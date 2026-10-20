@@ -1,0 +1,12 @@
+# Local secrets and machine state
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+.DS_Store
+__pycache__/
+*.pyc
+# Verification artifacts (keep deliberate, sanitized evidence under specs if needed)
+artifacts/
+# Add application-specific generated output only after choosing the project stack.
