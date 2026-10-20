@@ -100,3 +100,11 @@ mensual sí comprueba la fecha. No añadir filtro ni fecha Manual sin especifica
 y prueba de equivalencia. No cerrar alternativas de seguridad, integridad
 o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
 merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.
+
+Revisión posterior de PR #6/b47bfd1: favorable funcional/técnicamente, sin aprobación
+final. El usuario solicita una [matriz compacta de validación](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación).
+Solo M1 (Fecha apertura/Saldo apertura) y M2 (Estado/Finalidad/tres Sí-No) requieren confirmación
+de obligatoriedad para esta ronda. La muestra de registros no es una regla de obligatoriedad
+ni matriz exhaustiva. Objetivo opcional sin restricciones inventadas y Manual previsto,
+sin habilitar uso no demostrado. La denominación física Fecha apertura se conserva;
+sin segunda fecha de control, filtros temporales nuevos o conversión de ausencia en cero.

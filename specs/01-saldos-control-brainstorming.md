@@ -2,7 +2,7 @@
 Status: IN REVIEW — Q1–Q8 respondidas; decisiones confirmadas en el registro posterior.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: revisar versión con evidencias F1–F3 recibidas; extremos residuales explícitos, sin merge ni implementación.
+Next action: responder únicamente M1/M2 de la ronda 2 sobre obligatoriedad; sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -268,3 +268,38 @@ sin restricciones nuevas. Manual sigue conceptual y los motores/histórico sigue
 entregas posteriores. No se reabren Q1–Q8 ni se reclama evidencia ya aportada.
 Se autoriza únicamente actualizar PR #6/documentación y checks. Aprobación final del
 documento, merge e implementación continúan pendientes.
+
+
+## Round 2 — Matriz de validaciones — 2026-10-20
+Fuente de alcance: el usuario revisó PR #6/b47bfd1 favorablemente y pidió resolver
+únicamente reservas que afecten validaciones, manteniendo PR documental.
+Ver [matriz compacta](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación).
+Las evidencias F1–F3 y respuestas Q1–Q8 se conservan; no se reabren.
+
+### M1 — Fecha apertura y Saldo apertura por par demostrado
+Question: ¿Son obligatorios, opcionales o no aplicables para cada uno de los seis pares
+demostrados, al crear/conservar el maestro? No se ha aportado completitud de registros
+ni una regla física de obligatoriedad que permita clasificarlo con certeza.
+- [x] Registrar la regla existente confirmada por campo/par, conservando ausencias;
+  no sustituirlas por cero/fecha ni inferir filtro temporal de Movimientos.
+- [ ] Definir una nueva regla de alta para la app, identificándola como cambio y
+  revisándola expresamente, nunca atribuyéndola a v5.11.
+Confirmed answer: PENDING; source/date: PENDING.
+
+### M2 — Estado, Finalidad y los tres atributos Sí/No
+Question: ¿Se exige elección explícita de Estado, Finalidad, Liquidez, Mostrar como
+bolsa y Permite salida a Exterior al alta, o se admite vacío en algún par demostrado?
+Finalidad incluye vacío en su dominio, sin evidencia de opcionalidad en todos los pares.
+- [x] Separar dominio conocido de obligatoriedad; esperar confirmación de la regla
+  existente sin predeterminar Activa/Sí/No ni derivar un atributo de otro.
+- [ ] Acordar obligatoriedad nueva exclusiva de la app, diferenciándola de la fuente
+  y preservando los datos anteriores que existan; requiere aprobación expresa.
+Confirmed answer: PENDING; source/date: PENDING.
+
+Las marcas son recomendaciones, no respuestas. S000 continúa protegido; sus campos no
+se inventan ni se abre un flujo de edición. La ausencia de objetivos y registros Manual
+es observación, no regla. Objetivo sigue opcional y sin restricción de signo inventada;
+Manual previsto sin nuevas parejas habilitadas. Detalle mensual queda para histórico,
+conservando Saldo actual sin filtro y sin fechas nuevas. No se solicita una matriz
+universal ni se pregunta de nuevo por dominios/semánticas ya confirmados.
+Próxima acción: respuestas M1/M2 y actualización de matriz; aprobación final/merge no recibidos.

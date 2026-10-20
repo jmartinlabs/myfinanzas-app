@@ -16,6 +16,8 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   actualizada para revisión con evidencias F1–F3 del usuario. No reabrir decisiones;
   respetar extremos no demostrados. Saldo actual no filtra por Fecha apertura; histórico
   mensual sí comprueba esa fecha. No añadir filtro temporal ni fecha Manual por inferencia.
+  Matriz compacta en specification; ronda 2 de brainstorming limitada a M1/M2 de
+  obligatoriedad. No clasificar por inferencia campos no demostrados.
   Aprobación final/merge pendientes; sin desarrollo, otros pasos ni E1.2.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.

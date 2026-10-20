@@ -38,7 +38,7 @@ Current stage: 6
 ## Pending decisions
 - [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
 - Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
-- [Evidencias F1–F3](01-saldos-control-specification.md#reservas-financieras-y-trazabilidad) incorporadas; extremos residuales explícitos (exhaustividad/obligatoriedad por control, signos no probados, detalle del corte mensual/fecha ausente); Q1–Q8 ya tienen respuesta y pantallas confirmadas. Aprobación final del documento/merge pendientes, sin código, SQL ejecutable, migraciones, contratación o despliegue.
+- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): ronda 2 limitada a M1 (obligatoriedad de Fecha apertura/Saldo apertura por par) y M2 (Estado/Finalidad y los tres Sí/No); F1–F3 incorporadas. Sin reglas nuevas de Objetivo. Manual y detalle de histórico no bloquean esta ronda; Q1–Q8 ya tienen respuesta y pantallas confirmadas. Aprobación final del documento/merge pendientes, sin código, SQL ejecutable, migraciones, contratación o despliegue.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
@@ -64,16 +64,18 @@ Current stage: 6
 - Los criterios/pruebas del roadmap son futuros; no se han implementado ni ejecutado como funcionalidades.
 
 ## STEP 5 — E1.1 en revisión
+- Revisión de PR #6/b47bfd1 favorable, sin aprobación final: usuario pide matriz compacta. Ronda 2 append-only M1/M2; reglas confirmadas, observaciones y obligatoriedad no demostrada separadas.
 - Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
 - [Brainstorming](01-saldos-control-brainstorming.md): ronda original conservada, respuestas Q1–Q8 y feedback visual añadidos con fuente/fecha; sin aprobaciones por extensión.
 - [Propuesta](01-saldos-control-specification.md): alcance/contratos, DT1/DT2/DT6, wireframes,
-  31 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: evidencias F1–F3 incorporadas, extremos residuales sin reglas inventadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
+  32 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: evidencias F1–F3 incorporadas, extremos residuales sin reglas inventadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
 - No implementación ni instalación de paquetes/herramientas; no inspección/importación del Excel real.
-- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…26 conservados, AC-27…31 añadidos y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
+- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…31 conservados, AC-32 añadido y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-Presentar PR #6 actualizada y resultado de checks; solicitar revisión/aprobación expresa
-de la versión completa. F1–F3 ya están aportadas: no reclamarlas de nuevo en bloque.
-Contrastar únicamente extremos residuales antes de habilitar las operativas que los necesiten. No reabrir Q1–Q8; no merge,
-implementación, E1.2 u otros pasos sin autorización. Custodia/destino externo DT6 antes del despliegue.
+Presentar matriz compacta y recibir únicamente respuestas M1/M2 sobre obligatoriedad.
+No reclamar matriz exhaustiva de validez ni decidir signo de Objetivo por falta de datos;
+no imponer restricciones nuevas. Conservar Fecha apertura/Saldo apertura físicos y Manual
+previsto sin nuevos usos. Actualizar PR #6 documental y comprobar CI; sin merge,
+SQL, implementación, E1.2 u otros STEPS. Custodia/destino externo DT6 antes del despliegue.
