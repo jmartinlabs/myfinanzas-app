@@ -22,7 +22,8 @@ Current stage: 5
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- Crear/verificar PR y checks remotos de STEP 3; esperar aprobación explícita antes de merge.
+- [PR #3 de STEP 3](https://github.com/josemartin2000/myfinanzas-app/pull/3) abierta;
+  esperar aprobación explícita antes de merge y comprobar checks del HEAD vigente.
 - Especificación funcional de MyFinanzas y confirmación de Excel estable antes del roadmap financiero.
 
 ## Evidencia de sincronización
@@ -37,6 +38,6 @@ Current stage: 5
 - Checks remotos: verificar en la PR; no confundirlos con validación local.
 
 ## Next action
-Publicar/verificar PR de step-3/automated-checks hacia main y sus checks remotos.
-Esperar aprobación explícita del usuario para merge.
+Esperar aprobación explícita del usuario de PR #3 antes de merge. Comprobar los checks
+del HEAD vigente de step-3/automated-checks y realizar/verificar merge solo tras aprobación.
 No iniciar roadmap hasta recibir la especificación funcional de MyFinanzas.
