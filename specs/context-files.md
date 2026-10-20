@@ -23,7 +23,7 @@ Los prompts heredados se conservan como referencia, sin presentarlos como instru
 vigentes de creación o publicación de una nueva plantilla.
 
 ## Estado de Git y revisión previa a publicación
-GitHub confirma públicamente el repositorio josemartin2000/myfinanzas-app;
+Registro histórico de STEP 2 (antes del cambio de visibilidad): GitHub confirmó públicamente el repositorio josemartin2000/myfinanzas-app;
 el remoto de lectura y main son accesibles. El commit de bootstrap 36f43e8 aún no
 estaba en main al iniciar STEP 2. Se conservó en step-1/bootstrap, con STEP 2 en
 step-2/context-files basado en él. No se reescribió historial ni se cambió visibilidad.
@@ -57,9 +57,11 @@ Las bases, capturas y dependencias generadas están ignoradas y no se añaden al
   ni se pidió otro token. Acceso Git no demuestra permisos de API.
 - Se guardó en el borrador del entorno api.github.com como dominio adicional necesario
   para crear/verificar PR y, tras aprobación, hacer merge. Guardar el borrador no
-  activa la red ni publica el entorno. El bloqueo requiere aplicar esa configuración.
+  activa la red ni publica el entorno. El bloqueo requirió aplicar esa configuración; quedó resuelto antes de STEP 3.
 
-## Próxima acción
-Crear/verificar las PR hacia main cuando la API sea accesible. El estado de commits
-y ramas remotas se comprueba con Git. Esperar aprobación explícita de cada PR
-antes de su merge. No comenzar STEP 3 ni roadmap sin nueva autorización.
+## Cierre posterior
+El usuario hizo merge manual de PR #1 y #2 y cambió la visibilidad a privada.
+Se verificaron ambos merges y la visibilidad con Git y API antes de STEP 3.
+Este archivo conserva la evidencia histórica; el estado vigente está en
+[setup-progress](setup-progress.md). STEP 3 quedó autorizado posteriormente;
+el roadmap sigue pendiente de la especificación funcional.

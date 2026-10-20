@@ -1,7 +1,7 @@
 # MyFinanzas App
 
 Aplicación web privada de gestión financiera personal que migrará progresivamente
-el sistema MyFinanzas existente en Excel. El repositorio es público; la aplicación
+el sistema MyFinanzas existente en Excel. El repositorio es privado; la aplicación
 es de un único usuario y no tendrá registro público.
 
 Actualmente solo existe un **walking skeleton local con datos ficticios**:
@@ -33,6 +33,9 @@ bunx playwright install chromium
 bun run test:e2e
 ./scripts/validate-template
 ./scripts/test-validator
+./scripts/check-project
+./scripts/check-repository
+./scripts/test-checks
 git diff --check
 ```
 
@@ -51,8 +54,9 @@ El build genera el cliente estático, no un despliegue de producción.
 - [Instrucciones de agentes y política Git/GitHub](AGENTS.md).
 - [Propiedad de documentos y metodología de ocho pasos](specs/README.md).
 
-STEP 1 está implementado; STEP 2 documenta el contexto. STEP 3 (controles automáticos
-adicionales) y roadmap no se han iniciado. Antes de las épicas financieras definitivas
+STEP 1 y STEP 2 están integrados en main. STEP 3 automatiza las comprobaciones de
+proyecto, historial, tipos, build y pruebas en CI; [evidencia y estado](specs/automated-checks.md).
+El roadmap no se ha iniciado. Antes de las épicas financieras definitivas
 se debe recibir y revisar la especificación funcional de MyFinanzas.
 
 ## Skills

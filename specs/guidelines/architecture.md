@@ -64,5 +64,6 @@ financiero. Estos detalles requieren especificaciones y aprobaciones posteriores
 La [evidencia STEP 1](../bootstrap.md) documenta comprobaciones y capturas; comandos y
 cobertura vigente en [calidad](quality.md), presentación en [UI](ui.md) y amenazas en
 [seguridad](security.md). STEP 2 documenta lo implementado sin cambiar código ni contratos.
-Los controles automáticos adicionales corresponden a STEP 3. No inferir reglas económicas
+STEP 3 automatiza los controles descritos en [calidad](quality.md), sin cambiar la app.
+No inferir reglas económicas
 de nombres, ejemplos o código técnico. Esperar la especificación financiera antes del roadmap.

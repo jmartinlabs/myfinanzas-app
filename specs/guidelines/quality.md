@@ -14,6 +14,9 @@ No se requieren paquetes Python ni servicios externos. Chromium es necesario par
 | bun run test:e2e | 4 pruebas Playwright: dos flujos por viewport |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
 | ./scripts/test-validator | 18 regresiones positivas y negativas del validador |
+| ./scripts/check-project | Workspaces/Bun, versiones exactas, paquetes privados y límites de imports del navegador |
+| ./scripts/check-repository | Historial completo, índice y archivos versionados sin infracciones detectadas |
+| ./scripts/test-checks | Pruebas positivas/negativas de los controles nuevos |
 | git diff --check | Sin errores de whitespace |
 
 Instalar navegador con `bunx playwright install chromium`. En Codex, la descarga recibió
@@ -22,7 +25,7 @@ Instalar navegador con `bunx playwright install chromium`. En Codex, la descarga
 No omitir E2E silenciosamente si falta el navegador: resolver o registrar el bloqueo.
 Las versiones concretas ejecutadas y resultados de STEP 1 están en [bootstrap](../bootstrap.md).
 El bootstrap no ha configurado lint ni formateador; typecheck y diff --check no los sustituyen.
-Añadir herramientas/controles corresponde a STEP 3 o a una necesidad aprobada posterior.
+STEP 3 usa solo Python estándar y herramientas existentes; no añade dependencias.
 
 ## Cobertura existente
 Bun Test: semilla determinista e idempotente, persistencia tras reabrir SQLite,
@@ -40,13 +43,40 @@ Las capturas se inspeccionan visualmente; guardar una imagen no prueba que se ha
 El validador revisa estructura, links locales, manifests y contratos de Skills, protocolo
 de reanudación, prompt, portabilidad y heurísticas de credenciales. No es un parser completo,
 escáner exhaustivo de secretos ni verificador semántico de arquitectura.
-Su harness prueba casos válidos y corrupciones aisladas. Actualmente copia el checkout
-para cada fixture, incluidos node_modules si existen; puede ser lento con dependencias.
-No cambiar sus fixtures ni omitir assertions para simular éxito; su mejora queda para STEP 3.
+Su harness conserva sus 18 pruebas válidas y corrupciones aisladas. En STEP 3 se excluyen
+node_modules, dist, .local y salidas de pruebas al copiar fixtures, sin eliminar assertions.
+Los fixtures siguen incluyendo código, manifests y documentación del proyecto.
 
-La CI actual .github/workflows/validate.yml ejecuta solo las dos comprobaciones de plantilla
-y git diff --check con Python 3.12. No instala Bun ni ejecuta build, tipos o E2E.
-No atribuir a GitHub resultados que solo se ejecutaron localmente. STEP 2 no añade CI.
+## Controles STEP 3 y CI
+check-project contrasta .bun-version y packageManager, exige apps/* y private=true en
+los paquetes para impedir publicación npm (no controla visibilidad GitHub), verifica
+versiones directas exactas, rechaza una lista explícita de ORMs conocidos y detecta
+imports de Bun/Node o rutas relativas de apps/api desde código de navegador. El análisis
+de imports es léxico, no resuelve aliases, reexports externos ni toda la sintaxis TypeScript;
+tipos/build y la revisión manual complementan sus límites. También verifica presencia
+de las fases obligatorias de CI, SHAs de acciones e historial completo, y rechaza eventos
+pull_request_target o permisos de escritura; es validación léxica, no un parser YAML.
+
+check-repository exige historia Git completa; inspecciona todos los commits alcanzables
+desde HEAD, sus mensajes, el índice y los archivos versionados locales. Rechaza rutas
+sensibles y enlaces simbólicos pendientes de revisión, contenido SQLite renombrado y
+patrones conocidos de secretos. Redacta valores; no es un escáner exhaustivo. Nuevos
+archivos deben añadirse al índice antes de la revisión previa al push. Lee historia y
+blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
+
+La CI .github/workflows/validate.yml se activa con push, pull_request y workflow_dispatch.
+Usa checkout con historial completo y sin credenciales persistidas, acciones fijadas por
+SHA, permisos contents:read y timeout de 15 minutos. Ejecuta los tres controles y sus
+regresiones, diff --check y whitespace del commit con git show --check, instalación Bun 1.4.3 con lockfile congelado, tipos, build,
+Bun Test, instalación de Chromium y Playwright. Solo sube las capturas ficticias de
+artifacts/bootstrap/*.png, con retención de siete días; no bases ni archivos de entorno.
+No usa secretos de aplicación, pull_request_target ni permisos de escritura.
+No convierte automáticamente los checks en reglas obligatorias de protección de main;
+configurar rulesets requiere decisión y permisos administrativos independientes.
+
+No atribuir a GitHub resultados locales: estado de ejecución en [STEP 3](../automated-checks.md).
+Un exit 1 esperado dentro de un test negativo no es un fallo de la suite: demuestra que
+el control rechaza la infracción; la suite global debe finalizar correctamente.
 
 ## Criterios de entrega
 Ejecutar checks que correspondan al cambio, investigar fallos y conservar el estado real

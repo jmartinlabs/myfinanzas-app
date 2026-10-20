@@ -7,11 +7,13 @@ Current stage: 5
 | 2 Technology | complete | [Stack y versiones implementados](guidelines/architecture.md) |
 | 3 Architecture | complete | [Arquitectura](guidelines/architecture.md); plan aprobado 2026-10-20 |
 | 4 Bootstrap | complete | [STEP 1](bootstrap.md); el usuario autorizó continuar con STEP 2 |
-| 5 Guidelines | awaiting-approval | [STEP 2 · Context files](context-files.md); formato corregido tras autorización. API GitHub bloqueada |
+| 5 Guidelines | awaiting-approval | [STEP 2](context-files.md) integrado; [STEP 3](automated-checks.md) implementado y validado localmente, pendiente revisión PR |
 | 6 Roadmap | blocked | Esperar especificación funcional de MyFinanzas tras bootstrap y controles |
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
+- STEP 3 autorizado mediante «procede» tras presentar el siguiente paso; [alcance](automated-checks.md).
+- PR #1 y #2 integradas manualmente y repositorio privado: confirmado por usuario, Git y API.
 - [STEP 2 y contexto](context-files.md): autorizados por el usuario el 2026-10-20.
 - [Política Git/GitHub](../AGENTS.md): autorizada por el usuario el 2026-10-20; merge solo tras aprobación explícita de la PR.
 - [Plan STEP 1 y precisiones aprobadas](bootstrap.md): respuesta explícita del usuario el 2026-10-20.
@@ -20,24 +22,22 @@ Current stage: 5
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- API GitHub bloqueada por red: aplicar api.github.com en configuración del entorno.
-- Crear/verificar PR y esperar aprobación del usuario antes de cualquier merge.
-- STEP 3 requiere autorización posterior; no implementarlo en STEP 2.
-- Especificación funcional y confirmación del Excel estable para etapas financieras.
+- [PR #3 de STEP 3](https://github.com/josemartin2000/myfinanzas-app/pull/3) abierta;
+  esperar aprobación explícita antes de merge y comprobar checks del HEAD vigente.
+- Especificación funcional de MyFinanzas y confirmación de Excel estable antes del roadmap financiero.
 
-## Evidencia STEP 2
-- Formato corregido tras «hazlo». Validador y diff --check pasan; 18 regresiones
-  pasan sobre copia exacta de los archivos del commit, sin dependencias ignoradas.
-  No se modificaron scripts ni assertions para esa ejecución.
-- Solo documentación modificada; sin cambios de código, dependencias, tests ni CI.
-- Historial del bootstrap revisado: sin rutas sensibles, binarios, bases ni patrones
-  de credenciales detectados; contenido del código y documentación inspeccionado.
-- step-1/bootstrap publicado y SHA remoto verificado: 36f43e8.
-- Revisar también el commit final de STEP 2 antes de su push; no confiar solo en el diff.
-- Intento real de crear PR STEP 1: POST api.github.com/graphql devuelve Forbidden.
-  No se ha creado PR ni realizado merge; falta aplicar el dominio permitido en el entorno.
+## Evidencia de sincronización
+- PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
+- GitHub confirma repositorio privado y main como rama principal; API accesible.
+- Trabajo aislado en step-3/automated-checks, desde main actualizado; sin worktree adicional.
+
+## Evidencia STEP 3
+- 18 regresiones de plantilla y 22 pruebas de controles: pasan.
+- Tipos/build/instalación congelada: pasan; 4 Bun Test y 4 E2E pasan.
+- Capturas 390/1440 inspeccionadas. Sin datos reales ni nuevas dependencias.
+- Checks remotos: verificar en la PR; no confundirlos con validación local.
 
 ## Next action
-Crear/verificar las PR hacia main cuando funcione la API, usando las ramas
-step-1/bootstrap y step-2/context-files. La segunda depende del bootstrap aún no integrado.
-Esperar aprobación explícita de cada PR antes del merge. STEP 3 queda pendiente.
+Esperar aprobación explícita del usuario de PR #3 antes de merge. Comprobar los checks
+del HEAD vigente de step-3/automated-checks y realizar/verificar merge solo tras aprobación.
+No iniciar roadmap hasta recibir la especificación funcional de MyFinanzas.

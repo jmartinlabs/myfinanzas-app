@@ -13,7 +13,7 @@ class ValidationTests(unittest.TestCase):
  def setUp(self):
   temp=tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
   self.root=Path(temp.name)/'fixture'
-  shutil.copytree(ROOT,self.root,ignore=shutil.ignore_patterns('.git','__pycache__','artifacts'))
+  shutil.copytree(ROOT,self.root,ignore=shutil.ignore_patterns('.git','__pycache__','artifacts','node_modules','dist','.local','test-results','playwright-report'))
  def change(self,name,old,new):
   p=self.root/name; p.write_text(p.read_text().replace(old,new))
  def assertRule(self,rule): self.assertTrue(any(e.startswith(rule+':') for e in validate(self.root)),rule)
