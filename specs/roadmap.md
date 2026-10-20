@@ -510,3 +510,11 @@ Detenerse tras el merge. Siguiente paso previsto, todavía sin iniciar: autoriza
 expresa para STEP 5 y especificación de la primera entrega, con DT1/DT2/DT6 aplicables
 resueltas antes de implementar. No hay autorización de código, SQL definitivo,
 migraciones, contratación o despliegue en este cierre de STEP 4.
+
+
+### Actualización posterior de autorización — STEP 5
+El usuario autorizó únicamente la propuesta de especificación de E1.1, sin desarrollo.
+Ver [ronda de decisiones](01-saldos-control-brainstorming.md) y
+[borrador E1.1](01-saldos-control-specification.md). La parada anterior al STEP 5 quedó
+satisfecha; respuestas, especificación final y merge de la nueva PR siguen pendientes.
+Esta actualización de estado no modifica las cuatro épicas ni las 30 entregas aprobadas.

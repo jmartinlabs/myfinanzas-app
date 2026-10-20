@@ -11,7 +11,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- STEP 4 aprobado: cuatro épicas y 30 entregas. No avances a STEP 5 sin autorización.
+- STEP 4 aprobado: cuatro épicas y 30 entregas. STEP 5 autorizado solo para especificar E1.1.
+- Propuesta y preguntas: specs/01-saldos-control-brainstorming.md y specification correspondiente.
+  Espera respuestas/aprobación antes de cerrarla; sin desarrollo, otros pasos ni E1.2.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.

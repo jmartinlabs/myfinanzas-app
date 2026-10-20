@@ -12,6 +12,7 @@ Current stage: 6
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
+- STEP 5 autorizado solo para propuesta documental E1.1, por solicitud expresa del usuario el 2026-10-20; no equivale a aprobar DT1/DT2/DT6.
 - STEP 4 completado por aprobación expresa del usuario el 2026-10-20: PR #5 y distribución 4/30 aprobadas; merge autorizado tras CI/alcance.
 - Las entregas son unidades funcionales verificables, no necesariamente sprints ni PR.
 - [Consideraciones operativas](project.md): dominio previsto, preferencia UE sin VPS contratado y Excel maestro hasta migración autorizada.
@@ -35,14 +36,14 @@ Current stage: 6
 ## Pending decisions
 - [DT1–DT10](roadmap.md) se resolverán progresivamente antes de cada entrega afectada; no están aprobadas por este cierre.
 - Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
-- Esperar autorización explícita para iniciar STEP 5. Sin código, SQL definitivo, migraciones, contratación o despliegue.
+- [Q1–Q8 y wireframes E1.1](01-saldos-control-brainstorming.md) pendientes; no cerrar especificación sin respuestas/aprobación. Sin código, SQL ejecutable, migraciones, contratación o despliegue.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
 - GitHub confirma repositorio privado y main como rama principal; API accesible.
 - PR #3 MERGED: 193410d; HEAD c340bad integrado y main actualizado por fast-forward.
 - PR #4 MERGED: 0f07992; main actualizado y árbol limpio antes de STEP 4.
-- Cierre documental en step-4/roadmap; registro de integración y SHA consultables en [PR #5](https://github.com/josemartin2000/myfinanzas-app/pull/5).
+- PR #5 MERGED: fed2743; roadmap integrado en main, cuatro épicas/30 entregas aprobadas.
 
 ## Evidencia STEP 3
 - 18 regresiones de plantilla y 22 pruebas de controles: pasan.
@@ -60,7 +61,16 @@ Current stage: 6
 - Revisar historia e índice antes de push; comprobar los checks remotos de la PR sin confundirlos con tests financieros futuros.
 - Los criterios/pruebas del roadmap son futuros; no se han implementado ni ejecutado como funcionalidades.
 
+## STEP 5 — E1.1 en revisión
+- Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
+- [Brainstorming](01-saldos-control-brainstorming.md): primera ronda Q1–Q8 sin respuestas inventadas.
+- [Propuesta](01-saldos-control-specification.md): alcance/contratos, DT1/DT2/DT6, wireframes,
+  26 criterios futuros y plan de pruebas. DRAFT, no especificación cerrada ni aprobada.
+- No implementación ni instalación de paquetes/herramientas; no inspección/importación del Excel real.
+- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: 26 AC únicos y Q1–Q8 sin respuestas inventadas.
+- CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
+
 ## Next action
-Detenerse tras integrar PR #5 y verificar MERGED, roadmap en main y árbol limpio.
-Siguiente paso previsto, sin iniciar: STEP 5 para especificar la primera entrega del
-núcleo y resolver DT aplicables antes de implementación. Esperar autorización explícita.
+Detenerse para recibir respuestas Q1–Q8 y feedback de pantallas. Después incorporar
+confirmaciones con fuente/fecha sin borrar rondas y solicitar aprobación de la especificación
+completa. No merge de PR documental, implementación, E1.2 u otros pasos sin autorización.

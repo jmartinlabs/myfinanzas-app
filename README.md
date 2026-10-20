@@ -64,7 +64,9 @@ Las reglas confirmadas y la precedencia sobre v5.10 están en
 [project.md](specs/project.md). No se ha diseñado
 el modelo financiero definitivo. El [roadmap STEP 4](specs/roadmap.md), con cuatro épicas
 y 30 unidades funcionales verificables, está aprobado; no representa 30 sprints o PR.
-STEP 4 completado. STEP 5 e implementación no iniciados ni autorizados. DT1–DT10 se
+STEP 4 completado. STEP 5 autorizado únicamente para la
+[propuesta E1.1](specs/01-saldos-control-specification.md) y sus
+[preguntas pendientes](specs/01-saldos-control-brainstorming.md); sin implementación. DT1–DT10 se
 resolverán antes de las entregas afectadas. [Consideraciones operativas](specs/project.md).
 
 ## Skills

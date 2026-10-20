@@ -71,7 +71,8 @@ especificación funcional revisada y aprobación expresa de su propuesta.
 El usuario aprobó el 2026-10-20 la agrupación de cuatro épicas y sus 30 entregas y
 autorizó integrar PR #5 tras verificar CI y alcance. Las decisiones P1–P7 se conservan
 en la referencia funcional y se trazan en el [roadmap aprobado](roadmap.md).
-STEP 4 completado; detenerse tras el merge. STEP 5 e implementación no autorizados.
+STEP 4 completado e integrado en main (PR #5, fed2743). La autorización posterior
+de STEP 5 se limita a E1.1 como se indica abajo; implementación no autorizada.
 DT1–DT10 se resolverán progresivamente antes de las entregas correspondientes;
 esta aprobación no fija SQL definitivo ni autoriza migraciones o despliegues.
 
@@ -83,3 +84,12 @@ Fuente: autorización expresa del usuario para integrar PR #5, 2026-10-20.
 - Las 30 entregas son unidades funcionales verificables, no necesariamente 30 sprints ni 30 PR.
 - Excel v5.11 sigue siendo fuente de verdad hasta la migración definitiva autorizada;
   la app solo pasa a maestro después del proceso P7. Nunca doble escritura.
+
+## Autorización vigente de STEP 5 — E1.1
+Fuente: solicitud expresa del usuario, 2026-10-20, posterior al merge de PR #5.
+Se autoriza especificar Saldos y atributos de control, proponer DT1/DT2/DT6 y preparar
+rama/PR exclusivamente documental. [Ronda inicial](01-saldos-control-brainstorming.md)
+y [borrador de revisión](01-saldos-control-specification.md), pendientes de respuestas,
+feedback visual y aprobación completa. No cerrar alternativas de seguridad, integridad
+o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
+merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.
