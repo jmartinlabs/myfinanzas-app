@@ -9,7 +9,9 @@
     "typecheck": "tsc --noEmit",
     "build": "bun run --filter @myfinanzas/web build",
     "test": "bun test apps/api",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "setup": "bun apps/api/src/setup.ts",
+    "backup": "bun apps/api/src/backup-cli.ts"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",
