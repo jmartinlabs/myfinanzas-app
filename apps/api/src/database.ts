@@ -1,12 +1,36 @@
-import { Database } from 'bun:sqlite';
-import { mkdirSync, chmodSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { Database } from "bun:sqlite";
+import { mkdirSync, chmodSync } from "node:fs";
+import { dirname } from "node:path";
 
 // Only fictional bootstrap data. Original Excel and real migration are outside this module.
 export function openDatabase(path: string) {
-  if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
-  const db = new Database(path, { create: true, strict: true });
-  db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;');
+  if (path !== ":memory:")
+    mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+  const mask = process.umask(0o077);
+  let db: Database;
+  try {
+    db = new Database(path, { create: true, strict: true });
+  } finally {
+    process.umask(mask);
+  }
+  if (
+    db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'",
+      )
+      .get()
+  ) {
+    const versions = db.query("SELECT version FROM schema_version").all() as {
+      version: number;
+    }[];
+    if (versions.length !== 1 || versions[0].version !== 1) {
+      db.close();
+      throw new Error("Esquema no compatible; no se modificará esta base.");
+    }
+  }
+  db.exec(
+    "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
+  );
   db.transaction(() => {
     db.exec(`CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY) STRICT;
       CREATE TABLE IF NOT EXISTS saldos(
@@ -24,7 +48,9 @@ export function openDatabase(path: string) {
         WHEN OLD.id='S000' BEGIN SELECT RAISE(ABORT,'protected system saldo'); END;
       CREATE TABLE IF NOT EXISTS counters(name TEXT PRIMARY KEY, next INTEGER NOT NULL CHECK(next>0)) STRICT;
       CREATE TABLE IF NOT EXISTS audit(id INTEGER PRIMARY KEY, entidad TEXT NOT NULL, accion TEXT NOT NULL,
-        revision INTEGER NOT NULL, campos TEXT NOT NULL, instante TEXT NOT NULL) STRICT;
+        revision INTEGER NOT NULL, campos TEXT NOT NULL, instante TEXT NOT NULL,
+        revision_previa INTEGER NOT NULL, actor TEXT NOT NULL, motivo TEXT) STRICT;
+      CREATE TABLE IF NOT EXISTS auth_events(id INTEGER PRIMARY KEY, accion TEXT NOT NULL, instante INTEGER NOT NULL) STRICT;
       CREATE TABLE IF NOT EXISTS idempotency(key TEXT PRIMARY KEY, hash TEXT NOT NULL, saldo TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,
         expires INTEGER NOT NULL) STRICT;
       CREATE TABLE IF NOT EXISTS owner(id INTEGER PRIMARY KEY CHECK(id=1), password TEXT NOT NULL, secret TEXT NOT NULL,
@@ -36,20 +62,57 @@ export function openDatabase(path: string) {
       CREATE TABLE IF NOT EXISTS auth_limits(id INTEGER PRIMARY KEY CHECK(id=1), failures INTEGER NOT NULL,
         window INTEGER NOT NULL, blocked INTEGER NOT NULL) STRICT;
       INSERT OR IGNORE INTO schema_version VALUES(1);`);
-    if (!db.query('SELECT id FROM saldos LIMIT 1').get()) {
-      const insert = db.prepare(`INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`);
-      const time = '2026-01-01T00:00:00.000Z';
-      insert.run('S000','Exterior técnico','Exterior','Exterior','Activa',null,0,0,0,null,null,null,null,1,time,time);
-      for (const [id,nombre,tipo,control] of [
-        ['S001','Cuenta cotidiana demo','Efectivo','Movimientos'],
-        ['S002','Tarjeta terminal demo','Efectivo','Terminal'],
-        ['S003','Efectivo de inversión demo','Efectivo','Inversiones'],
-        ['S004','Cartera de inversión demo','Inversión','Inversiones'],
-        ['S005','Reserva sin control demo','Efectivo','No controlado'],
-      ]) insert.run(id,nombre,tipo,control,'Activa',null,0,0,0,null,null,null,null,1,time,time);
+    if (!db.query("SELECT id FROM saldos LIMIT 1").get()) {
+      const insert = db.prepare(
+        `INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+      );
+      const time = "2026-01-01T00:00:00.000Z";
+      insert.run(
+        "S000",
+        "Exterior técnico",
+        "Exterior",
+        "Exterior",
+        "Activa",
+        null,
+        0,
+        0,
+        0,
+        null,
+        null,
+        null,
+        null,
+        1,
+        time,
+        time,
+      );
+      for (const [id, nombre, tipo, control] of [
+        ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
+        ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
+        ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
+        ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
+        ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
+      ])
+        insert.run(
+          id,
+          nombre,
+          tipo,
+          control,
+          "Activa",
+          null,
+          0,
+          0,
+          0,
+          null,
+          null,
+          null,
+          null,
+          1,
+          time,
+          time,
+        );
       db.run("INSERT OR IGNORE INTO counters VALUES('saldo',6)");
     }
   })();
-  if (path !== ':memory:') chmodSync(path, 0o600);
+  if (path !== ":memory:") chmodSync(path, 0o600);
   return db;
 }

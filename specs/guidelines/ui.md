@@ -1,51 +1,39 @@
 # Ui guidelines
 
-## Alcance
-Interfaz web en español para el catálogo ficticio, implementada en STEP 1 y descrita
-en STEP 2. CSS propio, sin librería UI. Estos valores documentan el bootstrap existente;
-describen el bootstrap, no la implementación del diseño aprobado para futuras pantallas
-registrado más abajo. Mantener separados inventario actual, aprobación y pruebas futuras.
+## Implementación E1.1 — STEP 7
+Diseño aprobado en STEP 5, ahora implementado bajo autorización expresa de $dev 01.
+Shell con menú lateral escritorio y menú móvil, header Ciclo financiado: No disponible;
+listado con búsqueda/filtros/paginación y tabla/tarjetas; ficha y alta/edición en página propia.
+Identidad original MyFinanzas, CSS propio; componentes PageHead/Tag/Alert/Switch reutilizables.
 
-## Presentación actual
-Una página: cabecera MyFinanzas y etiqueta de entorno local; título del catálogo;
-aviso de datos ficticios; lista de nombres e identificadores; pie técnico del bootstrap.
-No muestra importes, gráficos, indicadores financieros ni acciones de negocio.
+Tokens vigentes: principal #8DBB2E, cabeceras #CBEA7B, secciones/switch off #DCECB3,
+fondo #EEF7E8, texto #2B2B2B, blanco; texto auxiliar #536147, foco #335B0D.
+Tipografía de sistema sin descarga; shell desktop 236px/sidebar, contenido fluido,
+breakpoints 1050px/760px; móvil padding 16px. Tema light explícito incluso con sistema dark.
+Switch binario accesible, knob blanco, texto Sí/No; ausencia histórica se representa
+Sin informar y acción explícita Informar No antes de convertirse en switch, no false implícito.
+Los tres indicadores nuevos comienzan false y en edición conservan valores reales.
 
-| Propiedad | Valor implementado |
-| --- | --- |
-| Tipografía | system-ui y fuentes de sistema; sin descargas externas |
-| Fondo / texto | #f6f7f4 / #1c3432 |
-| Tokens --muted / --line / --accent | #526562 / #d9e2dc / #195c4f |
-| Panel / aviso | blanco / #eaf1eb |
-| Contenedor / contenido principal | máximo 1120px / 800px |
-| Márgenes laterales | 40px; 22px hasta 600px |
-| Título principal | clamp(30px, 4vw, 44px) |
-| Radios | lista 12px; indicador 10px; aviso 8px; botón 6px |
+Formularios en tres bloques, errores asociados a campos, foco al aviso y borrador conservado;
+ID visible/inmutable, sin borrado físico. Desactivar/reactivar requiere confirmación.
+Aperturas/Objetivo vacíos no se transforman en cero. Sin cálculo disponible: motivo visible
+sin importe; no Manual operativo ni nuevas combinaciones. El menú no ofrece módulos inexistentes.
 
-Los colores base y varias medidas son literales CSS; no existe aún un sistema completo
-de tokens de espaciado o componentes. No introducir uno como si ya estuviera implementado.
-Hasta 600px se ajustan márgenes y tipografía y se oculta la etiqueta redundante «Ficticio»
-de cada fila; el aviso global permanece visible. Se admite scroll vertical normal.
+Acceso privado con enrolado/contraseña/TOTP/códigos de recuperación; factores no aparecen
+en las capturas de evidencia. Estado de sesión caducada pide conservar borrador antes de
+volver a identificarse. Formularios mantienen acciones Cancelar/Guardar y acceso por teclado.
 
-## Estados e interacción
-- Carga: mensaje «Cargando catálogo…» con role=status.
-- Éxito: lista semántica de registros y contador, sin operaciones de edición.
-- Vacío: mensaje explícito con role=status.
-- Error o respuesta inválida: aviso con role=alert y botón Reintentar que consulta de nuevo.
-- Peticiones canceladas al desmontar no generan un error de interfaz.
+Capturas reales 390×844 y 1440×1000 inspeccionadas; estados loading/empty/error/retry,
+conflicto, ausencias y restauración verificados. Resultados y cinco ajustes de revisión
+están en [testplan](../01-saldos-control-testplan.md), no en una aprobación gráfica supuesta.
+Se midieron pares de texto de la paleta y se operaron switches/menú por teclado;
+no auditoría WCAG completa ni ensayo con lector de pantalla.
 
-HTML con lang=es, header/main/section/footer, títulos jerárquicos y lista ul/li.
-El enlace de marca y el botón usan controles nativos; foco visible de 3px y offset 4px.
-Los números decorativos se ocultan al árbol accesible. Mantener uso de teclado, etiquetas
-comprensibles y significado independiente del color al añadir interacciones aprobadas.
-
-## Verificación y límites
-Playwright comprueba el flujo y estados en 390×844 y 1440×1000; las capturas de página
-completa de STEP 1 se inspeccionaron: legibilidad, jerarquía, espacios y ausencia de recortes.
-Rutas y evidencia en [bootstrap](../bootstrap.md). No se ha hecho auditoría WCAG,
-medición automatizada de contraste ni prueba con lector de pantalla: no afirmar conformidad.
-Futuros cambios visuales deben verificar teclado, foco, contraste y estados afectados,
-además de operar los flujos y capturar/inspeccionar 390px y 1440px según la Skill dev.
+## Registro de aprobación STEP 5
+Lo siguiente conserva el contrato visual aprobado y las limitaciones de aquella fase
+**documental**. Las frases sobre implementación futura/no autorizada o PR #6 abierta
+describen ese momento: PR #6 fue integrada en ebfe75b y STEP 7 sí está autorizado.
+No son una revocación de las pruebas reales documentadas arriba ni permiso de merge.
 
 ## Diseño visual común aprobado — 2026-10-21
 
