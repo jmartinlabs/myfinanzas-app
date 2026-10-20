@@ -139,3 +139,11 @@ Switch on verde #8DBB2E/indicador blanco/Sí; off verde suave MyFinanzas/indicad
 blanco/No. Tema exclusivamente claro, sin modo oscuro en esta fase. M1, Estado inicial
 Activa, Finalidad/Objetivo opcionales y S000 protegido permanecen sin cambios.
 Solo documentación/PR/checks; sin merge, código, CSS, SQL, migraciones o E1.2.
+
+
+## Autorización de desarrollo vigente — 2026-10-21
+STEP 5 y diseño E1.1 aprobados e integrados mediante PR #6/main ebfe75b. Usuario autoriza
+STEP 7/$dev 01 y seis bloques del plan en feat/e1-1-saldos: seguimiento/Handoff,
+persistencia/acceso/backups, primer recorrido, gestión completa, recuperación/UX y PR.
+Esta autorización sustituye límites de implementación del STEP 5 anterior; no altera
+reglas aprobadas ni habilita E1.2, datos reales, despliegue o merge sin autorización.

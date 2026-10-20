@@ -1,12 +1,14 @@
 # 01 — E1.1 Saldos y atributos de control: Specification
-Status: IN REVIEW — versión completada para revisión tras Q1–Q8; F1–F3 incorporadas y contrato M1/M2 de aplicación aprobado; sin implementación.
+Status: APPROVED — PR #6 integrada en main ebfe75b; aprobación confirmada por el usuario.
 Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el usuario el 2026-10-20.
 M1/M2: contrato aprobado por el usuario el 2026-10-20, distinto de evidencia del Excel.
 Diseño común y tres pantallas E1.1: aprobación comunicada por el usuario el 2026-10-21;
 no implementación ni comprobación visual de una UI nueva.
 Revisión M2 de switches/default false y tema claro: aprobada el 2026-10-21, sustituye
-elección manual obligatoria anterior. Aprobación final de versión completa, merge e
-implementación: PENDING / no autorizados.
+elección manual obligatoria anterior. Especificación y diseño aprobados por el usuario
+antes de STEP 7; desarrollo local/ficticio E1.1 autorizado el 2026-10-21.
+Los límites «sin implementación/SQL» posteriores describen el STEP 5 documental, no
+prohibiciones de desarrollar E1.1 tras esta autorización. Reglas y exclusiones financieras intactas.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
 [roadmap E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia funcional](functional-reference-v5.11.md).

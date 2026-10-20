@@ -11,7 +11,8 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- STEP 4 aprobado: cuatro épicas y 30 entregas. STEP 5 autorizado solo para especificar E1.1.
+- STEP 4 y STEP 5 E1.1 aprobados e integrados (PR #6, ebfe75b). STEP 7 autorizado
+  solo para E1.1 local/ficticio mediante $dev 01 en feat/e1-1-saldos.
 - E1.1: Q1–Q8 respondidas en specs/01-saldos-control-brainstorming.md; specification
   actualizada para revisión con evidencias F1–F3 del usuario. No reabrir decisiones;
   respetar extremos no demostrados. Saldo actual no filtra por Fecha apertura; histórico
@@ -23,11 +24,12 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
   el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
   con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
-  Aprobación final/merge pendientes; sin desarrollo, otros pasos ni E1.2.
+  Desarrollo E1.1 autorizado; PR funcional pendiente de revisión y merge solo aprobado
+  por usuario. Sin E1.2, datos reales, despliegue o servicios contratados.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
-- Sin implementación, SQL definitivo, migraciones ni despliegue. Consideraciones operativas
+- SQL/migraciones locales solo de E1.1 conforme contrato aprobado. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 
 ## Política permanente de Git y GitHub

@@ -1,5 +1,5 @@
 # Setup progress
-Current stage: 6
+Current stage: 7
 
 | Stage | Status | Evidence / canonical decision links |
 | --- | --- | --- |
@@ -9,7 +9,7 @@ Current stage: 6
 | 4 Bootstrap | complete | [STEP 1](bootstrap.md); el usuario autorizó continuar con STEP 2 |
 | 5 Guidelines | complete | [STEP 2](context-files.md) y [STEP 3](automated-checks.md) integrados; PR #3 aprobada y merge verificado |
 | 6 Roadmap | complete | [Roadmap aprobado](roadmap.md): cuatro épicas y 30 entregas; autorización expresa de integración de PR #5 |
-| 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
+| 7 Handoff | complete | Fuentes, arquitectura, bootstrap, controles y roadmap verificados; STEP 5 aprobado PR #6/ebfe75b. $spec 01 completado; $dev 01 autorizado. |
 
 ## Confirmed decisions
 - Revisión M2 switches aprobada 2026-10-21: sustituye elección manual/segmentados. Alta y POST omitido=false explícito; PATCH conserva; históricos ausentes no son false. Tema solo claro, sin modo oscuro; fuente append-only en brainstorming.
@@ -77,10 +77,14 @@ Current stage: 6
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-Presentar PR #6 actualizada con revisión M2 vigente de switches/default false y tema
-claro, junto a resultados de controles/CI. No volver a exigir elección manual de cada Sí/No. Esperar aprobación final de la versión completa/PR; no volver a pedir
-aprobación de la dirección visual ya confirmada. Las verificaciones responsive/contraste/
-teclado/foco/estados y capturas de UI nueva siguen futuras hasta implementación autorizada.
-Sin merge, pantallas/componentes/CSS, SQL, migraciones, E1.2 u otros STEPS. No adelantar
-Ciclos para poblar la cabecera; sin fuente, No disponible. Custodia/destino externo DT6
-antes del despliegue.
+Seguir el progreso STEP 7 E1.1; entregar incrementos y PR funcional con evidencia actual.
+
+## Estado vigente STEP 7 — 2026-10-21
+PR #6 MERGED verificada, commit main ebfe75b, coincidente con especificación/diseño aprobados.
+Los estados anteriores de revisión son históricos: quedan sustituidos por esta autorización.
+Handoff inicial completado con enlaces de las etapas previas y CI main exitosa; las
+preguntas de módulos posteriores no bloquean E1.1. STEP 6 ya cubierto por Skill spec
+reutilizable existente, validada; no crear una duplicada. STEP 8 se revisará después del build.
+Desarrollo autorizado en feat/e1-1-saldos; progreso/pruebas en
+[progress](01-saldos-control-progress.md) y [testplan](01-saldos-control-testplan.md).
+Solo local/ficticio. Excel v5.11 maestro. Sin E1.2, despliegue ni merge sin aprobación.
