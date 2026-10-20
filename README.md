@@ -54,10 +54,13 @@ El build genera el cliente estático, no un despliegue de producción.
 - [Instrucciones de agentes y política Git/GitHub](AGENTS.md).
 - [Propiedad de documentos y metodología de ocho pasos](specs/README.md).
 
-STEP 1 y STEP 2 están integrados en main. STEP 3 automatiza las comprobaciones de
+STEP 1, STEP 2 y STEP 3 están integrados en main. STEP 3 automatiza las comprobaciones de
 proyecto, historial, tipos, build y pruebas en CI; [evidencia y estado](specs/automated-checks.md).
-El roadmap no se ha iniciado. Antes de las épicas financieras definitivas
-se debe recibir y revisar la especificación funcional de MyFinanzas.
+La referencia funcional vigente es v5.11, con base de revisión
+MyFinanzas2026_v5.11(5).xlsx y su documentación asociada; las reglas confirmadas y
+la precedencia sobre v5.10 están en [project.md](specs/project.md). No se ha diseñado
+el modelo financiero definitivo ni cerrado el roadmap. Antes de hacerlo se debe
+recibir y revisar la especificación funcional actualizada de MyFinanzas.
 
 ## Skills
 Las Skills locales coordinan el trabajo: `$init-project` inicia o reanuda la configuración;

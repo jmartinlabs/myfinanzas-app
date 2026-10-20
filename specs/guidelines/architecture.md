@@ -66,4 +66,7 @@ cobertura vigente en [calidad](quality.md), presentación en [UI](ui.md) y amena
 [seguridad](security.md). STEP 2 documenta lo implementado sin cambiar código ni contratos.
 STEP 3 automatiza los controles descritos en [calidad](quality.md), sin cambiar la app.
 No inferir reglas económicas
-de nombres, ejemplos o código técnico. Esperar la especificación financiera antes del roadmap.
+de nombres, ejemplos o código técnico. La referencia vigente es la arquitectura v5.11
+definida en [project.md](../project.md); sustituye reglas v5.10 contradictorias. No
+convertir las tablas del Excel directamente en el modelo SQL definitivo ni cerrar
+el roadmap sin la especificación funcional revisada que aportará el usuario.

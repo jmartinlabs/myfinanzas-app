@@ -37,8 +37,10 @@ Sin nuevas dependencias, cambios de lógica financiera, datos reales ni desplieg
   catalog-mobile.png y catalog-desktop.png bajo artifacts/bootstrap inspeccionadas, sin recortes.
 - diff --check: pasa. La revisión previa al push incluye historial completo y diff manual.
 
-[PR #3](https://github.com/josemartin2000/myfinanzas-app/pull/3) abierta hacia main,
-pendiente de aprobación explícita antes de merge. El workflow se ejecuta por push y
+[PR #3](https://github.com/josemartin2000/myfinanzas-app/pull/3) aprobada explícitamente
+por el usuario e integrada en main mediante merge 193410d. Se verificó el estado MERGED
+y la ascendencia de su HEAD c340bad en main. Sus dos ejecuciones del HEAD aprobado
+terminaron en success. El workflow se ejecuta por push y
 por pull_request; su resultado remoto se verifica en los checks del HEAD vigente
 de la PR, sin deducirlo de la ejecución local.
 [Workflow y ejecuciones](https://github.com/josemartin2000/myfinanzas-app/actions/workflows/validate.yml).
