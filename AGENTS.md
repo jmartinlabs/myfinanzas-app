@@ -18,7 +18,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   mensual sí comprueba esa fecha. No añadir filtro temporal ni fecha Manual por inferencia.
   M1/M2 respondidas y aprobadas como contrato de aplicación, no reglas físicas Excel;
   matriz vigente en specification. No reabrirlas ni inferir otros valores.
-  Siguiente paso previsto: revisión visual global antes de desarrollar pantallas; no iniciarla aquí.
+  Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
+  el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
+  con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
   Aprobación final/merge pendientes; sin desarrollo, otros pasos ni E1.2.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.

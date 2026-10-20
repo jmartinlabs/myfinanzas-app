@@ -2,7 +2,7 @@
 Status: IN REVIEW — Q1–Q8 y M1/M2 respondidas; contrato de aplicación confirmado en registros posteriores.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: revisar PR #6 actualizada; siguiente paso previsto revisión visual global antes de desarrollar pantallas, sin iniciarla aquí. Sin merge ni implementación.
+Next action: revisar PR #6 con diseño comunicado como aprobado el 2026-10-21; esperar aprobación final, sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -350,3 +350,36 @@ será el siguiente paso ANTES de desarrollar pantallas; se registra, no se inici
 La aceptación anterior de estructura de pantallas Q8 no equivale a aprobar ese diseño global.
 M1/M2 quedan respondidas; no volver a formularlas. Aprobación final de esta versión
 completa y merge de la PR siguen pendientes, sin ampliarlos por la aprobación de contrato.
+
+
+## Aprobación visual comunicada por el usuario — 2026-10-21
+Fuente: mensaje «He revisado y aprobado con Álex la primera propuesta visual de
+MyFinanzas App». Actualiza el paso visual previsto en el registro anterior; no modifica
+rondas, respuestas ni contratos financieros. No se afirma revisión independiente por
+Codex de archivos gráficos/prototipos no recibidos.
+
+**Diseño común aprobado:** profesional, compacto, orientado al control financiero;
+identidad original verde #8DBB2E y paleta complementaria existente; menú lateral en
+escritorio, navegación móvil adaptada; cabecera con ciclo financiado actual procedente
+del maestro de Ciclos, distinguiendo estado temporal y cierre financiero; tablas
+compactas escritorio y tarjetas móvil; componentes reutilizables en siguientes entregas.
+
+**Pantallas aprobadas:** listado con búsqueda/filtros/estados; ficha con identificación,
+configuración y atributos separados, ID visible/inmutable y edición en página propia;
+alta/edición en tres bloques (Identificación, Configuración económica, Atributos de
+control), tres Sí/No explícitos, Estado Activa inicial y opcionalidad M1/M2.
+
+**Comportamiento confirmado:** responsive/accesible, sin importes ficticios de motores
+no entregados ni vacío convertido en cero. Reglas financieras intactas. Sin Manual
+operativo o pares Tipo/Control no contrastados. M1/M2 y Q1–Q8 no se reabren.
+
+**Límite y evidencia:** el diseño descrito está aprobado; UI/componentes nuevos no están
+implementados y sus comprobaciones a 390/1440, contraste/teclado/foco/estados y capturas
+siguen futuras. En E1.1, mientras Ciclos no exista, cabecera «No disponible» sin fabricar
+un maestro, selección o cierre para completar el dibujo. La integración real corresponde
+a las entregas del roadmap; no amplía E1.1.
+
+Se autoriza solo actualizar documentación común/especificación y PR #6 con checks.
+Sin merge, pantallas, componentes, SQL, E1.2 ni otros pasos. Aprobación final de la versión
+completa/PR sigue pendiente. Ver [guía visual](guidelines/ui.md) para contrato común y
+[especificación](01-saldos-control-specification.md#screens-and-interfaces) para E1.1.

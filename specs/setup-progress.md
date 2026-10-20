@@ -12,7 +12,8 @@ Current stage: 6
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
-- M1/M2 aprobadas por el usuario como contrato de la NUEVA APLICACIÓN el 2026-10-20; registro append-only en brainstorming, separado de F1–F3 Excel. Revisión visual global prevista como siguiente paso antes de desarrollar pantallas; no iniciada.
+- Primera propuesta visual común y pantallas E1.1 aprobadas según comunicación del usuario (revisión con Álex), 2026-10-21; guía UI y specification actualizadas. No prueba de implementación ni permiso de merge/código.
+- M1/M2 aprobadas por el usuario como contrato de la NUEVA APLICACIÓN el 2026-10-20; registro append-only en brainstorming, separado de F1–F3 Excel. La propuesta visual fue aprobada por comunicación posterior del 2026-10-21; implementación no autorizada.
 - Evidencias F1–F3 recibidas del usuario tras inspección propia del Excel estable, 2026-10-20: referencia/especificación actualizadas. Combinaciones utilizadas no son matriz exhaustiva; Saldo actual no filtra por Fecha apertura, histórico mensual sí comprueba esa fecha. Sin inspección independiente de Codex.
 - E1.1: Q1–Q8 respondidas por el usuario el 2026-10-20; estructura visual confirmada y permiso para completar documentación/PR #6. Fuente y alcance exacto en el registro posterior de brainstorming; sin aprobación final del documento ni de merge.
 - STEP 5 autorizado solo para propuesta documental E1.1, por solicitud expresa del usuario el 2026-10-20; no equivale a aprobar DT1/DT2/DT6.
@@ -39,7 +40,7 @@ Current stage: 6
 ## Pending decisions
 - [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
 - Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
-- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Aprobación final de la versión completa/merge y revisión visual global pendientes. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
+- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño visual común/pantallas aprobado; aprobación final de versión completa/merge y pruebas visuales de implementación pendientes. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
@@ -69,14 +70,16 @@ Current stage: 6
 - Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
 - [Brainstorming](01-saldos-control-brainstorming.md): ronda original conservada, respuestas Q1–Q8 y feedback visual añadidos con fuente/fecha; sin aprobaciones por extensión.
 - [Propuesta](01-saldos-control-specification.md): alcance/contratos, DT1/DT2/DT6, wireframes,
-  36 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: F1–F3 incorporadas y contrato M1/M2 aprobado; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
+  40 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: F1–F3, M1/M2 y aprobación visual comunicada incorporadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
 - No implementación ni instalación de paquetes/herramientas; no inspección/importación del Excel real.
-- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…32 conservados/actualizados y AC-33…36 añadidos y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
+- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…36 conservados/actualizados y AC-37…40 añadidos y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-Presentar PR #6 con M1/M2 documentadas, checks y resultado CI. No volver a preguntar
-M1/M2 ni iniciar otros pasos. El siguiente trabajo previsto será revisar el diseño visual
-global de MyFinanzas ANTES de desarrollar pantallas; se registra la secuencia sin iniciar
-esa revisión aquí. Sin merge, implementación, SQL, migraciones ni E1.2. Aprobación final
-de la versión completa pendiente; custodia/destino externo DT6 antes del despliegue.
+Presentar PR #6 actualizada con aprobación visual comunicada el 2026-10-21 y resultados
+de controles/CI. Esperar aprobación final de la versión completa/PR; no volver a pedir
+aprobación de la dirección visual ya confirmada. Las verificaciones responsive/contraste/
+teclado/foco/estados y capturas de UI nueva siguen futuras hasta implementación autorizada.
+Sin merge, pantallas/componentes/CSS, SQL, migraciones, E1.2 u otros STEPS. No adelantar
+Ciclos para poblar la cabecera; sin fuente, No disponible. Custodia/destino externo DT6
+antes del despliegue.

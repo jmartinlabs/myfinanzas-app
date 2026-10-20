@@ -108,6 +108,20 @@ en otros cinco pares; Estado Activa por defecto al crear, Finalidad/Objetivo opc
 tres Sí/No explícitos e independientes. No se atribuye ese contrato a reglas físicas
 del Excel. No eliminar información existente sin función en un motor, convertir ausencia
 en cero ni introducir filtro temporal o fecha Manual. M1/M2 quedan cerradas.
-Aprobación final del documento completo y merge pendientes. Siguiente paso previsto:
-revisión del diseño visual global antes de desarrollar pantallas. Esta actualización
-no inicia esa revisión ni autoriza implementación, SQL, migraciones o E1.2.
+Aprobación final del documento completo y merge pendientes. La revisión visual prevista
+recibió aprobación de su primera propuesta según comunicación posterior del usuario
+el 2026-10-21; ver estado vigente abajo. Sin implementación, SQL, migraciones o E1.2.
+
+
+## Diseño común y pantallas E1.1 aprobados — 2026-10-21
+El usuario comunica revisión/aprobación con Álex de la primera propuesta visual.
+[Guía UI común](guidelines/ui.md) registra paleta/estilo profesional y compacto,
+navegación escritorio/móvil, cabecera de ciclo y patrones reutilizables. La
+[especificación E1.1](01-saldos-control-specification.md#screens-and-interfaces) recoge
+listado, ficha y formulario en tres bloques. M1/M2, Q1–Q8 y reglas v5.11 intactas.
+La cabecera leerá el ciclo desde el maestro único; si no está entregado, No disponible,
+sin adelantar E1.3 ni inferir ciclo/cierre desde reloj o estado temporal.
+Aprobación comunicada no equivale a código, capturas inspeccionadas, prueba responsive
+ni accesibilidad comprobada. Se recibieron descripciones textuales, no se afirma
+inspección de un prototipo gráfico externo. Esperar aprobación final de PR #6/versión
+completa; sin merge, componentes, pantallas, CSS, SQL, migraciones o E1.2.

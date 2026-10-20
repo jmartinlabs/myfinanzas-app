@@ -2,6 +2,8 @@
 Status: IN REVIEW — versión completada para revisión tras Q1–Q8; F1–F3 incorporadas y contrato M1/M2 de aplicación aprobado; sin implementación.
 Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el usuario el 2026-10-20.
 M1/M2: contrato aprobado por el usuario el 2026-10-20, distinto de evidencia del Excel.
+Diseño común y tres pantallas E1.1: aprobación comunicada por el usuario el 2026-10-21;
+no implementación ni comprobación visual de una UI nueva.
 Aprobación final de esta versión completa, merge e implementación: PENDING / no autorizados.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
 [roadmap E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
@@ -16,7 +18,8 @@ probadas ni a parámetros/recomendaciones del borrador que no confirmó. Posteri
 el usuario contrastó F1–F3 contra el Excel físico y aportó evidencia sanitizada; registro
 append-only en brainstorming y precisión canónica en la referencia funcional. M1/M2
 se aprobaron después como contrato de la aplicación, no como hechos del Excel. La
-revisión visual global se prevé como siguiente paso antes de desarrollar pantallas.
+primera propuesta visual global y tres pantallas E1.1 fueron aprobadas por el usuario
+con Álex según comunicación del 2026-10-21; se documenta sin implementar.
 
 Se conocen el extracto y la especificación funcional recibida, no el Excel físico ni
 sus manuales originales completos. Solo reglas sanitizadas y fixtures inventados en
@@ -127,11 +130,11 @@ se contrasta en la entrega de histórico sin cambiar Saldo actual. Nuevos pares 
 operativo Manual requieren su propio contraste antes de habilitarse, sin bloquear esta
 ronda ni convertir la muestra en regla universal. No imponer signo a Objetivo por lagunas.
 
-El siguiente paso previsto es la revisión del diseño visual GLOBAL de MyFinanzas antes
-de desarrollar pantallas. La estructura Q8 sigue confirmada; no equivale a identidad,
-componentes o pantallas finales aprobados. Esta actualización solo registra esa secuencia,
-no inicia la revisión visual, E1.2 ni implementación. Aprobación final de la versión
-completa y merge de PR #6 continúan pendientes.
+La revisión de la primera propuesta visual GLOBAL y las tres pantallas E1.1 ya se
+comunicó como aprobada el 2026-10-21. Registro común en [UI](guidelines/ui.md), sin
+reabrir Q8 ni M1/M2. No equivale a comprobación de aplicación implementada ni permiso
+de construir componentes/pantallas. Aprobación final de esta versión completa y merge
+continúan pendientes.
 
 ### Ciclo de vida — Q3 confirmado
 1. Alta con atributos explícitos y combinaciones existentes contrastadas en F1; no crear una operación financiera.
@@ -246,73 +249,99 @@ antes de traducir a DDL bajo otra autorización. Ningún archivo SQL se añade a
 
 ## Screens and interfaces
 
-Estructura de wireframes aprobada en Q8: listado/ficha/formulario en página propia,
-tabla escritorio/tarjetas móvil, activos por defecto e inactivos consultables. ASCII
-sin pantallas implementadas ni capturas; contenido de campos respeta evidencias F1–F3
-y contrato M1/M2. La revisión visual global será el siguiente paso antes de desarrollar
-pantallas; estos wireframes no sustituyen esa revisión ni autorizan implementarla aquí.
-Usar referencia de identidad de UI guideline con contraste revisado, no asumir que colores
-originales cumplen accesibilidad. Foco visible, etiquetas, mensajes asociados, teclado,
-confirmación con foco y retorno a la acción invocadora. No información solo por color.
+Fuente: aprobación visual comunicada por el usuario el 2026-10-21, revisada con Álex.
+Dirección común en [guía UI](guidelines/ui.md): profesional/compacta, identidad original
+#8DBB2E y paleta existente, menú lateral escritorio, navegación móvil, cabecera de ciclo,
+tablas/tarjetas y patrones reutilizables. No se aprueban por extensión medidas o estilos
+no aportados. ASCII expresa el contrato textual; no es captura del diseño externo ni
+UI implementada. Q8/M1/M2 y las reglas financieras quedan intactas.
 
-### Escritorio 1440 px — lista y ficha
+### Cabecera global y dependencias
+El ciclo financiado actual se obtiene del maestro único de Ciclos. No crearlo en React,
+no derivarlo de Nómina ni usar hoy para inventarlo. Separar estado temporal del cierre
+financiero; no tratar Fin temporal como cierre económico. Cuando existan las fuentes,
+mostrar sus valores reales con etiquetas diferentes; sin fuente, «No disponible».
+
+En E1.1 el maestro todavía no está entregado (E1.3) y el cierre financiero llega después.
+No adelantarlos para poblar la cabecera: informar «Ciclo financiado: No disponible».
+Carga/error/vacío deben diferenciarse cuando exista la consulta; no inventar IDs/meses,
+estados o fechas. Integración posterior respeta DT3 y P5, sin nuevas decisiones económicas
+ni ruta API/SQL de Ciclos aprobada en esta actualización.
+
+### Escritorio 1440 px — listado y ficha
 ```text
-+------------------------------------------------------------------------+
-| MyFinanzas                    Local · datos ficticios        [Salir]   |
-| Saldos                                            [+ Nuevo Saldo]     |
-| Buscar [____________] Estado [Activos v] Tipo [Todos v] Control [Todos]  |
-| ID   Nombre         Tipo      Control       Posición       Acciones    |
-| S101 Cuenta demo    Efectivo  Movimientos   No disponible  [Ver]       |
-| S102 Reserva demo   Efectivo  No controlado No aplicable   [Ver]       |
-| Ejemplos ficticios con pares utilizados confirmados por el usuario.   |
-| [Incluir inactivos] [Mostrar contraparte técnica S000]                 |
-+------------------------------------------------------------------------+
-| Ficha: Cuenta demo · S101 (ID no editable)                             |
-| Estado · Tipo · Control                                               |
-| Posición: no disponible — motor Movimientos previsto en E1.4           |
-| Apertura y vigencia | Atributos independientes | Uso/relaciones        |
-| [Editar] [Desactivar]                    Última revisión técnica       |
++------------------+------------------------------------------------------+
+| MyFinanzas       | Ciclo financiado: No disponible             [Salir] |
+| > Saldos         +------------------------------------------------------+
+|                  | Saldos                                [+ Nuevo]    |
+| Menú lateral     | Buscar [________] Estado [Activos v] [Filtros]      |
+| (solo funciones  | ID   Nombre       Tipo      Control       Posición |
+| disponibles)     | S101 Cuenta demo  Efectivo  Movimientos   No disp. |
+|                  | S102 Reserva demo Efectivo  No controlado No aplic.|
+|                  | [Ver ficha]  Inactivos consultables                |
++------------------+------------------------------------------------------+
+| Ficha S101 · Cuenta demo · ID visible e inmutable                       |
+| Identificación | Configuración financiera | Atributos separados        |
+| Posición: No disponible (sin importe ficticio)                          |
+| [Editar en página propia] [Desactivar / Reactivar según Estado]         |
 +------------------------------------------------------------------------+
 ```
-No mostrar saldo total, colchón, rendimiento ni cobertura incompletos. Si el catálogo
-está vacío, CTA de alta; S000 se distingue de ese catálogo, no se confunde con una cuenta.
+No mostrar total/colchón/rendimiento/cobertura incompletos. Menú no habilita entregas
+pendientes. Tabla compacta conserva legibilidad y foco; la misma información/acciones
+vive en tarjetas de móvil. Búsqueda/filtros/estados y vacíos no ocultan errores de carga.
 
-### Móvil 390 px — listado y formulario propio
+### Móvil 390 px — tarjetas, ficha y formulario
 ```text
 +----------------------------------+
-| MyFinanzas              [Salir]   |
+| [Menú] MyFinanzas        [Salir]  |
+| Ciclo financiado: No disponible   |
 | Saldos                  [+ Nuevo]|
 | Buscar [____________________]    |
-| [Filtros: activos]               |
+| [Filtros · Activos]              |
 | S101 · Cuenta demo               |
 | Efectivo / Movimientos           |
 | Posición: No disponible          |
 | [Ver ficha]                      |
 +----------------------------------+
-| < Saldos · Nuevo / Editar         |
-| Identidad: asignada al guardar   |
+| < Saldos · Nuevo / Editar        |
+| IDENTIFICACIÓN                  |
+| ID: al guardar / solo lectura   |
+| Nombre [____________________]   |
 | Estado inicial: Activa          |
-| Nombre [____________________]    |
-| Tipo [v]     Control [v]         |
-| Apertura [ ]  Fecha apertura [ ] |
-| Manual: soporte conceptual      |
-| Liquidez: selección explícita    |
-| Finalidad [vacío / opciones v]   |
-| Objetivo EUR [____________]     |
-| Mostrar como bolsa: Sí / No      |
-| Permite salida Exterior: Sí / No |
-| [Cancelar]        [Guardar]      |
+| CONFIGURACIÓN ECONÓMICA          |
+| Tipo [v]   Control [v]           |
+| Fecha apertura [opcional]       |
+| Saldo apertura [opcional]       |
+| ATRIBUTOS DE CONTROL            |
+| Finalidad [vacío / opciones v]  |
+| Objetivo EUR [opcional]         |
+| Liquidez: [Sí] [No] sin elegir  |
+| Bolsa:    [Sí] [No] sin elegir  |
+| Exterior: [Sí] [No] sin elegir  |
+| [Cancelar]       [Guardar]      |
 +----------------------------------+
 ```
-Formulario ofrece Finalidad vacía o Gastos planificados/Ahorro/Inversión, Estado
-Activa/Inactiva y Objetivo (€) opcional. No exige Objetivo ni convierte vacío en cero;
-Estado Activa por defecto al crear, aprobado en M2. Los tres booleanos son independientes y exigen
-elección explícita sin preselección. Aperturas ordinarias opcionales según M1, sin
-campos editables de apertura para S000; no expone campos irrelevantes como si
-se debieran rellenar. Edición muestra ID solo lectura, cambios sin guardar avisan antes
-de salir. Error no borra entradas; conflicto ofrece recargar/revisar sin perder borrador.
-Permiso Exterior y Liquidez nunca se activan mutuamente. Antes de desactivar, resumen
-de impacto y confirmación; si hay bloqueo, enlaces a dependencias disponibles sin SQL.
+Listado, ficha y formulario son pantallas aprobadas, con edición en página propia.
+La ficha separa identificación/configuración/atributos y mantiene ID visible e inmutable.
+El formulario agrupa tres bloques; no infiere un Sí/No desde otro ni los preselecciona.
+Estado Activa solo al crear; en edición conserva el Estado existente. Aperturas según
+matriz M1, no editables para S000, sin eliminar información existente por falta de función.
+Finalidad/Objetivo opcionales, ausencia distinta de cero; Manual no se habilita operativo
+ni aparecen combinaciones Tipo/Control no contrastadas. El soporte conceptual no exige
+un campo Manual editable en esta pantalla.
+
+Formulario conserva entradas tras errores; conflicto permite revisar sin sobrescribir;
+cambios sin guardar avisan al salir. Desactivar muestra impacto/confirmación según Q3.
+Navegación móvil, foco/teclado, etiquetas, estados y contraste se verificarán al implementar,
+sin usar solo color ni reducir accesibilidad para hacer la pantalla compacta. Los patrones
+reutilizables de guía UI son contratos visuales futuros, no componentes creados aquí.
+
+### Diseño aprobado y verificación futura
+La aprobación cubre la dirección común y las tres pantallas descritas. No certifica la
+implementación, contraste real, accesibilidad o responsive. Futuras pruebas/capturas a
+390×844 y 1440×1000 e inspección efectiva siguen pendientes de desarrollo autorizado.
+Las capturas/CI del bootstrap no validan estas pantallas. No se modifica CSS ni se añaden
+componentes, dependencias o SQL por documentar diseño aprobado.
 
 ### Acceso propuesto DT1
 Pantalla de contraseña -> desafío TOTP/código de recuperación -> aplicación. Estados
@@ -558,7 +587,11 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-33 | En cada uno de los cinco pares ordinarios, alta ficticia omitiendo Fecha apertura/Saldo apertura, luego solo uno y luego ambos con apertura cero explícito o negativa | Altas válidas según M1 con datos restantes válidos; campos independientes, ausencias preservadas y cero/negativo conservados exactamente; sin Movimiento/filtro por fecha creado |
 | AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico |
 | AC-35 | Nueva alta sin Estado y con tres elecciones explícitas, probando No/false; repetir omitiendo o enviando null en cada indicador | Estado inicial Activa si omitido; false es elección válida. Ausencia/null del indicador rechaza alta sin escritura parcial; sin inferir de Tipo/Control. PATCH omite y conserva, no reinicializa Estado |
-| AC-36 | Revisar secuencia de entrega antes de empezar pantallas | Revisión del diseño visual global registrada como siguiente paso y pendiente antes del desarrollo de pantallas; estructura Q8 no se interpreta como diseño global aprobado ni permiso de implementación |
+| AC-36 | Revisar fuente/fecha de aprobación visual y estado de implementación | Dirección común y tres pantallas aprobadas por comunicación del usuario el 2026-10-21, separadas de futuras pruebas visuales; no implica aprobación final de PR ni permiso de código |
+| AC-37 | En futura UI, recorrer listado, ficha y alta/edición a 390 y 1440 px | Menú lateral escritorio/navegación móvil accesibles, tabla/tarjetas compactas, ID visible/inmutable y edición en página propia; misma información/acciones disponibles |
+| AC-38 | Revisar cabecera sin maestro disponible y después con fuente de Ciclos entregada, incluyendo carga/error/vacío | Sin fuente: No disponible, sin datos inventados. Con fuente: ciclo del maestro único; estado temporal y cierre financiero separados, sin inferencia desde reloj/Nómina o Fin temporal |
+| AC-39 | Recorrer formulario futuro y sus errores, modificando tres Sí/No independientemente | Tres bloques aprobados, Estado inicial Activa, opcionalidad M1/M2 y elecciones explícitas; conservar entradas/ausencias, sin Manual operativo ni pares no contrastados |
+| AC-40 | Revisar evidencia antes de declarar diseño implementado/validado | Capturas nuevas 390/1440 inspeccionadas y pruebas de teclado/foco/etiquetas/contraste/estados; ni aprobación textual, ASCII ni screenshots del bootstrap sustituyen la comprobación futura |
 
 ### Plan de prueba futuro con fixtures
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
@@ -580,6 +613,9 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 - AC-27 y AC-30/31 verifican contratos documentados; cálculo actual e histórico se
   probarán al entregar sus motores. No ampliar E1.1 a ejecutar esos módulos. Añadir
   equivalencia antes de cualquier filtro temporal nuevo o fecha Manual independiente.
+- AC-38: E1.1 verifica estado sin fuente, sin adelantar Ciclos. Lectura real del
+  maestro y sus estados se verificará al entregar E1.3 y las fuentes de cierre
+  correspondientes; no declarar esa integración pasada ni exigir implementarla en E1.1.
 - Cada AC se marcará pasado/fallido/no ejecutado en etapa de desarrollo autorizada;
   este plan no sustituye evidencia ni autoriza implementarlo. Datos/DB/capturas sensibles fuera de Git.
 
@@ -624,10 +660,11 @@ de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen a
   parseo exacto y protecciones estándar de sesión/API, resueltos con la autorización recibida.
 
 ## Puerta de revisión y siguiente acción
-Presentar la versión con contrato aprobado M1/M2, criterios revisados y resultados de
-checks. M1/M2 cerradas; no equivalen a aprobación final del documento completo ni a
-permiso de merge o esquema SQL. Las evidencias Excel y contrato nuevo permanecen separados.
-Siguiente paso previsto: revisión del diseño visual global ANTES de desarrollar pantallas;
-registrarla no es iniciarla. No merge, implementación, SQL, migraciones, servicios,
-E1.2 u otros STEPS. Pares nuevos, Manual operativo y detalle de histórico se contrastan
-cuando corresponda, sin reabrir decisiones aprobadas ni añadir restricciones a Objetivo.
+Presentar PR #6 con diseño común/pantallas aprobados documentados y resultados de
+controles; esperar aprobación final de la versión completa/merge. M1/M2 y aprobación
+visual no se reabren ni autorizan implementación. Las futuras verificaciones de la UI
+quedan pendientes hasta desarrollo autorizado; no afirmar que la aprobación textual
+sea una prueba de navegador o inspección de prototipo recibido.
+No merge, pantallas/componentes, CSS, SQL, migraciones, servicios, E1.2 u otros STEPS.
+Pares nuevos, Manual operativo y detalle de histórico se contrastan cuando corresponda,
+sin cambiar reglas financieras ni adelantar el maestro de Ciclos para una cabecera.
