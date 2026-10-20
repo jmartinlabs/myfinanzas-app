@@ -1,17 +1,35 @@
-# Agent project template
-This repository contains a reusable development methodology, not an application.
-Do not initialize a sample project here. In a derived project, replace this paragraph and
-add its approved install, run and test commands after bootstrap.
+# Agent instructions · MyFinanzas App
+Aplicación web privada para migrar el sistema financiero personal existente en Excel.
+El código público contiene solo un walking skeleton local con datos ficticios.
+Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
 
-- Validate template changes: `./scripts/validate-template`.
-- Test the validator: `./scripts/test-validator`.
-- Read [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
-  [quality](specs/guidelines/quality.md), and [security](specs/guidelines/security.md).
-- Start or resume project initialization with `$init-project`; persist stage transitions
-  in `specs/setup-progress.md`. See [document ownership](specs/README.md).
-- Preserve existing work; stage only your own reviewed changes. Never commit secrets.
-- Ask before material product/architecture decisions, destructive actions, security-sensitive
-  changes, remote creation/publication, production deployment or visibility changes.
-- Stop on conflicting approved requirements or missing permissions. Report blocked checks;
-  do not mark a feature done while acceptance checks fail or remain unverified.
-- Use the current isolated checkout. Do not create a worktree unless explicitly requested.
+- Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
+  [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
+- Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
+- Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
+  Prerrequisitos, comandos de plantilla y limitaciones: guideline de calidad.
+- Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
+- Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
+  financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
+- No avances al siguiente STEP sin autorización. STEP 3 y roadmap están pendientes.
+
+## Política permanente de Git y GitHub
+Aprobada por el usuario el 2026-10-20. Este repositorio es público; no cambies su visibilidad.
+- Gestiona autónomamente Git/GitHub; el usuario no debe ejecutar comandos manuales.
+- Comprueba estado, remoto y rama principal; preserva cambios ajenos y commits locales.
+- Trabaja en una rama específica por STEP o funcionalidad, nunca directamente en main.
+- Revisa tus cambios, ejecuta las validaciones aplicables y crea los commits necesarios.
+- Antes de cada push inspecciona todos los commits que se enviarán, sus mensajes,
+  rutas y contenido, incluidos archivos borrados en commits posteriores. Revisa también
+  el diff final: no publiques datos financieros reales, bases, credenciales, secretos
+  ni archivos sensibles. No confíes únicamente en .gitignore o un escáner.
+- Haz push de la rama y crea una PR hacia main con resumen, cambios, pruebas y limitaciones.
+  Si depende de otra rama aún no integrada, declara la dependencia y no la ocultes.
+- Espera aprobación explícita del usuario de esa PR antes de hacer merge; una aprobación
+  del plan o permiso para push no equivale a aprobación de merge.
+- Tras esa aprobación, realiza el merge en GitHub, verifica estado y commit integrado,
+  actualiza el checkout sin perder trabajo y confirma árbol limpio.
+- Ante problemas de seguridad, conflictos o fallos de validación, detente y consulta;
+  no fuerces un push ni desactives verificaciones. Informa de permisos o accesos bloqueados.
+- No despliegues a producción, cambies permisos/visibilidad ni realices operaciones
+  destructivas sin autorización específica. No publiques fuera del flujo autorizado.
