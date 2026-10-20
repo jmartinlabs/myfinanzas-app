@@ -68,5 +68,10 @@ STEP 3 automatiza los controles descritos en [calidad](quality.md), sin cambiar 
 No inferir reglas económicas
 de nombres, ejemplos o código técnico. La referencia vigente es la arquitectura v5.11
 definida en [project.md](../project.md); sustituye reglas v5.10 contradictorias. No
-convertir las tablas del Excel directamente en el modelo SQL definitivo ni cerrar
-el roadmap sin la especificación funcional revisada que aportará el usuario.
+convertir las tablas del Excel directamente en el modelo SQL definitivo.
+La especificación funcional ya fue recibida para STEP 4; su
+[referencia sanitizada](../functional-reference-v5.11.md) separa reglas y decisiones
+confirmadas de los detalles técnicos abiertos. La planificación aprobada en
+[roadmap](../roadmap.md) no altera la arquitectura implementada ni autoriza código.
+El dominio previsto y la preferencia de ubicación del VPS están en
+[contexto operativo](../project.md); no se ha contratado infraestructura ni desplegado la app.
