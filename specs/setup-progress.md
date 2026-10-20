@@ -12,6 +12,12 @@ Current stage: 6
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
+- Revisión M2 switches aprobada 2026-10-21: sustituye elección manual/segmentados. Alta y POST omitido=false explícito; PATCH conserva; históricos ausentes no son false. Tema solo claro, sin modo oscuro; fuente append-only en brainstorming.
+- Primera propuesta visual común y pantallas E1.1 aprobadas según comunicación del usuario (revisión con Álex), 2026-10-21; guía UI y specification actualizadas. No prueba de implementación ni permiso de merge/código.
+- M1/M2 aprobadas por el usuario como contrato de la NUEVA APLICACIÓN el 2026-10-20; registro append-only en brainstorming, separado de F1–F3 Excel. La propuesta visual fue aprobada por comunicación posterior del 2026-10-21; implementación no autorizada.
+- Evidencias F1–F3 recibidas del usuario tras inspección propia del Excel estable, 2026-10-20: referencia/especificación actualizadas. Combinaciones utilizadas no son matriz exhaustiva; Saldo actual no filtra por Fecha apertura, histórico mensual sí comprueba esa fecha. Sin inspección independiente de Codex.
+- E1.1: Q1–Q8 respondidas por el usuario el 2026-10-20; estructura visual confirmada y permiso para completar documentación/PR #6. Fuente y alcance exacto en el registro posterior de brainstorming; sin aprobación final del documento ni de merge.
+- STEP 5 autorizado solo para propuesta documental E1.1, por solicitud expresa del usuario el 2026-10-20; no equivale a aprobar DT1/DT2/DT6.
 - STEP 4 completado por aprobación expresa del usuario el 2026-10-20: PR #5 y distribución 4/30 aprobadas; merge autorizado tras CI/alcance.
 - Las entregas son unidades funcionales verificables, no necesariamente sprints ni PR.
 - [Consideraciones operativas](project.md): dominio previsto, preferencia UE sin VPS contratado y Excel maestro hasta migración autorizada.
@@ -33,16 +39,16 @@ Current stage: 6
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- [DT1–DT10](roadmap.md) se resolverán progresivamente antes de cada entrega afectada; no están aprobadas por este cierre.
+- [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
 - Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
-- Esperar autorización explícita para iniciar STEP 5. Sin código, SQL definitivo, migraciones, contratación o despliegue.
+- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño visual común/pantallas aprobado; aprobación final de versión completa/merge y pruebas visuales de implementación pendientes. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
 - GitHub confirma repositorio privado y main como rama principal; API accesible.
 - PR #3 MERGED: 193410d; HEAD c340bad integrado y main actualizado por fast-forward.
 - PR #4 MERGED: 0f07992; main actualizado y árbol limpio antes de STEP 4.
-- Cierre documental en step-4/roadmap; registro de integración y SHA consultables en [PR #5](https://github.com/josemartin2000/myfinanzas-app/pull/5).
+- PR #5 MERGED: fed2743; roadmap integrado en main, cuatro épicas/30 entregas aprobadas.
 
 ## Evidencia STEP 3
 - 18 regresiones de plantilla y 22 pruebas de controles: pasan.
@@ -60,7 +66,21 @@ Current stage: 6
 - Revisar historia e índice antes de push; comprobar los checks remotos de la PR sin confundirlos con tests financieros futuros.
 - Los criterios/pruebas del roadmap son futuros; no se han implementado ni ejecutado como funcionalidades.
 
+## STEP 5 — E1.1 en revisión
+- Revisión favorable de PR #6 seguida de M1/M2 explícitamente aprobadas para la aplicación; ronda original y respuestas append-only conservadas. No equivalen a evidencia de obligatoriedad física Excel ni aprobación final de la PR.
+- Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
+- [Brainstorming](01-saldos-control-brainstorming.md): ronda original conservada, respuestas Q1–Q8 y feedback visual añadidos con fuente/fecha; sin aprobaciones por extensión.
+- [Propuesta](01-saldos-control-specification.md): alcance/contratos, DT1/DT2/DT6, wireframes,
+  43 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: F1–F3, M1/M2 y aprobación visual comunicada incorporadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
+- No implementación ni instalación de paquetes/herramientas; no inspección/importación del Excel real.
+- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…40 conservados/actualizados, AC-41…43 añadidos para ausencia histórica/switches/tema claro y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
+- CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
+
 ## Next action
-Detenerse tras integrar PR #5 y verificar MERGED, roadmap en main y árbol limpio.
-Siguiente paso previsto, sin iniciar: STEP 5 para especificar la primera entrega del
-núcleo y resolver DT aplicables antes de implementación. Esperar autorización explícita.
+Presentar PR #6 actualizada con revisión M2 vigente de switches/default false y tema
+claro, junto a resultados de controles/CI. No volver a exigir elección manual de cada Sí/No. Esperar aprobación final de la versión completa/PR; no volver a pedir
+aprobación de la dirección visual ya confirmada. Las verificaciones responsive/contraste/
+teclado/foco/estados y capturas de UI nueva siguen futuras hasta implementación autorizada.
+Sin merge, pantallas/componentes/CSS, SQL, migraciones, E1.2 u otros STEPS. No adelantar
+Ciclos para poblar la cabecera; sin fuente, No disponible. Custodia/destino externo DT6
+antes del despliegue.

@@ -53,7 +53,8 @@ errores estructurales bloquean, alertas informativas no.
 
 Saldos distingue Tipo (Exterior, Efectivo, Inversión) y Control (Exterior, Movimientos,
 Terminal, No controlado, Inversiones, Manual). Motor Movimientos: apertura más entradas
-menos salidas desde vigencia del control. Inversiones/Efectivo agrega movimientos y
+menos salidas; el saldo actual no filtra Movimientos por Fecha apertura (precisión
+posterior del usuario, F3, que sustituye la expresión ambigua «desde vigencia»). Inversiones/Efectivo agrega movimientos y
 resta Compras/suma Ventas; Inversiones/Inversión consume posiciones agregadas.
 Manual conserva el valor autorizado. No representar un saldo no calculable como cero.
 Liquidez, Finalidad, Mostrar como bolsa, Objetivo, Estado, apertura y permiso de salida
@@ -166,3 +167,53 @@ P1–P7 conserva §13. La agrupación §14 se sustituye exclusivamente por los c
 aprobados por el usuario; el [roadmap](roadmap.md) registra la aprobación posterior
 de sus 30 entregas, sin resolver los detalles DT1–DT10 ni autorizar implementación.
 Ni este extracto ni el roadmap son una especificación implementable o un esquema SQL.
+
+
+## Evidencias sanitizadas F1–F3 aportadas por el usuario — 2026-10-20
+Fuente: mensaje explícito del usuario tras revisar directamente el Excel físico estable
+`MyFinanzas2026_v5.11(5).xlsx`. Son evidencias de su inspección, no inspección independiente
+de Codex. No se incorpora el libro, datos financieros personales ni manuales originales.
+Esta precisión prevalece sobre resúmenes anteriores contradictorios o incompletos.
+
+### F1 — Combinaciones utilizadas, no matriz exhaustiva de validez
+- Exterior / Exterior.
+- Efectivo / Movimientos.
+- Efectivo / Terminal.
+- Efectivo / No controlado.
+- Efectivo / Inversiones.
+- Inversión / Inversiones.
+Manual está implementado en la fórmula de Saldo actual, sin registros actuales.
+Conservar soporte conceptual, sin habilitar combinaciones Manual no contrastadas.
+Los seis pares observados no demuestran que todos los demás sean inválidos ni una
+matriz exhaustiva: no convertir la muestra en una regla financiera universal.
+
+### F2 — Dominios y atributos independientes
+| Atributo | Evidencia aportada |
+| --- | --- |
+| Finalidad | Vacío, Gastos planificados, Ahorro, Inversión |
+| Estado | Activa, Inactiva |
+| Objetivo (€) | Importe EUR opcional; sin objetivos informados en la base actual |
+| Liquidez | Sí / No |
+| Mostrar como bolsa | Sí / No |
+| Permite salida a Exterior | Sí / No |
+No exigir Objetivo, no rellenarlo con cero ni inferir un atributo desde otro.
+La ausencia de objetivos no demuestra restricciones de signo o fórmulas de cobertura.
+
+### F3 — Apertura, Saldo actual e histórico mensual
+- Saldo apertura es posición inicial, no Movimiento.
+- Saldo actual de Movimientos = apertura + entradas − salidas.
+- Saldo actual de Inversiones/Efectivo incorpora además Compras y Ventas.
+- Control Manual devuelve Valor manual directamente, o vacío si no existe.
+- Terminal, No controlado y Exterior no presentan Saldo actual convencional.
+- La fórmula de Saldo actual NO filtra Movimientos por Fecha apertura.
+- El histórico mensual sí comprueba Fecha apertura para no mostrar valores anteriores.
+- No existe fecha efectiva independiente de Valor manual.
+
+No añadir filtro de Movimientos por Fecha apertura ni fecha Manual nueva sin
+especificación y prueba de equivalencia. Este contrato se conserva aunque el motor
+se entregue después de E1.1. No se interpreta la ocultación histórica como borrado,
+recorte de operaciones ni autorización de importar datos reales.
+Aún no están demostrados la matriz exhaustiva, obligatoriedad por control, signo de
+Objetivo/Manual y el detalle del corte mensual (fecha ausente, comparación/límite exacto).
+No se inventan restricciones para cubrir estas lagunas; ver trazabilidad en
+[especificación E1.1](01-saldos-control-specification.md#reservas-financieras-y-trazabilidad).

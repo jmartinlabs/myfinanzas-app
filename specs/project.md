@@ -71,7 +71,8 @@ especificación funcional revisada y aprobación expresa de su propuesta.
 El usuario aprobó el 2026-10-20 la agrupación de cuatro épicas y sus 30 entregas y
 autorizó integrar PR #5 tras verificar CI y alcance. Las decisiones P1–P7 se conservan
 en la referencia funcional y se trazan en el [roadmap aprobado](roadmap.md).
-STEP 4 completado; detenerse tras el merge. STEP 5 e implementación no autorizados.
+STEP 4 completado e integrado en main (PR #5, fed2743). La autorización posterior
+de STEP 5 se limita a E1.1 como se indica abajo; implementación no autorizada.
 DT1–DT10 se resolverán progresivamente antes de las entregas correspondientes;
 esta aprobación no fija SQL definitivo ni autoriza migraciones o despliegues.
 
@@ -83,3 +84,58 @@ Fuente: autorización expresa del usuario para integrar PR #5, 2026-10-20.
 - Las 30 entregas son unidades funcionales verificables, no necesariamente 30 sprints ni 30 PR.
 - Excel v5.11 sigue siendo fuente de verdad hasta la migración definitiva autorizada;
   la app solo pasa a maestro después del proceso P7. Nunca doble escritura.
+
+## Autorización vigente de STEP 5 — E1.1
+Fuente: solicitud expresa del usuario, 2026-10-20, posterior al merge de PR #5.
+Se autoriza especificar Saldos y atributos de control, proponer DT1/DT2/DT6 y preparar
+rama/PR exclusivamente documental. [Ronda inicial](01-saldos-control-brainstorming.md)
+y [especificación en revisión](01-saldos-control-specification.md). El usuario respondió
+Q1–Q8 y aprobó la estructura visual el 2026-10-20; registro posterior append-only en
+brainstorming. La versión documental integra decisiones y detalles técnicos menores;
+el usuario ha aportado después evidencias sanitizadas F1–F3 de su revisión directa
+del Excel estable. Se incorporan en la referencia y especificación, sin inspección
+independiente de Codex; quedan explícitos extremos residuales y la aprobación final
+del documento sigue pendiente. Saldo actual NO filtra por Fecha apertura; histórico
+mensual sí comprueba la fecha. No añadir filtro ni fecha Manual sin especificación
+y prueba de equivalencia. No cerrar alternativas de seguridad, integridad
+o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
+merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.
+
+Revisión posterior de PR #6: favorable funcional/técnicamente, seguida de confirmación
+expresa M1/M2 el 2026-10-20. La [matriz de validación](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación)
+registra contrato aprobado para la aplicación: aperturas no aplicables Exterior, opcionales
+en otros cinco pares; Estado Activa por defecto al crear, Finalidad/Objetivo opcionales,
+tres booleanos independientes (revisión vigente de switches del 2026-10-21 abajo). No se atribuye ese contrato a reglas físicas
+del Excel. No eliminar información existente sin función en un motor, convertir ausencia
+en cero ni introducir filtro temporal o fecha Manual. M1/M2 quedan cerradas.
+Aprobación final del documento completo y merge pendientes. La revisión visual prevista
+recibió aprobación de su primera propuesta según comunicación posterior del usuario
+el 2026-10-21; ver estado vigente abajo. Sin implementación, SQL, migraciones o E1.2.
+
+
+## Diseño común y pantallas E1.1 aprobados — 2026-10-21
+El usuario comunica revisión/aprobación con Álex de la primera propuesta visual.
+[Guía UI común](guidelines/ui.md) registra paleta/estilo profesional y compacto,
+navegación escritorio/móvil, cabecera de ciclo y patrones reutilizables. La
+[especificación E1.1](01-saldos-control-specification.md#screens-and-interfaces) recoge
+listado, ficha y formulario en tres bloques. M1/M2, Q1–Q8 y reglas v5.11 intactas.
+La cabecera leerá el ciclo desde el maestro único; si no está entregado, No disponible,
+sin adelantar E1.3 ni inferir ciclo/cierre desde reloj o estado temporal.
+Aprobación comunicada no equivale a código, capturas inspeccionadas, prueba responsive
+ni accesibilidad comprobada. Se recibieron descripciones textuales, no se afirma
+inspección de un prototipo gráfico externo. Esperar aprobación final de PR #6/versión
+completa; sin merge, componentes, pantallas, CSS, SQL, migraciones o E1.2.
+
+
+## Revisión vigente M2 — switches y tema claro — 2026-10-21
+Decisión posterior aprobada por el usuario: sustituye controles segmentados y exigencia
+anterior de interacción manual en cada Sí/No. [Contrato](01-saldos-control-specification.md)
+y [guía UI](guidelines/ui.md): tres switches No/false por defecto en alta; POST ordinario
+omitido persiste false explícito, PATCH omitido conserva valor y edición no reinicializa.
+Atributos independientes de Tipo/Control/Finalidad y entre sí. Posibles históricos
+importados ausentes se preservan como ausencia, sin false ni conversión silenciosa;
+no hay importación real ni afirmación de que esos casos existan en el libro.
+Switch on verde #8DBB2E/indicador blanco/Sí; off verde suave MyFinanzas/indicador
+blanco/No. Tema exclusivamente claro, sin modo oscuro en esta fase. M1, Estado inicial
+Activa, Finalidad/Objetivo opcionales y S000 protegido permanecen sin cambios.
+Solo documentación/PR/checks; sin merge, código, CSS, SQL, migraciones o E1.2.

@@ -11,7 +11,19 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- STEP 4 aprobado: cuatro épicas y 30 entregas. No avances a STEP 5 sin autorización.
+- STEP 4 aprobado: cuatro épicas y 30 entregas. STEP 5 autorizado solo para especificar E1.1.
+- E1.1: Q1–Q8 respondidas en specs/01-saldos-control-brainstorming.md; specification
+  actualizada para revisión con evidencias F1–F3 del usuario. No reabrir decisiones;
+  respetar extremos no demostrados. Saldo actual no filtra por Fecha apertura; histórico
+  mensual sí comprueba esa fecha. No añadir filtro temporal ni fecha Manual por inferencia.
+  M1/M2 respondidas y aprobadas como contrato de aplicación, no reglas físicas Excel;
+  matriz vigente en specification. Revisión M2 del 2026-10-21: switches No/false
+  al alta y POST omitido=false; PATCH conserva y ausencias históricas no se convierten.
+  Sustituye elección manual obligatoria anterior. Tema solo claro; sin modo oscuro.
+  Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
+  el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
+  con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
+  Aprobación final/merge pendientes; sin desarrollo, otros pasos ni E1.2.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
