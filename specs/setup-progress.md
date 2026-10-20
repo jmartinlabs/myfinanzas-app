@@ -12,6 +12,8 @@ Current stage: 7
 | 7 Handoff | complete | Fuentes, arquitectura, bootstrap, controles y roadmap verificados; STEP 5 aprobado PR #6/ebfe75b. $spec 01 completado; $dev 01 autorizado. |
 
 ## Confirmed decisions
+Estado vigente: STEP 5 aprobado/integrado; los registros inferiores conservan su alcance
+y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - Revisión M2 switches aprobada 2026-10-21: sustituye elección manual/segmentados. Alta y POST omitido=false explícito; PATCH conserva; históricos ausentes no son false. Tema solo claro, sin modo oscuro; fuente append-only en brainstorming.
 - Primera propuesta visual común y pantallas E1.1 aprobadas según comunicación del usuario (revisión con Álex), 2026-10-21; guía UI y specification actualizadas. No prueba de implementación ni permiso de merge/código.
 - M1/M2 aprobadas por el usuario como contrato de la NUEVA APLICACIÓN el 2026-10-20; registro append-only en brainstorming, separado de F1–F3 Excel. La propuesta visual fue aprobada por comunicación posterior del 2026-10-21; implementación no autorizada.
@@ -41,7 +43,7 @@ Current stage: 7
 ## Pending decisions
 - [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
 - Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
-- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño visual común/pantallas aprobado; aprobación final de versión completa/merge y pruebas visuales de implementación pendientes. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
+- [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño y especificación integrados en PR #6. Implementación local en rama, pruebas actuales en testplan; aprobación de PR funcional/merge pendiente. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
@@ -66,7 +68,7 @@ Current stage: 7
 - Revisar historia e índice antes de push; comprobar los checks remotos de la PR sin confundirlos con tests financieros futuros.
 - Los criterios/pruebas del roadmap son futuros; no se han implementado ni ejecutado como funcionalidades.
 
-## STEP 5 — E1.1 en revisión
+## STEP 5 — registro histórico de revisión (ya aprobado e integrado)
 - Revisión favorable de PR #6 seguida de M1/M2 explícitamente aprobadas para la aplicación; ronda original y respuestas append-only conservadas. No equivalen a evidencia de obligatoriedad física Excel ni aprobación final de la PR.
 - Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
 - [Brainstorming](01-saldos-control-brainstorming.md): ronda original conservada, respuestas Q1–Q8 y feedback visual añadidos con fuente/fecha; sin aprobaciones por extensión.
@@ -88,3 +90,10 @@ reutilizable existente, validada; no crear una duplicada. STEP 8 se revisará de
 Desarrollo autorizado en feat/e1-1-saldos; progreso/pruebas en
 [progress](01-saldos-control-progress.md) y [testplan](01-saldos-control-testplan.md).
 Solo local/ficticio. Excel v5.11 maestro. Sin E1.2, despliegue ni merge sin aprobación.
+
+## Evidencia STEP 7 E1.1
+Handoff y estados completados en la misma rama funcional. Listado/ficha/formulario,
+acceso protegido, persistencia exacta y ensayo cifrado local implementados. Evidencia
+actual y distinción de contratos futuros en testplan; sin E1.2 ni motores posteriores.
+Siguiente puerta: revisión de Álex y aprobación expresa de PR funcional, sin merge automático.
+STEP 8 no iniciado por extensión del permiso de E1.1.

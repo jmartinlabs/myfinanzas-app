@@ -9,11 +9,12 @@ in [project.md](project.md). The workbook and original associated documentation 
 outside the repository and have not been inspected by Codex. The functional specification
 attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
 the [approved STEP 4 roadmap](roadmap.md): four epics and 30 functional increments,
-not necessarily 30 sprints or PRs. STEP 4 is complete. STEP 5 is authorized only for
-[E1.1 specification under review](01-saldos-control-specification.md), with
-[Q1–Q8 answers recorded](01-saldos-control-brainstorming.md). User-supplied sanitized evidence F1–F3
-is incorporated; unproven details remain explicit; no implementation or final document/merge approval.
-Current evidence and next action are recorded in setup progress.
+not necessarily 30 sprints or PRs. STEP 4 is complete. STEP 5 E1.1 is approved and merged (PR #6, main ebfe75b).
+Handoff is complete; the reusable spec Skill covers STEP 6. STEP 7 `$dev 01` is authorized
+for local fictional Saldos only. Follow [progress](01-saldos-control-progress.md) and
+[43 acceptance checks](01-saldos-control-testplan.md). Functional PR requires user approval
+before merge; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
+in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |
 | --- | --- | --- |

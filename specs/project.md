@@ -147,3 +147,12 @@ STEP 7/$dev 01 y seis bloques del plan en feat/e1-1-saldos: seguimiento/Handoff,
 persistencia/acceso/backups, primer recorrido, gestión completa, recuperación/UX y PR.
 Esta autorización sustituye límites de implementación del STEP 5 anterior; no altera
 reglas aprobadas ni habilita E1.2, datos reales, despliegue o merge sin autorización.
+
+## Estado de entrega STEP 7 E1.1
+Especificación/diseño integrados en main ebfe75b; Handoff completado. La rama funcional
+implementa el catálogo ficticio con altas/ediciones/estados, MFA y copias locales, según
+[progreso](01-saldos-control-progress.md) y [evidencia](01-saldos-control-testplan.md).
+Los textos anteriores de «sin implementación» registran la fase documental original.
+No son un permiso para nuevos módulos: E1.2 y motores posteriores siguen excluidos.
+Excel v5.11 sigue como maestro, sin datos reales ni despliegue. Revisión/merge funcional
+pendientes del usuario; no se ha iniciado STEP 8.

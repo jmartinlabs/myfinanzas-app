@@ -2,7 +2,8 @@
 
 ## Prerrequisitos y comandos actuales
 Desde la raíz del repositorio: Bun 1.4.3; Python 3.10+ para tooling de plantilla.
-No se requieren paquetes Python ni servicios externos. Chromium es necesario para E2E.
+No se requieren paquetes Python ni servicios externos. Chromium es necesario para E2E;
+CLI age/age-keygen es obligatoria para pruebas de copia/restauración.
 
 | Comando | Resultado esperado |
 | --- | --- |
@@ -10,8 +11,8 @@ No se requieren paquetes Python ni servicios externos. Chromium es necesario par
 | bun run dev | API y Vite en loopback; solo datos ficticios |
 | bun run typecheck | TypeScript sin errores en apps, pruebas y configuraciones |
 | bun run build | Cliente estático en apps/web/dist; no despliega ni empaqueta servidor |
-| bun run test | 4 pruebas Bun de persistencia/API; 10 aserciones |
-| bun run test:e2e | 4 pruebas Playwright: dos flujos por viewport |
+| bun run test | Integración Saldos/acceso/copias/concurrencia; cifra vigente en testplan |
+| bun run test:e2e | Recorrido E1.1 real a 390/1440, MFA y restauración aislada |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
 | ./scripts/test-validator | 18 regresiones positivas y negativas del validador |
 | ./scripts/check-project | Workspaces/Bun, versiones exactas, paquetes privados y límites de imports del navegador |
@@ -27,17 +28,24 @@ Las versiones concretas ejecutadas y resultados de STEP 1 están en [bootstrap](
 El bootstrap no ha configurado lint ni formateador; typecheck y diff --check no los sustituyen.
 STEP 3 usa solo Python estándar y herramientas existentes; no añade dependencias.
 
-## Cobertura existente
-Bun Test: semilla determinista e idempotente, persistencia tras reabrir SQLite,
-HTTP leyendo modificaciones reales de la base, lista vacía, 404 y fallo SQL con 500 genérico.
-La prueba de archivo elimina su directorio temporal; el resto usa SQLite en memoria.
+## Cobertura actual E1.1
+[Bun integración y Playwright](../01-saldos-control-testplan.md) trazan los 43 criterios.
+API/SQLite: datos exactos, estados, S000/IDs, revisión/idempotencia/rollback/FK, MFA,
+replay/recuperación/sesiones/CSRF, copias cifradas y fallos. Dos procesos prueban reserva
+atómica y escrituras WAL concurrentes; dos conexiones prueban revisión obsoleta.
+Fixtures financieros deterministas; factores se generan aleatoriamente y nunca se publican.
 
-Playwright inicia y detiene sus servidores; no reutiliza procesos ni la base de desarrollo.
-Antes de ejecutarlo, detener solo servidores propios que ocupen los puertos 3001/5173.
-Verifica API y UI sin mocks para el catálogo; intercepta respuestas para carga/vacío/error,
-y el reintento vuelve a la API real. Comprueba ausencia de errores JS y overflow horizontal.
-Capturas generadas e ignoradas: artifacts/bootstrap/catalog-mobile.png y catalog-desktop.png.
-Las capturas se inspeccionan visualmente; guardar una imagen no prueba que se haya revisado.
+Playwright inicia servidores aislados con base de archivo ficticia en .local/e2e, sin
+bypass de acceso. Navega las tres pantallas, errores/carga/vacío/reintento y conflictos,
+opera switches/menú con teclado, revisa tema claro y ausencia de overflow; snapshot real
+se restaura y sirve en otro Effect HTTP loopback, verifica MFA y lectura desde esa copia.
+La intercepción de respuestas solo modela estados transitorios; escrituras y restauración
+usan servidores reales. Las capturas ficticias artifacts/e1-1/*.png se inspeccionan.
+No guardar trazas/storageState con credenciales ni subir .local/DB/claves como artifacts.
+
+AC-30/31 son contratos de motores posteriores, no cálculos implementados. AC-38 cubre
+No disponible sin maestro; su integración futura no está probada. Fixtures de impacto
+no prueban consultas a módulos futuros. No scheduler/poda ni RPO/RTO de producción.
 
 ## Comprobaciones heredadas y CI real
 El validador revisa estructura, links locales, manifests y contratos de Skills, protocolo
@@ -68,8 +76,8 @@ La CI .github/workflows/validate.yml se activa con push, pull_request y workflow
 Usa checkout con historial completo y sin credenciales persistidas, acciones fijadas por
 SHA, permisos contents:read y timeout de 15 minutos. Ejecuta los tres controles y sus
 regresiones, diff --check y whitespace del commit con git show --check, instalación Bun 1.4.3 con lockfile congelado, tipos, build,
-Bun Test, instalación de Chromium y Playwright. Solo sube las capturas ficticias de
-artifacts/bootstrap/*.png, con retención de siete días; no bases ni archivos de entorno.
+Bun Test (age instalado), instalación de Chromium y Playwright. Solo sube las capturas ficticias de
+artifacts/e1-1/*.png, con retención de siete días; no bases ni archivos de entorno.
 No usa secretos de aplicación, pull_request_target ni permisos de escritura.
 No convierte automáticamente los checks en reglas obligatorias de protección de main;
 configurar rulesets requiere decisión y permisos administrativos independientes.

@@ -1,21 +1,35 @@
 # 01 — E1.1 Saldos: Progress
 Specification: [especificación aprobada](01-saldos-control-specification.md)
-Current state: in-progress — STEP 7 autorizado 2026-10-21
+Current state: review — STEP 7 implementado en rama, pendiente aprobación de PR/merge
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
-| Handoff, estado y mapeo 43 AC | complete | main ebfe75b y autorización del usuario |
-| SQLite/acceso protegido/copias | in-progress | 11 pruebas Bun / 144 aserciones y tipos: pasan; age 1.3.2 local. UI/recuperación visual pendientes. |
-| Primer recorrido y gestión completa | pending | |
-| Restauración/UI/QA | pending | |
-| Revisión de historia, push, PR | pending | |
+| 1. Sincronizar main, completar Handoff/estados y mapear 43 AC | complete | main ebfe75b; efb7f7c |
+| 2. Persistencia/API/validaciones exactas e integridad | complete | 0d6c296 y tests de revisión/concurrencia/rollback |
+| 3. Acceso único/TOTP/sesiones y copia cifrada/restauración aislada | complete | 0d6c296 y pruebas age/MFA/recuperación |
+| 4. Listado/ficha/formulario y estados responsive | complete | React real contra Effect HTTP/SQLite; sin motores futuros |
+| 5. QA, restauración, capturas e inspección 390/1440 | complete | [testplan 43 AC](01-saldos-control-testplan.md), 14 Bun/173 aserciones + E2E |
+| 6. Documentación y revisión de historia para PR funcional | complete | Controles locales pasan; rama feat/e1-1-saldos, CI por SHA en la PR |
 
 ## Verified increments
-Baseline main ebfe75b: CI success, 40 regresiones de plantilla/controles pasan.
+Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama
+funcional. Incremento backend local con pruebas antes de conectar pantallas; incremento
+UI 363c603 completo, con fixture de ausencia histórica y restauración de archivo WAL.
+43 criterios trazados; AC-30/31 contractuales y parte futura de AC-38 no son motores
+probados. Evidencia detallada y cinco correcciones visuales en testplan.
+
 ## Decisions
 [Arquitectura](guidelines/architecture.md), [UI](guidelines/ui.md), [seguridad](guidelines/security.md).
-Sin cambios a decisiones financieras o diseño aprobados.
+No se reabrieron decisiones financieras/visuales. OTPAuth 9.5.2 y age justificados según
+DT1/DT6 ya aprobadas. Sin nuevo servicio, ORM, router UI ni librería de componentes.
+Herramienta efímera Prettier para legibilidad, no dependencia de proyecto.
+
 ## Errors, regressions and blockers
-Ninguno confirmado. Resultados de E1.1 aún no ejecutados; no equivalen al bootstrap.
+Durante desarrollo se corrigieron etiquetas accesibles y una aserción que leía el color
+intermedio de una transición. La inspección detectó checkbox apilado/artefacto de skip-link;
+corregidos y verificados de nuevo. Sin fallos finales conocidos ni pruebas bloqueadas
+por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
+
 ## Next action
-Conectar las pantallas aprobadas a la API y ampliar restauración desde archivo y navegador.
+Entregar PR con CI del SHA final verificada; detenerse para revisión de Álex
+antes de aprobación del usuario. Sin merge, STEP 8, E1.2, Excel ni despliegue.
