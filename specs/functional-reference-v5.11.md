@@ -8,10 +8,10 @@ el 2026-10-20. SHA-256 del adjunto:
 Se preservan aquí reglas y decisiones necesarias para el roadmap, sin copiar el archivo
 original, registros, cifras personales, nombres de cuentas ni el Excel al repositorio.
 
-La última solicitud del usuario autoriza preparar y publicar una PR documental del
-STEP 4 y aprueba expresamente la agrupación en cuatro épicas. Prevalece sobre los
-avisos anteriores de la sección 14 y del final del adjunto que aún calificaban esa
-agrupación y esa PR como no autorizadas. La planificación detallada sigue siendo propuesta.
+El usuario autorizó preparar la PR documental de STEP 4 y posteriormente aprobó
+expresamente PR #5, sus cuatro épicas y 30 entregas y su integración en main.
+Estas autorizaciones prevalecen sobre los avisos anteriores de la sección 14 y del
+final del adjunto. No autorizan desarrollo, migración, despliegue ni inicio de STEP 5.
 Las instrucciones del adjunto se tratan como contexto funcional, no como autorización
 independiente para ejecutar desarrollo, migración, despliegue o merge.
 
@@ -163,5 +163,6 @@ excepcional y opciones de precarga del siguiente plan siguen abiertos (sección 
 ## Trazabilidad y recepción
 R1 resume §§0–2/5.1; R2 §§3–4; R3 §§5–6; R4 §§7/10; R5 §§8–9; R6 §§11–12;
 P1–P7 conserva §13. La agrupación §14 se sustituye exclusivamente por los cuatro nombres
-aprobados en la solicitud actual; [roadmap](roadmap.md) propone sus entregas, no su aprobación.
+aprobados por el usuario; el [roadmap](roadmap.md) registra la aprobación posterior
+de sus 30 entregas, sin resolver los detalles DT1–DT10 ni autorizar implementación.
 Ni este extracto ni el roadmap son una especificación implementable o un esquema SQL.

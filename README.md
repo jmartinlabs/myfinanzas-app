@@ -62,9 +62,10 @@ original no se han incorporado ni inspeccionado en Codex. Sí se ha leído la es
 funcional adjunta; [referencia sanitizada](specs/functional-reference-v5.11.md).
 Las reglas confirmadas y la precedencia sobre v5.10 están en
 [project.md](specs/project.md). No se ha diseñado
-el modelo financiero definitivo. La agrupación en cuatro épicas está aprobada; el
-[roadmap STEP 4](specs/roadmap.md) propone sus entregas y queda pendiente de revisión.
-Solo documentación y PR: no se ha iniciado STEP 5 ni autorizado implementación.
+el modelo financiero definitivo. El [roadmap STEP 4](specs/roadmap.md), con cuatro épicas
+y 30 unidades funcionales verificables, está aprobado; no representa 30 sprints o PR.
+STEP 4 completado. STEP 5 e implementación no iniciados ni autorizados. DT1–DT10 se
+resolverán antes de las entregas afectadas. [Consideraciones operativas](specs/project.md).
 
 ## Skills
 Las Skills locales coordinan el trabajo: `$init-project` inicia o reanuda la configuración;

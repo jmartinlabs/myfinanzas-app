@@ -24,8 +24,8 @@ Las reglas v5.10 que contradigan v5.11 quedan sustituidas y no deben aplicarse. 
 reutilizar la lista anterior de documentos v5.10 como referencia funcional vigente.
 Los principios previos no contradictorios se conservan; no inferir cambios adicionales.
 La especificación funcional revisada ya ha sido aportada para preparar el roadmap.
-El usuario aprobó la agrupación en cuatro épicas y autorizó una propuesta documental;
-su planificación detallada sigue pendiente de revisión. Las decisiones técnicas abiertas
+El usuario aprobó las cuatro épicas y sus 30 entregas y autorizó integrar PR #5.
+STEP 4 queda completado. Las decisiones técnicas abiertas
 requieren aprobación en las especificaciones posteriores antes de implementar, sin
 convertir automáticamente las tablas del Excel en SQL.
 
@@ -67,11 +67,19 @@ El usuario aprobó PR #3 explícitamente; se integró y verificó en main antes 
 actualización documental v5.11. No cerrar ni aprobar el roadmap de STEP 4 sin la
 especificación funcional revisada y aprobación expresa de su propuesta.
 
-## Autorización vigente de STEP 4
-El usuario autorizó el 2026-10-20 preparar una rama y PR documental del roadmap.
-Agrupación aprobada: Núcleo financiero; Planificación; Gestión y controles; Patrimonio
-y cierre. La sección 14 del adjunto era anterior a esa aprobación; no reabrirla.
-Las decisiones P1–P7 se conservan en la referencia funcional y se trazan a las entregas
-del [roadmap propuesto](roadmap.md). Autorización de elaborar/commitear/publicar el
-borrador no equivale a aprobación del detalle ni de merge. Sin implementación, SQL
-definitivo, migraciones o despliegues. Detenerse antes de STEP 5.
+## Cierre aprobado de STEP 4
+El usuario aprobó el 2026-10-20 la agrupación de cuatro épicas y sus 30 entregas y
+autorizó integrar PR #5 tras verificar CI y alcance. Las decisiones P1–P7 se conservan
+en la referencia funcional y se trazan en el [roadmap aprobado](roadmap.md).
+STEP 4 completado; detenerse tras el merge. STEP 5 e implementación no autorizados.
+DT1–DT10 se resolverán progresivamente antes de las entregas correspondientes;
+esta aprobación no fija SQL definitivo ni autoriza migraciones o despliegues.
+
+## Consideraciones operativas confirmadas
+Fuente: autorización expresa del usuario para integrar PR #5, 2026-10-20.
+- Dominio previsto: `myfinanzas.pp.ua`. No implica DNS, certificados o servicio ya preparados.
+- Preferencia: VPS ubicado en la Unión Europea; todavía sin contratar. Proveedor,
+  recursos y operación permanecen pendientes en DT10; no se autoriza contratar ahora.
+- Las 30 entregas son unidades funcionales verificables, no necesariamente 30 sprints ni 30 PR.
+- Excel v5.11 sigue siendo fuente de verdad hasta la migración definitiva autorizada;
+  la app solo pasa a maestro después del proceso P7. Nunca doble escritura.

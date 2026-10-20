@@ -1,15 +1,15 @@
 # MyFinanzas App · STEP 4 — Roadmap
 
-Status: DRAFT — planificación detallada propuesta para revisión mediante PR.
-Approval source/date: agrupación en cuatro épicas aprobada expresamente por el usuario
-el 2026-10-20 al autorizar STEP 4. Aprobación del detalle: PENDING.
+Status: APPROVED — STEP 4 completado: cuatro épicas y sus 30 entregas aprobadas.
+Approval source/date: autorización expresa del usuario el 2026-10-20 para aprobar e
+integrar PR #5. Aprobación de agrupación y distribución detallada confirmadas.
 Main user experience: registrar y consultar la realidad financiera, planificar por ciclos
 y ejercicio, revisar casos y patrimonio, conciliar y preservar cierres sin duplicar hechos.
-Scope: exactamente las cuatro épicas aprobadas. Las 30 entregas siguientes son una
-propuesta de descomposición, no funcionalidades implementadas ni especificaciones STEP 5.
-El orden se guía por dependencias; no se fijan fechas ni se equipara una entrega a un sprint.
+Scope: exactamente las cuatro épicas y 30 entregas aprobadas, como unidades funcionales
+verificables. No equivalen necesariamente a 30 sprints ni a 30 PR. No son funcionalidades
+implementadas ni especificaciones STEP 5. El orden se guía por dependencias, sin fechas fijadas.
 
-## Base y límites de esta propuesta
+## Base y límites del roadmap aprobado
 Base estable: MyFinanzas2026_v5.11(5).xlsx. Fuente leída: especificación funcional v5.11
 adjunta; extracto sanitizado, procedencia, reglas R1–R6 y P1–P7 en
 [referencia funcional](functional-reference-v5.11.md). La aprobación actual de la agrupación
@@ -39,7 +39,7 @@ no se inventan ceros, resultados o registros para simular cobertura completa. So
 marcarse completa una entrega si pasan todos sus criterios dentro del alcance declarado.
 Las integraciones aplazadas están asignadas a entregas concretas, no se dan por aprobadas antes.
 
-## Dependencias funcionales y secuencia propuesta
+## Dependencias funcionales y secuencia aprobada
 
 ```mermaid
 flowchart TD
@@ -103,7 +103,7 @@ suite; no pasar un caso omitido como correcto. Checks locales/CI y revisión del
 antes de push; revisión y autorización de merge según [AGENTS](../AGENTS.md).
 Los escenarios de abajo usan fixtures nuevos; no ejecutan importación ni equivalencia real.
 
-## Épica 1 — Núcleo financiero (6 entregas propuestas)
+## Épica 1 — Núcleo financiero (6 entregas aprobadas)
 
 ### E1.1 — Saldos y atributos de control
 **Capacidad:** mantener y consultar Saldos, sus IDs, apertura, Tipo/Control y atributos independientes.
@@ -164,7 +164,7 @@ E1.6-AC3, sin Deuda válida se rechaza y no se crean operaciones precontrol inex
 matriz final de los cuatro tipos, positiva/negativa y end-to-end. Deuda mínima se reutiliza en E4.4.
 **Fuera:** simulación de préstamos y vistas completas de patrimonio.
 
-## Épica 2 — Planificación (6 entregas propuestas)
+## Épica 2 — Planificación (6 entregas aprobadas)
 
 ### E2.1 — Operación de Ciclos y apertura revisable
 **Capacidad:** gestionar continuidad de periodos y confirmar saldo inicial comida, sin crear un ciclo desde Nómina.
@@ -227,7 +227,7 @@ E2.6-AC3, casos no integrados se señalan; el flujo completo queda asignado a E3
 atributos Liquidez distintos de Finalidad y cobertura parcial sin números fabricados.
 **Fuera:** duplicar Neto compartido, presentar este flujo como Resumen patrimonial final.
 
-## Épica 3 — Gestión y controles (6 entregas propuestas)
+## Épica 3 — Gestión y controles (6 entregas aprobadas)
 
 ### E3.1 — Anticipos y pendiente por caso
 **Capacidad:** crear Referencia/ficha coherente, seguir lo adelantado y registrar recuperaciones reales.
@@ -289,7 +289,7 @@ E3.6-AC3, alerta de conciliación se distingue de rechazo estructural, con naveg
 saldo inicial discrepante y periodos/años diferentes; preparar matriz de impacto para cierre DT5.
 **Fuera:** cierre financiero, inversiones todavía no entregadas y equivalencia real certificada.
 
-## Épica 4 — Patrimonio y cierre (12 entregas propuestas)
+## Épica 4 — Patrimonio y cierre (12 entregas aprobadas)
 
 La división permite revisar inversión, deuda e informes antes de habilitar acciones de cierre.
 No remueve ni duplica maestros anteriores. E4.8–E4.11 no empiezan con decisiones de foto o
@@ -438,9 +438,11 @@ Vehículo frente a Viaje/Evento, inversión con cambio histórico, valoración m
 
 ## Decisiones abiertas y puntos de autorización
 
-No bloquean la revisión de esta planificación, pero sí especificar/desarrollar la entrega
-que las necesite. El roadmap no elige entre alternativas ni convierte una recomendación
-en aprobación. Stack, cuatro épicas y P1–P7 no se reabren por estos detalles.
+DT1–DT10 se resolverán progresivamente antes de las entregas correspondientes.
+Aprobar el roadmap no selecciona alternativas técnicas ni autoriza STEP 5 o desarrollo.
+Stack, cuatro épicas y P1–P7 no se reabren por estos detalles. Las consideraciones de
+dominio previsto y preferencia de ubicación están en [project.md](project.md); DT10
+mantiene pendientes proveedor, recursos y operación sin autorizar contratación.
 
 | ID | Decisión pendiente y resultado que se necesita | Antes de | Quién confirma |
 | --- | --- | --- | --- |
@@ -453,7 +455,7 @@ en aprobación. Stack, cuatro épicas y P1–P7 no se reabren por estos detalles
 | DT7 | Mapping exhaustivo por campo/ID/apertura/archivo, corte, discrepancias/excepciones, inventario privado y herramientas de importación aislada | E4.5/E4.12; real solo con autorización P6/P7 | Usuario revisa mapping y conciliación; no subir fuentes reales |
 | DT8 | Flujos/wireframes, contraste de identidad, formato y filtros de informes; definiciones incompletas de métricas, división por coste esencial nulo y datos no aplicables | STEP 5 de cada UI; en especial E2.6/E4.6/E4.7 | Usuario revisa UX y criterio financiero, sin suposiciones de relleno |
 | DT9 | Rectificación excepcional de ciclos antiguos y efecto en fotografías trimestrales/anuales y cierres posteriores | No habilitar excepción hasta otra especificación aprobada | Usuario; vía ordinaria solo último cierre según P5 |
-| DT10 | Proveedor/recursos/dominio, operación segura, responsabilidades, ensayo privado y ventana de corte | Gate operativo P7 posterior; no compra/despliegue en STEP 4 | Usuario autoriza expresamente recursos, despliegue y traspaso |
+| DT10 | Proveedor/recursos, DNS/TLS del dominio previsto, operación segura, responsabilidades, ensayo privado y ventana de corte | Gate operativo P7 posterior; no compra/despliegue en STEP 4 | Usuario autoriza expresamente recursos, despliegue y traspaso |
 
 La política de recuperación de backups (DT6) no equivale a reabrir un ciclo (P5).
 P1, P2, P5 son capacidades/decisiones de app: no atribuirlas retroactivamente al Excel.
@@ -496,9 +498,15 @@ cuatro capacidades y con permiso específico:
    Nunca doble escritura. No adquirir VPS prematuramente. Fotos financieras y backups
    mantienen sus políticas independientes.
 
-## Revisión pendiente y siguiente acción
-La agrupación está aprobada; este detalle, el orden propuesto, los criterios y gates están
-en revisión mediante PR documental. Se solicita revisar entregas/dependencias, especialmente
-E4, y registrar aprobación o ajustes. Ninguna decisión DT queda resuelta por aprobar el roadmap.
-No hacer merge sin autorización explícita del usuario. Detenerse después de presentar la PR:
-STEP 5 (especificaciones detalladas) y desarrollo no están autorizados en esta entrega.
+## Aprobación y siguiente acción
+El usuario aprobó expresamente PR #5, las cuatro épicas y sus 30 entregas el 2026-10-20,
+y autorizó su integración en main después de comprobar CI y alcance. Registro de
+integración (estado y commit): [PR #5](https://github.com/josemartin2000/myfinanzas-app/pull/5).
+No cambia ningún criterio de entrega, regla financiera ni decisión DT pendiente.
+
+Excel v5.11 continúa como fuente de verdad hasta la migración definitiva autorizada,
+sin doble escritura. Dominio previsto y preferencia de VPS: [contexto operativo](project.md).
+Detenerse tras el merge. Siguiente paso previsto, todavía sin iniciar: autorización
+expresa para STEP 5 y especificación de la primera entrega, con DT1/DT2/DT6 aplicables
+resueltas antes de implementar. No hay autorización de código, SQL definitivo,
+migraciones, contratación o despliegue en este cierre de STEP 4.

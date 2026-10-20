@@ -8,8 +8,9 @@ are merged. The current functional reference and confirmed stable baseline are r
 in [project.md](project.md). The workbook and original associated documentation remain
 outside the repository and have not been inspected by Codex. The functional specification
 attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
-the [STEP 4 roadmap proposal](roadmap.md). Four-epic grouping is approved; detailed planning
-awaits PR review. Current evidence and next action are recorded in setup progress.
+the [approved STEP 4 roadmap](roadmap.md): four epics and 30 functional increments,
+not necessarily 30 sprints or PRs. STEP 4 is complete; STEP 5 has not started.
+Current evidence and next action are recorded in setup progress.
 
 | Document | Owns | Created/updated by |
 | --- | --- | --- |
