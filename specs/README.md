@@ -1,5 +1,8 @@
 # Document ownership and workflow
-This is an uninitialized template. No product, stack or architecture has been approved.
+MyFinanzas App is a derived project in initialization. Product context and technology
+are confirmed in [project.md](project.md) and [architecture](guidelines/architecture.md).
+The initial plan is approved and STEP 1 is implemented; see [setup progress](setup-progress.md)
+and [bootstrap evidence](bootstrap.md). STEP 2 awaits user review.
 
 | Document | Owns | Created/updated by |
 | --- | --- | --- |
