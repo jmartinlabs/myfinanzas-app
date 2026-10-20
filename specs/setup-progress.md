@@ -12,6 +12,7 @@ Current stage: 6
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
+- Revisión M2 switches aprobada 2026-10-21: sustituye elección manual/segmentados. Alta y POST omitido=false explícito; PATCH conserva; históricos ausentes no son false. Tema solo claro, sin modo oscuro; fuente append-only en brainstorming.
 - Primera propuesta visual común y pantallas E1.1 aprobadas según comunicación del usuario (revisión con Álex), 2026-10-21; guía UI y specification actualizadas. No prueba de implementación ni permiso de merge/código.
 - M1/M2 aprobadas por el usuario como contrato de la NUEVA APLICACIÓN el 2026-10-20; registro append-only en brainstorming, separado de F1–F3 Excel. La propuesta visual fue aprobada por comunicación posterior del 2026-10-21; implementación no autorizada.
 - Evidencias F1–F3 recibidas del usuario tras inspección propia del Excel estable, 2026-10-20: referencia/especificación actualizadas. Combinaciones utilizadas no son matriz exhaustiva; Saldo actual no filtra por Fecha apertura, histórico mensual sí comprueba esa fecha. Sin inspección independiente de Codex.
@@ -70,14 +71,14 @@ Current stage: 6
 - Rama step-5/e1-1-saldos-spec, partiendo de main fed2743; sin worktree adicional.
 - [Brainstorming](01-saldos-control-brainstorming.md): ronda original conservada, respuestas Q1–Q8 y feedback visual añadidos con fuente/fecha; sin aprobaciones por extensión.
 - [Propuesta](01-saldos-control-specification.md): alcance/contratos, DT1/DT2/DT6, wireframes,
-  40 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: F1–F3, M1/M2 y aprobación visual comunicada incorporadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
+  43 criterios de aceptación/contrato y plan de pruebas futuras. IN REVIEW: F1–F3, M1/M2 y aprobación visual comunicada incorporadas; aprobación final no recibida. AC-30/31 fijan contratos de motores posteriores, sin ampliar E1.1.
 - No implementación ni instalación de paquetes/herramientas; no inspección/importación del Excel real.
-- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…36 conservados/actualizados y AC-37…40 añadidos y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
+- Validación local de propuesta: plantilla y 18 regresiones, check-project y 22 pruebas de controles pasan; whitespace y revisión de historia/índice sin hallazgos. Auditoría documental: AC-01…40 conservados/actualizados, AC-41…43 añadidos para ausencia histórica/switches/tema claro y evidencia F1–F3 atribuida al usuario, separada de extremos no demostrados.
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-Presentar PR #6 actualizada con aprobación visual comunicada el 2026-10-21 y resultados
-de controles/CI. Esperar aprobación final de la versión completa/PR; no volver a pedir
+Presentar PR #6 actualizada con revisión M2 vigente de switches/default false y tema
+claro, junto a resultados de controles/CI. No volver a exigir elección manual de cada Sí/No. Esperar aprobación final de la versión completa/PR; no volver a pedir
 aprobación de la dirección visual ya confirmada. Las verificaciones responsive/contraste/
 teclado/foco/estados y capturas de UI nueva siguen futuras hasta implementación autorizada.
 Sin merge, pantallas/componentes/CSS, SQL, migraciones, E1.2 u otros STEPS. No adelantar

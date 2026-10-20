@@ -105,7 +105,7 @@ Revisión posterior de PR #6: favorable funcional/técnicamente, seguida de conf
 expresa M1/M2 el 2026-10-20. La [matriz de validación](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación)
 registra contrato aprobado para la aplicación: aperturas no aplicables Exterior, opcionales
 en otros cinco pares; Estado Activa por defecto al crear, Finalidad/Objetivo opcionales,
-tres Sí/No explícitos e independientes. No se atribuye ese contrato a reglas físicas
+tres booleanos independientes (revisión vigente de switches del 2026-10-21 abajo). No se atribuye ese contrato a reglas físicas
 del Excel. No eliminar información existente sin función en un motor, convertir ausencia
 en cero ni introducir filtro temporal o fecha Manual. M1/M2 quedan cerradas.
 Aprobación final del documento completo y merge pendientes. La revisión visual prevista
@@ -125,3 +125,17 @@ Aprobación comunicada no equivale a código, capturas inspeccionadas, prueba re
 ni accesibilidad comprobada. Se recibieron descripciones textuales, no se afirma
 inspección de un prototipo gráfico externo. Esperar aprobación final de PR #6/versión
 completa; sin merge, componentes, pantallas, CSS, SQL, migraciones o E1.2.
+
+
+## Revisión vigente M2 — switches y tema claro — 2026-10-21
+Decisión posterior aprobada por el usuario: sustituye controles segmentados y exigencia
+anterior de interacción manual en cada Sí/No. [Contrato](01-saldos-control-specification.md)
+y [guía UI](guidelines/ui.md): tres switches No/false por defecto en alta; POST ordinario
+omitido persiste false explícito, PATCH omitido conserva valor y edición no reinicializa.
+Atributos independientes de Tipo/Control/Finalidad y entre sí. Posibles históricos
+importados ausentes se preservan como ausencia, sin false ni conversión silenciosa;
+no hay importación real ni afirmación de que esos casos existan en el libro.
+Switch on verde #8DBB2E/indicador blanco/Sí; off verde suave MyFinanzas/indicador
+blanco/No. Tema exclusivamente claro, sin modo oscuro en esta fase. M1, Estado inicial
+Activa, Finalidad/Objetivo opcionales y S000 protegido permanecen sin cambios.
+Solo documentación/PR/checks; sin merge, código, CSS, SQL, migraciones o E1.2.

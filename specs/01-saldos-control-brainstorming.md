@@ -2,7 +2,7 @@
 Status: IN REVIEW — Q1–Q8 y M1/M2 respondidas; contrato de aplicación confirmado en registros posteriores.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: revisar PR #6 con diseño comunicado como aprobado el 2026-10-21; esperar aprobación final, sin merge ni implementación.
+Next action: revisar PR #6 con revisión M2 switches/default false y tema claro, aprobada el 2026-10-21; sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -383,3 +383,35 @@ Se autoriza solo actualizar documentación común/especificación y PR #6 con ch
 Sin merge, pantallas, componentes, SQL, E1.2 ni otros pasos. Aprobación final de la versión
 completa/PR sigue pendiente. Ver [guía visual](guidelines/ui.md) para contrato común y
 [especificación](01-saldos-control-specification.md#screens-and-interfaces) para E1.1.
+
+
+## Revisión aprobada M2 — switches y tema claro — 2026-10-21
+Fuente: instrucción expresa del usuario «incorporar nuestra última decisión aprobada
+sobre los controles booleanos». **Sustituye** la exigencia anterior de elección manual
+obligatoria y controles segmentados Sí/No para Liquidez, Mostrar como bolsa y Permite
+salida a Exterior. Se conserva el registro histórico; los textos anteriores dejan de
+ser el contrato vigente en este punto. Es contrato de aplicación, no evidencia Excel.
+
+- Switches en lugar de controles segmentados, independientes de Tipo/Control/Finalidad.
+- Nueva alta ordinaria: los tres comienzan desactivados, No/false por defecto.
+- Activado: fondo verde principal #8DBB2E, indicador blanco, etiqueta visible «Sí».
+- Desactivado: fondo verde suave de la paleta MyFinanzas, indicador blanco, etiqueta
+  visible «No». Desactivado significa off, no un control inutilizable.
+- Edición: valor guardado, sin reinicializar; no aplicar defaults de nueva alta.
+- Servidor: almacenar booleano explícito; POST ordinario aplica false a cada indicador
+  omitido; PATCH omitido conserva su valor, incluido posible histórico ausente.
+- Posibles ausencias de futuros históricos importados no son false: no convertirlas,
+  rellenarlas ni mostrarlas como No silenciosamente. No se afirma que existan registros
+  reales ausentes en el libro; la importación sigue fuera del alcance autorizado.
+- Tema únicamente claro en esta fase, con fondos blancos/verdes suaves; sin modo oscuro.
+
+Detalle técnico de validación: null explícito no es booleano válido en POST/PATCH
+ordinarios; no usarlo como sinónimo de omitido ni convertirlo a false. El permiso de
+preservar un histórico ausente no habilita crear ausencias nuevas en un alta ordinaria.
+La futura UI distinguirá «Sin informar» de No, sin inventar un tercer estado de switch.
+
+Confirmed answer: APPROVED — revisión M2 para aplicación y tema claro; source/date:
+mensaje expreso del usuario, 2026-10-21. M1, Estado inicial Activa, opcionalidad de
+Finalidad/Objetivo, S000 protegido y restantes reglas financieras siguen vigentes.
+Actualizar documentación/PR/checks; sin merge, implementación, SQL o E1.2. Pruebas
+visuales/funcionales futuras no se dan por ejecutadas por aprobar esta decisión.

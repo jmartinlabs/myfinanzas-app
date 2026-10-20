@@ -4,7 +4,9 @@ Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el 
 M1/M2: contrato aprobado por el usuario el 2026-10-20, distinto de evidencia del Excel.
 Diseño común y tres pantallas E1.1: aprobación comunicada por el usuario el 2026-10-21;
 no implementación ni comprobación visual de una UI nueva.
-Aprobación final de esta versión completa, merge e implementación: PENDING / no autorizados.
+Revisión M2 de switches/default false y tema claro: aprobada el 2026-10-21, sustituye
+elección manual obligatoria anterior. Aprobación final de versión completa, merge e
+implementación: PENDING / no autorizados.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
 [roadmap E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia funcional](functional-reference-v5.11.md).
@@ -59,9 +61,8 @@ sin convertirlos en una matriz exhaustiva de validez/invalidez de otros pares.
 **Leyenda:** **R-C** identidad/tipado confirmados; **R-T** nombre requerido por contrato
 técnico ya propuesto, no evidencia Excel; **O-A** opcional por contrato de aplicación;
 **NA-A** no aplicable por contrato de aplicación, sin prohibir conservar datos;
-**DEF-A** Estado Activa por defecto al crear, por contrato de aplicación; **E-A**
-Sí/No de elección explícita obligatoria, independiente y sin default, por contrato de
-aplicación; **SYS** registro técnico protegido, sin alta/edición ordinaria; **N-M**
+**DEF-A** Estado Activa por defecto al crear; **SW-A** switch independiente No/false
+por defecto de alta ordinaria y POST omitido, por revisión M2 aprobada el 2026-10-21; **SYS** registro técnico protegido, sin alta/edición ordinaria; **N-M**
 no usado como entrada del motor de ese control, no prohibición de almacenamiento;
 **D** resultado derivado, no entrada manual; **N-C** sin posición convencional (F3).
 
@@ -72,7 +73,7 @@ no usado como entrada del motor de ese control, no prohibición de almacenamient
 | Estado | SYS | DEF-A | DEF-A | DEF-A | DEF-A | DEF-A |
 | Finalidad | O-A / SYS | O-A | O-A | O-A | O-A | O-A |
 | Objetivo (€) | O-A / SYS | O-A | O-A | O-A | O-A | O-A |
-| Liquidez / Mostrar como bolsa / Permite salida a Exterior (cada uno independiente) | SYS | E-A | E-A | E-A | E-A | E-A |
+| Liquidez / Mostrar como bolsa / Permite salida a Exterior (cada uno independiente) | SYS | SW-A | SW-A | SW-A | SW-A | SW-A |
 | Fecha apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
 | Saldo apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
 | Valor manual | N-M / SYS | N-M | N-M | N-M | N-M | N-M |
@@ -89,18 +90,33 @@ admite alta/edición ordinaria. No imponer un CHECK que prohíba conservar infor
 existente, ni limpiar campos sin función demostrada. SYS no inventa valores de Estado,
 Finalidad o indicadores del S000 existente ni le aplica el default de una nueva alta.
 
-M2: solo Estado dispone del default aprobado Activa para una NUEVA alta ordinaria.
-Desactivar/reactivar cambia Estado sin crear otro ID ni tocar apertura. Finalidad y
-Objetivo son opcionales; no convertir su ausencia en una categoría, importe cero ni
-valor derivado. Los tres Sí/No se eligen expresamente, también cuando se elige No;
-no preseleccionar No/false ni inferirlos de Tipo/Control o de otro atributo.
+**M2 vigente — revisión aprobada 2026-10-21.** Sustituye la exigencia anterior de
+interacción/elección manual y controles segmentados. Estado sigue Activa por defecto
+al crear. Los tres atributos usan switches y comienzan No/false en nueva alta ordinaria,
+sin derivarse de Tipo, Control, Finalidad o entre sí. Edición conserva cada valor real;
+no aplica defaults de creación. Finalidad/Objetivo siguen opcionales, sin cero implícito.
 
-Detalle técnico de API: en POST, Estado omitido aplica Activa; un null explícito no es
-un Estado válido. Los tres booleanos deben estar presentes con valor válido (false/No
-es elección explícita, distinto de omitido/null). En PATCH, omitir un campo conserva
-su valor; no reaplicar defaults de creación ni exigir reenviar los tres indicadores
-cuando no se modifican. Vaciar un campo opcional es distinto de omitirlo, y sigue la
-protección de impacto histórico Q3. No actualizar o rellenar registros antiguos por defecto.
+| Petición/contexto | Indicador omitido | true/false explícito | null explícito |
+| --- | --- | --- | --- |
+| POST de alta ordinaria | Aplicar false a ese indicador y persistir booleano explícito | Conservar/persistir exactamente el valor enviado | Rechazar por no ser booleano; no convertir a false |
+| PATCH ordinario | Conservar el valor existente, incluso ausencia histórica posible | Actualizar solo ese indicador, con control de revisión/impacto Q3 | Rechazar como escritura ordinaria; no interpretarlo como omisión |
+| Futuro histórico importado, fuera de alcance | No aplicar defaults de alta; preservar ausencia y procedencia | Preservar false o true real | La ausencia legítima se representa sin pérdida conforme al mapping futuro autorizado |
+
+Para Estado omitido en POST sigue Activa; null explícito no es un Estado válido.
+PATCH no reinicia Estado ni los otros campos. Servidor almacena los tres booleanos
+explícitos en altas ordinarias, incluso cuando el cliente los omite. No convertir strings,
+valores inválidos o null en false mediante coerción. El default es política de creación,
+no transformación global de lectura, edición, importación o datos de S000.
+
+**Históricos ausentes, sin datos reales importados aquí.** El contrato debe distinguir
+booleano informado (true o false) de ausencia heredada; la respuesta puede representar
+esa ausencia como null sin afirmar que el dato era false. No se afirma que haya tales
+registros en el Excel inspeccionado por el usuario. Al consultar/editar un hipotético
+histórico ausente, mostrar «Sin informar», no un switch falsamente en No. No forzar a
+resolverlo al editar otro campo: PATCH omitido conserva la ausencia; solo una elección
+real del usuario informa ese atributo. No crear valores ausentes nuevos por POST/PATCH
+ordinarios. El switch representa solo true/false, sin checked=mixed ni equivalencia
+visual entre ausencia y false. Mapping/importación real requieren autorización posterior.
 
 R-C: ID estable y Tipo/Control identifican entidad; ID asignado en servidor, no editable.
 R-T: nombre no vacío es contrato técnico del formulario, no restricción física Excel.
@@ -119,7 +135,7 @@ financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunc
 | Evidencia funcional F3 | Apertura es posición inicial; Saldo actual sin filtro por Fecha apertura; Manual directo/vacío sin fecha propia | Preservar semántica, no generar Movimientos de apertura ni fecha/filtro nuevos |
 | Observación F1/F2 | Seis pares utilizados, sin registros Manual ni objetivos informados | Fixtures con pares contrastados; no matriz exhaustiva, no prohibición de objetivos |
 | Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin convertir ausencia en cero ni eliminar información existente |
-| Contrato aprobado M2, aplicación | Estado Activa por defecto al crear; Finalidad/Objetivo opcionales; tres Sí/No explícitos | Validación de alta/edición sin inferencias ni defaults adicionales; S000 protegido |
+| Contrato aprobado M2, aplicación | Estado Activa al crear; Finalidad/Objetivo opcionales; switches No/false por defecto al alta, POST omitido=false, PATCH omitido=conservar | Revisión M2 sustituye elección manual obligatoria; sin coerción de históricos ausentes ni inferencias; S000 protegido |
 | No demostrado del Excel | Obligatoriedad física por registro, exhaustividad de pares, detalle mensual | No atribuir M1/M2 al Excel ni inventar otros controles; no reabrir M1/M2 |
 
 ### Cierre de M1/M2 y secuencia posterior
@@ -138,7 +154,8 @@ continúan pendientes.
 
 ### Ciclo de vida — Q3 confirmado
 1. Alta con atributos explícitos y combinaciones existentes contrastadas en F1; no crear una operación financiera.
-   Estado Activa por defecto al crear; Liquidez/bolsa/permiso exigen elección explícita.
+   Estado Activa al crear; switches Liquidez/bolsa/permiso No/false por defecto.
+   Servidor aplica false al atributo omitido en POST ordinario; no en PATCH o históricos.
    Finalidad/Objetivo y aperturas ordinarias opcionales, sin importe cero por defecto.
    ID se devuelve al guardar; S000 sigue fuera del alta ordinaria.
 2. Consulta por ID y nombre; filtros independientes; ficha de activos e inactivos.
@@ -181,7 +198,7 @@ Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 
 | Grupo/entidad lógica propuesta | Datos persistentes candidatos | Restricciones/pendientes |
 | --- | --- | --- |
-| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. M2 aplicación: Estado Activa al crear, tres booleanos explícitos sin default; Finalidad opcional. S000 protegido; no rellenar registros anteriores. ID inmutable en API y protección SQLite; S000 reservado |
+| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. M2 aplicación: Estado Activa al crear, tres booleanos explícitos almacenados, con false si omitidos en POST ordinario; Finalidad opcional. S000 protegido; no rellenar registros anteriores ni históricos ausentes. ID inmutable en API y protección SQLite; S000 reservado |
 | saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
 | saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo opcional en céntimos, sin default cero ni signo impuesto. Finalidad: vacío/Gastos planificados/Ahorro/Inversión. Estado canónico Activa/Inactiva: selección activa deriva de Estado, no otro booleano persistente |
 | saldos: metadatos | revision INTEGER, creado_en TEXT, actualizado_en TEXT | Revisión positiva creciente; instantes UTC; no cambiar fecha económica por timestamp técnico |
@@ -190,6 +207,10 @@ Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 | principal único / factor / recuperación | hash Argon2id, secreto TOTP cifrado/nonce/versión de clave, último paso TOTP usado, hashes de códigos de recuperación | Único usuario; alta local exclusiva; códigos de un uso consumidos atómicamente; clave de cifrado fuera de base |
 | sesiones y desafíos | hash token, principal, creado/expira/último uso, estado MFA; desafío temporal limitado | Sin token crudo en DB/log; desafío no autoriza rutas financieras; sesiones revocables y expiración servidor |
 | versión de esquema técnica | versión aplicada | Diseño de futuras migraciones, no ejecutar/crear ninguna en STEP 5 |
+
+El diseño lógico debe preservar una posible ausencia histórica separada de 0/1,
+sin backfill ni defaults de lectura. El default false de alta no autoriza imponer
+un default global sobre importación/legacy. No se fija ni ejecuta aquí el DDL necesario.
 
 No fijar el modelo entero de Movimientos, inversión, ciclos, deuda, presupuesto o fotos.
 Claves foráneas futuras referencian Sxxx; activar foreign_keys en cada conexión y
@@ -315,15 +336,21 @@ vive en tarjetas de móvil. Búsqueda/filtros/estados y vacíos no ocultan error
 | ATRIBUTOS DE CONTROL            |
 | Finalidad [vacío / opciones v]  |
 | Objetivo EUR [opcional]         |
-| Liquidez: [Sí] [No] sin elegir  |
-| Bolsa:    [Sí] [No] sin elegir  |
-| Exterior: [Sí] [No] sin elegir  |
+| Liquidez: [switch OFF] No       |
+| Bolsa:    [switch OFF] No       |
+| Exterior: [switch OFF] No       |
 | [Cancelar]       [Guardar]      |
 +----------------------------------+
 ```
 Listado, ficha y formulario son pantallas aprobadas, con edición en página propia.
 La ficha separa identificación/configuración/atributos y mantiene ID visible e inmutable.
-El formulario agrupa tres bloques; no infiere un Sí/No desde otro ni los preselecciona.
+El formulario agrupa tres bloques; switches independientes iniciales No/false en
+alta, sin exigir pulsarlos. Edición refleja valor guardado sin reinicializarlo.
+Switch true: fondo #8DBB2E, indicador blanco y «Sí» visible. Switch false: fondo verde
+suave de paleta MyFinanzas, indicador blanco y «No» visible. No hay selección segmentada.
+Si un histórico futuro está ausente, «Sin informar» separado de No y sin default silencioso.
+Tema únicamente claro, superficies blancas/verdes suaves; sin modo/selector oscuro.
+Estética común y futura accesibilidad del switch en [guía UI](guidelines/ui.md).
 Estado Activa solo al crear; en edición conserva el Estado existente. Aperturas según
 matriz M1, no editables para S000, sin eliminar información existente por falta de función.
 Finalidad/Objetivo opcionales, ausencia distinta de cero; Manual no se habilita operativo
@@ -452,7 +479,7 @@ correlación; no revelar existencia de entidades a no autenticados.
 | GET /api/auth/session | Estado mínimo de la propia sesión, sin factor/secreto |
 | GET /api/saldos | 200 colección filtrada con identidad, atributos y estado de posición; paginación con máximo 100 por página, orden estable por ID y desempate sin depender del nombre |
 | GET /api/saldos/:id | 200 ficha o 404; acceso autenticado siempre |
-| POST /api/saldos | 201 Location + ficha; ID servidor, atributos explícitos, clave de idempotencia y revisión técnica |
+| POST /api/saldos | 201 Location + ficha; ID servidor, tres booleanos persistidos explícitamente (false por omisión), clave de idempotencia y revisión técnica |
 | PATCH /api/saldos/:id | Edición parcial con revisión esperada obligatoria; 200 nueva ficha o 409 |
 | POST /api/saldos/:id/desactivar o /reactivar | Revisión + validación transaccional del impacto; 200 ficha, 409 bloqueo |
 | DELETE /api/saldos/:id | Sin ruta habilitada; no borrar historia |
@@ -579,19 +606,22 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-25 | Restaurar a instancia aislada y consultar vía API/UI | IDs/atributos/importes exactos coinciden con corte; acceso/MFA verificados y sesiones/códigos antiguos no resucitan |
 | AC-26 | Simular disco lleno, backup interrumpido, clave incorrecta, snapshot inválido o viejo | Error visible, base original intacta, copias buenas conservadas; no declaración falsa de RPO/RTO |
 | AC-27 | Revisar el catálogo de combinaciones utilizadas F1 en fixtures y su validación | Los seis pares figuran como utilizados; no se declara que sean matriz exhaustiva ni que otros pares sean inválidos; Manual no habilita pares nuevos |
-| AC-28 | Alta/edición ficticia con Finalidad vacía y con sus valores, Estado y tres Sí/No independientes | Finalidad opcional, Estado Activa si se omite en nueva alta; los tres Sí/No explícitos, sin inferencias ni pérdida de histórico. PATCH omitido conserva valor |
+| AC-28 | Alta/edición ficticia con Finalidad vacía y valores, Estado y tres switches independientes | Finalidad opcional, Estado Activa inicial; alta switches No/false sin inferencias, edición muestra guardado y PATCH omitido conserva; no cambia históricos ausentes |
 | AC-29 | Guardar y recargar Saldo ficticio sin Objetivo, luego con importe EUR explícito | Objetivo es opcional y ausencia sigue null, no cero; céntimos exactos; sin reglas de signo inventadas |
 | AC-30 | Revisar contrato de Saldo actual con fixture de apertura 100, entrada anterior a Fecha apertura 20 y salida posterior 5 | Resultado de referencia 115: no excluir la entrada por Fecha apertura. Criterio de contrato para futuro motor E1.4; no motor implementado ni nueva pantalla E1.1 |
 | AC-31 | Revisar contrato histórico con un periodo inequívocamente anterior a Fecha apertura | No mostrar posición anterior; no borrar ni filtrar los Movimientos de Saldo actual. Límite mensual exacto/fecha ausente quedan sin suposición para la entrega del histórico |
-| AC-32 | Revisar matriz, validaciones y futura nulabilidad contra M1/M2 | O-A, NA-A, DEF-A y E-A identificados como contrato aprobado de aplicación; separados de evidencia Excel y observaciones; sin preguntas M1/M2 pendientes ni restricciones por inferencia |
+| AC-32 | Revisar matriz, validaciones y futura nulabilidad contra M1/M2 | O-A, NA-A, DEF-A y SW-A identificados como contrato aprobado de aplicación; separados de evidencia Excel y observaciones; sin preguntas M1/M2 pendientes ni restricciones por inferencia |
 | AC-33 | En cada uno de los cinco pares ordinarios, alta ficticia omitiendo Fecha apertura/Saldo apertura, luego solo uno y luego ambos con apertura cero explícito o negativa | Altas válidas según M1 con datos restantes válidos; campos independientes, ausencias preservadas y cero/negativo conservados exactamente; sin Movimiento/filtro por fecha creado |
 | AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico |
-| AC-35 | Nueva alta sin Estado y con tres elecciones explícitas, probando No/false; repetir omitiendo o enviando null en cada indicador | Estado inicial Activa si omitido; false es elección válida. Ausencia/null del indicador rechaza alta sin escritura parcial; sin inferir de Tipo/Control. PATCH omite y conserva, no reinicializa Estado |
+| AC-35 | Alta omitiendo cada indicador o todos; repetir con true/false y con null/valor inválido; PATCH omitiendo indicador | POST omitido persiste false explícito; true/false se conservan, null/valor inválido rechaza sin coerción/escritura parcial. PATCH omitido conserva false/true/ausencia histórica; Estado Activa solo por default de alta |
 | AC-36 | Revisar fuente/fecha de aprobación visual y estado de implementación | Dirección común y tres pantallas aprobadas por comunicación del usuario el 2026-10-21, separadas de futuras pruebas visuales; no implica aprobación final de PR ni permiso de código |
 | AC-37 | En futura UI, recorrer listado, ficha y alta/edición a 390 y 1440 px | Menú lateral escritorio/navegación móvil accesibles, tabla/tarjetas compactas, ID visible/inmutable y edición en página propia; misma información/acciones disponibles |
 | AC-38 | Revisar cabecera sin maestro disponible y después con fuente de Ciclos entregada, incluyendo carga/error/vacío | Sin fuente: No disponible, sin datos inventados. Con fuente: ciclo del maestro único; estado temporal y cierre financiero separados, sin inferencia desde reloj/Nómina o Fin temporal |
-| AC-39 | Recorrer formulario futuro y sus errores, modificando tres Sí/No independientemente | Tres bloques aprobados, Estado inicial Activa, opcionalidad M1/M2 y elecciones explícitas; conservar entradas/ausencias, sin Manual operativo ni pares no contrastados |
+| AC-39 | Recorrer formulario futuro y sus errores, modificando tres Sí/No independientemente | Tres bloques aprobados, Estado inicial Activa, opcionalidad M1/M2 y switches No/false iniciales solo en alta; edición conserva guardado e independencia. Sin Manual operativo ni pares no contrastados |
 | AC-40 | Revisar evidencia antes de declarar diseño implementado/validado | Capturas nuevas 390/1440 inspeccionadas y pruebas de teclado/foco/etiquetas/contraste/estados; ni aprobación textual, ASCII ni screenshots del bootstrap sustituyen la comprobación futura |
+| AC-41 | Fixture histórico ficticio con indicador ausente frente a false/true; consultar, cancelar edición y guardar cambio de otro campo | Ausencia sigue distinguible («Sin informar»/null), nunca No/false silencioso; PATCH omitido no la rellena. Informar booleano requiere elección real y solo cambia ese atributo; sin importar datos reales |
+| AC-42 | En futura UI a 390/1440, inspeccionar y operar cada switch con teclado y foco | true: #8DBB2E/indicador blanco/Sí; false: verde suave de paleta/indicador blanco/No; nombre del atributo accesible, checked binario y etiqueta visible, independencia, sin controles segmentados ni interacción obligatoria al alta |
+| AC-43 | Revisar futura UI con preferencia de sistema clara y oscura | Siempre tema claro de fondos blancos/verdes suaves; sin modo/selector oscuro. No se declara contraste/accesibilidad verificados sin pruebas reales |
 
 ### Plan de prueba futuro con fixtures
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
@@ -633,8 +663,9 @@ Saldo actual «desde vigencia del control» por Fecha apertura.
 | F3 | Apertura es posición inicial; Movimientos=apertura+entradas−salidas sin filtro de Fecha apertura; Inversiones/Efectivo añade Compras/Ventas; Manual directo o vacío sin fecha efectiva propia; Terminal/No controlado/Exterior sin saldo convencional; histórico mensual comprueba Fecha apertura | No consta detalle de comparación mensual, mes de frontera o fecha ausente; obligatoriedad de aplicación ya resuelta en M1, sin atribuirla al Excel. No cambiar Saldo actual; detalles del histórico se contrastan antes de su implementación. No inventar signo/parejas Manual |
 
 F1–F3 ya no se consideran evidencia ausente en bloque. Los extremos residuales se
-mantienen explícitos, sin restricciones nuevas ni defaults salvo Estado Activa de alta,
-aprobado para la aplicación en M2. M1/M2 no son extremos pendientes. Para operativas
+mantienen explícitos, sin restricciones nuevas. Defaults aprobados para altas ordinarias:
+Estado Activa y, por revisión M2 del 2026-10-21, tres booleanos false; no defaults de
+lectura/edición/importación o históricos ausentes. M1/M2 no son extremos pendientes. Para operativas
 que dependan de ellos se necesita únicamente el detalle sanitizado correspondiente,
 no reabrir Q1–Q8 ni reclamar dominios/semánticas que el usuario ya ha aportado.
 Los módulos posteriores conservan sus entregas; registrar contrato no autoriza implementarlos.
@@ -665,6 +696,8 @@ controles; esperar aprobación final de la versión completa/merge. M1/M2 y apro
 visual no se reabren ni autorizan implementación. Las futuras verificaciones de la UI
 quedan pendientes hasta desarrollo autorizado; no afirmar que la aprobación textual
 sea una prueba de navegador o inspección de prototipo recibido.
-No merge, pantallas/componentes, CSS, SQL, migraciones, servicios, E1.2 u otros STEPS.
+Aplicar revisión M2 vigente de switches y tema claro; no recuperar la antigua elección
+manual obligatoria. No merge, pantallas/componentes, CSS, SQL, migraciones, servicios,
+E1.2 u otros STEPS.
 Pares nuevos, Manual operativo y detalle de histórico se contrastan cuando corresponda,
 sin cambiar reglas financieras ni adelantar el maestro de Ciclos para una cabecera.

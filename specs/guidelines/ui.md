@@ -65,6 +65,8 @@ traducción documental de esa descripción, no evidencia de una UI implementada.
 - Tablas compactas en escritorio, tarjetas compactas en móvil. La densidad no debe
   perjudicar legibilidad, foco, etiquetas o áreas de interacción.
 - Componentes visuales reutilizables para entregas posteriores, sin construirlos aquí.
+- Tema únicamente claro en esta fase, fondos blancos y verdes suaves MyFinanzas. Sin
+  selector ni modo oscuro, tampoco activación automática por preferencia del sistema.
 
 | Papel de la paleta existente | Color aprobado como referencia de identidad |
 | --- | --- |
@@ -102,7 +104,7 @@ su entrega, sin resolverlas aquí. Tampoco inferir estado financiero a partir de
 | Búsqueda y filtros | Etiquetas comprensibles, filtros/estados visibles y estado vacío diferenciado |
 | Tabla/tarjeta de Saldo | Misma identidad/atributos y acciones disponibles en ambos formatos; ID visible |
 | Ficha y secciones de formulario | Separar identidad, configuración económica y atributos de control |
-| Elección Sí/No | Selección explícita e independiente; sin preselección ni equivalencia omitido=false |
+| Switches de los tres booleanos (M2 vigente) | Alta inicial No/false; edición conserva dato; POST omitido=false, PATCH omitido=sin cambio; histórico ausente distinto de false |
 | Estado/importe disponible | Distinguir ausencia, cero explícito, pendiente de motor y no aplicable; sin importes ficticios |
 | Avisos y acciones | Carga/vacío/error/éxito, confirmación de acciones, foco y valores del formulario preservados |
 
@@ -113,12 +115,52 @@ su entrega, sin resolverlas aquí. Tampoco inferir estado financiero a partir de
 2. Ficha: identificación, configuración financiera y atributos separados, ID visible e
    inmutable; edición en página propia.
 3. Alta/edición en página propia: tres bloques **Identificación**, **Configuración económica**
-   y **Atributos de control**; Estado Activa inicial, tres Sí/No explícitos y opcionalidad
+   y **Atributos de control**; Estado Activa inicial, tres switches No/false al alta y opcionalidad
    de M1/M2. Contrato exacto en [especificación E1.1](../01-saldos-control-specification.md).
 
 No habilitar Manual operativo ni combinaciones Tipo/Control no contrastadas. Motores
 aún no entregados no producen importes ficticios; vacío no equivale a cero. M1/M2,
 reglas financieras, IDs y separación entre fuentes conservan su autoridad.
+
+## Revisión M2 aprobada: switches — 2026-10-21
+
+La última decisión expresa del usuario **sustituye** controles segmentados y exigencia
+de elección manual de cada Sí/No. Contrato común para Liquidez, Mostrar como bolsa y
+Permite salida a Exterior, sin derivar valores del Tipo, Control, Finalidad o entre sí.
+
+| Estado booleano real | Apariencia aprobada | Texto visible |
+| --- | --- | --- |
+| true / activado | Fondo verde principal #8DBB2E, indicador blanco | Sí |
+| false / desactivado | Fondo verde suave de la paleta MyFinanzas, indicador blanco | No |
+
+«Desactivado» es off, no disabled: el control sigue siendo operable. Verde suave usa
+la paleta existente, sin introducir otro tono como decisión aprobada ni inventar un
+hex concreto no indicado para este switch. La etiqueta del atributo y Sí/No visibles
+impiden depender solo del color. Indicador blanco en ambos estados; contraste de pista,
+indicador, borde, texto y foco se comprobará en futura implementación, sin declarar
+conformidad por esta aprobación textual.
+
+Alta: tres switches en No/false inicialmente; no pedir interacción manual para aceptar
+ese valor. Edición: representar el valor realmente guardado, nunca inicializar desde el
+estado del formulario de alta. Guardar un cambio no modifica los otros dos indicadores.
+Semántica accesible de switch con nombre del atributo, estado checked true/false, foco
+visible y teclado; no simular un tercer estado mediante checked=false o mixed.
+
+Si una futura importación autorizada conserva un valor ausente, mostrar «Sin informar»
+y distinguirlo del switch en No. No asignarle estado falso para dibujar el control ni
+normalizarlo al abrir/cancelar/guardar otro campo. Si el usuario informa ese atributo,
+se registra el booleano elegido; si no lo toca, PATCH lo omite y conserva la ausencia.
+La presentación de ausencia no convierte al switch binario en un control de tres estados.
+No se importan datos ni se implementa esta UI en esta PR documental.
+
+POST ordinario omitido aplica false y persiste valor explícito; PATCH omitido no altera
+el valor. Null explícito no es booleano de escritura ordinaria ni activa el default de
+omisión. No trasladar ese default a futuras importaciones, históricos o S000. Detalle
+canónico en [especificación](../01-saldos-control-specification.md).
+
+Tema claro exclusivamente: superficies blancas/verdes suaves, sin versión oscura,
+selector de tema ni tokens oscuros implementados. Futuras pruebas verificarán que una
+preferencia de sistema oscura no active otro tema; no ampliar alcance para implementarlo.
 
 ## Aprobación de diseño frente a comprobación futura
 
@@ -132,7 +174,7 @@ reglas financieras, IDs y separación entre fuentes conservan su autoridad.
 
 La validación futura cubrirá los tres flujos, menú lateral/navegación móvil, cabecera
 con fuente disponible/no disponible/carga/error, ausencia/cero, y persistencia de los
-campos después de errores. Playwright y capturas inspeccionadas a 390 y 1440 px deben
+campos después de errores, switches Sí/No y preservación de históricos ausentes. Playwright y capturas inspeccionadas a 390 y 1440 px deben
 complementarse con revisión de accesibilidad; capturas viejas del bootstrap y CI de sus
 flujos no validan este diseño. La aprobación no autoriza implementar, generar CSS/tokens,
 componentes o SQL, hacer merge o iniciar E1.2. PR #6 permanece abierta para revisión final.
