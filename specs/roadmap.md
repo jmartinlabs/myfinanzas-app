@@ -516,5 +516,6 @@ migraciones, contratación o despliegue en este cierre de STEP 4.
 El usuario autorizó únicamente la propuesta de especificación de E1.1, sin desarrollo.
 Ver [ronda de decisiones](01-saldos-control-brainstorming.md) y
 [borrador E1.1](01-saldos-control-specification.md). La parada anterior al STEP 5 quedó
-satisfecha; respuestas, especificación final y merge de la nueva PR siguen pendientes.
+satisfecha; Q1–Q8 ya tienen respuestas registradas. La especificación actualizada
+conserva reservas de evidencia F1–F3; aprobación final y merge de PR #6 siguen pendientes.
 Esta actualización de estado no modifica las cuatro épicas ni las 30 entregas aprobadas.

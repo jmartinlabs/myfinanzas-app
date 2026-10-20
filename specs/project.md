@@ -89,7 +89,9 @@ Fuente: autorización expresa del usuario para integrar PR #5, 2026-10-20.
 Fuente: solicitud expresa del usuario, 2026-10-20, posterior al merge de PR #5.
 Se autoriza especificar Saldos y atributos de control, proponer DT1/DT2/DT6 y preparar
 rama/PR exclusivamente documental. [Ronda inicial](01-saldos-control-brainstorming.md)
-y [borrador de revisión](01-saldos-control-specification.md), pendientes de respuestas,
-feedback visual y aprobación completa. No cerrar alternativas de seguridad, integridad
+y [especificación en revisión](01-saldos-control-specification.md). El usuario respondió
+Q1–Q8 y aprobó la estructura visual el 2026-10-20; registro posterior append-only en
+brainstorming. La versión documental integra decisiones y detalles técnicos menores;
+evidencia financiera F1–F3 y aprobación final del documento siguen pendientes. No cerrar alternativas de seguridad, integridad
 o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
 merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.

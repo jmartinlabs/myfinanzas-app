@@ -1,8 +1,8 @@
 # 01 — E1.1 Saldos y atributos de control: Brainstorming
-Status: DRAFT — primera ronda pendiente; recomendaciones no aprobadas.
+Status: IN REVIEW — Q1–Q8 respondidas; decisiones confirmadas en el registro posterior.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: recibir respuestas Q1–Q8 y feedback de wireframes; no cerrar especificación.
+Next action: revisar especificación actualizada y reservas F1–F3; sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -143,3 +143,96 @@ Requieren feedback antes de finalizar; ninguna elección visual equivale a aprob
 ## Append-only clarifications
 Sin respuestas posteriores todavía. Próxima entrada: respuestas explícitas Q1–Q8,
 fuente/fecha, discrepancias y nueva ronda solo si sigue faltando una decisión material.
+
+
+## Respuestas confirmadas de Round 1 — 2026-10-20
+Fuente: mensaje expreso del usuario «He revisado contigo las preguntas Q1–Q8…».
+Este registro posterior sustituye el estado PENDING de las respuestas, sin editar las
+preguntas/recomendaciones originales. Una respuesta no aprueba automáticamente todo
+el texto de una recomendación ni la especificación completa.
+
+### Q1 — Respuesta confirmada
+Mantener los Tipos, Controles y atributos de MyFinanzas v5.11 y respetar las combinaciones
+existentes, sin inventar restricciones adicionales. Finalidad, Objetivo (€), Liquidez,
+Estado, Mostrar como bolsa y Permite salida a Exterior son independientes. Conservar
+soporte conceptual para Manual, actualmente no utilizado.
+**Límite:** no se ha aportado la matriz exhaustiva ni el vocabulario de Finalidad/Estado;
+Objetivo sí queda confirmado como importe EUR. No se aprueban por extensión signo,
+obligatoriedad, rango o efectos de Objetivo. Evidencia pendiente F1/F2.
+
+### Q2 — Respuesta confirmada
+Fecha de inicio del control, saldo de apertura y valor Manual separados. Admitir negativos
+cuando expresen una posición financiera real. Ausencias no se convierten en cero, no se
+inventan importes y se preserva la semántica de fechas del Excel.
+**Límite:** el material disponible no prueba frontera temporal exacta ni obligatoriedad
+por control. No se aprueba una fecha económica adicional obligatoria para Manual ni
+un histórico de observaciones; Manual conserva soporte conceptual. Evidencia F3.
+
+### Q3 — Respuesta confirmada
+IDs inmutables, protección de S000, desactivación/reactivación y ningún borrado físico.
+Inactivos fuera de nuevos desplegables, disponibles en histórico. Bloquear modificaciones
+económicas que alteren operaciones históricas sin rectificación explícita.
+**Límite:** no se aprueba prohibir todo cambio por la mera existencia de cualquier relación.
+Detectar impacto real; conservar historia sin versionar todo el catálogo ni inventar
+procedimiento de rectificación. La desactivación por sí sola no ajusta importes ni borra relaciones.
+
+### Q4 — Respuesta confirmada (DT1)
+Priorizar sencillez y mantenibilidad: único usuario, contraseña Argon2id, TOTP con aplicación
+autenticadora, códigos de recuperación, sesiones seguras de 30 minutos de inactividad y
+12 horas máximas, HTTPS en producción. Sin registro público, proveedores externos,
+correo de recuperación ni administración innecesaria. Preferir biblioteca consolidada
+cuando reduzca mantenimiento/riesgo. Recuperación excepcional solo local, justificada;
+nunca acceso remoto alternativo.
+**Límite:** no se autoriza un subsistema administrativo ni queda seleccionada/auditada
+una versión concreta de biblioteca. Detalles técnicos menores pueden concretarse según
+buenas prácticas; cambio de enfoque o vía de recuperación requiere revisión explícita.
+
+### Q5 — Respuesta confirmada (DT2)
+Sxxx como PK estable sin otra clave interna innecesaria, generación atómica en servidor,
+sin reutilización y con continuidad tras S999.
+**Detalle técnico menor:** formato de nuevas altas S + decimal con al menos tres dígitos
+(S001…S999, S1000…); S000 reservado. No recodificar IDs históricos ni reiniciar por año.
+No implica autorizar importación real o un esquema físico completo por extensión.
+
+### Q6 — Respuesta confirmada (DT2)
+Céntimos enteros para importes EUR de Saldos, sin FLOAT ni redondeos silenciosos;
+aperturas negativas admitidas. Fechas económicas civiles, metadatos UTC. No aplicar
+escala 2 a cantidades/precios/divisas de inversión. Límites técnicos suficientes, sin
+restricciones financieras arbitrarias.
+**Detalle técnico menor:** int64 SQLite con BigInt y transporte decimal textual;
+se elimina el límite más estrecho sugerido en la ronda inicial. Signo/obligación de
+Objetivo o Manual no se deducen de la aprobación expresa de aperturas negativas.
+
+### Q7 — Respuesta confirmada como propuesta (DT6)
+VACUUM INTO consistente, cifrado age y restauración probada. Objetivos iniciales
+RPO 24 horas/RTO 2 horas, retención 7 diarias/4 semanales/3 mensuales. Ubicación externa
+y custodia definitiva se deciden antes del despliegue. Sin contratación de servicios.
+**Límite:** no se afirma una clave externa ya custodiada ni copia remota configurada,
+ni se garantiza SLA. En futuro desarrollo local, claves/fixtures de ensayo fuera de Git;
+no instalar age ni ejecutar backups en este STEP documental.
+
+### Q8 — Respuesta y feedback de wireframes confirmados
+Listado, ficha y formulario en página propia. Tabla en escritorio, tarjetas en móvil,
+activos visibles por defecto e inactivos consultables. Valores no calculables y errores
+claros. Respetar identidad visual MyFinanzas. Se confirma la estructura de los wireframes;
+no se afirma que estilos, accesibilidad o pantallas hayan sido implementados/verificados.
+
+## Contraste posterior y estado de cierre — 2026-10-20
+Se releen R1/R2/R5/R6 y el §4 de la especificación funcional adjunta v5.11, fuera del
+checkout. El Excel físico y sus manuales completos siguen sin incorporarse/inspeccionarse.
+El documento recibido enumera Tipos/Controles y motores, pero no la matriz exhaustiva,
+vocabularios de Finalidad/Estado ni el contrato completo de apertura/Manual.
+
+Pendientes exclusivamente de evidencia, no nuevas decisiones inventadas:
+- **F1:** matriz Tipo×Control y obligatoriedad de atributos por control de v5.11.
+- **F2:** vocabularios de Finalidad/Estado, mapping activo/inactivo y condiciones de Objetivo (€).
+- **F3:** semántica exacta de vigencia de apertura (frontera/fecha ausente) y contrato
+  operativo de Manual si se pretende habilitarlo, más allá de conservar soporte conceptual.
+
+Ver detalle y puertas de aceptación en la [especificación](01-saldos-control-specification.md#reservas-financieras-y-trazabilidad).
+No volver a preguntar Q1–Q8 como si no existieran respuestas. Solicitar únicamente una
+referencia sanitizada para estos detalles, sin pedir datos financieros personales.
+La especificación se completa para revisión documental; no se declara lista para
+implementación mientras F1/F2 y la parte de F3 aplicable a aperturas sigan sin demostrar.
+Manual no se activa por inferencia. Aprobación final del documento y merge de PR #6
+siguen pendientes. No iniciar E1.2 ni otros STEPS.

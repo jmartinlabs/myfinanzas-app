@@ -66,7 +66,8 @@ el modelo financiero definitivo. El [roadmap STEP 4](specs/roadmap.md), con cuat
 y 30 unidades funcionales verificables, está aprobado; no representa 30 sprints o PR.
 STEP 4 completado. STEP 5 autorizado únicamente para la
 [propuesta E1.1](specs/01-saldos-control-specification.md) y sus
-[preguntas pendientes](specs/01-saldos-control-brainstorming.md); sin implementación. DT1–DT10 se
+[decisiones Q1–Q8 confirmadas](specs/01-saldos-control-brainstorming.md);
+especificación actualizada en revisión, con evidencia financiera F1–F3 pendiente y sin implementación. DT1–DT10 se
 resolverán antes de las entregas afectadas. [Consideraciones operativas](specs/project.md).
 
 ## Skills

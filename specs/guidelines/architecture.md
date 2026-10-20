@@ -57,8 +57,11 @@ librería UI ni validación externa. bun:sqlite no requiere paquete de base de d
 ## Decisiones de destino aún no implementadas
 VPS Linux con Docker Compose y Caddy; HTTPS obligatorio. Un único usuario, sin registro
 público; autenticación robusta y segundo factor antes de utilizar datos reales online.
-No se ha elegido mecanismo de autenticación, sesiones, recuperación, backups ni esquema
-financiero. Estos detalles requieren especificaciones y aprobaciones posteriores.
+Para E1.1, Q4–Q7 confirman contraseña Argon2id/TOTP, sesiones servidor, PK Sxxx,
+céntimos exactos y propuesta VACUUM INTO/age. Contrato y límites en la
+[especificación E1.1](../01-saldos-control-specification.md); nada de ello está implementado.
+Esquema físico completo, evidencia financiera y operación/custodia definitivas siguen
+pendientes de sus revisiones y aprobaciones. No convertir estas decisiones en un despliegue autorizado.
 
 ## Estado y límites
 La [evidencia STEP 1](../bootstrap.md) documenta comprobaciones y capturas; comandos y
