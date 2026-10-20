@@ -2,7 +2,7 @@
 Status: IN REVIEW — Q1–Q8 respondidas; decisiones confirmadas en el registro posterior.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: revisar especificación actualizada y reservas F1–F3; sin merge ni implementación.
+Next action: revisar versión con evidencias F1–F3 recibidas; extremos residuales explícitos, sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -236,3 +236,35 @@ La especificación se completa para revisión documental; no se declara lista pa
 implementación mientras F1/F2 y la parte de F3 aplicable a aperturas sigan sin demostrar.
 Manual no se activa por inferencia. Aprobación final del documento y merge de PR #6
 siguen pendientes. No iniciar E1.2 ni otros STEPS.
+
+
+## Evidencia posterior F1–F3 — 2026-10-20
+Fuente: mensaje del usuario «He revisado las reservas F1–F3 … directamente contra el
+Excel físico estable MyFinanzas2026_v5.11(5).xlsx». Este registro posterior actualiza
+las reservas descritas arriba; no reescribe preguntas, respuestas ni el contraste anterior.
+El libro físico sigue fuera de Codex; la inspección se atribuye al usuario.
+
+- **F1:** pares utilizados Exterior/Exterior, Efectivo/Movimientos, Efectivo/Terminal,
+  Efectivo/No controlado, Efectivo/Inversiones e Inversión/Inversiones. Manual existe
+  en fórmula sin registros. Soporte conceptual, sin habilitar pares Manual no contrastados.
+  La muestra no demuestra una matriz exhaustiva de validez ni invalidez de otros pares.
+- **F2:** Finalidad vacío/Gastos planificados/Ahorro/Inversión; Estado Activa/Inactiva;
+  Objetivo (€) opcional sin valores actualmente informados; Liquidez, Mostrar como bolsa
+  y Permite salida a Exterior Sí/No. Independientes; ni obligatoriedad ni cero implícito
+  para Objetivo. Dominio/mapping de Estado y unidad/opcionalidad de Objetivo demostrados.
+- **F3:** apertura es posición inicial, no Movimiento. Saldo actual Movimientos suma
+  apertura+entradas−salidas; Inversiones/Efectivo incorpora además Compras/Ventas.
+  Manual devuelve Valor manual o vacío. Terminal/No controlado/Exterior no tienen posición
+  convencional. Saldo actual NO filtra Movimientos por Fecha apertura; histórico mensual
+  sí comprueba esa fecha para no mostrar anteriores. Sin fecha efectiva Manual independiente.
+
+La afirmación anterior «desde vigencia» no debe convertirse en filtro: queda corregida
+para Saldo actual. No añadir filtro temporal o fecha Manual sin especificación y prueba
+de equivalencia. [Referencia canónica](functional-reference-v5.11.md#evidencias-sanitizadas-f1f3-aportadas-por-el-usuario--2026-10-20).
+
+Extremos residuales: exhaustividad Tipo×Control, obligatoriedad por control, signo de
+Objetivo/Manual y detalle de comparación/fecha ausente en histórico mensual. Se registran
+sin restricciones nuevas. Manual sigue conceptual y los motores/histórico siguen en sus
+entregas posteriores. No se reabren Q1–Q8 ni se reclama evidencia ya aportada.
+Se autoriza únicamente actualizar PR #6/documentación y checks. Aprobación final del
+documento, merge e implementación continúan pendientes.

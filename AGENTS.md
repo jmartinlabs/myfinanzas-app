@@ -13,7 +13,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
 - STEP 4 aprobado: cuatro épicas y 30 entregas. STEP 5 autorizado solo para especificar E1.1.
 - E1.1: Q1–Q8 respondidas en specs/01-saldos-control-brainstorming.md; specification
-  actualizada para revisión. No reabrir decisiones; contrastar solo reservas F1–F3.
+  actualizada para revisión con evidencias F1–F3 del usuario. No reabrir decisiones;
+  respetar extremos no demostrados. Saldo actual no filtra por Fecha apertura; histórico
+  mensual sí comprueba esa fecha. No añadir filtro temporal ni fecha Manual por inferencia.
   Aprobación final/merge pendientes; sin desarrollo, otros pasos ni E1.2.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.

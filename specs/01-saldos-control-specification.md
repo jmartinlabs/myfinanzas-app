@@ -1,5 +1,5 @@
 # 01 — E1.1 Saldos y atributos de control: Specification
-Status: IN REVIEW — versión completada para revisión tras Q1–Q8; reservas financieras F1–F3 explícitas.
+Status: IN REVIEW — versión completada para revisión tras Q1–Q8; evidencias sanitizadas F1–F3 incorporadas, con extremos residuales explícitos.
 Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el usuario el 2026-10-20.
 Aprobación final de esta versión, merge e implementación: PENDING / no autorizados.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
@@ -11,7 +11,9 @@ El usuario autorizó actualizar/completar la documentación y la PR #6 tras resp
 Q1–Q8 el 2026-10-20. Sus respuestas están registradas de forma append-only en el
 brainstorming. Esta versión integra esas decisiones y los detalles técnicos menores
 resueltos bajo su autorización. No extiende su aprobación a reglas económicas no
-probadas ni a parámetros/recomendaciones del borrador que no confirmó.
+probadas ni a parámetros/recomendaciones del borrador que no confirmó. Posteriormente
+el usuario contrastó F1–F3 contra el Excel físico y aportó evidencia sanitizada; registro
+append-only en brainstorming y precisión canónica en la referencia funcional.
 
 Se conocen el extracto y la especificación funcional recibida, no el Excel físico ni
 sus manuales originales completos. Solo reglas sanitizadas y fixtures inventados en
@@ -24,17 +26,17 @@ el roadmap, el stack ni P1–P7. Sin implementación, archivos SQL, migraciones 
 | Aspecto | Contrato confirmado de la fuente | Alcance E1.1 especificado |
 | --- | --- | --- |
 | Identidad | Sxxx estable, único, no reutilizable; nombre no es clave | Alta/consulta/edición por ID; generación atómica, al menos tres dígitos y continuidad S1000; Q5 confirmado |
-| Tipo | Exterior, Efectivo, Inversión | Atributo independiente de Control; respetar matriz existente; falta evidencia exhaustiva F1, no imponer restricciones nuevas |
+| Tipo | Exterior, Efectivo, Inversión | Atributo independiente de Control; seis pares utilizados demostrados F1, sin asumir exhaustividad ni invalidez del resto |
 | Control | Exterior, Movimientos, Terminal, No controlado, Inversiones, Manual | Mostrar motor y disponibilidad, no inventar uno |
-| Movimientos | Apertura + entradas − salidas desde vigencia de control | Configuración de apertura/vigencia; cálculo se entrega en E1.4, no en E1.1 |
+| Movimientos | Apertura + entradas − salidas, sin filtro por Fecha apertura en Saldo actual | Configurar apertura/fecha y conservar distinción actual/histórico; cálculo E1.4, no E1.1 |
 | Inversiones + Efectivo | Apertura + entradas − salidas de Movimientos − Compras + Ventas | Configuración, posición no disponible hasta E4.1/E4.2; sin falso cero |
 | Inversiones + Inversión | Valoración agregada de posiciones de inversión | No implementar ni duplicar tblInversionesResumen; hasta E4.3 no disponible |
-| Manual | Valor manual autorizado | Soporte conceptual; no habilitar captura operativa sin semántica de F3; no inventar fecha adicional |
+| Manual | Valor manual autorizado | Valor manual directamente o vacío si ausente; sin fecha efectiva propia. Soporte conceptual, sin habilitar pares no contrastados |
 | Terminal | Financiación por transferencia y gasto desde terminal, sin duplicar compras | Maestro consultable; sin posición monetaria ficticia ni operaciones todavía |
 | No controlado | No fingir posición calculada | Maestro consultable; etiqueta «No controlado», importe no aplicable |
 | Exterior | S000 contraparte técnica, no cuenta patrimonial disponible | Registro de sistema visible como tal; protección confirmada Q3 |
 | Liquidez | Solo Sí integra colchón; independiente de Finalidad/bolsa/permiso | Guardar atributo; sin sumar colchón ni fabricar KPI en E1.1 |
-| Finalidad, Objetivo (€), bolsa, Estado | Independientes de apertura/permiso y entre sí; Q1 confirmado | Objetivo es importe EUR; dominio de Finalidad/Estado y condiciones de Objetivo requieren F2 |
+| Finalidad, Objetivo (€), bolsa, Estado | Independientes de apertura/permiso y entre sí; Q1 confirmado | Dominios F2 recibidos; Objetivo EUR opcional, Estado Activa/Inactiva; no derivar atributos ni rellenar ausencias |
 | Permite salida a Exterior | Regla de salida directa, no inferida del banco o finalidad | Configurar explícitamente; su aplicación a operaciones llega con E1.4/E1.6 |
 
 Para Terminal no se inventa aquí fórmula, apertura ni relación con un banco: fuente
@@ -62,7 +64,7 @@ nuevo tipo de operación ni reemplaza las reglas de valoración de posiciones de
 | --- | --- |
 | ID / S000 técnico | Rechazar cambios de identidad; S000 sin edición ordinaria |
 | Nombre | Renombrar por ID sin reescribir hechos/fotos; no prometer etiquetas congeladas hasta DT4 |
-| Tipo, Control, apertura, inicio control, Manual | Validar/auditar; si altera operaciones históricas, bloquear edición ordinaria hasta rectificación explícita; no prohibir por una relación sin impacto. Manual conserva alcance conceptual F3 |
+| Tipo, Control, apertura, inicio control, Manual | Validar/auditar; si altera operaciones históricas, bloquear edición ordinaria hasta rectificación explícita; no prohibir por una relación sin impacto. Manual conserva alcance conceptual y no tiene fecha independiente |
 | Liquidez, Finalidad, Objetivo, bolsa, permiso | Presentar impacto; no inferir cambios entre atributos. No invalidar retrospectivamente hechos válidos; si puede afectar un cierre, bloquear hasta definir procedimiento DT5 |
 | Desactivar | Validar referencias activas, conservar todas las históricas y rechazar nuevas selecciones una vez inactivo |
 | Reactivar | Validar atributos y relaciones vigentes, sin nuevo ID ni nueva apertura |
@@ -84,9 +86,9 @@ Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 
 | Grupo/entidad lógica propuesta | Datos persistentes candidatos | Restricciones/pendientes |
 | --- | --- | --- |
-| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 cuando informados, sin defaults económicos; dominios/matriz/obligatoriedad F1/F2. ID inmutable en API y protección SQLite; S000 reservado |
-| saldos: datos económicos | apertura_minor INTEGER nullable, inicio_control TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura. Obligación/vigencia F1/F3; no crear fecha Manual no demostrada |
-| saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo (€) confirmado, céntimos exactos; sin defaults ni rango/signo económico supuesto. Finalidad/Estado: conservar valores existentes, sin enum inventado F2; no duplicar Estado en un booleano activo hasta demostrar mapping |
+| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. Sin defaults económicos; obligatoriedad por control no demostrada. ID inmutable en API y protección SQLite; S000 reservado |
+| saldos: datos económicos | apertura_minor INTEGER nullable, inicio_control TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual; obligatoriedad pendiente |
+| saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo opcional en céntimos, sin default cero ni signo impuesto. Finalidad: vacío/Gastos planificados/Ahorro/Inversión. Estado canónico Activa/Inactiva: selección activa deriva de Estado, no otro booleano persistente |
 | saldos: metadatos | revision INTEGER, creado_en TEXT, actualizado_en TEXT | Revisión positiva creciente; instantes UTC; no cambiar fecha económica por timestamp técnico |
 | reserva de identificadores | siguiente número de Saldo, o mecanismo equivalente transaccional | Nunca MAX(id)+1 sin protección; reserva+alta atómicas, códigos conservados tras desactivación; mínimo tres dígitos y extensión S1000 confirmada Q5 |
 | auditoría técnica | entidad/id, acción, revisión previa/nueva, instante UTC, actor, campos cambiados y motivo cuando sensible | Sin contraseña, token, secreto TOTP ni clave; auditoría mínima de acción/campos/revisión sin duplicar cifras financieras ni versionar catálogo; sin panel administrativo nuevo |
@@ -115,8 +117,9 @@ Probar ida/vuelta exacta por encima del entero seguro de JavaScript. Nuevos IDs/
 también se tratan exactamente, sin Number para el contador si supera ese rango seguro.
 
 Admitir aperturas negativas que representen posiciones reales; no aplicar una restricción
-«saldo >= 0». Valor ausente es null, distinto de cero, sin crear Movimientos. Signo y
-obligación de Objetivo/Manual no se extrapolan de la apertura: F2/F3. Rechazar exponentes,
+«saldo >= 0». Valor ausente es null, distinto de cero, sin crear Movimientos. El
+signo de Objetivo/Manual y obligatoriedad por control no se extrapolan de la apertura.
+Objetivo es opcional, sin imponer un CHECK de signo no demostrado. Rechazar exponentes,
 NaN/infinito y formatos ambiguos; formulario admite coma decimal española con conversión
 exacta sin separadores de miles ambiguos; API usa punto. Solo convertir texto/BigInt.
 Cantidades/precios/divisas/cambios de inversión quedan fuera, sin imponerles escala 2.
@@ -125,8 +128,10 @@ Fechas económicas YYYY-MM-DD, fecha civil válida (incluido bisiesto), sin desp
 por zona; instantes técnicos UTC y presentación Europe/Madrid. Mantener separados inicio
 del control, apertura y Manual, sin añadir fecha obligatoria a Manual. No usar el reloj
 como fecha económica ni imponer prohibición de fechas futuras sin evidencia de v5.11.
-La frontera de inclusión y tratamiento de fecha ausente deben contrastarse en F3, no
-asumirlos a partir de «desde vigencia».
+La evidencia F3 establece que Saldo actual NO filtra Movimientos por Fecha apertura;
+el histórico mensual sí comprueba la fecha. No añadir filtro ni fecha Manual. El detalle
+del límite mensual y de fecha ausente no está demostrado: no elegir comparador,
+mes de corte ni sustitución por hoy; contrastarlo en la entrega de histórico.
 
 **Atomicidad y concurrencia — detalles técnicos.** WAL con synchronous=FULL y timeout acotado,
 una conexión de escritura administrada, transacciones breves BEGIN IMMEDIATE para
@@ -142,14 +147,14 @@ transaccional síncrono bun:sqlite.
 **Pros:** importes exactos, identidad visible sin doble clave, rollback y relaciones
 protegidas, conflictos detectables. **Contras:** política de IDs debe durar, int64/JSON
 requiere cuidado y tests, STRICT no valida por sí solo calendarios/reglas financieras;
-las invariantes compuestas siguen en el servicio transaccional. Revisar el esquema completo y reservas F1–F3
+las invariantes compuestas siguen en el servicio transaccional. Revisar el esquema completo y extremos residuales de F1–F3
 antes de traducir a DDL bajo otra autorización. Ningún archivo SQL se añade aquí.
 
 ## Screens and interfaces
 
 Estructura de wireframes aprobada en Q8: listado/ficha/formulario en página propia,
 tabla escritorio/tarjetas móvil, activos por defecto e inactivos consultables. ASCII
-sin pantallas implementadas ni capturas; contenido de campos respeta reservas F1–F3.
+sin pantallas implementadas ni capturas; contenido de campos respeta evidencias F1–F3 y sus límites.
 Usar referencia de identidad de UI guideline con contraste revisado, no asumir que colores
 originales cumplen accesibilidad. Foco visible, etiquetas, mensajes asociados, teclado,
 confirmación con foco y retorno a la acción invocadora. No información solo por color.
@@ -163,7 +168,7 @@ confirmación con foco y retorno a la acción invocadora. No información solo p
 | ID   Nombre         Tipo      Control       Posición       Acciones    |
 | S101 Cuenta demo    Efectivo  Movimientos   No disponible  [Ver]       |
 | S102 Reserva demo   Efectivo  No controlado No aplicable   [Ver]       |
-| Ejemplos ilustrativos; combinaciones fixture requieren evidencia F1.  |
+| Ejemplos ficticios con pares utilizados confirmados por el usuario.   |
 | [Incluir inactivos] [Mostrar contraparte técnica S000]                 |
 +------------------------------------------------------------------------+
 | Ficha: Cuenta demo · S101 (ID no editable)                             |
@@ -195,14 +200,17 @@ está vacío, CTA de alta; S000 se distingue de ese catálogo, no se confunde co
 | Apertura [ ]  Inicio control [ ] |
 | Manual: soporte conceptual      |
 | Liquidez: selección explícita    |
-| Finalidad [pendiente dominio]    |
+| Finalidad [vacío / opciones v]   |
 | Objetivo EUR [____________]     |
 | Mostrar como bolsa: Sí / No      |
 | Permite salida Exterior: Sí / No |
 | [Cancelar]        [Guardar]      |
 +----------------------------------+
 ```
-Formulario final adapta obligatoriedad a evidencia F1–F3; no expone campos irrelevantes como si
+Formulario ofrece Finalidad vacía o Gastos planificados/Ahorro/Inversión, Estado
+Activa/Inactiva y Objetivo (€) opcional. No exige Objetivo ni convierte vacío en cero;
+los tres booleanos son independientes. Obligatoriedad por control no demostrada no
+se completa mediante suposiciones; no expone campos irrelevantes como si
 se debieran rellenar. Edición muestra ID solo lectura, cambios sin guardar avisan antes
 de salir. Error no borra entradas; conflicto ofrece recargar/revisar sin perder borrador.
 Permiso Exterior y Liquidez nunca se activan mutuamente. Antes de desactivar, resumen
@@ -388,7 +396,8 @@ verificado: no se inventa aquí un método bun:sqlite no comprobado.
 ## Validation and edge cases
 Separar esquema/validación estructural que bloquea escritura de discrepancia informativa
  de conciliación. Validar en servidor aunque UI ya valide. Reglas de
-matriz/obligatorios, vigencia y dominios pendientes F1–F3 no se sustituyen por defaults;
+exhaustividad de matriz, obligatoriedad por control y extremos residuales no se
+sustituyen por defaults; dominios F2 y distinción actual/histórico F3 ya están demostrados;
 aperturas negativas y céntimos exactos ya están confirmados.
 
 Casos de prueba: nombres repetidos (aviso no bloqueante, ID distingue),
@@ -408,7 +417,8 @@ No simular estas capacidades en UI ni considerar aprobados por extensión detall
 
 ## Acceptance checks
 TODOS FUTUROS; ninguno ejecutado sobre E1.1. Q1–Q8 tienen respuesta registrada;
-las reservas F1–F3 condicionan únicamente los checks que requieren evidencia financiera.
+las evidencias F1–F3 están incorporadas. Los extremos residuales condicionan únicamente
+los checks que los necesitan; no se interpreta la muestra como matriz exhaustiva.
 IDs estables locales AC-01…; relación con roadmap: E1.1-AC1 => AC-02/03/17;
 E1.1-AC2 => AC-07/08; E1.1-AC3 => AC-09/10/11/12. Tests de motor de inversión quedan
 fuera; se comprueba ausencia de resultado falso, no resultados que todavía no existen.
@@ -421,13 +431,13 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-04 | Desactivar Saldo sin bloqueo y consultar historia; intentar seleccionarlo de nuevo | Historia conserva ID, nuevas selecciones excluyen inactivo; importe no se reajusta |
 | AC-05 | Reactivar mismo Saldo y recargar | Mismo ID/apertura, vuelve a selección; sin hechos nuevos ni ciclo abierto |
 | AC-06 | Consultar/intentar editar/desactivar S000, con Q3 confirmado | Etiqueta técnica y operaciones ordinarias rechazadas, sin posición cero |
-| AC-07 | Cambiar solo Liquidez manteniendo Finalidad, bolsa y permiso | Solo cambia ese atributo; no se recalculan/infieren otros ni se muestra KPI incompleto |
+| AC-07 | Cambiar solo Liquidez manteniendo Finalidad, Objetivo, Estado, bolsa y permiso | Solo cambia ese atributo; no se recalculan/infieren otros ni se muestra KPI incompleto |
 | AC-08 | Cambiar permiso Exterior sin tocar Liquidez | Independencia persistente; no se reescribe validez de hechos históricos |
 | AC-09 | Consultar control Terminal | Motivo de posición no aplicable; sin cero ni duplicación de compras |
 | AC-10 | Consultar No controlado y Exterior | Etiquetas diferenciadas e importe null, sin cero ficticio |
-| AC-11 | Consultar configuración conceptual Manual, no usada actualmente; probar valor/ausencia solo al contrastar contrato F3 | Sin cero inventado ni motor automático; conservar soporte conceptual sin activar captura ni fecha obligatoria no demostradas |
+| AC-11 | Revisar contrato conceptual Manual con fixture de valor y ausencia, sin asignar un Tipo/Manual no contrastado | Valor manual directamente o vacío/null si ausente, sin cero inventado ni fecha efectiva independiente; no habilitar pares no contrastados |
 | AC-12 | Consultar Movimientos/Inversiones en E1.1 | Fuente/configuración visibles; pendiente motor E1.4/E4, no posición calculada inventada |
-| AC-13 | Enviar combinaciones inválidas, fechas irreales, precisión extra o overflow según Q6 confirmado y evidencia F1–F3 | 422 específico sin escritura parcial ni redondeo silencioso |
+| AC-13 | Enviar Tipo/Control desconocidos, fechas irreales, precisión extra u overflow; distinguir de pares no contrastados | 422 específico sin escritura parcial ni redondeo silencioso; no declarar inválido un par solo por no figurar en la muestra |
 | AC-14 | Cambiar apertura/Control/Tipo que altere operaciones históricas en fixture; bloquear por impacto | 409 con Q3 confirmado, datos/relaciones originales intactos; no fingir protección de fuentes aún no entregadas |
 | AC-15 | Dos clientes editan revisión idéntica | Uno guarda; otro recibe conflicto y conserva borrador, sin actualización perdida |
 | AC-16 | Forzar fallo de persistencia/auditoría en actualización | Rollback íntegro de datos/revisión/auditoría, error externo genérico |
@@ -441,6 +451,11 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-24 | Backup durante escrituras confirmadas con fixtures | Snapshot coherente confirmado, integrity/FK válidas, cifrado descifrable con clave externa; sin archivo incompleto publicado |
 | AC-25 | Restaurar a instancia aislada y consultar vía API/UI | IDs/atributos/importes exactos coinciden con corte; acceso/MFA verificados y sesiones/códigos antiguos no resucitan |
 | AC-26 | Simular disco lleno, backup interrumpido, clave incorrecta, snapshot inválido o viejo | Error visible, base original intacta, copias buenas conservadas; no declaración falsa de RPO/RTO |
+| AC-27 | Revisar el catálogo de combinaciones utilizadas F1 en fixtures y su validación | Los seis pares figuran como utilizados; no se declara que sean matriz exhaustiva ni que otros pares sean inválidos; Manual no habilita pares nuevos |
+| AC-28 | Alta/edición ficticia variando Finalidad y Estado y los tres Sí/No independientemente | Finalidad admite vacío/Gastos planificados/Ahorro/Inversión; Estado Activa/Inactiva; no se derivan atributos ni se pierde histórico |
+| AC-29 | Guardar y recargar Saldo ficticio sin Objetivo, luego con importe EUR explícito | Objetivo es opcional y ausencia sigue null, no cero; céntimos exactos; sin reglas de signo inventadas |
+| AC-30 | Revisar contrato de Saldo actual con fixture de apertura 100, entrada anterior a Fecha apertura 20 y salida posterior 5 | Resultado de referencia 115: no excluir la entrada por Fecha apertura. Criterio de contrato para futuro motor E1.4; no motor implementado ni nueva pantalla E1.1 |
+| AC-31 | Revisar contrato histórico con un periodo inequívocamente anterior a Fecha apertura | No mostrar posición anterior; no borrar ni filtrar los Movimientos de Saldo actual. Límite mensual exacto/fecha ausente quedan sin suposición para la entrega del histórico |
 
 ### Plan de prueba futuro con fixtures
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
@@ -453,31 +468,45 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 - Operativas locales aisladas: AC-24…26, escrituras concurrentes, restore a directorio
   nuevo con claves de prueba fuera de Git; medir tiempo y registrar corte/RPO/RTO observado.
 - Fixtures: S000 técnico, nombres «Cuenta demo», «Reserva demo», «Terminal demo» y
-  variantes de cada Control documentado; seleccionar combinaciones válidas al resolver F1.
+  seis pares utilizados contrastados F1; Manual se prueba como contrato conceptual sin
+  inventar combinación Tipo/Manual. No se habilita operativa adicional.
   No tratar todas las combinaciones como válidas ni rechazarlas por una nueva matriz inventada.
-  Ejemplos de aperturas 0, 123.45 y −25.00 confirmadas por Q2/Q6; Objetivo/Manual solo
-  con sus condiciones demostradas. Incluir límites int64 y >2^53 céntimos. Datos no
+  Ejemplos de aperturas 0, 123.45 y −25.00 confirmadas por Q2/Q6; Objetivo opcional (vacío no cero) y Manual directo/vacío,
+  sin imponer signo no demostrado ni inventar registros reales. Incluir límites int64 y >2^53 céntimos. Datos no
   copiados de finanzas reales. Identificadores ficticios no constituyen mapping de migración.
+- AC-27 y AC-30/31 verifican contratos documentados; cálculo actual e histórico se
+  probarán al entregar sus motores. No ampliar E1.1 a ejecutar esos módulos. Añadir
+  equivalencia antes de cualquier filtro temporal nuevo o fecha Manual independiente.
 - Cada AC se marcará pasado/fallido/no ejecutado en etapa de desarrollo autorizada;
   este plan no sustituye evidencia ni autoriza implementarlo. Datos/DB/capturas sensibles fuera de Git.
 
 ## Reservas financieras y trazabilidad
-La revisión vuelve a contrastar el extracto R1/R2/R5/R6 y §4 del adjunto funcional
-v5.11 recibido, sin copiar el original a Git. En esas fuentes figuran Tipos/Controles,
-fórmulas resumidas, S000 y atributos separados; no consta un diccionario completo
-de Saldos. Las afirmaciones de inspección del Excel siguen limitadas: no se ha
-incorporado ni inspeccionado el libro físico ni sus manuales originales completos.
+Evidencias F1–F3 recibidas del usuario el 2026-10-20 tras su inspección directa del
+Excel físico estable. [Procedencia y detalle canónico](functional-reference-v5.11.md#evidencias-sanitizadas-f1f3-aportadas-por-el-usuario--2026-10-20).
+Codex no ha incorporado ni inspeccionado el libro ni sus manuales originales completos.
+La precisión recibida sustituye cualquier formulación previa que implicase filtrar
+Saldo actual «desde vigencia del control» por Fecha apertura.
 
-| Reserva | Demostrado / confirmado | No demostrado; tratamiento y puerta |
+| Evidencia | Demostrado / incorporado | Extremos aún no demostrados; no inventar reglas |
 | --- | --- | --- |
-| F1 — Combinaciones y obligatorios | Tipo Exterior/Efectivo/Inversión y seis controles; S000 técnico; Inversiones/Efectivo e Inversiones/Inversión descritos en §4; Q1 exige preservar combinaciones | Falta matriz exhaustiva y campos obligatorios por control. No inferir restantes pares válidos/inválidos ni inventar restricciones; completar desde referencia sanitizada antes de cerrar validación de alta/edición y fixtures de AC-01/13 |
-| F2 — Dominios y Objetivo | Q1 confirma independencia y Objetivo (€); Q3 confirma desactivación/reactivación | Falta vocabulario de Finalidad/Estado, su correspondencia con activo/inactivo y obligación/signo de Objetivo. Persistencia conceptual tipa Objetivo como céntimos; no inventar enum, doble Estado ni límite financiero; necesario antes de fijar formulario/constraints |
-| F3 — Apertura y Manual | Q2 separa fecha inicio/apertura/Manual; Q6 permite apertura negativa y fechas civiles; §4 dice «según vigencia» | Falta frontera exacta de vigencia y tratamiento de fecha ausente/obligatoriedad por control. Preservar, no asumir inclusión/exclusión o fecha hoy. Manual no se usa: conservar concepto, no añadir fecha/histórico ni habilitar operativa sin contrato. Contrastar apertura antes de implementación; motor en E1.4 también requiere ese contrato |
+| F1 | Utilizados: Exterior/Exterior; Efectivo/Movimientos; Efectivo/Terminal; Efectivo/No controlado; Efectivo/Inversiones; Inversión/Inversiones. Manual existe en fórmula sin registros | La muestra no es matriz exhaustiva de validez; tampoco prueba invalidez de pares restantes. Obligatoriedad por control y otros pares requieren contraste antes de habilitarse; no convertir muestra en restricción universal |
+| F2 | Finalidad vacío/Gastos planificados/Ahorro/Inversión; Estado Activa/Inactiva; Objetivo (€) opcional y actualmente no informado; Liquidez/bolsa/permiso Sí/No, independientes | No demuestra signo de Objetivo ni reglas de cobertura/automatismos; no obligarlo ni inferir atributos. No se generaliza la muestra vacía a prohibir objetivos nuevos |
+| F3 | Apertura es posición inicial; Movimientos=apertura+entradas−salidas sin filtro de Fecha apertura; Inversiones/Efectivo añade Compras/Ventas; Manual directo o vacío sin fecha efectiva propia; Terminal/No controlado/Exterior sin saldo convencional; histórico mensual comprueba Fecha apertura | No consta detalle de comparación mensual, mes de frontera, fecha ausente ni obligatoriedad por control. No cambiar Saldo actual; detalles del histórico se contrastan antes de su implementación. No inventar signo/parejas Manual |
 
-Estas reservas son evidencia funcional pendiente, no autorización para elegir otra regla
-ni impedimento para documentar el resto. No se reabren Q1–Q8; se necesita una descripción
-sanitizada de los detalles existentes, sin importes reales ni originales en Git. Los
-casos de inversión, rectificación y cierre fuera de alcance conservan sus entregas/DT.
+F1–F3 ya no se consideran evidencia ausente en bloque. Los extremos residuales se
+mantienen explícitos, sin nuevas restricciones ni valores por defecto. Para operativas
+que dependan de ellos se necesita únicamente el detalle sanitizado correspondiente,
+no reabrir Q1–Q8 ni reclamar dominios/semánticas que el usuario ya ha aportado.
+Los módulos posteriores conservan sus entregas; registrar contrato no autoriza implementarlos.
+
+### Particularidad obligatoria: actual frente a histórico
+Saldo actual de control Movimientos suma apertura+entradas−salidas sin filtrar por Fecha
+apertura; el histórico mensual comprueba esa fecha para no mostrar posiciones anteriores.
+Esto no es una incoherencia a «corregir» autónomamente: preservar equivalencia. La fecha
+no altera ni borra los hechos registrados. Inversiones/Efectivo conserva además Compras
+y Ventas. No existe fecha efectiva Manual independiente. Ningún filtro nuevo de
+Movimientos por fecha de apertura ni fecha Manual se añade sin especificación y prueba
+de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen abiertos.
 
 ### Trazabilidad de decisiones
 - Q1 -> atributos independientes, Objetivo (€), Manual conceptual y F1/F2.
@@ -491,8 +520,9 @@ casos de inversión, rectificación y cierre fuera de alcance conservan sus entr
   parseo exacto y protecciones estándar de sesión/API, resueltos con la autorización recibida.
 
 ## Puerta de revisión y siguiente acción
-Revisar esta versión completada documentalmente y obtener únicamente la evidencia
-sanitizada F1–F3 aplicable. Aprobación final del documento y merge de PR #6 siguen
-pendientes; responder Q1–Q8 no aprueba automáticamente el texto completo o el esquema
-físico. No declarar E1.1 lista para implementar con validaciones económicas pendientes.
+Presentar la versión actualizada con F1–F3 incorporadas, criterios revisados y evidencia
+de checks. Aprobación final del documento y merge de PR #6 siguen pendientes; ni la
+inspección comunicada por el usuario ni Q1–Q8 aprueban el esquema físico por extensión.
+Antes de habilitar una operativa que necesite un extremo residual, contrastar ese detalle
+sin inventar reglas ni convertir combinaciones observadas en una matriz exhaustiva.
 No iniciar E1.2, código, SQL, migraciones, servicios o STEP 6/7/8 sin autorización.

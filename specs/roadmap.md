@@ -139,7 +139,9 @@ sin datos según decisión DT3; conservar contrato para las tres fuentes de refe
 **Dependencias:** E1.1–E1.3; reglas R2; diseño de protección futura DT5.
 **Aceptación:** E1.4-AC1, Ingreso con Nómina/Bonus/Intereses/Promoción sin Partida;
 E1.4-AC2, Gasto requiere Partida y salida permitida, incluso sin Presupuesto;
-E1.4-AC3, saldo Movimientos respeta apertura/vigencia, sin confundir error estructural y conciliación.
+E1.4-AC3, Saldo actual Movimientos=apertura+entradas−salidas, sin filtro por Fecha apertura;
+el histórico mensual sí comprueba esa fecha según evidencia F3. No confundir error
+estructural y conciliación; no añadir filtros o fecha Manual sin especificación/equivalencia.
 **Pruebas:** S000, relaciones/IDs/duplicados/importes inválidos, permiso Exterior, texto libre
 sin cambiar clasificación, efecto persistido y consulta tras reinicio. Tipos pendientes visibles como no disponibles.
 **Fuera:** cuotas ligadas a Deuda hasta E1.6, cálculo patrimonial completo y SQL decidido por el roadmap.
@@ -517,5 +519,6 @@ El usuario autorizó únicamente la propuesta de especificación de E1.1, sin de
 Ver [ronda de decisiones](01-saldos-control-brainstorming.md) y
 [borrador E1.1](01-saldos-control-specification.md). La parada anterior al STEP 5 quedó
 satisfecha; Q1–Q8 ya tienen respuestas registradas. La especificación actualizada
-conserva reservas de evidencia F1–F3; aprobación final y merge de PR #6 siguen pendientes.
+incorpora evidencias sanitizadas F1–F3 aportadas por el usuario; quedan explícitos
+extremos residuales no demostrados. Aprobación final y merge de PR #6 siguen pendientes.
 Esta actualización de estado no modifica las cuatro épicas ni las 30 entregas aprobadas.

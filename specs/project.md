@@ -92,6 +92,11 @@ rama/PR exclusivamente documental. [Ronda inicial](01-saldos-control-brainstormi
 y [especificación en revisión](01-saldos-control-specification.md). El usuario respondió
 Q1–Q8 y aprobó la estructura visual el 2026-10-20; registro posterior append-only en
 brainstorming. La versión documental integra decisiones y detalles técnicos menores;
-evidencia financiera F1–F3 y aprobación final del documento siguen pendientes. No cerrar alternativas de seguridad, integridad
+el usuario ha aportado después evidencias sanitizadas F1–F3 de su revisión directa
+del Excel estable. Se incorporan en la referencia y especificación, sin inspección
+independiente de Codex; quedan explícitos extremos residuales y la aprobación final
+del documento sigue pendiente. Saldo actual NO filtra por Fecha apertura; histórico
+mensual sí comprueba la fecha. No añadir filtro ni fecha Manual sin especificación
+y prueba de equivalencia. No cerrar alternativas de seguridad, integridad
 o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
 merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.
