@@ -12,8 +12,10 @@ Current stage: 6
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
-- [Contexto v5.11](project.md): sustituye v5.10 contradictoria; confirmado por usuario el 2026-10-20.
-- PR #3 aprobada explícitamente en la misma solicitud; merge 193410d verificado en main.
+- [Contexto v5.11 y base estable vigente](project.md): confirmados por usuario el 2026-10-20;
+  no queda pendiente promoción del Excel. Su incorporación e inspección en Codex siguen pendientes.
+- PR #3 aprobada explícitamente al actualizar inicialmente el contexto a v5.11;
+  merge 193410d verificado en main.
 - STEP 3 autorizado mediante «procede» tras presentar el siguiente paso; [alcance](automated-checks.md).
 - PR #1 y #2 integradas manualmente y repositorio privado: confirmado por usuario, Git y API.
 - [STEP 2 y contexto](context-files.md): autorizados por el usuario el 2026-10-20.
@@ -24,12 +26,12 @@ Current stage: 6
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- Entrega controlada de MyFinanzas2026_v5.11(5).xlsx y documentación asociada v5.11;
-  no se han recibido ni inspeccionado y no se declara una versión estable.
+- Incorporación controlada e inspección dentro del repositorio de Codex del Excel
+  estable vigente y su documentación asociada v5.11; ninguna se ha realizado todavía.
 - Recibir la especificación funcional revisada antes de diseñar el modelo financiero
   definitivo o cerrar el roadmap de STEP 4; el Excel por sí solo no basta.
-- Revisión mediante PR separada de esta actualización documental v5.11; su merge
-  requiere aprobación expresa, independiente de la aprobación ya ejecutada de PR #3.
+- PR #4: el usuario está conforme con el alcance y solicita reflejar la base estable.
+  Tras actualizarla y comprobar CI, esperar su aprobación definitiva antes de merge.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
@@ -45,5 +47,6 @@ Current stage: 6
   No se modificó el alcance aprobado antes de integrar PR #3.
 
 ## Next action
-Esperar aprobación de la PR de actualización documental v5.11 antes de su merge. Detenerse antes de cerrar/aprobar el roadmap STEP 4 o diseñar el
-modelo financiero definitivo. Solicitar/esperar la especificación funcional revisada.
+Esperar aprobación definitiva del usuario de PR #4 después de la corrección documental
+y la nueva comprobación de CI. No hacer merge ni iniciar STEP 4 en esta entrega;
+el modelo financiero definitivo y el roadmap siguen pendientes de la especificación funcional revisada.

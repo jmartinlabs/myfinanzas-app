@@ -56,9 +56,11 @@ El build genera el cliente estático, no un despliegue de producción.
 
 STEP 1, STEP 2 y STEP 3 están integrados en main. STEP 3 automatiza las comprobaciones de
 proyecto, historial, tipos, build y pruebas en CI; [evidencia y estado](specs/automated-checks.md).
-La referencia funcional vigente es v5.11, con base de revisión
-MyFinanzas2026_v5.11(5).xlsx y su documentación asociada; las reglas confirmadas y
-la precedencia sobre v5.10 están en [project.md](specs/project.md). No se ha diseñado
+La referencia funcional vigente es v5.11. MyFinanzas2026_v5.11(5).xlsx es la base
+estable vigente, confirmada por el usuario. El Excel y su documentación asociada
+todavía no se han incorporado ni inspeccionado dentro del repositorio de Codex.
+Las reglas confirmadas y la precedencia sobre v5.10 están en
+[project.md](specs/project.md). No se ha diseñado
 el modelo financiero definitivo ni cerrado el roadmap. Antes de hacerlo se debe
 recibir y revisar la especificación funcional actualizada de MyFinanzas.
 

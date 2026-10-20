@@ -10,10 +10,14 @@ y mantenibilidad. No diseñar reglas financieras nuevas ni inferirlas autónomam
 
 ## Referencia funcional vigente: arquitectura v5.11
 Actualización confirmada por el usuario el 2026-10-20, antes de STEP 4.
-La arquitectura v5.11 sustituye la referencia funcional v5.10. La base de revisión es
-`MyFinanzas2026_v5.11(5).xlsx` y su documentación asociada v5.11, pendientes de entrega
-controlada e inspección. El nombre de este archivo no implica validación integral ni
-confirmación de una versión estable. No se han importado ni analizado datos del Excel.
+La arquitectura v5.11 sustituye la referencia funcional v5.10. El usuario ha confirmado
+expresamente que `MyFinanzas2026_v5.11(5).xlsx` es la **base estable vigente**;
+no es una candidata ni está pendiente de promoción.
+
+El Excel y su documentación asociada v5.11 todavía no se han incorporado ni
+inspeccionado dentro del repositorio de Codex. La estabilidad es una decisión
+confirmada por el usuario; no implica que Codex haya validado o analizado esos
+archivos. No se han importado datos del Excel.
 
 Las reglas v5.10 que contradigan v5.11 quedan sustituidas y no deben aplicarse. No
 reutilizar la lista anterior de documentos v5.10 como referencia funcional vigente.
