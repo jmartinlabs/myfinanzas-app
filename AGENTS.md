@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-El código público contiene solo un walking skeleton local con datos ficticios.
+El repositorio privado contiene solo un walking skeleton local con datos ficticios.
 Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
 
 - Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -11,10 +11,10 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- No avances al siguiente STEP sin autorización. STEP 3 y roadmap están pendientes.
+- No avances al siguiente STEP sin autorización. STEP 3 está autorizado; roadmap espera especificación funcional.
 
 ## Política permanente de Git y GitHub
-Aprobada por el usuario el 2026-10-20. Este repositorio es público; no cambies su visibilidad.
+Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.
 - Gestiona autónomamente Git/GitHub; el usuario no debe ejecutar comandos manuales.
 - Comprueba estado, remoto y rama principal; preserva cambios ajenos y commits locales.
 - Trabaja en una rama específica por STEP o funcionalidad, nunca directamente en main.

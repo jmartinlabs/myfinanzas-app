@@ -1,0 +1,163 @@
+#!/usr/bin/env python3
+"""Positive, negative and legitimate-operation proofs for project/repository checks."""
+import json
+from pathlib import Path
+import runpy
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+validate = runpy.run_path(str(ROOT / 'scripts/check-project'))['validate']
+repository = runpy.run_path(str(ROOT / 'scripts/check-repository'))
+
+
+class ProjectChecks(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name) / 'project'
+        shutil.copytree(ROOT, self.root, ignore=shutil.ignore_patterns(
+            '.git', 'node_modules', 'dist', '.local', '__pycache__', 'artifacts', 'test-results', 'playwright-report'))
+
+    def manifest(self, name, change):
+        path = self.root / name
+        value = json.loads(path.read_text()); change(value)
+        path.write_text(json.dumps(value))
+
+    def test_valid_project(self):
+        self.assertEqual(validate(self.root), [])
+
+    def test_bun_mismatch(self):
+        (self.root / '.bun-version').write_text('0.0.0')
+        self.assertTrue(any(e.startswith('toolchain:') for e in validate(self.root)))
+
+    def test_workspace_missing(self):
+        self.manifest('package.json', lambda p: p.update(workspaces=[]))
+        self.assertTrue(any(e.startswith('workspaces:') for e in validate(self.root)))
+
+    def test_npm_publication(self):
+        self.manifest('apps/web/package.json', lambda p: p.update(private=False))
+        self.assertTrue(any(e.startswith('package:') for e in validate(self.root)))
+
+    def test_unpinned_dependency(self):
+        self.manifest('apps/web/package.json', lambda p: p['dependencies'].update(react='^19.0.0'))
+        self.assertTrue(any(e.startswith('version:') for e in validate(self.root)))
+
+    def test_orm_dependency(self):
+        self.manifest('apps/api/package.json', lambda p: p['dependencies'].update({'drizzle-orm': '1.0.0'}))
+        self.assertTrue(any(e.startswith('orm:') for e in validate(self.root)))
+
+    def test_missing_ci_gate(self):
+        path = self.root / '.github/workflows/validate.yml'
+        path.write_text(path.read_text().replace('bun run typecheck', 'echo skipped'))
+        self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
+
+    def test_unpinned_ci_action(self):
+        path = self.root / '.github/workflows/validate.yml'
+        import re
+        path.write_text(re.sub(r'(actions/checkout)@[0-9a-f]{40}', r'\1@v4', path.read_text()))
+        self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
+
+    def test_ci_write_permission(self):
+        path = self.root / '.github/workflows/validate.yml'
+        path.write_text(path.read_text().replace('contents: read', 'contents: write'))
+        self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
+
+    def test_ci_privileged_event(self):
+        path = self.root / '.github/workflows/validate.yml'
+        path.write_text(path.read_text().replace('pull_request,', 'pull_request_target,'))
+        self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
+
+    def test_browser_server_imports(self):
+        path = self.root / 'apps/web/src/proof.ts'
+        for source in ("import { Database } from 'bun:sqlite'", "import '../../api/src/database'", "import('node:fs')"):
+            with self.subTest(source=source):
+                path.write_text(source)
+                self.assertTrue(any(e.startswith('boundary:') for e in validate(self.root)))
+
+    def test_legitimate_browser_module(self):
+        (self.root / 'apps/web/src/proof.ts').write_text("import './style.css'; export const label = 'Ficticio';")
+        self.assertEqual(validate(self.root), [])
+
+
+class RepositoryChecks(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.git('init', '-q', '--initial-branch=main')
+        (self.root / 'README.md').write_text('Fictional fixture repository.\n')
+        self.commit()
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-C', str(self.root), *args], stderr=subprocess.PIPE)
+
+    def commit(self, message='fixture'):
+        self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'commit', '-qm', message)
+
+    def findings(self):
+        return repository['scan'](self.root)[0]
+
+    def test_clean_repository(self):
+        self.assertEqual(self.findings(), [])
+
+    def test_sensitive_paths(self):
+        for name in ('.env', '.env.local', 'demo.sqlite', 'demo.sqlite-wal', 'data.xlsx', 'export.csv', 'private.pem'):
+            with self.subTest(name=name):
+                self.assertTrue(repository['inspect_path'](name))
+
+    def test_env_example_and_binary_asset_allowed(self):
+        (self.root / '.env.example').write_text('DATABASE_PATH=.local/demo.sqlite\n')
+        (self.root / 'icon.png').write_bytes(b'\x89PNG\r\n\x1a\n')
+        self.commit()
+        self.assertEqual(self.findings(), [])
+
+    def test_renamed_database(self):
+        (self.root / 'notes.dat').write_bytes(b'SQLite format 3\x00' + bytes(20))
+        self.commit()
+        self.assertTrue(any(f[2] == 'sqlite-content' for f in self.findings()))
+
+    def test_deleted_secret_remains_in_history(self):
+        secret = 'gh' + 'p_' + 'a' * 36
+        (self.root / 'source.ts').write_text(secret)
+        self.commit()
+        (self.root / 'source.ts').unlink(); self.commit()
+        self.assertTrue(any(f[2] == 'github-token' for f in self.findings()))
+
+    def test_staged_then_modified_secret(self):
+        path = self.root / 'source.ts'
+        path.write_text('gh' + 'p_' + 'a' * 36); self.git('add', 'source.ts')
+        path.write_text('safe working file')
+        self.assertTrue(any(f[0] == 'index' and f[2] == 'github-token' for f in self.findings()))
+
+    def test_unstaged_secret_in_tracked_file(self):
+        (self.root / 'README.md').write_text('gh' + 'p_' + 'a' * 36)
+        self.assertTrue(any(f[0] == 'working-tree' for f in self.findings()))
+
+    def test_secret_in_commit_message(self):
+        (self.root / 'demo.txt').write_text('fictional')
+        self.commit('gh' + 'p_' + 'a' * 36)
+        self.assertTrue(any(f[1] == '(commit-message)' for f in self.findings()))
+
+    def test_cli_failure_redacts_values(self):
+        secret = 'gh' + 'p_' + 'a' * 36
+        (self.root / 'source.ts').write_text(secret); self.commit()
+        scripts = self.root / 'scripts'; scripts.mkdir()
+        shutil.copy2(ROOT / 'scripts/check-repository', scripts / 'check-repository')
+        result = subprocess.run([str(scripts / 'check-repository')], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertNotIn(secret, result.stdout + result.stderr)
+        self.assertIn('value withheld', result.stderr)
+
+    def test_shallow_history_rejected(self):
+        (self.root / '.git/shallow').write_text(self.git('rev-parse', 'HEAD').decode())
+        with self.assertRaises(ValueError):
+            repository['scan'](self.root)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

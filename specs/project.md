@@ -39,4 +39,7 @@ Planificación inicial; implementación solo tras aprobación del plan.
 Después: bootstrap verificado, arquitectura implementada, guidelines de UI/calidad/
 seguridad y controles automáticos. Respetar los ocho pasos de la plantilla.
 Detenerse antes de las épicas financieras definitivas y solicitar la especificación
-funcional de MyFinanzas para iniciar el roadmap. No se autoriza despliegue ni publicación.
+funcional de MyFinanzas para iniciar el roadmap. No se autoriza despliegue.
+La gestión de ramas, push y PR sí quedó autorizada posteriormente según [AGENTS](../AGENTS.md);
+los merges de cada nueva PR requieren aprobación explícita. El usuario integró STEP 1 y
+STEP 2 manualmente y cambió el repositorio a privado antes de autorizar STEP 3.

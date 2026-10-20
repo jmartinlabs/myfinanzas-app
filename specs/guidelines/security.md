@@ -1,7 +1,7 @@
 # Security guidelines
 
 ## Modelo actual y límites
-Repositorio público; aplicación privada de un único usuario. El bootstrap es exclusivamente
+Repositorio privado por cambio manual del usuario; aplicación de un único usuario. El bootstrap es exclusivamente
 local, con fixtures deterministas sin importes. El esquema técnico no contiene datos reales.
 Fuente: instrucciones del usuario de inicialización y política Git/GitHub, 2026-10-20.
 La política operativa de publicación y aprobación vive solo en [AGENTS](../../AGENTS.md).
@@ -9,7 +9,7 @@ La política operativa de publicación y aprobación vive solo en [AGENTS](../..
 ## Datos y configuración
 Originales financieros, documentos privados, exports y bases con datos reales permanecen
 fuera del repositorio y del historial. Los documentos financieros se entregarán de manera
-controlada para revisión, no se incorporarán automáticamente a este repositorio público.
+controlada para revisión, no se incorporarán automáticamente al repositorio, aunque ahora sea privado.
 No importar MyFinanzas2026_v5.10.xlsx ni inferir reglas de datos no recibidos.
 
 .local, bases SQLite y journals, .env, claves privadas y formatos financieros comunes
@@ -47,5 +47,11 @@ No se considera desplegable a producción el build estático de este bootstrap.
 
 Mantener TLS, firmas y checksums durante instalaciones. No suprimir verificaciones para
 resolver fallos. No hay auditoría de vulnerabilidades de dependencias ejecutada ni garantía
-de ausencia total de secretos por pasar el validador. Añadir controles proporcionados en
-STEP 3 con casos positivos/negativos, sin afirmar que ya están implementados.
+de ausencia total de secretos por pasar el validador. STEP 3 incorpora check-repository:
+revisa nombres sensibles, firmas de SQLite y patrones comunes de credenciales en los
+commits alcanzables desde HEAD, sus mensajes, el índice y los archivos versionados
+del árbol de trabajo. Exige historial completo y oculta los valores en los informes.
+No analiza archivos nuevos sin añadir al índice, no reconoce todas las credenciales
+ni identifica semánticamente cualquier dato financiero real; la revisión manual sigue
+siendo obligatoria según AGENTS. Pruebas con secretos sintéticos y repositorios Git
+temporales demuestran detección de contenido borrado, staged y mensajes de commit.

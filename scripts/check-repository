@@ -1,0 +1,91 @@
+#!/usr/bin/env python3
+"""Review index, tracked working files and reachable commit history; never print values."""
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+SENSITIVE = re.compile(
+    r'(^|/)(\.env(?:\..*)?|id_rsa|id_ed25519|credentials)(?:$|/)|'
+    r'\.(?:xlsx?|csv|ofx|qif|db|sqlite3?|pem|key|p12|pfx)(?:$|-)', re.I)
+PATTERNS = (
+    ('private-key', rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----'),
+    ('github-token', rb'\b(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{30,})\b'),
+    ('aws-key', rb'\bAKIA[A-Z0-9]{16}\b'),
+    ('api-token', rb'\bsk-[A-Za-z0-9_-]{32,}\b'),
+    ('credential-assignment', rb'(?im)^\s*(?:password|api_key|access_token|secret)\s*[:=]\s*[\x22\x27]?[A-Za-z0-9+/=_-]{20,}'),
+    ('url-credentials', rb'https?://[^\s/:]+:[^\s/@]+@'),
+)
+
+
+def inspect_content(data):
+    rules = [name for name, pattern in PATTERNS if re.search(pattern, data)]
+    if data.startswith(b'SQLite format 3\x00'):
+        rules.append('sqlite-content')
+    return rules
+
+
+def inspect_path(path):
+    return bool(SENSITIVE.search(path)) and Path(path).name != '.env.example'
+
+
+def scan(root):
+    root = Path(root)
+    def git(*args):
+        return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+    if git('rev-parse', '--is-shallow-repository').strip() != b'false':
+        raise ValueError('full history required; fetch without shallow depth')
+    findings = set()
+    content_seen = set()
+    commits = git('rev-list', 'HEAD').decode().splitlines()
+    for commit in commits:
+        for rule in inspect_content(git('show', '-s', '--format=%B', commit)):
+            findings.add((commit[:7], '(commit-message)', rule))
+        records = git('ls-tree', '-rz', commit).split(b'\0')
+        for record in records:
+            if not record:
+                continue
+            header, raw_path = record.split(b'\t', 1)
+            mode, kind, oid = header.split()
+            path = raw_path.decode('utf-8', errors='replace')
+            if inspect_path(path):
+                findings.add((commit[:7], path, 'sensitive-path'))
+            if mode == b'120000':
+                findings.add((commit[:7], path, 'symlink-review'))
+            if kind == b'blob' and oid not in content_seen:
+                content_seen.add(oid)
+                for rule in inspect_content(git('cat-file', 'blob', oid.decode())):
+                    findings.add((commit[:7], path, rule))
+    for record in git('ls-files', '--stage', '-z').split(b'\0'):
+        if not record:
+            continue
+        header, raw_path = record.split(b'\t', 1)
+        mode, oid, stage = header.split()
+        path = raw_path.decode('utf-8', errors='replace')
+        if stage != b'0':
+            findings.add(('index', path, 'unmerged-index'))
+        if inspect_path(path):
+            findings.add(('index', path, 'sensitive-path'))
+        if mode == b'120000':
+            findings.add(('index', path, 'symlink-review'))
+        for rule in inspect_content(git('cat-file', 'blob', oid.decode())):
+            findings.add(('index', path, rule))
+        local = root / path
+        if local.is_file() and not local.is_symlink():
+            for rule in inspect_content(local.read_bytes()):
+                findings.add(('working-tree', path, rule))
+    return sorted(findings), len(commits), len(content_seen)
+
+
+if __name__ == '__main__':
+    if len(sys.argv) != 1:
+        sys.exit('Usage: check-repository')
+    try:
+        findings, commits, blobs = scan(Path(__file__).resolve().parents[1])
+    except (OSError, ValueError, subprocess.CalledProcessError) as error:
+        sys.exit(f'Repository inspection could not complete: {type(error).__name__}; full readable history required.')
+    for revision, path, rule in findings:
+        print(f'{revision}: {path}: {rule} (value withheld)', file=sys.stderr)
+    if findings:
+        sys.exit(1)
+    print(f'Repository checks passed: {commits} commits, {blobs} historical blobs, index and tracked working files. Heuristics require manual review too.')

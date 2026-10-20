@@ -1,0 +1,68 @@
+#!/usr/bin/env python3
+"""Check the approved workspace/dependency and browser/server boundaries."""
+import json
+from pathlib import Path
+import re
+import sys
+
+
+def validate(root):
+    root = Path(root)
+    errors = []
+    try:
+        manifest = json.loads((root / 'package.json').read_text())
+        if manifest.get('packageManager') != 'bun@' + (root / '.bun-version').read_text().strip():
+            errors.append('toolchain: packageManager must match .bun-version')
+        if 'apps/*' not in manifest.get('workspaces', []):
+            errors.append('workspaces: apps/* is required')
+        packages = [root / 'package.json', root / 'apps/api/package.json', root / 'apps/web/package.json']
+        orms = {'prisma', '@prisma/client', 'typeorm', 'drizzle-orm', 'sequelize', 'mikro-orm', '@mikro-orm/core'}
+        for path in packages:
+            package = json.loads(path.read_text())
+            if package.get('private') is not True:
+                errors.append(f'package: {path.relative_to(root)} must prevent npm publication')
+            for section in ('dependencies', 'devDependencies'):
+                for name, version in package.get(section, {}).items():
+                    if not re.fullmatch(r'\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?', version):
+                        errors.append(f'version: {name} must have an exact version')
+                    if name in orms:
+                        errors.append(f'orm: {name} conflicts with direct SQL')
+        workflow = (root / '.github/workflows/validate.yml').read_text()
+        gates = ('./scripts/check-repository', './scripts/check-project', './scripts/test-checks',
+                 './scripts/validate-template', './scripts/test-validator',
+                 'bun install --frozen-lockfile', 'bun run typecheck', 'bun run build',
+                 'bun run test', 'bun run test:e2e', 'git show --format= --check HEAD')
+        for command in gates:
+            if not re.search(r'(?m)^\s*(?:-\s+run:\s*)?' + re.escape(command) + r'\s*$', workflow):
+                errors.append(f'ci: missing gate {command}')
+        for required in ('contents: read', 'fetch-depth: 0', 'persist-credentials: false'):
+            if required not in workflow:
+                errors.append(f'ci: missing {required}')
+        if 'pull_request_target' in workflow or re.search(r':\s*write\b', workflow):
+            errors.append('ci: privileged event or write permission is not allowed')
+        for action in re.findall(r'uses:\s*([^\s#]+)', workflow):
+            if not re.fullmatch(r'[^@]+@[0-9a-f]{40}', action):
+                errors.append('ci: actions must use full commit SHAs')
+        for path in (root / 'apps/web/src').rglob('*'):
+            if path.suffix not in ('.ts', '.tsx', '.js', '.jsx'):
+                continue
+            source = path.read_text()
+            imports = re.findall(r'''(?:from\s*|import\s*\(|require\s*\()\s*["']([^"']+)["']''', source)
+            imports += re.findall(r'''\bimport\s*["']([^"']+)["']''', source)
+            for target in imports:
+                resolved = (path.parent / target).resolve()
+                api = (root / 'apps/api').resolve()
+                if target.startswith(('bun:', 'node:')) or (target.startswith('.') and resolved.is_relative_to(api)):
+                    errors.append(f'boundary: browser source imports server code in {path.relative_to(root)}')
+    except (OSError, ValueError, TypeError) as error:
+        errors.append(f'configuration: {type(error).__name__}')
+    return errors
+
+
+if __name__ == '__main__':
+    errors = validate(Path(__file__).resolve().parents[1])
+    for error in errors:
+        print(error, file=sys.stderr)
+    if errors:
+        sys.exit(1)
+    print('Project checks passed: Bun workspaces, exact dependencies, no known ORM, browser/server imports.')
