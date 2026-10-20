@@ -8,10 +8,14 @@ Current stage: 6
 | 3 Architecture | complete | [Arquitectura](guidelines/architecture.md); plan aprobado 2026-10-20 |
 | 4 Bootstrap | complete | [STEP 1](bootstrap.md); el usuario autorizó continuar con STEP 2 |
 | 5 Guidelines | complete | [STEP 2](context-files.md) y [STEP 3](automated-checks.md) integrados; PR #3 aprobada y merge verificado |
-| 6 Roadmap | blocked | STEP 4 pendiente de especificación funcional revisada v5.11; no cerrar ni aprobar roadmap |
+| 6 Roadmap | awaiting-approval | [Roadmap](roadmap.md) propuesto y validado documentalmente; agrupación aprobada, detalle pendiente de PR |
 | 7 Handoff | pending | No declarar inicialización completa antes de las evidencias requeridas |
 
 ## Confirmed decisions
+- STEP 4 autorizado el 2026-10-20: preparar/commitear/publicar PR documental; no implementar ni hacer merge.
+- [Cuatro agrupaciones de épicas](roadmap.md) aprobadas expresamente; la sección 14 anterior del adjunto no las revoca.
+- [Especificación funcional recibida y P1–P7](functional-reference-v5.11.md): fuente leída y trazada; no implica inspección del Excel.
+- PR #4 aprobada e integrada en main: 0f07992; HEAD aprobado aeb867c verificado como ancestro.
 - [Contexto v5.11 y base estable vigente](project.md): confirmados por usuario el 2026-10-20;
   no queda pendiente promoción del Excel. Su incorporación e inspección en Codex siguen pendientes.
 - PR #3 aprobada explícitamente al actualizar inicialmente el contexto a v5.11;
@@ -26,18 +30,17 @@ Current stage: 6
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- Incorporación controlada e inspección dentro del repositorio de Codex del Excel
-  estable vigente y su documentación asociada v5.11; ninguna se ha realizado todavía.
-- Recibir la especificación funcional revisada antes de diseñar el modelo financiero
-  definitivo o cerrar el roadmap de STEP 4; el Excel por sí solo no basta.
-- PR #4: el usuario está conforme con el alcance y solicita reflejar la base estable.
-  Tras actualizarla y comprobar CI, esperar su aprobación definitiva antes de merge.
+- Revisar/aprobar detalle, entregas y dependencias del roadmap propuesto; agrupación ya aprobada.
+- [DT1–DT10](roadmap.md): detalles técnicos/UX/cierre/migración/operación sin elegir; resolver antes de la entrega que dependa de ellos.
+- Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
+- Merge de la nueva PR requiere autorización explícita del usuario. STEP 5 no autorizado.
 
 ## Evidencia de sincronización
 - PR #1 MERGED: 3ea80b2; PR #2 MERGED: f698549. Ambos commits de STEP 1/2 son ancestros de main.
 - GitHub confirma repositorio privado y main como rama principal; API accesible.
 - PR #3 MERGED: 193410d; HEAD c340bad integrado y main actualizado por fast-forward.
-- Actualización documental aislada en docs/myfinanzas-v5.11-context; sin worktree adicional.
+- PR #4 MERGED: 0f07992; main actualizado y árbol limpio antes de STEP 4.
+- Trabajo de roadmap aislado en step-4/roadmap, sin worktree adicional.
 
 ## Evidencia STEP 3
 - 18 regresiones de plantilla y 22 pruebas de controles: pasan.
@@ -46,7 +49,17 @@ Current stage: 6
 - Checks remotos del HEAD aprobado c340bad: success en push y pull_request.
   No se modificó el alcance aprobado antes de integrar PR #3.
 
+## Evidencia STEP 4
+- Original de la especificación leído fuera del checkout; extracto funcional y SHA en referencia sanitizada.
+- Roadmap propone 6+6+6+12 entregas, con AC, pruebas futuras, dependencias y exclusiones.
+- P1–P7 trazadas y P7 operativo posterior a las cuatro épicas, sin doble escritura.
+- Validador y 18 regresiones de plantilla, check-project y 22 pruebas de controles: pasan.
+- Revisión de estructura: 30 entregas con capacidad, dependencias, AC, pruebas futuras y exclusiones.
+- Revisar historia e índice antes de push; comprobar los checks remotos de la PR sin confundirlos con tests financieros futuros.
+- Los criterios/pruebas del roadmap son futuros; no se han implementado ni ejecutado como funcionalidades.
+
 ## Next action
-Esperar aprobación definitiva del usuario de PR #4 después de la corrección documental
-y la nueva comprobación de CI. No hacer merge ni iniciar STEP 4 en esta entrega;
-el modelo financiero definitivo y el roadmap siguen pendientes de la especificación funcional revisada.
+Esperar revisión del usuario de la PR documental del STEP 4; comprobar sus checks
+remotos antes de cualquier merge. La agrupación de épicas ya está aprobada; el detalle
+requiere aprobación expresa. Detenerse antes de STEP 5, SQL definitivo, implementación,
+migración o despliegue.

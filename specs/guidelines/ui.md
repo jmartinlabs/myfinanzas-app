@@ -45,3 +45,10 @@ Rutas y evidencia en [bootstrap](../bootstrap.md). No se ha hecho auditoría WCA
 medición automatizada de contraste ni prueba con lector de pantalla: no afirmar conformidad.
 Futuros cambios visuales deben verificar teclado, foco, contraste y estados afectados,
 además de operar los flujos y capturar/inspeccionar 390px y 1440px según la Skill dev.
+
+## Referencia para las futuras especificaciones de STEP 5
+La especificación funcional recibida aporta la identidad MyFinanzas descrita en
+[R6](../functional-reference-v5.11.md): verde #8DBB2E, cabeceras #CBEA7B, sección
+#DCECB3, fondo #EEF7E8 y texto #2B2B2B. Es una referencia para revisar contraste,
+componentes y wireframes, no una afirmación de que el CSS actual ya la implemente.
+STEP 4 solo planifica UX responsive y pruebas; no modifica estilos ni fija pantallas definitivas.

@@ -11,10 +11,11 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- No avances al siguiente STEP sin autorización. STEP 3 está integrado.
+- No avances al siguiente STEP sin autorización. STEP 4 solo autoriza roadmap y PR documental.
 - Referencia funcional vigente: v5.11 en specs/project.md.
-- No definas el modelo financiero ni cierres/apruebes STEP 4 sin la especificación
-  funcional revisada y aprobación del roadmap; v5.11 prevalece sobre reglas v5.10 contradictorias.
+- Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
+- Cuatro épicas aprobadas; detalle en specs/roadmap.md pendiente de revisión. Sin SQL
+  definitivo, migraciones, despliegue ni STEP 5; no merge hasta aprobación explícita.
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.

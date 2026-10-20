@@ -58,11 +58,13 @@ STEP 1, STEP 2 y STEP 3 están integrados en main. STEP 3 automatiza las comprob
 proyecto, historial, tipos, build y pruebas en CI; [evidencia y estado](specs/automated-checks.md).
 La referencia funcional vigente es v5.11. MyFinanzas2026_v5.11(5).xlsx es la base
 estable vigente, confirmada por el usuario. El Excel y su documentación asociada
-todavía no se han incorporado ni inspeccionado dentro del repositorio de Codex.
+original no se han incorporado ni inspeccionado en Codex. Sí se ha leído la especificación
+funcional adjunta; [referencia sanitizada](specs/functional-reference-v5.11.md).
 Las reglas confirmadas y la precedencia sobre v5.10 están en
 [project.md](specs/project.md). No se ha diseñado
-el modelo financiero definitivo ni cerrado el roadmap. Antes de hacerlo se debe
-recibir y revisar la especificación funcional actualizada de MyFinanzas.
+el modelo financiero definitivo. La agrupación en cuatro épicas está aprobada; el
+[roadmap STEP 4](specs/roadmap.md) propone sus entregas y queda pendiente de revisión.
+Solo documentación y PR: no se ha iniciado STEP 5 ni autorizado implementación.
 
 ## Skills
 Las Skills locales coordinan el trabajo: `$init-project` inicia o reanuda la configuración;

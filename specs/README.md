@@ -5,9 +5,11 @@ The initial plan is approved and STEP 1 is implemented; see [setup progress](set
 and [bootstrap evidence](bootstrap.md). STEP 2 context is documented in
 [context files](context-files.md). STEP 1/2 and [STEP 3 controls](automated-checks.md)
 are merged. The current functional reference and confirmed stable baseline are recorded
-in [project.md](project.md); the workbook and associated documentation have not been incorporated
-or inspected within the Codex repository. The roadmap
-awaits the revised functional specification. Current evidence and next action are recorded in setup progress.
+in [project.md](project.md). The workbook and original associated documentation remain
+outside the repository and have not been inspected by Codex. The functional specification
+attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
+the [STEP 4 roadmap proposal](roadmap.md). Four-epic grouping is approved; detailed planning
+awaits PR review. Current evidence and next action are recorded in setup progress.
 
 | Document | Owns | Created/updated by |
 | --- | --- | --- |
@@ -17,7 +19,8 @@ awaits the revised functional specification. Current evidence and next action ar
 | `guidelines/ui.md` | Applicable interface conventions or explicit not-applicable reason | init-project / dev |
 | `guidelines/quality.md` | Commands, checks, review and Definition of Done | bootstrap / dev |
 | `guidelines/security.md` | Threats, safeguards and authorization boundaries | init-project / dev |
-| `roadmap.md` | Approved product outcomes and epic scope | roadmap |
+| `roadmap.md` | Product outcomes, proposed increments, dependencies, acceptance and approval status | roadmap |
+| `functional-reference-v5.11.md` | Sanitized source provenance, financial rules and confirmed P1–P7 | STEP 4 source review |
 | `NN-slug-brainstorming.md` | Append-only questions and confirmed answers | spec |
 | `NN-slug-specification.md` | Approved behavior, contracts and acceptance checks | spec |
 | `NN-slug-progress.md` | Implementation tasks, evidence and next action | dev |

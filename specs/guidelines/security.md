@@ -10,6 +10,9 @@ La política operativa de publicación y aprobación vive solo en [AGENTS](../..
 Originales financieros, documentos privados, exports y bases con datos reales permanecen
 fuera del repositorio y del historial. Los documentos financieros se entregarán de manera
 controlada para revisión, no se incorporarán automáticamente al repositorio, aunque ahora sea privado.
+En STEP 4 se recibió y revisó una especificación funcional sanitizada; solo su extracto
+funcional sin registros personales se incorpora como referencia. El adjunto original
+permanece fuera del checkout, igual que el Excel físico y sus documentos originales.
 No importar el Excel financiero real ni inferir reglas de datos no recibidos.
 La referencia vigente y su estado de revisión pertenecen a [project.md](../project.md).
 
