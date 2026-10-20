@@ -3,8 +3,11 @@ MyFinanzas App is a derived project in initialization. Product context and techn
 are confirmed in [project.md](project.md) and [architecture](guidelines/architecture.md).
 The initial plan is approved and STEP 1 is implemented; see [setup progress](setup-progress.md)
 and [bootstrap evidence](bootstrap.md). STEP 2 context is documented in
-[context files](context-files.md). STEP 1/2 are merged; [STEP 3 controls](automated-checks.md)
-await PR review. Current evidence and next action are recorded in setup progress.
+[context files](context-files.md). STEP 1/2 and [STEP 3 controls](automated-checks.md)
+are merged. The current functional reference and confirmed stable baseline are recorded
+in [project.md](project.md); the workbook and associated documentation have not been incorporated
+or inspected within the Codex repository. The roadmap
+awaits the revised functional specification. Current evidence and next action are recorded in setup progress.
 
 | Document | Owns | Created/updated by |
 | --- | --- | --- |

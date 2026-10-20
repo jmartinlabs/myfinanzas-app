@@ -10,7 +10,8 @@ La política operativa de publicación y aprobación vive solo en [AGENTS](../..
 Originales financieros, documentos privados, exports y bases con datos reales permanecen
 fuera del repositorio y del historial. Los documentos financieros se entregarán de manera
 controlada para revisión, no se incorporarán automáticamente al repositorio, aunque ahora sea privado.
-No importar MyFinanzas2026_v5.10.xlsx ni inferir reglas de datos no recibidos.
+No importar el Excel financiero real ni inferir reglas de datos no recibidos.
+La referencia vigente y su estado de revisión pertenecen a [project.md](../project.md).
 
 .local, bases SQLite y journals, .env, claves privadas y formatos financieros comunes
 están ignorados. Esa cobertura no detecta contenido privado renombrado o ya versionado;
