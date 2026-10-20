@@ -52,3 +52,13 @@ La especificación funcional recibida aporta la identidad MyFinanzas descrita en
 #DCECB3, fondo #EEF7E8 y texto #2B2B2B. Es una referencia para revisar contraste,
 componentes y wireframes, no una afirmación de que el CSS actual ya la implemente.
 STEP 4 solo planifica UX responsive y pruebas; no modifica estilos ni fija pantallas definitivas.
+
+
+## Revisión visual global previa a desarrollar pantallas
+Fuente: instrucción expresa del usuario al confirmar M1/M2 de E1.1, 2026-10-20.
+La revisión del diseño visual GLOBAL de MyFinanzas será el siguiente paso antes de
+construir pantallas. Estructura de flujos Q8 y contrato de campos M1/M2 confirmados en
+[especificación E1.1](../01-saldos-control-specification.md); no equivalen a aprobar el
+diseño global definitivo. Esta actualización solo registra la secuencia: no inicia esa
+revisión ni implementa CSS, tokens, componentes o pantallas. No reutilizar las capturas
+del bootstrap como validación visual de E1.1.

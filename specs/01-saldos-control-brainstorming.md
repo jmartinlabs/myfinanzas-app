@@ -1,8 +1,8 @@
 # 01 — E1.1 Saldos y atributos de control: Brainstorming
-Status: IN REVIEW — Q1–Q8 respondidas; decisiones confirmadas en el registro posterior.
+Status: IN REVIEW — Q1–Q8 y M1/M2 respondidas; contrato de aplicación confirmado en registros posteriores.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: responder únicamente M1/M2 de la ronda 2 sobre obligatoriedad; sin merge ni implementación.
+Next action: revisar PR #6 actualizada; siguiente paso previsto revisión visual global antes de desarrollar pantallas, sin iniciarla aquí. Sin merge ni implementación.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -303,3 +303,50 @@ Manual previsto sin nuevas parejas habilitadas. Detalle mensual queda para hist�
 conservando Saldo actual sin filtro y sin fechas nuevas. No se solicita una matriz
 universal ni se pregunta de nuevo por dominios/semánticas ya confirmados.
 Próxima acción: respuestas M1/M2 y actualización de matriz; aprobación final/merge no recibidos.
+
+
+## Respuestas confirmadas de Round 2 — M1/M2 — 2026-10-20
+Fuente: mensaje expreso del usuario «Confirmo las decisiones M1 y M2 para la
+especificación E1.1». Este registro posterior sustituye el PENDING de la ronda 2 sin
+reescribir preguntas, recomendaciones, evidencias ni respuestas anteriores.
+**Autoridad:** contrato aprobado para la NUEVA APLICACIÓN; no nuevas afirmaciones sobre
+obligatoriedad física o fórmulas del Excel estable. Q1–Q8 y F1–F3 se conservan.
+
+### M1 — Respuesta confirmada: Fecha apertura y Saldo apertura
+| Tipo / Control demostrado | Fecha apertura | Saldo apertura | Función precisada por el usuario |
+| --- | --- | --- | --- |
+| Exterior / Exterior | No aplicable | No aplicable | S000 técnico y protegido |
+| Efectivo / Movimientos | Opcional | Opcional | Conservar semántica física, sin nuevo filtro temporal |
+| Efectivo / Terminal | Opcional | Opcional | Sin función actual demostrada |
+| Efectivo / No controlado | Opcional | Opcional | Sin función actual demostrada |
+| Efectivo / Inversiones | Opcional | Opcional | Preservar separación de datos y fórmula F3 |
+| Inversión / Inversiones | Opcional | Opcional | Apertura monetaria sin función actual demostrada |
+Confirmed answer: APPROVED — contrato de aplicación; source/date: mensaje del usuario, 2026-10-20.
+
+Ausencia distinta de cero explícito. No introducir filtro por Fecha apertura en Saldo
+actual; histórico mensual conserva su comprobación, sin inventar corte/fecha ausente.
+No prohibir ni eliminar información existente por carecer de función en un motor.
+«No aplicable» no autoriza limpiar datos ni crear una restricción física que los borre.
+Opcionalidad de ambos campos no crea dependencia de informar uno para permitir el otro.
+
+### M2 — Respuesta confirmada: Estado y atributos
+- Estado: Activa por defecto al crear Saldo nuevo; desactivación/reactivación posterior.
+- Finalidad: opcional.
+- Liquidez: Sí/No, elección explícita.
+- Mostrar como bolsa: Sí/No, elección explícita.
+- Permite salida a Exterior: Sí/No, elección explícita.
+- Objetivo (€): opcional.
+Confirmed answer: APPROVED — contrato de aplicación; source/date: mensaje del usuario, 2026-10-20.
+
+Los tres Sí/No son independientes, sin valores inferidos del Tipo/Control ni defaults.
+S000 conserva tratamiento técnico/protegido: no aplicar un alta ordinaria para asignarle
+atributos. Solo Estado tiene el default de creación aprobado; no implica cambiar
+Estados existentes, reactivar registros ni rellenar otros campos.
+
+### Secuencia confirmada y parada
+Se autoriza actualizar documentos/criterios y PR #6, ejecutar checks e informar. Sin
+merge, implementación, SQL ni E1.2. La revisión del diseño visual global de MyFinanzas
+será el siguiente paso ANTES de desarrollar pantallas; se registra, no se inicia aquí.
+La aceptación anterior de estructura de pantallas Q8 no equivale a aprobar ese diseño global.
+M1/M2 quedan respondidas; no volver a formularlas. Aprobación final de esta versión
+completa y merge de la PR siguen pendientes, sin ampliarlos por la aprobación de contrato.

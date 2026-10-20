@@ -1,7 +1,8 @@
 # 01 — E1.1 Saldos y atributos de control: Specification
-Status: IN REVIEW — versión completada para revisión tras Q1–Q8; evidencias sanitizadas F1–F3 incorporadas, con extremos residuales explícitos.
+Status: IN REVIEW — versión completada para revisión tras Q1–Q8; F1–F3 incorporadas y contrato M1/M2 de aplicación aprobado; sin implementación.
 Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el usuario el 2026-10-20.
-Aprobación final de esta versión, merge e implementación: PENDING / no autorizados.
+M1/M2: contrato aprobado por el usuario el 2026-10-20, distinto de evidencia del Excel.
+Aprobación final de esta versión completa, merge e implementación: PENDING / no autorizados.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
 [roadmap E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia funcional](functional-reference-v5.11.md).
@@ -13,7 +14,9 @@ brainstorming. Esta versión integra esas decisiones y los detalles técnicos me
 resueltos bajo su autorización. No extiende su aprobación a reglas económicas no
 probadas ni a parámetros/recomendaciones del borrador que no confirmó. Posteriormente
 el usuario contrastó F1–F3 contra el Excel físico y aportó evidencia sanitizada; registro
-append-only en brainstorming y precisión canónica en la referencia funcional.
+append-only en brainstorming y precisión canónica en la referencia funcional. M1/M2
+se aprobaron después como contrato de la aplicación, no como hechos del Excel. La
+revisión visual global se prevé como siguiente paso antes de desarrollar pantallas.
 
 Se conocen el extracto y la especificación funcional recibida, no el Excel físico ni
 sus manuales originales completos. Solo reglas sanitizadas y fixtures inventados en
@@ -45,91 +48,96 @@ nuevo tipo de operación ni reemplaza las reglas de valoración de posiciones de
 
 ### Matriz compacta de campos y evidencia de validación
 
-Fuente: Q1–Q8 y evidencias sanitizadas F1–F3 aportadas por el usuario; no inspección
-independiente del libro por Codex. Se comparan únicamente los seis pares demostrados.
-El inventario de pares es observacional; una celda no transforma esa muestra en una
-matriz exhaustiva de validez ni demuestra restricciones de pares no observados.
+Fuentes separadas: Q1–Q8, evidencia Excel F1–F3 aportada por el usuario y contrato de
+aplicación M1/M2 aprobado expresamente el 2026-10-20. No se atribuye el contrato nuevo
+al Excel físico, no inspeccionado por Codex. Solo se listan los seis pares demostrados,
+sin convertirlos en una matriz exhaustiva de validez/invalidez de otros pares.
 
-**Leyenda:** **R-C** obligatorio por contrato confirmado de identidad/tipado; **R-T**
-requerido por el contrato técnico de alta ya propuesto, no atribuido al Excel;
-**O-C** opcional expresamente confirmado; **V-C/P** vacío incluido en el dominio
-confirmado, sin demostrar opcionalidad para cada par; **P** obligatoriedad/opcionalidad/no aplicación
-no demostradas; **N-M** no aplica como entrada al motor de Saldo actual de ese control,
-no equivale a prohibición de conservar el campo; **D** derivado, nunca entrada manual;
-**N-C** sin posición convencional, confirmado. Los dominios no demuestran por sí solos
-obligatoriedad. P no significa opcional ni autorización para guardar por defecto.
+**Leyenda:** **R-C** identidad/tipado confirmados; **R-T** nombre requerido por contrato
+técnico ya propuesto, no evidencia Excel; **O-A** opcional por contrato de aplicación;
+**NA-A** no aplicable por contrato de aplicación, sin prohibir conservar datos;
+**DEF-A** Estado Activa por defecto al crear, por contrato de aplicación; **E-A**
+Sí/No de elección explícita obligatoria, independiente y sin default, por contrato de
+aplicación; **SYS** registro técnico protegido, sin alta/edición ordinaria; **N-M**
+no usado como entrada del motor de ese control, no prohibición de almacenamiento;
+**D** resultado derivado, no entrada manual; **N-C** sin posición convencional (F3).
 
 | Campo | Exterior / Exterior | Efectivo / Movimientos | Efectivo / Terminal | Efectivo / No controlado | Efectivo / Inversiones | Inversión / Inversiones |
 | --- | --- | --- | --- | --- | --- | --- |
 | ID, Tipo, Control | R-C, S000 protegido | R-C | R-C | R-C | R-C | R-C |
-| Nombre | R-T, sin edición ordinaria | R-T | R-T | R-T | R-T | R-T |
-| Estado | P | P | P | P | P | P |
-| Finalidad | V-C/P | V-C/P | V-C/P | V-C/P | V-C/P | V-C/P |
-| Objetivo (€) | O-C | O-C | O-C | O-C | O-C | O-C |
-| Liquidez / Mostrar como bolsa / Permite salida a Exterior (cada uno independiente) | P | P | P | P | P | P |
-| Fecha apertura | P | P | P | P | P | P |
-| Saldo apertura | P | P | P | P | P | P |
-| Valor manual | N-M | N-M | N-M | N-M | N-M | N-M |
+| Nombre | R-T / SYS | R-T | R-T | R-T | R-T | R-T |
+| Estado | SYS | DEF-A | DEF-A | DEF-A | DEF-A | DEF-A |
+| Finalidad | O-A / SYS | O-A | O-A | O-A | O-A | O-A |
+| Objetivo (€) | O-A / SYS | O-A | O-A | O-A | O-A | O-A |
+| Liquidez / Mostrar como bolsa / Permite salida a Exterior (cada uno independiente) | SYS | E-A | E-A | E-A | E-A | E-A |
+| Fecha apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
+| Saldo apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
+| Valor manual | N-M / SYS | N-M | N-M | N-M | N-M | N-M |
 | Saldo actual (resultado, no campo de alta) | N-C | D, futuro E1.4 | N-C | N-C | D, futuro E4 | D, futuro E4 |
 
-R-C: ID estable y Tipo/Control identifican cada entidad; asignación de ID en servidor,
-no campo editable por usuario. R-T: nombre no vacío del contrato de formulario existente,
-no evidencia de una restricción física Excel. S000 es registro de sistema protegido,
-no un séptimo flujo de alta/edición; sus atributos desconocidos tampoco reciben defaults.
+M1: en Efectivo/Terminal y Efectivo/No controlado, los dos campos de apertura son
+opcionales sin función actual demostrada. En Inversión/Inversiones ambos son opcionales
+y la apertura monetaria no tiene función actual demostrada. No inventar fórmulas para
+usarlos ni exigir cero. En los cinco pares ordinarios son opcionales de forma independiente:
+puede faltar uno, ambos o ninguno; no exigir completar uno para permitir el otro.
 
-V-C/P: el dominio de Finalidad incluye vacío (F2); eso no demuestra por sí solo
-que sea opcional en cada combinación. No se inventa obligatoriedad condicional.
-O-C: Objetivo es EUR opcional (F2), aunque no existan valores en la base actual. La falta de valores observados no justifica prohibirlos,
-exigirlos, convertirlos en cero ni imponer signo. Aplicar solo representación exacta
-y límites técnicos ya acordados, sin regla financiera de mínimo/máximo inventada.
+NA-A en Exterior/Exterior afecta a aplicabilidad del contrato y formulario; S000 no
+admite alta/edición ordinaria. No imponer un CHECK que prohíba conservar información
+existente, ni limpiar campos sin función demostrada. SYS no inventa valores de Estado,
+Finalidad o indicadores del S000 existente ni le aplica el default de una nueva alta.
 
-N-M describe dependencia de fórmula, no obligatoriedad de almacenamiento: los seis
-controles demostrados no son Manual. No rechazar ni borrar un valor histórico solo
-porque ese motor no lo consuma. Manual queda capacidad prevista sin pareja habilitada,
-con contrato conocido de valor directo/vacío y sin fecha efectiva independiente.
-No crear una fila Manual de alta con Tipo inventado.
+M2: solo Estado dispone del default aprobado Activa para una NUEVA alta ordinaria.
+Desactivar/reactivar cambia Estado sin crear otro ID ni tocar apertura. Finalidad y
+Objetivo son opcionales; no convertir su ausencia en una categoría, importe cero ni
+valor derivado. Los tres Sí/No se eligen expresamente, también cuando se elige No;
+no preseleccionar No/false ni inferirlos de Tipo/Control o de otro atributo.
 
-En particular, no se marca Saldo apertura ni Fecha apertura «no aplicable» porque un
-control no muestre saldo convencional. La evidencia no demuestra ausencia/prohibición
-de esos campos en esos registros. Tampoco se deduce que apertura deba ser cero porque
-falte, o que una fecha ausente invalide operaciones de Saldo actual.
+Detalle técnico de API: en POST, Estado omitido aplica Activa; un null explícito no es
+un Estado válido. Los tres booleanos deben estar presentes con valor válido (false/No
+es elección explícita, distinto de omitido/null). En PATCH, omitir un campo conserva
+su valor; no reaplicar defaults de creación ni exigir reenviar los tres indicadores
+cuando no se modifican. Vaciar un campo opcional es distinto de omitirlo, y sigue la
+protección de impacto histórico Q3. No actualizar o rellenar registros antiguos por defecto.
 
-### Reglas confirmadas frente a observaciones
+R-C: ID estable y Tipo/Control identifican entidad; ID asignado en servidor, no editable.
+R-T: nombre no vacío es contrato técnico del formulario, no restricción física Excel.
+N-M: los seis controles demostrados no son Manual. No rechazar/borrar información
+histórica porque no alimente ese motor. Manual permanece previsto sin pareja habilitada,
+con valor directo/vacío y sin fecha efectiva independiente. No inventar un Tipo/Manual.
+Objetivo mantiene céntimos exactos y límites técnicos acordados, sin mínimo/máximo
+financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunca es cero.
 
-| Naturaleza | Evidencia | Consecuencia permitida en la especificación |
+### Reglas del Excel, observaciones y contrato de aplicación
+
+| Naturaleza / fuente | Evidencia o decisión | Consecuencia permitida |
 | --- | --- | --- |
-| Regla confirmada Q3/Q5 | ID único/inmutable, S000 protegido, sin borrado físico | Validar identidad y preservar relaciones |
-| Regla confirmada F2 | Dominios de atributos, Finalidad vacía y Objetivo opcional; atributos independientes | Validar formato/dominio informado; no inventar obligatoriedad por par de Estado/Finalidad/los tres Sí-No |
-| Regla confirmada Q2/Q6/F3 | Apertura es posición inicial; negativos reales, ausencia distinta de cero; sin filtro de Movimientos por Fecha apertura | Preservar datos y contrato, no generar Movimientos de apertura ni filtro nuevo |
-| Regla confirmada F3 | Manual directo/vacío y sin fecha propia; histórico mensual comprueba Fecha apertura | Mantener contrato y no añadir fecha; corte mensual detallado en entrega correspondiente |
-| Observación de registros F1 | Existen los seis pares listados | Preparar fixtures con esos pares; no afirmar matriz exhaustiva o invalidar los demás |
-| Observación de registros F1/F2 | No hay registros Manual ni objetivos informados | No inferir que Manual sea inexistente, que Objetivo sea prohibido o que sus valores deban ser cero |
-| No aportado | Completitud por campo/registro o validación física de obligatoriedad | Mantener P; no afirmar «todas las filas tienen…» ni traducirlo a NOT NULL |
+| Confirmado Q3/Q5 | ID inmutable, S000 protegido, sin borrado físico | Validar identidad, preservar relaciones |
+| Evidencia funcional F2 | Dominios de atributos, vacío en Finalidad y Objetivo opcional | Conservar dominios; no atribuir a la muestra reglas físicas de obligatoriedad |
+| Evidencia funcional F3 | Apertura es posición inicial; Saldo actual sin filtro por Fecha apertura; Manual directo/vacío sin fecha propia | Preservar semántica, no generar Movimientos de apertura ni fecha/filtro nuevos |
+| Observación F1/F2 | Seis pares utilizados, sin registros Manual ni objetivos informados | Fixtures con pares contrastados; no matriz exhaustiva, no prohibición de objetivos |
+| Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin convertir ausencia en cero ni eliminar información existente |
+| Contrato aprobado M2, aplicación | Estado Activa por defecto al crear; Finalidad/Objetivo opcionales; tres Sí/No explícitos | Validación de alta/edición sin inferencias ni defaults adicionales; S000 protegido |
+| No demostrado del Excel | Obligatoriedad física por registro, exhaustividad de pares, detalle mensual | No atribuir M1/M2 al Excel ni inventar otros controles; no reabrir M1/M2 |
 
-### Dudas materiales de esta ronda — M1 y M2
+### Cierre de M1/M2 y secuencia posterior
 
-**M1 — Apertura por combinación:** para los seis pares demostrados, ¿Fecha apertura y
-Saldo apertura son obligatorios, opcionales o no aplicables al alta/conservación del
-maestro? Si se admite ausencia, basta confirmar que se conserva ausente; no se propone
-cero ni otra fecha. La fórmula conocida no permite deducir obligatoriedad de entrada.
-No se pregunta otra vez si Saldo actual filtra por fecha: está confirmado que NO.
+M1/M2 están respondidas y su contrato de aplicación queda aprobado. No siguen siendo
+preguntas ni requieren confirmar de nuevo su obligatoriedad. El corte mensual detallado
+se contrasta en la entrega de histórico sin cambiar Saldo actual. Nuevos pares y uso
+operativo Manual requieren su propio contraste antes de habilitarse, sin bloquear esta
+ronda ni convertir la muestra en regla universal. No imponer signo a Objetivo por lagunas.
 
-**M2 — Obligatoriedad de atributos:** ¿Estado, Finalidad y cada uno de Liquidez,
-Mostrar como bolsa y Permite salida a Exterior requieren valor explícito al dar de alta
-un Saldo, o admiten vacío en algún par demostrado? Finalidad incluye vacío en su
-dominio, pero no se ha demostrado si hay obligatoriedad condicional por combinación. No elegir Activa/Sí/No por defecto sin confirmación ni
-derivar los campos entre sí. S000 permanece sin edición ordinaria; si tiene excepciones
-de obligatoriedad, se describen como evidencia del registro de sistema, no reglas inventadas.
-
-No abrir una pregunta sobre signo de Objetivo para inventar un CHECK: la falta de
-restricción demostrada no autoriza añadirla. El corte mensual exacto/fecha ausente
-compete a la entrega de histórico, sin cambiar Saldo actual ni bloquear E1.1 por detalle
-de un motor no incluido. Pares nuevos y Manual se contrastarán antes de habilitarse;
-no se necesita convertir la muestra actual en matriz universal para esta ronda.
+El siguiente paso previsto es la revisión del diseño visual GLOBAL de MyFinanzas antes
+de desarrollar pantallas. La estructura Q8 sigue confirmada; no equivale a identidad,
+componentes o pantallas finales aprobados. Esta actualización solo registra esa secuencia,
+no inicia la revisión visual, E1.2 ni implementación. Aprobación final de la versión
+completa y merge de PR #6 continúan pendientes.
 
 ### Ciclo de vida — Q3 confirmado
 1. Alta con atributos explícitos y combinaciones existentes contrastadas en F1; no crear una operación financiera.
-   No predeterminar importe cero, Liquidez o permiso de salida. ID se devuelve al guardar.
+   Estado Activa por defecto al crear; Liquidez/bolsa/permiso exigen elección explícita.
+   Finalidad/Objetivo y aperturas ordinarias opcionales, sin importe cero por defecto.
+   ID se devuelve al guardar; S000 sigue fuera del alta ordinaria.
 2. Consulta por ID y nombre; filtros independientes; ficha de activos e inactivos.
 3. Edición de nombre conserva identidad y relaciones. Actualización exige revisión vigente.
 4. Desactivación es transición de uso futuro, no ajuste monetario ni cierre económico.
@@ -170,8 +178,8 @@ Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 
 | Grupo/entidad lógica propuesta | Datos persistentes candidatos | Restricciones/pendientes |
 | --- | --- | --- |
-| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. Sin defaults económicos; obligatoriedad por par de Estado/Finalidad/los tres booleanos pendiente M2. ID inmutable en API y protección SQLite; S000 reservado |
-| saldos: datos económicos | apertura_minor INTEGER (nulabilidad pendiente M1), fecha_apertura TEXT (nulabilidad pendiente M1), valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual; obligatoriedad pendiente M1 |
+| saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. M2 aplicación: Estado Activa al crear, tres booleanos explícitos sin default; Finalidad opcional. S000 protegido; no rellenar registros anteriores. ID inmutable en API y protección SQLite; S000 reservado |
+| saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
 | saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo opcional en céntimos, sin default cero ni signo impuesto. Finalidad: vacío/Gastos planificados/Ahorro/Inversión. Estado canónico Activa/Inactiva: selección activa deriva de Estado, no otro booleano persistente |
 | saldos: metadatos | revision INTEGER, creado_en TEXT, actualizado_en TEXT | Revisión positiva creciente; instantes UTC; no cambiar fecha económica por timestamp técnico |
 | reserva de identificadores | siguiente número de Saldo, o mecanismo equivalente transaccional | Nunca MAX(id)+1 sin protección; reserva+alta atómicas, códigos conservados tras desactivación; mínimo tres dígitos y extensión S1000 confirmada Q5 |
@@ -202,7 +210,8 @@ también se tratan exactamente, sin Number para el contador si supera ese rango 
 
 Admitir aperturas negativas que representen posiciones reales; no aplicar una restricción
 «saldo >= 0». Valor ausente es null, distinto de cero, sin crear Movimientos. El
-signo de Objetivo/Manual y obligatoriedad por control no se extrapolan de la apertura.
+signo de Objetivo/Manual no se extrapola de la apertura; opcionalidad por par aprobada
+en M1 y validación de atributos en M2 pertenecen al contrato de aplicación.
 Objetivo es opcional, sin imponer un CHECK de signo no demostrado. Rechazar exponentes,
 NaN/infinito y formatos ambiguos; formulario admite coma decimal española con conversión
 exacta sin separadores de miles ambiguos; API usa punto. Solo convertir texto/BigInt.
@@ -239,7 +248,9 @@ antes de traducir a DDL bajo otra autorización. Ningún archivo SQL se añade a
 
 Estructura de wireframes aprobada en Q8: listado/ficha/formulario en página propia,
 tabla escritorio/tarjetas móvil, activos por defecto e inactivos consultables. ASCII
-sin pantallas implementadas ni capturas; contenido de campos respeta evidencias F1–F3 y sus límites.
+sin pantallas implementadas ni capturas; contenido de campos respeta evidencias F1–F3
+y contrato M1/M2. La revisión visual global será el siguiente paso antes de desarrollar
+pantallas; estos wireframes no sustituyen esa revisión ni autorizan implementarla aquí.
 Usar referencia de identidad de UI guideline con contraste revisado, no asumir que colores
 originales cumplen accesibilidad. Foco visible, etiquetas, mensajes asociados, teclado,
 confirmación con foco y retorno a la acción invocadora. No información solo por color.
@@ -280,6 +291,7 @@ está vacío, CTA de alta; S000 se distingue de ese catálogo, no se confunde co
 +----------------------------------+
 | < Saldos · Nuevo / Editar         |
 | Identidad: asignada al guardar   |
+| Estado inicial: Activa          |
 | Nombre [____________________]    |
 | Tipo [v]     Control [v]         |
 | Apertura [ ]  Fecha apertura [ ] |
@@ -294,8 +306,9 @@ está vacío, CTA de alta; S000 se distingue de ese catálogo, no se confunde co
 ```
 Formulario ofrece Finalidad vacía o Gastos planificados/Ahorro/Inversión, Estado
 Activa/Inactiva y Objetivo (€) opcional. No exige Objetivo ni convierte vacío en cero;
-los tres booleanos son independientes. La obligatoriedad pendiente M1/M2 no
-se completa mediante suposiciones; no expone campos irrelevantes como si
+Estado Activa por defecto al crear, aprobado en M2. Los tres booleanos son independientes y exigen
+elección explícita sin preselección. Aperturas ordinarias opcionales según M1, sin
+campos editables de apertura para S000; no expone campos irrelevantes como si
 se debieran rellenar. Edición muestra ID solo lectura, cambios sin guardar avisan antes
 de salir. Error no borra entradas; conflicto ofrece recargar/revisar sin perder borrador.
 Permiso Exterior y Liquidez nunca se activan mutuamente. Antes de desactivar, resumen
@@ -481,8 +494,8 @@ verificado: no se inventa aquí un método bun:sqlite no comprobado.
 ## Validation and edge cases
 Separar esquema/validación estructural que bloquea escritura de discrepancia informativa
  de conciliación. Validar en servidor aunque UI ya valide. Reglas de
-exhaustividad de matriz, obligatoriedad por control y extremos residuales no se
-sustituyen por defaults; dominios F2 y distinción actual/histórico F3 ya están demostrados;
+exhaustividad de matriz y extremos residuales de motores posteriores no se
+sustituyen por defaults; M1/M2 ya resuelven obligatoriedad para la aplicación; dominios F2 y distinción actual/histórico F3 ya están demostrados;
 aperturas negativas y céntimos exactos ya están confirmados.
 
 Casos de prueba: nombres repetidos (aviso no bloqueante, ID distingue),
@@ -537,11 +550,15 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-25 | Restaurar a instancia aislada y consultar vía API/UI | IDs/atributos/importes exactos coinciden con corte; acceso/MFA verificados y sesiones/códigos antiguos no resucitan |
 | AC-26 | Simular disco lleno, backup interrumpido, clave incorrecta, snapshot inválido o viejo | Error visible, base original intacta, copias buenas conservadas; no declaración falsa de RPO/RTO |
 | AC-27 | Revisar el catálogo de combinaciones utilizadas F1 en fixtures y su validación | Los seis pares figuran como utilizados; no se declara que sean matriz exhaustiva ni que otros pares sean inválidos; Manual no habilita pares nuevos |
-| AC-28 | Alta/edición ficticia variando Finalidad y Estado y los tres Sí/No independientemente | Finalidad admite vacío/Gastos planificados/Ahorro/Inversión; Estado Activa/Inactiva; no se derivan atributos ni se pierde histórico |
+| AC-28 | Alta/edición ficticia con Finalidad vacía y con sus valores, Estado y tres Sí/No independientes | Finalidad opcional, Estado Activa si se omite en nueva alta; los tres Sí/No explícitos, sin inferencias ni pérdida de histórico. PATCH omitido conserva valor |
 | AC-29 | Guardar y recargar Saldo ficticio sin Objetivo, luego con importe EUR explícito | Objetivo es opcional y ausencia sigue null, no cero; céntimos exactos; sin reglas de signo inventadas |
 | AC-30 | Revisar contrato de Saldo actual con fixture de apertura 100, entrada anterior a Fecha apertura 20 y salida posterior 5 | Resultado de referencia 115: no excluir la entrada por Fecha apertura. Criterio de contrato para futuro motor E1.4; no motor implementado ni nueva pantalla E1.1 |
 | AC-31 | Revisar contrato histórico con un periodo inequívocamente anterior a Fecha apertura | No mostrar posición anterior; no borrar ni filtrar los Movimientos de Saldo actual. Límite mensual exacto/fecha ausente quedan sin suposición para la entrega del histórico |
-| AC-32 | Revisar validaciones de formulario/API y futura nulabilidad contra la matriz compacta y respuestas M1/M2 | Solo reglas confirmadas o contrato técnico identificado; celdas P no se convierten en NOT NULL, opcionalidad, no aplicabilidad, defaults ni rechazo financiero por inferencia |
+| AC-32 | Revisar matriz, validaciones y futura nulabilidad contra M1/M2 | O-A, NA-A, DEF-A y E-A identificados como contrato aprobado de aplicación; separados de evidencia Excel y observaciones; sin preguntas M1/M2 pendientes ni restricciones por inferencia |
+| AC-33 | En cada uno de los cinco pares ordinarios, alta ficticia omitiendo Fecha apertura/Saldo apertura, luego solo uno y luego ambos con apertura cero explícito o negativa | Altas válidas según M1 con datos restantes válidos; campos independientes, ausencias preservadas y cero/negativo conservados exactamente; sin Movimiento/filtro por fecha creado |
+| AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico |
+| AC-35 | Nueva alta sin Estado y con tres elecciones explícitas, probando No/false; repetir omitiendo o enviando null en cada indicador | Estado inicial Activa si omitido; false es elección válida. Ausencia/null del indicador rechaza alta sin escritura parcial; sin inferir de Tipo/Control. PATCH omite y conserva, no reinicializa Estado |
+| AC-36 | Revisar secuencia de entrega antes de empezar pantallas | Revisión del diseño visual global registrada como siguiente paso y pendiente antes del desarrollo de pantallas; estructura Q8 no se interpreta como diseño global aprobado ni permiso de implementación |
 
 ### Plan de prueba futuro con fixtures
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
@@ -577,10 +594,11 @@ Saldo actual «desde vigencia del control» por Fecha apertura.
 | --- | --- | --- |
 | F1 | Utilizados: Exterior/Exterior; Efectivo/Movimientos; Efectivo/Terminal; Efectivo/No controlado; Efectivo/Inversiones; Inversión/Inversiones. Manual existe en fórmula sin registros | La muestra no es matriz exhaustiva de validez; tampoco prueba invalidez de pares restantes. Obligatoriedad por control y otros pares requieren contraste antes de habilitarse; no convertir muestra en restricción universal |
 | F2 | Finalidad vacío/Gastos planificados/Ahorro/Inversión; Estado Activa/Inactiva; Objetivo (€) opcional y actualmente no informado; Liquidez/bolsa/permiso Sí/No, independientes | No demuestra signo de Objetivo ni reglas de cobertura/automatismos; no obligarlo ni inferir atributos. No se generaliza la muestra vacía a prohibir objetivos nuevos |
-| F3 | Apertura es posición inicial; Movimientos=apertura+entradas−salidas sin filtro de Fecha apertura; Inversiones/Efectivo añade Compras/Ventas; Manual directo o vacío sin fecha efectiva propia; Terminal/No controlado/Exterior sin saldo convencional; histórico mensual comprueba Fecha apertura | No consta detalle de comparación mensual, mes de frontera, fecha ausente ni obligatoriedad por control. No cambiar Saldo actual; detalles del histórico se contrastan antes de su implementación. No inventar signo/parejas Manual |
+| F3 | Apertura es posición inicial; Movimientos=apertura+entradas−salidas sin filtro de Fecha apertura; Inversiones/Efectivo añade Compras/Ventas; Manual directo o vacío sin fecha efectiva propia; Terminal/No controlado/Exterior sin saldo convencional; histórico mensual comprueba Fecha apertura | No consta detalle de comparación mensual, mes de frontera o fecha ausente; obligatoriedad de aplicación ya resuelta en M1, sin atribuirla al Excel. No cambiar Saldo actual; detalles del histórico se contrastan antes de su implementación. No inventar signo/parejas Manual |
 
 F1–F3 ya no se consideran evidencia ausente en bloque. Los extremos residuales se
-mantienen explícitos, sin nuevas restricciones ni valores por defecto. Para operativas
+mantienen explícitos, sin restricciones nuevas ni defaults salvo Estado Activa de alta,
+aprobado para la aplicación en M2. M1/M2 no son extremos pendientes. Para operativas
 que dependan de ellos se necesita únicamente el detalle sanitizado correspondiente,
 no reabrir Q1–Q8 ni reclamar dominios/semánticas que el usuario ya ha aportado.
 Los módulos posteriores conservan sus entregas; registrar contrato no autoriza implementarlos.
@@ -606,11 +624,10 @@ de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen a
   parseo exacto y protecciones estándar de sesión/API, resueltos con la autorización recibida.
 
 ## Puerta de revisión y siguiente acción
-Presentar la versión actualizada con F1–F3 incorporadas, criterios revisados y evidencia
-de checks. Aprobación final del documento y merge de PR #6 siguen pendientes; ni la
-inspección comunicada por el usuario ni Q1–Q8 aprueban el esquema físico por extensión.
-Antes de habilitar una operativa que necesite un extremo residual, contrastar ese detalle
-sin inventar reglas ni convertir combinaciones observadas en una matriz exhaustiva.
-La ronda de cierre se limita a [M1/M2](#dudas-materiales-de-esta-ronda--m1-y-m2);
-no exigir decisiones de motores posteriores o nuevas restricciones de Objetivo.
-No iniciar E1.2, código, SQL, migraciones, servicios o STEP 6/7/8 sin autorización.
+Presentar la versión con contrato aprobado M1/M2, criterios revisados y resultados de
+checks. M1/M2 cerradas; no equivalen a aprobación final del documento completo ni a
+permiso de merge o esquema SQL. Las evidencias Excel y contrato nuevo permanecen separados.
+Siguiente paso previsto: revisión del diseño visual global ANTES de desarrollar pantallas;
+registrarla no es iniciarla. No merge, implementación, SQL, migraciones, servicios,
+E1.2 u otros STEPS. Pares nuevos, Manual operativo y detalle de histórico se contrastan
+cuando corresponda, sin reabrir decisiones aprobadas ni añadir restricciones a Objetivo.

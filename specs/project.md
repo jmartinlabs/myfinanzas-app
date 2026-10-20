@@ -101,10 +101,13 @@ y prueba de equivalencia. No cerrar alternativas de seguridad, integridad
 o reglas económicas por suposición. Sin código, DDL, migraciones, nuevos servicios,
 merge, E1.2 ni otros pasos. El permiso de elaborar esta propuesta no aprueba su contenido.
 
-Revisión posterior de PR #6/b47bfd1: favorable funcional/técnicamente, sin aprobación
-final. El usuario solicita una [matriz compacta de validación](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación).
-Solo M1 (Fecha apertura/Saldo apertura) y M2 (Estado/Finalidad/tres Sí-No) requieren confirmación
-de obligatoriedad para esta ronda. La muestra de registros no es una regla de obligatoriedad
-ni matriz exhaustiva. Objetivo opcional sin restricciones inventadas y Manual previsto,
-sin habilitar uso no demostrado. La denominación física Fecha apertura se conserva;
-sin segunda fecha de control, filtros temporales nuevos o conversión de ausencia en cero.
+Revisión posterior de PR #6: favorable funcional/técnicamente, seguida de confirmación
+expresa M1/M2 el 2026-10-20. La [matriz de validación](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación)
+registra contrato aprobado para la aplicación: aperturas no aplicables Exterior, opcionales
+en otros cinco pares; Estado Activa por defecto al crear, Finalidad/Objetivo opcionales,
+tres Sí/No explícitos e independientes. No se atribuye ese contrato a reglas físicas
+del Excel. No eliminar información existente sin función en un motor, convertir ausencia
+en cero ni introducir filtro temporal o fecha Manual. M1/M2 quedan cerradas.
+Aprobación final del documento completo y merge pendientes. Siguiente paso previsto:
+revisión del diseño visual global antes de desarrollar pantallas. Esta actualización
+no inicia esa revisión ni autoriza implementación, SQL, migraciones o E1.2.
