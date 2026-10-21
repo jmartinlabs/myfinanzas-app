@@ -46,6 +46,8 @@ function verifyProductionDatabase(path: string) {
 export function openDatabase(path: string, productionBootstrap = false) {
   const env = process.env.NODE_ENV;
   if (env === "production") {
+    if (productionBootstrap && existsSync(path))
+      throw new Error("La base productiva ya existe; no se modificará.");
     if (!productionBootstrap) verifyProductionDatabase(path);
   } else if (productionBootstrap || !["development", "test"].includes(env ?? "")) {
     throw new Error(
