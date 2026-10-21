@@ -161,3 +161,14 @@ aprobado de spec. [Brainstorming](03-ciclos-financiados-brainstorming.md) reúne
 y criterios condicionados, no decisiones financieras asumidas. Próxima acción:
 respuestas a ronda breve y revisión de la misma PR. Sin dev 03/SQL ejecutado/merge,
 E2.1, motores, Nómina, datos reales ni despliegue. Excel v5.11 permanece maestro.
+
+
+### E1.3 — respuestas y base visual recibidas, cierre documental pendiente
+Q1–Q3 confirmadas por usuario tras revisión física de Álex. Corrección material Q2:
+mes financiado único demostrado en Control ciclo, además de Inicio único/obligatorio
+y saldo comida obligatorio; cero/negativos explícitos válidos. Cabecera por referencia,
+sin corte inventado; Fin conservado sin hechos. Wireframes aceptados como base.
+[Brainstorming](03-ciclos-financiados-brainstorming.md) conserva historia y respuestas;
+[especificación](03-ciclos-financiados-specification.md) define 24 criterios: 21 actuales
+y 3 contratos futuros, sin pruebas de E1.3 ejecutadas. PR #12 permanece Draft;
+siguiente acción: aprobación final y autorización dev 03, sin implementación/merge.

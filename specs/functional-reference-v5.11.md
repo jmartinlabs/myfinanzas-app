@@ -252,3 +252,17 @@ alcance global, sin distinción de mayúsculas, sin eliminación de tildes/espac
 App conserva texto y trata * y ? literalmente, sin trasladar comodines de COUNTIF.
 Detalles/casos en [especificación 02](02-clasificacion-specification.md) y testplan;
 no se declara equivalencia de collation Excel para todo Unicode sin pruebas.
+
+
+## Evidencia de Control ciclo y decisiones E1.3 — 2026-10-21
+Fuente: usuario comunica contraste de Álex con libro estable/Criterios; no inspección
+independiente de Codex. Control ciclo exige Inicio y saldo inicial comida informados,
+Inicio y Ciclo financiado no duplicados, corte aplicable y Fin no anteriores a Inicio.
+`COUNTIF(tblCiclos[Ciclo financiado],[@[Ciclo financiado]])>1` da
+`ERROR · Ciclo duplicado`: unicidad de mes/año financiado, incluso con Inicios distintos.
+Saldo inicial explícito admite cero y negativos; no prohibición de signo demostrada.
+Q1 confirma actual por intervalo de referencia, ausencia sin referencia, abierto
+anticipado distinto de actual y sin corte aplicable si referencia anterior a Inicio.
+Fin derivado se mantiene sin hechos. Alta solo posterior es contrato app confirmado,
+no fórmula adicional atribuida al libro; inserciones/rectificaciones quedan en E2.1.
+Registro y aceptación trazados en [spec 03](03-ciclos-financiados-specification.md).
