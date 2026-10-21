@@ -188,9 +188,26 @@ test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauraci
     await navigate("/movimientos");
     await page.setViewportSize({ width: 390, height: 844 });
     await shot("empty-mobile");
+    // Hold the real options request to exercise the loading boundary before tabbing.
+    let releaseOptions!: () => void;
+    const optionsReady = new Promise<void>((resolve) => {
+      releaseOptions = resolve;
+    });
+    await page.route("**/api/movimientos/opciones", async (route) => {
+      await optionsReady;
+      await route.fallback();
+    });
     await page
       .getByRole("button", { name: "Nuevo movimiento", exact: true })
       .click();
+    const register = page.getByRole("button", {
+      name: "Registrar movimiento",
+      exact: true,
+    });
+    await expect(register).toBeDisabled();
+    await expect(
+      page.getByRole("heading", { name: "Nuevo movimiento", exact: true }),
+    ).toBeFocused();
     const type = page.getByLabel("Tipo *", { exact: true }),
       date = page.getByLabel("Fecha económica *", { exact: true }),
       money = page.getByLabel("Importe (€) *", { exact: true }),
@@ -198,6 +215,9 @@ test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauraci
     await expect(type).toHaveValue("");
     await expect(date).toHaveValue("");
     await expect(money).toHaveValue("");
+    releaseOptions();
+    await expect(register).toBeEnabled();
+    await page.unroute("**/api/movimientos/opciones");
     await page.getByRole("button", { name: "Cancelar", exact: true }).focus();
     await page.keyboard.press("Tab");
     await expect(

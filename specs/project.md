@@ -288,8 +288,9 @@ CI posterior SUCCESS; 29 criterios verificados y AC-30–33 conservados como fut
 Usuario autoriza exclusivamente especificación/diseño E1.5 y publicación en PR Draft.
 Rama spec/05-transferencias-referencias desde main a693aeb. [Brainstorming 05](05-transferencias-referencias-brainstorming.md)
 y [propuesta con wireframes](05-transferencias-referencias-specification.md) DRAFT/NO APROBADOS:
-Q1 elegibilidad de Transferencias, Q2 matriz real de Referencias, Q3 fechas futuras pendientes.
-30 candidatos actuales condicionados y 3 contratos futuros; ninguna prueba E1.5 ejecutada.
-Siguiente acción: revisión de Álex/respuestas y aprobación posterior del documento completo.
+Q1–Q3 confirmadas por usuario: internas sin permiso Exterior; toda Transferencia Exterior
+reservada; matriz CAT011/012/013/014/009 y compatibilidad solo obligatoria; fechas Madrid sin futuro.
+30 criterios actuales previstos y 3 contratos futuros; ninguna prueba E1.5 ejecutada.
+Siguiente acción: revisión final de Álex y aprobación posterior del documento completo.
 Sin dev 05, SQL, merge, datos reales ni despliegue. Excel v5.11 sigue maestro.
 Los estados de desarrollo/revisión anteriores son históricos, no el estado vigente.

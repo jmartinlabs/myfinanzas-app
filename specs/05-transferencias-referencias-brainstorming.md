@@ -1,9 +1,9 @@
 # 05 — E1.5 Transferencias y Referencias: Brainstorming
-Status: DRAFT — NO APROBADO. Ronda única pendiente; no autoriza desarrollo.
+Status: DRAFT — NO APROBADO. Q1–Q3 resueltas; revisión final pendiente, sin desarrollo.
 Roadmap/context: [E1.5](roadmap.md#e15--transferencias-y-referencias-básicas-estables),
 [referencia R1–R4/P2](functional-reference-v5.11.md), [propuesta](05-transferencias-referencias-specification.md).
 Base: main a693aeb, E1.4 cerrada mediante PR #15/#16. Fecha: 2026-10-21.
-Next action: contrastar Q1–Q3, revisar wireframes y aprobar posteriormente el documento completo.
+Next action: revisión final de Álex y aprobación expresa del documento completo/wireframes.
 
 ## Autorización y decisiones ya confirmadas
 Usuario autoriza exclusivamente spec 05 y publicación de una PR Draft sin aprobación previa,
@@ -79,3 +79,60 @@ Feedback del usuario/Álex: PENDING. Son propuesta documental, no capturas reale
 ## Append-only clarifications
 Pendientes respuestas Q1–Q3 y revisión final. Añadir confirmaciones con procedencia/fecha;
 no sobrescribir la ronda ni confundir recomendación marcada con aprobación.
+
+
+## Confirmaciones posteriores — Q1–Q3 resueltas, 2026-10-21
+Fuente: comunicación expresa del usuario tras revisión favorable de Álex de PR #17.
+Este registro sustituye recomendaciones y pendientes anteriores sin borrar la ronda original.
+
+**Q1 confirmada:** Transferencias internas entre dos Saldos activos, distintos y elegibles.
+No aplicar Permite salida a Exterior; no excluir automáticamente Terminal ni No controlado.
+TODAS las Transferencias con Exterior quedan para una entrega posterior, también las
+ordinarias, no solo Anticipos/Compartidos E3. No habilitar Manual por extensión.
+
+**Q2 confirmada por evidencia sanitizada del usuario:**
+| Categoría ID | Tipo referencia | Obligación |
+| --- | --- | --- |
+| CAT011 | Viaje | Obligatoria |
+| CAT012 | Anticipo | Obligatoria |
+| CAT013 | Gasto compartido | Obligatoria |
+| CAT014 | Evento | Opcional |
+| CAT009 | Vehículo | Opcional |
+Toda REF informada debe existir. Solo donde la regla física exige Referencia se exige
+compatibilidad Categoría–Tipo; no endurecer referencias opcionales. En Ingreso/Transferencia
+sin Partida no inventar Categoría ni mapping obligatorio. Restricciones particulares
+independientes: Anticipo solo Transferencia; Compartido admite Gasto o Transferencia,
+con origen Exterior y Quién paga en esta última. E1.5 no habilita tipos con fichas E3
+ausentes, ni permite saltarse ese bloqueo mediante Referencia opcional. Viaje/Evento
+siguen los tipos operativos del roadmap; matriz no crea Categorías ni hechos nuevos.
+No afirmar cardinalidad universal ni nuevas filas a partir de estas cinco evidencias.
+
+**Q3 confirmada como nueva decisión app:** Transferencias sin fechas futuras, fecha
+civil Europe/Madrid en cliente y servidor. No regla física Excel; no modifica Ciclos
+futuros ni la Fecha de referencia financiera derivada de hechos vigentes.
+
+Criterios actualizados: 30 actuales previstos, 3 futuros, sin condicionantes Q pendientes.
+Los criterios siguen NO ejecutados para E1.5; diseño y documento completo aún no aprobados.
+La propuesta de Estado/Tipo protegido de REF permanece identificada como app, no Excel.
+Siguiente acción: revisión final en PR #17 Draft; sin dev 05, SQL, merge ni despliegue.
+
+
+## Investigación de CI y validación de revisión — 2026-10-21
+PR #17 inicial 501f993: push SUCCESS, pull_request FAILURE en test:e2e (run39634000748).
+El usuario identifica fallo de foco de Registrar movimiento. Metadatos GitHub confirman
+el paso fallido; descarga del log completo bloqueada por HTTP403, sin afirmar su lectura.
+Inspección: formulario aparece antes de options; el botón está disabled hasta recibirlas,
+pero el test intentaba Tab sin esperar enabled. Un botón disabled no participa en tabulación;
+además el shell enfoca h1 en requestAnimationFrame durante navegación.
+Corrección autorizada SOLO en test existente: retener petición real de opciones con promesa,
+comprobar disabled y foco inicial del título; liberar/fallback al servidor real, esperar
+enabled y mantener exactamente la aserción de foco del botón después de Tab desde Cancelar.
+Esto ejercita determinísticamente la frontera de carga que podía causar la carrera;
+no se afirma una reproducción del log remoto inaccesible. Sin sleeps, retries nuevos,
+aumento de timeout, eliminación de aserciones ni cambios funcionales/SQL.
+Resultados locales: typecheck PASS; suite Playwright completa 2 PASS (E1.1–E1.4), incluido
+caso de carga retenida y restauraciones reales. validate-template, 18 regresiones del
+validador, check-project, 22 regresiones de controles y diff --check PASS.
+Las pruebas E1.5 siguen previstas, no ejecutadas: esto verifica la regresión existente,
+no implementación de Transferencias/Referencias. La evidencia CI del SHA final se registra
+en PR #17 para no alterar de nuevo el commit validado. PR permanece Draft/NO APROBADA.
