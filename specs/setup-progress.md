@@ -1,6 +1,15 @@
 # Setup progress
 Current stage: 7
 
+## Especificación técnica 31 — aprobada, 2026-10-21
+
+El usuario aprueba íntegramente D1–D4 y AC-01–33 tras revisión con Álex y autoriza
+`$dev 31` al completar `$spec`. Fuente: mensaje expreso en esta conversación.
+[Decisiones y aprobación](31-sqlite-produccion-brainstorming.md) /
+[contrato aprobado](31-sqlite-produccion-specification.md). PR #23 documental;
+implementación independiente y sin merge autorizado. Se preservan los registros
+históricos inferiores. Sin VPS/deploy/datos reales ni modificaciones a #21/#22.
+
 | Stage | Status | Evidence / canonical decision links |
 | --- | --- | --- |
 | 1 Identity | complete | [Contexto confirmado](project.md), solicitud del usuario 2026-10-20 |
