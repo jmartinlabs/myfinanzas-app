@@ -829,7 +829,7 @@ test("semilla demo solo en development/test; otros entornos no crean ni modifica
       stderr: "pipe",
     });
     expect(setup.exitCode).not.toBe(0);
-    expect(setup.stderr.toString()).toContain("E1.1 solo admite");
+    expect(setup.stderr.toString()).toContain("Alta rechazada");
     expect(existsSync(join(dir, "setup"))).toBe(false);
     for (const mode of ["development", "test"]) {
       const path = join(dir, mode, "demo.sqlite");

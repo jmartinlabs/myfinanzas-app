@@ -677,7 +677,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 5,
+      version: 6,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -699,8 +699,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
     ).toBeString();
     const movement = save(db, income(m.saldo.id)),
       audit = getMovement(db, movement.id).auditoria;
-    backup(db, key, join(dir, "v5"), pub);
-    for (const version of [3, 5]) {
+    backup(db, key, join(dir, "v6"), pub);
+    for (const version of [3, 6]) {
       const restored = restore(
           join(dir, "v" + version),
           join(dir, "restored" + version),
@@ -712,8 +712,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         expect(getSaldo(copy, m.saldo.id).saldoApertura).toBe("100.00");
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(1);
         expect(copy.query("SELECT * FROM ciclos").all()).toHaveLength(1);
-        expect(listMovements(copy).total).toBe(version === 5 ? 1 : 0);
-        if (version === 5) {
+        expect(listMovements(copy).total).toBe(version === 6 ? 1 : 0);
+        if (version === 6) {
           expect(getMovement(copy, movement.id).auditoria).toEqual(audit);
           expect(getSaldo(copy, m.saldo.id).posicion.importe).toBe("150.00");
           expect(cycleContext(copy).referencia.fecha).toBe("2026-10-12");
@@ -785,8 +785,8 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
     };
     const opening = `import{openDatabase}from${JSON.stringify(database)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(db.query('SELECT version FROM schema_version').get()));db.close();`;
     expect(await Promise.all([run(opening), run(opening)])).toEqual([
-      { version: 5 },
-      { version: 5 },
+      { version: 6 },
+      { version: 6 },
     ]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
