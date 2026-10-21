@@ -1,80 +1,70 @@
 # Architecture guidelines
 
-## Decisiones confirmadas y alcance actual
-Fuente: solicitud «Start New Project — MyFinanzas App» y aprobación posterior del plan,
-2026-10-20. El usuario autorizó después STEP 2 · CONTEXT FILES y la gestión Git/GitHub.
-El propósito, los principios financieros y las referencias pendientes pertenecen a
-[project.md](../project.md); este documento describe tecnología y límites técnicos.
-
-Stack confirmado: React + TypeScript + Vite; Bun + Effect TS y Effect HTTP; SQLite
-mediante bun:sqlite, SQL directo sin ORM; CSS propio con design tokens; Bun Workspaces;
-Bun Test y Playwright. Desarrollo local primero. No reabrir estas decisiones sin una
-incompatibilidad concreta. Justificar cualquier dependencia adicional antes de incorporarla.
+## Stack y límites confirmados
+React + TypeScript + Vite; Bun + Effect TS/Effect HTTP; SQLite mediante bun:sqlite y
+SQL directo, sin ORM. Bun Workspaces, CSS propio/tokens, Bun Test y Playwright.
+E1.1 local y ficticio autorizada en STEP 7; Excel v5.11 sigue maestro. Especificación
+[aprobada](../01-saldos-control-specification.md) conserva la autoridad financiera;
+no es un modelo definitivo de todos los módulos.
 
 ## Estructura implementada
-
 | Ruta | Responsabilidad |
 | --- | --- |
-| apps/web | React, presentación y estados de lectura; Vite y proxy local /api |
-| apps/api | Servidor Effect HTTP, consultas SQL, creación y semilla del catálogo ficticio |
-| tests/e2e | Flujos de navegador y capturas de los dos viewports |
-| .local | Base ficticia local generada e ignorada por Git |
-| specs | Contexto, decisiones, estado y evidencia; sin originales financieros |
-| .agents/skills y templates | Metodología reutilizable |
+| apps/web/src | Shell/navegación, acceso, API client, listado/ficha/formulario y controles reutilizables |
+| apps/api/src/main.ts | Recurso SQLite scoped Effect y servidor Effect HTTP loopback |
+| apps/api/src/app.ts | Router Effect HTTP, guard de acceso, límite JSON y errores públicos |
+| apps/api/src/saldos.ts | Validación Effect Schema + reglas explícitas, consultas/transacciones y DTO |
+| apps/api/src/auth.ts | Argon2id nativo Bun, TOTP, desafíos, sesiones y recuperación |
+| apps/api/src/database.ts | Esquema local versión 1 y seis registros ficticios deterministas |
+| apps/api/src/backup.ts | Snapshot consistente, age y restauración aislada; nunca endpoint de copia |
+| apps/api/test-support y tests/e2e | Fixtures locales y recorrido real de navegador, sin bypass en app |
+| .local y artifacts | Estado y evidencia generados, ignorados por Git |
 
-El servidor abre y libera SQLite con un recurso Effect scoped; BunHttpServer sirve
-el router en 127.0.0.1:3001. Vite escucha en 127.0.0.1:5173 y redirige /api al servidor.
-React hace una petición relativa a /api/saldos y representa su resultado. No hay acceso
-al archivo SQLite desde el navegador ni servicios externos en el flujo.
+Vite sirve loopback 5173 y redirige /api a Effect HTTP loopback 3001. SQLite nunca
+se importa al navegador. Las páginas usan History API y enlaces reales; no se añadió
+router ni librería UI. Backend devuelve JSON no-store y errores correlacionados sin SQL.
+La cabecera muestra No disponible porque el maestro Ciclos todavía no existe.
 
-## Contrato y propiedad de datos
-GET /api/saldos devuelve 200 JSON `{ "saldos": [{ "id": "demo-001", "nombre": "…" }] }`.
-El resultado se ordena por id. Lista vacía: 200 con saldos vacío. Fallo de lectura:
-500 con mensaje genérico, sin detalles SQL. Las rutas desconocidas devuelven 404.
-El frontend comprueba la forma mínima de la respuesta y muestra error si no es válida.
-No existen endpoints de escritura ni importación.
+## Persistencia E1.1
+Semilla exclusivamente demo: openDatabase exige NODE_ENV=development/test antes de
+mkdir/apertura/PRAGMA. El proceso se rechaza en producción, entorno desconocido o ausente;
+las pruebas incluyen una base existente que queda idéntica tras el rechazo. No hay
+inicialización productiva: antes de datos reales se necesita un arranque limpio sin
+fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
+Esquema técnico v1 en inicialización transaccional, STRICT, FK activas, WAL y FULL,
+busy_timeout 3 s. Las versiones desconocidas fallan antes de mutar. No hay migraciones
+financieras, importador ni tablas de motores posteriores. La antigua tabla demo del
+bootstrap no se usa ni se transforma en registros financieros; base local nueva recomendada.
 
-SQLite es propiedad exclusiva del backend. La tabla demo_saldos contiene id TEXT
-PRIMARY KEY y nombre TEXT NOT NULL. La semilla es transaccional, determinista e idempotente:
-INSERT OR IGNORE conserva filas existentes. Es un catálogo técnico de solo lectura,
-no el modelo financiero definitivo de Saldos ni una migración del Excel.
+Sxxx es PK inmutable; contador reservado dentro de BEGIN IMMEDIATE, sin reutilización,
+continúa S1000. No DELETE, también protegido con trigger; S000 no se modifica.
+Saldos persiste configuración, revisión técnica y UTC; la posición es DTO derivado,
+no un campo calculado almacenado. EUR INTEGER firmado 64 bits, parsing bigint y CAST
+TEXT al leer: JSON decimal en string, nunca number para importes. Fechas civiles ISO.
+Ausencias de atributos históricos se conservan; false por omisión solo en alta ordinaria.
 
-La ruta por defecto es .local/demo.sqlite, independiente del directorio de invocación
-del servidor. DATABASE_PATH es una configuración local de confianza, no una entrada HTTP.
-Las pruebas de persistencia usan un archivo temporal eliminado al terminar; E2E usa
-SQLite en memoria, aislado de la base de desarrollo. No hay migraciones versionadas,
-autenticación, cálculos, sincronización ni lógica financiera implementados.
+PATCH exige revisión, valida impacto y audita en la misma transacción; rollback íntegro.
+El guard de impacto se inyecta para futuras fuentes; la app actual no tiene operaciones
+históricas que consultar. Tests usan FK/impacto ficticios aislados. Al entregar esas
+fuentes deberán conectarse al guard: no se afirma protección de módulos inexistentes.
+Idempotencia POST ligada a payload durante 24 h. Auditoría conserva actor único, campos,
+revisión previa/nueva y UTC, sin duplicar cifras. Catálogo filtrado en memoria tras lectura
+ordenada por ID, con páginas de 100; suficiente para catálogo personal, sin motor de búsqueda.
 
-## Herramientas y dependencias
-Bun 1.4.3 está indicado en .bun-version y packageManager. Versiones directas exactas
-en package.json de raíz y workspaces; resolución íntegra en bun.lock. Instalación congelada.
-Frontend: React/React DOM 19.3.1 y Vite 8.3.4 con plugin React 6.1.2.
-Backend: Effect 3.22.3, platform 0.97.2 y platform-bun 0.91.3, combinación compatible
-con sus peers. TypeScript 7.0.2 y tipos Bun/React para chequeos; Playwright 1.64.1 para E2E.
-Los adaptadores oficiales proporcionan HTTP y ejecución Bun; no se añade ORM,
-librería UI ni validación externa. bun:sqlite no requiere paquete de base de datos.
+## Dependencias y versiones
+Bun 1.4.3, React/DOM 19.3.1, Vite 8.3.4, TypeScript 7.0.2, Playwright 1.64.1;
+Effect 3.22.3, platform 0.97.2, platform-bun 0.91.3. Exactas y bun.lock congelado.
+Única dependencia runtime nueva: **otpauth 9.5.2 (MIT)**, mantenida y compatible con Bun,
+para TOTP estándar/replay/ventana, evitando algoritmos OTP propios. Hash Argon2id y
+cifrado AES-GCM usan APIs nativas. Sin ORM, framework de identidad, correo ni servicio.
+`age` CLI externo ya previsto por DT6, instalado localmente v1.3.2 desde release oficial
+con SHA-256 publicado verificado; CI usa paquete de Ubuntu. No se versiona el binario.
+Prettier 3.6.2 se utilizó como herramienta efímera de formato, sin dependencia de proyecto.
+Revisión de advisories `bun audit --json`: sin entradas en la ejecución documentada;
+no equivale a auditoría de seguridad completa. Evidencia vigente en testplan.
 
-## Decisiones de destino aún no implementadas
-VPS Linux con Docker Compose y Caddy; HTTPS obligatorio. Un único usuario, sin registro
-público; autenticación robusta y segundo factor antes de utilizar datos reales online.
-Para E1.1, Q4–Q7 confirman contraseña Argon2id/TOTP, sesiones servidor, PK Sxxx,
-céntimos exactos y propuesta VACUUM INTO/age. Contrato y límites en la
-[especificación E1.1](../01-saldos-control-specification.md); nada de ello está implementado.
-Esquema físico completo, evidencia financiera y operación/custodia definitivas siguen
-pendientes de sus revisiones y aprobaciones. No convertir estas decisiones en un despliegue autorizado.
-
-## Estado y límites
-La [evidencia STEP 1](../bootstrap.md) documenta comprobaciones y capturas; comandos y
-cobertura vigente en [calidad](quality.md), presentación en [UI](ui.md) y amenazas en
-[seguridad](security.md). STEP 2 documenta lo implementado sin cambiar código ni contratos.
-STEP 3 automatiza los controles descritos en [calidad](quality.md), sin cambiar la app.
-No inferir reglas económicas
-de nombres, ejemplos o código técnico. La referencia vigente es la arquitectura v5.11
-definida en [project.md](../project.md); sustituye reglas v5.10 contradictorias. No
-convertir las tablas del Excel directamente en el modelo SQL definitivo.
-La especificación funcional ya fue recibida para STEP 4; su
-[referencia sanitizada](../functional-reference-v5.11.md) separa reglas y decisiones
-confirmadas de los detalles técnicos abiertos. La planificación aprobada en
-[roadmap](../roadmap.md) no altera la arquitectura implementada ni autoriza código.
-El dominio previsto y la preferencia de ubicación del VPS están en
-[contexto operativo](../project.md); no se ha contratado infraestructura ni desplegado la app.
+## Destino posterior
+VPS UE todavía sin contratar, Docker Compose/Caddy y dominio previsto myfinanzas.pp.ua;
+HTTPS obligatorio. No hay deploy ni servicios configurados. Seguridad/custodia y backups
+externos operativos se revisarán antes de datos reales. E1.2/motores/histórico/ciclos quedan
+fuera: [roadmap](../roadmap.md), [seguridad](security.md), [calidad](quality.md).

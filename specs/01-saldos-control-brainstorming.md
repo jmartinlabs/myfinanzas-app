@@ -415,3 +415,11 @@ mensaje expreso del usuario, 2026-10-21. M1, Estado inicial Activa, opcionalidad
 Finalidad/Objetivo, S000 protegido y restantes reglas financieras siguen vigentes.
 Actualizar documentación/PR/checks; sin merge, implementación, SQL o E1.2. Pruebas
 visuales/funcionales futuras no se dan por ejecutadas por aprobar esta decisión.
+
+
+## Aprobación final y autorización STEP 7 — 2026-10-21
+Usuario confirma PR #6 aprobada y fusionada en ebfe75b, especificación/diseño E1.1 aprobados.
+Posteriormente aprueba plan de seis bloques y autoriza $dev 01 en feat/e1-1-saldos,
+con Handoff/estado dentro de la rama funcional. Fuente: solicitudes expresas del usuario.
+Historial anterior intacto; sin nuevas decisiones financieras/visuales. Desarrollo solo
+local/ficticio, Excel maestro, sin E1.2, despliegue o merge automático.

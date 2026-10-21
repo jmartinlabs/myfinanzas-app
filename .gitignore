@@ -4,6 +4,7 @@
 !.env.example
 *.pem
 *.key
+*.age
 .DS_Store
 __pycache__/
 *.pyc
