@@ -749,7 +749,21 @@ test("AC03: dos procesos reservan IDs sin duplicarlos y dos conexiones detectan 
         stderr: "pipe",
       }),
     );
-    expect(await Promise.all(jobs.map((j) => j.exited))).toEqual([0, 0]);
+    const results = await Promise.all(
+      jobs.map(async (j) => {
+        const [code, stdout, stderr] = await Promise.all([
+          j.exited,
+          new Response(j.stdout).text(),
+          new Response(j.stderr).text(),
+        ]);
+        return { code, stdout, stderr };
+      }),
+    );
+    for (const result of results)
+      expect(
+        result,
+        "Proceso hijo de concurrencia (solo fixtures ficticios)",
+      ).toMatchObject({ code: 0, stderr: "" });
     const ids = (
       db
         .query("SELECT id FROM saldos WHERE nombre='Concurrencia ficticia'")
@@ -827,6 +841,53 @@ test("semilla demo solo en development/test; otros entornos no crean ni modifica
       expect(readFileSync(path).equals(before)).toBe(true);
     }
   } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("inicialización espera a un escritor concurrente sin upgrade de transacción diferida", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mf-initialization-lock-")),
+    path = join(dir, "source.sqlite"),
+    marker = join(dir, "started");
+  const db = openDatabase(path);
+  let terminate: (() => Promise<void>) | undefined;
+  try {
+    db.exec("BEGIN IMMEDIATE");
+    const script = `import{writeFileSync}from'node:fs';import{openDatabase}from'./apps/api/src/database.ts';writeFileSync(process.argv[2],'started');openDatabase(process.argv[1]).close();`;
+    const child = Bun.spawn([process.execPath, "-e", script, path, marker], {
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    terminate = async () => {
+      child.kill();
+      await child.exited;
+    };
+    const result = Promise.all([
+      child.exited,
+      new Response(child.stdout).text(),
+      new Response(child.stderr).text(),
+    ]);
+    const deadline = Date.now() + 2000;
+    while (!existsSync(marker) && Date.now() < deadline) await Bun.sleep(5);
+    expect(existsSync(marker)).toBe(true);
+    // Deliberately hold the writer lock to distinguish waiting from an immediate SQLITE_BUSY.
+    const early = await Promise.race([
+      result.then((r) => ({ exited: r })),
+      Bun.sleep(150).then(() => ({ waiting: true })),
+    ]);
+    db.exec("COMMIT");
+    const [code, stdout, stderr] = await result;
+    expect({ code, stdout, stderr }).toEqual({
+      code: 0,
+      stdout: "",
+      stderr: "",
+    });
+    expect(early).toEqual({ waiting: true });
+    expect(listSaldos(db, new URLSearchParams("tecnico=true")).total).toBe(6);
+  } finally {
+    if (db.inTransaction) db.exec("ROLLBACK");
+    await terminate?.();
+    db.close();
     rmSync(dir, { recursive: true, force: true });
   }
 });
