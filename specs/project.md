@@ -280,3 +280,31 @@ y [pruebas](04-movimientos-testplan.md) conservan 29 criterios actuales y AC-30�
 El permiso posterior de dev 04 sustituye exclusiones de implementación de la fase spec;
 no altera Q1–Q6. Sin autorización de merge de PR funcional, E1.5, datos reales o deploy.
 Excel v5.11 sigue maestro. Próxima acción: revisión de Álex de implementación/CI/capturas.
+
+
+## Estado vigente — E1.4 cerrada; spec 05 autorizado
+E1.4 integrada en b51b89b (PR #15), cierre documental integrado en a693aeb (PR #16),
+CI posterior SUCCESS; 29 criterios verificados y AC-30–33 conservados como futuros.
+Usuario autoriza exclusivamente especificación/diseño E1.5 y publicación en PR Draft.
+Rama spec/05-transferencias-referencias desde main a693aeb. [Brainstorming 05](05-transferencias-referencias-brainstorming.md)
+y [propuesta con wireframes](05-transferencias-referencias-specification.md) DRAFT/NO APROBADOS:
+Q1–Q3 confirmadas por usuario: internas sin permiso Exterior; toda Transferencia Exterior
+reservada; matriz CAT011/012/013/014/009 y compatibilidad solo obligatoria; fechas Madrid sin futuro.
+30 criterios actuales previstos y 3 contratos futuros; ninguna prueba E1.5 ejecutada.
+Siguiente acción: revisión final de Álex y aprobación posterior del documento completo.
+Sin dev 05, SQL, merge, datos reales ni despliegue. Excel v5.11 sigue maestro.
+Los estados de desarrollo/revisión anteriores son históricos, no el estado vigente.
+
+
+## Spec 05 — aprobada y autorizada para integración — 2026-10-21
+Usuario aprueba PR #17 tras auditoría de Álex sobre 50de3e4: especificación funcional/técnica,
+wireframes 390/1440, Q1–Q3, AC-01–30 actuales y AC-31–33 contratos futuros. Autoriza
+cierre documental APPROVED y squash merge tras ambas CI SUCCESS del commit definitivo.
+[Brainstorming](05-transferencias-referencias-brainstorming.md) conserva la aprobación;
+[especificación](05-transferencias-referencias-specification.md) registra el contrato aprobado.
+Continuidad pendiente: asignar entrega futura responsable para Transferencias ordinarias
+con Exterior, sin ampliar E1.5 ni adjudicarlas automáticamente a E3. Hash de integración,
+estado MERGED y CI posterior se verifican y registran en PR #17 al concluir.
+Siguiente acción tras integración: spec 05 cerrada; esperar autorización expresa de dev 05.
+No implementación funcional, SQL, datos reales, modificación Excel ni despliegue. Los
+estados previos de revisión son históricos. Excel v5.11 continúa como maestro financiero.
