@@ -70,3 +70,14 @@ bind sin evidencia. No rerun para conseguir verde, assertions relajadas ni cambi
 financiero. Dev 32 se detiene para diagnóstico/consulta y capacidad rootless real.
 La actualización documental de esta incidencia no corrige el fallo de código ni
 lo cierra aunque dispare otra CI. Spec #29 conserva sus CI SUCCESS en a4de2e1.
+
+## Gate de infraestructura en runner autorizado — 2026-10-22
+Workflow Rootless infrastructure 32, ubuntu-24.04 efímero, contents:read,
+sin secretos de producción/VPS ni self-hosted. Comando:
+`python3 infra/tests/rootless-preflight.py`. Requiere éxito real de namespaces,
+subuid/subgid, Podman rootless/cgroup systemd y ejecución de unidad de usuario
+transitoria; no mocks. Localmente BLOCKED esperado por capacidades ausentes.
+Solo versiones/booleanos saneados en logs y job summary, ningún artifact sensible.
+Resultado remoto pendiente; AC-05/10/13/21 no pasan por publicar el workflow.
+Si falla el user manager del runner, detener y proponer VM temporal Debian 13.
+La CI API fallida anterior permanece abierta sin atribución de test/causa.

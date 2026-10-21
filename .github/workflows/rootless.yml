@@ -1,0 +1,33 @@
+name: Rootless infrastructure 32
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/rootless.yml'
+      - 'infra/**'
+      - 'apps/api/**'
+      - 'bun.lock'
+      - 'package.json'
+      - 'specs/32-*'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  capability:
+    name: Rootless capability gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install tooling on disposable runner only
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
+      - name: Verify real rootless and user systemd prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          python3 infra/tests/rootless-preflight.py

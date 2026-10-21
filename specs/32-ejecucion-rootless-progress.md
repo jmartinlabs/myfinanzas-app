@@ -61,3 +61,20 @@ bind sin evidencia. No rerun para conseguir verde, assertions relajadas ni cambi
 financiero. Dev 32 se detiene para diagnóstico/consulta y capacidad rootless real.
 La actualización documental de esta incidencia no corrige el fallo de código ni
 lo cierra aunque dispare otra CI. Spec #29 conserva sus CI SUCCESS en a4de2e1.
+
+## Continuación autorizada — runner efímero GitHub Actions — 2026-10-22
+Fuente: respuesta expresa del usuario en este chat. Autoriza ubuntu-24.04 efímero,
+independiente del VPS y sin self-hosted existente. Primero gate real de Podman
+rootless, subuid/subgid, cgroup v2/delegación y systemd --user; si no es funcional,
+detenerse y proponer VM temporal Debian 13. Sin contenedor privilegiado, secretos
+productivos o artefactos sensibles. Se reanuda exclusivamente ese diagnóstico;
+el fallo API anterior sigue abierto y no se cierra por otras ejecuciones verdes.
+
+Se añade workflow separado contents:read, PR normal (no pull_request_target),
+checkout fijado sin credenciales persistidas y tooling instalado solo en runner
+nuevo. El gate ejecuta realmente systemd-run --user y podman info; no crea un
+gestor alternativo ni usa sudo para Podman/app. Solo publica booleanos/versiones
+seleccionadas en log/summary; sin env, info completa, DB/claves ni artefactos.
+El primer incremento prueba capacidad antes de escribir/ejecutar imagen/volúmenes.
+Sondeo local falla de forma esperada, sin declarar PASS de infraestructura.
+Pendiente resultado del runner para AC-05/10/13/21; el resto sigue sin validar.
