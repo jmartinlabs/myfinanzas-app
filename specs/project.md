@@ -234,3 +234,27 @@ Implementación local/ficticia en rama independiente; [progreso](03-ciclos-finan
 y [testplan](03-ciclos-financiados-testplan.md) son la evidencia vigente.
 21 criterios actuales y 3 contratos futuros; sin declarar motores financieros entregados.
 Siguiente paso: revisión de implementación, sin merge automático, E2.1 ni despliegue.
+
+
+## Estado vigente — E1.3 integrada; spec 04 autorizado
+E1.3 completada e integrada PR #13 (ff9d18d), aprobación expresa del usuario sobre
+ce4dadb; CI previa doble y posterior main SUCCESS verificadas. 21 criterios actuales,
+AC-11/23/24 conservados como contratos futuros. Este registro sustituye estados de
+revisión pendientes anteriores, conservados como historia.
+Usuario autoriza spec 04 E1.4 Ingresos/Gastos, sin dev 04 ni SQL/merge/despliegue.
+Rama spec/04-movimientos desde main ff9d18d, solo documentación ficticia/sanitizada.
+[Ronda única Q1–Q6](04-movimientos-brainstorming.md) y
+[borrador con wireframes/criterios](04-movimientos-specification.md), no aprobados.
+Siguiente acción: respuestas materiales y feedback visual; no implementar ni publicar
+como especificación aprobada. Excel v5.11 sigue maestro, no incorporado/inspeccionado.
+
+
+### Spec 04 — Q1–Q6 confirmadas, especificación completa en revisión
+Usuario confirma Q1–Q6 tras revisión de Álex, 2026-10-21. Registro append-only en
+[brainstorming 04](04-movimientos-brainstorming.md); [especificación 04](04-movimientos-specification.md)
+actualiza wireframes y conserva 33 AC: 29 actuales previstos y 4 contratos futuros.
+No preguntas nuevas ni validaciones financieras supuestas. Apertura vacía→0 solo en
+cálculo Control Movimientos; bloqueo de fechas futuras según día civil español es
+contrato de app; rectificación/anulación auditadas y advertencias no bloqueantes.
+Siguiente acción: revisión/aprobación de especificación completa y diseños, no dev 04.
+Sin código, SQL, commit de especificación aprobada, merge ni despliegue autorizados.
