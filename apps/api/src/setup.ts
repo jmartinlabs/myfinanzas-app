@@ -1,6 +1,10 @@
 import { openDatabase } from "./database";
 import { provision, loadKey } from "./auth";
 import { resolve } from "node:path";
+
+// The local token flow must not expose provisioning tokens in production logs.
+if (process.env.NODE_ENV === "production")
+  throw new Error("El alta productiva exige un procedimiento privado aún no habilitado.");
 const path =
   process.env.DATABASE_PATH ??
   resolve(import.meta.dir, "../../../.local/demo.sqlite");
