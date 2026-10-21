@@ -177,3 +177,13 @@ campos después de errores, switches Sí/No y preservación de históricos ausen
 complementarse con revisión de accesibilidad; capturas viejas del bootstrap y CI de sus
 flujos no validan este diseño. La aprobación no autoriza implementar, generar CSS/tokens,
 componentes o SQL, hacer merge o iniciar E1.2. PR #6 permanece abierta para revisión final.
+
+
+## E1.2 Clasificación — implementación en revisión
+Reutiliza shell/PageHead/Alert/Tag y tokens aprobados. Pestañas de tres catálogos,
+búsqueda y filtros jerárquicos/estado, tabla compacta de tres columnas y tarjetas
+móvil. Ficha con enlaces de jerarquía, ID, Estado y dependencias reales; formularios
+en página propia, Referencia obligatoria sin preselección (no aplica default de
+switches E1.1). Rectificar presenta Antes/Después legibles, motivo y cobertura
+financiera no comprobada. No importes fingidos ni motores simulados. Evidencia y
+revisión visual en [testplan 02](../02-clasificacion-testplan.md).

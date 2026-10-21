@@ -28,11 +28,14 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   4f7cdda y autorización de merge el 2026-10-21. Motores financieros posteriores pendientes.
   STEP 8 completado e integrado mediante PR #8 tras aprobación del usuario sobre
   f4ff3e2 el 2026-10-21: ocho etapas iniciales cerradas y Skills spec/dev reutilizables.
-  Esperar nueva autorización: sin E1.2, datos reales, despliegue o servicios contratados.
+  E1.2 especificación/diseño aprobados e integrados PR #10 (0c7a87e); dev 02 autorizado
+  en feat/e1-2-clasificacion, solo local/ficticio. Unicidad SUB global sin mayúsculas,
+  tildes/espacios conservados y comodines literales; reserva resuelta por usuario.
+  Sin merge de implementación, datos reales, despliegue o servicios contratados.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
-- SQL/migraciones locales solo de E1.1 conforme contrato aprobado. Sin despliegue. Contexto
+- SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 
 ## Política permanente de Git y GitHub

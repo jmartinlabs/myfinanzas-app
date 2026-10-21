@@ -68,3 +68,11 @@ vulnerabilidades por pasar pruebas. Revisar avisos de versiones exactas y depend
 transitivas; versión/licencia/compatibilidad documentadas en [arquitectura](architecture.md).
 Los controles automáticos de repositorio son heurísticos; no identifican semánticamente
 todo dato privado y necesitan revisión manual del contenido antes de cada push.
+
+
+## Continuidad E1.2
+Rutas de clasificación pasan por la sesión MFA/Origin/CSRF existente; sin bypass.
+Esquema v2 conserva tablas de acceso y clave externa al actualizar v1, sin reset.
+Copias v1/v2 verificadas; restauración sigue revocando sesiones/códigos por política
+E1.1, a diferencia de actualizar esquema in situ. Guarda de entorno development/test
+intacta y clasificación vacía al iniciar: no datos ni maestros financieros reales.

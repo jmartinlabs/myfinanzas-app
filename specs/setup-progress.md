@@ -129,3 +129,12 @@ pendientes de revisión/aprobación. Sin nueva pregunta por contradicción mater
 El anterior pendiente Q6–Q8 queda resuelto por este registro. Validaciones de alta
 no demostradas físicamente se etiquetan propuestas app; consumidores futuros aparte.
 Siguiente acción: feedback visual y aprobación documental, no desarrollo ni merge.
+
+
+## Dev 02 — autorizado tras aprobación de PR #10
+PR #10 MERGED en 0c7a87e, CI push/PR SUCCESS del 25cffc0. Especificación y diseños
+aprobados; reserva SUB respondida después sin nueva ronda. Desarrollo local/ficticio
+en feat/e1-2-clasificacion: [estado](02-clasificacion-progress.md),
+[aceptación/pruebas](02-clasificacion-testplan.md). Ocho etapas iniciales siguen
+cerradas; no reiniciar Handoff. Esperar aprobación de implementación antes de merge;
+sin E1.3, datos reales ni despliegue. Registros anteriores de espera son históricos.

@@ -3,7 +3,10 @@
 Aplicación privada y monousuario para migrar progresivamente MyFinanzas desde Excel.
 E1.1 permite gestionar **Saldos ficticios en local**: listado, ficha, alta, edición,
 desactivación y reactivación. React → Effect HTTP → SQLite, sin ORM.
-Acceso con contraseña y TOTP; no hay registro público.
+E1.2 añade Clasificación: Categorías, Subcategorías y Partidas con jerarquía estable,
+estados sin cascadas y rectificación explícita de dependencias del catálogo.
+Acceso con contraseña y TOTP; no hay registro público. E1.2 está en revisión de PR,
+no integrada todavía.
 
 El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha incorporado
 ni inspeccionado en Codex, ni se han importado datos personales. No hay motores de
@@ -40,6 +43,13 @@ Antes de utilizar datos reales deberá existir una **inicialización limpia, sin
 y una migración del maestro expresamente autorizada**, conservando IDs y validando
 integridad/equivalencia. No se implementan aquí ni se reutiliza una base demo como real.
 No reutilices una base desconocida: se rechazan versiones de esquema incompatibles.
+
+Una base local **E1.1 existente (versión 1) se actualiza transaccionalmente a versión 2**
+al abrirla, sin borrar/resembrar Saldos ni reiniciar autenticación. No vuelvas a ejecutar
+setup si el usuario ya está configurado. Conserva la clave y realiza/verifica una copia
+con la versión E1.1 antes de actualizar; las copias v1 y v2 siguen restaurables.
+El catálogo Clasificación comienza vacío; crea datos ficticios desde sus páginas.
+Esto no importa el Excel ni convierte la base demo en una base para datos reales.
 
 ## Copias y restauración de prueba
 
@@ -91,7 +101,7 @@ Playwright inicia servidores propios, usa `.local/e2e` exclusiva y la reemplaza 
 no apuntar allí el desarrollo ni guardar datos. El ensayo restaurado escucha en loopback
 3002 durante la prueba. No se guardan factores en capturas o trazas. Si Chromium ya está
 instalado: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e`.
-Capturas ficticias ignoradas en `artifacts/e1-1`; CI las conserva siete días.
+Capturas ficticias ignoradas en `artifacts/e1-1` y `artifacts/e1-2`; CI las conserva siete días.
 Build solo genera cliente estático: no despliega ni hace la app apta para datos reales online.
 
 ## Contexto y metodología

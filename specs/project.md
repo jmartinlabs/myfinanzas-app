@@ -180,3 +180,15 @@ pendientes de revisión/aprobación. Sin nueva pregunta por contradicción mater
 El anterior pendiente Q6–Q8 queda resuelto por este registro. Validaciones de alta
 no demostradas físicamente se etiquetan propuestas app; consumidores futuros aparte.
 Siguiente acción: feedback visual y aprobación documental, no desarrollo ni merge.
+
+
+## E1.2 — especificación integrada y desarrollo autorizado
+Usuario aprueba PR #10 sobre 25cffc0; merge verificado en main 0c7a87e tras ambas CI
+SUCCESS. Autoriza dev 02 en feat/e1-2-clasificacion; aprobación no autoriza merge de
+implementación ni despliegue. Reserva de nombre SUB resuelta por evidencia posterior:
+COUNTIF global, comparación sin mayúsculas, acentos/espacios conservados; app usa
+comodines literales y prueba casos especiales, sin normalización silenciosa.
+Estado actual y siguiente acción en [progreso](02-clasificacion-progress.md),
+resultados en [testplan](02-clasificacion-testplan.md). Actualización local SQLite
+preserva E1.1; únicamente fixtures, Excel maestro sin modificar. Consumidores
+financieros de AC-19/24/25/26 siguen pendientes; ninguna aprobación por extensión.
