@@ -1,5 +1,11 @@
 import { inspectIdentity, assertMode, keyHash } from "./database-identity";
-import { productionConfig, privateDirectory, publishNewDirectory, syncPath, verifyProductionFiles } from "./private-state";
+import {
+  productionConfig,
+  privateDirectory,
+  publishNewDirectory,
+  syncPath,
+  verifyProductionFiles,
+} from "./private-state";
 import { basename } from "node:path";
 import { Database } from "bun:sqlite";
 import { createHash, randomUUID } from "node:crypto";
@@ -9,7 +15,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
   openSync,
@@ -62,14 +67,19 @@ export function backup(
   recipient: string,
   now = Date.now(),
 ) {
-  if (!["development", "test", "production"].includes(process.env.NODE_ENV ?? "")) throw new Error("Entorno de copia inválido.");
+  if (
+    !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
+  )
+    throw new Error("Entorno de copia inválido.");
   const sourceIdentity = inspectIdentity(db);
   assertMode(sourceIdentity, process.env.NODE_ENV === "production");
   if (sourceIdentity?.origin === "production") {
     const config = productionConfig();
-    if (db.filename !== config.database) throw new Error("Origen distinto de DATABASE_PATH.");
+    if (db.filename !== config.database)
+      throw new Error("Origen distinto de DATABASE_PATH.");
     verifyProductionFiles(config);
-    if (sourceIdentity.key_hash !== keyHash(key)) throw new Error("Pareja DB/clave inválida.");
+    if (sourceIdentity.key_hash !== keyHash(key))
+      throw new Error("Pareja DB/clave inválida.");
   }
   new Auth(db, key).checkKey();
   const target = resolve(destination);
@@ -101,7 +111,9 @@ export function backup(
               ? "e1.3-v3"
               : sourceVersion === 4
                 ? "e1.4-v4"
-                : sourceVersion === 5 ? "e1.5-v5" : "sqlite-v6",
+                : sourceVersion === 5
+                  ? "e1.5-v5"
+                  : "sqlite-v6",
       schema: sourceVersion,
       ...(sourceVersion === 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -165,11 +177,17 @@ export function restore(
   identity: string,
   options: { now?: number; allowOlder?: boolean } = {},
 ) {
-  if (!["development", "test", "production"].includes(process.env.NODE_ENV ?? "")) throw new Error("Entorno de restauración inválido.");
+  if (
+    !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
+  )
+    throw new Error("Entorno de restauración inválido.");
   const target = resolve(destination);
-  const config = process.env.NODE_ENV === "production" ? productionConfig() : null;
-  if (config && (destination !== target || config.state !== target)) throw new Error("Destino distinto de configuración productiva.");
-  if (existsSync(target)) throw new Error("Restauración requiere un directorio nuevo.");
+  const config =
+    process.env.NODE_ENV === "production" ? productionConfig() : null;
+  if (config && (destination !== target || config.state !== target))
+    throw new Error("Destino distinto de configuración productiva.");
+  if (existsSync(target))
+    throw new Error("Restauración requiere un directorio nuevo.");
   if (config) privateDirectory(dirname(target));
   else mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
   const stage = mkdtempSync(join(dirname(target), ".restore-"));
@@ -215,7 +233,10 @@ export function restore(
       throw new Error(
         "Antigüedad de copia requiere aceptación explícita (--allow-older).",
       );
-    const path = join(stage, config ? basename(config.database) : "demo.sqlite");
+    const path = join(
+      stage,
+      config ? basename(config.database) : "demo.sqlite",
+    );
     writeFileSync(path, bytes, { mode: 0o600 });
     valid(path, bundle.manifest.schema);
     const key = readFileSync(keyPath);
@@ -224,8 +245,10 @@ export function restore(
     try {
       const id = inspectIdentity(db);
       assertMode(id, !!config);
-      if (bundle.manifest.schema === 6 && bundle.manifest.origin !== id?.origin) throw new Error("Origen del manifiesto inválido.");
-      if (id?.origin === "production" && id.key_hash !== keyHash(key)) throw new Error("Pareja DB/clave inválida.");
+      if (bundle.manifest.schema === 6 && bundle.manifest.origin !== id?.origin)
+        throw new Error("Origen del manifiesto inválido.");
+      if (id?.origin === "production" && id.key_hash !== keyHash(key))
+        throw new Error("Pareja DB/clave inválida.");
       const auth = new Auth(db, key);
       auth.checkKey();
       db.transaction(() => {
@@ -248,7 +271,9 @@ export function restore(
     }
     rmSync(raw);
     chmodSync(keyPath, 0o600);
-    syncPath(path); syncPath(keyPath); syncPath(stage);
+    syncPath(path);
+    syncPath(keyPath);
+    syncPath(stage);
     publishNewDirectory(stage, target);
     return {
       created: bundle.manifest.created,

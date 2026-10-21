@@ -18,6 +18,68 @@ El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha inc
 ni inspeccionado en Codex, ni se han importado datos personales. Control Movimientos calcula apertura + entradas − salidas vigentes. Otros motores
 pendientes no se presentan como posiciones completas ni como un cero ficticio.
 
+## SQLite v6 — inicialización privada (especificación 31)
+
+Contrato [31](specs/31-sqlite-produccion-specification.md) aprobado; implementación
+local verificable, pendiente de revisión/integración. Esto no autoriza despliegue
+ni datos reales. La API continúa en loopback; los bloqueos de infra siguen vigentes.
+
+- Desarrollo/test: bases nuevas v6 con identidad demo; bases genuinas v1–v5 se
+  actualizan transaccionalmente sin resembrar ni reiniciar acceso. Conserva copia
+  cifrada verificada y clave antes de un upgrade de una base persistente.
+- Producción: no crea estado durante arranque; exige base v6 production y pareja
+  de clave válidas. Rechaza demo, legacy sin marcador y variante preliminar #22.
+  Development/test rechazan a su vez bases production. No existe promoción.
+- `DATABASE_PATH` y `AUTH_KEY_PATH` deben ser rutas absolutas canónicas distintas
+  en un mismo directorio de estado dedicado. Clave tampoco puede ocupar WAL/SHM/journal.
+  `APP_ORIGIN` debe ser explícito y HTTPS canónico. Directorios 0700, archivos
+  0600, UID efectivo; sin symlinks/hardlinks. No hay reparación de permisos al abrir.
+- La creación requiere raíz privada ya existente y **subdirectorio de estado nuevo**.
+  DB+clave se preparan en área privada y publican sin sobrescribir. Se usa Bun FFI
+  con `renameat2(RENAME_NOREPLACE)` de glibc: Linux/glibc es requisito de esta
+  operación (Debian 13 objetivo); no se ha validado macOS/Windows ni una imagen Alpine.
+
+Interfaces desde raíz del proyecto, con las tres variables anteriores ya configuradas
+para un estado de ensayo ficticio y sin servicios apuntando al destino:
+
+```sh
+NODE_ENV=production bun apps/api/src/production-init.ts
+NODE_ENV=production bun apps/api/src/setup.ts /ruta/privada/estado/token-inicial.txt
+NODE_ENV=production bun apps/api/src/main.ts
+```
+
+El segundo comando exige un archivo de entrega **nuevo**, dentro del directorio de
+estado; entrega el token solo allí (0600), nunca stdout/stderr. El operador lo consulta
+por canal local privado, sin logs/capturas/chat, y completa contraseña/TOTP en la UI
+existente. Caduca a los 10 minutos y es de un uso. Tras uso/caducidad, elimina el
+archivo por ese mismo canal; no se promete borrado físico seguro. Para emitir otro,
+retira antes el archivo caducado; nunca reinicia un propietario activo. Los códigos
+de recuperación se custodian fuera del repositorio y de la máquina operativa.
+
+No se ejecutan estos comandos contra el VPS en esta entrega. Las rutas de ejemplo
+no constituyen instrucciones de activar Quadlet ni de copiar datos a producción.
+El esquema limpio solo incluye S000 técnico; la primera alta deliberada usa S001.
+La clave de 32 bytes se crea exclusivamente al inicializar, y se vincula a la DB
+mediante huella SHA-256. Perderla bloquea arranque/alta/backup incluso sin usuario;
+restaura la pareja cifrada, sin regenerar ni inventar factores.
+
+Backup sigue usando los comandos existentes con NODE_ENV y configuración coherentes.
+Copias v6 añaden origen al manifest cifrado; copias v1–v5 siguen restaurables como demo.
+Para restaurar production, configura las rutas DB/clave del **nuevo destino** antes
+de ejecutar restore, y usa NODE_ENV=production. Se conserva origen/clave; no hay
+conversión hacia demo para ensayar. La restauración revoca sesiones, desafíos y
+códigos antiguos, conserva contraseña/TOTP y emite códigos nuevos tras identificación.
+El nombre de archivo devuelto por restore es el configurado en producción; en demo
+se conserva el nombre histórico demo.sqlite. No sobrescribe destinos existentes.
+
+Caída durante inicialización: el área `.initialize-*` privada puede quedar en la
+raíz de datos; el runtime rechaza los nombres reservados `.initialize-*`,
+`.restore-*` y `.backup-*` como estado operativo. Detén únicamente tus procesos,
+identifica la operación y conserva evidencia local antes de retirar su área temporal.
+No borres directorios/locks ajenos ni reutilices bases parciales. Una caída después
+de publicación puede haber dejado el conjunto completo: verifica antes de repetir.
+Mantén siempre copia/clave externa; fsync no protege frente a daño físico del disco.
+
 ## Desarrollo local
 
 Requisitos: Bun 1.4.3, Python 3.10+ y `age`/`age-keygen` para copias y pruebas.
@@ -40,8 +102,8 @@ ficticios. `.local/demo.sqlite` y `.local/auth.key` se generan con permisos priv
 están ignorados. Conserva la clave: no se regenera si existe un usuario.
 `DATABASE_PATH`, `AUTH_KEY_PATH` y `APP_ORIGIN` permiten configurar rutas/origen locales
 de confianza; mantén los mismos valores para setup, dev y backup. No son entradas HTTP.
-La inicialización con semilla ficticia exige `NODE_ENV=development` o `test` y rechaza
-producción, valores desconocidos o entorno ausente **antes de abrir SQLite o crear directorios**.
+La inicialización **demo** con semilla ficticia exige `NODE_ENV=development` o `test` y rechaza
+producción sin estado productivo explícito, valores desconocidos o entorno ausente **antes de abrir SQLite o crear directorios**.
 Los comandos `dev` de API, `setup` y `backup` usan development por defecto, preservando
 un NODE_ENV explícito; las pruebas usan test. Una invocación directa requiere indicarlo.
 Esto es un bloqueo preventivo, no una configuración de producción.

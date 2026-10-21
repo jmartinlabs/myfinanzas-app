@@ -100,3 +100,25 @@ Upgrade v4→v5 no altera contraseña/clave/TOTP/sesiones previas ni auditoría 
 restore age sigue revocando acceso/intentos. Producción rechazada antes de abrir/sembrar
 por el guard existente. Copia externa, automatización, operación real y migración limpia
 siguen pendientes; datos exclusivamente ficticios, sin despliegue ni RPO/RTO productivo probado.
+
+
+## Contrato aprobado 31 — separación de persistencia
+
+La apertura production exige configuración HTTPS y DB v6 production con clave
+externa existente y huella válida. Desarrollo/test rechazan production; producción
+rechaza demo y legacy, sin promoción ni adopción de la variante #22. Migraciones
+legacy solo en demo, transaccionales y sin reset de acceso. No inferir origen por
+nombres ni por filas. El marcador/huella previenen accidentes, no administradores
+maliciosos del host. La raíz y sus ancestros deben ser de confianza, con protección
+sticky de /tmp admitida en ensayos; estado 0700 y archivos 0600 del UID efectivo.
+Crear/publicar conjunto completo sin reemplazo; pérdida de clave nunca regenera.
+Token inicial productivo solo en archivo exclusivo 0600, caducidad/consumo vigente,
+rollback de hash si falla entrega; retirar archivo por canal local privado tras uso.
+Copias y restauración conservan identidad; restaurar revoca accesos, migrar no.
+Estas garantías técnicas locales sustituyen el bloqueo demo-only histórico en la
+rama 31, sin autorizar VPS, exposición de Vite, datos reales ni despliegue. Permanecen
+pendientes los gates HTTPS/proxy, rate limit de borde, cifrado de disco, copias
+offsite/retención/monitorización, custodia externa y ensayo operativo antes del uso real.
+
+Ver [contrato 31](../31-sqlite-produccion-specification.md) y
+[evidencia](../31-sqlite-produccion-testplan.md).

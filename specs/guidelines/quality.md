@@ -151,3 +151,19 @@ identidades/auditorías y posiciones, y consulta la Referencia restaurada por UI
 CI solo adjunta PNG ficticios e1-5 al artifact heredado, junto a entregas anteriores,
 retención 7 días. No factores, DB, auth.key, trazas o storageState. Sin nueva dependencia.
 Un fallo local o remoto nunca se reclasifica como futuro ni se oculta mediante retries.
+
+
+## Validación de la entrega 31
+
+Añadir `production.test.ts` a la suite existente, sin omitir regresiones. P1–P11
+cubren apertura cruzada por CLI, origen y migración, rutas/UID/clave, dos procesos,
+fallos ENOSPC inyectados, SIGKILL antes/después de publicación, MFA/API productiva,
+backup cifrado, corrupción y restore. UID ajeno se simula por respuesta de stat;
+la operación rootless real del VPS sigue fuera de esta evidencia local.
+Los 33 AC y evidencias de ejecución se mantienen en el testplan 31. Un rechazo
+esperado de fixture no es fallo de suite. Mantener Playwright 390/1440, contraste
+y restauración, sin factores en artefactos. Bun/lockfile y dependencia age vigentes;
+la publicación de estado nuevo requiere Linux/glibc por renameat2 sin reemplazo.
+
+Ver [contrato 31](../31-sqlite-produccion-specification.md) y
+[evidencia](../31-sqlite-produccion-testplan.md).
