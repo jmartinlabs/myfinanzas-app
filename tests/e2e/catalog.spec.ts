@@ -119,7 +119,9 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(
     page.getByRole("heading", { name: "Reserva ficticia E1.1", exact: true }),
   ).toBeVisible();
-  await expect(page.getByText("-123,45 €", { exact: true })).toBeVisible();
+  await expect(
+    page.locator("dl").getByText("-123,45 €", { exact: true }),
+  ).toBeVisible();
   await shot("detail-mobile");
   const id = page.url().split("/").at(-1)!;
   expect(id).toBe("S006");
@@ -328,7 +330,9 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
       .locator(".mobile-list")
       .getByRole("link", { name: "Reserva ficticia E1.1" })
       .click();
-    await expect(page.getByText("-123,45 €", { exact: true })).toBeVisible();
+    await expect(
+      page.locator("dl").getByText("-123,45 €", { exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("0,00 €", { exact: true })).toBeVisible();
     await shot("restored-mobile");
     const restoredClassification = await page.evaluate(

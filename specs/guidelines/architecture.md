@@ -15,7 +15,7 @@ no es un modelo definitivo de todos los módulos.
 | apps/api/src/app.ts | Router Effect HTTP, guard de acceso, límite JSON y errores públicos |
 | apps/api/src/saldos.ts | Validación Effect Schema + reglas explícitas, consultas/transacciones y DTO |
 | apps/api/src/auth.ts | Argon2id nativo Bun, TOTP, desafíos, sesiones y recuperación |
-| apps/api/src/database.ts | Apertura local y actualización v1→v2 sin resemilla de bases existentes |
+| apps/api/src/database.ts | Apertura local y actualización v1/v2/v3→v4 sin resemilla de bases existentes |
 | apps/api/src/classification-schema.ts y clasificacion.ts | Esquema v2 y catálogo con validación/relaciones/rectificación |
 | apps/api/src/backup.ts | Snapshot consistente, age y restauración aislada; nunca endpoint de copia |
 | apps/api/test-support y tests/e2e | Fixtures locales y recorrido real de navegador, sin bypass en app |
@@ -24,7 +24,8 @@ no es un modelo definitivo de todos los módulos.
 Vite sirve loopback 5173 y redirige /api a Effect HTTP loopback 3001. SQLite nunca
 se importa al navegador. Las páginas usan History API y enlaces reales; no se añadió
 router ni librería UI. Backend devuelve JSON no-store y errores correlacionados sin SQL.
-La cabecera muestra No disponible porque el maestro Ciclos todavía no existe.
+La cabecera consulta el maestro Ciclos y la referencia financiera central. Solo Movimientos
+es una fuente instalada en E1.4; no usa el reloj para seleccionar el ciclo actual.
 
 ## Persistencia E1.1
 Semilla exclusivamente demo: openDatabase exige NODE_ENV=development/test antes de
@@ -32,7 +33,7 @@ mkdir/apertura/PRAGMA. El proceso se rechaza en producción, entorno desconocido
 las pruebas incluyen una base existente que queda idéntica tras el rechazo. No hay
 inicialización productiva: antes de datos reales se necesita un arranque limpio sin
 fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
-Esquema técnico v3 (extiende v1/v2 preservando E1.1/E1.2) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
+Esquema técnico v4 (extiende v1/v2/v3 preservando E1.1–E1.3) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
 busy_timeout 3 s. Existen comprobaciones previas de versión fuera de la transacción.
 BEGIN IMMEDIATE adquiere el bloqueo de escritura antes de inicializar el esquema
 dentro de la transacción, evitando allí el upgrade diferido con otro escritor; [incidencia y regresión](../sqlite-startup-concurrency.md).
@@ -49,9 +50,9 @@ TEXT al leer: JSON decimal en string, nunca number para importes. Fechas civiles
 Ausencias de atributos históricos se conservan; false por omisión solo en alta ordinaria.
 
 PATCH exige revisión, valida impacto y audita en la misma transacción; rollback íntegro.
-El guard de impacto se inyecta para futuras fuentes; la app actual no tiene operaciones
-históricas que consultar. Tests usan FK/impacto ficticios aislados. Al entregar esas
-fuentes deberán conectarse al guard: no se afirma protección de módulos inexistentes.
+E1.4 conecta el guard a uso real en Movimientos; las fuentes futuras se integrarán
+al entregarse. Las pruebas aisladas de FK/protocolo no afirman protección de motores
+inexistentes; evidencia vigente en testplan 04.
 Idempotencia POST ligada a payload durante 24 h. Auditoría conserva actor único, campos,
 revisión previa/nueva y UTC, sin duplicar cifras. Catálogo filtrado en memoria tras lectura
 ordenada por ID, con páginas de 100; suficiente para catálogo personal, sin motor de búsqueda.
@@ -69,9 +70,9 @@ Escrituras solo por el servicio validado; SQL externo
 no es una API admitida. Tests prueban colisión entre dos procesos/categorías.
 Vista de rectificación lee descendientes reales y huella de revisiones/configuración
 del catálogo; confirmar revalida dentro de transacción. Huella no es una firma de
-impacto financiero. Adaptador futuro no tiene consumidores instalados; en sus entregas
-aportará hechos/periodos/indicadores reales y consistencia ante cambios financieros.
-Backups identifican esquema desde el snapshot, admiten v1/v2/v3 y verifican coincidencia
+impacto financiero. Movimientos está instalado en E1.4 con hechos/periodos reales; otros consumidores
+aportarán sus comprobaciones al entregarse, sin atribuirles consistencia probada.
+Backups identifican esquema desde el snapshot, admiten v1/v2/v3/v4 y verifican coincidencia
 con manifest. Restaurar revoca acceso como E1.1; actualizar in situ no lo revoca.
 No cambia algoritmo de autenticación, dependencias ni RPO/RTO operativo.
 
@@ -94,7 +95,7 @@ externos operativos se revisarán antes de datos reales. Motores financieros/his
 fuera: [roadmap](../roadmap.md), [seguridad](security.md), [calidad](quality.md).
 
 
-## Ciclos E1.3 — implementado en rama, pendiente de revisión/merge
+## Ciclos E1.3 — integrado PR #13; consumidor Movimientos en E1.4
 SQLite v3 incorpora ciclos e intentos, sin semillas de ciclos. Upgrade v1→v2→v3 o
 v2→v3 bajo el mismo IMMEDIATE, conserva filas previas y autenticación; rollback de DDL.
 Inicio único, mes financiado único como columna generada virtual desde Inicio,
@@ -106,7 +107,45 @@ GET /api/ciclos, /api/ciclos/:id, /api/ciclos/contexto; POST /api/ciclos con
 idempotency-key y contextRevision. Sin PATCH/DELETE ni endpoint de fecha alternativa.
 La huella de contexto protege alta concurrente; no es un cierre ni firma financiera.
 Servicio puro de referencia/intervalos probado con fechas ficticias aisladas; runtime
-sin proveedores: tres fuentes pendientes, referencia null. Futuras entregas conectarán
-lectores de hechos reales, sin tablas simuladas ni fallback al reloj. Cabecera compartida
+con lector de Movimientos desde E1.4; Comida/inversión permanecen pendientes. Sin
+hechos vigentes la referencia es null, sin tablas simuladas ni fallback al reloj. Cabecera compartida
 React consume ese contexto en las tres entregas. [Trazabilidad](../03-ciclos-financiados-testplan.md).
 Copias age admiten manifest v3 y prueban restauración aislada; no cambia custodia externa.
+
+
+## Movimientos E1.4 — implementado en rama, revisión/merge pendientes
+SQL v4, STRICT/FK y transacción IMMEDIATE. Tabla movimientos: ID decimal TEXT exacto
+(contador INTEGER atómico, sin otra identidad), fecha civil, Tipo, EUR INTEGER positivo,
+Origen/Destino por FK, Subtipo o Partida, Concepto/Nota, anulado, revisión y UTC.
+CHECK de dirección y tipado: Ingreso S000→Saldo sin Partida; Gasto Saldo→S000 con
+Partida. Sin tablas/columnas de Referencias, presupuestos, deudas o inversión de relleno.
+Triggers: ID inmutable, sin DELETE, anulado inmutable. movement_audit append-only
+con motivo, UTC, actor y anterior/posterior JSON exactos. movement_attempts conserva
+respuesta privada 24h para reintentos; restauración la revoca como intentos existentes.
+Sin saldos acumulados, clasificación superior ni Ciclo persistidos como fuentes paralelas.
+
+movement-ledger centraliza filas vigentes, posición bigint y máxima Fecha. Suma en
+bigint desde INTEGER leído como TEXT: admite agregado superior a int64 sin float ni
+desbordamiento, respetando rango individual previo. Solo Control Movimientos calcula
+apertura null→0 sin mutar null ni aplicar Fecha apertura; otros controles mantienen su
+semántica/disponibilidad. Lecturas financieras de API usan snapshot transaccional.
+Ciclos deriva intervalos desde maestro completo; referencia Movimientos disponible
+vacía/con hechos, otras fuentes pendientes. Rectificar/anular recalcula máximo real.
+Europe/Madrid limita Fecha económica de Ingreso/Gasto al día actual en servidor; no
+convierte reloj en referencia ni restringe Ciclos futuros.
+
+movimientos.ts valida y compone preview→confirmación, coincidencia por firma aprobada,
+revisión/huella de hechos+catálogos+ciclos+saldos y auditoría atómica. Huella es control
+de coherencia, no autorización de seguridad ni firma de cierre. Sesión MFA/CSRF siguen
+obligatorias. Guarda de futuras protecciones inyectable solo por servidor; sin proveedor
+simulado en runtime. Anulación valida operación/impacto, preservando enlaces inactivos.
+Saldo usado bloquea edición ordinaria de Tipo/Control/apertura/fecha/permiso que afecte
+historia. Clasificación conecta movimientos reales, cambios indirectos de ancestros,
+periodos y obligaciones; huella incluye hechos y nueva obligación no verificable bloquea.
+Posición por Saldo no depende de clasificación; indicadores no instalados siguen pendientes.
+
+API autenticada: GET /api/movimientos, /:id, /opciones; POST /impacto, alta en raíz;
+POST /:id/impacto, /rectificar, /impacto-anulacion, /anular. Sin PATCH/DELETE ni fecha
+financiera manual. Respuestas y auditoría nunca se guardan en artifacts de CI; solo PNG.
+GET opciones lee catálogos completos para selección/filtros, no primera página truncada.
+No dependencias nuevas. [Resultados y límites](../04-movimientos-testplan.md).

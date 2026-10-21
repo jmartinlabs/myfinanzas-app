@@ -5,7 +5,7 @@ import { readFileSync } from "node:fs";
 import { openDatabase } from "../src/database";
 import { backup, restore } from "../src/backup";
 import { createApp } from "../src/app";
-const dir = ".local/e2e";
+const dir = process.env.E2E_RESTORE_DIR ?? ".local/e2e";
 const db = openDatabase(dir + "/demo.sqlite");
 const key = readFileSync(dir + "/auth.key");
 const gen = Bun.spawnSync(
@@ -29,7 +29,12 @@ const app = createApp(restored, {
 BunRuntime.runMain(
   Layer.launch(
     HttpServer.serve(app).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3002 })),
+      Layer.provide(
+        BunHttpServer.layer({
+          hostname: "127.0.0.1",
+          port: Number(process.env.E2E_RESTORE_PORT ?? "3002"),
+        }),
+      ),
     ),
   ),
 );

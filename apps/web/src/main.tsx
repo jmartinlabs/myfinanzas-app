@@ -1,3 +1,4 @@
+import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
@@ -184,6 +185,20 @@ function App() {
             <span aria-hidden="true">▦</span> Ciclos{" "}
             <span aria-hidden="true">›</span>
           </a>
+          <a
+            className={
+              path.startsWith("/movimientos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/movimientos") ? "page" : undefined}
+            href="/movimientos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/movimientos");
+            }}
+          >
+            <span aria-hidden="true">↔</span> Movimientos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>
@@ -218,7 +233,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/ciclos") ? (
+          {path.startsWith("/movimientos") ? (
+            <Movimientos path={path} go={go} />
+          ) : path.startsWith("/ciclos") ? (
             <Ciclos path={path} go={go} />
           ) : path.startsWith("/clasificacion") ? (
             <Clasificacion path={path} go={go} />

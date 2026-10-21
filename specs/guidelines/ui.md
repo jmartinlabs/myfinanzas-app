@@ -197,3 +197,16 @@ verde #8DBB2E. Cabecera consulta maestro/contexto real: «Sin ciclos» ≠ «No 
 por referencia pendiente ≠ error de carga. Abierto es temporal, nunca cierre financiero.
 Formulario propio de dos campos, ambos vacíos; vista previa derivada separada. 409
 conserva borrador y exige actualizar contexto explícitamente; sin ajustes silenciosos.
+
+
+## E1.4 — pantallas implementadas, pendiente revisión de PR
+Listado tabla/tarjetas, filtros por IDs/intervalo/ciclo/estado, ficha y formularios
+propios. Importe siempre positivo; Tipo comunica dirección. Fecha prevista explícita
+dd/mm/aaaa junto al input date nativo dependiente de navegador/SO. Cabecera central
+usa hechos vigentes, no reloj. Posición calculada de Movimientos con texto de contraste
+normal; otros motores siguen con motivo de no disponibilidad.
+Vista previa compacta de cambios y efecto en Saldos/ciclos/referencia, duplicados
+revisables sin rechazo de hechos distintos. Anulado conserva periodo/relaciones y
+no computa, sin confundirse con devolución. Auditoría consultable, sin reactivación.
+Controles reales 390/1440 y capturas en [testplan](../04-movimientos-testplan.md);
+no equiparar wireframes aprobados con prueba visual ni auditoría WCAG completa.

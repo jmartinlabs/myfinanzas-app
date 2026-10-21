@@ -21,7 +21,9 @@ E1.2 implementation approved on 58b51f9 and integrated through PR #11;
 27 current acceptance checks verified, 4 future financial contracts pending.
 E1.3 spec approved and integrated via PR #12 (179942e); dev 03 authorized locally.
 See [progress 03](03-ciclos-financiados-progress.md) and [testplan 03](03-ciclos-financiados-testplan.md).
-Implementation review/merge pending; no E2.1 or deployment. Historical STEP 5 approval records remain attributed
+E1.3 integrated via PR #13 (ff9d18d). Spec 04 approved/integrated PR #14 (5fa4ace);
+dev 04 authorized locally. [Progress](04-movimientos-progress.md) / [acceptance](04-movimientos-testplan.md):
+29 current criteria, AC-30–33 future. Implementation review/merge pending; no E1.5 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

@@ -124,6 +124,16 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
     expect(g.origen.id).toBe(saldo.id);
     expect(g.destino.id).toBe("S000");
     expect(g.partida?.categoria?.id).toBe(category.id);
+    const freeText = save(
+      db,
+      expense(saldo.id, partida.id, {
+        concepto: "Transferencia, Nómina y Compra son texto libre",
+        nota: "No modificar clasificación desde esta descripción",
+      }),
+    );
+    expect(freeText.tipo).toBe("Gasto");
+    expect(freeText.partida?.id).toBe(partida.id);
+
     for (const importe of [
       undefined,
       null,
@@ -252,6 +262,19 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
     );
     expect(() => save(db, expense(blocked.id, partida.id))).toThrow();
     expect(getMovement(db, g.id).movimiento.partida?.estado).toBe("Inactiva");
+    const active = createSaldo(
+      db,
+      {
+        nombre: "Validar clasificación inactiva",
+        tipo: "Efectivo",
+        control: "Movimientos",
+        permiteSalidaExterior: true,
+      },
+      randomUUID(),
+    );
+    expect(() => save(db, expense(active.id, partida.id))).toThrow(
+      "clasificación",
+    );
   } finally {
     db.close();
   }
@@ -982,6 +1005,60 @@ test("04 filtros/páginas: maestro completo, orden numérico y posición no depe
       listMovements(db, new URLSearchParams({ page: "0" })),
     ).toThrow();
     expect(movementOptions(db).partidas[0].categoria?.id).toBe(m.category.id);
+  } finally {
+    db.close();
+  }
+});
+
+test("04 AC18/20/23: anular conserva enlaces históricos y no valida como alta; IDs exactos mayores que 2^53", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const m = masters(db),
+      g = save(db, expense(m.saldo.id, m.partida.id));
+    // Isolated future-import legacy configuration, not a fixture endpoint or financial engine.
+    db.run("UPDATE saldos SET estado='Inactiva',exterior=NULL WHERE id=?", [
+      m.saldo.id,
+    ]);
+    db.run("UPDATE partidas SET estado='Inactiva' WHERE id=?", [m.partida.id]);
+    db.run("UPDATE categorias SET referencia=1 WHERE id=?", [m.category.id]);
+    const cancelled = save(
+      db,
+      {
+        revision: g.revision,
+        motivo: "Registro heredado erróneo, sin hecho real",
+      },
+      g.id,
+      true,
+    );
+    expect(cancelled.id).toBe(g.id);
+    expect(cancelled.anulado).toBe(true);
+    expect(cancelled.origen.estado).toBe("Inactiva");
+    expect(cancelled.partida?.estado).toBe("Inactiva");
+    expect(getSaldo(db, m.saldo.id).permiteSalidaExterior).toBeNull();
+    expect(getSaldo(db, m.saldo.id).posicion.importe).toBe("100.00");
+    expect(cycleContext(db).referencia.fecha).toBeNull();
+    expect(() =>
+      db.run("UPDATE movimientos SET anulado=0 WHERE id=?", [g.id]),
+    ).toThrow();
+    const other = createSaldo(
+      db,
+      {
+        nombre: "Identidad ficticia de precisión",
+        tipo: "Efectivo",
+        control: "Movimientos",
+      },
+      randomUUID(),
+    );
+    db.run(
+      "UPDATE counters SET next=9007199254740993 WHERE name='movimientos'",
+    );
+    const first = save(db, income(other.id)),
+      second = save(db, income(other.id, { importe: "1" }));
+    expect(first.id).toBe("9007199254740993");
+    expect(second.id).toBe("9007199254740994");
+    expect(() =>
+      db.run("UPDATE movimientos SET id='999' WHERE id=?", [first.id]),
+    ).toThrow();
   } finally {
     db.close();
   }
