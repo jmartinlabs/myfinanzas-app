@@ -99,8 +99,8 @@ def main():
                '--env=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key']
         hardened = ['--pull=never', '--userns=keep-id:uid=10001,gid=10001',
                     '--user=10001:10001', '--cap-drop=all', '--security-opt=no-new-privileges',
-                    '--read-only', '--pids-limit=128', '--memory=1g', '--cpus=1',
-                    '--tmpfs=/tmp:rw,noexec,nosuid,nodev,mode=0700,uid=10001,gid=10001,size=64m',
+                    '--read-only', '--read-only-tmpfs=false', '--pids-limit=128', '--memory=1g', '--cpus=1',
+                    '--tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0700,size=64m',
                     '--volume=' + str(data) + ':/var/lib/myfinanzas:rw']
         stage = 'explicit-production-fixture-initialization'
         run(['podman', 'run', '--rm', '--network=none', *hardened, *env,
@@ -113,11 +113,14 @@ def main():
                 raise ProbeError('host UID/permission invariant failed')
         evidence['host-private-permissions-and-uid'] = True
         stage = 'internal-uid-and-volume-ownership'
-        identity_js = ('import {statSync} from "node:fs"; console.log(JSON.stringify({uid:process.getuid(),'
-                       'gid:process.getgid(),owner:statSync("/var/lib/myfinanzas/state/auth.key").uid}));')
+        identity_js = ('import {statSync,writeFileSync,unlinkSync} from "node:fs";'
+                       'writeFileSync("/tmp/owned-probe","probe",{mode:0o600,flag:"wx"});'
+                       'unlinkSync("/tmp/owned-probe"); console.log(JSON.stringify({uid:process.getuid(),'
+                       'gid:process.getgid(),owner:statSync("/var/lib/myfinanzas/state/auth.key").uid,'
+                       'tmpowner:statSync("/tmp").uid,tmpmode:statSync("/tmp").mode&0o777}));')
         identity = json.loads(run(['podman', 'run', '--rm', '--network=none', *hardened,
                                   image, '-e', identity_js]))
-        if identity != {'uid': 10001, 'gid': 10001, 'owner': 10001}:
+        if identity != {'uid': 10001, 'gid': 10001, 'owner': 10001, 'tmpowner': 10001, 'tmpmode': 0o700}:
             raise ProbeError('internal UID/volume ownership mismatch')
         evidence['uid-10001-keep-id-real'] = True
         # Leave an idle connection open to retain a real, noncheckpointed WAL.
@@ -159,8 +162,8 @@ Environment=API_BIND_HOST=0.0.0.0
 NoNewPrivileges=true
 ReadOnly=true
 DropCapability=all
-Tmpfs=/tmp:rw,noexec,nosuid,nodev,mode=0700,uid=10001,gid=10001,size=64m
-PodmanArgs=--memory=1g --cpus=1 --pids-limit=128
+Tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0700,size=64m
+PodmanArgs=--read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128
 [Service]
 Restart=on-failure
 RestartSec=5

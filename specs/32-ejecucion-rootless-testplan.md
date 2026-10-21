@@ -123,3 +123,15 @@ atribuye el fallo al mecanismo keep-id sin evidencia.
 Versiones de ese runner: Podman 4.9.3, systemd 255 (255.4-1ubuntu8.18),
 kernel 7.0.0-1017-azure, uidmap 1:4.13+dfsg1-4ubuntu3.2. Registrar por ejecución:
 la etiqueta ubuntu-24.04 no fija kernel/patch de paquetes entre runners.
+
+### Compatibilidad tmpfs Podman 4.9.3 — 2026-10-22
+Run 39689349891 / 738a179 identifica rechazo técnico exacto previo a aplicación:
+unknown mount option uid=10001. No demuestra incompatibilidad de keep-id.
+Se elimina esa opción no admitida y se usa tmpcopyup (mecanismo Podman 4.9),
+con /tmp de imagen preparado 0700/UID 10001 durante construcción, no mediante
+chmod/chown de estado en arranque. Se deshabilitan tmpfs automáticos de rootfs
+readonly; se conserva tmpfs explícito 64 MiB, noexec/nosuid/nodev y 0700.
+La prueba exige stat de propietario/mode y escritura/unlink real con UID 10001;
+si no conserva permisos/propietario, falla. Sin 0777, root o seccomp relajado.
+Referencia de implementación: Podman v4.9.3 pkg/specgen/generate/storage.go usa
+tmpcopyup para montajes readonly; la aceptación depende del ensayo, no de esa lectura.
