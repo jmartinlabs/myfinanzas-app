@@ -246,7 +246,7 @@ test("03 AC04/16: cambios de huso horario y DST no desplazan límites civiles", 
   expect(new Set(outputs).size).toBe(1);
 });
 
-test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v4", async () => {
+test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v5", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-cycles-upgrade-")),
     path = join(dir, "demo.sqlite");
   let db = openV2(path);
@@ -327,7 +327,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 4,
+      version: 5,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
     expect({
@@ -354,8 +354,8 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
     ).toBeString();
     const cycle = add(db, "2028-02-28", "-12.34");
     add(db, "2028-03-01");
-    backup(db, key, join(dir, "v4"), pub);
-    for (const version of [2, 4]) {
+    backup(db, key, join(dir, "v5"), pub);
+    for (const version of [2, 5]) {
       const restored = restore(
         join(dir, "v" + version),
         join(dir, "restored" + version),
@@ -369,8 +369,8 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         }).toEqual(priorSaldo);
         expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-10.01");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
-        expect(listCycles(copy).total).toBe(version === 4 ? 2 : 0);
-        if (version === 4)
+        expect(listCycles(copy).total).toBe(version === 5 ? 2 : 0);
+        if (version === 5)
           expect(getCycle(copy, cycle.ciclo.id).ciclo.fin).toBe("2028-02-29");
       } finally {
         copy.close();

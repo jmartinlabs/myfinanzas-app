@@ -5,7 +5,8 @@ export const fingerprint = (v: unknown) =>
 export type LedgerRow = {
   id: string;
   fecha: string;
-  tipo: "Ingreso" | "Gasto";
+  tipo: "Ingreso" | "Gasto" | "Transferencia";
+  referencia?: string | null;
   importe: string;
   origen: string;
   destino: string;
@@ -27,7 +28,7 @@ export function ledgerInstalled(db: Database) {
 export function ledgerRows(db: Database): LedgerRow[] {
   return db
     .query(
-      "SELECT id,fecha,tipo,CAST(importe AS TEXT) importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado FROM movimientos ORDER BY length(id),id",
+      "SELECT id,fecha,tipo,CAST(importe AS TEXT) importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado FROM movimientos ORDER BY length(id),id",
     )
     .all() as LedgerRow[];
 }
@@ -61,6 +62,7 @@ export function movementSource(
 export function financeRevision(db: Database) {
   return fingerprint([
     ledgerRows(db),
+    db.query("SELECT * FROM referencias ORDER BY id").all(),
     db
       .query(
         "SELECT id,nombre,tipo,control,estado,exterior,CAST(apertura AS TEXT) apertura,fecha_apertura,revision FROM saldos ORDER BY id",
