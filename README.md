@@ -107,8 +107,10 @@ Build solo genera cliente estático: no despliega ni hace la app apta para datos
 ## Skills
 
 STEP 5 integrado en main ebfe75b. Handoff completado; Skill spec reutilizada en STEP 6.
-STEP 7 E1.1 se entrega en rama para revisión de Álex y aprobación de PR; no se ha
-fusionado. No E1.2, despliegue ni uso real autorizado. `$dev 01` reutiliza la especificación;
+STEP 7 E1.1 implementado e integrado mediante PR #7, aprobada expresamente por el usuario
+tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendientes.
+Siguiente paso previsto: STEP 8, pendiente de nueva autorización; no iniciado.
+No E1.2, despliegue ni uso real autorizado. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 
 ## Universal AI development template

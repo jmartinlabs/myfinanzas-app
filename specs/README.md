@@ -10,10 +10,10 @@ outside the repository and have not been inspected by Codex. The functional spec
 attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
 the [approved STEP 4 roadmap](roadmap.md): four epics and 30 functional increments,
 not necessarily 30 sprints or PRs. STEP 4 is complete. STEP 5 E1.1 is approved and merged (PR #6, main ebfe75b).
-Handoff is complete; the reusable spec Skill covers STEP 6. STEP 7 `$dev 01` is authorized
-for local fictional Saldos only. Follow [progress](01-saldos-control-progress.md) and
-[43 acceptance checks](01-saldos-control-testplan.md). Functional PR requires user approval
-before merge; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
+Handoff is complete; the reusable spec Skill covers STEP 6. STEP 7 `$dev 01` E1.1 is implemented and integrated via approved PR #7
+for local fictional Saldos only; later financial engines remain pending. Follow [progress](01-saldos-control-progress.md) and
+[43 acceptance checks](01-saldos-control-testplan.md). PR #7 was expressly approved after review of 4f7cdda on 2026-10-21.
+STEP 8 is the next methodological step, not started and awaiting authorization; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

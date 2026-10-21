@@ -142,3 +142,10 @@ Baseline ce7a92c: 14 Bun/173 aserciones; revisión: 15 Bun/195 aserciones pasan.
 Antes de datos reales: inicialización limpia sin fixtures y migración autorizada,
 todavía no implementadas. Copias externas, automatización y configuración productiva
 siguen pendientes. Sin nuevas dependencias/infraestructura, E1.2, STEP 8 ni merge.
+
+## Cierre aprobado de entrega
+PR #7 aprobada expresamente por el usuario tras revisión de Álex sobre 4f7cdda el
+2026-10-21; E1.1 implementado e integrado con cierre documental. Los registros anteriores
+de espera/sin merge son históricos. La aprobación no completa motores financieros:
+AC-30/31 siguen contractuales y la integración futura de AC-38 sigue pendiente.
+STEP 8, E1.2 y despliegues no iniciados; Excel v5.11 continúa fuente de verdad.

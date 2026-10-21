@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-El repositorio privado contiene E1.1 Saldos local con datos ficticios, en rama para revisión.
+El repositorio privado contiene E1.1 Saldos local con datos ficticios, implementado e integrado mediante PR #7.
 Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
 
 - Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -24,8 +24,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
   el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
   con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
-  Desarrollo E1.1 autorizado; PR funcional pendiente de revisión y merge solo aprobado
-  por usuario. Sin E1.2, datos reales, despliegue o servicios contratados.
+  E1.1 implementado e integrado en PR #7 tras aprobación expresa del usuario sobre
+  4f7cdda y autorización de merge el 2026-10-21. Motores financieros posteriores pendientes.
+  STEP 8 y E1.2 requieren nueva autorización. Sin datos reales, despliegue o servicios contratados.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.

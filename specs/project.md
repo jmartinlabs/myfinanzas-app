@@ -149,10 +149,10 @@ Esta autorización sustituye límites de implementación del STEP 5 anterior; no
 reglas aprobadas ni habilita E1.2, datos reales, despliegue o merge sin autorización.
 
 ## Estado de entrega STEP 7 E1.1
-Especificación/diseño integrados en main ebfe75b; Handoff completado. La rama funcional
-implementa el catálogo ficticio con altas/ediciones/estados, MFA y copias locales, según
+Especificación/diseño integrados en main ebfe75b; Handoff completado. PR #7, aprobada tras revisión de Álex sobre 4f7cdda,
+integra el catálogo ficticio con altas/ediciones/estados, MFA y copias locales, según
 [progreso](01-saldos-control-progress.md) y [evidencia](01-saldos-control-testplan.md).
 Los textos anteriores de «sin implementación» registran la fase documental original.
 No son un permiso para nuevos módulos: E1.2 y motores posteriores siguen excluidos.
-Excel v5.11 sigue como maestro, sin datos reales ni despliegue. Revisión/merge funcional
-pendientes del usuario; no se ha iniciado STEP 8.
+Excel v5.11 sigue como maestro, sin datos reales ni despliegue. E1.1 implementado e integrado. STEP 8, siguiente paso metodológico,
+requiere nueva autorización y no se ha iniciado.

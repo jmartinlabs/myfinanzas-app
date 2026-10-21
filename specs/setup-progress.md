@@ -79,7 +79,8 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-Seguir el progreso STEP 7 E1.1; entregar incrementos y PR funcional con evidencia actual.
+E1.1 implementado e integrado en PR #7. Esperar autorización para STEP 8; no iniciar
+E1.2 ni despliegues. Estado vigente en el cierre inferior.
 
 ## Estado vigente STEP 7 — 2026-10-21
 PR #6 MERGED verificada, commit main ebfe75b, coincidente con especificación/diseño aprobados.
@@ -95,5 +96,7 @@ Solo local/ficticio. Excel v5.11 maestro. Sin E1.2, despliegue ni merge sin apro
 Handoff y estados completados en la misma rama funcional. Listado/ficha/formulario,
 acceso protegido, persistencia exacta y ensayo cifrado local implementados. Evidencia
 actual y distinción de contratos futuros en testplan; sin E1.2 ni motores posteriores.
-Siguiente puerta: revisión de Álex y aprobación expresa de PR funcional, sin merge automático.
-STEP 8 no iniciado por extensión del permiso de E1.1.
+PR #7 aprobada expresamente por el usuario tras revisión de Álex sobre 4f7cdda;
+E1.1 implementado e integrado, cierre registrado en progress.
+STEP 8 es el siguiente paso previsto y sigue sin iniciar; requiere nueva autorización.
+Motores AC-30/31 y parte futura de AC-38 pendientes. Excel v5.11 sigue maestro.
