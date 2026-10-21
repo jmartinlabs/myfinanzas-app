@@ -31,8 +31,8 @@ corregidos y verificados de nuevo. Sin fallos finales conocidos ni pruebas bloqu
 por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
 
 ## Next action
-Esperar autorización para STEP 8 (Skill dev reutilizable); no iniciarlo ni empezar
-E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
+STEP 8 autorizado posteriormente: consolidación de la Skill dev preparada en rama
+independiente para revisión; aprobación/merge pendientes. No empezar E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
