@@ -128,9 +128,11 @@ test("03 AC01/02/05/09/12–15: alta explícita, mes único y orden, sin reloj n
     expect(first.ciclo.saldoInicialComida).toBe("-12.34");
     expect(first.ciclo.fin).toBeNull();
     expect(first.contexto.referencia.fecha).toBeNull();
-    expect(
-      first.contexto.referencia.coverage.every((s) => s.state === "pendiente"),
-    ).toBe(true);
+    expect(first.contexto.referencia.coverage.map((s) => s.state)).toEqual([
+      "disponible",
+      "pendiente",
+      "pendiente",
+    ]);
     expect(() => add(db, "2026-10-25")).toThrow("Ciclo duplicado");
     expect(() => add(db, "2026-10-01")).toThrow("Ciclo duplicado");
     expect(() => add(db, "2026-09-25")).toThrow("posterior");
@@ -244,7 +246,7 @@ test("03 AC04/16: cambios de huso horario y DST no desplazan límites civiles", 
   expect(new Set(outputs).size).toBe(1);
 });
 
-test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v3", async () => {
+test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v2/v4", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-cycles-upgrade-")),
     path = join(dir, "demo.sqlite");
   let db = openV2(path);
@@ -325,10 +327,14 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 3,
+      version: 4,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
-    expect(getSaldo(db, saldo.id)).toEqual(priorSaldo);
+    expect({
+      ...getSaldo(db, saldo.id),
+      posicion: priorSaldo.posicion,
+    }).toEqual(priorSaldo);
+    expect(getSaldo(db, saldo.id).posicion.importe).toBe("-10.01");
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
     expect(
       nextAuth.session(
@@ -348,8 +354,8 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
     ).toBeString();
     const cycle = add(db, "2028-02-28", "-12.34");
     add(db, "2028-03-01");
-    backup(db, key, join(dir, "v3"), pub);
-    for (const version of [2, 3]) {
+    backup(db, key, join(dir, "v4"), pub);
+    for (const version of [2, 4]) {
       const restored = restore(
         join(dir, "v" + version),
         join(dir, "restored" + version),
@@ -357,10 +363,14 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
       );
       const copy = openDatabase(restored.database);
       try {
-        expect(getSaldo(copy, saldo.id)).toEqual(priorSaldo);
+        expect({
+          ...getSaldo(copy, saldo.id),
+          posicion: priorSaldo.posicion,
+        }).toEqual(priorSaldo);
+        expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-10.01");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
-        expect(listCycles(copy).total).toBe(version === 3 ? 2 : 0);
-        if (version === 3)
+        expect(listCycles(copy).total).toBe(version === 4 ? 2 : 0);
+        if (version === 4)
           expect(getCycle(copy, cycle.ciclo.id).ciclo.fin).toBe("2028-02-29");
       } finally {
         copy.close();

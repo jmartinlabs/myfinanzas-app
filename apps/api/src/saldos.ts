@@ -1,3 +1,8 @@
+import {
+  ledgerInstalled,
+  positionCents,
+  saldoHasEconomicUse,
+} from "./movement-ledger";
 import { Schema } from "effect";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
@@ -130,7 +135,7 @@ type Row = {
   manual: string | null;
   revision: number;
 };
-function dto(r: Row): Saldo {
+function dto(db: Database, r: Row): Saldo {
   return {
     id: r.id,
     nombre: r.nombre,
@@ -145,15 +150,23 @@ function dto(r: Row): Saldo {
     saldoApertura: decimal(r.apertura),
     objetivo: decimal(r.objetivo),
     revision: r.revision,
-    posicion: position(r.control, decimal(r.manual)),
+    posicion:
+      r.control === "Movimientos" && ledgerInstalled(db)
+        ? {
+            importe: decimal(positionCents(db, r.id, r.apertura)),
+            condicion: "calculado",
+            motivo:
+              "Apertura + entradas − salidas vigentes. Sin filtro por Fecha apertura.",
+          }
+        : position(r.control, decimal(r.manual)),
   };
 }
-export function getSaldo(db: Database, id: string): Saldo {
+function readSaldo(db: Database, id: string): Saldo {
   const r = db.query(select + " WHERE id=?").get(id) as Row | null;
   if (!r) throw new Problem(404, "NOT_FOUND", "Saldo no encontrado.");
-  return dto(r);
+  return dto(db, r);
 }
-export function listSaldos(db: Database, params = new URLSearchParams()) {
+function readSaldos(db: Database, params = new URLSearchParams()) {
   const q = (params.get("q") ?? "").toLocaleLowerCase("es");
   const estado = params.get("estado") ?? "Activa",
     tipo = params.get("tipo"),
@@ -162,7 +175,7 @@ export function listSaldos(db: Database, params = new URLSearchParams()) {
   if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
     throw new Problem(422, "VALIDATION", "Página inválida.");
   const rows = (db.query(select + " ORDER BY id").all() as Row[])
-    .map(dto)
+    .map((r) => dto(db, r))
     .filter(
       (s) =>
         (params.get("tecnico") === "true" || s.id !== "S000") &&
@@ -393,7 +406,7 @@ export function updateSaldo(
           JSON.stringify(v[f as keyof SaldoInput]) !==
           JSON.stringify(old[f as keyof SaldoInput]),
       );
-      if (guard(id, changed))
+      if (saldoHasEconomicUse(db, id, changed) || guard(id, changed))
         throw new Problem(
           409,
           "HISTORY_LOCKED",
@@ -408,4 +421,11 @@ export function updateSaldo(
       return getSaldo(db, id);
     })
     .immediate();
+}
+
+export function getSaldo(db: Database, id: string): Saldo {
+  return db.transaction(() => readSaldo(db, id))();
+}
+export function listSaldos(db: Database, params = new URLSearchParams()) {
+  return db.transaction(() => readSaldos(db, params))();
 }

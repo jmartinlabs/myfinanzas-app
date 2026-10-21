@@ -123,7 +123,7 @@ test("AC01–08/17: persistencia, IDs, atributos independientes, estado y FK his
       fechaApertura: "2026-01-10",
     });
     expect(s.id).toBe("S006");
-    expect(s.posicion.importe).toBeNull();
+    expect(s.posicion.importe).toBe("-10.25");
     db.run(
       "CREATE TABLE history_fixture(id INTEGER PRIMARY KEY,saldo TEXT REFERENCES saldos(id) ON DELETE RESTRICT) STRICT",
     );
@@ -202,7 +202,11 @@ test("AC06/09–12/27/34: seis pares, S000 protegido y posiciones no inventadas"
       "Inversión/Inversiones",
       "Efectivo/No controlado",
     ]);
-    for (const s of all) expect(s.posicion.importe).toBeNull();
+    for (const s of all) {
+      if (s.control === "Movimientos")
+        expect(s.posicion.importe).toBe(s.saldoApertura ?? "0.00");
+      else expect(s.posicion.importe).toBeNull();
+    }
     expect(getSaldo(db, "S002").posicion.motivo).toContain("Terminal");
     expect(getSaldo(db, "S005").posicion.motivo).toContain("No controlado");
     expect(() =>

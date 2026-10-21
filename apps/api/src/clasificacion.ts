@@ -1,3 +1,4 @@
+import { classificationMovementImpact } from "./movement-impact";
 import type { Database } from "bun:sqlite";
 import { Schema } from "effect";
 import { createHash } from "node:crypto";
@@ -371,6 +372,7 @@ function impact(
     ["padre", "anual", "mensual", "referencia"].includes(k),
   );
   const dependencies = descendants(db, kind, id);
+  const financial = classificationMovementImpact(db, kind, id, value, economic);
   const protection = guard?.(kind, id, economic);
   if (protection?.blocked)
     throw new Problem(
@@ -384,12 +386,14 @@ function impact(
     changed,
     economic,
     dependencies,
-    used: protection?.used === true,
-    fingerprint: hash([kind, id, value, snapshot(db)]),
-    coverage:
-      "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
+    used: financial?.used === true || protection?.used === true,
+    financial,
+    fingerprint: hash([kind, id, value, snapshot(db), financial?.revision]),
+    coverage: financial
+      ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
+      : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
     pending: [
-      "Movimientos",
+      ...(financial ? [] : ["Movimientos"]),
       "Presupuestos",
       "Deudas",
       "Indicadores",

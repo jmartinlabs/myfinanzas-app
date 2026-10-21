@@ -2,7 +2,8 @@ import { Database } from "bun:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname } from "node:path";
 import { classificationSchema } from "./classification-schema";
-import { cycleSchema, schemaVersion } from "./cycle-schema";
+import { cycleSchema } from "./cycle-schema";
+import { movementSchema, schemaVersion } from "./movement-schema";
 
 // Only fictional bootstrap data. Original Excel and real migration are outside this module.
 export function openDatabase(path: string) {
@@ -33,7 +34,7 @@ export function openDatabase(path: string) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, schemaVersion].includes(versions[0].version)
+      ![1, 2, 3, schemaVersion].includes(versions[0].version)
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
@@ -71,11 +72,12 @@ export function openDatabase(path: string) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, schemaVersion].includes(versions[0].version)
+          ![1, 2, 3, schemaVersion].includes(versions[0].version)
         )
           throw new Error("Esquema no compatible; no se modificará esta base.");
         if (versions[0].version === 1) classificationSchema(db);
         if (versions[0].version <= 2) cycleSchema(db);
+        if (versions[0].version <= 3) movementSchema(db);
         return; // Existing E1.1 data is never re-seeded (even if no Saldo exists).
       }
       if (
@@ -170,6 +172,7 @@ export function openDatabase(path: string) {
       }
       classificationSchema(db);
       cycleSchema(db);
+      movementSchema(db);
     }).immediate();
   } catch (error) {
     db.close();

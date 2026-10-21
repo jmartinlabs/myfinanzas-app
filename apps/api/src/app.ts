@@ -1,4 +1,12 @@
 import {
+  getMovement,
+  listMovements,
+  movementOptions,
+  previewMovement,
+  writeMovement,
+  type MovementProtection,
+} from "./movimientos";
+import {
   HttpRouter,
   HttpServerRequest,
   HttpServerResponse,
@@ -32,6 +40,7 @@ import { listCycles, getCycle, cycleContext, createCycle } from "./ciclos";
 
 export type AppOptions = {
   classificationGuard?: ClassificationGuard;
+  movementGuard?: MovementProtection;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -149,9 +158,11 @@ export function createApp(db: Database, options: AppOptions) {
         return reply({ saldo }, 201);
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
-        return reply(cycleContext(db));
+        return reply(db.transaction(() => cycleContext(db))());
       if (path === "/api/ciclos" && req.method === "GET")
-        return reply(listCycles(db, new URL(req.url).searchParams));
+        return reply(
+          db.transaction(() => listCycles(db, new URL(req.url).searchParams))(),
+        );
       if (path === "/api/ciclos" && req.method === "POST") {
         const result = createCycle(
           db,
@@ -163,7 +174,69 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(result, 201);
       }
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
-      if (cycle && req.method === "GET") return reply(getCycle(db, cycle[1]));
+      if (cycle && req.method === "GET")
+        return reply(db.transaction(() => getCycle(db, cycle[1]))());
+      if (path === "/api/movimientos/opciones" && req.method === "GET")
+        return reply(movementOptions(db, now()));
+      if (path === "/api/movimientos" && req.method === "GET")
+        return reply(listMovements(db, new URL(req.url).searchParams));
+      if (path === "/api/movimientos/impacto" && req.method === "POST")
+        return reply(
+          previewMovement(
+            db,
+            await jsonBody(req),
+            null,
+            false,
+            now(),
+            options.movementGuard,
+          ),
+        );
+      if (path === "/api/movimientos" && req.method === "POST") {
+        const result = writeMovement(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          null,
+          false,
+          now(),
+          options.movementGuard,
+        );
+        headers.set("location", "/api/movimientos/" + result.movimiento.id);
+        return reply(result, 201);
+      }
+      const movement = path.match(
+        /^\/api\/movimientos\/(\d+)(?:\/(impacto|rectificar|anular|impacto-anulacion))?$/,
+      );
+      if (movement) {
+        const [, id, action] = movement;
+        if (!action && req.method === "GET") return reply(getMovement(db, id));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            annul = action === "anular" || action === "impacto-anulacion";
+          if (action === "impacto" || action === "impacto-anulacion")
+            return reply(
+              previewMovement(
+                db,
+                body,
+                id,
+                annul,
+                now(),
+                options.movementGuard,
+              ),
+            );
+          return reply(
+            writeMovement(
+              db,
+              body,
+              req.headers.get("idempotency-key") ?? "",
+              id,
+              annul,
+              now(),
+              options.movementGuard,
+            ),
+          );
+        }
+      }
       const classification = path.match(
         /^\/api\/clasificacion\/(categorias|subcategorias|partidas)(?:\/((?:CAT|SUB|PAR)\d+)(?:\/(desactivar|reactivar|impacto|rectificar))?)?$/,
       );

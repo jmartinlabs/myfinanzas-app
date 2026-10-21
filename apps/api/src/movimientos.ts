@@ -1,0 +1,640 @@
+import type { Database } from "bun:sqlite";
+import { getSaldo, money, decimal, Problem } from "./saldos";
+import { getClassification } from "./clasificacion";
+import { civil, cycleContext, cycleMaster, type Cycle } from "./ciclos";
+import {
+  ledgerRows,
+  financeRevision,
+  fingerprint,
+  positionCents,
+  type LedgerRow,
+} from "./movement-ledger";
+export const incomeSubtypes = ["Nómina", "Bonus", "Intereses", "Promoción"];
+export type MovementProtection = (
+  action: string,
+  before: LedgerRow | null,
+  after: unknown,
+) => { blocked: boolean; reason?: string };
+type Candidate = {
+  fecha: string;
+  tipo: "Ingreso" | "Gasto";
+  importe: string;
+  origen: string;
+  destino: string;
+  subtipo: string | null;
+  partida: string | null;
+  concepto: string;
+  nota: string;
+};
+export function spanishToday(now = Date.now()) {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Madrid",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(new Date(now));
+  const value = (type: string) => parts.find((p) => p.type === type)!.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+const inputs = [
+  "fecha",
+  "tipo",
+  "importe",
+  "saldo",
+  "subtipo",
+  "partida",
+  "concepto",
+  "nota",
+];
+function text(value: unknown, name: string, max = 2000) {
+  if (
+    typeof value !== "string" ||
+    value.length > max ||
+    /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/.test(value)
+  )
+    throw new Problem(422, "VALIDATION", "Revisa los campos indicados.", {
+      [name]: `Texto válido, máximo ${max} caracteres.`,
+    });
+  return value;
+}
+function validated(
+  db: Database,
+  body: Record<string, unknown>,
+  old: LedgerRow | null,
+  now: number,
+): Candidate {
+  for (const key of Object.keys(body))
+    if (!inputs.includes(key))
+      throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`, {
+        [key]: "Campo no editable.",
+      });
+  const errors: Record<string, string> = {};
+  let fecha = "",
+    cents: bigint | null = null;
+  try {
+    fecha = civil(body.fecha);
+    if (fecha > spanishToday(now))
+      errors.fecha =
+        "No se admiten fechas futuras. Fecha máxima: " +
+        spanishToday(now) +
+        " (España).";
+  } catch {
+    errors.fecha = "Indica una fecha civil válida.";
+  }
+  try {
+    if (typeof body.importe !== "string" || !body.importe) throw Error();
+    cents = money(body.importe);
+    if (cents === null || cents <= 0n) throw Error();
+  } catch {
+    errors.importe =
+      "Indica un importe EUR exacto mayor que cero, hasta dos decimales.";
+  }
+  if (body.tipo !== "Ingreso" && body.tipo !== "Gasto")
+    errors.tipo = "Selecciona Ingreso o Gasto.";
+  if (typeof body.saldo !== "string" || !body.saldo || body.saldo === "S000")
+    errors.saldo = "Selecciona un Saldo ordinario existente.";
+  if (body.tipo === "Ingreso") {
+    if (!incomeSubtypes.includes(body.subtipo as string))
+      errors.subtipo = "Selecciona un Subtipo válido.";
+    if (
+      body.partida !== undefined &&
+      body.partida !== null &&
+      body.partida !== ""
+    )
+      errors.partida = "Ingreso no admite Partida.";
+  } else if (body.tipo === "Gasto") {
+    if (typeof body.partida !== "string" || !body.partida)
+      errors.partida = "Selecciona una Partida.";
+    if (
+      body.subtipo !== undefined &&
+      body.subtipo !== null &&
+      body.subtipo !== ""
+    )
+      errors.subtipo = "Gasto no admite Subtipo de Ingreso.";
+  }
+  if (Object.keys(errors).length)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Revisa los campos indicados.",
+      errors,
+    );
+  const tipo = body.tipo as Candidate["tipo"],
+    saldo = getSaldo(db, body.saldo as string);
+  const sameSaldo =
+    old &&
+    old.tipo === tipo &&
+    (tipo === "Ingreso" ? old.destino : old.origen) === saldo.id;
+  if (
+    (!sameSaldo && saldo.estado !== "Activa") ||
+    saldo.control === "Manual" ||
+    saldo.control === "Exterior"
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Saldo no disponible para esta selección.",
+      { saldo: "Selecciona un Saldo activo y operativo." },
+    );
+  if (tipo === "Gasto") {
+    if (saldo.permiteSalidaExterior !== true)
+      throw new Problem(
+        422,
+        "EXTERIOR_PERMISSION",
+        "El Saldo no tiene salida a Exterior expresamente permitida.",
+        { saldo: "Revisa Permite salida a Exterior en el Saldo." },
+      );
+    const p = getClassification(db, "partidas", body.partida as string),
+      sub = getClassification(db, "subcategorias", p.padre!),
+      cat = getClassification(db, "categorias", sub.padre!);
+    if (
+      (!old || old.tipo !== "Gasto" || old.partida !== p.id) &&
+      [p, sub, cat].some((v) => v.estado !== "Activa")
+    )
+      throw new Problem(
+        422,
+        "INACTIVE_CLASSIFICATION",
+        "La nueva clasificación debe estar activa.",
+        { partida: "Selecciona una Partida y ancestros activos." },
+      );
+    if (cat.referencia === true)
+      throw new Problem(
+        422,
+        "REFERENCE_UNAVAILABLE",
+        "Esta Partida exige una Referencia verificable. Disponible en E1.5.",
+        {
+          partida:
+            "Referencia obligatoria no verificable; no se puede registrar este Gasto.",
+        },
+      );
+  }
+  return {
+    fecha,
+    tipo,
+    importe: decimal(String(cents))!,
+    origen: tipo === "Ingreso" ? "S000" : saldo.id,
+    destino: tipo === "Gasto" ? "S000" : saldo.id,
+    subtipo: tipo === "Ingreso" ? (body.subtipo as string) : null,
+    partida: tipo === "Gasto" ? (body.partida as string) : null,
+    concepto: text(body.concepto ?? "", "concepto"),
+    nota: text(body.nota ?? "", "nota", 4000),
+  };
+}
+function auditValue(row: LedgerRow) {
+  return { ...row, importe: decimal(row.importe) };
+}
+function find(db: Database, id: string) {
+  const r = ledgerRows(db).find((r) => r.id === id);
+  if (!r) throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");
+  return r;
+}
+function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
+  const related = (id: string) =>
+    db.query("SELECT id,nombre,estado FROM saldos WHERE id=?").get(id) as {
+      id: string;
+      nombre: string;
+      estado: string;
+    };
+  const p = r.partida ? getClassification(db, "partidas", r.partida) : null;
+  return {
+    ...auditValue(r),
+    anulado: r.anulado === 1,
+    estado: r.anulado ? "Anulado" : "Vigente",
+    origen: related(r.origen),
+    destino: related(r.destino),
+    partida: p,
+    ciclo:
+      cycles.find(
+        (c) => c.inicio <= r.fecha && (c.fin === null || r.fecha <= c.fin),
+      ) ?? null,
+  };
+}
+export function getMovement(db: Database, id: string) {
+  return db.transaction(() => ({
+    movimiento: decorate(db, find(db, id), cycleMaster(db)),
+    auditoria: db
+      .query(
+        "SELECT revision,accion,motivo,instante,actor,anterior,posterior FROM movement_audit WHERE id=? ORDER BY revision",
+      )
+      .all(id)
+      .map((v) => {
+        const a = v as {
+          revision: number;
+          accion: string;
+          motivo: string | null;
+          instante: string;
+          actor: string;
+          anterior: string | null;
+          posterior: string;
+        };
+        return {
+          ...a,
+          anterior: a.anterior ? JSON.parse(a.anterior as string) : null,
+          posterior: JSON.parse(a.posterior as string),
+        };
+      }),
+    contexto: cycleContext(db),
+  }))();
+}
+export function movementOptions(db: Database, now = Date.now()) {
+  return db.transaction(() => ({
+    hoy: spanishToday(now),
+    saldos: (
+      db.query("SELECT id FROM saldos WHERE id!='S000' ORDER BY id").all() as {
+        id: string;
+      }[]
+    ).map((r) => getSaldo(db, r.id)),
+    partidas: (
+      db.query("SELECT id FROM partidas ORDER BY id").all() as { id: string }[]
+    ).map((r) => {
+      const p = getClassification(db, "partidas", r.id),
+        cat = getClassification(db, "categorias", p.categoria!.id),
+        sub = getClassification(db, "subcategorias", p.subcategoria!.id);
+      return {
+        ...p,
+        referenciaObligatoria: cat.referencia,
+        seleccionable: [p, sub, cat].every((x) => x.estado === "Activa"),
+      };
+    }),
+    categorias: db.query("SELECT id,nombre FROM categorias ORDER BY id").all(),
+    subcategorias: db
+      .query("SELECT id,nombre,padre FROM subcategorias ORDER BY id")
+      .all(),
+    ciclos: cycleMaster(db),
+    contexto: cycleContext(db),
+  }))();
+}
+export function listMovements(db: Database, params = new URLSearchParams()) {
+  return db.transaction(() => {
+    const page = Number(params.get("page") ?? 1),
+      state = params.get("estado") ?? "Vigente",
+      tipo = params.get("tipo") ?? "";
+    if (
+      !Number.isSafeInteger(page) ||
+      page < 1 ||
+      page > 100000 ||
+      !["", "Vigente", "Anulado"].includes(state) ||
+      !["", "Ingreso", "Gasto"].includes(tipo)
+    )
+      throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
+    const from = params.get("desde"),
+      to = params.get("hasta");
+    if (from) civil(from);
+    if (to) civil(to);
+    if (from && to && from > to)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "El intervalo de fechas es inválido.",
+      );
+    const cycles = cycleMaster(db),
+      query = (params.get("q") ?? "").toLocaleLowerCase("es");
+    const rows = ledgerRows(db)
+      .map((r) => decorate(db, r, cycles))
+      .filter(
+        (r) =>
+          (!state || r.estado === state) &&
+          (!tipo || r.tipo === tipo) &&
+          (!from || r.fecha >= from) &&
+          (!to || r.fecha <= to) &&
+          (!params.get("saldo") ||
+            [r.origen.id, r.destino.id].includes(params.get("saldo")!)) &&
+          (!params.get("partida") || r.partida?.id === params.get("partida")) &&
+          (!params.get("categoria") ||
+            r.partida?.categoria?.id === params.get("categoria")) &&
+          (!params.get("subcategoria") ||
+            r.partida?.subcategoria?.id === params.get("subcategoria")) &&
+          (!params.get("ciclo") ||
+            (params.get("ciclo") === "sin_ciclo"
+              ? r.ciclo === null
+              : r.ciclo?.id === params.get("ciclo"))) &&
+          `${r.id} ${r.concepto} ${r.nota}`
+            .toLocaleLowerCase("es")
+            .includes(query),
+      )
+      .sort(
+        (a, b) =>
+          b.fecha.localeCompare(a.fecha) ||
+          b.id.length - a.id.length ||
+          b.id.localeCompare(a.id),
+      );
+    return {
+      movimientos: rows.slice((page - 1) * 100, page * 100),
+      total: rows.length,
+      page,
+      contexto: cycleContext(db),
+    };
+  })();
+}
+function payload(body: Record<string, unknown>) {
+  return Object.fromEntries(
+    inputs.filter((k) => k in body).map((k) => [k, body[k]]),
+  );
+}
+function protect(
+  guard: MovementProtection | undefined,
+  action: string,
+  old: LedgerRow | null,
+  next: unknown,
+) {
+  const protection = guard?.(action, old, next);
+  if (protection?.blocked)
+    throw new Problem(
+      409,
+      "HISTORY_LOCKED",
+      protection.reason ?? "Operación afectada por cierre protegido.",
+    );
+}
+function plan(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null,
+  annul: boolean,
+  now: number,
+  guard?: MovementProtection,
+) {
+  const permitted = [
+    ...inputs,
+    "revision",
+    "motivo",
+    "fingerprint",
+    "aceptarCoincidencia",
+  ];
+  for (const name of Object.keys(body))
+    if (!permitted.includes(name) || (annul && inputs.includes(name)))
+      throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
+  const old = id ? find(db, id) : null;
+  if (old && (body.revision !== old.revision || old.anulado))
+    throw new Problem(
+      409,
+      "REVISION_CONFLICT",
+      "El Movimiento ha cambiado o está anulado. Revisa su ficha.",
+    );
+  const next = annul ? null : validated(db, payload(body), old, now);
+  if (old) {
+    const motive = text(body.motivo, "motivo");
+    if (!motive.trim())
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Indica un motivo de rectificación o anulación.",
+        { motivo: "Motivo obligatorio." },
+      );
+  } else if ("revision" in body || "motivo" in body)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "El alta no admite revisión o motivo de rectificación.",
+    );
+  const action = annul ? "anulación" : old ? "rectificación" : "alta";
+  protect(guard, action, old, next);
+  const all = ledgerRows(db),
+    cycles = cycleMaster(db),
+    duplicates = next
+      ? all
+          .filter(
+            (r) =>
+              !r.anulado &&
+              r.id !== id &&
+              r.fecha === next.fecha &&
+              r.tipo === next.tipo &&
+              r.origen === next.origen &&
+              r.destino === next.destino &&
+              decimal(r.importe) === next.importe &&
+              r.subtipo === next.subtipo &&
+              r.partida === next.partida,
+          )
+          .map((r) => ({
+            id: r.id,
+            fecha: r.fecha,
+            tipo: r.tipo,
+            importe: decimal(r.importe),
+            concepto: r.concepto,
+            origen: r.origen,
+            destino: r.destino,
+            subtipo: r.subtipo,
+            partida: r.partida,
+          }))
+      : [];
+  const ids = [
+    ...new Set(
+      [old?.origen, old?.destino, next?.origen, next?.destino].filter(
+        (v): v is string => !!v && v !== "S000",
+      ),
+    ),
+  ];
+  const saldos = ids.map((id) => {
+    const s = getSaldo(db, id);
+    let after: string | null = null;
+    if (s.control === "Movimientos") {
+      let n = BigInt(
+        positionCents(db, id, money(s.saldoApertura)?.toString() ?? null),
+      );
+      if (old && !old.anulado && (old.origen === id || old.destino === id))
+        n -= (old.destino === id ? 1n : -1n) * BigInt(old.importe);
+      if (next && (next.origen === id || next.destino === id))
+        n += (next.destino === id ? 1n : -1n) * money(next.importe)!;
+      after = decimal(n.toString());
+    }
+    return {
+      id,
+      nombre: s.nombre,
+      control: s.control,
+      antes: s.posicion.importe,
+      despues: after,
+      motivo:
+        s.control === "Movimientos"
+          ? "Motor Movimientos"
+          : "Posición no calculable por este motor",
+    };
+  });
+  const dates = all
+    .filter((r) => !r.anulado && r.id !== id)
+    .map((r) => r.fecha);
+  if (next) dates.push(next.fecha);
+  const contexto = cycleContext(db);
+  return {
+    accion: action,
+    antes: old ? decorate(db, old, cycles) : null,
+    despues: next,
+    duplicados: duplicates,
+    fingerprint: fingerprint([
+      action,
+      id,
+      old?.revision,
+      next,
+      annul,
+      financeRevision(db),
+    ]),
+    impacto: {
+      saldos,
+      cicloAntes: old
+        ? (cycles.find(
+            (c) =>
+              c.inicio <= old.fecha && (c.fin === null || old.fecha <= c.fin),
+          ) ?? null)
+        : null,
+      cicloDespues: next
+        ? (cycles.find(
+            (c) =>
+              c.inicio <= next.fecha && (c.fin === null || next.fecha <= c.fin),
+          ) ?? null)
+        : null,
+      referenciaAntes: contexto.referencia.fecha,
+      referenciaDespues: dates.sort().at(-1) ?? null,
+      cobertura:
+        "Movimientos comprobado; posición Control Movimientos y contexto temporal derivados.",
+      pendientes: ["Cierres", "Presupuestos", "Comida", "Inversiones"],
+    },
+    hoy: spanishToday(now),
+  };
+}
+export function previewMovement(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null = null,
+  annul = false,
+  now = Date.now(),
+  guard?: MovementProtection,
+) {
+  return db
+    .transaction(() => plan(db, body, id, annul, now, guard))
+    .immediate();
+}
+export function writeMovement(
+  db: Database,
+  body: Record<string, unknown>,
+  key: string,
+  id: string | null = null,
+  annul = false,
+  now = Date.now(),
+  guard?: MovementProtection,
+) {
+  if (!/^[a-zA-Z0-9-]{16,100}$/.test(key))
+    throw new Problem(
+      422,
+      "IDEMPOTENCY_REQUIRED",
+      "Clave de intento inválida.",
+    );
+  const requestHash = fingerprint([
+    id,
+    annul,
+    Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+  ]);
+  return db
+    .transaction(() => {
+      db.run("DELETE FROM movement_attempts WHERE expires<?", [now]);
+      const retry = db
+        .query("SELECT hash,response FROM movement_attempts WHERE key=?")
+        .get(key) as { hash: string; response: string } | null;
+      if (retry) {
+        if (retry.hash !== requestHash)
+          throw new Problem(
+            409,
+            "IDEMPOTENCY_CONFLICT",
+            "El intento ya corresponde a otros datos.",
+          );
+        return JSON.parse(retry.response) as ReturnType<typeof getMovement>;
+      }
+      const p = plan(db, body, id, annul, now, guard);
+      if (body.fingerprint !== p.fingerprint)
+        throw new Problem(
+          409,
+          "IMPACT_CHANGED",
+          "El contexto ha cambiado. Revisa otra vista previa; tu borrador se conserva.",
+        );
+      if (p.duplicados.length && body.aceptarCoincidencia !== true)
+        throw new Problem(
+          409,
+          "DUPLICATE_REVIEW",
+          "Revisa las coincidencias y confirma si es otro hecho económico real.",
+        );
+      const old = id ? find(db, id) : null,
+        time = new Date(now).toISOString();
+      if (!id) {
+        const n = db
+          .query(
+            "UPDATE counters SET next=next+1 WHERE name='movimientos' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) n",
+          )
+          .get() as { n: string } | null;
+        if (!n)
+          throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
+        id = n.n;
+      }
+      const v = p.despues;
+      if (annul)
+        db.run(
+          "UPDATE movimientos SET anulado=1,revision=revision+1,actualizado=? WHERE id=?",
+          [time, id],
+        );
+      else if (old)
+        db.run(
+          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,concepto=?,nota=?,revision=revision+1,actualizado=? WHERE id=?",
+          [
+            v!.fecha,
+            v!.tipo,
+            money(v!.importe)!,
+            v!.origen,
+            v!.destino,
+            v!.subtipo,
+            v!.partida,
+            v!.concepto,
+            v!.nota,
+            time,
+            id,
+          ],
+        );
+      else
+        db.run(
+          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,1,?,?)",
+          [
+            id,
+            v!.fecha,
+            v!.tipo,
+            money(v!.importe)!,
+            v!.origen,
+            v!.destino,
+            v!.subtipo,
+            v!.partida,
+            v!.concepto,
+            v!.nota,
+            time,
+            time,
+          ],
+        );
+      const after = find(db, id);
+      db.run(
+        "INSERT INTO movement_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)",
+        [
+          id,
+          after.revision,
+          p.accion,
+          old ? (body.motivo as string).trim() : null,
+          time,
+          old ? JSON.stringify(auditValue(old)) : null,
+          JSON.stringify(auditValue(after)),
+        ],
+      );
+      db.run(
+        "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
+        [
+          "movimiento:" + id,
+          p.accion,
+          after.revision,
+          JSON.stringify(annul ? ["anulado"] : inputs),
+          time,
+          old?.revision ?? 0,
+          old ? (body.motivo as string).trim() : null,
+        ],
+      );
+      const response = getMovement(db, id);
+      db.run("INSERT INTO movement_attempts VALUES(?,?,?,?)", [
+        key,
+        requestHash,
+        JSON.stringify(response),
+        now + 86400000,
+      ]);
+      return response;
+    })
+    .immediate();
+}
