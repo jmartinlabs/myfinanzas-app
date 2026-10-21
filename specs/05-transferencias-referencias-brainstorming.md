@@ -1,9 +1,9 @@
 # 05 — E1.5 Transferencias y Referencias: Brainstorming
-Status: DRAFT — NO APROBADO. Q1–Q3 resueltas; revisión final pendiente, sin desarrollo.
+Status: APPROVED — aprobación expresa del usuario tras auditoría favorable de Álex, 2026-10-21.
 Roadmap/context: [E1.5](roadmap.md#e15--transferencias-y-referencias-básicas-estables),
 [referencia R1–R4/P2](functional-reference-v5.11.md), [propuesta](05-transferencias-referencias-specification.md).
 Base: main a693aeb, E1.4 cerrada mediante PR #15/#16. Fecha: 2026-10-21.
-Next action: revisión final de Álex y aprobación expresa del documento completo/wireframes.
+Next action: integrar PR #17 tras CI del cierre documental; después esperar autorización de dev 05.
 
 ## Autorización y decisiones ya confirmadas
 Usuario autoriza exclusivamente spec 05 y publicación de una PR Draft sin aprobación previa,
@@ -136,3 +136,23 @@ validador, check-project, 22 regresiones de controles y diff --check PASS.
 Las pruebas E1.5 siguen previstas, no ejecutadas: esto verifica la regresión existente,
 no implementación de Transferencias/Referencias. La evidencia CI del SHA final se registra
 en PR #17 para no alterar de nuevo el commit validado. PR permanece Draft/NO APROBADA.
+
+
+## Aprobación final y autorización de integración — 2026-10-21
+El usuario aprueba expresamente especificación funcional/técnica, wireframes 390/1440,
+Q1–Q3, AC-01–30 actuales y AC-31–33 futuros tras auditoría favorable de Álex sobre
+50de3e4. Autoriza registrar APPROVED y realizar squash merge de PR #17 tras validaciones.
+HEAD revisado confirmado sin cambios, ambas CI SUCCESS y sin conflictos antes de este
+cierre exclusivamente documental. La prueba Playwright aprobada permanece intacta.
+Los estados DRAFT/no aprobado/merge no autorizado anteriores son historia de revisión,
+sustituidos por esta autorización. No constituyen permiso de dev 05 ni pruebas de E1.5.
+
+Observación de continuidad: las Transferencias ordinarias con Exterior necesitan una
+entrega futura responsable que especifique sus reglas y pruebas. La asignación concreta
+queda pendiente de planificación autorizada, sin atribuirlas automáticamente a E3 ni
+ampliar ahora E1.5. Mantener esa responsabilidad visible antes de abordar esa capacidad.
+
+Siguiente acción después de integración y CI posterior SUCCESS: spec 05 cerrada; esperar
+autorización expresa de dev 05. Sin código funcional, SQL, datos reales, Excel o despliegue.
+Hash de squash y CI posterior: registro de integración canónico en PR #17, verificado
+contra main al terminar; no afirmar aprobación de nuevas entregas por extensión.

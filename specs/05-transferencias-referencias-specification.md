@@ -1,6 +1,6 @@
 # 05 — E1.5 Transferencias y Referencias: Specification
-Status: DRAFT — NO APROBADO. Q1–Q3 confirmadas; revisión final del documento/diseño pendiente.
-Approval source/date: PENDING. La autorización de redactar/publicar no aprueba el contenido.
+Status: APPROVED — especificación funcional/técnica y wireframes 390/1440 aprobados el 2026-10-21.
+Approval source/date: autorización expresa del usuario, 2026-10-21, tras auditoría favorable de Álex sobre 50de3e4; Q1–Q3, 30 criterios actuales y 3 contratos futuros aprobados. Squash merge de PR #17 autorizado; sin dev 05.
 Context and brainstorming: [ronda única](05-transferencias-referencias-brainstorming.md),
 [roadmap](roadmap.md), [R1–R4/P2](functional-reference-v5.11.md),
 [contratos AC-30/31 E1.4](04-movimientos-testplan.md).
@@ -21,7 +21,7 @@ No crear otra tabla de hechos por terminal ni convertir financiación en compra 
 | Categoría derivada de Partida; mapping exigible solo con Referencia obligatoria | E1.2 y Q2 confirmada, matriz contrastada abajo |
 | Internas entre activos distintos/elegibles, sin permiso Exterior; no exclusión automática Terminal/No controlado | Q1 confirmada por usuario; Exterior completo reservado |
 | Bloqueo de fechas futuras de Transferencia, Europe/Madrid en cliente/servidor | Q3 aprobada como decisión nueva de app, no regla física Excel |
-| Activos/nombres/Tipo protegido/estados REF | Propuestas app de esta especificación, no reglas Excel atribuidas |
+| Activos/nombres/Tipo protegido/estados REF | Contratos app aprobados con esta especificación, no reglas Excel atribuidas |
 | Importes y precisión, auditoría, anulación, idempotencia | Reutilizar contrato y controles de registro E1.4 |
 
 AC-30 de E1.4 se cubre solo para Referencias habilitadas y mapping demostrado; fichas,
@@ -37,6 +37,9 @@ para financiación y No controlado sin un veto general por Tipo/Control. Manual 
 No seleccionar S000 en ningún extremo de Transferencias E1.5. TODAS las Transferencias
 con Exterior se reservan para una entrega posterior, incluidas las ordinarias y las
 variantes E3; no quedan habilitadas por carecer de Referencia o no ser casos especiales.
+Observación de continuidad aprobada: asignar una entrega futura responsable para las
+Transferencias ordinarias con Exterior, todavía pendiente de planificación autorizada.
+No se asigna por inferencia a E3 ni se amplía E1.5; conservar reglas/pruebas como trabajo futuro.
 Permiso de salida a Exterior se mantiene obligatorio en Gasto desde terminal u otro Saldo;
 no se aplica a Transferencias internas, según Q1; no copiarlo del formulario Gasto.
 
@@ -60,12 +63,12 @@ de Transferencia usando el día civil Europe/Madrid en cliente y servidor;
 no usar el reloj para decidir ciclo actual/corte ni duplicar la fecha de referencia.
 
 ### Referencias mínimas y Gastos obligatorios
-Alta/consulta/renombrado y propuesta de desactivación/reactivación. Tipo obligatorio entre
+Alta/consulta/renombrado y desactivación/reactivación aprobadas como contrato app. Tipo obligatorio entre
 Viaje/Evento operativos. Los cinco tipos de dominio se documentan, pero Anticipo, Gasto
 compartido y Vehículo no tienen alta/selector funcional hasta E3; no fichas vacías de relleno.
 ID REF visible e inmutable, nombre obligatorio y editable como presentación. No regla nueva
 de unicidad de nombres ni normalización silenciosa; IDs distinguen homónimos en el selector.
-Propuesta de Estado Activa inicial; inactivas no elegibles para nuevos enlaces, sí históricas.
+Contrato app aprobado: Estado Activa inicial; inactivas no elegibles para nuevos enlaces, sí históricas.
 Reactivar no crea operaciones ni modifica hechos. Sin DELETE físico, incluso referencias sin uso.
 
 ### Matriz contrastada y aplicación exacta de Q2
@@ -106,7 +109,7 @@ existente. Los Gastos que exigen tipos de E3 siguen bloqueados y explican la dep
 Consulta de uso incluye hechos vigentes y anulados, con filtros/IDs; cifras y auditoría
 pertenecen a Movimientos. Renombrar REF conserva enlaces, nombres vigentes en consultas vivas;
 la evidencia anterior de auditoría no se reescribe. Fotografías futuras conservarán lo capturado.
-Propuesta simple: cambio de Tipo sin uso permitido con revisión/auditoría; usado por cualquier
+Contrato app aprobado: cambio de Tipo sin uso permitido con revisión/auditoría; usado por cualquier
 hecho, incluso anulado, se bloquea. No reclasificación silenciosa ni versionado general;
 una futura rectificación excepcional requiere especificación e impacto completos.
 
@@ -153,14 +156,14 @@ Versión desconocida intacta, dos procesos coordinados y snapshots consistentes.
 in situ preserva acceso; restore age sigue revocando sesiones según política existente.
 
 ## Screens and interfaces
-Propuesta nueva, NO APROBADA; incorpora Q1–Q3 confirmadas. Transferencia solo ofrece
+Wireframes aprobados expresamente por el usuario el 2026-10-21; incorporan Q1–Q3 confirmadas. Transferencia solo ofrece
 Saldos internos elegibles y no exige permiso Exterior. Fecha económica indica «No posterior
 a hoy (España)» y max procede del contrato servidor; validación también en servidor.
 Gasto muestra «Referencia obligatoria» o «Referencia opcional» según Categoría, sin limitar
 Tipos opcionales por el mapping. Solo Viaje/Evento operativos en selectores.
 Reutiliza shell/menú/cabecera, tokens claros, texto oscuro
 sobre #8DBB2E, PageHead/Alert/Tag, tabla/tarjetas y formularios en página propia. Sin librería.
-No pruebas visuales ni capturas nuevas: esquemas previstos a 1440/390 px para revisión.
+No pruebas visuales ni capturas nuevas de E1.5: aprobación de esquemas 1440/390, no de una aplicación implementada.
 
 ### Escritorio — Movimientos y nueva Transferencia (1440 px)
 ```text
@@ -284,7 +287,7 @@ inversión, Amortización E1.6, cierres/fotos E4, migración/mapping de nombres 
 backup externo/scheduler/producción. Viaje/Evento no reciben ficha por analogía con E3.
 
 ## Acceptance checks
-Pruebas PREVISTAS, NO ejecutadas. I = candidato implementable en E1.5 tras aprobación;
+Pruebas PREVISTAS, NO ejecutadas. I = criterio actual aprobado para E1.5;
 C = contrato futuro, no computar como verificado. Q1–Q3 resueltas; ningún AC condicionado.
 No confundir esta clasificación con los 29 PASS ya integrados de E1.4.
 | ID | Acción / precondición | Resultado observable esperado | Prueba prevista | Clase |
@@ -303,7 +306,7 @@ No confundir esta clasificación con los 29 PASS ya integrados de E1.4.
 | AC-12 | Dos altas concurrentes y después de REF999 | IDs distintos atómicos/no reutilizados, REF1000, fallo sin hueco por commit parcial | Bun procesos | I |
 | AC-13 | Renombrar REF utilizada y consultar hechos/auditoría | Mismo ID/enlaces, nombre vigente en consulta, evidencia previa intacta; homónimos identificables por ID | Bun + UI | I |
 | AC-14 | Desactivar/reactivar REF usada | Historia intacta, sin DELETE; no nuevas selecciones inactivas, no creación de hechos al reactivar | Bun/API/UI | I |
-| AC-15 | Cambiar Tipo de REF con/sin uso, incluido anulado | Propuesta app: permitir sin uso; bloquear usada, sin reclasificación silenciosa/versionado | Bun/API | I |
+| AC-15 | Cambiar Tipo de REF con/sin uso, incluido anulado | Contrato app aprobado: permitir sin uso; bloquear usada, sin reclasificación silenciosa/versionado | Bun/API | I |
 | AC-16 | Gasto CAT011 obligatorio: sin REF, inexistente, Evento o Viaje existente | Ausente/inexistente/Evento bloqueados; Viaje válido por ID, sin depender de nombre Categoría/REF | Bun/API/UI | I |
 | AC-17 | CAT014/CAT009 y No/vacío histórico: sin REF, inexistente y REF operativa de otro Tipo; Ingreso/Transferencia con REF opcional | Sin REF válido; inexistente rechazado; REF Viaje/Evento existente no se rechaza por mapping opcional; sin Categoría inventada ni vacío→false | Bun/API | I |
 | AC-18 | CAT012/CAT013 obligatorias; intentar Anticipo/Compartido/Vehículo también opcionales | Casos que dependen de E3 bloqueados en UI/API; CAT009 sin REF sigue válido; no fichas de relleno | Bun/UI | I |
@@ -324,6 +327,6 @@ No confundir esta clasificación con los 29 PASS ya integrados de E1.4.
 | AC-33 | Cierre/foto/migración autorizada reales | Protección transversal y fotos inmutables, mapping auditado nombres→IDs, sin reescribir Excel | Pruebas futuras E4/P6/P7 | C |
 
 30 criterios actuales previstos (AC-01–30) y 3 contratos futuros (AC-31–33). No PASS de E1.5.
-Antes de dev: revisión final y aprobación expresa de especificación/wireframes completos.
+Spec 05 aprobada y squash merge autorizado. Antes de dev: esperar autorización expresa de dev 05.
 Tras futura autorización dev: implementación y evidencias en progress/testplan propios;
 no crear aquí resultados, capturas, esquemas ejecutables ni estado de implementación.
