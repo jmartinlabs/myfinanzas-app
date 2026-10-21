@@ -5,9 +5,10 @@ import {
   inspectIdentity,
   assertMode,
   type Identity,
+  keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
-import { productionConfig, verifyProductionFiles } from "./private-state";
+import { productionConfig, openProductionConnection } from "./private-state";
 
 export function openDatabase(path: string) {
   const mode = process.env.NODE_ENV;
@@ -20,7 +21,22 @@ export function openDatabase(path: string) {
     const config = productionConfig();
     if (path !== config.database)
       throw new Error("Ruta productiva distinta de DATABASE_PATH.");
-    verifyProductionFiles(config);
+    const { db, key } = openProductionConnection(config, false);
+    try {
+      db.exec(
+        "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
+      );
+      db.transaction(() => {
+        const identity = inspectIdentity(db);
+        assertMode(identity, true);
+        if (identity?.key_hash !== keyHash(key))
+          throw new Error("Pareja DB/clave inválida en conexión efectiva.");
+      }).immediate();
+      return db;
+    } catch (error) {
+      db.close();
+      throw error;
+    }
   }
   if (path !== ":memory:" && existsSync(path)) {
     const probe = new Database(path, { readonly: true, strict: true });
@@ -29,7 +45,7 @@ export function openDatabase(path: string) {
     } finally {
       probe.close();
     }
-  } else if (production) throw new Error("Base productiva inexistente.");
+  }
   if (!production && path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const mask = process.umask(0o077);
@@ -42,14 +58,7 @@ export function openDatabase(path: string) {
   try {
     assertMode(inspectIdentity(db), production);
     const identity: Identity = { origin: "demo", key_hash: null };
-    if (production) {
-      // Configuration/key validated before any writable PRAGMA. Recheck in the effective connection.
-      verifyProductionFiles(productionConfig());
-      db.exec(
-        "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
-      );
-      db.transaction(() => assertMode(inspectIdentity(db), true)).immediate();
-    } else prepareSchema(db, identity);
+    prepareSchema(db, identity);
     if (!production && path !== ":memory:") chmodSync(path, 0o600);
     return db;
   } catch (error) {

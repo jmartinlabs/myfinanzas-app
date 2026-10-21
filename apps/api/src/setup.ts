@@ -4,6 +4,8 @@ import {
   closeSync,
   fsyncSync,
   unlinkSync,
+  lstatSync,
+  fstatSync,
 } from "node:fs";
 import { dirname } from "node:path";
 import { productionConfig, privateDirectory, syncPath } from "./private-state";
@@ -29,7 +31,10 @@ try {
         output !== resolve(output) ||
         dirname(output) !== config.state ||
         output === config.database ||
-        output === config.key
+        output === config.key ||
+        ["-wal", "-shm", "-journal"].some(
+          (suffix) => output === config.database + suffix,
+        )
       )
         throw new Error(
           "Archivo de entrega nuevo dentro del estado privado requerido.",
@@ -44,7 +49,16 @@ try {
           syncPath(config.state);
         }).immediate();
       } catch (e) {
-        unlinkSync(output);
+        // Only remove the inode created by this invocation, never a concurrent replacement.
+        try {
+          const current = lstatSync(output),
+            owned = fstatSync(fd);
+          if (current.dev === owned.dev && current.ino === owned.ino)
+            unlinkSync(output);
+        } catch (cleanupError) {
+          if ((cleanupError as NodeJS.ErrnoException).code !== "ENOENT")
+            throw cleanupError;
+        }
         throw e;
       } finally {
         closeSync(fd);

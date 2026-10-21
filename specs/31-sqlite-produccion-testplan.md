@@ -111,3 +111,34 @@ regresiones de controles PASS; diff, historial y archivos revisados sin secretos
 bases ni claves. Se preservan los cambios de main y no se integra #21/#22.
 La CI remota se identificará por SHA/enlace en la PR, sin atribuirle estos
 resultados locales ni modificar el commit solo para registrar el enlace.
+
+## Revisión final de seguridad — 2026-10-21
+Resultados anteriores son históricos; validación final actual: **73 Bun PASS / 1210
+assertions**, con R11 de main y P12–P18 nuevos, sin omitir casos. Typecheck/build PASS.
+Las comprobaciones reproducen efectos reales en el filesystem; las ventanas de carrera
+se fuerzan con hooks fs controlados (sin sleeps/retries añadidos), no son solo análisis.
+
+| Caso nuevo | Antes de corregir | Después / aceptación reforzada |
+| --- | --- | --- |
+| P12, hardlink de clave entre lstat y open | Se acepta descriptor sustituido | fstat/dev/ino/nlink/UID/modo y revalidación; rechazo, AC13/14/18 |
+| P13, symlinks/hardlinks WAL/SHM/journal | SHM symlink no rechazado | Validación previa/posterior; sentinel ajeno intacto, AC13/14 |
+| P14, handle A con configuración de pareja B | loadKey devuelve clave de B | Archivo/huella y descifrado de conexión efectiva comprobados, AC18/24 |
+| P15, backup en padre inseguro | VACUUM empieza antes del rechazo | Rechazo antes de snapshot/cifrado, ningún temporal, AC14/24 |
+| P16, DB desaparece después de validarla | Riesgo adicional por fallback CREATE de opciones Bun | READWRITE explícito/strict sin CREATE; rechaza y no crea DB, AC02/18 |
+| P17, padre cambiado antes de publicación | Resolución de rutas no anclada | Dirfd validado + renameat2 relativo sin reemplazo/fsync/revalidación, AC13/15/16 |
+| P18, token sustituido por archivo de otra operación y fallo de entrega | Limpieza borra el reemplazo | Solo se retira inode propio; bootstrap revocado/rollback, AC20 |
+
+Se rechazan nombres/rutas que colisionan con el temporal de restore (`bundle.tmp`),
+espacios finales que Bun recorta y salida de token sobre sidecars SQLite. No precisión,
+IDs, cálculos o reglas financieras nuevos. No se publican stdout brutos ni factores.
+P12–P15/P18 tuvieron fallos negativos esperados antes del arreglo; no son skips ni
+se convierten en contratos futuros. P16/P17 añaden regresión de la solución endurecida.
+
+Límite de confianza: filesystem privado y UID operador/root confiables, conforme contrato.
+Estas pruebas cubren sustituciones simples inyectadas y concurrencia ordinaria, NO
+ofrecen aislamiento frente a un administrador o proceso malicioso con el mismo UID
+que pueda reescribir código/DB/clave o hacer sustituciones ABA arbitrarias. SQLite se
+abre con strict y READWRITE/READONLY explícitos; no se afirma usar openat2/RESOLVE_BENEATH
+para toda operación. Los demás UID quedan excluidos por ancestros/modos/propietario.
+SIGKILL no equivale a caída física del almacenamiento; sin ensayo de imagen/UID del VPS,
+servicios reales, offsite/custodia ni despliegue. Causa original R6 aún no identificada.

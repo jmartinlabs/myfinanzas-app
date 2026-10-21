@@ -10,15 +10,6 @@ El usuario aprueba íntegramente D1–D4 y AC-01–33 tras revisión con Álex y
 implementación independiente y sin merge autorizado. Se preservan los registros
 históricos inferiores. Sin VPS/deploy/datos reales ni modificaciones a #21/#22.
 
-
-## Desarrollo técnico 31 — verificación local
-
-[Progreso 31](31-sqlite-produccion-progress.md) y
-[testplan AC-01–33](31-sqlite-produccion-testplan.md). Esquema v6 con identidad,
-creación privada DB+clave, alta y restore implementados en rama independiente.
-65 Bun PASS y 2 E2E PASS; revisión/PR de implementación pendientes. PR #23 aprobada,
-no integrada. No merge autorizado; sin VPS/deploy/datos reales.
-
 | Stage | Status | Evidence / canonical decision links |
 | --- | --- | --- |
 | 1 Identity | complete | [Contexto confirmado](project.md), solicitud del usuario 2026-10-20 |
@@ -298,3 +289,12 @@ PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31�
 contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
 Este registro documental se propone en PR separada, pendiente de autorización de merge.
 No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
+
+
+## Desarrollo técnico 31 — verificación local
+
+[Progreso 31](31-sqlite-produccion-progress.md) y
+[testplan AC-01–33](31-sqlite-produccion-testplan.md). Esquema v6 con identidad,
+creación privada DB+clave, alta y restore implementados en rama independiente.
+73 Bun PASS / 1210 assertions; navegador y CI finales en PR #25. PR #23 aprobada,
+no integrada. No merge autorizado; sin VPS/deploy/datos reales.

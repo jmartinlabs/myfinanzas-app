@@ -64,6 +64,10 @@ mediante huella SHA-256. Perderla bloquea arranque/alta/backup incluso sin usuar
 restaura la pareja cifrada, sin regenerar ni inventar factores.
 
 Backup sigue usando los comandos existentes con NODE_ENV y configuración coherentes.
+En production el padre del destino debe existir y ser privado (0700/UID efectivo),
+validado antes del snapshot; no se reparan permisos automáticamente. DB/clave no
+pueden llamarse `bundle.tmp` (temporal reservado de restore) ni tener espacios finales.
+El archivo de entrega del token tampoco puede ocupar los sidecars SQLite.
 Copias v6 añaden origen al manifest cifrado; copias v1–v5 siguen restaurables como demo.
 Para restaurar production, configura las rutas DB/clave del **nuevo destino** antes
 de ejecutar restore, y usa NODE_ENV=production. Se conserva origen/clave; no hay
@@ -126,7 +130,7 @@ Instálala desde distribución/release oficial verificada. En Ubuntu: paquete `a
 Para el ensayo local, genera una identidad fuera de Git:
 
 ```sh
-mkdir -p .local/backups
+mkdir -p -m 700 .local/backups
 age-keygen -o .local/backup-identity.txt
 age-keygen -y .local/backup-identity.txt
 ```

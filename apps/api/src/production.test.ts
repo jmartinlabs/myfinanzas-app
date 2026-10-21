@@ -12,7 +12,13 @@ import { join, dirname } from "node:path";
 import { randomUUID, randomBytes } from "node:crypto";
 import { HttpApp } from "@effect/platform";
 import { initializeProduction } from "./production-state";
-import { productionConfig, publishNewDirectory } from "./private-state";
+import {
+  productionConfig,
+  publishNewDirectory,
+  readPrivateKey,
+  verifyProductionFiles,
+  openProductionConnection,
+} from "./private-state";
 import { inspectIdentity } from "./database-identity";
 import { openDatabase } from "./database";
 import { openDatabaseV5 } from "../test-support/database-v5";
@@ -216,6 +222,8 @@ test("31 P3 AC11–14/18: unsafe paths, aliases, permissions and lost key never 
     for (const invalid of [
       "relative.sqlite",
       ":memory:",
+      path + " ",
+      join(dirname(path), "bundle.tmp"),
       root + "/state/../escaped.sqlite",
     ]) {
       process.env.DATABASE_PATH = invalid;
@@ -929,4 +937,186 @@ test("31 P11 AC02/03/10/22: real production main serves minimal health and denie
       await errors;
     }
     openDatabase(path).close();
+  }));
+
+test("31 P12 AC13/14/18: revalidate actual key descriptor after a path replacement", async () =>
+  production((root, path, key) => {
+    initializeProduction();
+    const originalOpen = fs.openSync;
+    const other = join(root, "linked-key");
+    fs.writeFileSync(other, fs.readFileSync(key), { mode: 0o600 });
+    let swapped = false;
+    const swap = spyOn(fs, "openSync").mockImplementation(((
+      ...args: Parameters<typeof fs.openSync>
+    ) => {
+      if (args[0] === key && !swapped) {
+        swapped = true;
+        fs.unlinkSync(key);
+        fs.linkSync(other, key);
+      }
+      return originalOpen(...args);
+    }) as typeof fs.openSync);
+    try {
+      expect(() => {
+        readPrivateKey(key);
+      }).toThrow();
+    } finally {
+      swap.mockRestore();
+    }
+    expect(swapped).toBe(true);
+    expect(fs.statSync(other).nlink).toBe(2);
+  }));
+
+test("31 P13 AC13/14/24: reject SQLite sidecar links and unsafe backup parent before snapshot", async () =>
+  production((root, path, key) => {
+    initializeProduction();
+    const foreign = join(root, "foreign-file");
+    fs.writeFileSync(foreign, "unchanged fictitious sentinel", { mode: 0o600 });
+    const rejected: boolean[] = [];
+    for (const link of [fs.symlinkSync, fs.linkSync]) {
+      for (const suffix of ["-wal", "-shm", "-journal"]) {
+        fs.rmSync(path + suffix, { force: true });
+        link(foreign, path + suffix);
+        try {
+          verifyProductionFiles(productionConfig());
+          rejected.push(false);
+        } catch {
+          rejected.push(true);
+        } finally {
+          fs.rmSync(path + suffix, { force: true });
+        }
+        expect(fs.readFileSync(foreign, "utf8")).toBe(
+          "unchanged fictitious sentinel",
+        );
+      }
+    }
+    expect(rejected).toEqual([true, true, true, true, true, true]);
+  }));
+
+test("31 P15 AC14/24: validate backup parent before producing a snapshot", async () =>
+  production((root, path, key) => {
+    initializeProduction();
+    const db = openDatabase(path),
+      appKey = loadKey(db, key);
+    const unsafe = join(root, "unsafe");
+    fs.mkdirSync(unsafe, { mode: 0o777 });
+    fs.chmodSync(unsafe, 0o777);
+    const run = db.run.bind(db);
+    let snapshots = 0;
+    const spy = spyOn(db, "run").mockImplementation(((
+      ...args: Parameters<typeof db.run>
+    ) => {
+      if (String(args[0]).startsWith("VACUUM")) {
+        snapshots++;
+        throw Error("snapshot must not start");
+      }
+      return run(...args);
+    }) as typeof db.run);
+    try {
+      expect(() =>
+        backup(db, appKey, join(unsafe, "copy"), "age1invalid-test-recipient"),
+      ).toThrow();
+      expect(snapshots).toBe(0);
+      expect(fs.readdirSync(unsafe)).toEqual([]);
+    } finally {
+      spy.mockRestore();
+      db.close();
+    }
+  }));
+
+test("31 P14 AC18/24: bind the key to the effective database handle, not another configured pair", async () =>
+  production((root, path, key) => {
+    initializeProduction();
+    const db = openDatabase(path);
+    process.env.DATABASE_PATH = join(root, "second", "database.sqlite");
+    process.env.AUTH_KEY_PATH = join(root, "second", "auth.key");
+    initializeProduction();
+    try {
+      expect(() => {
+        loadKey(db, process.env.AUTH_KEY_PATH!);
+      }).toThrow();
+    } finally {
+      db.close();
+    }
+  }));
+
+test("31 P16 AC02/13/18: removal between validation and SQLite open never recreates a database", async () =>
+  production((root, path) => {
+    initializeProduction();
+    const config = productionConfig(),
+      saved = join(root, "saved.sqlite");
+    const close = fs.closeSync;
+    let removed = false,
+      closes = 0;
+    const race = spyOn(fs, "closeSync").mockImplementation((fd) => {
+      if (++closes === 2 && !removed) {
+        removed = true;
+        fs.renameSync(path, saved);
+      }
+      return close(fd);
+    });
+    try {
+      expect(() => {
+        openProductionConnection(config, false);
+      }).toThrow();
+    } finally {
+      race.mockRestore();
+    }
+    expect(removed).toBe(true);
+    expect(fs.existsSync(path)).toBe(false);
+    readonly(saved, (db) =>
+      expect(inspectIdentity(db)?.origin).toBe("production"),
+    );
+  }));
+
+test("31 P17 AC13/15/16: publication pins the parent and rejects its concurrent replacement", async () =>
+  production((root) => {
+    const parent = join(root, "publication"),
+      moved = join(root, "moved");
+    fs.mkdirSync(parent, { mode: 0o700 });
+    const stage = fs.mkdtempSync(join(parent, ".initialize-")),
+      target = join(parent, "state");
+    fs.writeFileSync(join(stage, "sentinel"), "fictitious", { mode: 0o600 });
+    const open = fs.openSync;
+    let replaced = false;
+    const race = spyOn(fs, "openSync").mockImplementation(((
+      ...args: Parameters<typeof fs.openSync>
+    ) => {
+      const fd = open(...args);
+      if (args[0] === parent && !replaced) {
+        replaced = true;
+        fs.renameSync(parent, moved);
+        fs.mkdirSync(parent, { mode: 0o700 });
+      }
+      return fd;
+    }) as typeof fs.openSync);
+    try {
+      expect(() => publishNewDirectory(stage, target)).toThrow();
+    } finally {
+      race.mockRestore();
+    }
+    expect(replaced).toBe(true);
+    expect(fs.readdirSync(parent)).toEqual([]);
+    expect(
+      fs.readFileSync(
+        join(moved, stage.slice(parent.length + 1), "sentinel"),
+        "utf8",
+      ),
+    ).toBe("fictitious");
+  }));
+
+test("31 P18 AC20: failed token delivery never unlinks a replacement owned by another operation", async () =>
+  production((root, path) => {
+    initializeProduction();
+    const output = join(dirname(path), "bootstrap-token");
+    const code = `import {spyOn} from 'bun:test';import * as fs from 'node:fs';const write=fs.writeFileSync;process.argv[2]=${JSON.stringify(output)};spyOn(fs,'writeFileSync').mockImplementation((...args)=>{if(typeof args[0]==='number'){fs.unlinkSync(${JSON.stringify(output)});write(${JSON.stringify(output)},'separate fictitious operation',{mode:0o600});throw Error('synthetic delivery failure');}return write(...args)});await import('./apps/api/src/setup.ts');`;
+    const result = spawn("-e", [code]);
+    expect(result.exitCode).not.toBe(0);
+    expect(fs.existsSync(output)).toBe(true);
+    expect(fs.readFileSync(output, "utf8")).toBe(
+      "separate fictitious operation",
+    );
+    readonly(path, (db) =>
+      expect(db.query("SELECT * FROM bootstrap").all()).toEqual([]),
+    );
   }));

@@ -40,3 +40,18 @@ PASS; 33 AC trazados y verificados. Linux/glibc necesario para publicación, sin
 ensayo del VPS ni gates operativos resueltos por inferencia. Áreas temporales
 reservadas no admitidas por runtime incluso tras caída con pareja completa.
 El historial de fallos iniciales se conserva; todos están corregidos.
+
+## Revisión crítica final previa al merge — 2026-10-21
+Usuario autoriza revisión real y correcciones de seguridad; no merge/VPS/despliegue.
+Main sincronizado con PR #26 integrada (68b0624), sin alterar su instrumentación R6.
+Se reprodujeron y corrigieron: sustitución de clave por hardlink tras lstat, symlink
+SHM aceptado, lectura de clave de otra conexión, snapshot antes de validar destino y
+borrado de un archivo de entrega reemplazado por otra operación tras fallo de escritura.
+P12–P18 verifican esos casos y apertura sin CREATE tras desaparición del archivo,
+publicación mediante descriptor del padre y sustitución concurrente del directorio.
+Typecheck/build y suite completa: **73 PASS / 1210 assertions**, incluyendo R11 integrada;
+ningún test omitido ni reglas financieras modificadas. Navegador/CI final en PR.
+La simulación local detectó solapamiento documental en setup-progress al squash de #23;
+se traslada únicamente el bloque de seguimiento de implementación al final para
+mantener intacta la aprobación #23 y evitar esa duplicidad/conflicto. Repetir simulación
+sobre el commit definitivo; no supone merge real de #23/#25.

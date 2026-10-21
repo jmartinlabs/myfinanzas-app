@@ -122,3 +122,13 @@ offsite/retención/monitorización, custodia externa y ensayo operativo antes de
 
 Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 [evidencia](../31-sqlite-produccion-testplan.md).
+
+Revisión final 31: clave validada también por fstat/dev/ino/nlink del descriptor;
+sidecars SQLite rechazan symlinks/hardlinks/permisos ajenos. La conexión efectiva
+comprueba identidad y huella antes de PRAGMA mutables; READWRITE explícito impide
+CREATE accidental tras desaparición de la DB. Publicación con dirfd privado y
+renameat2 relativo sin reemplazo; backup valida el padre antes de crear snapshot.
+Fallo de entrega solo limpia el inode propio, preservando reemplazos de otra operación.
+El UID operador/root sigue siendo frontera de confianza: no se promete aislamiento
+contra procesos host maliciosos con ese UID ni contra sustituciones ABA arbitrarias.
+Ver regresiones P12–P18 en testplan 31; ninguna autorización de VPS o datos reales.

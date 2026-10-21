@@ -87,7 +87,9 @@ export function backup(
     throw new Error("El destino ya existe; no se sobrescriben copias.");
   if (!recipient.startsWith("age1") || key.length !== 32)
     throw new Error("Destinatario age o clave de aplicación inválidos.");
-  mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  if (process.env.NODE_ENV !== "production")
+    mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  privateDirectory(dirname(target));
   const stage = mkdtempSync(join(dirname(target), ".backup-"));
   try {
     const snapshot = join(stage, "snapshot.sqlite");
@@ -189,7 +191,10 @@ export function restore(
   if (existsSync(target))
     throw new Error("Restauración requiere un directorio nuevo.");
   if (config) privateDirectory(dirname(target));
-  else mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  else {
+    mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+    privateDirectory(dirname(target));
+  }
   const stage = mkdtempSync(join(dirname(target), ".restore-"));
   try {
     const raw = join(stage, "bundle.tmp"),
