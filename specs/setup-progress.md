@@ -229,3 +229,16 @@ y [pruebas](04-movimientos-testplan.md) conservan 29 criterios actuales y AC-30�
 El permiso posterior de dev 04 sustituye exclusiones de implementación de la fase spec;
 no altera Q1–Q6. Sin autorización de merge de PR funcional, E1.5, datos reales o deploy.
 Excel v5.11 sigue maestro. Próxima acción: revisión de Álex de implementación/CI/capturas.
+
+
+## Estado vigente — E1.4 cerrada; spec 05 autorizado
+E1.4 integrada en b51b89b (PR #15), cierre documental integrado en a693aeb (PR #16),
+CI posterior SUCCESS; 29 criterios verificados y AC-30–33 conservados como futuros.
+Usuario autoriza exclusivamente especificación/diseño E1.5 y publicación en PR Draft.
+Rama spec/05-transferencias-referencias desde main a693aeb. [Brainstorming 05](05-transferencias-referencias-brainstorming.md)
+y [propuesta con wireframes](05-transferencias-referencias-specification.md) DRAFT/NO APROBADOS:
+Q1 elegibilidad de Transferencias, Q2 matriz real de Referencias, Q3 fechas futuras pendientes.
+30 candidatos actuales condicionados y 3 contratos futuros; ninguna prueba E1.5 ejecutada.
+Siguiente acción: revisión de Álex/respuestas y aprobación posterior del documento completo.
+Sin dev 05, SQL, merge, datos reales ni despliegue. Excel v5.11 sigue maestro.
+Los estados de desarrollo/revisión anteriores son históricos, no el estado vigente.
