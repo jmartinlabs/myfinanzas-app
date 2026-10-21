@@ -1,6 +1,6 @@
 # E1.1 — Incidencia de concurrencia al inicializar SQLite
 
-Estado: corrección verificada localmente en rama independiente; pendiente revisión/merge.
+Estado: corrección aprobada e integrada mediante PR #9 en main 23e471e, 2026-10-21.
 Autorización: el usuario responde «sí» el 2026-10-21 a investigar y corregir la incidencia
 antes de cerrar STEP 8. Rama fix/e1-1-sqlite-startup-concurrency desde main 5f1e27b.
 Sin E1.2, nuevas funcionalidades, datos reales, cambios financieros ni despliegue.
@@ -55,9 +55,11 @@ Reproducciones auxiliares solo en .local ignorado; pruebas permanentes en app.te
 Temporales ficticios eliminados al finalizar. No se ha accedido al Excel ni a datos reales.
 
 ## Reanudación
-PR de corrección requiere aprobación explícita antes de merge. La PR #8 permanece en
-borrador: su ejecución fallida no se borra ni se sustituye por el push verde. Tras integrar
-esta corrección autorizada, sincronizar su rama documental y volver a validar STEP 8.
-No se introduce el arreglo funcional en PR #8 ni se declara resuelto en main antes del merge.
+PR #9 aprobada por el usuario tras revisión de Álex sobre 121d790. Precisión documental
+0f1231c validada con ambas CI SUCCESS antes de merge; sin cambios adicionales de código.
+Integración verificada en main 23e471e y rama de PR #8 actualizada desde main sin conflictos.
+PR #8 permanece en borrador, pendiente de revisión/aprobación; se repiten sus validaciones.
+Su ejecución fallida original se conserva como evidencia, no se oculta mediante rerun.
+La corrección funcional llega desde main integrado, no como cambio propio del diff de PR #8.
 Los motores financieros futuros, Manual operativo y Ciclos/histórico pendientes conservan
 sus límites; esta incidencia no modifica las decisiones económicas de E1.1.

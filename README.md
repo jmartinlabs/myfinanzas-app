@@ -109,7 +109,9 @@ Build solo genera cliente estático: no despliega ni hace la app apta para datos
 STEP 5 integrado en main ebfe75b. Handoff completado; Skill spec reutilizada en STEP 6.
 STEP 7 E1.1 implementado e integrado mediante PR #7, aprobada expresamente por el usuario
 tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendientes.
-Siguiente paso previsto: STEP 8, pendiente de nueva autorización; no iniciado.
+STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas iniciales](specs/dev-skill-consolidation.md).
+Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
+inicialización. Esperar autorización antes de la próxima entrega.
 No E1.2, despliegue ni uso real autorizado. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 

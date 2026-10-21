@@ -154,5 +154,6 @@ integra el catálogo ficticio con altas/ediciones/estados, MFA y copias locales,
 [progreso](01-saldos-control-progress.md) y [evidencia](01-saldos-control-testplan.md).
 Los textos anteriores de «sin implementación» registran la fase documental original.
 No son un permiso para nuevos módulos: E1.2 y motores posteriores siguen excluidos.
-Excel v5.11 sigue como maestro, sin datos reales ni despliegue. E1.1 implementado e integrado. STEP 8, siguiente paso metodológico,
-requiere nueva autorización y no se ha iniciado.
+Excel v5.11 sigue como maestro, sin datos reales ni despliegue. E1.1 implementado e integrado. STEP 8 completado e integrado mediante PR #8 tras aprobación expresa sobre f4ff3e2;
+[cierre de las ocho etapas iniciales](dev-skill-consolidation.md). Skills spec/dev
+preparadas para reutilizarse. Esperar autorización; no iniciar E1.2 ni desplegar.

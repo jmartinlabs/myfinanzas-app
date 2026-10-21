@@ -51,7 +51,7 @@ Specification: [aprobada](01-saldos-control-specification.md)
 Ejecución local 2026-10-21 (Europe/Madrid), Bun 1.4.3, Chromium del sistema:
 - `bun install --frozen-lockfile`, `bun run typecheck`, `bun run build`: pasan.
 - `bun run test`: 16 pruebas, 200 aserciones, 0 fallos en la rama de corrección posterior.
-  Baseline integrada PR #7: 15/195; ver incidencia inferior, todavía pendiente merge.
+  Baseline integrada PR #7: 15/195; corrección PR #9 integrada en main 23e471e.
 - `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e`:
   recorrido real completo, ambos viewports, 0 fallos; sin errores JS.
 - `validate-template`, `check-project`, `test-validator` (18), `test-checks` (22): pasan.
@@ -155,5 +155,7 @@ STEP 8, E1.2 y despliegues no iniciados; Excel v5.11 continúa fuente de verdad.
 Fallo real de concurrencia reproducido tras PR #7; no atribuido a documentación de STEP 8.
 [Diagnóstico, prueba roja/verde y corrección](sqlite-startup-concurrency.md): inicialización
 BEGIN IMMEDIATE y diagnóstico de procesos hijos. 16 Bun/200 aserciones y Playwright pasan
-localmente en la rama de corrección; no se declara integrado ese arreglo hasta su merge.
-La ejecución fallida de PR #8 conserva su evidencia y STEP 8 sigue en borrador.
+localmente en la rama de corrección; PR #9 integrada y verificada en main 23e471e.
+La ejecución fallida de PR #8 conserva su evidencia; su rama actualizada desde main
+se valida de nuevo y posteriormente STEP 8 queda aprobado e integrado mediante PR #8.
+Esa integración no implementa motores futuros ni autoriza E1.2 o despliegues.

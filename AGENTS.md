@@ -26,7 +26,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
   E1.1 implementado e integrado en PR #7 tras aprobación expresa del usuario sobre
   4f7cdda y autorización de merge el 2026-10-21. Motores financieros posteriores pendientes.
-  STEP 8 y E1.2 requieren nueva autorización. Sin datos reales, despliegue o servicios contratados.
+  STEP 8 completado e integrado mediante PR #8 tras aprobación del usuario sobre
+  f4ff3e2 el 2026-10-21: ocho etapas iniciales cerradas y Skills spec/dev reutilizables.
+  Esperar nueva autorización: sin E1.2, datos reales, despliegue o servicios contratados.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
