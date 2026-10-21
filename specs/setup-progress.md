@@ -296,5 +296,5 @@ No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sig
 [Progreso 31](31-sqlite-produccion-progress.md) y
 [testplan AC-01–33](31-sqlite-produccion-testplan.md). Esquema v6 con identidad,
 creación privada DB+clave, alta y restore implementados en rama independiente.
-82 Bun PASS / 1243 assertions y 2 E2E PASS (41.5s); revisión y CI finales en PR #25. PR #23 aprobada,
-no integrada. No merge autorizado; sin VPS/deploy/datos reales.
+82 Bun PASS / 1243 assertions y 2 E2E PASS (41.5s); revisión y CI finales en PR #25. PR #23 aprobada e integrada externamente
+en 13f19f6; #25 sigue pendiente de autorización de merge. Sin VPS/deploy/datos reales.

@@ -86,3 +86,20 @@ refuerzan P1–P18 sin eliminar garantías. Resultado: 82 Bun PASS / 1243 assert
 árboles tras main actualizado y squash limpia, sin duplicar documentos aprobados.
 Pendiente aprobación expresa de merge tras CI del SHA final; no VPS/deploy/datos.
 La causa histórica R6 sigue sin atribuir; no se afirma resolverla por una CI verde.
+
+## Estado remoto comprobado — 2026-10-21
+
+GitHub registra #23 integrada por josemartin2000 a las 21:51:50 UTC mediante
+squash 13f19f6add82ff24be5040674528bdad4b96c75f (head aprobado f064935).
+Su árbol coincide exactamente con el árbol hipotético 115dc61 ya comprobado.
+La sincronización concurrente de la rama de implementación se preserva en
+619710b438da52fd321181b701fa9ee4f6d01398; su árbol es idéntico al estado probado
+f9bdc951153a62fdbf1adb39fc8f45580ce0011e. No se ha ejecutado merge de una PR
+por este agente. Main es ancestro de la rama: el diff GitHub contiene únicamente
+26 archivos de implementación/pruebas/documentación, sin specification ni
+brainstorming duplicados y sin conflictos. El orden #23 → #25 queda respetado;
+#25 continúa pendiente de autorización de integración. Resultados locales:
+82 API PASS / 1243 assertions y 2 E2E PASS; CI definitiva vinculada al SHA en #25.
+Sin VPS, despliegue ni datos financieros reales. Riesgos/límites vigentes:
+UID/root confiables, Linux/glibc, fallo fsync posterior a rename puede dejar un
+conjunto válido cuya durabilidad requiere inspección; causa histórica R6 sin atribuir.
