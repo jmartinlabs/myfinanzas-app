@@ -1,6 +1,7 @@
 # 04 — Movimientos: Test plan
 Specification: [aprobada](04-movimientos-specification.md).
-Status: VERIFIED LOCAL — 29 criterios actuales PASS; AC-30–33 futuros, revisión/merge pendientes.
+Status: COMPLETED AND INTEGRATED — 29 criterios actuales PASS; AC-30–33 contratos futuros.
+PR #15 aprobada sobre 423c8ee; squash main b51b89bd111eab310581d9d401102ca0f95d7a42.
 Fecha: 2026-10-21. Rama feat/e1-4-movimientos, base main 5fa4ace.
 
 ## Suites y comandos
@@ -119,8 +120,14 @@ reglas financieras ni se modificó el Excel; exclusiones de fase spec sustituida
 por autorización explícita de desarrollo. Sin E1.5, real migration, datos reales o deploy.
 Backups externos/automatización, inicialización productiva y RPO/RTO de producción pendientes.
 
-## Estado remoto y siguiente acción
-La CI externa se registra en la descripción de PR y se verifica contra su SHA exacto;
-los resultados locales no se atribuyen a un run remoto anterior. Al publicar, comprobar
-push/pull_request del HEAD definitivo; después esperar auditoría/aprobación del usuario.
-No merge automático ni avance a E1.5.
+## Estado remoto y cierre autorizado — 2026-10-21
+Usuario autoriza squash tras auditoría favorable de Álex sobre 423c8ee. HEAD confirmado
+sin cambios, sin conflictos y ambas CI SUCCESS antes del merge:
+- [Push 39609359322](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39609359322).
+- [PR 39609396669](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39609396669).
+[PR #15](https://github.com/josemartin2000/myfinanzas-app/pull/15) MERGED; integración
+b51b89bd111eab310581d9d401102ca0f95d7a42, árbol idéntico al commit auditado.
+[CI main posterior 39629917978](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39629917978)
+verifica el squash integrado. Cierre documental sin cambios funcionales; la evidencia
+local y la matriz anterior conservan su alcance y trazabilidad. AC-30–33 siguen futuros,
+sin afirmar sus motores implementados. Esperar autorización, sin E1.5 ni despliegue.
