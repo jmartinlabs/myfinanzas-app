@@ -183,3 +183,39 @@ feat/e1-3-ciclos-financiados. Spec 03 cerrada; aprobación registrada sin reabri
 separan 21 criterios actuales de AC-11/23/24 futuros. Implementación no integrada;
 próxima acción: revisión de PR funcional y aprobación expresa antes de merge.
 Las ocho etapas iniciales permanecen cerradas; sin E2.1, producción ni datos reales.
+
+
+## Estado vigente — E1.3 integrada; spec 04 autorizado
+E1.3 completada e integrada PR #13 (ff9d18d), aprobación expresa del usuario sobre
+ce4dadb; CI previa doble y posterior main SUCCESS verificadas. 21 criterios actuales,
+AC-11/23/24 conservados como contratos futuros. Este registro sustituye estados de
+revisión pendientes anteriores, conservados como historia.
+Usuario autoriza spec 04 E1.4 Ingresos/Gastos, sin dev 04 ni SQL/merge/despliegue.
+Rama spec/04-movimientos desde main ff9d18d, solo documentación ficticia/sanitizada.
+[Ronda única Q1–Q6](04-movimientos-brainstorming.md) y
+[borrador con wireframes/criterios](04-movimientos-specification.md), no aprobados.
+Siguiente acción: respuestas materiales y feedback visual; no implementar ni publicar
+como especificación aprobada. Excel v5.11 sigue maestro, no incorporado/inspeccionado.
+
+
+### Spec 04 — Q1–Q6 confirmadas, especificación completa en revisión
+Usuario confirma Q1–Q6 tras revisión de Álex, 2026-10-21. Registro append-only en
+[brainstorming 04](04-movimientos-brainstorming.md); [especificación 04](04-movimientos-specification.md)
+actualiza wireframes y conserva 33 AC: 29 actuales previstos y 4 contratos futuros.
+No preguntas nuevas ni validaciones financieras supuestas. Apertura vacía→0 solo en
+cálculo Control Movimientos; bloqueo de fechas futuras según día civil español es
+contrato de app; rectificación/anulación auditadas y advertencias no bloqueantes.
+Siguiente acción: revisión/aprobación de especificación completa y diseños, no dev 04.
+Sin código, SQL, commit de especificación aprobada, merge ni despliegue autorizados.
+
+
+### Spec 04 — aprobada el 21/10/2026
+Usuario aprueba especificación completa y wireframes tras revisión favorable de Álex,
+autoriza cierre de spec 04 y squash merge de PR #14 tras ambas CI verdes del HEAD final.
+AC-20 aclarado: anular un movimiento registrado por error sin hecho económico real.
+33 criterios conservados: 29 actuales previstos y 4 contratos futuros; ninguna prueba
+de E1.4 implementada se da por ejecutada. Estado aprobado en
+[specification](04-movimientos-specification.md) y registro en
+[brainstorming](04-movimientos-brainstorming.md). Verificar integración/commit en PR #14.
+Siguiente acción tras merge: esperar autorización de dev 04. Sin código/SQL, importación,
+datos reales ni despliegue; Excel v5.11 sigue maestro. Estados de revisión previos históricos.
