@@ -234,7 +234,9 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
       { nombre: "PAR Referencia", padre: rs.id },
       randomUUID(),
     );
-    expect(() => save(db, expense(saldo.id, rp.id))).toThrow("no es verificable");
+    expect(() => save(db, expense(saldo.id, rp.id))).toThrow(
+      "no es verificable",
+    );
     db.run("UPDATE categorias SET referencia=NULL WHERE id=?", [ref.id]);
     expect(save(db, expense(saldo.id, rp.id)).partida?.id).toBe(rp.id);
     expect(getClassification(db, "categorias", ref.id).referencia).toBeNull();
@@ -760,6 +762,135 @@ test("04 AC28: fallo de DDL revierte extensión y versión, esquema desconocido 
   }
 });
 
+// Test-only diagnostics. Never echo argv, payloads, raw stdout/stderr or exception messages.
+function e14Technical(error: unknown) {
+  const e = (error ?? {}) as {
+    name?: unknown;
+    code?: unknown;
+    errno?: unknown;
+    stack?: unknown;
+    location?: unknown;
+  };
+  const reasons: Record<string, string> = {
+    SQLITE_BUSY: "SQLite database busy",
+    SQLITE_BUSY_RECOVERY: "SQLite recovery busy",
+    SQLITE_BUSY_SNAPSHOT: "SQLite snapshot busy",
+    SQLITE_LOCKED: "SQLite database locked",
+    SQLITE_LOCKED_SHAREDCACHE: "SQLite shared cache locked",
+    SQLITE_ERROR: "SQLite statement error",
+    SQLITE_CONSTRAINT: "SQLite constraint failed",
+    SQLITE_CONSTRAINT_FOREIGNKEY: "SQLite foreign key failed",
+    SQLITE_CANTOPEN: "SQLite open failed",
+    SQLITE_IOERR: "SQLite IO failed",
+    SQLITE_FULL: "SQLite storage full",
+    SQLITE_READONLY: "SQLite read only",
+    SQLITE_NOMEM: "SQLite allocation failed",
+    SQLITE_MISUSE: "SQLite API misuse",
+  };
+  const code =
+    typeof e.code === "string" && Object.hasOwn(reasons, e.code)
+      ? e.code
+      : "UNCLASSIFIED";
+  const site =
+    /(?:^|[/\\])((?:database|database-schema|database-identity|private-state|auth|movimientos|referencias|movement-ledger|movement-impact|reference-schema)\.ts:[0-9]+:[0-9]+)(?:\)|$)/m;
+  const frame = typeof e.stack === "string" ? e.stack.match(site)?.[1] : null;
+  const location =
+    frame ??
+    (typeof e.location === "string" ? e.location.match(site)?.[1] : null) ??
+    null;
+  return {
+    name: [
+      "Error",
+      "SQLiteError",
+      "TypeError",
+      "SyntaxError",
+      "RangeError",
+    ].includes(e.name as string)
+      ? e.name
+      : "UnknownError",
+    code,
+    errno: Number.isSafeInteger(e.errno) ? e.errno : null,
+    reason: reasons[code] ?? "Technical error; details redacted",
+    location,
+  };
+}
+function e14Child(
+  imports: string,
+  opening: string,
+  writing: string,
+  closing: string,
+) {
+  return `${imports}
+    const e14Technical = ${e14Technical.toString()};
+    let e14Phase = 'open';
+    const e14Report = error => console.error(JSON.stringify({e14:1,phase:e14Phase,error:e14Technical(error)}));
+    try {
+      ${opening}
+      e14Phase = 'write'; ${writing}
+      e14Phase = 'close'; ${closing}
+    } catch(error) { e14Report(error); process.exitCode = 1; }`;
+}
+async function runE14(code: string, operation: string) {
+  const p = Bun.spawn([process.execPath, "-e", code], {
+    env: { ...process.env, NODE_ENV: "test" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, rawStderr, exit] = await Promise.all([
+    new Response(p.stdout).text(),
+    new Response(p.stderr).text(),
+    p.exited,
+  ]);
+  // Preserve the empty/nonempty assertion without exposing raw error text in its diff.
+  const errors =
+    rawStderr === ""
+      ? []
+      : rawStderr
+          .trim()
+          .split("\n")
+          .slice(0, 4)
+          .map((line) => {
+            try {
+              const value = JSON.parse(line);
+              if (
+                value?.e14 === 1 &&
+                ["open", "write", "close"].includes(value.phase)
+              )
+                return { phase: value.phase, error: e14Technical(value.error) };
+            } catch {}
+            return { phase: "unknown", error: e14Technical(null) };
+          });
+  const stderr = rawStderr === "" ? "" : JSON.stringify(errors);
+  let output = stdout === "" ? "empty" : "invalid-json";
+  try {
+    JSON.parse(stdout);
+    output = "json";
+  } catch {}
+  if (exit !== 0 || stderr !== "" || output !== "json") {
+    console.error(
+      "E1.4 child diagnostic " +
+        JSON.stringify({
+          operation,
+          phase:
+            errors.find((error) => error.phase !== "unknown")?.phase ??
+            "unknown",
+          pid: p.pid,
+          exit,
+          signal: p.signalCode ?? null,
+          errors,
+          stdout: { bytes: Buffer.byteLength(stdout), format: output },
+        }),
+    );
+  }
+  expect(exit).toBe(0);
+  expect(stderr).toBe("");
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error("E1.4 child output is not JSON; content redacted.");
+  }
+}
+
 test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en rectificación", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-e14-race-")),
     path = join(dir, "demo.sqlite");
@@ -769,33 +900,34 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
     db.close();
     const database = resolve(import.meta.dir, "database.ts"),
       service = resolve(import.meta.dir, "movimientos.ts");
-    const run = async (script: string) => {
-      const p = Bun.spawn([process.execPath, "-e", script], {
-        stdout: "pipe",
-        stderr: "pipe",
-      });
-      const [exitCode, stdout, stderr] = await Promise.all([
-        p.exited,
-        new Response(p.stdout).text(),
-        new Response(p.stderr).text(),
-      ]);
-      expect(exitCode).toBe(0);
-      expect(stderr).toBe("");
-      return JSON.parse(stdout);
-    };
-    const opening = `import{openDatabase}from${JSON.stringify(database)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(db.query('SELECT version FROM schema_version').get()));db.close();`;
-    expect(await Promise.all([run(opening), run(opening)])).toEqual([
-      { version: 5 },
-      { version: 5 },
-    ]);
+    const opening = e14Child(
+      `import{openDatabase}from${JSON.stringify(database)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      "console.log(JSON.stringify(db.query('SELECT version FROM schema_version').get()));",
+      "db.close();",
+    );
+    expect(
+      await Promise.all([
+        runE14(opening, "upgrade"),
+        runE14(opening, "upgrade"),
+      ]),
+    ).toEqual([{ version: 5 }, { version: 5 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),
       request = { ...body, fingerprint: plan.fingerprint },
       key = randomUUID();
     db.close();
-    const create = `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(service)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify({id:writeMovement(db,${JSON.stringify(request)},${JSON.stringify(key)},null,false,${now}).movimiento.id}));db.close();`;
-    const written = await Promise.all([run(create), run(create)]);
+    const create = e14Child(
+      `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(service)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      `console.log(JSON.stringify({id:writeMovement(db,${JSON.stringify(request)},${JSON.stringify(key)},null,false,${now}).movimiento.id}));`,
+      "db.close();",
+    );
+    const written = await Promise.all([
+      runE14(create, "idempotent-write"),
+      runE14(create, "idempotent-write"),
+    ]);
     expect(written[0]).toEqual(written[1]);
     db = openDatabase(path);
     expect(listMovements(db).total).toBe(1);
@@ -808,9 +940,19 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
       cp = previewMovement(db, c, id, false, now),
       req = { ...c, fingerprint: cp.fingerprint };
     db.close();
-    const correction = `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(service)};const db=openDatabase(${JSON.stringify(path)});try{writeMovement(db,${JSON.stringify(req)},crypto.randomUUID(),${JSON.stringify(id)},false,${now});console.log('200')}catch(e){console.log(JSON.stringify(e.status))}db.close();`;
+    const correction = e14Child(
+      `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(service)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      `try{writeMovement(db,${JSON.stringify(req)},crypto.randomUUID(),${JSON.stringify(id)},false,${now});console.log('200')}catch(e){if(e?.status!==409)e14Report(e);console.log(JSON.stringify(e.status))}`,
+      "db.close();",
+    );
     expect(
-      (await Promise.all([run(correction), run(correction)])).sort(),
+      (
+        await Promise.all([
+          runE14(correction, "rectification"),
+          runE14(correction, "rectification"),
+        ])
+      ).sort(),
     ).toEqual([200, 409]);
     db = openDatabase(path);
     expect(getMovement(db, id).auditoria).toHaveLength(2);
@@ -1061,5 +1203,101 @@ test("04 AC18/20/23: anular conserva enlaces históricos y no valida como alta; 
     ).toThrow();
   } finally {
     db.close();
+  }
+});
+
+// Only the isolated negative subprocess registers this deliberately failing test.
+const e14ProbePhase = process.env.MYFINANZAS_E14_PROBE_PHASE;
+if (["open", "write", "close"].includes(e14ProbePhase ?? "")) {
+  test("04 diagnostic controlled failure", async () => {
+    const fail = `console.log('E14_CANARY_NOT_FOR_LOGS');console.error('E14_CANARY_NOT_FOR_LOGS');throw Object.assign(new Error('/private/E14_CANARY_NOT_FOR_LOGS payload must not escape'),{code:'SQLITE_BUSY',errno:5,stack:'Error: E14_CANARY_NOT_FOR_LOGS\\n at openDatabase (/private/E14_CANARY_NOT_FOR_LOGS/database.ts:44:7)'});`;
+    await runE14(
+      e14Child(
+        "",
+        e14ProbePhase === "open" ? fail : "",
+        e14ProbePhase === "write" ? fail : "",
+        e14ProbePhase === "close" ? fail : "",
+      ),
+      "controlled-probe",
+    );
+  });
+}
+test("04 diagnostic: fallo instrumental conserva rechazo y diagnóstico seguro de apertura/escritura/cierre", async () => {
+  expect(
+    e14Technical({
+      name: "E14_CANARY_NOT_FOR_LOGS",
+      code: "E14_CANARY_NOT_FOR_LOGS",
+      message: "E14_CANARY_NOT_FOR_LOGS",
+    }),
+  ).toEqual({
+    name: "UnknownError",
+    code: "UNCLASSIFIED",
+    errno: null,
+    reason: "Technical error; details redacted",
+    location: null,
+  });
+  expect(
+    e14Technical({
+      location: "/private/E14_CANARY_NOT_FOR_LOGS/database.ts:44:7",
+    }).location,
+  ).toBe("database.ts:44:7");
+  expect(
+    e14Technical({ location: "E14_CANARY_NOT_FOR_LOGS" }).location,
+  ).toBeNull();
+  for (const phase of ["open", "write", "close"]) {
+    const p = Bun.spawn(
+      [
+        process.execPath,
+        "test",
+        import.meta.path,
+        "--test-name-pattern",
+        "^04 diagnostic controlled failure$",
+      ],
+      {
+        env: {
+          ...process.env,
+          NODE_ENV: "test",
+          MYFINANZAS_E14_PROBE_PHASE: phase,
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(p.stdout).text(),
+      new Response(p.stderr).text(),
+      p.exited,
+    ]);
+    const log = stdout + stderr;
+    expect(exit).toBe(1);
+    expect(p.signalCode ?? null).toBeNull();
+    expect(log).toContain("1 fail");
+    expect(log).not.toContain("E14_CANARY_NOT_FOR_LOGS");
+    expect(log).not.toContain("/private/");
+    const line = log
+      .split("\n")
+      .find((line) => line.startsWith("E1.4 child diagnostic "));
+    expect(line).toBeString();
+    const diagnostic = JSON.parse(line!.slice("E1.4 child diagnostic ".length));
+    expect(diagnostic.operation).toBe("controlled-probe");
+    expect(diagnostic.phase).toBe(phase);
+    expect(diagnostic.pid).toBeInteger();
+    expect(diagnostic.pid).toBeGreaterThan(0);
+    expect(diagnostic.exit).toBe(1);
+    expect(diagnostic.signal).toBeNull();
+    expect(diagnostic.stdout).toEqual({ bytes: 24, format: "invalid-json" });
+    expect(diagnostic.errors).toContainEqual({
+      phase,
+      error: {
+        name: "Error",
+        code: "SQLITE_BUSY",
+        errno: 5,
+        reason: "SQLite database busy",
+        location: "database.ts:44:7",
+      },
+    });
+    expect(log.indexOf("E1.4 child diagnostic ")).toBeLessThan(
+      log.indexOf("error: expect(received)"),
+    );
   }
 });
