@@ -50,7 +50,8 @@ Specification: [aprobada](01-saldos-control-specification.md)
 ## Regression checks
 Ejecución local 2026-10-21 (Europe/Madrid), Bun 1.4.3, Chromium del sistema:
 - `bun install --frozen-lockfile`, `bun run typecheck`, `bun run build`: pasan.
-- `bun run test`: 15 pruebas, 195 aserciones, 0 fallos.
+- `bun run test`: 16 pruebas, 200 aserciones, 0 fallos en la rama de corrección posterior.
+  Baseline integrada PR #7: 15/195; ver incidencia inferior, todavía pendiente merge.
 - `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e`:
   recorrido real completo, ambos viewports, 0 fallos; sin errores JS.
 - `validate-template`, `check-project`, `test-validator` (18), `test-checks` (22): pasan.
@@ -149,3 +150,10 @@ PR #7 aprobada expresamente por el usuario tras revisión de Álex sobre 4f7cdda
 de espera/sin merge son históricos. La aprobación no completa motores financieros:
 AC-30/31 siguen contractuales y la integración futura de AC-38 sigue pendiente.
 STEP 8, E1.2 y despliegues no iniciados; Excel v5.11 continúa fuente de verdad.
+
+## Incidencia posterior AC-03 — corrección propuesta
+Fallo real de concurrencia reproducido tras PR #7; no atribuido a documentación de STEP 8.
+[Diagnóstico, prueba roja/verde y corrección](sqlite-startup-concurrency.md): inicialización
+BEGIN IMMEDIATE y diagnóstico de procesos hijos. 16 Bun/200 aserciones y Playwright pasan
+localmente en la rama de corrección; no se declara integrado ese arreglo hasta su merge.
+La ejecución fallida de PR #8 conserva su evidencia y STEP 8 sigue en borrador.

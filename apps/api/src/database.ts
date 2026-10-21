@@ -37,6 +37,8 @@ export function openDatabase(path: string) {
   db.exec(
     "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
   );
+  // Acquire the writer lock before schema reads; a deferred read-to-write upgrade can fail
+  // immediately with SQLITE_BUSY even with busy_timeout configured.
   db.transaction(() => {
     db.exec(`CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY) STRICT;
       CREATE TABLE IF NOT EXISTS saldos(
@@ -118,7 +120,7 @@ export function openDatabase(path: string) {
         );
       db.run("INSERT OR IGNORE INTO counters VALUES('saldo',6)");
     }
-  })();
+  }).immediate();
   if (path !== ":memory:") chmodSync(path, 0o600);
   return db;
 }
