@@ -298,3 +298,12 @@ No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sig
 creación privada DB+clave, alta y restore implementados en rama independiente.
 82 Bun PASS / 1243 assertions y 2 E2E PASS (41.5s); revisión y CI finales en PR #25. PR #23 aprobada e integrada externamente
 en 13f19f6; #25 sigue pendiente de autorización de merge. Sin VPS/deploy/datos reales.
+
+## Dev 31 integrado — 2026-10-22
+Usuario autoriza expresamente solo PR #25 sobre 6c68b5e tras revisión con Álex.
+Squash verificado en main 511fcbad4bb0418af5bc06284ac30abb645cd604; árbol
+idéntico al aprobado y checkout limpio. 33 AC PASS, 82 API/1243 assertions, 2 E2E,
+CI previa y posterior al squash SUCCESS; detalles en [testplan 31](31-sqlite-produccion-testplan.md).
+R6 sin causa atribuida; fsync tras publicación puede dejar durabilidad incierta.
+Preparación operativa pendiente según infra/README.md; sin VPS/deploy/datos reales.
+PR #21/#22 intactas. Este cierre documental requiere su propia revisión/merge.

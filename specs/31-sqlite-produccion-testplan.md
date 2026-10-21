@@ -280,3 +280,32 @@ brainstorming duplicados y sin conflictos. El orden #23 → #25 queda respetado;
 Sin VPS, despliegue ni datos financieros reales. Riesgos/límites vigentes:
 UID/root confiables, Linux/glibc, fallo fsync posterior a rename puede dejar un
 conjunto válido cuya durabilidad requiere inspección; causa histórica R6 sin atribuir.
+
+## Cierre de dev 31 integrado — 2026-10-22 (Europe/Madrid)
+
+Fuente: autorización expresa del usuario en este chat tras revisión con Álex,
+limitada a integrar PR #25 con HEAD 6c68b5ed217bc1c435b66ab093489760ec8597e2.
+Preflight: #23 MERGED en 13f19f6; HEAD autorizado sin cambios posteriores,
+diff de 26 archivos revisado sin secretos/bases/datos reales, CI push y PR
+COMPLETED/SUCCESS y sin conflictos. Integración squash verificada en GitHub:
+**511fcbad4bb0418af5bc06284ac30abb645cd604**, PR #25 MERGED el 2026-10-22
+00:09:18 CEST. Checkout main sincronizado, limpio y árbol idéntico al HEAD aprobado.
+
+Los 33 AC quedan verificados: 82 pruebas API / 1243 assertions y 2 E2E,
+tipos/build/controles correctos según evidencia anterior. CI del HEAD aprobado:
+[push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682614034),
+[PR SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682619693).
+CI posterior al squash: [ejecución](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39684386599);
+COMPLETED/SUCCESS sobre 511fcbad4bb0418af5bc06284ac30abb645cd604,
+incluidos API, tipos/build/controles y Playwright. Entrega técnica integrada;
+despliegue no autorizado.
+
+Riesgos conservados: causa histórica R6 sin atribuir (una CI verde no demuestra
+su eliminación); fsync fallido tras rename puede dejar DB+clave válidas con
+durabilidad incierta, que deben preservarse e inspeccionarse sin sobrescribir;
+UID/root confiables, Linux/glibc/renameat2 y ensayo de pérdida física no realizado.
+Antes de desplegar: configuración validada de bind, imagen fijada/UID/volúmenes y
+WAL, Caddy/HTTPS/cookies, copias externas/retención/custodia y simulacro de restore,
+monitorización/actualizaciones/cifrado y autorización específica. Ver infra/README.md.
+No acceso al VPS, infraestructura activa, Excel ni datos reales. PR #21/#22 intactas.
+Este registro documental se propone aparte, sin autorización de integrar otra PR.
