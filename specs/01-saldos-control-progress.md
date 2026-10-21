@@ -62,5 +62,7 @@ Durante la CI documental de STEP 8 se detectó un fallo de un proceso hijo en AC
 Usuario autoriza investigar/corregir en rama separada, 2026-10-21. [Incidencia](sqlite-startup-concurrency.md)
 reproduce SQLITE_BUSY al inicializar esquema con transacción diferida; arreglo mínimo
 BEGIN IMMEDIATE y regresión roja/verde. Verificación local: 16 Bun/200 aserciones,
-tipos/build y Playwright pasan. Corrección en revisión, todavía no integrada en main.
-PR #8 sigue en borrador hasta resolver esta dependencia; sin merge, E1.2 o despliegues.
+tipos/build y Playwright pasan. Corrección aprobada e integrada en main 23e471e mediante
+PR #9; precisión de comprobaciones previas de versión incorporada sin más código.
+PR #8 actualizada desde main; se repite su validación y sigue en borrador, pendiente
+de revisión y aprobación propias. Sin merge de PR #8, E1.2 o despliegues.

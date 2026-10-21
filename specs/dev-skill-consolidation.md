@@ -56,8 +56,9 @@ productiva seguirán sus autorizaciones, sin servicios contratados ni configurac
 ## Validación y reanudación
 Cambios solo de Skill/contexto: ejecutar validate-template, test-validator (18),
 check-project, test-checks (22), diff --check y check-repository con índice e historial.
-No se añaden pruebas para texto ni se repiten flujos locales de app sin cambios; la CI
-existente sí ejecuta automáticamente tipos/build/Bun/Playwright y su resultado se enlaza
+No se añaden pruebas para texto. La validación documental inicial no repitió flujos
+locales de app; tras integrar PR #9 se repite la suite completa por petición del usuario.
+La CI existente ejecuta automáticamente tipos/build/Bun/Playwright y su resultado se enlaza
 en la PR por SHA, separado de la evidencia funcional E1.1 previamente integrada.
 
 Resultado local 2026-10-21: validador, 18 regresiones de plantilla, check-project y
@@ -67,3 +68,18 @@ CI del commit de STEP 8; no se presenta la evidencia antigua como una ejecución
 
 Siguiente acción: revisión y aprobación expresa de la PR de STEP 8; no merge automático.
 No iniciar E1.2 ni otro trabajo por extensión de esta autorización.
+
+## Actualización tras corregir la incidencia de CI
+El usuario aprueba PR #9 tras revisión de Álex sobre 121d790. Precisión documental
+0f1231c (comprobaciones de versión fuera de la transacción) sin más cambios de código;
+CI de push 39555763059 y PR 39555768822 SUCCESS antes de merge. Integración verificada
+en main 23e471e. PR #8 incorpora ese main sin conflictos y su diff respecto a main
+sigue limitado a Skill/documentación. No incorpora una corrección funcional propia.
+La ejecución fallida 39553456240 se mantiene como evidencia histórica.
+Validaciones locales repetidas de la rama actualizada: instalación congelada, tipos,
+build, 16 pruebas Bun/200 aserciones y Playwright real 390/1440 (MFA y restauración)
+pasan. Los controles documentales/40 regresiones y la revisión de historial/índice se
+repiten antes del push; la evidencia remota del nuevo SHA se enlaza en PR #8.
+CI posterior al merge de PR #9 en main: 39555962955 SUCCESS sobre 23e471e.
+PR #8 permanece en borrador para revisión; no se declara integrado STEP 8 ni se autoriza
+su merge, E1.2, nuevas funcionalidades o despliegue.
