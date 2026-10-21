@@ -115,3 +115,14 @@ la base fijada se descarga, pero bun install falla al resolver DNS de registry.n
 (DNSResolveFailed, fast-check 3.23.2). No se cambia la dependencia, DNS del host o
 política de red para ocultarlo. La ejecución rootless autorizada del runner será
 la evidencia necesaria; el fallo de este entorno queda registrado por separado.
+
+### Ensayo real inicial — fallo previo a aplicación — 2026-10-22
+Run 39689141747 / SHA 569ad0b: gate PASS y construcción rootless de imagen PASS;
+primer podman run del inicializador devuelve 125 antes de ejecutar aplicación.
+UID/volumen/red/Quadlet/reinicio NO verificados todavía. Se instrumenta únicamente
+stderr técnico acotado del rechazo 125 previo a aplicación para diagnosticarlo;
+no stdout, entorno, claves o datos. No se relajan permisos/privilegios ni se
+atribuye el fallo al mecanismo keep-id sin evidencia.
+Versiones de ese runner: Podman 4.9.3, systemd 255 (255.4-1ubuntu8.18),
+kernel 7.0.0-1017-azure, uidmap 1:4.13+dfsg1-4ubuntu3.2. Registrar por ejecución:
+la etiqueta ubuntu-24.04 no fija kernel/patch de paquetes entre runners.

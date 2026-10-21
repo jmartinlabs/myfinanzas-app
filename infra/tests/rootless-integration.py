@@ -25,7 +25,13 @@ stage = 'setup'
 def run(args, timeout=60):
     result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
     if result.returncode:
-        # No raw command output: application state/factors must never enter artifacts.
+        # Podman 125 means the application was not started. At this first run no
+        # key/DB has been created; expose only the bounded runtime diagnostic.
+        if stage == 'explicit-production-fixture-initialization' and result.returncode == 125:
+            message = result.stderr[:1200].replace(os.environ.get('RUNNER_TEMP', '/tmp'), '<runner-temp>')
+            message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
+            print('::error title=Podman pre-application runtime rejection::' + message)
+        # No application command output: factors must never enter artifacts.
         raise ProbeError(f'{stage}: command failed, exit {result.returncode}')
     return result.stdout
 
