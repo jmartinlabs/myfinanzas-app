@@ -28,6 +28,8 @@ import {
   type ClassificationGuard,
 } from "./clasificacion";
 
+import { listCycles, getCycle, cycleContext, createCycle } from "./ciclos";
+
 export type AppOptions = {
   classificationGuard?: ClassificationGuard;
   key: Buffer;
@@ -146,6 +148,22 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
       }
+      if (path === "/api/ciclos/contexto" && req.method === "GET")
+        return reply(cycleContext(db));
+      if (path === "/api/ciclos" && req.method === "GET")
+        return reply(listCycles(db, new URL(req.url).searchParams));
+      if (path === "/api/ciclos" && req.method === "POST") {
+        const result = createCycle(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", `/api/ciclos/${result.ciclo.id}`);
+        return reply(result, 201);
+      }
+      const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
+      if (cycle && req.method === "GET") return reply(getCycle(db, cycle[1]));
       const classification = path.match(
         /^\/api\/clasificacion\/(categorias|subcategorias|partidas)(?:\/((?:CAT|SUB|PAR)\d+)(?:\/(desactivar|reactivar|impacto|rectificar))?)?$/,
       );

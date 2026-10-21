@@ -1,9 +1,9 @@
 # 03 — E1.3 Ciclos financiados: Brainstorming
-Status: DRAFT — Q1–Q3 resueltas y wireframes aceptados como base; aprobación final pendiente.
+Status: APPROVED — Q1–Q3/diseños/especificación aprobados; PR #12 integrada.
 Roadmap/context: [E1.3](roadmap.md#e13--periodos-financiados-mínimos-para-imputar-hechos),
 [R3](functional-reference-v5.11.md#r3--planificación-ciclos-y-nómina-secciones-56),
 [proyecto](project.md), [especificación provisional](03-ciclos-financiados-specification.md).
-Next action: revisión final de PR #12 y autorización expresa antes de dev 03; sin nueva ronda.
+Next action: dev 03 autorizado; ver progreso 03. Sin merge de implementación.
 
 ## Autorización y procedencia — 2026-10-21
 Usuario autoriza spec 03 desde main; E1.1/E1.2 integradas, base a98d8f7.
@@ -147,3 +147,13 @@ Los 24 IDs de aceptación se mantienen: 21 de alcance E1.3 y 3 contratos futuros
 todos definidos; las tres filas Q pasan a alcance I tras sus respuestas, no a PASS.
 Esperar cierre/aprobación final de PR #12 y autorización dev 03. Sin más ronda salvo
 contradicción financiera material; detalles técnicos ordinarios en desarrollo.
+
+
+## Aprobación final y cierre de spec 03 — 2026-10-21
+Usuario comunica aprobación por Álex de bf3f2eb, autoriza PR #12 lista/squash y dev 03.
+SHA y CI comprobados: bf3f2eb; push 39587914869 y PR 39587919359 SUCCESS, sin conflictos.
+PR #12 marcada ready y MERGED exactamente sobre ese SHA en 179942e; main sincronizado,
+árbol limpio antes de crear feat/e1-3-ciclos-financiados. Spec 03 cerrada.
+Implementar solo los 21 criterios I; AC-11/23/24 conservan carácter de contrato futuro.
+Sin nueva ronda técnica ni ampliación financiera; PR funcional independiente requiere
+revisión y autorización de merge. No datos reales, despliegue ni modificación del Excel.
