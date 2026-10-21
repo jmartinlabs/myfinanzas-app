@@ -1,9 +1,9 @@
 # 04 — E1.4 Movimientos: Brainstorming
-Status: IN REVIEW — Q1–Q6 respondidas; especificación completa y diseños pendientes de aprobación.
+Status: APPROVED — Q1–Q6, especificación completa y wireframes aprobados el 21/10/2026.
 Base: main ff9d18d, PR #13 MERGED; E1.1/E1.2/E1.3 integradas.
 Roadmap/context: [E1.4](roadmap.md#e14--registrar-ingresosgastos-y-consultar-posición-general),
 [R2 y P1–P7](functional-reference-v5.11.md), [propuesta](04-movimientos-specification.md).
-Next action: revisión de especificación completa y wireframes actualizados; no dev 04.
+Next action: squash merge autorizado de PR #14 tras validaciones/CI; después esperar autorización de dev 04.
 
 ## Confirmado antes de la ronda
 Fuente: solicitud del usuario para spec 04 y referencias aprobadas, 2026-10-21.
@@ -132,3 +132,13 @@ finales pendientes. Solo documentación; sin dev 04, SQL, merge ni despliegue.
 El usuario autoriza expresamente commit/push de spec/04-movimientos y PR a main con
 ambos documentos, Q1–Q6 y 33 criterios. Esta autorización permite publicar documentos
 aún en revisión; no aprueba la especificación completa ni autoriza dev 04 o merge.
+
+
+## Aprobación final — 21/10/2026
+Fuente: autorización expresa del usuario tras revisión favorable de Álex de PR #14.
+Especificación completa y wireframes APPROVED. Se solicita precisar AC-20 como
+«Anular un movimiento registrado por error que no representa un hecho económico real».
+No cambia el contrato de anulación ni los 33 criterios (29 actuales previstos/4 futuros).
+Merge squash autorizado tras ambas CI verdes del commit definitivo; cerrar spec 04.
+Los estados PENDING/revisión anteriores son historia, sustituidos por este registro.
+No autorización de dev 04, código, SQL, datos reales ni despliegue. Excel v5.11 maestro.

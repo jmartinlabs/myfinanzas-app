@@ -258,3 +258,15 @@ cálculo Control Movimientos; bloqueo de fechas futuras según día civil españ
 contrato de app; rectificación/anulación auditadas y advertencias no bloqueantes.
 Siguiente acción: revisión/aprobación de especificación completa y diseños, no dev 04.
 Sin código, SQL, commit de especificación aprobada, merge ni despliegue autorizados.
+
+
+### Spec 04 — aprobada el 21/10/2026
+Usuario aprueba especificación completa y wireframes tras revisión favorable de Álex,
+autoriza cierre de spec 04 y squash merge de PR #14 tras ambas CI verdes del HEAD final.
+AC-20 aclarado: anular un movimiento registrado por error sin hecho económico real.
+33 criterios conservados: 29 actuales previstos y 4 contratos futuros; ninguna prueba
+de E1.4 implementada se da por ejecutada. Estado aprobado en
+[specification](04-movimientos-specification.md) y registro en
+[brainstorming](04-movimientos-brainstorming.md). Verificar integración/commit en PR #14.
+Siguiente acción tras merge: esperar autorización de dev 04. Sin código/SQL, importación,
+datos reales ni despliegue; Excel v5.11 sigue maestro. Estados de revisión previos históricos.

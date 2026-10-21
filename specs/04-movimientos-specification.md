@@ -1,6 +1,6 @@
 # 04 — E1.4 Movimientos: Specification
-Status: IN REVIEW — Q1–Q6 confirmadas; especificación completa y wireframes pendientes de aprobación.
-Approval source/date: especificación completa PENDING. Q1–Q6 aprobadas por usuario tras revisión de Álex, 2026-10-21. Autorizado spec 04, no dev 04.
+Status: APPROVED — especificación completa y wireframes aprobados el 21/10/2026.
+Approval source/date: aprobación expresa del usuario tras revisión favorable de Álex, 2026-10-21 (21/10/2026). Q1–Q6 confirmadas; publicación y squash merge de PR #14 autorizados. Sin dev 04.
 Context and brainstorming: [ronda única](04-movimientos-brainstorming.md),
 [roadmap E1.4](roadmap.md#e14--registrar-ingresosgastos-y-consultar-posición-general),
 [R2/P4/P5](functional-reference-v5.11.md), [UI aprobada](guidelines/ui.md).
@@ -145,7 +145,8 @@ bajo transacción; cambios relevantes en coincidencias piden revisión actualiza
 no un veto definitivo. Repetir el mismo intento técnico conserva un solo ID.
 
 ## Screens and interfaces
-Propuesta pendiente de feedback; reutilizar shell, cabecera central E1.3, componentes,
+Wireframes APPROVED el 21/10/2026 por el usuario tras revisión de Álex; reutilizar
+shell, cabecera central E1.3, componentes,
 paleta, tema claro y texto oscuro sobre #8DBB2E. No pantallas implementadas ni capturas.
 
 ### Escritorio — consulta
@@ -305,7 +306,7 @@ versionado general de catálogos, simulación de proveedores ni cálculos patrim
 ## Acceptance checks
 **Previstos, no ejecutados.** I = implementable en E1.4 cuando se autorice dev 04;
 C = contrato futuro. **29 I / 4 C**; IDs AC-01–33 conservados. Q1–Q6 resueltas,
-sin criterios financieros condicionados a otra ronda. Pendiente aprobación de este documento.
+sin criterios financieros condicionados a otra ronda. Documento y wireframes aprobados; pruebas de implementación pendientes.
 
 | ID | Acción/precondiciones | Resultado observable esperado y prueba prevista | Estado |
 | --- | --- | --- | --- |
@@ -328,7 +329,7 @@ sin criterios financieros condicionados a otra ronda. Pendiente aprobación de e
 | AC-17 | Cambiar Concepto/Nota y renombrar maestro sin cambio económico | Texto/nombre no cambia Tipo/IDs/clasificación ni genera catálogos; API/UI | I |
 | AC-18 | Seleccionar maestros inactivos frente a consultar histórico | No nuevas selecciones inactivas; enlaces históricos preservados, sin reactivar al consultar; API/UI | I |
 | AC-19 | Rectificar campos permitidos con motivo/vista previa | Mismo ID, motivo/fecha/antes/después, reglas del Tipo y relaciones revalidadas; posición/ciclo/referencia coherentes, sin cambio silencioso; Bun/API/UI | I |
-| AC-20 | Anular un registro inexistente | Vista previa/confirmación/motivo, mismo ID y auditoría; no contribuye a posiciones/referencia, consultable como Anulado, reintento no duplica; sin DELETE ni falsa devolución; Bun/E2E | I |
+| AC-20 | Anular un movimiento registrado por error que no representa un hecho económico real | Vista previa/confirmación/motivo, mismo ID y auditoría; no contribuye a posiciones/referencia, consultable como Anulado, reintento no duplica; sin DELETE ni falsa devolución; Bun/E2E | I |
 | AC-21 | Cambiar Saldo usado o jerarquía/Referencia obligatoria de ancestro usado | Guard de uso real activo; bloqueo ordinario o rectificación con movimientos/ciclos afectados y revalidación, no solo catálogo; Bun/API | I |
 | AC-22 | Cambiar maestro/hechos después de vista previa, fallo de auditoría | 409/rollback íntegro, sin mitad de efectos; concurrencia dos clientes/procesos | I |
 | AC-23 | Doble envío/reintento tras respuesta perdida | Una sola alta, ID numérico único/estable/no reutilizado, lectura tras reinicio; Bun/E2E | I |
@@ -344,7 +345,9 @@ sin criterios financieros condicionados a otra ronda. Pendiente aprobación de e
 | AC-33 | Entregar histórico mensual/planificación/Comida | Reglas de Fecha apertura, ejecución y conciliación correspondientes, sin adelanto en E1.4 | C |
 
 ## Revisión y siguiente acción
-Q1–Q6 confirmadas y trazadas en brainstorming; no contradicción financiera material
-detectada ni nueva ronda. Revisar especificación completa y wireframes actualizados
-para aprobación final de spec 04. No hay permiso de dev 04 ni aprobación por extensión.
+Q1–Q6 confirmadas y trazadas en brainstorming; especificación completa y wireframes
+aprobados expresamente el 21/10/2026 tras revisión favorable de Álex. Spec 04 cerrada;
+ajuste aclaratorio AC-20 solicitado por usuario incorporado sin cambio de regla.
+Integrar PR #14 mediante squash tras ambas CI verdes del commit definitivo. Después
+esperar autorización expresa de dev 04; no iniciar implementación por extensión.
 No pruebas de funcionalidad ejecutadas en esta fase: controles son documentales.
