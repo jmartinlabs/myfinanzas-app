@@ -1,0 +1,28 @@
+# TEMPLATE ONLY; deliberately not a Quadlet-active .container file.
+# This must not be installed before production bootstrap and tests are approved.
+# Build/pin the image by digest, do not deploy a mutable 'latest' tag.
+[Unit]
+Description=MyFinanzas API (production template)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=REPLACE_WITH_PINNED_IMAGE_DIGEST
+ContainerName=myfinanzas-api
+# Host loopback only; Caddy will proxy HTTP to this port.
+PublishPort=127.0.0.1:18081:3001
+# Binding the API to container 0.0.0.0:3001 is a REQUIRED code change.
+Volume=%h/myfinanzas/data:/var/lib/myfinanzas:rw
+Environment=NODE_ENV=production
+Environment=APP_ORIGIN=https://myfinanzas.pp.ua
+Environment=DATABASE_PATH=/var/lib/myfinanzas/myfinanzas.sqlite
+Environment=AUTH_KEY_PATH=/var/lib/myfinanzas/auth.key
+NoNewPrivileges=true
+ReadOnly=true
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
