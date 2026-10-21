@@ -27,7 +27,7 @@ function age(args: string[]) {
       "age no pudo completar la operación; comprueba instalación, destinatario, identidad y espacio.",
     );
 }
-function valid(path: string) {
+function valid(path: string, expected?: number) {
   const db = new Database(path, { readonly: true, strict: true });
   try {
     if (
@@ -39,8 +39,13 @@ function valid(path: string) {
     const versions = db.query("SELECT version FROM schema_version").all() as {
       version: number;
     }[];
-    if (versions.length !== 1 || versions[0].version !== 1)
+    if (
+      versions.length !== 1 ||
+      ![1, 2].includes(versions[0].version) ||
+      (expected !== undefined && versions[0].version !== expected)
+    )
       throw new Error("Versión de snapshot no compatible.");
+    return versions[0].version;
   } finally {
     db.close();
   }
@@ -70,12 +75,12 @@ export function backup(
       process.umask(mask);
     }
     chmodSync(snapshot, 0o600);
-    valid(snapshot);
+    const sourceVersion = valid(snapshot);
     const bytes = readFileSync(snapshot);
     const manifest = {
       format: 1,
-      app: "e1.1-v1",
-      schema: 1,
+      app: sourceVersion === 1 ? "e1.1-v1" : "e1.2-v2",
+      schema: sourceVersion,
       id: randomUUID(),
       created: new Date(now).toISOString(),
       sha256: hash(bytes),
@@ -170,7 +175,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      bundle.manifest.schema !== 1 ||
+      ![1, 2].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -186,7 +191,7 @@ export function restore(
       );
     const path = join(stage, "demo.sqlite");
     writeFileSync(path, bytes, { mode: 0o600 });
-    valid(path);
+    valid(path, bundle.manifest.schema);
     const key = readFileSync(keyPath);
     if (key.length !== 32) throw new Error("Clave de aplicación inválida.");
     const db = new Database(path, { strict: true });
@@ -201,6 +206,7 @@ export function restore(
           "recovery",
           "auth_limits",
           "idempotency",
+          ...(bundle.manifest.schema === 2 ? ["classification_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

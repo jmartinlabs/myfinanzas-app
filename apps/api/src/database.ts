@@ -1,6 +1,7 @@
 import { Database } from "bun:sqlite";
 import { mkdirSync, chmodSync } from "node:fs";
 import { dirname } from "node:path";
+import { classificationSchema, schemaVersion } from "./classification-schema";
 
 // Only fictional bootstrap data. Original Excel and real migration are outside this module.
 export function openDatabase(path: string) {
@@ -29,18 +30,63 @@ export function openDatabase(path: string) {
     const versions = db.query("SELECT version FROM schema_version").all() as {
       version: number;
     }[];
-    if (versions.length !== 1 || versions[0].version !== 1) {
+    if (
+      versions.length !== 1 ||
+      ![1, schemaVersion].includes(versions[0].version)
+    ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
+  } else if (
+    db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+      )
+      .get()
+  ) {
+    db.close();
+    throw new Error(
+      "Esquema sin versión no compatible; no se modificará esta base.",
+    );
   }
   db.exec(
     "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
   );
   // Acquire the writer lock before schema reads; a deferred read-to-write upgrade can fail
   // immediately with SQLITE_BUSY even with busy_timeout configured.
-  db.transaction(() => {
-    db.exec(`CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY) STRICT;
+  try {
+    db.transaction(() => {
+      // Recheck under writer lock: another process may already have upgraded.
+      const versionTable = db
+        .query(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'",
+        )
+        .get();
+      const versions = versionTable
+        ? (db.query("SELECT version FROM schema_version").all() as {
+            version: number;
+          }[])
+        : [];
+      if (versionTable) {
+        if (
+          versions.length !== 1 ||
+          ![1, schemaVersion].includes(versions[0].version)
+        )
+          throw new Error("Esquema no compatible; no se modificará esta base.");
+        if (versions[0].version === 1) classificationSchema(db);
+        return; // Existing E1.1 data is never re-seeded (even if no Saldo exists).
+      }
+      if (
+        db
+          .query(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          )
+          .get()
+      )
+        throw new Error(
+          "Esquema sin versión no compatible; no se modificará esta base.",
+        );
+      db.exec(`CREATE TABLE IF NOT EXISTS schema_version(version INTEGER PRIMARY KEY) STRICT;
       CREATE TABLE IF NOT EXISTS saldos(
         id TEXT PRIMARY KEY, nombre TEXT NOT NULL, tipo TEXT NOT NULL CHECK(tipo IN ('Exterior','Efectivo','Inversión')),
         control TEXT NOT NULL CHECK(control IN ('Exterior','Movimientos','Terminal','No controlado','Inversiones','Manual')),
@@ -70,41 +116,16 @@ export function openDatabase(path: string) {
       CREATE TABLE IF NOT EXISTS auth_limits(id INTEGER PRIMARY KEY CHECK(id=1), failures INTEGER NOT NULL,
         window INTEGER NOT NULL, blocked INTEGER NOT NULL) STRICT;
       INSERT OR IGNORE INTO schema_version VALUES(1);`);
-    if (!db.query("SELECT id FROM saldos LIMIT 1").get()) {
-      const insert = db.prepare(
-        `INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-      );
-      const time = "2026-01-01T00:00:00.000Z";
-      insert.run(
-        "S000",
-        "Exterior técnico",
-        "Exterior",
-        "Exterior",
-        "Activa",
-        null,
-        0,
-        0,
-        0,
-        null,
-        null,
-        null,
-        null,
-        1,
-        time,
-        time,
-      );
-      for (const [id, nombre, tipo, control] of [
-        ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
-        ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
-        ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
-        ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
-        ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
-      ])
+      if (!db.query("SELECT id FROM saldos LIMIT 1").get()) {
+        const insert = db.prepare(
+          `INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        );
+        const time = "2026-01-01T00:00:00.000Z";
         insert.run(
-          id,
-          nombre,
-          tipo,
-          control,
+          "S000",
+          "Exterior técnico",
+          "Exterior",
+          "Exterior",
           "Activa",
           null,
           0,
@@ -118,9 +139,39 @@ export function openDatabase(path: string) {
           time,
           time,
         );
-      db.run("INSERT OR IGNORE INTO counters VALUES('saldo',6)");
-    }
-  }).immediate();
+        for (const [id, nombre, tipo, control] of [
+          ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
+          ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
+          ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
+          ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
+          ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
+        ])
+          insert.run(
+            id,
+            nombre,
+            tipo,
+            control,
+            "Activa",
+            null,
+            0,
+            0,
+            0,
+            null,
+            null,
+            null,
+            null,
+            1,
+            time,
+            time,
+          );
+        db.run("INSERT OR IGNORE INTO counters VALUES('saldo',6)");
+      }
+      classificationSchema(db);
+    }).immediate();
+  } catch (error) {
+    db.close();
+    throw error;
+  }
   if (path !== ":memory:") chmodSync(path, 0o600);
   return db;
 }

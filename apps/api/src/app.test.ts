@@ -600,7 +600,7 @@ test("AC24–26: backup WAL consistente/cifrado, restauración aislada, antigüe
         now: f.now,
       }),
     ).toThrow("age");
-    f.db.run("UPDATE schema_version SET version=2");
+    f.db.run("UPDATE schema_version SET version=999");
     expect(() =>
       backup(f.db, f.key, join(dir, "invalid-schema"), pub, f.now),
     ).toThrow("compatible");
