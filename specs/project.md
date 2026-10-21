@@ -205,3 +205,24 @@ Próxima acción: esperar autorización de la siguiente entrega; no iniciar E1.3
 desplegar. Excel v5.11 sigue como fuente de verdad, sin datos reales ni cambios al maestro.
 Se prioriza resolver detalles técnicos ordinarios durante desarrollo y reutilizar
 arquitectura/componentes/pruebas, manteniendo rigor financiero, de seguridad e integridad.
+
+
+## E1.3 — spec 03 autorizado, sin desarrollo
+Usuario autoriza especificar Ciclos financiados desde main a98d8f7 y publicar una
+PR Draft de documentos no aprobados como excepción expresa a la secuencia de commit
+aprobado de spec. [Brainstorming](03-ciclos-financiados-brainstorming.md) reúne Q1–Q3;
+[especificación provisional](03-ciclos-financiados-specification.md) incluye wireframes
+y criterios condicionados, no decisiones financieras asumidas. Próxima acción:
+respuestas a ronda breve y revisión de la misma PR. Sin dev 03/SQL ejecutado/merge,
+E2.1, motores, Nómina, datos reales ni despliegue. Excel v5.11 permanece maestro.
+
+
+### E1.3 — respuestas y base visual recibidas, cierre documental pendiente
+Q1–Q3 confirmadas por usuario tras revisión física de Álex. Corrección material Q2:
+mes financiado único demostrado en Control ciclo, además de Inicio único/obligatorio
+y saldo comida obligatorio; cero/negativos explícitos válidos. Cabecera por referencia,
+sin corte inventado; Fin conservado sin hechos. Wireframes aceptados como base.
+[Brainstorming](03-ciclos-financiados-brainstorming.md) conserva historia y respuestas;
+[especificación](03-ciclos-financiados-specification.md) define 24 criterios: 21 actuales
+y 3 contratos futuros, sin pruebas de E1.3 ejecutadas. PR #12 permanece Draft;
+siguiente acción: aprobación final y autorización dev 03, sin implementación/merge.
