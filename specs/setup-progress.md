@@ -269,3 +269,14 @@ AC-31–33 futuros. Exterior ordinario/especial y fichas E3 siguen fuera; la ent
 responsable de Exterior ordinario queda pendiente de planificación autorizada.
 Próxima acción: auditoría de Álex de la PR funcional. Sin merge automático, E1.6,
 datos reales, Excel modificado ni despliegue; Excel v5.11 continúa maestro.
+
+## Cierre autorizado de E1.5 — 2026-10-21
+Auditoría final favorable de Álex; usuario autoriza squash de PR #18 sobre el HEAD
+064ffa295608a8a90152a2f6bf8ea57154855490, ambas CI SUCCESS y sin conflictos con
+main tras PR #19. Integración: `0d6cfc0e4622e00e1084aefb35987b1954c5e3ef`.
+[CI posterior al merge](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39649152132):
+COMPLETED / SUCCESS sobre ese commit. Main sincronizado y limpio tras integración;
+PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31–33
+contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
+Este registro documental se propone en PR separada, pendiente de autorización de merge.
+No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
