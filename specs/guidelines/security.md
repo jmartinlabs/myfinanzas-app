@@ -87,3 +87,16 @@ Fechas/importe/permisos/relaciones se revalidan bajo transacción; huella no sus
 MFA ni protecciones financieras. Cierres reales ausentes: contrato futuro, sin afirmar
 protección de módulos no entregados. Entorno demo development/test y barrera productiva
 intactos; sin inicialización real, copia externa, scheduler, deploy ni RPO/RTO operativos.
+
+
+## E1.5 local/ficticia
+Referencias/Transferencias heredan sesión MFA, CSRF, Origin, límites y errores sin SQL.
+No tokens ni payload financieros en logs/artifacts. Sin rutas de administración, acceso
+remoto alternativo o nuevas dependencias. Relaciones por FK y validación bajo IMMEDIATE;
+no validar solo en selector. REF informada siempre existente; compatibilidad solo por
+obligación confirmada, tipos con fichas ausentes no operativos. Transferencias S000
+rechazadas en servicio y CHECK, incluidas ordinarias; no permisos implícitos para Exterior.
+Upgrade v4→v5 no altera contraseña/clave/TOTP/sesiones previas ni auditoría histórica;
+restore age sigue revocando acceso/intentos. Producción rechazada antes de abrir/sembrar
+por el guard existente. Copia externa, automatización, operación real y migración limpia
+siguen pendientes; datos exclusivamente ficticios, sin despliegue ni RPO/RTO productivo probado.

@@ -210,3 +210,23 @@ revisables sin rechazo de hechos distintos. Anulado conserva periodo/relaciones 
 no computa, sin confundirse con devolución. Auditoría consultable, sin reactivación.
 Controles reales 390/1440 y capturas en [testplan](../04-movimientos-testplan.md);
 no equiparar wireframes aprobados con prueba visual ni auditoría WCAG completa.
+
+
+## E1.5 — UI implementada para auditoría
+Reutiliza identidad, shell y componentes existentes; sin nuevo tema ni biblioteca.
+Transferencia muestra dos selectores internos, dos posiciones según sus motores y una
+confirmación explícita con efecto antes/después. No Partida/Subtipo ni salida Exterior.
+Referencia por ID/Tipo/nombre, obligatoria solo según Categoría; no filtrar opcionales
+por una compatibilidad adicional. Inactivas conservadas solo en enlaces históricos.
+Maestro REF usa tabla/tarjetas, búsqueda/Tipo/Estado y página de alta/edición propia;
+Tipo usado bloqueado; desactivación/reactivación confirmadas. Ficha enlaza consulta por
+REF sin total económico que mezcle transferencias y gasto.
+
+Borrador al crear caso se conserva en memoria durante ida/vuelta, sin localStorage,
+ni datos de formulario en URL; query de consulta solo contiene REF ID, no payload.
+Nombres accesibles explícitos y foco en título asíncrono/confirmación/error. Filtros
+apilados a 390, paneles separados y comparación en dos columnas solo en escritorio.
+La nota de motor usa un bloque propio: no aplicar borde de help sobre texto inline.
+Capturas nuevas e inspección en [testplan 05](../05-transferencias-referencias-testplan.md),
+separadas de aprobación documental de wireframes. Contraste oscuro/#8DBB2E conservado;
+no se declara auditoría WCAG completa ni entrega de fichas E3.

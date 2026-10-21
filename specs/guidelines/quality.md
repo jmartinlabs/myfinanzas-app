@@ -132,3 +132,22 @@ presentación, escrituras exitosas siempre reales. Capturas 390/1440 inspecciona
 CI adjunta exclusivamente PNG e1-4 al artifact heredado e1-1-screenshots, 7 días.
 No ejecutar screenshots desde pantallas que exhiban factores. No afirmar AC futuros
 probados por dobles aislados de protección. No relajar checks para hacer pasar CI.
+
+
+## E1.5 — evidencia actual
+[30 criterios actuales y 3 contratos futuros](../05-transferencias-referencias-testplan.md).
+R1–R9 en referencias.test.ts prueban Transferencia, matriz Q2, catálogos, idempotencia,
+concurrencia, impacto clasificatorio compatible/incompatible y upgrade v4 genuina.
+Los 44 tests anteriores se conservan; solo cambian expectativas de versión actual,
+mensajes de dependencia ahora E3 y etiquetas de copias creadas por la versión actual.
+La fixture v4 congelada evita fingir continuidad renombrando una base nueva.
+
+Playwright reutiliza el recorrido E1.4 y añade transferencias.ts, sin duplicar onboarding,
+seguridad o servidor. Éxitos siempre contra Effect/SQLite reales; intercepta error transitorio
+para presentación, retiene/libera carga real y usa respuesta perdida tras commit real en
+regresión E1.4. Catálogos, dinero, correcciones y restore no se sustituyen por mocks.
+Restaura E1.5 en el servidor aislado existente con login/TOTP, compara hechos completos,
+identidades/auditorías y posiciones, y consulta la Referencia restaurada por UI.
+CI solo adjunta PNG ficticios e1-5 al artifact heredado, junto a entregas anteriores,
+retención 7 días. No factores, DB, auth.key, trazas o storageState. Sin nueva dependencia.
+Un fallo local o remoto nunca se reclasifica como futuro ni se oculta mediante retries.

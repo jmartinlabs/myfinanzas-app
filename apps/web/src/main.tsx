@@ -1,3 +1,4 @@
+import { Referencias } from "./Referencias";
 import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -13,7 +14,7 @@ function App() {
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
-  const [path, setPath] = useState(location.pathname),
+  const [path, setPath] = useState(location.pathname + location.search),
     [menu, setMenu] = useState(false),
     [saldo, setSaldo] = useState<Saldo | null>(null),
     [error, setError] = useState(""),
@@ -34,7 +35,7 @@ function App() {
   }, []);
   useEffect(() => {
     const pop = () => {
-      setPath(location.pathname);
+      setPath(location.pathname + location.search);
       setNotice("");
       setMenu(false);
     };
@@ -199,6 +200,20 @@ function App() {
             <span aria-hidden="true">↔</span> Movimientos{" "}
             <span aria-hidden="true">›</span>
           </a>
+          <a
+            className={
+              path.startsWith("/referencias") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/referencias") ? "page" : undefined}
+            href="/referencias"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/referencias");
+            }}
+          >
+            <span aria-hidden="true">⌑</span> Referencias{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>
@@ -233,7 +248,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/movimientos") ? (
+          {path.startsWith("/referencias") ? (
+            <Referencias path={path} go={go} />
+          ) : path.startsWith("/movimientos") ? (
             <Movimientos path={path} go={go} />
           ) : path.startsWith("/ciclos") ? (
             <Ciclos path={path} go={go} />

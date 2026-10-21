@@ -1449,3 +1449,25 @@ textarea {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
+
+.reference-detail > .panel {
+  margin-top: 20px;
+}
+@media (min-width: 761px) {
+  .movement-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 24px;
+  }
+}
+@media (max-width: 760px) {
+  .references-list .filters {
+    grid-template-columns: 1fr;
+  }
+}
+
+.movement-position-note {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+}

@@ -21,6 +21,14 @@ export async function classificationJourney(page: Page) {
   const navigate = async (path: string) => {
     await page.goto(path);
     await expect(page.locator("#main")).toBeVisible();
+    // The shell can render before the async ficha and its scheduled heading focus.
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) =>
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+        ),
+    );
   };
   async function createCategory(name: string) {
     await navigate("/clasificacion/categorias/nuevo");

@@ -308,3 +308,15 @@ estado MERGED y CI posterior se verifican y registran en PR #17 al concluir.
 Siguiente acción tras integración: spec 05 cerrada; esperar autorización expresa de dev 05.
 No implementación funcional, SQL, datos reales, modificación Excel ni despliegue. Los
 estados previos de revisión son históricos. Excel v5.11 continúa como maestro financiero.
+
+
+## Dev 05 — implementación autorizada en revisión
+Usuario autoriza desde main a586fa7 (PR #17 aprobada/integrada), rama funcional
+feat/e1-5-transferencias-referencias. Solo local/ficticio; migración versionada E1.5
+sin pérdida de datos. La autorización de dev 05 sustituye el límite documental anterior
+sin reabrir Q1–Q3 ni habilitar merge. [Progreso](05-transferencias-referencias-progress.md)
+y [resultados](05-transferencias-referencias-testplan.md) mantienen 30 AC actuales y
+AC-31–33 futuros. Exterior ordinario/especial y fichas E3 siguen fuera; la entrega
+responsable de Exterior ordinario queda pendiente de planificación autorizada.
+Próxima acción: auditoría de Álex de la PR funcional. Sin merge automático, E1.6,
+datos reales, Excel modificado ni despliegue; Excel v5.11 continúa maestro.

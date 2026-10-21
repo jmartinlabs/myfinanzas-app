@@ -204,6 +204,7 @@ test("05 R1 AC01–10/20/21: transferencias internas exactas, terminal, ciclos y
       true,
     );
     expect(getSaldo(db, a.id).posicion.importe).toBe("95.00");
+    expect(cycleContext(db).referencia.fecha).toBe("2026-10-13");
     expect(getMovement(db, tx.id).auditoria).toHaveLength(3);
     expect(() =>
       db.run("DELETE FROM movimientos WHERE id=?", [tx.id]),
@@ -504,7 +505,7 @@ test("05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age
       [a.id, time, time],
     );
     const old = db.query("SELECT * FROM movimientos WHERE id='1'").get();
-    const oldJson = JSON.stringify(old);
+    const oldJson = JSON.stringify({ ...(old as object), importe: "50.00" });
     db.run(
       "INSERT INTO movement_audit VALUES('1',1,'alta',NULL,?,'usuario-unico',NULL,?)",
       [time, oldJson],
@@ -545,7 +546,9 @@ test("05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age
       expect(
         db.query("SELECT * FROM counters WHERE name=?").get(c.name),
       ).toEqual(c);
-    expect(getMovement(db, "1").auditoria[0].posterior).toEqual(old);
+    expect(getMovement(db, "1").auditoria[0].posterior).toEqual(
+      JSON.parse(oldJson),
+    );
     expect(
       new Auth(db, readFileSync(join(dir, "auth.key"))).session(
         new Request("http://127.0.0.1:5173", {
@@ -555,6 +558,14 @@ test("05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age
     ).toBe(verified.csrf);
     const login = await new Auth(db, key).login(password);
     expect(login.challenge).toBeString();
+    expect(
+      new Auth(db, key).verify(
+        new Request("http://127.0.0.1:5173", {
+          headers: { cookie: auth.challengeName + "=" + login.challenge },
+        }),
+        totp(enroll.secret!).generate({ timestamp: Date.now() + 30000 }),
+      ).session,
+    ).toBeString();
     const r = ref(db);
     const tx = save(db, transfer(a.id, b.id, { referencia: r.id }));
     expect(tx.id).toBe("2");
@@ -571,7 +582,9 @@ test("05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age
         expect(copy.query("SELECT * FROM reference_attempts").all()).toEqual(
           [],
         );
-        expect(getMovement(copy, "1").auditoria[0].posterior).toEqual(old);
+        expect(getMovement(copy, "1").auditoria[0].posterior).toEqual(
+          JSON.parse(oldJson),
+        );
         expect(getSaldo(copy, a.id).posicion.importe).toBe(
           v === 5 ? "120.00" : "150.00",
         );
@@ -652,7 +665,8 @@ test("05 R6 AC12/22/23/28: dos procesos migran v4 y reservan REF; reintento/corr
     const results = await Promise.all([run(create), run(create)]);
     expect(new Set(results.map((x) => x.id)).size).toBe(2);
     db = openDatabase(path);
-    db.run("UPDATE counters SET next=1000 WHERE name='referencias'");
+    db.run("UPDATE counters SET next=999 WHERE name='referencias'");
+    expect(ref(db).id).toBe("REF999");
     expect(ref(db).id).toBe("REF1000");
     const r = ref(db),
       body = transfer(a.id, b.id, { referencia: r.id }),
@@ -792,6 +806,136 @@ test("05 R7 AC25: rutas Effect reales, MFA/CSRF/Origin, FK y no DELETE", async (
       (await request("/api/referencias/REF999", "GET", undefined, headers))
         .status,
     ).toBe(404);
+  } finally {
+    db.close();
+  }
+});
+
+test("05 R8 AC11–19/23/24: catálogo paginado, idempotencia REF y rectificación compatible real", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const body = { nombre: "Caso sin unicidad de nombre", tipo: "Viaje" },
+      key = randomUUID(),
+      first = createReference(db, body, key, now);
+    expect(createReference(db, body, key, now)).toEqual(first);
+    expect(() =>
+      createReference(db, { ...body, tipo: "Evento" }, key, now),
+    ).toThrow("otros datos");
+    for (let i = 0; i < 104; i++) ref(db, "Viaje", "Caso ficticio " + i);
+    expect(listReferences(db).items).toHaveLength(100);
+    expect(
+      listReferences(db, new URLSearchParams({ page: "2" })).items,
+    ).toHaveLength(5);
+    expect(movementOptions(db).referencias).toHaveLength(105);
+    const changed = updateReference(
+      db,
+      first.id,
+      { revision: first.revision, nombre: "Nombre vigente" },
+      now,
+    );
+    expect(() =>
+      updateReference(
+        db,
+        first.id,
+        { revision: first.revision, estado: "Inactiva" },
+        now,
+      ),
+    ).toThrow("ha cambiado");
+    categories(db);
+    const p = partida(db, "CAT011"),
+      a = saldo(db, "Cuenta", "100", "Movimientos", true);
+    save(db, expense(a.id, p.id, { referencia: first.id }));
+    const cat = getClassification(db, "categorias", "CAT011"),
+      changes = { revision: cat.revision, anual: "No aplica" };
+    const impact = previewClassification(db, "categorias", cat.id, changes);
+    expect(impact).toBeDefined();
+    updateClassification(db, "categorias", cat.id, changes, undefined, now, {
+      fingerprint: impact.fingerprint,
+      motivo: "Corrección de método anual con caso compatible",
+    });
+    expect(getClassification(db, "categorias", cat.id).anual).toBe("No aplica");
+    expect(getReference(db, first.id).nombre).toBe(changed.nombre);
+  } finally {
+    db.close();
+  }
+});
+
+test("05 R9 AC03/06/08/09/15: límites de ciclos/Madrid, FK y revisión de Referencias en servidor", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = saldo(db, "Origen", "0"),
+      b = saldo(db, "Destino", "0");
+    for (const inicio of ["2026-08-25", "2026-09-25"])
+      createCycle(
+        db,
+        {
+          inicio,
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(db).revision,
+        },
+        randomUUID(),
+        now,
+      );
+    const dates = ["2026-08-24", "2026-08-25", "2026-09-24", "2026-09-25"];
+    const facts = dates.map((fecha) =>
+      save(db, transfer(a.id, b.id, { fecha, importe: "0.01" })),
+    );
+    expect(facts.map((m) => m.ciclo?.mesFinanciado ?? null)).toEqual([
+      null,
+      "2026-09-01",
+      "2026-09-01",
+      "2026-10-01",
+    ]);
+    expect(getSaldo(db, a.id).posicion.importe).toBe("-0.04");
+    expect(getSaldo(db, b.id).posicion.importe).toBe("0.04");
+    const boundary = Date.parse("2026-10-20T22:30:00Z");
+    expect(
+      previewMovement(
+        db,
+        transfer(a.id, b.id, { fecha: "2026-10-21" }),
+        null,
+        false,
+        boundary,
+      ).despues?.fecha,
+    ).toBe("2026-10-21");
+    expect(() =>
+      previewMovement(
+        db,
+        transfer(a.id, b.id, { fecha: "2026-10-22" }),
+        null,
+        false,
+        boundary,
+      ),
+    ).toThrow("campos");
+    expect(() =>
+      db.run("UPDATE movimientos SET referencia='REF999' WHERE id=?", [
+        facts[0].id,
+      ]),
+    ).toThrow();
+    expect(() =>
+      db.run("UPDATE movimientos SET origen='S000' WHERE id=?", [facts[0].id]),
+    ).toThrow();
+    expect(() => save(db, transfer(a.id, b.id, { referencia: true }))).toThrow(
+      "ID registrado",
+    );
+    const r = ref(db),
+      state = updateReference(db, r.id, {
+        revision: r.revision,
+        estado: "Inactiva",
+      });
+    expect(() => save(db, transfer(a.id, b.id, { referencia: r.id }))).toThrow(
+      "activa",
+    );
+    updateReference(db, r.id, { revision: state.revision, estado: "Activa" });
+    expect(
+      save(db, transfer(a.id, b.id, { referencia: r.id })).referencia?.id,
+    ).toBe(r.id);
+    expect(() =>
+      updateReference(db, r.id, {
+        revision: getReference(db, r.id).revision,
+        tipo: "Evento",
+      }),
+    ).toThrow("Tipo protegido");
   } finally {
     db.close();
   }
