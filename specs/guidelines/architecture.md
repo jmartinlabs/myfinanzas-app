@@ -209,7 +209,8 @@ Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 solo 0.0.0.0 como opt-in explícito para namespace aislado. Puerto 3001 constante,
 sin cambios financieros/clave/origen. Pruebas de procesos reales no acreditan el
 mapeo Podman ni el ciclo Quadlet; [dev 32](../32-ejecucion-rootless-progress.md)
-permanece incompleto y bloqueado para infraestructura real. Ninguna activación remota.
+permanece incompleto; la evidencia del runner añadida abajo supera ese bloqueo
+inicial. Ninguna activación remota.
 
 Ensayo 32: runner ubuntu-24.04 efímero con Podman rootless/systemd de usuario
 reales validado; UID interno 10001 mediante keep-id frente al host 1001,

@@ -190,3 +190,7 @@ de sus contenedores, unidad y directorio privado; no basta intentar la limpieza.
 Los resultados finales de ese refuerzo/CI general se vinculan al SHA en PR #30.
 Sin artefactos sensibles, secretos reales, VPS, publicación de imagen ni merge.
 La evidencia del runner no acredita los contratos todavía no implementados de 32.
+
+Cierre de este incremento de ensayo: run 39690471643 / f1b66e6 SUCCESS, incluida
+limpieza verificada (contenedores/unidad/directorio ausentes). Evidencia y límites
+actualizados en testplan 32; no se declara la entrega completa ni cierre causal del fallo API.
