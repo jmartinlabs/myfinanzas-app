@@ -280,3 +280,13 @@ PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31�
 contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
 Este registro documental se propone en PR separada, pendiente de autorización de merge.
 No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
+
+## Spec 06 — E1.6 propuesta documental en revisión — 2026-10-21
+Base main 9336fdd; E1.5 cerrada e integrada. Usuario autoriza solo especificación,
+wireframes y PR Draft. [Brainstorming](06-deuda-brainstorming.md) y
+[especificación](06-deuda-specification.md): DRAFT, Q1–Q4 sin responder, 30 criterios
+actuales candidatos y 3 futuros; ninguna implementación/prueba funcional E1.6 ejecutada.
+Próxima acción: contrastar apertura/corte/precontrol, desglose/límites, mínimo de Deuda y
+protecciones históricas, permiso/fecha del nuevo Tipo; feedback de wireframes 390/1440.
+La publicación anticipada está autorizada, no la aprobación o dev 06. Sin código/SQL,
+migración, Excel, datos reales, merge o despliegue. Excel v5.11 continúa maestro.
