@@ -53,7 +53,7 @@ No reutilices una base desconocida: se rechazan versiones de esquema incompatibl
 Una base local **E1.1/E1.2/E1.3 existente (versión 1/2/3) se actualiza transaccionalmente a versión 4**
 al abrirla, sin borrar/resembrar Saldos ni reiniciar autenticación. No vuelvas a ejecutar
 setup si el usuario ya está configurado. Conserva la clave y realiza/verifica una copia
-con la versión E1.1 antes de actualizar; las copias v1, v2, v3 y v4 siguen restaurables.
+con la versión E1.1 antes de actualizar; las copias v1, v2, v3, v4 y v5 siguen restaurables.
 El catálogo Clasificación comienza vacío; crea datos ficticios desde sus páginas.
 Esto no importa el Excel ni convierte la base demo en una base para datos reales.
 
@@ -128,7 +128,7 @@ tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendiente
 STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas iniciales](specs/dev-skill-consolidation.md).
 Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
 inicialización. Esperar autorización antes de la próxima entrega.
-E1.2/E1.3 integradas; E1.4 implementada en revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
+E1.1–E1.4 integradas; E1.5 implementada en rama para revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 
 ## Universal AI development template
@@ -137,14 +137,30 @@ Proyecto derivado de agent-project-template; se conservan sus templates, control
 prompts de referencia. Los prompts heredados no sustituyen este contexto vigente.
 
 
-## E1.4 — implementación local en revisión, no integrada
+## E1.4 — integrada PR #15/#16 (b51b89b/a693aeb)
 Ingresos/Gastos: listado/ficha/alta, filtros, rectificación/anulación auditadas con ID
 estable, advertencia revisable de coincidencias e idempotencia. [Trazabilidad](specs/04-movimientos-testplan.md).
 Importes positivos, fecha no futura según Europe/Madrid y validación en servidor.
-Gasto exige Partida y permiso Exterior; Referencia obligatoria no verificable bloquea
-hasta E1.5. No controlado puede operar, pero no presenta posición convencional.
+Gasto exige Partida y permiso Exterior; Referencia obligatoria se integra en E1.5
+solo para casos y reglas verificables, conservando bloqueados los tipos E3. No controlado puede operar, pero no presenta posición convencional.
 Solo Control Movimientos usa apertura ausente como cero en cálculo, sin cambiar null
 persistente ni filtrar por Fecha apertura. Anulados conservados, sin cómputo ni borrado.
 Actualizar una base E1.3 no requiere reiniciar el usuario ni ejecutar setup otra vez:
 copia previa verificada y clave externa conservada. Esquema v4 transaccional sin semillas
-de hechos. Excel sigue maestro, solo fixtures. Sin E1.5, datos reales ni despliegue.
+de hechos en esa entrega. E1.5 amplía a v5 según el apartado siguiente. Excel maestro, solo fixtures.
+
+
+## E1.5 — implementación local en revisión, no integrada
+[Especificación aprobada](specs/05-transferencias-referencias-specification.md),
+[progreso](specs/05-transferencias-referencias-progress.md) y
+[pruebas](specs/05-transferencias-referencias-testplan.md). Transferencia interna como
+un único hecho, sin Partida/Subtipo, con posición derivada por cada motor. No exige
+permiso Exterior ni excluye Terminal/No controlado; todas las Transferencias con S000
+siguen fuera del alcance, incluidas las ordinarias. Gastos desde terminal siguen
+exigiendo permiso Exterior. Referencias Viaje/Evento por ID REF estable, sin fichas E3.
+
+Abrir una base v4 existente actualiza transaccionalmente a v5 sin reinicializar datos,
+usuario, clave ni historial. No volver a ejecutar setup para actualizar. Conservar copia
+cifrada verificada y clave externa; la restauración aislada sigue revocando sesiones.
+No hay importación ni arranque productivo: el guard development/test permanece intacto.
+Sin E1.6, referencias de Anticipo/Compartido/Vehículo operativas, datos reales ni deploy.

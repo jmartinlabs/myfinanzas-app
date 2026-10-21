@@ -1,3 +1,4 @@
+import { validateReference } from "./reference-rules";
 import type { Database } from "bun:sqlite";
 import type { Entity } from "./classification-schema";
 import {
@@ -60,12 +61,26 @@ export function classificationMovementImpact(
     .map((r) => {
       const before = chain(r.partida!, false),
         after = chain(r.partida!, true);
-      if (economic.length && !r.anulado && after.referencia)
-        throw new Problem(
-          409,
-          "REFERENCE_UNAVAILABLE",
-          "La rectificación exigiría una Referencia no verificable en Gastos existentes. Espera E1.5.",
-        );
+      if (economic.length && !r.anulado) {
+        try {
+          validateReference(
+            db,
+            r.referencia,
+            after.categoria.id,
+            after.referencia,
+            r.referencia ?? null,
+          );
+        } catch (e) {
+          if (e instanceof Problem)
+            throw new Problem(
+              409,
+              e.code,
+              "La rectificación invalidaría la Referencia de un Gasto existente: " +
+                e.message,
+            );
+          throw e;
+        }
+      }
       return {
         id: r.id,
         fecha: r.fecha,

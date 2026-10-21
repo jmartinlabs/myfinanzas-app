@@ -41,7 +41,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5].includes(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
@@ -86,7 +86,9 @@ export function backup(
             ? "e1.2-v2"
             : sourceVersion === 3
               ? "e1.3-v3"
-              : "e1.4-v4",
+              : sourceVersion === 4
+                ? "e1.4-v4"
+                : "e1.5-v5",
       schema: sourceVersion,
       id: randomUUID(),
       created: new Date(now).toISOString(),
@@ -182,7 +184,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -215,7 +217,8 @@ export function restore(
           "idempotency",
           ...(bundle.manifest.schema >= 2 ? ["classification_attempts"] : []),
           ...(bundle.manifest.schema >= 3 ? ["cycle_attempts"] : []),
-          ...(bundle.manifest.schema === 4 ? ["movement_attempts"] : []),
+          ...(bundle.manifest.schema >= 4 ? ["movement_attempts"] : []),
+          ...(bundle.manifest.schema >= 5 ? ["reference_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

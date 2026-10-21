@@ -372,7 +372,7 @@ test("02 AC02: IDs >999, idempotencia y rollback de altas", () => {
   }
 });
 
-test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v4", async () => {
+test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v5", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-upgrade-")),
     path = join(dir, "demo.sqlite");
   let db = openV1(path);
@@ -455,8 +455,8 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
     db.close();
     db = openDatabase(path);
     expect(snapshot(db)).toEqual(after);
-    backup(db, key, join(dir, "v4-backup"), recipient);
-    for (const version of [1, 4]) {
+    backup(db, key, join(dir, "v5-backup"), recipient);
+    for (const version of [1, 5]) {
       const restored = restore(
         join(dir, `v${version}-backup`),
         join(dir, `restore-${version}`),
@@ -471,7 +471,7 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
         expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-12.34");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(
-          version === 4 ? 1 : 0,
+          version === 5 ? 1 : 0,
         );
       } finally {
         copy.close();

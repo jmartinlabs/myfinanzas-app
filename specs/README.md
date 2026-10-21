@@ -23,7 +23,9 @@ E1.3 spec approved and integrated via PR #12 (179942e); dev 03 authorized locall
 See [progress 03](03-ciclos-financiados-progress.md) and [testplan 03](03-ciclos-financiados-testplan.md).
 E1.3 integrated via PR #13 (ff9d18d). Spec 04 approved/integrated PR #14 (5fa4ace);
 dev 04 authorized locally. [Progress](04-movimientos-progress.md) / [acceptance](04-movimientos-testplan.md):
-29 current criteria, AC-30–33 future. Implementation review/merge pending; no E1.5 or deployment. Historical STEP 5 approval records remain attributed
+29 current criteria, AC-30–33 future. E1.4 integrated PR #15/#16; spec 05 approved PR #17
+(a586fa7); dev 05 local/fictional authorized. See [progress 05](05-transferencias-referencias-progress.md)
+and [tests 05](05-transferencias-referencias-testplan.md): 30 current/3 future; no E1.6 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

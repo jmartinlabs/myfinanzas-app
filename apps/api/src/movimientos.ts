@@ -1,3 +1,9 @@
+import {
+  validateReference,
+  getReference,
+  referenceMapping,
+  operationalReferenceTypes,
+} from "./reference-rules";
 import type { Database } from "bun:sqlite";
 import { getSaldo, money, decimal, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
@@ -17,7 +23,8 @@ export type MovementProtection = (
 ) => { blocked: boolean; reason?: string };
 type Candidate = {
   fecha: string;
-  tipo: "Ingreso" | "Gasto";
+  tipo: "Ingreso" | "Gasto" | "Transferencia";
+  referencia: string | null;
   importe: string;
   origen: string;
   destino: string;
@@ -41,6 +48,9 @@ const inputs = [
   "tipo",
   "importe",
   "saldo",
+  "origen",
+  "destino",
+  "referencia",
   "subtipo",
   "partida",
   "concepto",
@@ -89,10 +99,32 @@ function validated(
     errors.importe =
       "Indica un importe EUR exacto mayor que cero, hasta dos decimales.";
   }
-  if (body.tipo !== "Ingreso" && body.tipo !== "Gasto")
-    errors.tipo = "Selecciona Ingreso o Gasto.";
-  if (typeof body.saldo !== "string" || !body.saldo || body.saldo === "S000")
-    errors.saldo = "Selecciona un Saldo ordinario existente.";
+  if (!["Ingreso", "Gasto", "Transferencia"].includes(body.tipo as string))
+    errors.tipo = "Selecciona Ingreso, Gasto o Transferencia.";
+  if (body.tipo === "Transferencia") {
+    for (const side of ["origen", "destino"])
+      if (
+        typeof body[side] !== "string" ||
+        !body[side] ||
+        body[side] === "S000"
+      )
+        errors[side] = "Selecciona un Saldo interno elegible.";
+    if (body.origen === body.destino)
+      errors.destino = "Origen y Destino deben ser distintos.";
+    for (const field of ["saldo", "subtipo", "partida"])
+      if (
+        body[field] !== undefined &&
+        body[field] !== null &&
+        body[field] !== ""
+      )
+        errors[field] = "No aplicable a Transferencia.";
+  } else {
+    if (typeof body.saldo !== "string" || !body.saldo || body.saldo === "S000")
+      errors.saldo = "Selecciona un Saldo ordinario existente.";
+    for (const side of ["origen", "destino"])
+      if (body[side] !== undefined && body[side] !== null && body[side] !== "")
+        errors[side] = "Dirección derivada del Tipo y Saldo.";
+  }
   if (body.tipo === "Ingreso") {
     if (!incomeSubtypes.includes(body.subtipo as string))
       errors.subtipo = "Selecciona un Subtipo válido.";
@@ -119,23 +151,46 @@ function validated(
       "Revisa los campos indicados.",
       errors,
     );
-  const tipo = body.tipo as Candidate["tipo"],
-    saldo = getSaldo(db, body.saldo as string);
-  const sameSaldo =
-    old &&
-    old.tipo === tipo &&
-    (tipo === "Ingreso" ? old.destino : old.origen) === saldo.id;
-  if (
-    (!sameSaldo && saldo.estado !== "Activa") ||
-    saldo.control === "Manual" ||
-    saldo.control === "Exterior"
-  )
-    throw new Problem(
-      422,
-      "VALIDATION",
-      "Saldo no disponible para esta selección.",
-      { saldo: "Selecciona un Saldo activo y operativo." },
-    );
+  const tipo = body.tipo as Candidate["tipo"];
+  const eligible = (
+    id: string,
+    field: string,
+    previous: string | undefined,
+  ) => {
+    const s = getSaldo(db, id);
+    if (
+      s.id === "S000" ||
+      (s.estado !== "Activa" && previous !== id) ||
+      s.control === "Manual" ||
+      s.control === "Exterior"
+    )
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Saldo no disponible para esta selección.",
+        { [field]: "Selecciona un Saldo activo y operativo." },
+      );
+    return s;
+  };
+  const saldo = eligible(
+    (tipo === "Transferencia" ? body.origen : body.saldo) as string,
+    tipo === "Transferencia" ? "origen" : "saldo",
+    old?.tipo === tipo
+      ? tipo === "Ingreso"
+        ? old.destino
+        : old.origen
+      : undefined,
+  );
+  const target =
+    tipo === "Transferencia"
+      ? eligible(
+          body.destino as string,
+          "destino",
+          old?.tipo === tipo ? old.destino : undefined,
+        )
+      : null;
+  let category: string | null = null,
+    required = false;
   if (tipo === "Gasto") {
     if (saldo.permiteSalidaExterior !== true)
       throw new Problem(
@@ -157,23 +212,23 @@ function validated(
         "La nueva clasificación debe estar activa.",
         { partida: "Selecciona una Partida y ancestros activos." },
       );
-    if (cat.referencia === true)
-      throw new Problem(
-        422,
-        "REFERENCE_UNAVAILABLE",
-        "Esta Partida exige una Referencia verificable. Disponible en E1.5.",
-        {
-          partida:
-            "Referencia obligatoria no verificable; no se puede registrar este Gasto.",
-        },
-      );
+    category = cat.id;
+    required = cat.referencia === true;
   }
+  const referencia = validateReference(
+    db,
+    body.referencia,
+    category,
+    required,
+    old?.referencia ?? null,
+  );
   return {
     fecha,
     tipo,
     importe: decimal(String(cents))!,
     origen: tipo === "Ingreso" ? "S000" : saldo.id,
-    destino: tipo === "Gasto" ? "S000" : saldo.id,
+    referencia,
+    destino: tipo === "Gasto" ? "S000" : (target?.id ?? saldo.id),
     subtipo: tipo === "Ingreso" ? (body.subtipo as string) : null,
     partida: tipo === "Gasto" ? (body.partida as string) : null,
     concepto: text(body.concepto ?? "", "concepto"),
@@ -203,6 +258,7 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
     origen: related(r.origen),
     destino: related(r.destino),
     partida: p,
+    referencia: r.referencia ? getReference(db, r.referencia) : null,
     ciclo:
       cycles.find(
         (c) => c.inicio <= r.fecha && (c.fin === null || r.fecha <= c.fin),
@@ -238,6 +294,11 @@ export function getMovement(db: Database, id: string) {
 }
 export function movementOptions(db: Database, now = Date.now()) {
   return db.transaction(() => ({
+    referencias: (
+      db.query("SELECT id FROM referencias ORDER BY length(id),id").all() as {
+        id: string;
+      }[]
+    ).map((r) => getReference(db, r.id)),
     hoy: spanishToday(now),
     saldos: (
       db.query("SELECT id FROM saldos WHERE id!='S000' ORDER BY id").all() as {
@@ -253,6 +314,12 @@ export function movementOptions(db: Database, now = Date.now()) {
       return {
         ...p,
         referenciaObligatoria: cat.referencia,
+        tipoReferencia: referenceMapping[cat.id] ?? null,
+        referenciaDisponible:
+          cat.referencia !== true ||
+          operationalReferenceTypes.includes(
+            referenceMapping[cat.id] as "Viaje" | "Evento",
+          ),
         seleccionable: [p, sub, cat].every((x) => x.estado === "Activa"),
       };
     }),
@@ -274,7 +341,7 @@ export function listMovements(db: Database, params = new URLSearchParams()) {
       page < 1 ||
       page > 100000 ||
       !["", "Vigente", "Anulado"].includes(state) ||
-      !["", "Ingreso", "Gasto"].includes(tipo)
+      !["", "Ingreso", "Gasto", "Transferencia"].includes(tipo)
     )
       throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
     const from = params.get("desde"),
@@ -299,6 +366,10 @@ export function listMovements(db: Database, params = new URLSearchParams()) {
           (!to || r.fecha <= to) &&
           (!params.get("saldo") ||
             [r.origen.id, r.destino.id].includes(params.get("saldo")!)) &&
+          (!params.get("referencia") ||
+            r.referencia?.id === params.get("referencia")) &&
+          (!params.get("origen") || r.origen.id === params.get("origen")) &&
+          (!params.get("destino") || r.destino.id === params.get("destino")) &&
           (!params.get("partida") || r.partida?.id === params.get("partida")) &&
           (!params.get("categoria") ||
             r.partida?.categoria?.id === params.get("categoria")) &&
@@ -402,7 +473,8 @@ function plan(
               r.destino === next.destino &&
               decimal(r.importe) === next.importe &&
               r.subtipo === next.subtipo &&
-              r.partida === next.partida,
+              r.partida === next.partida &&
+              (r.referencia ?? null) === next.referencia,
           )
           .map((r) => ({
             id: r.id,
@@ -569,7 +641,7 @@ export function writeMovement(
         );
       else if (old)
         db.run(
-          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,concepto=?,nota=?,revision=revision+1,actualizado=? WHERE id=?",
+          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,referencia=?,concepto=?,nota=?,revision=revision+1,actualizado=? WHERE id=?",
           [
             v!.fecha,
             v!.tipo,
@@ -578,6 +650,7 @@ export function writeMovement(
             v!.destino,
             v!.subtipo,
             v!.partida,
+            v!.referencia,
             v!.concepto,
             v!.nota,
             time,
@@ -586,7 +659,7 @@ export function writeMovement(
         );
       else
         db.run(
-          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,1,?,?)",
+          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
           [
             id,
             v!.fecha,
@@ -596,6 +669,7 @@ export function writeMovement(
             v!.destino,
             v!.subtipo,
             v!.partida,
+            v!.referencia,
             v!.concepto,
             v!.nota,
             time,

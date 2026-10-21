@@ -1,10 +1,11 @@
+import { transferencias } from "./transferencias";
 import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
 import { spawn } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
+test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y restauración con MFA", async ({
   page,
   request,
 }) => {
@@ -616,6 +617,9 @@ test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauraci
     await expect(concept).toHaveValue("Borrador conservado");
     await shot("session-draft-mobile");
     await page.unroute("**/api/movimientos/impacto");
+    expect((await get("/movimientos")).movimientos).toHaveLength(4);
+    const e15 = await transferencias(page);
+    const snapshotMovements = (await get("/movimientos?estado=")).movimientos;
     // Genuine VACUUM INTO/age restoration, normal login/TOTP in a second Effect server.
     const restored = spawn(
       process.env.BUN_BIN ?? "bun",
@@ -669,7 +673,22 @@ test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauraci
         page.getByRole("heading", { name: "Saldos", exact: true }),
       ).toBeVisible();
       await navigate("/movimientos");
-      await expect(page.locator(".mobile-list li")).toHaveCount(4);
+      await expect(page.locator(".mobile-list li")).toHaveCount(
+        snapshotMovements.filter((m: { anulado: boolean }) => !m.anulado)
+          .length,
+      );
+      expect((await get("/movimientos?estado=")).movimientos).toEqual(
+        snapshotMovements,
+      );
+      expect((await get("/referencias/" + e15.travel)).item.nombre).toBe(
+        "Caso concurrentemente renombrado",
+      );
+      expect((await get("/saldos/" + e15.a)).saldo.posicion.importe).toBe(
+        e15.position,
+      );
+      expect(
+        (await get("/movimientos/" + e15.transfer)).auditoria,
+      ).toHaveLength(3);
       expect((await get("/saldos/" + saldo.id)).saldo.posicion.importe).toBe(
         "121.00",
       );
@@ -685,6 +704,17 @@ test("E1.4: registro, cálculo, rectificación, anulación, guardas y restauraci
         }),
       ).toBeVisible();
       await shot("restored-mobile");
+      await navigate("/referencias/" + e15.travel);
+      await expect(
+        page.getByRole("heading", {
+          name: "Caso concurrentemente renombrado",
+          exact: true,
+        }),
+      ).toBeVisible();
+      await page.screenshot({
+        path: "artifacts/e1-5/restored-mobile.png",
+        fullPage: true,
+      });
     } finally {
       restored.kill("SIGTERM");
     }

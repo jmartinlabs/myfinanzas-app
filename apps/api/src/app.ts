@@ -1,4 +1,11 @@
 import {
+  getReference,
+  referenceUsage,
+  listReferences,
+  createReference,
+  updateReference,
+} from "./referencias";
+import {
   getMovement,
   listMovements,
   movementOptions,
@@ -176,6 +183,50 @@ export function createApp(db: Database, options: AppOptions) {
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
       if (cycle && req.method === "GET")
         return reply(db.transaction(() => getCycle(db, cycle[1]))());
+      if (path === "/api/referencias" && req.method === "GET")
+        return reply(listReferences(db, new URL(req.url).searchParams));
+      if (path === "/api/referencias" && req.method === "POST") {
+        const item = createReference(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/referencias/" + item.id);
+        return reply({ item }, 201);
+      }
+      const reference = path.match(
+        /^\/api\/referencias\/(REF\d+)(?:\/(desactivar|reactivar))?$/,
+      );
+      if (reference) {
+        const [, id, action] = reference;
+        if (!action && req.method === "GET")
+          return reply(
+            db.transaction(() => ({
+              item: getReference(db, id),
+              usos: referenceUsage(db, id),
+            }))(),
+          );
+        if (
+          (!action && req.method === "PATCH") ||
+          (action && req.method === "POST")
+        ) {
+          let body = await jsonBody(req);
+          if (action) {
+            if (Object.keys(body).some((k) => k !== "revision"))
+              throw new Problem(
+                422,
+                "VALIDATION",
+                "Solo se admite revisión para Estado.",
+              );
+            body = {
+              revision: body.revision,
+              estado: action === "reactivar" ? "Activa" : "Inactiva",
+            };
+          }
+          return reply({ item: updateReference(db, id, body, now()) });
+        }
+      }
       if (path === "/api/movimientos/opciones" && req.method === "GET")
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")

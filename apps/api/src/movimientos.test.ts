@@ -234,7 +234,7 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
       { nombre: "PAR Referencia", padre: rs.id },
       randomUUID(),
     );
-    expect(() => save(db, expense(saldo.id, rp.id))).toThrow("E1.5");
+    expect(() => save(db, expense(saldo.id, rp.id))).toThrow("no es verificable");
     db.run("UPDATE categorias SET referencia=NULL WHERE id=?", [ref.id]);
     expect(save(db, expense(saldo.id, rp.id)).partida?.id).toBe(rp.id);
     expect(getClassification(db, "categorias", ref.id).referencia).toBeNull();
@@ -622,7 +622,7 @@ test("04 AC21/22: impacto real de ancestros, Referencia protegida y huella inclu
   }
 });
 
-test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v4 y restore aislado", async () => {
+test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y restore aislado", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-e14-upgrade-")),
     path = join(dir, "demo.sqlite");
   let db = openV3(path);
@@ -677,7 +677,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v4 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 4,
+      version: 5,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -699,8 +699,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v4 y rest
     ).toBeString();
     const movement = save(db, income(m.saldo.id)),
       audit = getMovement(db, movement.id).auditoria;
-    backup(db, key, join(dir, "v4"), pub);
-    for (const version of [3, 4]) {
+    backup(db, key, join(dir, "v5"), pub);
+    for (const version of [3, 5]) {
       const restored = restore(
           join(dir, "v" + version),
           join(dir, "restored" + version),
@@ -712,8 +712,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v4 y rest
         expect(getSaldo(copy, m.saldo.id).saldoApertura).toBe("100.00");
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(1);
         expect(copy.query("SELECT * FROM ciclos").all()).toHaveLength(1);
-        expect(listMovements(copy).total).toBe(version === 4 ? 1 : 0);
-        if (version === 4) {
+        expect(listMovements(copy).total).toBe(version === 5 ? 1 : 0);
+        if (version === 5) {
           expect(getMovement(copy, movement.id).auditoria).toEqual(audit);
           expect(getSaldo(copy, m.saldo.id).posicion.importe).toBe("150.00");
           expect(cycleContext(copy).referencia.fecha).toBe("2026-10-12");
@@ -785,8 +785,8 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
     };
     const opening = `import{openDatabase}from${JSON.stringify(database)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(db.query('SELECT version FROM schema_version').get()));db.close();`;
     expect(await Promise.all([run(opening), run(opening)])).toEqual([
-      { version: 4 },
-      { version: 4 },
+      { version: 5 },
+      { version: 5 },
     ]);
     db = openDatabase(path);
     const body = income(m.saldo.id),

@@ -15,7 +15,7 @@ no es un modelo definitivo de todos los módulos.
 | apps/api/src/app.ts | Router Effect HTTP, guard de acceso, límite JSON y errores públicos |
 | apps/api/src/saldos.ts | Validación Effect Schema + reglas explícitas, consultas/transacciones y DTO |
 | apps/api/src/auth.ts | Argon2id nativo Bun, TOTP, desafíos, sesiones y recuperación |
-| apps/api/src/database.ts | Apertura local y actualización v1/v2/v3→v4 sin resemilla de bases existentes |
+| apps/api/src/database.ts | Apertura local y actualización v1/v2/v3/v4→v5 sin resemilla de bases existentes |
 | apps/api/src/classification-schema.ts y clasificacion.ts | Esquema v2 y catálogo con validación/relaciones/rectificación |
 | apps/api/src/backup.ts | Snapshot consistente, age y restauración aislada; nunca endpoint de copia |
 | apps/api/test-support y tests/e2e | Fixtures locales y recorrido real de navegador, sin bypass en app |
@@ -33,7 +33,7 @@ mkdir/apertura/PRAGMA. El proceso se rechaza en producción, entorno desconocido
 las pruebas incluyen una base existente que queda idéntica tras el rechazo. No hay
 inicialización productiva: antes de datos reales se necesita un arranque limpio sin
 fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
-Esquema técnico v4 (extiende v1/v2/v3 preservando E1.1–E1.3) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
+Esquema técnico v5 (extiende v1/v2/v3/v4 preservando E1.1–E1.4) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
 busy_timeout 3 s. Existen comprobaciones previas de versión fuera de la transacción.
 BEGIN IMMEDIATE adquiere el bloqueo de escritura antes de inicializar el esquema
 dentro de la transacción, evitando allí el upgrade diferido con otro escritor; [incidencia y regresión](../sqlite-startup-concurrency.md).
@@ -72,7 +72,7 @@ Vista de rectificación lee descendientes reales y huella de revisiones/configur
 del catálogo; confirmar revalida dentro de transacción. Huella no es una firma de
 impacto financiero. Movimientos está instalado en E1.4 con hechos/periodos reales; otros consumidores
 aportarán sus comprobaciones al entregarse, sin atribuirles consistencia probada.
-Backups identifican esquema desde el snapshot, admiten v1/v2/v3/v4 y verifican coincidencia
+Backups identifican esquema desde el snapshot, admiten v1/v2/v3/v4/v5 y verifican coincidencia
 con manifest. Restaurar revoca acceso como E1.1; actualizar in situ no lo revoca.
 No cambia algoritmo de autenticación, dependencias ni RPO/RTO operativo.
 
@@ -113,7 +113,7 @@ React consume ese contexto en las tres entregas. [Trazabilidad](../03-ciclos-fin
 Copias age admiten manifest v3 y prueban restauración aislada; no cambia custodia externa.
 
 
-## Movimientos E1.4 — implementado en rama, revisión/merge pendientes
+## Movimientos E1.4 — integrado PR #15/#16; base de E1.5
 SQL v4, STRICT/FK y transacción IMMEDIATE. Tabla movimientos: ID decimal TEXT exacto
 (contador INTEGER atómico, sin otra identidad), fecha civil, Tipo, EUR INTEGER positivo,
 Origen/Destino por FK, Subtipo o Partida, Concepto/Nota, anulado, revisión y UTC.
@@ -149,3 +149,37 @@ POST /:id/impacto, /rectificar, /impacto-anulacion, /anular. Sin PATCH/DELETE ni
 financiera manual. Respuestas y auditoría nunca se guardan en artifacts de CI; solo PNG.
 GET opciones lee catálogos completos para selección/filtros, no primera página truncada.
 No dependencias nuevas. [Resultados y límites](../04-movimientos-testplan.md).
+
+
+## E1.5 — implementación local en revisión
+reference-schema.ts actualiza v4→v5 bajo el BEGIN IMMEDIATE existente. Crea referencias
+STRICT/FK, solo Viaje/Evento, contador REF y reference_attempts. Reconstruye el CHECK
+Movimientos para Transferencia y FK referencia opcional; copia filas con referencia NULL,
+conserva JSON de movement_audit verbatim y reinstala tablas/índices/triggers. La copia
+transitoria de auditorías es TEMP dentro de la transacción, no fuente paralela. No desactiva
+FK ni resemilla datos; un fallo revierte también DDL/versión. Inicializador genuino v4
+congelado en test-support/database-v4.ts prueba continuidad, no un v5 rebautizado.
+
+referencias.ts gestiona catálogo con revisiones, reserva atómica sin reutilizar REF,
+continuación REF1000 e idempotencia 24 h del alta; no DELETE. Tipo usado por cualquier
+hecho, incluso anulado, protegido en servicio y trigger. Estado y nombre no cambian
+identidad, hechos ni evidencia anterior; edición audita antes/después en audit existente.
+reference-rules.ts contiene la única matriz confirmada por IDs y validador compartido:
+existencia para toda REF; compatibilidad solo si obligatoria; fichas E3 no habilitadas.
+La matriz no crea Categorías ni deriva nada de nombres. No editor de políticas nuevo.
+
+Movimientos añade Transferencia interna y REF opcional por FK; sin tabla de hechos ni
+contador de transferencias. Misma transacción/huella/auditoría y retry previo al chequeo
+obsoleto. La firma de coincidencia usa Fecha/Tipo/importe/origen/destino/Subtipo/Partida/REF,
+no Concepto/Nota como clasificadores. Coincidencias reales confirmables sin rechazo por
+contenido. Reintentos antiguos conservan response/hash almacenados, sin conversión.
+FinanceRevision incluye catálogo REF; cambios invalidan preview. La clasificación usada
+revalida Referencias reales, permitiendo correcciones compatibles y bloqueando inválidas.
+
+Motor positionCents ya suma entradas y resta salidas: Transferencia participa una vez
+en cada extremo sin saldo persistido. Terminal/No controlado/Inversiones siguen sin
+posición convencional de este motor. Ciclos y máximo de fecha usan los mismos hechos.
+MFA/Origin/CSRF heredados para /api/referencias (GET/POST), /:id (GET/PATCH) y acciones
+POST desactivar/reactivar; no DELETE ni bypass del registro. Sin dependencias nuevas.
+Backups identifican v1–v5 desde snapshot; restore borra también reference_attempts,
+revoca acceso según política existente, sin modificar el origen ni operar producción.
