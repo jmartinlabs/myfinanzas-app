@@ -307,3 +307,13 @@ CI previa y posterior al squash SUCCESS; detalles en [testplan 31](31-sqlite-pro
 R6 sin causa atribuida; fsync tras publicación puede dejar durabilidad incierta.
 Preparación operativa pendiente según infra/README.md; sin VPS/deploy/datos reales.
 PR #21/#22 intactas. Este cierre documental requiere su propia revisión/merge.
+
+## Spec 32 aprobada; dev 32 iniciado — 2026-10-22
+Fuente: aprobación expresa del usuario en este chat tras revisar #29 con Álex,
+D1–D3 y AC-01–24 con precisiones UID/keep-id y rollback datos/autenticación.
+Spec cerrada en a4de2e1, ambas CI SUCCESS y PR #29 lista, sin merge autorizado.
+Dev en rama independiente dependiente de #29: [progress](32-ejecucion-rootless-progress.md)
+y [testplan](32-ejecucion-rootless-testplan.md). Primer incremento de bind probado;
+rootless/UID/volúmenes/publicación/Quadlet/rollback pendientes de entorno aislado
+compatible. No declarar dev 32 completo, VPS listo ni AC-10 PASS por probar HTTP local.
+Sin VPS/deploy/infraestructura activa/datos reales ni cambios a PR #21/#22.

@@ -5,6 +5,8 @@ import { resolve } from "node:path";
 import { openDatabase } from "./database";
 import { createApp } from "./app";
 import { loadKey } from "./auth";
+import { apiBindHost } from "./server-config";
+const hostname = apiBindHost();
 const databasePath =
   process.env.DATABASE_PATH ??
   resolve(import.meta.dir, "../../../.local/demo.sqlite");
@@ -24,7 +26,7 @@ const program = Effect.acquireRelease(
         }),
       ).pipe(
         Layer.provide(
-          BunHttpServer.layer({ hostname: "127.0.0.1", port: 3001 }),
+          BunHttpServer.layer({ hostname, port: 3001 }),
         ),
       ),
     ),

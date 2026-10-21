@@ -203,3 +203,10 @@ no acredita integración, operación remota ni autorización de datos reales.
 
 Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 [evidencia](../31-sqlite-produccion-testplan.md).
+
+### Incremento de arranque 32
+`server-config.ts` valida API_BIND_HOST antes de adquirir SQLite: default loopback,
+solo 0.0.0.0 como opt-in explícito para namespace aislado. Puerto 3001 constante,
+sin cambios financieros/clave/origen. Pruebas de procesos reales no acreditan el
+mapeo Podman ni el ciclo Quadlet; [dev 32](../32-ejecucion-rootless-progress.md)
+permanece incompleto y bloqueado para infraestructura real. Ninguna activación remota.

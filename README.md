@@ -241,3 +241,12 @@ Si falla fsync del directorio después de publicar un restore, el destino puede
 contener una pareja completa pero de durabilidad incierta: detén la operación,
 verifica y preserva el destino y las copias; nunca lo borres o sobrescribas por
 suponer que el fallo significa que no existe.
+
+### Incremento 32: bind explícito (entrega incompleta)
+
+`API_BIND_HOST` ausente conserva `127.0.0.1:3001`; solo admite ese valor o
+`0.0.0.0` explícito para un namespace de contenedor aislado. Cualquier otro valor,
+incluido vacío, rechaza antes de abrir SQLite. No usar `0.0.0.0` en el host público.
+La publicación host prevista sigue siendo `127.0.0.1:18081:3001`, pendiente de
+ensayo real rootless. Este incremento no instala Podman/Quadlet ni valida VPS,
+UID, imagen o despliegue. Ver [estado 32](specs/32-ejecucion-rootless-progress.md).
