@@ -1344,3 +1344,108 @@ textarea {
     flex-wrap: wrap;
   }
 }
+
+/* E1.4 uses the existing financial light theme and responsive patterns. */
+.movements-list .filters {
+  grid-template-columns: minmax(180px, 2fr) 1fr 1.4fr 1fr;
+}
+.movements-list th:nth-child(1) {
+  width: 14%;
+}
+.movements-list th:nth-child(2) {
+  width: 16%;
+}
+.movements-list th:nth-child(3) {
+  width: 22%;
+}
+.movements-list th:nth-child(4) {
+  width: 18%;
+}
+.movements-list th:nth-child(5) {
+  width: 17%;
+}
+.movements-list th:nth-child(6) {
+  width: 13%;
+}
+.movements-list .money {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.movement-filters {
+  padding: 16px 22px;
+  border-top: 1px solid var(--border);
+}
+.movement-filters summary,
+.panel summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+.movement-filters .form-grid {
+  margin-top: 16px;
+}
+.full-width {
+  grid-column: 1 / -1;
+}
+.movement-facts dd span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.movement-impact .context-note {
+  margin: 16px 0;
+}
+.movement-audit {
+  border-top: 1px solid var(--border);
+  margin-top: 18px;
+  padding-top: 12px;
+}
+.duplicate-warning {
+  border-left: 4px solid #5c7f16;
+  background: #f5fae9;
+}
+.annulled {
+  background: #f6f7f3;
+}
+@media (max-width: 1050px) {
+  .movements-list .filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .movements-list .filters {
+    grid-template-columns: 1fr;
+  }
+  .movements-list .card-head {
+    flex-wrap: wrap;
+  }
+  .movement-facts dl,
+  .movement-facts dd {
+    min-width: 0;
+  }
+  .movement-filters {
+    padding: 16px;
+  }
+}
+
+.movements-list .money {
+  text-align: right;
+  font-weight: 600;
+}
+.movements-list th:last-child {
+  text-align: right;
+}
+.movement-facts > div {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.movement-facts dd {
+  margin: 4px 0 0;
+}
+
+.movement-detail > .panel {
+  margin-top: 20px;
+}
+.position-placeholder.calculated {
+  color: var(--text);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}

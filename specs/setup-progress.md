@@ -219,3 +219,13 @@ de E1.4 implementada se da por ejecutada. Estado aprobado en
 [brainstorming](04-movimientos-brainstorming.md). Verificar integración/commit en PR #14.
 Siguiente acción tras merge: esperar autorización de dev 04. Sin código/SQL, importación,
 datos reales ni despliegue; Excel v5.11 sigue maestro. Estados de revisión previos históricos.
+
+
+## Dev 04 — autorizado, implementación en revisión
+Usuario autoriza E1.4 desde main 5fa4ace (PR #14 documental integrada, especificación y
+wireframes APPROVED). Rama feat/e1-4-movimientos; SQL local versionado autorizado sin
+resemilla, pérdida de datos ni reset de acceso. [Progreso](04-movimientos-progress.md)
+y [pruebas](04-movimientos-testplan.md) conservan 29 criterios actuales y AC-30–33 futuros.
+El permiso posterior de dev 04 sustituye exclusiones de implementación de la fase spec;
+no altera Q1–Q6. Sin autorización de merge de PR funcional, E1.5, datos reales o deploy.
+Excel v5.11 sigue maestro. Próxima acción: revisión de Álex de implementación/CI/capturas.

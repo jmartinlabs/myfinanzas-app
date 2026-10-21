@@ -1,0 +1,1279 @@
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { api, ApiError, eur, type Saldo } from "./api";
+import { Alert, PageHead, Tag } from "./ui";
+import { monthLabel, type Cycle } from "./Ciclos";
+type Related = { id: string; nombre: string; estado?: string };
+type Partida = Related & {
+  seleccionable: boolean;
+  referenciaObligatoria: boolean | null;
+  categoria: Related;
+  subcategoria: Related;
+};
+type Movement = {
+  id: string;
+  fecha: string;
+  tipo: string;
+  importe: string;
+  origen: Related;
+  destino: Related;
+  subtipo: string | null;
+  partida: Partida | null;
+  concepto: string;
+  nota: string;
+  anulado: boolean;
+  estado: string;
+  revision: number;
+  ciclo: Cycle | null;
+};
+type Options = {
+  hoy: string;
+  saldos: Saldo[];
+  partidas: Partida[];
+  categorias: Related[];
+  subcategorias: (Related & { padre: string })[];
+  ciclos: Cycle[];
+};
+type Plan = {
+  fingerprint: string;
+  accion: string;
+  antes: Movement | null;
+  despues: Record<string, any> | null;
+  duplicados: {
+    id: string;
+    fecha: string;
+    tipo: string;
+    importe: string;
+    concepto: string;
+  }[];
+  impacto: {
+    saldos: {
+      id: string;
+      nombre: string;
+      control: string;
+      antes: string | null;
+      despues: string | null;
+      motivo: string;
+    }[];
+    cicloAntes: Cycle | null;
+    cicloDespues: Cycle | null;
+    referenciaAntes: string | null;
+    referenciaDespues: string | null;
+    cobertura: string;
+    pendientes: string[];
+  };
+};
+type Audit = {
+  revision: number;
+  accion: string;
+  motivo: string | null;
+  instante: string;
+  anterior: Record<string, any> | null;
+  posterior: Record<string, any>;
+};
+type Detail = { movimiento: Movement; auditoria: Audit[] };
+const base = "/movimientos";
+const date = (v: string) => v.split("-").reverse().join("/");
+const cycle = (v: Cycle | null) =>
+  v ? monthLabel(v.mesFinanciado) : "Sin ciclo asignable";
+const amount = (v: string | null) => (v === null ? "No disponible" : eur(v));
+function Link({
+  to,
+  go,
+  children,
+}: {
+  to: string;
+  go: (p: string) => void;
+  children: ReactNode;
+}) {
+  return (
+    <a
+      href={to}
+      onClick={(e) => {
+        e.preventDefault();
+        go(to);
+      }}
+    >
+      {children}
+    </a>
+  );
+}
+function useOptions() {
+  const [options, setOptions] = useState<Options | null>(null),
+    [error, setError] = useState(""),
+    [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setError("");
+    api<Options>(base + "/opciones")
+      .then((d) => {
+        if (live) setOptions(d);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [retry]);
+  return { options, error, reload: () => setRetry((v) => v + 1) };
+}
+export function Movimientos({
+  path,
+  go,
+}: {
+  path: string;
+  go: (p: string) => void;
+}) {
+  if (path === base) return <MovementList go={go} />;
+  if (path === base + "/nuevo") return <MovementForm key="nuevo" go={go} />;
+  const m = path.match(/^\/movimientos\/(\d+)(?:\/(rectificar|anular))?$/);
+  if (m)
+    return m[2] ? (
+      <MovementForm key={path} id={m[1]} annul={m[2] === "anular"} go={go} />
+    ) : (
+      <MovementDetail key={path} id={m[1]} go={go} />
+    );
+  return <Alert>Página no encontrada.</Alert>;
+}
+function MovementList({ go }: { go: (p: string) => void }) {
+  const { options, error: optionError, reload: reloadOptions } = useOptions();
+  const [filters, setFilters] = useState({
+      q: "",
+      tipo: "",
+      ciclo: "",
+      estado: "Vigente",
+      desde: "",
+      hasta: "",
+      saldo: "",
+      categoria: "",
+      subcategoria: "",
+      partida: "",
+    }),
+    [page, setPage] = useState(1),
+    [retry, setRetry] = useState(0),
+    [data, setData] = useState<{
+      movimientos: Movement[];
+      total: number;
+    } | null>(null),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(true);
+  useEffect(() => {
+    let live = true;
+    setLoading(true);
+    setData(null);
+    setError("");
+    api(base + "?" + new URLSearchParams({ ...filters, page: String(page) }))
+      .then((d) => {
+        if (live) setData(d);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      })
+      .finally(() => {
+        if (live) setLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [filters, page, retry]);
+  const change = (key: string, value: string) => {
+    setPage(1);
+    setFilters((v) => ({
+      ...v,
+      [key]: value,
+      ...(key === "categoria"
+        ? { subcategoria: "", partida: "" }
+        : key === "subcategoria"
+          ? { partida: "" }
+          : {}),
+    }));
+  };
+  const select = (
+    label: string,
+    key: keyof typeof filters,
+    items: { id: string; nombre: string }[],
+  ) => (
+    <label>
+      {label}
+      <select
+        aria-label={label}
+        value={filters[key]}
+        onChange={(e) => change(key, e.target.value)}
+      >
+        <option value="">Todos</option>
+        {items.map((r) => (
+          <option key={r.id} value={r.id}>
+            {r.nombre}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+  const activeFilters = Object.entries(filters).some(([k, v]) =>
+    k === "estado" ? v !== "Vigente" : !!v,
+  );
+  const cellLink = (m: Movement) => (
+    <Link to={base + "/" + m.id} go={go}>
+      {m.concepto || "Movimiento #" + m.id}
+    </Link>
+  );
+  return (
+    <>
+      <PageHead
+        eyebrow="NÚCLEO FINANCIERO"
+        title="Movimientos"
+        description="Hechos ejecutados · Ingresos y Gastos"
+      >
+        <button className="primary" onClick={() => go(base + "/nuevo")}>
+          Nuevo movimiento
+        </button>
+      </PageHead>
+      <p className="page-foot">
+        Transferencias y Amortización deuda: no disponibles todavía. Las
+        inversiones tienen su propio registro.
+      </p>
+      {optionError && <Alert retry={reloadOptions}>{optionError}</Alert>}
+      <section
+        className="panel catalog-panel movements-list"
+        aria-label="Registro de Movimientos"
+      >
+        <div className="filters">
+          <label>
+            Buscar Concepto, Nota o ID
+            <input
+              type="search"
+              value={filters.q}
+              onChange={(e) => change("q", e.target.value)}
+            />
+          </label>
+          {select("Tipo", "tipo", [
+            { id: "Ingreso", nombre: "Ingreso" },
+            { id: "Gasto", nombre: "Gasto" },
+          ])}
+          {select("Ciclo financiado", "ciclo", [
+            { id: "sin_ciclo", nombre: "Sin ciclo asignable" },
+            ...(options?.ciclos ?? []).map((c) => ({
+              id: c.id,
+              nombre: monthLabel(c.mesFinanciado),
+            })),
+          ])}
+          <label>
+            Estado
+            <select
+              aria-label="Estado de Movimiento"
+              value={filters.estado}
+              onChange={(e) => change("estado", e.target.value)}
+            >
+              <option>Vigente</option>
+              <option>Anulado</option>
+              <option value="">Todos</option>
+            </select>
+          </label>
+        </div>
+        <details className="movement-filters">
+          <summary>Más filtros</summary>
+          <div className="form-grid">
+            <label>
+              Desde
+              <input
+                type="date"
+                value={filters.desde}
+                onChange={(e) => change("desde", e.target.value)}
+              />
+            </label>
+            <label>
+              Hasta
+              <input
+                type="date"
+                value={filters.hasta}
+                onChange={(e) => change("hasta", e.target.value)}
+              />
+            </label>
+            {select(
+              "Saldo",
+              "saldo",
+              (options?.saldos ?? []).map((s) => ({
+                id: s.id,
+                nombre: s.id + " · " + s.nombre,
+              })),
+            )}
+            {select("Categoría", "categoria", options?.categorias ?? [])}
+            {select(
+              "Subcategoría",
+              "subcategoria",
+              (options?.subcategorias ?? []).filter(
+                (s) => !filters.categoria || s.padre === filters.categoria,
+              ),
+            )}
+            {select(
+              "Partida",
+              "partida",
+              (options?.partidas ?? []).filter(
+                (p) =>
+                  (!filters.categoria ||
+                    p.categoria.id === filters.categoria) &&
+                  (!filters.subcategoria ||
+                    p.subcategoria.id === filters.subcategoria),
+              ),
+            )}
+          </div>
+        </details>
+        <div className="list-toolbar">
+          <p role="status">
+            {loading
+              ? "Cargando Movimientos…"
+              : error
+                ? "Consulta no disponible"
+                : `${data?.total ?? 0} movimientos`}
+          </p>
+          <span>Fecha · más reciente primero</span>
+        </div>
+        {error ? (
+          <Alert retry={() => setRetry((v) => v + 1)}>{error}</Alert>
+        ) : loading ? (
+          <p className="empty" aria-busy="true">
+            Consultando el registro…
+          </p>
+        ) : !data?.movimientos.length ? (
+          <div className="empty">
+            <h2>
+              {activeFilters
+                ? "Sin coincidencias"
+                : "Todavía no hay movimientos"}
+            </h2>
+            <p>
+              {activeFilters
+                ? "Ajusta los filtros de consulta."
+                : "Registra un hecho ejecutado con datos ficticios."}
+            </p>
+            {activeFilters && (
+              <button
+                className="secondary"
+                onClick={() => {
+                  setFilters({
+                    q: "",
+                    tipo: "",
+                    ciclo: "",
+                    estado: "Vigente",
+                    desde: "",
+                    hasta: "",
+                    saldo: "",
+                    categoria: "",
+                    subcategoria: "",
+                    partida: "",
+                  });
+                  setPage(1);
+                }}
+              >
+                Limpiar filtros
+              </button>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="desktop-list">
+              <table>
+                <caption className="sr-only">Ingresos y Gastos</caption>
+                <thead>
+                  <tr>
+                    {[
+                      "Fecha",
+                      "Tipo / Subtipo",
+                      "Concepto",
+                      "Saldo",
+                      "Partida",
+                      "Importe",
+                    ].map((h) => (
+                      <th scope="col" key={h}>
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.movimientos.map((m) => (
+                    <tr key={m.id} className={m.anulado ? "annulled" : ""}>
+                      <td>
+                        {date(m.fecha)}
+                        {m.anulado && <Tag inactive>Anulado</Tag>}
+                      </td>
+                      <td>
+                        {m.tipo}
+                        <small className="table-id">{m.subtipo ?? ""}</small>
+                      </td>
+                      <td>
+                        {cellLink(m)}
+                        <small className="table-id">#{m.id}</small>
+                      </td>
+                      <td>
+                        {(m.tipo === "Ingreso" ? m.destino : m.origen).nombre}
+                      </td>
+                      <td>{m.partida?.nombre ?? "No aplica"}</td>
+                      <td className="money">{eur(m.importe)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ul className="mobile-list">
+              {data.movimientos.map((m) => (
+                <li key={m.id}>
+                  <div className="card-head">
+                    <span>{date(m.fecha)}</span>
+                    <Tag inactive={m.anulado}>
+                      {m.anulado ? "Anulado · " : ""}
+                      {m.tipo}
+                    </Tag>
+                  </div>
+                  <h2>{cellLink(m)}</h2>
+                  <p>
+                    #{m.id} ·{" "}
+                    {(m.tipo === "Ingreso" ? m.destino : m.origen).nombre}
+                  </p>
+                  <p>{m.subtipo ?? m.partida?.nombre}</p>
+                  <div className="card-position">
+                    <strong>{eur(m.importe)}</strong>
+                    <small>
+                      {cycle(m.ciclo)}
+                      {m.anulado ? " · No computa" : ""}
+                    </small>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <div className="list-footer">
+          <span>Página {page}</span>
+          <div className="actions">
+            <button
+              className="text-button"
+              disabled={page <= 1 || loading || !!error}
+              onClick={() => setPage((v) => v - 1)}
+            >
+              Anterior
+            </button>
+            <button
+              className="text-button"
+              disabled={page * 100 >= (data?.total ?? 0) || loading || !!error}
+              onClick={() => setPage((v) => v + 1)}
+            >
+              Siguiente
+            </button>
+          </div>
+        </div>
+      </section>
+      <p className="page-foot">
+        Los anulados se conservan para consulta y no computan. Los filtros no
+        modifican la posición general de Saldos.
+      </p>
+    </>
+  );
+}
+function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
+  const [data, setData] = useState<Detail | null>(null),
+    [error, setError] = useState(""),
+    [retry, setRetry] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setData(null);
+    setError("");
+    api<Detail>(base + "/" + id)
+      .then((d) => {
+        if (live) setData(d);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, retry]);
+  useEffect(() => {
+    if (data)
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>("h1")?.focus(),
+      );
+  }, [data]);
+  const back = (
+    <Link to={base} go={go}>
+      Volver a Movimientos
+    </Link>
+  );
+  if (error)
+    return (
+      <>
+        {back}
+        <Alert retry={() => setRetry((v) => v + 1)}>{error}</Alert>
+      </>
+    );
+  if (!data) return <p role="status">Cargando Movimiento…</p>;
+  const m = data.movimiento,
+    field = (label: string, v: ReactNode) => (
+      <div>
+        <dt>{label}</dt>
+        <dd>{v}</dd>
+      </div>
+    );
+  return (
+    <div className="movement-detail">
+      {back}
+      <PageHead
+        eyebrow={"MOVIMIENTO #" + m.id}
+        title={m.concepto || m.tipo + " #" + m.id}
+        description={m.tipo + (m.subtipo ? " · " + m.subtipo : "")}
+      >
+        <Tag inactive={m.anulado}>{m.estado}</Tag>
+        {!m.anulado && (
+          <>
+            <button
+              className="secondary"
+              onClick={() => go(base + "/" + id + "/rectificar")}
+            >
+              Rectificar
+            </button>
+            <button
+              className="secondary"
+              onClick={() => go(base + "/" + id + "/anular")}
+            >
+              Anular
+            </button>
+          </>
+        )}
+      </PageHead>
+      {m.anulado && (
+        <div className="context-note">
+          <p>
+            Registro anulado: se conserva, pero no computa económicamente. No
+            representa una devolución bancaria.
+          </p>
+        </div>
+      )}
+      <div className="detail-grid">
+        <section className="panel">
+          <h2>Hecho registrado</h2>
+          <dl>
+            {field("ID estable", m.id)}
+            {field("Fecha económica", date(m.fecha))}
+            {field("Importe", eur(m.importe))}
+            {field("Nota", m.nota || "Sin informar")}
+          </dl>
+        </section>
+        <section className="panel">
+          <h2>Relaciones financieras</h2>
+          <dl>
+            {field(
+              "Origen",
+              <Link to={"/saldos/" + m.origen.id} go={go}>
+                {m.origen.id + " · " + m.origen.nombre}
+              </Link>,
+            )}
+            {field(
+              "Destino",
+              <Link to={"/saldos/" + m.destino.id} go={go}>
+                {m.destino.id + " · " + m.destino.nombre}
+              </Link>,
+            )}
+            {field(
+              "Partida",
+              m.partida ? (
+                <Link to={"/clasificacion/partidas/" + m.partida.id} go={go}>
+                  {m.partida.id + " · " + m.partida.nombre}
+                </Link>
+              ) : (
+                "No aplica"
+              ),
+            )}
+            {field(
+              "Subcategoría",
+              m.partida?.subcategoria.nombre ?? "No aplica",
+            )}
+            {field("Categoría", m.partida?.categoria.nombre ?? "No aplica")}
+          </dl>
+        </section>
+      </div>
+      <section className="panel">
+        <h2>Imputación temporal</h2>
+        <dl>
+          {field(
+            "Ciclo financiado",
+            m.ciclo ? (
+              <Link to={"/ciclos/" + m.ciclo.id} go={go}>
+                {cycle(m.ciclo)}
+              </Link>
+            ) : (
+              cycle(null)
+            ),
+          )}
+          {field("Revisión", m.revision)}
+        </dl>
+        <p className="help">
+          Fin temporal no equivale a cierre financiero. Los cierres se
+          entregarán posteriormente.
+        </p>
+      </section>
+      <section className="panel">
+        <details>
+          <summary>Historial de cambios · {data.auditoria.length}</summary>
+          {data.auditoria.map((a) => (
+            <article className="movement-audit" key={a.revision}>
+              <h3>
+                {a.accion} · revisión {a.revision}
+              </h3>
+              <p>
+                {new Intl.DateTimeFormat("es-ES", {
+                  dateStyle: "short",
+                  timeStyle: "short",
+                  timeZone: "Europe/Madrid",
+                }).format(new Date(a.instante))}{" "}
+                · {a.motivo ?? "Alta de hecho ejecutado"}
+              </p>
+              <Facts before={a.anterior} after={a.posterior} />
+            </article>
+          ))}
+        </details>
+      </section>
+    </div>
+  );
+}
+function fact(value: Record<string, any> | null, key: string) {
+  if (!value) return "No existía";
+  const v = value[key];
+  if (key === "importe") return eur(v);
+  if (key === "fecha") return date(v);
+  if (key === "anulado") return v ? "Anulado" : "Vigente";
+  if (v && typeof v === "object") return v.id + " · " + v.nombre;
+  return v || "No aplica / sin informar";
+}
+function Facts({
+  before,
+  after,
+}: {
+  before: Record<string, any> | null;
+  after: Record<string, any> | null;
+}) {
+  const result = after ?? (before ? { ...before, anulado: true } : null);
+  const keys = [
+    ["tipo", "Tipo"],
+    ["fecha", "Fecha"],
+    ["importe", "Importe"],
+    ["origen", "Origen"],
+    ["destino", "Destino"],
+    ["subtipo", "Subtipo"],
+    ["partida", "Partida"],
+    ["concepto", "Concepto"],
+    ["nota", "Nota"],
+    ["anulado", "Estado"],
+  ];
+  const value = (v: Record<string, any> | null, key: string) => {
+    const n = v?.[key];
+    return key === "anulado"
+      ? !!n
+      : typeof n === "object" && n !== null
+        ? n.id
+        : (n ?? null);
+  };
+  const changed = keys.filter(
+    ([key]) => !before || value(before, key) !== value(result, key),
+  );
+  return changed.length ? (
+    <dl className="movement-facts">
+      {changed.map(([key, label]) => (
+        <div key={key}>
+          <dt>{label}</dt>
+          <dd>
+            <span>Antes: {fact(before, key)}</span>
+            <span>Después: {fact(result, key)}</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  ) : (
+    <p>Los datos económicos no cambian.</p>
+  );
+}
+function Impact({ plan }: { plan: Plan }) {
+  return (
+    <section
+      className="panel movement-impact"
+      aria-label="Vista previa de impacto"
+    >
+      <h2 tabIndex={-1}>Impacto económico</h2>
+      <Facts before={plan.antes} after={plan.despues} />
+      {plan.impacto.saldos.map((s) => (
+        <div className="context-note" key={s.id}>
+          <p>
+            <strong>
+              {s.id} · {s.nombre}
+            </strong>
+            <br />
+            Posición: {amount(s.antes)} → {amount(s.despues)}
+            <br />
+            <small>{s.motivo}</small>
+          </p>
+        </div>
+      ))}
+      <p>
+        {plan.accion === "anulación" ? (
+          <>
+            Ciclo histórico: {cycle(plan.impacto.cicloAntes)}. El registro se
+            conserva y dejará de computar.
+          </>
+        ) : (
+          <>
+            Ciclo: {cycle(plan.impacto.cicloAntes)} →{" "}
+            {cycle(plan.impacto.cicloDespues)}
+          </>
+        )}
+      </p>
+      <p>
+        Referencia financiera:{" "}
+        {plan.impacto.referenciaAntes
+          ? date(plan.impacto.referenciaAntes)
+          : "No disponible"}{" "}
+        →{" "}
+        {plan.impacto.referenciaDespues
+          ? date(plan.impacto.referenciaDespues)
+          : "No disponible"}
+      </p>
+      <p className="help">
+        {plan.impacto.cobertura} Pendientes:{" "}
+        {plan.impacto.pendientes.join(", ")}. No se afirma comprobación de
+        cierres todavía inexistentes.
+      </p>
+    </section>
+  );
+}
+const empty = {
+  tipo: "",
+  fecha: "",
+  importe: "",
+  saldo: "",
+  subtipo: "",
+  partida: "",
+  concepto: "",
+  nota: "",
+};
+function MovementForm({
+  id,
+  annul = false,
+  go,
+}: {
+  id?: string;
+  annul?: boolean;
+  go: (p: string) => void;
+}) {
+  const { options, error: optionsError, reload } = useOptions();
+  const [old, setOld] = useState<Movement | null>(null),
+    [form, setForm] = useState(empty),
+    [reason, setReason] = useState(""),
+    [error, setError] = useState(""),
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [plan, setPlan] = useState<Plan | null>(null),
+    [busy, setBusy] = useState(false),
+    [conflict, setConflict] = useState(false),
+    [refresh, setRefresh] = useState(0);
+  const initialized = useRef(false),
+    attempt = useRef(crypto.randomUUID()),
+    alert = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!id) return;
+    let live = true;
+    api<Detail>(base + "/" + id)
+      .then((d) => {
+        if (!live) return;
+        setOld(d.movimiento);
+        if (!initialized.current) {
+          const m = d.movimiento;
+          setForm({
+            tipo: m.tipo,
+            fecha: m.fecha,
+            importe: m.importe,
+            saldo: (m.tipo === "Ingreso" ? m.destino : m.origen).id,
+            subtipo: m.subtipo ?? "",
+            partida: m.partida?.id ?? "",
+            concepto: m.concepto,
+            nota: m.nota,
+          });
+          initialized.current = true;
+        }
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, refresh]);
+  const change = (key: keyof typeof empty, value: string) => {
+    setForm((v) => ({
+      ...v,
+      [key]: value,
+      ...(key === "tipo" ? { subtipo: "", partida: "" } : {}),
+    }));
+    setPlan(null);
+    setFields((v) => ({ ...v, [key]: "" }));
+    setError("");
+    attempt.current = crypto.randomUUID();
+  };
+  useEffect(() => {
+    if (plan)
+      requestAnimationFrame(() =>
+        document.querySelector<HTMLElement>(".movement-impact h2")?.focus(),
+      );
+  }, [plan]);
+  const selected = options?.partidas.find((p) => p.id === form.partida),
+    saldo = options?.saldos.find((s) => s.id === form.saldo);
+  const selectedCycle =
+    options?.ciclos.find(
+      (c) => c.inicio <= form.fecha && (c.fin === null || form.fecha <= c.fin),
+    ) ?? null;
+  function body() {
+    return {
+      ...(annul
+        ? {}
+        : {
+            ...form,
+            importe: form.importe.replace(",", "."),
+            subtipo: form.tipo === "Ingreso" ? form.subtipo : null,
+            partida: form.tipo === "Gasto" ? form.partida : null,
+          }),
+      ...(id ? { revision: old?.revision, motivo: reason } : {}),
+    };
+  }
+  function fail(e: unknown) {
+    const err = e as ApiError;
+    setError(err.message);
+    setFields(err.fields ?? {});
+    if (err.status === 409) {
+      setConflict(true);
+      setPlan(null);
+    }
+    requestAnimationFrame(() => alert.current?.focus());
+  }
+  async function confirm(p: Plan) {
+    const endpoint = id
+      ? base + "/" + id + (annul ? "/anular" : "/rectificar")
+      : base;
+    const result = await api<Detail>(
+      endpoint,
+      "POST",
+      {
+        ...body(),
+        fingerprint: p.fingerprint,
+        aceptarCoincidencia: p.duplicados.length > 0,
+      },
+      { "idempotency-key": attempt.current },
+    );
+    go(base + "/" + result.movimiento.id);
+  }
+  async function submit() {
+    setBusy(true);
+    setError("");
+    setFields({});
+    try {
+      if (plan) {
+        await confirm(plan);
+        return;
+      }
+      const endpoint = id
+        ? base + "/" + id + (annul ? "/impacto-anulacion" : "/impacto")
+        : base + "/impacto";
+      const p = await api<Plan>(endpoint, "POST", body());
+      setPlan(p);
+      if (!id && !p.duplicados.length) await confirm(p);
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const field = (
+    key: keyof typeof empty,
+    label: string,
+    children?: ReactNode,
+  ) => (
+    <label>
+      {label}
+      {children ?? (
+        <input
+          aria-label={label}
+          type={key === "fecha" ? "date" : "text"}
+          inputMode={key === "importe" ? "decimal" : undefined}
+          max={key === "fecha" ? options?.hoy : undefined}
+          value={form[key]}
+          aria-invalid={!!fields[key]}
+          aria-describedby={fields[key] ? "error-mov-" + key : undefined}
+          onChange={(e) => change(key, e.target.value)}
+        />
+      )}
+      {fields[key] && (
+        <span id={"error-mov-" + key} className="field-error">
+          {fields[key]}
+        </span>
+      )}
+    </label>
+  );
+  const saldos = (options?.saldos ?? []).filter(
+    (s) =>
+      (s.estado === "Activa" || (s.id === form.saldo && !!id)) &&
+      s.control !== "Manual" &&
+      s.control !== "Exterior",
+  );
+  const partidas = (options?.partidas ?? []).filter(
+    (p) => p.seleccionable || (p.id === form.partida && !!id),
+  );
+  const requiredRef =
+    !annul && form.tipo === "Gasto" && selected?.referenciaObligatoria === true;
+  const button = plan
+    ? id
+      ? annul
+        ? "Confirmar anulación"
+        : "Confirmar rectificación"
+      : plan.duplicados.length
+        ? "Registrar otro hecho real"
+        : "Reintentar registro"
+    : id
+      ? "Revisar impacto"
+      : "Registrar movimiento";
+  return (
+    <>
+      <Link to={base} go={go}>
+        Volver a Movimientos
+      </Link>
+      <PageHead
+        eyebrow={id ? "MOVIMIENTO #" + id : "HECHO EJECUTADO"}
+        title={
+          id
+            ? annul
+              ? "Anular movimiento"
+              : "Rectificar movimiento"
+            : "Nuevo movimiento"
+        }
+        description={
+          annul
+            ? "Anula una captura errónea que no representa un hecho económico real. No es una devolución."
+            : "Ingreso o Gasto · sin planificación ni registros automáticos"
+        }
+      />
+      {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
+      {error && (
+        <div tabIndex={-1} ref={alert}>
+          <Alert>
+            {error}
+            {conflict && (
+              <p>
+                Tus campos se conservan. Revisa el contexto antes de confirmar.
+                <button
+                  type="button"
+                  className="secondary"
+                  onClick={() => {
+                    reload();
+                    setRefresh((v) => v + 1);
+                    setConflict(false);
+                    attempt.current = crypto.randomUUID();
+                  }}
+                >
+                  Actualizar contexto
+                </button>
+              </p>
+            )}
+          </Alert>
+        </div>
+      )}
+      {id && !old ? (
+        <p role="status">Cargando Movimiento…</p>
+      ) : old?.anulado ? (
+        <Alert>
+          Este Movimiento está anulado y se conserva como histórico.
+        </Alert>
+      ) : (
+        <form
+          className="saldo-form"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            submit();
+          }}
+        >
+          {!annul ? (
+            <>
+              <section className="panel">
+                <h2>Hecho ejecutado</h2>
+                <div className="form-grid">
+                  {field(
+                    "tipo",
+                    "Tipo *",
+                    <select
+                      aria-label="Tipo *"
+                      value={form.tipo}
+                      aria-invalid={!!fields.tipo}
+                      aria-describedby={
+                        fields.tipo ? "error-mov-tipo" : undefined
+                      }
+                      onChange={(e) => change("tipo", e.target.value)}
+                    >
+                      <option value="">Selecciona</option>
+                      <option>Ingreso</option>
+                      <option>Gasto</option>
+                    </select>,
+                  )}
+                  {field("fecha", "Fecha económica *")}
+                  {field("importe", "Importe (€) *")}
+                  {field("concepto", "Concepto")}
+                  <label className="full-width">
+                    Nota
+                    <textarea
+                      aria-label="Nota"
+                      value={form.nota}
+                      maxLength={4000}
+                      onChange={(e) => change("nota", e.target.value)}
+                    />
+                  </label>
+                </div>
+                <p className="help">
+                  Importe mayor que cero. Fecha máxima:{" "}
+                  {options ? date(options.hoy) + " (España)" : "Cargando…"}.
+                  Cambiar Tipo elimina campos incompatibles, sin convertir el
+                  hecho.
+                </p>
+              </section>
+              <section className="panel">
+                <h2>Relación financiera</h2>
+                <div className="form-grid">
+                  {field(
+                    "saldo",
+                    form.tipo === "Gasto"
+                      ? "Saldo origen *"
+                      : "Saldo receptor *",
+                    <select
+                      aria-label={
+                        form.tipo === "Gasto"
+                          ? "Saldo origen *"
+                          : "Saldo receptor *"
+                      }
+                      value={form.saldo}
+                      aria-invalid={!!fields.saldo}
+                      aria-describedby={
+                        fields.saldo ? "error-mov-saldo" : undefined
+                      }
+                      onChange={(e) => change("saldo", e.target.value)}
+                    >
+                      <option value="">Selecciona un Saldo</option>
+                      {saldos.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.id} · {s.nombre}
+                          {s.estado === "Inactiva"
+                            ? " · Inactiva (histórico)"
+                            : ""}
+                        </option>
+                      ))}
+                    </select>,
+                  )}
+                  {form.tipo === "Ingreso" &&
+                    field(
+                      "subtipo",
+                      "Subtipo *",
+                      <select
+                        aria-label="Subtipo *"
+                        value={form.subtipo}
+                        aria-invalid={!!fields.subtipo}
+                        aria-describedby={
+                          fields.subtipo ? "error-mov-subtipo" : undefined
+                        }
+                        onChange={(e) => change("subtipo", e.target.value)}
+                      >
+                        <option value="">Selecciona</option>
+                        {["Nómina", "Bonus", "Intereses", "Promoción"].map(
+                          (v) => (
+                            <option key={v}>{v}</option>
+                          ),
+                        )}
+                      </select>,
+                    )}
+                  {form.tipo === "Gasto" &&
+                    field(
+                      "partida",
+                      "Partida *",
+                      <select
+                        aria-label="Partida *"
+                        value={form.partida}
+                        aria-invalid={!!fields.partida}
+                        aria-describedby={
+                          fields.partida ? "error-mov-partida" : undefined
+                        }
+                        onChange={(e) => change("partida", e.target.value)}
+                      >
+                        <option value="">Selecciona una Partida</option>
+                        {partidas.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.id} · {p.nombre} · {p.subcategoria.nombre} /{" "}
+                            {p.categoria.nombre}
+                          </option>
+                        ))}
+                      </select>,
+                    )}
+                </div>
+                <p>
+                  {form.tipo === "Ingreso"
+                    ? "Origen: Exterior técnico S000"
+                    : form.tipo === "Gasto"
+                      ? "Destino: Exterior técnico S000"
+                      : "Selecciona el Tipo para definir la dirección."}
+                </p>
+                {form.tipo === "Gasto" && (
+                  <>
+                    <p>
+                      Subcategoría:{" "}
+                      {selected?.subcategoria.nombre ?? "Selecciona Partida"} ·
+                      Categoría:{" "}
+                      {selected?.categoria.nombre ?? "Selecciona Partida"}
+                    </p>
+                    <p className={requiredRef ? "field-error" : "help"}>
+                      {requiredRef
+                        ? "Esta Partida exige una Referencia verificable. No se puede registrar hasta E1.5."
+                        : "Referencias: no disponibles hasta E1.5. No se crean registros de relleno."}
+                    </p>
+                  </>
+                )}
+                {options && !saldos.length && (
+                  <p className="help">
+                    No hay Saldos disponibles.{" "}
+                    <Link to="/saldos" go={go}>
+                      Consultar Saldos
+                    </Link>
+                  </p>
+                )}
+                {form.tipo === "Gasto" && options && !partidas.length && (
+                  <p className="help">
+                    No hay Partidas seleccionables.{" "}
+                    <Link to="/clasificacion/partidas" go={go}>
+                      Consultar Clasificación
+                    </Link>
+                  </p>
+                )}
+              </section>
+              <section className="panel">
+                <h2>Contexto derivado</h2>
+                <p>
+                  Fecha prevista:{" "}
+                  {/^\d{4}-\d{2}-\d{2}$/.test(form.fecha)
+                    ? date(form.fecha)
+                    : "Indica una fecha"}
+                </p>
+                <p>
+                  Ciclo:{" "}
+                  {form.fecha ? cycle(selectedCycle) : "Indica una fecha"}
+                </p>
+                <p>
+                  Posición actual del Saldo:{" "}
+                  {saldo ? amount(saldo.posicion.importe) : "Selecciona Saldo"}
+                </p>
+                <p className="help">
+                  {saldo?.posicion.motivo ??
+                    "No se copia el importe de ningún presupuesto ni se infiere una clasificación."}
+                </p>
+              </section>
+            </>
+          ) : (
+            <section className="panel">
+              <h2>Hecho que se anulará</h2>
+              <p>
+                #{old!.id} · {date(old!.fecha)} · {old!.tipo} ·{" "}
+                {eur(old!.importe)}
+              </p>
+              <p>{old!.concepto}</p>
+              <p className="help">
+                Se conservarán el registro, sus relaciones y la auditoría.
+                Dejará de computar económicamente.
+              </p>
+            </section>
+          )}
+          {!!id && (
+            <section className="panel">
+              <label>
+                Motivo *
+                <textarea
+                  aria-label="Motivo *"
+                  value={reason}
+                  maxLength={2000}
+                  aria-invalid={!!fields.motivo}
+                  onChange={(e) => {
+                    setReason(e.target.value);
+                    setPlan(null);
+                    setFields((v) => ({ ...v, motivo: "" }));
+                    attempt.current = crypto.randomUUID();
+                  }}
+                />
+              </label>
+              {fields.motivo && <p className="field-error">{fields.motivo}</p>}
+            </section>
+          )}
+          {plan && (
+            <>
+              {plan.duplicados.length > 0 && (
+                <section
+                  className="panel duplicate-warning"
+                  aria-label="Advertencia de coincidencias"
+                >
+                  <h2>Posible coincidencia</h2>
+                  <p>
+                    Revisa si son hechos distintos. La coincidencia no impide
+                    registrar otro hecho real.
+                  </p>
+                  <ul>
+                    {plan.duplicados.map((d) => (
+                      <li key={d.id}>
+                        #{d.id} · {date(d.fecha)} · {d.tipo} · {eur(d.importe)}{" "}
+                        · {d.concepto}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              )}
+              <Impact plan={plan} />
+            </>
+          )}
+          <div className="form-footer">
+            <p className="muted">
+              {id
+                ? "ID estable · cambios auditados con motivo y fecha"
+                : "* Campos obligatorios · datos ficticios en local"}
+            </p>
+            <div className="actions">
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => go(id ? base + "/" + id : base)}
+              >
+                Cancelar
+              </button>
+              {plan && (
+                <button
+                  className="secondary"
+                  type="button"
+                  onClick={() => setPlan(null)}
+                >
+                  Volver y revisar
+                </button>
+              )}
+              <button
+                className="primary"
+                type="submit"
+                disabled={
+                  busy ||
+                  !options ||
+                  !!optionsError ||
+                  conflict ||
+                  !!requiredRef
+                }
+              >
+                {busy ? "Comprobando…" : button}
+              </button>
+            </div>
+          </div>
+        </form>
+      )}
+    </>
+  );
+}

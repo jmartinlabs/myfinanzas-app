@@ -8,15 +8,15 @@ estados sin cascadas y rectificación explícita de dependencias del catálogo.
 Acceso con contraseña y TOTP; no hay registro público. E1.2 completada e integrada mediante PR #11,
 tras aprobación técnica y visual del usuario sobre 58b51f9.
 E1.3 incorpora el maestro de **Ciclos financiados**: listado, ficha y alta posterior,
-mes financiado único y Fin derivado del siguiente Inicio. Implementación en revisión,
-sin merge autorizado. [Pruebas y límites](specs/03-ciclos-financiados-testplan.md).
-Las tres fuentes de referencia aún no existen: cabecera «No disponible» cuando hay
-ciclos, «Sin ciclos» si el maestro está vacío. No usa el reloj, el último creado ni
+mes financiado único y Fin derivado del siguiente Inicio. Integrada mediante PR #13
+(ff9d18d). [Pruebas y límites](specs/03-ciclos-financiados-testplan.md).
+Movimientos ya alimenta la referencia; Comida/inversión siguen pendientes. Sin hechos
+vigentes, referencia «No disponible»; maestro vacío «Sin ciclos». No usa el reloj, el último creado ni
 Nómina para decidir el ciclo actual. No realiza cierre ni conciliación de comida.
 
 El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha incorporado
-ni inspeccionado en Codex, ni se han importado datos personales. No hay motores de
-Movimientos/Inversiones: su posición se muestra pendiente, nunca como un cero ficticio.
+ni inspeccionado en Codex, ni se han importado datos personales. Control Movimientos calcula apertura + entradas − salidas vigentes. Otros motores
+pendientes no se presentan como posiciones completas ni como un cero ficticio.
 
 ## Desarrollo local
 
@@ -50,10 +50,10 @@ y una migración del maestro expresamente autorizada**, conservando IDs y valida
 integridad/equivalencia. No se implementan aquí ni se reutiliza una base demo como real.
 No reutilices una base desconocida: se rechazan versiones de esquema incompatibles.
 
-Una base local **E1.1/E1.2 existente (versión 1/2) se actualiza transaccionalmente a versión 3**
+Una base local **E1.1/E1.2/E1.3 existente (versión 1/2/3) se actualiza transaccionalmente a versión 4**
 al abrirla, sin borrar/resembrar Saldos ni reiniciar autenticación. No vuelvas a ejecutar
 setup si el usuario ya está configurado. Conserva la clave y realiza/verifica una copia
-con la versión E1.1 antes de actualizar; las copias v1, v2 y v3 siguen restaurables.
+con la versión E1.1 antes de actualizar; las copias v1, v2, v3 y v4 siguen restaurables.
 El catálogo Clasificación comienza vacío; crea datos ficticios desde sus páginas.
 Esto no importa el Excel ni convierte la base demo en una base para datos reales.
 
@@ -128,10 +128,23 @@ tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendiente
 STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas iniciales](specs/dev-skill-consolidation.md).
 Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
 inicialización. Esperar autorización antes de la próxima entrega.
-E1.2 integrada; E1.3 implementada en revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
+E1.2/E1.3 integradas; E1.4 implementada en revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 
 ## Universal AI development template
 
 Proyecto derivado de agent-project-template; se conservan sus templates, controles y
 prompts de referencia. Los prompts heredados no sustituyen este contexto vigente.
+
+
+## E1.4 — implementación local en revisión, no integrada
+Ingresos/Gastos: listado/ficha/alta, filtros, rectificación/anulación auditadas con ID
+estable, advertencia revisable de coincidencias e idempotencia. [Trazabilidad](specs/04-movimientos-testplan.md).
+Importes positivos, fecha no futura según Europe/Madrid y validación en servidor.
+Gasto exige Partida y permiso Exterior; Referencia obligatoria no verificable bloquea
+hasta E1.5. No controlado puede operar, pero no presenta posición convencional.
+Solo Control Movimientos usa apertura ausente como cero en cálculo, sin cambiar null
+persistente ni filtrar por Fecha apertura. Anulados conservados, sin cómputo ni borrado.
+Actualizar una base E1.3 no requiere reiniciar el usuario ni ejecutar setup otra vez:
+copia previa verificada y clave externa conservada. Esquema v4 transaccional sin semillas
+de hechos. Excel sigue maestro, solo fixtures. Sin E1.5, datos reales ni despliegue.

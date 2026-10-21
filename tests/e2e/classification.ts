@@ -197,7 +197,7 @@ export async function classificationJourney(page: Page) {
     page.getByRole("heading", { name: "Vista previa del catálogo" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Solo dependencias verificables del catálogo.", {
+    page.getByText("Catálogo y Movimientos comprobados.", {
       exact: false,
     }),
   ).toContainText("no comprobado");

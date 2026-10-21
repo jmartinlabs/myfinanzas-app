@@ -1,5 +1,6 @@
+import { monthLabel } from "./Ciclos";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { api, ApiError } from "./api";
+import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 
 type Kind = "categorias" | "subcategorias" | "partidas";
@@ -23,6 +24,24 @@ type Plan = {
   dependencies: Dependency[];
   coverage: string;
   pending: string[];
+  financial?: {
+    movimientos: {
+      id: string;
+      fecha: string;
+      estado: string;
+      importe: string;
+      antes: {
+        categoria: { id: string; nombre: string };
+        subcategoria: { id: string; nombre: string };
+      };
+      despues: {
+        categoria: { id: string; nombre: string };
+        subcategoria: { id: string; nombre: string };
+      };
+      ciclo: { mesFinanciado: string } | null;
+    }[];
+    cobertura: string;
+  };
 };
 const plural = {
   categorias: "Categorías",
@@ -902,8 +921,9 @@ function ClassificationForm({
             </p>
             <p className="context-note">
               Aunque no cambien las filas de Movimientos, una relación puede
-              reclasificar y recalcular resultados históricos. E1.2 solo
-              comprueba dependencias del catálogo.
+              reclasificar y recalcular resultados históricos. La vista previa
+              muestra los consumidores disponibles e identifica las
+              comprobaciones pendientes.
             </p>
             {plan && (
               <div aria-live="polite">
@@ -932,6 +952,34 @@ function ClassificationForm({
                 </ul>
                 {!plan.dependencies.length && (
                   <p>Sin descendientes en el catálogo.</p>
+                )}
+                {plan.financial && (
+                  <div className="movement-impact">
+                    <h3>
+                      Movimientos afectados: {plan.financial.movimientos.length}
+                    </h3>
+                    <ul>
+                      {plan.financial.movimientos.map((m) => (
+                        <li key={m.id}>
+                          #{m.id} · {m.fecha.split("-").reverse().join("/")} ·{" "}
+                          {m.estado} · {eur(m.importe)}
+                          <br />
+                          Categoría: {m.antes.categoria.id} ·{" "}
+                          {m.antes.categoria.nombre} → {m.despues.categoria.id}{" "}
+                          · {m.despues.categoria.nombre}
+                          <br />
+                          Subcategoría: {m.antes.subcategoria.id} →{" "}
+                          {m.despues.subcategoria.id}
+                          <br />
+                          Ciclo:{" "}
+                          {m.ciclo
+                            ? monthLabel(m.ciclo.mesFinanciado)
+                            : "Sin ciclo asignable"}
+                        </li>
+                      ))}
+                    </ul>
+                    <p>{plan.financial.cobertura}</p>
+                  </div>
                 )}
                 <p>{plan.coverage}</p>
                 <p className="muted">

@@ -118,3 +118,17 @@ Playwright añade alta/consulta real y conflicto concurrente a MFA/restauración
 CI publica únicamente PNG ficticios de artifacts/e1-3, junto a entregas anteriores;
 no DB, claves, estado de autenticación ni trazas. 21 AC actuales frente a 3 contratos
 futuros; no afirmar integración de fuentes, imputación de hechos o cierre aún ausentes.
+
+
+## E1.4
+[29 AC actuales y AC-30–33 futuros](../04-movimientos-testplan.md). Bun añade reglas,
+auditoría, idempotencia/concurrencia, upgrade v3 genuino, rollback y age; regresiones
+anteriores mantienen comprobación de filas previas, actualizando solo estado derivado
+ahora entregado (posición/referencia y versión actual). Pruebas de backups identifican
+su esquema real; no snapshots nuevos rebautizados como antiguos.
+Playwright incorpora servidor Effect/SQLite test aislado, con mismo acceso normal, y
+restore real a segundo servidor; sin bypass/fixture HTTP. Mocks solo red/error/401 para
+presentación, escrituras exitosas siempre reales. Capturas 390/1440 inspeccionadas;
+CI adjunta exclusivamente PNG e1-4 al artifact heredado e1-1-screenshots, 7 días.
+No ejecutar screenshots desde pantallas que exhiban factores. No afirmar AC futuros
+probados por dobles aislados de protección. No relajar checks para hacer pasar CI.

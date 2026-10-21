@@ -78,8 +78,9 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
       <div className="context-note">
         <span aria-hidden="true">ⓘ</span>
         <p>
-          Los motores de cálculo llegarán en sus entregas. Aquí gestionas la
-          configuración, sin importes calculados.
+          Control Movimientos muestra apertura + entradas − salidas vigentes.
+          Los demás controles conservan su disponibilidad; no se inventan
+          posiciones.
         </p>
       </div>
       <section className="panel catalog-panel" aria-label="Catálogo de Saldos">
@@ -231,9 +232,11 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
                       </td>
                       <td>
                         <span className="position-label">
-                          {s.posicion.condicion === "pendiente_motor"
-                            ? "Pendiente de motor"
-                            : "No aplicable"}
+                          {s.posicion.importe !== null
+                            ? eur(s.posicion.importe)
+                            : s.posicion.condicion === "pendiente_motor"
+                              ? "Pendiente de motor"
+                              : "No aplicable"}
                         </span>
                         <small className="table-id">{s.posicion.motivo}</small>
                       </td>
@@ -260,9 +263,11 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
                   </p>
                   <div className="card-position">
                     <span>
-                      {s.posicion.condicion === "pendiente_motor"
-                        ? "Pendiente de motor"
-                        : "No aplicable"}
+                      {s.posicion.importe !== null
+                        ? eur(s.posicion.importe)
+                        : s.posicion.condicion === "pendiente_motor"
+                          ? "Pendiente de motor"
+                          : "No aplicable"}
                     </span>
                     <small>{s.posicion.motivo}</small>
                   </div>
@@ -411,18 +416,27 @@ export function SaldoDetail({
         <section className="panel position-panel">
           <p className="eyebrow">POSICIÓN ACTUAL</p>
           <h2>
-            {s.posicion.condicion === "pendiente_motor"
-              ? "Pendiente de motor"
-              : "No aplicable"}
+            {s.posicion.importe !== null
+              ? "Saldo actual"
+              : s.posicion.condicion === "pendiente_motor"
+                ? "Pendiente de motor"
+                : "No aplicable"}
           </h2>
           <p>{s.posicion.motivo}</p>
-          <div className="position-placeholder" aria-hidden="true">
-            —
+          <div
+            className={
+              "position-placeholder" +
+              (s.posicion.importe !== null ? " calculated" : "")
+            }
+          >
+            {s.posicion.importe !== null ? eur(s.posicion.importe) : "—"}
           </div>
           <p className="muted">
-            {s.posicion.condicion === "pendiente_motor"
-              ? "No se presenta un importe hasta disponer del motor correspondiente."
-              : "Este control no presenta un saldo actual convencional."}
+            {s.posicion.importe !== null
+              ? "Resultado económico vigente, independiente de los filtros de consulta."
+              : s.posicion.condicion === "pendiente_motor"
+                ? "No se presenta un importe hasta disponer del motor correspondiente."
+                : "Este control no presenta un saldo actual convencional."}
           </p>
         </section>
       </div>

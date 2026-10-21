@@ -72,7 +72,18 @@ todo dato privado y necesitan revisión manual del contenido antes de cada push.
 
 ## Continuidad E1.2
 Rutas de clasificación pasan por la sesión MFA/Origin/CSRF existente; sin bypass.
-Esquemas v2/v3 conservan tablas de acceso y clave externa al actualizar v1/v2, sin reset.
-Copias v1/v2/v3 verificadas; restauración sigue revocando sesiones/códigos por política
+Esquemas v2/v3/v4 conservan tablas de acceso y clave externa al actualizar v1/v2/v3, sin reset.
+Copias v1/v2/v3/v4 verificadas; restauración sigue revocando sesiones/códigos por política
 E1.1, a diferencia de actualizar esquema in situ. Guarda de entorno development/test
 intacta y clasificación vacía al iniciar: no datos ni maestros financieros reales.
+
+
+## E1.4 local
+Rutas de hechos reutilizan sesión MFA, Origin/CSRF y controles de JSON/errores. No
+nuevos proveedores, dependencias o recuperación administrativa. Datos de hechos y
+before/after solo en DB/API autenticada, nunca logs públicos, repo ni artifact de claves.
+Upgrade v3→v4 preserva sesiones/clave; restore age revoca acceso/intentos existentes.
+Fechas/importe/permisos/relaciones se revalidan bajo transacción; huella no sustituye
+MFA ni protecciones financieras. Cierres reales ausentes: contrato futuro, sin afirmar
+protección de módulos no entregados. Entorno demo development/test y barrera productiva
+intactos; sin inicialización real, copia externa, scheduler, deploy ni RPO/RTO operativos.

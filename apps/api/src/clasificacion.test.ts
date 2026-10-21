@@ -280,7 +280,8 @@ test("02 AC15–18/20: rectificación real del catálogo, impacto indirecto y re
     const plan = preview(db, "subcategorias", s.id, changes);
     expect(plan.dependencies.map((d) => d.id)).toEqual([p.id]);
     expect(plan.coverage).toContain("no comprobado");
-    expect(plan.pending).toContain("Movimientos");
+    expect(plan.pending).not.toContain("Movimientos");
+    expect(plan.financial?.movimientos).toEqual([]);
     expect(() =>
       update(db, "subcategorias", s.id, changes, undefined, Date.now(), {
         fingerprint: plan.fingerprint,
@@ -371,7 +372,7 @@ test("02 AC02: IDs >999, idempotencia y rollback de altas", () => {
   }
 });
 
-test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v2", async () => {
+test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y backup v1/v4", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-upgrade-")),
     path = join(dir, "demo.sqlite");
   let db = openV1(path);
@@ -428,7 +429,11 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
       expect(
         db.query("SELECT * FROM counters WHERE name=?").get(row.name),
       ).toEqual(row);
-    expect(getSaldo(db, saldo.id)).toEqual(saldoBefore);
+    expect({
+      ...getSaldo(db, saldo.id),
+      posicion: saldoBefore.posicion,
+    }).toEqual(saldoBefore);
+    expect(getSaldo(db, saldo.id).posicion.importe).toBe("-12.34");
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
     expect(
       nextAuth.session(
@@ -450,8 +455,8 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
     db.close();
     db = openDatabase(path);
     expect(snapshot(db)).toEqual(after);
-    backup(db, key, join(dir, "v2-backup"), recipient);
-    for (const version of [1, 2]) {
+    backup(db, key, join(dir, "v4-backup"), recipient);
+    for (const version of [1, 4]) {
       const restored = restore(
         join(dir, `v${version}-backup`),
         join(dir, `restore-${version}`),
@@ -459,10 +464,14 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
       );
       const copy = openDatabase(restored.database);
       try {
-        expect(getSaldo(copy, saldo.id)).toEqual(saldoBefore);
+        expect({
+          ...getSaldo(copy, saldo.id),
+          posicion: saldoBefore.posicion,
+        }).toEqual(saldoBefore);
+        expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-12.34");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(
-          version === 2 ? 1 : 0,
+          version === 4 ? 1 : 0,
         );
       } finally {
         copy.close();

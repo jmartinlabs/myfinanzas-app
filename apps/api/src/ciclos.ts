@@ -1,3 +1,4 @@
+import { movementSource } from "./movement-ledger";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Schema } from "effect";
@@ -140,7 +141,7 @@ export function deriveCycles(
 }
 export function cycleContext(db: Database) {
   // No date from wall clock, cycle creation or non-delivered sources enters this reference.
-  return contextFrom(rows(db), financialReference([]));
+  return contextFrom(rows(db), financialReference([movementSource(db)]));
 }
 export function contextFrom(
   input: Parameters<typeof deriveCycles>[0],
@@ -175,7 +176,7 @@ export function contextFrom(
 }
 export function listCycles(db: Database, params = new URLSearchParams()) {
   const input = rows(db),
-    context = contextFrom(input, financialReference([]));
+    context = contextFrom(input, financialReference([movementSource(db)]));
   const page = Number(params.get("page") ?? 1),
     query = (params.get("q") ?? "").toLocaleLowerCase("es"),
     state = params.get("estado") ?? "";
@@ -204,7 +205,7 @@ export function listCycles(db: Database, params = new URLSearchParams()) {
 }
 export function getCycle(db: Database, id: string) {
   const input = rows(db),
-    reference = financialReference([]);
+    reference = financialReference([movementSource(db)]);
   const item = deriveCycles(input, reference).find((c) => c.id === id);
   if (!item) throw new Problem(404, "NOT_FOUND", "Ciclo no encontrado.");
   return { ciclo: item, contexto: contextFrom(input, reference) };
@@ -329,4 +330,16 @@ export function createCycle(
       return getCycle(db, n.n);
     })
     .immediate();
+}
+
+export function cycleForDate(db: Database, date: string) {
+  return (
+    deriveCycles(rows(db), financialReference([movementSource(db)])).find(
+      (c) => c.inicio <= date && (c.fin === null || date <= c.fin),
+    ) ?? null
+  );
+}
+
+export function cycleMaster(db: Database) {
+  return deriveCycles(rows(db), financialReference([movementSource(db)]));
 }
