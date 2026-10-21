@@ -183,3 +183,23 @@ MFA/Origin/CSRF heredados para /api/referencias (GET/POST), /:id (GET/PATCH) y a
 POST desactivar/reactivar; no DELETE ni bypass del registro. Sin dependencias nuevas.
 Backups identifican v1–v5 desde snapshot; restore borra también reference_attempts,
 revoca acceso según política existente, sin modificar el origen ni operar producción.
+
+
+## Contrato vigente en implementación 31
+
+La especificación 31 aprobada añade identidad v6 a las migraciones existentes.
+`database-schema.ts` comparte DDL y separa fixtures; `database-identity.ts` valida
+contrato/origen. `database.ts` aplica la matriz de entornos antes de mutar y bajo
+bloqueo. `private-state.ts` valida rutas/UID/permisos, huella y publicación Linux
+glibc sin reemplazo. La identidad del filesystem raíz se interpreta en el namespace
+actual (incluido rootless), manteniendo los archivos privados en el UID efectivo.
+`production-state.ts` crea DB+clave en estado nuevo; startup nunca crea producción.
+`setup.ts` entrega token productivo a archivo privado, con rollback si falla.
+Backup/restore preservan identidad v6 y compatibilidad de snapshots genuinos v1–v5.
+El código Bun se carga perezosamente en helpers para conservar uso de TOTP desde
+Node/Playwright. No se alteran motores financieros, bind de contenedor ni frontend.
+Esta sección sustituye límites demo-only antiguos únicamente en la rama 31;
+no acredita integración, operación remota ni autorización de datos reales.
+
+Ver [contrato 31](../31-sqlite-produccion-specification.md) y
+[evidencia](../31-sqlite-produccion-testplan.md).

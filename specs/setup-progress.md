@@ -289,3 +289,12 @@ PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31�
 contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
 Este registro documental se propone en PR separada, pendiente de autorización de merge.
 No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
+
+
+## Desarrollo técnico 31 — verificación local
+
+[Progreso 31](31-sqlite-produccion-progress.md) y
+[testplan AC-01–33](31-sqlite-produccion-testplan.md). Esquema v6 con identidad,
+creación privada DB+clave, alta y restore implementados en rama independiente.
+82 Bun PASS / 1243 assertions y 2 E2E PASS (41.5s); revisión y CI finales en PR #25. PR #23 aprobada e integrada externamente
+en 13f19f6; #25 sigue pendiente de autorización de merge. Sin VPS/deploy/datos reales.

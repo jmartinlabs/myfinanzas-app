@@ -1,3 +1,12 @@
+import { inspectIdentity, assertMode, keyHash } from "./database-identity";
+import {
+  productionConfig,
+  privateDirectory,
+  publishNewDirectory,
+  syncPath,
+  verifyProductionFiles,
+} from "./private-state";
+import { basename } from "node:path";
 import { Database } from "bun:sqlite";
 import { createHash, randomUUID } from "node:crypto";
 import {
@@ -6,7 +15,6 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  renameSync,
   rmSync,
   writeFileSync,
   openSync,
@@ -41,10 +49,11 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5, 6].includes(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
+    inspectIdentity(db);
     return versions[0].version;
   } finally {
     db.close();
@@ -58,13 +67,29 @@ export function backup(
   recipient: string,
   now = Date.now(),
 ) {
+  if (
+    !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
+  )
+    throw new Error("Entorno de copia inválido.");
+  const sourceIdentity = inspectIdentity(db);
+  assertMode(sourceIdentity, process.env.NODE_ENV === "production");
+  if (sourceIdentity?.origin === "production") {
+    const config = productionConfig();
+    if (db.filename !== config.database)
+      throw new Error("Origen distinto de DATABASE_PATH.");
+    verifyProductionFiles(config);
+    if (sourceIdentity.key_hash !== keyHash(key))
+      throw new Error("Pareja DB/clave inválida.");
+  }
   new Auth(db, key).checkKey();
   const target = resolve(destination);
   if (existsSync(target))
     throw new Error("El destino ya existe; no se sobrescriben copias.");
   if (!recipient.startsWith("age1") || key.length !== 32)
     throw new Error("Destinatario age o clave de aplicación inválidos.");
-  mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  if (process.env.NODE_ENV !== "production")
+    mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  privateDirectory(dirname(target));
   const stage = mkdtempSync(join(dirname(target), ".backup-"));
   try {
     const snapshot = join(stage, "snapshot.sqlite");
@@ -88,8 +113,11 @@ export function backup(
               ? "e1.3-v3"
               : sourceVersion === 4
                 ? "e1.4-v4"
-                : "e1.5-v5",
+                : sourceVersion === 5
+                  ? "e1.5-v5"
+                  : "sqlite-v6",
       schema: sourceVersion,
+      ...(sourceVersion === 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
       created: new Date(now).toISOString(),
       sha256: hash(bytes),
@@ -137,7 +165,7 @@ export function backup(
     } finally {
       closeSync(directory);
     }
-    renameSync(stage, target);
+    publishNewDirectory(stage, target);
     return { created: manifest.created };
   } catch (e) {
     rmSync(stage, { recursive: true, force: true });
@@ -151,14 +179,26 @@ export function restore(
   identity: string,
   options: { now?: number; allowOlder?: boolean } = {},
 ) {
+  if (
+    !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
+  )
+    throw new Error("Entorno de restauración inválido.");
   const target = resolve(destination);
+  const config =
+    process.env.NODE_ENV === "production" ? productionConfig() : null;
+  if (config && (destination !== target || config.state !== target))
+    throw new Error("Destino distinto de configuración productiva.");
   if (existsSync(target))
     throw new Error("Restauración requiere un directorio nuevo.");
-  mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+  if (config) privateDirectory(dirname(target));
+  else {
+    mkdirSync(dirname(target), { recursive: true, mode: 0o700 });
+    privateDirectory(dirname(target));
+  }
   const stage = mkdtempSync(join(dirname(target), ".restore-"));
   try {
     const raw = join(stage, "bundle.tmp"),
-      keyPath = join(stage, "auth.key");
+      keyPath = join(stage, config ? basename(config.key) : "auth.key");
     const mask = process.umask(0o077);
     try {
       age([
@@ -184,7 +224,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5, 6].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -198,13 +238,22 @@ export function restore(
       throw new Error(
         "Antigüedad de copia requiere aceptación explícita (--allow-older).",
       );
-    const path = join(stage, "demo.sqlite");
+    const path = join(
+      stage,
+      config ? basename(config.database) : "demo.sqlite",
+    );
     writeFileSync(path, bytes, { mode: 0o600 });
     valid(path, bundle.manifest.schema);
     const key = readFileSync(keyPath);
     if (key.length !== 32) throw new Error("Clave de aplicación inválida.");
     const db = new Database(path, { strict: true });
     try {
+      const id = inspectIdentity(db);
+      assertMode(id, !!config);
+      if (bundle.manifest.schema === 6 && bundle.manifest.origin !== id?.origin)
+        throw new Error("Origen del manifiesto inválido.");
+      if (id?.origin === "production" && id.key_hash !== keyHash(key))
+        throw new Error("Pareja DB/clave inválida.");
       const auth = new Auth(db, key);
       auth.checkKey();
       db.transaction(() => {
@@ -227,11 +276,14 @@ export function restore(
     }
     rmSync(raw);
     chmodSync(keyPath, 0o600);
-    renameSync(stage, target);
+    syncPath(path);
+    syncPath(keyPath);
+    syncPath(stage);
+    publishNewDirectory(stage, target);
     return {
       created: bundle.manifest.created,
-      database: join(target, "demo.sqlite"),
-      key: join(target, "auth.key"),
+      database: join(target, basename(path)),
+      key: join(target, basename(keyPath)),
     };
   } catch (e) {
     rmSync(stage, { recursive: true, force: true });

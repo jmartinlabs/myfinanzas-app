@@ -1,3 +1,4 @@
+import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -1101,7 +1102,8 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [2, openV2, "e1.2-v2"],
       [3, openV3, "e1.3-v3"],
       [4, openV4, "e1.4-v4"],
-      [5, openDatabase, "e1.5-v5"],
+      [5, openDatabaseV5, "e1.5-v5"],
+      [6, openDatabase, "sqlite-v6"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);
