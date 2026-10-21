@@ -9,6 +9,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
   Prerrequisitos, comandos de plantilla y limitaciones: guideline de calidad.
 - Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
+- Próximas entregas: evitar documentación/rondas redundantes; resolver detalles técnicos
+  ordinarios durante desarrollo reutilizando arquitectura/componentes/pruebas. Mantener
+  revisión rigurosa de lógica financiera, integridad, seguridad y persistencia.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
 - STEP 4 y STEP 5 E1.1 aprobados e integrados (PR #6, ebfe75b). STEP 7 autorizado
@@ -31,7 +34,9 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   E1.2 especificación/diseño aprobados e integrados PR #10 (0c7a87e); dev 02 autorizado
   en feat/e1-2-clasificacion, solo local/ficticio. Unicidad SUB global sin mayúsculas,
   tildes/espacios conservados y comodines literales; reserva resuelta por usuario.
-  Sin merge de implementación, datos reales, despliegue o servicios contratados.
+  E1.2 completada e integrada mediante PR #11 tras aprobación expresa sobre 58b51f9
+  y squash merge autorizado. 27 criterios verificados; AC-19/24/25/26 siguen contratos
+  futuros. Esperar autorización: sin E1.3, datos reales, despliegue o servicios contratados.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.

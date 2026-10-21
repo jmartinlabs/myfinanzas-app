@@ -1,5 +1,5 @@
 # 02 — E1.2 Clasificación utilizable y conservación histórica: Specification
-Status: APPROVED — especificación/diseños aprobados; implementación local en revisión, sin integrar.
+Status: APPROVED — especificación/diseños aprobados; implementación E1.2 completada e integrada mediante PR #11.
 Approval source/date: usuario aprueba PR #10 sobre 25cffc0 y autoriza merge/dev 02; 2026-10-21. PR #10 integrada en main 0c7a87e.
 Context and brainstorming: [decisiones y evidencias](02-clasificacion-brainstorming.md),
 [roadmap E1.2](roadmap.md#e12--clasificación-utilizable-y-conservación-histórica),
@@ -11,7 +11,7 @@ por ID, consultando activos/inactivos, creando, editando y desactivando/reactiva
 No duplicar Categoría en Partida ni información económica derivada.
 Conservar historia, permitir gasto sin Presupuesto y distinguir renombrado de cambio
 económico. Sin versionado general de catálogo. Solo local con fixtures ficticios;
-Excel permanece maestro. El desarrollo local está autorizado después del merge de PR #10; sin merge de implementación ni despliegue.
+Excel permanece maestro. El desarrollo local está autorizado después del merge de PR #10; implementación aprobada para squash merge de PR #11; sin despliegue.
 
 ### Autoridad y límites de evidencia
 - Excel contrastado por usuario/Álex: atributos y cadena; dominios de Configuración;
@@ -306,4 +306,5 @@ Plan de pruebas de AC-31; ejecución y resultados vigentes en testplan 02:
 Especificación/diseño aprobados y PR #10 integrada; `$dev 02` autorizado con reserva
 SUB resuelta por evidencia posterior. Estado de implementación y pruebas actuales
 en [progreso](02-clasificacion-progress.md) y [testplan](02-clasificacion-testplan.md).
-No declarar integración de implementación sin merge autorizado.
+Implementación aprobada por usuario sobre 58b51f9 tras auditoría técnica/visual de
+Álex; cierre incorporado mediante PR #11. Sin autorización para E1.3 ni despliegue.

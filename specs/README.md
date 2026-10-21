@@ -17,7 +17,9 @@ STEP 8 is complete and integrated via approved PR #8: [dev Skill consolidation a
 All eight initialization steps are closed; existing spec/dev Skills are ready for reuse.
 E1.2 spec/design approved via PR #10 (0c7a87e); dev 02 local/fictional authorized.
 See [progress 02](02-clasificacion-progress.md) and [testplan 02](02-clasificacion-testplan.md);
-implementation merge and deployment require separate authorization. Historical STEP 5 approval records remain attributed
+E1.2 implementation approved on 58b51f9 and integrated through PR #11;
+27 current acceptance checks verified, 4 future financial contracts pending.
+Wait for authorization before E1.3 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

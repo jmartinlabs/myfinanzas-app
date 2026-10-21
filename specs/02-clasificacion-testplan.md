@@ -1,6 +1,6 @@
 # 02 — Clasificación: test plan
 Status: VERIFIED LOCALLY — 27 criterios actuales; 4 contratos futuros revisados.
-Fecha: 2026-10-21. Implementación en revisión, no integrada.
+Fecha: 2026-10-21. E1.2 aprobada e integrada mediante PR #11; cierre en la misma PR.
 Especificación aprobada: [02](02-clasificacion-specification.md).
 
 ## Evidencia ejecutada
@@ -91,4 +91,8 @@ rechaza; nueva instalación solo development/test. Copia antes de actualizar med
 herramientas E1.1 y custodia de clave siguen como precaución operativa documentada;
 actualización no genera copias externas automáticamente. No importación, datos reales,
 producción, scheduler/retención/custodia externa ni cambio de maestro.
-Siguiente acción: revisar PR y autorizar merge expresamente; no avanzar E1.3.
+Aprobación final: usuario sobre 58b51f9 tras auditoría de Álex, 2026-10-21.
+CI de ese SHA: push 39569358781 y PR 39569369542 SUCCESS. El cierre documental
+no cambia código/pruebas ni reclasifica aceptación. SHA de squash y CI posterior
+verificables en PR #11; las 27 filas PASS y 4 contratos futuros se conservan.
+Siguiente acción: esperar autorización antes de E1.3; no desplegar.

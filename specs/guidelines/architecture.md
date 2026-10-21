@@ -56,7 +56,7 @@ Idempotencia POST ligada a payload durante 24 h. Auditoría conserva actor únic
 revisión previa/nueva y UTC, sin duplicar cifras. Catálogo filtrado en memoria tras lectura
 ordenada por ID, con páginas de 100; suficiente para catálogo personal, sin motor de búsqueda.
 
-## Clasificación E1.2 local — implementación en revisión
+## Clasificación E1.2 local — completada e integrada PR #11
 Categorías, Subcategorías y Partidas STRICT con PK CAT/SUB/PAR, FK padre obligatorio,
 triggers de identidad/no DELETE e índices de padre. Counters por entidad con reserva
 IMMEDIATE, idempotencia separada por catálogo e intento durante 24h. Estado en padres

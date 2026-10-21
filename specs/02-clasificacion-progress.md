@@ -1,5 +1,5 @@
 # 02 — Clasificación: progreso
-Status: IMPLEMENTED — validada localmente; pendiente revisión y merge autorizado.
+Status: COMPLETED — E1.2 aprobada e integrada mediante PR #11.
 Base: PR #10 aprobada sobre 25cffc0, integrada en main 0c7a87e.
 Rama: feat/e1-2-clasificacion. Skill: dev 02. Fecha: 2026-10-21.
 
@@ -15,6 +15,9 @@ capturas); cierre documental en la misma rama. Resultados y límites:
 [testplan](02-clasificacion-testplan.md). Ninguna dependencia nueva; no E1.3.
 Solo fixtures locales; Excel maestro no modificado ni incorporado.
 AC-19/24/25/26 son contratos futuros revisados, no motores implementados.
-Siguiente acción: revisión de Álex de PR funcional y autorización expresa antes de
-merge. CI remota se contrasta con el SHA publicado en checks/descripcion de PR;
-las verificaciones locales no se atribuyen a GitHub. No despliegue ni datos reales.
+Aprobación: usuario comunica auditoría técnica/visual favorable de Álex sobre
+58b51f9 y autoriza squash merge de PR #11 el 2026-10-21. Este cierre documental se
+incorpora en esa misma PR; integración verificable por su estado MERGED y commit.
+CI del código aprobado: push 39569358781 y PR 39569369542, ambas SUCCESS.
+CI del cierre y posterior al merge: enlaces/SHA en descripción de PR #11.
+Siguiente acción: esperar autorización; no E1.3, despliegue ni datos reales.

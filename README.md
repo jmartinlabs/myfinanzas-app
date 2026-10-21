@@ -5,8 +5,8 @@ E1.1 permite gestionar **Saldos ficticios en local**: listado, ficha, alta, edic
 desactivación y reactivación. React → Effect HTTP → SQLite, sin ORM.
 E1.2 añade Clasificación: Categorías, Subcategorías y Partidas con jerarquía estable,
 estados sin cascadas y rectificación explícita de dependencias del catálogo.
-Acceso con contraseña y TOTP; no hay registro público. E1.2 está en revisión de PR,
-no integrada todavía.
+Acceso con contraseña y TOTP; no hay registro público. E1.2 completada e integrada mediante PR #11,
+tras aprobación técnica y visual del usuario sobre 58b51f9.
 
 El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha incorporado
 ni inspeccionado en Codex, ni se han importado datos personales. No hay motores de
@@ -122,7 +122,7 @@ tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendiente
 STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas iniciales](specs/dev-skill-consolidation.md).
 Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
 inicialización. Esperar autorización antes de la próxima entrega.
-No E1.2, despliegue ni uso real autorizado. `$dev 01` reutiliza la especificación;
+E1.2 integrada; E1.3, despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 
 ## Universal AI development template
