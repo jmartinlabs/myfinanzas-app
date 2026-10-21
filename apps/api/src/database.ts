@@ -1,6 +1,6 @@
 import { Database } from "bun:sqlite";
-import { mkdirSync, chmodSync } from "node:fs";
-import { dirname } from "node:path";
+import { mkdirSync, chmodSync, existsSync, statSync } from "node:fs";
+import { dirname, isAbsolute, resolve } from "node:path";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
 import { movementSchema } from "./movement-schema";
@@ -10,12 +10,46 @@ import {
   referenceSchemaVersion as schemaVersion,
 } from "./reference-schema";
 
-// Only fictional bootstrap data. Original Excel and real migration are outside this module.
-export function openDatabase(path: string) {
-  // E1.1 is demo-only. Reject before mkdir/open/PRAGMA/seed, including existing databases.
-  if (!["development", "test"].includes(process.env.NODE_ENV ?? "")) {
+// Production is explicitly provisioned; ordinary startup must never create it.
+export function initializeProductionDatabase(path: string) {
+  if (process.env.NODE_ENV !== "production")
+    throw new Error("La inicialización productiva requiere NODE_ENV=production.");
+  if (!isAbsolute(path) || path !== resolve(path) || path.includes("/.local/"))
+    throw new Error("La base productiva exige una ruta absoluta dedicada.");
+  if (existsSync(path))
+    throw new Error("La base productiva ya existe; no se modificará.");
+  const parent = statSync(dirname(path));
+  if (!parent.isDirectory() || (parent.mode & 0o077) !== 0)
+    throw new Error("El directorio productivo debe existir y ser privado (0700).");
+  return openDatabase(path, true);
+}
+
+function verifyProductionDatabase(path: string) {
+  if (!isAbsolute(path) || !existsSync(path))
+    throw new Error("La base productiva debe existir y tener ruta absoluta.");
+  const db = new Database(path, { readonly: true, strict: true });
+  try {
+    const row = db.query(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='database_origin'",
+    ).get();
+    if (!row) throw new Error("Base sin origen verificado; no se abrirá en producción.");
+    const origin = db.query("SELECT origin FROM database_origin").all() as { origin: string }[];
+    const version = db.query("SELECT version FROM schema_version").all() as { version: number }[];
+    if (origin.length !== 1 || origin[0].origin !== "production" ||
+        version.length !== 1 || version[0].version !== schemaVersion)
+      throw new Error("Base no productiva o versión incompatible.");
+  } finally {
+    db.close();
+  }
+}
+
+export function openDatabase(path: string, productionBootstrap = false) {
+  const env = process.env.NODE_ENV;
+  if (env === "production") {
+    if (!productionBootstrap) verifyProductionDatabase(path);
+  } else if (productionBootstrap || !["development", "test"].includes(env ?? "")) {
     throw new Error(
-      "E1.1 solo admite NODE_ENV=development o test y datos ficticios. Producción requiere inicialización limpia y migración autorizada.",
+      "Entorno no permitido. Producción requiere inicialización limpia explícita.",
     );
   }
   if (path !== ":memory:")
@@ -149,7 +183,7 @@ export function openDatabase(path: string) {
           time,
           time,
         );
-        for (const [id, nombre, tipo, control] of [
+        if (process.env.NODE_ENV !== "production") for (const [id, nombre, tipo, control] of [
           ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
           ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
           ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
@@ -174,12 +208,19 @@ export function openDatabase(path: string) {
             time,
             time,
           );
-        db.run("INSERT OR IGNORE INTO counters VALUES('saldo',6)");
+        db.run("INSERT OR IGNORE INTO counters VALUES('saldo',?)", [
+          process.env.NODE_ENV === "production" ? 1 : 6,
+        ]);
       }
       classificationSchema(db);
       cycleSchema(db);
       movementSchema(db);
       referenceSchema(db);
+      if (productionBootstrap) {
+        db.exec(`CREATE TABLE database_origin(origin TEXT PRIMARY KEY
+          CHECK(origin='production')) STRICT;
+          INSERT INTO database_origin VALUES('production');`);
+      }
     }).immediate();
   } catch (error) {
     db.close();
