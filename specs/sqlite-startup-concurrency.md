@@ -18,13 +18,19 @@ Sin E1.2, nuevas funcionalidades, datos reales, cambios financieros ni despliegu
   Se añade esa regresión y se ejecuta **antes** de corregir: falla con exit 1/SQLITE_BUSY.
 - La inicialización usaba BEGIN DEFERRED: la transición de lectura a escritura puede
   fallar sin agotar busy_timeout cuando otro escritor posee el bloqueo. Adquirir el
-  bloqueo desde el inicio evita esa transición y permite esperar por el escritor.
+  bloqueo desde el inicio de la transacción evita esa transición dentro de ella y
+  permite esperar por el escritor. Las comprobaciones previas de versión se ejecutan
+  fuera de esa transacción y antes de adquirir dicho bloqueo.
   Es una causa demostrada localmente compatible con CI; no hay traza remota del hijo
   para afirmar qué excepción exacta tuvo aquella ejecución.
 
 ## Corrección mínima
 Cambiar únicamente el modo de la transacción de inicialización a `.immediate()`
-(BEGIN IMMEDIATE), con comentario explicativo. Mismo esquema, semilla, guard de entorno,
+(BEGIN IMMEDIATE), con comentario explicativo. El bloqueo se adquiere antes de
+inicializar el esquema dentro de la transacción, no antes de todas las lecturas:
+las comprobaciones previas de existencia/versión siguen fuera de ella. Esta precisión
+documental fue solicitada por el usuario al aprobar 121d790; no cambia el código.
+Mismo esquema, semilla, guard de entorno,
 contador de IDs y timeout de 3 s. Sin reintentos, sleeps o aumentos de timeout en la app;
 sin omitir/desactivar pruebas ni relajar la condición de dos altas correctas.
 

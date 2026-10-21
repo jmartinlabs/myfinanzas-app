@@ -32,8 +32,9 @@ las pruebas incluyen una base existente que queda idéntica tras el rechazo. No 
 inicialización productiva: antes de datos reales se necesita un arranque limpio sin
 fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
 Esquema técnico v1 en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
-busy_timeout 3 s. El bloqueo de escritura se adquiere antes de leer/inicializar el
-esquema para evitar el upgrade diferido con otro escritor; [incidencia y regresión](../sqlite-startup-concurrency.md).
+busy_timeout 3 s. Existen comprobaciones previas de versión fuera de la transacción.
+BEGIN IMMEDIATE adquiere el bloqueo de escritura antes de inicializar el esquema
+dentro de la transacción, evitando allí el upgrade diferido con otro escritor; [incidencia y regresión](../sqlite-startup-concurrency.md).
 Las versiones desconocidas fallan antes de mutar. No hay migraciones
 financieras, importador ni tablas de motores posteriores. La antigua tabla demo del
 bootstrap no se usa ni se transforma en registros financieros; base local nueva recomendada.
