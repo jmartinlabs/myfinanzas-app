@@ -19,7 +19,9 @@ E1.2 spec/design approved via PR #10 (0c7a87e); dev 02 local/fictional authorize
 See [progress 02](02-clasificacion-progress.md) and [testplan 02](02-clasificacion-testplan.md);
 E1.2 implementation approved on 58b51f9 and integrated through PR #11;
 27 current acceptance checks verified, 4 future financial contracts pending.
-Wait for authorization before E1.3 or deployment. Historical STEP 5 approval records remain attributed
+E1.3 spec approved and integrated via PR #12 (179942e); dev 03 authorized locally.
+See [progress 03](03-ciclos-financiados-progress.md) and [testplan 03](03-ciclos-financiados-testplan.md).
+Implementation review/merge pending; no E2.1 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

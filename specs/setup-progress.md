@@ -172,3 +172,14 @@ sin corte inventado; Fin conservado sin hechos. Wireframes aceptados como base.
 [especificación](03-ciclos-financiados-specification.md) define 24 criterios: 21 actuales
 y 3 contratos futuros, sin pruebas de E1.3 ejecutadas. PR #12 permanece Draft;
 siguiente acción: aprobación final y autorización dev 03, sin implementación/merge.
+
+
+## Estado vigente — E1.3 / dev 03
+Usuario aprueba PR #12 sobre bf3f2eb y autoriza squash merge e implementación local.
+Se verificaron SHA exacto, ausencia de conflictos y CI push/PR SUCCESS; PR #12 lista
+y MERGED en 179942e. Main sincronizado y limpio antes de crear
+feat/e1-3-ciclos-financiados. Spec 03 cerrada; aprobación registrada sin reabrir reglas.
+[Progreso](03-ciclos-financiados-progress.md) y [evidencia](03-ciclos-financiados-testplan.md)
+separan 21 criterios actuales de AC-11/23/24 futuros. Implementación no integrada;
+próxima acción: revisión de PR funcional y aprobación expresa antes de merge.
+Las ocho etapas iniciales permanecen cerradas; sin E2.1, producción ni datos reales.

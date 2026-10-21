@@ -1,6 +1,6 @@
 # 03 — E1.3 Ciclos financiados: Specification
-Status: DRAFT — contrato completo con Q1–Q3 resueltas y base visual aceptada; aprobación final pendiente.
-Approval source/date: PENDING
+Status: APPROVED — spec 03 integrada; dev 03 autorizado, implementación en curso.
+Approval source/date: usuario comunica revisión/aprobación de Álex sobre bf3f2eb y autoriza squash merge/dev 03, 2026-10-21. PR #12 MERGED 179942e.
 Context and brainstorming: [ronda única](03-ciclos-financiados-brainstorming.md),
 [roadmap](roadmap.md#e13--periodos-financiados-mínimos-para-imputar-hechos),
 [R3](functional-reference-v5.11.md#r3--planificación-ciclos-y-nómina-secciones-56),
@@ -11,7 +11,8 @@ Crear y consultar el maestro único de Ciclos financiados para futuros consumido
 Alta en página propia, listado y ficha. Disponible sin Nómina cobrada ni módulos de
 hechos entregados. E1.3 incorpora derivaciones temporales, no motores de ejecución
 financiera, planificación o cierre. Excel v5.11 sigue como maestro, fixtures exclusivos.
-Publicación Draft autorizada no equivale a aprobar este contrato ni a implementar.
+La publicación Draft original no autorizaba desarrollo. La aprobación posterior de
+PR #12 sí autoriza dev 03 local; no autoriza merge de implementación ni despliegue.
 
 ### Autoridad y trazabilidad de decisiones
 R3 y solicitud fijan entradas manuales, mes siguiente, Fin por siguiente Inicio,
@@ -25,10 +26,13 @@ alternativa. Evidencia: `COUNTIF(tblCiclos[Ciclo financiado],[@[Ciclo financiado
 operativos app confirmados; no se atribuyen a una fórmula de Control no demostrada.
 [Registro append-only](03-ciclos-financiados-brainstorming.md) conserva las preguntas
 y respuestas, incluida aceptación de diseños como base. Sin inspección independiente
-de Criterios por Codex. Contrato definido no equivale a aprobación final ni a pruebas.
+de Criterios por Codex. Aprobación final recibida sobre bf3f2eb; la aprobación no
+equivale por sí sola a pruebas. Evidencia de desarrollo en testplan.
 
 ## Data model and contracts
-Modelo lógico, sin DDL ni SQL ejecutado. Mantener capas React → Effect HTTP → SQLite.
+Modelo lógico aprobado en fase spec. La autorización posterior de dev 03 permite
+el DDL local; arquitectura implementada y evidencia se registran en guidelines/testplan.
+Mantener capas React → Effect HTTP → SQLite.
 
 | Dato | Autoridad / representación propuesta | Escritura |
 | --- | --- | --- |
@@ -80,8 +84,8 @@ No estado «cerrado» ambiguo. Alta de siguiente ciclo deriva Fin previo, sin ej
 cierre, fotografía ni operación de Nómina. No reconciliar comida automáticamente.
 
 ## Screens and interfaces
-Wireframes aceptados por el usuario como base tras revisión de Álex; falta aprobación
-final de especificación. Tema claro, verdes MyFinanzas,
+Wireframes aceptados por el usuario como base tras revisión de Álex; aprobación
+final de especificación recibida posteriormente sobre bf3f2eb. Tema claro, verdes MyFinanzas,
 texto oscuro sobre #8DBB2E y componentes existentes. Tablas escritorio/tarjetas móvil;
 ficha y alta propias, IDs en ficha cuando ayudan; sin reaprobar la paleta.
 
@@ -175,7 +179,7 @@ Estos wireframes no sustituyen capturas de UI implementada ni pruebas de accesib
 - No encontrado: vuelta al listado; red fallida conserva intento y evita duplicados.
 
 ## API behavior and external dependencies
-Propuesta técnica a reutilizar, no rutas implementadas: GET /api/ciclos, GET ficha,
+Contrato técnico aprobado; rutas implementadas y pruebas en arquitectura/testplan: GET /api/ciclos, GET ficha,
 POST alta con clave idempotente y revisión del contexto temporal previo; lectura del
 contexto financiero derivado compartida para cabecera. Sin PATCH/DELETE/cierre ni
 endpoints para fabricar fechas de fuentes. Forma de ID/detalles de rutas se concretan
@@ -220,7 +224,8 @@ el control. Mes/Fin/corte se validan tras derivación en servidor y en la transa
 un conflicto no consume alta parcial ni sobrescribe otro ciclo.
 
 ## Exclusions
-Dev 03, código, DDL/actualización ejecutada, importación, Excel/datos reales/despliegue;
+La fase spec excluía código y DDL; dev 03 se autorizó posteriormente por separado.
+Siguen excluidos importación, Excel/datos reales/despliegue;
 E2.1 (operación/apertura revisable/conciliación), plan mensual/anual, Nómina,
 Movimientos, Comida e inversiones operativos, motores de importes, cierre/reapertura,
 fotografías, precarga de plan siguiente, fecha de referencia manual alternativa.
@@ -228,7 +233,8 @@ fotografías, precarga de plan siguiente, fecha de referencia manual alternativa
 ## Acceptance checks
 Los 24 criterios tienen contrato definido y conservan sus IDs: **21 I** (alcance E1.3)
 y **3 C** (integraciones futuras AC-11/23/24). Q1–Q3 están resueltas; AC-07/12/13 pasan
-de Q a I. Ninguno se declara ejecutado/PASS: no hay implementación ni autorización dev.
+de Q a I. Resultados de ejecución en [testplan](03-ciclos-financiados-testplan.md); autorización
+dev 03 recibida después del cierre documental. Contratos C no son motores entregados.
 La columna Fuente distingue evidencia financiera de controles técnicos reutilizados.
 
 | ID | Acción / precondiciones | Resultado observable esperado | Fuente |
@@ -263,9 +269,10 @@ Bun: calendario/contratos de fuentes y errores, API/SQLite, atomicidad, actualiz
 v2→extensión y restauración. Playwright: MFA real, cabecera/listado/ficha/alta, vacíos,
 conflictos, teclado y capturas 390/1440; regresión completa E1.1/E1.2. Pruebas de fuentes
 futuras aisladas se etiquetan contratos, sin atribuir integración económica real.
-Ahora solo controles documentales. Q1–Q3 resueltas y wireframes aceptados como base.
+Q1–Q3 resueltas y wireframes aprobados; spec 03 cerrada por aprobación sobre bf3f2eb.
 Sin nuevas preguntas financieras: el control de corte se conserva sin publicar corte
-inválido cuando no es aplicable, según Q1. PR #12 sigue Draft para cierre/aprobación
-final de especificación y autorización explícita de dev 03. Sin código/SQL ejecutado,
-merge, datos reales ni cambios al maestro. Detalles técnicos ordinarios se resuelven
+inválido cuando no es aplicable, según Q1. PR #12 lista y MERGED en 179942e después
+de verificar el SHA aprobado y ambas CI SUCCESS. Desarrollo autorizado en rama nueva;
+[progreso](03-ciclos-financiados-progress.md). Sin merge de implementación, despliegue,
+datos reales ni cambios al maestro. Detalles técnicos ordinarios se resuelven
 en desarrollo, reutilizando arquitectura/componentes/pruebas.

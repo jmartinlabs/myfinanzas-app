@@ -7,6 +7,12 @@ E1.2 añade Clasificación: Categorías, Subcategorías y Partidas con jerarquí
 estados sin cascadas y rectificación explícita de dependencias del catálogo.
 Acceso con contraseña y TOTP; no hay registro público. E1.2 completada e integrada mediante PR #11,
 tras aprobación técnica y visual del usuario sobre 58b51f9.
+E1.3 incorpora el maestro de **Ciclos financiados**: listado, ficha y alta posterior,
+mes financiado único y Fin derivado del siguiente Inicio. Implementación en revisión,
+sin merge autorizado. [Pruebas y límites](specs/03-ciclos-financiados-testplan.md).
+Las tres fuentes de referencia aún no existen: cabecera «No disponible» cuando hay
+ciclos, «Sin ciclos» si el maestro está vacío. No usa el reloj, el último creado ni
+Nómina para decidir el ciclo actual. No realiza cierre ni conciliación de comida.
 
 El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha incorporado
 ni inspeccionado en Codex, ni se han importado datos personales. No hay motores de
@@ -44,10 +50,10 @@ y una migración del maestro expresamente autorizada**, conservando IDs y valida
 integridad/equivalencia. No se implementan aquí ni se reutiliza una base demo como real.
 No reutilices una base desconocida: se rechazan versiones de esquema incompatibles.
 
-Una base local **E1.1 existente (versión 1) se actualiza transaccionalmente a versión 2**
+Una base local **E1.1/E1.2 existente (versión 1/2) se actualiza transaccionalmente a versión 3**
 al abrirla, sin borrar/resembrar Saldos ni reiniciar autenticación. No vuelvas a ejecutar
 setup si el usuario ya está configurado. Conserva la clave y realiza/verifica una copia
-con la versión E1.1 antes de actualizar; las copias v1 y v2 siguen restaurables.
+con la versión E1.1 antes de actualizar; las copias v1, v2 y v3 siguen restaurables.
 El catálogo Clasificación comienza vacío; crea datos ficticios desde sus páginas.
 Esto no importa el Excel ni convierte la base demo en una base para datos reales.
 
@@ -122,7 +128,7 @@ tras revisión de Álex sobre 4f7cdda. Motores financieros posteriores pendiente
 STEP 8 completado e integrado mediante PR #8: [cierre de las ocho etapas iniciales](specs/dev-skill-consolidation.md).
 Las Skills `$spec` y `$dev` quedan preparadas para reutilizarse, sin duplicados ni nueva
 inicialización. Esperar autorización antes de la próxima entrega.
-E1.2 integrada; E1.3, despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
+E1.2 integrada; E1.3 implementada en revisión, sin merge. Despliegue y uso real requieren autorización. `$dev 01` reutiliza la especificación;
 Skills locales en `.agents/skills`. No reabrir decisiones confirmadas.
 
 ## Universal AI development template

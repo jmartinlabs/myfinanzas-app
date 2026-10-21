@@ -3,9 +3,10 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { totp } from "../../apps/api/src/auth";
+import { cycleJourney } from "./ciclos";
 import { classificationJourney } from "./classification";
 
-test("E1.1 + E1.2: acceso real, catálogos, errores y restauración responsive", async ({
+test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración responsive", async ({
   page,
   request,
 }) => {
@@ -45,7 +46,9 @@ test("E1.1 + E1.2: acceso real, catálogos, errores y restauración responsive",
     page.getByRole("heading", { name: "Saldos", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
-  await expect(page.getByText("No disponible", { exact: true })).toBeVisible();
+  await expect(
+    page.locator(".global-header").getByText("Sin ciclos", { exact: true }),
+  ).toBeVisible();
   const skip = page.getByRole("link", { name: "Saltar al contenido" });
   await skip.focus();
   await expect(skip).toHaveCSS("opacity", "1");
@@ -280,6 +283,7 @@ test("E1.1 + E1.2: acceso real, catálogos, errores y restauración responsive",
     ),
   ).toBe(false);
   const classification = await classificationJourney(page);
+  const cycles = await cycleJourney(page);
   // Actual encrypted snapshot of the running WAL database, isolated restoration + second Effect server.
   const restoreStarted = Date.now();
   const bun = process.env.BUN_BIN ?? "bun";
@@ -342,6 +346,14 @@ test("E1.1 + E1.2: acceso real, catálogos, errores y restauración responsive",
     ).toBeVisible();
     await page.screenshot({
       path: "artifacts/e1-2/restored-mobile.png",
+      fullPage: true,
+    });
+    await page.goto("/ciclos/" + cycles.first);
+    await expect(page.getByText("-12,34 €", { exact: true })).toBeVisible();
+    await expect(page.getByText("29/02/2028", { exact: true })).toBeVisible();
+    await expect(page.locator(".global-header")).toContainText("No disponible");
+    await page.screenshot({
+      path: "artifacts/e1-3/restored-mobile.png",
       fullPage: true,
     });
     console.log(
