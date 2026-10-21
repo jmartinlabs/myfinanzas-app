@@ -1,15 +1,16 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: IN PROGRESS / BLOCKED para infraestructura real; no entrega completa
+Current state: IN PROGRESS — runner compatible y ensayo rootless PASS; release final y aceptación completa pendientes
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
 | Cerrar spec aprobada, precisiones UID y rollback | done | a4de2e1; PR #29 lista, CI push/PR SUCCESS; sin merge |
 | Bind explícito validado antes de SQLite | verified local | server-config.ts y tres pruebas de procesos reales; AC-09 parcial |
-| Imagen reproducible y manifiesto privado OCI/backend/frontend | blocked | Falta entorno de ensayo rootless+systemd validado; no receta declarada verificada |
-| UID 10001/keep-id y volúmenes | blocked | No Podman/newuidmap ni user manager/cgroup delegable disponibles aquí |
-| Publicación de puerto Podman / AC-10 | blocked | HTTP de proceso local no acredita mapeo rootless |
-| Quadlet, WAL/SHM, fallos, update/rollback cruzado | blocked | Necesitan ejecución real en runner/VM aislado; no mocks como evidencia |
+| Imagen reproducible y manifiesto privado OCI/backend/frontend | pending | Imagen de ensayo fijada y construida; receta/distribución final aún no implementadas |
+| UID 10001/keep-id y volúmenes | verified fixture | Runner efímero, UID real y 0700/0600; repetir sobre imagen final |
+| Publicación de puerto Podman / AC-10 | verified fixture | API real vía 127.0.0.1:18081; 200/401, no acceso externo; repetir sobre imagen final |
+| Quadlet y WAL/SHM | verified fixture | Servicio real, restart/stop y commit WAL conservado; sin reboot/logout ensayados |
+| Fallos/update/rollback cruzado | pending | No se han implementado/validado aún los contratos de datos/autenticación entre releases |
 | Regresión local y PR independiente | local verified / CI pendiente | 86 API PASS / 1319 assertions; 2 E2E PASS (47.0s); tipos/build/controles PASS |
 
 ## Verified increments
@@ -44,8 +45,8 @@ R6 sigue sin cierre causal; fsync tras rename puede dejar conjunto válido con
 durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 
 ## Next action
-Habilitar entorno aislado de ensayo compatible y continuar imagen/UID/publicación/
-Quadlet/rollback cruzado. La PR de implementación debe seguir Draft e incompleta.
+Continuar receta/manifiesto reproducible y rollback cruzado con el runner ya validado.
+Repetir ensayos con imagen final. La PR sigue Draft e incompleta; no falta ahora capacidad rootless.
 No VPS, deploy, datos reales, PR #21/#22 ni otras fases; no afirmar dev 32 completo.
 
 ## Incidencia de CI del incremento — 2026-10-22
@@ -151,3 +152,28 @@ chown/chmod del estado en arranque. tmpfs sigue limitado a 64 MiB y noexec,
 nosuid/nodev; raíz del filesystem readonly y sin tmpfs automáticos amplios.
 La nueva prueba exige owner/mode de padre e hijo y escritura real en TMPDIR,
 con diagnóstico solo de números UID/modos/booleanos, nunca contenido de clave.
+
+## Resultado real del runner — 2026-10-22
+[Run 39689862600 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39689862600)
+SHA 6a2ce9dae5b07bc26240ade74b2bf394dd3ef9cb; imagen SOLO DE ENSAYO
+sha256:0701a4d46c664b735b5c8abc3777e13cafdfa91854907904ec0306e24183b05b.
+Anotaciones comprobadas: gate real PASS y rootless integration PASS.
+Podman 4.9.3, systemd 255 (255.4-1ubuntu8.18), kernel 7.0.0-1017-azure,
+uidmap 1:4.13+dfsg1-4ubuntu3.2. Se confirman:
+- UID interno 10001, keep-id y propietario del volumen frente al UID host no coincidente;
+  state 0700, DB/clave 0600 y temporales de trabajo 0700 realmente escribibles.
+- HTTP real host → puerto publicado Podman 127.0.0.1:18081 → API; health 200 y
+  JSON {ok:true}; /api/saldos sin sesión 401. No acceso por IP host no-loopback
+  desde un segundo contenedor, sin host network ni privilegios de aplicación.
+- Quadlet efímero generado/arrancado por systemd --user; restart conserva commit
+  técnico ficticio en WAL retenido, con integrity/FK correctos y sidecars privados.
+- Stop deja inaccesible el puerto; limpieza limitada a nombres/unidad/temporales
+  creados por este ensayo. Sin publicar DB, clave, imagen ni artifacts sensibles.
+
+Esta evidencia desbloquea el runner, no la entrega completa: no release final
+reproducible/OCI+frontend, backup/restore cruzado ni rollback datos/autenticación,
+logout/reboot, HTTPS/Caddy o VPS validados. AC-05/10 pasan para esta imagen de
+ensayo; AC-13/14/21 tienen evidencia parcial y requieren cierre final del alcance.
+Se añade comprobación negativa explícita de ::1:18081 y UID host al reporte siguiente.
+El fallo API histórico 39687644407 sigue sin diagnóstico causal, aunque otras CI pasen.
+R6 y durabilidad fsync permanecen documentados; ningún merge ni despliegue.

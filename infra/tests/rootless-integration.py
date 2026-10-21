@@ -67,7 +67,7 @@ def main():
     unit = unit_dir / (token + '.container')
     service = token + '.service'
     unit_identity = None
-    evidence = {}
+    evidence = {'host-uid': os.getuid(), 'host-gid': os.getgid()}
     try:
         stage = 'build-real-api-test-image'
         source = Path(__file__).resolve().parents[2]
@@ -188,6 +188,13 @@ TimeoutStopSec=30
         if run(['podman', 'port', api_name, '3001/tcp']).strip() != '127.0.0.1:18081':
             raise ProbeError('unexpected host port publication')
         evidence['published-host-health-200-finance-401'] = True
+        # A v4-only publication must not expose an IPv6 loopback listener either.
+        try:
+            with socket.create_connection(('::1', 18081), timeout=1):
+                raise ProbeError('unexpected IPv6 API publication')
+        except OSError:
+            pass
+        evidence['ipv6-loopback-not-published'] = True
         stage = 'cross-namespace-negative-network'
         addresses = json.loads(run(['ip', '-j', '-4', 'address', 'show', 'scope', 'global']))
         ips = [row['local'] for item in addresses for row in item.get('addr_info', [])
