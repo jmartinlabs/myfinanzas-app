@@ -1,7 +1,7 @@
 # 32 — Ejecución segura con Podman rootless: Brainstorming
-Status: DRAFT — D1–D3 confirmadas; especificación completa PENDING APPROVAL
+Status: APPROVED — especificación íntegra, D1–D3 y AC-01–AC-24
 Roadmap/context: [roadmap](roadmap.md), [infra](../infra/README.md), [contrato 31](31-sqlite-produccion-specification.md).
-Next action: revisión de Álex y aprobación íntegra del [borrador](32-ejecucion-rootless-specification.md). Publicación provisional autorizada; no dev ni merge.
+Next action: cerrar controles y CI de spec 32; dev 32 autorizado después, PR independiente; no merge ni VPS.
 
 ## Contexto confirmado — 2026-10-22
 Fuente: solicitud del usuario en este chat. Autoriza especificar preparación técnica
@@ -71,3 +71,18 @@ específica y PR Draft para revisar los 24 AC. Es una excepción puntual al paso
 `.agents/skills/spec/SKILL.md` (commit de documentos aprobados), no una modificación
 del skill ni una aprobación implícita. Sin código, dev 32, merge, VPS o despliegue.
 Los AC permanecen PENDING/NO EJECUTADOS; publicación documental no es evidencia técnica.
+
+## Aprobación íntegra y precisiones — 2026-10-22 (Europe/Madrid)
+
+Fuente: mensaje expreso del usuario en este chat, tras revisar PR #29 con Álex.
+Aprueba íntegramente specification 32, D1–D3 y AC-01–AC-24, incorporando:
+1. Verificación real de UID 10001/keep-id y volúmenes. Si es incompatible,
+   documentar y justificar alternativa segura probada, sin privilegios adicionales
+   ni relajación de 0700/0600. No suponer compatibilidad por configuración.
+2. Rollback exige compatibilidad demostrada de esquema SQLite, contrato de datos
+   y autenticación entre versiones, preservando escrituras confirmadas; sin revertir
+   automáticamente datos/migraciones incompatibles.
+Autoriza iniciar dev 32 solo después de completar correctamente spec/controles/CI,
+con PR de implementación independiente. No autoriza merge de ninguna PR, VPS,
+despliegue, infraestructura activa ni datos reales. Los registros PENDING previos
+son historia; la aprobación no implica pruebas de implementación ejecutadas.

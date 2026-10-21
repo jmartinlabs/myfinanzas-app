@@ -1,11 +1,11 @@
 # 32 — Ejecución segura con Podman rootless: Specification
-Status: DRAFT — D1–D3 confirmadas; aprobación íntegra PENDING; no implementar
-Approval source/date: PENDING para especificación completa. D1–D3 confirmadas por mensaje expreso del usuario, 2026-10-22, tras revisión con Álex.
+Status: APPROVED — D1–D3 y AC-01–AC-24 aprobados; implementación pendiente
+Approval source/date: aprobación expresa íntegra del usuario en este chat, 2026-10-22 (Europe/Madrid), tras revisión con Álex de PR #29: D1–D3 y AC-01–AC-24, con precisiones UID/keep-id y rollback incorporadas. Autoriza dev 32 tras cerrar spec; no merge, VPS ni despliegue.
 Context and brainstorming: [ronda 1](32-ejecucion-rootless-brainstorming.md),
 [roadmap](roadmap.md), [arquitectura](guidelines/architecture.md),
 [calidad](guidelines/quality.md), [seguridad](guidelines/security.md), [infra](../infra/README.md).
 Base: main 62662e974eb6b9e6724f42ea1f385b569a905714, cierre #28.
-Documento pendiente de aprobación íntegra; no contrato completo aprobado ni evidencia ejecutada.
+Documento completo aprobado en la fecha indicada. No hay evidencia de implementación 32 ejecutada; la publicación provisional siguiente es historia previa a esta aprobación.
 Publicación provisional: el usuario autoriza excepcionalmente commit/push de estos
 dos documentos y PR en borrador, solo para revisión de Álex. Excepción puntual al
 paso 6 del skill spec, sin modificarlo; no autoriza dev 32, merge, VPS ni despliegue.
@@ -57,7 +57,11 @@ Propuesta UID: proceso no root con UID/GID interno fijo 10001 y user namespace
 keep-id mapeando al operador host (mfadmin). El número host no se supone 1000;
 se registra durante validación autorizada. La sintaxis keep-id:uid/gid y Quadlet
 se validarán contra una baseline explícita de Podman/systemd; incompatibilidad es
-bloqueo, no fallback a root, privilegios o permisos 0777. Probar stat desde ambos
+bloqueo para ese mecanismo, no fallback a root, privilegios o permisos 0777.
+Si keep-id con UID 10001 resulta incompatible, documentar evidencia y justificar
+una alternativa segura con mapeo explícito al operador, proceso no root y mismos
+0700/0600, sin elevar privilegios ni relajar permisos. Verificarla realmente antes
+de aceptarla; no dar keep-id por válido solo por sintaxis. Probar stat desde ambos
 namespaces y reinicio; no basta que archivos parezcan correctos desde el host.
 Los ancestros internos deben pasar las guardas de 31, incluido root del namespace.
 
@@ -155,8 +159,11 @@ sesión, sujeto a revisión y permiso remoto; no se activa ahora.
 D2: mantenimiento y único escritor; detener/verificar instancia anterior antes de
 activar nueva. No auto-update, nunca dos versiones activas sobre mismo estado.
 Validar imagen/manifiesto/salud antes de declarar release; conservar anterior.
-Rollback de binario exclusivamente con compatibilidad del esquema SQLite/contrato
-demostrada mediante pruebas y matriz de versiones, usando estado actual sin
+Rollback de binario exclusivamente con compatibilidad demostrada del esquema
+SQLite, contrato de datos y autenticación entre la versión anterior y la nueva.
+La matriz de versiones y pruebas cruzadas deben cubrir lectura/escritura, invariantes
+de datos, cifrado/clave, contraseña/TOTP y sesiones/revocaciones según sus contratos,
+preservando las escrituras confirmadas tras actualizar. Usar estado actual sin
 perder escrituras. Si incompatible: detener y pedir recuperación explícita; no
 abrir con imagen antigua a la fuerza ni sustituir DB por copia anterior automáticamente.
 Restore 31 a destino nuevo, con comprobación de identidad/clave, revocación de accesos
@@ -199,7 +206,7 @@ No alta disponibilidad, cero downtime ni garantía contra root/UID malicioso.
 
 ## Acceptance checks
 Todos **PENDING / NO EJECUTADOS** para 32. Son resultados futuros exigidos, no
-cobertura ya aportada por 31. D1–D3 confirmadas; aprobación del conjunto de esta especificación todavía pendiente.
+cobertura ya aportada por 31. D1–D3 y el conjunto de esta especificación aprobados; pruebas pendientes de dev.
 
 | ID | Action / preconditions | Expected observable result |
 | --- | --- | --- |
@@ -207,7 +214,7 @@ cobertura ya aportada por 31. D1–D3 confirmadas; aprobación del conjunto de e
 | AC-02 | Repetir dos builds limpios sin caché con inputs/plataforma iguales | Hashes de payload iguales; diferencias de metadatos OCI explícitas, ninguna diferencia de contenido sin explicar |
 | AC-03 | Inspeccionar contexto, capas, history, entorno y archivos de imagen/artefactos | Sin secretos, DB/sidecars, Excel, datos reales ni directorios de desarrollo; comprobación con canarios sintéticos que detecte inclusión accidental |
 | AC-04 | Ejecutar imagen por digest/ID verificado y servir CLI/API | Bun fijado, glibc/renameat2/age compatibles; runtime sin Vite ni watch; dist exportado coincide con manifiesto |
-| AC-05 | Ensayar UID host distinto de 10001 con keep-id y stat desde ambos lados | Proceso interno no root 10001, state 0700/archivos 0600 del efectivo; sin chown/chmod automático ni :U |
+| AC-05 | Ensayar UID host distinto de 10001 con keep-id y stat desde ambos lados | Compatibilidad real UID 10001/keep-id y volúmenes demostrada; si es incompatible, alternativa segura justificada y probada, proceso no root y state 0700/archivos 0600 del efectivo; sin elevar privilegios, relajar permisos, chown/chmod automático ni :U |
 | AC-06 | Crear estado mediante CLI 31 efímera y reabrir runtime | Inicialización explícita única DB+clave coherente; no fixtures; S000 únicamente, sin usuario; runtime no inicializa |
 | AC-07 | Arrancar sin DB/clave, con demo/legacy, clave errónea o permisos/enlaces inválidos | Exit no cero sin regenerar/fallback/sembrar/reparar; archivos previos intactos |
 | AC-08 | Reiniciar contenedor con rootfs readonly y mounts mínimos | Escritura solo en state/tmpfs previstos; sin socket Podman/privilegios/caps extra; límites efectivos y sin OOM en smoke |
@@ -220,7 +227,7 @@ cobertura ya aportada por 31. D1–D3 confirmadas; aprobación del conjunto de e
 | AC-15 | Parar con SIGTERM durante uso y repetir tras SIGKILL con commit confirmado | Cierre scoped, puerto liberado y reapertura íntegra; sin perder commits confirmados ni borrar sidecars a mano |
 | AC-16 | Dos arranques/inicializadores compiten en entorno rootless | Garantías 31 conservadas, sin sobrescritura ni doble clave; único servicio escritor activo según runbook |
 | AC-17 | Inyectar ENOSPC y fallo fsync antes/después de publicación | Error sin aceptar pareja parcial; post-rename preserva conjunto válido y declara durabilidad incierta, sin borrar/recrear |
-| AC-18 | Demostrar compatibilidad de esquema SQLite entre versiones; actualizar release y volver a anterior compatible tras nueva escritura | Mantenimiento controlado, único escritor, frontend/API emparejados, escritura posterior conservada y MFA funcional |
+| AC-18 | Demostrar compatibilidad de esquema SQLite, contrato de datos y autenticación entre versiones; actualizar release y volver a anterior compatible tras nuevas escrituras confirmadas | Mantenimiento controlado, único escritor, frontend/API emparejados; todas las escrituras confirmadas conservadas, contratos de datos y autenticación comprobados en ambas versiones; no rollback/restauración automática incompatible |
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios |
