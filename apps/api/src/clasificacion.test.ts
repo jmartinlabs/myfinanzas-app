@@ -529,6 +529,27 @@ test("02 AC02/31: dos procesos actualizan v1 y reservan IDs atómicamente", asyn
         db.query("SELECT COUNT(DISTINCT id) n FROM categorias").get(),
       ).toEqual({ n: 16 });
       expect(db.query("SELECT COUNT(*) n FROM saldos").get()).toEqual({ n: 6 });
+      const script = `import {openDatabase} from ${JSON.stringify(resolve("apps/api/src/database.ts"))}; import {createClassification} from ${JSON.stringify(resolve("apps/api/src/clasificacion.ts"))}; const db=openDatabase(process.argv[1]); try {createClassification(db,'subcategorias',{nombre:process.argv[3],padre:process.argv[2]},crypto.randomUUID()); process.stdout.write('created');} catch(e) {if(e.code!=='DUPLICATE_NAME') throw e; process.stdout.write('duplicate');} finally {db.close();}`;
+      const competing = [
+        ["CAT001", "Café concurrente"],
+        ["CAT002", "CAFÉ CONCURRENTE"],
+      ].map(([parent, name]) =>
+        Bun.spawn([process.execPath, "-e", script, path, parent, name], {
+          stdout: "pipe",
+          stderr: "pipe",
+          env: { ...process.env, NODE_ENV: "test" },
+        }),
+      );
+      const outcomes: string[] = [];
+      for (const child of competing) {
+        expect(await child.exited).toBe(0);
+        outcomes.push(await new Response(child.stdout).text());
+        expect(await new Response(child.stderr).text()).toBe("");
+      }
+      expect(outcomes.sort()).toEqual(["created", "duplicate"]);
+      expect(db.query("SELECT COUNT(*) n FROM subcategorias").get()).toEqual({
+        n: 1,
+      });
     } finally {
       db.close();
     }

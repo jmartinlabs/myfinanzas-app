@@ -3,8 +3,9 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { spawn, execFileSync } from "node:child_process";
 import { totp } from "../../apps/api/src/auth";
+import { classificationJourney } from "./classification";
 
-test("E1.1: acceso real, altas/ediciones/estados, errores y restauración responsive", async ({
+test("E1.1 + E1.2: acceso real, catálogos, errores y restauración responsive", async ({
   page,
   request,
 }) => {
@@ -278,6 +279,7 @@ test("E1.1: acceso real, altas/ediciones/estados, errores y restauración respon
         (await (await fetch("/api/saldos/S001")).json()).saldo.liquidez,
     ),
   ).toBe(false);
+  const classification = await classificationJourney(page);
   // Actual encrypted snapshot of the running WAL database, isolated restoration + second Effect server.
   const restoreStarted = Date.now();
   const bun = process.env.BUN_BIN ?? "bun";
@@ -325,6 +327,23 @@ test("E1.1: acceso real, altas/ediciones/estados, errores y restauración respon
     await expect(page.getByText("-123,45 €", { exact: true })).toBeVisible();
     await expect(page.getByText("0,00 €", { exact: true })).toBeVisible();
     await shot("restored-mobile");
+    const restoredClassification = await page.evaluate(
+      async (id) =>
+        (await (await fetch("/api/clasificacion/partidas/" + id)).json()).item,
+      classification.partida,
+    );
+    expect(restoredClassification.categoria.id).toBe(classification.category);
+    await page.goto("/clasificacion/partidas/" + classification.partida);
+    await expect(
+      page.getByRole("heading", {
+        name: "Edición concurrente ficticia",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/e1-2/restored-mobile.png",
+      fullPage: true,
+    });
     console.log(
       `Ensayo local de restauración + MFA + lectura UI: ${Date.now() - restoreStarted} ms (ficticio; no SLA).`,
     );

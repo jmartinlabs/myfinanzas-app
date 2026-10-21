@@ -34,11 +34,13 @@ jobs:
       - run: bun run test
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e
-      - name: Fictional E1.1 screenshots
+      - name: Fictional E1.1 and E1.2 screenshots
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: e1-1-screenshots
-          path: artifacts/e1-1/*.png
+          path: |
+            artifacts/e1-1/*.png
+            artifacts/e1-2/*.png
           if-no-files-found: ignore
           retention-days: 7

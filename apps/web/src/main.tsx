@@ -5,6 +5,7 @@ import { AuthScreen } from "./AuthScreen";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
+import { Clasificacion } from "./Clasificacion";
 import "./style.css";
 function App() {
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
@@ -137,8 +138,12 @@ function App() {
         <nav id="main-nav">
           <p className="nav-group">MI ESPACIO</p>
           <a
-            className="nav-active"
-            aria-current="page"
+            className={
+              path.startsWith("/clasificacion") ? "nav-link" : "nav-active"
+            }
+            aria-current={
+              path.startsWith("/clasificacion") ? undefined : "page"
+            }
             href="/saldos"
             onClick={(e) => {
               e.preventDefault();
@@ -146,6 +151,22 @@ function App() {
             }}
           >
             <span aria-hidden="true">▤</span> Saldos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
+              path.startsWith("/clasificacion") ? "nav-active" : "nav-link"
+            }
+            aria-current={
+              path.startsWith("/clasificacion") ? "page" : undefined
+            }
+            href="/clasificacion/partidas"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/clasificacion/partidas");
+            }}
+          >
+            <span aria-hidden="true">≡</span> Clasificación{" "}
             <span aria-hidden="true">›</span>
           </a>
           <div className="nav-future">
@@ -186,7 +207,9 @@ function App() {
               {notice}
             </p>
           )}
-          {creating ? (
+          {path.startsWith("/clasificacion") ? (
+            <Clasificacion path={path} go={go} />
+          ) : creating ? (
             <SaldoForm
               onCancel={() => go("/saldos")}
               onSaved={(newId) => {
