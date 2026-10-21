@@ -38,9 +38,20 @@ IDs inmutables, no reutilizables, nombres no claves. Propuesta técnica: generac
 atómica por prefijo, sin reinicio por ejercicio, extendiendo patrón de E1.1 más allá
 999; revisión técnica/UTC para concurrencia y auditoría mínima, no catálogo versionado.
 No borrado físico en interfaz/API; simplifica protección histórica.
-No imponer unicidad de nombres de Categoría/Partida sin evidencia. Subcategoría
-rechaza duplicados demostrados; no inventar equivalencia de acentos/case ni alcance
-por padre. Antes de cerrar implementación concretar comparador contra referencia.
+No imponer unicidad de nombres de Categoría/Partida sin evidencia.
+
+### Unicidad de Subcategorías: evidencia y decisión pendiente
+La evidencia aportada demuestra que Control comprueba duplicados de ID y nombre,
+pero no incluye la fórmula/rango de búsqueda ni el comparador físico utilizados.
+El ID estable es único en el catálogo; no hay evidencia suficiente para fijar el
+alcance de la unicidad del nombre (global o por Categoría), ni el tratamiento de
+mayúsculas, acentos, espacios o normalización Unicode. No seleccionar silenciosamente
+una collation de SQLite, case-folding, eliminación de acentos o índice por padre.
+**Decisión pendiente antes de implementar esa validación:** aportar fórmula/rango
+y casos sanitizados de comparación vigentes, o aprobar explícitamente un contrato
+app que resuelva alcance y comparador. No considerar esta reserva aprobada por
+extensión de la valoración favorable. AC-10 queda condicionado a esa resolución;
+no afirmar que el mero dominio de nombres actuales demuestre el comparador.
 
 ### Métodos de cálculo: configuración, no ejecución
 | Campo | Dominio confirmado | Contrato futuro |
@@ -73,6 +84,27 @@ vínculos ni se ofrecen IDs libres. Mostrar Sin asignación y explicación de m�
 pendiente, sin aparentar selector operativo. No registrar referencias provisionales.
 E2.2/E1.6 habilitarán selección validada y guardas de cambio; E1.2 no ejecuta motores.
 
+### Continuidad de una base local E1.1 existente
+Contrato de actualización futuro de E1.2, no migración implementada ni autorizada
+por este documento. La base E1.1 actual usa schema_version=1. La incorporación de
+clasificación exige una actualización explícita, transaccional y versionada del
+esquema, sin eliminar/recrear la base ni exigir reiniciar el bootstrap.
+Preservar Saldos y sus IDs/S000, atributos, null/false/cero, revisiones/UTC, contadores,
+auditoría e idempotencia; conservar también propietario, hash de contraseña, secreto
+TOTP cifrado, anti-replay, recuperación, sesiones/desafíos vigentes y límites de acceso.
+No pedir reenrolado, resetear contraseñas, resembrar Saldos ni sobrescribir registros.
+No clonar claves/factores reales: la prueba usa factores efímeros locales y fixtures.
+La clave TOTP externa permanece compatible, en su ubicación privada; nunca se publica.
+
+La actualización debe comprobar versión compatible, adquirir bloqueo de escritura,
+revalidar versión dentro de la transacción y publicar la nueva versión únicamente
+al completar el cambio. Un fallo revierte esquema/versión y datos; versión desconocida
+se rechaza sin modificar contenido. Reabrir es idempotente y el arranque concurrente
+no duplica cambios ni reproduce SQLITE_BUSY del upgrade diferido corregido en PR #9.
+No confundir esta evolución local con importación financiera ni uso productivo.
+Copia cifrada local verificable antes del cambio y restauración aislada según E1.1;
+no automatización externa ni infraestructura nueva.
+
 ## Validation and edge cases
 Nombre obligatorio y relación paterna existente/única. Subcategoría valida integridad
 en orden demostrado: ID, nombre, duplicado ID, duplicado nombre, Categoría existente
@@ -94,8 +126,10 @@ ordinaria no permite aplicarlo silenciosamente; acción Rectificar con vista pre
 Para cambio solo futuro crear nueva Partida y desactivar anterior cuando corresponda;
 no desplazar ramas usadas como atajo para evitar revisar impacto.
 
-Vista previa: valores antes/después, descendientes afectados, hechos/periodos e
-indicadores impactados, cobertura consultada y bloqueos. Explicar: «Aunque no cambien
+Vista previa E1.2: valores antes/después y dependencias verificables del catálogo.
+Hechos, periodos e indicadores económicos afectados solo podrán detallarse al
+integrar los consumidores futuros; en E1.2 se identifican como no comprobados.
+La vista declara cobertura consultada y bloqueos reales. Explicar: «Aunque no cambien
 las filas de Movimientos, esta relación puede reclasificar y recalcular resultados
 históricos». Motivo obligatorio y confirmación explícita antes de transacción atómica.
 Revalidar revisiones e impacto al confirmar; si cambió, cancelar operación y pedir
@@ -103,6 +137,10 @@ nueva vista previa. Auditoría mínima de cambio/motivo/UTC, sin crear versiones
 No modificar fotos. Si afecta a cierres protegidos, bloquear hasta procedimiento
 aprobado. Revisión de dependencias incluye uso indirecto por descendientes.
 
+**Límite de aceptación:** E1.2 solo muestra dependencias verificables del catálogo.
+No crear motores simulados ni resultados financieros ficticios para completar la
+vista. Dobles aislados pueden probar el protocolo técnico de fallo/bloqueo, nunca
+se sirven en la app ni se presentan como impacto económico comprobado.
 E1.2 no tiene Movimientos, planes, indicadores ni cierres: vista real cubre catálogo
 y declara consumidores pendientes; no muestra importes ni periodos inventados.
 Pruebas de contratos con fixtures aislados no prueban integración futura. Fuente
@@ -111,7 +149,9 @@ futuro conecta su guard antes de permitir cambios que afecten historia; no afirm
 protección completa de módulos inexistentes ni crear fuentes vacías para simularla.
 
 ## Screens and interfaces
-Propuesta pendiente de feedback visual. Reusar shell, tema claro, paleta MyFinanzas,
+Propuesta visual aceptada como base por revisión de Álex sobre 9317940, comunicada
+por el usuario; especificación completa aún pendiente de aprobación. Reusar shell,
+tema claro, paleta MyFinanzas,
 texto oscuro sobre verde principal, tablas escritorio/tarjetas móvil y páginas propias.
 IDs visibles en fichas y selectores cuando desambigüen; no saturar todas las celdas.
 Cabecera Ciclo financiado: No disponible hasta maestro correspondiente.
@@ -164,7 +204,7 @@ Cancelar no persiste; error conserva borrador. Campos derivados de solo lectura.
 Rectificar configuración de SUBxxx
 Antes: Categoría A        Después: Categoría B
 Descendientes afectados: lista verificable
-Impacto histórico: fuentes disponibles / fuentes pendientes
+Cobertura: catálogo comprobado / impacto financiero no comprobado
 Aviso: puede recalcular clasificaciones sin editar Movimientos
 [Motivo obligatorio................................]
 [Cancelar] [Confirmar rectificación]
@@ -203,6 +243,8 @@ fotos/cierre/reapertura; versionado general y catálogo de Conceptos.
 ## Acceptance checks
 Todos son FUTUROS, no ejecutados. I: verificable al implementar E1.2; C: contrato de
 consumidor posterior, no aceptación de motor completado por tests dobles.
+Se mantienen **31 criterios: 27 I y 4 C (AC-19, AC-24, AC-25, AC-26)**.
+AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar criterios.
 
 | ID | Action / preconditions | Expected observable result |
 | --- | --- | --- |
@@ -215,15 +257,15 @@ consumidor posterior, no aceptación de motor completado por tests dobles.
 | AC-07 I | Crear/editar Grupo vacío o nuevo texto | Válido; sugerencias no restringen; no maestro adicional |
 | AC-08 I | Anual No aplica y mensual Gasto | Combinación independiente conservada, sin importe calculado |
 | AC-09 I | Enviar valor ajeno a dominios de cálculo | Rechazo con mensaje de campo; sin conversión a No aplica |
-| AC-10 I | Revisar integridad de Subcategoría e intentar datos inválidos | Validaciones de la secuencia contrastada; no Control persistido |
+| AC-10 I | Resolver evidencia/contrato pendiente de alcance y comparador; probar ID/nombre duplicado y casos entre Categorías, mayúsculas, acentos y espacios | Validación según contrato explícitamente confirmado, sin normalizaciones inventadas; no Control persistido ni aceptación cerrada antes de resolver reserva |
 | AC-11 I | Intentar desactivar padre con descendiente activo | Bloqueo con descendientes identificados; nada se desactiva en cascada |
 | AC-12 I | Desactivar rama de abajo arriba y reactivar padre | Inactivos consultables; hijos siguen inactivos |
 | AC-13 I | Crear/reactivar bajo padre inactivo | Bloqueo explicable; no nueva selección de inactivos |
 | AC-14 I | Intentar borrar o cambiar ID | Rechazo; histórico y relaciones preservados |
-| AC-15 I | Cambiar economía con uso detectado por fixture de contrato | Edición ordinaria bloqueada; rectificación exige vista, motivo y confirmación |
-| AC-16 I | Revisar impacto de cambio en padre usado indirectamente | Incluye descendientes y explica recálculo aunque no cambien filas de hechos |
+| AC-15 I | Cambiar economía con dependencias verificables del catálogo | No cambio silencioso: rectificación con vista de dependencias reales, motivo y confirmación; sin atribuir uso financiero inexistente |
+| AC-16 I | Revisar cambio en padre con descendientes reales | Muestra dependencias del catálogo y explica posible recálculo indirecto; impacto financiero explícitamente no comprobado |
 | AC-17 I | Cambiar revisión/dependencias después de vista previa | Confirmación rechazada sin escritura; requiere revisar nuevo impacto |
-| AC-18 I | Fixture declara cierre protegido o error de fuente instalada | Fallo cerrado; no altera fotos ni configuración |
+| AC-18 I | Probar fallo de lectura del catálogo y, aisladamente, protocolo de guard con doble que bloquea/falla | Sin escritura parcial; doble no es motor simulado servido ni prueba de cierres reales, cuya integración pertenece a AC-19 |
 | AC-19 C | Integrar hechos/planes/indicadores/cierres futuros y repetir rectificación | Impacto real por movimientos, periodos e indicadores; bloqueos efectivos, fotos intactas |
 | AC-20 I | Consultar impacto sin consumidores entregados | Cobertura catálogo y pendientes explícitos; no ceros/importes/periodos inventados |
 | AC-21 I | Crear Partida sin Presupuesto/Deuda | Válida; no selectores/IDs ficticios ni maestros adelantados |
@@ -236,11 +278,27 @@ consumidor posterior, no aceptación de motor completado por tests dobles.
 | AC-28 I | Forzar carga/vacío/error/conflicto/sesión caducada | Estados distintos, reintento y borrador conservado; sin sobreescritura |
 | AC-29 I | Operar teclado y revisar capturas 390/1440 | Foco/etiquetas, sin overflow; texto legible, tema claro; inspección real documentada |
 | AC-30 I | Petición sin MFA o mutación sin CSRF/Origin válido | Protección E1.1 conservada; sin datos sensibles en respuesta/logs |
-| AC-31 I | Copia cifrada local y restauración aislada de fixtures | Jerarquía/atributos/estados idénticos; no afirma operación externa/producción |
+| AC-31 I | Actualizar base local E1.1 versión 1 con Saldos modificados y autenticación ficticia configurada; reabrir, probar rollback/concurrencia y restaurar copia aislada | Esquema evoluciona sin reset/resemilla; todos los datos previos se preservan, login/MFA siguen operativos; actualización idempotente/atómica y restauración compatible; sin afirmar producción |
 
 ## Validación futura y siguiente paso
 Bun integración SQLite/API: invariantes, rollback/concurrencia, errores y guardas;
 Playwright real con MFA: recorrido de tres niveles, estados, corrección disponible,
 390/1440 y capturas inspeccionadas. Contratos futuros trazados por separado.
-Ahora solo controles documentales. Pendiente revisión de wireframes y aprobación
+Pruebas previstas de AC-31, sin ejecutar todavía:
+
+1. Crear base de archivo con implementación E1.1 vigente y datos ficticios no triviales:
+   Saldos editados/inactivos, apertura negativa, null/cero/false y contadores avanzados;
+   enrolar propietario/TOTP y registrar recuperación/sesión vigentes sin publicar factores.
+2. Capturar estado lógico de todas las tablas previas; actualizar con futura versión
+   E1.2 y comparar registros/valores antes de efectuar nuevas acciones de autenticación
+   (estas sí cambian legítimamente sesiones, anti-replay y eventos).
+3. Verificar lectura/edición de Saldos, login contraseña+TOTP real, sesión previamente
+   vigente y acceso de clasificación; comprobar copia/restauración aislada y login
+   posterior según política E1.1 de revocación en restauración, distinta del upgrade.
+4. Reabrir dos veces y ejecutar aperturas concurrentes: sin duplicados/resemilla/reset.
+5. Inyectar fallo de actualización y verificar rollback lógico íntegro de datos,
+   esquema y versión; rechazar versión desconocida sin cambios. No exigir identidad
+   binaria del archivo SQLite tras actividad WAL como sustituto de integridad lógica.
+
+Ahora solo controles documentales. Base visual aceptada; pendiente aprobación
 expresa de especificación; no iniciar `$dev 02` ni declarar E1.2 implementada.

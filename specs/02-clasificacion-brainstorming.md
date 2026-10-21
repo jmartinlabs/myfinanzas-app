@@ -242,3 +242,22 @@ Autoriza publicar este borrador en rama y PR en borrador para revisión de Álex
 sustituyendo para esta publicación la secuencia del paso 6 de la Skill spec.
 No supone aprobación de especificación/wireframes, implementación ni permiso de merge.
 Se conservan Status DRAFT y Approval PENDING; próxima acción: revisión del contenido.
+
+
+## Revisión de Álex sobre PR #10 / 9317940 — precisiones solicitadas
+Fuente: mensaje del usuario. Valoración favorable y propuesta visual aceptada como
+base; no aprobación definitiva de especificación ni permiso de desarrollo/merge.
+- Unicidad: evidencia confirma comprobación de duplicados, pero no fórmula/rango
+  ni comparador. Alcance de nombre global/por Categoría y comparación de mayúsculas,
+  acentos/espacios permanecen decisión pendiente antes de implementar AC-10. No
+  extrapolar de muestra ni imponer normalización/índice silenciosamente.
+- Continuidad E1.1: especificación incorpora actualización SQLite transaccional
+  desde versión 1, sin reinicializar/borrar, preservando Saldos y autenticación;
+  AC-31 y plan futuro detallan comparación lógica, MFA, idempotencia, rollback,
+  concurrencia, copia y restauración aislada. No se escribe ni ejecuta migración.
+- Rectificación: en E1.2 solo dependencias verificables del catálogo; no motores
+  simulados ni impacto financiero presentado como comprobado. Consumidores futuros
+  integran consultas reales (AC-19), incluidos hechos/periodos/indicadores/cierres.
+- Se mantienen 31 IDs: 27 criterios E1.2 y 4 contratos posteriores; no renumeración.
+Siguiente acción: revisión de estas precisiones y resolución de reserva de unicidad
+para cerrar validaciones. PR en borrador; documento DRAFT/Approval PENDING.
