@@ -1,3 +1,5 @@
+import { inspectIdentity, keyHash } from "./database-identity";
+import { productionConfig, verifyProductionFiles } from "./private-state";
 import type { Database } from "bun:sqlite";
 import {
   createHash,
@@ -21,6 +23,21 @@ export const digest = (s: string) =>
   createHash("sha256").update(s).digest("hex");
 export const token = () => randomBytes(32).toString("base64url");
 export function loadKey(db: Database, path: string) {
+  if (inspectIdentity(db)?.origin === "production") {
+    if (process.env.NODE_ENV !== "production")
+      throw new Error("Clave productiva fuera de su entorno.");
+    const config = productionConfig();
+    if (path !== config.key) throw new Error("AUTH_KEY_PATH no coincide.");
+    if (db.filename !== config.database)
+      throw new Error("Conexión distinta de DATABASE_PATH.");
+    const key = verifyProductionFiles(config);
+    if (inspectIdentity(db)?.key_hash !== keyHash(key))
+      throw new Error("Pareja DB/clave inválida en conexión efectiva.");
+    new Auth(db, key, config.origin).checkKey();
+    return key;
+  }
+  if (process.env.NODE_ENV === "production")
+    throw new Error("Clave demo no admitida en producción.");
   if (!existsSync(path)) {
     if (db.query("SELECT id FROM owner").get())
       throw new Error(

@@ -455,8 +455,8 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
     db.close();
     db = openDatabase(path);
     expect(snapshot(db)).toEqual(after);
-    backup(db, key, join(dir, "v5-backup"), recipient);
-    for (const version of [1, 5]) {
+    backup(db, key, join(dir, "v6-backup"), recipient);
+    for (const version of [1, 6]) {
       const restored = restore(
         join(dir, `v${version}-backup`),
         join(dir, `restore-${version}`),
@@ -471,7 +471,7 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
         expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-12.34");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(
-          version === 5 ? 1 : 0,
+          version === 6 ? 1 : 0,
         );
       } finally {
         copy.close();
