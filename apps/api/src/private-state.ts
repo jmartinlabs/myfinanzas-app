@@ -1,3 +1,4 @@
+import { pathToFileURL } from "node:url";
 import {
   constants,
   type Stats,
@@ -149,11 +150,9 @@ export function openProductionConnection(
   readonly: boolean,
 ) {
   const { Database } = require("bun:sqlite") as typeof import("bun:sqlite");
-  if (!readonly) {
-    // Reject demo/invalid pairs in a readonly connection before requesting write access.
-    const probe = openProductionConnection(config, true);
-    probe.db.close();
-  }
+  // Readonly SQLite can change SHM read marks. Reject origins with a persistent,
+  // immutable metadata probe before opening any connection that can touch WAL/SHM.
+  verifyProductionFiles(config);
   privateDirectory(config.state);
   const expected = privateFile(config.database);
   privateSidecars(config.database);
@@ -177,9 +176,30 @@ export function openProductionConnection(
     throw error;
   }
 }
+// Identity is checkpointed before production publication and cannot be changed.
+// Only this metadata probe ignores WAL; real connections validate live state below.
+export function persistentIdentity(path: string) {
+  const { Database, constants: sqlite } =
+    require("bun:sqlite") as typeof import("bun:sqlite");
+  const uri = pathToFileURL(resolve(path)).href + "?mode=ro&immutable=1";
+  const db = new Database(
+    uri,
+    sqlite.SQLITE_OPEN_READONLY | sqlite.SQLITE_OPEN_URI,
+  );
+  try {
+    return inspectIdentity(db);
+  } finally {
+    db.close();
+  }
+}
 export function verifyProductionFiles(config: ProductionConfig) {
-  const { db, key } = openProductionConnection(config, true);
-  db.close();
+  privateDirectory(config.state);
+  privateFile(config.database);
+  privateSidecars(config.database);
+  const key = readPrivateKey(config.key);
+  const id = persistentIdentity(config.database);
+  if (id?.origin !== "production" || id.key_hash !== keyHash(key))
+    throw new Error("Identidad productiva persistente o clave inválida.");
   return key;
 }
 

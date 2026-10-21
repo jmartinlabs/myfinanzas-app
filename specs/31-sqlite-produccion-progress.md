@@ -55,3 +55,34 @@ La simulación local detectó solapamiento documental en setup-progress al squas
 se traslada únicamente el bloque de seguimiento de implementación al final para
 mantener intacta la aprobación #23 y evitar esa duplicidad/conflicto. Repetir simulación
 sobre el commit definitivo; no supone merge real de #23/#25.
+
+## Revisión de seguridad posterior — 2026-10-21
+
+Usuario solicita revisión real y orden #23 → #25, sin merge. Ensayo local previo a incorporar los avances remotos:
+conexión efectiva vinculada a clave, fstat/O_NOFOLLOW tras apertura, restore sin
+colisiones de nombres y preflight inmutable sin modificar SHM en rechazos. Nueve
+pruebas adicionales S1–S7; resultados locales 74 API PASS / 1170 assertions y 2
+E2E PASS (47.5 s). Los 33 AC conservan PASS con cobertura reforzada. Ver testplan.
+
+Resuelto conflicto hipotético de squash moviendo el seguimiento de implementación
+al final de setup-progress; #23 y sus documentos aprobados permanecen idénticos.
+Simulación de árboles limpia, sin ejecutar merge. Pendiente CI del SHA definitivo
+y revisión con Álex para autorización; ni #23 ni #25 integradas.
+
+Reconciliación de cambios concurrentes: se preservan main 68b0624 (R6) y el
+endurecimiento remoto 9362158 (P12–P18, dirfd, sidecars, READWRITE sin CREATE,
+limpieza por inode y raíz de backup validada). Estos avances ya resuelven varios
+hallazgos del ensayo inicial. La solución local adicional conserva dichas
+protecciones, añade preflight de identidad sin SHM y nueve regresiones S1–S7.
+Se mantiene bundle.tmp como nombre reservado, sin ampliar rutas aceptadas ni
+introducir otro espacio temporal innecesario. Los conteos anteriores son historia
+local previa a la reconciliación; el resultado combinado se registra al validar.
+
+## Resultado combinado para revisión
+
+Main 68b0624 y endurecimiento ajeno 9362158 preservados. Nueve pruebas S1–S7
+refuerzan P1–P18 sin eliminar garantías. Resultado: 82 Bun PASS / 1243 assertions,
+2 E2E PASS (41.5s), tipos/build correctos. #23 primero, luego #25; simulación de
+árboles tras main actualizado y squash limpia, sin duplicar documentos aprobados.
+Pendiente aprobación expresa de merge tras CI del SHA final; no VPS/deploy/datos.
+La causa histórica R6 sigue sin atribuir; no se afirma resolverla por una CI verde.

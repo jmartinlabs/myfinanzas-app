@@ -8,7 +8,11 @@ import {
   keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
-import { productionConfig, openProductionConnection } from "./private-state";
+import {
+  productionConfig,
+  openProductionConnection,
+  persistentIdentity,
+} from "./private-state";
 
 export function openDatabase(path: string) {
   const mode = process.env.NODE_ENV;
@@ -39,12 +43,7 @@ export function openDatabase(path: string) {
     }
   }
   if (path !== ":memory:" && existsSync(path)) {
-    const probe = new Database(path, { readonly: true, strict: true });
-    try {
-      assertMode(inspectIdentity(probe), production);
-    } finally {
-      probe.close();
-    }
+    assertMode(persistentIdentity(path), production);
   }
   if (!production && path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });

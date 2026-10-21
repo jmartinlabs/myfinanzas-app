@@ -167,3 +167,11 @@ la publicación de estado nuevo requiere Linux/glibc por renameat2 sin reemplazo
 
 Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 [evidencia](../31-sqlite-produccion-testplan.md).
+
+### Secuencia y revisión de seguridad 31
+
+Ejecutar Bun y Playwright secuencialmente, con servidores propios detenidos antes
+de ambas suites: P11 arranca main real en 3001. `security-review.test.ts` añade
+inyección de límites de resolución/apertura, comparación de DB/WAL/SHM en rechazos,
+publicación competidora y restore real con fallos de sync y nombres límite.
+Estas pruebas refuerzan AC existentes, sin omitir assertions ni cambiar el contrato.
