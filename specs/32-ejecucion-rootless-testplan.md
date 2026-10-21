@@ -94,3 +94,21 @@ mediante podman unshare true, no exigir que un binario distinto esté autorizado
 Se corrige ese método sin tocar AppArmor/seccomp/sysctl ni elevar privilegios.
 Se conserva el fallo anterior; nuevo resultado pendiente. Solo continuar si
 Podman demuestra el namespace y se mantienen todas las demás condiciones.
+
+### Gate real aprobado y ensayo siguiente — 2026-10-22
+[Run 39688519229 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39688519229)
+sobre d681156: todas las comprobaciones pasan mediante Podman real, incluyendo
+namespace, subuid/gid, cgroup delegado y systemd-run --user. Versiones anteriores
+confirmadas por anotación. Las dos CI validate de ese SHA también pasan; el fallo
+API histórico de 5a748c0 sigue sin diagnóstico/cierre causal, no se borra.
+
+Se continúa con imagen SOLO DE ENSAYO, base Bun 1.4.3 Debian por digest
+923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b,
+contexto por allowlist sin tests/DB/claves/env y dependencias congeladas production.
+No es todavía la receta final reproducible ni la distribución OCI+frontend.
+Ensayo previsto: inicializador 31 explícito, UID interno 10001 frente a UID host
+no coincidente, permisos de volumen, WAL con commit técnico ficticio retenido,
+Quadlet temporal real, health/401 vía puerto publicado 18081, no acceso desde
+otro namespace a interfaz no-loopback, reinicio y parada. Solo unidades/nombres
+aleatorios propios; limpieza incluso en fallo, ningún artifact de DB/claves.
+AC-05/10/13/21 siguen pendientes hasta ese resultado; no basta el gate de capacidad.

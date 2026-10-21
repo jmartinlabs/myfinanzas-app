@@ -1,0 +1,14 @@
+# Test fixture image only: not the final release/distribution recipe.
+FROM docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b
+USER 0:0
+WORKDIR /app
+COPY package.json bun.lock ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+RUN bun install --production --frozen-lockfile --ignore-scripts
+COPY apps/api/src ./apps/api/src
+RUN groupadd --gid 10001 mfprobe && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin mfprobe \
+    && mkdir -p /var/lib/myfinanzas && chown 10001:10001 /var/lib/myfinanzas && chmod 0700 /var/lib/myfinanzas
+USER 10001:10001
+ENTRYPOINT ["/usr/local/bin/bun"]
+CMD ["apps/api/src/main.ts"]
