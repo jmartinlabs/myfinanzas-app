@@ -230,3 +230,14 @@ usuario, clave ni historial. No volver a ejecutar setup para actualizar. Conserv
 cifrada verificada y clave externa; la restauración aislada sigue revocando sesiones.
 No hay importación ni arranque productivo: el guard development/test permanece intacto.
 Sin E1.6, referencias de Anticipo/Compartido/Vehículo operativas, datos reales ni deploy.
+
+### Ensayos y errores de publicación
+
+Las pruebas Bun de 31 también arrancan una API real en 3001: detén tus servidores
+locales antes de Bun y Playwright, y ejecuta esas suites secuencialmente. El
+preflight de identidad no abre WAL/SHM para rechazos; la conexión de trabajo sí
+lee WAL y comprueba su propia identidad/clave. Se exige raíz/UID de confianza.
+Si falla fsync del directorio después de publicar un restore, el destino puede
+contener una pareja completa pero de durabilidad incierta: detén la operación,
+verifica y preserva el destino y las copias; nunca lo borres o sobrescribas por
+suponer que el fallo significa que no existe.

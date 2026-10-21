@@ -132,3 +132,26 @@ Fallo de entrega solo limpia el inode propio, preservando reemplazos de otra ope
 El UID operador/root sigue siendo frontera de confianza: no se promete aislamiento
 contra procesos host maliciosos con ese UID ni contra sustituciones ABA arbitrarias.
 Ver regresiones P12–P18 en testplan 31; ninguna autorización de VPS o datos reales.
+
+### Revisión crítica 31
+
+La identidad/huella y el descifrado se verifican en la conexión SQLite efectiva,
+no solo en otra conexión por ruta. La clave se valida con fstat del descriptor
+O_NOFOLLOW, dev/ino, modo 0600, UID y nlink; no basta un lstat previo. El preflight
+de identidad persistente usa SQLite URI readonly+immutable para no modificar SHM
+al rechazar cruces. Producción se checkpointa antes de publicar y su origen es
+inmutable; el runtime real sigue leyendo WAL y revalidando bajo bloqueo.
+Restaurar conserva la reserva explícita del nombre bundle.tmp para evitar colisiones.
+Fallo fsync posterior a rename puede dejar conjunto completo con durabilidad
+incierta: preservar e inspeccionar, sin borrar ni reintentar sobrescribiendo.
+La raíz y el UID del servicio siguen siendo de confianza; no se ofrece aislamiento
+frente a root/proceso malicioso con acceso de escritura al estado privado.
+
+Reconciliación de cambios concurrentes: se preservan main 68b0624 (R6) y el
+endurecimiento remoto 9362158 (P12–P18, dirfd, sidecars, READWRITE sin CREATE,
+limpieza por inode y raíz de backup validada). Estos avances ya resuelven varios
+hallazgos del ensayo inicial. La solución local adicional conserva dichas
+protecciones, añade preflight de identidad sin SHM y nueve regresiones S1–S7.
+Se mantiene bundle.tmp como nombre reservado, sin ampliar rutas aceptadas ni
+introducir otro espacio temporal innecesario. Los conteos anteriores son historia
+local previa a la reconciliación; el resultado combinado se registra al validar.
