@@ -1,6 +1,6 @@
 # 31 — Inicialización segura de SQLite: Specification
-Status: IN REVIEW — propuesta técnica completa, sin aprobar ni implementar.
-Approval source/date: PENDING; solicitud de especificación del usuario, 2026-10-21.
+Status: APPROVED — D1–D4 y AC-01–33 aprobados; implementación pendiente.
+Approval source/date: mensaje expreso del usuario en esta conversación, 2026-10-21, tras revisión con Álex: aprobación íntegra de D1–D4 y AC-01–33; autoriza iniciar `$dev 31` al completar `$spec`. Sin autorización de merge.
 Publicación provisional: el usuario autorizó expresamente una excepción al paso 6
 de `$spec` para commit/push de estos dos documentos y PR en borrador hacia main,
 solo para revisión de Álex. Esta autorización no aprueba el contrato, no permite
@@ -23,7 +23,7 @@ de identidad, registro público, motor financiero o dependencia nueva propuestos
 Se separan creación del esquema técnico y siembra demo; no se mantienen dos
 copias divergentes del esquema ni se habilita producción quitando un guard global.
 
-### Contratos recomendados pendientes de aprobación
+### Contratos aprobados
 
 | Decisión | Contrato | Fuente |
 | --- | --- | --- |
@@ -287,3 +287,10 @@ autorización para `$dev 31`. En `$dev` crear progress/testplan desde sus planti
 mapear AC-01–33, implementar por incrementos (identidad/migración; publicación y
 apertura; alta privada; backup/restore; regresión/documentación) y preparar PR
 independiente. Merge y despliegue requieren autorizaciones separadas.
+
+### Aprobación posterior expresa — 2026-10-21
+
+El usuario aprueba íntegramente este contenido, D1–D4 y AC-01–33, tras revisión
+con Álex, y autoriza `$dev 31` después del cierre de `$spec`. Las referencias
+a publicación provisional y aprobación pendiente anteriores son históricas.
+No autoriza merge de ninguna PR, VPS, despliegue ni datos reales.

@@ -1,7 +1,7 @@
 # 31 — Inicialización segura de SQLite: Brainstorming
-Status: IN REVIEW — requisitos del usuario confirmados; propuesta técnica sin aprobar.
+Status: APPROVED — requisitos, decisiones D1–D4 y AC-01–33 aprobados.
 Roadmap/context: [contexto](project.md), [roadmap](roadmap.md), [infraestructura](../infra/README.md).
-Next action: revisión y aprobación de la [especificación completa](31-sqlite-produccion-specification.md).
+Next action: cierre documental de `$spec 31` e inicio autorizado de `$dev 31`, sin merge.
 
 ## Round 1 — 2026-10-21
 
@@ -143,3 +143,13 @@ La aprobación del contrato completo y la autorización de `$dev 31` siguen
 pendientes. No se autoriza merge, despliegue, cambios de código ni modificaciones
 a las PR #21/#22. `specs/setup-progress.md` tiene un cambio local previo que se
 preserva fuera de esta publicación; no forma parte del commit ni de la PR.
+
+### Confirmación expresa posterior — 2026-10-21
+
+Fuente: mensaje del usuario en esta conversación tras revisión con Álex:
+«apruebo íntegramente su contenido, incluidas las decisiones D1–D4 y los 33
+criterios de aceptación (AC-01 a AC-33)». D1–D4 quedan CONFIRMED y el contrato
+completo APPROVED. Autoriza commits de cierre, actualizar PR #23 y comenzar
+`$dev 31` tras completar `$spec`; implementación en PR independiente.
+No se autoriza merge de ninguna PR, VPS, despliegue ni datos reales.
+Esta confirmación sustituye los pendientes históricos, sin reescribir sus fuentes.
