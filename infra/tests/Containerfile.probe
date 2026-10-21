@@ -8,7 +8,8 @@ COPY apps/web/package.json ./apps/web/package.json
 RUN bun install --production --frozen-lockfile --ignore-scripts
 COPY apps/api/src ./apps/api/src
 RUN groupadd --gid 10001 mfprobe && useradd --uid 10001 --gid 10001 --no-create-home --shell /usr/sbin/nologin mfprobe \
-    && mkdir -p /var/lib/myfinanzas && chown 10001:10001 /var/lib/myfinanzas /tmp && chmod 0700 /var/lib/myfinanzas /tmp
+    && mkdir -p /var/lib/myfinanzas /tmp/private && chown 10001:10001 /var/lib/myfinanzas /tmp/private && chmod 0700 /var/lib/myfinanzas /tmp/private && chown 0:0 /tmp && chmod 0711 /tmp
+ENV TMPDIR=/tmp/private
 USER 10001:10001
 ENTRYPOINT ["/usr/local/bin/bun"]
 CMD ["apps/api/src/main.ts"]

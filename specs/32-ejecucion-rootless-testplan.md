@@ -135,3 +135,16 @@ La prueba exige stat de propietario/mode y escritura/unlink real con UID 10001;
 si no conserva permisos/propietario, falla. Sin 0777, root o seccomp relajado.
 Referencia de implementación: Podman v4.9.3 pkg/specgen/generate/storage.go usa
 tmpcopyup para montajes readonly; la aceptación depende del ensayo, no de esa lectura.
+
+### Área temporal privada dentro del tmpfs — 2026-10-22
+Run 39689590035 / 79cfe0a: inicializador productivo y permisos/UID host del
+volumen pasan; falla la escritura de la prueba de temporales. No se marca AC-05
+completo. tmpcopyup no debe suponerse que cambie el propietario de la raíz montada.
+Se conserva el propietario root del namespace para la raíz tmpfs sin datos,
+0711 (solo traversal para el proceso, sin listado/escritura), y se copia un
+subdirectorio private UID 10001/0700 desde imagen, con TMPDIR apuntando a él.
+El temporal sensible sigue 0700, state 0700 y archivos 0600; ningún 0777 ni
+chown/chmod del estado en arranque. tmpfs sigue limitado a 64 MiB y noexec,
+nosuid/nodev; raíz del filesystem readonly y sin tmpfs automáticos amplios.
+La nueva prueba exige owner/mode de padre e hijo y escritura real en TMPDIR,
+con diagnóstico solo de números UID/modos/booleanos, nunca contenido de clave.
