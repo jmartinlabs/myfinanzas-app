@@ -16,7 +16,20 @@ import {
   type ImpactGuard,
 } from "./saldos";
 
+import {
+  entity,
+  listClassification,
+  getClassification,
+  descendants,
+  createClassification,
+  updateClassification,
+  previewClassification,
+  changeClassificationState,
+  type ClassificationGuard,
+} from "./clasificacion";
+
 export type AppOptions = {
+  classificationGuard?: ClassificationGuard;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -132,6 +145,94 @@ export function createApp(db: Database, options: AppOptions) {
         );
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
+      }
+      const classification = path.match(
+        /^\/api\/clasificacion\/(categorias|subcategorias|partidas)(?:\/((?:CAT|SUB|PAR)\d+)(?:\/(desactivar|reactivar|impacto|rectificar))?)?$/,
+      );
+      if (classification) {
+        const [, name, id, action] = classification;
+        const kind = entity(name);
+        if (!id && req.method === "GET")
+          return reply(
+            listClassification(db, kind, new URL(req.url).searchParams),
+          );
+        if (!id && req.method === "POST") {
+          const item = createClassification(
+            db,
+            kind,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          );
+          headers.set("location", `/api/clasificacion/${kind}/${item.id}`);
+          return reply({ item }, 201);
+        }
+        if (id && !action && req.method === "GET")
+          return reply({
+            item: getClassification(db, kind, id),
+            dependencies: descendants(db, kind, id),
+          });
+        if (id && !action && req.method === "PATCH")
+          return reply({
+            item: updateClassification(
+              db,
+              kind,
+              id,
+              await jsonBody(req),
+              options.classificationGuard,
+              now(),
+            ),
+          });
+        if (id && action && req.method === "POST") {
+          const body = await jsonBody(req);
+          if (action === "desactivar" || action === "reactivar")
+            return reply({
+              item: changeClassificationState(
+                db,
+                kind,
+                id,
+                body,
+                action === "reactivar",
+                now(),
+              ),
+            });
+          if (action === "impacto")
+            return reply(
+              previewClassification(
+                db,
+                kind,
+                id,
+                body,
+                options.classificationGuard,
+              ),
+            );
+          if (action === "rectificar") {
+            if (
+              Object.keys(body).some(
+                (k) => !["cambios", "fingerprint", "motivo"].includes(k),
+              ) ||
+              !body.cambios ||
+              typeof body.cambios !== "object" ||
+              Array.isArray(body.cambios)
+            )
+              throw new Problem(
+                422,
+                "VALIDATION",
+                "Se requieren cambios y confirmación de rectificación.",
+              );
+            return reply({
+              item: updateClassification(
+                db,
+                kind,
+                id,
+                body.cambios as Record<string, unknown>,
+                options.classificationGuard,
+                now(),
+                { fingerprint: body.fingerprint, motivo: body.motivo },
+              ),
+            });
+          }
+        }
       }
       const match = path.match(
         /^\/api\/saldos\/(S\d+)(?:\/(desactivar|reactivar))?$/,

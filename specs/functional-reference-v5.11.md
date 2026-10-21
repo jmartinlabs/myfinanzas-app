@@ -244,3 +244,11 @@ y separación de decisiones app: [brainstorming 02](02-clasificacion-brainstormi
   anual por Partida. No trasladarlos a maestros.
 Reglas de nuevos formularios y pantallas siguen como propuesta en
 [especificación E1.2](02-clasificacion-specification.md), pendiente de aprobación.
+
+
+### Reserva SUB resuelta durante dev 02
+Usuario confirma fórmula física COUNTIF(tblSubcategorias[Subcategoría],s)<>1:
+alcance global, sin distinción de mayúsculas, sin eliminación de tildes/espacios.
+App conserva texto y trata * y ? literalmente, sin trasladar comodines de COUNTIF.
+Detalles/casos en [especificación 02](02-clasificacion-specification.md) y testplan;
+no se declara equivalencia de collation Excel para todo Unicode sin pruebas.

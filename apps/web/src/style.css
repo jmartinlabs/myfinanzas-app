@@ -1208,3 +1208,104 @@ select[aria-invalid="true"] {
     transition: background-color 0.12s;
   }
 }
+
+/* Classification reuses the existing light shell, form, table and card tokens. */
+.nav-link {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 12px;
+  margin-top: 6px;
+  text-decoration: none;
+  border-radius: 7px;
+  font-weight: 650;
+  color: #354d19;
+}
+.nav-link:hover {
+  background: var(--bg);
+}
+.classification-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.classification-tabs a {
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  border-radius: 7px;
+  text-decoration: none;
+  font-weight: 650;
+}
+.classification-tabs a[aria-current="page"] {
+  background: var(--section);
+  border-color: #9da994;
+}
+.classification-list .desktop-list th:nth-child(1) {
+  width: 38%;
+}
+.classification-list .desktop-list th:nth-child(2) {
+  width: 44%;
+}
+.classification-list .desktop-list th:nth-child(3) {
+  width: 18%;
+}
+.classification-deps {
+  margin-top: 20px;
+}
+.classification-deps ul {
+  padding-left: 20px;
+  overflow-wrap: anywhere;
+}
+.classification-deps li {
+  margin-bottom: 8px;
+}
+.classification-deps .primary {
+  margin-top: 14px;
+}
+textarea {
+  width: 100%;
+  min-height: 100px;
+  padding: 10px;
+  font: inherit;
+  border: 1px solid #9eab92;
+  border-radius: 6px;
+  resize: vertical;
+  color: var(--text);
+  background: var(--white);
+}
+.change-summary > div {
+  display: grid;
+  grid-template-columns: minmax(80px, 1fr) 3fr;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+.change-summary dd {
+  margin: 0;
+}
+@media (max-width: 760px) {
+  .classification-tabs {
+    gap: 6px;
+  }
+  .classification-tabs a {
+    font-size: 11px;
+    padding: 10px;
+  }
+  .classification-list .card-head h2 {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
+}
+
+.change-summary dd > span {
+  display: block;
+}
+.classification-list td a,
+.classification-list .mobile-list h2 a {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

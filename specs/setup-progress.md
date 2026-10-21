@@ -129,3 +129,25 @@ pendientes de revisión/aprobación. Sin nueva pregunta por contradicción mater
 El anterior pendiente Q6–Q8 queda resuelto por este registro. Validaciones de alta
 no demostradas físicamente se etiquetan propuestas app; consumidores futuros aparte.
 Siguiente acción: feedback visual y aprobación documental, no desarrollo ni merge.
+
+
+## Dev 02 — autorizado tras aprobación de PR #10
+PR #10 MERGED en 0c7a87e, CI push/PR SUCCESS del 25cffc0. Especificación y diseños
+aprobados; reserva SUB respondida después sin nueva ronda. Desarrollo local/ficticio
+en feat/e1-2-clasificacion: [estado](02-clasificacion-progress.md),
+[aceptación/pruebas](02-clasificacion-testplan.md). Ocho etapas iniciales siguen
+cerradas; no reiniciar Handoff. Esperar aprobación de implementación antes de merge;
+sin E1.3, datos reales ni despliegue. Registros anteriores de espera son históricos.
+
+
+## E1.2 completada e integrada — PR #11
+El usuario aprueba 58b51f9 tras auditoría técnica y visual de Álex y autoriza squash
+merge el 2026-10-21. Cierre registrado en la misma PR, sin cambios de código ni lógica.
+[Progreso](02-clasificacion-progress.md) y [evidencia](02-clasificacion-testplan.md)
+conservan 27 criterios verificados y AC-19/24/25/26 como contratos financieros futuros.
+Estado MERGED, commit de squash y CI posterior verificables en PR #11. Los registros
+anteriores de «en revisión/merge pendiente» describen la fase previa a esta aprobación.
+Próxima acción: esperar autorización de la siguiente entrega; no iniciar E1.3 ni
+desplegar. Excel v5.11 sigue como fuente de verdad, sin datos reales ni cambios al maestro.
+Se prioriza resolver detalles técnicos ordinarios durante desarrollo y reutilizar
+arquitectura/componentes/pruebas, manteniendo rigor financiero, de seguridad e integridad.

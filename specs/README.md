@@ -15,7 +15,11 @@ for local fictional Saldos only; later financial engines remain pending. Follow 
 [43 acceptance checks](01-saldos-control-testplan.md). PR #7 was expressly approved after review of 4f7cdda on 2026-10-21.
 STEP 8 is complete and integrated via approved PR #8: [dev Skill consolidation and eight-step closure](dev-skill-consolidation.md).
 All eight initialization steps are closed; existing spec/dev Skills are ready for reuse.
-Wait for authorization before any next delivery; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
+E1.2 spec/design approved via PR #10 (0c7a87e); dev 02 local/fictional authorized.
+See [progress 02](02-clasificacion-progress.md) and [testplan 02](02-clasificacion-testplan.md);
+E1.2 implementation approved on 58b51f9 and integrated through PR #11;
+27 current acceptance checks verified, 4 future financial contracts pending.
+Wait for authorization before E1.3 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |

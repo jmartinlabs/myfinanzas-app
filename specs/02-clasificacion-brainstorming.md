@@ -1,8 +1,8 @@
 # 02 — E1.2 Clasificación utilizable y conservación histórica: Brainstorming
-Status: DRAFT — rondas 1 y 2 respondidas; propuesta de especificación y wireframes pendiente de revisión.
+Status: APPROVED — PR #10 aprobada/integrada; reserva SUB resuelta; dev 02 autorizado.
 Roadmap/context: [E1.2](roadmap.md#e12--clasificación-utilizable-y-conservación-histórica),
 [referencia v5.11](functional-reference-v5.11.md), [contexto](project.md).
-Next action: revisar propuesta y wireframes enlazados al final; sin nueva ronda funcional por ahora.
+Next action: desarrollo local autorizado según progreso 02; sin merge de implementación.
 
 ## Alcance y autorización — 2026-10-21
 Usuario autoriza `$spec 02`, comenzando por preguntas. Base main 2bc92e9;
@@ -261,3 +261,14 @@ base; no aprobación definitiva de especificación ni permiso de desarrollo/merg
 - Se mantienen 31 IDs: 27 criterios E1.2 y 4 contratos posteriores; no renumeración.
 Siguiente acción: revisión de estas precisiones y resolución de reserva de unicidad
 para cerrar validaciones. PR en borrador; documento DRAFT/Approval PENDING.
+
+
+## Aprobación y reserva resuelta — 2026-10-21
+Usuario aprueba especificación/diseños sobre 25cffc0, autoriza integrar PR #10 y
+comenzar dev 02. CI push/PR verde antes de merge; PR #10 MERGED en 0c7a87e.
+Reserva SUB resuelta por posterior comprobación física: COUNTIF sobre columna
+completa tblSubcategorias[Subcategoría], sin distinguir mayúsculas, sin normalización
+de tildes/espacios. App: alcance global, comparación sin mayúsculas conservando texto,
+comodines * y ? literales; probar casos especiales, sin introducir otros cambios.
+Se sustituye la reserva anterior; no hace falta nueva ronda ni reaprobar propuesta.
+Implementación local/ficticia en feat/e1-2-clasificacion; revisión final/merge separados.

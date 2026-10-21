@@ -97,3 +97,14 @@ impide declarar completada la funcionalidad.
 Mantener contexto, evidencia y siguiente acción reanudables. La política completa de
 ramas, publicación, revisión del historial y aprobación de merge está en [AGENTS](../../AGENTS.md).
 Las reglas económicas requieren especificaciones funcionales revisadas antes del código.
+
+
+## Cobertura E1.2 en revisión
+[AC y resultados 02](../02-clasificacion-testplan.md): 27 criterios actuales y 4 contratos
+futuros, sin declararlos motores entregados. Regresión E1.1 conserva sus assertions;
+la prueba de versión no compatible ahora usa 999 porque v2 sí está soportada.
+Fixture test-support/database-v1.ts congela el inicializador integrado E1.1: prueba
+actualización desde una base genuina, no un esquema previo reconstruido a conveniencia.
+Pruebas de actualización comparan tablas lógicas antes de nuevas acciones de login;
+MFA/sesiones cambian legítimamente al utilizarlos. Capturas e1-2 se publican junto
+a e1-1, sin DB, storageState ni factores. No se ha añadido dependencia de pruebas.

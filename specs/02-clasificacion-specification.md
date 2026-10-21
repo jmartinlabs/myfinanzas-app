@@ -1,6 +1,6 @@
 # 02 — E1.2 Clasificación utilizable y conservación histórica: Specification
-Status: DRAFT — propuesta para revisión, no aprobada ni implementada.
-Approval source/date: PENDING
+Status: APPROVED — especificación/diseños aprobados; implementación E1.2 completada e integrada mediante PR #11.
+Approval source/date: usuario aprueba PR #10 sobre 25cffc0 y autoriza merge/dev 02; 2026-10-21. PR #10 integrada en main 0c7a87e.
 Context and brainstorming: [decisiones y evidencias](02-clasificacion-brainstorming.md),
 [roadmap E1.2](roadmap.md#e12--clasificación-utilizable-y-conservación-histórica),
 [referencia](functional-reference-v5.11.md), [UI común](guidelines/ui.md).
@@ -11,7 +11,7 @@ por ID, consultando activos/inactivos, creando, editando y desactivando/reactiva
 No duplicar Categoría en Partida ni información económica derivada.
 Conservar historia, permitir gasto sin Presupuesto y distinguir renombrado de cambio
 económico. Sin versionado general de catálogo. Solo local con fixtures ficticios;
-Excel permanece maestro. Este documento no autoriza desarrollo.
+Excel permanece maestro. El desarrollo local está autorizado después del merge de PR #10; implementación aprobada para squash merge de PR #11; sin despliegue.
 
 ### Autoridad y límites de evidencia
 - Excel contrastado por usuario/Álex: atributos y cadena; dominios de Configuración;
@@ -21,9 +21,9 @@ Excel permanece maestro. Este documento no autoriza desarrollo.
 - Propuesta del usuario incorporada para revisión final: elección explícita Sí/No
   en nuevas Categorías, preservando posibles ausencias históricas.
 - No demostrado: consumo directo actual de Cálculo anual, nulabilidad histórica de
-  cálculos, comparador exacto de nombres duplicados, matriz completa de tipos de
-  Referencia. No convertir observaciones en reglas nuevas. No bloquean este borrador;
-  deben contrastarse antes de implementar validaciones dependientes no aprobadas.
+  cálculos, matriz completa de tipos de
+  Referencia. No convertir observaciones en reglas nuevas; contrastar estos extremos
+  antes de implementar sus consumidores o validaciones dependientes.
 
 ## Data model and contracts
 Modelo lógico propuesto, sin DDL ni aprobación implícita de esquema físico.
@@ -40,18 +40,20 @@ atómica por prefijo, sin reinicio por ejercicio, extendiendo patrón de E1.1 m�
 No borrado físico en interfaz/API; simplifica protección histórica.
 No imponer unicidad de nombres de Categoría/Partida sin evidencia.
 
-### Unicidad de Subcategorías: evidencia y decisión pendiente
-La evidencia aportada demuestra que Control comprueba duplicados de ID y nombre,
-pero no incluye la fórmula/rango de búsqueda ni el comparador físico utilizados.
-El ID estable es único en el catálogo; no hay evidencia suficiente para fijar el
-alcance de la unicidad del nombre (global o por Categoría), ni el tratamiento de
-mayúsculas, acentos, espacios o normalización Unicode. No seleccionar silenciosamente
-una collation de SQLite, case-folding, eliminación de acentos o índice por padre.
-**Decisión pendiente antes de implementar esa validación:** aportar fórmula/rango
-y casos sanitizados de comparación vigentes, o aprobar explícitamente un contrato
-app que resuelva alcance y comparador. No considerar esta reserva aprobada por
-extensión de la valoración favorable. AC-10 queda condicionado a esa resolución;
-no afirmar que el mero dominio de nombres actuales demuestre el comparador.
+### Unicidad de Subcategorías: reserva resuelta
+Fuente posterior: usuario comprueba fórmula real v5.11:
+`COUNTIF(tblSubcategorias[Subcategoría],s)<>1`, con resultado
+`ERROR · Subcategoría duplicada`. Alcance global en todas las Categorías; COUNTIF
+no distingue mayúsculas y no elimina tildes ni espacios.
+Contrato app confirmado por usuario para cerrar la reserva: comparar nombres globalmente
+sin distinguir mayúsculas, conservando acentos y espacios, sin normalizaciones extra,
+y tratar `*`/`?` literalmente (sin trasladar semántica de comodines de COUNTIF).
+Detalle técnico: comparación mediante Unicode lowercase de JavaScript (`toLowerCase`),
+sin trim, eliminación de tildes ni normalización NFC/NFD; tests de Unicode/literales
+explican el comportamiento de casos especiales sin afirmar equivalencia exhaustiva
+con todas las reglas de collation de Excel. ID propio excluido al editar/reintentar.
+Chequeo y escritura en transacción IMMEDIATE, incluyendo nombres de inactivos;
+servidor es la vía autorizada de escritura, no herramientas externas de SQL.
 
 ### Métodos de cálculo: configuración, no ejecución
 | Campo | Dominio confirmado | Contrato futuro |
@@ -236,13 +238,14 @@ biblioteca nueva ni servicio externo necesarios. Backups locales existentes debe
 incluir nuevas entidades y verificarse restaurando fixtures una vez implementadas.
 
 ## Exclusions
-Código, DDL/migraciones, datos reales, Excel, despliegue, contratación; motores anual,
+La fase documental excluía código/DDL; el usuario autorizó después dev 02 local.
+Permanecen fuera datos reales, Excel, despliegue, contratación; motores anual,
 mensual, Movimientos, Referencias, Presupuestos y Deudas; importación y mapping real;
 fotos/cierre/reapertura; versionado general y catálogo de Conceptos.
 
 ## Acceptance checks
-Todos son FUTUROS, no ejecutados. I: verificable al implementar E1.2; C: contrato de
-consumidor posterior, no aceptación de motor completado por tests dobles.
+Criterios del contrato aprobado; resultados ejecutados en testplan 02. I: alcance
+actual de E1.2; C: contrato posterior, no motor entregado por tests dobles.
 Se mantienen **31 criterios: 27 I y 4 C (AC-19, AC-24, AC-25, AC-26)**.
 AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar criterios.
 
@@ -257,7 +260,7 @@ AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar c
 | AC-07 I | Crear/editar Grupo vacío o nuevo texto | Válido; sugerencias no restringen; no maestro adicional |
 | AC-08 I | Anual No aplica y mensual Gasto | Combinación independiente conservada, sin importe calculado |
 | AC-09 I | Enviar valor ajeno a dominios de cálculo | Rechazo con mensaje de campo; sin conversión a No aplica |
-| AC-10 I | Resolver evidencia/contrato pendiente de alcance y comparador; probar ID/nombre duplicado y casos entre Categorías, mayúsculas, acentos y espacios | Validación según contrato explícitamente confirmado, sin normalizaciones inventadas; no Control persistido ni aceptación cerrada antes de resolver reserva |
+| AC-10 I | Probar nombre duplicado global entre Categorías, mayúsculas Unicode, acentos, espacios y comodines literales, incluidos edición e intento repetido | Rechaza duplicados según contrato confirmado; preserva tildes/espacios y trata * y ? como literales; Control no persistido |
 | AC-11 I | Intentar desactivar padre con descendiente activo | Bloqueo con descendientes identificados; nada se desactiva en cascada |
 | AC-12 I | Desactivar rama de abajo arriba y reactivar padre | Inactivos consultables; hijos siguen inactivos |
 | AC-13 I | Crear/reactivar bajo padre inactivo | Bloqueo explicable; no nueva selección de inactivos |
@@ -284,7 +287,7 @@ AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar c
 Bun integración SQLite/API: invariantes, rollback/concurrencia, errores y guardas;
 Playwright real con MFA: recorrido de tres niveles, estados, corrección disponible,
 390/1440 y capturas inspeccionadas. Contratos futuros trazados por separado.
-Pruebas previstas de AC-31, sin ejecutar todavía:
+Plan de pruebas de AC-31; ejecución y resultados vigentes en testplan 02:
 
 1. Crear base de archivo con implementación E1.1 vigente y datos ficticios no triviales:
    Saldos editados/inactivos, apertura negativa, null/cero/false y contadores avanzados;
@@ -300,5 +303,8 @@ Pruebas previstas de AC-31, sin ejecutar todavía:
    esquema y versión; rechazar versión desconocida sin cambios. No exigir identidad
    binaria del archivo SQLite tras actividad WAL como sustituto de integridad lógica.
 
-Ahora solo controles documentales. Base visual aceptada; pendiente aprobación
-expresa de especificación; no iniciar `$dev 02` ni declarar E1.2 implementada.
+Especificación/diseño aprobados y PR #10 integrada; `$dev 02` autorizado con reserva
+SUB resuelta por evidencia posterior. Estado de implementación y pruebas actuales
+en [progreso](02-clasificacion-progress.md) y [testplan](02-clasificacion-testplan.md).
+Implementación aprobada por usuario sobre 58b51f9 tras auditoría técnica/visual de
+Álex; cierre incorporado mediante PR #11. Sin autorización para E1.3 ni despliegue.
