@@ -1,6 +1,6 @@
 # 05 — Transferencias y Referencias: Test plan
 Specification: [APPROVED](05-transferencias-referencias-specification.md).
-Status: VERIFIED LOCAL — 30 criterios actuales PASS; AC-31–33 contratos futuros. Implementación no integrada, pendiente auditoría/merge autorizado.
+Status: COMPLETED / INTEGRATED — 30 criterios actuales PASS; AC-31–33 contratos futuros. PR #18, squash 0d6cfc0e4622e00e1084aefb35987b1954c5e3ef.
 Fecha: 2026-10-21; main base a586fa7, rama feat/e1-5-transferencias-referencias.
 Solo datos ficticios/local. Excel v5.11 sigue maestro; 30 AC actuales, AC-31–33 futuros.
 
@@ -125,9 +125,9 @@ Backups externos/scheduler y producción pendientes, sin RPO/RTO operativo certi
 No datos reales, Excel modificado, dependencias nuevas o despliegue.
 
 ## Estado de entrega y siguiente acción
-Suites finales y capturas PASS; publicar PR funcional para Álex y comprobar
-ambas CI del SHA definitivo. Evidencia remota canónica en descripción de PR, sin alterar
-el commit validado por registrar sus enlaces. Sin merge automático ni inicio de E1.6.
+Suites finales y capturas PASS; auditoría final favorable de Álex sobre 064ffa2.
+Ambas CI del SHA auditado SUCCESS; PR #18 integrada mediante squash autorizado.
+AC-31–33 siguen pendientes. No iniciar spec/dev 06 sin nueva autorización.
 
 
 ## Inventario de capturas revisadas
@@ -144,4 +144,15 @@ fallo anterior y verifica versión/etiqueta del manifiesto realmente cifrado con
 además de restaurar los cinco esquemas genuinos sin actualizar su versión y comprobar
 Saldos e integridad referencial. No expone claves ni contenido descifrado en evidencia.
 Se mantienen los 30 AC actuales y AC-31–33 futuros; sin cambios económicos o de UI.
-CI del nuevo SHA y enlaces de ejecución se registran en la PR, sin merge autorizado.
+CI del SHA auditado y enlaces de ejecución registrados en la PR; merge autorizado realizado.
+
+## Cierre autorizado de E1.5 — 2026-10-21
+Auditoría final favorable de Álex; usuario autoriza squash de PR #18 sobre el HEAD
+064ffa295608a8a90152a2f6bf8ea57154855490, ambas CI SUCCESS y sin conflictos con
+main tras PR #19. Integración: `0d6cfc0e4622e00e1084aefb35987b1954c5e3ef`.
+[CI posterior al merge](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39649152132):
+COMPLETED / SUCCESS sobre ese commit. Main sincronizado y limpio tras integración;
+PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31–33
+contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
+Este registro documental se propone en PR separada, pendiente de autorización de merge.
+No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.

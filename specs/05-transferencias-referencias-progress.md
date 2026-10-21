@@ -1,5 +1,5 @@
 # 05 — Transferencias y Referencias: Progress
-Status: IMPLEMENTED / VERIFIED LOCAL — pendiente auditoría de Álex, no integrado.
+Status: COMPLETED / INTEGRATED — PR #18, squash 0d6cfc0e4622e00e1084aefb35987b1954c5e3ef.
 Specification: [APPROVED](05-transferencias-referencias-specification.md).
 Base main a586fa7, rama feat/e1-5-transferencias-referencias; usuario autoriza dev 05,
 migración local versionada y PR funcional. Fecha: 2026-10-21. Solo datos ficticios.
@@ -11,8 +11,8 @@ migración local versionada y PR funcional. Fecha: 2026-10-21. Solo datos fictic
 | UI responsive reutilizada y flujo real E1.5 | verified | E5 en recorrido E1.4, sin nuevo onboarding/backend simulado |
 | 30 AC actuales y 3 futuros separados | verified | [Testplan](05-transferencias-referencias-testplan.md), R1–R10, 54 Bun PASS |
 | Capturas/inspección y mejoras | verified | 32 PNG a390/1440; cinco ajustes de UX documentados |
-| Publicación PR/CI del HEAD final | follow-up | Registrar enlaces y SHA en descripción de PR al completar |
-| Merge / siguiente entrega | waiting | Requiere autorización expresa; no E1.6 |
+| Publicación PR/CI del HEAD final | verified | PR #18; 064ffa2, ambas CI SUCCESS |
+| Merge / siguiente entrega | integrated / waiting | PR #18 autorizada e integrada; no E1.6 |
 
 ## Evidencia final local
 Typecheck/build PASS. Bun **54 PASS / 908 assertions**: diez pruebas E1.5 y 44
@@ -37,10 +37,21 @@ Excel v5.11 maestro. Todas las Transferencias con Exterior y fichas E3 siguen fu
 la entrega responsable de Exterior ordinario continúa pendiente de planificación.
 AC-30/31 de E1.4 solo reciben cobertura parcial de lo entregado; no declarar completos
 sus consumidores futuros. No E1.6, datos reales, Excel modificado ni despliegue.
-Publicar PR para auditoría de Álex, comprobar ambas CI del commit final y esperar
-aprobación expresa antes de merge. Árbol limpio al entregar.
+Auditoría final favorable de Álex y merge autorizados expresamente por el usuario.
+Entrega integrada; esperar nueva autorización antes de spec/dev 06.
 
 ## Revisión final de backup (PR #18)
 Corregida etiqueta SQLite v5 a `e1.5-v5`, conservando v1–v4. R10 verifica manifiesto
 cifrado y restauración de los cinco esquemas; detalles en el testplan. Sin cambios
-financieros o de UI. Nuevo SHA y ambas CI en la PR; merge pendiente de autorización.
+financieros o de UI. SHA auditado 064ffa2 y ambas CI SUCCESS en la PR; merge autorizado y realizado.
+
+## Cierre autorizado de E1.5 — 2026-10-21
+Auditoría final favorable de Álex; usuario autoriza squash de PR #18 sobre el HEAD
+064ffa295608a8a90152a2f6bf8ea57154855490, ambas CI SUCCESS y sin conflictos con
+main tras PR #19. Integración: `0d6cfc0e4622e00e1084aefb35987b1954c5e3ef`.
+[CI posterior al merge](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39649152132):
+COMPLETED / SUCCESS sobre ese commit. Main sincronizado y limpio tras integración;
+PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31–33
+contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
+Este registro documental se propone en PR separada, pendiente de autorización de merge.
+No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
