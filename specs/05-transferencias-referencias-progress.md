@@ -9,13 +9,13 @@ migración local versionada y PR funcional. Fecha: 2026-10-21. Solo datos fictic
 | SQLite v5, catálogo REF, validación/impacto central | verified | 8c2f2f4; R1–R7 iniciales |
 | Continuidad v4 genuina, rollback/concurrencia/age | verified | R4–R6 + regresiones previas |
 | UI responsive reutilizada y flujo real E1.5 | verified | E5 en recorrido E1.4, sin nuevo onboarding/backend simulado |
-| 30 AC actuales y 3 futuros separados | verified | [Testplan](05-transferencias-referencias-testplan.md), R1–R9, 53 Bun PASS |
+| 30 AC actuales y 3 futuros separados | verified | [Testplan](05-transferencias-referencias-testplan.md), R1–R10, 54 Bun PASS |
 | Capturas/inspección y mejoras | verified | 32 PNG a390/1440; cinco ajustes de UX documentados |
 | Publicación PR/CI del HEAD final | follow-up | Registrar enlaces y SHA en descripción de PR al completar |
 | Merge / siguiente entrega | waiting | Requiere autorización expresa; no E1.6 |
 
 ## Evidencia final local
-Typecheck/build PASS. Bun **53 PASS / 866 assertions**: nueve pruebas E1.5 y 44
+Typecheck/build PASS. Bun **54 PASS / 908 assertions**: diez pruebas E1.5 y 44
 regresiones. Playwright **2 PASS**, recorridos E1.1–E1.3 y E1.4–E1.5 reales con MFA,
 SQLite/Effect y backup/restore age en servidor aislado. 30 criterios PASS, AC-31–33
 no implementados ni probados. Controles de plantilla/repositorio según testplan y PR.
@@ -39,3 +39,8 @@ AC-30/31 de E1.4 solo reciben cobertura parcial de lo entregado; no declarar com
 sus consumidores futuros. No E1.6, datos reales, Excel modificado ni despliegue.
 Publicar PR para auditoría de Álex, comprobar ambas CI del commit final y esperar
 aprobación expresa antes de merge. Árbol limpio al entregar.
+
+## Revisión final de backup (PR #18)
+Corregida etiqueta SQLite v5 a `e1.5-v5`, conservando v1–v4. R10 verifica manifiesto
+cifrado y restauración de los cinco esquemas; detalles en el testplan. Sin cambios
+financieros o de UI. Nuevo SHA y ambas CI en la PR; merge pendiente de autorización.

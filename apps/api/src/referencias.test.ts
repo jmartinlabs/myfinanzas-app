@@ -6,6 +6,9 @@ import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 import { HttpApp } from "@effect/platform";
 import { openDatabase } from "./database";
+import { openDatabase as openV1 } from "../test-support/database-v1";
+import { openDatabase as openV2 } from "../test-support/database-v2";
+import { openDatabase as openV3 } from "../test-support/database-v3";
 import { openDatabase as openV4 } from "../test-support/database-v4";
 import { createSaldo, getSaldo, updateSaldo } from "./saldos";
 import {
@@ -938,5 +941,79 @@ test("05 R9 AC03/06/08/09/15: límites de ciclos/Madrid, FK y revisión de Refer
     ).toThrow("Tipo protegido");
   } finally {
     db.close();
+  }
+});
+
+test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema", () => {
+  const dir = mkdtempSync(join(tmpdir(), "e15-manifest-"));
+  try {
+    const identity = join(dir, "identity.txt");
+    expect(
+      Bun.spawnSync(["age-keygen", "-o", identity], { stderr: "pipe" })
+        .exitCode,
+    ).toBe(0);
+    const recipient = Bun.spawnSync(["age-keygen", "-y", identity], {
+      stderr: "pipe",
+    });
+    expect(recipient.exitCode).toBe(0);
+    for (const [version, initialize, label] of [
+      [1, openV1, "e1.1-v1"],
+      [2, openV2, "e1.2-v2"],
+      [3, openV3, "e1.3-v3"],
+      [4, openV4, "e1.4-v4"],
+      [5, openDatabase, "e1.5-v5"],
+    ] as const) {
+      const source = initialize(join(dir, `source-${version}.sqlite`));
+      const target = join(dir, `backup-${version}`);
+      let saldos;
+      try {
+        const key = loadKey(source, join(dir, `key-${version}`));
+        saldos = source.query("SELECT * FROM saldos ORDER BY id").all();
+        backup(source, key, target, recipient.stdout.toString().trim());
+      } finally {
+        source.close();
+      }
+      const encrypted = join(target, "database.age");
+      expect(
+        readFileSync(encrypted).toString().startsWith("age-encryption.org/v1"),
+      ).toBe(true);
+      const decrypted = Bun.spawnSync(
+        [
+          process.env.AGE_BIN ?? "age",
+          "--decrypt",
+          "--identity",
+          identity,
+          encrypted,
+        ],
+        { stdout: "pipe", stderr: "pipe" },
+      );
+      expect(decrypted.exitCode).toBe(0);
+      const { manifest } = JSON.parse(decrypted.stdout.toString());
+      expect(manifest.format).toBe(1);
+      expect(manifest.schema).toBe(version);
+      expect(manifest.app).toBe(label);
+      const restored = restore(
+        target,
+        join(dir, `restored-${version}`),
+        identity,
+      );
+      const copy = new Database(restored.database, {
+        readonly: true,
+        strict: true,
+      });
+      try {
+        expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
+          version,
+        });
+        expect(copy.query("SELECT * FROM saldos ORDER BY id").all()).toEqual(
+          saldos,
+        );
+        expect(copy.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      } finally {
+        copy.close();
+      }
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });

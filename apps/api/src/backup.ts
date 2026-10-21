@@ -86,7 +86,9 @@ export function backup(
             ? "e1.2-v2"
             : sourceVersion === 3
               ? "e1.3-v3"
-              : "e1.4-v4",
+              : sourceVersion === 4
+                ? "e1.4-v4"
+                : "e1.5-v5",
       schema: sourceVersion,
       id: randomUUID(),
       created: new Date(now).toISOString(),

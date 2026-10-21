@@ -7,7 +7,7 @@ Solo datos ficticios/local. Excel v5.11 sigue maestro; 30 AC actuales, AC-31–3
 ## Comandos y evidencia
 Desde raíz, Bun 1.4.3, age/age-keygen y Chromium del sistema disponibles.
 - `bun run typecheck`, `bun run build`: PASS, sin despliegue ni dependencias nuevas.
-- `bun run test`: **53 PASS / 866 assertions / 0 fallos**, R1–R9 nuevas + 44 regresiones.
+- `bun run test`: **54 PASS / 908 assertions / 0 fallos**, R1–R10 nuevas + 44 regresiones.
 - `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e`:
   **2 PASS / 0 fallos**: E1.1–E1.3 y E1.4–E1.5. E5=tests/e2e/transferencias.ts, reutilizado desde movimientos.spec.ts.
 - `./scripts/validate-template`, `./scripts/test-validator` (18 regresiones),
@@ -48,8 +48,8 @@ estados transitorios de presentación explícitos. Suites finales PASS el 2026-1
 | AC-26 | Recorrer listado/ficha/formularios/preview a390/1440 y teclado | Tabla/tarjetas, foco, labels, contraste y sin overflow; capturas reales inspeccionadas solo en dev | E5 + inspección directa PNG 390/1440 y teclado | PASS |
 | AC-27 | Vacío/carga/error/404/422/409/401 y reintento | Estados distintos, borrador preservado y sin datos ficticios como sustitución | R7 + E4/E5 carga/error/404/422/409/401 | PASS |
 | AC-28 | Upgrade base genuina v4, fallo DDL, dos arranques | Conserva datos/IDs/auditoría/intentos/acceso, rollback íntegro, versión desconocida intacta, sin reseed | R4/R5/R6 + regresiones upgrade anteriores | PASS |
-| AC-29 | Snapshot age del nuevo esquema y restore aislado | Datos/posiciones/REF coherentes; MFA/login reales, sesiones revocadas según política; no dependencia externa | R4 + E4/E5 age/restore/MFA reales | PASS |
-| AC-30 | Ejecutar suite E1.1–E1.4 tras extensión | Sin regresiones de identidad/seguridad/fecha/saldos/ciclos, 29 AC E1.4 conservados salvo dependencia ahora satisfecha explícitamente | 53 Bun + 2 recorridos Playwright completos | PASS |
+| AC-29 | Snapshot age del nuevo esquema y restore aislado | Datos/posiciones/REF coherentes; MFA/login reales, sesiones revocadas según política; no dependencia externa | R4/R10 + E4/E5 age/restore/MFA reales | PASS |
+| AC-30 | Ejecutar suite E1.1–E1.4 tras extensión | Sin regresiones de identidad/seguridad/fecha/saldos/ciclos, 29 AC E1.4 conservados salvo dependencia ahora satisfecha explícitamente | 54 Bun + 2 recorridos Playwright completos | PASS |
 | AC-31 | Entrega posterior habilita Transferencias Exterior y fichas E3 | Exterior ordinario y especial fuera de E1.5; Anticipo solo Transferencia; Compartido Gasto o Transferencia con origen Exterior y Quién paga; REF–ficha/participantes coherentes, sin huérfanos | Pruebas futuras de ampliación Exterior/E3.1–E3.3 | CONTRATO FUTURO |
 | AC-32 | Consumidores plan/inversión/deuda/Comida | Efectos según su motor, sin doble ejecución ni cambiar Tipo económico; AC-31/33 E1.4 no completos por E1.5 | Pruebas futuras E2/E3/E4/E1.6 | CONTRATO FUTURO |
 | AC-33 | Cierre/foto/migración autorizada reales | Protección transversal y fotos inmutables, mapping auditado nombres→IDs, sin reescribir Excel | Pruebas futuras E4/P6/P7 | CONTRATO FUTURO |
@@ -136,3 +136,12 @@ el commit validado por registrar sus enlaces. Sin merge automático ni inicio de
 
 Todas las pruebas son de esta rama local. Los controles y CI remotas se registran en la
 PR del SHA definitivo; no atribuirle un run anterior. No se publica la base restaurada.
+
+## Revisión final de backup (PR #18)
+Auditoría de Álex sobre d5a424d: corregida únicamente la etiqueta del manifiesto de
+SQLite v5 a `e1.5-v5`; v1–v4 conservan sus etiquetas anteriores. R10 reproduce el
+fallo anterior y verifica versión/etiqueta del manifiesto realmente cifrado con age,
+además de restaurar los cinco esquemas genuinos sin actualizar su versión y comprobar
+Saldos e integridad referencial. No expone claves ni contenido descifrado en evidencia.
+Se mantienen los 30 AC actuales y AC-31–33 futuros; sin cambios económicos o de UI.
+CI del nuevo SHA y enlaces de ejecución se registran en la PR, sin merge autorizado.
