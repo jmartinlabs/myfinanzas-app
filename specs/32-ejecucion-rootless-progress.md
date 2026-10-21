@@ -47,3 +47,17 @@ durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 Habilitar entorno aislado de ensayo compatible y continuar imagen/UID/publicación/
 Quadlet/rollback cruzado. La PR de implementación debe seguir Draft e incompleta.
 No VPS, deploy, datos reales, PR #21/#22 ni otras fases; no afirmar dev 32 completo.
+
+## Incidencia de CI del incremento — 2026-10-22
+
+SHA de código 5a748c039630b8b56c4d7da6b46cba335e769bc6: CI
+[push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39687638211),
+pero [pull_request FAILURE](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39687644407)
+en Run bun run test (job 119525659541). Los resultados locales anteriores se
+conservan, sin convertir el fallo remoto en PASS. Las anotaciones solo indican
+exit 1; descarga de logs detallados no disponible desde este entorno (HTTP 403).
+No se conoce todavía el test fallido ni su causa: no atribuirlo a R6, #27 o al
+bind sin evidencia. No rerun para conseguir verde, assertions relajadas ni cambio
+financiero. Dev 32 se detiene para diagnóstico/consulta y capacidad rootless real.
+La actualización documental de esta incidencia no corrige el fallo de código ni
+lo cierra aunque dispare otra CI. Spec #29 conserva sus CI SUCCESS en a4de2e1.

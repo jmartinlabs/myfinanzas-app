@@ -56,3 +56,17 @@ fallos y rollback cruzado de datos/autenticación. Ver diagnóstico en progress.
 R6 y fsync siguen abiertos; sin VPS, infraestructura activa, publicación de imagen,
 Excel/datos reales ni merge. Continuar con runner/VM aislado, no usar Docker como
 prueba equivalente ni dar PASS a checks no ejecutados.
+
+## Incidencia de CI del incremento — 2026-10-22
+
+SHA de código 5a748c039630b8b56c4d7da6b46cba335e769bc6: CI
+[push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39687638211),
+pero [pull_request FAILURE](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39687644407)
+en Run bun run test (job 119525659541). Los resultados locales anteriores se
+conservan, sin convertir el fallo remoto en PASS. Las anotaciones solo indican
+exit 1; descarga de logs detallados no disponible desde este entorno (HTTP 403).
+No se conoce todavía el test fallido ni su causa: no atribuirlo a R6, #27 o al
+bind sin evidencia. No rerun para conseguir verde, assertions relajadas ni cambio
+financiero. Dev 32 se detiene para diagnóstico/consulta y capacidad rootless real.
+La actualización documental de esta incidencia no corrige el fallo de código ni
+lo cierra aunque dispare otra CI. Spec #29 conserva sus CI SUCCESS en a4de2e1.
