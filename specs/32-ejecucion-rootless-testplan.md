@@ -198,3 +198,12 @@ No hace falta proponer VM por ausencia de user manager: funciona en este runner.
 Revalidar baseline e imagen final antes de aceptación completa. CI general y
 estado final del HEAD documental se consultan por SHA en #30. El fallo API
 histórico no queda diagnosticado ni corregido por estas ejecuciones satisfactorias.
+
+## Nuevo paquete definitivo en verificación — 2026-10-22
+Comando runner: `python3 infra/tests/rootless-integration.py` tras preflight real.
+Ahora construye dos imágenes sin caché, exige payload/frontend iguales, verifica
+archivo OCI y manifiesto, rechaza frontend corrupto y repite pruebas rootless.
+Se añade regresión API en runtime final y matriz real anterior/actual/anterior con
+backup/restore/MFA y preservación de escrituras. Pendiente de CI: ningún AC cambia
+a PASS por preparar este código. Fixture local seed/update/rollback/restore PASS
+con datos ficticios; no prueba imágenes, UID ni systemd. Riesgos previos vigentes.

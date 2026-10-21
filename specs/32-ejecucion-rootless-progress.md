@@ -194,3 +194,23 @@ La evidencia del runner no acredita los contratos todavía no implementados de 3
 Cierre de este incremento de ensayo: run 39690471643 / f1b66e6 SUCCESS, incluida
 limpieza verificada (contenedores/unidad/directorio ausentes). Evidencia y límites
 actualizados en testplan 32; no se declara la entrega completa ni cierre causal del fallo API.
+
+## Continuación autorizada — 2026-10-22
+Fuente: mensaje expreso del usuario «Continuación Dev 32», tras revisión con Álex
+sobre PR #30. Autoriza completar AC-01–24 en runner efímero ubuntu-24.04; no merge,
+VPS, despliegue, publicación de imágenes ni datos reales. Secuencia #29 → #30.
+Reconciliación sin conflictos con main ad9442669468968d0ab82a9613522c7205b242c1:
+PR #29 conserva exclusivamente los dos documentos aprobados y la corrección ajena
+#31 permanece intacta. No se reabre Dev 31 ni se modifica código financiero.
+
+Incremento en verificación: receta multistage con base Bun por digest, dependencias
+locked sin scripts, age 1.3.2 verificado por SHA256, frontend pareado y archivo OCI
+privado. Dos builds sin caché deben coincidir en payload normalizado y frontend;
+no se acepta una diferencia de contenido inexplicada. El runner repetirá UID,
+volúmenes, WAL, red y Quadlet con esta imagen y ejecutará la regresión API usando
+las dependencias de runtime. Matriz anterior b0bc5a7 → actual → anterior, con
+escrituras ficticias confirmadas, sesión/contraseña/TOTP/recovery y backup/restore.
+Ensayo local de la fixture sintética seed/update/rollback/restore PASS contra el
+código actual y age local; no sustituye la matriz entre imágenes ni acredita AC.
+Resultados remotos del nuevo incremento pendientes. R6, fsync y el fallo API
+histórico sin causa diagnosticada permanecen abiertos y visibles.

@@ -69,29 +69,33 @@ def main():
     unit_identity = None
     evidence = {'host-uid': os.getuid(), 'host-gid': os.getgid()}
     try:
-        stage = 'build-real-api-test-image'
+        stage = 'build-reproducible-private-release'
         source = Path(__file__).resolve().parents[2]
-        context = root / 'context'
-        context.mkdir(mode=0o700)
-        # Explicit allowlist, never use the checkout as container build context.
-        for relative in ('package.json', 'bun.lock', 'apps/api/package.json', 'apps/web/package.json'):
-            target = context / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(source / relative, target)
-        api = context / 'apps/api/src'
-        api.mkdir()
-        for path in (source / 'apps/api/src').glob('*.ts'):
-            if not path.name.endswith('.test.ts'):
-                shutil.copyfile(path, api / path.name)
-        shutil.copyfile(source / 'infra/tests/Containerfile.probe', context / 'Containerfile')
-        iidfile = root / 'image.id'
-        run(['podman', 'build', '--platform=linux/amd64', '--no-cache',
-             '--iidfile', str(iidfile), '--file', str(context / 'Containerfile'), str(context)], 420)
-        image = iidfile.read_text().strip()
-        if not image.startswith('sha256:') or len(image) != 71:
-            raise ProbeError('invalid local image identifier')
-        evidence['test-image-id'] = image
-        evidence['scope'] = 'test image only; final reproducible release/OCI distribution pending'
+        sys.path.insert(0, str(source / 'infra'))
+        from release import build, verify, sha, CONTRACTS
+        output = root / 'release'
+        manifest = build(output)
+        image = manifest['image']
+        evidence['final-image-id'] = image
+        evidence['release-source'] = manifest['inputs']['source']
+        evidence['oci-manifest-digest'] = manifest['oci_manifest_digest']
+        evidence['two-clean-builds-payload-equal'] = manifest['reproducibility']['payload_equal']
+        digest = (output / 'manifest.sha256').read_text().strip()
+        verify(output, manifest['inputs']['source'], digest)
+        # Real corruption checks; never accept a foreign frontend or manifest.
+        index = output / 'frontend/index.html'
+        original = index.read_bytes()
+        index.write_bytes(original + b'<!-- synthetic mismatch -->')
+        rejected = False
+        try:
+            verify(output, manifest['inputs']['source'], digest)
+        except Exception:
+            rejected = True
+        finally:
+            index.write_bytes(original)
+        if not rejected:
+            raise ProbeError('foreign frontend was accepted')
+        evidence['frontend-backend-integrity-and-negative'] = True
         data = root / 'data'
         data.mkdir(mode=0o700)
         env = ['--env=NODE_ENV=production', '--env=APP_ORIGIN=https://myfinanzas.pp.ua',
@@ -226,6 +230,52 @@ TimeoutStopSec=30
         run(['systemctl', '--user', 'stop', service])
         health(False)
         evidence['stop-disconnects-published-api'] = True
+        # Every API regression runs against the definitive runtime dependencies.
+        # Test sources are mounted read-only; no tests/dev tools enter the image.
+        stage = 'final-image-api-regressions'
+        suite = root / 'suite'
+        suite.mkdir(mode=0o700)
+        for prefix in ('apps/api/src', 'apps/api/test-support'):
+            for relative in run(['git', 'ls-tree', '-r', '--name-only', 'HEAD', '--', prefix]).splitlines():
+                if not relative.endswith('.ts'):
+                    continue
+                destination = suite / relative
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:' + relative]))
+        (suite / 'node_modules').symlink_to('/app/node_modules')
+        (suite / 'apps/api/node_modules').symlink_to('/app/apps/api/node_modules')
+        result = subprocess.run(['podman', 'run', '--rm', '--network=none',
+                                 *hardened, '--memory=2g', '--pids-limit=512',
+                                 '--env=NODE_ENV=test', '--volume=' + str(suite) + ':/suite:ro',
+                                 '--workdir=/suite', image, 'test', 'apps/api'],
+                                capture_output=True, text=True, timeout=600)
+        # Never emit raw test output: authentication fixtures can contain factors.
+        import re
+        counts = re.search(r'(\d+) pass.*?(\d+) fail', result.stderr, re.S)
+        if result.returncode or not counts or int(counts[2]) != 0:
+            raise ProbeError('final image API regression failed; private output not published')
+        evidence['final-image-api-tests-passed'] = int(counts[1])
+        stage = 'previous-private-release-build'
+        previous = build(root / 'previous', ref='b0bc5a7634bb5b0102b30bd21ad478c0f3ae72c9')
+        if previous['inputs']['contracts'] != manifest['inputs']['contracts']:
+            raise ProbeError('incompatible contract metadata; no rollback authorized')
+        matrix = root / 'matrix'
+        matrix.mkdir(mode=0o700)
+        matrix_flags = [flag for flag in hardened if not flag.startswith('--volume=')]
+        matrix_flags += ['--volume=' + str(matrix) + ':/var/lib/myfinanzas:rw',
+                         '--volume=' + str(source / 'infra/tests/release-contract.mjs') + ':/app/apps/api/infra-contract.mjs:ro']
+        stage = 'previous-version-explicit-initialization'
+        run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+             previous['image'], 'apps/api/src/production-init.ts'])
+        for version, action in [(previous, 'seed'), (manifest, 'update'),
+                                (previous, 'rollback'), (manifest, 'restore')]:
+            stage = 'real-cross-version-' + action
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 version['image'], '/app/apps/api/infra-contract.mjs', action], timeout=180)
+        evidence['previous-source'] = previous['inputs']['source']
+        evidence['previous-image'] = previous['image']
+        evidence['schema-data-authentication-and-confirmed-writes-roundtrip'] = True
+        evidence['final-image-encrypted-backup-restore-key-mfa-revocation'] = True
     finally:
         # Only names/files created by this invocation, never existing user units/data.
         had_error = sys.exc_info()[0] is not None
