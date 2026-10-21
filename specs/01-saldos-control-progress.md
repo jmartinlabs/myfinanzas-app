@@ -31,8 +31,8 @@ corregidos y verificados de nuevo. Sin fallos finales conocidos ni pruebas bloqu
 por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
 
 ## Next action
-STEP 8 autorizado posteriormente: consolidación de la Skill dev preparada en rama
-independiente para revisión; aprobación/merge pendientes. No empezar E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
+STEP 8 posteriormente completado e integrado mediante PR #8; ocho etapas iniciales
+cerradas y Skills spec/dev reutilizables. Esperar autorización antes de E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
@@ -64,5 +64,5 @@ reproduce SQLITE_BUSY al inicializar esquema con transacción diferida; arreglo 
 BEGIN IMMEDIATE y regresión roja/verde. Verificación local: 16 Bun/200 aserciones,
 tipos/build y Playwright pasan. Corrección aprobada e integrada en main 23e471e mediante
 PR #9; precisión de comprobaciones previas de versión incorporada sin más código.
-PR #8 actualizada desde main; se repite su validación y sigue en borrador, pendiente
-de revisión y aprobación propias. Sin merge de PR #8, E1.2 o despliegues.
+PR #8 actualizada desde main y validada, después aprobada e integrada. STEP 8 cerrado;
+sin E1.2 o despliegues, que requieren nueva autorización.

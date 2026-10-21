@@ -1,6 +1,6 @@
 # STEP 8 — Consolidación de la Skill dev
 
-Estado: preparada y validada en rama; pendiente aprobación e integración de esta PR.
+Estado: STEP 8 completado e integrado mediante PR #8; ocho etapas iniciales cerradas.
 Autorización del usuario: 2026-10-21. Base main `5f1e27b`, PR #7 MERGED.
 Se reutiliza [.agents/skills/dev/SKILL.md](../.agents/skills/dev/SKILL.md); no se crea otra
 Skill ni se cambia la metodología de ocho etapas. E1.1 permanece completada e integrada.
@@ -44,10 +44,11 @@ Identity–Handoff del walkthrough init-project en setup-progress.
 | 5 Specification | E1.1 y diseño aprobados, 43 AC | Integrado; [specification](01-saldos-control-specification.md), PR #6 |
 | 6 Reusable spec Skill | Skill spec existente revisada/reutilizada | Cubierto; [spec Skill](../.agents/skills/spec/SKILL.md), Handoff |
 | 7 Build | E1.1 local/ficticia implementada y verificada | Integrado; PR #7/main 5f1e27b; motores posteriores pendientes |
-| 8 Reusable dev Skill | Skill dev existente consolidada con experiencia real | Preparado en esta rama; aprobación/merge de esta PR pendientes |
+| 8 Reusable dev Skill | Skill dev existente consolidada con experiencia real | Completado e integrado mediante PR #8, aprobada sobre f4ff3e2 |
 
-Con esta propuesta quedan cubiertas las ocho etapas; **no se declara integrado STEP 8**
-hasta aprobar y fusionar su PR. La metodología queda preparada para reutilizar las Skills
+Las ocho etapas iniciales quedan cerradas: **STEP 8 completado e integrado en PR #8**,
+aprobada por el usuario tras revisión final de Álex sobre f4ff3e2 el 2026-10-21.
+La metodología queda preparada para reutilizar las Skills
 spec/dev existentes y el roadmap aprobado, sin nuevas rondas de inicialización ni duplicados.
 Esta preparación no autoriza E1.2, nuevas funcionalidades, datos reales ni despliegue.
 Excel v5.11 continúa como fuente de verdad; inicialización limpia/migración y operación
@@ -66,8 +67,8 @@ Resultado local 2026-10-21: validador, 18 regresiones de plantilla, check-projec
 check-repository revisa también el índice/historial antes del push. La PR enlaza la
 CI del commit de STEP 8; no se presenta la evidencia antigua como una ejecución nueva.
 
-Siguiente acción: revisión y aprobación expresa de la PR de STEP 8; no merge automático.
-No iniciar E1.2 ni otro trabajo por extensión de esta autorización.
+Siguiente acción: esperar nueva autorización antes de E1.2 u otra entrega.
+La autorización del cierre inicial no habilita nuevas funcionalidades o despliegues.
 
 ## Actualización tras corregir la incidencia de CI
 El usuario aprueba PR #9 tras revisión de Álex sobre 121d790. Precisión documental
@@ -81,5 +82,16 @@ build, 16 pruebas Bun/200 aserciones y Playwright real 390/1440 (MFA y restaurac
 pasan. Los controles documentales/40 regresiones y la revisión de historial/índice se
 repiten antes del push; la evidencia remota del nuevo SHA se enlaza en PR #8.
 CI posterior al merge de PR #9 en main: 39555962955 SUCCESS sobre 23e471e.
-PR #8 permanece en borrador para revisión; no se declara integrado STEP 8 ni se autoriza
-su merge, E1.2, nuevas funcionalidades o despliegue.
+Ese registro corresponde a la revisión previa: PR #8 se mantuvo en borrador hasta
+recibir aprobación final del usuario. No autorizaba E1.2 ni despliegue.
+
+## Cierre definitivo autorizado — 2026-10-21
+Álex revisa f4ff3e2; el usuario aprueba PR #8 y autoriza marcarla lista y fusionarla.
+CI de ese HEAD: push 39556146404 y PR 39556151938 SUCCESS, sin conflictos.
+Este cierre cambia solo estados documentales; las Skills spec/dev y la aplicación no
+se modifican respecto al HEAD aprobado. CI del cierre se verifica antes de su merge.
+Integración y SHA final verificables en [PR #8](https://github.com/josemartin2000/myfinanzas-app/pull/8).
+Skills spec/dev existentes listas para próximas entregas; no se inicia ninguna ahora.
+E1.1 y corrección de concurrencia PR #9 integradas; motores financieros posteriores,
+inicialización/migración reales y producción mantienen sus límites y autorizaciones.
+Excel v5.11 continúa fuente de verdad; sin datos reales o modificación del maestro.

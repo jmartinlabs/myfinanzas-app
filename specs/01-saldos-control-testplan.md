@@ -157,4 +157,5 @@ Fallo real de concurrencia reproducido tras PR #7; no atribuido a documentación
 BEGIN IMMEDIATE y diagnóstico de procesos hijos. 16 Bun/200 aserciones y Playwright pasan
 localmente en la rama de corrección; PR #9 integrada y verificada en main 23e471e.
 La ejecución fallida de PR #8 conserva su evidencia; su rama actualizada desde main
-se valida de nuevo y STEP 8 sigue en borrador, sin autorización de merge.
+se valida de nuevo y posteriormente STEP 8 queda aprobado e integrado mediante PR #8.
+Esa integración no implementa motores futuros ni autoriza E1.2 o despliegues.

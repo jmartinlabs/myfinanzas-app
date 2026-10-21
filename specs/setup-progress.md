@@ -79,8 +79,8 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - CI del commit publicado: consultar la PR; sus suites del bootstrap no validan E1.1, que no está implementada.
 
 ## Next action
-E1.1 integrado en main 5f1e27b. STEP 8 autorizado, consolidación preparada en rama para
-revisión y aprobación de PR; no hacer merge ni iniciar E1.2 o despliegues.
+Ocho etapas iniciales cerradas; STEP 8 completado e integrado en PR #8. Skills spec/dev
+preparadas para reutilizarse. Esperar autorización antes de E1.2 o despliegues.
 
 ## Estado vigente STEP 7 — 2026-10-21
 PR #6 MERGED verificada, commit main ebfe75b, coincidente con especificación/diseño aprobados.
@@ -101,11 +101,12 @@ E1.1 implementado e integrado, cierre registrado en progress.
 STEP 8 posteriormente autorizado por el usuario; cierre propuesto en el registro inferior.
 Motores AC-30/31 y parte futura de AC-38 pendientes. Excel v5.11 sigue maestro.
 
-## STEP 8 — consolidación preparada para revisión
+## STEP 8 — completado e integrado
 Autorizado el 2026-10-21. Rama step-8/dev-skill-consolidation desde main 5f1e27b.
 Skill dev existente contrastada con progreso/testplan/revisión E1.1, sin duplicarla.
 [Aprendizajes, cambios mínimos y cierre de las ocho etapas](dev-skill-consolidation.md).
 Se mantiene Current stage: 7 del walkthrough interno (Handoff completo); no es la
-numeración global de las ocho etapas. STEP 1–7 integrados/cubiertos; STEP 8 preparado,
-pendiente aprobación y merge de su PR. No declarar todavía su integración en main.
+numeración global de las ocho etapas. STEP 1–7 integrados/cubiertos; STEP 8 completado
+e integrado mediante PR #8 tras aprobación del usuario sobre f4ff3e2 el 2026-10-21.
+Cierre documental validado en la misma PR antes de su merge; integración verificable en PR #8.
 Sin cambios funcionales, E1.2 o despliegue. Excel v5.11 sigue maestro.

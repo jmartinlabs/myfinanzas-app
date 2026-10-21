@@ -13,8 +13,9 @@ not necessarily 30 sprints or PRs. STEP 4 is complete. STEP 5 E1.1 is approved a
 Handoff is complete; the reusable spec Skill covers STEP 6. STEP 7 `$dev 01` E1.1 is implemented and integrated via approved PR #7
 for local fictional Saldos only; later financial engines remain pending. Follow [progress](01-saldos-control-progress.md) and
 [43 acceptance checks](01-saldos-control-testplan.md). PR #7 was expressly approved after review of 4f7cdda on 2026-10-21.
-STEP 8 is authorized: [dev Skill consolidation and eight-step closure](dev-skill-consolidation.md)
-are prepared for review, not yet merged; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
+STEP 8 is complete and integrated via approved PR #8: [dev Skill consolidation and eight-step closure](dev-skill-consolidation.md).
+All eight initialization steps are closed; existing spec/dev Skills are ready for reuse.
+Wait for authorization before any next delivery; no E1.2 or deployment. Historical STEP 5 approval records remain attributed
 in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 
 | Document | Owns | Created/updated by |
