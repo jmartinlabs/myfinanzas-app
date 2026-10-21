@@ -164,6 +164,8 @@ export function openProductionConnection(
       : { readwrite: true, strict: true },
   );
   try {
+    // Keep persistent-origin/path checks above; no WAL or schema changes before live identity.
+    db.exec("PRAGMA busy_timeout=3000");
     sameFile(expected, privateFile(config.database));
     privateSidecars(config.database);
     const id = inspectIdentity(db);
