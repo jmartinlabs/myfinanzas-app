@@ -26,10 +26,13 @@ alternativa. Evidencia: `COUNTIF(tblCiclos[Ciclo financiado],[@[Ciclo financiado
 operativos app confirmados; no se atribuyen a una fórmula de Control no demostrada.
 [Registro append-only](03-ciclos-financiados-brainstorming.md) conserva las preguntas
 y respuestas, incluida aceptación de diseños como base. Sin inspección independiente
-de Criterios por Codex. Contrato definido no equivale a aprobación final ni a pruebas.
+de Criterios por Codex. Aprobación final recibida sobre bf3f2eb; la aprobación no
+equivale por sí sola a pruebas. Evidencia de desarrollo en testplan.
 
 ## Data model and contracts
-Modelo lógico, sin DDL ni SQL ejecutado. Mantener capas React → Effect HTTP → SQLite.
+Modelo lógico aprobado en fase spec. La autorización posterior de dev 03 permite
+el DDL local; arquitectura implementada y evidencia se registran en guidelines/testplan.
+Mantener capas React → Effect HTTP → SQLite.
 
 | Dato | Autoridad / representación propuesta | Escritura |
 | --- | --- | --- |
@@ -81,7 +84,7 @@ No estado «cerrado» ambiguo. Alta de siguiente ciclo deriva Fin previo, sin ej
 cierre, fotografía ni operación de Nómina. No reconciliar comida automáticamente.
 
 ## Screens and interfaces
-Wireframes aceptados por el usuario como base tras revisión de Álex; falta aprobación
+Wireframes aceptados por el usuario como base tras revisión de Álex; aprobación
 final de especificación recibida posteriormente sobre bf3f2eb. Tema claro, verdes MyFinanzas,
 texto oscuro sobre #8DBB2E y componentes existentes. Tablas escritorio/tarjetas móvil;
 ficha y alta propias, IDs en ficha cuando ayudan; sin reaprobar la paleta.
@@ -176,7 +179,7 @@ Estos wireframes no sustituyen capturas de UI implementada ni pruebas de accesib
 - No encontrado: vuelta al listado; red fallida conserva intento y evita duplicados.
 
 ## API behavior and external dependencies
-Propuesta técnica a reutilizar, no rutas implementadas: GET /api/ciclos, GET ficha,
+Contrato técnico aprobado; rutas implementadas y pruebas en arquitectura/testplan: GET /api/ciclos, GET ficha,
 POST alta con clave idempotente y revisión del contexto temporal previo; lectura del
 contexto financiero derivado compartida para cabecera. Sin PATCH/DELETE/cierre ni
 endpoints para fabricar fechas de fuentes. Forma de ID/detalles de rutas se concretan
@@ -221,7 +224,8 @@ el control. Mes/Fin/corte se validan tras derivación en servidor y en la transa
 un conflicto no consume alta parcial ni sobrescribe otro ciclo.
 
 ## Exclusions
-Dev 03, código, DDL/actualización ejecutada, importación, Excel/datos reales/despliegue;
+La fase spec excluía código y DDL; dev 03 se autorizó posteriormente por separado.
+Siguen excluidos importación, Excel/datos reales/despliegue;
 E2.1 (operación/apertura revisable/conciliación), plan mensual/anual, Nómina,
 Movimientos, Comida e inversiones operativos, motores de importes, cierre/reapertura,
 fotografías, precarga de plan siguiente, fecha de referencia manual alternativa.

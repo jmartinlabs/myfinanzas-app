@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-El repositorio privado contiene E1.1 Saldos local con datos ficticios, implementado e integrado mediante PR #7.
+Repositorio privado: E1.1/E1.2 integradas; E1.3 local/ficticia en desarrollo autorizado.
 Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
 
 - Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -14,8 +14,6 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   revisión rigurosa de lógica financiera, integridad, seguridad y persistencia.
 - Sigue las ocho etapas de la metodología y las Skills locales; no inventes reglas
   financieras ni reabras decisiones confirmadas sin incompatibilidad justificada.
-- STEP 4 y STEP 5 E1.1 aprobados e integrados (PR #6, ebfe75b). STEP 7 autorizado
-  solo para E1.1 local/ficticio mediante $dev 01 en feat/e1-1-saldos.
 - E1.1: Q1–Q8 respondidas en specs/01-saldos-control-brainstorming.md; specification
   aprobada/integrada con evidencias F1–F3 del usuario. No reabrir decisiones;
   respetar extremos no demostrados. Saldo actual no filtra por Fecha apertura; histórico
@@ -36,7 +34,8 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   tildes/espacios conservados y comodines literales; reserva resuelta por usuario.
   E1.2 completada e integrada mediante PR #11 tras aprobación expresa sobre 58b51f9
   y squash merge autorizado. 27 criterios verificados; AC-19/24/25/26 siguen contratos
-  futuros. Esperar autorización: sin E1.3, datos reales, despliegue o servicios contratados.
+  futuros. E1.3 spec aprobada PR #12 (179942e); $dev 03 autorizado en feat/e1-3-ciclos-financiados.
+  Estado/evidencia en progress/testplan 03: 21 AC actuales, 3 futuros; sin E2.1, datos reales o despliegue.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.

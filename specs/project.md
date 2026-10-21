@@ -226,3 +226,11 @@ sin corte inventado; Fin conservado sin hechos. Wireframes aceptados como base.
 [especificación](03-ciclos-financiados-specification.md) define 24 criterios: 21 actuales
 y 3 contratos futuros, sin pruebas de E1.3 ejecutadas. PR #12 permanece Draft;
 siguiente acción: aprobación final y autorización dev 03, sin implementación/merge.
+
+
+## E1.3 vigente — desarrollo autorizado
+Especificación/diseños aprobados por usuario sobre bf3f2eb, PR #12 integrada (179942e).
+Implementación local/ficticia en rama independiente; [progreso](03-ciclos-financiados-progress.md)
+y [testplan](03-ciclos-financiados-testplan.md) son la evidencia vigente.
+21 criterios actuales y 3 contratos futuros; sin declarar motores financieros entregados.
+Siguiente paso: revisión de implementación, sin merge automático, E2.1 ni despliegue.

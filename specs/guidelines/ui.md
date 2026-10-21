@@ -187,3 +187,13 @@ en página propia, Referencia obligatoria sin preselección (no aplica default d
 switches E1.1). Rectificar presenta Antes/Después legibles, motivo y cobertura
 financiera no comprobada. No importes fingidos ni motores simulados. Evidencia y
 revisión visual en [testplan 02](../02-clasificacion-testplan.md).
+
+
+## Ciclos E1.3
+Base visual aprobada en spec 03; implementación revisable con capturas reales 390/1440
+trazadas en [testplan](../03-ciclos-financiados-testplan.md), no aprobación por capturas.
+Reutiliza cabecera, navegación, paneles, tabla/tarjetas, etiquetas y texto oscuro sobre
+verde #8DBB2E. Cabecera consulta maestro/contexto real: «Sin ciclos» ≠ «No disponible»
+por referencia pendiente ≠ error de carga. Abierto es temporal, nunca cierre financiero.
+Formulario propio de dos campos, ambos vacíos; vista previa derivada separada. 409
+conserva borrador y exige actualizar contexto explícitamente; sin ajustes silenciosos.

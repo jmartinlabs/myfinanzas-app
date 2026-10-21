@@ -1,12 +1,23 @@
 # 03 — Ciclos financiados: progreso
-Status: IN PROGRESS — dev 03 autorizado, sin integrar.
+Status: IMPLEMENTED — verificado localmente, pendiente revisión/merge de PR funcional.
 Base main: PR #12 aprobada sobre bf3f2eb, MERGED 179942e.
 Rama: feat/e1-3-ciclos-financiados. Fecha: 2026-10-21.
 
+- [x] Cerrar spec 03: SHA aprobado y ambas CI SUCCESS, PR lista, squash y main limpio.
 - [x] Persistencia v2→v3, calendario/referencia/contexto/API y continuidad.
-- [ ] UI/listado/ficha/alta/cabecera común, componentes existentes.
-- [ ] 21 AC actuales, 3 contratos futuros separados; Bun + Playwright.
-- [ ] Capturas 390/1440 inspeccionadas, controles y PR independiente sin merge.
+- [x] UI/listado/ficha/alta/cabecera común, componentes existentes.
+- [x] 21 AC actuales, 3 contratos futuros separados; Bun + Playwright.
+- [x] Capturas 390/1440 inspeccionadas y ajustes justificados, controles locales.
+- [ ] PR funcional independiente publicada, CI remota del HEAD final verificada.
+- [ ] Revisión/aprobación expresa del usuario y merge (no autorizado todavía).
 
-Siguiente acción: verificar pantallas/cabecera con Playwright y capturas; backend 33 pruebas PASS.
-Excel maestro intacto, solo fixtures locales; no E2.1 ni motores/producción.
+Incremento 16a2273: maestro/API/upgrade, 33 pruebas backend y regresión navegador previa PASS.
+Incremento UI: pantallas reales/cabecera, errores/idempotencia de red/conflicto, restauración
+con MFA, capturas y documentación común. [Trazabilidad y resultados](03-ciclos-financiados-testplan.md).
+La aprobación documental se registró en esta rama después de integrar exactamente el
+SHA aprobado: checks PR #12 push 39587914869 y PR 39587919359 SUCCESS.
+
+Siguiente acción: publicar PR funcional y verificar ambas CI; después esperar revisión.
+AC-11/23/24 pendientes de consumidores financieros, no pruebas de motores inexistentes.
+Excel maestro intacto; solo fixtures locales, sin semillas de ciclos. No E2.1,
+datos reales, nuevas dependencias, despliegue ni infraestructura productiva.

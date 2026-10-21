@@ -191,7 +191,7 @@ export function listCycles(db: Database, params = new URLSearchParams()) {
     .filter(
       (c) =>
         (!state || c.estadoTemporal === state) &&
-        `${c.mesFinanciado} ${new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(c.mesFinanciado + "T00:00:00Z"))} ${c.inicio}`
+        `${c.mesFinanciado} ${new Intl.DateTimeFormat("es-ES", { month: "long", year: "numeric", timeZone: "UTC" }).format(new Date(c.mesFinanciado + "T00:00:00Z"))} ${c.inicio} ${c.inicio.split("-").reverse().join("/")}`
           .toLocaleLowerCase("es")
           .includes(query),
     );

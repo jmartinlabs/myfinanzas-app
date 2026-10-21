@@ -1309,3 +1309,38 @@ textarea {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* Cycle views retain the shared light financial UI. */
+.cycles-list .filters {
+  grid-template-columns: minmax(180px, 2fr) minmax(160px, 1fr);
+}
+.cycles-list .desktop-list th:nth-child(1) {
+  width: 28%;
+}
+.cycles-list .desktop-list th:nth-child(2) {
+  width: 22%;
+}
+.cycles-list .desktop-list th:nth-child(3) {
+  width: 24%;
+}
+.cycles-list .desktop-list th:nth-child(4) {
+  width: 26%;
+}
+.cycle-context {
+  min-width: 0;
+}
+.cycle-context strong {
+  overflow-wrap: anywhere;
+}
+.cycle-context .text-button {
+  margin-left: 8px;
+  font-size: 11px;
+}
+@media (max-width: 760px) {
+  .cycles-list .filters {
+    grid-template-columns: 1fr;
+  }
+  .cycles-list .card-head {
+    flex-wrap: wrap;
+  }
+}

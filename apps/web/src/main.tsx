@@ -6,6 +6,7 @@ import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
 import { Clasificacion } from "./Clasificacion";
+import { Ciclos, CycleHeader } from "./Ciclos";
 import "./style.css";
 function App() {
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
@@ -139,10 +140,12 @@ function App() {
           <p className="nav-group">MI ESPACIO</p>
           <a
             className={
-              path.startsWith("/clasificacion") ? "nav-link" : "nav-active"
+              path.startsWith("/saldos") || path === "/"
+                ? "nav-active"
+                : "nav-link"
             }
             aria-current={
-              path.startsWith("/clasificacion") ? undefined : "page"
+              path.startsWith("/saldos") || path === "/" ? "page" : undefined
             }
             href="/saldos"
             onClick={(e) => {
@@ -169,6 +172,18 @@ function App() {
             <span aria-hidden="true">≡</span> Clasificación{" "}
             <span aria-hidden="true">›</span>
           </a>
+          <a
+            className={path.startsWith("/ciclos") ? "nav-active" : "nav-link"}
+            aria-current={path.startsWith("/ciclos") ? "page" : undefined}
+            href="/ciclos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/ciclos");
+            }}
+          >
+            <span aria-hidden="true">▦</span> Ciclos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>
@@ -180,11 +195,7 @@ function App() {
       </aside>
       <div className="workspace">
         <header className="global-header">
-          <div>
-            <span className="header-label">CICLO FINANCIADO</span>
-            <strong>No disponible</strong>
-            <span className="cycle-help">Maestro de Ciclos pendiente</span>
-          </div>
+          <CycleHeader path={path} />
           <div className="header-actions">
             <span className="local-badge">Entorno local</span>
             <button className="text-button" onClick={logout}>
@@ -207,7 +218,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/clasificacion") ? (
+          {path.startsWith("/ciclos") ? (
+            <Ciclos path={path} go={go} />
+          ) : path.startsWith("/clasificacion") ? (
             <Clasificacion path={path} go={go} />
           ) : creating ? (
             <SaldoForm

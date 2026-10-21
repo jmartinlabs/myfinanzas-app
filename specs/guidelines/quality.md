@@ -12,7 +12,7 @@ CLI age/age-keygen es obligatoria para pruebas de copia/restauración.
 | bun run typecheck | TypeScript sin errores en apps, pruebas y configuraciones |
 | bun run build | Cliente estático en apps/web/dist; no despliega ni empaqueta servidor |
 | bun run test | Integración Saldos/acceso/copias/concurrencia; cifra vigente en testplan |
-| bun run test:e2e | Recorrido E1.1 real a 390/1440, MFA y restauración aislada |
+| bun run test:e2e | Recorrido E1.1/E1.2/E1.3 real a 390/1440, MFA y restauración aislada |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
 | ./scripts/test-validator | 18 regresiones positivas y negativas del validador |
 | ./scripts/check-project | Workspaces/Bun, versiones exactas, paquetes privados y límites de imports del navegador |
@@ -108,3 +108,13 @@ actualización desde una base genuina, no un esquema previo reconstruido a conve
 Pruebas de actualización comparan tablas lógicas antes de nuevas acciones de login;
 MFA/sesiones cambian legítimamente al utilizarlos. Capturas e1-2 se publican junto
 a e1-1, sin DB, storageState ni factores. No se ha añadido dependencia de pruebas.
+
+
+## E1.3 local
+[Plan y resultados](../03-ciclos-financiados-testplan.md): calendario civil, contratos
+puros de referencia (sin fuentes operativas), API protegida, SQLite v2→v3 y dos
+procesos, límites exactos EUR, copia age/restauración y regresión de catálogos/acceso.
+Playwright añade alta/consulta real y conflicto concurrente a MFA/restauración existentes.
+CI publica únicamente PNG ficticios de artifacts/e1-3, junto a entregas anteriores;
+no DB, claves, estado de autenticación ni trazas. 21 AC actuales frente a 3 contratos
+futuros; no afirmar integración de fuentes, imputación de hechos o cierre aún ausentes.

@@ -32,7 +32,7 @@ mkdir/apertura/PRAGMA. El proceso se rechaza en producción, entorno desconocido
 las pruebas incluyen una base existente que queda idéntica tras el rechazo. No hay
 inicialización productiva: antes de datos reales se necesita un arranque limpio sin
 fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
-Esquema técnico v2 (extiende v1 preservando E1.1) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
+Esquema técnico v3 (extiende v1/v2 preservando E1.1/E1.2) en inicialización transaccional BEGIN IMMEDIATE, STRICT, FK activas, WAL y FULL,
 busy_timeout 3 s. Existen comprobaciones previas de versión fuera de la transacción.
 BEGIN IMMEDIATE adquiere el bloqueo de escritura antes de inicializar el esquema
 dentro de la transacción, evitando allí el upgrade diferido con otro escritor; [incidencia y regresión](../sqlite-startup-concurrency.md).
@@ -71,7 +71,7 @@ Vista de rectificación lee descendientes reales y huella de revisiones/configur
 del catálogo; confirmar revalida dentro de transacción. Huella no es una firma de
 impacto financiero. Adaptador futuro no tiene consumidores instalados; en sus entregas
 aportará hechos/periodos/indicadores reales y consistencia ante cambios financieros.
-Backups identifican esquema desde el snapshot, admiten v1/v2 y verifican coincidencia
+Backups identifican esquema desde el snapshot, admiten v1/v2/v3 y verifican coincidencia
 con manifest. Restaurar revoca acceso como E1.1; actualizar in situ no lo revoca.
 No cambia algoritmo de autenticación, dependencias ni RPO/RTO operativo.
 
@@ -90,5 +90,23 @@ no equivale a auditoría de seguridad completa. Evidencia vigente en testplan.
 ## Destino posterior
 VPS UE todavía sin contratar, Docker Compose/Caddy y dominio previsto myfinanzas.pp.ua;
 HTTPS obligatorio. No hay deploy ni servicios configurados. Seguridad/custodia y backups
-externos operativos se revisarán antes de datos reales. Motores/histórico/ciclos quedan
+externos operativos se revisarán antes de datos reales. Motores financieros/histórico/cierre quedan
 fuera: [roadmap](../roadmap.md), [seguridad](security.md), [calidad](quality.md).
+
+
+## Ciclos E1.3 — implementado en rama, pendiente de revisión/merge
+SQLite v3 incorpora ciclos e intentos, sin semillas de ciclos. Upgrade v1→v2→v3 o
+v2→v3 bajo el mismo IMMEDIATE, conserva filas previas y autenticación; rollback de DDL.
+Inicio único, mes financiado único como columna generada virtual desde Inicio,
+EUR INTEGER 64 bits leído como texto; solo Inicio/saldo son entradas financieras.
+ID técnico TEXT desde contador atómico; trigger impide UPDATE/DELETE e inserción no
+posterior. Rectificaciones necesitan el procedimiento de E2.1, no un atajo de API.
+Fin/estado/corte/contexto se derivan del maestro completo antes de filtrar/paginar.
+GET /api/ciclos, /api/ciclos/:id, /api/ciclos/contexto; POST /api/ciclos con
+idempotency-key y contextRevision. Sin PATCH/DELETE ni endpoint de fecha alternativa.
+La huella de contexto protege alta concurrente; no es un cierre ni firma financiera.
+Servicio puro de referencia/intervalos probado con fechas ficticias aisladas; runtime
+sin proveedores: tres fuentes pendientes, referencia null. Futuras entregas conectarán
+lectores de hechos reales, sin tablas simuladas ni fallback al reloj. Cabecera compartida
+React consume ese contexto en las tres entregas. [Trazabilidad](../03-ciclos-financiados-testplan.md).
+Copias age admiten manifest v3 y prueban restauración aislada; no cambia custodia externa.
