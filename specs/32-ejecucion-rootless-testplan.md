@@ -81,3 +81,16 @@ Solo versiones/booleanos saneados en logs y job summary, ningún artifact sensib
 Resultado remoto pendiente; AC-05/10/13/21 no pasan por publicar el workflow.
 Si falla el user manager del runner, detener y proponer VM temporal Debian 13.
 La CI API fallida anterior permanece abierta sin atribución de test/causa.
+
+### Primer resultado del runner y corrección del sondeo — 2026-10-22
+[Run 39688358428](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39688358428),
+SHA feef838, termina FAILURE únicamente por el comando genérico unshare.
+Las demás comprobaciones pasan: systemd --user real y unidad transitoria,
+cgroup delegado, Podman rootless/cgroup v2/systemd y mapeos subuid/subgid.
+Versiones: Podman 4.9.3; systemd 255 (255.4-1ubuntu8.17);
+kernel 6.17.0-1022-azure; uidmap 1:4.13+dfsg1-4ubuntu3.2.
+No se ha demostrado un fallo de Podman: el sondeo debe comprobar el namespace
+mediante podman unshare true, no exigir que un binario distinto esté autorizado.
+Se corrige ese método sin tocar AppArmor/seccomp/sysctl ni elevar privilegios.
+Se conserva el fallo anterior; nuevo resultado pendiente. Solo continuar si
+Podman demuestra el namespace y se mantienen todas las demás condiciones.

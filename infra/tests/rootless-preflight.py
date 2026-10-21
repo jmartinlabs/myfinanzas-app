@@ -33,7 +33,7 @@ def main():
             checks[name] = subordinate_ids('/etc/' + name)
         except OSError:
             checks[name] = False
-    checks['user-namespace'], _ = command(['unshare', '--user', '--map-root-user', 'true'])
+    checks['podman-user-namespace'], _ = command(['podman', 'unshare', 'true'])
     checks['cgroup-v2'] = Path('/sys/fs/cgroup/cgroup.controllers').is_file()
     checks['systemd-user'], _ = command(['systemctl', '--user', 'show-environment'])
     # Prove execution by a real user manager; do not manufacture a manager or use sudo.
