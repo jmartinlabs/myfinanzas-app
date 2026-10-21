@@ -56,3 +56,11 @@ documental vuelve a pasar controles/CI antes del merge. Commit integrado verific
 No se declaran implementados/probados los motores AC-30/31 ni la integración futura
 Ciclos/cierre de AC-38. Siguen pendientes Manual operativo, inicialización real/migración,
 copias externas/automatización y configuración productiva. Sin modificación del maestro.
+
+## Seguimiento posterior — concurrencia de inicialización
+Durante la CI documental de STEP 8 se detectó un fallo de un proceso hijo en AC03.
+Usuario autoriza investigar/corregir en rama separada, 2026-10-21. [Incidencia](sqlite-startup-concurrency.md)
+reproduce SQLITE_BUSY al inicializar esquema con transacción diferida; arreglo mínimo
+BEGIN IMMEDIATE y regresión roja/verde. Verificación local: 16 Bun/200 aserciones,
+tipos/build y Playwright pasan. Corrección en revisión, todavía no integrada en main.
+PR #8 sigue en borrador hasta resolver esta dependencia; sin merge, E1.2 o despliegues.
