@@ -210,3 +210,10 @@ solo 0.0.0.0 como opt-in explícito para namespace aislado. Puerto 3001 constant
 sin cambios financieros/clave/origen. Pruebas de procesos reales no acreditan el
 mapeo Podman ni el ciclo Quadlet; [dev 32](../32-ejecucion-rootless-progress.md)
 permanece incompleto y bloqueado para infraestructura real. Ninguna activación remota.
+
+Ensayo 32: runner ubuntu-24.04 efímero con Podman rootless/systemd de usuario
+reales validado; UID interno 10001 mediante keep-id frente al host 1001,
+volumen privado y publicación 127.0.0.1:18081 probados con API real y restart de
+Quadlet. La imagen de infra/tests es exclusivamente fixture, no release final.
+No se declara operación en Debian/VPS, reproducibilidad de release ni rollback
+completo por estos ensayos. Evidencia por SHA en testplan/progress 32 y PR #30.

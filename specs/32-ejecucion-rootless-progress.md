@@ -177,3 +177,16 @@ ensayo; AC-13/14/21 tienen evidencia parcial y requieren cierre final del alcanc
 Se añade comprobación negativa explícita de ::1:18081 y UID host al reporte siguiente.
 El fallo API histórico 39687644407 sigue sin diagnóstico causal, aunque otras CI pasen.
 R6 y durabilidad fsync permanecen documentados; ningún merge ni despliegue.
+
+## Evidencia ampliada del ensayo — 2026-10-22
+[Run 39690157698 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39690157698)
+sobre e778ad4aafd5adb48862655d3f3359bb81e2def1. Confirma lo anterior y ausencia
+de publicación en ::1:18081. UID/GID host 1001 frente a interno 10001;
+Podman 4.9.3, systemd 255 (255.4-1ubuntu8.18), kernel 7.0.0-1017-azure,
+uidmap 1:4.13+dfsg1-4ubuntu3.2. Imagen de ensayo
+sha256:2bc097f19c68a3d7088a7c4da5fae4e7d52ef9b098931fb1033cbd4df010342c.
+Se refuerza además el final del harness: solo emite PASS tras comprobar ausencia
+de sus contenedores, unidad y directorio privado; no basta intentar la limpieza.
+Los resultados finales de ese refuerzo/CI general se vinculan al SHA en PR #30.
+Sin artefactos sensibles, secretos reales, VPS, publicación de imagen ni merge.
+La evidencia del runner no acredita los contratos todavía no implementados de 32.

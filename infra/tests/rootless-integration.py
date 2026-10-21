@@ -226,21 +226,31 @@ TimeoutStopSec=30
         run(['systemctl', '--user', 'stop', service])
         health(False)
         evidence['stop-disconnects-published-api'] = True
-        print('::notice title=Rootless integration PASS::' + json.dumps(evidence))
-        if os.environ.get('GITHUB_STEP_SUMMARY'):
-            with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
-                summary.write('\n## Real rootless integration\n\n```json\n' + json.dumps(evidence, indent=2) + '\n```\n')
     finally:
         # Only names/files created by this invocation, never existing user units/data.
+        had_error = sys.exc_info()[0] is not None
+        cleanup_ok = True
         subprocess.run(['systemctl', '--user', 'stop', service], capture_output=True, timeout=40)
         for name in (api_name, writer_name):
             subprocess.run(['podman', 'rm', '--force', name], capture_output=True, timeout=30)
+            absent = subprocess.run(['podman', 'container', 'exists', name], capture_output=True, timeout=30)
+            cleanup_ok = cleanup_ok and absent.returncode == 1
         if unit_identity and unit.exists():
             info = unit.lstat()
             if (info.st_dev, info.st_ino) == unit_identity:
                 unit.unlink()
                 subprocess.run(['systemctl', '--user', 'daemon-reload'], capture_output=True, timeout=30)
         shutil.rmtree(root)
+        cleanup_ok = cleanup_ok and not root.exists() and not unit.exists()
+        if not cleanup_ok:
+            print('::error title=Rootless cleanup incomplete::owned fixture cleanup could not be verified')
+            if not had_error:
+                raise ProbeError('owned fixture cleanup could not be verified')
+    evidence['cleanup-own-resources'] = True
+    print('::notice title=Rootless integration PASS::' + json.dumps(evidence))
+    if os.environ.get('GITHUB_STEP_SUMMARY'):
+        with open(os.environ['GITHUB_STEP_SUMMARY'], 'a') as summary:
+            summary.write('\n## Real rootless integration\n\n```json\n' + json.dumps(evidence, indent=2) + '\n```\n')
 
 
 if __name__ == '__main__':
