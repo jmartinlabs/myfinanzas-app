@@ -101,3 +101,19 @@ no se diseña un dashboard de patrimonio ni cuadro de amortización.
 Pendiente respuesta Q1–Q4 y revisión de wireframes/especificación completa por Álex.
 Registrar las respuestas aquí sin reescribir esta ronda ni confundir recomendación
 marcada con aprobación. No iniciar dev 06 por publicar la PR Draft.
+
+## Evidencia recibida — revisión de Álex, pendiente de consolidación — 2026-10-21
+El usuario comunica revisión de Álex: fórmula de capital con `>= Inicio control`,
+desglose explícito y exacto, protección histórica y permiso Exterior para salidas a S000.
+Se registra como evidencia atribuida, NO decisión aprobada ni inspección física por Codex.
+Falta confirmar la base física vigente y aceptación expresa del usuario antes de
+consolidar Q1–Q4. Esta evidencia no resuelve por extensión signos/cero/exceso de capital,
+campos precontrol mínimos ni la extensión del límite de fecha futura al nuevo Tipo.
+No se cambia Status, aceptación o clasificación de AC; PR #24 continúa Draft.
+Investigación técnica R6 autorizada aparte, sin permiso para modificar código/pruebas.
+
+## Investigación técnica aislada R6
+[Diagnóstico reproducible y propuesta de PR independiente](investigations/05-r6-diagnostico.md).
+No reproducido en local; carencia de diagnóstico del helper confirmada, causa raíz de CI
+no demostrada. Ningún código o prueba modificados. Se espera autorización para una PR
+de diagnóstico de R6; el fallo histórico no se oculta ni declara resuelto por una CI verde.

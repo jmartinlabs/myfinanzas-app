@@ -343,3 +343,10 @@ Resolver Q1–Q4 en brainstorming con evidencias sanitizadas, revisar estos wire
 ajustar AC condicionados antes de pedir aprobación completa. Publicar Draft autorizado,
 sin marcar APPROVED ni iniciar dev 06. Ningún resultado de pruebas funcionales o visuales
 se atribuye a esta fase documental; las validaciones de documentos se registran en la PR.
+
+## Evidencia de revisión pendiente de consolidar — 2026-10-21
+Álex informa, según comunicación del usuario, fórmula con `>= Inicio control`,
+desglose explícito/exacto, protección histórica y permiso Exterior en salidas a S000.
+[Registro y límites](06-deuda-brainstorming.md): falta confirmar base física vigente y
+aceptación del usuario. No se promueven estas observaciones a reglas aprobadas ni se
+cierran Q1–Q4/AC condicionados. El resto de extremos no se deduce por extensión.
