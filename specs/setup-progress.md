@@ -110,3 +110,22 @@ numeración global de las ocho etapas. STEP 1–7 integrados/cubiertos; STEP 8 c
 e integrado mediante PR #8 tras aprobación del usuario sobre f4ff3e2 el 2026-10-21.
 Cierre documental validado en la misma PR antes de su merge; integración verificable en PR #8.
 Sin cambios funcionales, E1.2 o despliegue. Excel v5.11 sigue maestro.
+
+
+## Entrega siguiente autorizada — E1.2 / $spec 02
+Las ocho etapas iniciales siguen cerradas. El usuario autoriza especificar E1.2
+el 2026-10-21, no implementarla. [Rondas y decisiones](02-clasificacion-brainstorming.md):
+Q1–Q5 respondidas; Q6–Q8 pendientes. Siguiente acción: recibir dominios/semántica de
+Grupo, cálculos/Control y Referencia obligatoria; después wireframes y especificación.
+Rama spec/02-clasificacion desde main 2bc92e9. Sin SQL, datos reales, Excel, merge
+ni despliegue. La espera anterior queda sustituida solo en este alcance documental.
+
+
+### E1.2 — segunda ronda recibida; propuesta pendiente de revisión
+El usuario aporta evidencia sanitizada de dominios y semántica de cálculos,
+Control de integridad y Referencia obligatoria. [Registro](02-clasificacion-brainstorming.md)
+conserva ambas rondas; [propuesta y wireframes](02-clasificacion-specification.md)
+pendientes de revisión/aprobación. Sin nueva pregunta por contradicción material.
+El anterior pendiente Q6–Q8 queda resuelto por este registro. Validaciones de alta
+no demostradas físicamente se etiquetan propuestas app; consumidores futuros aparte.
+Siguiente acción: feedback visual y aprobación documental, no desarrollo ni merge.

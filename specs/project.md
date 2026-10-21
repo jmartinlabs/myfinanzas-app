@@ -157,3 +157,26 @@ No son un permiso para nuevos módulos: E1.2 y motores posteriores siguen exclui
 Excel v5.11 sigue como maestro, sin datos reales ni despliegue. E1.1 implementado e integrado. STEP 8 completado e integrado mediante PR #8 tras aprobación expresa sobre f4ff3e2;
 [cierre de las ocho etapas iniciales](dev-skill-consolidation.md). Skills spec/dev
 preparadas para reutilizarse. Esperar autorización; no iniciar E1.2 ni desplegar.
+
+
+## Autorización vigente — especificación E1.2 / $spec 02
+Usuario autoriza el 2026-10-21 continuar tras las ocho etapas iniciales cerradas
+(main 2bc92e9). Solo especificación de clasificación: rama spec/02-clasificacion,
+[brainstorming reanudable](02-clasificacion-brainstorming.md). Ronda 1 confirmada
+por el usuario tras contraste de Álex con Excel/Criterios: jerarquía única por ID,
+atributos de cada entidad, estados de padres como extensión app, corrección con
+impacto económico indirecto y separación de Presupuestos/Deudas futuros.
+Ronda 2 pendiente sobre dominios/reglas no demostrados; no inventar equivalencias.
+Esta autorización sustituye el anterior «esperar autorización de E1.2» únicamente
+para especificar: no desarrollo, SQL, importación, despliegue o merge. Excel maestro
+sin modificar; evidencia aportada por usuario, sin inspección independiente de Codex.
+
+
+### E1.2 — segunda ronda recibida; propuesta pendiente de revisión
+El usuario aporta evidencia sanitizada de dominios y semántica de cálculos,
+Control de integridad y Referencia obligatoria. [Registro](02-clasificacion-brainstorming.md)
+conserva ambas rondas; [propuesta y wireframes](02-clasificacion-specification.md)
+pendientes de revisión/aprobación. Sin nueva pregunta por contradicción material.
+El anterior pendiente Q6–Q8 queda resuelto por este registro. Validaciones de alta
+no demostradas físicamente se etiquetan propuestas app; consumidores futuros aparte.
+Siguiente acción: feedback visual y aprobación documental, no desarrollo ni merge.

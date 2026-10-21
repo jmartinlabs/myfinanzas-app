@@ -217,3 +217,30 @@ Aún no están demostrados la matriz exhaustiva, obligatoriedad por control, sig
 Objetivo/Manual y el detalle del corte mensual (fecha ausente, comparación/límite exacto).
 No se inventan restricciones para cubrir estas lagunas; ver trazabilidad en
 [especificación E1.1](01-saldos-control-specification.md#reservas-financieras-y-trazabilidad).
+
+
+## Evidencias de clasificación aportadas durante E1.2
+Fuente: mensajes del usuario tras contraste de Álex y revisión física por el usuario
+de Categorias, Configuración, Movimientos y Criterios de MyFinanzas2026_v5.11.
+No inspección independiente por Codex ni incorporación del libro. Registro completo
+y separación de decisiones app: [brainstorming 02](02-clasificacion-brainstorming.md).
+- Jerarquía única por IDs: Subcategoría → Categoría; Partida → Subcategoría.
+- Categoría: nombre, Grupo, Cálculo anual/mensual, Referencia obligatoria.
+  Subcategoría: nombre y Categoría; Control derivado de integridad. Partida: nombre,
+  Subcategoría, Presupuesto/Deuda opcionales, Estado. Estado de padres es extensión app.
+- Grupo es texto sin lista cerrada; no se encontraron fórmulas consumidoras directas.
+  Opcional descriptivo sin efecto económico es decisión app, no conclusión universal
+  de que la muestra prueba ausencia de consumidores.
+- Anual: Ingreso/Gasto/No aplica. Mensual: Ingreso/Gasto/Gasto compartido neto/No aplica.
+  Métodos independientes; significados contrastados en Configuración. No se encontró
+  consumo directo actual de Cálculo anual. Ningún motor se implementa en E1.2.
+- Control Subcategoría valida ID/nombre informados, ID/nombre no duplicados, Categoría
+  existente única y coincidencia del ID derivado. No dato maestro persistente en app.
+- Referencia obligatoria admite Sí/No y técnicamente vacío: Sí exige, No/vacío no
+  activan obligación. Herencia desde Categoría vía Partida para Gastos y Amortizaciones.
+  Si obligatoria: Referencia registrada, Tipo válido y esperado según tblTiposReferencia.
+  Anticipo restringe a Transferencia; Compartido tiene reglas propias. No inventar matriz.
+- Importe base/esencial/del mes son de Presupuesto Mensual; Esencial también de plan
+  anual por Partida. No trasladarlos a maestros.
+Reglas de nuevos formularios y pantallas siguen como propuesta en
+[especificación E1.2](02-clasificacion-specification.md), pendiente de aprobación.
