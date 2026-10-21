@@ -26,6 +26,11 @@ router ni librería UI. Backend devuelve JSON no-store y errores correlacionados
 La cabecera muestra No disponible porque el maestro Ciclos todavía no existe.
 
 ## Persistencia E1.1
+Semilla exclusivamente demo: openDatabase exige NODE_ENV=development/test antes de
+mkdir/apertura/PRAGMA. El proceso se rechaza en producción, entorno desconocido o ausente;
+las pruebas incluyen una base existente que queda idéntica tras el rechazo. No hay
+inicialización productiva: antes de datos reales se necesita un arranque limpio sin
+fixtures y una migración autorizada, no convertir o reutilizar automáticamente una demo.
 Esquema técnico v1 en inicialización transaccional, STRICT, FK activas, WAL y FULL,
 busy_timeout 3 s. Las versiones desconocidas fallan antes de mutar. No hay migraciones
 financieras, importador ni tablas de motores posteriores. La antigua tabla demo del

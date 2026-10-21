@@ -8,7 +8,7 @@ Current state: review — STEP 7 implementado en rama, pendiente aprobación de 
 | 2. Persistencia/API/validaciones exactas e integridad | complete | 0d6c296 y tests de revisión/concurrencia/rollback |
 | 3. Acceso único/TOTP/sesiones y copia cifrada/restauración aislada | complete | 0d6c296 y pruebas age/MFA/recuperación |
 | 4. Listado/ficha/formulario y estados responsive | complete | React real contra Effect HTTP/SQLite; sin motores futuros |
-| 5. QA, restauración, capturas e inspección 390/1440 | complete | [testplan 43 AC](01-saldos-control-testplan.md), 14 Bun/173 aserciones + E2E |
+| 5. QA, restauración, capturas e inspección 390/1440 | complete | [testplan 43 AC](01-saldos-control-testplan.md), 15 Bun/195 aserciones + E2E |
 | 6. Documentación y revisión de historia para PR funcional | complete | Controles locales pasan; rama feat/e1-1-saldos, CI por SHA en la PR |
 
 ## Verified increments
@@ -33,3 +33,16 @@ por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
 ## Next action
 Entregar PR con CI del SHA final verificada; detenerse para revisión de Álex
 antes de aprobación del usuario. Sin merge, STEP 8, E1.2, Excel ni despliegue.
+
+## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
+Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
+2.26:1), sin cambiar CSS/diseño. Aserción Playwright del color real del botón añadida.
+Se detectó semilla incondicional por entorno: ahora openDatabase solo admite
+NODE_ENV=development/test y bloquea antes de crear directorios o abrir cualquier base.
+Prueba de subprocesses cubre development/test (semilla idempotente), producción/entorno
+ausente/desconocido (sin archivos) y bases existentes intactas ante rechazo. También verifica que bun run setup respeta
+NODE_ENV=production y no crea base ni clave.
+Baseline ce7a92c: 14 Bun/173 aserciones; revisión: 15 Bun/195 aserciones pasan.
+Antes de datos reales: inicialización limpia sin fixtures y migración autorizada,
+todavía no implementadas. Copias externas, automatización y configuración productiva
+siguen pendientes. Sin nuevas dependencias/infraestructura, E1.2, STEP 8 ni merge.

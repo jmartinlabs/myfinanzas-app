@@ -50,7 +50,7 @@ Specification: [aprobada](01-saldos-control-specification.md)
 ## Regression checks
 Ejecución local 2026-10-21 (Europe/Madrid), Bun 1.4.3, Chromium del sistema:
 - `bun install --frozen-lockfile`, `bun run typecheck`, `bun run build`: pasan.
-- `bun run test`: 14 pruebas, 173 aserciones, 0 fallos.
+- `bun run test`: 15 pruebas, 195 aserciones, 0 fallos.
 - `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e`:
   recorrido real completo, ambos viewports, 0 fallos; sin errores JS.
 - `validate-template`, `check-project`, `test-validator` (18), `test-checks` (22): pasan.
@@ -129,3 +129,16 @@ Sin Manual operativo, cálculos, módulos E1.2, importador ni datos reales. Cabe
 No disponible. Sin deploy/HTTPS real, copia externa, scheduler/poda ni custodia definitiva.
 Pruebas locales ejecutadas, sin bloqueo de Codex: Chromium del sistema y age oficial
 verificado disponibles. Revisión final de PR por Álex/usuario, sin merge autorizado.
+
+## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
+Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
+2.26:1), sin cambiar CSS/diseño. Aserción Playwright del color real del botón añadida.
+Se detectó semilla incondicional por entorno: ahora openDatabase solo admite
+NODE_ENV=development/test y bloquea antes de crear directorios o abrir cualquier base.
+Prueba de subprocesses cubre development/test (semilla idempotente), producción/entorno
+ausente/desconocido (sin archivos) y bases existentes intactas ante rechazo. También verifica que bun run setup respeta
+NODE_ENV=production y no crea base ni clave.
+Baseline ce7a92c: 14 Bun/173 aserciones; revisión: 15 Bun/195 aserciones pasan.
+Antes de datos reales: inicialización limpia sin fixtures y migración autorizada,
+todavía no implementadas. Copias externas, automatización y configuración productiva
+siguen pendientes. Sin nuevas dependencias/infraestructura, E1.2, STEP 8 ni merge.

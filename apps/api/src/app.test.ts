@@ -777,3 +777,56 @@ test("AC03: dos procesos reservan IDs sin duplicarlos y dos conexiones detectan 
     rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test("semilla demo solo en development/test; otros entornos no crean ni modifican bases", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mf-environment-"));
+  const script =
+    "import {openDatabase} from './apps/api/src/database.ts'; const db=openDatabase(process.argv[1]); db.close();";
+  const run = (path: string, mode: string | undefined) => {
+    const env = { ...process.env };
+    if (mode === undefined) delete env.NODE_ENV;
+    else env.NODE_ENV = mode;
+    return Bun.spawnSync([process.execPath, "-e", script, path], {
+      env,
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+  };
+  try {
+    for (const mode of [undefined, "production", "staging"]) {
+      const path = join(dir, mode ?? "missing", "demo.sqlite");
+      const result = run(path, mode);
+      expect(result.exitCode).not.toBe(0);
+      expect(result.stderr.toString()).toContain("E1.1 solo admite");
+      expect(existsSync(join(dir, mode ?? "missing"))).toBe(false);
+    }
+    const setup = Bun.spawnSync([process.execPath, "run", "setup"], {
+      env: {
+        ...process.env,
+        NODE_ENV: "production",
+        DATABASE_PATH: join(dir, "setup", "demo.sqlite"),
+        AUTH_KEY_PATH: join(dir, "setup", "auth.key"),
+      },
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    expect(setup.exitCode).not.toBe(0);
+    expect(setup.stderr.toString()).toContain("E1.1 solo admite");
+    expect(existsSync(join(dir, "setup"))).toBe(false);
+    for (const mode of ["development", "test"]) {
+      const path = join(dir, mode, "demo.sqlite");
+      expect(run(path, mode).exitCode).toBe(0);
+      expect(run(path, mode).exitCode).toBe(0);
+      const db = new Database(path, { readonly: true });
+      expect(
+        (db.query("SELECT COUNT(*) n FROM saldos").get() as { n: number }).n,
+      ).toBe(6);
+      db.close();
+      const before = readFileSync(path);
+      expect(run(path, "production").exitCode).not.toBe(0);
+      expect(readFileSync(path).equals(before)).toBe(true);
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});

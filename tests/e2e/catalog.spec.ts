@@ -52,6 +52,9 @@ test("E1.1: acceso real, altas/ediciones/estados, errores y restauración respon
   await expect(page.locator("#main")).toBeFocused();
   await expect(skip).toHaveCSS("opacity", "0");
   await page.getByRole("heading", { name: "Saldos", exact: true }).focus();
+  const primary = page.getByRole("button", { name: "Nuevo Saldo" });
+  await expect(primary).toHaveCSS("color", "rgb(36, 50, 14)");
+  await expect(primary).toHaveCSS("background-color", "rgb(141, 187, 46)");
   await shot("list-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: "dark" });
@@ -280,7 +283,7 @@ test("E1.1: acceso real, altas/ediciones/estados, errores y restauración respon
   const bun = process.env.BUN_BIN ?? "bun";
   const restored = spawn(bun, ["apps/api/test-support/restore-server.ts"], {
     stdio: "pipe",
-    env: process.env,
+    env: { ...process.env, NODE_ENV: "test" },
   });
   try {
     await expect

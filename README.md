@@ -31,6 +31,14 @@ ficticios. `.local/demo.sqlite` y `.local/auth.key` se generan con permisos priv
 están ignorados. Conserva la clave: no se regenera si existe un usuario.
 `DATABASE_PATH`, `AUTH_KEY_PATH` y `APP_ORIGIN` permiten configurar rutas/origen locales
 de confianza; mantén los mismos valores para setup, dev y backup. No son entradas HTTP.
+La inicialización con semilla ficticia exige `NODE_ENV=development` o `test` y rechaza
+producción, valores desconocidos o entorno ausente **antes de abrir SQLite o crear directorios**.
+Los comandos `dev` de API, `setup` y `backup` usan development por defecto, preservando
+un NODE_ENV explícito; las pruebas usan test. Una invocación directa requiere indicarlo.
+Esto es un bloqueo preventivo, no una configuración de producción.
+Antes de utilizar datos reales deberá existir una **inicialización limpia, sin fixtures,
+y una migración del maestro expresamente autorizada**, conservando IDs y validando
+integridad/equivalencia. No se implementan aquí ni se reutiliza una base demo como real.
 No reutilices una base desconocida: se rechazan versiones de esquema incompatibles.
 
 ## Copias y restauración de prueba

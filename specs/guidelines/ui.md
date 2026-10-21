@@ -29,6 +29,17 @@ están en [testplan](../01-saldos-control-testplan.md), no en una aprobación gr
 Se midieron pares de texto de la paleta y se operaron switches/menú por teclado;
 no auditoría WCAG completa ni ensayo con lector de pantalla.
 
+## Excepción de contraste confirmada en revisión de PR #7
+Revisión comunicada por el usuario el 2026-10-21: conservar texto oscuro sobre el verde
+principal #8DBB2E, aunque la referencia original de la paleta emplee texto blanco.
+La combinación implementada #24320E/#8DBB2E ofrece aproximadamente **6.04:1**;
+blanco/#8DBB2E ofrece **2.26:1**, insuficiente para texto normal (4.5:1).
+Esta excepción de accesibilidad afecta al texto de acciones, no cambia el verde, la
+identidad ni el diseño aprobado. Los indicadores blancos de los switches se conservan;
+sus etiquetas Sí/No siguen siendo oscuras. No se ha cambiado CSS ni distribución.
+Playwright comprueba el color real de texto y fondo del botón principal, además de los
+ratios de paleta; no se afirma una auditoría WCAG completa.
+
 ## Registro de aprobación STEP 5
 Lo siguiente conserva el contrato visual aprobado y las limitaciones de aquella fase
 **documental**. Las frases sobre implementación futura/no autorizada o PR #6 abierta

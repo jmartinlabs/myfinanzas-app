@@ -18,6 +18,7 @@ export default defineConfig({
   webServer: [
     {
       command: "bun tests/e2e/server.ts",
+      env: { NODE_ENV: "test" },
       url: "http://127.0.0.1:3001/api/health",
       reuseExistingServer: false,
     },

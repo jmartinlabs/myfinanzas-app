@@ -54,6 +54,12 @@ local en testplan. Custodia definitiva de identidad/rotación, monitorización y
 externo independiente antes de despliegue. Misma máquina no cubre pérdida del disco.
 
 ## Límites antes de producción
+La apertura/inicialización E1.1 solo admite NODE_ENV=development/test; producción,
+valores desconocidos o ausencia fallan antes de tocar el sistema de archivos/SQLite.
+Los scripts locales establecen un default explícito sin sobreescribir NODE_ENV existente.
+El guard de entorno evita una semilla accidental; no identifica datos personales ni
+permite introducirlos en desarrollo. El uso real requiere inicialización limpia sin
+fixtures y migración autorizada del maestro, todavía no implementadas.
 No se autoriza exponer Vite/HTTP local ni usar datos reales. Pendientes HTTPS/Caddy,
 CSP para HTML (Vite desarrollo requiere su política propia), headers del proxy, pruebas
 sobre dominio real, hardening/calibración/clock, custodia/rotación y ensayo de recuperación

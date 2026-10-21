@@ -4,6 +4,12 @@ import { dirname } from "node:path";
 
 // Only fictional bootstrap data. Original Excel and real migration are outside this module.
 export function openDatabase(path: string) {
+  // E1.1 is demo-only. Reject before mkdir/open/PRAGMA/seed, including existing databases.
+  if (!["development", "test"].includes(process.env.NODE_ENV ?? "")) {
+    throw new Error(
+      "E1.1 solo admite NODE_ENV=development o test y datos ficticios. Producción requiere inicialización limpia y migración autorizada.",
+    );
+  }
   if (path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const mask = process.umask(0o077);
