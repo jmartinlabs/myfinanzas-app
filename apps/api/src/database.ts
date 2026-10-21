@@ -55,6 +55,8 @@ export function openDatabase(path: string) {
     process.umask(mask);
   }
   try {
+    // Connection-local only: install the existing wait policy before reading live metadata.
+    db.exec("PRAGMA busy_timeout=3000");
     assertMode(inspectIdentity(db), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);
