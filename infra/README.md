@@ -68,3 +68,24 @@ Secure cookies; verify headers under real HTTPS.
 See `infra/Caddyfile.example` and
 `infra/myfinanzas-api.container.example` for **non-executable** sketches.
 Neither is a completed deployment recipe.
+
+
+## Preparación de persistencia 31 (sin activación)
+
+La rama de implementación 31 resuelve el bootstrap limpio mediante esquema v6
+e identidad persistente, sin habilitar despliegue. El bloqueo 1 anterior describe
+main antes de esta entrega; tras revisión/merge se deberá verificar el nuevo
+contrato, no eludirlo. Las plantillas `.example` permanecen sin activar/modificar.
+
+La raíz de datos privada del volumen puede contener un nuevo subdirectorio de
+estado, por ejemplo `/var/lib/myfinanzas/state/database.sqlite` y
+`/var/lib/myfinanzas/state/auth.key`. Solo son rutas de diseño para alinear la
+futura imagen/Quadlet: no son cambios aplicados al VPS. La inicialización exige
+ese subdirectorio inexistente y publica DB+clave juntas. El runtime exige ambos
+archivos existentes 0600, estado 0700 y UID efectivo; no corrige permisos ajenos.
+Linux/glibc con renameat2 es requisito de la publicación sin reemplazo.
+
+Los bloqueos 2–7 (bind, imagen/UID real, Caddy/HTTPS, copia externa y operación)
+siguen pendientes. El dominio real, Podman y los directorios del VPS no se han
+inspeccionado ni modificado. Ver [flujo CLI](../README.md) y
+[aceptación 31](../specs/31-sqlite-produccion-testplan.md).

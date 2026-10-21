@@ -1,3 +1,4 @@
+import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -638,6 +639,135 @@ test("05 R5 AC28: fallo durante rebuild restaura tablas/triggers y versión; des
   }
 });
 
+// Test-only diagnostics. Never echo argv, payloads, raw stdout/stderr or exception messages.
+function r6Technical(error: unknown) {
+  const e = (error ?? {}) as {
+    name?: unknown;
+    code?: unknown;
+    errno?: unknown;
+    stack?: unknown;
+    location?: unknown;
+  };
+  const reasons: Record<string, string> = {
+    SQLITE_BUSY: "SQLite database busy",
+    SQLITE_BUSY_RECOVERY: "SQLite recovery busy",
+    SQLITE_BUSY_SNAPSHOT: "SQLite snapshot busy",
+    SQLITE_LOCKED: "SQLite database locked",
+    SQLITE_LOCKED_SHAREDCACHE: "SQLite shared cache locked",
+    SQLITE_ERROR: "SQLite statement error",
+    SQLITE_CONSTRAINT: "SQLite constraint failed",
+    SQLITE_CONSTRAINT_FOREIGNKEY: "SQLite foreign key failed",
+    SQLITE_CANTOPEN: "SQLite open failed",
+    SQLITE_IOERR: "SQLite IO failed",
+    SQLITE_FULL: "SQLite storage full",
+    SQLITE_READONLY: "SQLite read only",
+    SQLITE_NOMEM: "SQLite allocation failed",
+    SQLITE_MISUSE: "SQLite API misuse",
+  };
+  const code =
+    typeof e.code === "string" && Object.hasOwn(reasons, e.code)
+      ? e.code
+      : "UNCLASSIFIED";
+  const site =
+    /(?:^|[/\\])((?:database|movimientos|referencias|movement-ledger|movement-impact|reference-schema)\.ts:[0-9]+:[0-9]+)(?:\)|$)/m;
+  const frame = typeof e.stack === "string" ? e.stack.match(site)?.[1] : null;
+  const location =
+    frame ??
+    (typeof e.location === "string" ? e.location.match(site)?.[1] : null) ??
+    null;
+  return {
+    name: [
+      "Error",
+      "SQLiteError",
+      "TypeError",
+      "SyntaxError",
+      "RangeError",
+    ].includes(e.name as string)
+      ? e.name
+      : "UnknownError",
+    code,
+    errno: Number.isSafeInteger(e.errno) ? e.errno : null,
+    reason: reasons[code] ?? "Technical error; details redacted",
+    location,
+  };
+}
+function r6Child(
+  imports: string,
+  opening: string,
+  writing: string,
+  closing: string,
+) {
+  return `${imports}
+    const r6Technical = ${r6Technical.toString()};
+    let r6Phase = 'open';
+    const r6Report = error => console.error(JSON.stringify({r6:1,phase:r6Phase,error:r6Technical(error)}));
+    try {
+      ${opening}
+      r6Phase = 'write'; ${writing}
+      r6Phase = 'close'; ${closing}
+    } catch(error) { r6Report(error); process.exitCode = 1; }`;
+}
+async function runR6(code: string, operation: string) {
+  const p = Bun.spawn([process.execPath, "-e", code], {
+    env: { ...process.env, NODE_ENV: "test" },
+    stdout: "pipe",
+    stderr: "pipe",
+  });
+  const [stdout, rawStderr, exit] = await Promise.all([
+    new Response(p.stdout).text(),
+    new Response(p.stderr).text(),
+    p.exited,
+  ]);
+  // Preserve the empty/nonempty assertion without exposing raw error text in its diff.
+  const errors =
+    rawStderr === ""
+      ? []
+      : rawStderr
+          .trim()
+          .split("\n")
+          .slice(0, 4)
+          .map((line) => {
+            try {
+              const value = JSON.parse(line);
+              if (
+                value?.r6 === 1 &&
+                ["open", "write", "close"].includes(value.phase)
+              )
+                return { phase: value.phase, error: r6Technical(value.error) };
+            } catch {}
+            return { phase: "unknown", error: r6Technical(null) };
+          });
+  const stderr = rawStderr === "" ? "" : JSON.stringify(errors);
+  let output = stdout === "" ? "empty" : "invalid-json";
+  try {
+    JSON.parse(stdout);
+    output = "json";
+  } catch {}
+  if (exit !== 0 || stderr !== "" || output !== "json") {
+    console.error(
+      "R6 child diagnostic " +
+        JSON.stringify({
+          operation,
+          phase:
+            errors.find((error) => error.phase !== "unknown")?.phase ??
+            "unknown",
+          pid: p.pid,
+          exit,
+          signal: p.signalCode ?? null,
+          errors,
+          stdout: { bytes: Buffer.byteLength(stdout), format: output },
+        }),
+    );
+  }
+  expect(exit).toBe(0);
+  expect(stderr).toBe("");
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error("R6 child output is not JSON; content redacted.");
+  }
+}
+
 test("05 R6 AC12/22/23/28: dos procesos migran v4 y reservan REF; reintento/corrección concurrentes", async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-e15-concurrency-")),
     path = join(dir, "demo.sqlite");
@@ -648,24 +778,17 @@ test("05 R6 AC12/22/23/28: dos procesos migran v4 y reservan REF; reintento/corr
   const database = resolve("apps/api/src/database.ts"),
     refs = resolve("apps/api/src/referencias.ts"),
     movements = resolve("apps/api/src/movimientos.ts");
-  async function run(code: string) {
-    const p = Bun.spawn([process.execPath, "-e", code], {
-      env: { ...process.env, NODE_ENV: "test" },
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const [stdout, stderr, exit] = await Promise.all([
-      new Response(p.stdout).text(),
-      new Response(p.stderr).text(),
-      p.exited,
-    ]);
-    expect(exit).toBe(0);
-    expect(stderr).toBe("");
-    return JSON.parse(stdout);
-  }
   try {
-    const create = `import{openDatabase}from${JSON.stringify(database)};import{createReference}from${JSON.stringify(refs)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(createReference(db,{nombre:'Caso concurrente',tipo:'Viaje'},crypto.randomUUID())));db.close();`;
-    const results = await Promise.all([run(create), run(create)]);
+    const create = r6Child(
+      `import{openDatabase}from${JSON.stringify(database)};import{createReference}from${JSON.stringify(refs)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      `console.log(JSON.stringify(createReference(db,{nombre:'Caso concurrente',tipo:'Viaje'},crypto.randomUUID())));`,
+      "db.close();",
+    );
+    const results = await Promise.all([
+      runR6(create, "create-reference"),
+      runR6(create, "create-reference"),
+    ]);
     expect(new Set(results.map((x) => x.id)).size).toBe(2);
     db = openDatabase(path);
     db.run("UPDATE counters SET next=999 WHERE name='referencias'");
@@ -677,8 +800,16 @@ test("05 R6 AC12/22/23/28: dos procesos migran v4 y reservan REF; reintento/corr
       key = randomUUID(),
       write = { ...body, fingerprint: p.fingerprint };
     db.close();
-    const cmd = `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(movements)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(writeMovement(db,${JSON.stringify(write)},${JSON.stringify(key)},null,false,${now})));db.close();`;
-    const two = await Promise.all([run(cmd), run(cmd)]);
+    const cmd = r6Child(
+      `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(movements)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      `console.log(JSON.stringify(writeMovement(db,${JSON.stringify(write)},${JSON.stringify(key)},null,false,${now})));`,
+      "db.close();",
+    );
+    const two = await Promise.all([
+      runR6(cmd, "idempotent-write"),
+      runR6(cmd, "idempotent-write"),
+    ]);
     expect(two[0]).toEqual(two[1]);
     db = openDatabase(path);
     expect(listMovements(db).total).toBe(1);
@@ -691,9 +822,19 @@ test("05 R6 AC12/22/23/28: dos procesos migran v4 y reservan REF; reintento/corr
       },
       plan = previewMovement(db, correction, id, false, now);
     db.close();
-    const correctionCmd = `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(movements)};const db=openDatabase(${JSON.stringify(path)});try{writeMovement(db,${JSON.stringify({ ...correction, fingerprint: plan.fingerprint })},crypto.randomUUID(),${JSON.stringify(id)},false,${now});console.log('200');}catch(e){console.log(JSON.stringify(e.status));}db.close();`;
+    const correctionCmd = r6Child(
+      `import{openDatabase}from${JSON.stringify(database)};import{writeMovement}from${JSON.stringify(movements)};`,
+      `const db=openDatabase(${JSON.stringify(path)});`,
+      `try{writeMovement(db,${JSON.stringify({ ...correction, fingerprint: plan.fingerprint })},crypto.randomUUID(),${JSON.stringify(id)},false,${now});console.log('200');}catch(e){if(e?.status!==409)r6Report(e);console.log(JSON.stringify(e.status));}`,
+      "db.close();",
+    );
     expect(
-      (await Promise.all([run(correctionCmd), run(correctionCmd)])).sort(),
+      (
+        await Promise.all([
+          runR6(correctionCmd, "rectification"),
+          runR6(correctionCmd, "rectification"),
+        ])
+      ).sort(),
     ).toEqual([200, 409]);
     db = openDatabase(path);
     expect(getMovement(db, id).auditoria).toHaveLength(2);
@@ -961,7 +1102,8 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [2, openV2, "e1.2-v2"],
       [3, openV3, "e1.3-v3"],
       [4, openV4, "e1.4-v4"],
-      [5, openDatabase, "e1.5-v5"],
+      [5, openDatabaseV5, "e1.5-v5"],
+      [6, openDatabase, "sqlite-v6"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);
@@ -1015,5 +1157,98 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+// Only the isolated negative subprocess registers this deliberately failing test.
+const r6ProbePhase = process.env.MYFINANZAS_R6_PROBE_PHASE;
+if (["open", "write", "close"].includes(r6ProbePhase ?? "")) {
+  test("05 R6 diagnostic controlled failure", async () => {
+    const fail = `console.log('CANARY_NOT_FOR_LOGS');console.error('CANARY_NOT_FOR_LOGS');throw Object.assign(new Error('/private/CANARY_NOT_FOR_LOGS payload must not escape'),{code:'SQLITE_BUSY',errno:5,stack:'Error: CANARY_NOT_FOR_LOGS\\n at openDatabase (/private/CANARY_NOT_FOR_LOGS/database.ts:44:7)'});`;
+    await runR6(
+      r6Child(
+        "",
+        r6ProbePhase === "open" ? fail : "",
+        r6ProbePhase === "write" ? fail : "",
+        r6ProbePhase === "close" ? fail : "",
+      ),
+      "controlled-probe",
+    );
+  });
+}
+test("05 R11: fallo instrumental conserva rechazo y diagnóstico seguro de apertura/escritura/cierre", async () => {
+  expect(
+    r6Technical({
+      name: "CANARY_NOT_FOR_LOGS",
+      code: "CANARY_NOT_FOR_LOGS",
+      message: "CANARY_NOT_FOR_LOGS",
+    }),
+  ).toEqual({
+    name: "UnknownError",
+    code: "UNCLASSIFIED",
+    errno: null,
+    reason: "Technical error; details redacted",
+    location: null,
+  });
+  expect(
+    r6Technical({ location: "/private/CANARY_NOT_FOR_LOGS/database.ts:44:7" })
+      .location,
+  ).toBe("database.ts:44:7");
+  expect(r6Technical({ location: "CANARY_NOT_FOR_LOGS" }).location).toBeNull();
+  for (const phase of ["open", "write", "close"]) {
+    const p = Bun.spawn(
+      [
+        process.execPath,
+        "test",
+        import.meta.path,
+        "--test-name-pattern",
+        "^05 R6 diagnostic controlled failure$",
+      ],
+      {
+        env: {
+          ...process.env,
+          NODE_ENV: "test",
+          MYFINANZAS_R6_PROBE_PHASE: phase,
+        },
+        stdout: "pipe",
+        stderr: "pipe",
+      },
+    );
+    const [stdout, stderr, exit] = await Promise.all([
+      new Response(p.stdout).text(),
+      new Response(p.stderr).text(),
+      p.exited,
+    ]);
+    const log = stdout + stderr;
+    expect(exit).toBe(1);
+    expect(p.signalCode ?? null).toBeNull();
+    expect(log).toContain("1 fail");
+    expect(log).not.toContain("CANARY_NOT_FOR_LOGS");
+    expect(log).not.toContain("/private/");
+    const line = log
+      .split("\n")
+      .find((line) => line.startsWith("R6 child diagnostic "));
+    expect(line).toBeString();
+    const diagnostic = JSON.parse(line!.slice("R6 child diagnostic ".length));
+    expect(diagnostic.operation).toBe("controlled-probe");
+    expect(diagnostic.phase).toBe(phase);
+    expect(diagnostic.pid).toBeInteger();
+    expect(diagnostic.pid).toBeGreaterThan(0);
+    expect(diagnostic.exit).toBe(1);
+    expect(diagnostic.signal).toBeNull();
+    expect(diagnostic.stdout).toEqual({ bytes: 20, format: "invalid-json" });
+    expect(diagnostic.errors).toContainEqual({
+      phase,
+      error: {
+        name: "Error",
+        code: "SQLITE_BUSY",
+        errno: 5,
+        reason: "SQLite database busy",
+        location: "database.ts:44:7",
+      },
+    });
+    expect(log.indexOf("R6 child diagnostic ")).toBeLessThan(
+      log.indexOf("error: expect(received)"),
+    );
   }
 });

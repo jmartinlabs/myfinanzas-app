@@ -1,6 +1,15 @@
 # Setup progress
 Current stage: 7
 
+## Especificación técnica 31 — aprobada, 2026-10-21
+
+El usuario aprueba íntegramente D1–D4 y AC-01–33 tras revisión con Álex y autoriza
+`$dev 31` al completar `$spec`. Fuente: mensaje expreso en esta conversación.
+[Decisiones y aprobación](31-sqlite-produccion-brainstorming.md) /
+[contrato aprobado](31-sqlite-produccion-specification.md). PR #23 documental;
+implementación independiente y sin merge autorizado. Se preservan los registros
+históricos inferiores. Sin VPS/deploy/datos reales ni modificaciones a #21/#22.
+
 | Stage | Status | Evidence / canonical decision links |
 | --- | --- | --- |
 | 1 Identity | complete | [Contexto confirmado](project.md), solicitud del usuario 2026-10-20 |
@@ -281,6 +290,25 @@ contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
 Este registro documental se propone en PR separada, pendiente de autorización de merge.
 No spec/dev 06, datos reales, modificación Excel ni despliegue; Excel v5.11 sigue maestro.
 
+
+## Desarrollo técnico 31 — verificación local
+
+[Progreso 31](31-sqlite-produccion-progress.md) y
+[testplan AC-01–33](31-sqlite-produccion-testplan.md). Esquema v6 con identidad,
+creación privada DB+clave, alta y restore implementados en rama independiente.
+82 Bun PASS / 1243 assertions y 2 E2E PASS (41.5s); revisión y CI finales en PR #25. PR #23 aprobada e integrada externamente
+en 13f19f6; #25 sigue pendiente de autorización de merge. Sin VPS/deploy/datos reales.
+
+## Dev 31 integrado — 2026-10-22
+Usuario autoriza expresamente solo PR #25 sobre 6c68b5e tras revisión con Álex.
+Squash verificado en main 511fcbad4bb0418af5bc06284ac30abb645cd604; árbol
+idéntico al aprobado y checkout limpio. 33 AC PASS, 82 API/1243 assertions, 2 E2E,
+CI previa y posterior al squash SUCCESS; detalles en [testplan 31](31-sqlite-produccion-testplan.md).
+R6 sin causa atribuida; fsync tras publicación puede dejar durabilidad incierta.
+Preparación operativa pendiente según infra/README.md; sin VPS/deploy/datos reales.
+PR #21/#22 intactas. Este cierre documental requiere su propia revisión/merge.
+
+
 ## Spec 06 — E1.6 propuesta documental en revisión — 2026-10-21
 Base main 9336fdd; E1.5 cerrada e integrada. Usuario autoriza solo especificación,
 wireframes y PR Draft. [Brainstorming](06-deuda-brainstorming.md) y
@@ -290,3 +318,19 @@ Próxima acción: contrastar apertura/corte/precontrol, desglose/límites, míni
 protecciones históricas, permiso/fecha del nuevo Tipo; feedback de wireframes 390/1440.
 La publicación anticipada está autorizada, no la aprobación o dev 06. Sin código/SQL,
 migración, Excel, datos reales, merge o despliegue. Excel v5.11 continúa maestro.
+
+
+## Spec 06 — consolidación para auditoría — 2026-10-22
+Base incorporada: main ad9442669468968d0ab82a9613522c7205b242c1, SQLite v6.
+PR #24 permanece DRAFT, sin aprobación final ni autorización de dev 06/merge.
+Usuario confirma cuota íntegra, capital>0/intereses>=0/suma exacta, Dxxx/enlace único,
+protección histórica y extraordinaria con S000/permiso Exterior. Q1 sigue única reserva
+física: falta fórmula literal y texto Criterios de apertura, >= Inicio control y precontrol.
+Exceso de amortización y fecha futura de extraordinaria: propuestas app explícitas para
+aceptación en la revisión completa, no reglas Excel ni autorizaciones implícitas.
+30 AC actuales candidatos/3 contratos futuros; ninguno ejecutado como funcionalidad E1.6.
+[Brainstorming](06-deuda-brainstorming.md) y [especificación/plan dev 06](06-deuda-specification.md)
+conservan evidencia, wireframes y trazabilidad. PR #31 integrada con CI SUCCESS; incidencias
+históricas no declaradas resueltas. Sin nuevas investigaciones de infraestructura.
+Próxima acción: evidencia sanitizada Q1 y auditoría/aprobación de especificación; después
+esperar autorización expresa de dev 06. Sin producto/SQL/migración, VPS, deploy o datos reales.

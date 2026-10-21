@@ -1,10 +1,11 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Specification
-Status: DRAFT — NO APROBADA; propuesta para revisión, Q1–Q4 pendientes.
+Status: DRAFT — NO APROBADA; Q2–Q4 consolidadas, Q1 pendiente de evidencia física.
+Propuestas de exceso y fecha futura requieren aceptación en la aprobación completa.
 Approval source/date: PENDING. Autorizada solo elaboración/publicación Draft, 2026-10-21.
 Context and brainstorming: [decisiones y ronda única](06-deuda-brainstorming.md),
 [roadmap E1.6/E4.4](roadmap.md), [R1/R2/R5](functional-reference-v5.11.md),
 [contratos E1.4](04-movimientos-testplan.md), [cierre E1.5](05-transferencias-referencias-testplan.md).
-Base: main 9336fdd; datos exclusivamente ficticios. No libro ni Criterios físicos
+Base vigente: main ad9442669468968d0ab82a9613522c7205b242c1 (SQLite v6), 2026-10-22; datos exclusivamente ficticios. No libro ni Criterios físicos
 inspeccionados por Codex. No dev 06, código funcional, SQL ni migraciones autorizados.
 
 ## Functionality
@@ -20,9 +21,11 @@ Amortización extraordinaria es UN Movimiento del tipo vigente Amortización deu
 | Cuota Gasto íntegro, capital + intereses = importe | R2 confirmado |
 | Extraordinaria a Exterior: capital = importe, intereses = 0, no Gasto | R2 confirmado |
 | Capital pendiente deriva de apertura y capital real aplicable desde control | R5 confirmado; fórmula/corte exactos pendientes Q1 |
-| Regla de desglose ausente/cero/signo y exceso sobre principal | Q2 pendiente; no inferir de importes totales positivos |
-| Maestro mínimo, estados y protección de enlaces con uso | Propuesta app Q3, no columnas/validaciones físicas atribuidas |
-| Permiso Exterior y fecha máxima de extraordinaria | Q4 pendiente; fecha es nueva decisión app si se aprueba |
+| Cuota: capital>0, intereses>=0, ambos explícitos, suma exacta | Confirmación del usuario 2026-10-22 Q2; no inferir TIN/TAE |
+| Exceso sobre principal | Propuesta app explícita, por aprobar con documento completo; no regla Excel |
+| Maestro mínimo Dxxx/Partida→Deuda y protección de apertura/Inicio/enlaces usados | Usuario Q3 confirmado; campos de apertura exactos dependen de Q1; estados son propuesta app |
+| Extraordinaria S000 y origen con permiso Exterior Sí | Usuario Q4 confirmado |
+| Fecha máxima extraordinaria | Propuesta app hoy civil Europe/Madrid, por aprobar; no regla Excel |
 | EUR exacto, MFA, auditoría, idempotencia y rectificaciones | Reutilización de contratos ya aprobados |
 
 E1.6 habilitará el consumidor Deuda de E1.2 y la parte deuda/extraordinaria de E1.4
@@ -32,7 +35,7 @@ mantienen referencias E3 y TODAS las Transferencias con Exterior fuera de alcanc
 La matriz de cuatro tipos no equivale a habilitar cualquier variante de Transferencia.
 
 ### Maestro y capital pendiente
-Propuesta Q3: alta, consulta/listado, nombre editable, estado, desactivación/reactivación,
+Contrato Q3 y propuesta de ciclo de vida app: alta, consulta/listado, nombre editable, estado, desactivación/reactivación,
 ID visible inmutable Dxxx generado en servidor, atómico/no reutilizado y después de D999.
 No ID interno extra sin necesidad; preservar los existentes en migración futura autorizada.
 Nombre identifica en UI pero no es clave; no inventar unicidad de nombres.
@@ -40,11 +43,12 @@ Se pueden asociar distintas Partidas a una misma Deuda, manteniendo 0..1 por Par
 según R1; no inventar un límite 1:1. Una Partida sin Deuda sigue válida para Gasto ordinario.
 
 Entradas propuestas: nombre, Inicio control y capital pendiente apertura; ausencia/cero
-separados. No decidir signo, obligatoriedad definitiva ni campos precontrol hasta Q1/Q3.
+separados. No decidir signo, obligatoriedad definitiva ni campos precontrol hasta Q1.
 No crear capital inicial como Movimiento ni como Saldo. TIN/TAE no calculan el desglose
 real; no deducir intereses mediante calendario ni generar cuotas programadas.
-Capital pendiente: apertura menos capital de hechos vigentes aplicables según Q1,
-NO menos gasto íntegro, intereses ni un agregado histórico ya incluido en la apertura.
+Capital pendiente: motor único desde las entradas de apertura/control y capital real
+aplicable que demuestre Q1; NO descontar gasto íntegro, intereses ni un agregado
+histórico ya incluido en la apertura. No se fija aún una fórmula física equivalente.
 No publicar fórmula con operador temporal pendiente ni usar `max(pendiente,0)` para
 ocultar discrepancias. No sumar apertura al Saldo bancario ni persistir capital restante.
 
@@ -53,7 +57,7 @@ Q1 definirá su contribución al principal sin quitar su efecto bancario o gasto
 El corte de control de Deuda no cambia el motor Saldos: apertura bancaria + entradas −
 salidas de hechos vigentes, SIN filtro general de Fecha apertura. Mostrar alcance temporal
 junto al capital, sin confundirlo con importe original del préstamo ni deuda patrimonial total.
-No habilitar nuevas altas ligadas a Deuda inactiva según propuesta Q3; la historia sigue
+Propuesta app de ciclo de vida: no habilitar nuevas altas ligadas a Deuda inactiva; la historia sigue
 consultable y una reactivación no crea hechos. No impedir anular por estado inactivo.
 La conservación de relaciones sin cambio en una rectificación sigue patrón E1.4/E1.5,
 sin obligar a sustituir entidades históricas inactivas por otras activas silenciosamente.
@@ -62,10 +66,12 @@ sin obligar a sustituir entidades históricas inactivas por otras activas silenc
 Gasto con Partida ligada a Deuda existente: mostrar Deuda derivada por ID y desglose.
 No selector independiente de Deuda contradictorio con Partida. Capital/intereses son
 atributos del MISMO hecho, no detalles con IDs financieros nuevos.
-La suma exacta debe igualar importe EUR positivo. Q2 decide cero/signos/ausencias;
+Capital amortizado obligatorio y estrictamente mayor que cero; intereses obligatorios
+y mayores o iguales a cero. Ambos explícitos: ausencia no es cero. La suma exacta debe
+igualar importe EUR positivo según Q2 confirmado por el usuario;
 no autocompletar capital=total, intereses=0 ni usar TIN/TAE en una cuota ordinaria.
 Gasto sin Partida ligada sigue funcionando como E1.4, sin desglose de deuda inventado.
-Q3 protege cambios de enlace que reclasifiquen hechos ya registrados: nunca incorporar
+Q3 confirmado protege cambios de enlace que reclasifiquen hechos ya registrados: nunca incorporar
 retroactivamente Gastos existentes a un motor nuevo sin revisión y datos de desglose.
 
 Ejemplo ficticio condicionado a apertura/corte Q1: apertura de Deuda 1.000,00 EUR,
@@ -74,11 +80,24 @@ Banco con apertura 500,00 → 400,00; gasto económico 100,00, no 20,00 ni 180,0
 La ejecución presupuestaria futura consume el Gasto completo según fuente/Partida;
 no se implementa un presupuesto simulado ni se afirma probado E2 por esta igualdad.
 
+### Propuesta app de exceso de capital — pendiente de aprobación completa
+Recomendar rechazo atómico del alta/rectificación cuando el estado candidato de hechos
+vigentes aplicables deje capital pendiente verificable negativo en alguna Deuda afectada;
+igualdad permite cero exacto. Al rectificar se sustituye el efecto anterior, no se resta
+dos veces. Revalidar también las consecuencias de rectificación/anulación sobre los
+hechos posteriores y ambas Deudas si cambian. Mostrar operación, Deuda y diferencia,
+sin truncar ni crear compensaciones. No requiere inventar horas ni orden económico por ID.
+El chequeo depende de Q1 y no se extiende a precontrol por analogía. Si no hay base
+verificable, no inventar pendiente ni aprobar un efecto ficticio. Regla propuesta de
+la app, no demostrada por Excel ni aprobada automáticamente por esta actualización.
+
 ### Amortización extraordinaria
 Tipo Amortización deuda; origen Saldo válido y destino fijo Exterior S000, Partida
 obligatoria con Deuda válida; sin Subtipo ingreso. No Transferencia para este hecho.
 Importe total estrictamente positivo; capital derivado=importe, intereses derivados=0,
-no aceptar valores contradictorios ni un segundo Gasto. Q4 fija permiso/fecha del tipo.
+no aceptar valores contradictorios ni un segundo Gasto. Q4 confirmado exige origen
+activo elegible con Permite salida a Exterior=Sí; destino técnico S000 fijo. El límite
+de fecha futura es propuesta app explícita para aprobación, no una regla física demostrada.
 Saldo origen Control Movimientos reduce el importe íntegro; principal reduce ese mismo
 capital si aplica al control según Q1. Otros motores mantienen sus estados no calculables;
 no excluir automáticamente No controlado ni Terminal sin evidencia específica.
@@ -95,10 +114,12 @@ CAT013 Gasto compartido obligatorio, CAT014 Evento y CAT009 Vehículo opcionales
 No endurecer compatibilidad opcional. Viaje/Evento operativos; casos con ficha E3 y
 sus restricciones siguen bloqueados, no utilizar una Referencia para cambiar el Tipo.
 
-Fecha civil y Ciclo se derivan del maestro único; antes del primero: Sin ciclo asignable.
+Fecha económica civil es entrada del hecho ejecutado; solo Ciclo se deriva del maestro
+único. Antes del primero: Sin ciclo asignable.
 Movimiento vigente del nuevo Tipo participa en máximo financiero; rectificar/anular puede
 retroceder la referencia. No usar reloj para ciclo/corte. El límite de fecha futura
-Europe/Madrid ya rige Gasto; extensión al nuevo Tipo pendiente Q4. Sin cambiar Ciclos futuros.
+Europe/Madrid ya rige Gasto; se propone extenderlo al nuevo Tipo en cliente/servidor
+como nueva decisión app por aprobar con este documento. Sin cambiar Ciclos futuros.
 
 Rectificar importe, Partida, desglose, fecha o Tipo requiere motivo, preview verificable,
 ID estable, revisión/contexto y auditoría anterior/posterior. Anular solo un error que no
@@ -109,8 +130,10 @@ Cambiar una operación puede afectar el capital de la antigua y nueva Deuda: amb
 figurar en revisión. Conversiones de Tipo no retienen campos inválidos ni generan otra fila.
 
 Reasignación Partida→Deuda, apertura e Inicio con uso tienen impacto económico aunque no
-se edite directamente Movimientos. Q3 propone bloquear su edición ordinaria y dar salida
-futura con nueva Partida, sin versionado general ni actualización masiva implícita.
+se edite directamente Movimientos. Q3 confirmado bloquea su edición ordinaria. Para
+cambios futuros del enlace se crea nueva Partida, sin versionado general ni actualización
+masiva implícita. Esto no autoriza cambiar apertura/Inicio de una Deuda usada mediante
+nueva Partida ni define un procedimiento de rectificación de esas entradas.
 Si se aprueba una rectificación histórica específica, debe tener consumidores verificables,
 no motores simulados. Cierres/fotos todavía inexistentes siguen contrato futuro DT5/P5;
 no declarar protegido por cierre un período sin motor de cierre instalado.
@@ -120,21 +143,24 @@ Modelo conceptual propuesto, NO esquema SQL aprobado ni código ejecutable:
 
 | Entidad | Persistente propuesto | Derivado/no persistir como fuente paralela |
 | --- | --- | --- |
-| Deuda | Dxxx, nombre, entradas de control/apertura Q1/Q3, estado Q3, revisión y UTC | Capital pendiente, totales operados, posiciones patrimoniales |
+| Deuda | Dxxx, nombre, entradas de control/apertura Q1, estado propuesto app, revisión y UTC | Capital pendiente, totales operados, posiciones patrimoniales |
 | Partida existente | Enlace opcional a Deuda por ID con integridad y protección Q3 | Deuda/nombre/jerarquía del contexto actual; no copia por descripción |
 | Movimiento existente | Hecho único/ID, Tipo, fecha, importe, Saldos, Partida, REF, concepto/nota; desglose real de cuota | Capital/intereses de extraordinaria por identidad; Ciclo/jerarquía/efectos |
 | Auditoría e intento | Actor único, motivo, UTC, anterior/posterior, revisiones e idempotencia | No acumulados financieros en tablas auxiliares |
 
-La estrategia exacta para preservar el enlace económico usado se concretará al resolver
-Q3: no dos FK editables independientes en Partida/Movimiento, ni reinterpretación por
+La relación conceptual Partida→Deuda todavía no tiene columna ni selector en el producto
+vigente. Se incorporará una única relación opcional por ID con integridad; Deuda de un
+Movimiento deriva de su Partida, no dos FK editables independientes ni reinterpretación por
 cambio silencioso del catálogo. Una captura de auditoría no sustituye el control de esa relación.
 Importes EUR: céntimos enteros, parsing/suma exacta con controles de desbordamiento ya
 establecidos, no float ni redondeo silencioso; fechas económicas civiles, metadatos UTC.
 No extender dos decimales a futuras inversiones ni almacenar tasas innecesarias aquí.
 Ausencias históricas/desglose antiguo no se rellenan con cero en upgrade ni por formulario.
 
-Continuidad desde SQLite v5 genuina: migración futura versionada atómica, preservando
-Saldos/clasificación/Ciclos/REF/hechos/IDs/auditorías/intentos y propietario/MFA/acceso.
+Continuidad desde SQLite v6 genuina vigente: migración futura versionada atómica, preservando
+Saldos/clasificación/Ciclos/REF/hechos/IDs/auditorías/intentos y propietario/MFA/acceso,
+identidad demo/producción y vínculo DB/clave. Conservar cadena de upgrades anteriores
+v1–v5 sin sustituir una fixture real por renumerar una base nueva.
 Sin borrar/resembrar ni convertir movimientos antiguos en cuotas o amortizaciones.
 Cambios de CHECK/tablas, si se requieren, preservan FK/índices/triggers y contenido exacto;
 rollback ante fallo, dos arranques concurrentes y rechazo intacto de versión desconocida.
@@ -167,7 +193,7 @@ campos etiquetados, teclado/foco y acciones sin depender solo del color. No grá
 └────────────┴────────────────────────────────────────────────────────────┘
 ```
 Alta/edición en página propia: Identificación (nombre/ID de solo lectura), Control
-(Inicio/apertura y campos adicionales solo si Q1/Q3 lo exigen), Estado según Q3.
+(Inicio/apertura y campos adicionales solo si Q1 los demuestra necesarios), Estado como propuesta app.
 No importe vacío presentado como cero ni total si configuración incompleta/no verificable.
 
 ### 1440 px — cuota, extraordinaria y revisión
@@ -196,7 +222,8 @@ Rectificación: motivo [____], anterior/posterior, ambas Deudas si cambia.
 [Volver al formulario] [Confirmar]  Ficha: [Rectificar] [Anular error]
 ```
 En edición de Partida: selector Deuda real, opcional, Sin asignación válido. Si está
-utilizada, Q3 determina bloqueo y explicación sin guardar un cambio económico oculto.
+utilizada, Q3 impone bloqueo y explicación sin guardar un cambio económico oculto.
+Incluye asignar Deuda a una Partida ya usada que antes no tenía desglose; no backfill implícito.
 Acceso a alta Deuda propia y vuelta conserva borrador en memoria, no registros temporales.
 No preselección de la primera Deuda ni autoasignación por nombre/Grupo.
 
@@ -215,7 +242,7 @@ No preselección de la primera Deuda ni autoasignación por nombre/Grupo.
 │ Nombre [____]                    │
 │ Inicio control [____]            │
 │ Capital apertura EUR [____]      │
-│ [campos mínimos según Q1/Q3]      │
+│ [otros campos solo si Q1 demuestra]      │
 │ [Cancelar] [Guardar]             │
 ├──────────────────────────────────┤
 │ Ficha D001 · [Editar]            │
@@ -252,7 +279,8 @@ Sin Deudas: explicación y CTA alta, sin semillas reales/automáticas para cubri
 Sin Partidas ligadas: enlazar a configuración, no permitir ID libre ni crear relación provisional.
 Carga/error: reintento y borrador conservado, no sustituir por cero o por entidades de demo.
 Validación: campo/mensaje y foco accesible; desglose desigual señala diferencia exacta,
-no corrige automáticamente. Q2 fijará otras validaciones, sin fabricar límites.
+no corrige automáticamente. Capital amortizado de cuota cero/negativo o intereses negativos se rechazan.
+La propuesta de exceso informa pendiente verificable y diferencia, sin truncar importes.
 404 inexistente, 422 datos inválidos, 409 revisión/contexto/idempotencia obsoletos:
 conservar borrador y exigir revisión nueva, sin sobreescribir ni confirmar preview anterior.
 401/expiración sigue MFA; no token persistido en navegador ni recuperación alternativa.
@@ -281,7 +309,7 @@ React + Bun + Effect HTTP + bun:sqlite/SQL directo; sin ORM, dependencias nuevas
 servicios bancarios, infraestructura ni herramientas de simulación.
 
 ## Validation and edge cases
-Resolver Q1–Q4 antes de declarar cerrada esta propuesta. IDs inexistentes/inactivos,
+Resolver Q1 y obtener aprobación completa (incluidas las propuestas app) antes de cerrar. IDs inexistentes/inactivos,
 Partida sin Deuda en extraordinaria, relación histórica cambiada, suma desigual,
 redondeos/reintentos/concurrencia, cambios antes/después del corte, igualdad de fechas
 y principal agotado/excedido requieren las reglas contrastadas y pruebas de frontera.
@@ -299,54 +327,100 @@ producción. No motor falso para demostrar futuros contratos.
 
 ## Acceptance checks
 Pruebas PREVISTAS, NO ejecutadas. 30 actuales candidatos I (algunos condicionados a
-Q1–Q4), 3 contratos futuros C. No son 30 PASS ni aceptación aprobada. IDs estables
+Q1 y propuestas app), 3 contratos futuros C. No son 30 PASS ni aceptación aprobada. IDs estables
 para revisión, sin afirmar validez de condiciones propuestas pendientes.
 
 | ID | Acción / precondición | Resultado observable esperado | Prueba prevista | Clase / reserva |
 | --- | --- | --- | --- | --- |
-| AC-01 | Alta y consulta de Deuda con mínimo confirmado | Un Dxxx estable, identidad/control, sin Saldo ni Movimiento de apertura | Bun/API/UI | I — Q1/Q3 |
-| AC-02 | Altas concurrentes, reintento y D999 | IDs atómicos/no reutilizados, D1000, una respuesta por intento técnico | Bun procesos/API | I — Q3 |
-| AC-03 | Renombrar, desactivar/reactivar Deuda usada | ID/historia conservados, sin DELETE ni hechos nuevos; nuevas selecciones según estado | Bun/API/UI | I — Q3 |
-| AC-04 | Asignar Deuda a Partida nueva, dejar otra sin relación | Enlace 0..1 real por ID, varias Partidas admisibles; sin duplicar jerarquía | Bun/API/UI | I — Q3 |
-| AC-05 | Reasignar/desvincular Partida o cambiar apertura/Inicio utilizados | No reclasificación histórica silenciosa; aplicar protección aprobada | Bun impacto/API | I — Q3 |
-| AC-06 | Registrar cuota 100, capital80/intereses20 aplicable | Un Gasto100, banco−100, principal−80; ningún segundo hecho | Bun exactitud/E2E | I — Q1/Q2 |
-| AC-07 | Cuota con suma incorrecta, ausencia/cero/signo de componentes | Desigualdad rechazada; demás dominios según Q2, sin autocompletar ni redondear | Bun/API/UI | I — Q2 |
+| AC-01 | Alta y consulta de Deuda con mínimo confirmado | Un Dxxx estable, identidad/control, sin Saldo ni Movimiento de apertura | Bun/API/UI | I — Q1 |
+| AC-02 | Altas concurrentes, reintento y D999 | IDs atómicos/no reutilizados, D1000, una respuesta por intento técnico | Bun procesos/API | I |
+| AC-03 | Renombrar, desactivar/reactivar Deuda usada | ID/historia conservados, sin DELETE ni hechos nuevos; ciclo de vida app propuesto, no regla Excel | Bun/API/UI | I — propuesta app |
+| AC-04 | Asignar Deuda a Partida nueva, dejar otra sin relación | Enlace 0..1 único por ID, varias Partidas admisibles; sin duplicar jerarquía ni FK editable en Movimiento | Bun/API/UI | I |
+| AC-05 | Reasignar/desvincular Partida usada, asignarle Deuda retroactivamente o cambiar apertura/Inicio usados | Bloqueo de edición económica ordinaria, sin reclasificación histórica; nueva Partida para futuro | Bun impacto/API | I |
+| AC-06 | Registrar cuota100, capital80/intereses20 aplicable | Un Gasto100, banco−100, principal−80; ningún segundo hecho | Bun exactitud/E2E | I — Q1 |
+| AC-07 | Cuota con suma desigual, componentes ausentes, capital0/negativo o intereses negativos; probar intereses0 explícitos | Rechazar inválidos; capital>0/intereses>=0 y suma exacta; intereses0 válidos; sin TIN/TAE, autorrelleno o redondeo | Bun/API/UI | I |
 | AC-08 | Gasto sin Deuda; intento de desglose/deuda contradictorios | Gasto ordinario intacto, ninguna reducción de principal ni FK paralela aceptada | Bun/API | I |
-| AC-09 | Extraordinaria200 con Partida ligada | Un Amortización deuda, capital200/intereses0, banco−200, principal−200 si aplicable; Gasto0 | Bun/E2E | I — Q1/Q4 |
+| AC-09 | Extraordinaria200 con Partida ligada y origen permitido | Un Amortización deuda, capital200/intereses0, banco−200, principal−200 si aplicable; Gasto0 | Bun/E2E | I — Q1 |
 | AC-10 | Extraordinaria sin Partida/Deuda, Subtipo o componentes alterados | Rechazo atómico del payload inválido; destino S000 fijo, sin Gasto sintético | Bun/API | I |
-| AC-11 | Origen inactivo/inexistente/S000 y Control Terminal/No controlado; permiso Exterior | Aplicar elegibilidad contrastada sin vetos generales nuevos; sin posición parcial presentada como calculada | Bun/API/UI | I — Q4 |
+| AC-11 | Origen inactivo/inexistente/S000, permiso Exterior No/Sí y Control Terminal/No controlado | Rechazar inválidos o permiso No; exigir Sí sin excluir Terminal/No controlado por su Control; no mostrar posiciones parciales calculadas | Bun/API/UI | I |
 | AC-12 | Total cero/negativo/tercer decimal y límites técnicos | Total positivo EUR exacto, error explícito; no float/truncado/overflow | Bun/API | I |
-| AC-13 | Hechos antes/en/después del Inicio de control, apertura informada | Principal según frontera Q1, sin duplicación precontrol ni reconstrucción; banco no filtrado por Fecha apertura | Bun tabla de equivalencia | I — Q1 |
-| AC-14 | Capital cero/agotado/excedido y rectificación retroactiva | Resultado o rechazo según Q2, sin clamp ni desaparición del exceso | Bun/API/UI | I — Q1/Q2 |
-| AC-15 | Hoy/mañana en medianoche Madrid/DST | Gasto conserva límite; extraordinaria según Q4, cliente/servidor iguales; Ciclos futuros intactos | Bun/API/UI | I — Q4 |
+| AC-13 | Hechos t−1/t/t+1 respecto a Inicio, ausencias/cero/apertura/precontrol según fórmula física | Capital conforme a equivalencia Q1; >= atribuido a Álex no basta como fórmula; no doble cómputo/reconstrucción; banco sin filtro Fecha apertura | Bun tabla de equivalencia física | I — Q1 pendiente |
+| AC-14 | Capital igual/excesivo respecto al pendiente verificable y cambios retroactivos/anulación que afecten después | Propuesta: igualdad deja0; exceso aplicable bloquea atómicamente indicando hecho/diferencia; revalidar estado candidato/ambas Deudas sin orden horario inventado; no clamp | Bun/API/UI | I — Q1/propuesta app exceso |
+| AC-15 | Hoy/mañana en medianoche Madrid/DST | Propuesta app: extraordinaria bloquea futuro en cliente/servidor como Gasto; no atribuir a Excel ni alterar Ciclos futuros | Bun/API/UI | I — propuesta app fecha |
 | AC-16 | Hecho antes del primer Ciclo y en límites de intervalo | Sin ciclo asignable o maestro correcto, sin ciclo creado automáticamente | Bun/E2E | I |
 | AC-17 | Nueva extraordinaria vigente de fecha máxima; rectificar/anular | Máximo financiero/cabecera se actualiza o retrocede desde hechos vigentes, no reloj | Bun/UI | I |
 | AC-18 | Gasto/extraordinaria con REF obligatoria/opcional/mapping/E3 | Existencia/compatibilidad según regla vigente por IDs; casos E3 bloqueados, opcionales no endurecidos | Bun/API/UI | I |
-| AC-19 | Rectificar cuota/capital/intereses/Partida/Tipo con motivo | Mismo ID, antes/después y ambas Deudas afectadas verificables; sin efecto doble | Bun/API/E2E | I — Q1/Q2/Q3 |
+| AC-19 | Rectificar cuota/capital/intereses/Partida/Tipo con motivo | Mismo ID, antes/después y ambas Deudas afectadas verificables; sin efecto doble y límites propuestos revalidados | Bun/API/E2E | I — Q1/propuesta exceso |
 | AC-20 | Anular error que no representa hecho real y reintentar | Auditoría conservada, excluye importe y capital del motor aplicable, no DELETE/compensación | Bun/E2E | I — Q1 |
 | AC-21 | Dos hechos iguales reales frente a respuesta perdida | Advertencia revisable permite dos hechos; reintento técnico produce solo uno | Bun concurrencia/E2E | I |
-| AC-22 | Cambiar Deuda/apertura/enlace/hecho tras preview | 409/revisión nueva, sin guardar efecto basado en contexto obsoleto | Bun procesos/API/UI | I — Q3 |
+| AC-22 | Cambiar Deuda/apertura/enlace/hecho tras preview | 409/revisión nueva, sin guardar efecto basado en contexto obsoleto; huella incluye las nuevas entradas reales | Bun procesos/API/UI | I |
 | AC-23 | Fallar escritura de auditoría/intento durante pago | Rollback de hecho/desglose/ID/intento, principal y banco intactos | Bun fault injection | I |
 | AC-24 | Filtrar Deuda/Tipo/Ciclo/estado y abrir ficha | Solo hechos vinculados por ID, anulados consultables; gasto separado de extraordinaria | API/E2E | I |
 | AC-25 | Recorrer listados/fichas/formularios/preview a390/1440 | Tabla/tarjetas, teclado/labels/foco/contraste, sin overflow; capturas reales solo en dev | Playwright + inspección | I — diseño pendiente |
 | AC-26 | Vacío/carga/error/401/404/409/422 y vuelta desde alta Deuda | Borrador conservado, error accionable, no valores/relaciones ficticios de sustitución | API/E2E | I |
 | AC-27 | Leer/escribir sin MFA, sin Origin/CSRF o manipular derivados | Rechazo servidor en todas las rutas, no fuga SQL/datos/factores ni bypass heredado | Bun Effect HTTP | I |
-| AC-28 | Upgrade v5 genuina con historia/acceso, fallo DDL, dos arranques | Datos/IDs/auditorías/REF/intentos/MFA preservados, sin reseed/backfill; rollback y versión desconocida intacta | Bun integración/procesos | I |
+| AC-28 | Upgrade v6 genuina con historia/acceso, fallo DDL, dos arranques y cadena anterior | Datos/IDs/auditorías/REF/intentos/MFA/origen/DB-clave preservados, sin reseed/backfill; rollback y versión desconocida intacta | Bun integración/procesos | I |
 | AC-29 | Backup age del esquema nuevo, inspeccionar manifiesto y restaurar aislado | Versión/etiqueta correctas, relaciones/capital/posiciones y acceso recuperables; política de sesiones preservada | Bun + E2E restore/MFA | I |
 | AC-30 | Regresión E1.1–E1.5 y matriz de cuatro Tipos | Reglas previas conservadas, sin habilitar Exterior Transferencia ni E3; cuota es gasto íntegro, extraordinaria no es gasto | Bun/API/Playwright | I |
 | AC-31 | Integrar plan anual/mensual, flujo e informes posteriores | Cuota ejecuta Gasto íntegro por reglas de fuente; extraordinaria excluida; no duplicar capital/intereses | Futuras E2/E4 | C |
 | AC-32 | Ampliar Deuda completa/conciliación histórica y migración real | Apertura/precontrol preservados, condiciones/hipoteca según E4.4; equivalencia y corte autorizados, sin hechos inventados | Futuras E4.4/E4.5/E4.12 | C |
 | AC-33 | Instalar cierres/fotos y rectificación protegida | Guardas reales transversales y fotos inmutables; no confundir pruebas locales con protección instalada | Futuras DT5/P5/E4 | C |
 
-## Reanudación y aprobación
-Resolver Q1–Q4 en brainstorming con evidencias sanitizadas, revisar estos wireframes y
-ajustar AC condicionados antes de pedir aprobación completa. Publicar Draft autorizado,
-sin marcar APPROVED ni iniciar dev 06. Ningún resultado de pruebas funcionales o visuales
-se atribuye a esta fase documental; las validaciones de documentos se registran en la PR.
+### Matriz mínima de pruebas para las decisiones revisadas
+- AC-13: Inicio−1/Inicio/Inicio+1, apertura ausente/cero según evidencia, hechos
+  precontrol, rectificar cruzando la frontera y anular. Esperados independientes de
+  fórmula/Criterios sanitizados; no fabricar una equivalencia Excel aún no demostrada.
+- AC-07/12: 100=80+20, intereses0 explícitos, capital0 rechazado; ausencias, negativos,
+  céntimo de diferencia, tercer decimal y límites técnicos sin redondeos silenciosos.
+- AC-14/19/22/23: igualdad al pendiente y un céntimo superior; dos pagos concurrentes
+  admisibles por separado pero excesivos juntos, cambio de Deuda y rectificación de un
+  hecho previo; rechazo/rollback sin segunda auditoría ni consumo parcial de intento.
+  Esperados de esta propuesta solo se consolidan al aprobarla y resolver Q1.
+- AC-05/28: Partida usada antes sin Deuda, enlace utilizado, apertura/Inicio usados;
+  fixture v6 real con historia y acceso tanto demo como producción local ficticia,
+  preservando origen y pareja DB/clave; continuidad heredada v1–v5.
+- AC-11/15: permiso Exterior Sí/No, S000 manipulado, No controlado/Terminal; hoy/mañana,
+  medianoche y DST Madrid si se acepta la nueva regla temporal de extraordinaria.
+- AC-29: snapshot/manifiesto con etiqueta del futuro esquema y restore age aislado,
+  acceso MFA, hechos/relaciones/posiciones y capital coherentes. No motor E2/E4 simulado.
 
-## Evidencia de revisión pendiente de consolidar — 2026-10-21
-Álex informa, según comunicación del usuario, fórmula con `>= Inicio control`,
-desglose explícito/exacto, protección histórica y permiso Exterior en salidas a S000.
-[Registro y límites](06-deuda-brainstorming.md): falta confirmar base física vigente y
-aceptación del usuario. No se promueven estas observaciones a reglas aprobadas ni se
-cierran Q1–Q4/AC condicionados. El resto de extremos no se deduce por extensión.
+## Plan concreto para dev 06 — no iniciado
+Tras evidencia Q1, auditoría/aprobación completa y autorización expresa de desarrollo:
+1. Maestro mínimo y continuidad: fixture v6 genuina, migración versionada atómica sin
+   reseed, Dxxx/revisiones/ciclo de vida app; preservar origen/DB-clave y MFA. Probar
+   upgrade, rollback, versión desconocida y arranques concurrentes antes de ampliar UI.
+2. Partida→Deuda: única relación opcional real y selector reutilizado; consumidor Deuda
+   de clasificación con guardas históricas, incluida Partida usada sin desglose. No
+   rellenar hechos antiguos ni eliminar reservas de consumidores todavía inexistentes.
+3. Capital: servicio central desde entradas Q1 y hechos vigentes; equivalencia física
+   antes/en/después de Inicio, precontrol y exactitud. Sin saldo acumulado paralelo.
+4. Pagos: extender único pipeline Movimientos, posiciones, financeRevision/huella de
+   preview, rectificación/anulación, Referencias y contexto de ambas Deudas. Conservar
+   IMMEDIATE/idempotencia/auditoría; extraordinaria es cuarto Tipo, no Transferencia.
+5. UI: reutilizar shell, formularios y navegación; maestro y filtros/desglose/revisión
+   banco-capital-gasto, responsive 390/1440. Wireframes todavía sujetos a aprobación.
+6. Validación/entrega: trazar 30 AC actuales sin atribuir E2/E4 implementadas; Bun/API,
+   Playwright/capturas reales, concurrencia, rollback, backup/manifiesto/restore age/MFA,
+   typecheck/build/controles y ambas CI; PR funcional independiente sin merge automático.
+
+Ubicación física del desglose, consultas parametrizadas, nombres de componentes y
+número de migración se resolverán en desarrollo como detalles ordinarios, sin nuevas
+rondas si mantienen estas invariantes. No se fija SQL ahora ni se abre infraestructura.
+
+## Reanudación y aprobación
+Q1 es la única reserva de evidencia física: transcripción sanitizada de fórmula vigente
+más Criterios, fecha comparada/operador >=, apertura/día inicial/precontrol y tratamiento
+de ausencias/cero/campos realmente usados. R5 y revisión atribuida de Álex no bastan
+para sustituirla. No inventar entradas ni reconstruir operaciones históricas ausentes.
+Q2–Q4 consolidadas con fuente usuario 2026-10-22; exceso, fecha futura y ciclo de vida
+app se presentan explícitamente como propuestas a aceptar en la aprobación completa,
+no como reglas del Excel ni una nueva ronda general de preguntas.
+PR #24 sigue DRAFT; no marcar APPROVED, integrar ni iniciar dev 06. Ninguna prueba
+funcional/visual E1.6 se declara ejecutada. Validaciones documentales/CI por SHA en PR.
+
+## Evidencia histórica — 2026-10-21
+Álex informó >= Inicio control, desglose exacto, protección histórica y permiso Exterior.
+[Brainstorming](06-deuda-brainstorming.md) conserva el registro original. La consolidación
+2026-10-22 sustituye sus PENDING de Q2–Q4, sin inventar la evidencia que falta de Q1.
+El fallo histórico R6 y el IOERR_SHORT_READ del prototipo no se declaran resueltos por
+extensión; #26/#27/#31 ya integradas. No nuevas investigaciones salvo bloqueo demostrado.

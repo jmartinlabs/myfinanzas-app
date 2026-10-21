@@ -320,3 +320,13 @@ AC-31–33 futuros. Exterior ordinario/especial y fichas E3 siguen fuera; la ent
 responsable de Exterior ordinario queda pendiente de planificación autorizada.
 Próxima acción: auditoría de Álex de la PR funcional. Sin merge automático, E1.6,
 datos reales, Excel modificado ni despliegue; Excel v5.11 continúa maestro.
+
+
+## Autorización vigente — especificación y desarrollo técnico 31
+
+El 2026-10-21 el usuario aprueba íntegramente D1–D4 y AC-01–33 tras revisión con
+Álex, y autoriza `$dev 31` al cerrar `$spec`. [Contrato](31-sqlite-produccion-specification.md)
+y [seguimiento](31-sqlite-produccion-progress.md). PR #23 documental aprobada,
+sin integrar; implementación en PR independiente dependiente de esa documentación.
+No se autoriza merge de ninguna PR ni VPS/deploy/datos reales/importación del Excel.
+Esta autorización técnica transversal no inicia E1.6 ni modifica el roadmap financiero.

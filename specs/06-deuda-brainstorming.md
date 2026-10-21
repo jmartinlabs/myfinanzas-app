@@ -1,10 +1,12 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Brainstorming
-Status: DRAFT — propuesta NO APROBADA; ronda Q1–Q4 pendiente.
+Status: DRAFT — consolidación para auditoría; Q1 pendiente de evidencia física.
+Q2–Q4 consolidadas según usuario; propuestas app requieren aceptación del documento completo.
 Roadmap/context: [E1.6/E4.4 y DT2/DT7](roadmap.md),
 [R1/R2/R5 y P4–P7](functional-reference-v5.11.md),
 [propuesta](06-deuda-specification.md).
 Base: main `9336fdd301231191509b6371ffb05a54b33d61ed`. Fecha: 2026-10-21.
-Next action: revisar Q1–Q4 con evidencia sanitizada y los wireframes; no dev 06.
+Next action: aportar evidencia literal de Q1 y revisar especificación completa/propuestas app; no dev 06.
+Actualización 2026-10-22: base main ad9442669468968d0ab82a9613522c7205b242c1 (SQLite v6).
 
 ## Autoridad y decisiones que no se reabren
 El usuario autoriza exclusivamente spec 06 y publicación en PR documental Draft,
@@ -27,7 +29,7 @@ No se atribuye al Excel ninguna propuesta nueva de este documento.
 | Gasto respeta salida Exterior; Referencia según Categoría; fuentes de Ciclos únicas | E1.4/E1.5, sin extensión implícita a la nueva operación |
 | E1.5 completada: 30 AC; AC-31–33 siguen contratos futuros | PR #18/#20; cierre 9336fdd |
 
-## Round 1 — 2026-10-21 — única ronda material
+## Round 1 — 2026-10-21 — registro histórico, sustituido por consolidación de 2026-10-22
 Las recomendaciones son propuestas, no respuestas del usuario. Basta aportar reglas,
 fórmulas o ejemplos ficticios sanitizados; no enviar el libro ni registros personales.
 
@@ -117,3 +119,59 @@ Investigación técnica R6 autorizada aparte, sin permiso para modificar código
 No reproducido en local; carencia de diagnóstico del helper confirmada, causa raíz de CI
 no demostrada. Ningún código o prueba modificados. Se espera autorización para una PR
 de diagnóstico de R6; el fallo histórico no se oculta ni declara resuelto por una CI verde.
+
+
+## Consolidación vigente Q1–Q4 — 2026-10-22
+Fuente: instrucción expresa del usuario «Álex — Retomar E1.6 · Deudas — PR #24».
+No se vuelve a preguntar lo ya confirmado. La ronda original y observaciones de Álex
+se conservan como historia; sus PENDING y recomendación de capital cero no son el
+contrato actual. La especificación completa y sus wireframes siguen DRAFT.
+
+| Cuestión | Decisión/evidencia vigente | Estado |
+| --- | --- | --- |
+| Q1 | R5 confirma apertura, control y amortización real, sin reconstrucción. Álex comunicó >= Inicio control, pero no está la fórmula literal ni el texto Criterios en Codex | ÚNICA reserva de evidencia física |
+| Q2 | Usuario: cuota Gasto íntegro; capital>0, intereses>=0, ambos explícitos; suma exacta EUR, no TIN/TAE | Consolidada; sustituye propuesta anterior de capital cero |
+| Q3 | Usuario: Dxxx estable, Partida→Deuda única por ID, mínimo necesario, apertura/Inicio/enlaces utilizados protegidos; no fuentes paralelas | Consolidada; entradas exactas subordinadas a Q1 |
+| Q4 | Usuario: Amortización deuda, misma Partida ligada, S000, origen con permiso Exterior Sí; capital=importe, intereses=0, no Gasto/ejecución presupuestaria | Consolidada; límite futuro es propuesta app |
+
+### Q1 — exactamente qué falta
+No se ha incorporado/inspeccionado el Excel. La referencia sanitizada R5 no contiene
+la fórmula física completa ni prueba qué campos de apertura/precontrol intervienen.
+Falta transcripción sanitizada de la fórmula vigente de capital pendiente (tabla y
+columnas) y del criterio que define Inicio control/apertura: confirmar `>=`, fecha
+comparada, tratamiento del día inicial y movimientos anteriores, y si los importes
+precontrol ya están incluidos en la apertura o intervienen como entrada separada.
+Confirmar asimismo el tratamiento físico de apertura ausente/cero y los campos mínimos
+necesarios; no se deduce signo ni obligatoriedad económica de una muestra.
+No pedir libro ni datos personales; basta texto de reglas/fórmula y, si hiciera falta,
+ejemplo ficticio. Hasta recibirlo, no publicar una fórmula definitiva, inventar campos
+precontrol, reconstruir operaciones ni aplicar el criterio de Saldos a Deudas.
+
+### Propuestas explícitas para aprobar con la especificación, sin nueva ronda general
+- Exceso de principal (Q2): recomendar rechazo atómico del alta/rectificación aplicable
+  cuyo estado candidato deje pendiente verificable negativo en alguna Deuda afectada;
+  igualdad válida deja cero exacto. Al rectificar sustituir el efecto anterior y revisar
+  consecuencias sobre hechos posteriores y ambas Deudas si cambian. Señalar operación,
+  Deuda y diferencia; no truncar, clamp, compensar ni ocultar inconsistencias. No inventar
+  horas ni precedencia económica por ID dentro del mismo día. No aplicar el límite a
+  precontrol antes de resolver Q1. Regla nueva app, NO demostrada en Excel ni aprobada
+  por extensión; condiciones exactas dependen del motor de Q1.
+- Fecha futura extraordinaria (Q4): recomendar máximo hoy civil Europe/Madrid, validado
+  cliente/servidor como los demás hechos ejecutados. Nueva decisión app que requiere
+  aceptación de la especificación; no cambia Ciclos futuros ni referencia financiera.
+- Ciclo de vida del mínimo (Q3): mantener propuesta UI Activa inicial, desactivar/reactivar,
+  nombre editable sin cambiar identidad; no DELETE. Son comportamientos app, no campos
+  físicos Excel. Apertura/Inicio con uso y enlace de Partida utilizado se bloquean en
+  edición ordinaria, incluida asignación retroactiva a Partida usada sin desglose.
+  Nueva Partida para cambios futuros; sin versionado general ni rectificador histórico
+  completo de catálogos en E1.6. Datos económicos exactos de apertura esperan Q1.
+
+### Continuidad técnica y revisión paralela
+PR #31 integrada: base SQLite v6; upgrade futuro desde v6 genuina preservará identidad
+DB/clave, MFA y todos los datos. La relación Deuda todavía no está implementada en
+Partida: se añadirá una sola relación opcional, no una segunda selección por Movimiento.
+Análisis funcional/técnico/QA en paralelo, sin ediciones concurrentes: coordinador
+consolida estos archivos; 33 IDs conservados (30 actuales candidatos y 3 contratos).
+No nueva investigación de infraestructura. La evidencia R6 del 2026-10-21 es histórica;
+#26/#27 mejoran diagnóstico y #31 adelanta timeout, sin demostrar causa histórica de CI
+ni resolver por extensión el IOERR_SHORT_READ del prototipo. Se conservan sus límites.
