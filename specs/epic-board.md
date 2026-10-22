@@ -256,3 +256,16 @@ heredada, separado del producto E2.1 y sin reactivar Dev32; no se introduce aqu�
 Entrega prevista: PR funcional DRAFT con evidencia y bloqueo explícito; verificar
 CI por SHA sin convertir un éxito posterior en cierre del fallo local. Ningún
 merge autorizado. Los 3 contratos futuros siguen PENDING y E2.1-AC2 hasta Comida.
+
+
+### Handoff de sesión — 2026-10-22 — STOP REQUESTED — NO AUTO-RESUME
+
+E2.1 queda congelado a petición expresa del usuario. Checkpoint e inventario:
+[progress07, apartado Handoff](07-ciclos-operacion-progress.md#handoff--2026-10-22--stop-requested--no-auto-resume).
+Origen publicado7b7cfce; código d63442e, QA53cc238. CI push39796609691 SUCCESS
+no cierra API local105 PASS/1 FAIL errno11: AC23/global BLOQUEADO. No existe PR
+funcional de esta rama. No se crea PR ni se continúa investigación o desarrollo.
+Runtime sin trabajadores visibles; controles dev07/qa07 not_found, terminación
+de proceso no confirmable. Dev32/PR30/AC22 continúa pausado. Próxima sesión:
+leer checkpoint y verificar estado antes de proponer continuación; requiere nueva
+instrucción del usuario, sin auto-resume.
