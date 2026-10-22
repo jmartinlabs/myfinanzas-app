@@ -1,6 +1,6 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: VERIFIED — AC-01–AC-24 PASS en runner efímero; revisión/integración pendientes, sin merge/deploy
+Current state: BLOCKED — 23/24 AC verificados; AC-22 abierto por fallo intermitente E1.4; PR #30 Draft, sin merge/deploy
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Current state: VERIFIED — AC-01–AC-24 PASS en runner efímero; revisión/int
 | Publicación de puerto Podman / AC-10 | verified final image | API real vía 127.0.0.1:18081, 200/401; sin IPv6 ni acceso externo; stop desconecta |
 | Quadlet y WAL/SHM | verified final image | systemd --user real, health→kill→restart, SIGTERM/SIGKILL, 3/60s/5s estable, WAL íntegro; sin reboot/logout remoto |
 | Fallos/update/rollback cruzado | verified | 39734037872: b0bc5a7→3094563→b0bc5a7, datos/auth/escrituras conservados; restore age con WAL/MFA y negativos incompatibles PASS |
-| Regresión local y PR independiente | verified / review pending | 90 API PASS / 1409 assertions; 2 E2E PASS (43.0s); tipos/build/controles PASS |
+| Regresión local y PR independiente | BLOCKED AC-22 | 90 API y 2 E2E locales PASS; 9a1dc5d CI íntegra PASS, pero 77e4982 falló en concurrencia E1.4 sin diagnóstico cerrado |
 
 ## Verified increments
 2026-10-22 Europe/Madrid, raíz del repositorio. Validación de API_BIND_HOST solo
@@ -45,11 +45,12 @@ R6 sigue sin cierre causal; fsync tras rename puede dejar conjunto válido con
 durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 
 ## Next action
-Verificar CI del commit documental final y entregar PR #30 para revisión; la
-evidencia del HEAD final se registra también en su descripción para evitar
-autorreferencia de SHA en este documento. Esperar autorización expresa antes
-de cualquier merge, en orden #29 → #30; no avanzar a acceso/despliegue.
-No VPS, deploy, datos reales, PR #21/#22 ni otras fases; no afirmar dev 32 completo.
+Mantener PR #30 Draft. Revisar el fallo E1.4 con el agente financiero o recibir
+autorización acotada para investigar/corregir la apertura/migración técnica que
+resulte demostrada, sin cambiar reglas financieras. No se ha modificado ese código.
+Un verde posterior no cierra el fallo intermitente. AC-22 sigue abierto; no declarar
+24/24 ni solicitar merge. PR #29 sí está reconciliada/CI verde, sin integrar.
+La CI del HEAD final se referencia en PR #30; sin VPS/deploy/datos reales.
 
 ## Incidencia de CI del incremento — 2026-10-22
 
@@ -303,3 +304,35 @@ defecto y runtime protegido, sin emitir valores. No cambia el contrato aprobado;
 refuerza AC-11 (sin herencia accidental de credenciales/config global). La evidencia
 3094563 sigue válida para su SHA; este refuerzo requiere nueva CI íntegra antes
 de entregar PR #30 como lista.
+
+## Bloqueo vigente de regresión — 2026-10-22
+La sección de aceptación integral de 3094563 registra ese ensayo concreto; no es
+cierre actual de Dev 32. **23/24 actuales; AC-22 abierto.**
+[Run 39734977613 / 77e4982 FAILURE](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39734977613):
+89 API PASS / 1 FAIL, sin timeout. Test «04 AC22/23/28: dos procesos actualizan
+v3, reintentan alta y compiten en rectificación». Ubicaciones saneadas:
+movimientos.test.ts:885:16 (exit de hijo esperado cero), :910:21 (Promise.all de
+la fase upgrade). No se conoce todavía código/causa del error del hijo: no
+atribuirlo a SQLITE_BUSY, R6 ni a la incidencia API histórica sin evidencia.
+No modificar timeouts, concurrencia, aserciones o código financiero para ocultarlo.
+
+9a1dc5df8da680ec557438499d0c27079ad0a6a3 tiene [rootless39735182627 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39735182627),
+[validate PR39735182819 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39735182819)
+y [push39735175707 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39735175707).
+Ese run ya se había iniciado antes de conocer el fallo 77e4982 para verificar
+la protección de proxies; no fue un retry. Confirma 90 API, todos los checks
+rootless y matriz/restore completos, incluida herencia de proxy ficticio por
+defecto y bloqueo explícito. **No diagnostica ni resuelve el fallo anterior.**
+
+Para no perder el diagnóstico financiero ya instrumentado, el harness de infra
+ahora exporta solo los enums/códigos/errno/fuente del reporter E1.4 existente a
+anotaciones cuando falla. No se modifica movimientos.test.ts ni implementación
+financiera. Prueba local del filtro: conserva SQLITE_BUSY sintético y elimina
+mensajes/payloads/sentinelas secretos; PASS. No se reintenta ningún run ni se
+ejecutan bucles hasta verde. La siguiente CI valida este cambio de observabilidad
+y documentación; aunque pase, AC-22 permanece abierto hasta diagnóstico/revisión.
+
+Alternativas antes de tocar código fuera de alcance: agente financiero cierra la
+incidencia con su evidencia; o usuario autoriza investigación/corrección técnica
+acotada a la ruta demostrada. No se cambia contrato aprobado ni se integra nada.
+R6/fsync/API histórico siguen documentados de forma independiente.

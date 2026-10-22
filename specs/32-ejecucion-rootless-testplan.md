@@ -24,10 +24,11 @@ Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 | verify frontend/OCI/pin corruptos + require_rollback negativos + restore existente | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas | release-contract.mjs restore: WAL confirmado, age, key/integrity/revocación/MFA | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios | preflight + integración completos, versiones/UID registrados y cleanup verificado | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + tipos/build/90 API/2 E2E + 22/18 controles | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
+| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + tipos/build/90 API/2 E2E + 22/18 controles | BLOCKED — 77e4982: 89 PASS/1 FAIL concurrencia E1.4; 9a1dc5d verde no cierra causa | 2026-10-22; run39734977613 FAILURE; run39735182627 SUCCESS sin atribución causal |
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
+**Estado vigente: 23/24 verificados; AC-22 bloqueado por regresión E1.4.**
 La tabla es el estado vigente; los bloques inferiores conservan la historia de
 fallos/ensayos y no sustituyen esta aceptación. CI del HEAD documental final se
 vincula en PR #30, sin inferir aprobación de merge ni despliegue.
@@ -311,3 +312,27 @@ defecto y runtime protegido, sin emitir valores. No cambia el contrato aprobado;
 refuerza AC-11 (sin herencia accidental de credenciales/config global). La evidencia
 3094563 sigue válida para su SHA; este refuerzo requiere nueva CI íntegra antes
 de entregar PR #30 como lista.
+
+## Incidencia actual que impide cerrar AC-22
+Run39734977613 / 77e4982 FAILURE: 89 PASS/1 FAIL, timeout_present=false.
+Test E1.4 «04 AC22/23/28…», movimientos.test.ts:885:16 / :910:21, hijo de
+upgrade v3 con exit no cero. No hay todavía código/causa técnica extraíble de
+las anotaciones originales; logs descargables no disponibles en este entorno.
+No afirmar relación causal con R6/API histórico ni cierre por CI posterior verde.
+
+9a1dc5d: rootless39735182627 + validate39735182819/39735175707 SUCCESS.
+90 API y matriz completa, sin retry. Se inició para probar proxy antes de conocer
+el fallo anterior; no constituye su corrección. Imagen actual del run:
+sha256:c68706f63c078e1a2acd8295c4f2f8df74b7fe90cb6e8380f8c0ab09f23bda39;
+OCI sha256:6201b3cb6525b803626645bcead975e539f870fcf21ae9e380929d4b29053892;
+manifiesto b44efae7092013a3bf33568fb8c6eaf8bde077371ba55bd2a858618e04298e06.
+Podman4.9.3/systemd255(255.4-1ubuntu8.18)/kernel7.0.0-1017-azure/uidmap1:4.13+dfsg1-4ubuntu3.2.
+Canario proxy: se hereda por defecto y queda ausente con --http-proxy=false, PASS.
+
+Observabilidad nueva de infra: reporter E1.4 existente filtrado a operación,
+exit, fase, code/errno y fuente permitidos. Se descartan mensajes, stack/argv,
+stdout real y campos desconocidos. Filtro probado localmente con canario privado,
+PASS. No se modifican tests/lógica financiera, retries ni timeouts. CI posterior
+valida ese filtro/documentación, pero no se usa un verde como cierre de la causa.
+Requiere diagnóstico/revisión por el agente financiero o autorización técnica
+acotada antes de cambiar código fuera de alcance. PR #30 permanece Draft.

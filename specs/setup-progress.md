@@ -332,3 +332,14 @@ R6/fsync/API histórico sin diagnóstico siguen residuales. No VPS ni despliegue
 infraestructura activa, imágenes publicadas, datos reales/Excel ni PR #21/#22.
 Próximas specs independientes A Caddy/HTTPS y B recuperación externa/custodia;
 ninguna activación ni migración real se infiere del cierre técnico 32.
+
+### Bloqueo posterior vigente Dev 32 — 2026-10-22
+El resultado 24 AC del ensayo 3094563 anterior queda acotado a ese run. Estado
+actual **23/24 verificados, AC-22 abierto**: run39734977613/77e4982 falló en
+concurrencia E1.4 (89 PASS/1 FAIL), fase upgrade v3, causa no diagnosticada.
+9a1dc5d tiene toda la CI verde y prueba proxies/datos/auth/restore, pero no
+resuelve ese fallo. No retries, omisiones ni modificaciones financieras.
+Se añade únicamente observabilidad saneada del reporter existente al harness
+de infra; PR #30 Draft hasta diagnóstico/revisión con el agente financiero o
+autorización técnica acotada. #29 sigue lista/verde; ninguna PR integrada.
+No se inician fases A/B ni VPS/despliegue. Detalles en progress/testplan 32.

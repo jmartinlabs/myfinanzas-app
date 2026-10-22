@@ -36,6 +36,40 @@ def run(args, timeout=60):
     return result.stdout
 
 
+def e14_diagnostics(stderr):
+    """Expose only the existing E1.4 reporter's technical enums, never payloads."""
+    import re
+    codes = {'SQLITE_BUSY', 'SQLITE_BUSY_RECOVERY', 'SQLITE_BUSY_SNAPSHOT', 'SQLITE_LOCKED',
+             'SQLITE_LOCKED_SHAREDCACHE', 'SQLITE_ERROR', 'SQLITE_CONSTRAINT',
+             'SQLITE_CONSTRAINT_FOREIGNKEY', 'SQLITE_CANTOPEN', 'SQLITE_IOERR',
+             'SQLITE_FULL', 'SQLITE_READONLY', 'SQLITE_NOMEM', 'SQLITE_MISUSE'}
+    result = []
+    for line in stderr.splitlines():
+        marker = 'E1.4 child diagnostic '
+        if marker not in line:
+            continue
+        try:
+            value = json.loads(re.sub(r'\x1b\[[0-9;]*m', '', line.split(marker, 1)[1]))
+        except (ValueError, TypeError):
+            continue
+        operation = value.get('operation')
+        if operation not in ('upgrade', 'idempotent-write', 'rectification'):
+            operation = 'unknown'
+        errors = []
+        for item in value.get('errors', [])[:4]:
+            error = item.get('error', {})
+            location = error.get('location')
+            if not isinstance(location, str) or not re.fullmatch(r'(?:database|database-schema|database-identity|private-state|auth|movimientos|referencias|movement-ledger|movement-impact|reference-schema)\.ts:[0-9]+:[0-9]+', location):
+                location = None
+            errors.append({'phase': item.get('phase') if item.get('phase') in ('open', 'write', 'close') else 'unknown',
+                           'code': error.get('code') if error.get('code') in codes else 'UNCLASSIFIED',
+                           'errno': error.get('errno') if type(error.get('errno')) is int else None,
+                           'location': location})
+        result.append({'operation': operation, 'exit': value.get('exit') if type(value.get('exit')) is int else None,
+                       'errors': errors})
+    return result
+
+
 def health(expected=True):
     for _ in range(60 if expected else 1):
         try:
@@ -415,6 +449,8 @@ def main():
         import re
         counts = re.search(r'(\d+) pass.*?(\d+) fail', result.stderr, re.S)
         if result.returncode or not counts or int(counts[2]) != 0:
+            for diagnostic in e14_diagnostics(result.stderr):
+                print('::error title=E1.4 sanitized child diagnostic::' + json.dumps(diagnostic))
             # Emit only labels literally declared in reviewed test sources, never
             # assertions, exception payloads, stdout or authentication factors.
             declared = set()
