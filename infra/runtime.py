@@ -44,7 +44,7 @@ HealthInterval=30s
 HealthTimeout=3s
 HealthRetries=3
 HealthStartPeriod=30s
-PodmanArgs=--read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128 --health-on-failure=kill
+PodmanArgs=--http-proxy=false --read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128 --health-on-failure=kill
 [Service]
 Restart=on-failure
 RestartSec=5

@@ -126,11 +126,26 @@ def main():
         env = ['--env=NODE_ENV=production', '--env=APP_ORIGIN=https://myfinanzas.pp.ua',
                '--env=DATABASE_PATH=/var/lib/myfinanzas/state/database.sqlite',
                '--env=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key']
-        hardened = ['--pull=never', '--userns=keep-id:uid=10001,gid=10001',
+        hardened = ['--pull=never', '--http-proxy=false', '--userns=keep-id:uid=10001,gid=10001',
                     '--user=10001:10001', '--cap-drop=all', '--security-opt=no-new-privileges',
                     '--read-only', '--read-only-tmpfs=false', '--pids-limit=128', '--memory=1g', '--cpus=1',
                     '--tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0711,size=64m',
                     '--volume=' + str(data) + ':/var/lib/myfinanzas:rw']
+        stage = 'synthetic-host-proxy-inheritance-boundary'
+        proxy_host = dict(os.environ, HTTP_PROXY='http://MF32_SYNTHETIC_PROXY_CANARY@127.0.0.1:9',
+                          http_proxy='http://MF32_SYNTHETIC_PROXY_CANARY@127.0.0.1:9')
+        proxy_js = 'process.exit(Object.values(process.env).some(value=>value?.includes("MF32_SYNTHETIC_PROXY_CANARY"))?42:0)'
+        control = subprocess.run(['podman', 'run', '--rm', '--network=none',
+                                  *(flag for flag in hardened if flag != '--http-proxy=false'),
+                                  image, '-e', proxy_js], env=proxy_host, capture_output=True, timeout=60)
+        if control.returncode not in (0, 42):
+            raise ProbeError('synthetic proxy control did not execute')
+        protected = subprocess.run(['podman', 'run', '--rm', '--network=none', *hardened,
+                                    image, '-e', proxy_js], env=proxy_host, capture_output=True, timeout=60)
+        if protected.returncode != 0:
+            raise ProbeError('runtime inherited synthetic host proxy')
+        evidence['podman-default-forwarded-synthetic-proxy'] = control.returncode == 42
+        evidence['explicit-runtime-proxy-inheritance-blocked'] = True
         stage = 'explicit-production-fixture-initialization'
         run(['podman', 'run', '--rm', '--network=none', *hardened, *env,
              image, 'apps/api/src/production-init.ts'])

@@ -115,7 +115,7 @@ def inspect_layers(archive):
 def inventory(image, root, frontend=None):
     name = 'mf32-export-' + uuid.uuid4().hex
     archive_path = root / (name + '.tar')
-    run(['podman', 'create', '--name', name, '--pull=never', image])
+    run(['podman', 'create', '--http-proxy=false', '--name', name, '--pull=never', image])
     try:
         run(['podman', 'export', '--output', str(archive_path), name])
         entries, web = {}, {}
@@ -216,7 +216,7 @@ def build(directory, ref='HEAD', repeat=True):
         results = []
         for index in range(2 if repeat else 1):
             iid = scratch / ('image-' + str(index))
-            run(['podman', 'build', '--platform=linux/amd64', '--no-cache', '--timestamp=' + epoch,
+            run(['podman', 'build', '--http-proxy=false', '--platform=linux/amd64', '--no-cache', '--timestamp=' + epoch,
                  '--build-arg=SOURCE_COMMIT=' + commit, '--iidfile', str(iid), '--file', str(ctx / 'Containerfile'), str(ctx)])
             image = iid.read_text().strip()
             payload, web = inventory(image, scratch, directory / 'frontend' if index == 0 else None)
@@ -233,7 +233,7 @@ def build(directory, ref='HEAD', repeat=True):
                     'reproducibility': {'builds': results, 'payload_equal': repeat,
                        'oci_metadata': 'Only tar/image timestamps and container-generated host files are excluded from normalized payload; no unexplained content differences allowed.'},
                     'tool_versions': {'podman': run(['podman', '--version']).decode().strip()}}
-        os_release = run(['podman', 'run', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', '--entrypoint=cat', chosen['image'], '/etc/os-release']).decode()
+        os_release = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', '--entrypoint=cat', chosen['image'], '/etc/os-release']).decode()
         manifest['runtime_os'] = dict(line.split('=', 1) for line in os_release.splitlines() if line.startswith(('ID=', 'VERSION_ID=')))
         manifest_path = directory / 'manifest.json'
         manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True))
@@ -244,11 +244,11 @@ def build(directory, ref='HEAD', repeat=True):
         verify(directory, commit, digest)
         # Roundtrip the private archive without a registry or production credentials.
         run(['podman', 'load', '--input', str(directory / 'image.oci.tar')])
-        version = run(['podman', 'run', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges',
+        version = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges',
                        '--read-only', '--entrypoint=age', chosen['image'], '--version']).decode().strip().lstrip('v')
         if version != '1.3.2':
             raise ReleaseError('age runtime version mismatch')
-        bun = run(['podman', 'run', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', chosen['image'], '--version']).decode().strip()
+        bun = run(['podman', 'run', '--http-proxy=false', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', chosen['image'], '--version']).decode().strip()
         if bun != '1.4.3':
             raise ReleaseError('Bun runtime version mismatch')
         return manifest

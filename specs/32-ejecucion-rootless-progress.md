@@ -295,3 +295,11 @@ La fase A deberá especificar integración HTTPS; B, backup externo/custodia y
 simulacro. Activación y datos reales siguen gates independientes; Excel maestro.
 #29 reconciliada/CI SUCCESS, solo dos documentos; #30 contiene diff propio sin
 duplicidades al comparar contra 56407e0. Ninguna PR integrada ni #21/#22 modificadas.
+
+Revisión final adicional — 2026-10-22: se desactiva explícitamente herencia de
+proxy host en Podman run/build/create con --http-proxy=false, incluida unidad
+Quadlet. Nueva prueba con proxy exclusivamente ficticio compara control por
+defecto y runtime protegido, sin emitir valores. No cambia el contrato aprobado;
+refuerza AC-11 (sin herencia accidental de credenciales/config global). La evidencia
+3094563 sigue válida para su SHA; este refuerzo requiere nueva CI íntegra antes
+de entregar PR #30 como lista.

@@ -303,3 +303,11 @@ No es prueba de VPS real, reboot/logout, Caddy/HTTPS ni recuperación externa.
 AC-13 acredita ciclo de servicio real y revisión de linger como requisito futuro,
 sin activarlo. AC-24 acredita gates documentados, no implementación de fases A/B.
 R6/fsync/API histórico siguen abiertos aunque esta suite y CI estén verdes.
+
+Revisión final adicional — 2026-10-22: se desactiva explícitamente herencia de
+proxy host en Podman run/build/create con --http-proxy=false, incluida unidad
+Quadlet. Nueva prueba con proxy exclusivamente ficticio compara control por
+defecto y runtime protegido, sin emitir valores. No cambia el contrato aprobado;
+refuerza AC-11 (sin herencia accidental de credenciales/config global). La evidencia
+3094563 sigue válida para su SHA; este refuerzo requiere nueva CI íntegra antes
+de entregar PR #30 como lista.

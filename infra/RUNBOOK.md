@@ -159,7 +159,7 @@ privada nueva, el comando de inicialización equivalente al probado es:
 ```sh
 MF32_IMAGE=sha256:ID_VERIFICADO_DE_64_HEX
 MF32_DATA=/ruta/privada/data
-podman run --rm --pull=never --network=none \
+podman run --rm --pull=never --http-proxy=false --network=none \
   --userns=keep-id:uid=10001,gid=10001 --user=10001:10001 \
   --cap-drop=all --security-opt=no-new-privileges \
   --read-only --read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128 \
@@ -189,3 +189,11 @@ y `systemctl --user stop myfinanzas-api.service` operan la unidad revisada.
 Comprobar HTTP host `/api/health` y 401 en ruta protegida, y puerto inaccesible tras
 stop. No ejecutar `reset-failed` repetidamente para eludir un start-limit: primero
 diagnosticar y corregir la causa sin modificar ni regenerar el estado.
+
+La unidad y tareas deshabilitan explícitamente `--http-proxy=false`: Podman
+hereda proxies del host por defecto y podrían contener credenciales. El ensayo
+inyecta solo un proxy ficticio en el entorno host, observa el comportamiento por
+defecto y exige ausencia del canario con el flag. No se imprimen variables ni
+valores; no se utiliza un proxy real. Build/create y tareas de inspección también
+desactivan esa herencia. Si una red futura necesita proxy, parar y definir su
+tratamiento seguro antes de introducir credenciales en ARG/ENV/capas/logs.
