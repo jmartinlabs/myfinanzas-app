@@ -225,3 +225,11 @@ runner en mount de pruebas privado readonly (intérprete/stdlib/loader), sin
 instalar Python en imagen final ni ampliar mounts del host. Se añaden diagnósticos
 solo de nombres literales de tests revisados, nunca payloads/factores. El diagnóstico
 concreto del fallo anterior sigue limitado por indisponibilidad de logs remotos.
+
+Run 39732364245 / 0ad8deb: FAIL en observación de start-limit (ningún PASS global).
+El observador de la nueva prueba duraba 25s, inferior a la ventana de 60s del
+contrato; se corrige a esa ventana más margen de scheduling y se añaden propiedades
+systemd no secretas para diagnosticar si vuelve a fallar. No se altera 3/60s,
+backoff 5s, límites productivos ni aserciones de aplicación. Health, reinicio real
+tras SIGKILL y conservación WAL alcanzaron sus checks previos. Regresión local
+actual: 90 API / 1409 aserciones PASS, tipos/build y 22+18 controles PASS.

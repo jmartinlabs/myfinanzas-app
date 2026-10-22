@@ -218,3 +218,13 @@ volumen privado y publicación 127.0.0.1:18081 probados con API real y restart d
 Quadlet. La imagen de infra/tests es exclusivamente fixture, no release final.
 No se declara operación en Debian/VPS, reproducibilidad de release ni rollback
 completo por estos ensayos. Evidencia por SHA en testplan/progress 32 y PR #30.
+
+Paquete 32 en validación: `infra/Containerfile` multistage fija base Bun/Debian por
+digest, dependencias frozen sin scripts y age por SHA256. `infra/release.py`
+materializa allowlist de Git, exige dos builds sin caché iguales en payload y
+frontend, exporta OCI privado y manifiesto pareado. `infra/runtime.py` solo renderiza
+Quadlet; `infra/compatibility.py` bloquea rollback sin prueba del par exacto de
+imágenes/esquema/datos/auth/escrituras. Ninguno despliega ni cambia estado.
+Tests Python/fcntl de #31 se montan como helper readonly del runner, fuera de la
+imagen productiva. La fixture Containerfile.probe es historia, ya no receta CI.
+Estado de aceptación, fallos y SHA en testplan 32; no anticipar PASS ni cierre R6.

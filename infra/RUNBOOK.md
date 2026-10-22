@@ -140,3 +140,13 @@ omisiones o relajación de pruebas para obtener verde.
 | B: recuperación externa | Backup age externo independiente, scheduler/alertas, retención 7 diarias/4 semanales/3 mensuales, custodia off-VPS, simulacro con MFA y RPO24h/RTO2h medidos | Nueva spec/dev, proveedor/coste/custodia decididos; cifrado no sustituye copia externa |
 | Activación | A+B, preflight Debian/UID/filesystem reales, compatibilidad y riesgos aceptados, ensayo ficticio y plan de corte | Autorización expresa separada para acceso y despliegue |
 | Datos reales | Migración/validación financiera P7 y autorización específica | Excel sigue maestro; este agente no importa ni modifica funcionalidad financiera |
+
+Comandos solo de preparación:
+`python3 infra/release.py render-unit /release --expected-commit COMMIT --expected-manifest-sha256 SHA --data /racine/privee`
+imprime la unidad sin instalarla. El control
+`python3 infra/release.py rollback-check --previous /ancienne --previous-commit ANCIEN --previous-manifest-sha256 SHA1 --current /nouvelle --current-commit NOUVEAU --current-manifest-sha256 SHA2 --proof /preuve-revue.json`
+rechaza pares no demostrados sin abrir DB. La prueba no secreta debe contener
+previous_source/current_source/previous_image/current_image exactos y
+schema/data/authentication/confirmed_writes=true, obtenidos del ensayo real y
+revisados en CI; ese JSON no es una firma ni sustituye revisar los resultados.
+Ningún control ejecuta un rollback.

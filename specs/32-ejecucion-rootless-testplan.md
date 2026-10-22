@@ -217,3 +217,8 @@ inspeccionar extensiones ajenas de site-packages. Se excluye ese árbol, que tam
 se copia al harness. Resultado corregido pendiente de ejecución. La próxima CI ejecutará todos los tests sin excluir #31.
 Reejecución local tras excluir site-packages de la inspección: PASS, Python
 3.12.14 con loader copiado importa fcntl/os; sin modificar imagen ni tests API.
+Run 39732364245 / 0ad8deb FAIL: observación de start-limit no alcanzada en 25s.
+Se observa ahora la ventana contractual completa de 60s + margen, manteniendo
+exactamente 3/60s y backoff 5s; propiedades systemd saneadas en caso de fallo.
+No acredita todavía AC-12. Local 90 API / 1409 aserciones, tipos/build y controles
+22+18 PASS; imagen/rollback/restauración finales siguen pendientes de CI.

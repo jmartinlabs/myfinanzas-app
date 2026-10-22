@@ -95,6 +95,27 @@ def main():
             index.write_bytes(original)
         if not rejected:
             raise ProbeError('foreign frontend was accepted')
+        # Reject corrupted OCI and an untrusted manifest pin before loading state.
+        archive = output / 'image.oci.tar'
+        with archive.open('r+b') as stream:
+            first = stream.read(1)
+            stream.seek(0); stream.write(bytes([first[0] ^ 1]))
+        try:
+            verify(output, manifest['inputs']['source'], digest)
+        except Exception:
+            pass
+        else:
+            raise ProbeError('corrupt OCI was accepted')
+        finally:
+            with archive.open('r+b') as stream:
+                stream.write(first)
+        try:
+            verify(output, manifest['inputs']['source'], '0' * 64)
+        except Exception:
+            pass
+        else:
+            raise ProbeError('wrong manifest trust pin was accepted')
+        verify(output, manifest['inputs']['source'], digest)
         evidence['frontend-backend-integrity-and-negative'] = True
         data = root / 'data'
         data.mkdir(mode=0o700)
@@ -166,6 +187,14 @@ def main():
         if run(['podman', 'port', api_name, '3001/tcp']).strip() != '127.0.0.1:18081':
             raise ProbeError('unexpected host port publication')
         evidence['published-host-health-200-finance-401'] = True
+        visibility = run(['podman', 'inspect', api_name]) + run(['podman', 'logs', api_name])
+        visibility += run(['podman', 'history', '--no-trunc', '--format=json', image])
+        visibility += run(['podman', 'image', 'inspect', image])
+        import base64
+        key_bytes = (state / 'auth.key').read_bytes()
+        if any(secret in visibility for secret in (key_bytes.hex(), base64.b64encode(key_bytes).decode())):
+            raise ProbeError('authentication key leaked through operational metadata/logs')
+        evidence['key-absent-from-logs-inspect-env-history'] = True
         # A v4-only publication must not expose an IPv6 loopback listener either.
         try:
             with socket.create_connection(('::1', 18081), timeout=1):
@@ -231,12 +260,16 @@ def main():
         run(['systemctl', '--user', 'daemon-reload'])
         run(['systemctl', '--user', 'reset-failed', service])
         subprocess.run(['systemctl', '--user', 'start', service], capture_output=True, timeout=30)
-        for _ in range(100):
+        # Observe the configured 60-second start-limit window plus scheduling
+        # margin; the previous 25-second observer was shorter than the contract.
+        for _ in range(280):
             result = run(['systemctl', '--user', 'show', service, '--property=Result', '--value']).strip()
             if result == 'start-limit-hit':
                 break
             time.sleep(0.25)
         else:
+            properties = run(['systemctl', '--user', 'show', service, '--property=Result,NRestarts,ActiveState,SubState,ExecMainStatus,StartLimitBurst,StartLimitIntervalUSec,RestartUSec'])
+            print('::error title=Nonsecret startup-limit properties::' + json.dumps(properties.splitlines()))
             raise ProbeError('invalid startup did not hit bounded start limit')
         if before != {p.name: sha(p.read_bytes()) for p in state.iterdir() if p.is_file()}:
             raise ProbeError('invalid startup modified existing state')
@@ -330,6 +363,35 @@ def main():
         evidence['previous-image'] = previous['image']
         evidence['schema-data-authentication-and-confirmed-writes-roundtrip'] = True
         evidence['final-image-encrypted-backup-restore-key-mfa-revocation'] = True
+        stage = 'fail-closed-rollback-review-gate'
+        from compatibility import require_rollback, CHECKS
+        proof = {'previous_source': previous['inputs']['source'],
+                 'current_source': manifest['inputs']['source'],
+                 'previous_image': previous['image'], 'current_image': manifest['image'],
+                 **{check: True for check in CHECKS}}
+        require_rollback(previous, manifest, proof)
+        # Real negative calls: none can open or mutate the application DB.
+        import copy
+        baseline = {p.name: sha(p.read_bytes()) for p in (matrix / 'state').iterdir() if p.is_file()}
+        for kind in ('schema', 'data', 'authentication', 'foreign_pair', 'missing_proof'):
+            other = copy.deepcopy(previous)
+            evidence_copy = dict(proof)
+            if kind in ('schema', 'data', 'authentication'):
+                other['inputs']['contracts'][kind] = 'incompatible'
+            elif kind == 'foreign_pair':
+                evidence_copy['previous_image'] = 'sha256:' + '0' * 64
+            else:
+                del evidence_copy['confirmed_writes']
+            try:
+                require_rollback(other, manifest, evidence_copy)
+            except ValueError:
+                pass
+            else:
+                raise ProbeError('incompatible rollback gate accepted ' + kind)
+        if baseline != {p.name: sha(p.read_bytes()) for p in (matrix / 'state').iterdir() if p.is_file()}:
+            raise ProbeError('rollback rejection changed current state')
+        evidence['incompatible-and-unproven-rollback-rejected'] = True
+
     finally:
         # Only names/files created by this invocation, never existing user units/data.
         had_error = sys.exc_info()[0] is not None

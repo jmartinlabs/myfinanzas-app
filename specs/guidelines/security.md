@@ -167,3 +167,10 @@ ni escritura/listado por app; TMPDIR privado 0700/UID 10001, verificado por stat
 y escritura real. State 0700 y DB/clave/sidecars 0600 no se relajan ni reparan.
 Solo se borra unidad/contenedores/temporales aleatorios propios; no prune global.
 No implica validación de host real, cifrado de disco, HTTPS o cierre de R6/fsync.
+
+El paquete definitivo 32 usa contexto Git por allowlist, canarios sintéticos
+rechazados antes de build e inspección de capas, sin ARG/ENV de secretos. El
+manifiesto se valida con commit y SHA esperados obtenidos por canal revisado
+independiente; un checksum junto al paquete no autentica su origen. Rollback
+requiere prueba de versiones exactas con escrituras y autenticación, no solo
+schema_version; no automatiza reversión ni restore. Ver runbook de infra.

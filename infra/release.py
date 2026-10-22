@@ -77,6 +77,41 @@ def context(commit, target, age_bytes):
     return inputs
 
 
+def check_context(target, inputs):
+    allowed = set(inputs['source_files']) | {'tools/age', 'tools/age-keygen',
+               'release-inputs.json', 'Containerfile', 'healthcheck.mjs'}
+    actual = set()
+    for path in target.rglob('*'):
+        if path.is_symlink():
+            raise ReleaseError('symlink in build context')
+        if path.is_file():
+            actual.add(path.relative_to(target).as_posix())
+    if actual != allowed:
+        raise ReleaseError('unapproved file in build context')
+
+
+def inspect_layers(archive):
+    with tarfile.open(archive) as oci:
+        for blob in oci:
+            if not blob.isfile() or not blob.name.startswith('blobs/sha256/'):
+                continue
+            payload = oci.extractfile(blob).read()
+            try:
+                layer = tarfile.open(fileobj=io.BytesIO(payload))
+            except tarfile.TarError:
+                continue  # OCI config/manifest JSON is not a rootfs layer.
+            with layer:
+                for entry in layer:
+                    name = entry.name.removeprefix('./')
+                    if not entry.isfile():
+                        continue
+                    data = layer.extractfile(entry).read()
+                    if data.startswith(b'SQLite format 3') or b'MF32_SYNTHETIC_SECRET_CANARY_NOT_FOR_RUNTIME' in data:
+                        raise ReleaseError('state/canary in image layer')
+                    if name.startswith('app/') and (name.endswith(('.sqlite', '.sqlite-wal', '.sqlite-shm', '.xlsx', '.env')) or '/.local/' in name or '/.git/' in name):
+                        raise ReleaseError('unsafe application layer payload')
+
+
 def inventory(image, root, frontend=None):
     name = 'mf32-export-' + uuid.uuid4().hex
     archive_path = root / (name + '.tar')
@@ -162,6 +197,20 @@ def build(directory, ref='HEAD', repeat=True):
         ctx = scratch / 'context'
         ctx.mkdir(mode=0o700)
         inputs = context(commit, ctx, age_bytes)
+        check_context(ctx, inputs)
+        # Synthetic credentials/DB/Excel canaries must be rejected before build.
+        for name in ('.env', 'database.sqlite', 'private.xlsx'):
+            canary = ctx / name
+            canary.write_bytes(b'MF32_SYNTHETIC_SECRET_CANARY_NOT_FOR_RUNTIME')
+            rejected = False
+            try:
+                check_context(ctx, inputs)
+            except ReleaseError:
+                rejected = True
+            finally:
+                canary.unlink()
+            if not rejected:
+                raise ReleaseError('context canary was accepted')
         results = []
         for index in range(2 if repeat else 1):
             iid = scratch / ('image-' + str(index))
@@ -174,6 +223,7 @@ def build(directory, ref='HEAD', repeat=True):
             raise ReleaseError('clean build payloads differ; no acceptance')
         chosen = results[0]
         run(['podman', 'save', '--format=oci-archive', '--output', str(directory / 'image.oci.tar'), chosen['image']])
+        inspect_layers(directory / 'image.oci.tar')
         with tarfile.open(directory / 'image.oci.tar') as oci:
             oci_digest = json.load(oci.extractfile('index.json'))['manifests'][0]['digest']
         manifest = {'oci_manifest_digest': oci_digest, 'format': 1, 'inputs': inputs, **chosen, 'source_date_epoch': int(epoch),
@@ -204,12 +254,29 @@ if __name__ == '__main__':
     sub = parser.add_subparsers(dest='action', required=True)
     b = sub.add_parser('build'); b.add_argument('--output', required=True); b.add_argument('--ref', default='HEAD')
     v = sub.add_parser('verify'); v.add_argument('directory'); v.add_argument('--expected-commit', required=True); v.add_argument('--expected-manifest-sha256', required=True)
+    r = sub.add_parser('render-unit'); r.add_argument('directory'); r.add_argument('--expected-commit', required=True); r.add_argument('--expected-manifest-sha256', required=True); r.add_argument('--data', required=True)
+    c = sub.add_parser('rollback-check')
+    for prefix in ('previous', 'current'):
+        c.add_argument('--' + prefix, required=True)
+        c.add_argument('--' + prefix + '-commit', required=True)
+        c.add_argument('--' + prefix + '-manifest-sha256', required=True)
+    c.add_argument('--proof', required=True)
     args = parser.parse_args()
     try:
         if args.action == 'build':
             build(Path(args.output), args.ref)
+        elif args.action == 'rollback-check':
+            from compatibility import require_rollback
+            previous = verify(Path(args.previous), args.previous_commit, args.previous_manifest_sha256)
+            current = verify(Path(args.current), args.current_commit, args.current_manifest_sha256)
+            require_rollback(previous, current, json.loads(Path(args.proof).read_text()))
         else:
-            verify(Path(args.directory), args.expected_commit, args.expected_manifest_sha256)
+            manifest = verify(Path(args.directory), args.expected_commit, args.expected_manifest_sha256)
+            if args.action == 'render-unit':
+                from runtime import render
+                print(render(manifest['image'], args.data), end='')
+                raise SystemExit(0)
+
         print('Private release operation verified; no deployment or publication.')
     except Exception as error:
         print('::error title=Private release failed::' + type(error).__name__ + (': ' + str(error) if isinstance(error, ReleaseError) else ''))

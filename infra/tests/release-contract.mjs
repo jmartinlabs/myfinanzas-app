@@ -17,6 +17,8 @@ const snapshot = db => JSON.stringify(tables.map(table => [table,db.query(`SELEC
 async function main() {
   let db = openDatabase(process.env.DATABASE_PATH);
   let key = loadKey(db, process.env.AUTH_KEY_PATH);
+  check(db.query('SELECT version FROM schema_version').get().version===6,'actual SQLite schema contract');
+  check(db.query('SELECT origin FROM database_origin').get().origin==='production','production identity contract');
   let saved = mode === 'seed' ? { password:'Synthetic fixture ' + randomUUID(), clock:Date.now(), cookie:'', csrf:'' } : JSON.parse(readFileSync(privatePath,'utf8'));
   if (mode !== 'seed') {
     check(snapshot(db) === saved.business, 'confirmed data changed between versions');

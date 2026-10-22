@@ -29,7 +29,7 @@ Caddy serves the built frontend; do **not** expose the Vite dev server.
 API proxy must preserve the exact public origin for SameSite/CSRF and host-only
 Secure cookies; verify headers under real HTTPS.
 
-## Production blockers (must not bypass)
+## Bloqueos históricos previos a 31/32 (no instrucciones vigentes)
 
 1. `apps/api/src/database.ts` intentionally rejects `NODE_ENV=production`
    before touching SQLite and seeds fictional Saldos for new demo databases.
@@ -89,3 +89,17 @@ Los bloqueos 2–7 (bind, imagen/UID real, Caddy/HTTPS, copia externa y operaci�
 siguen pendientes. El dominio real, Podman y los directorios del VPS no se han
 inspeccionado ni modificado. Ver [flujo CLI](../README.md) y
 [aceptación 31](../specs/31-sqlite-produccion-testplan.md).
+
+## Preparación 32 vigente — sin activación
+
+La inicialización segura 31 ya está integrada; el bind explícito 32 y el paquete
+definitivo se verifican en PR #30. Los bloqueos históricos anteriores conservan
+contexto, no describen literalmente main actual. [Runbook](RUNBOOK.md),
+`Containerfile`, `release.py` y `runtime.py` definen build privado/pareado,
+verificación, UID/volúmenes y unidad revisable. La plantilla se ha alineado con
+state, keep-id y endurecimiento; sigue sin instalarse ni activarse.
+El workflow ahora usa la receta definitiva, no Containerfile.probe. El estado
+verificado de los 24 criterios está en el [testplan](../specs/32-ejecucion-rootless-testplan.md);
+preparar un script no acredita su ejecución. VPS/Caddy/HTTPS, copias externas,
+custodia y despliegue siguen sujetos a sus gates independientes. R6/fsync y el
+fallo API histórico permanecen abiertos.

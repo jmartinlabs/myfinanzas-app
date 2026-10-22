@@ -249,5 +249,6 @@ suponer que el fallo significa que no existe.
 incluido vacío, rechaza antes de abrir SQLite. No usar `0.0.0.0` en el host público.
 La publicación host `127.0.0.1:18081:3001` está comprobada en el runner. El workflow `Rootless infrastructure 32` ya ensaya API/UID,
 volúmenes y Quadlet temporal en ubuntu-24.04 efímero. No instala ni modifica nada
-en el VPS y usa una imagen de prueba, no la release final. Ver
+en el VPS. El incremento actual prueba la receta definitiva; la evidencia previa
+con imagen de ensayo se conserva como histórica. Ver [runbook](infra/RUNBOOK.md) y
 [estado 32](specs/32-ejecucion-rootless-progress.md).
