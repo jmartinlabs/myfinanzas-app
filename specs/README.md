@@ -1,10 +1,19 @@
 # Document ownership and workflow
+
+Estado vigente 2026-10-22: aplicación existente, ocho etapas cerradas, E1.1–E1.5
+integradas y spec E1.6 integrada PR #24 (b60def1). Sin autorización de dev06/spec07.
+Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
+Adopción v2.3.1 en revisión: [$orchestrate](../.agents/skills/orchestrate/SKILL.md),
+[contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
+[evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
+
+## Cronología conservada
 MyFinanzas App is a derived project in initialization. Product context and technology
 are confirmed in [project.md](project.md) and [architecture](guidelines/architecture.md).
 The initial plan is approved and STEP 1 is implemented; see [setup progress](setup-progress.md)
 and [bootstrap evidence](bootstrap.md). STEP 2 context is documented in
 [context files](context-files.md). STEP 1/2 and [STEP 3 controls](automated-checks.md)
-are merged. The current functional reference and confirmed stable baseline are recorded
+are merged. The functional reference and its current candidate/stable status are recorded
 in [project.md](project.md). The workbook and original associated documentation remain
 outside the repository and have not been inspected by Codex. The functional specification
 attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
@@ -37,6 +46,8 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 | `guidelines/ui.md` | Applicable interface conventions or explicit not-applicable reason | init-project / dev |
 | `guidelines/quality.md` | Commands, checks, review and Definition of Done | bootstrap / dev |
 | `guidelines/security.md` | Threats, safeguards and authorization boundaries | init-project / dev |
+| `epic-board.md` | Estado/cola/gates/evidencias, nunca aprobación canónica | orchestrate, coordinador único |
+| `methodology/` | Coordinación, roles, validación y procedencia de adopción | adopción / coordinador |
 | `roadmap.md` | Product outcomes, proposed increments, dependencies, acceptance and approval status | roadmap |
 | `functional-reference-v5.11.md` | Sanitized source provenance, financial rules and confirmed P1–P7 | STEP 4 source review |
 | `NN-slug-brainstorming.md` | Append-only questions and confirmed answers | spec |

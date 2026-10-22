@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.4 integradas; E1.5 local/ficticia en desarrollo autorizado.
+Repositorio privado: E1.1–E1.5 integradas; especificación E1.6 integrada, desarrollo NO autorizado.
 Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
 
 - Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -25,22 +25,22 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
   el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
   con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
-  E1.1 implementado e integrado en PR #7 tras aprobación expresa del usuario sobre
-  4f7cdda y autorización de merge el 2026-10-21. Motores financieros posteriores pendientes.
-  STEP 8 completado e integrado mediante PR #8 tras aprobación del usuario sobre
-  f4ff3e2 el 2026-10-21: ocho etapas iniciales cerradas y Skills spec/dev reutilizables.
-  E1.2 especificación/diseño aprobados e integrados PR #10 (0c7a87e); dev 02 autorizado
-  en feat/e1-2-clasificacion, solo local/ficticio. Unicidad SUB global sin mayúsculas,
-  tildes/espacios conservados y comodines literales; reserva resuelta por usuario.
-  E1.2 completada e integrada mediante PR #11 tras aprobación expresa sobre 58b51f9
-  y squash merge autorizado. 27 criterios verificados; AC-19/24/25/26 siguen contratos
-  futuros. E1.3 integrada PR #13 (ff9d18d); spec 04 aprobada PR #14 (5fa4ace).
-  E1.4 cerrada PR #15/#16; spec 05 aprobada PR #17 (a586fa7). Dev 05 autorizado: 30 AC actuales/3 futuros; sin E1.6, Exterior ni deploy.
+  E1.1–E1.5 implementadas e integradas; ocho etapas iniciales cerradas. Historial y
+  aprobaciones en specs/project.md y specs/setup-progress.md; motores futuros pendientes.
+  Unicidad SUB global sin mayúsculas, tildes/espacios conservados y comodines literales.
+  Spec E1.6 integrada PR #24 (b60def1): 30 AC actuales/3 futuros; sin dev06, Exterior Transferencia ni deploy.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
 - SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
+
+## Coordinación v2.3.1 — adopción en revisión
+- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado.
+- Lee [flujos](specs/methodology/workflows.md), [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md); Skills existentes preservadas.
+- Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
+- Dimensiona tareas por independencia/capacidad real, sin máximo rígido de tres ni delegación ilimitada; sin aislamiento, paraleliza lecturas y serializa escrituras.
+- Aprobar spec NO autoriza dev: exigir permiso expreso por entrega. No dev06/spec07 en esta adopción; no chats externos controlados ni trabajo entre sesiones.
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.
