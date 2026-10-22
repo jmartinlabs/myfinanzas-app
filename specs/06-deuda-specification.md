@@ -1,8 +1,9 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Specification
-Status: DRAFT — NO APROBADA; Q1 cerrada con evidencia v5.11(7), Q2–Q4 consolidadas.
+Status: APPROVED AND INTEGRATED — PR #24, squash b60def124e95d692b6021eff9c1049652e21ded0.
 Q1–Q4 validadas y decisiones app de exceso, fecha futura y ciclo de vida consolidadas
-por auditoría final del usuario 2026-10-22; integración y desarrollo aún NO autorizados.
-Approval source/date: PENDING. Autorizada solo elaboración/publicación Draft, 2026-10-21.
+por auditoría final del usuario 2026-10-22; integración verificada, desarrollo NO autorizado.
+Approval source/date: usuario autoriza cierre e integración del SHA 3f04f33 el
+2026-10-22; merge y CI posterior verificados. No autorización de dev06.
 Context and brainstorming: [decisiones y ronda única](06-deuda-brainstorming.md),
 [roadmap E1.6/E4.4](roadmap.md), [R1/R2/R5](functional-reference-v5.11.md),
 [contratos E1.4](04-movimientos-testplan.md), [cierre E1.5](05-transferencias-referencias-testplan.md).
@@ -186,7 +187,7 @@ se verifican en desarrollo futuro; claves y copias fuera de Git, restore destino
 No automatización/copia externa ni configuración de producción en E1.6.
 
 ## Screens and interfaces
-Wireframes PROPUESTOS: revisión de diseño pendiente, NO capturas ni pruebas ejecutadas.
+Wireframes aprobados documentalmente al integrar PR #24; NO capturas ni pruebas ejecutadas.
 Reutilizar shell/cabecera Ciclos, navegación, componentes/tokens claros MyFinanzas:
 #8DBB2E con texto oscuro, fondos blancos/verdes suaves, sin modo oscuro/librerías nuevas.
 Desktop tabla compacta y menú lateral; móvil tarjetas, menú adaptado, formularios propios,
@@ -326,7 +327,7 @@ React + Bun + Effect HTTP + bun:sqlite/SQL directo; sin ORM, dependencias nuevas
 servicios bancarios, infraestructura ni herramientas de simulación.
 
 ## Validation and edge cases
-Q1–Q4 validadas; verificar ajustes finales y obtener autorización expresa de integración/desarrollo. IDs inexistentes/inactivos,
+Q1–Q4 validadas e integración verificada; desarrollo requiere autorización expresa. IDs inexistentes/inactivos,
 Partida sin Deuda en extraordinaria, relación histórica cambiada, suma desigual,
 redondeos/reintentos/concurrencia, cambios antes/después del corte, igualdad de fechas
 y principal agotado/excedido requieren las reglas contrastadas y pruebas de frontera.
@@ -420,7 +421,7 @@ Gasto170, capital720. No crear hechos históricos adicionales ni filtrar saldo b
 por Fecha apertura. Todos los importes son ficticios, sin relación con registros reales.
 
 ## Plan concreto para dev 06 — no iniciado
-Con Q1 cerrada, tras auditoría/aprobación completa y autorización expresa de desarrollo:
+Con spec06 integrada, tras integrar la metodología y obtener autorización expresa de desarrollo:
 1. Maestro mínimo y continuidad: fixture v6 genuina, migración versionada atómica sin
    reseed, Dxxx/revisiones/ciclo de vida app; preservar origen/DB-clave y MFA. Probar
    upgrade, rollback, versión desconocida y arranques concurrentes antes de ampliar UI.
@@ -433,7 +434,7 @@ Con Q1 cerrada, tras auditoría/aprobación completa y autorización expresa de 
    preview, rectificación/anulación, Referencias y contexto de ambas Deudas. Conservar
    IMMEDIATE/idempotencia/auditoría; extraordinaria es cuarto Tipo, no Transferencia.
 5. UI: reutilizar shell, formularios y navegación; maestro y filtros/desglose/revisión
-   banco-capital-gasto, responsive 390/1440. Wireframes todavía sujetos a aprobación.
+   banco-capital-gasto, responsive 390/1440. Wireframes aprobados documentalmente; comprobaciones UI reales pendientes.
 6. Validación/entrega: trazar 30 AC actuales sin atribuir E2/E4 implementadas; Bun/API,
    Playwright/capturas reales, concurrencia, rollback, backup/manifiesto/restore age/MFA,
    typecheck/build/controles y ambas CI; PR funcional independiente sin merge automático.
@@ -449,10 +450,11 @@ otra ronda Q1: Fecha de Movimiento >= Inicio control, apertura sin doble descuen
 histórico ni reconstrucción. No inspección independiente del Excel por Codex.
 Q2–Q4 validadas y exceso, fecha futura y ciclo de vida consolidados explícitamente
 por auditoría final del usuario 2026-10-22 como decisiones app, no reglas del Excel.
-Pendiente comprobar ajustes finales y autorización expresa de integración/desarrollo,
-sin reabrir Q1–Q4 ni iniciar nuevas rondas sobre decisiones resueltas.
-PR #24 sigue DRAFT; no marcar APPROVED, integrar ni iniciar dev 06. Ninguna prueba
-funcional/visual E1.6 se declara ejecutada. Validaciones documentales/CI por SHA en PR.
+Integración verificada; pendiente autorización expresa de desarrollo tras integrar
+la metodología, sin reabrir Q1–Q4 ni preguntar otra vez decisiones resueltas.
+PR #24 MERGED y CI de main SUCCESS: cierre documental verificado en b60def1.
+No iniciar dev06 sin autorización expresa posterior; no se declara ninguna prueba
+funcional/visual E1.6 ejecutada. La adopción metodológica no modifica este alcance.
 
 ## Evidencia histórica — 2026-10-21
 Álex informó >= Inicio control, desglose exacto, protección histórica y permiso Exterior.

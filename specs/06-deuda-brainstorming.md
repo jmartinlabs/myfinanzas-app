@@ -1,12 +1,12 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Brainstorming
-Status: DRAFT — Q1 cerrada con evidencia v5.11(7); especificación completa NO APROBADA.
+Status: APPROVED AND INTEGRATED — especificación E1.6 cerrada por usuario, PR #24/b60def1.
 Q1–Q4 validadas; exceso, fecha futura y ciclo de vida consolidados como decisiones app
-en auditoría final 2026-10-22. PR Draft: integración y desarrollo NO autorizados.
+en auditoría final 2026-10-22. Integración verificada; desarrollo NO autorizado.
 Roadmap/context: [E1.6/E4.4 y DT2/DT7](roadmap.md),
 [R1/R2/R5 y P4–P7](functional-reference-v5.11.md),
 [propuesta](06-deuda-specification.md).
 Base: main `9336fdd301231191509b6371ffb05a54b33d61ed`. Fecha: 2026-10-21.
-Next action: verificar ajustes finales y obtener autorización de integración/desarrollo; no dev 06.
+Next action: revisar/integrar metodología y esperar autorización expresa de dev06; no spec07.
 Actualización 2026-10-22: base main ad9442669468968d0ab82a9613522c7205b242c1 (SQLite v6).
 
 ## Autoridad y decisiones que no se reabren
@@ -227,3 +227,12 @@ Referencia v5.11(7) candidata, no estable. Se mantienen fórmula Q1 y 33 AC (30+
 Auditoría favorable y decisiones consolidadas no equivalen a autorización de integrar
 PR #24 ni de dev06: sigue DRAFT, pendiente comprobar el diff final y aprobación expresa.
 No preguntas nuevas sobre Q1–Q4, implementación, SQL, datos reales, Excel o despliegue.
+
+
+## Cierre de spec06 verificado — 2026-10-22
+Usuario autoriza squash merge del SHA 3f04f3395723dcd0141606affe7b7aba170bc7e5 en
+la petición «Integración E1.6 y adopción de Epic Orchestration v2.3.1». PR #24 MERGED,
+main b60def124e95d692b6021eff9c1049652e21ded0 y CI posterior SUCCESS verificados.
+Spec y wireframes aprobados documentalmente; 30 AC actuales/3 contratos futuros,
+sin implementar ni ejecutar pruebas E1.6. Los anteriores Draft/merge pendiente son
+históricos. Adopción de metodología en PR independiente; dev06/spec07 NO autorizados.

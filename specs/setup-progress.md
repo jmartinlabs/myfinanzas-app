@@ -364,3 +364,15 @@ Referencia única v5.11(7) sigue candidata, NO estable. PR #24 permanece DRAFT; 
 verificación del diff final y autorización expresa de integración/desarrollo. No dev06,
 merge, SQL, infraestructura nueva, VPS, despliegues, datos reales o Excel modificado.
 Los estados previos de propuestas/preguntas pendientes son históricos, no el vigente.
+
+
+## Spec06 integrada y adopción de coordinación autorizada — 2026-10-22
+Usuario autoriza integrar PR #24 sobre 3f04f33 sin cambios adicionales: HEAD y ambas
+CI SUCCESS, sin conflictos; squash b60def124e95d692b6021eff9c1049652e21ded0 MERGED.
+[CI posterior39738161833](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39738161833)
+COMPLETED/SUCCESS, main sincronizado y limpio. Spec06 cerrada; dev06/spec07 no autorizados.
+Adopción selectiva v2.3.1 en rama independiente; [plan y evidencia](methodology/orchestration-adoption.md),
+[tablero](epic-board.md) y [límites locales](methodology/myfinanzas-coordination.md).
+No reinicializar ocho etapas ni cambiar Skills existentes/CI/producto/finanzas. Esperar
+aprobación de PR de metodología antes de la nueva fase coordinada. La evidencia
+histórica de CI/IOERR no queda resuelta por esta adopción. Sin VPS/deploy/datos reales.

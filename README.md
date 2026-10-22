@@ -242,3 +242,15 @@ Si falla fsync del directorio después de publicar un restore, el destino puede
 contener una pareja completa pero de durabilidad incierta: detén la operación,
 verifica y preserva el destino y las copias; nunca lo borres o sobrescribas por
 suponer que el fallo significa que no existe.
+
+
+## Coordinación v2.3.1 — adopción propuesta
+La aplicación no se reinicializa. [$orchestrate](.agents/skills/orchestrate/SKILL.md)
+ruta trabajo autorizado hacia las Skills existentes, dimensiona subagentes nativos
+según tareas independientes y mantiene [el tablero](specs/epic-board.md). No es un
+servicio residente ni un framework propio. Sin herramientas de delegación usa la
+misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordination.md),
+[guía visual](docs/GUIA_VISUAL_ORQUESTACION.md) y
+[fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
+Spec E1.6 integrada PR #24; dev06 y spec07 necesitan autorización expresa posterior.
+La PR de metodología debe revisarse/integrarse antes de iniciar esa nueva fase.

@@ -1,0 +1,19 @@
+---
+name: task
+description: Deliver a medium scoped feature through a short plan, concise acceptance criteria, implementation and verification.
+---
+
+# task
+
+## Inputs
+Read AGENTS.md, approved Standard classification, relevant guidelines, existing code, related specs and roadmap if present.
+## Outputs
+Concise task plan and acceptance checks, incremental implementation, verification and review evidence. Persist a task note only if work spans sessions or needs traceability.
+## Procedure
+1. Confirm scope, contracts, edge cases and acceptance criteria in a brief plan. Resolve material uncertainty before coding. Reuse existing approved documents.
+2. Identify affected modules, tests and dependencies. Prefer a short in-conversation mini-spec; use a persistent specs task document only when justified.
+3. Implement in small steps. Write or update behavior-based tests and verify regressions. Report tests with commands and actual results.
+4. Inspect diff for security, correctness, maintainability and unrelated edits; update documentation if contracts changed.
+5. If complexity rises to a new architectural boundary, multiple epics or unresolved product decisions, propose Full and await confirmation.
+## Stop conditions
+Stop at scope changes, security or destructive operations, conflicting requirements or failed mandatory acceptance checks. Do not push or deploy without authorization.
