@@ -26,7 +26,9 @@ Dev32/PR30/AC22 pausado, sin investigaciones/cambios. Referencia v5.11(7) candid
 Typecheck/build PASS; suite API íntegra105 PASS/1 FAIL (106 tests/1713 assertions).
 Falla apertura concurrente heredada v3, SQLiteError UNCLASSIFIED errno11 faseopen en
 database-identity.ts:13:6. Comprobación afectada posterior12 PASS/270 no cierra el fallo.
-Coordinador contrasta base c04dc07; no se modificará apertura fuera alcance por inferencia.
+Control base del coordinador en c04dc07: mismo escenario1 PASS/18 assertions, una
+ejecución; no atribuye causa ni cierra el fallo candidato. No se modificará apertura
+fuera alcance por inferencia.
 Playwright completo2 PASS/47,6s, conservando financiero heredado y restore/MFA.
 Tres mejoras visuales justificadas aplicadas y verificadas; ninguna CI remota declarada.
 

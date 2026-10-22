@@ -10,8 +10,8 @@ E2.1-AC2 pendiente hasta Comida E3.5; AC27–29 no son pruebas actuales aprobada
 Toolchain: Bun1.4.3, age1.3.2, Chromium del entorno, datos íntegramente ficticios.
 `bun run typecheck` PASS; `bun run build` PASS. Suite específica
 `NODE_ENV=test bun test apps/api/src/cycle-operations.test.ts`: O1–O9 PASS,
-171 assertions antes del ajuste exclusivamente instrumental de limpieza de procesos;
-las nueve también PASS dentro de la suite completa posterior.
+171 assertions en ejecución específica; las nueve también PASS dentro de la suite
+completa posterior, incluida la limpieza instrumental de procesos.
 
 `bun run test`: **105 PASS / 1 FAIL**, 106 tests/1713 assertions/25,80s.
 Log local no publicado `work/api-final.log`, líneas125–147: escenario heredado
@@ -20,7 +20,9 @@ Diagnóstico: operación `upgrade`, fase `open`, `SQLiteError`, code `UNCLASSIFI
 errno11, localización `database-identity.ts:13:6`; proceso hijo exit1.
 Una única comprobación afectada posterior, `NODE_ENV=test bun test apps/api/src/movimientos.test.ts`,
 12 PASS/270 assertions/2,53s (`work/movimientos-repeat.log`), **no cierra el FAIL**.
-Coordinador realiza contraste acotado contra base c04dc07. Sin reparación de apertura
+Control base acotado del coordinador en main c04dc07, mismo escenario:1 PASS/18
+assertions en una ejecución. No demuestra ausencia/intermitencia ni atribuye causa a E2.1;
+el fallo del candidato sigue abierto. Sin reparación de apertura
 ni investigación/reanudación Dev32. Verificación global pendiente de resolución.
 
 Regresión enfocada anterior de cuatro módulos:41 PASS/862 assertions
