@@ -1,6 +1,6 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Test plan
 
-Estado 2026-10-22: **30 AC actuales con verificación local; QA independiente completada sin bloqueantes; CI pendiente por SHA antes de preparar la PR.** Especificación [aprobada](06-deuda-specification.md); desarrollo autorizado expresamente por usuario en esta ejecución. Ningún resultado local equivale a aprobación de merge. AC31–33 son contratos futuros NO implementados ni contados como PASS.
+Estado 2026-10-22: **30 AC actuales con verificación local; QA del producto completada sin bloqueantes; PR #34 abierta, corrección de fixture tras fallo de CI pendiente de revisión/CI por SHA.** Especificación [aprobada](06-deuda-specification.md); desarrollo autorizado expresamente por usuario en esta ejecución. Ningún resultado local equivale a aprobación de merge. AC31–33 son contratos futuros NO implementados ni contados como PASS.
 
 ## Matriz vigente de aceptación
 
@@ -37,7 +37,7 @@ Esta matriz sustituye el estado inicial de planificación. D1–D10 están en `a
 | 27 | PASS D6 y suites de seguridad/API: MFA/CSRF/Origin, rechazo de derivados y DELETE inexistente; errores genéricos | Seguridad heredada preservada; no nueva política |
 | 28 | PASS D4/D5/D8 y regresión v1–v5: v6 genuina demo+production ficticia, historia/REF/auditoría/intentos/acceso/DB-clave conservados; DDL rollback y versión desconocida intactos | Upgrade productivo solo después de guardas de par efectivo; ninguna migración operativa |
 | 29 | PASS D4 y restore navegador: age real, manifiesto7/e1.6-v7/origen, capital/posiciones/IDs/MFA recuperados, sesiones e intentos revocados | Destino nuevo ficticio; sin copia externa, scheduler ni RPO/RTO |
-| 30 | PASS suite íntegra97 tests/1547 assertions y Playwright2 tests; matriz de cuatro Tipos, cuota Gasto íntegro y extraordinaria excluida | Transferencias con Exterior, E3/E2/E4 no habilitados |
+| 30 | PASS suite íntegra97 tests/1557 assertions bajo umask022 tras corregir fixture; Playwright2 tests vigente para producto; matriz de cuatro Tipos, cuota Gasto íntegro y extraordinaria excluida | Transferencias con Exterior, E3/E2/E4 no habilitados |
 | 31 | Contrato E2/E4 revisado, NO implementado/probado | Plan mensual/anual, flujo e informes posteriores |
 | 32 | Contrato E4 revisado, NO implementado/probado | Deuda completa, historia/importación real y equivalencia |
 | 33 | Contrato P5/DT5 revisado, NO implementado/probado | Cierres/fotos/guardas transversales futuras |
@@ -64,6 +64,15 @@ Mejoras justificadas aplicadas dentro del diseño: separación20px entre paneles
 - E2E primer run: catálogoPASS/financieroFAIL por helper ruta Partida /nueva (real /nuevo). Segundo: helper botón Guardar (real Crear Partida). Corregidos sin aumentar timeout ni cambiar contrato; financiero posteriorPASS28.0s, suite final2PASS47.0s, auditoría posterior1PASS28.1s. No son reintentos a ciegas.
 - Suites multiproceso/servidores requieren permisos de entorno `with_additional_permissions` (`network.enabled=true`); evita EPERM del sandbox y conserva comandos/aserciones. Logs locales en work/ no se publican.
 
+## CI PR #34 y corrección de fixture privada — 2026-10-22
+
+- [CI push39752272341](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39752272341) sobre **5c1e4f08fe2cf660c158c966bec5290902cd2655**: **FAILURE**, API96 PASS/1 FAIL exclusivamente D4; rechazo `privateSidecars → privateFile`, archivo no0600 al abrir producción. Este fallo permanece registrado; no se atribuye a AC-22/Dev32 ni se borra por resultados locales previos.
+- Reproducción local explícita: `umask 022 && NODE_ENV=test bun test apps/api/src/deudas.test.ts -t '06 D4'` antes del cambio: **0 PASS/1 FAIL/37 assertions**, mismo rechazo en apertura productiva. El builder ficticio v6 creaba DB0644 y SQLite heredaba ese modo en WAL/SHM; el chmod posterior de DB no cambiaba los sidecars ya creados. Con umask077 local anterior la fixture había quedado privada, de ahí la diferencia de entorno.
+- Corrección limitada al helper de fixture `apps/api/test-support/database-v6.ts`: crear DB/esquema bajo máscara077 desde la primera apertura, restaurando siempre la máscara del llamador en finally. D4 ya no repara permisos de DB a posteriori: exige DB/WAL/SHM0600 antes de abrir producción. El producto y sus guardas permanecen idénticos.
+- Negativo conservado/reforzado: D4 cambia deliberadamente solo su WAL ficticio a0644 y comprueba rechazo antes de migrar, snapshot completo/identidad/clave sin cambios; restaura únicamente ese permiso de fixture a0600 para continuar la verificación positiva del upgrade/restore. No se relajan guardas, timeouts ni aserciones.
+- Después: mismo D4 bajo umask022 **1 PASS/0 FAIL/84 assertions**. Suite íntegra `umask 022 && bun run test`: **97 PASS/0 FAIL/1557 assertions**,24.25s. Typecheck PASS. Bun1.4.3 y age1.3.2; permisos de ejecución de entorno iguales a los anteriores.
+- No se repite Playwright: estos dos cambios afectan exclusivamente construcción/asserts de fixtures API; código de producto y recorrido de navegador siguen en f2bfc1b, con evidencia válida anterior. Revisión independiente de esta corrección y nueva CI por SHA a conciliar por coordinador; sin rerun manual de CI.
+
 ## Límites y siguiente gate
 
-QA final completada sin bloqueantes; CI por SHA y autorización de merge pendientes. No Dev32, investigación AC-22 de infraestructura, VPS, deploy, datos reales, migración operativa, E2/E3/E4 ni cierre financiero ejecutados. R6/IOERR/API históricos no se declaran resueltos. Excel sigue fuente de verdad hasta el traspaso autorizado.
+QA del producto completada sin bloqueantes; revisión de corrección de fixture/CI por SHA y autorización de merge pendientes. No Dev32, investigación AC-22 de infraestructura, VPS, deploy, datos reales, migración operativa, E2/E3/E4 ni cierre financiero ejecutados. R6/IOERR/API históricos no se declaran resueltos. Excel sigue fuente de verdad hasta el traspaso autorizado.

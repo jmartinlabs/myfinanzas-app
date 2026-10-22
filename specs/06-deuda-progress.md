@@ -34,3 +34,10 @@ QA independiente sobre3239c2d confirmó10/166 Deudas y9/67 guardas productivas P
 
 ## Conciliación del coordinador
 QA final sobre f2bfc1b cerrado sin bloqueantes detectados, incluidos los cuatro hallazgos iniciales corregidos y resumen visible de auditoría. Historial y contenido revisados para publicación; controles locales vigentes. Rama preparada para PR hacia main; CI remota se verifica por SHA en la PR. Merge requiere autorización expresa del usuario.
+
+## PR #34 — fallo CI y corrección acotada de fixture — 2026-10-22
+PR34 abierta, HEAD previo5c1e4f0. CI push39752272341 FAILURE: API96 PASS/1 FAIL D4 por WAL/SHM ficticios no0600. Reproducido con umask022: D4 falla exactamente en privateSidecars/privateFile. El builder v6 había creado DB/sidecars0644 antes del chmod de DB; entorno local077 no exponía ese defecto de fixture. No es diagnóstico de Dev32/AC-22.
+
+Único ajuste: helperfixture crea desde el primeropen bajo077 y restaura máscara en finally. D4 exige DB/WAL/SHM0600 y añade negativo WAL0644, rechazo sin cambiar snapshot/identidad/clave. Producto/guardas/diseño financiero intactos. Después, D4 bajo0221 PASS/84 assertions; suite completa bajo02297 PASS/1557 assertions en24.25s y typecheckPASS. [Testplan](06-deuda-testplan.md) conserva ambos resultados y el fallo remoto. No se repite navegador sin cambio de producto.
+
+Siguiente acción: revisión independiente del cambio de fixture, revisión de diff/historial y publicación por coordinador; comprobar nueva CI por SHA. Sin rerun manual, merge, migración operativa, infraestructura ni despliegue.

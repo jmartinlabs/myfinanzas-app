@@ -346,6 +346,7 @@ import {
   writeFileSync,
   mkdirSync,
   chmodSync,
+  statSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -384,7 +385,10 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
         origin,
         key_hash: origin === "production" ? keyHash(key) : null,
       });
-      chmodSync(path, 0o600);
+      // Assert the genuine fixture is private before any production open, even
+      // when the runner starts with umask 022. Do not repair runtime sidecars.
+      for (const file of [path, path + "-wal", path + "-shm"])
+        expect(statSync(file).mode & 0o777).toBe(0o600);
       writeFileSync(keyPath, key, { mode: 0o600 });
       Object.assign(process.env, {
         NODE_ENV: origin === "production" ? "production" : "test",
@@ -441,6 +445,18 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
       const before = snapshot(db),
         identity = inspectIdentity(db);
       db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+      if (origin === "production") {
+        // A genuinely unsafe sidecar must still fail closed before migration.
+        // This deliberate negative changes only this fixture's mode, never data.
+        chmodSync(path + "-wal", 0o644);
+        expect(() => openDatabase(path)).toThrow(
+          "Archivo privado regular 0600 requerido.",
+        );
+        expect(snapshot(db)).toEqual(before);
+        expect(inspectIdentity(db)).toEqual(identity);
+        expect(readFileSync(keyPath)).toEqual(key);
+        chmodSync(path + "-wal", 0o600);
+      }
       db.close();
       db = openDatabase(path);
       try {

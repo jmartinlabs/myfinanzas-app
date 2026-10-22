@@ -185,7 +185,14 @@ export function openDatabaseV6(
   path: string,
   identity: Identity = { origin: "demo", key_hash: null },
 ) {
-  const db = new Database(path, { create: true, strict: true });
-  prepareSchema(db, identity);
-  return db;
+  // Test fixture creation must be private from the first open: SQLite derives
+  // WAL/SHM permissions from the database, before a caller can chmod its path.
+  const mask = process.umask(0o077);
+  try {
+    const db = new Database(path, { create: true, strict: true });
+    prepareSchema(db, identity);
+    return db;
+  } finally {
+    process.umask(mask);
+  }
 }
