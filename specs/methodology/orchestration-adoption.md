@@ -1,6 +1,8 @@
 # Adopción selectiva de Epic Orchestration v2.3.1 — MyFinanzas
-Status: READY FOR REVIEW — validación local real completada; CI/PR final por registrar. Sin merge autorizado.
+Status: READY FOR REVIEW — validación local real completada; PR32 Draft. Sin merge autorizado.
 Fecha: 2026-10-22. Rama chore/adopt-orchestration-v2-3-1.
+[PR32 de adopción y resultados CI por SHA](https://github.com/josemartin2000/myfinanzas-app/pull/32).
+Reconciliar su HEAD/checks reales; el tablero no sustituye evidencia remota actual.
 
 ## Fuente y autorización
 Petición adjunta del usuario «Integración E1.6 y adopción de Epic Orchestration v2.3.1»:
