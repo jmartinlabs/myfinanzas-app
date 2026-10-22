@@ -151,6 +151,18 @@ def main():
             print('::error title=Nonsecret UID and tmpfs evidence::' + json.dumps(identity))
             raise ProbeError('internal UID/volume ownership mismatch')
         evidence['uid-10001-keep-id-real'] = True
+        stage = 'effective-runtime-hardening'
+        hardening_js = ('import {readFileSync,writeFileSync,copyFileSync,chmodSync} from "node:fs";'
+                        'const status=readFileSync("/proc/self/status","utf8");'
+                        'if(!/^CapEff:\\s+0+$/m.test(status)||!/^NoNewPrivs:\\s+1$/m.test(status))process.exit(1);'
+                        'let denied=false;try{writeFileSync("/app/forbidden","probe")}catch(e){denied=e.code==="EROFS"||e.code==="EACCES"}'
+                        'if(!denied)process.exit(2);'
+                        'copyFileSync("/bin/true","/tmp/private/noexec-probe");chmodSync("/tmp/private/noexec-probe",0o700);'
+                        'let blocked=false;try{const p=Bun.spawnSync(["/tmp/private/noexec-probe"]);blocked=p.exitCode!==0;}catch{blocked=true}'
+                        'if(!blocked)process.exit(3);')
+        run(['podman', 'run', '--rm', '--network=none', *hardened, image, '-e', hardening_js])
+        evidence['effective-no-capabilities-nnp-readonly-noexec'] = True
+
         # Leave an idle connection open to retain a real, noncheckpointed WAL.
         stage = 'controlled-wal-commit'
         writer_js = ('import {openDatabase} from "./apps/api/src/database";'
@@ -254,23 +266,66 @@ def main():
         run(['podman', 'exec', api_name, '/usr/local/bin/bun', '-e', check_js])
         run(['systemctl', '--user', 'stop', service])
         evidence['healthcheck-and-sigkill-restart-preserve-wal'] = True
+        stage = 'real-unhealthy-to-systemd-restart'
+        run(['systemctl', '--user', 'reset-failed', service])
+        run(['systemctl', '--user', 'start', service])
+        health()
+        # Exercise the production grace/timeout/retry policy unchanged. SIGSTOP
+        # freezes only Bun PID1, so independent health execs can detect failure.
+        from datetime import datetime, timezone
+        started = json.loads(run(['podman', 'inspect', api_name]))[0]['State']['StartedAt']
+        started_at = datetime.fromisoformat(started.replace('Z', '+00:00'))
+        while (datetime.now(timezone.utc) - started_at).total_seconds() < 31:
+            time.sleep(0.25)
+        baseline_restarts = int(run(['systemctl', '--user', 'show', service, '--property=NRestarts', '--value']).strip())
+        run(['podman', 'kill', '--signal=STOP', api_name])
+        failed_health = 0
+        for _ in range(3):
+            checked = subprocess.run(['podman', 'healthcheck', 'run', api_name], capture_output=True, timeout=10)
+            if checked.returncode == 0:
+                raise ProbeError('stopped Bun unexpectedly passed health')
+            failed_health += 1
+        for _ in range(80):
+            attempts = int(run(['systemctl', '--user', 'show', service, '--property=NRestarts', '--value']).strip())
+            if attempts > baseline_restarts:
+                break
+            time.sleep(0.25)
+        else:
+            raise ProbeError('unhealthy container did not cause systemd restart')
+        health()
+        run(['podman', 'exec', api_name, '/usr/local/bin/bun', '-e', check_js])
+        run(['systemctl', '--user', 'stop', service])
+        evidence['health-failures-drive-bounded-systemd-restart'] = failed_health
+
         stage = 'bounded-invalid-configuration-restarts'
         before = {p.name: sha(p.read_bytes()) for p in state.iterdir() if p.is_file()}
         unit.write_text(content.replace('Environment=API_BIND_HOST=0.0.0.0', 'Environment=API_BIND_HOST=invalid'))
         run(['systemctl', '--user', 'daemon-reload'])
         run(['systemctl', '--user', 'reset-failed', service])
         subprocess.run(['systemctl', '--user', 'start', service], capture_output=True, timeout=30)
-        # Observe the configured 60-second start-limit window plus scheduling
-        # margin; the previous 25-second observer was shorter than the contract.
+        # systemd 255 retains Result=exit-code after the start-limit rejection.
+        # Verify bounded behavior rather than a version-specific Result label.
+        properties = {}
         for _ in range(280):
-            result = run(['systemctl', '--user', 'show', service, '--property=Result', '--value']).strip()
-            if result == 'start-limit-hit':
+            raw = run(['systemctl', '--user', 'show', service,
+                       '--property=Result,NRestarts,ActiveState,SubState,ExecMainStatus,StartLimitBurst,StartLimitIntervalUSec,RestartUSec'])
+            properties = dict(row.split('=', 1) for row in raw.splitlines())
+            if properties.get('ActiveState') == 'failed' and properties.get('NRestarts') == '3':
                 break
             time.sleep(0.25)
         else:
-            properties = run(['systemctl', '--user', 'show', service, '--property=Result,NRestarts,ActiveState,SubState,ExecMainStatus,StartLimitBurst,StartLimitIntervalUSec,RestartUSec'])
-            print('::error title=Nonsecret startup-limit properties::' + json.dumps(properties.splitlines()))
-            raise ProbeError('invalid startup did not hit bounded start limit')
+            print('::error title=Nonsecret startup-limit properties::' + json.dumps(properties))
+            raise ProbeError('invalid startup did not stop at configured start limit')
+        if properties.get('StartLimitBurst') != '3' or properties.get('StartLimitIntervalUSec') != '1min' or properties.get('RestartUSec') != '5s' or properties.get('ExecMainStatus') != '1':
+            raise ProbeError('effective startup limit differs from approved contract')
+        # Two backoff periods later the failed service must still be stopped.
+        until = time.monotonic() + 11
+        while time.monotonic() < until:
+            if run(['systemctl', '--user', 'show', service, '--property=NRestarts', '--value']).strip() != '3':
+                raise ProbeError('invalid startup continued restarting beyond limit')
+            time.sleep(0.25)
+        if run(['systemctl', '--user', 'show', service, '--property=ActiveState', '--value']).strip() != 'failed':
+            raise ProbeError('invalid startup did not remain stopped')
         if before != {p.name: sha(p.read_bytes()) for p in state.iterdir() if p.is_file()}:
             raise ProbeError('invalid startup modified existing state')
         health(False)

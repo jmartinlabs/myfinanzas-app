@@ -222,3 +222,24 @@ Se observa ahora la ventana contractual completa de 60s + margen, manteniendo
 exactamente 3/60s y backoff 5s; propiedades systemd saneadas en caso de fallo.
 No acredita todavía AC-12. Local 90 API / 1409 aserciones, tipos/build y controles
 22+18 PASS; imagen/rollback/restauración finales siguen pendientes de CI.
+
+## Regresión local y revisión visual actual — 2026-10-22
+Tipos/build PASS; `bun run test`: 90 PASS, 0 FAIL, 1409 aserciones, sin reintentos.
+`bun run test:e2e`: 2 PASS en 43.0s, Chromium real /usr/bin/chromium; flujos
+existentes ficticios E1.1–E1.5, auth, accesibilidad y responsive. Capturas locales
+`artifacts/e1-1/list-mobile.png` (390) y `list-desktop.png` (1440) inspeccionadas:
+sin desbordamientos, jerarquía legible, navegación/controles y foco visibles.
+Colores reales comprobados por E2E: botón rgb(36,50,14) sobre rgb(141,187,46),
+contraste 6.04:1; texto rgb(43,43,43) sobre blanco, 14.16:1.
+No se justifican mejoras visuales dentro de infraestructura: no hay interfaz nueva;
+modificar pantallas, espaciado, colores, navegación o formularios financieros
+excedería responsabilidad y diseño aprobado del otro agente. Sin cambios UI.
+Controles check-repository/check-project/validate-template y 22+18 regresiones PASS.
+Estos resultados no sustituyen CI/rootless del SHA final ni cierran R6/API histórico.
+Run 39732833232 / 72233d6 FAIL, diagnóstico: servicio failed con NRestarts=3 y
+configuración contractual exacta, Result=exit-code conservado por systemd 255.
+Nueva aserción verifica estado terminal estable y contador congelado durante
+11s (más de dos backoffs), no depende de etiqueta Result. No se cambia 3/60s/5s.
+Próximo ensayo añade health real bloqueando Bun PID1 (SIGSTOP), tres health
+fallidos y recuperación por systemd, con gracia 30s/timeout3s intactos; rootfs
+readonly/capabilities/NNP/tmpfs noexec y backup con WAL confirmado explícito.

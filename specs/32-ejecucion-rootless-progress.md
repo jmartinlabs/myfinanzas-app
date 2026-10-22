@@ -233,3 +233,13 @@ systemd no secretas para diagnosticar si vuelve a fallar. No se altera 3/60s,
 backoff 5s, límites productivos ni aserciones de aplicación. Health, reinicio real
 tras SIGKILL y conservación WAL alcanzaron sus checks previos. Regresión local
 actual: 90 API / 1409 aserciones PASS, tipos/build y 22+18 controles PASS.
+
+Run 39732833232 / 72233d6 FAIL por aserción literal Result=start-limit-hit.
+Diagnóstico seguro disponible: systemd 255 declara ActiveState/SubState=failed,
+NRestarts=3, ExecMainStatus=1, StartLimitBurst=3, ventana 1min y RestartUSec=5s,
+pero conserva Result=exit-code. El servicio sí quedó detenido; se sustituye la
+etiqueta específica por comprobación funcional más fuerte: fallo estable tras
+3 reinicios, parámetros efectivos y ninguna reanudación durante dos backoffs.
+Se conserva este fallo y no se cambia el contrato ni la configuración productiva.
+Se añade prueba real health→kill→systemd (Bun detenido con SIGSTOP, health ejecutado
+independientemente con gracia/timeout/fallos productivos), no solo SIGKILL manual.

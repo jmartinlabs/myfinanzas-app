@@ -56,6 +56,9 @@ async function main() {
     check(generated.exitCode===0,'age identity generation');
     const recipient=Bun.spawnSync(['age-keygen','-y',recipientFile],{stdout:'pipe',stderr:'pipe'});
     check(recipient.exitCode===0,'age recipient');
+    db.exec("PRAGMA wal_autocheckpoint=0; INSERT INTO counters VALUES('infra32_backup_wal',23)");
+    saved.business=snapshot(db);
+    check(readFileSync(process.env.DATABASE_PATH+'-wal').length>32,'backup must include an actual committed WAL');
     backup(db,key,root+'/encrypted-copy',recipient.stdout.toString().trim());
     check(readdirSync(root+'/encrypted-copy').sort().join(',')==='access-key.age,database.age','backup plaintext residue');
     db.close();
