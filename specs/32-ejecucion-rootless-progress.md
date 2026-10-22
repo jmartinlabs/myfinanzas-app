@@ -214,3 +214,14 @@ Ensayo local de la fixture sintética seed/update/rollback/restore PASS contra e
 código actual y age local; no sustituye la matriz entre imágenes ni acredita AC.
 Resultados remotos del nuevo incremento pendientes. R6, fsync y el fallo API
 histórico sin causa diagnosticada permanecen abiertos y visibles.
+
+Primer ensayo del paquete final: run 39731758544 / 103bf7e FAIL en
+`final-image-api-regressions`; la compilación doble, manifiesto, UID, API publicada,
+WAL y Quadlet previos a esa etapa sí alcanzaron su comprobación, pero no existe
+PASS global. CI general push/PR PASS en ese SHA. No se reintenta el run ni se omite
+la suite. La regresión #31 incorporada desde main requiere Python/fcntl como
+holder de bloqueo real, no dependencia de producción; se prepara ese helper del
+runner en mount de pruebas privado readonly (intérprete/stdlib/loader), sin
+instalar Python en imagen final ni ampliar mounts del host. Se añaden diagnósticos
+solo de nombres literales de tests revisados, nunca payloads/factores. El diagnóstico
+concreto del fallo anterior sigue limitado por indisponibilidad de logs remotos.

@@ -27,6 +27,7 @@ COPY apps/api/src apps/api/src
 COPY --from=frontend /app/apps/web/dist /release/frontend
 COPY tools/age tools/age-keygen /usr/local/bin/
 COPY release-inputs.json /release/inputs.json
+COPY healthcheck.mjs /app/healthcheck.mjs
 RUN groupadd --gid 10001 myfinanzas && useradd --uid 10001 --gid 10001 --no-create-home --no-log-init --shell /usr/sbin/nologin -K SUB_UID_COUNT=0 -K SUB_GID_COUNT=0 myfinanzas \
     && chage -d 0 myfinanzas && rm -f /etc/passwd- /etc/group- /etc/shadow- /etc/gshadow- \
     && mkdir -p /var/lib/myfinanzas /tmp/private \

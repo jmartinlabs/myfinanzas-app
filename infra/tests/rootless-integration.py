@@ -148,34 +148,8 @@ def main():
         unit_dir.mkdir(parents=True, exist_ok=True)
         if any(char in str(data) for char in (' ', '\n', '%')):
             raise ProbeError('unsafe unit fixture path')
-        content = f'''[Unit]
-Description=Ephemeral MyFinanzas 32 infrastructure fixture
-StartLimitIntervalSec=60
-StartLimitBurst=3
-[Container]
-Image={image}
-Pull=never
-ContainerName={api_name}
-UserNS=keep-id:uid=10001,gid=10001
-User=10001
-Group=10001
-PublishPort=127.0.0.1:18081:3001
-Volume={data}:/var/lib/myfinanzas:rw
-Environment=NODE_ENV=production
-Environment=APP_ORIGIN=https://myfinanzas.pp.ua
-Environment=DATABASE_PATH=/var/lib/myfinanzas/state/database.sqlite
-Environment=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key
-Environment=API_BIND_HOST=0.0.0.0
-NoNewPrivileges=true
-ReadOnly=true
-DropCapability=all
-Tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0711,size=64m
-PodmanArgs=--read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128
-[Service]
-Restart=on-failure
-RestartSec=5
-TimeoutStopSec=30
-'''
+        from runtime import render
+        content = render(image, data, api_name)
         with unit.open('x') as output:
             output.write(content)
         info = unit.stat()
@@ -230,6 +204,45 @@ TimeoutStopSec=30
         run(['systemctl', '--user', 'stop', service])
         health(False)
         evidence['stop-disconnects-published-api'] = True
+        stage = 'bounded-restart-after-sigkill'
+        run(['systemctl', '--user', 'reset-failed', service])
+        run(['systemctl', '--user', 'start', service])
+        health()
+        run(['podman', 'healthcheck', 'run', api_name])
+        details = json.loads(run(['podman', 'inspect', api_name]))[0]
+        if details['State']['Health']['Status'] != 'healthy' or not details['HostConfig']['ReadonlyRootfs']:
+            raise ProbeError('runtime health/read-only invariant failed')
+        run(['podman', 'kill', '--signal=KILL', api_name])
+        # Wait for the actual new systemd-managed container, not stale port health.
+        for _ in range(80):
+            attempts = int(run(['systemctl', '--user', 'show', service, '--property=NRestarts', '--value']).strip())
+            if attempts >= 1:
+                break
+            time.sleep(0.25)
+        else:
+            raise ProbeError('systemd did not restart killed API')
+        health()
+        run(['podman', 'exec', api_name, '/usr/local/bin/bun', '-e', check_js])
+        run(['systemctl', '--user', 'stop', service])
+        evidence['healthcheck-and-sigkill-restart-preserve-wal'] = True
+        stage = 'bounded-invalid-configuration-restarts'
+        before = {p.name: sha(p.read_bytes()) for p in state.iterdir() if p.is_file()}
+        unit.write_text(content.replace('Environment=API_BIND_HOST=0.0.0.0', 'Environment=API_BIND_HOST=invalid'))
+        run(['systemctl', '--user', 'daemon-reload'])
+        run(['systemctl', '--user', 'reset-failed', service])
+        subprocess.run(['systemctl', '--user', 'start', service], capture_output=True, timeout=30)
+        for _ in range(100):
+            result = run(['systemctl', '--user', 'show', service, '--property=Result', '--value']).strip()
+            if result == 'start-limit-hit':
+                break
+            time.sleep(0.25)
+        else:
+            raise ProbeError('invalid startup did not hit bounded start limit')
+        if before != {p.name: sha(p.read_bytes()) for p in state.iterdir() if p.is_file()}:
+            raise ProbeError('invalid startup modified existing state')
+        health(False)
+        evidence['invalid-startup-bounded-no-state-repair'] = True
+
         # Every API regression runs against the definitive runtime dependencies.
         # Test sources are mounted read-only; no tests/dev tools enter the image.
         stage = 'final-image-api-regressions'
@@ -242,17 +255,58 @@ TimeoutStopSec=30
                 destination = suite / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:' + relative]))
+        # #31 adds real fcntl lock-holder fixtures requiring Python, not an app
+        # dependency. Copy the runner's interpreter/stdlib/loader into the private
+        # read-only test mount; never add Python or broad host mounts to runtime.
+        import sysconfig
+        tools = suite / 'tools'
+        (tools / 'bin').mkdir(parents=True)
+        (tools / 'lib').mkdir()
+        executable = Path(sys.executable).resolve()
+        shutil.copyfile(executable, tools / 'bin/python3-real')
+        (tools / 'bin/python3-real').chmod(0o755)
+        stdlib = Path(sysconfig.get_path('stdlib'))
+        shutil.copytree(stdlib, tools / 'lib' / stdlib.name,
+                        ignore=shutil.ignore_patterns('site-packages', '__pycache__'))
+        import re
+        libraries = set()
+        for binary in [executable, *stdlib.rglob('*.so')]:
+            linked = subprocess.run(['ldd', str(binary)], capture_output=True, text=True, timeout=10)
+            if linked.returncode:
+                raise ProbeError('test-only Python dependency inspection failed')
+            libraries.update(re.findall(r'(?:=> )?(/[^ \n]+)', linked.stdout))
+        for library in libraries:
+            path = Path(library)
+            destination = tools / 'lib' / path.name
+            if destination.exists() and sha(destination.read_bytes()) != sha(path.read_bytes()):
+                raise ProbeError('test-only Python library collision')
+            shutil.copyfile(path, destination)
+            destination.chmod(0o755)
+        loader = tools / 'lib/ld-linux-x86-64.so.2'
+        if not loader.exists():
+            raise ProbeError('unsupported runner Python loader')
+        launcher = tools / 'bin/python3'
+        launcher.write_text('#!/bin/sh\nexport PYTHONHOME=/suite/tools\nexec /suite/tools/lib/ld-linux-x86-64.so.2 --library-path /suite/tools/lib /suite/tools/bin/python3-real "$@"\n')
+        launcher.chmod(0o755)
+        evidence['test-only-python'] = sys.version.split()[0]
         (suite / 'node_modules').symlink_to('/app/node_modules')
         (suite / 'apps/api/node_modules').symlink_to('/app/apps/api/node_modules')
         result = subprocess.run(['podman', 'run', '--rm', '--network=none',
                                  *hardened, '--memory=2g', '--pids-limit=512',
-                                 '--env=NODE_ENV=test', '--volume=' + str(suite) + ':/suite:ro',
+                                 '--env=NODE_ENV=test', '--env=PATH=/suite/tools/bin:/usr/local/bin:/usr/bin:/bin', '--volume=' + str(suite) + ':/suite:ro',
                                  '--workdir=/suite', image, 'test', 'apps/api'],
                                 capture_output=True, text=True, timeout=600)
         # Never emit raw test output: authentication fixtures can contain factors.
         import re
         counts = re.search(r'(\d+) pass.*?(\d+) fail', result.stderr, re.S)
         if result.returncode or not counts or int(counts[2]) != 0:
+            # Emit only labels literally declared in reviewed test sources, never
+            # assertions, exception payloads, stdout or authentication factors.
+            declared = set()
+            for test in (suite / 'apps/api/src').glob('*.test.ts'):
+                declared.update(re.findall(r'test\(\s*["\']([^"\']+)["\']', test.read_text()))
+            failed = [label for label in declared if '(fail) ' + label in result.stderr]
+            print('::error title=Final image regression labels::' + json.dumps({'exit': result.returncode, 'counts': counts.groups() if counts else None, 'failed': sorted(failed)}))
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'

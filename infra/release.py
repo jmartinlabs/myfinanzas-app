@@ -71,6 +71,9 @@ def context(commit, target, age_bytes):
               'builder_source': run(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD']).decode().strip()}
     (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
     shutil.copyfile(SOURCE / 'infra/Containerfile', target / 'Containerfile')
+    shutil.copyfile(SOURCE / 'infra/healthcheck.mjs', target / 'healthcheck.mjs')
+    inputs['healthcheck_sha256'] = sha((target / 'healthcheck.mjs').read_bytes())
+    (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
     return inputs
 
 

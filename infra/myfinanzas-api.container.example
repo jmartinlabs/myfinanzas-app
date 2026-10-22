@@ -1,28 +1,37 @@
-# TEMPLATE ONLY; deliberately not a Quadlet-active .container file.
-# This must not be installed before production bootstrap and tests are approved.
-# Build/pin the image by digest, do not deploy a mutable 'latest' tag.
+# REVIEW TEMPLATE ONLY — never install directly.
 [Unit]
-Description=MyFinanzas API (production template)
+Description=MyFinanzas rootless API
 After=network-online.target
 Wants=network-online.target
-
+StartLimitIntervalSec=60
+StartLimitBurst=3
 [Container]
-Image=REPLACE_WITH_PINNED_IMAGE_DIGEST
+Image=REPLACE_WITH_VERIFIED_IMAGE_ID
+Pull=never
 ContainerName=myfinanzas-api
-# Host loopback only; Caddy will proxy HTTP to this port.
+UserNS=keep-id:uid=10001,gid=10001
+User=10001
+Group=10001
 PublishPort=127.0.0.1:18081:3001
-# Binding the API to container 0.0.0.0:3001 is a REQUIRED code change.
 Volume=%h/myfinanzas/data:/var/lib/myfinanzas:rw
 Environment=NODE_ENV=production
 Environment=APP_ORIGIN=https://myfinanzas.pp.ua
-Environment=DATABASE_PATH=/var/lib/myfinanzas/myfinanzas.sqlite
-Environment=AUTH_KEY_PATH=/var/lib/myfinanzas/auth.key
+Environment=DATABASE_PATH=/var/lib/myfinanzas/state/database.sqlite
+Environment=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key
+Environment=API_BIND_HOST=0.0.0.0
 NoNewPrivileges=true
 ReadOnly=true
-
+DropCapability=all
+Tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0711,size=64m
+HealthCmd=/usr/local/bin/bun /app/healthcheck.mjs
+HealthInterval=30s
+HealthTimeout=3s
+HealthRetries=3
+HealthStartPeriod=30s
+PodmanArgs=--read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128 --health-on-failure=kill
 [Service]
 Restart=on-failure
 RestartSec=5
-
+TimeoutStopSec=30
 [Install]
 WantedBy=default.target

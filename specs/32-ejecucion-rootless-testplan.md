@@ -207,3 +207,10 @@ Se añade regresión API en runtime final y matriz real anterior/actual/anterior
 backup/restore/MFA y preservación de escrituras. Pendiente de CI: ningún AC cambia
 a PASS por preparar este código. Fixture local seed/update/rollback/restore PASS
 con datos ficticios; no prueba imágenes, UID ni systemd. Riesgos previos vigentes.
+
+Run 39731758544 / 103bf7e: FAIL en regresión API de imagen final. No se atribuye
+sin logs a un test concreto. CI general push y PR SUCCESS. Se conserva el fallo;
+los nuevos tests #31 necesitan Python/fcntl real en el harness. El helper se copia
+con su loader/stdlib/dependencias al montaje readonly de pruebas, nunca a runtime.
+Prueba local del cierre de dependencias de ese helper: importa fcntl y arranca con
+su loader copiado, PASS. La próxima CI ejecutará todos los tests sin excluir #31.
