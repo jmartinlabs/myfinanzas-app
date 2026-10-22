@@ -13,8 +13,9 @@ and approved `specs/roadmap.md`. Do not generate an application in the original 
 ## Procedure
 Inspect existing code, references and documents first. If this is the template itself,
 help create/open an independent derived repository, with publication authorization.
-Do not clone again when already in a derived project. Use the current checkout; do not
-create a Git worktree unless explicitly requested.
+Do not clone again when already in a derived project. Prefer the current checkout;
+local worktrees within authorized scope follow specs/methodology/myfinanzas-coordination.md,
+never conflicting with existing work or overriding stricter instructions.
 
 ### Resume protocol
 If `specs/setup-progress.md` exists, read it and follow its next action. Verify linked
