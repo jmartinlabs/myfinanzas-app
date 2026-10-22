@@ -10,7 +10,7 @@ import {
   cycleHistory,
   listCycles,
 } from "./ciclos";
-import { getSaldo } from "./saldos";
+import { getSaldo, createSaldo } from "./saldos";
 const add = (db: any, inicio: string, saldoInicialComida = "0") =>
   createCycle(
     db,
@@ -221,6 +221,485 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
     expect(
       listCycles(db, new URLSearchParams({ q: "marzo" })).contexto.actual?.id,
     ).toBe(a.id);
+  } finally {
+    db.close();
+  }
+});
+
+import { Database } from "bun:sqlite";
+import { openDatabaseV7 } from "../test-support/database-v7";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  rmSync,
+  statSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { randomBytes } from "node:crypto";
+import { keyHash, inspectIdentity } from "./database-identity";
+import { Auth, provision, totp } from "./auth";
+import { backup, restore } from "./backup";
+import { getDebt } from "./deudas";
+import { createClassification } from "./clasificacion";
+import { createApp } from "./app";
+import { HttpApp } from "@effect/platform";
+const snapshot = (db: Database) =>
+  (
+    db
+      .query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+      .all() as { name: string }[]
+  ).map(
+    ({ name }) =>
+      [name, db.query(`SELECT * FROM "${name}" ORDER BY rowid`).all()] as const,
+  );
+test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, age8 y restore", async () => {
+  const saved = {
+      NODE_ENV: process.env.NODE_ENV,
+      DATABASE_PATH: process.env.DATABASE_PATH,
+      AUTH_KEY_PATH: process.env.AUTH_KEY_PATH,
+      APP_ORIGIN: process.env.APP_ORIGIN,
+    },
+    dir = mkdtempSync(join(tmpdir(), "mf-cycle-v7-"));
+  try {
+    for (const origin of ["demo", "production"] as const) {
+      const root = join(dir, origin);
+      mkdirSync(root, { mode: 0o700 });
+      const path = join(root, "database.sqlite"),
+        keyPath = join(root, "auth.key"),
+        key = randomBytes(32);
+      let db = openDatabaseV7(path, {
+        origin,
+        key_hash: origin === "production" ? keyHash(key) : null,
+      });
+      writeFileSync(keyPath, key, { mode: 0o600 });
+      for (const file of [path, path + "-wal", path + "-shm"])
+        expect(statSync(file).mode & 0o777).toBe(0o600);
+      Object.assign(process.env, {
+        NODE_ENV: origin === "production" ? "production" : "test",
+        DATABASE_PATH: path,
+        AUTH_KEY_PATH: keyPath,
+        APP_ORIGIN: "https://myfinanzas.pp.ua",
+      });
+      const auth = new Auth(db, key),
+        password = "Contraseña ficticia " + randomUUID(),
+        enrolled = await auth.enroll(provision(db), password);
+      const access = auth.verify(
+        new Request("http://127.0.0.1:5173", {
+          headers: { cookie: auth.challengeName + "=" + enrolled.challenge },
+        }),
+        totp(enrolled.secret!).generate(),
+      );
+      const stamp = "2026-01-01T00:00:00.000Z";
+      db.run(
+        "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('1','2026-01-01',1000,?)",
+        [stamp],
+      );
+      db.run("UPDATE counters SET next=2 WHERE name='ciclos'");
+      db.run(
+        "INSERT INTO deudas VALUES('D001','Deuda histórica ficticia','2026-01-01',100000,'Activa',1,?,?)",
+        [stamp, stamp],
+      );
+      const category = createClassification(
+          db,
+          "categorias",
+          {
+            nombre: "Ficticia",
+            anual: "Gasto",
+            mensual: "Gasto",
+            referencia: false,
+          },
+          randomUUID(),
+        ),
+        sub = createClassification(
+          db,
+          "subcategorias",
+          { nombre: "Ficticia", padre: category.id },
+          randomUUID(),
+        ),
+        partida = createClassification(
+          db,
+          "partidas",
+          { nombre: "Ficticia", padre: sub.id, deuda: "D001" },
+          randomUUID(),
+        );
+      const bank = createSaldo(
+        db,
+        {
+          nombre: "Banco v7 ficticio",
+          tipo: "Efectivo",
+          control: "Movimientos",
+          saldoApertura: "500",
+          permiteSalidaExterior: true,
+        },
+        randomUUID(),
+      );
+      // Fixture uses the real v7 schema with a debt-linked quota and preserved original audit.
+      db.run(
+        "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses) VALUES('1','2026-02-15','Gasto',10000,?,'S000',?,'Cuota histórica ficticia','',0,1,?,?,8000,2000)",
+        [bank.id, partida.id, stamp, stamp],
+      );
+      db.run(
+        "INSERT INTO movement_audit VALUES('1',1,'alta',NULL,?,'usuario-unico',NULL,?)",
+        [
+          stamp,
+          JSON.stringify({ id: "1", capital: "80.00", intereses: "20.00" }),
+        ],
+      );
+      db.run("UPDATE counters SET next=2 WHERE name='movimientos'");
+      const before = snapshot(db),
+        identity = inspectIdentity(db);
+      db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
+      db.close();
+      db = openDatabase(path);
+      try {
+        for (const [table, values] of before) {
+          if (table === "schema_version") continue;
+          expect(
+            db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
+          ).toEqual(
+            table === "ciclos"
+              ? values.map((r: any) => ({
+                  ...r,
+                  revision: 1,
+                  actualizado: null,
+                }))
+              : values,
+          );
+        }
+        expect(inspectIdentity(db)).toEqual(identity);
+        expect(readFileSync(keyPath)).toEqual(key);
+        expect(
+          new Auth(db, key).session(
+            new Request("http://127.0.0.1:5173", {
+              headers: { cookie: auth.cookieName + "=" + access.session },
+            }),
+          ).csrf,
+        ).toBe(access.csrf);
+        expect(getDebt(db, "D001").capitalPendiente).toBe("920.00");
+        commit(db, "rectificar", "1", input("2026-01-02", "-2"));
+        expect(cycleHistory(db, "1")).toHaveLength(1);
+        const identityFile = join(dir, origin + ".agekey");
+        expect(
+          Bun.spawnSync(["age-keygen", "-o", identityFile], {
+            stdout: "pipe",
+            stderr: "pipe",
+          }).exitCode,
+        ).toBe(0);
+        const pub = Bun.spawnSync(["age-keygen", "-y", identityFile], {
+            stdout: "pipe",
+            stderr: "pipe",
+          })
+            .stdout.toString()
+            .trim(),
+          dest = join(dir, origin + "-backup");
+        backup(db, key, dest, pub);
+        const bundle = JSON.parse(
+          Bun.spawnSync(
+            ["age", "-d", "-i", identityFile, join(dest, "database.age")],
+            { stdout: "pipe", stderr: "pipe" },
+          ).stdout.toString(),
+        );
+        expect(bundle.manifest.schema).toBe(8);
+        expect(bundle.manifest.app).toBe("e2.1-v8");
+        expect(bundle.manifest.origin).toBe(origin);
+        const target = join(dir, origin + "-restore");
+        if (origin === "production")
+          Object.assign(process.env, {
+            DATABASE_PATH: join(target, "database.sqlite"),
+            AUTH_KEY_PATH: join(target, "auth.key"),
+          });
+        const restored = restore(dest, target, identityFile),
+          copy = openDatabase(restored.database);
+        try {
+          expect(cycleHistory(copy, "1")).toEqual(cycleHistory(db, "1"));
+          expect(getDebt(copy, "D001").capitalPendiente).toBe("920.00");
+          expect(
+            copy.query("SELECT * FROM cycle_operation_attempts").all(),
+          ).toEqual([]);
+          expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
+          const a = new Auth(copy, readFileSync(restored.key)),
+            challenge = await a.login(password);
+          expect(
+            a.verify(
+              new Request("http://127.0.0.1:5173", {
+                headers: {
+                  cookie: a.challengeName + "=" + challenge.challenge,
+                },
+              }),
+              totp(enrolled.secret!).generate({
+                timestamp: Date.now() + 30000,
+              }),
+            ).session,
+          ).toBeString();
+          expect(copy.query("PRAGMA foreign_key_check").all()).toEqual([]);
+        } finally {
+          copy.close();
+        }
+      } finally {
+        db.close();
+      }
+    }
+  } finally {
+    for (const [k, v] of Object.entries(saved))
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("07 O5 AC23: fallo DDL y versión desconocida mantienen v7, identidad y datos", () => {
+  const dir = mkdtempSync(join(tmpdir(), "mf-cycle-fail-")),
+    path = join(dir, "database.sqlite");
+  try {
+    let db = openDatabaseV7(path);
+    db.exec("CREATE TABLE cycle_audit(conflict TEXT) STRICT");
+    const before = snapshot(db),
+      schema = db.query("SELECT * FROM sqlite_master ORDER BY name").all();
+    db.close();
+    expect(() => openDatabase(path)).toThrow();
+    db = new Database(path);
+    expect(snapshot(db)).toEqual(before);
+    expect(db.query("SELECT * FROM sqlite_master ORDER BY name").all()).toEqual(
+      schema,
+    );
+    db.exec("UPDATE schema_version SET version=999");
+    const unknown = snapshot(db);
+    db.close();
+    expect(() => openDatabase(path)).toThrow();
+    db = new Database(path);
+    expect(snapshot(db)).toEqual(unknown);
+    db.close();
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("07 O6 AC21/22: rutas Effect reales, MFA/Origin/CSRF y rechazo de derivados", async () => {
+  const { db, a } = fixture(),
+    key = randomBytes(32);
+  try {
+    const auth = new Auth(db, key),
+      enrolled = await auth.enroll(
+        provision(db),
+        "Contraseña ficticia " + randomUUID(),
+      ),
+      session = auth.verify(
+        new Request("http://127.0.0.1:5173", {
+          headers: { cookie: auth.challengeName + "=" + enrolled.challenge },
+        }),
+        totp(enrolled.secret!).generate(),
+      ),
+      handler = HttpApp.toWebHandler(createApp(db, { key }));
+    const req = (
+      path: string,
+      method = "GET",
+      body?: unknown,
+      headers: Record<string, string> = {},
+    ) =>
+      handler(
+        new Request("http://127.0.0.1:3001/api" + path, {
+          method,
+          headers: { "content-type": "application/json", ...headers },
+          ...(body ? { body: JSON.stringify(body) } : {}),
+        }),
+      );
+    const endpoint = "/ciclos/" + a.id + "/rectificar",
+      cookie = auth.cookieName + "=" + session.session;
+    expect(
+      (await req(endpoint + "/preview", "POST", input("2026-01-02"))).status,
+    ).toBe(401);
+    expect(
+      (
+        await req(endpoint + "/preview", "POST", input("2026-01-02"), {
+          cookie,
+        })
+      ).status,
+    ).toBe(403);
+    const headers = {
+      cookie,
+      origin: "http://127.0.0.1:5173",
+      "x-csrf-token": session.csrf,
+      "idempotency-key": randomUUID(),
+    };
+    expect(
+      (
+        await req(
+          endpoint + "/preview",
+          "POST",
+          { ...input("2026-01-02"), fin: "2026-02-28" },
+          headers,
+        )
+      ).status,
+    ).toBe(422);
+    const preview = await req(
+      endpoint + "/preview",
+      "POST",
+      input("2026-01-02"),
+      headers,
+    );
+    expect(preview.status).toBe(200);
+    const p = await preview.json(),
+      r = await req(
+        endpoint,
+        "POST",
+        {
+          ...input("2026-01-02"),
+          contextRevision: p.contextRevision,
+          impactRevision: p.impactRevision,
+          confirmado: true,
+        },
+        headers,
+      );
+    expect(r.status).toBe(200);
+    expect(
+      (
+        await req("/ciclos/" + a.id + "/historial", "GET", undefined, {
+          cookie,
+        })
+      ).status,
+    ).toBe(200);
+    expect((await req("/ciclos/" + a.id, "DELETE", {}, headers)).status).toBe(
+      404,
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O7 AC17/18/19/23: dos procesos migran v7 y confirman una revisión concurrente", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "mf-cycle-process-")),
+    path = join(dir, "database.sqlite"),
+    modulePath = resolve("apps/api/src/database.ts"),
+    cyclesPath = resolve("apps/api/src/ciclos.ts");
+  try {
+    let db = openDatabaseV7(path);
+    db.run(
+      "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('1','2026-01-01',1000,'2026-01-01T00:00:00.000Z')",
+    );
+    db.run("UPDATE counters SET next=2 WHERE name='ciclos'");
+    db.close();
+    const open = () =>
+      Bun.spawn(
+        [
+          process.execPath,
+          "-e",
+          `import {openDatabase} from ${JSON.stringify(modulePath)};const db=openDatabase(${JSON.stringify(path)});console.log(JSON.stringify(db.query('SELECT version FROM schema_version').get()));db.close();`,
+        ],
+        {
+          env: { ...process.env, NODE_ENV: "test" },
+          stdout: "pipe",
+          stderr: "pipe",
+        },
+      );
+    const upgrades = [open(), open()];
+    const upgraded = await Promise.all(
+      upgrades.map(async (child) => {
+        const output = await new Response(child.stdout).text();
+        expect(await child.exited).toBe(0);
+        return JSON.parse(output);
+      }),
+    );
+    expect(upgraded).toEqual([{ version: 8 }, { version: 8 }]);
+    const children = [1, 2].map((n) => {
+      const ready = join(dir, "ready-" + n),
+        body = {
+          inicio: n === 1 ? "2026-01-02" : "2026-01-03",
+          saldoInicialComida: String(n),
+          motivo: "Proceso ficticio " + n,
+          revision: 1,
+        };
+      const code = `import{openDatabase}from ${JSON.stringify(modulePath)};import{previewCycleOperation,writeCycleOperation}from ${JSON.stringify(cyclesPath)};import{writeFileSync}from'node:fs';const db=openDatabase(${JSON.stringify(path)}),body=${JSON.stringify(body)},p=previewCycleOperation(db,'rectificar','1',body);writeFileSync(${JSON.stringify(ready)},'ready',{mode:0o600});await new Response(Bun.stdin.stream()).text();try{const r=writeCycleOperation(db,'rectificar','1',{...body,contextRevision:p.contextRevision,impactRevision:p.impactRevision,confirmado:true},crypto.randomUUID());console.log('written')}catch(e){if(e.status===409)console.log('conflict');else throw e}finally{db.close()}`;
+      return {
+        ready,
+        child: Bun.spawn([process.execPath, "-e", code], {
+          env: { ...process.env, NODE_ENV: "test" },
+          stdin: "pipe",
+          stdout: "pipe",
+          stderr: "pipe",
+        }),
+      };
+    });
+    const deadline = Date.now() + 3000;
+    while (
+      !(
+        await Promise.all(children.map((c) => Bun.file(c.ready).exists()))
+      ).every(Boolean)
+    ) {
+      if (Date.now() > deadline) throw Error("Child readiness not reached");
+      await Bun.sleep(5);
+    }
+    for (const { child } of children) {
+      child.stdin.write("confirm");
+      child.stdin.end();
+    }
+    const results = await Promise.all(
+      children.map(async ({ child }) => {
+        const output = (await new Response(child.stdout).text()).trim();
+        expect(await child.exited).toBe(0);
+        return output;
+      }),
+    );
+    expect(results.sort()).toEqual(["conflict", "written"]);
+    db = openDatabase(path);
+    try {
+      expect(getCycle(db, "1").ciclo.revision).toBe(2);
+      expect(cycleHistory(db, "1")).toHaveLength(1);
+      expect(
+        db.query("SELECT COUNT(*) n FROM cycle_operation_attempts").get(),
+      ).toEqual({ n: 1 });
+      expect(db.query("SELECT * FROM cycle_operation_guard").all()).toEqual([]);
+      expect(db.query("PRAGMA integrity_check").get()).toEqual({
+        integrity_check: "ok",
+      });
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+test("07 O8 QA regresión: periodo visible del mismo ID y replay con derivados manipulados", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const c = add(db, "2026-01-01");
+    const stamp = "2026-01-01T00:00:00Z";
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES('1','2026-02-15','Ingreso',100,'S000','S001','Bonus','Ficticio','',0,1,?,?)",
+      [stamp, stamp],
+    );
+    const body = input("2026-02-01"),
+      p = previewCycleOperation(db, "rectificar", c.id, body);
+    expect(p.movimientos).toHaveLength(1);
+    expect(p.movimientos[0].antes?.id).toBe(c.id);
+    expect(p.movimientos[0].despues?.id).toBe(c.id);
+    expect(p.movimientos[0].antes?.mesFinanciado).toBe("2026-02-01");
+    expect(p.movimientos[0].despues?.mesFinanciado).toBe("2026-03-01");
+    const request = {
+        ...body,
+        contextRevision: p.contextRevision,
+        impactRevision: p.impactRevision,
+        confirmado: true,
+      },
+      key = randomUUID(),
+      result = writeCycleOperation(db, "rectificar", c.id, request, key);
+    expect(writeCycleOperation(db, "rectificar", c.id, request, key)).toEqual(
+      result,
+    );
+    for (const extra of [
+      { id: "otro" },
+      { mesFinanciado: "2020-01-01" },
+      { creado: stamp },
+    ])
+      expect(() =>
+        writeCycleOperation(
+          db,
+          "rectificar",
+          c.id,
+          { ...request, ...extra },
+          key,
+        ),
+      ).toThrow("Campo no editable");
   } finally {
     db.close();
   }

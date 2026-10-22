@@ -1105,7 +1105,7 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [3, openV3, "e1.3-v3"],
       [4, openV4, "e1.4-v4"],
       [5, openDatabaseV5, "e1.5-v5"],
-      [7, openDatabase, "e1.6-v7"],
+      [8, openDatabase, "e2.1-v8"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);

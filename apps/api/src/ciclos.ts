@@ -104,7 +104,19 @@ const select =
 const fingerprint = (value: unknown) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
 function rows(db: Database) {
-  return db.query(select).all() as Row[];
+  const modern = (
+    db.query("PRAGMA table_info(ciclos)").all() as { name: string }[]
+  ).some((c) => c.name === "revision");
+  return db
+    .query(
+      modern
+        ? select
+        : select.replace(
+            "creado,revision,actualizado",
+            "creado,1 revision,NULL actualizado",
+          ),
+    )
+    .all() as Row[];
 }
 export function deriveCycles(
   input: readonly Pick<
@@ -470,7 +482,9 @@ function operationPlan(
   const affected = facts.flatMap((m) => {
     const a = atDate(before, m.fecha),
       b = atDate(after, m.fecha);
-    return a?.id !== b?.id
+    const period = (c: Cycle | null) =>
+      c ? [c.id, c.inicio, c.fin, c.mesFinanciado] : null;
+    return fingerprint(period(a)) !== fingerprint(period(b))
       ? [
           {
             id: m.id,
@@ -542,6 +556,9 @@ export function writeCycleOperation(
       "IDEMPOTENCY_REQUIRED",
       "Clave de intento inválida.",
     );
+  for (const name of Object.keys(body))
+    if (!operationKeys.includes(name))
+      throw new Problem(422, "VALIDATION", "Campo no editable: " + name);
   const hash = fingerprint([
     operation,
     id,
