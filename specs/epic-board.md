@@ -1,3 +1,39 @@
+## Reconciliación — 2026-10-23 — main 30c7ea0
+
+Coordinador: reconciliación documental solicitada por el usuario; no concede autorizaciones nuevas.
+Main remoto verificado en `30c7ea0` (PR #41, adopción orquestación v2.4.2, solo metodología),
+sobre `20d8f9a` (PR #39, spec08). Este apartado complementa el cierre spec08 inferior
+(PR #40, integrada por squash en main `11e2fae` el 2026-10-23 tras «Apruebo PR #40» del usuario, HEAD `b5c88d7` con CI SUCCESS) y prevalece
+sobre estados históricos más antiguos.
+
+| Línea | Estado verificado en Git | Próxima acción / gate |
+| --- | --- | --- |
+| E1.1–E1.6 | Integradas; E1.6 por PR34 `cb9ba3b` | Sin cambios |
+| E2.1 / spec07 | Aprobada e integrada PR37 `c04dc07` | Sin cambios de decisiones ni criterios |
+| E2.1 / dev07 | Rama `feat/07-ciclos-operacion` HEAD `d1868dc`, fuera de main; sin PR (ningún `refs/pull/*/head` apunta a ella). Handoff STOP / NO AUTO-RESUME en progress07 de esa rama | Reanudar solo con nueva instrucción expresa del usuario |
+| AC23 | BLOQUEADO; API 105 PASS / 1 FAIL errno11 según checkpoint dev07 | Sin investigación nueva sin hipótesis discriminante y autorización |
+| E2.2 / spec08 | Aprobada e integrada PR39 `20d8f9a`; cabecera de la especificación actualizada a APPROVED por instrucción del usuario del 2026-10-23, que sustituye la decisión de PR #40 de no tocarla; cuerpo intacto | Spec aprobada no autoriza dev08 |
+| E2.2 / dev08 | NO AUTORIZADO; plan propuesto en el cierre spec08 inferior | Esperar autorización expresa de desarrollo |
+| Dev32 / PR30 / AC22 | PAUSED; PR30 HEAD `a090112` | No reanudar |
+
+Paquetes activos: ninguno. Worktrees adicionales en este checkout: ninguno. Los SHAs
+históricos de cabecera del tablero (`cb9ba3b`) quedan sustituidos por este apartado.
+
+PRs verificadas con `gh` el 2026-10-23 (este registro no aprueba merges):
+
+| PR | Rama | Estado | Nota |
+| --- | --- | --- | --- |
+| #40 | `docs/08-integration-close` | MERGED squash `11e2fae` (HEAD `b5c88d7`, CI SUCCESS) | Cierre spec08 y plan dev08; aprobada expresamente por el usuario |
+| #35 | `docs/explicit-approvals-v2-3-2` | Abierta, CONFLICTING | Metodología v2.3.2; posiblemente superada por v2.4.x, sin decidir |
+| #30 | `feat/32-ejecucion-rootless` | Draft, CONFLICTING | Dev32 PAUSED |
+| #29 | `spec/32-ejecucion-rootless` | Abierta, MERGEABLE | Spec32 aprobada, no integrada |
+| #22 | `infra/production-sqlite-bootstrap` | Draft, CONFLICTING | Infra pausada |
+| #21 | `infra/production-bootstrap-spec` | Draft, MERGEABLE | Infra pausada |
+
+Cerrar o actualizar PRs antiguas requiere decisión expresa del usuario por PR.
+
+---
+
 ## Estado vigente — cierre spec08 y autorización de integración — 2026-10-22
 
 Fuente: aprobación documental final de Álex y autorización expresa de squash PR39. Este apartado prevalece sobre estados históricos inferiores; el tablero registra autorizaciones, no las concede.
