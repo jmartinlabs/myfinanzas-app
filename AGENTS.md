@@ -8,13 +8,8 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
 - Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
   Prerrequisitos, comandos de plantilla y limitaciones: guideline de calidad.
-- Usa el checkout aislado actual. Dentro de una tarea o épica con alcance expresamente autorizado,
-  `$orchestrate` puede crear y gestionar ramas, worktrees temporales o checkouts aislados
-  para trabajos independientes, sin pedir permiso operativo por cada aislamiento.
-  Antes de hacerlo verifica soporte real del entorno, estado Git, cambios existentes,
-  ownership disjunto y ausencia de conflictos; nunca sobrescribas trabajo ajeno.
-  Si no hay aislamiento seguro, serializa las escrituras. Limpia solo recursos temporales
-  propios una vez verificado que sus cambios están preservados; no borres trabajo ajeno.
+- Dentro de trabajo autorizado, `$orchestrate` puede gestionar subagentes, ramas y worktrees
+  aislados sin permiso operativo adicional, aplicando la política de seguridad y ownership local.
 - Próximas entregas: evitar documentación/rondas redundantes; resolver detalles técnicos
   ordinarios durante desarrollo reutilizando arquitectura/componentes/pruebas. Mantener
   revisión rigurosa de lógica financiera, integridad, seguridad y persistencia.
@@ -45,12 +40,8 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado.
 - Lee [flujos](specs/methodology/workflows.md), [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md); Skills existentes preservadas.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
-- Dimensiona tareas por independencia/capacidad real, sin máximo rígido de tres ni delegación ilimitada.
-  El coordinador decide cuándo crear subagentes y cómo aislarlos dentro del alcance ya autorizado;
-  no solicita permisos operativos repetidos. Sin aislamiento, paraleliza lecturas y serializa escrituras.
-- Aprobar spec NO autoriza dev: exigir permiso expreso por entrega. La integración de la
-  metodología no autoriza por sí sola dev06 ni nuevas especificaciones; no se controlan
-  chats externos ni existe trabajo entre sesiones.
+- Dimensiona subagentes según trabajo y capacidad; sin aislamiento seguro, serializa escrituras.
+- Aprobar spec NO autoriza dev06 ni nuevas specs; no controla chats externos ni trabaja entre sesiones.
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.
