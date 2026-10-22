@@ -41,3 +41,9 @@ PR34 abierta, HEAD previo5c1e4f0. CI push39752272341 FAILURE: API96 PASS/1 FAIL 
 Único ajuste: helperfixture crea desde el primeropen bajo077 y restaura máscara en finally. D4 exige DB/WAL/SHM0600 y añade negativo WAL0644, rechazo sin cambiar snapshot/identidad/clave. Producto/guardas/diseño financiero intactos. Después, D4 bajo0221 PASS/84 assertions; suite completa bajo02297 PASS/1557 assertions en24.25s y typecheckPASS. [Testplan](06-deuda-testplan.md) conserva ambos resultados y el fallo remoto. No se repite navegador sin cambio de producto.
 
 Siguiente acción: revisión independiente del cambio de fixture, revisión de diff/historial y publicación por coordinador; comprobar nueva CI por SHA. Sin rerun manual, merge, migración operativa, infraestructura ni despliegue.
+
+## Integración verificada — 2026-10-22
+Usuario autoriza mediante «dale» tras presentar PR34 para su revisión. HEAD exacto
+81ca2cdd y ambas CI SUCCESS comprobados antes del squash. PR34 MERGED en
+cb9ba3b93dc12a4107f063930bca0b48b67babbe, main local/remoto sincronizados.
+No cambios de código al integrar, despliegue ni migración operativa.

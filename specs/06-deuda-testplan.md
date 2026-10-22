@@ -76,3 +76,9 @@ Mejoras justificadas aplicadas dentro del diseño: separación20px entre paneles
 ## Límites y siguiente gate
 
 QA del producto completada sin bloqueantes; revisión de corrección de fixture/CI por SHA y autorización de merge pendientes. No Dev32, investigación AC-22 de infraestructura, VPS, deploy, datos reales, migración operativa, E2/E3/E4 ni cierre financiero ejecutados. R6/IOERR/API históricos no se declaran resueltos. Excel sigue fuente de verdad hasta el traspaso autorizado.
+
+## CI e integración finales verificadas — 2026-10-22
+SHA81ca2cdd: push39753174309 y PR39753182014 COMPLETED/SUCCESS.
+PR34 integrada por permiso del usuario, squash cb9ba3b. No se borran fallos previos
+ni se atribuye este resultado a AC futuros. CI posterior de main se consulta por
+SHA integrado; el merge no ejecuta despliegue ni migración operativa.

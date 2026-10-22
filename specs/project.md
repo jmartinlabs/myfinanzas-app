@@ -350,3 +350,10 @@ Usuario autorizó expresamente `$dev 06`, QA independiente y preparación de PR 
 Implementación en rama feat/06-deuda, maestro mínimo Deudas/enlace Partida y pagos en pipeline único. SQLitev7 con continuidad v6 genuina demo/production ficticia, identidad/DB-clave/MFA preservados; sin migraciones operativas. [Progress06](06-deuda-progress.md) y [testplan06](06-deuda-testplan.md) son autoridad de pruebas/estado por SHA:97 API/1547 assertions y Playwright2 PASS; incremento auditoría con E2E afectadoPASS. QA final completada sin bloqueantes; CI/PR pendientes, ninguna autorización de merge/deploy.
 
 Dev32/PR30/AC-22 continúa pausado, checkpoint intacto; no investigaciones ni cambios de infraestructura. E2.1 es línea documental independiente autorizada, sin implementación. Excel sigue maestro; R6/IOERR/fallo API históricos no quedan resueltos por esta entrega.
+
+## Cierre coordinado E1.6 y spec07 — 2026-10-22
+Usuario «dale» aprueba integrar PR34 y cerrar spec07/wireframes. PR34 verificada
+con HEAD81ca2cdd y ambas CI SUCCESS, integrada en main cb9ba3b mediante squash.
+Spec07 E2.1 aprobada documentalmente, PR propia pendiente de revisión/merge;
+dev07 no autorizado. AC2 de Comida mantiene su integración pendiente conforme
+a respuesta expresa anterior. Dev32/PR30/AC22 pausado, sin cambios.

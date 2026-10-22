@@ -2,7 +2,8 @@
 
 Coordinador: único escritor; [gates locales](methodology/myfinanzas-coordination.md).
 Reconciliación: 2026-10-22 Europe/Madrid. Main remoto verificado en
-`7c5c7d1bfb62bdc77af1fad080312e6dce1577dd` (PR #33 integrada).
+`cb9ba3b93dc12a4107f063930bca0b48b67babbe` (PR #34 integrada).
+PR #33 integrada en `7c5c7d1bfb62bdc77af1fad080312e6dce1577dd`.
 PR #32 integrada en `da543f3af6bde89259aeb0d9b2c1faad67311c05`.
 Este tablero registra estado; no concede aprobaciones.
 
@@ -19,17 +20,17 @@ sin reiniciar agentes ni trabajo ya realizado.
 | Item | Prioridad | Spec / autorización | Dev | QA | Dependencias duras | Dueño / aislamiento | Bloqueo | Siguiente acción autorizada | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
-| E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | Implementado y verificado localmente | Revisión independiente sin bloqueantes detectados en f2bfc1b | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Preparar PR y verificar CI por SHA; esperar permiso de merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
-| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 y cobertura Comida respondidas; spec/wireframes aún sin aprobar | Revisar y aprobar expresamente spec/wireframes; no dev07 | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
-| E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 pendiente; permiso específico | No iniciar | [roadmap](roadmap.md) |
+| E1.6 | Cerrada actual | Spec06 y merge PR34 aprobados por usuario | Integrada main cb9ba3b | QA independiente y CI de rama SUCCESS | Dependencias satisfechas | Sin trabajador activo; rama feat/06-deuda preservada | Ninguno para alcance actual | Conservar evidencia; 3 contratos futuros pendientes | [PR34](https://github.com/josemartin2000/myfinanzas-app/pull/34), [testplan06](06-deuda-testplan.md) |
+| E2.1 / spec07 | P1 documental | Spec y wireframes aprobados por usuario; Q1/Q2 resueltas | NO autorizado | Validación documental; ninguna aceptación funcional ejecutada | E1.3/E1.4 integradas; Comida para AC2 futuro | Coordinador; docs/07-ciclos-operacion; worktree e21 | Integración de nueva PR documental requiere permiso | Publicar PR, verificar CI y esperar revisión de esa PR | [spec07](07-ciclos-operacion-specification.md), [brainstorming07](07-ciclos-operacion-brainstorming.md) |
+| E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 satisfecha; permiso específico pendiente | No iniciar | [roadmap](roadmap.md) |
 | DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
 ## Paquetes activos y ownership
 
 | Paquete | Estado | Escritura exclusiva | Límites / retorno |
 | --- | --- | --- | --- |
-| DEV06 | Completado localmente con QA; rama preparada para PR | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
-| SPEC07 | Propuesta completa; spec/wireframes pendientes de aprobación | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
+| DEV06 | Cerrado e integrado PR34 | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
+| SPEC07 | Aprobado documentalmente; PR propia pendiente | Documentos specs/07-* en worktree e21 | Sin autorización dev07; sin código/tablero/infra |
 | QA06 | Completado sobre f2bfc1b; cuatro hallazgos iniciales corregidos | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
 Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
@@ -134,3 +135,40 @@ Validación documental PASS. Los documentos se preservan sin declarar spec aprob
 El cierre de esta ejecución espera únicamente CI dePR34 y revisión del usuario:
 mergePR34 y aprobaciónspec07 son gates distintos; ninguno autoriza despliegue ni
 dev07 por inferencia. Dev32/PR30/AC22 continúa PAUSED; checkpoints sin modificación.
+
+## Estado vigente tras aprobación del usuario — 2026-10-22
+Este apartado sustituye los gates pendientes de los registros históricos anteriores.
+Usuario «dale»: integración de PR34 y cierre documental spec07/wireframes aprobados.
+PR34 MERGED, squash cb9ba3b93dc12a4107f063930bca0b48b67babbe, HEAD81ca2cdd
+y CI push39753174309/PR39753182014 SUCCESS comprobados. Main y worktree e21
+sincronizados preservando los borradores. Ningún cambio de producto al integrar.
+
+| Item | Estado vigente | Siguiente acción / gate |
+| --- | --- | --- |
+| E1.6 | Integrada PR34; aceptación actual y QA cerradas; 3 contratos futuros separados | Consultar CI de main por SHA; no despliegue |
+| E2.1 / spec07 | Spec y wireframes aprobados; 26 criterios operativos y 3 integraciones futuras | Preparar PR documental y verificar CI; merge de nueva PR requiere permiso |
+| E2.1 / dev07 | NO autorizado | Permiso expreso de desarrollo por entrega, además de spec integrada y dependencias |
+| Dev32 / PR30 / AC22 | PAUSED, checkpoint intacto | No investigar, corregir ni integrar |
+
+No subagentes nuevos: cierre documental por coordinador, cuota eficiente. Los
+worktrees y temporales previos se conservan; ningún recurso con trabajo pendiente
+se elimina. Aprobar spec07 no autoriza automáticamente desarrollo ni su nuevo merge.
+
+## Cierre documental E2.1 autorizado por Álex — 2026-10-22
+Auditoría funcional y documental de [PR37](https://github.com/josemartin2000/myfinanzas-app/pull/37)
+favorable. Spec07 y wireframes aprobados; permiso expreso de squash condicionado
+a ambas CI SUCCESS del HEAD final y ausencia de conflictos. Se corrige únicamente
+la cabecera del brainstorming y se conserva su trazabilidad; ningún cambio de
+alcance, wireframes, criterios, código, SQL o infraestructura. Estado efectivo de
+integración y SHA de main: registro Git de PR37 y sus Checks, verificados al cerrar.
+
+| Línea | Estado documental / autorización | Próxima acción |
+| --- | --- | --- |
+| E2.1 / spec07 | Aprobada por Álex; cierre de PR37 autorizado con gates CI/HEAD | Integrar/verificar y presentar plan dev07 |
+| E2.1 / dev07 | NO autorizado; 26 AC operativos y 3 contratos futuros | Revisar plan antes de dar permiso expreso |
+| E2.1-AC2 | Pendiente hasta motor real Comida E3.5 | No simular conciliación ni declarar PASS |
+| Dev32 / PR30 / AC22 | PAUSED; checkpoint preservado | Sin investigaciones ni cambios |
+
+Preparación técnica/pruebas permitida en lectura; sin nuevos subagentes ni
+implementación durante este cierre. tblCiclos sigue único maestro, saldo Comida
+manual sin propagación, IDs y Movimientos originales preservados.
