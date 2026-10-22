@@ -37,7 +37,8 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - [Especificación funcional recibida y P1–P7](functional-reference-v5.11.md): fuente leída y trazada; no implica inspección del Excel.
 - PR #4 aprobada e integrada en main: 0f07992; HEAD aprobado aeb867c verificado como ancestro.
 - [Contexto v5.11 y referencia candidata vigente](project.md): actualizado por usuario el 2026-10-22;
-  no queda pendiente promoción del Excel. Su incorporación e inspección en Codex siguen pendientes.
+  v5.11(7) es candidata vigente, NO estable; su promoción a estable sigue pendiente.
+  Incorporación e inspección del libro en Codex no realizadas.
 - PR #3 aprobada explícitamente al actualizar inicialmente el contexto a v5.11;
   merge 193410d verificado en main.
 - STEP 3 autorizado mediante «procede» tras presentar el siguiente paso; [alcance](automated-checks.md).
@@ -350,3 +351,16 @@ candidatos/3 futuros, sin pruebas funcionales E1.6 ni autorización dev06/merge/
 Próxima acción: auditoría final de especificación/wireframes y aprobación expresa;
 después solicitar autorización dev06. Sin infraestructura nueva, VPS, deploy, datos
 reales, importaciones o modificación del Excel. Estados anteriores quedan históricos.
+
+
+## Spec 06 — auditoría final y ajustes autorizados — 2026-10-22
+Álex revisa 89788288f7a820efd2a6cc1411e6a95a8d11d174 favorablemente; usuario autoriza
+solo ajustes documentales y consolidar decisiones app: rechazo atómico de capital
+pendiente verificable negativo (cero exacto admitido, sin truncar/compensar); extraordinaria
+no futura según día civil Europe/Madrid; activar/desactivar sin borrar historia y proteger
+apertura/Inicio control/enlaces usados. No atribuir estas decisiones a fórmulas Excel.
+Q1–Q4 validadas, fórmula inclusiva intacta y 30 AC actuales/3 futuros conservados.
+Referencia única v5.11(7) sigue candidata, NO estable. PR #24 permanece DRAFT; pendiente
+verificación del diff final y autorización expresa de integración/desarrollo. No dev06,
+merge, SQL, infraestructura nueva, VPS, despliegues, datos reales o Excel modificado.
+Los estados previos de propuestas/preguntas pendientes son históricos, no el vigente.

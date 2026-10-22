@@ -1,11 +1,12 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Brainstorming
 Status: DRAFT — Q1 cerrada con evidencia v5.11(7); especificación completa NO APROBADA.
-Q2–Q4 consolidadas según usuario; propuestas app requieren aceptación del documento completo.
+Q1–Q4 validadas; exceso, fecha futura y ciclo de vida consolidados como decisiones app
+en auditoría final 2026-10-22. PR Draft: integración y desarrollo NO autorizados.
 Roadmap/context: [E1.6/E4.4 y DT2/DT7](roadmap.md),
 [R1/R2/R5 y P4–P7](functional-reference-v5.11.md),
 [propuesta](06-deuda-specification.md).
 Base: main `9336fdd301231191509b6371ffb05a54b33d61ed`. Fecha: 2026-10-21.
-Next action: revisión/aprobación de especificación completa, wireframes y propuestas app; no dev 06.
+Next action: verificar ajustes finales y obtener autorización de integración/desarrollo; no dev 06.
 Actualización 2026-10-22: base main ad9442669468968d0ab82a9613522c7205b242c1 (SQLite v6).
 
 ## Autoridad y decisiones que no se reabren
@@ -122,20 +123,24 @@ no demostrada. Ningún código o prueba modificados. Se espera autorización par
 de diagnóstico de R6; el fallo histórico no se oculta ni declara resuelto por una CI verde.
 
 
-## Consolidación inicial Q1–Q4 — 2026-10-22 (histórica; Q1 sustituida por cierre inferior)
+## Tabla vigente Q1–Q4 — actualizada tras auditoría final, 2026-10-22
 Fuente: instrucción expresa del usuario «Álex — Retomar E1.6 · Deudas — PR #24».
 No se vuelve a preguntar lo ya confirmado. La ronda original y observaciones de Álex
 se conservan como historia; sus PENDING y recomendación de capital cero no son el
-contrato actual. La especificación completa y sus wireframes siguen DRAFT.
+contrato actual. La tabla inferior refleja la evidencia y decisiones ya consolidadas;
+la PR sigue DRAFT, sin autorización de integración o desarrollo.
 
 | Cuestión | Decisión/evidencia vigente | Estado |
 | --- | --- | --- |
-| Q1 | R5 confirma apertura, control y amortización real, sin reconstrucción. Álex comunicó >= Inicio control, pero no está la fórmula literal ni el texto Criterios en Codex | ÚNICA reserva de evidencia física |
-| Q2 | Usuario: cuota Gasto íntegro; capital>0, intereses>=0, ambos explícitos; suma exacta EUR, no TIN/TAE | Consolidada; sustituye propuesta anterior de capital cero |
-| Q3 | Usuario: Dxxx estable, Partida→Deuda única por ID, mínimo necesario, apertura/Inicio/enlaces utilizados protegidos; no fuentes paralelas | Consolidada; entradas exactas subordinadas a Q1 |
-| Q4 | Usuario: Amortización deuda, misma Partida ligada, S000, origen con permiso Exterior Sí; capital=importe, intereses=0, no Gasto/ejecución presupuestaria | Consolidada; límite futuro es propuesta app |
+| Q1 | Fórmula literal v5.11(7) y Criterios aportados: apertura − capital por mismo ID con Fecha >= Inicio control; propio día incluido, sin doble descuento precontrol | CERRADA y validada; referencia candidata, no estable |
+| Q2 | Cuota Gasto íntegro; capital>0/intereses>=0/suma exacta, no TIN/TAE; rechazo atómico de estado con pendiente verificable negativo, cero exacto admitido | Validada; límite de exceso es decisión app |
+| Q3 | Dxxx y vínculo único Partida→Deuda; mínimo Inicio control/apertura; activar/desactivar sin borrar historia, proteger entradas/enlaces utilizados | Validada; ciclo de vida/protecciones son decisiones app |
+| Q4 | Amortización deuda, misma Partida, S000, permiso Exterior Sí; capital=importe/intereses=0/sin Gasto ni presupuesto; no posterior al hoy civil Europe/Madrid | Validada; límite futuro es decisión app |
 
-### Q1 — exactamente qué falta
+### Reserva histórica Q1 — resuelta por evidencia v5.11(7)
+El texto siguiente conserva lo solicitado antes de recibir la fórmula; NO es una
+reserva vigente. La fila anterior decía «no está la fórmula literal ni el texto
+Criterios en Codex»; queda sustituida por la tabla actual y el cierre documentado.
 No se ha incorporado/inspeccionado el Excel. La referencia sanitizada R5 no contiene
 la fórmula física completa ni prueba qué campos de apertura/precontrol intervienen.
 Falta transcripción sanitizada de la fórmula vigente de capital pendiente (tabla y
@@ -148,7 +153,8 @@ No pedir libro ni datos personales; basta texto de reglas/fórmula y, si hiciera
 ejemplo ficticio. Hasta recibirlo, no publicar una fórmula definitiva, inventar campos
 precontrol, reconstruir operaciones ni aplicar el criterio de Saldos a Deudas.
 
-### Propuestas explícitas para aprobar con la especificación, sin nueva ronda general
+### Propuestas históricas — consolidadas por la auditoría final inferior
+Se conserva su redacción anterior como trazabilidad, no como decisiones pendientes.
 - Exceso de principal (Q2): recomendar rechazo atómico del alta/rectificación aplicable
   cuyo estado candidato deje pendiente verificable negativo en alguna Deuda afectada;
   igualdad válida deja cero exacto. Al rectificar sustituir el efecto anterior y revisar
@@ -178,7 +184,7 @@ No nueva investigación de infraestructura. La evidencia R6 del 2026-10-21 es hi
 ni resolver por extensión el IOERR_SHORT_READ del prototipo. Se conservan sus límites.
 
 
-## Cierre vigente Q1 — v5.11(7), 2026-10-22
+## Cierre de Q1 — v5.11(7), 2026-10-22 (registro anterior a auditoría final)
 Usuario aporta fórmula literal Deudas!J20:J21/B15 y Criterios C30/C88/C109;
 [transcripción sanitizada y roles de campos](functional-reference-v5.11.md).
 Posteriormente confirma (7) como referencia financiera única/base candidata vigente,
@@ -202,3 +208,22 @@ sin precargar apertura cero ni inventar ausencias históricas. No trasladar el c
 exigido a cuotas al dominio de apertura por analogía.
 PR #24 sigue DRAFT: cierre de Q1 no equivale a aprobación de documento, wireframes,
 dev06 o merge. 30 AC actuales candidatos y 3 contratos futuros; pruebas aún previstas.
+
+
+## Auditoría final y decisiones app consolidadas — 2026-10-22
+Fuente: mensaje del usuario «Álex — Auditoría final E1.6 · PR #24» tras revisión de
+89788288f7a820efd2a6cc1411e6a95a8d11d174. Sin bloqueantes financieros/arquitectónicos;
+Q1–Q4 validadas. Las recomendaciones anteriores de estos tres puntos quedan sustituidas:
+- Exceso: rechazar atómicamente cualquier operación que deje capital pendiente
+  verificable negativo en alguna Deuda afectada; cero exacto válido. Mantener revisión
+  de estado candidato, sin doble resta al rectificar, truncamientos ni compensaciones.
+- Fecha futura: extraordinaria no posterior al día civil actual Europe/Madrid;
+  validar cliente/servidor. No modifica Ciclos futuros ni fecha de referencia financiera.
+- Ciclo de vida: activar/desactivar sin borrar historia; proteger apertura e Inicio
+  control utilizados y evitar asignaciones/reasignaciones/desvinculaciones históricas
+  silenciosas. Nueva Partida solo para enlace futuro, no para alterar apertura usada.
+Son decisiones de aplicación, NO fórmulas o validaciones físicas atribuidas al Excel.
+Referencia v5.11(7) candidata, no estable. Se mantienen fórmula Q1 y 33 AC (30+3).
+Auditoría favorable y decisiones consolidadas no equivalen a autorización de integrar
+PR #24 ni de dev06: sigue DRAFT, pendiente comprobar el diff final y aprobación expresa.
+No preguntas nuevas sobre Q1–Q4, implementación, SQL, datos reales, Excel o despliegue.
