@@ -20,7 +20,7 @@ sin reiniciar agentes ni trabajo ya realizado.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
 | E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | En curso | Pendiente candidato; revisión independiente posterior | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Implementar, verificar, entregar candidato a QA; PR sin merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
-| E2.1 / spec07 | P2 paralela | Inicio de especificación autorizado; 07 libre comprobado | NO autorizado | Revisión funcional; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Nuevas decisiones y spec requieren aprobación | Preparar ronda de decisiones sin reabrir contratos temporales aprobados | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
+| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 sobre rectificación con hechos y cobertura Comida pendientes de respuesta | Esperar respuestas; después completar spec y wireframes para aprobación | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
 | E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 pendiente; permiso específico | No iniciar | [roadmap](roadmap.md) |
 | DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
@@ -29,8 +29,8 @@ sin reiniciar agentes ni trabajo ya realizado.
 | Paquete | Estado | Escritura exclusiva | Límites / retorno |
 | --- | --- | --- | --- |
 | DEV06 | En curso; análisis inicial completado, implementación continuada | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
-| SPEC07 | En curso; recuperación temporal y ronda funcional | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
-| QA06 | En cola; sin trabajador creado | Se asignará tras candidato y plaza disponible | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
+| SPEC07 | Primera ronda preparada; esperando respuestas | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
+| QA06 | Diseño independiente completado por /root/spec07; esperando SHA fijo | Sin escrituras durante diseño; checkout propio al verificar | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
 Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
 Sin delegación recursiva; máximo dos trabajadores simultáneos. QA reutilizará capacidad
@@ -61,3 +61,10 @@ antes de publicar; preservar cambios y no declarar PASS o completado sin verific
 Ensayo PR32 ADOPT-RO-1/2 completado, lectura sin escrituras; no se repite para demostrar
 herramientas. PR24 integrada b60def1. Estado anterior de tablero (PR32 Draft y dev06
 sin autorización) queda sustituido por esta reconciliación y permisos expresos actuales.
+
+### Actualización de paquetes
+SPEC07 devuelve brainstorming07 sin commit ni aprobación, en worktree e21.
+Q1 y la dependencia real Comida (E3.5 para aviso AC2) se han presentado al usuario.
+No se ha rebajado AC2 ni cambiado roadmap. QA06-DESIGN completado en lectura por
+/root/spec07; matriz AC01–30 y contratos31–33 revisados, sin suites ni PASS inventados.
+Plaza disponible para QA ejecutable tras candidato; DEV06 continúa en su worktree.
