@@ -41,7 +41,7 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - Lee [flujos](specs/methodology/workflows.md), [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md); Skills existentes preservadas.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
 - Dimensiona subagentes según trabajo y capacidad; sin aislamiento seguro, serializa escrituras.
-- Aprobar spec NO autoriza dev06 ni nuevas specs; no controla chats externos ni trabaja entre sesiones.
+- Aprobar spec NO autoriza dev; aplica [aprobaciones explícitas](specs/methodology/approvals.md).
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.
@@ -55,8 +55,8 @@ Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a priva
   ni archivos sensibles. No confíes únicamente en .gitignore o un escáner.
 - Haz push de la rama y crea una PR hacia main con resumen, cambios, pruebas y limitaciones.
   Si depende de otra rama aún no integrada, declara la dependencia y no la ocultes.
-- Espera aprobación explícita del usuario de esa PR antes de hacer merge; una aprobación
-  del plan o permiso para push no equivale a aprobación de merge.
+- Antes de merge exige «Apruebo PR #N» o equivalente inequívoco para esa PR/revisión.
+  «Dale», «ok» o «continúa» no autorizan merges; ver [política](specs/methodology/approvals.md).
 - Tras esa aprobación, realiza el merge en GitHub, verifica estado y commit integrado,
   actualiza el checkout sin perder trabajo y confirma árbol limpio.
 - Ante problemas de seguridad, conflictos o fallos de validación, detente y consulta;
