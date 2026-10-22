@@ -1,9 +1,9 @@
 # Document ownership and workflow
 
 Estado vigente 2026-10-22: aplicación existente, ocho etapas cerradas, E1.1–E1.5
-integradas y spec E1.6 integrada PR #24 (b60def1). Dev06 autorizado y verificado localmente
-con QA independiente; PR/CI y merge pendientes. Spec07 E2.1 autorizada en preparación,
-sin permiso de implementación ni aprobación automática de especificación.
+integradas junto a E1.6 (PR34, cb9ba3b), con QA independiente y CI de rama SUCCESS.
+Spec07 E2.1 y wireframes aprobados documentalmente; PR de integración pendiente,
+sin autorización de implementación.
 Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
 Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$orchestrate](../.agents/skills/orchestrate/SKILL.md),
 [contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
