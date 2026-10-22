@@ -270,7 +270,7 @@ def main():
                         ignore=shutil.ignore_patterns('site-packages', '__pycache__'))
         import re
         libraries = set()
-        for binary in [executable, *stdlib.rglob('*.so')]:
+        for binary in [executable, *(p for p in stdlib.rglob('*.so') if 'site-packages' not in p.parts)]:
             linked = subprocess.run(['ldd', str(binary)], capture_output=True, text=True, timeout=10)
             if linked.returncode:
                 raise ProbeError('test-only Python dependency inspection failed')

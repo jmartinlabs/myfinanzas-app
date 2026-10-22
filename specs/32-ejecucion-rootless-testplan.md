@@ -212,5 +212,8 @@ Run 39731758544 / 103bf7e: FAIL en regresión API de imagen final. No se atribuy
 sin logs a un test concreto. CI general push y PR SUCCESS. Se conserva el fallo;
 los nuevos tests #31 necesitan Python/fcntl real en el harness. El helper se copia
 con su loader/stdlib/dependencias al montaje readonly de pruebas, nunca a runtime.
-Prueba local del cierre de dependencias de ese helper: importa fcntl y arranca con
-su loader copiado, PASS. La próxima CI ejecutará todos los tests sin excluir #31.
+Prueba local inicial del helper FAIL: se detectó colisión de bibliotecas al
+inspeccionar extensiones ajenas de site-packages. Se excluye ese árbol, que tampoco
+se copia al harness. Resultado corregido pendiente de ejecución. La próxima CI ejecutará todos los tests sin excluir #31.
+Reejecución local tras excluir site-packages de la inspección: PASS, Python
+3.12.14 con loader copiado importa fcntl/os; sin modificar imagen ni tests API.
