@@ -36,12 +36,12 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 
-## Coordinación v2.3.1 — vigente (PR #32 integrada)
+## Coordinación v2.4.1 — Efficient Orchestration + handoff
 - Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado.
 - Lee [flujos](specs/methodology/workflows.md), [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md); Skills existentes preservadas.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
-- Dimensiona subagentes según trabajo y capacidad; sin aislamiento seguro, serializa escrituras.
-- Aprobar spec NO autoriza dev06 ni nuevas specs; no controla chats externos ni trabaja entre sesiones.
+- Un ejecutor por defecto; coordinación por hitos y QA independiente; sin aislamiento seguro, serializa escrituras.
+- Aprobar spec NO autoriza desarrollo; [$handoff](.agents/skills/handoff/SKILL.md) (Claude: `/handoff`) consolida y para, sin reanudar ni controlar chats externos.
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.
