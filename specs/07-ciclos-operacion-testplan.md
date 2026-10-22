@@ -103,3 +103,21 @@ se conserva diseño común, incluido control date nativo dependiente del navegad
 
 QA independiente revisa SHA fijo y probes aislados; coordinador consolida dictamen
 y evidencia de CI sobre el candidato final. Sin merge autorizado.
+
+## Conciliación final del coordinador — 2026-10-22
+QA independiente sobre53cc238 (código d63442e): dictamen funcional favorable,
+sin nuevos defectos detectados. Probes originales corregidos; ejecución QA
+propia8/154, probes3/22 yO9 adicional1/17 PASS. E2E Developer2/47,6s contrastado
+por QA mediante código/log/capturas. No se atribuye a QA la suite E2E completa.
+
+AC23 y gate API global siguen BLOQUEADOS por105 PASS/1 FAIL errno11. Control
+base c04dc07 del coordinador1 PASS/18 no demuestra causa ni cierra el fallo.
+Un único probe de dos procesos con barrera e instrumentación temporal segura
+dio lecturas immutable/live correctas y una DDL8; no reprodujo ni identificó
+handle del fallo original. Sin cambios de apertura/guardas ni reanudación Dev32.
+No se propone corrección causal sin evidencia.
+
+Se prepara PR funcional en estado DRAFT para revisión con evidencia y CI por SHA,
+no entrega verificada ni merge automático. Un CI posterior verde no se presenta
+como resolución de esta incidencia. Ampliar la ruta heredada de diagnóstico
+requiere decisión de alcance; no se oculta como trabajo funcional completado.
