@@ -10,9 +10,11 @@ y mantenibilidad. No diseñar reglas financieras nuevas ni inferirlas autónomam
 
 ## Referencia funcional vigente: arquitectura v5.11
 Actualización confirmada por el usuario el 2026-10-20, antes de STEP 4.
-La arquitectura v5.11 sustituye la referencia funcional v5.10. El usuario ha confirmado
-expresamente que `MyFinanzas2026_v5.11(5).xlsx` es la **base estable vigente**;
-no es una candidata ni está pendiente de promoción.
+La arquitectura v5.11 sustituye la referencia funcional v5.10. El usuario designó
+inicialmente v5.11(5) como estable. El 2026-10-22 la sustituye
+expresamente por **`MyFinanzas2026_v5.11(7).xlsx`, base candidata vigente y referencia
+financiera única**. v5.11(7) NO está promovida a estable; no conservar v5.11(5) como
+autoridad financiera vigente. Las evidencias anteriores retienen su procedencia histórica.
 
 El Excel físico y su documentación original asociada v5.11 no se han incorporado
 ni inspeccionado en Codex. Sí se ha recibido y leído la especificación funcional
@@ -330,3 +332,14 @@ y [seguimiento](31-sqlite-produccion-progress.md). PR #23 documental aprobada,
 sin integrar; implementación en PR independiente dependiente de esa documentación.
 No se autoriza merge de ninguna PR ni VPS/deploy/datos reales/importación del Excel.
 Esta autorización técnica transversal no inicia E1.6 ni modifica el roadmap financiero.
+
+
+### E1.6 — cierre de Q1 y nueva referencia candidata — 2026-10-22
+Usuario autoriza v5.11(7) como referencia única, sustituyendo a (5), sin promoverla a
+estable. Q1 cerrada con evidencia sanitizada atribuida a su inspección de tblDeudas y
+Criterios: apertura menos capital de Movimientos del mismo ID y Fecha >= Inicio control.
+Históricos/precontrol no vuelven a descontarse; no filtro por Tipo/Control/Fecha inicio
+deuda. [Procedencia/fórmula](functional-reference-v5.11.md) y [spec 06](06-deuda-specification.md).
+Codex no ha recibido/inspeccionado el libro ni importado datos reales. La especificación
+sigue DRAFT: Q2–Q4 consolidadas, propuestas app y wireframes para aprobación completa.
+No dev06/merge/SQL ni cambios del Excel autorizados; prioridad funcional E1.6.

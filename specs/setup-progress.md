@@ -36,8 +36,9 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - [Cuatro agrupaciones de épicas](roadmap.md) aprobadas expresamente; la sección 14 anterior del adjunto no las revoca.
 - [Especificación funcional recibida y P1–P7](functional-reference-v5.11.md): fuente leída y trazada; no implica inspección del Excel.
 - PR #4 aprobada e integrada en main: 0f07992; HEAD aprobado aeb867c verificado como ancestro.
-- [Contexto v5.11 y base estable vigente](project.md): confirmados por usuario el 2026-10-20;
-  no queda pendiente promoción del Excel. Su incorporación e inspección en Codex siguen pendientes.
+- [Contexto v5.11 y referencia candidata vigente](project.md): actualizado por usuario el 2026-10-22;
+  v5.11(7) es candidata vigente, NO estable; su promoción a estable sigue pendiente.
+  Incorporación e inspección del libro en Codex no realizadas.
 - PR #3 aprobada explícitamente al actualizar inicialmente el contexto a v5.11;
   merge 193410d verificado en main.
 - STEP 3 autorizado mediante «procede» tras presentar el siguiente paso; [alcance](automated-checks.md).
@@ -51,7 +52,7 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 
 ## Pending decisions
 - [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
-- Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
+- Excel de referencia y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
 - [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño y especificación integrados en PR #6. Implementación local en rama, pruebas actuales en testplan; aprobación de PR funcional/merge pendiente. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
 ## Evidencia de sincronización
@@ -307,3 +308,59 @@ CI previa y posterior al squash SUCCESS; detalles en [testplan 31](31-sqlite-pro
 R6 sin causa atribuida; fsync tras publicación puede dejar durabilidad incierta.
 Preparación operativa pendiente según infra/README.md; sin VPS/deploy/datos reales.
 PR #21/#22 intactas. Este cierre documental requiere su propia revisión/merge.
+
+
+## Spec 06 — E1.6 propuesta documental en revisión — 2026-10-21
+Base main 9336fdd; E1.5 cerrada e integrada. Usuario autoriza solo especificación,
+wireframes y PR Draft. [Brainstorming](06-deuda-brainstorming.md) y
+[especificación](06-deuda-specification.md): DRAFT, Q1–Q4 sin responder, 30 criterios
+actuales candidatos y 3 futuros; ninguna implementación/prueba funcional E1.6 ejecutada.
+Próxima acción: contrastar apertura/corte/precontrol, desglose/límites, mínimo de Deuda y
+protecciones históricas, permiso/fecha del nuevo Tipo; feedback de wireframes 390/1440.
+La publicación anticipada está autorizada, no la aprobación o dev 06. Sin código/SQL,
+migración, Excel, datos reales, merge o despliegue. Excel v5.11 continúa maestro.
+
+
+## Spec 06 — consolidación para auditoría — 2026-10-22
+Base incorporada: main ad9442669468968d0ab82a9613522c7205b242c1, SQLite v6.
+PR #24 permanece DRAFT, sin aprobación final ni autorización de dev 06/merge.
+Usuario confirma cuota íntegra, capital>0/intereses>=0/suma exacta, Dxxx/enlace único,
+protección histórica y extraordinaria con S000/permiso Exterior. Q1 sigue única reserva
+física: falta fórmula literal y texto Criterios de apertura, >= Inicio control y precontrol.
+Exceso de amortización y fecha futura de extraordinaria: propuestas app explícitas para
+aceptación en la revisión completa, no reglas Excel ni autorizaciones implícitas.
+30 AC actuales candidatos/3 contratos futuros; ninguno ejecutado como funcionalidad E1.6.
+[Brainstorming](06-deuda-brainstorming.md) y [especificación/plan dev 06](06-deuda-specification.md)
+conservan evidencia, wireframes y trazabilidad. PR #31 integrada con CI SUCCESS; incidencias
+históricas no declaradas resueltas. Sin nuevas investigaciones de infraestructura.
+Próxima acción: evidencia sanitizada Q1 y auditoría/aprobación de especificación; después
+esperar autorización expresa de dev 06. Sin producto/SQL/migración, VPS, deploy o datos reales.
+
+
+## Spec 06 — Q1 cerrada y referencia candidata única — 2026-10-22
+El usuario designa MyFinanzas2026_v5.11(7).xlsx referencia financiera única/base
+candidata vigente, sustituyendo a (5), SIN promoverla a estable. Q1 cerrada por
+transcripción física atribuida de tblDeudas y Criterios C30/C88/C109: apertura menos
+capital por mismo ID con Fecha de Movimientos >= Inicio control. Sin Tipo/Control ni
+Fecha inicio deuda como filtros, ni históricos/precontrol como operandos adicionales.
+[Referencia y procedencia](functional-reference-v5.11.md), [spec](06-deuda-specification.md)
+y [decisiones](06-deuda-brainstorming.md) actualizadas; ausencia no se convierte en cero.
+Q2–Q4 consolidadas. Propuestas app de exceso/fecha futura/ciclo de vida y formulario
+mínimo para aceptar en la aprobación completa. PR #24 sigue DRAFT, 30 actuales
+candidatos/3 futuros, sin pruebas funcionales E1.6 ni autorización dev06/merge/SQL.
+Próxima acción: auditoría final de especificación/wireframes y aprobación expresa;
+después solicitar autorización dev06. Sin infraestructura nueva, VPS, deploy, datos
+reales, importaciones o modificación del Excel. Estados anteriores quedan históricos.
+
+
+## Spec 06 — auditoría final y ajustes autorizados — 2026-10-22
+Álex revisa 89788288f7a820efd2a6cc1411e6a95a8d11d174 favorablemente; usuario autoriza
+solo ajustes documentales y consolidar decisiones app: rechazo atómico de capital
+pendiente verificable negativo (cero exacto admitido, sin truncar/compensar); extraordinaria
+no futura según día civil Europe/Madrid; activar/desactivar sin borrar historia y proteger
+apertura/Inicio control/enlaces usados. No atribuir estas decisiones a fórmulas Excel.
+Q1–Q4 validadas, fórmula inclusiva intacta y 30 AC actuales/3 futuros conservados.
+Referencia única v5.11(7) sigue candidata, NO estable. PR #24 permanece DRAFT; pendiente
+verificación del diff final y autorización expresa de integración/desarrollo. No dev06,
+merge, SQL, infraestructura nueva, VPS, despliegues, datos reales o Excel modificado.
+Los estados previos de propuestas/preguntas pendientes son históricos, no el vigente.
