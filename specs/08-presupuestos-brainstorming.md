@@ -9,7 +9,7 @@ Roadmap aprobado, E2.2: mantener Presupuestos y vincular opcionalmente Partidas;
 
 Fuentes: [roadmap](roadmap.md#e22--presupuestos-y-sus-fuentes-de-ejecución), [referencia R1/R3/P3](functional-reference-v5.11.md), [contrato E1.2](02-clasificacion-specification.md#presupuestos-y-deudas), [Deuda E1.6](06-deuda-specification.md), guidelines architecture/ui/quality/security. Se revisaron contratos existentes y las reservas del selector Presupuestos en Clasificación; no se ejecutaron comprobaciones ni se modificó producto.
 
-Referencia financiera v5.11(7) candidata, no estable. No se inspeccionó Excel físico ni se importaron datos. AC23 sigue BLOQUEADO, E2.1 sin aceptación global; AC23-SQLITE es incidencia separada con investigación cerrada inconclusa. Cierre/evidencias registrados en copia documental /workspace/work/ac23-recovery/closure-docs y archivos privados de recuperación; no se afirma que estén integrados en main. Dev32/PR30/AC22 y otras tareas pausadas permanecen así.
+Referencia financiera v5.11(7) candidata, no estable. No se inspeccionó Excel físico ni se importaron datos. AC23 sigue BLOQUEADO, E2.1 sin aceptación global; AC23-SQLITE es incidencia separada con investigación cerrada inconclusa. Cierre/evidencias registrados en una copia documental aislada y archivos privados de recuperación de la sesión de diagnóstico; no se afirma que estén integrados en main. Dev32/PR30/AC22 y otras tareas pausadas permanecen así.
 
 ## Registro inicial reutilizado — histórico, sujeto a precisiones de ronda2
 
