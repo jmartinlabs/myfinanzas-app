@@ -28,7 +28,7 @@ sin reiniciar agentes ni trabajo ya realizado.
 
 | Paquete | Estado | Escritura exclusiva | Límites / retorno |
 | --- | --- | --- | --- |
-| DEV06 | Código verificado; consolidación documental final | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
+| DEV06 | Completado localmente con QA; rama preparada para PR | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
 | SPEC07 | Respuestas recibidas; siguiente paquete completa propuesta | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
 | QA06 | Completado sobre f2bfc1b; cuatro hallazgos iniciales corregidos | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
@@ -106,3 +106,11 @@ sin secretos/DB/datos reales detectados; solo fixtures y capturas ficticias. CI 
 y revisión del commit documental final pendientes antes de entregar PR.
 SPEC07-FINAL en curso por mismo trabajador: propuestas pendientes de aprobación final,
 sin implementación ni tercer trabajador. Dev32 conserva pausa expresa.
+
+### Entrega del coordinador
+Conciliado cierre QA f2bfc1b y documentación final fbcf423; los cuatro commits de
+tablero se incorporan por el coordinador a feat/06-deuda, único escritor de tablero.
+Rama preparada para PR hacia main; [comparación](https://github.com/josemartin2000/myfinanzas-app/compare/main...feat/06-deuda).
+Resultados remotos vigentes se consultan por SHA en la PR, sin inferirlos de pruebas
+locales. Merge sigue pendiente de autorización expresa. SPEC07-FINAL completa
+propuesta documental con las respuestas recibidas; spec/wireframes no aprobados.
