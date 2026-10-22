@@ -390,3 +390,17 @@ con HEAD81ca2cdd y ambas CI SUCCESS, integrada en main cb9ba3b mediante squash.
 Spec07 E2.1 aprobada documentalmente, PR propia pendiente de revisión/merge;
 dev07 no autorizado. AC2 de Comida mantiene su integración pendiente conforme
 a respuesta expresa anterior. Dev32/PR30/AC22 pausado, sin cambios.
+
+## E2.1 dev07 autorizado — 2026-10-22
+Spec07 integrada PR37 (main c04dc07). El usuario autoriza cinco incrementos de dev07,
+QA independiente y preparación de PR; esta autorización supera las restricciones
+históricas «sin dev07» anteriores, sin autorizar merge, despliegue ni migración operativa.
+Implementación en feat/07-ciclos-operacion: maestro único ciclos, impacto revisable,
+motivo/confirmación, auditoría y revisión concurrente, SQLite8 compatible con v7 genuina.
+[Progress07](07-ciclos-operacion-progress.md) y [testplan07](07-ciclos-operacion-testplan.md)
+son la autoridad vigente de pruebas y bloqueos. La suite íntegra encontró un fallo
+concurrente de apertura heredada (SQLite errno11); permanece abierto aunque la
+regresión enfocada posterior pase. No se ha investigado ni reanudado infraestructura.
+26 criterios operativos separados de tres contratos futuros; E2.1-AC2 sigue pendiente
+hasta Comida E3.5. Dev32/PR30/AC22 pausado. Referencia v5.11(7) candidata, no estable;
+sin Excel real, datos personales, despliegues ni motores futuros.

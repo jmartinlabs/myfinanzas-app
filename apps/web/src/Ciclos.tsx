@@ -1018,8 +1018,12 @@ function CycleOperationForm({
                       <strong>
                         #{m.id} · {dateLabel(m.fecha)} · {m.tipo} · {m.vigencia}
                       </strong>
-                      <p>Antes: {cycleName(m.antes)}</p>
-                      <p>Después: {cycleName(m.despues)}</p>
+                      <p>
+                        Antes: {cycleName(m.antes)} · {interval(m.antes)}
+                      </p>
+                      <p>
+                        Después: {cycleName(m.despues)} · {interval(m.despues)}
+                      </p>
                     </li>
                   ))}
                 </ul>

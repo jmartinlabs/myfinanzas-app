@@ -46,5 +46,6 @@ jobs:
             artifacts/e1-4/*.png
             artifacts/e1-5/*.png
             artifacts/e1-6/*.png
+            artifacts/e2-1/*.png
           if-no-files-found: ignore
           retention-days: 7

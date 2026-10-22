@@ -620,27 +620,34 @@ test("07 O7 AC17/18/19/23: dos procesos migran v7 y confirman una revisión conc
         }),
       };
     });
-    const deadline = Date.now() + 3000;
-    while (
-      !(
-        await Promise.all(children.map((c) => Bun.file(c.ready).exists()))
-      ).every(Boolean)
-    ) {
-      if (Date.now() > deadline) throw Error("Child readiness not reached");
-      await Bun.sleep(5);
+    try {
+      const deadline = Date.now() + 3000;
+      while (
+        !(
+          await Promise.all(children.map((c) => Bun.file(c.ready).exists()))
+        ).every(Boolean)
+      ) {
+        if (Date.now() > deadline) throw Error("Child readiness not reached");
+        await Bun.sleep(5);
+      }
+      for (const { child } of children) {
+        child.stdin.write("confirm");
+        child.stdin.end();
+      }
+      const results = await Promise.all(
+        children.map(async ({ child }) => {
+          const output = (await new Response(child.stdout).text()).trim();
+          expect(await child.exited).toBe(0);
+          return output;
+        }),
+      );
+      expect(results.sort()).toEqual(["conflict", "written"]);
+    } finally {
+      for (const { child } of children) {
+        if (child.exitCode === null) child.kill();
+      }
+      await Promise.all(children.map(({ child }) => child.exited));
     }
-    for (const { child } of children) {
-      child.stdin.write("confirm");
-      child.stdin.end();
-    }
-    const results = await Promise.all(
-      children.map(async ({ child }) => {
-        const output = (await new Response(child.stdout).text()).trim();
-        expect(await child.exited).toBe(0);
-        return output;
-      }),
-    );
-    expect(results.sort()).toEqual(["conflict", "written"]);
     db = openDatabase(path);
     try {
       expect(getCycle(db, "1").ciclo.revision).toBe(2);
@@ -700,6 +707,49 @@ test("07 O8 QA regresión: periodo visible del mismo ID y replay con derivados m
           key,
         ),
       ).toThrow("Campo no editable");
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O9 AC03/04/10/12/13/20: fuente vacía, Comida pendiente y rollback completo de alta omitida", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const first = add(db, "2026-03-01", "0");
+    expect(cycleContext(db).referencia.fecha).toBeNull();
+    expect(cycleContext(db).actual).toBeNull();
+    const plan = previewCycleOperation(
+      db,
+      "omitido",
+      null,
+      input("2026-02-01", "-1.25"),
+    );
+    expect(plan.conciliacion.estado).toBe("pendiente");
+    expect(plan.totalMovimientos).toBe(0);
+    expect(plan.contextoDespues.referencia.fecha).toBeNull();
+    for (const value of [null, undefined, "", 0, "1.001"]) {
+      expect(() =>
+        previewCycleOperation(db, "omitido", null, {
+          ...input("2026-02-01"),
+          saldoInicialComida: value,
+        }),
+      ).toThrow();
+    }
+    db.exec(
+      "CREATE TRIGGER fail_cycle_attempt BEFORE INSERT ON cycle_operation_attempts BEGIN SELECT RAISE(ABORT,'injected attempt failure'); END",
+    );
+    const before = snapshot(db);
+    expect(() => commit(db, "omitido", null, input("2026-02-01", "0"))).toThrow(
+      "injected",
+    );
+    expect(snapshot(db)).toEqual(before);
+    expect(getCycle(db, first.id).ciclo.saldoInicialComida).toBe("0.00");
+    db.exec("DROP TRIGGER fail_cycle_attempt");
+    const created = commit(db, "omitido", null, input("2026-02-01", "0")).ciclo;
+    expect(created.id).toBe("2");
+    expect(created.saldoInicialComida).toBe("0.00");
+    expect(() => db.run("UPDATE cycle_audit SET motivo='alterar'")).toThrow();
+    expect(() => db.run("DELETE FROM cycle_audit")).toThrow();
   } finally {
     db.close();
   }

@@ -1,3 +1,4 @@
+import { cycleOperationsJourney } from "./cycle-operations";
 import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
 import { test, expect } from "@playwright/test";
@@ -621,6 +622,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     expect((await get("/movimientos")).movimientos).toHaveLength(4);
     const e15 = await transferencias(page);
     const e16 = await deudas(page);
+    const e21 = await cycleOperationsJourney(page);
     const snapshotMovements = (await get("/movimientos?estado=")).movimientos;
     // Genuine VACUUM INTO/age restoration, normal login/TOTP in a second Effect server.
     const restored = spawn(
@@ -681,6 +683,12 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       );
       expect((await get("/movimientos?estado=")).movimientos).toEqual(
         snapshotMovements,
+      );
+      expect(
+        (await get("/ciclos/" + e21.correctedId + "/historial")).items,
+      ).toEqual(e21.history);
+      expect((await get("/ciclos/" + e21.omittedId)).ciclo.inicio).toBe(
+        "2026-08-01",
       );
       expect((await get("/deudas/" + e16.id)).item.capitalPendiente).toBe(
         "720.00",

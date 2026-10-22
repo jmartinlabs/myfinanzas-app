@@ -208,3 +208,17 @@ Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 Esquema7 añade deudas, intentos y relación opcional Partida→Deuda; capital/intereses en el hecho Movimiento único. La migración preserva filas/auditorías/FK/índices/triggers sin reseed/backfill y se ejecuta dentro de IMMEDIATE. En origen production se invoca únicamente después de verificar la pareja efectiva y guardas existentes. Desarrollo autorizado el 2026-10-22, exclusivamente fixtures locales; sin ejecución operativa ni despliegue.
 
 `deudas.ts` centraliza maestro/posición derivada desde apertura y capital aplicable; `debt-schema.ts` mantiene la extensión versionada. Movimientos incorpora el cuarto Tipo y revisión banco/capital/Gasto, huella con entradas Deuda y contexto técnico para rechazar confirmación obsoleta; no API paralela de pagos ni acumulados persistidos. Backup admite manifiesto7/e1.6-v7/origen y restore revoca también intentos Deuda. [Evidencia06](../06-deuda-testplan.md); E2/E4/cierres siguen pendientes.
+
+## E2.1 — Operación de Ciclos (dev07, pendiente integración)
+`cycle-operation-schema.ts` extiende el maestro SQL `ciclos` en v8 (sin segundo maestro).
+Guarda transaccional interna permite el procedimiento revisado; fuera de él siguen
+prohibidas actualización directa, eliminación y alteración de identidad. La guarda
+queda vacía tras éxito o rollback. `cycle_audit` conserva actor/UTC/motivo/antes/después;
+`cycle_operation_attempts` ofrece reintento y se revoca al restaurar.
+`ciclos.ts` calcula antes/después desde maestro y Movimientos completos, incluyendo
+anulados consultables; pagina solo presentación. Huella de contexto incluye revisiones,
+hechos y fuentes reales comunes. BEGIN IMMEDIATE revalida huella y confirma únicamente
+con motivo y revisión explícita, sin actualizar hechos originales ni propagar Comida.
+API y UI reutilizan seguridad, componentes y pipeline existentes. Backup age identifica
+esquema8/e2.1-v8; continuidad v7 usa fixture congelada previa con Deuda, hechos y MFA.
+[Pruebas07](../07-ciclos-operacion-testplan.md) distingue evidencia y bloqueos abiertos.
