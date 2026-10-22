@@ -19,9 +19,18 @@ sobre estados históricos más antiguos.
 Paquetes activos: ninguno. Worktrees adicionales en este checkout: ninguno. Los SHAs
 históricos de cabecera del tablero (`cb9ba3b`) quedan sustituidos por este apartado.
 
-Limitación: en esta sesión Claude Code no dispone de `gh` ni de acceso autenticado a la
-API de GitHub; estado abierto/cerrado de PRs y CI no se consultó, solo refs Git remotas.
-No se declara ningún resultado de CI no verificado aquí.
+PRs abiertas verificadas con `gh` el 2026-10-23 (ninguna aprobada para merge por este registro):
+
+| PR | Rama | Estado | Nota |
+| --- | --- | --- | --- |
+| #40 | `docs/08-integration-close` | Abierta, MERGEABLE, CI `validate` SUCCESS en `b5c88d7` | Cierre spec08 y plan dev08; base de esta reconciliación |
+| #35 | `docs/explicit-approvals-v2-3-2` | Abierta, CONFLICTING | Metodología v2.3.2; posiblemente superada por v2.4.x, sin decidir |
+| #30 | `feat/32-ejecucion-rootless` | Draft, CONFLICTING | Dev32 PAUSED |
+| #29 | `spec/32-ejecucion-rootless` | Abierta, MERGEABLE | Spec32 aprobada, no integrada |
+| #22 | `infra/production-sqlite-bootstrap` | Draft, CONFLICTING | Infra pausada |
+| #21 | `infra/production-bootstrap-spec` | Draft, MERGEABLE | Infra pausada |
+
+Cerrar o actualizar PRs antiguas requiere decisión expresa del usuario por PR.
 
 ---
 
