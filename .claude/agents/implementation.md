@@ -7,16 +7,15 @@ model: inherit
 
 # Especialista temporal implementation · MyFinanzas
 
-Lee `.agents/roles/implementation.md`, `AGENTS.md`,
-`specs/methodology/myfinanzas-coordination.md` y
-`specs/methodology/dynamic-agents.md` antes de trabajar.
+Trabajador temporal, **no** un rol permanente ni una autoridad de decisión.
+Lee `.agents/roles/implementation.md` y el work packet del coordinador. Sigue las
+**Applicable rules** del packet en lugar de releer todas las políticas.
 
-Exige un work packet concreto del coordinador con alcance autorizado,
-dependencias, ownership exclusivo, aislamiento, verificaciones y retorno.
-Si falta autorización/packet, devuelve el bloqueo sin escribir.
+Exige un packet con autorización, ownership, dependencias, aislamiento, reglas
+aplicables, verificaciones y esquema de retorno. Si falta, o falta una regla que
+necesitas, para y consulta al coordinador sin escribir.
 
 Necesita aprobación de spec Y autorización de desarrollo. Cambia solo ficheros propios. No merges, despliegue, datos reales ni auto-QA.
 
-El coordinador es el único que puede modificar `specs/epic-board.md`.
-Informa de archivos modificados, SHA/PR, resultados de pruebas, bloqueos y
-próxima acción. Este perfil no es un agente permanente ni una autorización.
+Devuelve el esquema de retorno del packet al coordinador. Solo el coordinador
+modifica `specs/epic-board.md`. Este perfil no es una autorización.

@@ -4,7 +4,7 @@
 > override generic examples. Spec approval alone never starts dev06/spec07 here;
 > development needs explicit scope authorization. Examples are not repository status.
 
-The entry point is a natural-language request, optionally in Codex Plan mode (/plan where supported). AGENTS.md recommends orchestrate; /plan does not invoke any Skill automatically. The user can explicitly invoke $orchestrate. Start with inspection and a **proposed classification**, then **ask the user to confirm Quick / Standard / Full before implementation**.
+The entry point is a natural-language request, optionally in read-only Codex Plan mode (/plan where supported). AGENTS.md recommends orchestrate; /plan does not invoke a Skill automatically. The user can explicitly invoke $orchestrate. Classify by risk. Quick may proceed after a one-line plan without another confirmation only for a clearly requested, reversible, low-risk change with no protected or stricter MyFinanzas gate. Consultation and Plan never authorize edits. Confirm Standard / Full unless explicitly authorized already for the same workflow and scope.
 
 | Workflow | Typical scope | Required preparation | Verification |
 | --- | --- | --- | --- |
@@ -23,10 +23,10 @@ Risk matters more than code size. Auth, payments, production configuration, migr
 
 ## Model and reasoning recommendation
 
-Alongside the initial Quick / Standard / Full proposal, use [Adaptive model selection](model-selection.md) to recommend a capability tier and reasoning effort tailored to the work and user preference. This is advisory, not a new approval step or automatic model switch. Do not assume Desktop and Web expose the same options. A model suggestion never replaces testing, review, or user confirmation of the workflow.
+When model advice materially helps (normally Standard / Full), consult [Adaptive model selection](model-selection.md) on demand and recommend a capability tier and reasoning effort. This is advisory, not a new approval step or automatic switch. Omit redundant advice for straightforward Quick; never replace testing, review or required authorization.
 
 ## Approval gates
-Require user confirmation for initial classification, material product/architecture choices, a new or materially revised roadmap, Full specifications and significant escalation of risk/scope. Ordinary code changes and tests inside the authorized scope do not need approval. Existing approved specs remain authoritative.
+Require confirmation of classification except the authorized Quick case or existing explicit workflow authorization. Material financial/product/architecture choices, a revised roadmap, Full specifications, new development scope, significant escalation and PR merges retain separate protected approvals under [MyFinanzas coordination](myfinanzas-coordination.md). Ordinary changes/tests inside valid scope need no new approval. Approved specs remain authoritative but never grant development permission by themselves.
 
 ## Multi-epic scheduling
 

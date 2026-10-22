@@ -1,8 +1,8 @@
 # 08 — E2.2 Presupuestos: Specification
 
-Status: DRAFT — revisión financiera favorable; contenido completo y wireframes pendientes de aprobación en PR. Fecha: 2026-10-22.
-Approval source/date: revisión financiera favorable comunicada por Álex el2026-10-22; aprobación documental final PENDING. Consolidación y PR documental expresamente autorizadas; sin merge ni dev08.
-Contexto/decisiones: [brainstorming08](08-presupuestos-brainstorming.md). Revisión financiera de Álex recibida el2026-10-22: se incorporan sus cuatro ajustes como instrucciones vigentes. Especificación completa y wireframes siguen pendientes de aprobación documental final; no hay autorización de desarrollo.
+Status: APPROVED — especificación y wireframes aprobados e integrados en main por squash PR #39 (20d8f9a). Desarrollo dev08 NO autorizado. Fecha: 2026-10-22.
+Approval source/date: aprobación documental final de Álex y autorización expresa de squash PR #39 sobre HEAD 0f3d4e5, con CI push39851581005/PR39851590534 SUCCESS, 2026-10-22 (registro de merge 20d8f9a y [tablero](epic-board.md)). Revisión financiera favorable previa de Álex, misma fecha. Sin merge ni dev08 adicionales autorizados.
+Contexto/decisiones: [brainstorming08](08-presupuestos-brainstorming.md). Revisión financiera de Álex recibida el2026-10-22: se incorporan sus cuatro ajustes como instrucciones vigentes. Las menciones de aprobación pendiente en el cuerpo describen la revisión previa a la integración; el estado vigente es esta cabecera. No hay autorización de desarrollo.
 
 ## Funcionalidad y alcance
 

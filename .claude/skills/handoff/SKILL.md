@@ -5,9 +5,10 @@ description: Stop and consolidate this session without continuing development.
 
 # /handoff — Claude Code adapter
 
-**Canonical workflow:** `.agents/skills/handoff/SKILL.md`.
-Read that exact file and follow its shutdown rules. Also respect `AGENTS.md`, `CLAUDE.md` and `specs/methodology/myfinanzas-coordination.md` for MyFinanzas-specific gates.
+Lee y sigue la Skill canónica `.agents/skills/handoff/SKILL.md`; este wrapper no añade reglas salvo la nota Claude de abajo.
+Argumentos: `$ARGUMENTS`. `$nombre` de Codex equivale aquí a `/nombre`; un comando no concede aprobación, cambio de modelo ni delegación por sí solo. Aprobaciones:
+[approvals.md](../../../specs/methodology/approvals.md).
 
-Requested scope or arguments: `$ARGUMENTS`.
-
-This command is the Claude Code equivalent of Codex `$handoff`, not a new approval or an automatic pause/resume hook. Use only actual Claude runtime capabilities to request cancellation of owned subagents. Do not assert worker termination without confirmation; other sessions remain outside its control. Preserve uncommitted work and report failures honestly.
+Usa solo capacidades reales de Claude para cancelar subagentes propios; no afirmes
+que un trabajador se detuvo sin confirmación. Otras sesiones quedan fuera de su control.
+Preserva el trabajo sin commit e informa de fallos con honestidad.

@@ -1,6 +1,6 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado de agent-project-template v2.3.1, con coordinación ligera v2.4.1 y Skill `$handoff`. Fuente y diferencias:
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.5.0 (tag `3c9aefe`), preservando coordinación ligera y Skill `$handoff`. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
 
 ## Autoridad y entradas
@@ -10,7 +10,7 @@ Contrato local adaptado de agent-project-template v2.3.1, con coordinación lige
 3. Contratos de coordinación de esta carpeta y perfiles reutilizables. El tablero es
    un índice reanudable, no evidencia de aprobación por sí solo. Reconciliarlo siempre.
 
-$orchestrate usa Quick/Standard/Full por riesgo sin volver a inicializar el proyecto.
+$orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
 La metodología v2.3.1 está integrada mediante PR #32; sus reglas operativas
 se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
@@ -29,7 +29,7 @@ selector real ni otro gate. Conservar el modelo actual si es suficiente.
 - E1.7 no existe en el roadmap aprobado, que termina E1 en E1.6 y continúa E2.1.
   La futura solicitud spec07/E1.7 necesita mapping explícito antes de asignarse;
   los ejemplos del upstream NO crean entregas ni alteran el roadmap.
-- Mantener aprobaciones expresas para finanzas, especificaciones, nuevo alcance,
+- Mantener aprobaciones expresas, según [approvals](approvals.md), para finanzas, especificaciones, nuevo alcance,
   arquitectura material, destrucción, merges, datos reales, acceso a VPS y despliegues.
   Una autorización previa válida no se pide otra vez; tampoco se extiende por analogía.
 - Git: rama por ámbito, revisión de historial y datos sensibles, push/PR según política
