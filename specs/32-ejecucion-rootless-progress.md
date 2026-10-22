@@ -1,17 +1,17 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: IN PROGRESS — corrección técnica autorizada B5 verificada localmente; AC-22 pendiente de CI de imagen final, sin merge/deploy
+Current state: PAUSED / CHECKPOINT — 23/24 verificados; AC-22 pendiente de revisión por el futuro coordinador. CI b8a68d8 SUCCESS; sin cierre, merge ni deploy.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
-| Cerrar spec aprobada, precisiones UID y rollback | done | 56407e0; PR #29 reconciliada con main ad94426, CI push/PR SUCCESS; sin merge |
+| Cerrar spec aprobada, precisiones UID y rollback | done | a9e0fdbe241189548e45591d46edaaf3ad5842a6; PR #29 reconciliada con main b60def1; aprobada, sin merge |
 | Bind explícito validado antes de SQLite | verified | Tres pruebas de procesos reales dentro de imagen final; 90 API PASS |
 | Imagen reproducible y manifiesto privado OCI/backend/frontend | verified | 39734037872 / 3094563: dos builds sin caché, payload/frontend iguales, OCI y manifiesto verificados; Bun 1.4.3/age 1.3.2/Debian 13 |
 | UID 10001/keep-id y volúmenes | verified final image | Host 1001 → interno 10001, state/TMPDIR 0700, DB/clave/sidecars 0600; 39734037872 |
 | Publicación de puerto Podman / AC-10 | verified final image | API real vía 127.0.0.1:18081, 200/401; sin IPv6 ni acceso externo; stop desconecta |
 | Quadlet y WAL/SHM | verified final image | systemd --user real, health→kill→restart, SIGTERM/SIGKILL, 3/60s/5s estable, WAL íntegro; sin reboot/logout remoto |
 | Fallos/update/rollback cruzado | verified | 39734037872: b0bc5a7→3094563→b0bc5a7, datos/auth/escrituras conservados; restore age con WAL/MFA y negativos incompatibles PASS |
-| Regresión local y PR independiente | fix verified local / final CI pending | B5 antes FAIL/después PASS; 91 API/1415 aserciones y 2 E2E (47.5s) PASS; corrección de snapshot sin reglas financieras |
+| Regresión local y PR independiente | candidate preserved / review pending | B5 antes FAIL/después PASS; 91 API/1415 aserciones y 2 E2E (47.5s) PASS; corrección de snapshot sin reglas financieras |
 
 ## Verified increments
 2026-10-22 Europe/Madrid, raíz del repositorio. Validación de API_BIND_HOST solo
@@ -45,12 +45,12 @@ R6 sigue sin cierre causal; fsync tras rename puede dejar conjunto válido con
 durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 
 ## Next action
-Ejecutar CI íntegra del fix autorizado: B5 y los 90 tests previos dentro de la
-imagen definitiva, rootless/Quadlet/red, matriz entre versiones y restore/MFA.
-Si pasa, cerrar AC-22 y preparar PR #30 para revisión con evidencia del HEAD final.
-El usuario ya autorizó la intervención técnica; no sigue pendiente esa decisión.
-No cambia contrato financiero ni se interpreta CI verde como diagnóstico exacto
-del run77/R6/API histórico. #29 → #30, ningún merge/VPS/deploy autorizado.
+PAUSA solicitada por el usuario el 2026-10-22 en «Checkpoint de Dev 32 y preparación
+del traspaso a Orchestrator». No continuar diagnóstico ni corrección de AC-22.
+Cuando se apruebe la metodología, el coordinador leerá este checkpoint, testplan y
+la investigación existente; contrastará candidato/evidencias y asignará la revisión
+pendiente antes de decidir reanudar Dev 32. No cerrar por una CI posterior verde.
+Se conserva #29 → #30, sin merge, VPS ni despliegue autorizados.
 
 ## Incidencia de CI del incremento — 2026-10-22
 
@@ -356,3 +356,91 @@ Control negativo exacto de B5 con snapshot retirado temporalmente: vuelve a
 IDENTITY_ABSENT/FAIL; restaurado inmediatamente, PASS/6 aserciones. No se publica
 el código de control sin corrección. FIFO abierta antes del aviso ready y escritor
 no bloqueante evitan que un hijo muerto deje colgado el harness. No hay retries.
+
+## Checkpoint para el futuro Orchestrator — 2026-10-22
+
+Esta sección sustituye las siguientes acciones de los registros históricos, que se
+conservan como evidencia. Fuente: solicitud expresa del usuario de pausar y traspasar;
+no se adopta aquí la metodología ni se crean subagentes.
+
+- PR [#30](https://github.com/josemartin2000/myfinanzas-app/pull/30), OPEN/DRAFT,
+  rama `feat/32-ejecucion-rootless`, HEAD de implementación preservado
+  `b8a68d8a6bef49968f80c516ef3099c40d953f8d`, GitHub MERGEABLE.
+  El commit documental que contiene este checkpoint es su sucesor; su SHA y CI
+  se registran en la PR para evitar una referencia circular dentro del propio commit.
+- Base ya reconciliada: main `b60def124e95d692b6021eff9c1049652e21ded0`;
+  spec PR #29 `a9e0fdbe241189548e45591d46edaaf3ad5842a6`, OPEN, sin integrar.
+  Se preservaron los cambios financieros ajenos; no se modifica main en esta transición.
+- D1–D3 y AC-01–24 aprobados en los documentos de spec: runtime separado de
+  Caddy/HTTPS y recuperación externa; mantenimiento/un escritor y rollback con
+  compatibilidad de esquema, datos y autenticación; OCI privado emparejado con frontend.
+  UID10001/keep-id probado realmente, sin elevar privilegios ni relajar permisos.
+- Completados: imagen reproducible, frontend/manifiesto, UID/permisos/volúmenes,
+  WAL/SHM, puerto loopback/API real, Quadlet/fallos/reinicio, actualización/rollback
+  con escrituras conservadas, restore cifrado con claves/MFA y runbook. Los 23 AC
+  verificados conservan su mapa individual y evidencias en testplan.
+- AC-22 sigue PENDING por orden de pausa y revisión pendiente. Candidato técnico
+  anterior a esta pausa: `86b15701aa36580321a2b43e53832beca78112d3`, incluido en b8.
+  No se ha corregido código ni ejecutado una nueva investigación durante el checkpoint.
+
+### Hechos, hipótesis y trabajo restante de AC-22
+
+**Hechos:** run39734977613 sobre77e4982 falló (89 PASS/1 FAIL, sin timeout),
+E1.4 «04 AC22/23/28…», movimientos.test.ts:885:16/:910:21: hijo no cero al abrir/
+actualizar v3 con dos procesos. El error interno original no está disponible;
+la descarga de logs detallados está bloqueada. Existe además el fallo API histórico
+39687644407 sin test/causa diagnosticados; no se elimina por éxitos posteriores.
+
+La investigación ya realizada en
+[investigación32](investigations/32-sqlite-identity-snapshot.md) demuestra otra
+intercalación concreta: leer ausencia de identidad v3, migrar desde otro proceso,
+y leer versión6 fuera de una única instantánea. B5 usa procesos/FIFO reales:
+antes FAIL/IDENTITY_ABSENT; candidato de snapshot de lectura antes del writer
+IMMEDIATE PASS/6 aserciones; control negativo quitando solo el snapshot vuelve a
+fallar. Local: 91 API/1415 aserciones, tipos/build y 2 E2E PASS. Rama productiva y
+pruebas/reglas financieras sin cambios por ese candidato.
+
+**Hipótesis no demostrada:** esa intercalación explica el fallo original E1.4.
+No está probado que lo explique, ni que sea la causa de R6 o del fallo API histórico.
+CI íntegra b8 verde valida una ejecución del candidato, no esa atribución causal.
+
+**Pendiente:** revisión independiente del candidato y límites transaccionales;
+contrastar la evidencia histórica y decidir qué reproducción/observabilidad falta
+sin repetir a ciegas la investigación existente; decidir con el coordinador la
+suficiencia de AC-22 y las pruebas adicionales necesarias. Si cambia código después,
+congelar nuevo SHA y repetir las suites afectadas y CI completa sin reintentos que
+oculten fallos. Ninguna prueba nueva de esta revisión se ha ejecutado en la pausa.
+
+### Evidencia CI y límites del checkpoint
+
+HEAD b8: rootless [39739135407](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39739135407),
+Validate PR [39739135378](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39739135378)
+y push [39739131767](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39739131767):
+SUCCESS. No rerun manual. Los fallos previos permanecen en testplan; no se
+recalifican como aprobados. La CI del sucesor documental se consulta en la PR;
+no equivale a cerrar AC-22. No pruebas VPS, reboot/logout real, Caddy/HTTPS ni
+recuperación externa: fuera de esta entrega, no ejecutadas ni aceptadas por inferencia.
+
+Riesgos residuales: R6 sin cierre causal; fsync posterior a rename puede dejar
+estado válido con durabilidad incierta (preservar e inspeccionar, no recrear/restaurar
+automáticamente); fallo API histórico sin diagnóstico. No distribuir artefactos
+sensibles ni importar Excel/datos reales. Caddy/HTTPS y backups externos requieren
+sus fases, custodia de claves, retención y simulacro/RPO/RTO aprobados; solo se ha
+validado la interfaz loopback y el restore local sintético de32.
+
+### Propuesta conceptual de delegación futura (no ejecutada)
+
+| Tarea | Objetivo y archivos de referencia/posible alcance | Finalización | Dependencias y conflictos |
+| --- | --- | --- | --- |
+| Diagnóstico AC-22 | Partir de B5 e investigación32; database.ts, database-identity.ts, sqlite-migration-opening.test.ts y movimientos.test.ts solo como referencia; recuperar diagnóstico histórico si disponible | Separar mecanismo demostrado de causa histórica; propuesta reproducible sin relajar pruebas ni reglas financieras | Puede coexistir con revisión solo lectura; cambios SQLite reservados a un único responsable autorizado |
+| Revisión independiente | Leer candidato86 y rutas de apertura/identidad/migración/private-state; comprobar snapshot, liberación antes de writer y guardas producción | Informe reproducible con hallazgos y límites, sin afirmar que verde prueba causalidad | En paralelo al diagnóstico sobre SHA fijo, sin editar sus archivos; decisión final conjunta del coordinador |
+| QA/regresión | testplan, suites API/B5/E2E e infra/tests/rootless-integration.py y workflows existentes | Evidencias por SHA de API, UID/red/Quadlet, rollback datos/auth/escrituras y restore/MFA; fallos y no ejecutados explícitos | QA final depende de revisión/candidato congelado; no modificar implementación mientras se certifica; sin mocks sustitutos ni retries ocultos |
+| Preparación de fases posteriores | Lectura de infra/RUNBOOK.md, infra/ y spec32; identificar contrato Caddy/HTTPS, backups cifrados externos, retención, claves y recuperación | Propuesta acotada de siguientes specs y gates; ninguna activación ni acceso al VPS | Análisis documental paralelo; implementación/despliegue exige aprobación posterior y cierre de dependencias runtime |
+
+El coordinador futuro será responsable de secuenciar decisiones, consolidar seguimiento
+y evitar escritores Git simultáneos. El agente financiero conserva reglas/pantallas/
+contratos; no modificarlos para resolver infra sin incompatibilidad justificada y
+autorización. La adopción v2.3.1 y PR24 pertenecen al otro agente: AGENTS.md/Skills
+quedan fuera. Reservar propietario para archivos compartidos (setup-progress, roadmap,
+guidelines) y coordinar SHA/base antes de reconciliar ramas; no sobrescribir avances
+ajenos. Este checkpoint solo modifica los dos documentos canónicos de Dev32.

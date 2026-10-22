@@ -24,11 +24,11 @@ Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 | verify frontend/OCI/pin corruptos + require_rollback negativos + restore existente | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas | release-contract.mjs restore: WAL confirmado, age, key/integrity/revocación/MFA | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios | preflight + integración completos, versiones/UID registrados y cleanup verificado | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING FINAL CI — B5 antes FAIL/después PASS; local91 API/1415 aserciones + 2 E2E PASS | 2026-10-22; investigación32 y resultado final del fix en PR30 |
+| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING / PAUSED — candidato B5 y CI b8 PASS; revisión del coordinador pendiente | 2026-10-22; investigación32 y resultado final del fix en PR30 |
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Estado vigente: 23/24 verificados; fix técnico B5 local PASS, AC-22 pendiente de CI con imagen corregida.**
+**Estado vigente: 23/24 verificados; AC-22 PENDING/PAUSED. Candidato B5 y CI completa b8 PASS; pendiente de revisión, sin cierre de Dev32.**
 La tabla es el estado vigente; los bloques inferiores conservan la historia de
 fallos/ensayos y no sustituyen esta aceptación. CI del HEAD documental final se
 vincula en PR #30, sin inferir aprobación de merge ni despliegue.
@@ -55,12 +55,12 @@ Ninguna: incremento de bind sin cambios UI/CSS. No se justifican cinco mejoras
 cosméticas ajenas al alcance ni nuevas afirmaciones de accesibilidad por este cambio.
 
 ## Limitations and next action
-No aceptación completa de 32: capacidad rootless/systemd y ensayo de imagen/API
-ya confirmados. Pendientes release final reproducible/OCI+frontend, resto de fallos
-y rollback cruzado de datos/autenticación. Ver diagnóstico/evidencias en progress.
-R6 y fsync siguen abiertos; sin VPS, infraestructura activa, publicación de imagen,
-Excel/datos reales ni merge. Continuar con runner/VM aislado, no usar Docker como
-prueba equivalente ni dar PASS a checks no ejecutados.
+Pausa expresa del usuario para traspaso: no investigar ni corregir AC-22 ahora.
+Imagen definitiva, rollback datos/auth, restore y rootless ya tienen evidencias
+registradas abajo; no siguen pendientes de implementación como en etapas históricas.
+La siguiente acción corresponde al futuro coordinador: leer el checkpoint de
+progress, revisar el candidato y decidir la evidencia adicional necesaria.
+R6, fsync y fallo API histórico siguen documentados; no VPS/deploy/datos reales/merge.
 
 ## Incidencia de CI del incremento — 2026-10-22
 
@@ -352,3 +352,27 @@ Regresión corregida local: 2 E2E PASS47.5s; B5 negativo exacto con solo snapsho
 retirado FAIL/IDENTITY_ABSENT, restauración inmediata PASS/6 aserciones. Filtro
 E1.4/guardas31 conservados. La siguiente CI debe demostrar91 API dentro de imagen
 final; no se cierra AC-22 únicamente por el control local.
+
+## Checkpoint de pruebas para traspaso — 2026-10-22
+
+La matriz superior conserva 23 AC verificados y AC-22 pendiente. No se ejecutan
+nuevas investigaciones ni suites durante esta transición documental. Se consultan
+los resultados ya existentes; las secciones anteriores son historia por SHA.
+
+| SHA / evidencia | Resultado confirmado | Interpretación |
+| --- | --- | --- |
+| 77e4982 / 39734977613 | FAILURE, 89 PASS/1 FAIL E1.4, sin timeout | Apertura/migración concurrente v3; hijo no cero; causa histórica no diagnosticada |
+| 5a748c0 / 39687644407 | FAILURE API, test y causa no disponibles | Incidencia histórica conservada; no atribuida a R6/B5 |
+| 86b1570 local | B5 antes FAIL/después PASS; control negativo FAIL; 91 API/1415 aserciones y 2 E2E PASS; tipos/build PASS | Candidato ya existente, no nueva corrección en el checkpoint |
+| b8a68d8a6bef49968f80c516ef3099c40d953f8d / 39739135407 | Rootless infrastructure32 SUCCESS | CI de imagen definitiva con candidato y matriz real del workflow; no prueba causalidad histórica |
+| b8a68d8a6bef49968f80c516ef3099c40d953f8d / 39739135378 y 39739131767 | Validate PR y push SUCCESS | Validación integral existente, no rerun manual ni aprobación de AC-22 |
+| Revisión independiente / eventual reproducción adicional | NO EJECUTADA en esta transición | Pendiente de decisión del futuro coordinador |
+| VPS / reboot/logout real / Caddy / backups externos | NO EJECUTADOS | Fuera del alcance autorizado; gates de fases posteriores |
+
+Las evidencias detalladas de AC-01–21/23–24 siguen en su fila y en los ensayos
+3094563/9a1dc5d/dd0e4c8; el nuevo éxito b8 no borra los fallos anteriores.
+La CI del commit documental sucesor y su SHA exacto se registran en PR30 (evita
+autorreferencia de commit). El checkpoint no afirma que esas CI hayan terminado
+antes de publicarlo. Véase progress para hechos/hipótesis, bloqueos, dependencias,
+riesgos R6/fsync y propuesta conceptual de delegación. No nuevos subagentes,
+contratos, código ni adopción de metodología en esta intervención.
