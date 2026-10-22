@@ -185,8 +185,8 @@ sustituidos únicamente por esta autorización expresa, sin nuevos permisos por 
 
 | Paquete | Estado | Ownership / aislamiento | Gate y retorno |
 | --- | --- | --- | --- |
-| DEV07 | implementing; recuperación y ejecución iniciadas | /root/dev07; feat/07-ciclos-operacion; worktree dev07; código/tests y progress07/testplan07/contexto | 26 AC reales; 3 futuros separados; commits y evidencia por SHA; sin tablero/infra |
-| QA07 | planned, sin trabajador creado todavía | Checkout independiente sobre primer SHA verificable | Revisión independiente y pruebas reales; sin editar producto ni tablero |
+| DEV07 | implementado; verificación global BLOQUEADA por AC23/API105/1 | /root/dev07; feat/07-ciclos-operacion; worktree dev07; código/tests y progress07/testplan07/contexto | 26 AC reales; 3 futuros separados; commits y evidencia por SHA; sin tablero/infra |
+| QA07 | dictamen funcional favorable sobre53cc238; gate global abierto | /root/qa07; qa/07-ciclos-operacion; worktree qa07 | Revisión independiente y pruebas reales; sin editar producto ni tablero |
 | COORD07 | activo, único escritor de este tablero | chore/07-coordination; worktree coord07 | Encadenar Developer → QA → correcciones → checks → PR; nunca merge sin permiso |
 
 La ejecución conserva maestro único Ciclos, revisión antes/después/motivo/confirmación,
@@ -196,3 +196,63 @@ conciliación, cierre ni motor futuro. Nuevas decisiones financieras no cubierta
 detienen para aprobación. Sin datos reales, Excel, despliegue o migración operativa.
 Dev32/PR30/AC22 PAUSED. No agentes infra ni investigaciones salvo bloqueo demostrado.
 QA se activa al existir candidato, evitando trabajadores o suites duplicadas.
+
+### Primer candidato DEV07 y relevo QA
+SHA3834ca9 contiene backend de operaciones revisadas, extensión v8 del maestro
+existente y continuidad v7. Developer informa typecheck PASS y3 pruebas/36
+aserciones PASS; no es aceptación completa ni cobertura UI. QA07 independiente
+activado sobre ese SHA fijo, con probes y revisión sin escritura de producto.
+Developer continúa UI/cobertura en su checkout. API completa reserva3001 de forma
+exclusiva; Playwright se coordina, sin suites competidoras sobre los mismos puertos.
+
+### QA07 — revisión inicial del backend
+QA independiente sobre3834ca9: suite enfocada3 PASS/36 aserciones, sin atribuir
+cobertura UI. Dos brechas reproducidas enviadas a Developer: detalle omitía hechos
+con mismo ID de Ciclo pero periodo visible cambiado; replay aceptaba campos extra
+derivados antes de validación estructural. Sin mutación de hechos ni bypass
+financiero demostrado. Se corrigen dentro del contrato aprobado AC07/09/21,
+con regresiones. Continuidad productiva/restore/procesos y UI requieren candidato
+ampliado; no se declara aceptación global ni PR lista.
+
+### Candidato ampliado y revisión de correcciones
+DEV07 SHA5787c39 añade UI de operación/historial y regresiones O8 de los dos
+hallazgos iniciales. Developer informa8 pruebas nuevas/154aserciones PASS,
+typecheck PASS y regresión enfocada41/862 PASS; suite completa final pendiente.
+O4/O7 cubren continuidad v7 con historia/MFA demo/productiva ficticia, restore y
+concurrencia real; QA los contrastará de forma independiente. Primer run íntegro
+94/100 con6fallos estructurales conservado, sin rebajar reglas ni ocultar fallos.
+QA07 reactivado sobre5787c39; Developer amplía E2E y validaciones finales.
+
+### Verificación global bloqueada y análisis acotado
+Candidato53cc238 (código/E2E d63442e): Developer informa Playwright2 PASS/47,6s,
+types/build y controles PASS. Suite API completa105 PASS/1 FAIL de106: escenario
+heredado E1.4 de apertura concurrente v3, operación upgrade/fase open, SQLite
+UNCLASSIFIED errno11 en database-identity.ts:13:6. Una repetición afectada12/270
+PASS y un único control base c04dc07 de coordinador1/18 PASS NO cierran ni
+atribuyen ese fallo. AC23/gate global permanece BLOQUEADO.
+
+Bajo la excepción expresa del usuario para un bloqueo demostrado se permite
+triage limitado en lectura/probe para distinguir handle immutable frente a live;
+no cambios de apertura/guardas, no bucles hasta verde, no reanudación Dev32.
+Se aporta resumen B5 ya recuperado para no repetir investigación ni atribuirle
+nuestro errno11 por analogía. Si requiere alterar frontera de seguridad o alcance
+externo, se detiene para decisión expresa. QA07 revisa producto/AC/diffs de53cc238
+en paralelo sin servidores ni duplicar diagnóstico. No se declara entrega lista.
+
+### Cierre QA funcional y bloqueo residual
+QA final53cc238, código d63442e: sin nuevos defectos funcionales; hallazgos iniciales
+corregidos. Ejecuciones propias: suite enfocada8/154 PASS, probes3/22 PASS y
+O9 adicional1/17 PASS. Revisó E2E real2 PASS/47,6s y capturas, código/historial
+publicable sin borrados, bases, secretos ni datos reales observados. Dictamen
+funcional favorable; aceptación global sigue BLOQUEADA (API105/1, AC23).
+
+Triage único con dos procesos y barrera no reproduce errno11: ambos exit0,
+lecturas immutable/live correctas y DDL8 ejecutado una vez. No identifica handle
+del fallo original ni prueba causa. Apertura/guardas idénticas a main c04dc07,
+sin cambios de producto por diagnóstico. No hay corrección causal propuesta.
+El próximo diagnóstico posible sería instrumentación por handle/etapa en ruta
+heredada, separado del producto E2.1 y sin reactivar Dev32; no se introduce aquí.
+
+Entrega prevista: PR funcional DRAFT con evidencia y bloqueo explícito; verificar
+CI por SHA sin convertir un éxito posterior en cierre del fallo local. Ningún
+merge autorizado. Los 3 contratos futuros siguen PENDING y E2.1-AC2 hasta Comida.
