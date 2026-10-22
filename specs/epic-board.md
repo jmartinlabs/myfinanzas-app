@@ -1,3 +1,30 @@
+## Reconciliación — 2026-10-23 — main 30c7ea0
+
+Coordinador: reconciliación documental solicitada por el usuario; no concede autorizaciones nuevas.
+Main remoto verificado en `30c7ea0` (PR #41, adopción orquestación v2.4.2, solo metodología),
+sobre `20d8f9a` (PR #39, spec08). Este apartado complementa el cierre spec08 inferior
+(PR #40, rama `docs/08-integration-close`, no integrada en main al reconciliar) y prevalece
+sobre estados históricos más antiguos.
+
+| Línea | Estado verificado en Git | Próxima acción / gate |
+| --- | --- | --- |
+| E1.1–E1.6 | Integradas; E1.6 por PR34 `cb9ba3b` | Sin cambios |
+| E2.1 / spec07 | Aprobada e integrada PR37 `c04dc07` | Sin cambios de decisiones ni criterios |
+| E2.1 / dev07 | Rama `feat/07-ciclos-operacion` HEAD `d1868dc`, fuera de main; sin PR (ningún `refs/pull/*/head` apunta a ella). Handoff STOP / NO AUTO-RESUME en progress07 de esa rama | Reanudar solo con nueva instrucción expresa del usuario |
+| AC23 | BLOQUEADO; API 105 PASS / 1 FAIL errno11 según checkpoint dev07 | Sin investigación nueva sin hipótesis discriminante y autorización |
+| E2.2 / spec08 | Aprobada e integrada PR39 `20d8f9a`; cabecera de la especificación actualizada a APPROVED por instrucción del usuario del 2026-10-23, que sustituye la decisión de PR #40 de no tocarla; cuerpo intacto | Spec aprobada no autoriza dev08 |
+| E2.2 / dev08 | NO AUTORIZADO; plan propuesto en el cierre spec08 inferior | Esperar autorización expresa de desarrollo |
+| Dev32 / PR30 / AC22 | PAUSED; PR30 HEAD `a090112` | No reanudar |
+
+Paquetes activos: ninguno. Worktrees adicionales en este checkout: ninguno. Los SHAs
+históricos de cabecera del tablero (`cb9ba3b`) quedan sustituidos por este apartado.
+
+Limitación: en esta sesión Claude Code no dispone de `gh` ni de acceso autenticado a la
+API de GitHub; estado abierto/cerrado de PRs y CI no se consultó, solo refs Git remotas.
+No se declara ningún resultado de CI no verificado aquí.
+
+---
+
 ## Estado vigente — cierre spec08 y autorización de integración — 2026-10-22
 
 Fuente: aprobación documental final de Álex y autorización expresa de squash PR39. Este apartado prevalece sobre estados históricos inferiores; el tablero registra autorizaciones, no las concede.
