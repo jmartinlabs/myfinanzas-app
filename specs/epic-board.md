@@ -30,7 +30,7 @@ sin reiniciar agentes ni trabajo ya realizado.
 | --- | --- | --- | --- |
 | DEV06 | En curso; análisis inicial completado, implementación continuada | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
 | SPEC07 | Primera ronda preparada; esperando respuestas | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
-| QA06 | Diseño independiente completado por /root/spec07; esperando SHA fijo | Sin escrituras durante diseño; checkout propio al verificar | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
+| QA06 | Revisión inicial ejecutándose sobre67f2dbd por /root/spec07 | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
 Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
 Sin delegación recursiva; máximo dos trabajadores simultáneos. QA reutilizará capacidad
@@ -68,3 +68,17 @@ Q1 y la dependencia real Comida (E3.5 para aviso AC2) se han presentado al usuar
 No se ha rebajado AC2 ni cambiado roadmap. QA06-DESIGN completado en lectura por
 /root/spec07; matriz AC01–30 y contratos31–33 revisados, sin suites ni PASS inventados.
 Plaza disponible para QA ejecutable tras candidato; DEV06 continúa en su worktree.
+
+### QA06 — primer candidato
+Candidato67f2dbd en checkout QA aislado. QA reprodujo: extraordinaria UI con desglose
+null rechazada; exceso aplicado indebidamente a precontrol; apertura productiva v6
+sin migrar a tablas nuevas. Hallazgos enviados a DEV06 para corrección y regresiones
+dentro de la spec aprobada. No aceptación global ni PR lista. Developer continúa
+pruebas/UI mientras QA revisa el SHA fijo; no suites compartiendo puerto3001.
+
+### DEV06 — verificación en curso
+Developer informa correcciones de los cuatro hallazgos, API96 PASS/1537 aserciones,
+typecheck/build PASS y prueba multiproceso v6→v7/IDs/reintentos/exceso. Evidencia
+definitiva se consolidará por SHA en testplan06; no se trata como aceptación final.
+Playwright E1.6/restoreMFA y capturas390/1440 en ejecución exclusiva de Developer;
+QA no usa simultáneamente los puertos de esos servidores.
