@@ -1,6 +1,6 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Test plan
 
-Estado 2026-10-22: **30 AC actuales con verificación local; QA independiente y CI se concilian por SHA antes de preparar la PR.** Especificación [aprobada](06-deuda-specification.md); desarrollo autorizado expresamente por usuario en esta ejecución. Ningún resultado local equivale a aprobación de merge. AC31–33 son contratos futuros NO implementados ni contados como PASS.
+Estado 2026-10-22: **30 AC actuales con verificación local; QA independiente completada sin bloqueantes; CI pendiente por SHA antes de preparar la PR.** Especificación [aprobada](06-deuda-specification.md); desarrollo autorizado expresamente por usuario en esta ejecución. Ningún resultado local equivale a aprobación de merge. AC31–33 son contratos futuros NO implementados ni contados como PASS.
 
 ## Matriz vigente de aceptación
 
@@ -48,7 +48,7 @@ Esta matriz sustituye el estado inicial de planificación. D1–D10 están en `a
 - Mismo código: `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH=/usr/bin/chromium bun run test:e2e` **2 PASS**,47.0s. Recorrido normal con Effect/SQLite reales, contraseña/TOTP y restore aislado; ningún bypass MFA ni fixture HTTP para éxitos financieros.
 - Incremento auditoría **f2bfc1b0b3e0b86ae4232d3ee30d896f8b47b6f0**: dos archivos UI/test; añade filas capital/intereses al resumen antes/después. Typecheck PASS; recorrido afectado `bun run test:e2e -- tests/e2e/movimientos.spec.ts` **1 PASS**,28.1s. Abre historial y comprueba capital80/intereses20 visibles. Backend idéntico; no se repite la suite API sin necesidad.
 - `bun run typecheck`, `bun run build`, `check-project`, `check-repository`, `validate-template`, `test-validator`18, `test-checks`22, `git diff --check`: PASS. Tooling Bun1.4.3, age1.3.2, Chromium del sistema.
-- QA independiente sobre3239c2d informó10/166 Deudas y9/67 guardas productivas PASS, cuatro hallazgos iniciales corregidos y sin nuevos bloqueantes; conciliación final de su retorno por coordinador. Revisión incremental f2bfc1b y CI del SHA final se registrarán al recibirlos.
+- QA independiente sobre3239c2d informó10/166 Deudas y9/67 guardas productivas PASS, cuatro hallazgos iniciales corregidos y sin nuevos bloqueantes; retorno conciliado por coordinador. QA cerró además la revisión incremental f2bfc1b sin bloqueantes y contrastó su E2E afectado1 PASS. CI del SHA final pendiente.
 
 ## Navegador y revisión visual
 
@@ -66,4 +66,4 @@ Mejoras justificadas aplicadas dentro del diseño: separación20px entre paneles
 
 ## Límites y siguiente gate
 
-QA final/CI por SHA y autorización de merge pendientes. No Dev32, investigación AC-22 de infraestructura, VPS, deploy, datos reales, migración operativa, E2/E3/E4 ni cierre financiero ejecutados. R6/IOERR/API históricos no se declaran resueltos. Excel sigue fuente de verdad hasta el traspaso autorizado.
+QA final completada sin bloqueantes; CI por SHA y autorización de merge pendientes. No Dev32, investigación AC-22 de infraestructura, VPS, deploy, datos reales, migración operativa, E2/E3/E4 ni cierre financiero ejecutados. R6/IOERR/API históricos no se declaran resueltos. Excel sigue fuente de verdad hasta el traspaso autorizado.
