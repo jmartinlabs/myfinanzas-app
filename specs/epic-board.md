@@ -19,8 +19,8 @@ sin reiniciar agentes ni trabajo ya realizado.
 | Item | Prioridad | Spec / autorización | Dev | QA | Dependencias duras | Dueño / aislamiento | Bloqueo | Siguiente acción autorizada | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
-| E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | En curso | Pendiente candidato; revisión independiente posterior | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Implementar, verificar, entregar candidato a QA; PR sin merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
-| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 sobre rectificación con hechos y cobertura Comida pendientes de respuesta | Esperar respuestas; después completar spec y wireframes para aprobación | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
+| E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | Implementado y verificado localmente | Revisión independiente sin bloqueantes detectados en f2bfc1b | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Preparar PR y verificar CI por SHA; esperar permiso de merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
+| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 y cobertura Comida respondidas; spec/wireframes aún sin aprobar | Completar spec y wireframes para aprobación expresa | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
 | E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 pendiente; permiso específico | No iniciar | [roadmap](roadmap.md) |
 | DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
@@ -28,9 +28,9 @@ sin reiniciar agentes ni trabajo ya realizado.
 
 | Paquete | Estado | Escritura exclusiva | Límites / retorno |
 | --- | --- | --- | --- |
-| DEV06 | En curso; análisis inicial completado, implementación continuada | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
-| SPEC07 | Primera ronda preparada; esperando respuestas | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
-| QA06 | Revisión inicial ejecutándose sobre67f2dbd por /root/spec07 | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
+| DEV06 | Código verificado; consolidación documental final | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
+| SPEC07 | Respuestas recibidas; siguiente paquete completa propuesta | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
+| QA06 | Completado sobre f2bfc1b; cuatro hallazgos iniciales corregidos | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
 Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
 Sin delegación recursiva; máximo dos trabajadores simultáneos. QA reutilizará capacidad
@@ -82,3 +82,27 @@ typecheck/build PASS y prueba multiproceso v6→v7/IDs/reintentos/exceso. Eviden
 definitiva se consolidará por SHA en testplan06; no se trata como aceptación final.
 Playwright E1.6/restoreMFA y capturas390/1440 en ejecución exclusiva de Developer;
 QA no usa simultáneamente los puertos de esos servidores.
+
+### Respuestas expresas E2.1 — 2026-10-22
+Usuario confirma permitir rectificación con revisión de impacto (Q1) y especificar
+operación disponible conservando AC2 pendiente hasta integrar Comida. No se declara
+AC2 cumplido ni aprobada la especificación/wireframes. Tras cerrar QA06, el trabajador
+Functional completará propuesta07 sin implementar E2.1.
+
+### Candidato E1.6 corregido
+Código3239c2d: Developer confirma API97 PASS/1547 aserciones, Playwright2 PASS47s,
+typecheck/build y controles18+22 PASS. QA independiente confirma probes originales
+corregidos y suite enfocada Deudas10 PASS/166 aserciones. Se añade aún resumen
+visual capital/intereses en auditoría; se verificará incremental antes de cerrar.
+
+### QA06 — cierre de código
+Código final f2bfc1b0b3e0b86ae4232d3ee30d896f8b47b6f0, sin bloqueantes detectados
+por QA independiente. Probes originales corregidos; ejecución QA propia:10 Deudas/166
+aserciones y9guardas productivas/67aserciones PASS sobre3239c2d. Backend idéntico en
+f2bfc1b; cambio incremental resumen auditoría capital/intereses revisado y E2E afectado
+Developer1 PASS28.1s. Suite completa DeveloperAPI97/1547 yE2E2/47s sobre3239c2d.
+No se atribuyen esas suites a QA. Historial de cuatro commits de desarrollo revisado
+sin secretos/DB/datos reales detectados; solo fixtures y capturas ficticias. CI remota
+y revisión del commit documental final pendientes antes de entregar PR.
+SPEC07-FINAL en curso por mismo trabajador: propuestas pendientes de aprobación final,
+sin implementación ni tercer trabajador. Dev32 conserva pausa expresa.
