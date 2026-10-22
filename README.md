@@ -14,7 +14,8 @@ Movimientos ya alimenta la referencia; Comida/inversión siguen pendientes. Sin 
 vigentes, referencia «No disponible»; maestro vacío «Sin ciclos». No usa el reloj, el último creado ni
 Nómina para decidir el ciclo actual. No realiza cierre ni conciliación de comida.
 
-El Excel estable `MyFinanzas2026_v5.11(5).xlsx` sigue como maestro. No se ha incorporado
+`MyFinanzas2026_v5.11(7).xlsx` es la referencia financiera única y base candidata vigente,
+sustituyendo a v5.11(5) por decisión del usuario del 2026-10-22. No está promovida a estable. No se ha incorporado
 ni inspeccionado en Codex, ni se han importado datos personales. Control Movimientos calcula apertura + entradas − salidas vigentes. Otros motores
 pendientes no se presentan como posiciones completas ni como un cero ficticio.
 

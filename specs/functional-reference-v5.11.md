@@ -15,7 +15,10 @@ final del adjunto. No autorizan desarrollo, migración, despliegue ni inicio de 
 Las instrucciones del adjunto se tratan como contexto funcional, no como autorización
 independiente para ejecutar desarrollo, migración, despliegue o merge.
 
-La base estable es `MyFinanzas2026_v5.11(5).xlsx`, confirmada por el usuario. Codex
+Desde la confirmación expresa del usuario del 2026-10-22, la referencia financiera única
+es `MyFinanzas2026_v5.11(7).xlsx`, **base candidata vigente, NO promovida a estable**;
+sustituye a v5.11(5), anteriormente estable. La procedencia de evidencias anteriores
+se conserva como histórica, sin afirmar un contraste nuevo de todos los módulos. Codex
 ha leído la especificación funcional adjunta; no ha incorporado ni inspeccionado el
 libro, Criterios físico ni la documentación original completa. Las afirmaciones del
 adjunto sobre fórmulas comprobadas son atribuidas a su fuente, no a una inspección
@@ -115,6 +118,8 @@ Deudas conserva inicio de control, capital pendiente apertura e importes histór
 precontrol, TIN, TAE, cuota y condiciones. Capital restante usa amortización real desde
 el control; no reconstruir hechos anteriores ausentes. Diferenciar deuda no hipotecaria
 e hipoteca sin activo inmobiliario controlado. No añadir simulación avanzada por defecto.
+La evidencia física de Q1 E1.6 (fórmula inclusiva y operandos de v5.11(7)) se transcribe
+en el apartado final de este documento; prevalece sobre la anterior indeterminación.
 
 Compras/Ventas exclusivamente en tblOperacionesInversion. Aportar efectivo al bróker
 es Transferencia. Cada operación conserva saldos efectivo/inversión, instrumento,
@@ -266,3 +271,60 @@ anticipado distinto de actual y sin corte aplicable si referencia anterior a Ini
 Fin derivado se mantiene sin hechos. Alta solo posterior es contrato app confirmado,
 no fórmula adicional atribuida al libro; inserciones/rectificaciones quedan en E2.1.
 Registro y aceptación trazados en [spec 03](03-ciclos-financiados-specification.md).
+
+
+## E1.6 Q1 — evidencia física aportada y referencia autorizada — 2026-10-22
+Fuente: transcripción sanitizada aportada por el usuario tras inspección de
+MyFinanzas2026_v5.11(7).xlsx, Deudas/tblDeudas y Criterios. Confirmación posterior
+expresa: (7) sustituye a (5) como referencia única/base candidata, no automáticamente
+estable. Codex NO ha incorporado ni inspeccionado el Excel ni modificado sus archivos.
+
+### Fórmula física — Deudas!J20:J21, tblDeudas[Capital pendiente actual (€)]
+```excel
+=IF(tblDeudas[[#This Row],[ID deuda]]="","",tblDeudas[[#This Row],[Capital pendiente apertura (€)]]-SUMIFS(tblMovimientos[Capital amortizado (€)],tblMovimientos[ID deuda],tblDeudas[[#This Row],[ID deuda]],tblMovimientos[Fecha],">="&tblDeudas[[#This Row],[Fecha inicio control]]))
+```
+Misma lógica reportada en Deudas!B15 para la deuda seleccionada. Por ID deuda Dxxx,
+Capital pendiente apertura menos Capital amortizado de Movimientos cuya Fecha sea
+mayor o igual a Fecha inicio control: propio día incluido, anteriores excluidos.
+No usa Fecha inicio de la deuda como frontera, ni filtro adicional por Tipo o Control.
+Con ID vacío devuelve vacío. La fórmula no demuestra por sí sola obligatoriedad/signo
+de apertura ni autoriza persistir una ausencia como cero.
+
+### Criterios aportados (IDs anonimizados)
+- C30, Modelo de deuda: tblDeudas usa Dxxx; para deudas sujetas al corte histórico
+  de 2026, corte 27/08/2026 y control de Movimientos desde 28/08/2026. Históricos y
+  precontrol preservan capital, intereses y cuotas anteriores sin inventar movimientos;
+  capital actual descuenta capital registrado desde Inicio control. Es un corte de
+  esas deudas, NO una fecha fija ni un default global que deba codificarse en la app.
+- C88, Deudas: no son Saldos; maestro Dxxx consolida capital, intereses, cuotas,
+  histórico de apertura y estado actual; pagos desde saldo bancario real a Exterior.
+- C109, Movimientos de deuda: cuota ordinaria Gasto con Partida asociada, importe
+  íntegro como gasto; extraordinaria Amortización deuda y misma Partida, sin Gasto
+  ni ejecución presupuestaria; ID deuda deriva de Partida; capital+intereses=importe.
+
+### Apertura e históricos — roles demostrados
+| Campo físico | Papel |
+| --- | --- |
+| Fecha inicio control | Frontera inclusiva sobre Fecha de Movimientos |
+| Capital pendiente apertura (€) | Base monetaria del capital actual |
+| Capital amortizado (€) de Movimientos | Reducción aplicable desde la frontera por mismo ID |
+| Capital inicial (€) | Dato histórico distinto de apertura |
+| Capital amortizado histórico (€) | Capital inicial menos capital pendiente apertura |
+| Amortización extra histórica (€) | Desglose histórico |
+| Capital histórico en cuotas (€) | Capital histórico menos extraordinaria histórica |
+| Intereses históricos (€) | Histórico de intereses |
+| Total pagado histórico (€) | Agregado histórico de capital e intereses |
+| Cuotas/capital/amortización precontrol del año | Información histórica diferenciada |
+Los históricos/precontrol NO son operandos adicionales del capital actual. Apertura
+es la posición en la frontera: no descontar otra vez lo anterior ni crear hechos para
+reconstruirlo. Fecha inicio deuda y campos históricos no son entradas necesarias del
+motor mínimo E1.6; la conservación/conciliación amplia sigue prevista para E4.4.
+
+### Traducción controlada a la app
+Q1 cerrada por evidencia y autorización del usuario; no implica aprobación de spec06.
+Aplicar fórmula al registro canónico de hechos vigentes: la exclusión de anulados es
+contrato app ya aprobado de E1.4, NO un filtro que se atribuya al SUMIFS físico.
+No añadir filtro por Tipo/Control en este agregado. Los validadores de escritura de
+cada Tipo siguen protegiendo qué desgloses son admisibles: ausencia de filtro en el
+motor NO autoriza payloads inválidos. Aperturas ausentes no se inventan ni convierten
+en cero; mostrar capital no calculable cuando falten entradas necesarias de control.
