@@ -1,6 +1,6 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.4.2, preservando coordinación ligera y Skill `$handoff`. Historia y procedencia:
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.5.0 (tag `3c9aefe`), preservando coordinación ligera y Skill `$handoff`. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
 
 ## Autoridad y entradas
@@ -29,7 +29,7 @@ selector real ni otro gate. Conservar el modelo actual si es suficiente.
 - E1.7 no existe en el roadmap aprobado, que termina E1 en E1.6 y continúa E2.1.
   La futura solicitud spec07/E1.7 necesita mapping explícito antes de asignarse;
   los ejemplos del upstream NO crean entregas ni alteran el roadmap.
-- Mantener aprobaciones expresas para finanzas, especificaciones, nuevo alcance,
+- Mantener aprobaciones expresas, según [approvals](approvals.md), para finanzas, especificaciones, nuevo alcance,
   arquitectura material, destrucción, merges, datos reales, acceso a VPS y despliegues.
   Una autorización previa válida no se pide otra vez; tampoco se extiende por analogía.
 - Git: rama por ámbito, revisión de historial y datos sensibles, push/PR según política

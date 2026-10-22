@@ -36,8 +36,8 @@ Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](s
 - SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 
-## Coordinación v2.4.2 — Consistency & Efficiency + handoff
-- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado.
+## Coordinación v2.5.0 — aprobaciones únicas + handoff
+- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado; aprobaciones: [approvals](specs/methodology/approvals.md).
 - Consulta [flujos](specs/methodology/workflows.md) para clasificar; carga [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md) solo al delegar; Skills preservadas.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
 - Quick autorizado, reversible y de bajo riesgo: plan de una línea, sin reconfirmar; consulta o Plan no autoriza editar. Un ejecutor por defecto, coordinación por hitos y QA independiente.

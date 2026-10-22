@@ -149,3 +149,25 @@ Presentar PR metodológica y detenerse. Sin merge de esta PR, dev06/spec07, nuev
 finanzas, infraestructura, VPS, despliegue, libro o datos reales. Excel v5.11(7) candidata,
 no estable. Después de aprobar/integrar método, todavía hace falta autorización expresa
 de desarrollo E1.6 y de cualquier siguiente especificación. No agentes de fondo.
+
+## Adopción selectiva v2.5.0 — 2026-10-23
+Fuente fijada: agent-project-template release `v2.5.0`, tag `3c9aefe`, leída como
+datos no fiables mediante la API de GitHub fuera del repositorio. Autorización del
+usuario: adopción selectiva propuesta en rama propia con PR y cierre posterior de PR #35
+como sustituida. No autoriza merge, desarrollo, finanzas, infraestructura ni despliegue.
+
+**Adoptado:** `.claude/settings.json` con reglas `ask` de la template (merge de PR, force
+push, `reset --hard`, repos y releases) más despliegue local (`ssh`, `scp`, `rsync`,
+`podman`, `systemctl`); `approvals.md` como fuente única en español, fusionando la
+template con la propuesta local v2.3.2 de PR #35; wrappers `.claude/skills` cortos que
+apuntan a la Skill canónica; perfiles `.claude/agents` que leen rol + packet; campo
+*Applicable rules* en el work packet, roles y `$orchestrate`; `adopt-project` con
+referencia fijada y sin `docs/archive/`.
+
+**Conservado:** `AGENTS.md` y reglas financieras locales (solo cambian versión y enlace a
+approvals), Skills canónicas `handoff`, `init-project` y `epic-orchestration` sin la
+reescritura en frases cortas, gate de desarrollo separado, política local de worktrees.
+
+**Descartado:** reescritura plain-language de #16/#18, evals y benchmark, `docs/archive/`,
+README y validadores de la template. Evidencia de la template (52/52 decisiones, 12/12
+benchmark) no cubre Codex, Full ni delegación y no se atribuye a MyFinanzas.

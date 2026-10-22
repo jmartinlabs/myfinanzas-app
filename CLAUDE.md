@@ -1,6 +1,6 @@
 @AGENTS.md
 
-# MyFinanzas · Claude Code adapter (adopción v2.4.2)
+# MyFinanzas · Claude Code adapter (adopción v2.5.0)
 
 Las decisiones financieras, arquitectura, roadmap, permisos y estado del proyecto
 se mantienen en los documentos canónicos del repositorio. Este adaptador NO
@@ -16,12 +16,9 @@ sustituye ni reinterpreta `AGENTS.md` ni las Skills existentes.
   etc. delegan en las Skills equivalentes existentes.
 - En MyFinanzas la aprobación de especificación NO autoriza desarrollo:
   exige autorización de alcance adicional conforme a reglas locales.
-- Para decisiones protegidas exigir aprobación afirmativa e individual que
-  identifique la operación: por ejemplo «Apruebo PR #N» o «Apruebo
-  especificación 07». «Dale», «ok», «continúa» o «adelante» solo permiten
-  continuar trabajo YA autorizado y nunca autorizar un merge, un cambio
-  financiero, una nueva especificación, un despliegue o una migración real.
-  Si existe `specs/methodology/approvals.md`, leer además esa política.
+- Decisiones protegidas: aplicar `specs/methodology/approvals.md` (fuente única;
+  por ejemplo «Apruebo PR #N»). `.claude/settings.json` solo añade confirmaciones
+  `ask` en Claude Code; no concede ni sustituye aprobaciones.
 - No implementar E2.1, desplegar, modificar datos financieros reales ni
   reactivar infraestructura en pausa por el mero cambio de herramienta.
 - Los perfiles `.claude/agents/` son contratos reutilizables, no trabajadores
