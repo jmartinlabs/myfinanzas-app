@@ -50,7 +50,15 @@ import {
   type ClassificationGuard,
 } from "./clasificacion";
 
-import { listCycles, getCycle, cycleContext, createCycle } from "./ciclos";
+import {
+  listCycles,
+  getCycle,
+  cycleContext,
+  createCycle,
+  previewCycleOperation,
+  writeCycleOperation,
+  cycleHistory,
+} from "./ciclos";
 
 export type AppOptions = {
   classificationGuard?: ClassificationGuard;
@@ -187,6 +195,39 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/ciclos/${result.ciclo.id}`);
         return reply(result, 201);
       }
+      const cycleOperation = path.match(
+        /^\/api\/ciclos\/(omitido|\d+\/rectificar)(?:\/(preview))?$/,
+      );
+      if (cycleOperation && req.method === "POST") {
+        const action =
+            cycleOperation[1] === "omitido" ? "omitido" : "rectificar",
+          id = action === "omitido" ? null : cycleOperation[1].split("/")[0];
+        const body = await jsonBody(req);
+        return reply(
+          cycleOperation[2]
+            ? previewCycleOperation(
+                db,
+                action,
+                id,
+                body,
+                Number(new URL(req.url).searchParams.get("page") ?? 1),
+              )
+            : writeCycleOperation(
+                db,
+                action,
+                id,
+                body,
+                req.headers.get("idempotency-key") ?? "",
+                now(),
+              ),
+          cycleOperation[2] ? 200 : action === "omitido" ? 201 : 200,
+        );
+      }
+      const cycleAudit = path.match(/^\/api\/ciclos\/(\d+)\/historial$/);
+      if (cycleAudit && req.method === "GET")
+        return reply(
+          db.transaction(() => ({ items: cycleHistory(db, cycleAudit[1]) }))(),
+        );
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
       if (cycle && req.method === "GET")
         return reply(db.transaction(() => getCycle(db, cycle[1]))());
