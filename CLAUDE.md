@@ -1,14 +1,15 @@
 @AGENTS.md
 
-# MyFinanzas · Claude Code adapter (template v2.4)
+# MyFinanzas · Claude Code adapter (adopción v2.4.2)
 
 Las decisiones financieras, arquitectura, roadmap, permisos y estado del proyecto
 se mantienen en los documentos canónicos del repositorio. Este adaptador NO
 sustituye ni reinterpreta `AGENTS.md` ni las Skills existentes.
 
-- Leer siempre `specs/project.md`, `specs/setup-progress.md`,
-  `specs/epic-board.md`, `specs/methodology/myfinanzas-coordination.md`,
-  las especificaciones aprobadas y el estado REAL de Git/GitHub antes de actuar.
+- Verificar al inicio `AGENTS.md`, las normas locales en
+  `specs/methodology/myfinanzas-coordination.md`, Git/GitHub y el checkpoint relevante.
+  Consultar `specs/project.md`, `specs/setup-progress.md`, `specs/epic-board.md`
+  y especificaciones aprobadas según la tarea, su riesgo y las decisiones necesarias.
   El tablero es reanudable, no prueba autónoma de autorización ni verdad de CI.
 - Invocar `/orchestrate` en Claude Code; su contrato canónico sigue siendo
   `.agents/skills/orchestrate/SKILL.md`. Los otros comandos `/spec`, `/dev`,

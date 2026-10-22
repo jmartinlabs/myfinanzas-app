@@ -3,7 +3,7 @@
 Coordinador: reconciliación documental solicitada por el usuario; no concede autorizaciones nuevas.
 Main remoto verificado en `30c7ea0` (PR #41, adopción orquestación v2.4.2, solo metodología),
 sobre `20d8f9a` (PR #39, spec08). Este apartado complementa el cierre spec08 inferior
-(PR #40, rama `docs/08-integration-close`, no integrada en main al reconciliar) y prevalece
+(PR #40, integrada por squash en main `11e2fae` el 2026-10-23 tras «Apruebo PR #40» del usuario, HEAD `b5c88d7` con CI SUCCESS) y prevalece
 sobre estados históricos más antiguos.
 
 | Línea | Estado verificado en Git | Próxima acción / gate |
@@ -19,11 +19,11 @@ sobre estados históricos más antiguos.
 Paquetes activos: ninguno. Worktrees adicionales en este checkout: ninguno. Los SHAs
 históricos de cabecera del tablero (`cb9ba3b`) quedan sustituidos por este apartado.
 
-PRs abiertas verificadas con `gh` el 2026-10-23 (ninguna aprobada para merge por este registro):
+PRs verificadas con `gh` el 2026-10-23 (este registro no aprueba merges):
 
 | PR | Rama | Estado | Nota |
 | --- | --- | --- | --- |
-| #40 | `docs/08-integration-close` | Abierta, MERGEABLE, CI `validate` SUCCESS en `b5c88d7` | Cierre spec08 y plan dev08; base de esta reconciliación |
+| #40 | `docs/08-integration-close` | MERGED squash `11e2fae` (HEAD `b5c88d7`, CI SUCCESS) | Cierre spec08 y plan dev08; aprobada expresamente por el usuario |
 | #35 | `docs/explicit-approvals-v2-3-2` | Abierta, CONFLICTING | Metodología v2.3.2; posiblemente superada por v2.4.x, sin decidir |
 | #30 | `feat/32-ejecucion-rootless` | Draft, CONFLICTING | Dev32 PAUSED |
 | #29 | `spec/32-ejecucion-rootless` | Abierta, MERGEABLE | Spec32 aprobada, no integrada |
