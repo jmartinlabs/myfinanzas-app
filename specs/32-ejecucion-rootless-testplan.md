@@ -243,3 +243,9 @@ Nueva aserción verifica estado terminal estable y contador congelado durante
 Próximo ensayo añade health real bloqueando Bun PID1 (SIGSTOP), tres health
 fallidos y recuperación por systemd, con gracia 30s/timeout3s intactos; rootfs
 readonly/capabilities/NNP/tmpfs noexec y backup con WAL confirmado explícito.
+Run 39733300336 / 9b4f757 FAIL: 88 PASS, 2 FAIL (semilla demo / 31 P7).
+Se conservan ambos; paquete de harness ahora incluye package.json/lock originales
+para ejecutar scripts CLI. Batch de tests 2CPU/2GiB/512pids, sin cambiar límites
+operativos 1CPU/1GiB/128 ni aserciones/timeout. Diagnósticos solo nombres/fuentes y
+booleano timeout, nunca factores. Rootless/health/límite de reinicios previos pasan
+sus etapas, pero la aceptación de conjunto y matriz posterior sigue pendiente.

@@ -243,3 +243,16 @@ etiqueta específica por comprobación funcional más fuerte: fallo estable tras
 Se conserva este fallo y no se cambia el contrato ni la configuración productiva.
 Se añade prueba real health→kill→systemd (Bun detenido con SIGSTOP, health ejecutado
 independientemente con gracia/timeout/fallos productivos), no solo SIGKILL manual.
+
+Run 39733300336 / 9b4f757: FAIL, 88 API PASS/2 FAIL dentro de imagen final.
+Fallos visibles por nombres: «semilla demo solo…» y «31 P7…». Health real,
+SIGKILL, límites estables y demás etapas previas ya superaron sus aserciones,
+pero no se declara PASS global. El paquete de pruebas montado omitía package.json,
+por lo que `bun run setup` no podía comprobar el mensaje del CLI real: se añaden
+manifiestos y lock originales de HEAD, sin alterar tests ni código. El ejecutor
+de la suite multiproceso dispone de 2 CPU/2GiB/512 pids; servicio, CLI y matriz
+operativa conservan 1 CPU/1GiB/128. No se modifican timeouts/aserciones ni se
+excluye ningún test. Se añaden solo clasificación timeout y ubicaciones fuente
+saneadas para distinguir el segundo fallo si persiste; su causa sigue pendiente.
+La receta/healthcheck se materializan también desde Git HEAD y se rechaza checkout
+sucio; Bun/age se verifican ejecutando sus binarios, no solo leyendo etiquetas.

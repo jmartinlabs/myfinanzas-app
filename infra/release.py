@@ -67,11 +67,11 @@ def context(commit, target, age_bytes):
     inputs = {'source': commit, 'base': BASE, 'platform': 'linux/amd64', 'bun': '1.4.3',
               'age': '1.3.2', 'age_archive_sha256': AGE_SHA, 'contracts': CONTRACTS,
               'source_files': source_hashes, 'lock_sha256': source_hashes['bun.lock'],
-              'recipe_sha256': sha((SOURCE / 'infra/Containerfile').read_bytes()),
+              'recipe_sha256': sha(source_bytes('HEAD', 'infra/Containerfile')),
               'builder_source': run(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD']).decode().strip()}
     (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
-    shutil.copyfile(SOURCE / 'infra/Containerfile', target / 'Containerfile')
-    shutil.copyfile(SOURCE / 'infra/healthcheck.mjs', target / 'healthcheck.mjs')
+    (target / 'Containerfile').write_bytes(source_bytes('HEAD', 'infra/Containerfile'))
+    (target / 'healthcheck.mjs').write_bytes(source_bytes('HEAD', 'infra/healthcheck.mjs'))
     inputs['healthcheck_sha256'] = sha((target / 'healthcheck.mjs').read_bytes())
     (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
     return inputs
@@ -186,6 +186,8 @@ def build(directory, ref='HEAD', repeat=True):
     directory = Path(directory)
     if directory.exists() or not directory.is_absolute() or directory.is_symlink():
         raise ReleaseError('new absolute output directory required')
+    if run(['git', '-C', str(SOURCE), 'status', '--porcelain', '--untracked-files=normal']).strip():
+        raise ReleaseError('clean checkout required; no dirty builder or source inputs')
     commit = run(['git', '-C', str(SOURCE), 'rev-parse', '--verify', ref + '^{commit}']).decode().strip()
     epoch = run(['git', '-C', str(SOURCE), 'show', '-s', '--format=%ct', commit]).decode().strip()
     directory.mkdir(mode=0o700)
@@ -246,6 +248,9 @@ def build(directory, ref='HEAD', repeat=True):
                        '--read-only', '--entrypoint=age', chosen['image'], '--version']).decode().strip().lstrip('v')
         if version != '1.3.2':
             raise ReleaseError('age runtime version mismatch')
+        bun = run(['podman', 'run', '--rm', '--pull=never', '--cap-drop=all', '--security-opt=no-new-privileges', '--read-only', chosen['image'], '--version']).decode().strip()
+        if bun != '1.4.3':
+            raise ReleaseError('Bun runtime version mismatch')
         return manifest
 
 

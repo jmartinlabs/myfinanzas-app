@@ -81,6 +81,10 @@ def main():
         evidence['oci-manifest-digest'] = manifest['oci_manifest_digest']
         evidence['two-clean-builds-payload-equal'] = manifest['reproducibility']['payload_equal']
         digest = (output / 'manifest.sha256').read_text().strip()
+        evidence['release-manifest-sha256'] = digest
+        evidence['rootfs-payload-sha256'] = manifest['rootfs_payload_sha256']
+        evidence['runtime-os'] = manifest['runtime_os']
+        evidence['runtime-bun-age'] = {'bun': manifest['inputs']['bun'], 'age': manifest['inputs']['age']}
         verify(output, manifest['inputs']['source'], digest)
         # Real corruption checks; never accept a foreign frontend or manifest.
         index = output / 'frontend/index.html'
@@ -158,8 +162,12 @@ def main():
                         'let denied=false;try{writeFileSync("/app/forbidden","probe")}catch(e){denied=e.code==="EROFS"||e.code==="EACCES"}'
                         'if(!denied)process.exit(2);'
                         'copyFileSync("/bin/true","/tmp/private/noexec-probe");chmodSync("/tmp/private/noexec-probe",0o700);'
-                        'let blocked=false;try{const p=Bun.spawnSync(["/tmp/private/noexec-probe"]);blocked=p.exitCode!==0;}catch{blocked=true}'
-                        'if(!blocked)process.exit(3);')
+                        'let blocked=false;try{Bun.spawnSync(["/tmp/private/noexec-probe"]);}catch(e){blocked=e.code==="EACCES";}'
+                        'if(!blocked)process.exit(3);'
+                        'if(readFileSync("/sys/fs/cgroup/memory.max","utf8").trim()!=="1073741824")process.exit(4);'
+                        'if(readFileSync("/sys/fs/cgroup/pids.max","utf8").trim()!=="128")process.exit(5);'
+                        'const [quota,period]=readFileSync("/sys/fs/cgroup/cpu.max","utf8").trim().split(/\\s+/).map(Number);'
+                        'if(quota/period!==1)process.exit(6);')
         run(['podman', 'run', '--rm', '--network=none', *hardened, image, '-e', hardening_js])
         evidence['effective-no-capabilities-nnp-readonly-noexec'] = True
 
@@ -377,10 +385,14 @@ def main():
         launcher.write_text('#!/bin/sh\nexport PYTHONHOME=/suite/tools\nexec /suite/tools/lib/ld-linux-x86-64.so.2 --library-path /suite/tools/lib /suite/tools/bin/python3-real "$@"\n')
         launcher.chmod(0o755)
         evidence['test-only-python'] = sys.version.split()[0]
+        for relative in ('package.json', 'bun.lock', 'apps/api/package.json', 'apps/web/package.json'):
+            destination = suite / relative
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            destination.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:' + relative]))
         (suite / 'node_modules').symlink_to('/app/node_modules')
         (suite / 'apps/api/node_modules').symlink_to('/app/apps/api/node_modules')
         result = subprocess.run(['podman', 'run', '--rm', '--network=none',
-                                 *hardened, '--memory=2g', '--pids-limit=512',
+                                 *hardened, '--memory=2g', '--pids-limit=512', '--cpus=2',
                                  '--env=NODE_ENV=test', '--env=PATH=/suite/tools/bin:/usr/local/bin:/usr/bin:/bin', '--volume=' + str(suite) + ':/suite:ro',
                                  '--workdir=/suite', image, 'test', 'apps/api'],
                                 capture_output=True, text=True, timeout=600)
@@ -394,7 +406,7 @@ def main():
             for test in (suite / 'apps/api/src').glob('*.test.ts'):
                 declared.update(re.findall(r'test\(\s*["\']([^"\']+)["\']', test.read_text()))
             failed = [label for label in declared if '(fail) ' + label in result.stderr]
-            print('::error title=Final image regression labels::' + json.dumps({'exit': result.returncode, 'counts': counts.groups() if counts else None, 'failed': sorted(failed)}))
+            print('::error title=Final image regression labels::' + json.dumps({'exit': result.returncode, 'counts': counts.groups() if counts else None, 'failed': sorted(failed), 'timeout_present': 'Test timed out after' in result.stderr, 'locations': sorted(set(re.findall(r'apps/api/src/[a-z0-9-]+\.test\.ts:\d+:\d+', result.stderr)))}))
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'
