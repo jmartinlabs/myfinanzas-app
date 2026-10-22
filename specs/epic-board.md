@@ -1,5 +1,44 @@
 # MyFinanzas — tablero de coordinación
 
+## Parada y checkpoint WIP dev08 — 2026-10-23
+
+El usuario detiene desarrollo y autoriza únicamente commit/push de todo el estado
+de dev08, sin PR ni merge. Este estado prevalece sobre IN PROGRESS inferior:
+**dev08 WIP SIN VALIDAR**, ejecución detenida tras límite de uso de Developer.
+API posterior105 PASS/0 FAIL/1713 observada en log; primera98/7 conservada;
+E2E no superado y QA independiente NO ejecutada. Ver [checkpoint08](08-presupuestos-progress.md)
+y [evidencia parcial08](08-presupuestos-testplan.md). No reanudar automáticamente.
+AC23/E2.1 BLOQUEADO, AC23-SQLITE inconcluso separado y Dev32 PAUSED; PR40 independiente.
+
+## Estado vigente — ejecución dev08 autorizada — 2026-10-22
+
+Fuente: mensaje expreso «Álex — Autorización de desarrollo E2.2 · $dev 08».
+Prevalece sobre permisos históricos inferiores. El tablero registra autorizaciones,
+no las concede. Spec08/wireframes aprobados e integrados mediante squash PR39 en
+main `20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad`; HEAD autorizado `0f3d4e5`,
+CI push39851581005 y PR39851590534 SUCCESS. CI posterior main39853674496 SUCCESS.
+
+| Línea | Estado real / autorización | Siguiente gate |
+| --- | --- | --- |
+| E2.2 spec08 | APROBADA e integrada PR39;24 AC actuales y F-01/F-02 futuros | Conservar decisiones/wireframes; no reabrir preguntas |
+| E2.2 dev08 | IN PROGRESS; seis incrementos, pruebas, QA independiente y preparación PR autorizados | Developer entrega candidato SHA; QA evalúa, coordinador publica solo si verificable |
+| QA08 | Matriz24 preparada, NO ejecución ni PASS todavía | Esperar candidato exacto, revisión independiente y checks reales |
+| E2.1/AC23 | BLOQUEADO; sin aceptación global | Conservar fallo histórico; no darlo por resuelto por verdes de dev08 |
+| AC23-SQLITE | Investigación actual cerrada INCONCLUSA, incidencia técnica separada | Sin probes/cambios nuevos sin hipótesis discriminante y autorización aplicable |
+| Dev32/PR30/AC22 y otras tareas pausadas | PAUSED | No reanudar |
+| PR40 | Actualización documental independiente, OPEN sin merge autorizado | No integrar por inferencia de permisos dev08 |
+| E2.3 y F-01/F-02 | PENDING/FUERA DE ALCANCE dev08 | Sin planificación/Base/Esencial/Del mes/ejecutado/pendientes/estados mensuales |
+
+Base exacta main verificada con árboles/commits Git, rama aislada feat/08-presupuestos.
+Sin importar dev07 ni modificar checkpoints ajenos. Su migración aún fuera de main
+no se presume compatible: documentar reconciliación futura y regresiones, no reparar
+SQLite incidentalmente. Sin Excel real/datos personales/despliegue/migración operativa.
+No merge automático de futura PR funcional. Estados históricos inferiores conservados.
+
+---
+
+## Historial anterior
+
 Coordinador: único escritor; [gates locales](methodology/myfinanzas-coordination.md).
 Reconciliación: 2026-10-22 Europe/Madrid. Main remoto verificado en
 `cb9ba3b93dc12a4107f063930bca0b48b67babbe` (PR #34 integrada).

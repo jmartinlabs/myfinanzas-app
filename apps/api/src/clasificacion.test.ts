@@ -149,7 +149,7 @@ test("02 AC01/03–09/21–23: catálogo persistente, derivación y atributos pr
         .query("PRAGMA table_info(partidas)")
         .all()
         .some((x: any) =>
-          ["categoria", "presupuesto", "esencial"].includes(x.name),
+          ["categoria", "esencial"].includes(x.name),
         ),
     ).toBe(false);
   } finally {

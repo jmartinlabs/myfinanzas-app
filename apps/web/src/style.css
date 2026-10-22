@@ -1498,3 +1498,8 @@ textarea {
     gap: 6px 16px;
   }
 }
+
+/* E2.2: prevent long financial labels from stretching narrow screens. */
+.budget-filters { grid-template-columns: repeat(auto-fit,minmax(min(100%,190px),1fr)); }
+.budget-review { overflow-wrap: anywhere; }
+.budget-review .actions { flex-wrap: wrap; }

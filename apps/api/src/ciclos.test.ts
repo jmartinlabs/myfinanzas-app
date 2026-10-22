@@ -320,7 +320,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
           db.query(`SELECT * FROM "${name}" ORDER BY rowid`).all(),
         ).toEqual(
           name === "partidas"
-            ? values.map((r: any) => ({ ...r, deuda: null }))
+            ? values.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
             : values,
         );
     for (const old of before.find(([name]) => name === "counters")![1] as {
@@ -331,7 +331,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 7,
+      version: 8,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
     expect({

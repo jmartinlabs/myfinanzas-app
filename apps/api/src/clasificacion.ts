@@ -1,3 +1,4 @@
+import { getBudget } from "./presupuestos";
 import { getDebt } from "./deudas";
 import { classificationMovementImpact } from "./movement-impact";
 import type { Database } from "bun:sqlite";
@@ -26,6 +27,7 @@ export type Classification = {
   categoria: { id: string; nombre: string } | null;
   subcategoria: { id: string; nombre: string } | null;
   deuda: string | null;
+  presupuesto: string | null;
   integridad: string | null;
 };
 // Financial consumers must supply real checks when delivered, not simulated engines.
@@ -40,6 +42,7 @@ type Row = {
   estado: "Activa" | "Inactiva";
   revision: number;
   deuda?: string | null;
+  presupuesto?: string | null;
   padre?: string;
   grupo?: string | null;
   anual?: string | null;
@@ -84,6 +87,7 @@ export function getClassification(
     categoria: cat && { id: cat.id, nombre: cat.nombre },
     subcategoria: sub && { id: sub.id, nombre: sub.nombre },
     deuda: r.deuda ?? null,
+    presupuesto: r.presupuesto ?? null,
     integridad:
       kind !== "subcategorias"
         ? null
@@ -169,7 +173,7 @@ function validate(
     ...(kind === "categorias"
       ? categoryFields
       : kind === "partidas"
-        ? ["padre", "deuda"]
+        ? ["padre", "deuda", "presupuesto"]
         : ["padre"]),
   ];
   const errors: Record<string, string> = {};
@@ -183,6 +187,7 @@ function validate(
       mensual: null,
       referencia: null,
       deuda: null,
+      presupuesto: null,
     }),
     ...body,
   };
@@ -272,6 +277,12 @@ function validate(
       "HISTORY_LOCKED",
       "No se puede cambiar Deuda de una Partida utilizada; crea otra Partida para el futuro.",
     );
+  if (kind === "partidas" && v.presupuesto !== null) {
+    if (typeof v.presupuesto !== "string") throw new Problem(422,"VALIDATION","Presupuesto inválido.");
+    const presupuesto = getBudget(db,v.presupuesto);
+    if (presupuesto.estado !== "Activo" && old?.presupuesto !== v.presupuesto)
+      throw new Problem(422,"INACTIVE_BUDGET","Selecciona un Presupuesto activo.");
+  }
   const result: Record<string, unknown> = {};
   for (const f of fields) result[f] = v[f];
   return result;
@@ -367,6 +378,8 @@ export function createClassification(
           v.deuda as string,
           id,
         ]);
+      if (kind === "partidas" && v.presupuesto !== null)
+        db.run("UPDATE partidas SET presupuesto=? WHERE id=?",[v.presupuesto as string,id]);
       audit(db, id, "alta", 1, Object.keys(v), now);
       db.run("INSERT INTO classification_attempts VALUES(?,?,?,?,?)", [
         attempt,
@@ -406,10 +419,11 @@ function impact(
     (k) => value[k] !== old[k as keyof Classification],
   );
   const economic = changed.filter((k) =>
-    ["padre", "anual", "mensual", "referencia", "deuda"].includes(k),
+    ["padre", "anual", "mensual", "referencia", "deuda", "presupuesto"].includes(k),
   );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
+  const budgetBlocked = kind === "partidas" && economic.includes("presupuesto") && !!db.query("SELECT id FROM movimientos WHERE partida=? LIMIT 1").get(id);
   const protection = guard?.(kind, id, economic);
   if (protection?.blocked)
     throw new Problem(
@@ -423,13 +437,15 @@ function impact(
     changed,
     economic,
     dependencies,
+    blocked: budgetBlocked,
     used: financial?.used === true || protection?.used === true,
     financial,
     fingerprint: hash([kind, id, value, snapshot(db), financial?.revision]),
-    coverage: financial
+    coverage: budgetBlocked ? "Impacto histórico completo no verificable: E2.3 pendiente. Cambio de Presupuesto bloqueado." : financial
       ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
       : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
     pending: [
+      ...(budgetBlocked ? ["E2.3"] : []),
       ...(financial ? [] : ["Movimientos"]),
       "Presupuestos",
       "Indicadores",
@@ -458,6 +474,7 @@ export function updateClassification(
   return db
     .transaction(() => {
       const plan = impact(db, kind, id, body, guard);
+      if (plan.blocked) throw new Problem(409,"HISTORY_LOCKED",plan.coverage);
       // Used catalog branches require explicit review; unused records remain editable.
       if (
         plan.economic.length &&
@@ -519,6 +536,7 @@ export function updateClassification(
           v.deuda as string | null,
           id,
         ]);
+      if (kind === "partidas") db.run("UPDATE partidas SET presupuesto=? WHERE id=?",[v.presupuesto as string|null,id]);
       audit(
         db,
         id,
@@ -566,6 +584,8 @@ export function changeClassificationState(
         raw(db, entities[kind].parent!, old.padre!).estado !== "Activa"
       )
         throw new Problem(409, "INACTIVE_PARENT", "Reactiva primero el padre.");
+      if (active && kind === "partidas" && old.presupuesto && getBudget(db,old.presupuesto).estado !== "Activo")
+        throw new Problem(409,"INACTIVE_BUDGET","Reactiva primero el Presupuesto vinculado.");
       const state = active ? "Activa" : "Inactiva";
       if (old.estado === state) return old;
       db.run(
