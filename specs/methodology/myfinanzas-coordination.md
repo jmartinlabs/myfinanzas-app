@@ -18,6 +18,8 @@ No cambiar el modelo: la sugerencia de capacidad/razonamiento es orientativa, no
 selector real ni otro gate. Conservar el modelo actual si es suficiente.
 
 ## Gates que NO desaparecen
+Leer también [política de aprobaciones explícitas](approvals.md); tiene carácter
+obligatorio para coordinador y subagentes, además de las reglas locales.
 - Especificación aprobada + dependencias satisfechas + autorización expresa de
   desarrollo de esa entrega: solo entonces dev puede pasar a ready. No basta que
   una PR de especificación sea MERGED. No hace falta volver a escribir $dev si ese
@@ -31,6 +33,8 @@ selector real ni otro gate. Conservar el modelo actual si es suficiente.
   los ejemplos del upstream NO crean entregas ni alteran el roadmap.
 - Mantener aprobaciones expresas para finanzas, especificaciones, nuevo alcance,
   arquitectura material, destrucción, merges, datos reales, acceso a VPS y despliegues.
+  El usuario debe aprobar con un verbo inequívoco y target/revisión identificables.
+  «Dale», «ok», «continúa» o similares nunca conceden permiso a una operación protegida.
   Una autorización previa válida no se pide otra vez; tampoco se extiende por analogía.
 - Git: rama por ámbito, revisión de historial y datos sensibles, push/PR según política
   ya autorizada, squash merge únicamente tras aprobación expresa de esa PR y checks.
