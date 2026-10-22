@@ -12,8 +12,8 @@ Contrato adaptado de agent-project-template v2.3.1. Fuente y diferencias:
 
 $orchestrate usa Quick/Standard/Full por riesgo sin volver a inicializar el proyecto.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
-La adopción tiene alcance expresamente autorizado y no exige repetir su aprobación
-para inspeccionar/copiar componentes. La PR resultante sí exige autorización de merge.
+La metodología v2.3.1 está integrada mediante PR #32; sus reglas operativas
+se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
 No cambiar el modelo: la sugerencia de capacidad/razonamiento es orientativa, no un
 selector real ni otro gate. Conservar el modelo actual si es suficiente.
 
@@ -22,8 +22,8 @@ selector real ni otro gate. Conservar el modelo actual si es suficiente.
   desarrollo de esa entrega: solo entonces dev puede pasar a ready. No basta que
   una PR de especificación sea MERGED. No hace falta volver a escribir $dev si ese
   alcance ya fue autorizado en la ejecución activa.
-- Esta intervención solo cierra PR24 y propone adopción metodológica. No dev06 ni
-  spec07, ni cambios financieros/SQL/migraciones, ni nuevas investigaciones técnicas.
+- La adopción metodológica de PR #32 no autoriza dev06 ni la especificación de E2.1.
+  Cada nuevo alcance requiere su autorización propia; no se infiere de la metodología.
 - E1.6 spec y wireframes están integrados en b60def1; sus 30 AC actuales NO están
   implementados/probados. AC31–33 siguen contratos de entregas futuras.
 - E1.7 no existe en el roadmap aprobado, que termina E1 en E1.6 y continúa E2.1.
@@ -46,11 +46,16 @@ No duplicar tareas activas. Leer listado de agentes reales y checkpoints antes d
 Cada paquete usa templates/agent-work-packet.md, con gate, dependencias, ownership,
 aislamiento, prohibiciones, revisión exacta y formato de retorno. Roles funcional,
 implementación, QA y infraestructura son perfiles; no procesos residentes.
-- Lecturas concurrentes pueden compartir el checkout. En esta validación solo el
-  coordinador escribe: todos los paquetes delegados tienen write=[] y no ramas nuevas.
-- Código concurrente: ownership disjunto Y aislamiento de checkout autorizado. No
-  crear worktrees sin petición explícita; una rama por sí sola no aísla el directorio
-  compartido. Si no hay aislamiento, serializar escrituras sin bloquear análisis de lectura.
+- Lecturas concurrentes pueden compartir el checkout. Los permisos de escritura de
+  cada paquete quedan limitados al alcance autorizado, su ownership y sus gates.
+- Código concurrente: ownership disjunto Y checkouts efectivamente aislados. Una rama
+  por sí sola no aísla un directorio compartido. Dentro de una tarea o épica de desarrollo
+  ya autorizada, el coordinador puede crear y gestionar autónomamente ramas, worktrees
+  temporales y checkouts aislados, sin pedir una aprobación por cada operación ordinaria.
+  Antes debe verificar soporte real, estado Git, cambios preexistentes y riesgos de colisión.
+  Si no existe aislamiento seguro, serializar escrituras sin bloquear lecturas paralelas.
+  La limpieza se limita a recursos temporales propios y sin trabajo pendiente; jamás
+  descartar cambios ajenos o sin reconciliar.
 - QA independiente del autor de implementación; tests reales solo cuando exista candidato.
   Diseño de pruebas no es PASS; revisión de un contrato futuro no lo implementa.
 - Sin herramientas multiagente: misma cola y gates en secuencia, sin delegación fingida.
