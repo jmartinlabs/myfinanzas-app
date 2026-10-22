@@ -26,3 +26,8 @@ Candidato inicial 67f2dbd revisado por QA independiente. Se corrigieron cuatro h
 El upgrade productivo de E1.6 se ejecuta exclusivamente después de las comprobaciones existentes de ruta/identidad/pareja efectiva DB-clave y conserva la identidad. Solo se ha probado en fixtures ficticias; ninguna migración operativa ejecutada. Restore7 conserva la política heredada de revocación, incluidos los nuevos intentos Deuda.
 
 API íntegra intermedia:96 PASS/1537 assertions; D10 adicional10 PASS/166 assertions; types/build PASS. Playwright financiero E1.4/E1.5/E1.6+restore/MFA1 PASS28s; catálogo1 PASS17.6s. Runs completos finales en curso tras D10 y ajustes visuales. Aceptación local final, QA de correcciones y CI pendientes de consolidar; PR todavía no preparada.
+
+## Estado local final — 2026-10-22
+Backend/UI principal3239c2d:97 API PASS/1547 assertions, Playwright2 PASS47.0s, types/build y controles18+22 PASS. Incremento mínimo auditoríaf2bfc1b: filas capital/intereses visibles en resumen antes/después, typecheck y E2E financiero afectado1 PASS28.1s; backend sin cambios. [Testplan](06-deuda-testplan.md) consolida los30 AC actuales con evidencia y los3 contratos futuros separados. Este apartado sustituye los pendientes iniciales del incremento, conservados como historia.
+
+QA independiente sobre3239c2d confirmó10/166 Deudas y9/67 guardas productivas PASS y la corrección de sus cuatro hallazgos; cierre de revisión incremental y CI por SHA a cargo del coordinador. Siguiente acción: conciliar QA final, revisar historial/diff/datos sensibles y preparar PR funcional según política autorizada. Sin merge automático ni despliegue.

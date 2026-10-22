@@ -343,3 +343,10 @@ deuda. [Procedencia/fórmula](functional-reference-v5.11.md) y [spec 06](06-deud
 Codex no ha recibido/inspeccionado el libro ni importado datos reales. La especificación
 sigue DRAFT: Q2–Q4 consolidadas, propuestas app y wireframes para aprobación completa.
 No dev06/merge/SQL ni cambios del Excel autorizados; prioridad funcional E1.6.
+
+## E1.6 — ejecución autorizada y verificación local — 2026-10-22
+Usuario autorizó expresamente `$dev 06`, QA independiente y preparación de PR dentro de `$orchestrate`; esta autorización posterior sustituye el gate histórico de no iniciar dev06. Spec06 y Q1–Q4 se reutilizan sin cambios. PR32 y PR33 integradas, dependencia metodológica satisfecha.
+
+Implementación en rama feat/06-deuda, maestro mínimo Deudas/enlace Partida y pagos en pipeline único. SQLitev7 con continuidad v6 genuina demo/production ficticia, identidad/DB-clave/MFA preservados; sin migraciones operativas. [Progress06](06-deuda-progress.md) y [testplan06](06-deuda-testplan.md) son autoridad de pruebas/estado por SHA:97 API/1547 assertions y Playwright2 PASS; incremento auditoría con E2E afectadoPASS. QA final/CI/PR por conciliar; ninguna autorización de merge/deploy.
+
+Dev32/PR30/AC-22 continúa pausado, checkpoint intacto; no investigaciones ni cambios de infraestructura. E2.1 es línea documental independiente autorizada, sin implementación. Excel sigue maestro; R6/IOERR/fallo API históricos no quedan resueltos por esta entrega.
