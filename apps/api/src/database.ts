@@ -57,7 +57,9 @@ export function openDatabase(path: string) {
   try {
     // Connection-local only: install the existing wait policy before reading live metadata.
     db.exec("PRAGMA busy_timeout=3000");
-    assertMode(inspectIdentity(db), production);
+    // A concurrent legacy migration can commit between identity queries.
+    // Validate one read snapshot, then release it before acquiring the migration writer lock.
+    db.transaction(() => assertMode(inspectIdentity(db), production)).deferred();
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);
     if (!production && path !== ":memory:") chmodSync(path, 0o600);

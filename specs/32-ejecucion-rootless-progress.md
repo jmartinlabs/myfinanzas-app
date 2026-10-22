@@ -1,6 +1,6 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: BLOCKED — 23/24 AC verificados; AC-22 abierto por fallo intermitente E1.4; PR #30 Draft, sin merge/deploy
+Current state: IN PROGRESS — corrección técnica autorizada B5 verificada localmente; AC-22 pendiente de CI de imagen final, sin merge/deploy
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -11,7 +11,7 @@ Current state: BLOCKED — 23/24 AC verificados; AC-22 abierto por fallo intermi
 | Publicación de puerto Podman / AC-10 | verified final image | API real vía 127.0.0.1:18081, 200/401; sin IPv6 ni acceso externo; stop desconecta |
 | Quadlet y WAL/SHM | verified final image | systemd --user real, health→kill→restart, SIGTERM/SIGKILL, 3/60s/5s estable, WAL íntegro; sin reboot/logout remoto |
 | Fallos/update/rollback cruzado | verified | 39734037872: b0bc5a7→3094563→b0bc5a7, datos/auth/escrituras conservados; restore age con WAL/MFA y negativos incompatibles PASS |
-| Regresión local y PR independiente | BLOCKED AC-22 | 90 API y 2 E2E locales PASS; 9a1dc5d CI íntegra PASS, pero 77e4982 falló en concurrencia E1.4 sin diagnóstico cerrado |
+| Regresión local y PR independiente | fix verified local / final CI pending | B5 antes FAIL/después PASS; 91 API/1415 aserciones y 2 E2E (47.5s) PASS; corrección de snapshot sin reglas financieras |
 
 ## Verified increments
 2026-10-22 Europe/Madrid, raíz del repositorio. Validación de API_BIND_HOST solo
@@ -45,12 +45,12 @@ R6 sigue sin cierre causal; fsync tras rename puede dejar conjunto válido con
 durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 
 ## Next action
-Mantener PR #30 Draft. Revisar el fallo E1.4 con el agente financiero o recibir
-autorización acotada para investigar/corregir la apertura/migración técnica que
-resulte demostrada, sin cambiar reglas financieras. No se ha modificado ese código.
-Un verde posterior no cierra el fallo intermitente. AC-22 sigue abierto; no declarar
-24/24 ni solicitar merge. PR #29 sí está reconciliada/CI verde, sin integrar.
-La CI del HEAD final se referencia en PR #30; sin VPS/deploy/datos reales.
+Ejecutar CI íntegra del fix autorizado: B5 y los 90 tests previos dentro de la
+imagen definitiva, rootless/Quadlet/red, matriz entre versiones y restore/MFA.
+Si pasa, cerrar AC-22 y preparar PR #30 para revisión con evidencia del HEAD final.
+El usuario ya autorizó la intervención técnica; no sigue pendiente esa decisión.
+No cambia contrato financiero ni se interpreta CI verde como diagnóstico exacto
+del run77/R6/API histórico. #29 → #30, ningún merge/VPS/deploy autorizado.
 
 ## Incidencia de CI del incremento — 2026-10-22
 
@@ -336,3 +336,23 @@ Alternativas antes de tocar código fuera de alcance: agente financiero cierra l
 incidencia con su evidencia; o usuario autoriza investigación/corrección técnica
 acotada a la ruta demostrada. No se cambia contrato aprobado ni se integra nada.
 R6/fsync/API histórico siguen documentados de forma independiente.
+
+## Corrección técnica autorizada de apertura — 2026-10-22
+El usuario autoriza expresamente investigar/corregir únicamente apertura/migración
+SQLite, sin reglas financieras. [Análisis y B5](investigations/32-sqlite-identity-snapshot.md).
+Se reproduce determinísticamente una carrera entre consultas de identidad: lector
+ve marcador ausente v3, escritor migra a v6, lector ve versión6 y falla con
+IDENTITY_ABSENT. No se afirma que sea el mensaje perdido del run77; sí es una
+incompatibilidad real de la misma ruta. Control sobre código anterior: 0/1 FAIL.
+Cambio mínimo demo/memoria: una transacción de lectura para validar identidad,
+cerrada antes del BEGIN IMMEDIATE de migración. Sin SQL financiero, retries,
+timeouts nuevos, cambios al probe immutable ni a la rama productiva/guardas31.
+B5 corregido 1 PASS/6 aserciones; suite91 API/1415 aserciones, tipos/build PASS.
+El cierre de AC-22 queda pendiente de ejecutar la corrección en la imagen final
+con CI completa; no se cierra por los verdes previos. PR30 sigue Draft mientras.
+
+Regresión posterior al fix: 2 E2E PASS (47.5s), tipos/build y controles22+18 PASS.
+Control negativo exacto de B5 con snapshot retirado temporalmente: vuelve a
+IDENTITY_ABSENT/FAIL; restaurado inmediatamente, PASS/6 aserciones. No se publica
+el código de control sin corrección. FIFO abierta antes del aviso ready y escritor
+no bloqueante evitan que un hijo muerto deje colgado el harness. No hay retries.

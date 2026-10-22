@@ -24,11 +24,11 @@ Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 | verify frontend/OCI/pin corruptos + require_rollback negativos + restore existente | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas | release-contract.mjs restore: WAL confirmado, age, key/integrity/revocación/MFA | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios | preflight + integración completos, versiones/UID registrados y cleanup verificado | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + tipos/build/90 API/2 E2E + 22/18 controles | BLOCKED — 77e4982: 89 PASS/1 FAIL concurrencia E1.4; 9a1dc5d verde no cierra causa | 2026-10-22; run39734977613 FAILURE; run39735182627 SUCCESS sin atribución causal |
+| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING FINAL CI — B5 antes FAIL/después PASS; local91 API/1415 aserciones + 2 E2E PASS | 2026-10-22; investigación32 y resultado final del fix en PR30 |
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Estado vigente: 23/24 verificados; AC-22 bloqueado por regresión E1.4.**
+**Estado vigente: 23/24 verificados; fix técnico B5 local PASS, AC-22 pendiente de CI con imagen corregida.**
 La tabla es el estado vigente; los bloques inferiores conservan la historia de
 fallos/ensayos y no sustituyen esta aceptación. CI del HEAD documental final se
 vincula en PR #30, sin inferir aprobación de merge ni despliegue.
@@ -336,3 +336,19 @@ PASS. No se modifican tests/lógica financiera, retries ni timeouts. CI posterio
 valida ese filtro/documentación, pero no se usa un verde como cierre de la causa.
 Requiere diagnóstico/revisión por el agente financiero o autorización técnica
 acotada antes de cambiar código fuera de alcance. PR #30 permanece Draft.
+
+## B5 y apertura coherente — autorización expresa 2026-10-22
+Nuevo test técnico sqlite-migration-opening.test.ts: dos procesos y FIFO real
+intercalan v3→6 entre lecturas de identidad, sin simular SQL ni errores. Antes:
+0 PASS/1 FAIL por IDENTITY_ABSENT. Después de snapshot de lectura terminado antes
+de writer IMMEDIATE: 1 PASS/6 aserciones, versión6/contador17/integridad/FK válidos.
+91 API/1415 aserciones y tipos/build locales PASS, sin cambios a los 90 tests,
+reglas financieras, timeouts o concurrencia previos. Rama productiva y probe
+immutable intactos. [Investigación](investigations/32-sqlite-identity-snapshot.md).
+AC-22 sigue pendiente de CI sobre esta corrección; no se equipara mecanismo
+reproducido con diagnóstico exacto del run77 ni R6/API histórico.
+
+Regresión corregida local: 2 E2E PASS47.5s; B5 negativo exacto con solo snapshot
+retirado FAIL/IDENTITY_ABSENT, restauración inmediata PASS/6 aserciones. Filtro
+E1.4/guardas31 conservados. La siguiente CI debe demostrar91 API dentro de imagen
+final; no se cierra AC-22 únicamente por el control local.
