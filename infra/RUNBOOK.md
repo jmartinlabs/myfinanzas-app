@@ -150,3 +150,42 @@ previous_source/current_source/previous_image/current_image exactos y
 schema/data/authentication/confirmed_writes=true, obtenidos del ensayo real y
 revisados en CI; ese JSON no es una firma ni sustituye revisar los resultados.
 Ningún control ejecuta un rollback.
+
+## Ejemplo de tarea deliberada (solo futuro host de ensayo autorizado)
+
+No ejecutar en VPS ni sobre un estado previo. Tras verificar paquete, ID y raíz
+privada nueva, el comando de inicialización equivalente al probado es:
+
+```sh
+MF32_IMAGE=sha256:ID_VERIFICADO_DE_64_HEX
+MF32_DATA=/ruta/privada/data
+podman run --rm --pull=never --network=none \
+  --userns=keep-id:uid=10001,gid=10001 --user=10001:10001 \
+  --cap-drop=all --security-opt=no-new-privileges \
+  --read-only --read-only-tmpfs=false --memory=1g --cpus=1 --pids-limit=128 \
+  --tmpfs=/tmp:rw,noexec,nosuid,nodev,tmpcopyup,mode=0711,size=64m \
+  --volume="$MF32_DATA:/var/lib/myfinanzas:rw" \
+  --env=NODE_ENV=production --env=APP_ORIGIN=https://myfinanzas.pp.ua \
+  --env=DATABASE_PATH=/var/lib/myfinanzas/state/database.sqlite \
+  --env=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key \
+  "$MF32_IMAGE" apps/api/src/production-init.ts
+```
+
+Mismos flags/imagen para `apps/api/src/setup.ts /var/lib/myfinanzas/state/alta.txt`:
+archivo nuevo, privado, nunca mostrar su contenido ni versionarlo. Para backup,
+`apps/api/src/backup-cli.ts create /backup/COPIA_NUEVA DESTINATARIO_PUBLICO_AGE`,
+con raíz de backups privada adicional montada rw en `/backup` solo en esa tarea.
+Para restore, `apps/api/src/backup-cli.ts restore /backup/COPIA /var/lib/myfinanzas/NUEVO /run/keys/identity`,
+montar la copia readonly, identidad 0600 readonly solo en `/run/keys/identity` y
+configurar DATABASE_PATH/AUTH_KEY_PATH bajo `NUEVO`; ese directorio debe no existir.
+No reutilizar rutas de ejemplo como si fueran destinos verificados. Nunca montar
+la identidad ni raíz de backups en la API permanente. Los comandos CLI de 31 no
+han cambiado; revisar también [instrucciones de persistencia](../README.md).
+
+En instalación posterior autorizada, `systemctl --user daemon-reload`,
+`systemctl --user start myfinanzas-api.service`,
+`systemctl --user show myfinanzas-api.service -p ActiveState -p NRestarts -p Result`
+y `systemctl --user stop myfinanzas-api.service` operan la unidad revisada.
+Comprobar HTTP host `/api/health` y 401 en ruta protegida, y puerto inaccesible tras
+stop. No ejecutar `reset-failed` repetidamente para eludir un start-limit: primero
+diagnosticar y corregir la causa sin modificar ni regenerar el estado.

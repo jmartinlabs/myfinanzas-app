@@ -317,3 +317,18 @@ y [testplan](32-ejecucion-rootless-testplan.md). Primer incremento de bind proba
 rootless/UID/volúmenes/publicación/Quadlet/rollback pendientes de entorno aislado
 compatible. No declarar dev 32 completo, VPS listo ni AC-10 PASS por probar HTTP local.
 Sin VPS/deploy/infraestructura activa/datos reales ni cambios a PR #21/#22.
+
+## Dev 32 verificado; revisión final pendiente — 2026-10-22
+Fuente: continuación expresa del usuario tras revisión con Álex de PR #30.
+24 AC PASS en 3094563, rootless 39734037872 y validate 39734037875/39734032852
+SUCCESS. [Progress](32-ejecucion-rootless-progress.md) y
+[testplan](32-ejecucion-rootless-testplan.md): release OCI/frontend reproducible,
+UID10001/host1001, API publicada/Quadlet/health, 90 API dentro de imagen final,
+matriz datos/auth/escrituras y backup/WAL/restore/MFA. Regresión local 90 API / 1409
+aserciones, 2 E2E, tipos/build/22+18 controles PASS. Historial de fallos preservado.
+PR #29 reconciliada con main ad94426 y CI SUCCESS, dos documentos; secuencia
+#29→#30, sin merge autorizado. SHA/CI del cierre documental final en PR #30.
+R6/fsync/API histórico sin diagnóstico siguen residuales. No VPS ni despliegue,
+infraestructura activa, imágenes publicadas, datos reales/Excel ni PR #21/#22.
+Próximas specs independientes A Caddy/HTTPS y B recuperación externa/custodia;
+ninguna activación ni migración real se infiere del cierre técnico 32.

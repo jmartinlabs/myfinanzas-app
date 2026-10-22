@@ -1,17 +1,17 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: IN PROGRESS — runner compatible y ensayo rootless PASS; release final y aceptación completa pendientes
+Current state: VERIFIED — AC-01–AC-24 PASS en runner efímero; revisión/integración pendientes, sin merge/deploy
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
-| Cerrar spec aprobada, precisiones UID y rollback | done | a4de2e1; PR #29 lista, CI push/PR SUCCESS; sin merge |
-| Bind explícito validado antes de SQLite | verified local | server-config.ts y tres pruebas de procesos reales; AC-09 parcial |
-| Imagen reproducible y manifiesto privado OCI/backend/frontend | pending | Imagen de ensayo fijada y construida; receta/distribución final aún no implementadas |
-| UID 10001/keep-id y volúmenes | verified fixture | Runner efímero, UID real y 0700/0600; repetir sobre imagen final |
-| Publicación de puerto Podman / AC-10 | verified fixture | API real vía 127.0.0.1:18081; 200/401, no acceso externo; repetir sobre imagen final |
-| Quadlet y WAL/SHM | verified fixture | Servicio real, restart/stop y commit WAL conservado; sin reboot/logout ensayados |
-| Fallos/update/rollback cruzado | pending | No se han implementado/validado aún los contratos de datos/autenticación entre releases |
-| Regresión local y PR independiente | local verified / CI pendiente | 86 API PASS / 1319 assertions; 2 E2E PASS (47.0s); tipos/build/controles PASS |
+| Cerrar spec aprobada, precisiones UID y rollback | done | 56407e0; PR #29 reconciliada con main ad94426, CI push/PR SUCCESS; sin merge |
+| Bind explícito validado antes de SQLite | verified | Tres pruebas de procesos reales dentro de imagen final; 90 API PASS |
+| Imagen reproducible y manifiesto privado OCI/backend/frontend | verified | 39734037872 / 3094563: dos builds sin caché, payload/frontend iguales, OCI y manifiesto verificados; Bun 1.4.3/age 1.3.2/Debian 13 |
+| UID 10001/keep-id y volúmenes | verified final image | Host 1001 → interno 10001, state/TMPDIR 0700, DB/clave/sidecars 0600; 39734037872 |
+| Publicación de puerto Podman / AC-10 | verified final image | API real vía 127.0.0.1:18081, 200/401; sin IPv6 ni acceso externo; stop desconecta |
+| Quadlet y WAL/SHM | verified final image | systemd --user real, health→kill→restart, SIGTERM/SIGKILL, 3/60s/5s estable, WAL íntegro; sin reboot/logout remoto |
+| Fallos/update/rollback cruzado | verified | 39734037872: b0bc5a7→3094563→b0bc5a7, datos/auth/escrituras conservados; restore age con WAL/MFA y negativos incompatibles PASS |
+| Regresión local y PR independiente | verified / review pending | 90 API PASS / 1409 assertions; 2 E2E PASS (43.0s); tipos/build/controles PASS |
 
 ## Verified increments
 2026-10-22 Europe/Madrid, raíz del repositorio. Validación de API_BIND_HOST solo
@@ -26,7 +26,7 @@ Playwright 2 PASS (47.0s), ejecutado después de Bun sin colisión de puerto.
 ## Decisions
 Aprobación fuente/fecha en specification y brainstorming; se preservan main #27,
 Dev 31 y sus guardas. Rama feat/32-ejecucion-rootless depende de spec PR #29,
-aún sin integrar; su diff efectivo se revisa contra a4de2e1. No merge autorizado.
+aún sin integrar; su diff efectivo se revisa contra spec/32-ejecucion-rootless (56407e0). No merge autorizado.
 
 ## Errors, regressions and blockers
 Primer ensayo del incremento falló por tipado de env en test y expectativa de JSON
@@ -45,8 +45,10 @@ R6 sigue sin cierre causal; fsync tras rename puede dejar conjunto válido con
 durabilidad incierta. No borrar/recrear ni restaurar datos automáticamente.
 
 ## Next action
-Continuar receta/manifiesto reproducible y rollback cruzado con el runner ya validado.
-Repetir ensayos con imagen final. La PR sigue Draft e incompleta; no falta ahora capacidad rootless.
+Verificar CI del commit documental final y entregar PR #30 para revisión; la
+evidencia del HEAD final se registra también en su descripción para evitar
+autorreferencia de SHA en este documento. Esperar autorización expresa antes
+de cualquier merge, en orden #29 → #30; no avanzar a acceso/despliegue.
 No VPS, deploy, datos reales, PR #21/#22 ni otras fases; no afirmar dev 32 completo.
 
 ## Incidencia de CI del incremento — 2026-10-22
@@ -256,3 +258,40 @@ excluye ningún test. Se añaden solo clasificación timeout y ubicaciones fuent
 saneadas para distinguir el segundo fallo si persiste; su causa sigue pendiente.
 La receta/healthcheck se materializan también desde Git HEAD y se rechaza checkout
 sucio; Bun/age se verifican ejecutando sus binarios, no solo leyendo etiquetas.
+
+## Aceptación integral demostrada — 2026-10-22
+[Rootless 39734037872 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39734037872),
+[validate PR 39734037875 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39734037875)
+y [validate push 39734032852 SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39734032852),
+todos sobre **3094563c466873fc5d2519a328b6109d30f13c41**. Sin retry de ningún run.
+90 API PASS dentro de la imagen final, incluida toda la regresión #31 con fcntl
+real; las dos fallas del harness anterior no reaparecen. Se conserva su historial
+y no se atribuye causa única a P7 sin diagnóstico del fallo original. No cambia
+código financiero, tests existentes, timeouts ni aserciones. Servicio y matriz
+operativa mantienen 1CPU/1GiB/128; batch de regresión 2CPU/2GiB/512 por sus hijos.
+
+AC-01–24 verificados según testplan: reproducibilidad de payload/frontend,
+canarios/capas/OCI, UID/permisos/noexec/cgroups/NNP/caps, API publicada y negativas,
+health real (tres fallos)→kill→restart, SIGTERM/SIGKILL/WAL, start-limit estable,
+fallos/concurrencia/guardas de 31, matriz real de datos/auth/escrituras y
+backup cifrado con WAL/restauración nueva/clave/integridad/revocaciones/MFA.
+Runbook y gates posteriores revisados. No se ejecuta un rollback de datos;
+negativos bloquean sin abrir/modificar DB. Limpieza de contenedores/unidad/raíz
+privada propia comprobada antes de PASS; runner efímero desecha imágenes/cachés
+locales. No imágenes, claves, DB o paquetes publicados/retendidos como artifact.
+
+La baseline anterior es b0bc5a7 reconstruida con la receta actual: evidencia
+válida solo para ese par exacto, no promesa de compatibilidad con futuras releases.
+Imagen verificada actual sha256:28f754d6187a1cc770530b177fb27d17acaab5fb972ed5c6942e39d4a15c3f16,
+anterior sha256:d8a85d453e1a34807ce3584f5e802d16287184b02da877510bd60e2059b74196.
+Hashes/manifiesto y versiones completos en testplan. El commit documental final
+se vuelve a probar en CI; su SHA y resultados definitivos constarán en PR #30.
+
+Riesgos residuales: R6 y fallo API histórico 39687644407 sin causa diagnosticada;
+fsync post-rename puede dejar pareja válida con durabilidad incierta. No se
+prueba pérdida física de energía/disco. No se acredita reboot/logout del VPS,
+configuración Debian real, HTTPS/Caddy, copia externa/retención/custodia ni RPO/RTO.
+La fase A deberá especificar integración HTTPS; B, backup externo/custodia y
+simulacro. Activación y datos reales siguen gates independientes; Excel maestro.
+#29 reconciliada/CI SUCCESS, solo dos documentos; #30 contiene diff propio sin
+duplicidades al comparar contra 56407e0. Ninguna PR integrada ni #21/#22 modificadas.
