@@ -10,7 +10,10 @@ verificables. No equivalen necesariamente a 30 sprints ni a 30 PR. No son funcio
 implementadas ni especificaciones STEP 5. El orden se guía por dependencias, sin fechas fijadas.
 
 ## Base y límites del roadmap aprobado
-Base estable: MyFinanzas2026_v5.11(5).xlsx. Fuente leída: especificación funcional v5.11
+Base histórica al aprobar STEP 4: MyFinanzas2026_v5.11(5).xlsx, entonces estable.
+Referencia única vigente desde 2026-10-22: MyFinanzas2026_v5.11(7).xlsx, candidata
+NO promovida a estable según [contexto](project.md). Sin cambiar las 30 entregas.
+Fuente leída para el roadmap: especificación funcional v5.11
 adjunta; extracto sanitizado, procedencia, reglas R1–R6 y P1–P7 en
 [referencia funcional](functional-reference-v5.11.md). La aprobación actual de la agrupación
 prevalece sobre §14 del adjunto, redactado antes. El Excel físico y sus documentos originales

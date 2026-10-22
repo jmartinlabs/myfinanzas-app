@@ -36,7 +36,7 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - [Cuatro agrupaciones de épicas](roadmap.md) aprobadas expresamente; la sección 14 anterior del adjunto no las revoca.
 - [Especificación funcional recibida y P1–P7](functional-reference-v5.11.md): fuente leída y trazada; no implica inspección del Excel.
 - PR #4 aprobada e integrada en main: 0f07992; HEAD aprobado aeb867c verificado como ancestro.
-- [Contexto v5.11 y base estable vigente](project.md): confirmados por usuario el 2026-10-20;
+- [Contexto v5.11 y referencia candidata vigente](project.md): actualizado por usuario el 2026-10-22;
   no queda pendiente promoción del Excel. Su incorporación e inspección en Codex siguen pendientes.
 - PR #3 aprobada explícitamente al actualizar inicialmente el contexto a v5.11;
   merge 193410d verificado en main.
@@ -51,7 +51,7 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 
 ## Pending decisions
 - [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
-- Excel estable y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
+- Excel de referencia y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
 - [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño y especificación integrados en PR #6. Implementación local en rama, pruebas actuales en testplan; aprobación de PR funcional/merge pendiente. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
 ## Evidencia de sincronización
@@ -334,3 +334,19 @@ conservan evidencia, wireframes y trazabilidad. PR #31 integrada con CI SUCCESS;
 históricas no declaradas resueltas. Sin nuevas investigaciones de infraestructura.
 Próxima acción: evidencia sanitizada Q1 y auditoría/aprobación de especificación; después
 esperar autorización expresa de dev 06. Sin producto/SQL/migración, VPS, deploy o datos reales.
+
+
+## Spec 06 — Q1 cerrada y referencia candidata única — 2026-10-22
+El usuario designa MyFinanzas2026_v5.11(7).xlsx referencia financiera única/base
+candidata vigente, sustituyendo a (5), SIN promoverla a estable. Q1 cerrada por
+transcripción física atribuida de tblDeudas y Criterios C30/C88/C109: apertura menos
+capital por mismo ID con Fecha de Movimientos >= Inicio control. Sin Tipo/Control ni
+Fecha inicio deuda como filtros, ni históricos/precontrol como operandos adicionales.
+[Referencia y procedencia](functional-reference-v5.11.md), [spec](06-deuda-specification.md)
+y [decisiones](06-deuda-brainstorming.md) actualizadas; ausencia no se convierte en cero.
+Q2–Q4 consolidadas. Propuestas app de exceso/fecha futura/ciclo de vida y formulario
+mínimo para aceptar en la aprobación completa. PR #24 sigue DRAFT, 30 actuales
+candidatos/3 futuros, sin pruebas funcionales E1.6 ni autorización dev06/merge/SQL.
+Próxima acción: auditoría final de especificación/wireframes y aprobación expresa;
+después solicitar autorización dev06. Sin infraestructura nueva, VPS, deploy, datos
+reales, importaciones o modificación del Excel. Estados anteriores quedan históricos.

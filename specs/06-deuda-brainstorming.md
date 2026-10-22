@@ -1,11 +1,11 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Brainstorming
-Status: DRAFT — consolidación para auditoría; Q1 pendiente de evidencia física.
+Status: DRAFT — Q1 cerrada con evidencia v5.11(7); especificación completa NO APROBADA.
 Q2–Q4 consolidadas según usuario; propuestas app requieren aceptación del documento completo.
 Roadmap/context: [E1.6/E4.4 y DT2/DT7](roadmap.md),
 [R1/R2/R5 y P4–P7](functional-reference-v5.11.md),
 [propuesta](06-deuda-specification.md).
 Base: main `9336fdd301231191509b6371ffb05a54b33d61ed`. Fecha: 2026-10-21.
-Next action: aportar evidencia literal de Q1 y revisar especificación completa/propuestas app; no dev 06.
+Next action: revisión/aprobación de especificación completa, wireframes y propuestas app; no dev 06.
 Actualización 2026-10-22: base main ad9442669468968d0ab82a9613522c7205b242c1 (SQLite v6).
 
 ## Autoridad y decisiones que no se reabren
@@ -13,7 +13,8 @@ El usuario autoriza exclusivamente spec 06 y publicación en PR documental Draft
 no aprobación, implementación, SQL, migración, merge ni despliegue. La publicación
 anticipada solicitada permite revisar estos documentos sin esperar su aprobación;
 no sustituye la pausa de la Skill ante preguntas pendientes para cerrar la especificación.
-Excel estable v5.11 continúa maestro. No incorporado ni inspeccionado por Codex:
+Referencia financiera única: MyFinanzas2026_v5.11(7).xlsx, candidata vigente NO estable
+por confirmación expresa del usuario del 2026-10-22. Sustituye a (5). No incorporada ni inspeccionada por Codex:
 se dispone de referencia funcional sanitizada y evidencias anteriores del usuario.
 No se atribuye al Excel ninguna propuesta nueva de este documento.
 
@@ -121,7 +122,7 @@ no demostrada. Ningún código o prueba modificados. Se espera autorización par
 de diagnóstico de R6; el fallo histórico no se oculta ni declara resuelto por una CI verde.
 
 
-## Consolidación vigente Q1–Q4 — 2026-10-22
+## Consolidación inicial Q1–Q4 — 2026-10-22 (histórica; Q1 sustituida por cierre inferior)
 Fuente: instrucción expresa del usuario «Álex — Retomar E1.6 · Deudas — PR #24».
 No se vuelve a preguntar lo ya confirmado. La ronda original y observaciones de Álex
 se conservan como historia; sus PENDING y recomendación de capital cero no son el
@@ -175,3 +176,29 @@ consolida estos archivos; 33 IDs conservados (30 actuales candidatos y 3 contrat
 No nueva investigación de infraestructura. La evidencia R6 del 2026-10-21 es histórica;
 #26/#27 mejoran diagnóstico y #31 adelanta timeout, sin demostrar causa histórica de CI
 ni resolver por extensión el IOERR_SHORT_READ del prototipo. Se conservan sus límites.
+
+
+## Cierre vigente Q1 — v5.11(7), 2026-10-22
+Usuario aporta fórmula literal Deudas!J20:J21/B15 y Criterios C30/C88/C109;
+[transcripción sanitizada y roles de campos](functional-reference-v5.11.md).
+Posteriormente confirma (7) como referencia financiera única/base candidata vigente,
+sustituyendo a (5), SIN promoverla a estable. La reserva anterior de versión queda
+resuelta. Evidencia física atribuida al usuario; no inspección independiente por Codex.
+
+**Q1 CERRADA:** capital apertura menos capital amortizado del mismo ID Deuda con
+Fecha de Movimientos >= Fecha inicio control. Incluye propio día, excluye anteriores;
+no usar Fecha inicio deuda, Tipo o Control como filtros adicionales. Apertura e históricos
+no se duplican: precontrol no se vuelve a descontar ni se reconstruye con hechos ficticios.
+Exclusión de anulados procede del contrato app previo, no se atribuye al SUMIFS físico.
+No se deducen restricciones de signo/obligatoriedad de apertura ni se normaliza ausencia
+como cero. Maestro mínimo del cálculo: Dxxx, Inicio control, capital apertura, además de
+identidad/ciclo de vida app; sin TIN/TAE ni campos históricos necesarios para este motor.
+
+Q2–Q4 siguen consolidadas: capital cuota>0/intereses>=0/suma exacta; protección histórica;
+extraordinaria S000/permiso Exterior/capital=importe/intereses=0/sin Gasto. Se mantienen
+las propuestas app de exceso y fecha futura para aprobación conjunta, sin nueva ronda.
+Propuesta de formulario: entradas de control explícitas para crear una Deuda calculable,
+sin precargar apertura cero ni inventar ausencias históricas. No trasladar el capital>0
+exigido a cuotas al dominio de apertura por analogía.
+PR #24 sigue DRAFT: cierre de Q1 no equivale a aprobación de documento, wireframes,
+dev06 o merge. 30 AC actuales candidatos y 3 contratos futuros; pruebas aún previstas.

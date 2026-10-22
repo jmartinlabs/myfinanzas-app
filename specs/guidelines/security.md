@@ -4,7 +4,7 @@
 Aplicación privada monousuario, **solo loopback y datos ficticios**. Ningún Excel, registro
 personal, DB, factor o clave se publica. `.local`, bases/journals, `.env`, claves y `.age`
 están ignorados; esto no sustituye revisión de historial/índice según [AGENTS](../../AGENTS.md).
-Excel estable y originales no incorporados ni inspeccionados en Codex; únicamente
+Excel de referencia y originales no incorporados ni inspeccionados en Codex; únicamente
 referencia sanitizada y evidencias aportadas por el usuario.
 
 ## Acceso implementado E1.1
