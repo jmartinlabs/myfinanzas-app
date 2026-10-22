@@ -36,6 +36,8 @@ export function openDatabase(path: string) {
         if (identity?.key_hash !== keyHash(key))
           throw new Error("Pareja DB/clave inválida en conexión efectiva.");
       }).immediate();
+      // E1.6 versioned upgrade only after the effective private pair is verified.
+      prepareSchema(db, { origin: "production", key_hash: keyHash(key) });
       return db;
     } catch (error) {
       db.close();

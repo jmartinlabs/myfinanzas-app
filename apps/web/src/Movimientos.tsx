@@ -50,6 +50,7 @@ type Options = {
   ciclos: Cycle[];
 };
 type Plan = {
+  contextRevision: string;
   fingerprint: string;
   accion: string;
   antes: Movement | null;
@@ -152,6 +153,7 @@ export function Movimientos({
     return (
       <MovementList
         key={path}
+        initialDebt={new URLSearchParams(path.split("?")[1]).get("deuda") ?? ""}
         initialReference={
           new URLSearchParams(path.split("?")[1]).get("referencia") ?? ""
         }
@@ -170,15 +172,18 @@ export function Movimientos({
 }
 function MovementList({
   go,
+  initialDebt,
   initialReference,
 }: {
   go: (p: string) => void;
   initialReference: string;
+  initialDebt: string;
 }) {
   const { options, error: optionError, reload: reloadOptions } = useOptions();
   const [filters, setFilters] = useState({
       q: "",
       referencia: initialReference,
+      deuda: initialDebt,
       origen: "",
       destino: "",
       tipo: "",
@@ -264,7 +269,7 @@ function MovementList({
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Movimientos"
-        description="Hechos ejecutados · Ingresos, Gastos y Transferencias"
+        description="Hechos ejecutados · Ingresos, Gastos, Transferencias y amortizaciones"
       >
         <button className="primary" onClick={() => go(base + "/nuevo")}>
           Nuevo movimiento
@@ -294,6 +299,7 @@ function MovementList({
             { id: "Transferencia", nombre: "Transferencia" },
             { id: "Amortización deuda", nombre: "Amortización deuda" },
           ])}
+          {select("Deuda", "deuda", options?.deudas ?? [])}
           {select("Ciclo financiado", "ciclo", [
             { id: "sin_ciclo", nombre: "Sin ciclo asignable" },
             ...(options?.ciclos ?? []).map((c) => ({
@@ -407,6 +413,7 @@ function MovementList({
                   setFilters({
                     q: "",
                     referencia: "",
+                    deuda: "",
                     origen: "",
                     destino: "",
                     tipo: "",
@@ -1019,6 +1026,7 @@ function MovementForm({
       {
         ...body(),
         fingerprint: p.fingerprint,
+        contextRevision: p.contextRevision,
         aceptarCoincidencia: p.duplicados.length > 0,
       },
       { "idempotency-key": attempt.current },
@@ -1048,7 +1056,12 @@ function MovementForm({
         : base + "/impacto";
       const p = await api<Plan>(endpoint, "POST", body());
       setPlan(p);
-      if (!id && !p.duplicados.length && form.tipo !== "Transferencia")
+      if (
+        !id &&
+        !p.duplicados.length &&
+        form.tipo !== "Transferencia" &&
+        !selected?.deuda
+      )
         await confirm(p);
     } catch (e) {
       fail(e);
@@ -1105,7 +1118,9 @@ function MovementForm({
         ? "Registrar otro hecho real"
         : form.tipo === "Transferencia"
           ? "Confirmar transferencia"
-          : "Reintentar registro"
+          : selected?.deuda
+            ? "Confirmar pago de deuda"
+            : "Reintentar registro"
     : id
       ? "Revisar impacto"
       : form.tipo === "Transferencia"
@@ -1128,7 +1143,7 @@ function MovementForm({
         description={
           annul
             ? "Anula una captura errónea que no representa un hecho económico real. No es una devolución."
-            : "Ingreso, Gasto o Transferencia interna · sin planificación"
+            : "Ingreso, Gasto, Transferencia interna o Amortización deuda"
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}

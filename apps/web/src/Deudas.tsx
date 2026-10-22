@@ -231,7 +231,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
   }
   const d = data?.item;
   return (
-    <>
+    <div className="reference-detail debt-detail">
       <button className="text-button" onClick={() => go(base)}>
         Volver a Deudas
       </button>
@@ -255,14 +255,17 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
           </PageHead>
           <section className="panel">
             <h2>Control y capital</h2>
-            <dl>
+            <dl className="debt-facts">
               <div>
                 <dt>ID estable</dt>
                 <dd>{id}</dd>
               </div>
               <div>
                 <dt>Inicio control</dt>
-                <dd>{d!.inicioControl ?? "Sin informar"}</dd>
+                <dd>
+                  {d!.inicioControl?.split("-").reverse().join("/") ??
+                    "Sin informar"}
+                </dd>
               </div>
               <div>
                 <dt>Capital apertura</dt>
@@ -350,7 +353,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
           </section>
         </>
       )}
-    </>
+    </div>
   );
 }
 function Form({ id, go }: { id?: string; go: (p: string) => void }) {

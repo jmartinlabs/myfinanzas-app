@@ -432,7 +432,6 @@ function impact(
     pending: [
       ...(financial ? [] : ["Movimientos"]),
       "Presupuestos",
-      "Deudas",
       "Indicadores",
       "Cierres",
     ],

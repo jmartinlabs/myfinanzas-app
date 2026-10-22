@@ -670,7 +670,11 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
       if (!["schema_version", "counters"].includes(table))
         expect(
           db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
-        ).toEqual(data);
+        ).toEqual(
+          table === "partidas"
+            ? data.map((r: any) => ({ ...r, deuda: null }))
+            : data,
+        );
     for (const counter of before.find(([name]) => name === "counters")![1] as {
       name: string;
       next: number;
@@ -679,7 +683,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 6,
+      version: 7,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -701,8 +705,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
     ).toBeString();
     const movement = save(db, income(m.saldo.id)),
       audit = getMovement(db, movement.id).auditoria;
-    backup(db, key, join(dir, "v6"), pub);
-    for (const version of [3, 6]) {
+    backup(db, key, join(dir, "v7"), pub);
+    for (const version of [3, 7]) {
       const restored = restore(
           join(dir, "v" + version),
           join(dir, "restored" + version),
@@ -714,8 +718,8 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         expect(getSaldo(copy, m.saldo.id).saldoApertura).toBe("100.00");
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(1);
         expect(copy.query("SELECT * FROM ciclos").all()).toHaveLength(1);
-        expect(listMovements(copy).total).toBe(version === 6 ? 1 : 0);
-        if (version === 6) {
+        expect(listMovements(copy).total).toBe(version === 7 ? 1 : 0);
+        if (version === 7) {
           expect(getMovement(copy, movement.id).auditoria).toEqual(audit);
           expect(getSaldo(copy, m.saldo.id).posicion.importe).toBe("150.00");
           expect(cycleContext(copy).referencia.fecha).toBe("2026-10-12");
@@ -911,7 +915,7 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
         runE14(opening, "upgrade"),
         runE14(opening, "upgrade"),
       ]),
-    ).toEqual([{ version: 6 }, { version: 6 }]);
+    ).toEqual([{ version: 7 }, { version: 7 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),

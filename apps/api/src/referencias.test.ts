@@ -542,6 +542,8 @@ test("05 R4 AC28/29: v4 genuina conserva hechos/auditorías/acceso, restaura age
     expect(db.query("SELECT * FROM movimientos WHERE id='1'").get()).toEqual({
       ...(old as object),
       referencia: null,
+      capital: null,
+      intereses: null,
     });
     for (const c of before.find(([n]) => n === "counters")![1] as {
       name: string;
@@ -1103,7 +1105,7 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [3, openV3, "e1.3-v3"],
       [4, openV4, "e1.4-v4"],
       [5, openDatabaseV5, "e1.5-v5"],
-      [6, openDatabase, "sqlite-v6"],
+      [7, openDatabase, "e1.6-v7"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);

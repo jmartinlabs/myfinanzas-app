@@ -239,7 +239,7 @@ function validated(
           ["capital", capital],
           ["intereses", intereses],
         ] as const)
-          if (body[field] !== undefined && body[field] !== value)
+          if (body[field] != null && body[field] !== value)
             throw new Problem(
               422,
               "VALIDATION",
@@ -516,6 +516,7 @@ function plan(
     "revision",
     "motivo",
     "fingerprint",
+    "contextRevision",
     "aceptarCoincidencia",
   ];
   for (const name of Object.keys(body))
@@ -638,7 +639,10 @@ function plan(
       if (old && !old.anulado && applicable(old))
         after += BigInt(old.capital ?? "0");
       if (next && applicable(next)) after -= money(next.capital)!;
-      if (after < 0n)
+      if (
+        after < 0n &&
+        ((old && applicable(old)) || (next && applicable(next)))
+      )
         throw new Problem(
           422,
           "DEBT_EXCESS",
@@ -659,6 +663,7 @@ function plan(
   if (next) dates.push(next.fecha);
   const contexto = cycleContext(db);
   return {
+    contextRevision: financeRevision(db),
     accion: action,
     antes: old ? decorate(db, old, cycles) : null,
     despues: next,
@@ -745,6 +750,15 @@ export function writeMovement(
           );
         return JSON.parse(retry.response) as ReturnType<typeof getMovement>;
       }
+      if (
+        body.contextRevision !== undefined &&
+        body.contextRevision !== financeRevision(db)
+      )
+        throw new Problem(
+          409,
+          "IMPACT_CHANGED",
+          "El contexto ha cambiado. Revisa otra vista previa; tu borrador se conserva.",
+        );
       const p = plan(db, body, id, annul, now, guard);
       if (body.fingerprint !== p.fingerprint)
         throw new Problem(

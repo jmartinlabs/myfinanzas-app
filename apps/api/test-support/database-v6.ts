@@ -6,10 +6,11 @@ import { referenceSchema } from "../src/reference-schema";
 import {
   installIdentity,
   inspectIdentity,
-  schemaVersion,
   type Identity,
 } from "../src/database-identity";
 
+const schemaVersion = 6;
+// Frozen v6 builder for continuity tests.
 // Internal schema builder: receives a connection, never opens a path or grants runtime access.
 export function prepareSchema(db: Database, identity: Identity) {
   if (
@@ -178,4 +179,13 @@ export function prepareSchema(db: Database, identity: Identity) {
     db.close();
     throw error;
   }
+}
+
+export function openDatabaseV6(
+  path: string,
+  identity: Identity = { origin: "demo", key_hash: null },
+) {
+  const db = new Database(path, { create: true, strict: true });
+  prepareSchema(db, identity);
+  return db;
 }
