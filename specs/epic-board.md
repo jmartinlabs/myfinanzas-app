@@ -20,7 +20,7 @@ sin reiniciar agentes ni trabajo ya realizado.
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
 | E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | Implementado y verificado localmente | Revisión independiente sin bloqueantes detectados en f2bfc1b | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Preparar PR y verificar CI por SHA; esperar permiso de merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
-| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 y cobertura Comida respondidas; spec/wireframes aún sin aprobar | Completar spec y wireframes para aprobación expresa | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
+| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 y cobertura Comida respondidas; spec/wireframes aún sin aprobar | Revisar y aprobar expresamente spec/wireframes; no dev07 | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
 | E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 pendiente; permiso específico | No iniciar | [roadmap](roadmap.md) |
 | DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
@@ -29,7 +29,7 @@ sin reiniciar agentes ni trabajo ya realizado.
 | Paquete | Estado | Escritura exclusiva | Límites / retorno |
 | --- | --- | --- | --- |
 | DEV06 | Completado localmente con QA; rama preparada para PR | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
-| SPEC07 | Respuestas recibidas; siguiente paquete completa propuesta | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
+| SPEC07 | Propuesta completa; spec/wireframes pendientes de aprobación | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
 | QA06 | Completado sobre f2bfc1b; cuatro hallazgos iniciales corregidos | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
 Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
@@ -114,3 +114,23 @@ Rama preparada para PR hacia main; [comparación](https://github.com/josemartin2
 Resultados remotos vigentes se consultan por SHA en la PR, sin inferirlos de pruebas
 locales. Merge sigue pendiente de autorización expresa. SPEC07-FINAL completa
 propuesta documental con las respuestas recibidas; spec/wireframes no aprobados.
+
+### PR34, corrección de fixture CI y propuesta07
+[PR34](https://github.com/josemartin2000/myfinanzas-app/pull/34) abierta, sin merge.
+SHA5c1e4f0: CI push39752272341 yPR39752340189 FAILURE, API96/97; únicamenteD4
+rechazó un sidecar de fixture sin0600. E2E remoto no ejecutado por ese fallo.
+Reproducción determinista umask022 falló; fix28cb52c limita cambios a creación privada
+fixturev6 desdeprimeropen y negativoWAL0644. Ningún cambio producto/guardas/infra32.
+Developer: API íntegra bajo02297 PASS/1557aserciones. QA independiente: D4 bajo022
+1 PASS/84aserciones, rechazo inseguro y snapshot/identidad/clave intactos; revisión
+de diff sin bloqueantes. Se publica fix y se verifica nueva CI por SHA en PR34,
+sin rerun manual ni conversión retrospectiva de los fallos en PASS.
+
+SPEC07-FINAL completado: brainstorming yspec07 en worktreee21, propuestas sin commit
+ni implementación,26ACoperación y3contratos integración. Q1/Q2 confirmadas; spec y
+wireframes390/1440 requieren aprobación final. E2.1-AC2 sigue pendiente hastaComida.
+Validación documental PASS. Los documentos se preservan sin declarar spec aprobada.
+
+El cierre de esta ejecución espera únicamente CI dePR34 y revisión del usuario:
+mergePR34 y aprobaciónspec07 son gates distintos; ninguno autoriza despliegue ni
+dev07 por inferencia. Dev32/PR30/AC22 continúa PAUSED; checkpoints sin modificación.
