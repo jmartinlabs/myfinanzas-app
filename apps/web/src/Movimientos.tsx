@@ -749,7 +749,8 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
 function fact(value: Record<string, any> | null, key: string) {
   if (!value) return "No existía";
   const v = value[key];
-  if (key === "importe") return eur(v);
+  if (["importe", "capital", "intereses"].includes(key))
+    return v == null ? "No aplica / sin informar" : eur(v);
   if (key === "fecha") return date(v);
   if (key === "anulado") return v ? "Anulado" : "Vigente";
   if (v && typeof v === "object") return v.id + " · " + v.nombre;
@@ -767,6 +768,8 @@ function Facts({
     ["tipo", "Tipo"],
     ["fecha", "Fecha"],
     ["importe", "Importe"],
+    ["capital", "Capital amortizado"],
+    ["intereses", "Intereses"],
     ["origen", "Origen"],
     ["destino", "Destino"],
     ["subtipo", "Subtipo"],

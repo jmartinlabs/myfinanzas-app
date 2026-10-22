@@ -144,6 +144,17 @@ export async function deudas(page: Page) {
   await expect(
     page.getByRole("heading", { name: "Cuota deuda ficticia", exact: true }),
   ).toBeVisible();
+  await page.locator("summary").click();
+  await expect(
+    page
+      .locator(".movement-audit")
+      .getByText("Capital amortizado", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.locator(".movement-audit").getByText("Intereses", { exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".movement-audit")).toContainText("Después: 80,00");
+  await expect(page.locator(".movement-audit")).toContainText("Después: 20,00");
   const quota = page.url().split("/").at(-1)!;
   expect((await get("/deudas/" + id)).item.capitalPendiente).toBe("920.00");
   expect((await get("/saldos/" + bank.id)).saldo.posicion.importe).toBe(
