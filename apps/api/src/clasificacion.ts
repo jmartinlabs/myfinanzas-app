@@ -1,3 +1,4 @@
+import { getDebt } from "./deudas";
 import { classificationMovementImpact } from "./movement-impact";
 import type { Database } from "bun:sqlite";
 import { Schema } from "effect";
@@ -24,6 +25,7 @@ export type Classification = {
   referencia: boolean | null;
   categoria: { id: string; nombre: string } | null;
   subcategoria: { id: string; nombre: string } | null;
+  deuda: string | null;
   integridad: string | null;
 };
 // Financial consumers must supply real checks when delivered, not simulated engines.
@@ -37,6 +39,7 @@ type Row = {
   nombre: string;
   estado: "Activa" | "Inactiva";
   revision: number;
+  deuda?: string | null;
   padre?: string;
   grupo?: string | null;
   anual?: string | null;
@@ -80,6 +83,7 @@ export function getClassification(
     referencia: r.referencia == null ? null : r.referencia === 1,
     categoria: cat && { id: cat.id, nombre: cat.nombre },
     subcategoria: sub && { id: sub.id, nombre: sub.nombre },
+    deuda: r.deuda ?? null,
     integridad:
       kind !== "subcategorias"
         ? null
@@ -162,14 +166,24 @@ function validate(
 ) {
   const fields = [
     ...common,
-    ...(kind === "categorias" ? categoryFields : ["padre"]),
+    ...(kind === "categorias"
+      ? categoryFields
+      : kind === "partidas"
+        ? ["padre", "deuda"]
+        : ["padre"]),
   ];
   const errors: Record<string, string> = {};
   for (const name of Object.keys(body))
     if (![...fields, "revision"].includes(name))
       errors[name] = "Campo no editable.";
   const v: Record<string, unknown> = {
-    ...(old ?? { grupo: null, anual: null, mensual: null, referencia: null }),
+    ...(old ?? {
+      grupo: null,
+      anual: null,
+      mensual: null,
+      referencia: null,
+      deuda: null,
+    }),
     ...body,
   };
   if (
@@ -240,6 +254,24 @@ function validate(
         },
       );
   }
+  if (kind === "partidas" && v.deuda !== null) {
+    if (typeof v.deuda !== "string")
+      throw new Problem(422, "VALIDATION", "Deuda inválida.");
+    const d = getDebt(db, v.deuda);
+    if (d.estado !== "Activa" && old?.deuda !== v.deuda)
+      throw new Problem(422, "INACTIVE_DEBT", "Selecciona una Deuda activa.");
+  }
+  if (
+    kind === "partidas" &&
+    old &&
+    old.deuda !== v.deuda &&
+    db.query("SELECT id FROM movimientos WHERE partida=? LIMIT 1").get(old.id)
+  )
+    throw new Problem(
+      409,
+      "HISTORY_LOCKED",
+      "No se puede cambiar Deuda de una Partida utilizada; crea otra Partida para el futuro.",
+    );
   const result: Record<string, unknown> = {};
   for (const f of fields) result[f] = v[f];
   return result;
@@ -327,9 +359,14 @@ export function createClassification(
         ]);
       else
         db.run(
-          `INSERT INTO ${entities[kind].table} VALUES(?,?,?,'Activa',1,?,?)`,
+          `INSERT INTO ${entities[kind].table}(id,nombre,padre,estado,revision,creado,actualizado) VALUES(?,?,?,'Activa',1,?,?)`,
           [id, v.nombre as string, v.padre as string, time, time],
         );
+      if (kind === "partidas" && v.deuda !== null)
+        db.run("UPDATE partidas SET deuda=? WHERE id=?", [
+          v.deuda as string,
+          id,
+        ]);
       audit(db, id, "alta", 1, Object.keys(v), now);
       db.run("INSERT INTO classification_attempts VALUES(?,?,?,?,?)", [
         attempt,
@@ -369,7 +406,7 @@ function impact(
     (k) => value[k] !== old[k as keyof Classification],
   );
   const economic = changed.filter((k) =>
-    ["padre", "anual", "mensual", "referencia"].includes(k),
+    ["padre", "anual", "mensual", "referencia", "deuda"].includes(k),
   );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
@@ -395,7 +432,6 @@ function impact(
     pending: [
       ...(financial ? [] : ["Movimientos"]),
       "Presupuestos",
-      "Deudas",
       "Indicadores",
       "Cierres",
     ],
@@ -478,6 +514,11 @@ export function updateClassification(
             id,
           ],
         );
+      if (kind === "partidas")
+        db.run("UPDATE partidas SET deuda=? WHERE id=?", [
+          v.deuda as string | null,
+          id,
+        ]);
       audit(
         db,
         id,

@@ -149,7 +149,7 @@ test("02 AC01/03–09/21–23: catálogo persistente, derivación y atributos pr
         .query("PRAGMA table_info(partidas)")
         .all()
         .some((x: any) =>
-          ["categoria", "presupuesto", "deuda", "esencial"].includes(x.name),
+          ["categoria", "presupuesto", "esencial"].includes(x.name),
         ),
     ).toBe(false);
   } finally {
@@ -455,8 +455,8 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
     db.close();
     db = openDatabase(path);
     expect(snapshot(db)).toEqual(after);
-    backup(db, key, join(dir, "v6-backup"), recipient);
-    for (const version of [1, 6]) {
+    backup(db, key, join(dir, "v7-backup"), recipient);
+    for (const version of [1, 7]) {
       const restored = restore(
         join(dir, `v${version}-backup`),
         join(dir, `restore-${version}`),
@@ -471,7 +471,7 @@ test("02 AC31: base E1.1 genuina conserva tablas completas, MFA, sesiones y back
         expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-12.34");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
         expect(copy.query("SELECT * FROM categorias").all()).toHaveLength(
-          version === 6 ? 1 : 0,
+          version === 7 ? 1 : 0,
         );
       } finally {
         copy.close();

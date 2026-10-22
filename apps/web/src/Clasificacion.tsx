@@ -9,6 +9,7 @@ type Item = {
   nombre: string;
   estado: string;
   revision: number;
+  deuda?: string | null;
   padre: string | null;
   grupo: string | null;
   anual: string | null;
@@ -651,8 +652,18 @@ function ClassificationForm({
     anual: item?.anual ?? "",
     mensual: item?.mensual ?? "",
     referencia: item?.referencia == null ? "" : String(item.referencia),
+    deuda: item?.deuda ?? "",
     padre: item?.padre ?? "",
   });
+  const [debts, setDebts] = useState<
+    { id: string; nombre: string; estado: string }[]
+  >([]);
+  useEffect(() => {
+    if (kind === "partidas")
+      api("/movimientos/opciones")
+        .then((d) => setDebts(d.deudas))
+        .catch((e) => setLoadError(e.message));
+  }, [kind]);
   const [parents, setParents] = useState<Item[]>([]),
     [groups, setGroups] = useState<string[]>([]),
     [loading, setLoading] = useState(true),
@@ -699,13 +710,15 @@ function ClassificationForm({
     const names =
       kind === "categorias"
         ? ["nombre", "grupo", "anual", "mensual", "referencia"]
-        : ["nombre", "padre"];
+        : kind === "partidas"
+          ? ["nombre", "padre", "deuda"]
+          : ["nombre", "padre"];
     const result: Record<string, unknown> = item
       ? { revision: item.revision }
       : {};
     for (const name of names) {
       const val =
-        name === "grupo"
+        name === "grupo" || name === "deuda"
           ? value[name] || null
           : name === "referencia"
             ? value[name] === ""
@@ -787,7 +800,11 @@ function ClassificationForm({
             onChange={(e) => change(name, e.target.value)}
             aria-invalid={Boolean(fields[name])}
             aria-describedby={fields[name] ? `error-${name}` : undefined}
-            list={name === "grupo" ? "classification-groups" : undefined}
+            list={
+              name === "grupo" || name === "deuda"
+                ? "classification-groups"
+                : undefined
+            }
           />
         )}
         {fields[name] && (
@@ -906,10 +923,32 @@ function ClassificationForm({
             </p>
           )}
           {kind === "partidas" && (
-            <p className="help">
-              Presupuesto y Deuda: Sin asignación. Sus selectores se habilitarán
-              en las entregas correspondientes.
-            </p>
+            <>
+              <label>
+                Deuda opcional
+                <select
+                  aria-label="Deuda opcional"
+                  value={value.deuda}
+                  onChange={(e) => change("deuda", e.target.value)}
+                >
+                  <option value="">Sin Deuda</option>
+                  {debts
+                    .filter(
+                      (d) => d.estado === "Activa" || d.id === item?.deuda,
+                    )
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.id} · {d.nombre} · {d.estado}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="help">
+                Una Partida puede enlazar una Deuda. El enlace de una Partida
+                utilizada está protegido; crea una nueva para el futuro.
+                Presupuesto pendiente de su entrega.
+              </p>
+            </>
           )}
         </section>
         {rectifying && (

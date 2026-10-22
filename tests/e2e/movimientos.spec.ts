@@ -1,3 +1,4 @@
+import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
 import { test, expect } from "@playwright/test";
 import { mkdirSync, readFileSync } from "node:fs";
@@ -619,6 +620,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await page.unroute("**/api/movimientos/impacto");
     expect((await get("/movimientos")).movimientos).toHaveLength(4);
     const e15 = await transferencias(page);
+    const e16 = await deudas(page);
     const snapshotMovements = (await get("/movimientos?estado=")).movimientos;
     // Genuine VACUUM INTO/age restoration, normal login/TOTP in a second Effect server.
     const restored = spawn(
@@ -679,6 +681,12 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       );
       expect((await get("/movimientos?estado=")).movimientos).toEqual(
         snapshotMovements,
+      );
+      expect((await get("/deudas/" + e16.id)).item.capitalPendiente).toBe(
+        "720.00",
+      );
+      expect((await get("/saldos/" + e16.bank)).saldo.posicion.importe).toBe(
+        "200.00",
       );
       expect((await get("/referencias/" + e15.travel)).item.nombre).toBe(
         "Caso concurrentemente renombrado",

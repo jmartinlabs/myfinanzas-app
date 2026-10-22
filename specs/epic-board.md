@@ -1,47 +1,136 @@
 # MyFinanzas — tablero de coordinación
 
 Coordinador: único escritor; [gates locales](methodology/myfinanzas-coordination.md).
-Última reconciliación: 2026-10-22, main b60def124e95d692b6021eff9c1049652e21ded0.
-Rama: chore/adopt-orchestration-v2-3-1. [PR32](https://github.com/josemartin2000/myfinanzas-app/pull/32) Draft.
-Resultados CI por SHA en esa PR; reconciliar HEAD antes de actuar. El tablero no concede aprobaciones.
+Reconciliación: 2026-10-22 Europe/Madrid. Main remoto verificado en
+`7c5c7d1bfb62bdc77af1fad080312e6dce1577dd` (PR #33 integrada).
+PR #32 integrada en `da543f3af6bde89259aeb0d9b2c1faad67311c05`.
+Este tablero registra estado; no concede aprobaciones.
+
+## Autorización vigente de esta ejecución
+
+El usuario aprobó el plan y autorizó expresamente dev06, pruebas, relevo QA independiente
+y preparación de PR; especificación E2.1 sin implementación ni aprobación automática;
+subagentes y worktrees seguros, máximo dos trabajadores simultáneos más coordinador.
+Dev32/PR30/AC22 permanecen pausados. Sin merges, despliegues, migraciones operativas,
+cambios de seguridad ni decisiones financieras nuevas por inferencia.
+La instrucción posterior de continuar preserva estos permisos e incorpora PR33,
+sin reiniciar agentes ni trabajo ya realizado.
 
 | Item | Prioridad | Spec / autorización | Dev | QA | Dependencias duras | Dueño / aislamiento | Bloqueo | Siguiente acción autorizada | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| ADOPT-ORCH | P1 | Adopción y PR autorizadas; merge metodología pendiente | Solo instrucciones/docs | Local passed; CI por SHA en PR32 | PR24 integrada y CI SUCCESS: satisfecho | Coordinador, rama actual | Aprobación PR final | Esperar revisión PR32; verificar CI por SHA | [adopción](methodology/orchestration-adoption.md) |
-| E1.6 | P1 tras adopción | Spec06 aprobada/integrada PR24 | not-ready, SIN permiso dev06 | Plan y 30 AC aún no ejecutados | Método integrado + autorización dev06 | Sin trabajador de implementación | Permiso explícito y PR método aún sin integrar | Esperar; no codificar | [spec06](06-deuda-specification.md), main b60def1 |
-| NEXT-SPEC | P2 futura | SIN permiso spec07; mapping E1.7 no resuelto | not-ready | planned | Identidad de entrega y alcance autorizados | Sin asignación | Roadmap actual continúa E2.1, no E1.7 | No crear spec; conservar solicitud futura | [roadmap](roadmap.md) |
-| EXT-FIN | Externo | Checkpoint no recibido/verificado | unknown | unknown | Dueño externo y Git/checkpoint | Chat independiente, NO trabajador gestionado | No transferir ni duplicar | Esperar checkpoint antes de asignar | Solo declaración usuario, no contexto verificable |
-| EXT-INFRA | Externo | Checkpoint no recibido/verificado | unknown | unknown | Dueño externo y Git/checkpoint | Chat independiente, NO trabajador gestionado | Sin autorización nueva de infra/VPS | No investigar ni tocar su trabajo | [límites](methodology/myfinanzas-coordination.md) |
+| ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
+| E1.6 | P1 | Spec06 aprobada PR24; dev06 expresamente autorizado | Implementado y verificado localmente | Revisión independiente sin bloqueantes detectados en f2bfc1b | E1.2/E1.4/E1.5 y método integrados | /root/dev06; feat/06-deuda; worktree e16 | Solo nuevas decisiones materiales o fallo real | Preparar PR y verificar CI por SHA; esperar permiso de merge | [spec06](06-deuda-specification.md); autorización del usuario en esta sesión |
+| E2.1 / spec07 | P2 paralela | Brainstorming07 preparado; 07 libre comprobado; spec NO aprobada | NO autorizado | Revisión funcional completada; ninguna aceptación ejecutada | E1.3/E1.4 integradas; resolver solo DT3 pendiente | /root/spec07; docs/07-ciclos-operacion; worktree e21 | Q1 y cobertura Comida respondidas; spec/wireframes aún sin aprobar | Revisar y aprobar expresamente spec/wireframes; no dev07 | [roadmap](roadmap.md), [spec03](03-ciclos-financiados-specification.md) |
+| E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 pendiente; permiso específico | No iniciar | [roadmap](roadmap.md) |
+| DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
-## Cola lista de esta intervención
-- ADOPT-RO-1/2 completados: dos subagentes nativos, lectura y retornos verificados; sin ediciones.
-- Coordinador: resultados/hashes/diagramas/controles verificados; PR32 preparada.
-  Terminar verificación de CI/Git y esperar aprobación; sin nuevas tareas financieras.
-Después de entregar esta PR, no hay más trabajo financiero autorizado en esta intervención.
+## Paquetes activos y ownership
 
-## Paquetes y estados
-| Paquete | Estado | Scope de escritura | Responsable | Resultado |
-| --- | --- | --- | --- | --- |
-| ADOPT-RO-1 | completed / cerrado como paquete | Ninguno | /root/orch_gate_probe, perfil funcional | Skill/rol accesibles, dev06/spec07 blocked, retorno recibido |
-| ADOPT-RO-2 | completed / cerrado como paquete | Ninguno | /root/orch_catalog_probe, perfil QA | 9 Skills/ownership/fallback revisados, retorno recibido |
+| Paquete | Estado | Escritura exclusiva | Límites / retorno |
+| --- | --- | --- | --- |
+| DEV06 | Completado localmente con QA; rama preparada para PR | Código/tests E1.6 y progress06/testplan06 en worktree e16 | 30 AC actuales; 3 futuros separados; candidato/SHA y evidencias reales; sin tablero/infra/spec07 |
+| SPEC07 | Propuesta completa; spec/wireframes pendientes de aprobación | Documentos specs/07-* en worktree e21 | Propuestas sin aprobación automática; sin código/tablero/infra |
+| QA06 | Completado sobre f2bfc1b; cuatro hallazgos iniciales corregidos | Lectura y probes propios en worktree qa06; sin cambios a candidato | Independiente de autor; SHA fijo, AC/regresiones/seguridad/persistencia; no merge |
 
-## Infraestructura e investigaciones
-Ninguna tarea nueva autorizada. R6, error histórico de CI y IOERR_SHORT_READ conservan
-su evidencia; esta adopción no los investiga ni declara resueltos. No scheduler permanente.
+Los agentes reciben templates/agent-work-packet.md como contrato en su contexto.
+Sin delegación recursiva; máximo dos trabajadores simultáneos. QA reutilizará capacidad
+al terminar SPEC07 o DEV06. Solo coordinador escribe este tablero en
+`chore/orchestrator-execution`; no comparte archivos de escritura con trabajadores.
+Worktrees separados; suites con puerto3001 se ejecutarán de forma serial.
 
-## Handoff y reanudación
-El merge de PR24 está autorizado y verificado. La PR metodológica necesita revisión y
-permiso de integración. Dev06 y spec07 necesitan su propio permiso posterior, aunque la
-spec06 esté aprobada. Reconciliar siempre Git y documentos canónicos antes de actuar;
-no asumir que un agente quedó trabajando entre sesiones. No usar este tablero para
-apropiarse de ramas de otros chats. Paquetes y evidencia: [registro](methodology/orchestration-adoption.md).
+## Checkpoint de infraestructura preservado
 
+Recuperados progress32/testplan32 e investigación existente desde SHA a090112, solo lectura.
+Tres CI de a090112 confirmadas completed/success: rootless39739941226,
+Validate PR39739941392 y push39739935397. Esto no cierra AC22.
+Candidato86b1570/B5 demuestra carrera concreta de identidad y corrección mediante
+snapshot, no causalidad del fallo histórico E1.4. R6, fsync post-rename y fallo API
+histórico permanecen abiertos. Sin nuevas investigaciones, cambios, reruns o agentes infra.
+No hay dependencia dura documentada de Dev32 para iniciar E1.6.
 
-## Conciliación tras ensayo real — 2026-10-22
-Coordinador recibió ambos resultados y contrastó rutas, hashes y diff. Ningún trabajador
-modificó archivos ni tablero. Se pausaron las escrituras del coordinador durante sus
-lecturas; las correcciones editoriales se aplicaron después, en serie. Estado nativo
-completed comprobado; no se afirma terminación del proceso ni actividad residente.
-Bloqueos detectados: falta permiso dev06/spec07 y aprobación PR de metodología. No se
-lanzan investigaciones para ocupar trabajadores. O6/O8 y aislamiento de escritores reales
-no se probaron; fallback y bloqueo de colisiones son contratos/revisión, no ejecución simulada.
+## Handoff y gates
+
+Coordinador encadena dev → QA → correcciones técnicas autorizadas → verificaciones → PR.
+Merge requiere permiso expreso de esa PR. E2.1 se detiene en decisiones nuevas y
+aprobación de especificación; aprobar spec no autoriza desarrollo.
+No trabajo entre sesiones ni control de chats externos. Reconciliar SHA/diff/evidencias
+antes de publicar; preservar cambios y no declarar PASS o completado sin verificación.
+
+## Historial metodológico
+
+Ensayo PR32 ADOPT-RO-1/2 completado, lectura sin escrituras; no se repite para demostrar
+herramientas. PR24 integrada b60def1. Estado anterior de tablero (PR32 Draft y dev06
+sin autorización) queda sustituido por esta reconciliación y permisos expresos actuales.
+
+### Actualización de paquetes
+SPEC07 devuelve brainstorming07 sin commit ni aprobación, en worktree e21.
+Q1 y la dependencia real Comida (E3.5 para aviso AC2) se han presentado al usuario.
+No se ha rebajado AC2 ni cambiado roadmap. QA06-DESIGN completado en lectura por
+/root/spec07; matriz AC01–30 y contratos31–33 revisados, sin suites ni PASS inventados.
+Plaza disponible para QA ejecutable tras candidato; DEV06 continúa en su worktree.
+
+### QA06 — primer candidato
+Candidato67f2dbd en checkout QA aislado. QA reprodujo: extraordinaria UI con desglose
+null rechazada; exceso aplicado indebidamente a precontrol; apertura productiva v6
+sin migrar a tablas nuevas. Hallazgos enviados a DEV06 para corrección y regresiones
+dentro de la spec aprobada. No aceptación global ni PR lista. Developer continúa
+pruebas/UI mientras QA revisa el SHA fijo; no suites compartiendo puerto3001.
+
+### DEV06 — verificación en curso
+Developer informa correcciones de los cuatro hallazgos, API96 PASS/1537 aserciones,
+typecheck/build PASS y prueba multiproceso v6→v7/IDs/reintentos/exceso. Evidencia
+definitiva se consolidará por SHA en testplan06; no se trata como aceptación final.
+Playwright E1.6/restoreMFA y capturas390/1440 en ejecución exclusiva de Developer;
+QA no usa simultáneamente los puertos de esos servidores.
+
+### Respuestas expresas E2.1 — 2026-10-22
+Usuario confirma permitir rectificación con revisión de impacto (Q1) y especificar
+operación disponible conservando AC2 pendiente hasta integrar Comida. No se declara
+AC2 cumplido ni aprobada la especificación/wireframes. Tras cerrar QA06, el trabajador
+Functional completará propuesta07 sin implementar E2.1.
+
+### Candidato E1.6 corregido
+Código3239c2d: Developer confirma API97 PASS/1547 aserciones, Playwright2 PASS47s,
+typecheck/build y controles18+22 PASS. QA independiente confirma probes originales
+corregidos y suite enfocada Deudas10 PASS/166 aserciones. Se añade aún resumen
+visual capital/intereses en auditoría; se verificará incremental antes de cerrar.
+
+### QA06 — cierre de código
+Código final f2bfc1b0b3e0b86ae4232d3ee30d896f8b47b6f0, sin bloqueantes detectados
+por QA independiente. Probes originales corregidos; ejecución QA propia:10 Deudas/166
+aserciones y9guardas productivas/67aserciones PASS sobre3239c2d. Backend idéntico en
+f2bfc1b; cambio incremental resumen auditoría capital/intereses revisado y E2E afectado
+Developer1 PASS28.1s. Suite completa DeveloperAPI97/1547 yE2E2/47s sobre3239c2d.
+No se atribuyen esas suites a QA. Historial de cuatro commits de desarrollo revisado
+sin secretos/DB/datos reales detectados; solo fixtures y capturas ficticias. CI remota
+y revisión del commit documental final pendientes antes de entregar PR.
+SPEC07-FINAL en curso por mismo trabajador: propuestas pendientes de aprobación final,
+sin implementación ni tercer trabajador. Dev32 conserva pausa expresa.
+
+### Entrega del coordinador
+Conciliado cierre QA f2bfc1b y documentación final fbcf423; los cuatro commits de
+tablero se incorporan por el coordinador a feat/06-deuda, único escritor de tablero.
+Rama preparada para PR hacia main; [comparación](https://github.com/josemartin2000/myfinanzas-app/compare/main...feat/06-deuda).
+Resultados remotos vigentes se consultan por SHA en la PR, sin inferirlos de pruebas
+locales. Merge sigue pendiente de autorización expresa. SPEC07-FINAL completa
+propuesta documental con las respuestas recibidas; spec/wireframes no aprobados.
+
+### PR34, corrección de fixture CI y propuesta07
+[PR34](https://github.com/josemartin2000/myfinanzas-app/pull/34) abierta, sin merge.
+SHA5c1e4f0: CI push39752272341 yPR39752340189 FAILURE, API96/97; únicamenteD4
+rechazó un sidecar de fixture sin0600. E2E remoto no ejecutado por ese fallo.
+Reproducción determinista umask022 falló; fix28cb52c limita cambios a creación privada
+fixturev6 desdeprimeropen y negativoWAL0644. Ningún cambio producto/guardas/infra32.
+Developer: API íntegra bajo02297 PASS/1557aserciones. QA independiente: D4 bajo022
+1 PASS/84aserciones, rechazo inseguro y snapshot/identidad/clave intactos; revisión
+de diff sin bloqueantes. Se publica fix y se verifica nueva CI por SHA en PR34,
+sin rerun manual ni conversión retrospectiva de los fallos en PASS.
+
+SPEC07-FINAL completado: brainstorming yspec07 en worktreee21, propuestas sin commit
+ni implementación,26ACoperación y3contratos integración. Q1/Q2 confirmadas; spec y
+wireframes390/1440 requieren aprobación final. E2.1-AC2 sigue pendiente hastaComida.
+Validación documental PASS. Los documentos se preservan sin declarar spec aprobada.
+
+El cierre de esta ejecución espera únicamente CI dePR34 y revisión del usuario:
+mergePR34 y aprobaciónspec07 son gates distintos; ninguno autoriza despliegue ni
+dev07 por inferencia. Dev32/PR30/AC22 continúa PAUSED; checkpoints sin modificación.

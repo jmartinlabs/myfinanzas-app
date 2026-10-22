@@ -1,3 +1,4 @@
+import { getDebt } from "./deudas";
 import {
   validateReference,
   getReference,
@@ -23,7 +24,9 @@ export type MovementProtection = (
 ) => { blocked: boolean; reason?: string };
 type Candidate = {
   fecha: string;
-  tipo: "Ingreso" | "Gasto" | "Transferencia";
+  tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
+  capital: string | null;
+  intereses: string | null;
   referencia: string | null;
   importe: string;
   origen: string;
@@ -44,6 +47,8 @@ export function spanishToday(now = Date.now()) {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 const inputs = [
+  "capital",
+  "intereses",
   "fecha",
   "tipo",
   "importe",
@@ -99,7 +104,11 @@ function validated(
     errors.importe =
       "Indica un importe EUR exacto mayor que cero, hasta dos decimales.";
   }
-  if (!["Ingreso", "Gasto", "Transferencia"].includes(body.tipo as string))
+  if (
+    !["Ingreso", "Gasto", "Transferencia", "Amortización deuda"].includes(
+      body.tipo as string,
+    )
+  )
     errors.tipo = "Selecciona Ingreso, Gasto o Transferencia.";
   if (body.tipo === "Transferencia") {
     for (const side of ["origen", "destino"])
@@ -134,7 +143,7 @@ function validated(
       body.partida !== ""
     )
       errors.partida = "Ingreso no admite Partida.";
-  } else if (body.tipo === "Gasto") {
+  } else if (body.tipo === "Gasto" || body.tipo === "Amortización deuda") {
     if (typeof body.partida !== "string" || !body.partida)
       errors.partida = "Selecciona una Partida.";
     if (
@@ -191,7 +200,10 @@ function validated(
       : null;
   let category: string | null = null,
     required = false;
-  if (tipo === "Gasto") {
+  let capital: string | null = null,
+    intereses: string | null = null;
+  const outgoing = tipo === "Gasto" || tipo === "Amortización deuda";
+  if (outgoing) {
     if (saldo.permiteSalidaExterior !== true)
       throw new Problem(
         422,
@@ -203,7 +215,7 @@ function validated(
       sub = getClassification(db, "subcategorias", p.padre!),
       cat = getClassification(db, "categorias", sub.padre!);
     if (
-      (!old || old.tipo !== "Gasto" || old.partida !== p.id) &&
+      (!old || old.partida !== p.id) &&
       [p, sub, cat].some((v) => v.estado !== "Activa")
     )
       throw new Problem(
@@ -212,9 +224,68 @@ function validated(
         "La nueva clasificación debe estar activa.",
         { partida: "Selecciona una Partida y ancestros activos." },
       );
+    if (p.deuda) {
+      const debt = getDebt(db, p.deuda);
+      if (debt.estado !== "Activa" && (!old || old.partida !== p.id))
+        throw new Problem(
+          422,
+          "INACTIVE_DEBT",
+          "No se admiten nuevas operaciones ligadas a Deuda inactiva.",
+        );
+      if (tipo === "Amortización deuda") {
+        capital = decimal(String(cents));
+        intereses = "0.00";
+        for (const [field, value] of [
+          ["capital", capital],
+          ["intereses", intereses],
+        ] as const)
+          if (body[field] != null && body[field] !== value)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Desglose extraordinario derivado; no admite valores contradictorios.",
+              { [field]: "Valor derivado del importe." },
+            );
+      } else {
+        let c: bigint | null = null,
+          i: bigint | null = null;
+        try {
+          if (
+            typeof body.capital !== "string" ||
+            typeof body.intereses !== "string"
+          )
+            throw Error();
+          c = money(body.capital);
+          i = money(body.intereses);
+        } catch {}
+        if (c === null || i === null || c <= 0n || i < 0n || c + i !== cents)
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "Capital positivo e intereses no negativos explícitos deben sumar el importe exacto.",
+            {
+              capital: "Revisa el desglose exacto.",
+              intereses: "No se completa automáticamente.",
+            },
+          );
+        capital = decimal(c.toString());
+        intereses = decimal(i.toString());
+      }
+    } else if (tipo === "Amortización deuda")
+      throw new Problem(
+        422,
+        "DEBT_REQUIRED",
+        "La amortización requiere una Partida ligada a Deuda.",
+      );
     category = cat.id;
     required = cat.referencia === true;
   }
+  if (capital === null && (body.capital != null || body.intereses != null))
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Este hecho no admite desglose de Deuda.",
+    );
   const referencia = validateReference(
     db,
     body.referencia,
@@ -228,15 +299,22 @@ function validated(
     importe: decimal(String(cents))!,
     origen: tipo === "Ingreso" ? "S000" : saldo.id,
     referencia,
-    destino: tipo === "Gasto" ? "S000" : (target?.id ?? saldo.id),
+    capital,
+    intereses,
+    destino: outgoing ? "S000" : (target?.id ?? saldo.id),
     subtipo: tipo === "Ingreso" ? (body.subtipo as string) : null,
-    partida: tipo === "Gasto" ? (body.partida as string) : null,
+    partida: outgoing ? (body.partida as string) : null,
     concepto: text(body.concepto ?? "", "concepto"),
     nota: text(body.nota ?? "", "nota", 4000),
   };
 }
 function auditValue(row: LedgerRow) {
-  return { ...row, importe: decimal(row.importe) };
+  return {
+    ...row,
+    importe: decimal(row.importe),
+    capital: decimal(row.capital),
+    intereses: decimal(row.intereses),
+  };
 }
 function find(db: Database, id: string) {
   const r = ledgerRows(db).find((r) => r.id === id);
@@ -258,6 +336,7 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
     origen: related(r.origen),
     destino: related(r.destino),
     partida: p,
+    deuda: p?.deuda ? getDebt(db, p.deuda) : null,
     referencia: r.referencia ? getReference(db, r.referencia) : null,
     ciclo:
       cycles.find(
@@ -294,6 +373,11 @@ export function getMovement(db: Database, id: string) {
 }
 export function movementOptions(db: Database, now = Date.now()) {
   return db.transaction(() => ({
+    deudas: (
+      db.query("SELECT id FROM deudas ORDER BY length(id),id").all() as {
+        id: string;
+      }[]
+    ).map((r) => getDebt(db, r.id)),
     referencias: (
       db.query("SELECT id FROM referencias ORDER BY length(id),id").all() as {
         id: string;
@@ -341,7 +425,9 @@ export function listMovements(db: Database, params = new URLSearchParams()) {
       page < 1 ||
       page > 100000 ||
       !["", "Vigente", "Anulado"].includes(state) ||
-      !["", "Ingreso", "Gasto", "Transferencia"].includes(tipo)
+      !["", "Ingreso", "Gasto", "Transferencia", "Amortización deuda"].includes(
+        tipo,
+      )
     )
       throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
     const from = params.get("desde"),
@@ -370,6 +456,7 @@ export function listMovements(db: Database, params = new URLSearchParams()) {
             r.referencia?.id === params.get("referencia")) &&
           (!params.get("origen") || r.origen.id === params.get("origen")) &&
           (!params.get("destino") || r.destino.id === params.get("destino")) &&
+          (!params.get("deuda") || r.deuda?.id === params.get("deuda")) &&
           (!params.get("partida") || r.partida?.id === params.get("partida")) &&
           (!params.get("categoria") ||
             r.partida?.categoria?.id === params.get("categoria")) &&
@@ -429,6 +516,7 @@ function plan(
     "revision",
     "motivo",
     "fingerprint",
+    "contextRevision",
     "aceptarCoincidencia",
   ];
   for (const name of Object.keys(body))
@@ -520,12 +608,62 @@ function plan(
           : "Posición no calculable por este motor",
     };
   });
+  const debtIds = [
+    ...new Set(
+      [old?.partida, next?.partida]
+        .filter((p): p is string => !!p)
+        .map((p) => getClassification(db, "partidas", p).deuda)
+        .filter((d): d is string => !!d),
+    ),
+  ];
+  const deudas = debtIds.map((debtId) => {
+    const debt = getDebt(db, debtId);
+    let after =
+      debt.capitalPendiente === null ? null : money(debt.capitalPendiente)!;
+    const applicable = (r: {
+      fecha: string;
+      partida: string | null;
+      capital: string | null;
+    }) =>
+      r.partida &&
+      getClassification(db, "partidas", r.partida).deuda === debtId &&
+      debt.inicioControl !== null &&
+      r.fecha >= debt.inicioControl;
+    if (next && applicable(next) && after === null)
+      throw new Problem(
+        409,
+        "DEBT_UNVERIFIABLE",
+        "Capital no calculable: no existe apertura verificable.",
+      );
+    if (after !== null) {
+      if (old && !old.anulado && applicable(old))
+        after += BigInt(old.capital ?? "0");
+      if (next && applicable(next)) after -= money(next.capital)!;
+      if (
+        after < 0n &&
+        ((old && applicable(old)) || (next && applicable(next)))
+      )
+        throw new Problem(
+          422,
+          "DEBT_EXCESS",
+          `La operación dejaría capital negativo en ${debtId}; exceso ${decimal((-after).toString())} EUR.`,
+          { capital: "Reduce el capital o revisa los hechos vinculados." },
+        );
+    }
+    return {
+      id: debtId,
+      nombre: debt.nombre,
+      antes: debt.capitalPendiente,
+      despues: after === null ? null : decimal(after.toString()),
+    };
+  });
   const dates = all
     .filter((r) => !r.anulado && r.id !== id)
     .map((r) => r.fecha);
   if (next) dates.push(next.fecha);
   const contexto = cycleContext(db);
   return {
+    contextRevision: financeRevision(db),
     accion: action,
     antes: old ? decorate(db, old, cycles) : null,
     despues: next,
@@ -539,6 +677,10 @@ function plan(
       financeRevision(db),
     ]),
     impacto: {
+      deudas,
+      gastoAntes:
+        old?.tipo === "Gasto" && !old.anulado ? decimal(old.importe) : "0.00",
+      gastoDespues: next?.tipo === "Gasto" ? next.importe : "0.00",
       saldos,
       cicloAntes: old
         ? (cycles.find(
@@ -608,6 +750,15 @@ export function writeMovement(
           );
         return JSON.parse(retry.response) as ReturnType<typeof getMovement>;
       }
+      if (
+        body.contextRevision !== undefined &&
+        body.contextRevision !== financeRevision(db)
+      )
+        throw new Problem(
+          409,
+          "IMPACT_CHANGED",
+          "El contexto ha cambiado. Revisa otra vista previa; tu borrador se conserva.",
+        );
       const p = plan(db, body, id, annul, now, guard);
       if (body.fingerprint !== p.fingerprint)
         throw new Problem(
@@ -641,7 +792,7 @@ export function writeMovement(
         );
       else if (old)
         db.run(
-          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,referencia=?,concepto=?,nota=?,revision=revision+1,actualizado=? WHERE id=?",
+          "UPDATE movimientos SET fecha=?,tipo=?,importe=?,origen=?,destino=?,subtipo=?,partida=?,referencia=?,concepto=?,nota=?,capital=?,intereses=?,revision=revision+1,actualizado=? WHERE id=?",
           [
             v!.fecha,
             v!.tipo,
@@ -653,13 +804,15 @@ export function writeMovement(
             v!.referencia,
             v!.concepto,
             v!.nota,
+            money(v!.capital),
+            money(v!.intereses),
             time,
             id,
           ],
         );
       else
         db.run(
-          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
+          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,capital,intereses,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,1,?,?)",
           [
             id,
             v!.fecha,
@@ -672,6 +825,8 @@ export function writeMovement(
             v!.referencia,
             v!.concepto,
             v!.nota,
+            money(v!.capital),
+            money(v!.intereses),
             time,
             time,
           ],

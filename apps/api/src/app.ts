@@ -1,4 +1,11 @@
 import {
+  getDebt,
+  listDebts,
+  createDebt,
+  updateDebt,
+  debtUsage,
+} from "./deudas";
+import {
   getReference,
   referenceUsage,
   listReferences,
@@ -183,6 +190,55 @@ export function createApp(db: Database, options: AppOptions) {
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
       if (cycle && req.method === "GET")
         return reply(db.transaction(() => getCycle(db, cycle[1]))());
+      if (path === "/api/deudas" && req.method === "GET")
+        return reply(listDebts(db, new URL(req.url).searchParams));
+      if (path === "/api/deudas" && req.method === "POST") {
+        const item = createDebt(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/deudas/" + item.id);
+        return reply({ item }, 201);
+      }
+      const debt = path.match(
+        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
+      );
+      if (debt) {
+        const [, id, action] = debt;
+        if (!action && req.method === "GET")
+          return reply(
+            db.transaction(() => ({
+              item: getDebt(db, id),
+              usos: debtUsage(db, id),
+              partidas: db
+                .query(
+                  "SELECT id,nombre,estado FROM partidas WHERE deuda=? ORDER BY id",
+                )
+                .all(id),
+            }))(),
+          );
+        if (
+          (!action && req.method === "PATCH") ||
+          (action && req.method === "POST")
+        ) {
+          let body = await jsonBody(req);
+          if (action) {
+            if (Object.keys(body).some((k) => k !== "revision"))
+              throw new Problem(
+                422,
+                "VALIDATION",
+                "Solo revisión para Estado.",
+              );
+            body = {
+              revision: body.revision,
+              estado: action === "reactivar" ? "Activa" : "Inactiva",
+            };
+          }
+          return reply({ item: updateDebt(db, id, body, now()) });
+        }
+      }
       if (path === "/api/referencias" && req.method === "GET")
         return reply(listReferences(db, new URL(req.url).searchParams));
       if (path === "/api/referencias" && req.method === "POST") {

@@ -1471,3 +1471,30 @@ textarea {
   margin-top: 4px;
   color: var(--muted);
 }
+
+.debt-facts {
+  margin: 0;
+}
+.debt-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #e5ecdf;
+}
+.debt-facts dt {
+  color: var(--muted);
+}
+.debt-facts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .debt-facts > div {
+    flex-wrap: wrap;
+    gap: 6px 16px;
+  }
+}

@@ -100,6 +100,6 @@ export function classificationMovementImpact(
     movimientos: movements,
     cobertura:
       "Movimientos y clasificación comprobados; cambiar clasificación no altera entradas/salidas de Saldos.",
-    pendientes: ["Presupuestos", "Deudas", "Indicadores", "Cierres"],
+    pendientes: ["Presupuestos", "Indicadores", "Cierres"],
   };
 }

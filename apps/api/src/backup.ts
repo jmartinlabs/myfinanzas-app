@@ -49,7 +49,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5, 6, 7].includes(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
@@ -115,9 +115,11 @@ export function backup(
                 ? "e1.4-v4"
                 : sourceVersion === 5
                   ? "e1.5-v5"
-                  : "sqlite-v6",
+                  : sourceVersion === 6
+                    ? "sqlite-v6"
+                    : "e1.6-v7",
       schema: sourceVersion,
-      ...(sourceVersion === 6 ? { origin: sourceIdentity!.origin } : {}),
+      ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
       created: new Date(now).toISOString(),
       sha256: hash(bytes),
@@ -224,7 +226,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5, 6, 7].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -250,7 +252,7 @@ export function restore(
     try {
       const id = inspectIdentity(db);
       assertMode(id, !!config);
-      if (bundle.manifest.schema === 6 && bundle.manifest.origin !== id?.origin)
+      if (bundle.manifest.schema >= 6 && bundle.manifest.origin !== id?.origin)
         throw new Error("Origen del manifiesto inválido.");
       if (id?.origin === "production" && id.key_hash !== keyHash(key))
         throw new Error("Pareja DB/clave inválida.");
@@ -268,6 +270,7 @@ export function restore(
           ...(bundle.manifest.schema >= 3 ? ["cycle_attempts"] : []),
           ...(bundle.manifest.schema >= 4 ? ["movement_attempts"] : []),
           ...(bundle.manifest.schema >= 5 ? ["reference_attempts"] : []),
+          ...(bundle.manifest.schema >= 7 ? ["debt_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

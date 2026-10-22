@@ -1,3 +1,4 @@
+import { Deudas } from "./Deudas";
 import { Referencias } from "./Referencias";
 import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
@@ -214,6 +215,18 @@ function App() {
             <span aria-hidden="true">⌑</span> Referencias{" "}
             <span aria-hidden="true">›</span>
           </a>
+          <a
+            className={path.startsWith("/deudas") ? "nav-active" : "nav-link"}
+            aria-current={path.startsWith("/deudas") ? "page" : undefined}
+            href="/deudas"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/deudas");
+            }}
+          >
+            <span aria-hidden="true">◷</span> Deudas{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>
@@ -248,7 +261,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/referencias") ? (
+          {path.startsWith("/deudas") ? (
+            <Deudas path={path} go={go} />
+          ) : path.startsWith("/referencias") ? (
             <Referencias path={path} go={go} />
           ) : path.startsWith("/movimientos") ? (
             <Movimientos path={path} go={go} />
