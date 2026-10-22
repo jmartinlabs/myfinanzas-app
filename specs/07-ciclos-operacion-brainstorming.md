@@ -1,8 +1,8 @@
 # 07 — E2.1 Operación de Ciclos y apertura revisable: Brainstorming
-Status: DRAFT — Q1/Q2 respondidas; especificación/wireframes y desarrollo NO aprobados.
+Status: APPROVED — aprobación funcional y documental vigente, incluidos wireframes; desarrollo NO autorizado.
 Roadmap/context: [E2.1](roadmap.md#e21--operación-de-ciclos-y-apertura-revisable),
 [R3/R4](functional-reference-v5.11.md), [spec 03](03-ciclos-financiados-specification.md).
-Next action: revisar spec07 completa y wireframes propuestos; esperar aprobación expresa, sin desarrollo.
+Next action: integrar PR #37 mediante squash tras ambas CI SUCCESS del mismo SHA; después presentar plan dev07 para autorización expresa.
 
 ## Autorización y procedencia — 2026-10-22
 Fuente: usuario en la ejecución activa de `$orchestrate`: «Autorizo iniciar la
@@ -220,3 +220,12 @@ anteriores son historia de la propuesta y quedan sustituidas por esta aprobació
 E1.6 integrada mediante PR34 en cb9ba3b; siguiente acción: publicar PR documental
 y verificar CI, esperando permiso expreso de merge de esa nueva PR. AC2 conserva
 su dependencia de Comida; ninguna prueba funcional E2.1 ejecutada.
+
+## Auditoría favorable de Álex y autorización de integración — 2026-10-22
+Fuente: mensaje del usuario «Álex — Aprobación PR #37 · E2.1 Operación de Ciclos».
+Auditoría funcional/documental favorable; integración squash de PR37 autorizada
+condicionada a HEAD documental final, ambas CI SUCCESS sobre ese mismo SHA y
+ausencia de conflictos. Esta cabecera corrige el DRAFT obsoleto sin reescribir
+decisiones históricas. Alcance, wireframes y criterios permanecen intactos.
+Después de integrar y verificar main se presenta plan dev07; su ejecución no
+está autorizada. Dev32/PR30/AC22 sigue pausado y v5.11(7) candidata, no estable.

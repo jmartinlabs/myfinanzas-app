@@ -153,3 +153,22 @@ sincronizados preservando los borradores. Ningún cambio de producto al integrar
 No subagentes nuevos: cierre documental por coordinador, cuota eficiente. Los
 worktrees y temporales previos se conservan; ningún recurso con trabajo pendiente
 se elimina. Aprobar spec07 no autoriza automáticamente desarrollo ni su nuevo merge.
+
+## Cierre documental E2.1 autorizado por Álex — 2026-10-22
+Auditoría funcional y documental de [PR37](https://github.com/josemartin2000/myfinanzas-app/pull/37)
+favorable. Spec07 y wireframes aprobados; permiso expreso de squash condicionado
+a ambas CI SUCCESS del HEAD final y ausencia de conflictos. Se corrige únicamente
+la cabecera del brainstorming y se conserva su trazabilidad; ningún cambio de
+alcance, wireframes, criterios, código, SQL o infraestructura. Estado efectivo de
+integración y SHA de main: registro Git de PR37 y sus Checks, verificados al cerrar.
+
+| Línea | Estado documental / autorización | Próxima acción |
+| --- | --- | --- |
+| E2.1 / spec07 | Aprobada por Álex; cierre de PR37 autorizado con gates CI/HEAD | Integrar/verificar y presentar plan dev07 |
+| E2.1 / dev07 | NO autorizado; 26 AC operativos y 3 contratos futuros | Revisar plan antes de dar permiso expreso |
+| E2.1-AC2 | Pendiente hasta motor real Comida E3.5 | No simular conciliación ni declarar PASS |
+| Dev32 / PR30 / AC22 | PAUSED; checkpoint preservado | Sin investigaciones ni cambios |
+
+Preparación técnica/pruebas permitida en lectura; sin nuevos subagentes ni
+implementación durante este cierre. tblCiclos sigue único maestro, saldo Comida
+manual sin propagación, IDs y Movimientos originales preservados.
