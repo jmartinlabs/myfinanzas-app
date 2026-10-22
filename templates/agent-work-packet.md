@@ -14,6 +14,7 @@
 - **Working branch / isolated checkout:** UNSET or read-only
 - **Other active conflicting packets:** NONE / LIST
 - **Permitted actions:** UNSET
+- **Applicable rules:** UNSET — copy the 3–6 rules this task needs, one line each with its source link (for example approval gates touched, worktree/isolation, security or financial constraints, project-specific restrictions). The delegate reads this list instead of the full policies.
 - **Prohibited actions:** approvals, merge, production deployment, destructive operations unless separately authorized
 - **Verification commands / expected evidence:** UNSET
 - **User decisions to request:** NONE / LIST
