@@ -14,7 +14,11 @@ Regresión heredada AC23: 5 ejecuciones independientes, cada una 1 PASS/18 asser
 O5/O7 desde v7 y v8: 4 PASS/32 assertions. No reaparece errno11 en estas pruebas;
 esto no acredita por sí solo cierre global ni sustituye Linux/QA del candidato.
 Suite API completa, O4 productivo, E2E/visual y CI Linux pendientes del candidato.
-Históricos /workspace/work/dev07/work y artefactos del handoff no existen localmente:
+Correcciones QA: revisión expone mes financiado antes/después; detalle ordenado por
+fecha/ID decimal exacto antes de paginar. O3 enfocado PASS (1/8), tipos/build PASS;
+validate-template PASS tras corregir referencias portables. Destinos backup de pruebas
+actuales coherentes con v9. E2E añade cambio de mes real sin confirmar escritura.
+El directorio histórico work/ del worktree Dev07 y los artefactos del handoff no existen localmente:
 se conservan sus referencias documentales, sin afirmar recuperación de esos archivos.
 Dev32/infraAC22/B4/E2.3 y datos reales/deploy permanecen fuera de alcance.
 
@@ -89,7 +93,7 @@ automática tras este cierre.
 ### Identidad verificable y entrega
 
 - Repositorio: `josemartin2000/myfinanzas-app`.
-- Worktree: `/workspace/work/dev07`; rama `feat/07-ciclos-operacion`.
+- Worktree: `work/dev07` (ruta relativa al workspace histórico); rama `feat/07-ciclos-operacion`.
 - HEAD de origen del checkpoint, publicado y verificado:
   `7b7cfced3f5952c440f55a9b89d2ddaf5a94b89f`.
 - Código y E2E finales: `d63442e`; revisión QA documental:

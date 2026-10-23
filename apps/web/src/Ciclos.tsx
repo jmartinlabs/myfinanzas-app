@@ -996,6 +996,8 @@ function CycleOperationForm({
                   <p>
                     <strong>{cycleName(c.despues)}</strong>
                   </p>
+                  <p>Mes financiado antes: {c.antes ? monthLabel(c.antes.mesFinanciado) : "No existía"}</p>
+                  <p>Mes financiado después: {c.despues ? monthLabel(c.despues.mesFinanciado) : "No existía"}</p>
                   <p>Antes: {interval(c.antes)}</p>
                   <p>Después: {interval(c.despues)}</p>
                 </article>

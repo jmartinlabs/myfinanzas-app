@@ -276,6 +276,21 @@ export async function cycleOperationsJourney(page: Page) {
   await shot("list-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await shot("list-mobile");
+  // Review a genuine change of financed month without committing another operation.
+  const future = (await get("/ciclos")).ciclos.find((c: any) => c.inicio === "2027-02-01");
+  expect(future).toBeTruthy();
+  await page.goto("/ciclos/" + future.id);
+  await page.getByRole("button", {name: "Rectificar ciclo", exact: true}).click();
+  await page.getByLabel("Inicio ciclo *", {exact: true}).fill("2027-03-01");
+  await page.getByLabel("Motivo *", {exact: true}).fill("Revisión ficticia de cambio de mes");
+  await page.getByRole("button", {name: "Revisar impacto", exact: true}).click();
+  const monthReview = page.getByRole("region", {name: "Revisión de impacto de Ciclos"});
+  await expect(monthReview.getByText("Mes financiado antes: marzo de 2027", {exact: true})).toBeVisible();
+  await expect(monthReview.getByText("Mes financiado después: abril de 2027", {exact: true})).toBeVisible();
+  await shot("month-change-preview-mobile");
+  await page.setViewportSize({width: 1440, height: 1000});
+  await shot("month-change-preview-desktop");
+  await page.goto("/ciclos");
   return {
     correctedId: target.id,
     omittedId,

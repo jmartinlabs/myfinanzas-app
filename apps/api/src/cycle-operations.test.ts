@@ -206,6 +206,9 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
         "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES(?,'2026-02-15','Ingreso',100,'S000','S001','Bonus','Ficticio','',0,1,?,?)",
         [String(i), stamp, stamp],
       );
+    // Retroactive facts and adjacent IDs above Number.MAX_SAFE_INTEGER retain exact order.
+    for (const id of ["9007199254740993", "9007199254740992"])
+      db.run("INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES(?,'2026-02-10','Ingreso',100,'S000','S001','Bonus','Ficticio','',0,1,?,?)", [id, stamp, stamp]);
     const one = previewCycleOperation(
         db,
         "omitido",
@@ -215,9 +218,13 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
       ),
       two = previewCycleOperation(db, "omitido", null, input("2026-02-01"), 2);
     expect(one.movimientos).toHaveLength(100);
-    expect(two.movimientos).toHaveLength(7);
-    expect(one.totalMovimientos).toBe(107);
+    expect(two.movimientos).toHaveLength(9);
+    expect(one.totalMovimientos).toBe(109);
     expect(one.impactRevision).toBe(two.impactRevision);
+    const complete = [...one.movimientos, ...two.movimientos];
+    expect(complete.filter((m) => m.fecha === "2026-02-10").map((m) => m.id)).toEqual(["9007199254740992", "9007199254740993"]);
+    expect(complete.map((m) => m.id)).toEqual([...complete].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.length - b.id.length || a.id.localeCompare(b.id)).map((m) => m.id));
+    expect(new Set(complete.map((m) => m.id)).size).toBe(109);
     expect(
       listCycles(db, new URLSearchParams({ q: "marzo" })).contexto.actual?.id,
     ).toBe(a.id);

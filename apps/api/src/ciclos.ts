@@ -497,6 +497,8 @@ function operationPlan(
         ]
       : [];
   });
+  affected.sort((a, b) => a.fecha.localeCompare(b.fecha)
+    || a.id.length - b.id.length || a.id.localeCompare(b.id));
   const cycles = after.flatMap((c) => {
     const a = before.find((v) => v.id === c.id) ?? null;
     return JSON.stringify(a) !== JSON.stringify(c)
