@@ -10,6 +10,7 @@ type Item = {
   estado: string;
   revision: number;
   deuda?: string | null;
+  presupuesto?: string | null;
   padre: string | null;
   grupo: string | null;
   anual: string | null;
@@ -21,6 +22,7 @@ type Item = {
 };
 type Dependency = { kind: Kind; id: string; nombre: string; estado: string };
 type Plan = {
+  blocked?: boolean;
   fingerprint: string;
   dependencies: Dependency[];
   coverage: string;
@@ -556,11 +558,26 @@ function ClassificationDetail({
             </dl>
           ) : kind === "partidas" ? (
             <>
-              <p>Presupuesto: Sin asignación</p>
-              <p>Deuda: Sin asignación</p>
+              <p>
+                Presupuesto:{" "}
+                {item.presupuesto ? (
+                  <a
+                    href={"/presupuestos/" + item.presupuesto}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      go("/presupuestos/" + item.presupuesto);
+                    }}
+                  >
+                    {item.presupuesto}
+                  </a>
+                ) : (
+                  "Sin Presupuesto"
+                )}
+              </p>
+              <p>Deuda: {item.deuda ?? "Sin Deuda"}</p>
               <p className="muted">
-                Vinculación disponible en sus entregas. Una Partida sin
-                Presupuesto es válida.
+                Los enlaces son independientes. Una Partida sin Presupuesto es
+                válida.
               </p>
             </>
           ) : (
@@ -653,8 +670,18 @@ function ClassificationForm({
     mensual: item?.mensual ?? "",
     referencia: item?.referencia == null ? "" : String(item.referencia),
     deuda: item?.deuda ?? "",
+    presupuesto: item?.presupuesto ?? "",
     padre: item?.padre ?? "",
   });
+  const [budgets, setBudgets] = useState<
+    { id: string; nombre: string; estado: string }[]
+  >([]);
+  useEffect(() => {
+    if (kind === "partidas")
+      api("/presupuestos/opciones")
+        .then((d) => setBudgets(d.presupuestos))
+        .catch((e) => setLoadError(e.message));
+  }, [kind]);
   const [debts, setDebts] = useState<
     { id: string; nombre: string; estado: string }[]
   >([]);
@@ -711,14 +738,14 @@ function ClassificationForm({
       kind === "categorias"
         ? ["nombre", "grupo", "anual", "mensual", "referencia"]
         : kind === "partidas"
-          ? ["nombre", "padre", "deuda"]
+          ? ["nombre", "padre", "deuda", "presupuesto"]
           : ["nombre", "padre"];
     const result: Record<string, unknown> = item
       ? { revision: item.revision }
       : {};
     for (const name of names) {
       const val =
-        name === "grupo" || name === "deuda"
+        name === "grupo" || name === "deuda" || name === "presupuesto"
           ? value[name] || null
           : name === "referencia"
             ? value[name] === ""
@@ -801,7 +828,7 @@ function ClassificationForm({
             aria-invalid={Boolean(fields[name])}
             aria-describedby={fields[name] ? `error-${name}` : undefined}
             list={
-              name === "grupo" || name === "deuda"
+              name === "grupo" || name === "deuda" || name === "presupuesto"
                 ? "classification-groups"
                 : undefined
             }
@@ -925,6 +952,31 @@ function ClassificationForm({
           {kind === "partidas" && (
             <>
               <label>
+                Presupuesto opcional
+                <select
+                  aria-label="Presupuesto opcional"
+                  value={value.presupuesto}
+                  onChange={(e) => change("presupuesto", e.target.value)}
+                >
+                  <option value="">Sin Presupuesto</option>
+                  {budgets
+                    .filter(
+                      (b) =>
+                        b.estado === "Activo" || b.id === item?.presupuesto,
+                    )
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.id} · {b.nombre} · {b.estado}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="help">
+                0..1 Presupuesto por Partida. El impacto histórico no
+                verificable queda bloqueado hasta E2.3; la Deuda es
+                independiente.
+              </p>
+              <label>
                 Deuda opcional
                 <select
                   aria-label="Deuda opcional"
@@ -1046,7 +1098,7 @@ function ClassificationForm({
                 <button
                   type="button"
                   className="primary"
-                  disabled={busy || !reason.trim()}
+                  disabled={busy || !reason.trim() || plan.blocked}
                   onClick={() => submit(true)}
                 >
                   Confirmar rectificación

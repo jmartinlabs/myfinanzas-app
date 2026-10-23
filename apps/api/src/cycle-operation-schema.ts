@@ -12,5 +12,5 @@ export function cycleOperationSchema(db: Database) {
  CREATE TRIGGER cycle_audit_no_update BEFORE UPDATE ON cycle_audit BEGIN SELECT RAISE(ABORT,'immutable cycle audit'); END;
  CREATE TRIGGER cycle_audit_no_delete BEFORE DELETE ON cycle_audit BEGIN SELECT RAISE(ABORT,'immutable cycle audit'); END;
  CREATE TABLE cycle_operation_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
- UPDATE schema_version SET version=8;`);
+ UPDATE schema_version SET version=9;`);
 }

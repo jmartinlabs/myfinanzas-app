@@ -1,4 +1,4 @@
-# Dynamic agent management (v2.3.1)
+# Dynamic agent management (v2.4.1, MyFinanzas adaptation)
 
 > MyFinanzas: [project coordination and authorization gates](myfinanzas-coordination.md)
 > override generic examples. Spec approval alone never starts dev06/spec07 here;
@@ -14,13 +14,19 @@ The coordinator is the only scheduler and shared board writer. Subagents must no
 
 ## Dynamic selection algorithm
 
-1. **Inventory** the ready queue using the board, authoritative approvals, dependencies and current source/test evidence. Classify work as read-only research, document draft, code edit, QA, or infrastructure; identify required skill/profile and affected files.
-2. **Check necessity**: Delegate only bounded independent work that can progress without blocked prerequisites or additional user decision. Simple, dependent or short tasks should stay with the coordinator.
-3. **Size the pool** according to independent ready work, risk, coordination overhead, file contention and estimated usage. Usually start with **one to three active specialists**; add a fourth or more only if a clear benefit outweighs overhead and the actual environment permits it. This is a **methodology recommendation**, not a universal technical Codex limit. Respect any runtime concurrency cap, quotas and limits. Do not require permission for each ordinary subagent within a confirmed scope, but do request approval for additional unapproved scope, expense/operations with impact, or destructive actions.
+1. **Inventory** relevant ready work using checkpoint and real code/test/approval state. Do not rebuild the full queue after each event.
+2. **Check necessity**: Default to one executor for an authorized outcome. Delegate complete deliverables, not microsteps; bring in independent QA at the candidate gate.
+3. **Size the pool**: Prefer one executor, scaling only for independent ready tasks that justify context and coordination overhead. Respect actual runtime quotas and isolated ownership. This is not a fixed Codex limit or authorization for new financial scope.
 4. **Pick a role dynamically** from reusable profiles or a temporary narrowly bounded specialization. Same profile can be used more than once for independent tasks. For each delegate, issue a [work-packet contract](../../templates/agent-work-packet.md): unique ID, source/approval evidence, objective, file ownership, read/write permissions, isolation, dependencies, deliverable, checks, prohibitions and return schema.
 5. **Start only if supported**: Check actual available subagent tools/capabilities in this Codex session before claiming a worker exists. If unavailable, use sequential execution following the same ready queue; never pretend the delegate ran. External chats opened manually are **not** attached workers. They can only contribute via recorded checkpoints/branches/PRs.
-6. **Supervise**: Track assigned, running, awaiting-result, blocked, completed or cancelled; inspect results and actual diffs/tests; update the shared board after each event. Do not spawn duplicates for the same scope or let two workers write the same files. Parallel read-only tasks can share one checkout; separate code writers need non-overlapping file ownership and permitted isolated checkouts/branches, otherwise serialize writes.
+6. **Supervise by milestone and exception**: Inspect actual candidate diff and test evidence at agreed handoffs, not each intermediate message. Prevent duplicate work; parallel code writers need disjoint ownership and safe isolated checkouts, otherwise serialize.
 7. **Close or reassign** when deliverables are complete, blocked, duplicated or no longer useful. A completed agent's task is done; launch a **new bounded work packet** for another need rather than treating a role as a permanent always-on worker. Do not claim terminated sessions kept working or that agent cleanup was executed unless the runtime confirms it.
+
+## Resource discipline and shutdown
+
+- Judge completed verifiable work, not agent count; report token/quota only when runtime telemetry exists.
+- After two comparable non-informative debugging attempts, checkpoint evidence and escalate to a new hypothesis rather than repeating blindly.
+- A user `$handoff` request freezes new tasks, safely consolidates and stops controllable workers; it cannot stop external sessions. Quota warnings never waive financial QA or approval gates.
 
 ## Prioritization and approvals
 

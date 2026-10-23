@@ -227,6 +227,7 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
 });
 
 import { Database } from "bun:sqlite";
+import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV7 } from "../test-support/database-v7";
 import {
   mkdtempSync,
@@ -255,7 +256,7 @@ const snapshot = (db: Database) =>
     ({ name }) =>
       [name, db.query(`SELECT * FROM "${name}" ORDER BY rowid`).all()] as const,
   );
-test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, age8 y restore", async () => {
+test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deuda/hechos/MFA, age9 y restore", async () => {
   const saved = {
       NODE_ENV: process.env.NODE_ENV,
       DATABASE_PATH: process.env.DATABASE_PATH,
@@ -264,13 +265,15 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
     },
     dir = mkdtempSync(join(tmpdir(), "mf-cycle-v7-"));
   try {
+    for (const previousVersion of [7, 8] as const)
     for (const origin of ["demo", "production"] as const) {
-      const root = join(dir, origin);
+      const fixtureName = `${origin}-v${previousVersion}`;
+      const root = join(dir, fixtureName);
       mkdirSync(root, { mode: 0o700 });
       const path = join(root, "database.sqlite"),
         keyPath = join(root, "auth.key"),
         key = randomBytes(32);
-      let db = openDatabaseV7(path, {
+      let db = (previousVersion === 7 ? openDatabaseV7 : openDatabaseV8)(path, {
         origin,
         key_hash: origin === "production" ? keyHash(key) : null,
       });
@@ -349,6 +352,13 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
         ],
       );
       db.run("UPDATE counters SET next=2 WHERE name='movimientos'");
+      if (previousVersion === 8) {
+        db.run("INSERT INTO presupuestos VALUES('PRE001','Presupuesto histórico ficticio','No aplica',NULL,'Activo',1,?,?)", [stamp, stamp]);
+        db.run("UPDATE counters SET next=2 WHERE name='presupuestos'");
+        // Link an unused historical partida; preserves both debt and budget relations.
+        db.run("INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda,presupuesto) VALUES('PAR998','Histórica presupuesto',?,'Activa',1,?,?,'D001','PRE001')", [sub.id, stamp, stamp]);
+        db.run("INSERT INTO budget_attempts VALUES('historical-budget','hash','{}',9999999999999)");
+      }
       const before = snapshot(db),
         identity = inspectIdentity(db);
       db.exec("PRAGMA wal_checkpoint(TRUNCATE)");
@@ -357,6 +367,12 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
       try {
         for (const [table, values] of before) {
           if (table === "schema_version") continue;
+          if (table === "counters" && previousVersion === 7) {
+            for (const row of values as any[])
+              expect(db.query("SELECT * FROM counters WHERE name=?").get(row.name)).toEqual(row);
+            expect(db.query("SELECT next FROM counters WHERE name='presupuestos'").get()).toEqual({next: 1});
+            continue;
+          }
           expect(
             db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
           ).toEqual(
@@ -366,7 +382,9 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
                   revision: 1,
                   actualizado: null,
                 }))
-              : values,
+              : table === "partidas" && previousVersion === 7
+                ? values.map((r: any) => ({...r, presupuesto: null}))
+                : values,
           );
         }
         expect(inspectIdentity(db)).toEqual(identity);
@@ -381,7 +399,7 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
         expect(getDebt(db, "D001").capitalPendiente).toBe("920.00");
         commit(db, "rectificar", "1", input("2026-01-02", "-2"));
         expect(cycleHistory(db, "1")).toHaveLength(1);
-        const identityFile = join(dir, origin + ".agekey");
+        const identityFile = join(dir, fixtureName + ".agekey");
         expect(
           Bun.spawnSync(["age-keygen", "-o", identityFile], {
             stdout: "pipe",
@@ -394,7 +412,7 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
           })
             .stdout.toString()
             .trim(),
-          dest = join(dir, origin + "-backup");
+          dest = join(dir, fixtureName + "-backup");
         backup(db, key, dest, pub);
         const bundle = JSON.parse(
           Bun.spawnSync(
@@ -402,10 +420,10 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(8);
-        expect(bundle.manifest.app).toBe("e2.1-v8");
+        expect(bundle.manifest.schema).toBe(9);
+        expect(bundle.manifest.app).toBe("e2.1-v9");
         expect(bundle.manifest.origin).toBe(origin);
-        const target = join(dir, origin + "-restore");
+        const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
           Object.assign(process.env, {
             DATABASE_PATH: join(target, "database.sqlite"),
@@ -420,6 +438,9 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
             copy.query("SELECT * FROM cycle_operation_attempts").all(),
           ).toEqual([]);
           expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
+          expect(copy.query("SELECT * FROM budget_attempts").all()).toEqual([]);
+          expect(copy.query("SELECT * FROM presupuestos ORDER BY id").all()).toEqual(db.query("SELECT * FROM presupuestos ORDER BY id").all());
+          expect(copy.query("SELECT id,deuda,presupuesto FROM partidas ORDER BY id").all()).toEqual(db.query("SELECT id,deuda,presupuesto FROM partidas ORDER BY id").all());
           const a = new Auth(copy, readFileSync(restored.key)),
             challenge = await a.login(password);
           expect(
@@ -449,11 +470,12 @@ test("07 O4 AC23/24: continuidad v7 genuina demo/production, deuda/hechos/MFA, a
     rmSync(dir, { recursive: true, force: true });
   }
 });
-test("07 O5 AC23: fallo DDL y versión desconocida mantienen v7, identidad y datos", () => {
+for (const previousVersion of [7, 8] as const)
+test(`07 O5 AC23: fallo DDL y versión desconocida mantienen v${previousVersion}, identidad y datos`, () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-cycle-fail-")),
     path = join(dir, "database.sqlite");
   try {
-    let db = openDatabaseV7(path);
+    let db = (previousVersion === 7 ? openDatabaseV7 : openDatabaseV8)(path);
     db.exec("CREATE TABLE cycle_audit(conflict TEXT) STRICT");
     const before = snapshot(db),
       schema = db.query("SELECT * FROM sqlite_master ORDER BY name").all();
@@ -567,13 +589,14 @@ test("07 O6 AC21/22: rutas Effect reales, MFA/Origin/CSRF y rechazo de derivados
   }
 });
 
-test("07 O7 AC17/18/19/23: dos procesos migran v7 y confirman una revisión concurrente", async () => {
+for (const previousVersion of [7, 8] as const)
+test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman una revisión concurrente`, async () => {
   const dir = mkdtempSync(join(tmpdir(), "mf-cycle-process-")),
     path = join(dir, "database.sqlite"),
     modulePath = resolve("apps/api/src/database.ts"),
     cyclesPath = resolve("apps/api/src/ciclos.ts");
   try {
-    let db = openDatabaseV7(path);
+    let db = (previousVersion === 7 ? openDatabaseV7 : openDatabaseV8)(path);
     db.run(
       "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('1','2026-01-01',1000,'2026-01-01T00:00:00.000Z')",
     );
@@ -600,7 +623,7 @@ test("07 O7 AC17/18/19/23: dos procesos migran v7 y confirman una revisión conc
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 8 }, { version: 8 }]);
+    expect(upgraded).toEqual([{ version: 9 }, { version: 9 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

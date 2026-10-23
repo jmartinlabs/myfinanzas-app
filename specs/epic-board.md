@@ -1,4 +1,150 @@
+## Estado vigente — E2.2 integrada — 2026-10-23
+
+Coordinador (Claude Code, `/orchestrate`). Prevalece sobre los apartados inferiores; el
+tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI SUCCESS; después `a7fb9d8` (PR #29).
+
+| Línea | Estado verificado | Próxima acción / gate |
+| --- | --- | --- |
+| E2.2 / dev08 | INTEGRADA: PR #44 squash `255bf61` tras «Apruebo PR #44» del usuario, HEAD `6eeb727` con ambas CI SUCCESS (job pull_request relanzado una vez a petición del usuario por fallo intermitente de SQLite B4) | Cerrada; limitaciones en [testplan08](08-presupuestos-testplan.md) |
+| E2.3 | Siguiente entrega del roadmap; consume Presupuestos | Requiere especificación y autorización propias |
+| E2.1 / dev07 / AC23 | BLOQUEADO; rama `feat/07-ciclos-operacion` fuera de main, sin PR. Investigación 2026-10-23: la sonda `immutable=1` de `persistentIdentity` produce `SQLITE_CORRUPT/11` en migraciones concurrentes (21/150 rondas; control con bloqueos 0/150); atribución al fallo de dev07 pendiente ([diagnóstico](investigations/ac23-immutable-probe.md)) | Corrección de la sonda requiere autorización expresa; después, reanudar dev07 renumerando su esquema a v9 |
+| Spec31 / enmienda 31-E1 | APROBADA 2026-10-23 («Apruebo enmienda 31-E1»); desarrollo autorizado el 2026-10-23 e implementado en `fix/ac23-persistent-identity` (código `07e0369`, CI 114/0, QA sin bloqueos), pendiente de merge: verificar identidad con conexión convencional y transacción de lectura; garantía lógica en lugar de bytes de WAL/SHM ([propuesta](31-sqlite-produccion-enmienda-01.md)) | Merge de su PR con «Apruebo PR #N»; después, decidir si se reanuda dev07 (renumerando su esquema a v9) |
+| SQLite B4 | Fallo intermitente observado una vez en CI de `6eeb727`; pasó al relanzar | Incidencia de apertura SQLite fuera de alcance; no investigar sin autorización |
+| Spec32 / PR #29 | INTEGRADA: squash `a7fb9d8` tras «Apruebo PR #29» del usuario, HEAD `a9e0fdb` con CI SUCCESS y merge con main verificado localmente | Solo documentación; no reactiva Dev32 |
+| Dev32 / PR #30 / AC22 | PAUSED; draft con conflictos, 12 commits por detrás de main | Reanudar solo con autorización expresa; revisar actualización/rollback con esquema v8 |
+| PRs #21 y #22 | CERRADAS 2026-10-23 como sustituidas por spec31/dev31 (#23, #25, #28, #31), con permiso del usuario; ramas conservadas | — |
+| PR #35 | Cerrada como sustituida por #43 | — |
+
+Worktrees temporales de dev08/QA08 eliminados tras el merge; rama `feat/08-presupuestos` conservada.
+
+---
+
+## Estado vigente — dev08 candidato verificado — 2026-10-23
+
+Coordinador (Claude Code). Prevalece sobre «Parada y checkpoint WIP dev08» inferior; el
+tablero registra, no concede, autorizaciones. Main verificado `ca5de20` (PR #43, harness
+v2.5.0). PR #35 cerrada como sustituida por #43 con permiso del usuario.
+
+| Línea | Estado verificado | Próxima acción / gate |
+| --- | --- | --- |
+| E2.2 / dev08 | Autorizado por «Álex — Autorización de desarrollo E2.2 · `$dev 08`» (texto en el apartado 2026-10-22 inferior). Candidato en `feat/08-presupuestos`, CI Linux por SHA en [testplan08](08-presupuestos-testplan.md) | PR funcional; merge solo con «Apruebo PR #N» |
+| Decisión dev08 | Usuario 2026-10-23: «Sí: cambiar la fuente con un destino ya inactivo cuenta como nueva relación y debe exigir un Saldo activo; solo renombrar conserva el destino inactivo.» Implementada en `2880f98` | Sin otras decisiones abiertas |
+| QA08 | Independiente: QA08-1 `f82064b` NO_BLOCKERS (24 AC PASS), QA08-2 delta `84078b2` NO_BLOCKERS, QA08-3 delta `2880f98` NO_BLOCKERS | Limitaciones menores listadas en testplan08 |
+| E2.1 / AC23 | BLOQUEADO; dev07 fuera de main sin PR | Integrar dev07 exigirá reconciliar su esquema8 con el contrato v8 de E2.2 |
+| Dev32 / PR30 y PRs #21, #22, #29 | PAUSED / abiertas sin decisión | No reanudar |
+| E2.3, F-01/F-02 | Fuera de alcance | Sin Base/Esencial/Del mes ni ejecución |
+
+---
+
+## Reconciliación — 2026-10-23 — main 30c7ea0
+
+Coordinador: reconciliación documental solicitada por el usuario; no concede autorizaciones nuevas.
+Main remoto verificado en `30c7ea0` (PR #41, adopción orquestación v2.4.2, solo metodología),
+sobre `20d8f9a` (PR #39, spec08). Este apartado complementa el cierre spec08 inferior
+(PR #40, integrada por squash en main `11e2fae` el 2026-10-23 tras «Apruebo PR #40» del usuario, HEAD `b5c88d7` con CI SUCCESS) y prevalece
+sobre estados históricos más antiguos.
+
+| Línea | Estado verificado en Git | Próxima acción / gate |
+| --- | --- | --- |
+| E1.1–E1.6 | Integradas; E1.6 por PR34 `cb9ba3b` | Sin cambios |
+| E2.1 / spec07 | Aprobada e integrada PR37 `c04dc07` | Sin cambios de decisiones ni criterios |
+| E2.1 / dev07 | Rama `feat/07-ciclos-operacion` HEAD `d1868dc`, fuera de main; sin PR (ningún `refs/pull/*/head` apunta a ella). Handoff STOP / NO AUTO-RESUME en progress07 de esa rama | Reanudar solo con nueva instrucción expresa del usuario |
+| AC23 | BLOQUEADO; API 105 PASS / 1 FAIL errno11 según checkpoint dev07 | Sin investigación nueva sin hipótesis discriminante y autorización |
+| E2.2 / spec08 | Aprobada e integrada PR39 `20d8f9a`; cabecera de la especificación actualizada a APPROVED por instrucción del usuario del 2026-10-23, que sustituye la decisión de PR #40 de no tocarla; cuerpo intacto | Spec aprobada no autoriza dev08 |
+| E2.2 / dev08 | NO AUTORIZADO; plan propuesto en el cierre spec08 inferior | Esperar autorización expresa de desarrollo |
+| Dev32 / PR30 / AC22 | PAUSED; PR30 HEAD `a090112` | No reanudar |
+
+Paquetes activos: ninguno. Worktrees adicionales en este checkout: ninguno. Los SHAs
+históricos de cabecera del tablero (`cb9ba3b`) quedan sustituidos por este apartado.
+
+PRs verificadas con `gh` el 2026-10-23 (este registro no aprueba merges):
+
+| PR | Rama | Estado | Nota |
+| --- | --- | --- | --- |
+| #40 | `docs/08-integration-close` | MERGED squash `11e2fae` (HEAD `b5c88d7`, CI SUCCESS) | Cierre spec08 y plan dev08; aprobada expresamente por el usuario |
+| #35 | `docs/explicit-approvals-v2-3-2` | Abierta, CONFLICTING | Metodología v2.3.2; posiblemente superada por v2.4.x, sin decidir |
+| #30 | `feat/32-ejecucion-rootless` | Draft, CONFLICTING | Dev32 PAUSED |
+| #29 | `spec/32-ejecucion-rootless` | Abierta, MERGEABLE | Spec32 aprobada, no integrada |
+| #22 | `infra/production-sqlite-bootstrap` | Draft, CONFLICTING | Infra pausada |
+| #21 | `infra/production-bootstrap-spec` | Draft, MERGEABLE | Infra pausada |
+
+Cerrar o actualizar PRs antiguas requiere decisión expresa del usuario por PR.
+
+---
+
+## Estado vigente — cierre spec08 y autorización de integración — 2026-10-22
+
+Fuente: aprobación documental final de Álex y autorización expresa de squash PR39. Este apartado prevalece sobre estados históricos inferiores; el tablero registra autorizaciones, no las concede.
+
+| Línea | Estado verificado | Próxima acción / gate |
+| --- | --- | --- |
+| E2.2 / spec08 | APROBADA e integrada por squash PR39, main20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad | Spec y wireframes cerrados; preservar decisiones,24 AC actuales y F-01/F-02 futuros |
+| E2.2 / dev08 | NO AUTORIZADO; implementación y pruebas de E2.2 no ejecutadas | Presentar plan y esperar autorización independiente; spec aprobada no autoriza dev |
+| E2.1 / spec07 | Especificación aprobada e integrada PR37/c04dc07 | Sin cambio de decisiones ni criterios |
+| E2.1 / dev07 / AC23 | Implementación conservada fuera de main; AC23 BLOQUEADO, sin aceptación global | No presentar API105 PASS/1 FAIL como resuelta por verdes posteriores |
+| AC23-SQLITE | Incidencia técnica separada; investigación actual CERRADA INCONCLUSA | Sin nuevos probes/instrumentación/cambios sin hipótesis nueva discriminante y autorización aplicable |
+| Dev32 / PR30 / AC22 y otras tareas pausadas | PAUSED | No reanudar |
+| E2.3 | Fuera de esta autorización | No implementar planificación/ejecutado/pendientes/estados mensuales en E2.2 |
+
+PR39 se integró únicamente después de verificar HEAD0f3d4e5575cd855558cfd8a8cfb11e980ff55398, mergeable sin conflictos y CI push39851581005/PR39851590534 completed SUCCESS sobre ese SHA. Diff final: solo brainstorming08 y specification08. Su corrección técnica fue una línea portable; contratos financieros y wireframes intactos. CI posterior main: [CI main39853674496](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39853674496) completed SUCCESS sobre main20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad, confirmado después de finalizar el workflow; sin reintentos manuales.
+
+Documentos canónicos: [brainstorming08](08-presupuestos-brainstorming.md) y [specification08](08-presupuestos-specification.md). Sus marcas DRAFT/PENDING describen la revisión previa; la aprobación completa e integración posterior quedan registradas aquí con la instrucción expresa del usuario, sin modificar los documentos aprobados ni repetir preguntas financieras. La CI acredita regresión del núcleo integrado, no implementación E2.2 ni resolución de AC23.
+
+### Plan dev08 propuesto — pendiente, NO iniciar
+
+1. Reconciliar base main integrada y evolución versionada del esquema; trabajar en rama aislada. No importar dev07/schema8 ni reparar apertura SQLite. Prever que cualquier integración futura de Ciclos deberá reconciliar versiones/contratos de migración y repetir su continuidad; no asumir intercambiables dos cambios de esquema pendientes.
+2. Maestro/validaciones: identidad PRE estable, tres fuentes y matriz destino, unicidad global de nombres (incluidos inactivos) con criterio SUB autorizado y unicidad atómica del destino entre Aportaciones; revisión/idempotencia/auditoría y activar/desactivar preservando historia.
+3. Vínculo Partida0..1 Presupuesto, Deuda independiente, protección de Partidas activas; preview/motivo/confirmación de cambios utilizados solo con impacto histórico completo verificable. Sin consumidor disponible, bloqueo explícito; no inventar cálculos E2.3.
+4. API/UI conforme wireframes: listado/ficha/formulario y selector desde Partida, MFA/Origin/CSRF y estados de error/borrador/conflicto. Sin Base/Esencial/Del mes, ejecución ni importes ficticios.
+5. Verificación autorizada futura: matriz24 AC, continuidad/rollback/concurrencia/backup-restore privado, regresión API y E2E390/1440; typecheck/build y revisión independiente del candidato. F-01/F-02 siguen futuros. Un FAIL global conserva el gate de entrega, sin ampliar investigación SQLite por inferencia.
+6. Solo con candidato verificable: revisión de historial/contenido, commits/PR de desarrollo según autorización aplicable. Merge requerirá permiso expreso de esa PR. Sin despliegue/Excel real/datos personales ni reanudación Dev32.
+
+Mantener un ejecutor por defecto; no crear subagentes por este plan. La revisión independiente futura no se considera ejecutada ni autorizada como actividad presente. Detenerse después de presentar este plan al usuario.
+
+---
+
+## Historial anterior — conservar trazabilidad
+
 # MyFinanzas — tablero de coordinación
+
+## Parada y checkpoint WIP dev08 — 2026-10-23
+
+El usuario detiene desarrollo y autoriza únicamente commit/push de todo el estado
+de dev08, sin PR ni merge. Este estado prevalece sobre IN PROGRESS inferior:
+**dev08 WIP SIN VALIDAR**, ejecución detenida tras límite de uso de Developer.
+API posterior105 PASS/0 FAIL/1713 observada en log; primera98/7 conservada;
+E2E no superado y QA independiente NO ejecutada. Ver [checkpoint08](08-presupuestos-progress.md)
+y [evidencia parcial08](08-presupuestos-testplan.md). No reanudar automáticamente.
+AC23/E2.1 BLOQUEADO, AC23-SQLITE inconcluso separado y Dev32 PAUSED; PR40 independiente.
+
+## Estado vigente — ejecución dev08 autorizada — 2026-10-22
+
+Fuente: mensaje expreso «Álex — Autorización de desarrollo E2.2 · $dev 08».
+Prevalece sobre permisos históricos inferiores. El tablero registra autorizaciones,
+no las concede. Spec08/wireframes aprobados e integrados mediante squash PR39 en
+main `20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad`; HEAD autorizado `0f3d4e5`,
+CI push39851581005 y PR39851590534 SUCCESS. CI posterior main39853674496 SUCCESS.
+
+| Línea | Estado real / autorización | Siguiente gate |
+| --- | --- | --- |
+| E2.2 spec08 | APROBADA e integrada PR39;24 AC actuales y F-01/F-02 futuros | Conservar decisiones/wireframes; no reabrir preguntas |
+| E2.2 dev08 | IN PROGRESS; seis incrementos, pruebas, QA independiente y preparación PR autorizados | Developer entrega candidato SHA; QA evalúa, coordinador publica solo si verificable |
+| QA08 | Matriz24 preparada, NO ejecución ni PASS todavía | Esperar candidato exacto, revisión independiente y checks reales |
+| E2.1/AC23 | BLOQUEADO; sin aceptación global | Conservar fallo histórico; no darlo por resuelto por verdes de dev08 |
+| AC23-SQLITE | Investigación actual cerrada INCONCLUSA, incidencia técnica separada | Sin probes/cambios nuevos sin hipótesis discriminante y autorización aplicable |
+| Dev32/PR30/AC22 y otras tareas pausadas | PAUSED | No reanudar |
+| PR40 | Actualización documental independiente, OPEN sin merge autorizado | No integrar por inferencia de permisos dev08 |
+| E2.3 y F-01/F-02 | PENDING/FUERA DE ALCANCE dev08 | Sin planificación/Base/Esencial/Del mes/ejecutado/pendientes/estados mensuales |
+
+Base exacta main verificada con árboles/commits Git, rama aislada feat/08-presupuestos.
+Sin importar dev07 ni modificar checkpoints ajenos. Su migración aún fuera de main
+no se presume compatible: documentar reconciliación futura y regresiones, no reparar
+SQLite incidentalmente. Sin Excel real/datos personales/despliegue/migración operativa.
+No merge automático de futura PR funcional. Estados históricos inferiores conservados.
+
+---
+
+## Historial anterior
 
 Coordinador: único escritor; [gates locales](methodology/myfinanzas-coordination.md).
 Reconciliación: 2026-10-22 Europe/Madrid. Main remoto verificado en

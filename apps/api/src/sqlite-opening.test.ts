@@ -32,11 +32,22 @@ async function fixture(run: (path: string) => Promise<void> | void) {
   }
 }
 
-test("SQLite B1: timeout is the first SQL on demo and production runtime/read-only handles; immutable probe unchanged", async () =>
+test("SQLite B1: timeout is the first SQL on every demo and production handle; no immutable probe (31-E1)", async () =>
   fixture((path) => {
     initializeProduction();
     const traces = new Map<sqlite.Database, string[]>();
     const spies = [];
+    const begin = sqlite.Database.prototype.transaction;
+    spies.push(
+      spyOn(sqlite.Database.prototype, "transaction").mockImplementation(
+        function (this: sqlite.Database, ...a: any[]) {
+          const calls = traces.get(this) ?? [];
+          calls.push("<transaction>");
+          traces.set(this, calls);
+          return (begin as Function).apply(this, a);
+        } as any,
+      ),
+    );
     for (const name of ["exec", "query", "prepare", "run"] as const) {
       const original = sqlite.Database.prototype[name];
       spies.push(
@@ -58,15 +69,22 @@ test("SQLite B1: timeout is the first SQL on demo and production runtime/read-on
       openDatabase(join(resolve(path, "../.."), "demo.sqlite")).close();
       openDatabase(":memory:").close();
       const calls = [...traces.values()];
-      const live = calls.filter((c) => c[0] === "PRAGMA busy_timeout=3000");
-      expect(live).toHaveLength(4);
-      const probes = calls.filter((c) => c[0] !== "PRAGMA busy_timeout=3000");
-      expect(probes.length).toBeGreaterThan(0);
-      for (const c of probes) {
-        expect(c[0]).toStartWith("SELECT name FROM sqlite_master");
-        expect(c.some((s) => /PRAGMA|BEGIN|INSERT|UPDATE/i.test(s))).toBe(
-          false,
+      // 31-E1: every connection is a conventional live handle; none is a separate probe.
+      expect(calls).toHaveLength(4);
+      for (const c of calls) {
+        expect(c[0]).toBe("PRAGMA busy_timeout=3000");
+        const firstRead = c.findIndex((s) =>
+          s.startsWith("SELECT name FROM sqlite_master"),
         );
+        const persistent = c.findIndex((s) =>
+          /journal_mode|synchronous/i.test(s),
+        );
+        expect(firstRead).toBeGreaterThan(0);
+        // The first identity read happens inside a read transaction (31-E1).
+        const opened = c.indexOf("<transaction>");
+        expect(opened).toBeGreaterThan(0);
+        expect(opened).toBeLessThan(firstRead);
+        if (persistent !== -1) expect(persistent).toBeGreaterThan(firstRead);
       }
     } finally {
       for (const spy of spies) spy.mockRestore();

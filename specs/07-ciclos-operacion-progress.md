@@ -1,5 +1,24 @@
 # 07 — E2.1 Operación de Ciclos: Progress
 
+## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
+
+La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.
+Se incorpora origin/main 8fae7a44 mediante merge preservando los 8 commits originales.
+SQLite31-E1 permanece intacto; E2.2 conserva v8 y Dev07 pasa a v9. Fixture v8 congelada
+captura el builder integrado previo, sin renumerar una base nueva. O4 cubre v7/v8,
+demo/production ficticias, Presupuestos/enlaces/intentos y MFA; restore revoca ambos intentos.
+Conflictos ordinarios de schema/backup/tests/fixture/CSS/E2E resueltos conservando módulos.
+
+Resultados locales macOS Bun1.4.3: install congelado, typecheck y build PASS.
+Regresión heredada AC23: 5 ejecuciones independientes, cada una 1 PASS/18 assertions;
+O5/O7 desde v7 y v8: 4 PASS/32 assertions. No reaparece errno11 en estas pruebas;
+esto no acredita por sí solo cierre global ni sustituye Linux/QA del candidato.
+Suite API completa, O4 productivo, E2E/visual y CI Linux pendientes del candidato.
+Históricos /workspace/work/dev07/work y artefactos del handoff no existen localmente:
+se conservan sus referencias documentales, sin afirmar recuperación de esos archivos.
+Dev32/infraAC22/B4/E2.3 y datos reales/deploy permanecen fuera de alcance.
+
+
 Specification aprobada integrada PR37/c04dc07; dev07 autorizado por el usuario
 2026-10-22. Rama feat/07-ciclos-operacion, trabajo aislado. **IN PROGRESS —
 verificación global bloqueada**, sin publicación/merge/despliegue/migración operativa.

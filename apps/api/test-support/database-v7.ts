@@ -11,8 +11,8 @@ import {
 } from "../src/database-identity";
 
 const schemaVersion = 7;
-// Frozen genuine v7 builder. Internal schema builder: receives a connection, never opens a path or grants runtime access.
-export function prepareSchema(db: Database, identity: Identity) {
+// Internal schema builder: receives a connection, never opens a path or grants runtime access.
+export function prepareV7(db: Database, identity: Identity) {
   if (
     db
       .query(
@@ -187,10 +187,11 @@ export function openDatabaseV7(
   path: string,
   identity: Identity = { origin: "demo", key_hash: null },
 ) {
+  // Same private first open as openDatabaseV6: WAL/SHM inherit the database mode.
   const mask = process.umask(0o077);
   try {
     const db = new Database(path, { create: true, strict: true });
-    prepareSchema(db, identity);
+    prepareV7(db, identity);
     return db;
   } finally {
     process.umask(mask);

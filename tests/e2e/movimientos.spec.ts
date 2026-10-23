@@ -1,4 +1,5 @@
 import { cycleOperationsJourney } from "./cycle-operations";
+import { presupuestos } from "./presupuestos";
 import { deudas } from "./deudas";
 import { transferencias } from "./transferencias";
 import { test, expect } from "@playwright/test";
@@ -623,6 +624,12 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     const e15 = await transferencias(page);
     const e16 = await deudas(page);
     const e21 = await cycleOperationsJourney(page);
+    const e22 = await presupuestos(page, e16);
+    const expectedDebt = (await get("/deudas/" + e16.id)).item.capitalPendiente;
+    const expectedBank = (await get("/saldos/" + e16.bank)).saldo.posicion
+      .importe;
+    expect(expectedDebt).toBe("712.00");
+    expect(expectedBank).toBe("190.00");
     const snapshotMovements = (await get("/movimientos?estado=")).movimientos;
     // Genuine VACUUM INTO/age restoration, normal login/TOTP in a second Effect server.
     const restored = spawn(
@@ -691,11 +698,20 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
         "2026-08-01",
       );
       expect((await get("/deudas/" + e16.id)).item.capitalPendiente).toBe(
-        "720.00",
+        expectedDebt,
       );
       expect((await get("/saldos/" + e16.bank)).saldo.posicion.importe).toBe(
-        "200.00",
+        expectedBank,
       );
+      expect((await get("/presupuestos/" + e22.id)).item.nombre).toBe(
+        "Presupuesto gasto ficticio",
+      );
+      expect(
+        (await get("/clasificacion/partidas/" + e22.partida)).item.presupuesto,
+      ).toBe(e22.id);
+      expect(
+        (await get("/clasificacion/partidas/" + e22.partida)).item.deuda,
+      ).toBe(e22.debt);
       expect((await get("/referencias/" + e15.travel)).item.nombre).toBe(
         "Caso concurrentemente renombrado",
       );

@@ -1,9 +1,9 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.6 integradas (PR34 cb9ba3b); spec07 E2.1 integrada PR37; dev07 autorizado y en verificación, sin merge.
-Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
+Repositorio privado: E1.1–E1.6 y E2.2 integradas (PR44 255bf61); spec07 E2.1 aprobada, dev07 sin integrar (AC23 bloqueado).
+Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) en las secciones necesarias, sin recargar documentos completos sin cambios.
 
-- Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
+- Carga solo las guías aplicables: [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
   [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
 - Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
 - Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
@@ -36,12 +36,12 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
 - SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 
-## Coordinación v2.3.1 — vigente (PR #32 integrada)
-- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado.
-- Lee [flujos](specs/methodology/workflows.md), [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md); Skills existentes preservadas.
+## Coordinación v2.5.0 — aprobaciones únicas + handoff
+- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado; aprobaciones: [approvals](specs/methodology/approvals.md).
+- Consulta [flujos](specs/methodology/workflows.md) para clasificar; carga [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md) solo al delegar; Skills preservadas.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
-- Dimensiona subagentes según trabajo y capacidad; sin aislamiento seguro, serializa escrituras.
-- Aprobar spec NO autoriza dev06 ni nuevas specs; no controla chats externos ni trabaja entre sesiones.
+- Quick autorizado, reversible y de bajo riesgo: plan de una línea, sin reconfirmar; consulta o Plan no autoriza editar. Un ejecutor por defecto, coordinación por hitos y QA independiente.
+- Aprobar spec NO autoriza desarrollo; [$handoff](.agents/skills/handoff/SKILL.md) (Claude: `/handoff`) consolida y para, sin reanudar ni controlar chats externos.
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.

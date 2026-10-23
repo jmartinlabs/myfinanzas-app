@@ -34,10 +34,9 @@ por agentes ni de un tablero que aún cite SHAs anteriores.
 
 ## Aprobaciones y costes
 
-Antes de fusionar una PR, exigir `Apruebo PR #N` inequívoco y comprobar
-HEAD/CI. Nunca interpretar `dale`, `ok` o `continúa` como merge,
-aprobación de spec o nuevo desarrollo. Priorizar trabajo autorizado y no
-duplicar QA ni subagentes innecesariamente.
+Las reglas de aprobación (por ejemplo `Apruebo PR #N` y qué no vale como
+aprobación) están solo en `specs/methodology/approvals.md`. Priorizar trabajo
+autorizado y no duplicar QA ni subagentes innecesariamente.
 
 Este adaptador no activa Claude, no contrata ninguna suscripción, no instala
 hooks ni configura claves de API, no ejecuta Evals de modelos y no despliega.

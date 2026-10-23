@@ -31,6 +31,16 @@ jobs:
       - run: bun run build
       - name: Install approved local backup tool
         run: sudo apt-get update && sudo apt-get install -y age
+      - name: Dev07 AC23 concurrency gate
+        if: github.ref_name == 'feat/07-ciclos-operacion' || github.head_ref == 'feat/07-ciclos-operacion'
+        run: |
+          set -e
+          # Bounded repetition for the historical intermittent v3 opening failure.
+          for iteration in 1 2 3 4 5; do
+            echo "AC23 legacy concurrency run ${iteration}/5"
+            NODE_ENV=test bun test apps/api/src/movimientos.test.ts --test-name-pattern '04 AC22/23/28: dos procesos'
+          done
+          NODE_ENV=test bun test apps/api/src/cycle-operations.test.ts --test-name-pattern '07 O[457]'
       - run: bun run test
       - run: bunx playwright install --with-deps chromium
       - run: bun run test:e2e

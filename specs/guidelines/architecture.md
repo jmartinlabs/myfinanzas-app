@@ -210,7 +210,7 @@ Esquema7 añade deudas, intentos y relación opcional Partida→Deuda; capital/i
 `deudas.ts` centraliza maestro/posición derivada desde apertura y capital aplicable; `debt-schema.ts` mantiene la extensión versionada. Movimientos incorpora el cuarto Tipo y revisión banco/capital/Gasto, huella con entradas Deuda y contexto técnico para rechazar confirmación obsoleta; no API paralela de pagos ni acumulados persistidos. Backup admite manifiesto7/e1.6-v7/origen y restore revoca también intentos Deuda. [Evidencia06](../06-deuda-testplan.md); E2/E4/cierres siguen pendientes.
 
 ## E2.1 — Operación de Ciclos (dev07, pendiente integración)
-`cycle-operation-schema.ts` extiende el maestro SQL `ciclos` en v8 (sin segundo maestro).
+`cycle-operation-schema.ts` extiende el maestro SQL `ciclos` en v9 (sin segundo maestro).
 Guarda transaccional interna permite el procedimiento revisado; fuera de él siguen
 prohibidas actualización directa, eliminación y alteración de identidad. La guarda
 queda vacía tras éxito o rollback. `cycle_audit` conserva actor/UTC/motivo/antes/después;
@@ -220,5 +220,7 @@ anulados consultables; pagina solo presentación. Huella de contexto incluye rev
 hechos y fuentes reales comunes. BEGIN IMMEDIATE revalida huella y confirma únicamente
 con motivo y revisión explícita, sin actualizar hechos originales ni propagar Comida.
 API y UI reutilizan seguridad, componentes y pipeline existentes. Backup age identifica
-esquema8/e2.1-v8; continuidad v7 usa fixture congelada previa con Deuda, hechos y MFA.
+esquema9/e2.1-v9; continuidad v7 usa fixture congelada previa con Deuda, hechos y MFA.
 [Pruebas07](../07-ciclos-operacion-testplan.md) distingue evidencia y bloqueos abiertos.
+
+Reconciliación Dev07 2026-10-23: se preserva Presupuestos v8/contrato e2.2 y se aplica Ciclos v9 después. Fixtures genuinas v7 y v8 (builder integrado de main) verifican continuidad y rollback; backup conserva v8 y admite v9, restore revoca intentos de ambos módulos. Apertura conserva íntegra la enmienda31-E1 de main.

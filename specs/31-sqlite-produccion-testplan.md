@@ -309,3 +309,50 @@ WAL, Caddy/HTTPS/cookies, copias externas/retención/custodia y simulacro de res
 monitorización/actualizaciones/cifrado y autorización específica. Ver infra/README.md.
 No acceso al VPS, infraestructura activa, Excel ni datos reales. PR #21/#22 intactas.
 Este registro documental se propone aparte, sin autorización de integrar otra PR.
+
+## Enmienda 31-E1 — evidencia — 2026-10-23
+
+Rama `fix/ac23-persistent-identity`, base main `c8cb72d`. La CI de Linux es la referencia: en
+macOS las suites de producción no se ejecutan (FFI `libc.so.6`, `age`); main falla allí ~35
+pruebas por entorno.
+
+| Criterio | Prueba | Resultado |
+| --- | --- | --- |
+| AC-34 (concurrente) | `31 AC34: concurrent…`: 40 rondas, dos migraciones reales de v3 genuina + tercer proceso reabriendo con `openDatabase` | Código de main (local): **FAIL**, 2 «Identidad ausente.» en 40 rondas. Corregido: **PASS** local y CI. Detecta con fuerza la falta de la transacción de lectura (QA: 4/4 fallos al quitarla) |
+| AC-34 (determinista) | `31 AC34: demo opening…` y `31 AC34: production opening…`: identidad vigente confirmada solo en el WAL; el archivo principal conserva otra (construcción de prueba con triggers retirados y restaurados) | **PASS** CI. Mutación en copia de scratch con la sonda `immutable=1` reintroducida (transacción conservada): **FAIL 3/3**; control sin mutar **PASS**. Cierra el hallazgo F1 de QA |
+| AC-35 | `31 AC35`: base de origen ajeno en modo rollback, ambos sentidos | **PASS** CI: rechazo, cabecera sigue en rollback, sin `-wal`, contenido lógico y clave intactos |
+| AC-36 | `31 AC36`: clave de otra pareja, con y sin escritor | **PASS** CI: rechazo antes de PRAGMA persistentes; DB (y WAL con escritor) y clave intactos |
+| AC-37 | `31 AC37`: ningún módulo de aplicación con `immutable=`, `nolock=` ni `readonly_shm=` | **PASS** local y CI |
+| AC-05/06 | `31 S7` actualizada + P1 | **PASS** CI: DB/WAL idénticos con escritor abierto; contenido lógico y clave intactos |
+| AC-17 | AC34 + `04 AC22/23/28` + B2–B4 | **PASS** CI; `04 AC22/23/28` también **PASS** local |
+| B1 | `SQLite B1` actualizada: toda conexión empieza con `busy_timeout` y lee identidad antes de cualquier PRAGMA persistente | **PASS** CI |
+| P16 | Sin cambios | **PASS** CI tras conservar `verifyProductionFiles` |
+
+| SHA | CI | API | E2E | Nota |
+| --- | --- | --- | --- | --- |
+| `58015a1` | [39941271047](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39941271047) | 108/2 | no ejecutado | P16 (montaje) y AC35 (montaje); corregido |
+| `7b571ef` | [39941586636](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39941586636) | **110/0** | **2 PASS** | Candidato revisado por QA31E1-1 |
+| `e4bddfa` | [39943120470](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39943120470) | **112/0** | **2 PASS** | Hallazgos menores F2–F5 (QA31E1-2) |
+| `07e0369` | [39957909451](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39957909451) | **114/0** | **2 PASS** | AC-34 determinista (F1, QA31E1-3) |
+
+Typecheck y build PASS (local y CI). Controles documentales en la PR.
+
+QA independiente (`qa-review`, sin participación en la implementación):
+- QA31E1-1 sobre `7b571ef`: sin defectos de código; reglas de 31-E1 y garantías de spec31
+  cumplidas. Hallazgo F1 (AC-34 no detectaba la sonda reintroducida) y menores F2–F5.
+- QA31E1-2 sobre `e4bddfa`: F2–F5 resueltos, sin bloqueos.
+- QA31E1-3 sobre `07e0369`: sin bloqueos, F1 cerrado. Verificación propia en copias de
+  scratch: sonda reintroducida **FAIL 4/4** en el caso determinista; código actual PASS 3/3;
+  sin transacción de lectura falla la escena concurrente. Construcción de prueba válida (un
+  archivo principal anterior a un commit sin checkpoint es un estado normal de SQLite); el
+  caso de producción habría fallado con la sonda anterior.
+
+Limitaciones:
+- La escena concurrente de AC34 es probabilística; el caso determinista cubre la regresión
+  de la sonda. Ninguna prueba demuestra ausencia absoluta de carreras.
+- Los casos deterministas de AC34 construyen el estado retirando y restaurando triggers de
+  identidad: simulan un archivo principal desactualizado frente a un WAL confirmado.
+- B1 registra la creación de la transacción, no que cada lectura ocurra dentro de ella.
+- AC37 no detecta flags de apertura numéricos ni cadenas construidas por partes.
+- El `-shm` puede cambiar en un rechazo, conforme a 31-E1; no se compara byte a byte.
+- B4 (fallo intermitente previo) queda fuera de alcance.

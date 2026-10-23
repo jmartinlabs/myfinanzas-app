@@ -1504,3 +1504,16 @@ textarea {
 .cycle-facts li { padding: 1rem 0; border-top: 1px solid #dce5d0; overflow-wrap: anywhere; }
 .cycle-impact, .cycle-history { margin-top: 20px; }
 .cycle-impact p, .cycle-history p { overflow-wrap: anywhere; }
+/* E2.2: prevent long financial labels from stretching narrow screens. */
+.budget-filters {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+.budget-list > p {
+  padding: 0 22px;
+}
+.budget-review {
+  overflow-wrap: anywhere;
+}
+.budget-review .actions {
+  flex-wrap: wrap;
+}
