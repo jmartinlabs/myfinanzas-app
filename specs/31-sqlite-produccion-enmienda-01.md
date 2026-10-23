@@ -22,6 +22,12 @@ porque su protocolo WAL crea o actualiza `-wal`/`-shm` y hace checkpoint de tran
 confirmadas. Esa restricción no protege datos: la enmienda la sustituye por una garantía
 **lógica** y elimina la sonda.
 
+**Prevalencia:** esta enmienda es la solución definitiva aprobada. Prevalece sobre la
+«corrección mínima propuesta» del diagnóstico AC23 (sustituir `immutable=1` por una lectura
+de solo lectura con bloqueos), que la evaluación posterior descartó porque falla con
+`SQLITE_CANTOPEN` en bases sin sidecars y en la recuperación de B2. Ese diagnóstico y sus
+resultados se conservan íntegros como evidencia histórica; no se reescriben ni se borran.
+
 ## Clasificación de las garantías de spec31
 
 | Tipo | Garantía | Tras la enmienda |
