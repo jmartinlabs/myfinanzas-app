@@ -43,6 +43,10 @@ jobs:
           NODE_ENV=test bun test apps/api/src/cycle-operations.test.ts --test-name-pattern '07 O[457]'
       - run: bun run test
       - run: bunx playwright install --with-deps chromium
+      - name: Cycle review focus regression
+        run: |
+          focus_browser=$(bun -e 'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())')
+          bun scripts/diagnostics/cycle-review-focus.ts . "$focus_browser" .local/focus-regression.json
       - run: bun run test:e2e
       - name: Fictional E1.1–E1.5 screenshots
         if: always()

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 export type Cycle = {
@@ -779,6 +779,9 @@ function CycleOperationForm({
     attempt = useRef(crypto.randomUUID()),
     errorRef = useRef<HTMLDivElement>(null),
     reviewRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (impact) reviewRef.current?.focus();
+  }, [impact]);
   const endpoint = id ? "/ciclos/" + id + "/rectificar" : "/ciclos/omitido";
   useEffect(() => {
     if (!id) return;
@@ -832,7 +835,6 @@ function CycleOperationForm({
           payload(),
         ),
       );
-      requestAnimationFrame(() => reviewRef.current?.focus());
     } catch (e) {
       fail(e);
     } finally {
