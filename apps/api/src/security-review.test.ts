@@ -335,17 +335,37 @@ test("31 AC35: foreign-origin rollback-mode databases are rejected without WAL c
   isolated((_root, configure) => {
     for (const source of ["production", "demo"]) {
       const path = configure(source);
-      if (source === "production") initializeProduction();
-      else {
-        process.env.NODE_ENV = "test";
-        openDatabase(path).close();
+      if (source === "demo") process.env.NODE_ENV = "test";
+      // Create and switch to rollback mode in a child that exits: leaving the WAL
+      // mode needs exclusive access, which an in-process closed handle could block.
+      const created = Bun.spawnSync(
+        [
+          process.execPath,
+          "-e",
+          source === "production"
+            ? `import{initializeProduction}from${JSON.stringify(join(import.meta.dir, "production-state.ts"))};initializeProduction();`
+            : `import{openDatabase}from${JSON.stringify(join(import.meta.dir, "database.ts"))};openDatabase(${JSON.stringify(path)}).close();`,
+        ],
+        { env: { ...process.env }, stderr: "pipe" },
+      );
+      expect(created.stderr.toString()).toBe("");
+      expect(created.exitCode).toBe(0);
+      if (source === "demo")
         fs.writeFileSync(process.env.AUTH_KEY_PATH!, Buffer.alloc(32), {
           mode: 0o600,
         });
-      }
-      const setup = new sqlite.Database(path, { strict: true });
-      setup.exec("PRAGMA journal_mode=DELETE");
-      setup.close();
+      const converted = Bun.spawnSync(
+        [
+          process.execPath,
+          "-e",
+          `import{Database}from"bun:sqlite";const d=new Database(${JSON.stringify(path)});const m=d.query("PRAGMA journal_mode=DELETE").get();d.close();console.log(JSON.stringify(m));`,
+        ],
+        { stderr: "pipe", stdout: "pipe" },
+      );
+      expect(converted.stderr.toString()).toBe("");
+      expect(JSON.parse(converted.stdout.toString())).toEqual({
+        journal_mode: "delete",
+      });
       for (const suffix of ["-wal", "-shm"])
         fs.rmSync(path + suffix, { force: true });
       const reader = new sqlite.Database(path, { readonly: true });
