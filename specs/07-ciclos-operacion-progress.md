@@ -1,5 +1,18 @@
 # 07 — E2.1 Operación de Ciclos: Progress
 
+## Verificación actual — 2026-10-23
+
+Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
+incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
+CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
+SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
+AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
+QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
+Evidencia completa y límites en [testplan07](07-ciclos-operacion-testplan.md).
+Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futuros.
+Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
+y aprobación expresa por su número. El cierre posterior solo cambia documentación.
+
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
 La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.

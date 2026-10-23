@@ -1,5 +1,40 @@
 # 07 — E2.1 Operación de Ciclos: Test plan
 
+## Verificación del candidato reconciliado — 2026-10-23
+
+Estado: operación E2.1 verificada y pendiente de revisión/merge de PR #49.
+Código candidato `a2722f4d57d600d09cbf256ddbea906019cbbd1f`, base main `8fae7a44`;
+los apartados inferiores conservan la historia y los bloqueos previos, no el estado actual.
+
+| Gate actual | Evidencia real | Resultado |
+| --- | --- | --- |
+| AC23 heredada | 5 ejecuciones locales y 5 en gate Linux, 18 aserciones cada una; escenario incluido además en API completa | PASS, sin errno11 en estas ejecuciones |
+| AC23 continuidad | O4: v7/v8 genuinas, demo/production ficticias, origen/clave, presupuestos/enlaces, deuda/hechos/auditoría/MFA; O5/O7: rollback/desconocido y dos procesos v7/v8 | PASS Linux |
+| AC24 copia/restore | age real, formatos históricos hasta e2.2-v8 y nuevo e2.1-v9; revoca sesiones/intentos de ambos módulos, conserva historia y recupera MFA | PASS Linux |
+| API completa | 125 PASS / 0 FAIL / 2228 aserciones | PASS Linux |
+| Tipos/build/controles | Instalación congelada Bun1.4.3, typecheck/build, repositorio/proyecto/validador y regresiones | PASS local y Linux |
+| E2E/AC25/26 | 2 PASS; recorridos E1.1–E1.6/E2.1/E2.2 y restore/MFA; capturas ficticias390/1440 inspeccionadas | PASS Linux e inspección |
+| QA independiente | 9 pruebas propias PASS/167 aserciones; probe de antiguo schema8 Dev07 rechazado con bytes/versión intactos; delta final revisado | Sin bloqueos |
+
+CI por SHA: [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637),
+COMPLETED/SUCCESS sobre `a2722f4`. QA contrastó además sus logs y capturas.
+Hallazgos corregidos: mes financiado antes/después explícito y detalle por fecha/ID
+decimal exacto antes de paginar. O3 actual:109 hechos, páginas100/9, IDs superiores
+a2^53; ejecución del caso final1 PASS/10 aserciones. Destinos de backup de pruebas v9 coherentes.
+
+AC01–26 operativos verificados con la matriz histórica y la evidencia actual anterior.
+AC23 deja de bloquear esta entrega por la evidencia acumulada de regresiones, continuidad,
+suite global y QA, no por una ejecución aislada. No se afirma ausencia absoluta de carreras.
+AC27–29 y E2.1-AC2 del roadmap permanecen PENDING de sus módulos futuros.
+
+Capturas: `artifacts/e2-1/` del artifact de CI, incluyendo listado/ficha/formulario,
+revisión/errores/historial y cambio de mes en390/1440. Se conserva diseño claro aprobado,
+teclado/foco y contraste; el delta añade los dos meses explícitos sin rediseñar.
+Límites: macOS no sustituye la referencia productiva Linux/glibc/age; archivos históricos
+Cloud no recuperados. Dev32/infraAC22/B4/E2.3 fuera de alcance. Solo fixtures ficticias;
+sin migración operativa, datos reales ni despliegue. Merge requiere aprobación expresa
+del usuario por PR #49. El commit posterior de cierre solo modifica documentación.
+
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
 La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.
