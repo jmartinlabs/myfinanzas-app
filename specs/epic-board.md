@@ -1,7 +1,7 @@
 ## Estado vigente — E2.2 integrada — 2026-10-23
 
 Coordinador (Claude Code, `/orchestrate`). Prevalece sobre los apartados inferiores; el
-tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI SUCCESS.
+tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI SUCCESS; después `a7fb9d8` (PR #29).
 
 | Línea | Estado verificado | Próxima acción / gate |
 | --- | --- | --- |
@@ -9,7 +9,9 @@ tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI S
 | E2.3 | Siguiente entrega del roadmap; consume Presupuestos | Requiere especificación y autorización propias |
 | E2.1 / dev07 / AC23 | BLOQUEADO; rama `feat/07-ciclos-operacion` fuera de main, sin PR | Reanudar solo con instrucción expresa; reconciliar su esquema8 con el contrato v8 de E2.2 |
 | SQLite B4 | Fallo intermitente observado una vez en CI de `6eeb727`; pasó al relanzar | Incidencia de apertura SQLite fuera de alcance; no investigar sin autorización |
-| Dev32 / PR #30, PRs #21, #22, #29 | PAUSED / abiertas sin decisión | No reanudar |
+| Spec32 / PR #29 | INTEGRADA: squash `a7fb9d8` tras «Apruebo PR #29» del usuario, HEAD `a9e0fdb` con CI SUCCESS y merge con main verificado localmente | Solo documentación; no reactiva Dev32 |
+| Dev32 / PR #30 / AC22 | PAUSED; draft con conflictos, 12 commits por detrás de main | Reanudar solo con autorización expresa; revisar actualización/rollback con esquema v8 |
+| PRs #21 y #22 | CERRADAS 2026-10-23 como sustituidas por spec31/dev31 (#23, #25, #28, #31), con permiso del usuario; ramas conservadas | — |
 | PR #35 | Cerrada como sustituida por #43 | — |
 
 Worktrees temporales de dev08/QA08 eliminados tras el merge; rama `feat/08-presupuestos` conservada.
