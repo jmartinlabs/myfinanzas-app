@@ -1,5 +1,14 @@
 # 07 — E2.1 Operación de Ciclos: Test plan
 
+## Integración verificada — 2026-10-23
+
+PR #49 integrada por aprobación literal «Apruebo PR #49.» del HEAD `c55d9f0`;
+squash `1cdbc7c8ce843bebe15117e1e6dc179f92e0e545`, árbol idéntico al candidato aprobado.
+[CI posterior de main](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39980584663) SUCCESS: API 125/0 y 2228 aserciones,
+E2E 2 PASS, tipos/build/controles PASS. AC23 concurrente incluida y PASS en suite íntegra.
+Los apartados inferiores conservan la historia previa a integración; AC27–29/E2.1-AC2 no se reabren.
+Alcance operativo integrado, sin acreditar integración futura Comida, infraestructura o deploy.
+
 ## Verificación del candidato reconciliado — 2026-10-23
 
 Estado: operación E2.1 verificada y pendiente de revisión/merge de PR #49.
