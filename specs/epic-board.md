@@ -8,7 +8,7 @@ v2.5.0). PR #35 cerrada como sustituida por #43 con permiso del usuario.
 | --- | --- | --- |
 | E2.2 / dev08 | Autorizado por «Álex — Autorización de desarrollo E2.2 · `$dev 08`» (texto en el apartado 2026-10-22 inferior). Candidato en `feat/08-presupuestos`, CI Linux por SHA en [testplan08](08-presupuestos-testplan.md) | PR funcional; merge solo con «Apruebo PR #N» |
 | Decisión dev08 | Usuario 2026-10-23: «Sí: cambiar la fuente con un destino ya inactivo cuenta como nueva relación y debe exigir un Saldo activo; solo renombrar conserva el destino inactivo.» Implementada en `2880f98` | Sin otras decisiones abiertas |
-| QA08 | Independiente: QA08-1 `f82064b` NO_BLOCKERS (24 AC PASS), QA08-2 delta `84078b2` NO_BLOCKERS, QA08-3 delta `2880f98` | Limitaciones menores listadas en testplan08 |
+| QA08 | Independiente: QA08-1 `f82064b` NO_BLOCKERS (24 AC PASS), QA08-2 delta `84078b2` NO_BLOCKERS, QA08-3 delta `2880f98` NO_BLOCKERS | Limitaciones menores listadas en testplan08 |
 | E2.1 / AC23 | BLOQUEADO; dev07 fuera de main sin PR | Integrar dev07 exigirá reconciliar su esquema8 con el contrato v8 de E2.2 |
 | Dev32 / PR30 y PRs #21, #22, #29 | PAUSED / abiertas sin decisión | No reanudar |
 | E2.3, F-01/F-02 | Fuera de alcance | Sin Base/Esencial/Del mes ni ejecución |

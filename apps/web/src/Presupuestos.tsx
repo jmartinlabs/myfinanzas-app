@@ -496,6 +496,12 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     setPlan(null);
     setFields({});
   };
+  const destinations =
+    options?.saldos.filter(
+      (s) =>
+        s.estado === "Activa" ||
+        (s.id === old?.destino && value.fuente === old?.fuente),
+    ) ?? [];
   const body = () => ({
     ...value,
     destino: value.destino || null,
@@ -647,17 +653,18 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
                 aria-invalid={!!fields.destino}
               >
                 <option value="">Sin destino</option>
-                {options?.saldos
-                  .filter(
-                    (s) =>
-                      s.estado === "Activa" ||
-                      (s.id === old?.destino && value.fuente === old?.fuente),
-                  )
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.id} · {s.nombre} · {s.estado}
+                {destinations.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.id} · {s.nombre} · {s.estado}
+                  </option>
+                ))}
+                {/* Never clear a stale destination silently: show it as invalid. */}
+                {value.destino &&
+                  !destinations.some((s) => s.id === value.destino) && (
+                    <option value={value.destino} disabled>
+                      {value.destino} · no válido para esta fuente
                     </option>
-                  ))}
+                  )}
               </select>
             </label>
             {value.fuente === "No aplica" && value.destino && (

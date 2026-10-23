@@ -13,7 +13,7 @@ autoritativa. Las ejecuciones locales en macOS no cubren las suites que dependen
 | `a112b6d` | 39910404965 | 105/0 | 2 PASS | Primer candidato con E2E verde |
 | `f82064b` | 39910564007 | 105/0 | 2 PASS | Candidato revisado por QA08-1 |
 | `84078b2` | 39911604222 | 106/0 | 2 PASS | Delta revisado por QA08-2 |
-| `2880f98` | ver PR | — | — | Regla de fuente con destino inactivo; QA08-3 |
+| `2880f98` | 39912703886 | 106/0 | 2 PASS | Regla de fuente con destino inactivo; QA08-3 NO_BLOCKERS |
 
 ## Cobertura de criterios
 
@@ -33,7 +33,9 @@ autoritativa. Las ejecuciones locales en macOS no cubren las suites que dependen
 QA independiente (subagente `qa-review`, sin participación en la implementación):
 QA08-1 sobre `f82064b` NO_BLOCKERS con los 24 criterios PASS (AC-19 parcial en UI,
 corregido en `84078b2`; AC-21 visual cubierto por la inspección del coordinador);
-QA08-2 sobre el delta `84078b2` NO_BLOCKERS; QA08-3 sobre `2880f98` en la PR.
+QA08-2 sobre el delta `84078b2` NO_BLOCKERS; QA08-3 sobre el delta `2880f98` NO_BLOCKERS
+(su hallazgo menor de UI —destino no válido oculto en el select— corregido después:
+se muestra como opción deshabilitada «no válido para esta fuente», sin vaciarlo).
 Inspección visual del coordinador sobre capturas 390/1440 (listado, formulario,
 revisión de impacto, bloqueo por historia): sin desbordamiento.
 
