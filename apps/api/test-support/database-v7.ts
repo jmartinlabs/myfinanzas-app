@@ -10,7 +10,7 @@ import {
   type Identity,
 } from "../src/database-identity";
 
-const schemaVersion=7;
+const schemaVersion = 7;
 // Internal schema builder: receives a connection, never opens a path or grants runtime access.
 export function prepareV7(db: Database, identity: Identity) {
   if (

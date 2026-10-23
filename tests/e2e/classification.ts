@@ -101,7 +101,7 @@ export async function classificationJourney(page: Page) {
     .click();
   await expect(heading("Gasto cotidiano ficticio")).toBeVisible();
   const partida = page.url().split("/").at(-1)!;
-  await expect(page.getByText("Presupuesto: Sin asignación")).toBeVisible();
+  await expect(page.getByText("Presupuesto: Sin Presupuesto")).toBeVisible();
   await shot("detail-mobile");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await shot("detail-desktop");

@@ -119,7 +119,9 @@ export function backup(
                   ? "e1.5-v5"
                   : sourceVersion === 6
                     ? "sqlite-v6"
-                    : sourceVersion === 7 ? "e1.6-v7" : "e2.2-v8",
+                    : sourceVersion === 7
+                      ? "e1.6-v7"
+                      : "e2.2-v8",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),

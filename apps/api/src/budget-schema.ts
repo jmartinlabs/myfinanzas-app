@@ -28,7 +28,16 @@ export function budgetSchema(db: Database) {
 }
 
 export function assertBudgetContract(db: Database) {
-  if (!db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='budget_contract'").get() ||
-    (db.query("SELECT contract FROM budget_contract WHERE id=1").get() as any)?.contract !== 'e2.2-presupuestos-v8')
-    throw Error("Esquema8 incompatible: se requiere el contrato E2.2, no una migración ajena.");
+  if (
+    !db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='budget_contract'",
+      )
+      .get() ||
+    (db.query("SELECT contract FROM budget_contract WHERE id=1").get() as any)
+      ?.contract !== "e2.2-presupuestos-v8"
+  )
+    throw Error(
+      "Esquema8 incompatible: se requiere el contrato E2.2, no una migración ajena.",
+    );
 }

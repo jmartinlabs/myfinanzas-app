@@ -228,7 +228,20 @@ function App() {
             <span aria-hidden="true">◷</span> Deudas{" "}
             <span aria-hidden="true">›</span>
           </a>
-          <a className={path.startsWith("/presupuestos")?"nav-active":"nav-link"} aria-current={path.startsWith("/presupuestos")?"page":undefined} href="/presupuestos" onClick={e=>{e.preventDefault();go("/presupuestos")}}><span aria-hidden="true">▤</span> Presupuestos <span aria-hidden="true">›</span></a>
+          <a
+            className={
+              path.startsWith("/presupuestos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/presupuestos") ? "page" : undefined}
+            href="/presupuestos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/presupuestos");
+            }}
+          >
+            <span aria-hidden="true">▤</span> Presupuestos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>
@@ -263,7 +276,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/presupuestos") ? (<Presupuestos path={path} go={go}/>) : path.startsWith("/deudas") ? (
+          {path.startsWith("/presupuestos") ? (
+            <Presupuestos path={path} go={go} />
+          ) : path.startsWith("/deudas") ? (
             <Deudas path={path} go={go} />
           ) : path.startsWith("/referencias") ? (
             <Referencias path={path} go={go} />

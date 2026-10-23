@@ -1,4 +1,13 @@
-import {getBudget,listBudgets,createBudget,updateBudget,previewBudget,changeBudgetState,budgetParts,budgetUsage} from "./presupuestos";
+import {
+  getBudget,
+  listBudgets,
+  createBudget,
+  updateBudget,
+  previewBudget,
+  changeBudgetState,
+  budgetParts,
+  budgetUsage,
+} from "./presupuestos";
 import {
   getDebt,
   listDebts,
@@ -191,24 +200,85 @@ export function createApp(db: Database, options: AppOptions) {
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
       if (cycle && req.method === "GET")
         return reply(db.transaction(() => getCycle(db, cycle[1]))());
-      if (path === "/api/presupuestos" && req.method === "GET") return reply(listBudgets(db,new URL(req.url).searchParams));
+      if (path === "/api/presupuestos" && req.method === "GET")
+        return reply(listBudgets(db, new URL(req.url).searchParams));
       if (path === "/api/presupuestos" && req.method === "POST") {
-        const item=createBudget(db,await jsonBody(req),req.headers.get("idempotency-key")??"",now());
-        headers.set("location","/api/presupuestos/"+item.id);return reply({item},201);
+        const item = createBudget(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/presupuestos/" + item.id);
+        return reply({ item }, 201);
       }
-      if (path === "/api/presupuestos/opciones" && req.method === "GET") return reply(db.transaction(()=>({
-        saldos:db.query("SELECT id,nombre,estado FROM saldos WHERE id!='S000' ORDER BY id").all(),
-        presupuestos:(db.query("SELECT id FROM presupuestos ORDER BY length(id),id").all() as {id:string}[]).map(r=>getBudget(db,r.id))
-      }))());
-      const budget=path.match(/^\/api\/presupuestos\/(PRE\d+)(?:\/(impacto|rectificar|desactivar|reactivar))?$/);
-      if(budget){const [,id,action]=budget;
-        if(!action&&req.method==="GET")return reply(db.transaction(()=>({item:getBudget(db,id),partidas:budgetParts(db,id),usos:budgetUsage(db,id)}))());
-        if(!action&&req.method==="PATCH")return reply({item:updateBudget(db,id,await jsonBody(req),now())});
-        if(action&&req.method==="POST") {const body=await jsonBody(req);
-          if(action==="impacto")return reply(previewBudget(db,id,body));
-          if(action==="desactivar"||action==="reactivar")return reply({item:changeBudgetState(db,id,body,action==="reactivar",now())});
-          if(Object.keys(body).some(k=>!["cambios","fingerprint","motivo"].includes(k))||!body.cambios||typeof body.cambios!=="object"||Array.isArray(body.cambios))throw new Problem(422,"VALIDATION","Se requieren cambios y confirmación.");
-          return reply({item:updateBudget(db,id,body.cambios as Record<string,unknown>,now(),{fingerprint:body.fingerprint,motivo:body.motivo})});
+      if (path === "/api/presupuestos/opciones" && req.method === "GET")
+        return reply(
+          db.transaction(() => ({
+            saldos: db
+              .query(
+                "SELECT id,nombre,estado FROM saldos WHERE id!='S000' ORDER BY id",
+              )
+              .all(),
+            presupuestos: (
+              db
+                .query("SELECT id FROM presupuestos ORDER BY length(id),id")
+                .all() as { id: string }[]
+            ).map((r) => getBudget(db, r.id)),
+          }))(),
+        );
+      const budget = path.match(
+        /^\/api\/presupuestos\/(PRE\d+)(?:\/(impacto|rectificar|desactivar|reactivar))?$/,
+      );
+      if (budget) {
+        const [, id, action] = budget;
+        if (!action && req.method === "GET")
+          return reply(
+            db.transaction(() => ({
+              item: getBudget(db, id),
+              partidas: budgetParts(db, id),
+              usos: budgetUsage(db, id),
+            }))(),
+          );
+        if (!action && req.method === "PATCH")
+          return reply({
+            item: updateBudget(db, id, await jsonBody(req), now()),
+          });
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req);
+          if (action === "impacto") return reply(previewBudget(db, id, body));
+          if (action === "desactivar" || action === "reactivar")
+            return reply({
+              item: changeBudgetState(
+                db,
+                id,
+                body,
+                action === "reactivar",
+                now(),
+              ),
+            });
+          if (
+            Object.keys(body).some(
+              (k) => !["cambios", "fingerprint", "motivo"].includes(k),
+            ) ||
+            !body.cambios ||
+            typeof body.cambios !== "object" ||
+            Array.isArray(body.cambios)
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Se requieren cambios y confirmación.",
+            );
+          return reply({
+            item: updateBudget(
+              db,
+              id,
+              body.cambios as Record<string, unknown>,
+              now(),
+              { fingerprint: body.fingerprint, motivo: body.motivo },
+            ),
+          });
         }
       }
       if (path === "/api/deudas" && req.method === "GET")

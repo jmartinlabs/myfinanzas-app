@@ -558,11 +558,26 @@ function ClassificationDetail({
             </dl>
           ) : kind === "partidas" ? (
             <>
-              <p>Presupuesto: {item.presupuesto?<a href={"/presupuestos/"+item.presupuesto} onClick={e=>{e.preventDefault();go("/presupuestos/"+item.presupuesto)}}>{item.presupuesto}</a>:"Sin Presupuesto"}</p>
-              <p>Deuda: {item.deuda??"Sin Deuda"}</p>
+              <p>
+                Presupuesto:{" "}
+                {item.presupuesto ? (
+                  <a
+                    href={"/presupuestos/" + item.presupuesto}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      go("/presupuestos/" + item.presupuesto);
+                    }}
+                  >
+                    {item.presupuesto}
+                  </a>
+                ) : (
+                  "Sin Presupuesto"
+                )}
+              </p>
+              <p>Deuda: {item.deuda ?? "Sin Deuda"}</p>
               <p className="muted">
-                Los enlaces son independientes. Una Partida sin
-                Presupuesto es válida.
+                Los enlaces son independientes. Una Partida sin Presupuesto es
+                válida.
               </p>
             </>
           ) : (
@@ -658,8 +673,15 @@ function ClassificationForm({
     presupuesto: item?.presupuesto ?? "",
     padre: item?.padre ?? "",
   });
-  const [budgets,setBudgets]=useState<{id:string;nombre:string;estado:string}[]>([]);
-  useEffect(()=>{if(kind==="partidas")api("/presupuestos/opciones").then(d=>setBudgets(d.presupuestos)).catch(e=>setLoadError(e.message));},[kind]);
+  const [budgets, setBudgets] = useState<
+    { id: string; nombre: string; estado: string }[]
+  >([]);
+  useEffect(() => {
+    if (kind === "partidas")
+      api("/presupuestos/opciones")
+        .then((d) => setBudgets(d.presupuestos))
+        .catch((e) => setLoadError(e.message));
+  }, [kind]);
   const [debts, setDebts] = useState<
     { id: string; nombre: string; estado: string }[]
   >([]);
@@ -929,7 +951,31 @@ function ClassificationForm({
           )}
           {kind === "partidas" && (
             <>
-              <label>Presupuesto opcional<select aria-label="Presupuesto opcional" value={value.presupuesto} onChange={e=>change("presupuesto",e.target.value)}><option value="">Sin Presupuesto</option>{budgets.filter(b=>b.estado==="Activo"||b.id===item?.presupuesto).map(b=><option key={b.id} value={b.id}>{b.id} · {b.nombre} · {b.estado}</option>)}</select></label><p className="help">0..1 Presupuesto por Partida. El impacto histórico no verificable queda bloqueado hasta E2.3; la Deuda es independiente.</p>
+              <label>
+                Presupuesto opcional
+                <select
+                  aria-label="Presupuesto opcional"
+                  value={value.presupuesto}
+                  onChange={(e) => change("presupuesto", e.target.value)}
+                >
+                  <option value="">Sin Presupuesto</option>
+                  {budgets
+                    .filter(
+                      (b) =>
+                        b.estado === "Activo" || b.id === item?.presupuesto,
+                    )
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.id} · {b.nombre} · {b.estado}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="help">
+                0..1 Presupuesto por Partida. El impacto histórico no
+                verificable queda bloqueado hasta E2.3; la Deuda es
+                independiente.
+              </p>
               <label>
                 Deuda opcional
                 <select
