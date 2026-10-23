@@ -189,7 +189,10 @@ function List({ go }: { go: (p: string) => void }) {
               Configura una fuente y sus relaciones, sin crear un plan ni
               Movimientos.
             </p>
-            {Object.values(filters).some((v, i) => i < 3 && v) && (
+            {(filters.q ||
+              filters.fuente ||
+              filters.destino ||
+              filters.estado !== "Activo") && (
               <button
                 className="secondary"
                 onClick={() => {
@@ -446,7 +449,8 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     [fields, setFields] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [plan, setPlan] = useState<Plan | null>(null),
-    [reason, setReason] = useState("");
+    [reason, setReason] = useState(""),
+    [conflict, setConflict] = useState(false);
   const attempt = useRef(crypto.randomUUID()),
     errorRef = useRef<HTMLDivElement>(null),
     reviewRef = useRef<HTMLElement>(null);
@@ -500,6 +504,21 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
   function failure(e: unknown) {
     setError((e as Error).message);
     if (e instanceof ApiError) setFields(e.fields ?? {});
+    setConflict(e instanceof ApiError && e.status === 409 && !!id);
+  }
+  // Refresh only the stored revision; the user's draft stays in the form.
+  async function refresh() {
+    setBusy(true);
+    try {
+      const d = await api(base + "/" + id);
+      setOld(d.item);
+      setError("");
+      setConflict(false);
+    } catch (e) {
+      failure(e);
+    } finally {
+      setBusy(false);
+    }
   }
   async function save(e: React.FormEvent) {
     e.preventDefault();
@@ -560,7 +579,14 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
       />
       {error && (
         <div tabIndex={-1} ref={errorRef}>
-          <Alert>{error}</Alert>
+          <Alert>
+            {error}
+            {conflict && (
+              <button className="secondary" disabled={busy} onClick={refresh}>
+                Actualizar contexto
+              </button>
+            )}
+          </Alert>
         </div>
       )}
       {!plan ? (

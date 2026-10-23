@@ -677,6 +677,9 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
     });
     copy.close();
     db.exec("DROP TABLE budget_contract");
+    expect(() =>
+      backup(db, secret, join(dir, "foreign-backup"), recipient),
+    ).toThrow("Esquema8 incompatible");
     db.close();
     const bytes = readFileSync(path);
     expect(() => openDatabase(path)).toThrow("Esquema8 incompatible");
@@ -686,5 +689,41 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
       db.close();
     } catch {}
     rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("08 B9 AC15: renombrar con destino ya inactivo conserva destino y fuente", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { s } = setup(db),
+      b = createBudget(
+        db,
+        input("Destino histórico", s.id, "Gasto real"),
+        key(),
+      );
+    const closed = updateSaldo(db, s.id, {
+      revision: getSaldo(db, s.id).revision,
+      estado: "Inactiva",
+    });
+    expect(closed.estado).toBe("Inactiva");
+    const renamed = updateBudget(db, b.id, {
+      revision: b.revision,
+      nombre: "Destino histórico renombrado",
+    });
+    expect(renamed).toMatchObject({
+      nombre: "Destino histórico renombrado",
+      fuente: "Gasto real",
+      destino: s.id,
+    });
+    expect(renamed.saldoDestino?.estado).toBe("Inactiva");
+    expect(() =>
+      createBudget(
+        db,
+        input("Nuevo sobre inactivo", s.id, "Gasto real"),
+        key(),
+      ),
+    ).toThrow("Selecciona un Saldo interno activo.");
+  } finally {
+    db.close();
   }
 });
