@@ -1,3 +1,21 @@
+## Estado vigente — E2.2 integrada — 2026-10-23
+
+Coordinador (Claude Code, `/orchestrate`). Prevalece sobre los apartados inferiores; el
+tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI SUCCESS.
+
+| Línea | Estado verificado | Próxima acción / gate |
+| --- | --- | --- |
+| E2.2 / dev08 | INTEGRADA: PR #44 squash `255bf61` tras «Apruebo PR #44» del usuario, HEAD `6eeb727` con ambas CI SUCCESS (job pull_request relanzado una vez a petición del usuario por fallo intermitente de SQLite B4) | Cerrada; limitaciones en [testplan08](08-presupuestos-testplan.md) |
+| E2.3 | Siguiente entrega del roadmap; consume Presupuestos | Requiere especificación y autorización propias |
+| E2.1 / dev07 / AC23 | BLOQUEADO; rama `feat/07-ciclos-operacion` fuera de main, sin PR | Reanudar solo con instrucción expresa; reconciliar su esquema8 con el contrato v8 de E2.2 |
+| SQLite B4 | Fallo intermitente observado una vez en CI de `6eeb727`; pasó al relanzar | Incidencia de apertura SQLite fuera de alcance; no investigar sin autorización |
+| Dev32 / PR #30, PRs #21, #22, #29 | PAUSED / abiertas sin decisión | No reanudar |
+| PR #35 | Cerrada como sustituida por #43 | — |
+
+Worktrees temporales de dev08/QA08 eliminados tras el merge; rama `feat/08-presupuestos` conservada.
+
+---
+
 ## Estado vigente — dev08 candidato verificado — 2026-10-23
 
 Coordinador (Claude Code). Prevalece sobre «Parada y checkpoint WIP dev08» inferior; el
