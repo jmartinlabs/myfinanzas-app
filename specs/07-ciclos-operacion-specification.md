@@ -1,5 +1,5 @@
 # 07 — E2.1 Operación de Ciclos y apertura revisable: Specification
-Status: APPROVED — especificación y wireframes aprobados; integración documental pendiente de PR. Desarrollo NO autorizado.
+Status: APPROVED — especificación y wireframes aprobados e integrados en main (PR #37, c04dc07). Desarrollo dev07 fuera de main, sin PR; aceptación E2.1 bloqueada por AC23.
 Approval source/date: usuario «dale» en respuesta al cierre de ejecución que presentó PR34 y spec07/wireframes para aprobación, 2026-10-22. Q1/Q2 confirmadas previamente.
 Context and brainstorming: [ronda y respuestas](07-ciclos-operacion-brainstorming.md),
 [roadmap E2.1](roadmap.md#e21--operación-de-ciclos-y-apertura-revisable),

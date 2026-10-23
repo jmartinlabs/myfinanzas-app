@@ -1,6 +1,6 @@
 # 08 — E2.2 Presupuestos: Specification
 
-Status: APPROVED — especificación y wireframes aprobados e integrados en main por squash PR #39 (20d8f9a). Desarrollo dev08 NO autorizado. Fecha: 2026-10-22.
+Status: APPROVED — especificación y wireframes aprobados e integrados en main por squash PR #39 (20d8f9a). Desarrollo dev08 autorizado e integrado por PR #44 (255bf61) el 2026-10-23; ver [progreso](08-presupuestos-progress.md).
 Approval source/date: aprobación documental final de Álex y autorización expresa de squash PR #39 sobre HEAD 0f3d4e5, con CI push39851581005/PR39851590534 SUCCESS, 2026-10-22 (registro de merge 20d8f9a y [tablero](epic-board.md)). Revisión financiera favorable previa de Álex, misma fecha. Sin merge ni dev08 adicionales autorizados.
 Contexto/decisiones: [brainstorming08](08-presupuestos-brainstorming.md). Revisión financiera de Álex recibida el2026-10-22: se incorporan sus cuatro ajustes como instrucciones vigentes. Las menciones de aprobación pendiente en el cuerpo describen la revisión previa a la integración; el estado vigente es esta cabecera. No hay autorización de desarrollo.
 

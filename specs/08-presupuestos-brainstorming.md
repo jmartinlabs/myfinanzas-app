@@ -1,6 +1,6 @@
 # 08 — E2.2 Presupuestos: Brainstorming
 
-Status: DRAFT — revisión financiera favorable y decisiones consolidadas; aprobación documental final en PR pendiente. Fecha: 2026-10-22 (Europe/Madrid).
+Status: APPROVED — decisiones consolidadas e integradas con la especificación por PR #39 (20d8f9a). Fecha: 2026-10-22 (Europe/Madrid). Las menciones de aprobación pendiente describen la revisión previa a la integración.
 Autorización inicial histórica: especificación E2.2 sin código/SQL/pruebas/commits/PR. La ronda3 autoriza posteriormente consolidación y PR documental; contenido completo/wireframes pendientes de aprobación, sin permiso de desarrollo ni merge.
 
 ## Contexto y dependencias comprobadas
