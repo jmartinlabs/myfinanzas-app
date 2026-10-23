@@ -37,6 +37,17 @@ test("SQLite B1: timeout is the first SQL on every demo and production handle; n
     initializeProduction();
     const traces = new Map<sqlite.Database, string[]>();
     const spies = [];
+    const begin = sqlite.Database.prototype.transaction;
+    spies.push(
+      spyOn(sqlite.Database.prototype, "transaction").mockImplementation(
+        function (this: sqlite.Database, ...a: any[]) {
+          const calls = traces.get(this) ?? [];
+          calls.push("<transaction>");
+          traces.set(this, calls);
+          return (begin as Function).apply(this, a);
+        } as any,
+      ),
+    );
     for (const name of ["exec", "query", "prepare", "run"] as const) {
       const original = sqlite.Database.prototype[name];
       spies.push(
@@ -69,6 +80,10 @@ test("SQLite B1: timeout is the first SQL on every demo and production handle; n
           /journal_mode|synchronous/i.test(s),
         );
         expect(firstRead).toBeGreaterThan(0);
+        // The first identity read happens inside a read transaction (31-E1).
+        const opened = c.indexOf("<transaction>");
+        expect(opened).toBeGreaterThan(0);
+        expect(opened).toBeLessThan(firstRead);
         if (persistent !== -1) expect(persistent).toBeGreaterThan(firstRead);
       }
     } finally {

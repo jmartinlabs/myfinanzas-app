@@ -377,7 +377,11 @@ test("31 AC35: foreign-origin rollback-mode databases are rejected without WAL c
       process.env.NODE_ENV = source === "production" ? "test" : "production";
       expect(() => {
         openDatabase(path);
-      }).toThrow();
+      }).toThrow(
+        source === "production"
+          ? "El origen de la base no corresponde al entorno."
+          : "Identidad o pareja DB/clave inválida.",
+      );
       expect([...fs.readFileSync(path).subarray(18, 20)]).toEqual([1, 1]);
       expect(fs.existsSync(path + "-wal")).toBe(false);
       expect(fs.readFileSync(process.env.AUTH_KEY_PATH!).equals(key)).toBe(
@@ -447,14 +451,89 @@ test("31 AC36: another pair's key is rejected before persistent PRAGMA, with and
 // No application module opens SQLite with immutable=1 or another lock-free URI mode.
 test("31 AC37: application code has no immutable or lock-free SQLite opening", () => {
   const dir = import.meta.dir;
-  const sources = fs
-    .readdirSync(dir)
-    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+  const sources = (fs.readdirSync(dir, { recursive: true }) as string[]).filter(
+    (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"),
+  );
   expect(sources.length).toBeGreaterThan(10);
   for (const file of sources) {
     const text = fs.readFileSync(join(dir, file), "utf8");
-    expect(`${file}: ${/immutable=|nolock=|readonly_shm=/.test(text)}`).toBe(
-      `${file}: false`,
-    );
+    expect(
+      `${file}: ${/immutable=|nolock=|readonly_shm|SQLITE_OPEN_URI/.test(text)}`,
+    ).toBe(`${file}: false`);
   }
 });
+
+// AC35, pending WAL: committed frames left by a killed writer, no writer open. The rejection
+// may let SQLite consolidate them (31-E1) but logical content and key bytes stay unchanged.
+test("31 AC35: foreign-origin database with a pending WAL is rejected with logical content intact", async () =>
+  isolated((_root, configure) => {
+    for (const source of ["production", "demo"]) {
+      const path = configure(source);
+      if (source === "demo") process.env.NODE_ENV = "test";
+      const created = Bun.spawnSync(
+        [
+          process.execPath,
+          "-e",
+          (source === "production"
+            ? `import{initializeProduction}from${JSON.stringify(join(import.meta.dir, "production-state.ts"))};initializeProduction();`
+            : `import{openDatabase}from${JSON.stringify(join(import.meta.dir, "database.ts"))};openDatabase(${JSON.stringify(path)}).close();`) +
+            `import{Database}from"bun:sqlite";const d=new Database(${JSON.stringify(path)});d.exec("PRAGMA wal_autocheckpoint=0;CREATE TABLE pending_fixture(n INTEGER);INSERT INTO pending_fixture VALUES(7)");process.kill(process.pid,"SIGKILL");`,
+        ],
+        { env: { ...process.env }, stderr: "pipe" },
+      );
+      expect(created.signalCode).toBe("SIGKILL");
+      expect(fs.statSync(path + "-wal").size).toBeGreaterThan(32);
+      if (source === "demo")
+        fs.writeFileSync(process.env.AUTH_KEY_PATH!, Buffer.alloc(32), {
+          mode: 0o600,
+        });
+      const key = fs.readFileSync(process.env.AUTH_KEY_PATH!);
+      const reader = new sqlite.Database(path, { readonly: true });
+      const content = logical(reader);
+      reader.close();
+      expect(content).toContain("pending_fixture");
+      process.env.NODE_ENV = source === "production" ? "test" : "production";
+      expect(() => {
+        openDatabase(path);
+      }).toThrow(
+        source === "production"
+          ? "El origen de la base no corresponde al entorno."
+          : "Identidad o pareja DB/clave inválida.",
+      );
+      expect(fs.readFileSync(process.env.AUTH_KEY_PATH!).equals(key)).toBe(
+        true,
+      );
+      const after = new sqlite.Database(path, { readonly: true });
+      try {
+        expect(logical(after)).toBe(content);
+      } finally {
+        after.close();
+      }
+    }
+  }));
+
+// Backup binds the key FILE to the live identity, not only the key passed by the caller.
+test("31 AC36: backup rejects a key file from another pair even with the right in-memory key", async () =>
+  isolated((root, configure) => {
+    configure("other");
+    initializeProduction();
+    const otherKey = fs.readFileSync(process.env.AUTH_KEY_PATH!);
+    const path = configure("first");
+    initializeProduction();
+    const ownKey = fs.readFileSync(process.env.AUTH_KEY_PATH!);
+    const db = openDatabase(path);
+    try {
+      fs.writeFileSync(process.env.AUTH_KEY_PATH!, otherKey, { mode: 0o600 });
+      expect(() =>
+        backup(
+          db,
+          ownKey,
+          join(root, "backup-target"),
+          "age1qyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqszqgpqyqs3290gq",
+        ),
+      ).toThrow("Pareja DB/clave inválida.");
+      expect(fs.existsSync(join(root, "backup-target"))).toBe(false);
+    } finally {
+      db.close();
+    }
+  }));

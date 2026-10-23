@@ -152,6 +152,8 @@ export function openProductionConnection(
   // 31-E1: path/permission checks use no SQLite; identity is verified on this
   // conventional connection. SQLite may create or update -wal/-shm (mode copied from
   // the 0600 database); no write transaction or persistent PRAGMA runs before it.
+  // Kept as the first validation pass: P16 removes the database between this key
+  // read and the SQLite open below, which must then fail without recreating it.
   verifyProductionFiles(config);
   privateDirectory(config.state);
   const expected = privateFile(config.database);
