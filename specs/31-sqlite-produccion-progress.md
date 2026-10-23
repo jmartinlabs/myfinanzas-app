@@ -132,3 +132,38 @@ WAL, Caddy/HTTPS/cookies, copias externas/retención/custodia y simulacro de res
 monitorización/actualizaciones/cifrado y autorización específica. Ver infra/README.md.
 No acceso al VPS, infraestructura activa, Excel ni datos reales. PR #21/#22 intactas.
 Este registro documental se propone aparte, sin autorización de integrar otra PR.
+
+## Enmienda 31-E1 — desarrollo autorizado — 2026-10-23
+
+Autorización expresa del usuario (2026-10-23): desarrollar la enmienda 31-E1, ya aprobada
+e integrada (PR #47, `c8cb72d`), con `$orchestrate`/`$dev`, en el worktree aislado
+`../myfinanzas-ac23` (rama `fix/ac23-persistent-identity`). Sin dev07 ni su esquema v9, sin
+Dev32, B4, dependencias, finanzas, infraestructura ni despliegue; sin merge automático.
+
+Cambios de código (mínimos, conforme a 31-E1):
+- `private-state.ts`: se elimina `persistentIdentity` (`immutable=1`). `verifyProductionFiles`
+  queda en comprobaciones de archivos/permisos y lectura de la clave; se conserva su llamada
+  en `openProductionConnection`. Origen, versión y huella se leen en la conexión convencional
+  dentro de una transacción de lectura.
+- `database.ts`: la rama demo verifica identidad en una transacción de lectura antes de
+  `prepareSchema` (PRAGMA persistentes y migración). La rama de producción ya ejecutaba sus
+  PRAGMA después de `openProductionConnection`.
+- `backup.ts`: identidad en transacción de lectura; compara además el archivo de clave con la
+  identidad viva (antes lo hacía la sonda).
+- Pruebas: AC34 (nueva, `sqlite-identity-concurrency.test.ts`), AC35–37 (nuevas,
+  `security-review.test.ts`); S7 y B1 actualizadas a la garantía de 31-E1.
+- `specs/31-sqlite-produccion-specification.md`: texto de 31-E1 aplicado (orden de validación,
+  efectos de un rechazo, AC-05/06/17, AC-34–37 y trazabilidad).
+
+Incidencias durante el desarrollo, corregidas sin cambiar garantías:
+- CI `39941271047` (`58015a1`): P16 dejó de ejercitar su ventana porque provoca la eliminación
+  en la segunda lectura de clave y la corrección había quitado una; se conserva la llamada a
+  `verifyProductionFiles`. AC35 falló en su montaje (`SQLITE_BUSY` al cambiar `journal_mode`
+  con un handle cerrado en el mismo proceso); se crea y convierte en procesos hijo.
+
+- QA31E1-1 (F1): AC-34 no detectaba la sonda reintroducida. Decisión del usuario «Refuerza
+  AC-34…»: dos casos deterministas (`07e0369`) con la identidad vigente solo en el WAL.
+
+Candidato final de código: `07e0369`, CI de Linux 114/0 y E2E 2/2; QA31E1-1/2/3 sin
+bloqueos pendientes. Evidencia por commit y limitaciones: [testplan](31-sqlite-produccion-testplan.md),
+apartado 31-E1.
