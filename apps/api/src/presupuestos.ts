@@ -98,7 +98,7 @@ function fields(db: Database, body: Record<string, unknown>, old?: Budget) {
     throw new Problem(
       422,
       "VALIDATION",
-      "Nombre obligatorio, máximo120 caracteres.",
+      "Nombre obligatorio, máximo 120 caracteres.",
       { nombre: "Indica un nombre válido." },
     );
   // Same approved comparator as SUB: no trim, accent removal, LIKE or normalization.
@@ -326,7 +326,7 @@ export function updateBudget(
           throw new Problem(
             422,
             "VALIDATION",
-            "Motivo obligatorio, máximo2000 caracteres.",
+            "Motivo obligatorio, máximo 2000 caracteres.",
             { motivo: "Indica el motivo del cambio." },
           );
       }

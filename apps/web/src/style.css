@@ -1503,6 +1503,9 @@ textarea {
 .budget-filters {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
 }
+.budget-list > p {
+  padding: 0 22px;
+}
 .budget-review {
   overflow-wrap: anywhere;
 }

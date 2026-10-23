@@ -123,7 +123,7 @@ function List({ go }: { go: (p: string) => void }) {
           Nuevo presupuesto
         </button>
       </PageHead>
-      <section className="panel catalog-panel">
+      <section className="panel catalog-panel budget-list">
         <div className="filters budget-filters">
           <label>
             Buscar nombre o ID
@@ -191,6 +191,7 @@ function List({ go }: { go: (p: string) => void }) {
             </p>
             {Object.values(filters).some((v, i) => i < 3 && v) && (
               <button
+                className="secondary"
                 onClick={() => {
                   setFilters({
                     q: "",
@@ -344,7 +345,10 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
         title={b.nombre}
         description="Maestro e identificación estable"
       >
-        <button onClick={() => go(base + "/" + id + "/editar")}>
+        <button
+          className="secondary"
+          onClick={() => go(base + "/" + id + "/editar")}
+        >
           Editar presupuesto
         </button>
       </PageHead>
@@ -414,14 +418,16 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
               este Presupuesto?
             </p>
             <div className="actions">
-              <button onClick={() => setConfirm(false)}>Cancelar</button>
+              <button className="secondary" onClick={() => setConfirm(false)}>
+                Cancelar
+              </button>
               <button className="primary" disabled={busy} onClick={state}>
                 Confirmar estado
               </button>
             </div>
           </div>
         ) : (
-          <button onClick={() => setConfirm(true)}>
+          <button className="secondary" onClick={() => setConfirm(true)}>
             {b.estado === "Activo" ? "Desactivar" : "Reactivar"} presupuesto
           </button>
         )}
@@ -625,7 +631,11 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
               </select>
             </label>
             {value.fuente === "No aplica" && value.destino && (
-              <button type="button" onClick={() => change("destino", "")}>
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => change("destino", "")}
+              >
                 Vaciar destino expresamente
               </button>
             )}
@@ -644,6 +654,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
             </p>
             <div className="actions">
               <button
+                className="secondary"
                 type="button"
                 onClick={() => go(id ? base + "/" + id : base)}
               >
@@ -715,7 +726,9 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
             </label>
           )}
           <div className="actions">
-            <button onClick={() => setPlan(null)}>Volver al borrador</button>
+            <button className="secondary" onClick={() => setPlan(null)}>
+              Volver al borrador
+            </button>
             <button
               className="primary"
               disabled={plan.blocked || busy}
