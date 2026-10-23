@@ -13,8 +13,8 @@ autorización aparte. No reanuda dev07, no investiga B4 y no reactiva Dev32.
 La verificación previa de identidad usa `persistentIdentity()` con `?mode=ro&immutable=1`,
 que lee el archivo principal sin bloqueos ni WAL. Durante migraciones concurrentes reales
 esa lectura produce `SQLITE_CORRUPT` (errno 11) e identidades incoherentes; una conexión
-convencional con bloqueos no falla. Evidencia: diagnóstico AC23 en
-`specs/investigations/ac23-immutable-probe.md` (PR #46, pendiente de integración).
+convencional con bloqueos no falla. Evidencia: [diagnóstico AC23](investigations/ac23-immutable-probe.md)
+(integrado por PR #46).
 
 La sonda existe para cumplir una restricción de spec31 que exige dejar **byte a byte**
 intactos DB, WAL y SHM en un rechazo. Una conexión SQLite convencional no puede garantizarlo
