@@ -140,7 +140,9 @@ export async function presupuestos(
     .getByLabel("Deuda opcional", { exact: true })
     .selectOption(debt.id);
   await shot("partida-mobile");
-  await page.getByRole("button", { name: "Guardar", exact: true }).click();
+  await page
+    .getByRole("button", { name: "Crear Partida", exact: true })
+    .click();
   await expect(
     page.getByRole("heading", {
       name: "Partida presupuesto demo",
@@ -278,15 +280,21 @@ export async function presupuestos(
   await page.unroute("**/api/presupuestos?**");
   await page.getByRole("button", { name: "Reintentar", exact: true }).click();
   await expect(page.locator("tbody tr")).toHaveCount(3);
+  // Same gated pattern as Referencias: loading stays visible until released.
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
   await page.route("**/api/presupuestos?**", async (r) => {
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    await r.continue();
+    await gate;
+    await r.fallback();
   });
   await page.goto("/presupuestos");
   await expect(
     page.getByRole("status").filter({ hasText: "Cargando Presupuestos" }),
   ).toBeVisible();
   await shot("loading-desktop");
+  release();
   await expect(page.locator("tbody tr")).toHaveCount(3);
   await page.unroute("**/api/presupuestos?**");
   return { id, partida: partId, debt: debt.id };

@@ -136,6 +136,7 @@ function List({ go }: { go: (p: string) => void }) {
           <label>
             Fuente
             <select
+              aria-label="Fuente"
               value={filters.fuente}
               onChange={(e) => update("fuente", e.target.value)}
             >
@@ -148,6 +149,7 @@ function List({ go }: { go: (p: string) => void }) {
           <label>
             Saldo destino
             <select
+              aria-label="Saldo destino"
               value={filters.destino}
               onChange={(e) => update("destino", e.target.value)}
             >
@@ -162,6 +164,7 @@ function List({ go }: { go: (p: string) => void }) {
           <label>
             Estado de Presupuesto
             <select
+              aria-label="Estado de Presupuesto"
               value={filters.estado}
               onChange={(e) => update("estado", e.target.value)}
             >
@@ -585,6 +588,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
             <label>
               Fuente ejecutado *
               <select
+                aria-label="Fuente ejecutado *"
                 value={value.fuente}
                 onChange={(e) => change("fuente", e.target.value)}
                 aria-invalid={!!fields.fuente}
@@ -600,6 +604,11 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
               Saldo destino
               {value.fuente !== "No aplica" ? " *" : " · debe estar vacío"}
               <select
+                aria-label={
+                  value.fuente !== "No aplica"
+                    ? "Saldo destino *"
+                    : "Saldo destino · debe estar vacío"
+                }
                 value={value.destino}
                 disabled={value.fuente === "No aplica"}
                 onChange={(e) => change("destino", e.target.value)}
