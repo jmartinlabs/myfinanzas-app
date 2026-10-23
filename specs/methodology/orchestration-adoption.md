@@ -171,3 +171,36 @@ reescritura en frases cortas, gate de desarrollo separado, política local de wo
 **Descartado:** reescritura plain-language de #16/#18, evals y benchmark, `docs/archive/`,
 README y validadores de la template. Evidencia de la template (52/52 decisiones, 12/12
 benchmark) no cubre Codex, Full ni delegación y no se atribuye a MyFinanzas.
+
+
+## Contrato CI v2.6.0 — primera entrega local
+
+Autorización del usuario, 2026-10-23: «Primero prepara y verifica localmente el
+contrato y sus regresiones, sin cambiar todavía la ejecución de Actions. Presenta
+el resultado y el cambio propuesto del workflow antes de aplicarlo.» Sin publicación
+ni merge. Fuente: agent-project-template v2.6.0,
+`267bd75f7c4a856f35a7a7a4c1d8a40f5a0de833`; contrato canónico importado íntegro y
+adaptación al final de [ci-policy](ci-policy.md). No se adopta toda la metodología
+ni se cambian Skills/guías ajenas al alcance.
+
+Base verificada: main local/remoto `d012538`, PR52 MERGED; rama local
+`codex/harness-ci-policy-v260`. Implementación limitada a clasificador/gate compartido,
+validador estructural, receta candidata inactiva, integración en check-project y
+validate-template, regresiones y documentación de uso/calidad. No cambios en
+`.github/workflows/validate.yml`, aplicación, SQL, Excel, permisos o estados de otras
+entregas. La excepción temporal del workflow heredado está fijada por huella exacta;
+no permite modificaciones no revisadas.
+
+Verificación local y QA independiente CI260-QA: PASS, sin hallazgos bloqueantes.
+`test-ci-policy`:18 PASS; integrado en `test-checks`:40 PASS; `test-validator`:18 PASS;
+check-project actual y candidato, validate-template, check-repository y diff: PASS.
+La QA revisó base/rama/cambios y ejecutó suites independientemente; el delta final de
+submódulos/configuración Git tiene18 PASS independientes. Pruebas reales adicionales:
+PR52 documental `1cdbc7c..d012538` produce docs; rango que incluye PR49 produce full.
+La huella del workflow activo coincide con la base: sin cambios de ejecución.
+Acciones remotas del grafo candidato y suites de aplicación: UNRUN en esta entrega;
+no son evidencia necesaria para cambios locales de harness sin cambios de aplicación.
+No se han iniciado ejecuciones Actions ni publicado ramas o PR.
+Comandos y límites en [calidad](../guidelines/quality.md#contrato-ci-v260--preparación-local).
+Próximo gate: presentar receta candidata y evidencia; esperar autorización antes de
+activar Actions. UI específica, deduplicación de eventos, cachés y retirada AC23 fuera.

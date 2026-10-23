@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 """Check the approved workspace/dependency and browser/server boundaries."""
+import argparse
 import json
+import runpy
 from pathlib import Path
 import re
 import sys
 
 
-def validate(root):
+def validate(root, workflow_path=None):
     root = Path(root)
     errors = []
     try:
@@ -27,22 +29,11 @@ def validate(root):
                         errors.append(f'version: {name} must have an exact version')
                     if name in orms:
                         errors.append(f'orm: {name} conflicts with direct SQL')
-        workflow = (root / '.github/workflows/validate.yml').read_text()
-        gates = ('./scripts/check-repository', './scripts/check-project', './scripts/test-checks',
-                 './scripts/validate-template', './scripts/test-validator',
-                 'bun install --frozen-lockfile', 'bun run typecheck', 'bun run build',
-                 'bun run test', 'bun run test:e2e', 'git show --format= --check HEAD')
-        for command in gates:
-            if not re.search(r'(?m)^\s*(?:-\s+run:\s*)?' + re.escape(command) + r'\s*$', workflow):
-                errors.append(f'ci: missing gate {command}')
-        for required in ('contents: read', 'fetch-depth: 0', 'persist-credentials: false'):
-            if required not in workflow:
-                errors.append(f'ci: missing {required}')
-        if 'pull_request_target' in workflow or re.search(r':\s*write\b', workflow):
-            errors.append('ci: privileged event or write permission is not allowed')
-        for action in re.findall(r'uses:\s*([^\s#]+)', workflow):
-            if not re.fullmatch(r'[^@]+@[0-9a-f]{40}', action):
-                errors.append('ci: actions must use full commit SHAs')
+        policy = runpy.run_path(str(root / 'scripts/ci_workflow.py'))
+        active = Path(workflow_path) if workflow_path else root / '.github/workflows/validate.yml'
+        errors.extend(policy['validate_workflow'](active, allow_legacy=workflow_path is None))
+        # Stage 1: exercise the future graph while leaving live Actions unchanged.
+        errors.extend(policy['validate_workflow'](root / 'scripts/fixtures/ci-policy.workflow.json'))
         for path in (root / 'apps/web/src').rglob('*'):
             if path.suffix not in ('.ts', '.tsx', '.js', '.jsx'):
                 continue
@@ -60,7 +51,10 @@ def validate(root):
 
 
 if __name__ == '__main__':
-    errors = validate(Path(__file__).resolve().parents[1])
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--workflow', type=Path, help='validate an inactive candidate (no legacy exception)')
+    args = parser.parse_args()
+    errors = validate(Path(__file__).resolve().parents[1], args.workflow)
     for error in errors:
         print(error, file=sys.stderr)
     if errors:

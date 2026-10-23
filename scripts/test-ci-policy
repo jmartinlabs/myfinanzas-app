@@ -1,0 +1,275 @@
+#!/usr/bin/env python3
+"""Behavioral evidence for the shared classifier and supported workflow graph."""
+import copy
+import itertools
+import json
+import os
+from pathlib import Path
+import runpy
+import shutil
+import subprocess
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
+WORKFLOW = runpy.run_path(str(ROOT / 'scripts/ci_workflow.py'))
+CANDIDATE = ROOT / 'scripts/fixtures/ci-policy.workflow.json'
+
+
+class CiClassifierTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.git('init', '-q', '--initial-branch=main')
+        self.write('README.md', 'fixture')
+        self.base = self.commit()
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-C', str(self.root), *args], stderr=subprocess.PIPE)
+
+    def write(self, name, text='fictional documentation'):
+        p = self.root / name
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text)
+
+    def commit(self, stage=True):
+        if stage:
+            self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture')
+        return self.git('rev-parse', 'HEAD').decode().strip()
+
+    def classify(self, head=None, base=None, pr=False):
+        return POLICY['classify_git'](self.root, base or self.base, head or self.commit(), pull_request=pr)
+
+    def test_allowlisted_add_modify_delete_and_unusual_paths(self):
+        for name in ('normal.md', 'con espacios.md', 'línea\ncon\ttab.md', '-leading.md'):
+            self.write('specs/backlog/' + name)
+        added = self.commit()
+        self.assertEqual(self.classify(added), 'docs')
+        self.write('specs/backlog/normal.md', 'changed')
+        changed = self.commit()
+        self.assertEqual(self.classify(changed, added), 'docs')
+        (self.root / 'specs/backlog/normal.md').unlink()
+        self.assertEqual(self.classify(base=changed), 'docs')
+
+    def test_protected_unknown_and_mixed_paths(self):
+        paths = ['AGENTS.md', 'specs/backlog/AGENTS.md', 'specs/backlog/SKILL.md',
+                 '.agents/skills/demo/SKILL.md', 'specs/methodology/ci-policy.md',
+                 'specs/guidelines/quality.md', 'schema.sql', 'package.json', 'bun.lock',
+                 'tsconfig.json', '.github/workflows/validate.yml', 'scripts/check-project',
+                 'apps/web/src/App.tsx', 'specs/backlog/nested/file.md', 'unknown.md',
+                 'specs/backlog/config.yml', 'CLAUDE.md']
+        for name in paths:
+            with self.subTest(name=name):
+                data = ('A\0specs/backlog/demo.md\0M\0' + name + '\0').encode()
+                self.assertEqual(POLICY['classify_records'](data), 'full')
+
+    def test_complete_range_includes_earlier_code_change(self):
+        self.write('apps/api/code.ts', 'export const fictional = 1;')
+        self.commit()
+        self.write('specs/backlog/last.md')
+        self.assertEqual(self.classify(), 'full')
+
+    def test_deleted_protected_file(self):
+        self.write('AGENTS.md')
+        before = self.commit()
+        (self.root / 'AGENTS.md').unlink()
+        self.assertEqual(self.classify(base=before), 'full')
+
+    def test_local_git_config_cannot_hide_gitlink_mixed_with_docs(self):
+        self.write('specs/backlog/demo.md')
+        self.git('add', '.')
+        self.git('update-index', '--add', '--cacheinfo', '160000,' + self.base + ',vendor/fixture')
+        head = self.commit(stage=False)
+        self.git('config', 'diff.ignoreSubmodules', 'all')
+        hidden = self.git('diff', '--name-status', '-z', self.base, head)
+        self.assertEqual(POLICY['classify_records'](hidden), 'docs')
+        self.assertEqual(self.classify(head), 'full')
+
+    def test_both_sides_of_real_renames(self):
+        self.write('apps/api/code.md', 'same content for rename detection')
+        start = self.commit()
+        (self.root / 'specs/backlog').mkdir(parents=True)
+        self.git('mv', 'apps/api/code.md', 'specs/backlog/demo.md')
+        middle = self.commit()
+        self.assertEqual(self.classify(middle, start), 'full')
+        self.git('mv', 'specs/backlog/demo.md', 'apps/api/other.md')
+        self.assertEqual(self.classify(base=middle), 'full')
+
+    def test_document_to_document_rename(self):
+        self.write('specs/backlog/old.md')
+        start = self.commit()
+        self.git('mv', 'specs/backlog/old.md', 'specs/backlog/new name.md')
+        self.assertEqual(self.classify(base=start), 'docs')
+
+    def test_empty_invalid_incomplete_and_unknown_records(self):
+        cases = [b'', b'A\0', b'A\0x', b'A\0\0', b'R100\0specs/backlog/a.md\0',
+                 b'M\0specs/backlog/a.md\0junk', b'Z\0specs/backlog/a.md\0',
+                 b'M\0specs/backlog/\xff.md\0', b'M\0specs/backlog/../a.md\0',
+                 b'M\0/specs/backlog/a.md\0']
+        for value in cases:
+            with self.subTest(value=value):
+                self.assertEqual(POLICY['classify_records'](value), 'full')
+
+    def test_missing_empty_comparison_shallow_and_failed_git(self):
+        self.assertEqual(self.classify(self.base), 'full')
+        self.assertEqual(self.classify('f' * 40), 'full')
+        self.assertEqual(self.classify(self.base, base='0' * 40), 'full')
+        self.assertEqual(self.classify(self.base, base='--help'), 'full')
+        self.write('specs/backlog/demo.md')
+        head = self.commit()
+        (self.root / '.git/shallow').write_text(self.base + '\n')
+        self.assertEqual(self.classify(head), 'full')
+        self.assertEqual(POLICY['classify_git'](self.root / 'missing', self.base, head), 'full')
+
+    def test_push_and_pr_event_bases_and_manual_fallback(self):
+        self.write('specs/backlog/demo.md')
+        head = self.commit()
+        self.assertEqual(POLICY['classify_event'](self.root, 'push',
+                         {'before': self.base, 'after': head}), 'docs')
+        self.assertEqual(POLICY['classify_event'](self.root, 'pull_request',
+                         {'pull_request': {'base': {'sha': self.base}, 'head': {'sha': head}}}), 'docs')
+        for event in ('workflow_dispatch', 'unknown', 'push', 'pull_request'):
+            self.assertEqual(POLICY['classify_event'](self.root, event, {}), 'full')
+
+    def test_pr_merge_base_excludes_base_branch_only_code(self):
+        self.git('switch', '-qc', 'feature')
+        self.write('specs/backlog/demo.md')
+        head = self.commit()
+        self.git('switch', '-q', 'main')
+        self.write('apps/api/base-only.ts')
+        base = self.commit()
+        self.assertEqual(self.classify(head, base, pr=True), 'docs')
+        self.assertEqual(self.classify(head, base), 'full')
+
+    def test_cli_reads_full_event_and_missing_event_falls_back(self):
+        self.write('specs/backlog/demo.md')
+        head = self.commit()
+        script = self.root / 'scripts/ci_policy.py'
+        script.parent.mkdir()
+        shutil.copy2(ROOT / 'scripts/ci_policy.py', script)
+        event = self.root / 'event.json'
+        event.write_text(json.dumps({'before': self.base, 'after': head}))
+        env = {**os.environ, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
+        command = ['python3', str(script), 'classify']
+        self.assertEqual(subprocess.check_output(command, env=env).strip(), b'docs')
+        self.assertEqual(subprocess.check_output(command + ['--base', self.base, '--head', head],
+                                                env=env).strip(), b'docs')
+        event.write_text('{incomplete')
+        self.assertEqual(subprocess.check_output(command, env=env).strip(), b'full')
+        event.unlink()
+        self.assertEqual(subprocess.check_output(command, env=env).strip(), b'full')
+
+
+class CiWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.root = Path(tmp.name)
+        self.candidate = json.loads(CANDIDATE.read_text())
+
+    def errors(self, value):
+        path = self.root / 'workflow.json'
+        path.write_text(json.dumps(value))
+        return WORKFLOW['validate_workflow'](path)
+
+    def test_valid_candidate_and_reviewed_legacy(self):
+        self.assertEqual(self.errors(self.candidate), [])
+        legacy = ROOT / '.github/workflows/validate.yml'
+        self.assertEqual(WORKFLOW['validate_workflow'](legacy, allow_legacy=True), [])
+        # The transition exception is explicit, not a wildcard for arbitrary YAML.
+        if legacy.read_text().lstrip().startswith('name:'):
+            self.assertTrue(WORKFLOW['validate_workflow'](legacy))
+
+    def test_reject_semantic_mutations(self):
+        mutations = {
+            'missing classifier': lambda w: w['jobs']['baseline']['steps'].pop(2),
+            'disabled baseline': lambda w: w['jobs']['baseline'].update({'if': False}),
+            'disabled baseline step': lambda w: w['jobs']['baseline']['steps'][3].update({'if': False}),
+            'disabled full': lambda w: w['jobs']['full'].update({'if': False}),
+            'docs equality instead of full condition': lambda w: w['jobs']['full'].update({'if': "${{ needs.baseline.outputs.class == 'full' }}"}),
+            'broken dependency': lambda w: w['jobs']['full'].update(needs=[]),
+            'missing final': lambda w: w['jobs'].pop('required'),
+            'skippable final': lambda w: w['jobs']['required'].pop('if'),
+            'final omits full dependency': lambda w: w['jobs']['required'].update(needs=['baseline']),
+            'final always succeeds': lambda w: w['jobs']['required']['steps'][2].update(run='echo success'),
+            'allowed failure': lambda w: w['jobs']['full']['steps'][3].update({'continue-on-error': True}),
+            'job allowed failure': lambda w: w['jobs']['baseline'].update({'continue-on-error': True}),
+            'commented command': lambda w: w['jobs']['full']['steps'][3].update(run='# bun run typecheck'),
+            'event path filter': lambda w: w.update({'on': {'push': {'paths': ['apps/**']}}}),
+            'privileged event': lambda w: w.update({'on': ['pull_request_target']}),
+            'write permissions': lambda w: w.update(permissions={'contents': 'write'}),
+            'unpinned action': lambda w: w['jobs']['full']['steps'][0].update(uses='actions/checkout@v4'),
+            'shallow history': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'fetch-depth': 1}),
+            'persist credentials': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'persist-credentials': True}),
+            'result env missing': lambda w: w['jobs']['required']['steps'][2]['env'].pop('CI_FULL'),
+            'classification error suppressed': lambda w: w['jobs']['baseline']['steps'][2].update(run='python3 scripts/ci_policy.py classify || true'),
+            'full test skipped': lambda w: w['jobs']['full']['steps'][7].update({'if': False}),
+        }
+        for name, mutate in mutations.items():
+            with self.subTest(name=name):
+                value = copy.deepcopy(self.candidate)
+                mutate(value)
+                self.assertTrue(self.errors(value))
+
+    def test_unreadable_malformed_duplicate_keys_and_boolean_number(self):
+        p = self.root / 'bad.json'
+        for data in ('{}', '{', 'null', '{"on":[],"on":[]}'):
+            p.write_text(data)
+            self.assertTrue(WORKFLOW['validate_workflow'](p))
+        self.assertTrue(WORKFLOW['validate_workflow'](self.root / 'missing'))
+        value = copy.deepcopy(self.candidate)
+        value['jobs']['baseline']['steps'][0]['with']['persist-credentials'] = 0
+        self.assertTrue(self.errors(value))
+
+    def test_classifier_step_rejects_invalid_output_and_crashes(self):
+        script = self.root / 'scripts/ci_policy.py'
+        script.parent.mkdir()
+        output = self.root / 'output'
+        env = {**os.environ, 'GITHUB_OUTPUT': str(output)}
+        step = self.candidate['jobs']['baseline']['steps'][2]['run']
+        for body, expected in (("print('docs')", 0), ("print('full')", 0),
+                               ("print('bogus')", 1), ("print('')", 1),
+                               ("print('docs\\nfull')", 1), ('raise RuntimeError()', 1)):
+            with self.subTest(body=body):
+                script.write_text(body)
+                output.unlink(missing_ok=True)
+                r = subprocess.run(['bash', '-c', step], cwd=self.root, env=env, capture_output=True)
+                self.assertEqual(r.returncode == 0, expected == 0)
+                if expected:
+                    self.assertFalse(output.exists())
+                else:
+                    self.assertIn(output.read_text(), ('class=docs\n', 'class=full\n'))
+
+
+class CiResultTests(unittest.TestCase):
+    def test_all_result_combinations(self):
+        for classification, baseline, full in itertools.product(
+                ('docs', 'full', '', 'invalid'),
+                ('success', 'failure', 'skipped', 'cancelled'),
+                ('success', 'failure', 'skipped', 'cancelled')):
+            expected = (classification, baseline, full) in (
+                ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+            self.assertEqual(POLICY['result_ok'](classification, baseline, full), expected)
+
+    def test_final_cli_valid_paths_and_unexpected_skips_failures(self):
+        command = ['python3', str(ROOT / 'scripts/ci_policy.py'), 'result']
+        for classification, baseline, full in (
+                ('docs', 'success', 'skipped'), ('full', 'success', 'success'),
+                ('docs', 'failure', 'skipped'), ('full', 'success', 'skipped'),
+                ('full', 'success', 'failure'), ('docs', 'skipped', 'skipped'),
+                ('invalid', 'success', 'success'), ('', 'success', 'skipped'),
+                ('docs', 'cancelled', 'skipped'), ('full', 'success', 'cancelled')):
+            with self.subTest(classification=classification, baseline=baseline, full=full):
+                env = {**os.environ, 'CI_CLASS': classification, 'CI_BASELINE': baseline, 'CI_FULL': full}
+                r = subprocess.run(command, env=env, capture_output=True)
+                expected = (classification, baseline, full) in (
+                    ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
+                self.assertEqual(r.returncode == 0, expected)
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

@@ -159,5 +159,12 @@ class RepositoryChecks(unittest.TestCase):
             repository['scan'](self.root)
 
 
+# Run the same policy regressions in the existing local/CI harness entry point.
+for name, value in runpy.run_path(str(ROOT / 'scripts/test-ci-policy')).items():
+    if name.startswith('Ci') and isinstance(value, type) and issubclass(value, unittest.TestCase):
+        globals()[name] = value
+del name, value
+
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

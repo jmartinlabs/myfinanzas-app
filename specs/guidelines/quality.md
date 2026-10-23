@@ -61,9 +61,11 @@ los paquetes para impedir publicación npm (no controla visibilidad GitHub), ver
 versiones directas exactas, rechaza una lista explícita de ORMs conocidos y detecta
 imports de Bun/Node o rutas relativas de apps/api desde código de navegador. El análisis
 de imports es léxico, no resuelve aliases, reexports externos ni toda la sintaxis TypeScript;
-tipos/build y la revisión manual complementan sus límites. También verifica presencia
-de las fases obligatorias de CI, SHAs de acciones e historial completo, y rechaza eventos
-pull_request_target o permisos de escritura; es validación léxica, no un parser YAML.
+tipos/build y la revisión manual complementan sus límites. El control de CI se adapta
+al contrato v2.6.0 descrito abajo: receta activa heredada por huella exacta y candidato
+JSON/YAML-subset por estructura cerrada, incluidos jobs, condiciones y dependencias.
+Conserva acciones por SHA, historial completo y permisos de lectura; no admite eventos
+pull_request_target ni controles que permitan éxito sin validación.
 
 check-repository exige historia Git completa; inspecciona todos los commits alcanzables
 desde HEAD, sus mensajes, el índice y los archivos versionados locales. Rechaza rutas
@@ -97,6 +99,40 @@ impide declarar completada la funcionalidad.
 Mantener contexto, evidencia y siguiente acción reanudables. La política completa de
 ramas, publicación, revisión del historial y aprobación de merge está en [AGENTS](../../AGENTS.md).
 Las reglas económicas requieren especificaciones funcionales revisadas antes del código.
+
+## Contrato CI v2.6.0 — preparación local
+
+Adopción acotada de [ci-policy](../methodology/ci-policy.md), fuente fijada
+`267bd75f7c4a856f35a7a7a4c1d8a40f5a0de833`. El workflow activo sigue intacto y ejecuta
+su batería completa. La receta candidata está fuera de `.github/workflows/`;
+no hay evidencia remota del nuevo grafo ni autorización para activarlo/publicarlo.
+
+| Comando desde raíz | Contrato verificable |
+| --- | --- |
+| `python3 scripts/ci_policy.py classify --base <SHA> --head <SHA>` | Comparación push completa; imprime exactamente docs/full; PR añade `--pull-request` para merge-base |
+| `python3 scripts/ci_policy.py classify` | Consume evento GitHub por variables estándar; ausencia/error/manual implica full |
+| `python3 scripts/test-ci-policy` | Regresiones Git reales, entradas inválidas, mutaciones del workflow y ejecución local del control de salida/resultado |
+| `./scripts/check-project` | Proyecto actual, workflow heredado exacto y grafo candidato |
+| `./scripts/check-project --workflow scripts/fixtures/ci-policy.workflow.json` | Valida estructura y condiciones del candidato sin excepción heredada |
+| `./scripts/test-checks` | Regresiones anteriores más la suite CI compartida |
+| `./scripts/validate-template` / `./scripts/test-validator` | Contratos documentales y regresiones; control CI estructural compartido |
+
+Baseline obligatoria para docs/full: `check-repository`, `check-project`,
+`validate-template`, `test-checks`, `test-validator`, `git diff --check` y
+`git show --format= --check HEAD`. Para full: `bun install --frozen-lockfile`,
+`bun run typecheck`, `bun run build`, `bun run test`, instalación age/Chromium y
+`bun run test:e2e`; gate adicional AC23 conserva su condición actual de rama.
+Ninguna comprobación de aplicación se declara inaplicable a full: MyFinanzas tiene
+web/API/SQLite. En esta entrega del harness no cambia código de aplicación, SQL ni UI;
+sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prueban
+clasificación y gates sin ejecutar cargas financieras ni instalar navegadores.
+
+La allowlist docs solo admite Markdown directo de `specs/backlog/`, salvo nombres de
+instrucciones protegidos. Guías, metodología y harness son full. El validador soporta
+una receta JSON (subconjunto YAML) cerrada, no expresiones/YAML arbitrarios; sintaxis
+no reconocida falla visiblemente. No se añaden dependencias Python ni de aplicación.
+La revisión independiente y los resultados de esta entrega se conservan en
+[adopción](../methodology/orchestration-adoption.md#contrato-ci-v260--primera-entrega-local).
 
 
 ## Cobertura E1.2 en revisión

@@ -2,6 +2,7 @@
 """Portable structural validation, not a complete security or semantic audit."""
 from pathlib import Path
 import re
+import runpy
 import sys
 from urllib.parse import unquote, urlsplit
 SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev')
@@ -52,9 +53,11 @@ def validate(root):
   if re.search(r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\',s): fail('portability',f'machine-specific path in {p.relative_to(root)}')
  for p in [root/'AGENTS.md',*(root/'.agents/skills').rglob('SKILL.md')]:
   if p.is_file() and re.search(r'(?i)(?:all projects|every project|all applications) must (?:use|install|run)\b',p.read_text()): fail('neutrality',f'universal stack mandate in {p.relative_to(root)}')
- s=read('.github/workflows/validate.yml')
- for token in ('pull_request','contents: read','./scripts/validate-template','./scripts/test-validator'):
-  if token not in s: fail('ci',f'missing {token}')
+ # The project workflow contract checks parsed structure/conditions, not token presence.
+ try:
+  policy=runpy.run_path(str(root/'scripts/ci_workflow.py'))
+  errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml',allow_legacy=True))
+ except (OSError,ValueError): fail('ci','workflow policy unavailable')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')
