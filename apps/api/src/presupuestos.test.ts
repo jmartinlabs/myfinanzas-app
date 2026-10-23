@@ -692,7 +692,7 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
   }
 });
 
-test("08 B9 AC15: renombrar con destino ya inactivo conserva destino y fuente", () => {
+test("08 B9 AC15/AC04: solo renombrar conserva un destino inactivo; cambiar fuente exige activo", () => {
   const db = openDatabase(":memory:");
   try {
     const { s } = setup(db),
@@ -716,6 +716,24 @@ test("08 B9 AC15: renombrar con destino ya inactivo conserva destino y fuente", 
       destino: s.id,
     });
     expect(renamed.saldoDestino?.estado).toBe("Inactiva");
+    // Cambiar la fuente sobre el destino inactivo es una nueva relación.
+    expect(() =>
+      updateBudget(db, b.id, {
+        revision: renamed.revision,
+        fuente: "Aportación a saldo",
+      }),
+    ).toThrow("Selecciona un Saldo interno activo.");
+    expect(() =>
+      previewBudget(db, b.id, {
+        revision: renamed.revision,
+        fuente: "Aportación a saldo",
+      }),
+    ).toThrow("Selecciona un Saldo interno activo.");
+    expect(getBudget(db, b.id)).toMatchObject({
+      fuente: "Gasto real",
+      destino: s.id,
+      revision: renamed.revision,
+    });
     expect(() =>
       createBudget(
         db,

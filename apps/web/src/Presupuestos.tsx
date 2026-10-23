@@ -648,7 +648,11 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
               >
                 <option value="">Sin destino</option>
                 {options?.saldos
-                  .filter((s) => s.estado === "Activa" || s.id === old?.destino)
+                  .filter(
+                    (s) =>
+                      s.estado === "Activa" ||
+                      (s.id === old?.destino && value.fuente === old?.fuente),
+                  )
                   .map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.id} · {s.nombre} · {s.estado}

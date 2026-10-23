@@ -143,10 +143,11 @@ function fields(db: Database, body: Record<string, unknown>, old?: Budget) {
     const saldo = db
       .query("SELECT id,estado FROM saldos WHERE id=?")
       .get(v.destino) as { id: string; estado: string } | null;
-    if (
-      !saldo ||
-      ((!old || old.destino !== v.destino) && saldo.estado !== "Activa")
-    )
+    // Decisión del usuario 2026-10-23: cambiar la fuente también es una nueva
+    // relación; solo un renombrado conserva un destino ya inactivo.
+    const newRelation =
+      !old || old.destino !== v.destino || old.fuente !== v.fuente;
+    if (!saldo || (newRelation && saldo.estado !== "Activa"))
       throw new Problem(
         422,
         "INVALID_DESTINATION",
