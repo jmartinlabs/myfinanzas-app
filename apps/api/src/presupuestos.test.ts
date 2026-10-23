@@ -623,7 +623,9 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
         ).toEqual(
           table === "partidas"
             ? (rows as any[]).map((r) => ({ ...r, presupuesto: null }))
-            : rows,
+            : table === "ciclos"
+              ? (rows as any[]).map((r) => ({...r, revision: 1, actualizado: null}))
+              : rows,
         );
       }
       expect(

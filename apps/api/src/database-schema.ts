@@ -1,3 +1,4 @@
+import { cycleOperationSchema } from "./cycle-operation-schema";
 import { budgetSchema, assertBudgetContract } from "./budget-schema";
 import { debtSchema } from "./debt-schema";
 import { Database } from "bun:sqlite";
@@ -26,12 +27,12 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, schemaVersion].includes(versions[0].version)
+      ![1, 2, 3, 4, 5, 6, 7, 8, schemaVersion].includes(versions[0].version)
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
-    if (versions[0].version === 8) assertBudgetContract(db);
+    if (versions[0].version >= 8) assertBudgetContract(db);
   } else if (
     db
       .query(
@@ -68,7 +69,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, schemaVersion].includes(versions[0].version)
+          ![1, 2, 3, 4, 5, 6, 7, 8, schemaVersion].includes(versions[0].version)
         )
           throw new Error("Esquema no compatible; no se modificará esta base.");
         if (versions[0].version === 1) classificationSchema(db);
@@ -79,6 +80,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 7) debtSchema(db);
         if (versions[0].version < 8) budgetSchema(db);
         else assertBudgetContract(db);
+        if (versions[0].version < 9) cycleOperationSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -181,6 +183,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       installIdentity(db, identity);
       debtSchema(db);
       budgetSchema(db);
+      cycleOperationSchema(db);
     }).immediate();
   } catch (error) {
     db.close();

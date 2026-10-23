@@ -1499,6 +1499,11 @@ textarea {
   }
 }
 
+.cycle-impact article, .cycle-history article { border-top: 1px solid var(--line, #dce5d0); padding: 1rem 0; }
+.cycle-facts { list-style: none; padding: 0; }
+.cycle-facts li { padding: 1rem 0; border-top: 1px solid #dce5d0; overflow-wrap: anywhere; }
+.cycle-impact, .cycle-history { margin-top: 20px; }
+.cycle-impact p, .cycle-history p { overflow-wrap: anywhere; }
 /* E2.2: prevent long financial labels from stretching narrow screens. */
 .budget-filters {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));

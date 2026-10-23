@@ -50,12 +50,12 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
     inspectIdentity(db);
-    if (versions[0].version === 8) assertBudgetContract(db);
+    if (versions[0].version >= 8) assertBudgetContract(db);
     return versions[0].version;
   } finally {
     db.close();
@@ -125,7 +125,9 @@ export function backup(
                     ? "sqlite-v6"
                     : sourceVersion === 7
                       ? "e1.6-v7"
-                      : "e2.2-v8",
+                      : sourceVersion === 8
+                        ? "e2.2-v8"
+                        : "e2.1-v9",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -234,7 +236,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -280,6 +282,7 @@ export function restore(
           ...(bundle.manifest.schema >= 5 ? ["reference_attempts"] : []),
           ...(bundle.manifest.schema >= 7 ? ["debt_attempts"] : []),
           ...(bundle.manifest.schema >= 8 ? ["budget_attempts"] : []),
+          ...(bundle.manifest.schema >= 9 ? ["cycle_operation_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();
