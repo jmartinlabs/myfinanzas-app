@@ -171,3 +171,67 @@ reescritura en frases cortas, gate de desarrollo separado, política local de wo
 **Descartado:** reescritura plain-language de #16/#18, evals y benchmark, `docs/archive/`,
 README y validadores de la template. Evidencia de la template (52/52 decisiones, 12/12
 benchmark) no cubre Codex, Full ni delegación y no se atribuye a MyFinanzas.
+
+
+## Contrato CI v2.6.0 — primera entrega local
+
+Autorización del usuario, 2026-10-23: «Primero prepara y verifica localmente el
+contrato y sus regresiones, sin cambiar todavía la ejecución de Actions. Presenta
+el resultado y el cambio propuesto del workflow antes de aplicarlo.» Sin publicación
+ni merge. Fuente: agent-project-template v2.6.0,
+`267bd75f7c4a856f35a7a7a4c1d8a40f5a0de833`; contrato canónico importado íntegro y
+adaptación al final de [ci-policy](ci-policy.md). No se adopta toda la metodología
+ni se cambian Skills/guías ajenas al alcance.
+
+Base verificada: main local/remoto `d012538`, PR52 MERGED; rama local
+`codex/harness-ci-policy-v260`. Implementación limitada a clasificador/gate compartido,
+validador estructural, receta candidata inactiva, integración en check-project y
+validate-template, regresiones y documentación de uso/calidad. No cambios en
+`.github/workflows/validate.yml`, aplicación, SQL, Excel, permisos o estados de otras
+entregas. La excepción temporal del workflow heredado está fijada por huella exacta;
+no permite modificaciones no revisadas.
+
+Verificación local y QA independiente CI260-QA: PASS, sin hallazgos bloqueantes.
+`test-ci-policy`:18 PASS; integrado en `test-checks`:40 PASS; `test-validator`:18 PASS;
+check-project actual y candidato, validate-template, check-repository y diff: PASS.
+La QA revisó base/rama/cambios y ejecutó suites independientemente; el delta final de
+submódulos/configuración Git tiene18 PASS independientes. Pruebas reales adicionales:
+PR52 documental `1cdbc7c..d012538` produce docs; rango que incluye PR49 produce full.
+La huella del workflow activo coincide con la base: sin cambios de ejecución.
+Acciones remotas del grafo candidato y suites de aplicación: UNRUN en esta entrega;
+no son evidencia necesaria para cambios locales de harness sin cambios de aplicación.
+No se han iniciado ejecuciones Actions ni publicado ramas o PR.
+Comandos y límites en [calidad](../guidelines/quality.md#contrato-ci-v260--preparación-local).
+Próximo gate: presentar receta candidata y evidencia; esperar autorización antes de
+activar Actions. UI específica, deduplicación de eventos, cachés y retirada AC23 fuera.
+
+
+### Ampliación local — mejoras de Actions
+
+Autorización posterior real del usuario: «Autorizo», en respuesta a los cuatro puntos
+propuestos: activar docs/full, evitar duplicados conservando ramas sin PR, cancelar
+obsoletos y preparar Playwright; preparar/probar localmente sin publicar ni merge.
+La primera entrega ac059f7 se conserva. Esta ampliación sustituye el workflow local por
+la receta docs/full, retira la excepción heredada y alinea sus regresiones.
+
+Deduplicación acotada: concurrencia compartida push/PR, no eliminación retroactiva de
+runs terminados. Se mantiene contexto de integración aunque sobreviva push, con permiso
+pull-requests:read solo en baseline, snapshot HEAD^2 y clasificación conjunta del evento
+más la PR acumulada. Main no cancela ejecución activa; manual aislado; tags/forks no
+colisionan. Sin filtros que dejen ramas sin PR sin validación. Required nunca acepta
+full omitido salvo docs válido. No configura protección/permisos del repositorio.
+
+Preparación Linux: Ubuntu24.04,34 paquetes (33 oficiales tools+chromium de Playwright1.64.1
+más age), inventario dpkg y APT solo faltantes una vez. Lista comparada con fuente
+oficial: coincidencia exacta; comprobar CLI instalado en CI. Sin caché de navegador porque
+la demora observada era APT. No se garantiza eliminar latencia de mirrors.
+
+QA independiente CI260-ACTIONS: primera revisión encontró P1 (push final docs podía
+ocultar código acumulado de PR) y P2 (colisión tag/rama); corregidos con regresiones reales
+Git y evaluación de expresiones. Revisión posterior PASS:29 test-ci-policy y51 test-checks,
+check-project y diff PASS; validate-template y18 test-validator PASS. Sin bloqueos
+pendientes. APT real, browser y Actions remotos UNRUN, tests de entorno simulados.
+
+Siguiente paso seguro: presentar cambios y límites; esperar autorización de publicación
+para verificar el grafo y tiempos en GitHub. Sin implementación financiera, cambios de
+Excel, clasificación UI específica ni retirada del gate AC23.

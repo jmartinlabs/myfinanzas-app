@@ -61,9 +61,11 @@ los paquetes para impedir publicación npm (no controla visibilidad GitHub), ver
 versiones directas exactas, rechaza una lista explícita de ORMs conocidos y detecta
 imports de Bun/Node o rutas relativas de apps/api desde código de navegador. El análisis
 de imports es léxico, no resuelve aliases, reexports externos ni toda la sintaxis TypeScript;
-tipos/build y la revisión manual complementan sus límites. También verifica presencia
-de las fases obligatorias de CI, SHAs de acciones e historial completo, y rechaza eventos
-pull_request_target o permisos de escritura; es validación léxica, no un parser YAML.
+tipos/build y la revisión manual complementan sus límites. El control de CI se adapta
+al contrato v2.6.0 descrito abajo: workflow y referencia JSON/YAML-subset por estructura
+cerrada, incluidos jobs, condiciones, concurrencia, contexto y dependencias.
+Conserva acciones por SHA, historial completo y permisos de lectura; no admite eventos
+pull_request_target ni controles que permitan éxito sin validación.
 
 check-repository exige historia Git completa; inspecciona todos los commits alcanzables
 desde HEAD, sus mensajes, el índice y los archivos versionados locales. Rechaza rutas
@@ -72,15 +74,17 @@ patrones conocidos de secretos. Redacta valores; no es un escáner exhaustivo. N
 archivos deben añadirse al índice antes de la revisión previa al push. Lee historia y
 blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
 
-La CI .github/workflows/validate.yml se activa con push, pull_request y workflow_dispatch.
-Usa checkout con historial completo y sin credenciales persistidas, acciones fijadas por
-SHA, permisos contents:read y timeout de 15 minutos. Ejecuta los tres controles y sus
-regresiones, diff --check y whitespace del commit con git show --check, instalación Bun 1.4.3 con lockfile congelado, tipos, build,
-Bun Test (age instalado), instalación de Chromium y Playwright. Solo sube las capturas ficticias de
-artifacts/e1-1/*.png, con retención de siete días; no bases ni archivos de entorno.
-No usa secretos de aplicación, pull_request_target ni permisos de escritura.
-No convierte automáticamente los checks en reglas obligatorias de protección de main;
-configurar rulesets requiere decisión y permisos administrativos independientes.
+La configuración local de CI .github/workflows/validate.yml conserva push,
+pull_request y workflow_dispatch. Baseline ejecuta siempre controles documentales y
+de seguridad; full conserva tipos/build, API/SQLite y E2E salvo clasificación docs
+válida; required rechaza fallos/skips inesperados. Jobs Ubuntu24.04, checkout completo
+sin credenciales persistidas y acciones por SHA. Permisos contents:read; baseline añade
+pull-requests:read exclusivamente para resolver contexto de integración. No secretos
+de aplicación, pull_request_target ni permisos de escritura. Timeout 15 min para baseline
+/full y 5 min para required. Capturas ficticias en las rutas explícitas e1.1–e2.1, retención
+siete días; no DB/env/trazas. Concurrencia, preparación Linux y límites debajo.
+Publicación y ejecución remota pendientes; esto no atribuye resultados a Actions ni
+configura reglas obligatorias de protección de main.
 
 No atribuir a GitHub resultados locales: estado de ejecución en [STEP 3](../automated-checks.md).
 Un exit 1 esperado dentro de un test negativo no es un fallo de la suite: demuestra que
@@ -97,6 +101,54 @@ impide declarar completada la funcionalidad.
 Mantener contexto, evidencia y siguiente acción reanudables. La política completa de
 ramas, publicación, revisión del historial y aprobación de merge está en [AGENTS](../../AGENTS.md).
 Las reglas económicas requieren especificaciones funcionales revisadas antes del código.
+
+## Contrato CI v2.6.0 — preparación local
+
+Adopción acotada de [ci-policy](../methodology/ci-policy.md), fuente fijada
+`267bd75f7c4a856f35a7a7a4c1d8a40f5a0de833`. Primera entrega local conservada en ac059f7;
+usuario autoriza después preparar las mejoras Actions en la misma rama. Workflow y
+referencia actualizados localmente; no hay publicación, merge ni evidencia remota.
+
+| Comando desde raíz | Contrato verificable |
+| --- | --- |
+| `python3 scripts/ci_policy.py classify --base <SHA> --head <SHA>` | Comparación push completa; imprime exactamente docs/full; PR añade `--pull-request` para merge-base |
+| `python3 scripts/ci_policy.py classify` | Consume evento GitHub por variables estándar; ausencia/error/manual implica full |
+| `python3 scripts/test-ci-policy` | Regresiones Git reales, entradas inválidas, mutaciones del workflow y ejecución local del control de salida/resultado |
+| `./scripts/check-project` | Proyecto actual, workflow local y receta de referencia |
+| `./scripts/check-project --workflow scripts/fixtures/ci-policy.workflow.json` | Valida estructura, condiciones y dependencias de la receta |
+| `./scripts/test-checks` | Regresiones anteriores más la suite CI compartida |
+| `./scripts/validate-template` / `./scripts/test-validator` | Contratos documentales y regresiones; control CI estructural compartido |
+
+Baseline obligatoria para docs/full: `check-repository`, `check-project`,
+`validate-template`, `test-checks`, `test-validator`, `git diff --check` y
+`git show --format= --check HEAD`. Para full: `bun install --frozen-lockfile`,
+`bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
+`node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
+gate adicional AC23 conserva su condición actual de rama.
+Ninguna comprobación de aplicación se declara inaplicable a full: MyFinanzas tiene
+web/API/SQLite. En esta entrega del harness no cambia código de aplicación, SQL ni UI;
+sus suites no sustituyen ni prueban el nuevo grafo. Las regresiones locales prueban
+clasificación y gates sin ejecutar cargas financieras ni instalar navegadores.
+
+Para un push con PR abierta, `ci_context.py` selecciona la integración PR y verifica
+su head tras checkout. La clasificación combina el rango del evento y la PR acumulada;
+un último commit documental no oculta código anterior. Full/required usan el SHA
+fijado por baseline. Error API, lista incompleta, varias PR o referencia cambiada fallan.
+Push/PR comparten concurrencia por repositorio/rama; tags y forks se separan, main no
+cancela ejecución activa y manuales se aíslan. No elimina ejecuciones ya completadas.
+
+Ubuntu24.04 x64: inventario dpkg de los 33 paquetes oficiales tools+chromium de Playwright
+1.64.1 más age. Versión instalada comprobada; una sola actualización/instalación APT
+solo si faltan paquetes. Sin --with-deps duplicado, navegador del sistema ni caché nueva.
+La instalación y red APT aún pueden ser lentas; el ahorro real debe medirse en CI.
+[Política y fuentes](../methodology/ci-policy.md#concurrencia-y-preparación-linux).
+
+La allowlist docs solo admite Markdown directo de `specs/backlog/`, salvo nombres de
+instrucciones protegidos. Guías, metodología y harness son full. El validador soporta
+una receta JSON (subconjunto YAML) cerrada, no expresiones/YAML arbitrarios; sintaxis
+no reconocida falla visiblemente. No se añaden dependencias Python ni de aplicación.
+La revisión independiente y los resultados de esta entrega se conservan en
+[adopción](../methodology/orchestration-adoption.md#contrato-ci-v260--primera-entrega-local).
 
 
 ## Cobertura E1.2 en revisión

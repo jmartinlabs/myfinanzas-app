@@ -1,8 +1,8 @@
 # Foco en revisión de Ciclos — diagnóstico acotado
 
 2026-10-23. Usuario autoriza revisión técnica acotada del fallo E2E de PR #50,
-reproducción limitada y propuesta mínima en PR independiente. No autoriza aplicar
-el cambio de producto ni hacer merge. PR #50 permanece exclusivamente documental;
+reproducción limitada y propuesta mínima en PR independiente. La autorización posterior permite aplicar y verificar la corrección en PR #51;
+el merge sigue pendiente de aprobación expresa. PR #50 permanece exclusivamente documental;
 Dev32, infraestructura AC22, B4, E2.3, despliegues, issue #22 de Agentic Template y
 archivos ajenos de backlog quedan fuera del trabajo.
 
@@ -39,7 +39,7 @@ que se hayan descartado todas las causas posibles de pérdida de foco del shell 
 
 ## Prueba limitada y comparación temporal
 
-Herramienta: [probe independiente](../../scripts/diagnostics/cycle-review-focus.ts).
+Herramienta histórica en commit `88655d9`: [probe independiente](../../scripts/diagnostics/cycle-review-focus.ts).
 Usa Bun 1.4.3, React 19.3.1/ReactDOM del lockfile y Chrome 155.0.8059.85 headless en macOS.
 Compila el componente real en memoria, lo exporta para el harness y registra el callback
 exacto sin cambiar su orden. La variante de comparación introduce el hook solo en ese
@@ -69,7 +69,7 @@ contienen solo resultados/etiquetas DOM ficticias. Una salida 0 del probe signif
 se observaron los resultados esperados, incluido FAIL negativo del componente original;
 no significa que el producto original haya pasado la comprobación de foco.
 
-Reproducción desde un checkout con dependencias del lockfile ya instaladas:
+Reproducción histórica desde el checkout `88655d9` con dependencias instaladas:
 
 ```sh
 bun scripts/diagnostics/cycle-review-focus.ts . "$CHROME_EXECUTABLE" .local/focus-result.json
@@ -86,7 +86,7 @@ SHA256 de las fuentes observadas (iguales en main y PR #50):
 - `apps/web/src/Ciclos.tsx`: `6d06daac4cdf510415a08db08aca7697cd65916bad4d0fb3058c5c01503088cf`.
 - `tests/e2e/cycle-operations.ts`: `0c50f29d9c34c2f6b40a8e46e0d483e1740959ece569f1d5614641eab6510763`.
 
-## Corrección mínima propuesta, NO aplicada al producto
+## Corrección mínima aplicada en PR #51
 
 Conservar el estado/API, la región y su `tabIndex=-1`. Importar `useLayoutEffect`,
 retirar solo el RAF de foco exitoso en `review()` y enfocar al confirmar React cada
@@ -98,8 +98,8 @@ useLayoutEffect(() => {
 }, [impact]);
 ```
 
-Esta modificación existe únicamente en el bundle temporal de comparación del probe.
-No se han editado archivos de apps, tests, timeouts, lockfile ni PR #50. El scope
+La corrección está aplicada en `apps/web/src/Ciclos.tsx` desde `39ba078`.
+Tests E2E, assertions, timeouts, lockfile y PR #50 permanecen intactos. El scope
 no incluye otros callbacks de error/foco del producto ni una auditoría general.
 
 React asigna las refs en commit y ejecuta useLayoutEffect después de colocar el DOM,
@@ -108,25 +108,35 @@ antes de pintar: [refs/commit](https://react.dev/learn/manipulating-the-dom-with
 RAF solo garantiza una llamada antes de un repintado, no un commit de React:
 [MDN](https://developer.mozilla.org/en-US/docs/Web/API/Window/requestAnimationFrame).
 
-## Plan y decisión pendiente
+## Regresión actual y verificación
 
-1. Autorizar la corrección mínima en la PR independiente de este diagnóstico.
-2. Aplicar el hook al componente; mantener `toBeFocused()` y 5000 ms del E2E existente.
-   Añadir regresión enfocada del orden RAF/commit, sin instrumentación de scheduler
-   en el producto ni nuevos endpoints/dependencias. Comprobar revisión inicial,
-   nueva página/revisión y regreso al borrador sin robar foco tras limpiar impact.
-3. Verificar typecheck/build, comparación enfocada y una pasada E2E normal/CI Linux;
-   detenerse ante un fallo nuevo, sin timeouts aumentados ni relanzamientos indefinidos.
-4. Revisar el candidato y solicitar aprobación de merge por el número de su PR.
+El script actual compila el componente real sin sustituir código ni buscar el RAF
+antiguo. Comprueba revisión inicial, paginación, vuelta al borrador, edición sin robar
+foco y nueva revisión, con scheduler normal y retenido. Cada nuevo impact recibe una
+sola asignación de foco, después de la respuesta preview. Una aserción fallida devuelve
+salida distinta de cero. Conserva `toBeFocused()` y su timeout original de 5000ms.
+Los dos JSON históricos permanecen idénticos; sus fallos negativos no se reinterpretan
+como pases del producto antiguo.
 
-Esta PR presenta diagnóstico, herramienta y plan; no entrega aún la corrección de
-accesibilidad. PR #50 conserva su fallo observado: no se reejecuta para ocultarlo.
+```sh
+bun scripts/diagnostics/cycle-review-focus.ts . "$CHROME_EXECUTABLE" .local/focus-result.json
+# Solo el flujo con scheduler retenido:
+bun scripts/diagnostics/cycle-review-focus.ts . "$CHROME_EXECUTABLE" .local/focus-trace.json --controlled-only
+```
 
-## Comprobaciones del diagnóstico publicado
+Verificación local del candidato `39ba078`: typecheck/build PASS, ambos flujos de
+cinco comprobaciones PASS. Son pruebas con datos ficticios, sin backend ni base real;
+no sustituyen la suite E2E de integración Linux.
 
-Probe ejecutado con resultados negativos/positivos esperados, sin relanzar la suite
-E2E completa. Su copia publicada es idéntica al script de la última pareja por SHA256
-`a1143c6737012f2425b3d5cd0145a95fdf88a582aa086e2f4abd8ac43d999b4e`.
-validate-template, 18 regresiones del validador, check-project, check-repository y
-diff --check PASS. No se atribuye a estos controles una validación de la corrección
-de producto, que sigue propuesta y necesita autorización y pruebas de su candidato.
+Adaptación posterior a main `2412ac3` (PR #53): regresión dentro del job full tras
+instalar Chromium, con receta cerrada y fixture actualizados. Se conserva el grafo
+baseline/full/required, clasificador, contexto de integración y concurrencia. PR #51
+requiere full por contener producto y harness; la allowlist docs no se amplía.
+Las regresiones del contrato rechazan omitir o desactivar el nuevo paso.
+
+QA independiente favorable sobre `39ba078` y adaptación a main: flujo retenido PASS
+en sus cinco pasos; el mismo script contra la fuente original de PR #50 devuelve FAIL
+esperado en `toBeFocused()` a 5000ms. Producto/probe conservados durante la adaptación;
+E2E/config y JSON históricos intactos. Contrato CI: 29 pruebas PASS.
+CI Linux del HEAD publicado pendiente; su resultado se registra en PR #51 antes de
+presentarla como validada. No se hace merge ni despliegue.

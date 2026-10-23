@@ -10,7 +10,12 @@ Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$or
 [contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
+Contrato CI por cambios: [política v2.6.0](methodology/ci-policy.md), harness y workflow actualizados
+localmente; publicación y verificación remota pendientes. Estado y evidencias en
+[adopción](methodology/orchestration-adoption.md#contrato-ci-v260--primera-entrega-local).
+
 ## Cronología conservada
+
 MyFinanzas App is a derived project in initialization. Product context and technology
 are confirmed in [project.md](project.md) and [architecture](guidelines/architecture.md).
 The initial plan is approved and STEP 1 is implemented; see [setup progress](setup-progress.md)
