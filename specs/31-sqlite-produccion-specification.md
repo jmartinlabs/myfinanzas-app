@@ -1,5 +1,6 @@
 # 31 — Inicialización segura de SQLite: Specification
 Status: APPROVED — D1–D4 y AC-01–33 aprobados; implementación pendiente.
+Enmienda: [31-E1](31-sqlite-produccion-enmienda-01.md) aprobada por el usuario el 2026-10-23 («Apruebo enmienda 31-E1.»); su texto se aplica aquí junto con su implementación (AC-05/06/17 modificados, AC-34–37 nuevos).
 Approval source/date: mensaje expreso del usuario en esta conversación, 2026-10-21, tras revisión con Álex: aprobación íntegra de D1–D4 y AC-01–33; autoriza iniciar `$dev 31` al completar `$spec`. Sin autorización de merge.
 Publicación provisional: el usuario autorizó expresamente una excepción al paso 6
 de `$spec` para commit/push de estos dos documentos y PR en borrador hacia main,
@@ -116,9 +117,14 @@ base parcial aceptable por el runtime. Su recuperación/limpieza será explícit
 limitada a archivos propios; no borrar locks ajenos ni reutilizar parcialmente
 un destino. No se promete transacción distribuida frente a daño físico del disco.
 
-En aperturas validar antes de PRAGMA mutables, chmod o migración; revalidar
-identidad/versión en la conexión efectiva bajo el bloqueo de escritura antes de
-migrar. Conservar WAL, FK, synchronous FULL y busy_timeout actual de 3 s. Dos
+En aperturas validar rutas y permisos sin SQLite; después abrir una conexión
+convencional (en producción, sin crear la base) con busy_timeout de 3 s y, dentro de
+una transacción de lectura, verificar esquema sin versión, versión, origen e identidad,
+y en producción la huella de la clave. Solo entonces ejecutar PRAGMA que persistan en la
+base (journal_mode, synchronous), chmod o migración. Revalidar identidad/versión en la
+conexión efectiva bajo el bloqueo de escritura antes de migrar. Prohibido abrir SQLite
+con `immutable=1` u otra lectura sin bloqueos sobre una base que pueda tener escritores
+(enmienda 31-E1). Conservar WAL, FK, synchronous FULL y busy_timeout actual de 3 s. Dos
 procesos contra el mismo destino tienen un solo ganador al crear; los upgrades
 concurrentes se serializan o fallan sin corrupción, sin elevar reintentos sin límite.
 
@@ -168,10 +174,15 @@ payload sensible. Toda validación fallida retorna exit no cero y categoría té
 accionable sin stack/payload/secretos en salidas productivas. No intentar fallback
 a demo, borrar datos ni continuar como si el arranque estuviera listo.
 
-Rechazos de origen/versión/rutas/permisos dejan inalterados archivos preexistentes,
-incluidos DB, WAL/SHM y clave. La evidencia comparará contenido/hash en fixtures
-cerrados o con escritor suspendido: no atribuir al rechazo cambios de un escritor
-legítimo concurrente ni exigir que atime nunca cambie en una lectura del sistema.
+Rechazos de rutas/permisos ocurren antes de abrir SQLite y dejan inalterados todos los
+archivos. Rechazos de origen/versión/identidad/huella no ejecutan transacciones de
+escritura, migraciones, siembras ni PRAGMA persistentes, y dejan sin cambios el
+**contenido lógico** de la base (esquema, versión, identidad y filas) y el archivo de clave
+**byte a byte**. El protocolo WAL de SQLite puede crear o actualizar `-wal`/`-shm` con los
+permisos de la base y consolidar transacciones ya confirmadas; eso no cuenta como
+mutación (enmienda 31-E1). La evidencia comparará contenido lógico y bytes de la clave en
+fixtures cerrados o con escritor suspendido, y bytes de DB/WAL cuando el escritor siga
+abierto (no hay checkpoint de cierre); no exigir que atime ni `-shm` permanezcan idénticos.
 
 ## API behavior and external dependencies
 
@@ -244,8 +255,8 @@ marcar como pasados con mocks o mediante estas pruebas locales.
 | AC-02 | Arrancar production sin DB o sin configuración explícita completa | Exit no cero; no directorios/DB/clave ni fallback |
 | AC-03 | Inicializar production en destino nuevo válido | v6 production coherente, solo S000 y contadores técnicos, clave de 32 bytes y tablas de negocio/acceso vacías |
 | AC-04 | Crear primer Saldo mediante API autenticada de fixture limpio | S001; no fixtures ni salto artificial a S006; S000 sigue protegido |
-| AC-05 | Abrir demo v6 en production desde cada interfaz | Rechazo sin cambios de DB/WAL/clave; mismo resultado tras eliminar filas demo en fixture |
-| AC-06 | Abrir production v6 en development/test desde cada interfaz | Rechazo sin cambios; no escritura ni reetiquetado |
+| AC-05 | Abrir demo v6 en production desde cada interfaz | Rechazo sin escritura ni cambios lógicos de la DB; clave idéntica byte a byte; mismo resultado tras eliminar filas demo en fixture (31-E1) |
+| AC-06 | Abrir production v6 en development/test desde cada interfaz | Rechazo sin escritura, cambios lógicos ni reetiquetado; clave idéntica (31-E1) |
 | AC-07 | Abrir v1–v5 legítimas sin marcador en production | Rechazo sin migrar, sembrar ni generar clave |
 | AC-08 | Abrir v1–v5 genuinas en development/test | Upgrade transaccional a v6 demo; conserva datos, IDs, auditoría, usuario, factores y sesiones; no resembra |
 | AC-09 | Forzar fallo en upgrade y probar versiones/marcadores inválidos, incluida variante #22 | Rollback íntegro o rechazo previo; no adopción ni conversión silenciosa |
@@ -256,7 +267,7 @@ marcar como pasados con mocks o mediante estas pruebas locales.
 | AC-14 | Crear en raíz privada válida y probar raíz/archivos con permisos/UID inválidos | Estado nuevo 0700/0600 desde su creación; configuración insegura rechazada sin chmod reparador |
 | AC-15 | Dos procesos reales inicializan el mismo destino | Un único conjunto válido, un ganador, otro rechaza; sin sobrescritura ni doble clave |
 | AC-16 | Inyectar fallo de escritura/espacio/cierre/publicación y caída en puntos controlados | Ningún conjunto parcial aceptado; estado previo intacto; temporales privados no utilizables ni limpieza ajena |
-| AC-17 | Arranques/upgrades concurrentes con escritor y WAL | Espera acotada/serialización o rechazo limpio; sin corrupción; regresión del bloqueo IMMEDIATE conservada |
+| AC-17 | Arranques/upgrades concurrentes con escritor y WAL | Espera acotada/serialización o rechazo limpio; sin corrupción; regresión del bloqueo IMMEDIATE conservada; ninguna apertura concurrente devuelve `SQLITE_CORRUPT` ni identidad incoherente por la verificación previa (31-E1) |
 | AC-18 | Quitar/cambiar/truncar clave productiva, con y sin propietario | Arranque/alta/backup rechazan; nunca regeneran ni sustituyen clave |
 | AC-19 | Pedir alta privada sin propietario en production válida | Token solo en archivo nuevo 0600, hash/caducidad de 10 min; stdout/stderr/artefactos sin factores |
 | AC-20 | Fallar entrega privada o usar archivo existente/enlazado | Exit no cero, sin token activo inaccesible ni sobrescritura; limpieza limitada a archivo propio |
@@ -273,10 +284,14 @@ marcar como pasados con mocks o mediante estas pruebas locales.
 | AC-31 | Ejecutar Playwright existente a 390/1440 con MFA, catálogos, movimientos, transferencias y restore | Ambas regresiones pasan; capturas ficticias revisadas, sin factores/trazas sensibles |
 | AC-32 | Ejecutar instalación congelada, typecheck, build y controles documentales/repositorio | Checks pasan sin desactivar firmas, guardas ni assertions; lockfile no cambia sin necesidad aprobada |
 | AC-33 | Revisar diff/historial, README/guidelines/infra de la futura implementación | Documenta comandos reales, migración v6, canales privados, estados y límites; sin secretos/bases; PR revisable sin deploy |
+| AC-34 | Dos procesos migran a la vez una v3 genuina mientras un tercero abre la misma base repetidamente (escena del diagnóstico AC23) | Cero `SQLITE_CORRUPT` e identidades incoherentes; la regresión falla con la sonda anterior y pasa con la verificación nueva (31-E1) |
+| AC-35 | Abrir una base de origen ajeno en modo rollback, o con journal/WAL pendiente, en cada contexto | Rechazo sin convertirla a WAL ni ejecutar PRAGMA persistentes antes de la verificación; contenido lógico y clave intactos (31-E1) |
+| AC-36 | Producción con clave de otra pareja, con y sin escritor abierto | Rechazo dentro de la transacción de lectura, antes de cualquier escritura; ningún PRAGMA persistente ni migración; clave intacta (31-E1) |
+| AC-37 | Revisar código y ejecución | Ninguna apertura usa `immutable=1` ni lecturas sin bloqueos sobre bases potencialmente mutables (31-E1) |
 
 ### Trazabilidad y transición
 
-D1 → AC-01/02/05–10/27/28; D2 → AC-03/04/11–18;
+D1 → AC-01/02/05–10/27/28/34–37 (enmienda 31-E1); D2 → AC-03/04/11–18;
 D3 → AC-19–23; D4 → AC-24–29. Calidad y continuidad → AC-30–33.
 E1.4/E1.5 conservan sus reglas y regresiones; futuras entregas reutilizarán el
 mismo esquema/migrador y política de origen, sin declararse implementadas aquí.

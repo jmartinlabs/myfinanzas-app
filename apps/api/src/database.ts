@@ -8,11 +8,7 @@ import {
   keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
-import {
-  productionConfig,
-  openProductionConnection,
-  persistentIdentity,
-} from "./private-state";
+import { productionConfig, openProductionConnection } from "./private-state";
 
 export function openDatabase(path: string) {
   const mode = process.env.NODE_ENV;
@@ -44,9 +40,6 @@ export function openDatabase(path: string) {
       throw error;
     }
   }
-  if (path !== ":memory:" && existsSync(path)) {
-    assertMode(persistentIdentity(path), production);
-  }
   if (!production && path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
   const mask = process.umask(0o077);
@@ -59,7 +52,9 @@ export function openDatabase(path: string) {
   try {
     // Connection-local only: install the existing wait policy before reading live metadata.
     db.exec("PRAGMA busy_timeout=3000");
-    assertMode(inspectIdentity(db), production);
+    // 31-E1: verify origin and version from one read snapshot before any persistent
+    // PRAGMA, chmod or migration (prepareSchema runs only after this check).
+    assertMode(db.transaction(() => inspectIdentity(db))(), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);
     if (!production && path !== ":memory:") chmodSync(path, 0o600);
