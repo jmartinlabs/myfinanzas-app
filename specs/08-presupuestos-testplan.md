@@ -1,32 +1,50 @@
-# 08 — E2.2 Presupuestos: evidencia parcial al checkpoint WIP
+# 08 — E2.2 Presupuestos: plan de pruebas y evidencia
 
-Fecha de checkpoint:2026-10-23 Europe/Madrid. **NO VALIDADO COMO ENTREGA**. No hay QA independiente de candidato ni24AC aceptados globalmente. Pruebas escritas/diseñadas no equivalen a PASS. Este registro transcribe logs existentes; no se ejecutaron nuevas pruebas durante el checkpoint.
+Fecha: 2026-10-23 (Europe/Madrid). Evidencia por SHA; la CI de Linux es la fuente
+autoritativa. Las ejecuciones locales en macOS no cubren las suites que dependen de Linux
+(`libc.so.6`) ni de `age`: main `ca5de20` también falla ahí ~35 pruebas por entorno.
 
-| Registro local privado | Resultado observado | Alcance / límite |
-| --- | --- | --- |
-| typecheck-current.log y reportes Developer | PASS | Tipos; no aceptación funcional/visual |
-| budgets-current.log |8 PASS/0 FAIL/156 aserciones | B1–B8 focales; hubo ampliaciones posteriores de continuidad, no atribuir esta pasada a todo el código final |
-| api-first.log |98 PASS/7 FAIL/1631 aserciones | Preservar fallos:2 expectativas técnicas del nuevo campo, P11timeout,2 hijos concurrentes exit1 y B3/B4pipeEPERM; sin causa única demostrada |
-| api-final.log |105 PASS/0 FAIL/1713 aserciones,39.79s | Log completo posterior, tras adaptaciones técnicas y permisos de red; encontrado al congelar, sin nueva ejecución ni atribución causal de todos los fallos |
-| e2e-first.log |FAIL de arranque config.webServer,exit1 | No llegó a ejecutar escenarios; no hay E2E PASS ni capturas inspeccionadas dev08 |
-| QA08 preparatoria | Matriz24 y riesgos preparados | Sin ejecución ni dictamen sobre candidato; matriz privada, no pruebas completadas |
+## CI de Linux por SHA
 
-El perfil de ejecución por defecto bloqueó creación de sockets con EPERM; comprobación equivalente con permisos adicionales permitió loopback. Ese prerrequisito justifica la segunda ejecución, pero no demuestra causa de cada error SQLite/concurrencia histórico. No se modificó el motor de apertura para cerrar fallos ni se afirma resuelto AC23.
+| SHA | Run | API | E2E | Nota |
+| --- | --- | --- | --- | --- |
+| `010b8fa` | 39875156224 | 104/1 | no ejecutado | B7: fixture v7 sin 0600 |
+| `d57fb0a` | 39875505260 | 105/0 | 2 FAIL | Texto «Sin asignación» y select sin `aria-label` |
+| `a112b6d` | 39910404965 | 105/0 | 2 PASS | Primer candidato con E2E verde |
+| `f82064b` | 39910564007 | 105/0 | 2 PASS | Candidato revisado por QA08-1 |
+| `84078b2` | 39911604222 | 106/0 | 2 PASS | Delta revisado por QA08-2 |
+| `2880f98` | ver PR | — | — | Regla de fuente con destino inactivo; QA08-3 |
 
-## Cobertura escrita para revisión posterior
+## Cobertura de criterios
 
-| Casos del archivo presupuestos.test.ts | Criterios que pretenden apoyar | Estado de aceptación |
-| --- | --- | --- |
-| B1 fuentes/destinos/sin reserva | AC01–04/08/09/20/23/24 | Pendiente de revisar cobertura exacta y extremos |
-| B2 nombres/Estado/intento/revisión | AC10–12/15/16/17 | Pendiente; nombres requieren revisar altas/ediciones/concurrencia, no solo nombre del caso |
-| B3 relación Partida/Deuda/historia | AC05–07/11/13/14 | Pendiente de QA independiente |
-| B4 preview/huella/rollback | AC13/14/17 | Pendiente de QA y validación de todas las rutas |
-| B5 procesos reales | AC17/23 | Ejecución local observada, cobertura completa por verificar |
-| B6 HTTP/MFA/CSRF/errores | AC18/19/20/24 | No sustituye errores/borrador/UI pendientes |
-| B7 continuidad genuinav7 | AC22 | Ampliada con cuota/hechos/audit; global posterior PASS, revisión pendiente |
-| B8 backup/restore/contrato8 | AC22 | No afirmar todos los fallos de migración cubiertos sin revisión |
-| tests/e2e/presupuestos.ts e integración en movimientos.spec.ts | AC de flujos y especialmente AC19/21,restore/MFA | Escritos; E2E/visual390/1440 NO VERIFICADOS |
+| Pruebas | Criterios |
+| --- | --- |
+| B1 fuentes, destinos y compartición | AC-01–04, 08, 09, 20, 23, 24 |
+| B2 nombres, Estado, idempotencia y revisión | AC-10–12, 15–17 |
+| B3 Partida/Deuda e historia bloqueada | AC-05–07, 11, 13, 14 |
+| B4 vista previa, huella y rollback | AC-13, 14, 17 |
+| B5 procesos reales concurrentes | AC-17, 23 |
+| B6 HTTP Effect, MFA, CSRF y errores | AC-18–20, 24 |
+| B7 continuidad v7 genuina demo/producción | AC-22 |
+| B8 backup/restore v8 y rechazo de v8 ajena | AC-22 |
+| B9 destino inactivo: renombrar conserva, cambiar fuente exige activo | AC-04, 15 |
+| E2E `presupuestos.ts` dentro de `movimientos.spec.ts` (390/1440, teclado, contraste, vacío, carga, error, bloqueo, restore MFA) | AC-06, 07, 13, 19–22, 24 |
 
-AC01–AC24 continúan como criterios actuales; ninguno se degrada a futuro por falta de prueba. F-01(E2.3) y F-02(E3/E4/cierres) permanecen contratos futuros NO implementados. AC23 de E2.1 es un bloqueo independiente, no el AC23 de esta especificación.
+QA independiente (subagente `qa-review`, sin participación en la implementación):
+QA08-1 sobre `f82064b` NO_BLOCKERS con los 24 criterios PASS (AC-19 parcial en UI,
+corregido en `84078b2`; AC-21 visual cubierto por la inspección del coordinador);
+QA08-2 sobre el delta `84078b2` NO_BLOCKERS; QA08-3 sobre `2880f98` en la PR.
+Inspección visual del coordinador sobre capturas 390/1440 (listado, formulario,
+revisión de impacto, bloqueo por historia): sin desbordamiento.
 
-Siguiente gate solo bajo nueva instrucción: candidato SHA fijo, comprobación de cobertura y regresiones necesarias, E2E completo e inspección visual y QA independiente. No PR ni merge autorizados por el checkpoint WIP.
+## Limitaciones conocidas
+
+- Sin prueba propia de rollback de la migración v7→v8 (corre en la transacción
+  IMMEDIATE existente) ni de restore directo de un paquete v8 ajeno (comparte `valid()`).
+- La v8 ajena se simula retirando `budget_contract`, no con el esquema8 real de dev07.
+- Sin prueba de renombrados concurrentes (misma transacción serializada que el alta).
+- Tras «Actualizar contexto» la UI no muestra qué cambió; un renombrado posterior puede
+  sobrescribir el nombre de otra sesión (fuente/destino siguen exigiendo revisión).
+- `database-schema.ts` no cierra la conexión si falla `assertBudgetContract`; observado
+  por QA y no modificado por quedar en la ruta de apertura SQLite (fuera de alcance).
+- F-01/F-02 contratos futuros; AC23/E2.1 bloqueo independiente, no resuelto aquí.

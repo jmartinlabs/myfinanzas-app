@@ -1,27 +1,42 @@
-# 08 — E2.2 Presupuestos: checkpoint WIP sin validar
+# 08 — E2.2 Presupuestos: progreso de desarrollo
 
-Estado: **WIP — SIN VALIDACIÓN GLOBAL DE ACEPTACIÓN**. Checkpoint solicitado por el usuario el2026-10-23 (Europe/Madrid), después de ordenar detener la ejecución. No reanudar automáticamente ni abrir PR por este checkpoint.
+Estado: **CANDIDATO VERIFICADO — PR funcional pendiente de aprobación de merge**.
+Fecha: 2026-10-23 (Europe/Madrid). Rama `feat/08-presupuestos`; base main `ca5de20`.
+Autorización: «Álex — Autorización de desarrollo E2.2 · `$dev 08`» (registrada en el
+[tablero](epic-board.md)). No autoriza merge, despliegue, Excel real ni E2.3.
 
-Base integrada: main20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad, spec/wireframes aprobados PR39. Rama feat/08-presupuestos. Autorización vigente para esta acción: commit de todos los cambios de trabajo dev08 y push de rama, **sin PR ni merge**. El SHA del checkpoint se entrega en el recibo de publicación, evitando autorreferencia circular.
+## Historia de la entrega
 
-## Estado material conservado
+1. **WIP `010b8fa`** (otro entorno, interrumpido por límite de uso): maestro, migración v8,
+   relación Partida→Presupuesto, API, UI y escenarios E2E escritos sin validar.
+2. **Retomado en Claude Code**: worktree aislado, merge de main `ca5de20` (`9ddc7e0`) sin
+   conflictos.
+3. **`d57fb0a`**: fixture v7 privada desde la primera apertura (B7 fallaba en CI por
+   sidecars 0644 bajo umask 022; mismo patrón que `openDatabaseV6`).
+4. **`c7e8bd3`**: formato Prettier 3.6.2 por defecto en los archivos TS/TSX/CSS de dev08
+   (main ya cumplía ese formato); texto E2E «Sin Presupuesto» (AC-06).
+5. **`a112b6d`**: `aria-label` en los select de formulario y filtros, botón real «Crear
+   Partida» y estado de carga con puerta + `fallback` en E2E.
+6. **`f82064b`**: inspección visual 390/1440 — botones secundarios, margen del listado y
+   mensajes «máximo 120/2000».
+7. **`84078b2`**: hallazgos menores QA08-1 — «Actualizar contexto» tras 409 sin perder
+   borrador, «Limpiar filtros» con Estado, pruebas B9 (AC-15) y backup v8 ajeno en B8.
+8. **`2880f98`**: decisión del usuario 2026-10-23 — cambiar la fuente con un destino ya
+   inactivo es nueva relación y exige Saldo activo; solo renombrar conserva el destino.
 
-- Backend maestro Presupuestos, relación Partida→Presupuesto y Deuda independiente, API y guardas de impacto implementados localmente; pendientes de revisión independiente.
-- Migración8 propia con contrato e2.2-presupuestos-v8, fixturev7 genuina, backup/restore y rechazo de esquema8 ajeno. No incorpora dev07; futura reconciliación de ambas migraciones requiere diseño/revalidación explícitos, no basta igual número de versión.
-- UI maestro y selector Partida, integración de navegación/estilos y escenarios E2E escritos. No hay resultado E2E satisfactorio ni inspección visual390/1440 terminada.
-- Adaptaciones de expectativas heredadas para nuevo esquema/campo presupuesto incluidas en este estado; no se modificaron apertura SQLite, private-state ni checkpoints dev07.
-- Developer se interrumpió por límite de uso. QA independiente solo preparó matriz; no revisó ni ejecutó checks sobre candidato funcional. No existe dictamen QA favorable de dev08.
+## Decisiones de esta entrega
 
-## Evidencia disponible, no aceptación
+- Decisión del usuario (2026-10-23, literal): «Sí: cambiar la fuente con un destino ya
+  inactivo cuenta como nueva relación y debe exigir un Saldo activo; solo renombrar
+  conserva el destino inactivo.»
+- Migración v8 propia con contrato `e2.2-presupuestos-v8`; una v8 ajena (p. ej. el
+  esquema8 de dev07, fuera de main) se rechaza sin modificar la base. Integrar dev07 en el
+  futuro exigirá diseñar y revalidar la reconciliación de ambas migraciones.
+- Cambios de Presupuesto con hechos registrados quedan bloqueados (HISTORY_LOCKED) hasta
+  E2.3; no se estima impacto.
 
-Ver [testplan08](08-presupuestos-testplan.md). Typecheck reportado PASS y pruebas nuevas focales8 PASS/156 aserciones. Primera API global98 PASS/7 FAIL/1631 aserciones conservada. Log posterior API global105 PASS/0 FAIL/1713 aserciones,39.79s, localizado tras la interrupción; no se atribuye cierre causal de fallos previos ni de AC23. Entre ejecuciones se adaptaron expectativas técnicas y se habilitaron permisos de red para servidores locales; no se afirma que eso explique cada fallo anterior.
+## Fuera de alcance y pendientes
 
-Primer E2E: config.webServer exit1 antes de ejecutar tests. No se ejecutan suites adicionales para este checkpoint. Los resultados previos no se atribuyen al SHA final como si se hubieran ejecutado después del commit. Pruebas/código pendientes de revisión de cobertura24AC y de validación sobre candidato fijo.
-
-Logs y scripts intermedios permanecen privados/ignorados en work; bases/claves/estado local, dependencias y resultados privados no se publican. Su persistencia a otra sesión no se garantiza. Este commit conserva código/migración/pruebas/UI/documentación, no promete un artefacto listo para integrar.
-
-## Congelación y siguiente acción
-
-Todo desarrollo queda detenido. Publicar solo checkpoint WIP solicitado, verificar SHA remoto y detenerse. Para continuar se requiere nueva instrucción del usuario: revisar diff/candidato, completar E2E/visual y QA independiente y decidir validaciones faltantes, sin ampliar alcance financiero.
-
-AC23/E2.1 sigue BLOQUEADO, E2.1 sin aceptación global, AC23-SQLITE investigación separada cerrada inconclusa; Dev32 pausado. PR40 conserva autorización de integración independiente. F-01/F-02 futuros pendientes. Sin E2.3, Excel real, datos personales, despliegue ni migración operativa.
+F-01/F-02 futuros; E2.3, Base/Esencial/Del mes, ejecución y estados mensuales fuera.
+AC23/E2.1 sigue BLOQUEADO y Dev32 PAUSED; no se modificó el motor de apertura SQLite.
+Evidencia y limitaciones: [testplan08](08-presupuestos-testplan.md).
