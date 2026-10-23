@@ -73,14 +73,18 @@ export function backup(
     !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
   )
     throw new Error("Entorno de copia inválido.");
-  const sourceIdentity = inspectIdentity(db);
+  const sourceIdentity = db.transaction(() => inspectIdentity(db))();
   assertMode(sourceIdentity, process.env.NODE_ENV === "production");
   if (sourceIdentity?.origin === "production") {
     const config = productionConfig();
     if (db.filename !== config.database)
       throw new Error("Origen distinto de DATABASE_PATH.");
-    verifyProductionFiles(config);
-    if (sourceIdentity.key_hash !== keyHash(key))
+    // The key file must match the live identity too (31-E1: no separate probe).
+    const fileKey = verifyProductionFiles(config);
+    if (
+      sourceIdentity.key_hash !== keyHash(key) ||
+      sourceIdentity.key_hash !== keyHash(fileKey)
+    )
       throw new Error("Pareja DB/clave inválida.");
   }
   new Auth(db, key).checkKey();

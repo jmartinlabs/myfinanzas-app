@@ -32,7 +32,7 @@ async function fixture(run: (path: string) => Promise<void> | void) {
   }
 }
 
-test("SQLite B1: timeout is the first SQL on demo and production runtime/read-only handles; immutable probe unchanged", async () =>
+test("SQLite B1: timeout is the first SQL on every demo and production handle; no immutable probe (31-E1)", async () =>
   fixture((path) => {
     initializeProduction();
     const traces = new Map<sqlite.Database, string[]>();
@@ -58,15 +58,18 @@ test("SQLite B1: timeout is the first SQL on demo and production runtime/read-on
       openDatabase(join(resolve(path, "../.."), "demo.sqlite")).close();
       openDatabase(":memory:").close();
       const calls = [...traces.values()];
-      const live = calls.filter((c) => c[0] === "PRAGMA busy_timeout=3000");
-      expect(live).toHaveLength(4);
-      const probes = calls.filter((c) => c[0] !== "PRAGMA busy_timeout=3000");
-      expect(probes.length).toBeGreaterThan(0);
-      for (const c of probes) {
-        expect(c[0]).toStartWith("SELECT name FROM sqlite_master");
-        expect(c.some((s) => /PRAGMA|BEGIN|INSERT|UPDATE/i.test(s))).toBe(
-          false,
+      // 31-E1: every connection is a conventional live handle; none is a separate probe.
+      expect(calls).toHaveLength(4);
+      for (const c of calls) {
+        expect(c[0]).toBe("PRAGMA busy_timeout=3000");
+        const firstRead = c.findIndex((s) =>
+          s.startsWith("SELECT name FROM sqlite_master"),
         );
+        const persistent = c.findIndex((s) =>
+          /journal_mode|synchronous/i.test(s),
+        );
+        expect(firstRead).toBeGreaterThan(0);
+        if (persistent !== -1) expect(persistent).toBeGreaterThan(firstRead);
       }
     } finally {
       for (const spy of spies) spy.mockRestore();

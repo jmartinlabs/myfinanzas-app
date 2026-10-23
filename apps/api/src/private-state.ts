@@ -1,4 +1,3 @@
-import { pathToFileURL } from "node:url";
 import {
   constants,
   type Stats,
@@ -150,9 +149,9 @@ export function openProductionConnection(
   readonly: boolean,
 ) {
   const { Database } = require("bun:sqlite") as typeof import("bun:sqlite");
-  // Readonly SQLite can change SHM read marks. Reject origins with a persistent,
-  // immutable metadata probe before opening any connection that can touch WAL/SHM.
-  verifyProductionFiles(config);
+  // 31-E1: path/permission checks use no SQLite; identity is verified on this
+  // conventional connection. SQLite may create or update -wal/-shm (mode copied from
+  // the 0600 database); no write transaction or persistent PRAGMA runs before it.
   privateDirectory(config.state);
   const expected = privateFile(config.database);
   privateSidecars(config.database);
@@ -164,11 +163,12 @@ export function openProductionConnection(
       : { readwrite: true, strict: true },
   );
   try {
-    // Keep persistent-origin/path checks above; no WAL or schema changes before live identity.
+    // No persistent PRAGMA or schema change before live identity.
     db.exec("PRAGMA busy_timeout=3000");
     sameFile(expected, privateFile(config.database));
     privateSidecars(config.database);
-    const id = inspectIdentity(db);
+    // One read transaction: origin, version and key hash come from a single snapshot.
+    const id = db.transaction(() => inspectIdentity(db))();
     if (id?.origin !== "production" || id.key_hash !== keyHash(key))
       throw new Error("Identidad o pareja DB/clave inválida.");
     new Auth(db, key, config.origin).checkKey();
@@ -178,31 +178,13 @@ export function openProductionConnection(
     throw error;
   }
 }
-// Identity is checkpointed before production publication and cannot be changed.
-// Only this metadata probe ignores WAL; real connections validate live state below.
-export function persistentIdentity(path: string) {
-  const { Database, constants: sqlite } =
-    require("bun:sqlite") as typeof import("bun:sqlite");
-  const uri = pathToFileURL(resolve(path)).href + "?mode=ro&immutable=1";
-  const db = new Database(
-    uri,
-    sqlite.SQLITE_OPEN_READONLY | sqlite.SQLITE_OPEN_URI,
-  );
-  try {
-    return inspectIdentity(db);
-  } finally {
-    db.close();
-  }
-}
+// File-level checks only (31-E1). Callers verify origin and key hash on their
+// effective SQLite connection; no lock-free immutable read is used.
 export function verifyProductionFiles(config: ProductionConfig) {
   privateDirectory(config.state);
   privateFile(config.database);
   privateSidecars(config.database);
-  const key = readPrivateKey(config.key);
-  const id = persistentIdentity(config.database);
-  if (id?.origin !== "production" || id.key_hash !== keyHash(key))
-    throw new Error("Identidad productiva persistente o clave inválida.");
-  return key;
+  return readPrivateKey(config.key);
 }
 
 // Linux target (Debian 13): atomic directory publication with RENAME_NOREPLACE.

@@ -276,7 +276,25 @@ test("31 S6: restore sync failures leave either no target or a complete validate
     }
   }));
 
-test("31 S7: cross-origin rejection leaves live database, WAL and SHM bytes unchanged", async () =>
+// Logical content: every table's rows plus the schema, read through an existing handle.
+function logical(db: sqlite.Database) {
+  const tables = db
+    .query(
+      "SELECT name,sql FROM sqlite_master WHERE type='table' ORDER BY name",
+    )
+    .all() as { name: string; sql: string }[];
+  return JSON.stringify(
+    tables.map((t) => [
+      t.name,
+      t.sql,
+      db.query(`SELECT * FROM "${t.name}" ORDER BY rowid`).all(),
+    ]),
+  );
+}
+
+// 31-E1: with the writer still open there is no closing checkpoint, so DB and WAL bytes
+// stay identical; -shm may change (read marks). Logical content and key bytes never change.
+test("31 S7: cross-origin rejection keeps DB/WAL bytes with an open writer, logical content and key unchanged", async () =>
   isolated((_root, configure) => {
     for (const source of ["production", "demo"]) {
       const path = configure(source);
@@ -295,16 +313,128 @@ test("31 S7: cross-origin rejection leaves live database, WAL and SHM bytes unch
         db.exec(
           "CREATE TABLE review_fixture(n INTEGER);INSERT INTO review_fixture VALUES(1)",
         );
-        const files = [path, path + "-wal", path + "-shm"],
-          before = files.map((p) => fs.readFileSync(p));
+        const files = [path, path + "-wal", process.env.AUTH_KEY_PATH!],
+          before = files.map((p) => fs.readFileSync(p)),
+          content = logical(db);
         process.env.NODE_ENV = source === "production" ? "test" : "production";
         expect(() => {
           openDatabase(path);
         }).toThrow();
         for (let i = 0; i < files.length; i++)
           expect(fs.readFileSync(files[i]).equals(before[i])).toBe(true);
+        expect(logical(db)).toBe(content);
       } finally {
         db.close();
       }
     }
   }));
+
+// Rollback-journal databases of the other origin must not be converted to WAL or receive
+// any persistent PRAGMA before the identity check rejects them.
+test("31 AC35: foreign-origin rollback-mode databases are rejected without WAL conversion", async () =>
+  isolated((_root, configure) => {
+    for (const source of ["production", "demo"]) {
+      const path = configure(source);
+      if (source === "production") initializeProduction();
+      else {
+        process.env.NODE_ENV = "test";
+        openDatabase(path).close();
+        fs.writeFileSync(process.env.AUTH_KEY_PATH!, Buffer.alloc(32), {
+          mode: 0o600,
+        });
+      }
+      const setup = new sqlite.Database(path, { strict: true });
+      setup.exec("PRAGMA journal_mode=DELETE");
+      setup.close();
+      for (const suffix of ["-wal", "-shm"])
+        fs.rmSync(path + suffix, { force: true });
+      const reader = new sqlite.Database(path, { readonly: true });
+      const content = logical(reader);
+      reader.close();
+      const key = fs.readFileSync(process.env.AUTH_KEY_PATH!),
+        header = fs.readFileSync(path).subarray(18, 20);
+      expect([...header]).toEqual([1, 1]);
+      process.env.NODE_ENV = source === "production" ? "test" : "production";
+      expect(() => {
+        openDatabase(path);
+      }).toThrow();
+      expect([...fs.readFileSync(path).subarray(18, 20)]).toEqual([1, 1]);
+      expect(fs.existsSync(path + "-wal")).toBe(false);
+      expect(fs.readFileSync(process.env.AUTH_KEY_PATH!).equals(key)).toBe(
+        true,
+      );
+      const after = new sqlite.Database(path, { readonly: true });
+      try {
+        expect(logical(after)).toBe(content);
+        expect(after.query("PRAGMA journal_mode").get()).toEqual({
+          journal_mode: "delete",
+        });
+      } finally {
+        after.close();
+      }
+    }
+  }));
+
+// A key from another genuine pair is rejected inside the read transaction, before any
+// persistent PRAGMA or migration, with and without an open writer on the database.
+test("31 AC36: another pair's key is rejected before persistent PRAGMA, with and without a writer", async () =>
+  isolated((_root, configure) => {
+    configure("other");
+    initializeProduction();
+    const otherKey = fs.readFileSync(process.env.AUTH_KEY_PATH!);
+    for (const withWriter of [false, true]) {
+      const path = configure(withWriter ? "first-writer" : "first");
+      initializeProduction();
+      const own = new sqlite.Database(path, { strict: true });
+      const content = logical(own);
+      if (!withWriter) own.close();
+      fs.writeFileSync(process.env.AUTH_KEY_PATH!, otherKey, { mode: 0o600 });
+      const files = withWriter ? [path, path + "-wal"] : [path];
+      const before = files.map((p) => fs.readFileSync(p));
+      const persistent: string[] = [];
+      const exec = sqlite.Database.prototype.exec;
+      const spy = spyOn(sqlite.Database.prototype, "exec").mockImplementation(
+        function (this: sqlite.Database, ...a: any[]) {
+          if (/journal_mode|synchronous|foreign_keys/i.test(String(a[0])))
+            persistent.push(String(a[0]));
+          return (exec as Function).apply(this, a);
+        } as any,
+      );
+      try {
+        expect(() => {
+          openDatabase(path);
+        }).toThrow("Identidad o pareja DB/clave inválida.");
+      } finally {
+        spy.mockRestore();
+      }
+      expect(persistent).toEqual([]);
+      for (let i = 0; i < files.length; i++)
+        expect(fs.readFileSync(files[i]).equals(before[i])).toBe(true);
+      expect(fs.readFileSync(process.env.AUTH_KEY_PATH!).equals(otherKey)).toBe(
+        true,
+      );
+      const check = withWriter
+        ? own
+        : new sqlite.Database(path, { readonly: true });
+      try {
+        expect(logical(check)).toBe(content);
+      } finally {
+        check.close();
+      }
+    }
+  }));
+
+// No application module opens SQLite with immutable=1 or another lock-free URI mode.
+test("31 AC37: application code has no immutable or lock-free SQLite opening", () => {
+  const dir = import.meta.dir;
+  const sources = fs
+    .readdirSync(dir)
+    .filter((f) => f.endsWith(".ts") && !f.endsWith(".test.ts"));
+  expect(sources.length).toBeGreaterThan(10);
+  for (const file of sources) {
+    const text = fs.readFileSync(join(dir, file), "utf8");
+    expect(`${file}: ${/immutable=|nolock=|readonly_shm=/.test(text)}`).toBe(
+      `${file}: false`,
+    );
+  }
+});
