@@ -72,7 +72,7 @@ def classify_git(root, base, head, *, pull_request=False):
         return 'full'
 
 
-def classify_event(root, event_name, event):
+def classify_event_range(root, event_name, event):
     try:
         if event_name == 'pull_request':
             pr = event['pull_request']
@@ -82,6 +82,29 @@ def classify_event(root, event_name, event):
     except (KeyError, TypeError):
         pass
     return 'full'
+
+
+def classify_event(root, event_name, event, checkout_ref=None):
+    original = classify_event_range(root, event_name, event)
+    if checkout_ref is None:
+        return original
+    try:
+        expected = (event['pull_request']['head']['sha'] if event_name == 'pull_request'
+                    else event['after'] if event_name == 'push' else None)
+        if isinstance(checkout_ref, str) and re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref):
+            if git(root, 'rev-parse', 'HEAD^2').decode().strip() != expected:
+                return 'full'
+            base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
+            accumulated = classify_git(root, base, expected, pull_request=True)
+            # A last docs-only push must not cancel the PR's full checks when
+            # earlier commits in the same PR changed application/harness code.
+            return 'docs' if original == accumulated == 'docs' else 'full'
+        if (not isinstance(checkout_ref, str) or not re.fullmatch(r'[0-9a-f]{40}', checkout_ref)
+                or (expected is not None and checkout_ref != expected)):
+            return 'full'
+        return original
+    except (OSError, subprocess.SubprocessError, UnicodeError, KeyError, TypeError):
+        return 'full'
 
 
 def result_ok(classification, baseline, full):
@@ -108,7 +131,8 @@ def main(argv=None):
     else:
         try:
             event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
-            classification = classify_event(ROOT, os.getenv('GITHUB_EVENT_NAME'), event)
+            classification = classify_event(ROOT, os.getenv('GITHUB_EVENT_NAME'), event,
+                                             os.getenv('CI_CHECKOUT_REF'))
         except (OSError, ValueError, KeyError):
             classification = 'full'
     print(classification)

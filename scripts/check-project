@@ -31,8 +31,8 @@ def validate(root, workflow_path=None):
                         errors.append(f'orm: {name} conflicts with direct SQL')
         policy = runpy.run_path(str(root / 'scripts/ci_workflow.py'))
         active = Path(workflow_path) if workflow_path else root / '.github/workflows/validate.yml'
-        errors.extend(policy['validate_workflow'](active, allow_legacy=workflow_path is None))
-        # Stage 1: exercise the future graph while leaving live Actions unchanged.
+        errors.extend(policy['validate_workflow'](active))
+        # The inactive fixture and active graph must independently satisfy the recipe.
         errors.extend(policy['validate_workflow'](root / 'scripts/fixtures/ci-policy.workflow.json'))
         for path in (root / 'apps/web/src').rglob('*'):
             if path.suffix not in ('.ts', '.tsx', '.js', '.jsx'):
@@ -52,7 +52,7 @@ def validate(root, workflow_path=None):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--workflow', type=Path, help='validate an inactive candidate (no legacy exception)')
+    parser.add_argument('--workflow', type=Path, help='validate an additional workflow against the supported recipe')
     args = parser.parse_args()
     errors = validate(Path(__file__).resolve().parents[1], args.workflow)
     for error in errors:

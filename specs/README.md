@@ -10,8 +10,8 @@ Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$or
 [contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
-Contrato CI por cambios: [política v2.6.0](methodology/ci-policy.md), preparación local
-del harness; workflow candidato aún no activado. Estado y evidencias en
+Contrato CI por cambios: [política v2.6.0](methodology/ci-policy.md), harness y workflow actualizados
+localmente; publicación y verificación remota pendientes. Estado y evidencias en
 [adopción](methodology/orchestration-adoption.md#contrato-ci-v260--primera-entrega-local).
 
 ## Cronología conservada

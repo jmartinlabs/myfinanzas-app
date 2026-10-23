@@ -204,3 +204,34 @@ No se han iniciado ejecuciones Actions ni publicado ramas o PR.
 Comandos y límites en [calidad](../guidelines/quality.md#contrato-ci-v260--preparación-local).
 Próximo gate: presentar receta candidata y evidencia; esperar autorización antes de
 activar Actions. UI específica, deduplicación de eventos, cachés y retirada AC23 fuera.
+
+
+### Ampliación local — mejoras de Actions
+
+Autorización posterior real del usuario: «Autorizo», en respuesta a los cuatro puntos
+propuestos: activar docs/full, evitar duplicados conservando ramas sin PR, cancelar
+obsoletos y preparar Playwright; preparar/probar localmente sin publicar ni merge.
+La primera entrega ac059f7 se conserva. Esta ampliación sustituye el workflow local por
+la receta docs/full, retira la excepción heredada y alinea sus regresiones.
+
+Deduplicación acotada: concurrencia compartida push/PR, no eliminación retroactiva de
+runs terminados. Se mantiene contexto de integración aunque sobreviva push, con permiso
+pull-requests:read solo en baseline, snapshot HEAD^2 y clasificación conjunta del evento
+más la PR acumulada. Main no cancela ejecución activa; manual aislado; tags/forks no
+colisionan. Sin filtros que dejen ramas sin PR sin validación. Required nunca acepta
+full omitido salvo docs válido. No configura protección/permisos del repositorio.
+
+Preparación Linux: Ubuntu24.04,34 paquetes (33 oficiales tools+chromium de Playwright1.64.1
+más age), inventario dpkg y APT solo faltantes una vez. Lista comparada con fuente
+oficial: coincidencia exacta; comprobar CLI instalado en CI. Sin caché de navegador porque
+la demora observada era APT. No se garantiza eliminar latencia de mirrors.
+
+QA independiente CI260-ACTIONS: primera revisión encontró P1 (push final docs podía
+ocultar código acumulado de PR) y P2 (colisión tag/rama); corregidos con regresiones reales
+Git y evaluación de expresiones. Revisión posterior PASS:29 test-ci-policy y51 test-checks,
+check-project y diff PASS; validate-template y18 test-validator PASS. Sin bloqueos
+pendientes. APT real, browser y Actions remotos UNRUN, tests de entorno simulados.
+
+Siguiente paso seguro: presentar cambios y límites; esperar autorización de publicación
+para verificar el grafo y tiempos en GitHub. Sin implementación financiera, cambios de
+Excel, clasificación UI específica ni retirada del gate AC23.

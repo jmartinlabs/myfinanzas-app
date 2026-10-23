@@ -56,7 +56,7 @@ def validate(root):
  # The project workflow contract checks parsed structure/conditions, not token presence.
  try:
   policy=runpy.run_path(str(root/'scripts/ci_workflow.py'))
-  errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml',allow_legacy=True))
+  errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml'))
  except (OSError,ValueError): fail('ci','workflow policy unavailable')
  return errors
 if __name__=='__main__':
