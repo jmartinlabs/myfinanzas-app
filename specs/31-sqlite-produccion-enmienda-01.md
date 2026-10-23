@@ -1,6 +1,6 @@
 # 31 — SQLite segura: enmienda 31-E1 (verificación con conexión convencional)
 
-Status: PROPUESTA — pendiente de aprobación expresa («Apruebo enmienda 31-E1»).
+Status: APPROVED — enmienda aprobada por el usuario el 2026-10-23 («Apruebo enmienda 31-E1»). Implementación NO autorizada.
 Fecha: 2026-10-23 (Europe/Madrid). Afecta a la [especificación 31](31-sqlite-produccion-specification.md),
 aprobada el 2026-10-21; su texto vigente **no se modifica** hasta aprobar esta enmienda.
 Autorización: el usuario pide preparar una enmienda acotada (garantía lógica en lugar de
@@ -153,5 +153,9 @@ etiqueta de cabecera y marcador externo (alternativas evaluadas y no elegidas).
 
 ## Aprobación
 
-Pendiente. Aprobar con «Apruebo enmienda 31-E1». Después, para aplicarla al texto de spec31
-e implementarla, hace falta una autorización de desarrollo expresa y separada.
+Aprobada por el usuario el 2026-10-23 (Europe/Madrid), mensaje literal: «Apruebo enmienda
+31-E1.». La aprobación cubre el
+contenido de este documento. No autoriza implementarla, aplicarla al código, ni hacer merge
+de la PR que la contiene: el merge requiere «Apruebo PR #N» y el desarrollo una
+autorización expresa y separada. El texto de spec31 se actualizará con estos cambios en la
+entrega que la implemente.
