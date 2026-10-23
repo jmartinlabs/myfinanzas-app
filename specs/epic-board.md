@@ -8,6 +8,7 @@ tablero registra, no concede, autorizaciones. Main verificado `255bf61` con CI S
 | E2.2 / dev08 | INTEGRADA: PR #44 squash `255bf61` tras «Apruebo PR #44» del usuario, HEAD `6eeb727` con ambas CI SUCCESS (job pull_request relanzado una vez a petición del usuario por fallo intermitente de SQLite B4) | Cerrada; limitaciones en [testplan08](08-presupuestos-testplan.md) |
 | E2.3 | Siguiente entrega del roadmap; consume Presupuestos | Requiere especificación y autorización propias |
 | E2.1 / dev07 / AC23 | BLOQUEADO; rama `feat/07-ciclos-operacion` fuera de main, sin PR | Reanudar solo con instrucción expresa; reconciliar su esquema8 con el contrato v8 de E2.2 |
+| Spec31 / enmienda 31-E1 | PROPUESTA 2026-10-23: verificar identidad con conexión convencional y transacción de lectura; garantía lógica en lugar de bytes de WAL/SHM ([propuesta](31-sqlite-produccion-enmienda-01.md)) | Aprobación expresa «Apruebo enmienda 31-E1»; desarrollo con autorización aparte |
 | SQLite B4 | Fallo intermitente observado una vez en CI de `6eeb727`; pasó al relanzar | Incidencia de apertura SQLite fuera de alcance; no investigar sin autorización |
 | Spec32 / PR #29 | INTEGRADA: squash `a7fb9d8` tras «Apruebo PR #29» del usuario, HEAD `a9e0fdb` con CI SUCCESS y merge con main verificado localmente | Solo documentación; no reactiva Dev32 |
 | Dev32 / PR #30 / AC22 | PAUSED; draft con conflictos, 12 commits por detrás de main | Reanudar solo con autorización expresa; revisar actualización/rollback con esquema v8 |
