@@ -67,12 +67,25 @@ No se ejecuta init-project ni se reemplazan las guías o decisiones de la aplica
 ### Clasificador y bases completas
 
 Implementación única: [ci_policy.py](../../scripts/ci_policy.py), Python estándar.
-Única allowlist docs: archivos `.md` directamente dentro de `specs/backlog/`, excepto
-nombres de instrucciones `AGENTS.md`, `CLAUDE.md`, `SKILL.md` e `instructions.md`
-(comparación de esos nombres sin distinguir mayúsculas). No hay allowlist por mera
-extensión fuera de esa carpeta ni para subcarpetas. Instrucciones, Skills, metodología,
+Allowlist docs (ampliación autorizada por el usuario el 2026-10-24):
+
+- Archivos `.md` directamente dentro de `specs/backlog/`.
+- Documentos directamente en `specs/` con número de dos dígitos, slug de segmentos
+  alfanuméricos minúsculos separados por guiones y sufijo `-brainstorming.md`,
+  `-specification.md`, `-progress.md` o `-testplan.md`.
+- Archivos exactos `specs/project.md`, `specs/roadmap.md`, `specs/setup-progress.md`,
+  `specs/epic-board.md`, `specs/functional-reference-v5.11.md` y `specs/README.md`.
+
+Siempre se excluyen nombres `AGENTS.md`, `CLAUDE.md`, `SKILL.md` e `instructions.md`
+(sin distinguir mayúsculas). No hay permiso general por extensión ni para subcarpetas.
+Estas rutas son documentos de producto/seguimiento, no instrucciones ejecutables del
+agente; una futura incorporación de instrucciones exige reclasificar su ruta como full.
+Instrucciones, Skills, metodología,
 guías, SQL, dependencias/lockfiles, configuración, workflows, harness, código y rutas
 desconocidas son full. Mezclar cualquier ruta full con documentación produce full.
+La corrección no modifica el grafo ni omite baseline/required: el propio cambio del
+clasificador requiere full. Solo comparaciones posteriores compuestas exclusivamente
+por las rutas documentales permitidas pueden omitir pruebas de aplicación.
 
 - PR: `merge-base(base.sha, head.sha)` hasta `head.sha` del evento, incluyendo todos
   los commits de la rama; no se compara solo el último commit ni HEAD~1.
