@@ -182,3 +182,18 @@ export function prepareV7(db: Database, identity: Identity) {
     throw error;
   }
 }
+
+export function openDatabaseV7(
+  path: string,
+  identity: Identity = { origin: "demo", key_hash: null },
+) {
+  // Same private first open as openDatabaseV6: WAL/SHM inherit the database mode.
+  const mask = process.umask(0o077);
+  try {
+    const db = new Database(path, { create: true, strict: true });
+    prepareV7(db, identity);
+    return db;
+  } finally {
+    process.umask(mask);
+  }
+}
