@@ -223,7 +223,9 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
     expect(one.impactRevision).toBe(two.impactRevision);
     const complete = [...one.movimientos, ...two.movimientos];
     expect(complete.filter((m) => m.fecha === "2026-02-10").map((m) => m.id)).toEqual(["9007199254740992", "9007199254740993"]);
-    expect(complete.map((m) => m.id)).toEqual([...complete].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id.length - b.id.length || a.id.localeCompare(b.id)).map((m) => m.id));
+    expect(complete.map((m) => m.id)).toEqual(["9007199254740992", "9007199254740993", "2", ...Array.from({length: 105}, (_, i) => String(i + 4)), "3"]);
+    expect(one.movimientos.at(-1)?.fecha).toBe("2026-02-15");
+    expect(two.movimientos.at(-1)?.fecha).toBe("2026-02-16");
     expect(new Set(complete.map((m) => m.id)).size).toBe(109);
     expect(
       listCycles(db, new URLSearchParams({ q: "marzo" })).contexto.actual?.id,
