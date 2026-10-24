@@ -807,6 +807,9 @@ function CycleOperationForm({
       live = false;
     };
   }, [id, retry]);
+  useEffect(() => {
+    if (impact) reviewRef.current?.focus();
+  }, [impact]);
   const payload = () => ({
     inicio,
     saldoInicialComida: saldo.replace(",", "."),
@@ -832,7 +835,6 @@ function CycleOperationForm({
           payload(),
         ),
       );
-      requestAnimationFrame(() => reviewRef.current?.focus());
     } catch (e) {
       fail(e);
     } finally {
