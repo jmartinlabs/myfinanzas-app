@@ -6,7 +6,8 @@ keeps its own complete validation workflow; it has no application stack to test.
 ## Classification
 Use one reusable classifier locally and in CI, with exactly `docs` and `full` results.
 `docs` requires a nonempty set containing only explicitly allowlisted documentation
-paths (for example a project backlog). A Markdown extension alone is insufficient.
+paths. A Markdown extension alone is insufficient; backlog is not the only eligible
+product documentation.
 Instructions, Skills, methodology, harness scripts, workflows, configuration, SQL,
 dependencies and lockfiles always require `full`, even when written in Markdown.
 Unknown paths, mixed documentation/code, invalid input, missing Git base, empty or
@@ -14,6 +15,36 @@ incomplete change lists and classification errors default to `full`.
 Inspect the complete event comparison, including additions, deletions and both sides
 of renames. Document PR and push comparison bases; never silently inspect only HEAD's
 last commit. Parse filenames safely, including spaces and unusual characters.
+
+## Adaptable product-document allowlist
+Record the exact allowlist in each project's CI policy and implement it in the shared
+classifier. Start with these bounded product-document families, adapting paths and
+naming to the existing project rather than renaming its documents:
+
+- Direct backlog documents under an explicitly named product backlog directory.
+- Direct numbered brainstorming, specification, progress and testplan documents.
+  For this template's convention, match the whole relative path with
+  `specs/[0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*-(?:brainstorming|specification|progress|testplan)\.md`.
+  Do not match arbitrary suffixes, nested directories or every file in `specs/`.
+- Exact context/plan/tracking files reviewed as product documentation, such as
+  `specs/project.md`, `specs/roadmap.md`, `specs/setup-progress.md` and
+  `specs/epic-board.md`. Additional references need explicit exact paths or bounded
+  families, with rationale and positive/negative tests. A README is not automatically
+  eligible: it may contain operational agent instructions.
+
+Protected exclusions take precedence over every allowlist entry. Exclude instructions
+(including AGENTS.md, CLAUDE.md, SKILL.md and instructions.md regardless of case), Skills,
+operational methodology, guidelines, harness, workflows and configuration, even if
+stored beside product documents or matching an allowed name. Code, SQL, dependencies,
+lockfiles, mixed changes and unknown paths remain `full`. Never use a blanket `*.md`
+or `specs/**` exemption. If a product document becomes operational instructions,
+reclassify its path as `full`; review this boundary when changing document ownership.
+Changes to the allowlist or classifier themselves require `full`.
+
+Adapt existing projects without init-project, replacing functional decisions or
+reinitializing their harness. This is a CI scope policy, not product approval.
+Reference: [MyFinanzas PR #55](https://github.com/josemartin2000/myfinanzas-app/pull/55)
+illustrates the correction; its project-specific filenames are not universal defaults.
 
 ## Required checks and workflow enforcement
 Documentation and security controls are mandatory for both classes. `full` also runs
@@ -32,6 +63,39 @@ commands, `continue-on-error` on required checks and event/path filters that omi
 validation. Preserve approved security controls, including permissions, action pins,
 checkout credentials and history requirements; classification never relaxes them.
 
+## Canonical verification entry point
+Bootstrap establishes one canonical verification command for local use and CI.
+Reuse an existing command when it already covers this contract; do not add a wrapper
+or rename commands merely for uniformity. The command name and implementation belong
+to the approved project stack (for example a script, task runner or package command).
+Record its working directory, prerequisites, comparison inputs and a way to force
+`full` verification in AGENTS.md and project quality guidelines.
+
+The entry point coordinates the shared classifier and required checks; keep their
+logic in existing tools rather than copying it. Apply the same check selection and
+failure semantics locally and in CI for equivalent inputs. Environment preparation
+may differ and must be documented. CI may split work across jobs through explicit
+modes of the same entry point; the required final result must still verify coverage.
+Within one verification run, execute each required suite once unless a documented
+repeat is needed for an acceptance criterion or flakiness investigation. This does
+not remove independent QA or require reusing stale evidence between candidates.
+
+Propagate a nonzero exit status for any required failure or missing prerequisite.
+An invalid mode must fail visibly. Report passed, failed, intentionally skipped and
+unrun checks separately; unexpected skips and unexpectedly zero discovered tests
+must not count as success. Classification uncertainty retains the conservative
+`full` or visible failure behavior specified above. Successful `docs` verification
+must say that application checks were intentionally omitted, not claim they passed.
+Verification must not install dependencies, change task state, commit, deploy or
+reinitialize a project implicitly; provision the documented environment separately.
+
+Derived-project regression tests must invoke the real entry point and demonstrate:
+valid docs/full paths, forced full mode, each required check failing, missing tooling,
+invalid modes, unexpected zero tests/skips, local/CI selection parity, and each suite
+executing once per run. Prove reuse of an adequate existing command without a second
+verification layer. These are generated-harness behavioral tests; this template's
+validator only protects preservation of the contract.
+
 ## Local regression evidence
 The harness regression suite (for example `scripts/test-checks`) must exercise the
 same classifier used by CI and valid/invalid workflow fixtures. Cover at least:
@@ -39,6 +103,11 @@ same classifier used by CI and valid/invalid workflow fixtures. Cover at least:
 | Input or mutation | Expected result |
 | --- | --- |
 | Only allowlisted backlog documentation | `docs`, baseline controls required |
+| Each allowed brainstorming/specification/progress/testplan and exact tracking path: additions, modifications and deletions | `docs`, baseline controls required |
+| Renames between two allowed product-document paths | `docs`, both endpoints checked |
+| Protected/unknown to product documentation, and product documentation to protected/unknown | `full`, both rename directions checked |
+| Each protected category added, modified or deleted, alone and mixed with allowed product documentation | `full` |
+| Markdown lookalikes: nested paths, wrong suffix/extension, arbitrary specs files or protected names in allowed directories | `full` |
 | Documentation plus code | `full`, complete applicable battery required |
 | SQL, dependencies, lockfiles, workflows, harness, configuration, instructions or Skills | `full` |
 | Unknown path, empty input, invalid output, missing comparison base or classifier failure | `full` or visible CI failure; never successful omission |
@@ -52,6 +121,12 @@ Prove the contract with local tests before changing Actions execution. Regressio
 must check behavior, not repeat the implementation's string-presence assertions.
 UI-specific classification, event deduplication and environment caching are separate
 changes requiring their own evidence and scope.
+
+For every allowed family and exact path, use real Git comparisons for additions,
+modifications, deletions and renames. Exercise both rename endpoints even if the old
+file no longer exists. Include protected files mixed with each product-document
+family; one protected or unknown path makes the whole comparison `full`. Test policy
+adaptations with valid alternate product paths and rejected broad Markdown exemptions.
 
 
 ## Adaptación MyFinanzas — v2.6.0, entrega local ampliada
@@ -74,7 +149,7 @@ Allowlist docs (ampliación autorizada por el usuario el 2026-10-24):
   alfanuméricos minúsculos separados por guiones y sufijo `-brainstorming.md`,
   `-specification.md`, `-progress.md` o `-testplan.md`.
 - Archivos exactos `specs/project.md`, `specs/roadmap.md`, `specs/setup-progress.md`,
-  `specs/epic-board.md`, `specs/functional-reference-v5.11.md` y `specs/README.md`.
+  `specs/epic-board.md` y `specs/functional-reference-v5.11.md`.
 
 Siempre se excluyen nombres `AGENTS.md`, `CLAUDE.md`, `SKILL.md` e `instructions.md`
 (sin distinguir mayúsculas). No hay permiso general por extensión ni para subcarpetas.
@@ -180,3 +255,34 @@ publicación autorizada. Sus tiempos y permisos deben verificarse en esa fase;
 las pruebas locales no se atribuyen a GitHub. Los [comandos y evidencia](../guidelines/quality.md#contrato-ci-v260--preparación-local)
 registran cobertura y límites. No cambia código financiero, SQL, roadmap, Excel ni
 estados de otras entregas. No se modifican reglas de protección de main.
+
+## Adaptación vigente v2.7.0
+
+Fuente fijada: agent-project-template v2.7.0, commit
+`ed61c62ea62dc378d2281222dfec6ebecada2410`. Solicitud del usuario del 2026-10-24.
+Este apartado actualiza el estado histórico anterior; la adopción está en preparación
+local y requiere PR, CI y aprobación específica antes del merge.
+
+Entrada compartida: `python3 scripts/verify`, desde la raíz, Python 3.10+.
+Sin comparación verificable ejecuta full. Admite `--base SHA --head SHA` y
+`--pull-request` para comparar mediante merge-base; `--full` fuerza toda la batería.
+Las fases `classify`, `baseline`, `application` y `result` permiten al workflow usar
+la misma implementación; una fase aislada no acredita la verificación completa.
+Baseline conserva seguridad, estructura, regresiones del harness y whitespace en
+ambas clases. Application ejecuta tipos, build, API/SQLite y E2E una vez cada uno.
+Solo se conserva la repetición histórica explícita AC23 en feat/07-ciclos-operacion.
+La instalación congelada, age y Chromium se preparan por separado en Actions.
+Herramientas ausentes, errores, salida inválida, cero pruebas o skips inesperados
+fallan visiblemente. Required conserva el cierre fail-closed del grafo.
+
+Se mantienen las familias documentales acotadas. `specs/README.md` es full porque
+contiene instrucciones operativas de ownership; no se concede permiso por extensión.
+No se añaden clasificación UI, cachés ni retirada de AC23. Se preservan contexto de
+integración, concurrencia y preparación Linux ya aprobados.
+
+Los informes locales y hooks de uso de v2.7.0 son opcionales y advisory. Las pruebas
+usan registros sintéticos; no acreditan activación ni confianza del cliente Codex.
+No se modifican configuración global, trust, decisiones financieras ni código de app.
+
+La selección docs exige un checkout limpio y, con `--head`, ese mismo commit en HEAD.
+Cambios locales sin commit o un snapshot distinto fuerzan full conservadoramente.

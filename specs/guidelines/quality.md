@@ -14,7 +14,7 @@ CLI age/age-keygen es obligatoria para pruebas de copia/restauración.
 | bun run test | Integración Saldos/acceso/copias/concurrencia; cifra vigente en testplan |
 | bun run test:e2e | Recorrido E1.1/E1.2/E1.3 real a 390/1440, MFA y restauración aislada |
 | ./scripts/validate-template | Estructura y contratos documentales válidos |
-| ./scripts/test-validator | 18 regresiones positivas y negativas del validador |
+| ./scripts/test-validator | Regresiones positivas y negativas del validador |
 | ./scripts/check-project | Workspaces/Bun, versiones exactas, paquetes privados y límites de imports del navegador |
 | ./scripts/check-repository | Historial completo, índice y archivos versionados sin infracciones detectadas |
 | ./scripts/test-checks | Pruebas positivas/negativas de los controles nuevos |
@@ -243,3 +243,28 @@ los ensayos Linux glibc de publicación/restore: macOS no proporciona `libc.so.6
 Ese fallo de plataforma se registra como no verificado; no se omiten ni debilitan
 las pruebas. Usar TMPDIR con ruta real (p. ej. /private/tmp en macOS), conservando
 las guardas de ancestros. Evidencia actual en testplan09, no en estas instrucciones.
+
+## Entrada compartida v2.7.0 — vigente
+
+Desde la raíz: `python3 scripts/verify`. Python 3.10+, Git completo y comparación
+verificable son necesarios para seleccionar docs; sin comparación se selecciona full.
+Usar `--base SHA --head SHA [--pull-request]` para una comparación explícita y
+`--full` para forzar full. La entrada nunca instala dependencias ni prepara servicios.
+Preparar antes Bun 1.4.3, Node, `bun install --frozen-lockfile`, age/age-keygen y
+Chromium. Las pruebas de publicación atómica de copias requieren Linux/glibc;
+macOS no sustituye la evidencia Linux de CI ni permite omitirlas silenciosamente.
+
+Baseline ejecuta check-repository, check-project, validate-template, test-checks,
+test-validator, test-agent-usage, test-auto-agent-usage, test-verification y controles
+Git de whitespace. Full añade typecheck, build, test y test:e2e una vez cada uno;
+permanece la excepción histórica AC23 de su rama. Docs solo omite la aplicación,
+con mensaje explícito. Cero pruebas, skips inesperados y errores fallan.
+Actions usa fases de esta misma entrada: classify, baseline, application y result.
+Una fase por separado es evidencia parcial. Las regresiones invocan el CLI real,
+comprueban propagación de errores, cobertura y paridad local/CI mediante fixtures.
+Los [informes de uso](../../docs/USAGE_REPORTS.md) son opcionales, locales y no
+miden cuota ni facturación. Sus hooks requieren confianza explícita del cliente;
+la adopción prueba replays sintéticos, no su ejecución automática real.
+
+La selección docs exige un checkout limpio y, con `--head`, ese mismo commit en HEAD.
+Cambios locales sin commit o un snapshot distinto fuerzan full conservadoramente.

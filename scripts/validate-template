@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Portable structural validation, not a complete security or semantic audit."""
 from pathlib import Path
+import json
 import re
 import runpy
 import sys
@@ -9,7 +10,9 @@ SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev')
 REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md',
  *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
- *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator')
+ *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
+ 'scripts/verify','scripts/test-verification','scripts/report-agent-usage','scripts/auto-agent-usage',
+ 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
 def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
@@ -58,6 +61,28 @@ def validate(root):
   policy=runpy.run_path(str(root/'scripts/ci_workflow.py'))
   errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml'))
  except (OSError,ValueError): fail('ci','workflow policy unavailable')
+ # Preserve the contract, while behavioral tests exercise the real verification entry.
+ for name,tokens in {
+  'specs/methodology/ci-policy.md':('## Canonical verification entry point',
+   'Reuse an existing command','each required suite once','nonzero exit status',
+   'missing prerequisite','invalid mode','unexpectedly zero discovered tests',
+   'must not install dependencies','local/CI selection parity'),
+  '.agents/skills/bootstrap/SKILL.md':('one canonical verification command',
+   'Reuse an adequate existing command','forced full mode'),
+  'AGENTS.md':('python3 scripts/verify','--full','--base SHA --head SHA'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('verification-entry',f'{name}: missing {token}')
+ # Optional reporting stays advisory/local; never trust or activate hooks here.
+ try:
+  config=json.loads(read('.codex/hooks.json'))
+  command='python3 "$(git rev-parse --show-toplevel)/scripts/auto-agent-usage"'
+  hook={'type':'command','command':command,'timeout':3}
+  expected={event:[{'hooks':[hook]}] for event in ('Stop','SubagentStop','SessionEnd')}
+  if (not isinstance(config,dict) or set(config)-{'description','hooks'} or
+      json.dumps(config.get('hooks'),sort_keys=True)!=json.dumps(expected,sort_keys=True)):
+   fail('usage-hooks','unexpected local reporting hook scope or command')
+ except (ValueError,TypeError): fail('usage-hooks','invalid reporting hook configuration')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

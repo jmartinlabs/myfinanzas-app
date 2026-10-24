@@ -51,7 +51,7 @@ class ProjectChecks(unittest.TestCase):
 
     def test_missing_ci_gate(self):
         path = self.root / '.github/workflows/validate.yml'
-        path.write_text(path.read_text().replace('bun run typecheck', 'echo skipped'))
+        path.write_text(path.read_text().replace('python3 scripts/verify application', 'echo skipped'))
         self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
 
     def test_unpinned_ci_action(self):
