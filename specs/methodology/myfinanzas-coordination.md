@@ -84,3 +84,55 @@ Reanudar desde el último checkpoint verificando deltas de Git/PR y autorizacion
 leer tablero, specs y testplans completos solo cuando sea necesario. Un handoff nunca
 autoriza reiniciar automáticamente el desarrollo.
 No prometer actividad después del turno ni agentes trabajando entre sesiones.
+
+## Piloto de eficiencia — spec10 / E2.4
+
+Autorizado por el usuario el 2026-10-24: revisar mecanismos existentes, registrar
+el piloto y medirlo antes de cambiar la plantilla. Se aplica a la preparación
+específica de spec10 y, únicamente tras spec/wireframes aprobados y autorización
+separada, a su desarrollo. No autoriza desarrollo, cambios financieros ni merges.
+No se modifica agent-project-template, Skills, hooks, scripts o workflows por este piloto.
+
+Se reutilizan el paquete de [delegación](../../templates/agent-work-packet.md),
+la QA independiente, los gates de [aprobación](approvals.md) y la entrada canónica
+[de calidad](../guidelines/quality.md#entrada-compartida-v270--vigente).
+No se crean formularios, Skills, workflows ni herramientas de medición paralelos.
+
+- Preparación por sesión/cambio material de entorno: comprobar Git/PR/checkpoint,
+  checkout y ownership escribibles, herramientas/versiones y prerrequisitos de la fase.
+  Reutilizar entorno/dependencias válidos; instalar solo si faltan o cambia el lockfile.
+  Comprobar permisos antes de asignar escrituras; un worktree existente no demuestra
+  acceso. Nunca eludir sandbox, ampliar permisos por inferencia ni activar trust.
+  macOS no acredita guardas Linux. En especificación no preparar toda la aplicación
+  ni ejecutar suites funcionales sin necesidad documental o de CI.
+- Un ejecutor por defecto. Delegar solo un resultado independiente que justifique
+  el coste; usar el paquete existente con objetivo, fuentes, ownership, gates,
+  comprobaciones y retorno breve. Preferir contexto nuevo y acotado cuando el runtime
+  lo permita, sin omitir las instrucciones aplicables; no heredar toda la conversación
+  por defecto. Devolver evidencia y extractos relevantes, no logs completos.
+- Durante trabajo autorizado, comprobaciones focales por delta y una verificación
+  canónica por candidato estable identificado por SHA/revisión. Reutilizar evidencia
+  del mismo candidato/entorno; repetir por cambios, fallos o riesgos pendientes,
+  anotando el motivo. La QA independiente revisa riesgos/casos negativos y ejecuta
+  pruebas cuando aporten evidencia; no necesita duplicar toda batería ya acreditada.
+  Esto no omite checks obligatorios, pruebas financieras ni full exigido por CI.
+- Consultar CI inicialmente tras unos 60 s y espaciar después a 120–240 s si no cambia
+  el estado; usar mientras tanto trabajo independiente autorizado o devolver estado
+  pendiente. No mantener consultas/actualizaciones sin información nueva ni prometer
+  supervisión después del turno. Ante fallo, analizar la evidencia antes de relanzar;
+  mantener la distinción fallo/cancelación/cola y las aprobaciones por PR.
+- Registrar métricas por hito en el tablero y, cuando existan, progress/testplan10:
+  sesión/agente/modelo, intervalo, candidato, pruebas/resultado/motivo de repetición,
+  bloqueo operativo con inicio/fin/causa conocida, y hallazgos QA/corrección.
+  Usar JSONL e informes existentes, sin activar hooks ni publicar registros sensibles.
+  Tokens: usage por respuesta, deduplicado por thread_id/response_id y agente propietario;
+  caché incluida en entrada, contadores acumulativos excluidos, faltantes como N/D.
+  Separar tiempo transcurrido, turnos y esperas; las atribuciones por actividad son
+  estimaciones. No convertir tokens en cuota ni sumar tiempos de agentes paralelos.
+
+Evaluar al aprobar spec10 (fase documental) y, si llega a autorizarse, al cerrar dev10
+(fase funcional separada). Comparar resultados, rondas, contexto por respuesta, bloqueos,
+repeticiones justificadas/evitables y hallazgos QA con la auditoría del 24/10 08:00–12:30.
+Las tareas son diferentes: no atribuir causalidad ni mejora porcentual solo a totales.
+Proponer conservar/ajustar/revertir el piloto; cualquier cambio a la plantilla se
+planteará después con evidencia y autorización propias.

@@ -1,3 +1,59 @@
+## Estado vigente — piloto spec10 — 2026-10-24
+
+Solicitud real del usuario: aplicar en MyFinanzas el piloto de eficiencia y medirlo
+antes de cambiar la plantilla; no autoriza desarrollar spec10 sin sus aprobaciones.
+Main comprobado: `9fd2317` (PR58 harness v2.7.0 integrada tras «Haz el merge»).
+E2.3 integrada por PR57/`7422d23`; sus bloqueos inferiores son historia, no estado vigente.
+B3 continúa abierto y no se reanuda por este piloto; Dev32 y Excel/despliegue fuera.
+
+Piloto local: [reglas](methodology/myfinanzas-coordination.md#piloto-de-eficiencia--spec10--e24).
+Spec10 corresponde a E2.4, Plan anual por Partida y ejercicio. Preparación documental
+solicitada; spec/wireframes aún no aprobados y desarrollo NO autorizado.
+Esta rama solo registra el piloto; no crea todavía specification ni código de E2.4.
+
+| Mecanismo | Reutilización / ajuste mínimo |
+| --- | --- |
+| Entorno | Reusar checkout limpio; preflight por fase, sin reinstalación rutinaria |
+| Delegación | Paquete existente; un ejecutor y QA independiente, contexto breve |
+| Verificación | scripts/verify existente; focales por delta y evidencia por candidato |
+| CI | Grafo/política intactos; consultas espaciadas y trabajo independiente autorizado |
+| Medición | JSONL/reportes existentes; anotación por hito aquí y en progress/testplan10 cuando existan |
+
+Referencia de auditoría 24/10, 08:00–12:30 Madrid: 487 respuestas propias únicas,
+105325937 tokens de entrada (103818240 caché incluida), 170099 salida; coordinador
+78,45% de entrada. 50 llamadas del coordinador con escalación acumularon 72,1 min
+envolventes, no atribuibles íntegramente a aprobación humana. CI:24 runs,9 cancelados,
+37 min28 s agregados de jobs activos; instalación Chromium78 s. No hay informes de
+hooks de MyFinanzas disponibles. Estos datos no son objetivos ni una medición del piloto.
+
+Registro inicial del piloto: preflight PASS para esta fase documental, mismo checkout,
+Python3.12.14 y Bun1.4.3 disponibles; Python del sistema3.9 no se utiliza para verify.
+Sin instalación, cambio de hooks/trust ni herramientas nuevas. Rama de preparación
+`codex/pilot-spec10-efficiency`; baseline canónico PASS una vez y QA documental
+independiente PILOT10-QA PASS, cero hallazgos bloqueantes (sin repetir tests).
+Mediciones se cortarán por sesión/turno/candidato, sin mezclar el consumo de la auditoría
+con el piloto. No se declara todavía ahorro ni resultado funcional de spec10.
+Corte fijo de preparación, 24/10 16:18:10 Madrid (14:18:10 UTC), turno raíz
+`01a16e41-5872-73c2-b1ca-9ff7ef6be56f`, modelo gpt-6.1-sol:
+
+| Agente | Respuestas | Entrada | Caché incluida | Salida |
+| --- | --- | --- | --- | --- |
+| Coordinador | 10 | 2090422 | 2077056 | 4829 |
+| QA documental, contexto nuevo acotado | 4 | 143267 | 103424 | 396 |
+
+Fuente: collect de scripts/report-agent-usage, sin generar archivos ni activar hooks.
+Corte parcial: no incluye respuestas posteriores, publicación ni el futuro trabajo
+funcional de spec10. Un baseline ejecutado; cero repeticiones y cero fallos de tests
+hasta este corte. QA: cero defectos detectados; no equivale a QA de E2.4.
+Un intervalo operativo de escalación al crear rama: 16:13:10–16:15:49 Madrid,
+159,09 s envolventes (no tiempo de CPU ni aprobación humana pura). No hubo colisión
+de archivos, reinstalación ni bloqueo de desarrollo resuelto por inferencia.
+
+Próximo hito: revisar/publicar este registro y continuar spec10 con las decisiones
+funcionales pendientes según Skill spec; merge de cada PR requiere aprobación propia.
+
+---
+
 ## Dev09 autorizado y en curso — 2026-10-24
 
 Fuente: mensaje real del usuario «Autorizo dev 09». Spec09 revisión4 y wireframes
