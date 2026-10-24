@@ -1,3 +1,4 @@
+import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
@@ -15,6 +16,7 @@ type Options = {
   presupuestos: Budget[];
 };
 type Plan = {
+  execution?: PlanImpactData | null;
   old: Budget;
   value: { nombre: string; fuente: string; destino: string | null };
   blocked: boolean;
@@ -404,8 +406,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
           <p>Sin Partidas vinculadas.</p>
         )}
         <p>
-          Hechos relacionados: {data.usos.length}. Su detalle no sustituye el
-          motor presupuestario pendiente.
+          Hechos relacionados: {data.usos.length}. Consulta Plan del ciclo para
+          ver la ejecución R3 y sus condiciones de comparabilidad.
         </p>
       </section>
       <section className="panel">
@@ -723,6 +725,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
             </div>
           </div>
           <p>{plan.coverage}</p>
+          <PlanImpact impact={plan.execution} />
           <h3>Partidas relacionadas</h3>
           {plan.partidas.length ? (
             <ul>

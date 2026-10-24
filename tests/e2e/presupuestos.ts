@@ -218,20 +218,22 @@ export async function presupuestos(
   await page
     .getByRole("button", { name: "Guardar / Revisar cambio", exact: true })
     .click();
-  await expect(page.getByRole("alert")).toContainText("Cambio bloqueado");
   await expect(
-    page.getByRole("button", { name: "Confirmar cambio", exact: true }),
-  ).toBeDisabled();
-  await shot("blocked-desktop");
-  await page.setViewportSize({ width: 390, height: 844 });
-  await shot("blocked-mobile");
+    page.getByRole("region", { name: "Impacto en planes del ciclo" }),
+  ).toBeVisible();
   await page
-    .getByRole("button", { name: "Volver al borrador", exact: true })
+    .getByLabel("Motivo del cambio", { exact: true })
+    .fill("Instalar ejecución R3 verificada");
+  await page
+    .getByRole("button", { name: "Confirmar cambio", exact: true })
     .click();
   await expect(
-    page.getByLabel("Fuente ejecutado *", { exact: true }),
-  ).toHaveValue("Gasto real");
-  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    page.getByRole("heading", {
+      name: "Presupuesto gasto ficticio",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect((await get("/presupuestos/" + id)).item.fuente).toBe("Gasto real");
   await page
     .getByRole("button", { name: "Desactivar presupuesto", exact: true })
     .click();
@@ -245,8 +247,13 @@ export async function presupuestos(
   await page.setViewportSize({ width: 1440, height: 1000 });
   await expect(page.locator("tbody tr")).toHaveCount(3);
   await shot("list-desktop");
+  await page.getByLabel("Fuente", { exact: true }).selectOption("Gasto real");
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody tr")).toContainText(id);
   await page.getByLabel("Fuente", { exact: true }).selectOption("No aplica");
-  await expect(page.locator("tbody tr")).toHaveCount(2);
+  await expect(page.locator("tbody tr")).toHaveCount(1);
+  await expect(page.locator("tbody tr")).toContainText(none.data.item.id);
+  await expect(page.locator("tbody tr")).not.toContainText(id);
   await page
     .getByLabel("Buscar nombre o ID", { exact: true })
     .fill("inexistente");

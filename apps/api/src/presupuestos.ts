@@ -1,3 +1,4 @@
+import { planConfigurationImpact } from "./planes-ciclo";
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
@@ -271,8 +272,10 @@ function plan(db: Database, id: string, body: Record<string, unknown>) {
     economic = value.fuente !== old.fuente || value.destino !== old.destino,
     usos = budgetUsage(db, id),
     partidas = budgetParts(db, id);
-  // E2.3 does not exist. Existing history cannot be attributed completely by a fake total.
-  const blocked = economic && usos.length > 0;
+  const execution = economic
+    ? planConfigurationImpact(db, { budget: { id, value } })
+    : null;
+  const blocked = execution?.blocked ?? false;
   return {
     old,
     value,
@@ -280,11 +283,13 @@ function plan(db: Database, id: string, body: Record<string, unknown>) {
     usos,
     partidas,
     blocked,
+    execution,
     coverage: blocked
-      ? "Impacto histórico completo no verificable: motor presupuestario E2.3 pendiente."
-      : "Relaciones y ausencia de hechos utilizados verificadas; sin cálculo de ejecución.",
-    pending: blocked ? ["E2.3"] : [],
-    fingerprint: fingerprint([old, value, partidas, usos]),
+      ? execution!.coverage
+      : (execution?.coverage ??
+        "Relaciones verificadas; sin cambio de ejecución."),
+    pending: blocked ? ["Periodo/corte"] : [],
+    fingerprint: fingerprint([old, value, partidas, usos, execution]),
   };
 }
 export function previewBudget(
@@ -305,7 +310,11 @@ export function updateBudget(
     .transaction(() => {
       const p = plan(db, id, body);
       if (p.blocked) throw new Problem(409, "HISTORY_LOCKED", p.coverage);
-      if (p.economic && p.partidas.length && !confirmation)
+      if (
+        p.economic &&
+        (p.partidas.length || p.execution?.ciclos.length) &&
+        !confirmation
+      )
         throw new Problem(
           409,
           "RECTIFICATION_REQUIRED",

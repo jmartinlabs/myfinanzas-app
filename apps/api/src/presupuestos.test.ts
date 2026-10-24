@@ -273,7 +273,7 @@ test("08 B3 AC05-07/11/13/14: Partida independiente de Deuda y bloqueo históric
         revision: 1,
         presupuesto: b.id,
       }),
-    ).toThrow("E2.3");
+    ).toThrow("Impacto de periodos no verificable");
     expect(() =>
       updateClassification(
         db,
@@ -284,7 +284,7 @@ test("08 B3 AC05-07/11/13/14: Partida independiente de Deuda y bloqueo históric
         now,
         { fingerprint: pplan.fingerprint, motivo: "No permite bypass" },
       ),
-    ).toThrow("E2.3");
+    ).toThrow("Impacto de periodos no verificable");
     expect(
       getClassification(db, "partidas", unbudgeted.id).presupuesto,
     ).toBeNull();
@@ -325,7 +325,7 @@ test("08 B3 AC05-07/11/13/14: Partida independiente de Deuda y bloqueo históric
         now,
         { fingerprint: blocked.fingerprint, motivo: "No inventar ejecución" },
       ),
-    ).toThrow("E2.3");
+    ).toThrow("Impacto de periodos no verificable");
     expect(getBudget(db, b.id).fuente).toBe("Gasto real");
     expect(getClassification(db, "partidas", p.id).deuda).toBe(debt.id);
     expect(budgetUsage(db, b.id)).toHaveLength(1);
@@ -624,7 +624,11 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
           table === "partidas"
             ? (rows as any[]).map((r) => ({ ...r, presupuesto: null }))
             : table === "ciclos"
-              ? (rows as any[]).map((r) => ({...r, revision: 1, actualizado: null}))
+              ? (rows as any[]).map((r) => ({
+                  ...r,
+                  revision: 1,
+                  actualizado: null,
+                }))
               : rows,
         );
       }

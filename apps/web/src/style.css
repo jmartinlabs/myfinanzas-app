@@ -1517,3 +1517,92 @@ textarea {
 .budget-review .actions {
   flex-wrap: wrap;
 }
+
+.plan-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: end;
+}
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 28rem), 1fr));
+  gap: 1rem;
+  margin: 1rem 0;
+}
+.plan-card {
+  min-width: 0;
+}
+.plan-values {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.plan-values dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.plan-values dt {
+  color: var(--muted, #536147);
+}
+.plan-grid a {
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .plan-values {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .plan-controls > * {
+    width: 100%;
+  }
+}
+
+.plan-card {
+  max-width: 56rem;
+}
+.plan-controls + .actions,
+.plan-grid + .actions {
+  margin-top: 1rem;
+}
+.plan-grid button,
+.plan-controls button,
+.panel[aria-label="Detalle de ejecución"] button {
+  min-height: 44px;
+}
+
+.plan-table td {
+  overflow-wrap: anywhere;
+}
+.plan-table th:nth-child(n) {
+  width: 9%;
+  padding: 12px 8px;
+  overflow-wrap: anywhere;
+}
+.plan-table th:first-child {
+  width: 23%;
+}
+.plan-table th:nth-child(7) {
+  width: 15%;
+}
+.plan-table th:last-child {
+  width: 17%;
+}
+.plan-table td {
+  padding: 14px 8px;
+}
+.plan-table td:first-child {
+  padding-left: 12px;
+}
+.plan-table .actions {
+  flex-direction: column;
+  align-items: stretch;
+}
+.plan-table button {
+  min-height: 44px;
+}
+@media (min-width: 761px) {
+  .plan-grid.mobile-list {
+    display: none;
+  }
+}

@@ -1,3 +1,4 @@
+import { cyclePlanJourney } from "./planes-ciclo";
 import { cycleOperationsJourney } from "./cycle-operations";
 import { presupuestos } from "./presupuestos";
 import { deudas } from "./deudas";
@@ -625,11 +626,13 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     const e16 = await deudas(page);
     const e21 = await cycleOperationsJourney(page);
     const e22 = await presupuestos(page, e16);
+    const e23 = await cyclePlanJourney(page, e22.id);
     const expectedDebt = (await get("/deudas/" + e16.id)).item.capitalPendiente;
     const expectedBank = (await get("/saldos/" + e16.bank)).saldo.posicion
       .importe;
     expect(expectedDebt).toBe("712.00");
     expect(expectedBank).toBe("190.00");
+    const snapshotCyclePlan = await get("/planes-ciclo/" + e23.cycle);
     const snapshotMovements = (await get("/movimientos?estado=")).movimientos;
     // Genuine VACUUM INTO/age restoration, normal login/TOTP in a second Effect server.
     const restored = spawn(
@@ -691,6 +694,23 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       expect((await get("/movimientos?estado=")).movimientos).toEqual(
         snapshotMovements,
       );
+      const restoredPlan = await get("/planes-ciclo/" + e23.cycle);
+      expect(restoredPlan.items).toEqual(snapshotCyclePlan.items);
+      expect(restoredPlan.auditoria).toEqual(snapshotCyclePlan.auditoria);
+      expect(restoredPlan.revision).toBe(snapshotCyclePlan.revision);
+      await navigate("/planes-ciclo");
+      await page
+        .getByLabel("Ciclo del plan", { exact: true })
+        .selectOption(e23.cycle);
+      await expect(
+        page
+          .locator(".plan-card:visible, .plan-row:visible")
+          .filter({ hasText: e23.budget }),
+      ).toContainText("Excedido");
+      await page.screenshot({
+        path: "artifacts/e2-3/restored-mobile.png",
+        fullPage: true,
+      });
       expect(
         (await get("/ciclos/" + e21.correctedId + "/historial")).items,
       ).toEqual(e21.history);

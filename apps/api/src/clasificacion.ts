@@ -1,3 +1,4 @@
+import { planConfigurationImpact } from "./planes-ciclo";
 import { getBudget } from "./presupuestos";
 import { getDebt } from "./deudas";
 import { classificationMovementImpact } from "./movement-impact";
@@ -438,10 +439,13 @@ function impact(
   );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
-  const budgetBlocked =
-    kind === "partidas" &&
-    economic.includes("presupuesto") &&
-    !!db.query("SELECT id FROM movimientos WHERE partida=? LIMIT 1").get(id);
+  const budgetExecution =
+    kind === "partidas" && economic.includes("presupuesto")
+      ? planConfigurationImpact(db, {
+          part: { id, presupuesto: value.presupuesto as string | null },
+        })
+      : null;
+  const budgetBlocked = budgetExecution?.blocked ?? false;
   const protection = guard?.(kind, id, economic);
   if (protection?.blocked)
     throw new Problem(
@@ -456,18 +460,26 @@ function impact(
     economic,
     dependencies,
     blocked: budgetBlocked,
+    budgetExecution,
     used: financial?.used === true || protection?.used === true,
     financial,
-    fingerprint: hash([kind, id, value, snapshot(db), financial?.revision]),
+    fingerprint: hash([
+      kind,
+      id,
+      value,
+      snapshot(db),
+      financial?.revision,
+      budgetExecution,
+    ]),
     coverage: budgetBlocked
-      ? "Impacto histórico completo no verificable: E2.3 pendiente. Cambio de Presupuesto bloqueado."
+      ? budgetExecution!.coverage
       : financial
         ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
         : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
     pending: [
-      ...(budgetBlocked ? ["E2.3"] : []),
+      ...(budgetBlocked ? ["Periodo/corte"] : []),
       ...(financial ? [] : ["Movimientos"]),
-      "Presupuestos",
+      ...(budgetExecution ? [] : ["Presupuestos"]),
       "Indicadores",
       "Cierres",
     ],

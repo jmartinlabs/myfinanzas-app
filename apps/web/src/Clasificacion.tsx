@@ -1,3 +1,4 @@
+import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { monthLabel } from "./Ciclos";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
@@ -22,6 +23,7 @@ type Item = {
 };
 type Dependency = { kind: Kind; id: string; nombre: string; estado: string };
 type Plan = {
+  budgetExecution?: PlanImpactData | null;
   blocked?: boolean;
   fingerprint: string;
   dependencies: Dependency[];
@@ -1073,6 +1075,7 @@ function ClassificationForm({
                   </div>
                 )}
                 <p>{plan.coverage}</p>
+                <PlanImpact impact={plan.budgetExecution} />
                 <p className="muted">
                   Pendientes: {plan.pending.join(", ")}. No se presentan
                   periodos ni importes estimados como comprobados.

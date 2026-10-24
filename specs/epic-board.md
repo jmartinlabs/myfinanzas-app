@@ -1,3 +1,22 @@
+## Dev09 autorizado y en curso — 2026-10-24
+
+Fuente: mensaje real del usuario «Autorizo dev 09». Spec09 revisión4 y wireframes
+aprobados e integrados mediante PR #54, main `568aeed`. E2.1/dev07 ya integrada
+PR #49; E2.2/dev08 integrada PR #44. Sus estados pendientes inferiores son históricos.
+CI docs de #54 verificada: baseline/required SUCCESS, full omitido correctamente.
+Correcciones #55 (clasificación documental) y #56 (foco de revisión) integradas.
+
+Dev09: rama `codex/dev09-plan-ciclo`, un ejecutor, QA independiente al candidato.
+Ownership producto/tests/progress09/testplan09 del ejecutor; tablero del coordinador.
+Entregable: E2.3 según [spec09](09-plan-ciclo-specification.md), 36 AC actuales y
+V1–V10; evidencia en [progress09](09-plan-ciclo-progress.md) y
+[testplan09](09-plan-ciclo-testplan.md). Candidato publicado en PR #57, HEAD `88941e1`.
+CI40076614284: API137PASS/1FAIL (B3 heredado IOERR_SHORT_READ522);13 pruebas nuevas
+PASS y E2E local1PASS, pero E2E global pendiente. Aceptación global bloqueada,
+sin investigación B3 ni reintentos automáticos. Checkpoint documental local separado.
+Sin merge autorizado de PR funcional, datos reales, Excel, despliegue, reanudación
+Dev32 ni investigación B3. Cierres/fotos y fuentes E3/E4 continúan futuros.
+
 ## Dev07 verificado, PR #49 pendiente de revisión — 2026-10-23
 
 Fuente de autorización: mensaje real del usuario «Autorizo reanudar Dev07 / E2.1 —

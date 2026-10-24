@@ -224,3 +224,18 @@ esquema9/e2.1-v9; continuidad v7 usa fixture congelada previa con Deuda, hechos 
 [Pruebas07](../07-ciclos-operacion-testplan.md) distingue evidencia y bloqueos abiertos.
 
 Reconciliación Dev07 2026-10-23: se preserva Presupuestos v8/contrato e2.2 y se aplica Ciclos v9 después. Fixtures genuinas v7 y v8 (builder integrado de main) verifican continuidad y rollback; backup conserva v8 y admite v9, restore revoca intentos de ambos módulos. Apertura conserva íntegra la enmienda31-E1 de main.
+
+## E2.3 — Plan del ciclo (candidato dev09)
+
+`cycle-plan-schema.ts` extiende v9→v10 dentro del IMMEDIATE existente, sin cambiar
+apertura SQLite. Cabecera/revisión por Ciclo, líneas únicas por Presupuesto, tres
+INTEGER nullable no negativos y auditoría append-only de deltas, sin persistir derivados.
+`planes-ciclo.ts` comparte R3 con impactos de Presupuestos/Partidas: Gastos vigentes
+por vínculo y Transferencias ordinarias internas hacia destino sin Referencia. Agregados
+y diferencias bigint exactos; null no se convierte en cero. Sin periodo verificable
+o ciclo no iniciado, no hay ejecución inventada. Copia explícita por ID y campos,
+solo sobre vacíos, revalidada completa en IMMEDIATE; revisión/contexto e intentos24h
+evitan sobrescrituras y duplicación de auditorías. API hereda MFA, Origin/CSRF,
+no-store y límites JSON. Backup/restore identifica e2.3-v10 y revoca intentos del plan.
+Fixture genuina v9 y rollback de DDL no reetiquetan bases nuevas. Cierres E4.9/fuentes
+E3/E4 siguen pendientes, sin proveedor ficticio ni cambios de Movimientos al planificar.
