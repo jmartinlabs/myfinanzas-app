@@ -75,3 +75,11 @@ aplazando B3; no convierte la incidencia en resuelta ni elimina pruebas. Se cons
 la evidencia de CI137/1 y de la sonda12/12 sin reproducción. Antes de integrar se
 comprobará el E2E global pendiente; no se integra la rama diagnóstica. Dev32 y otras
 PR ajenas a este alcance no se reanudan. No autoriza otro desarrollo ni despliegue.
+
+## Validación de cierre — 2026-10-24
+
+CI40079319881 sobre3aad9b9:138 API PASS/0 FAIL, incluido B3 en esta ejecución;
+esto no cierra la incidencia intermitente. E2E2PASS/1FAIL: el recorrido Presupuestos
+seguía esperando2 No aplica aunque la operación aprobada de E2.3 había conservado
+Gasto real. Se corrige la expectativa comprobando1 fila por fuente y los IDs exactos,
+sin relajar validación ni lógica financiera. Verificación global nueva pendiente.
