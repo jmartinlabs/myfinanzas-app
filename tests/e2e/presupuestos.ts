@@ -218,20 +218,22 @@ export async function presupuestos(
   await page
     .getByRole("button", { name: "Guardar / Revisar cambio", exact: true })
     .click();
-  await expect(page.getByRole("alert")).toContainText("Cambio bloqueado");
   await expect(
-    page.getByRole("button", { name: "Confirmar cambio", exact: true }),
-  ).toBeDisabled();
-  await shot("blocked-desktop");
-  await page.setViewportSize({ width: 390, height: 844 });
-  await shot("blocked-mobile");
+    page.getByRole("region", { name: "Impacto en planes del ciclo" }),
+  ).toBeVisible();
   await page
-    .getByRole("button", { name: "Volver al borrador", exact: true })
+    .getByLabel("Motivo del cambio", { exact: true })
+    .fill("Instalar ejecución R3 verificada");
+  await page
+    .getByRole("button", { name: "Confirmar cambio", exact: true })
     .click();
   await expect(
-    page.getByLabel("Fuente ejecutado *", { exact: true }),
-  ).toHaveValue("Gasto real");
-  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    page.getByRole("heading", {
+      name: "Presupuesto gasto ficticio",
+      exact: true,
+    }),
+  ).toBeVisible();
+  expect((await get("/presupuestos/" + id)).item.fuente).toBe("Gasto real");
   await page
     .getByRole("button", { name: "Desactivar presupuesto", exact: true })
     .click();

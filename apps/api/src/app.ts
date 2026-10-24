@@ -1,4 +1,10 @@
 import {
+  getCyclePlan,
+  executionDetail,
+  previewCyclePlan,
+  confirmCyclePlan,
+} from "./planes-ciclo";
+import {
   getBudget,
   listBudgets,
   createBudget,
@@ -188,6 +194,36 @@ export function createApp(db: Database, options: AppOptions) {
         );
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
+      }
+      const cyclePlan = path.match(
+        /^\/api\/planes-ciclo\/(\d+)(?:\/(impacto|confirmar|ejecucion)(?:\/(PRE\d+))?)?$/,
+      );
+      if (cyclePlan) {
+        const [, id, action, budgetId] = cyclePlan;
+        if (!action && req.method === "GET")
+          return reply(getCyclePlan(db, id, now()));
+        if (action === "ejecucion" && budgetId && req.method === "GET")
+          return reply(
+            executionDetail(
+              db,
+              id,
+              budgetId,
+              new URL(req.url).searchParams,
+              now(),
+            ),
+          );
+        if (action === "impacto" && req.method === "POST")
+          return reply(previewCyclePlan(db, id, await jsonBody(req), now()));
+        if (action === "confirmar" && req.method === "POST")
+          return reply(
+            confirmCyclePlan(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());

@@ -90,7 +90,7 @@ test("31 AC34: concurrent genuine v3 upgrades never yield SQLITE_CORRUPT or mixe
           integrity_check: "ok",
         });
         expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 9,
+          version: 10,
         });
       } finally {
         db.close();

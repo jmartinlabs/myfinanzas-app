@@ -230,3 +230,16 @@ de ambas suites: P11 arranca main real en 3001. `security-review.test.ts` añade
 inyección de límites de resolución/apertura, comparación de DB/WAL/SHM en rechazos,
 publicación competidora y restore real con fallos de sync y nombres límite.
 Estas pruebas refuerzan AC existentes, sin omitir assertions ni cambiar el contrato.
+
+## Verificación dev09 — E2.3
+
+Pruebas focales en `apps/api/src/planes-ciclo.test.ts`: matriz V1–V10, R3 por
+hechos vigentes, exactitud/paginación, contexto/copia, idempotencia, dos procesos,
+HTTP real MFA/CSRF, consumidores históricos y fixture v9/backup10. Recorrido
+`tests/e2e/planes-ciclo.spec.ts` utiliza Effect/Auth reales en proceso aislado
+y el helper compartido `planes-ciclo.ts` también amplía el recorrido financiero.
+Capturas ficticias 390/1440 en `artifacts/e2-3/`. La batería completa conserva
+los ensayos Linux glibc de publicación/restore: macOS no proporciona `libc.so.6`.
+Ese fallo de plataforma se registra como no verificado; no se omiten ni debilitan
+las pruebas. Usar TMPDIR con ruta real (p. ej. /private/tmp en macOS), conservando
+las guardas de ancestros. Evidencia actual en testplan09, no en estas instrucciones.

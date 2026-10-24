@@ -1,3 +1,4 @@
+import { PlanesCiclo } from "./PlanesCiclo";
 import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
 import { Referencias } from "./Referencias";
@@ -144,6 +145,19 @@ function App() {
           <p className="nav-group">MI ESPACIO</p>
           <a
             className={
+              path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
+            }
+            href="/planes-ciclo"
+            aria-current={path.startsWith("/planes-ciclo") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/planes-ciclo");
+            }}
+          >
+            Plan del ciclo
+          </a>
+          <a
+            className={
               path.startsWith("/saldos") || path === "/"
                 ? "nav-active"
                 : "nav-link"
@@ -276,7 +290,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/presupuestos") ? (
+          {path.startsWith("/planes-ciclo") ? (
+            <PlanesCiclo go={go} />
+          ) : path.startsWith("/presupuestos") ? (
             <Presupuestos path={path} go={go} />
           ) : path.startsWith("/deudas") ? (
             <Deudas path={path} go={go} />
