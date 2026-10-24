@@ -260,3 +260,8 @@ se corrigió selección docs sobre checkout local modificado o HEAD distinto; re
 de entrada ampliadas a 15 PASS. Typecheck y build PASS con Bun 1.4.3. La batería de
 aplicación completa requiere CI Linux; no se acredita por fixtures ni por macOS.
 Los cinco archivos ejecutables/config de uso coinciden byte a byte con ed61c62.
+
+PR58, primer CI Linux 40083703786: baseline bloqueado por carrera al eliminar .git
+tras numerosos commits del fixture (ENOTEMPTY), sin fallos de aserciones. Se desactiva
+mantenimiento automático únicamente en esos repositorios temporales; 35 regresiones
+locales PASS y QA del delta conforme. Confirmación remota pendiente.
