@@ -1,17 +1,25 @@
 # 07 — E2.1 Operación de Ciclos: Progress
 
-## Verificación actual — 2026-10-23
+## Cierre integrado — 2026-10-23
 
-Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
-incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
-CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
-SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
-AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
-QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
-Evidencia completa y límites en [testplan07](07-ciclos-operacion-testplan.md).
-Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futuros.
-Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
-y aprobación expresa por su número. El cierre posterior solo cambia documentación.
+Usuario: «Apruebo PR #49.»; aprobación limitada al HEAD exacto
+`c55d9f0a9bc4bfa47470e04f0fddcecfd4eae3e6`. Preflight: CI push 39978925707 y
+PR 39978940090 SUCCESS, sin conflictos ni comentarios/reviews bloqueantes nuevos.
+Squash de PR #49 verificado el 2026-10-23 a las 17:42:30 Europe/Madrid:
+`1cdbc7c8ce843bebe15117e1e6dc179f92e0e545`. Su árbol es idéntico al HEAD aprobado; main local y origin/main sincronizados.
+
+CI posterior al merge [39980584663](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39980584663) COMPLETED/SUCCESS sobre ese SHA:
+API 125 PASS/0 FAIL/2228 aserciones, E2E 2 PASS, tipos/build/controles PASS.
+La regresión concurrente heredada pasó dentro de la suite completa; el gate de cinco
+repeticiones es exclusivo de la rama Dev07 y no se ejecuta en main, conforme al workflow.
+QA independiente del código aprobado: PASS sin hallazgos; capturas 390/1440 inspeccionadas.
+
+Dev07 operativo integrado, AC23 sin bloqueo; E2.2 conserva v8 y E2.1 usa v9.
+[Testplan07](07-ciclos-operacion-testplan.md) conserva matriz, resultados y límites.
+AC27–29 y E2.1-AC2 siguen PENDING de sus módulos futuros, incluida Comida E3.5.
+Ramas y evidencias históricas conservadas. Sin Dev32/infraAC22/B4/E2.3, datos reales
+ni despliegue. Este cierre documental se propone aparte; no autoriza integrar otra PR.
+Los apartados inferiores son historia y no reabren los bloqueos anteriores.
 
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 

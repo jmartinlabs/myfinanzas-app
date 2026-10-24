@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.6 y E2.2 integradas (PR44 255bf61); spec07 E2.1 aprobada, dev07 sin integrar (AC23 bloqueado).
+Repositorio privado: E1.1–E1.6, E2.2 y E2.1 integradas; Dev07 PR49 1cdbc7c con CI SUCCESS, SQLite v9; integraciones Comida/AC27–29 pendientes.
 Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) en las secciones necesarias, sin recargar documentos completos sin cambios.
 
 - Carga solo las guías aplicables: [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
@@ -29,7 +29,7 @@ Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](s
   E1.1–E1.5 implementadas e integradas; ocho etapas iniciales cerradas. Historial y
   aprobaciones en specs/project.md y specs/setup-progress.md; motores futuros pendientes.
   Unicidad SUB global sin mayúsculas, tildes/espacios conservados y comodines literales.
-  E1.6 integrada PR34: 30 AC actuales verificados/3 futuros. Spec07 aprobada/integrada; dev07 autorizado (estado en progress07), sin Exterior Transferencia ni deploy.
+  E1.6 integrada PR34: 30 AC actuales verificados/3 futuros. Spec07 integrada PR37; Dev07 integrado PR49; integraciones futuras en progress07, sin Exterior Transferencia ni deploy.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.

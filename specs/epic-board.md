@@ -1,23 +1,24 @@
-## Dev07 verificado, PR #49 pendiente de revisión — 2026-10-23
+## Estado vigente — Dev07 integrado — 2026-10-23
 
-Fuente de autorización: mensaje real del usuario «Autorizo reanudar Dev07 / E2.1 —
-Operación de Ciclos, utilizando `$orchestrate` y la metodología vigente». Sustituye
-STOP únicamente para este alcance; no autoriza merge ni otras líneas.
-Este estado prevalece sobre los registros históricos inferiores.
+Este checkpoint prevalece sobre la historia inferior. Usuario «Apruebo PR #49.»
+para HEAD `c55d9f0a9bc4bfa47470e04f0fddcecfd4eae3e6`, ambas CI SUCCESS,
+sin conflictos ni observaciones bloqueantes nuevas. Squash verificado
+`1cdbc7c8ce843bebe15117e1e6dc179f92e0e545`; main local/remoto sincronizados y árbol idéntico al aprobado.
 
-## Verificación actual — 2026-10-23
+| Línea | Estado | Próxima acción / gate |
+| --- | --- | --- |
+| E2.1 / Dev07 | INTEGRADO PR #49; AC23 sin bloqueo; SQLite v9 tras E2.2 v8 | Conservar evidencia en [progress07](07-ciclos-operacion-progress.md) y [testplan07](07-ciclos-operacion-testplan.md) |
+| CI posterior main | [39980584663](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39980584663) SUCCESS: API 125/0/2228 aserciones, E2E 2 PASS; tipos/build/controles PASS | Sin pruebas locales redundantes |
+| E2.2 / Presupuestos | Integrada; contrato v8 preservado | Dependencia disponible para futuro E2.3 |
+| E2.3 | Siguiente entrega funcional del roadmap; no iniciada | Requiere especificación y autorización propias; DT3 según roadmap |
+| AC27–29 / E2.1-AC2 | Integraciones futuras PENDING; Comida E3.5 y fuentes/cierres de sus módulos | No reabrir ni presentar como completadas |
+| Dev32 / infraestructura AC22 | PAUSED | No reanudar; compatibilidad con v9 se revisará solo al autorizar esa línea |
+| SQLite B4 / despliegues | Fuera de alcance | Sin investigación ni operación automática |
 
-Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
-incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
-CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
-SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
-AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
-QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
-Evidencia completa y límites en [testplan07](07-ciclos-operacion-testplan.md).
-Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futuros.
-Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
-y aprobación expresa por su número. El cierre posterior solo cambia documentación.
-
+Ramas Dev07/SQLite y evidencias históricas conservadas; archivos históricos Cloud
+no recuperados permanecen inventariados, sin afirmar su disponibilidad local.
+El checkout ajeno de backlog se preserva. Este registro documental no concede aprobación
+de merge de otra PR, desarrollo nuevo, datos reales o despliegue.
 
 ---
 
