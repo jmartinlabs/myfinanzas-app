@@ -10,17 +10,24 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[1]
 PROTECTED = {'agents.md', 'claude.md', 'skill.md', 'instructions.md'}
+FUNCTIONAL_DOC = re.compile(
+    r'[0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*-(?:brainstorming|specification|progress|testplan)\.md')
+CONTEXT_DOCS = {'project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md',
+                'functional-reference-v5.11.md', 'README.md'}
 
 
 def docs_path(path):
-    # Allow only direct backlog Markdown files. No normalization that hides a path.
+    # Explicit product-document families only; never all Markdown under specs/.
     if not isinstance(path, str) or not path or '\\' in path:
         return False
     parts = path.split('/')
-    return (len(parts) == 3 and parts[:2] == ['specs', 'backlog']
-            and all(p not in ('', '.', '..') for p in parts)
-            and PurePosixPath(path).name.lower() not in PROTECTED
-            and parts[2].endswith('.md'))
+    if (not all(p not in ('', '.', '..') for p in parts)
+            or PurePosixPath(path).name.lower() in PROTECTED):
+        return False
+    return ((len(parts) == 3 and parts[:2] == ['specs', 'backlog']
+             and parts[2].endswith('.md'))
+            or (len(parts) == 2 and parts[0] == 'specs'
+                and (parts[1] in CONTEXT_DOCS or FUNCTIONAL_DOC.fullmatch(parts[1]) is not None)))
 
 
 def classify_records(data):

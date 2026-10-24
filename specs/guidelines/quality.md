@@ -143,8 +143,11 @@ solo si faltan paquetes. Sin --with-deps duplicado, navegador del sistema ni cac
 La instalación y red APT aún pueden ser lentas; el ahorro real debe medirse en CI.
 [Política y fuentes](../methodology/ci-policy.md#concurrencia-y-preparación-linux).
 
-La allowlist docs solo admite Markdown directo de `specs/backlog/`, salvo nombres de
-instrucciones protegidos. Guías, metodología y harness son full. El validador soporta
+La allowlist docs admite Markdown directo de `specs/backlog/`, familias numeradas
+brainstorming/specification/progress/testplan y archivos concretos de contexto y
+seguimiento en `specs/`, según la lista exacta de [ci-policy](../methodology/ci-policy.md#clasificador-y-bases-completas).
+No basta la extensión Markdown; nombres de instrucciones protegidos, guías, metodología
+y harness son full. El validador soporta
 una receta JSON (subconjunto YAML) cerrada, no expresiones/YAML arbitrarios; sintaxis
 no reconocida falla visiblemente. No se añaden dependencias Python ni de aplicación.
 La revisión independiente y los resultados de esta entrega se conservan en

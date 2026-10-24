@@ -86,6 +86,51 @@ class CiClassifierTests(unittest.TestCase):
         self.write('specs/backlog/last.md')
         self.assertEqual(self.classify(), 'full')
 
+    def test_functional_documents_real_add_modify_delete_and_rename(self):
+        names = ['specs/09-plan-ciclo-' + kind + '.md' for kind in
+                 ('brainstorming', 'specification', 'progress', 'testplan')]
+        names += ['specs/' + name for name in
+                  ('project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md',
+                   'functional-reference-v5.11.md', 'README.md')]
+        for name in names:
+            self.write(name, 'fixture ' + name)
+        added = self.commit()
+        self.assertEqual(self.classify(added), 'docs')
+        self.write(names[0], 'changed fixture')
+        changed = self.commit()
+        self.assertEqual(self.classify(changed, added), 'docs')
+        (self.root / names[1]).unlink()
+        deleted = self.commit()
+        self.assertEqual(self.classify(deleted, changed), 'docs')
+        self.git('mv', names[0], 'specs/10-next-brainstorming.md')
+        self.assertEqual(self.classify(base=deleted), 'docs')
+
+    def test_functional_docs_do_not_allow_unknown_or_operational_markdown(self):
+        forbidden = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
+                     'specs/instructions.md', 'specs/09-plan-ciclo.md',
+                     'specs/09-plan-ciclo-specification.md.sql',
+                     'specs/09-plan-ciclo-SKILL.md', 'specs/09-plan-ciclo/plan-specification.md',
+                     'specs/methodology/09-policy-specification.md',
+                     'specs/guidelines/09-guide-specification.md',
+                     '.agents/skills/09-plan-specification.md', 'README.md',
+                     'specs/unknown.md', 'scripts/09-plan-specification.md']
+        for name in forbidden:
+            with self.subTest(name=name):
+                for status in ('A', 'M', 'D'):
+                    records = (status + '\0' + name + '\0').encode()
+                    self.assertEqual(POLICY['classify_records'](records), 'full')
+                    mixed = b'A\0specs/09-plan-specification.md\0' + records
+                    self.assertEqual(POLICY['classify_records'](mixed), 'full')
+
+    def test_functional_rename_checks_both_endpoints(self):
+        self.write('specs/guidelines/quality.md', 'identical fixture')
+        before = self.commit()
+        self.git('mv', 'specs/guidelines/quality.md', 'specs/09-plan-specification.md')
+        middle = self.commit()
+        self.assertEqual(self.classify(middle, before), 'full')
+        self.git('mv', 'specs/09-plan-specification.md', 'specs/unknown.md')
+        self.assertEqual(self.classify(base=middle), 'full')
+
     def test_deleted_protected_file(self):
         self.write('AGENTS.md')
         before = self.commit()
