@@ -64,6 +64,16 @@ export function movementSource(
 export function financeRevision(db: Database) {
   return fingerprint([
     ledgerRows(db),
+    ...(db
+      .query("SELECT name FROM sqlite_master WHERE name='payroll_allocations'")
+      .get()
+      ? [
+          db
+            .query("SELECT * FROM payroll_allocations ORDER BY paga,movimiento")
+            .all(),
+          db.query("SELECT MAX(id) revision FROM payroll_audit").get(),
+        ]
+      : []),
     db
       .query(
         "SELECT id,nombre,inicio,CAST(apertura AS TEXT) apertura,estado,revision FROM deudas ORDER BY id",

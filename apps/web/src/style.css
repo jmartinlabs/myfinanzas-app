@@ -1725,3 +1725,67 @@ textarea {
     flex-wrap: wrap;
   }
 }
+
+.payroll-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 330px), 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.payroll-card {
+  min-width: 0;
+}
+.payroll-id {
+  overflow-wrap: anywhere;
+}
+.payroll-card dl {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.payroll-card dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.payroll-preview {
+  max-height: 360px;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.payroll-card details {
+  margin: 16px 0;
+}
+.payroll-card .actions {
+  flex-wrap: wrap;
+}
+
+.payroll-table table {
+  table-layout: fixed;
+  width: 100%;
+}
+.payroll-table td {
+  overflow-wrap: anywhere;
+  vertical-align: top;
+}
+.payroll-table .payroll-id {
+  font-size: 12px;
+}
+.payroll-table button {
+  margin-bottom: 8px;
+}
+.payroll-table + .payroll-cards {
+  display: none;
+}
+@media (max-width: 760px) {
+  .payroll-table {
+    display: none;
+  }
+  .payroll-table + .payroll-cards {
+    display: grid;
+  }
+}
+
+.payroll-date {
+  white-space: nowrap;
+}

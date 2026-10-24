@@ -677,6 +677,19 @@ function plan(
       financeRevision(db),
     ]),
     impacto: {
+      nomina:
+        id &&
+        db
+          .query(
+            "SELECT name FROM sqlite_master WHERE name='payroll_allocations'",
+          )
+          .get()
+          ? db
+              .query(
+                "SELECT paga,importe,evidencia FROM payroll_allocations WHERE movimiento=?",
+              )
+              .all(id)
+          : [],
       deudas,
       gastoAntes:
         old?.tipo === "Gasto" && !old.anulado ? decimal(old.importe) : "0.00",
