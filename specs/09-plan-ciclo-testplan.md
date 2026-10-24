@@ -113,3 +113,15 @@ potencialmente obsoleta al cambiar ciclo; se corrigen sin mutar importes ni hech
 E2E local con regresiones de recuperación de catálogo y respuesta tardía:1PASS/4.6s;
 typecheck PASS. AC-34 añade carga/error/reintento real de UI, manteniendo pendiente
 la regresión integral Linux y el recorrido de restauración. Sin repetir CI a ciegas.
+
+## Resultado Linux del candidato 88941e1
+
+[CI40076614284](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40076614284):
+API137PASS/1FAIL. P1–P13 completos PASS, incluido P11 con continuidad/restore10
+productivo y demo, auditoría, sesiones/intentos revocados. Las tres correcciones de
+fixtures de la primera CI quedan verificadas. El único FAIL es B3 heredado con
+SQLITE_IOERR_SHORT_READ522 al reabrir tras contención; no es una prueba nueva de E2.3.
+E2E global omitido por fallo API, no PASS; AC-28 UI integrada/AC-33 restoreUI y
+aceptación global de AC-34 siguen pendientes de ese recorrido. No se usa el E2E local
+independiente como sustituto. Harness54/0 y validador18/0 locales PASS.
+La suite no se relanza para ocultar este fallo ni se modifica su política por dev09.

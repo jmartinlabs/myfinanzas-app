@@ -46,3 +46,16 @@ QA detectó reintento inicial del catálogo no funcional y riesgo de respuesta m
 antigua al cambiar Ciclo: catálogo recargable y generación de peticiones implementados.
 E2E real ampliado1 PASS/4.6s demuestra error→reintento y respuesta tardía descartada.
 Typecheck/check-project/whitespace PASS. Nueva CI Linux y revisión del delta pendientes.
+
+## Checkpoint — bloqueo de aceptación, 2026-10-24
+
+HEAD publicado `88941e1`, PR #57 DRAFT. CI Linux40076614284: baseline PASS;
+API137 PASS/1 FAIL. Las13 pruebas nuevas de planes, incluidos procesos, migración
+v9 genuina demo/production y backup/restore10, PASS. El único fallo es SQLite B3
+preexistente: SQLITE_IOERR_SHORT_READ errno522 al reabrir tras liberar contención,
+sqlite-opening.test.ts:288/private-state.ts:174. Mismo síntoma registrado antes de
+dev09, sin atribuir causa ni declarar ausencia de regresiones. E2E global no ejecutado
+al fallar API; required falla correctamente. No merge ni reintento hasta verde.
+E2E local ampliado1 PASS/4.6s; harness54 y validador18 PASS. La aceptación global
+permanece bloqueada. Requiere decisión sobre diagnóstico B3, fuera del alcance dev09.
+Checkpoint documental local; resultado remoto completo también en PR #57.

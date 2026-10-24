@@ -10,7 +10,10 @@ Dev09: rama `codex/dev09-plan-ciclo`, un ejecutor, QA independiente al candidato
 Ownership producto/tests/progress09/testplan09 del ejecutor; tablero del coordinador.
 Entregable: E2.3 según [spec09](09-plan-ciclo-specification.md), 36 AC actuales y
 V1–V10; evidencia en [progress09](09-plan-ciclo-progress.md) y
-[testplan09](09-plan-ciclo-testplan.md). Implementación en curso, no verificada aún.
+[testplan09](09-plan-ciclo-testplan.md). Candidato publicado en PR #57, HEAD `88941e1`.
+CI40076614284: API137PASS/1FAIL (B3 heredado IOERR_SHORT_READ522);13 pruebas nuevas
+PASS y E2E local1PASS, pero E2E global pendiente. Aceptación global bloqueada,
+sin investigación B3 ni reintentos automáticos. Checkpoint documental local separado.
 Sin merge autorizado de PR funcional, datos reales, Excel, despliegue, reanudación
 Dev32 ni investigación B3. Cierres/fotos y fuentes E3/E4 continúan futuros.
 
