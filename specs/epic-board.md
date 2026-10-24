@@ -1,3 +1,83 @@
+## Spec11 — rev3, relación N:M y wireframes aprobados — 2026-10-24
+
+Fuente real: «Aprobadas», respuesta inmediata a solicitud única de spec11 rev3 completa,
+incluida relación técnica N:M y wireframes. [Spec11](11-nomina-prevision-specification.md) /
+[registro11](11-nomina-prevision-brainstorming.md). Q1–Q6/M1 cerradas;46 AC futuros.
+Candidato aprobado SHA256 `c35beb2dac62ad0898b2dafd857138a91806309e235ea755670953cf6fe157f8`;
+solo actualizados estado/fuente de aprobación, sin cambiar reglas/diseños. QA documental
+independiente conforme, sin implementación o equivalencia numérica del Excel acreditadas.
+Rama `codex/spec11-nomina-prevision`, base main `e1d6dba` verificada. Preparar PR documental;
+checks y autorización de merge propios. Dev11 no autorizado; tampoco SQL/Excel/deploy.
+No reanudar B3/Dev32 ni cambiar plantilla. Los hitos inferiores conservan historia.
+
+---
+
+## Spec11 — Neto documentado aceptado, propuesta completa rev3 — 2026-10-24
+
+Fuente: usuario «E2.5 — Decisión sobre Neto documentado y conciliación».
+[Brainstorming11](11-nomina-prevision-brainstorming.md) registra M1 resuelto;
+[spec11 rev3](11-nomina-prevision-specification.md) incorpora captura opcional con
+evidencia, Histórico independiente y conciliación con referencia válida/discrepancias.
+Comprobación de reutilización actual:sin campo Nómina/Neto documentado semánticamente
+idéntico instalado; antes de implementar revalidar fuentes, sin cambiar esquema ahora.
+Q1–Q6/M1 sin preguntas pendientes.46 AC futuros; diseño técnico N:M, protocolos y
+wireframes rev3 pendientes de aprobación completa. Sin desarrollo/SQL/Excel/merge.
+Revisión independiente SPEC11-DOC-QA PASS del delta, sin nuevos conflictos materiales.
+Candidato rev3 SHA256 `c35beb2dac62ad0898b2dafd857138a91806309e235ea755670953cf6fe157f8`.
+Estructura/enlaces/whitespace PASS;46 IDs AC únicos y bloques de wireframes equilibrados.
+No tests funcionales, instalaciones o CI. Próximo paso:aprobación completa rev3,
+incluida relación técnica N:M y wireframes; no desarrollo/SQL/Excel/merge por inferencia.
+
+---
+
+## Spec11 — resolución Q4–Q6 integrada en rev2 — 2026-10-24
+
+Fuente: usuario «E2.5 Nómina — Resolución de decisiones adicionales Q4–Q6».
+[Brainstorming11](11-nomina-prevision-brainstorming.md) conserva rondas y respuestas;
+[spec11 rev2](11-nomina-prevision-specification.md) separa físico/limitaciones/app.
+N:M conceptual aceptada; diseño técnico por IDs/importes y diferencia con C176 explícitos.
+Fórmulas salariales/prudente y validaciones propuestas recibidas, sin inventar nuevo
+motor fiscal.40 AC futuros y wireframes rev2. M1 fuente/captura de Neto documentado
+sin histórico y desempate de formato monetario expuestos antes de cierre completo.
+Sin aprobación completa/visual/estructural, desarrollo, SQL, Excel o merge.
+QA independiente SPEC11-DOC-QA PASS con límites, sin nuevos conflictos materiales.
+Formato final explicitado como propuesta técnica, sin afirmar equivalencia numérica.
+M1 es el único cierre material pendiente: aceptar fuente/captura opcional del neto
+documentado o mantener no disponible si falta original. Sin nueva confirmación Q1–Q6.
+Estructura/enlaces y whitespace PASS; no suites funcionales ni instalaciones.
+Próximo hito: resolver M1 y presentar especificación/wireframes completos para aprobación.
+
+---
+
+## Spec11 — Q1–Q3 confirmadas y propuesta rev1 — 2026-10-24
+
+Fuente real: usuario «E2.5 — Nómina: decisiones funcionales Q1–Q3», contraste de Álex
+atribuido a hoja Nómina/tablas/Criterios v5.11(7), sin inspección propia.
+[Brainstorming11](11-nomina-prevision-brainstorming.md) conserva ronda1 y respuestas;
+[spec11 rev1](11-nomina-prevision-specification.md) desarrolla vínculo mínimo propuesto,
+casos parciales/múltiples/fuera de mes, fórmulas de previsión y wireframes provisionales.
+Q4 cardinalidad/abonos agrupados, Q5 derivados/referencias y Q6 prudente/precisión
+pendientes. Q1–Q3 no se reabren. No modelo estructural aprobado, SQL, desarrollo,
+Excel, merge ni nuevo motor fiscal. Un ejecutor, controles documentales proporcionales;
+próximo paso: resolver solo esos complementos antes de cerrar vínculos/cálculos.
+
+---
+
+## Spec11 — E2.5 iniciada, ronda1 pendiente — 2026-10-24
+
+Usuario: «Inicia» / «Venga empieza», en contexto único de spec11. Main verificado
+`e1d6dba`, dev10 integrado por PR61 tras «Apruebo merge»; checkout limpio de partida.
+[Brainstorming11](11-nomina-prevision-brainstorming.md), rama codex/spec11-nomina-prevision.
+Contratos R3 y roadmap conservados; Q1 unidad/campos históricos, Q2 atribución de
+cobros y Q3 entradas/fórmulas de previsión pendientes. Sin reglas fiscales inventadas.
+Sin aprobación de especificación/wireframes, desarrollo, SQL, Excel o merge.
+Un ejecutor, sin delegación ni suites funcionales para abrir esta ronda. Próximo paso:
+recibir respuestas funcionales y preparar diseño documental, sin reabrir Ciclos/R3.
+Los estados dev10 inferiores son hitos históricos: CI de PR61 pasó147 API/4E2E;
+B3 pasó esa ejecución, incidencia intermitente no cerrada. No se reanuda investigación.
+
+---
+
 ## Dev10 — autorizado y en curso — 2026-10-24
 
 Fuente real: usuario «Autorizo», respuesta inmediata al único siguiente alcance
