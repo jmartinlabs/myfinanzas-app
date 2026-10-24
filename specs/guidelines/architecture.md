@@ -239,3 +239,28 @@ evitan sobrescrituras y duplicación de auditorías. API hereda MFA, Origin/CSRF
 no-store y límites JSON. Backup/restore identifica e2.3-v10 y revoca intentos del plan.
 Fixture genuina v9 y rollback de DDL no reetiquetan bases nuevas. Cierres E4.9/fuentes
 E3/E4 siguen pendientes, sin proveedor ficticio ni cambios de Movimientos al planificar.
+
+## E2.4 — Plan anual (candidato dev10)
+
+`annual-plan-schema.ts` migra v10→v11 dentro del IMMEDIATE existente; no altera
+apertura/ownership/private identity. Línea única por ejercicio/Partida, importe
+INTEGER nullable,periodo texto y Esencial Sí/No/Pendiente;sin derivados persistidos.
+Auditoría append-only de deltas e intentos24h;backup identifica e2.4-v11 y restore
+revoca intentos anuales preservando líneas/auditoría. Gate restore Linux pendiente.
+
+`plan-anual.ts` consulta Gastos vigentes por ID/Fecha real,independiente de fuente
+mensual/ciclo. Sin proveedor verificable de inicio de control/histórico en runtime:
+Ejecutado/Diferencia null,motivo y subtotal registrado/fecha conocida consultables.
+La fecha del primer hecho/ciclo no acredita cobertura. Frontera interna inyectable
+valida intervalos,corte,procedencia,solapamiento y referencias protegidas,incluidas
+no verificables;fixtures no equivalen a integración de cierres/histórico futuros.
+Preview/confirm revalida catálogo,revisión,fuentes y protecciones en IMMEDIATE;
+año pasado exige motivo. No snapshots por edición ni reescritura de hechos.
+
+Equivalente conserva suma bigint de céntimos y divisor12 como racional;totalnull si
+faltan importes Sí,parcial y contadores independientes. Ningún float/importe visual
+alimenta agregados;resta de agregado tampoco aplica límite int64 individual.
+Clasificación incluye relaciones anuales en impacto/huella y mantiene identidad PAR.
+API/UI heredan MFA/Origin/CSRF y shell existentes,sin dependencias ni proveedor ficticio.
+No sincronización Esencial del ciclo ni consumidor global adelantados.
+[Estado y evidencia](../10-plan-anual-testplan.md);E2.4 no integrada todavía.

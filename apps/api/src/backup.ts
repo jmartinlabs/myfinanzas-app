@@ -50,7 +50,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(versions[0].version) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
@@ -129,7 +129,9 @@ export function backup(
                         ? "e2.2-v8"
                         : sourceVersion === 9
                           ? "e2.1-v9"
-                          : "e2.3-v10",
+                          : sourceVersion === 10
+                            ? "e2.3-v10"
+                            : "e2.4-v11",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -238,7 +240,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(bundle.manifest.schema) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -286,6 +288,7 @@ export function restore(
           ...(bundle.manifest.schema >= 8 ? ["budget_attempts"] : []),
           ...(bundle.manifest.schema >= 9 ? ["cycle_operation_attempts"] : []),
           ...(bundle.manifest.schema >= 10 ? ["cycle_plan_attempts"] : []),
+          ...(bundle.manifest.schema >= 11 ? ["annual_plan_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

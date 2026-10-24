@@ -1,3 +1,4 @@
+import { PlanAnual } from "./PlanAnual";
 import { PlanesCiclo } from "./PlanesCiclo";
 import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
@@ -158,6 +159,19 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/plan-anual") ? "nav-active" : "nav-link"
+            }
+            href="/plan-anual"
+            aria-current={path.startsWith("/plan-anual") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/plan-anual");
+            }}
+          >
+            Plan anual
+          </a>
+          <a
+            className={
               path.startsWith("/saldos") || path === "/"
                 ? "nav-active"
                 : "nav-link"
@@ -290,7 +304,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/planes-ciclo") ? (
+          {path.startsWith("/plan-anual") ? (
+            <PlanAnual go={go} />
+          ) : path.startsWith("/planes-ciclo") ? (
             <PlanesCiclo go={go} />
           ) : path.startsWith("/presupuestos") ? (
             <Presupuestos path={path} go={go} />

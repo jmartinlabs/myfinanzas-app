@@ -1,3 +1,8 @@
+import {
+  getAnnualPlan,
+  previewAnnualPlan,
+  confirmAnnualPlan,
+} from "./plan-anual";
 import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
@@ -317,7 +322,7 @@ test("P6 genuine v9 upgrade and transactional DDL rollback preserves v9 identity
     });
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 10,
+      version: 11,
     });
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally {
@@ -613,7 +618,7 @@ test("P10 copy source and cycle changes invalidate preview, no effective change 
   }
 });
 
-test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v10 restore revokes attempts and retains delta audit", async () => {
+test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 restore revokes cycle/annual attempts and retains delta audit", async () => {
   const fs = await import("node:fs"),
     { tmpdir } = await import("node:os"),
     { join } = await import("node:path"),
@@ -692,6 +697,37 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v10 re
           { presupuesto: b.id, base: null, esencial: "0", delMes: "25" },
         ]);
         save(db, "1", [{ presupuesto: b.id, base: "10" }]);
+        db.exec(`INSERT INTO categorias VALUES('CAT900','Fixture',NULL,'Gasto','Gasto',0,'Activa',1,'f','f');
+          INSERT INTO subcategorias VALUES('SUB900','Fixture','CAT900','Activa',1,'f','f');
+          INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado) VALUES('PAR900','Anual fixture','SUB900','Activa',1,'f','f');`);
+        for (const presupuesto of [null, "0"]) {
+          const annualBefore = getAnnualPlan(db, 2026, now),
+            annualProposal = {
+              partida: "PAR900",
+              revision: annualBefore.items[0]?.linea?.revision ?? 0,
+              contextRevision: annualBefore.contextRevision,
+              cambios: {
+                presupuesto,
+                periodo: "Mayo - Octubre",
+                esencial: "Sí",
+              },
+            },
+            annualPreview = previewAnnualPlan(db, 2026, annualProposal, now);
+          confirmAnnualPlan(
+            db,
+            2026,
+            {
+              propuesta: annualProposal,
+              fingerprint: annualPreview.fingerprint,
+            },
+            key(),
+            now,
+          );
+        }
+        const annualPlan = getAnnualPlan(db, 2026, now);
+        expect(
+          db.query("SELECT * FROM annual_plan_attempts").all(),
+        ).toHaveLength(2);
         const plan = getCyclePlan(db, "1", now);
         expect(
           db.query("SELECT * FROM cycle_plan_attempts").all(),
@@ -721,8 +757,8 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v10 re
         );
         expect(encrypted.exitCode).toBe(0);
         const manifest = JSON.parse(encrypted.stdout.toString()).manifest;
-        expect(manifest.schema).toBe(10);
-        expect(manifest.app).toBe("e2.3-v10");
+        expect(manifest.schema).toBe(11);
+        expect(manifest.app).toBe("e2.4-v11");
         const target = join(state, "restored");
         if (origin === "production")
           Object.assign(process.env, {
@@ -743,6 +779,14 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v10 re
           });
           expect(
             copy.query("SELECT * FROM cycle_plan_attempts").all(),
+          ).toHaveLength(0);
+          expect(getAnnualPlan(copy, 2026, now)).toMatchObject({
+            items: annualPlan.items,
+            esencial: annualPlan.esencial,
+            auditoria: annualPlan.auditoria,
+          });
+          expect(
+            copy.query("SELECT * FROM annual_plan_attempts").all(),
           ).toHaveLength(0);
           expect(copy.query("SELECT * FROM sessions").all()).toHaveLength(0);
           expect(copy.query("PRAGMA foreign_key_check").all()).toEqual([]);

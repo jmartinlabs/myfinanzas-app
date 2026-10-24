@@ -27,7 +27,7 @@ ARTIFACT = {'name': 'Fictional E1.1–E1.5 screenshots', 'if': 'always()',
             'uses': 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
             'with': {'name': 'e1-1-screenshots', 'path': '\n'.join(
                 'artifacts/' + n + '/*.png' for n in
-                ('e1-1', 'e1-2', 'e1-3', 'e1-4', 'e1-5', 'e1-6', 'e2-1', 'e2-3')),
+                ('e1-1', 'e1-2', 'e1-3', 'e1-4', 'e1-5', 'e1-6', 'e2-1', 'e2-3', 'e2-4')),
                 'if-no-files-found': 'ignore', 'retention-days': 7}}
 
 

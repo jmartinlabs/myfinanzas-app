@@ -1499,11 +1499,28 @@ textarea {
   }
 }
 
-.cycle-impact article, .cycle-history article { border-top: 1px solid var(--line, #dce5d0); padding: 1rem 0; }
-.cycle-facts { list-style: none; padding: 0; }
-.cycle-facts li { padding: 1rem 0; border-top: 1px solid #dce5d0; overflow-wrap: anywhere; }
-.cycle-impact, .cycle-history { margin-top: 20px; }
-.cycle-impact p, .cycle-history p { overflow-wrap: anywhere; }
+.cycle-impact article,
+.cycle-history article {
+  border-top: 1px solid var(--line, #dce5d0);
+  padding: 1rem 0;
+}
+.cycle-facts {
+  list-style: none;
+  padding: 0;
+}
+.cycle-facts li {
+  padding: 1rem 0;
+  border-top: 1px solid #dce5d0;
+  overflow-wrap: anywhere;
+}
+.cycle-impact,
+.cycle-history {
+  margin-top: 20px;
+}
+.cycle-impact p,
+.cycle-history p {
+  overflow-wrap: anywhere;
+}
 /* E2.2: prevent long financial labels from stretching narrow screens. */
 .budget-filters {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
@@ -1604,5 +1621,107 @@ textarea {
 @media (min-width: 761px) {
   .plan-grid.mobile-list {
     display: none;
+  }
+}
+
+/* Annual plan shares the approved shell, with compact desktop rows and mobile cards. */
+.annual-essential,
+.annual-coverage {
+  margin-bottom: 1rem;
+}
+.annual-essential {
+  border-left: 4px solid var(--green, #8dbb2e);
+}
+.annual-table {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+.annual-table table {
+  min-width: 100%;
+  font-size: 0.875rem;
+}
+.annual-table th:nth-child(n) {
+  width: 10%;
+  padding: 12px 8px;
+  overflow-wrap: anywhere;
+}
+.annual-table th:first-child {
+  width: 22%;
+}
+.annual-table th:nth-child(2) {
+  width: 12%;
+}
+.annual-table th:nth-child(3) {
+  width: 16%;
+}
+.annual-table th:nth-child(4) {
+  width: 9%;
+}
+.annual-table th:nth-child(7) {
+  width: 11%;
+}
+.annual-table td {
+  padding: 14px 8px;
+}
+.annual-table td:first-child {
+  padding-left: 12px;
+}
+.annual-table td:nth-child(7) {
+  white-space: nowrap;
+}
+.annual-table button {
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  min-height: 44px;
+}
+.annual-table td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.annual-table small {
+  display: block;
+  margin-top: 0.4rem;
+}
+.annual-table .actions {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+.annual-table button {
+  font-size: 0.8rem;
+  padding: 0.5rem;
+}
+.annual-values {
+  display: grid;
+  grid-template-columns: minmax(7rem, 1fr) minmax(0, 1.3fr);
+  gap: 0.5rem 1rem;
+}
+.annual-values dt {
+  font-weight: 600;
+}
+.annual-values dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.annual-add {
+  display: block;
+  max-width: 36rem;
+  margin: 1rem 0;
+}
+.annual-editor {
+  margin: 1rem 0;
+  scroll-margin-top: 1rem;
+}
+@media (max-width: 700px) {
+  .annual-editor .form-grid {
+    display: block;
+  }
+  .annual-editor label {
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .annual-editor .actions {
+    flex-wrap: wrap;
   }
 }

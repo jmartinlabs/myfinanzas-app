@@ -124,7 +124,7 @@
           "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
           "with": {
             "name": "e1-1-screenshots",
-            "path": "artifacts/e1-1/*.png\nartifacts/e1-2/*.png\nartifacts/e1-3/*.png\nartifacts/e1-4/*.png\nartifacts/e1-5/*.png\nartifacts/e1-6/*.png\nartifacts/e2-1/*.png\nartifacts/e2-3/*.png",
+            "path": "artifacts/e1-1/*.png\nartifacts/e1-2/*.png\nartifacts/e1-3/*.png\nartifacts/e1-4/*.png\nartifacts/e1-5/*.png\nartifacts/e1-6/*.png\nartifacts/e2-1/*.png\nartifacts/e2-3/*.png\nartifacts/e2-4/*.png",
             "if-no-files-found": "ignore",
             "retention-days": 7
           }
