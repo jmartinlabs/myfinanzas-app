@@ -283,6 +283,8 @@ class CiWorkflowTests(unittest.TestCase):
 
     def test_reject_semantic_mutations(self):
         mutations = {
+            'missing focus regression': lambda w: w['jobs']['full']['steps'].remove(next(s for s in w['jobs']['full']['steps'] if s.get('name') == 'Cycle review focus regression')),
+            'disabled focus regression': lambda w: next(s for s in w['jobs']['full']['steps'] if s.get('name') == 'Cycle review focus regression').update({'if': False}),
             'missing classifier': lambda w: w['jobs']['baseline']['steps'].remove(by_id(w, 'classify')),
             'disabled baseline': lambda w: w['jobs']['baseline'].update({'if': False}),
             'disabled baseline step': lambda w: w['jobs']['baseline']['steps'][-1].update({'if': False}),

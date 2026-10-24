@@ -1,0 +1,170 @@
+{
+  "sourceVariant": "main product source; export only in diagnostic bundle",
+  "react": "19.3.1",
+  "browser": "Chrome headless",
+  "cases": [
+    {
+      "variant": "baseline",
+      "hold": false,
+      "focused": true,
+      "events": [
+        {
+          "type": "response-release",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "region-committed",
+          "region": true,
+          "active": "BODY"
+        },
+        {
+          "type": "raf-before",
+          "region": true,
+          "active": "BODY"
+        },
+        {
+          "type": "focus-call",
+          "region": true,
+          "active": "BODY",
+          "target": "Revisión de impacto de Ciclos"
+        },
+        {
+          "type": "raf-after",
+          "region": true,
+          "active": "Revisión de impacto de Ciclos"
+        }
+      ]
+    },
+    {
+      "variant": "baseline",
+      "hold": true,
+      "focused": false,
+      "events": [
+        {
+          "type": "response-release",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "scheduler-held",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "scheduler-released",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "region-committed",
+          "region": true,
+          "active": "BODY"
+        }
+      ]
+    },
+    {
+      "variant": "layout-effect",
+      "hold": true,
+      "focused": true,
+      "events": [
+        {
+          "type": "response-release",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "scheduler-held",
+          "region": false,
+          "active": "BUTTON"
+        },
+        {
+          "type": "raf-before",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "raf-after",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "scheduler-released",
+          "region": false,
+          "active": "BODY"
+        },
+        {
+          "type": "focus-call",
+          "region": true,
+          "active": "BODY",
+          "target": "Revisión de impacto de Ciclos"
+        },
+        {
+          "type": "region-committed",
+          "region": true,
+          "active": "Revisión de impacto de Ciclos"
+        }
+      ]
+    }
+  ]
+}

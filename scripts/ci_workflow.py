@@ -80,6 +80,7 @@ def required_workflow():
                           {'name': 'Dev07 AC23 concurrency gate', 'if': AC23_IF, 'run': AC23},
                           {'run': 'bun run test'},
                           {'run': 'node node_modules/@playwright/test/cli.js install chromium'},
+                          {'name': 'Cycle review focus regression', 'run': 'set -eu\nfocus_browser=$(bun -e \'import { chromium } from "@playwright/test"; console.log(chromium.executablePath())\')\nbun scripts/diagnostics/cycle-review-focus.ts . "$focus_browser" .local/focus-regression.json'},
                           {'run': 'bun run test:e2e'}, ARTIFACT],
             },
             'required': {
