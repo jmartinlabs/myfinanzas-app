@@ -65,3 +65,14 @@ libc.so.6 directos y4 de procesos Linux); E2E global UNRUN por fallo previo. Est
 ejecución precede al complemento P17–P21, acreditado aparte mediante C1. No se declara
 full PASS ni restore Linux probado. Publicar candidato para obtener CI Linux completa,
 sin omitir pruebas ni modificar harness. Merge requiere aprobación expresa de su PR.
+
+## Corrección de fixture tras primera CI Linux — 2026-10-24
+
+Candidato `5979731`, run40128010086: baseline PASS; API167 PASS/1 FAIL (2660assertions),
+E2E global UNRUN. Único fallo en P11 backup/restore: nuevo abono asumía S001,
+inexistente en la base production sin cuentas demo. No fallo del reparto ni permiso
+para omitir el ensayo. La fixture crea ahora destino mediante createSaldo y utiliza
+su ID real en ambos orígenes. P22 reproduce production-v9 sin cuenta demo, migra,
+crea destino explícito y verifica N:M/FK. Corrección limitada a pruebas y revisión
+independiente PASS. C1 repetido por delta de pruebas:22 PASS/156 assertions; typecheck
+PASS. CI Linux/restore completo aún pendientes del candidato corregido.

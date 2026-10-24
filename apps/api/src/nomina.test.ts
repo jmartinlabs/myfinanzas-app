@@ -962,3 +962,44 @@ test("P21 forecast default and future-cutoff guard follow Madrid civil month at 
     db.close();
   }
 });
+
+test("P22 production-origin migration has no demo account: explicit fixture account supports payroll allocation", async () => {
+  const { prepareV9 } = await import("../test-support/database-v9");
+  const { createSaldo } = await import("./saldos");
+  const db = new Database(":memory:");
+  try {
+    const identity = {
+      origin: "production" as const,
+      key_hash: "f".repeat(64),
+    };
+    prepareV9(db, identity);
+    prepareSchema(db, identity);
+    expect(db.query("SELECT id FROM saldos ORDER BY id").all()).toEqual([
+      { id: "S000" },
+    ]);
+    const destination = createSaldo(
+      db,
+      {
+        nombre: "Cuenta ficticia explícita",
+        tipo: "Efectivo",
+        control: "Movimientos",
+      },
+      crypto.randomUUID(),
+      now,
+    );
+    expect(destination.id).toBe("S001");
+    const p = create(db);
+    movement(db, "101", "100000");
+    change(db, {
+      accion: "repartir",
+      movimiento: "101",
+      asignaciones: [
+        { paga: p.id, importe: "1000", evidencia: "Fixture explícita" },
+      ],
+    });
+    expect(getPayroll(db).pagas[0].cobrado).toBe("1000.00");
+    expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally {
+    db.close();
+  }
+});

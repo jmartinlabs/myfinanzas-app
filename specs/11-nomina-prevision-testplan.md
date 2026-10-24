@@ -124,3 +124,14 @@ Sólo pruebas nuevas P17–P20 para cobertura pendiente y ajuste civil de mes P2
 
 Los resultados E2E/QA/globales posteriores los mantiene el coordinador; este complemento
 no relanza esos gates ni cambia sus evidencias por inferencia.
+
+## Corrección de fixture tras primera CI Linux — 2026-10-24
+
+Candidato `5979731`, run40128010086: baseline PASS; API167 PASS/1 FAIL (2660assertions),
+E2E global UNRUN. Único fallo en P11 backup/restore: nuevo abono asumía S001,
+inexistente en la base production sin cuentas demo. No fallo del reparto ni permiso
+para omitir el ensayo. La fixture crea ahora destino mediante createSaldo y utiliza
+su ID real en ambos orígenes. P22 reproduce production-v9 sin cuenta demo, migra,
+crea destino explícito y verifica N:M/FK. Corrección limitada a pruebas y revisión
+independiente PASS. C1 repetido por delta de pruebas:22 PASS/156 assertions; typecheck
+PASS. CI Linux/restore completo aún pendientes del candidato corregido.

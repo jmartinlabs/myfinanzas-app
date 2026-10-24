@@ -1,3 +1,4 @@
+import { createSaldo } from "./saldos";
 import { confirmPayroll, getPayroll } from "./nomina";
 import {
   getAnnualPlan,
@@ -619,7 +620,7 @@ test("P10 copy source and cycle changes invalidate preview, no effective change 
   }
 });
 
-test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 restore revokes cycle/annual attempts and retains delta audit", async () => {
+test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 restore revokes cycle/annual/payroll attempts and retains delta audit", async () => {
   const fs = await import("node:fs"),
     { tmpdir } = await import("node:os"),
     { join } = await import("node:path"),
@@ -751,9 +752,20 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 re
           key(),
           now,
         );
+        // Production has no demo accounts: provision the fixture destination explicitly.
+        const payrollDestination = createSaldo(
+          db,
+          {
+            nombre: "Cuenta salarial ficticia",
+            tipo: "Efectivo",
+            control: "Movimientos",
+          },
+          key(),
+          now,
+        ).id;
         db.query(
-          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES('9001','2026-07-05','Ingreso',100000,'S000','S001','Nómina','Fixture salarial','',0,1,'fixture','fixture')",
-        ).run();
+          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES('9001','2026-07-05','Ingreso',100000,'S000',?,'Nómina','Fixture salarial','',0,1,'fixture','fixture')",
+        ).run(payrollDestination);
         payroll = confirmPayroll(
           db,
           {

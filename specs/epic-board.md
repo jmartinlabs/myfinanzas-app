@@ -1,3 +1,14 @@
+## Dev11 — PR63 en borrador, fixture corregida tras CI — 2026-10-24
+
+PR63/head5979731: baseline PASS, API167 PASS/1 FAIL en fixture P11 producción:
+S001 demo no existe en producción. Destino ahora creado explícitamente mediante
+servicio existente, sin cambiar código de aplicación ni quitar assertions. Regresión
+P22 y C1 final22 PASS/156 assertions; tipos y revisión independiente del delta PASS.
+[Progreso/evidencias](11-nomina-prevision-progress.md). Publicar corrección y esperar
+CI Linux completa; no merge/dev12/Excel/deploy. Estados inferiores son hitos históricos.
+
+---
+
 ## Dev11 — candidato local y QA conformes, CI Linux pendiente — 2026-10-24
 
 [Progress11](11-nomina-prevision-progress.md) / [testplan46AC](11-nomina-prevision-testplan.md).
