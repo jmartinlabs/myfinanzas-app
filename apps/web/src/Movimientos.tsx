@@ -63,6 +63,7 @@ type Plan = {
     concepto: string;
   }[];
   impacto: {
+    nomina?: { paga: string; importe: string; evidencia: string }[];
     deudas: {
       id: string;
       nombre: string;
@@ -820,6 +821,16 @@ function Impact({ plan }: { plan: Plan }) {
     >
       <h2 tabIndex={-1}>Impacto económico</h2>
       <Facts before={plan.antes} after={plan.despues} />
+      {!!plan.impacto.nomina?.length && (
+        <Alert>
+          Este hecho tiene asignaciones salariales:{" "}
+          {plan.impacto.nomina
+            .map((a) => `${a.paga}: ${amount(a.importe)}`)
+            .join(", ")}
+          . La corrección requiere revisar esas asociaciones en Nómina; no se
+          trasladan automáticamente.
+        </Alert>
+      )}
       {plan.impacto.deudas.map((d) => (
         <p key={d.id}>
           Capital {d.id} · {d.nombre}: {amount(d.antes)} → {amount(d.despues)}

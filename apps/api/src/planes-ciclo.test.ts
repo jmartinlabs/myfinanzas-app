@@ -1,3 +1,5 @@
+import { createSaldo } from "./saldos";
+import { confirmPayroll, getPayroll } from "./nomina";
 import {
   getAnnualPlan,
   previewAnnualPlan,
@@ -322,7 +324,7 @@ test("P6 genuine v9 upgrade and transactional DDL rollback preserves v9 identity
     });
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 11,
+      version: 12,
     });
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally {
@@ -618,7 +620,7 @@ test("P10 copy source and cycle changes invalidate preview, no effective change 
   }
 });
 
-test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 restore revokes cycle/annual attempts and retains delta audit", async () => {
+test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 restore revokes cycle/annual/payroll attempts and retains delta audit", async () => {
   const fs = await import("node:fs"),
     { tmpdir } = await import("node:os"),
     { join } = await import("node:path"),
@@ -724,6 +726,69 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 re
             now,
           );
         }
+        let payroll = confirmPayroll(
+          db,
+          {
+            accion: "guardar",
+            contexto: getPayroll(db).contexto,
+            motivo: "Fixture continuidad Nómina",
+            paga: {
+              mes: "2026-06",
+              tipo: "Ordinaria",
+              guardia: "No",
+              devengo: "1200",
+              base: "1200",
+              irpf: "10",
+              variable: "0",
+              historico: "1000",
+              documentado: "1000",
+              evidencia: "Fixture salarial",
+              evidenciaDocumentado: "Fixture documento",
+              verificado: true,
+              documentadoVerificado: true,
+              nota: "Ficticio",
+            },
+          },
+          key(),
+          now,
+        );
+        // Production has no demo accounts: provision the fixture destination explicitly.
+        const payrollDestination = createSaldo(
+          db,
+          {
+            nombre: "Cuenta salarial ficticia",
+            tipo: "Efectivo",
+            control: "Movimientos",
+          },
+          key(),
+          now,
+        ).id;
+        db.query(
+          "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,concepto,nota,anulado,revision,creado,actualizado) VALUES('9001','2026-07-05','Ingreso',100000,'S000',?,'Nómina','Fixture salarial','',0,1,'fixture','fixture')",
+        ).run(payrollDestination);
+        payroll = confirmPayroll(
+          db,
+          {
+            accion: "repartir",
+            movimiento: "9001",
+            asignaciones: [
+              {
+                paga: payroll.pagas[0].id,
+                importe: "1000",
+                evidencia: "Desglose restauración ficticio",
+              },
+            ],
+            contexto: getPayroll(db).contexto,
+            motivo: "Fixture asociación Nómina",
+          },
+          key(),
+          now,
+        );
+        expect(payroll.pagas[0].cobrado).toBe("1000.00");
+        expect(payroll.pagas[0].fechaCompleta).toBe("2026-07-05");
+        expect(db.query("SELECT * FROM payroll_attempts").all()).toHaveLength(
+          2,
+        );
         const annualPlan = getAnnualPlan(db, 2026, now);
         expect(
           db.query("SELECT * FROM annual_plan_attempts").all(),
@@ -757,8 +822,8 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 re
         );
         expect(encrypted.exitCode).toBe(0);
         const manifest = JSON.parse(encrypted.stdout.toString()).manifest;
-        expect(manifest.schema).toBe(11);
-        expect(manifest.app).toBe("e2.4-v11");
+        expect(manifest.schema).toBe(12);
+        expect(manifest.app).toBe("e2.5-v12");
         const target = join(state, "restored");
         if (origin === "production")
           Object.assign(process.env, {
@@ -787,6 +852,11 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v11 re
           });
           expect(
             copy.query("SELECT * FROM annual_plan_attempts").all(),
+          ).toHaveLength(0);
+          expect(getPayroll(copy).pagas).toEqual(payroll.pagas);
+          expect(getPayroll(copy).auditoria).toEqual(payroll.auditoria);
+          expect(
+            copy.query("SELECT * FROM payroll_attempts").all(),
           ).toHaveLength(0);
           expect(copy.query("SELECT * FROM sessions").all()).toHaveLength(0);
           expect(copy.query("PRAGMA foreign_key_check").all()).toEqual([]);

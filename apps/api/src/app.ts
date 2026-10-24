@@ -1,4 +1,10 @@
 import {
+  getPayroll,
+  previewPayroll,
+  confirmPayroll,
+  payrollForecast,
+} from "./nomina";
+import {
   getAnnualPlan,
   previewAnnualPlan,
   confirmAnnualPlan,
@@ -202,6 +208,21 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
       }
+      if (path === "/api/nomina" && req.method === "GET")
+        return reply(getPayroll(db));
+      if (path === "/api/nomina/impacto" && req.method === "POST")
+        return reply(previewPayroll(db, await jsonBody(req)));
+      if (path === "/api/nomina/confirmar" && req.method === "POST")
+        return reply(
+          confirmPayroll(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      if (path === "/api/nomina/pronostico" && req.method === "POST")
+        return reply(payrollForecast(db, await jsonBody(req), now()));
       const annual = path.match(
         /^\/api\/plan-anual\/(\d{4})(?:\/(impacto|confirmar))?$/,
       );

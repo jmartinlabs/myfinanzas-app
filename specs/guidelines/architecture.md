@@ -264,3 +264,28 @@ Clasificación incluye relaciones anuales en impacto/huella y mantiene identidad
 API/UI heredan MFA/Origin/CSRF y shell existentes,sin dependencias ni proveedor ficticio.
 No sincronización Esencial del ciclo ni consumidor global adelantados.
 [Estado y evidencia](../10-plan-anual-testplan.md);E2.4 no integrada todavía.
+
+
+## E2.5 — Nómina (candidato dev11)
+
+`payroll-schema.ts` migra v11→v12 dentro de IMMEDIATE existente: paga estable con originales
+serializados y revisión, relaciones N:M por IDs del ledger, intentos24h y auditoría append-only
+de deltas. Sin reseed ni modificación de Movimientos; identity/apertura/guardas conservadas.
+Backup identifica e2.5-v12 y restore revoca intentos salariales preservando originales/auditoría.
+Fixture genuinav11 y rollback DDL focales; restore Linux pendiente.
+
+`nomina.ts` separa Neto histórico, documental, cobrado y referencia conciliatoria. Fuente
+discrepante requiere evidencia/selección, invalidada al revisar originales. Asociación valida
+revisión real/estado/tipo/Subtipo y suma global exacta; corregir un hecho invalida cómputo,
+conserva historia y obliga revisión. La corrección bancaria advierte relaciones salariales;
+financeRevision incorpora asignaciones para evitar confirmar impacto bancario obsoleto.
+Conjunto de reparto entero se revalida bajo writer lock, con idempotencia y auditoría atómica.
+No proveedor de cierres inventado ni modificación de fotos/histórico ajenos.
+
+`payroll-decimal.ts` usa bigint/escala decimal para tasas/componentes sin redondeos intermedios;
+formato final al céntimo, empate alejándose de cero. Pronóstico elige una Ordinaria completa
+del mes más reciente en corte visible, con selección ID/evidencia en empate; no eleva netos
+parciales a referencias fiscales. Escenarios base/prudente se validan separados, +0,27pp sobre
+referencia. Sin escritura financiera desde simulación ni equivalencia C176/N:M afirmada.
+UI reutiliza shell/paleta, tabla escritorio/tarjetas390, tres vistas y revisión humana.
+[Evidencia y gates](../11-nomina-prevision-testplan.md); no integración/dev final inferidos.

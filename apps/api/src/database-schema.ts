@@ -1,3 +1,4 @@
+import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
 import { cyclePlanSchema } from "./cycle-plan-schema";
 import { cycleOperationSchema } from "./cycle-operation-schema";
@@ -29,7 +30,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -73,7 +74,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -89,6 +90,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 9) cycleOperationSchema(db);
         if (versions[0].version < 10) cyclePlanSchema(db);
         if (versions[0].version < 11) annualPlanSchema(db);
+        if (versions[0].version < 12) payrollSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -194,6 +196,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       cycleOperationSchema(db);
       cyclePlanSchema(db);
       annualPlanSchema(db);
+      payrollSchema(db);
     }).immediate();
   } catch (error) {
     db.close();

@@ -1,3 +1,43 @@
+## Dev11 — PR63 en borrador, fixture corregida tras CI — 2026-10-24
+
+PR63/head5979731: baseline PASS, API167 PASS/1 FAIL en fixture P11 producción:
+S001 demo no existe en producción. Destino ahora creado explícitamente mediante
+servicio existente, sin cambiar código de aplicación ni quitar assertions. Regresión
+P22 y C1 final22 PASS/156 assertions; tipos y revisión independiente del delta PASS.
+[Progreso/evidencias](11-nomina-prevision-progress.md). Publicar corrección y esperar
+CI Linux completa; no merge/dev12/Excel/deploy. Estados inferiores son hitos históricos.
+
+---
+
+## Dev11 — candidato local y QA conformes, CI Linux pendiente — 2026-10-24
+
+[Progress11](11-nomina-prevision-progress.md) / [testplan46AC](11-nomina-prevision-testplan.md).
+Un ejecutor, QA independiente PASS tras resolver carreras UI/corte y contexto ABA.
+Focal21 PASS/152 assertions; tipos/build PASS. C2 final1 PASS(3,7s), impacto desde
+Movimientos, async/conflictos y capturas390/1440 inspeccionadas; contraste mínimo6,04:1.
+Baseline PASS. Application local NO PASS: API120PASS/43FAIL en macOS (libc/operación
+Linux), global E2E UNRUN; no omitir guardas. CI Linux/restore pendientes. Rama
+`codex/dev11-nomina-prevision`, base `1cf13b4`; preparar commit/PR de candidato.
+Sin merge, Excel real, deploy, plantilla o investigación B3/Dev32.
+
+---
+
+## Dev11 — E2.5 autorizado y en curso — 2026-10-24
+
+Fuente: usuario «Autorizo», respuesta inmediata al único gate de desarrollo dev11,
+tras integración aprobada de spec11/wireframes PR62 en main `1cf13b4`.
+Rama `codex/dev11-nomina-prevision`, checkout limpio de partida. Alcance: implementar
+[spec11 rev3](11-nomina-prevision-specification.md), incluidos persistencia propia,
+API y UI, con los 46 AC aprobados y datos exclusivamente ficticios.
+Un ejecutor y QA independiente al candidato; pruebas focales por incremento y
+verificación canónica del candidato, sin reinstalaciones o rondas redundantes.
+Mantener separados histórico/documentación, banco y pronóstico. No reabrir Q1–Q6/M1.
+Sin Excel real, despliegue, cambios de plantilla, B3/Dev32 ni merge por inferencia.
+Progreso/testplan11 recogerán cobertura real y bloqueos; ningún AC fallido se difiere
+como contrato futuro. La publicación/PR sigue la política Git; merge exige aprobación.
+
+---
+
 ## Spec11 — rev3, relación N:M y wireframes aprobados — 2026-10-24
 
 Fuente real: «Aprobadas», respuesta inmediata a solicitud única de spec11 rev3 completa,
