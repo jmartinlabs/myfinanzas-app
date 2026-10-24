@@ -29,6 +29,8 @@ def validate(root, workflow_path=None):
                         errors.append(f'version: {name} must have an exact version')
                     if name in orms:
                         errors.append(f'orm: {name} conflicts with direct SQL')
+        if not (root / 'scripts/verify').is_file():
+            errors.append('verification-entry: canonical scripts/verify is required')
         policy = runpy.run_path(str(root / 'scripts/ci_workflow.py'))
         active = Path(workflow_path) if workflow_path else root / '.github/workflows/validate.yml'
         errors.extend(policy['validate_workflow'](active))

@@ -36,6 +36,9 @@ class CiClassifierTests(unittest.TestCase):
         self.addCleanup(tmp.cleanup)
         self.root = Path(tmp.name)
         self.git('init', '-q', '--initial-branch=main')
+        # Many real commits must not spawn maintenance racing fixture cleanup.
+        self.git('config', 'gc.auto', '0')
+        self.git('config', 'maintenance.auto', 'false')
         self.write('README.md', 'fixture')
         self.base = self.commit()
 
@@ -80,6 +83,64 @@ class CiClassifierTests(unittest.TestCase):
                 data = ('A\0specs/backlog/demo.md\0M\0' + name + '\0').encode()
                 self.assertEqual(POLICY['classify_records'](data), 'full')
 
+    def test_each_product_family_and_exact_path_git_lifecycle(self):
+        names = ['specs/09-plan-' + kind + '.md' for kind in
+                 ('brainstorming', 'specification', 'progress', 'testplan')]
+        names += ['specs/backlog/fixture.md'] + ['specs/' + n for n in
+                 ('project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md', 'functional-reference-v5.11.md')]
+        for index, name in enumerate(names):
+            with self.subTest(name=name):
+                before = self.commit() if self.git('status', '--porcelain') else self.git('rev-parse', 'HEAD').decode().strip()
+                self.write(name, 'unique ' + name)
+                added = self.commit(); self.assertEqual(self.classify(added, before), 'docs')
+                self.write(name, 'changed unique ' + name)
+                changed = self.commit(); self.assertEqual(self.classify(changed, added), 'docs')
+                renamed = 'specs/backlog/rename-' + str(index) + '.md'
+                (self.root / renamed).parent.mkdir(parents=True, exist_ok=True)
+                self.git('mv', name, renamed)
+                moved = self.commit(); self.assertEqual(self.classify(moved, changed), 'docs')
+                self.git('mv', renamed, name)
+                returned = self.commit(); self.assertEqual(self.classify(returned, moved), 'docs')
+                (self.root / name).unlink()
+                self.assertEqual(self.classify(base=returned), 'docs')
+
+    def test_protected_categories_git_lifecycle_alone_and_product_mixes(self):
+        protected = ['AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
+                     'specs/methodology/policy.md', 'specs/guidelines/quality.md', 'scripts/verify',
+                     '.github/workflows/validate.yml', 'config.json', 'schema.sql', 'package.json',
+                     'bun.lock', 'apps/api/code.ts', 'unknown.md', 'specs/README.md']
+        families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
+                    'specs/09-plan-' + kind + '.md' for kind in
+                    ('brainstorming', 'specification', 'progress', 'testplan')]
+        for path in protected:
+            with self.subTest(path=path):
+                before = self.git('rev-parse', 'HEAD').decode().strip()
+                self.write(path, 'protected added'); added = self.commit()
+                self.assertEqual(self.classify(added, before), 'full')
+                self.write(path, 'protected changed'); changed = self.commit()
+                self.assertEqual(self.classify(changed, added), 'full')
+                for index, family in enumerate(families):
+                    base = self.git('rev-parse', 'HEAD').decode().strip()
+                    self.write(path, 'protected mixed ' + str(index))
+                    self.write(family, 'product mixed ' + path)
+                    self.assertEqual(self.classify(base=base), 'full')
+                base = self.git('rev-parse', 'HEAD').decode().strip(); (self.root / path).unlink()
+                self.assertEqual(self.classify(base=base), 'full')
+
+    def test_real_renames_both_directions_for_every_product_family(self):
+        families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
+                    'specs/09-plan-' + kind + '.md' for kind in
+                    ('brainstorming', 'specification', 'progress', 'testplan')]
+        for index, family in enumerate(families):
+            with self.subTest(family=family):
+                protected = 'specs/methodology/protected-' + str(index) + '.md'
+                self.write(protected, 'unique rename ' + str(index)); before = self.commit()
+                (self.root / family).parent.mkdir(parents=True, exist_ok=True)
+                self.git('mv', protected, family); forward = self.commit()
+                self.assertEqual(self.classify(forward, before), 'full')
+                self.git('mv', family, protected)
+                self.assertEqual(self.classify(base=forward), 'full')
+
     def test_complete_range_includes_earlier_code_change(self):
         self.write('apps/api/code.ts', 'export const fictional = 1;')
         self.commit()
@@ -91,7 +152,7 @@ class CiClassifierTests(unittest.TestCase):
                  ('brainstorming', 'specification', 'progress', 'testplan')]
         names += ['specs/' + name for name in
                   ('project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md',
-                   'functional-reference-v5.11.md', 'README.md')]
+                   'functional-reference-v5.11.md')]
         for name in names:
             self.write(name, 'fixture ' + name)
         added = self.commit()
@@ -113,7 +174,7 @@ class CiClassifierTests(unittest.TestCase):
                      'specs/methodology/09-policy-specification.md',
                      'specs/guidelines/09-guide-specification.md',
                      '.agents/skills/09-plan-specification.md', 'README.md',
-                     'specs/unknown.md', 'scripts/09-plan-specification.md']
+                     'specs/unknown.md', 'scripts/09-plan-specification.md', 'specs/README.md']
         for name in forbidden:
             with self.subTest(name=name):
                 for status in ('A', 'M', 'D'):
@@ -246,7 +307,7 @@ class CiClassifierTests(unittest.TestCase):
     def test_cli_reads_full_event_and_missing_event_falls_back(self):
         self.write('specs/backlog/demo.md')
         head = self.commit()
-        script = self.root / 'scripts/ci_policy.py'
+        script = self.root / 'scripts/verify'
         script.parent.mkdir()
         shutil.copy2(ROOT / 'scripts/ci_policy.py', script)
         event = self.root / 'event.json'
@@ -303,7 +364,10 @@ class CiWorkflowTests(unittest.TestCase):
             'shallow history': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'fetch-depth': 1}),
             'persist credentials': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'persist-credentials': True}),
             'result env missing': lambda w: w['jobs']['required']['steps'][2]['env'].pop('CI_FULL'),
-            'classification error suppressed': lambda w: by_id(w, 'classify').update(run='python3 scripts/ci_policy.py classify || true'),
+            'classification error suppressed': lambda w: by_id(w, 'classify').update(run='python3 scripts/verify classify || true'),
+            'application bypasses entry': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update(run='bun run test'),
+            'baseline bypasses entry': lambda w: w['jobs']['baseline']['steps'][-1].update(run='./scripts/test-checks'),
+            'entrypoint partial application': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update(run='python3 scripts/verify baseline'),
             'missing concurrency': lambda w: w.pop('concurrency'),
             'wrong event group': lambda w: w['concurrency'].update(group='${{ github.event_name }}-${{ github.ref }}'),
             'no cancellation': lambda w: w['concurrency'].update({'cancel-in-progress': False}),
@@ -314,7 +378,7 @@ class CiWorkflowTests(unittest.TestCase):
             'moving runner': lambda w: w['jobs']['full'].update({'runs-on': 'ubuntu-latest'}),
             'skip Linux setup': lambda w: by_run(w, 'full', 'python3 scripts/ci_prepare_linux.py').update({'if': False}),
             'system browser substitution': lambda w: w['jobs']['full'].update(env={'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': '/usr/bin/chromium'}),
-            'full test skipped': lambda w: by_run(w, 'full', 'bun run test').update({'if': False}),
+            'full test skipped': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update({'if': False}),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):
@@ -333,7 +397,7 @@ class CiWorkflowTests(unittest.TestCase):
         self.assertTrue(self.errors(value))
 
     def test_classifier_step_rejects_invalid_output_and_crashes(self):
-        script = self.root / 'scripts/ci_policy.py'
+        script = self.root / 'scripts/verify'
         script.parent.mkdir()
         output = self.root / 'output'
         env = {**os.environ, 'GITHUB_OUTPUT': str(output)}

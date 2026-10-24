@@ -13,12 +13,9 @@ PYTHON = {'uses': 'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065
           'with': {'python-version': '3.12'}}
 BUN = {'uses': 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
        'with': {'bun-version-file': '.bun-version'}}
-BASELINE = '\n'.join(('set -eu', './scripts/check-repository', './scripts/check-project',
-                      './scripts/validate-template', './scripts/test-checks',
-                      './scripts/test-validator', 'git diff --check',
-                      'git show --format= --check HEAD'))
+BASELINE = 'python3 scripts/verify baseline'
 CLASSIFY = '''set -eu
-classification="$(python3 scripts/ci_policy.py classify)"
+classification="$(python3 scripts/verify classify)"
 case "$classification" in docs|full) ;; *) echo "Invalid CI classification" >&2; exit 1;; esac
 printf 'class=%s\\n' "$classification" >> "$GITHUB_OUTPUT"'''
 CONCURRENCY = {
@@ -26,14 +23,6 @@ CONCURRENCY = {
     'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}",
 }
 FULL_IF = "${{ needs.baseline.result == 'success' && needs.baseline.outputs.class != 'docs' }}"
-AC23_IF = "github.ref_name == 'feat/07-ciclos-operacion' || github.head_ref == 'feat/07-ciclos-operacion'"
-AC23 = '''set -e
-# Bounded repetition for the historical intermittent v3 opening failure.
-for iteration in 1 2 3 4 5; do
-  echo "AC23 legacy concurrency run ${iteration}/5"
-  NODE_ENV=test bun test apps/api/src/movimientos.test.ts --test-name-pattern '04 AC22/23/28: dos procesos'
-done
-NODE_ENV=test bun test apps/api/src/cycle-operations.test.ts --test-name-pattern '07 O[457]' '''.rstrip()
 ARTIFACT = {'name': 'Fictional E1.1–E1.5 screenshots', 'if': 'always()',
             'uses': 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
             'with': {'name': 'e1-1-screenshots', 'path': '\n'.join(
@@ -74,13 +63,10 @@ def required_workflow():
                 'steps': [{'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'],
                            'ref': '${{ needs.baseline.outputs.checkout }}'}}, BUN, PYTHON,
                           {'run': 'bun install --frozen-lockfile'},
-                          {'run': 'bun run typecheck'}, {'run': 'bun run build'},
                           {'name': 'Prepare missing Linux packages once',
                            'run': 'python3 scripts/ci_prepare_linux.py'},
-                          {'name': 'Dev07 AC23 concurrency gate', 'if': AC23_IF, 'run': AC23},
-                          {'run': 'bun run test'},
                           {'run': 'node node_modules/@playwright/test/cli.js install chromium'},
-                          {'run': 'bun run test:e2e'}, ARTIFACT],
+                          {'name': 'Canonical application verification', 'run': 'python3 scripts/verify application'}, ARTIFACT],
             },
             'required': {
                 'needs': ['baseline', 'full'], 'if': '${{ always() }}',
@@ -91,7 +77,7 @@ def required_workflow():
                            'env': {'CI_CLASS': '${{ needs.baseline.outputs.class }}',
                                    'CI_BASELINE': '${{ needs.baseline.result }}',
                                    'CI_FULL': '${{ needs.full.result }}'},
-                           'run': 'python3 scripts/ci_policy.py result'}],
+                           'run': 'python3 scripts/verify result'}],
             },
         },
     }

@@ -65,14 +65,14 @@
         {
           "id": "classify",
           "name": "Classify complete change",
-          "run": "set -eu\nclassification=\"$(python3 scripts/ci_policy.py classify)\"\ncase \"$classification\" in docs|full) ;; *) echo \"Invalid CI classification\" >&2; exit 1;; esac\nprintf 'class=%s\\n' \"$classification\" >> \"$GITHUB_OUTPUT\"",
+          "run": "set -eu\nclassification=\"$(python3 scripts/verify classify)\"\ncase \"$classification\" in docs|full) ;; *) echo \"Invalid CI classification\" >&2; exit 1;; esac\nprintf 'class=%s\\n' \"$classification\" >> \"$GITHUB_OUTPUT\"",
           "env": {
             "CI_CHECKOUT_REF": "${{ steps.context.outputs.ref }}"
           }
         },
         {
           "name": "Repository, project and document checks",
-          "run": "set -eu\n./scripts/check-repository\n./scripts/check-project\n./scripts/validate-template\n./scripts/test-checks\n./scripts/test-validator\ngit diff --check\ngit show --format= --check HEAD"
+          "run": "python3 scripts/verify baseline"
         }
       ]
     },
@@ -108,31 +108,18 @@
           "run": "bun install --frozen-lockfile"
         },
         {
-          "run": "bun run typecheck"
-        },
-        {
-          "run": "bun run build"
-        },
-        {
           "name": "Prepare missing Linux packages once",
           "run": "python3 scripts/ci_prepare_linux.py"
-        },
-        {
-          "name": "Dev07 AC23 concurrency gate",
-          "if": "github.ref_name == 'feat/07-ciclos-operacion' || github.head_ref == 'feat/07-ciclos-operacion'",
-          "run": "set -e\n# Bounded repetition for the historical intermittent v3 opening failure.\nfor iteration in 1 2 3 4 5; do\n  echo \"AC23 legacy concurrency run ${iteration}/5\"\n  NODE_ENV=test bun test apps/api/src/movimientos.test.ts --test-name-pattern '04 AC22/23/28: dos procesos'\ndone\nNODE_ENV=test bun test apps/api/src/cycle-operations.test.ts --test-name-pattern '07 O[457]'"
-        },
-        {
-          "run": "bun run test"
         },
         {
           "run": "node node_modules/@playwright/test/cli.js install chromium"
         },
         {
-          "run": "bun run test:e2e"
+          "name": "Canonical application verification",
+          "run": "python3 scripts/verify application"
         },
         {
-          "name": "Fictional E1.1–E1.5 screenshots",
+          "name": "Fictional E1.1\u2013E1.5 screenshots",
           "if": "always()",
           "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
           "with": {
@@ -174,7 +161,7 @@
             "CI_BASELINE": "${{ needs.baseline.result }}",
             "CI_FULL": "${{ needs.full.result }}"
           },
-          "run": "python3 scripts/ci_policy.py result"
+          "run": "python3 scripts/verify result"
         }
       ]
     }

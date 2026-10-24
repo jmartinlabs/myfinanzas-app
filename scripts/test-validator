@@ -45,7 +45,37 @@ class ValidationTests(unittest.TestCase):
  def test_neutrality(self):
   self.change('AGENTS.md','# Agent','# Agent\nAll projects must use ExampleStack.'); self.assertRule('neutrality')
  def test_ci(self):
-  self.change('.github/workflows/validate.yml','./scripts/test-validator','echo skip'); self.assertRule('ci')
+  self.change('.github/workflows/validate.yml','python3 scripts/verify baseline','echo skip'); self.assertRule('ci')
+ def test_verification_contract(self):
+  for name,token in (('specs/methodology/ci-policy.md','each required suite once'),
+                     ('.agents/skills/bootstrap/SKILL.md','one canonical verification command'),
+                     ('AGENTS.md','--full')):
+   with self.subTest(name=name):
+    p=self.root/name; old=p.read_text()
+    try:
+     p.write_text(old.replace(token,'REMOVED')); self.assertRule('verification-entry')
+    finally: p.write_text(old)
+ def test_usage_structure(self):
+  for name in ('scripts/report-agent-usage','scripts/auto-agent-usage','scripts/test-agent-usage',
+               'scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md'):
+   with self.subTest(name=name):
+    p=self.root/name; old=p.read_bytes()
+    try:
+     p.unlink(); self.assertRule('structure')
+    finally: p.write_bytes(old)
+ def test_usage_hook_scope(self):
+  import json
+  p=self.root/'.codex/hooks.json'; original=p.read_text()
+  for mutation in ('event','command','timeout','extra'):
+   with self.subTest(mutation=mutation):
+    config=json.loads(original); hooks=config['hooks']
+    if mutation=='event': hooks['PreToolUse']=hooks.pop('Stop')
+    if mutation=='command': hooks['Stop'][0]['hooks'][0]['command']='echo skip'
+    if mutation=='timeout': hooks['Stop'][0]['hooks'][0]['timeout']=600
+    if mutation=='extra': hooks['Stop'][0]['hooks'][0]['async']=True
+    try:
+     p.write_text(json.dumps(config)); self.assertRule('usage-hooks')
+    finally: p.write_text(original)
  def test_legitimate_project(self):
   self.change('specs/guidelines/architecture.md','# Architecture','# Architecture\nApproved for this project: Rust and SQLite.')
   self.change('README.md','# Universal','# Universal\n[Folder](templates) [External](https://example.com)\nUNDECIDED api_key: YOUR_KEY')

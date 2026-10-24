@@ -1,0 +1,171 @@
+#!/usr/bin/env python3
+"""Canonical MyFinanzas local/CI verification; provisioning is separate."""
+import argparse
+import contextlib
+import io
+import os
+from pathlib import Path
+import re
+import runpy
+import shutil
+import subprocess
+import sys
+ROOT = Path(__file__).resolve().parents[1]
+POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
+BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.startswith('test-') else None) for name in (
+    'check-repository', 'check-project', 'validate-template', 'test-checks',
+    'test-validator', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification')) + (
+    ('working-whitespace', ['git', 'diff', '--check'], None),
+    ('commit-whitespace', ['git', 'show', '--format=', '--check', 'HEAD'], None))
+APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),
+               ('build', ['bun', 'run', 'build'], None),
+               ('api', ['bun', 'run', 'test'], 'bun'),
+               ('e2e', ['bun', 'run', 'test:e2e'], 'playwright'))
+LEGACY_BRANCH = 'feat/07-ciclos-operacion'
+ANSI = re.compile(r'\x1b\[[0-?]*[ -/]*[@-~]')
+
+class VerificationError(ValueError):
+    pass
+
+def test_coverage(output, kind):
+    """A successful process is insufficient: pinned reporters must prove coverage."""
+    output = ANSI.sub('', output)
+    if kind == 'bun':
+        passed = re.findall(r'(?m)^\s*(\d+) pass\s*$', output)
+        failures = re.findall(r'(?m)^\s*(\d+) fail\s*$', output)
+        skipped = re.findall(r'(?m)^\s*(\d+) (?:skip|skipped|todo)\b', output)
+        valid = len(passed) == 1 and int(passed[0]) > 0 and failures == ['0']
+    elif kind == 'unittest':
+        passed = re.findall(r'(?m)^Ran (\d+) tests? in ', output)
+        skipped = re.findall(r'(?:skipped|expected failures|unexpected successes)=(\d+)', output)
+        valid = len(passed) == 1 and int(passed[0]) > 0 and bool(re.search(r'(?m)^OK(?:\s|$)', output)) and not re.search(r'(?m)^FAILED', output)
+    else:
+        passed = re.findall(r'(?m)^\s*(\d+) passed(?:\s|$)', output)
+        failures = re.findall(r'(?m)^\s*(\d+) (?:failed|interrupted)\b', output)
+        skipped = re.findall(r'(?m)^\s*(\d+) (?:skipped|did not run|fixme)\b', output)
+        valid = len(passed) == 1 and int(passed[0]) > 0 and not any(map(int, failures))
+    return valid and not any(map(int, skipped))
+
+def classification(args):
+    if args.full:
+        return 'full'
+    command = ['classify']
+    for flag in ('base', 'head'):
+        value = getattr(args, flag)
+        if value is not None:
+            command.extend(['--' + flag, value])
+    if args.pull_request:
+        command.append('--pull-request')
+    output = io.StringIO()
+    with contextlib.redirect_stdout(output):
+        code = POLICY['main'](command)
+    value = output.getvalue().strip()
+    if code != 0 or value not in ('docs', 'full'):
+        raise VerificationError('Shared classifier failed or returned an invalid result.')
+    if value == 'docs':
+        # The comparison cannot authorize omission over a different local snapshot.
+        status = subprocess.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
+                                cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        head = subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT,
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        if (status.returncode or status.stdout or head.returncode or
+                (args.head and head.stdout.decode().strip() != args.head)):
+            return 'full'
+    return value
+
+def legacy_required():
+    names = [os.getenv('GITHUB_HEAD_REF'), os.getenv('GITHUB_REF_NAME')]
+    if not any(names):
+        result = subprocess.run(['git', 'branch', '--show-current'], cwd=ROOT,
+                                text=True, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+        if result.returncode == 0:
+            names.append(result.stdout.strip())
+    return LEGACY_BRANCH in names
+
+def application_checks():
+    checks = list(APPLICATION)
+    if legacy_required():
+        # Preserve explicit historical acceptance repeats, not duplicate core suites.
+        legacy = [('legacy-ac23-' + str(i), ['bun', 'test', 'apps/api/src/movimientos.test.ts',
+                   '--test-name-pattern', '04 AC22/23/28: dos procesos'], 'bun') for i in range(1, 6)]
+        legacy.append(('legacy-continuity', ['bun', 'test', 'apps/api/src/cycle-operations.test.ts',
+                       '--test-name-pattern', '07 O[457]'], 'bun'))
+        checks[2:2] = legacy
+    return checks
+
+def run_checks(checks, prerequisites=()):
+    missing = [tool for tool in prerequisites if shutil.which(tool) is None]
+    if missing:
+        print('FAIL prerequisites: ' + ', '.join(missing), file=sys.stderr)
+        for name, _, _ in checks:
+            print('UNRUN ' + name)
+        return False
+    for index, (name, command, reporter) in enumerate(checks):
+        print('RUN ' + name, flush=True)
+        try:
+            env = {**os.environ}
+            if reporter == 'bun':
+                env.setdefault('NODE_ENV', 'test')
+            result = subprocess.run(command, cwd=ROOT, env=env, text=True,
+                                    stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            print(result.stdout, end='' if result.stdout.endswith('\n') else '\n', flush=True)
+            if result.returncode != 0:
+                raise VerificationError('exit ' + str(result.returncode))
+            if reporter and not test_coverage(result.stdout, reporter):
+                raise VerificationError('missing/zero test coverage or unexpected skips/failures')
+            print('PASS ' + name, flush=True)
+        except (OSError, VerificationError) as error:
+            print('FAIL ' + name + ': ' + str(error), file=sys.stderr)
+            for unrun, _, _ in checks[index + 1:]:
+                print('UNRUN ' + unrun)
+            return False
+    return True
+
+def main(argv=None):
+    if sys.version_info < (3, 10):
+        print('FAIL prerequisite: Python 3.10+ is required for canonical verification.', file=sys.stderr)
+        return 1
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('mode', nargs='?', choices=('all', 'classify', 'baseline', 'application', 'result'), default='all')
+    parser.add_argument('--full', action='store_true', help='Force full; never provisions dependencies')
+    parser.add_argument('--base')
+    parser.add_argument('--head')
+    parser.add_argument('--pull-request', action='store_true')
+    args = parser.parse_args(argv)
+    if args.mode not in ('all', 'classify') and (args.full or args.base or args.head or args.pull_request):
+        parser.error('Comparison and forced-full flags belong to all/classify modes.')
+    if args.mode == 'result':
+        return POLICY['main'](['result'])
+    if args.mode == 'baseline':
+        ok = run_checks(BASELINE, ('git',))
+        print('Baseline phase: ' + ('PASS' if ok else 'FAIL') + '; application phase not included.')
+        return 0 if ok else 1
+    if args.mode == 'application':
+        ok = run_checks(application_checks(), ('bun', 'node', 'age', 'git'))
+        print('Application phase: ' + ('PASS' if ok else 'FAIL') + '; baseline phase not included.')
+        return 0 if ok else 1
+    selected = classification(args)
+    if args.mode == 'classify':
+        print(selected)
+        return 0
+    print('Classification: ' + selected)
+    if not run_checks(BASELINE, ('git',)):
+        print('UNRUN application checks')
+        return 1
+    if selected == 'docs':
+        print('INTENTIONALLY SKIPPED application checks: allowlisted documentation only; not reported as passed.')
+        app_status = 'skipped'
+    else:
+        if not run_checks(application_checks(), ('bun', 'node', 'age', 'git')):
+            return 1
+        app_status = 'success'
+    ok = POLICY['result_ok'](selected, 'success', app_status)
+    print('Verification: ' + ('PASS' if ok else 'FAIL'))
+    return 0 if ok else 1
+
+if __name__ == '__main__':
+    try:
+        sys.exit(main())
+    except (OSError, VerificationError) as error:
+        print('Verification failed: ' + str(error), file=sys.stderr)
+        sys.exit(1)

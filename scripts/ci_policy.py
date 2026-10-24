@@ -13,7 +13,7 @@ PROTECTED = {'agents.md', 'claude.md', 'skill.md', 'instructions.md'}
 FUNCTIONAL_DOC = re.compile(
     r'[0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*-(?:brainstorming|specification|progress|testplan)\.md')
 CONTEXT_DOCS = {'project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md',
-                'functional-reference-v5.11.md', 'README.md'}
+                'functional-reference-v5.11.md'}
 
 
 def docs_path(path):

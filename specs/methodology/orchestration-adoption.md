@@ -235,3 +235,33 @@ pendientes. APT real, browser y Actions remotos UNRUN, tests de entorno simulado
 Siguiente paso seguro: presentar cambios y límites; esperar autorización de publicación
 para verificar el grafo y tiempos en GitHub. Sin implementación financiera, cambios de
 Excel, clasificación UI específica ni retirada del gate AC23.
+
+## Harness v2.7.0 — adaptación en curso
+
+Autorizado por el usuario el 2026-10-24 antes de spec10. Fuente local y tag remoto:
+agent-project-template v2.7.0, `ed61c62ea62dc378d2281222dfec6ebecada2410`.
+Se preservan aplicación, decisiones y guías; no se ejecuta init-project.
+
+| Archivos | Adaptación |
+| --- | --- |
+| scripts/verify, scripts/test-verification | Entrada canónica y regresiones reales del CLI |
+| validate.yml, ci_workflow.py, fixture workflow | Fases compartidas, grafo y validación cerrada |
+| ci_policy.py, test-ci-policy, check-project | Protección de instrucciones y contrato actualizado |
+| validate-template, test-validator | Estructura, contrato y hooks acotados |
+| AGENTS.md, bootstrap Skill, quality, ci-policy | Comandos y contrato vigente, sin sustituir guías |
+| Cuatro scripts de uso, .codex/hooks.json, docs/USAGE_REPORTS.md | Herramientas opcionales fijadas al upstream; sin activar trust |
+
+Sin cambios funcionales, Excel, despliegue ni resolución inferida de B3. La revisión
+independiente y CI deben confirmar la integración; no hay aprobación de merge de esta PR.
+
+Verificación local: baseline canónico PASS (57 controles/regresiones de proyecto y CI,
+21 del validador, 9 informes, 8 hooks y 14 de entrada). Tras revisión independiente,
+se corrigió selección docs sobre checkout local modificado o HEAD distinto; regresiones
+de entrada ampliadas a 15 PASS. Typecheck y build PASS con Bun 1.4.3. La batería de
+aplicación completa requiere CI Linux; no se acredita por fixtures ni por macOS.
+Los cinco archivos ejecutables/config de uso coinciden byte a byte con ed61c62.
+
+PR58, primer CI Linux 40083703786: baseline bloqueado por carrera al eliminar .git
+tras numerosos commits del fixture (ENOTEMPTY), sin fallos de aserciones. Se desactiva
+mantenimiento automático únicamente en esos repositorios temporales; 35 regresiones
+locales PASS y QA del delta conforme. Confirmación remota pendiente.

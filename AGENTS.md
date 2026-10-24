@@ -1,13 +1,13 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.6 y E2.2 integradas (PR44 255bf61); spec07 E2.1 aprobada, dev07 sin integrar (AC23 bloqueado).
+Repositorio privado: E1.1–E1.6 y E2.1–E2.3 integradas; dev09 PR57/7422d23. B3 sigue abierto; no reanudar su investigación por inferencia.
 Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) en las secciones necesarias, sin recargar documentos completos sin cambios.
 
 - Carga solo las guías aplicables: [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
   [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
 - Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
-- Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
-  Prerrequisitos, comandos de plantilla y limitaciones: guideline de calidad.
+- Verificación única: `python3 scripts/verify` (auto) o `python3 scripts/verify --full`.
+  Python3.10+; comparación `--base SHA --head SHA [--pull-request]`, prerrequisitos y fases CI en calidad.
 - Dentro de trabajo autorizado, `$orchestrate` puede gestionar subagentes, ramas y worktrees
   aislados sin permiso operativo adicional, aplicando la política de seguridad y ownership local.
 - Próximas entregas: evitar documentación/rondas redundantes; resolver detalles técnicos
