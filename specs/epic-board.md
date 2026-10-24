@@ -1,3 +1,95 @@
+## Spec10 — rev2 y wireframes aprobados — 2026-10-24
+
+Fuente real: «Aprobadas», respuesta inmediata a la solicitud única «¿Apruebas la
+especificación completa rev2 y sus wireframes?». Q1–Q6 confirmadas;34 AC futuros.
+[Spec10](10-plan-anual-specification.md) y [registro](10-plan-anual-brainstorming.md).
+QA documental independiente PASS sobre candidato SHA256
+`d38a51e2c2e563e02819aed8cd4d49c132ec494c0f5397e5966b8abd853a1b95`;
+actualización administrativa de estados, sin cambio de reglas/diseños aprobados.
+Rama `codex/spec10-plan-anual`, base main `5c3e49b`. Preparación de PR documental;
+no desarrollo autorizado, SQL, migración, Excel, merge, B3 ni Dev32.
+Próximo gate: revisión/CI documental y aprobación específica de merge de la nueva PR.
+Tras integrar, dev10 seguirá requiriendo autorización propia. Piloto solo local;
+ningún cambio a la plantilla ni afirmación de ahorro causal.
+
+Piloto — balance de preparación/revisión hasta solicitar aprobación: tres turnos
+cerrados (01a16e55,01a16e5f,01a16e68; IDs completos en hitos inferiores), sin duplicar
+respuestas: coordinador21 respuestas/entrada5239991/caché incluida5209344/salida24347;
+QA independiente3 respuestas/entrada117275/caché incluida102528/salida322.
+Fuente collect existente; excluye registro/publicación de esta aprobación y trabajo futuro.
+Un ejecutor y un paquete QA acotado; cero hallazgos bloqueantes documentales; sin
+instalaciones, suites funcionales locales ni cambios de plantilla. Controles documentales
+por revisión; baseline final de publicación PASS una vez, sin cambios de aplicación.
+Bloqueo operativo inicial de rama204,386s ya registrado, sin atribuirlo todo a humano.
+Q1–Q6 no se reabren tras confirmarse. Mantener piloto en fase documental; muestra sin
+comparación homogénea para probar ahorro causal ni reducción de defectos funcionales.
+Dev10 no autorizado: evaluación funcional pendiente, no extrapolar estos datos.
+
+---
+
+## Spec10 — Q1–Q6 confirmadas, revisión completa rev2 — 2026-10-24
+
+Fuente: usuario «Spec10 — Resolución Q4–Q6 por Álex»; registro append-only en
+[brainstorming10](10-plan-anual-brainstorming.md). [Spec10 rev2](10-plan-anual-specification.md)
+incorpora Diferencia redondeada, fecha histórica/Gastos, agregado esencial incompleto,
+protección de ciclos/fotografías e inactivos. Wireframes rev2 y34 AC futuros.
+Sin preguntas Q1–Q6 abiertas. Documento completo y wireframes NO aprobados todavía.
+Sin desarrollo, SQL, migración, Excel, merge ni reanudación B3. Próximo paso: QA
+completa por el usuario. Fuentes físicas atribuidas al contraste de Álex, no inspección
+propia. Se preservan los hitos inferiores.
+
+QA independiente SPEC10-DOC-QA: PASS documental, sin hallazgos bloqueantes; lectura de
+specification completa y respuestas confirmadas, sin pruebas funcionales ni escrituras.
+Candidato rev2 SHA256: `d38a51e2c2e563e02819aed8cd4d49c132ec494c0f5397e5966b8abd853a1b95`.
+Control estructural/enlaces y whitespace PASS, una ejecución; sin suites de aplicación,
+instalaciones, escalaciones ni CI. No acreditar implementación ni aceptación visual.
+Piloto, corte parcial UTC 2026-10-24T15:00:02+00:00, turno `01a16e68-48df-73f2-b1ef-2be6690a0b74`:
+
+- /root (gpt-6.1-sol): 5 respuestas, entrada 1328571, caché incluida 1320832, salida 8982.
+- /root/qa_spec10_doc (gpt-6.1-sol): 3 respuestas, entrada 117275, caché incluida 102528, salida 322.
+
+Corte de registros existentes, excluye respuestas posteriores; QA detectados0 en esta revisión documental, no evidencia de ausencia de defectos funcionales. Sin atribuir ahorro causal.
+
+---
+
+## Spec10 — Q1–Q3 confirmadas, propuesta rev1 — 2026-10-24
+
+Fuente: mensaje del usuario «Spec10 — Decisiones funcionales de Álex para E2.4 Plan anual».
+[Brainstorming10](10-plan-anual-brainstorming.md) conserva ronda1 y añade respuestas;
+[spec10 rev1](10-plan-anual-specification.md) propone contratos, wireframes y24 AC futuros.
+Presupuesto anual manual único; Periodo previsto texto; Esencial Sí/No/Pendiente y
+suma anual/12 confirmados. R3/R6 revisadas: equivalente anual no es coste global,
+no doble cómputo ni sobrescritura del Esencial manual del ciclo. Evidencia Excel atribuida.
+Pendientes nuevos Q4 derivados, Q5 agregado incompleto y Q6 edición pasada/inactivos.
+Sin aprobación completa/visual, desarrollo, SQL, Excel, merge ni reanudación B3.
+Piloto, corte parcial24/10 16:50:04 Madrid, turno `01a16e5f-8966-7221-861a-7a4ef838ca56`:
+coordinador gpt-6.1-sol,4 respuestas,entrada987075,caché incluida979840,salida8499.
+Fuente collect existente; excluye respuestas posteriores. Sin subagentes, instalaciones,
+CI ni nuevas escalaciones. Un validate-template PASS y whitespace PASS; cero repeticiones.
+QA independiente/hallazgos N/D hasta candidato completo. Sin comparación causal de ahorro.
+Un ejecutor; siguiente paso: revisión Q4–Q6 antes de aprobación completa.
+
+---
+
+## Spec10 — ronda1 documental abierta — 2026-10-24
+
+Usuario: «Sigue con spec10». Main `5c3e49b`, piloto PR59 integrado tras «Apruebo merge»;
+los apartados inferiores conservan historia. Rama `codex/spec10-plan-anual`.
+[Brainstorming10](10-plan-anual-brainstorming.md): E2.4, Plan anual por Partida/ejercicio.
+Q1 importes/edición, Q2 dominio de Periodo previsto y Q3 regla de esenciales pendientes.
+No se reabren las decisiones R3 ya documentadas. Sin specification, wireframes aprobados,
+desarrollo ni migración. Un ejecutor, sin delegación para esta ronda.
+Piloto, corte parcial 24/10 16:39:27 Madrid, turno `01a16e55-03e5-7952-b0a3-9620957cd2ea`:
+coordinador gpt-6.1-sol,6 respuestas,entrada1391340,caché incluida1378176,salida3925.
+Fuente collect existente; no incluye respuestas posteriores. Cero delegaciones,
+instalaciones o CI; un validate-template PASS y whitespace PASS, cero repeticiones.
+QA independiente aún no aplica al borrador; defectos QA N/D, no cero acreditado.
+Un intervalo operativo al crear rama:204,386 s envolventes, no CPU ni aprobación pura.
+Sin afirmar mejora frente a otra tarea. Fuentes consultadas y Q1–Q3 quedan recuperables.
+Próximo paso: recibir Q1–Q3 y continuar el diseño documental; no hacer merge ni dev.
+
+---
+
 ## Estado vigente — piloto spec10 — 2026-10-24
 
 Solicitud real del usuario: aplicar en MyFinanzas el piloto de eficiencia y medirlo

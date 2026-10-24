@@ -328,3 +328,62 @@ No añadir filtro por Tipo/Control en este agregado. Los validadores de escritur
 cada Tipo siguen protegiendo qué desgloses son admisibles: ausencia de filtro en el
 motor NO autoriza payloads inválidos. Aperturas ausentes no se inventan ni convierten
 en cero; mostrar capital no calculable cuando falten entradas necesarias de control.
+
+
+## E2.4 — precisión del plan anual y esenciales, 2026-10-24
+
+Fuente: decisiones Q1–Q3 de Álex transmitidas expresamente por el usuario, tras su
+contraste de v5.11(7)/Criterios; no inspección independiente por Codex. Detalle y
+pendientes posteriores en [brainstorming10](10-plan-anual-brainstorming.md).
+Esta precisión concreta R3 y la contribución anual a R6 sin cambiar sus fórmulas.
+
+Una línea por ID de Partida/ejercicio natural. Único importe manual Presupuesto (€),
+editable, vacío o cero explícito distintos y sin negativos. No copiar/calcular desde
+otro ejercicio o Ejecutado automáticamente, ni reconstruir cada mes. No importe
+esencial anual independiente. Ejecutado, Diferencia y Fecha ejecutada derivados;
+su semántica de signo/fecha múltiple se concreta en spec10 antes de aprobarla.
+Periodo previsto es texto flexible opcional/editable (uno o varios meses/periodos),
+sin lista cerrada, varias filas ni motor de periodicidad; no gobierna la ejecución.
+Transitorios2026 son histórico/migración, no nuevos campos del plan.
+
+Esencial manual por línea: Sí/No/Pendiente. Solo Sí contribuye; Pendiente no se
+convierte en No. Equivalente esencial mensual anual = suma de Presupuesto anual
+con Esencial=Sí dividida por12, sin redondear contribuciones antes de sumar.
+Evidencia física atribuida: `=SUMIFS(tblAnual2026[Presupuesto (€)],tblAnual2026[Esencial],"Sí")/12`.
+Si un importe esencial está vacío sigue no informado, no decisión de0€.
+El equivalente anual alimenta el Importe esencial del Presupuesto Mensual de Gastos
+anuales; Coste esencial mensual global suma importes esenciales mensuales. No sumar
+el equivalente anual otra vez. En la app se preserva el contrato manual de spec09;
+el enlace/consumo no autoriza sobrescritura automática ni conexión por nombre.
+R6 consume coste global, no este equivalente aislado. Liquidez/objetivos no se
+implementan en E2.4; cobertura, nulos y cero deben propagarse sin inventar resultados.
+Autorización solo documental, sin SQL, cambios del Excel, desarrollo ni merge.
+
+
+### E2.4 — precisión Q4–Q6, 2026-10-24
+
+Fuente: «Spec10 — Resolución Q4–Q6 por Álex», transmitida por el usuario tras su
+contraste de tblAnual2026/Criterios T5.n. Resuelve la semántica de derivados pendiente
+arriba; no es aprobación completa de spec10 ni inspección física independiente.
+Diferencia=ROUND(Presupuesto−Ejecutado,2). Presupuesto vacío implica Diferencia vacía;
+Ejecutado0 verificado da Diferencia=Presupuesto. Cobertura no verificable impide
+presentarla como definitiva. Fecha ejecutada=máxima fecha conocida entre Fecha histórica
+y Gastos elegibles de la Partida en el ejercicio natural/periodo de control. Histórico
+válido conservado sin duplicarlo con Movimientos. Sin fecha conocida queda vacía,
+no inferida del importe. Amortización extraordinaria no es Gasto ejecutado.
+
+Con Esencial=Sí e importe sin informar, equivalente total Incompleto; subtotal
+conocido Parcial y contador de importes faltantes. No usarlo silenciosamente como
+objetivo definitivo de liquidez. Clasificación Pendiente se avisa por separado,
+sin incluirla ni convertirla a No. La fórmula suma de anuales esenciales/12 no cambia.
+Conservar líneas históricas inactivas y prohibir nuevas líneas para inactivas.
+Editar planes pasados requiere ausencia de protección financiera aplicable, impacto,
+motivo y confirmación. Revalidar también ciclos cerrados/fotografías dentro del año,
+aunque no exista cierre anual. Preservar identidades, relaciones y fotos inmutables;
+no reescribir Gastos ni crear históricos inexistentes. Solo autorización documental.
+
+
+Aprobación documental posterior, 2026-10-24: el usuario responde «Aprobadas» a la
+solicitud única de aprobar spec10 rev2 completa y sus wireframes. Se confirma el
+contrato documental descrito; no autoriza desarrollo, SQL, migración, Excel ni merge.
+Trazabilidad/candidato en [brainstorming10](10-plan-anual-brainstorming.md).
