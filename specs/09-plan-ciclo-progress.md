@@ -59,3 +59,9 @@ al fallar API; required falla correctamente. No merge ni reintento hasta verde.
 E2E local ampliado1 PASS/4.6s; harness54 y validador18 PASS. La aceptación global
 permanece bloqueada. Requiere decisión sobre diagnóstico B3, fuera del alcance dev09.
 Checkpoint documental local; resultado remoto completo también en PR #57.
+
+Diagnóstico B3 autorizado posteriormente por «Autorizo»: comparación en Linux de
+B3 aislado y B1/B2→B3, tres rondas en main568aeed y dev88941e1.12/12 casos PASS,
+sin reproducción ni causa demostrada. [Informe](investigations/sqlite-b3-sequence.md).
+La incidencia sigue abierta y la aceptación global bloqueada; sin cambios a dev09
+ni a guardas/pruebas. Rama diagnóstica separada, no destinada a merge.
