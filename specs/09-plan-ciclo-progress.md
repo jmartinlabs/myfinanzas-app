@@ -65,3 +65,13 @@ B3 aislado y B1/B2→B3, tres rondas en main568aeed y dev88941e1.12/12 casos PAS
 sin reproducción ni causa demostrada. [Informe](investigations/sqlite-b3-sequence.md).
 La incidencia sigue abierta y la aceptación global bloqueada; sin cambios a dev09
 ni a guardas/pruebas. Rama diagnóstica separada, no destinada a merge.
+
+## Decisión posterior del usuario — continuar integración
+
+Fuente real: «Hay q seguir adelante ya revisaremos estas cosas, termina los merges
+y demas , o sigueiente tarea», 2026-10-24, en el contexto de PR #57 como única
+entrega funcional pendiente de este chat. Autoriza continuar su cierre/integración
+aplazando B3; no convierte la incidencia en resuelta ni elimina pruebas. Se conserva
+la evidencia de CI137/1 y de la sonda12/12 sin reproducción. Antes de integrar se
+comprobará el E2E global pendiente; no se integra la rama diagnóstica. Dev32 y otras
+PR ajenas a este alcance no se reanudan. No autoriza otro desarrollo ni despliegue.
