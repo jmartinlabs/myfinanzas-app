@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 
-export const schemaVersion = 10;
+export const schemaVersion = 11;
 export type Identity = {
   origin: "demo" | "production";
   key_hash: string | null;
@@ -31,7 +31,7 @@ export function inspectIdentity(db: Database): Identity | null {
   }[];
   if (
     versions.length !== 1 ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10].includes(versions[0].version)
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].includes(versions[0].version)
   )
     throw new Error("Esquema no compatible.");
   if (versions[0].version < 6) {

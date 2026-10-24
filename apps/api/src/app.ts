@@ -1,4 +1,10 @@
 import {
+  getAnnualPlan,
+  previewAnnualPlan,
+  confirmAnnualPlan,
+  type AnnualProvider,
+} from "./plan-anual";
+import {
   getCyclePlan,
   executionDetail,
   previewCyclePlan,
@@ -77,6 +83,7 @@ import {
 } from "./ciclos";
 
 export type AppOptions = {
+  annualProvider?: AnnualProvider;
   classificationGuard?: ClassificationGuard;
   movementGuard?: MovementProtection;
   key: Buffer;
@@ -194,6 +201,35 @@ export function createApp(db: Database, options: AppOptions) {
         );
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
+      }
+      const annual = path.match(
+        /^\/api\/plan-anual\/(\d{4})(?:\/(impacto|confirmar))?$/,
+      );
+      if (annual) {
+        const [, year, action] = annual;
+        if (!action && req.method === "GET")
+          return reply(getAnnualPlan(db, year, now(), options.annualProvider));
+        if (action === "impacto" && req.method === "POST")
+          return reply(
+            previewAnnualPlan(
+              db,
+              year,
+              await jsonBody(req),
+              now(),
+              options.annualProvider,
+            ),
+          );
+        if (action === "confirmar" && req.method === "POST")
+          return reply(
+            confirmAnnualPlan(
+              db,
+              year,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+              options.annualProvider,
+            ),
+          );
       }
       const cyclePlan = path.match(
         /^\/api\/planes-ciclo\/(\d+)(?:\/(impacto|confirmar|ejecucion)(?:\/(PRE\d+))?)?$/,

@@ -1,3 +1,41 @@
+## Dev10 — autorizado y en curso — 2026-10-24
+
+Fuente real: usuario «Autorizo», respuesta inmediata al único siguiente alcance
+pendiente, desarrollo de dev10 tras integrar spec10/PR60. Base main `72833b9`.
+[Spec10 rev2](10-plan-anual-specification.md) y wireframes aprobados; Q1–Q6 cerradas.
+Rama `codex/dev10-plan-anual`; un ejecutor, QA independiente al candidato.
+Ownership código/tests/progress10/testplan10/arquitectura del ejecutor; tablero del
+coordinador. Prerrequisitos: Python3.12/Bun1.4.3/age/navegador ya disponibles; no repetir
+instalaciones sin necesidad. MacOS no acredita las guardas Linux; full en CI Linux.
+Sin merge, Excel real, despliegue, reanudación B3/Dev32 ni cambio de plantilla.
+Próximo hito: incrementos verificables, matriz34 AC actuales frente a contratos futuros
+expresos (histórico/cierres/consumidores no instalados), sin reclasificar fallos actuales.
+
+Hito I1 del ejecutor: esquema11/API anual/motor/UI conectados, typecheck PASS.
+Focales, continuidad y E2E/visual aún en curso; no candidato final ni PASS global.
+Revisión temprana del coordinador detecta parseo con límite individual int64 aplicado
+al agregado ejecutado (corrección solicitada) y revisa el corte temporal adicional
+por reloj. Sin cambios concurrentes al código ni reinterpretar decisiones financieras.
+
+Hito candidato1: ocho focales83 aserciones, tipos/build PASS por ejecutor. QA10
+independiente encuentra preview sin derivados/importes y ciclos sobraincluidos; P2
+pendiente de corrección, con probe SQLite propio. E2E coordinador ejecutado:1 FAIL6,2s
+porque tras MFA el recorrido no navega desde Saldos a Plan anual; corrección de fixture,
+no cambio de autenticación. Capturas y aceptación aún pendientes. Un intento de browser
+del ejecutor quedó en permiso sin ejecutarse (~8min); se interrumpió y root asume el gate.
+No declarar que esa espera es tiempo de tests ni duplicar una suite no iniciada.
+
+Hito local final:9 focales91asserts y tipos/build PASS del autor; P2 QA cerrado con
+probe independiente7asserts, sin nuevos hallazgos. B final1PASS2,1s/3,4s ejecución,
+tras4FAIL de fixture (navegación/selectores). Capturas390/1440 inspeccionadas; corregida
+superposición de columnas heredadas; contraste efectivo mínimo5,81:1. Se añade solo
+allowlist PNG e2-4 en CI para evidencia funcional, sin cambiar gates/plantilla.
+Baseline único PASS; pendiente full Linux con P11restorev11 al publicar. Evidencia
+remota por SHA/run en checks/resumen de la PR, sin commit de auto-registro que repita
+full innecesariamente. No aceptación global/merge antes del gate.
+
+---
+
 ## Spec10 — rev2 y wireframes aprobados — 2026-10-24
 
 Fuente real: «Aprobadas», respuesta inmediata a la solicitud única «¿Apruebas la

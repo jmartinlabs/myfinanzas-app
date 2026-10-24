@@ -1,3 +1,4 @@
+import { annualClassificationRelations } from "./plan-anual";
 import { planConfigurationImpact } from "./planes-ciclo";
 import { getBudget } from "./presupuestos";
 import { getDebt } from "./deudas";
@@ -439,6 +440,12 @@ function impact(
   );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
+  const annualPlans = annualClassificationRelations(
+    db,
+    kind === "partidas"
+      ? [id]
+      : dependencies.filter((d) => d.kind === "partidas").map((d) => d.id),
+  );
   const budgetExecution =
     kind === "partidas" && economic.includes("presupuesto")
       ? planConfigurationImpact(db, {
@@ -461,7 +468,11 @@ function impact(
     dependencies,
     blocked: budgetBlocked,
     budgetExecution,
-    used: financial?.used === true || protection?.used === true,
+    annualPlans,
+    used:
+      annualPlans.length > 0 ||
+      financial?.used === true ||
+      protection?.used === true,
     financial,
     fingerprint: hash([
       kind,
@@ -470,6 +481,7 @@ function impact(
       snapshot(db),
       financial?.revision,
       budgetExecution,
+      annualPlans,
     ]),
     coverage: budgetBlocked
       ? budgetExecution!.coverage
