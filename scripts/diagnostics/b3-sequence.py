@@ -62,7 +62,8 @@ def main():
                 subprocess.run(['git', 'worktree', 'add', '--detach', str(destination), revision],
                                cwd=ROOT, check=True)
                 roots[label] = destination
-                (destination / 'node_modules').symlink_to(ROOT / 'node_modules', target_is_directory=True)
+                subprocess.run(['bun', 'install', '--frozen-lockfile'], cwd=destination, check=True)
+                subprocess.run(['bun', '-e', "import './apps/api/src/database.ts'; import './apps/api/src/production-state.ts'; console.log('Diagnostic imports ready');"], cwd=destination, check=True)
                 actual_revision = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=destination, text=True).strip()
                 if actual_revision != revision:
                     raise RuntimeError('Unexpected comparison revision.')
