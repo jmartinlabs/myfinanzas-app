@@ -46,6 +46,8 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
     [error, setError] = useState(""),
     [loading, setLoading] = useState(false),
     [catalogLoading, setCatalogLoading] = useState(true),
+    [catalogFailed, setCatalogFailed] = useState(false),
+    [catalogRetry, setCatalogRetry] = useState(0),
     [notice, setNotice] = useState("");
   const [edit, setEdit] = useState(""),
     [draft, setDraft] = useState({ base: "", esencial: "", delMes: "" }),
@@ -61,9 +63,15 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
     [busy, setBusy] = useState(false),
     [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const reviewRef = useRef<HTMLElement>(null),
-    errorRef = useRef<HTMLDivElement>(null);
+    errorRef = useRef<HTMLDivElement>(null),
+    selectedRef = useRef(selected),
+    planRequest = useRef(0);
+  selectedRef.current = selected;
   useEffect(() => {
     let live = true;
+    setCatalogLoading(true);
+    setCatalogFailed(false);
+    setError("");
     async function catalog() {
       try {
         const all: { id: string; inicio: string }[] = [];
@@ -76,10 +84,13 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
         } while (all.length < total);
         if (live) {
           setCycles(all);
-          if (all.length) setSelected(all[0].id);
+          if (all.length) setSelected((previous) => previous || all[0].id);
         }
       } catch (e) {
-        if (live) setError((e as Error).message);
+        if (live) {
+          setCatalogFailed(true);
+          setError((e as Error).message);
+        }
       } finally {
         if (live) setCatalogLoading(false);
       }
@@ -88,7 +99,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
     return () => {
       live = false;
     };
-  }, []);
+  }, [catalogRetry]);
   useEffect(() => {
     if (review) reviewRef.current?.focus();
   }, [review]);
@@ -97,35 +108,27 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
   }, [error]);
   async function load(id = selected) {
     if (!id) return;
+    const request = ++planRequest.current;
     setLoading(true);
     setError("");
     try {
-      setPlan(await api("/planes-ciclo/" + id));
+      const data = await api<Plan>("/planes-ciclo/" + id);
+      if (request === planRequest.current && selectedRef.current === id)
+        setPlan(data);
     } catch (e) {
-      setError((e as Error).message);
+      if (request === planRequest.current && selectedRef.current === id)
+        setError((e as Error).message);
     } finally {
-      setLoading(false);
+      if (request === planRequest.current && selectedRef.current === id)
+        setLoading(false);
     }
   }
   useEffect(() => {
-    let live = true;
     setPlan(null);
-    setLoading(true);
-    setError("");
-    if (selected)
-      api<Plan>("/planes-ciclo/" + selected)
-        .then((d) => {
-          if (live) setPlan(d);
-        })
-        .catch((e) => {
-          if (live) setError(e.message);
-        })
-        .finally(() => {
-          if (live) setLoading(false);
-        });
+    if (selected) void load(selected);
     else setLoading(false);
     return () => {
-      live = false;
+      ++planRequest.current;
     };
   }, [selected]);
   function begin(id: string) {
@@ -209,8 +212,6 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       setBusy(false);
     }
   }
-  const selectedRef = useRef(selected);
-  selectedRef.current = selected;
   async function showDetail(id: string, page = 1) {
     const cycle = selected;
     setError("");
@@ -235,7 +236,13 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       />
       <div ref={errorRef} tabIndex={-1}>
         {error && (
-          <Alert retry={() => load()}>
+          <Alert
+            retry={
+              catalogFailed
+                ? () => setCatalogRetry((value) => value + 1)
+                : () => load()
+            }
+          >
             {error} El borrador se conserva. Actualiza contexto y vuelve a
             revisar.
           </Alert>

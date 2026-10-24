@@ -358,7 +358,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
     ).toBeString();
     const cycle = add(db, "2028-02-28", "-12.34");
     add(db, "2028-03-01");
-    backup(db, key, join(dir, "v9"), pub);
+    backup(db, key, join(dir, "v10"), pub);
     for (const version of [2, 10]) {
       const restored = restore(
         join(dir, "v" + version),

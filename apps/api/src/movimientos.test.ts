@@ -707,7 +707,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
     ).toBeString();
     const movement = save(db, income(m.saldo.id)),
       audit = getMovement(db, movement.id).auditoria;
-    backup(db, key, join(dir, "v9"), pub);
+    backup(db, key, join(dir, "v10"), pub);
     for (const version of [3, 10]) {
       const restored = restore(
           join(dir, "v" + version),

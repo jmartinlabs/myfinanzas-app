@@ -36,3 +36,13 @@ reales, copia efectiva, No aplica, null/cero, recarga y conflicto/borrador. Tabl
 y tarjetas390 inspeccionadas. Corregido solapamiento de columnas por anchuras heredadas;
 regresión verifica anchura/contenido de cabeceras y contraste real de acciones ≥4.5.
 Ningún cambio a test/timeouts para omitir fallos. Full Linux y QA del SHA fijo pendientes.
+
+## Correcciones QA del candidato 45a73cf
+
+PR #57 en borrador. Primera CI Linux40075502671:135 API PASS/3 FAIL; fallos en
+paths de backup de dos regresiones (creaban v9 y buscaban v10) y configuración del
+destino productivo de P11 antes de restore. Corregidos fixtures, sin relajar guardas.
+QA detectó reintento inicial del catálogo no funcional y riesgo de respuesta manual
+antigua al cambiar Ciclo: catálogo recargable y generación de peticiones implementados.
+E2E real ampliado1 PASS/4.6s demuestra error→reintento y respuesta tardía descartada.
+Typecheck/check-project/whitespace PASS. Nueva CI Linux y revisión del delta pendientes.

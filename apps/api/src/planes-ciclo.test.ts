@@ -723,11 +723,13 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v10 re
         const manifest = JSON.parse(encrypted.stdout.toString()).manifest;
         expect(manifest.schema).toBe(10);
         expect(manifest.app).toBe("e2.3-v10");
-        const restored = restore(
-          backupPath,
-          join(state, "restored"),
-          ageIdentity,
-        );
+        const target = join(state, "restored");
+        if (origin === "production")
+          Object.assign(process.env, {
+            DATABASE_PATH: join(target, "database.sqlite"),
+            AUTH_KEY_PATH: join(target, "key.bin"),
+          });
+        const restored = restore(backupPath, target, ageIdentity);
         Object.assign(process.env, {
           DATABASE_PATH: restored.database,
           AUTH_KEY_PATH: restored.key,

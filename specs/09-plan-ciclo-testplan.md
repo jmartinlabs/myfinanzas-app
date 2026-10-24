@@ -101,3 +101,15 @@ Contraste calculado sobre foreground/background reales de acciones primarias ≥
 en ambas anchuras; sin nueva paleta ni excepción. No equivale a auditoría WCAG completa.
 Regresión compartida CI tras añadir PNG e2-3 al artefacto:32 PASS; controles proyecto,
 documentación y whitespace PASS. No se exportan DB, sesiones, trazas ni factores.
+
+## Primera CI Linux y correcciones QA
+
+Run40075502671, SHA45a73cf: baseline PASS; API135PASS/3FAIL, E2E no ejecutado por
+fallo del paso anterior. Dos regresiones guardaban backup en v9 y restauraban v10;
+P11 no configuraba destino productivo antes de restore. Se corrigen las rutas y la
+configuración del fixture; código de apertura/restauración y guardas sin cambios.
+QA independiente halló reintento de catálogo inicial ineficaz y respuesta manual
+potencialmente obsoleta al cambiar ciclo; se corrigen sin mutar importes ni hechos.
+E2E local con regresiones de recuperación de catálogo y respuesta tardía:1PASS/4.6s;
+typecheck PASS. AC-34 añade carga/error/reintento real de UI, manteniendo pendiente
+la regresión integral Linux y el recorrido de restauración. Sin repetir CI a ciegas.

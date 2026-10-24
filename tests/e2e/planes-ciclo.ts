@@ -17,7 +17,19 @@ export async function cyclePlanJourney(page: Page, budgetId: string) {
     }
   }
   expect(selected).not.toBe("");
+  const catalogEndpoint = /\/api\/ciclos\?estado=&page=\d+$/;
+  await page.route(catalogEndpoint, (route) =>
+    route.fulfill({
+      status: 503,
+      json: { error: "Catálogo temporalmente no disponible" },
+    }),
+  );
   await page.goto("/planes-ciclo");
+  await expect(page.getByRole("alert")).toContainText(
+    "Catálogo temporalmente no disponible",
+  );
+  await page.unroute(catalogEndpoint);
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
   await page
     .getByLabel("Ciclo del plan", { exact: true })
     .selectOption(selected);
@@ -275,5 +287,45 @@ export async function cyclePlanJourney(page: Page, budgetId: string) {
   await page
     .getByRole("button", { name: "Cancelar edición", exact: true })
     .click();
+  // An old manual refresh must not replace the newly selected cycle's plan.
+  const planEndpoint = `**/api/planes-ciclo/${selected}`;
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await page.route(planEndpoint, async (route) => {
+    await gate;
+    await route.fallback();
+  });
+  const oldResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith(`/api/planes-ciclo/${selected}`) &&
+      response.request().method() === "GET",
+  );
+  await page
+    .getByRole("button", { name: "Actualizar contexto", exact: true })
+    .click();
+  await expect(page.getByRole("status")).toContainText("Cargando plan");
+  await page
+    .getByLabel("Ciclo del plan", { exact: true })
+    .selectOption(origin.id);
+  await expect(card).toContainText("5,00");
+  release();
+  await oldResponse;
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(card).toContainText("5,00");
+  await expect(page.getByLabel("Ciclo del plan", { exact: true })).toHaveValue(
+    origin.id,
+  );
+  await page.unroute(planEndpoint);
+  await page
+    .getByLabel("Ciclo del plan", { exact: true })
+    .selectOption(selected);
+  await expect(card).toContainText("Excedido");
   return { cycle: selected, budget: budgetId };
 }
