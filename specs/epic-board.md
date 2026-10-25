@@ -1,4 +1,4 @@
-## Current checkpoint — candidato dev13; publicación pendiente — 2026-10-25
+## Current checkpoint — publicación DRAFT dev13 autorizada — 2026-10-25
 
 - DEV13 terminó candidato local `8710916`, código `6e8dad3`, base `fa8a01e`,
   rama `codex/dev13-anticipos-q9`. Ejecutor nativo completado, sin trabajo pendiente.
@@ -8,13 +8,16 @@
 - CI Linux full y QA independiente UNRUN. AC36 protocolo probado con proveedor
   explícito de test; runtime bloquea corrección con protección no verificable;
   integración Cierres UNRUN y aceptación global ABIERTA. Matriz44AC en testplan13.
-- Solicitada autorización de publicación PR DRAFT para CI ante fallos conforme
-  AGENTS; no push/PR dev13 todavía. No merge/deploy/datos reales autorizados.
+- Usuario autoriza «Publicar borrador para CI Linux» conservando45FAIL, AC36
+  integración pendiente y QA pendiente. Se prepara push/PR DRAFT, sin merge,
+  despliegue ni datos reales.
 - Usuario autoriza spec14/E3.2 solo especificación con OpenCode vía traslado
-  manual del paquete existente; checkpoint externo no recibido, inicio no confirmado.
+  manual. Checkpoint externo recibido: DRAFT24AC/Q1–Q7, Q5 Exterior dependencia
+  material sin resolver; archivos sin commit. Ruta/enlace solicitado para revisar
+  contenido y evidencia; PASS del autor no equivale QA/aprobación.
   Dependencia E2.6/PR67 no integrada; incompatibilidad Exterior a decidir en spec.
-- Próximo gate: respuesta sobre publicación DRAFT; después CI por SHA y paquete
-  QA independiente, sin duplicar trabajo externo ni iniciar desarrollo14.
+- Próximo gate: CI Linux por SHA y paquete QA independiente. Spec14 sin aprobación
+  completa ni desarrollo14; corregir estado externo obsoleto B13-1 al reconciliar.
 
 Los apartados inferiores conservan historia.
 
