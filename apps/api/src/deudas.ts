@@ -233,3 +233,57 @@ export function updateDebt(
     })
     .immediate();
 }
+
+/** Period breakdown of recorded payments, never opening/current outstanding capital. */
+export function debtPeriod(
+  db: Database,
+  rows: import("./movement-ledger").LedgerRow[],
+) {
+  const links = db.query("SELECT id,deuda FROM partidas").all() as {
+    id: string;
+    deuda: string | null;
+  }[];
+  const cuotas: typeof rows = [],
+    extraordinarias: typeof rows = [],
+    invalidos: string[] = [];
+  const fuentes: { movimiento: string; deuda: string; revision: number }[] = [];
+  for (const m of rows.filter(
+    (r) => !r.anulado && ["Gasto", "Amortización deuda"].includes(r.tipo),
+  )) {
+    const id = links.find((p) => p.id === m.partida)?.deuda;
+    if (!id) {
+      if (m.tipo === "Amortización deuda") invalidos.push(m.id);
+      continue;
+    }
+    const exists = db.query("SELECT id FROM deudas WHERE id=?").get(id);
+    if (!exists) {
+      invalidos.push(m.id);
+      continue;
+    }
+    const debt = getDebt(db, id);
+    fuentes.push({ movimiento: m.id, deuda: id, revision: debt.revision });
+    (m.tipo === "Gasto" ? cuotas : extraordinarias).push(m);
+  }
+  const payments = [...cuotas, ...extraordinarias];
+  const completo =
+    invalidos.length === 0 &&
+    payments.every(
+      (m) =>
+        m.capital !== null &&
+        m.intereses !== null &&
+        BigInt(m.capital) + BigInt(m.intereses) === BigInt(m.importe),
+    );
+  return {
+    cuotas,
+    extraordinarias,
+    invalidos,
+    fuentes,
+    desgloseVerificable: completo,
+    capital: completo
+      ? payments.reduce((s, m) => s + BigInt(m.capital!), 0n)
+      : null,
+    intereses: completo
+      ? payments.reduce((s, m) => s + BigInt(m.intereses!), 0n)
+      : null,
+  };
+}

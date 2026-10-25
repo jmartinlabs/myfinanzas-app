@@ -1,3 +1,4 @@
+import { FlujoMensual } from "./FlujoMensual";
 import { Nomina } from "./Nomina";
 import { PlanAnual } from "./PlanAnual";
 import { PlanesCiclo } from "./PlanesCiclo";
@@ -111,7 +112,7 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go("/saldos");
+          go(path.startsWith("/flujo-mensual") ? path : "/saldos");
         }}
       />
     );
@@ -145,6 +146,21 @@ function App() {
         </button>
         <nav id="main-nav">
           <p className="nav-group">MI ESPACIO</p>
+          <a
+            className={
+              path.startsWith("/flujo-mensual") ? "nav-active" : "nav-link"
+            }
+            href="/flujo-mensual"
+            aria-current={
+              path.startsWith("/flujo-mensual") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/flujo-mensual");
+            }}
+          >
+            Flujo mensual
+          </a>
           <a
             className={
               path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
@@ -316,7 +332,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/nomina") ? (
+          {path.startsWith("/flujo-mensual") ? (
+            <FlujoMensual path={path} go={go} />
+          ) : path.startsWith("/nomina") ? (
             <Nomina />
           ) : path.startsWith("/plan-anual") ? (
             <PlanAnual go={go} />
