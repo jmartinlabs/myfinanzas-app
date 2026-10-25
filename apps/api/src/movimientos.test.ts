@@ -685,7 +685,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 12,
+      version: 13,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -917,7 +917,7 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
         runE14(opening, "upgrade"),
         runE14(opening, "upgrade"),
       ]),
-    ).toEqual([{ version: 12 }, { version: 12 }]);
+    ).toEqual([{ version: 13 }, { version: 13 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),

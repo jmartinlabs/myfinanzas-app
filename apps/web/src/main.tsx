@@ -1,3 +1,4 @@
+import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
 import { PlanAnual } from "./PlanAnual";
 import { PlanesCiclo } from "./PlanesCiclo";
@@ -145,6 +146,19 @@ function App() {
         </button>
         <nav id="main-nav">
           <p className="nav-group">MI ESPACIO</p>
+          <a
+            href="/anticipos"
+            className={
+              path.startsWith("/anticipos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/anticipos") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/anticipos");
+            }}
+          >
+            Anticipos
+          </a>
           <a
             className={
               path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
@@ -316,7 +330,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/nomina") ? (
+          {path.startsWith("/anticipos") ? (
+            <Anticipos path={path} go={go} />
+          ) : path.startsWith("/nomina") ? (
             <Nomina />
           ) : path.startsWith("/plan-anual") ? (
             <PlanAnual go={go} />

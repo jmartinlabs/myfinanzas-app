@@ -65,6 +65,20 @@ export function financeRevision(db: Database) {
   return fingerprint([
     ledgerRows(db),
     ...(db
+      .query("SELECT name FROM sqlite_master WHERE name='movimiento_anticipo'")
+      .get()
+      ? [
+          db
+            .query("SELECT * FROM movimiento_anticipo ORDER BY movimiento")
+            .all(),
+          db
+            .query(
+              "SELECT * FROM fotos_neto_apertura ORDER BY referencia,ciclo",
+            )
+            .all(),
+        ]
+      : []),
+    ...(db
       .query("SELECT name FROM sqlite_master WHERE name='payroll_allocations'")
       .get()
       ? [

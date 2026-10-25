@@ -1,3 +1,11 @@
+import {
+  anticipoImpact,
+  validateAnticipo,
+  anticipoMetadata,
+  protectAnticipoChange,
+  storeAnticipo,
+  type Attribution,
+} from "./anticipos";
 import { getDebt } from "./deudas";
 import {
   validateReference,
@@ -23,6 +31,7 @@ export type MovementProtection = (
   after: unknown,
 ) => { blocked: boolean; reason?: string };
 type Candidate = {
+  anticipo: Attribution | null;
   fecha: string;
   tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
   capital: string | null;
@@ -47,6 +56,7 @@ export function spanishToday(now = Date.now()) {
   return `${value("year")}-${value("month")}-${value("day")}`;
 }
 const inputs = [
+  "anticipo",
   "capital",
   "intereses",
   "fecha",
@@ -293,7 +303,19 @@ function validated(
     required,
     old?.referencia ?? null,
   );
+  const anticipo = validateAnticipo(
+    db,
+    {
+      tipo,
+      referencia,
+      origen: tipo === "Ingreso" ? "S000" : saldo.id,
+      destino: outgoing ? "S000" : (target?.id ?? saldo.id),
+    },
+    body.anticipo,
+    old?.id,
+  );
   return {
+    anticipo,
     fecha,
     tipo,
     importe: decimal(String(cents))!,
@@ -338,6 +360,7 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
     partida: p,
     deuda: p?.deuda ? getDebt(db, p.deuda) : null,
     referencia: r.referencia ? getReference(db, r.referencia) : null,
+    anticipo: anticipoMetadata(db, r.id),
     ciclo:
       cycles.find(
         (c) => c.inicio <= r.fecha && (c.fin === null || r.fecha <= c.fin),
@@ -530,6 +553,7 @@ function plan(
       "El Movimiento ha cambiado o está anulado. Revisa su ficha.",
     );
   const next = annul ? null : validated(db, payload(body), old, now);
+  protectAnticipoChange(db, old, next, next?.anticipo ?? null);
   if (old) {
     const motive = text(body.motivo, "motivo");
     if (!motive.trim())
@@ -677,6 +701,7 @@ function plan(
       financeRevision(db),
     ]),
     impacto: {
+      anticipo: anticipoImpact(db, next),
       nomina:
         id &&
         db
@@ -844,6 +869,7 @@ export function writeMovement(
             time,
           ],
         );
+      storeAnticipo(db, id, v?.anticipo ?? null, now);
       const after = find(db, id);
       db.run(
         "INSERT INTO movement_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)",

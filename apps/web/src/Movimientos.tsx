@@ -1,3 +1,4 @@
+import type { Anticipo } from "./Anticipos";
 import type { Debt } from "./Deudas";
 import type { Reference } from "./Referencias";
 import {
@@ -20,6 +21,13 @@ type Partida = Related & {
   subcategoria: Related;
 };
 type Movement = {
+  anticipo: {
+    rol: string;
+    origen: string;
+    destino: string;
+    evidencia: string;
+    procedencia: string;
+  } | null;
   id: string;
   fecha: string;
   tipo: string;
@@ -63,6 +71,14 @@ type Plan = {
     concepto: string;
   }[];
   impacto: {
+    anticipo?: {
+      referencia: string;
+      rol: string;
+      origen: string;
+      destino: string;
+      pendientePar: string | null;
+      aviso: string | null;
+    } | null;
     nomina?: { paga: string; importe: string; evidencia: string }[];
     deudas: {
       id: string;
@@ -877,6 +893,19 @@ function Impact({ plan }: { plan: Plan }) {
           ? date(plan.impacto.referenciaDespues)
           : "No disponible"}
       </p>
+      {plan.impacto.anticipo && (
+        <div className="panel">
+          <h3>Anticipo · rol y orientación declarados</h3>
+          <p>
+            {plan.impacto.anticipo.referencia} · {plan.impacto.anticipo.rol} ·{" "}
+            {plan.impacto.anticipo.origen} → {plan.impacto.anticipo.destino}
+          </p>
+          <p>Pendiente del par: {amount(plan.impacto.anticipo.pendientePar)}</p>
+          {plan.impacto.anticipo.aviso && (
+            <p role="alert">{plan.impacto.anticipo.aviso}</p>
+          )}
+        </div>
+      )}
       <p className="help">
         {plan.impacto.cobertura} Pendientes:{" "}
         {plan.impacto.pendientes.join(", ")}. No se afirma comprobación de
@@ -886,6 +915,10 @@ function Impact({ plan }: { plan: Plan }) {
   );
 }
 const empty = {
+  rolAnticipo: "",
+  parAnticipo: "",
+  evidenciaAnticipo: "",
+  procedenciaAnticipo: "",
   capital: "",
   intereses: "",
   tipo: "",
@@ -942,6 +975,12 @@ function MovementForm({
         if (!initialized.current) {
           const m = d.movimiento;
           setForm({
+            rolAnticipo: m.anticipo?.rol ?? "",
+            parAnticipo: m.anticipo
+              ? m.anticipo.origen + ">" + m.anticipo.destino
+              : "",
+            evidenciaAnticipo: m.anticipo?.evidencia ?? "",
+            procedenciaAnticipo: m.anticipo?.procedencia ?? "",
             capital: m.capital ?? "",
             intereses: m.intereses ?? "",
             tipo: m.tipo,
@@ -992,12 +1031,62 @@ function MovementForm({
     options?.ciclos.find(
       (c) => c.inicio <= form.fecha && (c.fin === null || form.fecha <= c.fin),
     ) ?? null;
+  const [caseData, setCaseData] = useState<Anticipo | null>(null),
+    [caseError, setCaseError] = useState("");
+  const isAnticipo =
+    form.tipo === "Transferencia" &&
+    options?.referencias.some(
+      (r) => r.id === form.referencia && r.tipo === "Anticipo",
+    );
+  useEffect(() => {
+    let live = true;
+    setCaseData(null);
+    setCaseError("");
+    if (isAnticipo)
+      api<Anticipo>("/anticipos/fichas/" + form.referencia)
+        .then((r) => {
+          if (live) setCaseData(r);
+        })
+        .catch((e) => {
+          if (live) setCaseError(e.message);
+        });
+    return () => {
+      live = false;
+    };
+  }, [isAnticipo, form.referencia, refresh]);
   function body() {
+    const {
+      rolAnticipo,
+      parAnticipo,
+      evidenciaAnticipo,
+      procedenciaAnticipo,
+      ...bankForm
+    } = form;
+    const selectedPair = caseData?.pares.find(
+      (p) => p.origen + ">" + p.destino === parAnticipo,
+    );
     return {
       ...(annul
         ? {}
         : {
-            ...form,
+            ...bankForm,
+            ...(isAnticipo
+              ? {
+                  anticipo: {
+                    rol: rolAnticipo,
+                    origen:
+                      rolAnticipo === "Adelanto"
+                        ? form.origen
+                        : (selectedPair?.origen ?? ""),
+                    destino:
+                      rolAnticipo === "Adelanto"
+                        ? form.destino
+                        : (selectedPair?.destino ?? ""),
+                    evidencia: evidenciaAnticipo,
+                    procedencia: procedenciaAnticipo,
+                  },
+                }
+              : {}),
             capital:
               form.tipo === "Gasto" && selected?.deuda
                 ? form.capital.replace(",", ".")
@@ -1451,6 +1540,99 @@ function MovementForm({
                         </option>
                       ))}
                   </select>,
+                )}
+                {isAnticipo && (
+                  <section className="panel" aria-label="Atribución Anticipo">
+                    <h3>Atribución explícita del Anticipo</h3>
+                    <p>
+                      Referencia {form.referencia}. El rol y el par se guardan
+                      junto al hecho, sin duplicar el importe.
+                    </p>
+                    {caseError && <Alert>{caseError}</Alert>}
+                    <label>
+                      Rol Anticipo obligatorio
+                      <select
+                        aria-label="Rol Anticipo obligatorio"
+                        value={form.rolAnticipo}
+                        onChange={(e) => change("rolAnticipo", e.target.value)}
+                      >
+                        <option value="">Seleccionar rol</option>
+                        <option>Adelanto</option>
+                        <option>Devolución</option>
+                      </select>
+                    </label>
+                    {form.rolAnticipo === "Adelanto" ? (
+                      <p>
+                        Orientación declarada:{" "}
+                        {form.origen || "Selecciona Origen"} →{" "}
+                        {form.destino || "Selecciona Destino"}
+                      </p>
+                    ) : (
+                      form.rolAnticipo === "Devolución" && (
+                        <label>
+                          Par de Adelanto acreditado
+                          <select
+                            aria-label="Par de Adelanto acreditado"
+                            value={form.parAnticipo}
+                            onChange={(e) => {
+                              const p = caseData?.pares.find(
+                                (p) =>
+                                  p.origen + ">" + p.destino === e.target.value,
+                              );
+                              change("parAnticipo", e.target.value);
+                              if (p) {
+                                change("origen", p.destino);
+                                change("destino", p.origen);
+                              }
+                            }}
+                          >
+                            <option value="">
+                              Seleccionar par explícitamente
+                            </option>
+                            {caseData?.pares.map((p) => (
+                              <option
+                                disabled={!p.disponible}
+                                key={p.origen + ">" + p.destino}
+                                value={p.origen + ">" + p.destino}
+                              >
+                                {p.origen} → {p.destino} · pendiente{" "}
+                                {eur(p.neto)}
+                                {p.motivo ? " · " + p.motivo : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )
+                    )}
+                    <label>
+                      Evidencia de atribución
+                      <input
+                        aria-label="Evidencia de atribución"
+                        value={form.evidenciaAnticipo}
+                        onChange={(e) =>
+                          change("evidenciaAnticipo", e.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Procedencia de atribución
+                      <input
+                        aria-label="Procedencia de atribución"
+                        value={form.procedenciaAnticipo}
+                        onChange={(e) =>
+                          change("procedenciaAnticipo", e.target.value)
+                        }
+                      />
+                    </label>
+                    {fields.anticipo && <p role="alert">{fields.anticipo}</p>}
+                    {form.rolAnticipo === "Devolución" &&
+                      !caseData?.pares.some((p) => p.disponible) && (
+                        <p>
+                          ⚠ No disponible: sin par verificable o conflicto
+                          pendiente de revisión.
+                        </p>
+                      )}
+                  </section>
                 )}
                 <button
                   type="button"
