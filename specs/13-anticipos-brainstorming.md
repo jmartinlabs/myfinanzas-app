@@ -273,3 +273,47 @@ conservadas. Sustituye los estados DRAFT históricos sin reescribirlos.
 OpenCode no disponible en esta ejecución; continuidad por coordinador Codex,
 sin asignaciones externas. No autorización de desarrollo13, SQL/Excel o merge.
 Próximo paso: cierre documental, validación y PR; merge con aprobación separada.
+
+
+## Q9 — resolución conceptual y enmienda pendiente — 2026-10-25
+
+Fuente: usuario/Álex, mensaje «Spec13/dev13 — Resolución Q9: identificación de
+Adelanto y Devolución». Confirmada conceptualmente la fuente explícita; exige
+aprobar enmienda documental antes de continuar dev13. Q1–Q8 no se reabren.
+
+Confirmed answer Q9: toda nueva Transferencia de Anticipo declara rol Adelanto o
+Devolución. Metadatos auditados vinculados al ID estable del Movimiento conservan
+rol y par/orientación; el Movimiento sigue único hecho financiero, sin duplicar
+importes. Devolución identifica expresamente par de adelanto; varios pares exigen
+selección Q7, nunca similitud/fecha/nombres. Atajo precarga rol/REF/inversa, sujeto
+a validación y confirmación. Movimiento y metadatos atómicos; validaciones en todas
+las rutas de escritura. Histórico sin evidencia conserva hechos/efecto bancario,
+sin asignación automática: No disponible/Revisar, subtotales acreditados Parciales.
+Acreditación histórica explícita con evidencia identificable, revisión y auditoría.
+Rectificar/anular exige revalidar rol/par/REF, derivados e impactos sobre apertura,
+fotos/cierres protegidos. Sin segundo motor ni maestro independiente de pares si
+bastan metadatos mínimos por Movimiento.
+
+Estado: enmienda Q9 propuesta en specification, pendiente aprobación documental
+completa. Dev13 DETENIDO en B13-1. No implementar, migrar datos reales ni hacer
+merge/deploy por esta resolución conceptual. La autorización dev13 previa queda
+sujeta al gate expreso de esta enmienda.
+
+
+## Revisión Álex PR70 — precisiones documentales — 2026-10-25
+
+Dictamen favorable con dos precisiones: exigir acreditación Q9 también en ejemplos
+y positivos anteriores; distinguir autorización previa dev13 de suspensión actual
+B13-1. Aplicadas sin cambiar diseño Q9. La aprobación rev3 por sí sola no autorizó
+dev13; después hubo «Autorizo dev13»/«Sigue implementacion» y posteriormente
+suspensión por Q9. Esta revisión no autoriza enmienda completa, reanudación, código
+ni merge. Pendiente presentación final para aprobación de la enmienda.
+
+
+## Aprobación completa de enmienda Q9 — 2026-10-25
+
+Fuente expresa: usuario «Aprobado», respuesta a presentación final de PR70,
+commit8f58f53 y dos precisiones de Álex aplicadas. Aprobada enmienda completa
+datos/API/UI/wireframes/AC37–44. Sustituye PENDING documentales anteriores;
+no autoriza merge ni reanuda dev13 por inferencia. Autorización previa dev13
+conservada, ejecución suspendida hasta instrucción expresa y gates de cuota.
