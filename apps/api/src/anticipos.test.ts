@@ -13,6 +13,8 @@ import {
 import { previewMovement, writeMovement, getMovement } from "./movimientos";
 import { createReference, updateReference } from "./referencias";
 import { createCycle, cycleContext } from "./ciclos";
+import { createClassification } from "./clasificacion";
+import { createSaldo, getSaldo, Problem } from "./saldos";
 const now = Date.parse("2026-10-25T12:00:00Z");
 const setup = () => {
   const db = new Database(":memory:");
@@ -985,5 +987,295 @@ test("AC09/20/21 legacy incompatible attribution is Revisar, GET stays read-only
     listAnticipos(db, new URLSearchParams({ page: "2" })).items,
   ).toHaveLength(3);
   expect(getAnticipo(db, other).adelantado).toBe("25.00");
+  db.close();
+});
+function h1Masters(db: Database) {
+  for (let i = 1; i <= 14; i++)
+    createClassification(
+      db,
+      "categorias",
+      {
+        nombre: "Categoría ficticia H1 " + i,
+        anual: "Gasto",
+        mensual: "Gasto",
+        referencia: [11, 12, 13].includes(i),
+      },
+      crypto.randomUUID(),
+    );
+  const partida = (cat: string) => {
+    const s = createClassification(
+      db,
+      "subcategorias",
+      { nombre: "Subcategoría H1 " + cat, padre: cat },
+      crypto.randomUUID(),
+    );
+    return createClassification(
+      db,
+      "partidas",
+      { nombre: "Partida H1 " + cat, padre: s.id },
+      crypto.randomUUID(),
+    ).id;
+  };
+  const saldo = createSaldo(
+    db,
+    {
+      nombre: "Cuenta ficticia H1",
+      tipo: "Efectivo",
+      control: "Movimientos",
+      saldoApertura: "1000",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    },
+    crypto.randomUUID(),
+  ).id;
+  return {
+    cat012: partida("CAT012"),
+    cat009: partida("CAT009"),
+    saldo,
+    gasto: (p: string, importe: string, referencia: string | null) => ({
+      tipo: "Gasto",
+      fecha: "2026-03-02",
+      importe,
+      saldo,
+      partida: p,
+      concepto: "Gasto ficticio H1",
+      ...(referencia ? { referencia } : {}),
+    }),
+    ingreso: (importe: string, referencia: string) => ({
+      tipo: "Ingreso",
+      fecha: "2026-03-03",
+      importe,
+      saldo,
+      subtipo: "Bonus",
+      concepto: "Ingreso ficticio H1",
+      referencia,
+    }),
+  };
+}
+function rejection(fn: () => unknown) {
+  try {
+    fn();
+  } catch (e) {
+    return e as Problem;
+  }
+  throw new Error("La operación no fue rechazada");
+}
+function h1Save(
+  db: Database,
+  body: Record<string, unknown>,
+  id: string | null = null,
+  annul = false,
+) {
+  const p = previewMovement(db, body, id, annul, now);
+  return writeMovement(
+    db,
+    { ...body, fingerprint: p.fingerprint, aceptarCoincidencia: true },
+    crypto.randomUUID(),
+    id,
+    annul,
+    now,
+  ).movimiento;
+}
+const h1Pos = (db: Database, id = "S001") =>
+  Math.round(Number(getSaldo(db, id).posicion.importe) * 100);
+const h1State = (db: Database, ref: string) =>
+  JSON.stringify({
+    movimientos: db.query("SELECT * FROM movimientos ORDER BY id").all(),
+    movement_audit: db.query("SELECT * FROM movement_audit").all(),
+    movimiento_anticipo: db
+      .query("SELECT * FROM movimiento_anticipo ORDER BY movimiento")
+      .all(),
+    anticipo_audit: db.query("SELECT * FROM anticipo_audit ORDER BY id").all(),
+    referencias: db.query("SELECT * FROM referencias ORDER BY id").all(),
+    ficha: getAnticipo(db, ref),
+  });
+test("H1 CAT012, REF opcional e Ingreso se asocian sin metadatos; banco exacto; cobertura Verificada con Transferencias acreditadas", () => {
+  const db = setup(),
+    ref = create(db),
+    m = h1Masters(db);
+  transfer(db, ref, "Adelanto", "1000");
+  transfer(db, ref, "Devolución", "400", "S002", "S001");
+  expect(
+    rejection(() =>
+      previewMovement(db, m.gasto(m.cat012, "5", null), null, false, now),
+    ).status,
+  ).toBe(422);
+  const bank = h1Pos(db, m.saldo);
+  const reads = h1State(db, ref);
+  const g012 = h1Save(db, m.gasto(m.cat012, "20", ref)).id;
+  const g009 = h1Save(db, m.gasto(m.cat009, "30", ref)).id;
+  const ing = h1Save(db, m.ingreso("70", ref)).id;
+  expect(h1Pos(db, m.saldo) - bank).toBe(-2000 - 3000 + 7000);
+  expect(
+    db.query("SELECT COUNT(*) AS n FROM movimiento_anticipo").get(),
+  ).toEqual({ n: 2 });
+  const ficha = getAnticipo(db, ref);
+  expect(ficha.cobertura).toBe("Verificada");
+  expect(ficha.pendientes).toBe(0);
+  expect(ficha.neto).toBe("600.00");
+  expect(ficha.estado).toBe("Recuperación parcial");
+  expect(ficha.operaciones).toHaveLength(2);
+  expect(ficha.pendientesAcreditacion).toHaveLength(0);
+  expect(ficha.relacionados.map((r) => r.id).sort()).toEqual(
+    [g012, g009, ing].sort(),
+  );
+  expect(ficha.relacionados.every((r) => r.motivo === null)).toBe(true);
+  expect(JSON.stringify(ficha.relacionados)).not.toContain("Sin rol");
+  expect(h1State(db, ref)).not.toBe(reads);
+  db.close();
+});
+test("H1 Gasto o Ingreso con bloque anticipo se rechaza y no escribe", () => {
+  const db = setup(),
+    ref = create(db),
+    m = h1Masters(db);
+  transfer(db, ref, "Adelanto", "100");
+  const before = h1State(db, ref);
+  const anticipo = {
+    rol: "Adelanto",
+    origen: "S001",
+    destino: "S002",
+    evidencia: "x",
+    procedencia: "x",
+  };
+  for (const body of [
+    { ...m.gasto(m.cat012, "20", ref), anticipo },
+    { ...m.ingreso("20", ref), anticipo },
+  ])
+    expect(rejection(() => h1Save(db, body)).status).toBe(422);
+  expect(h1State(db, ref)).toBe(before);
+  db.close();
+});
+test("H1 histórico con REF inactiva: asociación conservada sin metadatos ni nuevos enlaces", () => {
+  const db = setup(),
+    ref = create(db),
+    m = h1Masters(db);
+  transfer(db, ref, "Adelanto", "500");
+  const g = h1Save(db, m.gasto(m.cat012, "20", ref)).id;
+  const rev = (
+    db.query("SELECT revision FROM referencias WHERE id=?").get(ref) as {
+      revision: number;
+    }
+  ).revision;
+  updateReference(db, ref, { revision: rev, estado: "Inactiva" }, now);
+  expect(
+    rejection(() =>
+      previewMovement(db, m.gasto(m.cat009, "5", ref), null, false, now),
+    ).status,
+  ).toBe(422);
+  const mrev = getMovement(db, g).movimiento.revision;
+  expect(
+    h1Save(
+      db,
+      { ...m.gasto(m.cat012, "25", ref), revision: mrev, motivo: "Rectificación histórica" },
+      g,
+    ).id,
+  ).toBe(g);
+  const ficha = getAnticipo(db, ref);
+  expect(ficha.relacionados).toHaveLength(1);
+  expect(ficha.relacionados[0]).toMatchObject({
+    id: g,
+    anulado: false,
+    estado: "Relacionado",
+  });
+  expect(ficha.relacionados[0].motivo).toContain("inactiva");
+  expect(ficha.cobertura).toBe("Verificada");
+  expect(ficha.neto).toBe("500.00");
+  expect(
+    db.query("SELECT COUNT(*) AS n FROM movimiento_anticipo").get(),
+  ).toEqual({ n: 1 });
+  db.close();
+});
+test("H1 rectificación y anulación de relacionados revierten el banco exacto; Transferencias acreditadas no cambian de tipo ni de REF", () => {
+  const db = setup(),
+    ref = create(db),
+    m = h1Masters(db),
+    adelanto = transfer(db, ref, "Adelanto", "1000").movimiento.id,
+    base = h1Pos(db, m.saldo),
+    g = h1Save(db, m.gasto(m.cat012, "20", ref)).id;
+  expect(h1Pos(db, m.saldo) - base).toBe(-2000);
+  let mg = getMovement(db, g).movimiento;
+  h1Save(
+    db,
+    { ...m.gasto(m.cat012, "35", ref), revision: mg.revision, motivo: "Rectificar importe" },
+    g,
+  );
+  expect(h1Pos(db, m.saldo) - base).toBe(-3500);
+  mg = getMovement(db, g).movimiento;
+  h1Save(db, { revision: mg.revision, motivo: "Anulación H1" }, g, true);
+  expect(h1Pos(db, m.saldo)).toBe(base);
+  expect(getAnticipo(db, ref).relacionados[0]).toMatchObject({
+    id: g,
+    anulado: true,
+    estado: "Anulado",
+    efecto: "Sin efecto bancario",
+  });
+  const ma = getMovement(db, adelanto).movimiento;
+  const viaje = createReference(
+    db,
+    { nombre: "Viaje H1", tipo: "Viaje" },
+    crypto.randomUUID(),
+    now,
+  ).id;
+  const state = h1State(db, ref);
+  for (const body of [
+    { ...m.gasto(m.cat012, "1000", ref), revision: ma.revision, motivo: "Cambio de tipo" },
+    { ...m.ingreso("1000", ref), revision: ma.revision, motivo: "Cambio de tipo" },
+    {
+      tipo: "Transferencia",
+      fecha: "2026-02-03",
+      importe: "1000",
+      origen: "S001",
+      destino: "S002",
+      referencia: viaje,
+      revision: ma.revision,
+      motivo: "Cambio de REF",
+    },
+  ])
+    expect(rejection(() => h1Save(db, body, adelanto)).status).toBe(422);
+  expect(h1State(db, ref)).toBe(state);
+  h1Save(db, {
+    tipo: "Transferencia",
+    fecha: "2026-02-03",
+    importe: "900",
+    origen: "S001",
+    destino: "S002",
+    referencia: ref,
+    anticipo: { rol: "Adelanto", origen: "S001", destino: "S002", evidencia: "x", procedencia: "x" },
+    revision: ma.revision,
+    motivo: "Rectificar importe",
+  }, adelanto);
+  expect(getAnticipo(db, ref).neto).toBe("900.00");
+  h1Save(
+    db,
+    { revision: getMovement(db, adelanto).movimiento.revision, motivo: "Anulación de Adelanto" },
+    adelanto,
+    true,
+  );
+  const after = getAnticipo(db, ref);
+  expect(after.neto).toBe("0.00");
+  expect(after.relacionados).toHaveLength(1);
+  db.close();
+});
+test("H1 Transferencia pendiente degrada la cobertura; Gasto relacionado no", () => {
+  const db = setup(),
+    ref = create(db),
+    m = h1Masters(db);
+  transfer(db, ref, "Adelanto", "1000");
+  db.run(
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,revision,creado,actualizado) VALUES('9001','2026-01-05','Transferencia',50000,'S002','S001',?,'histórico H1','',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+    [ref],
+  );
+  const g = h1Save(db, m.gasto(m.cat012, "20", ref)).id;
+  const ficha = getAnticipo(db, ref);
+  expect(ficha.cobertura).toBe("Parcial");
+  expect(ficha.pendientesAcreditacion).toHaveLength(1);
+  expect(ficha.pendientesAcreditacion[0]).toMatchObject({
+    id: "9001",
+    motivo: "Sin rol acreditado",
+    estado: "Revisar",
+  });
+  expect(ficha.relacionados).toHaveLength(1);
+  expect(ficha.relacionados[0]).toMatchObject({ id: g, motivo: null });
+  expect(JSON.stringify(ficha.relacionados)).not.toContain("Sin rol");
   db.close();
 });

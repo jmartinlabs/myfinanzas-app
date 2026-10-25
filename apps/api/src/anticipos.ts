@@ -128,6 +128,10 @@ export function validateAnticipo(
   if (!isCase || next.tipo !== "Transferencia") {
     if (value !== undefined && value !== null)
       fail("Atribución solo para Transferencia Anticipo.");
+    if (exclude && anticipoMetadata(db, exclude))
+      fail(
+        "Una Transferencia acreditada solo puede rectificarse como Transferencia de su Referencia Anticipo; anúlala para retirar la acreditación.",
+      );
     return null;
   }
   if (
@@ -381,37 +385,58 @@ function readAnticipo(
         actualizado: m.actualizado,
       });
     }
-    const operations = facts.map((m) => {
-      const a = metadata.find((a) => a.movimiento === m.id) ?? null;
-      let reason = m.anulado
-        ? "Anulado: no computa"
-        : !a
-          ? "Sin rol acreditado"
-          : !matching(m, a, ref)
-            ? "Atribución incompatible u obsoleta"
-            : a.rol === "Devolución" &&
-                !hasAdvanceFacts(facts, metadata, ref, a)
-              ? "Sin Adelanto acreditado del par"
-              : null;
-      return {
+    const operations = facts
+      .filter((m) => m.tipo === "Transferencia")
+      .map((m) => {
+        const a = metadata.find((a) => a.movimiento === m.id) ?? null;
+        let reason = m.anulado
+          ? "Anulado: no computa"
+          : !a
+            ? "Sin rol acreditado"
+            : !matching(m, a, ref)
+              ? "Atribución incompatible u obsoleta"
+              : a.rol === "Devolución" &&
+                  !hasAdvanceFacts(facts, metadata, ref, a)
+                ? "Sin Adelanto acreditado del par"
+                : null;
+        return {
+          id: m.id,
+          fecha: m.fecha,
+          tipo: m.tipo,
+          importe: decimal(m.importe)!,
+          origen: m.origen,
+          destino: m.destino,
+          revision: m.revision,
+          anulado: !!m.anulado,
+          atribucion: a,
+          elegible: reason === null,
+          motivo: reason,
+          estado: reason ? (m.anulado ? "Anulado" : "Revisar") : "Elegible",
+        };
+      });
+    const eligible = operations.filter((o) => o.elegible),
+      unknown = operations.filter(
+        (o) => o.tipo === "Transferencia" && !o.anulado && !o.elegible,
+      );
+    const related = facts
+      .filter((m) => m.tipo !== "Transferencia")
+      .map((m) => ({
         id: m.id,
         fecha: m.fecha,
         tipo: m.tipo,
         importe: decimal(m.importe)!,
         origen: m.origen,
         destino: m.destino,
-        revision: m.revision,
         anulado: !!m.anulado,
-        atribucion: a,
-        elegible: reason === null,
-        motivo: reason,
-        estado: reason ? (m.anulado ? "Anulado" : "Revisar") : "Elegible",
-      };
-    });
-    const eligible = operations.filter((o) => o.elegible),
-      unknown = operations.filter(
-        (o) => o.tipo === "Transferencia" && !o.anulado && !o.elegible,
-      );
+        estado: m.anulado ? "Anulado" : "Relacionado",
+        efecto: m.anulado
+          ? "Sin efecto bancario"
+          : "Efecto bancario conservado; fuera del motor",
+        motivo:
+          referencia.estado === "Activa"
+            ? null
+            : "Referencia inactiva: histórico conservado sin metadatos",
+      }));
     const subtotal = sums(eligible),
       coverage = unknown.length
         ? eligible.length
@@ -507,6 +532,8 @@ function readAnticipo(
         evidencia: ficha.evidencia,
       },
       operaciones: operations,
+      pendientesAcreditacion: unknown,
+      relacionados: related,
       pares: pairs,
       fotos: photos.map((p) => ({ ...p, importe: decimal(p.importe) })),
       ciclos: cycles,
