@@ -1,7 +1,6 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.8.0
-(`a451dff89a499a15f7b1a30ed17f4d3a67379149`), preservando coordinación ligera,
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.9.0 (`781ffbb018c2d24fc472d3fe1ca39427a8308d80`), preservando coordinación ligera,
 gates financieros y Skill `$handoff`. Contrato portable en [agentes dinámicos](dynamic-agents.md);
 el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
@@ -17,8 +16,7 @@ $orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a ini
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
 La metodología v2.3.1 está integrada mediante PR #32; sus reglas operativas
 se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
-No cambiar el modelo: la sugerencia de capacidad/razonamiento es orientativa, no un
-selector real ni otro gate. Conservar el modelo actual si es suficiente.
+El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
 
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de

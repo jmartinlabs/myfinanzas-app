@@ -23,7 +23,7 @@ Risk matters more than code size. Auth, payments, production configuration, migr
 
 ## Model and reasoning recommendation
 
-When model advice materially helps (normally Standard / Full), consult [Adaptive model selection](model-selection.md) on demand and recommend a capability tier and reasoning effort. This is advisory, not a new approval step or automatic switch. Omit redundant advice for straightforward Quick; never replace testing, review or required authorization.
+When model advice materially helps (normally Standard / Full), consult [Adaptive model selection](model-selection.md) on demand and recommend a capability tier and reasoning effort. Tier advice does not switch models; the absolute Codex subagent ceiling and the quota dispatch gate (including QA) remain mandatory. Omit redundant advice for straightforward Quick; never replace testing, review or required authorization.
 
 ## Approval gates
 Require confirmation of classification except the authorized Quick case or existing explicit workflow authorization. Material financial/product/architecture choices, a revised roadmap, Full specifications, new development scope, significant escalation and PR merges retain separate protected approvals under [MyFinanzas coordination](myfinanzas-coordination.md). Ordinary changes/tests inside valid scope need no new approval. Approved specs remain authoritative but never grant development permission by themselves.
