@@ -1,12 +1,15 @@
-## Estado vigente — 2026-10-24
+## Estado vigente — 2026-10-25
 
 - Aplicación: dev11/E2.5 integrada por PR63 en main `ed4a272`; candidato validado
   `7d24a7f`, CI40128422924 SUCCESS. [Cierre/evidencias](11-nomina-prevision-progress.md#cierre-vigente--2026-10-24).
 - Trabajo autorizado: piloto operativo local y preparación documental de E2.6/spec12,
   usuario «te doy mi aprobacion para realizar esas mejoras y seguir».
-- Rama documental: `codex/pilot-spec12-efficiency`; [reglas y medición](methodology/myfinanzas-coordination.md#piloto-operativo-acotado--spec12--e26).
-- Próximo hito: revisar/publicar ajustes documentales y abrir primera ronda spec12;
-  decisiones, spec/wireframes, desarrollo y merge conservan sus gates propios.
+- Piloto integrado PR64 en main `467c11a`, CI40169710112 SUCCESS.
+- Rama documental vigente: `codex/spec12-flujo-mensual`; [reglas y medición](methodology/myfinanzas-coordination.md#piloto-operativo-acotado--spec12--e26).
+- Spec12 rev3 completa/wireframes/56AC aprobados: usuario «si aprobada»,2026-10-25.
+  [Spec](12-flujo-mensual-specification.md) / [registro y candidato](12-flujo-mensual-brainstorming.md#aprobación-completa-rev3--2026-10-25).
+  Q1–Q4 cerradas y QA documental PASS; [cobertura diseñada](12-flujo-mensual-testplan.md), no tests funcionales.
+- Próximo: verificación/commit/PR documental; autorización de merge y dev12 separadas.
 - Sin cambios de plantilla, código/SQL/Excel, deploy o investigación B3/Dev32.
 
 Los apartados inferiores son historia conservada; no recargarlos para conocer el estado actual.

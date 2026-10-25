@@ -478,3 +478,19 @@ Aprobación documental E2.5 posterior, 2026-10-24: usuario «Aprobadas» a solic
 de spec11 rev3 completa, incluida relación técnica N:M y wireframes. Quedan aprobadas
 las ampliaciones de app descritas, distintas del modelo físico C176; no se modifica
 Excel ni se autoriza desarrollo/SQL/migración/merge. Registro/candidato en brainstorming11.
+
+
+## E2.6 — flujo base y referencia estructural, contrato documental aprobado
+
+Fuente: resoluciones Q1–Q4 del usuario (contraste físico atribuido a Álex, sin inspección
+propia de Excel) y «si aprobada»,2026-10-25, a spec12 rev3 completa/wireframes/56AC.
+[Contrato y diferencias físicas D–L/C48](12-flujo-mensual-specification.md) /
+[trazabilidad](12-flujo-mensual-brainstorming.md). Banco solo Movimientos por Ciclos;
+Gasto bruto no equivale a H neta del Excel; deuda informativa sin doble resta, saldo
+operativo siempre Parcial. Márgenes son planificación, liquidez actual contexto
+independiente; ahorro/posiciones/ejecución R3/anual no se fusionan. Media estructural
+central Nómina por totales mensuales documentales válidos y N/12 al corte del ciclo,
+distinta de COUNTIFS por filas físico; banco parcial no invalida por sí solo fuente
+salarial documental válida. E3/E4 y sus coberturas permanecen explícitamente pendientes.
+Aprobación documental, no desarrollo/SQL/Excel/merge/deploy ni equivalencia numérica
+contrastada o capacidades ya ejecutadas. No se cambian fórmulas físicas del libro.
