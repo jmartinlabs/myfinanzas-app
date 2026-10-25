@@ -273,3 +273,28 @@ conservadas. Sustituye los estados DRAFT históricos sin reescribirlos.
 OpenCode no disponible en esta ejecución; continuidad por coordinador Codex,
 sin asignaciones externas. No autorización de desarrollo13, SQL/Excel o merge.
 Próximo paso: cierre documental, validación y PR; merge con aprobación separada.
+
+
+## Q9 — resolución conceptual y enmienda pendiente — 2026-10-25
+
+Fuente: usuario/Álex, mensaje «Spec13/dev13 — Resolución Q9: identificación de
+Adelanto y Devolución». Confirmada conceptualmente la fuente explícita; exige
+aprobar enmienda documental antes de continuar dev13. Q1–Q8 no se reabren.
+
+Confirmed answer Q9: toda nueva Transferencia de Anticipo declara rol Adelanto o
+Devolución. Metadatos auditados vinculados al ID estable del Movimiento conservan
+rol y par/orientación; el Movimiento sigue único hecho financiero, sin duplicar
+importes. Devolución identifica expresamente par de adelanto; varios pares exigen
+selección Q7, nunca similitud/fecha/nombres. Atajo precarga rol/REF/inversa, sujeto
+a validación y confirmación. Movimiento y metadatos atómicos; validaciones en todas
+las rutas de escritura. Histórico sin evidencia conserva hechos/efecto bancario,
+sin asignación automática: No disponible/Revisar, subtotales acreditados Parciales.
+Acreditación histórica explícita con evidencia identificable, revisión y auditoría.
+Rectificar/anular exige revalidar rol/par/REF, derivados e impactos sobre apertura,
+fotos/cierres protegidos. Sin segundo motor ni maestro independiente de pares si
+bastan metadatos mínimos por Movimiento.
+
+Estado: enmienda Q9 propuesta en specification, pendiente aprobación documental
+completa. Dev13 DETENIDO en B13-1. No implementar, migrar datos reales ni hacer
+merge/deploy por esta resolución conceptual. La autorización dev13 previa queda
+sujeta al gate expreso de esta enmienda.

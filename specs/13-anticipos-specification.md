@@ -1,8 +1,12 @@
 # 13 — E3.1 Anticipos y pendiente por caso: Specification
-Status: APPROVED rev3 — especificación completa y wireframes aprobados
+Status: rev3 APPROVED + enmienda Q9 DRAFT — pendiente aprobación documental de la enmienda
 Approval source/date: Usuario, 2026-10-25: «De momento no esta open, asi q seguimos solo por aqui, Propuesta aprobada». No autoriza desarrollo13 ni merge.
 Context and brainstorming: [ronda base y Q1–Q6 confirmadas](13-anticipos-brainstorming.md),
 decisiones Q1–Q8 del usuario 2026-10-25; resolución Q7/Q8 registrada al final del brainstorming. Base `10bb794`; revisión documental aislada en `codex/spec13-documentary-rev2`.
+
+La rev3 integrada mantiene su aprobación. La enmienda Q9 al final de este
+documento precisa y, donde corresponda, sustituye sus contratos de atribución
+por dirección; todavía NO está aprobada para implementación. Dev13 detenido.
 
 ## Functionality
 
@@ -302,3 +306,108 @@ Trazabilidad adicional: AC-27–29 desarrollan E3.1-AC1/2; AC-30–36 desarrolla
 E3.1-AC3. Q1–Q8 resueltas; revisión documental independiente realizada y ajustes aplicados.
 Spec/wireframes aprobados. Siguiente gate: commit/PR documental y checks; merge
 requiere aprobación propia. Desarrollo13 no autorizado. Sin SQL ni Excel.
+
+
+## Enmienda Q9 — atribución explícita de Transferencias — DRAFT
+
+Fuente conceptual: resolución expresa usuario/Álex 2026-10-25, registrada en
+[brainstorming](13-anticipos-brainstorming.md#q9--resolución-conceptual-y-enmienda-pendiente--2026-10-25).
+Aprobación de esta enmienda completa: **PENDING**. Q1–Q8 conservadas. El rol no se
+puede deducir solo de origen/destino/Referencia: esta enmienda reemplaza cualquier
+lectura de rev3 que permita usar dirección aislada como acreditación del rol.
+
+### Impacto en datos y motor
+
+- Propuesta de metadatos mínimos `movimiento_anticipo`, relación 0..1 por ID estable
+  de Movimiento (FK única). Rol explícito Adelanto/Devolución; IDs de orientación
+  del adelanto (origen y destino del par) y Referencia coherentes con el hecho;
+  evidencia/procedencia, revisión y auditoría. Un Adelanto declara su orientación;
+  una Devolución selecciona un par acreditado de esa REF y usa su inversa.
+- No persiste copia de importe ni segundo hecho financiero. El motor único lee
+  importe/vigencia de Movimientos y rol/vinculación acreditados de sus metadatos.
+  Identidad del par por REF+IDs de origen/destino del adelanto, sin maestro nuevo.
+  Validar existencia de adelanto acreditado del par; no elegir por fecha o importe.
+- Nueva Transferencia con REF Anticipo exige metadatos válidos. Si falta rol,
+  par incompatible o dirección no inversa, rechazar íntegramente. Movimiento,
+  metadatos y auditoría se escriben en una transacción con idempotencia/revisión.
+- Histórico sin acreditación conserva datos y efecto bancario. No backfill de rol
+  por orden/fecha/nombre/importe. Mostrar hechos pendientes de revisión y únicamente
+  subtotales acreditados Parciales; global no se presenta completo ni estado
+  Recuperado por ausencia/0=0. No disponible cuando no hay base acreditada.
+- Acreditación histórica es acción explícita sobre IDs/revisión vigentes, evidencia
+  identificable, vista de impacto y confirmación auditada. Solo cambia metadatos;
+  no altera silenciosamente fecha/importe/dirección del hecho bancario.
+- Rectificación/anulación revalida rol, par, Referencia y dependencias en el mismo
+  protocolo de revisión. Si retirar/cambiar un adelanto deja devoluciones sin par
+  acreditado, mostrar conflicto e impedir confirmar una atribución incoherente;
+  no reasignar a otro par automáticamente. Revisar impacto sobre foto/cierres y
+  recalcular el motor. Originales/fotos no se reescriben silenciosamente.
+- Propuesta de actualización técnica futura: crear metadatos sin clasificar
+  automáticamente históricos, preservar IDs/efecto bancario y tratar su ausencia
+  como falta de acreditación. No hay DDL ejecutado ni migración de datos reales.
+
+### Impacto en API y concurrencia
+
+- Extender el contrato del servicio común de Transferencias con rol y orientación/
+  par cuando la Referencia es Anticipo. Todas las rutas que crean, rectifican o
+  anulan pasan por las mismas validaciones; no basta validar el atajo UI.
+- Lecturas de ficha/operaciones devuelven rol acreditado o ausencia con motivo,
+  par por IDs, procedencia y cobertura. Importes siempre del hecho canónico.
+- Propuesta de acción protegida de acreditación histórica por ID de Movimiento,
+  con revisión esperada, rol/par, evidencia y confirmación de impacto. Reutilizar
+  servicios/revisión/auditoría; no crear endpoint de movimientos paralelo.
+- Idempotencia, validación de revisión y transacción evitan hecho sin metadatos,
+  doble recuperación y acreditación sobre hecho obsoleto. Fallo revierte conjunto;
+  sesión inválida no escribe; errores no revelan SQL ni evidencia sensible.
+
+### Impacto en UI y wireframes de la enmienda
+
+```text
+TRANSFERENCIA · Referencia Anticipo REFxxx
+Rol obligatorio: ( ) Adelanto  ( ) Devolución
+Adelanto: Origen [ID Saldo] → Destino [ID Saldo] · declarar orientación
+Devolución: seleccionar par acreditado [origen/destino e importes verificables]
+Dirección propuesta [inversa del par] · Importe [editable] · Fecha [editable]
+[Revisar y confirmar] → un Movimiento + metadatos en transacción
+Sin par acreditado / conflicto: no confirmar devolución; [Ver motivo]
+```
+
+```text
+ACREDITAR HISTÓRICO · Movimiento IDxxx · REFxxx · revisión vigente
+Hecho original: fecha, importe, origen y destino (sin cambios bancarios)
+Rol [Adelanto/Devolución] · Orientación/par [IDs verificables]
+Evidencia [identificador] · Procedencia [fuente]
+[Revisar impacto] → derivados, pendientes y fotos/cierres afectados
+[Confirmar acreditación] [Cancelar]
+Sin evidencia: Revisar/No disponible; subtotal acreditado Parcial
+```
+
+El atajo de Q6/Q7 precarga rol Devolución, REF e inversa del par seleccionado;
+revisión/confirmación obligatorias. Histórico Exterior conserva limitación Q4/Q6.
+En 390 campos/tarjetas en columna con etiquetas, foco y errores asociados;
+1440 muestra hecho original y revisión sin ocultar cobertura ni evidencia.
+La ficha diferencia subtotales acreditados de hechos pendientes de atribución.
+
+### Impacto en pruebas y trazabilidad
+
+Los AC-01–36 permanecen actuales; Q9 modifica precondiciones de AC-05–12,
+17–23 y 27–36: roles/par acreditados para positivos, ausencia/conflicto para
+negativos. No convierte pruebas actuales en futuras ni acredita ejecución.
+
+| ID | Acción / precondiciones | Resultado esperado |
+| --- | --- | --- |
+| AC-37 | Crear Transferencia Anticipo por cada ruta soportada sin rol o con rol/par inválido | Rechazo atómico; sin Movimiento o metadatos parciales; mismas reglas que atajo |
+| AC-38 | Registrar Adelanto y Devolución con IDs/REF/par coherentes | Un solo hecho por operación, metadatos vinculados a su ID; motor calcula una vez usando importes canónicos |
+| AC-39 | Fallo intermedio, replay o escritura concurrente de hecho y metadatos | Rollback o repetición idempotente; sin huérfanos, duplicados ni atribuciones inconsistentes |
+| AC-40 | Histórico A→B y B→A sin rol acreditado | No inferir por fecha/importe/nombre; efecto bancario intacto, motor ND/Revisar o subtotal acreditado Parcial |
+| AC-41 | Acreditar histórico con evidencia y revisión; cancelar, conflicto o sesión expirada | Solo confirmación válida cambia metadatos/auditoría; hecho bancario intacto; conflicto/expiración/cancelación no escribe |
+| AC-42 | Rectificar/anular hecho acreditado o cambiar REF/orientación con recuperaciones dependientes | Revalidar dependencias e impacto; sin reasignación automática, sin doble recuperación ni metadatos obsoletos aceptados como completos |
+| AC-43 | Acreditación/rectificación afecta Neto apertura o cierres/fotos | Vista de impacto y protección verificable; no cambiar foto silenciosamente; corrección excepcional conforme Q8 |
+| AC-44 | Atajo con único/múltiples pares, vista 390/1440 y acceso por teclado | Rol/REF/inversa precargados y visibles; selección explícita si múltiples, revisión previa; ausencia/conflicto bloquea con motivo |
+
+AC-37–42/44 desarrollan E3.1-AC1/2; AC-43 desarrolla E3.1-AC3 y Q8.
+Pruebas funcionales de enmienda: UNRUN; no implementación autorizada de Q9.
+
+**Gate:** aprobar enmienda documental Q9 completa, incluidos impacto de datos,
+API, UI/wireframes y AC-37–44, antes de continuar dev13. No merge, migración real
+ni despliegue por aprobación conceptual. Dev13 permanece detenido en B13-1.
