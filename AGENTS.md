@@ -37,7 +37,7 @@ Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](s
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
 ## Coordinación v2.9.0 — aprobaciones únicas + handoff
 - Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado; aprobaciones: [approvals](specs/methodology/approvals.md).
-- Consulta [flujos](specs/methodology/workflows.md) para clasificar; carga [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md) solo al delegar; Skills preservadas.
+- Consulta [flujos](specs/methodology/workflows.md) para clasificar; carga [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md) solo al delegar; Skills preservadas. Paquetes, retornos completos y estado manual: [comunicación](specs/methodology/coordinator-communication.md).
 - Modelos/cuota: aplicar [techo Codex](specs/methodology/model-selection.md) y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate) antes de nuevas tareas, incluida QA; OpenCode solo si está habilitado para esa ejecución.
 - Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes.
 - Quick autorizado, reversible y de bajo riesgo: plan de una línea, sin reconfirmar; consulta o Plan no autoriza editar. Un ejecutor por defecto, coordinación por hitos y QA independiente.

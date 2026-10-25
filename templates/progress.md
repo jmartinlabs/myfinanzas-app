@@ -14,6 +14,7 @@ milestones and closure; historical entries below do not override current state.
 - Checks / QA evidence / environment: UNRUN
 - PR / CI / merge state, source and last verified time: UNVERIFIED
 - Next safe action: UNDECIDED
+- Manual task states, one per task with provenance ([communication](../specs/methodology/coordinator-communication.md)): NONE
 
 ## Tasks
 

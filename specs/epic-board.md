@@ -1,3 +1,33 @@
+## Current checkpoint — sincronización comunicación v2.10.0/PR24 — 2026-10-25
+
+Resumen vigente del coordinador; reemplaza etiquetas actuales de los apartados
+históricos inferiores. Sin reanudación de trabajo ni nuevas asignaciones.
+Main verificado `36fd238` (PR72); harness v2.9.0 con adaptación documental selectiva upstream v2.10.0/PR24
+`f43d691`; tag anotado verificado46c07e7→f43d691. Sin adopción de scorer/evals.
+
+| Task ID / nombre | Cliente y referencia de sesión estable | Estado y procedencia | Última evidencia, gates y siguiente acción |
+| --- | --- | --- | --- |
+| DEV13-H1/CI · corrección H1 y schema13 | OpenCode, sesión funcional DEV13-H1/CI; versión e ID técnico desconocidos | ESPERANDO RETORNO — último paquete entregado por usuario; ejecución/fin no inferidos | PR71 OPEN/DRAFT, HEAD1255ef8 verificado. Schema13 en commit local7339b5e comprobado; nuevo commit local a0e0567 observado, sin retorno final ni validación de candidato. Resolución H1 de Álex preserva E1.5 y separa no-Transferencias del motor. Próximo: recibir HANDOFF completo de esa sesión, revisar diff y evidencia, publicar solo bajo gates vigentes y repetir CI/QA. Sin nueva orden externa ahora. |
+| EXT-OPENCODE-QA12-CLOSE · cierre QA dev12 | OpenCode, sesión funcional QA12/PR67; versión e ID técnico desconocidos | PENDIENTE DE ENVIAR — paquete preparado; envío no confirmado en este chat | PR67 OPEN, HEADbb24934 verificado. CI40191028155 SUCCESS verificada anteriormente; informe QA anterior comunicado favorable condicionado, no informe nuevo de esta sesión. Checkpoint dev12 localc971ff4 preservado. Acción humana: confirmar si se envió el paquete existente o enviarlo una vez a sesión QA12/PR67; no afirmar ejecución. MergePR67 no aprobado. |
+| EXT-OPENCODE-SPEC14 · especificación E3.2 | OpenCode, sesión funcional Spec14; versión e ID técnico desconocidos | COMPLETADO — documentos y merge verificados | Originales a5f9400/c2cf298 preservados; publicación exacta50c0d64, PR72 MERGED36fd238 por usuario.39AC aprobados. Sin correcciones ni respuesta necesaria al autor. Desarrollo14 no autorizado. |
+| D5/Exterior · dependencia de aportaciones de terceros | Cliente/sesión no asignados | BLOQUEADO — contrato y autorización específicos pendientes | Spec14 mantiene OPEN; E3.2 no funcionalmente completa. No implementar/simular aportaciones externas ni ampliar E1.5. Acción humana futura: autorizar especificación focal, cuando proceda; no es permiso actual. |
+
+DEV13 conserva autorización previa de desarrollo y corrección H1; no reanudación
+automática por esta sincronización. AC36 PARCIAL, integración Cierres UNRUN,
+aceptación global abierta. CI PR71 último resultado FAILURE183PASS/3FAIL, sin
+refrescar runs en esta sincronización; corrección no publicada. QA13 anterior
+recibida/contrastada con H1 y CI, dictamen no apto merge; QA independiente del
+nuevo delta aún pendiente y sin asignar. No convertir pruebas de autor en QA.
+
+Identidades funcionales se conservan aunque el ID técnico no esté disponible.
+Un retorno se atribuye solo por su Task ID/sesión; pedir aclaración si ambiguo.
+No agentes/chats consultados ni mensajes externos enviados por herramientas.
+B3/Dev32, datos reales, Excel/VPS/deploy fuera. La sincronización no autoriza
+mergePR71, desarrollo14, D5 ni otra ampliación. Próxima acción del coordinador:
+validar/publicar adaptación documental; aprobación de su PR/merge separada.
+
+---
+
 ## Estado vigente — 2026-10-25 — adopción v2.9.0
 
 - Harness v2.8.0 integrado PR66/main `10bb794`; candidato `ee2f431`. CI [candidato40173694194](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40173694194) y [main40174086170](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40174086170) SUCCESS según entregable externo, no reconsultados en esta adopción; QA documental externa favorable con CI UNRUN por falta de acceso.
