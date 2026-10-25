@@ -289,3 +289,45 @@ parciales a referencias fiscales. Escenarios base/prudente se validan separados,
 referencia. Sin escritura financiera desde simulación ni equivalencia C176/N:M afirmada.
 UI reutiliza shell/paleta, tabla escritorio/tarjetas390, tres vistas y revisión humana.
 [Evidencia y gates](../11-nomina-prevision-testplan.md); no integración/dev final inferidos.
+
+## E3.1 — Anticipos, candidato DEV13 (no integrado)
+
+Esquema13 se instala en el IMMEDIATE de apertura existente, después de v12. Amplía
+el Tipo de Referencia con Anticipo reconstruyendo Referencias y sus dependencias
+(Movimientos, auditoría bancaria y asignaciones salariales) mediante copias TEMP
+transaccionales; conserva IDs, importes, JSON de auditoría, acceso, índices, triggers,
+FK y restricciones anteriores. No clasifica hechos históricos ni resemilla. Fixture
+v12 genuina y fallo de DDL comprueban continuidad/rollback; no hay migración real ejecutada.
+
+`fichas_anticipos` es 1:1 con REF. También el alta común de Referencias crea su ficha
+en la misma transacción; cambiar Tipo hacia/desde Anticipo exige la ficha, sin conversión
+ordinaria que deje casos parciales. `movimiento_anticipo` guarda rol, orientación por IDs,
+revisión del Movimiento, procedencia/evidencia y auditoría; no copia importes. Toda
+Transferencia Anticipo nueva/rectificada usa `movimientos.ts`, incluyendo metadatos y
+validación de dependencias en el mismo writer lock, fingerprint e intento. Anulación
+conserva el original en auditoría y no puede retirar el último Adelanto de devoluciones
+acreditadas. Sin servicio paralelo de hechos ni ejecución de Presupuesto.
+
+`anticipos.ts` contiene un único read model para ficha, pares y simulación de impacto
+de acreditación. Lee todos los hechos canónicos antes de paginar fichas; suma bigint,
+EUR string, fechas civiles y UTC de auditoría separados. Histórico sin rol verificable
+conserva banco y ofrece No disponible/Revisar o subtotal Parcial. El lector admite fuente
+histórica Exterior acreditada; no hay importador instalado ni ampliación de Transferencias
+nuevas. El CHECK y servicio ordinarios siguen rechazando Exterior nuevo.
+
+`fotos_neto_apertura` tiene PK REF+Ciclo; solo confirmación explícita con evidencia de
+importe/instante/cobertura crea una foto. GET no escribe y no convierte pendiente actual
+en apertura. Sugerencias usan el mismo motor con hechos anteriores; sin hechos u orden
+verificable del mismo día no hay sugerencia. Cero/negativo requieren declaración/evidencia.
+La foto bloquea cambios bancarios que afecten su apertura y rectificación de su Inicio.
+Corrección excepcional conserva original en auditoría, motivo/revisión, y revalida impacto
+con `AnticipoProtectionProvider` interno. Runtime no instala proveedor de Cierres: bloquea
+la corrección con motivo explícito. Prueba positiva con proveedor de test no acredita
+integración de cierres futuros ni aceptación global de AC36.
+
+API de fichas y acreditación hereda MFA/Origin/CSRF/no-store y límites existentes.
+Backup identifica e3.1-v13 y restore revoca también anticipo_attempts; CI Linux de copia/
+restauración permanece pendiente. UI reutiliza shell/paleta; tabla1440/tarjetas390,
+selección explícita de varios pares, borrador de devolución solo en memoria y formulario
+común de Movimientos. [Checkpoint y límites](../13-anticipos-progress.md),
+[evidencia por AC](../13-anticipos-testplan.md).

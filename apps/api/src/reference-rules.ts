@@ -1,6 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
-export const operationalReferenceTypes = ["Viaje", "Evento"] as const;
+export const operationalReferenceTypes = [
+  "Viaje",
+  "Evento",
+  "Anticipo",
+] as const;
 // Q2: sanitized evidence by stable category IDs. No category/financial data is seeded.
 export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
   {
@@ -14,7 +18,7 @@ export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
 export type Reference = {
   id: string;
   nombre: string;
-  tipo: "Viaje" | "Evento";
+  tipo: "Viaje" | "Evento" | "Anticipo";
   estado: "Activa" | "Inactiva";
   revision: number;
   creado: string;
@@ -46,7 +50,9 @@ export function validateReference(
   if (
     required &&
     (!expected ||
-      !operationalReferenceTypes.includes(expected as "Viaje" | "Evento"))
+      !operationalReferenceTypes.includes(
+        expected as "Viaje" | "Evento" | "Anticipo",
+      ))
   )
     throw new Problem(
       422,

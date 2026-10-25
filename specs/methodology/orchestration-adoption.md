@@ -305,3 +305,70 @@ QA independiente H280-QA PASS del diff18rutas, sin bloqueantes; no duplicó suit
 Diff/whitespace PASS. Ninguna modificación en aplicación, SQL, workflows, verify,
 clasificador o hooks. No se ejecutó full incompatible en macOS: CI Linux del SHA
 publicado sigue pendiente y será condición antes de cualquier merge aprobado.
+
+
+## Harness v2.9.0 — adopción local
+
+Autorización del usuario, 2026-10-25: «Autorizo la actualización local Standard y sus validaciones, con QA independiente sujeta a la política de cuota. No autorizo merges ni despliegues». OpenCode no habilitado para esta ejecución. Fuente revisada: tag remoto v2.9.0 resuelto a `781ffbb018c2d24fc472d3fe1ca39427a8308d80`, coincidente con copia local; no se ejecutan scripts del upstream ni se modifica su checkout. Base MyFinanzas `10bb794`, PR66 integrada; estado vigente único en [tablero](../epic-board.md).
+
+Plan por archivo, cubierto por la autorización explícita anterior:
+
+| Rutas | Decisión |
+| --- | --- |
+| model-selection | Adoptar política revisada, añadiendo precedencia financiera/local |
+| dynamic-agents | Fusionar gate de cuota y OpenCode manual; preservar excepción runtime de escalación |
+| orchestrate/handoff Skills | Fusionar dispatch/modelos y transferencia verificada; conservar gates y ownership |
+| agent-work-packet | Ampliar plantilla existente con selección/cuota y retorno HANDOFF → CODEX; sin segundo tablero |
+| validate-template/test-validator | Solo nuevas guardas estructurales y negativos, preservando CI local |
+| guía visual/workflows | Actualizar únicamente consejos de modelos que contradicen el techo |
+| AGENTS/coordinación local/README/tablero/este registro | Versionado, precedencia, autorizaciones y checkpoint vigente |
+| Otras Skills, roles, approvals/epic-orchestration | Revisados; sin cambio upstream aplicable adicional |
+| AGENT_EVALS, escenarios/respuestas de muestra | No importar: scorer no instalado; no acreditar comportamiento por muestras |
+| Aplicación, SQL, Excel, CI, scripts verify/clasificador, hooks, plantilla fuente | Sin cambios |
+
+Capacidad observada: cuota por herramienta de cliente 63% restante/5h y79%/semana al preflight; mínimo63%, sin excepción necesaria. Runtime declara overrides explícitos model/effort solo con `fork_turns="none"`; selección solicitada QA `gpt-6.1-sol` + `low`, contexto nuevo. Antes de QA se releyó cuota:54%/5h y77%/semana, mínimo54%. Selección efectiva observada en turn_context2026-10-25T12:07:20.505Z de sesión `01a172f5-45c8-7a21-b17b-7d63cbe30354`, ruta agente `/root/qa_h290`, padre `01a1720a-f7e1-7312-b6c3-ef4b3e3dcf85`: model `gpt-6.1-sol`, effort `low`, coincidentes con solicitud; metadatos locales atribuibles, no autorreporte. No se publican logs de sesión. Sin cambio del modelo coordinador, reset pagado ni servicio de cuotas.
+
+No hay ensayo de umbrales reales25%/5%, suspensión por permisos, control remoto OpenCode o handoff real entre chats. No se induce consumo de cuota para probar límites. Guardas textuales/negativos solo demuestran detección estructural; ensayos reales se registran por separado. Baseline y QA del candidato local completadas abajo. Full Linux exigible por política CI; no sustituido por macOS.
+
+
+Verificación local final, base `10bb794` + diff14rutas (sin producto): entrada canónica `scripts/verify baseline` con Python3.12 del runtime instalado PASS. Incluye57 regresiones proyecto/CI,24 validador (nueva guarda de recursos con11 mutaciones negativas),9 uso,8 hooks,15 entrada, estructura/enlaces y whitespace. La primera invocación con Python del sistema se rechazó por versión<3.10 antes de ejecutar checks; se reutilizó runtime existente sin instalaciones. Guarda de portabilidad detectó una ruta de máquina en checkpoint, corregida sin relajar validación. H290-QA independiente PASS:14rutas revisadas,3 focales/5,037s y whitespace PASS; sin hallazgos bloqueantes ni ediciones del revisor. Ensayo real acotado: despacho QA con selección explícita y metadatos efectivos coincidentes PASS; no extrapolar a otros clientes/versiones. Cuotas reales25%/5%, handoff entre chats y OpenCode UNRUN.
+
+Entrega local por autorización: no push/PR nuevo, merge o despliegue. Full aplicación/Linux UNRUN en esta adopción; la baseline no acredita aceptación funcional. Dev12 y spec13 permanecen en sus checkouts y no se incorporan al candidato. Próxima acción: revisión del commit local y, si se autoriza publicación, PR/CI full Linux; aprobación expresa de merge seguirá siendo independiente.
+
+
+## Adaptación focal de comunicación — v2.10.0/PR24 — 2026-10-25
+
+Autorización expresa del usuario: sincronizar instrucciones aplicables desde
+Agentic Template PR24/main `f43d691d9ca9a0604044c97a1610f9e4daae822e` y reconciliar
+resumen sin reanudar tareas ni ampliar alcance. Verificada PR24 MERGED y la base
+upstream781ffbb; MyFinanzas main36fd238 ya adopta harness v2.9.0. La raíz dev12
+conserva v2.8.0 y handoff propio; no se sobrescribe. Rama documental separada
+`codex/sync-coordinator-comms-pr24`, base36fd238; no cambios de producto.
+
+Adopción selectiva: nuevo coordinator-communication con precedencia local;
+orchestrate conserva sus gates específicos y añade carga bajo demanda,
+identidad/retorno/estado/acción humana. AGENTS, coordinación local, agentes
+dinámicos y plantillas packet/progress enlazan contrato único. Retorno completo
+obligatorio en cada seguimiento, también bloqueos. Modelo/catalogo externo no
+verificado se declara; techo Codex low y gates25%/5% se conservan sin excepción.
+El tablero reconcilia tareas por evidencia y estados manuales; no crea otro
+registro, polling o control de chats.
+
+No se importa wholesale orchestrate genérico, evaluaciones/scorer de comportamiento,
+guardas scripts ni adaptadores Claude: esta sincronización focal es documental,
+no acredita cobertura automatizada de comunicación ni comportamiento real. Se
+validan enlaces/estructura, diff, consistencia de campos/estados y baseline local.
+No tests funcionales ni nuevos trabajadores; sin reanudar tareas. La publicación
+sigue política Git local y merge requiere aprobación propia.
+
+Resultado local COMMS-PR24: baseline canónico PASS (57/24/9/8/15 regresiones),
+comprobación focal de campos/estados/enlaces y gates PASS; sin ensayo funcional
+ni agentes. Límite65líneas AGENTS detectado y preservado integrando enlace en
+línea existente; whitespace EOF corregido, sin relajar verificadores.
+
+Corrección de procedencia solicitada por usuario: tag upstream `v2.10.0`
+verificado por API GitHub: tag anotado `46c07e713a84879b69048ddb2b383d0b62f475f7`
+apunta exactamente a `f43d691d9ca9a0604044c97a1610f9e4daae822e`. Por tanto la
+fuente sí está versionada v2.10.0; la primera descripción «sin nueva versión»
+era incorrecta. Alcance sigue siendo adaptación documental selectiva sobre
+MyFinanzas v2.9.0, sin incorporar scorer/evals ni afirmar adopción íntegra.

@@ -97,7 +97,11 @@ export type Cycle = {
   corte: string | null;
   revision: number;
   estadoCorte:
-    "disponible" | "sin_referencia" | "no_aplicable" | "no_abierto" | "error";
+    | "disponible"
+    | "sin_referencia"
+    | "no_aplicable"
+    | "no_abierto"
+    | "error";
 };
 const select =
   "SELECT id,inicio,mes_financiado,CAST(saldo_comida AS TEXT) saldo_comida,creado,revision,actualizado FROM ciclos ORDER BY inicio";
@@ -423,6 +427,21 @@ function operationPlan(
     throw new Problem(404, "NOT_FOUND", "Ciclo no encontrado.");
   const v = operationInput(body, operation, old);
   if (
+    old &&
+    old.inicio !== v.inicio &&
+    db
+      .query("SELECT name FROM sqlite_master WHERE name='fotos_neto_apertura'")
+      .get() &&
+    db
+      .query("SELECT referencia FROM fotos_neto_apertura WHERE ciclo=? LIMIT 1")
+      .get(old.id)
+  )
+    throw new Problem(
+      409,
+      "HISTORY_LOCKED",
+      "Inicio protegido por Neto apertura de Anticipo confirmado. Revisa sus fotografías; no se modifican silenciosamente.",
+    );
+  if (
     beforeRows.some(
       (r) =>
         r.id !== old?.id &&
@@ -497,8 +516,12 @@ function operationPlan(
         ]
       : [];
   });
-  affected.sort((a, b) => a.fecha.localeCompare(b.fecha)
-    || a.id.length - b.id.length || a.id.localeCompare(b.id));
+  affected.sort(
+    (a, b) =>
+      a.fecha.localeCompare(b.fecha) ||
+      a.id.length - b.id.length ||
+      a.id.localeCompare(b.id),
+  );
   const cycles = after.flatMap((c) => {
     const a = before.find((v) => v.id === c.id) ?? null;
     return JSON.stringify(a) !== JSON.stringify(c)

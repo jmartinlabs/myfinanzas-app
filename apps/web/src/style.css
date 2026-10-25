@@ -1790,6 +1790,116 @@ textarea {
   white-space: nowrap;
 }
 
+/* E3.1 uses the existing light palette and controls. */
+.anticipo-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.anticipo-metrics .metric {
+  border: 1px solid #c8d5bb;
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.anticipo-metrics strong {
+  font-size: 1.35rem;
+  overflow-wrap: anywhere;
+}
+.anticipo-pair {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #c8d5bb;
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.anticipo-pair input {
+  min-height: 20px;
+  width: 20px;
+  flex: none;
+  margin-top: 4px;
+}
+.anticipo-operation {
+  padding: 16px 0;
+  border-bottom: 1px solid #c8d5bb;
+  overflow-wrap: anywhere;
+}
+.anticipo-operation button {
+  margin: 8px 8px 0 0;
+}
+.anticipo-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.anticipo-review {
+  border: 2px solid #335b0d;
+}
+@media (max-width: 760px) {
+  .anticipo-metrics,
+  .anticipo-list {
+    grid-template-columns: 1fr;
+  }
+  .anticipo-operation button {
+    width: 100%;
+    margin-right: 0;
+  }
+  .anticipo-review .form-actions {
+    flex-direction: column;
+  }
+}
+
+.anticipo-page > .panel {
+  margin-top: 20px;
+}
+.anticipo-page details {
+  overflow-wrap: anywhere;
+  margin: 12px 0;
+}
+.anticipo-page .form-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+}
+
+.anticipo-page .check-label {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+}
+.anticipo-page .check-label input {
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+  flex: none;
+  padding: 0;
+}
+.anticipo-cards {
+  display: none;
+}
+.desktop-list.anticipo-table th:nth-child(n) {
+  width: auto;
+}
+.anticipo-table td {
+  overflow-wrap: anywhere;
+}
+.anticipo-table button {
+  margin: 4px 0;
+}
+@media (max-width: 1050px) {
+  .anticipo-cards {
+    display: block;
+  }
+}
+
 /* Monthly query: readable source/coverage blocks at both supported viewports. */
 .flow-selection {
   display: flex;

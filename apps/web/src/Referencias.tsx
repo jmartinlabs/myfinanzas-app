@@ -72,15 +72,15 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="CASOS IDENTIFICABLES"
         title="Referencias"
-        description="Un único maestro · Viajes y Eventos"
+        description="Un único maestro · Viajes, Eventos y Anticipos"
       >
         <button className="primary" onClick={() => go(base + "/nueva")}>
           Nueva referencia
         </button>
       </PageHead>
       <p className="help">
-        Anticipos, Gastos compartidos y Vehículos estarán disponibles con sus
-        fichas. No se crean casos incompletos.
+        Gastos compartidos y Vehículos estarán disponibles con sus fichas. No se
+        crean casos incompletos.
       </p>
       <section
         className="panel catalog-panel references-list"
@@ -105,6 +105,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
               <option value="">Todos</option>
               <option>Viaje</option>
               <option>Evento</option>
+              <option>Anticipo</option>
             </select>
           </label>
           <label>
@@ -131,7 +132,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
                 ? "Sin coincidencias"
                 : "Todavía no hay referencias"}
             </h2>
-            <p>Crea un Viaje o Evento para identificar un caso concreto.</p>
+            <p>Crea una Referencia para identificar un caso concreto.</p>
           </div>
         ) : (
           <>
@@ -297,6 +298,14 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               cambiar sin alterar sus enlaces.
             </p>
           </section>
+          {r?.tipo === "Anticipo" && (
+            <section className="panel">
+              <h2>Ficha de Anticipo</h2>
+              <button onClick={() => go("/anticipos/" + id)}>
+                Consultar ficha de Anticipo
+              </button>
+            </section>
+          )}
           <section className="panel">
             <h2>Movimientos vinculados</h2>
             <p>
@@ -515,6 +524,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                   <option value="">Selecciona</option>
                   <option>Viaje</option>
                   <option>Evento</option>
+                  <option>Anticipo</option>
                 </select>
                 {fields.tipo && (
                   <span className="field-error" id="ref-type-error">
@@ -530,8 +540,8 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
               </p>
             )}
             <p className="help">
-              Estado inicial Activa. Anticipo, Gasto compartido y Vehículo
-              esperan sus fichas E3.
+              Estado inicial Activa. Gasto compartido y Vehículo esperan sus
+              fichas E3.
             </p>
           </section>
           <div className="form-footer">

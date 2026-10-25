@@ -1,5 +1,14 @@
 import { monthlyFlow } from "./flujo-mensual";
 import {
+  getAnticipo,
+  listAnticipos,
+  createAnticipo,
+  previewAccreditation,
+  confirmAccreditation,
+  previewOpening,
+  confirmOpening,
+} from "./anticipos";
+import {
   getPayroll,
   previewPayroll,
   confirmPayroll,
@@ -212,6 +221,40 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/anticipos/fichas" && req.method === "GET")
+        return reply(listAnticipos(db, new URL(req.url).searchParams));
+      if (path === "/api/anticipos/fichas" && req.method === "POST")
+        return reply(
+          createAnticipo(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+          201,
+        );
+      const anticipoPath = path.match(
+        /^\/api\/anticipos\/fichas\/(REF\d+)(?:\/(netos-apertura)(?:\/(preview))?|\/movimientos\/(\d+)\/acreditar(?:\/(preview))?)?$/,
+      );
+      if (anticipoPath) {
+        const [, ref, opening, openingPreview, movement, accreditationPreview] =
+          anticipoPath;
+        if (req.method === "GET" && !opening && !movement)
+          return reply(getAnticipo(db, ref));
+        if (req.method === "POST" && (opening || movement)) {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          return reply(
+            opening
+              ? openingPreview
+                ? previewOpening(db, ref, body)
+                : confirmOpening(db, ref, body, key, now())
+              : accreditationPreview
+                ? previewAccreditation(db, ref, movement, body)
+                : confirmAccreditation(db, ref, movement, body, key, now()),
+          );
+        }
+      }
       if (path === "/api/nomina" && req.method === "GET")
         return reply(getPayroll(db));
       if (path === "/api/nomina/impacto" && req.method === "POST")

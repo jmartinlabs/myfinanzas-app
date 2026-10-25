@@ -66,13 +66,15 @@ function fields(body: Record<string, unknown>, creating: boolean) {
     );
   if (
     (creating || "tipo" in body) &&
-    !operationalReferenceTypes.includes(body.tipo as "Viaje" | "Evento")
+    !operationalReferenceTypes.includes(
+      body.tipo as "Viaje" | "Evento" | "Anticipo",
+    )
   )
     throw new Problem(
       422,
       "REFERENCE_UNAVAILABLE",
-      "Solo Viaje y Evento disponibles; otros Tipos esperan sus fichas E3.",
-      { tipo: "Selecciona Viaje o Evento." },
+      "Viaje, Evento y Anticipo disponibles; otros Tipos esperan sus fichas E3.",
+      { tipo: "Selecciona Viaje, Evento o Anticipo." },
     );
   if (
     "estado" in body &&
@@ -127,6 +129,12 @@ export function createReference(
         time,
         time,
       ]);
+      if (body.tipo === "Anticipo")
+        db.run("INSERT INTO fichas_anticipos VALUES(?,NULL,NULL,?,?)", [
+          id,
+          time,
+          time,
+        ]);
       db.run(
         "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,'alta',1,?,?,0,'usuario-unico',NULL)",
         [id, JSON.stringify(["nombre", "tipo", "estado"]), time],
@@ -161,7 +169,9 @@ export function updateReference(
       if (
         "tipo" in body &&
         body.tipo !== old.tipo &&
-        referenceUsage(db, id).length
+        (old.tipo === "Anticipo" ||
+          body.tipo === "Anticipo" ||
+          referenceUsage(db, id).length)
       )
         throw new Problem(
           409,

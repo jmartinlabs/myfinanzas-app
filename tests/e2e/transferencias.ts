@@ -149,7 +149,8 @@ export async function transferencias(page: Page) {
   };
   const travelPart = await part("CAT011"),
     optionalPart = await part("CAT014"),
-    blockedPart = await part("CAT012");
+    blockedPart = await part("CAT013"),
+    anticipoPart = await part("CAT012");
   async function fillTransfer(
     concept: string,
     amount = "30",
@@ -512,5 +513,128 @@ export async function transferencias(page: Page) {
   await shot("movement-list-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await shot("movement-list-mobile");
+  // E3.1 enables CAT012; CAT013 above still proves the unavailable E3 guard.
+  const created = await write("/anticipos/fichas", {
+    nombre: "Anticipo ficticio H1 E2E",
+  });
+  expect(created.status).toBe(201);
+  const anticipo = created.data.referencia.id;
+  const source = await account(
+    "Origen ficticio H1 E2E",
+    "100",
+    "Movimientos",
+    true,
+  );
+  const target = await account("Destino ficticio H1 E2E", "0");
+  const advance = {
+    tipo: "Transferencia",
+    fecha: "2026-10-13",
+    importe: "10",
+    origen: source.id,
+    destino: target.id,
+    referencia: anticipo,
+    concepto: "Adelanto ficticio H1 E2E",
+    anticipo: {
+      rol: "Adelanto",
+      origen: source.id,
+      destino: target.id,
+      evidencia: "Declaración ficticia E2E",
+      procedencia: "Prueba H1",
+    },
+  };
+  const impact = await write("/movimientos/impacto", advance);
+  expect(impact.status).toBe(200);
+  expect(
+    (
+      await write("/movimientos", {
+        ...advance,
+        fingerprint: impact.data.fingerprint,
+        contextRevision: impact.data.contextRevision,
+      })
+    ).status,
+  ).toBe(201);
+  const before = await get("/anticipos/fichas/" + anticipo);
+  expect(before.referencia.estado).toBe("Activa");
+  expect(before.ficha).toBeTruthy();
+  expect(before.cobertura).toBe("Verificada");
+  expect(before.neto).toBe("10.00");
+  const expense = {
+    tipo: "Gasto",
+    fecha: "2026-10-13",
+    importe: "12",
+    saldo: source.id,
+    partida: anticipoPart.id,
+    concepto: "Gasto relacionado H1 E2E",
+  };
+  // Exercise real authenticated validation; failed writes must leave bank/motor intact.
+  for (const [reference, code] of [
+    [null, "REFERENCE_REQUIRED"],
+    ["REF999999", "REFERENCE_NOT_FOUND"],
+    [travel, "REFERENCE_TYPE"],
+  ] as const) {
+    const rejected = await write("/movimientos", {
+      ...expense,
+      ...(reference ? { referencia: reference } : {}),
+    });
+    expect(rejected.status).toBe(422);
+    expect(rejected.data.code).toBe(code);
+  }
+  expect((await get("/saldos/" + source.id)).saldo.posicion.importe).toBe(
+    "90.00",
+  );
+  expect(await get("/anticipos/fichas/" + anticipo)).toEqual(before);
+  await nav("/movimientos/nuevo");
+  await fillExpense(expense.concepto, anticipoPart.id, "");
+  await page
+    .getByLabel("Saldo origen *", { exact: true })
+    .selectOption(source.id);
+  await page.getByLabel("Referencia *", { exact: true }).selectOption(anticipo);
+  await expect(
+    page.getByRole("region", { name: "Atribución Anticipo" }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByLabel("Rol Anticipo obligatorio", { exact: true }),
+  ).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "Registrar movimiento", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: expense.concepto, exact: true }),
+  ).toBeVisible();
+  const movement = (await get("/movimientos/" + page.url().split("/").at(-1)!))
+    .movimiento;
+  expect(movement).toMatchObject({
+    tipo: "Gasto",
+    referencia: { id: anticipo, tipo: "Anticipo", estado: "Activa" },
+    importe: "12.00",
+  });
+  expect(movement.anticipo ?? null).toBeNull();
+  expect((await get("/saldos/" + source.id)).saldo.posicion.importe).toBe(
+    "78.00",
+  );
+  expect((await get("/saldos/" + target.id)).saldo.posicion.importe).toBe(
+    "10.00",
+  );
+  const after = await get("/anticipos/fichas/" + anticipo);
+  for (const key of [
+    "adelantado",
+    "recuperado",
+    "neto",
+    "exceso",
+    "cobertura",
+    "pendientes",
+    "operaciones",
+    "pendientesAcreditacion",
+    "pares",
+  ])
+    expect(after[key]).toEqual(before[key]);
+  expect(after.relacionados).toHaveLength(1);
+  expect(after.relacionados[0]).toMatchObject({
+    id: movement.id,
+    tipo: "Gasto",
+    importe: "12.00",
+    motivo: null,
+  });
+  await shot("anticipo-related-expense-mobile");
   return { travel, event, transfer: id, a: a.id, b: b.id, position: "65.00" };
 }

@@ -1,7 +1,6 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.8.0
-(`a451dff89a499a15f7b1a30ed17f4d3a67379149`), preservando coordinación ligera,
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.9.0 (`781ffbb018c2d24fc472d3fe1ca39427a8308d80`), preservando coordinación ligera,
 gates financieros y Skill `$handoff`. Contrato portable en [agentes dinámicos](dynamic-agents.md);
 el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
@@ -17,8 +16,7 @@ $orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a ini
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
 La metodología v2.3.1 está integrada mediante PR #32; sus reglas operativas
 se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
-No cambiar el modelo: la sugerencia de capacidad/razonamiento es orientativa, no un
-selector real ni otro gate. Conservar el modelo actual si es suficiente.
+El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
 
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de
@@ -76,6 +74,17 @@ realmente controlables y deja checkpoint mínimo en progress/board o
 despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza checkpoint.
 Solo el coordinador puede editar epic-board; delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff.
+
+## Comunicación manual — adaptación focal v2.10.0
+
+Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, sobre harness local
+v2.9.0, sin sustituir sus contratos. [Comunicación del coordinador](coordinator-communication.md)
+exige Task ID y sesión funcional estables, retorno `HANDOFF → CODEX` completo
+en cada seguimiento (también bloqueos), procedencia del estado y acción humana.
+Traslado manual por usuario; no controla chats ni cambia gates de cuota/modelo,
+finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
+no es resultado verificado. Reconciliar por hitos desde el único resumen actual;
+consultar estado completo no autoriza escrituras ni reanudación.
 
 ## Chats existentes y reanudación
 Chats financieros/infraestructura externos no son nuestros subagentes y no podemos
