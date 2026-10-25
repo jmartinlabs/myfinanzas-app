@@ -1,7 +1,15 @@
 # 11 — Nómina histórica y previsión separada: Test plan
 Specification: [spec11](11-nomina-prevision-specification.md)
 
-Candidato local en verificación. Ningún AC actual se reclasifica como futuro.
+**Resultado vigente: PASS final Linux e integrado PR63.** Candidato `7d24a7f`,
+main `ed4a272`; [CI40128422924](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40128422924)
+SUCCESS con169 API/2683 aserciones y5 E2E. P11 backup/restore v12 demo/production PASS,
+N:M/originales/auditoría conservados e intentos revocados. Focal final22 PASS/156
+aserciones y QA independiente PASS. [Cierre y procedencia](11-nomina-prevision-progress.md#cierre-vigente--2026-10-24).
+El mapping y los resultados parciales siguientes conservan la evidencia previa a CI;
+las menciones pendientes quedan resueltas por este cierre, sin borrar fallos históricos.
+
+Candidato local en verificación (checkpoint histórico). Ningún AC actual se reclasifica como futuro.
 La aprobación documental completa/visual y el gate dev11 del usuario son distintos de
 la evidencia de implementación. Sin datos reales, Excel, despliegue o merge; publicación del candidato para CI según política Git.
 

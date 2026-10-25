@@ -1,3 +1,18 @@
+## Estado vigente — 2026-10-24
+
+- Aplicación: dev11/E2.5 integrada por PR63 en main `ed4a272`; candidato validado
+  `7d24a7f`, CI40128422924 SUCCESS. [Cierre/evidencias](11-nomina-prevision-progress.md#cierre-vigente--2026-10-24).
+- Trabajo autorizado: piloto operativo local y preparación documental de E2.6/spec12,
+  usuario «te doy mi aprobacion para realizar esas mejoras y seguir».
+- Rama documental: `codex/pilot-spec12-efficiency`; [reglas y medición](methodology/myfinanzas-coordination.md#piloto-operativo-acotado--spec12--e26).
+- Próximo hito: revisar/publicar ajustes documentales y abrir primera ronda spec12;
+  decisiones, spec/wireframes, desarrollo y merge conservan sus gates propios.
+- Sin cambios de plantilla, código/SQL/Excel, deploy o investigación B3/Dev32.
+
+Los apartados inferiores son historia conservada; no recargarlos para conocer el estado actual.
+
+---
+
 ## Dev11 — PR63 en borrador, fixture corregida tras CI — 2026-10-24
 
 PR63/head5979731: baseline PASS, API167 PASS/1 FAIL en fixture P11 producción:

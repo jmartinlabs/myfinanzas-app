@@ -1,6 +1,21 @@
 # 11 — Nómina histórica y previsión separada: Progress
 Specification: [spec11](11-nomina-prevision-specification.md)
-Current state: candidato implementado y QA independiente conforme; CI Linux pendiente.
+Current state: integrada en main mediante PR63; verificación final Linux PASS.
+
+
+## Cierre vigente — 2026-10-24
+
+Usuario «Aprobado merge» tras PR63 lista para revisión. [PR63](https://github.com/josemartin2000/myfinanzas-app/pull/63)
+integrada en main `ed4a2723de9a8f8b43ba13a44a1bc5703f7a5a70`; candidato validado
+`7d24a7f23bb61082c70655f4bc86ed284b4f7152`. [CI40128422924](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40128422924)
+SUCCESS: baseline/full/required,169 API/0fallos/2683 aserciones,5 E2E. P11 acredita
+backup/restore v12 demo/production, originales y N:M/auditoría preservados e intentos
+revocados. QA independiente PASS,22 focales/156 aserciones; capturas390/1440 y
+contraste mínimo6,04:1 inspeccionados. La limitación macOS permanece documentada y
+no invalida la evidencia Linux; no se omiten pruebas ni se afirma equivalencia con
+el Excel físico. Sin despliegue o cambios de Excel. Próximo: piloto local autorizado
+y preparación documental de E2.6/spec12; dev12 no autorizado. Los apartados siguientes
+son checkpoints históricos previos al cierre, no tareas actuales pendientes.
 
 Desarrollo autorizado por usuario «Autorizo» tras integración PR62 el2026-10-24;
 rama `codex/dev11-nomina-prevision`, base `1cf13b4`. El gate está registrado por

@@ -136,3 +136,65 @@ repeticiones justificadas/evitables y hallazgos QA con la auditoría del 24/10 0
 Las tareas son diferentes: no atribuir causalidad ni mejora porcentual solo a totales.
 Proponer conservar/ajustar/revertir el piloto; cualquier cambio a la plantilla se
 planteará después con evidencia y autorización propias.
+
+
+## Piloto operativo acotado — spec12 / E2.6
+
+Autorizado el2026-10-24: usuario «te doy mi aprobacion para realizar esas mejoras y
+seguir». Aplica a MyFinanzas y preparación documental de spec12; la fase funcional
+requiere spec/wireframes aprobados y autorización de dev12. Reutiliza íntegramente
+el piloto anterior y sus gates SDD/seguridad/QA. No cambia Agentic Template, Skills,
+hooks, scripts ni workflows. No autoriza merge, Excel, despliegue o B3/Dev32.
+
+1. **Preflight antes de delegar.** Verificar Git/PR/SHA/checkpoint, rama creada,
+   ownership/conflictos y herramientas/permisos requeridos por la fase, reutilizando
+   el entorno. Usar el paquete existente para asignar las operaciones potencialmente
+   escaladas a un responsable. Comunicar anticipadamente operación, motivo y siguiente
+   acción cuando el runtime lo permita: una llamada suspendida puede impedir avisar
+   después. Si sus instrucciones exigen escalar directamente tras un fallo, respetar
+   esa secuencia y explicar el bloqueo en justification, sin mensaje previo prohibido.
+   No prometer aviso inmediato al coordinador si el runtime suspende la comunicación.
+   El coordinador puede asumir navegador u otro paso delimitado; no duplicar una llamada
+   activa, eludir sandbox/trust ni ejecutar operaciones privilegiadas de prueba.
+2. **Supervisión por hitos.** Un ejecutor y QA independiente al candidato. Usar mensajes
+   y esperas acotadas del runtime, sin prometer avisos de permisos que este no exponga.
+   Un timeout no acredita fallo/progreso/aprobación. Consultar estado si resuelve una
+   decisión o hay señal de bloqueo/control justificado; no encadenar dormir, releer
+   estado y recordar sin información nueva. Mantener el espaciado CI del piloto previo.
+3. **Contexto vigente.** Un resumen compacto en tablero: autorización/alcance, SHA
+   integrado y candidato, PR, enlace a evidencia y próxima acción/gate. Actualizar por
+   hito y conservar historia debajo sin copiarla otra vez. Reanudar verificando deltas
+   Git/PR y leyendo solo fuentes necesarias o modificadas. Progreso/testplan son dueños
+   del detalle. Registrar CI final primero en la PR y consolidarla con el siguiente
+   cambio documental autorizado, evitando otro full solo por su resultado; señalar
+   cualquier retraso documental y cerrar el resumen tras verificar el merge.
+4. **Cobertura y plataforma antes del código.** En el testplan existente: AC aprobado →
+   caso positivo/negativo y riesgo/integración → comando → entorno → evidencia esperada.
+   Diseñar según alcance producción sin demo, concurrencia, restauración y respuestas
+   asíncronas; en especificación no son PASS funcional. Distinguir focales/baseline/
+   tipos/build/navegador locales soportados de guardas Linux/glibc. No intentar full
+   Linux en macOS con prerrequisitos conocidos ausentes. No es un modo parcial verde
+   ni excepción docs: resultado global exige CI Linux completa en el SHA candidato.
+   Repetir por cambio/fallo/riesgo registrado; QA revisa candidato/delta sin duplicación
+   automática de una batería ya acreditada.
+
+**Medición y evaluación.** Usar JSONL/lector existentes y progress/testplan, sin nuevos
+medidores ni activar hooks/trust. Separar especificación, desarrollo y aprobaciones/
+merge; documentar compactaciones, alcance y entorno. Mantener deduplicación, caché
+incluida, faltantes N/D y límites de atribución del piloto anterior. Registrar tiempo
+por turno y bloqueo (inicio/fin/causa/demora observable de aviso, sin sumar solapamientos),
+tokens/respuestas por agente/modelo, intervenciones/consultas y su información o decisión,
+verificaciones por candidato/entorno/motivo de repetición, cobertura inicial y hallazgos
+QA/fallos CI. Sin convertir tokens en cuota ni herramientas en CPU/espera humana pura.
+
+Referencia funcional Dev10:64,4min,78 respuestas del coordinador,26.024.501 entrada
+coordinador/31.634.695 equipo,16 reanudaciones espera/consulta. Dev11:51,2min,144respuestas,
+19.320.047/28.778.061 entrada,37reanudaciones. Excluye aprobación/merge posterior y
+la auditoría; entrada incluye caché. La compactación previa y alcances distintos
+impiden atribución causal. Comparar fase documental con spec10/spec11 documental.
+Éxito preliminar: bloqueos comunicados por el canal permitido antes de la suspensión,
+AC mapeados al inicio,
+plataforma correcta, repeticiones justificadas y menos consultas sin información nueva,
+sin perder cobertura/QA/controles. Sin porcentajes prometidos ni máximo de pruebas ajeno
+al riesgo. Evaluar conservar/ajustar/revertir al cierre; traslado reutilizable a la
+plantilla requiere evidencia y autorización propias.
