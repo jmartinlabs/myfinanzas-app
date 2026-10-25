@@ -1,3 +1,45 @@
+## Current checkpoint — candidato dev13; publicación pendiente — 2026-10-25
+
+- DEV13 terminó candidato local `8710916`, código `6e8dad3`, base `fa8a01e`,
+  rama `codex/dev13-anticipos-q9`. Ejecutor nativo completado, sin trabajo pendiente.
+- Autor: focal17/158, tipos/build/baseline y E2E1PASS;22PNG390/1440 inspeccionadas.
+  Global applicationFAIL API141PASS/45FAIL:39libc,2aserciones diagnóstico con
+  stack de ruta,4inicialización/procesos sin causa común acreditada. No investigar B3.
+- CI Linux full y QA independiente UNRUN. AC36 protocolo probado con proveedor
+  explícito de test; runtime bloquea corrección con protección no verificable;
+  integración Cierres UNRUN y aceptación global ABIERTA. Matriz44AC en testplan13.
+- Solicitada autorización de publicación PR DRAFT para CI ante fallos conforme
+  AGENTS; no push/PR dev13 todavía. No merge/deploy/datos reales autorizados.
+- Usuario autoriza spec14/E3.2 solo especificación con OpenCode vía traslado
+  manual del paquete existente; checkpoint externo no recibido, inicio no confirmado.
+  Dependencia E2.6/PR67 no integrada; incompatibilidad Exterior a decidir en spec.
+- Próximo gate: respuesta sobre publicación DRAFT; después CI por SHA y paquete
+  QA independiente, sin duplicar trabajo externo ni iniciar desarrollo14.
+
+Los apartados inferiores conservan historia.
+
+---
+
+## Current checkpoint — dev13 reanudado — 2026-10-25
+
+- Usuario «Pues empieza» tras renovación cuota autoriza reanudación dev13.
+- Q9 completa aprobada e integrada PR70/main `fa8a01e`; rev3 PR69 conservada.
+- Ejecutora nativa `/root/dev13_q9`, selección solicitada/observada
+  `gpt-6.1-sol`/`low`. Rama `codex/dev13-anticipos-q9`, base `fa8a01e`.
+  Checkout aislado; ownership código/pruebas E3.1, progress13/testplan13 y
+  arquitectura afectada. Solo coordinador escribe este tablero.
+- Cuota previa99%5h/69%semana. Gate normal, sin dispensa de QA financiera.
+- Actualizar matriz36→44AC antes de código; Q9 resuelve B13-1 conceptual.
+  Candidato y pruebas funcionales todavía UNRUN; QA independiente posterior.
+- Dev12/PR67 separado y detenido; evidencia QA externa detallada pendiente.
+  No asumir integrado. OpenCode no disponible. B3/Dev32, datos reales, Excel,
+  VPS/deploy fuera; ningún merge desarrollo13 autorizado.
+- Próximo hito: candidato con evidencia por SHA o bloqueo material verificado.
+
+Los apartados inferiores conservan historia; no son autorización nueva.
+
+---
+
 ## Estado vigente — 2026-10-25 — adopción v2.9.0
 
 - Harness v2.8.0 integrado PR66/main `10bb794`; candidato `ee2f431`. CI [candidato40173694194](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40173694194) y [main40174086170](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40174086170) SUCCESS según entregable externo, no reconsultados en esta adopción; QA documental externa favorable con CI UNRUN por falta de acceso.
