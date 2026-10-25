@@ -1,20 +1,20 @@
 # 13 — E3.1 Anticipos y pendiente por caso: Specification
-Status: rev3 APPROVED + enmienda Q9 DRAFT — pendiente aprobación documental de la enmienda
+Status: rev3 APPROVED + enmienda Q9 APPROVED — 2026-10-25
 Approval source/date: Usuario, 2026-10-25: «De momento no esta open, asi q seguimos solo por aqui, Propuesta aprobada». Esta aprobación documental no autorizaba desarrollo13 ni merge; autorización posterior y suspensión vigente se distinguen abajo.
 Context and brainstorming: [ronda base y Q1–Q6 confirmadas](13-anticipos-brainstorming.md),
 decisiones Q1–Q8 del usuario 2026-10-25; resolución Q7/Q8 registrada al final del brainstorming. Base `10bb794`; revisión documental aislada en `codex/spec13-documentary-rev2`.
 
 La rev3 integrada mantiene su aprobación. La enmienda Q9 al final de este
 documento precisa y, donde corresponda, sustituye sus contratos de atribución
-por dirección; todavía NO está aprobada para implementación. Dev13 detenido.
+por dirección. Enmienda completa aprobada por el usuario el 2026-10-25 («Aprobado»),
+tras las dos precisiones de Álex en PR70. Dev13 sigue detenido hasta reanudación expresa.
 
 Estado temporal de autorización: tras integrar rev3, el usuario autorizó dev13
 («Autorizo dev13») y su implementación tras aviso de cuota («Sigue implementacion»).
-Esa autorización previa existe, pero la ejecución está suspendida en B13-1 desde
-el hallazgo Q9. La resolución conceptual Q9 y la revisión favorable de Álex no
-aprueban esta enmienda completa ni autorizan reanudar. No código ni merge en esta
-ronda; cualquier continuidad debe verificar el gate documental y la instrucción
-vigente de reanudación, sin inferirla de la autorización histórica.
+Esa autorización previa existe; la ejecución se suspendió en B13-1. La aprobación
+completa Q9 del 2026-10-25 resuelve su gate documental. PR70 pendiente de merge
+con aprobación propia; dev13 permanece suspendido hasta instrucción expresa de
+reanudación y comprobación de gates de cuota. No código ni merge en esta ronda.
 
 ## Functionality
 
@@ -39,7 +39,7 @@ conservado como fotografía, no sustituido por el pendiente actual.
 
 ## Data model and contracts
 
-Propuesta rev3 con enmienda Q9 pendiente; sin DDL ejecutado. La autorización previa de dev13 está suspendida en B13-1.
+Rev3 y enmienda Q9 aprobadas; sin DDL ejecutado. La autorización previa de dev13 está suspendida en B13-1.
 
 - `fichas_anticipos`: `referencia` FK única a REFxxx tipo Anticipo; `creado` y
   `actualizado` UTC como datos de auditoría técnica. UNIQUE(referencia). La ficha
@@ -321,14 +321,14 @@ Trazabilidad adicional: AC-27–29 desarrollan E3.1-AC1/2; AC-30–36 desarrolla
 E3.1-AC3. Q1–Q8 resueltas; revisión documental independiente realizada y ajustes aplicados.
 Spec/wireframes aprobados. Siguiente gate: commit/PR documental y checks; merge
 requiere aprobación propia. Dev13 fue autorizado posteriormente y está ahora
-suspendido en B13-1 por enmienda Q9 pendiente; no reanudar en esta ronda. Sin SQL ni Excel.
+suspendido tras B13-1 hasta reanudación expresa; no reanudar en esta ronda. Sin SQL ni Excel.
 
 
-## Enmienda Q9 — atribución explícita de Transferencias — DRAFT
+## Enmienda Q9 — atribución explícita de Transferencias — APPROVED
 
 Fuente conceptual: resolución expresa usuario/Álex 2026-10-25, registrada en
 [brainstorming](13-anticipos-brainstorming.md#q9--resolución-conceptual-y-enmienda-pendiente--2026-10-25).
-Aprobación de esta enmienda completa: **PENDING**. Q1–Q8 conservadas. El rol no se
+Aprobación de esta enmienda completa: **APPROVED**, usuario 2026-10-25 «Aprobado», respuesta a entrega final PR70/8f58f53. Q1–Q8 conservadas. El rol no se
 puede deducir solo de origen/destino/Referencia: esta enmienda reemplaza cualquier
 lectura de rev3 que permita usar dirección aislada como acreditación del rol.
 
@@ -422,8 +422,9 @@ negativos. No convierte pruebas actuales en futuras ni acredita ejecución.
 | AC-44 | Atajo con único/múltiples pares, vista 390/1440 y acceso por teclado | Rol/REF/inversa precargados y visibles; selección explícita si múltiples, revisión previa; ausencia/conflicto bloquea con motivo |
 
 AC-37–42/44 desarrollan E3.1-AC1/2; AC-43 desarrolla E3.1-AC3 y Q8.
-Pruebas funcionales de enmienda: UNRUN; no implementación autorizada de Q9.
+Pruebas funcionales de enmienda: UNRUN; implementación aún no reanudada.
 
-**Gate:** aprobar enmienda documental Q9 completa, incluidos impacto de datos,
-API, UI/wireframes y AC-37–44, antes de continuar dev13. No merge, migración real
-ni despliegue por aprobación conceptual. Dev13 permanece detenido en B13-1.
+**Gate documental cerrado:** enmienda completa aprobada, incluidos datos, API,
+UI/wireframes y AC-37–44. Siguientes gates: aprobación propia de merge PR70 e
+instrucción expresa de reanudación dev13 con cuota verificada. Sin migración real
+ni despliegue. Dev13 permanece detenido; no se declara implementado ni probado.

@@ -308,3 +308,12 @@ B13-1. Aplicadas sin cambiar diseño Q9. La aprobación rev3 por sí sola no aut
 dev13; después hubo «Autorizo dev13»/«Sigue implementacion» y posteriormente
 suspensión por Q9. Esta revisión no autoriza enmienda completa, reanudación, código
 ni merge. Pendiente presentación final para aprobación de la enmienda.
+
+
+## Aprobación completa de enmienda Q9 — 2026-10-25
+
+Fuente expresa: usuario «Aprobado», respuesta a presentación final de PR70,
+commit8f58f53 y dos precisiones de Álex aplicadas. Aprobada enmienda completa
+datos/API/UI/wireframes/AC37–44. Sustituye PENDING documentales anteriores;
+no autoriza merge ni reanuda dev13 por inferencia. Autorización previa dev13
+conservada, ejecución suspendida hasta instrucción expresa y gates de cuota.
