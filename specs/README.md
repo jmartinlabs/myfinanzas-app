@@ -1,7 +1,7 @@
-## Estado metodológico vigente — v2.8.0
+## Estado metodológico vigente — v2.9.0 (candidato local)
 
-Adaptación local autorizada desde tag v2.8.0/`a451dff`, sin reinicializar la aplicación.
-[Procedencia y comprobaciones](methodology/orchestration-adoption.md#harness-v280--adopción-local).
+Adaptación local Standard autorizada desde tag v2.9.0/`781ffbb`, sin reinicializar la aplicación.
+[Procedencia y comprobaciones](methodology/orchestration-adoption.md#harness-v290--adopción-local). Modelos, cuota, OpenCode manual y handoff se integran en los contratos existentes; evidencia estructural no acredita comportamiento real.
 Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
 [contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
 launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.

@@ -80,6 +80,29 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('coordination')
     finally:
      p.write_text(original)
+ def test_resource_policy_guards(self):
+  cases = (
+   ('specs/methodology/model-selection.md', '`gpt-6.1-sol` + `low`'),
+   ('specs/methodology/model-selection.md', 'do not spawn'),
+   ('specs/methodology/model-selection.md', 'requested versus observed'),
+   ('specs/methodology/dynamic-agents.md', '**25% or less:**'),
+   ('specs/methodology/dynamic-agents.md', '**5% or less:**'),
+   ('specs/methodology/dynamic-agents.md', '**including QA**'),
+   ('specs/methodology/dynamic-agents.md', 'after this warning'),
+   ('specs/methodology/dynamic-agents.md', 'OpenCode is not enabled'),
+   ('templates/agent-work-packet.md', 'HANDOFF → CODEX'),
+   ('.agents/skills/orchestrate/SKILL.md', 'run `$handoff`'),
+   ('.agents/skills/handoff/SKILL.md', 'Reread the written checkpoint'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('resource-policy')
+    finally:
+     p.write_text(original)
  def test_external_contract_does_not_register_clients(self):
   p=self.root/'specs/methodology/dynamic-agents.md'
   p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')

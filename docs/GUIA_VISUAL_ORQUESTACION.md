@@ -159,16 +159,16 @@ flowchart TD
 ```mermaid
 flowchart TD
     T["Tarea lista"] --> R{"¿Riesgo o ambigüedad altos?"}
-    R -->|Sí| A["Capacidad avanzada; razonamiento alto"]
+    R -->|Sí| A["Capacidad avanzada dentro de política"]
     R -->|No| C{"¿Trabajo rutinario y acotado?"}
-    C -->|Sí| E["Capacidad eficiente; razonamiento bajo o medio"]
-    C -->|No| M["Capacidad equilibrada; razonamiento medio"]
+    C -->|Sí| E["Capacidad eficiente dentro de política"]
+    C -->|No| M["Capacidad equilibrada dentro de política"]
     A --> V["Validación real y code review"]
     E --> V
     M --> V
 ```
 
-Esto **no cambia el modelo por sí solo**. El nombre concreto y el nivel de razonamiento dependen de las opciones realmente visibles en Codex. Nunca sustituir pruebas por razonamiento elevado.
+La selección respeta la [política canónica de modelos](../specs/methodology/model-selection.md) y las capacidades verificadas del cliente. Los subagentes Codex tienen un techo absoluto de GPT-6.1 Sol Light; el coordinador conserva su modelo. Si no puede garantizarse la selección permitida, no se crea el subagente. Nunca sustituir pruebas por capacidad o razonamiento.
 
 ## 9. ¿Qué instala realmente esta template?
 

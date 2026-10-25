@@ -118,6 +118,16 @@ def validate(root):
  }.items():
   for token in tokens:
    if token not in read(name): fail('coordination',f'{name}: missing {token}')
+ # Resource policy guards are structural; runtime behavior needs separate trials.
+ for name,tokens in {
+  'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),
+  'specs/methodology/dynamic-agents.md':('**25% or less:**','**5% or less:**','**including QA**','after this warning','OpenCode is not enabled','Token accounting in the usage reader is not subscription quota'),
+  'templates/agent-work-packet.md':('HANDOFF → CODEX','Recommended model:','Final status','Branch, commit SHA, PR','Quota gate:'),
+  '.agents/skills/orchestrate/SKILL.md':('quota dispatch gate','run `$handoff`'),
+  '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('resource-policy',f'{name}: missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

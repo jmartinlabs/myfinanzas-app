@@ -1,3 +1,16 @@
+## Estado vigente — 2026-10-25 — adopción v2.9.0
+
+- Harness v2.8.0 integrado PR66/main `10bb794`; candidato `ee2f431`. CI [candidato40173694194](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40173694194) y [main40174086170](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40174086170) SUCCESS según entregable externo, no reconsultados en esta adopción; QA documental externa favorable con CI UNRUN por falta de acceso.
+- Autorización vigente: actualización local Standard v2.9.0 y validaciones/QA independiente, sin merge/deploy. Rama `codex/adopt-harness-v290`, base `10bb794`, fuente `781ffbb`. [Plan/evidencia](methodology/orchestration-adoption.md#harness-v290--adopción-local). Baseline PASS (57/24/9/8/15 regresiones) y H290-QA independiente PASS del diff14rutas; selección efectiva QA `gpt-6.1-sol` + `low` verificada en metadatos. OpenCode deshabilitado en esta ejecución.
+- Dev12 autorizado: usuario «Autorizo dev12 conforme a la especificación y wireframes aprobado». Checkout externo principal MyFinanzas, rama `codex/dev12-flujo-mensual`, HEAD observado `bb24934`, limpio al preflight. Candidato no revisado aquí; QA independiente pendiente, sin merge.
+- Spec13/E3.1 autorizada solo especificación: usuario «Autoriza preparar la especificación E3.1, sin desarrollo». Worktree externo aislado `myfinanzas-spec13-opencode` (ruta local en paquete del usuario), base observada `10bb794`; contenido/progreso externo no verificado. No se inicia ni controla OpenCode desde esta ejecución; inicio/parada del cliente externo corresponden al usuario.
+- Cuota inicial63%/79%, mínimo63%; techo subagentes `gpt-6.1-sol` + `low` con contexto nuevo. Sin autorización inferida al alcanzar umbrales25%/5%.
+- Siguiente acción: revisar commit local v2.9.0; publicación/PR no realizada, full Linux UNRUN y merge sin autorización. Cuota antes de QA54%/77%, sin excepción necesaria; umbrales reales25%/5%, OpenCode y handoff entre chats UNRUN. No aplicación/SQL/Excel/deploy, cambios en plantilla fuente ni investigación B3/Dev32.
+
+Los apartados inferiores son historia conservada; este resumen sustituye sus etiquetas vigentes.
+
+---
+
 ## Estado vigente — 2026-10-25
 
 - Aplicación: dev11/E2.5 integrada por PR63 en main `ed4a272`; candidato validado
