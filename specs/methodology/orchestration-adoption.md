@@ -336,7 +336,7 @@ Verificación local final, base `10bb794` + diff14rutas (sin producto): entrada 
 Entrega local por autorización: no push/PR nuevo, merge o despliegue. Full aplicación/Linux UNRUN en esta adopción; la baseline no acredita aceptación funcional. Dev12 y spec13 permanecen en sus checkouts y no se incorporan al candidato. Próxima acción: revisión del commit local y, si se autoriza publicación, PR/CI full Linux; aprobación expresa de merge seguirá siendo independiente.
 
 
-## Suplemento comunicación — upstream PR24 — 2026-10-25
+## Adaptación focal de comunicación — v2.10.0/PR24 — 2026-10-25
 
 Autorización expresa del usuario: sincronizar instrucciones aplicables desde
 Agentic Template PR24/main `f43d691d9ca9a0604044c97a1610f9e4daae822e` y reconciliar
@@ -365,3 +365,10 @@ Resultado local COMMS-PR24: baseline canónico PASS (57/24/9/8/15 regresiones),
 comprobación focal de campos/estados/enlaces y gates PASS; sin ensayo funcional
 ni agentes. Límite65líneas AGENTS detectado y preservado integrando enlace en
 línea existente; whitespace EOF corregido, sin relajar verificadores.
+
+Corrección de procedencia solicitada por usuario: tag upstream `v2.10.0`
+verificado por API GitHub: tag anotado `46c07e713a84879b69048ddb2b383d0b62f475f7`
+apunta exactamente a `f43d691d9ca9a0604044c97a1610f9e4daae822e`. Por tanto la
+fuente sí está versionada v2.10.0; la primera descripción «sin nueva versión»
+era incorrecta. Alcance sigue siendo adaptación documental selectiva sobre
+MyFinanzas v2.9.0, sin incorporar scorer/evals ni afirmar adopción íntegra.

@@ -75,9 +75,9 @@ despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza c
 Solo el coordinador puede editar epic-board; delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff.
 
-## Comunicación manual — suplemento PR24
+## Comunicación manual — adaptación focal v2.10.0
 
-Adaptación focal de agent-project-template PR24/`f43d691` sobre harness local
+Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, sobre harness local
 v2.9.0, sin sustituir sus contratos. [Comunicación del coordinador](coordinator-communication.md)
 exige Task ID y sesión funcional estables, retorno `HANDOFF → CODEX` completo
 en cada seguimiento (también bloqueos), procedencia del estado y acción humana.

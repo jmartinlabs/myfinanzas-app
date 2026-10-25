@@ -1,9 +1,9 @@
-## Current checkpoint — sincronización comunicación PR24 — 2026-10-25
+## Current checkpoint — sincronización comunicación v2.10.0/PR24 — 2026-10-25
 
 Resumen vigente del coordinador; reemplaza etiquetas actuales de los apartados
 históricos inferiores. Sin reanudación de trabajo ni nuevas asignaciones.
-Main verificado `36fd238` (PR72); harness v2.9.0 con suplemento upstream PR24
-`f43d691` en preparación documental, sin afirmar nueva versión del harness.
+Main verificado `36fd238` (PR72); harness v2.9.0 con adaptación documental selectiva upstream v2.10.0/PR24
+`f43d691`; tag anotado verificado46c07e7→f43d691. Sin adopción de scorer/evals.
 
 | Task ID / nombre | Cliente y referencia de sesión estable | Estado y procedencia | Última evidencia, gates y siguiente acción |
 | --- | --- | --- | --- |

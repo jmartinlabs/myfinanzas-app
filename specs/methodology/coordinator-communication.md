@@ -1,6 +1,6 @@
 # Coordinator communication, returns and operational status
 
-> Adaptación focal MyFinanzas desde agent-project-template PR24, commit
+> Adaptación focal MyFinanzas desde agent-project-template v2.10.0 (tag anotado verificado), PR24, commit
 > `f43d691d9ca9a0604044c97a1610f9e4daae822e`, sobre harness v2.9.0.
 > [Precedencia local](myfinanzas-coordination.md), AGENTS y aprobaciones del usuario
 > prevalecen; no cambia modelos/cuota, ownership, reglas financieras ni gates.
