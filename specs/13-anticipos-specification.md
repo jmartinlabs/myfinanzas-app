@@ -428,3 +428,15 @@ Pruebas funcionales de enmienda: UNRUN; implementación aún no reanudada.
 UI/wireframes y AC-37–44. Siguientes gates: aprobación propia de merge PR70 e
 instrucción expresa de reanudación dev13 con cuota verificada. Sin migración real
 ni despliegue. Dev13 permanece detenido; no se declara implementado ni probado.
+
+## Enmienda H1 — resolución de Álex — APPROVED (2026-10-25)
+
+Precisa la enmienda Q9 y corrige una contradicción anterior con la matriz E1.5 (`specs/05-transferencias-referencias-specification.md`, CAT012 → Anticipo, obligatoria). No reabre Q1–Q9 ni la matriz E1.5. Una propuesta previa de rechazar toda operación no-Transferencia con Referencia Anticipo se retira sin aplicar.
+
+- **Matriz E1.5 preservada.** Un Gasto en CAT012 exige Referencia Anticipo. Gastos con Referencia opcional e Ingresos pueden usarla conforme a sus validaciones vigentes. Los históricos con Referencia hoy inactiva se conservan. No se habilitan incompatibilidades con otras categorías obligatorias.
+- **«Anticipo solo Transferencia».** Solo las Transferencias con rol explícito y par acreditado participan en Adelantado, Recuperado, Neto y Exceso. Esto reemplaza cualquier lectura anterior que hiciera entrar otras operaciones en el motor.
+- **Gastos/Ingresos relacionados.** Conservan su efecto bancario. No llevan metadatos Anticipo, ni conversión, duplicación o compensación automática.
+- **Separación API/ficha.** `operaciones`: Transferencias del caso, con su estado como hasta ahora. `pendientesAcreditacion`: subconjunto de Transferencias no elegibles, con motivo específico. `relacionados`: Gastos/Ingresos y demás hechos fuera del motor, con su efecto bancario.
+- **Cobertura.** Los relacionados no degradan la cobertura ni aparecen como «Sin rol acreditado». Con Transferencias acreditadas la cobertura es Verificada. Solo las Transferencias pendientes degradan la cobertura, con su motivo.
+- **Rectificación y anulación.** Una Transferencia acreditada no puede cambiar de tipo ni salir de su Referencia Anticipo por rectificación; para retirar la acreditación debe anularse. Los Gastos/Ingresos rectificados o anulados no crean ni eliminan metadatos. Amortizaciones: sin ampliar su contrato existente; se tratan como relacionados.
+- **Límite.** La interfaz web aún no muestra `relacionados`; queda fuera de este cambio.

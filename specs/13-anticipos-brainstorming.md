@@ -317,3 +317,6 @@ commit8f58f53 y dos precisiones de Álex aplicadas. Aprobada enmienda completa
 datos/API/UI/wireframes/AC37–44. Sustituye PENDING documentales anteriores;
 no autoriza merge ni reanuda dev13 por inferencia. Autorización previa dev13
 conservada, ejecución suspendida hasta instrucción expresa y gates de cuota.
+
+## Nota de precisión H1 — 2026-10-25 (append-only)
+La resolución H1 de Álex precisa que «Anticipo solo Transferencia» aplica al motor (Adelantado/Recuperado/Neto/Exceso), no a toda operación con Referencia Anticipo. Reconoce que la regla de rechazo total anterior contradecía E1.5 (CAT012 obligatoria) y la retira. Detalle y pruebas: [spec13, enmienda H1](13-anticipos-specification.md).
