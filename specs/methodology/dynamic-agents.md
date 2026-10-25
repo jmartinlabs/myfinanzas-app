@@ -104,7 +104,7 @@ OpenCode is not enabled. Do not launch or integrate it via CLI, MCP or APIs. Whe
 use the copyable variant of the existing work packet, including a recommended model from
 that installation's verified available catalog (otherwise mark recommendation unverified
 and request the catalog before assigning a model). The user copies the prompt and returns
-`HANDOFF → CODEX` manually. Commits and PR preparation are permitted only within existing
+`HANDOFF → CODEX` manually. Stable task/session identity, manual states, corrections and mandatory full returns in every interaction follow [coordinator communication](coordinator-communication.md). Commits and PR preparation are permitted only within existing
 project authorization; the packet grants none. Notify significant assignments, models,
 blockers and deliveries. Continue useful independent authorized work, then wait when none
 remains; never repeatedly query the user or a worker for unchanged status.

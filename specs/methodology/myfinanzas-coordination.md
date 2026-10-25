@@ -75,6 +75,17 @@ despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza c
 Solo el coordinador puede editar epic-board; delegados conservan su propio progreso.
 Las autorizaciones existentes no se amplían ni desaparecen por un handoff.
 
+## Comunicación manual — adaptación focal v2.10.0
+
+Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, sobre harness local
+v2.9.0, sin sustituir sus contratos. [Comunicación del coordinador](coordinator-communication.md)
+exige Task ID y sesión funcional estables, retorno `HANDOFF → CODEX` completo
+en cada seguimiento (también bloqueos), procedencia del estado y acción humana.
+Traslado manual por usuario; no controla chats ni cambia gates de cuota/modelo,
+finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
+no es resultado verificado. Reconciliar por hitos desde el único resumen actual;
+consultar estado completo no autoriza escrituras ni reanudación.
+
 ## Chats existentes y reanudación
 Chats financieros/infraestructura externos no son nuestros subagentes y no podemos
 controlarlos, cerrarlos ni asumir su contexto. Antes de transferir trabajo, incorporar

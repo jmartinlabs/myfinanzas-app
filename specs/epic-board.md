@@ -1,45 +1,156 @@
-## Current checkpoint — publicación DRAFT dev13 autorizada — 2026-10-25
+## Current checkpoint — PR71 integración documental con main — 2026-10-25
 
-- DEV13 terminó candidato local `8710916`, código `6e8dad3`, base `fa8a01e`,
-  rama `codex/dev13-anticipos-q9`. Ejecutor nativo completado, sin trabajo pendiente.
-- Autor: focal17/158, tipos/build/baseline y E2E1PASS;22PNG390/1440 inspeccionadas.
-  Global applicationFAIL API141PASS/45FAIL:39libc,2aserciones diagnóstico con
-  stack de ruta,4inicialización/procesos sin causa común acreditada. No investigar B3.
-- CI Linux full y QA independiente UNRUN. AC36 protocolo probado con proveedor
-  explícito de test; runtime bloquea corrección con protección no verificable;
-  integración Cierres UNRUN y aceptación global ABIERTA. Matriz44AC en testplan13.
-- Usuario autoriza «Publicar borrador para CI Linux» conservando45FAIL, AC36
-  integración pendiente y QA pendiente. Se prepara push/PR DRAFT, sin merge,
-  despliegue ni datos reales.
-- Usuario autoriza spec14/E3.2 solo especificación con OpenCode vía traslado
-  manual. Checkpoint externo recibido: DRAFT24AC/Q1–Q7, Q5 Exterior dependencia
-  material sin resolver; archivos sin commit. Ruta/enlace solicitado para revisar
-  contenido y evidencia; PASS del autor no equivale QA/aprobación.
-  Dependencia E2.6/PR67 no integrada; incompatibilidad Exterior a decidir en spec.
-- Próximo gate: CI Linux por SHA y paquete QA independiente. Spec14 sin aprobación
-  completa ni desarrollo14; corregir estado externo obsoleto B13-1 al reconciliar.
+Usuario autoriza comprobar/resolver integración de PR71 y validar CI, sin merge
+hacia main. `main` verificado36321da, candidato H1 previoa0e0567. Conflicto
+reproducido únicamente en specs/epic-board.md; se conserva abajo el tablero
+más reciente del coordinador234dbbd. Commits/autoría H1 originales preservados.
+Sin cambios a lógica financiera, pruebas, guardas o workflows en esta resolución.
+Rutas personales del checkpoint local sustituidas por referencias portables.
+Se incorporan los documentos ya integrados PR72/73; desarrollo14 no autorizado.
 
-Los apartados inferiores conservan historia.
+Próximo: baseline del merge local y publicación en PR71; después verificar que
+refs/pull/71/merge corresponde al nuevo HEAD y ejecutar CI Linux. CI previa
+40239847535 FAIL antes de aplicación, no PASS; QA independiente pendiente,
+AC36 PARCIAL/Cierres UNRUN. B3/Dev32 fuera. Sin OpenCode/agentes externos,
+datos reales o despliegue; PR71 sigue DRAFT y sin aprobación de merge.
 
 ---
 
-## Current checkpoint — dev13 reanudado — 2026-10-25
+## Current checkpoint — DEV13-H1 publicado, CI bloqueada — 2026-10-25
 
-- Usuario «Pues empieza» tras renovación cuota autoriza reanudación dev13.
-- Q9 completa aprobada e integrada PR70/main `fa8a01e`; rev3 PR69 conservada.
-- Ejecutora nativa `/root/dev13_q9`, selección solicitada/observada
-  `gpt-6.1-sol`/`low`. Rama `codex/dev13-anticipos-q9`, base `fa8a01e`.
-  Checkout aislado; ownership código/pruebas E3.1, progress13/testplan13 y
-  arquitectura afectada. Solo coordinador escribe este tablero.
-- Cuota previa99%5h/69%semana. Gate normal, sin dispensa de QA financiera.
-- Actualizar matriz36→44AC antes de código; Q9 resuelve B13-1 conceptual.
-  Candidato y pruebas funcionales todavía UNRUN; QA independiente posterior.
-- Dev12/PR67 separado y detenido; evidencia QA externa detallada pendiente.
-  No asumir integrado. OpenCode no disponible. B3/Dev32, datos reales, Excel,
-  VPS/deploy fuera; ningún merge desarrollo13 autorizado.
-- Próximo hito: candidato con evidencia por SHA o bloqueo material verificado.
+Reemplaza el resumen vigente anterior; historia preservada. Usuario pide seguir
+por aquí, sin OpenCode ni agentes externos. Solo continúa revisión/publicación
+acotada DEV13-H1/CI; no reanuda ejecutores ni amplía desarrollo.
 
-Los apartados inferiores conservan historia; no son autorización nueva.
+- Coordinador: checkout `/private/tmp/myfinanzas-spec14-publication`, rama
+  `codex/comms-v210-integrated`; checkpoint previo46cd6b4 preservado, sin push.
+  Main remoto verificado36321da; PR72/73 integradas; B3 sigue abierto/fuera.
+- DEV13-H1/CI (OpenCode, sesión funcional del mismo nombre, ID/versionN/D):
+  sin retorno externo final nuevo. Coordinador verificó delta y publicó íntegros
+  7339b5e/1881576/a0e0567 en rama remota `codex/dev13-anticipos-q9`, PR71 DRAFT,
+  HEADa0e056722ecba0ccaeb7ce4498a72c48bebd88aa. Autoría original y resolución
+  de Álex preservadas; checkout externo `.../T/opencode/dev13-h1` limpio.
+- Verificación propia macOS/Bun1.4.3: Anticipos22PASS, cinco H1 incluidos;
+  conjunto Anticipos/Referencias30PASS/3FAIL. Con age en PATH, backup falla en
+  guarda Ancestro no confiable; R11 falla por ruta del stack Bun, reproducido
+  también en base1255ef8. Sin cambios de guardas/assertions. TypecheckPASS;
+  baseline canónica Python3.12 PASS57/24/9/8/15; diff/historial revisados.
+- CI [40239847535](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40239847535)
+  del HEADa0e0567: baseline/requiredFAIL, fullSKIPPED. Log baseline121309105938:
+  `ci_context.py snapshot` rechaza checkout refs/pull/71/merge6261d54, que integra
+  antiguo1255ef8 con fa8a01e. Pruebas Linux de aplicación UNRUN en este candidato.
+  No rerun ni diagnóstico ampliado. PR actualizada con evidencia y limitaciones.
+- Próxima acción segura DEV13: resolver discrepancia de referencia de integración
+  bajo política de conflictos/CI antes de nueva validación; sin relajar guardas.
+  QA independiente pendiente; AC36PARCIAL/CierresUNRUN; merge no autorizado.
+- QA12-CLOSE: PENDIENTE DE ENVIAR según último checkpoint, no contactar ahora.
+  PR67 DRAFT/remotobb24934, CI40191028155SUCCESS reconsultada; localc971ff4
+  limpio preservado. Sin informe nuevo ni aprobación de merge.
+- Spec14 integradaPR72/36fd238,39AC; desarrollo14 NO autorizado. D5/Exterior
+  abierto. Sin B3/Dev32, datos reales, Excel, VPS/deploy, nuevos ejecutores o
+  mensajes externos. Comentarios PR67/71 sin retornos nuevos al contraste.
+- Cuota consultada al inicio:65%5h/48%semanal restantes. Sin nueva delegación.
+
+---
+
+## Current checkpoint — STOP REQUESTED — NO AUTO-RESUME — 2026-10-25
+
+Usuario invoca `$handoff`: alcance congelado. No QA, desarrollo, investigación,
+PR, merge, despliegue ni nuevas asignaciones durante esta parada.
+
+- Repo `josemartin2000/myfinanzas-app`, checkout coordinador
+  `/private/tmp/myfinanzas-spec14-publication`, rama `codex/comms-v210-integrated`.
+  HEAD previo `36321da40f04bb3a0e94c8be5a22234d72907b43`, limpio al inventario.
+  Este resumen se guarda en commit local de checkpoint, sin push. Ruta temporal:
+  portabilidad remota del checkpoint NO VERIFICADA; fuente integrada sí en GitHub.
+- COMMS-PR24 COMPLETADO: usuario integró PR73, merge36321da verificado; adaptación
+  selectiva harnessv2.10.0 (upstream f43d691, tag46c07e7), no scorer/evals.
+  Baseline local y remotoPASS; fullLinux del HEAD5f6889e FAIL168PASS/1FAIL,
+  B3 SQLite disk I/O error (run40238031354). Merge no convierte CI en PASS,
+  B3/Dev32 sigue abierto y fuera de alcance; sin reejecución ni diagnóstico.
+- Prefijo externo `.../T/opencode/` =
+  `<raiz-temporal-opencode>/`.
+- DEV13-H1/CI (OpenCode, sesión funcional DEV13-H1/CI; ID/versionN/D):
+  ESPERANDO RETORNO, estado de ejecución/parada externo UNCONFIRMED. PR71
+  OPEN/DRAFT al último contraste, remoto1255ef8; Linux183PASS/3FAIL en
+  schema12→13 (run40218101424). Candidato autor6e8dad3/docs8710916: focal17/158,
+  tipos/build/baseline y E2E1/22PNG PASS; applicationmacOS141/45FAIL conservados.
+  QA externa no apto merge. Corrección autorizada: preservar compatibilidadE1.5,
+  separar Gastos/Ingresos relacionados fuera del motor sin degradar cobertura;
+  solo Transferencias acreditadas actúan Adelanto/Devolución. Históricos/inactivas
+  preservados, amortizaciones sin ampliar contrato. AC36 PARCIAL/CierresUNRUN.
+  Checkout externo `.../T/opencode/dev13-h1` inspeccionado limpio, rama
+  `codex/dev13-anticipos-h1`, HEADa0e0567; schemafix7339b5e local. Nuevo commit
+  documental observado NO acredita implementación H1 ni QA. Sin retorno final
+  ni push confirmado. No mergePR71 autorizado. [Progreso base](https://github.com/josemartin2000/myfinanzas-app/blob/1255ef88bb196c8326f7794aa79b1c4715aa0e0a/specs/13-anticipos-progress.md)
+  vive en rama de PR71, no en este main; consultar por SHA remoto.
+- EXT-OPENCODE-QA12-CLOSE (OpenCode, sesión funcional QA12/PR67, ID/versionN/D):
+  PENDIENTE DE ENVIAR, envío de nuevo paquete no confirmado. PR67 OPEN/HEADbb24934
+  al último contraste; CI40191028155 SUCCESS previamente verificada. Informe
+  antiguo favorable condicionado comunicado, falta nuevo informe verificable
+  de cierre. Principal `<checkout-principal>` conserva
+  rama `codex/dev12-flujo-mensual`, HEADc971ff4 local sin push, limpio. No merge
+  aprobado ni reanudación del autor. [56AC](12-flujo-mensual-specification.md).
+- EXT-OPENCODE-SPEC14 COMPLETADO:39AC aprobados e integrados PR72/36fd238,
+  publicación50c0d64 idéntica a documentos aprobados OpenCodec2cf298.
+  Checkout original `.../T/opencode/spec14` limpio, rama `codex/spec14-compartidos`,
+  HEADc2cf298 sobre a5f9400. Pausa antigua superada solo por instrucciones
+  documentales posteriores; esta nueva parada vuelve a congelar. Desarrollo14
+  NO autorizado. D5/Exterior BLOQUEADO: falta contrato/autorización específicos,
+  E3.2 no funcionalmente completa. [Spec14](14-compartidos-specification.md).
+- Runtime controlado: dev13, dev13_q9, spec14_m_review COMPLETED; ningún ejecutor
+  nativo activo aparte del coordinador que guarda este checkpoint. No se
+  envían mensajes ni se afirma parada de OpenCode: inicio/parada/traslado manual
+  corresponden al usuario. Pedir a sesiones externas activas que paren y devuelvan
+  HANDOFF → CODEX completo con Task ID/sesión antes de reasignar.
+- Preservados sin limpieza: checkoutdev13 `/private/tmp/myfinanzas-spec13-q9-review`
+  HEAD1255ef8 limpio; copia documental duplicada spec14
+  `/private/tmp/myfinanzas-spec14-coordination`, HEADa5f9400, cambios sin commit
+  en brainstorming14/specification14 (solo referencia, NO publicar). Antiguo
+  `/private/tmp/myfinanzas-spec13-rev2-codex`, HEAD500a385, cambios sin commit
+  en brainstorming13/progress13/specification13/epic-board (históricos, no candidato).
+  No reset/stash/borrado ni sustitución de autoría OpenCode.
+- Política: identidad estable Task ID+sesión, estados manuales con procedencia,
+  retorno completo en cada seguimiento y acción humana explícita según
+  [comunicación](methodology/coordinator-communication.md). No inventar modelo
+  OpenCode (catálogo no recibido), cuota o IDs. Techo Codexgpt-6.1-sol/low y
+  gates25%/5% vigentes; cuota de próxima sesión requiere lectura actual.
+  B3/Dev32, datos reales, Excel, VPS/deploy fuera; no approvals nuevos por handoff.
+- **Una próxima acción segura:** nuevo coordinador inspecciona este checkpoint,
+  Git/PR/SHA/cuota y retornos externos disponibles antes de proponer continuidad.
+  No reanudar, asignar QA o hacer merge por inferencia.
+
+Este es el único resumen vigente; debajo se conserva historia, sin nueva autorización.
+
+---
+
+## Current checkpoint — sincronización comunicación v2.10.0/PR24 — 2026-10-25
+
+Resumen vigente del coordinador; reemplaza etiquetas actuales de los apartados
+históricos inferiores. Sin reanudación de trabajo ni nuevas asignaciones.
+Main verificado `36fd238` (PR72); harness v2.9.0 con adaptación documental selectiva upstream v2.10.0/PR24
+`f43d691`; tag anotado verificado46c07e7→f43d691. Sin adopción de scorer/evals.
+
+| Task ID / nombre | Cliente y referencia de sesión estable | Estado y procedencia | Última evidencia, gates y siguiente acción |
+| --- | --- | --- | --- |
+| DEV13-H1/CI · corrección H1 y schema13 | OpenCode, sesión funcional DEV13-H1/CI; versión e ID técnico desconocidos | ESPERANDO RETORNO — último paquete entregado por usuario; ejecución/fin no inferidos | PR71 OPEN/DRAFT, HEAD1255ef8 verificado. Schema13 en commit local7339b5e comprobado; nuevo commit local a0e0567 observado, sin retorno final ni validación de candidato. Resolución H1 de Álex preserva E1.5 y separa no-Transferencias del motor. Próximo: recibir HANDOFF completo de esa sesión, revisar diff y evidencia, publicar solo bajo gates vigentes y repetir CI/QA. Sin nueva orden externa ahora. |
+| EXT-OPENCODE-QA12-CLOSE · cierre QA dev12 | OpenCode, sesión funcional QA12/PR67; versión e ID técnico desconocidos | PENDIENTE DE ENVIAR — paquete preparado; envío no confirmado en este chat | PR67 OPEN, HEADbb24934 verificado. CI40191028155 SUCCESS verificada anteriormente; informe QA anterior comunicado favorable condicionado, no informe nuevo de esta sesión. Checkpoint dev12 localc971ff4 preservado. Acción humana: confirmar si se envió el paquete existente o enviarlo una vez a sesión QA12/PR67; no afirmar ejecución. MergePR67 no aprobado. |
+| EXT-OPENCODE-SPEC14 · especificación E3.2 | OpenCode, sesión funcional Spec14; versión e ID técnico desconocidos | COMPLETADO — documentos y merge verificados | Originales a5f9400/c2cf298 preservados; publicación exacta50c0d64, PR72 MERGED36fd238 por usuario.39AC aprobados. Sin correcciones ni respuesta necesaria al autor. Desarrollo14 no autorizado. |
+| D5/Exterior · dependencia de aportaciones de terceros | Cliente/sesión no asignados | BLOQUEADO — contrato y autorización específicos pendientes | Spec14 mantiene OPEN; E3.2 no funcionalmente completa. No implementar/simular aportaciones externas ni ampliar E1.5. Acción humana futura: autorizar especificación focal, cuando proceda; no es permiso actual. |
+
+DEV13 conserva autorización previa de desarrollo y corrección H1; no reanudación
+automática por esta sincronización. AC36 PARCIAL, integración Cierres UNRUN,
+aceptación global abierta. CI PR71 último resultado FAILURE183PASS/3FAIL, sin
+refrescar runs en esta sincronización; corrección no publicada. QA13 anterior
+recibida/contrastada con H1 y CI, dictamen no apto merge; QA independiente del
+nuevo delta aún pendiente y sin asignar. No convertir pruebas de autor en QA.
+
+Identidades funcionales se conservan aunque el ID técnico no esté disponible.
+Un retorno se atribuye solo por su Task ID/sesión; pedir aclaración si ambiguo.
+No agentes/chats consultados ni mensajes externos enviados por herramientas.
+B3/Dev32, datos reales, Excel/VPS/deploy fuera. La sincronización no autoriza
+mergePR71, desarrollo14, D5 ni otra ampliación. Próxima acción del coordinador:
+validar/publicar adaptación documental; aprobación de su PR/merge separada.
 
 ---
 
