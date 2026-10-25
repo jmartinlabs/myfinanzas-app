@@ -3,7 +3,7 @@ Specification: [APPROVED rev3](12-flujo-mensual-specification.md)
 
 ## Current checkpoint
 
-EXT-CODEX-DEV12 · 2026-10-25 · candidato implementado, pendiente de commit/PR/CI Linux y QA independiente.
+EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67), pendiente de QA independiente; no integrado.
 - Autorización real del usuario: «Autorizo dev12 conforme a la especificación y wireframes aprobado».
   Sustituye el gate anterior de desarrollo pendiente; no autoriza merge ni otros motores.
 - Base `10bb794d793b7cd7c8f740831099e4dfb91c7340` (PR66), remoto reconsultado sin avance.
@@ -22,9 +22,13 @@ EXT-CODEX-DEV12 · 2026-10-25 · candidato implementado, pendiente de commit/PR/
   Detalle/56AC y UNRUN de integraciones condicionadas a fuentes ausentes en testplan.
 - Permisos: refs/índice Git y navegador/servidores locales requirieron escalación;
   explicados en justification tras fallo sandbox. Responsable este ejecutor, sin eludir trust.
-- PR/CI full Linux pendientes; no merge, datos reales/Excel/VPS/deploy/B3/Dev32.
-- Siguiente: revisar todos los commits/diff, publicar PR para QA independiente y esperar
-  CI Linux por SHA; cualquier gate obligatorio fallido se conserva y se comunica.
+- Código revisado en `519978cbae0e5dbcd915d0859382f7057e029d4e`; este delta solo consolida
+  checkpoint/evidencias. SHA HEAD candidato y resultado remoto full Linux vigentes en
+  [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67), fuente de CI por SHA.
+  Al redactar este checkpoint, CI estaba en curso; consolidar resultado en PR, sin otro
+  commit documental únicamente para su verde. Sin merge/datos reales/Excel/VPS/deploy/B3/Dev32.
+- Siguiente gate: QA independiente OpenCode sobre HEAD de PR67 y evidencia CI Linux del
+  mismo SHA. El usuario traslada el paquete; aprobación de merge sigue separada.
 
 ## Tasks
 
@@ -33,11 +37,11 @@ EXT-CODEX-DEV12 · 2026-10-25 · candidato implementado, pendiente de commit/PR/
 | Autorización/preflight/mapa56AC | completado | este checkpoint/testplan |
 | Referencia central Q4 y read model | implementado | Q4/F13 PASS |
 | API protegida/UI de consulta | implementado | MFA/read model/E2E/capturas PASS |
-| Candidato/validación/publicación | pendiente | scripts/verify y CI Linux |
+| Candidato/validación/publicación | publicado, QA pendiente | PR67; CI por SHA en PR |
 
 ## Verified increments
 
-Evidencias funcionales locales y límites por AC en testplan; QA independiente y CI Linux pendientes.
+Evidencias funcionales locales y límites por AC en testplan; QA independiente pendiente; CI Linux por SHA en PR67.
 La evidencia histórica de spec/QA documental permanece identificada como historia.
 Métricas de uso y versión del cliente no disponibles, no se inventan.
 

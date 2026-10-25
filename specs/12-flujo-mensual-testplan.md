@@ -14,7 +14,9 @@ Cada caso incluye positivos/negativos/integraciones indicados abajo. No mocks de
 financiero, fuente ausente no se acredita por tabla vacía, ni ausencia como0.
 Candidato estable: tipos/build y entrada canónica `python3 scripts/verify`;
 full Linux/restore exigidos en CI del SHA publicado, no sustituidos por macOS.
-Evidencia local del árbol candidato previa a commit, base `10bb794`; CI del SHA final pendiente.
+Evidencia local del árbol de código `519978cbae0e5dbcd915d0859382f7057e029d4e`, base `10bb794`.
+Estado remoto del HEAD candidato y CI por SHA en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67);
+esta consolidación solo cambia checkpoint/evidencias, no código ni pruebas.
 PASS indica comprobación ejecutada por el autor, no QA independiente. Los escenarios
 positivos que requieren cobertura bancaria completa o identidad de Ahorro no instalada
 conservan UNRUN de integración; no se reclasifican como AC futuros. El usuario confirmó
@@ -91,7 +93,7 @@ conservan UNRUN de integración; no se reclasifican como AC futuros. El usuario 
 | PASS | `bun run typecheck`, `bun run build` | árbol candidato; builds no despliegan |
 | PASS | `python3 scripts/verify baseline` · Python3.12.14 | Baseline canónica completa:57 controles proyecto/CI,23validador,9uso,8hooks,15entrada; no fase application |
 | FAIL | Regresión ampliada Deudas/Plan del ciclo en macOS |60PASS/2FAIL/589assertions; ambos fallos requieren libc.so.6 en copia/restauración. Selección local incompatible, no se repite/omite ni se declara verde; CI Linux obligatoria |
-| UNRUN | Entrada canónica full Linux del SHA publicado | Se acreditará mediante Actions, sin sustituir guardas por macOS |
+| UNRUN local | Entrada canónica full Linux del SHA publicado | macOS no la sustituye; resultado remoto vigente por SHA en PR67 |
 | UNRUN | QA independiente OpenCode | revisión del candidato final, no realizada por este autor |
 
 Prerrequisitos existentes reutilizados; sin instalación ni cambios de lockfile. Python3
