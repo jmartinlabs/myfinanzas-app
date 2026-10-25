@@ -1,12 +1,20 @@
 # 13 — E3.1 Anticipos y pendiente por caso: Specification
 Status: rev3 APPROVED + enmienda Q9 DRAFT — pendiente aprobación documental de la enmienda
-Approval source/date: Usuario, 2026-10-25: «De momento no esta open, asi q seguimos solo por aqui, Propuesta aprobada». No autoriza desarrollo13 ni merge.
+Approval source/date: Usuario, 2026-10-25: «De momento no esta open, asi q seguimos solo por aqui, Propuesta aprobada». Esta aprobación documental no autorizaba desarrollo13 ni merge; autorización posterior y suspensión vigente se distinguen abajo.
 Context and brainstorming: [ronda base y Q1–Q6 confirmadas](13-anticipos-brainstorming.md),
 decisiones Q1–Q8 del usuario 2026-10-25; resolución Q7/Q8 registrada al final del brainstorming. Base `10bb794`; revisión documental aislada en `codex/spec13-documentary-rev2`.
 
 La rev3 integrada mantiene su aprobación. La enmienda Q9 al final de este
 documento precisa y, donde corresponda, sustituye sus contratos de atribución
 por dirección; todavía NO está aprobada para implementación. Dev13 detenido.
+
+Estado temporal de autorización: tras integrar rev3, el usuario autorizó dev13
+(«Autorizo dev13») y su implementación tras aviso de cuota («Sigue implementacion»).
+Esa autorización previa existe, pero la ejecución está suspendida en B13-1 desde
+el hallazgo Q9. La resolución conceptual Q9 y la revisión favorable de Álex no
+aprueban esta enmienda completa ni autorizan reanudar. No código ni merge en esta
+ronda; cualquier continuidad debe verificar el gate documental y la instrucción
+vigente de reanudación, sin inferirla de la autorización histórica.
 
 ## Functionality
 
@@ -31,7 +39,7 @@ conservado como fotografía, no sustituido por el pendiente actual.
 
 ## Data model and contracts
 
-Propuesta rev3; sin DDL ejecutado hasta aprobación y autorización de desarrollo.
+Propuesta rev3 con enmienda Q9 pendiente; sin DDL ejecutado. La autorización previa de dev13 está suspendida en B13-1.
 
 - `fichas_anticipos`: `referencia` FK única a REFxxx tipo Anticipo; `creado` y
   `actualizado` UTC como datos de auditoría técnica. UNIQUE(referencia). La ficha
@@ -63,8 +71,11 @@ Propuesta rev3; sin DDL ejecutado hasta aprobación y autorización de desarroll
 
 ## Screens and interfaces
 
-Wireframes rev3 con datos ficticios, aprobados por el usuario el 2026-10-25. Extienden
-el diseño visual común aprobado (desktop 1440, móvil 390) y sus tokens; sin color
+Wireframes rev3 con datos ficticios, aprobados por el usuario el 2026-10-25.
+Precondición Q9 de todos los ejemplos positivos: roles Adelanto/Devolución y
+orientación/par explícitamente acreditados por ID de Movimiento y evidencia.
+Las flechas y fechas solo presentan hechos; nunca acreditan su rol por sí solas.
+Los wireframes extienden el diseño visual común aprobado (desktop 1440, móvil 390) y sus tokens; sin color
 sin icono/texto; ausencia explicitada como «No disponible», nunca 0 ni guion.
 
 ```text
@@ -243,7 +254,11 @@ E1/E2 ya aprobadas.
 
 ## Acceptance checks
 
-Diseño de prueba; su aprobación documental no autoriza desarrollo.
+Diseño de prueba. Precondición de todos los positivos que usan Adelanto/Devolución
+(incluidos AC-05–07, 11, 14, 16–19, 23 y 27–36): rol y orientación/par acreditados
+explícitamente conforme Q9. Sin acreditación se aplican ND/Revisar y cobertura
+Parcial de Q9; dirección/fecha aisladas no satisfacen estos positivos.
+La autorización previa de desarrollo permanece suspendida en B13-1.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
 | --- | --- | --- |
@@ -251,9 +266,9 @@ Diseño de prueba; su aprobación documental no autoriza desarrollo.
 | AC-02 | Fallo en cualquier paso del alta | Rollback completo; sin REF parcial ni ficha huérfana; mensaje de causa segura |
 | AC-03 | Alta duplicada o simultánea de la misma referencia | Rechazada por unicidad con idempotencia; no hay segunda ficha |
 | AC-04 | Desactivar Referencia con historial | Ficha y motor conservan historial; sin DELETE físico; reactivar no crea operaciones |
-| AC-05 | Adelantos 1000+500 y devolución 500 | Recuperación parcial; Adelantado 1500, Recuperado 500, Neto 1000, Exceso 0 verificado; fechas por transferencias reales |
-| AC-06 | Devolución igual al adelantado | Estado Recuperado; sin doble cómputo ni evento de cierre financiero inferido |
-| AC-07 | Devolución 1800 sobre adelantado 1500 | Advertencia de exceso antes de confirmar; caso pasa a Excedido; Exceso 300; importe real intacto |
+| AC-05 | Adelantos 1000+500 y devolución 500 con rol/par acreditados Q9 | Recuperación parcial; Adelantado 1500, Recuperado 500, Neto 1000, Exceso 0 verificado; fechas por transferencias reales |
+| AC-06 | Devolución igual al adelantado, roles/par acreditados Q9 | Estado Recuperado; sin doble cómputo ni evento de cierre financiero inferido |
+| AC-07 | Devolución 1800 sobre adelantado 1500, roles/par acreditados Q9 | Advertencia de exceso antes de confirmar; caso pasa a Excedido; Exceso 300; importe real intacto |
 | AC-08 | Ficha sin movimientos elegibles | «Sin operaciones» o No disponible según cobertura; nunca Recuperado por igualdad 0=0 |
 | AC-09 | Devolución nueva con dirección equivocada acreditada respecto a un par verificable | Bloqueada al guardar; histórica equivalente marcada «Revisar» y no computada; sin autocorrección |
 | AC-10 | Devolución con otra Referencia | Pertenece a su propia ficha; no computada en la ficha consultada; sin atribución por similitud |
@@ -291,7 +306,7 @@ rev3 y wireframes aprobados el 2026-10-25.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
 | --- | --- | --- |
-| AC-27 | Misma REF con A→B y A→C; abrir devolución | Sin par elegido automáticamente; selección explícita muestra origen/destino y adelantado/recuperado/pendiente verificables; precarga inversa del seleccionado |
+| AC-27 | Misma REF con adelantos A→B y A→C explícitamente acreditados Q9; abrir devolución | Sin par elegido automáticamente; selección explícita muestra origen/destino y adelantado/recuperado/pendiente verificables; precarga inversa del seleccionado |
 | AC-28 | Dirección contradictoria o par original no identificable | Atajo bloqueado con conflicto y acceso a hechos; sin elección por fecha/importe/proximidad ni autocorrección |
 | AC-29 | Devolución parcial y después excesiva de par seleccionado | Validación de par/dirección, importe y fecha editables; aviso de exceso; cada recuperación una sola vez en par y global; motor único determina Neto/Exceso/Estado |
 | AC-30 | Confirmar apertura con evidencia suficiente desde ficha | Una foto por ID REF+ID Ciclo con importe, Inicio, procedencia, evidencia/auditoría, fecha confirmación y cobertura; sin modificar apertura E2.1 |
@@ -305,7 +320,8 @@ rev3 y wireframes aprobados el 2026-10-25.
 Trazabilidad adicional: AC-27–29 desarrollan E3.1-AC1/2; AC-30–36 desarrollan
 E3.1-AC3. Q1–Q8 resueltas; revisión documental independiente realizada y ajustes aplicados.
 Spec/wireframes aprobados. Siguiente gate: commit/PR documental y checks; merge
-requiere aprobación propia. Desarrollo13 no autorizado. Sin SQL ni Excel.
+requiere aprobación propia. Dev13 fue autorizado posteriormente y está ahora
+suspendido en B13-1 por enmienda Q9 pendiente; no reanudar en esta ronda. Sin SQL ni Excel.
 
 
 ## Enmienda Q9 — atribución explícita de Transferencias — DRAFT

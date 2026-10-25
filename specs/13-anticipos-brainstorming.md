@@ -298,3 +298,13 @@ Estado: enmienda Q9 propuesta en specification, pendiente aprobación documental
 completa. Dev13 DETENIDO en B13-1. No implementar, migrar datos reales ni hacer
 merge/deploy por esta resolución conceptual. La autorización dev13 previa queda
 sujeta al gate expreso de esta enmienda.
+
+
+## Revisión Álex PR70 — precisiones documentales — 2026-10-25
+
+Dictamen favorable con dos precisiones: exigir acreditación Q9 también en ejemplos
+y positivos anteriores; distinguir autorización previa dev13 de suspensión actual
+B13-1. Aplicadas sin cambiar diseño Q9. La aprobación rev3 por sí sola no autorizó
+dev13; después hubo «Autorizo dev13»/«Sigue implementacion» y posteriormente
+suspensión por Q9. Esta revisión no autoriza enmienda completa, reanudación, código
+ni merge. Pendiente presentación final para aprobación de la enmienda.
