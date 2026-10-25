@@ -1,3 +1,13 @@
+## Estado metodológico vigente — v2.8.0
+
+Adaptación local autorizada desde tag v2.8.0/`a451dff`, sin reinicializar la aplicación.
+[Procedencia y comprobaciones](methodology/orchestration-adoption.md#harness-v280--adopción-local).
+Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
+[contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
+launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
+Un resumen vigente en tablero/progreso es dueño del estado; el resto enlaza ese resumen.
+Entrada de verificación v2.7.0 conservada, sin cambiar CI. Los estados inferiores son historia.
+
 # Document ownership and workflow
 
 Estado vigente 2026-10-22: aplicación existente, ocho etapas cerradas, E1.1–E1.5

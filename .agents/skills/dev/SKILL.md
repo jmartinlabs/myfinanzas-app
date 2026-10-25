@@ -16,13 +16,20 @@ verified acceptance evidence, relevant documentation updates and local commits.
    Review acceptance checks and identify contradictions; stop on important conflicts.
 2. Start/resume progress and test plan using their templates. Create coherent tasks and
    map every acceptance ID to an automated/manual check, expected result, command and
-   evidence location. Preserve previous evidence with run dates and label stale results.
+   evidence location, local/CI platform, owner and negative/integration cases before code.
+   Preserve previous evidence with run dates and label stale results.
    Separate executable checks for this delivery from reviewed contracts for future deliveries;
    identify partial coverage and missing integrations without claiming future behavior tested.
    Use the approved scope; never relabel a failed or unrun current check as a future contract.
-3. Implement small working increments. Maintain task state, relevant errors and next
+3. Preflight the affected environment and assign permission-sensitive operation owners.
+   Follow [coordination](../../../specs/methodology/dynamic-agents.md) for advance
+   escalation notices, external workers and shared test resources; preserve runtime
+   restrictions on direct retries and never bypass approval.
+   Implement small working increments. Maintain task state, relevant errors and next
    action. Run relevant automated tests and required build/type/lint checks. Inspect
-   errors and regressions, correct defects and repeat affected checks.
+   errors and regressions, correct defects and repeat affected checks. Complete required
+   checks on each stable candidate; reuse evidence only for unchanged inputs/environment,
+   recording reasons for repeats. Incompatible local runs never replace CI gates.
    If demo/test fixtures initialize automatically, verify their environment boundary and
    rejection without changing existing data outside that boundary. Keep credentials and
    authentication artifacts out of shared logs, screenshots and other evidence.
@@ -50,6 +57,8 @@ verified acceptance evidence, relevant documentation updates and local commits.
    and required regression checks pass with current evidence. Record reviewed future contracts
    separately; their implementation and integration remain pending. Summarize commands/results, commits,
    limitations and next authorized action; do not advance the roadmap by implication.
+   Update one current checkpoint with SHA/pending changes, check/QA evidence, PR/merge
+   state and next action; supersede stale current labels without deleting history.
 ## Stop conditions
 Never deploy to production, publish or perform destructive operations without explicit
 permission. Stop on important conflicts or missing required authorization. Record blockers;

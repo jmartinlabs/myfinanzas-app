@@ -1,4 +1,4 @@
-# Epic orchestration: lightweight delivery with MyFinanzas approvals (v2.4.1)
+# Epic orchestration: lightweight delivery with MyFinanzas approvals (v2.8.0)
 
 > MyFinanzas: [project coordination and authorization gates](myfinanzas-coordination.md)
 > override generic examples. Spec approval alone never starts dev06/spec07 here;
@@ -13,6 +13,8 @@ Maintain `specs/epic-board.md` when multiple epics or workstreams genuinely requ
 The coordinator is the **only writer** of the shared board. Delegates return concise results, SHA and evidence. Update changed fields at authorization, candidate, QA, blocker or PR milestones, not on every worker message. Approved decisions remain canonical in the specs/guidelines.
 
 Each row has a unique feature ID and tracks stage, scope/dependencies, approval, assigned role, isolated branch/checkout (if applicable), blockers, evidence link, next action and last verification. A ready task is not the same as an approved spec. A PR opened is not a merge.
+Link one current summary; after integration replace stale pending labels with verified
+SHA/PR/check state and retain the historical record as superseded.
 
 ## Stage/gate rules
 
@@ -39,6 +41,8 @@ Each investigation needs a falsifiable hypothesis, discriminating probe and evid
 ## Independent specialist work packets
 
 The coordinator gives each delegate: feature ID, role, source spec and approval state, concrete deliverables, read/write files, dependencies, prohibited actions, validation checks, and a result format (outcome, evidence, blockers, proposed next work). See [role contracts](../../.agents/roles/README.md) and the [work packet template](../../templates/agent-work-packet.md). Specialists cannot promote draft to approved, merge a PR or update the shared board themselves.
+Mixed-client workers, preflight, advance escalation notices, fresh context and resource
+isolation follow dynamic-agents.md; no parallel scheduler or implied cross-client control.
 
 ## Financial and security decisions
 
