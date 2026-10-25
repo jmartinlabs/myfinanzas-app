@@ -1,6 +1,9 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.5.0 (tag `3c9aefe`), preservando coordinación ligera y Skill `$handoff`. Historia y procedencia:
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.8.0
+(`a451dff89a499a15f7b1a30ed17f4d3a67379149`), preservando coordinación ligera,
+gates financieros y Skill `$handoff`. Contrato portable en [agentes dinámicos](dynamic-agents.md);
+el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
 
 ## Autoridad y entradas

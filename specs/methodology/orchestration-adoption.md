@@ -265,3 +265,43 @@ PR58, primer CI Linux 40083703786: baseline bloqueado por carrera al eliminar .g
 tras numerosos commits del fixture (ENOTEMPTY), sin fallos de aserciones. Se desactiva
 mantenimiento automático únicamente en esos repositorios temporales; 35 regresiones
 locales PASS y QA del delta conforme. Confirmación remota pendiente.
+
+
+## Harness v2.8.0 — adopción local
+
+Autorización: usuario «adopta los ultimos cambios del harness»,2026-10-25. Fuente
+`josemartin2000/agent-project-template`, tag v2.8.0 anotado remoto resuelto a commit
+`a451dff89a499a15f7b1a30ed17f4d3a67379149`, idéntico a la copia local revisada.
+Base adoptada previa v2.7.0/`ed61c62`; main MyFinanzas inicial `42a3efe` (PR65).
+No init-project/bootstrap ni sustitución de guías, arquitectura o decisiones financieras.
+
+| Rutas | Decisión revisada |
+| --- | --- |
+| Skills orchestrate/dev/task/handoff | Fusionar obligaciones v2.8 conservando gates/protecciones y AC actuales/futuros locales |
+| dynamic-agents / epic-orchestration | Incorporar preflight, contexto/supervisión, clientes externos, recursos aislados y estado vigente |
+| templates packet/progress/testplan/board | Actualizar desde archivos previos idénticos a upstream, sin sobrescribir adaptación propia |
+| validate-template / test-validator | Fusionar guardas de coordinación y regresiones negativas; preservar validación CI propia |
+| AGENTS, coordinación local, quality, specs/README | Versionado/contexto vigente y enlaces, sin copiar README/guías genéricos |
+| README upstream, AGENT_EVALS y fixtures evals | No importar: proyecto no tiene ese scorer; no afirmar evaluaciones de clientes ni rendimiento real |
+| Aplicación, SQL/Excel, workflows, scripts verify/ci-policy, hooks/uso, plantilla fuente | Sin cambios; docs/full y CI Linux obligatorios intactos |
+
+Desviación necesaria: cuando el runtime obliga a reintentar escalado sin mensaje
+previo al usuario, respetar esa secuencia y explicar en justification. El aviso
+anticipado solo puede prometerse por canal permitido; un trabajador suspendido puede
+no comunicar. Se conserva la excepción local de PR64 y se añaden guardas/regresiones
+de texto sobre ella. No relajar autorizaciones ni activar trust o clientes externos.
+
+Evidencia estructural no demuestra conducta real de Codex/Claude/OpenCode o ahorro.
+No hay adaptador OpenCode, launcher o recolector de uso multicliente instalado.
+Medición operativa E2.6 sigue siendo piloto local; adopción común no acredita mejora.
+Próximo: baseline/regresiones locales, QA independiente y full CI Linux en candidato.
+Sin merge, despliegue, datos reales, cambio financiero o desarrollo dev12 autorizado.
+
+
+Verificación del candidato v2.8.0: baseline canónico PASS;23 regresiones del validador
+incluyen pérdidas de obligaciones de coordinación y excepción de escalación;15 de
+entrada de verificación, además de controles de proyecto/uso/hooks existentes.
+QA independiente H280-QA PASS del diff18rutas, sin bloqueantes; no duplicó suites.
+Diff/whitespace PASS. Ninguna modificación en aplicación, SQL, workflows, verify,
+clasificador o hooks. No se ejecutó full incompatible en macOS: CI Linux del SHA
+publicado sigue pendiente y será condición antes de cualquier merge aprobado.

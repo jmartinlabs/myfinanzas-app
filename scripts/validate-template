@@ -83,6 +83,41 @@ def validate(root):
       json.dumps(config.get('hooks'),sort_keys=True)!=json.dumps(expected,sort_keys=True)):
    fail('usage-hooks','unexpected local reporting hook scope or command')
  except (ValueError,TypeError): fail('usage-hooks','invalid reporting hook configuration')
+ # Preserve portable coordination obligations; live behavior is evaluated separately.
+ for name,tokens in {
+  'specs/methodology/dynamic-agents.md':('scope-sized preflight',
+   'suspending escalation, the worker notifies the coordinator',
+   'Advance notice is not another user approval gate',
+   'If higher-priority runtime instructions require a direct escalation retry without a prior user message',
+   'blocking operation in justification', 'fresh bounded context by default',
+   'Inherit full history only for a concrete dependency',
+   'not repeated status reminders', 'Space CI queries progressively',
+   'QA independently', 'Workers in other clients',
+   'start/stop owner', 'No OpenCode adapter is supplied',
+   'explicit user authorization and supported tools',
+   'separate checkouts/worktrees AND non-overlapping ownership',
+   'Separate test ports, databases', 'Worker output is evidence, never',
+   'other-client usage is', 'one current summary', 'Replace stale current-state labels',
+   'savings still need measurement'),
+  'templates/agent-work-packet.md':('Client / version / session ID',
+   'Start/stop owner and permitted communication route', 'Instruction entry points',
+   'Context:', 'Preflight / operation owners', 'Shared test resources',
+   'Verification environment / candidate', 'Blocking notice', 'Evidence destination'),
+  'templates/progress.md':('Current checkpoint', 'one current summary',
+   'permission-sensitive operation owners', 'PR / CI / merge state'),
+  'templates/testplan.md':('Before implementation', 'negative/error and integration',
+   'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
+  '.agents/skills/orchestrate/SKILL.md':('fresh bounded context',
+   'progressively spaced CI queries', 'one current summary'),
+  '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
+   'advance', 'escalation notices', 'Incompatible local runs never replace CI gates',
+   'one current checkpoint'),
+  '.agents/skills/task/SKILL.md':('execution platform and operation owners before code',
+   'dynamic-agents.md', 'preserve independent QA'),
+  '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('coordination',f'{name}: missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

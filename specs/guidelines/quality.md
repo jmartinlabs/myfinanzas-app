@@ -268,3 +268,15 @@ la adopción prueba replays sintéticos, no su ejecución automática real.
 
 La selección docs exige un checkout limpio y, con `--head`, ese mismo commit en HEAD.
 Cambios locales sin commit o un snapshot distinto fuerzan full conservadoramente.
+
+
+## Coordinación v2.8.0 — preparación y evidencia
+
+Antes del código mapear AC, casos negativos/integración, entorno local/CI, responsable
+y evidencia esperada en el testplan existente. Preflight por alcance y plataforma;
+ningún ensayo local incompatible sustituye CI Linux. Focales por delta y controles
+obligatorios por candidato estable, con revisión/entorno y motivo de repetición.
+QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen del autor.
+Al cierre enlazar un checkpoint vigente con SHA/PR/evidencias, conservando historia.
+[Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);
+[desviaciones/procedencia](../methodology/orchestration-adoption.md#harness-v280--adopción-local).

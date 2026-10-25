@@ -5,6 +5,8 @@
 Repository: UNDECIDED
 Last reconciled (date + source commit/PR): UNVERIFIED
 Coordinator next action: Inspect canonical spec/roadmap/progress before assigning work.
+Current summary owner/link: this board or the existing progress document; no competing statuses.
+External clients / IDs / start-stop owners / notification routes: NONE VERIFIED.
 
 | Item | Priority | Spec status / approval evidence | Dev status | QA status | Hard dependencies | Owner / isolated branch | Blocker / decision needed | Next independent action | Evidence / last verified |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -28,6 +30,9 @@ Coordinator next action: Inspect canonical spec/roadmap/progress before assignin
 ## Handoffs and checks
 
 - PENDING: Spec approved? source/date; Dev tests? command/result; QA? evidence; PR? authorization to push/open; merge? explicit user approval.
+
+After confirmed integration, update current PR/merge/SHA/check fields, explicitly
+superseding historical pending states. Preserve history behind links.
 
 ## Next-session resume
 
