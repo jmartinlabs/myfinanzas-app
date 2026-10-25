@@ -87,3 +87,55 @@ export function eur(value: string | null) {
   const [whole, dec] = value.split(".");
   return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${dec} €`;
 }
+
+// E2.6 wire contract only; the browser never imports server modules.
+export type FlowMetric = {
+  valor: string | null;
+  subtotal: string | null;
+  estado: string;
+  motivo: string;
+  fuente: string;
+  ids: string[];
+  cobertura: string;
+};
+type FlowCycle = {
+  id: string;
+  mesFinanciado: string;
+  inicio: string;
+  fin: string | null;
+};
+type FlowPay = {
+  id: string;
+  revision: number;
+  mes: string;
+  motivo: string;
+  fuente: string | null;
+};
+export type MonthlyFlowDTO = {
+  ciclo: FlowCycle;
+  ciclos: FlowCycle[];
+  corteEfectivo: string | null;
+  consulta: string;
+  metrics: Record<string, FlowMetric>;
+  erroresFuente: string[];
+  alcance: string;
+  procedencia: string;
+  coberturaBancaria: { verificada: boolean; motivo: string };
+  mensual: {
+    ancla: string | null;
+    inicio: string | null;
+    fin: string | null;
+    n: number;
+    meses: {
+      mes: string;
+      valido: boolean;
+      motivo: string;
+      subtotalConocido: string | null;
+      pagas: FlowPay[];
+    }[];
+    avisos: FlowPay[];
+  };
+  plan: { sinPlan: boolean; sinPlanificar: string[] };
+  liquidez: { fuente: string; excluidos: { id: string; motivo: string }[] };
+  pendientes: string[];
+};

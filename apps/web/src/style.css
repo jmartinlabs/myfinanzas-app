@@ -1899,3 +1899,97 @@ textarea {
     display: block;
   }
 }
+
+/* Monthly query: readable source/coverage blocks at both supported viewports. */
+.flow-selection {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.flow-cycle-control {
+  flex: 1;
+  min-width: 0;
+}
+.flow-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+.flow-indicator {
+  border: 1px solid #9da98e;
+  border-radius: 10px;
+  padding: 1rem;
+  min-width: 0;
+  background: #fff;
+  overflow-wrap: anywhere;
+}
+.flow-indicator-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: start;
+}
+.flow-indicator h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+.flow-amount {
+  font-size: 1.4rem;
+  font-weight: 700;
+  margin: 0.65rem 0;
+}
+.flow-indicator p {
+  margin: 0.65rem 0;
+}
+.flow-ids {
+  max-height: 12rem;
+  overflow: auto;
+}
+.flow-month {
+  border-bottom: 1px solid #9da98e;
+  padding: 0.5rem 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 760px) {
+  .flow-grid {
+    grid-template-columns: 1fr;
+  }
+  .flow-selection {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .flow-indicator {
+    padding: 0.85rem;
+  }
+}
+/* Desktop keeps amounts/coverage aligned in compact rows; mobile retains source cards. */
+@media (min-width: 1051px) {
+  .flow-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.65rem;
+  }
+  .flow-grid .flow-indicator {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 0.7fr);
+    column-gap: 1.25rem;
+    padding: 0.85rem 1rem;
+  }
+  .flow-grid .flow-indicator-head {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .flow-grid .flow-amount {
+    grid-column: 2;
+    grid-row: 1;
+    font-size: 1.25rem;
+    margin: 0;
+    text-align: right;
+  }
+  .flow-grid .flow-indicator > p:not(.flow-amount),
+  .flow-grid .flow-indicator > details,
+  .flow-grid .flow-indicator > a {
+    grid-column: 1 / -1;
+  }
+}

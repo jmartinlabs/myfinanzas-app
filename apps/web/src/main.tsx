@@ -1,3 +1,4 @@
+import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
 import { PlanAnual } from "./PlanAnual";
@@ -112,7 +113,7 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go("/saldos");
+          go(path.startsWith("/flujo-mensual") ? path : "/saldos");
         }}
       />
     );
@@ -158,6 +159,21 @@ function App() {
             }}
           >
             Anticipos
+          </a>
+          <a
+            className={
+              path.startsWith("/flujo-mensual") ? "nav-active" : "nav-link"
+            }
+            href="/flujo-mensual"
+            aria-current={
+              path.startsWith("/flujo-mensual") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/flujo-mensual");
+            }}
+          >
+            Flujo mensual
           </a>
           <a
             className={
@@ -330,7 +346,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/anticipos") ? (
+          {path.startsWith("/flujo-mensual") ? (
+            <FlujoMensual path={path} go={go} />
+          ) : path.startsWith("/anticipos") ? (
             <Anticipos path={path} go={go} />
           ) : path.startsWith("/nomina") ? (
             <Nomina />

@@ -589,3 +589,61 @@ export function payrollForecast(db: Database, input: unknown, now: number) {
         : null,
   };
 }
+
+/** Documentary eligibility independent of bank allocation completeness and forecast selection. */
+export function structuralDocumentReference(p: Pay) {
+  const unavailable = (motivo: string) => ({
+    exacto: null as string | null,
+    motivo,
+    fuente: null as string | null,
+    operandos: {
+      devengo: p.devengo,
+      base: p.base,
+      irpf: p.irpf,
+      variable: p.variable,
+      guardia: p.guardia,
+    },
+  });
+  if (
+    p.tipo !== "Ordinaria" ||
+    !p.verificado ||
+    p.guardia === null ||
+    [p.devengo, p.base, p.irpf, p.variable].some((v) => v === null) ||
+    !p.evidencia
+  )
+    return unavailable(
+      "Operandos/documentación salarial insuficientes o pendientes de verificar",
+    );
+  const h = p.historico === null ? null : D(p.historico),
+    d = p.documentado === null ? null : D(p.documentado);
+  if (d !== null && (!p.documentadoVerificado || !p.evidenciaDocumentado))
+    return unavailable("Neto documentado pendiente de verificar");
+  let net = d ?? h,
+    source = d !== null ? "Documentado" : "Histórico";
+  if (h !== null && d !== null && h.cmp(d) !== 0) {
+    if (p.resolucion?.contexto !== originalContext(p))
+      return unavailable("Discrepancia documental sin revisión vigente");
+    source = p.resolucion.fuente;
+    net = source === "Histórico" ? h : d;
+  }
+  if (net === null)
+    return unavailable(
+      "Sin Neto documental verificable; banco no lo sustituye",
+    );
+  const rate = D(p.irpf!).pct();
+  const deductions = D(p.devengo!).sub(D(p.base!).mul(rate)).sub(net);
+  const structural =
+    p.guardia === "No"
+      ? net
+      : D(p.devengo!)
+          .sub(D(p.variable!))
+          .sub(D(p.base!).sub(D(p.variable!)).mul(rate))
+          .sub(deductions);
+  return {
+    ...unavailable(
+      "Referencia documental verificada; conciliación bancaria independiente",
+    ),
+    exacto: structural.exact(),
+    fuente: source,
+  };
+}

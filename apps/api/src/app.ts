@@ -1,3 +1,4 @@
+import { monthlyFlow } from "./flujo-mensual";
 import {
   getAnticipo,
   listAnticipos,
@@ -217,6 +218,9 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
       }
+      const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
+      if (flow && req.method === "GET")
+        return reply(monthlyFlow(db, flow[1], now()));
       if (path === "/api/anticipos/fichas" && req.method === "GET")
         return reply(listAnticipos(db, new URL(req.url).searchParams));
       if (path === "/api/anticipos/fichas" && req.method === "POST")

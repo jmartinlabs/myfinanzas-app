@@ -1,3 +1,136 @@
+# 12 — Verificación de desarrollo vigente · 2026-10-25
+
+Autorización EXT-CODEX-DEV12 registrada en [progress](12-flujo-mensual-progress.md).
+56 AC actuales; ninguno diferido. Mapa previo al código, responsable único Codex;
+QA independiente posterior OpenCode pendiente. La historia inferior conserva su fecha
+sin sustituir el gate de desarrollo ahora autorizado.
+
+F = `bun test apps/api/src/flujo-mensual.test.ts`, integración SQLite real y API/MFA;
+Q4 = `bun test apps/api/src/nomina-mensual.test.ts`, motor único y vectores M1–M10;
+UI = `node node_modules/@playwright/test/cli.js test tests/e2e/flujo-mensual.spec.ts`,
+Effect/Auth/SQLite reales, respuestas retenidas/errores, teclado/capturas390/1440/contraste.
+F/Q4 en macOS soportado y CI Linux; UI en navegador soportado y CI Linux.
+Cada caso incluye positivos/negativos/integraciones indicados abajo. No mocks de éxito
+financiero, fuente ausente no se acredita por tabla vacía, ni ausencia como0.
+Candidato estable: tipos/build y entrada canónica `python3 scripts/verify`;
+full Linux/restore exigidos en CI del SHA publicado, no sustituidos por macOS.
+Evidencia local del árbol de código `519978cbae0e5dbcd915d0859382f7057e029d4e`, base `10bb794`.
+Estado remoto del HEAD candidato y CI por SHA en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67);
+esta consolidación solo cambia checkpoint/evidencias, no código ni pruebas.
+PASS indica comprobación ejecutada por el autor, no QA independiente. Los escenarios
+positivos que requieren cobertura bancaria completa o identidad de Ahorro no instalada
+conservan UNRUN de integración; no se reclasifican como AC futuros. El usuario confirmó
+«Conservar ausencia de cobertura y subtotal Parcial».
+
+| AC | Positivo/negativo e integración | Resultado esperado | Comando/estado |
+| --- | --- | --- | --- |
+| AC-01 | Hechos en Inicio/corte y fuera del intervalo | Incluir solo vigentes dentro de ventana central, límites incluidos | PASS · F1 |
+| AC-02 | Ciclo abierto/cerrado, referencia central cambia | Corte del maestro, no reloj o fin/mes natural supuesto | PASS · F11 |
+| AC-03 | Sin periodo/fuente verificables o ciclo futuro | No disponible con motivo, no ejecución0 fabricada | PASS · F1/F8 |
+| AC-04 | Ingresos Nómina y Bonus en distintos meses salariales | Sumar por Subtipo/Fecha del ciclo, identidades preservadas | PASS · F1/F12 |
+| AC-05 | Otros e Intereses separados | Otros contiene Intereses; desgloses suman Otros sin doble ingreso | PASS · F1/UI |
+| AC-06 | N:M, cobro sin asociar, Histórico/Documentado/Pronóstico | Banco una vez aunque sin vínculo; importes documentales/previstos no se suman | PASS · F12/Q4 |
+| AC-07 | Gasto de Partida sin presupuesto o plan | Incluido en Gasto bruto, sin crear línea automática | PASS · F2/F10 |
+| AC-08 | Cuota ordinaria capital+interés | Gasto bruto incluye cuota íntegra una vez | PASS · F2 |
+| AC-09 | Gasto terminal y Transferencia de financiación | Un Gasto, sin financiación añadida ni déficit supuesto | PASS · F2 |
+| AC-10 | Compartido bruto sin motor neto | Incluido bruto, cobertura neta pendiente visible | PASS · F2/UI |
+| AC-11 | Transferencia propia/Exterior y amortización | No Ingreso/Gasto por reclasificación; extraordinaria separada, sin ahorro inventado | PASS · F2 |
+| AC-12 | Gasto con Deuda válida hoy inactiva | Cuota informativa por ID válido, historia preservada | PASS · F2 |
+| AC-13 | Amortización extraordinaria vigente/anulada e ID Deuda válido/inválido | Solo vigente con relación válida en intervalo; relación no verificable impide completitud | PASS · F3/F13 |
+| AC-14 | Cuotas300/extra100/Gasto1800/Ingreso2250 | Total deudas400 informativo; S350, no−50 por restar dos veces | PASS · F2/F13; UNRUN integración con cobertura completa (fuente ausente) |
+| AC-15 | Capital/Intereses disponibles frente a desconocidos | Solo motor Deudas verificable; desconocidos no se calculan por diferencia | PASS · F3 |
+| AC-16 | Tres componentes S verificables y netos futuros ausentes | S calculado siempre PARCIAL, nunca Ahorro real/flujo completo | PASS · F2/F13; UNRUN integración con cobertura completa (fuente ausente) |
+| AC-17 | S negativo o0 verificado | Valor con signo/0, sin truncar; etiqueta PARCIAL | PASS · F2/F13; UNRUN integración con cobertura completa (fuente ausente) |
+| AC-18 | Un componente S no verificable | S No disponible, conocidos aparte sin null→0 | PASS · F2/F8 |
+| AC-19 | Nómina2000 y Del mes1900 completos | Margen del plan100 del mismo ciclo; no Bonus/histórico/forecast añadidos | PASS · F4/F13/UI; UNRUN integración con cobertura completa (fuente ausente) |
+| AC-20 | No existen líneas de plan | Sin plan; no suma0 o margen definitivo automático | PASS · F4 |
+| AC-21 | Base completa/Del mes incompleto y viceversa | Cobertura por campo; margen dependiente no disponible, subtotal Parcial | PASS · F4/F10 |
+| AC-22 | Del mes0 explícito frente a vacío | 0 decidido se suma; vacío conserva falta de información | PASS · F4/F13 |
+| AC-23 | Plan anual/Esencial y hecho sin línea | No doble plan ni Esencial como Base; Sin planificar según E2.3, sin nueva línea | PASS · F10 |
+| AC-24 | Media estructural12meses con varias Ordinarias/meses ausentes | Totales mensuales verificados, ancla válida al corte y divisorN, nunca filas o12 fijo | PASS · Q4 M1/M2 |
+| AC-25 | Fuente salarial futura/incompleta/incoherente frente a banco parcial | Excluir incoherencia no resuelta; documentación válida no se invalida solo por cobro parcial | PASS · Q4 M4/M5/M6 |
+| AC-26 | Periodo y fuentes válidos sin hechos frente a fuente desconocida | 0 verificado distinto de ausencia; nunca nómina antigua trasladada al ciclo | PASS · F8/F13; UNRUN integración con cobertura completa (fuente ausente) |
+| AC-27 | Saldos activos/inactivos y Liquidez Sí/No | Sumar solo activos Sí con posición verificable del motor | PASS · F5/F8 |
+| AC-28 | Cambiar Finalidad/bolsa/Entidad/nombre | Sin sustituir atributo Liquidez ni derivar pertenencia por esos campos | PASS · F5 |
+| AC-29 | Posiciones o pertenencia no verificables | Subtotal conocido Parcial con exclusiones; todo desconocido No disponible, no total0 | PASS · F5/F6 |
+| AC-30 | Seleccionar ciclo antiguo y consultar actual | Liquidez actual independiente, fecha/fuente reales; no cierre histórico supuesto | PASS · F5/UI |
+| AC-31 | Histórico sin proveedor o foto incompatible de mes natural | No disponible; solo fuente verificable compatible permite cifra histórica | PASS · F5/UI |
+| AC-32 | Consultar liquidez/contexto R6 | Sin objetivos, meses cubiertos, umbrales o dashboard anticipado | PASS · F5/UI |
+| AC-33 | Componente completo y modelo global parcial | Estados por definición; no completo global ni porcentaje de cobertura ficticio | PASS · F7/UI |
+| AC-34 | Motores E3/E4 ausentes | Pendientes visibles y sin ceros, netos o cálculos paralelos | PASS · F2/UI |
+| AC-35 | Consultar y volver de fuente | Sin modificar hechos/planes/documentos/cierres/fotos; IDs y relaciones históricos intactos | PASS · F6/Q4 integración |
+| AC-36 | Sumas grandes/tasas medias/medio céntimo | Exactitud sin redondeo intermedio ni overflow silencioso; media mensual exacta conforme Q4 | PASS · F6/Q4 M7/M9 |
+| AC-37 | Cambio de Ciclo/contexto durante carga o paginación | Sin mezcla de revisiones ni respuesta antigua; total no truncado por página | PASS · F6/F11/UI |
+| AC-38 | Consulta anónima/sesión expirada/error servidor | Acceso protegido, errores sin SQL/datos sensibles; selección conservada | PASS · F9/UI |
+| AC-39 | 390/1440, teclado/contraste/ausencias | Wireframes por aprobar; posterior UI real legible con icono+texto y fuentes | PASS · UI/capturas |
+| AC-40 | Ciclo histórico y catálogos renombrados/inactivos | Periodos/IDs preservados, sin inventar datos precontrol ni reescribir historia | PASS · F12 |
+| AC-41 | Comparar Gasto bruto con H física y futuro Neto Compartido | Diferencia explícita; bruto no se presenta como H ni se suma de nuevo el Neto | PASS · F2/UI |
+| AC-42 | Variación ahorro/Ahorro cierre con posiciones históricas ausentes o incompatibles | No disponible, sin mes natural/actual/apertura inferida como histórico del ciclo | PASS · F5/UI |
+| AC-43 | Presupuesto de Ahorro con ID/R3 verificables frente a identidad/ejecución ausente | Resultado de R3 separado de ahorro generado; desconocido No disponible, sin cálculo por nombre | PASS · F5/F10; UNRUN identidad/ejecución Ahorro acreditadas (fuente ausente) |
+| AC-44 | Regla anual física con S015, Niños e inversión | Procedencia anual explícita, sin excluir S015 de Liquidez ni adelantar motor anual/inversión | PASS · F12 |
+| AC-45 | C49 física apunta al último ciclo distinto del seleccionado | Nómina real del ciclo seleccionado; no fallback a último ciclo/paga ni presupuesto redefinido por Bonus | PASS · F1 |
+| AC-46 | Histórico anual precontrol Cálculos!B54:B59 disponible | No incorporarlo automáticamente al ciclo ni inventar cobertura anterior al control | PASS · F1/UI |
+| AC-47 | Integración futura Compartidos/Comida/Anticipos | No doble Neto+bruto, segundo Gasto Comida o doble descuento Anticipo; estados pendientes hasta motores aprobados | PASS · F2/UI |
+| AC-48 | Ciclo histórico, Ordinaria posterior al corte y ancla válida anterior | Ancla por Mes salarial válido≤corte, ventana incluida ancla−11meses; no futura/reloj/último global | PASS · Q4 M1 |
+| AC-49 | Dos Ordinarias distintas1000+500 de un mes y2000 de otro | T(m)=1500/2000, N2, media1750 Parcial2/12; no promedio por tres filas | PASS · Q4 M2/F4 |
+| AC-50 | Representaciones duplicadas de una paga y pagas legítimas iguales | Una paga por identidad/evidencia; no descartar distinta por Mes/Tipo/importe; duplicidad no resuelta pendiente | PASS · Q4 M3 |
+| AC-51 | Mes sin Ordinaria o con una paga suficiente y otra indeterminada | No0 ni denominador; mes indeterminado excluido de media válida y motivo/importe conocido parcial visibles | PASS · Q4 M4 |
+| AC-52 | Documentación salarial válida y abono parcial frente a incoherencia documental | Falta conciliación sola no excluye; no promover neto bancario parcial ni validar documento por coincidencia | PASS · Q4 integración/M5/M6 |
+| AC-53 | Mes válido0, meses ausentes y N0 | 0 documentado cuenta en N; ausencia no; N0→Media/Margen No disponible | PASS · Q4 M7 |
+| AC-54 | N1–11/N12 con Base completa, vacía o incompleta | Cobertura N/12; media parcial propaga margen parcial; sin Base completa margen No disponible | PASS · Q4 M8/F4 |
+| AC-55 | Consumir media/cambiar fuentes documentales | Un motor Nómina con IDs/revisiones/meses/motivos; E2.6 no calcula otra media ni reescribe históricos | PASS · Q4 integración/F4 |
+| AC-56 | Comparar C48 física COUNTIFS de filas con vacío y consolidación app | Diferencia de denominador/ancla explícita, sin afirmar equivalencia literal Excel/app | PASS · Q4 M10/UI |
+
+
+## Evidencias locales del candidato — 2026-10-25
+
+| Estado | Comando / entorno | Resultado y límite |
+| --- | --- | --- |
+| PASS | `bun test apps/api/src/flujo-mensual.test.ts` · macOS/Bun1.4.3 | F1–F13,13tests/117assertions; incremento de regresión N:M/S015/fórmulas |
+| PASS | `bun test apps/api/src/nomina-mensual.test.ts apps/api/src/nomina.test.ts` | 28tests/197assertions; Q4/6 y regresión E2.5/22, sin cambios posteriores de ese motor |
+| PASS | Playwright focal E2.6 | MFA real, snapshot/read model real, consulta de fuentes/vuelta, selección retenida, respuesta antigua descartada,500/reintento,401, teclado/foco, contraste mínimo6,63:1 |
+| PASS | Playwright E2.6/Nómina/Plan anual/Plan del ciclo |4tests en11,8s; repetición posterior solo E2.6 por estabilización de repintado de captura y delta focal |
+| PASS | `bun run typecheck`, `bun run build` | árbol candidato; builds no despliegan |
+| PASS | `python3 scripts/verify baseline` · Python3.12.14 | Baseline canónica completa:57 controles proyecto/CI,23validador,9uso,8hooks,15entrada; no fase application |
+| FAIL | Regresión ampliada Deudas/Plan del ciclo en macOS |60PASS/2FAIL/589assertions; ambos fallos requieren libc.so.6 en copia/restauración. Selección local incompatible, no se repite/omite ni se declara verde; CI Linux obligatoria |
+| UNRUN local | Entrada canónica full Linux del SHA publicado | macOS no la sustituye; resultado remoto vigente por SHA en PR67 |
+| UNRUN | QA independiente OpenCode | revisión del candidato final, no realizada por este autor |
+
+Prerrequisitos existentes reutilizados; sin instalación ni cambios de lockfile. Python3
+por defecto del sistema era anterior a3.10; se usa runtime3.12.14 disponible, sin alterar
+herramientas del proyecto. El primer baseline rechazó una ruta de máquina en progress;
+corregido el checkpoint portable y repetido ese gate. La primera fixture usó Subtipo
+no admitido «Otros»: corregido a Promoción del contrato existente, sin alterar validación.
+E2E inicial precisó nombre accesible del selector/grupo de error, no assertions financieras.
+
+### Inspección visual propia (no independiente)
+
+Capturas viewport390×844 y1440×1000 en `artifacts/e2-6/`: `flujo-390.png`,
+`flujo-1440.png`, `flow-plan-{390,1440}.png`, `flow-current-{390,1440}.png` y
+`flow-coverage-{390,1440}.png`. Inspeccionadas cabecera, plan, contexto y cobertura.
+Cinco mejoras justificadas:1) nombre accesible explícito del selector,2) foco identificable
+al error,3) filas alineadas en escritorio/tarjetas móviles,4) Intereses/Resto dentro de
+Otros con menos repetición,5) subtotal Parcial solo en campos incompletos, sin duplicar
+etiquetas bajo valores Verificados. Motivos visibles, sin desbordamiento; icono+texto,
+contraste medido en texto de títulos/etiquetas/fuentes mínimo6,63:1. No auditoría WCAG total.
+Capturas fullPage iniciales tenían un artefacto de repintado del navegador: sustituidas
+por viewport con dos frames de estabilización. No modifica el producto ni oculta elementos.
+Los PNG son ignorados por Git; workflow conservado, no se presupone subida remota E2.6.
+
+### Límites que conserva el candidato
+
+Sin proveedor de integridad histórica del intervalo, banco/deuda solo subtotal Parcial;
+S y margen frente a nómina real No disponible. Fórmulas exactas con operandos completos
+probadas focalmente; integración positiva completa UNRUN, sin habilitar fuente ficticia.
+Sin identidad semántica del Presupuesto de Ahorro acreditada, residual No disponible;
+no selección por nombre. Sin históricos/fotos ni netos E3/E4 instalados, estados explícitos.
+No se añade tabla, migración, dependencia, hook, workflow, metodología, tablero o plantilla.
+No se afirma equivalencia numérica con Excel ni se cierran B3/Dev32.
+
+---
+
+## Historia documental (supersedida solo en estado de autorización)
+
 # 12 — Flujo mensual base: cobertura diseñada rev3
 
 Status: DESIGN ONLY — spec12 rev3/wireframes/56AC aprobados el2026-10-25; sin ejecución funcional.
