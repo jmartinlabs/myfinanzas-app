@@ -334,3 +334,34 @@ No hay ensayo de umbrales reales25%/5%, suspensión por permisos, control remoto
 Verificación local final, base `10bb794` + diff14rutas (sin producto): entrada canónica `scripts/verify baseline` con Python3.12 del runtime instalado PASS. Incluye57 regresiones proyecto/CI,24 validador (nueva guarda de recursos con11 mutaciones negativas),9 uso,8 hooks,15 entrada, estructura/enlaces y whitespace. La primera invocación con Python del sistema se rechazó por versión<3.10 antes de ejecutar checks; se reutilizó runtime existente sin instalaciones. Guarda de portabilidad detectó una ruta de máquina en checkpoint, corregida sin relajar validación. H290-QA independiente PASS:14rutas revisadas,3 focales/5,037s y whitespace PASS; sin hallazgos bloqueantes ni ediciones del revisor. Ensayo real acotado: despacho QA con selección explícita y metadatos efectivos coincidentes PASS; no extrapolar a otros clientes/versiones. Cuotas reales25%/5%, handoff entre chats y OpenCode UNRUN.
 
 Entrega local por autorización: no push/PR nuevo, merge o despliegue. Full aplicación/Linux UNRUN en esta adopción; la baseline no acredita aceptación funcional. Dev12 y spec13 permanecen en sus checkouts y no se incorporan al candidato. Próxima acción: revisión del commit local y, si se autoriza publicación, PR/CI full Linux; aprobación expresa de merge seguirá siendo independiente.
+
+
+## Suplemento comunicación — upstream PR24 — 2026-10-25
+
+Autorización expresa del usuario: sincronizar instrucciones aplicables desde
+Agentic Template PR24/main `f43d691d9ca9a0604044c97a1610f9e4daae822e` y reconciliar
+resumen sin reanudar tareas ni ampliar alcance. Verificada PR24 MERGED y la base
+upstream781ffbb; MyFinanzas main36fd238 ya adopta harness v2.9.0. La raíz dev12
+conserva v2.8.0 y handoff propio; no se sobrescribe. Rama documental separada
+`codex/sync-coordinator-comms-pr24`, base36fd238; no cambios de producto.
+
+Adopción selectiva: nuevo coordinator-communication con precedencia local;
+orchestrate conserva sus gates específicos y añade carga bajo demanda,
+identidad/retorno/estado/acción humana. AGENTS, coordinación local, agentes
+dinámicos y plantillas packet/progress enlazan contrato único. Retorno completo
+obligatorio en cada seguimiento, también bloqueos. Modelo/catalogo externo no
+verificado se declara; techo Codex low y gates25%/5% se conservan sin excepción.
+El tablero reconcilia tareas por evidencia y estados manuales; no crea otro
+registro, polling o control de chats.
+
+No se importa wholesale orchestrate genérico, evaluaciones/scorer de comportamiento,
+guardas scripts ni adaptadores Claude: esta sincronización focal es documental,
+no acredita cobertura automatizada de comunicación ni comportamiento real. Se
+validan enlaces/estructura, diff, consistencia de campos/estados y baseline local.
+No tests funcionales ni nuevos trabajadores; sin reanudar tareas. La publicación
+sigue política Git local y merge requiere aprobación propia.
+
+Resultado local COMMS-PR24: baseline canónico PASS (57/24/9/8/15 regresiones),
+comprobación focal de campos/estados/enlaces y gates PASS; sin ensayo funcional
+ni agentes. Límite65líneas AGENTS detectado y preservado integrando enlace en
+línea existente; whitespace EOF corregido, sin relajar verificadores.
