@@ -143,3 +143,20 @@ Playwright mide color real de texto y fondo de acción primaria y exige>=4.5:1; 
 ### Gates pendientes y límites
 
 QA independiente y CI Linux full sobre SHA publicado pendientes; candidato no integrado, sin merge/deploy. Corrección excepcional tiene motivo, revisión, impacto, auditoría con original y proveedor interno revalidado; prueba positiva con proveedor ficticio NO prueba Cierres runtime. El runtime bloquea lo no verificable conforme Q8, sin instalar cierre simulado; AC36 integración sigueUNRUN. Fuente histórica Exterior se conserva por lector con fixture explícita, no hay importación histórica real autorizada. Sin SQL/Excel/VPS/datos reales.
+
+## H1 — resolución de Álex (2026-10-25)
+
+Pruebas focales añadidas (`apps/api/src/anticipos.test.ts`, prefijo H1). Las anteriores AC siguen vigentes.
+
+| Caso | Resultado |
+| --- | --- |
+| CAT012 sin REF rechazado; CAT012 con REF, REF opcional e Ingreso asociados; banco +2000 céntimos exacto; `operaciones` 2; `relacionados` 3 sin motivo; cobertura Verificada | PASS |
+| Gasto/Ingreso con bloque `anticipo` rechazado; estado idéntico | PASS |
+| Histórico con REF inactiva: nuevo enlace rechazado; rectificación conservada; motivo de inactiva; sin metadatos | PASS |
+| Rectificación y anulación de relacionados revierten banco exacto; Transferencia acreditada no cambia de tipo ni de REF; rectificación conservando Transferencia; anulación retira acreditación | PASS |
+| Transferencia pendiente degrada cobertura a Parcial; Gasto relacionado no | PASS |
+| Amortización de Deuda | UNRUN: requiere fixture de Deuda; sin ampliar contrato |
+| Schema 13 (tres aserciones) | macOS FAIL por `libc.so.6` (plataforma); copia desechable PASS |
+| Suite API completa en copia desechable | 186 PASS / 5 FAIL de plataforma sobre 191 |
+| E2E anticipos | PASS 1/1 |
+| CI Linux | UNRUN; QA independiente pendiente |
