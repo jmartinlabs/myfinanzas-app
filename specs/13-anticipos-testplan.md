@@ -160,3 +160,21 @@ Pruebas focales añadidas (`apps/api/src/anticipos.test.ts`, prefijo H1). Las an
 | Suite API completa en copia desechable | 186 PASS / 5 FAIL de plataforma sobre 191 |
 | E2E anticipos | PASS 1/1 |
 | CI Linux | UNRUN; QA independiente pendiente |
+
+## Corrección focal E2E CAT012/CAT013 — 2026-10-25
+
+Autorización expresa del usuario tras confirmación de Álex. Solo pruebas; sin
+cambios de reglas de negocio. `tests/e2e/transferencias.ts` usa CAT013 para
+dependencia no habilitada y añade CAT012 con Referencia Anticipo activa/ficha.
+Adelanto10€ establece motor verificado; Gasto12€ por UI sin rol/atribución
+reduce banco90→78€ y deja destino10€, motor/pares/cobertura intactos.
+Relacionado visible en API, sin metadatos. POST negativos de Referencia ausente,
+inexistente e incompatible devuelven422/código específico y no alteran banco/ficha.
+
+- Bun1.4.3 macOS: `bun test apps/api/src/anticipos.test.ts`:22PASS/199assertions.
+- `bun test apps/api/src/referencias.test.ts --test-name-pattern '^05 R(2|3|8) '`:3PASS/56assertions,8 filtrados deliberadamente; no suite globalPASS inferida.
+- `bun run typecheck`:PASS; diff/whitespacePASS.
+- Playwright `test tests/e2e/movimientos.spec.ts`, Chrome real/macOS, age en PATH, TMPDIR privado: FAIL posterior en movimientos.spec.ts:665 esperando health de restauración3004. Nuevos escenarios y recorridos siguientes hasta Plan de ciclo completados; no es PASS del E2E completo. Dos intentos previos corrigieron errores de la fixture nueva (permiso Exterior y forma de Referencia), sin tocar aplicación.
+- Captura ficticia `artifacts/e1-5/anticipo-related-expense-mobile.png` generada; no versionar.
+- CI Linux del candidato corregido pendiente; incidente no cerrado, PR71 DRAFT.
+- AC36 PARCIAL/CierresUNRUN y QA independiente pendientes. Sin B3/Dev32, datos reales, merge o deploy.
