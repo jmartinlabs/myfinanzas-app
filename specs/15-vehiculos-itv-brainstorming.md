@@ -1,6 +1,6 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
-Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev4 y
-wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
+Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev5 (base
+`e253e82`) y wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
 Nota de lectura: los `PENDING` de las Rondas 1 y 2 son estados históricos; las
 respuestas posteriores los sustituyen y están al final. La tabla de trazabilidad de
 respuestas indica la sustitución sin reescribir las preguntas. Los wireframes
@@ -252,7 +252,7 @@ implementación ni merge.
 - Los duplicados confirmados siguen permitidos; no se introduce unicidad global.
 - Se preservan ID, Referencia e historial de la ficha.
 
-Consecuencia documental: Q6 deja de estar abierta; la specification rev3 (hoy rev4)
+Consecuencia documental: Q6 deja de estar abierta; la specification rev3 (hoy rev5)
 incorpora la decisión y AC-36. No se reabren Q1–Q5 ni H1–H6.
 
 ## Trazabilidad de respuestas — 2026-10-26
@@ -266,4 +266,13 @@ incorpora la decisión y AC-36. No se reabren Q1–Q5 ni H1–H6.
 | Q6 | `PENDING` en Ronda 2 | Q6-A confirmada | Ronda 2 — Q6-A confirmada |
 
 Esta tabla es administrativa: no cambia las respuestas ni reescribe la historia. La
-specification rev4 incorpora F1–F6 sin reabrir Q1–Q6.
+specification rev4 incorporó F1–F6 sin reabrir Q1–Q6.
+
+## Corrección acotada rev5 — 2026-10-26
+Base `e253e82`. No se reabre Q1–Q6 ni se añade una decisión funcional. Se corrigen:
+- atomicidad total de confirmaciones de duplicado, sin guardado parcial;
+- identificación del candidato rev5 y fuentes QA;
+- §10 404 vs Vehículo sin ficha -> 200/`Revisar`;
+- Q5: año inicial solo de vista;
+- AC-15: hechos fuera de control/corte excluidos del cómputo.
+La specification rev5 conserva el contrato restante y sigue pendiente de aprobación.

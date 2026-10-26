@@ -1,12 +1,13 @@
 # 15 — E3.3 Vehículos y control ITV: Specification
-Status: **DRAFT rev4** — Q1–Q6 confirmadas; specification y wireframes pendientes de
+Status: **DRAFT rev5** — Q1–Q6 confirmadas; specification y wireframes pendientes de
 aprobación.
 Approval source/date: Q1–Q5, usuario, 2026-10-26; Q6-A, usuario, 2026-10-26.
-Aprobación de esta revisión: PENDING. Esta propuesta no autoriza desarrollo15, SQL,
-datos reales, push de publicación ni merge.
-QA source: segundo informe de QA independiente sobre el SHA `616f4ff`. Historial:
-rev1 `4d037cd`; rev2 corrige H1–H6; rev3 incorpora Q6-A; rev4 corrige F1–F6 sin
-reabrir Q1–Q6.
+Candidato: **rev5 sobre `e253e82`**; SHA de publicación se registra en el retorno de
+sesión/PR. Aprobación de esta revisión: PENDING. Esta propuesta no autoriza desarrollo15,
+SQL, datos reales, push de publicación ni merge.
+QA sources: H1–H6 sobre `4d037cd`; F1–F6 sobre `616f4ff`; residuales y atomicidad
+sobre `e253e82`. Historial: rev1 `4d037cd`; rev2 corrige H1–H6; rev3 incorpora Q6-A;
+rev4 corrige F1–F6; rev5 cierra residuales sin reabrir Q1–Q6.
 Context and brainstorming: [15-vehiculos-itv-brainstorming.md](15-vehiculos-itv-brainstorming.md),
 [roadmap E3.3](roadmap.md), [R4/P2](functional-reference-v5.11.md).
 Base: `f0a5219b2193283a4e3254d13c87c75c9254e845`; rama `codex/spec15-vehiculos`.
@@ -68,9 +69,10 @@ histórica, se muestra cobertura parcial y subtotal registrado, nunca un total
 completo inventado. Ausencia de datos no es cero comprobado.
 
 ### Q5 — Ejercicio
-Selector explícito de ejercicio, inicializado al año natural actual. Sin arrastre
-entre ejercicios. Los años futuros sin datos no se presentan como importes cero
-verificados.
+Selector explícito de ejercicio, inicializado al año natural actual. El año inicial es
+**solo de vista**: no atribuye Gastos, no sustituye la referencia financiera y no se
+usa para decidir cobertura. Sin arrastre entre ejercicios. Los años futuros sin datos
+no se presentan como importes cero verificados.
 
 ### Q6 — Aviso de duplicado al corregir matrícula (Q6-A confirmada)
 Se aplica la misma detección, aviso y confirmación server-side que en el alta y el
@@ -371,6 +373,12 @@ sin repararlas.
   si falta, es inválido o el flag correspondiente es falso, se rechaza con 422; si no
   coincide, `409 DUPLICATE_CONTEXT_CHANGED`. No se acepta una lista de candidatos
   enviada por el cliente. Las dimensiones sin candidatos no requieren hash ni flag.
+- **Atomicidad de la confirmación:** la operación es una sola transacción. Si falta
+  cualquier flag/hash requerido, es inválido o el contexto cambió, se rechaza toda la
+  operación: no se modifican nombre, matrícula, REF, ficha ni auditoría de cambio. Una
+  dimensión confirmada con otra requerida incompleta -> 422 sin cambios; ambas
+  incompletas -> 422 sin cambios; ambas válidas -> un único guardado; contexto cambiado
+  -> 409 sin cambios. No existe guardado parcial.
 - **Conversión Q3:** la conversión de una REF sin ficha y sin hechos usa el mismo
   contrato de duplicados al crear la ficha; no hay una segunda regla para W9/W10.
 - **Repetición:** un 409 de aviso o contexto no se registra como éxito. La confirmación
@@ -418,7 +426,8 @@ REF1003  Furgoneta        Sin informar 03/03/2027  10/01/2025  No disponible  No
 «Subtotal reg.» es el `subtotalRegistrado`; `Total al corte` solo existe si la cobertura
 al corte agregada es verificable. REF1002 es el único cero verificado del ejemplo;
 REF1003 no es cero. La cita de REF1003 es una fecha pasada válida y se muestra sin
-normalización.
+normalización. El año inicial del selector es solo de vista: no atribuye Gastos ni
+sustituye la referencia financiera.
 
 ### W2 — Ficha de vehículo (1440)
 ```text
@@ -518,6 +527,7 @@ La cita puede quedar vacía. No se calcula periodicidad ni se envían avisos.
 [!] Matrícula coincide: REF1002 · Moto · 1234 ABC · Activa
     [Confirmar matrícula] (candidateMatriculaHash)
 Son vehículos distintos; ambas dimensiones se confirman por separado.
+Si falta una confirmación requerida, no se crea ni modifica nada.
 
 [Cancelar] [Crear vehículo]
 Al confirmar se crean REF + ficha en una única transacción; un fallo revierte todo.
@@ -531,6 +541,8 @@ Fechas pasadas permitidas; se muestran tal cual.
 [!] Matrícula coincide: REF1004 · Furgoneta · 1234 ABC
     [Confirmar matrícula] (candidateMatriculaHash)
 La propia ficha no es candidata; nombre/matrícula sin cambios no piden confirmación.
+Si falta una confirmación requerida, no se guarda nada: nombre, matrícula, REF y ficha
+quedan intactos.
 [Cancelar] [Confirmar y guardar]
 ```
 
@@ -547,6 +559,7 @@ Cita vacía permitida; sin avisos automáticos.
 [Confirmar nombre] (candidateNameHash)
 [!] Matrícula coincide: REF1002 · Moto
 [Confirmar matrícula] (candidateMatriculaHash)
+Si falta una confirmación requerida, no se crea nada.
 
 [Cancelar] [Crear vehículo]
 Alta atómica; fallo = rollback.
@@ -560,6 +573,7 @@ Fechas pasadas permitidas.
 [!] Matrícula coincide: REF1004 · Furgoneta
     [Confirmar matrícula] (candidateMatriculaHash)
 La propia ficha no es candidata; sin cambio no hay aviso.
+Si falta una confirmación requerida, no se guarda nada: REF, nombre y ficha intactos.
 [Cancelar] [Confirmar y guardar]
 ```
 
@@ -614,6 +628,8 @@ Próx. ITV [10/01/2025] (pasada válida)  Cita [ ]
 [!] Matrícula coincide: REF1004 · Furgoneta · 9012 JKL
     [Confirmar matrícula] (candidateMatriculaHash)
 La propia REF1007 no es candidata; matrícula vacía no genera aviso.
+Si falta una confirmación requerida, no se convierte ni se crea ficha; REF e historial
+quedan intactos.
 [Revisar y convertir] [Cancelar]
 Si ya tiene ficha o hechos: bloqueado con motivo; sin acciones automáticas.
 ```
@@ -635,6 +651,7 @@ Cita [ ]
 [!] Matrícula coincide: REF1004
 [Confirmar matrícula] (candidateMatriculaHash)
 La propia REF1007 no es candidata; matrícula vacía no avisa.
+Si falta confirmación requerida, no se convierte ni crea ficha.
 [ ] Confirmo la conversión explícita
 [Revisar y convertir] [Cancelar]
 ```
@@ -650,6 +667,8 @@ conformidad WCAG completa.
 - Listado sin vehículos: «Sin vehículos» + Nuevo vehículo; no filas ficticias.
 - Ficha inexistente: 404 con mensaje accionable y vuelta al listado. Una REF no
   Vehículo sin ficha responde 404 `NOT_VEHICLE`; no se presenta también como `Revisar`.
+- REF Vehículo sin ficha: 200 con `ficha:null` e `integridad:Revisar`; **no** 404. El 404
+  queda reservado para REF inexistente o no-Vehículo sin ficha.
 - Carga: estado visible; se conserva el ejercicio seleccionado y los filtros.
 - Error de Movimientos o de la fuente anual: identidad/fechas siguen visibles; el gasto
   muestra «No disponible»/«Parcial», `control`, `corte`, `procedencia`, `cobertura
@@ -798,17 +817,22 @@ Reglas de API:
   hash que no coincide con el contexto recalculado -> 409 `DUPLICATE_CONTEXT_CHANGED`;
   sin escritura. No se aceptan candidatos del cliente. Matrícula NULL/vacía no genera
   candidatos.
+- **Atomicidad (F4):** si falta cualquier confirmación/hash requerido, se rechaza toda la
+  operación sin modificar nombre, matrícula, REF ni ficha. Una dimensión confirmada con
+  otra incompleta, ambas incompletas o contexto cambiado no dejan guardado parcial; ambas
+  válidas producen un único guardado.
 - **Matrícula en edición (Q6-A):** la corrección de matrícula usa la misma detección,
   aviso y confirmación server-side que el alta/renombrado; se excluye la propia ficha y
   no se pide confirmación si el valor no cambia. Si coincide con otra ficha, se exige
   confirmación explícita. Se conservan ID, Referencia e historial; no hay unicidad
   global.
 - **Gasto año:** un Gasto de otra REF no cuenta; un Gasto con REF Vehículo y cualquier
-  Partida sí cuenta; anulados no cuentan; rectificados reevalúan; no doble cómputo.
-- **Cambio de ejercicio (Q5):** selector inicializado en el año natural actual;
-  diciembre/enero y Ciclo distinto no arrastran; ITV no mueve el gasto; año futuro
-  `Futura`, totales `null` y `ceroVerificado=false`; no se usa el reloj para atribuir
-  Gastos.
+  Partida sí cuenta si está dentro del control/corte; fuera de control/corte se lista
+  aparte y no se suma; anulados no cuentan; rectificados reevalúan; no doble cómputo.
+- **Cambio de ejercicio (Q5):** selector inicializado en el año natural actual; ese año
+  inicial es solo de vista y no atribuye Gastos; diciembre/enero y Ciclo distinto no
+  arrastran; ITV no mueve el gasto; año futuro `Futura`, totales `null` y
+  `ceroVerificado=false`; no se usa el reloj para atribuir Gastos.
 - **Cobertura (F1):** `control`, `corte`, `universo`, `procedencia`, `hechos`,
   `subtotalRegistrado`, `coberturaAlCorte`, `coberturaAnual`, `totalAlCorte`,
   `totalAnual` y `ceroVerificado` salen del mismo contrato E2.4, sin otra fórmula.
@@ -847,11 +871,11 @@ de esta tabla no autoriza implementación.
 | AC-08 | Renombrar la Referencia | Mismo REFxxx, enlaces e historia; Gasto año sin cambio; auditoría |
 | AC-09 | Crear/editar/limpiar matrícula opcional | Se conserva o queda «Sin informar»; sin unicidad global; auditoría |
 | AC-10 | Crear/renombrar/corregir matrícula/convertir con coincidencia de nombre y/o matrícula no vacía, sin confirmar | `409 DUPLICATE_WARNING` con `coincidenciasNombre`/`coincidenciasMatricula` y hashes separados; sin escritura; propia REF excluida; matrícula NULL/vacía no es candidata |
-| AC-11 | Confirmar solo nombre, solo matrícula o ambos; candidatos cambiados | La dimensión confirmada con hash vigente escribe; la no confirmada con candidatos bloquea; si el contexto cambió, 409 sin escritura; no hay unicidad global |
+| AC-11 | Confirmar una dimensión, ambas incompletas, ambas válidas o contexto cambiado | Una dimensión confirmada con otra requerida incompleta -> 422 y rechazo total; ambas incompletas -> 422 y rechazo total; ambas válidas -> un único guardado; contexto cambiado -> 409 sin cambios; nunca se modifica parcialmente nombre, matrícula, REF ni ficha |
 | AC-12 | Desactivar y reactivar una REF con ficha e historial | Ficha e historia conservadas; sin nuevos enlaces mientras inactiva; sin hechos nuevos al reactivar |
 | AC-13 | Alta sin próxima ITV ni cita; después informar una sola | Ambas ausentes como «No informada»; independencia; la cita vacía es válida |
 | AC-14 | Editar fechas pasadas/futuras, limpiar una y conservar la otra | Ambas válidas, incluidas pasadas; sin cálculo de periodicidad; PATCH omitido conserva; null limpia; auditoría |
-| AC-15 | Varios Gastos con la REF, Partidas distintas | Todos cuentan una vez; suma exacta; sin filtro por Categoría/Partida |
+| AC-15 | Varios Gastos con la REF, Partidas distintas, incluyendo hechos fuera de control/corte | Los de dentro cuentan una vez; los de fuera se listan aparte y quedan excluidos del cómputo; sin filtro por Categoría/Partida; sin doble cómputo |
 | AC-16 | Gastos de otra REF, Ingresos, Transferencias, Amortizaciones, Presupuesto y anulados | No cuentan; no se mezcla planificación; originales intactos |
 | AC-17 | Gasto de diciembre con Ciclo de enero; ITV en otro año | Pertenece al año de su Fecha real; la ITV no mueve el gasto; sin arrastre |
 | AC-18 | Abrir ficha y cambiar el selector de ejercicio | Inicializa en el año natural actual; recalcula solo el año elegido; pasado/futuro consultables |
@@ -880,7 +904,7 @@ de esta tabla no autoriza implementación.
 | AC-41 | REF con PAR101 verificable, PAR102 parcial con 50 € fuera de control/corte y PAR103 verificable; y REF sin hechos con cobertura verificable/parcial | Agregado: subtotal 1.240,00 €, `coberturaMixta=true`, `resultadosPorPartida` con 3 filas, `totalAlCorte=null`, `totalAnual=null`, fuera 50,00 € no computado, `ceroVerificado=false`; sin hechos y cobertura verificable -> cero verdadero; sin hechos y cobertura parcial/mixta -> falso |
 | AC-42 | Coincidencia solo de nombre, solo de matrícula no vacía, ambas; matrícula NULL/vacía; propia REF | Cada dimensión exige su propio flag/hash; NULL/vacío no genera candidatos; propia REF excluida; duplicados confirmados permitidos; sin unicidad global |
 | AC-43 | PATCH con campo omitido, `null` explícito, cadena vacía, `vehiculo:null`, `estado`; desactivar/reactivar | Omitido conserva; `null` limpia el campo nullable; vacío/`vehiculo:null`/`estado` en PATCH -> 422; estado solo por acciones canónicas |
-| AC-44 | Abrir ficha, cambiar ejercicio y consultar año futuro | Inicializa en el año natural actual; sin arrastre; futuro `coberturaAnual=Futura`, totales `null`, `ceroVerificado=false`; sin usar el reloj para atribuir Gastos |
+| AC-44 | Abrir ficha, cambiar ejercicio y consultar año futuro | Año inicial actual solo de vista; sin atribución por el selector; sin arrastre; futuro `coberturaAnual=Futura`, totales `null`, `ceroVerificado=false`; sin usar el reloj para atribuir Gastos |
 | AC-45 | Revisar contraste de texto y acciones en 390/1440 | Texto oscuro #24320E sobre #8DBB2E, ratio ~6,04:1; sin texto blanco; sin afirmar WCAG completa |
 
 ## 15. Trazabilidad
@@ -907,7 +931,7 @@ de esta tabla no autoriza implementación.
 | F1 | Reglas, DTO, wireframes y AC no describían de forma unificada la agregación por REF, cobertura mixta, procedencia, totales y cero verificable; DTO incompleto y riesgo de fórmula paralela | §6.2–§6.4 define resultados por Partida y agregación por REF; `coberturaMixta`, `resultadosPorPartida`, `hechosFueraDeControlCorte`, `importeFueraDeControlCorte`, subtotal, procedencia, coberturas, totales y cero; DTO §11, W1–W4/W7/W8 y AC-19–22/39/41 usan los mismos campos. Q4 no se reabre | §6.2–6.4, §11, §9, AC-19–AC-22, AC-39, AC-41 |
 | F2 | Transición de E1.5-AC-11/E1.5-AC-18 incompleta | §4.4 documenta qué cambia al habilitar Vehículo y qué permanece bloqueado; E1.5 no se reescribe | §4.4, AC-38 |
 | F3 | Contradicción 404/`Revisar` en la lectura del vehículo | §7 añade resolución única: 404 solo para REF inexistente o no-Vehículo sin ficha; 200 + `Revisar` para Vehículo sin ficha, ficha huérfana o duplicada; API y AC-07 alineados | §7, §11, AC-07 |
-| F4 | Confirmación de duplicados no distinguía nombre/matrícula ni excluía NULL/vacío; validación de hash imprecisa | §8 separa dimensiones, `candidateNameHash`/`candidateMatriculaHash` y flags; matrícula NULL/vacía no es candidata; validación 422/409; W5/W6/W9/W10 y AC-10/11/36/37/42 alineados | §8, §11, §12, AC-10/11/36/37/42 |
+| F4 | Confirmación de duplicados no distinguía nombre/matrícula ni excluía NULL/vacío; validación de hash imprecisa; riesgo de guardado parcial | §8 separa dimensiones, `candidateNameHash`/`candidateMatriculaHash` y flags; matrícula NULL/vacía no es candidata; validación 422/409 y atomicidad total sin cambios parciales; W5/W6/W9/W10 y AC-10/11/36/37/42 alineados | §8, §11, §12, AC-10/11/36/37/42 |
 | F5 | Faltaba mostrar conversión desde Referencias y estado de edición; Q3 ya la cubre como alta de ficha | §4.4 constata que Q3 cubre la conversión; §8 aplica el mismo contrato de duplicados; W5/W6 edición, W9/W10 conversión; AC-35/40 | §4.4, §8, §9, AC-35, AC-40 |
 | F6 | Fechas pasadas e historia de respuestas | Q2, §12 y AC-14 aceptan fechas pasadas sin normalizar; el brainstorming incorpora tabla de respuestas que sustituyen `PENDING` | §2 Q2, §12, AC-14; brainstorming |
 
@@ -933,15 +957,17 @@ Revisión manual del candidato; no es implementación ni prueba funcional.
 | Contraste | Texto oscuro #24320E sobre #8DBB2E, ~6,04:1; sin blanco; sin WCAG completa | §9 notas, AC-28, AC-45 |
 | F1 DTO agregado | `coberturaMixta`, `resultadosPorPartida`, fuera de control/corte, procedencia y totales en un único DTO | §6.4, §11, AC-39, AC-41 |
 | F4 dimensiones | Nombre y matrícula separados; NULL/vacío excluido de matrícula; hashes/flags independientes | §8, §11, §12, AC-10/11/36/37/42 |
+| Atomicidad | Si falta cualquier confirmación/hash, no se modifica nombre, matrícula, REF ni ficha; ambos válidos = un guardado; contexto cambiado = 409 | §8, §12, AC-11, W5/W6/W9/W10 |
 | F5 conversión | Q3 cubre conversión como alta de ficha; mismo contrato de duplicados | §4.4, §8, W9/W10, AC-40 |
 
 ## 20. Pendiente antes de aprobar
+- **Candidato:** rev5 sobre `e253e82`; la aprobación de esta revisión sigue PENDING.
 - **Q6-A confirmada (usuario, 2026-10-26):** la corrección de matrícula aplica la misma
   detección, aviso y confirmación server-side que el alta/renombrado; excluye la propia
   ficha; no pide confirmación si la matrícula no cambia; exige confirmación si coincide
   con otra ficha; permite duplicados confirmados; sin unicidad global; conserva ID,
   Referencia e historial.
-- Revisión y aprobación expresa de esta specification rev4 y de los wireframes W1–W10.
+- Revisión y aprobación expresa de esta specification rev5 y de los wireframes W1–W10.
 - La distinción `coberturaAlCorte`/`coberturaAnual` y `totalAlCorte`/`totalAnual` se
   documenta como corrección F1, sin cambiar la regla Q4: no hay una pregunta adicional.
 - F5 no abre pregunta: Q3 aprobada ya cubre la conversión como alta de ficha; se aplica
