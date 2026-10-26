@@ -50,7 +50,7 @@ ni datos reales. Cobertura por AC en
 | I4 | API y permisos | completado |
 | I5 | UI 390/1440, teclado, foco y estados | completado |
 | I6 | Pruebas API/SQLite/HTTP y E2E | completado local (ver testplan) |
-| I7 | Verificación canónica y QA independiente | completado (QA PASS; CI Linux/restore UNRUN) |
+| I7 | Verificación canónica y QA independiente | completado (QA PASS; CI Linux PASS) |
 | I8 | Publicación de rama y PR | pendiente |
 
 ## Checkpoints
@@ -138,8 +138,8 @@ sesión de QA no editó, commiteó ni publicó; ejecutó pruebas y sondas propia
   M3/M4/M5 y residuales de evidencia. Corregidos en `265bea7`.
 - Ronda 2 sobre `265bea7`: **PASS de código** con AC-35 PARCIAL por la rama
   `Reposición→Ingreso`/Ingreso a Exterior. Corregido en `36a81a2`.
-- Ronda final sobre `36a81a2`: **PASS**. AC-35 PASS; AC-21 PARCIAL (restore cifrado
-  UNRUN local); AC-25 abierto; AC-27/34/36 futuros no simulados; AC-12 C con fixture;
+- Ronda final sobre `36a81a2`: **PASS**. AC-35 PASS; AC-21 se cerró después con
+  restore cifrado v15 en CI Linux; AC-25 abierto; AC-27/34/36 futuros no simulados; AC-12 C con fixture;
   AC-31 UNRUN/C. Invariantes financieros confirmados.
 - Evidencia QA: focal **15 PASS / 215 expect**, typecheck/build PASS, E2E PASS,
   baseline PASS, full API **192 PASS / 46 FAIL** de plataforma `libc.so.6`.
@@ -149,7 +149,9 @@ sesión de QA no editó, commiteó ni publicó; ejecutó pruebas y sondas propia
   cabecera de ciclo solo al filtrar y etiqueta API «Anulado» con UI «Anulada». No afectan
   a integridad financiera ni a los AC.
 
-CI Linux, restore cifrado y `scripts/verify --full` siguen **UNRUN**; no se declaran PASS.
+CI Linux [run 40402952821](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40402952821)
+sobre `6dabcee`: **PASS** (API 239/0, 10 E2E, baseline/full/required success; AC-21 restore
+cifrado v15). No se declara merge.
 
 ### 2026-10-26 · Integración de main f5bf032 (E3.3 Vehículos)
 
@@ -164,3 +166,16 @@ candidato vuelve a verificarse.
   el candidato añade 15 pruebas PASS y ningún fallo de `revision-comida`.
 - Typecheck/build, E2E propio y baseline canónico: PASS.
 - Backup/restore `e3.4-v15` y `scripts/verify --full` remoto: **UNRUN** en macOS.
+
+### 2026-10-26 · Cierre de evidencia AC-21 y CI Linux
+
+- Candidato de código: `6dabcee` (sobre el delta revisado `4382f6c`; solo añade
+  `revision-comida-backup.test.ts`).
+- CI Linux [run 40402952821](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40402952821):
+  **PASS**; baseline 59 s, full 11 m 13 s, required 9 s.
+- Full API: **239 PASS / 0 FAIL / 3.509 expect** en 23 archivos.
+- E2E: **10 PASS**.
+- AC-21: `(pass) AC21: restore cifrado v15 conserva operaciones, devoluciones,
+  reposiciones, vínculos, evidencias y auditoría`.
+- `Application phase: PASS`; artefacto de capturas ficticias disponible.
+- El árbol queda limpio y la PR #82 actualizada. Sin merge ni despliegue.
