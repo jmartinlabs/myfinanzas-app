@@ -1277,7 +1277,7 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │                               │ Evidencia/Procedencia         │
 │ Aportaciones acreditadas      │ Preview antes/después         │
 │ Álex 300,00 € · evidencia     │ Bea pend. 150 · Álex exc. 150 │
-│ Bea pendiente 150,00 €        │ Global 150/150                │
+│ Bea pendiente 150,00 €        │ Global pend. 150 · exc. 150   │
 │                               │ [Cancelar] [Revisar]          │
 └───────────────────────────────┴──────────────────────────────┘
 ```
