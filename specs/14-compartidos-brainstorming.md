@@ -316,3 +316,118 @@ los 39 AC base se conservan. Esta aprobación no autoriza desarrollo B/dev14/D5,
 datos reales, SQL operativo, edición de spec05, importación histórica, merge ni
 despliegue. La publicación documental sigue la política Git; el merge de su PR
 exige aprobación separada.
+
+## D5/Exterior — Ronda 1 y respuestas del usuario — 2026-10-26 (append-only)
+
+Estado: **D5-Q1–D5-Q6 aprobadas conceptualmente (opción A) con precisiones; la
+enmienda documental §15 de la specification queda PROPUESTA y pendiente de
+revisión final.** No es aprobación documental final ni autorización de desarrollo.
+No se reabren Q1–Q7, F1–F6, P-F6, R-MP, R-CC, Base B ni los 39 AC base.
+
+Fuente: mensaje del usuario «Apruebo conceptualmente las opciones A de D5-Q1 a
+D5-Q6, con las siguientes precisiones obligatorias», 2026-10-26. Base de esta
+revisión: main `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema v15).
+Procedencia del borrador: OpenCode, worktree `.../T/opencode/spec14-d5`, base
+`a445f90`, sin commits; se conserva su texto y autoría, recompuesto sobre Base B.
+
+### Contraste confirmado del contrato vigente (no se pregunta)
+
+1. **R4/E3.2-AC1.** El Gasto conserva Partida e importe real. Una aportación de
+   tercero es una Transferencia desde Exterior con Referencia y Quién paga; no es
+   un Ingreso, no crea un Gasto ficticio y no se simula con un movimiento entre
+   Saldos propios (Q5). La variante histórica Exterior se conserva con procedencia.
+2. **D4.** La acreditación son metadatos mínimos sobre el ID canónico del
+   Movimiento y el participante: sin copiar importe, fecha, Origen ni Destino;
+   con evidencia/procedencia, revisión, auditoría e idempotencia. La dirección o
+   la Referencia por sí solas nunca acreditan el rol (Q9/AC-10).
+3. **E1.5 vigente.** Transferencia es un único Movimiento, sin Partida ni Subtipo,
+   entre dos extremos internos; S000 se rechaza en servicio y CHECK. CAT013 no es
+   un Tipo operativo. Todas las Transferencias con Exterior —ordinarias y
+   especiales— están reservadas fuera de E1.5; AC-31 sigue siendo contrato futuro.
+4. **Q9/H1 de spec13.** El rol no se deduce de origen/destino/Referencia. Solo las
+   Transferencias llevan metadatos de atribución; Gastos/Ingresos con la misma
+   Referencia conservan su asociación sin metadatos. Una Transferencia acreditada
+   no cambia de Tipo ni de Referencia; anularla retira la acreditación. Este
+   precedente se reutiliza, sin copiar orientación/par que D4 no exige.
+5. **Motor y estados de spec14.** Exceso permitido e íntegro (F2/F5); sin
+   compensación entre participantes (D7); recuperación sin cuota asignada produce
+   incidencia y bloquea Cerrado (R-MP); los movimientos internos no acreditan
+   recuperación; el banco nunca se reescribe por cambios de reparto (AC-19/AC-30).
+6. **Base B integrada.** Ficha 1:1, participantes, Gasto CAT013 y motor sin
+   aportaciones ya existen en main v15. D5 no los duplica ni declara E3.2 completo;
+   B-T11 y aceptación global siguen pendientes.
+7. **Seguridad.** Solo el titular autenticado registra; no hay cuenta ni portal de
+   terceros. MFA/sesión, Origin/CSRF, validación en API, idempotencia y errores sin
+   datos sensibles se heredan. No se añaden roles ni permisos por esta enmienda.
+
+### Preguntas y respuestas (todas con opción A y precisiones)
+
+**D5-Q1 — Alcance, dirección y destino**
+- A (elegida): habilitar **solo la aportación nueva de tercero**: Transferencia
+  S000 → Saldo interno activo elegible, REF CAT013 y Quién paga. No habilitar
+  Transferencias ordinarias con Exterior ni salidas interno→Exterior. El Destino
+  conserva la elegibilidad de extremos internos de E1.5 (activo, no S000, no
+  Manual, no Control Exterior; sin excluir Terminal/No controlado por inferencia).
+- Precisión del usuario: CAT013 identifica el ámbito funcional, no convierte la
+  Transferencia en Gasto ni deriva clasificación económica; la elegibilidad se
+  comprueba por la Referencia y su ficha.
+
+**D5-Q2 — Quién paga, cardinalidad y evidencia**
+- A (elegida): un Movimiento acredita **un solo participante Tercero** de la misma
+  ficha, activo; metadatos 0..1 por Movimiento; sin creación implícita; el Titular
+  no es pagador acreditable; no se divide un Movimiento entre varias personas;
+  evidencia y procedencia obligatorias y revisables. Si un ingreso cubre a varias
+  personas, se registra el pagador real y no se infiere el reparto.
+- Precisión: el mínimo de evidencia se concreta en la enmienda (propuesta 10–500
+  y enum de procedencia) para revisión.
+
+**D5-Q3 — Punto de entrada UI/API**
+- A (elegida): acción **«Registrar aportación»** en la ficha, formulario dedicado
+  con Referencia bloqueada; el formulario común sigue sin S000/Exterior. La API
+  extiende `POST /api/movimientos` con bloque `compartido`; la acreditación
+  histórica usa una acción revisada propia. Sin endpoint paralelo de hechos.
+
+**D5-Q4 — Históricos Exterior**
+- A (elegida): conservarlos y mostrarlos con procedencia; acreditar solo por
+  acción explícita revisada sobre un Movimiento ya vinculado a REF CAT013 y con
+  ficha/participante; sin backfill, REF retroactiva ni atribución automática.
+  Sin evidencia suficiente: Revisar/No disponible y subtotales Parciales.
+- Precisión: el CHECK actual impide Transferencias S000; deben delimitarse los
+  realmente elegibles. En v15 estándar no hay filas elegibles sin importación.
+
+**D5-Q5 — Dependencia y gate CAT013/E3.2**
+- A (elegida): D5 **no se implementa ni habilita por separado**; requiere
+  autorización propia y aceptación global de E3.2. CAT013 para Gasto ya está
+  habilitada por Base B; D5 solo añade la variante Transferencia entrante CAT013
+  y no completa E3.2 ni habilita Exterior ordinario.
+
+**D5-Q6 — Rectificación, corrección de atribución y anulación**
+- A (elegida): una Transferencia acreditada **no cambia de Tipo ni de
+  Referencia**. Importe, fecha y Destino pueden rectificarse con vista de impacto,
+  motivo, auditoría y revalidación; la corrección de participante/evidencia es una
+  acción revisada con impacto; la anulación excluye el hecho del motor, conserva
+  metadatos e historia y no reactiva ni borra. Sin DELETE físico.
+- Precisión: preservar evidencia y valores originales, especialmente en registros
+  bancarios importados.
+
+**Invariantes operativas confirmadas:** transaccionalidad, idempotencia,
+revalidación concurrente, 409 sin efectos parciales y rollback total.
+
+### Decisiones conservadas, propuestas y pendientes
+
+- **Aprobado (base):** todo Q1–Q7, F1–F6, P-F6, R-MP, R-CC, Base B §14 y los 39 AC
+  base. D5 no los reabre.
+- **Aprobado conceptualmente:** D5-Q1–D5-Q6 opción A con las precisiones
+  anteriores; no equivale a aprobación documental final.
+- **Propuesto:** §15 de la specification; `movimiento_compartido`, enum/evidencia,
+  endpoints, D5-AC-01..15, matriz de riesgos, wireframes y enmienda consecuente de
+  spec05 §D5.
+- **Pendiente de revisión/aprobación:** P-D5-1..P-D5-6 de §15.16 (evidencia,
+  históricos, numeración, spec05, UI y versión futura de esquema). No se inventan
+  reglas financieras para cerrarlas.
+
+### Límites
+
+Solo especificación. Sin desarrollo D5, SQL/migraciones, Excel, datos reales, VPS,
+merge ni despliegue. B-T11 no se implementa: conserva su dependencia y estado
+pendiente. No se declara D5 aprobado, implementado ni E3.2 completo.

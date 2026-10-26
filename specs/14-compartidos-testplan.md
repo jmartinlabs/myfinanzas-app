@@ -304,3 +304,54 @@ modo journal. Focales 53 PASS / 0 FAIL; typecheck PASS (macOS/Bun1.4.3). Control
 negativo sin parche: los 3 casos DELETE fallan por mutación, WAL pasa. La prueba
 existente v14 Vehículos→v15 conserva la continuidad admitida. No se cambia la
 política B3 ni sus3000ms. Linux/restore y QA del nuevo candidato: pendientes.
+
+## D5/Exterior — plan de pruebas futuro (NO EJECUTADO)
+
+Status: **DISEÑO DE PRUEBAS; todas UNRUN/BLOQUEADAS.** No existe implementación D5
+en main v15. Base de contraste: main `24b48c5` / Base B `5ad75ed`; spec14 §15 y
+spec05 §D5. Este bloque no declara D5, E3.2, B-T11 ni AC-31 PASS. Sin datos
+reales: fixtures ficticias y servicios reales de prueba.
+
+### T-D5-01–15
+
+| ID | AC D5 | Precondición / operación | Caso positivo | Caso negativo | Comprobación futura | Estado |
+| --- | --- | --- | --- | --- | --- | --- |
+| T-D5-01 | AC-01 | REF CAT013+ficha+Tercero; alta S000→interno con evidencia | Un Movimiento + una acreditación; efecto exacto en destino; sin Gasto/Ingreso | Payload con Partida/Subtipo o importe 0 → 422 | API/SQLite; DTO; saldo destino | UNRUN |
+| T-D5-02 | AC-02 | Intentos interno→S000, S000→S000, sin CAT013, Exterior ordinario | Ninguno permitido; 422 | Formulario común sin S000 | HTTP + UI; gates de servicio | UNRUN |
+| T-D5-03 | AC-03 | Transferencia interna con REF CAT013 | Movimiento interno válido sin acreditación | No altera Recuperado/Neto | Motor + DTO | UNRUN |
+| T-D5-04 | AC-04 | Gasto/Ingreso con S000 y CAT013 | Conserva su Tipo; no acredita | No se reclasifica | Servicio + esquema | UNRUN |
+| T-D5-05 | AC-05 | Participante Titular/inactivo/otra ficha/inexistente | 422 sin alta parcial | Sin creación implícita | API/SQLite | UNRUN |
+| T-D5-06 | AC-06 | Segunda acreditación o división del mismo Movimiento | Rechazo por unicidad/cardinalidad | Una sola fila | SQLite UNIQUE + API | UNRUN |
+| T-D5-07 | AC-07 | Evidencia vacía/genérica; histórico con procedencia insuficiente | Rechazo o Revisar/No disponible | No inventa importe/fecha | Validación + UI | UNRUN |
+| T-D5-08 | AC-08 | Histórico elegible vs. Gasto/Ingreso/interno/anulado/sin REF/sin ficha | Solo el elegible tras revisión | Resto no acredita; sin REF retroactiva/backfill | Focal + fixtures | UNRUN |
+| T-D5-09 | AC-09 | Reintento, preview obsoleto, dos conexiones, fallo de auditoría | Un hecho; 409 sin parcial; rollback | Sin huérfanos | Dos conexiones + fallo inyectado | UNRUN |
+| T-D5-10 | AC-10 | Rectificar importe/fecha/destino; cambiar Tipo/REF/Origen; corregir participante/evidencia | Impacto/motivo/auditoría; inmutables bloqueados | Original preservado | API + triggers + auditoría | UNRUN |
+| T-D5-11 | AC-11 | Anular aportación acreditada | Excluida del motor; historia conservada | Sin reactivación/DELETE | SQLite + DTO + UI | UNRUN |
+| T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota | Sin compensación cruzada | Motor + DTO + capturas | UNRUN |
+| T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso sin MFA/CSRF; errores | Neto central sin doble descuento; acceso denegado; errores seguros | Sin Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | UNRUN |
+| T-D5-14 | AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Equivalencia, foco, contraste, borrador conservado | Sin S000 en formulario común | Playwright + PNG `artifacts/e3-2-d5/` | UNRUN |
+| T-D5-15 | AC-15 | Gate sin autorización/E3.2 global; intentar habilitar Gasto CAT013/Exterior/salidas | Bloqueo explícito; B-T11 UNRUN; sin PASS de E3.2 | Sin ampliación de alcance | Inspección + gates | UNRUN |
+
+### Riesgos cubiertos
+
+| Riesgo | Pruebas |
+| --- | --- |
+| Doble cómputo (interna/Anticipo/informe) | T-D5-03, T-D5-12, T-D5-13 |
+| Atribución falsa | T-D5-02, T-D5-05, T-D5-08 |
+| Huérfano/parcial | T-D5-05, T-D5-09 |
+| Backfill/inferencia histórica | T-D5-07, T-D5-08 |
+| Concurrencia/idempotencia | T-D5-09 |
+| Reescritura bancaria | T-D5-10, T-D5-11 |
+| Seguridad/privacidad | T-D5-13, T-D5-14 |
+| UI engañosa | T-D5-12, T-D5-14 |
+| Colisión de esquema v15 | T-D5-01, T-D5-15 |
+| Ampliación de alcance | T-D5-02, T-D5-15 |
+
+### Límites y evidencia
+
+- Ninguna prueba se ejecutó para D5; no hay PASS funcional, capturas D5 ni
+  migración D5. Una prueba diseñada no es evidencia ejecutada.
+- backup/restore v15 de Base B conserva su estado propio; no acredita D5.
+- B-T11 sigue UNRUN y no se convierte en gate D5.
+- La prueba de UI/migración D5 solo podrá ejecutarse tras autorización de dev y
+  contraste de esquema con main; la versión futura no se fija aquí.

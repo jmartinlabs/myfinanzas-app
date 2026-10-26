@@ -225,3 +225,19 @@ suite completa ni backup/restore real: **UNRUN** en macOS.
 
 ## Next action
 See current checkpoint.
+
+## D5/Exterior — preparación documental (no desarrollo) — 2026-10-26
+
+Status: **PROPUESTA DOCUMENTAL; implementación bloqueada.** Base main `24b48c5`
+(PR75/Base B `5ad75ed` integrada, v15). Rama `codex/spec14-d5-exterior-r2`.
+No se reanuda dev14/D5, no hay SQL/migración, datos reales, merge ni deploy.
+
+- Contrato focal: spec14 §15; respuestas D5-Q1–Q6: brainstorming (append-only).
+- Matriz de aceptación/riesgo y pruebas futuras: spec14 §15.13–§15.14 y
+  [testplan](14-compartidos-testplan.md) T-D5-01–15, todas UNRUN.
+- Enmienda consecuente propuesta: [spec05 §D5](05-transferencias-referencias-specification.md),
+  no aprobada; sin ella D5 no sería operativo.
+- QA independiente y veredicto: ver entrega/HANDOFF de esta preparación. No se
+  confunde QA documental con evidencia funcional.
+- B-T11 sigue UNRUN; E3.2 no se declara completa. D5 no se declara aprobado ni
+  implementado; el siguiente gate es revisión final y aprobación explícita.
