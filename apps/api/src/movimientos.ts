@@ -9,6 +9,7 @@ import {
 import { getDebt } from "./deudas";
 import {
   validateReference,
+  validateSharedReferenceOperation,
   getReference,
   referenceMapping,
   operationalReferenceTypes,
@@ -303,6 +304,7 @@ function validated(
     required,
     old?.referencia ?? null,
   );
+  validateSharedReferenceOperation(db, referencia, tipo, category);
   const anticipo = validateAnticipo(
     db,
     {

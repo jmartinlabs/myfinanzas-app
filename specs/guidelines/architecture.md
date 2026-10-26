@@ -331,3 +331,42 @@ restauración permanece pendiente. UI reutiliza shell/paleta; tabla1440/tarjetas
 selección explícita de varios pares, borrador de devolución solo en memoria y formulario
 común de Movimientos. [Checkpoint y límites](../13-anticipos-progress.md),
 [evidencia por AC](../13-anticipos-testplan.md).
+
+## E3.2 base B — Compartidos sin D5 (candidato dev14)
+
+`compartido-schema.ts` migra v13→v14 dentro del IMMEDIATE existente. Reconstruye
+Referencias y sus dependientes (Movimientos, auditoría bancaria, asignaciones
+salariales y tablas de Anticipos) con copias TEMP transaccionales para ampliar el
+Tipo con «Gasto compartido», conservando IDs, importes, JSON de auditoría, índices,
+triggers, FK y acceso. Añade `fichas_compartidos` 1:1, `participantes_compartido`
+hijos con ID estable/revisión/baja lógica, índices, un único Titular activo,
+`compartido_audit` append-only y `compartido_attempts`. No reseed, no desactiva FK
+ni crea metadata de aportación. Fixture v13 genuina y fallo de DDL comprueban
+continuidad y rollback.
+
+`referencias.ts` crea la ficha compartida en la misma transacción que la REF CAT013.
+`reference-rules.ts` añade el Tipo operativo y un gate por operación: Gasto o
+Transferencia interna con ficha; S000 sigue rechazado por servicio y CHECK; Ingreso
+y Gasto fuera de CAT013 con esa REF se rechazan. Cambiar Tipo hacia/desde Gasto
+compartido queda protegido. Transferencias internas con la REF conservan efecto
+bancario y no acreditan recuperación.
+
+`compartidos.ts` es el motor/read model central (base B): Bruto, cuotas exactas por
+Gasto/Partida con mayor resto y desempate por ID, Coste propio del Titular y
+Pendiente estructural. Con terceros con cuota y D5 deshabilitado, Recuperado,
+Neto, Cobertura, Pendiente de tercero y Exceso se exponen como No disponible; sin
+terceros con cuota, No aplica. Nunca se sustituye una fuente ausente por 0,00. Un
+Gasto CAT013 incompatible o inválido se muestra «Revisar», queda fuera del Bruto y
+bloquea Cerrado (P-F6); resolverlo por el servicio común recalcula el estado. El
+caso 100 % Titular verificable y sin incidencias permite Cerrado con Neto = Bruto =
+Coste propio. El DTO incluye importe/ausencia/cobertura para AC-20, pero el consumo
+por informes/E3.6 (B-T11) queda UNRUN y fuera de base B.
+
+Cambios de partes/rol exigen vista de impacto, fingerprint y motivo; historia
+append-only; baja lógica sin DELETE ni huérfanos; los Movimientos bancarios no se
+reescriben. API `/api/compartidos/...` hereda MFA/Origin/CSRF/no-store y errores
+404/409/422; sin endpoint de aportación ni tabla `movimiento_compartido`. UI reutiliza
+shell/paleta y muestra ficha, participantes, impacto, Gastos/Partidas, estados y
+ausencias explícitas a 390/1440. Backup identifica e3.2-v14 y restore revoca
+`compartido_attempts`. D5/Exterior, informes, E3.2 completa y deploy siguen fuera.
+[Checkpoint](../14-compartidos-progress.md), [matriz y evidencia](../14-compartidos-testplan.md).

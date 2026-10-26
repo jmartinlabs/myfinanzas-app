@@ -1,4 +1,5 @@
 import { openDatabaseV12 } from "../test-support/database-v12";
+import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
@@ -250,7 +251,13 @@ test("05 R2 AC11–18/24: matriz por ID, opcionales sin endurecer, usados e inac
         .query("SELECT referencia FROM fichas_anticipos WHERE referencia=?")
         .get(anticipo.id),
     ).toEqual({ referencia: anticipo.id });
-    expect(() => ref(db, "Gasto compartido")).toThrow();
+    expect(() => ref(db, "Gasto compartido")).not.toThrow();
+    const shared = ref(db, "Gasto compartido");
+    expect(
+      db
+        .query("SELECT referencia FROM fichas_compartidos WHERE referencia=?")
+        .get(shared.id),
+    ).toEqual({ referencia: shared.id });
     expect(() => ref(db, "Vehículo")).toThrow();
     const ps = Object.fromEntries(
       ["CAT011", "CAT012", "CAT013", "CAT014", "CAT009"].map((c) => [
@@ -284,7 +291,11 @@ test("05 R2 AC11–18/24: matriz por ID, opcionales sin endurecer, usados e inac
     for (const c of ["CAT013"])
       expect(() =>
         save(db, expense(a.id, ps[c].id, { referencia: travel.id })),
-      ).toThrow("E3");
+      ).toThrow("Gasto compartido");
+    expect(
+      save(db, expense(a.id, ps.CAT013.id, { referencia: shared.id }))
+        .referencia?.id,
+    ).toBe(shared.id);
     expect(() =>
       updateReference(
         db,
@@ -1121,7 +1132,8 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [5, openDatabaseV5, "e1.5-v5"],
       [8, openDatabaseV8, "e2.2-v8"],
       [12, openDatabaseV12, "e2.5-v12"],
-      [13, openDatabase, "e3.1-v13"],
+      [13, openDatabaseV13, "e3.1-v13"],
+      [14, openDatabase, "e3.2-v14"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);
