@@ -9,6 +9,16 @@ import {
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
+  getRevisionComida,
+  listOperaciones,
+  listReposiciones,
+  revisionComidaOptions,
+  createRevisionComida,
+  rectificarRevisionComida,
+  anularRevisionComida,
+  vincularRevisionComida,
+} from "./revision-comida";
+import {
   getAnticipo,
   listAnticipos,
   createAnticipo,
@@ -239,6 +249,92 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/revision-comida/opciones" && req.method === "GET")
+        return reply(revisionComidaOptions(db, now()));
+      if (path === "/api/revision-comida" && req.method === "GET")
+        return reply(listOperaciones(db, new URL(req.url).searchParams));
+      if (path === "/api/revision-comida" && req.method === "POST") {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Detalle",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "GET"
+      )
+        return reply(listReposiciones(db, new URL(req.url).searchParams));
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "POST"
+      ) {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Reposicion",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/reposiciones/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      const reposicion = path.match(
+        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (reposicion) {
+        const [, id, action] = reposicion;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Reposicion"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Reposicion"),
+          );
+        }
+      }
+      const revision = path.match(
+        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (revision) {
+        const [, id, action] = revision;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Detalle"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Detalle"),
+          );
+        }
+      }
       if (path === "/api/anticipos/fichas" && req.method === "GET")
         return reply(listAnticipos(db, new URL(req.url).searchParams));
       if (path === "/api/anticipos/fichas" && req.method === "POST")

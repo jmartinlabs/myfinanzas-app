@@ -83,7 +83,7 @@ export async function cycleOperationsJourney(page: Page) {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto("/ciclos/" + target.id);
   await expect(
-    page.getByText("No disponible · Revisión Comida pendiente", {
+    page.getByText("No disponible · conciliación E3.5 pendiente", {
       exact: true,
     }),
   ).toBeVisible();

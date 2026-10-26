@@ -1,0 +1,125 @@
+# 16 — E3.4 Revisión bancaria de Comida: progreso DEV16
+
+Status: DEV16 en revisión. Implementación, integración con `main` y QA independiente
+del delta completadas; sin merge, despliegue, Excel ni datos reales. Cobertura por AC en
+[16-revision-comida-testplan.md](16-revision-comida-testplan.md).
+
+## Autorización y preflight
+
+- Paquete: DEV16 — E3.4 Revisión bancaria de Comida.
+- Base documental inicial: PR79 + PR80; `origin/main` `dc48f42`.
+- Autorización de implementación y QA: usuario, 2026-10-26.
+- Autorización de integración final: usuario, 2026-10-26; merge de `main` en la misma
+  rama, sin rebase ni force-push; sin merge de PR.
+- Checkout aislado:
+  `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/dev16`.
+- Rama: `codex/dev16-revision-comida`; PR #82.
+- Datos exclusivamente ficticios. Sin Excel, bases reales ni secretos.
+
+## Alcance implementado
+
+- Esquema técnico v16: `revision_comida` (Detalle/Reposicion en identidad numérica
+  compartida), auditoría append-only, intentos24h, contador atómico y marca histórica
+  de doble columna de solo lectura.
+- API MFA/Origin/CSRF: consulta/ficha, alta, rectificación, anulación lógica y
+  vínculo/desvínculo de operaciones y reposiciones; idempotencia y revisión.
+- Fuente `Revisión Comida` integrada en la referencia temporal central; `tblCiclos`
+  sigue siendo el único maestro temporal.
+- UI 390/1440: listado, ficha, formularios, vínculo, reposiciones y estados
+  vacío/carga/error/409/422/404 con foco y teclado.
+- Sin Gastos, Movimientos, saldos paralelos, ejecución presupuestaria ni efectos
+  adicionales en Saldos centrales.
+- Integración con main: Vehículos v14 y Compartidos/Base B v15 preservados; Revisión
+  Comida v16. `assertV14VehicleContract` y fixtures v13/v14/v15 conservados.
+
+## Incrementos
+
+| # | Incremento | Estado |
+| --- | --- | --- |
+| I1 | Testplan/progress y matriz AC inicial | completado |
+| I2 | Esquema v16, continuidad v13/v14/v15→v16, backup/restore y contador | completado |
+| I3 | Dominio/validación/auditoría/idempotencia y fuente temporal | completado |
+| I4 | API y permisos | completado |
+| I5 | UI 390/1440, teclado, foco y estados | completado |
+| I6 | Pruebas API/SQLite/HTTP y E2E | completado |
+| I7 | Verificación, CI Linux y QA independiente del delta | completado |
+| I8 | Publicación de rama y PR | completado; merge no autorizado |
+
+## Checkpoints
+
+### 2026-10-26 · I1 preflight y plan
+
+- Base `dc48f42`; rama `codex/dev16-revision-comida`; sin DEV16 previo.
+- Plan: esquema, fuente temporal, dominio, API, UI y pruebas; conservar los 37 AC.
+- AC-27/34/36 no se simulan; AC-12/31 condicionales; AC-23/25 documentales.
+
+### 2026-10-26 · I2–I6 candidato local
+
+- Archivos principales: `revision-comida-schema.ts`, `revision-comida-ledger.ts`,
+  `revision-comida.ts`, `revision-comida.test.ts`, `revision-comida-backup.test.ts`,
+  `RevisionComida.tsx`, fixture y servidor E2E; integración en `database-schema.ts`,
+  `database-identity.ts`, `backup.ts`, `ciclos.ts`, `app.ts`, `main.tsx`, `style.css`.
+- Evidencia por AC en el testplan. Contratos futuros y documentales sin PASS.
+
+### 2026-10-26 · Integración de main f5bf032 (histórico)
+
+`main` avanzó a `f5bf032` (Vehículos v14). Se integró preservando Vehículos y Revisión
+Comida; después `main` volvió a avanzar y esa integración quedó superada por el
+checkpoint final. Se conserva como historia, no como estado vigente.
+
+### 2026-10-26 · Integración final de main 5ad75ed y esquema v16
+
+- `main` remoto verificado en `5ad75ed` (Compartidos/Base B v15).
+- Merge de `origin/main` en `codex/dev16-revision-comida`, sin rebase ni force-push.
+- Conflictos resueltos preservando Vehículos v14 y Compartidos/Base B v15.
+- Revisión Comida pasa a **v16**:
+  - `revisionComidaSchema` actualiza `schema_version` a 16;
+  - `database-identity` admite 1–16;
+  - `database-schema` aplica vehículo `<14`, compartido `<15`, revisión `<16`;
+  - contadores `participantes_compartido` y `revision_comida`;
+  - intentos `compartido_attempts` desde v15 y `revision_comida_attempts` desde v16;
+  - backup/restore con etiquetas `e3.3-v14`, `e3.2-v15`, `e3.4-v16`;
+  - fixtures genuinos v13/v14/v15 y continuidad hasta v16.
+- Archivos de conflicto resueltos: backup, database-schema, cycle-operations, deudas,
+  planes-ciclo, referencias, vehiculos-backup, database-v14 y main.tsx; CSS y app.ts
+  auto-mergeados y revisados.
+- `specs/epic-board.md` solo incorpora el cambio de `main`; DEV16 no lo editó.
+
+### 2026-10-26 · Candidato final y CI Linux
+
+- Candidato de código: `77a311d` (merge `d179515` + fix de backup v16).
+- HEAD de la rama: `77a311d`; PR #82 abierta; sin merge.
+- CI Linux [run 40410650558](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40410650558):
+  **PASS**; baseline 1m6s, full 4m28s, required 7s.
+- Full API: **259 PASS / 0 FAIL / 3.721 expect** en 25 archivos.
+- E2E: **11 PASS**.
+- AC-21: `(pass) AC21: restore cifrado v16 conserva operaciones, devoluciones,
+  reposiciones, vínculos, evidencias y auditoría`.
+- `Application phase: PASS`; artefacto de capturas ficticias disponible.
+- Local macOS: focal 15/215 PASS; typecheck/build/E2E propio/baseline PASS. Full API
+  local 212/47: 47 fallos de plataforma `libc.so.6` (base main 5ad75ed 197/46; el fallo
+  adicional es el test de restore v16, que CI Linux ejecuta PASS).
+
+## QA independiente
+
+- Sesión independiente: `ses_e8658f75cffe04NrnMEjcapIYt`; no editó, commiteó ni publicó.
+- Ronda 1 `c59cc84`: FAIL; cobertura «Completa», filtro «Todos», coincidencia y
+  evidencia AC-35. Corregidos.
+- Ronda 2 `265bea7`: PASS de código con AC-35 parcial. Corregido en `36a81a2`.
+- Ronda 3 `36a81a2`: PASS; AC-35 PASS, AC-21 parcial en ese momento.
+- Ronda final delta `36a81a2..77a311d`: **PASS técnico** de integración, esquema v16,
+  migraciones, backup/restore, AC-21 v16 e invariantes financieros. Solo detectó
+  documentación desactualizada (v15/CI antiguo), corregida en este documento.
+- QA confirmó preservación de Vehículos/Compartidos y que `specs/epic-board.md` solo
+  refleja el cambio de main.
+- AC-21: PASS en CI Linux v16; local macOS UNRUN por `libc.so.6`.
+- AC-35: PASS. AC-25 abierto; AC-27/34/36 futuros no simulados; AC-12 C con fixture;
+  AC-31 UNRUN/C.
+
+## Pendientes y límites
+
+- AC-25 abierto: sin contraste físico acreditado de v5.11(7); no se declara equivalencia.
+- AC-27/34/36: contratos futuros E3.5; no simulados.
+- AC-12/31: históricos condicionales; solo fixture sintético y UNRUN/C.
+- Sin Excel, datos reales, B3/Dev32, despliegue ni merge.
+- Merge de PR #82 requiere aprobación expresa del usuario.

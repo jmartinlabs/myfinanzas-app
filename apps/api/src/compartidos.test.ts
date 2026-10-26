@@ -875,7 +875,7 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
   );
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 15,
+    version: 16,
   });
   for (const table of Object.keys(before))
     expect(JSON.stringify(db.query(`SELECT * FROM ${table} ORDER BY 1`).all())).toBe(
@@ -969,7 +969,7 @@ test("B-T01 v14 Vehículos → v15 preserves vehicle ficha/audit and rejects a v
     audits = db.query("SELECT * FROM audit ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 15,
+    version: 16,
   });
   expect(db.query("SELECT * FROM referencias ORDER BY id").all()).toEqual(refs);
   expect(db.query("SELECT * FROM fichas_vehiculo ORDER BY referencia").all()).toEqual(

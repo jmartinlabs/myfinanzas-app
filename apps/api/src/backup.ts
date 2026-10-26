@@ -50,7 +50,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
         versions[0].version,
       ) ||
       (expected !== undefined && versions[0].version !== expected)
@@ -141,7 +141,9 @@ export function backup(
                                   ? "e3.1-v13"
                                   : sourceVersion === 14
                                     ? "e3.3-v14"
-                                    : "e3.2-v15",
+                                    : sourceVersion === 15
+                                      ? "e3.2-v15"
+                                      : "e3.4-v16",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -250,7 +252,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
         bundle.manifest.schema,
       ) ||
       hash(bytes) !== bundle.manifest.sha256
@@ -304,6 +306,9 @@ export function restore(
           ...(bundle.manifest.schema >= 12 ? ["payroll_attempts"] : []),
           ...(bundle.manifest.schema >= 13 ? ["anticipo_attempts"] : []),
           ...(bundle.manifest.schema >= 15 ? ["compartido_attempts"] : []),
+          ...(bundle.manifest.schema >= 16
+            ? ["revision_comida_attempts"]
+            : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();
