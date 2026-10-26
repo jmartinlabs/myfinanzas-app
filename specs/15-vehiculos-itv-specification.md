@@ -1,9 +1,9 @@
 # 15 — E3.3 Vehículos y control ITV: Specification
-Status: **DRAFT rev5** — Q1–Q6 confirmadas; specification y wireframes pendientes de
-aprobación.
+Status: **APPROVED rev5** — specification y wireframes W1–W10 aprobados por el usuario
+el 2026-10-26 sobre SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Approval source/date: Q1–Q5, usuario, 2026-10-26; Q6-A, usuario, 2026-10-26.
 Candidato: **rev5 sobre `e253e82`**; SHA de publicación se registra en el retorno de
-sesión/PR. Aprobación de esta revisión: PENDING. Esta propuesta no autoriza desarrollo15,
+sesión/PR. Aprobación de esta revisión: usuario, 2026-10-26, SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129`. Esta propuesta no autoriza desarrollo15,
 SQL, datos reales, push de publicación ni merge.
 QA sources: H1–H6 sobre `4d037cd`; F1–F6 sobre `616f4ff`; residuales y atomicidad
 sobre `e253e82`. Historial: rev1 `4d037cd`; rev2 corrige H1–H6; rev3 incorpora Q6-A;
@@ -960,17 +960,32 @@ Revisión manual del candidato; no es implementación ni prueba funcional.
 | Atomicidad | Si falta cualquier confirmación/hash, no se modifica nombre, matrícula, REF ni ficha; ambos válidos = un guardado; contexto cambiado = 409 | §8, §12, AC-11, W5/W6/W9/W10 |
 | F5 conversión | Q3 cubre conversión como alta de ficha; mismo contrato de duplicados | §4.4, §8, W9/W10, AC-40 |
 
-## 20. Pendiente antes de aprobar
-- **Candidato:** rev5 sobre `e253e82`; la aprobación de esta revisión sigue PENDING.
+## 20. Aprobación documental y gates restantes
+- **Candidato aprobado:** rev5, SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129`, sobre `e253e82`.
 - **Q6-A confirmada (usuario, 2026-10-26):** la corrección de matrícula aplica la misma
   detección, aviso y confirmación server-side que el alta/renombrado; excluye la propia
   ficha; no pide confirmación si la matrícula no cambia; exige confirmación si coincide
   con otra ficha; permite duplicados confirmados; sin unicidad global; conserva ID,
   Referencia e historial.
-- Revisión y aprobación expresa de esta specification rev5 y de los wireframes W1–W10.
+- Specification rev5 y wireframes W1–W10 aprobados expresamente por el usuario el 2026-10-26.
 - La distinción `coberturaAlCorte`/`coberturaAnual` y `totalAlCorte`/`totalAnual` se
   documenta como corrección F1, sin cambiar la regla Q4: no hay una pregunta adicional.
 - F5 no abre pregunta: Q3 aprobada ya cubre la conversión como alta de ficha; se aplica
   el mismo contrato de duplicados en §8, W9/W10 y AC-40.
 - Tras la aprobación, desarrollo15 seguirá necesitando autorización separada; no se
   incluye SQL, migración, datos reales, publicación ni merge.
+
+
+### Registro de aprobación — 2026-10-26
+
+Fuente: mensaje directo del usuario en el chat coordinador:
+
+> Apruebo la specification 15 rev5 y los wireframes W1–W10 del SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129`
+
+QA independiente OpenCode sobre ese SHA: APTO para presentar a aprobación; cinco
+puntos focales PASS (404/Revisar con observación editorial no bloqueante), sin
+regresiones materiales F1–F6. Informe recibido por el coordinador; no es QA del
+código ni ejecución de los 45 AC funcionales. La verificación canónica externa
+quedó UNRUN por Python 3.9.6; su cierre se registra con la evidencia de publicación.
+Este cambio registra la aprobación sin alterar reglas, AC ni wireframes aprobados.
+Desarrollo15, SQL operativo, datos reales y merge requieren sus gates propios.

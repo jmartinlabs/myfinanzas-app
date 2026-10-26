@@ -1,6 +1,6 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
 Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev5 (base
-`e253e82`) y wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
+`e253e82`) y wireframes W1–W10 aprobados sobre SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129` (2026-10-26). Ninguna aprobación de desarrollo.
 Nota de lectura: los `PENDING` de las Rondas 1 y 2 son estados históricos; las
 respuestas posteriores los sustituyen y están al final. La tabla de trazabilidad de
 respuestas indica la sustitución sin reescribir las preguntas. Los wireframes
@@ -276,3 +276,15 @@ Base `e253e82`. No se reabre Q1–Q6 ni se añade una decisión funcional. Se co
 - Q5: año inicial solo de vista;
 - AC-15: hechos fuera de control/corte excluidos del cómputo.
 La specification rev5 conserva el contrato restante y sigue pendiente de aprobación.
+
+
+## Aprobación completa de rev5 y W1–W10 — 2026-10-26
+
+Fuente: mensaje directo del usuario en el chat coordinador:
+
+> Apruebo la specification 15 rev5 y los wireframes W1–W10 del SHA `15c2ff1e59d36e3fb5ca99790d9774d204c35129`
+
+QA independiente de OpenCode APTO sobre ese SHA, sin regresiones materiales.
+Los estados pendientes anteriores conservan historia y quedan sustituidos por
+esta aprobación completa. No autoriza desarrollo15, SQL operativo, datos reales
+ni merge. Se prepara publicación documental con verificación y PR propias.
