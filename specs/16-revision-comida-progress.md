@@ -25,7 +25,7 @@ ni datos reales. Cobertura por AC en
 
 ## Alcance implementado
 
-- Esquema técnico v14: tabla `revision_comida` (Detalle/Reposicion en una identidad
+- Esquema técnico v15: tabla `revision_comida` (Detalle/Reposicion en una identidad
   numérica compartida), auditoría append-only, intentos24h, contador atómico y la
   posibilidad de preservar en lectura una marca histórica de doble columna
   (`fuera_presupuesto_historico`) sin campo escribible `fueraPresupuesto`.
@@ -45,7 +45,7 @@ ni datos reales. Cobertura por AC en
 | # | Incremento | Estado |
 | --- | --- | --- |
 | I1 | Testplan/progress y matriz AC inicial | completado |
-| I2 | Esquema v14, continuidad v13→v14, backup/restore y contador | completado |
+| I2 | Esquema v15, continuidad v13→v15, backup/restore y contador | completado |
 | I3 | Dominio/validación/auditoría/idempotencia y fuente temporal | completado |
 | I4 | API y permisos | completado |
 | I5 | UI 390/1440, teclado, foco y estados | completado |
@@ -59,7 +59,7 @@ ni datos reales. Cobertura por AC en
 
 - Base `dc48f42`; rama `codex/dev16-revision-comida`.
 - Sin `progress16`/`testplan16` previos; se crean sin reutilizar documentos ajenos.
-- Plan: esquema v14, fuente temporal, dominio, API, UI y pruebas; conservar los 37 AC
+- Plan: esquema v15, fuente temporal, dominio, API, UI y pruebas; conservar los 37 AC
   y sus grupos. AC-27/34/36 no se simulan; AC-12/31 condicionales; AC-23/25 documentales.
 
 ### 2026-10-26 · I2–I6 candidato local
@@ -97,9 +97,9 @@ Base y rama:
 
 Cambios:
 
-- Esquema v14 en `revision-comida-schema.ts`; identidad/versión actualizadas en
+- Esquema v15 en `revision-comida-schema.ts`; identidad/versión actualizadas en
   `database-identity.ts` y `database-schema.ts`; backup/restore reconoce
-  `e3.4-v14` y revoca `revision_comida_attempts`.
+  `e3.4-v15` y revoca `revision_comida_attempts`.
 - `revision-comida-ledger.ts` y `revision-comida.ts`: lectura, fuente temporal,
   validación, matriz, evidencias, vínculo opcional, auditoría, anulación lógica,
   idempotencia, concurrencia y consulta.
@@ -121,8 +121,8 @@ Evidencia:
   `artifacts/e3-4/`.
 - Baseline canónica: **PASS** con Python 3.12.16.
 - `scripts/verify --full`: baseline/typecheck/build PASS; API **FAIL platform** por
-  `libc.so.6` (publicación atómica/restore Linux) y e2e canónico UNRUN. El mismo worktree
-  base `dc48f42` presenta los mismos 45 fallos, por lo que no son regresiones DEV16.
+  `libc.so.6` (publicación atómica/restore Linux) y e2e canónico UNRUN. El worktree de `main`
+  `f5bf032` presenta los mismos 46 fallos, por lo que no son regresiones DEV16.
 - CI Linux y restore cifrado del candidato: **UNRUN**; no se declaran PASS.
 - AC-21 queda parcial (migración/reapertura PASS; restore cifrado local UNRUN).
 - AC-25 sigue abierto; AC-27/34/36 no se simulan; AC-12 se prueba solo con fixture
@@ -142,7 +142,7 @@ sesión de QA no editó, commiteó ni publicó; ejecutó pruebas y sondas propia
   UNRUN local); AC-25 abierto; AC-27/34/36 futuros no simulados; AC-12 C con fixture;
   AC-31 UNRUN/C. Invariantes financieros confirmados.
 - Evidencia QA: focal **15 PASS / 215 expect**, typecheck/build PASS, E2E PASS,
-  baseline PASS, full API **180 PASS / 45 FAIL** de plataforma `libc.so.6`.
+  baseline PASS, full API **192 PASS / 46 FAIL** de plataforma `libc.so.6`.
 - Residuales bajos aceptados: selector de vínculo no oculta la combinación
   `Agregado terminal` con Gasto no Terminal (el servidor la rechaza), 409 de UI
   interceptado para presentación, acciones de fila de reposiciones limitadas a Ver/Editar,
@@ -150,3 +150,17 @@ sesión de QA no editó, commiteó ni publicó; ejecutó pruebas y sondas propia
   a integridad financiera ni a los AC.
 
 CI Linux, restore cifrado y `scripts/verify --full` siguen **UNRUN**; no se declaran PASS.
+
+### 2026-10-26 · Integración de main f5bf032 (E3.3 Vehículos)
+
+`main` avanzó a `f5bf032` con E3.3 Vehículos y esquema v14. Se integró `origin/main`
+en la rama DEV16, conservando ambas entregas: Vehículos v14 y Revisión Comida v15.
+Se resolvieron conflictos en esquema/identidad/backup, expectativas de versión y CSS;
+no se eliminaron cambios de Vehículos. La rama publicada queda actualizada y el
+candidato vuelve a verificarse.
+
+- API focal: **15 PASS / 0 FAIL / 215 expect**.
+- Full API local: **192 PASS / 46 FAIL** de plataforma; base `main` f5bf032: **177 / 46**;
+  el candidato añade 15 pruebas PASS y ningún fallo de `revision-comida`.
+- Typecheck/build, E2E propio y baseline canónico: PASS.
+- Backup/restore `e3.4-v15` y `scripts/verify --full` remoto: **UNRUN** en macOS.

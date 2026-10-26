@@ -1,9 +1,11 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
+import { vehicleFicha } from "./vehicle-rules";
 export const operationalReferenceTypes = [
   "Viaje",
   "Evento",
   "Anticipo",
+  "Vehículo",
 ] as const;
 // Q2: sanitized evidence by stable category IDs. No category/financial data is seeded.
 export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
@@ -18,7 +20,7 @@ export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
 export type Reference = {
   id: string;
   nombre: string;
-  tipo: "Viaje" | "Evento" | "Anticipo";
+  tipo: "Viaje" | "Evento" | "Anticipo" | "Vehículo";
   estado: "Activa" | "Inactiva";
   revision: number;
   creado: string;
@@ -51,7 +53,7 @@ export function validateReference(
     required &&
     (!expected ||
       !operationalReferenceTypes.includes(
-        expected as "Viaje" | "Evento" | "Anticipo",
+        expected as "Viaje" | "Evento" | "Anticipo" | "Vehículo",
       ))
   )
     throw new Problem(
@@ -88,6 +90,13 @@ export function validateReference(
       422,
       "REFERENCE_UNAVAILABLE",
       "Este Tipo requiere su ficha E3.",
+    );
+  if (ref.tipo === "Vehículo" && !vehicleFicha(db, id))
+    throw new Problem(
+      422,
+      "REFERENCE_FICHA_REQUIRED",
+      "La Referencia Vehículo requiere su ficha 1:1.",
+      { referencia: "La Referencia Vehículo no tiene ficha; no admite nuevos enlaces." },
     );
   if (ref.estado !== "Activa" && id !== previous)
     throw new Problem(
