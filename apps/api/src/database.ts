@@ -57,8 +57,10 @@ export function openDatabase(path: string) {
     db.exec("PRAGMA busy_timeout=3000");
     // 31-E1: verify origin and version from one read snapshot before any persistent
     // PRAGMA, chmod or migration (prepareSchema runs only after this check).
-    assertMode(db.transaction(() => inspectIdentity(db))(), production);
+    // The admitted v14/v15 manifest is verified before any identity transaction,
+    // persistent PRAGMA or write.
     verifyAdmittedContract(db);
+    assertMode(db.transaction(() => inspectIdentity(db))(), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);
     if (!production && path !== ":memory:") chmodSync(path, 0o600);

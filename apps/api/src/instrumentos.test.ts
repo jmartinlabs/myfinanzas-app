@@ -303,3 +303,34 @@ test("E4.1-AC-32: IDs y auditoría dedicada no se reutilizan ni admiten DELETE",
   expect(() => f.db.run("DELETE FROM operaciones_inversion WHERE id=?", [first.data.compra.id])).toThrow();
   expect(() => f.db.run("DELETE FROM instrumentos WHERE id=?", [a.data.instrumento.id])).toThrow();
 });
+
+test("E4.1-AC-19: idempotencia de Instrumento con replay idéntico y payload distinto", async () => {
+  const f = await fixture();
+  await f.enroll();
+  const key = randomUUID();
+  const body = {
+    nombre: "Fondo idempotente",
+    isin: "ES0000000005",
+    isinEvidencia: "Evidencia idempotente",
+  };
+  const first = await f.request("/api/instrumentos", "POST", body, {
+    "idempotency-key": key,
+  });
+  expect(first.status).toBe(201);
+  const replay = await f.request("/api/instrumentos", "POST", body, {
+    "idempotency-key": key,
+  });
+  expect(replay.status).toBe(201);
+  expect(replay.data.instrumento.id).toBe(first.data.instrumento.id);
+  const conflict = await f.request(
+    "/api/instrumentos",
+    "POST",
+    { ...body, nombre: "Otro payload" },
+    { "idempotency-key": key },
+  );
+  expect(conflict.status).toBe(409);
+  expect(conflict.data.code).toBe("IDEMPOTENCY_CONFLICT");
+  expect(
+    (f.db.query("SELECT COUNT(*) n FROM instrumentos").get() as { n: number }).n,
+  ).toBe(1);
+});

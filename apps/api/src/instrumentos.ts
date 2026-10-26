@@ -254,8 +254,13 @@ export function createInstrumento(
 ) {
   if (!/^[a-zA-Z0-9-]{16,100}$/.test(key))
     throw new Problem(422, "IDEMPOTENCY_REQUIRED", "Clave de intento inválida.");
-  const value = validated(db, body),
-    hash = createHash("sha256").update(JSON.stringify(value)).digest("hex");
+  const hash = createHash("sha256")
+    .update(
+      JSON.stringify(
+        Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+      ),
+    )
+    .digest("hex");
   return db
     .transaction(() => {
       db.run("DELETE FROM instrumento_attempts WHERE expires<?", [now]);
@@ -271,6 +276,7 @@ export function createInstrumento(
           );
         return JSON.parse(retry.response) as ReturnType<typeof getInstrumento>;
       }
+      const value = validated(db, body);
       const counter = db
         .query(
           "UPDATE counters SET next=next+1 WHERE name='instrumento' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) value",

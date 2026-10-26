@@ -1,7 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import contractsJson from "./schema-contracts.json";
 
 export type ContractObject = {
   type: string;
@@ -17,12 +16,11 @@ export type SchemaContract = {
   sha256: string;
 };
 
-const file = join(import.meta.dir, "schema-contracts.json");
 let cached: SchemaContract[] | null = null;
 
 export function contracts(): SchemaContract[] {
   if (cached) return cached;
-  const parsed = JSON.parse(readFileSync(file, "utf8")) as SchemaContract[];
+  const parsed = contractsJson as SchemaContract[];
   for (const contract of parsed) {
     const objects = contract.objects
       .map((object) => ({

@@ -15,6 +15,7 @@ export type Saldo = {
   posicion: { importe: string | null; condicion: string; motivo: string };
 };
 export class ApiError extends Error {
+  code: string;
   constructor(
     public status: number,
     message: string,
@@ -22,6 +23,7 @@ export class ApiError extends Error {
     public data: Record<string, any> = {},
   ) {
     super(message);
+    this.code = typeof data.code === "string" ? data.code : "";
   }
 }
 let csrf = "";

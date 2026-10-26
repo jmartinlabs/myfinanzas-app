@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 
@@ -140,30 +140,19 @@ function scaled(value: string, scale: number) {
   return BigInt(whole) * 10n ** BigInt(scale) +
     BigInt(fraction.padEnd(scale, "0"));
 }
-function reference(form: Form) {
-  const cantidad = scaled(form.cantidad, 8),
-    precio = scaled(form.precio, 6),
-    cambio =
-      form.divisa === "EUR"
-        ? 1_000_000n
-        : scaled(form.cambio || "0", 6);
-  if (cantidad === null || precio === null || cambio === null) return null;
-  const denominator = 10n ** 18n,
-    cents = (cantidad * precio * cambio + denominator / 2n) / denominator;
-  return (cents < 0n ? -cents : cents).toString().padStart(3, "0");
-}
 function centsText(value: bigint) {
   const negative = value < 0n,
     abs = negative ? -value : value;
   return `${negative ? "-" : ""}${abs / 100n}.${String(abs % 100n).padStart(2, "0")}`;
 }
 function localReference(form: Form) {
+  if (form.divisa !== "EUR" && !form.cambio.trim()) return null;
   const cantidad = scaled(form.cantidad, 8),
     precio = scaled(form.precio, 6),
     cambio =
       form.divisa === "EUR"
         ? 1_000_000n
-        : scaled(form.cambio || "0", 6);
+        : scaled(form.cambio, 6);
   if (cantidad === null || precio === null || cambio === null) return null;
   const denominator = 10n ** 18n,
     cents = (cantidad * precio * cambio + denominator / 2n) / denominator;
@@ -296,14 +285,15 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
     [options, setOptions] = useState<Options | null>(null),
     [optionsError, setOptionsError] = useState(false),
     [error, setError] = useState(""),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    [page, setPage] = useState(1);
   useEffect(() => {
     let live = true;
     setData(null);
     setError("");
     setOptionsError(false);
     api<{ instrumentos: Instrumento[]; total: number; cobertura: string }>(
-      `${BASE.replace("/inversiones", "")}/instrumentos?busqueda=${encodeURIComponent(search)}&estado=${estado}`,
+      `${BASE.replace("/inversiones", "")}/instrumentos?busqueda=${encodeURIComponent(search)}&estado=${estado}&page=${page}`,
     )
       .then((value) => live && setData(value))
       .catch(
@@ -319,7 +309,7 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
     return () => {
       live = false;
     };
-  }, [search, estado, retry]);
+  }, [search, estado, page, retry]);
   return (
     <>
       <PageHead
@@ -339,13 +329,22 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
             Buscar por nombre o ISIN
             <input
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => {
+                setSearch(event.target.value);
+                setPage(1);
+              }}
               placeholder="Nombre o ISIN"
             />
           </label>
           <label>
             Estado
-            <select value={estado} onChange={(event) => setEstado(event.target.value)}>
+            <select
+              value={estado}
+              onChange={(event) => {
+                setEstado(event.target.value);
+                setPage(1);
+              }}
+            >
               <option value="">Todos</option>
               <option value="Activa">Activos</option>
               <option value="Inactiva">Inactivos</option>
@@ -367,8 +366,8 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
           </div>
         ) : (
           <>
-            <div className="desktop-list">
-              <table>
+            <div className="desktop-list inversiones-desktop">
+              <table className="inversiones-table">
                 <caption className="sr-only">Instrumentos registrados</caption>
                 <thead>
                   <tr>
@@ -458,7 +457,25 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
               ))}
             </ul>
             <p className="help">{data.cobertura}</p>
-            <p className="list-footer">{data.total} Instrumento(s)</p>
+            <div className="list-footer">
+              <span>{data.total} Instrumento(s) · página {page}</span>
+              <div className="actions">
+                <button
+                  className="secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage((value) => value - 1)}
+                >
+                  Anterior
+                </button>
+                <button
+                  className="secondary"
+                  disabled={page * 100 >= data.total}
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
           </>
         )}
       </section>
@@ -479,8 +496,12 @@ function InstrumentDetail({
     [motivo, setMotivo] = useState(""),
     [busy, setBusy] = useState(false);
   useEffect(() => {
-    let live = true;
     setData(null);
+    setAudit([]);
+    setError("");
+  }, [id]);
+  useEffect(() => {
+    let live = true;
     setError("");
     api(`/instrumentos/${id}`)
       .then((value) => live && setData(value))
@@ -580,8 +601,8 @@ function InstrumentDetail({
         {data.posiciones.length === 0 ? (
           <p>Sin posiciones registradas; cero verificado del registro de Compras.</p>
         ) : (
-          <div className="desktop-list">
-            <table>
+          <div className="desktop-list inversiones-desktop">
+            <table className="inversiones-table">
               <caption className="sr-only">Posiciones por Saldo</caption>
               <thead>
                 <tr>
@@ -605,6 +626,26 @@ function InstrumentDetail({
               </tbody>
             </table>
           </div>
+        )}
+        {data.posiciones.length > 0 && (
+          <ul
+            className="mobile-list inversiones-mobile"
+            aria-label="Posiciones por Saldo móvil"
+          >
+            {data.posiciones.map((position: Position) => (
+              <li key={position.saldoInversion.id}>
+                <div className="card-head">
+                  <strong>
+                    {position.saldoInversion.id} · {position.saldoInversion.nombre}
+                  </strong>
+                  <span>{num(position.cantidad)}</span>
+                </div>
+                <p>
+                  {position.compras} compra(s) · última {date(position.ultimaCompra)}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
         <p className="help">
           Valoración y resultado: {data.valoracion.estado} · {data.valoracion.motivo}.
@@ -638,8 +679,8 @@ function InstrumentDetail({
         {data.compras.length === 0 ? (
           <p>Sin compras registradas.</p>
         ) : (
-          <div className="desktop-list">
-            <table>
+          <div className="desktop-list inversiones-desktop">
+            <table className="inversiones-table">
               <caption className="sr-only">Compras del Instrumento</caption>
               <thead>
                 <tr>
@@ -673,6 +714,32 @@ function InstrumentDetail({
               </tbody>
             </table>
           </div>
+        )}
+        {data.compras.length > 0 && (
+          <ul
+            className="mobile-list inversiones-mobile"
+            aria-label="Compras del Instrumento móvil"
+          >
+            {data.compras.map((compra: Compra) => (
+              <li key={compra.id}>
+                <div className="card-head">
+                  <strong>{date(compra.fecha)}</strong>
+                  <Tag inactive={compra.estado === "Anulada"}>
+                    {compra.estado}
+                  </Tag>
+                </div>
+                <p>
+                  {compra.saldoEfectivo?.id} → {compra.saldoInversion?.id} ·{" "}
+                  {num(compra.cantidad)} × {num(compra.precio)} {compra.divisa}
+                  {compra.cambio ? ` · ${num(compra.cambio)}` : ""}
+                </p>
+                <p>
+                  EUR cargado {eur(compra.importeEur)} · comisión{" "}
+                  {compra.comisionEur ? eur(compra.comisionEur) : "0,00 €"}
+                </p>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
       <section className="panel" aria-labelledby="auditoria-instrumento-title">
@@ -894,7 +961,8 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
       cobertura: string;
     } | null>(null),
     [error, setError] = useState(""),
-    [retry, setRetry] = useState(0);
+    [retry, setRetry] = useState(0),
+    [page, setPage] = useState(1);
   useEffect(() => {
     api<Options>("/instrumentos/opciones")
       .then(setOptions)
@@ -908,6 +976,7 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
       Object.entries(filters).filter(([, value]) => value),
     );
     if (filters.estado === "") query.set("estado", "");
+    query.set("page", String(page));
     api(`/compras?${query.toString()}`)
       .then((value) => live && setData(value))
       .catch(
@@ -918,7 +987,8 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
     return () => {
       live = false;
     };
-  }, [filters, retry]);
+  }, [filters, page, retry]);
+  useEffect(() => setPage(1), [filters]);
   return (
     <>
       <PageHead
@@ -1019,8 +1089,8 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
               Todas ({data.resumen.total}) · {data.resumen.vigentes} vigentes ·{" "}
               {data.resumen.anuladas} anulada(s). {data.cobertura}
             </p>
-            <div className="desktop-list">
-              <table>
+            <div className="desktop-list inversiones-desktop">
+              <table className="inversiones-table">
                 <caption className="sr-only">Compras registradas</caption>
                 <thead>
                   <tr>
@@ -1132,6 +1202,25 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
                 </li>
               ))}
             </ul>
+            <div className="list-footer">
+              <span>{data.total} Compra(s) · página {page}</span>
+              <div className="actions">
+                <button
+                  className="secondary"
+                  disabled={page <= 1}
+                  onClick={() => setPage((value) => value - 1)}
+                >
+                  Anterior
+                </button>
+                <button
+                  className="secondary"
+                  disabled={page * 100 >= data.total}
+                  onClick={() => setPage((value) => value + 1)}
+                >
+                  Siguiente
+                </button>
+              </div>
+            </div>
           </>
         )}
       </section>
@@ -1377,6 +1466,7 @@ function PurchaseForm({
     [error, setError] = useState(""),
     [impact, setImpactState] = useState<Impact | null>(null),
     [busy, setBusy] = useState(false),
+    [stale, setStale] = useState(false),
     [loaded, setLoaded] = useState(!rectifying),
     attempt = useRef(crypto.randomUUID()),
     alert = useRef<HTMLDivElement>(null);
@@ -1409,6 +1499,7 @@ function PurchaseForm({
     setForm((current) => ({ ...current, [field]: value }));
     setImpactState(null);
     setError("");
+    setStale(false);
     setErrors((current) => ({ ...current, [field]: "" }));
     attempt.current = crypto.randomUUID();
   }
@@ -1454,9 +1545,21 @@ function PurchaseForm({
       const apiError = value as ApiError;
       setError(apiError.message);
       setErrors(apiError.fields ?? {});
+      setStale(apiError.code === "REVISION_CONFLICT");
       requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
+    }
+  }
+  async function refreshRevision() {
+    if (!id) return;
+    try {
+      const value = await api(`/compras/${id}`);
+      setRevision(value.compra.revision);
+      setStale(false);
+      setError("");
+    } catch (value) {
+      setError((value as Error).message);
     }
   }
   async function confirm() {
@@ -1474,6 +1577,7 @@ function PurchaseForm({
       const apiError = value as ApiError;
       setError(apiError.message);
       setErrors(apiError.fields ?? {});
+      setStale(apiError.code === "REVISION_CONFLICT");
       requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
@@ -1500,8 +1604,17 @@ function PurchaseForm({
         description="Los Saldos se eligen explícitamente; no hay preselección automática"
       />
       {error && (
-        <div ref={alert} tabIndex={-1}>
-          <Alert>{error}</Alert>
+        <div ref={alert} tabIndex={-1} className="focus-alert">
+          <Alert>
+            {error}
+            {stale && rectifying && (
+              <p>
+                <button className="secondary" type="button" onClick={refreshRevision}>
+                  Actualizar revisión conservando el borrador
+                </button>
+              </p>
+            )}
+          </Alert>
         </div>
       )}
       {noCash && !rectifying && (

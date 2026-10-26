@@ -107,7 +107,12 @@ export function financeRevision(db: Database) {
       ? [
           db
             .query(
-              "SELECT * FROM operaciones_inversion ORDER BY length(id),id",
+              `SELECT id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,
+                CAST(cantidad AS TEXT) cantidad,CAST(precio_divisa AS TEXT) precio_divisa,
+                divisa,CAST(cambio AS TEXT) cambio,CAST(importe_eur AS TEXT) importe_eur,
+                CAST(comision_eur AS TEXT) comision_eur,concepto,nota,estado,revision,
+                creado,actualizado
+               FROM operaciones_inversion ORDER BY length(id),id`,
             )
             .all(),
         ]

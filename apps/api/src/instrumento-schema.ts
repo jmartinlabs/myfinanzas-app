@@ -54,6 +54,9 @@ export function investmentSchema(db: Database) {
     BEGIN SELECT RAISE(ABORT,'no delete'); END;
   CREATE TRIGGER operacion_inversion_annulled_immutable BEFORE UPDATE ON operaciones_inversion
     WHEN OLD.estado='Anulada' BEGIN SELECT RAISE(ABORT,'annulled operation is immutable'); END;
+  CREATE TRIGGER operacion_inversion_identity_immutable BEFORE UPDATE OF instrumento,saldo_efectivo,saldo_inversion ON operaciones_inversion
+    WHEN NEW.instrumento!=OLD.instrumento OR NEW.saldo_efectivo!=OLD.saldo_efectivo OR NEW.saldo_inversion!=OLD.saldo_inversion
+    BEGIN SELECT RAISE(ABORT,'immutable operation identity'); END;
   CREATE TRIGGER operacion_inversion_saldos_type BEFORE INSERT ON operaciones_inversion
     WHEN (SELECT tipo FROM saldos WHERE id=NEW.saldo_efectivo) IS NOT 'Efectivo'
       OR (SELECT control FROM saldos WHERE id=NEW.saldo_efectivo) IS NOT 'Inversiones'

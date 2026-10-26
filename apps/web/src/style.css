@@ -2206,3 +2206,41 @@ textarea {
     margin-left: 0;
   }
 }
+
+.inversiones-desktop {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.desktop-list table.inversiones-table {
+  width: max-content;
+  min-width: 1080px;
+  max-width: none;
+  table-layout: auto;
+}
+.desktop-list table.inversiones-table th {
+  width: auto;
+}
+.inversiones-table th,
+.inversiones-table td {
+  white-space: nowrap;
+}
+.inversiones-table td:nth-child(2),
+.inversiones-table td:nth-child(5) {
+  white-space: normal;
+  min-width: 140px;
+}
+.focus-alert:focus,
+.focus-alert:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+
+.desktop-list table.inversiones-table th,
+.desktop-list table.inversiones-table td {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.desktop-list table.inversiones-table th:first-child,
+.desktop-list table.inversiones-table td:first-child {
+  padding-left: 10px;
+}

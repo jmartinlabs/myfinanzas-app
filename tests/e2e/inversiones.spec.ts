@@ -81,6 +81,10 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await expect(
       page.locator(".inversiones-list tbody tr"),
     ).toHaveCount(3);
+    for (const header of ["ID", "Nombre", "ISIN", "Estado", "Compras"])
+      await expect(
+        page.getByRole("columnheader", { name: header, exact: true }),
+      ).toBeVisible();
     await expect(
       page.getByText("Fondo antiguo", { exact: true }),
     ).toBeVisible();
@@ -130,6 +134,21 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
       page.getByRole("heading", { name: "Compras de inversión", exact: true }),
     ).toBeVisible();
     await expect(page.getByText(/Todas \(3\) · 2 vigentes · 1 anulada/)).toBeVisible();
+    for (const header of ["EUR cargado", "Comisión", "Estado", "Acciones"]) {
+      const cell = page.getByRole("columnheader", { name: header, exact: true });
+      await cell.scrollIntoViewIfNeeded();
+      await expect(cell).toBeVisible();
+    }
+    const amountCell = page
+      .locator(".inversiones-list tbody tr", { hasText: "10/02/2026" })
+      .locator("td")
+      .filter({ hasText: "1.125,00 €" });
+    expect(
+      await amountCell.evaluate((cell) => getComputedStyle(cell).whiteSpace),
+    ).toBe("nowrap");
+    await page.locator(".inversiones-desktop").evaluateAll((containers) => {
+      for (const container of containers) container.scrollLeft = 0;
+    });
     const annulledRow = page.locator("tr", { hasText: "Anulada" });
     await expect(annulledRow).toHaveCount(1);
     await expect(annulledRow.getByRole("button", { name: "Ver" })).toBeVisible();
@@ -158,6 +177,10 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByLabel(/Saldo de inversión \*/).selectOption("S004");
     await page.getByLabel(/Cantidad \*/).fill("1");
     await page.getByLabel(/Precio unitario \*/).fill("10.00");
+    await page.getByLabel(/Divisa \*/).selectOption("USD");
+    await expect(
+      page.getByText(/Referencia cantidad×precio×cambio: No calculable/),
+    ).toBeVisible();
     await page.getByLabel(/Divisa \*/).selectOption("EUR");
     await page.getByLabel(/Importe EUR cargado \*/).fill("10.00");
     await page.getByRole("button", { name: "Revisar compra" }).click();
@@ -187,6 +210,34 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await page.getByLabel(/Motivo \*/).fill("Corrección de cantidad ficticia");
     await page.getByRole("button", { name: "Revisar compra" }).click();
     await expect(impact).toContainText("antes 1.800,40 € → después 2.025,40 €");
+    await page.screenshot({
+      path: "artifacts/e4-1/rectificar-impacto-1440.png",
+    });
+    await page.route(
+      /\/api\/compras\/\d+\/rectificar$/,
+      (route) =>
+        route.fulfill({
+          status: 409,
+          contentType: "application/json",
+          body: JSON.stringify({
+            code: "REVISION_CONFLICT",
+            error: "La Compra ha cambiado. Revisa la versión actual.",
+          }),
+        }),
+      { times: 1 },
+    );
+    await page.getByRole("button", { name: "Confirmar rectificación" }).click();
+    await expect(
+      page.getByText("La Compra ha cambiado. Revisa la versión actual."),
+    ).toBeVisible();
+    await expect(page.locator(".focus-alert")).toBeFocused();
+    await page
+      .getByRole("button", {
+        name: "Actualizar revisión conservando el borrador",
+      })
+      .click();
+    await expect(page.locator(".focus-alert")).toHaveCount(0);
+    await page.unroute(/\/api\/compras\/\d+\/rectificar$/);
     await page.getByRole("button", { name: "Confirmar rectificación" }).click();
     await expect(page.getByText("900,00 €").first()).toBeVisible();
     await expect(page.getByText(/revisión 2/).first()).toBeVisible();
@@ -266,6 +317,31 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     ).toBe(true);
     await page.screenshot({
       path: "artifacts/e4-1/compras-list-390.png",
+      fullPage: true,
+    });
+    await page.locator(".inversiones-mobile li").first().getByRole("button", { name: "Rectificar" }).click();
+    await expect(
+      page.getByRole("heading", { name: /Rectificar compra/ }),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/e4-1/rectificar-390.png",
+    });
+    await page.getByRole("link", { name: /Instrumentos/ }).click();
+    await page.locator(".inversiones-mobile a", { hasText: "Fondo índice demo" }).click();
+    await expect(
+      page.getByLabel("Posiciones por Saldo móvil"),
+    ).toContainText("S004 · Cartera de inversión demo");
+    await expect(
+      page.getByLabel("Compras del Instrumento móvil"),
+    ).toContainText("EUR cargado");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/e4-1/instrumento-ficha-390.png",
       fullPage: true,
     });
     expect(errors).toEqual([]);
