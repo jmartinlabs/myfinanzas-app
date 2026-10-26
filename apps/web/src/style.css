@@ -2160,6 +2160,9 @@ textarea {
   overflow-wrap: normal;
   word-break: normal;
 }
+.shared-participants td:first-child {
+  overflow-wrap: anywhere;
+}
 .shared-participants td small {
   display: block;
   margin-top: 2px;

@@ -239,6 +239,22 @@ test("E3.2 base B real MFA, ficha, participants, impact, statuses and no D5 form
       .click();
     await expect(page.getByRole("row", { name: /Bea/ })).toContainText("Baja");
     await expect(page.getByText("baja participante", { exact: false })).toBeVisible();
+    // A legally admitted long name stays contained in the 1440 participant table.
+    const longName = "A".repeat(120);
+    await page.getByRole("button", { name: "Añadir participante" }).click();
+    await page.getByLabel("Nombre", { exact: true }).fill(longName);
+    await page.locator(".shared-form").getByRole("button", {
+      name: "Añadir participante",
+    }).click();
+    await expect(page.getByText(longName, { exact: true })).toBeVisible();
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () => document.documentElement.scrollWidth <= innerWidth,
+        ),
+      )
+      .toBe(true);
     expect(errors).toEqual([]);
   } finally {
     child.kill();
