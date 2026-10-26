@@ -74,6 +74,7 @@ function factDto(r: LedgerRow, partida: Partida | undefined) {
   return {
     id: r.id,
     fecha: r.fecha,
+    concepto: r.concepto,
     importe: decimal(r.importe),
     partida: partida ? { id: partida.id, nombre: partida.nombre } : null,
   };
@@ -247,7 +248,9 @@ function audit(db: Database, reference: string) {
 function gastosFor(db: Database, reference: string) {
   return (
     db
-      .query("SELECT id FROM movimientos WHERE referencia=? LIMIT 1")
+      .query(
+        "SELECT id FROM movimientos WHERE referencia=? AND tipo='Gasto' AND anulado=0 LIMIT 1",
+      )
       .get(reference) as { id: string } | null
   );
 }

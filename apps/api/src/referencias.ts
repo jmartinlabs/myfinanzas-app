@@ -165,6 +165,7 @@ function duplicateAudit(
   db: Database,
   reference: string,
   revision: number,
+  previousRevision: number,
   details: ReturnType<typeof assertDuplicateConfirmations>,
   time: string,
 ) {
@@ -172,9 +173,9 @@ function duplicateAudit(
     "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES('ficha_vehiculo','duplicado_confirmado',?,?,?,?, 'usuario-unico',?)",
     [
       revision,
-      JSON.stringify(details),
+      JSON.stringify({ referencia: reference, ...details }),
       time,
-      revision - 1,
+      previousRevision,
       "Duplicado confirmado por dimensión; sin unicidad global",
     ],
   );
@@ -285,7 +286,7 @@ export function createReference(
           "Alta atómica de Referencia y ficha 1:1",
         );
         if (confirmation)
-          duplicateAudit(db, id, 1, confirmation, time);
+          duplicateAudit(db, id, 1, 0, confirmation, time);
       }
       const r = getReference(db, id);
       db.run("INSERT INTO reference_attempts VALUES(?,?,?,?)", [
@@ -520,7 +521,8 @@ export function updateReference(
         duplicateAudit(
           db,
           id,
-          conversion ? 1 : fichaChanged ? oldFicha!.revision + 1 : (oldFicha?.revision ?? 1),
+          old.revision + 1,
+          old.revision,
           confirmation,
           time,
         );

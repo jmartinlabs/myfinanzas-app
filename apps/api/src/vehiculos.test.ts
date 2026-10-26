@@ -114,10 +114,12 @@ function fact(
       concepto: "Gasto ficticio vehículo",
       nota: "",
       anulado: 0,
+      capital: null,
+      intereses: null,
       ...over,
     };
   db.run(
-    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,capital,intereses,revision,creado,actualizado) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
     [
       id,
       row.fecha,
@@ -131,6 +133,8 @@ function fact(
       row.concepto,
       row.nota,
       row.anulado,
+      row.capital,
+      row.intereses,
     ],
   );
   return id;
@@ -687,6 +691,12 @@ test("AC-15/16/17/19/20/21/22/23/24/25/39/41/44: annual read model and E2.4 cove
       partida: null,
       destino: "S002",
     });
+    fact(db, open.id, parts[0].id, {
+      importe: 90000,
+      tipo: "Amortización deuda",
+      capital: 90000,
+      intereses: 0,
+    });
     fact(db, open.id, parts[0].id, { importe: 90000, anulado: 1 });
     const detail = getVehicle(db, mixed.id, "2026", now, p).gastoAnual!;
     expect(detail).toMatchObject({
@@ -804,7 +814,7 @@ test("AC-15/16/17/19/20/21/22/23/24/25/39/41/44: annual read model and E2.4 cove
     );
     expect(
       db.query("SELECT COUNT(*) n FROM movimientos WHERE referencia=?").get(open.id),
-    ).toEqual({ n: 5 });
+    ).toEqual({ n: 6 });
     // Rename/deactivate preserves historical totals.
     const oldTotal = getVehicle(db, open.id, "2026", now, p).gastoAnual!.subtotalRegistrado;
     updateReference(db, open.id, { revision: getReference(db, open.id).revision, nombre: "Renombrado" }, now);
@@ -911,7 +921,13 @@ test("AC-10/11/36/37/42: duplicate warnings, dimension hashes and atomic confirm
     const empty = await request({ nombre: "Sin matrícula", tipo: "Vehículo" });
     expect(empty.status).toBe(201);
     // Own ficha is excluded from an edit warning.
-    const own = getReference(db, (await good.json()).item.id);
+    const goodId = (await good.json()).item.id,
+      duplicateAudit = getVehicle(db, goodId, "2026", now).auditoria?.find(
+        (a) => a.accion === "duplicado_confirmado",
+      );
+    expect(duplicateAudit).toBeDefined();
+    expect((duplicateAudit!.campos as any).referencia).toBe(goodId);
+    const own = getReference(db, goodId);
     const selfEdit = await h.request(
       `/api/referencias/${own.id}`,
       "PATCH",
@@ -966,7 +982,7 @@ test("AC-07/25/32/33: integrity list is read-only, scope stays local and audit i
   }
 });
 
-test("AC-02/04/26/31: migration v13→v14, FK/audit continuity, backup manifest and HTTP guards", async () => {
+test("AC-02/04/26/31: migration v13→v14, FK/audit continuity and HTTP guards", async () => {
   const dir = mkdtempSync(join(tmpdir(), "e33-vehiculo-"));
   try {
     const path = join(dir, "v13.sqlite"),
@@ -1026,9 +1042,6 @@ test("AC-02/04/26/31: migration v13→v14, FK/audit continuity, backup manifest 
     } finally {
       db.close();
     }
-    // Backup/restore is exercised only when the external age binary is available;
-    // absence is recorded as UNRUN, never as PASS.
-    expect(true).toBe(true);
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

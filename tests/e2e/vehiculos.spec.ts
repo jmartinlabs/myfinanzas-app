@@ -170,6 +170,10 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await page.getByRole("button", { name: "Revisar y convertir", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Coche secundario", exact: true })).toBeVisible();
     await expect(page.getByText("9012 JKL", { exact: true })).toBeVisible();
+    await page.screenshot({
+      path: "artifacts/e3-3/vehiculos-conversion-1440.png",
+      fullPage: true,
+    });
     await page.goto("/referencias/REF005");
     await expect(
       page.getByText(/La Referencia tiene hechos y E1.5 protege su Tipo/),

@@ -80,9 +80,19 @@ merge, despliegue, datos reales ni cambios de visibilidad. PR78 no se modifica.
 - Pruebas focales `apps/api/src/vehiculos.test.ts` (10 tests, 150 assertions) y
   `tests/e2e/vehiculos.spec.ts` (PASS, capturas 1440/390).
 - `bun run typecheck` PASS; `bun run build` PASS.
-- Suite API completa: 177 PASS / 43 FAIL, todos los fallos atribuidos a guardas
-  Linux de publicación/restore (`libc.so.6`) en macOS; ningún fallo funcional nuevo
-  detectado. CI Linux sigue UNRUN.
+- Suite API completa: 177 PASS / 44 FAIL; los 44 son guardas Linux de publicación/
+  restore (`libc.so.6`) en macOS, incluida la prueba real de backup/restore v14.
+  Ningún fallo funcional nuevo. CI Linux sigue UNRUN.
 - E2E completo: 6 PASS / 2 FAIL; fallos en servidores de restauración aislada de
   catalog/movimientos por la misma guarda Linux. E2E de vehículos PASS.
-- `python3 scripts/verify baseline` y QA independiente: pendientes de este checkpoint.
+- Verificación canónica: baseline PASS (57/24/8/15 regresiones, whitespace); full
+  FAIL en la fase API por las guardas Linux y E2E UNRUN en macOS. No se declara PASS.
+- QA independiente sobre `8544dad`: APTO funcional con hallazgos. Corregidos H-01
+  (aserciones de manifiesto 14), H-02 (prueba real de backup/restore v14), H-03
+  (auditoría `duplicado_confirmado` ligada a REF y revisión), H-04 (edición de
+  vehículo desde la ficha, sin callejón en Referencias), H-05 (fechas/columnas/
+  concepto/auditoría) y H-06 (`GASTO_SIN_FICHA` solo Gastos vigentes). H-07/H-08
+  quedan como límites documentados: histórico futuro debe deduplicar y la prueba
+  de backup/restore es UNRUN en macOS.
+- Prueba focal nueva `apps/api/src/vehiculos-backup.test.ts`: UNRUN en macOS por
+  `libc.so.6`; debe ejecutarse en Linux/CI.

@@ -822,7 +822,7 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 re
         );
         expect(encrypted.exitCode).toBe(0);
         const manifest = JSON.parse(encrypted.stdout.toString()).manifest;
-        expect(manifest.schema).toBe(13);
+        expect(manifest.schema).toBe(14);
         expect(manifest.app).toBe("e3.3-v14");
         const target = join(state, "restored");
         if (origin === "production")

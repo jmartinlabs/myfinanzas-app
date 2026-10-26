@@ -296,9 +296,15 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
             <Tag inactive={r!.estado === "Inactiva"}>{r!.estado}</Tag>
             <button
               className="secondary"
-              onClick={() => go(base + "/" + id + "/editar")}
+              onClick={() =>
+                go(
+                  r!.tipo === "Vehículo"
+                    ? "/vehiculos/" + id + "/editar"
+                    : base + "/" + id + "/editar",
+                )
+              }
             >
-              Editar referencia
+              {r!.tipo === "Vehículo" ? "Editar ficha" : "Editar referencia"}
             </button>
           </PageHead>
           <section className="panel">
@@ -515,6 +521,29 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
       setBusy(false);
     }
   }
+  if (data?.item.tipo === "Vehículo")
+    return (
+      <>
+        <PageHead
+          eyebrow={id!}
+          title={data.item.nombre}
+          description="Vehículo · ficha 1:1"
+        />
+        <section className="panel">
+          <h2>Edición de vehículo</h2>
+          <p>
+            El nombre, la matrícula y las fechas se editan en la ficha, donde
+            también se confirman los duplicados por dimensión.
+          </p>
+          <button
+            className="primary"
+            onClick={() => go("/vehiculos/" + id + "/editar")}
+          >
+            Abrir ficha de vehículo
+          </button>
+        </section>
+      </>
+    );
   return (
     <>
       <PageHead

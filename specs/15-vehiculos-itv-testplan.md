@@ -77,13 +77,69 @@ age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
 | Tipos | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS |
 | Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 10 PASS / 150 assertions |
-| API completa | `NODE_ENV=test bun test apps/api` | 177 PASS / 43 FAIL; los 43 son guardas Linux/restore (`libc.so.6`) en macOS, no fallos funcionales del candidato |
+| API completa | `NODE_ENV=test bun test apps/api` | 177 PASS / 44 FAIL; los 44 son guardas Linux/restore (`libc.so.6`) en macOS, no fallos funcionales del candidato |
 | E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts` | PASS; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
-| Verificación canónica | `python3 scripts/verify ...` | Pendiente de commit/QA |
-| QA independiente | Revisión de SHA final | Pendiente |
+| Baseline canónica | `python3 scripts/verify baseline` | PASS en `8544dad`; nueva ejecución sobre el SHA final pendiente |
+| Full canónica | `python3 scripts/verify --full` | FAIL en API por guardas Linux; E2E UNRUN en macOS. No es PASS |
+| Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
+| QA independiente | Revisión de `8544dad` | APTO con hallazgos; H-01–H-06 corregidos, H-07/H-08 documentados |
 
 Los fallos de plataforma se conservan como UNRUN/BLOCKED para Linux/CI; no se
 reclasifican como PASS. Las capturas son ficticias y no contienen bases, claves,
 factores ni trazas.
+
+
+## Estado por AC tras QA y correcciones
+
+Todos los AC tienen evidencia local; `PASS` no implica CI Linux ni aprobación de merge.
+Los límites se conservan explícitos.
+
+| AC | Estado | Evidencia principal |
+| --- | --- | --- |
+| AC-01 | PASS | API focal + alta 1:1 |
+| AC-02 | PASS | rollback forzado + idempotencia |
+| AC-03 | PASS | Type/ficha cruzados |
+| AC-04 | PASS (límite: alta 2 procesos no ejecutada; conversión sí) | PK/trigger + carrera de conversión |
+| AC-05 | PASS | conversión Q3 |
+| AC-06 | PASS | Tipo con ficha/usado bloqueado |
+| AC-07 | PASS | 404/200 Revisar sin reparación |
+| AC-08 | PASS | renombrado conserva ID/histórico |
+| AC-09 | PASS | matrícula nullable/limpieza |
+| AC-10 | PASS | aviso dos dimensiones |
+| AC-11 | PASS | 422/409 atómicos |
+| AC-12 | PASS | desactivar/reactivar |
+| AC-13 | PASS | fechas ausentes independientes |
+| AC-14 | PASS | pasadas/futuras/null/omitido |
+| AC-15 | PASS | dentro/fuera de control |
+| AC-16 | PASS | Ingreso/Transferencia/Amortización/anulados excluidos |
+| AC-17 | PASS | Fecha real diciembre/ITV |
+| AC-18 | PASS | selector UI/API |
+| AC-19 | PASS | parcial/null/false |
+| AC-20 | PASS | abierta/total al corte |
+| AC-21 | PASS | completa/total anual |
+| AC-22 | PASS | cero verificado vs futuro |
+| AC-23 | PASS | rectificar/anular una vez |
+| AC-24 | PASS | renombrar/desactivar histórico |
+| AC-25 | PASS | sin tabla de totales |
+| AC-26 | PASS | MFA/CSRF/Origin/replay/DELETE |
+| AC-27 | PASS | respuesta antigua no sustituye |
+| AC-28 | PASS | E2E 390/1440 + capturas |
+| AC-29 | PASS (límite: vacío/carga por inspección) | error/retry e integridad |
+| AC-30 | PASS | Viaje/Evento y CAT009 sin REF |
+| AC-31 | PASS | POST/PATCH/validateReference/ledger |
+| AC-32 | PASS | alcance sin módulos ajenos |
+| AC-33 | PASS | auditoría append-only y duplicado ligado a REF |
+| AC-34 | PASS | sin edición de Gastos/importes |
+| AC-35 | PASS | W1–W10 y captura de conversión |
+| AC-36 | PASS | corrección de matrícula |
+| AC-37 | PASS | hash/contexto/NULL |
+| AC-38 | PASS | transición E1.5 |
+| AC-39 | PASS | contrato E2.4 completo |
+| AC-40 | PASS | conversión UI/API |
+| AC-41 | PASS | caso exacto 1240/50 |
+| AC-42 | PASS | dimensiones/ propia REF |
+| AC-43 | PASS | PATCH omitido/null/estado |
+| AC-44 | PASS | futuro Futura/null/false |
+| AC-45 | PASS | contraste computado 6,04:1 |

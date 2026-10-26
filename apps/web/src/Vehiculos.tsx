@@ -54,6 +54,7 @@ type Annual = {
   hechosFueraDeControlCorte: {
     id: string;
     fecha: string;
+    concepto: string;
     importe: string;
     partida: { id: string; nombre: string } | null;
   }[];
@@ -62,6 +63,7 @@ type Annual = {
   gastos: {
     id: string;
     fecha: string;
+    concepto: string;
     importe: string;
     partida: { id: string; nombre: string } | null;
   }[];
@@ -124,6 +126,9 @@ function date(value: string | null | undefined) {
   if (!value) return "No informada";
   const [y, m, d] = value.split("-");
   return y && m && d ? `${d}/${m}/${y}` : value;
+}
+function availableDate(value: string | null | undefined) {
+  return value ? date(value) : "No disponible";
 }
 function amount(value: string | null | undefined) {
   return value === null || value === undefined ? "No disponible" : eur(value);
@@ -189,7 +194,7 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
         {annual.control
           ? `${date(annual.control.inicio)} — ${date(annual.control.fin)}`
           : "No disponible"}{" "}
-        · Corte: {date(annual.corte)} · Procedencia: Movimientos
+        · Corte: {availableDate(annual.corte)} · Procedencia: Movimientos
         {annual.procedencia.historico === "No instalado"
           ? "; histórico no instalado."
           : "."}
@@ -233,7 +238,7 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
                 <th scope="col">Partida</th>
                 <th scope="col">Subtotal</th>
                 <th scope="col">Cobertura corte</th>
-                <th scope="col">Total corte</th>
+                <th scope="col">Total al corte</th>
                 <th scope="col">Cobertura anual</th>
                 <th scope="col">Total anual</th>
               </tr>
@@ -288,6 +293,7 @@ function AnnualFacts({ annual }: { annual: Annual | null }) {
             <thead>
               <tr>
                 <th scope="col">Fecha</th>
+                <th scope="col">Concepto</th>
                 <th scope="col">Partida</th>
                 <th scope="col">Importe</th>
               </tr>
@@ -296,6 +302,7 @@ function AnnualFacts({ annual }: { annual: Annual | null }) {
               {annual.gastos.map((g) => (
                 <tr key={g.id}>
                   <td>{date(g.fecha)}</td>
+                  <td>{g.concepto || "—"}</td>
                   <td>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "—"}</td>
                   <td>{eur(g.importe)}</td>
                 </tr>
@@ -323,6 +330,12 @@ function AuditPanel({ view }: { view: View }) {
                 {new Date(a.instante).toLocaleString("es-ES")} · {a.actor}
               </span>
               {a.motivo && <p className="help">{a.motivo}</p>}
+              {Boolean(a.campos) && (
+                <details>
+                  <summary>Antes y después</summary>
+                  <pre>{JSON.stringify(a.campos, null, 2)}</pre>
+                </details>
+              )}
             </li>
           ))}
         </ul>
@@ -417,7 +430,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
             {data.control
               ? `${date(data.control.inicio)} — ${date(data.control.fin)}`
               : "No disponible"}{" "}
-            · Corte: {date(data.corte)} · Procedencia: Movimientos; histórico no
+            · Corte: {availableDate(data.corte)} · Procedencia: Movimientos; histórico no
             instalado.
           </p>
         )}
@@ -449,7 +462,7 @@ function VehicleList({ go }: { go: (p: string) => void }) {
                   <th scope="col">Cita</th>
                   <th scope="col">Subtotal reg.</th>
                   <th scope="col">Cob. corte</th>
-                  <th scope="col">Total corte</th>
+                  <th scope="col">Total al corte</th>
                   <th scope="col">Cob. anual</th>
                   <th scope="col">Total anual</th>
                   <th scope="col">Integridad</th>
@@ -466,7 +479,10 @@ function VehicleList({ go }: { go: (p: string) => void }) {
                     <td>{v.ficha?.matricula ?? "Sin informar"}</td>
                     <td>{date(v.ficha?.proximaITV)}</td>
                     <td>{date(v.ficha?.cita)}</td>
-                    <td>{amount(v.gastoAnual?.subtotalRegistrado)}</td>
+                    <td>
+                      {amount(v.gastoAnual?.subtotalRegistrado)}
+                      {v.gastoAnual?.ceroVerificado ? " verif." : ""}
+                    </td>
                     <td>
                       <CoverageText value={v.gastoAnual?.coberturaAlCorte ?? "No disponible"} />
                     </td>
@@ -782,6 +798,7 @@ export function VehicleForm({
     [confirmedRegistration, setConfirmedRegistration] = useState(false),
     [busy, setBusy] = useState(false),
     [conflict, setConflict] = useState(false),
+    [loadRetry, setLoadRetry] = useState(0),
     key = useRef(crypto.randomUUID()),
     alert = useRef<HTMLDivElement>(null);
   useEffect(() => {
@@ -831,7 +848,7 @@ export function VehicleForm({
     return () => {
       live = false;
     };
-  }, [editing, converting, id, conversionId, target]);
+  }, [editing, converting, id, conversionId, target, loadRetry]);
   useEffect(() => {
     if (warning || error) alert.current?.focus();
   }, [warning, error]);
@@ -972,6 +989,14 @@ export function VehicleForm({
             {conflict && (
               <button className="secondary" onClick={refreshContext}>
                 Actualizar contexto
+              </button>
+            )}
+            {!conflict && (editing || converting) && revision === null && (
+              <button
+                className="secondary"
+                onClick={() => setLoadRetry((v) => v + 1)}
+              >
+                Reintentar carga
               </button>
             )}
           </Alert>
@@ -1243,7 +1268,7 @@ function VehicleIntegrity({ go }: { go: (p: string) => void }) {
               {data.cobertura.control
                 ? `${date(data.cobertura.control.inicio)} — ${date(data.cobertura.control.fin)}`
                 : "No disponible"}{" "}
-              · Corte: {date(data.cobertura.corte)}
+              · Corte: {availableDate(data.cobertura.corte)}
             </p>
             <p>
               Cobertura al corte:{" "}
