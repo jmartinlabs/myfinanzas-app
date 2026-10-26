@@ -4,7 +4,9 @@ Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26
 `47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella.
 **APPROVED rev8** — ajuste técnico a la versión 16 aprobado por el usuario el 2026-10-26 sobre
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`; se mantienen las decisiones funcionales de rev7.
-DEV, merge y despliegue **no** autorizados.
+**PROPOSED rev9 — pending Codex review; NOT approved** — alinea 13/14→16 con `main` v15
+(`24b48c5`) y las tablas vacías de Compartidos; no cambia decisiones funcionales.
+DEV autorizado y ejecutado; **PR, merge y despliegue no autorizados**.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -215,18 +217,57 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   desde la URL anterior (o conceder `gh`/token) y verificar CI Linux; después, corregir si
   falla. **No merge ni despliegue** sin aprobación explícita del usuario y CI verde.
 
+## Cambio de main, integración y STOP por discrepancia — 2026-10-27
+
+- **Main avanzó durante la preparación de la PR:** `origin/main` pasó de `f5bf032` (14) a
+  `24b48c5` (15, PR75 Compartidos Base B + harness v2.14). Manifiesto regenerado: 122 objetos,
+  SHA-256 `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`, idéntico a
+  `C15-COMPARTIDOS-AD2EDFE`. La 16 sigue libre; gate para 16 **PASS** con el `main` actual.
+- **Integración:** merge `--no-ff` de `24b48c5` en la rama E4.1 → candidato
+  `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a` (padres `30ff49c` + `24b48c5`). Se preservaron
+  Compartidos v15, Vehículos, harness v2.14 y los documentos SPEC19; sin reejecutar 14→15 en
+  la ruta 15→16.
+- **QA independiente final:** mismo revisor `ses_e85c21434ffeNTjIjccJrpxTZ2`, worktree
+  `qa-e41-r3` en `51d7f5d`. **PASS para publicar la rama y abrir PR, no para merge**; 35
+  pass / 457 aserciones focales, typecheck/build/E2E (Inversiones, flujo mensual y Compartidos)
+  PASS, backup/restore y O4 PASS en simulación Linux. Detectó una **discrepancia documental
+  MAYOR**: SPEC19 rev8 decía que 13→16 «no crea tablas de Compartidos», pero `main` v15 obliga
+  a la progresión canónica 13→14→15→16. **STOP antes de PR/merge.**
+- **Ajuste propuesto:** **SPEC19 rev9 y testplan rev9, pendientes de revisión/aprobación por
+  Codex**. Justifican la progresión 13/14→15→16, las tablas de Compartidos vacías cuando el
+  origen no las tenía, la preservación de filas/identidad y que los `DROP`/`ALTER` de la
+  migración 14→15 son de `main`, no del DDL propio de E4.1. No se declaran aprobados.
+- **Rama remota publicada:** `origin/codex/pilot-full-e41-instrumentos-compras-inversion` en
+  `30ff49c` antes del merge; el candidato fusionado `51d7f5d` y el checkpoint rev9 se publican
+  juntos al cierre, sin PR.
+- **Subagentes reales:** DEV `ses_e85ef3979ffegZjzgMA7k0PzUT`; QA independiente
+  `ses_e85c21434ffeNTjIjccJrpxTZ2`. Ninguno activo. No se contactó ni reanudó la sesión
+  anterior.
+
 ## HANDOFF → CODEX — 2026-10-27
 
-- **Estado:** DEV y QA independiente completados; rama publicada; PR bloqueada por acceso.
-- **Candidato de código:** `dba5825f237cee8216f2b7d60ef966d63c203e03`; HEAD publicado
-  `424c120` (incluye checkpoint documental). QA: **PASS para publicar, no para merge**.
+- **Estado:** DEV y QA independiente completados; integración con `main` v15 hecha; **PR no
+  publicada** hasta que Codex revise y el usuario apruebe SPEC19 rev9. Sin merge ni despliegue.
+- **Candidato de código fusionado:** `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a` (padres
+  `30ff49c` + `24b48c5`). El checkpoint rev9 se publica en el commit documental posterior.
+- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion`; último SHA remoto
+  verificado antes del merge `30ff49c`; el push final incluye `51d7f5d` + docs rev9.
+- **Diff documental a revisar:** `specs/19-instrumentos-compras-inversion-specification.md`
+  (status rev9, §5.2 y AC-33), `specs/19-instrumentos-compras-inversion-testplan.md` (status,
+  AC-33, evidencia) y este progress.
+- **Evidencia gate 16:** `origin/main` `24b48c5` = 15 con C15 (122 objetos,
+  `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`); ningún ref en 16; la
+  15 de Compartidos no se toca; la rama se fusionó con `main` mediante merge.
+- **Evidencia DEV/QA:** focal 35 pass / 457 aserciones; typecheck/build PASS; E2E Inversiones,
+  flujo mensual y Compartidos 3 PASS; `bun test apps/api` macOS 219 pass / 48 fail, todos
+  `libc.so.6`/`renameat2`; simulación Linux backup/restore y O4 PASS. CI Linux real **UNKNOWN**
+  porque no hay `gh`/token y el repositorio es privado.
+- **Discrepancia abierta:** SPEC19 rev8 decía que 13→16 no crea tablas de Compartidos; rev9
+  propone aceptar la progresión canónica y las tablas vacías. **No aprobada.**
 - **Matriz:** 48 PASS / 6 PARCIAL (AC-03, AC-24, AC-27, AC-30, AC-33, AC-34), 0 FAIL funcional.
-- **Evidencia:** focal 34 pass / 442 aserciones; typecheck/build/E2E PASS en macOS; 48 fallos
-  API nativos exclusivamente por `libc.so.6`/`renameat2`; backup/restore y O4 PASS en
-  simulación Linux. CI Linux real **UNKNOWN**.
-- **Ownership:** coordinador actualizó solo progress/testplan; ningún agente escribe el
-  tablero. No hay subagentes activos. No se contactó ni reanudó la sesión anterior.
-- **Exclusiones:** sin merge, despliegue, cambios de harness/CI/permisos, datos reales,
-  importación Excel, Ventas, valoración ni nuevas reglas financieras.
-- **Siguiente acción segura:** abrir PR y dejar que CI Linux ejecute `bun test apps/api`,
-  backup/restore y `scripts/verify --full`; no merge sin aprobación humana y CI verde.
+- **Bloqueo de PR:** sin `gh` ni credenciales GitHub API; el push SSH funciona. Codex debe
+  abrir la PR y consultar CI con su conexión. URL de comparación:
+  `https://github.com/josemartin2000/myfinanzas-app/pull/new/codex/pilot-full-e41-instrumentos-compras-inversion`.
+- **Siguiente acción segura:** Codex revisa/decide rev9; si aprueba, abre PR, ejecuta CI Linux
+  (`bun test apps/api`, backup/restore, `scripts/verify --full`) y solo entonces propone merge
+  al usuario. Sin merge ni despliegue por inferencia.
