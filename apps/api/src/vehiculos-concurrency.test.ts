@@ -109,7 +109,7 @@ test("AC-04: two independent processes create Vehicles without orphan or duplica
     const insertScript = join(dir, "insert-ficha.ts");
     writeFileSync(
       insertScript,
-      `import{openDatabase}from${JSON.stringify(database)};const db=openDatabase(process.argv[2]);try{db.run("INSERT INTO fichas_vehiculo VALUES('REF900',NULL,NULL,NULL,1,'x','x')");console.log('ok');}catch(e){console.log('rejected');}finally{db.close();}`,
+      `import{openDatabase}from${JSON.stringify(database)};const db=openDatabase(process.argv[2]);try{db.run("INSERT INTO fichas_vehiculo VALUES('REF900',NULL,NULL,NULL,1,'x','x')");console.log('ok');}catch(e){console.log('rejected:'+String(e?.message??e?.code));}finally{db.close();}`,
     );
     const insert = () =>
       Bun.spawn([process.execPath, insertScript, path], {
@@ -124,7 +124,12 @@ test("AC-04: two independent processes create Vehicles without orphan or duplica
       })),
     );
     expect(fichaRace.every((r) => r.code === 0)).toBe(true);
-    expect(fichaRace.map((r) => r.out).sort()).toEqual(["ok", "rejected"]);
+    expect(fichaRace.filter((r) => r.out === "ok")).toHaveLength(1);
+    expect(
+      fichaRace.some((r) =>
+        /UNIQUE constraint failed: fichas_vehiculo\.referencia/.test(r.out),
+      ),
+    ).toBe(true);
     const after = openDatabase(path);
     try {
       expect(
