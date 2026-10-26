@@ -99,14 +99,14 @@ function fields(body: Record<string, unknown>, creating: boolean) {
     (creating || "tipo" in body) &&
     (typeof body.tipo !== "string" ||
       !operationalReferenceTypes.includes(
-        body.tipo as "Viaje" | "Evento" | "Anticipo" | "Vehículo",
+        body.tipo as (typeof operationalReferenceTypes)[number],
       ))
   )
     throw new Problem(
       422,
       "REFERENCE_UNAVAILABLE",
-      "Viaje, Evento, Anticipo y Vehículo están disponibles; otros Tipos esperan su entrega.",
-      { tipo: "Selecciona Viaje, Evento, Anticipo o Vehículo." },
+      "Viaje, Evento, Anticipo, Vehículo y Gasto compartido están disponibles; otros Tipos esperan su entrega.",
+      { tipo: "Selecciona Viaje, Evento, Anticipo, Vehículo o Gasto compartido." },
     );
   if ("estado" in body && !["Activa", "Inactiva"].includes(body.estado as string))
     throw new Problem(422, "VALIDATION", "Estado inválido.");
@@ -271,6 +271,17 @@ export function createReference(
           time,
           time,
         ]);
+      if (tipo === "Gasto compartido") {
+        db.run("INSERT INTO fichas_compartidos VALUES(?,1,?,?)", [
+          id,
+          time,
+          time,
+        ]);
+        db.run(
+          "INSERT INTO compartido_audit(referencia,accion,anterior,posterior,motivo,instante,actor) VALUES(?,'alta ficha',NULL,?,NULL,?,'usuario-unico')",
+          [id, JSON.stringify({ revision: 1 }), time],
+        );
+      }
       db.run(
         "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,'alta',1,?,?,0,'usuario-unico',NULL)",
         [id, JSON.stringify(["nombre", "tipo", "estado"]), time],
@@ -368,12 +379,14 @@ export function updateReference(
         body.tipo !== old.tipo &&
         (old.tipo === "Anticipo" ||
           nextTipo === "Anticipo" ||
+          old.tipo === "Gasto compartido" ||
+          nextTipo === "Gasto compartido" ||
           referenceUsage(db, id).length)
       )
         throw new Problem(
           409,
           "HISTORY_LOCKED",
-          "Tipo protegido: la Referencia ya está utilizada, incluso en hechos anulados.",
+          "Tipo protegido: la Referencia ya está utilizada o tiene ficha 1:1, incluso en hechos anulados.",
         );
       let nextVehicle = oldFicha,
         fichaChanged = false;

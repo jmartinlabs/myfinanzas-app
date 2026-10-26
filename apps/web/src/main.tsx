@@ -1,3 +1,4 @@
+import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
@@ -160,6 +161,19 @@ function App() {
             }}
           >
             Anticipos
+          </a>
+          <a
+            className={
+              path.startsWith("/compartidos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/compartidos") ? "page" : undefined}
+            href="/compartidos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/compartidos");
+            }}
+          >
+            Compartidos
           </a>
           <a
             className={
@@ -363,6 +377,8 @@ function App() {
           )}
           {path.startsWith("/flujo-mensual") ? (
             <FlujoMensual path={path} go={go} />
+          ) : path.startsWith("/compartidos") ? (
+            <Compartidos path={path} go={go} />
           ) : path.startsWith("/anticipos") ? (
             <Anticipos path={path} go={go} />
           ) : path.startsWith("/nomina") ? (

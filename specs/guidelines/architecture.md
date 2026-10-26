@@ -332,7 +332,51 @@ selección explícita de varios pares, borrador de devolución solo en memoria y
 común de Movimientos. [Checkpoint y límites](../13-anticipos-progress.md),
 [evidencia por AC](../13-anticipos-testplan.md).
 
-## E3.3 — Vehículos e ITV (DEV15, candidato local)
+## E3.2 base B — Compartidos sin D5 (candidato dev14)
+
+`compartido-schema.ts` migra v14→v15 dentro del IMMEDIATE existente. La v14 es
+el contrato ya integrado de Vehículos; una base que se declare v14 sin
+`fichas_vehiculo` se rechaza como variante desconocida y no se modifica. Desde una
+v13 se ejecuta primero `vehicleSchema` y después `compartidoSchema`, de modo que
+la base resultante contiene ambos contratos. Reconstruye Referencias y sus
+dependientes (Movimientos, auditoría bancaria, asignaciones salariales, tablas de
+Anticipos y `fichas_vehiculo`) con copias TEMP transaccionales para ampliar el
+Tipo con «Gasto compartido», conservando IDs, importes, JSON de auditoría, índices,
+triggers, FK, matrículas/fechas de Vehículos y acceso. Añade `fichas_compartidos`
+1:1, `participantes_compartido` hijos con ID estable/revisión/baja lógica, índices,
+un único Titular activo, `compartido_audit` append-only y `compartido_attempts`.
+No reseed, no desactiva FK ni crea metadata de aportación. Fixture v13 genuina,
+v14 con Vehículos y fallo de DDL comprueban continuidad y rollback.
+
+`referencias.ts` crea la ficha compartida en la misma transacción que la REF CAT013
+y mantiene el alta de Vehículo. `reference-rules.ts` añade el Tipo operativo y un
+gate por operación: Gasto o Transferencia interna con ficha; S000 sigue rechazado
+por servicio y CHECK; Ingreso y Gasto fuera de CAT013 con esa REF se rechazan.
+Cambiar Tipo hacia/desde Gasto compartido queda protegido. Transferencias internas
+con la REF conservan efecto bancario y no acreditan recuperación.
+
+`compartidos.ts` es el motor/read model central (base B): Bruto, cuotas exactas por
+Gasto/Partida con mayor resto y desempate por ID, Coste propio del Titular y
+Pendiente estructural. Con terceros con cuota y D5 deshabilitado, Recuperado,
+Neto, Cobertura, Pendiente de tercero y Exceso se exponen como No disponible; sin
+terceros con cuota, No aplica. Nunca se sustituye una fuente ausente por 0,00. Un
+Gasto CAT013 incompatible o inválido se muestra «Revisar», queda fuera del Bruto y
+bloquea Cerrado (P-F6); resolverlo por el servicio común recalcula el estado. El
+caso 100 % Titular verificable y sin incidencias permite Cerrado con Neto = Bruto =
+Coste propio. El DTO incluye importe/ausencia/cobertura para AC-20, pero el consumo
+por informes/E3.6 (B-T11) queda UNRUN y fuera de base B.
+
+Cambios de partes/rol exigen vista de impacto, fingerprint y motivo; historia
+append-only; baja lógica sin DELETE ni huérfanos; los Movimientos bancarios no se
+reescriben. API `/api/compartidos/...` hereda MFA/Origin/CSRF/no-store y errores
+404/409/422; sin endpoint de aportación ni tabla `movimiento_compartido`. UI reutiliza
+shell/paleta y muestra ficha, participantes, impacto, Gastos/Partidas, estados y
+ausencias explícitas a 390/1440. Backup identifica e3.2-v15 y restore revoca
+`compartido_attempts`; las copias v14 de Vehículos conservan e3.3-v14. D5/Exterior,
+informes, E3.2 completa y deploy siguen fuera.
+[Checkpoint](../14-compartidos-progress.md), [matriz y evidencia](../14-compartidos-testplan.md).
+
+## E3.3 — Vehículos e ITV (DEV15, integrado)
 
 `vehicle-schema.ts` migra v13→v14 dentro del IMMEDIATE existente. Habilita el Tipo
 `Vehículo` en `referencias` y añade `fichas_vehiculo` 1:1 (matrícula, próxima ITV y
@@ -340,7 +384,8 @@ cita nullable, revisión y UTC). SQLite no altera el CHECK en sitio: se reconstr
 `referencias` y sus dependientes directos conservando filas, auditorías, índices, FK
 y triggers. Triggers impiden ficha de otro Tipo, borrado de ficha/REF y cambio de Tipo
 con ficha; la auditoría de ficha es append-only. La lectura tolera anomalías históricas
-sin repararlas.
+sin repararlas. La v15 de Compartidos reconstruye `fichas_vehiculo` con el resto de
+dependientes de Referencias y preserva su contrato.
 
 `referencias.ts` conserva el alta/edición única. `POST /api/referencias` crea REF y
 ficha en una transacción cuando el Tipo es Vehículo; `PATCH` edita ficha con

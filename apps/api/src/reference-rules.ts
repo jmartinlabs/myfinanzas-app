@@ -6,7 +6,9 @@ export const operationalReferenceTypes = [
   "Evento",
   "Anticipo",
   "Vehículo",
+  "Gasto compartido",
 ] as const;
+export type OperationalReferenceType = (typeof operationalReferenceTypes)[number];
 // Q2: sanitized evidence by stable category IDs. No category/financial data is seeded.
 export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
   {
@@ -20,7 +22,7 @@ export const referenceMapping: Readonly<Record<string, string>> = Object.freeze(
 export type Reference = {
   id: string;
   nombre: string;
-  tipo: "Viaje" | "Evento" | "Anticipo" | "Vehículo";
+  tipo: "Viaje" | "Evento" | "Anticipo" | "Vehículo" | "Gasto compartido";
   estado: "Activa" | "Inactiva";
   revision: number;
   creado: string;
@@ -53,7 +55,7 @@ export function validateReference(
     required &&
     (!expected ||
       !operationalReferenceTypes.includes(
-        expected as "Viaje" | "Evento" | "Anticipo" | "Vehículo",
+        expected as OperationalReferenceType,
       ))
   )
     throw new Problem(
@@ -114,4 +116,44 @@ export function validateReference(
       { referencia: "Tipo esperado: " + expected + "." },
     );
   return id;
+}
+
+/**
+ * Base B E3.2 gate, per operation. A CAT013 Reference enables only the shared
+ * case sheet/Gasto and internal Transfers with an existing sheet. It does not
+ * open S000, Exterior or any contribution metadata.
+ */
+export function validateSharedReferenceOperation(
+  db: Database,
+  referencia: string | null,
+  tipo: string,
+  categoria: string | null,
+) {
+  if (!referencia) return;
+  if (getReference(db, referencia).tipo !== "Gasto compartido") return;
+  if (tipo !== "Gasto" && tipo !== "Transferencia")
+    throw new Problem(
+      422,
+      "SHARED_REFERENCE_OPERATION",
+      "La Referencia de Gasto compartido solo admite Gastos o Transferencias internas.",
+      { referencia: "Operación no compatible con la Referencia compartida." },
+    );
+  if (tipo === "Gasto" && categoria !== "CAT013")
+    throw new Problem(
+      422,
+      "SHARED_REFERENCE_TYPE",
+      "Un Gasto con Referencia compartida debe pertenecer a CAT013.",
+      { referencia: "Selecciona una Partida de Gasto compartido." },
+    );
+  if (
+    !db
+      .query("SELECT referencia FROM fichas_compartidos WHERE referencia=?")
+      .get(referencia)
+  )
+    throw new Problem(
+      422,
+      "SHARED_CASE_REQUIRED",
+      "La Referencia compartida no tiene ficha 1:1; no se admiten hechos huérfanos.",
+      { referencia: "Selecciona una Referencia compartida con ficha." },
+    );
 }

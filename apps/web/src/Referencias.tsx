@@ -83,7 +83,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="CASOS IDENTIFICABLES"
         title="Referencias"
-        description="Un único maestro · Viajes, Eventos, Anticipos y Vehículos"
+        description="Un único maestro · Viajes, Eventos, Anticipos, Vehículos y Gastos compartidos"
       >
         <button className="primary" onClick={() => go(base + "/nueva")}>
           Nueva referencia
@@ -127,6 +127,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
               <option>Evento</option>
               <option>Anticipo</option>
               <option>Vehículo</option>
+              <option>Gasto compartido</option>
             </select>
           </label>
           <label>
@@ -324,9 +325,9 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               </div>
             </dl>
             <p className="help">
-              Viaje y Evento no necesitan ficha específica. Los Vehículos usan
-              la Referencia como identidad y conservan su ficha 1:1. El nombre
-              puede cambiar sin alterar sus enlaces.
+              Viaje y Evento no necesitan ficha específica. Anticipo, Vehículo
+              y Gasto compartido crean su ficha 1:1 en la misma transacción. El
+              nombre puede cambiar sin alterar sus enlaces.
             </p>
           </section>
           {r?.tipo === "Vehículo" && (
@@ -390,6 +391,14 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               <h2>Ficha de Anticipo</h2>
               <button onClick={() => go("/anticipos/" + id)}>
                 Consultar ficha de Anticipo
+              </button>
+            </section>
+          )}
+          {r?.tipo === "Gasto compartido" && (
+            <section className="panel">
+              <h2>Ficha compartida</h2>
+              <button onClick={() => go("/compartidos/" + id)}>
+                Consultar ficha de Gasto compartido
               </button>
             </section>
           )}
@@ -640,6 +649,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                   <option>Viaje</option>
                   <option>Evento</option>
                   <option>Anticipo</option>
+                  <option>Gasto compartido</option>
                   {type === "Vehículo" && <option>Vehículo</option>}
                 </select>
                 {fields.tipo && (
