@@ -33,7 +33,7 @@ SHA/PR/check state and retain the historical record as superseded.
 6. At major milestones update only changed state and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run.
 7. End an active run with a concise board summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. State the responsible party, exact human action (or none) and reason for waiting. No claim of background processing between sessions; rescan on next invocation.
 
-Use [dynamic agent management](dynamic-agents.md) with **one executor by default** and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR approval gates.
+Use [dynamic agent management](dynamic-agents.md) with **one executor by default** and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR merge approval gates.
 
 ## Bounded debugging
 Each investigation needs a falsifiable hypothesis, discriminating probe and evidence. After two comparable probes without new findings, checkpoint the blocker and switch hypothesis or request an explicit scope decision. Do not mark QA passed, bypass failing regressions or abandon urgent containment.

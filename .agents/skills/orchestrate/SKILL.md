@@ -50,7 +50,7 @@ before yielding. Stop only when a real blocker remains.
 "Continuing to verify" is an update followed by the next action in the same turn, not a
 closing promise. Reuse a valid authorization for corrections and checks in the same scope;
 do not ask for repeated permission. When finishing or stopping, use the closure contract in
-[coordinator communication](../../../specs/methodology/coordinator-communication.md#7-cierre-del-turno-o-parada).
+[coordinator communication](../../../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
 
 ## Resource efficiency and deliberate shutdown
 - Coordinate results, not messages; never repeatedly ingest unchanged large documents or recreate a packet for already-owned work.
@@ -67,7 +67,7 @@ After a significant delivery, recommend a new chat only when accumulated context
 - State whether the user must relay anything to OpenCode and the exact human next action. Attribute each return only to its identified task/session; ask if ambiguous.
 - Use the existing current summary and milestone events. No per-message Git/worker polling, document writes or second board. A full-state request is read-only; show provenance, recorded candidate, blockers, gates and next action for every open task, declaring what was not refreshed.
 - When work/actions remain, end with 2–4 compact status lines, using manual states from the communication contract. A delivered packet is PENDIENTE DE ENVIAR until user confirmation; native agents retain runtime states only.
-- Every final or stopped reply states the responsible party, the exact human action (or "ninguna"), and the state plus reason for waiting. "Continúo" is followed by execution, never by another closing promise. Apply the [closure contract](../../../specs/methodology/coordinator-communication.md#7-cierre-del-turno-o-parada) rather than repeating it here.
+- Every final or stopped reply states the responsible party, the exact human action (or "ninguna"), and the state plus reason for waiting. "Continúo" is followed by execution, never by another closing promise. Apply the [closure contract](../../../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping) rather than repeating it here.
 - No received handoff grants merge, scope or resumption authorization. Keep all MyFinanzas financial, independent-QA, model/quota and separate development gates.
 
 ## Stop conditions

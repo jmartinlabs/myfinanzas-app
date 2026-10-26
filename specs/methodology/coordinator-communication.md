@@ -109,9 +109,10 @@ Never call a received report "validated". Update only the matching task.
 
 ## 7. Closing a turn or stopping
 
-End the turn only for completed work, a needed decision or approval, a user stop request or a
-real blocker. An intermediate report never closes the turn while executable authorized work
-remains.
+Whether to yield the turn is defined in
+[orchestrate execution continuity](../../.agents/skills/orchestrate/SKILL.md#execution-continuity).
+This section defines only the communication contract for a final or stopped reply. An
+intermediate report never closes the turn while executable authorized work remains.
 
 Every final or stopped reply states, explicitly:
 
