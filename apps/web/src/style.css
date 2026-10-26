@@ -1993,3 +1993,66 @@ textarea {
     grid-column: 1 / -1;
   }
 }
+
+/* E3.4 — Revisión Comida reuses the approved shell, filters, table and card tokens. */
+.revision-list .filters {
+  grid-template-columns: minmax(12rem, 1.6fr) repeat(3, minmax(9rem, 1fr));
+}
+.revision-list th:nth-child(1),
+.revision-list th:nth-child(2) {
+  width: 6.5rem;
+}
+.revision-list th:nth-child(5),
+.revision-list th:nth-child(6),
+.revision-list th:nth-child(7) {
+  width: 10rem;
+}
+.revision-list .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.revision-list .card-position {
+  margin-top: 0.5rem;
+}
+.revision-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+}
+.revision-facts > div {
+  min-width: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--line, #dce8d0);
+}
+.revision-facts dt {
+  color: var(--muted, #536147);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.revision-facts dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+.revision-detail .actions {
+  margin-top: 1rem;
+}
+.revision-detail label {
+  display: block;
+  margin-top: 0.75rem;
+}
+@media (max-width: 1050px) {
+  .revision-list .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .revision-list .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .revision-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

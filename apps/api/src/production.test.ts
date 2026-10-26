@@ -79,7 +79,7 @@ test("31 P1 AC01–07/10/11: explicit clean creation, first ID and symmetric fai
     const before = fs.readFileSync(path);
     readonly(path, (db) => {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 13,
+        version: 14,
       });
       expect(db.query("SELECT id FROM saldos").all()).toEqual([{ id: "S000" }]);
       expect(

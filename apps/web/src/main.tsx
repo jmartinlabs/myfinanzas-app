@@ -1,3 +1,4 @@
+import { RevisionComida } from "./RevisionComida";
 import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
@@ -177,6 +178,21 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/revision-comida") ? "nav-active" : "nav-link"
+            }
+            href="/revision-comida"
+            aria-current={
+              path.startsWith("/revision-comida") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/revision-comida");
+            }}
+          >
+            Revisión Comida
+          </a>
+          <a
+            className={
               path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
             }
             href="/planes-ciclo"
@@ -346,7 +362,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/flujo-mensual") ? (
+          {path.startsWith("/revision-comida") ? (
+            <RevisionComida path={path} go={go} />
+          ) : path.startsWith("/flujo-mensual") ? (
             <FlujoMensual path={path} go={go} />
           ) : path.startsWith("/anticipos") ? (
             <Anticipos path={path} go={go} />

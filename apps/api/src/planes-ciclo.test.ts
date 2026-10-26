@@ -324,7 +324,7 @@ test("P6 genuine v9 upgrade and transactional DDL rollback preserves v9 identity
     });
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 13,
+      version: 14,
     });
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally {
@@ -822,8 +822,8 @@ test("P11 genuine v9 demo/production migration retains MFA/key; encrypted v12 re
         );
         expect(encrypted.exitCode).toBe(0);
         const manifest = JSON.parse(encrypted.stdout.toString()).manifest;
-        expect(manifest.schema).toBe(13);
-        expect(manifest.app).toBe("e3.1-v13");
+        expect(manifest.schema).toBe(14);
+        expect(manifest.app).toBe("e3.4-v14");
         const target = join(state, "restored");
         if (origin === "production")
           Object.assign(process.env, {

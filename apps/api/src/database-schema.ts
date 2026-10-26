@@ -1,3 +1,4 @@
+import { revisionComidaSchema } from "./revision-comida-schema";
 import { anticipoSchema } from "./anticipo-schema";
 import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
@@ -31,7 +32,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -75,7 +76,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -93,6 +94,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 11) annualPlanSchema(db);
         if (versions[0].version < 12) payrollSchema(db);
         if (versions[0].version < 13) anticipoSchema(db);
+        if (versions[0].version < 14) revisionComidaSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -200,6 +202,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       annualPlanSchema(db);
       payrollSchema(db);
       anticipoSchema(db);
+      revisionComidaSchema(db);
     }).immediate();
   } catch (error) {
     db.close();
