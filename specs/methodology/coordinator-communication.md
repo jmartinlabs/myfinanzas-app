@@ -109,10 +109,9 @@ Never call a received report "validated". Update only the matching task.
 
 ## 7. Closing a turn or stopping
 
-Whether to yield the turn is defined in
+Whether to yield the turn and how to handle a correctable failed check are defined in
 [orchestrate execution continuity](../../.agents/skills/orchestrate/SKILL.md#execution-continuity).
-This section defines only the communication contract for a final or stopped reply. An
-intermediate report never closes the turn while executable authorized work remains.
+This section defines only the communication contract for a final or stopped reply.
 
 Every final or stopped reply states, explicitly:
 
@@ -124,8 +123,7 @@ Every final or stopped reply states, explicitly:
 Avoid ambiguous closings such as "next step: review the PR". Name who must review and what
 they must decide. When no action is needed, say so and do not imply that a reply is required.
 These rules apply to native and manual clients; manual relays keep their identity, copyable
-messages and mandatory return. Reuse a valid authorization for corrections and checks in the
-same scope; a correctable failed check is not a blocker.
+messages and mandatory return.
 
 ## 8. Compact status (end of reply)
 

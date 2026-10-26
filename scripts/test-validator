@@ -84,6 +84,7 @@ class ValidationTests(unittest.TestCase):
    ('.agents/skills/dev/SKILL.md', 'authorized scope includes branch/PR publication'),
    ('.agents/skills/task/SKILL.md', 'execution platform and operation owners before code'),
    ('.agents/skills/task/SKILL.md', 'branch/PR publication follows'),
+   ('.agents/skills/task/SKILL.md', 'A required check that fails and can be corrected'),
    ('.agents/skills/tweak/SKILL.md', 'Branch/PR publication follows'),
    ('.agents/skills/handoff/SKILL.md', 'external client'),
   )
@@ -119,6 +120,11 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('resource-policy')
     finally:
      p.write_text(original)
+ def test_coordination_does_not_duplicate_continuity(self):
+  p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
+  try:
+   p.write_text(original+'\na correctable failed check is not a blocker\n'); self.assertRule('coordination')
+  finally: p.write_text(original)
  def test_external_contract_does_not_register_clients(self):
   p=self.root/'specs/methodology/dynamic-agents.md'
   p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')

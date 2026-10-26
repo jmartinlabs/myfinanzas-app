@@ -432,5 +432,13 @@ cierre y ampliar la guarda a fragmentos reales. La prueba negativa en copia temp
 rompió una ancla tokenizada y otra no tokenizada; ambas produjeron `fragments` y exit 1.
 El repositorio real quedó sin ediciones del revisor; 25 tests del validador PASS.
 Estado de publicación: rama `codex/adopt-v2140-publication-continuity` publicada en
-origin; PR pendiente de acceso a la API de GitHub en este runtime (solo SSH disponible).
-No hay merge, auto-merge, desarrollo funcional ni despliegue.
+origin; PR #83 creada en borrador. No hay merge, auto-merge, desarrollo funcional ni
+despliegue.
+
+Corrección solicitada el 2026-10-26 sobre la rama existente: `task` declara que un check
+obligatorio fallido y corregible dentro del alcance se investiga, corrige y verifica sin
+detener la ejecución; `coordinator-communication` deja de repetir continuidad y corrección
+de checks y referencia solo `orchestrate`, conservando el contrato de comunicación. Las
+guardas exigen la obligación en `task` y rechazan la duplicación en comunicación; la
+regresión negativa correspondiente y la baseline canónica (26 tests del validador) PASS.
+El registro ya no declara la PR pendiente de creación.

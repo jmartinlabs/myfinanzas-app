@@ -131,7 +131,8 @@ def validate(root):
   'specs/methodology/approvals.md':('Publicación de rama y PR',
    'No se necesita otra aprobación de', 'Nunca activar auto-merge'),
   'specs/methodology/coordinator-communication.md':('HANDOFF → CODEX',
-   '## 7. Closing a turn or stopping', '#execution-continuity', 'Exact human action',
+   '## 7. Closing a turn or stopping', '#execution-continuity',
+   'This section defines only the communication contract', 'Exact human action',
    'A received handoff never authorizes merge'),
   'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',),
   'templates/progress.md':('Current checkpoint', 'one current summary',
@@ -148,12 +149,17 @@ def validate(root):
    'advance', 'escalation notices', 'Incompatible local runs never replace CI gates',
    'one current checkpoint', 'authorized scope includes branch/PR publication'),
   '.agents/skills/task/SKILL.md':('execution platform and operation owners before code',
-   'dynamic-agents.md', 'preserve independent QA', 'branch/PR publication follows'),
+   'dynamic-agents.md', 'preserve independent QA', 'branch/PR publication follows',
+   'A required check that fails and can be corrected'),
   '.agents/skills/tweak/SKILL.md':('Branch/PR publication follows',),
   '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
  }.items():
   for token in tokens:
    if token not in read(name): fail('coordination',f'{name}: missing {token}')
+ # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
+ coordinator=read('specs/methodology/coordinator-communication.md')
+ for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
+  if token in coordinator: fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
  # Resource policy guards are structural; runtime behavior needs separate trials.
  for name,tokens in {
   'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),
