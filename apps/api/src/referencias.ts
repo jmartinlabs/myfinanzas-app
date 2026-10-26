@@ -13,6 +13,7 @@ import {
   duplicateWarning,
   hasConfirmationAttempt,
   fullVehicle,
+  nonVehicleFicha,
   normalizeVehicleKey,
   parseVehicleChanges,
   vehicleFicha,
@@ -340,11 +341,14 @@ export function updateReference(
           "La ficha de vehículo no existe; no se repara automáticamente. Revisa la integridad.",
         );
       if (conversion) {
-        if (oldFicha)
+        const otherFicha = nonVehicleFicha(db, id);
+        if (oldFicha || otherFicha || old.tipo === "Anticipo")
           throw new Problem(
             409,
             "HISTORY_LOCKED",
-            "La Referencia ya tiene una ficha; no se convierte ni se recrea.",
+            otherFicha || old.tipo === "Anticipo"
+              ? "La Referencia tiene ficha de Anticipo; no se convierte a Vehículo ni se conservan dos fichas."
+              : "La Referencia ya tiene una ficha; no se convierte ni se recrea.",
           );
         if (referenceUsage(db, id).length)
           throw new Problem(

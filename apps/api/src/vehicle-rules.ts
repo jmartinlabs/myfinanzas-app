@@ -73,6 +73,14 @@ export function vehicleFicha(db: Database, referencia: string): Vehicle | null {
   return row ? vehicleDto(row) : null;
 }
 
+/** Returns the non-vehicle 1:1 ficha that also makes Q3 conversion ineligible. */
+export function nonVehicleFicha(db: Database, referencia: string) {
+  return db
+    .query("SELECT 1 FROM fichas_anticipos WHERE referencia=?")
+    .get(referencia)
+    ? "Anticipo"
+    : null;
+}
 export function vehicleFichas(db: Database): Vehicle[] {
   return (
     db

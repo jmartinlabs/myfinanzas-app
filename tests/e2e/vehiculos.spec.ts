@@ -178,6 +178,11 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(
       page.getByText(/La Referencia tiene hechos y E1.5 protege su Tipo/),
     ).toBeVisible();
+    await page.goto("/referencias/REF006");
+    await expect(page.getByText(/La Referencia es un Anticipo/)).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Convertir a Vehículo", exact: true }),
+    ).toHaveCount(0);
 
     await page.goto("/vehiculos/integridad");
     await expect(

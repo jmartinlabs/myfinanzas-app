@@ -654,6 +654,56 @@ test("AC-05/06/07/31/36/37/38/42/43: Q3 conversion, 404/Revisar resolution, dupl
   }
 });
 
+test("AC-06/40: una ficha de Anticipo bloquea la conversión a Vehículo y el indicador", async () => {
+  const { db } = setup();
+  try {
+    const h = await http(db),
+      anticipo = reference(db, "Anticipo", "Anticipo ficticio"),
+      beforeAnticipo = db
+        .query("SELECT * FROM fichas_anticipos WHERE referencia=?")
+        .get(anticipo.id);
+    expect(beforeAnticipo).toBeDefined();
+    expect(
+      db.query("SELECT COUNT(*) n FROM fichas_vehiculo WHERE referencia=?").get(anticipo.id),
+    ).toEqual({ n: 0 });
+    const detail = await h.request(
+      `/api/referencias/${anticipo.id}`,
+      "GET",
+      undefined,
+      h.headers,
+    );
+    expect(detail.status).toBe(200);
+    const view = await detail.json();
+    expect(view.conversion.disponible).toBe(false);
+    expect(view.conversion.motivo).toMatch(/Anticipo/);
+    const rejected = await h.request(
+      `/api/referencias/${anticipo.id}`,
+      "PATCH",
+      {
+        revision: anticipo.revision,
+        tipo: "Vehículo",
+        confirmarConversion: true,
+        vehiculo: { matricula: "ANT 001" },
+      },
+      h.headers,
+    );
+    expect(rejected.status).toBe(409);
+    expect((await rejected.json()).code).toBe("HISTORY_LOCKED");
+    expect(getReference(db, anticipo.id).tipo).toBe("Anticipo");
+    expect(
+      db.query("SELECT COUNT(*) n FROM fichas_vehiculo WHERE referencia=?").get(anticipo.id),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM fichas_anticipos WHERE referencia=?").get(anticipo.id),
+    ).toEqual({ n: 1 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM audit WHERE entidad='ficha_vehiculo' AND campos LIKE ?").get(`%${anticipo.id}%`),
+    ).toEqual({ n: 0 });
+  } finally {
+    db.close();
+  }
+});
+
 test("AC-15/16/17/19/20/21/22/23/24/25/39/41/44: annual read model and E2.4 coverage", () => {
   const { db, parts, saldo } = setup();
   try {

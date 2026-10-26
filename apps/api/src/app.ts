@@ -55,7 +55,10 @@ import {
   listVehicles,
   vehicleIntegrity,
 } from "./vehiculos";
-import { vehicleFicha } from "./vehicle-rules";
+import {
+  nonVehicleFicha,
+  vehicleFicha,
+} from "./vehicle-rules";
 import {
   getMovement,
   listMovements,
@@ -540,8 +543,13 @@ export function createApp(db: Database, options: AppOptions) {
               const item = getReference(db, id),
                 usos = referenceUsage(db, id),
                 ficha = vehicleFicha(db, id),
+                otherFicha = nonVehicleFicha(db, id),
                 puedeConvertir =
-                  item.tipo !== "Vehículo" && !ficha && usos.length === 0;
+                  item.tipo !== "Vehículo" &&
+                  item.tipo !== "Anticipo" &&
+                  !ficha &&
+                  !otherFicha &&
+                  usos.length === 0;
               return {
                 item,
                 usos,
@@ -554,7 +562,9 @@ export function createApp(db: Database, options: AppOptions) {
                       ? "La Referencia ya es un Vehículo."
                       : ficha
                         ? "La Referencia ya tiene una ficha."
-                        : "La Referencia tiene hechos y E1.5 protege su Tipo.",
+                        : otherFicha || item.tipo === "Anticipo"
+                          ? "La Referencia es un Anticipo y conserva su ficha."
+                          : "La Referencia tiene hechos y E1.5 protege su Tipo.",
                 },
               };
             })(),

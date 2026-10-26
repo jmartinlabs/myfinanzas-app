@@ -83,6 +83,7 @@ const conversion = createReference(
     now,
   ),
   used = createReference(db, { nombre: "Viaje usado", tipo: "Viaje" }, id(), now),
+  anticipo = createReference(db, { nombre: "Anticipo ficticio", tipo: "Anticipo" }, id(), now),
   missingRef = "REF900",
   wrongRef = "REF901";
 db.run(
