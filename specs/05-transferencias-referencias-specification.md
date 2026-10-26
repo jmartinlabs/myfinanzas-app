@@ -1,4 +1,14 @@
 # 05 — E1.5 Transferencias y Referencias: Specification
+
+**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
+inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
+spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
+P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
+ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
+anteriores conservadas abajo describen la revisión previa y quedan sustituidas
+por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
+pendientes; ninguna prueba funcional D5 se declara ejecutada.
+
 Status: APPROVED — especificación funcional/técnica y wireframes 390/1440 aprobados el 2026-10-21.
 Approval source/date: autorización expresa del usuario, 2026-10-21, tras auditoría favorable de Álex sobre 50de3e4; Q1–Q3, 30 criterios actuales y 3 contratos futuros aprobados. Squash merge de PR #17 autorizado; sin dev 05.
 Context and brainstorming: [ronda única](05-transferencias-referencias-brainstorming.md),
@@ -37,6 +47,10 @@ para financiación y No controlado sin un veto general por Tipo/Control. Manual 
 No seleccionar S000 en ningún extremo de Transferencias E1.5. TODAS las Transferencias
 con Exterior se reservan para una entrega posterior, incluidas las ordinarias y las
 variantes E3; no quedan habilitadas por carecer de Referencia o no ser casos especiales.
+**Excepción D5 propuesta (no vigente):** la aportación de tercero CAT013
+S000→Saldo interno queda fuera de E1.5 y se rige por spec14 §15; no habilita
+Exterior ordinario ni salidas y requiere aprobación/implementación propias. Ver
+§D5 al final.
 Observación de continuidad aprobada: asignar una entrega futura responsable para las
 Transferencias ordinarias con Exterior, todavía pendiente de planificación autorizada.
 No se asigna por inferencia a E3 ni se amplía E1.5; conservar reglas/pruebas como trabajo futuro.
@@ -95,7 +109,8 @@ Restricciones independientes confirmadas: Anticipo solo Transferencia; Gasto com
 admite Gasto o Transferencia, con origen Exterior y Quién paga cuando es Transferencia.
 En E1.5 permanecen BLOQUEADOS esos Tipos y Vehículo hasta disponer de sus fichas E3,
 aunque la Referencia fuese opcional. Ningún selector, payload ni alta de catálogo puede
-eludirlo. La Transferencia compartida exterior tampoco se habilita como caso especial.
+eludirlo. La Transferencia compartida exterior tampoco se habilita como caso especial
+en E1.5; su contrato focal posterior se propone en spec14 §15 y §D5 de este documento.
 No se implementan ahora Quién paga, participantes ni ficticios datos de ficha.
 Mapping único por IDs Categoría–Tipo, nunca nombre mutable; no copiar Categoría/Subcategoría
 ni Tipo REF al Movimiento como fuentes económicas paralelas. Las cinco filas contrastadas
@@ -327,6 +342,80 @@ No confundir esta clasificación con los 29 PASS ya integrados de E1.4.
 | AC-33 | Cierre/foto/migración autorizada reales | Protección transversal y fotos inmutables, mapping auditado nombres→IDs, sin reescribir Excel | Pruebas futuras E4/P6/P7 | C |
 
 30 criterios actuales previstos (AC-01–30) y 3 contratos futuros (AC-31–33). No PASS de E1.5.
+
+**Nota D5 propuesta (no vigente):** AC-03 mantiene el rechazo de S000 en E1.5;
+§D5 propone la excepción focal CAT013 entrante y no la declara aprobada. AC-20 se
+limita para una Transferencia acreditada: Tipo, Referencia y Origen S000
+inmutables mientras la acreditación esté vigente; importe/fecha/Destino con
+impacto y auditoría. Sin aprobación de §D5, ambas filas conservan su texto actual.
 Spec 05 aprobada y squash merge autorizado. Antes de dev: esperar autorización expresa de dev 05.
 Tras futura autorización dev: implementación y evidencias en progress/testplan propios;
 no crear aquí resultados, capturas, esquemas ejecutables ni estado de implementación.
+
+## D5 — Enmienda consecuente propuesta: aportación CAT013 desde S000 (NO APROBADA)
+
+Status: **PROPUESTA para revisión junto con spec14 §15.** No modifica el contrato
+vigente de E1.5 hasta aprobación explícita; no autoriza implementación, SQL,
+migración, merge ni despliegue. Base: main `24b48c5` (v15, Base B integrada).
+
+Motivo de la enmienda: spec14 §15 propone una Transferencia S000→interno con REF
+CAT013 para acreditar aportaciones de terceros. E1.5 prohíbe S000 en ambos
+extremos; sin esta enmienda, D5 sería incoherente con spec05. La incompatibilidad
+es explícita y se limita a esa variante.
+
+### D5-1 Regla propuesta
+
+- Se admite **solo** `Transferencia` con Origen S000, Destino Saldo interno
+  elegible, Referencia de tipo «Gasto compartido» (CAT013) con ficha 1:1 y
+  participante Tercero activo, evidencia/procedencia y demás validaciones de
+  spec14 §15.
+- El Destino debe ser activo, distinto de S000, de tipo distinto de Exterior, no
+  Manual y no Control Exterior; no se excluyen Terminal/No controlado/Inversiones
+  por inferencia.
+- Sin Partida, sin Subtipo, importe EUR > 0, fecha civil no futura Europe/Madrid.
+- S000 sigue prohibido en el extremo interno de cualquier otra Transferencia:
+  ordinarias, salidas interno→S000 y S000→S000. Gasto e Ingreso conservan su
+  semántica E1.5 (S000 como contraparte) y no se convierten en aportación. El
+  formulario común de Transferencia no ofrece S000/Exterior.
+- La Transferencia interna con REF CAT013 sigue permitida como movimiento interno
+  y **no** acredita recuperación.
+- La aportación no crea Gasto, Ingreso, Partida, Subtipo ni clasificación
+  económica; CAT013 identifica el ámbito y la ficha, no el Tipo del Movimiento.
+
+### D5-2 Efecto en AC-03/AC-31
+
+- **AC-03:** se conserva el rechazo de S000 en E1.5 y se añade la excepción D5
+  solo para la variante CAT013 entrante. No se declara AC-03 PASS por esta
+  enmienda.
+- **AC-20 (rectificación):** se limita para D5: una Transferencia acreditada no
+  puede cambiar Tipo, Referencia ni Origen S000 mientras la acreditación esté
+  vigente. Importe, fecha y Destino interno sí pueden rectificarse con impacto,
+  motivo y auditoría. Esta precisión es propuesta y no modifica AC-20 actual.
+- **AC-31:** sigue siendo contrato futuro y no se declara PASS. La rama
+  «Compartido Transferencia con origen Exterior y Quién paga» se concreta en D5;
+  Anticipo, Vehículo y el resto de Exterior conservan sus gates.
+- Los 30 AC actuales y los 3 futuros no se renumeran. La verificación de D5 usa
+  D5-AC-01..15 de spec14 §15.13, todos futuros/UNRUN.
+
+### D5-3 Compatibilidad y seguridad
+
+- El CHECK no puede validar CAT013/ficha/participante. Si se habilita D5, solo
+  podrá relajar la forma S000→destino interno para `Transferencia`; la validación
+  por Referencia/ficha/participante y la acreditación quedan en servicio y, si se
+  usa guarda de base, en un trigger sobre `movimiento_compartido`. No se promete
+  una guarda DB que el CHECK no puede expresar.
+- La transacción IMMEDIATE, revisión, idempotencia, auditoría append-only y
+  errores 404/409/422 se heredan de E1.5/spec14; sin endpoint de hechos paralelo.
+- Migración futura provisional: preservar IDs, auditorías, FK, triggers y CHECK;
+  contrastar main antes de dev. No se fija versión de esquema aquí.
+- Sin datos reales, importación histórica, backfill, REF retroactiva ni
+  atribución automática. Históricos Exterior solo por revisión explícita y
+  elegibilidad demostrada (spec14 §15.4).
+
+### D5-4 Aprobación y límites
+
+Esta sección no está aprobada. Su aprobación debe ser explícita y conjunta con
+spec14 §15; una aprobación de E1.5 o de Base B no la concede. D5 no habilita
+Exterior ordinario ni salidas, no convierte Gasto CAT013 en aportación y no
+completa E3.2; B-T11 sigue UNRUN.
+Sin implementación, migraciones, datos reales, merge ni despliegue.

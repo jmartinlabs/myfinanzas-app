@@ -5,6 +5,30 @@ base B aprobada en §14 (usuario, 2026-10-26). Brainstorming:
 [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md).
 Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.md).
 
+## Current checkpoint — D5 aprobada funcionalmente; PR84 sin merge — 2026-10-27
+
+**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
+inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
+spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
+P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
+ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
+anteriores conservadas abajo describen la revisión previa y quedan sustituidas
+por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
+pendientes; ninguna prueba funcional D5 se declara ejecutada.
+
+- Candidato aprobado: `3b737aa`; rama `codex/spec14-d5-exterior-r2`, PR84.
+- Revisión final Codex sin hallazgos bloqueantes; QA independiente DeepSeek PASS
+  según HANDOFF del usuario. CI40420592824 del candidato: baseline/required
+  SUCCESS, full omitido por clasificación documental.
+- Main `26b6f0c` v16; integración virtual `c3ce874` sin conflictos, árbol
+  `a8297ea8cda3022f25a8be6cbee46be9c28889f9` contrastado con merge-tree local.
+- Este delta registra aprobación y checkpoint; no cambia el contrato aprobado.
+- Próximo gate: validar el registro publicado y solicitar autorización expresa
+  del merge de PR84. Desarrollo D5 requiere autorización separada. Sin desarrollo,
+  SQL operativo, datos reales, B3/Dev32 ni intervención en DEV16/E4.1.
+
+---
+
 ## Current checkpoint — Base B v15 compatible con main/DEV15 — 2026-10-26
 Continuación autorizada por el usuario sobre PR75, sin merge ni despliegue.
 Estado vigente: **CORRECCIÓN P2 DE RECHAZO v14 / NUEVO CANDIDATO PENDIENTE QA Y CI**.
@@ -225,3 +249,21 @@ suite completa ni backup/restore real: **UNRUN** en macOS.
 
 ## Next action
 See current checkpoint.
+
+## D5/Exterior — preparación documental (no desarrollo) — 2026-10-26
+
+Status: **PROPUESTA DOCUMENTAL; implementación bloqueada.** Base main `24b48c5`
+(PR75/Base B `5ad75ed` integrada, v15). Rama `codex/spec14-d5-exterior-r2`; PR84 en borrador sobre `b30ae57`. La revisión
+final de Codex pidió corregir wireframes, idempotencia, rectificación y mapping
+D5-AC; el delta se registra en los commits posteriores de la misma rama. No se
+reanuda dev14/D5, no hay SQL/migración, datos reales, merge ni deploy.
+
+- Contrato focal: spec14 §15; respuestas D5-Q1–Q6: brainstorming (append-only).
+- Matriz de aceptación/riesgo y pruebas futuras: spec14 §15.13–§15.14 y
+  [testplan](14-compartidos-testplan.md) T-D5-01–16, todas UNRUN.
+- Enmienda consecuente propuesta: [spec05 §D5](05-transferencias-referencias-specification.md),
+  no aprobada; sin ella D5 no sería operativo.
+- QA independiente y veredicto: ver entrega/HANDOFF de esta preparación. No se
+  confunde QA documental con evidencia funcional.
+- B-T11 sigue UNRUN; E3.2 no se declara completa. D5 no se declara aprobado ni
+  implementado; el siguiente gate es revisión final y aprobación explícita.
