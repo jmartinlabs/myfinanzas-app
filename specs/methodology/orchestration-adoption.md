@@ -402,10 +402,10 @@ modelos, evaluaciones/scorer, adaptadores, CI y producto quedan fuera.
 | `.agents/skills/orchestrate/SKILL.md` | Continuidad, corrección de checks corregibles, cierre y publicación en gates |
 | `specs/methodology/coordinator-communication.md` | Conservado el contrato v2.10 local; añadidos cierre v2.14 y reenumeración de secciones |
 | `AGENTS.md`, `myfinanzas-coordination.md`, `workflows.md`, `epic-orchestration.md` | Una sola regla con enlaces; gates financieros/dev/merge y chats externos preservados |
-| `task`, `tweak`, `dev`, roles implementation/infrastructure | Condiciones de parada alineadas con publicación autorizada |
+| `task`, `tweak`, `dev`, `adopt-project`, roles implementation/infrastructure | Condiciones de parada alineadas con publicación autorizada; `adopt-project` distingue publicar fuera de alcance |
 | `templates/agent-work-packet.md`, `epic-board.md` | Publicación dentro de alcance y retorno/cierre; sin segundo tablero |
 | `dynamic-agents.md`, `acceptance-scenarios.md`, `quality.md`, `README.md`, `specs/README.md` | Referencias, escenarios O11/O12 y verificación v2.14 |
-| `scripts/validate-template`, `scripts/test-validator` | Guardas de publicación/continuidad/cierre y negativos de pérdida |
+| `scripts/validate-template`, `scripts/test-validator` | Guardas de publicación/continuidad/cierre, validación de fragmentos de ancla en instrucciones y negativos de pérdida |
 | Aplicación, SQL, dependencias, CI, `scripts/verify`, hooks, tablero y registros funcionales | Sin cambios |
 
 Desviaciones locales conservadas: precedencia de AGENTS y reglas financieras; gate de
@@ -416,9 +416,12 @@ de abrir un PR nuevo. La comunicación manual sigue siendo un contrato de instru
 no un servicio ni una garantía técnica.
 
 Verificación local del candidato: `python3 scripts/verify baseline` con Python 3.12.7
-PASS. Incluye 57 regresiones de proyecto/CI, 24 del validador (con los nuevos negativos
-de publicación/continuidad/cierre), 9 de uso, 8 de hooks, 15 de entrada de verificación,
-estructura/enlaces, whitespace y diff. `AGENTS.md` conserva 65 líneas. Diff sin cambios
+PASS. Incluye 57 regresiones de proyecto/CI, 25 del validador (con los nuevos negativos
+de publicación/continuidad/cierre y de fragmento de ancla), 9 de uso, 8 de hooks, 15 de
+entrada de verificación, estructura/enlaces, whitespace y diff. `AGENTS.md` conserva
+65 líneas. La QA independiente H214-QA encontró dos anclas de cierre mal referenciadas y
+una guarda limitada a literales; se corrigieron y se añadió validación de fragmentos
+contra encabezados reales, con regresión negativa. Diff sin cambios
 en aplicación, SQL, dependencias, workflows ni hooks. La clasificación full y la CI Linux
 del SHA publicado son UNRUN en esta preparación local; no se sustituyen por macOS.
 QA independiente posterior al commit y resultado remoto se registran en la PR/checkpoint,

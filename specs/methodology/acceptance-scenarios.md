@@ -16,7 +16,7 @@ si solo se ha observado la sesión actual.
 | O7 | Dos chats externos sin checkpoint | No asumir que están subordinados; pedir/verificar checkpoint antes de transferir trabajo |
 | O8 | Reanudar en nueva sesión | Releer fuentes y Git; prueba de sesión nueva permanece unrun hasta observarla |
 | O9 | Guía visual y Mermaid | Rutas válidas y ocho diagramas parseables; sintaxis rota debe fallar |
-| O10 | Skills heredadas no incluidas en el alcance, CI, aplicación y dependencias | `init-project`, `bootstrap`, `roadmap` y `spec` conservan su contrato; CI, app, tests, SQL y lockfile sin cambios. `dev`, `orchestrate`, `task` y `tweak` se actualizan solo por el alcance v2.14 documentado |
+| O10 | Skills heredadas no incluidas en el alcance, CI, aplicación y dependencias | `init-project`, `bootstrap`, `roadmap` y `spec` conservan su contrato; CI, app, tests, SQL y lockfile sin cambios. `dev`, `orchestrate`, `task`, `tweak` y `adopt-project` se actualizan solo por el alcance v2.14 documentado |
 | O11 | Trabajo autorizado de código/documentación con rama y PR | Publicar rama y crear/actualizar PR sin aprobación extra; merge sigue bloqueado hasta aprobación explícita e identificable |
 | O12 | Informe intermedio o check corregible dentro del alcance | Investigar, corregir y repetir el check en el mismo turno; si se detiene, declarar responsable, acción humana exacta y motivo de espera |
 

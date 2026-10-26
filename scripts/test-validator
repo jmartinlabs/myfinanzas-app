@@ -22,6 +22,8 @@ class ValidationTests(unittest.TestCase):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
  def test_links(self):
   self.change('README.md','## Skills','[Broken](missing.md)\n## Skills'); self.assertRule('links')
+ def test_fragment_anchor(self):
+  self.change('.agents/skills/orchestrate/SKILL.md','coordinator-communication.md#7-closing-a-turn-or-stopping','coordinator-communication.md#missing-anchor'); self.assertRule('fragments')
  def test_agents(self):
   self.change('AGENTS.md','(specs/guidelines/ui.md)','(README.md)'); self.assertRule('agents')
  def test_thin_agents(self):
