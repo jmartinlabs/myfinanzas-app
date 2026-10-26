@@ -918,7 +918,7 @@ Base B/v15 y registra la autoría original sin atribuirle la consolidación actu
 | `Transferencia` S000 → S000 | Prohibida | No hay destino interno; no es aportación. |
 | `Transferencia` interna → interna con REF CAT013 | No es aportación (permitida como movimiento interno) | Puede existir con efecto bancario, pero **no** acredita; no crea metadatos ni Recuperado. |
 | `Transferencia` Exterior ordinaria (sin CAT013) o cualquier salida | Prohibida | Sigue reservada a una entrega posterior; D5 no la habilita. |
-| Gasto o Ingreso con S000, aunque tenga CAT013 | No es aportación D5 | El hecho conserva su Tipo y validez E1.5 (Ingreso S000→saldo; Gasto saldo→S000); no se acredita, no se reclasifica y no se convierte en aportación. |
+| Gasto con S000/CAT013 (con ficha) o Ingreso S000 sin CAT013 | No es aportación D5 | El Gasto CAT013 conserva Base B; el Ingreso S000 sin CAT013 conserva E1.5; ninguno se acredita ni se reclasifica. Ingreso CAT013 → 422. |
 | Gasto CAT013 | No es aportación D5 | Base B lo admite con ficha; D5 no lo convierte en Transferencia ni lo usa para simular una aportación. |
 
 **S000** es la contraparte técnica protegida de Exterior, no un Saldo interno
