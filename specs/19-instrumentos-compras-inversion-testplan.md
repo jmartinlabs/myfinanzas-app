@@ -13,8 +13,10 @@ AC-33), 2026-10-26; rev5 aplica el delta técnico R6 (esquema 15 con upgrade 13�
 restore en directorio nuevo sin mezclar versiones, códigos de error unívocos y precondición R4-1
 de AC-41), 2026-10-26; rev6 corrige los hallazgos de la revisión independiente del delta
 (restore en directorio nuevo y vaciado de intentos, rutas `metrics.liquidez`, alcance de
-`IMPACT_CHANGED`, precondición AC-41 sin Movimientos y errata de AC-52), 2026-10-26; sin
-ejecutar nada.
+`IMPACT_CHANGED`, precondición AC-41 sin Movimientos y errata de AC-52), 2026-10-26; rev7
+delimita y condiciona el contrato de esquema v14 (lista cerrada de contratos admitidos,
+manifiestos canónicos y SHA-256 obligatorios antes de DEV, rechazo de variantes desconocidas o
+incompletas antes de mutar y revalidación de la versión destino); sin ejecutar nada.
 
 Matriz provisional y determinista. No existe implementación de E4.1, no se ha ejecutado
 ninguna suite y no se declara PASS ni cobertura. Los comandos usan el runner real del
@@ -58,7 +60,7 @@ motor único, límites de magnitud y cobertura parcial se marcan explícitamente
 | E4.1-AC-30 | Recorrer listado, ficha, alta, W7/W8 y W9/W10 a 390/1440 con teclado; comprobar filtro de Estado y alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas, sin overflow, tema claro, borrador conservado, botones deshabilitados sin motivo; en W1/W4 «Todos» muestra `I1003` Inactiva y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9/W10 cubren rectificación y anulación | Playwright real, capturas 390×844 y 1440×1000; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | PNG ficticios inspeccionados `artifacts/e4-1/`; notas de foco/overflow | unrun — DRAFT sin código | — |
 | E4.1-AC-31 | Provocar vacío, carga, error de fuente, 409 y sesión expirada | Estados distintos/accionables; «No disponible» con motivo; sin 0 ficticio; borrador conservado | Playwright con API real e intercepción solo de estados; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | PNG de estados; assertions de borrador y foco | unrun — DRAFT sin código | — |
 | E4.1-AC-32 | Inspeccionar IDs y auditorías dedicadas; intentar UPDATE/DELETE sobre ellas | IDs únicos/inmutables; una fila por revisión con actor, UTC, motivo y JSON antes/después; triggers abortan; `audit` sin cambios | SQLite/API; `bun test apps/api/src/compras.test.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | Assertions de IDs, filas de auditoría y triggers; sin DELETE | unrun — DRAFT sin código | — |
-| E4.1-AC-33 | (a) actualizar una base 13→15 sin tablas v14; (b) actualizar una base 14 con un fixture sintético de tablas/datos ajenos ficticios (`compartidos_demo`, `vehiculos_demo`) a 15; (c) abrir una base marcada 16; (d) inspeccionar el SQL de migración y la lógica/manifiesto de restore y restaurar copias 13, 14 y 15 en directorios nuevos | (a) sube 13→15 con filas previas preservadas y sin «Esquema no compatible»; (b) sube 14→15 conservando intactas las tablas y filas ajenas del fixture; (c) la 16 se rechaza antes de mutar; (d) migración aditiva sin `DROP`/`ALTER` destructivo ni borrado de tablas ajenas; las tres compuertas aceptan `1..15` (`database-identity.ts` con `schemaVersion = 15`, `database-schema.ts` con `[1..14, version]`, `backup.ts` con `1..15`) y la etiqueta es `e4.1-v15`; el restore solo se hace en directorio nuevo: una copia de 13 o 14 conserva su esquema de origen y no incorpora tablas v15; una copia de 15 recupera Instrumentos, Compras y las dos auditorías y vacía sesiones, desafíos e intentos (incluidas `instrumento_attempts` y `operacion_attempts`); rollback ante fallo | Fixture congelada v13, fixture sintética v14 con tablas ajenas, upgrade, rearranque 15, versión 16 y restore aislado de 13/14/15; `bun test apps/api/src/compras.test.ts` | macOS: dev19 pendiente; CI Ubuntu/Linux glibc: obligatorio | Assertions de esquema/filas ajenas intactas, etiqueta, rechazo de 16 y restauración con intentos vacíos; salida de suite | unrun — DRAFT sin código | — |
+| E4.1-AC-33 | (a) actualizar una base 13→15 sin tablas v14; (b) congelar el manifiesto y SHA-256 de `C14-COMPARTIDOS-FCE1107` (desde `fce1107`) y actualizar su fixture aislado generado por el commit fuente, con datos sintéticos, a 15; (c) congelar el manifiesto y SHA-256 de `C14-VEHICULOS-C69E343` (desde `c69e343`) y actualizar su fixture aislado generado por el commit fuente, con datos sintéticos, a 15; (d) intentar abrir variantes v14 desconocidas o incompletas (objeto ausente, SQL alterado, objeto extra, tablas sintéticas, contratos mezclados o v14 de `main` no verificado); (e) abrir una base marcada 16; (f) ejecutar el gate pre-DEV con `origin/main` en 15+, la 15 ocupada, un v14 de `main` no verificado o manifiestos/hashes sin registrar; (g) inspeccionar el SQL de migración y la lógica/manifiesto de restore y restaurar copias 13, 14 verificadas, 14 desconocida y 15 en directorios nuevos | (a) sube 13→15 con filas previas preservadas y sin «Esquema no compatible»; (b) el manifiesto y SHA-256 de Compartidos están registrados antes de DEV; su fixture aislado coincide y sube 14→15 conservando tablas, índices, triggers y filas; (c) el manifiesto y SHA-256 de Vehículos están registrados antes de DEV; su fixture aislado coincide y sube 14→15 conservando tablas, triggers y filas; (d) toda variante desconocida o incompleta se rechaza antes de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`, con el literal `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.`, sin escribir; el número 14 o las tablas sintéticas no acreditan compatibilidad; (e) la 16 se rechaza antes de mutar; (f) si `main` está en 15 o más, la 15 está ocupada, `main` contiene un v14 no verificado o faltan manifiestos/hashes, el gate pre-DEV se detiene y no se implementa la 15; (g) migración aditiva sin `DROP`/`ALTER` destructivo ni borrado de tablas ajenas; las compuertas incluyen `database.ts` y `database-identity.ts` con `schemaVersion = 15`, `database-schema.ts` con `[1..14, version]` y `backup.ts` con `1..15`; la etiqueta es `e4.1-v15`; el restore solo se hace en directorio nuevo y verifica el manifiesto de una copia v14 antes de publicarla: una copia de 13 o 14 verificada conserva su esquema de origen y no incorpora tablas v15, una copia v14 desconocida se rechaza sin publicar, y una copia de 15 recupera Instrumentos, Compras y las dos auditorías y vacía sesiones, desafíos e intentos (incluidas `instrumento_attempts` y `operacion_attempts`); rollback ante fallo | Fixtures aisladas generadas por `fce1107` y `c69e343` con manifiesto y SHA-256, manifiestos negativos (ausente/alterado/extra/sintético/mezclado), upgrade, rearranque 15, versión 16, gate pre-DEV con `origin/main`, restore aislado de 13/14/15 y copia v14 desconocida; `bun test apps/api/src/compras.test.ts` | macOS: dev19 pendiente; CI Ubuntu/Linux glibc: obligatorio; gate pre-DEV manual/CI sobre `origin/main` | Assertions de manifiesto/hash, rechazo sin mutación, esquema/filas ajenas intactas, etiqueta, rechazo de 16, gate de destino y restauración con intentos vacíos; salida de suite | unrun — DRAFT sin código | — |
 | E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | «No disponible» con causa concreta; identidad/filtros conservados; sin 0, reparación ni guardado que presuma integridad | API/UI con fallo de fuente; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | PNG de error; assertions de motivo y ausencia de escritura | unrun — DRAFT sin código | — |
 | E4.1-AC-35 | Retroactiva con apertura 1.000,00; entrada 500,00 el 2026-02-01; salida 1.800,00 el 2026-03-01; Compra de 100,00 el 2026-02-10; repetir con salida 200,00; mismo día con entrada 100,00 y Compra 1.050,00 / 1.150,00 | Primer caso 422 `INSUFFICIENT_CASH` con fecha 2026-03-01 y mínimo −400,00; segundo 201 y saldo posterior 1.200,00; mismo día: 1.050,00 aceptada (cierre 50,00) y 1.150,00 rechazada con fecha 2026-02-10 y mínimo −50,00, independiente del orden | API + motor puro de suficiencia con ventana posterior; `bun test apps/api/src/compras.test.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | Assertions de 422/201, código, fecha, importe del mínimo y tablas sin cambio | unrun — DRAFT sin código | — |
 | E4.1-AC-36 | Instrumento con Compra USD (cambio 0,900000); editar su divisa de referencia a EUR | Solo cambia el maestro con auditoría; la Compra conserva USD, 0,900000, precio, 1.125,00 € y comisión; efectivo/cantidad iguales | API/SQLite; `bun test apps/api/src/instrumentos.test.ts` | macOS: dev19 pendiente; CI Ubuntu: pendiente | Assertions de campos históricos y auditoría del maestro | unrun — DRAFT sin código | — |
@@ -127,13 +129,31 @@ sin condicionales.
   `apps/api/src/backup.ts`: `schemaVersion` pasa a `15` en `database-identity.ts` y sus listas
   admitidas a `1..15`, mientras `database-schema.ts` acepta `[1..14, version]` (con
   `version = 15`) y `backup.ts` acepta `1..15`; la etiqueta de la copia 15 es `e4.1-v15`.
-  Una base 13 sube a 15 sin tablas v14 conservando filas; una base 14 (con un fixture
-  sintético de tablas ajenas) sube a 15 preservándolas; una base ya en 15 rearranca sin
-  «Esquema no compatible»; los backups 13, 14 y 15 se restauran en directorio nuevo; el de 13
-  o 14 conserva su esquema de origen y no incorpora tablas v15; el de 15 recupera Instrumentos,
-  Compras y auditorías y vacía sesiones, desafíos e intentos (incluidas las dos tablas nuevas);
-  una versión 16 se rechaza antes de mutar. La migración es aditiva: la prueba
-  falla si el SQL contiene `DROP` o `ALTER` destructivo sobre tablas ajenas.
+  Antes de DEV se genera el manifiesto canónico completo de cada contrato (JSON sin indentación,
+  orden `type`,`name`,`tbl_name`,`sql`, SHA-256 sobre la cadena UTF-8), se registra su
+  SHA-256 en el testplan y en `apps/api/src/schema-contracts.json` (o constante equivalente que
+  debe coincidir), y se reordena `database.ts` para que la verificación preceda a la transacción
+  de identidad y a las PRAGMAs persistentes.
+  Una base 13 sube a 15 sin tablas v14 conservando filas. Una base 14 **solo** sube si su
+  manifiesto coincide exactamente con `C14-COMPARTIDOS-FCE1107` (fixture aislado generado por `fce1107` con datos sintéticos) o
+  `C14-VEHICULOS-C69E343` (fixture aislado generado por `c69e343` con datos sintéticos); entonces preserva sus tablas, índices,
+  triggers y filas. Una base 14 con objeto ausente, SQL alterado, objeto extra, tablas
+  sintéticas (`compartidos_demo`/`vehiculos_demo`) o contratos mezclados se rechaza con el
+  literal `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.`
+  antes de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`; el
+  número 14 no acredita compatibilidad. Una base ya en 15 rearranca sin «Esquema no
+  compatible»; los backups 13, 14 verificadas y 15 se restauran en directorio nuevo; el de 13
+  o 14 conserva su esquema de origen y no incorpora tablas v15; una copia v14 desconocida se
+  rechaza antes de publicar el directorio; el de 15 recupera Instrumentos, Compras y auditorías
+  y vacía sesiones, desafíos e intentos (incluidas las dos tablas nuevas); una versión 16 se
+  rechaza antes de mutar. La migración es aditiva: la prueba falla si el SQL contiene `DROP` o
+  `ALTER` destructivo sobre tablas ajenas.
+- Gate pre-DEV de destino: antes de implementar se comprueba `origin/main` mediante
+  `git show origin/main:apps/api/src/database-identity.ts` y las migraciones vigentes. Si
+  `main` está en 15 o más, la 15 está ocupada, `main` contiene un v14 no verificado o faltan
+  los manifiestos/hashes, el gate falla y no se inicia DEV: la spec y este testplan se
+  renumeran o completan y se repite la revisión. La reserva documental 15 no prevalece
+  sobre un `main` avanzado.
 - `app.test.ts`/`saldos`/`movimientos` y los endpoints de error: los códigos esperados se
   unifican con la tabla de §7 de la especificación. Una comprobación que hoy espere 409 para
   un rechazo por suficiencia pasa a 422 `INSUFFICIENT_CASH`; una que espere 409 genérico por
@@ -153,9 +173,11 @@ sin condicionales.
 UNRUN. Ningún AC tiene resultado funcional. La matriz tiene 54 AC (47 funcionales de E4.1 y
 7 de integración/regresión). Las verificaciones previstas incluyen API/SQLite real,
 comparación de tablas antes/después, dos procesos para concurrencia, rollback inyectado,
-upgrade de esquema 13→15 y 14→15 con fixture sintético de tablas ajenas, restauración aislada
-de 13, 14 y 15 en directorio nuevo (sin mezclar esquemas y con intentos vacíos), rechazo de la
-versión 16, igualdad al céntimo
+upgrade de esquema 13→15 y 14→15 con fixtures congelados generados por los commits fuente de Compartidos (`fce1107`) y
+Vehículos (`c69e343`), manifiestos canónicos y SHA-256 registrados antes de DEV, rechazo antes
+de mutar de variantes v14 desconocidas o incompletas, restauración aislada de 13, 14 verificadas,
+14 desconocida y 15 en directorio nuevo (sin mezclar esquemas y con intentos vacíos), rechazo de
+la versión 16 y gate pre-DEV sobre `origin/main`, igualdad al céntimo
 entre `/api/saldos/{id}` y el endpoint de efectivo, y el determinismo de la convención de fin de
 día. Los casos AC-35, AC-36, AC-37, AC-38, AC-39, AC-46, AC-50, AC-51, AC-52, AC-53 y AC-54
 cubren respectivamente retroactividad negativa, preservación de divisa/factor histórico,
@@ -194,6 +216,9 @@ wireframes. Las cinco mejoras se evaluarán sobre la UI real:
 DRAFT sin código ni UI; sin ejecución de suites. Los comandos y rutas de prueba son
 propuestas verificadas contra `package.json`, `playwright.config.ts` y `scripts/verify`. El
 aplazamiento de DT7 a E4.5/E4.12 está registrado en la especificación (§5.2, §12, §14) y no
-se prueba en E4.1 porque no hay importación. Siguiente acción: revisión independiente del
-delta, aprobación explícita del usuario y, solo después, autorización de desarrollo. No
+se prueba en E4.1 porque no hay importación. Antes de DEV se revalida obligatoriamente el
+destino con `origin/main` y las reservas abiertas, y se congelan los manifiestos v14 con sus
+SHA-256; si `main` ya está en 15 o más, o falta un manifiesto, esta spec se detiene y se
+renumera o completa. Siguiente acción: revisión independiente del delta, aprobación explícita
+del usuario y, solo después, autorización de desarrollo. No
 implementar, commitear ni ejecutar suites todavía.

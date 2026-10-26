@@ -1,8 +1,8 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Brainstorming
 
 Status: DRAFT — ronda 1 respondida por el usuario el 2026-10-26; correcciones de las
-revisiones independientes incorporadas el 2026-10-26 (H1/H2/H3, N1–N12 y rev5/rev6 con R6 y
-el residual R4-1); specification DRAFT con aprobación pendiente.
+revisiones independientes incorporadas el 2026-10-26 (H1/H2/H3, N1–N12 y rev5–rev7 con R6,
+el residual R4-1 y el contrato de esquema v14); specification DRAFT con aprobación pendiente.
 Roadmap/context: [E4.1 y límites E4.2/E4.3](roadmap.md), [referencia funcional R5](functional-reference-v5.11.md),
 [E1.1 Saldos](01-saldos-control-specification.md), [E1.3 referencia temporal](03-ciclos-financiados-specification.md),
 [E1.5 Transferencias y Referencias](05-transferencias-referencias-specification.md),
@@ -10,8 +10,9 @@ Roadmap/context: [E4.1 y límites E4.2/E4.3](roadmap.md), [referencia funcional 
 Base de la ronda: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
 `codex/pilot-full-e41-instrumentos-compras-inversion`. Documento DRAFT; no autoriza
 desarrollo, SQL, migraciones, pruebas ejecutables ni datos reales.
-Next action: revisar el delta documental final (N1–N12, R6 y residual R4-1) y solicitar
-aprobación explícita; no implementar.
+Next action: revisar el delta documental final (N1–N12, R6, R4-1 y R7 de contrato v14) y
+solicitar aprobación explícita; antes de DEV, ejecutar el gate de destino y congelar los
+manifiestos v14 con sus SHA-256; no implementar.
 
 ## Alcance de la ronda
 
@@ -408,8 +409,20 @@ las sesiones de Compartidos ni de Vehículos.
 
 | ID | Corrección aplicada | Destino |
 | --- | --- | --- |
-| R6-1 | **Coordinación de esquema.** E4.1 reserva la versión **15**, no la 14. La 14 está reservada operativamente por dos desarrollos no integrados en `main`: Compartidos/PR75 (`refs/pull/75/head` = `fce1107`, rama `codex/dev14-base-b`, `schemaVersion = 14`) y Vehículos (`codex/pilot-dev15-deepseek`, HEAD verificado `c69e343`, cuyo código usa `schemaVersion = 14`; su especificación no fija versión, así que la 14 es reserva operativa). Sus especificaciones están integradas como documentación (PR74/PR78), pero su código no; `main` conserva el esquema 13. E4.1 no reabre ni modifica esas sesiones: solo evita la colisión con migración aditiva 15, upgrade 13→15 y 14→15, compuertas `1..15` y restore en directorio nuevo sin mezclar versiones, que vacía intentos y sesiones. Si una entrega v14 se integra después de E4.1, renumera en su propia rama; E4.1 no cambia. | §3.1 (R6-1), §5.2, AC-33 |
+| R6-1 | **Coordinación de esquema.** E4.1 propone la versión **15** (provisional, condicionada a revalidación de destino), no la 14. La 14 está reservada operativamente por dos desarrollos no integrados en `main`: Compartidos/PR75 (`refs/pull/75/head` = `fce1107`, rama `codex/dev14-base-b`, `schemaVersion = 14`) y Vehículos (`codex/pilot-dev15-deepseek`, commit congelado `c69e343`, cuyo código usa `schemaVersion = 14`; el HEAD posterior `28d4816` no cambia el esquema; su especificación no fija versión, así que la 14 es reserva operativa). Sus especificaciones están integradas como documentación (PR74/PR78), pero su código no; `main` conserva el esquema 13. E4.1 no reabre ni modifica esas sesiones: solo evita la colisión con migración aditiva 15, upgrade 13→15 y 14→15 con contrato verificado, compuertas `1..15` y restore en directorio nuevo sin mezclar versiones, que vacía intentos y sesiones. Si una entrega v14 se integra después de E4.1, renumera en su propia rama; E4.1 no cambia. | §3.1 (R6-1), §5.2, AC-33 |
 | R6-2 | **Errores de concurrencia unívocos.** Insuficiencia de efectivo, incluida la recalculada dentro de la transacción, → 422 `INSUFFICIENT_CASH`; `revision` obsoleta → 409 `REVISION_CONFLICT`; huella/contexto de **Movimiento** obsoleto → 409 `IMPACT_CHANGED`; guard de impacto de Saldo → 409 `HISTORY_LOCKED`. Se elimina cualquier 409 genérico por concurrencia y ningún 409 expresa falta de efectivo. Las rutas de Compra no transportan huella y usan `revision`. | §3.1 (R6-2), §4.3.2, §4.5, §7, §8, §10, §11, AC-16, AC-20, AC-25, AC-26, AC-35, AC-42, AC-46, AC-53 |
 | R4-1 | **Residual redaccional de AC-41.** La precondición queda ejecutable y ordenada: partir de `S003` sin Movimientos ni Compras, fijar `permiteSalidaExterior=true` antes de cualquier Compra, crear después las Compras del fixture y preparar Partida/Subtipo/Deuda antes de previsualizar Gasto, Ingreso, Transferencia y Amortización. Se elimina la alternativa del Saldo dedicado y el resultado se enuncia sobre el extremo del Saldo de prueba utilizado. | §3.1 (R6-3/R4-1), §13 AC-41, testplan AC-41 |
+
+La aprobación de la specification sigue pendiente; desarrollar E4.1 no está autorizado.
+
+### Ronda 5 — cierre del contrato de esquema v14 (2026-10-26)
+
+Fuente: verificación de Codex del checkpoint anterior. No se reabren decisiones funcionales;
+solo se cierra el contrato técnico de compatibilidad y la revalidación de destino.
+
+| ID | Corrección aplicada | Destino |
+| --- | --- | --- |
+| R7-1 | **No se acepta una base v14 por su número.** Solo se admiten dos contratos delimitados y verificados en objetos: `C14-COMPARTIDOS-FCE1107` (commit `fce1107`) y `C14-VEHICULOS-C69E343` (commit `c69e343`; el HEAD posterior `28d4816` no cambia el esquema). Antes de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version` se compara el manifiesto canónico exacto de `sqlite_master` y las invariantes del contrato. El manifiesto y su SHA-256 se generan y registran antes de DEV; sin ellos el gate falla. Una variante desconocida, incompleta, con SQL alterado, con objetos extra, con tablas sintéticas o con contratos mezclados se rechaza con el literal `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.`; el soporte de cualquier otro contrato v14 queda bloqueado hasta una revisión autorizada. `database.ts` se reordena para que la comprobación preceda a PRAGMAs persistentes y a la transacción de identidad; el restore verifica el manifiesto de una copia v14 antes de publicarla. | §3.1 (R7-1), §5.2, §8, AC-33, testplan AC-33 |
+| R7-2 | **Revalidación de destino antes de DEV.** La reserva 15 es provisional y no prevalece sobre `main`. Antes de DEV se comprueba `origin/main` y las reservas abiertas; si `main` ya está en 15 o más, la 15 está ocupada o `main` contiene un v14 no verificado, se detiene la implementación, se renumera esta spec y se repite la revisión. | §3.1 (R7-2), §5.2, AC-33(f), testplan |
 
 La aprobación de la specification sigue pendiente; desarrollar E4.1 no está autorizado.
