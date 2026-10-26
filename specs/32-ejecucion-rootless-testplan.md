@@ -1,6 +1,26 @@
 # 32 — Ejecución rootless: Test plan
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 
+## Estado vigente — recuperación DEV32 (2026-10-27)
+
+La tabla siguiente conserva la evidencia histórica de 3094563/run 39734037872.
+El candidato actual es **ceadd9d** sobre el merge **582846c** (a090112 + main
+26b6f0c) y no hereda automáticamente esos PASS. Revalidación en curso:
+
+- Esquema real v16; B5 y `infra/release.py` derivan `schemaVersion`/`e3.4-v16` del
+  código. Matriz de rollback definida para el baseline anterior main 26b6f0c
+  (16→16), con esquema, datos, autenticación y escrituras confirmadas; ejecución
+  pendiente de CI. No acredita rollback de servicio con el bind/Quadlet nuevo,
+  fuera del alcance de AC-18.
+- QA independiente (subagente distinto del autor): APPROVE FOR CI. PASS locales:
+  B5 1/0 (6 aserciones), typecheck, build, `py_compile`, `node --check`, contratos
+  schema16/e3.4-v16 para HEAD y 26b6f0c. Suite API local 216/47, mismo conjunto de
+  fallos que main 212/47 por límites macOS (libc.so.6, age-keygen, rutas /private
+  y cascadas de producción); no es PASS de aceptación.
+- `python3 scripts/verify` UNRUN local (Python 3.9.6; requiere 3.10+). Linux/rootless
+  CI y AC-22 permanecen **PENDING** hasta el run real del SHA final en PR #30.
+  Sin retries, omisiones ni relajación de guardas/assertions para obtener verde.
+
 | Acceptance ID | Preconditions and action | Expected result | Automated/manual method and command | Actual result / status | Run date / evidence |
 | --- | --- | --- | --- | --- | --- |
 | AC-01 | Revisar release y reconstruir desde commit limpio con inputs fijados | Manifiesto fuente/lock/base/Bun/age/OS/plataforma completo; ningún latest ni apt no fijado | release.py build: inputs Git/digest/lock/age/OS + ejecución de versiones | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
@@ -24,7 +44,7 @@ Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 | verify frontend/OCI/pin corruptos + require_rollback negativos + restore existente | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas | release-contract.mjs restore: WAL confirmado, age, key/integrity/revocación/MFA | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios | preflight + integración completos, versiones/UID registrados y cleanup verificado | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING / PAUSED — candidato B5 y CI b8 PASS; revisión del coordinador pendiente | 2026-10-22; investigación32 y resultado final del fix en PR30 |
+| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING — ceadd9d/582846c: QA APPROVE FOR CI; B5/typecheck/build locales PASS; verify y Linux/rootless pendientes | 2026-10-27; progress32; no reutilizar 3094563 |
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
@@ -271,7 +291,8 @@ SHA **3094563c466873fc5d2519a328b6109d30f13c41**:
 - Quadlet/systemd --user reales: restart/WAL integrity/FK, SIGKILL, tres health
   fallidos tras SIGSTOP→kill→restart; configuración inválida termina failed con
   NRestarts=3, 3/60s y backoff5s, estable dos backoffs, estado sin modificaciones.
-- b0bc5a7 anterior → actual → anterior: esquema v6/identidad productiva reales,
+- b0bc5a7 anterior → actual → anterior: esquema v6/identidad productiva reales
+  (histórico 3094563; el baseline vigente se define en «Estado vigente»),
   snapshots de hechos/auditoría/IDs/counters y clave estables, sesiones heredadas,
   password/TOTP/recovery, tres escrituras confirmadas y saldo sintético final60.00.
 - Backup con commit real retenido en WAL, solo dos archivos age cifrados; restore

@@ -107,8 +107,8 @@ Nunca borrar WAL/SHM manualmente ni copiar solo DB activa. No auto-update.
    **actual**, sin reemplazarlo por backup y sin revertir migraciones a la fuerza.
 5. Sin evidencia, esquema/datos/auth incompatibles o manifiesto corrupto: bloquear
    antes de abrir DB y solicitar decisión. No rollback automático ni restauración
-   automática. El ensayo b0bc5a7→release actual solo vale para ese par; no habilita
-   versiones futuras por coincidencia de etiquetas.
+   automática. El ensayo baseline anterior compatible→release actual solo vale para
+   ese par; no habilita versiones futuras por coincidencia de etiquetas.
 
 ## Backup, restauración y fallos parciales
 
