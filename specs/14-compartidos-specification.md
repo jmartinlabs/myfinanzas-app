@@ -649,51 +649,50 @@ informes/E3.6; no se reasigna a otra entrega ni se declara PASS.
 |---|---|---|---|
 | AC-01 | **B completa** | — | B-T02 |
 | AC-02 | **B completa** | — | B-T03 |
-| AC-03 | **B parcial** | B: no deducción desde Saldo propio y Saldo pagador visible. D5: atribución de aportación. | B-T06 + D5-AC-01/07/10 |
+| AC-03 | **B parcial** | B: no deducción desde Saldo propio y Saldo pagador visible. D5: atribución de aportación. | B-T06 + D5-AC-01/05/06 |
 | AC-04 | **B completa** | — | B-T05 |
 | AC-05 | **B completa** | — | B-T05 |
 | AC-06 | **B completa** | — | B-T04 + B-T05 |
 | AC-07 | **B completa** | — | B-T05 |
-| AC-08 | **D5** | Metadata sobre Movimiento + participante. | D5-AC-01/07/08 |
-| AC-09 | **B parcial** | B: auditoría/revisión/idempotencia de ficha, participantes y Gasto. D5: evidencia/auditoría de aportación. | B-T02/B-T03/B-T07 + D5-AC-09/10 |
-| AC-10 | **D5** | Históricos Exterior sin evidencia → Revisar/No disponible. | D5-AC-07b/08 |
-| AC-11 | **B parcial** | B: Gasto conserva Partida/importe. D5: Referencia y Quién paga acreditados. | B-T04 + D5-AC-01 |
-| AC-12 | **B parcial** | B: Sin repartir / Reparto parcial / Cerrado sin terceros. D5: Excedido positivo. | B-T06 + D5-AC-01/10 |
+| AC-08 | **D5** | Metadata sobre Movimiento + participante. | D5-AC-01/06/07 |
+| AC-09 | **B parcial** | B: auditoría/revisión/idempotencia de ficha, participantes y Gasto. D5: evidencia/auditoría de aportación. | B-T02/B-T03/B-T07 + D5-AC-07/09/10 |
+| AC-10 | **D5** | Históricos Exterior sin evidencia → Revisar/No disponible. | D5-AC-08 |
+| AC-11 | **B parcial** | B: Gasto conserva Partida/importe. D5: Referencia y Quién paga acreditados. | B-T04 + D5-AC-01/05 |
+| AC-12 | **B parcial** | B: Sin repartir / Reparto parcial / Cerrado sin terceros. D5: Excedido positivo. | B-T06 + D5-AC-01/12 |
 | AC-13 | **B completa** | — | B-T06 |
-| AC-14 | **D5** | Excedido real e identificación del participante. | D5-AC-01/10 |
+| AC-14 | **D5** | Excedido real e identificación del participante. | D5-AC-12 |
 | AC-15 | **B completa** | — | B-T06 |
-| AC-16 | **B parcial** | B: fecha de Gasto y ausencia de fechas no soportadas. D5: última aportación, reparto cubierto y exceso. | B-T06 + D5-AC-01/10 |
-| AC-17 | **B parcial** | B: campos separados y cobertura explícita; Pendiente/Exceso No disponible o No aplica según §14.5, sin fabricar Exceso=0. D5: valores con aportaciones acreditadas y no compensación. | B-T06 + D5-AC-10 |
-| AC-18 | **B parcial** | B: impacto/auditoría al cambiar partes sin aportaciones. D5: cambio con aportaciones acreditadas. | B-T07 + D5-AC-10b/c |
-| AC-19 | **B completa** | — | B-T07; revalidar en D5-AC-10b |
+| AC-16 | **B parcial** | B: fecha de Gasto y ausencia de fechas no soportadas. D5: última aportación, reparto cubierto y exceso. | B-T06 + D5-AC-01/08 |
+| AC-17 | **B parcial** | B: campos separados y cobertura explícita; Pendiente/Exceso No disponible o No aplica según §14.5, sin fabricar Exceso=0. D5: valores con aportaciones acreditadas y no compensación. | B-T06 + D5-AC-12 |
+| AC-18 | **B parcial** | B: impacto/auditoría al cambiar partes sin aportaciones. D5: cambio con aportaciones acreditadas. | B-T07 + D5-AC-10/11 |
+| AC-19 | **B completa** | — | B-T07; revalidar en D5-AC-10/11 |
 | AC-20 | **B parcial** | B: contrato de Neto central/DTO con importe o ausencia y cobertura coherentes. Pendiente: consumo por informes/E3.6, **dentro de E3.2**; aplazamiento explícito aprobado documentalmente. | B-T06/B-T08 (contrato entregado por B) + B-T11 (consumo aplazado) |
-| AC-21 | **D5** | Exterior/S000, históricos y límites. | B-T09 + D5-AC-14 |
-| AC-22 | **B completa** | — | B-T08; revalidar en D5-AC-12/13 |
-| AC-23 | **B parcial** | B: W1/W2/W4/W5 y ficha/participantes. D5: W3/formulario de aportación. | B-T08 + D5-AC-13 |
+| AC-21 | **D5** | Exterior/S000, históricos y límites. | B-T09 + D5-AC-02/04/08/15 |
+| AC-22 | **B completa** | — | B-T08; revalidar en D5-AC-13 |
+| AC-23 | **B parcial** | B: W1/W2/W4/W5 y ficha/participantes. D5: W3/formulario de aportación. | B-T08 + D5-AC-14 |
 | AC-24 | **B completa** | — | B-T03/B-T07; revalidar en D5-AC-10/11 |
-| AC-25 | **B parcial** | B: Neto con Recuperado no disponible/no aplica e identidad estructural. D5: Recuperado real, exceso e identidad completa. | B-T06 + D5-AC-01/10/11 |
+| AC-25 | **B parcial** | B: Neto con Recuperado no disponible/no aplica e identidad estructural. D5: Recuperado real, exceso e identidad completa. | B-T06 + D5-AC-01/12 |
 | AC-26 | **B completa** | — | B-T06 |
 | AC-27 | **B completa** | — | B-T05 |
 | AC-28 | **B completa** | — | B-T06 |
 | AC-29 | **B completa** | — | B-T06 |
 | AC-30 | **B completa** | — | B-T06 |
-| AC-31 | **B completa** | Calificación limitada a resolución de incidencia P-F6 en Gastos admitidos por B; no acredita resolución R-MP con recuperaciones. Esta última se revalida en D5. | B-T06 (rama B) + D5-AC-10 (rama futura, UNRUN) |
-| AC-32 | **D5** | Distribución de Recuperado por Gasto. | D5-AC-01/10 |
-| AC-33 | **D5** | Recuperado sin cuota asignada. | D5-AC-07/10 |
-| AC-34 | **D5** | Netos con Recuperado atribuido. | D5-AC-01/10 |
-| AC-35 | **D5** | Recuperado global no repartido directamente. | D5-AC-07/10 |
-| AC-36 | **D5** | Cierre con aportaciones 50+50. | D5-AC-01/10 |
-| AC-37 | **D5** | Pendiente y exceso coexistentes. | D5-AC-01/10 |
+| AC-31 | **B completa** | Calificación limitada a resolución de incidencia P-F6 en Gastos admitidos por B; no acredita resolución R-MP con recuperaciones. Esta última se revalida en D5. | B-T06 (rama B) + D5-AC-12 (rama futura, UNRUN) |
+| AC-32 | **D5** | Distribución de Recuperado por Gasto. | D5-AC-12 |
+| AC-33 | **D5** | Recuperado sin cuota asignada. | D5-AC-12 |
+| AC-34 | **D5** | Netos con Recuperado atribuido. | D5-AC-12 |
+| AC-35 | **D5** | Recuperado global no repartido directamente. | D5-AC-12 |
+| AC-36 | **D5** | Cierre con aportaciones 50+50. | D5-AC-12 |
+| AC-37 | **D5** | Pendiente y exceso coexistentes. | D5-AC-12 |
 | AC-38 | **B completa** | — | B-T06 |
-| AC-39 | **B parcial** | B: P-F6/importe inválido bloquea Cerrado. D5: R-MP/recuperado sin cuota. | B-T06 + D5-AC-07/10 |
+| AC-39 | **B parcial** | B: P-F6/importe inválido bloquea Cerrado. D5: R-MP/recuperado sin cuota. | B-T06 + D5-AC-12 |
 
 **Recuento:** 18 completas en B, 11 parciales, 10 pendientes de D5.
 
-Las referencias `D5-AC-*` de esta matriz aprobada son **históricas del borrador**
-y no constituyen el mapping vigente; el mapping propuesto se fija en §15.13. Por
-ejemplo, AC-21/AC-23 y AC-32–37 conservan referencias antiguas que no coinciden
-con la numeración D5 actual. La matriz base no se reescribe ni se declara D5
-aprobado; al aprobar D5 se actualizará en una enmienda explícita.
+Las referencias `D5-AC-*` de esta matriz se han alineado con el mapping propuesto
+en §15.13 para que la trazabilidad sea revisable; la cobertura B (18/11/10) no
+cambia y D5 sigue sin aprobar. Cualquier cambio de cobertura o de AC base exigirá
+una enmienda explícita.
 
 ### 14.3 B-T01–B-T11 completas
 
@@ -859,7 +858,7 @@ No se atribuye al revisor una validación del hash consolidado posterior.
 
 | Origen | Precisión incluida en la versión aprobada | Trazabilidad |
 | --- | --- | --- |
-| F-BASEB-QA-01 | AC-31 completa solo para la rama P-F6 de B; R-MP requiere revalidación futura en D5 | AC-31, B-T06 y referencia futura D5-AC-10 pendiente. |
+| F-BASEB-QA-01 | AC-31 completa solo para la rama P-F6 de B; R-MP requiere revalidación futura en D5 | AC-31, B-T06 y referencia futura D5-AC-12 pendiente. |
 | F-BASEB-QA-02 | Neto = Bruto, coincidente con Coste propio, en reparto 100% Titular verificable y sin incidencias | §14.5.2, B-T06; no fórmula alternativa. |
 | Coordinador | AC-17 no afirma Exceso=0 por ausencia de fuente | AC-17 y §14.5, limitación de entrega explícita. |
 | Coordinador | Contrato/readmodel central probado en B, consumidor aplazado | AC-20, B-T06/B-T08 y B-T11. |
@@ -1052,8 +1051,18 @@ terceros pendientes.
   reclasificación.
 - Movimiento + metadatos + intento + auditoría en una transacción IMMEDIATE.
   Revalidar Referencia, ficha, participante, revisión y huella antes de confirmar.
-  Cambio concurrente → 409 sin escritura parcial; reintento idempotente → una
-  sola aportación; fallo inyectado en auditoría → rollback total.
+- **Reintento idéntico:** misma clave de idempotencia, mismo payload, misma huella
+  y misma revisión → devuelve la respuesta original; no crea Movimiento,
+  acreditación ni auditoría nueva. El intento se registra como replay.
+- **Acreditación duplicada:** segunda solicitud sobre un Movimiento ya acreditado
+  con clave o payload distinto → 409 CONFLICT; no modifica la acreditación
+  existente ni crea otra. Misma clave con payload distinto → 409 de idempotencia,
+  no replay.
+- **Conflicto concurrente:** dos confirmaciones simultáneas o revisión/huella
+  obsoleta → 409 sin escritura parcial; el cliente recarga y reintenta.
+- **Rollback:** cualquier fallo en Movimiento, metadatos, intento o auditoría →
+  rollback total; no queda Movimiento sin acreditación, acreditación huérfana ni
+  auditoría parcial. Un reintento posterior seguro no duplica.
 - No se admite confirmar un preview obsoleto ni completar campos derivados por el
   cliente.
 
@@ -1071,6 +1080,14 @@ terceros pendientes.
 - La anulación excluye la acreditación del motor, conserva metadatos, evidencia e
   historia y no permite reactivación ni DELETE. Los registros bancarios
   importados conservan sus valores y evidencia originales.
+- **Vínculos históricos inactivos:** una acreditación anulada, un Movimiento
+  anulado, una REF/ficha inactiva o un participante de baja se conservan y se
+  muestran con procedencia, pero no se borran, no se reactivan y no se usan para
+  nuevas altas. La baja lógica del participante conserva sus acreditaciones
+  vigentes y bloquea nuevas mientras esté inactivo; una eventual reactivación no
+  reactiva acreditaciones anuladas ni crea atribuciones retroactivas. Rectificar
+  participante o evidencia de una acreditación anulada está bloqueado; solo se
+  conserva su historia.
 - Toda corrección revalida Referencia, ficha, participante, Tipo, dirección y
   dependencias; si deja una acreditación incoherente, bloquea con conflicto.
 - Un cambio de partes/participante con aportaciones acreditadas exige la vista de
@@ -1168,9 +1185,9 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo por unicidad/cardinalidad; una sola acreditación y un solo participante. |
 | D5-AC-07 | Evidencia vacía/genérica o procedencia histórica insuficiente | Rechazo 422 o Revisar/No disponible; no se acredita; no se inventan importe/fecha. |
 | D5-AC-08 | Histórico S000 con CAT013/ficha/evidencia vs. Gasto/Ingreso, interno, anulado, sin REF o sin ficha | Solo el primero es elegible tras revisión; el resto no se acredita; sin REF retroactiva, backfill ni atribución automática. |
-| D5-AC-09 | Reintento con misma clave, preview obsoleto, dos procesos y fallo de auditoría | Un solo hecho; 409 sin escritura parcial; rollback total; auditoría coherente. |
-| D5-AC-10 | Rectificar importe/fecha/destino; intentar cambiar Tipo/REF/Origen; corregir participante/evidencia | Importe/fecha/destino con impacto, motivo y auditoría; Tipo/REF/Origen bloqueados; corrección de participante/evidencia revisada y con originales preservados. |
-| D5-AC-11 | Anular una aportación acreditada; consultar historia | Excluida del motor; metadatos/evidencia/historia conservados; sin reactivación ni DELETE. |
+| D5-AC-09 | Reintento idéntico, acreditación duplicada, preview obsoleto, dos procesos y fallo de auditoría | Replay idéntico devuelve la respuesta sin duplicar; duplicado/conflicto → 409 sin efectos; fallo → rollback total; auditoría coherente. |
+| D5-AC-10 | Rectificar importe/fecha/destino; intentar cambiar Tipo/REF/Origen; corregir participante/evidencia; vínculo inactivo | Importe/fecha/destino con impacto, motivo y auditoría; Tipo/REF/Origen bloqueados; corrección revisada con originales preservados; vínculos inactivos no se reactivan ni admiten nuevas altas. |
+| D5-AC-11 | Anular una aportación acreditada; consultar historia; intentar reutilizar el vínculo | Excluida del motor; metadatos/evidencia/historia conservados; vínculo inactivo visible pero no reutilizable; sin reactivación ni DELETE. |
 | D5-AC-12 | Aportación acreditada en caso multi-Gasto/multi-Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado y Neto por Gasto/Partida exactos; exceso íntegro sin recorte; sin cuota → Revisar; sin compensación cruzada; Titular con Pendiente/Exceso 0 (F3). |
 | D5-AC-13 | Informes y seguridad: aportación acreditada; acceso sin MFA/CSRF; errores | Nunca Ingreso ni ejecución presupuestaria; Neto central sin doble descuento; acceso denegado; errores sin datos sensibles. |
 | D5-AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Formulario dedicado, campos/labels/foco/contraste, sin S000 en el formulario común, borrador conservado y estados diferenciados. |
@@ -1193,6 +1210,8 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | R-D5-11 | Confundir Gasto CAT013 válido o Ingreso S000 con aportación | AC-04 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5 | Ingreso CAT013 → 422; ninguno acredita ni se reclasifica | Servicio + DTO + inspección | UNRUN |
 | R-D5-12 | Duplicado o división de un Movimiento entre participantes | AC-06 | Un Movimiento, un Tercero, una acreditación | Segundo intento/división rechazado | UNIQUE + API + SQLite | UNRUN |
 | R-D5-13 | Aplicar Pendiente/Exceso al Titular y romper F3 | AC-12 | Titular conserva coste propio y Pendiente 0 | Titular no genera Exceso ni aportación exigible | Motor + DTO + UI | UNRUN |
+| R-D5-14 | Reutilizar un vínculo histórico inactivo o crear atribución retroactiva | AC-10, AC-11 | Vínculo visible con procedencia | Nueva alta/reactivación bloqueada; sin retroactividad | API + SQLite + UI | UNRUN |
+| R-D5-15 | Confundir replay idéntico con duplicado o conflicto | AC-09 | Replay devuelve la respuesta original sin duplicar | Duplicado/clave distinta → 409; fallo → rollback | Dos conexiones + claves | UNRUN |
 
 Ninguna fila es evidencia funcional: todas son **UNRUN** y describen pruebas
 futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
@@ -1206,11 +1225,13 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Estado: Reparto parcial              │
 │ Bruto 450,00 €                       │
 │ Recuperado 300,00 € · Neto 150,00 €  │
+│ ⚠ Bea pendiente 150,00 €             │
+│ ⚠ Álex exceso 150,00 €               │
 │ [Registrar aportación]               │
 │ [Aportaciones históricas]            │
 ├──────────────────────────────────────┤
 │ Álex · 300,00 € · 10/10 · evidencia  │
-│ Bea  · pendiente 50,00 €             │
+│ Bea  · pendiente 150,00 €            │
 └──────────────────────────────────────┘
 ```
 
@@ -1227,8 +1248,11 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Procedencia[Documento bancario ▾]    │
 │ Aviso: Transferencia desde Exterior; │
 │ no es Ingreso ni Gasto.              │
-│ Antes: Recuperado 0 · Pendiente 150  │
-│ Después: Recuperado 300 · Neto 150   │
+│ Antes: Bea pend. 150 · Álex pend.    │
+│ 150 · global pend. 300 · exceso 0    │
+│ Después: Bea pend. 150 · Álex exceso │
+│ 150 · global pend. 150 · exceso 150  │
+│ Recuperado 300 · Neto 150            │
 │ [Cancelar]       [Revisar aportación]│
 └──────────────────────────────────────┘
 ```
@@ -1238,6 +1262,8 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 ┌──────────────────────────────────────────────────────────────┐
 │ Compartido · Piso 2026                    Estado: Reparto parcial │
 │ Bruto 450,00 € · Recuperado 300,00 € · Neto 150,00 €          │
+│ ⚠ Bea pendiente 150,00 € · Álex exceso 150,00 €              │
+│ Global terceros: pendiente 150,00 € · exceso 150,00 €         │
 │ [Registrar aportación]  [Aportaciones históricas]             │
 ├───────────────────────────────┬──────────────────────────────┤
 │ Participantes y reparto       │ Registrar aportación          │
@@ -1246,7 +1272,8 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Yo    Titular   150,00 €      │ Fecha/Importe/Destino         │
 │                               │ Evidencia/Procedencia         │
 │ Aportaciones acreditadas      │ Preview antes/después         │
-│ Álex 300,00 € · evidencia     │ [Cancelar] [Revisar]          │
+│ Álex 300,00 € · evidencia     │ Bea pend. 150 · Álex exc. 150 │
+│ Bea pendiente 150,00 €        │ [Cancelar] [Revisar]          │
 └───────────────────────────────┴──────────────────────────────┘
 ```
 
@@ -1254,7 +1281,8 @@ Estados exigidos: sin participantes (vacío con acción de alta de participante)
 carga, error con reintento, 409 de revisión, 422 de validación, 401 que conserva
 borrador, éxito y anulación. En 1440 no se añaden campos ni se pierde el aviso; el
 foco inicial va al primer campo editable y el preview es texto, no solo color.
-**Propuesta, no implementada.**
+«Global» es la suma separada de pendientes y excesos de Terceros; no compensa a
+Bea con Álex (D7). **Propuesta, no implementada.**
 
 ### 15.16 Puntos de revisión antes de aprobar la enmienda
 

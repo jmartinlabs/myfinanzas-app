@@ -324,9 +324,9 @@ reales: fixtures ficticias y servicios reales de prueba.
 | T-D5-06 | AC-06 | Primer alta válida vs. segunda acreditación o división del mismo Movimiento | Una sola fila por Movimiento | Rechazo por unicidad/cardinalidad | SQLite UNIQUE + API | UNRUN |
 | T-D5-07 | AC-07 | Evidencia suficiente vs. vacía/genérica; histórico con procedencia insuficiente | Evidencia suficiente acredita | 422 o Revisar/No disponible; no inventa importe/fecha | Validación + UI | UNRUN |
 | T-D5-08 | AC-08 | Histórico elegible vs. Gasto/Ingreso/interno/anulado/sin REF/sin ficha | Solo el elegible tras revisión acredita | Resto no acredita; sin REF retroactiva/backfill | Focal + fixtures | UNRUN |
-| T-D5-09 | AC-09 | Reintento, preview obsoleto, dos conexiones, fallo de auditoría | Un hecho idempotente; reintento válido no duplica | 409 sin escritura parcial; fallo de auditoría → rollback; sin huérfanos | Dos conexiones + fallo inyectado | UNRUN |
-| T-D5-10 | AC-10 | Rectificar importe/fecha/destino; cambiar Tipo/REF/Origen; corregir participante/evidencia | Rectificación válida con impacto/motivo/auditoría | Tipo/REF/Origen bloqueados; original preservado | API + triggers + auditoría | UNRUN |
-| T-D5-11 | AC-11 | Anular aportación acreditada | Excluida del motor; historia/evidencia conservadas | Reactivación y DELETE bloqueados | SQLite + DTO + UI | UNRUN |
+| T-D5-09 | AC-09 | Reintento idéntico; duplicado con clave/payload distinto; preview obsoleto; dos conexiones; fallo de auditoría | Replay idéntico devuelve la misma respuesta sin duplicar | Duplicado/conflicto → 409; fallo → rollback total; sin huérfanos | Dos conexiones + fallo inyectado | UNRUN |
+| T-D5-10 | AC-10 | Rectificar importe/fecha/destino; cambiar Tipo/REF/Origen; corregir participante/evidencia; vínculo inactivo | Rectificación válida con impacto/motivo/auditoría | Tipo/REF/Origen bloqueados; inactivo no se reactiva ni admite nueva alta; original preservado | API + triggers + auditoría | UNRUN |
+| T-D5-11 | AC-11 | Anular aportación acreditada; reutilizar vínculo | Excluida del motor; historia/evidencia conservadas y visibles | Reactivación, DELETE y nueva atribución bloqueados | SQLite + DTO + UI | UNRUN |
 | T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota; Titular Pendiente 0 | Sin compensación cruzada ni aportación exigible del Titular | Motor + DTO + capturas | UNRUN |
 | T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | UNRUN |
 | T-D5-14 | AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Equivalencia, foco, contraste, borrador conservado | Sin S000 en formulario común | Playwright + PNG `artifacts/e3-2-d5/` | UNRUN |
@@ -343,6 +343,8 @@ reales: fixtures ficticias y servicios reales de prueba.
 | Backfill/inferencia histórica | T-D5-07, T-D5-08 |
 | Concurrencia/idempotencia | T-D5-09 |
 | Reescritura bancaria | T-D5-10, T-D5-11 |
+| Vínculo histórico reutilizado | T-D5-10, T-D5-11 |
+| Replay/duplicado/conflicto | T-D5-09 |
 | Seguridad/privacidad | T-D5-13, T-D5-14 |
 | UI engañosa | T-D5-12, T-D5-14 |
 | Colisión de esquema v15 | T-D5-01, T-D5-15, T-D5-16 |
