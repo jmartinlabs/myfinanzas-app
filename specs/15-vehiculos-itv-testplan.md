@@ -68,23 +68,23 @@ Los datos son ficticios. Un resultado macOS no sustituye CI Linux.
 
 ## Registro de ejecuciones
 
-Candidato final local `80c7848` (base `e408b1d`). macOS
+Candidato final local `90c28a7` (base `e408b1d`). macOS
 arm64, Bun 1.4.3, Python 3.12, Chromium/Playwright 1.64.1, `TMPDIR=/private/tmp` y
-age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
+age 1.2.1 local. La QA independiente revisó el SHA final, no este resumen.
 
 | Comprobación | Comando | Resultado |
 | --- | --- | --- |
 | Tipos | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS |
-| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 11 PASS / 164 assertions, incluida regresión de Anticipo |
-| API completa | `NODE_ENV=test bun test apps/api` | 176 PASS / 46 FAIL / 222 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
-| E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts` | PASS; capturas en `artifacts/e3-3/` |
+| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts apps/api/src/vehiculos-concurrency.test.ts` | 12 PASS / 179 assertions: Anticipo + alta concurrente |
+| API completa | `NODE_ENV=test bun test apps/api` | 177 PASS / 46 FAIL / 223 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
+| E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts tests/e2e/vehiculos-empty.spec.ts` | 2 PASS; listado, ficha, conversión, Anticipo, vacío y carga dinámicos; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
-| Baseline canónica | `python3 scripts/verify baseline` | PASS en `9b46153` (57/24/8/15 regresiones, whitespace) |
+| Baseline canónica | `python3 scripts/verify baseline` | PASS en `178f3e9`; nueva ejecución sobre el SHA final pendiente |
 | Full canónica | `python3 scripts/verify --full` | FAIL en API por guardas Linux; E2E UNRUN en macOS. No es PASS |
 | Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
-| QA independiente | Revisión de `80c7848` | APTO CON OBSERVACIONES; defecto de Anticipo corregido, 43/45 AC completos + AC-04/AC-29 parciales, residuales menores y Linux/CI UNRUN |
+| QA independiente | Revisión de `90c28a7` | APTO CON OBSERVACIONES; 45/45 AC locales, Anticipo y AC-04/AC-29 completos, residuales menores y Linux/CI UNRUN |
 
 Los fallos de plataforma se conservan como UNRUN/BLOCKED para Linux/CI; no se
 reclasifican como PASS. Las capturas son ficticias y no contienen bases, claves,
@@ -93,7 +93,7 @@ factores ni trazas.
 
 ## Estado por AC tras QA y correcciones
 
-**43/45 AC con PASS completo; AC-04 y AC-29 parciales; 0 FAIL funcionales.** `PASS` no implica CI Linux ni aprobación de merge.
+**45/45 AC con PASS local; AC-04 y AC-29 completos; 0 FAIL funcionales.** `PASS` local no implica CI Linux ni aprobación de merge.
 Los límites se conservan explícitos.
 
 | AC | Estado | Evidencia principal |
@@ -101,7 +101,7 @@ Los límites se conservan explícitos.
 | AC-01 | PASS | API focal + alta 1:1 |
 | AC-02 | PASS | rollback forzado + idempotencia |
 | AC-03 | PASS | Type/ficha cruzados |
-| AC-04 | PASS parcial (alta 2 procesos no ejecutada; conversión sí) | PK/trigger + carrera de conversión |
+| AC-04 | PASS | alta concurrente 2 procesos + carrera de segunda ficha con PK verificada |
 | AC-05 | PASS | conversión Q3 |
 | AC-06 | PASS | Tipo con ficha/usado bloqueado |
 | AC-07 | PASS | 404/200 Revisar sin reparación |
@@ -126,7 +126,7 @@ Los límites se conservan explícitos.
 | AC-26 | PASS | MFA/CSRF/Origin/replay/DELETE |
 | AC-27 | PASS | respuesta antigua no sustituye |
 | AC-28 | PASS | E2E 390/1440 + capturas |
-| AC-29 | PASS parcial (vacío/carga por inspección; error/retry e integridad dinámicos) | E2E + API |
+| AC-29 | PASS | E2E real de carga/vacío sin filas ni importes + error/retry e integridad |
 | AC-30 | PASS | Viaje/Evento y CAT009 sin REF |
 | AC-31 | PASS | POST/PATCH/validateReference/ledger |
 | AC-32 | PASS | alcance sin módulos ajenos |
@@ -145,14 +145,16 @@ Los límites se conservan explícitos.
 | AC-45 | PASS | contraste computado 6,04:1 |
 
 
-## Residuales de QA final (`9b46153`)
+## Residuales de QA final (`90c28a7`)
 
 - R-02 (baja): `duplicado_confirmado` declara entidad `ficha_vehiculo` pero usa la
   revisión de la REF; queda documentado, sin pérdida de datos ni bloqueo.
 - R-03 (baja): «Ver procedencia» permanece inline y `Movimientos.tsx` no pinta el DTO
   `integridad`; la API y la página de integridad son correctas.
-- R-04 (baja): los recuentos de la suite pueden variar por flakes preexistentes R11/04
-  y por `vehiculos-backup.test.ts`, que es UNRUN en macOS.
+- R-04 (baja): los recuentos son 177/46/223 en la QA final; pueden variar por flakes
+  preexistentes R11/04 y por `vehiculos-backup.test.ts`, UNRUN en macOS.
+- R-06: cerrado; la carrera de segunda ficha exige el motivo `UNIQUE constraint failed:
+  fichas_vehiculo.referencia`, no un rechazo genérico.
 - Gates pendientes: CI Linux real, `scripts/verify --full` PASS, revisión/publicación
   autorizada de PR y aprobación de merge. Nada de esto se declara.
 
@@ -165,3 +167,21 @@ ficha de Anticipo, ausencia de ficha de Vehículo y ausencia de auditoría de fi
 E2E comprueba que Referencias no ofrece el botón para el Anticipo. QA independiente
 confirmó el cierre sobre `80c7848`, incluido el caso de Anticipo sin ficha histórica.
 Linux/CI y backup/restore siguen UNRUN: no se declara PASS completo.
+
+## AC-04 y AC-29: cobertura dinámica añadida
+
+- `AC-04`: `apps/api/src/vehiculos-concurrency.test.ts` lanza dos procesos Bun
+  independientes que crean Vehículos; verifica IDs distintos, dos REF, dos fichas,
+  ausencia de huérfanas, FK, auditoría, contador y estado final. Después lanza dos
+  procesos que intentan insertar la misma segunda ficha `REF900`: exactamente uno es
+  aceptado y el otro rechazado por `UNIQUE constraint failed:
+  fichas_vehiculo.referencia`; queda una sola ficha. Ejecutado 3 veces: 1 PASS/16
+  assertions cada vez.
+- `AC-29`: `tests/e2e/vehiculos-empty.spec.ts` arranca un servidor real sin vehículos,
+  autentica con MFA, retiene la respuesta del listado y comprueba «Cargando
+  vehículos…» sin tabla, tarjetas ni importes; al liberar aparece «Sin vehículos» sin
+  filas ni importes, a 1440 y 390. Error/retry e integridad siguen cubiertos por el
+  recorrido principal y las pruebas API.
+
+Estas pruebas elevan el estado local a **45/45 AC**; no sustituyen Linux/CI ni el
+backup/restore v14, que permanecen UNRUN.

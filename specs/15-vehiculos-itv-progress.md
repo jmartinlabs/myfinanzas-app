@@ -2,7 +2,7 @@
 
 Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
-HEAD final local de código: `80c78489e2bdcde9641318233af1741255bffc9f`.
+HEAD final local de código: `90c28a7cfc15bfd31af4dc327769553147914ddf`.
 Spec: [15-vehiculos-itv-specification.md](15-vehiculos-itv-specification.md) rev5,
 aprobada sobre `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Evidencia de pruebas: [15-vehiculos-itv-testplan.md](15-vehiculos-itv-testplan.md).
@@ -82,22 +82,21 @@ merge, despliegue, datos reales ni cambios de visibilidad. PR78 no se modifica.
   `tests/e2e/vehiculos.spec.ts` (PASS, capturas 1440/390). Incluye regresión de
   conversión de Anticipo con y sin ficha y comprobación del indicador.
 - `bun run typecheck` PASS; `bun run build` PASS.
-- Suite API completa (última ejecución): 176 PASS / 46 FAIL / 222 tests. Los fallos
-  son guardas Linux de publicación/restore (`libc.so.6`) en macOS, la prueba real de
+- Suite API completa (QA final): 177 PASS / 46 FAIL / 223 tests. Los fallos son
+  guardas Linux de publicación/restore (`libc.so.6`) en macOS, la prueba real de
   backup/restore v14 UNRUN y dos flakes preexistentes de diagnóstico (R11/04). No hay
   fallo funcional nuevo de E3.3. CI Linux sigue UNRUN.
 - E2E completo: 6 PASS / 2 FAIL; fallos en servidores de restauración aislada de
   catalog/movimientos por la misma guarda Linux. E2E de vehículos PASS.
 - Verificación canónica: baseline PASS (57/24/8/15 regresiones, whitespace); full
   FAIL en la fase API por las guardas Linux y E2E UNRUN en macOS. No se declara PASS.
-- QA independiente final sobre `80c7848`: **APTO CON OBSERVACIONES**. Defecto
-  bloqueante reportado por revisión externa corregido: un Anticipo con ficha (o sin
-  ficha, por anomalía histórica) no puede convertirse a Vehículo; el indicador
-  responde `disponible=false`, el PATCH devuelve 409 `HISTORY_LOCKED`, no se crea
-  `fichas_vehiculo` y se conserva `fichas_anticipos`. Corregidos además H-01–H-06/R-01
-  y el texto de rechazo. **43/45 AC con PASS completo; AC-04 y AC-29 parciales; 0 FAIL
-  funcionales.** Residuales R-02/R-03/R-04 menores. H-07/H-08 y Linux/CI siguen
-  UNRUN.
+- QA independiente final sobre `90c28a7`: **APTO CON OBSERVACIONES**. Defecto
+  bloqueante de Anticipo corregido (con y sin ficha histórica): indicador
+  `disponible=false`, PATCH 409 `HISTORY_LOCKED`, sin `fichas_vehiculo`, conservando
+  `fichas_anticipos`. AC-04 y AC-29 completados con pruebas dinámicas: alta concurrente
+  real en dos procesos y carrera de segunda ficha; listado vacío y carga reales sin
+  filas ni importes ficticios. **45/45 AC con PASS local; 0 FAIL funcionales.**
+  Residuales R-02/R-03 menores. Linux/CI y backup/restore v14 siguen UNRUN.
 - Prueba focal nueva `apps/api/src/vehiculos-backup.test.ts`: UNRUN en macOS por
   `libc.so.6`; debe ejecutarse en Linux/CI.
 
@@ -111,7 +110,9 @@ se comprueba `fichas_anticipos` y se protege todo Tipo Anticipo, con o sin ficha
 histórica. Regresión API (`vehiculos.test.ts`) y E2E con fixture Anticipo. QA
 independiente confirmó 409/estado sin doble ficha para ambos casos.
 
-El handoff anterior no debe declarar «45/45 PASS»: el estado acreditado es **43/45
-completos y 2 parciales** (AC-04 alta concurrente real no ejecutada; AC-29 vacío/carga
-por inspección), con 0 FAIL funcionales. Linux/CI y backup/restore v14 siguen UNRUN y
-no acreditan un PASS completo.
+El handoff anterior declaró 43/45 porque AC-04 y AC-29 aún no tenían prueba dinámica
+completa. Esa cobertura se añadió en `c0e0cd2` y se endureció en `90c28a7`: alta
+concurrente real de dos procesos, carrera de segunda ficha con motivo de rechazo
+verificado, y listado vacío/carga reales sin filas ni importes ficticios. El estado
+local pasa a **45/45 AC**, pero Linux/CI y backup/restore v14 siguen UNRUN y no
+acreditan un PASS completo.
