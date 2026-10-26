@@ -50,7 +50,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
         versions[0].version,
       ) ||
       (expected !== undefined && versions[0].version !== expected)
@@ -252,7 +252,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
         bundle.manifest.schema,
       ) ||
       hash(bytes) !== bundle.manifest.sha256
