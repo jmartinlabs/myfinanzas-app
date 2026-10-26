@@ -77,7 +77,11 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(page.getByLabel("Gasto año y cobertura")).toContainText("1.240,00 €");
     await expect(page.getByLabel("Gasto año y cobertura")).toContainText("Parcial");
     await expect(page.getByLabel("Gasto año y cobertura")).toContainText("50,00 €");
-    await expect(page.getByLabel("Gastos del año")).toContainText("Gastos del año (3)");
+    const factsDesktop = page.getByRole("region", { name: "Gastos del año", exact: true });
+    await expect(factsDesktop).toContainText("Gastos del año (3)");
+    await expect(factsDesktop.locator(".desktop-list")).toBeVisible();
+    await expect(factsDesktop.locator(".vehicle-facts")).toBeHidden();
+    await expect(factsDesktop.locator("tbody tr")).toHaveCount(3);
     await page.getByLabel("Ejercicio del gasto del vehículo").selectOption("2025");
     await expect(page.getByLabel("Gasto año y cobertura")).toContainText(
       "Cobertura anual: Completa",
@@ -130,6 +134,19 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     await expect(
       page.getByRole("heading", { name: "Coche principal", exact: true }),
     ).toBeVisible();
+    const factsMobile = page.getByRole("region", { name: "Gastos del año", exact: true });
+    await expect(factsMobile.locator(".desktop-list")).toBeHidden();
+    await expect(factsMobile.locator(".vehicle-facts")).toBeVisible();
+    await expect(factsMobile.locator(".vehicle-facts li")).toHaveCount(3);
+    const firstFact = factsMobile.locator(".vehicle-facts li").first();
+    await expect(firstFact).toContainText("15/02/2026");
+    await expect(firstFact).toContainText("Gasto ficticio vehículo");
+    await expect(firstFact).toContainText("PAR001 · Mantenimiento");
+    await expect(firstFact).toContainText("120,00 €");
+    await page.screenshot({
+      path: "artifacts/e3-3/vehiculos-detail-390.png",
+      fullPage: true,
+    });
     await page.unroute("**/api/vehiculos/REF001?ejercicio=2026");
     await page.goto("/vehiculos");
 

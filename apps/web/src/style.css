@@ -2127,3 +2127,14 @@ textarea {
   .vehicle-values { grid-template-columns: 1fr; }
   .vehicle-summary { grid-template-columns: 1fr 1fr; }
 }
+
+/* E3.3: Gastos del año mantienen datos y jerarquía en la tarjeta móvil. */
+.vehicle-facts h3 {
+  font-size: 14px;
+  margin: 0 0 5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.vehicle-facts .card-head strong {
+  white-space: nowrap;
+}

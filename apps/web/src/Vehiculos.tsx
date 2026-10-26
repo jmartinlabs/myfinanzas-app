@@ -287,29 +287,43 @@ function AnnualFacts({ annual }: { annual: Annual | null }) {
       {annual.gastos.length === 0 ? (
         <p>Sin Gastos registrados conocidos para este ejercicio.</p>
       ) : (
-        <div className="desktop-list">
-          <table>
-            <caption className="sr-only">Gastos del año</caption>
-            <thead>
-              <tr>
-                <th scope="col">Fecha</th>
-                <th scope="col">Concepto</th>
-                <th scope="col">Partida</th>
-                <th scope="col">Importe</th>
-              </tr>
-            </thead>
-            <tbody>
-              {annual.gastos.map((g) => (
-                <tr key={g.id}>
-                  <td>{date(g.fecha)}</td>
-                  <td>{g.concepto || "—"}</td>
-                  <td>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "—"}</td>
-                  <td>{eur(g.importe)}</td>
+        <>
+          <div className="desktop-list">
+            <table>
+              <caption className="sr-only">Gastos del año</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Concepto</th>
+                  <th scope="col">Partida</th>
+                  <th scope="col">Importe</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {annual.gastos.map((g) => (
+                  <tr key={g.id}>
+                    <td>{date(g.fecha)}</td>
+                    <td>{g.concepto || "—"}</td>
+                    <td>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "—"}</td>
+                    <td>{eur(g.importe)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <ul className="mobile-list vehicle-facts" aria-label="Gastos del año móvil">
+            {annual.gastos.map((g) => (
+              <li key={g.id}>
+                <div className="card-head">
+                  <span>{date(g.fecha)}</span>
+                  <strong>{eur(g.importe)}</strong>
+                </div>
+                <h3>{g.concepto || "Sin concepto"}</h3>
+                <p>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "Sin Partida"}</p>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
     </section>
   );
