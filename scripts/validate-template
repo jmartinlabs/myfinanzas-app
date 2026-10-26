@@ -159,7 +159,7 @@ def validate(root):
  # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
  coordinator=read('specs/methodology/coordinator-communication.md')
  for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
-  if token in coordinator: fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
+  if token.lower() in coordinator.lower(): fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
  # Resource policy guards are structural; runtime behavior needs separate trials.
  for name,tokens in {
   'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),

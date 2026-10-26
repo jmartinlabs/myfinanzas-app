@@ -122,9 +122,10 @@ class ValidationTests(unittest.TestCase):
      p.write_text(original)
  def test_coordination_does_not_duplicate_continuity(self):
   p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
-  try:
-   p.write_text(original+'\na correctable failed check is not a blocker\n'); self.assertRule('coordination')
-  finally: p.write_text(original)
+  for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
+   try:
+    p.write_text(original+'\n'+variant+'\n'); self.assertRule('coordination')
+   finally: p.write_text(original)
  def test_external_contract_does_not_register_clients(self):
   p=self.root/'specs/methodology/dynamic-agents.md'
   p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')
