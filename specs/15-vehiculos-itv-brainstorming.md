@@ -1,8 +1,8 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
-Status: Q1–Q5 confirmadas por el usuario el 2026-10-26; Q6 pendiente; specification
-rev2 y wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
-Nota de lectura: los `PENDING` de la Ronda 1 y la sección Wireframes describen el
-momento de la pregunta; las respuestas confirmadas están al final y los wireframes
+Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev3 y
+wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
+Nota de lectura: los `PENDING` de las Rondas 1 y 2 y la sección Wireframes describen
+el momento de la pregunta; las respuestas confirmadas están al final y los wireframes
 propuestos se presentan en la specification para aprobación.
 Roadmap/context: [E3.3](roadmap.md) · [R4 y P2](functional-reference-v5.11.md) ·
 [E1.4 Movimientos](04-movimientos-specification.md) ·
@@ -237,3 +237,19 @@ matrícula** de una ficha existente?
 
 Confirmed answer: PENDING; source/date: PENDING. Q6 es la única decisión funcional
 abierta de esta revisión; no se fija una regla nueva hasta su respuesta.
+
+## Ronda 2 — Q6-A confirmada — 2026-10-26
+Fuente directa: usuario «Apruebo Q6-A». Decisión confirmada, sin autorizar
+implementación ni merge.
+
+- La corrección de matrícula aplica la misma detección, aviso y confirmación
+  server-side que el alta y el renombrado.
+- Se excluye la propia ficha de la comparación.
+- No se solicita confirmación si la matrícula permanece sin cambios.
+- Si existe coincidencia con otra ficha, se exige confirmación explícita antes de
+  guardar.
+- Los duplicados confirmados siguen permitidos; no se introduce unicidad global.
+- Se preservan ID, Referencia e historial de la ficha.
+
+Consecuencia documental: Q6 deja de estar abierta; la specification rev3 incorpora
+la decisión y AC-36. No se reabren Q1–Q5 ni H1–H6.

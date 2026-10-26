@@ -1,11 +1,12 @@
 # 15 — E3.3 Vehículos y control ITV: Specification
-Status: **DRAFT rev2** — Q1–Q5 confirmadas; Q6 pendiente; specification y wireframes
-pendientes de aprobación.
-Approval source/date: Q1–Q5, usuario, 2026-10-26. Aprobación de esta revisión:
-PENDING. Esta propuesta no autoriza desarrollo15, SQL, datos reales, push de
-publicación ni merge.
+Status: **DRAFT rev3** — Q1–Q6 confirmadas; specification y wireframes pendientes de
+aprobación.
+Approval source/date: Q1–Q5, usuario, 2026-10-26; Q6-A, usuario, 2026-10-26.
+Aprobación de esta revisión: PENDING. Esta propuesta no autoriza desarrollo15, SQL,
+datos reales, push de publicación ni merge.
 QA source: correcciones solicitadas sobre el informe de QA independiente del SHA
-`4d037cd`. Historial: rev1 `4d037cd`; rev2 corrige H1–H6 sin reabrir Q1–Q5.
+`4d037cd`. Historial: rev1 `4d037cd`; rev2 corrige H1–H6 sin reabrir Q1–Q5; rev3
+incorpora Q6-A sin cambiar Q1–Q5.
 Context and brainstorming: [15-vehiculos-itv-brainstorming.md](15-vehiculos-itv-brainstorming.md),
 [roadmap E3.3](roadmap.md), [R4/P2](functional-reference-v5.11.md).
 Base: `f0a5219b2193283a4e3254d13c87c75c9254e845`; rama `codex/spec15-vehiculos`.
@@ -32,7 +33,7 @@ módulo; activos inmobiliarios; marca/modelo/kilometraje; historial 1:N de ITV;
 recordatorios o automatización externa; planificación/presupuesto; importación
 histórica; módulo Navidad; implementación, SQL y merge.
 
-## 2. Decisiones confirmadas Q1–Q5
+## 2. Decisiones confirmadas Q1–Q6
 
 ### Q1 — Contenido mínimo
 Ficha mínima con la Referencia como identidad estable, nombre visible, matrícula
@@ -67,6 +68,15 @@ completo inventado. Ausencia de datos no es cero comprobado.
 Selector explícito de ejercicio, inicializado al año natural actual. Sin arrastre
 entre ejercicios. Los años futuros sin datos no se presentan como importes cero
 verificados.
+
+### Q6 — Aviso de duplicado al corregir matrícula (Q6-A confirmada)
+Se aplica la misma detección, aviso y confirmación server-side que en el alta y el
+renombrado también al **corregir la matrícula** de una ficha existente:
+- se excluye la propia ficha de la comparación;
+- no se solicita confirmación si la matrícula permanece sin cambios;
+- si coincide con otra ficha, se exige confirmación explícita antes de guardar;
+- los duplicados confirmados siguen permitidos; no se introduce unicidad global;
+- se preservan ID, Referencia e historial de la ficha.
 
 Precisión transversal: única fuente de verdad de Gastos en Movimientos; sin duplicar
 hechos ni introducir maestros adicionales.
@@ -237,13 +247,16 @@ Reglas:
 - `POST`/`PATCH` impiden crear nuevas REF Vehículo sin ficha o nuevas fichas inválidas;
   las lecturas no reparan datos históricos.
 
-## 8. Confirmación de duplicados en servidor (H5)
-- **Alcance confirmado:** alta de vehículo y renombrado de la Referencia. Se comparan
-  nombre y matrícula; una coincidencia en cualquiera genera aviso. No hay unicidad
-  global ni fusión.
+## 8. Confirmación de duplicados en servidor (H5, Q6-A)
+- **Alcance confirmado:** alta de vehículo, renombrado de la Referencia y corrección de
+  matrícula de una ficha existente. Se comparan nombre y matrícula; una coincidencia en
+  cualquiera genera aviso. No hay unicidad global ni fusión.
 - **Cálculo:** el servidor busca coincidencias por valor exacto o clave efímera de
   presentación (trim + minúsculas), incluyendo fichas activas e inactivas. La clave no
-  se persiste ni altera el valor guardado.
+  se persiste ni altera el valor guardado. Al corregir una ficha se excluye su propia
+  REF de la comparación.
+- **Matrícula sin cambios:** si el valor enviado es igual al guardado, no se solicita
+  confirmación por duplicado; la edición sigue su flujo normal de revisión.
 - **Sin confirmación:** `409 DUPLICATE_WARNING` con `coincidencias` (REF, nombre,
   matrícula, estado) y `candidateHash`; no se escribe nada.
 - **Confirmación:** el cliente reenvía la operación con `confirmarDuplicado: true` y el
@@ -251,14 +264,13 @@ Reglas:
   conjunto coincide; si cambió, devuelve 409 de nuevo. El hash liga candidatos,
   revisión y campos comparados; no se acepta una lista de candidatos enviada por el
   cliente.
+- **Duplicados confirmados:** siguen permitidos; no se crea una restricción de unicidad
+  global. Se conservan ID, Referencia e historial de la ficha.
 - **Atomicidad e idempotencia:** la confirmación forma parte del payload idempotente;
-  un 409 no se registra como éxito. Un reintento confirmado no duplica la REF/ficha.
+  un 409 no se registra como éxito. Un reintento confirmado no duplica la REF/ficha ni
+  crea otra ficha.
 - **Auditoría:** se registra `duplicado_confirmado` con el hash de candidatos y la
   revisión, sin duplicar importes ni hechos.
-- **Matrícula en edición:** el alcance del aviso al corregir una matrícula existente es
-  la única decisión funcional abierta (**Q6**, §17). Hasta su respuesta, la
-  specification no fija una regla nueva para ese caso; el resto del flujo servidor
-  (alta y renombrado) queda definido.
 
 ## 9. Pantallas y wireframes (H6)
 Datos ficticios. Se reutiliza el shell, tokens, tablas/tarjetas, foco y componentes
@@ -354,7 +366,8 @@ La cita puede quedar vacía. No se calcula periodicidad ni se envían avisos.
 [Cancelar] [Crear vehículo]
 Al confirmar se crean REF + ficha en una única transacción; un fallo revierte todo.
 En edición se muestran los valores reales; el aviso de duplicado se aplica al
-renombrar (y a la matrícula según Q6); la acción es [Confirmar y guardar].
+renombrar y al corregir la matrícula (Q6-A, excluyendo la propia ficha); la acción
+es [Confirmar y guardar].
 ```
 
 ### W6 — Alta / edición (390)
@@ -372,7 +385,8 @@ REF1001 · Coche principal · 1234 ABC
 
 [Cancelar] [Crear vehículo]
 Alta atómica; fallo = rollback.
-En edición, la acción es [Confirmar y guardar]; Q6 decide si la matrícula avisa.
+En edición, la acción es [Confirmar y guardar]; Q6-A aplica el mismo aviso a la
+matrícula, excluyendo la propia ficha.
 ```
 
 ### W7 — Integridad y cobertura (1440)
@@ -503,7 +517,11 @@ Reglas de API:
 - **Duplicados de nombre/matrícula:** coincidencia exacta o clave efímera (trim +
   minúsculas) solo para aviso; no se guarda la clave. Confirmación server-side con
   `candidateHash`; nunca fusión.
-- **Matrícula en edición:** Q6 pendiente; no se fija regla nueva hasta respuesta.
+- **Matrícula en edición (Q6-A):** la corrección de matrícula usa la misma detección,
+  aviso y confirmación server-side que el alta/renombrado; se excluye la propia ficha y
+  no se pide confirmación si el valor no cambia. Si coincide con otra ficha, se exige
+  confirmación explícita. Se conservan ID, Referencia e historial; no hay unicidad
+  global.
 - **Gasto año:** un Gasto de otra REF no cuenta; un Gasto con REF Vehículo y cualquier
   Partida sí cuenta; anulados no cuentan; rectificados reevalúan; no doble cómputo.
 - **Cambio de ejercicio:** diciembre/enero y Ciclo distinto no arrastran; ITV no mueve
@@ -538,8 +556,8 @@ de esta tabla no autoriza implementación.
 | AC-07 | Leer REF Vehículo sin ficha, ficha con REF de otro Tipo o ficha duplicada | Integridad `Revisar`/No disponible con motivo; sin auto-reparación ni escritura |
 | AC-08 | Renombrar la Referencia | Mismo REFxxx, enlaces e historia; Gasto año sin cambio; auditoría |
 | AC-09 | Crear/editar/limpiar matrícula opcional | Se conserva o queda «Sin informar»; sin unicidad global; auditoría |
-| AC-10 | Crear/renombrar con nombre o matrícula coincidente sin confirmar | `409 DUPLICATE_WARNING` con candidatos y `candidateHash`; sin escritura |
-| AC-11 | Confirmar duplicado con `candidateHash` vigente; candidatos cambiados | Con hash vigente escribe y audita; si cambió, 409 sin escritura |
+| AC-10 | Crear/renombrar o corregir matrícula con coincidencia y sin confirmar | `409 DUPLICATE_WARNING` con candidatos y `candidateHash`; sin escritura; la propia ficha no aparece como candidata |
+| AC-11 | Confirmar duplicado con `candidateHash` vigente; candidatos cambiados | Con hash vigente escribe y audita; si cambió, 409 sin escritura; no se crea unicidad global |
 | AC-12 | Desactivar y reactivar una REF con ficha e historial | Ficha e historia conservadas; sin nuevos enlaces mientras inactiva; sin hechos nuevos al reactivar |
 | AC-13 | Alta sin próxima ITV ni cita; después informar una sola | Ambas ausentes como «No informada»; independencia; la cita vacía es válida |
 | AC-14 | Editar fechas pasadas/futuras, limpiar una y conservar la otra | Fechas civiles válidas; sin cálculo de periodicidad; PATCH omitido conserva; null limpia; auditoría |
@@ -564,11 +582,12 @@ de esta tabla no autoriza implementación.
 | AC-33 | Consultar auditoría de ficha y Referencia | Cambios con actor, UTC y antes/después; sin DELETE ni historia reescrita |
 | AC-34 | Intentar corregir fechas/importes desde la ficha | La ficha no edita Gastos ni importes; solo enlaza a Movimientos; no se duplican hechos |
 | AC-35 | Revisar wireframes W1–W8 en 390/1440 | Listado, ficha, alta/edición, integridad y cobertura presentes; estados y candidatos visibles |
+| AC-36 | Corregir la matrícula: valor igual al guardado; valor de otra ficha; confirmar; revisar ID/REF/historial | Sin cambio no pide confirmación; con otra ficha devuelve 409 y exige confirmación; confirmado guarda, conserva ID/REF/historial y permite duplicados |
 
 ## 15. Trazabilidad
 | Criterio de roadmap | Criterios de esta specification |
 | --- | --- |
-| E3.3-AC1: una ficha por Referencia Vehículo, ID estable | AC-01–AC-14, AC-30, AC-31, AC-33 |
+| E3.3-AC1: una ficha por Referencia Vehículo, ID estable | AC-01–AC-14, AC-30, AC-31, AC-33, AC-36 |
 | E3.3-AC2: Gasto año solo de Gastos reales vinculados y ejercicio | AC-15–AC-25, AC-34 |
 | E3.3-AC3: Viaje/Evento sin ficha; sin módulo Navidad | AC-30, AC-32 |
 | Transversales de integridad, API y UI | AC-02, AC-07, AC-26–AC-29, AC-35 |
@@ -580,18 +599,16 @@ de esta tabla no autoriza implementación.
 | H2 | Se mezclaba cobertura al corte con cobertura anual y podía leerse como total anual completo | Reutilizado E2.4; separadas `coberturaAlCorte`/`coberturaAnual` y `totalAlCorte`/`totalAnual`; Q4 sin cambios | §6, AC-19–AC-21 |
 | H3 | Integración incompleta de Referencias/Movimientos y riesgo de ruta paralela | `POST/PATCH /api/referencias` como única alta/edición; `validateReference` exige ficha; `referenceUsage` y `ledgerRows` reutilizados; sin `POST /api/vehiculos` | §4, §11, AC-01–AC-06, AC-31 |
 | H4 | Estados de integridad insuficientes | Añadidos `OK`/`Revisar`/`No disponible`, motivos, lectura sin reparación y bloqueo de escritura | §7, §10, AC-07 |
-| H5 | Confirmación de duplicados no definida en servidor | Añadidos candidatos server-side, `409`, `candidateHash`, confirmación atómica, idempotencia y auditoría; Q6 solo para matrícula editada | §8, §12, AC-10/11 |
+| H5 | Confirmación de duplicados no definida en servidor | Añadidos candidatos server-side, `409`, `candidateHash`, confirmación atómica, idempotencia y auditoría; Q6-A extiende el mismo flujo a la matrícula editada, excluyendo la propia ficha | §8, §12, AC-10/11, AC-36 |
 | H6 | Wireframes incompletos | Añadidos W1–W8 con 390/1440, listado, ficha, alta/edición, integridad y cobertura | §9, AC-28/AC-35 |
 
 ## 17. Pendiente antes de aprobar
-- **Q6 (única decisión funcional abierta):** ¿el aviso/confirmación de duplicado debe
-  aplicarse también al **corregir la matrícula** de una ficha existente?
-  - A) Sí, mismo aviso y confirmación server-side que en alta/renombrado (recomendada).
-  - B) No; solo en alta y renombrado de nombre; la corrección de matrícula es una
-    corrección de dato y no avisa.
-  - C) Solo cuando la matrícula anterior estuviera vacía.
-  - Confirmada: PENDING; source/date: PENDING.
-- Revisión y aprobación expresa de esta specification rev2 y de los wireframes W1–W8.
+- **Q6-A confirmada (usuario, 2026-10-26):** la corrección de matrícula aplica la misma
+  detección, aviso y confirmación server-side que el alta/renombrado; excluye la propia
+  ficha; no pide confirmación si la matrícula no cambia; exige confirmación si coincide
+  con otra ficha; permite duplicados confirmados; sin unicidad global; conserva ID,
+  Referencia e historial.
+- Revisión y aprobación expresa de esta specification rev3 y de los wireframes W1–W8.
 - La distinción `coberturaAlCorte`/`coberturaAnual` y `totalAlCorte`/`totalAnual` se
   documenta como corrección H2, sin cambiar la regla Q4: no hay una pregunta adicional.
 - Tras la aprobación, desarrollo15 seguirá necesitando autorización separada; no se
