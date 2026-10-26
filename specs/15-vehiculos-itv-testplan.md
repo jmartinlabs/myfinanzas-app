@@ -77,12 +77,12 @@ age 1.2.1 local. La QA independiente revisó el SHA final, no este resumen.
 | Tipos | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS |
 | Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts apps/api/src/vehiculos-concurrency.test.ts` | 12 PASS / 179 assertions: Anticipo + alta concurrente |
-| API completa | `NODE_ENV=test bun test apps/api` | 177 PASS / 46 FAIL / 223 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
+| API completa | `NODE_ENV=test bun test apps/api` | QA 177 PASS / 46 FAIL; full final 179 PASS / 44 FAIL / 223 tests; diferencia por flakes R11/04; guardas Linux/restore y backup v14 UNRUN; sin fallo funcional nuevo |
 | E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts tests/e2e/vehiculos-empty.spec.ts` | 2 PASS; listado, ficha, conversión, Anticipo, vacío y carga dinámicos; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
-| Baseline canónica | `python3 scripts/verify baseline` | PASS en `178f3e9`; nueva ejecución sobre el SHA final pendiente |
-| Full canónica | `python3 scripts/verify --full` | FAIL en API por guardas Linux; E2E UNRUN en macOS. No es PASS |
+| Baseline canónica | `python3 scripts/verify baseline` | PASS en `1ef3f62` |
+| Full canónica | `python3 scripts/verify --full` | Baseline PASS; typecheck/build PASS; API 179 PASS/44 FAIL por guardas Linux; E2E UNRUN. No es PASS |
 | Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
 | QA independiente | Revisión de `90c28a7` | APTO CON OBSERVACIONES; 45/45 AC locales, Anticipo y AC-04/AC-29 completos, residuales menores y Linux/CI UNRUN |
 

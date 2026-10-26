@@ -3,6 +3,7 @@
 Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
 HEAD final local de código: `90c28a7cfc15bfd31af4dc327769553147914ddf`.
+HEAD documental final: `1ef3f62c81ba7a51214e9c3b0c9f77b7f77d1f60`.
 Spec: [15-vehiculos-itv-specification.md](15-vehiculos-itv-specification.md) rev5,
 aprobada sobre `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Evidencia de pruebas: [15-vehiculos-itv-testplan.md](15-vehiculos-itv-testplan.md).
@@ -82,10 +83,11 @@ merge, despliegue, datos reales ni cambios de visibilidad. PR78 no se modifica.
   `tests/e2e/vehiculos.spec.ts` (PASS, capturas 1440/390). Incluye regresión de
   conversión de Anticipo con y sin ficha y comprobación del indicador.
 - `bun run typecheck` PASS; `bun run build` PASS.
-- Suite API completa (QA final): 177 PASS / 46 FAIL / 223 tests. Los fallos son
-  guardas Linux de publicación/restore (`libc.so.6`) en macOS, la prueba real de
-  backup/restore v14 UNRUN y dos flakes preexistentes de diagnóstico (R11/04). No hay
-  fallo funcional nuevo de E3.3. CI Linux sigue UNRUN.
+- Suite API completa: QA final 177 PASS / 46 FAIL / 223 tests; ejecución final de
+  `scripts/verify --full` 179 PASS / 44 FAIL / 223 tests. La diferencia son los flakes
+  preexistentes R11/04. Todos los fallos observados son guardas Linux de publicación/
+  restore (`libc.so.6`) o la prueba real de backup/restore v14 UNRUN. No hay fallo
+  funcional nuevo de E3.3. CI Linux sigue UNRUN.
 - E2E completo: 6 PASS / 2 FAIL; fallos en servidores de restauración aislada de
   catalog/movimientos por la misma guarda Linux. E2E de vehículos PASS.
 - Verificación canónica: baseline PASS (57/24/8/15 regresiones, whitespace); full
