@@ -102,9 +102,6 @@ test("AC01/02/06/22/37: detalle propio, sin Gasto ni saldo paralelo, fecha y evi
   expect(r.operacion.estadoRegistro).toBe("Vigente");
   expect(ledgerRows(db)).toHaveLength(movementsBefore);
   expect(central(db)).toEqual(before);
-  expect(getSaldo(db, "S001").posicion.importe).toBe(
-    getSaldo(db, "S001").posicion.importe,
-  );
   const noEvidence = create(
     db,
     detail({
@@ -128,6 +125,17 @@ test("AC01/02/06/22/37: detalle propio, sin Gasto ni saldo paralelo, fecha y evi
   ])
     expect(text).not.toContain(forbidden);
   expect(noEvidence.operacion.efecto).toContain("no crea Gasto");
+  for (const forbidden of [
+    "recursos",
+    "gastoComida",
+    "compensable",
+    "faltaPorReponer",
+    "financiacion",
+    "neto",
+    "parcial",
+    "completada",
+  ])
+    expect(Object.keys(noEvidence.operacion)).not.toContain(forbidden);
   db.close();
 });
 
@@ -273,6 +281,21 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       now,
       "Detalle",
     ), "tipoVinculo")).toBeTruthy();
+  expect(fieldError(() =>
+    vincularRevisionComida(
+      db,
+      a.operacion.id,
+      {
+        revision: 2,
+        motivo: "gasto exterior no habilitado",
+        movimiento: "208",
+        tipoVinculo: "Individual",
+        evidenciaVinculo: "evidencia ficticia",
+      },
+      randomUUID(),
+      now,
+      "Detalle",
+    ), "movimiento")).toBeTruthy();
   const outside = create(
     db,
     detail({
@@ -318,6 +341,67 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       now,
       "Detalle",
     ), "evidenciaVinculo")).toBeTruthy();
+  const repo = createRepos(db, reposicion({ fecha: "2026-10-13" }));
+  expect(fieldError(() =>
+    vincularRevisionComida(
+      db,
+      repo.operacion.id,
+      {
+        revision: 1,
+        motivo: "reposición a Gasto",
+        movimiento: "202",
+        tipoVinculo: "Individual",
+        evidenciaVinculo: "evidencia ficticia",
+      },
+      randomUUID(),
+      now,
+      "Reposicion",
+    ), "movimiento")).toBeTruthy();
+  expect(fieldError(() =>
+    vincularRevisionComida(
+      db,
+      repo.operacion.id,
+      {
+        revision: 1,
+        motivo: "reposición a Exterior",
+        movimiento: "206",
+        tipoVinculo: "Individual",
+        evidenciaVinculo: "evidencia ficticia",
+      },
+      randomUUID(),
+      now,
+      "Reposicion",
+    ), "movimiento")).toBeTruthy();
+  expect(fieldError(() =>
+    vincularRevisionComida(
+      db,
+      repo.operacion.id,
+      {
+        revision: 1,
+        motivo: "agregado en reposición",
+        movimiento: "201",
+        tipoVinculo: "Agregado terminal",
+        evidenciaVinculo: "evidencia ficticia",
+      },
+      randomUUID(),
+      now,
+      "Reposicion",
+    ), "tipoVinculo")).toBeTruthy();
+  const repoTransfer = vincularRevisionComida(
+    db,
+    repo.operacion.id,
+    {
+      revision: 1,
+      motivo: "transferencia interna ficticia",
+      movimiento: "204",
+      tipoVinculo: "Individual",
+      evidenciaVinculo: "justificante interno",
+    },
+    randomUUID(),
+    now,
+    "Reposicion",
+  );
+  expect(repoTransfer.operacion.estadoVinculo).toBe("Verificado");
   db.close();
 });
 
@@ -354,7 +438,7 @@ test("AC05/15/30: idempotencia, coincidencias legítimas, reposición duplicada 
 
 test("AC07/08: referencia central con fuente Revisión Comida, máxima vigente, sin evidencia y cobertura", () => {
   const db = setup();
-  expect(cycleContext(db).referencia.fecha).toBe("2026-10-07");
+  expect(cycleContext(db).referencia.fecha).toBe("2026-10-08");
   const a = create(db, detail({ fecha: "2026-10-09" }));
   const b = create(
     db,
@@ -778,6 +862,22 @@ test("AC16/24/30: dos conexiones, revisión obsoleta y ausencia de escritura par
   }
 });
 
+test("AC28/35: ficha de reposición exige tipo y no expone una operación de detalle", () => {
+  const db = setup();
+  const detailRow = create(db, detail()),
+    reposRow = createRepos(db);
+  expect(getRevisionComida(db, reposRow.operacion.id, "Reposicion").operacion.id).toBe(
+    reposRow.operacion.id,
+  );
+  expect(() => getRevisionComida(db, detailRow.operacion.id, "Reposicion")).toThrow(
+    "no encontrada",
+  );
+  expect(() => getRevisionComida(db, reposRow.operacion.id, "Detalle")).toThrow(
+    "no encontrada",
+  );
+  db.close();
+});
+
 test("AC19: MFA/Origin/CSRF, JSON limitado, campos derivados y errores seguros", async () => {
   const { HttpApp } = await import("@effect/platform");
   const { createApp } = await import("./app");
@@ -903,7 +1003,10 @@ test("AC32: ciclo abierto, fuera de ciclo, sin ciclo asignable y cobertura parci
   const noCycle = listOperaciones(db, new URLSearchParams("ciclo=sin_ciclo"));
   expect(noCycle.operaciones.map((o) => o.id)).toEqual([before.operacion.id]);
   result = listOperaciones(db, new URLSearchParams("ciclo=1"));
-  expect(result.ciclo!.cobertura).toBe("Completa");
+  expect(result.ciclo!.cobertura).toBe("Parcial");
+  const emptyCycle = listOperaciones(db, new URLSearchParams("ciclo=2"));
+  expect(emptyCycle.operaciones).toHaveLength(0);
+  expect(emptyCycle.ciclo!.cobertura).toBe("Parcial");
   expect(result.operaciones.map((o) => o.id)).toContain(inside.operacion.id);
   db.close();
 });

@@ -96,6 +96,17 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     await expect(page.getByText("#7 · 12/10/2026", { exact: false })).toBeVisible();
     await shot("revision-comida-ficha-1440");
 
+    await page.getByRole("button", { name: "Cambiar vínculo" }).click();
+    await page.getByLabel("Movimiento elegible").selectOption("202");
+    await page.getByLabel("Evidencia del vínculo").fill("evidencia UI ficticia");
+    await page.getByLabel("Motivo", { exact: true }).fill("cambio de vínculo UI");
+    await page.getByRole("button", { name: "Guardar vínculo" }).click();
+    await expect(page.getByText("Movimiento #202", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Cambiar vínculo" }).click();
+    await page.getByLabel("Motivo", { exact: true }).fill("desvínculo UI");
+    await page.getByRole("button", { name: "Desvincular" }).click();
+    await expect(page.getByText("Sin vínculo", { exact: false }).first()).toBeVisible();
+
     await page.getByRole("button", { name: "Editar", exact: true }).click();
     await page.getByRole("combobox", { name: "Clasificación", exact: true }).selectOption("Otros");
     await page.getByLabel("Motivo de rectificación").fill("Reclasificación ficticia");
@@ -106,6 +117,10 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     await page.getByLabel("Motivo", { exact: true }).fill("Anulación ficticia");
     await page.getByRole("button", { name: "Confirmar anulación" }).click();
     await expect(page.getByText("Anulado", { exact: false })).toBeVisible();
+    await page.goto("/revision-comida");
+    await page.getByText("Más filtros", { exact: true }).click();
+    await page.getByRole("combobox", { name: "Estado", exact: true }).selectOption("");
+    await expect(page.locator(".desktop-list")).toContainText("Anulado");
 
     await page.goto("/revision-comida/nueva");
     await page.getByLabel("Fecha de operación").fill("2026-10-14");
@@ -136,6 +151,22 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
       .fill("operación ficticia E-10");
     await page.getByRole("button", { name: "Guardar", exact: true }).click();
     await expect(page.getByRole("heading", { name: /Operación 9/ })).toBeVisible();
+
+    // A legitimate coincident operation is warned, not rejected.
+    await page.goto("/revision-comida/nueva");
+    await page.getByLabel("Fecha de operación").fill("2026-10-04");
+    await page.getByLabel("Concepto", { exact: true }).fill("Cine ficticio");
+    await page.getByLabel("Importe EUR").fill("8.50");
+    await page.getByRole("combobox", { name: "Clasificación", exact: true }).selectOption(
+      "Ocio",
+    );
+    await page.getByLabel("Evidencia bancaria", { exact: true }).fill("banco ficticio 3");
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    await expect(
+      page.getByText("Operación guardada con coincidencia", { exact: false }),
+    ).toBeVisible();
+    await page.getByRole("button", { name: "Ver operación" }).click();
+    await expect(page.getByRole("heading", { name: /Operación 10/ })).toBeVisible();
 
     // Real 422 keeps the draft and associates the field error.
     await page.goto("/revision-comida/nueva");
@@ -172,6 +203,9 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     // Empty coverage is not zero and is distinguished from no operations.
     await page.goto("/revision-comida");
     await page.getByText("Más filtros", { exact: true }).click();
+    await page.getByLabel("Desde", { exact: true }).fill("2026-10-09");
+    await page.getByLabel("Hasta", { exact: true }).fill("2026-10-09");
+    await expect(page.getByRole("heading", { name: "Sin operaciones", exact: true })).toBeVisible();
     await page.getByLabel("Desde", { exact: true }).fill("2020-01-01");
     await page.getByLabel("Hasta", { exact: true }).fill("2020-01-02");
     await expect(page.getByText("Sin cobertura histórica", { exact: false }).first()).toBeVisible();
@@ -182,15 +216,34 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
     await expect(page.locator(".mobile-list")).toBeVisible();
     const search = page.getByLabel("Buscar ID o concepto");
     await search.focus();
-    await page.keyboard.type("Cine");
+    await page.keyboard.type("Compra nueva");
     await expect(page.locator(".mobile-list li")).toHaveCount(1);
-    await expect(page.locator(".mobile-list li")).toContainText("Cine ficticio");
+    await expect(page.locator(".mobile-list li")).toContainText("Compra nueva ficticia");
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
       ),
     ).toBe(true);
     await shot("revision-comida-listado-390");
+    await page
+      .locator(".mobile-list button", { hasText: "Compra nueva ficticia" })
+      .click();
+    await expect(page.getByRole("heading", { name: /Operación 8/ })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    await page.getByRole("button", { name: "Editar", exact: true }).click();
+    await expect(page.getByLabel("Fecha de operación")).toBeVisible();
+    await page.getByRole("button", { name: "Guardar rectificación" }).click();
+    await expect(page.getByText("Revisa los campos", { exact: false })).toBeVisible();
+    await expect(
+      page.getByRole("group", { name: "Error del formulario" }),
+    ).toBeFocused();
+    await page.context().clearCookies();
+    await page.goto("/revision-comida");
+    await expect(page.getByLabel("Contraseña", { exact: true })).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     child.kill();

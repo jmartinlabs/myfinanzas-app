@@ -277,7 +277,7 @@ export function createApp(db: Database, options: AppOptions) {
       if (reposicion) {
         const [, id, action] = reposicion;
         if (!action && req.method === "GET")
-          return reply(getRevisionComida(db, id));
+          return reply(getRevisionComida(db, id, "Reposicion"));
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";
@@ -300,7 +300,7 @@ export function createApp(db: Database, options: AppOptions) {
       if (revision) {
         const [, id, action] = revision;
         if (!action && req.method === "GET")
-          return reply(getRevisionComida(db, id));
+          return reply(getRevisionComida(db, id, "Detalle"));
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";

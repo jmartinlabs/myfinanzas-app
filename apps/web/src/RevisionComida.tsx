@@ -348,7 +348,7 @@ function Filters({
     </>
   );
 }
-function emptyFilters() {
+function emptyFilters(): Record<string, string> {
   return {
     q: "",
     clasificacion: "",
@@ -365,9 +365,16 @@ function emptyFilters() {
 }
 function query(filters: Record<string, string>, page: number) {
   const params = new URLSearchParams({ page: String(page) });
-  for (const [k, v] of Object.entries(filters)) if (v) params.set(k, v);
+  for (const [k, v] of Object.entries(filters))
+    if (v || k === "estado") params.set(k, v);
   return params.toString();
 }
+const stateLabel = (o: Operacion) =>
+  o.estadoRegistro === "Anulado"
+    ? o.tipo === "Reposicion"
+      ? "Anulada"
+      : "Anulado"
+    : o.estadoRegistro;
 function RowActions({
   o,
   go,
@@ -441,7 +448,7 @@ function OperationTable({
                 </td>
                 <td>{classification(o)}</td>
                 <td>{linkLabel(o)}</td>
-                <td>{o.estadoRegistro}</td>
+                <td>{stateLabel(o)}</td>
               </tr>
             ))}
           </tbody>
@@ -472,7 +479,7 @@ function OperationTable({
               <TagFor o={o} />
             </p>
             <div className="card-position">
-              <small>{o.estadoRegistro}</small>
+              <small>{stateLabel(o)}</small>
             </div>
             <RowActions o={o} go={go} />
           </li>
@@ -542,6 +549,12 @@ function OperationList({ go }: { go: (p: string) => void }) {
   const active = Object.entries(filters).some(
     ([k, v]) => v && v !== "Vigente",
   );
+  const nonDateFilter =
+    ["q", "clasificacion", "vinculo", "fueraPresupuesto", "tipo", "esDevolucion", "evidencia", "ciclo"].some(
+      (k) => filters[k],
+    ) || filters.estado !== "Vigente";
+  const dateOnly =
+    !nonDateFilter && !!(filters.desde || filters.hasta);
   const total = data?.total ?? 0;
   return (
     <>
@@ -613,16 +626,20 @@ function OperationList({ go }: { go: (p: string) => void }) {
                 ? "Sin cobertura histórica"
                 : data?.fueraDeCiclo
                   ? "Fuera de ciclo"
-                  : active
-                    ? "Sin coincidencias"
-                    : "Sin operaciones de Revisión Comida"}
+                  : dateOnly
+                    ? "Sin operaciones"
+                    : active
+                      ? "Sin coincidencias"
+                      : "Sin operaciones de Revisión Comida"}
             </h2>
             <p>
               {data?.cobertura.estado === "sin_cobertura_historica"
                 ? "El periodo solicitado es anterior al primer registro disponible. No se rellena con cero ni se extrapola."
-                : active
-                  ? "Ajusta los filtros. La ausencia no equivale a cero financiero."
-                  : "Registra una operación bancaria real con datos ficticios."}
+                : dateOnly
+                  ? "El periodo está dentro del rango observado, pero no hay operaciones registradas. No es un cero financiero."
+                  : active
+                    ? "Ajusta los filtros. La ausencia no equivale a cero financiero."
+                    : "Registra una operación bancaria real con datos ficticios."}
             </p>
             {active && (
               <button
@@ -660,9 +677,9 @@ function OperationList({ go }: { go: (p: string) => void }) {
         </div>
       </section>
       <p className="page-foot">
-        Una Entrada solo se muestra como devolución si `esDevolucion=true`. Un
-        vínculo verificado es trazabilidad, no reparto de importes. Sin vínculo
-        es un estado normal.
+        Una Entrada solo se muestra como devolución si «esDevolucion» es true.
+        Un vínculo verificado es trazabilidad, no reparto de importes. Sin
+        vínculo es un estado normal.
       </p>
     </>
   );
@@ -706,7 +723,7 @@ function ReposList({ go }: { go: (p: string) => void }) {
       </PageHead>
       <p className="notice">
         Cobertura de compensación: E3.5 (no instalado). E3.4 registra y expone;
-        no calcula `Parcial`, `Completada` ni `Falta por reponer`.
+        no calcula «Parcial», «Completada» ni «Falta por reponer».
       </p>
       <section className="panel revision-list" aria-label="Reposiciones registradas">
         <Filters value={filters} change={change} cycles={cycles} repos />
@@ -768,7 +785,7 @@ function ReposList({ go }: { go: (p: string) => void }) {
                         <small className="table-id">C-02 (futuro E3.5)</small>
                       </td>
                       <td>
-                        {r.estadoRegistro} · Rev. {r.revision}
+                        {stateLabel(r)} · Rev. {r.revision}
                       </td>
                       <td>
                         <RowActions o={r} go={go} />
@@ -802,7 +819,7 @@ function ReposList({ go }: { go: (p: string) => void }) {
                     Trazabilidad: {r.estadoTrazabilidad} · C-02 (futuro E3.5)
                   </p>
                   <p>
-                    Estado: {r.estadoRegistro} · Rev. {r.revision}
+                    Estado: {stateLabel(r)} · Rev. {r.revision}
                   </p>
                   <RowActions o={r} go={go} />
                   <button
@@ -819,8 +836,8 @@ function ReposList({ go }: { go: (p: string) => void }) {
         )}
       </section>
       <p className="page-foot">
-        E3.4 registra y expone; no calcula `Parcial`, `Completada`, `Falta por
-        reponer` ni cobertura de compensación. Esos estados pertenecen a E3.5.
+        E3.4 registra y expone; no calcula «Parcial», «Completada», «Falta por
+        reponer» ni cobertura de compensación. Esos estados pertenecen a E3.5.
       </p>
     </>
   );
@@ -939,8 +956,11 @@ function OperationDetail({
       <Alert retry={() => setRetry((r) => r + 1)}>
         {error}
         <p>
-          <button className="text-button" onClick={() => go(base)}>
-            Volver a Revisión Comida
+          <button
+            className="text-button"
+            onClick={() => go(tipo === "Reposicion" ? reposBase : base)}
+          >
+            Volver a {tipo === "Reposicion" ? "Reposiciones" : "Revisión Comida"}
           </button>
         </p>
       </Alert>
@@ -959,7 +979,10 @@ function OperationDetail({
         title={`Operación ${o.id}`}
         description={`${o.concepto} · ${date(o.fecha)}`}
       >
-        <button className="secondary" onClick={() => go(base)}>
+        <button
+          className="secondary"
+          onClick={() => go(o.tipo === "Reposicion" ? reposBase : base)}
+        >
           Volver
         </button>
       </PageHead>
@@ -1066,7 +1089,7 @@ function OperationDetail({
           <div>
             <dt>Estado</dt>
             <dd>
-              {o.estadoRegistro} · Rev. {o.revision}
+              {stateLabel(o)} · Rev. {o.revision}
             </dd>
           </div>
           <div>
@@ -1213,7 +1236,7 @@ function OperationDetail({
         <h2 id="revision-repos">Reposiciones</h2>
         <p>
           Cobertura de compensación: E3.5 (no instalado). No se calcula
-          `Parcial`/`Completada` en E3.4.
+          «Parcial»/«Completada» en E3.4.
         </p>
         {!data.reposiciones.length ? (
           <p>Sin reposición registrada.</p>
@@ -1228,7 +1251,7 @@ function OperationDetail({
                   #{r.id} · {date(r.fecha)} · {eur(r.importe)}
                 </button>{" "}
                 · {r.evidenciaBancaria ?? "Sin evidencia"} ·{" "}
-                {r.estadoTrazabilidad} · {r.estadoRegistro} · Rev. {r.revision}
+                {r.estadoTrazabilidad} · {stateLabel(r)} · Rev. {r.revision}
               </li>
             ))}
           </ul>
@@ -1296,9 +1319,16 @@ function OperationForm({
     [fields, setFields] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
     [loading, setLoading] = useState(!!id),
+    [saved, setSaved] = useState<{
+      id: string;
+      coincidencias: { id: string; fecha: string; concepto: string }[];
+    } | null>(null),
     attempt = useRef(crypto.randomUUID()),
     alert = useRef<HTMLDivElement>(null),
     initialized = useRef(false);
+  useEffect(() => {
+    if (error) alert.current?.focus();
+  }, [error]);
   useEffect(() => {
     if (!id) return;
     let live = true;
@@ -1357,8 +1387,13 @@ function OperationForm({
     setBusy(true);
     setError("");
     setFields({});
+    setSaved(null);
     try {
-      const result = await api<Detail>(
+      const result = await api<
+        Detail & {
+          coincidencias?: { id: string; fecha: string; concepto: string }[];
+        }
+      >(
         id ? endpoint + "/rectificar" : endpoint,
         "POST",
         body(),
@@ -1366,6 +1401,13 @@ function OperationForm({
       );
       const target =
         (tipo === "Reposicion" ? reposBase : base) + "/" + result.operacion.id;
+      if (!id && result.coincidencias?.length) {
+        setSaved({
+          id: result.operacion.id,
+          coincidencias: result.coincidencias,
+        });
+        return;
+      }
       go(target);
     } catch (e) {
       const err = e as ApiError;
@@ -1415,8 +1457,37 @@ function OperationForm({
         </button>
       </PageHead>
       {error && (
-        <div ref={alert} tabIndex={-1}>
+        <div
+          ref={alert}
+          tabIndex={-1}
+          role="group"
+          aria-label="Error del formulario"
+        >
           <Alert>{error} El borrador se conserva.</Alert>
+        </div>
+      )}
+      {saved && (
+        <div className="notice" role="status">
+          <strong>Operación guardada con coincidencia.</strong> Existe otra
+          operación con la misma fecha, importe y concepto. No se ha rechazado:
+          revisa si es un hecho real distinto.
+          <ul>
+            {saved.coincidencias.map((c) => (
+              <li key={c.id}>
+                #{c.id} · {date(c.fecha)} · {c.concepto}
+              </li>
+            ))}
+          </ul>
+          <button
+            className="secondary"
+            onClick={() =>
+              go(
+                (tipo === "Reposicion" ? reposBase : base) + "/" + saved.id,
+              )
+            }
+          >
+            Ver operación
+          </button>
         </div>
       )}
       <section className="panel">

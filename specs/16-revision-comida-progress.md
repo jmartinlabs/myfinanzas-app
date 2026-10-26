@@ -114,10 +114,11 @@ Cambios:
 
 Evidencia:
 
-- API focal: **14 PASS / 0 FAIL / 191 expectativas**.
+- API focal: **15 PASS / 0 FAIL / 212 expectativas**.
 - Typecheck y build: **PASS**.
-- E2E propio: **PASS** (MFA real, escrituras reales, 390/1440, teclado, error/conflicto,
-  sin overflow). Capturas en `artifacts/e3-4/`.
+- E2E propio: **PASS** (MFA real, escrituras reales, vincular/desvincular, coincidencia
+  advertida, 390/1440 ficha y formulario, teclado, foco, 401 y sin overflow). Capturas en
+  `artifacts/e3-4/`.
 - Baseline canónica: **PASS** con Python 3.12.16.
 - `scripts/verify --full`: baseline/typecheck/build PASS; API **FAIL platform** por
   `libc.so.6` (publicación atómica/restore Linux) y e2e canónico UNRUN. El mismo worktree

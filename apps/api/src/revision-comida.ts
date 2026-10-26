@@ -651,17 +651,27 @@ function eligibleLink(
       );
     if (!["Individual", "Agregado terminal"].includes(tipoVinculo))
       fail({ tipoVinculo: "Selecciona Individual o Agregado terminal." });
-    if (tipoVinculo === "Agregado terminal") {
-      const source = getSaldo(db, movimiento.origen);
-      if (source.control !== "Terminal")
-        fail(
-          {
-            tipoVinculo:
-              "Un agregado terminal solo admite un Gasto originado en Terminal.",
-          },
-          "Movimiento no elegible.",
-        );
-    }
+    const source = getSaldo(db, movimiento.origen);
+    if (
+      source.id === "S000" ||
+      source.tipo === "Exterior" ||
+      source.control === "Exterior"
+    )
+      fail(
+        {
+          movimiento:
+            "Movimientos con Exterior/D5 no habilitados para este vínculo.",
+        },
+        "Movimiento no elegible.",
+      );
+    if (tipoVinculo === "Agregado terminal" && source.control !== "Terminal")
+      fail(
+        {
+          tipoVinculo:
+            "Un agregado terminal solo admite un Gasto originado en Terminal.",
+        },
+        "Movimiento no elegible.",
+      );
     return;
   }
   if (tipoVinculo !== "Individual")
@@ -904,12 +914,9 @@ export function listRevisionComida(
       estadoCobertura = "cobertura_parcial";
     const cicloCobertura = (() => {
       if (!selected) return null;
-      // An open cycle has no verifiable end: its coverage cannot be declared complete.
-      if (!selected.fin) return "Parcial";
-      if (!range.desde || !range.hasta) return "Parcial";
-      const covered =
-        range.desde <= selected.inicio && range.hasta >= selected.fin;
-      return covered ? "Completa" : "Parcial";
+      // The observed min/max never proves an uninterrupted complete period, even
+      // when it spans a closed cycle. E3.4 always reports partial cycle coverage.
+      return "Parcial";
     })();
     const base = {
       total: filtered.length,
@@ -969,9 +976,9 @@ export function listOperaciones(db: Database, params = new URLSearchParams()) {
   };
 }
 
-export function getRevisionComida(db: Database, id: string) {
+export function getRevisionComida(db: Database, id: string, tipo?: Tipo) {
   return db.transaction(() => {
-    const row = find(db, id),
+    const row = find(db, id, tipo),
       cycles = cycleMaster(db),
       movements = movementMap(db),
       all = revisionComidaRows(db),

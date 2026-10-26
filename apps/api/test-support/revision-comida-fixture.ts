@@ -18,5 +18,6 @@ export function revisionComidaFixture(db: Database) {
       ('204','2026-10-04','Transferencia',150000,'S001','S002',NULL,NULL,NULL,'Transferencia interna ficticia','',0,1,'f','f',NULL,NULL),
       ('205','2026-10-05','Gasto',300000,'S002','S000',NULL,'PAR001',NULL,'Compra anulada ficticia','',1,1,'f','f',NULL,NULL),
       ('206','2026-10-06','Transferencia',100000,'S001','S006',NULL,NULL,NULL,'Transferencia exterior ficticia','',0,1,'f','f',NULL,NULL),
-      ('207','2026-10-07','Gasto',400000,'S001','S000',NULL,'PAR001',NULL,'Compra revisable ficticia','',0,1,'f','f',NULL,NULL);`);
+      ('207','2026-10-07','Gasto',400000,'S001','S000',NULL,'PAR001',NULL,'Compra revisable ficticia','',0,1,'f','f',NULL,NULL),
+      ('208','2026-10-08','Gasto',5000,'S006','S000',NULL,'PAR001',NULL,'Compra exterior ficticia','',0,1,'f','f',NULL,NULL);`);
 }
