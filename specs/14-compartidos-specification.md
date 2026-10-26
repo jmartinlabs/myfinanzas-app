@@ -656,13 +656,13 @@ informes/E3.6; no se reasigna a otra entrega ni se declara PASS.
 | AC-07 | **B completa** | — | B-T05 |
 | AC-08 | **D5** | Metadata sobre Movimiento + participante. | D5-AC-01/06/07 |
 | AC-09 | **B parcial** | B: auditoría/revisión/idempotencia de ficha, participantes y Gasto. D5: evidencia/auditoría de aportación. | B-T02/B-T03/B-T07 + D5-AC-07/09/10 |
-| AC-10 | **D5** | Históricos Exterior sin evidencia → Revisar/No disponible. | D5-AC-08 |
+| AC-10 | **D5** | Históricos Exterior sin evidencia → Revisar/No disponible. | D5-AC-07/08 |
 | AC-11 | **B parcial** | B: Gasto conserva Partida/importe. D5: Referencia y Quién paga acreditados. | B-T04 + D5-AC-01/05 |
 | AC-12 | **B parcial** | B: Sin repartir / Reparto parcial / Cerrado sin terceros. D5: Excedido positivo. | B-T06 + D5-AC-01/12 |
 | AC-13 | **B completa** | — | B-T06 |
-| AC-14 | **D5** | Excedido real e identificación del participante. | D5-AC-12 |
+| AC-14 | **D5** | Excedido real e identificación del participante. | D5-AC-01/05/12 |
 | AC-15 | **B completa** | — | B-T06 |
-| AC-16 | **B parcial** | B: fecha de Gasto y ausencia de fechas no soportadas. D5: última aportación, reparto cubierto y exceso. | B-T06 + D5-AC-01/08 |
+| AC-16 | **B parcial** | B: fecha de Gasto y ausencia de fechas no soportadas. D5: última aportación, reparto cubierto y exceso. | B-T06 + D5-AC-01/08/12 |
 | AC-17 | **B parcial** | B: campos separados y cobertura explícita; Pendiente/Exceso No disponible o No aplica según §14.5, sin fabricar Exceso=0. D5: valores con aportaciones acreditadas y no compensación. | B-T06 + D5-AC-12 |
 | AC-18 | **B parcial** | B: impacto/auditoría al cambiar partes sin aportaciones. D5: cambio con aportaciones acreditadas. | B-T07 + D5-AC-10/11 |
 | AC-19 | **B completa** | — | B-T07; revalidar en D5-AC-10/11 |
@@ -689,9 +689,11 @@ informes/E3.6; no se reasigna a otra entrega ni se declara PASS.
 
 **Recuento:** 18 completas en B, 11 parciales, 10 pendientes de D5.
 
-Las referencias `D5-AC-*` de esta matriz se han alineado con el mapping propuesto
-en §15.13 para que la trazabilidad sea revisable; la cobertura B (18/11/10) no
-cambia y D5 sigue sin aprobar. Cualquier cambio de cobertura o de AC base exigirá
+**Corrección de trazabilidad (PR84, 2026-10-26):** las referencias D5-AC de esta
+matriz se alinearon con §15.13 para completar el mapping solicitado en revisión.
+No cambia el texto de los 39 AC, la cobertura 18/11/10 ni la aprobación de Base B;
+D5-AC sigue propuesto y se fijará al aprobar §15. Si la enmienda no se aprueba, se
+restaura el mapping anterior. Cualquier cambio de cobertura o de AC base exigirá
 una enmienda explícita.
 
 ### 14.3 B-T01–B-T11 completas
@@ -879,7 +881,8 @@ verificada main `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema v15). Rama
 documental `codex/spec14-d5-exterior-r2`. Fuente: respuestas D5-Q1–D5-Q6
 registradas en el [brainstorming](14-compartidos-brainstorming.md).
 Q1–Q7, F1–F6, P-F6, R-MP, R-CC y los 39 AC base se conservan; AC-21 no se
-modifica en la matriz aprobada: su sustitución propuesta se traza en §15.12 y
+modifica en la matriz aprobada: solo se alinean referencias D5-AC de evidencia,
+sin cambiar su texto ni cobertura; su sustitución propuesta se traza en §15.12 y
 requiere aprobación explícita.
 
 Procedencia del borrador: trabajo previo de OpenCode en el worktree
@@ -1227,6 +1230,7 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Recuperado 300,00 € · Neto 150,00 €  │
 │ ⚠ Bea pendiente 150,00 €             │
 │ ⚠ Álex exceso 150,00 €               │
+│ Global: pend. 150 · exceso 150       │
 │ [Registrar aportación]               │
 │ [Aportaciones históricas]            │
 ├──────────────────────────────────────┤
@@ -1273,7 +1277,8 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │                               │ Evidencia/Procedencia         │
 │ Aportaciones acreditadas      │ Preview antes/después         │
 │ Álex 300,00 € · evidencia     │ Bea pend. 150 · Álex exc. 150 │
-│ Bea pendiente 150,00 €        │ [Cancelar] [Revisar]          │
+│ Bea pendiente 150,00 €        │ Global 150/150                │
+│                               │ [Cancelar] [Revisar]          │
 └───────────────────────────────┴──────────────────────────────┘
 ```
 
@@ -1294,8 +1299,9 @@ Bea con Álex (D7). **Propuesta, no implementada.**
    S000 elegibles es **vacío** y que la vía histórica exigiría un cambio de
    esquema futuro + importación autorizada con procedencia; sin backfill ni
    presuposición de filas inexistentes.
-3. **P-D5-3 (numeración):** confirmar `D5-AC-01..15` y que AC-21 se sustituye con
-   la trazabilidad §15.12; los 39 AC base no se renumeran.
+3. **P-D5-3 (numeración):** confirmar `D5-AC-01..15` y el mapping de §14.2
+   alineado como corrección de trazabilidad; AC-21 se sustituye con §15.12 y los
+   39 AC base no se renumeran.
 4. **P-D5-4 (spec05):** confirmar la enmienda consecuente focal propuesta en
    `05-transferencias-referencias-specification.md` §D5 (excepción S000 solo para
    CAT013 entrante; resto de Exterior intacto). Sin ella, D5 no es operativo.
