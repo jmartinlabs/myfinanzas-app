@@ -1,9 +1,10 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Brainstorming
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Las decisiones Q1–Q7 fueron
-confirmadas por el usuario en esta sesión; la especificación y los wireframes **NO están
-aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel, datos reales, merge
-ni despliegue.
+Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Q1–Q7 tienen respuesta
+registrada en la herramienta `question` de OpenCode; el **mensaje humano original y su
+procedencia independiente están pendientes de contraste**. La especificación y los
+wireframes **NO están aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel,
+datos reales, merge ni despliegue.
 
 Roadmap/context: [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
 [E1.6](06-deuda-specification.md), [R2/R5 y P4–P7](functional-reference-v5.11.md),
@@ -100,7 +101,7 @@ intereses devengados?
   conciliación propia.
 - [ ] Capital + intereses devengados: exigiría reglas de devengo, tasa y corte no aprobadas.
 
-**Respuesta confirmada:** capital pendiente E1.6. **Fuente/fecha:** usuario, 2026-10-26.
+**Respuesta registrada:** capital pendiente E1.6. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 ### Q2 — TIN, TAE, cuota contractual y condiciones
 
@@ -113,7 +114,7 @@ que exista en la fuente?
 - [ ] Con vigencia e historial: TIN/TAE/cuota/condiciones con fechas y versiones.
 - [ ] Solo lo que exista en la fuente: subconjunto incompleto, sin campos nuevos.
 
-**Respuesta confirmada:** informativos y opcionales. **Fuente/fecha:** usuario, 2026-10-26.
+**Respuesta registrada:** informativos y opcionales. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 ### Q3 — Importes históricos/precontrol
 
@@ -126,7 +127,12 @@ que exista en la fuente?
 - [ ] Solo mostrar, no persistir.
 - [ ] Lista ampliada: el usuario debe indicar campos y significado.
 
-**Respuesta confirmada:** sí, lista R5, solo lectura. **Fuente/fecha:** usuario, 2026-10-26.
+**Respuesta registrada:** sí, lista R5, solo lectura. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
+
+**Consecuencia operativa:** E4.4 no ofrece alta ni corrección de histórico/precontrol por
+`POST`/`PATCH`; solo lectura. Su aportación/corrección futura requiere una vía expresamente
+autorizada (E4.5/E4.12/DT7 o proceso específico), con fuente/auditoría. E4.4 no concede ese
+permiso ni inventa quién puede ejecutarlo.
 
 ### Q4 — Corte histórico y límites de reconstrucción
 
@@ -137,8 +143,7 @@ que exista en la fuente?
 - [ ] Solo cortes declarados o de Ciclo.
 - [ ] Fotos persistentes por corte (E4.11, fuera de E4.4).
 
-**Respuesta confirmada:** fecha civil arbitraria, solo hechos. **Fuente/fecha:** usuario,
-2026-10-26.
+**Respuesta registrada:** fecha civil arbitraria, solo hechos. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 ### Q5 — Distinción de hipoteca
 
@@ -149,8 +154,7 @@ que exista en la fuente?
 - [ ] Obligatorio en altas nuevas.
 - [ ] Módulo de activo inmobiliario (fuera de alcance).
 
-**Respuesta confirmada:** atributo explícito con Sin informar. **Fuente/fecha:** usuario,
-2026-10-26.
+**Respuesta registrada:** atributo explícito con Sin informar. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 ### Q6 — Discrepancia conciliable
 
@@ -161,8 +165,7 @@ que exista en la fuente?
 - [ ] Solo consistencia interna, sin saldo externo.
 - [ ] Ajuste económico automático (requiere regla financiera expresa).
 
-**Respuesta confirmada:** saldo declarado vs. derivado. **Fuente/fecha:** usuario,
-2026-10-26.
+**Respuesta registrada:** saldo declarado vs. derivado. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 ### Q7 — Comisiones y penalizaciones
 
@@ -172,15 +175,45 @@ que exista en la fuente?
 - [ ] Ampliar el desglose del pago (modifica E1.6; requiere aprobación financiera expresa).
 - [ ] Incluir en intereses (oculta su naturaleza; no recomendado).
 
-**Respuesta confirmada:** excluir por ahora. **Fuente/fecha:** usuario, 2026-10-26.
+**Respuesta registrada:** excluir por ahora. **Procedencia:** ver evidencia Q1–Q7; contraste humano pendiente.
 
-## Decisiones confirmadas E4.4-D1…D7
+## Evidencia de confirmación Q1–Q7 — 2026-10-26
 
-| ID | Decisión confirmada | Efecto en la spec |
+**Lo que existe:** una respuesta del usuario registrada por la herramienta `question` de
+OpenCode en esta sesión. **Lo que no existe:** un mensaje humano libre, firmado o externo
+que pueda citarse como «mensaje original». Por tanto, la confirmación se registra como
+**evidencia mediada por la herramienta**, no como aprobación documental, y su **contraste
+con el mensaje humano/procedencia original queda PENDIENTE**.
+
+Transcripción literal de las respuestas devueltas por `question`:
+
+| Pregunta | Respuesta registrada |
+| --- | --- |
+| Q1 — Deuda viva | `Capital pendiente E1.6 (Recommended)` |
+| Q2 — Condiciones | `Informativas y opcionales (Recommended)` |
+| Q3 — Histórico/precontrol | `Sí, lista R5, solo lectura (Recommended)` |
+| Q4 — Corte histórico | `Fecha civil arbitraria, solo hechos (Recommended)` |
+| Q5 — Hipoteca | `Atributo explícito con Sin informar (Recommended)` |
+| Q6 — Conciliación | `Saldo declarado vs. derivado (Recommended)` |
+| Q7 — Comisiones | `Excluir por ahora (Recommended)` |
+
+Procedencia técnica: herramienta `question` de OpenCode, invocada por el agente en la
+sesión autora; fecha de registro **2026-10-26**. El resultado no es un texto redactado por
+el usuario ni un documento externo; es una selección de opciones. No se atribuye al usuario
+una aprobación de la especificación, de los wireframes, del desarrollo ni del merge.
+
+**Consecuencia de gate:** si Codex o el usuario exigen el mensaje humano original, esta
+evidencia debe contrastarse antes de tratar Q1–Q7 como confirmadas. Hasta entonces, las
+decisiones D1–D7 se conservan como **registradas y pendientes de contraste humano**, no como
+aprobación canónica.
+
+## Decisiones registradas E4.4-D1…D7 (contraste humano pendiente)
+
+| ID | Decisión registrada (contraste humano pendiente) | Efecto en la spec |
 | --- | --- | --- |
 | E4.4-D1 | Deuda viva = capital pendiente E1.6; capital de control = apertura en la frontera | Una sola fuente de capital; sin segundo saldo |
 | E4.4-D2 | Condiciones informativas y opcionales; sin cálculo ni historial por defecto | TIN/TAE/cuota/condiciones no son operandos |
-| E4.4-D3 | Histórico/precontrol R5 de solo lectura; sin reconstrucción | Bloque histórico separado; no se suma al capital |
+| E4.4-D3 | Histórico/precontrol R5 de solo lectura; sin reconstrucción | Bloque histórico separado; no se suma al capital; no se edita en E4.4 |
 | E4.4-D4 | Corte civil arbitrario, inclusivo, solo hechos; sin fotos | Vista calculada; límites de reconstrucción explícitos |
 | E4.4-D5 | Tipo de Deuda explícito `Hipotecaria`/`No hipotecaria`/`null` (= Sin informar) | Sin activo inmobiliario ni inferencia |
 | E4.4-D6 | Conciliación contra saldo declarado; sin ajuste económico | Diferencia visible; corrección/auditoría |
@@ -195,7 +228,7 @@ fuente antes de desarrollar. No cambian las decisiones D1–D7.
 | --- | --- | --- |
 | P1 | TIN/TAE como porcentaje decimal exacto, sin `float`, hasta 6 decimales; se muestra sin redondear | El máximo puede ajustarse a la fuente en desarrollo; no se usa para calcular |
 | P2 | `condiciones` como texto informativo acotado; las condiciones estructuradas futuras requieren evidencia y decisión propia | No se inventan periodicidad, plazo, revisión ni comisiones |
-| P3 | Histórico/precontrol con campos nullable y etiqueta de ejercicio opcional; si la fuente solo aporta un agregado, se conserva como agregado sin descomponerlo | No se derivan componentes ausentes |
+| P3 | Histórico/precontrol con campos nullable y etiqueta de ejercicio opcional; si la fuente solo aporta un agregado, se conserva como agregado sin descomponerlo; solo lectura en E4.4 | No se derivan componentes ausentes ni se edita por POST/PATCH |
 | P4 | Varias conciliaciones por Deuda, una vigente por fecha de corte; corrección/annulación con revisión y auditoría | No se fija nombre físico, ID visible ni número de migración |
 | P5 | Corte histórico futuro rechazado (422); el cálculo no usa reloj, solo la validación de la consulta | Evita confundir histórico con previsión |
 | P6 | El corte no crea fotografía: una rectificación posterior puede cambiar el resultado del mismo corte | E4.11 seguirá siendo la entrega de fotos inmutables |

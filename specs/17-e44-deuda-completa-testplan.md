@@ -45,11 +45,11 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 
 | AC | Riesgo | Caso positivo | Caso negativo | Comprobación futura | Entorno / evidencia | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| AC-01 | R2 | Alta D001 con apertura/Inicio/tipo/condiciones/histórico | Falta de campos obligatorios, campos derivados o Saldo/Movimiento de apertura | API DTO + SQL: una Deuda, cero Movimientos/Saldos nuevos | `deudas.test.ts`; Bun/SQLite | UNRUN |
+| AC-01 | R2 | Alta D001 con apertura/Inicio/tipo/condiciones | Falta de campos obligatorios, campos derivados, escritura de histórico o Saldo/Movimiento de apertura | API DTO + SQL: una Deuda, cero Movimientos/Saldos nuevos; histórico no aceptado | `deudas.test.ts`; Bun/SQLite | UNRUN |
 | AC-02 | R7/R12 | TIN 2,5 / TAE 2,8 / cuota 100 / condiciones | Tasa/importe no exacto, fuera de límite, intención de calcular | DTO exacto; ningún interés/cuota/cuadro derivado; 422 | API/UI; Bun/Playwright | UNRUN |
 | AC-03 | R6/R5 | Hipotecaria, No hipotecaria, null (= Sin informar); filtro | Persistir el literal `Sin informar`; inferir por nombre/Partida; sumar a Saldos; crear activo | DTO enum/null; listado filtrado; `sqlite_master` sin activo; Saldos intactos | API/UI; Bun | UNRUN |
-| AC-04 | R1/R3 | Histórico R5 completo y parcial | Backfill, cero implícito, intento de usarlo como operando | Campos null/exactos; capital solo E1.6; sin reconstrucción | API/SQL; Bun | UNRUN |
-| AC-05 | R4 | Relación `capitalInicial − apertura = amortizadoHistorico` correcta | Diferencia de un céntimo | Aviso exacto, no bloqueo del dato fuente, capital intacto | API DTO; Bun | UNRUN |
+| AC-04 | R1/R3 | Histórico R5 ya existente/consultado; completo y parcial | `POST`/`PATCH` con histórico, backfill, cero implícito, uso como operando | Solo lectura; escritura 422; campos null/exactos; capital solo E1.6; sin reconstrucción | API/SQL; Bun | UNRUN |
+| AC-05 | R4 | Relación `capitalInicial − apertura = amortizadoHistorico` correcta | Diferencia de un céntimo o intento de corregirla en E4.4 | Aviso exacto; no se corrige desde E4.4; capital intacto | API DTO; Bun | UNRUN |
 | AC-06 | R1/R2 | Cuota 100 (80/20) + extraordinaria 200 desde control | Precontrol, anulado, otro Dxxx, cuota completa, intereses, Gasto ordinario sin Deuda | Deuda 720; aplicado 280; sin doble resta; Gasto sin Deuda no reduce | API/oráculo; Bun | UNRUN |
 | AC-07 | R1 | Cuota 100 = 80 + 20 | Cuota sin desglose, suma desigual, capital 0/negativo | Historia 100/80/20; Gasto 100; banco −100; un hecho | API/E2E | UNRUN |
 | AC-08 | R1 | Extraordinaria 200, capital 200, intereses 0 | Intento de Gasto/Transferencia/segundo hecho | Historia 200/200/0; Gasto 0; banco −200; capital −200 | API/E2E | UNRUN |
@@ -64,7 +64,7 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | AC-17 | R4 | Declarado antes del control o sin base | Intento de diferencia ficticia | `No comparable` con motivo; sin cero | API/UI | UNRUN |
 | AC-18 | R8 | Varias fechas de conciliación; listado última + `Varias` | Dos altas vigentes misma Deuda/fecha | 409 en la segunda; corregir la existente; sin duplicado ambiguo; ficha muestra todas | API/procesos/UI | UNRUN |
 | AC-19 | R8 | Reintento misma clave; dos procesos | Revisión obsoleta; misma clave con otro payload | Una entidad; 409; sin escritura parcial | API/procesos | UNRUN |
-| AC-20 | R3/R4 | Corregir tipo/condiciones/histórico | PATCH sin revisión/motivo; cambiar apertura/Inicio usados | Auditoría; sin efecto económico; E1.6 bloquea | API/SQL | UNRUN |
+| AC-20 | R3/R4 | Corregir tipo/condiciones | PATCH sin revisión/motivo; cambiar apertura/Inicio usados; intentar histórico | Auditoría; sin efecto económico; histórico no editable; E1.6 bloquea | API/SQL | UNRUN |
 | AC-21 | R1/R3 | Rectificar/anular cuota; cambiar su fecha respecto al corte | Doble resta; historia borrada; corte no cambia | Recalcula deuda/diferencia; ambas Deudas; historia conservada; corte inclusive | API/E2E | UNRUN |
 | AC-22 | R1/R5 | Inspeccionar tablas/endpoints | Intento de escribir derivados o ajuste | Sin capital/historia persistidos; sin segundo ledger; 422 | API/SQL | UNRUN |
 | AC-23 | R10 | v16 genuina con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
@@ -137,13 +137,31 @@ sin bloqueantes. Esta lista no autoriza ese dev ni declara PASS ahora.
 
 ## QA independiente
 
-Pendiente de candidato documental estable. El revisor será distinto del autor, con contexto
-nuevo, y revisará este testplan, la spec y el brainstorming sobre un SHA concreto. No aprueba
-reglas financieras, no amplía alcance, no escribe epic-board y no hace merge. Sus hallazgos
-se registrarán con severidad y evidencia; las correcciones documentales se re-revisarán.
+**Revisor real:** subagente independiente con contexto nuevo, distinto del autor, sesión
+`ses_e858f7d0cffeQ5uvfRpdPxphvW`. No editó archivos, no hizo commits, no escribió
+`specs/epic-board.md`, no hizo merge y no usó datos reales.
+
+| Hito | Candidato | Dictamen | Hallazgos/evidencia |
+| --- | --- | --- | --- |
+| QA inicial | `0084092` | FAIL documental | 3 MAJOR, 8 MINOR, 2 NIT: precontrol con derivado, `null→0`, oráculo 1000, tipo duplicado, selección de conciliación, fecha futura, corte 15/09, testplan incompleto, terminología, `capitalHistorico`, R5/filas, IDs/alcance |
+| Correcciones | `16f7f65` (rebasado `a45f318`) | PASS con menores | M-01…M-03 y m-04…m-11/n-12/n-13 cerrados; N-01…N-04 abiertos |
+| Cierre de menores | `d415d3b` | PASS con residual N-01 | N-02…N-04 cerrados; N-01 residual en 390 |
+| QA final | `e918ca5` | **PASS documental** | N-01 cerrado; sin hallazgos nuevos; no es PASS funcional |
+| Delta posterior | pendiente | **PENDIENTE** | Procedencia Q1–Q7 y solo lectura de histórico/precontrol requieren re-revisión |
+
+El dictamen es **documental**, no funcional: no hay candidato E4.4, no se ejecutaron E2E ni
+la suite financiera y el revisor no aprobó la especificación, los wireframes, el desarrollo
+ni el merge.
 
 ## Registro de ejecuciones
 
 | Fecha | Candidato | Comando | Resultado | Nota |
 | --- | --- | --- | --- | --- |
 | 2026-10-26 | — | — | UNRUN | Diseño documental; no hay implementación E4.4 |
+| 2026-10-26 | `0084092` | QA independiente | FAIL documental | 3 MAJOR, 8 MINOR, 2 NIT; corregidos |
+| 2026-10-26 | `16f7f65`/`a45f318` | QA independiente | PASS con menores | N-01…N-04; corregidos |
+| 2026-10-27 | `d415d3b` | QA independiente | PASS con residual N-01 | Móvil sin `Varias`; corregido |
+| 2026-10-27 | `e918ca5` | QA independiente | PASS documental | Sin hallazgos nuevos; no funcional |
+| 2026-10-27 | `e918ca5` | `python3 scripts/verify` (Codex, Python compatible) | PASS documental | Aplicación omitida por clasificación `docs`; reportado por Codex |
+| 2026-10-27 | `e918ca5` | `python3 scripts/verify` (este entorno, Python 3.9.6) | BLOCKED | Prerrequisito Python 3.10+ |
+| 2026-10-27 | pendiente | QA delta de esta revisión | PENDIENTE | Revisar procedencia y solo lectura |

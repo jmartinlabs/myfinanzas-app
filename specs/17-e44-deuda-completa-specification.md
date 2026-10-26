@@ -1,12 +1,15 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Las decisiones Q1–Q7 están
-confirmadas por el usuario; la especificación y los wireframes **NO están aprobados**.
-Sin desarrollo, código, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
-No se declara E4.4 aprobada ni implementada.
+Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Q1–Q7 tienen respuesta
+registrada en la herramienta `question`; el **mensaje humano original y su procedencia
+independiente están pendientes de contraste**. La especificación y los wireframes **NO están
+aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel, datos reales, merge ni
+despliegue. No se declara E4.4 aprobada ni implementada.
 
-Approval source/date: **PENDIENTE**. La confirmación de Q1–Q7 (usuario, 2026-10-26) no
-equivale a aprobar esta especificación ni sus wireframes.
+Approval source/date: **PENDIENTE**. La respuesta registrada de Q1–Q7 (herramienta
+`question`, 2026-10-26) no equivale a un mensaje humano original, a aprobar esta
+especificación ni a aprobar sus wireframes. Evidencia y límites:
+[brainstorming](17-e44-deuda-completa-brainstorming.md#evidencia-de-confirmación-q1q7--2026-10-26).
 
 Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md),
 [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
@@ -108,7 +111,7 @@ historia.
 | Gasto de una cuota | `Movimientos.importe` íntegro | No (dato del hecho) |
 | Gasto de una extraordinaria | Cero por contrato E1.6 | Derivado |
 | Efecto bancario | Motor de Saldos sobre el Saldo origen; importe del hecho | Sí; E4.4 no lo recalcula |
-| Histórico/precontrol R5 | Campos históricos de la Deuda | No |
+| Histórico/precontrol R5 | Campos históricos de la Deuda; solo lectura en E4.4 | No |
 | Precontrol ejecutado | Movimientos anteriores a Inicio control | Sí; se muestran, no se suman al capital |
 | Saldo declarado | Registro de conciliación (importe, fecha, fuente) | No |
 | Diferencia de conciliación | Declarado − deuda viva en la fecha de corte | Sí |
@@ -192,7 +195,9 @@ apertura/Inicio/enlaces usados de E1.6 se conservan.
 | Cambio | Control | Efecto en capital | Efecto en historia/conciliación | Auditoría |
 | --- | --- | --- | --- | --- |
 | Nombre/estado de Deuda | PATCH con revisión; E1.6 | Ninguno | Se conserva; no crea hechos | Sí, actor/UTC/anterior/posterior |
-| Tipo/condiciones/histórico | PATCH con revisión; motivo si se corrige un valor existente | Ninguno | Se muestra el nuevo dato; no recalcula capital | Sí, con motivo |
+| Tipo/condiciones | PATCH con revisión; motivo si se corrige un valor existente | Ninguno | Se muestra el nuevo dato; no recalcula capital | Sí, con motivo |
+| Histórico/precontrol R5 | **Solo lectura en E4.4**; no POST/PATCH; origen futuro en importación/migración o corrección autorizada fuera de E4.4 | Ninguno | Se muestra el dato existente; no se corrige ni reconstruye desde E4.4 | No hay escritura E4.4; la vía futura deberá auditar |
+| Aportar/corregir histórico | **No autorizado en E4.4**; requiere proceso futuro aprobado (E4.5/E4.12/DT7) | Ninguno | Solo cambia el dato histórico si se autoriza esa vía | La vía futura deberá registrar actor/motivo/fuente |
 | Apertura/Inicio usados | Bloqueo E1.6 | No se editan | Se conserva la historia | Intento rechazado, sin escritura |
 | Alta/corrección/anulación de conciliación | POST/PATCH con idempotencia y revisión | Ninguno | Diferencia recalculada; anulada conservada | Sí, con motivo al corregir/anular |
 | Rectificar pago | Pipeline E1.6 con revisión/contexto | Recalcula; sustituye el efecto anterior | Historia y diferencia recalculadas; ambas Deudas | Auditoría E1.6 |
@@ -209,7 +214,7 @@ existentes.
 
 | Entidad | Persistente propuesto | Derivado / no persistir |
 | --- | --- | --- |
-| Deuda | Campos E1.6 + tipo, TIN, TAE, cuota contractual, condiciones, histórico/precontrol, revisión y UTC | Capital aplicado, deuda viva, cobertura, diferencias, historia ejecutada |
+| Deuda | Campos E1.6 + tipo, TIN, TAE, cuota contractual, condiciones, histórico/precontrol (solo lectura en E4.4), revisión y UTC | Capital aplicado, deuda viva, cobertura, diferencias, historia ejecutada |
 | Conciliación de Deuda | ID técnico estable, Deuda, fecha de corte, capital declarado, fuente/nota, estado, revisión y UTC | Diferencia, estado conciliado/no comparable |
 | Partida existente | Enlace 0..1 a Deuda, ya existente | Deuda/nombre por descripción |
 | Movimiento existente | Hecho único, Tipo, fecha, importe, capital, intereses, Partida, REF, estado y auditoría | Historia, capital y efectos derivados |
@@ -230,21 +235,30 @@ existentes.
 | `tae` | Porcentaje decimal exacto, informativo; mismo criterio | Sí | Condición | No |
 | `cuotaContractual` | EUR exacto, informativo | Sí | Condición | No |
 | `condiciones` | Texto informativo acotado (propuesta 1.000 caracteres) | Sí | Condición libre | No |
-| `capitalInicial` | EUR exacto | Sí | Histórico R5 | No |
-| `capitalAmortizadoHistorico` | EUR exacto | Sí | Histórico R5 | No |
-| `amortizacionExtraHistorica` | EUR exacto | Sí | Histórico R5 | No |
-| `capitalHistoricoCuotas` | EUR exacto | Sí | Histórico R5 | No |
-| `interesesHistoricos` | EUR exacto | Sí | Histórico R5 | No |
-| `totalPagadoHistorico` | EUR exacto | Sí | Histórico R5 | No |
-| `precontrolCuotas` | Conteo entero `>= 0` | Sí | Precontrol R5 | No |
-| `precontrolCapital` | EUR exacto | Sí | Precontrol R5 | No |
-| `precontrolAmortizacionExtra` | EUR exacto | Sí | Precontrol R5 | No |
-| `precontrolEjercicio` | Año civil, etiqueta | Sí | Contexto del precontrol | No |
+| `capitalInicial` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `capitalAmortizadoHistorico` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `amortizacionExtraHistorica` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `capitalHistoricoCuotas` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `interesesHistoricos` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `totalPagadoHistorico` | EUR exacto | Sí | Histórico R5; solo lectura E4.4 | No |
+| `precontrolCuotas` | Conteo entero `>= 0` | Sí | Precontrol R5; solo lectura E4.4 | No |
+| `precontrolCapital` | EUR exacto | Sí | Precontrol R5; solo lectura E4.4 | No |
+| `precontrolAmortizacionExtra` | EUR exacto | Sí | Precontrol R5; solo lectura E4.4 | No |
+| `precontrolEjercicio` | Año civil, etiqueta | Sí | Contexto del precontrol; solo lectura E4.4 | No |
 
 Los campos nuevos son opcionales y **nullable**. No se rellenan con cero, no se derivan de
 la apertura y no se backfillean en Deudas existentes. Si la fuente presenta el precontrol
 como un único agregado, se conserva el agregado con su etiqueta y no se descompone por
 inferencia; los campos separados solo se usan cuando la fuente los aporta.
+
+**Solo lectura en E4.4.** Los campos históricos/precontrol **no se aceptan** en `POST` ni
+`PATCH` de esta entrega. El usuario único puede consultarlos, pero E4.4 no le concede una
+acción de alta/corrección. Su aportación o corrección corresponde, fuera de E4.4 y bajo
+autorización expresa del usuario único/propietario, a una **importación/migración o
+corrección histórica futura** (E4.5/E4.12/DT7 o un proceso específico aprobado), con fuente,
+motivo, actor y auditoría. E4.4 no autoriza esa vía ni inventa quién puede ejecutarla. Hasta
+entonces, una ausencia se muestra como `Sin informar` y una inconsistencia como discrepancia;
+no se rellena ni se reconstruye.
 
 ### Relaciones históricas de la fuente
 
@@ -259,8 +273,8 @@ como operandos del capital actual:
   Esta spec **no crea** un campo `capitalHistorico` ni presume que `capitalInicial` sea esa
   base; si la fuente no lo identifica, la relación no se calcula.
 - Una diferencia se muestra como `histórico inconsistente`, con los campos y la diferencia
-  exacta. No se corrige automáticamente, no se bloquea el guardado de un dato histórico
-  aportado y no se usa para alterar la deuda viva.
+  exacta. No se corrige automáticamente, no se bloquea la lectura del dato existente y no se
+  usa para alterar la deuda viva; E4.4 no ofrece la corrección.
 
 ### Conciliación de Deuda
 
@@ -578,8 +592,8 @@ Sesión:
 - **404:** Deuda/conciliación inexistente; no crear una entidad vacía.
 - **409:** revisión obsoleta, duplicado vigente o contexto cambiado; conservar borrador y
   exigir recarga/revisión nueva.
-- **422:** campo inválido, corte futuro, tasa/importe no exacto, texto fuera de límite;
-  mensaje accionable y foco.
+- **422:** campo inválido, corte fecha futura, tasa/importe no exacto, texto fuera de
+  límite o intento de escribir histórico/precontrol; mensaje accionable y foco.
 - **401/403:** MFA/sesión/CSRF/Origin; no filtrar SQL, importes, notas, secretos ni stack.
 - **Error técnico:** mensaje genérico con `requestId`; no payload financiero en logs.
 
@@ -591,10 +605,11 @@ CSRF/Origin, límite JSON, errores `Problem` y transacciones existentes.
 | Operación | Comportamiento |
 | --- | --- |
 | `GET /api/deudas` | Listado con búsqueda, estado y filtro `tipoDeuda`; paginación estable; incluye deuda viva y la conciliación vigente de mayor `fechaCorte`, con marca `Varias` si hay más |
-| `GET /api/deudas/:id` | Ficha con control, condiciones, histórico, historia ejecutada y conciliaciones |
+| `GET /api/deudas/:id` | Ficha con control, condiciones, histórico/precontrol (solo lectura), historia ejecutada y conciliaciones |
 | `GET /api/deudas/:id?corte=YYYY-MM-DD` | Misma ficha calculada al corte inclusivo; valida fecha y cobertura |
-| `POST /api/deudas` | Alta con campos E1.6 + nuevos campos opcionales; `idempotency-key`; revisión inicial y auditoría |
-| `PATCH /api/deudas/:id` | Edición con `revision`; nombre/estado/condiciones/tipo/histórico según reglas; apertura/Inicio protegidos por E1.6; auditoría |
+| `POST /api/deudas` | Alta con campos E1.6 + tipo/condiciones; histórico/precontrol no aceptado; `idempotency-key`; revisión inicial y auditoría |
+| `PATCH /api/deudas/:id` | Edición con `revision`; nombre/estado/condiciones/tipo; histórico/precontrol no editable; apertura/Inicio protegidos por E1.6; auditoría |
+| `POST/PATCH con histórico/precontrol` | 422: campo de solo lectura; no se crea ni corrige por esta API |
 | `POST /api/deudas/:id/conciliaciones` | Alta de saldo declarado con fecha, importe, fuente/nota; idempotencia; una vigente por fecha |
 | `PATCH /api/deudas/:id/conciliaciones/:cid` | Corrección/anulación con `revision` y motivo; auditoría; sin DELETE |
 | `GET /api/deudas/:id/conciliaciones` | Historial vigente/anulado; puede incluirse en la ficha |
@@ -604,6 +619,8 @@ Reglas de API:
 - Toda ruta exige sesión/MFA; las escrituras exigen Origin/CSRF y validación servidor.
 - Rechazar campos derivados o de otra entidad; no aceptar `capitalPendiente`, `deudaViva`,
   `diferencia`, `cobertura`, `aplicaAlCapital`, `gasto` ni `estadoConciliacion` como entrada.
+- Los campos históricos/precontrol R5 son de solo lectura: rechazar su escritura en `POST`/
+  `PATCH` con 422. No hay endpoint de importación, alta o corrección histórica en E4.4.
 - No hay endpoint de ajuste de capital, movimiento de apertura, transferencia, Gasto
   sintético ni DELETE.
 - `corte` inválido o futuro -> 422; `fechaCorte` de conciliación futura -> 422;
@@ -640,6 +657,9 @@ Reglas de API:
   hechos; anulada no aparece como vigente pero se conserva.
 - **Condiciones:** TIN/TAE/cuota/condiciones informativas; no calculan; desconocido no es
   cero; valores no exactos/fuera de límite -> 422; no se infiere por nombre ni histórico.
+- **Histórico/precontrol:** solo lectura en E4.4; `POST`/`PATCH` con esos campos -> 422;
+  ausencia = `Sin informar`; no backfill/reconstrucción; corrección solo por una vía futura
+  autorizada (E4.5/E4.12/DT7), no por esta entrega.
 - **Tipo:** enum cerrado `Hipotecaria`/`No hipotecaria` o `null` (= Sin informar); no se
   persiste el literal `Sin informar`; no se infiere; no se suma a Saldos; no se crea activo
   inmobiliario.
@@ -676,8 +696,9 @@ Reglas de API:
   deploy, merge ni cambio de visibilidad.
 - No simulación avanzada, cuadro de amortización, calendario de cuotas futuras, cálculo de
   intereses por TIN/TAE, previsión ni proyección.
-- No reconstrucción de hechos precontrol ausentes, no importación E4.5, no archivo histórico,
-  no fotos E4.11, no cierre E4.8–E4.10, no resumen E4.6/E4.7.
+- No reconstrucción de hechos precontrol ausentes, no alta/corrección de histórico/precontrol
+  por esta entrega, no importación E4.5, no archivo histórico, no fotos E4.11, no cierre
+  E4.8–E4.10, no resumen E4.6/E4.7.
 - No activo inmobiliario, valor de garantía, LTV, tasación ni patrimonio hipotecario.
 - No comisiones/penalizaciones: no hay componente aprobado; un caso futuro requiere spec y
   aprobación financiera propias.
@@ -699,11 +720,11 @@ con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
 
 | ID | Acción / precondición | Resultado observable esperado | Clase | Traza |
 | --- | --- | --- | --- | --- |
-| AC-01 | Alta/consulta de Deuda con campos E1.6 + tipo/condiciones/histórico | Dxxx estable; apertura/Inicio; campos nuevos conservados; desconocidos null/Sin informar; sin Movimiento/Saldo de apertura | I | E4.4-AC1 |
+| AC-01 | Alta/consulta de Deuda con campos E1.6 + tipo/condiciones | Dxxx estable; apertura/Inicio; tipo/condiciones conservados; histórico/precontrol no se escribe aquí; desconocidos null/Sin informar; sin Movimiento/Saldo de apertura | I | E4.4-AC1 |
 | AC-02 | Aportar TIN/TAE/cuota/condiciones y consultar | Valores informativos exactos; no calculan intereses/cuotas/cuadros; desconocido ≠ 0; inválidos 422 | I | E4.4-AC1 |
 | AC-03 | Clasificar Hipotecaria/No hipotecaria o dejar null (= Sin informar); filtrar; Deudas existentes | Enum cerrado; null se presenta Sin informar; sin inferencia; filtro correcto; sin activo/LTV | I | E4.4-AC3 |
-| AC-04 | Alta con histórico/precontrol R5 y consulta | Campos opcionales conservados; sin backfill; no operandos; desconocido null; no se reconstruye | I | E4.4-AC1 |
-| AC-05 | Histórico con relación R5 inconsistente | Diferencia exacta señalada; no se corrige/trunca; guardado del dato aportado permitido; capital intacto | I | E4.4-AC1 |
+| AC-04 | Leer histórico/precontrol R5 e intentar escribirlo por POST/PATCH | Se muestra el dato existente; escritura ordinaria 422; solo lectura; sin backfill; no operandos; no se reconstruye | I | E4.4-AC1 |
+| AC-05 | Histórico con relación R5 inconsistente | Diferencia exacta señalada; no se corrige desde E4.4; no se trunca; capital intacto | I | E4.4-AC1 |
 | AC-06 | Cuota/extraordinaria vigentes desde Inicio control | Capital aplicado = suma de capital; deuda viva = apertura − aplicado; solo capital; sin doble cómputo | I | E4.4-AC2 |
 | AC-07 | Cuota 100 (capital 80, intereses 20) | Historia muestra 100/80/20; Gasto 100; banco −100; capital −80; un solo hecho | I | E4.4-AC2 |
 | AC-08 | Extraordinaria 200 | Historia muestra 200/200/0; banco −200; Gasto 0; capital −200; no Transferencia | I | E4.4-AC2 |
@@ -718,7 +739,7 @@ con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
 | AC-17 | Conciliación antes del control o sin base calculable | Estado No comparable con motivo; no se inventa diferencia | I | E4.4-AC2 |
 | AC-18 | Dos altas de conciliación vigentes misma Deuda/fecha | 409 en la segunda; la corrección se hace sobre la existente; fechas distintas permitidas y el listado las marca `Varias` | I | E4.4-AC2 |
 | AC-19 | Concurrencia/reintento en alta/edición/conciliación | Revisión obsoleta 409; idempotencia devuelve una sola entidad; sin escritura parcial | I | E4.4-AC2 |
-| AC-20 | Corregir tipo/condiciones/histórico con revisión | Auditoría antes/después/motivo; sin efecto económico; apertura/Inicio usados siguen protegidos | I | E4.4-AC1 |
+| AC-20 | Corregir tipo/condiciones con revisión | Auditoría antes/después/motivo; sin efecto económico; histórico/precontrol no editable; apertura/Inicio usados siguen protegidos | I | E4.4-AC1 |
 | AC-21 | Rectificar/anular un pago y consultar corte/conciliación | Deuda viva y diferencia se recalculan; ambas Deudas si cambia; no doble resta; historia conservada | I | E4.4-AC2 |
 | AC-22 | Inspeccionar persistencia y endpoints | No se persiste capital/deuda viva/historia; no hay ajuste ni segundo ledger; derivados rechazados | I | E4.4-AC2 |
 | AC-23 | Migrar desde la versión vigente de main (hoy v16) | Campos nuevos null/Sin informar; IDs/auditoría/MFA/relaciones preservados; rollback/versión desconocida | I | E4.4-AC1 |
@@ -750,11 +771,14 @@ funcionalidad.
 
 ## Approval and next action
 
-- **Decisiones financieras/materiales:** Q1–Q7 confirmadas por el usuario el 2026-10-26.
+- **Decisiones financieras/materiales:** Q1–Q7 tienen respuesta registrada con la
+  herramienta `question` el 2026-10-26; el mensaje humano original/procedencia independiente
+  está **pendiente de contraste**. No se declaran aprobadas por esta spec.
 - **Especificación/wireframes:** **NO aprobados**. Pendiente de revisión final de Codex y
   aprobación explícita del usuario.
-- **QA independiente:** se coordina sobre un SHA concreto; el revisor no aprueba reglas
-  financieras, no amplía alcance, no escribe epic-board y no hace merge.
+- **QA independiente:** se coordinó sobre SHAs concretos; el revisor no aprueba reglas
+  financieras, no amplía alcance, no escribe epic-board y no hace merge. Dictamen documental
+  final registrado en el testplan; no es PASS funcional.
 - **Desarrollo:** no autorizado. Cualquier autorización será posterior y separada; no se
   infiere de la aprobación documental.
 - **SQL/migración:** no autorizados ni fijados; el dev comprobará `main` y la versión vigente.
