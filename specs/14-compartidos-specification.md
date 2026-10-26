@@ -192,7 +192,7 @@ o backfill; atribución automática; endpoint paralelo de hechos.
 
 ## 5. Dependencia material D5 — Exterior (contrato propuesto; implementación bloqueada)
 Texto R4 vigente: aportaciones de terceros = Transferencias desde Exterior con
-Referencia y Quién paga. Estado técnico actual: main v15 con Base B integrada;
+Referencia y Quién paga. Estado técnico actual: main v16 con Base B v15 integrada;
 E1.5 y el CHECK siguen rechazando S000 en ambos extremos. La enmienda §15
 consolida el contrato focal aprobado conceptualmente el 2026-10-26, pero **no se
 implementa**. Consecuencias:
@@ -950,7 +950,7 @@ metadatos. La Transferencia no altera la identidad de la Referencia ni la ficha.
 
 ### 15.4 Elegibilidad de históricos y supuestos excluidos
 
-El CHECK vigente de `movimientos` (v15) exige `origen!='S000' AND
+El CHECK vigente de `movimientos` (v15; sin cambios en v16) exige `origen!='S000' AND
 destino!='S000'` para `tipo='Transferencia'`. Por tanto, **en una base v15 el
 conjunto de Transferencias S000 elegibles es vacío**: ni una importación ni una
 fixture pueden insertarlas sin un cambio de esquema futuro. La vía histórica
@@ -1255,7 +1255,7 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | R-D5-06 | Reescritura del hecho bancario o pérdida de evidencia | AC-10, AC-11 | Rectificación/anulación conserva original | DELETE o cambio silencioso bloqueado | Triggers + auditoría | UNRUN |
 | R-D5-07 | Fuga de evidencia/datos personales o acceso sin sesión | AC-13, AC-14 | Acceso autorizado con MFA/CSRF | 401/403; logs sin evidencia | HTTP/seguridad + revisión de logs | UNRUN |
 | R-D5-08 | UI declara cobertura o cierre sin fuente | AC-12, AC-14 | Estados vacío/parcial/error honestos | Cero inventado o Cerrado con terceros pendientes | Playwright 390/1440 + capturas | UNRUN |
-| R-D5-09 | Colisión de esquema/versión con v15 y Vehículos | AC-01, AC-15 | Migración futura preserva IDs/auditorías/FK | Variante desconocida rechazada; rollback | Migración ficticia + backup/restore | UNRUN |
+| R-D5-09 | Colisión de esquema/versión con v15/v16 y Vehículos | AC-01, AC-15 | Migración futura preserva IDs/auditorías/FK | Variante desconocida rechazada; rollback | Migración ficticia + backup/restore | UNRUN |
 | R-D5-10 | Ampliación de alcance a Exterior ordinario/salidas | AC-02, AC-15 | Solo variante CAT013 entrante | Formulario común y payloads alternativos rechazados | Gates de servicio/UI + inspección | UNRUN |
 | R-D5-11 | Confundir Gasto CAT013 válido o Ingreso S000 con aportación | AC-04 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5 | Ingreso CAT013 → 422; ninguno acredita ni se reclasifica | Servicio + DTO + inspección | UNRUN |
 | R-D5-12 | Duplicado o división de un Movimiento entre participantes | AC-06 | Un Movimiento, un Tercero, una acreditación | Segundo intento/división rechazado | UNIQUE + API + SQLite | UNRUN |
