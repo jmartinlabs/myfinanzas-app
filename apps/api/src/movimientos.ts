@@ -13,6 +13,7 @@ import {
   referenceMapping,
   operationalReferenceTypes,
 } from "./reference-rules";
+import { vehicleFicha } from "./vehicle-rules";
 import type { Database } from "bun:sqlite";
 import { getSaldo, money, decimal, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
@@ -360,6 +361,14 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
     partida: p,
     deuda: p?.deuda ? getDebt(db, p.deuda) : null,
     referencia: r.referencia ? getReference(db, r.referencia) : null,
+    integridad:
+      r.referencia && getReference(db, r.referencia).tipo === "Vehículo" && !vehicleFicha(db, r.referencia)
+        ? {
+            estado: "Revisar" as const,
+            motivos: ["GASTO_SIN_FICHA"],
+            mensaje: "El Gasto usa una Referencia Vehículo sin ficha.",
+          }
+        : { estado: "OK" as const, motivos: [] as string[], mensaje: "Sin incidencias." },
     anticipo: anticipoMetadata(db, r.id),
     ciclo:
       cycles.find(
