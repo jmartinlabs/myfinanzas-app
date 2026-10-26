@@ -119,6 +119,36 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - Impacto: continuidad documental sin pérdida; el cierre pendiente se completó en una sesión
   nueva y queda registrado aquí para el handoff.
 
+## HANDOFF — 2026-10-26 — STOP REQUESTED — NO AUTO-RESUME
+
+- **Feature / scope:** PILOT-DS-FULL-EPIC-01 · E4.1, fase documental PRE-DEV-SCHEMA y ajuste
+  técnico SPEC19 rev8 a esquema 16. **DEV no autorizado.**
+- **Repositorio / rama / worktree / HEAD:** `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/pilot-e41`;
+  rama `codex/pilot-full-e41-instrumentos-compras-inversion`; HEAD
+  `31421d9e25008a38e5ba470ffb0bdf9fa732bf25`. Árbol limpio. Sin push, PR, merge ni despliegue;
+  portabilidad remota no verificada.
+- **Workers:** no existe tooling de workers controlados en esta sesión; los subagentes de
+  revisión finalizaron. `ps` no muestra procesos de pilot, tests, dev server ni Playwright.
+  Las sesiones/worktrees de Compartidos (`dev14-baseb`, `dev14-qa`) y Vehículos/`dev16` no son
+  controlados por esta sesión y no se tocaron.
+- **Completado:** SPEC19 rev8 y testplan aprobados sobre `f439010`; manifiestos C14/C15
+  congelados y auto-verificados; fixtures aislados y generador reproducible; rutas 13/14/15→16;
+  gate de destino repetido sin refs en 16; documentación de aprobación y checkpoint.
+- **Pendiente:** autorización explícita de DEV; repetir el gate inmediatamente antes de
+  implementar. Sin implementación E4.1.
+- **Checks:** `python3 scripts/verify baseline` → **PASS** sobre HEAD `31421d9`; revisión
+  independiente final **PASS** sobre `f439010`; suites de aplicación y migraciones E4.1
+  **UNRUN**.
+- **Gate de destino (última comprobación):** `origin/main` = `f5bf032` (14);
+  `codex/dev14-base-b` = `e4ff2df` (15, mismo manifiesto C15); `codex/dev16-revision-comida` =
+  `4382f6c` (15); ningún ref local/remoto declara 16. PASS para 16, condicional a repetir el
+  gate antes de DEV.
+- **Aprobaciones:** SPEC19 rev7 y rev8 aprobadas por el usuario; DEV, merge y despliegue **no**
+  autorizados.
+- **Siguiente acción segura:** nueva sesión debe inspeccionar este handoff, verificar HEAD,
+  aprobaciones y gate, y esperar autorización explícita de DEV. No reanudar por inferencia.
+- **Checkpoint:** este archivo; no hay cambios sin commitear.
+
 ## Siguiente acción
 
 La rev8 técnica (versión 16) está **aprobada**. Gate repetido a 2026-10-26: `origin/main` 14,
