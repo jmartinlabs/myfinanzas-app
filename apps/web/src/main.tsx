@@ -7,6 +7,7 @@ import { PlanesCiclo } from "./PlanesCiclo";
 import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
 import { Referencias } from "./Referencias";
+import { Vehiculos } from "./Vehiculos";
 import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -288,6 +289,20 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/vehiculos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/vehiculos") ? "page" : undefined}
+            href="/vehiculos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/vehiculos");
+            }}
+          >
+            <span aria-hidden="true">⌑</span> Vehículos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
               path.startsWith("/referencias") ? "nav-active" : "nav-link"
             }
             aria-current={path.startsWith("/referencias") ? "page" : undefined}
@@ -376,6 +391,8 @@ function App() {
             <Presupuestos path={path} go={go} />
           ) : path.startsWith("/deudas") ? (
             <Deudas path={path} go={go} />
+          ) : path.startsWith("/vehiculos") ? (
+            <Vehiculos path={path} go={go} />
           ) : path.startsWith("/referencias") ? (
             <Referencias path={path} go={go} />
           ) : path.startsWith("/movimientos") ? (

@@ -1,5 +1,6 @@
 import { anticipoSchema } from "./anticipo-schema";
 import { compartidoSchema } from "./compartido-schema";
+import { vehicleSchema } from "./vehicle-schema";
 import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
 import { cyclePlanSchema } from "./cycle-plan-schema";
@@ -14,7 +15,6 @@ import { referenceSchema } from "./reference-schema";
 import {
   installIdentity,
   inspectIdentity,
-  schemaVersion,
   type Identity,
 } from "./database-identity";
 
@@ -32,7 +32,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
         versions[0].version,
       )
     ) {
@@ -76,7 +76,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15].includes(
             versions[0].version,
           )
         )
@@ -94,7 +94,10 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 11) annualPlanSchema(db);
         if (versions[0].version < 12) payrollSchema(db);
         if (versions[0].version < 13) anticipoSchema(db);
-        if (versions[0].version < 14) compartidoSchema(db);
+        // v14 belongs to Vehículos. Shared cases advance the schema to v15 and
+        // require the v14 vehicle contract to be present before rebuilding tables.
+        if (versions[0].version < 14) vehicleSchema(db);
+        if (versions[0].version < 15) compartidoSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -206,6 +209,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       annualPlanSchema(db);
       payrollSchema(db);
       anticipoSchema(db);
+      vehicleSchema(db);
       compartidoSchema(db);
     }).immediate();
   } catch (error) {

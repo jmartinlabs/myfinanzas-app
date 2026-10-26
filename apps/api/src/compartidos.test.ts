@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { prepareSchema } from "./database-schema";
 import { prepareV13 } from "../test-support/database-v13";
+import { prepareV14 } from "../test-support/database-v14";
 import {
   calcularReparto,
   createCompartido,
@@ -834,7 +835,7 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
   );
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 14,
+    version: 15,
   });
   for (const table of Object.keys(before))
     expect(JSON.stringify(db.query(`SELECT * FROM ${table} ORDER BY 1`).all())).toBe(
@@ -853,6 +854,16 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
     { name: "participantes_compartido" },
   ]);
   expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  expect(
+    db.query("SELECT name FROM sqlite_master WHERE name='fichas_vehiculo'").get(),
+  ).toEqual({ name: "fichas_vehiculo" });
+  const referenceSql = (
+    db
+      .query("SELECT sql FROM sqlite_master WHERE type='table' AND name='referencias'")
+      .get() as { sql: string }
+  ).sql;
+  expect(referenceSql).toContain("'Vehículo'");
+  expect(referenceSql).toContain("'Gasto compartido'");
   db.close();
 
   const unknown = new Database(":memory:");
@@ -896,6 +907,48 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
     rmSync(dir, { recursive: true, force: true });
   }
   broken.close();
+});
+
+test("B-T01 v14 Vehículos → v15 preserves vehicle ficha/audit and rejects a v14 variant without its contract", () => {
+  const db = new Database(":memory:");
+  prepareV14(db);
+  expect(db.query("SELECT version FROM schema_version").get()).toEqual({
+    version: 14,
+  });
+  db.run(
+    "INSERT INTO referencias VALUES('REF700','Vehículo previo','Vehículo','Activa',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+  );
+  db.run(
+    "INSERT INTO fichas_vehiculo VALUES('REF700','7000 ABC','2027-02-03','2027-02-01',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+  );
+  db.run(
+    "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES('ficha_vehiculo','alta',1,'{\"referencia\":\"REF700\"}','2026-01-01T00:00:00Z',0,'usuario-unico','Alta previa')",
+  );
+  const refs = db.query("SELECT * FROM referencias ORDER BY id").all(),
+    fichas = db.query("SELECT * FROM fichas_vehiculo ORDER BY referencia").all(),
+    audits = db.query("SELECT * FROM audit ORDER BY id").all();
+  prepareSchema(db, { origin: "demo", key_hash: null });
+  expect(db.query("SELECT version FROM schema_version").get()).toEqual({
+    version: 15,
+  });
+  expect(db.query("SELECT * FROM referencias ORDER BY id").all()).toEqual(refs);
+  expect(db.query("SELECT * FROM fichas_vehiculo ORDER BY referencia").all()).toEqual(
+    fichas,
+  );
+  expect(db.query("SELECT * FROM audit ORDER BY id").all()).toEqual(audits);
+  expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  expect(
+    db.query("SELECT name FROM sqlite_master WHERE name='fichas_compartidos'").get(),
+  ).toEqual({ name: "fichas_compartidos" });
+  db.close();
+
+  const variant = new Database(":memory:");
+  prepareV13(variant);
+  variant.run("UPDATE schema_version SET version=14");
+  expect(() =>
+    prepareSchema(variant, { origin: "demo", key_hash: null }),
+  ).toThrow("Variante v14");
+  variant.close();
 });
 
 test("B-T08 AC22 DTO contract, protected routes, CSRF/Origin, 404/409/422 and reads do not mutate", async () => {

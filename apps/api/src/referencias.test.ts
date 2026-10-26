@@ -1,5 +1,6 @@
 import { openDatabaseV12 } from "../test-support/database-v12";
 import { openDatabaseV13 } from "../test-support/database-v13";
+import { openDatabaseV14 } from "../test-support/database-v14";
 import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
@@ -258,7 +259,9 @@ test("05 R2 AC11–18/24: matriz por ID, opcionales sin endurecer, usados e inac
         .query("SELECT referencia FROM fichas_compartidos WHERE referencia=?")
         .get(shared.id),
     ).toEqual({ referencia: shared.id });
-    expect(() => ref(db, "Vehículo")).toThrow();
+    // E3.3 habilita Vehículo con ficha 1:1 atómica; el alta sin bloque vehiculo
+    // conserva matrícula/fechas sin informar.
+    expect(ref(db, "Vehículo").tipo).toBe("Vehículo");
     const ps = Object.fromEntries(
       ["CAT011", "CAT012", "CAT013", "CAT014", "CAT009"].map((c) => [
         c,
@@ -1133,7 +1136,8 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [8, openDatabaseV8, "e2.2-v8"],
       [12, openDatabaseV12, "e2.5-v12"],
       [13, openDatabaseV13, "e3.1-v13"],
-      [14, openDatabase, "e3.2-v14"],
+      [14, openDatabaseV14, "e3.3-v14"],
+      [15, openDatabase, "e3.2-v15"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);
