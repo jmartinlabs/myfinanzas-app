@@ -86,8 +86,9 @@ amplía solo la conservación/consulta/conciliación.
 
 ## Round 1 — 2026-10-26 — decisiones materiales
 
-Las recomendaciones marcadas son propuestas; las respuestas inferiores son del usuario y
-se registran con fuente/fecha. No se reescribe esta ronda.
+Las recomendaciones marcadas son propuestas; las selecciones registradas mediante la
+herramienta `question` se conservan abajo y su procedencia humana está **pendiente de
+contraste**. No se reescribe esta ronda.
 
 ### Q1 — Deuda viva y capital de control
 
@@ -179,8 +180,8 @@ permiso ni inventa quién puede ejecutarlo.
 
 ## Evidencia de confirmación Q1–Q7 — 2026-10-26
 
-**Lo que existe:** una respuesta del usuario registrada por la herramienta `question` de
-OpenCode en esta sesión. **Lo que no existe:** un mensaje humano libre, firmado o externo
+**Lo que existe:** una selección registrada en `question` para el usuario en esta sesión; no
+es un mensaje humano libre. **Lo que no existe:** un mensaje humano libre, firmado o externo
 que pueda citarse como «mensaje original». Por tanto, la confirmación se registra como
 **evidencia mediada por la herramienta**, no como aprobación documental, y su **contraste
 con el mensaje humano/procedencia original queda PENDIENTE**.
@@ -256,7 +257,8 @@ El feedback del usuario y de Codex queda pendiente; no se adelanta un Ciclo de U
 
 ## Append-only clarifications
 
-- 2026-10-26: usuario confirma Q1–Q7 con las recomendaciones anteriores. Se registran como
-  decisiones de producto; la spec/wireframes siguen en revisión y no aprobadas.
+- 2026-10-26: se registra una selección mediada por `question` para Q1–Q7; **no se atribuye
+  confirmación humana original** y el contraste de procedencia queda pendiente. La
+  spec/wireframes siguen en revisión y no aprobadas.
 - Pendiente: revisión final de Codex y aprobación explícita; después, autorización separada
   de dev. No se inicia desarrollo por publicar esta rama/PR.
