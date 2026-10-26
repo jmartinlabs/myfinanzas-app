@@ -141,6 +141,9 @@ Evidencia local macOS arm64/Bun 1.4.3 sobre `e205ba4`:
   o por B3 heredado (`SQLITE_BUSY` temprano); no se relabelan como PASS.
 - `playwright tests/e2e/compartidos.spec.ts` → 1/1 PASS; Vehículos vacío → 1/1
   PASS; Vehículos completo → 1/1 PASS tras la corrección CSS.
+- `python3.12 scripts/verify --base origin/main --head HEAD` → baseline PASS,
+  typecheck/build PASS, API 191 PASS/46 FAIL macOS (plataforma/B3), E2E UNRUN
+  al detenerse la fase API; salida global FAIL, no se relabela.
 - `scripts/verify` canónico y CI Linux del SHA final: pendientes en este entorno.
 
 ## Decisions

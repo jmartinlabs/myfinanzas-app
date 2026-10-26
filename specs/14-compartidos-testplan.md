@@ -251,7 +251,8 @@ los resultados v14 anteriores quedan históricos y no acreditan este SHA.
 | `playwright tests/e2e/compartidos.spec.ts` | 1 PASS / 0 FAIL; PNG 390/1440 |
 | `playwright tests/e2e/vehiculos-empty.spec.ts` | 1 PASS / 0 FAIL |
 | `playwright tests/e2e/vehiculos.spec.ts` | 1 PASS / 0 FAIL tras corregir cierre CSS; PNG 390/1440 |
-| `python3.12 scripts/verify` | Pendiente sobre el SHA final |
+| `python3.12 scripts/verify --base origin/main --head HEAD` | Baseline PASS; typecheck/build PASS; API 191 PASS/46 FAIL macOS; E2E UNRUN; global FAIL por plataforma/B3 |
+| `python3.12 scripts/verify baseline` | PASS (15 pruebas de verificación) |
 | CI Linux | UNRUN desde este entorno; requiere Codex/Actions |
 
 ### Matriz B-T01–B-T10 (parte B, candidato v15)
