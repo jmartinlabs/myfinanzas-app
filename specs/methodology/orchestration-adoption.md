@@ -426,3 +426,11 @@ en aplicación, SQL, dependencias, workflows ni hooks. La clasificación full y 
 del SHA publicado son UNRUN en esta preparación local; no se sustituyen por macOS.
 QA independiente posterior al commit y resultado remoto se registran en la PR/checkpoint,
 sin atribuir comportamiento real de Codex/OpenCode a guardas estructurales.
+
+QA independiente H214-QA: PASS final sobre `e7b07d4`, tras corregir dos anclas de
+cierre y ampliar la guarda a fragmentos reales. La prueba negativa en copia temporal
+rompió una ancla tokenizada y otra no tokenizada; ambas produjeron `fragments` y exit 1.
+El repositorio real quedó sin ediciones del revisor; 25 tests del validador PASS.
+Estado de publicación: rama `codex/adopt-v2140-publication-continuity` publicada en
+origin; PR pendiente de acceso a la API de GitHub en este runtime (solo SSH disponible).
+No hay merge, auto-merge, desarrollo funcional ni despliegue.
