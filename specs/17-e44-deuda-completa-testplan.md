@@ -147,7 +147,8 @@ sin bloqueantes. Esta lista no autoriza ese dev ni declara PASS ahora.
 | Correcciones | `16f7f65` (rebasado `a45f318`) | PASS con menores | M-01…M-03 y m-04…m-11/n-12/n-13 cerrados; N-01…N-04 abiertos |
 | Cierre de menores | `d415d3b` | PASS con residual N-01 | N-02…N-04 cerrados; N-01 residual en 390 |
 | QA final | `e918ca5` | **PASS documental** | N-01 cerrado; sin hallazgos nuevos; no es PASS funcional |
-| Delta posterior | pendiente | **PENDIENTE** | Procedencia Q1–Q7 y solo lectura de histórico/precontrol requieren re-revisión |
+| Delta supervisor | `cb74b28` | FAIL documental | Atribución residual «usuario confirma Q1–Q7»; corregida |
+| Delta supervisor | `09b416b` | **PASS documental** | Procedencia mediada por `question` y contraste humano pendiente; histórico solo lectura; sin hallazgos nuevos |
 
 El dictamen es **documental**, no funcional: no hay candidato E4.4, no se ejecutaron E2E ni
 la suite financiera y el revisor no aprobó la especificación, los wireframes, el desarrollo
@@ -164,4 +165,5 @@ ni el merge.
 | 2026-10-27 | `e918ca5` | QA independiente | PASS documental | Sin hallazgos nuevos; no funcional |
 | 2026-10-27 | `e918ca5` | `python3 scripts/verify` (Codex, Python compatible) | PASS documental | Aplicación omitida por clasificación `docs`; reportado por Codex |
 | 2026-10-27 | `e918ca5` | `python3 scripts/verify` (este entorno, Python 3.9.6) | BLOCKED | Prerrequisito Python 3.10+ |
-| 2026-10-27 | pendiente | QA delta de esta revisión | PENDIENTE | Revisar procedencia y solo lectura |
+| 2026-10-27 | `cb74b28` | QA delta supervisor | FAIL documental | Atribución residual de Q1–Q7; corregida |
+| 2026-10-27 | `09b416b` | QA delta supervisor | PASS documental | Procedencia y solo lectura cerradas; no funcional |
