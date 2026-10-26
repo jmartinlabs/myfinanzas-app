@@ -45,6 +45,22 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - Sesiones del cierre: coordinador `ses_e86859b93ffdjZlpllG1FflZol`; revisor independiente
   `ses_e86523c99ffeNgigtCay1EMUq1`.
 
+## Gate pre-DEV — comprobación inicial (2026-10-26)
+
+- `origin/main` ha avanzado a `f5bf0325e52cdd4c875aacb32f086dd67a08befa`
+  («feat(vehiculos): ficha e ITV...», PR81) y declara `schemaVersion = 14`; la base de esta
+  rama sigue en 13. La 15 sigue siendo la siguiente versión libre **hoy**.
+- Los archivos de esquema de `origin/main` (`vehicle-schema.ts`, `database-schema.ts`,
+  `database-identity.ts`, `database.ts`, `backup.ts`) son idénticos a `c69e343`; el candidato
+  parece corresponder a `C14-VEHICULOS-C69E343`, pero **el manifiesto canónico y su SHA-256
+  aún no se han generado**. La coincidencia de archivos no sustituye la verificación del
+  manifiesto.
+- Resultado del gate: **condicional, no autorizado a DEV**. Antes de implementar hay que
+  rebasar el trabajo sobre `main` 14, congelar los manifiestos de `C14-VEHICULOS-C69E343` y
+  `C14-COMPARTIDOS-FCE1107` desde fixtures aislados y confirmar que el v14 de `main` coincide
+  exactamente con uno de ellos. Si no coincide, STOP y revisión de contrato/versión.
+- No se ha ejecutado ninguna migración, fixture, generación de manifiesto ni prueba funcional.
+
 ## Incidencia del piloto — cambio de sesión
 
 - La sesión anterior del piloto quedó bloqueada por un error del proveedor y **no** se ha
