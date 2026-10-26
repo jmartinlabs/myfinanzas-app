@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+"""Execute the real canonical entry point over isolated Git/check/tool fixtures."""
+import json
+import os
+from pathlib import Path
+import runpy
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+ROOT = Path(__file__).resolve().parents[1]
+ENTRY = runpy.run_path(str(ROOT / 'scripts/verify'))
+BASELINE_NAMES = [name for name, _, _ in ENTRY['BASELINE'] if name not in ('working-whitespace', 'commit-whitespace')]
+APP_NAMES = ['typecheck', 'build', 'api', 'e2e']
+
+class VerificationTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+        self.home = Path(temp.name); self.root = self.home / 'repo'; self.root.mkdir()
+        (self.root / 'scripts').mkdir(); self.bin = self.home / 'bin'; self.bin.mkdir()
+        self.record = self.home / 'calls.jsonl'
+        for name in ('verify', 'ci_policy.py'):
+            shutil.copyfile(ROOT / 'scripts' / name, self.root / 'scripts' / name)
+        stub = '''import json,os,sys\nfrom pathlib import Path\nname=Path(__file__).name\nwith open(os.environ['VERIFY_FIXTURE_CALLS'],'a') as f: f.write(json.dumps(name)+'\\n')\nprint('fixture '+name)\nif name.startswith('test-'): print(os.getenv('VERIFY_FIXTURE_UNIT_REPORT','Ran 2 tests in 0.001s\\n\\nOK'))\nsys.exit(1 if os.getenv('VERIFY_FIXTURE_FAIL')==name else 0)\n'''
+        for name in BASELINE_NAMES:
+            (self.root / 'scripts' / name).write_text(stub)
+        bun = '#!' + sys.executable + '\n' + '''import json,os,sys
+args=sys.argv[1:]
+name={'typecheck':'typecheck','build':'build','test':'api','test:e2e':'e2e'}.get(args[1] if args[:1]==['run'] else '', 'legacy')
+with open(os.environ['VERIFY_FIXTURE_CALLS'],'a') as f: f.write(json.dumps(name)+'\\n')
+if os.getenv('VERIFY_FIXTURE_FAIL')==name: sys.exit(7)
+if name in ('api','legacy'): print(os.getenv('VERIFY_FIXTURE_API_REPORT','2 pass\\n0 fail\\n8 expect() calls'))
+if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
+'''
+        (self.bin / 'bun').write_text(bun); (self.bin / 'bun').chmod(0o755)
+        (self.bin / 'git').symlink_to(shutil.which('git'))
+        for name in ('node','age'):
+            (self.bin / name).write_text('#!/bin/sh\nexit 0\n'); (self.bin / name).chmod(0o755)
+        self.env = {**os.environ, 'PATH': str(self.bin), 'VERIFY_FIXTURE_CALLS': str(self.record),
+                    'GITHUB_HEAD_REF':'', 'GITHUB_REF_NAME':''}
+        for name in ('GITHUB_EVENT_PATH','GITHUB_EVENT_NAME','CI_CHECKOUT_REF','VERIFY_FIXTURE_FAIL','VERIFY_FIXTURE_API_REPORT','VERIFY_FIXTURE_E2E_REPORT','VERIFY_FIXTURE_UNIT_REPORT'):
+            self.env.pop(name, None)
+        self.git('init','-q','--initial-branch=main'); self.base = self.commit()
+        (self.root / 'specs/backlog').mkdir(parents=True)
+        (self.root / 'specs/backlog/fixture.md').write_text('product documentation\n')
+        self.head = self.commit()
+
+    def git(self,*args):
+        return subprocess.check_output(['git','-C',str(self.root),*args],stderr=subprocess.PIPE).decode().strip()
+    def commit(self):
+        self.git('add','.')
+        self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false','commit','-qm','fixture')
+        return self.git('rev-parse','HEAD')
+    def run_entry(self,*args,extra=None):
+        return subprocess.run([sys.executable,str(self.root/'scripts/verify'),*args],cwd=self.root,
+                              env={**self.env,**(extra or {})},text=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+    def calls(self):
+        return [json.loads(line) for line in self.record.read_text().splitlines()] if self.record.exists() else []
+    def clear(self):
+        self.record.unlink(missing_ok=True)
+    def docs_args(self):
+        return ['--base',self.base,'--head',self.head]
+
+    def test_docs_baseline_once_and_explicit_omission(self):
+        result=self.run_entry(*self.docs_args())
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),BASELINE_NAMES)
+        self.assertIn('INTENTIONALLY SKIPPED application',result.stdout)
+    def test_docs_comparison_requires_matching_clean_snapshot(self):
+        path=self.root/'app.ts'
+        for staged in (False,True):
+            path.write_text('pending code\n')
+            if staged: self.git('add','app.ts')
+            self.clear(); result=self.run_entry(*self.docs_args())
+            self.assertEqual(result.returncode,0,result.stdout)
+            self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+            if staged: self.git('reset','-q','HEAD','--','app.ts')
+            path.unlink()
+        path.write_text('committed code\n'); self.commit(); self.clear()
+        result=self.run_entry(*self.docs_args())
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+
+    def test_forced_full_runs_every_suite_once(self):
+        result=self.run_entry('--full',*self.docs_args())
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+    def test_code_and_unknown_or_missing_comparison_select_full(self):
+        for args in ([],['--base','f'*40,'--head',self.head]):
+            self.clear(); result=self.run_entry(*args)
+            self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+        (self.root/'app.ts').write_text('fixture\n'); head=self.commit(); self.clear()
+        result=self.run_entry('--base',self.base,'--head',head)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+    def test_each_required_check_failure_is_visible(self):
+        for name in BASELINE_NAMES+APP_NAMES:
+            with self.subTest(name=name):
+                self.clear(); result=self.run_entry('--full',extra={'VERIFY_FIXTURE_FAIL':name})
+                self.assertNotEqual(result.returncode,0,result.stdout)
+                self.assertIn('FAIL '+name,result.stdout); self.assertEqual(self.calls().count(name),1)
+                self.assertNotIn('Verification: PASS',result.stdout)
+    def test_whitespace_checks_fail_and_propagate(self):
+        (self.root/'specs/backlog/fixture.md').write_text('bad whitespace  \n')
+        result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL working-whitespace',result.stdout)
+        self.commit(); result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL commit-whitespace',result.stdout)
+    def test_missing_tool_does_not_report_application_pass(self):
+        for tool in ('bun','node','age','git'):
+            with self.subTest(tool=tool):
+                path=self.bin/tool; moved=self.bin/(tool+'.disabled'); path.rename(moved)
+                try:
+                    self.clear(); result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout)
+                    self.assertIn('FAIL prerequisites',result.stdout); self.assertNotIn('PASS api',result.stdout)
+                finally: moved.rename(path)
+    def test_missing_required_script_fails(self):
+        (self.root/'scripts/test-agent-usage').unlink()
+        result=self.run_entry('--full'); self.assertNotEqual(result.returncode,0,result.stdout); self.assertIn('FAIL test-agent-usage',result.stdout)
+    def test_invalid_modes_and_phase_flags_fail_without_checks(self):
+        for args in (['invalid'],['baseline','--full'],['application','--base',self.base],['result','--pull-request']):
+            self.clear(); result=self.run_entry(*args); self.assertNotEqual(result.returncode,0); self.assertEqual(self.calls(),[])
+    def test_zero_missing_failed_and_skipped_test_reports_fail(self):
+        reports={'VERIFY_FIXTURE_UNIT_REPORT':['Ran 0 tests in 0.001s\nOK','no coverage','Ran 2 tests in 0.001s\nOK (skipped=1)','Ran 2 tests in 0.001s\nOK (expected failures=1)'],
+                 'VERIFY_FIXTURE_API_REPORT':['0 pass\n0 fail','no coverage','1 pass\n1 fail','1 pass\n0 fail\n1 skip','1 pass\n0 fail\n1 todo'],
+                 'VERIFY_FIXTURE_E2E_REPORT':['0 passed (1s)','no coverage','1 passed (1s)\n1 failed','1 passed (1s)\n1 skipped','1 passed (1s)\n1 did not run']}
+        for key,values in reports.items():
+            for value in values:
+                with self.subTest(key=key,value=value):
+                    result=self.run_entry('--full',extra={key:value}); self.assertNotEqual(result.returncode,0,result.stdout)
+                    self.assertIn('test coverage or unexpected skips',result.stdout)
+    def test_local_and_ci_phases_have_identical_selection(self):
+        event=self.home/'event.json'; event.write_text(json.dumps({'before':self.base,'after':self.head}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event)}
+        local=self.run_entry(*self.docs_args()); self.assertEqual(local.returncode,0,local.stdout); local_calls=self.calls(); self.clear()
+        classification=self.run_entry('classify',extra=extra); self.assertEqual(classification.stdout.strip(),'docs')
+        phase=self.run_entry('baseline'); self.assertEqual(phase.returncode,0,phase.stdout); self.assertEqual(self.calls(),local_calls)
+        self.clear(); local=self.run_entry('--full'); self.assertEqual(local.returncode,0,local.stdout); local_calls=self.calls(); self.clear()
+        for mode in ('baseline','application'):
+            phase=self.run_entry(mode); self.assertEqual(phase.returncode,0,phase.stdout)
+        self.assertEqual(self.calls(),local_calls)
+    def test_shared_classifier_invalid_output_and_crash_are_not_green(self):
+        policy=self.root/'scripts/ci_policy.py'
+        original=policy.read_text()
+        for body in ("print('docs\\nfull'); return 0", "print('docs'); return 1", "raise OSError('fixture')"):
+            with self.subTest(body=body):
+                policy.write_text('def main(argv):\n    '+body+'\n')
+                try:
+                    result=self.run_entry('classify'); self.assertNotEqual(result.returncode,0,result.stdout)
+                    self.assertEqual(self.calls(),[])
+                finally: policy.write_text(original)
+
+    def test_result_rejects_missing_failed_and_unexpected_skips(self):
+        for classification,baseline,full in (('docs','success','skipped'),('full','success','success'),('full','success','skipped'),('docs','failure','skipped'),('invalid','success','success')):
+            result=self.run_entry('result',extra={'CI_CLASS':classification,'CI_BASELINE':baseline,'CI_FULL':full})
+            self.assertEqual(result.returncode==0,(classification,baseline,full) in (('docs','success','skipped'),('full','success','success')))
+    def test_legacy_gate_is_bounded_and_same_locally_or_ci(self):
+        result=self.run_entry('--full',extra={'GITHUB_HEAD_REF':'feat/07-ciclos-operacion'})
+        self.assertEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.calls().count('legacy'),6)
+        self.assertEqual(self.calls().count('api'),1); self.assertEqual(self.calls().count('e2e'),1)
+        self.git('switch','-qc','feat/07-ciclos-operacion'); self.clear()
+        result=self.run_entry('--full'); self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls().count('legacy'),6)
+    def test_verification_has_no_provisioning_or_state_changes(self):
+        before=self.git('status','--porcelain'); head=self.git('rev-parse','HEAD')
+        result=self.run_entry('--full'); self.assertEqual(result.returncode,0,result.stdout)
+        self.assertEqual(self.git('status','--porcelain'),before); self.assertEqual(self.git('rev-parse','HEAD'),head)
+        self.assertEqual(self.calls(),BASELINE_NAMES+APP_NAMES)
+
+if __name__=='__main__': unittest.main(verbosity=2)

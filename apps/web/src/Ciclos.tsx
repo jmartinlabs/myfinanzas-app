@@ -10,6 +10,7 @@ export type Cycle = {
   estadoTemporal: string;
   corte: string | null;
   estadoCorte: string;
+  revision: number;
 };
 type Context = {
   actual: Cycle | null;
@@ -96,6 +97,13 @@ export function Ciclos({
   go: (path: string) => void;
 }) {
   if (path === "/ciclos/nuevo") return <CycleForm go={go} />;
+  if (path === "/ciclos/omitido")
+    return <CycleOperationForm key="omitido" go={go} />;
+  const correction = path.match(/^\/ciclos\/(\d+)\/rectificar$/);
+  if (correction)
+    return (
+      <CycleOperationForm key={correction[1]} id={correction[1]} go={go} />
+    );
   const match = path.match(/^\/ciclos\/(\d+)$/);
   if (match) return <CycleDetail key={match[1]} id={match[1]} go={go} />;
   if (path === "/ciclos") return <CycleList go={go} />;
@@ -178,6 +186,9 @@ function CycleList({ go }: { go: (p: string) => void }) {
         title="Ciclos financiados"
         description="Periodos de financiación · maestro único, independiente de Nómina"
       >
+        <button className="secondary" onClick={() => go("/ciclos/omitido")}>
+          Registrar ciclo omitido
+        </button>
         <button className="primary" onClick={() => go("/ciclos/nuevo")}>
           Nuevo ciclo
         </button>
@@ -393,6 +404,12 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
         description={`Ciclo #${c.id} · Identidad estable`}
       >
         <Tag>{c.estadoTemporal}</Tag>
+        <button
+          className="primary"
+          onClick={() => go("/ciclos/" + id + "/rectificar")}
+        >
+          Rectificar ciclo
+        </button>
       </PageHead>
       <ReferenceNote context={contexto} />
       <div className="detail-grid">
@@ -421,6 +438,11 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
           </dl>
         </section>
       </div>
+      <section className="panel classification-deps">
+        <h2>Conciliación comida</h2>
+        <p>No disponible · conciliación E3.5 pendiente</p>
+      </section>
+      <CycleHistory id={id} />
       <section className="panel classification-deps">
         <h2>Cierre financiero</h2>
         <p>Funcionalidad no disponible.</p>
@@ -647,6 +669,439 @@ function CycleForm({ go }: { go: (p: string) => void }) {
           </div>
         </div>
       </form>
+    </>
+  );
+}
+
+type CycleAudit = {
+  revision: number;
+  accion: string;
+  motivo: string;
+  instante: string;
+  actor: string;
+  anterior: Cycle | null;
+  posterior: Cycle;
+};
+function CycleHistory({ id }: { id: string }) {
+  const [items, setItems] = useState<CycleAudit[] | null>(null),
+    [error, setError] = useState(""),
+    [reload, setReload] = useState(0);
+  useEffect(() => {
+    let live = true;
+    setItems(null);
+    setError("");
+    api<{ items: CycleAudit[] }>("/ciclos/" + id + "/historial")
+      .then((d) => {
+        if (live) setItems(d.items);
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, reload]);
+  return (
+    <section className="panel cycle-history">
+      <h2>Historial de rectificaciones</h2>
+      {error ? (
+        <Alert retry={() => setReload((n) => n + 1)}>{error}</Alert>
+      ) : items === null ? (
+        <p role="status">Cargando historial…</p>
+      ) : !items.length ? (
+        <p>Todavía no hay rectificaciones.</p>
+      ) : (
+        items.map((r) => (
+          <article key={r.revision}>
+            <h3>
+              Revisión {r.revision} ·{" "}
+              {r.accion === "omitido" ? "Ciclo omitido" : "Rectificación"}
+            </h3>
+            <p>Motivo: {r.motivo}</p>
+            <p>
+              {r.instante} · {r.actor}
+            </p>
+            <p>
+              Inicio antes:{" "}
+              {r.anterior ? dateLabel(r.anterior.inicio) : "No existía"} →
+              después: {dateLabel(r.posterior.inicio)}
+            </p>
+            <p>
+              Saldo comida antes:{" "}
+              {r.anterior ? eur(r.anterior.saldoInicialComida) : "No existía"} →
+              después: {eur(r.posterior.saldoInicialComida)}
+            </p>
+          </article>
+        ))
+      )}
+    </section>
+  );
+}
+type CycleImpact = {
+  operation: string;
+  id: string | null;
+  before: Cycle | null;
+  after: Cycle;
+  contextRevision: string;
+  impactRevision: string;
+  ciclos: { antes: Cycle | null; despues: Cycle }[];
+  movimientos: {
+    id: string;
+    fecha: string;
+    tipo: string;
+    vigencia: string;
+    antes: Cycle | null;
+    despues: Cycle | null;
+  }[];
+  totalMovimientos: number;
+  page: number;
+  contextoAntes: Context;
+  contextoDespues: Context;
+};
+function CycleOperationForm({
+  id,
+  go,
+}: {
+  id?: string;
+  go: (p: string) => void;
+}) {
+  const [inicio, setInicio] = useState(""),
+    [saldo, setSaldo] = useState(""),
+    [motivo, setMotivo] = useState(""),
+    [revision, setRevision] = useState(1),
+    [loading, setLoading] = useState(Boolean(id)),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(""),
+    [retry, setRetry] = useState(0),
+    [fields, setFields] = useState<Record<string, string>>({}),
+    [impact, setImpact] = useState<CycleImpact | null>(null);
+  const initialized = useRef(false),
+    attempt = useRef(crypto.randomUUID()),
+    errorRef = useRef<HTMLDivElement>(null),
+    reviewRef = useRef<HTMLDivElement>(null);
+  const endpoint = id ? "/ciclos/" + id + "/rectificar" : "/ciclos/omitido";
+  useEffect(() => {
+    if (!id) return;
+    let live = true;
+    setLoading(true);
+    setError("");
+    api<{ ciclo: Cycle }>("/ciclos/" + id)
+      .then((d) => {
+        if (live) {
+          if (!initialized.current) {
+            setInicio(d.ciclo.inicio);
+            setSaldo(d.ciclo.saldoInicialComida);
+            initialized.current = true;
+          }
+          setRevision(d.ciclo.revision);
+          setImpact(null);
+        }
+      })
+      .catch((e) => {
+        if (live) setError(e.message);
+      })
+      .finally(() => {
+        if (live) setLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [id, retry]);
+  useEffect(() => {
+    if (impact) reviewRef.current?.focus();
+  }, [impact]);
+  const payload = () => ({
+    inicio,
+    saldoInicialComida: saldo.replace(",", "."),
+    motivo,
+    ...(id ? { revision } : {}),
+  });
+  const fail = (e: unknown) => {
+    const err = e as ApiError;
+    setError(err.message);
+    setFields(err.fields ?? {});
+    if (err.status === 409) setImpact(null);
+    requestAnimationFrame(() => errorRef.current?.focus());
+  };
+  async function review(page = 1) {
+    setBusy(true);
+    setError("");
+    setFields({});
+    try {
+      setImpact(
+        await api<CycleImpact>(
+          endpoint + "/preview?page=" + page,
+          "POST",
+          payload(),
+        ),
+      );
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function confirm() {
+    if (!impact) return;
+    setBusy(true);
+    setError("");
+    try {
+      const result = await api<{ ciclo: Cycle }>(
+        endpoint,
+        "POST",
+        {
+          ...payload(),
+          contextRevision: impact.contextRevision,
+          impactRevision: impact.impactRevision,
+          confirmado: true,
+        },
+        { "idempotency-key": attempt.current },
+      );
+      go("/ciclos/" + result.ciclo.id);
+    } catch (e) {
+      fail(e);
+    } finally {
+      setBusy(false);
+    }
+  }
+  const change =
+    (set: (s: string) => void) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      set(e.target.value);
+      setImpact(null);
+      attempt.current = crypto.randomUUID();
+    };
+  const interval = (c: Cycle | null) =>
+    c
+      ? `${dateLabel(c.inicio)} — ${c.fin ? dateLabel(c.fin) : "Sin siguiente Inicio"}`
+      : "No existía";
+  const cycleName = (c: Cycle | null) =>
+    c
+      ? `${c.id === "nuevo" ? "Nuevo" : c.id} · ${monthLabel(c.mesFinanciado)}`
+      : "Sin ciclo asignable";
+  const reference = (c: Context) =>
+    `${c.referencia.fecha ? dateLabel(c.referencia.fecha) : "No disponible"} · ${c.actual ? monthLabel(c.actual.mesFinanciado) : "Sin ciclo actual"}`;
+  return (
+    <>
+      <PageHead
+        eyebrow="CICLOS FINANCIADOS"
+        title={id ? "Rectificar ciclo" : "Registrar ciclo omitido"}
+        description="Revisión de impacto antes de confirmar; conserva los hechos originales."
+      />
+      {error && (
+        <div tabIndex={-1} ref={errorRef}>
+          <Alert>
+            {error}
+            {id && !loading && (
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => setRetry((n) => n + 1)}
+              >
+                Recargar ciclo
+              </button>
+            )}
+          </Alert>
+        </div>
+      )}
+      {loading ? (
+        <p role="status">Cargando ciclo…</p>
+      ) : (
+        <form
+          className="saldo-form"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            review();
+          }}
+        >
+          <section className="panel">
+            <h2>Entradas manuales</h2>
+            <div className="form-grid">
+              <label>
+                Inicio ciclo *
+                <input
+                  type="date"
+                  aria-label="Inicio ciclo *"
+                  value={inicio}
+                  onChange={change(setInicio)}
+                  aria-invalid={Boolean(fields.inicio)}
+                />
+                {fields.inicio && (
+                  <span className="field-error">{fields.inicio}</span>
+                )}
+              </label>
+              <label>
+                Saldo inicial comida (€) *
+                <input
+                  aria-label="Saldo inicial comida (€) *"
+                  inputMode="decimal"
+                  value={saldo}
+                  onChange={change(setSaldo)}
+                  aria-invalid={Boolean(fields.saldoInicialComida)}
+                />
+                {fields.saldoInicialComida && (
+                  <span className="field-error">
+                    {fields.saldoInicialComida}
+                  </span>
+                )}
+              </label>
+            </div>
+            <label>
+              Motivo *
+              <textarea
+                aria-label="Motivo *"
+                value={motivo}
+                onChange={change(setMotivo)}
+                maxLength={1000}
+              />
+            </label>
+            <p className="help">
+              Importe manual explícito: cero y negativos válidos. No se copia un
+              cierre ni se modifica la apertura del siguiente ciclo.
+            </p>
+          </section>
+          {impact && (
+            <section
+              className="panel cycle-impact"
+              role="region"
+              aria-label="Revisión de impacto de Ciclos"
+              tabIndex={-1}
+              ref={reviewRef}
+            >
+              <h2>Revisar {id ? "rectificación" : "ciclo omitido"}</h2>
+              <div className="impact-pair">
+                <p>
+                  <strong>Inicio antes:</strong>{" "}
+                  {impact.before
+                    ? dateLabel(impact.before.inicio)
+                    : "No existía"}
+                </p>
+                <p>
+                  <strong>Inicio después:</strong>{" "}
+                  {dateLabel(impact.after.inicio)}
+                </p>
+                <p>
+                  <strong>Saldo comida antes:</strong>{" "}
+                  {impact.before
+                    ? eur(impact.before.saldoInicialComida)
+                    : "No existía"}
+                </p>
+                <p>
+                  <strong>Saldo comida después:</strong>{" "}
+                  {eur(impact.after.saldoInicialComida)}
+                </p>
+              </div>
+              <h3>Periodos afectados</h3>
+              {impact.ciclos.map((c, i) => (
+                <article key={i}>
+                  <p>
+                    <strong>{cycleName(c.despues)}</strong>
+                  </p>
+                  <p>Mes financiado antes: {c.antes ? monthLabel(c.antes.mesFinanciado) : "No existía"}</p>
+                  <p>Mes financiado después: {c.despues ? monthLabel(c.despues.mesFinanciado) : "No existía"}</p>
+                  <p>Antes: {interval(c.antes)}</p>
+                  <p>Después: {interval(c.despues)}</p>
+                </article>
+              ))}
+              <p>
+                Referencia / ciclo actual antes:{" "}
+                {reference(impact.contextoAntes)}
+              </p>
+              <p>
+                Referencia / ciclo actual después:{" "}
+                {reference(impact.contextoDespues)}
+              </p>
+              <h3>Hechos afectados: {impact.totalMovimientos}</h3>
+              {impact.movimientos.length === 0 ? (
+                <p>No hay hechos que cambien de ciclo.</p>
+              ) : (
+                <ul className="cycle-facts">
+                  {impact.movimientos.map((m) => (
+                    <li key={m.id}>
+                      <strong>
+                        #{m.id} · {dateLabel(m.fecha)} · {m.tipo} · {m.vigencia}
+                      </strong>
+                      <p>
+                        Antes: {cycleName(m.antes)} · {interval(m.antes)}
+                      </p>
+                      <p>
+                        Después: {cycleName(m.despues)} · {interval(m.despues)}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="actions">
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={busy || impact.page <= 1}
+                  onClick={() => review(impact.page - 1)}
+                >
+                  Anterior detalle
+                </button>
+                <span>Página {impact.page}</span>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={
+                    busy || impact.page * 100 >= impact.totalMovimientos
+                  }
+                  onClick={() => review(impact.page + 1)}
+                >
+                  Siguiente detalle
+                </button>
+              </div>
+              <p>
+                Movimientos comprobado. Revisión Comida instalada; operaciones
+                de inversión pendientes.
+              </p>
+              <p>
+                Conciliación comida: No disponible · E3.5 pendiente.
+              </p>
+              <p className="help">
+                No se alteran fechas, importes ni identidades de los hechos. Fin
+                temporal no es cierre financiero.
+              </p>
+            </section>
+          )}
+          <div className="form-footer">
+            <p className="muted">* Campos obligatorios</p>
+            <div className="actions">
+              <button
+                className="secondary"
+                type="button"
+                onClick={() =>
+                  impact
+                    ? setImpact(null)
+                    : go(id ? "/ciclos/" + id : "/ciclos")
+                }
+              >
+                {impact ? "Volver al borrador" : "Cancelar"}
+              </button>
+              {!impact ? (
+                <button className="primary" type="submit" disabled={busy}>
+                  {busy ? "Revisando…" : "Revisar impacto"}
+                </button>
+              ) : (
+                <button
+                  className="primary"
+                  type="button"
+                  disabled={busy}
+                  onClick={confirm}
+                >
+                  {busy
+                    ? "Confirmando…"
+                    : id
+                      ? "Confirmar rectificación"
+                      : "Confirmar ciclo omitido"}
+                </button>
+              )}
+            </div>
+          </div>
+        </form>
+      )}
     </>
   );
 }

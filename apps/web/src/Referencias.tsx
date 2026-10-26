@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 import { referenceReturn } from "./movement-draft";
+import { VehicleForm } from "./Vehiculos";
 export type Reference = {
   id: string;
   nombre: string;
@@ -10,6 +11,13 @@ export type Reference = {
   revision: number;
 };
 type Usage = { id: string; fecha: string; tipo: string; anulado: number };
+type VehicleFicha = {
+  referencia: string;
+  matricula: string | null;
+  proximaITV: string | null;
+  cita: string | null;
+  revision: number;
+};
 const base = "/referencias";
 export function Referencias({
   path,
@@ -20,6 +28,9 @@ export function Referencias({
 }) {
   if (path === base) return <ReferenceList go={go} />;
   if (path === base + "/nueva") return <ReferenceForm key="nueva" go={go} />;
+  const conversion = path.match(/^\/referencias\/(REF\d+)\/convertir$/);
+  if (conversion)
+    return <VehicleForm key={path} conversionId={conversion[1]} go={go} />;
   const m = path.match(/^\/referencias\/(REF\d+)(?:\/(editar))?$/);
   if (m)
     return m[2] ? (
@@ -72,15 +83,24 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="CASOS IDENTIFICABLES"
         title="Referencias"
-        description="Un único maestro · Viajes y Eventos"
+        description="Un único maestro · Viajes, Eventos, Anticipos, Vehículos y Gastos compartidos"
       >
         <button className="primary" onClick={() => go(base + "/nueva")}>
           Nueva referencia
         </button>
       </PageHead>
       <p className="help">
-        Anticipos, Gastos compartidos y Vehículos estarán disponibles con sus
-        fichas. No se crean casos incompletos.
+        Cada caso conserva una identidad estable. Los Vehículos añaden su ficha
+        1:1 y su gasto anual sin crear maestros paralelos.{" "}
+        <a
+          href="/vehiculos/nuevo"
+          onClick={(e) => {
+            e.preventDefault();
+            go("/vehiculos/nuevo");
+          }}
+        >
+          Nuevo vehículo
+        </a>
       </p>
       <section
         className="panel catalog-panel references-list"
@@ -105,6 +125,9 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
               <option value="">Todos</option>
               <option>Viaje</option>
               <option>Evento</option>
+              <option>Anticipo</option>
+              <option>Vehículo</option>
+              <option>Gasto compartido</option>
             </select>
           </label>
           <label>
@@ -131,7 +154,7 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
                 ? "Sin coincidencias"
                 : "Todavía no hay referencias"}
             </h2>
-            <p>Crea un Viaje o Evento para identificar un caso concreto.</p>
+            <p>Crea una Referencia para identificar un caso concreto.</p>
           </div>
         ) : (
           <>
@@ -200,9 +223,12 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
   );
 }
 function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
-  const [data, setData] = useState<{ item: Reference; usos: Usage[] } | null>(
-      null,
-    ),
+  const [data, setData] = useState<{
+      item: Reference;
+      usos: Usage[];
+      vehiculo: VehicleFicha | null;
+      conversion: { disponible: boolean; motivo: string | null };
+    } | null>(null),
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0),
     [confirm, setConfirm] = useState(false),
@@ -271,9 +297,15 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
             <Tag inactive={r!.estado === "Inactiva"}>{r!.estado}</Tag>
             <button
               className="secondary"
-              onClick={() => go(base + "/" + id + "/editar")}
+              onClick={() =>
+                go(
+                  r!.tipo === "Vehículo"
+                    ? "/vehiculos/" + id + "/editar"
+                    : base + "/" + id + "/editar",
+                )
+              }
             >
-              Editar referencia
+              {r!.tipo === "Vehículo" ? "Editar ficha" : "Editar referencia"}
             </button>
           </PageHead>
           <section className="panel">
@@ -293,10 +325,83 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               </div>
             </dl>
             <p className="help">
-              Viaje y Evento no necesitan ficha específica. El nombre puede
-              cambiar sin alterar sus enlaces.
+              Viaje y Evento no necesitan ficha específica. Anticipo, Vehículo
+              y Gasto compartido crean su ficha 1:1 en la misma transacción. El
+              nombre puede cambiar sin alterar sus enlaces.
             </p>
           </section>
+          {r?.tipo === "Vehículo" && (
+            <section className="panel">
+              <h2>Ficha de Vehículo</h2>
+              {data.vehiculo ? (
+                <>
+                  <dl>
+                    <div>
+                      <dt>Matrícula</dt>
+                      <dd>{data.vehiculo.matricula ?? "Sin informar"}</dd>
+                    </div>
+                    <div>
+                      <dt>Próxima ITV</dt>
+                      <dd>{data.vehiculo.proximaITV ?? "No informada"}</dd>
+                    </div>
+                    <div>
+                      <dt>Cita</dt>
+                      <dd>{data.vehiculo.cita ?? "No informada"}</dd>
+                    </div>
+                  </dl>
+                  <button
+                    className="secondary"
+                    onClick={() => go("/vehiculos/" + id)}
+                  >
+                    Consultar ficha y gasto anual
+                  </button>
+                </>
+              ) : (
+                <p>
+                  Integridad: Revisar · la ficha no existe. No se crea ni repara
+                  automáticamente.
+                </p>
+              )}
+            </section>
+          )}
+          {r?.tipo !== "Vehículo" && (
+            <section className="panel">
+              <h2>Conversión a Vehículo</h2>
+              {data.conversion.disponible ? (
+                <>
+                  <p>
+                    La Referencia no tiene ficha ni hechos. La conversión crea
+                    una ficha 1:1 en la misma transacción, conservando ID,
+                    nombre e historial.
+                  </p>
+                  <button
+                    className="secondary"
+                    onClick={() => go(base + "/" + id + "/convertir")}
+                  >
+                    Convertir a Vehículo
+                  </button>
+                </>
+              ) : (
+                <p className="help">{data.conversion.motivo}</p>
+              )}
+            </section>
+          )}
+          {r?.tipo === "Anticipo" && (
+            <section className="panel">
+              <h2>Ficha de Anticipo</h2>
+              <button onClick={() => go("/anticipos/" + id)}>
+                Consultar ficha de Anticipo
+              </button>
+            </section>
+          )}
+          {r?.tipo === "Gasto compartido" && (
+            <section className="panel">
+              <h2>Ficha compartida</h2>
+              <button onClick={() => go("/compartidos/" + id)}>
+                Consultar ficha de Gasto compartido
+              </button>
+            </section>
+          )}
           <section className="panel">
             <h2>Movimientos vinculados</h2>
             <p>
@@ -353,9 +458,12 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
   );
 }
 function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
-  const [data, setData] = useState<{ item: Reference; usos: Usage[] } | null>(
-      null,
-    ),
+  const [data, setData] = useState<{
+      item: Reference;
+      usos: Usage[];
+      vehiculo: VehicleFicha | null;
+      conversion: { disponible: boolean; motivo: string | null };
+    } | null>(null),
     [name, setName] = useState(""),
     [type, setType] = useState(""),
     [error, setError] = useState(""),
@@ -422,6 +530,29 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
       setBusy(false);
     }
   }
+  if (data?.item.tipo === "Vehículo")
+    return (
+      <>
+        <PageHead
+          eyebrow={id!}
+          title={data.item.nombre}
+          description="Vehículo · ficha 1:1"
+        />
+        <section className="panel">
+          <h2>Edición de vehículo</h2>
+          <p>
+            El nombre, la matrícula y las fechas se editan en la ficha, donde
+            también se confirman los duplicados por dimensión.
+          </p>
+          <button
+            className="primary"
+            onClick={() => go("/vehiculos/" + id + "/editar")}
+          >
+            Abrir ficha de vehículo
+          </button>
+        </section>
+      </>
+    );
   return (
     <>
       <PageHead
@@ -502,7 +633,9 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                 <select
                   aria-label="Tipo de Referencia *"
                   value={type}
-                  disabled={!!data?.usos.length}
+                  disabled={
+                    !!data?.usos.length || data?.item.tipo === "Vehículo"
+                  }
                   aria-invalid={!!fields.tipo}
                   aria-describedby={fields.tipo ? "ref-type-error" : undefined}
                   onChange={(e) => {
@@ -515,6 +648,9 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                   <option value="">Selecciona</option>
                   <option>Viaje</option>
                   <option>Evento</option>
+                  <option>Anticipo</option>
+                  <option>Gasto compartido</option>
+                  {type === "Vehículo" && <option>Vehículo</option>}
                 </select>
                 {fields.tipo && (
                   <span className="field-error" id="ref-type-error">
@@ -530,8 +666,8 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
               </p>
             )}
             <p className="help">
-              Estado inicial Activa. Anticipo, Gasto compartido y Vehículo
-              esperan sus fichas E3.
+              Estado inicial Activa. El alta de Vehículo se realiza desde
+              «Nuevo vehículo» para crear la ficha 1:1 en la misma transacción.
             </p>
           </section>
           <div className="form-footer">

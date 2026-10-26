@@ -23,7 +23,12 @@ updates, evidence in setup progress and a working local commit.
 5. Start and inspect the application/service and exercise representative behavior.
    For a library, invoke its public API; for CLI, assert output/exit status; for web,
    send actual requests and inspect responses. Diagnose failures and retry corrections.
-6. Document exact working directories, install/run/check commands and prerequisites.
+6. Establish one canonical verification command shared by local use and CI, following
+   specs/methodology/ci-policy.md. Reuse an adequate existing command instead of adding
+   a redundant wrapper. Document prerequisites, comparison inputs and forced full mode
+   in AGENTS.md and quality guidelines. Prove failure propagation, coverage, local/CI
+   parity and each required suite once. Provision dependencies separately.
+   Document exact working directories, install/run/check commands and prerequisites.
    Update architecture to implemented reality; record test evidence and next action.
 7. Review diff, stage only own files, check for secrets, then commit the working state.
    Do not push or deploy without authorization.

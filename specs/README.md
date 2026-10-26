@@ -1,10 +1,37 @@
+## Estado metodológico vigente — v2.14.0 (adaptación selectiva)
+
+Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicializar la aplicación ni afirmar una adopción íntegra.
+[Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, OpenCode manual, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
+Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
+[contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
+launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
+Un resumen vigente en tablero/progreso es dueño del estado; el resto enlaza ese resumen.
+Entrada de verificación v2.7.0 conservada, sin cambiar CI. Los estados inferiores son historia.
+
 # Document ownership and workflow
+
+Estado vigente 2026-10-22: aplicación existente, ocho etapas cerradas, E1.1–E1.5
+integradas junto a E1.6 (PR34, cb9ba3b), con QA independiente y CI de rama SUCCESS.
+Spec07 E2.1 y wireframes aprobados e integrados PR37/c04dc07; dev07 autorizado.
+Implementación y verificaciones en [progress07](07-ciclos-operacion-progress.md),
+con gate global API pendiente; sin merge de implementación ni despliegue.
+Referencia única v5.11(7) candidata, no estable. La cronología inferior es histórica.
+Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$orchestrate](../.agents/skills/orchestrate/SKILL.md),
+[contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
+[evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
+
+Contrato CI vigente: [v2.7.0](methodology/ci-policy.md#adaptación-vigente-v270),
+entrada local/CI `python3 scripts/verify`; adopción en preparación y pendiente de PR/CI.
+Procedencia y alcance en [adopción](methodology/orchestration-adoption.md#harness-v270--adaptación-en-curso).
+
+## Cronología conservada
+
 MyFinanzas App is a derived project in initialization. Product context and technology
 are confirmed in [project.md](project.md) and [architecture](guidelines/architecture.md).
 The initial plan is approved and STEP 1 is implemented; see [setup progress](setup-progress.md)
 and [bootstrap evidence](bootstrap.md). STEP 2 context is documented in
 [context files](context-files.md). STEP 1/2 and [STEP 3 controls](automated-checks.md)
-are merged. The current functional reference and confirmed stable baseline are recorded
+are merged. The functional reference and its current candidate/stable status are recorded
 in [project.md](project.md). The workbook and original associated documentation remain
 outside the repository and have not been inspected by Codex. The functional specification
 attachment has been read; its [sanitized reference](functional-reference-v5.11.md) informs
@@ -37,6 +64,8 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 | `guidelines/ui.md` | Applicable interface conventions or explicit not-applicable reason | init-project / dev |
 | `guidelines/quality.md` | Commands, checks, review and Definition of Done | bootstrap / dev |
 | `guidelines/security.md` | Threats, safeguards and authorization boundaries | init-project / dev |
+| `epic-board.md` | Estado/cola/gates/evidencias, nunca aprobación canónica | orchestrate, coordinador único |
+| `methodology/` | Coordinación, roles, validación y procedencia de adopción | adopción / coordinador |
 | `roadmap.md` | Product outcomes, proposed increments, dependencies, acceptance and approval status | roadmap |
 | `functional-reference-v5.11.md` | Sanitized source provenance, financial rules and confirmed P1–P7 | STEP 4 source review |
 | `NN-slug-brainstorming.md` | Append-only questions and confirmed answers | spec |

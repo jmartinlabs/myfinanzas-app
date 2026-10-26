@@ -1,14 +1,15 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.4 integradas; E1.5 local/ficticia en desarrollo autorizado.
-Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) antes de actuar.
+Repositorio privado: E1.1–E1.6 y E2.1–E2.5 integradas; spec12 PR65/42a3efe aprobada/integrada, dev12 autorizado por el usuario el 2026-10-25, candidato externo pendiente de QA independiente. B3 sigue abierto; no reanudar su investigación por inferencia.
+Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) en las secciones necesarias, sin recargar documentos completos sin cambios.
 
-- Lee [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
+- Carga solo las guías aplicables: [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
   [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
 - Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
-- Verifica `bun run typecheck`, `bun run build`, `bun run test`, `bun run test:e2e`.
-  Prerrequisitos, comandos de plantilla y limitaciones: guideline de calidad.
-- Usa el checkout aislado actual; no crees un worktree salvo petición explícita.
+- Verificación única: `python3 scripts/verify` (auto) o `python3 scripts/verify --full`.
+  Python3.10+; comparación `--base SHA --head SHA [--pull-request]`, prerrequisitos y fases CI en calidad.
+- Dentro de trabajo autorizado, `$orchestrate` puede gestionar subagentes, ramas y worktrees
+  aislados sin permiso operativo adicional, aplicando la política de seguridad y ownership local.
 - Próximas entregas: evitar documentación/rondas redundantes; resolver detalles técnicos
   ordinarios durante desarrollo reutilizando arquitectura/componentes/pruebas. Mantener
   revisión rigurosa de lógica financiera, integridad, seguridad y persistencia.
@@ -25,22 +26,22 @@ Lee [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) 
   Primera propuesta visual común y pantallas E1.1 aprobadas por comunicación del usuario
   el 2026-10-21; guía UI y specification documentan alcance. No confundir aprobación
   con pruebas de UI implementada ni adelantar Ciclos para la cabecera.
-  E1.1 implementado e integrado en PR #7 tras aprobación expresa del usuario sobre
-  4f7cdda y autorización de merge el 2026-10-21. Motores financieros posteriores pendientes.
-  STEP 8 completado e integrado mediante PR #8 tras aprobación del usuario sobre
-  f4ff3e2 el 2026-10-21: ocho etapas iniciales cerradas y Skills spec/dev reutilizables.
-  E1.2 especificación/diseño aprobados e integrados PR #10 (0c7a87e); dev 02 autorizado
-  en feat/e1-2-clasificacion, solo local/ficticio. Unicidad SUB global sin mayúsculas,
-  tildes/espacios conservados y comodines literales; reserva resuelta por usuario.
-  E1.2 completada e integrada mediante PR #11 tras aprobación expresa sobre 58b51f9
-  y squash merge autorizado. 27 criterios verificados; AC-19/24/25/26 siguen contratos
-  futuros. E1.3 integrada PR #13 (ff9d18d); spec 04 aprobada PR #14 (5fa4ace).
-  E1.4 cerrada PR #15/#16; spec 05 aprobada PR #17 (a586fa7). Dev 05 autorizado: 30 AC actuales/3 futuros; sin E1.6, Exterior ni deploy.
+  E1.1–E1.5 implementadas e integradas; ocho etapas iniciales cerradas. Historial y
+  aprobaciones en specs/project.md y specs/setup-progress.md; motores futuros pendientes.
+  Unicidad SUB global sin mayúsculas, tildes/espacios conservados y comodines literales.
+  E1.6 integrada PR34: 30 AC actuales verificados/3 futuros. Spec07 aprobada/integrada; dev07 autorizado (estado en progress07), sin Exterior Transferencia ni deploy.
 - Referencia funcional vigente: v5.11 en specs/project.md.
 - Especificación funcional recibida y leída: specs/functional-reference-v5.11.md.
 - Roadmap aprobado en specs/roadmap.md; DT1–DT10 progresivas antes de cada entrega.
 - SQL/actualización local E1.2 autorizados conforme especificación 02, preservando E1.1. Sin despliegue. Contexto
   en specs/project.md; Excel sigue como fuente de verdad hasta el traspaso autorizado.
+## Coordinación v2.14.0 selectiva — publicación, continuidad y handoff
+- Usa [$orchestrate](.agents/skills/orchestrate/SKILL.md) y [reglas locales](specs/methodology/myfinanzas-coordination.md) para coordinar trabajo autorizado; aprobaciones: [approvals](specs/methodology/approvals.md).
+- Consulta [flujos](specs/methodology/workflows.md) para clasificar; carga [agentes dinámicos](specs/methodology/dynamic-agents.md) y [roles](.agents/roles/README.md) solo al delegar; Skills preservadas. Paquetes, retornos completos y estado manual: [comunicación](specs/methodology/coordinator-communication.md).
+- Modelos/cuota: aplicar [techo Codex](specs/methodology/model-selection.md) y [gate de cuota](specs/methodology/dynamic-agents.md#quota-and-dispatch-gate) antes de nuevas tareas, incluida QA; OpenCode solo si está habilitado para esa ejecución.
+- Solo el coordinador escribe [tablero](specs/epic-board.md); cada agente recibe ownership y gates. Roles no son agentes permanentes. Trabajo autorizado de código o documentación incluye publicar su rama y crear o actualizar su PR, conforme a [publicación](specs/methodology/approvals.md#publicación-de-rama-y-pr); el merge de cada PR conserva aprobación explícita e identificable y nunca se auto-fusiona.
+- Quick autorizado, reversible y de bajo riesgo: plan de una línea, sin reconfirmar; consulta o Plan no autoriza editar. Un ejecutor por defecto, coordinación por hitos y QA independiente.
+- Aprobar spec NO autoriza desarrollo; [$handoff](.agents/skills/handoff/SKILL.md) (Claude: `/handoff`) consolida y para, sin reanudar ni controlar chats externos. Continuar el alcance autorizado hasta completarlo o hasta un bloqueo real: un informe intermedio o un check corregible no cierra el turno. Al terminar o parar, indicar responsable, acción humana exacta y estado/motivo de espera según [comunicación](specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
 
 ## Política permanente de Git y GitHub
 Aprobada por el usuario el 2026-10-20. El usuario cambió el repositorio a privado; no cambies su visibilidad.

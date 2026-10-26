@@ -51,7 +51,7 @@ class ProjectChecks(unittest.TestCase):
 
     def test_missing_ci_gate(self):
         path = self.root / '.github/workflows/validate.yml'
-        path.write_text(path.read_text().replace('bun run typecheck', 'echo skipped'))
+        path.write_text(path.read_text().replace('python3 scripts/verify application', 'echo skipped'))
         self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
 
     def test_unpinned_ci_action(self):
@@ -62,12 +62,16 @@ class ProjectChecks(unittest.TestCase):
 
     def test_ci_write_permission(self):
         path = self.root / '.github/workflows/validate.yml'
-        path.write_text(path.read_text().replace('contents: read', 'contents: write'))
+        value = json.loads(path.read_text())
+        value['permissions']['contents'] = 'write'
+        path.write_text(json.dumps(value))
         self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
 
     def test_ci_privileged_event(self):
         path = self.root / '.github/workflows/validate.yml'
-        path.write_text(path.read_text().replace('pull_request,', 'pull_request_target,'))
+        value = json.loads(path.read_text())
+        value['on'] = ['pull_request_target']
+        path.write_text(json.dumps(value))
         self.assertTrue(any(e.startswith('ci:') for e in validate(self.root)))
 
     def test_browser_server_imports(self):
@@ -157,6 +161,13 @@ class RepositoryChecks(unittest.TestCase):
         (self.root / '.git/shallow').write_text(self.git('rev-parse', 'HEAD').decode())
         with self.assertRaises(ValueError):
             repository['scan'](self.root)
+
+
+# Run the same policy regressions in the existing local/CI harness entry point.
+for name, value in runpy.run_path(str(ROOT / 'scripts/test-ci-policy')).items():
+    if name.startswith('Ci') and isinstance(value, type) and issubclass(value, unittest.TestCase):
+        globals()[name] = value
+del name, value
 
 
 if __name__ == '__main__':

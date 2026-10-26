@@ -253,3 +253,17 @@ volúmenes y Quadlet temporal en ubuntu-24.04 efímero. No instala ni modifica n
 en el VPS. El incremento actual prueba la receta definitiva; la evidencia previa
 con imagen de ensayo se conserva como histórica. Ver [runbook](infra/RUNBOOK.md) y
 [estado 32](specs/32-ejecucion-rootless-progress.md).
+
+## Coordinación — adaptación selectiva v2.14.0
+La aplicación no se reinicializa. [$orchestrate](.agents/skills/orchestrate/SKILL.md)
+ruta trabajo autorizado hacia las Skills existentes, dimensiona subagentes nativos
+según tareas independientes y mantiene [el tablero](specs/epic-board.md). No es un
+servicio residente ni un framework propio. Sin herramientas de delegación usa la
+misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordination.md),
+[guía visual](docs/GUIA_VISUAL_ORQUESTACION.md) y
+[fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
+El trabajo autorizado de código o documentación incluye publicar su rama y crear o
+actualizar su PR; el merge conserva aprobación explícita y nunca se auto-fusiona.
+La [comunicación del coordinador](specs/methodology/coordinator-communication.md)
+define retornos manuales y el cierre con responsable, acción humana y motivo de espera.
+Esta adopción no reabre epics ni autoriza desarrollo.

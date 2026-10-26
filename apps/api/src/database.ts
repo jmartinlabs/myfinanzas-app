@@ -8,11 +8,8 @@ import {
   keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
-import {
-  productionConfig,
-  openProductionConnection,
-  persistentIdentity,
-} from "./private-state";
+import { assertV14VehicleContract } from "./compartido-schema";
+import { productionConfig, openProductionConnection } from "./private-state";
 
 export function openDatabase(path: string) {
   const mode = process.env.NODE_ENV;
@@ -27,6 +24,7 @@ export function openDatabase(path: string) {
       throw new Error("Ruta productiva distinta de DATABASE_PATH.");
     const { db, key } = openProductionConnection(config, false);
     try {
+      assertV14VehicleContract(db);
       db.exec(
         "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
       );
@@ -36,14 +34,13 @@ export function openDatabase(path: string) {
         if (identity?.key_hash !== keyHash(key))
           throw new Error("Pareja DB/clave inválida en conexión efectiva.");
       }).immediate();
+      // E1.6 versioned upgrade only after the effective private pair is verified.
+      prepareSchema(db, { origin: "production", key_hash: keyHash(key) });
       return db;
     } catch (error) {
       db.close();
       throw error;
     }
-  }
-  if (path !== ":memory:" && existsSync(path)) {
-    assertMode(persistentIdentity(path), production);
   }
   if (!production && path !== ":memory:")
     mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -57,9 +54,9 @@ export function openDatabase(path: string) {
   try {
     // Connection-local only: install the existing wait policy before reading live metadata.
     db.exec("PRAGMA busy_timeout=3000");
-    // A concurrent legacy migration can commit between identity queries.
-    // Validate one read snapshot, then release it before acquiring the migration writer lock.
-    db.transaction(() => assertMode(inspectIdentity(db), production)).deferred();
+    // 31-E1: verify origin and version from one read snapshot before any persistent
+    // PRAGMA, chmod or migration (prepareSchema runs only after this check).
+    assertMode(db.transaction(() => inspectIdentity(db))(), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);
     if (!production && path !== ":memory:") chmodSync(path, 0o600);

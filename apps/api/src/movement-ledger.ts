@@ -5,7 +5,9 @@ export const fingerprint = (v: unknown) =>
 export type LedgerRow = {
   id: string;
   fecha: string;
-  tipo: "Ingreso" | "Gasto" | "Transferencia";
+  tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
+  capital: string | null;
+  intereses: string | null;
   referencia?: string | null;
   importe: string;
   origen: string;
@@ -28,7 +30,7 @@ export function ledgerInstalled(db: Database) {
 export function ledgerRows(db: Database): LedgerRow[] {
   return db
     .query(
-      "SELECT id,fecha,tipo,CAST(importe AS TEXT) importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado FROM movimientos ORDER BY length(id),id",
+      "SELECT id,fecha,tipo,CAST(capital AS TEXT) capital,CAST(intereses AS TEXT) intereses,CAST(importe AS TEXT) importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado FROM movimientos ORDER BY length(id),id",
     )
     .all() as LedgerRow[];
 }
@@ -62,6 +64,35 @@ export function movementSource(
 export function financeRevision(db: Database) {
   return fingerprint([
     ledgerRows(db),
+    ...(db
+      .query("SELECT name FROM sqlite_master WHERE name='movimiento_anticipo'")
+      .get()
+      ? [
+          db
+            .query("SELECT * FROM movimiento_anticipo ORDER BY movimiento")
+            .all(),
+          db
+            .query(
+              "SELECT * FROM fotos_neto_apertura ORDER BY referencia,ciclo",
+            )
+            .all(),
+        ]
+      : []),
+    ...(db
+      .query("SELECT name FROM sqlite_master WHERE name='payroll_allocations'")
+      .get()
+      ? [
+          db
+            .query("SELECT * FROM payroll_allocations ORDER BY paga,movimiento")
+            .all(),
+          db.query("SELECT MAX(id) revision FROM payroll_audit").get(),
+        ]
+      : []),
+    db
+      .query(
+        "SELECT id,nombre,inicio,CAST(apertura AS TEXT) apertura,estado,revision FROM deudas ORDER BY id",
+      )
+      .all(),
     db.query("SELECT * FROM referencias ORDER BY id").all(),
     db
       .query(

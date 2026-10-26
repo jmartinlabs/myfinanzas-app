@@ -130,7 +130,7 @@ test("03 AC01/02/05/09/12–15: alta explícita, mes único y orden, sin reloj n
     expect(first.contexto.referencia.fecha).toBeNull();
     expect(first.contexto.referencia.coverage.map((s) => s.state)).toEqual([
       "disponible",
-      "pendiente",
+      "disponible",
       "pendiente",
     ]);
     expect(() => add(db, "2026-10-25")).toThrow("Ciclo duplicado");
@@ -318,7 +318,11 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
       if (name !== "schema_version" && name !== "counters")
         expect(
           db.query(`SELECT * FROM "${name}" ORDER BY rowid`).all(),
-        ).toEqual(values);
+        ).toEqual(
+          name === "partidas"
+            ? values.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
+            : values,
+        );
     for (const old of before.find(([name]) => name === "counters")![1] as {
       name: string;
       next: number;
@@ -327,7 +331,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 6,
+      version: 16,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
     expect({
@@ -354,8 +358,8 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
     ).toBeString();
     const cycle = add(db, "2028-02-28", "-12.34");
     add(db, "2028-03-01");
-    backup(db, key, join(dir, "v6"), pub);
-    for (const version of [2, 6]) {
+    backup(db, key, join(dir, "v10"), pub);
+    for (const version of [2, 10]) {
       const restored = restore(
         join(dir, "v" + version),
         join(dir, "restored" + version),
@@ -369,8 +373,8 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         }).toEqual(priorSaldo);
         expect(getSaldo(copy, saldo.id).posicion.importe).toBe("-10.01");
         expect(copy.query("SELECT * FROM sessions").all()).toEqual([]);
-        expect(listCycles(copy).total).toBe(version === 6 ? 2 : 0);
-        if (version === 6)
+        expect(listCycles(copy).total).toBe(version === 10 ? 2 : 0);
+        if (version === 10)
           expect(getCycle(copy, cycle.ciclo.id).ciclo.fin).toBe("2028-02-29");
       } finally {
         copy.close();

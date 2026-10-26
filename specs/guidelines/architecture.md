@@ -228,3 +228,205 @@ imágenes/esquema/datos/auth/escrituras. Ninguno despliega ni cambia estado.
 Tests Python/fcntl de #31 se montan como helper readonly del runner, fuera de la
 imagen productiva. La fixture Containerfile.probe es historia, ya no receta CI.
 Estado de aceptación, fallos y SHA en testplan 32; no anticipar PASS ni cierre R6.
+
+## E1.6 — Deuda mínima, candidato local
+Esquema7 añade deudas, intentos y relación opcional Partida→Deuda; capital/intereses en el hecho Movimiento único. La migración preserva filas/auditorías/FK/índices/triggers sin reseed/backfill y se ejecuta dentro de IMMEDIATE. En origen production se invoca únicamente después de verificar la pareja efectiva y guardas existentes. Desarrollo autorizado el 2026-10-22, exclusivamente fixtures locales; sin ejecución operativa ni despliegue.
+
+`deudas.ts` centraliza maestro/posición derivada desde apertura y capital aplicable; `debt-schema.ts` mantiene la extensión versionada. Movimientos incorpora el cuarto Tipo y revisión banco/capital/Gasto, huella con entradas Deuda y contexto técnico para rechazar confirmación obsoleta; no API paralela de pagos ni acumulados persistidos. Backup admite manifiesto7/e1.6-v7/origen y restore revoca también intentos Deuda. [Evidencia06](../06-deuda-testplan.md); E2/E4/cierres siguen pendientes.
+
+## E2.1 — Operación de Ciclos (dev07, pendiente integración)
+`cycle-operation-schema.ts` extiende el maestro SQL `ciclos` en v9 (sin segundo maestro).
+Guarda transaccional interna permite el procedimiento revisado; fuera de él siguen
+prohibidas actualización directa, eliminación y alteración de identidad. La guarda
+queda vacía tras éxito o rollback. `cycle_audit` conserva actor/UTC/motivo/antes/después;
+`cycle_operation_attempts` ofrece reintento y se revoca al restaurar.
+`ciclos.ts` calcula antes/después desde maestro y Movimientos completos, incluyendo
+anulados consultables; pagina solo presentación. Huella de contexto incluye revisiones,
+hechos y fuentes reales comunes. BEGIN IMMEDIATE revalida huella y confirma únicamente
+con motivo y revisión explícita, sin actualizar hechos originales ni propagar Comida.
+API y UI reutilizan seguridad, componentes y pipeline existentes. Backup age identifica
+esquema9/e2.1-v9; continuidad v7 usa fixture congelada previa con Deuda, hechos y MFA.
+[Pruebas07](../07-ciclos-operacion-testplan.md) distingue evidencia y bloqueos abiertos.
+
+Reconciliación Dev07 2026-10-23: se preserva Presupuestos v8/contrato e2.2 y se aplica Ciclos v9 después. Fixtures genuinas v7 y v8 (builder integrado de main) verifican continuidad y rollback; backup conserva v8 y admite v9, restore revoca intentos de ambos módulos. Apertura conserva íntegra la enmienda31-E1 de main.
+
+## E2.3 — Plan del ciclo (candidato dev09)
+
+`cycle-plan-schema.ts` extiende v9→v10 dentro del IMMEDIATE existente, sin cambiar
+apertura SQLite. Cabecera/revisión por Ciclo, líneas únicas por Presupuesto, tres
+INTEGER nullable no negativos y auditoría append-only de deltas, sin persistir derivados.
+`planes-ciclo.ts` comparte R3 con impactos de Presupuestos/Partidas: Gastos vigentes
+por vínculo y Transferencias ordinarias internas hacia destino sin Referencia. Agregados
+y diferencias bigint exactos; null no se convierte en cero. Sin periodo verificable
+o ciclo no iniciado, no hay ejecución inventada. Copia explícita por ID y campos,
+solo sobre vacíos, revalidada completa en IMMEDIATE; revisión/contexto e intentos24h
+evitan sobrescrituras y duplicación de auditorías. API hereda MFA, Origin/CSRF,
+no-store y límites JSON. Backup/restore identifica e2.3-v10 y revoca intentos del plan.
+Fixture genuina v9 y rollback de DDL no reetiquetan bases nuevas. Cierres E4.9/fuentes
+E3/E4 siguen pendientes, sin proveedor ficticio ni cambios de Movimientos al planificar.
+
+## E2.4 — Plan anual (candidato dev10)
+
+`annual-plan-schema.ts` migra v10→v11 dentro del IMMEDIATE existente; no altera
+apertura/ownership/private identity. Línea única por ejercicio/Partida, importe
+INTEGER nullable,periodo texto y Esencial Sí/No/Pendiente;sin derivados persistidos.
+Auditoría append-only de deltas e intentos24h;backup identifica e2.4-v11 y restore
+revoca intentos anuales preservando líneas/auditoría. Gate restore Linux pendiente.
+
+`plan-anual.ts` consulta Gastos vigentes por ID/Fecha real,independiente de fuente
+mensual/ciclo. Sin proveedor verificable de inicio de control/histórico en runtime:
+Ejecutado/Diferencia null,motivo y subtotal registrado/fecha conocida consultables.
+La fecha del primer hecho/ciclo no acredita cobertura. Frontera interna inyectable
+valida intervalos,corte,procedencia,solapamiento y referencias protegidas,incluidas
+no verificables;fixtures no equivalen a integración de cierres/histórico futuros.
+Preview/confirm revalida catálogo,revisión,fuentes y protecciones en IMMEDIATE;
+año pasado exige motivo. No snapshots por edición ni reescritura de hechos.
+
+Equivalente conserva suma bigint de céntimos y divisor12 como racional;totalnull si
+faltan importes Sí,parcial y contadores independientes. Ningún float/importe visual
+alimenta agregados;resta de agregado tampoco aplica límite int64 individual.
+Clasificación incluye relaciones anuales en impacto/huella y mantiene identidad PAR.
+API/UI heredan MFA/Origin/CSRF y shell existentes,sin dependencias ni proveedor ficticio.
+No sincronización Esencial del ciclo ni consumidor global adelantados.
+[Estado y evidencia](../10-plan-anual-testplan.md);E2.4 no integrada todavía.
+
+
+## E2.5 — Nómina (candidato dev11)
+
+`payroll-schema.ts` migra v11→v12 dentro de IMMEDIATE existente: paga estable con originales
+serializados y revisión, relaciones N:M por IDs del ledger, intentos24h y auditoría append-only
+de deltas. Sin reseed ni modificación de Movimientos; identity/apertura/guardas conservadas.
+Backup identifica e2.5-v12 y restore revoca intentos salariales preservando originales/auditoría.
+Fixture genuinav11 y rollback DDL focales; restore Linux pendiente.
+
+`nomina.ts` separa Neto histórico, documental, cobrado y referencia conciliatoria. Fuente
+discrepante requiere evidencia/selección, invalidada al revisar originales. Asociación valida
+revisión real/estado/tipo/Subtipo y suma global exacta; corregir un hecho invalida cómputo,
+conserva historia y obliga revisión. La corrección bancaria advierte relaciones salariales;
+financeRevision incorpora asignaciones para evitar confirmar impacto bancario obsoleto.
+Conjunto de reparto entero se revalida bajo writer lock, con idempotencia y auditoría atómica.
+No proveedor de cierres inventado ni modificación de fotos/histórico ajenos.
+
+`payroll-decimal.ts` usa bigint/escala decimal para tasas/componentes sin redondeos intermedios;
+formato final al céntimo, empate alejándose de cero. Pronóstico elige una Ordinaria completa
+del mes más reciente en corte visible, con selección ID/evidencia en empate; no eleva netos
+parciales a referencias fiscales. Escenarios base/prudente se validan separados, +0,27pp sobre
+referencia. Sin escritura financiera desde simulación ni equivalencia C176/N:M afirmada.
+UI reutiliza shell/paleta, tabla escritorio/tarjetas390, tres vistas y revisión humana.
+[Evidencia y gates](../11-nomina-prevision-testplan.md); no integración/dev final inferidos.
+
+## E3.1 — Anticipos, candidato DEV13 (no integrado)
+
+Esquema13 se instala en el IMMEDIATE de apertura existente, después de v12. Amplía
+el Tipo de Referencia con Anticipo reconstruyendo Referencias y sus dependencias
+(Movimientos, auditoría bancaria y asignaciones salariales) mediante copias TEMP
+transaccionales; conserva IDs, importes, JSON de auditoría, acceso, índices, triggers,
+FK y restricciones anteriores. No clasifica hechos históricos ni resemilla. Fixture
+v12 genuina y fallo de DDL comprueban continuidad/rollback; no hay migración real ejecutada.
+
+`fichas_anticipos` es 1:1 con REF. También el alta común de Referencias crea su ficha
+en la misma transacción; cambiar Tipo hacia/desde Anticipo exige la ficha, sin conversión
+ordinaria que deje casos parciales. `movimiento_anticipo` guarda rol, orientación por IDs,
+revisión del Movimiento, procedencia/evidencia y auditoría; no copia importes. Toda
+Transferencia Anticipo nueva/rectificada usa `movimientos.ts`, incluyendo metadatos y
+validación de dependencias en el mismo writer lock, fingerprint e intento. Anulación
+conserva el original en auditoría y no puede retirar el último Adelanto de devoluciones
+acreditadas. Sin servicio paralelo de hechos ni ejecución de Presupuesto.
+
+`anticipos.ts` contiene un único read model para ficha, pares y simulación de impacto
+de acreditación. Lee todos los hechos canónicos antes de paginar fichas; suma bigint,
+EUR string, fechas civiles y UTC de auditoría separados. Histórico sin rol verificable
+conserva banco y ofrece No disponible/Revisar o subtotal Parcial. El lector admite fuente
+histórica Exterior acreditada; no hay importador instalado ni ampliación de Transferencias
+nuevas. El CHECK y servicio ordinarios siguen rechazando Exterior nuevo.
+
+`fotos_neto_apertura` tiene PK REF+Ciclo; solo confirmación explícita con evidencia de
+importe/instante/cobertura crea una foto. GET no escribe y no convierte pendiente actual
+en apertura. Sugerencias usan el mismo motor con hechos anteriores; sin hechos u orden
+verificable del mismo día no hay sugerencia. Cero/negativo requieren declaración/evidencia.
+La foto bloquea cambios bancarios que afecten su apertura y rectificación de su Inicio.
+Corrección excepcional conserva original en auditoría, motivo/revisión, y revalida impacto
+con `AnticipoProtectionProvider` interno. Runtime no instala proveedor de Cierres: bloquea
+la corrección con motivo explícito. Prueba positiva con proveedor de test no acredita
+integración de cierres futuros ni aceptación global de AC36.
+
+API de fichas y acreditación hereda MFA/Origin/CSRF/no-store y límites existentes.
+Backup identifica e3.1-v13 y restore revoca también anticipo_attempts; CI Linux de copia/
+restauración permanece pendiente. UI reutiliza shell/paleta; tabla1440/tarjetas390,
+selección explícita de varios pares, borrador de devolución solo en memoria y formulario
+común de Movimientos. [Checkpoint y límites](../13-anticipos-progress.md),
+[evidencia por AC](../13-anticipos-testplan.md).
+
+## E3.2 base B — Compartidos sin D5 (candidato dev14)
+
+`compartido-schema.ts` migra v14→v15 dentro del IMMEDIATE existente. La v14 es
+el contrato ya integrado de Vehículos; una base que se declare v14 sin
+`fichas_vehiculo` se rechaza como variante desconocida y no se modifica. Desde una
+v13 se ejecuta primero `vehicleSchema` y después `compartidoSchema`, de modo que
+la base resultante contiene ambos contratos. Reconstruye Referencias y sus
+dependientes (Movimientos, auditoría bancaria, asignaciones salariales, tablas de
+Anticipos y `fichas_vehiculo`) con copias TEMP transaccionales para ampliar el
+Tipo con «Gasto compartido», conservando IDs, importes, JSON de auditoría, índices,
+triggers, FK, matrículas/fechas de Vehículos y acceso. Añade `fichas_compartidos`
+1:1, `participantes_compartido` hijos con ID estable/revisión/baja lógica, índices,
+un único Titular activo, `compartido_audit` append-only y `compartido_attempts`.
+No reseed, no desactiva FK ni crea metadata de aportación. Fixture v13 genuina,
+v14 con Vehículos y fallo de DDL comprueban continuidad y rollback.
+
+`referencias.ts` crea la ficha compartida en la misma transacción que la REF CAT013
+y mantiene el alta de Vehículo. `reference-rules.ts` añade el Tipo operativo y un
+gate por operación: Gasto o Transferencia interna con ficha; S000 sigue rechazado
+por servicio y CHECK; Ingreso y Gasto fuera de CAT013 con esa REF se rechazan.
+Cambiar Tipo hacia/desde Gasto compartido queda protegido. Transferencias internas
+con la REF conservan efecto bancario y no acreditan recuperación.
+
+`compartidos.ts` es el motor/read model central (base B): Bruto, cuotas exactas por
+Gasto/Partida con mayor resto y desempate por ID, Coste propio del Titular y
+Pendiente estructural. Con terceros con cuota y D5 deshabilitado, Recuperado,
+Neto, Cobertura, Pendiente de tercero y Exceso se exponen como No disponible; sin
+terceros con cuota, No aplica. Nunca se sustituye una fuente ausente por 0,00. Un
+Gasto CAT013 incompatible o inválido se muestra «Revisar», queda fuera del Bruto y
+bloquea Cerrado (P-F6); resolverlo por el servicio común recalcula el estado. El
+caso 100 % Titular verificable y sin incidencias permite Cerrado con Neto = Bruto =
+Coste propio. El DTO incluye importe/ausencia/cobertura para AC-20, pero el consumo
+por informes/E3.6 (B-T11) queda UNRUN y fuera de base B.
+
+Cambios de partes/rol exigen vista de impacto, fingerprint y motivo; historia
+append-only; baja lógica sin DELETE ni huérfanos; los Movimientos bancarios no se
+reescriben. API `/api/compartidos/...` hereda MFA/Origin/CSRF/no-store y errores
+404/409/422; sin endpoint de aportación ni tabla `movimiento_compartido`. UI reutiliza
+shell/paleta y muestra ficha, participantes, impacto, Gastos/Partidas, estados y
+ausencias explícitas a 390/1440. Backup identifica e3.2-v15 y restore revoca
+`compartido_attempts`; las copias v14 de Vehículos conservan e3.3-v14. D5/Exterior,
+informes, E3.2 completa y deploy siguen fuera.
+[Checkpoint](../14-compartidos-progress.md), [matriz y evidencia](../14-compartidos-testplan.md).
+
+## E3.3 — Vehículos e ITV (DEV15, integrado)
+
+`vehicle-schema.ts` migra v13→v14 dentro del IMMEDIATE existente. Habilita el Tipo
+`Vehículo` en `referencias` y añade `fichas_vehiculo` 1:1 (matrícula, próxima ITV y
+cita nullable, revisión y UTC). SQLite no altera el CHECK en sitio: se reconstruyen
+`referencias` y sus dependientes directos conservando filas, auditorías, índices, FK
+y triggers. Triggers impiden ficha de otro Tipo, borrado de ficha/REF y cambio de Tipo
+con ficha; la auditoría de ficha es append-only. La lectura tolera anomalías históricas
+sin repararlas. La v15 de Compartidos reconstruye `fichas_vehiculo` con el resto de
+dependientes de Referencias y preserva su contrato.
+
+`referencias.ts` conserva el alta/edición única. `POST /api/referencias` crea REF y
+ficha en una transacción cuando el Tipo es Vehículo; `PATCH` edita ficha con
+`fichaRevision`, exige `confirmarConversion` para Q3 y bloquea REF con ficha o hechos.
+`vehicle-rules.ts` valida campos, compara nombre/matrícula por dimensión efímera,
+excluye la propia REF y emite/revalida hashes server-side; los duplicados confirmados
+siguen permitidos. `reference-rules.ts` exige ficha para todo enlace a REF Vehículo.
+
+`vehiculos.ts` es read model: integridad `OK`/`Revisar`/`No disponible`, ficha,
+auditoría y Gasto año derivado de `ledgerRows` + `annualExecution` E2.4 por Partida.
+Agrega subtotal, coberturas al corte/anual, totales, cero verificado, procedencia,
+fuera de control/corte y motivo; no persiste totales ni hechos paralelos. Sin proveedor
+anual la cobertura es parcial y los totales quedan null; las pruebas inyectan
+`AnnualProvider` ficticio. API: `GET /api/vehiculos`, `/api/vehiculos/{REF}` y
+`/api/vehiculos/integridad`; no existe escritura paralela. Backup identifica
+`e3.3-v14`; restore conserva fichas y revoca intentos. UI reutiliza shell/tokens y
+añade listado 1440/tarjetas 390, ficha, alta/edición, integridad y conversión desde
+Referencias. [Progreso](../15-vehiculos-itv-progress.md) y
+[evidencia](../15-vehiculos-itv-testplan.md).

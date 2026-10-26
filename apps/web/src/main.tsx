@@ -1,4 +1,14 @@
+import { RevisionComida } from "./RevisionComida";
+import { Compartidos } from "./Compartidos";
+import { FlujoMensual } from "./FlujoMensual";
+import { Anticipos } from "./Anticipos";
+import { Nomina } from "./Nomina";
+import { PlanAnual } from "./PlanAnual";
+import { PlanesCiclo } from "./PlanesCiclo";
+import { Presupuestos } from "./Presupuestos";
+import { Deudas } from "./Deudas";
 import { Referencias } from "./Referencias";
+import { Vehiculos } from "./Vehiculos";
 import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -106,7 +116,7 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go("/saldos");
+          go(path.startsWith("/flujo-mensual") ? path : "/saldos");
         }}
       />
     );
@@ -140,6 +150,99 @@ function App() {
         </button>
         <nav id="main-nav">
           <p className="nav-group">MI ESPACIO</p>
+          <a
+            href="/anticipos"
+            className={
+              path.startsWith("/anticipos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/anticipos") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/anticipos");
+            }}
+          >
+            Anticipos
+          </a>
+          <a
+            className={
+              path.startsWith("/compartidos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/compartidos") ? "page" : undefined}
+            href="/compartidos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/compartidos");
+            }}
+          >
+            Compartidos
+          </a>
+          <a
+            className={
+              path.startsWith("/flujo-mensual") ? "nav-active" : "nav-link"
+            }
+            href="/flujo-mensual"
+            aria-current={
+              path.startsWith("/flujo-mensual") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/flujo-mensual");
+            }}
+          >
+            Flujo mensual
+          </a>
+          <a
+            className={
+              path.startsWith("/revision-comida") ? "nav-active" : "nav-link"
+            }
+            href="/revision-comida"
+            aria-current={
+              path.startsWith("/revision-comida") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/revision-comida");
+            }}
+          >
+            Revisión Comida
+          </a>
+          <a
+            className={
+              path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
+            }
+            href="/planes-ciclo"
+            aria-current={path.startsWith("/planes-ciclo") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/planes-ciclo");
+            }}
+          >
+            Plan del ciclo
+          </a>
+          <a
+            className={path.startsWith("/nomina") ? "nav-active" : "nav-link"}
+            href="/nomina"
+            aria-current={path.startsWith("/nomina") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/nomina");
+            }}
+          >
+            Nómina
+          </a>
+          <a
+            className={
+              path.startsWith("/plan-anual") ? "nav-active" : "nav-link"
+            }
+            href="/plan-anual"
+            aria-current={path.startsWith("/plan-anual") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/plan-anual");
+            }}
+          >
+            Plan anual
+          </a>
           <a
             className={
               path.startsWith("/saldos") || path === "/"
@@ -202,6 +305,20 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/vehiculos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/vehiculos") ? "page" : undefined}
+            href="/vehiculos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/vehiculos");
+            }}
+          >
+            <span aria-hidden="true">⌑</span> Vehículos{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
               path.startsWith("/referencias") ? "nav-active" : "nav-link"
             }
             aria-current={path.startsWith("/referencias") ? "page" : undefined}
@@ -212,6 +329,32 @@ function App() {
             }}
           >
             <span aria-hidden="true">⌑</span> Referencias{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={path.startsWith("/deudas") ? "nav-active" : "nav-link"}
+            aria-current={path.startsWith("/deudas") ? "page" : undefined}
+            href="/deudas"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/deudas");
+            }}
+          >
+            <span aria-hidden="true">◷</span> Deudas{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
+              path.startsWith("/presupuestos") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/presupuestos") ? "page" : undefined}
+            href="/presupuestos"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/presupuestos");
+            }}
+          >
+            <span aria-hidden="true">▤</span> Presupuestos{" "}
             <span aria-hidden="true">›</span>
           </a>
           <div className="nav-future">
@@ -248,7 +391,27 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/referencias") ? (
+          {path.startsWith("/revision-comida") ? (
+            <RevisionComida path={path} go={go} />
+          ) : path.startsWith("/flujo-mensual") ? (
+            <FlujoMensual path={path} go={go} />
+          ) : path.startsWith("/compartidos") ? (
+            <Compartidos path={path} go={go} />
+          ) : path.startsWith("/anticipos") ? (
+            <Anticipos path={path} go={go} />
+          ) : path.startsWith("/nomina") ? (
+            <Nomina />
+          ) : path.startsWith("/plan-anual") ? (
+            <PlanAnual go={go} />
+          ) : path.startsWith("/planes-ciclo") ? (
+            <PlanesCiclo go={go} />
+          ) : path.startsWith("/presupuestos") ? (
+            <Presupuestos path={path} go={go} />
+          ) : path.startsWith("/deudas") ? (
+            <Deudas path={path} go={go} />
+          ) : path.startsWith("/vehiculos") ? (
+            <Vehiculos path={path} go={go} />
+          ) : path.startsWith("/referencias") ? (
             <Referencias path={path} go={go} />
           ) : path.startsWith("/movimientos") ? (
             <Movimientos path={path} go={go} />

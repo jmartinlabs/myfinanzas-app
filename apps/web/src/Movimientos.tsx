@@ -1,3 +1,5 @@
+import type { Anticipo } from "./Anticipos";
+import type { Debt } from "./Deudas";
 import type { Reference } from "./Referencias";
 import {
   referenceReturn,
@@ -10,6 +12,7 @@ import { Alert, PageHead, Tag } from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
+  deuda: string | null;
   seleccionable: boolean;
   referenciaObligatoria: boolean | null;
   tipoReferencia: string | null;
@@ -18,10 +21,20 @@ type Partida = Related & {
   subcategoria: Related;
 };
 type Movement = {
+  anticipo: {
+    rol: string;
+    origen: string;
+    destino: string;
+    evidencia: string;
+    procedencia: string;
+  } | null;
   id: string;
   fecha: string;
   tipo: string;
   importe: string;
+  capital: string | null;
+  intereses: string | null;
+  deuda: Debt | null;
   origen: Related;
   destino: Related;
   subtipo: string | null;
@@ -35,6 +48,7 @@ type Movement = {
   ciclo: Cycle | null;
 };
 type Options = {
+  deudas: Debt[];
   referencias: Reference[];
   hoy: string;
   saldos: Saldo[];
@@ -44,6 +58,7 @@ type Options = {
   ciclos: Cycle[];
 };
 type Plan = {
+  contextRevision: string;
   fingerprint: string;
   accion: string;
   antes: Movement | null;
@@ -56,6 +71,23 @@ type Plan = {
     concepto: string;
   }[];
   impacto: {
+    anticipo?: {
+      referencia: string;
+      rol: string;
+      origen: string;
+      destino: string;
+      pendientePar: string | null;
+      aviso: string | null;
+    } | null;
+    nomina?: { paga: string; importe: string; evidencia: string }[];
+    deudas: {
+      id: string;
+      nombre: string;
+      antes: string | null;
+      despues: string | null;
+    }[];
+    gastoAntes: string;
+    gastoDespues: string;
     saldos: {
       id: string;
       nombre: string;
@@ -138,13 +170,26 @@ export function Movimientos({
     return (
       <MovementList
         key={path}
+        initialDebt={new URLSearchParams(path.split("?")[1]).get("deuda") ?? ""}
         initialReference={
           new URLSearchParams(path.split("?")[1]).get("referencia") ?? ""
         }
         go={go}
       />
     );
-  if (path === base + "/nuevo") return <MovementForm key="nuevo" go={go} />;
+  if (path.split("?")[0] === base + "/nuevo")
+    return (
+      <MovementForm
+        key="nuevo"
+        go={go}
+        initialReference={
+          new URLSearchParams(path.split("?")[1]).get("referencia") ?? ""
+        }
+        initialType={
+          new URLSearchParams(path.split("?")[1]).get("tipo") ?? ""
+        }
+      />
+    );
   const m = path.match(/^\/movimientos\/(\d+)(?:\/(rectificar|anular))?$/);
   if (m)
     return m[2] ? (
@@ -156,15 +201,18 @@ export function Movimientos({
 }
 function MovementList({
   go,
+  initialDebt,
   initialReference,
 }: {
   go: (p: string) => void;
   initialReference: string;
+  initialDebt: string;
 }) {
   const { options, error: optionError, reload: reloadOptions } = useOptions();
   const [filters, setFilters] = useState({
       q: "",
       referencia: initialReference,
+      deuda: initialDebt,
       origen: "",
       destino: "",
       tipo: "",
@@ -250,15 +298,15 @@ function MovementList({
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Movimientos"
-        description="Hechos ejecutados · Ingresos, Gastos y Transferencias"
+        description="Hechos ejecutados · Ingresos, Gastos, Transferencias y amortizaciones"
       >
         <button className="primary" onClick={() => go(base + "/nuevo")}>
           Nuevo movimiento
         </button>
       </PageHead>
       <p className="page-foot">
-        Amortización deuda y Transferencias con Exterior: no disponibles
-        todavía. Las inversiones tienen su propio registro.
+        Transferencias con Exterior: no disponibles todavía. Las inversiones
+        tienen su propio registro.
       </p>
       {optionError && <Alert retry={reloadOptions}>{optionError}</Alert>}
       <section
@@ -278,7 +326,9 @@ function MovementList({
             { id: "Ingreso", nombre: "Ingreso" },
             { id: "Gasto", nombre: "Gasto" },
             { id: "Transferencia", nombre: "Transferencia" },
+            { id: "Amortización deuda", nombre: "Amortización deuda" },
           ])}
+          {select("Deuda", "deuda", options?.deudas ?? [])}
           {select("Ciclo financiado", "ciclo", [
             { id: "sin_ciclo", nombre: "Sin ciclo asignable" },
             ...(options?.ciclos ?? []).map((c) => ({
@@ -392,6 +442,7 @@ function MovementList({
                   setFilters({
                     q: "",
                     referencia: "",
+                    deuda: "",
                     origen: "",
                     destino: "",
                     tipo: "",
@@ -651,6 +702,18 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
             )}
             {field("Categoría", m.partida?.categoria.nombre ?? "No aplica")}
             {field(
+              "Deuda",
+              m.deuda ? (
+                <Link to={"/deudas/" + m.deuda.id} go={go}>
+                  {m.deuda.id + " · " + m.deuda.nombre}
+                </Link>
+              ) : (
+                "No aplica"
+              ),
+            )}
+            {field("Capital amortizado", amount(m.capital))}
+            {field("Intereses", amount(m.intereses))}
+            {field(
               "Referencia",
               m.referencia ? (
                 <Link to={"/referencias/" + m.referencia.id} go={go}>
@@ -715,7 +778,8 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
 function fact(value: Record<string, any> | null, key: string) {
   if (!value) return "No existía";
   const v = value[key];
-  if (key === "importe") return eur(v);
+  if (["importe", "capital", "intereses"].includes(key))
+    return v == null ? "No aplica / sin informar" : eur(v);
   if (key === "fecha") return date(v);
   if (key === "anulado") return v ? "Anulado" : "Vigente";
   if (v && typeof v === "object") return v.id + " · " + v.nombre;
@@ -733,6 +797,8 @@ function Facts({
     ["tipo", "Tipo"],
     ["fecha", "Fecha"],
     ["importe", "Importe"],
+    ["capital", "Capital amortizado"],
+    ["intereses", "Intereses"],
     ["origen", "Origen"],
     ["destino", "Destino"],
     ["subtipo", "Subtipo"],
@@ -783,6 +849,26 @@ function Impact({ plan }: { plan: Plan }) {
     >
       <h2 tabIndex={-1}>Impacto económico</h2>
       <Facts before={plan.antes} after={plan.despues} />
+      {!!plan.impacto.nomina?.length && (
+        <Alert>
+          Este hecho tiene asignaciones salariales:{" "}
+          {plan.impacto.nomina
+            .map((a) => `${a.paga}: ${amount(a.importe)}`)
+            .join(", ")}
+          . La corrección requiere revisar esas asociaciones en Nómina; no se
+          trasladan automáticamente.
+        </Alert>
+      )}
+      {plan.impacto.deudas.map((d) => (
+        <p key={d.id}>
+          Capital {d.id} · {d.nombre}: {amount(d.antes)} → {amount(d.despues)}
+        </p>
+      ))}
+      <p>
+        Gasto íntegro: {amount(plan.impacto.gastoAntes)} →{" "}
+        {amount(plan.impacto.gastoDespues)}. La amortización extraordinaria no
+        ejecuta Gasto.
+      </p>
       {plan.impacto.saldos.map((s) => (
         <div className="context-note" key={s.id}>
           <p>
@@ -819,6 +905,19 @@ function Impact({ plan }: { plan: Plan }) {
           ? date(plan.impacto.referenciaDespues)
           : "No disponible"}
       </p>
+      {plan.impacto.anticipo && (
+        <div className="panel">
+          <h3>Anticipo · rol y orientación declarados</h3>
+          <p>
+            {plan.impacto.anticipo.referencia} · {plan.impacto.anticipo.rol} ·{" "}
+            {plan.impacto.anticipo.origen} → {plan.impacto.anticipo.destino}
+          </p>
+          <p>Pendiente del par: {amount(plan.impacto.anticipo.pendientePar)}</p>
+          {plan.impacto.anticipo.aviso && (
+            <p role="alert">{plan.impacto.anticipo.aviso}</p>
+          )}
+        </div>
+      )}
       <p className="help">
         {plan.impacto.cobertura} Pendientes:{" "}
         {plan.impacto.pendientes.join(", ")}. No se afirma comprobación de
@@ -828,6 +927,12 @@ function Impact({ plan }: { plan: Plan }) {
   );
 }
 const empty = {
+  rolAnticipo: "",
+  parAnticipo: "",
+  evidenciaAnticipo: "",
+  procedenciaAnticipo: "",
+  capital: "",
+  intereses: "",
   tipo: "",
   fecha: "",
   importe: "",
@@ -844,10 +949,14 @@ function MovementForm({
   id,
   annul = false,
   go,
+  initialReference = "",
+  initialType = "",
 }: {
   id?: string;
   annul?: boolean;
   go: (p: string) => void;
+  initialReference?: string;
+  initialType?: string;
 }) {
   const { options, error: optionsError, reload } = useOptions();
   const returnDraft =
@@ -857,7 +966,13 @@ function MovementForm({
       : null;
   const [old, setOld] = useState<Movement | null>(null),
     [form, setForm] = useState(
-      returnDraft ? { ...empty, ...returnDraft.form } : empty,
+      returnDraft
+        ? { ...empty, ...returnDraft.form }
+        : {
+            ...empty,
+            ...(initialReference ? { referencia: initialReference } : {}),
+            ...(initialType ? { tipo: initialType } : {}),
+          },
     ),
     [reason, setReason] = useState(returnDraft?.reason ?? ""),
     [error, setError] = useState(""),
@@ -882,6 +997,14 @@ function MovementForm({
         if (!initialized.current) {
           const m = d.movimiento;
           setForm({
+            rolAnticipo: m.anticipo?.rol ?? "",
+            parAnticipo: m.anticipo
+              ? m.anticipo.origen + ">" + m.anticipo.destino
+              : "",
+            evidenciaAnticipo: m.anticipo?.evidencia ?? "",
+            procedenciaAnticipo: m.anticipo?.procedencia ?? "",
+            capital: m.capital ?? "",
+            intereses: m.intereses ?? "",
             tipo: m.tipo,
             fecha: m.fecha,
             importe: m.importe,
@@ -908,7 +1031,10 @@ function MovementForm({
     setForm((v) => ({
       ...v,
       [key]: value,
-      ...(key === "tipo" ? { subtipo: "", partida: "" } : {}),
+      ...(key === "tipo"
+        ? { subtipo: "", partida: "", capital: "", intereses: "" }
+        : {}),
+      ...(key === "partida" ? { capital: "", intereses: "" } : {}),
     }));
     setPlan(null);
     setFields((v) => ({ ...v, [key]: "" }));
@@ -927,19 +1053,80 @@ function MovementForm({
     options?.ciclos.find(
       (c) => c.inicio <= form.fecha && (c.fin === null || form.fecha <= c.fin),
     ) ?? null;
+  const [caseData, setCaseData] = useState<Anticipo | null>(null),
+    [caseError, setCaseError] = useState("");
+  const isAnticipo =
+    form.tipo === "Transferencia" &&
+    options?.referencias.some(
+      (r) => r.id === form.referencia && r.tipo === "Anticipo",
+    );
+  useEffect(() => {
+    let live = true;
+    setCaseData(null);
+    setCaseError("");
+    if (isAnticipo)
+      api<Anticipo>("/anticipos/fichas/" + form.referencia)
+        .then((r) => {
+          if (live) setCaseData(r);
+        })
+        .catch((e) => {
+          if (live) setCaseError(e.message);
+        });
+    return () => {
+      live = false;
+    };
+  }, [isAnticipo, form.referencia, refresh]);
   function body() {
+    const {
+      rolAnticipo,
+      parAnticipo,
+      evidenciaAnticipo,
+      procedenciaAnticipo,
+      ...bankForm
+    } = form;
+    const selectedPair = caseData?.pares.find(
+      (p) => p.origen + ">" + p.destino === parAnticipo,
+    );
     return {
       ...(annul
         ? {}
         : {
-            ...form,
+            ...bankForm,
+            ...(isAnticipo
+              ? {
+                  anticipo: {
+                    rol: rolAnticipo,
+                    origen:
+                      rolAnticipo === "Adelanto"
+                        ? form.origen
+                        : (selectedPair?.origen ?? ""),
+                    destino:
+                      rolAnticipo === "Adelanto"
+                        ? form.destino
+                        : (selectedPair?.destino ?? ""),
+                    evidencia: evidenciaAnticipo,
+                    procedencia: procedenciaAnticipo,
+                  },
+                }
+              : {}),
+            capital:
+              form.tipo === "Gasto" && selected?.deuda
+                ? form.capital.replace(",", ".")
+                : null,
+            intereses:
+              form.tipo === "Gasto" && selected?.deuda
+                ? form.intereses.replace(",", ".")
+                : null,
             saldo: form.tipo === "Transferencia" ? null : form.saldo,
             origen: form.tipo === "Transferencia" ? form.origen : null,
             destino: form.tipo === "Transferencia" ? form.destino : null,
             referencia: form.referencia || null,
             importe: form.importe.replace(",", "."),
             subtipo: form.tipo === "Ingreso" ? form.subtipo : null,
-            partida: form.tipo === "Gasto" ? form.partida : null,
+            partida:
+              form.tipo === "Gasto" || form.tipo === "Amortización deuda"
+                ? form.partida
+                : null,
           }),
       ...(id ? { revision: old?.revision, motivo: reason } : {}),
     };
@@ -964,6 +1151,7 @@ function MovementForm({
       {
         ...body(),
         fingerprint: p.fingerprint,
+        contextRevision: p.contextRevision,
         aceptarCoincidencia: p.duplicados.length > 0,
       },
       { "idempotency-key": attempt.current },
@@ -993,7 +1181,12 @@ function MovementForm({
         : base + "/impacto";
       const p = await api<Plan>(endpoint, "POST", body());
       setPlan(p);
-      if (!id && !p.duplicados.length && form.tipo !== "Transferencia")
+      if (
+        !id &&
+        !p.duplicados.length &&
+        form.tipo !== "Transferencia" &&
+        !selected?.deuda
+      )
         await confirm(p);
     } catch (e) {
       fail(e);
@@ -1038,7 +1231,7 @@ function MovementForm({
   );
   const requiredRef =
     !annul &&
-    form.tipo === "Gasto" &&
+    (form.tipo === "Gasto" || form.tipo === "Amortización deuda") &&
     selected?.referenciaObligatoria === true &&
     selected?.referenciaDisponible === false;
   const button = plan
@@ -1050,7 +1243,9 @@ function MovementForm({
         ? "Registrar otro hecho real"
         : form.tipo === "Transferencia"
           ? "Confirmar transferencia"
-          : "Reintentar registro"
+          : selected?.deuda
+            ? "Confirmar pago de deuda"
+            : "Reintentar registro"
     : id
       ? "Revisar impacto"
       : form.tipo === "Transferencia"
@@ -1073,7 +1268,7 @@ function MovementForm({
         description={
           annul
             ? "Anula una captura errónea que no representa un hecho económico real. No es una devolución."
-            : "Ingreso, Gasto o Transferencia interna · sin planificación"
+            : "Ingreso, Gasto, Transferencia interna o Amortización deuda"
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
@@ -1137,6 +1332,7 @@ function MovementForm({
                       <option>Ingreso</option>
                       <option>Gasto</option>
                       <option>Transferencia</option>
+                      <option>Amortización deuda</option>
                     </select>,
                   )}
                   {field("fecha", "Fecha económica *")}
@@ -1212,12 +1408,14 @@ function MovementForm({
                     <>
                       {field(
                         "saldo",
-                        form.tipo === "Gasto"
+                        form.tipo === "Gasto" ||
+                          form.tipo === "Amortización deuda"
                           ? "Saldo origen *"
                           : "Saldo receptor *",
                         <select
                           aria-label={
-                            form.tipo === "Gasto"
+                            form.tipo === "Gasto" ||
+                            form.tipo === "Amortización deuda"
                               ? "Saldo origen *"
                               : "Saldo receptor *"
                           }
@@ -1262,7 +1460,8 @@ function MovementForm({
                         )}
                       </select>,
                     )}
-                  {form.tipo === "Gasto" &&
+                  {(form.tipo === "Gasto" ||
+                    form.tipo === "Amortización deuda") &&
                     field(
                       "partida",
                       "Partida *",
@@ -1288,13 +1487,15 @@ function MovementForm({
                 <p>
                   {form.tipo === "Ingreso"
                     ? "Origen: Exterior técnico S000"
-                    : form.tipo === "Gasto"
+                    : form.tipo === "Gasto" ||
+                        form.tipo === "Amortización deuda"
                       ? "Destino: Exterior técnico S000"
                       : form.tipo === "Transferencia"
                         ? "Origen y Destino internos · dos Saldos distintos"
                         : "Selecciona el Tipo para definir la dirección."}
                 </p>
-                {form.tipo === "Gasto" && (
+                {(form.tipo === "Gasto" ||
+                  form.tipo === "Amortización deuda") && (
                   <>
                     <p>
                       Subcategoría:{" "}
@@ -1314,12 +1515,16 @@ function MovementForm({
                 )}
                 {field(
                   "referencia",
-                  form.tipo === "Gasto" && selected?.referenciaObligatoria
+                  (form.tipo === "Gasto" ||
+                    form.tipo === "Amortización deuda") &&
+                    selected?.referenciaObligatoria
                     ? "Referencia *"
                     : "Referencia opcional",
                   <select
                     aria-label={
-                      form.tipo === "Gasto" && selected?.referenciaObligatoria
+                      (form.tipo === "Gasto" ||
+                        form.tipo === "Amortización deuda") &&
+                      selected?.referenciaObligatoria
                         ? "Referencia *"
                         : "Referencia opcional"
                     }
@@ -1338,7 +1543,8 @@ function MovementForm({
                           (r.estado === "Activa" ||
                             (!!id && old?.referencia?.id === r.id)) &&
                           (!(
-                            form.tipo === "Gasto" &&
+                            (form.tipo === "Gasto" ||
+                              form.tipo === "Amortización deuda") &&
                             selected?.referenciaObligatoria
                           ) ||
                             r.tipo === selected.tipoReferencia),
@@ -1357,6 +1563,99 @@ function MovementForm({
                       ))}
                   </select>,
                 )}
+                {isAnticipo && (
+                  <section className="panel" aria-label="Atribución Anticipo">
+                    <h3>Atribución explícita del Anticipo</h3>
+                    <p>
+                      Referencia {form.referencia}. El rol y el par se guardan
+                      junto al hecho, sin duplicar el importe.
+                    </p>
+                    {caseError && <Alert>{caseError}</Alert>}
+                    <label>
+                      Rol Anticipo obligatorio
+                      <select
+                        aria-label="Rol Anticipo obligatorio"
+                        value={form.rolAnticipo}
+                        onChange={(e) => change("rolAnticipo", e.target.value)}
+                      >
+                        <option value="">Seleccionar rol</option>
+                        <option>Adelanto</option>
+                        <option>Devolución</option>
+                      </select>
+                    </label>
+                    {form.rolAnticipo === "Adelanto" ? (
+                      <p>
+                        Orientación declarada:{" "}
+                        {form.origen || "Selecciona Origen"} →{" "}
+                        {form.destino || "Selecciona Destino"}
+                      </p>
+                    ) : (
+                      form.rolAnticipo === "Devolución" && (
+                        <label>
+                          Par de Adelanto acreditado
+                          <select
+                            aria-label="Par de Adelanto acreditado"
+                            value={form.parAnticipo}
+                            onChange={(e) => {
+                              const p = caseData?.pares.find(
+                                (p) =>
+                                  p.origen + ">" + p.destino === e.target.value,
+                              );
+                              change("parAnticipo", e.target.value);
+                              if (p) {
+                                change("origen", p.destino);
+                                change("destino", p.origen);
+                              }
+                            }}
+                          >
+                            <option value="">
+                              Seleccionar par explícitamente
+                            </option>
+                            {caseData?.pares.map((p) => (
+                              <option
+                                disabled={!p.disponible}
+                                key={p.origen + ">" + p.destino}
+                                value={p.origen + ">" + p.destino}
+                              >
+                                {p.origen} → {p.destino} · pendiente{" "}
+                                {eur(p.neto)}
+                                {p.motivo ? " · " + p.motivo : ""}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      )
+                    )}
+                    <label>
+                      Evidencia de atribución
+                      <input
+                        aria-label="Evidencia de atribución"
+                        value={form.evidenciaAnticipo}
+                        onChange={(e) =>
+                          change("evidenciaAnticipo", e.target.value)
+                        }
+                      />
+                    </label>
+                    <label>
+                      Procedencia de atribución
+                      <input
+                        aria-label="Procedencia de atribución"
+                        value={form.procedenciaAnticipo}
+                        onChange={(e) =>
+                          change("procedenciaAnticipo", e.target.value)
+                        }
+                      />
+                    </label>
+                    {fields.anticipo && <p role="alert">{fields.anticipo}</p>}
+                    {form.rolAnticipo === "Devolución" &&
+                      !caseData?.pares.some((p) => p.disponible) && (
+                        <p>
+                          ⚠ No disponible: sin par verificable o conflicto
+                          pendiente de revisión.
+                        </p>
+                      )}
+                  </section>
+                )}
                 <button
                   type="button"
                   className="text-button"
@@ -1371,6 +1670,69 @@ function MovementForm({
                 >
                   Crear Viaje o Evento conservando borrador
                 </button>
+                {(form.tipo === "Gasto" ||
+                  form.tipo === "Amortización deuda") && (
+                  <section aria-label="Desglose de Deuda">
+                    <h3>Deuda vinculada</h3>
+                    <p>
+                      {selected?.deuda
+                        ? selected.deuda +
+                          " · " +
+                          (options?.deudas.find((d) => d.id === selected.deuda)
+                            ?.nombre ?? "Deuda")
+                        : "Sin Deuda: selecciona una Partida vinculada para un pago de Deuda."}
+                    </p>
+                    {selected?.deuda &&
+                      (form.tipo === "Gasto" ? (
+                        <div className="form-grid">
+                          {(["capital", "intereses"] as const).map((k) =>
+                            field(
+                              k,
+                              k === "capital"
+                                ? "Capital amortizado EUR *"
+                                : "Intereses EUR *",
+                              <input
+                                aria-label={
+                                  k === "capital"
+                                    ? "Capital amortizado EUR *"
+                                    : "Intereses EUR *"
+                                }
+                                inputMode="decimal"
+                                value={form[k]}
+                                aria-invalid={!!fields[k]}
+                                onChange={(e) => change(k, e.target.value)}
+                              />,
+                            ),
+                          )}
+                          <p>
+                            El capital y los intereses deben sumar el importe
+                            exacto. No se completan automáticamente.
+                          </p>
+                        </div>
+                      ) : (
+                        <p>
+                          Capital = importe {form.importe || "sin informar"} EUR
+                          · Intereses = 0,00 EUR · No es Gasto
+                        </p>
+                      ))}
+                    <button
+                      type="button"
+                      className="text-button"
+                      onClick={() => {
+                        preserveMovement(
+                          id
+                            ? base + "/" + id + "/rectificar"
+                            : base + "/nuevo",
+                          form,
+                          reason,
+                        );
+                        go("/deudas/nueva");
+                      }}
+                    >
+                      Crear deuda conservando borrador
+                    </button>
+                  </section>
+                )}
                 {form.tipo === "Transferencia" && (
                   <p className="help">
                     Transferencia interna: sin Partida ni Subtipo, sin permiso
@@ -1386,14 +1748,17 @@ function MovementForm({
                     </Link>
                   </p>
                 )}
-                {form.tipo === "Gasto" && options && !partidas.length && (
-                  <p className="help">
-                    No hay Partidas seleccionables.{" "}
-                    <Link to="/clasificacion/partidas" go={go}>
-                      Consultar Clasificación
-                    </Link>
-                  </p>
-                )}
+                {(form.tipo === "Gasto" ||
+                  form.tipo === "Amortización deuda") &&
+                  options &&
+                  !partidas.length && (
+                    <p className="help">
+                      No hay Partidas seleccionables.{" "}
+                      <Link to="/clasificacion/partidas" go={go}>
+                        Consultar Clasificación
+                      </Link>
+                    </p>
+                  )}
               </section>
               <section className="panel">
                 <h2>Contexto derivado</h2>

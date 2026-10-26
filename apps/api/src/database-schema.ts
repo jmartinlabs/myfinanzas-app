@@ -1,3 +1,13 @@
+import { revisionComidaSchema } from "./revision-comida-schema";
+import { anticipoSchema } from "./anticipo-schema";
+import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
+import { vehicleSchema } from "./vehicle-schema";
+import { payrollSchema } from "./payroll-schema";
+import { annualPlanSchema } from "./annual-plan-schema";
+import { cyclePlanSchema } from "./cycle-plan-schema";
+import { cycleOperationSchema } from "./cycle-operation-schema";
+import { budgetSchema, assertBudgetContract } from "./budget-schema";
+import { debtSchema } from "./debt-schema";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -24,10 +34,19 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, schemaVersion].includes(versions[0].version)
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+        versions[0].version,
+      )
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
+    }
+    if (versions[0].version >= 8) assertBudgetContract(db);
+    try {
+      assertV14VehicleContract(db);
+    } catch (error) {
+      db.close();
+      throw error;
     }
   } else if (
     db
@@ -65,7 +84,9 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, schemaVersion].includes(versions[0].version)
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+            versions[0].version,
+          )
         )
           throw new Error("Esquema no compatible; no se modificará esta base.");
         if (versions[0].version === 1) classificationSchema(db);
@@ -73,6 +94,19 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version <= 3) movementSchema(db);
         if (versions[0].version <= 4) referenceSchema(db);
         if (versions[0].version < 6) installIdentity(db, identity);
+        if (versions[0].version < 7) debtSchema(db);
+        if (versions[0].version < 8) budgetSchema(db);
+        else assertBudgetContract(db);
+        if (versions[0].version < 9) cycleOperationSchema(db);
+        if (versions[0].version < 10) cyclePlanSchema(db);
+        if (versions[0].version < 11) annualPlanSchema(db);
+        if (versions[0].version < 12) payrollSchema(db);
+        if (versions[0].version < 13) anticipoSchema(db);
+        // v14 belongs to Vehículos. Shared cases advance the schema to v15 and
+        // require the v14 vehicle contract to be present before rebuilding tables.
+        if (versions[0].version < 14) vehicleSchema(db);
+        if (versions[0].version < 15) compartidoSchema(db);
+        if (versions[0].version < 16) revisionComidaSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -120,50 +154,54 @@ export function prepareSchema(db: Database, identity: Identity) {
           `INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         );
         const time = "2026-01-01T00:00:00.000Z";
-        insert.run(
-          "S000",
-          "Exterior técnico",
-          "Exterior",
-          "Exterior",
-          "Activa",
-          null,
-          0,
-          0,
-          0,
-          null,
-          null,
-          null,
-          null,
-          1,
-          time,
-          time,
-        );
-        if (identity.origin === "demo")
-          for (const [id, nombre, tipo, control] of [
-            ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
-            ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
-            ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
-            ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
-            ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
-          ])
-            insert.run(
-              id,
-              nombre,
-              tipo,
-              control,
-              "Activa",
-              null,
-              0,
-              0,
-              0,
-              null,
-              null,
-              null,
-              null,
-              1,
-              time,
-              time,
-            );
+        try {
+          insert.run(
+            "S000",
+            "Exterior técnico",
+            "Exterior",
+            "Exterior",
+            "Activa",
+            null,
+            0,
+            0,
+            0,
+            null,
+            null,
+            null,
+            null,
+            1,
+            time,
+            time,
+          );
+          if (identity.origin === "demo")
+            for (const [id, nombre, tipo, control] of [
+              ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
+              ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
+              ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
+              ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
+              ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
+            ])
+              insert.run(
+                id,
+                nombre,
+                tipo,
+                control,
+                "Activa",
+                null,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                1,
+                time,
+                time,
+              );
+        } finally {
+          insert.finalize();
+        }
         db.run("INSERT OR IGNORE INTO counters VALUES('saldo',?)", [
           identity.origin === "demo" ? 6 : 1,
         ]);
@@ -173,6 +211,16 @@ export function prepareSchema(db: Database, identity: Identity) {
       movementSchema(db);
       referenceSchema(db);
       installIdentity(db, identity);
+      debtSchema(db);
+      budgetSchema(db);
+      cycleOperationSchema(db);
+      cyclePlanSchema(db);
+      annualPlanSchema(db);
+      payrollSchema(db);
+      anticipoSchema(db);
+      vehicleSchema(db);
+      compartidoSchema(db);
+      revisionComidaSchema(db);
     }).immediate();
   } catch (error) {
     db.close();

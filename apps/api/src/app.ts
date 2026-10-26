@@ -1,10 +1,83 @@
 import {
+  getCompartido,
+  listCompartidos,
+  createCompartido,
+  createParticipante,
+  previewParticipante,
+  rectificarParticipante,
+  bajaParticipante,
+} from "./compartidos";
+import { monthlyFlow } from "./flujo-mensual";
+import {
+  getRevisionComida,
+  listOperaciones,
+  listReposiciones,
+  revisionComidaOptions,
+  createRevisionComida,
+  rectificarRevisionComida,
+  anularRevisionComida,
+  vincularRevisionComida,
+} from "./revision-comida";
+import {
+  getAnticipo,
+  listAnticipos,
+  createAnticipo,
+  previewAccreditation,
+  confirmAccreditation,
+  previewOpening,
+  confirmOpening,
+} from "./anticipos";
+import {
+  getPayroll,
+  previewPayroll,
+  confirmPayroll,
+  payrollForecast,
+} from "./nomina";
+import {
+  getAnnualPlan,
+  previewAnnualPlan,
+  confirmAnnualPlan,
+  type AnnualProvider,
+} from "./plan-anual";
+import {
+  getCyclePlan,
+  executionDetail,
+  previewCyclePlan,
+  confirmCyclePlan,
+} from "./planes-ciclo";
+import {
+  getBudget,
+  listBudgets,
+  createBudget,
+  updateBudget,
+  previewBudget,
+  changeBudgetState,
+  budgetParts,
+  budgetUsage,
+} from "./presupuestos";
+import {
+  getDebt,
+  listDebts,
+  createDebt,
+  updateDebt,
+  debtUsage,
+} from "./deudas";
+import {
   getReference,
   referenceUsage,
   listReferences,
   createReference,
   updateReference,
 } from "./referencias";
+import {
+  getVehicle,
+  listVehicles,
+  vehicleIntegrity,
+} from "./vehiculos";
+import {
+  nonVehicleFicha,
+  vehicleFicha,
+} from "./vehicle-rules";
 import {
   getMovement,
   listMovements,
@@ -43,9 +116,18 @@ import {
   type ClassificationGuard,
 } from "./clasificacion";
 
-import { listCycles, getCycle, cycleContext, createCycle } from "./ciclos";
+import {
+  listCycles,
+  getCycle,
+  cycleContext,
+  createCycle,
+  previewCycleOperation,
+  writeCycleOperation,
+  cycleHistory,
+} from "./ciclos";
 
 export type AppOptions = {
+  annualProvider?: AnnualProvider;
   classificationGuard?: ClassificationGuard;
   movementGuard?: MovementProtection;
   key: Buffer;
@@ -164,6 +246,260 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/saldos/${saldo.id}`);
         return reply({ saldo }, 201);
       }
+      const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
+      if (flow && req.method === "GET")
+        return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/revision-comida/opciones" && req.method === "GET")
+        return reply(revisionComidaOptions(db, now()));
+      if (path === "/api/revision-comida" && req.method === "GET")
+        return reply(listOperaciones(db, new URL(req.url).searchParams));
+      if (path === "/api/revision-comida" && req.method === "POST") {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Detalle",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "GET"
+      )
+        return reply(listReposiciones(db, new URL(req.url).searchParams));
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "POST"
+      ) {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Reposicion",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/reposiciones/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      const reposicion = path.match(
+        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (reposicion) {
+        const [, id, action] = reposicion;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Reposicion"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Reposicion"),
+          );
+        }
+      }
+      const revision = path.match(
+        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (revision) {
+        const [, id, action] = revision;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Detalle"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Detalle"),
+          );
+        }
+      }
+      if (path === "/api/anticipos/fichas" && req.method === "GET")
+        return reply(listAnticipos(db, new URL(req.url).searchParams));
+      if (path === "/api/anticipos/fichas" && req.method === "POST")
+        return reply(
+          createAnticipo(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+          201,
+        );
+      const anticipoPath = path.match(
+        /^\/api\/anticipos\/fichas\/(REF\d+)(?:\/(netos-apertura)(?:\/(preview))?|\/movimientos\/(\d+)\/acreditar(?:\/(preview))?)?$/,
+      );
+      if (anticipoPath) {
+        const [, ref, opening, openingPreview, movement, accreditationPreview] =
+          anticipoPath;
+        if (req.method === "GET" && !opening && !movement)
+          return reply(getAnticipo(db, ref));
+        if (req.method === "POST" && (opening || movement)) {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          return reply(
+            opening
+              ? openingPreview
+                ? previewOpening(db, ref, body)
+                : confirmOpening(db, ref, body, key, now())
+              : accreditationPreview
+                ? previewAccreditation(db, ref, movement, body)
+                : confirmAccreditation(db, ref, movement, body, key, now()),
+          );
+        }
+      }
+      if (path === "/api/compartidos/fichas" && req.method === "GET")
+        return reply(listCompartidos(db, new URL(req.url).searchParams));
+      if (path === "/api/compartidos/fichas" && req.method === "POST")
+        return reply(
+          createCompartido(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+          201,
+        );
+      const compartidoPath = path.match(
+        /^\/api\/compartidos\/fichas\/(REF\d+)(?:\/participantes(?:\/(CP\d+)(?:\/(impacto|rectificar|baja))?)?)?$/,
+      );
+      if (compartidoPath) {
+        const [, ref, participant, action] = compartidoPath;
+        if (!participant && req.method === "GET")
+          return reply(getCompartido(db, ref));
+        if (!participant && req.method === "POST")
+          return reply(
+            createParticipante(
+              db,
+              ref,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+            201,
+          );
+        if (participant && action === "impacto" && req.method === "POST")
+          return reply(
+            previewParticipante(db, ref, participant, await jsonBody(req)),
+          );
+        if (participant && action === "rectificar" && req.method === "POST")
+          return reply(
+            rectificarParticipante(
+              db,
+              ref,
+              participant,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+        if (participant && action === "baja" && req.method === "POST")
+          return reply(
+            bajaParticipante(
+              db,
+              ref,
+              participant,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+      }
+      if (path === "/api/nomina" && req.method === "GET")
+        return reply(getPayroll(db));
+      if (path === "/api/nomina/impacto" && req.method === "POST")
+        return reply(previewPayroll(db, await jsonBody(req)));
+      if (path === "/api/nomina/confirmar" && req.method === "POST")
+        return reply(
+          confirmPayroll(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      if (path === "/api/nomina/pronostico" && req.method === "POST")
+        return reply(payrollForecast(db, await jsonBody(req), now()));
+      const annual = path.match(
+        /^\/api\/plan-anual\/(\d{4})(?:\/(impacto|confirmar))?$/,
+      );
+      if (annual) {
+        const [, year, action] = annual;
+        if (!action && req.method === "GET")
+          return reply(getAnnualPlan(db, year, now(), options.annualProvider));
+        if (action === "impacto" && req.method === "POST")
+          return reply(
+            previewAnnualPlan(
+              db,
+              year,
+              await jsonBody(req),
+              now(),
+              options.annualProvider,
+            ),
+          );
+        if (action === "confirmar" && req.method === "POST")
+          return reply(
+            confirmAnnualPlan(
+              db,
+              year,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+              options.annualProvider,
+            ),
+          );
+      }
+      const cyclePlan = path.match(
+        /^\/api\/planes-ciclo\/(\d+)(?:\/(impacto|confirmar|ejecucion)(?:\/(PRE\d+))?)?$/,
+      );
+      if (cyclePlan) {
+        const [, id, action, budgetId] = cyclePlan;
+        if (!action && req.method === "GET")
+          return reply(getCyclePlan(db, id, now()));
+        if (action === "ejecucion" && budgetId && req.method === "GET")
+          return reply(
+            executionDetail(
+              db,
+              id,
+              budgetId,
+              new URL(req.url).searchParams,
+              now(),
+            ),
+          );
+        if (action === "impacto" && req.method === "POST")
+          return reply(previewCyclePlan(db, id, await jsonBody(req), now()));
+        if (action === "confirmar" && req.method === "POST")
+          return reply(
+            confirmCyclePlan(
+              db,
+              id,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+      }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());
       if (path === "/api/ciclos" && req.method === "GET")
@@ -180,9 +516,172 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", `/api/ciclos/${result.ciclo.id}`);
         return reply(result, 201);
       }
+      const cycleOperation = path.match(
+        /^\/api\/ciclos\/(omitido|\d+\/rectificar)(?:\/(preview))?$/,
+      );
+      if (cycleOperation && req.method === "POST") {
+        const action =
+            cycleOperation[1] === "omitido" ? "omitido" : "rectificar",
+          id = action === "omitido" ? null : cycleOperation[1].split("/")[0];
+        const body = await jsonBody(req);
+        return reply(
+          cycleOperation[2]
+            ? previewCycleOperation(
+                db,
+                action,
+                id,
+                body,
+                Number(new URL(req.url).searchParams.get("page") ?? 1),
+              )
+            : writeCycleOperation(
+                db,
+                action,
+                id,
+                body,
+                req.headers.get("idempotency-key") ?? "",
+                now(),
+              ),
+          cycleOperation[2] ? 200 : action === "omitido" ? 201 : 200,
+        );
+      }
+      const cycleAudit = path.match(/^\/api\/ciclos\/(\d+)\/historial$/);
+      if (cycleAudit && req.method === "GET")
+        return reply(
+          db.transaction(() => ({ items: cycleHistory(db, cycleAudit[1]) }))(),
+        );
       const cycle = path.match(/^\/api\/ciclos\/(\d+)$/);
       if (cycle && req.method === "GET")
         return reply(db.transaction(() => getCycle(db, cycle[1]))());
+      if (path === "/api/presupuestos" && req.method === "GET")
+        return reply(listBudgets(db, new URL(req.url).searchParams));
+      if (path === "/api/presupuestos" && req.method === "POST") {
+        const item = createBudget(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/presupuestos/" + item.id);
+        return reply({ item }, 201);
+      }
+      if (path === "/api/presupuestos/opciones" && req.method === "GET")
+        return reply(
+          db.transaction(() => ({
+            saldos: db
+              .query(
+                "SELECT id,nombre,estado FROM saldos WHERE id!='S000' ORDER BY id",
+              )
+              .all(),
+            presupuestos: (
+              db
+                .query("SELECT id FROM presupuestos ORDER BY length(id),id")
+                .all() as { id: string }[]
+            ).map((r) => getBudget(db, r.id)),
+          }))(),
+        );
+      const budget = path.match(
+        /^\/api\/presupuestos\/(PRE\d+)(?:\/(impacto|rectificar|desactivar|reactivar))?$/,
+      );
+      if (budget) {
+        const [, id, action] = budget;
+        if (!action && req.method === "GET")
+          return reply(
+            db.transaction(() => ({
+              item: getBudget(db, id),
+              partidas: budgetParts(db, id),
+              usos: budgetUsage(db, id),
+            }))(),
+          );
+        if (!action && req.method === "PATCH")
+          return reply({
+            item: updateBudget(db, id, await jsonBody(req), now()),
+          });
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req);
+          if (action === "impacto") return reply(previewBudget(db, id, body));
+          if (action === "desactivar" || action === "reactivar")
+            return reply({
+              item: changeBudgetState(
+                db,
+                id,
+                body,
+                action === "reactivar",
+                now(),
+              ),
+            });
+          if (
+            Object.keys(body).some(
+              (k) => !["cambios", "fingerprint", "motivo"].includes(k),
+            ) ||
+            !body.cambios ||
+            typeof body.cambios !== "object" ||
+            Array.isArray(body.cambios)
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Se requieren cambios y confirmación.",
+            );
+          return reply({
+            item: updateBudget(
+              db,
+              id,
+              body.cambios as Record<string, unknown>,
+              now(),
+              { fingerprint: body.fingerprint, motivo: body.motivo },
+            ),
+          });
+        }
+      }
+      if (path === "/api/deudas" && req.method === "GET")
+        return reply(listDebts(db, new URL(req.url).searchParams));
+      if (path === "/api/deudas" && req.method === "POST") {
+        const item = createDebt(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/deudas/" + item.id);
+        return reply({ item }, 201);
+      }
+      const debt = path.match(
+        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
+      );
+      if (debt) {
+        const [, id, action] = debt;
+        if (!action && req.method === "GET")
+          return reply(
+            db.transaction(() => ({
+              item: getDebt(db, id),
+              usos: debtUsage(db, id),
+              partidas: db
+                .query(
+                  "SELECT id,nombre,estado FROM partidas WHERE deuda=? ORDER BY id",
+                )
+                .all(id),
+            }))(),
+          );
+        if (
+          (!action && req.method === "PATCH") ||
+          (action && req.method === "POST")
+        ) {
+          let body = await jsonBody(req);
+          if (action) {
+            if (Object.keys(body).some((k) => k !== "revision"))
+              throw new Problem(
+                422,
+                "VALIDATION",
+                "Solo revisión para Estado.",
+              );
+            body = {
+              revision: body.revision,
+              estado: action === "reactivar" ? "Activa" : "Inactiva",
+            };
+          }
+          return reply({ item: updateDebt(db, id, body, now()) });
+        }
+      }
       if (path === "/api/referencias" && req.method === "GET")
         return reply(listReferences(db, new URL(req.url).searchParams));
       if (path === "/api/referencias" && req.method === "POST") {
@@ -202,10 +701,35 @@ export function createApp(db: Database, options: AppOptions) {
         const [, id, action] = reference;
         if (!action && req.method === "GET")
           return reply(
-            db.transaction(() => ({
-              item: getReference(db, id),
-              usos: referenceUsage(db, id),
-            }))(),
+            db.transaction(() => {
+              const item = getReference(db, id),
+                usos = referenceUsage(db, id),
+                ficha = vehicleFicha(db, id),
+                otherFicha = nonVehicleFicha(db, id),
+                puedeConvertir =
+                  item.tipo !== "Vehículo" &&
+                  item.tipo !== "Anticipo" &&
+                  !ficha &&
+                  !otherFicha &&
+                  usos.length === 0;
+              return {
+                item,
+                usos,
+                vehiculo: ficha,
+                conversion: {
+                  disponible: puedeConvertir,
+                  motivo: puedeConvertir
+                    ? null
+                    : item.tipo === "Vehículo"
+                      ? "La Referencia ya es un Vehículo."
+                      : ficha
+                        ? "La Referencia ya tiene una ficha."
+                        : otherFicha || item.tipo === "Anticipo"
+                          ? "La Referencia es un Anticipo y no admite conversión a Vehículo."
+                          : "La Referencia tiene hechos y E1.5 protege su Tipo.",
+                },
+              };
+            })(),
           );
         if (
           (!action && req.method === "PATCH") ||
@@ -223,10 +747,45 @@ export function createApp(db: Database, options: AppOptions) {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
             };
-          }
+          } else if ("estado" in body)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "El Estado solo se cambia por /desactivar o /reactivar.",
+              { estado: "Usa la acción canónica de Estado." },
+            );
           return reply({ item: updateReference(db, id, body, now()) });
         }
       }
+      if (path === "/api/vehiculos/integridad" && req.method === "GET")
+        return reply(
+          vehicleIntegrity(
+            db,
+            new URL(req.url).searchParams.get("ejercicio"),
+            now(),
+            options.annualProvider,
+          ),
+        );
+      if (path === "/api/vehiculos" && req.method === "GET")
+        return reply(
+          listVehicles(
+            db,
+            new URL(req.url).searchParams,
+            now(),
+            options.annualProvider,
+          ),
+        );
+      const vehicle = path.match(/^\/api\/vehiculos\/(REF\d+)$/);
+      if (vehicle && req.method === "GET")
+        return reply(
+          getVehicle(
+            db,
+            vehicle[1],
+            new URL(req.url).searchParams.get("ejercicio"),
+            now(),
+            options.annualProvider,
+          ),
+        );
       if (path === "/api/movimientos/opciones" && req.method === "GET")
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")
@@ -417,6 +976,7 @@ export function createApp(db: Database, options: AppOptions) {
           code: p.code,
           error: p.message,
           fields: p.fields,
+          ...p.details,
           requestId: randomUUID(),
         },
         p.status,

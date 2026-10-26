@@ -13,6 +13,7 @@ export class Problem extends Error {
     public code: string,
     message: string,
     public fields: Record<string, string> = {},
+    public details: Record<string, unknown> = {},
   ) {
     super(message);
   }

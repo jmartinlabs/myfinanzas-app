@@ -22,6 +22,8 @@ class ValidationTests(unittest.TestCase):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
  def test_links(self):
   self.change('README.md','## Skills','[Broken](missing.md)\n## Skills'); self.assertRule('links')
+ def test_fragment_anchor(self):
+  self.change('.agents/skills/orchestrate/SKILL.md','coordinator-communication.md#7-closing-a-turn-or-stopping','coordinator-communication.md#missing-anchor'); self.assertRule('fragments')
  def test_agents(self):
   self.change('AGENTS.md','(specs/guidelines/ui.md)','(README.md)'); self.assertRule('agents')
  def test_thin_agents(self):
@@ -44,8 +46,122 @@ class ValidationTests(unittest.TestCase):
   self.change('README.md','# Universal','# Universal\n'+'/'+'home/example/project'); self.assertRule('portability')
  def test_neutrality(self):
   self.change('AGENTS.md','# Agent','# Agent\nAll projects must use ExampleStack.'); self.assertRule('neutrality')
+ def test_coordination_obligations(self):
+  # Structural drift guards only, not a claim that real clients followed the rules.
+  cases = (
+   ('specs/methodology/dynamic-agents.md', 'scope-sized preflight'),
+   ('specs/methodology/dynamic-agents.md', 'suspending escalation, the worker notifies the coordinator'),
+   ('specs/methodology/dynamic-agents.md', 'Advance notice is not another user approval gate'),
+   ('specs/methodology/dynamic-agents.md', 'If higher-priority runtime instructions require a direct escalation retry without a prior user message'),
+   ('specs/methodology/dynamic-agents.md', 'blocking operation in justification'),
+   ('specs/methodology/dynamic-agents.md', 'fresh bounded context by default'),
+   ('specs/methodology/dynamic-agents.md', 'not repeated status reminders'),
+   ('specs/methodology/dynamic-agents.md', 'QA independently'),
+   ('specs/methodology/dynamic-agents.md', 'No OpenCode adapter is supplied'),
+   ('specs/methodology/dynamic-agents.md', 'explicit user authorization and supported tools'),
+   ('specs/methodology/dynamic-agents.md', 'separate checkouts/worktrees AND non-overlapping ownership'),
+   ('specs/methodology/dynamic-agents.md', 'Separate test ports, databases'),
+   ('specs/methodology/dynamic-agents.md', 'other-client usage is'),
+   ('specs/methodology/dynamic-agents.md', 'Replace stale current-state labels'),
+   ('specs/methodology/dynamic-agents.md', 'savings still need measurement'),
+   ('templates/agent-work-packet.md', 'Client / version / session ID'),
+   ('templates/agent-work-packet.md', 'Blocking notice'),
+   ('templates/agent-work-packet.md', 'PR none unless the authorized scope includes publication'),
+   ('templates/progress.md', 'Current checkpoint'),
+   ('templates/testplan.md', 'Local / CI platform and owner'),
+   ('specs/methodology/approvals.md', 'Publicación de rama y PR'),
+   ('specs/methodology/approvals.md', 'No se necesita otra aprobación de'),
+   ('specs/methodology/approvals.md', 'Nunca activar auto-merge'),
+   ('specs/methodology/coordinator-communication.md', '## 7. Closing a turn or stopping'),
+   ('specs/methodology/coordinator-communication.md', '#execution-continuity'),
+   ('specs/methodology/coordinator-communication.md', 'A received handoff never authorizes merge'),
+   ('specs/methodology/myfinanzas-coordination.md', 'nunca auto-merge'),
+   ('specs/methodology/epic-orchestration.md', 'Branch/PR publication is ordinary inside the authorized scope'),
+   ('.agents/skills/orchestrate/SKILL.md', 'progressively spaced CI queries'),
+   ('.agents/skills/orchestrate/SKILL.md', 'A required check that fails and can be corrected'),
+   ('.agents/skills/orchestrate/SKILL.md', '#7-closing-a-turn-or-stopping'),
+   ('.agents/skills/dev/SKILL.md', 'negative/integration cases before code'),
+   ('.agents/skills/dev/SKILL.md', 'authorized scope includes branch/PR publication'),
+   ('.agents/skills/task/SKILL.md', 'execution platform and operation owners before code'),
+   ('.agents/skills/task/SKILL.md', 'branch/PR publication follows'),
+   ('.agents/skills/task/SKILL.md', 'A required check that fails and can be corrected'),
+   ('.agents/skills/tweak/SKILL.md', 'Branch/PR publication follows'),
+   ('.agents/skills/handoff/SKILL.md', 'external client'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('coordination')
+    finally:
+     p.write_text(original)
+ def test_resource_policy_guards(self):
+  cases = (
+   ('specs/methodology/model-selection.md', '`gpt-6.1-sol` + `low`'),
+   ('specs/methodology/model-selection.md', 'do not spawn'),
+   ('specs/methodology/model-selection.md', 'requested versus observed'),
+   ('specs/methodology/dynamic-agents.md', '**25% or less:**'),
+   ('specs/methodology/dynamic-agents.md', '**5% or less:**'),
+   ('specs/methodology/dynamic-agents.md', '**including QA**'),
+   ('specs/methodology/dynamic-agents.md', 'after this warning'),
+   ('specs/methodology/dynamic-agents.md', 'OpenCode is not enabled'),
+   ('templates/agent-work-packet.md', 'HANDOFF → CODEX'),
+   ('.agents/skills/orchestrate/SKILL.md', 'run `$handoff`'),
+   ('.agents/skills/handoff/SKILL.md', 'Reread the written checkpoint'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('resource-policy')
+    finally:
+     p.write_text(original)
+ def test_coordination_does_not_duplicate_continuity(self):
+  p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
+  for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
+   try:
+    p.write_text(original+'\n'+variant+'\n'); self.assertRule('coordination')
+   finally: p.write_text(original)
+ def test_external_contract_does_not_register_clients(self):
+  p=self.root/'specs/methodology/dynamic-agents.md'
+  p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')
+  self.assertEqual(validate(self.root),[])
  def test_ci(self):
-  self.change('.github/workflows/validate.yml','./scripts/test-validator','echo skip'); self.assertRule('ci')
+  self.change('.github/workflows/validate.yml','python3 scripts/verify baseline','echo skip'); self.assertRule('ci')
+ def test_verification_contract(self):
+  for name,token in (('specs/methodology/ci-policy.md','each required suite once'),
+                     ('.agents/skills/bootstrap/SKILL.md','one canonical verification command'),
+                     ('AGENTS.md','--full')):
+   with self.subTest(name=name):
+    p=self.root/name; old=p.read_text()
+    try:
+     p.write_text(old.replace(token,'REMOVED')); self.assertRule('verification-entry')
+    finally: p.write_text(old)
+ def test_usage_structure(self):
+  for name in ('scripts/report-agent-usage','scripts/auto-agent-usage','scripts/test-agent-usage',
+               'scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md'):
+   with self.subTest(name=name):
+    p=self.root/name; old=p.read_bytes()
+    try:
+     p.unlink(); self.assertRule('structure')
+    finally: p.write_bytes(old)
+ def test_usage_hook_scope(self):
+  import json
+  p=self.root/'.codex/hooks.json'; original=p.read_text()
+  for mutation in ('event','command','timeout','extra'):
+   with self.subTest(mutation=mutation):
+    config=json.loads(original); hooks=config['hooks']
+    if mutation=='event': hooks['PreToolUse']=hooks.pop('Stop')
+    if mutation=='command': hooks['Stop'][0]['hooks'][0]['command']='echo skip'
+    if mutation=='timeout': hooks['Stop'][0]['hooks'][0]['timeout']=600
+    if mutation=='extra': hooks['Stop'][0]['hooks'][0]['async']=True
+    try:
+     p.write_text(json.dumps(config)); self.assertRule('usage-hooks')
+    finally: p.write_text(original)
  def test_legitimate_project(self):
   self.change('specs/guidelines/architecture.md','# Architecture','# Architecture\nApproved for this project: Rust and SQLite.')
   self.change('README.md','# Universal','# Universal\n[Folder](templates) [External](https://example.com)\nUNDECIDED api_key: YOUR_KEY')

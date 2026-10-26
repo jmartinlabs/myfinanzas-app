@@ -328,3 +328,169 @@ No añadir filtro por Tipo/Control en este agregado. Los validadores de escritur
 cada Tipo siguen protegiendo qué desgloses son admisibles: ausencia de filtro en el
 motor NO autoriza payloads inválidos. Aperturas ausentes no se inventan ni convierten
 en cero; mostrar capital no calculable cuando falten entradas necesarias de control.
+
+
+## E2.4 — precisión del plan anual y esenciales, 2026-10-24
+
+Fuente: decisiones Q1–Q3 de Álex transmitidas expresamente por el usuario, tras su
+contraste de v5.11(7)/Criterios; no inspección independiente por Codex. Detalle y
+pendientes posteriores en [brainstorming10](10-plan-anual-brainstorming.md).
+Esta precisión concreta R3 y la contribución anual a R6 sin cambiar sus fórmulas.
+
+Una línea por ID de Partida/ejercicio natural. Único importe manual Presupuesto (€),
+editable, vacío o cero explícito distintos y sin negativos. No copiar/calcular desde
+otro ejercicio o Ejecutado automáticamente, ni reconstruir cada mes. No importe
+esencial anual independiente. Ejecutado, Diferencia y Fecha ejecutada derivados;
+su semántica de signo/fecha múltiple se concreta en spec10 antes de aprobarla.
+Periodo previsto es texto flexible opcional/editable (uno o varios meses/periodos),
+sin lista cerrada, varias filas ni motor de periodicidad; no gobierna la ejecución.
+Transitorios2026 son histórico/migración, no nuevos campos del plan.
+
+Esencial manual por línea: Sí/No/Pendiente. Solo Sí contribuye; Pendiente no se
+convierte en No. Equivalente esencial mensual anual = suma de Presupuesto anual
+con Esencial=Sí dividida por12, sin redondear contribuciones antes de sumar.
+Evidencia física atribuida: `=SUMIFS(tblAnual2026[Presupuesto (€)],tblAnual2026[Esencial],"Sí")/12`.
+Si un importe esencial está vacío sigue no informado, no decisión de0€.
+El equivalente anual alimenta el Importe esencial del Presupuesto Mensual de Gastos
+anuales; Coste esencial mensual global suma importes esenciales mensuales. No sumar
+el equivalente anual otra vez. En la app se preserva el contrato manual de spec09;
+el enlace/consumo no autoriza sobrescritura automática ni conexión por nombre.
+R6 consume coste global, no este equivalente aislado. Liquidez/objetivos no se
+implementan en E2.4; cobertura, nulos y cero deben propagarse sin inventar resultados.
+Autorización solo documental, sin SQL, cambios del Excel, desarrollo ni merge.
+
+
+### E2.4 — precisión Q4–Q6, 2026-10-24
+
+Fuente: «Spec10 — Resolución Q4–Q6 por Álex», transmitida por el usuario tras su
+contraste de tblAnual2026/Criterios T5.n. Resuelve la semántica de derivados pendiente
+arriba; no es aprobación completa de spec10 ni inspección física independiente.
+Diferencia=ROUND(Presupuesto−Ejecutado,2). Presupuesto vacío implica Diferencia vacía;
+Ejecutado0 verificado da Diferencia=Presupuesto. Cobertura no verificable impide
+presentarla como definitiva. Fecha ejecutada=máxima fecha conocida entre Fecha histórica
+y Gastos elegibles de la Partida en el ejercicio natural/periodo de control. Histórico
+válido conservado sin duplicarlo con Movimientos. Sin fecha conocida queda vacía,
+no inferida del importe. Amortización extraordinaria no es Gasto ejecutado.
+
+Con Esencial=Sí e importe sin informar, equivalente total Incompleto; subtotal
+conocido Parcial y contador de importes faltantes. No usarlo silenciosamente como
+objetivo definitivo de liquidez. Clasificación Pendiente se avisa por separado,
+sin incluirla ni convertirla a No. La fórmula suma de anuales esenciales/12 no cambia.
+Conservar líneas históricas inactivas y prohibir nuevas líneas para inactivas.
+Editar planes pasados requiere ausencia de protección financiera aplicable, impacto,
+motivo y confirmación. Revalidar también ciclos cerrados/fotografías dentro del año,
+aunque no exista cierre anual. Preservar identidades, relaciones y fotos inmutables;
+no reescribir Gastos ni crear históricos inexistentes. Solo autorización documental.
+
+
+Aprobación documental posterior, 2026-10-24: el usuario responde «Aprobadas» a la
+solicitud única de aprobar spec10 rev2 completa y sus wireframes. Se confirma el
+contrato documental descrito; no autoriza desarrollo, SQL, migración, Excel ni merge.
+Trazabilidad/candidato en [brainstorming10](10-plan-anual-brainstorming.md).
+
+
+## E2.5 — precisión de Nómina Q1–Q3, 2026-10-24
+
+Fuente: «E2.5 — Nómina: decisiones funcionales Q1–Q3», usuario tras contraste de Álex
+sobre hoja Nómina, tblNominaIRPF, tblNominaForecast, tblCalculosFlujoMensual/Criterios
+v5.11(7). No inspección independiente de Codex. [Registro11](11-nomina-prevision-brainstorming.md).
+Paga documentada por Mes nómina/Tipo Ordinaria o Bonus, sin unicidad que impida dos
+pagas realmente distintas del mismo mes/tipo. Originales/procedencia: Mes, Tipo,
+Guardia, Devengo, Base IRPF, IRPF%, Variable, Neto histórico y Nota. Retención IRPF
+=Base IRPF×IRPF% si ambos informados. Guardia atributo de Ordinaria, salvo evidencia
+de paga diferenciada. Neto estructural según regla vigente de Ordinaria; Bonus vacío.
+Fecha ingreso, Neto, Neto estructural y Origen neto derivados; no sustituir originales.
+
+Movimientos es la verdad bancaria: Ingreso Nómina/Bonus, cada abono con ID/Fecha/
+Importe/Destino reales. Parciales separados, paga origen aunque se cobre en otro mes;
+ciclo por fecha bancaria/Ciclos. Separar histórico, documentado y cobrado, sin doble
+entrada. MINIFS/SUMIFS por mes/Subtipo y XLOOKUP Ordinaria del Excel no resuelven
+inequívocamente esos vínculos; la app propondrá relación mínima explícita por IDs,
+sin otro maestro ni asociaciones por proximidad. Sin evidencia: pendiente de asociación,
+Movimiento intacto. Cardinalidad/estructura pendientes de aprobación posterior.
+
+Previsión manual: Variable prevista (€), Ajuste IRPF esperado (pp). Referencias:
+último Devengo ordinario con datos fiscales suficientes, última Base IRPF ordinaria
+válida, Deducciones no IRPF y último IRPF ordinario válido. IRPF estimado=Último IRPF
++Ajuste; Retención estimada=(Base referencia+Variable prevista)×IRPF estimado;
+Neto estimado=(Devengo referencia+Variable prevista)−Deducciones no IRPF−Retención estimada.
+Conservar escenario prudente como simulación configurable, no reglas fijas universales.
+No produce cobros/Movimientos, cambia presupuesto o ciclos, sobrescribe histórico/real
+ni convierte registros futuros/incompletos en hechos. Precisiones de fórmulas derivadas,
+selección de referencias y redondeos aún pendientes en spec11. Solo autorización documental.
+
+
+### E2.5 — resolución Q4–Q6: físico, límites y propuesta app, 2026-10-24
+
+Fuente: resolución de Álex transmitida por el usuario; no inspección física por Codex.
+**Comprobado Excel:** Retención=Base IRPF×IRPF; Deducciones no IRPF=Devengo−Retención−Neto.
+Neto estructural Bonus vacío; Ordinaria sin Guardia=Sí:Neto; con Guardia=Sí:
+(Devengo−Variable)−(Base IRPF−Variable)×IRPF−(Devengo−Retención−Neto).
+Neto:histórico informado, luego Ingresos mes/Subtipo, sin valores vacío; origen
+Histórico/Movimientos/vacío. Fecha ingreso MINIFS mes/Subtipo. LOOKUP toma última fila
+física Ordinaria con Base>0/IRPF>0/Retención>0, después agrega por mes con SUMIFS.
+Sin ROUND explícitos ni límites numéricos en Variable prevista/Ajuste del Excel.
+
+**Limitaciones:** esas selecciones no prueban relación inequívoca de cada paga/cobro;
+C176 describe una paga por Ingreso. No reconstruir historia con reglas nuevas.
+**Ampliación app conceptual Q4:** N:M por IDs/importe asignado, suma por Movimiento
+≤importe real, remanente/diferencias visibles y evidencia entre meses/tipos mixtos.
+Un Movimiento real, sin división/duplicación, contado una vez por Fecha/Ciclo; diseño
+técnico sujeto a aprobación de spec11 completa, sin alterar Excel.
+
+Referencias propuestas por mes salarial más reciente de Ordinarias documentadas
+completas, excluyendo futuras/incompletas; empate por ID/evidencia, no suma ni inserción.
+Sin referencia verificable, no disponible/incompleto. Cobros:primera/última fecha,
+total/número/diferencia y fecha completa solo si conciliación demostrable.
+Forecast:Variable prevista€ y Ajuste pp inicialmente0. Fórmulas Q3 intactas.
+Prudente usa Último IRPF+0,0027 (=+0,27pp), manteniendo demás referencias/Variable;
+Neto prudente=(Devengo ref+Variable prevista)−Deducciones ref−(Base ref+Variable prevista)
+×(Último IRPF+0,0027); Diferencia prudente=Neto prudente−Neto estimado. Simulación,
+no ingreso realizado ni banda del ajuste manual.
+
+App propuesta:decimal preciso, monetarios visibles2decimales sin redondeos tempranos,
+equivalencia económica a verificar; finitos, IRPF estimado0–100%, Variable no negativa
+por defecto sin máximo financiero arbitrario, ajustes salariales negativos aparte;
+Ajuste pp± mientras tasa válida, sin banda arbitraria. Faltantes no se completan con0.
+Nuevos vínculos, fallback de Neto y desempates se identifican en spec11 como propuestas
+pendientes de aprobación técnica completa, no equivalencia estructural con C176.
+Solo elaboración documental:sin código, SQL, Excel, migración o merge.
+
+
+### E2.5 — Neto documentado y conciliación, decisión posterior, 2026-10-24
+
+Fuente: «E2.5 — Decisión sobre Neto documentado y conciliación», usuario. Acepta
+Neto documentado€ opcional por paga, captura manual con evidencia salarial identificable,
+procedencia y auditoría de altas/correcciones. Histórico independiente/intacto; vacío≠0;
+nunca autocompletar desde Movimientos/cobrado ni crear segunda verdad bancaria.
+Cobrado solo desde hechos reales asociados; referencia documental válida=Documentado
+o Histórico original cuando corresponda. Si ambos informados discrepan, mostrarlo,
+sin elegir silenciosamente. Diferencia=referencia válida−cobrado real asociado.
+Fecha completa solo desde abonos asociados suficientes y conciliación demostrable;
+sin referencia válida, Diferencia/Fecha completa no disponibles aunque haya Ingresos.
+Coincidencia monetaria no prueba vínculo documental; N:M no duplica ingreso económico.
+Antes de implementar comprobar campo con idéntica semántica y evitar duplicidad.
+Histórico salarial, documentación, banco y pronóstico independientes. Solo elaboración
+documental; no código/SQL/Excel/merge. Resolución M1 en brainstorming11, sin reabrirla.
+
+
+Aprobación documental E2.5 posterior, 2026-10-24: usuario «Aprobadas» a solicitud única
+de spec11 rev3 completa, incluida relación técnica N:M y wireframes. Quedan aprobadas
+las ampliaciones de app descritas, distintas del modelo físico C176; no se modifica
+Excel ni se autoriza desarrollo/SQL/migración/merge. Registro/candidato en brainstorming11.
+
+
+## E2.6 — flujo base y referencia estructural, contrato documental aprobado
+
+Fuente: resoluciones Q1–Q4 del usuario (contraste físico atribuido a Álex, sin inspección
+propia de Excel) y «si aprobada»,2026-10-25, a spec12 rev3 completa/wireframes/56AC.
+[Contrato y diferencias físicas D–L/C48](12-flujo-mensual-specification.md) /
+[trazabilidad](12-flujo-mensual-brainstorming.md). Banco solo Movimientos por Ciclos;
+Gasto bruto no equivale a H neta del Excel; deuda informativa sin doble resta, saldo
+operativo siempre Parcial. Márgenes son planificación, liquidez actual contexto
+independiente; ahorro/posiciones/ejecución R3/anual no se fusionan. Media estructural
+central Nómina por totales mensuales documentales válidos y N/12 al corte del ciclo,
+distinta de COUNTIFS por filas físico; banco parcial no invalida por sí solo fuente
+salarial documental válida. E3/E4 y sus coberturas permanecen explícitamente pendientes.
+Aprobación documental, no desarrollo/SQL/Excel/merge/deploy ni equivalencia numérica
+contrastada o capacidades ya ejecutadas. No se cambian fórmulas físicas del libro.

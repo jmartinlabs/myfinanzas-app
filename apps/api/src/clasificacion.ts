@@ -1,3 +1,7 @@
+import { annualClassificationRelations } from "./plan-anual";
+import { planConfigurationImpact } from "./planes-ciclo";
+import { getBudget } from "./presupuestos";
+import { getDebt } from "./deudas";
 import { classificationMovementImpact } from "./movement-impact";
 import type { Database } from "bun:sqlite";
 import { Schema } from "effect";
@@ -24,6 +28,8 @@ export type Classification = {
   referencia: boolean | null;
   categoria: { id: string; nombre: string } | null;
   subcategoria: { id: string; nombre: string } | null;
+  deuda: string | null;
+  presupuesto: string | null;
   integridad: string | null;
 };
 // Financial consumers must supply real checks when delivered, not simulated engines.
@@ -37,6 +43,8 @@ type Row = {
   nombre: string;
   estado: "Activa" | "Inactiva";
   revision: number;
+  deuda?: string | null;
+  presupuesto?: string | null;
   padre?: string;
   grupo?: string | null;
   anual?: string | null;
@@ -80,6 +88,8 @@ export function getClassification(
     referencia: r.referencia == null ? null : r.referencia === 1,
     categoria: cat && { id: cat.id, nombre: cat.nombre },
     subcategoria: sub && { id: sub.id, nombre: sub.nombre },
+    deuda: r.deuda ?? null,
+    presupuesto: r.presupuesto ?? null,
     integridad:
       kind !== "subcategorias"
         ? null
@@ -162,14 +172,25 @@ function validate(
 ) {
   const fields = [
     ...common,
-    ...(kind === "categorias" ? categoryFields : ["padre"]),
+    ...(kind === "categorias"
+      ? categoryFields
+      : kind === "partidas"
+        ? ["padre", "deuda", "presupuesto"]
+        : ["padre"]),
   ];
   const errors: Record<string, string> = {};
   for (const name of Object.keys(body))
     if (![...fields, "revision"].includes(name))
       errors[name] = "Campo no editable.";
   const v: Record<string, unknown> = {
-    ...(old ?? { grupo: null, anual: null, mensual: null, referencia: null }),
+    ...(old ?? {
+      grupo: null,
+      anual: null,
+      mensual: null,
+      referencia: null,
+      deuda: null,
+      presupuesto: null,
+    }),
     ...body,
   };
   if (
@@ -238,6 +259,35 @@ function validate(
           nombre:
             "El nombre ya existe en el catálogo global (sin distinguir mayúsculas).",
         },
+      );
+  }
+  if (kind === "partidas" && v.deuda !== null) {
+    if (typeof v.deuda !== "string")
+      throw new Problem(422, "VALIDATION", "Deuda inválida.");
+    const d = getDebt(db, v.deuda);
+    if (d.estado !== "Activa" && old?.deuda !== v.deuda)
+      throw new Problem(422, "INACTIVE_DEBT", "Selecciona una Deuda activa.");
+  }
+  if (
+    kind === "partidas" &&
+    old &&
+    old.deuda !== v.deuda &&
+    db.query("SELECT id FROM movimientos WHERE partida=? LIMIT 1").get(old.id)
+  )
+    throw new Problem(
+      409,
+      "HISTORY_LOCKED",
+      "No se puede cambiar Deuda de una Partida utilizada; crea otra Partida para el futuro.",
+    );
+  if (kind === "partidas" && v.presupuesto !== null) {
+    if (typeof v.presupuesto !== "string")
+      throw new Problem(422, "VALIDATION", "Presupuesto inválido.");
+    const presupuesto = getBudget(db, v.presupuesto);
+    if (presupuesto.estado !== "Activo" && old?.presupuesto !== v.presupuesto)
+      throw new Problem(
+        422,
+        "INACTIVE_BUDGET",
+        "Selecciona un Presupuesto activo.",
       );
   }
   const result: Record<string, unknown> = {};
@@ -327,9 +377,19 @@ export function createClassification(
         ]);
       else
         db.run(
-          `INSERT INTO ${entities[kind].table} VALUES(?,?,?,'Activa',1,?,?)`,
+          `INSERT INTO ${entities[kind].table}(id,nombre,padre,estado,revision,creado,actualizado) VALUES(?,?,?,'Activa',1,?,?)`,
           [id, v.nombre as string, v.padre as string, time, time],
         );
+      if (kind === "partidas" && v.deuda !== null)
+        db.run("UPDATE partidas SET deuda=? WHERE id=?", [
+          v.deuda as string,
+          id,
+        ]);
+      if (kind === "partidas" && v.presupuesto !== null)
+        db.run("UPDATE partidas SET presupuesto=? WHERE id=?", [
+          v.presupuesto as string,
+          id,
+        ]);
       audit(db, id, "alta", 1, Object.keys(v), now);
       db.run("INSERT INTO classification_attempts VALUES(?,?,?,?,?)", [
         attempt,
@@ -369,10 +429,30 @@ function impact(
     (k) => value[k] !== old[k as keyof Classification],
   );
   const economic = changed.filter((k) =>
-    ["padre", "anual", "mensual", "referencia"].includes(k),
+    [
+      "padre",
+      "anual",
+      "mensual",
+      "referencia",
+      "deuda",
+      "presupuesto",
+    ].includes(k),
   );
   const dependencies = descendants(db, kind, id);
   const financial = classificationMovementImpact(db, kind, id, value, economic);
+  const annualPlans = annualClassificationRelations(
+    db,
+    kind === "partidas"
+      ? [id]
+      : dependencies.filter((d) => d.kind === "partidas").map((d) => d.id),
+  );
+  const budgetExecution =
+    kind === "partidas" && economic.includes("presupuesto")
+      ? planConfigurationImpact(db, {
+          part: { id, presupuesto: value.presupuesto as string | null },
+        })
+      : null;
+  const budgetBlocked = budgetExecution?.blocked ?? false;
   const protection = guard?.(kind, id, economic);
   if (protection?.blocked)
     throw new Problem(
@@ -386,16 +466,32 @@ function impact(
     changed,
     economic,
     dependencies,
-    used: financial?.used === true || protection?.used === true,
+    blocked: budgetBlocked,
+    budgetExecution,
+    annualPlans,
+    used:
+      annualPlans.length > 0 ||
+      financial?.used === true ||
+      protection?.used === true,
     financial,
-    fingerprint: hash([kind, id, value, snapshot(db), financial?.revision]),
-    coverage: financial
-      ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
-      : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
+    fingerprint: hash([
+      kind,
+      id,
+      value,
+      snapshot(db),
+      financial?.revision,
+      budgetExecution,
+      annualPlans,
+    ]),
+    coverage: budgetBlocked
+      ? budgetExecution!.coverage
+      : financial
+        ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
+        : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
     pending: [
+      ...(budgetBlocked ? ["Periodo/corte"] : []),
       ...(financial ? [] : ["Movimientos"]),
-      "Presupuestos",
-      "Deudas",
+      ...(budgetExecution ? [] : ["Presupuestos"]),
       "Indicadores",
       "Cierres",
     ],
@@ -422,6 +518,7 @@ export function updateClassification(
   return db
     .transaction(() => {
       const plan = impact(db, kind, id, body, guard);
+      if (plan.blocked) throw new Problem(409, "HISTORY_LOCKED", plan.coverage);
       // Used catalog branches require explicit review; unused records remain editable.
       if (
         plan.economic.length &&
@@ -478,6 +575,16 @@ export function updateClassification(
             id,
           ],
         );
+      if (kind === "partidas")
+        db.run("UPDATE partidas SET deuda=? WHERE id=?", [
+          v.deuda as string | null,
+          id,
+        ]);
+      if (kind === "partidas")
+        db.run("UPDATE partidas SET presupuesto=? WHERE id=?", [
+          v.presupuesto as string | null,
+          id,
+        ]);
       audit(
         db,
         id,
@@ -525,6 +632,17 @@ export function changeClassificationState(
         raw(db, entities[kind].parent!, old.padre!).estado !== "Activa"
       )
         throw new Problem(409, "INACTIVE_PARENT", "Reactiva primero el padre.");
+      if (
+        active &&
+        kind === "partidas" &&
+        old.presupuesto &&
+        getBudget(db, old.presupuesto).estado !== "Activo"
+      )
+        throw new Problem(
+          409,
+          "INACTIVE_BUDGET",
+          "Reactiva primero el Presupuesto vinculado.",
+        );
       const state = active ? "Activa" : "Inactiva";
       if (old.estado === state) return old;
       db.run(

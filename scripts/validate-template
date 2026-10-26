@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 """Portable structural validation, not a complete security or semantic audit."""
 from pathlib import Path
+import json
 import re
+import runpy
 import sys
 from urllib.parse import unquote, urlsplit
 SKILLS = ('init-project', 'bootstrap', 'roadmap', 'spec', 'dev')
 REQUIRED = ('AGENTS.md','README.md','NEW_PROJECT_PROMPT.md','.gitignore','.github/workflows/validate.yml','specs/README.md',
  *(f'specs/guidelines/{n}.md' for n in ('architecture','ui','quality','security')),
  *(f'templates/{n}.md' for n in ('brainstorming','specification','roadmap','progress','testplan')),
- *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator')
+ *(f'.agents/skills/{n}/SKILL.md' for n in SKILLS),'scripts/validate-template','scripts/test-validator',
+ 'scripts/verify','scripts/test-verification','scripts/report-agent-usage','scripts/auto-agent-usage',
+ 'scripts/test-agent-usage','scripts/test-auto-agent-usage','.codex/hooks.json','docs/USAGE_REPORTS.md')
 def validate(root):
  root=Path(root).resolve(); errors=[]
  def fail(rule,msg): errors.append(f'{rule}: {msg}')
@@ -27,6 +31,30 @@ def validate(root):
    if u.scheme or dest.startswith('#'): continue
    target=(p.parent/unquote(u.path)).resolve()
    if not target.is_relative_to(root) or not target.exists(): fail('links',f'{p.relative_to(root)} -> {dest}')
+ # Cross-file fragments in portable instructions must resolve to a real heading.
+ def heading_slug(value):
+  value=re.sub(r'\[([^\]]+)\]\([^)]+\)',r'\1',value).replace('`','').strip().lower()
+  value=re.sub(r'[^\w\s-]','',value,flags=re.UNICODE)
+  return value.replace(' ','-')
+ anchors={}
+ for p in root.rglob('*.md'):
+  seen={}
+  values=set()
+  for heading in re.findall(r'^#{1,6}\s+(.+)$',p.read_text(encoding='utf-8'),re.M):
+   base=heading_slug(heading); count=seen.get(base,0)
+   values.add(base if count==0 else f'{base}-{count}'); seen[base]=count+1
+  anchors[p.resolve()]=values
+ fragment_docs=[root/n for n in ('AGENTS.md','README.md') if (root/n).is_file()]
+ for folder in ('docs','specs/methodology','specs/guidelines','templates','.agents'):
+  fragment_docs.extend((root/folder).rglob('*.md'))
+ for p in fragment_docs:
+  for dest in re.findall(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)',p.read_text(encoding='utf-8')):
+   dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
+   if u.scheme or not u.fragment or not u.path: continue
+   target=(p.parent/unquote(u.path)).resolve()
+   if target.suffix!='.md' or not target.is_file(): continue
+   if unquote(u.fragment) not in anchors.get(target,set()):
+    fail('fragments',f'{p.relative_to(root)} -> {dest}')
  agents=read('AGENTS.md')
  for n in ('architecture','ui','quality','security'):
   if f'(specs/guidelines/{n}.md)' not in agents: fail('agents',f'missing guideline {n}')
@@ -52,9 +80,96 @@ def validate(root):
   if re.search(r'/(?:Users|home|workspace)/[A-Za-z0-9_.-]+|[A-Z]:\\Users\\',s): fail('portability',f'machine-specific path in {p.relative_to(root)}')
  for p in [root/'AGENTS.md',*(root/'.agents/skills').rglob('SKILL.md')]:
   if p.is_file() and re.search(r'(?i)(?:all projects|every project|all applications) must (?:use|install|run)\b',p.read_text()): fail('neutrality',f'universal stack mandate in {p.relative_to(root)}')
- s=read('.github/workflows/validate.yml')
- for token in ('pull_request','contents: read','./scripts/validate-template','./scripts/test-validator'):
-  if token not in s: fail('ci',f'missing {token}')
+ # The project workflow contract checks parsed structure/conditions, not token presence.
+ try:
+  policy=runpy.run_path(str(root/'scripts/ci_workflow.py'))
+  errors.extend(policy['validate_workflow'](root/'.github/workflows/validate.yml'))
+ except (OSError,ValueError): fail('ci','workflow policy unavailable')
+ # Preserve the contract, while behavioral tests exercise the real verification entry.
+ for name,tokens in {
+  'specs/methodology/ci-policy.md':('## Canonical verification entry point',
+   'Reuse an existing command','each required suite once','nonzero exit status',
+   'missing prerequisite','invalid mode','unexpectedly zero discovered tests',
+   'must not install dependencies','local/CI selection parity'),
+  '.agents/skills/bootstrap/SKILL.md':('one canonical verification command',
+   'Reuse an adequate existing command','forced full mode'),
+  'AGENTS.md':('python3 scripts/verify','--full','--base SHA --head SHA'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('verification-entry',f'{name}: missing {token}')
+ # Optional reporting stays advisory/local; never trust or activate hooks here.
+ try:
+  config=json.loads(read('.codex/hooks.json'))
+  command='python3 "$(git rev-parse --show-toplevel)/scripts/auto-agent-usage"'
+  hook={'type':'command','command':command,'timeout':3}
+  expected={event:[{'hooks':[hook]}] for event in ('Stop','SubagentStop','SessionEnd')}
+  if (not isinstance(config,dict) or set(config)-{'description','hooks'} or
+      json.dumps(config.get('hooks'),sort_keys=True)!=json.dumps(expected,sort_keys=True)):
+   fail('usage-hooks','unexpected local reporting hook scope or command')
+ except (ValueError,TypeError): fail('usage-hooks','invalid reporting hook configuration')
+ # Preserve portable coordination obligations; live behavior is evaluated separately.
+ for name,tokens in {
+  'specs/methodology/dynamic-agents.md':('scope-sized preflight',
+   'suspending escalation, the worker notifies the coordinator',
+   'Advance notice is not another user approval gate',
+   'If higher-priority runtime instructions require a direct escalation retry without a prior user message',
+   'blocking operation in justification', 'fresh bounded context by default',
+   'Inherit full history only for a concrete dependency',
+   'not repeated status reminders', 'Space CI queries progressively',
+   'QA independently', 'Workers in other clients',
+   'start/stop owner', 'No OpenCode adapter is supplied',
+   'explicit user authorization and supported tools',
+   'separate checkouts/worktrees AND non-overlapping ownership',
+   'Separate test ports, databases', 'Worker output is evidence, never',
+   'other-client usage is', 'one current summary', 'Replace stale current-state labels',
+   'savings still need measurement'),
+  'templates/agent-work-packet.md':('Client / version / session ID',
+   'Start/stop owner and permitted communication route', 'Instruction entry points',
+   'Context:', 'Preflight / operation owners', 'Shared test resources',
+   'Verification environment / candidate', 'Blocking notice', 'Evidence destination',
+   'PR none unless the authorized scope includes publication', 'Push and create'),
+  'specs/methodology/approvals.md':('Publicación de rama y PR',
+   'No se necesita otra aprobación de', 'Nunca activar auto-merge'),
+  'specs/methodology/coordinator-communication.md':('HANDOFF → CODEX',
+   '## 7. Closing a turn or stopping', '#execution-continuity',
+   'This section defines only the communication contract', 'Exact human action',
+   'A received handoff never authorizes merge'),
+  'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',),
+  'templates/progress.md':('Current checkpoint', 'one current summary',
+   'permission-sensitive operation owners', 'PR / CI / merge state'),
+  'templates/testplan.md':('Before implementation', 'negative/error and integration',
+   'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
+  '.agents/skills/orchestrate/SKILL.md':('fresh bounded context',
+   'progressively spaced CI queries', 'one current summary',
+   '## Execution continuity', 'A required check that fails and can be corrected',
+   '#7-closing-a-turn-or-stopping'),
+  'specs/methodology/myfinanzas-coordination.md':('Publicar rama y crear o',
+   'nunca auto-merge', 'no cierra el turno'),
+  '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
+   'advance', 'escalation notices', 'Incompatible local runs never replace CI gates',
+   'one current checkpoint', 'authorized scope includes branch/PR publication'),
+  '.agents/skills/task/SKILL.md':('execution platform and operation owners before code',
+   'dynamic-agents.md', 'preserve independent QA', 'branch/PR publication follows',
+   'A required check that fails and can be corrected'),
+  '.agents/skills/tweak/SKILL.md':('Branch/PR publication follows',),
+  '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('coordination',f'{name}: missing {token}')
+ # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
+ coordinator=read('specs/methodology/coordinator-communication.md')
+ for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
+  if token.lower() in coordinator.lower(): fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
+ # Resource policy guards are structural; runtime behavior needs separate trials.
+ for name,tokens in {
+  'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),
+  'specs/methodology/dynamic-agents.md':('**25% or less:**','**5% or less:**','**including QA**','after this warning','OpenCode is not enabled','Token accounting in the usage reader is not subscription quota'),
+  'templates/agent-work-packet.md':('HANDOFF → CODEX','Recommended model:','Final status','Branch, commit SHA, PR','Quota gate:'),
+  '.agents/skills/orchestrate/SKILL.md':('quota dispatch gate','run `$handoff`'),
+  '.agents/skills/handoff/SKILL.md':('Reread the written checkpoint','complete copyable next-chat instruction'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('resource-policy',f'{name}: missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

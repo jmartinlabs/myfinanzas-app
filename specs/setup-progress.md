@@ -400,3 +400,42 @@ Se añade únicamente observabilidad saneada del reporter existente al harness
 de infra; PR #30 Draft hasta diagnóstico/revisión con el agente financiero o
 autorización técnica acotada. #29 sigue lista/verde; ninguna PR integrada.
 No se inician fases A/B ni VPS/despliegue. Detalles en progress/testplan 32.
+
+## Spec06 integrada y adopción de coordinación autorizada — 2026-10-22
+Usuario autoriza integrar PR #24 sobre 3f04f33 sin cambios adicionales: HEAD y ambas
+CI SUCCESS, sin conflictos; squash b60def124e95d692b6021eff9c1049652e21ded0 MERGED.
+[CI posterior39738161833](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39738161833)
+COMPLETED/SUCCESS, main sincronizado y limpio. Spec06 cerrada; dev06/spec07 no autorizados.
+Adopción selectiva v2.3.1 en rama independiente; [plan y evidencia](methodology/orchestration-adoption.md),
+[tablero](epic-board.md) y [límites locales](methodology/myfinanzas-coordination.md).
+No reinicializar ocho etapas ni cambiar Skills existentes/CI/producto/finanzas. Esperar
+aprobación de PR de metodología antes de la nueva fase coordinada. La evidencia
+histórica de CI/IOERR no queda resuelta por esta adopción. Sin VPS/deploy/datos reales.
+
+## E1.6 — ejecución autorizada y verificación local — 2026-10-22
+Usuario autorizó expresamente `$dev 06`, QA independiente y preparación de PR dentro de `$orchestrate`; esta autorización posterior sustituye el gate histórico de no iniciar dev06. Spec06 y Q1–Q4 se reutilizan sin cambios. PR32 y PR33 integradas, dependencia metodológica satisfecha.
+
+Implementación en rama feat/06-deuda, maestro mínimo Deudas/enlace Partida y pagos en pipeline único. SQLitev7 con continuidad v6 genuina demo/production ficticia, identidad/DB-clave/MFA preservados; sin migraciones operativas. [Progress06](06-deuda-progress.md) y [testplan06](06-deuda-testplan.md) son autoridad de pruebas/estado por SHA:97 API/1547 assertions y Playwright2 PASS; incremento auditoría con E2E afectadoPASS. QA final completada sin bloqueantes; CI/PR pendientes, ninguna autorización de merge/deploy.
+
+Dev32/PR30/AC-22 continúa pausado, checkpoint intacto; no investigaciones ni cambios de infraestructura. E2.1 es línea documental independiente autorizada, sin implementación. Excel sigue maestro; R6/IOERR/fallo API históricos no quedan resueltos por esta entrega.
+
+## Cierre coordinado E1.6 y spec07 — 2026-10-22
+Usuario «dale» aprueba integrar PR34 y cerrar spec07/wireframes. PR34 verificada
+con HEAD81ca2cdd y ambas CI SUCCESS, integrada en main cb9ba3b mediante squash.
+Spec07 E2.1 aprobada documentalmente, PR propia pendiente de revisión/merge;
+dev07 no autorizado. AC2 de Comida mantiene su integración pendiente conforme
+a respuesta expresa anterior. Dev32/PR30/AC22 pausado, sin cambios.
+
+## E2.1 dev07 autorizado — 2026-10-22
+Spec07 integrada PR37 (main c04dc07). El usuario autoriza cinco incrementos de dev07,
+QA independiente y preparación de PR; esta autorización supera las restricciones
+históricas «sin dev07» anteriores, sin autorizar merge, despliegue ni migración operativa.
+Implementación en feat/07-ciclos-operacion: maestro único ciclos, impacto revisable,
+motivo/confirmación, auditoría y revisión concurrente, SQLite8 compatible con v7 genuina.
+[Progress07](07-ciclos-operacion-progress.md) y [testplan07](07-ciclos-operacion-testplan.md)
+son la autoridad vigente de pruebas y bloqueos. La suite íntegra encontró un fallo
+concurrente de apertura heredada (SQLite errno11); permanece abierto aunque la
+regresión enfocada posterior pase. No se ha investigado ni reanudado infraestructura.
+26 criterios operativos separados de tres contratos futuros; E2.1-AC2 sigue pendiente
+hasta Comida E3.5. Dev32/PR30/AC22 pausado. Referencia v5.11(7) candidata, no estable;
+sin Excel real, datos personales, despliegues ni motores futuros.

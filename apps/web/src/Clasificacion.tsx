@@ -1,3 +1,4 @@
+import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { monthLabel } from "./Ciclos";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
@@ -9,6 +10,8 @@ type Item = {
   nombre: string;
   estado: string;
   revision: number;
+  deuda?: string | null;
+  presupuesto?: string | null;
   padre: string | null;
   grupo: string | null;
   anual: string | null;
@@ -20,6 +23,8 @@ type Item = {
 };
 type Dependency = { kind: Kind; id: string; nombre: string; estado: string };
 type Plan = {
+  budgetExecution?: PlanImpactData | null;
+  blocked?: boolean;
   fingerprint: string;
   dependencies: Dependency[];
   coverage: string;
@@ -555,11 +560,26 @@ function ClassificationDetail({
             </dl>
           ) : kind === "partidas" ? (
             <>
-              <p>Presupuesto: Sin asignación</p>
-              <p>Deuda: Sin asignación</p>
+              <p>
+                Presupuesto:{" "}
+                {item.presupuesto ? (
+                  <a
+                    href={"/presupuestos/" + item.presupuesto}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      go("/presupuestos/" + item.presupuesto);
+                    }}
+                  >
+                    {item.presupuesto}
+                  </a>
+                ) : (
+                  "Sin Presupuesto"
+                )}
+              </p>
+              <p>Deuda: {item.deuda ?? "Sin Deuda"}</p>
               <p className="muted">
-                Vinculación disponible en sus entregas. Una Partida sin
-                Presupuesto es válida.
+                Los enlaces son independientes. Una Partida sin Presupuesto es
+                válida.
               </p>
             </>
           ) : (
@@ -651,8 +671,28 @@ function ClassificationForm({
     anual: item?.anual ?? "",
     mensual: item?.mensual ?? "",
     referencia: item?.referencia == null ? "" : String(item.referencia),
+    deuda: item?.deuda ?? "",
+    presupuesto: item?.presupuesto ?? "",
     padre: item?.padre ?? "",
   });
+  const [budgets, setBudgets] = useState<
+    { id: string; nombre: string; estado: string }[]
+  >([]);
+  useEffect(() => {
+    if (kind === "partidas")
+      api("/presupuestos/opciones")
+        .then((d) => setBudgets(d.presupuestos))
+        .catch((e) => setLoadError(e.message));
+  }, [kind]);
+  const [debts, setDebts] = useState<
+    { id: string; nombre: string; estado: string }[]
+  >([]);
+  useEffect(() => {
+    if (kind === "partidas")
+      api("/movimientos/opciones")
+        .then((d) => setDebts(d.deudas))
+        .catch((e) => setLoadError(e.message));
+  }, [kind]);
   const [parents, setParents] = useState<Item[]>([]),
     [groups, setGroups] = useState<string[]>([]),
     [loading, setLoading] = useState(true),
@@ -699,13 +739,15 @@ function ClassificationForm({
     const names =
       kind === "categorias"
         ? ["nombre", "grupo", "anual", "mensual", "referencia"]
-        : ["nombre", "padre"];
+        : kind === "partidas"
+          ? ["nombre", "padre", "deuda", "presupuesto"]
+          : ["nombre", "padre"];
     const result: Record<string, unknown> = item
       ? { revision: item.revision }
       : {};
     for (const name of names) {
       const val =
-        name === "grupo"
+        name === "grupo" || name === "deuda" || name === "presupuesto"
           ? value[name] || null
           : name === "referencia"
             ? value[name] === ""
@@ -787,7 +829,11 @@ function ClassificationForm({
             onChange={(e) => change(name, e.target.value)}
             aria-invalid={Boolean(fields[name])}
             aria-describedby={fields[name] ? `error-${name}` : undefined}
-            list={name === "grupo" ? "classification-groups" : undefined}
+            list={
+              name === "grupo" || name === "deuda" || name === "presupuesto"
+                ? "classification-groups"
+                : undefined
+            }
           />
         )}
         {fields[name] && (
@@ -906,10 +952,57 @@ function ClassificationForm({
             </p>
           )}
           {kind === "partidas" && (
-            <p className="help">
-              Presupuesto y Deuda: Sin asignación. Sus selectores se habilitarán
-              en las entregas correspondientes.
-            </p>
+            <>
+              <label>
+                Presupuesto opcional
+                <select
+                  aria-label="Presupuesto opcional"
+                  value={value.presupuesto}
+                  onChange={(e) => change("presupuesto", e.target.value)}
+                >
+                  <option value="">Sin Presupuesto</option>
+                  {budgets
+                    .filter(
+                      (b) =>
+                        b.estado === "Activo" || b.id === item?.presupuesto,
+                    )
+                    .map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.id} · {b.nombre} · {b.estado}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="help">
+                0..1 Presupuesto por Partida. El impacto histórico no
+                verificable queda bloqueado hasta E2.3; la Deuda es
+                independiente.
+              </p>
+              <label>
+                Deuda opcional
+                <select
+                  aria-label="Deuda opcional"
+                  value={value.deuda}
+                  onChange={(e) => change("deuda", e.target.value)}
+                >
+                  <option value="">Sin Deuda</option>
+                  {debts
+                    .filter(
+                      (d) => d.estado === "Activa" || d.id === item?.deuda,
+                    )
+                    .map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.id} · {d.nombre} · {d.estado}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <p className="help">
+                Una Partida puede enlazar una Deuda. El enlace de una Partida
+                utilizada está protegido; crea una nueva para el futuro.
+                Presupuesto pendiente de su entrega.
+              </p>
+            </>
           )}
         </section>
         {rectifying && (
@@ -982,6 +1075,7 @@ function ClassificationForm({
                   </div>
                 )}
                 <p>{plan.coverage}</p>
+                <PlanImpact impact={plan.budgetExecution} />
                 <p className="muted">
                   Pendientes: {plan.pending.join(", ")}. No se presentan
                   periodos ni importes estimados como comprobados.
@@ -1007,7 +1101,7 @@ function ClassificationForm({
                 <button
                   type="button"
                   className="primary"
-                  disabled={busy || !reason.trim()}
+                  disabled={busy || !reason.trim() || plan.blocked}
                   onClick={() => submit(true)}
                 >
                   Confirmar rectificación

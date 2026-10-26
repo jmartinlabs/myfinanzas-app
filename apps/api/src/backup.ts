@@ -1,3 +1,4 @@
+import { assertBudgetContract } from "./budget-schema";
 import { inspectIdentity, assertMode, keyHash } from "./database-identity";
 import {
   productionConfig,
@@ -49,11 +50,14 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6].includes(versions[0].version) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
+        versions[0].version,
+      ) ||
       (expected !== undefined && versions[0].version !== expected)
     )
       throw new Error("Versión de snapshot no compatible.");
     inspectIdentity(db);
+    if (versions[0].version >= 8) assertBudgetContract(db);
     return versions[0].version;
   } finally {
     db.close();
@@ -71,14 +75,18 @@ export function backup(
     !["development", "test", "production"].includes(process.env.NODE_ENV ?? "")
   )
     throw new Error("Entorno de copia inválido.");
-  const sourceIdentity = inspectIdentity(db);
+  const sourceIdentity = db.transaction(() => inspectIdentity(db))();
   assertMode(sourceIdentity, process.env.NODE_ENV === "production");
   if (sourceIdentity?.origin === "production") {
     const config = productionConfig();
     if (db.filename !== config.database)
       throw new Error("Origen distinto de DATABASE_PATH.");
-    verifyProductionFiles(config);
-    if (sourceIdentity.key_hash !== keyHash(key))
+    // The key file must match the live identity too (31-E1: no separate probe).
+    const fileKey = verifyProductionFiles(config);
+    if (
+      sourceIdentity.key_hash !== keyHash(key) ||
+      sourceIdentity.key_hash !== keyHash(fileKey)
+    )
       throw new Error("Pareja DB/clave inválida.");
   }
   new Auth(db, key).checkKey();
@@ -115,9 +123,29 @@ export function backup(
                 ? "e1.4-v4"
                 : sourceVersion === 5
                   ? "e1.5-v5"
-                  : "sqlite-v6",
+                  : sourceVersion === 6
+                    ? "sqlite-v6"
+                    : sourceVersion === 7
+                      ? "e1.6-v7"
+                      : sourceVersion === 8
+                        ? "e2.2-v8"
+                        : sourceVersion === 9
+                          ? "e2.1-v9"
+                          : sourceVersion === 10
+                            ? "e2.3-v10"
+                            : sourceVersion === 11
+                              ? "e2.4-v11"
+                              : sourceVersion === 12
+                                ? "e2.5-v12"
+                                : sourceVersion === 13
+                                  ? "e3.1-v13"
+                                  : sourceVersion === 14
+                                    ? "e3.3-v14"
+                                    : sourceVersion === 15
+                                      ? "e3.2-v15"
+                                      : "e3.4-v16",
       schema: sourceVersion,
-      ...(sourceVersion === 6 ? { origin: sourceIdentity!.origin } : {}),
+      ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
       created: new Date(now).toISOString(),
       sha256: hash(bytes),
@@ -224,7 +252,9 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6].includes(bundle.manifest.schema) ||
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
+        bundle.manifest.schema,
+      ) ||
       hash(bytes) !== bundle.manifest.sha256
     )
       throw new Error("Paquete o checksum inválido.");
@@ -250,7 +280,7 @@ export function restore(
     try {
       const id = inspectIdentity(db);
       assertMode(id, !!config);
-      if (bundle.manifest.schema === 6 && bundle.manifest.origin !== id?.origin)
+      if (bundle.manifest.schema >= 6 && bundle.manifest.origin !== id?.origin)
         throw new Error("Origen del manifiesto inválido.");
       if (id?.origin === "production" && id.key_hash !== keyHash(key))
         throw new Error("Pareja DB/clave inválida.");
@@ -268,6 +298,17 @@ export function restore(
           ...(bundle.manifest.schema >= 3 ? ["cycle_attempts"] : []),
           ...(bundle.manifest.schema >= 4 ? ["movement_attempts"] : []),
           ...(bundle.manifest.schema >= 5 ? ["reference_attempts"] : []),
+          ...(bundle.manifest.schema >= 7 ? ["debt_attempts"] : []),
+          ...(bundle.manifest.schema >= 8 ? ["budget_attempts"] : []),
+          ...(bundle.manifest.schema >= 9 ? ["cycle_operation_attempts"] : []),
+          ...(bundle.manifest.schema >= 10 ? ["cycle_plan_attempts"] : []),
+          ...(bundle.manifest.schema >= 11 ? ["annual_plan_attempts"] : []),
+          ...(bundle.manifest.schema >= 12 ? ["payroll_attempts"] : []),
+          ...(bundle.manifest.schema >= 13 ? ["anticipo_attempts"] : []),
+          ...(bundle.manifest.schema >= 15 ? ["compartido_attempts"] : []),
+          ...(bundle.manifest.schema >= 16
+            ? ["revision_comida_attempts"]
+            : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

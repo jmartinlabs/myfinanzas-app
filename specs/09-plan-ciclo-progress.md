@@ -1,0 +1,85 @@
+# 09 — Plan del ciclo: progreso
+
+Estado: EN CURSO. Rama codex/dev09-plan-ciclo; base main 568aeed.
+Autorización: usuario «Autorizo dev 09», 2026-10-24. Spec09 rev4 aprobada.
+Un ejecutor; sin merge, despliegue, Excel real ni reanudación Dev32/B3.
+
+## Incrementos
+
+- [x] I1 Migración v9→v10, persistencia, continuidad y backup.
+- [x] I2 Motor R3 exacto, API lectura/preview/confirmación/copia y auditoría.
+- [x] I3 Consumidores de impacto Presupuestos y Partidas.
+- [ ] I4 UI responsive, recorrido navegador y accesibilidad.
+- [ ] I5 Regresiones completas y QA independiente.
+
+Candidato implementado, todavía sin PASS global. Typecheck/build correctos;
+P1–P10 focales correctos y P12/P13 correctos. P11 backup/production requiere Linux.
+E2E independiente real ha pasado una vez; se amplía copia efectiva/No aplica y
+se repetirá tras formato. Capturas iniciales revisadas por coordinador.
+Primera API completa en macOS:85 pass/46 fail con tmpdir /var alias. Segunda
+con TMPDIR=/private/tmp:90 pass/42 fail por publicación Linux libc.so.6 ausente;
+no se modifica apertura ni se desactiva test alguno. Gate Linux CI pendiente.
+Próximo paso: formato, focales vigentes, E2E actualizado y QA independiente.
+Cierres E4.9 y fuentes E3/E4 permanecen futuros, sin proveedores ficticios.
+
+Checkpoint: fixturev9 extraída literalmente de main568aeed con imports/nombre
+adaptados; tabla escritorio y tarjetas móvil conformes al wireframe. Formato
+Prettier3.6.2 aplicado desde binario local; npm escalado no ejecutado tras bloqueo
+de aprobación/aborto. No hay commit de este ejecutor; coordinador publicará candidato.
+E2E ampliado listo para repetir, incluye copia efectiva, No aplica y restoreUI
+(en recorrido Linux financiero). No se tocan archivos de metodología del coordinador.
+
+## Candidato del coordinador — verificación local actual
+
+Recorrido ampliado `planes-ciclo.spec.ts`:1 PASS,4.1s con MFA/Effect/SQLite/Chromium
+reales, copia efectiva, No aplica, null/cero, recarga y conflicto/borrador. Tabla1440
+y tarjetas390 inspeccionadas. Corregido solapamiento de columnas por anchuras heredadas;
+regresión verifica anchura/contenido de cabeceras y contraste real de acciones ≥4.5.
+Ningún cambio a test/timeouts para omitir fallos. Full Linux y QA del SHA fijo pendientes.
+
+## Correcciones QA del candidato 45a73cf
+
+PR #57 en borrador. Primera CI Linux40075502671:135 API PASS/3 FAIL; fallos en
+paths de backup de dos regresiones (creaban v9 y buscaban v10) y configuración del
+destino productivo de P11 antes de restore. Corregidos fixtures, sin relajar guardas.
+QA detectó reintento inicial del catálogo no funcional y riesgo de respuesta manual
+antigua al cambiar Ciclo: catálogo recargable y generación de peticiones implementados.
+E2E real ampliado1 PASS/4.6s demuestra error→reintento y respuesta tardía descartada.
+Typecheck/check-project/whitespace PASS. Nueva CI Linux y revisión del delta pendientes.
+
+## Checkpoint — bloqueo de aceptación, 2026-10-24
+
+HEAD publicado `88941e1`, PR #57 DRAFT. CI Linux40076614284: baseline PASS;
+API137 PASS/1 FAIL. Las13 pruebas nuevas de planes, incluidos procesos, migración
+v9 genuina demo/production y backup/restore10, PASS. El único fallo es SQLite B3
+preexistente: SQLITE_IOERR_SHORT_READ errno522 al reabrir tras liberar contención,
+sqlite-opening.test.ts:288/private-state.ts:174. Mismo síntoma registrado antes de
+dev09, sin atribuir causa ni declarar ausencia de regresiones. E2E global no ejecutado
+al fallar API; required falla correctamente. No merge ni reintento hasta verde.
+E2E local ampliado1 PASS/4.6s; harness54 y validador18 PASS. La aceptación global
+permanece bloqueada. Requiere decisión sobre diagnóstico B3, fuera del alcance dev09.
+Checkpoint documental local; resultado remoto completo también en PR #57.
+
+Diagnóstico B3 autorizado posteriormente por «Autorizo»: comparación en Linux de
+B3 aislado y B1/B2→B3, tres rondas en main568aeed y dev88941e1.12/12 casos PASS,
+sin reproducción ni causa demostrada. [Informe](investigations/sqlite-b3-sequence.md).
+La incidencia sigue abierta y la aceptación global bloqueada; sin cambios a dev09
+ni a guardas/pruebas. Rama diagnóstica separada, no destinada a merge.
+
+## Decisión posterior del usuario — continuar integración
+
+Fuente real: «Hay q seguir adelante ya revisaremos estas cosas, termina los merges
+y demas , o sigueiente tarea», 2026-10-24, en el contexto de PR #57 como única
+entrega funcional pendiente de este chat. Autoriza continuar su cierre/integración
+aplazando B3; no convierte la incidencia en resuelta ni elimina pruebas. Se conserva
+la evidencia de CI137/1 y de la sonda12/12 sin reproducción. Antes de integrar se
+comprobará el E2E global pendiente; no se integra la rama diagnóstica. Dev32 y otras
+PR ajenas a este alcance no se reanudan. No autoriza otro desarrollo ni despliegue.
+
+## Validación de cierre — 2026-10-24
+
+CI40079319881 sobre3aad9b9:138 API PASS/0 FAIL, incluido B3 en esta ejecución;
+esto no cierra la incidencia intermitente. E2E2PASS/1FAIL: el recorrido Presupuestos
+seguía esperando2 No aplica aunque la operación aprobada de E2.3 había conservado
+Gasto real. Se corrige la expectativa comprobando1 fila por fuente y los IDs exactos,
+sin relajar validación ni lógica financiera. Verificación global nueva pendiente.
