@@ -1,6 +1,6 @@
 # MyFinanzas — coordinación y precedencia local
 
-Contrato local adaptado incrementalmente de agent-project-template hasta v2.9.0 (`781ffbb018c2d24fc472d3fe1ca39427a8308d80`), preservando coordinación ligera,
+Contrato local adaptado incrementalmente de agent-project-template hasta v2.14.0 (`98b5351a72eae1df985819c01a47954e6a1a0836`), preservando coordinación ligera,
 gates financieros y Skill `$handoff`. Contrato portable en [agentes dinámicos](dynamic-agents.md);
 el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora causal. Historia y procedencia:
 [adopción](orchestration-adoption.md). No cambia el stack ni las ocho etapas cerradas.
@@ -14,8 +14,9 @@ el piloto E2.6 conserva su medición y límites locales, sin afirmar mejora caus
 
 $orchestrate usa [Quick/Standard/Full por riesgo](workflows.md) sin volver a inicializar el proyecto; una petición Quick no autoriza decisiones financieras, desarrollo nuevo ni operaciones protegidas.
 E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redundantes.
-La metodología v2.3.1 está integrada mediante PR #32; sus reglas operativas
-se aplican a entregas futuras sin reinterpretar las autorizaciones de negocio.
+La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
+v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
+autorizaciones de negocio ni afirmar una adopción íntegra.
 El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
 
 ## Gates que NO desaparecen
@@ -33,8 +34,9 @@ El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo 
 - Mantener aprobaciones expresas, según [approvals](approvals.md), para finanzas, especificaciones, nuevo alcance,
   arquitectura material, destrucción, merges, datos reales, acceso a VPS y despliegues.
   Una autorización previa válida no se pide otra vez; tampoco se extiende por analogía.
-- Git: rama por ámbito, revisión de historial y datos sensibles, push/PR según política
-  ya autorizada, squash merge únicamente tras aprobación expresa de esa PR y checks.
+- Git: rama por ámbito, revisión de historial y datos sensibles. Publicar rama y crear o
+  actualizar PR es trabajo ordinario dentro del alcance autorizado; squash merge solo tras
+  aprobación expresa de esa PR y checks, nunca auto-merge.
 
 ## Scheduler, propiedad y ejecución
 Solo el coordinador escribe specs/epic-board.md, asigna ownership y reconcilia resultados.
@@ -73,18 +75,23 @@ realmente controlables y deja checkpoint mínimo en progress/board o
 `specs/session-handoff.md` si no hay documento adecuado. No ejecuta QA nueva, merge,
 despliegue ni reanudación. Una ejecución interrumpida por cuota no garantiza checkpoint.
 Solo el coordinador puede editar epic-board; delegados conservan su propio progreso.
-Las autorizaciones existentes no se amplían ni desaparecen por un handoff.
+Las autorizaciones existentes no se amplían ni desaparecen por un handoff. Un informe
+intermedio o un check corregible no cierra el turno mientras quede trabajo autorizado:
+investigar, corregir y repetir la verificación. El cierre declara responsable, acción
+humana exacta y estado/motivo de espera conforme a [comunicación](coordinator-communication.md#7-closing-a-turn-or-stopping).
 
-## Comunicación manual — adaptación focal v2.10.0
+## Comunicación manual — adaptación focal v2.10.0/v2.14.0
 
-Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, sobre harness local
-v2.9.0, sin sustituir sus contratos. [Comunicación del coordinador](coordinator-communication.md)
-exige Task ID y sesión funcional estables, retorno `HANDOFF → CODEX` completo
-en cada seguimiento (también bloqueos), procedencia del estado y acción humana.
+Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
+v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
+[Comunicación del coordinador](coordinator-communication.md) exige Task ID y sesión
+funcional estables, retorno `HANDOFF → CODEX` completo en cada seguimiento (también
+bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
 Traslado manual por usuario; no controla chats ni cambia gates de cuota/modelo,
 finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
-no es resultado verificado. Reconciliar por hitos desde el único resumen actual;
-consultar estado completo no autoriza escrituras ni reanudación.
+no es resultado verificado. La publicación autorizada de rama/PR no aprueba merge.
+Reconciliar por hitos desde el único resumen actual; consultar estado completo no
+autoriza escrituras ni reanudación.
 
 ## Chats existentes y reanudación
 Chats financieros/infraestructura externos no son nuestros subagentes y no podemos

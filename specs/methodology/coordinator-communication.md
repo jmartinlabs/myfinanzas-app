@@ -1,7 +1,8 @@
 # Coordinator communication, returns and operational status
 
 > Adaptación focal MyFinanzas desde agent-project-template v2.10.0 (tag anotado verificado), PR24, commit
-> `f43d691d9ca9a0604044c97a1610f9e4daae822e`, sobre harness v2.9.0.
+> `f43d691d9ca9a0604044c97a1610f9e4daae822e`, sobre harness v2.9.0; revisada contra
+> v2.14.0/`98b5351a72eae1df985819c01a47954e6a1a0836` para continuidad, publicación y cierre.
 > [Precedencia local](myfinanzas-coordination.md), AGENTS y aprobaciones del usuario
 > prevalecen; no cambia modelos/cuota, ownership, reglas financieras ni gates.
 
@@ -37,7 +38,7 @@ changing any task state. Never attribute feedback to the last session by intuiti
 | EN REVISIÓN | The coordinator or QA has started verifying the candidate. | Verification passed. |
 | CORRECCIÓN PENDIENTE | A correction message is prepared to send. | It was sent. |
 | BLOQUEADO | A decision, authorization or impediment must be resolved first. | The whole project is blocked. |
-| COMPLETADO | The result is verified against evidence and the task has no pending work. | PR approval or merge; those are separate gates. |
+| COMPLETADO | The result is verified against evidence and the task has no pending work. | Merge approval; that is a separate gate. |
 | DESCONOCIDO | The evidence is insufficient to choose a state. | Failure. |
 
 Rules:
@@ -46,8 +47,8 @@ Rules:
   ESPERANDO RETORNO, and only a return moves it to RETORNO RECIBIDO.
 - Only the coordinator marks COMPLETADO, after checking the return's candidate SHA, diff and checks.
   A return that says "validated" or "tests green" without evidence stays RETORNO RECIBIDO or DESCONOCIDO.
-- Report external work completion and later PR gates separately, for example
-  `COMPLETADO · gate PR: pendiente de aprobación explícita`.
+- Report external work completion and the later merge gate separately, for example
+  `COMPLETADO · gate merge: pendiente de aprobación explícita`.
 - Native subagents use only the states their runtime actually exposes. Do not add states they lack.
 - Never show percentages or invented progress.
 
@@ -61,7 +62,7 @@ mandatory return block. Write the copyable text in the user's language, keeping 
 ## 4. Mandatory return
 
 Every delegation requires exactly one final, clearly delimited, copyable block headed
-`HANDOFF → CODEX` (or the coordinator's client name, see section 9). The client must return it
+`HANDOFF → CODEX` (or the coordinator's client name, see section 10). The client must return it
 also when it is blocked or needs a decision. Its fields are defined in the packet template:
 task and origin session, status COMPLETED / PARTIAL / BLOCKED / CANCELLED, summary and changes,
 relevant files and pending changes, branch / SHA / PR (or absent or unknown), tests PASS / FAIL / UNRUN
@@ -106,7 +107,25 @@ whether this is a **received report** or a **verified result**. Then:
 Every reply says explicitly whether the user must send something to OpenCode. Never leave that implicit.
 Never call a received report "validated". Update only the matching task.
 
-## 7. Compact status (end of reply)
+## 7. Closing a turn or stopping
+
+Whether to yield the turn and how to handle a correctable failed check are defined in
+[orchestrate execution continuity](../../.agents/skills/orchestrate/SKILL.md#execution-continuity).
+This section defines only the communication contract for a final or stopped reply.
+
+Every final or stopped reply states, explicitly:
+
+1. **Responsible party:** who must act (user, coordinator, external client or none).
+2. **Exact human action:** the action, command or answer needed, naming the target. For a protected
+   gate, give the exact approval wording expected.
+3. **State and reason for waiting:** what remains blocked or pending and whether the agent waits.
+
+Avoid ambiguous closings such as "next step: review the PR". Name who must review and what
+they must decide. When no action is needed, say so and do not imply that a reply is required.
+These rules apply to native and manual clients; manual relays keep their identity, copyable
+messages and mandatory return.
+
+## 8. Compact status (end of reply)
 
 When open work or pending actions exist, end the reply with 2 to 4 lines:
 
@@ -120,7 +139,7 @@ Estado · <Task ID> (<client>, <session>): <STATE> — <last known event>. Acci�
 - Use the current summary and relevant events only. Do not query Git or workers, re-read histories,
   write files or Git, or create another board on each message.
 
-## 8. Full status (read-only, on request)
+## 9. Full status (read-only, on request)
 
 When the user asks for the full state, orchestrate reports every open task from the existing sources
 (progress, setup or board summary and open checkpoints). Reread the sources or check Git and PR state only
@@ -135,17 +154,20 @@ if the user asks for verification, or if the summary is stale or unknown. For ea
 
 State what was not updated. This view writes nothing.
 
-## 9. Several sessions and client portability
+## 10. Several sessions and client portability
 
 A return from session B updates only task B; tasks in sessions A and C keep their states. Every later
 message keeps the Task ID and the destination session. The same rules serve Codex and Claude Code.
 Only the client name changes: use `HANDOFF → CODEX` when Codex coordinates and `HANDOFF → CLAUDE CODE`
 when Claude Code does. Manual relay remains the only route to OpenCode.
 
-## 10. Gates and supervision
+## 11. Gates and supervision
 
-A received handoff never authorizes PR approval, merge, deployment or a scope expansion. Those remain
+A received handoff never authorizes merge, deployment or a scope expansion. Those remain
 protected actions under [approvals](approvals.md), which need an explicit, identifiable user approval.
-Quota and model rules in [dynamic agents](dynamic-agents.md) and [model selection](model-selection.md)
-do not change. Supervise by events and milestones (returns, blockers, decisions); do not send repeated
+Branch/PR publication inside the already authorized scope is ordinary work under the
+[publication policy](approvals.md#publicación-de-rama-y-pr); it does not authorize merge and does
+not end the task while checks or QA remain. Quota and model rules in
+[dynamic agents](dynamic-agents.md) and [model selection](model-selection.md) do not change.
+Supervise by events and milestones (returns, blockers, decisions); do not send repeated
 status queries or reminders without new information.

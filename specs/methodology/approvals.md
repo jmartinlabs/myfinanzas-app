@@ -1,10 +1,10 @@
-# MyFinanzas — aprobaciones explícitas (v2.5.0)
+# MyFinanzas — aprobaciones explícitas (v2.14.0 selectiva)
 
 Fuente única de las reglas de aprobación para `$orchestrate` (Claude: `/orchestrate`),
-subagentes, Skills y wrappers. Adaptada de agent-project-template v2.5.0 y de la
-propuesta local v2.3.2 (PR #35, sustituida). Complementa los gates de
-[coordinación](myfinanzas-coordination.md) y la [política Git](../../AGENTS.md); ante
-conflicto prevalece la regla más estricta.
+subagentes, Skills y wrappers. Contrato base de agent-project-template v2.14.0, adaptado
+desde la versión local v2.5.0 y la propuesta local v2.3.2 (PR #35, sustituida).
+Complementa los gates de [coordinación](myfinanzas-coordination.md) y la
+[política Git](../../AGENTS.md); ante conflicto prevalece la regla más estricta.
 Es una **regla de comportamiento**, no un hook ni una garantía técnica de GitHub.
 `.claude/settings.json` solo añade confirmaciones `ask` en Claude Code; no concede ni
 sustituye aprobaciones.
@@ -27,9 +27,36 @@ CI verde, QA terminada, un plan aprobado, una autorización anterior o código t
 ## Trabajo ordinario (sin nueva aprobación)
 
 Dentro de un alcance ya autorizado no se pide permiso por cada paso: implementación,
-pruebas, subagentes, ramas, commits, push, preparación de PR, correcciones técnicas y
-worktrees locales que cumplan la política siguiente. Es continuar trabajo autorizado,
-no una acción protegida.
+pruebas, subagentes, ramas, commits, correcciones técnicas y worktrees locales que
+cumplan la política siguiente. La publicación sigue la sección siguiente. Es continuar
+trabajo autorizado, no una acción protegida.
+
+## Publicación de rama y PR
+
+La autorización para realizar el trabajo —código o documentación, incluida la redacción
+o edición de una especificación— también autoriza publicar su rama y crear o actualizar
+su pull request en el repositorio existente. No se necesita otra aprobación de
+publicación.
+
+- Respetar instrucciones explícitas como «solo local» o «no publiques»; no toda tarea
+  requiere PR.
+- Antes de publicar, revisar todos los commits que se enviarán, el diff, los archivos
+  preparados, los secretos y los cambios ajenos, conforme a la
+  [política Git](../../AGENTS.md).
+- Un PR en borrador es válido mientras queden checks o decisiones pendientes, nombrándolos.
+  Un PR abierto no termina la tarea mientras queden checks ejecutables; completar los
+  checks y la QA requeridos antes de declararlo listo para merge.
+- Actualizar el PR existente de la tarea en lugar de abrir otro duplicado.
+- Crear o integrar un PR de especificación no aprueba su contenido ni autoriza el
+  desarrollo cuando esos son gates separados.
+- El merge de un PR siempre requiere aprobación explícita e identificable de ese PR y del
+  candidato aprobado. Nunca activar auto-merge como atajo. Tampoco se hace merge por
+  inferencia de esta autorización de publicación.
+
+Esta política no cubre crear repositorios, cambiar visibilidad, pushes directos a ramas
+protegidas, force pushes, releases, paquetes ni despliegues. Siguen protegidos o prohibidos
+según las reglas del proyecto. La Skill `$handoff` conserva su prohibición de abrir un PR
+nuevo.
 
 ## Lenguaje válido y no válido
 
@@ -81,7 +108,8 @@ detener ese paso. Detalle local de ownership y limpieza:
 
 Un work packet asigna responsabilidades y ownership; un worktree aísla; la autorización
 viene del alcance concedido por el usuario. Ninguno concede tareas nuevas, acciones
-protegidas, publicación ni merges.
+protegidas ni merges; la publicación solo es ordinaria dentro del alcance autorizado
+y conforme a la sección anterior.
 
 Garantías técnicas más fuertes (hooks, rulesets o branch protection) requieren
 configuración separada y una fuente de autorización que los agentes no puedan editar;

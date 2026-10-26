@@ -21,7 +21,7 @@ SHA/PR/check state and retain the historical record as superseded.
 - `spec`: planned → drafting → awaiting-approval → approved. Drafts and brainstorming may be prepared autonomously, but **only the user approves functional/financial decisions and the final spec**. A prepared next epic remains draft until approved.
 - `dev`: not-ready → ready → implementing → testing/review → verified. `dev` is ready only with a recorded **approved** spec, satisfied hard dependencies and authorization for its scope. If there is no approved spec, the implementation lane cannot start. QA may still draft test cases without altering production code.
 - `QA`: planned → test-design → awaiting-implementation → verifying → passed/failed/blocked. Independent test design and investigation can overlap another feature's spec or dev. Never claim tests passed before execution against the actual candidate.
-- `merge`: proposed PR → ready-for-user-review → user-approved → merged. Never auto-merge or push/create remote PR without required repository authorization. PR readiness requires current tests/review evidence; branch merge is a separate approval gate.
+- `merge`: proposed PR → ready-for-user-review → user-approved → merged. Branch/PR publication is ordinary inside the authorized scope; never publish outside it. Never auto-merge. PR readiness requires current tests/review evidence; branch merge is a separate approval gate.
 
 ## Scheduler: reconcile at meaningful milestones
 
@@ -30,10 +30,10 @@ SHA/PR/check state and retain the historical record as superseded.
 3. Recompute independent **ready** work when a gate or relevant dependency changes: approved AND authorized implementation; candidate verification; independent spec drafting up to approval; bounded investigation with hypothesis/exit condition.
 4. Prefer user priorities and critical-path work, but do not starve next-feature preparation because an unrelated investigation is running. When any work is blocked, promptly pick the next independent ready item.
 5. Prefer one complete implementation packet per authorized feature, then independent QA/review. Parallel work requires genuine independence, justified context cost, separate ownership and authorized isolated checkouts for code writers; otherwise serialize.
-6. At major milestones update only changed state and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → prepare PR for approval. Do not ask again for unchanged prior permission.
-7. End an active run with a concise board summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. No claim of background processing between sessions; rescan on next invocation.
+6. At major milestones update only changed state and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run.
+7. End an active run with a concise board summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. State the responsible party, exact human action (or none) and reason for waiting. No claim of background processing between sessions; rescan on next invocation.
 
-Use [dynamic agent management](dynamic-agents.md) with **one executor by default** and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR approval gates.
+Use [dynamic agent management](dynamic-agents.md) with **one executor by default** and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR merge approval gates.
 
 ## Bounded debugging
 Each investigation needs a falsifiable hypothesis, discriminating probe and evidence. After two comparable probes without new findings, checkpoint the blocker and switch hypothesis or request an explicit scope decision. Do not mark QA passed, bypass failing regressions or abandon urgent containment.

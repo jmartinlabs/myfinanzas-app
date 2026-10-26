@@ -44,7 +44,7 @@ Use the packet above as the single source of scope and authorization, not a seco
 Task ID and name: <packet ID> — <functional name>
 Session reference: <known technical ID or stable functional reference; never invent>
 Client: OpenCode <verified version or UNVERIFIED>; external, manually started/stopped by the user.
-Repository, branch or worktree, base SHA, PR: <verified values or absent/unknown>.
+Repository, branch or worktree, base SHA, PR: <verified values or absent/unknown; PR none unless the authorized scope includes publication>.
 Recommended model: <verified available model with rationale> | UNVERIFIED: catalog not checked; request before assigning.
 Objective and minimum context: <task, relevant decisions, source paths and instruction entry points>.
 Authorized scope: <approval source/date, allowed actions, editable paths and exclusions>.
@@ -54,7 +54,8 @@ Applicable rules: <copy the task's required rules and source links; preserve app
 Deliverable and acceptance: <concrete checks and expected behavior>.
 Tests: <commands, environment, expected evidence; report PASS/FAIL/UNRUN>.
 Stop on missing permissions, conflicting requirements, ownership collisions or scope expansion.
-Implement, test, commit or prepare a PR only when covered by the stated authorization.
+Implement, test and commit only when covered by the stated authorization. Push and create
+or update the PR only when the authorized scope includes publication; respect local-only instructions.
 Never merge, deploy, self-approve QA, expand scope or start other workers.
 Return exactly one complete final copyable message, also when blocked, partial or needing a decision, with this heading and all fields:
 HANDOFF → CODEX
@@ -73,3 +74,5 @@ END HANDOFF → CODEX
 Corrections and queries retain this task/session and require the complete return again;
 use [the follow-up shape](../specs/methodology/coordinator-communication.md#5-corrections-queries-and-follow-ups).
 Coordinator replies explicitly state the human next action and whether to relay anything.
+A final or stopped reply names the responsible party, exact human action (or none) and
+reason for waiting under [the closure contract](../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).

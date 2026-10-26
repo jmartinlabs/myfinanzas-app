@@ -27,8 +27,30 @@ spec07 is authorized during methodology adoption. Native agents remain optional 
 6. Follow specs/methodology/dynamic-agents.md: default to one executor for a bounded authorized task. Delegate a complete verifiable outcome rather than microsteps; add specialists only where independent work justifies extra coordination and context. Preserve mandatory independent QA after the candidate. Packets document approved scope, ownership, applicable rules, checks, stop condition and return evidence. Use fresh bounded context, scope-sized preflight and operation owners; follow the same contract for external clients, never assume messaging or stop control. For manual clients use stable task/session identity and require a complete `HANDOFF → CODEX` on every follow-up, including blockers and decisions, per [coordinator communication](../../../specs/methodology/coordinator-communication.md).
 7. Apply the absolute Codex subagent ceiling in specs/methodology/model-selection.md and the quota dispatch gate in specs/methodology/dynamic-agents.md before new Codex tasks, including QA. Record external availability per execution; reuse the existing packet for manual OpenCode. Keep the coordinator model when adequate; portable tier advice never overrides the absolute subagent ceiling or quota gate. Launch subagents only with actual runtime support and measurable benefit, otherwise execute sequentially. Verify quotas, isolation and ownership. Never invent worker lifecycle or token telemetry. Supervise at outcomes/blockers/decisions using bounded event waits and progressively spaced CI queries; no reminders or repeated reads without new evidence.
 8. Apply role contracts when useful. Concurrent code writes require distinct owned files and safely isolated checkouts; otherwise serialize. Route to $dev only after explicit spec approval, hard dependencies AND separate MyFinanzas development authorization. Independent QA/review is still required after implementation. Workers cannot approve specifications, merge, update the shared board or recursively spawn without authorization. Reconcile completed deliverables at handoff instead of supervising each intermediate step.
-9. Apply specs/methodology/approvals.md to every protected gate, including PR merges. Enforce approvals for protected architecture/product/security/financial decisions, roadmap changes, new development scope and Full specifications. Reuse unchanged valid authorization but never infer one protected gate from another. Reclassify and ask confirmation if discoveries raise risk. Never perform destructive actions, publish, push or deploy production without authorization.
+9. Apply specs/methodology/approvals.md to every protected gate, including PR merges. Enforce approvals for protected architecture/product/security/financial decisions, roadmap changes, new development scope and Full specifications. Authorized code or documentation work includes branch/PR publication under [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); merge still needs explicit approval for that PR and candidate. Never enable auto-merge. Reuse unchanged valid authorization but never infer one protected gate from another. Reclassify and ask confirmation if discoveries raise risk. Never perform destructive actions, deploy production or publish outside the authorized scope.
 10. Verify actual acceptance checks, financial/security regressions and diff; report PASS/FAIL/UNRUN distinctly. Record concise checkpoints at changed approval/candidate/QA/blocker/PR milestones; keep actual Git SHA and next safe action. External chats cannot be controlled by this coordinator. No agents continue after the active session ends. Update one current summary with candidate, check/QA evidence, PR/merge state and next action; replace stale labels and link historical entries.
+
+## Execution continuity
+
+Continue the authorized scope until it is complete or a real blocker remains. An
+intermediate report, a partial result or an invitation to say "continue" never justifies
+ending the turn while authorized, executable work remains.
+
+Yield the turn only for:
+
+- completed work with its evidence;
+- a decision or approval that only the user can provide;
+- a user request to stop; or
+- a blocker that cannot be resolved with the available access or authorization.
+
+A required check that fails and can be corrected inside the authorized scope is not a
+blocker: investigate the failure, correct the cause and rerun the affected verification
+before yielding. Stop only when a real blocker remains.
+
+"Continuing to verify" is an update followed by the next action in the same turn, not a
+closing promise. Reuse a valid authorization for corrections and checks in the same scope;
+do not ask for repeated permission. When finishing or stopping, use the closure contract in
+[coordinator communication](../../../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).
 
 ## Resource efficiency and deliberate shutdown
 - Coordinate results, not messages; never repeatedly ingest unchanged large documents or recreate a packet for already-owned work.
@@ -45,7 +67,8 @@ After a significant delivery, recommend a new chat only when accumulated context
 - State whether the user must relay anything to OpenCode and the exact human next action. Attribute each return only to its identified task/session; ask if ambiguous.
 - Use the existing current summary and milestone events. No per-message Git/worker polling, document writes or second board. A full-state request is read-only; show provenance, recorded candidate, blockers, gates and next action for every open task, declaring what was not refreshed.
 - When work/actions remain, end with 2–4 compact status lines, using manual states from the communication contract. A delivered packet is PENDIENTE DE ENVIAR until user confirmation; native agents retain runtime states only.
+- Every final or stopped reply states the responsible party, the exact human action (or "ninguna"), and the state plus reason for waiting. "Continúo" is followed by execution, never by another closing promise. Apply the [closure contract](../../../specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping) rather than repeating it here.
 - No received handoff grants merge, scope or resumption authorization. Keep all MyFinanzas financial, independent-QA, model/quota and separate development gates.
 
 ## Stop conditions
-Stop at unresolved approvals, unsafe/destructive operations, conflicting approved requirements, missing access, or failed required acceptance checks. Preserve the next action and blocker.
+Stop at unresolved approvals, unsafe/destructive operations, conflicting approved requirements, missing access, or a failed required check that cannot be corrected inside the authorized scope. Investigate and correct a correctable failure, then rerun the affected verification. Preserve the next action and blocker.

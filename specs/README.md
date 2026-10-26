@@ -1,7 +1,7 @@
-## Estado metodológico vigente — v2.9.0 (candidato local)
+## Estado metodológico vigente — v2.14.0 (adaptación selectiva)
 
-Adaptación local Standard autorizada desde tag v2.9.0/`781ffbb`, sin reinicializar la aplicación.
-[Procedencia y comprobaciones](methodology/orchestration-adoption.md#harness-v290--adopción-local). Modelos, cuota, OpenCode manual y handoff se integran en los contratos existentes; evidencia estructural no acredita comportamiento real.
+Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicializar la aplicación ni afirmar una adopción íntegra.
+[Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, OpenCode manual, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
 Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
 [contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
 launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
