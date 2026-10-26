@@ -305,13 +305,34 @@ negativo sin parche: los 3 casos DELETE fallan por mutación, WAL pasa. La prueb
 existente v14 Vehículos→v15 conserva la continuidad admitida. No se cambia la
 política B3 ni sus3000ms. Linux/restore y QA del nuevo candidato: pendientes.
 
-## D5/Exterior — plan de pruebas futuro (NO EJECUTADO)
+## D5/Exterior — plan de pruebas autorizado (ejecución en curso)
 
-Status: **DISEÑO DE PRUEBAS; todas UNRUN/BLOQUEADAS.** No existe implementación D5
-en main (v16 actual). Base de contraste: `24b48c5`/v15 (Base B `5ad75ed`); main actual `26b6f0c`/v16
-por E3.4, sin cambios en estos documentos; spec14 §15 y
-spec05 §D5. Este bloque no declara D5, E3.2, B-T11 ni AC-31 de spec05 PASS. Sin datos
-reales: fixtures ficticias y servicios reales de prueba.
+Status: **AUTORIZADO 2026-10-27 («Acepto el desarrollo»); resultados por ejecutar.**
+Main de contraste `2487656`/v16; esquema de desarrollo **v17** (contrastado, no
+presupuesto). Contrato: spec14 §15, wireframes §15.15 y spec05 §D5, P-D5-1..6.
+Este bloque no declara D5, E3.2, B-T11 ni AC-31 de spec05 PASS hasta que cada
+comprobación se ejecute sobre el candidato exacto. Sin datos reales: fixtures
+ficticias y servicios reales de prueba.
+
+### Mapa D5-AC → T-D5 (previo al código)
+
+| AC D5 | T-D5 | Evidencia mínima |
+| --- | --- | --- |
+| D5-AC-01 | T-D5-01, T-D5-16 | Alta atómica, un Movimiento + una acreditación, efecto bancario |
+| D5-AC-02 | T-D5-02, T-D5-15 | Rechazo de variantes prohibidas y formulario común sin S000 |
+| D5-AC-03 | T-D5-03 | Transferencia interna CAT013 no acredita |
+| D5-AC-04 | T-D5-04 | Gasto CAT013 e Ingreso S000 conservan su semántica |
+| D5-AC-05 | T-D5-05 | Participante Tercero activo de la misma ficha |
+| D5-AC-06 | T-D5-06 | Unicidad por Movimiento; sin división |
+| D5-AC-07 | T-D5-07 | Evidencia 10–500 y procedencia suficiente |
+| D5-AC-08 | T-D5-08 | Histórico elegible solo por revisión explícita |
+| D5-AC-09 | T-D5-09 | Replay, concurrentes, conflicto y rollback |
+| D5-AC-10 | T-D5-10 | Rectificación con impacto, motivo y auditoría |
+| D5-AC-11 | T-D5-11 | Anulación excluye del motor sin DELETE |
+| D5-AC-12 | T-D5-12 | Recuperado/Neto/pendiente/exceso exactos y Titular F3 |
+| D5-AC-13 | T-D5-13 | Informes/seguridad sin doble descuento ni fugas |
+| D5-AC-14 | T-D5-14 | UI 390/1440, estados, foco, borrador y capturas |
+| D5-AC-15 | T-D5-15 | Gates de alcance, B-T11 UNRUN y E3.2 no completo |
 
 ### T-D5-01–16
 

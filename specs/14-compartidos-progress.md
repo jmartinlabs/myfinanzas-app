@@ -5,27 +5,28 @@ base B aprobada en §14 (usuario, 2026-10-26). Brainstorming:
 [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md).
 Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.md).
 
-## Current checkpoint — D5 aprobada funcionalmente; PR84 sin merge — 2026-10-27
+## Current checkpoint — D5/Exterior: desarrollo autorizado — 2026-10-27
 
-**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
-inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
-spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
-P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
-ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
-anteriores conservadas abajo describen la revisión previa y quedan sustituidas
-por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
-pendientes; ninguna prueba funcional D5 se declara ejecutada.
+**Autorización de desarrollo D5 — 2026-10-27:** usuario «Acepto el desarrollo».
+Objeto: contrato aprobado de spec14 §15, wireframes §15.15 y spec05 §D5,
+incluidos P-D5-1..6. Autoriza implementación, QA independiente, rama/PR de
+desarrollo y pruebas ficticias; **no** autoriza merge, despliegue, datos reales,
+migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
 
-- Candidato aprobado: `3b737aa`; rama `codex/spec14-d5-exterior-r2`, PR84.
-- Revisión final Codex sin hallazgos bloqueantes; QA independiente DeepSeek PASS
-  según HANDOFF del usuario. CI40420592824 del candidato: baseline/required
-  SUCCESS, full omitido por clasificación documental.
-- Main `26b6f0c` v16; integración virtual `c3ce874` sin conflictos, árbol
-  `a8297ea8cda3022f25a8be6cbee46be9c28889f9` contrastado con merge-tree local.
-- Este delta registra aprobación y checkpoint; no cambia el contrato aprobado.
-- Próximo gate: validar el registro publicado y solicitar autorización expresa
-  del merge de PR84. Desarrollo D5 requiere autorización separada. Sin desarrollo,
-  SQL operativo, datos reales, B3/Dev32 ni intervención en DEV16/E4.1.
+- Base verificada: main `248765661d0ea041030899816527747091312522` (PR84
+  integrada, esquema v16). Sin otra rama/worktree de desarrollo D5 antes de
+  crear el checkout aislado; no hay ejecutor D5 previo que reutilizar.
+- Checkout: `.../T/opencode/dev14-d5`, rama `codex/dev14-d5-exterior`.
+- Esquema siguiente: **v17**, contrastado con main v16 (E3.4) y con la cadena
+  v15 Base B → v16 Revisión Comida. No se presupone ninguna versión distinta.
+- Mapa previo al código: D5-AC-01..15 → T-D5-01..16 en
+  [testplan](14-compartidos-testplan.md). Se implementan migración técnica,
+  acreditación/motor/servicio común, API/UI, rectificación, replay,
+  concurrencia, auditoría y backup/restore sobre fixtures ficticias.
+- Fuera: B-T11/consumo por informes (sigue UNRUN), Exterior ordinario/salidas,
+  datos reales, deploy, cambios de guardas/timeouts/harness/metodología.
+- Aprobación documental previa conservada: candidato `3b737aa`, PR84, main
+  `2487656`; este checkpoint no reabre decisiones confirmadas.
 
 ---
 
