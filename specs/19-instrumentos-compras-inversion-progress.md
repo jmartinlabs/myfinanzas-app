@@ -1,8 +1,10 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Progress
 
 Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26 sobre el commit
-`47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella. DEV, merge y
-despliegue **no** autorizados.
+`47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella.
+**PRE-DEV-SCHEMA: STOP** — manifiestos v14 congelados, pero la versión destino 15 está ocupada
+por `codex/dev14-base-b` (`ad2edfe`, `schemaVersion = 15`). DEV, merge y despliegue **no**
+autorizados.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -45,21 +47,33 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - Sesiones del cierre: coordinador `ses_e86859b93ffdjZlpllG1FflZol`; revisor independiente
   `ses_e86523c99ffeNgigtCay1EMUq1`.
 
-## Gate pre-DEV — comprobación inicial (2026-10-26)
+## Gate pre-DEV — dictamen (2026-10-26)
 
-- `origin/main` ha avanzado a `f5bf0325e52cdd4c875aacb32f086dd67a08befa`
-  («feat(vehiculos): ficha e ITV...», PR81) y declara `schemaVersion = 14`; la base de esta
-  rama sigue en 13. La 15 sigue siendo la siguiente versión libre **hoy**.
-- Los archivos de esquema de `origin/main` (`vehicle-schema.ts`, `database-schema.ts`,
-  `database-identity.ts`, `database.ts`, `backup.ts`) son idénticos a `c69e343`; el candidato
-  parece corresponder a `C14-VEHICULOS-C69E343`, pero **el manifiesto canónico y su SHA-256
-  aún no se han generado**. La coincidencia de archivos no sustituye la verificación del
-  manifiesto.
-- Resultado del gate: **condicional, no autorizado a DEV**. Antes de implementar hay que
-  rebasar el trabajo sobre `main` 14, congelar los manifiestos de `C14-VEHICULOS-C69E343` y
-  `C14-COMPARTIDOS-FCE1107` desde fixtures aislados y confirmar que el v14 de `main` coincide
-  exactamente con uno de ellos. Si no coincide, STOP y revisión de contrato/versión.
-- No se ha ejecutado ninguna migración, fixture, generación de manifiesto ni prueba funcional.
+- La rama se actualizó con `origin/main` mediante el merge `dd7c457` («merge: sync E4.1
+  documentary branch with main schema 14»), preservando los commits documentales. La base de
+  trabajo ya es el esquema 14 de `main`.
+- `origin/main` es `f5bf0325e52cdd4c875aacb32f086dd67a08befa` («feat(vehiculos): ficha e
+  ITV...», PR81), `schemaVersion = 14`.
+- Manifiestos congelados en `apps/api/src/schema-contracts.json`:
+  - `C14-COMPARTIDOS-FCE1107` (`fce1107`, 114 objetos) →
+    `df6ad4b2e069392a3aa3e1dd616f15afdd5a78738a64ae0199a57dd67b607c8d`
+  - `C14-VEHICULOS-C69E343` (`c69e343`, 111 objetos) →
+    `f262020fd1658cf0e7c873c32a0322479dbe91f67d3027e178f89b072a86c857`
+- El fixture de `main` 14 produce exactamente el mismo manifiesto y SHA-256 que
+  `C14-VEHICULOS-C69E343`; el v14 de `main` **coincide** con el contrato admitido.
+- **La 15 no está libre.** `refs/heads/codex/dev14-base-b` está en `ad2edfe` y declara
+  `schemaVersion = 15`; sus worktrees `dev14-baseb` y `dev14-qa` siguen activos. El ref remoto
+  `origin/codex/dev14-base-b` aún está en `fce1107` (14), pero la reserva local 15 existe y no
+  se puede ignorar.
+- Fixtures SQLite aislados generados fuera del repo: Compartidos
+  `e6a490ae25a9c0c3c9d87ce8a599de55a2bb462961a63b03fd05dcb9ec496d96`; Vehículos/main
+  `34cadc7ef7f98a0db0153e180b4449a78337a7a43121d0c538fccd4c847de383`. No se publican.
+- **Resultado:** **STOP — versión destino no disponible (2026-10-26).** El contrato v14 y los
+  manifiestos son correctos, pero la 15 está ocupada por `codex/dev14-base-b`. No se autoriza
+  DEV, no se implementa E4.1 y no se renumera la spec por inferencia; se requiere decisión de
+  coordinación/revisión.
+- Revisor independiente del PRE-DEV-SCHEMA: `ses_e8626d90bffeSZElYYcR4XhU2n`; detectó la
+  colisión de la 15 antes de aceptar el gate.
 
 ## Incidencia del piloto — cambio de sesión
 
@@ -73,7 +87,8 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 ## Siguiente acción
 
-SPEC19 rev7 aprobada. Antes de DEV: ejecutar el gate de destino de §5.2/AC-33(f), comprobar
-`origin/main` y reservas, y congelar los manifiestos v14 con sus SHA-256 en un paso pre-DEV
-autorizado con fixtures aislados. Después, y solo con autorización separada de DEV, implementar
-E4.1. HANDOFF a CODEX con los hashes del commit y de los documentos; no merge ni despliegue.
+PRE-DEV-SCHEMA **STOP**: los manifiestos v14 están congelados y `main` 14 coincide con
+`C14-VEHICULOS-C69E343`, pero la 15 está ocupada por `codex/dev14-base-b` (`ad2edfe`). No se
+autoriza DEV ni se renumera la spec por inferencia. Se requiere decisión de coordinación para
+resolver la reserva 15 (renumerar E4.1 o integrar/renumerar la otra rama) y repetir el gate y la
+revisión antes de cualquier autorización de desarrollo. No merge ni despliegue.
