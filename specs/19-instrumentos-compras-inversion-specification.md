@@ -1,9 +1,15 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: **PROPOSED rev9 — pending independent/Codex review; NOT approved.** Rev9 alinea el
-contrato técnico con `origin/main` `24b48c5` (Compartidos v15 integrado) y **no cambia las
-decisiones funcionales** de rev7/rev8. El DEV delegado y el QA independiente existen, pero
-**no se autoriza PR, merge ni despliegue** hasta revisar y aprobar este ajuste.
+Status: **PROPOSED rev9 — pending independent/Codex review; NOT approved. STOP: rev9 queda
+superada por el avance de `main` a 16 (Revisión bancaria de Comida) y requiere rev10 con
+destino 17.** Rev9 alinea el contrato técnico con `origin/main` `24b48c5` (Compartidos v15
+integrado) y **no cambia las decisiones funcionales** de rev7/rev8. El DEV delegado y el QA
+independiente existen, pero **no se autoriza PR, merge ni despliegue**.
+**Actualización 2026-10-27:** `origin/main` pasó a `2487656` y declara `schemaVersion = 16`
+(DEV16/PR82, Revisión bancaria de Comida). La 16 ya **no está libre**; E4.1 no puede aprobar
+rev9 con destino 16. Se requiere una rev10 que renumere a **17**, integre `main` 16, preserve
+sus tablas/datos y repita el gate y la revisión. Nada de esto está aprobado ni implementado en
+esta rama; no hay PR ni merge.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, manteniendo las decisiones funcionales de rev7.
 Rev9 se propone el 2026-10-27 a partir de la discrepancia detectada al integrar `main` v15;
@@ -507,6 +513,12 @@ Propuesta técnica (DT2), no decisión financiera:
   ese `main` v15 verificado como base y subir a la 16; no reabre ni modifica Compartidos, y no
   comparte el número 16 con otro contrato. La reserva 16 sigue siendo provisional frente a un
   `main` que avance.
+- **STOP por ocupación de la 16 (2026-10-27).** Tras publicar rev9, `origin/main` avanzó a
+  `2487656` (PR82/DEV16) y declara `schemaVersion = 16`; la 16 está ocupada por Revisión
+  bancaria de Comida. El gate de destino falla y **no se implementa ni publica** E4.1 como 16.
+  Rev9 queda superada: se requiere **rev10** con destino **17**, contrato C16 de main,
+  preservación de sus tablas/datos y repetición de revisión y gate. Sin aprobación de rev10 no
+  hay PR ni merge.
 - **Progresión canónica y tablas vacías (rev9).** Al estar `main` en 15, las rutas 13→16 y
   14→16 ejecutan la progresión canónica **13→14→15→16** o **14→15→16** con las migraciones de
   main. Si el origen no tenía Compartidos, la migración 14→15 crea sus tablas **vacías**; no

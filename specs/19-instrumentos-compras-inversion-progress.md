@@ -6,7 +6,9 @@ Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`; se mantienen las decisiones funcionales de rev7.
 **PROPOSED rev9 — pending Codex review; NOT approved** — alinea 13/14→16 con `main` v15
 (`24b48c5`) y las tablas vacías de Compartidos; no cambia decisiones funcionales.
-DEV autorizado y ejecutado; **PR, merge y despliegue no autorizados**.
+**STOP 2026-10-27:** `main` avanzó a `2487656` (16, DEV16 Revisión bancaria de Comida); la 16
+está ocupada y se requiere rev10 con destino **17**. DEV autorizado y ejecutado; **PR, merge y
+despliegue no autorizados**.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -244,30 +246,47 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   `ses_e85c21434ffeNTjIjccJrpxTZ2`. Ninguno activo. No se contactó ni reanudó la sesión
   anterior.
 
+## STOP final — la 16 ya está ocupada por main (2026-10-27)
+
+- **Nuevo avance de `main`:** tras publicar rev9, `origin/main` pasó a
+  `2487656` (PR82/DEV16, «Revisión bancaria de Comida») y declara `schemaVersion = 16`
+  (`database-identity.ts`). La **16 ya no está libre**; el gate de destino falla para rev9.
+- **Dictamen:** E4.1 no puede aprobarse ni publicarse como 16. Se requiere **rev10** con destino
+  **17**, contrato de main v16, preservación de las tablas/datos de Revisión bancaria de Comida,
+  rutas 13/14/15/16→17 y repetición de gate, revisión independiente y QA. No implementado ni
+  aprobado.
+- **Estado remoto:** rama `codex/pilot-full-e41-instrumentos-compras-inversion` publicada en
+  `7f68a59` (merge `51d7f5d` + docs rev9). **Sin PR**, sin merge y sin despliegue. El candidato
+  `51d7f5d` sigue siendo válido como evidencia de DEV/QA para el contrato 16, pero **no es
+  publicable** con el `main` actual.
+- **Subagentes:** DEV `ses_e85ef3979ffegZjzgMA7k0PzUT`; QA `ses_e85c21434ffeNTjIjccJrpxTZ2`.
+  Ninguno activo. No se contactó la sesión anterior.
+
 ## HANDOFF → CODEX — 2026-10-27
 
-- **Estado:** DEV y QA independiente completados; integración con `main` v15 hecha; **PR no
-  publicada** hasta que Codex revise y el usuario apruebe SPEC19 rev9. Sin merge ni despliegue.
+- **Estado:** DEV/QA del contrato 16 completados; integración con `main` v15 hecha; **STOP
+  final porque `main` ocupa la 16 con DEV16/Revisión bancaria de Comida (PR82)**. Sin PR, merge
+  ni despliegue.
 - **Candidato de código fusionado:** `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a` (padres
-  `30ff49c` + `24b48c5`). El checkpoint rev9 se publica en el commit documental posterior.
-- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion`; último SHA remoto
-  verificado antes del merge `30ff49c`; el push final incluye `51d7f5d` + docs rev9.
-- **Diff documental a revisar:** `specs/19-instrumentos-compras-inversion-specification.md`
-  (status rev9, §5.2 y AC-33), `specs/19-instrumentos-compras-inversion-testplan.md` (status,
-  AC-33, evidencia) y este progress.
-- **Evidencia gate 16:** `origin/main` `24b48c5` = 15 con C15 (122 objetos,
-  `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`); ningún ref en 16; la
-  15 de Compartidos no se toca; la rama se fusionó con `main` mediante merge.
+  `30ff49c` + `24b48c5`), válido para el contrato 16 pero **no publicable** hasta renumerar a 17.
+- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion` en `7f68a59`
+  (merge + docs rev9); `git ls-remote` verificado. Sin PR.
+- **Diff documental a revisar:** spec (status rev9/STOP, §5.2 y AC-33), testplan (status, AC-33,
+  evidencia) y progress. Rev9 queda superada; hay que preparar rev10 (17) antes de PR.
+- **Evidencia gate 16:** `origin/main` `24b48c5` era 15 con C15 (122 objetos,
+  `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`) y la 16 estaba libre;
+  después `main` `2487656` pasó a 16 (DEV16). Por eso el gate final es **FAIL/STOP para 16**.
 - **Evidencia DEV/QA:** focal 35 pass / 457 aserciones; typecheck/build PASS; E2E Inversiones,
   flujo mensual y Compartidos 3 PASS; `bun test apps/api` macOS 219 pass / 48 fail, todos
   `libc.so.6`/`renameat2`; simulación Linux backup/restore y O4 PASS. CI Linux real **UNKNOWN**
   porque no hay `gh`/token y el repositorio es privado.
-- **Discrepancia abierta:** SPEC19 rev8 decía que 13→16 no crea tablas de Compartidos; rev9
-  propone aceptar la progresión canónica y las tablas vacías. **No aprobada.**
+- **Discrepancia abierta 1:** rev8 decía que 13→16 no crea tablas de Compartidos; rev9 proponía
+  la progresión canónica y tablas vacías. No aprobada.
+- **Discrepancia abierta 2:** la 16 está ocupada por DEV16; se requiere rev10/17 y nueva
+  aprobación. No reabrir ni modificar DEV16 por inferencia.
 - **Matriz:** 48 PASS / 6 PARCIAL (AC-03, AC-24, AC-27, AC-30, AC-33, AC-34), 0 FAIL funcional.
 - **Bloqueo de PR:** sin `gh` ni credenciales GitHub API; el push SSH funciona. Codex debe
-  abrir la PR y consultar CI con su conexión. URL de comparación:
-  `https://github.com/josemartin2000/myfinanzas-app/pull/new/codex/pilot-full-e41-instrumentos-compras-inversion`.
-- **Siguiente acción segura:** Codex revisa/decide rev9; si aprueba, abre PR, ejecuta CI Linux
-  (`bun test apps/api`, backup/restore, `scripts/verify --full`) y solo entonces propone merge
-  al usuario. Sin merge ni despliegue por inferencia.
+  abrir la PR y consultar CI con su conexión cuando el contrato esté verificado.
+- **Siguiente acción segura:** Codex revisa el STOP y decide rev10 (destino 17 + integración
+  main 16). Solo tras aprobación se renumera, se repite gate/QA, se abre PR y se ejecuta CI
+  Linux. Sin merge ni despliegue por inferencia.

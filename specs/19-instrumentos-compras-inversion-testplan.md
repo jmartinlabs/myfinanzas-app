@@ -1,10 +1,14 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Test plan
 
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
-Status: **PROPOSED rev9 — pending independent/Codex review; NOT approved.** Rev9 alinea la
-matriz y las rutas de migración con `origin/main` `24b48c5` (Compartidos v15, C15 verificado) y
-no cambia las decisiones funcionales de rev7/rev8. El candidato DEV y la QA independiente
-existen; **no se autoriza PR, merge ni despliegue** hasta revisar y aprobar rev9.
+Status: **PROPOSED rev9 — pending independent/Codex review; NOT approved. STOP: rev9 queda
+superada por el avance de `main` a 16 (Revisión bancaria de Comida) y requiere rev10 con
+destino 17.** Rev9 alinea la matriz y las rutas de migración con `origin/main` `24b48c5`
+(Compartidos v15, C15 verificado) y no cambia las decisiones funcionales de rev7/rev8. El
+candidato DEV y la QA independiente existen; **no se autoriza PR, merge ni despliegue**.
+**Actualización 2026-10-27:** `origin/main` = `2487656` declara `schemaVersion = 16` (DEV16,
+Revisión bancaria de Comida); la 16 ya no está libre. Hay que renumera a 17 (rev10), integrar
+main 16 y repetir gate/revisión/QA; no hay PR ni merge.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`. Rev9 se propone el 2026-10-27 y no tiene
 aprobación registrada.
