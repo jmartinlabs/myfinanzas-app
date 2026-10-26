@@ -1003,11 +1003,12 @@ terceros pendientes.
 - El CHECK no puede validar CAT013, ficha ni participante. Si se habilita D5, el
   CHECK solo podrá relajar la **forma** `S000 → destino distinto de S000` para
   `Transferencia`; la validación CAT013/ficha/participante y la exigencia de
-  acreditación deben quedar en servicio y, si se usa una guarda de base, en un
-  trigger que compruebe la relación `movimiento_compartido`. Una prueba de
-  frontera SQLite debe demostrar que no se puede insertar una Transferencia S000
-  sin la acreditación exigida (prueba de frontera T-D5-16). El resto de
-  Transferencias mantiene el rechazo.
+  acreditación quedan en servicio. Cualquier guarda de base adicional se
+  definirá en dev: un trigger sobre `movimientos` no puede exigir metadatos antes
+  de insertarlos, por lo que hará falta orden de inserción/FK diferida o un
+  trigger sobre la relación, y no se promete hoy. T-D5-16 verifica esa frontera
+  cuando exista el contrato de dev. El resto de Transferencias mantiene el
+  rechazo.
 
 ### 15.6 UI y API (propuesta)
 
@@ -1162,7 +1163,7 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-01 | Alta válida: Transferencia S000→Saldo interno, REF de tipo «Gasto compartido» (CAT013) activa con ficha, Tercero activo, evidencia/procedencia, importe/fecha válidos | Un único Movimiento y una acreditación; sin Gasto/Ingreso/Partida/Subtipo; efecto bancario exacto; sin doble hecho. |
 | D5-AC-02 | Intentar Transferencia interno→S000, S000→S000, sin tipo «Gasto compartido» (CAT013) o con Exterior ordinario | Rechazo 422; ningún Movimiento ni acreditación; el formulario común no ofrece S000. |
 | D5-AC-03 | Transferencia interna entre Saldos propios con CAT013 | No acredita recuperación; no altera Recuperado/pendiente/exceso; sigue siendo movimiento interno. |
-| D5-AC-04 | Gasto CAT013 válido (Base B) e Ingreso con S000/CAT013 | El Gasto CAT013 conserva su validez y no se convierte en aportación; el Ingreso CAT013 sigue rechazado por la regla vigente; ninguno acredita ni se reclasifica. |
+| D5-AC-04 | Gasto CAT013 válido; Ingreso S000 sin CAT013; Ingreso CAT013 | Gasto CAT013 conserva Base B y no se convierte en aportación; Ingreso S000 sin CAT013 conserva E1.5; Ingreso CAT013 → 422; ninguno acredita ni se reclasifica. |
 | D5-AC-05 | Participante Titular, inactivo, de otra ficha, inexistente o implícito | Rechazo 422; sin alta parcial; no se crea participante automáticamente. |
 | D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo por unicidad/cardinalidad; una sola acreditación y un solo participante. |
 | D5-AC-07 | Evidencia vacía/genérica o procedencia histórica insuficiente | Rechazo 422 o Revisar/No disponible; no se acredita; no se inventan importe/fecha. |
@@ -1189,7 +1190,7 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | R-D5-08 | UI declara cobertura o cierre sin fuente | AC-12, AC-14 | Estados vacío/parcial/error honestos | Cero inventado o Cerrado con terceros pendientes | Playwright 390/1440 + capturas | UNRUN |
 | R-D5-09 | Colisión de esquema/versión con v15 y Vehículos | AC-01, AC-15 | Migración futura preserva IDs/auditorías/FK | Variante desconocida rechazada; rollback | Migración ficticia + backup/restore | UNRUN |
 | R-D5-10 | Ampliación de alcance a Exterior ordinario/salidas | AC-02, AC-15 | Solo variante CAT013 entrante | Formulario común y payloads alternativos rechazados | Gates de servicio/UI + inspección | UNRUN |
-| R-D5-11 | Confundir Gasto CAT013 válido o Ingreso S000 con aportación | AC-04 | Gasto CAT013 conserva Base B; Ingreso conserva E1.5 | Ninguno acredita ni se reclasifica | Servicio + DTO + inspección | UNRUN |
+| R-D5-11 | Confundir Gasto CAT013 válido o Ingreso S000 con aportación | AC-04 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5 | Ingreso CAT013 → 422; ninguno acredita ni se reclasifica | Servicio + DTO + inspección | UNRUN |
 | R-D5-12 | Duplicado o división de un Movimiento entre participantes | AC-06 | Un Movimiento, un Tercero, una acreditación | Segundo intento/división rechazado | UNIQUE + API + SQLite | UNRUN |
 | R-D5-13 | Aplicar Pendiente/Exceso al Titular y romper F3 | AC-12 | Titular conserva coste propio y Pendiente 0 | Titular no genera Exceso ni aportación exigible | Motor + DTO + UI | UNRUN |
 
