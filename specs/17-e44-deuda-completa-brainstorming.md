@@ -22,7 +22,7 @@ ni despliegue.
 | Comprobación | Evidencia |
 | --- | --- |
 | Repositorio | repositorio local autorizado de MyFinanzas |
-| Base/main verificado | `origin/main` = `24b48c57b70700fedb80f9f4d4f1ed8cb00f2649` |
+| Base/main verificado | `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f` |
 | Checkout aislado | worktree temporal aislado bajo el directorio aprobado de OpenCode; nunca `main` |
 | Rama documental | `codex/spec17-e44-deuda-completa` |
 | Número documental | **17** libre: no existía `specs/17-*` ni rama/commit previo de E4.4 |
@@ -30,7 +30,7 @@ ni despliegue.
 | Trabajo ajeno | D5/DEV16/E4.1 no contactados, reasignados ni modificados; checkout principal con cambios ajenos intacto |
 | Referencia | v5.11(7) candidata, **no estable**; Codex no ha inspeccionado el Excel ni importado datos reales |
 | Estado E1.6 | Implementada e integrada PR #34/`cb9ba3b`; 30 AC actuales verificados y `E1.6-AC-31…33` conservados como contratos futuros. No se reabren Q1–Q4 |
-| Estado main | Esquema SQLite v15; E4.4 no fija una versión futura ni escribe SQL |
+| Estado main | Esquema SQLite v16; E4.4 no fija una versión futura ni escribe SQL |
 
 ### Fuentes leídas
 
@@ -75,7 +75,7 @@ arquitectura, UI, calidad y seguridad. No se recargaron documentos completos sin
 | Fórmula de capital y pipeline único de cuota/extraordinaria | Vista de **historia ejecutada**, **capital de control** y **deuda viva** por corte |
 | Partida→Deuda y protecciones de uso histórico | Bloque de **histórico/precontrol** de solo lectura, sin operandos ni doble descuento |
 | Validación de desglose, exceso, fecha, Referencias y Ciclos | **Conciliación desde apertura** con saldo declarado opcional y diferencias visibles |
-| Migración v6→v7, backup/restore, MFA/CSRF, idempotencia y auditoría | Compatibilidad con main v15, nuevos campos opcionales, registros de conciliación y consulta por corte |
+| Migración v6→v7, backup/restore, MFA/CSRF, idempotencia y auditoría | Compatibilidad con main v16, nuevos campos opcionales, registros de conciliación y consulta por corte |
 | UI mínima de listado/ficha/alta y pagos | Wireframes 1440/390 de consulta, detalle, histórico, corte, conciliación, vacíos y errores |
 | `E1.6-AC-31…E1.6-AC-33` futuros de E1.6 | AC de E4.4 (IDs locales) y contrato de consumo para E4.6/E4.7, sin duplicar E1.6 |
 
@@ -207,7 +207,7 @@ fuente antes de desarrollar. No cambian las decisiones D1–D7.
 - **Pantallas:** listado, ficha, condiciones, histórico, historia, corte, conciliación,
   vacíos, parcialidad, errores e incidencias a 1440/390.
 - **Datos:** campos opcionales, registros de conciliación, derivados no persistidos,
-  migración/rollback y compatibilidad con v15.
+  migración/rollback y compatibilidad con v16.
 - **API:** lectura por corte, filtros por tipo, alta/edición de metadatos y conciliaciones,
   seguridad, revisión, idempotencia y errores.
 - **Validación:** apertura/control, desglose, precontrol, histórico, diferencias, precisión,

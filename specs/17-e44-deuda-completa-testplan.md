@@ -5,8 +5,8 @@ candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es P
 prueba diseñada no acredita la funcionalidad. Los AC se ejecutarán solo tras autorización
 expresa y separada de desarrollo.
 
-Base de preparación: `origin/main` = `24b48c57b70700fedb80f9f4d4f1ed8cb00f2649`
-(esquema v15). Referencia: [specification](17-e44-deuda-completa-specification.md) y
+Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`
+(esquema v16). Referencia: [specification](17-e44-deuda-completa-specification.md) y
 [brainstorming](17-e44-deuda-completa-brainstorming.md).
 
 ## Estrategia
@@ -18,7 +18,7 @@ Base de preparación: `origin/main` = `24b48c57b70700fedb80f9f4d4f1ed8cb00f2649`
 - **UI:** extender el recorrido real de Deudas (`tests/e2e/deudas.ts` o un
   `deudas-completa.ts` nuevo, a decidir en dev) con MFA real, 390/1440, capturas ficticias,
   teclado, foco, contraste y estados vacío/parcial/error.
-- **Migración/backup:** v15 genuina (o versión vigente al iniciar dev) → esquema ampliado;
+- **Migración/backup:** v16 genuina (o versión vigente al iniciar dev) → esquema ampliado;
   rollback, versión desconocida, dos arranques, snapshot/manifiesto/restore aislado y MFA.
 - **Verificación canónica:** `python3 scripts/verify --base <main> --head <SHA>` en el
   candidato funcional; para esta rama documental, la verificación se limita a baseline/clasificación
@@ -62,12 +62,12 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | AC-15 | R4 | Declarado 750 vs derivado 720; fecha no futura | Declarado 720 (0), sin declarado o fecha futura | Diferencia +30/0; estado Conciliado/Diferencia; fecha futura 422; capital intacto | API/UI; Bun | UNRUN |
 | AC-16 | R3/R4 | Corregir declarado con motivo; anular | PATCH sin revisión/motivo, DELETE | Auditoría antes/después; anulada conservada; no vigente | API/SQL | UNRUN |
 | AC-17 | R4 | Declarado antes del control o sin base | Intento de diferencia ficticia | `No comparable` con motivo; sin cero | API/UI | UNRUN |
-| AC-18 | R8 | Varias fechas de conciliación; listado elige la última/Varias | Dos altas vigentes misma Deuda/fecha | 409 en la segunda; corregir la existente; sin duplicado ambiguo; ficha muestra todas | API/procesos/UI | UNRUN |
+| AC-18 | R8 | Varias fechas de conciliación; listado última + `Varias` | Dos altas vigentes misma Deuda/fecha | 409 en la segunda; corregir la existente; sin duplicado ambiguo; ficha muestra todas | API/procesos/UI | UNRUN |
 | AC-19 | R8 | Reintento misma clave; dos procesos | Revisión obsoleta; misma clave con otro payload | Una entidad; 409; sin escritura parcial | API/procesos | UNRUN |
 | AC-20 | R3/R4 | Corregir tipo/condiciones/histórico | PATCH sin revisión/motivo; cambiar apertura/Inicio usados | Auditoría; sin efecto económico; E1.6 bloquea | API/SQL | UNRUN |
 | AC-21 | R1/R3 | Rectificar/anular cuota; cambiar su fecha respecto al corte | Doble resta; historia borrada; corte no cambia | Recalcula deuda/diferencia; ambas Deudas; historia conservada; corte inclusive | API/E2E | UNRUN |
 | AC-22 | R1/R5 | Inspeccionar tablas/endpoints | Intento de escribir derivados o ajuste | Sin capital/historia persistidos; sin segundo ledger; 422 | API/SQL | UNRUN |
-| AC-23 | R10 | v15 genuina con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
+| AC-23 | R10 | v16 genuina con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
 | AC-24 | R10 | Snapshot/manifiesto/restore aislado | Copia corrupta/versión incorrecta | Campos/conciliaciones/MFA recuperables; sin datos reales | Bun + E2E restore | UNRUN |
 | AC-25 | R5 | Consumidor E4.6/E4.7 recibe capital/tipo | Suma Deuda a Saldos o duplica Gasto/capital | DTO separado; sin Saldo; sin doble cómputo | Contrato/API; futuro | UNRUN |
 | AC-26 | R9 | MFA/CSRF/Origin válidos; payload limpio | Sin MFA/CSRF/Origin; derivados; DELETE; error forzado | 401/403/422; sin fuga; sin DELETE; límite JSON | API seguridad; Bun Effect | UNRUN |
@@ -127,7 +127,7 @@ y la conciliación recalcula; H3 sigue consultable como anulada.
 | R7 precisión | Float, redondeo, tercer decimal aceptado | Bigint/decimal exacto; 422 |
 | R8 concurrencia | Dos vigentes, pérdida de revisión, duplicado | 409/idempotencia/transacción |
 | R9 seguridad | Fuga de importes/notas/SQL; bypass MFA | 401/403/422; errores genéricos |
-| R10 migración | Backfill, pérdida de IDs/MFA, versión desconocida mutada | v15→nuevo rollback/restore PASS |
+| R10 migración | Backfill, pérdida de IDs/MFA, versión desconocida mutada | v16→nuevo rollback/restore PASS |
 | R11 UI | Overflow, foco perdido, información oculta | 390/1440 + teclado/contraste |
 | R12 alcance | Cuadro, simulación, comisión, activo, cierre | Exclusión verificable; sin hechos |
 

@@ -14,8 +14,8 @@ Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda
 [spec04](04-movimientos-specification.md), [spec05](05-transferencias-referencias-specification.md),
 [spec07](07-ciclos-operacion-specification.md).
 
-Base de preparación: `origin/main` = `24b48c57b70700fedb80f9f4d4f1ed8cb00f2649`;
-esquema SQLite v15. Esta spec **no fija** una versión futura de esquema ni escribe SQL.
+Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`;
+esquema SQLite v16. Esta spec **no fija** una versión futura de esquema ni escribe SQL.
 El desarrollo deberá comprobar de nuevo `main`, la versión vigente y los contratos
 integrados antes de implementar.
 
@@ -413,7 +413,7 @@ ejecutada contenga ese número de filas ni se reconstruye desde Movimientos.
   confirman con la fuente antes de dev. No se usan para cálculo. `condiciones` no se parsea.
 - Fechas económicas civiles ISO; metadatos de auditoría en UTC. El corte no usa el reloj
   para calcular; solo se valida que no sea futuro.
-- Migración futura versionada y atómica desde la versión vigente de `main` (hoy v15):
+- Migración futura versionada y atómica desde la versión vigente de `main` (hoy v16):
   preservar IDs, Deudas, Partidas, Movimientos, Ciclos, Referencias, auditoría, intentos,
   MFA, identidad demo/producción y pareja DB/clave. Campos nuevos nullable, sin backfill.
   Rollback ante fallo; versión desconocida intacta; dos arranques concurrentes sin corrupción.
@@ -437,16 +437,17 @@ amortización.
 │ Saldos      │ Deudas                                                [+ Nueva deuda]      │
 │ Clasific.   │ Buscar [____________________] Tipo [Todas ▾] Estado [Activas ▾]           │
 │ Ciclos      │ ID    Nombre              Tipo             Inicio control Apertura Deuda viva Conciliación │
-│ Movim.      │ D001  Préstamo ficticio   No hipotecaria  01/10/2026     1.000,00 720,00    +30,00    │
+│ Movim.      │ D001  Préstamo ficticio   No hipotecaria  01/10/2026     1.000,00 720,00    +30,00 · Varias │
 │ Referenc.   │ D002  Hipoteca ficticia   Hipotecaria     [Sin informar]  [—]      [—]       Sin declarar │
 │ Deudas      │ D003  Deuda sin tipo      Sin informar     ...            ...      ...       No calculable │
 │             │ [Ver ficha]                                                                    │
 └─────────────┴────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Notas: `Tipo` y `Estado` son filtros; `Deuda viva` es el capital pendiente del corte vigente
-(o todos los hechos si no hay corte); `Conciliación` muestra la vigente de mayor `fechaCorte`
-o `Varias`, y nunca un cero de relleno. El listado no suma Deuda a Saldos.
+Notas: `Tipo` y `Estado` son filtros; `Deuda viva` usa el corte aplicado en la ficha o,
+en el listado, todos los hechos registrados si no hay corte; `Conciliación` muestra la
+vigente de mayor `fechaCorte` y añade `Varias` si hay más de una; nunca un cero de relleno.
+El listado no suma Deuda a Saldos.
 
 ### 1440 px — ficha, corte, historia y conciliación
 
@@ -538,7 +539,7 @@ Sin histórico precontrol:
 
 Corte anterior al inicio de control:
   Corte 15/09/2026 · No hay deuda viva calculable antes de 01/10/2026.
-  Se muestra el precontrol disponible; no se inventa capital.
+  Agregado R5 disponible; H1 (30/09) no incluido. No se inventa capital.
 
 Capital no calculable:
   Falta [apertura / Inicio control / desglose del Movimiento 123].
@@ -588,7 +589,7 @@ CSRF/Origin, límite JSON, errores `Problem` y transacciones existentes.
 
 | Operación | Comportamiento |
 | --- | --- |
-| `GET /api/deudas` | Listado con búsqueda, estado y filtro `tipoDeuda`; paginación estable; incluye deuda viva y la conciliación vigente de mayor `fechaCorte` (o `Varias`) |
+| `GET /api/deudas` | Listado con búsqueda, estado y filtro `tipoDeuda`; paginación estable; incluye deuda viva y la conciliación vigente de mayor `fechaCorte`, con marca `Varias` si hay más |
 | `GET /api/deudas/:id` | Ficha con control, condiciones, histórico, historia ejecutada y conciliaciones |
 | `GET /api/deudas/:id?corte=YYYY-MM-DD` | Misma ficha calculada al corte inclusivo; valida fecha y cobertura |
 | `POST /api/deudas` | Alta con campos E1.6 + nuevos campos opcionales; `idempotency-key`; revisión inicial y auditoría |
@@ -646,7 +647,7 @@ Reglas de API:
 - **Concurrencia/idempotencia:** dos altas/ediciones concurrentes no pisan; reintento con
   la misma clave devuelve el mismo resultado; una respuesta perdida no duplica; una clave
   con otro payload -> 409.
-- **Compatibilidad:** main v15 actual; migración futura desde la versión vigente; datos
+- **Compatibilidad:** main v16 actual; migración futura desde la versión vigente; datos
   existentes sin backfill; rollback/versión desconocida; backup/restore; E1.1–E1.6 intactos.
 
 ## Security, persistence and compatibility
@@ -711,15 +712,15 @@ con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
 | AC-12 | Apertura ausente vs. cero explícito | Ausente = no calculable; cero explícito = cero; no se normaliza | I | E4.4-AC2 |
 | AC-13 | Hecho aplicable con capital/intereses ausentes o inválidos | Deuda viva no calculable; se listan IDs afectados; no se trata null como 0 | I | E4.4-AC2 |
 | AC-14 | Capital resultante negativo o exceso heredado | Se muestra negativo/diferencia; sin clamp; E1.6 sigue bloqueando nuevos estados verificables negativos | I | E4.4-AC2 |
-| AC-15 | Alta de saldo declarado y comparación; fecha no futura | Diferencia = declarado − derivado exacta; 0 = Conciliado; ≠0 = Diferencia; fecha futura 422; listado usa la última/Varias; sin cambio de capital | I | E4.4-AC2 |
+| AC-15 | Alta de saldo declarado y comparación; fecha no futura | Diferencia = declarado − derivado exacta; 0 = Conciliado; ≠0 = Diferencia; fecha futura 422; listado usa la última y marca `Varias`; sin cambio de capital | I | E4.4-AC2 |
 | AC-16 | Corregir/anular conciliación con motivo | Revisión/auditoría; anulada no vigente pero conservada; sin DELETE; capital intacto | I | E4.4-AC2 |
 | AC-17 | Conciliación antes del control o sin base calculable | Estado No comparable con motivo; no se inventa diferencia | I | E4.4-AC2 |
-| AC-18 | Dos altas de conciliación vigentes misma Deuda/fecha | 409 en la segunda; la corrección se hace sobre la existente; otras fechas permitidas | I | E4.4-AC2 |
+| AC-18 | Dos altas de conciliación vigentes misma Deuda/fecha | 409 en la segunda; la corrección se hace sobre la existente; fechas distintas permitidas y el listado las marca `Varias` | I | E4.4-AC2 |
 | AC-19 | Concurrencia/reintento en alta/edición/conciliación | Revisión obsoleta 409; idempotencia devuelve una sola entidad; sin escritura parcial | I | E4.4-AC2 |
 | AC-20 | Corregir tipo/condiciones/histórico con revisión | Auditoría antes/después/motivo; sin efecto económico; apertura/Inicio usados siguen protegidos | I | E4.4-AC1 |
 | AC-21 | Rectificar/anular un pago y consultar corte/conciliación | Deuda viva y diferencia se recalculan; ambas Deudas si cambia; no doble resta; historia conservada | I | E4.4-AC2 |
 | AC-22 | Inspeccionar persistencia y endpoints | No se persiste capital/deuda viva/historia; no hay ajuste ni segundo ledger; derivados rechazados | I | E4.4-AC2 |
-| AC-23 | Migrar desde la versión vigente de main (hoy v15) | Campos nuevos null/Sin informar; IDs/auditoría/MFA/relaciones preservados; rollback/versión desconocida | I | E4.4-AC1 |
+| AC-23 | Migrar desde la versión vigente de main (hoy v16) | Campos nuevos null/Sin informar; IDs/auditoría/MFA/relaciones preservados; rollback/versión desconocida | I | E4.4-AC1 |
 | AC-24 | Backup/restore del esquema ampliado | Manifiesto/versión correctos; campos/conciliaciones/MFA recuperables; sin datos reales | I | E4.4-AC1 |
 | AC-25 | Consumidor E4.6/E4.7 lee la Deuda | Recibe capital/tipo separados; no suma Deuda a Saldos; no duplica Gasto/capital; hipoteca identificable | C | E4.4-AC3 |
 | AC-26 | Acceso sin MFA/CSRF/Origin; payload con derivados; errores | 401/403/422; sin fuga SQL/importes/notas/secretos; sin DELETE; límites JSON | I | E4.4-AC1 |
