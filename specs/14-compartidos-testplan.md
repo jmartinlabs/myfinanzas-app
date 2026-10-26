@@ -293,3 +293,14 @@ El E2E nuevo falla si se retira la contención CSS, por lo que no es tautológic
 
 Límites: suite completa, backup/restore real y CI Linux **UNRUN** en macOS. No
 se declara CI ni aceptación global de E3.2. B-T11/D5 siguen fuera y pendientes.
+
+
+## Regresión P2 Codex — rechazo v14 sin mutación persistente
+
+`database-schema.test.ts`: 3 entradas (prepareSchema, apertura demo, apertura
+productiva con pareja/identidad ficticias válidas) × journal DELETE/WAL. Rechazo
+conserva bytes del archivo, lista de sidecars, objetos sqlite_master, versión14 y
+modo journal. Focales 53 PASS / 0 FAIL; typecheck PASS (macOS/Bun1.4.3). Control
+negativo sin parche: los 3 casos DELETE fallan por mutación, WAL pasa. La prueba
+existente v14 Vehículos→v15 conserva la continuidad admitida. No se cambia la
+política B3 ni sus3000ms. Linux/restore y QA del nuevo candidato: pendientes.

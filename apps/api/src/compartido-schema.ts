@@ -1,5 +1,29 @@
 import type { Database } from "bun:sqlite";
 
+// Read-only preflight, also repeated inside the migration's writer transaction.
+export function assertV14VehicleContract(db: Database) {
+  if (
+    db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='schema_version'",
+      )
+      .get() &&
+    (
+      db.query("SELECT version FROM schema_version").get() as {
+        version: number;
+      } | null
+    )?.version === 14 &&
+    !db
+      .query(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='fichas_vehiculo' AND sql IS NOT NULL",
+      )
+      .get()
+  )
+    throw new Error(
+      "Variante v14 sin contrato de Vehículos; no se modificará esta base.",
+    );
+}
+
 /**
  * v14 → v15 (base B de E3.2). Runs only inside the existing opening IMMEDIATE
  * transaction, after the v14 Vehículos contract is present. Extends the Reference
@@ -8,6 +32,7 @@ import type { Database } from "bun:sqlite";
  * data is classified or re-seeded and no D5 movement metadata is created.
  */
 export function compartidoSchema(db: Database) {
+  assertV14VehicleContract(db);
   const tables = [
     "referencias",
     "fichas_vehiculo",

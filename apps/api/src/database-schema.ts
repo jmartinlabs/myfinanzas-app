@@ -1,5 +1,5 @@
 import { anticipoSchema } from "./anticipo-schema";
-import { compartidoSchema } from "./compartido-schema";
+import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
 import { vehicleSchema } from "./vehicle-schema";
 import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
@@ -40,6 +40,12 @@ export function prepareSchema(db: Database, identity: Identity) {
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
     if (versions[0].version >= 8) assertBudgetContract(db);
+    try {
+      assertV14VehicleContract(db);
+    } catch (error) {
+      db.close();
+      throw error;
+    }
   } else if (
     db
       .query(

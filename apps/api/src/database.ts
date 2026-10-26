@@ -8,6 +8,7 @@ import {
   keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
+import { assertV14VehicleContract } from "./compartido-schema";
 import { productionConfig, openProductionConnection } from "./private-state";
 
 export function openDatabase(path: string) {
@@ -23,6 +24,7 @@ export function openDatabase(path: string) {
       throw new Error("Ruta productiva distinta de DATABASE_PATH.");
     const { db, key } = openProductionConnection(config, false);
     try {
+      assertV14VehicleContract(db);
       db.exec(
         "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
       );

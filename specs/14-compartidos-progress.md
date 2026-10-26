@@ -7,7 +7,17 @@ Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.
 
 ## Current checkpoint — Base B v15 compatible con main/DEV15 — 2026-10-26
 Continuación autorizada por el usuario sobre PR75, sin merge ni despliegue.
-Estado vigente: **CANDIDATE FOR INDEPENDENT QA / CI LINUX PENDIENTE**.
+Estado vigente: **CORRECCIÓN P2 DE RECHAZO v14 / NUEVO CANDIDATO PENDIENTE QA Y CI**.
+
+Corrección Codex autorizada por el usuario («Si») tras revisión de `025f1df`:
+rechazar v14 sin Vehículos antes de PRAGMAs persistentes en builder/demo/producción,
+con revalidación dentro de la migración IMMEDIATE. Seis regresiones de archivo
+comparan bytes, objetos, versión, sidecars y journal DELETE/WAL. Control negativo
+sobre `025f1df`: 3 FAIL DELETE/3 PASS WAL; parche restaurado: 6 PASS.
+Focales Compartidos/esquema/Vehículos/Anticipos: 53 PASS; typecheck PASS.
+CI anterior [40402511849](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40402511849)
+SUCCESS sobre `025f1df`; no acredita esta corrección. QA independiente y CI del
+nuevo candidato pendientes. B3 no investigado; sin merge ni despliegue.
 
 - Authorized scope / approval source: Task `EXT-OPENCODE-DEV14-BASEB`; usuario,
   2026-10-26: «Autorizo continuar el trabajo existente de Base B de Compartidos,
