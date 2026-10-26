@@ -1,6 +1,6 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
-Status: Q1–Q5 confirmadas por el usuario el 2026-10-26; specification y wireframes
-pendientes de aprobación. Ninguna aprobación de desarrollo.
+Status: Q1–Q5 confirmadas por el usuario el 2026-10-26; Q6 pendiente; specification
+rev2 y wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
 Nota de lectura: los `PENDING` de la Ronda 1 y la sección Wireframes describen el
 momento de la pregunta; las respuestas confirmadas están al final y los wireframes
 propuestos se presentan en la specification para aprobación.
@@ -187,7 +187,7 @@ estados vacío/carga/cobertura parcial; concurrencia/idempotencia; auditoría; s
 y criterios de aceptación numerados con trazabilidad a E3.3-AC1..3.
 
 ## Wireframes
-Presentados en la [specification §7](15-vehiculos-itv-specification.md#7-pantallas-y-wireframes)
+Presentados en la [specification §9](15-vehiculos-itv-specification.md#9-pantallas-y-wireframes-h6)
 para revisión y aprobación separadas. No se considera aprobado ningún diseño por este
 documento.
 
@@ -222,3 +222,18 @@ SQL o merge.
 Precisión transversal confirmada: mantener una única fuente de verdad para los Gastos
 en Movimientos, sin duplicar hechos ni introducir maestros adicionales. Las respuestas
 no autorizan implementación, modificaciones de base de datos ni merge.
+
+## Ronda 2 — Q6 — 2026-10-26
+Question: ¿El aviso/confirmación de duplicado debe aplicarse también al **corregir la
+matrícula** de una ficha existente?
+- [x] **Recomendada A:** sí; cualquier cambio de matrícula que coincida con otra ficha
+  muestra el mismo aviso y exige confirmación server-side que el alta o el renombrado.
+  Es coherente con la identificación del vehículo y evita duplicados por corrección.
+- [ ] **Alternativa B:** no; el aviso solo se aplica en el alta y al renombrar la
+  Referencia. La corrección de matrícula se considera una corrección de dato y no
+  interrumpe con confirmación.
+- [ ] **Alternativa C:** solo si la matrícula anterior estaba vacía y se informa por
+  primera vez; las correcciones posteriores no avisan.
+
+Confirmed answer: PENDING; source/date: PENDING. Q6 es la única decisión funcional
+abierta de esta revisión; no se fija una regla nueva hasta su respuesta.
