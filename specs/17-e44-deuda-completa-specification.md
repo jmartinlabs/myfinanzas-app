@@ -498,7 +498,7 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 │ Inicio 01/10/2026                    │
 │ Apertura 1.000,00                    │
 │ Deuda viva 720,00                    │
-│ Conciliación +30,00                  │
+│ Conciliación +30,00 · Varias         │
 │ [Ficha]                              │
 ├──────────────────────────────────────┤
 │ Ficha D001 · [Editar]                │
@@ -515,6 +515,7 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 │ Declarado 750,00                     │
 │ Derivado 720,00                      │
 │ Diferencia +30,00                    │
+│ Historial 10/10/2026 · +10,00        │
 │ Fuente [Banco ficticio]              │
 │ [Corregir] [Anular]                  │
 │ No crea Movimiento.                  │
