@@ -50,7 +50,7 @@ ni datos reales. Cobertura por AC en
 | I4 | API y permisos | completado |
 | I5 | UI 390/1440, teclado, foco y estados | completado |
 | I6 | Pruebas API/SQLite/HTTP y E2E | completado local (ver testplan) |
-| I7 | Verificación canónica y QA independiente | pendiente / ver checkpoint |
+| I7 | Verificación canónica y QA independiente | completado (QA PASS; CI Linux/restore UNRUN) |
 | I8 | Publicación de rama y PR | pendiente |
 
 ## Checkpoints
@@ -128,8 +128,25 @@ Evidencia:
 - AC-25 sigue abierto; AC-27/34/36 no se simulan; AC-12 se prueba solo con fixture
   sintético y AC-31 sigue UNRUN/C.
 
-## QA independiente
+## QA independiente — PASS del candidato
 
-Pendiente de activar sobre candidato fijo. Si no se dispone de permisos/cuota para una
-sesión independiente, se devuelve al coordinador el candidato, la matriz y esta evidencia;
-no se autodeclara QA independiente.
+Candidato de código revisado por sesión independiente: `36a81a2` (base `dc48f42`). La
+sesión de QA no editó, commiteó ni publicó; ejecutó pruebas y sondas propias.
+
+- Ronda 1 sobre `c59cc84`: **FAIL**. Hallazgos A1 (cobertura de ciclo «Completa» sin
+  base), M1 («Estado: Todos» no mostraba anuladas), M2 (coincidencia no advertida en UI),
+  M3/M4/M5 y residuales de evidencia. Corregidos en `265bea7`.
+- Ronda 2 sobre `265bea7`: **PASS de código** con AC-35 PARCIAL por la rama
+  `Reposición→Ingreso`/Ingreso a Exterior. Corregido en `36a81a2`.
+- Ronda final sobre `36a81a2`: **PASS**. AC-35 PASS; AC-21 PARCIAL (restore cifrado
+  UNRUN local); AC-25 abierto; AC-27/34/36 futuros no simulados; AC-12 C con fixture;
+  AC-31 UNRUN/C. Invariantes financieros confirmados.
+- Evidencia QA: focal **15 PASS / 215 expect**, typecheck/build PASS, E2E PASS,
+  baseline PASS, full API **180 PASS / 45 FAIL** de plataforma `libc.so.6`.
+- Residuales bajos aceptados: selector de vínculo no oculta la combinación
+  `Agregado terminal` con Gasto no Terminal (el servidor la rechaza), 409 de UI
+  interceptado para presentación, acciones de fila de reposiciones limitadas a Ver/Editar,
+  cabecera de ciclo solo al filtrar y etiqueta API «Anulado» con UI «Anulada». No afectan
+  a integridad financiera ni a los AC.
+
+CI Linux, restore cifrado y `scripts/verify --full` siguen **UNRUN**; no se declaran PASS.
