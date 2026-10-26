@@ -2157,7 +2157,8 @@ textarea {
 }
 .shared-participants td {
   vertical-align: top;
-  overflow-wrap: anywhere;
+  overflow-wrap: normal;
+  word-break: normal;
 }
 .shared-participants td small {
   display: block;

@@ -534,6 +534,46 @@ test("B-T06 AC12/13/15/17/25/29/38/39 states and metrics: no source is never zer
   expect(d.resumen.neto.valor).toBeNull();
   expect(d.resumen.pendienteTerceros.estado).toBe("No disponible");
   expect(d.resumen.exceso.valor).toBeNull();
+  const annulled = caseWith(db, [
+    { nombre: "Yo", rol: "Titular", partes: 1 },
+  ]);
+  const annulledExpense = expense(db, annulled, a, p13, "450.00");
+  db.run("UPDATE movimientos SET anulado=1 WHERE id=?", [annulledExpense.id]);
+  d = getCompartido(db, annulled);
+  expect(d.resumen).toMatchObject({
+    estado: "Sin repartir",
+    estadoReparto: "Sin repartir",
+    puedeCerrar: false,
+  });
+  expect(d.resumen.bruto).toMatchObject({
+    valor: null,
+    estado: "No disponible",
+  });
+  expect(d.resumen.bruto.valor).not.toBe("0.00");
+  expect(d.resumen.neto.valor).toBeNull();
+  expect(d.gastos[0].neto.estado).toBe("No aplica");
+  const onlyThirdParty = caseWith(db, [
+    { nombre: "Bea", rol: "Tercero", partes: 1 },
+  ]);
+  expense(db, onlyThirdParty, a, p13, "150.00");
+  d = getCompartido(db, onlyThirdParty);
+  expect(d.resumen).toMatchObject({
+    estado: "Sin repartir",
+    estadoReparto: "Sin repartir",
+    puedeCerrar: false,
+  });
+  expect(d.resumen.bruto).toMatchObject({
+    valor: "150.00",
+    estado: "Verificada",
+  });
+  expect(d.resumen.neto).toMatchObject({
+    valor: null,
+    estado: "No disponible",
+  });
+  expect(d.participantes[0].asignado).toMatchObject({
+    valor: null,
+    estado: "No disponible",
+  });
   expense(db, empty, a, p13, "150.00");
   d = getCompartido(db, empty);
   expect(d.resumen).toMatchObject({

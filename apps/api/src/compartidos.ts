@@ -181,15 +181,18 @@ export function calcularReparto(
   const elegibles = gastos.filter((g) => !g.anulado && g.valido);
   const incidencias = gastos.filter((g) => !g.anulado && !g.valido);
   const brutoCents = elegibles.reduce((sum, g) => sum + g.importeCents, 0n);
+  const titular = activos.find((p) => p.rol === "Titular") ?? null;
   const repartoValido =
-    activos.length > 0 && totalPartes > 0n && brutoCents > 0n;
+    activos.length > 0 && totalPartes > 0n && brutoCents > 0n && !!titular;
   const motivoReparto = !activos.length
     ? "Sin participantes activos."
     : totalPartes === 0n
       ? "Sin partes válidas: define al menos una parte mayor que cero."
-      : brutoCents === 0n
-        ? "Sin Gastos elegibles verificables."
-        : null;
+      : !titular
+        ? "Sin Titular activo: no se puede acreditar el coste propio exigido por F3."
+        : brutoCents === 0n
+          ? "Sin Gastos elegibles verificables."
+          : null;
 
   const asignadoTotal = new Map<string, bigint>(
     activos.map((p) => [p.id, 0n]),
@@ -207,7 +210,6 @@ export function calcularReparto(
         asignadoTotal.set(id, asignadoTotal.get(id)! + value);
     }
 
-  const titular = activos.find((p) => p.rol === "Titular") ?? null;
   const asignadoTitular = titular ? (asignadoTotal.get(titular.id) ?? 0n) : null;
   const tercerosConCuota = activos.some(
     (p) => p.rol === "Tercero" && (asignadoTotal.get(p.id) ?? 0n) > 0n,
@@ -216,7 +218,7 @@ export function calcularReparto(
   const costePropioDecimal =
     asignadoTitular === null ? null : decimal(asignadoTitular.toString())!;
 
-  const bruto: Metrica = !gastos.length
+  const bruto: Metrica = !elegibles.length && !incidencias.length
     ? metric(
         null,
         "No disponible",
