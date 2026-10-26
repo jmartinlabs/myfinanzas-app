@@ -2,8 +2,9 @@
 
 Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26 sobre el commit
 `47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella.
-**DRAFT rev8 — ajuste técnico a la versión 16 pendiente de aprobación.** Respeta la reserva 15
-de Compartidos; DEV, merge y despliegue **no** autorizados.
+**APPROVED rev8** — ajuste técnico a la versión 16 aprobado por el usuario el 2026-10-26 sobre
+`f439010d527ba65953a1ccc0aa47cbeb51cfce31`; se mantienen las decisiones funcionales de rev7.
+DEV, merge y despliegue **no** autorizados.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -24,8 +25,8 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 - Autorización del usuario: ajuste documental de E4.1 a la siguiente versión libre,
   provisionalmente **16**, respetando la reserva 15 de Compartidos.
-- `origin/main` = `f5bf032` (esquema 14); el ref local `main` puede estar retrasado, por lo que el gate usa `origin/main`; `codex/dev14-base-b` = `ad2edfe` (esquema 15, Compartidos
-  v15 + Vehículos). También declaran v15 `codex/dev16-revision-comida` y su remoto; solo el
+- `origin/main` = `f5bf032` (esquema 14); el ref local `main` puede estar retrasado, por lo que el gate usa `origin/main`; `codex/dev14-base-b` = `e4ff2df` (esquema 15, Compartidos
+  v15 + Vehículos; `ad2edfe` era el commit congelado y el esquema no cambió). También declaran v15 `codex/dev16-revision-comida` y su remoto; solo el
   contrato `C15-COMPARTIDOS-AD2EDFE` está verificado por E4.1, cualquier otro v15 se rechaza.
   La 16 está libre en la revisión. No se contactó ni modificó la sesión de Compartidos.
 - Contrato real v15 congelado: `C15-COMPARTIDOS-AD2EDFE` (`ad2edfe`, 122 objetos),
@@ -39,7 +40,19 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   etiqueta `e4.1-v16`; restore verifica manifiestos v14/v15. Sin implementación de E4.1.
 - Gate pre-DEV: **PASS para 16 a 2026-10-26, condicional**; debe repetirse sobre refs
   locales/remotos antes de DEV.
-- Estado: **rev8 pendiente de aprobación**. No autoriza DEV, merge ni despliegue.
+- Gate repetido tras la aprobación (2026-10-26): `origin/main` `f5bf032` = 14;
+  `codex/dev14-base-b` `e4ff2df` = 15 con el mismo manifiesto C15 (HEAD previo `935dee9`); `codex/dev16-revision-comida`
+  y su remoto = 15; ningún ref declara 16. Resultado: **PASS para 16**.
+- Estado: **rev8 aprobada** por el usuario el 2026-10-26 sobre `f439010`. No autoriza DEV,
+  merge ni despliegue.
+
+## Aprobación rev8 — 2026-10-26
+
+- Objeto: **SPEC19 rev8 y su testplan**, commit `f439010d527ba65953a1ccc0aa47cbeb51cfce31`.
+- Mensaje real: «Apruebo el ajuste técnico de SPEC19 rev8 y su testplan correspondiente al
+  commit f439010d527ba65953a1ccc0aa47cbeb51cfce31. Se mantienen las decisiones funcionales
+  aprobadas de rev7.»
+- No autoriza DEV, merge ni despliegue.
 
 ## Checkpoint documental — 2026-10-26
 
@@ -108,7 +121,7 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 ## Siguiente acción
 
-La rev8 técnica (versión 16) está **pendiente de aprobación**. Manifiestos v14/v15 congelados,
-`main` 14 y 15 reservada por Compartidos; la 16 está libre a 2026-10-26. Antes de DEV debe
-repetirse el gate sobre refs locales/remotos y, solo después, solicitar autorización separada
-de desarrollo. No merge ni despliegue.
+La rev8 técnica (versión 16) está **aprobada**. Gate repetido a 2026-10-26: `origin/main` 14,
+15 reservada por Compartidos (`e4ff2df`, mismo manifiesto C15), 16 libre. Se solicita
+autorización separada de DEV; antes de implementar debe repetirse el gate. No merge ni
+despliegue.

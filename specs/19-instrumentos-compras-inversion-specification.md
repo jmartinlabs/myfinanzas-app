@@ -1,10 +1,12 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: **DRAFT rev8 — ajuste técnico de versión 16 pendiente de aprobación.** La rev7 sigue
-aprobada como contrato funcional; este delta solo cambia la versión de esquema y las rutas de
-migración para respetar la reserva 15 de Compartidos.
-Approval source/date: rev7 aprobada por mensaje del usuario del 2026-10-26 sobre
-`47f469a902330ac199c910225563f909bd5116eb`; **rev8 pendiente**.
+Status: **APPROVED rev8** — ajuste técnico de versión 16 aprobado por el usuario el 2026-10-26
+sobre el commit `f439010d527ba65953a1ccc0aa47cbeb51cfce31`; se mantienen las decisiones
+funcionales aprobadas de rev7.
+Approval source/date: mensaje del usuario, 2026-10-26: «Apruebo el ajuste técnico de SPEC19
+rev8 y su testplan correspondiente al commit
+f439010d527ba65953a1ccc0aa47cbeb51cfce31. Se mantienen las decisiones funcionales aprobadas
+de rev7.»
 Context and brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md),
 [roadmap E4.1](roadmap.md), [referencia R5](functional-reference-v5.11.md).
 Base: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
@@ -30,7 +32,9 @@ de la versión destino), 2026-10-26; **aprobada rev7 por el usuario el 2026-10-2
 `47f469a902330ac199c910225563f909bd5116eb`**, incluidos wireframes y testplan; rev8 es el
 ajuste técnico documental a la versión **16** para respetar la reserva 15 de Compartidos
 (contrato real `C15-COMPARTIDOS-AD2EDFE`, rutas 13/14/15→16 y preservación de datos),
-2026-10-26, **pendiente de aprobación**; DEV, merge y despliegue no autorizados.
+2026-10-26, **aprobada rev8 por el usuario el 2026-10-26 sobre el commit
+`f439010d527ba65953a1ccc0aa47cbeb51cfce31`**, manteniendo las decisiones funcionales de rev7;
+DEV, merge y despliegue no autorizados.
 Solo documentación y ejemplos ficticios; no autoriza desarrollo, SQL, migraciones, pruebas
 ejecutables, datos reales ni despliegue.
 
@@ -493,7 +497,8 @@ Propuesta técnica (DT2), no decisión financiera:
 
 - **Versión destino: E4.1 usa la 16.** El gate pre-DEV verificó que `origin/main` está en el esquema
   14 (Vehículos) y que la **15 está reservada por Compartidos**: la rama local
-  `codex/dev14-base-b` (`ad2edfe`, con worktrees activos) declara `schemaVersion = 15` y su
+  `codex/dev14-base-b` (`ad2edfe` congelado; HEAD actual `e4ff2df`, mismo esquema y manifiesto,
+  con worktrees activos) declara `schemaVersion = 15` y su
   contrato real se congela como `C15-COMPARTIDOS-AD2EDFE`. E4.1 no reabre, no modifica ni
   reanuda esa sesión ni sus worktrees; respeta la 15 y toma la **16**, siguiente versión libre
   en la revisión. Ningún ref declaraba la 16. La reserva 16 es **provisional** y no prevalece
@@ -1351,9 +1356,10 @@ Otras integraciones declaradas:
 
 ## 15. Siguiente acción
 
-SPEC19 rev7 está aprobada; la **rev8** es el ajuste técnico documental a la versión 16 y queda
-**pendiente de aprobación**. Los manifiestos v14/v15 ya están congelados y el gate pre-DEV
-verificó la reserva 15 de Compartidos y la disponibilidad de la 16. Antes de implementar debe
-repetirse el gate de §5.2/AC-33(g) sobre `main` y todos los refs; si cambia, STOP. Solo después,
-y con autorización separada de DEV: implementar, actualizar pruebas y revisar wireframes.
+SPEC19 rev8 está aprobada (ajuste técnico a 16; se mantienen las decisiones funcionales de
+rev7). Los manifiestos v14/v15 están congelados y el gate pre-DEV verificó la reserva 15 de
+Compartidos y la disponibilidad de la 16. Antes de implementar debe repetirse el gate de
+§5.2/AC-33(g) sobre `origin/main` y todos los refs locales/remotos; si cambia, STOP. Solo
+después, y con autorización separada de DEV: implementar, actualizar pruebas y revisar
+wireframes.
 Esta aprobación no autoriza DEV, merge ni despliegue.
