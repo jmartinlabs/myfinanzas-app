@@ -1,13 +1,14 @@
 ## Current checkpoint — DEV14 Base B v15 en PR75 — 2026-10-26
 
 Continuación autorizada de Base B (E3.2) sobre PR75, sin merge ni despliegue.
-El candidato `e205ba4` integra main `aad33e9`/DEV15 y resuelve la colisión de
-esquema: v14 pertenece a Vehículos y Base B avanza a v15. Desde v13 se ejecutan
-ambos contratos; una v14 sin `fichas_vehiculo` se rechaza. Backup distingue
-`e3.3-v14`/`e3.2-v15`. Typecheck/build, focales Compartidos/Vehículos/Anticipos,
-migraciones v13/v14 y E2E Compartidos están en verde local; suite API macOS
-conserva fallos de plataforma y B3 heredado. QA independiente y CI Linux del SHA
-final siguen pendientes; B-T11 y D5 no se declaran PASS. No hay merge/deploy.
+El candidato de código `e4ff2df` integra main `aad33e9`/DEV15 y resuelve la
+colisión de esquema: v14 pertenece a Vehículos y Base B avanza a v15. Desde v13
+se ejecutan ambos contratos; una v14 sin `fichas_vehiculo` se rechaza. Backup
+distingue `e3.3-v14`/`e3.2-v15`. Typecheck/build, focales
+Compartidos/Vehículos/Anticipos, migraciones v13/v14, E2E y QA independiente
+están en verde local (APTO con H1/O1/H2 cerrados); la suite API macOS conserva
+fallos de plataforma y B3 heredado. CI Linux del SHA final sigue pendiente;
+B-T11 y D5 no se declaran PASS. No hay merge/deploy.
 
 ---
 
@@ -146,7 +147,7 @@ Main verificado `36fd238` (PR72); harness v2.9.0 con adaptación documental sele
 
 | Task ID / nombre | Cliente y referencia de sesión estable | Estado y procedencia | Última evidencia, gates y siguiente acción |
 | --- | --- | --- | --- |
-| EXT-OPENCODE-DEV14-BASEB · Base B E3.2 | Coordinador OpenCode, checkout aislado `.../T/opencode/dev14-baseb`; autor previo con HANDOFF | CANDIDATE FOR INDEPENDENT QA / CI — PR75 OPEN | Candidato `e205ba4` (merge main `aad33e9`/DEV15). v15 compatible con v14 de Vehículos; focales/tipos/build/E2E Compartidos PASS; backup/restore y suite Linux UNRUN. B-T11/D5/E3.2 global pendientes. Próximo: QA independiente y CI del SHA final; sin merge/deploy. |
+| EXT-OPENCODE-DEV14-BASEB · Base B E3.2 | Coordinador OpenCode, checkout aislado `.../T/opencode/dev14-baseb`; autor previo con HANDOFF | QA INDEPENDIENTE APTO / CI LINUX PENDIENTE — PR75 OPEN | Código `e4ff2df` (merge main `aad33e9`/DEV15 + fixes QA). v15 compatible con v14 de Vehículos; focales/tipos/build/E2E y QA independiente PASS; backup/restore y suite Linux UNRUN. B-T11/D5/E3.2 global pendientes. Próximo: CI Linux del SHA final; sin merge/deploy. |
 | DEV13-H1/CI · corrección H1 y schema13 | OpenCode, sesión funcional DEV13-H1/CI; versión e ID técnico desconocidos | ESPERANDO RETORNO — último paquete entregado por usuario; ejecución/fin no inferidos | PR71 OPEN/DRAFT, HEAD1255ef8 verificado. Schema13 en commit local7339b5e comprobado; nuevo commit local a0e0567 observado, sin retorno final ni validación de candidato. Resolución H1 de Álex preserva E1.5 y separa no-Transferencias del motor. Próximo: recibir HANDOFF completo de esa sesión, revisar diff y evidencia, publicar solo bajo gates vigentes y repetir CI/QA. Sin nueva orden externa ahora. |
 | EXT-OPENCODE-QA12-CLOSE · cierre QA dev12 | OpenCode, sesión funcional QA12/PR67; versión e ID técnico desconocidos | PENDIENTE DE ENVIAR — paquete preparado; envío no confirmado en este chat | PR67 OPEN, HEADbb24934 verificado. CI40191028155 SUCCESS verificada anteriormente; informe QA anterior comunicado favorable condicionado, no informe nuevo de esta sesión. Checkpoint dev12 localc971ff4 preservado. Acción humana: confirmar si se envió el paquete existente o enviarlo una vez a sesión QA12/PR67; no afirmar ejecución. MergePR67 no aprobado. |
 | EXT-OPENCODE-SPEC14 · especificación E3.2 | OpenCode, sesión funcional Spec14; versión e ID técnico desconocidos | COMPLETADO — documentos y merge verificados | Originales a5f9400/c2cf298 preservados; publicación exacta50c0d64, PR72 MERGED36fd238 por usuario.39AC aprobados. Sin correcciones ni respuesta necesaria al autor. Desarrollo14 no autorizado. |

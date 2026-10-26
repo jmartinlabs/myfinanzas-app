@@ -243,12 +243,12 @@ los resultados v14 anteriores quedan históricos y no acreditan este SHA.
 | --- | --- |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (35 módulos) |
-| `bun test apps/api/src/compartidos.test.ts` | 10 PASS / 0 FAIL / 171 assertions |
+| `bun test apps/api/src/compartidos.test.ts` | 10 PASS / 0 FAIL / 180 assertions |
 | `bun test apps/api/src/vehiculos.test.ts apps/api/src/database-schema.test.ts` | 15 PASS / 0 FAIL |
 | `bun test apps/api/src/anticipos.test.ts` | 22 PASS / 0 FAIL |
 | Lote ciclos/nómina/planes/plan anual/concurrencia | 62 PASS / 4 FAIL por `libc.so.6` |
 | `bun test apps/api` | 191 PASS / 46 FAIL macOS (plataforma y B3 heredado) |
-| `playwright tests/e2e/compartidos.spec.ts` | 1 PASS / 0 FAIL; PNG 390/1440 |
+| `playwright tests/e2e/compartidos.spec.ts` | 1 PASS / 0 FAIL; PNG 390/1440; nombre de 120 sin overflow |
 | `playwright tests/e2e/vehiculos-empty.spec.ts` | 1 PASS / 0 FAIL |
 | `playwright tests/e2e/vehiculos.spec.ts` | 1 PASS / 0 FAIL tras corregir cierre CSS; PNG 390/1440 |
 | `python3.12 scripts/verify --base origin/main --head HEAD` | Baseline PASS; typecheck/build PASS; API 191 PASS/46 FAIL macOS; E2E UNRUN; global FAIL por plataforma/B3 |
@@ -272,3 +272,24 @@ los resultados v14 anteriores quedan históricos y no acreditan este SHA.
 | B-T11 | UNRUN (aplazado E3.2/E3.6) | No PASS |
 
 No se declara DEV14/E3.2/D5 completos. No hay datos reales, merge ni deploy.
+
+## QA independiente y SHA final — 2026-10-26
+
+QA de contexto nuevo revisó la compatibilidad v15 y emitió APTO CON RESERVAS
+sobre `ad2edfe`. Hallazgos y cierre:
+
+| ID | Severidad | Hallazgo | Cierre |
+| --- | --- | --- | --- |
+| H1 | Media | Bruto `0,00 Verificada` con todos los Gastos anulados | Corregido `935dee9`; regresión todos anulados; revalidado PASS |
+| O1 | Baja | Sin Titular quedaba `Reparto parcial` pese a la decisión «Sin repartir» | Corregido `935dee9`; reparto válido exige Titular; revalidado PASS |
+| H2 | Baja | Tabla de participantes 1440 partía palabras | Corregido `935dee9`; métricas con `overflow-wrap: normal` |
+| H2-1 | Baja | `normal` desbordaba con nombres de 120 | Corregido `e4ff2df`; `anywhere` solo en celda de nombre; E2E añadido |
+
+Re-revisión sobre `e4ff2df`: **APTO** en el alcance acotado, sin hallazgos
+nuevos. Evidencia: focal Compartidos 10/10/180 assertions; typecheck PASS; E2E
+Compartidos 1/1 con 390/1440 y nombre largo; Vehículos+Anticipos+esquema 37/37;
+E2E de regresión 3/3; probes independientes de H1/O1/motor/atómica/HTTP PASS.
+El E2E nuevo falla si se retira la contención CSS, por lo que no es tautológico.
+
+Límites: suite completa, backup/restore real y CI Linux **UNRUN** en macOS. No
+se declara CI ni aceptación global de E3.2. B-T11/D5 siguen fuera y pendientes.

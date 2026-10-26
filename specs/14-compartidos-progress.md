@@ -19,8 +19,9 @@ Estado vigente: **CANDIDATE FOR INDEPENDENT QA / CI LINUX PENDIENTE**.
   `https://github.com/josemartin2000/myfinanzas-app/pull/75`, rama
   `codex/dev14-base-b`. Checkout aislado
   `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/dev14-baseb`.
-  Candidato de compatibilidad `e205ba4` (merge de `origin/main` `aad33e9` con el
-  candidato Base B `fce1107`); el commit documental posterior fija el SHA final.
+  Merge de compatibilidad `e205ba4` (`origin/main` `aad33e9` con Base B
+  `fce1107`), correcciones QA `935dee9` y `e4ff2df`; el SHA de código final es
+  `e4ff2df`. El commit documental posterior fija el SHA publicado.
 - Ownership / previous executor: el progress anterior acredita un único escritor y
   HANDOFF completado; el checkout original `/private/tmp/myfinanzas-dev14-base-b`
   ya no existe. No había worktree activo de `codex/dev14-base-b`; el nuevo
@@ -32,13 +33,14 @@ Estado vigente: **CANDIDATE FOR INDEPENDENT QA / CI LINUX PENDIENTE**.
   variante desconocida. La migración v15 reconstruye también `fichas_vehiculo`,
   conserva matrícula/fechas/auditoría/triggers/FK y los tipos `Vehículo` y
   `Gasto compartido`. Backup distingue `e3.3-v14` y `e3.2-v15`.
-- Checks / QA evidence: typecheck/build PASS; focal Compartidos 10/10 PASS/171
-  assertions; Vehículos+cierre 15/15; Anticipos 22/22; migraciones/regresiones
+- Checks / QA evidence: typecheck/build PASS; focal Compartidos 10/10 PASS/180
+  assertions; Vehículos+cierre+Anticipos 37/37; migraciones/regresiones
   históricas 62 PASS y 4 FAIL de plataforma en el lote focal; suite API completa
   191 PASS/46 FAIL macOS (todas las observadas de plataforma `libc.so.6` o B3
-  heredado); E2E Compartidos 1/1 PASS, Vehículos vacío 1/1 PASS y Vehículos
-  completo 1/1 PASS tras corregir el cierre CSS. Capturas 390/1440
-  inspeccionadas. Detalle en el testplan.
+  heredado); E2E Compartidos 1/1 PASS (incluye nombre de 120 y no overflow),
+  Vehículos vacío 1/1, Vehículos completo 1/1 y Anticipos 1/1. Capturas
+  390/1440 inspeccionadas. QA independiente: APTO tras cerrar H1/O1/H2-1.
+  Detalle en el testplan.
 - PR / CI / merge state: PR75 abierta; sin CI Linux del candidato verificable
   desde este entorno (no hay `gh`/API). Sin merge ni deploy. El push actualizará
   la PR; la comprobación de Actions queda para Codex si no hay acceso API.
@@ -131,7 +133,7 @@ del bloque móvil; corregido, no un defecto de producto previo.
 Evidencia local macOS arm64/Bun 1.4.3 sobre `e205ba4`:
 
 - `bun run typecheck` PASS; `bun run build` PASS (35 módulos).
-- `bun test apps/api/src/compartidos.test.ts` → 10 PASS/0 FAIL/171 assertions.
+- `bun test apps/api/src/compartidos.test.ts` → 10 PASS/0 FAIL/180 assertions.
 - `bun test apps/api/src/vehiculos.test.ts apps/api/src/database-schema.test.ts`
   → 15 PASS/0 FAIL.
 - `bun test apps/api/src/anticipos.test.ts` → 22 PASS/0 FAIL.
@@ -145,6 +147,29 @@ Evidencia local macOS arm64/Bun 1.4.3 sobre `e205ba4`:
   typecheck/build PASS, API 191 PASS/46 FAIL macOS (plataforma/B3), E2E UNRUN
   al detenerse la fase API; salida global FAIL, no se relabela.
 - `scripts/verify` canónico y CI Linux del SHA final: pendientes en este entorno.
+
+## QA independiente y correcciones — 2026-10-26
+
+QA de contexto nuevo revisó primero `ad2edfe` y emitió **APTO CON RESERVAS** con
+tres hallazgos dentro del alcance:
+
+- **H1 (media):** con todos los Gastos anulados, el Bruto se presentaba como
+  `0,00 Verificada` aunque no hubiera Gastos elegibles, contradiciendo «no
+  inventar 0,00». Corregido: Bruto `No disponible` cuando no hay elegibles ni
+  incidencias; regresión de «todos anulados».
+- **O1 (baja):** sin Titular activo el estado era `Reparto parcial` pese a la
+  decisión registrada «Sin repartir». Corregido: el reparto válido exige Titular;
+  no se fabrican asignaciones ni coste propio. Regresión de caso solo Tercero.
+- **H2 (baja):** la tabla de participantes 1440 partía palabras. Corregido con
+  `overflow-wrap: normal` en métricas. La primera corrección desbordaba con
+  nombres de 120 caracteres (H2-1 de la re-revisión); se limita `anywhere` a la
+  celda de nombre y se añade E2E con nombre largo y aserción de no overflow.
+
+Re-revisión independiente sobre `e4ff2df`: **APTO** en el alcance acotado.
+H1/O1/H2-1 PASS, focal 10/10, typecheck PASS, E2E Compartidos 1/1, Vehículos+
+Anticipos+esquema 37/37 y E2E de regresión 3/3. El E2E nuevo falla si se retira
+el CSS de contención, por lo que no es tautológico. No se declara CI Linux,
+suite completa ni backup/restore real: **UNRUN** en macOS.
 
 ## Decisions
 - Se reutiliza el patrón de ficha 1:1 y auditoría de E3.1, sin copiar metadatos de
