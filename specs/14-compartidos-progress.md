@@ -146,7 +146,8 @@ Evidencia local macOS arm64/Bun 1.4.3 sobre `e205ba4`:
 - `python3.12 scripts/verify --base origin/main --head HEAD` → baseline PASS,
   typecheck/build PASS, API 191 PASS/46 FAIL macOS (plataforma/B3), E2E UNRUN
   al detenerse la fase API; salida global FAIL, no se relabela.
-- `scripts/verify` canónico y CI Linux del SHA final: pendientes en este entorno.
+- `scripts/verify` canónico sobre el SHA final: baseline PASS, typecheck/build
+  PASS, API 191/46 macOS (plataforma/B3), E2E UNRUN; CI Linux pendiente.
 
 ## QA independiente y correcciones — 2026-10-26
 
