@@ -283,3 +283,36 @@ spec: APPROVED. Incluye Q1–Q7, F1–F5, P-F6, R-MP y R-CC, con 39 AC.
 Queda abierto y separado: D5/Exterior (contrato y autorización propios). Esta
 aprobación no autoriza desarrollo14, SQL, Excel, push ni merge; el commit local
 registra solo la documentación aprobada.
+
+## División documental Base B aprobada — 2026-10-26 (append-only)
+
+Fuente directa: usuario «Apruebo la división documental base B de la propuesta
+consolidada», respuesta a la presentación inequívoca de esa división. Snapshot
+aprobado SHA-256: e1839ba8e851fce25dca611a2247229b7dec60496ce402e38327069f8fc5a4d0.
+
+- Base B: ficha/participantes, Gasto CAT013 y motor sin aportaciones D5. Las
+  Transferencias internas con Referencia compartida conservan su efecto bancario
+  y no acreditan recuperación.
+- Matriz de 39 AC: 18 completas para el alcance B, 11 parciales y 10 pendientes
+  de D5; se conservan sus IDs. AC-31 se limita a la rama P-F6 de B; no acredita
+  la rama R-MP futura.
+- AC-20 sigue en E3.2: contrato/read model central en B-T06/B-T08 y consumo por
+  informes aplazado en B-T11, UNRUN. B-T01–B-T10 son condiciones futuras para
+  aceptar B como entrega autónoma.
+- Limitación de métricas aprobada para B: una fuente ausente no es cero;
+  campos dependientes No disponible/Parcial. Neto = Bruto, coincidente con Coste
+  propio, en el caso 100% Titular verificable y sin incidencias. No se añade el
+  indicador Pendiente máximo.
+- D5-P1 queda resuelta como división documental de este alcance, sin demostrar
+  todavía viabilidad ni aceptación funcional. D5 es posterior, sin entrega
+  conjunta; su enmienda completa y la coordinación con spec05 mantienen gates propios.
+- Procedencia: OpenCode, Task EXT-OPENCODE-SPEC14-D5, sesión Spec14; revisión
+  Antigravity EXT-ANTIGRAVITY-SPEC14-BASEB-QA sobre el original e95a0c85…;
+  precisiones de Codex incorporadas al snapshot aprobado por el usuario.
+
+Contenido y trazabilidad completos en spec14 §14. Q1–Q7, F1–F5, P-F6, R-MP y
+R-CC no se reabren. El borrador D5 y su sustitución de AC-21 no se aprueban aquí;
+los 39 AC base se conservan. Esta aprobación no autoriza desarrollo B/dev14/D5,
+datos reales, SQL operativo, edición de spec05, importación histórica, merge ni
+despliegue. La publicación documental sigue la política Git; el merge de su PR
+exige aprobación separada.
