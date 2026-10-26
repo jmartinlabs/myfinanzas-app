@@ -149,9 +149,30 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   aprobaciones y gate, y esperar autorización explícita de DEV. No reanudar por inferencia.
 - **Checkpoint:** este archivo; no hay cambios sin commitear.
 
+## DEV autorizado y gate de versión repetido — 2026-10-26
+
+- **Autorización humana:** el usuario autorizó DEV de E4.1 conforme a SPEC19 rev8, aprobada
+  sobre `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, conservando las decisiones funcionales de
+  rev7. Merge y despliegue siguen **no** autorizados.
+- **Gate repetido inmediatamente antes de DEV (PASS para 16):** `git fetch origin` ejecutado;
+  `origin/main` = `f5bf032` (14) y su manifiesto generado es
+  `f262020fd1658cf0e7c873c32a0322479dbe91f67d3027e178f89b072a86c857` (111 objetos), idéntico
+  a `C14-VEHICULOS-C69E343`. `codex/dev14-base-b` y su remoto = `930d221` (15) con manifiesto
+  `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5` (122 objetos), idéntico
+  a `C15-COMPARTIDOS-AD2EDFE`. `codex/dev16-revision-comida` y su remoto = `4382f6c` (15) con
+  un manifiesto v15 distinto (124 objetos, `5baad4a8…1287fe`), que E4.1 **no** reconoce como
+  origen; no ocupa la 16. Ningún ref local/remoto declara `schemaVersion = 16`; la 16 sigue
+  libre. La 15 de Compartidos no se toca.
+- **Manifiestos congelados:** `apps/api/src/schema-contracts.json` se auto-verifica con sus tres
+  SHA-256 declarados (C14 histórico, C14 Vehículos y C15 Compartidos).
+- **Baseline:** `~/.local/python/3.12/bin/python3.12 scripts/verify baseline` → **PASS** sobre
+  HEAD documental `dc250ad`, incluida la comprobación de espacio en blanco.
+- **Checkout de DEV:** `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/pilot-e41`,
+  rama `codex/pilot-full-e41-instrumentos-compras-inversion`, HEAD `dc250ad`, árbol limpio. Un
+  único ejecutor de DEV; QA independiente posterior en checkout aislado.
+
 ## Siguiente acción
 
-La rev8 técnica (versión 16) está **aprobada**. Gate repetido a 2026-10-26: `origin/main` 14,
-15 reservada por Compartidos (`e4ff2df`, mismo manifiesto C15), 16 libre. Se solicita
-autorización separada de DEV; antes de implementar debe repetirse el gate. No merge ni
-despliegue.
+DEV de E4.1 autorizado y en curso sobre la rama del piloto. Al cerrar el candidato: commit,
+QA independiente en checkout aislado, `python3.12 scripts/verify --full`, actualización de la
+matriz del testplan, push de la rama y PR hacia `main` sin merge ni despliegue.
