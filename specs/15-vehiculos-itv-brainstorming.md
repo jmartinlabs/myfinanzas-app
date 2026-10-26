@@ -1,5 +1,9 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
-Status: DRAFT — Ronda 1 pendiente de respuestas; ninguna decisión aprobada.
+Status: Q1–Q5 confirmadas por el usuario el 2026-10-26; specification y wireframes
+pendientes de aprobación. Ninguna aprobación de desarrollo.
+Nota de lectura: los `PENDING` de la Ronda 1 y la sección Wireframes describen el
+momento de la pregunta; las respuestas confirmadas están al final y los wireframes
+propuestos se presentan en la specification para aprobación.
 Roadmap/context: [E3.3](roadmap.md) · [R4 y P2](functional-reference-v5.11.md) ·
 [E1.4 Movimientos](04-movimientos-specification.md) ·
 [E1.5 Referencias](05-transferencias-referencias-specification.md) ·
@@ -183,10 +187,38 @@ estados vacío/carga/cobertura parcial; concurrencia/idempotencia; auditoría; s
 y criterios de aceptación numerados con trazabilidad a E3.3-AC1..3.
 
 ## Wireframes
-Pendientes. Se presentarán después de esta ronda, junto con la specification completa,
+Presentados en la [specification §7](15-vehiculos-itv-specification.md#7-pantallas-y-wireframes)
 para revisión y aprobación separadas. No se considera aprobado ningún diseño por este
 documento.
 
 ## Append-only clarifications
 Las respuestas y rondas posteriores se anexarán al final; nunca se reescribirán las
 preguntas ni las respuestas anteriores.
+
+## Ronda 1 — Respuestas del usuario — 2026-10-26
+Estado: **CONFIRMADAS**. Fuente directa: mensaje del usuario «Apruebo las opciones
+recomendadas A para Q1–Q5, con estas precisiones». Se transcribe el contenido de
+decisión, sin convertirlo en aprobación de specification, wireframes, desarrollo15,
+SQL o merge.
+
+- **Q1 — APROBADA A.** Ficha mínima con Referencia como identidad estable, nombre
+  visible, matrícula opcional y fechas manuales. No incorporar marca, modelo ni
+  kilometraje.
+- **Q2 — APROBADA A.** Próxima ITV y cita son fechas independientes; la cita puede
+  estar vacía. Sin historial 1:N ni avisos automáticos.
+- **Q3 — APROBADA A.** Alta atómica, una ficha por REF de tipo Vehículo, sin unicidad
+  global de nombre/matrícula. Renombrar conserva ID e historia. No cambiar Tipo de
+  Referencia eliminando o recreando automáticamente la ficha; bloquear operaciones
+  incompatibles y exigir decisión explícita.
+- **Q4 — APROBADA A.** Gasto anual calculado exclusivamente desde Gastos reales
+  vigentes asociados a la REF y pertenecientes al año natural seleccionado por su
+  Fecha real, sin filtrar por Categoría/Partida ni mezclar planificación. Mostrar
+  cobertura parcial cuando no pueda garantizarse integridad histórica. Distinguir
+  ausencia de datos de cero comprobado.
+- **Q5 — APROBADA A.** Selector explícito de ejercicio, inicializado al año natural
+  actual. Sin arrastre entre ejercicios. No presentar años futuros sin datos como
+  importes cero verificados.
+
+Precisión transversal confirmada: mantener una única fuente de verdad para los Gastos
+en Movimientos, sin duplicar hechos ni introducir maestros adicionales. Las respuestas
+no autorizan implementación, modificaciones de base de datos ni merge.
