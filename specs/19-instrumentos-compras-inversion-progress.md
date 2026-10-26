@@ -171,8 +171,37 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   rama `codex/pilot-full-e41-instrumentos-compras-inversion`, HEAD `dc250ad`, árbol limpio. Un
   único ejecutor de DEV; QA independiente posterior en checkout aislado.
 
+## DEV y QA independiente — 2026-10-27
+
+- **Ejecutor DEV:** subagente real `ses_e85ef3979ffegZjzgMA7k0PzUT`, en el checkout del piloto.
+  Primer candidato `47a5b56` (implementación completa: esquema 16, API, motor, integraciones,
+  UI, tests y testplan).
+- **QA independiente 1:** subagente `ses_e85c21434ffeNTjIjccJrpxTZ2`, checkout aislado
+  `qa-e41` en `47a5b56`. Dictamen **CHANGES REQUIRED** con 8 hallazgos: UI ilegible/sin ficha
+  móvil; dos tests que fallarían en Linux; idempotencia de Instrumento con ISIN; pérdida de
+  precisión en `financeRevision` >2⁵³; cobertura AC insuficiente; orden de la compuerta de
+  manifiesto; detalles de foco/estado/error en UI; inmutabilidad SQLite/paginación.
+- **Correcciones DEV:** candidato `dba5825f237cee8216f2b7d60ef966d63c203e03`; corrige los ocho
+  hallazgos y amplía `inversiones-ac.test.ts` e `inversiones-backup.test.ts`.
+- **QA independiente 2:** checkout aislado `qa-e41-r2` en `dba5825`, mismo revisor.
+  Dictamen **PASS para publicar la rama y abrir PR, no para merge**. Matriz final: **48 PASS,
+  6 PARCIAL** (AC-03, AC-24, AC-27, AC-30, AC-33, AC-34), 0 FAIL funcional y 0 UNRUN
+  bloqueante. Residuales de cobertura/foco documentados en el testplan.
+- **Evidencia local (macOS):** focal
+  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts apps/api/src/flujo-mensual.test.ts`
+  → **34 pass / 0 fail / 442 aserciones**; typecheck **PASS**; build **PASS**; E2E Inversiones y
+  flujo mensual **2 passed**; capturas 390/1440 inspeccionadas por QA. `bun test apps/api`
+  nativo → 198 pass / 48 fail, todos por `libc.so.6`/`renameat2` de macOS; `scripts/verify
+  --full` no puede completar API/E2E en macOS. En simulación Linux (copia temporal con
+  `publishNewDirectory` compatible) backup/restore 13/14/15/16 y O4 **PASS**; quedan solo
+  artefactos de plataforma. La evidencia Linux/CI real es obligatoria antes de merge.
+- **Higiene:** sin datos reales, DB, claves, tokens, capturas versionadas ni cambios en
+  harness/CI/permisos. Sin push, PR, merge ni despliegue en esta fase.
+- **Workers:** ninguno activo tras el QA; solo el coordinador continúa.
+
 ## Siguiente acción
 
-DEV de E4.1 autorizado y en curso sobre la rama del piloto. Al cerrar el candidato: commit,
-QA independiente en checkout aislado, `python3.12 scripts/verify --full`, actualización de la
-matriz del testplan, push de la rama y PR hacia `main` sin merge ni despliegue.
+Publicar la rama `codex/pilot-full-e41-instrumentos-compras-inversion` y abrir PR hacia `main`
+con el candidato `dba5825` (más el checkpoint documental). Esperar CI Linux de `bun test
+apps/api`, backup/restore y `scripts/verify --full`; corregir si falla. **No merge ni despliegue**
+sin aprobación explícita del usuario tras el PR y CI verde.

@@ -62,17 +62,17 @@ motor único, límites de magnitud y cobertura parcial se marcan explícitamente
 | E4.1-AC-21 | Listado con `saldo`, `saldoEfectivo`, `saldoInversion`, fechas, Estado y paginación; búsqueda ISIN/nombre | `saldo` casa con efectivo o inversión; específicos estrechan; filtros/página estables; anuladas consultables; búsqueda normalizada y `%`/`_` literales | API real con >100 filas ficticias; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de filtros, orden y páginas |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-22 | Consultar ficha/posición de un Instrumento | Cantidad = suma de compras vigentes; sin Ventas, valor, resultado ni rentabilidad; «No disponible» sin 0; cobertura parcial visible | API/UI real; `bun test apps/api/src/compras.test.ts` + E2E | macOS local ejecutado; CI Ubuntu pendiente | Assertions de cantidad; PNG de ficha sin valoración |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-23 | Consultar `S003`, `S004` y `S001` antes/después de una Compra | Fórmula con ventas 0 estructural; efectivo separado de la posición; `S004` sigue sin valoración; `S001` no cambia; Ventas no instaladas | Motor puro + API; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de fórmula y DTO; comparación con Saldos |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-24 | Crear, rectificar y anular Compras; consultar referencia temporal | Máximo sin cambios por Compras; fuente Inversión «pendiente hasta E4.2» (E4.2-AC3); sin reloj ni fecha inventada | Motor de referencia + API; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de máximo igual y ausencia de `Date.now` |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
+| E4.1-AC-24 | Crear, rectificar y anular Compras; consultar referencia temporal | Máximo sin cambios por Compras; fuente Inversión «pendiente hasta E4.2» (E4.2-AC3); sin reloj ni fecha inventada | Motor de referencia + API; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de máximo igual y ausencia de `Date.now` | PARCIAL — creación/anulación cubiertas; rectificación verificada por QA en temporal, no versionada |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-25 | Rectificar Compra vigente con payload completo; repetir con revisión obsoleta y omitiendo `precio` | Impacto efectivo/cantidad antes/después; motivo/revisión; atómico; auditoría; posición recalculada; payload completo obligatorio; revisión obsoleta 409 `REVISION_CONFLICT` y campo omitido 422 `VALIDATION`, sin escritura | API/UI real; `bun test apps/api/src/compras.test.ts` + E2E | macOS local ejecutado; CI Ubuntu pendiente | Assertions de impacto, revisión, códigos y auditoría; PNG de preview |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-26 | Anular con revisión/motivo; repetir con la revisión ya vigente; revisión obsoleta | Queda Anulada, no computa, no se borra; segunda anulación 422 `VALIDATION` por Estado no elegible y revisión obsoleta 409 `REVISION_CONFLICT`, sin escritura; auditoría consultable | API real; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de estado, códigos, cantidad y auditoría |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-27 | Crear, rectificar y anular Compras; comparar Movimientos/Presupuesto | Sin cambio en número de Movimientos; sin Gasto/Compra, Partida, Referencia ni ejecución | API/SQLite, comparación antes/después; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de conteo y tablas de presupuesto |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
+| E4.1-AC-27 | Crear, rectificar y anular Compras; comparar Movimientos/Presupuesto | Sin cambio en número de Movimientos; sin Gasto/Compra, Partida, Referencia ni ejecución | API/SQLite, comparación antes/después; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de conteo y tablas de presupuesto | PARCIAL — no se crean Movimientos; comparación de tablas de Presupuesto verificada por QA en temporal, no versionada |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-28 | Transferir efectivo al bróker y después comprar | Dos hechos distintos; cada uno afecta al efectivo una vez; ninguno crea el otro | API real de Transferencia + Compra; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de dos IDs, efectivo y ausencia de relación automática |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-29 | Acceso sin sesión, sin CSRF/Origin y error interno | 401/403; sin escritura; errores sin SQL/importes/tokens; sin DELETE ni fixtures | HTTP real MFA/Origin/CSRF; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de códigos y logs/errores saneados |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-30 | Recorrer listado, ficha, alta, W7/W8 y W9/W10 a 390/1440 con teclado; comprobar filtro de Estado y alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas, sin overflow, tema claro, borrador conservado, botones deshabilitados sin motivo; en W1/W4 «Todos» muestra `I1003` Inactiva y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9/W10 cubren rectificación y anulación | Playwright real, capturas 390×844 y 1440×1000; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG ficticios inspeccionados `artifacts/e4-1/`; notas de foco/overflow |  PASS — E2E ejecutado  |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
+| E4.1-AC-30 | Recorrer listado, ficha, alta, W7/W8 y W9/W10 a 390/1440 con teclado; comprobar filtro de Estado y alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas, sin overflow, tema claro, borrador conservado, botones deshabilitados sin motivo; en W1/W4 «Todos» muestra `I1003` Inactiva y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9/W10 cubren rectificación y anulación | Playwright real, capturas 390×844 y 1440×1000; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG ficticios inspeccionados `artifacts/e4-1/`; notas de foco/overflow | PARCIAL — capturas 390/1440 y flujo visual PASS; navegación completa por teclado y foco del impacto no automatizados |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-31 | Provocar vacío, carga, error de fuente, 409 y sesión expirada | Estados distintos/accionables; «No disponible» con motivo; sin 0 ficticio; borrador conservado | Playwright con API real e intercepción solo de estados; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de estados; assertions de borrador y foco |  PASS — E2E ejecutado  |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-32 | Inspeccionar IDs y auditorías dedicadas; intentar UPDATE/DELETE sobre ellas | IDs únicos/inmutables; una fila por revisión con actor, UTC, motivo y JSON antes/después; triggers abortan; `audit` sin cambios | SQLite/API; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de IDs, filas de auditoría y triggers; sin DELETE |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-33 | (a) actualizar una base 13→16 sin tablas v14/v15; (b) verificar el manifiesto histórico `C14-COMPARTIDOS-FCE1107` y comprobar que su v14 se rechaza/bloquea como origen no admitido; (c) verificar `C14-VEHICULOS-C69E343` y actualizar su fixture v14 a 16; (d) verificar el manifiesto real `C15-COMPARTIDOS-AD2EDFE` y actualizar su fixture v15 con filas sintéticas de Compartidos y Vehículos a 16, comprobando preservación de tablas/filas; (e) intentar abrir variantes v14/v15 desconocidas o incompletas; (f) abrir una base marcada 17; (g) ejecutar el gate pre-DEV con `main` en 16+, la 16 ocupada, `main` en 14/15 no verificado o manifiestos/hashes sin registrar; (h) inspeccionar rutas 13→16, 14→16 y 15→16, compuertas y restore de 13, 14/15 verificadas, 14/15 desconocidas o no admitidas y 16 en directorios nuevos | (a) sube 13→16 conservando filas y con Instrumentos/Compras/auditorías; (b) el manifiesto histórico v14 de Compartidos coincide y su base se rechaza/bloquea sin mutar, sin producir un v16 incompleto; (c) el manifiesto v14 de Vehículos coincide y 14→16 preserva tablas y filas; (d) el manifiesto v15 real coincide y 15→16 preserva `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`, `fichas_vehiculo`, `referencias`, contadores y filas, sin reejecutar 14→15 ni reseedear; (e) variantes desconocidas/incompletas se rechazan antes de `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup/`schema_version`, con el literal v14 o v15 correspondiente y sin escribir; (f) la 17 se rechaza antes de mutar; (g) si `main` está en 16+, la 16 está ocupada, falta un contrato/hash o `main` trae un v14/v15 no verificado, el gate se detiene y no se implementa la 16; (h) migración aditiva sin `DROP`/`ALTER` destructivo; `database.ts` reordena, `database-identity.ts` admite `1..16`, `database-schema.ts` `[1..15, version]`, `backup.ts` `1..16`, etiqueta `e4.1-v16`; restore verifica manifiestos v14/v15, copias de 13/14/15 no incorporan tablas v16, copia desconocida o no admitida no se publica, copia 16 recupera Instrumentos/Compras/auditorías y vacía intentos/sesiones; rollback íntegro | Fixtures aisladas de `fce1107`, `c69e343` y `ad2edfe` con manifiesto y SHA-256; fixture v15 con filas sintéticas; manifiestos negativos; upgrade 13/14/15→16; rearranque 16; versión 17; gate con refs locales/remotos; restore aislado 13/14/15/16 y copia desconocida; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado (restore UNRUN); CI Linux glibc obligatorio; gate pre-DEV manual/CI sobre refs locales/remotos | Assertions de manifiesto/hash, preservación de filas, rechazo sin mutación, etiqueta, rechazo de 17, gate de destino y restauración con intentos vacíos; salida de suite |  PASS migraciones/rechazos y backup/restore 13/14/15/16 en simulación Linux; gate pre-DEV manual PASS; macOS restore UNRUN  |  `bun test apps/api/src/inversiones-backup.test.ts apps/api/src/vehiculos-backup.test.ts` (Linux/simulación) + `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | «No disponible» con causa concreta; identidad/filtros conservados; sin 0, reparación ni guardado que presuma integridad | API/UI con fallo de fuente; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de error; assertions de motivo y ausencia de escritura |  PASS — E2E ejecutado  |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
+| E4.1-AC-33 | (a) actualizar una base 13→16 sin tablas v14/v15; (b) verificar el manifiesto histórico `C14-COMPARTIDOS-FCE1107` y comprobar que su v14 se rechaza/bloquea como origen no admitido; (c) verificar `C14-VEHICULOS-C69E343` y actualizar su fixture v14 a 16; (d) verificar el manifiesto real `C15-COMPARTIDOS-AD2EDFE` y actualizar su fixture v15 con filas sintéticas de Compartidos y Vehículos a 16, comprobando preservación de tablas/filas; (e) intentar abrir variantes v14/v15 desconocidas o incompletas; (f) abrir una base marcada 17; (g) ejecutar el gate pre-DEV con `main` en 16+, la 16 ocupada, `main` en 14/15 no verificado o manifiestos/hashes sin registrar; (h) inspeccionar rutas 13→16, 14→16 y 15→16, compuertas y restore de 13, 14/15 verificadas, 14/15 desconocidas o no admitidas y 16 en directorios nuevos | (a) sube 13→16 conservando filas y con Instrumentos/Compras/auditorías; (b) el manifiesto histórico v14 de Compartidos coincide y su base se rechaza/bloquea sin mutar, sin producir un v16 incompleto; (c) el manifiesto v14 de Vehículos coincide y 14→16 preserva tablas y filas; (d) el manifiesto v15 real coincide y 15→16 preserva `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`, `fichas_vehiculo`, `referencias`, contadores y filas, sin reejecutar 14→15 ni reseedear; (e) variantes desconocidas/incompletas se rechazan antes de `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup/`schema_version`, con el literal v14 o v15 correspondiente y sin escribir; (f) la 17 se rechaza antes de mutar; (g) si `main` está en 16+, la 16 está ocupada, falta un contrato/hash o `main` trae un v14/v15 no verificado, el gate se detiene y no se implementa la 16; (h) migración aditiva sin `DROP`/`ALTER` destructivo; `database.ts` reordena, `database-identity.ts` admite `1..16`, `database-schema.ts` `[1..15, version]`, `backup.ts` `1..16`, etiqueta `e4.1-v16`; restore verifica manifiestos v14/v15, copias de 13/14/15 no incorporan tablas v16, copia desconocida o no admitida no se publica, copia 16 recupera Instrumentos/Compras/auditorías y vacía intentos/sesiones; rollback íntegro | Fixtures aisladas de `fce1107`, `c69e343` y `ad2edfe` con manifiesto y SHA-256; fixture v15 con filas sintéticas; manifiestos negativos; upgrade 13/14/15→16; rearranque 16; versión 17; gate con refs locales/remotos; restore aislado 13/14/15/16 y copia desconocida; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado (restore UNRUN); CI Linux glibc obligatorio; gate pre-DEV manual/CI sobre refs locales/remotos | Assertions de manifiesto/hash, preservación de filas, rechazo sin mutación, etiqueta, rechazo de 17, gate de destino y restauración con intentos vacíos; salida de suite | PARCIAL — migraciones, rechazos y backup/restore 13/14/15/16 PASS en simulación Linux; gate manual; macOS restore UNRUN y auditorías restauradas sin aserción específica |  `bun test apps/api/src/inversiones-backup.test.ts apps/api/src/vehiculos-backup.test.ts` (Linux/simulación) + `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
+| E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | «No disponible» con causa concreta; identidad/filtros conservados; sin 0, reparación ni guardado que presuma integridad | API/UI con fallo de fuente; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de error; assertions de motivo y ausencia de escritura | PARCIAL — error de Compras cubierto; error de fuente de efectivo no probado extremo a extremo |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-35 | Retroactiva con apertura 1.000,00; entrada 500,00 el 2026-02-01; salida 1.800,00 el 2026-03-01; Compra de 100,00 el 2026-02-10; repetir con salida 200,00; mismo día con entrada 100,00 y Compra 1.050,00 / 1.150,00 | Primer caso 422 `INSUFFICIENT_CASH` con fecha 2026-03-01 y mínimo −400,00; segundo 201 y saldo posterior 1.200,00; mismo día: 1.050,00 aceptada (cierre 50,00) y 1.150,00 rechazada con fecha 2026-02-10 y mínimo −50,00, independiente del orden | API + motor puro de suficiencia con ventana posterior; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de 422/201, código, fecha, importe del mínimo y tablas sin cambio |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-36 | Instrumento con Compra USD (cambio 0,900000); editar su divisa de referencia a EUR | Solo cambia el maestro con auditoría; la Compra conserva USD, 0,900000, precio, 1.125,00 € y comisión; efectivo/cantidad iguales | API/SQLite; `bun test apps/api/src/instrumentos.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de campos históricos y auditoría del maestro |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-37 | Abrir listado, ficha y W7/W8 con posiciones calculadas | Declaración de cobertura parcial visible; no se presenta como posición completa; sin 0 ni datos no registrados | Playwright real; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de listado/ficha con la etiqueta; assertion de texto |  PASS — E2E ejecutado  |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
@@ -135,10 +135,15 @@ Antes de DEV debe repetirse el gate completo sobre refs locales y remotos; si `m
 
 ## Regression checks
 
-Ejecutado focalmente el 2026-10-26: `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` (21 pruebas, 317 aserciones, más backup/restore en simulación Linux), regresiones seleccionadas y E2E `tests/e2e/inversiones.spec.ts`. Typecheck y build PASS. La matriz de 54 AC queda cubierta por API/SQLite real y navegador, con AC-03 marcado PARCIAL por la carrera de dos procesos; los ensayos Linux/glibc se ejecutaron en una copia temporal con `publishNewDirectory` monkeypatcheado; en macOS nativo quedan UNRUN y no se declaran PASS.
-Conservar las regresiones de Saldos, Movimientos, Transferencias, Deuda, Ciclos, Referencia
-temporal, autenticación, backups y restauración. Un fallo esperado de fixture negativa no es
-fallo de suite. macOS no sustituye la evidencia Linux/glibc de publicación/restauración.
+Ejecutado el 2026-10-27 sobre el candidato `dba5825f237cee8216f2b7d60ef966d63c203e03`:
+`bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts apps/api/src/flujo-mensual.test.ts`
+→ **34 pass / 0 fail / 442 aserciones**. Typecheck, build y E2E de Inversiones y flujo mensual
+**PASS**. La matriz queda en **48 PASS y 6 PARCIAL** (AC-03, AC-24, AC-27, AC-30, AC-33 y
+AC-34), sin FAIL funcional ni UNRUN bloqueante; los residuales están justificados en la propia
+matriz. El backup/restore y las compuertas Linux/glibc se verificaron en una copia temporal con
+`publishNewDirectory` compatible con macOS; en macOS nativo esos ensayos siguen UNRUN y no se
+declaran PASS. La revisión independiente emitió **PASS para publicar la rama y abrir PR**, no
+para merge; la evidencia Linux/CI sigue siendo obligatoria.
 
 Regresiones de integración con expectativa que cambia (H1-1, H1-2, H3-8, N1–N4). No son
 fallos: son el efecto declarado de hacer disponible el motor de `Efectivo`/`Inversiones` y de
@@ -222,55 +227,58 @@ sin condicionales.
 
 ## Functional verification
 
-PASS focal en API/SQLite real. La matriz tiene 54 AC (47 funcionales de E4.1 y 7 de
-integración/regresión). Las verificaciones previstas incluyen API/SQLite real,
-comparación de tablas antes/después, dos procesos para concurrencia, rollback inyectado,
-upgrade de esquema 13→16, 14→16 y 15→16 con fixtures congelados de Compartidos v14 (`fce1107`),
-Vehículos (`c69e343`) y Compartidos v15 (`ad2edfe`), manifiestos canónicos y SHA-256, rechazo
-antes de mutar de variantes v14/v15 desconocidas o incompletas, preservación de las filas
-sintéticas de Compartidos v15, restauración aislada de 13, 14/15 verificadas, 14/15
-desconocidas y 16 en directorio nuevo (sin mezclar esquemas y con intentos vacíos), rechazo de
-la versión 17 y gate pre-DEV sobre refs locales/remotos, igualdad al céntimo
-entre `/api/saldos/{id}` y el endpoint de efectivo, y el determinismo de la convención de fin de
-día. Los casos AC-35, AC-36, AC-37, AC-38, AC-39, AC-46, AC-50, AC-51, AC-52, AC-53 y AC-54
-cubren respectivamente retroactividad negativa, preservación de divisa/factor histórico,
-cobertura parcial, motor único, flag de Liquidez, rectificación retroactiva, límites de
-entrada, cálculo interno exacto, no-escritura de impacto/GET, contexto invalidado por una
-Compra —incluida la sobre-invalidación global de una vista previa ajena— y validación de
-longitudes/divisa/comisión. Los códigos de error se comprueban literalmente:
-`INSUFFICIENT_CASH` (422), `REVISION_CONFLICT` (409), `IMPACT_CHANGED` (409),
-`HISTORY_LOCKED` (409), `VALIDATION` (422) y `NOT_FOUND` (404). No se declara PASS por
-inspección documental ni por wireframes.
+**PASS** en API/SQLite real con **48 AC PASS y 6 PARCIAL** (AC-03, AC-24, AC-27, AC-30, AC-33
+y AC-34), sin FAIL funcional. La matriz tiene 54 AC (47 funcionales de E4.1 y 7 de
+integración/regresión). Se ejecutaron API/SQLite real, comparación de tablas antes/después,
+dos procesos para concurrencia, rollback inyectado, upgrades 13→16/14→16/15→16 con fixtures
+congelados de Compartidos v14 (`fce1107`), Vehículos (`c69e343`) y Compartidos v15
+(`ad2edfe`), manifiestos canónicos y SHA-256, rechazo antes de mutar de variantes desconocidas
+o incompletas, preservación de filas sintéticas, backup/restore 13/14/15/16 en directorio nuevo
+en simulación Linux, rechazo de la versión 17 e igualdad al céntimo entre `/api/saldos/{id}` y
+el endpoint de efectivo. También se comprobaron la huella exacta por encima de 2⁵³, la
+idempotencia de Instrumento y Compra, el orden de la compuerta de manifiesto, el trigger de
+identidad de Compra y la no-escritura de GET/impacto con snapshot. Los códigos de error se
+comprueban literalmente: `INSUFFICIENT_CASH` (422), `REVISION_CONFLICT` (409),
+`IMPACT_CHANGED` (409), `HISTORY_LOCKED` (409), `VALIDATION` (422), `NOT_FOUND` (404) e
+`IDEMPOTENCY_CONFLICT` (409). Los residuales PARCIAL no bloquean la publicación: AC-03 carece
+de carrera real de alta; AC-24/AC-27 tienen verificación QA temporal no versionada; AC-30 no
+automatiza toda la navegación por teclado/foco; AC-33 no prueba la copia v15 desconocida ni
+las auditorías restauradas; AC-34 solo simula el error de Compras. La evidencia Linux/CI
+completa sigue pendiente y es requisito de merge.
 
 ## Browser verification (web only)
 
-PASS en Playwright con API/SQLite reales: listado, ficha/posición, alta, pestaña Compras
-(W7/W8) e impacto/rectificación/anulación (W9/W10) a 390×844 y 1440×1000; inspeccionar capturas ficticias, teclado/foco, etiquetas, contraste real,
-ausencia de overflow, estados deshabilitados sin motivo y devolución del foco al aviso. La
-nota de cobertura histórica no importada de Liquidez se comprueba en
-`tests/e2e/flujo-mensual.spec.ts` sobre el bloque «Liquidez actual». No guardar DB,
-credenciales, tokens, storageState, factores ni trazas. La intercepción de red solo puede
-modelar estados transitorios; las escrituras exitosas deben ser reales.
+**PASS** en Playwright con API/SQLite reales: listado, ficha/posición, alta, pestaña Compras
+(W7/W8) e impacto/rectificación/anulación (W9/W10) a 390×844 y 1440×1000. La revisión
+independiente inspeccionó capturas reales y confirmó ausencia de solapamiento/importes
+partidos, listas móviles de posiciones y compras en la ficha, borrador conservado, foco en el
+aviso de conflicto y botón de recarga de revisión. Residual AC-30: la navegación completa por
+teclado y el foco del panel de impacto no están automatizados; el foco sobre el `h2` del
+impacto es un no-op conocido. La nota de cobertura histórica no importada de Liquidez se
+comprueba en `tests/e2e/flujo-mensual.spec.ts` sobre el bloque «Liquidez actual». No se
+guardaron DB, credenciales, tokens, storageState, factores ni trazas en el repositorio.
 
 ## Visual improvements (visual apps only)
 
-No hay UI implementada que inspeccionar; no se inventa una evaluación visual desde los
-wireframes. Las cinco mejoras se evaluarán sobre la UI real:
-1. Claridad de la separación efectivo/posición y de la cantidad por Saldo, incluidos varios
-   Saldos de efectivo sin agregado.
-2. Legibilidad del desglose cantidad/precio/divisa/cambio/EUR/comisión en 390.
-3. Impacto antes/después de rectificar/anular sin perder el contexto ni el motivo.
-4. Estados «No disponible», «Sin posiciones», «Anulada» y cobertura parcial distinguibles.
-5. Foco, teclado y orden de lectura en formularios de tres bloques y en el panel de impacto.
+Evaluación sobre la UI real del candidato `dba5825`:
+1. Separación efectivo/posición y cantidad por Saldo: PASS, incluidos varios Saldos de
+   efectivo sin agregado.
+2. Legibilidad del desglose cantidad/precio/divisa/cambio/EUR/comisión a 390: PASS tras
+   corregir tablas y añadir listas móviles.
+3. Impacto antes/después de rectificar/anular: PASS, conserva contexto y motivo; residual de
+   foco del panel.
+4. Estados «No disponible», «Sin posiciones», «Anulada» y cobertura parcial: PASS y
+   distinguibles.
+5. Foco, teclado y orden de lectura: PARCIAL; el foco de error es visible, pero el panel de
+   impacto y la navegación completa por teclado quedan como residual AC-30.
 
 ## Limitations and next action
 
-Aprobado como diseño rev7 con ajuste técnico rev8 aprobado, sin código ni UI; sin ejecución de suites. Los comandos y rutas de
-prueba son propuestas verificadas contra `package.json`, `playwright.config.ts` y
-`scripts/verify`. El aplazamiento de DT7 a E4.5/E4.12 está registrado en la especificación
-(§5.2, §12, §14) y no se prueba en E4.1 porque no hay importación. Antes de DEV se revalida
-obligatoriamente el destino con `origin/main` y las reservas abiertas, y se congelan los
-manifiestos v14/v15 con sus SHA-256; si `main` está en 16 o más, la 16 se ocupa, la 15 cambia
-de contrato o falta un manifiesto, esta spec se detiene y se renumera o completa. Siguiente acción: gate de destino y manifiestos;
-después, autorización separada de desarrollo. No implementar, commitear ni ejecutar suites
-todavía.
+Implementación y revisión independiente completadas el 2026-10-27 sobre SPEC19 rev8. Candidato
+`dba5825f237cee8216f2b7d60ef966d63c203e03`; QA independiente **PASS para publicar rama y abrir
+PR, no para merge**. La evidencia Linux/CI de `bun test apps/api`, backup/restore y
+`scripts/verify --full` sigue siendo obligatoria antes de merge. macOS no sustituye esa
+evidencia por la limitación `libc.so.6`/`renameat2`. El aplazamiento de DT7 a E4.5/E4.12 sigue
+registrado en la especificación (§5.2, §12, §14) y no se prueba en E4.1. No hay merge ni
+despliegue autorizados; el merge requiere aprobación explícita del usuario tras el PR y CI
+verde.
