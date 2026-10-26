@@ -6,6 +6,12 @@ base B aprobada en §14 (usuario, 2026-10-26). Brainstorming:
 Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.md).
 
 ## Current checkpoint
+Actualización Codex2026-10-26: usuario autorizó corrección focal de sentencia
+de semilla sin finalizar. Aplicado try/finally insert.finalize en prepareSchema;
+regresiones de cierre/rollback4PASS, control original4FAIL; focal Compartidos+
+cierre13PASS/184assertions, tiposPASS. CI Linux nuevo candidato pendiente.
+No causaB3 demostrada, no merge/deploy. Detalle vigente al final del testplan.
+
 Current state: CANDIDATE FOR INDEPENDENT QA — Base B implementada y verificada
 localmente en lo posible; gate local PARCIAL por límites de plataforma macOS
 (backup/restore y suite completa Linux pendientes). No es aceptación de E3.2.

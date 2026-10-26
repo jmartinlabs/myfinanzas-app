@@ -197,3 +197,25 @@ Reejecución focal local O4 tras ajuste: FAIL ERR_DLOPEN_FAILED libc.so.6 en
 backup/private-state.ts:216, después de 34 assertions. No es PASS de O4 ni
 prueba de restore; validación completa del ajuste pendiente de CI Linux.
 Se corrige además la enumeración documental: AC-03 es parcial, no B-completa.
+
+### Corrección focal de lifecycle autorizada — 2026-10-26
+
+Usuario «autorizo» tras propuesta verificable de corregir la sentencia de semilla
+sin finalizar; no merge ni despliegue. Codex añade try/finally insert.finalize
+en prepareSchema, sin cambiar filas/counters/transacción ni política de apertura.
+No modifica B3,3000ms, retries o validadores financieros.
+
+Regresión nueva database-schema.test.ts: demo y producción ficticios verifican
+liberación inmediata tras close() normal, datos/identidad/integridad preservados,
+y fallo de inserción real con rollback de todas las tablas y recursos liberados.
+Observación de fds: /proc en Linux, lsof del PID propio en macOS. SinGC ni retries.
+
+- Focales Compartidos+cierre:13PASS/0FAIL/184assertions en macOS/Bun1.4.3.
+- Typecheck PASS; diff-check PASS.
+- Control negativo: código originalb7bcbb6 con nuevas regresiones=>0PASS/4FAIL,
+  todas por archivos retenidos. Parche restaurado; focal cierre4PASS/0FAIL.
+- CI Linux del nuevo candidato pendiente. Corregir retención no demuestra
+  por sí solo causa ni resolución definitiva de la intermitenciaB3.
+- CI normal de PR77/run40332705052, producto anteriorb7bcbb6 sin preload:
+  API219PASS/E2E8PASS/requiredPASS; compatibilidad acreditada en esa ejecución,
+  no sustituye checks del nuevo candidato ni cierraB3.

@@ -142,50 +142,54 @@ export function prepareSchema(db: Database, identity: Identity) {
           `INSERT INTO saldos VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
         );
         const time = "2026-01-01T00:00:00.000Z";
-        insert.run(
-          "S000",
-          "Exterior técnico",
-          "Exterior",
-          "Exterior",
-          "Activa",
-          null,
-          0,
-          0,
-          0,
-          null,
-          null,
-          null,
-          null,
-          1,
-          time,
-          time,
-        );
-        if (identity.origin === "demo")
-          for (const [id, nombre, tipo, control] of [
-            ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
-            ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
-            ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
-            ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
-            ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
-          ])
-            insert.run(
-              id,
-              nombre,
-              tipo,
-              control,
-              "Activa",
-              null,
-              0,
-              0,
-              0,
-              null,
-              null,
-              null,
-              null,
-              1,
-              time,
-              time,
-            );
+        try {
+          insert.run(
+            "S000",
+            "Exterior técnico",
+            "Exterior",
+            "Exterior",
+            "Activa",
+            null,
+            0,
+            0,
+            0,
+            null,
+            null,
+            null,
+            null,
+            1,
+            time,
+            time,
+          );
+          if (identity.origin === "demo")
+            for (const [id, nombre, tipo, control] of [
+              ["S001", "Cuenta cotidiana demo", "Efectivo", "Movimientos"],
+              ["S002", "Tarjeta terminal demo", "Efectivo", "Terminal"],
+              ["S003", "Efectivo de inversión demo", "Efectivo", "Inversiones"],
+              ["S004", "Cartera de inversión demo", "Inversión", "Inversiones"],
+              ["S005", "Reserva sin control demo", "Efectivo", "No controlado"],
+            ])
+              insert.run(
+                id,
+                nombre,
+                tipo,
+                control,
+                "Activa",
+                null,
+                0,
+                0,
+                0,
+                null,
+                null,
+                null,
+                null,
+                1,
+                time,
+                time,
+              );
+        } finally {
+          insert.finalize();
+        }
         db.run("INSERT OR IGNORE INTO counters VALUES('saldo',?)", [
           identity.origin === "demo" ? 6 : 1,
         ]);
