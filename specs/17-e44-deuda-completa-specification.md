@@ -1,15 +1,8 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Q1–Q7 tienen respuesta
-registrada en la herramienta `question`; el **mensaje humano original y su procedencia
-independiente están pendientes de contraste**. La especificación y los wireframes **NO están
-aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel, datos reales, merge ni
-despliegue. No se declara E4.4 aprobada ni implementada.
+Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex; la especificación y los wireframes **NO están aprobados**. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
 
-Approval source/date: **PENDIENTE**. La respuesta registrada de Q1–Q7 (herramienta
-`question`, 2026-10-26) no equivale a un mensaje humano original, a aprobar esta
-especificación ni a aprobar sus wireframes. Evidencia y límites:
-[brainstorming](17-e44-deuda-completa-brainstorming.md#evidencia-de-confirmación-q1q7--2026-10-26).
+Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7; no autoriza specification, wireframes, merge ni desarrollo. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
 
 Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md),
 [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
@@ -771,9 +764,7 @@ funcionalidad.
 
 ## Approval and next action
 
-- **Decisiones financieras/materiales:** Q1–Q7 tienen respuesta registrada con la
-  herramienta `question` el 2026-10-26; el mensaje humano original/procedencia independiente
-  está **pendiente de contraste**. No se declaran aprobadas por esta spec.
+- **Decisiones financieras/materiales:** Q1–Q7 confirmadas expresamente por el usuario el 2026-10-27; evidencia directa y alcance en brainstorming. No supone aprobación de esta spec.
 - **Especificación/wireframes:** **NO aprobados**. Pendiente de revisión final de Codex y
   aprobación explícita del usuario.
 - **QA independiente:** se coordinó sobre SHAs concretos; el revisor no aprueba reglas

@@ -6,6 +6,9 @@ procedencia independiente están pendientes de contraste**. La especificación y
 wireframes **NO están aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel,
 datos reales, merge ni despliegue.
 
+
+**Estado vigente — 2026-10-27:** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Sustituye únicamente los estados históricos de contraste pendiente conservados abajo; specification/wireframes no aprobados.
+
 Roadmap/context: [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
 [E1.6](06-deuda-specification.md), [R2/R5 y P4–P7](functional-reference-v5.11.md),
 [spec04](04-movimientos-specification.md), [spec05](05-transferencias-referencias-specification.md),
@@ -262,3 +265,17 @@ El feedback del usuario y de Codex queda pendiente; no se adelanta un Ciclo de U
   spec/wireframes siguen en revisión y no aprobadas.
 - Pendiente: revisión final de Codex y aprobación explícita; después, autorización separada
   de dev. No se inicia desarrollo por publicar esta rama/PR.
+
+## Confirmación humana Q1–Q7 — 2026-10-27
+
+Fuente: mensaje directo del usuario en el chat supervisor Codex «Supervisar especificación E4.4», posterior a la presentación de las siete preguntas.
+
+> Confirmo Q1–Q7 en los términos propuestos.
+>
+> Mantener la separación entre capital real calculado, condiciones informativas, histórico precontrol y saldo declarado para conciliación. Sin operaciones ficticias ni ajustes automáticos.
+>
+> Esta confirmación cierra únicamente las siete decisiones funcionales. No autoriza todavía la specification, los wireframes, el merge ni el desarrollo.
+
+Quedan confirmadas D1–D7: capital pendiente E1.6; condiciones opcionales e informativas; histórico/precontrol solo consultable en E4.4, sin POST/PATCH; corte civil inclusivo no futuro y solo hechos; tipo explícito opcional; saldo declarado separado sin ajuste; comisiones/penalizaciones excluidas. La aportación/corrección del histórico requiere proceso futuro autorizado. No se atribuye aprobación retroactiva a la selección `question` del 26/10.
+
+Próximo gate: aprobación explícita de specification y wireframes concretos; merge de PR85 y desarrollo siguen siendo autorizaciones separadas.
