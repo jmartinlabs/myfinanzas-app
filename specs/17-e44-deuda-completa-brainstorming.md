@@ -29,7 +29,7 @@ ni despliegue.
 | Ownership | Sin otro ejecutor, borrador o rama E4.4 con ownership vigente |
 | Trabajo ajeno | D5/DEV16/E4.1 no contactados, reasignados ni modificados; checkout principal con cambios ajenos intacto |
 | Referencia | v5.11(7) candidata, **no estable**; Codex no ha inspeccionado el Excel ni importado datos reales |
-| Estado E1.6 | Implementada e integrada PR #34/`cb9ba3b`; 30 AC actuales verificados y AC-31–33 conservados como contratos futuros. No se reabren Q1–Q4 |
+| Estado E1.6 | Implementada e integrada PR #34/`cb9ba3b`; 30 AC actuales verificados y `E1.6-AC-31…33` conservados como contratos futuros. No se reabren Q1–Q4 |
 | Estado main | Esquema SQLite v15; E4.4 no fija una versión futura ni escribe SQL |
 
 ### Fuentes leídas
@@ -77,7 +77,7 @@ arquitectura, UI, calidad y seguridad. No se recargaron documentos completos sin
 | Validación de desglose, exceso, fecha, Referencias y Ciclos | **Conciliación desde apertura** con saldo declarado opcional y diferencias visibles |
 | Migración v6→v7, backup/restore, MFA/CSRF, idempotencia y auditoría | Compatibilidad con main v15, nuevos campos opcionales, registros de conciliación y consulta por corte |
 | UI mínima de listado/ficha/alta y pagos | Wireframes 1440/390 de consulta, detalle, histórico, corte, conciliación, vacíos y errores |
-| AC-31–33 futuros de E1.6 | AC de E4.4 y contrato de consumo para E4.6/E4.7, sin duplicar E1.6 |
+| `E1.6-AC-31…E1.6-AC-33` futuros de E1.6 | AC de E4.4 (IDs locales) y contrato de consumo para E4.6/E4.7, sin duplicar E1.6 |
 
 E4.4 **no remodela** Saldos ni Movimientos, no crea un segundo ledger y no convierte a Deuda
 en Saldo. La spec06 sigue siendo la autoridad del motor mínimo; esta spec la consume y
@@ -143,8 +143,9 @@ que exista en la fuente?
 ### Q5 — Distinción de hipoteca
 
 - [x] **Recomendada — atributo explícito con Sin informar**: Hipotecaria / No hipotecaria /
-  Sin informar; opcional; sin inferencia desde Partida, nombre o importe; las Deudas
-  existentes quedan Sin informar. No se modela activo inmobiliario, LTV ni garantía.
+  null (= Sin informar); opcional; sin inferencia desde Partida, nombre o importe; las
+  Deudas existentes quedan null/Sin informar. No se modela activo inmobiliario, LTV ni
+  garantía. `Sin informar` es una etiqueta de presentación, no un literal persistido.
 - [ ] Obligatorio en altas nuevas.
 - [ ] Módulo de activo inmobiliario (fuera de alcance).
 
@@ -181,7 +182,7 @@ que exista en la fuente?
 | E4.4-D2 | Condiciones informativas y opcionales; sin cálculo ni historial por defecto | TIN/TAE/cuota/condiciones no son operandos |
 | E4.4-D3 | Histórico/precontrol R5 de solo lectura; sin reconstrucción | Bloque histórico separado; no se suma al capital |
 | E4.4-D4 | Corte civil arbitrario, inclusivo, solo hechos; sin fotos | Vista calculada; límites de reconstrucción explícitos |
-| E4.4-D5 | Tipo de Deuda explícito Hipotecaria/No hipotecaria/Sin informar | Sin activo inmobiliario ni inferencia |
+| E4.4-D5 | Tipo de Deuda explícito `Hipotecaria`/`No hipotecaria`/`null` (= Sin informar) | Sin activo inmobiliario ni inferencia |
 | E4.4-D6 | Conciliación contra saldo declarado; sin ajuste económico | Diferencia visible; corrección/auditoría |
 | E4.4-D7 | Comisiones/penalizaciones excluidas | No se amplía el desglose E1.6 |
 

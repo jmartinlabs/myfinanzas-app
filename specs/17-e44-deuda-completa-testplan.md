@@ -47,25 +47,25 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | --- | --- | --- | --- | --- | --- | --- |
 | AC-01 | R2 | Alta D001 con apertura/Inicio/tipo/condiciones/histórico | Falta de campos obligatorios, campos derivados o Saldo/Movimiento de apertura | API DTO + SQL: una Deuda, cero Movimientos/Saldos nuevos | `deudas.test.ts`; Bun/SQLite | UNRUN |
 | AC-02 | R7/R12 | TIN 2,5 / TAE 2,8 / cuota 100 / condiciones | Tasa/importe no exacto, fuera de límite, intención de calcular | DTO exacto; ningún interés/cuota/cuadro derivado; 422 | API/UI; Bun/Playwright | UNRUN |
-| AC-03 | R6/R5 | Hipotecaria, No hipotecaria, Sin informar; filtro | Inferir por nombre/Partida; sumar a Saldos; crear activo | DTO enum; listado filtrado; `sqlite_master` sin activo; Saldos intactos | API/UI; Bun | UNRUN |
+| AC-03 | R6/R5 | Hipotecaria, No hipotecaria, null (= Sin informar); filtro | Persistir el literal `Sin informar`; inferir por nombre/Partida; sumar a Saldos; crear activo | DTO enum/null; listado filtrado; `sqlite_master` sin activo; Saldos intactos | API/UI; Bun | UNRUN |
 | AC-04 | R1/R3 | Histórico R5 completo y parcial | Backfill, cero implícito, intento de usarlo como operando | Campos null/exactos; capital solo E1.6; sin reconstrucción | API/SQL; Bun | UNRUN |
 | AC-05 | R4 | Relación `capitalInicial − apertura = amortizadoHistorico` correcta | Diferencia de un céntimo | Aviso exacto, no bloqueo del dato fuente, capital intacto | API DTO; Bun | UNRUN |
-| AC-06 | R1/R2 | Cuota 100 (80/20) + extraordinaria 200 desde control | Precontrol, anulado, otro Dxxx, cuota completa o intereses | Deuda 720; aplicado 280; sin doble resta | API/oráculo; Bun | UNRUN |
+| AC-06 | R1/R2 | Cuota 100 (80/20) + extraordinaria 200 desde control | Precontrol, anulado, otro Dxxx, cuota completa, intereses, Gasto ordinario sin Deuda | Deuda 720; aplicado 280; sin doble resta; Gasto sin Deuda no reduce | API/oráculo; Bun | UNRUN |
 | AC-07 | R1 | Cuota 100 = 80 + 20 | Cuota sin desglose, suma desigual, capital 0/negativo | Historia 100/80/20; Gasto 100; banco −100; un hecho | API/E2E | UNRUN |
 | AC-08 | R1 | Extraordinaria 200, capital 200, intereses 0 | Intento de Gasto/Transferencia/segundo hecho | Historia 200/200/0; Gasto 0; banco −200; capital −200 | API/E2E | UNRUN |
-| AC-09 | R1 | Gasto precontrol 70 (50/20) | Intento de incluirlo en capital | `aplicaAlCapital=false`; banco/Gasto reales; deuda 720/1000 según corte | API/oráculo | UNRUN |
-| AC-10 | R1/R2 | Hechos 30/09, 01/10, 15/10 y corte 01/10 | Hecho 02/10, otro Dxxx, corte futuro | Solo `<=` corte; día incluido; otra Deuda excluida | API tabla; Bun | UNRUN |
+| AC-09 | R1 | Gasto precontrol 70 (50/20) | Intento de incluirlo en capital | `aplicaAlCapital=false`; banco/Gasto reales; deuda 720 sin corte o después de H3; 920 al 01/10; no calculable antes del control | API/oráculo | UNRUN |
+| AC-10 | R1/R2 | Hechos 30/09, 01/10, 15/10 y corte 01/10; varias Partidas del mismo Dxxx | Hecho 02/10, otro Dxxx, corte futuro, Partida de otra Deuda | Solo `<=` corte; día incluido; varias Partidas mismo Dxxx suman; otra Deuda excluida | API tabla; Bun | UNRUN |
 | AC-11 | R2/R4 | Corte anterior a Inicio; sin Inicio; sin apertura | Intento de mostrar 0 o capital inventado | No calculable + motivo; cobertura precontrol | API/UI | UNRUN |
 | AC-12 | R2 | Apertura 0 explícita | Apertura ausente | 0 explícito vs null/no calculable; sin normalización | API DTO | UNRUN |
-| AC-13 | R1/R4 | Hecho aplicable con desglose completo | Hecho aplicable con capital/intereses null o inválido | No calculable; IDs afectados; null ≠ 0 | API/fixture SQL | UNRUN |
+| AC-13 | R1/R4 | Hecho aplicable con desglose completo | Hecho aplicable con capital/intereses null o inválido | Read model E4.4 no calculable; IDs afectados; null ≠ 0; regresión del lector | API/fixture SQL | UNRUN |
 | AC-14 | R2/R4 | Capital 0 por igualdad | Apertura/datos heredados que producen negativo | Negativo visible; sin clamp; E1.6 sigue bloqueando nuevos excesos | API/UI | UNRUN |
-| AC-15 | R4 | Declarado 750 vs derivado 720 | Declarado 720 (0) o sin declarado | Diferencia +30/0; estado Conciliado/Diferencia; capital intacto | API/UI; Bun | UNRUN |
+| AC-15 | R4 | Declarado 750 vs derivado 720; fecha no futura | Declarado 720 (0), sin declarado o fecha futura | Diferencia +30/0; estado Conciliado/Diferencia; fecha futura 422; capital intacto | API/UI; Bun | UNRUN |
 | AC-16 | R3/R4 | Corregir declarado con motivo; anular | PATCH sin revisión/motivo, DELETE | Auditoría antes/después; anulada conservada; no vigente | API/SQL | UNRUN |
 | AC-17 | R4 | Declarado antes del control o sin base | Intento de diferencia ficticia | `No comparable` con motivo; sin cero | API/UI | UNRUN |
-| AC-18 | R8 | Varias fechas de conciliación | Dos altas vigentes misma Deuda/fecha | 409 en la segunda; corregir la existente; sin duplicado ambiguo | API/procesos | UNRUN |
+| AC-18 | R8 | Varias fechas de conciliación; listado elige la última/Varias | Dos altas vigentes misma Deuda/fecha | 409 en la segunda; corregir la existente; sin duplicado ambiguo; ficha muestra todas | API/procesos/UI | UNRUN |
 | AC-19 | R8 | Reintento misma clave; dos procesos | Revisión obsoleta; misma clave con otro payload | Una entidad; 409; sin escritura parcial | API/procesos | UNRUN |
 | AC-20 | R3/R4 | Corregir tipo/condiciones/histórico | PATCH sin revisión/motivo; cambiar apertura/Inicio usados | Auditoría; sin efecto económico; E1.6 bloquea | API/SQL | UNRUN |
-| AC-21 | R1/R3 | Rectificar/anular cuota y consultar corte/conciliación | Doble resta; historia borrada | Recalcula deuda/diferencia; ambas Deudas; historia conservada | API/E2E | UNRUN |
+| AC-21 | R1/R3 | Rectificar/anular cuota; cambiar su fecha respecto al corte | Doble resta; historia borrada; corte no cambia | Recalcula deuda/diferencia; ambas Deudas; historia conservada; corte inclusive | API/E2E | UNRUN |
 | AC-22 | R1/R5 | Inspeccionar tablas/endpoints | Intento de escribir derivados o ajuste | Sin capital/historia persistidos; sin segundo ledger; 422 | API/SQL | UNRUN |
 | AC-23 | R10 | v15 genuina con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
 | AC-24 | R10 | Snapshot/manifiesto/restore aislado | Copia corrupta/versión incorrecta | Campos/conciliaciones/MFA recuperables; sin datos reales | Bun + E2E restore | UNRUN |
@@ -95,14 +95,14 @@ TIN `2.500000`, TAE `2.800000`, cuota contractual `100.00`.
 | Consulta | Capital aplicado | Deuda viva | Cobertura/observación |
 | --- | ---: | ---: | --- |
 | Sin corte (todos los hechos) | 280.00 | 720.00 | H1 visible como precontrol; no resta |
-| Corte 2026-09-15 | — | No calculable | Anterior a Inicio control; solo precontrol disponible |
+| Corte 2026-09-15 | — | No calculable | Anterior a Inicio control; agregado R5 disponible; H1 (30/09) no incluido |
 | Corte 2026-10-01 | 80.00 | 920.00 | Día inclusivo; H1 excluido; H3 posterior excluido |
 | Corte 2026-10-14 | 80.00 | 920.00 | H3 aún no existe |
 | Corte 2026-10-15 | 280.00 | 720.00 | H3 incluido en su día |
-| Corte 2026-12-31 | 280.00 | 720.00 | Sin hechos posteriores |
+| Corte 2026-10-20 | 280.00 | 720.00 | Sin hechos posteriores |
 | Corte futuro | — | 422 | No se simula previsión |
 
-**Conciliación:** corte `2026-12-31`, declarado `750.00`, derivado `720.00`,
+**Conciliación:** corte `2026-10-20`, declarado `750.00`, derivado `720.00`,
 diferencia `+30.00`, estado `Diferencia`; declarado `720.00` → `Conciliado`; declarado
 antes del control → `No comparable`; dos declarados vigentes misma fecha → 409.
 
@@ -123,7 +123,7 @@ y la conciliación recalcula; H3 sigue consultable como anulada.
 | R3 pérdida de historia | Anulación/rectificación borra filas o auditoría | Historia y auditoría conservadas; recálculo |
 | R4 discrepancia oculta | Diferencia truncada, “resuelto” sin dato o clamp | Diferencia exacta visible; corrección auditada |
 | R5 Deuda como Saldo | Deuda suma a Liquidez/patrimonio/Saldo | Inspección y contrato E4.6 sin suma |
-| R6 hipoteca inferida | Tipo deducido por nombre/Partida | Enum explícito; Sin informar |
+| R6 hipoteca inferida | Tipo deducido por nombre/Partida o literal `Sin informar` persistido | Enum/null explícito; presentación Sin informar |
 | R7 precisión | Float, redondeo, tercer decimal aceptado | Bigint/decimal exacto; 422 |
 | R8 concurrencia | Dos vigentes, pérdida de revisión, duplicado | 409/idempotencia/transacción |
 | R9 seguridad | Fuga de importes/notas/SQL; bypass MFA | 401/403/422; errores genéricos |

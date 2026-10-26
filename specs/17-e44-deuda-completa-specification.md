@@ -33,8 +33,8 @@ Capacidades incluidas:
 2. Mostrar la historia ejecutada de cuotas y amortizaciones extraordinarias ya registradas
    en Movimientos, separando capital, intereses, gasto y efecto bancario.
 3. Mostrar el histórico/precontrol de solo lectura sin volver a descontarlo del capital.
-4. Calcular la deuda viva por la fórmula E1.6, a la fecha actual de hechos o a un corte
-   histórico inclusivo, sin persistir el resultado.
+4. Calcular la deuda viva por la fórmula E1.6 sobre **todos los hechos registrados** o a un
+   corte histórico inclusivo, sin persistir el resultado ni usar el reloj como fuente.
 5. Conciliar el capital derivado con un saldo declarado opcional (importe, fecha y
    fuente/nota), mostrando la diferencia exacta sin fabricar transacciones.
 6. Distinguir deuda no hipotecaria e hipoteca sin activo inmobiliario controlado, sin
@@ -52,16 +52,19 @@ Capacidades incluidas:
 | Precontrol no reduce otra vez el principal | E1.6/R5/P6 | Consume; conserva y muestra el histórico sin usarlo como operando |
 | Deudas no son Saldos | R2/R5 | Reafirma; prohíbe agregados que las sumen como Saldo |
 | Condiciones completas, TIN/TAE/cuota, hipoteca y conciliación | E4.4 | **Delta propio** de esta spec |
-| Archivo histórico precontrol, fotos, cierre, resumen anual | E4.5/E4.11/E4.8–E4.10/E4.7 | Fuera de E4.4; solo contratos de lectura cuando proceda |
+| Archivo histórico precontrol, fotos, cierre, resumen E4.6/E4.7 | E4.5/E4.11/E4.8–E4.10/E4.6/E4.7 | Fuera de E4.4; solo contratos de lectura cuando proceda |
 
-E4.4 no declara implementados los AC-31–33 de E1.6 ni los consumidores E2/E3/E4.6/E4.7.
+E4.4 no declara implementados los `E1.6-AC-31…E1.6-AC-33` ni los consumidores E2/E3/E4.6/E4.7.
 No crea tipos de Movimiento, no habilita Transferencias con Exterior, no importa el Excel y
 no sustituye la fuente de verdad vigente.
 
 La lectura E4.4 **no convierte un desglose ausente en cero**: si un hecho aplicable no tiene
-capital/intereses válidos, la deuda viva es no calculable y se indica el hecho afectado. Si
-el lector vigente de E1.6 tratara un `null` como cero, el futuro dev deberá corregir esa
-presentación sin cambiar la fórmula ni reabrir Q1–Q4.
+capital/intereses válidos, la deuda viva es no calculable y se indica el hecho afectado.
+E4.4 no reabre la fórmula Q1 ni los contratos de escritura de E1.6, pero sí define un **read
+model propio** (o un ajuste de lectura mínimo y documentado) que aplica la misma fórmula con
+validación de desglose completo. Si se reutiliza el lector E1.6, se corregirá únicamente su
+presentación `null → 0`, con prueba de regresión; no se cambia el cálculo ni se reescribe la
+historia.
 
 ### Dependencias DT2/DT7/DT8
 
@@ -88,6 +91,7 @@ presentación sin cambiar la fórmula ni reabrir Q1–Q4.
 | Historia ejecutada | Cuotas y extraordinarias vinculadas, incluidas precontrol y anuladas, con banderas de aplicación | Movimientos + Partida→Deuda | Un segundo registro de pagos |
 | Precontrol | Hechos anteriores a Inicio control y campos históricos R5 anteriores a la frontera | Movimientos + campos históricos | Operando adicional del capital actual |
 | Corte histórico | Fecha civil inclusiva de consulta; solo hechos registrados hasta esa fecha | Parámetro de consulta | Fotografía persistida ni reconstrucción de hechos ausentes |
+| Vista sin corte | Todos los hechos registrados, sin filtrar por el reloj | Movimientos vigentes | “Hoy” como fuente financiera |
 | Saldo declarado | Importe externo opcional con fecha y fuente/nota, para comparar | Registro de conciliación | Hecho económico, Movimiento o ajuste de capital |
 | Discrepancia | Diferencia o inconsistencia visible que requiere revisión | Derivada | Algo que se corrige truncando, compensando u ocultando |
 | Condiciones informativas | TIN, TAE, cuota contractual y texto de condiciones | Campos de la Deuda | Motor de intereses, cuadro de amortización o previsión |
@@ -148,10 +152,11 @@ cuadros. La cuota contractual es una referencia, no un hecho ejecutado; no se au
 desde el histórico ni se infiere por TIN/TAE. Una condición desconocida se muestra como
 `Sin informar`, nunca como cero.
 
-**R-E44-5 — Tipo de Deuda explícito.** `Hipotecaria`, `No hipotecaria` o `Sin informar`.
-No se infiere del nombre, Partida, importe, acreedor ni condiciones. Las Deudas existentes
-quedan `Sin informar` hasta que el usuario las clasifique. No se modela activo inmobiliario,
-valor de garantía, LTV ni amortización hipotecaria simulada.
+**R-E44-5 — Tipo de Deuda explícito.** `Hipotecaria`, `No hipotecaria` o `null`
+(presentado como `Sin informar`). No se infiere del nombre, Partida, importe, acreedor ni
+condiciones. Las Deudas existentes quedan con `null`/`Sin informar` hasta que el usuario las
+clasifique. No se modela activo inmobiliario, valor de garantía, LTV ni amortización
+hipotecaria simulada.
 
 **R-E44-6 — Conciliación sin fabricar hechos.** Un saldo declarado opcional se compara con
 la deuda viva en su fecha de corte. La diferencia es exacta y visible; no se trunca, no se
@@ -162,8 +167,9 @@ con motivo y auditoría. No existe un estado “resuelto” que oculte una difer
 **R-E44-7 — Corte histórico inclusivo y limitado.** La consulta por corte usa la fecha
 civil `<= corte` y solo hechos registrados. El día del corte se incluye. No usa el reloj
 para calcular el capital. Antes de Inicio control no hay deuda viva derivada; se muestra
-cobertura precontrol y el motivo. Una fecha futura se rechaza para no confundir histórico
-con previsión.
+cobertura precontrol y el motivo. Si el corte es anterior a un hecho precontrol concreto,
+ese hecho no se incluye; el agregado R5 se muestra como agregado y no se descompone por
+fecha. Una fecha futura se rechaza para no confundir histórico con previsión.
 
 **R-E44-8 — El corte no es una fotografía.** Rectificar o anular un Movimiento después de
 una consulta puede cambiar el resultado del mismo corte, porque se recalcula desde los
@@ -219,7 +225,7 @@ existentes.
 | `capitalApertura` | EUR exacto | Sí en legado | Posición en la frontera | Sí (base) |
 | `estado` | Activa / Inactiva | No | Ciclo de vida | No |
 | `revision` | Entero > 0 | No | Concurrencia | No |
-| `tipoDeuda` | Hipotecaria / No hipotecaria / Sin informar; nulo = Sin informar | Sí | Clasificación | No |
+| `tipoDeuda` | `Hipotecaria` / `No hipotecaria` / `NULL` (= Sin informar); no se persiste el literal `Sin informar` | Sí | Clasificación | No |
 | `tin` | Porcentaje decimal exacto, informativo; se conserva el signo aportado y se aplica un límite técnico de magnitud propuesto 100 | Sí | Condición | No |
 | `tae` | Porcentaje decimal exacto, informativo; mismo criterio | Sí | Condición | No |
 | `cuotaContractual` | EUR exacto, informativo | Sí | Condición | No |
@@ -250,6 +256,8 @@ como operandos del capital actual:
 - Si la fuente identifica el “capital histórico” y sus componentes, la relación
   `capital histórico − amortización extraordinaria histórica = capital histórico en cuotas`
   se muestra igualmente como comprobación, sin imponer una base que la fuente no aclare.
+  Esta spec **no crea** un campo `capitalHistorico` ni presume que `capitalInicial` sea esa
+  base; si la fuente no lo identifica, la relación no se calcula.
 - Una diferencia se muestra como `histórico inconsistente`, con los campos y la diferencia
   exacta. No se corrige automáticamente, no se bloquea el guardado de un dato histórico
   aportado y no se usa para alterar la deuda viva.
@@ -273,6 +281,11 @@ Reglas de conciliación:
 - Se permiten varias conciliaciones por Deuda, con fechas distintas; una sola vigente por
   Deuda y fecha. Un alta duplicada vigente responde 409; la corrección se hace sobre la
   existente con `PATCH` y revisión, sin crear una segunda.
+- La vista de listado muestra la conciliación vigente de **mayor `fechaCorte`** y, si hay
+  más de una, indica `Varias` con acceso a la ficha; la ficha muestra todas. No se elige una
+  conciliación por revisión sin fecha ni se oculta una diferencia de otra fecha.
+- `fechaCorte` es una fecha civil no futura (Europe/Madrid); una fecha futura se rechaza con
+  422 para no confundir conciliación histórica con previsión.
 - La diferencia es `capitalDeclarado − deuda viva` en `fechaCorte`, exacta y con signo.
 - `Conciliado` si la diferencia es exactamente 0; `Diferencia` si no; `No comparable` si la
   deuda viva no es calculable, falta apertura/Inicio/desglose o el corte es anterior al
@@ -318,7 +331,7 @@ ficticio, no contrato de transporte definitivo:
       "amortizacionExtra": "0.00"
     }
   },
-  "corte": "2026-12-31",
+  "corte": "2026-10-20",
   "cobertura": {
     "desdeControl": true,
     "hastaCorte": true,
@@ -375,7 +388,7 @@ ficticio, no contrato de transporte definitivo:
   "conciliaciones": [
     {
       "id": "C001",
-      "fechaCorte": "2026-12-31",
+      "fechaCorte": "2026-10-20",
       "capitalDeclarado": "750.00",
       "fuente": "Banco ficticio",
       "diferencia": "30.00",
@@ -389,7 +402,8 @@ ficticio, no contrato de transporte definitivo:
 
 Los campos `capitalAplicado`, `deudaViva`, `diferencia`, `estadoConciliacion`,
 `aplicaAlCapital`, `cobertura` y `gasto` son **derivados**: se rechazan si el cliente intenta
-escribirlos.
+escribirlos. `precontrol.cuotas` es el agregado R5 aportado; no implica que la historia
+ejecutada contenga ese número de filas ni se reconstruye desde Movimientos.
 
 ### Persistencia, precisión y compatibilidad
 
@@ -422,7 +436,7 @@ amortización.
 ┌ MyFinanzas ┬ Ciclo financiado: [contexto del maestro / No disponible] ─────────────────┐
 │ Saldos      │ Deudas                                                [+ Nueva deuda]      │
 │ Clasific.   │ Buscar [____________________] Tipo [Todas ▾] Estado [Activas ▾]           │
-│ Ciclos      │ ID    Nombre              Tipo             Inicio control Apertura Pendiente Conciliación │
+│ Ciclos      │ ID    Nombre              Tipo             Inicio control Apertura Deuda viva Conciliación │
 │ Movim.      │ D001  Préstamo ficticio   No hipotecaria  01/10/2026     1.000,00 720,00    +30,00    │
 │ Referenc.   │ D002  Hipoteca ficticia   Hipotecaria     [Sin informar]  [—]      [—]       Sin declarar │
 │ Deudas      │ D003  Deuda sin tipo      Sin informar     ...            ...      ...       No calculable │
@@ -430,8 +444,9 @@ amortización.
 └─────────────┴────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-Notas: `Tipo` y `Estado` son filtros; `Conciliación` muestra la diferencia vigente o
-`Sin declarar`/`No calculable`, nunca un cero de relleno. El listado no suma Deuda a Saldos.
+Notas: `Tipo` y `Estado` son filtros; `Deuda viva` es el capital pendiente del corte vigente
+(o todos los hechos si no hay corte); `Conciliación` muestra la vigente de mayor `fechaCorte`
+o `Varias`, y nunca un cero de relleno. El listado no suma Deuda a Saldos.
 
 ### 1440 px — ficha, corte, historia y conciliación
 
@@ -439,7 +454,7 @@ Notas: `Tipo` y `Estado` son filtros; `Conciliación` muestra la diferencia vige
 D001 · Préstamo ficticio · No hipotecaria · Activa                                  [Editar]
 ┌ Control y capital ─────────────────────────────────────────────────────────────────────┐
 │ Inicio control 01/10/2026 · Capital apertura 1.000,00 · Capital de control 1.000,00     │
-│ Corte histórico [31/12/2026] [Aplicar]   Cobertura: desde control · 2 aplicables · 1 precontrol │
+│ Corte histórico [20/10/2026] [Aplicar]   Cobertura: desde control · 2 aplicables · 1 precontrol │
 │ Capital aplicado 280,00 · Deuda viva 720,00                                             │
 │ [No incluye intereses futuros, comisiones ni saldo bancario]                            │
 └────────────────────────────────────────────────────────────────────────────────────────┘
@@ -450,7 +465,8 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 ┌ Histórico precontrol (solo lectura; no reduce el capital) ─────────────────────────────┐
 │ Capital inicial 1.200,00 · Amortizado histórico 200,00 · Extra histórica 0,00           │
 │ Capital histórico en cuotas 1.200,00 · Intereses históricos 300,00 · Total pagado 1.500,00 │
-│ Precontrol 2026: cuotas 3 · capital 50,00 · amortización extra 0,00                      │
+│ Precontrol 2026 (R5): cuotas 3 · capital 50,00 · amortización extra 0,00            │
+│ [El agregado R5 no reconstruye filas; la historia muestra solo los hechos registrados] │
 │ [Comprobación histórica: sin diferencias / diferencia +X,XX]                            │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ Historia ejecutada ─────────────────────────────────────────────────────────────────────┐
@@ -462,10 +478,10 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 │ [Anulados: 0] [Ver ficha del Movimiento]                                                │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ Conciliación desde apertura ────────────────────────────────────────────────────────────┐
-│ Corte 31/12/2026 · Declarado 750,00 · Derivado 720,00 · Diferencia +30,00 · Diferencia   │
+│ Corte 20/10/2026 · Declarado 750,00 · Derivado 720,00 · Diferencia +30,00 · Diferencia   │
 │ Fuente [Banco ficticio] · Nota [Extracto ficticio]                                      │
 │ [Corregir declarado] [Anular]   No crea Movimiento ni ajuste de capital.                │
-│ Historial: 30/09/2026 · declarado 1.010,00 · derivado 1.000,00 · +10,00 · Vigente        │
+│ Historial: 10/10/2026 · declarado 930,00 · derivado 920,00 · +10,00 · Vigente        │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -486,7 +502,7 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 ├──────────────────────────────────────┤
 │ Ficha D001 · [Editar]                │
 │ Control y capital                    │
-│ Corte [31/12/2026] [Aplicar]         │
+│ Corte [20/10/2026] [Aplicar]         │
 │ Cobertura: ...                       │
 │ Capital aplicado 280,00              │
 │ Deuda viva 720,00                    │
@@ -494,7 +510,7 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 │ [Historia] [Conciliación]            │
 ├──────────────────────────────────────┤
 │ Conciliación                         │
-│ Corte 31/12/2026                     │
+│ Corte 20/10/2026                     │
 │ Declarado 750,00                     │
 │ Derivado 720,00                      │
 │ Diferencia +30,00                    │
@@ -572,7 +588,7 @@ CSRF/Origin, límite JSON, errores `Problem` y transacciones existentes.
 
 | Operación | Comportamiento |
 | --- | --- |
-| `GET /api/deudas` | Listado con búsqueda, estado y filtro `tipoDeuda`; paginación estable; incluye deuda viva/conciliación resumida |
+| `GET /api/deudas` | Listado con búsqueda, estado y filtro `tipoDeuda`; paginación estable; incluye deuda viva y la conciliación vigente de mayor `fechaCorte` (o `Varias`) |
 | `GET /api/deudas/:id` | Ficha con control, condiciones, histórico, historia ejecutada y conciliaciones |
 | `GET /api/deudas/:id?corte=YYYY-MM-DD` | Misma ficha calculada al corte inclusivo; valida fecha y cobertura |
 | `POST /api/deudas` | Alta con campos E1.6 + nuevos campos opcionales; `idempotency-key`; revisión inicial y auditoría |
@@ -588,8 +604,9 @@ Reglas de API:
   `diferencia`, `cobertura`, `aplicaAlCapital`, `gasto` ni `estadoConciliacion` como entrada.
 - No hay endpoint de ajuste de capital, movimiento de apertura, transferencia, Gasto
   sintético ni DELETE.
-- `corte` inválido o futuro -> 422; deuda/conciliación inexistente -> 404; revisión/duplicado
-  -> 409; falta de sesión/CSRF -> 401/403.
+- `corte` inválido o futuro -> 422; `fechaCorte` de conciliación futura -> 422;
+  deuda/conciliación inexistente -> 404; revisión/duplicado -> 409; falta de sesión/CSRF ->
+  401/403.
 - Las escrituras se ejecutan en una transacción atómica: validar, reservar ID si procede,
   escribir, auditar e intentar. Un fallo revierte todo. La concurrencia revalida la Deuda,
   la conciliación y las entradas usadas.
@@ -617,12 +634,13 @@ Reglas de API:
 - **Corte:** inclusivo; antes del control no calculable; después del último hecho usa todos;
   futuro 422; no usa reloj para el capital; no persiste foto; no reconstruye precontrol.
 - **Conciliación:** diferencia exacta; cero = conciliado; no comparable si falta base;
-  duplicado vigente = 409; corrección/anulación con motivo; no crea hechos; anulada no
-  aparece como vigente pero se conserva.
+  duplicado vigente = 409; fecha futura = 422; corrección/anulación con motivo; no crea
+  hechos; anulada no aparece como vigente pero se conserva.
 - **Condiciones:** TIN/TAE/cuota/condiciones informativas; no calculan; desconocido no es
   cero; valores no exactos/fuera de límite -> 422; no se infiere por nombre ni histórico.
-- **Tipo:** enum cerrado; nulo = Sin informar; no se infiere; no se suma a Saldos; no se
-  crea activo inmobiliario.
+- **Tipo:** enum cerrado `Hipotecaria`/`No hipotecaria` o `null` (= Sin informar); no se
+  persiste el literal `Sin informar`; no se infiere; no se suma a Saldos; no se crea activo
+  inmobiliario.
 - **Precisión:** EUR exacto; tasas exactas; sin float, redondeo, truncamiento ni overflow;
   textos acotados; fechas civiles válidas.
 - **Concurrencia/idempotencia:** dos altas/ediciones concurrentes no pisan; reintento con
@@ -636,8 +654,9 @@ Reglas de API:
 - **Acceso:** MFA, sesión única, CSRF/Origin y autorización servidor en todas las rutas;
   no se confía en la UI. Sin token persistido en navegador ni recuperación alternativa.
 - **Datos:** las notas/fuentes de conciliación pueden contener información privada; no se
-  registran en logs, no se exportan y se escapan en la UI. No se publican bases, claves,
-  factores ni capturas con datos reales.
+  registran en logs, no se ofrece exportación funcional y se escapan en la UI. El backup
+  protegido sí incluye las notas/fuentes como parte del snapshot; no se publica. No se
+  publican bases, claves, factores ni capturas con datos reales.
 - **Integridad:** derivados solo en servidor; validación exacta; transacción atómica;
   auditoría append-only; sin DELETE; sin tablas de capital/historia paralelas.
 - **Persistencia:** migración versionada/atómica, STRICT/FK/WAL/busy_timeout heredados;
@@ -662,8 +681,9 @@ Reglas de API:
   aprobación financiera propias.
 - No Deuda como Saldo, no saldo negativo artificial, no Movimiento/Transferencia/Gasto de
   apertura o ajuste, no compensación automática.
-- No cambios de E1.6, E1.1–E1.5, E2, E3, B3/Dev32, D5, DEV16, E4.1 ni de la metodología,
-  Skills, guardas o workflows.
+- No cambios de la fórmula Q1 ni de los contratos de escritura E1.6/E1.1–E1.5; sí se admite
+  el ajuste de lectura mínimo para no convertir `null` en cero, con regresión. No se tocan
+  E2, E3, B3/Dev32, D5, DEV16, E4.1, metodología, Skills, guardas o workflows.
 - No se fija versión futura de esquema.
 
 ## Acceptance checks
@@ -671,11 +691,15 @@ Reglas de API:
 Clase **I** = criterio de E4.4 en su futura implementación; **C** = contrato de consumo o
 compatibilidad futura. Todos son **PREVISTOS/NO EJECUTADOS**; una prueba diseñada no es PASS.
 
+**IDs locales:** en este documento `AC-01…AC-33` significan `E4.4-AC-01…E4.4-AC-33`
+(con guion) y no son los `E1.6-AC-31…E1.6-AC-33`; cuando se citan estos últimos se prefijan
+con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
+
 | ID | Acción / precondición | Resultado observable esperado | Clase | Traza |
 | --- | --- | --- | --- | --- |
 | AC-01 | Alta/consulta de Deuda con campos E1.6 + tipo/condiciones/histórico | Dxxx estable; apertura/Inicio; campos nuevos conservados; desconocidos null/Sin informar; sin Movimiento/Saldo de apertura | I | E4.4-AC1 |
 | AC-02 | Aportar TIN/TAE/cuota/condiciones y consultar | Valores informativos exactos; no calculan intereses/cuotas/cuadros; desconocido ≠ 0; inválidos 422 | I | E4.4-AC1 |
-| AC-03 | Clasificar Hipotecaria/No hipotecaria/Sin informar; filtrar; Deudas existentes | Enum cerrado; nulo = Sin informar; sin inferencia; filtro correcto; sin activo/LTV | I | E4.4-AC3 |
+| AC-03 | Clasificar Hipotecaria/No hipotecaria o dejar null (= Sin informar); filtrar; Deudas existentes | Enum cerrado; null se presenta Sin informar; sin inferencia; filtro correcto; sin activo/LTV | I | E4.4-AC3 |
 | AC-04 | Alta con histórico/precontrol R5 y consulta | Campos opcionales conservados; sin backfill; no operandos; desconocido null; no se reconstruye | I | E4.4-AC1 |
 | AC-05 | Histórico con relación R5 inconsistente | Diferencia exacta señalada; no se corrige/trunca; guardado del dato aportado permitido; capital intacto | I | E4.4-AC1 |
 | AC-06 | Cuota/extraordinaria vigentes desde Inicio control | Capital aplicado = suma de capital; deuda viva = apertura − aplicado; solo capital; sin doble cómputo | I | E4.4-AC2 |
@@ -687,7 +711,7 @@ compatibilidad futura. Todos son **PREVISTOS/NO EJECUTADOS**; una prueba diseña
 | AC-12 | Apertura ausente vs. cero explícito | Ausente = no calculable; cero explícito = cero; no se normaliza | I | E4.4-AC2 |
 | AC-13 | Hecho aplicable con capital/intereses ausentes o inválidos | Deuda viva no calculable; se listan IDs afectados; no se trata null como 0 | I | E4.4-AC2 |
 | AC-14 | Capital resultante negativo o exceso heredado | Se muestra negativo/diferencia; sin clamp; E1.6 sigue bloqueando nuevos estados verificables negativos | I | E4.4-AC2 |
-| AC-15 | Alta de saldo declarado y comparación | Diferencia = declarado − derivado exacta; 0 = Conciliado; ≠0 = Diferencia; sin cambio de capital | I | E4.4-AC2 |
+| AC-15 | Alta de saldo declarado y comparación; fecha no futura | Diferencia = declarado − derivado exacta; 0 = Conciliado; ≠0 = Diferencia; fecha futura 422; listado usa la última/Varias; sin cambio de capital | I | E4.4-AC2 |
 | AC-16 | Corregir/anular conciliación con motivo | Revisión/auditoría; anulada no vigente pero conservada; sin DELETE; capital intacto | I | E4.4-AC2 |
 | AC-17 | Conciliación antes del control o sin base calculable | Estado No comparable con motivo; no se inventa diferencia | I | E4.4-AC2 |
 | AC-18 | Dos altas de conciliación vigentes misma Deuda/fecha | 409 en la segunda; la corrección se hace sobre la existente; otras fechas permitidas | I | E4.4-AC2 |
