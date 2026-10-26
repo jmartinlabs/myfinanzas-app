@@ -2,8 +2,8 @@
 
 Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
-HEAD final local de código: `90c28a7cfc15bfd31af4dc327769553147914ddf`.
-HEAD documental final: `1ef3f62c81ba7a51214e9c3b0c9f77b7f77d1f60`.
+HEAD final local de código: `8c8f06470e76e80437a63f591aff86f3012f3ffc`.
+HEAD documental previo: `c69e343ec3b16348ca10d96376298807fc65bcb2`.
 Spec: [15-vehiculos-itv-specification.md](15-vehiculos-itv-specification.md) rev5,
 aprobada sobre `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Evidencia de pruebas: [15-vehiculos-itv-testplan.md](15-vehiculos-itv-testplan.md).
@@ -79,9 +79,10 @@ merge, despliegue, datos reales ni cambios de visibilidad. PR78 no se modifica.
 - Dominio `apps/api/src/vehicle-rules.ts` + `referencias.ts`; read model en
   `apps/api/src/vehiculos.ts`; rutas en `apps/api/src/app.ts`.
 - UI `apps/web/src/Vehiculos.tsx`, integración en `Referencias.tsx` y navegación.
-- Pruebas focales `apps/api/src/vehiculos.test.ts` (11 tests, 164 assertions) y
-  `tests/e2e/vehiculos.spec.ts` (PASS, capturas 1440/390). Incluye regresión de
-  conversión de Anticipo con y sin ficha y comprobación del indicador.
+- Pruebas focales `apps/api/src/vehiculos.test.ts` (11 tests, 164 assertions),
+  `vehiculos-concurrency.test.ts` y `tests/e2e/vehiculos.spec.ts` (PASS, capturas
+  1440/390). Incluye Anticipo, alta concurrente, vacío/carga y regresión P2 de
+  Gastos del año visibles en móvil.
 - `bun run typecheck` PASS; `bun run build` PASS.
 - Suite API completa: QA final 177 PASS / 46 FAIL / 223 tests; ejecución final de
   `scripts/verify --full` 179 PASS / 44 FAIL / 223 tests. La diferencia son los flakes
@@ -118,3 +119,20 @@ concurrente real de dos procesos, carrera de segunda ficha con motivo de rechazo
 verificado, y listado vacío/carga reales sin filas ni importes ficticios. El estado
 local pasa a **45/45 AC**, pero Linux/CI y backup/restore v14 siguen UNRUN y no
 acreditan un PASS completo.
+
+## Corrección P2 posterior a PR81 — Gastos del año en móvil
+
+Codex reprodujo sobre `c69e343` que `AnnualFacts` solo renderizaba `.desktop-list`,
+oculta por CSS a menos de 760 px; a 390 px se veía «Gastos del año (3)» sin filas.
+
+Corrección `8c8f064`: se conserva la tabla de escritorio y se añade una lista móvil
+accesible `.vehicle-facts`, alimentada por el mismo `annual.gastos` (sin cálculos ni
+reglas nuevas). Regresión E2E: a 390 px la primera fila muestra `15/02/2026`,
+`Gasto ficticio vehículo`, `PAR001 · Mantenimiento` y `120,00 €`; a 1440 px sigue
+visible la tabla y oculta la presentación móvil. Capturas:
+`artifacts/e3-3/vehiculos-detail-390.png` y `vehiculos-detail-1440.png`.
+
+QA independiente sobre `8c8f064`: **APTO CON OBSERVACIONES**, defecto P2 cerrado,
+45/45 AC locales, 0 FAIL funcionales. Linux/CI y backup/restore v14 siguen UNRUN
+en macOS. La CI de `c69e343` no acredita el SHA nuevo; queda pendiente la CI Linux
+del candidato `8c8f064`/HEAD documental actualizado.

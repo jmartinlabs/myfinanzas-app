@@ -68,7 +68,7 @@ Los datos son ficticios. Un resultado macOS no sustituye CI Linux.
 
 ## Registro de ejecuciones
 
-Candidato final local `90c28a7` (base `e408b1d`). macOS
+Candidato P2 local `8c8f064` (base `e408b1d`). macOS
 arm64, Bun 1.4.3, Python 3.12, Chromium/Playwright 1.64.1, `TMPDIR=/private/tmp` y
 age 1.2.1 local. La QA independiente revisó el SHA final, no este resumen.
 
@@ -78,13 +78,13 @@ age 1.2.1 local. La QA independiente revisó el SHA final, no este resumen.
 | Build | `bun run build` | PASS |
 | Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts apps/api/src/vehiculos-concurrency.test.ts` | 12 PASS / 179 assertions: Anticipo + alta concurrente |
 | API completa | `NODE_ENV=test bun test apps/api` | QA 177 PASS / 46 FAIL; full final 179 PASS / 44 FAIL / 223 tests; diferencia por flakes R11/04; guardas Linux/restore y backup v14 UNRUN; sin fallo funcional nuevo |
-| E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts tests/e2e/vehiculos-empty.spec.ts` | 2 PASS; listado, ficha, conversión, Anticipo, vacío y carga dinámicos; capturas en `artifacts/e3-3/` |
+| E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts tests/e2e/vehiculos-empty.spec.ts` | 2 PASS; listado, ficha, Anticipo, vacío/carga y Gastos del año visibles a 390/1440; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
 | Baseline canónica | `python3 scripts/verify baseline` | PASS en `1ef3f62` |
 | Full canónica | `python3 scripts/verify --full` | Baseline PASS; typecheck/build PASS; API 179 PASS/44 FAIL por guardas Linux; E2E UNRUN. No es PASS |
 | Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
-| QA independiente | Revisión de `90c28a7` | APTO CON OBSERVACIONES; 45/45 AC locales, Anticipo y AC-04/AC-29 completos, residuales menores y Linux/CI UNRUN |
+| QA independiente | Revisión de `8c8f064` | APTO CON OBSERVACIONES; P2 de Gastos móvil cerrado, 45/45 AC locales, residuales menores y Linux/CI UNRUN |
 
 Los fallos de plataforma se conservan como UNRUN/BLOCKED para Linux/CI; no se
 reclasifican como PASS. Las capturas son ficticias y no contienen bases, claves,
@@ -185,3 +185,18 @@ Linux/CI y backup/restore siguen UNRUN: no se declara PASS completo.
 
 Estas pruebas elevan el estado local a **45/45 AC**; no sustituyen Linux/CI ni el
 backup/restore v14, que permanecen UNRUN.
+
+## Regresión P2 — Gastos del año en móvil
+
+Defecto Codex sobre `c69e343`: a 390 px `AnnualFacts` solo montaba `.desktop-list`,
+oculta por CSS; no había fecha, concepto, Partida ni importe visibles.
+
+Corrección `8c8f064`: tabla de escritorio intacta + `<ul class="mobile-list
+vehicle-facts">` con el mismo `annual.gastos`, sin duplicar cálculos. La prueba E2E
+comprueba a 390 px las 3 filas y la primera con `15/02/2026`, `Gasto ficticio
+vehículo`, `PAR001 · Mantenimiento`, `120,00 €`; a 1440 px exige tabla visible,
+móvil oculta y 3 filas. Capturas inspeccionadas: `vehiculos-detail-390.png` y
+`vehiculos-detail-1440.png`.
+
+La CI Linux de `c69e343` no acredita `8c8f064`. Resultado de CI del SHA nuevo:
+pendiente de la ejecución de PR81; no se declara PASS hasta verificarla.
