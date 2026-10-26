@@ -387,11 +387,41 @@ test("AC03/04/26/33/35: vínculo opcional verificado, agregado terminal sin conc
       now,
       "Reposicion",
     ), "tipoVinculo")).toBeTruthy();
-  const repoTransfer = vincularRevisionComida(
+  const repoIncome = vincularRevisionComida(
     db,
     repo.operacion.id,
     {
       revision: 1,
+      motivo: "ingreso existente ficticio",
+      movimiento: "203",
+      tipoVinculo: "Individual",
+      evidenciaVinculo: "justificante de ingreso",
+    },
+    randomUUID(),
+    now,
+    "Reposicion",
+  );
+  expect(repoIncome.operacion.estadoVinculo).toBe("Verificado");
+  expect(fieldError(() =>
+    vincularRevisionComida(
+      db,
+      repo.operacion.id,
+      {
+        revision: 2,
+        motivo: "ingreso exterior no habilitado",
+        movimiento: "209",
+        tipoVinculo: "Individual",
+        evidenciaVinculo: "evidencia ficticia",
+      },
+      randomUUID(),
+      now,
+      "Reposicion",
+    ), "movimiento")).toBeTruthy();
+  const repoTransfer = vincularRevisionComida(
+    db,
+    repo.operacion.id,
+    {
+      revision: 2,
       motivo: "transferencia interna ficticia",
       movimiento: "204",
       tipoVinculo: "Individual",

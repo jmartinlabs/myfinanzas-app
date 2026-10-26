@@ -111,7 +111,7 @@ type ListData = {
     inicio: string;
     fin: string | null;
     estadoTemporal: string;
-    cobertura: "Completa" | "Parcial" | null;
+    cobertura: "Parcial" | null;
   } | null;
   sinCicloAsignable: number;
   fueraDeCiclo: number;
@@ -598,7 +598,7 @@ function OperationList({ go }: { go: (p: string) => void }) {
         {!!data?.fueraDeCiclo && (
           <p className="help">
             {data.fueraDeCiclo} operaciones existen fuera del ciclo filtrado
-            (`Fuera de ciclo`); no son ausencia ni cero.
+            («Fuera de ciclo»); no son ausencia ni cero.
           </p>
         )}
         <div className="list-toolbar">
@@ -967,11 +967,20 @@ function OperationDetail({
     );
   if (!data) return <p role="status">Cargando ficha…</p>;
   const o = data.operacion;
-  const movements = (options?.movimientos ?? []).filter(
-    (m) =>
-      !m.anulado &&
-      (tipo === "Detalle" ? m.tipo === "Gasto" : ["Ingreso", "Transferencia"].includes(m.tipo)),
-  );
+  const movements = (options?.movimientos ?? []).filter((m) => {
+    if (m.anulado) return false;
+    if (tipo === "Detalle")
+      return m.tipo === "Gasto" && m.origenControl !== "Exterior";
+    if (m.tipo === "Ingreso") return m.destinoControl !== "Exterior";
+    if (m.tipo === "Transferencia")
+      return (
+        m.origen !== "S000" &&
+        m.destino !== "S000" &&
+        m.origenControl !== "Exterior" &&
+        m.destinoControl !== "Exterior"
+      );
+    return false;
+  });
   return (
     <>
       <PageHead
@@ -1103,7 +1112,7 @@ function OperationDetail({
         {o.estadoVinculo === "Revisar" && (
           <p className="notice">
             El Movimiento vinculado cambió o está anulado. El vínculo se conserva
-            en `Revisar` y no se reasigna automáticamente. La operación bancaria
+            en «Revisar» y no se reasigna automáticamente. La operación bancaria
             sigue siendo válida.
           </p>
         )}
@@ -1406,6 +1415,7 @@ function OperationForm({
           id: result.operacion.id,
           coincidencias: result.coincidencias,
         });
+        attempt.current = crypto.randomUUID();
         return;
       }
       go(target);

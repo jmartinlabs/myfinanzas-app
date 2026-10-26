@@ -682,6 +682,19 @@ function eligibleLink(
         { movimiento: "El Ingreso no tiene Subtipo existente." },
         "Movimiento no elegible.",
       );
+    const destination = getSaldo(db, movimiento.destino);
+    if (
+      destination.id === "S000" ||
+      destination.tipo === "Exterior" ||
+      destination.control === "Exterior"
+    )
+      fail(
+        {
+          movimiento:
+            "Movimientos con Exterior/D5 no habilitados para este vínculo.",
+        },
+        "Movimiento no elegible.",
+      );
     return;
   }
   if (movimiento.tipo !== "Transferencia")

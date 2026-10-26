@@ -234,8 +234,10 @@ test("E3.4 Revisión Comida: MFA, devolución explícita, vínculo, reposiciones
         () => document.documentElement.scrollWidth <= window.innerWidth + 1,
       ),
     ).toBe(true);
+    await shot("revision-comida-ficha-390");
     await page.getByRole("button", { name: "Editar", exact: true }).click();
     await expect(page.getByLabel("Fecha de operación")).toBeVisible();
+    await shot("revision-comida-formulario-390");
     await page.getByRole("button", { name: "Guardar rectificación" }).click();
     await expect(page.getByText("Revisa los campos", { exact: false })).toBeVisible();
     await expect(

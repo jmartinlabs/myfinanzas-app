@@ -114,7 +114,7 @@ Cambios:
 
 Evidencia:
 
-- API focal: **15 PASS / 0 FAIL / 212 expectativas**.
+- API focal: **15 PASS / 0 FAIL / 215 expectativas**.
 - Typecheck y build: **PASS**.
 - E2E propio: **PASS** (MFA real, escrituras reales, vincular/desvincular, coincidencia
   advertida, 390/1440 ficha y formulario, teclado, foco, 401 y sin overflow). Capturas en
