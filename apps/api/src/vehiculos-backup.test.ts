@@ -87,7 +87,7 @@ test("E3.3 v14 backup manifest and restore preserve fichas and revoke sessions",
     expect(decrypted.exitCode).toBe(0);
     const bundle = JSON.parse(decrypted.stdout.toString());
     expect(bundle.manifest).toMatchObject({
-      app: "e3.3-v14",
+      app: "e4.1-v16",
       schema: 14,
       origin: "demo",
     });
@@ -96,7 +96,7 @@ test("E3.3 v14 backup manifest and restore preserve fichas and revoke sessions",
     const snapshot = new Database(snapshotPath, { readonly: true, strict: true });
     try {
       expect(snapshot.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 14,
+        version: 16,
       });
       expect(
         snapshot
@@ -114,7 +114,7 @@ test("E3.3 v14 backup manifest and restore preserve fichas and revoke sessions",
     const copy = new Database(restored.database, { readonly: true, strict: true });
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 14,
+        version: 16,
       });
       expect(
         copy.query("SELECT matricula FROM fichas_vehiculo WHERE referencia=?").get(vehicle.id),

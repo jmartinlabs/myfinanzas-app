@@ -25,6 +25,7 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
+import { cashAt, cents as cashDecimal } from "./investment-engine";
 export const incomeSubtypes = ["Nómina", "Bonus", "Intereses", "Promoción"];
 export type MovementProtection = (
   action: string,
@@ -632,6 +633,13 @@ function plan(
       if (next && (next.origen === id || next.destino === id))
         n += (next.destino === id ? 1n : -1n) * money(next.importe)!;
       after = decimal(n.toString());
+    } else if (s.tipo === "Efectivo" && s.control === "Inversiones") {
+      let n = BigInt(cashAt(db, id).disponible);
+      if (old && !old.anulado && (old.origen === id || old.destino === id))
+        n -= (old.destino === id ? 1n : -1n) * BigInt(old.importe);
+      if (next && (next.origen === id || next.destino === id))
+        n += (next.destino === id ? 1n : -1n) * money(next.importe)!;
+      after = cashDecimal(n);
     }
     return {
       id,
@@ -642,7 +650,11 @@ function plan(
       motivo:
         s.control === "Movimientos"
           ? "Motor Movimientos"
-          : "Posición no calculable por este motor",
+          : s.tipo === "Efectivo" && s.control === "Inversiones"
+            ? "Motor de efectivo de inversión"
+            : s.control === "Inversiones"
+              ? "Valoración de inversión no disponible hasta E4.3"
+              : "Posición no calculable por este motor",
     };
   });
   const debtIds = [
@@ -749,7 +761,12 @@ function plan(
       referenciaDespues: dates.sort().at(-1) ?? null,
       cobertura:
         "Movimientos comprobado; posición Control Movimientos y contexto temporal derivados.",
-      pendientes: ["Cierres", "Presupuestos", "Comida", "Inversiones"],
+      pendientes: [
+        "Cierres",
+        "Presupuestos",
+        "Comida",
+        "Valoración de inversión E4.3",
+      ],
     },
     hoy: spanishToday(now),
   };

@@ -319,6 +319,13 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
           : null,
         `${included.length}/${eligible.length} posiciones elegibles; ${unknown.length} pertenencias sin informar`,
       );
+      if (
+        included.some(
+          (s) => s.tipo === "Efectivo" && s.control === "Inversiones",
+        )
+      )
+        metrics.liquidez.motivo +=
+          " Cobertura histórica no importada: la posición de inversión solo incluye Compras registradas en la aplicación.";
       metrics.liquidezHistorica = absent(
         "Sin reconstrucción/fotografía verificable compatible con el corte financiado",
       );

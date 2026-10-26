@@ -288,7 +288,7 @@ test("P11 genuine v11 migration preserves all original rows and rollback", async
   const before = db.query("SELECT * FROM saldos ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 14,
+    version: 16,
   });
   expect(db.query("SELECT * FROM saldos ORDER BY id").all()).toEqual(before);
   expect(getPayroll(db).pagas).toHaveLength(0);

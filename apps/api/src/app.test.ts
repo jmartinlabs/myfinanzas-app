@@ -205,6 +205,8 @@ test("AC06/09–12/27/34: seis pares, S000 protegido y posiciones no inventadas"
     for (const s of all) {
       if (s.control === "Movimientos")
         expect(s.posicion.importe).toBe(s.saldoApertura ?? "0.00");
+      else if (s.tipo === "Efectivo" && s.control === "Inversiones")
+        expect(s.posicion.importe).toBe("0.00");
       else expect(s.posicion.importe).toBeNull();
     }
     expect(getSaldo(db, "S002").posicion.motivo).toContain("Terminal");

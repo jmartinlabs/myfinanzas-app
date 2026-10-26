@@ -2138,3 +2138,71 @@ textarea {
 .vehicle-facts .card-head strong {
   white-space: nowrap;
 }
+
+/* E4.1 Inversiones: clear separation between cash and position. */
+.inversiones-cash-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+}
+.inversiones-cash-list li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.inversiones-cash-list li:last-child {
+  border-bottom: 0;
+}
+.inversiones-list .desktop-list th:nth-child(5) {
+  width: 26%;
+}
+.inversiones-actions {
+  white-space: nowrap;
+}
+.inversiones-actions button + button {
+  margin-left: 8px;
+}
+.inversiones-filters {
+  grid-template-columns: repeat(5, minmax(120px, 1fr));
+}
+.inversiones-audit {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.inversiones-audit li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.inversiones-audit li:last-child {
+  border-bottom: 0;
+}
+.inversiones-impact {
+  border-left: 4px solid var(--green);
+}
+.inversiones-impact h2:focus {
+  outline: 3px solid var(--green);
+  outline-offset: 4px;
+}
+@media (max-width: 1050px) {
+  .inversiones-filters {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .inversiones-filters {
+    grid-template-columns: 1fr;
+  }
+  .inversiones-cash-list li {
+    align-items: flex-start;
+  }
+  .inversiones-actions {
+    white-space: normal;
+  }
+  .inversiones-actions button + button {
+    margin-left: 0;
+  }
+}

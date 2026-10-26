@@ -99,6 +99,19 @@ export function financeRevision(db: Database) {
         "SELECT id,nombre,tipo,control,estado,exterior,CAST(apertura AS TEXT) apertura,fecha_apertura,revision FROM saldos ORDER BY id",
       )
       .all(),
+    ...(db
+      .query(
+        "SELECT name FROM sqlite_master WHERE name='operaciones_inversion'",
+      )
+      .get()
+      ? [
+          db
+            .query(
+              "SELECT * FROM operaciones_inversion ORDER BY length(id),id",
+            )
+            .all(),
+        ]
+      : []),
     ...["categorias", "subcategorias", "partidas"].map((table) =>
       db.query(`SELECT * FROM ${table} ORDER BY id`).all(),
     ),
@@ -114,19 +127,28 @@ export function saldoHasEconomicUse(
   id: string,
   changed: string[],
 ) {
+  const protectedFields = [
+    "tipo",
+    "control",
+    "saldoApertura",
+    "fechaApertura",
+    "permiteSalidaExterior",
+  ];
   return (
-    ledgerInstalled(db) &&
-    changed.some((c) =>
-      [
-        "tipo",
-        "control",
-        "saldoApertura",
-        "fechaApertura",
-        "permiteSalidaExterior",
-      ].includes(c),
-    ) &&
-    !!db
-      .query("SELECT id FROM movimientos WHERE origen=? OR destino=? LIMIT 1")
-      .get(id, id)
+    changed.some((c) => protectedFields.includes(c)) &&
+    ((ledgerInstalled(db) &&
+      !!db
+        .query("SELECT id FROM movimientos WHERE origen=? OR destino=? LIMIT 1")
+        .get(id, id)) ||
+      (!!db
+        .query(
+          "SELECT name FROM sqlite_master WHERE name='operaciones_inversion'",
+        )
+        .get() &&
+        !!db
+          .query(
+            "SELECT id FROM operaciones_inversion WHERE saldo_efectivo=? OR saldo_inversion=? LIMIT 1",
+          )
+          .get(id, id)))
   );
 }

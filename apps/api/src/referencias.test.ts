@@ -224,7 +224,9 @@ test("05 R1 AC01–10/20/21: transferencias internas exactas, terminal, ciclos y
     for (const control of ["No controlado", "Terminal", "Inversiones"]) {
       const s = saldo(db, control, "0", control);
       expect(save(db, transfer(b.id, s.id)).destino.id).toBe(s.id);
-      expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      const position = getSaldo(db, s.id).posicion.importe;
+      if (control === "Inversiones") expect(position).not.toBeNull();
+      else expect(position).toBeNull();
     }
     updateSaldo(db, b.id, {
       revision: getSaldo(db, b.id).revision,
@@ -1125,7 +1127,7 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [8, openDatabaseV8, "e2.2-v8"],
       [12, openDatabaseV12, "e2.5-v12"],
       [13, openDatabaseV13, "e3.1-v13"],
-      [14, openDatabase, "e3.3-v14"],
+      [16, openDatabase, "e4.1-v16"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);

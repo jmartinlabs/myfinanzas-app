@@ -1,5 +1,7 @@
 import { anticipoSchema } from "./anticipo-schema";
 import { vehicleSchema } from "./vehicle-schema";
+import { investmentSchema } from "./instrumento-schema";
+import { verifyAdmittedContract } from "./schema-contract";
 import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
 import { cyclePlanSchema } from "./cycle-plan-schema";
@@ -32,13 +34,16 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
         versions[0].version,
       )
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
+    // Contract verification is the first operation on an existing 14/15 database,
+    // before any persistent PRAGMA, identity transaction or DDL.
+    verifyAdmittedContract(db);
     if (versions[0].version >= 8) assertBudgetContract(db);
   } else if (
     db
@@ -76,7 +81,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -95,6 +100,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 12) payrollSchema(db);
         if (versions[0].version < 13) anticipoSchema(db);
         if (versions[0].version < 14) vehicleSchema(db);
+        if (versions[0].version < 16) investmentSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -203,6 +209,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       payrollSchema(db);
       anticipoSchema(db);
       vehicleSchema(db);
+      investmentSchema(db);
     }).immediate();
   } catch (error) {
     db.close();
