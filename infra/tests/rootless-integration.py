@@ -468,7 +468,8 @@ def main():
         matrix.mkdir(mode=0o700)
         matrix_flags = [flag for flag in hardened if not flag.startswith('--volume=')]
         matrix_flags += ['--volume=' + str(matrix) + ':/var/lib/myfinanzas:rw',
-                         '--volume=' + str(source / 'infra/tests/release-contract.mjs') + ':/app/apps/api/infra-contract.mjs:ro']
+                         '--volume=' + str(source / 'infra/tests/release-contract.mjs') + ':/app/apps/api/infra-contract.mjs:ro',
+                         '--volume=' + str(source / 'infra/tests/release-fixture.mjs') + ':/app/apps/api/release-fixture.mjs:ro']
         stage = 'previous-version-explicit-initialization'
         run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
              previous['image'], 'apps/api/src/production-init.ts'])
