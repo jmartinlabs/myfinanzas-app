@@ -12,8 +12,9 @@ aprobación conceptual de D5-Q1–D5-Q6 (usuario, 2026-10-26) y no autoriza
 implementación, migraciones, SQL, Excel, commit, push, PR ni merge.
 Brainstorming, respuestas y revisiones: [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md)
 Testplan y evidencia: [14-compartidos-testplan.md](14-compartidos-testplan.md).
-Base de esta revisión: main `26b6f0c` (PR75/Base B `5ad75ed` integrada; esquema
-v15; documentos D5 sin cambios desde `24b48c5`). Rama documental
+Base de contraste D5: `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema
+v15). Main actual `26b6f0c` es v16 por E3.4; los documentos D5 no cambiaron. La
+migración D5 futura deberá contrastarse con main vigente. Rama documental
 `codex/spec14-d5-exterior-r2`.
 Solo especificación: no autoriza desarrollo, SQL real, commit, push ni merge.
 
@@ -546,9 +547,10 @@ siguen sin autorizar. PR67/71 integradas en la base a445f90 de esta publicación
    D5/B-T11. No se habilitan Exterior ordinario ni salidas. D5 no completa E3.2;
    roadmap y AC-31 de spec05 no se declaran PASS.
 3. Estado de entregas (verificado contra Git/main `26b6f0c`): Base B/PR75
-   integrada en `5ad75ed` (esquema v15); PR67/Dev12 integrada en `a445f90`;
-   Dev13/PR71 y Q9 integrados previamente. B-T11 y aceptación global E3.2 siguen
-   pendientes. Una eventual dev D5 exigirá candidato verificado.
+   integrada en `5ad75ed` (v15); main actual v16 por E3.4; PR67/Dev12 integrada en
+   `a445f90`; Dev13/PR71 y Q9 integrados previamente. B-T11 y aceptación global
+   E3.2 siguen pendientes. Una eventual dev D5 exigirá candidato verificado y
+   contraste de esquema con main.
 4. Excel: el traspaso de históricos (incluidos Exterior) pertenece al plan
    autorizado local; esta spec no define cargas ni SQL.
 5. E3.5/Comida y E3.1/Anticipos consumen este Neto central (E3.6); su orden de
@@ -878,7 +880,8 @@ restricción aprobada y D5 continúa pendiente. Los 39 AC originales no se renum
 Status: **PROPUESTA CONSOLIDADA — aprobación conceptual del usuario 2026-10-26;
 pendiente de revisión documental final y aprobación explícita.** No autoriza
 implementación, dev D5, migraciones, SQL, Excel, commit, push, PR ni merge. Base
-verificada main `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema v15). Rama
+de contraste `24b48c5` (Base B v15); main actual `26b6f0c` v16 por E3.4, sin
+cambios en estos documentos. La migración futura se contrastará con main. Rama
 documental `codex/spec14-d5-exterior-r2`. Fuente: respuestas D5-Q1–D5-Q6
 registradas en el [brainstorming](14-compartidos-brainstorming.md).
 Q1–Q7, F1–F6, P-F6, R-MP, R-CC y los 39 AC base se conservan; AC-21 no se
@@ -1002,7 +1005,8 @@ terceros pendientes.
   preservando IDs, auditorías, FK, triggers, CHECK y la identidad de fichas,
   participantes y Movimientos; continuidad con Base B/v15 y Vehículos, sin
   reseed. No se ejecuta DDL en esta entrega. La versión futura es **provisional**:
-  main v15 es solo el punto de contraste.
+  main v15 fue el punto de contraste; main actual v16 y la migración futura se
+  contrastará con él.
 - El CHECK no puede validar CAT013, ficha ni participante. Si se habilita D5, el
   CHECK solo podrá relajar la **forma** `S000 → destino distinto de S000` para
   `Transferencia`; la validación CAT013/ficha/participante y la exigencia de
@@ -1066,16 +1070,18 @@ terceros pendientes.
   patrón de idempotencia vigente de Movimientos; no se diseña otro mecanismo.
 - **Duplicado o contexto obsoleto:** misma clave con payload distinto, o intento
   distinto con huella/revisión obsoleta → 409 sin efectos parciales; no modifica
-  la acreditación existente ni crea otra.
+  la acreditación existente ni crea otra. Segunda acreditación del mismo Movimiento
+  con clave nueva → 409; payload inválido → 422.
 - **Fallo transaccional:** cualquier fallo en Movimiento, metadatos, intento o
   auditoría → rollback íntegro; no queda Movimiento sin acreditación,
   acreditación huérfana ni auditoría parcial. Un reintento posterior seguro no
   duplica.
 - **Rectificación:** un hecho vigente con REF/participante históricos hoy
   inactivos puede rectificar importe, fecha o Destino elegible conservando ambos
-  vínculos, sin exigir reactivación; exige impacto, motivo, revisión y auditoría.
-  Cambiar la identidad del participante exige REF/ficha activa y Tercero activo de
-  la misma ficha, y no cambia la REF. Un hecho o acreditación anulados no se
+  vínculos, sin exigir reactivación; exige impacto, motivo, revisión y auditoría,
+  y el motor recalcula Recuperado, pendiente, exceso y Neto. Cambiar la identidad
+  del participante exige REF/ficha activa y Tercero activo de la misma ficha, y no
+  cambia la REF. Un hecho o acreditación anulados no se
   rectifican ni se reactivan.
 - No se admite confirmar un preview obsoleto ni completar campos derivados por el
   cliente.
@@ -1099,7 +1105,8 @@ terceros pendientes.
   participante, sin exigir su reactivación. Exige vista de impacto, motivo,
   revisión y auditoría append-only; no crea un enlace nuevo ni reactiva el
   vínculo. El Destino nuevo debe ser un Saldo elegible; no se conserva un enlace
-  operativo a un Saldo inactivo.
+  operativo a un Saldo inactivo. El motor recalcula Recuperado, pendiente, exceso
+  y Neto, y el preview muestra el antes/después.
 - **Cambio de identidad del participante:** sustituir el participante de la
   acreditación exige REF/ficha activa y un Tercero activo de la misma ficha. No
   cambia la REF ni el Tipo, y se registra como corrección revisada con impacto y
@@ -1225,11 +1232,11 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-03 | Transferencia interna entre Saldos propios con CAT013 | No acredita recuperación; no altera Recuperado/pendiente/exceso; sigue siendo movimiento interno. |
 | D5-AC-04 | Gasto CAT013 válido; Ingreso S000 sin CAT013; Ingreso CAT013 | Gasto CAT013 conserva Base B y no se convierte en aportación; Ingreso S000 sin CAT013 conserva E1.5; Ingreso CAT013 → 422; ninguno acredita ni se reclasifica. |
 | D5-AC-05 | Participante Titular, inactivo, de otra ficha, inexistente o implícito | Rechazo 422; sin alta parcial; no se crea participante automáticamente. |
-| D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo por unicidad/cardinalidad; una sola acreditación y un solo participante. |
+| D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo 409/422 por unicidad/cardinalidad; una sola acreditación y un solo participante. |
 | D5-AC-07 | Evidencia vacía/genérica o procedencia histórica insuficiente | Rechazo 422 o Revisar/No disponible; no se acredita; no se inventan importe/fecha. |
 | D5-AC-08 | Histórico S000 con CAT013/ficha/evidencia vs. Gasto/Ingreso, interno, anulado, sin REF o sin ficha | Solo el primero es elegible tras revisión; el resto no se acredita; sin REF retroactiva, backfill ni atribución automática. |
 | D5-AC-09 | Replay idéntico con respuesta perdida; dos idénticas concurrentes; clave reutilizada con payload distinto; contexto obsoleto; fallo transaccional | Replay devuelve respuesta/IDs originales antes de revalidar huella/revisión; concurrentes idénticas producen una operación y la misma respuesta; duplicado/contexto obsoleto → 409 sin efectos; fallo → rollback íntegro. |
-| D5-AC-10 | Hecho vigente con REF/participante inactivos: rectificar importe/fecha/Destino conservando vínculos; cambiar identidad del participante; intentar rectificar un anulado | Importe/fecha/Destino con impacto, motivo y auditoría sin reactivar REF/participante; cambio de participante solo con REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen y originales preservados. |
+| D5-AC-10 | Hecho vigente con REF/participante inactivos: rectificar importe/fecha/Destino conservando vínculos; cambiar identidad del participante; intentar rectificar un anulado | Importe/fecha/Destino con impacto, motivo, auditoría y recálculo de Recuperado/pendiente/exceso/Neto, sin reactivar REF/participante; cambio de participante solo con REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen y originales preservados. |
 | D5-AC-11 | Anular una aportación acreditada; consultar historia; intentar reutilizar el vínculo | Excluida del motor; metadatos/evidencia/historia conservados; vínculo inactivo visible pero no reutilizable; sin reactivación ni DELETE. |
 | D5-AC-12 | Aportación acreditada en caso multi-Gasto/multi-Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado y Neto por Gasto/Partida exactos; exceso íntegro sin recorte; sin cuota → Revisar; sin compensación cruzada; Titular con Pendiente/Exceso 0 (F3). |
 | D5-AC-13 | Informes y seguridad: aportación acreditada; acceso sin MFA/CSRF; errores | Nunca Ingreso ni ejecución presupuestaria; Neto central sin doble descuento; acceso denegado; errores sin datos sensibles. |
@@ -1320,7 +1327,8 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Aportaciones acreditadas      │ Preview antes/después         │
 │ Álex 300,00 € · evidencia     │ Bea pend. 150 · Álex exc. 150 │
 │ Bea pendiente 150,00 €        │ Global pend. 150 · exc. 150   │
-│                               │ Banco +300,00 € · S000 no saldo│
+│                               │ Banco +300,00 €               │
+│                               │ S000 no computa como saldo    │
 │                               │ [Cancelar] [Revisar]          │
 └───────────────────────────────┴──────────────────────────────┘
 ```

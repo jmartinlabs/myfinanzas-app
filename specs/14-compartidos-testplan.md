@@ -308,7 +308,8 @@ política B3 ni sus3000ms. Linux/restore y QA del nuevo candidato: pendientes.
 ## D5/Exterior — plan de pruebas futuro (NO EJECUTADO)
 
 Status: **DISEÑO DE PRUEBAS; todas UNRUN/BLOQUEADAS.** No existe implementación D5
-en main v15. Base de contraste: main `24b48c5` / Base B `5ad75ed`; spec14 §15 y
+en main (v16 actual). Base de contraste: `24b48c5`/v15 (Base B `5ad75ed`); main actual `26b6f0c`/v16
+por E3.4, sin cambios en estos documentos; spec14 §15 y
 spec05 §D5. Este bloque no declara D5, E3.2, B-T11 ni AC-31 de spec05 PASS. Sin datos
 reales: fixtures ficticias y servicios reales de prueba.
 
@@ -321,11 +322,11 @@ reales: fixtures ficticias y servicios reales de prueba.
 | T-D5-03 | AC-03 | Transferencia interna con REF CAT013 | Movimiento interno válido sin acreditación | No altera Recuperado/Neto | Motor + DTO | UNRUN |
 | T-D5-04 | AC-04 | Gasto CAT013 válido; Ingreso S000 sin CAT013; Ingreso CAT013 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5; ninguno acredita | Ingreso CAT013 → 422; no se reclasifica ni se convierte en aportación | Servicio + esquema + DTO | UNRUN |
 | T-D5-05 | AC-05 | Tercero activo de la ficha vs. Titular/inactivo/otra ficha/inexistente | Tercero válido acredita | 422 sin alta parcial; sin creación implícita | API/SQLite | UNRUN |
-| T-D5-06 | AC-06 | Primer alta válida vs. segunda acreditación o división del mismo Movimiento | Una sola fila por Movimiento | Rechazo por unicidad/cardinalidad | SQLite UNIQUE + API | UNRUN |
+| T-D5-06 | AC-06 | Primer alta válida vs. segunda acreditación o división del mismo Movimiento | Una sola fila por Movimiento | Rechazo 409/422 por unicidad/cardinalidad | SQLite UNIQUE + API | UNRUN |
 | T-D5-07 | AC-07 | Evidencia suficiente vs. vacía/genérica; histórico con procedencia insuficiente | Evidencia suficiente acredita | 422 o Revisar/No disponible; no inventa importe/fecha | Validación + UI | UNRUN |
 | T-D5-08 | AC-08 | Histórico elegible vs. Gasto/Ingreso/interno/anulado/sin REF/sin ficha | Solo el elegible tras revisión acredita | Resto no acredita; sin REF retroactiva/backfill | Focal + fixtures | UNRUN |
 | T-D5-09 | AC-09 | Respuesta perdida tras commit; dos idénticas concurrentes; clave reutilizada con payload distinto; contexto obsoleto; fallo transaccional | Replay devuelve respuesta/IDs originales antes de revalidar; concurrentes idénticas → una operación y misma respuesta | Duplicado/contexto obsoleto → 409 sin efectos; fallo → rollback íntegro; sin huérfanos | Dos conexiones + fallo inyectado | UNRUN |
-| T-D5-10 | AC-10 | Positivo: hecho vigente con REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos. Negativo: cambiar participante con REF/Tercero inactivo; rectificar anulado; cambiar Tipo/REF/Origen | Importe/fecha/Destino con impacto/motivo/auditoría sin reactivar REF/participante; historial preservado | Cambio de participante exige REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen bloqueados | API + triggers + auditoría | UNRUN |
+| T-D5-10 | AC-10 | Positivo: hecho vigente con REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos. Negativo: cambiar participante con REF/Tercero inactivo; rectificar anulado; cambiar Tipo/REF/Origen | Importe/fecha/Destino con impacto/motivo/auditoría; Recuperado/pendiente/exceso/Neto recalculados; historial preservado | Cambio de participante exige REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen bloqueados | API + triggers + auditoría | UNRUN |
 | T-D5-11 | AC-11 | Anular aportación acreditada; reutilizar vínculo | Excluida del motor; historia/evidencia conservadas y visibles | Reactivación, DELETE y nueva atribución bloqueados | SQLite + DTO + UI | UNRUN |
 | T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota; Titular Pendiente 0 | Sin compensación cruzada ni aportación exigible del Titular | Motor + DTO + capturas | UNRUN |
 | T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | UNRUN |
