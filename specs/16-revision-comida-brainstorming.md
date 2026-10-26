@@ -1,8 +1,8 @@
 # 16 — E3.4 Revisión bancaria de Comida: Brainstorming
 
-Status: EN PAUSA — Q1–Q7 confirmadas con precisiones el 2026-10-26; D-01-R abierta y
-basada solo en evidencia histórica v5.10; AC-25 pendiente; specification DRAFT no aprobada.
-No se declara equivalencia con v5.11(7).
+Status: Aprobación documental del candidato registrada el 2026-10-26; delta E3.4 con QA
+independiente PASS, pendiente de aprobación final. AC-25 abierto; D-01-R(v5.11(7))
+pendiente; efecto analítico E3.5 pendiente. No se declara equivalencia con v5.11(7).
 Roadmap/context: [E3.4](roadmap.md#e34--revisión-bancaria-de-comida-sin-gasto-duplicado),
 [E3.5](roadmap.md#e35--comida-por-ciclo-y-compensaciones),
 [R1/R3/R4/P6](functional-reference-v5.11.md),
@@ -11,11 +11,8 @@ Roadmap/context: [E3.4](roadmap.md#e34--revisión-bancaria-de-comida-sin-gasto-d
 [spec07](07-ciclos-operacion-specification.md),
 [spec12](12-flujo-mensual-specification.md) y spec13 (E3.1 Anticipos, rama
 `codex/spec13-anticipos`, no integrada).
-Next action: DETENIDA. No hay más rondas sobre D-01-R/v5.11(7); PD-01 es la única ronda
-breve pendiente. Se reanudará al disponer del contenido vigente de v5.11(7); entonces se
-contrastará AC-25 y se decidirá D-01-R. La
-[specification](16-revision-comida-specification.md) sigue DRAFT y este documento no
-aprueba ni implementa nada.
+Next action: aprobación final del delta; después, si se aprueba, publicación documental.
+No DEV16, SQL, Excel, datos reales, migración, despliegue ni merge. AC-25 no se cierra.
 
 ## Autorización y preflight
 
@@ -836,8 +833,44 @@ candidato: brainstorming SHA-256
 `bb6397f438b7ed236d944c8fcfc591d061f011bb63291e2257508e350affb385`;
 specification SHA-256
 `a8a278d2dba9ed31a5e7b0606764991698b762c214997ff83b9bf386ee82e4d4`.
+Los hashes citados identifican la propuesta original, no el texto consolidado. El
+texto consolidado en main `aad33e9` tiene SHA-256
+`804e17774d152506115404ef609f7fb8d6e3ce5f36e5990466a27f98f6df7bdf`
+(brainstorming) y
+`d3f48143ff5be3f1036d7475f08b2dfb8d35b08a8afa370e791c607fa088139b`
+(specification).
 Esta entrada actualiza el estado histórico de no aprobación documental.
-Se conservan pendientes PD-01 analítica, D-01-R y AC-25; no se inventan respuestas,
-no se declara equivalencia física ni cierre completo. Sin autorización de desarrollo,
-SQL, migración, despliegue o merge. Próxima acción: resolver los gates pendientes
-cuando exista evidencia/decisión, sin repetir QA del contenido sin cambios.
+Se conservan pendientes efecto analítico E3.5, D-01-R(v5.11(7)) y AC-25; no se inventan
+respuestas, no se declara equivalencia física ni cierre completo. Sin autorización de
+desarrollo, SQL, migración, despliegue o merge. Próxima acción: QA y aprobación final del
+delta, sin repetir QA del contenido sin cambios.
+
+## Delta de cierre E3.4 — 2026-10-26, en revisión
+
+Estado: propuesta documental con QA independiente PASS (2026-10-26), pendiente de aprobación final;
+no sustituye la aprobación del candidato original ni cierra AC-25.
+
+Decisiones incorporadas al delta:
+
+- Devolución: `Detalle`+`Entrada` con `esDevolucion=true`; no se infiere por dirección.
+  No define neteo, periodo ni fórmula de E3.5.
+- Clasificación: se conserva el enum aprobado, incluido `Fuera presupuesto` y su
+  exclusividad; históricos con ambas columnas se preservan en lectura.
+- Evidencia: `evidenciaBancaria`, `evidenciaRelacionCompra` opcional y
+  `evidenciaVinculo`. La referencia temporal no se filtra por evidencia.
+- Relación devolución–compra: se conserva solo `evidenciaRelacionCompra`; `detalleOrigenId`
+  se difiere y no se exige que la compra exista en el auxiliar.
+- D-01-R(app): vínculo opcional; `Gasto` agregado de Terminal con
+  `tipoVinculo=Agregado terminal`, sin conciliación de importes; sin financiación por
+  `Transferencia` ni ampliación de Exterior/D5. D-01-R(v5.11(7)) sigue en AC-25.
+- Contrato E3.5: E3.4 registra y expone; E3.5 calcula. E3.4 no calcula neteo, periodo ni
+  resultados financieros.
+- AC-25: abierto; el libro v5.11(7) existe pero no hay contraste físico acreditado.
+
+No se declara aprobación, equivalencia, cobertura completa ni autorización DEV16.
+
+Nota de supersesión: este delta sustituye, en lo relativo a `Detalle`+`Entrada` y sus
+evidencias, §9.2 (bullet PD-01), §9.3.3, §9.4 (filas «Vínculo» y «Reposición como
+única salida de toda `Entrada`», y párrafo de cierre), §9.4.1, §9.4.2, §9.5, la fila PD-01
+de §10, la fila A5 de §11 y el «Pendiente real» de §11. AC-10 deja de estar bloqueado por PD-01. D-01-R(app)
+queda propuesto y D-01-R(v5.11(7)) sigue en AC-25. No se declara aprobación ni equivalencia.
