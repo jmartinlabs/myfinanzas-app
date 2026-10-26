@@ -7,7 +7,7 @@ import { backup, restore } from '/app/apps/api/src/backup.ts';
 import { HttpApp } from '@effect/platform';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { installFixture, snapshot } from './release-fixture.mjs';
+import { installFixture, linkFixture, snapshot } from './release-fixture.mjs';
 const mode = process.argv[2];
 const root = '/var/lib/myfinanzas';
 const privatePath = root + '/fixture-private.json';
@@ -105,6 +105,7 @@ async function main() {
   const body={tipo:'Ingreso',fecha:'2026-01-01',importe:mode==='seed'?'50':mode==='update'?'7':'3',saldo:'S001',subtipo:'Bonus',concepto:'Synthetic infrastructure acceptance'};
   const preview=await request('/movimientos/impacto','POST',body);
   await request('/movimientos','POST',{...body,fingerprint:preview.fingerprint,aceptarCoincidencia:true},201);
+  linkFixture(db,mode);
   if(mode==='rollback') {
     const oldCookie=saved.cookie;
     const recovered=await request('/auth/recover','POST',{password:saved.password,code:saved.codes[0]});

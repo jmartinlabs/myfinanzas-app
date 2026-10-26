@@ -1,7 +1,6 @@
 // Synthetic cross-version acceptance fixture. Mounted read-only; never shipped.
-// One representative row per post-v6 module, plus a second write after the update,
-// so release-contract.mjs can prove that both the previous and current binaries
-// preserve the whole v16 data contract, not only Saldos/Movimientos.
+// Representative rows for every post-v6 module plus audit/photo/link continuity.
+// Attempt-only tables remain covered by the module test suites.
 
 export const tables = [
   'saldos', 'movimientos', 'movement_audit', 'referencias', 'categorias',
@@ -68,6 +67,37 @@ const moduleRows = (db, suffix, cycle, inicio, extra) => {
     VALUES(?, 'Detalle', ?, ?, 1234, 'Salida', 0, 'Comida', NULL, 'evidencia fixture', NULL, NULL, NULL,
     'Sin vínculo', NULL, NULL, NULL, 'Vigente', 'Sin asignación', 1, 'fixture', 'fixture')`,
     ['RC900' + suffix, '2026-01-1' + suffix, 'Compra fixture ' + suffix]);
+  const anticipo = 'REF900' + (suffix === '1' ? 1 : 4);
+  const compartido = 'REF900' + (suffix === '1' ? 2 : 5);
+  db.run(`INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
+    VALUES(?, '2026-01-01', 'Gasto', 1, 'S001', 'S000', NULL, 'PAR900', 'Anticipo fixture', '', 1, 1, 'fixture', 'fixture', NULL, NULL)`,
+    ['910' + suffix]);
+  db.run(`INSERT INTO movimiento_anticipo VALUES(?,?, 'Adelanto', 'S001', 'S000', 1, 'fixture', 'fixture', 1, 'fixture')`,
+    ['910' + suffix, anticipo]);
+  db.run(`INSERT INTO cycle_audit VALUES(?,1,'fixture','fixture','fixture','usuario-unico',NULL,'{}')`, [cycle]);
+  db.run(`INSERT INTO cycle_plan_audit(ciclo,presupuesto,revision,actor,instante,motivo,delta)
+    VALUES(?,?,1,'usuario-unico','fixture','fixture','{}')`, [cycle, 'PRE900' + suffix]);
+  db.run(`INSERT INTO payroll_audit(paga,actor,instante,motivo,delta)
+    VALUES(?,'usuario-unico','fixture','fixture','{}')`, ['PAY900' + suffix]);
+  db.run(`INSERT INTO fotos_neto_apertura VALUES(?,?,?,?,?,?,?,?,1)`,
+    [anticipo, cycle, inicio, 1000, 'fixture', 'fixture', 'fixture', 'fixture']);
+  db.run(`INSERT INTO annual_plan_audit(ejercicio,partida,revision,actor,instante,motivo,delta)
+    VALUES(?,?,1,'usuario-unico','fixture','fixture','{}')`, [extra, 'PAR900']);
+  db.run(`INSERT INTO anticipo_audit(referencia,accion,anterior,posterior,motivo,instante,actor)
+    VALUES(?,'fixture',NULL,'{}','fixture','fixture','usuario-unico')`, [anticipo]);
+  db.run(`INSERT INTO compartido_audit(referencia,accion,anterior,posterior,motivo,instante,actor)
+    VALUES(?,'fixture',NULL,'{}','fixture','fixture','usuario-unico')`, [compartido]);
+  db.run(`INSERT INTO revision_comida_audit(operacion,accion,revision,anterior,posterior,motivo,instante,actor)
+    VALUES(?,'fixture',1,NULL,'{}','fixture','fixture','usuario-unico')`, ['RC900' + suffix]);
+}
+
+export function linkFixture(db, mode) {
+  // Link a payroll row to the confirmed income movement created by release-contract.
+  const paga = mode === 'seed' ? 'PAY9001' : 'PAY9002';
+  const movement = db.query("SELECT id FROM movimientos ORDER BY rowid DESC LIMIT 1").get();
+  if (movement)
+    db.run("INSERT OR IGNORE INTO payroll_allocations VALUES(?,?,?,?,?)",
+      [paga, movement.id, '1.00', 1, 'fixture']);
 };
 
 export function installFixture(db, mode) {
