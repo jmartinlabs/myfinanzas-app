@@ -15,7 +15,7 @@ import {
 import { getVehicle, listVehicles, vehicleIntegrity } from "./vehiculos";
 import { createClassification } from "./clasificacion";
 import { createSaldo } from "./saldos";
-import { previewMovement, writeMovement } from "./movimientos";
+import { getMovement, previewMovement, writeMovement } from "./movimientos";
 import { cycleContext } from "./ciclos";
 import { Auth, provision, totp } from "./auth";
 import { createApp } from "./app";
@@ -954,11 +954,20 @@ test("AC-10/11/36/37/42: duplicate warnings, dimension hashes and atomic confirm
 });
 
 test("AC-07/25/32/33: integrity list is read-only, scope stays local and audit is append-only", async () => {
-  const { db } = setup();
+  const { db, parts } = setup();
   try {
     const h = await http(db);
     vehicle(db);
     db.run("INSERT INTO referencias VALUES('REF901','Huérfano','Vehículo','Activa',1,'x','x')");
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,partida,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES('990','2026-01-01','Gasto',100,'S001','S000',?,'REF901','x','',0,1,'x','x')",
+      [parts[0].id],
+    );
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES('991','2026-01-01','Transferencia',100,'S001','S002','REF901','x','',0,1,'x','x')",
+    );
+    expect(getMovement(db, "990").movimiento.integridad.estado).toBe("Revisar");
+    expect(getMovement(db, "991").movimiento.integridad.estado).toBe("OK");
     const report = vehicleIntegrity(db, "2026", now);
     expect(report.estado).toBe("Revisar");
     expect(report.items.some((i) => i.integridad.motivos.includes("FICHA_AUSENTE"))).toBe(true);

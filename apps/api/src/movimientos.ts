@@ -362,7 +362,11 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
     deuda: p?.deuda ? getDebt(db, p.deuda) : null,
     referencia: r.referencia ? getReference(db, r.referencia) : null,
     integridad:
-      r.referencia && getReference(db, r.referencia).tipo === "Vehículo" && !vehicleFicha(db, r.referencia)
+      r.referencia &&
+      r.tipo === "Gasto" &&
+      !r.anulado &&
+      getReference(db, r.referencia).tipo === "Vehículo" &&
+      !vehicleFicha(db, r.referencia)
         ? {
             estado: "Revisar" as const,
             motivos: ["GASTO_SIN_FICHA"],

@@ -327,7 +327,10 @@ function AuditPanel({ view }: { view: View }) {
             <li key={a.id}>
               <strong>{a.accion}</strong> · {a.entidad} · revisión {a.revision}{" "}
               <span className="help">
-                {new Date(a.instante).toLocaleString("es-ES")} · {a.actor}
+                {new Date(a.instante).toLocaleString("es-ES", {
+                  timeZone: "UTC",
+                  timeZoneName: "short",
+                })} · {a.actor}
               </span>
               {a.motivo && <p className="help">{a.motivo}</p>}
               {Boolean(a.campos) && (
