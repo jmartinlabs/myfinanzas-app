@@ -19,7 +19,7 @@ Estado vigente: **CANDIDATE FOR INDEPENDENT QA / CI LINUX PENDIENTE**.
   `https://github.com/josemartin2000/myfinanzas-app/pull/75`, rama
   `codex/dev14-base-b`. Checkout aislado
   `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/dev14-baseb`.
-  Merge de compatibilidad `e205ba4` (`origin/main` `aad33e9` con Base B
+  Merge de compatibilidad `e205ba4` (`origin/main` `f5bf032`/DEV15 con Base B
   `fce1107`), correcciones QA `935dee9` y `e4ff2df`; el SHA de código final es
   `e4ff2df`. El commit documental posterior fija el SHA publicado.
 - Ownership / previous executor: el progress anterior acredita un único escritor y
@@ -103,7 +103,7 @@ E2E `7cefaf6`:
 
 ## Compatibilidad con main/DEV15 — 2026-10-26
 
-Main `aad33e9` contiene DEV15/PR81 `f5bf032`, que ocupa la versión **v14** con
+Main `f5bf032` (PR81, DEV15 integrado) ocupa la versión **v14** con
 `fichas_vehiculo`, `vehicle-rules.ts`, `vehiculos.ts` y sus rutas/UI. Base B partió
 de v13 y también declaraba v14, por lo que un merge textual habría marcado como
 actualizada una base con tablas o invariantes ausentes. Solución aplicada:

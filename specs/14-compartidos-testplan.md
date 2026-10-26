@@ -222,7 +222,7 @@ Observación de fds: /proc en Linux, lsof del PID propio en macOS. SinGC ni retr
 
 ## Compatibilidad v15 con main/DEV15 — 2026-10-26
 
-Candidato fusionado `e205ba4` sobre main `aad33e9` (DEV15/PR81 `f5bf032`).
+Candidato fusionado `e205ba4` sobre main `f5bf032` (DEV15/PR81).
 Esta sección sustituye únicamente la expectativa de versión del candidato actual;
 los resultados v14 anteriores quedan históricos y no acreditan este SHA.
 
