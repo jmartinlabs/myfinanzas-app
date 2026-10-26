@@ -1,7 +1,8 @@
 # E3.3 — Vehículos y control ITV: progreso DEV15
 
-Estado: **CANDIDATO IMPLEMENTADO — QA INDEPENDIENTE PENDIENTE** · rama `codex/pilot-dev15-deepseek`
+Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
+HEAD final local: `9b46153a510fc6b9eb0bc9504a480d84e2bd9bbd`.
 Spec: [15-vehiculos-itv-specification.md](15-vehiculos-itv-specification.md) rev5,
 aprobada sobre `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Evidencia de pruebas: [15-vehiculos-itv-testplan.md](15-vehiculos-itv-testplan.md).
@@ -77,22 +78,25 @@ merge, despliegue, datos reales ni cambios de visibilidad. PR78 no se modifica.
 - Dominio `apps/api/src/vehicle-rules.ts` + `referencias.ts`; read model en
   `apps/api/src/vehiculos.ts`; rutas en `apps/api/src/app.ts`.
 - UI `apps/web/src/Vehiculos.tsx`, integración en `Referencias.tsx` y navegación.
-- Pruebas focales `apps/api/src/vehiculos.test.ts` (10 tests, 150 assertions) y
+- Pruebas focales `apps/api/src/vehiculos.test.ts` (10 tests, 153 assertions) y
   `tests/e2e/vehiculos.spec.ts` (PASS, capturas 1440/390).
 - `bun run typecheck` PASS; `bun run build` PASS.
-- Suite API completa: 177 PASS / 44 FAIL; los 44 son guardas Linux de publicación/
-  restore (`libc.so.6`) en macOS, incluida la prueba real de backup/restore v14.
-  Ningún fallo funcional nuevo. CI Linux sigue UNRUN.
+- Suite API completa (última ejecución): 175 PASS / 46 FAIL / 221 tests. Los fallos
+  son guardas Linux de publicación/restore (`libc.so.6`) en macOS, la prueba real de
+  backup/restore v14 UNRUN y dos flakes preexistentes de diagnóstico (R11/04). No hay
+  fallo funcional nuevo de E3.3. CI Linux sigue UNRUN.
 - E2E completo: 6 PASS / 2 FAIL; fallos en servidores de restauración aislada de
   catalog/movimientos por la misma guarda Linux. E2E de vehículos PASS.
 - Verificación canónica: baseline PASS (57/24/8/15 regresiones, whitespace); full
   FAIL en la fase API por las guardas Linux y E2E UNRUN en macOS. No se declara PASS.
-- QA independiente sobre `8544dad`: APTO funcional con hallazgos. Corregidos H-01
-  (aserciones de manifiesto 14), H-02 (prueba real de backup/restore v14), H-03
-  (auditoría `duplicado_confirmado` ligada a REF y revisión), H-04 (edición de
-  vehículo desde la ficha, sin callejón en Referencias), H-05 (fechas/columnas/
-  concepto/auditoría) y H-06 (`GASTO_SIN_FICHA` solo Gastos vigentes). H-07/H-08
-  quedan como límites documentados: histórico futuro debe deduplicar y la prueba
-  de backup/restore es UNRUN en macOS.
+- QA independiente final sobre `9b46153`: **APTO CON OBSERVACIONES**, 45/45 AC con
+  PASS funcional y límites AC-04/AC-29. Corregidos H-01 (aserciones de manifiesto 14),
+  H-02 (prueba real de backup/restore v14), H-03 (auditoría `duplicado_confirmado`
+  ligada a REF y revisión), H-04 (edición de vehículo desde la ficha, sin callejón en
+  Referencias), H-05 (fechas/columnas/concepto/auditoría), H-06/R-01
+  (`GASTO_SIN_FICHA` solo Gastos vigentes) y UTC de auditoría. Residuales menores:
+  revisión REF vs ficha en una fila de auditoría, «Ver procedencia» inline y
+  `Movimientos.tsx` sin pintar el DTO de integridad. H-07/H-08 quedan como límites:
+  histórico futuro debe deduplicar y backup/restore es UNRUN en macOS.
 - Prueba focal nueva `apps/api/src/vehiculos-backup.test.ts`: UNRUN en macOS por
   `libc.so.6`; debe ejecutarse en Linux/CI.

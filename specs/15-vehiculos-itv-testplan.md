@@ -68,7 +68,7 @@ Los datos son ficticios. Un resultado macOS no sustituye CI Linux.
 
 ## Registro de ejecuciones
 
-Candidato funcional local (commits `96c3ac5` + `5f4403a`, base `e408b1d`). macOS
+Candidato final local `9b46153` (base `e408b1d`). macOS
 arm64, Bun 1.4.3, Python 3.12, Chromium/Playwright 1.64.1, `TMPDIR=/private/tmp` y
 age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
 
@@ -76,15 +76,15 @@ age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
 | --- | --- | --- |
 | Tipos | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS |
-| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 10 PASS / 150 assertions |
-| API completa | `NODE_ENV=test bun test apps/api` | 177 PASS / 44 FAIL; los 44 son guardas Linux/restore (`libc.so.6`) en macOS, no fallos funcionales del candidato |
+| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 10 PASS / 153 assertions |
+| API completa | `NODE_ENV=test bun test apps/api` | 175 PASS / 46 FAIL / 221 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
 | E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts` | PASS; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
-| Baseline canónica | `python3 scripts/verify baseline` | PASS en `8544dad`; nueva ejecución sobre el SHA final pendiente |
+| Baseline canónica | `python3 scripts/verify baseline` | PASS en `9b46153` (57/24/8/15 regresiones, whitespace) |
 | Full canónica | `python3 scripts/verify --full` | FAIL en API por guardas Linux; E2E UNRUN en macOS. No es PASS |
 | Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
-| QA independiente | Revisión de `8544dad` | APTO con hallazgos; H-01–H-06 corregidos, H-07/H-08 documentados |
+| QA independiente | Revisión de `9b46153` | APTO CON OBSERVACIONES; 45/45 AC funcional, H-01–H-06/R-01 cerrados, residuales menores y Linux/CI UNRUN |
 
 Los fallos de plataforma se conservan como UNRUN/BLOCKED para Linux/CI; no se
 reclasifican como PASS. Las capturas son ficticias y no contienen bases, claves,
@@ -143,3 +143,15 @@ Los límites se conservan explícitos.
 | AC-43 | PASS | PATCH omitido/null/estado |
 | AC-44 | PASS | futuro Futura/null/false |
 | AC-45 | PASS | contraste computado 6,04:1 |
+
+
+## Residuales de QA final (`9b46153`)
+
+- R-02 (baja): `duplicado_confirmado` declara entidad `ficha_vehiculo` pero usa la
+  revisión de la REF; queda documentado, sin pérdida de datos ni bloqueo.
+- R-03 (baja): «Ver procedencia» permanece inline y `Movimientos.tsx` no pinta el DTO
+  `integridad`; la API y la página de integridad son correctas.
+- R-04 (baja): los recuentos de la suite pueden variar por flakes preexistentes R11/04
+  y por `vehiculos-backup.test.ts`, que es UNRUN en macOS.
+- Gates pendientes: CI Linux real, `scripts/verify --full` PASS, revisión/publicación
+  autorizada de PR y aprobación de merge. Nada de esto se declara.
