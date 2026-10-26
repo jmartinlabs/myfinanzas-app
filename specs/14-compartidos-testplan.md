@@ -110,3 +110,72 @@ Se aplicarán solo correcciones dentro del diseño aprobado, sin rediseño.
 Base B no implementa D5, Recuperado real, Exceso, R-MP ni informes; B-T11 queda
 UNRUN. La aceptación de este plan no declara E3.2 completa. Próxima acción: ejecutar
 incrementos y actualizar resultados con evidencia real.
+
+## Resultados actuales del candidato — 2026-10-26
+
+La columna «Estado» de las matrices anteriores describe el diseño previo a código;
+este apartado es el estado vigente. Candidato de código `06cf1d85f52c`, ajuste E2E
+autorizado `7cefaf662837` y commit documental posterior. Evidencia de AUTOR; no
+sustituye QA independiente ni CI Linux.
+
+Entorno: macOS arm64; Bun 1.4.3
+(`/private/tmp/myfinanzas-toolchain/bun-darwin-aarch64/bun`), Python 3.12, age 1.3.2
+(`/private/tmp/myfinanzas-runtime/age`), Chrome del sistema, `TMPDIR=/private/tmp`.
+Comandos desde la raíz del checkout.
+
+### Gate B-T01–B-T11
+
+| ID | Resultado vigente | Evidencia / límite |
+| --- | --- | --- |
+| **B-T01** | **PARTIAL** | Migración v13→v14, preservación de filas/auditorías/FK/acceso de Anticipos, rollback de DDL y rechazo de versión desconocida: **PASS** en `compartidos.test.ts`. Backup/manifiesto v13/v14 y restore: **UNRUN macOS** por `libc.so.6` (`backup.ts`/`private-state.ts`); CI Linux obligatorio. |
+| **B-T02** | **PASS** (focal) | Alta REF CAT013+ficha, replay idempotente, conflicto de payload, fallo inyectado sin REF huérfana, lectura coherente. |
+| **B-T03** | **PASS** (focal) | IDs estables, único Titular activo, revisión/409, impacto, motivo, baja lógica con partes conservadas, DELETE físico y auditoría inmutable rechazados, participante de otra ficha 404. |
+| **B-T04** | **PASS** (focal) | Gasto CAT013 solo con ficha; Transferencia interna con REF permitida; S000 rechazada por servicio y CHECK; metadata de aportación rechazada; sin `movimiento_compartido`. |
+| **B-T05** | **PASS** (focal) | Ejemplo 300/150/100 con 1:1:1 → 183,34/183,33/183,33; sumas exactas por Gasto/Partida; sin doble cómputo. |
+| **B-T06** | **PASS** (rama B) | Sin Gastos → Sin repartir y Bruto no 0; 100 % Titular → Cerrado, Neto = Bruto = Coste propio; terceros con cuota → Reparto parcial y métricas No disponible; Gasto incompatible → Revisar/Parcial; rectificación P-F6 recalcula a Cerrado. Rama R-MP/D5 **UNRUN**. |
+| **B-T07** | **PASS** (focal) | Impacto antes/después, motivo obligatorio, historia append-only, baja lógica sin huérfanos y Movimientos bancarios idénticos. |
+| **B-T08** | **PASS** (rama B) | HTTP 401/403/404/409/422, CSRF/Origin, GET sin mutaciones, DTO sin 0 por ausencia; E2E real MFA 390/1440, teclado/foco, contraste real ≥4,5:1, sin W3 ni «Quién paga». 8 PNG en `artifacts/e3-2/` inspeccionadas. |
+| **B-T09** | **PASS** (focal) | S000/D5 bloqueados, Gasto CAT013 solo con ficha, interna sin acreditación; `specs/05*` sin cambios; no se declara E3.2. |
+| **B-T10** | **PARTIAL** | Tipos/build/baseline **PASS**; focales Compartidos/Referencias/Movimientos **PASS** en su parte no-platform. API completa 174 PASS/45 FAIL por `libc.so.6` (producción/publicación). E2E completo 6 PASS/2 FAIL: Liquidez ajeno y restauración macOS. CI Linux **UNRUN**. |
+| **B-T11** | **UNRUN (aplazado)** | Consumo por informes/E3.6 no implementado; AC-20 no PASS. |
+
+### Evidencia ejecutada
+
+| Comando | Resultado |
+| --- | --- |
+| `bun test apps/api/src/compartidos.test.ts` | **9 PASS / 0 FAIL**, 160 assertions |
+| `bun run typecheck` | **PASS** |
+| `bun run build` | **PASS** (34 módulos) |
+| `python3 scripts/verify --base f0a5219 --head HEAD` | Baseline **PASS**; typecheck/build **PASS**; API **174 PASS/45 FAIL** plataforma; E2E **UNRUN** al detenerse en API |
+| `node node_modules/@playwright/test/cli.js test tests/e2e/compartidos.spec.ts` | **1 PASS / 0 FAIL**; 8 PNG 390/1440 |
+| E2E completo | **6 PASS / 2 FAIL**: `catalog` (Liquidez) y `movimientos` (restauración) |
+
+### AC: estado de la parte B
+
+- **18 AC B-completas** (AC-01–07, AC-13, AC-15, AC-19, AC-22, AC-24, AC-26, AC-27,
+  AC-28, AC-29, AC-30, AC-31, AC-38): parte B verificada con focales/E2E, con las
+  salvedades de plataforma de B-T01/B-T10. AC-31 se limita a la rama P-F6 de B; la
+  rama R-MP/D5 sigue UNRUN.
+- **11 AC parciales** (AC-03, AC-09, AC-11, AC-12, AC-16, AC-17, AC-18, AC-20, AC-23,
+  AC-25, AC-39): parte B verificada; D5/informes/R-MP permanecen **UNRUN**.
+- **10 AC D5** (AC-08, AC-10, AC-14, AC-21, AC-32–AC-37): **UNRUN**. No se declaran PASS.
+- AC-20 y AC-31 conservan su parte pendiente; no se declara E3.2 completa.
+
+### Browser y revisión visual
+
+`artifacts/e3-2/compartidos-listado-{390,1440}.png`,
+`compartidos-ficha-{390,1440}.png`, `compartidos-impacto-{390,1440}.png` y
+`compartidos-cerrado-{390,1440}.png`. Inspeccionadas: listado y ficha legibles,
+tabla de participantes sin solapamiento a 1440, impacto apilado a 390, sin overflow
+de página, estados/ausencias visibles y foco del impacto comprobado. Correcciones
+aplicadas dentro del diseño aprobado: anchos de tablas, apilado móvil del impacto y
+lista de movimientos internos. No se afirma auditoría WCAG completa.
+
+### Fallos ajenos y bloqueos
+
+- `catalog.spec.ts:98`: el segundo `Space` no devuelve Liquidez a `false`
+  (`aria-checked` sigue `true`). Ocurre antes de cualquier ruta compartida; `Switch`
+  y `SaldoForm` no se modificaron. No se corrige para no ampliar alcance.
+- `movimientos.spec.ts`: el recorrido funcional (incluido Gasto CAT013 con ficha)
+  pasa; la restauración no arranca en macOS por `libc.so.6`.
+- Ambos requieren CI Linux/QA; no se relabelan como PASS.
