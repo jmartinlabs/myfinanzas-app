@@ -1993,3 +1993,148 @@ textarea {
     grid-column: 1 / -1;
   }
 }
+
+/* E3.3 Vehículos: compact desktop table and mobile cards without new visual identity. */
+.vehicle-table table {
+  font-size: 0.78rem;
+}
+.vehicle-table th,
+.vehicle-table td {
+  padding-left: 7px;
+  padding-right: 7px;
+  vertical-align: top;
+}
+.vehicle-table th:nth-child(1) { width: 15%; }
+.vehicle-table th:nth-child(2) { width: 10%; }
+.vehicle-table th:nth-child(3) { width: 9%; }
+.vehicle-table th:nth-child(4) { width: 9%; }
+.vehicle-table th:nth-child(5) { width: 10%; }
+.vehicle-table th:nth-child(6) { width: 10%; }
+.vehicle-table th:nth-child(7) { width: 9%; }
+.vehicle-table th:nth-child(8) { width: 10%; }
+.vehicle-table th:nth-child(9) { width: 9%; }
+.vehicle-table th:nth-child(10) { width: 8%; }
+.vehicle-table th:nth-child(11) { width: 7%; }
+.vehicle-table td:nth-child(5),
+.vehicle-table td:nth-child(7),
+.vehicle-table td:nth-child(9) {
+  white-space: nowrap;
+}
+.vehicle-fields,
+.vehicle-values {
+  display: grid;
+  gap: 6px 18px;
+  margin: 10px 0;
+}
+.vehicle-fields {
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+}
+.vehicle-values {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.vehicle-fields div,
+.vehicle-values div {
+  border-bottom: 1px solid var(--line, #dcecB3);
+  padding-bottom: 5px;
+}
+.vehicle-fields dt,
+.vehicle-values dt {
+  color: #536147;
+  font-size: 0.78rem;
+}
+.vehicle-fields dd,
+.vehicle-values dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.vehicle-summary {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 12px 0;
+}
+.vehicle-summary > div {
+  background: #f6fbef;
+  border: 1px solid #dcecB3;
+  border-radius: 8px;
+  padding: 9px 10px;
+}
+.vehicle-summary span {
+  color: #536147;
+  display: block;
+  font-size: 0.78rem;
+}
+.vehicle-summary strong {
+  display: block;
+  margin-top: 3px;
+}
+.vehicle-parts {
+  overflow-x: auto;
+}
+.vehicle-parts table {
+  border-collapse: collapse;
+  min-width: 620px;
+  width: 100%;
+}
+.vehicle-parts th,
+.vehicle-parts td {
+  border-bottom: 1px solid #dcecB3;
+  padding: 6px;
+  text-align: left;
+}
+.vehicle-outside {
+  border-top: 1px solid #dcecB3;
+  margin-top: 12px;
+  padding-top: 10px;
+}
+.vehicle-outside ul,
+.vehicle-audit,
+.integrity-list {
+  margin: 8px 0;
+  padding-left: 20px;
+}
+.vehicle-outside li,
+.vehicle-audit li,
+.integrity-list li {
+  margin: 6px 0;
+}
+.duplicate-warning {
+  border: 2px solid #8dbb2e;
+  border-radius: 8px;
+  margin-top: 10px;
+  padding: 10px 12px;
+}
+.duplicate-warning ul {
+  margin: 6px 0 10px;
+  padding-left: 20px;
+}
+.checkbox {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.panel-head {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+}
+@media (max-width: 760px) {
+  .vehicle-table { display: none; }
+  .vehicle-values { grid-template-columns: 1fr; }
+  .vehicle-summary { grid-template-columns: 1fr 1fr; }
+}
+
+/* E3.3: Gastos del año mantienen datos y jerarquía en la tarjeta móvil. */
+.vehicle-facts h3 {
+  font-size: 14px;
+  margin: 0 0 5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.vehicle-facts .card-head strong {
+  white-space: nowrap;
+}

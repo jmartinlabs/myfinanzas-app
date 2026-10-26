@@ -19,6 +19,7 @@ export class ApiError extends Error {
     public status: number,
     message: string,
     public fields: Record<string, string> = {},
+    public data: Record<string, any> = {},
   ) {
     super(message);
   }
@@ -64,6 +65,7 @@ export async function api<T = any>(
       response.status,
       data.error ?? "No se pudo completar la operación.",
       data.fields ?? {},
+      data,
     );
   if (data.csrf) csrf = data.csrf;
   return data as T;

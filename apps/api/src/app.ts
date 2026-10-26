@@ -51,6 +51,15 @@ import {
   updateReference,
 } from "./referencias";
 import {
+  getVehicle,
+  listVehicles,
+  vehicleIntegrity,
+} from "./vehiculos";
+import {
+  nonVehicleFicha,
+  vehicleFicha,
+} from "./vehicle-rules";
+import {
   getMovement,
   listMovements,
   movementOptions,
@@ -530,10 +539,35 @@ export function createApp(db: Database, options: AppOptions) {
         const [, id, action] = reference;
         if (!action && req.method === "GET")
           return reply(
-            db.transaction(() => ({
-              item: getReference(db, id),
-              usos: referenceUsage(db, id),
-            }))(),
+            db.transaction(() => {
+              const item = getReference(db, id),
+                usos = referenceUsage(db, id),
+                ficha = vehicleFicha(db, id),
+                otherFicha = nonVehicleFicha(db, id),
+                puedeConvertir =
+                  item.tipo !== "Vehículo" &&
+                  item.tipo !== "Anticipo" &&
+                  !ficha &&
+                  !otherFicha &&
+                  usos.length === 0;
+              return {
+                item,
+                usos,
+                vehiculo: ficha,
+                conversion: {
+                  disponible: puedeConvertir,
+                  motivo: puedeConvertir
+                    ? null
+                    : item.tipo === "Vehículo"
+                      ? "La Referencia ya es un Vehículo."
+                      : ficha
+                        ? "La Referencia ya tiene una ficha."
+                        : otherFicha || item.tipo === "Anticipo"
+                          ? "La Referencia es un Anticipo y no admite conversión a Vehículo."
+                          : "La Referencia tiene hechos y E1.5 protege su Tipo.",
+                },
+              };
+            })(),
           );
         if (
           (!action && req.method === "PATCH") ||
@@ -551,10 +585,45 @@ export function createApp(db: Database, options: AppOptions) {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
             };
-          }
+          } else if ("estado" in body)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "El Estado solo se cambia por /desactivar o /reactivar.",
+              { estado: "Usa la acción canónica de Estado." },
+            );
           return reply({ item: updateReference(db, id, body, now()) });
         }
       }
+      if (path === "/api/vehiculos/integridad" && req.method === "GET")
+        return reply(
+          vehicleIntegrity(
+            db,
+            new URL(req.url).searchParams.get("ejercicio"),
+            now(),
+            options.annualProvider,
+          ),
+        );
+      if (path === "/api/vehiculos" && req.method === "GET")
+        return reply(
+          listVehicles(
+            db,
+            new URL(req.url).searchParams,
+            now(),
+            options.annualProvider,
+          ),
+        );
+      const vehicle = path.match(/^\/api\/vehiculos\/(REF\d+)$/);
+      if (vehicle && req.method === "GET")
+        return reply(
+          getVehicle(
+            db,
+            vehicle[1],
+            new URL(req.url).searchParams.get("ejercicio"),
+            now(),
+            options.annualProvider,
+          ),
+        );
       if (path === "/api/movimientos/opciones" && req.method === "GET")
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")
@@ -745,6 +814,7 @@ export function createApp(db: Database, options: AppOptions) {
           code: p.code,
           error: p.message,
           fields: p.fields,
+          ...p.details,
           requestId: randomUUID(),
         },
         p.status,
