@@ -347,7 +347,7 @@ export function updateReference(
             409,
             "HISTORY_LOCKED",
             otherFicha || old.tipo === "Anticipo"
-              ? "La Referencia tiene ficha de Anticipo; no se convierte a Vehículo ni se conservan dos fichas."
+              ? "La Referencia es un Anticipo y no admite conversión a Vehículo."
               : "La Referencia ya tiene una ficha; no se convierte ni se recrea.",
           );
         if (referenceUsage(db, id).length)

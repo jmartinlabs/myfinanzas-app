@@ -563,7 +563,7 @@ export function createApp(db: Database, options: AppOptions) {
                       : ficha
                         ? "La Referencia ya tiene una ficha."
                         : otherFicha || item.tipo === "Anticipo"
-                          ? "La Referencia es un Anticipo y conserva su ficha."
+                          ? "La Referencia es un Anticipo y no admite conversión a Vehículo."
                           : "La Referencia tiene hechos y E1.5 protege su Tipo.",
                 },
               };
