@@ -442,3 +442,27 @@ de checks y referencia solo `orchestrate`, conservando el contrato de comunicaci
 guardas exigen la obligación en `task` y rechazan la duplicación en comunicación; la
 regresión negativa correspondiente y la baseline canónica (26 tests del validador) PASS.
 El registro ya no declara la PR pendiente de creación.
+
+## Checkpoint de handoff — STOP REQUESTED — NO AUTO-RESUME
+
+Fecha: 2026-10-26. Este checkpoint no autoriza reanudar, publicar de nuevo ni mergear;
+solo preserva el estado verificado de la sesión.
+
+- Alcance: adaptación selectiva v2.14.0 ya aplicada, incluida la corrección posterior
+  de `task` y la deduplicación de continuidad en comunicación. No se reabren specs,
+  epics ni desarrollo funcional.
+- Repositorio/worktree: `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/adopt-v2140`.
+- Rama: `codex/adopt-v2140-publication-continuity`.
+- HEAD local y remoto previo a este checkpoint: `31248ce238bde815ed005f7b2bd20376055303c8`.
+- PR: #83, en borrador; este checkpoint se publica en la misma rama, sin merge.
+- Cambios pendientes: ninguno antes de este checkpoint. El checkout principal
+  `codex/dev12-flujo-mensual` y su `specs/session-handoff.md` sin rastrear quedan intactos.
+- Workers: ninguna tarea de trabajo activa controlada por esta sesión; las QA
+  independientes terminaron. Chats externos y otras sesiones no son controlables.
+- Checks: baseline canónico PASS; validador 26 tests PASS; clasificación `full`;
+  QA H214-QA PASS sobre `216efc2`; CI Linux del SHA remoto UNRUN/UNVERIFIED.
+- Gates: publicación autorizada dentro del alcance; merge de PR #83 pendiente de
+  aprobación humana explícita. Sin auto-merge, despliegue ni operaciones destructivas.
+- Próxima acción segura: en una sesión nueva, verificar PR #83, HEAD remoto y CI;
+  corregir solo fallos dentro del alcance o esperar la aprobación de merge. No reanudar
+  desarrollo ni ampliar la adopción por inferencia.
