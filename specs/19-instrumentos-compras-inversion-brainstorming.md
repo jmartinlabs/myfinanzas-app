@@ -1,18 +1,19 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Brainstorming
 
-Status: DRAFT — ronda 1 respondida por el usuario el 2026-10-26; correcciones de las
+Status: CERRADO — ronda 1 respondida por el usuario el 2026-10-26; correcciones de las
 revisiones independientes incorporadas el 2026-10-26 (H1/H2/H3, N1–N12 y rev5–rev7 con R6,
-el residual R4-1 y el contrato de esquema v14); specification DRAFT con aprobación pendiente.
+el residual R4-1 y el contrato de esquema v14); SPEC19 rev7 **aprobada** el 2026-10-26 sobre
+el commit `47f469a902330ac199c910225563f909bd5116eb`, incluidos wireframes y testplan. DEV,
+merge y despliegue no autorizados.
 Roadmap/context: [E4.1 y límites E4.2/E4.3](roadmap.md), [referencia funcional R5](functional-reference-v5.11.md),
 [E1.1 Saldos](01-saldos-control-specification.md), [E1.3 referencia temporal](03-ciclos-financiados-specification.md),
 [E1.5 Transferencias y Referencias](05-transferencias-referencias-specification.md),
 [guía UI](guidelines/ui.md), [guía de arquitectura](guidelines/architecture.md).
 Base de la ronda: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
-`codex/pilot-full-e41-instrumentos-compras-inversion`. Documento DRAFT; no autoriza
-desarrollo, SQL, migraciones, pruebas ejecutables ni datos reales.
-Next action: revisar el delta documental final (N1–N12, R6, R4-1 y R7 de contrato v14) y
-solicitar aprobación explícita; antes de DEV, ejecutar el gate de destino y congelar los
-manifiestos v14 con sus SHA-256; no implementar.
+`codex/pilot-full-e41-instrumentos-compras-inversion`. Documento histórico de brainstorming;
+no autoriza desarrollo, SQL, migraciones, pruebas ejecutables ni datos reales.
+Next action: SPEC19 rev7 aprobada. Antes de DEV, ejecutar el gate de destino y congelar los
+manifiestos v14 con sus SHA-256; DEV/merge/despliegue siguen sin autorización.
 
 ## Alcance de la ronda
 
@@ -312,14 +313,14 @@ source/date: mensaje del usuario, 2026-10-26
 
 ## Wireframes
 
-PROPUESTA, pendiente de revisión visual. Q10 confirmada: módulo **Inversiones** con
-pestañas Instrumentos y Compras. Los esquemas ASCII viven en la
-[especificación](19-instrumentos-compras-inversion-specification.md#9-pantallas-y-wireframes-propuesta):
+APROBADOS como parte de SPEC19 rev7 por el usuario el 2026-10-26. Q10 confirmada: módulo
+**Inversiones** con pestañas Instrumentos y Compras. Los esquemas ASCII viven en la
+[especificación](19-instrumentos-compras-inversion-specification.md#9-pantallas-y-wireframes-aprobadas-rev7):
 W1 listado de Instrumentos 1440, W2 ficha/posición 1440, W3 alta de Compra 1440,
 W4 listado de Instrumentos 390, W5 ficha/posición 390, W6 alta de Compra 390,
 W7 pestaña Compras 1440, W8 pestaña Compras 390, W9 impacto/rectificación/anulación 1440 y
 W10 impacto/rectificación/anulación 390.
-No son una aprobación gráfica ni una prueba de UI implementada.
+La aprobación documental no es una prueba de UI implementada.
 
 ## Append-only clarifications
 

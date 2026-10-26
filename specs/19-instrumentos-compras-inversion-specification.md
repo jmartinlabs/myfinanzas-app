@@ -1,7 +1,10 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: DRAFT — propuesta funcional, sin aprobación.
-Approval source/date: PENDING
+Status: **APPROVED rev7** — specification y wireframes W1–W10 aprobados por el usuario el
+2026-10-26 sobre el commit `47f469a902330ac199c910225563f909bd5116eb`.
+Approval source/date: mensaje del usuario, 2026-10-26: «Apruebo la SPEC19 de E4.1 rev7,
+incluidos wireframes y testplan, correspondiente al commit
+47f469a902330ac199c910225563f909bd5116eb.»
 Context and brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md),
 [roadmap E4.1](roadmap.md), [referencia R5](functional-reference-v5.11.md).
 Base: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
@@ -23,7 +26,9 @@ versiones, vaciado de intentos, rutas `metrics.liquidez`, alcance de `IMPACT_CHA
 precondición AC-41 sin Movimientos y errata de AC-52), 2026-10-26; rev7 delimita el contrato
 de esquema v14 (lista cerrada de contratos admitidos, manifiesto canónico obligatorio antes de
 DEV, rechazo de variantes desconocidas o incompletas antes de mutar y revalidación obligatoria
-de la versión destino), 2026-10-26; sin aprobación.
+de la versión destino), 2026-10-26; **aprobada rev7 por el usuario el 2026-10-26 sobre el commit
+`47f469a902330ac199c910225563f909bd5116eb`**, incluidos wireframes y testplan; DEV, merge y
+despliegue no autorizados.
 Solo documentación y ejemplos ficticios; no autoriza desarrollo, SQL, migraciones, pruebas
 ejecutables, datos reales ni despliegue.
 
@@ -857,11 +862,12 @@ Códigos de error (contrato unívoco; una causa, un código):
   vigente. No se añade un mecanismo de copia nuevo. El guard de entorno demo sigue intacto.
 - Sin nuevas dependencias, ORM, servicios externos ni cambios de autenticación.
 
-## 9. Pantallas y wireframes (PROPUESTA)
+## 9. Pantallas y wireframes (APROBADAS rev7)
 
 Datos ficticios. Se reutiliza el shell, tokens, tablas/tarjetas, foco y componentes
-existentes; tema claro; sin modo oscuro. La aprobación visual no acredita implementación ni
-pruebas de navegador. Q10 confirmada: módulo **Inversiones** con pestañas **Instrumentos** y
+existentes; tema claro; sin modo oscuro. Wireframes W1–W10 aprobados por el usuario el
+2026-10-26 como parte de SPEC19 rev7; la aprobación no acredita implementación ni pruebas de
+navegador. Q10 confirmada: módulo **Inversiones** con pestañas **Instrumentos** y
 **Compras**; la ficha muestra posiciones por Saldo e historial; el efectivo del bróker es
 solo lectura y enlaza a Saldos. W1–W3 son 1440; W4–W6 son 390; W7/W8 son la pestaña
 **Compras** a 1440/390; W9/W10 son impacto, rectificación y anulación a 1440/390. Los
@@ -1254,7 +1260,8 @@ de W9 libera 225,00 € y la anulación los 1.125,00 € de la compra.
 
 ## 13. Acceptance checks
 
-Todos los criterios son DRAFT. Ninguno depende de una respuesta pendiente ni de una
+Todos los criterios están **aprobados como contrato de diseño rev7**; ninguno declara un
+resultado ejecutado ni un PASS. Ninguno depende de una respuesta pendiente ni de una
 condición abierta: cada resultado es determinista con las decisiones confirmadas de §3 y las
 correcciones de §3.1. «Sin escritura» significa que no cambian Compra, efectivo, cantidad,
 contador ni auditoría. Los códigos esperados se fijan por caso y no se solapan: 404
@@ -1358,14 +1365,15 @@ Otras integraciones declaradas:
 - **DT7 (mapping/importación).** Aplazado expresamente a E4.5/E4.12 (§5.2, §12); E4.1 no
   mapea campos, IDs, aperturas ni archivos, y no fija cortes ni excepciones. La desviación
   queda registrada y no se presenta como cumplimiento diferido implícito.
-- Ningún AC de este documento se declara aprobado ni probado por este DRAFT.
+- Ningún AC de este documento se declara probado; la aprobación rev7 es del contrato de diseño,
+  no de una implementación.
 
 ## 15. Siguiente acción
 
-Revisión independiente del delta documental y aprobación explícita del usuario.
-Antes de implementar, ejecutar el gate de destino de §5.2/AC-33(f) y congelar los manifiestos
-v14 con sus SHA-256 en un paso pre-DEV autorizado, con fixtures sintéticos aislados y sin tocar
-los worktrees de Compartidos o Vehículos; si el gate falla, STOP y renumerar la spec. Solo
-después, y con autorización separada: implementar, actualizar pruebas y revisar wireframes con
-el usuario.
-No implementar, no commitear y no iniciar desarrollo sin autorización separada.
+SPEC19 rev7 está aprobada (incluidos wireframes y testplan) sobre el commit
+`47f469a902330ac199c910225563f909bd5116eb`. Antes de implementar, ejecutar el gate de destino
+de §5.2/AC-33(f) y congelar los manifiestos v14 con sus SHA-256 en un paso pre-DEV autorizado,
+con fixtures sintéticos aislados y sin tocar los worktrees de Compartidos o Vehículos; si el
+gate falla, STOP y renumerar la spec. Solo después, y con autorización separada de DEV:
+implementar, actualizar pruebas y revisar wireframes con el usuario.
+Esta aprobación no autoriza DEV, merge ni despliegue.

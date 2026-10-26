@@ -1,9 +1,23 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Progress
 
-Status: DRAFT documental rev7 — specification pendiente de aprobación; desarrollo **no** autorizado.
+Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26 sobre el commit
+`47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella. DEV, merge y
+despliegue **no** autorizados.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
+
+## Aprobación registrada — 2026-10-26
+
+- Objeto: **SPEC19 de E4.1 rev7**, incluidos wireframes W1–W10 y testplan.
+- Commit aprobado: `47f469a902330ac199c910225563f909bd5116eb`.
+- Mensaje real del usuario: «Apruebo la SPEC19 de E4.1 rev7, incluidos wireframes y testplan,
+  correspondiente al commit 47f469a902330ac199c910225563f909bd5116eb.»
+- Alcance de la aprobación: contrato de diseño documental. **No autoriza DEV, merge ni
+  despliegue.** La implementación requiere una autorización separada posterior al gate de
+  destino y a la congelación de manifiestos v14.
+- Este checkpoint posterior solo registra la aprobación y el estado; no cambia el contenido
+  funcional aprobado sobre `47f469a`.
 
 ## Checkpoint documental — 2026-10-26
 
@@ -43,7 +57,7 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 ## Siguiente acción
 
-Revisión/aprobación explícita de la specification por el usuario. Antes de DEV: ejecutar el
-gate de destino de §5.2/AC-33(f), congelar los manifiestos v14 con sus SHA-256 y revalidar
-`origin/main`. Después, y solo con autorización separada, desarrollo de E4.1. HANDOFF a CODEX
-con los hashes del commit y de los documentos; no merge ni despliegue.
+SPEC19 rev7 aprobada. Antes de DEV: ejecutar el gate de destino de §5.2/AC-33(f), comprobar
+`origin/main` y reservas, y congelar los manifiestos v14 con sus SHA-256 en un paso pre-DEV
+autorizado con fixtures aislados. Después, y solo con autorización separada de DEV, implementar
+E4.1. HANDOFF a CODEX con los hashes del commit y de los documentos; no merge ni despliegue.
