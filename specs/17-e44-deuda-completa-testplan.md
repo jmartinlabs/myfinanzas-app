@@ -147,7 +147,7 @@ sin bloqueantes. Esta lista no autoriza ese dev ni declara PASS ahora.
 | Correcciones | `16f7f65` (rebasado `a45f318`) | PASS con menores | M-01…M-03 y m-04…m-11/n-12/n-13 cerrados; N-01…N-04 abiertos |
 | Cierre de menores | `d415d3b` | PASS con residual N-01 | N-02…N-04 cerrados; N-01 residual en 390 |
 | QA final | `e918ca5` | **PASS documental** | N-01 cerrado; sin hallazgos nuevos; no es PASS funcional |
-| Delta supervisor | `cb74b28` | FAIL documental | Atribución residual «usuario confirma Q1–Q7»; corregida |
+| Delta supervisor | `cb74b28` | FAIL documental | Atribución residual de confirmación al usuario; corregida |
 | Delta supervisor | `09b416b` | **PASS documental** | Procedencia mediada por `question` y contraste humano pendiente; histórico solo lectura; sin hallazgos nuevos |
 
 El dictamen es **documental**, no funcional: no hay candidato E4.4, no se ejecutaron E2E ni
