@@ -199,9 +199,34 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   harness/CI/permisos. Sin push, PR, merge ni despliegue en esta fase.
 - **Workers:** ninguno activo tras el QA; solo el coordinador continúa.
 
-## Siguiente acción
+## Publicación de rama y bloqueo de PR — 2026-10-27
 
-Publicar la rama `codex/pilot-full-e41-instrumentos-compras-inversion` y abrir PR hacia `main`
-con el candidato `dba5825` (más el checkpoint documental). Esperar CI Linux de `bun test
-apps/api`, backup/restore y `scripts/verify --full`; corregir si falla. **No merge ni despliegue**
-sin aprobación explícita del usuario tras el PR y CI verde.
+- **Push:** rama `codex/pilot-full-e41-instrumentos-compras-inversion` publicada en `origin`
+  (`git push -u`), HEAD `424c120`. El push remoto correcto fue confirmado por Git; árbol local
+  limpio.
+- **PR:** **NO creada.** El entorno no dispone de `gh` ni de credenciales/token de GitHub API
+  (keychain y `git credential` sin datos; el remoto usa SSH y el push funciona). No se
+  inventó ni extrajo ningún token. URL de comparación para autorización humana:
+  `https://github.com/josemartin2000/myfinanzas-app/pull/new/codex/pilot-full-e41-instrumentos-compras-inversion`.
+- **CI:** el workflow `Validate project` se dispara también en `push`, pero al ser el
+  repositorio privado y no haber autenticación de API en esta sesión, **no se pudo consultar**
+  el resultado de las ejecuciones. CI Linux sigue **UNRUN/UNKNOWN** y es requisito de merge.
+- **Siguiente acción segura:** el usuario o una sesión con credenciales GitHub debe abrir la PR
+  desde la URL anterior (o conceder `gh`/token) y verificar CI Linux; después, corregir si
+  falla. **No merge ni despliegue** sin aprobación explícita del usuario y CI verde.
+
+## HANDOFF → CODEX — 2026-10-27
+
+- **Estado:** DEV y QA independiente completados; rama publicada; PR bloqueada por acceso.
+- **Candidato de código:** `dba5825f237cee8216f2b7d60ef966d63c203e03`; HEAD publicado
+  `424c120` (incluye checkpoint documental). QA: **PASS para publicar, no para merge**.
+- **Matriz:** 48 PASS / 6 PARCIAL (AC-03, AC-24, AC-27, AC-30, AC-33, AC-34), 0 FAIL funcional.
+- **Evidencia:** focal 34 pass / 442 aserciones; typecheck/build/E2E PASS en macOS; 48 fallos
+  API nativos exclusivamente por `libc.so.6`/`renameat2`; backup/restore y O4 PASS en
+  simulación Linux. CI Linux real **UNKNOWN**.
+- **Ownership:** coordinador actualizó solo progress/testplan; ningún agente escribe el
+  tablero. No hay subagentes activos. No se contactó ni reanudó la sesión anterior.
+- **Exclusiones:** sin merge, despliegue, cambios de harness/CI/permisos, datos reales,
+  importación Excel, Ventas, valoración ni nuevas reglas financieras.
+- **Siguiente acción segura:** abrir PR y dejar que CI Linux ejecute `bun test apps/api`,
+  backup/restore y `scripts/verify --full`; no merge sin aprobación humana y CI verde.
