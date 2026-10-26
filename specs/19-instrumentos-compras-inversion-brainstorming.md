@@ -419,6 +419,9 @@ La aprobación de la specification sigue pendiente; desarrollar E4.1 no está au
 
 ### Ronda 5 — cierre del contrato de esquema v14 (2026-10-26)
 
+> **Histórico:** esta ronda queda sustituida por la Ronda 6 (versión 16); se conserva para
+> trazabilidad.
+
 Fuente: verificación de Codex del checkpoint anterior. No se reabren decisiones funcionales;
 solo se cierra el contrato técnico de compatibilidad y la revalidación de destino.
 

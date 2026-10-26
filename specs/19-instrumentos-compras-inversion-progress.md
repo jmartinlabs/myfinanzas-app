@@ -24,7 +24,7 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 - Autorización del usuario: ajuste documental de E4.1 a la siguiente versión libre,
   provisionalmente **16**, respetando la reserva 15 de Compartidos.
-- `main` = `f5bf032` (esquema 14); `codex/dev14-base-b` = `ad2edfe` (esquema 15, Compartidos
+- `origin/main` = `f5bf032` (esquema 14); el ref local `main` puede estar retrasado, por lo que el gate usa `origin/main`; `codex/dev14-base-b` = `ad2edfe` (esquema 15, Compartidos
   v15 + Vehículos). También declaran v15 `codex/dev16-revision-comida` y su remoto; solo el
   contrato `C15-COMPARTIDOS-AD2EDFE` está verificado por E4.1, cualquier otro v15 se rechaza.
   La 16 está libre en la revisión. No se contactó ni modificó la sesión de Compartidos.
