@@ -1,10 +1,11 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Brainstorming
 
-Status: CERRADO — ronda 1 respondida por el usuario el 2026-10-26; correcciones de las
-revisiones independientes incorporadas el 2026-10-26 (H1/H2/H3, N1–N12 y rev5–rev7 con R6,
+Status: CERRADO funcional — ronda 1 respondida por el usuario el 2026-10-26; correcciones de las
+revisiones independientes incorporadas el 2026-10-26 (H1/H2/H3, N1–N12, rev5–rev7 con R6,
 el residual R4-1 y el contrato de esquema v14); SPEC19 rev7 **aprobada** el 2026-10-26 sobre
-el commit `47f469a902330ac199c910225563f909bd5116eb`, incluidos wireframes y testplan. DEV,
-merge y despliegue no autorizados.
+el commit `47f469a902330ac199c910225563f909bd5116eb`, incluidos wireframes y testplan. La
+**rev8** es un ajuste técnico a la versión 16, pendiente de aprobación. DEV, merge y despliegue
+no autorizados.
 Roadmap/context: [E4.1 y límites E4.2/E4.3](roadmap.md), [referencia funcional R5](functional-reference-v5.11.md),
 [E1.1 Saldos](01-saldos-control-specification.md), [E1.3 referencia temporal](03-ciclos-financiados-specification.md),
 [E1.5 Transferencias y Referencias](05-transferencias-referencias-specification.md),
@@ -12,8 +13,8 @@ Roadmap/context: [E4.1 y límites E4.2/E4.3](roadmap.md), [referencia funcional 
 Base de la ronda: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
 `codex/pilot-full-e41-instrumentos-compras-inversion`. Documento histórico de brainstorming;
 no autoriza desarrollo, SQL, migraciones, pruebas ejecutables ni datos reales.
-Next action: SPEC19 rev7 aprobada. Antes de DEV, ejecutar el gate de destino y congelar los
-manifiestos v14 con sus SHA-256; DEV/merge/despliegue siguen sin autorización.
+Next action: aprobar la rev8 técnica (versión 16) y repetir el gate pre-DEV sobre refs
+locales/remotos; DEV/merge/despliegue siguen sin autorización.
 
 ## Alcance de la ronda
 
@@ -427,3 +428,16 @@ solo se cierra el contrato técnico de compatibilidad y la revalidación de dest
 | R7-2 | **Revalidación de destino antes de DEV.** La reserva 15 es provisional y no prevalece sobre `main`. Antes de DEV se comprueba `origin/main` y las reservas abiertas; si `main` ya está en 15 o más, la 15 está ocupada o `main` contiene un v14 no verificado, se detiene la implementación, se renumera esta spec y se repite la revisión. | §3.1 (R7-2), §5.2, AC-33(f), testplan |
 
 La aprobación de la specification sigue pendiente; desarrollar E4.1 no está autorizado.
+
+### Ronda 6 — ajuste técnico a la versión 16 (2026-10-26)
+
+Fuente: autorización del usuario para ajustar E4.1 a la siguiente versión libre, respetando la
+reserva 15 de Compartidos. No se reabre ninguna decisión funcional.
+
+| ID | Corrección aplicada | Destino |
+| --- | --- | --- |
+| R8-1 | **Versión destino 16.** `main` está en 14; `codex/dev14-base-b` (`ad2edfe`) ocupa la 15 con el contrato real `C15-COMPARTIDOS-AD2EDFE`. E4.1 pasa a 16 y mantiene la 15 intacta. Se añade el manifiesto v15 (122 objetos) y se definen rutas 13→16, 14→16 y 15→16, con preservación explícita de las tablas y filas de Compartidos v15 y Vehículos. | §3.1 (R8-1/R8-2), §5.2, §8, AC-33, testplan |
+| R8-2 | **Compuertas y restore a 16.** `schemaVersion = 16`, `[1..15, version]`, `1..16`, etiqueta `e4.1-v16`, verificación de manifiestos v14/v15 antes de publicar una copia y rechazo de v17. No se modifica el harness ni se implementa E4.1. | §5.2, §8, AC-33, testplan |
+
+La rev8 es un ajuste técnico documental pendiente de aprobación; DEV, merge y despliegue no
+están autorizados.

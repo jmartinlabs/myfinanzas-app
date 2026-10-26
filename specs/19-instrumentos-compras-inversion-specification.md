@@ -1,10 +1,10 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: **APPROVED rev7** — specification y wireframes W1–W10 aprobados por el usuario el
-2026-10-26 sobre el commit `47f469a902330ac199c910225563f909bd5116eb`.
-Approval source/date: mensaje del usuario, 2026-10-26: «Apruebo la SPEC19 de E4.1 rev7,
-incluidos wireframes y testplan, correspondiente al commit
-47f469a902330ac199c910225563f909bd5116eb.»
+Status: **DRAFT rev8 — ajuste técnico de versión 16 pendiente de aprobación.** La rev7 sigue
+aprobada como contrato funcional; este delta solo cambia la versión de esquema y las rutas de
+migración para respetar la reserva 15 de Compartidos.
+Approval source/date: rev7 aprobada por mensaje del usuario del 2026-10-26 sobre
+`47f469a902330ac199c910225563f909bd5116eb`; **rev8 pendiente**.
 Context and brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md),
 [roadmap E4.1](roadmap.md), [referencia R5](functional-reference-v5.11.md).
 Base: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
@@ -27,8 +27,10 @@ precondición AC-41 sin Movimientos y errata de AC-52), 2026-10-26; rev7 delimit
 de esquema v14 (lista cerrada de contratos admitidos, manifiesto canónico obligatorio antes de
 DEV, rechazo de variantes desconocidas o incompletas antes de mutar y revalidación obligatoria
 de la versión destino), 2026-10-26; **aprobada rev7 por el usuario el 2026-10-26 sobre el commit
-`47f469a902330ac199c910225563f909bd5116eb`**, incluidos wireframes y testplan; DEV, merge y
-despliegue no autorizados.
+`47f469a902330ac199c910225563f909bd5116eb`**, incluidos wireframes y testplan; rev8 es el
+ajuste técnico documental a la versión **16** para respetar la reserva 15 de Compartidos
+(contrato real `C15-COMPARTIDOS-AD2EDFE`, rutas 13/14/15→16 y preservación de datos),
+2026-10-26, **pendiente de aprobación**; DEV, merge y despliegue no autorizados.
 Solo documentación y ejemplos ficticios; no autoriza desarrollo, SQL, migraciones, pruebas
 ejecutables, datos reales ni despliegue.
 
@@ -125,18 +127,20 @@ independiente.
 | N2 | Liquidez mantiene `Verificado` cuando todas las posiciones elegibles son calculables y añade una nota explícita de cobertura histórica no importada; no se cambia R6 ni se convierte la nota en `Parcial`. Oráculo único: estado `Verificado`, valor S001+S003, `subtotal` `null`. | §4.3.3 | AC-39 |
 | N3 | La previsualización `antes/despues` cubre todo Movimiento que toque `Efectivo`/`Inversiones` (Gasto, Ingreso, Transferencia, Amortización) y `financeRevision` incluye `operaciones_inversion`; una Compra entre la vista previa y la confirmación invalida el contexto. La invalidación es global y amplia (cualquier Compra afecta a todos los Movimientos); es una sobre-invalidación segura que puede devolver 409 `IMPACT_CHANGED` en una vista previa ajena. | §4.3.3, §8, §10 | AC-41, AC-53 |
 | N9 | Exclusión registrada: el cambio de Estado de un Saldo conserva el cuerpo E1.1 (`revision` únicamente), sin `motivo` humano; E4.1 no amplía ese contrato y una extensión de E1.1 se tramitaría aparte. | §4.1, §12 | AC-42 (sin cambio) |
-| R6-1 | Colisión de versión de esquema resuelta como contrato: E4.1 propone la **15**, provisional y condicionada a la revalidación de destino (no la 14, ocupada operativamente por PR75/Compartidos y por el commit de Vehículos, ninguna integrada); migración aditiva sin `DROP`/`ALTER` destructivo de tablas ajenas; compuertas `database-identity.ts` 15, `database-schema.ts` `[1..14, version]`, `backup.ts` `1..15` y etiqueta `e4.1-v15`; upgrade 13→15 y 14→15 solo con contrato verificado; restore en directorio nuevo, sin mezclar versiones, que vacía intentos y sesiones. | §4.1, §5.2, §8, §13 | AC-33 |
+| R6-1 | Colisión de versión de esquema resuelta como contrato: E4.1 usa la **16** (14 de Vehículos/main y 15 de Compartidos quedan reservadas); migración aditiva sin `DROP`/`ALTER` destructivo de tablas ajenas; compuertas `database-identity.ts` 16, `database-schema.ts` `[1..15, version]`, `backup.ts` `1..16` y etiqueta `e4.1-v16`; rutas 13→16, 14→16 y 15→16 solo con contrato verificado; restore en directorio nuevo, sin mezclar versiones, que vacía intentos y sesiones. | §4.1, §5.2, §8, §13 | AC-33 |
 | R6-2 | Semántica de errores unívoca: suficiencia (también la recalculada) → 422 `INSUFFICIENT_CASH`; revisión obsoleta → 409 `REVISION_CONFLICT`; huella/contexto de **Movimiento** obsoleto → 409 `IMPACT_CHANGED`; guard de Saldo → 409 `HISTORY_LOCKED`. Sin 409 genérico por «cambio concurrente»; 409 nunca señala suficiencia; las rutas de Compra no transportan huella. | §4.3.2, §4.5, §7, §8, §10, §11, §13 | AC-16, AC-20, AC-25, AC-26, AC-35, AC-42, AC-46, AC-53 |
 | R6-3 (resuelve R4-1) | AC-41 ejecutable sin ambigüedad: precondición única desde `S003` sin Movimientos ni Compras, con `permiteSalidaExterior=true` fijado antes de cualquier Compra; se elimina la alternativa del Saldo dedicado y el resultado se enuncia sobre «el extremo del Saldo de prueba utilizado». | §13 | AC-41 |
 | R7-1 | Contrato de esquema v14 delimitado: no se acepta una base por su número. Solo se admiten `C14-COMPARTIDOS-FCE1107` y `C14-VEHICULOS-C69E343`, comparando el manifiesto canónico exacto de `sqlite_master` y sus invariantes antes de `BEGIN IMMEDIATE`; el manifiesto y su SHA-256 se congelan antes de DEV. Una variante desconocida, incompleta, con tablas sintéticas o con contratos mezclados se rechaza sin mutar; el soporte de cualquier otro contrato v14 queda bloqueado hasta una revisión autorizada. | §5.2, §8, §13 | AC-33 |
-| R7-2 | Revalidación de destino antes de DEV: la reserva 15 es provisional y no prevalece sobre `main`. Si `main` ya está en 15 o más, si la 15 está ocupada o si `main` contiene un v14 no verificado, se detiene la implementación, se renumera en esta spec y se repite la revisión. Un `main` avanzado gana siempre. | §5.2, §13 | AC-33 |
+| R7-2 | Revalidación de destino antes de DEV: la reserva 16 es provisional y no prevalece sobre `main`. Si `main` ya está en 16 o más, si la 16 está ocupada o si `main` contiene un v14/v15 no verificado, se detiene la implementación, se renumera en esta spec y se repite la revisión. Un `main` avanzado gana siempre. | §5.2, §13 | AC-33 |
+| R8-1 | Ajuste técnico a la **16**: se respeta la reserva 15 de Compartidos y se añade su contrato real v15 `C15-COMPARTIDOS-AD2EDFE` (`ad2edfe`, 122 objetos) al manifiesto congelado. Se definen las rutas 13→16, 14→16 y 15→16, con preservación explícita de las tablas y filas de Compartidos v15 y Vehículos. No cambia ninguna decisión funcional de rev7. | §5.2, §8, §13 | AC-33 |
+| R8-2 | Compuertas y backup/restore ajustados a 16: `schemaVersion = 16`, `[1..15, version]`, `1..16`, etiqueta `e4.1-v16`, verificación de manifiestos v14/v15 antes de publicar una copia y rechazo de v17. El gate pre-DEV debe repetirse sobre refs locales/remotos antes de DEV. | §5.2, §8, §13 | AC-33 |
 
 ## 4. Funcionalidad
 
 ### 4.1 Instrumentos
 
 - Identidad `Ixxx`, estable e inmutable; el nombre es editable y no es clave. La tabla de
-  Instrumentos se crea en la versión de esquema 15: la secuencia parte de `I1001` y no
+  Instrumentos se crea en la versión de esquema 16: la secuencia parte de `I1001` y no
   reutiliza IDs. Si la migración encontrara filas, continúa desde el mayor `Ixxx` real; E4.1
   no afirma la existencia de Instrumentos previos.
 - Campos: nombre obligatorio (1–120 caracteres, sin caracteres de control, valor literal
@@ -423,7 +427,7 @@ cobertura temporal, la fuente Inversión se declara «pendiente hasta E4.2».
 ## 5. Modelo de datos y contratos
 
 Modelo lógico documental; sin DDL ejecutable, migración ejecutada ni datos reales. La
-versión 15 es un contrato documental que el desarrollo autorizado implementará.
+versión 16 es un contrato documental que el desarrollo autorizado implementará.
 
 | Objeto | Datos persistentes propuestos | Garantías y límites |
 | --- | --- | --- |
@@ -474,7 +478,7 @@ Reglas de integridad:
 Propuesta técnica (DT2), no decisión financiera:
 
 - Instrumentos nuevos: `I` + secuencia decimal. La secuencia parte de `I1001` en la versión
-  15 y no reutiliza IDs; si la migración encontrara filas, continúa desde el mayor `Ixxx`
+  16 y no reutiliza IDs; si la migración encontrara filas, continúa desde el mayor `Ixxx`
   real. El formato exacto es detalle técnico, no una regla financiera, y E4.1 no afirma que
   existan Instrumentos previos.
 - Compras nuevas: ID decimal exacto en TEXT, procedente de un contador atómico, como en
@@ -484,137 +488,102 @@ Propuesta técnica (DT2), no decisión financiera:
 
 ### 5.2 Persistencia y migración (contrato documental)
 
-- **Reserva de versión: E4.1 propone la 15, condicionada a revalidación.** La 14 está
-  reservada operativamente por dos entregas en curso cuyo código **no** está integrado en
-  `main` (que conserva el esquema 13): **Compartidos/PR75** (`origin/codex/dev14-base-b` =
-  `fce1107`; `refs/pull/75/head` es el ref remoto de GitHub, no local), `schemaVersion = 14` en
-  `apps/api/src/database-identity.ts`,
-  commit `b7bcbb6` «verify exact migrated counters for v14»; su especificación está integrada
-  como documentación en PR74) y **Vehículos** (rama `codex/pilot-dev15-deepseek`, commit
-  congelado `c69e343`, cuyo código usa `schemaVersion = 14`; el HEAD posterior `28d4816` no
-  cambia el esquema; su especificación está integrada como documentación en PR78 y no fija una
-  versión de esquema, por lo que la 14 es una reserva operativa, no una decisión de esa spec). E4.1 no reabre, no modifica ni reanuda esas sesiones
-  ni sus worktrees; solo evita colisionar con ellas. La 15 es una **propuesta provisional**:
-  `main` manda y la reserva no prevalece si `main` avanza antes de DEV (§5.2, revalidación de
-  destino).
-- **Regla de resolución.** Las reservas de versión se resuelven por orden de integración: la
-  primera entrega v14 que se integre ocupa la 14; si un v14 se integra después de una versión
-  superior (incluida la 15 de E4.1), renumera en su propia rama a una versión por encima de la
-  vigente y E4.1 no cambia. E4.1 no exige que PR75 esté integrado, pero debe existir el
-  upgrade 14→15 para el caso de que ya lo esté.
-- **Contratos v14 admitidos: lista cerrada, manifiesto obligatorio antes de DEV.** E4.1 **no**
-  acepta una base por el número 14. Solo admite dos contratos identificados y verificados en
-  objetos e invariantes; cualquier otro v14 —incluida una revisión que cambie el manifiesto de
-  estas mismas ramas— es desconocido y se rechaza antes de mutar. El soporte de cualquier otro
-  contrato v14 queda bloqueado hasta que una revisión autorizada de esta spec lo añada. Antes de
-  DEV, el manifiesto completo de cada contrato debe generarse, registrarse y fijarse con su
-  SHA-256; sin ese artefacto, el gate pre-DEV falla y no se autoriza desarrollo.
+- **Versión destino: E4.1 usa la 16.** El gate pre-DEV verificó que `main` está en el esquema
+  14 (Vehículos) y que la **15 está reservada por Compartidos**: la rama local
+  `codex/dev14-base-b` (`ad2edfe`, con worktrees activos) declara `schemaVersion = 15` y su
+  contrato real se congela como `C15-COMPARTIDOS-AD2EDFE`. E4.1 no reabre, no modifica ni
+  reanuda esa sesión ni sus worktrees; respeta la 15 y toma la **16**, siguiente versión libre
+  en la revisión. Ningún ref declaraba la 16. La reserva 16 es **provisional** y no prevalece
+  sobre un `main` que avance ni sobre otra reserva que aparezca antes de DEV.
+- **Regla de resolución.** Las versiones se resuelven por orden de integración. La 14 queda
+  para Vehículos o Compartidos v14; la 15 para Compartidos/Base B v15; E4.1 usa la 16. Si otra
+  entrega ocupa la 16 antes de DEV, E4.1 renumera en su rama a la siguiente versión libre y
+  repite el gate; si un v14 o v15 se integra después de una versión superior, renumera en su
+  propia rama. Nunca se comparte el mismo número entre contratos distintos.
+- **Contratos admitidos: lista cerrada y manifiesto obligatorio.** E4.1 **no** acepta una base
+  por su número. Solo admite los contratos de la tabla, identificados y verificados en objetos
+  e invariantes; cualquier otro v14 o v15 —incluida una revisión que cambie el manifiesto— es
+  desconocido y se rechaza antes de mutar. El soporte de cualquier otro contrato queda
+  bloqueado hasta una revisión autorizada. El manifiesto completo de cada contrato está
+  congelado en `apps/api/src/schema-contracts.json` con su SHA-256; sin ese artefacto y sus
+  hashes, el gate pre-DEV falla.
 
   | ID de contrato | Fuente congelada | Objetos distintivos exigidos | Invariante específica |
   | --- | --- | --- | --- |
-  | `C14-COMPARTIDOS-FCE1107` | Compartidos/PR75, commit `fce1107` | `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`; índices `participantes_compartido_referencia` y `participantes_compartido_titular`; triggers `compartido_no_delete`, `participante_compartido_id_immutable`, `participante_compartido_no_delete`, `compartido_audit_no_update` y `compartido_audit_no_delete` | `referencias` admite `'Gasto compartido'`; existe el contador `participantes_compartido` |
-  | `C14-VEHICULOS-C69E343` | Vehículos, commit `c69e343` (`origin/codex/pilot-dev15-deepseek` en la revisión; el HEAD posterior `28d4816` no cambia el esquema) | `fichas_vehiculo`; índice `fichas_vehiculo_matricula`; triggers `ficha_vehiculo_identity`, `ficha_vehiculo_no_delete`, `ficha_vehiculo_type`, `referencia_vehicle_type`, `audit_ficha_no_update` y `audit_ficha_no_delete` | `referencias` admite `'Vehículo'`; no crea contador nuevo |
+  | `C14-COMPARTIDOS-FCE1107` | Compartidos v14, commit `fce1107` | `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`; índices `participantes_compartido_referencia` y `participantes_compartido_titular`; triggers `compartido_no_delete`, `participante_compartido_id_immutable`, `participante_compartido_no_delete`, `compartido_audit_no_update` y `compartido_audit_no_delete` | `referencias` admite `'Gasto compartido'`; existe el contador `participantes_compartido`; 114 objetos |
+  | `C14-VEHICULOS-C69E343` | Vehículos v14, commit `c69e343` | `fichas_vehiculo`; índice `fichas_vehiculo_matricula`; triggers `ficha_vehiculo_identity`, `ficha_vehiculo_no_delete`, `ficha_vehiculo_type`, `referencia_vehicle_type`, `audit_ficha_no_update` y `audit_ficha_no_delete` | `referencias` admite `'Vehículo'`; no crea contador nuevo; 111 objetos |
+  | `C15-COMPARTIDOS-AD2EDFE` | **Compartidos v15 real**, commit `ad2edfe` | Base 14 de Vehículos más `fichas_compartidos`, `participantes_compartido`, `compartido_audit` y `compartido_attempts`; mismos índices y triggers de Compartidos; `fichas_vehiculo` y sus triggers se conservan | `schema_version = 15`; `referencias` admite `'Vehículo'` y `'Gasto compartido'`; 122 objetos; la migración 15→16 debe preservar todas sus tablas y filas |
 
-  La tabla anterior es orientativa; la autoridad es el **manifiesto canónico completo** de cada
+  La tabla es orientativa; la autoridad es el **manifiesto canónico completo** de cada
   contrato, que incluye todos los objetos no internos de `sqlite_master` (tablas, índices,
-  triggers y sus `sql` exactos), no solo los distintivos. El manifiesto se serializa como un
-  array JSON ordenado por `(type, name)` con los campos en orden `type`, `name`, `tbl_name` y
-  `sql` (UTF-8, sin normalizar el contenido del SQL salvo el recorte de bordes); se excluyen
-  las filas con `name LIKE 'sqlite_%'` y las que tienen `sql` NULL. La serialización canónica es
-  `JSON.stringify` **sin indentación**, con escape JSON estándar y sin espacios añadidos; el
-  artefacto se parsea y se vuelve a serializar así antes de comparar. Su SHA-256 se calcula
-  sobre esa cadena UTF-8 exacta.
-  El artefacto versionado del manifiesto y sus hashes se incorporan en el commit de DEV y se
-  reflejan en el testplan; esta spec fija el algoritmo y la obligación, no un hash inventado.
-  Artefacto propuesto: `apps/api/src/schema-contracts.json`, con una entrada por contrato
-  (`id`, `sourceCommit`, `objects` canónicos y `sha256`); su ausencia o un hash no registrado
-  hace fallar el gate pre-DEV. El artefacto es la fuente de verdad; si además se usa una
-  constante de código, debe coincidir con él y el gate compara ambas. La generación del
-  manifiesto es un paso pre-DEV separado y autorizado específicamente, sobre fixtures
-  sintéticos aislados; no abre ni modifica los worktrees de Compartidos o Vehículos y no toca
-  datos reales.
+  triggers y sus `sql` exactos). Serialización: array JSON ordenado por `(type, name)` con
+  campos en orden `type`, `name`, `tbl_name`, `sql` (UTF-8, `sql` recortado en bordes), sin
+  filas `name LIKE 'sqlite_%'` ni `sql` NULL; `JSON.stringify` sin indentación, escape JSON
+  estándar y sin espacios añadidos; el artefacto se parsea y re-serializa así antes de
+  comparar; SHA-256 sobre la cadena UTF-8 exacta.
 - **Verificación del contrato antes de mutar.** El arranque aplica este orden; cualquier fallo
-  cierra la base y devuelve literalmente
-  `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.` **antes** de
-  `BEGIN IMMEDIATE`, `PRAGMA journal_mode`, DDL, backup,
-  contadores, auditoría o cambio de `schema_version`:
-  1. Leer `schema_version`: debe existir, tener exactamente una fila y valer 14.
-  2. Construir el manifiesto real con la serialización canónica anterior y compararlo por
-     igualdad exacta con el manifiesto congelado de un contrato admitido. Deben existir todos
-     los objetos esperados, con su SQL exacto, y no debe aparecer ningún objeto ajeno al
-     manifiesto.
-  3. Comprobar las invariantes específicas del contrato (literales del `CHECK` de
-     `referencias`, contador de Compartidos) y que `PRAGMA foreign_key_check` esté vacío.
-  4. Solo si el manifiesto y las invariantes coinciden, se permite evaluar el upgrade 14→15.
-  - Una base 14 con tablas sintéticas (`compartidos_demo`, `vehiculos_demo` u otras) **no**
-    acredita compatibilidad: no coincide con ningún manifiesto y se rechaza. La conservación de
-    tablas inventadas no sustituye la verificación del contrato real.
-  - Un manifiesto con un objeto ausente, con SQL alterado, con un trigger o índice de menos,
-    con objetos extra o con objetos de ambos contratos mezclados, es una variante **desconocida
-    o incompleta** y se rechaza igualmente.
-  - El manifiesto congelado se genera desde un fixture aislado creado por el commit fuente y
-    con datos sintéticos; su SHA-256 canónico se registra en el testplan y en el artefacto
-    `schema-contracts.json` (si existe una constante de código, debe coincidir) antes de DEV.
-    Sin ese artefacto y sus hashes, el gate pre-DEV falla. Si la rama fuente cambia el
-    manifiesto, cambia la huella y la base deja de aceptarse hasta una revisión autorizada.
-  - **Orden de apertura en DEV.** El orden actual de `database.ts` (que fija `journal_mode=WAL`
-    y abre una transacción de identidad antes de `prepareSchema`) y el de `database-schema.ts`
-    deben reordenarse para que la comprobación del contrato sea la primera operación tras abrir
-    la base en lectura; ninguna PRAGMA persistente ni transacción de escritura puede precederla.
-    `database.ts` se añade a las compuertas de esta verificación.
-- **Revalidación de destino antes de DEV (obligatoria).** La reserva 15 no prevalece sobre
-  `main`. Antes de autorizar o iniciar DEV se debe volver a comprobar el destino:
-  `git fetch origin`, leer `origin/main:apps/api/src/database-identity.ts` y las migraciones
-  vigentes, y revisar PRs/ramas abiertas que reserven versión. **STOP** si `main` ya está en 15
-  o más, si la 15 está ocupada por otro contrato, o si `main` contiene un esquema 14 cuyo
-  manifiesto no coincide exactamente con uno de los dos contratos admitidos (incluido un
-  combinado de ambos): en esos casos no se implementa la 15; se actualiza esta spec y el
-  testplan a la siguiente versión libre o se resuelve la coordinación, y se repite la revisión.
-  Si `main` sigue por debajo de 15, la 15 está libre y no hay un v14 desconocido, la reserva se
-  confirma para ese candidato concreto. Un `main` avanzado o un v14 no verificado ganan siempre
-  a la reserva documental. Si dos entregas v14 coinciden en el tiempo, la primera integrada
-  ocupa la 14 y la segunda renumera en su rama a la siguiente versión libre por encima de la
-  vigente; nunca comparten el número 14.
-- **Migración aditiva en la versión 15.** La extensión se aplica dentro de la transacción
-  `BEGIN IMMEDIATE` existente y con rollback íntegro ante fallo. Crea `instrumentos`,
-  `operaciones_inversion`, `instrumento_attempts`, `operacion_attempts`, `instrumento_audit` y
+  cierra la base y devuelve el literal correspondiente **antes** de `BEGIN IMMEDIATE`,
+  `PRAGMA journal_mode`, DDL, backup, contadores, auditoría o cambio de `schema_version`:
+  1. Leer `schema_version`: exactamente una fila, con valor 14 o 15.
+  2. Construir el manifiesto real y compararlo por igualdad exacta con el contrato admitido de
+     esa versión: v14 contra `C14-COMPARTIDOS-FCE1107` o `C14-VEHICULOS-C69E343`; v15 contra
+     `C15-COMPARTIDOS-AD2EDFE`. Deben existir todos los objetos con su SQL exacto y no puede
+     aparecer ningún objeto ajeno.
+  3. Comprobar las invariantes (literales del `CHECK` de `referencias`, contador de Compartidos,
+     `schema_version` real) y que `PRAGMA foreign_key_check` esté vacío.
+  4. Solo si el manifiesto y las invariantes coinciden se permite evaluar el upgrade a 16.
+  - v14 desconocido o incompleto:
+    `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.`
+  - v15 desconocido o incompleto:
+    `Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.`
+  - Tablas sintéticas (`compartidos_demo`, `vehiculos_demo` u otras), objetos ausentes,
+    alterados o extra, o contratos mezclados no acreditan compatibilidad y se rechazan.
+  - **Orden de apertura en DEV.** `database.ts` se reordena para que la comprobación del
+    contrato sea la primera operación tras abrir la base en lectura; ninguna PRAGMA persistente
+    ni transacción de identidad puede precederla. `database.ts` es compuerta de esta
+    verificación.
+- **Revalidación de destino antes de DEV (obligatoria).** La 16 no prevalece sobre `main`.
+  Antes de DEV: `git fetch origin`, leer `origin/main:apps/api/src/database-identity.ts`, las
+  migraciones vigentes y **todos los refs locales y remotos** que reserven versión. **STOP** si
+  `main` está en 16 o más, si la 16 está ocupada, si `main` contiene un v14/v15 no verificado o
+  si falta un manifiesto/hash. Si `main` sigue en 14, la 15 sigue reservada y la 16 está libre,
+  la reserva se confirma para ese candidato concreto. Un `main` avanzado o una reserva no
+  verificada ganan siempre a la reserva documental.
+- **Migración aditiva a la versión 16.** La extensión se aplica dentro de `BEGIN IMMEDIATE` y
+  con rollback íntegro. Crea `instrumentos`, `operaciones_inversion`,
+  `instrumento_attempts`, `operacion_attempts`, `instrumento_audit` y
   `operacion_inversion_audit`; no ejecuta `DROP`, no borra ni renombra tablas y no aplica
-  `ALTER` destructivo sobre tablas ajenas. Si la base ya está en 14 y coincide con un contrato
-  admitido, conserva intactas sus tablas y datos y solo añade lo propio.
-- **Compuertas explícitas.** `database.ts` se reordena para verificar el contrato antes de las
-  PRAGMAs persistentes y de la transacción de identidad. `database-identity.ts` declara
-  `schemaVersion = 15` y admite `[1..15]`; es la fuente de la constante y la primera compuerta
-  que rechaza una base 15 si no se actualiza. `database-schema.ts` acepta `[1..14, version]`
-  (con `version = 15`), verifica el contrato cuando la base observada es 14 y aplica el esquema
-  de inversión cuando es `< 15`. `backup.ts` admite `1..15` y etiqueta la copia como `e4.1-v15`.
-  Una versión mayor que 15 se rechaza antes de mutar.
-- **Upgrade.** Una base 13 sube a 15 en el arranque (13→15 sin tablas v14). Una base 14 sube
-  a 15 **solo** si coincide exactamente con `C14-COMPARTIDOS-FCE1107` o
-  `C14-VEHICULOS-C69E343`; en ese caso preserva sus tablas y datos y añade lo propio. Una base
-  14 con otro contrato, con un objeto ausente o alterado, o con tablas sintéticas, se rechaza
-  antes de mutar y no se convierte en 15. Un backup de la 13, de la 14 verificada o de la 15 se
-  restaura en un directorio nuevo, como exige el restore existente; el de la 15 reproduce
-  Instrumentos, Compras y las dos auditorías, y deja vacías las tablas de intentos. El restore
-  aplica **la misma verificación de manifiesto** a una copia v14 antes de publicarla: una copia
-  v14 desconocida o incompleta se rechaza sin publicar el directorio nuevo.
-- Se preservan Saldos, Movimientos, Referencias, Deudas, auditorías, FK, índices, triggers y
-  datos existentes; sin reseed ni borrado.
-- El backup/restore existente se reutiliza sin mecanismo nuevo. Reconoce las versiones 13, 14 y
-  15 en su lista de versiones admitidas, copia y restaura Instrumentos, Compras y las dos
-  auditorías dedicadas, y extiende el vaciado de intentos a `instrumento_attempts` y
-  `operacion_attempts`. El restore sigue exigiendo un **directorio nuevo**: no se aplica sobre
-  una base existente ni mezcla tablas de otra entrega. Por eso una copia de 13 o 14 se restaura
-  con su esquema de origen y no incorpora las tablas de la 15; una copia de 15 recupera sus
-  tablas propias y deja sesiones, desafíos e intentos vacíos/revocados. Restaurar mantiene la
-  revocación de sesiones vigente y sigue rechazando una versión desconocida antes de mutar; una
-  copia v14 se verifica contra el manifiesto admitido antes de publicar el directorio nuevo.
+  `ALTER` destructivo sobre tablas ajenas. En una base 15 de Compartidos conserva intactas
+  `fichas_compartidos`, `participantes_compartido`, `compartido_audit`,
+  `compartido_attempts`, `fichas_vehiculo`, `referencias`, Movimientos, auditorías, contadores
+  y el resto de datos; solo añade lo propio y actualiza `schema_version` a 16.
+- **Compuertas explícitas.** `database.ts` verifica el contrato antes de las PRAGMAs
+  persistentes y de la transacción de identidad. `database-identity.ts` declara
+  `schemaVersion = 16` y admite `[1..16]`; `database-schema.ts` acepta `[1..15, version]`
+  (con `version = 16`), verifica el contrato de 14/15 y aplica el esquema de inversión cuando
+  la base es `< 16`. `backup.ts` admite `1..16` y etiqueta la copia como `e4.1-v16`. Una
+  versión mayor que 16 se rechaza antes de mutar.
+- **Rutas de upgrade.**
+  - **13→16:** crea la base 13, aplica la migración establecida 13→14 de Vehículos y después
+    E4.1 14→16; conserva filas previas y no crea tablas de Compartidos.
+  - **14→16:** exige `C14-VEHICULOS-C69E343` o `C14-COMPARTIDOS-FCE1107`; aplica E4.1 14→16
+    preservando las tablas y datos del contrato verificado, sin añadir Compartidos v15.
+  - **15→16:** exige `C15-COMPARTIDOS-AD2EDFE`; aplica E4.1 15→16 preservando Compartidos v15,
+    Vehículos y todos los datos; no reejecuta la migración 14→15 ni reseedea.
+  Cualquier base 14/15 con otro contrato, objeto ausente o alterado, o tablas sintéticas se
+  rechaza antes de mutar y no se convierte en 16.
+- **Backup y restore.** El backup/restore existente reconoce las versiones 13, 14, 15 y 16,
+  copia y restaura Instrumentos, Compras y las dos auditorías, y extiende el vaciado de
+  intentos a `instrumento_attempts` y `operacion_attempts`. El restore exige un **directorio
+  nuevo**, no mezcla versiones y verifica el manifiesto de una copia v14 o v15 antes de
+  publicarla; una copia desconocida se rechaza sin publicar. Restaurar una copia de 13, 14 o 15
+  conserva su esquema de origen y no incorpora tablas de la 16; una copia de 16 recupera sus
+  tablas propias. Restaurar mantiene la revocación de sesiones, desafíos e intentos vigente.
 - **DT7 (mapping/importación por campo/ID/apertura/archivo) se aplaza expresamente** a
-  E4.5/E4.12, que es donde el roadmap lo sitúa. E4.1 no importa datos, no mapea el Excel y
-  no fija cortes ni excepciones de conciliación: los fixtures son nuevos, ficticios y
-  deterministas. El aplazamiento es una desviación declarada, no una deuda oculta, y no
-  promete mapping en esta entrega.
+  E4.5/E4.12. E4.1 no importa datos, no mapea el Excel y no fija cortes ni excepciones de
+  conciliación: los fixtures son nuevos, ficticios y deterministas.
 - Fixtures ficticios y nombres reales: `S003` «Efectivo de inversión demo»
-  (`Efectivo`/`Inversiones`) y `S004` «Cartera de inversión demo`
+  (`Efectivo`/`Inversiones`) y `S004` «Cartera de inversión demo»
   (`Inversión`/`Inversiones`) ya existen en el entorno demo. `S006` «Cartera secundaria
   demo» (`Inversión`/`Inversiones`) se crea **por el servicio** (`POST /api/saldos`) desde
   el fixture de E4.1 para demostrar dos posiciones del mismo Instrumento; no se inserta por
@@ -622,6 +591,7 @@ Propuesta técnica (DT2), no decisión financiera:
   segundo Saldo de efectivo de inversión para AC-48, también se crea por el servicio y su ID
   lo asigna el contador, no el fixture.
 - Sin datos reales, importación ni migración operativa en esta entrega.
+
 
 ## 6. Invariantes monetarios y precisión
 
@@ -853,13 +823,15 @@ Códigos de error (contrato unívoco; una causa, un código):
   servidor, UTC, revisión resultante, motivo y JSON `anterior`/`posterior`; triggers que
   abortan `UPDATE` y `DELETE`. No se registran contraseñas, tokens, OTP, claves, importes ni
   payloads en logs públicos. La tabla `audit` existente no se modifica.
-- El backup/restore existente reconoce las versiones 13, 14 y 15 y restaura las tablas nuevas;
-  una copia de 15 se etiqueta `e4.1-v15`, una base 13 o 14 sube a 15 con migración aditiva. El
-  restore exige un directorio nuevo —no escribe sobre una base existente ni mezcla tablas de
-  otra entrega—, vacía sesiones, desafíos e intentos (incluidas `instrumento_attempts` y
-  `operacion_attempts`), y una copia de 13 o 14 se restaura con su esquema de origen sin
-  incorporar las tablas de la 15. Restaurar revoca sesiones y desafíos según la política
-  vigente. No se añade un mecanismo de copia nuevo. El guard de entorno demo sigue intacto.
+- El backup/restore existente reconoce las versiones 13, 14, 15 y 16 y restaura las tablas
+  nuevas; una copia de 16 se etiqueta `e4.1-v16` y una base 13, 14 o 15 sube a 16 con migración
+  aditiva. El restore exige un directorio nuevo —no escribe sobre una base existente ni mezcla
+  tablas de otra entrega—, vacía sesiones, desafíos e intentos (incluidas
+  `instrumento_attempts` y `operacion_attempts`), y verifica el manifiesto de una copia v14 o
+  v15 antes de publicarla. Una copia de 13, 14 o 15 se restaura con su esquema de origen sin
+  incorporar las tablas de la 16; una copia de 16 recupera sus tablas propias. Restaurar revoca
+  sesiones y desafíos según la política vigente. No se añade un mecanismo de copia nuevo. El
+  guard de entorno demo sigue intacto.
 - Sin nuevas dependencias, ORM, servicios externos ni cambios de autenticación.
 
 ## 9. Pantallas y wireframes (APROBADAS rev7)
@@ -1260,8 +1232,8 @@ de W9 libera 225,00 € y la anulación los 1.125,00 € de la compra.
 
 ## 13. Acceptance checks
 
-Todos los criterios están **aprobados como contrato de diseño rev7**; ninguno declara un
-resultado ejecutado ni un PASS. Ninguno depende de una respuesta pendiente ni de una
+Todos los criterios están **aprobados como contrato de diseño rev7** y la rev8 solo ajusta la
+versión de esquema y las rutas de migración; ninguno declara un resultado ejecutado ni un PASS. Ninguno depende de una respuesta pendiente ni de una
 condición abierta: cada resultado es determinista con las decisiones confirmadas de §3 y las
 correcciones de §3.1. «Sin escritura» significa que no cambian Compra, efectivo, cantidad,
 contador ni auditoría. Los códigos esperados se fijan por caso y no se solapan: 404
@@ -1273,9 +1245,9 @@ para el guard de impacto de Saldo; 422 `VALIDATION` para validación de campos; 
 existe un 409 ni un 422 genéricos, y la suficiencia nunca se reporta como 409. Los AC marcados
 **(integración/regresión)** —AC-38, AC-39, AC-40, AC-41, AC-42, AC-49 y AC-53— verifican contratos
 previos o consumidores y no cuentan como funcionalidad nueva de E4.1. Total: 54 AC, de los
-que 47 son funcionales de E4.1 y 7 de integración/regresión. AC-33 incluye el gate de contrato
-v14 y la revalidación de la versión destino; su apartado (f) es una comprobación pre-DEV, no
-una migración ejecutada.
+que 47 son funcionales de E4.1 y 7 de integración/regresión. AC-33 incluye los contratos
+v14/v15 y la revalidación de la versión destino; su apartado (g) es una comprobación pre-DEV,
+no una migración ejecutada.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
 | --- | --- | --- |
@@ -1311,7 +1283,7 @@ una migración ejecutada.
 | E4.1-AC-30 | Recorrer listado, ficha, alta, pestaña Compras (W7/W8) e impacto/rectificación/anulación (W9/W10) a 390 y 1440 con teclado; comprobar el filtro de Estado y el alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas asociadas, sin overflow; tema claro; borrador conservado; botones deshabilitados sin motivo o con revisión obsoleta; en W1/W4 «Todos» muestra la fila Inactiva `I1003` y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9 y W10 cubren rectificación y anulación; capturas ficticias inspeccionadas |
 | E4.1-AC-31 | Provocar vacío, carga, error de fuente, 409 y sesión expirada | Estados distintos y accionables; «No disponible» con motivo; nunca 0 ficticio; no se pierde el borrador ni la selección |
 | E4.1-AC-32 | Inspeccionar IDs y `instrumento_audit`/`operacion_inversion_audit` tras alta, edición, desactivación, rectificación y anulación; intentar `UPDATE`/`DELETE` sobre ambas tablas | IDs `Ixxx` y de Compra únicos e inmutables; una fila por revisión con actor, UTC, motivo y JSON `anterior`/`posterior`; los triggers abortan modificaciones; la tabla `audit` existente no cambia; sin DELETE |
-| E4.1-AC-33 | (a) actualizar una base ficticia de esquema 13 a 15 sin tablas v14; (b) congelar el manifiesto canónico de `C14-COMPARTIDOS-FCE1107` (generado desde `fce1107`), registrar su SHA-256 y actualizar su fixture aislado generado por el commit fuente, con datos sintéticos, a 15; (c) congelar el manifiesto canónico de `C14-VEHICULOS-C69E343` (generado desde `c69e343`), registrar su SHA-256 y actualizar su fixture aislado generado por el commit fuente, con datos sintéticos, a 15; (d) intentar abrir variantes v14 desconocidas o incompletas: mismo número 14 con una tabla/trigger/índice ausente, con SQL alterado, con un objeto extra, con tablas sintéticas (`compartidos_demo`/`vehiculos_demo`), con contratos mezclados o con un v14 de `main` no verificado; (e) abrir una base marcada como versión 16; (f) ejecutar el gate pre-DEV con `origin/main` en 15 o más, con la 15 ocupada, con un v14 de `main` no verificado o sin los manifiestos/hashes registrados; (g) inspeccionar el SQL de migración y la lógica/manifiesto de restore y restaurar copias ficticias de 13, 14 verificadas, 14 desconocida y 15 en directorios nuevos | (a) la base sube 13→15 en el arranque, sin «Esquema no compatible», conservando tablas/filas previas, y la 15 incluye Instrumentos, Compras, intentos y las dos auditorías; (b) el manifiesto y el SHA-256 de Compartidos quedan registrados antes de DEV; su fixture aislado coincide y sube 14→15 conservando tablas, índices, triggers y filas; (c) el manifiesto y el SHA-256 de Vehículos quedan registrados antes de DEV; su fixture aislado coincide y sube 14→15 conservando tablas, triggers y filas; (d) toda variante desconocida o incompleta se rechaza **antes** de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`, con el literal `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.` y sin escribir; el número 14 o la presencia de tablas sintéticas no basta; (e) la versión 16 se rechaza antes de mutar; (f) si `origin/main` ya está en 15 o más, la 15 está ocupada, `main` contiene un v14 no verificado o faltan los manifiestos/hashes, el gate pre-DEV se detiene, no se implementa la 15 y esta spec/testplan se renumeran o completan y revisan antes de DEV; (g) la migración es aditiva —sin `DROP`, sin borrado ni renombrado de tablas ajenas y sin `ALTER` destructivo—, las compuertas incluyen `database.ts`, `database-identity.ts` con `schemaVersion = 15`, `database-schema.ts` con `[1..14, version]` y `backup.ts` con `1..15`; la copia de la 15 se etiqueta `e4.1-v15`; el restore solo se hace en directorio nuevo y verifica el manifiesto de una copia v14 antes de publicarla: una copia de 13 o 14 verificada conserva su esquema de origen y no incorpora tablas de la 15, una copia v14 desconocida se rechaza sin publicar, y una copia de 15 recupera Instrumentos, Compras y las dos auditorías y vacía sesiones, desafíos e intentos (incluidas `instrumento_attempts` y `operacion_attempts`); rollback íntegro ante fallo |
+| E4.1-AC-33 | (a) actualizar una base ficticia de esquema 13 a 16 sin tablas v14/v15; (b) verificar el manifiesto `C14-COMPARTIDOS-FCE1107` (114 objetos) y actualizar su fixture v14 a 16 conservando sus datos; (c) verificar el manifiesto `C14-VEHICULOS-C69E343` (111 objetos) y actualizar su fixture v14 a 16 conservando sus datos; (d) verificar el manifiesto **real** `C15-COMPARTIDOS-AD2EDFE` (122 objetos, commit `ad2edfe`) y actualizar su fixture v15 con filas sintéticas de Compartidos y Vehículos a 16, comprobando que se preservan `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`, `fichas_vehiculo`, `referencias`, contadores y el resto de filas; (e) intentar abrir variantes v14 o v15 desconocidas o incompletas (objeto ausente, SQL alterado, objeto extra, tablas sintéticas o contratos mezclados); (f) abrir una base marcada como versión 17; (g) ejecutar el gate pre-DEV con `main` en 16 o más, con la 16 ocupada, con `main` en 14/15 no verificado, con la 15 no reconocida o sin manifiestos/hashes; (h) inspeccionar las rutas 13→16, 14→16 y 15→16, las compuertas y el restore de copias 13, 14 verificada, 15 verificada, 14/15 desconocida y 16 en directorios nuevos | (a) la base sube 13→16, conserva filas previas y la 16 incluye Instrumentos, Compras, intentos y las dos auditorías; (b) el manifiesto v14 de Compartidos coincide y la ruta 14→16 conserva sus tablas, índices, triggers y filas; (c) el manifiesto v14 de Vehículos coincide y la ruta 14→16 conserva sus tablas, triggers y filas; (d) el manifiesto real v15 de Compartidos coincide y la ruta 15→16 conserva todas sus tablas y las filas sintéticas, sin reejecutar 14→15 ni reseedear; (e) toda variante desconocida o incompleta se rechaza **antes** de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`, con el literal de su versión (`Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.` / `Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.`) y sin escribir; el número no acredita compatibilidad; (f) la versión 17 se rechaza antes de mutar; (g) si `main` está en 16 o más, la 16 está ocupada, `main` contiene un v14/v15 no verificado o faltan manifiestos/hashes, el gate pre-DEV se detiene y no se implementa la 16; (h) migración aditiva sin `DROP`/`ALTER` destructivo ni borrado de tablas ajenas; `database-identity.ts` admite `1..16`, `database-schema.ts` `[1..15, version]`, `backup.ts` `1..16`, `database.ts` reordena la verificación, la etiqueta es `e4.1-v16`; el restore verifica manifiestos v14/v15 antes de publicar, una copia de 13/14/15 conserva su esquema de origen y no incorpora tablas v16, una copia v14/v15 desconocida se rechaza sin publicar, y una copia de 16 recupera Instrumentos, Compras y auditorías y vacía sesiones, desafíos e intentos; rollback íntegro ante fallo |
 | E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | La UI muestra «No disponible» con la causa concreta («No se pudo leer el registro de Compras»/«No se pudo calcular el efectivo») y conserva identidad/filtros; no presenta 0, no repara y no permite guardar una rectificación que presuma integridad |
 | E4.1-AC-35 | Compra retroactiva que deja negativo un saldo posterior (entrada/salida vigente después de la fecha) y hechos del mismo día (apertura 1.000,00; entrada 100,00 y Compra 1.050,00 el 2026-02-10; repetir con 1.150,00) | 422 `INSUFFICIENT_CASH` sin escritura con `disponible`, `necesario`, `minimo` y la fecha del mínimo posterior; aperturas y hechos intactos; la retroactiva que no deja ningún saldo posterior negativo se acepta; con 1.050,00 el cierre del día es 50,00 y se acepta, con 1.150,00 se rechaza con fecha 2026-02-10 y mínimo −50,00, sin depender del orden de captura |
 | E4.1-AC-36 | Editar la divisa de referencia de un Instrumento con Compras en divisa no EUR | Solo cambia el dato de presentación del maestro con auditoría; las Compras conservan divisa, cambio, precio, importe EUR y comisión; efectivo y cantidad no cambian |
@@ -1365,15 +1337,14 @@ Otras integraciones declaradas:
 - **DT7 (mapping/importación).** Aplazado expresamente a E4.5/E4.12 (§5.2, §12); E4.1 no
   mapea campos, IDs, aperturas ni archivos, y no fija cortes ni excepciones. La desviación
   queda registrada y no se presenta como cumplimiento diferido implícito.
-- Ningún AC de este documento se declara probado; la aprobación rev7 es del contrato de diseño,
-  no de una implementación.
+- Ningún AC de este documento se declara probado; la aprobación rev7 es del contrato de diseño
+  y rev8 solo ajusta la versión técnica, no una implementación.
 
 ## 15. Siguiente acción
 
-SPEC19 rev7 está aprobada (incluidos wireframes y testplan) sobre el commit
-`47f469a902330ac199c910225563f909bd5116eb`. Antes de implementar, ejecutar el gate de destino
-de §5.2/AC-33(f) y congelar los manifiestos v14 con sus SHA-256 en un paso pre-DEV autorizado,
-con fixtures sintéticos aislados y sin tocar los worktrees de Compartidos o Vehículos; si el
-gate falla, STOP y renumerar la spec. Solo después, y con autorización separada de DEV:
-implementar, actualizar pruebas y revisar wireframes con el usuario.
+SPEC19 rev7 está aprobada; la **rev8** es el ajuste técnico documental a la versión 16 y queda
+**pendiente de aprobación**. Los manifiestos v14/v15 ya están congelados y el gate pre-DEV
+verificó la reserva 15 de Compartidos y la disponibilidad de la 16. Antes de implementar debe
+repetirse el gate de §5.2/AC-33(g) sobre `main` y todos los refs; si cambia, STOP. Solo después,
+y con autorización separada de DEV: implementar, actualizar pruebas y revisar wireframes.
 Esta aprobación no autoriza DEV, merge ni despliegue.

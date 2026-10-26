@@ -2,9 +2,8 @@
 
 Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26 sobre el commit
 `47f469a902330ac199c910225563f909bd5116eb`; testplan aprobado con ella.
-**PRE-DEV-SCHEMA: STOP** — manifiestos v14 congelados, pero la versión destino 15 está ocupada
-por `codex/dev14-base-b` (`ad2edfe`, `schemaVersion = 15`). DEV, merge y despliegue **no**
-autorizados.
+**DRAFT rev8 — ajuste técnico a la versión 16 pendiente de aprobación.** Respeta la reserva 15
+de Compartidos; DEV, merge y despliegue **no** autorizados.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -21,6 +20,27 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - Este checkpoint posterior solo registra la aprobación y el estado; no cambia el contenido
   funcional aprobado sobre `47f469a`.
 
+## Ajuste técnico rev8 — versión 16 (2026-10-26)
+
+- Autorización del usuario: ajuste documental de E4.1 a la siguiente versión libre,
+  provisionalmente **16**, respetando la reserva 15 de Compartidos.
+- `main` = `f5bf032` (esquema 14); `codex/dev14-base-b` = `ad2edfe` (esquema 15, Compartidos
+  v15 + Vehículos). También declaran v15 `codex/dev16-revision-comida` y su remoto; solo el
+  contrato `C15-COMPARTIDOS-AD2EDFE` está verificado por E4.1, cualquier otro v15 se rechaza.
+  La 16 está libre en la revisión. No se contactó ni modificó la sesión de Compartidos.
+- Contrato real v15 congelado: `C15-COMPARTIDOS-AD2EDFE` (`ad2edfe`, 122 objetos),
+  SHA-256 `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`.
+  Fixture v15 con filas sintéticas de Compartidos y Vehículos:
+  `6c0b9bb51054d74d34cf67494cee8b6b9745b8a3ce4a4acce75fa95b5b2ea226`.
+- Rutas documentadas: 13→16, 14→16 y 15→16; 15→16 preserva todas las tablas y filas de
+  Compartidos v15, Vehículos, Referencias, contadores y auditorías, sin reejecutar 14→15 ni
+  reseedear.
+- Compuertas: `schemaVersion = 16`, admisión `1..16`, `[1..15, version]`, `backup.ts 1..16`,
+  etiqueta `e4.1-v16`; restore verifica manifiestos v14/v15. Sin implementación de E4.1.
+- Gate pre-DEV: **PASS para 16 a 2026-10-26, condicional**; debe repetirse sobre refs
+  locales/remotos antes de DEV.
+- Estado: **rev8 pendiente de aprobación**. No autoriza DEV, merge ni despliegue.
+
 ## Checkpoint documental — 2026-10-26
 
 - Checkout: `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/pilot-e41`.
@@ -32,12 +52,10 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   revisión obsoleta 409 `REVISION_CONFLICT`; huella de Movimiento 409 `IMPACT_CHANGED`; guard
   de Saldo 409 `HISTORY_LOCKED`); residual R4-1 de AC-41 resuelto con precondición ordenada
   sobre `S003`.
-- Contrato v14 (rev7): no se acepta una base por su número. Solo se admiten
-  `C14-COMPARTIDOS-FCE1107` y `C14-VEHICULOS-C69E343`, con manifiesto canónico y SHA-256
-  obligatorios antes de DEV; una variante desconocida o incompleta se rechaza antes de
-  `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup. La reserva 15 es provisional y se revalida
-  contra `origin/main` antes de DEV. La generación de manifiestos es un paso pre-DEV separado,
-  autorizado y con fixtures aislados, sin tocar los worktrees de Compartidos o Vehículos.
+- Contrato v14/v15 (rev8): no se acepta una base por su número. Se admiten
+  `C14-COMPARTIDOS-FCE1107`, `C14-VEHICULOS-C69E343` y `C15-COMPARTIDOS-AD2EDFE`, con
+  manifiesto canónico y SHA-256; una variante desconocida o incompleta se rechaza antes de
+  `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup. E4.1 usa la 16; la 15 queda para Compartidos.
 - Verificación canónica: `python3 scripts/verify baseline` con Python 3.12.14 → **PASS**,
   incluida la comprobación de espacio en blanco del commit.
 - Revisión independiente real: **PASS** tras corregir restore/intentos, rutas
@@ -68,10 +86,11 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - Fixtures SQLite aislados generados fuera del repo: Compartidos
   `e6a490ae25a9c0c3c9d87ce8a599de55a2bb462961a63b03fd05dcb9ec496d96`; Vehículos/main
   `34cadc7ef7f98a0db0153e180b4449a78337a7a43121d0c538fccd4c847de383`. No se publican.
-- **Resultado:** **STOP — versión destino no disponible (2026-10-26).** El contrato v14 y los
-  manifiestos son correctos, pero la 15 está ocupada por `codex/dev14-base-b`. No se autoriza
-  DEV, no se implementa E4.1 y no se renumera la spec por inferencia; se requiere decisión de
-  coordinación/revisión.
+- **Resultado inicial:** **STOP — versión destino no disponible (2026-10-26).** El contrato v14
+  y los manifiestos son correctos, pero la 15 está ocupada por `codex/dev14-base-b`.
+- **Resolución:** el usuario autorizó el ajuste técnico a la 16. Se añadió el contrato real
+  `C15-COMPARTIDOS-AD2EDFE` y las rutas 13/14/15→16; el gate para 16 queda **PASS condicional**
+  a 2026-10-26. La 15 no se toca.
 - Revisor independiente del PRE-DEV-SCHEMA: `ses_e8626d90bffeSZElYYcR4XhU2n`; detectó la
   colisión de la 15 antes de aceptar el gate.
 
@@ -87,8 +106,7 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 ## Siguiente acción
 
-PRE-DEV-SCHEMA **STOP**: los manifiestos v14 están congelados y `main` 14 coincide con
-`C14-VEHICULOS-C69E343`, pero la 15 está ocupada por `codex/dev14-base-b` (`ad2edfe`). No se
-autoriza DEV ni se renumera la spec por inferencia. Se requiere decisión de coordinación para
-resolver la reserva 15 (renumerar E4.1 o integrar/renumerar la otra rama) y repetir el gate y la
-revisión antes de cualquier autorización de desarrollo. No merge ni despliegue.
+La rev8 técnica (versión 16) está **pendiente de aprobación**. Manifiestos v14/v15 congelados,
+`main` 14 y 15 reservada por Compartidos; la 16 está libre a 2026-10-26. Antes de DEV debe
+repetirse el gate sobre refs locales/remotos y, solo después, solicitar autorización separada
+de desarrollo. No merge ni despliegue.
