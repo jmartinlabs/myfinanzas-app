@@ -5,42 +5,46 @@ base B aprobada en §14 (usuario, 2026-10-26). Brainstorming:
 [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md).
 Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.md).
 
-## Current checkpoint
-Actualización Codex2026-10-26: usuario autorizó corrección focal de sentencia
-de semilla sin finalizar. Aplicado try/finally insert.finalize en prepareSchema;
-regresiones de cierre/rollback4PASS, control original4FAIL; focal Compartidos+
-cierre13PASS/184assertions, tiposPASS. CI Linux nuevo candidato pendiente.
-No causaB3 demostrada, no merge/deploy. Detalle vigente al final del testplan.
-
-Current state: CANDIDATE FOR INDEPENDENT QA — Base B implementada y verificada
-localmente en lo posible; gate local PARCIAL por límites de plataforma macOS
-(backup/restore y suite completa Linux pendientes). No es aceptación de E3.2.
+## Current checkpoint — Base B v15 compatible con main/DEV15 — 2026-10-26
+Continuación autorizada por el usuario sobre PR75, sin merge ni despliegue.
+Estado vigente: **CANDIDATE FOR INDEPENDENT QA / CI LINUX PENDIENTE**.
 
 - Authorized scope / approval source: Task `EXT-OPENCODE-DEV14-BASEB`; usuario,
-  2026-10-26: «Autorizo desarrollo de base B conforme a la división integrada en
-  PR74, sin D5 ni despliegue». PR74/main `f0a5219b2193283a4e3254d13c87c75c9254e845`.
-- Repository / checkout / branch / candidate SHA and pending changes:
-  `/private/tmp/myfinanzas-dev14-base-b`, rama `codex/dev14-base-b`. Código
-  `06cf1d85f52c`; ajuste E2E autorizado `7cefaf662837`; resultados documentales en
-  el commit posterior. Sin cambios pendientes tras ese commit.
-- Client(s) / worker IDs / start-stop owners / uncontrolled workers: OpenCode,
-  sesión funcional DEV14-BASEB; versión/ID técnico/modelo no verificables desde el
-  entorno. Un solo escritor; sin subdelegación. Codex conserva publicación/PR/CI;
-  Antigravity solo QA de lectura.
-- Preflight / permission-sensitive operation owners / blockers: Bun 1.4.3,
-  Python 3.12, age 1.3.2 (`/tmp/myfinanzas-runtime/age`) y Chrome del sistema.
-  Dependencias frozen ya instaladas. `TMPDIR=/private/tmp`. macOS no permite
-  `libc.so.6`: backup/restore/producción y el cierre E2E con restauración quedan
-  UNRUN/FAIL de plataforma; CI Linux es obligatorio.
-- Checks / QA evidence / environment: focal Compartidos 9/9 PASS; typecheck/build
-  PASS; entry `scripts/verify` baseline PASS y API 174 PASS/45 FAIL de plataforma;
-  E2E propio PASS; E2E completo 6 PASS/2 FAIL (Liquidez no relacionado y
-  restauración macOS). Detalle y capturas en el testplan.
-- PR / CI / merge state, source and last verified time: sin push, PR, CI remoto,
-  merge ni deploy por este ejecutor. No se reclama estado remoto.
-- Next safe action: QA independiente revisa candidato/diff; Codex ejecuta CI Linux
-  para backup/restore v14, API completa y E2E. No reanudar D5/B3/Dev32.
-- Manual task states, one per task with provenance: ver tabla de Tasks.
+  2026-10-26: «Autorizo continuar el trabajo existente de Base B de Compartidos,
+  resolver su compatibilidad con main y DEV15 integrado, corregir defectos dentro
+  del alcance aprobado, completar QA independiente y publicar las actualizaciones
+  necesarias en PR75. No autorizo merge ni despliegue.» División B aprobada en
+  specification §14; PR74/main `f0a5219b2193283a4e3254d13c87c75c9254e845`.
+- Repository / checkout / branch / candidate SHA: PR75
+  `https://github.com/josemartin2000/myfinanzas-app/pull/75`, rama
+  `codex/dev14-base-b`. Checkout aislado
+  `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/dev14-baseb`.
+  Candidato de compatibilidad `e205ba4` (merge de `origin/main` `aad33e9` con el
+  candidato Base B `fce1107`); el commit documental posterior fija el SHA final.
+- Ownership / previous executor: el progress anterior acredita un único escritor y
+  HANDOFF completado; el checkout original `/private/tmp/myfinanzas-dev14-base-b`
+  ya no existe. No había worktree activo de `codex/dev14-base-b`; el nuevo
+  checkout es exclusivo del coordinador. Codex conserva revisión final, CI y
+  operaciones GitHub que requieran API.
+- Compatibility contract: main/DEV15 ya ocupa **v14** con `fichas_vehiculo`.
+  Base B avanza a **v15**; desde v13 se ejecuta `vehicleSchema` (v14) y después
+  `compartidoSchema` (v15). Una base v14 sin `fichas_vehiculo` se rechaza como
+  variante desconocida. La migración v15 reconstruye también `fichas_vehiculo`,
+  conserva matrícula/fechas/auditoría/triggers/FK y los tipos `Vehículo` y
+  `Gasto compartido`. Backup distingue `e3.3-v14` y `e3.2-v15`.
+- Checks / QA evidence: typecheck/build PASS; focal Compartidos 10/10 PASS/171
+  assertions; Vehículos+cierre 15/15; Anticipos 22/22; migraciones/regresiones
+  históricas 62 PASS y 4 FAIL de plataforma en el lote focal; suite API completa
+  191 PASS/46 FAIL macOS (todas las observadas de plataforma `libc.so.6` o B3
+  heredado); E2E Compartidos 1/1 PASS, Vehículos vacío 1/1 PASS y Vehículos
+  completo 1/1 PASS tras corregir el cierre CSS. Capturas 390/1440
+  inspeccionadas. Detalle en el testplan.
+- PR / CI / merge state: PR75 abierta; sin CI Linux del candidato verificable
+  desde este entorno (no hay `gh`/API). Sin merge ni deploy. El push actualizará
+  la PR; la comprobación de Actions queda para Codex si no hay acceso API.
+- Next safe action: repetir E2E Vehículos, QA independiente sobre el SHA fijado y
+  CI Linux. No reanudar D5/B3/Dev32 ni declarar E3.2 completo.
+- Manual task states: ver tabla de Tasks y sección de compatibilidad.
 
 ## Scope lock (Base B)
 Incluido: ficha 1:1 + participantes, alta atómica Referencia CAT013/ficha, Gasto
@@ -68,6 +72,9 @@ deploy y aceptación E3.2.
 | API protegida + UI 390/1440 + navegación | done | `06cf1d8`; B-T08 HTTP/E2E PASS; capturas inspeccionadas |
 | Regresiones, typecheck/build, verify y capturas | partial | `06cf1d8`; tipos/build/baseline PASS; API/E2E Linux UNRUN; Liquidez ajeno registrado |
 | Ajuste autorizado E2E CAT013 + recuentos | done | `7cefaf6`; Movimientos alcanza restauración macOS |
+| Compatibilidad con main/DEV15 y esquema v15 | done (local) | `e205ba4`; v13→v14→v15, v14 preservado, variante v14 rechazada |
+| QA independiente del candidato fusionado | pending | Requiere SHA final y revisión de contexto nuevo |
+| CI Linux de backup/restore v15 y suite completa | pending | No verificable sin API/Actions; handoff a Codex |
 | HANDOFF → CODEX | done | Commit documental de resultados y respuesta final |
 
 ## Verified increments
@@ -91,6 +98,50 @@ E2E `7cefaf6`:
 - Ajustes visuales aplicados y recapturados: tabla de participantes 1440 sin
   solapamiento, tabla de impacto apilada 390, listado 1440 con anchos correctos.
 
+
+## Compatibilidad con main/DEV15 — 2026-10-26
+
+Main `aad33e9` contiene DEV15/PR81 `f5bf032`, que ocupa la versión **v14** con
+`fichas_vehiculo`, `vehicle-rules.ts`, `vehiculos.ts` y sus rutas/UI. Base B partió
+de v13 y también declaraba v14, por lo que un merge textual habría marcado como
+actualizada una base con tablas o invariantes ausentes. Solución aplicada:
+
+- `database-identity.schemaVersion` y la lista admitida pasan a **15**.
+- `prepareSchema` ejecuta, por orden, `vehicleSchema` cuando la versión es <14 y
+  `compartidoSchema` cuando es <15. Una v13 recorre ambos; una v14 de Vehículos
+  solo ejecuta Compartidos; una instalación limpia crea ambos contratos.
+- `compartidoSchema` (v14→v15) incluye `fichas_vehiculo` en la reconstrucción
+  transaccional, amplía el CHECK de Referencias con `Vehículo` y
+  `Gasto compartido`, y reaplica índices/triggers de ambos contratos.
+- Si una base se declara v14 pero no tiene `fichas_vehiculo`, se rechaza como
+  variante desconocida, se cierra y no se modifica.
+- Backup identifica `e3.3-v14` para Vehículos y `e3.2-v15` para Base B; restore
+  admite ambas y solo revoca `compartido_attempts` desde v15.
+- `operationalReferenceTypes`, validación de Referencias, gates por operación y
+  UI admiten simultáneamente `Vehículo` y `Gasto compartido`, sin abrir S000,
+  D5, Exterior ni metadata de aportación.
+
+Pruebas añadidas/actualizadas: migración v13→v15 con preservación de filas,
+auditorías, identidad y FK; migración v14→v15 con ficha/matrícula/fechas de
+Vehículos y auditoría; rechazo de variante v14 sin contrato; matriz de backups
+con fixture v14 explícita y v15; E2E de Vehículos como regresión. El fallo de UI
+detectado en esa regresión fue un cierre `}` perdido al resolver el conflicto CSS
+del bloque móvil; corregido, no un defecto de producto previo.
+
+Evidencia local macOS arm64/Bun 1.4.3 sobre `e205ba4`:
+
+- `bun run typecheck` PASS; `bun run build` PASS (35 módulos).
+- `bun test apps/api/src/compartidos.test.ts` → 10 PASS/0 FAIL/171 assertions.
+- `bun test apps/api/src/vehiculos.test.ts apps/api/src/database-schema.test.ts`
+  → 15 PASS/0 FAIL.
+- `bun test apps/api/src/anticipos.test.ts` → 22 PASS/0 FAIL.
+- Lote ciclos/nómina/planes/plan anual/concurrencia → 62 PASS/4 FAIL, los cuatro
+  por `libc.so.6` en publicación/restore (plataforma).
+- Suite API completa → 191 PASS/46 FAIL, todas las observadas por `libc.so.6`
+  o por B3 heredado (`SQLITE_BUSY` temprano); no se relabelan como PASS.
+- `playwright tests/e2e/compartidos.spec.ts` → 1/1 PASS; Vehículos vacío → 1/1
+  PASS; Vehículos completo → 1/1 PASS tras la corrección CSS.
+- `scripts/verify` canónico y CI Linux del SHA final: pendientes en este entorno.
 
 ## Decisions
 - Se reutiliza el patrón de ficha 1:1 y auditoría de E3.1, sin copiar metadatos de
@@ -126,7 +177,12 @@ E2E `7cefaf6`:
 - **E2E movimientos:** el recorrido funcional pasa hasta la restauración; el
   servidor de restore no arranca por el bloqueo `libc.so.6`. Se registra UNRUN de
   plataforma, no PASS.
-- Sin datos reales, Excel, VPS, D5, push, PR, merge ni deploy.
+- **B3 heredado:** la prueba R6 de `referencias.test.ts` volvió a observar
+  `SQLITE_BUSY` temprano en `database.ts:44` sobre el candidato local. No se
+  investiga, no se cambian guardas/timeouts ni se relanza a ciegas; queda como
+  evidencia para Codex junto al SHA. No se atribuye a la compatibilidad v15 sin
+  demostración causal.
+- Sin datos reales, Excel, VPS, D5, merge ni deploy.
 
 ## Next action
 See current checkpoint.

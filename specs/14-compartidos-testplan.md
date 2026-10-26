@@ -219,3 +219,55 @@ Observación de fds: /proc en Linux, lsof del PID propio en macOS. SinGC ni retr
 - CI normal de PR77/run40332705052, producto anteriorb7bcbb6 sin preload:
   API219PASS/E2E8PASS/requiredPASS; compatibilidad acreditada en esa ejecución,
   no sustituye checks del nuevo candidato ni cierraB3.
+
+## Compatibilidad v15 con main/DEV15 — 2026-10-26
+
+Candidato fusionado `e205ba4` sobre main `aad33e9` (DEV15/PR81 `f5bf032`).
+Esta sección sustituye únicamente la expectativa de versión del candidato actual;
+los resultados v14 anteriores quedan históricos y no acreditan este SHA.
+
+### Contrato comprobado
+
+| Caso | Resultado esperado | Prueba |
+| --- | --- | --- |
+| Instalación limpia | v15 con `fichas_vehiculo` y tablas de Compartidos; ambos Tipos en Referencias | `database-schema.test.ts`, focales |
+| v13 → v15 | Ejecuta Vehículos v14 y Compartidos v15; filas/auditorías/FK/identidad preservadas | `compartidos.test.ts` B-T01 |
+| v14 Vehículos → v15 | Conserva REF, matrícula, fechas, auditoría y triggers; añade Compartidos | `compartidos.test.ts` B-T01 v14 |
+| v14 sin Vehículos | Rechazo seguro como variante desconocida; sin modificación | `compartidos.test.ts` B-T01 |
+| Backup | v14 = `e3.3-v14`; v15 = `e3.2-v15`; restore conserva ambos | `referencias.test.ts` R10; CI Linux |
+| Gates | `Vehículo` y `Gasto compartido` conviven; S000/D5/Exterior siguen cerrados | B-T04/B-T09; `vehiculos.test.ts` |
+
+### Evidencia local ejecutada — macOS arm64, Bun 1.4.3
+
+| Comando | Resultado |
+| --- | --- |
+| `bun run typecheck` | PASS |
+| `bun run build` | PASS (35 módulos) |
+| `bun test apps/api/src/compartidos.test.ts` | 10 PASS / 0 FAIL / 171 assertions |
+| `bun test apps/api/src/vehiculos.test.ts apps/api/src/database-schema.test.ts` | 15 PASS / 0 FAIL |
+| `bun test apps/api/src/anticipos.test.ts` | 22 PASS / 0 FAIL |
+| Lote ciclos/nómina/planes/plan anual/concurrencia | 62 PASS / 4 FAIL por `libc.so.6` |
+| `bun test apps/api` | 191 PASS / 46 FAIL macOS (plataforma y B3 heredado) |
+| `playwright tests/e2e/compartidos.spec.ts` | 1 PASS / 0 FAIL; PNG 390/1440 |
+| `playwright tests/e2e/vehiculos-empty.spec.ts` | 1 PASS / 0 FAIL |
+| `playwright tests/e2e/vehiculos.spec.ts` | 1 PASS / 0 FAIL tras corregir cierre CSS; PNG 390/1440 |
+| `python3.12 scripts/verify` | Pendiente sobre el SHA final |
+| CI Linux | UNRUN desde este entorno; requiere Codex/Actions |
+
+### Matriz B-T01–B-T10 (parte B, candidato v15)
+
+| Gate | Estado local | Límite |
+| --- | --- | --- |
+| B-T01 | PASS focal v13/v14→v15, rollback y variante desconocida; backup/restore UNRUN macOS | CI Linux obligatorio |
+| B-T02 | PASS focal | — |
+| B-T03 | PASS focal | — |
+| B-T04 | PASS focal; convivencia con Vehículo comprobada | — |
+| B-T05 | PASS focal | — |
+| B-T06 | PASS rama B | R-MP/D5 UNRUN |
+| B-T07 | PASS focal | — |
+| B-T08 | PASS HTTP/E2E rama B; Vehículos E2E PASS | CI Linux pendiente |
+| B-T09 | PASS focal; S000/D5 bloqueados | — |
+| B-T10 | PARCIAL: focales/tipos/build PASS; API completa macOS con fallos de plataforma/B3; Linux UNRUN | CI Linux obligatorio |
+| B-T11 | UNRUN (aplazado E3.2/E3.6) | No PASS |
+
+No se declara DEV14/E3.2/D5 completos. No hay datos reales, merge ni deploy.
