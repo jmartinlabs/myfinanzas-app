@@ -1,4 +1,14 @@
 # 14 — Gasto compartido y reparto verificable: Specification
+
+**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
+inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
+spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
+P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
+ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
+anteriores conservadas abajo describen la revisión previa y quedan sustituidas
+por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
+pendientes; ninguna prueba funcional D5 se declara ejecutada.
+
 Status: APPROVED (base) — aprobación completa de la specification por el usuario,
 vía coordinador (2026-10-25). Q1–Q7, F1–F5, P-F6, recuperación multi-Partida
 (R-MP) y Cerrado con coste propio (R-CC) confirmadas. **D5/Exterior: contrato

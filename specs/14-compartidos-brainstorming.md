@@ -432,3 +432,14 @@ revalidación concurrente, 409 sin efectos parciales y rollback total.
 Solo especificación. Sin desarrollo D5, SQL/migraciones, Excel, datos reales, VPS,
 merge ni despliegue. B-T11 no se implementa: conserva su dependencia y estado
 pendiente. No se declara D5 aprobado, implementado ni E3.2 completo.
+
+## D5 — Aprobación funcional final — 2026-10-27 (append-only)
+
+**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
+inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
+spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
+P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
+ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
+anteriores conservadas abajo describen la revisión previa y quedan sustituidas
+por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
+pendientes; ninguna prueba funcional D5 se declara ejecutada.

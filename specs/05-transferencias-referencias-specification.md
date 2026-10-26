@@ -1,4 +1,14 @@
 # 05 — E1.5 Transferencias y Referencias: Specification
+
+**Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
+inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
+spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos
+P-D5-1..6. Es aprobación documental del conjunto, no autorización de merge PR84
+ni de desarrollo, migraciones o despliegue. Las etiquetas de propuesta/pendiente
+anteriores conservadas abajo describen la revisión previa y quedan sustituidas
+por este registro para el alcance aprobado. B-T11 y aceptación global E3.2 siguen
+pendientes; ninguna prueba funcional D5 se declara ejecutada.
+
 Status: APPROVED — especificación funcional/técnica y wireframes 390/1440 aprobados el 2026-10-21.
 Approval source/date: autorización expresa del usuario, 2026-10-21, tras auditoría favorable de Álex sobre 50de3e4; Q1–Q3, 30 criterios actuales y 3 contratos futuros aprobados. Squash merge de PR #17 autorizado; sin dev 05.
 Context and brainstorming: [ronda única](05-transferencias-referencias-brainstorming.md),
