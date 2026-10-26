@@ -22,6 +22,8 @@ class ValidationTests(unittest.TestCase):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
  def test_links(self):
   self.change('README.md','## Skills','[Broken](missing.md)\n## Skills'); self.assertRule('links')
+ def test_fragment_anchor(self):
+  self.change('.agents/skills/orchestrate/SKILL.md','coordinator-communication.md#7-closing-a-turn-or-stopping','coordinator-communication.md#missing-anchor'); self.assertRule('fragments')
  def test_agents(self):
   self.change('AGENTS.md','(specs/guidelines/ui.md)','(README.md)'); self.assertRule('agents')
  def test_thin_agents(self):
@@ -64,11 +66,26 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', 'savings still need measurement'),
    ('templates/agent-work-packet.md', 'Client / version / session ID'),
    ('templates/agent-work-packet.md', 'Blocking notice'),
+   ('templates/agent-work-packet.md', 'PR none unless the authorized scope includes publication'),
    ('templates/progress.md', 'Current checkpoint'),
    ('templates/testplan.md', 'Local / CI platform and owner'),
+   ('specs/methodology/approvals.md', 'Publicación de rama y PR'),
+   ('specs/methodology/approvals.md', 'No se necesita otra aprobación de'),
+   ('specs/methodology/approvals.md', 'Nunca activar auto-merge'),
+   ('specs/methodology/coordinator-communication.md', '## 7. Closing a turn or stopping'),
+   ('specs/methodology/coordinator-communication.md', '#execution-continuity'),
+   ('specs/methodology/coordinator-communication.md', 'A received handoff never authorizes merge'),
+   ('specs/methodology/myfinanzas-coordination.md', 'nunca auto-merge'),
+   ('specs/methodology/epic-orchestration.md', 'Branch/PR publication is ordinary inside the authorized scope'),
    ('.agents/skills/orchestrate/SKILL.md', 'progressively spaced CI queries'),
+   ('.agents/skills/orchestrate/SKILL.md', 'A required check that fails and can be corrected'),
+   ('.agents/skills/orchestrate/SKILL.md', '#7-closing-a-turn-or-stopping'),
    ('.agents/skills/dev/SKILL.md', 'negative/integration cases before code'),
+   ('.agents/skills/dev/SKILL.md', 'authorized scope includes branch/PR publication'),
    ('.agents/skills/task/SKILL.md', 'execution platform and operation owners before code'),
+   ('.agents/skills/task/SKILL.md', 'branch/PR publication follows'),
+   ('.agents/skills/task/SKILL.md', 'A required check that fails and can be corrected'),
+   ('.agents/skills/tweak/SKILL.md', 'Branch/PR publication follows'),
    ('.agents/skills/handoff/SKILL.md', 'external client'),
   )
   for name,token in cases:
@@ -103,6 +120,12 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('resource-policy')
     finally:
      p.write_text(original)
+ def test_coordination_does_not_duplicate_continuity(self):
+  p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
+  for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
+   try:
+    p.write_text(original+'\n'+variant+'\n'); self.assertRule('coordination')
+   finally: p.write_text(original)
  def test_external_contract_does_not_register_clients(self):
   p=self.root/'specs/methodology/dynamic-agents.md'
   p.write_text(p.read_text()+'\nAn additional user-selected client may use the same verified packet.\n')

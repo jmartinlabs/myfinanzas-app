@@ -1994,6 +1994,263 @@ textarea {
   }
 }
 
+/* E3.2 base B — Compartidos */
+.shared-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 16px;
+  align-items: start;
+}
+.shared-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.shared-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 12px;
+}
+.shared-metrics .metric {
+  border: 1px solid var(--border, #cbd8ba);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fbfdf7;
+}
+.shared-metrics dt {
+  color: #536147;
+  font-size: 0.82rem;
+}
+.shared-metrics dd {
+  margin: 4px 0 0;
+  font-size: 1.15rem;
+}
+.shared-metrics small {
+  display: block;
+  margin-top: 4px;
+  line-height: 1.35;
+}
+.shared-state {
+  margin-bottom: 16px;
+}
+.shared-alert {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-left: 4px solid #a33d1c;
+  background: #fbe9e1;
+  color: #5c230f;
+}
+.shared-expenses,
+.shared-partidas,
+.shared-related,
+.shared-history {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.shared-expenses li,
+.shared-partidas li,
+.shared-related li {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) auto auto auto;
+  gap: 12px;
+  align-items: start;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2ead8;
+}
+.shared-expenses li small,
+.shared-related li small {
+  display: block;
+}
+.shared-expenses li.shared-invalid {
+  background: #fff6f1;
+}
+.shared-history li {
+  padding: 6px 0;
+  border-bottom: 1px solid #e2ead8;
+  font-size: 0.92rem;
+}
+.state-closed,
+.state-partial,
+.state-review {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+.state-closed {
+  background: #dcecb3;
+  color: #24320e;
+}
+.state-partial {
+  background: #f6e6b8;
+  color: #4a3706;
+}
+.state-review {
+  background: #fbe1d7;
+  color: #5c230f;
+}
+.shared-scope-note,
+.shared-state,
+.shared-impact {
+  margin-top: 16px;
+}
+.shared-cards {
+  display: none;
+  gap: 12px;
+  grid-template-columns: 1fr;
+}
+.shared-form {
+  margin-top: 16px;
+}
+.shared-impact table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.shared-impact th,
+.shared-impact td {
+  text-align: left;
+  padding: 8px;
+  border-bottom: 1px solid #e2ead8;
+}
+@media (max-width: 1050px) {
+  .shared-layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 760px) {
+  .shared-metrics {
+    grid-template-columns: 1fr;
+  }
+  .shared-cards {
+    display: grid;
+  }
+  .shared-expenses li,
+  .shared-partidas li,
+  .shared-related li {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+.shared-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.shared-table-scroll table {
+  min-width: 560px;
+}
+.shared-layout > *,
+.shared-layout .panel {
+  min-width: 0;
+}
+.shared-table-scroll {
+  width: 100%;
+}
+.shared-participants table {
+  table-layout: fixed;
+}
+.shared-participants th:first-child {
+  width: 30%;
+}
+.shared-participants td {
+  vertical-align: top;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.shared-participants td:first-child {
+  overflow-wrap: anywhere;
+}
+.shared-participants td small {
+  display: block;
+  margin-top: 2px;
+}
+.shared-participants td .text-button {
+  display: block;
+  padding: 2px 0;
+}
+.shared-partidas li {
+  grid-template-columns: minmax(0, 2fr) auto auto;
+}
+.shared-related li {
+  display: block;
+}
+.shared-participants th:first-child {
+  width: 30%;
+}
+.shared-participants th:nth-child(2),
+.shared-participants th:nth-child(3),
+.shared-participants th:nth-child(4),
+.shared-participants th:nth-child(5) {
+  width: 13%;
+}
+.shared-participants th:last-child {
+  width: 18%;
+}
+@media (min-width: 761px) {
+  .shared-table-scroll table {
+    min-width: 0;
+  }
+}
+@media (max-width: 760px) {
+  .shared-table-scroll table {
+    min-width: 560px;
+  }
+}
+.shared-list th:first-child {
+  width: 14%;
+}
+.shared-list th:nth-child(2) {
+  width: 28%;
+}
+.shared-list th:nth-child(3) {
+  width: 20%;
+}
+.shared-list th:nth-child(4) {
+  width: 14%;
+}
+.shared-list th:nth-child(5) {
+  width: 14%;
+}
+.shared-list th:last-child {
+  width: 10%;
+}
+@media (max-width: 760px) {
+  .shared-table-scroll {
+    overflow: visible;
+  }
+  .shared-table-scroll table {
+    display: block;
+    min-width: 0;
+  }
+  .shared-table-scroll thead {
+    display: none;
+  }
+  .shared-table-scroll tbody,
+  .shared-table-scroll tr,
+  .shared-table-scroll td {
+    display: block;
+  }
+  .shared-table-scroll tr {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid #e2ead8;
+  }
+  .shared-table-scroll td:first-child {
+    grid-column: 1 / -1;
+    font-weight: 700;
+  }
+  .shared-table-scroll td::before {
+    content: attr(data-label);
+    display: block;
+    color: #536147;
+    font-size: 0.78rem;
+  }
+}
 /* E3.3 Vehículos: compact desktop table and mobile cards without new visual identity. */
 .vehicle-table table {
   font-size: 0.78rem;

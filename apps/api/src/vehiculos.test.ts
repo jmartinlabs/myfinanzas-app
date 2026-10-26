@@ -1041,7 +1041,7 @@ test("AC-07/25/32/33: integrity list is read-only, scope stays local and audit i
   }
 });
 
-test("AC-02/04/26/31: migration v13→v14, FK/audit continuity and HTTP guards", async () => {
+test("AC-02/04/26/31: migration v13→v15, FK/audit continuity and HTTP guards", async () => {
   const dir = mkdtempSync(join(tmpdir(), "e33-vehiculo-"));
   try {
     const path = join(dir, "v13.sqlite"),

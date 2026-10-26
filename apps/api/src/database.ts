@@ -9,6 +9,7 @@ import {
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
 import { verifyAdmittedContract } from "./schema-contract";
+import { assertV14VehicleContract } from "./compartido-schema";
 import { productionConfig, openProductionConnection } from "./private-state";
 
 export function openDatabase(path: string) {
@@ -26,6 +27,7 @@ export function openDatabase(path: string) {
     try {
       // The admitted v14/v15 manifest is verified before persistent PRAGMAs.
       verifyAdmittedContract(db);
+      assertV14VehicleContract(db);
       db.exec(
         "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
       );
@@ -60,6 +62,7 @@ export function openDatabase(path: string) {
     // The admitted v14/v15 manifest is verified before any identity transaction,
     // persistent PRAGMA or write.
     verifyAdmittedContract(db);
+    assertV14VehicleContract(db);
     assertMode(db.transaction(() => inspectIdentity(db))(), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);

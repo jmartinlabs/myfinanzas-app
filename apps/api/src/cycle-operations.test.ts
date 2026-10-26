@@ -377,12 +377,14 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
         for (const [table, values] of before) {
           if (table === "schema_version") continue;
           if (table === "counters") {
-            for (const row of values as any[])
-              expect(db.query("SELECT * FROM counters WHERE name=?").get(row.name)).toEqual(row);
-            if (previousVersion === 7)
-              expect(db.query("SELECT next FROM counters WHERE name='presupuestos'").get()).toEqual({next: 1});
-            expect(db.query("SELECT next FROM counters WHERE name='instrumento'").get()).toEqual({next: 1001});
-            expect(db.query("SELECT next FROM counters WHERE name='operaciones_inversion'").get()).toEqual({next: 1});
+            const expected = [
+              ...values,
+              ...(previousVersion === 7 ? [{ name: "presupuestos", next: 1 }] : []),
+              { name: "participantes_compartido", next: 1 },
+              { name: "instrumento", next: 1001 },
+              { name: "operaciones_inversion", next: 1 },
+            ].sort((a: any, b: any) => a.name.localeCompare(b.name));
+            expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
             continue;
           }
           expect(

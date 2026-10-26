@@ -1,4 +1,4 @@
-// Genuine pre-E3.3 builder: unchanged v12 fixture plus the integrated E3.1 schema.
+// Genuine pre-E3.2/pre-E3.3 builder: unchanged v12 plus the integrated E3.1 schema.
 import { Database } from "bun:sqlite";
 import { prepareV12 } from "./database-v12";
 import { anticipoSchema } from "../src/anticipo-schema";

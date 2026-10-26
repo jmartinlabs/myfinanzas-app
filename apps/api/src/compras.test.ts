@@ -9,6 +9,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { openDatabaseV13 } from "../test-support/database-v13";
+import { openDatabaseV15 } from "../test-support/database-v15";
 import { materializeContract } from "../test-support/inversiones-schema";
 import { createInstrumento } from "./instrumentos";
 import {
@@ -780,7 +781,8 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
     db = openDatabase(v14);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
     expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF900'").get()).toEqual({ matricula: "1234ABC" });
-    expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='fichas_compartidos'").get()).toEqual({ n: 0 });
+    expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='fichas_compartidos'").get()).toEqual({ n: 1 });
+    expect(db.query("SELECT COUNT(*) n FROM fichas_compartidos").get()).toEqual({ n: 0 });
     db.close();
 
     const v15 = materializeContract(join(dir, "v15.sqlite"), "C15-COMPARTIDOS-AD2EDFE", (fixture) => {
@@ -818,6 +820,68 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
     v17Db.exec("UPDATE schema_version SET version=17");
     v17Db.close();
     expect(() => openDatabase(v17)).toThrow("Esquema no compatible");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("E4.1-AC-33(d): v15 real de main preserva Compartidos y Vehículos al subir a 16", () => {
+  const dir = mkdtempSync(join(tmpdir(), "e41-real-v15-"));
+  try {
+    const path = join(dir, "v15.sqlite");
+    const v15 = openDatabaseV15(path);
+    const stamp = "2026-01-01T00:00:00Z";
+    v15.run(
+      "INSERT INTO referencias VALUES('REF9100','Compartido real demo','Gasto compartido','Activa',1,?,?)",
+      [stamp, stamp],
+    );
+    v15.run("INSERT INTO fichas_compartidos VALUES('REF9100',1,?,?)", [stamp, stamp]);
+    v15.run(
+      "INSERT INTO participantes_compartido VALUES('CP9100','REF9100','Titular real','Titular',50,'Activa',1,?,?)",
+      [stamp, stamp],
+    );
+    v15.run(
+      "INSERT INTO compartido_audit VALUES(1,'REF9100','alta',NULL,'{\"revision\":1}','Alta real',?, 'usuario-unico')",
+      [stamp],
+    );
+    v15.run(
+      "INSERT INTO compartido_attempts VALUES('intento-real','hash','{}',9999999999999)",
+    );
+    v15.run(
+      "INSERT INTO referencias VALUES('REF9101','Vehículo real demo','Vehículo','Activa',1,?,?)",
+      [stamp, stamp],
+    );
+    v15.run(
+      "INSERT INTO fichas_vehiculo VALUES('REF9101','9101 ABC','2027-01-01','2026-12-01',1,?,?)",
+      [stamp, stamp],
+    );
+    v15.run("UPDATE counters SET next=7 WHERE name='participantes_compartido'");
+    expect(v15.query("SELECT version FROM schema_version").get()).toEqual({ version: 15 });
+    v15.close();
+
+    const db = openDatabase(path);
+    try {
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
+      for (const [table, id, expected] of [
+        ["fichas_compartidos", "REF9100", 1],
+        ["participantes_compartido", "CP9100", 1],
+        ["compartido_audit", "REF9100", 1],
+        ["compartido_attempts", "intento-real", 1],
+        ["fichas_vehiculo", "REF9101", 1],
+        ["referencias", "REF9100", 1],
+        ["referencias", "REF9101", 1],
+      ] as const)
+        expect(
+          db.query(`SELECT COUNT(*) n FROM ${table} WHERE ${table === "compartido_attempts" ? "key" : table === "referencias" ? "id" : table === "fichas_compartidos" || table === "compartido_audit" ? "referencia" : table === "fichas_vehiculo" ? "referencia" : "id"}=?`).get(id),
+        ).toEqual({ n: expected });
+      expect(db.query("SELECT next FROM counters WHERE name='participantes_compartido'").get()).toEqual({ next: 7 });
+      expect(db.query("SELECT next FROM counters WHERE name='instrumento'").get()).toEqual({ next: 1001 });
+      expect(db.query("SELECT next FROM counters WHERE name='operaciones_inversion'").get()).toEqual({ next: 1 });
+      expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF9101'").get()).toEqual({ matricula: "9101 ABC" });
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      db.close();
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

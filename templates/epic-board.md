@@ -29,7 +29,7 @@ External clients / IDs / start-stop owners / notification routes: NONE VERIFIED.
 
 ## Handoffs and checks
 
-- PENDING: Spec approved? source/date; Dev tests? command/result; QA? evidence; PR? authorization to push/open; merge? explicit user approval.
+- PENDING: Spec approved? source/date; Dev tests? command/result; QA? evidence; PR? published under the authorized scope; merge? explicit user approval.
 
 After confirmed integration, update current PR/merge/SHA/check fields, explicitly
 superseding historical pending states. Preserve history behind links.

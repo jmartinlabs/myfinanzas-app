@@ -144,7 +144,7 @@ export function backup(
                                   : sourceVersion === 14
                                     ? "e3.3-v14"
                                     : sourceVersion === 15
-                                      ? "e4.1-v15"
+                                      ? "e3.2-v15"
                                       : "e4.1-v16",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
@@ -307,6 +307,7 @@ export function restore(
           ...(bundle.manifest.schema >= 11 ? ["annual_plan_attempts"] : []),
           ...(bundle.manifest.schema >= 12 ? ["payroll_attempts"] : []),
           ...(bundle.manifest.schema >= 13 ? ["anticipo_attempts"] : []),
+          ...(bundle.manifest.schema >= 15 ? ["compartido_attempts"] : []),
           ...(bundle.manifest.schema >= 16
             ? ["instrumento_attempts", "operacion_attempts"]
             : []),

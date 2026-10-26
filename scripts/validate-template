@@ -31,6 +31,30 @@ def validate(root):
    if u.scheme or dest.startswith('#'): continue
    target=(p.parent/unquote(u.path)).resolve()
    if not target.is_relative_to(root) or not target.exists(): fail('links',f'{p.relative_to(root)} -> {dest}')
+ # Cross-file fragments in portable instructions must resolve to a real heading.
+ def heading_slug(value):
+  value=re.sub(r'\[([^\]]+)\]\([^)]+\)',r'\1',value).replace('`','').strip().lower()
+  value=re.sub(r'[^\w\s-]','',value,flags=re.UNICODE)
+  return value.replace(' ','-')
+ anchors={}
+ for p in root.rglob('*.md'):
+  seen={}
+  values=set()
+  for heading in re.findall(r'^#{1,6}\s+(.+)$',p.read_text(encoding='utf-8'),re.M):
+   base=heading_slug(heading); count=seen.get(base,0)
+   values.add(base if count==0 else f'{base}-{count}'); seen[base]=count+1
+  anchors[p.resolve()]=values
+ fragment_docs=[root/n for n in ('AGENTS.md','README.md') if (root/n).is_file()]
+ for folder in ('docs','specs/methodology','specs/guidelines','templates','.agents'):
+  fragment_docs.extend((root/folder).rglob('*.md'))
+ for p in fragment_docs:
+  for dest in re.findall(r'(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)',p.read_text(encoding='utf-8')):
+   dest=dest.strip().split(' "',1)[0].strip('<>'); u=urlsplit(dest)
+   if u.scheme or not u.fragment or not u.path: continue
+   target=(p.parent/unquote(u.path)).resolve()
+   if target.suffix!='.md' or not target.is_file(): continue
+   if unquote(u.fragment) not in anchors.get(target,set()):
+    fail('fragments',f'{p.relative_to(root)} -> {dest}')
  agents=read('AGENTS.md')
  for n in ('architecture','ui','quality','security'):
   if f'(specs/guidelines/{n}.md)' not in agents: fail('agents',f'missing guideline {n}')
@@ -102,22 +126,40 @@ def validate(root):
   'templates/agent-work-packet.md':('Client / version / session ID',
    'Start/stop owner and permitted communication route', 'Instruction entry points',
    'Context:', 'Preflight / operation owners', 'Shared test resources',
-   'Verification environment / candidate', 'Blocking notice', 'Evidence destination'),
+   'Verification environment / candidate', 'Blocking notice', 'Evidence destination',
+   'PR none unless the authorized scope includes publication', 'Push and create'),
+  'specs/methodology/approvals.md':('Publicación de rama y PR',
+   'No se necesita otra aprobación de', 'Nunca activar auto-merge'),
+  'specs/methodology/coordinator-communication.md':('HANDOFF → CODEX',
+   '## 7. Closing a turn or stopping', '#execution-continuity',
+   'This section defines only the communication contract', 'Exact human action',
+   'A received handoff never authorizes merge'),
+  'specs/methodology/epic-orchestration.md':('Branch/PR publication is ordinary inside the authorized scope',),
   'templates/progress.md':('Current checkpoint', 'one current summary',
    'permission-sensitive operation owners', 'PR / CI / merge state'),
   'templates/testplan.md':('Before implementation', 'negative/error and integration',
    'Local / CI platform and owner', 'Expected evidence', 'incompatible platform'),
   '.agents/skills/orchestrate/SKILL.md':('fresh bounded context',
-   'progressively spaced CI queries', 'one current summary'),
+   'progressively spaced CI queries', 'one current summary',
+   '## Execution continuity', 'A required check that fails and can be corrected',
+   '#7-closing-a-turn-or-stopping'),
+  'specs/methodology/myfinanzas-coordination.md':('Publicar rama y crear o',
+   'nunca auto-merge', 'no cierra el turno'),
   '.agents/skills/dev/SKILL.md':('negative/integration cases before code',
    'advance', 'escalation notices', 'Incompatible local runs never replace CI gates',
-   'one current checkpoint'),
+   'one current checkpoint', 'authorized scope includes branch/PR publication'),
   '.agents/skills/task/SKILL.md':('execution platform and operation owners before code',
-   'dynamic-agents.md', 'preserve independent QA'),
+   'dynamic-agents.md', 'preserve independent QA', 'branch/PR publication follows',
+   'A required check that fails and can be corrected'),
+  '.agents/skills/tweak/SKILL.md':('Branch/PR publication follows',),
   '.agents/skills/handoff/SKILL.md':('external client', 'uncontrolled workers'),
  }.items():
   for token in tokens:
    if token not in read(name): fail('coordination',f'{name}: missing {token}')
+ # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
+ coordinator=read('specs/methodology/coordinator-communication.md')
+ for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):
+  if token.lower() in coordinator.lower(): fail('coordination',f'coordinator-communication.md: duplicate continuity rule: {token}')
  # Resource policy guards are structural; runtime behavior needs separate trials.
  for name,tokens in {
   'specs/methodology/model-selection.md':('`gpt-6.1-sol` + `low`','do not spawn','requested versus observed','fork_turns="none"'),

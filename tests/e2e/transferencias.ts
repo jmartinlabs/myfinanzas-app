@@ -149,7 +149,7 @@ export async function transferencias(page: Page) {
   };
   const travelPart = await part("CAT011"),
     optionalPart = await part("CAT014"),
-    blockedPart = await part("CAT013"),
+    sharedPart = await part("CAT013"),
     anticipoPart = await part("CAT012");
   async function fillTransfer(
     concept: string,
@@ -365,7 +365,9 @@ export async function transferencias(page: Page) {
     if (reference)
       await page
         .getByLabel(
-          p === travelPart.id ? "Referencia *" : "Referencia opcional",
+          p === travelPart.id || p === sharedPart.id
+            ? "Referencia *"
+            : "Referencia opcional",
           { exact: true },
         )
         .selectOption(reference);
@@ -406,16 +408,35 @@ export async function transferencias(page: Page) {
       exact: true,
     }),
   ).toBeVisible();
+  const sharedReference = await write("/referencias", {
+    nombre: "Caso compartido E1.5",
+    tipo: "Gasto compartido",
+  });
+  expect(sharedReference.status).toBe(201);
+  const sharedReferenceId = sharedReference.data.item.id as string;
   await nav("/movimientos/nuevo");
-  await page.getByLabel("Tipo *", { exact: true }).selectOption("Gasto");
-  await page
-    .getByLabel("Partida *", { exact: true })
-    .selectOption(blockedPart.id);
+  await fillExpense(
+    "Gasto compartido con ficha",
+    sharedPart.id,
+    sharedReferenceId,
+  );
+  await expect(
+    page.getByLabel("Referencia *", { exact: true }),
+  ).toHaveValue(sharedReferenceId);
   await expect(
     page.getByRole("button", { name: "Registrar movimiento", exact: true }),
-  ).toBeDisabled();
+  ).toBeEnabled();
   await page.setViewportSize({ width: 390, height: 844 });
-  await shot("e3-blocked-mobile");
+  await shot("e3-cat013-enabled-mobile");
+  await page
+    .getByRole("button", { name: "Registrar movimiento", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", {
+      name: "Gasto compartido con ficha",
+      exact: true,
+    }),
+  ).toBeVisible();
   // Round trip to a real Reference form preserves a memory-only movement draft.
   await nav("/movimientos/nuevo");
   await fillTransfer("Borrador para crear caso", "1", nc.id);
@@ -488,7 +509,7 @@ export async function transferencias(page: Page) {
   await shot("error-mobile");
   await page.unroute("**/api/referencias?*");
   await page.getByRole("button", { name: "Reintentar", exact: true }).click();
-  await expect(page.locator(".mobile-list li")).toHaveCount(3);
+  await expect(page.locator(".mobile-list li")).toHaveCount(4);
   let releaseReferences!: () => void;
   const referenceGate = new Promise<void>((resolve) => {
     releaseReferences = resolve;
@@ -505,7 +526,7 @@ export async function transferencias(page: Page) {
   ).toBeVisible();
   await shot("loading-mobile");
   releaseReferences();
-  await expect(page.locator(".mobile-list li")).toHaveCount(3);
+  await expect(page.locator(".mobile-list li")).toHaveCount(4);
   await page.unroute("**/api/referencias?*");
   await nav("/movimientos?referencia=" + travel);
   await expect(page.locator(".mobile-list li")).toHaveCount(4);
@@ -513,7 +534,7 @@ export async function transferencias(page: Page) {
   await shot("movement-list-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await shot("movement-list-mobile");
-  // E3.1 enables CAT012; CAT013 above still proves the unavailable E3 guard.
+  // E3.1 enables CAT012; E3.2 base B enables CAT013 only with its shared case.
   const created = await write("/anticipos/fichas", {
     nombre: "Anticipo ficticio H1 E2E",
   });

@@ -137,7 +137,7 @@ test("E4.1-AC-33(h): backup/restore 13, 14, 15 y 16 en directorio nuevo", () => 
     });
     return new Database(path, { strict: true });
   };
-  run("demo", 15, "e4.1-v15", v15);
+  run("demo", 15, "e3.2-v15", v15);
 
   run("demo", 16, "e4.1-v16", (path) => openDatabase(path), (db) => {
     updateSaldo(db, "S003", {

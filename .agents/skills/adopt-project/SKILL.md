@@ -27,4 +27,4 @@ Do not copy upstream checks or CI over the project workflow.
 7. Summarize changed files, existing rules preserved, source revision, tests/evidence and any manual next steps. Recommend the next request use $orchestrate and Quick/Standard/Full after adoption.
 
 ## Stop conditions
-Stop before editing for approval, on conflicts or missing source access, and before destructive changes, publishing, pushing or production deployment. Do not overwrite unrelated work or claim adoption complete with failed required checks.
+Stop before editing for approval, on conflicts or missing source access, and before destructive changes or production deployment. Branch/PR publication inside the authorized scope follows [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); publishing outside that scope or pushing a protected branch remains protected. Do not overwrite unrelated work or claim adoption complete with failed required checks.

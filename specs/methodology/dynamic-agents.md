@@ -171,7 +171,7 @@ This repository contains **instructions and templates**, not executable subagent
 
 ## Result contract for each work packet
 
-Return: packet ID; completed/blocked status; changed and read files; commit/revision if applicable; real tests and results (passed/failed/unrun); unresolved decisions, file collisions or blockers; evidence links; next independent action. The coordinator reconciles the board and decides whether to launch a new packet. No delegate may self-approve decisions, merge PRs or change the board.
+Return: one complete `HANDOFF → CODEX` block per [coordinator communication](coordinator-communication.md#4-mandatory-return), including when blocked or awaiting a decision: packet ID and origin session; completed/partial/blocked/cancelled status; changed and read files; commit/revision if applicable; real tests and results (passed/failed/unrun) with environment and evidence; unresolved decisions, file collisions or blockers; and next independent action. The coordinator reconciles the board and decides whether to launch a new packet. No delegate may self-approve decisions, merge PRs or change the board; publication remains inside the authorized scope.
 
 ## Example: two ongoing MyFinanzas chats
 

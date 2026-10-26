@@ -49,7 +49,9 @@ verified acceptance evidence, relevant documentation updates and local commits.
 6. Update architecture when confirmed boundaries change; obtain approval before material
    deviations. Update progress/test results and documentation. Review own diff and staged
    files for regressions, secrets and unrelated changes, then commit each working increment.
-   Follow the repository's Git/GitHub policy in AGENTS.md, including merge authorization.
+   Follow the repository's Git/GitHub policy in AGENTS.md and the
+   [publication policy](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr);
+   authorized scope includes branch/PR publication, while merge keeps explicit approval.
    Tie remote CI evidence to its commit SHA; distinguish local results from remote status.
    Keep implemented, approved and integrated states distinct; mark integration complete only
    after verifying the merge.
@@ -60,7 +62,8 @@ verified acceptance evidence, relevant documentation updates and local commits.
    Update one current checkpoint with SHA/pending changes, check/QA evidence, PR/merge
    state and next action; supersede stale current labels without deleting history.
 ## Stop conditions
-Never deploy to production, publish or perform destructive operations without explicit
-permission. Stop on important conflicts or missing required authorization. Record blockers;
+Never deploy to production or perform destructive operations without explicit permission.
+Branch/PR publication follows [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr);
+respect local-only instructions. Stop on important conflicts or missing required authorization. Record blockers;
 failed, skipped and unrun checks remain open. Do not finish as complete while acceptance
 checks fail. Preserve enough progress to resume in another session.

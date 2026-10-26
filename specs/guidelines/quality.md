@@ -280,3 +280,15 @@ QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen d
 Al cierre enlazar un checkpoint vigente con SHA/PR/evidencias, conservando historia.
 [Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);
 [desviaciones/procedencia](../methodology/orchestration-adoption.md#harness-v280--adopción-local).
+
+## Coordinación v2.14.0 selectiva — publicación y continuidad
+
+Cambios metodológicos: validar enlaces, contratos de Skills, guardas y regresiones
+negativas; el diff no toca aplicación, SQL, dependencias ni workflow. `python3 scripts/verify`
+sigue siendo la entrada única: baseline siempre, y full cuando el clasificador lo exija
+por tocar metodología/scripts. Un check fallido y corregible dentro del alcance se
+investiga y repite antes de cerrar; no se declara PASS sin comando, entorno, candidato y
+evidencia. La publicación autorizada de rama/PR no autoriza merge y no sustituye la CI
+Linux obligatoria del SHA candidato. Estados, retorno manual y cierre en
+[comunicación](../methodology/coordinator-communication.md); procedencia y límites en
+[adopción](../methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26).
