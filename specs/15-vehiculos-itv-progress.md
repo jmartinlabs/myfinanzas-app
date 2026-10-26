@@ -2,7 +2,7 @@
 
 Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
-HEAD final local: `9b46153a510fc6b9eb0bc9504a480d84e2bd9bbd`.
+HEAD final local: `cdd40ad08656e29c5449c979da0908c5e24517bd` (código `9b46153a510fc6b9eb0bc9504a480d84e2bd9bbd`).
 Spec: [15-vehiculos-itv-specification.md](15-vehiculos-itv-specification.md) rev5,
 aprobada sobre `15c2ff1e59d36e3fb5ca99790d9774d204c35129`.
 Evidencia de pruebas: [15-vehiculos-itv-testplan.md](15-vehiculos-itv-testplan.md).
