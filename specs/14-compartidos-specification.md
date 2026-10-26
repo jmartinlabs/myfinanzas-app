@@ -12,8 +12,9 @@ aprobación conceptual de D5-Q1–D5-Q6 (usuario, 2026-10-26) y no autoriza
 implementación, migraciones, SQL, Excel, commit, push, PR ni merge.
 Brainstorming, respuestas y revisiones: [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md)
 Testplan y evidencia: [14-compartidos-testplan.md](14-compartidos-testplan.md).
-Base de esta revisión: main `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema
-v15). Rama documental `codex/spec14-d5-exterior-r2`.
+Base de esta revisión: main `26b6f0c` (PR75/Base B `5ad75ed` integrada; esquema
+v15; documentos D5 sin cambios desde `24b48c5`). Rama documental
+`codex/spec14-d5-exterior-r2`.
 Solo especificación: no autoriza desarrollo, SQL real, commit, push ni merge.
 
 ## 1. Contexto y fuentes
@@ -544,10 +545,10 @@ siguen sin autorizar. PR67/71 integradas en la base a445f90 de esta publicación
    consecuente de spec05; la aceptación global de E3.2 es posterior e incluye
    D5/B-T11. No se habilitan Exterior ordinario ni salidas. D5 no completa E3.2;
    roadmap y AC-31 de spec05 no se declaran PASS.
-3. Estado de entregas (dato del coordinador, verificado contra main `24b48c5`):
-   Base B/PR75 integrada en `5ad75ed` (esquema v15); B-T11 y aceptación global
-   E3.2 siguen pendientes. Dev13/PR71 y Q9 integrados previamente; Dev12/PR67
-   separado, sin merge. Una eventual dev D5 exigirá candidato verificado.
+3. Estado de entregas (verificado contra Git/main `26b6f0c`): Base B/PR75
+   integrada en `5ad75ed` (esquema v15); PR67/Dev12 integrada en `a445f90`;
+   Dev13/PR71 y Q9 integrados previamente. B-T11 y aceptación global E3.2 siguen
+   pendientes. Una eventual dev D5 exigirá candidato verificado.
 4. Excel: el traspaso de históricos (incluidos Exterior) pertenece al plan
    autorizado local; esta spec no define cargas ni SQL.
 5. E3.5/Comida y E3.1/Anticipos consumen este Neto central (E3.6); su orden de
@@ -1017,7 +1018,8 @@ terceros pendientes.
 - **UI:** acción «Registrar aportación» en la ficha; formulario dedicado con caso
   y Referencia bloqueados, Quién paga (solo Terceros activos de la ficha), fecha,
   importe, Destino interno, evidencia y procedencia. Preview antes/después con
-  Recuperado, pendiente, exceso y efecto en el Saldo. Aviso explícito: «es una
+  Recuperado, pendiente, exceso y efecto bancario explícito: +importe en el
+  Destino; S000 no computa como saldo interno. Aviso explícito: «es una
   Transferencia desde Exterior; no es Ingreso ni Gasto». El formulario común de
   Transferencia sigue sin S000/Exterior.
 - **API de alta:** extender `POST /api/movimientos/impacto` y
@@ -1054,35 +1056,63 @@ terceros pendientes.
   reclasificación.
 - Movimiento + metadatos + intento + auditoría en una transacción IMMEDIATE.
   Revalidar Referencia, ficha, participante, revisión y huella antes de confirmar.
-- **Reintento idéntico:** misma clave de idempotencia, mismo payload, misma huella
-  y misma revisión → devuelve la respuesta original; no crea Movimiento,
-  acreditación ni auditoría nueva. El intento se registra como replay.
-- **Acreditación duplicada:** segunda solicitud sobre un Movimiento ya acreditado
-  con clave o payload distinto → 409 CONFLICT; no modifica la acreditación
-  existente ni crea otra. Misma clave con payload distinto → 409 de idempotencia,
-  no replay.
-- **Conflicto concurrente:** dos confirmaciones simultáneas o revisión/huella
-  obsoleta → 409 sin escritura parcial; el cliente recarga y reintenta.
-- **Rollback:** cualquier fallo en Movimiento, metadatos, intento o auditoría →
-  rollback total; no queda Movimiento sin acreditación, acreditación huérfana ni
-  auditoría parcial. Un reintento posterior seguro no duplica.
+- **Replay idéntico:** misma clave de idempotencia y mismo payload original →
+  devuelve la respuesta e IDs almacenados **antes** de revalidar la huella o la
+  revisión actuales, aunque el primer commit las haya cambiado. Una respuesta
+  perdida después del commit es un replay, no un alta nueva. No crea Movimiento,
+  acreditación ni auditoría nueva.
+- **Concurrentes idénticas:** dos solicitudes con la misma clave y payload → una
+  sola operación; la segunda devuelve la misma respuesta e IDs. Se reutiliza el
+  patrón de idempotencia vigente de Movimientos; no se diseña otro mecanismo.
+- **Duplicado o contexto obsoleto:** misma clave con payload distinto, o intento
+  distinto con huella/revisión obsoleta → 409 sin efectos parciales; no modifica
+  la acreditación existente ni crea otra.
+- **Fallo transaccional:** cualquier fallo en Movimiento, metadatos, intento o
+  auditoría → rollback íntegro; no queda Movimiento sin acreditación,
+  acreditación huérfana ni auditoría parcial. Un reintento posterior seguro no
+  duplica.
+- **Rectificación:** un hecho vigente con REF/participante históricos hoy
+  inactivos puede rectificar importe, fecha o Destino elegible conservando ambos
+  vínculos, sin exigir reactivación; exige impacto, motivo, revisión y auditoría.
+  Cambiar la identidad del participante exige REF/ficha activa y Tercero activo de
+  la misma ficha, y no cambia la REF. Un hecho o acreditación anulados no se
+  rectifican ni se reactivan.
 - No se admite confirmar un preview obsoleto ni completar campos derivados por el
   cliente.
+
+| Caso de idempotencia | Resultado |
+| --- | --- |
+| Respuesta perdida después del commit; mismo payload/clave | Replay: respuesta e IDs originales, sin duplicar |
+| Dos solicitudes idénticas concurrentes | Una operación; ambas reciben la misma respuesta |
+| Misma clave con payload distinto | 409 de idempotencia; sin efectos |
+| Intento distinto con huella/revisión obsoleta | 409; sin efectos parciales |
+| Fallo en Movimiento/metadatos/intento/auditoría | Rollback íntegro; reintento seguro |
 
 ### 15.8 Rectificación, anulación y auditoría
 
 - Tipo, Referencia y Origen S000 son inmutables mientras la acreditación esté
   vigente. Para cambiarlos, se anula el hecho y se registra uno nuevo; el
   original no se reescribe ni se reactiva.
-- Importe, fecha y Destino interno pueden rectificarse con vista de impacto,
-  motivo obligatorio, auditoría append-only y revalidación; el motor recalcula
-  Recuperado, pendiente, exceso y Neto.
-- La corrección de participante o evidencia es una acción revisada con impacto,
-  motivo y auditoría; conserva los valores anteriores y no borra la evidencia
-  original. No se corrige por edición silenciosa.
+- **Hecho vigente con vínculos históricos inactivos:** si la REF/ficha o el
+  participante están hoy inactivos pero la acreditación sigue vigente, se puede
+  rectificar importe, fecha o Destino elegible **conservando** esa REF y ese
+  participante, sin exigir su reactivación. Exige vista de impacto, motivo,
+  revisión y auditoría append-only; no crea un enlace nuevo ni reactiva el
+  vínculo. El Destino nuevo debe ser un Saldo elegible; no se conserva un enlace
+  operativo a un Saldo inactivo.
+- **Cambio de identidad del participante:** sustituir el participante de la
+  acreditación exige REF/ficha activa y un Tercero activo de la misma ficha. No
+  cambia la REF ni el Tipo, y se registra como corrección revisada con impacto y
+  auditoría. Si la REF/ficha o el Tercero destino no están activos → 409/422.
+- La corrección de evidencia que no cambia participante ni REF se revisa con
+  impacto, motivo y auditoría; conserva la evidencia anterior y no reactiva
+  vínculos inactivos.
+- **Hecho o acreditación anulados:** no admiten rectificación que los reactive;
+  se conservan como historia y, si hace falta corregir, se registra un hecho
+  nuevo. Los registros bancarios importados conservan sus valores y evidencia
+  originales; sin DELETE.
 - La anulación excluye la acreditación del motor, conserva metadatos, evidencia e
-  historia y no permite reactivación ni DELETE. Los registros bancarios
-  importados conservan sus valores y evidencia originales.
+  historia y no permite reactivación ni DELETE.
 - **Vínculos históricos inactivos:** una acreditación anulada, un Movimiento
   anulado, una REF/ficha inactiva o un participante de baja se conservan y se
   muestran con procedencia, pero no se borran, no se reactivan y no se usan para
@@ -1092,9 +1122,19 @@ terceros pendientes.
   participante o evidencia de una acreditación anulada está bloqueado; solo se
   conserva su historia.
 - Toda corrección revalida Referencia, ficha, participante, Tipo, dirección y
-  dependencias; si deja una acreditación incoherente, bloquea con conflicto.
+  dependencias; conservar un vínculo histórico inactivo no es un enlace nuevo ni
+  exige reactivarlo. Si la corrección deja una acreditación incoherente, bloquea
+  con conflicto.
 - Un cambio de partes/participante con aportaciones acreditadas exige la vista de
   impacto de §8; nunca reescribe el Movimiento bancario.
+
+| Caso de rectificación | Resultado |
+| --- | --- |
+| Hecho vigente; REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos | Permitido con impacto, motivo, revisión y auditoría; no reactiva ni crea enlace nuevo |
+| Corregir evidencia sin cambiar participante/REF | Permitido con impacto, motivo y auditoría; conserva la anterior |
+| Cambiar participante con REF/ficha inactiva o Tercero inactivo | 409/422; sin cambio ni atribución nueva |
+| Rectificar hecho/acreditación anulados o reutilizar su vínculo | Bloqueado; sin reactivación ni DELETE |
+| Cambiar Tipo/REF/Origen S000 con acreditación vigente | Bloqueado; anular y registrar un hecho nuevo |
 
 ### 15.9 Recuperado, Neto, Cobertura, Pendiente y Exceso
 
@@ -1188,8 +1228,8 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo por unicidad/cardinalidad; una sola acreditación y un solo participante. |
 | D5-AC-07 | Evidencia vacía/genérica o procedencia histórica insuficiente | Rechazo 422 o Revisar/No disponible; no se acredita; no se inventan importe/fecha. |
 | D5-AC-08 | Histórico S000 con CAT013/ficha/evidencia vs. Gasto/Ingreso, interno, anulado, sin REF o sin ficha | Solo el primero es elegible tras revisión; el resto no se acredita; sin REF retroactiva, backfill ni atribución automática. |
-| D5-AC-09 | Reintento idéntico, acreditación duplicada, preview obsoleto, dos procesos y fallo de auditoría | Replay idéntico devuelve la respuesta sin duplicar; duplicado/conflicto → 409 sin efectos; fallo → rollback total; auditoría coherente. |
-| D5-AC-10 | Rectificar importe/fecha/destino; intentar cambiar Tipo/REF/Origen; corregir participante/evidencia; vínculo inactivo | Importe/fecha/destino con impacto, motivo y auditoría; Tipo/REF/Origen bloqueados; corrección revisada con originales preservados; vínculos inactivos no se reactivan ni admiten nuevas altas. |
+| D5-AC-09 | Replay idéntico con respuesta perdida; dos idénticas concurrentes; clave reutilizada con payload distinto; contexto obsoleto; fallo transaccional | Replay devuelve respuesta/IDs originales antes de revalidar huella/revisión; concurrentes idénticas producen una operación y la misma respuesta; duplicado/contexto obsoleto → 409 sin efectos; fallo → rollback íntegro. |
+| D5-AC-10 | Hecho vigente con REF/participante inactivos: rectificar importe/fecha/Destino conservando vínculos; cambiar identidad del participante; intentar rectificar un anulado | Importe/fecha/Destino con impacto, motivo y auditoría sin reactivar REF/participante; cambio de participante solo con REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen y originales preservados. |
 | D5-AC-11 | Anular una aportación acreditada; consultar historia; intentar reutilizar el vínculo | Excluida del motor; metadatos/evidencia/historia conservados; vínculo inactivo visible pero no reutilizable; sin reactivación ni DELETE. |
 | D5-AC-12 | Aportación acreditada en caso multi-Gasto/multi-Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado y Neto por Gasto/Partida exactos; exceso íntegro sin recorte; sin cuota → Revisar; sin compensación cruzada; Titular con Pendiente/Exceso 0 (F3). |
 | D5-AC-13 | Informes y seguridad: aportación acreditada; acceso sin MFA/CSRF; errores | Nunca Ingreso ni ejecución presupuestaria; Neto central sin doble descuento; acceso denegado; errores sin datos sensibles. |
@@ -1257,6 +1297,8 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Después: Bea pend. 150 · Álex exceso │
 │ 150 · global pend. 150 · exceso 150  │
 │ Recuperado 300 · Neto 150            │
+│ Efecto banco: +300,00 € en Destino   │
+│ S000 no computa como saldo interno   │
 │ [Cancelar]       [Revisar aportación]│
 └──────────────────────────────────────┘
 ```
@@ -1278,6 +1320,7 @@ futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
 │ Aportaciones acreditadas      │ Preview antes/después         │
 │ Álex 300,00 € · evidencia     │ Bea pend. 150 · Álex exc. 150 │
 │ Bea pendiente 150,00 €        │ Global pend. 150 · exc. 150   │
+│                               │ Banco +300,00 € · S000 no saldo│
 │                               │ [Cancelar] [Revisar]          │
 └───────────────────────────────┴──────────────────────────────┘
 ```
