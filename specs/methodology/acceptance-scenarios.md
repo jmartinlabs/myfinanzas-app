@@ -17,6 +17,8 @@ si solo se ha observado la sesión actual.
 | O8 | Reanudar en nueva sesión | Releer fuentes y Git; prueba de sesión nueva permanece unrun hasta observarla |
 | O9 | Guía visual y Mermaid | Rutas válidas y ocho diagramas parseables; sintaxis rota debe fallar |
 | O10 | Skills heredadas, CI, aplicación y dependencias | Hashes iguales a main para las cinco Skills y CI; sin cambios apps/tests/SQL/lockfile |
+| O11 | Trabajo autorizado de código/documentación con rama y PR | Publicar rama y crear/actualizar PR sin aprobación extra; merge sigue bloqueado hasta aprobación explícita e identificable |
+| O12 | Informe intermedio o check corregible dentro del alcance | Investigar, corregir y repetir el check en el mismo turno; si se detiene, declarar responsable, acción humana exacta y motivo de espera |
 
 Las pruebas de Quick/Standard con código, implementación de E1.6 y despliegue NO se
 ensayan en esta adopción. No relajar ningún control para dar por superado un escenario.

@@ -16,4 +16,4 @@ Concise task plan and acceptance checks, incremental implementation, verificatio
 4. Inspect diff for security, correctness, maintainability and unrelated edits; update documentation if contracts changed.
 5. If complexity rises to a new architectural boundary, multiple epics or unresolved product decisions, propose Full and await confirmation.
 ## Stop conditions
-Stop at scope changes, security or destructive operations, conflicting requirements or failed mandatory acceptance checks. Do not push or deploy without authorization.
+Stop at scope changes, security or destructive operations, conflicting requirements or failed mandatory acceptance checks. Do not deploy or perform destructive operations without authorization; branch/PR publication follows [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr).

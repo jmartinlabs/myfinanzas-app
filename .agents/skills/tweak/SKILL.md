@@ -15,4 +15,4 @@ Minimal diff, relevant tests or clearly reported limitations, brief summary. No 
 3. Implement minimal changes, run focused tests and relevant lint/type/build checks. For visual changes verify the affected UI if browser tooling is available; report inability plainly.
 4. Review diff and regressions; report evidence and open limitations. Commit locally only if project workflow authorizes it.
 ## Stop conditions
-Do not expand scope, declare unrun tests passed, push, publish, deploy or destroy resources without permission.
+Do not expand scope or declare unrun tests passed; do not deploy or destroy resources without explicit permission. Branch/PR publication follows [approvals](../../../specs/methodology/approvals.md#publicación-de-rama-y-pr); respect local-only instructions.

@@ -372,3 +372,54 @@ apunta exactamente a `f43d691d9ca9a0604044c97a1610f9e4daae822e`. Por tanto la
 fuente sí está versionada v2.10.0; la primera descripción «sin nueva versión»
 era incorrecta. Alcance sigue siendo adaptación documental selectiva sobre
 MyFinanzas v2.9.0, sin incorporar scorer/evals ni afirmar adopción íntegra.
+
+
+## Adaptación selectiva v2.14.0 — 2026-10-26
+
+Autorización del usuario: actualizar selectivamente la metodología desde la adopción
+actual hasta Agent Project Template v2.14.0, con plan por archivo, implementación,
+verificación, commits, rama y PR; sin merge, auto-merge, desarrollo funcional,
+despliegue ni operaciones destructivas. Es workflow Standard sobre un proyecto
+existente: no se ejecuta `init-project` ni `bootstrap`.
+
+Fuente fijada y verificada: repositorio `josemartin2000/agent-project-template`,
+tag anotado `v2.14.0` cuyo objeto `3900fb3c4c3d2b7997cc368cfd296a372be902c7`
+resuelve a `98b5351a72eae1df985819c01a47954e6a1a0836`. Clon de solo lectura fuera del
+repositorio; no se ejecutaron scripts del upstream. Base MyFinanzas `origin/main`
+`f5bf0325e52cdd4c875aacb32f086dd67a08befa`, anterior a esta rama; el checkout principal
+con `codex/dev12-flujo-mensual` y `specs/session-handoff.md` sin rastrear se preservó sin
+tocar. Rama: `codex/adopt-v2140-publication-continuity`.
+
+Alcance aplicado: publicación autorizada de rama/PR para código y documentación;
+merge y gates locales intactos; continuidad de ejecución; contrato de cierre;
+comunicación manual existente adaptada; referencias, plantillas y guardas necesarias.
+No se copia la plantilla completa ni se afirma adopción íntegra de v2.14.0. Cuota,
+modelos, evaluaciones/scorer, adaptadores, CI y producto quedan fuera.
+
+| Archivo | Cambio revisado |
+| --- | --- |
+| `specs/methodology/approvals.md` | Sección de publicación; merge explícito, sin auto-merge; worktree/publicación conciliados |
+| `.agents/skills/orchestrate/SKILL.md` | Continuidad, corrección de checks corregibles, cierre y publicación en gates |
+| `specs/methodology/coordinator-communication.md` | Conservado el contrato v2.10 local; añadidos cierre v2.14 y reenumeración de secciones |
+| `AGENTS.md`, `myfinanzas-coordination.md`, `workflows.md`, `epic-orchestration.md` | Una sola regla con enlaces; gates financieros/dev/merge y chats externos preservados |
+| `task`, `tweak`, `dev`, roles implementation/infrastructure | Condiciones de parada alineadas con publicación autorizada |
+| `templates/agent-work-packet.md`, `epic-board.md` | Publicación dentro de alcance y retorno/cierre; sin segundo tablero |
+| `dynamic-agents.md`, `acceptance-scenarios.md`, `quality.md`, `README.md`, `specs/README.md` | Referencias, escenarios O11/O12 y verificación v2.14 |
+| `scripts/validate-template`, `scripts/test-validator` | Guardas de publicación/continuidad/cierre y negativos de pérdida |
+| Aplicación, SQL, dependencias, CI, `scripts/verify`, hooks, tablero y registros funcionales | Sin cambios |
+
+Desviaciones locales conservadas: precedencia de AGENTS y reglas financieras; gate de
+desarrollo separado; política Git/GitHub con revisión de todos los commits, secretos y
+datos; prohibición de merge/auto-merge sin aprobación; trabajo manual de OpenCode sin
+control remoto; excepción de escalación del runtime. `$handoff` conserva su prohibición
+de abrir un PR nuevo. La comunicación manual sigue siendo un contrato de instrucciones,
+no un servicio ni una garantía técnica.
+
+Verificación local del candidato: `python3 scripts/verify baseline` con Python 3.12.7
+PASS. Incluye 57 regresiones de proyecto/CI, 24 del validador (con los nuevos negativos
+de publicación/continuidad/cierre), 9 de uso, 8 de hooks, 15 de entrada de verificación,
+estructura/enlaces, whitespace y diff. `AGENTS.md` conserva 65 líneas. Diff sin cambios
+en aplicación, SQL, dependencias, workflows ni hooks. La clasificación full y la CI Linux
+del SHA publicado son UNRUN en esta preparación local; no se sustituyen por macOS.
+QA independiente posterior al commit y resultado remoto se registran en la PR/checkpoint,
+sin atribuir comportamiento real de Codex/OpenCode a guardas estructurales.
