@@ -1,8 +1,9 @@
 # 15 — E3.3 Vehículos y control ITV: Brainstorming
-Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev3 y
+Status: Q1–Q6 confirmadas por el usuario el 2026-10-26; specification rev4 y
 wireframes pendientes de aprobación. Ninguna aprobación de desarrollo.
-Nota de lectura: los `PENDING` de las Rondas 1 y 2 y la sección Wireframes describen
-el momento de la pregunta; las respuestas confirmadas están al final y los wireframes
+Nota de lectura: los `PENDING` de las Rondas 1 y 2 son estados históricos; las
+respuestas posteriores los sustituyen y están al final. La tabla de trazabilidad de
+respuestas indica la sustitución sin reescribir las preguntas. Los wireframes
 propuestos se presentan en la specification para aprobación.
 Roadmap/context: [E3.3](roadmap.md) · [R4 y P2](functional-reference-v5.11.md) ·
 [E1.4 Movimientos](04-movimientos-specification.md) ·
@@ -251,5 +252,18 @@ implementación ni merge.
 - Los duplicados confirmados siguen permitidos; no se introduce unicidad global.
 - Se preservan ID, Referencia e historial de la ficha.
 
-Consecuencia documental: Q6 deja de estar abierta; la specification rev3 incorpora
-la decisión y AC-36. No se reabren Q1–Q5 ni H1–H6.
+Consecuencia documental: Q6 deja de estar abierta; la specification rev3 (hoy rev4)
+incorpora la decisión y AC-36. No se reabren Q1–Q5 ni H1–H6.
+
+## Trazabilidad de respuestas — 2026-10-26
+| Pregunta | Estado histórico | Respuesta vigente que lo sustituye | Fuente |
+| --- | --- | --- | --- |
+| Q1 | `PENDING` en Ronda 1 | A confirmada | Ronda 1 — Respuestas del usuario |
+| Q2 | `PENDING` en Ronda 1 | A confirmada; fechas pasadas válidas | Ronda 1 — Respuestas del usuario; Q2 |
+| Q3 | `PENDING` en Ronda 1 | A confirmada; H1 restituye su alcance | Ronda 1 — Respuestas; spec §2 Q3 |
+| Q4 | `PENDING` en Ronda 1 | A confirmada; F1 conserva la regla | Ronda 1 — Respuestas; spec §6 |
+| Q5 | `PENDING` en Ronda 1 | A confirmada | Ronda 1 — Respuestas del usuario |
+| Q6 | `PENDING` en Ronda 2 | Q6-A confirmada | Ronda 2 — Q6-A confirmada |
+
+Esta tabla es administrativa: no cambia las respuestas ni reescribe la historia. La
+specification rev4 incorpora F1–F6 sin reabrir Q1–Q6.
