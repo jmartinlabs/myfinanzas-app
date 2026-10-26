@@ -152,7 +152,7 @@ Comandos desde la raíz del checkout.
 
 ### AC: estado de la parte B
 
-- **18 AC B-completas** (AC-01–07, AC-13, AC-15, AC-19, AC-22, AC-24, AC-26, AC-27,
+- **18 AC B-completas** (AC-01–02, AC-04–07, AC-13, AC-15, AC-19, AC-22, AC-24, AC-26, AC-27,
   AC-28, AC-29, AC-30, AC-31, AC-38): parte B verificada con focales/E2E, con las
   salvedades de plataforma de B-T01/B-T10. AC-31 se limita a la rama P-F6 de B; la
   rama R-MP/D5 sigue UNRUN.
@@ -179,3 +179,21 @@ lista de movimientos internos. No se afirma auditoría WCAG completa.
 - `movimientos.spec.ts`: el recorrido funcional (incluido Gasto CAT013 con ficha)
   pasa; la restauración no arranca en macOS por `libc.so.6`.
 - Ambos requieren CI Linux/QA; no se relabelan como PASS.
+
+### Revisión Codex y primer CI Linux — 2026-10-26
+
+Candidato del autor b69a24e: Codex reprodujo focal Compartidos 9 PASS/160
+assertions y baseline PASS. CI40307785180: baseline/tipos/build PASS; API
+218 PASS/1 FAIL/3141 assertions; E2E UNRUN por fallo API. SQLite B3 PASS
+solo en esta ejecución; incidencia intermitente no cerrada.
+
+Fallo identificado en cycle-operations.test.ts:387: snapshot de contadores v8
+no contemplaba participantes_compartido añadido por v14. Se actualiza la
+expectativa exacta para v7/v8: preservar todos los contadores existentes, añadir
+solo presupuestos=1 cuando procede desde v7 y participantes_compartido=1.
+No se omiten filas ni se altera migración/producto.
+
+Reejecución focal local O4 tras ajuste: FAIL ERR_DLOPEN_FAILED libc.so.6 en
+backup/private-state.ts:216, después de 34 assertions. No es PASS de O4 ni
+prueba de restore; validación completa del ajuste pendiente de CI Linux.
+Se corrige además la enumeración documental: AC-03 es parcial, no B-completa.
