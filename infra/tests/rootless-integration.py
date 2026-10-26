@@ -106,7 +106,7 @@ def main():
         stage = 'build-reproducible-private-release'
         source = Path(__file__).resolve().parents[2]
         sys.path.insert(0, str(source / 'infra'))
-        from release import build, verify, sha, CONTRACTS
+        from release import build, verify, sha
         output = root / 'release'
         manifest = build(output)
         image = manifest['image']
@@ -461,7 +461,7 @@ def main():
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'
-        previous = build(root / 'previous', ref='b0bc5a7634bb5b0102b30bd21ad478c0f3ae72c9')
+        previous = build(root / 'previous', ref='26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f')
         if previous['inputs']['contracts'] != manifest['inputs']['contracts']:
             raise ProbeError('incompatible contract metadata; no rollback authorized')
         matrix = root / 'matrix'

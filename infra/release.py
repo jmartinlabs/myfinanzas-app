@@ -6,6 +6,7 @@ import io
 import json
 import os
 from pathlib import Path, PurePosixPath
+import re
 import shutil
 import subprocess
 import tarfile
@@ -16,7 +17,6 @@ import uuid
 BASE = 'docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b'
 AGE_URL = 'https://github.com/FiloSottile/age/releases/download/v1.3.2/age-v1.3.2-linux-amd64.tar.gz'
 AGE_SHA = 'cbe24006683f8eb669266162894b9a522a1af52f2665fbc63a4bb032ed26ac10'
-CONTRACTS = {'schema': 6, 'data': 'e1.5-v5-direct-sql-v1', 'authentication': 'argon2id-aesgcm-totp-session-v1'}
 SOURCE = Path(__file__).resolve().parents[1]
 
 
@@ -37,6 +37,21 @@ def run(args, timeout=600):
 
 def source_bytes(commit, path):
     return run(['git', '-C', str(SOURCE), 'show', commit + ':' + path])
+
+
+def contracts_for(commit):
+    """Derive schema/data contracts from the source being released; never assume a version."""
+    identity = source_bytes(commit, 'apps/api/src/database-identity.ts').decode('utf-8')
+    match = re.search(r'export const schemaVersion = (\d+);', identity)
+    if not match:
+        raise ReleaseError('schema version is not declared by source')
+    schema = int(match.group(1))
+    backup = source_bytes(commit, 'apps/api/src/backup.ts').decode('utf-8')
+    data = next((name for name, version in re.findall(r'"(e\d+\.\d+-v(\d+))"', backup)
+                 if int(version) == schema), None)
+    if data is None:
+        raise ReleaseError('data contract is not declared for schema ' + str(schema))
+    return {'schema': schema, 'data': data, 'authentication': 'argon2id-aesgcm-totp-session-v1'}
 
 
 def files(commit, prefix):
@@ -65,7 +80,7 @@ def context(commit, target, age_bytes):
             path.write_bytes(archive.extractfile(entry).read())
             path.chmod(0o755)
     inputs = {'source': commit, 'base': BASE, 'platform': 'linux/amd64', 'bun': '1.4.3',
-              'age': '1.3.2', 'age_archive_sha256': AGE_SHA, 'contracts': CONTRACTS,
+              'age': '1.3.2', 'age_archive_sha256': AGE_SHA, 'contracts': contracts_for(commit),
               'source_files': source_hashes, 'lock_sha256': source_hashes['bun.lock'],
               'recipe_sha256': sha(source_bytes('HEAD', 'infra/Containerfile')),
               'builder_source': run(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD']).decode().strip()}
@@ -156,7 +171,7 @@ def verify(directory, expected_commit, expected_manifest):
     if manifest_path.is_symlink() or sha(manifest_path.read_bytes()) != expected_manifest:
         raise ReleaseError('manifest integrity mismatch')
     manifest = json.loads(manifest_path.read_text())
-    if manifest['inputs']['source'] != expected_commit or manifest['inputs']['contracts'] != CONTRACTS:
+    if manifest['inputs']['source'] != expected_commit or manifest['inputs']['contracts'] != contracts_for(expected_commit):
         raise ReleaseError('source/contract mismatch')
     archive = directory / 'image.oci.tar'
     if archive.is_symlink() or sha(archive.read_bytes()) != manifest['oci_archive_sha256']:
