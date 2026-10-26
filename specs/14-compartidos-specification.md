@@ -3,6 +3,8 @@ Status: APPROVED — aprobación completa de la specification por el usuario, v�
 coordinador (2026-10-25). Q1–Q7, F1–F5, P-F6, recuperación multi-Partida (R-MP) y
 Cerrado con coste propio (R-CC) confirmadas. D5/Exterior sigue OPEN. La aprobación
 no autoriza desarrollo14, SQL, Excel, push ni merge.
+**División documental Base B APPROVED (usuario, 2026-10-26): §14.** La aprobación
+se limita al alcance/condiciones B; no aprueba la enmienda D5 ni desarrollo.
 Brainstorming, respuestas y revisiones: [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md)
 Base: `fa8a01ee72ee622e6d3f71cd170e5d399376473e`; rama `codex/spec14-compartidos`.
 Solo especificación: no autoriza desarrollo, SQL real, commit, push ni merge.
@@ -481,6 +483,11 @@ Gasto anulado:   deja de computar en el bruto; queda en historia.
 | AC-39 | Incidencia relevante de cobertura (P-F6 o recuperación sin cuota) bloquea Cerrado y muestra «Revisar» | P-F6; R-CC; R-MP |
 
 ## 12. Pendientes antes de la aprobación completa
+
+Nota vigente: la spec14 base ya está aprobada; los puntos originales siguientes
+conservan procedencia histórica. División B aprobada en §14; desarrollo y D5
+siguen sin autorizar. PR67/71 integradas en la basea445f90 de esta publicación.
+
 1. Aprobación completa de esta spec por el usuario. Q1–Q7, F1–F5, P-F6 y las
    decisiones R-MP y R-CC están registradas; ninguna propuesta técnica queda
    abierta, salvo la aplicación de P-F6 a la recuperación sin cuota (§2.4), que
@@ -519,3 +526,292 @@ Gasto anulado:   deja de computar en el bruto; queda en historia.
 - API/seguridad: acceso denegado sin sesión; validaciones; respuestas obsoletas;
   errores sin información sensible; alta Exterior rechazada.
 - UI: 390/1440, teclado/foco, contraste, estados de error reales.
+
+## 14. División documental Base B — APPROVED (2026-10-26)
+
+### 14.1 Alcance de base B
+
+**Base B = ficha/participantes + Gasto CAT013 + motor de reparto sin aportaciones
+D5.**
+
+#### 14.1.1 Incluido
+
+| Capacidad | Contenido |
+|---|---|
+| Ficha 1:1 | Alta atómica Referencia de tipo «Gasto compartido» (CAT013) + ficha; sin huérfanos; auditoría y revisión. |
+| Participantes | Hijos 1:N con ID estable, nombre, rol Titular/Tercero, partes enteras, alta/edición/baja lógica y auditoría. |
+| Gasto CAT013 | Gastos originales con Referencia CAT013, Partida e importe real conservados. |
+| Transferencia interna con REF CAT013 | Permitida entre dos Saldos internos, con ficha activa; no crea metadata, no pide Quién paga y no acredita Recuperado. |
+| Motor base | Bruto, asignado por Gasto/Partida, coste propio, pendiente estructural y estados Sin repartir / Reparto parcial / Cerrado sin terceros con cuota. Sin Recuperado, Exceso ni cobertura de aportaciones. |
+| Reparto exacto | Céntimos, mayor resto, desempate por ID; multi-Gasto y multi-Partida; sin doble cómputo. |
+| Impacto e historia | Vista de impacto al cambiar partes, motivo, auditoría append-only y baja lógica sin huérfanos. |
+| API/UI | Rutas protegidas y pantallas de ficha/participantes/Gasto/estado; 390/1440; estados vacío/carga/error/409/422. |
+| Migración | Versión siguiente con rollback y continuidad desde v13; fixtures ficticias y servicios reales de prueba. |
+
+#### 14.1.2 Excluido
+
+- D5/Exterior: Transferencias S000→interno, formulario de aportación,
+  `movimiento_compartido`, evidencia/procedencia de aportaciones.
+- Recuperado real, Exceso positivo, atribución de recuperaciones por Gasto y
+  cobertura de aportaciones.
+- Históricos Exterior y cualquier importación histórica no autorizada.
+- Transferencia CAT013 desde S000; Gasto CAT013 no se convierte en Transferencia.
+- Informes/E3.6: AC-20 queda pendiente dentro de E3.2, con aplazamiento explícito
+  propuesto (§14.4).
+- Aceptación global de E3.2, T-D5-DOC-05 y entrega conjunta D5.
+- Datos personales o financieros; solo fixtures ficticias.
+
+#### 14.1.3 Utilidad autónoma
+
+Base B permite crear un caso compartido, definir participantes y partes, registrar
+los Gastos originales con CAT013 y conocer el **Bruto**, el **Asignado** por
+Gasto/Partida y el **Coste propio**. Es útil para reparto y planificación.
+
+No permite verificar que un tercero pagó. Con terceros con cuota, el caso queda
+normalmente en **Reparto parcial / Cobertura no disponible**; no se muestra
+Recuperado verificado, no se declara Excedido y no se cierra con terceros
+pendientes. **No es E3.2 completo ni sustituye D5.**
+
+#### 14.1.4 Transferencias internas con REF compartida vs. S000→interno
+
+| Supuesto | Base B | D5 posterior |
+|---|---|---|
+| Transferencia entre dos Saldos internos, con REF CAT013 y ficha activa | **Permitida** según §4. No crea `movimiento_compartido`, no pide Quién paga y no acredita Recuperado. Puede verse en historia como movimiento interno. | Sigue sin acreditar; D5 no la convierte en aportación. |
+| Transferencia S000 → Saldo interno, con REF CAT013 | **Rechazada**; el formulario común no ofrece S000; no hay tabla ni endpoint de aportación. | **Exclusiva de D5**; exige participante Tercero, evidencia/procedencia y validaciones D5. |
+| Transferencia S000 → S000, o interno → S000 | Rechazada. | Rechazada; no es aportación. |
+| Transferencia interna con REF CAT013 pero sin ficha | Rechazada. | Rechazada; la ficha es precondición. |
+
+La base B debe usar un gate por operación: CAT013 para ficha/Gasto y para
+Transferencia interna con ficha; S000 sigue prohibido. Una ampliación de la lista global repercute en alta de Referencias, validación
+de Movimientos y opciones UI; debe coordinarse con ficha, esquema y gates por
+operación. Por sí sola no elimina las guardas S000 del servicio ni el CHECK.
+
+### 14.2 Matriz completa de los 39 AC
+
+Leyenda:
+- **B completa**: aceptable íntegramente en base B.
+- **B parcial**: parte verificable en B; el resto se indica.
+- **D5**: no aceptable sin D5.
+
+AC-20 **permanece en E3.2**. Se propone aplazar explícitamente su consumo por
+informes/E3.6; no se reasigna a otra entrega ni se declara PASS.
+
+| AC | Cobertura B | Parte pendiente | Evidencia prevista |
+|---|---|---|---|
+| AC-01 | **B completa** | — | B-T02 |
+| AC-02 | **B completa** | — | B-T03 |
+| AC-03 | **B parcial** | B: no deducción desde Saldo propio y Saldo pagador visible. D5: atribución de aportación. | B-T06 + D5-AC-01/07/10 |
+| AC-04 | **B completa** | — | B-T05 |
+| AC-05 | **B completa** | — | B-T05 |
+| AC-06 | **B completa** | — | B-T04 + B-T05 |
+| AC-07 | **B completa** | — | B-T05 |
+| AC-08 | **D5** | Metadata sobre Movimiento + participante. | D5-AC-01/07/08 |
+| AC-09 | **B parcial** | B: auditoría/revisión/idempotencia de ficha, participantes y Gasto. D5: evidencia/auditoría de aportación. | B-T02/B-T03/B-T07 + D5-AC-09/10 |
+| AC-10 | **D5** | Históricos Exterior sin evidencia → Revisar/No disponible. | D5-AC-07b/08 |
+| AC-11 | **B parcial** | B: Gasto conserva Partida/importe. D5: Referencia y Quién paga acreditados. | B-T04 + D5-AC-01 |
+| AC-12 | **B parcial** | B: Sin repartir / Reparto parcial / Cerrado sin terceros. D5: Excedido positivo. | B-T06 + D5-AC-01/10 |
+| AC-13 | **B completa** | — | B-T06 |
+| AC-14 | **D5** | Excedido real e identificación del participante. | D5-AC-01/10 |
+| AC-15 | **B completa** | — | B-T06 |
+| AC-16 | **B parcial** | B: fecha de Gasto y ausencia de fechas no soportadas. D5: última aportación, reparto cubierto y exceso. | B-T06 + D5-AC-01/10 |
+| AC-17 | **B parcial** | B: campos separados y cobertura explícita; Pendiente/Exceso No disponible o No aplica según §14.5, sin fabricar Exceso=0. D5: valores con aportaciones acreditadas y no compensación. | B-T06 + D5-AC-10 |
+| AC-18 | **B parcial** | B: impacto/auditoría al cambiar partes sin aportaciones. D5: cambio con aportaciones acreditadas. | B-T07 + D5-AC-10b/c |
+| AC-19 | **B completa** | — | B-T07; revalidar en D5-AC-10b |
+| AC-20 | **B parcial** | B: contrato de Neto central/DTO con importe o ausencia y cobertura coherentes. Pendiente: consumo por informes/E3.6, **dentro de E3.2**; aplazamiento explícito aprobado documentalmente. | B-T06/B-T08 (contrato entregado por B) + B-T11 (consumo aplazado) |
+| AC-21 | **D5** | Exterior/S000, históricos y límites. | B-T09 + D5-AC-14 |
+| AC-22 | **B completa** | — | B-T08; revalidar en D5-AC-12/13 |
+| AC-23 | **B parcial** | B: W1/W2/W4/W5 y ficha/participantes. D5: W3/formulario de aportación. | B-T08 + D5-AC-13 |
+| AC-24 | **B completa** | — | B-T03/B-T07; revalidar en D5-AC-10/11 |
+| AC-25 | **B parcial** | B: Neto con Recuperado no disponible/no aplica e identidad estructural. D5: Recuperado real, exceso e identidad completa. | B-T06 + D5-AC-01/10/11 |
+| AC-26 | **B completa** | — | B-T06 |
+| AC-27 | **B completa** | — | B-T05 |
+| AC-28 | **B completa** | — | B-T06 |
+| AC-29 | **B completa** | — | B-T06 |
+| AC-30 | **B completa** | — | B-T06 |
+| AC-31 | **B completa** | Calificación limitada a resolución de incidencia P-F6 en Gastos admitidos por B; no acredita resolución R-MP con recuperaciones. Esta última se revalida en D5. | B-T06 (rama B) + D5-AC-10 (rama futura, UNRUN) |
+| AC-32 | **D5** | Distribución de Recuperado por Gasto. | D5-AC-01/10 |
+| AC-33 | **D5** | Recuperado sin cuota asignada. | D5-AC-07/10 |
+| AC-34 | **D5** | Netos con Recuperado atribuido. | D5-AC-01/10 |
+| AC-35 | **D5** | Recuperado global no repartido directamente. | D5-AC-07/10 |
+| AC-36 | **D5** | Cierre con aportaciones 50+50. | D5-AC-01/10 |
+| AC-37 | **D5** | Pendiente y exceso coexistentes. | D5-AC-01/10 |
+| AC-38 | **B completa** | — | B-T06 |
+| AC-39 | **B parcial** | B: P-F6/importe inválido bloquea Cerrado. D5: R-MP/recuperado sin cuota. | B-T06 + D5-AC-07/10 |
+
+**Recuento:** 18 completas en B, 11 parciales, 10 pendientes de D5.
+
+### 14.3 B-T01–B-T11 completas
+
+Todas **UNRUN**. Son especificaciones de prueba, no resultados. El gate base B es
+B-T01–B-T10; B-T11 pertenece al pendiente AC-20/E3.2 (§14.4).
+
+| ID | Gate | Precondición | Operación | Resultado esperado |
+|---|---|---|---|---|
+| **B-T01** | Base B | Fixture v13 ficticia y congelada (nueva `database-v13`), con datos de módulos previos; esquema v13 actual. | Abrir/migrar; inyectar fallo de DDL; probar versión desconocida; backup/restore. | Versión siguiente; tablas nuevas; filas/auditorías/FK/acceso preservados; rollback íntegro; sin reseed; versión desconocida rechazada; manifiesto de copia correcto. |
+| **B-T02** | Base B | Saldos ficticios y catálogo mínimo; servicio de Referencias y ficha. | Alta REF CAT013 + ficha atómica; reintento idempotente; conflicto de clave; revisión obsoleta; intento de ficha sin REF o REF sin ficha. | Un REF y una ficha; sin huérfanos; reintento no duplica; 409 sin estado parcial; lectura coherente. |
+| **B-T03** | Base B | Ficha creada; participantes ficticios. | Alta, edición de nombre/rol/partes, baja lógica; dos conexiones; DELETE físico; participante de otra ficha. | ID estable; auditoría; revisión; sin DELETE; baja lógica conserva historia; sin huérfanos; 409/422 correctos. |
+| **B-T04** | Base B | Ficha/participantes; Partida ficticia; Saldos internos. | Gasto CAT013 con Partida/importe; Gasto CAT013 sin ficha; Transferencia interna con REF CAT013; Transferencia CAT013 S000; Transferencia CAT013 interna sin metadata. | Gasto válido solo con ficha; interna con REF permitida sin acreditación; S000 rechazada; no se crea metadata ni Recuperado. |
+| **B-T05** | Base B | Caso con varios Gastos y Partidas ficticias; participantes con partes. | Reparto multi-Gasto/multi-Partida con céntimos, residuo, mayor resto y desempate por ID; suma de asignados. | AC-04/05/06/07/27 exactos; cada Gasto/Partida suma; sin doble cómputo ni Movimientos alterados. |
+| **B-T06** | Base B | Casos ficticios: sin Gastos; reparto 100% Titular verificable; terceros con cuota sin fuente de aportaciones; Gasto inválido; resolución de incidencia P-F6. | Consultar DTO/read model y UI de Recuperado, Neto, cobertura, Pendiente y Cerrado; resolver incidencia P-F6 de Gasto. | Contrato central y UI coinciden en importe/ausencia/cobertura. Estados Sin repartir / Reparto parcial conforme §6 y sus precondiciones verificables; no deducir un estado de una métrica desconocida. Cerrado solo sin terceros con cuota, con hechos/reparto verificables y sin incidencias. Métricas dependientes No disponible cuando falta fuente; no 0 por omisión ni Excedido. Recálculo P-F6 verificado, sin declarar probada la rama R-MP aplazada. |
+| **B-T07** | Base B | Caso con Gasto y participantes; sin aportaciones. | Cambiar partes; motivo; impacto antes/después; baja lógica; consultar Movimientos y auditoría. | AC-18 parcial/19/24; Movimientos intactos; historia append-only; sin huérfanos; impacto correcto. |
+| **B-T08** | Base B | API y UI base B; sesión MFA/CSRF. | API sin MFA/CSRF; 404/409/422; lectura sin mutaciones; verificar forma del DTO central de Neto/importe/ausencia/cobertura y consumo por UI B; UI 390/1440, teclado/foco/contraste; W3 ausente. | Rutas B protegidas, DTO coherente con B-T06, sin null→0 y errores sin datos sensibles; AC-22 y AC-23 parcial. El consumo por informes ajenos a B permanece en B-T11, no el contrato entregado por B. |
+| **B-T09** | Base B | Servicio y UI base B; spec05 sin editar. | Gates: Transfer S000, D5, Exterior ordinario/salidas, Gasto CAT013 sin ficha, Transfer CAT013 interna con/sin metadata, spec05 y T-D5-DOC-05. | S000/D5 bloqueados; Gasto CAT013 solo con ficha; interna con REF sin acreditación; archivos05 intactos; no se declara E3.2. |
+| **B-T10** | Base B | Suite de regresión del repositorio; fixtures ficticias. | `referencias.test.ts`, `movimientos.test.ts`, clasificación, ciclos, backups; actualizar expectativas CAT013 solo en el gate autorizado. | Sin regresiones E1.5/E1.4; CAT013 Gasto controlado; Transferencia CAT013/S000 sigue rechazada; esquemas anteriores preservados. |
+| **B-T11** | **Pendiente E3.2 / aplazado** | Integración E3.6/informes, no incluida en base B. | Informe consume Neto central; comprobar no doble descuento con Anticipos/Comida y presentación Parcial/No disponible. | **UNRUN y aplazado explícitamente.** No se declara AC-20 PASS ni E3.2 completo. Si se exige en B, el alcance crece y B-T11 pasa a gate. |
+
+#### 14.3.1 Por qué la aceptación de base B exige B-T01–B-T10 y no B-T11
+
+- B-T01–B-T10 cubren todas las capacidades que base B **entrega**: ficha,
+  participantes, Gasto CAT013, motor sin aportaciones, estados, API/UI, migración
+  y gates.
+- B-T11 cubre el **consumo por informes/E3.6**, que no forma parte de base B.
+  AC-20 sigue siendo E3.2; su aplazamiento está aprobado documentalmente por el usuario (§14.6.1).
+- Aceptar base B sin B-T11 significa aceptar una base B honesta y parcial, no una
+  E3.2 completa. B-T11 queda abierto y trazable; no se convierte en PASS ni se
+  elimina del alcance E3.2.
+- Anticipar ese consumo ampliaría el alcance B aprobado y requiere otra
+  decisión expresa; no se añade E3.6 por interpretación.
+
+### 14.4 AC-20 como requisito de E3.2 y aplazamiento aprobado documentalmente
+
+AC-20 exige que los informes consuman el Neto y la atribución central, sin doble
+descuento con Anticipos/Comida (E3.2-AC3; E3.6-AC1). **Pertenece a E3.2 y no se
+reasigna.**
+
+Aplazamiento aprobado documentalmente:
+- Base B expone el Neto central como DTO/read model, pero **no integra** los
+  informes/E3.6.
+- AC-20 queda **pendiente y UNRUN** en base B; B-T11 lo verifica cuando exista la
+  integración.
+- La aceptación de base B no declara AC-20 ni E3.2 completos.
+- El aplazamiento está aprobado documentalmente. Cualquier cambio para incluir
+  informes y convertir B-T11 en gate requiere revisión expresa del alcance.
+- No se modifica el roadmap, spec05 ni el alcance global de E3.2.
+
+### 14.5 Métricas sin D5: cero verificable, Parcial y No disponible
+
+#### 14.5.1 Reglas confirmadas que no se cambian
+
+Se conservan F1 (Neto = Bruto − Recuperado), F2 (Recuperado incluye exceso), F3
+(Titular con coste propio sin aportación exigible), F5/P-F6, R-MP y R-CC. Base B
+no crea reglas financieras nuevas; solo no puede poblar las fuentes que dependen
+de D5.
+
+#### 14.5.2 Presentación adoptada para base B
+
+| Métrica | Fuente/cobertura en base B | Presentación | Prohibición |
+|---|---|---|---|
+| **Bruto** | Gastos CAT013 elegibles, fuente presente. | Suma verificable; si hay Gasto inválido que compromete cobertura, **Parcial** con «Revisar». | No convertir ausencia de Gastos en 0; usar «Sin repartir». |
+| **Asignado** | Partes + Gastos; fuente presente. | Céntimos exactos y verificables. | No inventar participantes ni partes. |
+| **Coste propio** | Titular y partes; fuente presente. | Importe verificable. | No tratarlo como aportación exigible. |
+| **Recuperado** | D5 deshabilitado; con terceros con cuota no hay fuente. | `No disponible — D5 no habilitado`; sin terceros, `No aplica — sin terceros`. | **Nunca 0,00 verificado** por ausencia de fuente. |
+| **Neto** | Depende de Recuperado y de cobertura verificable. | Con terceros: `No disponible / Parcial` según la limitación propuesta. Con reparto 100% coste propio, hechos/reparto verificables y sin incidencias: `Neto = Bruto`, coincidente con Coste propio; no fórmula alternativa. | No usar Bruto como Neto verificado con terceros o cobertura comprometida. |
+| **Pendiente** | Requiere Aportado; fuente ausente con terceros. | `No disponible / Parcial`; mostrar `Asignado` con su propia definición y cobertura. | No presentar Asignado como pendiente verificado ni añadir un indicador de pendiente máximo no incluido en B. |
+| **Pendiente del Titular** | F3; fuente presente. | `0,00 verificado` estructural. | No convertirlo en aportación exigible. |
+| **Exceso** | Requiere Aportado; fuente ausente. | `No disponible / No aplica`; no simular. | **Nunca 0,00 verificado** por ausencia de fuente. |
+| **Cobertura** | Requiere aportaciones; ausente con terceros. | `No disponible / Parcial`; no declarar cubierto. Sin terceros: `No aplica`. | No declarar Cerrado con terceros pendientes. |
+| **Cerrado** | Sin terceros con cuota, hechos y reparto verificables, sin pendientes/excesos/incidencias. | Permitido en caso 100% coste propio conforme AC-38; no es un estado automático por ausencia de D5. | Nunca con terceros con cuota y D5 deshabilitado bajo esta limitación propuesta; ni con cobertura comprometida. |
+| **Fechas** | Gasto: fuente presente; aportación/reparto cubierto/exceso: ausentes. | Fecha de Gasto verificable; las demás `No disponible`. | No inventar fechas ni usar la fecha de creación como fecha financiera. |
+
+#### 14.5.3 Cero verificable, Parcial y No disponible
+
+- **Cero verificable:** existe fuente y el cálculo exacto da cero. En base B:
+  pendiente del Titular (F3) y asignaciones/partes explícitamente 0.
+- **Parcial:** existe fuente, pero la cobertura está comprometida o incompleta
+  (por ejemplo, Gasto inválido P-F6, o una futura acreditación parcial). Afecta a
+  Bruto/Neto/reparto según §6; no se usa para inventar Recuperado.
+- **No disponible:** no existe la fuente habilitada (D5 deshabilitado) o no hay
+  base verificable para la métrica. Se muestra el motivo; no se sustituye por 0.
+
+#### 14.5.4 Limitación de entrega aprobada para base B (sin cambiar reglas generales)
+
+Esta es una **limitación de entrega**, no una regla financiera nueva:
+- Con terceros con cuota y D5 deshabilitado, base B muestra Recuperado, Neto,
+  cobertura y Exceso como `No disponible / Parcial`, y no declara Cerrado.
+- No se añade el indicador opcional `Pendiente máximo`: queda fuera de esta
+  propuesta para no introducir otra métrica. Se conserva Asignado con su definición.
+- Esta limitación está aprobada para B. Su modificación requerirá decisión
+  expresa; no autoriza D5 ni otra fuente de aportaciones por inferencia.
+- No se modifica F1/F2/F3/F5/P-F6/R-MP/R-CC.
+
+### 14.6 Decisiones aprobadas y condiciones de aceptación
+
+#### 14.6.1 Decisión documental aprobada
+
+Fuente directa del usuario, 2026-10-26: «Apruebo la división documental base B
+de la propuesta consolidada», sobre SHA-256
+e1839ba8e851fce25dca611a2247229b7dec60496ce402e38327069f8fc5a4d0.
+
+- Se aprueba la división y matriz18/11/10, con las capacidades y límites de §14.1.
+- Las Transferencias internas con REF del caso conservan el contrato ya aprobado;
+  no son aportaciones. S000 sigue bloqueado durante B.
+- Se aprueba el aplazamiento del consumo AC-20/B-T11 dentro de E3.2,
+  sin reasignarlo, eliminarlo o declararlo PASS; el contrato central de B sí
+  debe verificarse en B-T06/B-T08.
+- Se aprueba la limitación de presentación sin D5 de §14.5, no una regla
+  financiera general nueva; no se incorpora el indicador Pendiente máximo.
+- B-T01–B-T10 son condiciones futuras para aceptar el alcance B; B-T11 queda
+  pendiente de integración E3.2. Todas siguen UNRUN: no existe implementación.
+- Fixtures ficticias y servicios reales de prueba conservan los límites de
+  seguridad; no autorizan importación histórica ni uso de datos reales.
+- **Desarrollo B requiere autorización separada.** D5 es posterior, con contrato
+  y autorización propios; no se autoriza entrega conjunta, merge ni deploy.
+
+La decisión de división documental D5-P1 queda resuelta para este alcance; su
+viabilidad funcional solo se acreditará con el candidato y pruebas autorizados.
+No se aprueba por ello la enmienda D5 completa ni excepciones históricas.
+
+#### 14.6.2 Condiciones de aceptación
+
+- B-T01–B-T10 en PASS sobre el candidato autorizado.
+- B-T11 **UNRUN** y registrada como pendiente E3.2, no como PASS.
+- Todos los AC parciales documentados con su parte pendiente.
+- Sin 0 verificado por fuente ausente.
+- Sin Transferencia S000, sin metadata D5, sin Exterior ordinario/salidas.
+- Sin cambios en spec05, roadmap ni T-D5-DOC-05.
+- Migración desde fixture v13 ficticia con rollback y sin reseed.
+- Sin datos personales/financieros; fixtures ficticias y servicios reales de
+  prueba; importación histórica separada y no autorizada.
+- Sin declarar dev14/E3.2/D5 completos.
+- PR y merge con aprobación explícita e independiente.
+
+### 14.7 Límites de la aprobación
+
+La aprobación es documental. No autoriza desarrollo B/dev14, implementación D5,
+migraciones operativas, edición de spec05/testplan, importación histórica, uso de
+datos reales, merge ni despliegue. La publicación de estos documentos sigue la
+política Git del proyecto; el merge de su PR requiere aprobación propia.
+
+No declara PASS de pruebas futuras ni dev14, D5, E3.2 o todos sus39AC completos.
+D5 y T-D5-DOC-05 conservan gates propios. El resto de decisiones Q1–Q7, F1–F5,
+P-F6, R-MP y R-CC permanece vigente; solo se delimita el alcance B aceptable de
+forma autónoma tras su implementación y validación autorizadas.
+
+### 14.8 Procedencia, revisión y trazabilidad de consolidación
+
+Base original de publicación: main `a445f90`, con PR67/71 integradas. Autoría:
+propuesta de OpenCode, Task `EXT-OPENCODE-SPEC14-D5`, sesión funcional Spec14,
+versión/modelo/ID técnico desconocidos; consolidación y precisiones de Codex. Propuesta original SHA-256
+e95a0c856580bfb3493a32fc61c354ed0d5236f8ac3897b250b10bec0d9d26cb,
+consolidada aprobada e1839ba8e851fce25dca611a2247229b7dec60496ce402e38327069f8fc5a4d0.
+La reproducción aquí omite rutas temporales y convierte etiquetas de propuesta
+pendiente en aprobación documental, conservando alcance, matriz y condiciones.
+
+QA externa Antigravity, EXT-ANTIGRAVITY-SPEC14-BASEB-QA, APTO para presentar a
+aprobación sobre el original e95a0c85…; informe SHA-256
+f9406b985f6c7c166b0059161fa890e5c53b701a91aa971208cd6b04b17f9029.
+No se atribuye al revisor una validación del hash consolidado posterior.
+
+| Origen | Precisión incluida en la versión aprobada | Trazabilidad |
+| --- | --- | --- |
+| F-BASEB-QA-01 | AC-31 completa solo para la rama P-F6 de B; R-MP requiere revalidación futura en D5 | AC-31, B-T06 y referencia futura D5-AC-10 pendiente. |
+| F-BASEB-QA-02 | Neto = Bruto, coincidente con Coste propio, en reparto 100% Titular verificable y sin incidencias | §14.5.2, B-T06; no fórmula alternativa. |
+| Coordinador | AC-17 no afirma Exceso=0 por ausencia de fuente | AC-17 y §14.5, limitación de entrega explícita. |
+| Coordinador | Contrato/readmodel central probado en B, consumidor aplazado | AC-20, B-T06/B-T08 y B-T11. |
+| Delimitación | Sin indicador Pendiente máximo adicional | §14.5.2/14.5.4; Asignado no se convierte en Pendiente verificado. |
+| Mapa técnico | Tipos compartidos afectan varias operaciones; S000 también protegido por servicio/CHECK | §14.1.4 y B-T09/B-T10. |
+
+Las referencias D5-AC en la matriz son trazabilidad propuesta hacia el contrato
+D5 aún no aprobado ni publicado, no incorporación ni aprobación de sus cláusulas.
+La sustitución D5 de AC-21 no se publica aquí: la matriz base§11 mantiene su
+restricción aprobada y D5 continúa pendiente. Los 39 AC originales no se renumeran.
