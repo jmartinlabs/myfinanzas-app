@@ -68,7 +68,7 @@ Los datos son ficticios. Un resultado macOS no sustituye CI Linux.
 
 ## Registro de ejecuciones
 
-Candidato final local `9b46153` (base `e408b1d`). macOS
+Candidato final local `80c7848` (base `e408b1d`). macOS
 arm64, Bun 1.4.3, Python 3.12, Chromium/Playwright 1.64.1, `TMPDIR=/private/tmp` y
 age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
 
@@ -76,15 +76,15 @@ age 1.2.1 local. La QA independiente revisará el SHA final, no este resumen.
 | --- | --- | --- |
 | Tipos | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS |
-| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 10 PASS / 153 assertions |
-| API completa | `NODE_ENV=test bun test apps/api` | 175 PASS / 46 FAIL / 221 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
+| Focal API | `NODE_ENV=test bun test apps/api/src/vehiculos.test.ts` | 11 PASS / 164 assertions, incluida regresión de Anticipo |
+| API completa | `NODE_ENV=test bun test apps/api` | 176 PASS / 46 FAIL / 222 tests; guardas Linux/restore (`libc.so.6`), backup v14 UNRUN y dos flakes preexistentes; sin fallo funcional nuevo de E3.3 |
 | E2E vehículos | `bunx playwright test tests/e2e/vehiculos.spec.ts` | PASS; capturas en `artifacts/e3-3/` |
 | E2E completo | `bunx playwright test` | 6 PASS / 2 FAIL; catalog/movimientos fallan al arrancar servidores de restauración aislada en macOS; vehículos PASS |
 | Referencias heredadas | `NODE_ENV=test bun test apps/api/src/referencias.test.ts` | 9 PASS / 2 FAIL; solo guardas Linux de backup/restore |
 | Baseline canónica | `python3 scripts/verify baseline` | PASS en `9b46153` (57/24/8/15 regresiones, whitespace) |
 | Full canónica | `python3 scripts/verify --full` | FAIL en API por guardas Linux; E2E UNRUN en macOS. No es PASS |
 | Backup/restore v14 | `bun test apps/api/src/vehiculos-backup.test.ts` | UNRUN en macOS (`libc.so.6`); debe ejecutarse en Linux/CI |
-| QA independiente | Revisión de `9b46153` | APTO CON OBSERVACIONES; 45/45 AC funcional, H-01–H-06/R-01 cerrados, residuales menores y Linux/CI UNRUN |
+| QA independiente | Revisión de `80c7848` | APTO CON OBSERVACIONES; defecto de Anticipo corregido, 43/45 AC completos + AC-04/AC-29 parciales, residuales menores y Linux/CI UNRUN |
 
 Los fallos de plataforma se conservan como UNRUN/BLOCKED para Linux/CI; no se
 reclasifican como PASS. Las capturas son ficticias y no contienen bases, claves,
@@ -93,7 +93,7 @@ factores ni trazas.
 
 ## Estado por AC tras QA y correcciones
 
-Todos los AC tienen evidencia local; `PASS` no implica CI Linux ni aprobación de merge.
+**43/45 AC con PASS completo; AC-04 y AC-29 parciales; 0 FAIL funcionales.** `PASS` no implica CI Linux ni aprobación de merge.
 Los límites se conservan explícitos.
 
 | AC | Estado | Evidencia principal |
@@ -101,7 +101,7 @@ Los límites se conservan explícitos.
 | AC-01 | PASS | API focal + alta 1:1 |
 | AC-02 | PASS | rollback forzado + idempotencia |
 | AC-03 | PASS | Type/ficha cruzados |
-| AC-04 | PASS (límite: alta 2 procesos no ejecutada; conversión sí) | PK/trigger + carrera de conversión |
+| AC-04 | PASS parcial (alta 2 procesos no ejecutada; conversión sí) | PK/trigger + carrera de conversión |
 | AC-05 | PASS | conversión Q3 |
 | AC-06 | PASS | Tipo con ficha/usado bloqueado |
 | AC-07 | PASS | 404/200 Revisar sin reparación |
@@ -126,7 +126,7 @@ Los límites se conservan explícitos.
 | AC-26 | PASS | MFA/CSRF/Origin/replay/DELETE |
 | AC-27 | PASS | respuesta antigua no sustituye |
 | AC-28 | PASS | E2E 390/1440 + capturas |
-| AC-29 | PASS (límite: vacío/carga por inspección) | error/retry e integridad |
+| AC-29 | PASS parcial (vacío/carga por inspección; error/retry e integridad dinámicos) | E2E + API |
 | AC-30 | PASS | Viaje/Evento y CAT009 sin REF |
 | AC-31 | PASS | POST/PATCH/validateReference/ledger |
 | AC-32 | PASS | alcance sin módulos ajenos |
@@ -155,3 +155,13 @@ Los límites se conservan explícitos.
   y por `vehiculos-backup.test.ts`, que es UNRUN en macOS.
 - Gates pendientes: CI Linux real, `scripts/verify --full` PASS, revisión/publicación
   autorizada de PR y aprobación de merge. Nada de esto se declara.
+
+## Revisión externa del defecto de Anticipo
+
+La revisión del usuario reprodujo una conversión inválida: Anticipo sin movimientos →
+Vehículo conservando `fichas_anticipos` y creando `fichas_vehiculo`. La regresión nueva
+`AC-06/40` cubre GET del indicador, PATCH 409 `HISTORY_LOCKED`, conservación de Tipo y
+ficha de Anticipo, ausencia de ficha de Vehículo y ausencia de auditoría de ficha. El
+E2E comprueba que Referencias no ofrece el botón para el Anticipo. QA independiente
+confirmó el cierre sobre `80c7848`, incluido el caso de Anticipo sin ficha histórica.
+Linux/CI y backup/restore siguen UNRUN: no se declara PASS completo.
