@@ -67,6 +67,9 @@ Textos sin cambios desde la primera versión.
   Exterior se conservan con su procedencia; el bloqueo funcional y su contrato
   pendiente quedan documentados (§5); no se declara E3.2 funcionalmente
   completo mientras no pueda registrar las aportaciones que R4 exige.
+  **Nota D5 (2026-10-26):** Q5 se conserva para movimientos internos; la
+  consecuencia «ninguna alta Exterior» se sustituye en parte por D5-Q1 (§15),
+  aún propuesto y no aprobado.
 - **D6** Estados y cardinalidad: no se limita el caso a un único Gasto; hay
   varios Gastos reales elegibles por Referencia, incluso con Partidas
   distintas (contrato multi-Partida de E3.6); cada Gasto conserva identidad,
@@ -144,7 +147,7 @@ ingreso económico ficticio por cobros compartidos; recálculo de netos por cada
 informe; maestro global de personas; campo manual de estado; atribución por
 similitud o texto libre.
 **Out (D5):** habilitar Transferencias Exterior ordinarias, salidas
-interno→Exterior o Gasto CAT013; divisiones automáticas de un Movimiento entre
+interno→Exterior; convertir Gasto CAT013 en aportación; divisiones automáticas de un Movimiento entre
 participantes; participantes implícitos; reclasificación, Referencia retroactiva
 o backfill; atribución automática; endpoint paralelo de hechos.
 
@@ -199,7 +202,7 @@ implementa**. Consecuencias:
    por la dirección.
 2. **Altas nuevas:** solo la aportación CAT013 entrante, mediante formulario
    dedicado desde la ficha y el servicio común de Movimientos (§15.6–§15.7). No
-   se habilita Exterior ordinario, Gasto CAT013 ni salidas interno→Exterior.
+   se habilita Exterior ordinario ni salidas interno→Exterior; Gasto CAT013 conserva Base B y no se convierte en aportación.
    Ningún selector, payload ni alta puede eludir estas reglas.
 3. **Aportaciones acreditables hoy:** en una base v15 estándar no existen
    Transferencias con S000 porque el CHECK las impide. Solo pueden acreditarse
@@ -346,8 +349,9 @@ recalcular por vista (E3.2-AC3; E3.6-AC1).
   atribución por Gasto/Partida, fechas y desglose.
 - **D5 (propuesto):** alta de aportación CAT013 entrante mediante el servicio común
   de Movimientos, con bloque `compartido` y validaciones §15.6–§15.7; sin endpoint
-  paralelo de hechos. Exterior ordinario, Gasto CAT013 y salidas siguen
-  rechazados. La acreditación histórica usa una acción revisada de la ficha.
+  paralelo de hechos. Exterior ordinario y salidas siguen rechazados; Gasto
+  CAT013 conserva Base B y no se acredita como aportación. La acreditación
+  histórica usa una acción revisada de la ficha.
 - Validación: partes enteras ≥ 0; nombre obligatorio sin control characters
   (máximo acotado); Referencia CAT013 obligatoria; campos no editables rechazados;
   errores 404/409/422 sin información sensible; idempotencia en reintentos.
@@ -504,7 +508,7 @@ Gasto anulado:   deja de computar en el bruto; queda en historia.
 | AC-18 | Cambio de reparto con acreditados: vista de impacto, motivo, auditoría | D7 |
 | AC-19 | Movimientos bancarios nunca reescritos por cambios de reparto | D7 |
 | AC-20 | Informes consumen Neto y atribución central; sin doble descuento con Anticipos/Comida | E3.2-AC3; E3.6-AC1 |
-| AC-21 | Exterior ordinario y salidas no habilitados; solo aportación CAT013 entrante D5 §15; movimientos internos no acreditan recuperación; históricos Exterior con procedencia y elegibilidad limitada | D5; Q5; E1.5; enmienda D5 |
+| AC-21 | Exterior no habilitado; movimientos internos no acreditan recuperación; históricos Exterior con procedencia | D5; Q5; E1.5 |
 | AC-22 | API protegida; 404/409/422; lectura sin mutaciones | Guía seguridad; §9 |
 | AC-23 | UI 390/1440 equivalente; teclado/foco; contraste 6:1; errores visibles | W1–W5; guía UI |
 | AC-24 | Historia append-only; baja lógica sin huérfanos | D1/D7 |
@@ -536,9 +540,10 @@ siguen sin autorizar. PR67/71 integradas en la base a445f90 de esta publicación
    se pide confirmar en la aprobación.
 2. **D5/Exterior (contrato propuesto; implementación OPEN):** §15 incorpora la
    aprobación conceptual del 2026-10-26 y el contrato focal. La implementación
-   sigue bloqueada hasta autorización propia, E3.2 global y la enmienda
-   consecuente de spec05; no se habilitan Gasto CAT013, Exterior ordinario ni
-   salidas. D5 no completa E3.2; roadmap y AC-31 no se declaran PASS.
+   sigue bloqueada hasta autorización propia de dev D5 y la enmienda
+   consecuente de spec05; la aceptación global de E3.2 es posterior e incluye
+   D5/B-T11. No se habilitan Exterior ordinario ni salidas. D5 no completa E3.2;
+   roadmap y AC-31 de spec05 no se declaran PASS.
 3. Estado de entregas (dato del coordinador, verificado contra main `24b48c5`):
    Base B/PR75 integrada en `5ad75ed` (esquema v15); B-T11 y aceptación global
    E3.2 siguen pendientes. Dev13/PR71 y Q9 integrados previamente; Dev12/PR67
@@ -563,15 +568,12 @@ siguen sin autorizar. PR67/71 integradas en la base a445f90 de esta publicación
   pendientes; Cerrado sin pendientes ni excesos, incluido el ejemplo 150/50/100.
 - Incidencias: importes inválidos y recuperación sin cuota bloquean Cerrado y
   muestran «Revisar»; Bruto/Neto Parciales; sin conversión automática de negativos.
-- Acreditación: solo metadatos sobre Movimiento; internos no acreditan; Exterior
-  ordinario/salida rechazado; aportación CAT013 entrante solo por D5 §15;
-  históricos Exterior elegibles con procedencia; sin duplicar datos bancarios;
-  idempotencia.
+- Acreditación: solo metadatos sobre Movimiento; internos no acreditan; históricos
+  Exterior con procedencia; sin duplicar datos bancarios; idempotencia.
 - Integridad: sin huérfanos tras baja; sin reescritura bancaria; lectura sin
   mutaciones; snapshot antes/después.
 - API/seguridad: acceso denegado sin sesión; validaciones; respuestas obsoletas;
-  errores sin información sensible; Exterior ordinario/salida rechazado; CAT013
-  entrante solo por D5 §15.
+  errores sin información sensible; alta Exterior rechazada.
 - UI: 390/1440, teclado/foco, contraste, estados de error reales.
 
 ## 14. División documental Base B — APPROVED (2026-10-26)
@@ -686,6 +688,12 @@ informes/E3.6; no se reasigna a otra entrega ni se declara PASS.
 | AC-39 | **B parcial** | B: P-F6/importe inválido bloquea Cerrado. D5: R-MP/recuperado sin cuota. | B-T06 + D5-AC-07/10 |
 
 **Recuento:** 18 completas en B, 11 parciales, 10 pendientes de D5.
+
+Las referencias `D5-AC-*` de esta matriz aprobada son **históricas del borrador**
+y no constituyen el mapping vigente; el mapping propuesto se fija en §15.13. Por
+ejemplo, AC-21/AC-23 y AC-32–37 conservan referencias antiguas que no coinciden
+con la numeración D5 actual. La matriz base no se reescribe ni se declara D5
+aprobado; al aprobar D5 se actualizará en una enmienda explícita.
 
 ### 14.3 B-T01–B-T11 completas
 
@@ -870,9 +878,10 @@ pendiente de revisión documental final y aprobación explícita.** No autoriza
 implementación, dev D5, migraciones, SQL, Excel, commit, push, PR ni merge. Base
 verificada main `24b48c5` (PR75/Base B `5ad75ed` integrada; esquema v15). Rama
 documental `codex/spec14-d5-exterior-r2`. Fuente: respuestas D5-Q1–D5-Q6
-registradas en el [brainstorming](14-compartidos-brainstorming.md#d5--respuestas-del-usuario-2026-10-26-append-only).
-Q1–Q7, F1–F6, P-F6, R-MP, R-CC y los 39 AC base se conservan; AC-21 se ajusta de
-forma explícita y trazable (§15.12).
+registradas en el [brainstorming](14-compartidos-brainstorming.md).
+Q1–Q7, F1–F6, P-F6, R-MP, R-CC y los 39 AC base se conservan; AC-21 no se
+modifica en la matriz aprobada: su sustitución propuesta se traza en §15.12 y
+requiere aprobación explícita.
 
 Procedencia del borrador: trabajo previo de OpenCode en el worktree
 `.../T/opencode/spec14-d5`, base `a445f90`, sin commits y con dos archivos
@@ -894,9 +903,10 @@ Base B/v15 y registra la autoría original sin atribuirle la consolidación actu
    de un tercero, aunque lleve la Referencia del caso (Q5).
 4. La aportación se registra mediante el servicio común de Movimientos y un
    formulario dedicado desde la ficha; no hay endpoint paralelo de hechos.
-5. La implementación de D5 está **bloqueada** hasta autorización propia y
-   aceptación global de E3.2. Base B ya aporta ficha y participantes; D5 no
-   habilita Gasto CAT013, Exterior ordinario ni salidas, y no completa E3.2.
+5. La implementación de D5 está **bloqueada** hasta autorización propia de dev
+   D5, con Base B integrada. La aceptación global de E3.2 es **posterior** e
+   incluye D5 y B-T11; no es una precondición circular de D5. D5 no habilita
+   Exterior ordinario ni salidas, y no completa E3.2.
 
 ### 15.2 Operaciones permitidas y prohibidas; sentido bancario y S000
 
@@ -908,8 +918,8 @@ Base B/v15 y registra la autoría original sin atribuirle la consolidación actu
 | `Transferencia` S000 → S000 | Prohibida | No hay destino interno; no es aportación. |
 | `Transferencia` interna → interna con REF CAT013 | No es aportación (permitida como movimiento interno) | Puede existir con efecto bancario, pero **no** acredita; no crea metadatos ni Recuperado. |
 | `Transferencia` Exterior ordinaria (sin CAT013) o cualquier salida | Prohibida | Sigue reservada a una entrega posterior; D5 no la habilita. |
-| Gasto o Ingreso con S000, aunque tenga CAT013 | Prohibido | No es Transferencia; no se reclasifica ni se convierte en aportación. |
-| Gasto CAT013 | Prohibido en D5 | Base B lo admite con ficha; D5 no lo convierte en Transferencia ni lo usa para simular una aportación. |
+| Gasto o Ingreso con S000, aunque tenga CAT013 | No es aportación D5 | El hecho conserva su Tipo y validez E1.5 (Ingreso S000→saldo; Gasto saldo→S000); no se acredita, no se reclasifica y no se convierte en aportación. |
+| Gasto CAT013 | No es aportación D5 | Base B lo admite con ficha; D5 no lo convierte en Transferencia ni lo usa para simular una aportación. |
 
 **S000** es la contraparte técnica protegida de Exterior, no un Saldo interno
 operativo. Su posición no se calcula como la de un Saldo convencional y no se
@@ -930,20 +940,22 @@ metadatos. La Transferencia no altera la identidad de la Referencia ni la ficha.
 | I-D5-7 | Tipo, Referencia y Origen S000 de una Transferencia acreditada son inmutables mientras la acreditación esté vigente. |
 | I-D5-8 | Movimiento, metadatos, intento y auditoría son atómicos; un 409, un fallo de auditoría o un fallo inyectado no deja efectos parciales. |
 | I-D5-9 | Existe una sola fuente de hechos financieros; no hay endpoint ni tabla de hechos paralela. |
-| I-D5-10 | D5 no habilita Exterior ordinario, salidas ni Gasto CAT013, y no declara E3.2 completo ni B-T11 PASS. |
+| I-D5-10 | D5 no habilita Exterior ordinario ni salidas; no convierte Gasto CAT013 en aportación, y no declara E3.2 completo ni B-T11 PASS. |
 
 ### 15.4 Elegibilidad de históricos y supuestos excluidos
 
 El CHECK vigente de `movimientos` (v15) exige `origen!='S000' AND
-destino!='S000'` para `tipo='Transferencia'`. Por tanto, **en una base v15
-estándar no puede existir ninguna Transferencia desde S000**: los históricos
-Exterior solo pueden aparecer por una importación/migración autorizada (o fixture
-explícita), no por inferencia. La acreditación histórica no crea ni reclasifica
-hechos.
+destino!='S000'` para `tipo='Transferencia'`. Por tanto, **en una base v15 el
+conjunto de Transferencias S000 elegibles es vacío**: ni una importación ni una
+fixture pueden insertarlas sin un cambio de esquema futuro. La vía histórica
+exigiría ese cambio más una importación autorizada con procedencia demostrada; no
+existe hoy y no se presupone. La acreditación histórica no crea ni reclasifica
+hechos. **La tabla siguiente es hipotética:** describe supuestos que solo podrían
+existir tras ese cambio futuro; ninguno se declara disponible en v15.
 
 | Supuesto existente | ¿Acreditable? | Regla |
 | --- | --- | --- |
-| Transferencia vigente S000→interno, REF CAT013 activa, ficha, participante Tercero activo en el alta, evidencia/procedencia | Sí, por revisión explícita | Cumple R4/D5; el motor usa el hecho canónico. |
+| Transferencia vigente S000→interno, REF CAT013 activa, ficha, participante Tercero activo en el alta, evidencia/procedencia | Sí, por revisión explícita **solo si un cambio de esquema futuro la hiciera existir** | Cumple R4/D5; el motor usa el hecho canónico. |
 | Transferencia S000 con CAT013 pero sin ficha, sin participante o con participante Titular/inactivo/otra ficha | No | Falta ámbito o cardinalidad; no se crea implícitamente. |
 | Transferencia S000 sin REF CAT013 o con otra Referencia | No | No hay ámbito compartido; prohibida REF retroactiva. |
 | Gasto o Ingreso con S000, aunque tenga CAT013 | No | No es Transferencia; no se reclasifica ni se convierte en aportación. |
@@ -951,7 +963,7 @@ hechos.
 | Transferencia S000 anulada | No | No vigente; solo historia consultable. |
 | Transferencia S000 sin evidencia suficiente | No / Revisar | No se acredita; se muestra Revisar o No disponible. |
 | Fila histórica solo en Excel, fuera de `movimientos` | No | No existe en la app; requiere importación autorizada aparte. |
-| Transferencia S000 en base v15 sin importación/migración | Ninguna | El CHECK actual la impide; no se simula con Gasto/Ingreso. |
+| Transferencia S000 en base v15 | Ninguna | El CHECK actual la impide; el conjunto es vacío. Solo un cambio de esquema futuro + importación autorizada podría habilitar filas, sin backfill ni simulación con Gasto/Ingreso. |
 
 La ausencia de filas elegibles no se convierte en cero: la cobertura y el
 Recuperado quedan **No disponible** con motivo, y el caso no pasa a Cerrado con
@@ -988,9 +1000,14 @@ terceros pendientes.
   participantes y Movimientos; continuidad con Base B/v15 y Vehículos, sin
   reseed. No se ejecuta DDL en esta entrega. La versión futura es **provisional**:
   main v15 es solo el punto de contraste.
-- El CHECK/servicio futuro solo admitirá S000 como Origen de esta variante
-  CAT013; el resto de Transferencias mantiene el rechazo. La validación de Tipo
-  de Referencia y ficha es de servicio, no solo de formulario.
+- El CHECK no puede validar CAT013, ficha ni participante. Si se habilita D5, el
+  CHECK solo podrá relajar la **forma** `S000 → destino distinto de S000` para
+  `Transferencia`; la validación CAT013/ficha/participante y la exigencia de
+  acreditación deben quedar en servicio y, si se usa una guarda de base, en un
+  trigger que compruebe la relación `movimiento_compartido`. Una prueba de
+  frontera SQLite debe demostrar que no se puede insertar una Transferencia S000
+  sin la acreditación exigida (prueba de frontera T-D5-16). El resto de
+  Transferencias mantiene el rechazo.
 
 ### 15.6 UI y API (propuesta)
 
@@ -1062,18 +1079,23 @@ terceros pendientes.
 
 Se reutilizan las definiciones de §7.1–§7.5, sin fórmulas nuevas:
 
-- **Aportado_p** = suma de aportaciones acreditadas vigentes de p. Solo cuentan
-  Transferencias D5; las internas, los Anticipos y los Gastos/Ingresos no.
-- **Recuperado_p** = Aportado_p (incluye el exceso íntegro, F2; no se recorta).
-- **Recuperado R** = Σ de terceros. **Neto caso** = B − R (puede ser negativo).
+- **Aportado_p** = suma de aportaciones acreditadas vigentes de p, **solo para
+  Terceros**. Solo cuentan Transferencias D5; las internas, los Anticipos y los
+  Gastos/Ingresos no. El Titular no tiene Aportado ni aportación exigible (F3).
+- **Recuperado_p** = Aportado_p de un Tercero (incluye el exceso íntegro, F2; no
+  se recorta).
+- **Recuperado R** = Σ de Terceros. **Neto caso** = B − R (puede ser negativo).
 - **Atribución multi-Gasto/Partida:** rec(g,p) = R_p × Asignado(g,p) /
   Asignado_p, céntimos exactos con mayor resto y desempate por ID de Gasto
   ascendente (§7.4). Si Asignado_p = 0 y R_p > 0 → incidencia «Revisar» por
   recuperado sin cuota; no se divide y no se cierra. **Neto(g)** = B_g − Rec(g);
   **Neto(P)** = Σ Neto(g); **Neto caso** = Σ Neto(P) cuando no hay incidencia.
-- **Pendiente_p** = max(Asignado_p − Aportado_p, 0); **Exceso_p** =
-  max(Aportado_p − Asignado_p, 0). Se calculan por separado, sin compensación
-  cruzada entre participantes (D7); pueden coexistir (Reparto parcial + alerta).
+- **Pendiente_p** y **Exceso_p** se calculan **solo para Terceros**:
+  Pendiente_p = max(Asignado_p − Aportado_p, 0); Exceso_p =
+  max(Aportado_p − Asignado_p, 0). El Titular conserva coste propio y
+  **Pendiente_T = 0** estructural, sin aportación exigible (F3). Se calculan por
+  separado, sin compensación cruzada (D7); pueden coexistir (Reparto parcial +
+  alerta).
 - **Cobertura:** verificable solo si todos los terceros con Asignado_p > 0 tienen
   aportaciones acreditadas suficientes y no hay incidencia que comprometa Bruto o
   atribución. Si falta fuente o hay incidencia → Parcial/No disponible con
@@ -1096,11 +1118,11 @@ Se reutilizan las definiciones de §7.1–§7.5, sin fórmulas nuevas:
   con Anticipos/Comida (E3.6-AC1) y sin recalcular por vista.
 - **B-T11 no se implementa en D5**: sigue UNRUN y dependiente de la integración
   E3.6/informes. D5 no lo convierte en gate de su entrega ni declara AC-20 PASS.
-- No se habilita Gasto CAT013, Exterior ordinario, salidas interno→Exterior,
+- No se habilita Exterior ordinario ni salidas interno→Exterior; Gasto CAT013 conserva Base B y no se convierte en aportación;
   divisiones automáticas, participantes implícitos, reclasificación, REF
   retroactiva, backfill, atribución automática ni portal de terceros.
-- D5 no declara E3.2 funcionalmente completo; roadmap, spec05 y AC-31 se ajustan
-  solo en la medida descrita en §15.12 y §15.16.
+- D5 no declara E3.2 funcionalmente completo; roadmap, spec05 y AC-31 de spec05 se
+  ajustan solo en la medida descrita en §15.12 y §15.16.
 
 ### 15.11 Dependencias y gate
 
@@ -1112,7 +1134,7 @@ Se reutilizan las definiciones de §7.1–§7.5, sin fórmulas nuevas:
 | Servicio/CHECK E1.5 para S000 | Requiere cambio futuro focal y enmienda consecuente de spec05; no se edita silenciosamente. |
 | Migración de esquema de `movimiento_compartido` | Se decidirá en dev; versión futura provisional, sin DDL ahora. |
 | Importación/migración histórica Exterior | Autorización separada; sin backfill ni datos reales. |
-| Implementación D5 | **BLOQUEADA** hasta autorización propia y aceptación global de E3.2. |
+| Implementación D5 | **BLOQUEADA** hasta autorización propia de dev D5 y enmienda spec05; la aceptación global E3.2 es posterior (D5 + B-T11). |
 
 ### 15.12 Cláusulas sustituidas y trazabilidad
 
@@ -1124,7 +1146,7 @@ Se reutilizan las definiciones de §7.1–§7.5, sin fórmulas nuevas:
 | §9 | «Ninguna operación de alta de aportación de tercero desde Exterior (D5)» | Alta focal por el servicio común con bloque `compartido`; sin endpoint paralelo. |
 | §10 W3 | Pantalla de alta bloqueada | W3 base sigue bloqueada; D5 propone el formulario/preview de §15.15; el formulario común sigue sin S000. |
 | AC-21 | «Exterior no habilitado...» | Exterior ordinario/salidas siguen bloqueados; se añade la excepción CAT013 entrante y la elegibilidad histórica limitada. |
-| §12.2 | D5 OPEN, paquete pendiente | Contrato propuesto; implementación OPEN hasta autorización y E3.2 global; E3.2 no completo. |
+| §12.2 | D5 OPEN, paquete pendiente | Contrato propuesto; implementación OPEN hasta autorización propia; aceptación global posterior; E3.2 no completo. |
 | §13 | «alta Exterior rechazada» | Se separa: ordinaria/salida rechazada; CAT013 entrante válida solo D5. |
 | Brainstorming Q5/D5 | «no habilitar nada» | Se conserva como historia; la consecuencia operativa se sustituye por esta enmienda. |
 | spec05 §Transferencias, AC-03/AC-31, testplan | Todas las Transferencias Exterior reservadas; S000 bloqueado | Se propone una enmienda consecuente focal en spec05 (§D5); no se declara aprobada. |
@@ -1140,7 +1162,7 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-01 | Alta válida: Transferencia S000→Saldo interno, REF de tipo «Gasto compartido» (CAT013) activa con ficha, Tercero activo, evidencia/procedencia, importe/fecha válidos | Un único Movimiento y una acreditación; sin Gasto/Ingreso/Partida/Subtipo; efecto bancario exacto; sin doble hecho. |
 | D5-AC-02 | Intentar Transferencia interno→S000, S000→S000, sin tipo «Gasto compartido» (CAT013) o con Exterior ordinario | Rechazo 422; ningún Movimiento ni acreditación; el formulario común no ofrece S000. |
 | D5-AC-03 | Transferencia interna entre Saldos propios con CAT013 | No acredita recuperación; no altera Recuperado/pendiente/exceso; sigue siendo movimiento interno. |
-| D5-AC-04 | Gasto o Ingreso con S000 y CAT013 | No se acredita ni se reclasifica; conserva su Tipo; no aparece como aportación. |
+| D5-AC-04 | Gasto CAT013 válido (Base B) e Ingreso con S000/CAT013 | El Gasto CAT013 conserva su validez y no se convierte en aportación; el Ingreso CAT013 sigue rechazado por la regla vigente; ninguno acredita ni se reclasifica. |
 | D5-AC-05 | Participante Titular, inactivo, de otra ficha, inexistente o implícito | Rechazo 422; sin alta parcial; no se crea participante automáticamente. |
 | D5-AC-06 | Segundo intento de acreditar el mismo Movimiento o dividirlo entre varios | Rechazo por unicidad/cardinalidad; una sola acreditación y un solo participante. |
 | D5-AC-07 | Evidencia vacía/genérica o procedencia histórica insuficiente | Rechazo 422 o Revisar/No disponible; no se acredita; no se inventan importe/fecha. |
@@ -1148,10 +1170,10 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | D5-AC-09 | Reintento con misma clave, preview obsoleto, dos procesos y fallo de auditoría | Un solo hecho; 409 sin escritura parcial; rollback total; auditoría coherente. |
 | D5-AC-10 | Rectificar importe/fecha/destino; intentar cambiar Tipo/REF/Origen; corregir participante/evidencia | Importe/fecha/destino con impacto, motivo y auditoría; Tipo/REF/Origen bloqueados; corrección de participante/evidencia revisada y con originales preservados. |
 | D5-AC-11 | Anular una aportación acreditada; consultar historia | Excluida del motor; metadatos/evidencia/historia conservados; sin reactivación ni DELETE. |
-| D5-AC-12 | Aportación acreditada en caso multi-Gasto/multi-Partida; aportación sin cuota; exceso | Recuperado y Neto por Gasto/Partida exactos; exceso íntegro sin recorte; sin cuota → Revisar; sin compensación cruzada. |
+| D5-AC-12 | Aportación acreditada en caso multi-Gasto/multi-Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado y Neto por Gasto/Partida exactos; exceso íntegro sin recorte; sin cuota → Revisar; sin compensación cruzada; Titular con Pendiente/Exceso 0 (F3). |
 | D5-AC-13 | Informes y seguridad: aportación acreditada; acceso sin MFA/CSRF; errores | Nunca Ingreso ni ejecución presupuestaria; Neto central sin doble descuento; acceso denegado; errores sin datos sensibles. |
 | D5-AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Formulario dedicado, campos/labels/foco/contraste, sin S000 en el formulario común, borrador conservado y estados diferenciados. |
-| D5-AC-15 | Gate de entrega: intentar habilitar D5 sin autorización/E3.2 global o habilitar Gasto CAT013/Exterior ordinario/salidas | Bloqueo explícito; no se declara E3.2 completo; B-T11 sigue UNRUN; roadmap y AC-31 sin PASS. |
+| D5-AC-15 | Gate de entrega: intentar habilitar D5 sin autorización de dev o sin enmienda spec05; intentar habilitar Exterior ordinario/salidas | Bloqueo explícito; no se declara E3.2 completo; B-T11 sigue UNRUN; roadmap y AC-31 de spec05 sin PASS. |
 
 ### 15.14 Matriz de riesgo → aceptación → pruebas futuras
 
@@ -1166,7 +1188,10 @@ evita renumerar los 39 AC base; se fijará al aprobar la enmienda.
 | R-D5-07 | Fuga de evidencia/datos personales o acceso sin sesión | AC-13, AC-14 | Acceso autorizado con MFA/CSRF | 401/403; logs sin evidencia | HTTP/seguridad + revisión de logs | UNRUN |
 | R-D5-08 | UI declara cobertura o cierre sin fuente | AC-12, AC-14 | Estados vacío/parcial/error honestos | Cero inventado o Cerrado con terceros pendientes | Playwright 390/1440 + capturas | UNRUN |
 | R-D5-09 | Colisión de esquema/versión con v15 y Vehículos | AC-01, AC-15 | Migración futura preserva IDs/auditorías/FK | Variante desconocida rechazada; rollback | Migración ficticia + backup/restore | UNRUN |
-| R-D5-10 | Ampliación de alcance a Exterior ordinario/Gasto CAT013/salidas | AC-02, AC-15 | Solo variante CAT013 entrante | Formulario común y payloads alternativos rechazados | Gates de servicio/UI + inspección | UNRUN |
+| R-D5-10 | Ampliación de alcance a Exterior ordinario/salidas | AC-02, AC-15 | Solo variante CAT013 entrante | Formulario común y payloads alternativos rechazados | Gates de servicio/UI + inspección | UNRUN |
+| R-D5-11 | Confundir Gasto CAT013 válido o Ingreso S000 con aportación | AC-04 | Gasto CAT013 conserva Base B; Ingreso conserva E1.5 | Ninguno acredita ni se reclasifica | Servicio + DTO + inspección | UNRUN |
+| R-D5-12 | Duplicado o división de un Movimiento entre participantes | AC-06 | Un Movimiento, un Tercero, una acreditación | Segundo intento/división rechazado | UNIQUE + API + SQLite | UNRUN |
+| R-D5-13 | Aplicar Pendiente/Exceso al Titular y romper F3 | AC-12 | Titular conserva coste propio y Pendiente 0 | Titular no genera Exceso ni aportación exigible | Motor + DTO + UI | UNRUN |
 
 Ninguna fila es evidencia funcional: todas son **UNRUN** y describen pruebas
 futuras. No se declara PASS de D5, E3.2, B-T11 ni de la enmienda.
@@ -1236,9 +1261,10 @@ foco inicial va al primer campo editable y el preview es texto, no solo color.
    procedencia, incluida la regla de que un histórico no se acredita solo con
    «Registro del titular». No es una regla financiera nueva; es umbral de
    verificabilidad.
-2. **P-D5-2 (delimitación):** confirmar que en v15 no hay Transferencias S000 y
-   que solo una importación/migración autorizada puede aportar filas históricas
-   elegibles; sin backfill.
+2. **P-D5-2 (delimitación):** confirmar que en v15 el conjunto de Transferencias
+   S000 elegibles es **vacío** y que la vía histórica exigiría un cambio de
+   esquema futuro + importación autorizada con procedencia; sin backfill ni
+   presuposición de filas inexistentes.
 3. **P-D5-3 (numeración):** confirmar `D5-AC-01..15` y que AC-21 se sustituye con
    la trazabilidad §15.12; los 39 AC base no se renumeran.
 4. **P-D5-4 (spec05):** confirmar la enmienda consecuente focal propuesta en

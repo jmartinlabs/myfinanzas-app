@@ -332,6 +332,12 @@ No confundir esta clasificación con los 29 PASS ya integrados de E1.4.
 | AC-33 | Cierre/foto/migración autorizada reales | Protección transversal y fotos inmutables, mapping auditado nombres→IDs, sin reescribir Excel | Pruebas futuras E4/P6/P7 | C |
 
 30 criterios actuales previstos (AC-01–30) y 3 contratos futuros (AC-31–33). No PASS de E1.5.
+
+**Nota D5 propuesta (no vigente):** AC-03 mantiene el rechazo de S000 en E1.5;
+§D5 propone la excepción focal CAT013 entrante y no la declara aprobada. AC-20 se
+limita para una Transferencia acreditada: Tipo, Referencia y Origen S000
+inmutables mientras la acreditación esté vigente; importe/fecha/Destino con
+impacto y auditoría. Sin aprobación de §D5, ambas filas conservan su texto actual.
 Spec 05 aprobada y squash merge autorizado. Antes de dev: esperar autorización expresa de dev 05.
 Tras futura autorización dev: implementación y evidencias en progress/testplan propios;
 no crear aquí resultados, capturas, esquemas ejecutables ni estado de implementación.
@@ -357,9 +363,10 @@ es explícita y se limita a esa variante.
   Manual y no Control Exterior; no se excluyen Terminal/No controlado/Inversiones
   por inferencia.
 - Sin Partida, sin Subtipo, importe EUR > 0, fecha civil no futura Europe/Madrid.
-- S000 sigue prohibido en cualquier otro extremo, en Transferencias ordinarias,
-  en salidas interno→S000, en S000→S000 y en Gasto/Ingreso. El formulario común
-  de Transferencia no ofrece S000/Exterior.
+- S000 sigue prohibido en el extremo interno de cualquier otra Transferencia:
+  ordinarias, salidas interno→S000 y S000→S000. Gasto e Ingreso conservan su
+  semántica E1.5 (S000 como contraparte) y no se convierten en aportación. El
+  formulario común de Transferencia no ofrece S000/Exterior.
 - La Transferencia interna con REF CAT013 sigue permitida como movimiento interno
   y **no** acredita recuperación.
 - La aportación no crea Gasto, Ingreso, Partida, Subtipo ni clasificación
@@ -370,6 +377,10 @@ es explícita y se limita a esa variante.
 - **AC-03:** se conserva el rechazo de S000 en E1.5 y se añade la excepción D5
   solo para la variante CAT013 entrante. No se declara AC-03 PASS por esta
   enmienda.
+- **AC-20 (rectificación):** se limita para D5: una Transferencia acreditada no
+  puede cambiar Tipo, Referencia ni Origen S000 mientras la acreditación esté
+  vigente. Importe, fecha y Destino interno sí pueden rectificarse con impacto,
+  motivo y auditoría. Esta precisión es propuesta y no modifica AC-20 actual.
 - **AC-31:** sigue siendo contrato futuro y no se declara PASS. La rama
   «Compartido Transferencia con origen Exterior y Quién paga» se concreta en D5;
   Anticipo, Vehículo y el resto de Exterior conservan sus gates.
@@ -378,8 +389,11 @@ es explícita y se limita a esa variante.
 
 ### D5-3 Compatibilidad y seguridad
 
-- Servicio y CHECK deben aceptar S000 únicamente en esta variante; la validación
-  por Referencia/ficha/participante es de servicio y no solo de UI.
+- El CHECK no puede validar CAT013/ficha/participante. Si se habilita D5, solo
+  podrá relajar la forma S000→destino interno para `Transferencia`; la validación
+  por Referencia/ficha/participante y la acreditación quedan en servicio y, si se
+  usa guarda de base, en un trigger sobre `movimiento_compartido`. No se promete
+  una guarda DB que el CHECK no puede expresar.
 - La transacción IMMEDIATE, revisión, idempotencia, auditoría append-only y
   errores 404/409/422 se heredan de E1.5/spec14; sin endpoint de hechos paralelo.
 - Migración futura provisional: preservar IDs, auditorías, FK, triggers y CHECK;
@@ -392,5 +406,6 @@ es explícita y se limita a esa variante.
 
 Esta sección no está aprobada. Su aprobación debe ser explícita y conjunta con
 spec14 §15; una aprobación de E1.5 o de Base B no la concede. D5 no habilita
-Exterior ordinario, salidas, Gasto CAT013 ni completa E3.2; B-T11 sigue UNRUN.
+Exterior ordinario ni salidas, no convierte Gasto CAT013 en aportación y no
+completa E3.2; B-T11 sigue UNRUN.
 Sin implementación, migraciones, datos reales, merge ni despliegue.

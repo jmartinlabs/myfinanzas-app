@@ -397,9 +397,10 @@ Procedencia del borrador: OpenCode, worktree `.../T/opencode/spec14-d5`, base
 
 **D5-Q5 — Dependencia y gate CAT013/E3.2**
 - A (elegida): D5 **no se implementa ni habilita por separado**; requiere
-  autorización propia y aceptación global de E3.2. CAT013 para Gasto ya está
-  habilitada por Base B; D5 solo añade la variante Transferencia entrante CAT013
-  y no completa E3.2 ni habilita Exterior ordinario.
+  autorización propia de dev D5 con Base B integrada. La aceptación global de
+  E3.2 es posterior e incluye D5/B-T11; no es precondición circular. CAT013 para
+  Gasto ya está habilitada por Base B; D5 solo añade la variante Transferencia
+  entrante CAT013 y no completa E3.2 ni habilita Exterior ordinario.
 
 **D5-Q6 — Rectificación, corrección de atribución y anulación**
 - A (elegida): una Transferencia acreditada **no cambia de Tipo ni de
