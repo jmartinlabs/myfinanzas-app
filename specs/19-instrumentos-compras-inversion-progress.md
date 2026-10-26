@@ -52,10 +52,12 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
   revisión obsoleta 409 `REVISION_CONFLICT`; huella de Movimiento 409 `IMPACT_CHANGED`; guard
   de Saldo 409 `HISTORY_LOCKED`); residual R4-1 de AC-41 resuelto con precondición ordenada
   sobre `S003`.
-- Contrato v14/v15 (rev8): no se acepta una base por su número. Se admiten
-  `C14-COMPARTIDOS-FCE1107`, `C14-VEHICULOS-C69E343` y `C15-COMPARTIDOS-AD2EDFE`, con
-  manifiesto canónico y SHA-256; una variante desconocida o incompleta se rechaza antes de
-  `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup. E4.1 usa la 16; la 15 queda para Compartidos.
+- Contrato v14/v15 (rev8): no se acepta una base por su número. Se conserva
+  `C14-COMPARTIDOS-FCE1107` como evidencia histórica, pero **no** como origen de upgrade; solo
+  `C14-VEHICULOS-C69E343` y `C15-COMPARTIDOS-AD2EDFE` son orígenes admitidos, con manifiesto
+  canónico y SHA-256. Una variante desconocida, incompleta o un v14 de Compartidos se rechaza
+  antes de `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup. E4.1 usa la 16; la 15 queda para
+  Compartidos.
 - Verificación canónica: `python3 scripts/verify baseline` con Python 3.12.14 → **PASS**,
   incluida la comprobación de espacio en blanco del commit.
 - Revisión independiente real: **PASS** tras corregir restore/intentos, rutas
