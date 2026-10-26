@@ -141,7 +141,9 @@ export function backup(
                                   ? "e3.1-v13"
                                   : sourceVersion === 14
                                     ? "e3.3-v14"
-                                    : "e3.4-v15",
+                                    : sourceVersion === 15
+                                      ? "e3.2-v15"
+                                      : "e3.4-v16",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -303,7 +305,8 @@ export function restore(
           ...(bundle.manifest.schema >= 11 ? ["annual_plan_attempts"] : []),
           ...(bundle.manifest.schema >= 12 ? ["payroll_attempts"] : []),
           ...(bundle.manifest.schema >= 13 ? ["anticipo_attempts"] : []),
-          ...(bundle.manifest.schema >= 15
+          ...(bundle.manifest.schema >= 15 ? ["compartido_attempts"] : []),
+          ...(bundle.manifest.schema >= 16
             ? ["revision_comida_attempts"]
             : []),
         ])

@@ -1,3 +1,12 @@
+import {
+  getCompartido,
+  listCompartidos,
+  createCompartido,
+  createParticipante,
+  previewParticipante,
+  rectificarParticipante,
+  bajaParticipante,
+} from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
   getRevisionComida,
@@ -359,6 +368,63 @@ export function createApp(db: Database, options: AppOptions) {
                 : confirmAccreditation(db, ref, movement, body, key, now()),
           );
         }
+      }
+      if (path === "/api/compartidos/fichas" && req.method === "GET")
+        return reply(listCompartidos(db, new URL(req.url).searchParams));
+      if (path === "/api/compartidos/fichas" && req.method === "POST")
+        return reply(
+          createCompartido(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+          201,
+        );
+      const compartidoPath = path.match(
+        /^\/api\/compartidos\/fichas\/(REF\d+)(?:\/participantes(?:\/(CP\d+)(?:\/(impacto|rectificar|baja))?)?)?$/,
+      );
+      if (compartidoPath) {
+        const [, ref, participant, action] = compartidoPath;
+        if (!participant && req.method === "GET")
+          return reply(getCompartido(db, ref));
+        if (!participant && req.method === "POST")
+          return reply(
+            createParticipante(
+              db,
+              ref,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+            201,
+          );
+        if (participant && action === "impacto" && req.method === "POST")
+          return reply(
+            previewParticipante(db, ref, participant, await jsonBody(req)),
+          );
+        if (participant && action === "rectificar" && req.method === "POST")
+          return reply(
+            rectificarParticipante(
+              db,
+              ref,
+              participant,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+        if (participant && action === "baja" && req.method === "POST")
+          return reply(
+            bajaParticipante(
+              db,
+              ref,
+              participant,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
       }
       if (path === "/api/nomina" && req.method === "GET")
         return reply(getPayroll(db));

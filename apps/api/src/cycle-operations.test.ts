@@ -377,11 +377,13 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
         for (const [table, values] of before) {
           if (table === "schema_version") continue;
           if (table === "counters") {
-            for (const row of values as any[])
-              expect(db.query("SELECT * FROM counters WHERE name=?").get(row.name)).toEqual(row);
-            if (previousVersion === 7)
-              expect(db.query("SELECT next FROM counters WHERE name='presupuestos'").get()).toEqual({next: 1});
-            expect(db.query("SELECT next FROM counters WHERE name='revision_comida'").get()).toEqual({next: 1});
+            const expected = [
+              ...values,
+              ...(previousVersion === 7 ? [{ name: "presupuestos", next: 1 }] : []),
+              { name: "participantes_compartido", next: 1 },
+              { name: "revision_comida", next: 1 },
+            ].sort((a: any, b: any) => a.name.localeCompare(b.name));
+            expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
             continue;
           }
           expect(
@@ -431,8 +433,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(15);
-        expect(bundle.manifest.app).toBe("e3.4-v15");
+        expect(bundle.manifest.schema).toBe(16);
+        expect(bundle.manifest.app).toBe("e3.4-v16");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -634,7 +636,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 15 }, { version: 15 }]);
+    expect(upgraded).toEqual([{ version: 16 }, { version: 16 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

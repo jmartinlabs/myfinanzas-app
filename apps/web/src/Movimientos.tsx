@@ -177,7 +177,19 @@ export function Movimientos({
         go={go}
       />
     );
-  if (path === base + "/nuevo") return <MovementForm key="nuevo" go={go} />;
+  if (path.split("?")[0] === base + "/nuevo")
+    return (
+      <MovementForm
+        key="nuevo"
+        go={go}
+        initialReference={
+          new URLSearchParams(path.split("?")[1]).get("referencia") ?? ""
+        }
+        initialType={
+          new URLSearchParams(path.split("?")[1]).get("tipo") ?? ""
+        }
+      />
+    );
   const m = path.match(/^\/movimientos\/(\d+)(?:\/(rectificar|anular))?$/);
   if (m)
     return m[2] ? (
@@ -937,10 +949,14 @@ function MovementForm({
   id,
   annul = false,
   go,
+  initialReference = "",
+  initialType = "",
 }: {
   id?: string;
   annul?: boolean;
   go: (p: string) => void;
+  initialReference?: string;
+  initialType?: string;
 }) {
   const { options, error: optionsError, reload } = useOptions();
   const returnDraft =
@@ -950,7 +966,13 @@ function MovementForm({
       : null;
   const [old, setOld] = useState<Movement | null>(null),
     [form, setForm] = useState(
-      returnDraft ? { ...empty, ...returnDraft.form } : empty,
+      returnDraft
+        ? { ...empty, ...returnDraft.form }
+        : {
+            ...empty,
+            ...(initialReference ? { referencia: initialReference } : {}),
+            ...(initialType ? { tipo: initialType } : {}),
+          },
     ),
     [reason, setReason] = useState(returnDraft?.reason ?? ""),
     [error, setError] = useState(""),

@@ -71,7 +71,7 @@ export function revisionComidaSchema(db: Database) {
     expires INTEGER NOT NULL
   ) STRICT;
   INSERT OR IGNORE INTO counters VALUES('revision_comida',1);
-  UPDATE schema_version SET version=15;`);
+  UPDATE schema_version SET version=16;`);
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw Error("Upgrade FK validation failed.");
 }

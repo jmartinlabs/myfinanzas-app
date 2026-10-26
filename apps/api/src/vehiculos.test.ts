@@ -1041,7 +1041,7 @@ test("AC-07/25/32/33: integrity list is read-only, scope stays local and audit i
   }
 });
 
-test("AC-02/04/26/31: migration v13→v14, FK/audit continuity and HTTP guards", async () => {
+test("AC-02/04/26/31: migration v13→v15, FK/audit continuity and HTTP guards", async () => {
   const dir = mkdtempSync(join(tmpdir(), "e33-vehiculo-"));
   try {
     const path = join(dir, "v13.sqlite"),
@@ -1067,7 +1067,7 @@ test("AC-02/04/26/31: migration v13→v14, FK/audit continuity and HTTP guards",
     old.close();
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 15 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
       expect(db.query("SELECT * FROM referencias").all()).toEqual(refs);
       expect(db.query("SELECT * FROM movimientos").all()).toEqual(movs);
       expect(db.query("SELECT * FROM fichas_anticipos").all()).toEqual(anticipos);
