@@ -2167,6 +2167,8 @@ textarea {
   text-align: left;
   padding: 8px;
   border-bottom: 1px solid #e2ead8;
+}
+.shared-impact td:first-child {
   overflow-wrap: anywhere;
 }
 @media (max-width: 1050px) {
