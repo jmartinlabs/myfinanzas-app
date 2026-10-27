@@ -1,7 +1,9 @@
 # Change-aware CI contract for derived projects
 
 Bootstrap implements this contract in the generated project harness. This template
-keeps its own complete validation workflow; it has no application stack to test.
+keeps its own lightweight validation workflow; it has no application stack to test.
+The local-first policy below applies to derived projects without adding a new Skill,
+agent service, attestation system or mandatory client hook.
 
 ## Classification
 Use one reusable classifier locally and in CI, with exactly `docs` and `full` results.
@@ -47,21 +49,59 @@ Reference: [MyFinanzas PR #55](https://github.com/josemartin2000/myfinanzas-app/
 illustrates the correction; its project-specific filenames are not universal defaults.
 
 ## Required checks and workflow enforcement
-Documentation and security controls are mandatory for both classes. `full` also runs
-all applicable type, build, API/integration and E2E checks. Record exact commands and
-explicit reasons for inapplicable checks in project quality guidelines; do not invent
-a browser, API or database requirement for stacks that do not use them.
+Documentation and security controls are mandatory for both classes. `full` defines
+required delivery coverage: all applicable type, build, API/integration and E2E checks.
+It does not require running every suite on every GitHub event. Record exact commands,
+execution profiles, critical paths and platform requirements in project quality guidelines;
+do not invent a browser, API or database requirement for stacks that do not use them.
+
+Use local-first QA with a minimal CI gate:
+
+- Local development and independent QA run E2E and complete regressions for each stable
+  candidate. Platform-dependent checks require a compatible isolated environment;
+  a host OS that cannot exercise them is not equivalent evidence.
+- Every PR has one unconditional `required` job: baseline documentation/security controls,
+  the shared conservative classifier and the project's fast type/build checks.
+  Critical persistence, migration, financial, security and dependency changes also run
+  independent checks in CI on the required platform. Keep their commands and path map
+  in the project, including indirect consumers; unknown paths or uncertain impact select
+  critical verification or fail visibly, never a successful omission.
+- Automatic push runs target only `main`, providing a fast post-merge gate. PR runs
+  compare the complete base/head change; working-branch pushes must not duplicate them.
+  Keep manual full verification available. Cancel superseded PR runs using a PR-specific
+  concurrency group; never let a push cancel the PR check or silently pass a cancellation.
+- Keep a single habitual job rather than separate baseline/full/aggregator runners.
+  Preserve the check identity through migration or explicitly coordinate protection
+  updates with user approval. A job named `required` alone does not enforce branch
+  protection; inspect actual required checks and bypass settings before claiming enforcement.
 
 The project harness (for example `scripts/check-project`) must validate workflow
-structure and execution conditions, not merely command text. Require the shared
-classifier, unconditional baseline controls, and full checks unless classification
-has successfully produced exactly `docs`. Missing or invalid classifier output must
-run full checks or fail visibly; it must never yield a green run with no validation.
-Check job dependencies, conditions and a final required result that rejects failures
-and unexpected skipped checks. Reject disabled controls (`if: false`), commented-only
-commands, `continue-on-error` on required checks and event/path filters that omit all
-validation. Preserve approved security controls, including permissions, action pins,
-checkout credentials and history requirements; classification never relaxes them.
+structure and execution conditions, not merely command text. Require unconditional
+baseline controls, conservative profile selection and a required result that rejects
+failures and unexpected skipped checks. Missing or invalid classifier output must
+select critical/full verification or fail visibly. Reject disabled controls (`if: false`),
+commented-only commands, `continue-on-error` on required checks and event/path filters
+that omit the PR gate. Preserve approved security controls, including permissions,
+action pins, checkout credentials and history requirements; classification never relaxes them.
+
+## Evidence validity and independent QA
+Reuse the existing testplan/checkpoint, not a second evidence registry. Before integration,
+the coordinator and independent QA verify the clean candidate commit, current base commit,
+complete comparison and tested environment against reachable raw logs and artifacts.
+Record exact commands, tool/runtime versions, platform/architecture, run time, test counts,
+exit statuses and expected coverage. Dirty/untracked inputs must be identified and cannot
+be represented as evidence for a clean commit. A PASS declared by an agent or a self-authored
+manifest is not sufficient evidence. QA inspects raw output and candidate diff and reruns
+checks that resolve material risks; it does not merely repeat the author's conclusion.
+
+After a candidate, base, dependency, toolchain, filesystem or environment change, reassess
+impact and rerun affected checks; uncertain impact requires complete verification. Reuse
+unchanged evidence only with an explicit equivalence rationale verified independently.
+Missing, stale, inaccessible or incompatible evidence blocks integration even if CI is green.
+The fast CI gate does not attest that local QA ran. Keep explicit merge approval; no
+repository-controlled PASS file, client hook or successful check substitutes for it.
+Codex and Claude Code follow this same canonical policy through their existing adapters;
+do not make correctness depend on optional lifecycle hooks or a particular client.
 
 ## Canonical verification entry point
 Bootstrap establishes one canonical verification command for local use and CI.
@@ -72,10 +112,12 @@ Record its working directory, prerequisites, comparison inputs and a way to forc
 `full` verification in AGENTS.md and project quality guidelines.
 
 The entry point coordinates the shared classifier and required checks; keep their
-logic in existing tools rather than copying it. Apply the same check selection and
-failure semantics locally and in CI for equivalent inputs. Environment preparation
-may differ and must be documented. CI may split work across jobs through explicit
-modes of the same entry point; the required final result must still verify coverage.
+logic in existing tools rather than copying it. Use explicit local-full, fast-CI and critical-CI profiles in the existing entry point.
+Apply the same check selection and failure semantics for equivalent inputs within each
+profile; profile differences are intentional and documented, not silent skips.
+Environment preparation may differ and must be documented. The required CI result
+verifies its profile coverage; the independent integration review verifies local-full
+evidence. Keep conservative docs/full coverage classification separate from execution venue.
 Within one verification run, execute each required suite once unless a documented
 repeat is needed for an acceptance criterion or flakiness investigation. This does
 not remove independent QA or require reusing stale evidence between candidates.
@@ -91,7 +133,7 @@ reinitialize a project implicitly; provision the documented environment separate
 
 Derived-project regression tests must invoke the real entry point and demonstrate:
 valid docs/full paths, forced full mode, each required check failing, missing tooling,
-invalid modes, unexpected zero tests/skips, local/CI selection parity, and each suite
+invalid modes, unexpected zero tests/skips, local/CI selection parity within profiles, and each suite
 executing once per run. Prove reuse of an adequate existing command without a second
 verification layer. These are generated-harness behavioral tests; this template's
 validator only protects preservation of the contract.
@@ -108,19 +150,22 @@ same classifier used by CI and valid/invalid workflow fixtures. Cover at least:
 | Protected/unknown to product documentation, and product documentation to protected/unknown | `full`, both rename directions checked |
 | Each protected category added, modified or deleted, alone and mixed with allowed product documentation | `full` |
 | Markdown lookalikes: nested paths, wrong suffix/extension, arbitrary specs files or protected names in allowed directories | `full` |
-| Documentation plus code | `full`, complete applicable battery required |
+| Documentation plus code | `full` delivery coverage; CI follows the explicit execution profile |
 | SQL, dependencies, lockfiles, workflows, harness, configuration, instructions or Skills | `full` |
 | Unknown path, empty input, invalid output, missing comparison base or classifier failure | `full` or visible CI failure; never successful omission |
 | Rename from code to documentation, or deleted protected file | `full` |
 | Paths containing spaces or unusual characters | Parsed without losing changes |
-| Missing classifier, disabled baseline/full check, broken dependency or unexpected skip | Workflow rejected |
+| Missing classifier, disabled required check, broken dependency or unexpected skip | Workflow rejected |
 | Commented command, allowed failure or filter skipping all validation | Workflow rejected |
 | Valid docs and full workflow execution paths | Accepted with their required checks |
 
 Prove the contract with local tests before changing Actions execution. Regressions
 must check behavior, not repeat the implementation's string-presence assertions.
-UI-specific classification, event deduplication and environment caching are separate
-changes requiring their own evidence and scope.
+Also exercise working-branch push exclusion, PR/main/manual admission, PR cancellation,
+failed/cancelled/timed-out checks, invalid profile selection and unknown critical paths.
+Evidence validity tests cover stale candidate/base, dirty inputs, incompatible environment,
+missing/raw-log mismatch and a forged PASS claim. Keep environment caching optional and
+review its trust boundary separately.
 
 For every allowed family and exact path, use real Git comparisons for additions,
 modifications, deletions and renames. Exercise both rename endpoints even if the old
@@ -128,6 +173,52 @@ file no longer exists. Include protected files mixed with each product-document
 family; one protected or unknown path makes the whole comparison `full`. Test policy
 adaptations with valid alternate product paths and rejected broad Markdown exemptions.
 
+## MyFinanzas — local-first vigente (2026-10-27)
+
+Autorizado por el usuario: implementación y PR independientes, sin merge, deploy,
+protecciones ni intervención en los cinco desarrollos paralelos. Esta adaptación
+aplica el contrato portable anterior; los apartados v2.6/v2.7 inferiores son historia
+sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones vigentes.
+
+- `python3 scripts/verify` y `--full` conservan toda la cobertura local; baseline,
+  tipos/build, API/SQLite y E2E. La excepción histórica AC23 sigue limitada a su rama.
+- CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
+  `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
+  con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
+- Eventos: PR hacia main, push solo main, manual completo. PR valida checkout de
+  integración con head y base exactos del evento; una referencia movida falla.
+  No hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
+  anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
+- `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
+  `docs` ejecuta baseline; `fast` añade tipos/build; `critical` añade **toda** la
+  suite API/SQLite Linux; `full` añade además E2E. Push main selecciona fast;
+  manual selecciona full. PR compara todo el rango mediante merge-base.
+- Fast se limita a documentación permitida y CSS en `apps/web/`. Todo TS/TSX,
+  incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
+  dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
+  Borrados y ambos extremos de renombres cuentan. Clasificación incierta nunca
+  exime API/SQLite. No se amplía esta lista sin revisión y regresiones.
+- Ubuntu24.04 x64 conserva acciones SHA, historia completa y permisos de lectura.
+  `ci_prepare_linux.py api` prepara solo age; full prepara además Chromium como
+  antes. Los controles financieros y de persistencia son independientes del entorno
+  del autor aunque compartan job con el gate rápido.
+- SQLite local requiere Linux Debian13/glibc aislado compatible con producción,
+  Bun1.4.3 y arquitectura de destino; usar filesystem Linux para WAL, bloqueos,
+  permisos y renameat2. macOS, Ubuntu CI y un bind mount de macOS no demuestran
+  por sí solos equivalencia Debian/host. Si falta ese entorno, registrar BLOCKED;
+  no afirmar QA completa ni integrar por un CI verde.
+- Evidencia y QA siguen el apartado portable de validez anterior, en testplan y
+  checkpoint existentes: candidato limpio, base vigente y árbol de integración,
+  versiones/arquitectura/filesystem, comandos, fecha, salidas crudas, conteos y
+  código de salida. El coordinador comprueba esos objetos contra Git y los logs;
+  QA inspecciona el diff y reproduce los controles de riesgo independientemente.
+  Un PASS declarado, log inaccesible o evidencia para otra base/candidato bloquea.
+  El gate rápido **no** autentica pruebas locales; no se añade un registro ni hook.
+- Codex lee AGENTS/Skills; Claude Code importa AGENTS y delega en las mismas Skills.
+  No cambia ningún adaptador ni se depende de hooks opcionales. Protección de main
+  requiere verificación y autorización separada; el nombre required no la configura.
+
+### Historia de adopción — selección CI anterior sustituida
 
 ## Adaptación MyFinanzas — v2.6.0, entrega local ampliada
 
@@ -256,7 +347,7 @@ las pruebas locales no se atribuyen a GitHub. Los [comandos y evidencia](../guid
 registran cobertura y límites. No cambia código financiero, SQL, roadmap, Excel ni
 estados de otras entregas. No se modifican reglas de protección de main.
 
-## Adaptación vigente v2.7.0
+## Adaptación histórica v2.7.0
 
 Fuente fijada: agent-project-template v2.7.0, commit
 `ed61c62ea62dc378d2281222dfec6ebecada2410`. Solicitud del usuario del 2026-10-24.

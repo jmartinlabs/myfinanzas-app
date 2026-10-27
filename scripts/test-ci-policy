@@ -20,7 +20,7 @@ LINUX = runpy.run_path(str(ROOT / 'scripts/ci_prepare_linux.py'))
 
 
 def by_id(workflow, step_id):
-    return next(s for s in workflow['jobs']['baseline']['steps'] if s.get('id') == step_id)
+    return next(s for s in workflow['jobs']['required']['steps'] if s.get('id') == step_id)
 
 
 def by_run(workflow, job, command):
@@ -322,6 +322,48 @@ class CiClassifierTests(unittest.TestCase):
         event.unlink()
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'full')
 
+    def test_ci_profiles_critical_unknown_renames_and_fast_allowlist(self):
+        profiles = POLICY['profile_records']
+        for path in ('apps/api/src/database.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
+                     'scripts/verify', 'infra/Containerfile', 'bun.lock', 'unknown.md'):
+            for status in ('A', 'M', 'D'):
+                self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'critical')
+            for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
+                self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'critical')
+        self.assertEqual(profiles(b'M\0apps/web/src/style.css\0'), 'fast')
+        self.assertEqual(profiles(b'M\0apps/web/../amount.css\0'), 'critical')
+        self.assertEqual(profiles(b'M\0specs/project.md\0'), 'docs')
+        for bad in (b'', b'M\0', b'R100\0apps/web/a.css\0', b'Z\0apps/web/a.css\0', b'M\0bad\xff\0'):
+            self.assertEqual(profiles(bad), 'critical')
+
+    def test_ci_profile_compares_entire_pr_and_verified_integration_base(self):
+        self.git('switch', '-qc', 'feature')
+        self.write('apps/web/src/amount.ts', 'export const total = 1;')
+        self.commit()
+        self.write('specs/backlog/last.md')
+        head = self.commit()
+        self.git('switch', '-q', 'main')
+        base = self.git('rev-parse', 'HEAD').decode().strip()
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'integration', 'feature')
+        event = {'pull_request': {'base': {'ref': 'main', 'sha': base}, 'head': {'sha': head}}}
+        select = POLICY['ci_profile']
+        self.assertEqual(select(self.root, 'pull_request', event, 'refs/pull/7/merge'), 'critical')
+        event['pull_request']['base']['sha'] = head
+        with self.assertRaises(ValueError):
+            select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        event['pull_request']['base'] = {'ref': 'other', 'sha': base}
+        with self.assertRaises(ValueError):
+            select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        actual = self.git('rev-parse', 'HEAD').decode().strip()
+        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'after': actual}, actual), 'fast')
+        for ref in ('refs/heads/feature', 'refs/tags/v1'):
+            with self.assertRaises(ValueError):
+                select(self.root, 'push', {'ref': ref, 'after': actual}, actual)
+        self.assertEqual(select(self.root, 'workflow_dispatch', {}, actual), 'full')
+        with self.assertRaises(ValueError): select(self.root, 'unknown', {}, actual)
+
+
 
 class CiWorkflowTests(unittest.TestCase):
     def setUp(self):
@@ -344,41 +386,37 @@ class CiWorkflowTests(unittest.TestCase):
 
     def test_reject_semantic_mutations(self):
         mutations = {
-            'missing classifier': lambda w: w['jobs']['baseline']['steps'].remove(by_id(w, 'classify')),
-            'disabled baseline': lambda w: w['jobs']['baseline'].update({'if': False}),
-            'disabled baseline step': lambda w: w['jobs']['baseline']['steps'][-1].update({'if': False}),
-            'disabled full': lambda w: w['jobs']['full'].update({'if': False}),
-            'docs equality instead of full condition': lambda w: w['jobs']['full'].update({'if': "${{ needs.baseline.outputs.class == 'full' }}"}),
-            'broken dependency': lambda w: w['jobs']['full'].update(needs=[]),
+            'missing selector': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'plan')),
+            'disabled job': lambda w: w['jobs']['required'].update({'if': False}),
+            'disabled baseline': lambda w: by_id(w, 'baseline').update({'if': False}),
             'missing final': lambda w: w['jobs'].pop('required'),
-            'skippable final': lambda w: w['jobs']['required'].pop('if'),
-            'final omits full dependency': lambda w: w['jobs']['required'].update(needs=['baseline']),
-            'final always succeeds': lambda w: w['jobs']['required']['steps'][2].update(run='echo success'),
-            'allowed failure': lambda w: w['jobs']['full']['steps'][3].update({'continue-on-error': True}),
-            'job allowed failure': lambda w: w['jobs']['baseline'].update({'continue-on-error': True}),
-            'commented command': lambda w: w['jobs']['full']['steps'][3].update(run='# bun run typecheck'),
-            'event path filter': lambda w: w.update({'on': {'push': {'paths': ['apps/**']}}}),
+            'skippable final': lambda w: w['jobs']['required']['steps'][-1].pop('if'),
+            'final always succeeds': lambda w: w['jobs']['required']['steps'][-1].update(run='echo success'),
+            'allowed failure': lambda w: by_id(w, 'verify').update({'continue-on-error': True}),
+            'job allowed failure': lambda w: w['jobs']['required'].update({'continue-on-error': True}),
+            'commented command': lambda w: by_id(w, 'verify').update(run='# python3 scripts/verify ci'),
+            'event path filter': lambda w: w['on']['pull_request'].update(paths=['apps/**']),
+            'redundant feature push': lambda w: w['on'].update(push={}),
+            'missing main push': lambda w: w['on'].pop('push'),
             'privileged event': lambda w: w.update({'on': ['pull_request_target']}),
             'write permissions': lambda w: w.update(permissions={'contents': 'write'}),
-            'unpinned action': lambda w: w['jobs']['full']['steps'][0].update(uses='actions/checkout@v4'),
-            'shallow history': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'fetch-depth': 1}),
-            'persist credentials': lambda w: w['jobs']['baseline']['steps'][0]['with'].update({'persist-credentials': True}),
-            'result env missing': lambda w: w['jobs']['required']['steps'][2]['env'].pop('CI_FULL'),
-            'classification error suppressed': lambda w: by_id(w, 'classify').update(run='python3 scripts/verify classify || true'),
-            'application bypasses entry': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update(run='bun run test'),
-            'baseline bypasses entry': lambda w: w['jobs']['baseline']['steps'][-1].update(run='./scripts/test-checks'),
-            'entrypoint partial application': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update(run='python3 scripts/verify baseline'),
+            'unpinned action': lambda w: w['jobs']['required']['steps'][0].update(uses='actions/checkout@v4'),
+            'shallow history': lambda w: w['jobs']['required']['steps'][0]['with'].update({'fetch-depth': 1}),
+            'persist credentials': lambda w: w['jobs']['required']['steps'][0]['with'].update({'persist-credentials': True}),
+            'result env missing': lambda w: w['jobs']['required']['steps'][-1]['env'].pop('CI_VERIFY'),
+            'selector error suppressed': lambda w: by_id(w, 'plan').update(run='python3 scripts/verify ci-plan || true'),
+            'application bypasses entry': lambda w: by_id(w, 'verify').update(run='bun run test'),
+            'baseline bypasses entry': lambda w: by_id(w, 'baseline').update(run='./scripts/test-checks'),
             'missing concurrency': lambda w: w.pop('concurrency'),
             'wrong event group': lambda w: w['concurrency'].update(group='${{ github.event_name }}-${{ github.ref }}'),
             'no cancellation': lambda w: w['concurrency'].update({'cancel-in-progress': False}),
-            'missing PR context': lambda w: w['jobs']['baseline']['steps'].remove(by_id(w, 'context')),
-            'classifier loses PR context': lambda w: by_id(w, 'classify').pop('env'),
+            'missing PR context': lambda w: w['jobs']['required']['steps'].remove(by_id(w, 'context')),
+            'selector loses PR context': lambda w: by_id(w, 'plan').pop('env'),
             'snapshot guard removed': lambda w: by_id(w, 'snapshot').update(run='git rev-parse HEAD'),
-            'floating full checkout': lambda w: w['jobs']['full']['steps'][0]['with'].pop('ref'),
-            'moving runner': lambda w: w['jobs']['full'].update({'runs-on': 'ubuntu-latest'}),
-            'skip Linux setup': lambda w: by_run(w, 'full', 'python3 scripts/ci_prepare_linux.py').update({'if': False}),
-            'system browser substitution': lambda w: w['jobs']['full'].update(env={'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': '/usr/bin/chromium'}),
-            'full test skipped': lambda w: by_run(w, 'full', 'python3 scripts/verify application').update({'if': False}),
+            'moving runner': lambda w: w['jobs']['required'].update({'runs-on': 'ubuntu-latest'}),
+            'skip Linux setup': lambda w: by_id(w, 'prepare').update({'if': False}),
+            'system browser substitution': lambda w: w['jobs']['required'].update(env={'PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH': '/usr/bin/chromium'}),
+            'application skipped': lambda w: by_id(w, 'verify').update({'if': False}),
         }
         for name, mutate in mutations.items():
             with self.subTest(name=name):
@@ -393,7 +431,7 @@ class CiWorkflowTests(unittest.TestCase):
             self.assertTrue(WORKFLOW['validate_workflow'](p))
         self.assertTrue(WORKFLOW['validate_workflow'](self.root / 'missing'))
         value = copy.deepcopy(self.candidate)
-        value['jobs']['baseline']['steps'][0]['with']['persist-credentials'] = 0
+        value['jobs']['required']['steps'][0]['with']['persist-credentials'] = 0
         self.assertTrue(self.errors(value))
 
     def test_classifier_step_rejects_invalid_output_and_crashes(self):
@@ -401,8 +439,8 @@ class CiWorkflowTests(unittest.TestCase):
         script.parent.mkdir()
         output = self.root / 'output'
         env = {**os.environ, 'GITHUB_OUTPUT': str(output)}
-        step = by_id(self.candidate, 'classify')['run']
-        for body, expected in (("print('docs')", 0), ("print('full')", 0),
+        step = by_id(self.candidate, 'plan')['run']
+        for body, expected in (("print('docs')", 0), ("print('fast')", 0), ("print('critical')", 0), ("print('full')", 0),
                                ("print('bogus')", 1), ("print('')", 1),
                                ("print('docs\\nfull')", 1), ('raise RuntimeError()', 1)):
             with self.subTest(body=body):
@@ -413,7 +451,7 @@ class CiWorkflowTests(unittest.TestCase):
                 if expected:
                     self.assertFalse(output.exists())
                 else:
-                    self.assertIn(output.read_text(), ('class=docs\n', 'class=full\n'))
+                    self.assertIn(output.read_text(), ('profile=docs\n', 'profile=fast\n', 'profile=critical\n', 'profile=full\n'))
 
 
 class CiResultTests(unittest.TestCase):
@@ -440,6 +478,21 @@ class CiResultTests(unittest.TestCase):
                 expected = (classification, baseline, full) in (
                     ('docs', 'success', 'skipped'), ('full', 'success', 'success'))
                 self.assertEqual(r.returncode == 0, expected)
+
+    def test_single_job_result_matrix_rejects_every_missing_failed_skipped_cancelled_phase(self):
+        gate = POLICY['ci_result_ok']
+        for profile in ('docs', 'fast', 'critical', 'full'):
+            states = {name: 'success' for name in ('context','snapshot','plan','baseline','verify')}
+            states.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun','install')})
+            states['prepare'] = 'success' if profile in ('critical','full') else 'skipped'
+            states['browser'] = 'success' if profile == 'full' else 'skipped'
+            self.assertTrue(gate(profile, states))
+            for name in states:
+                for value in ('success','skipped','failure','cancelled','timed_out',''):
+                    if value != states[name]: self.assertFalse(gate(profile, {**states,name:value}))
+                incomplete = dict(states); incomplete.pop(name); self.assertFalse(gate(profile, incomplete))
+            self.assertFalse(gate('invalid', states))
+
 
 
 class CiContextTests(unittest.TestCase):
@@ -591,6 +644,15 @@ class CiLinuxTests(unittest.TestCase):
                 return result
             with self.subTest(failure=failure), self.assertRaises(ValueError):
                 self.prepare(broken)
+
+    def test_api_preparation_never_invokes_playwright_or_installs_browser_packages(self):
+        self.missing = {'age'}
+        LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='api')
+        self.assertFalse(any(c[0] == 'node' for c in self.calls))
+        installs = [c for c in self.calls if c[:3] == ['sudo','apt-get','install']]
+        self.assertEqual(installs[0][6:], ['age'])
+        with self.assertRaises(ValueError):
+            LINUX['prepare'](ROOT, self.execute, os_release='ID=ubuntu\nVERSION_ID=24.04', machine='x86_64', mode='invalid')
 
     def test_manifest_version_drift_is_rejected_before_install(self):
         with tempfile.TemporaryDirectory() as tmp:

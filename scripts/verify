@@ -3,6 +3,7 @@
 import argparse
 import contextlib
 import io
+import json
 import os
 from pathlib import Path
 import re
@@ -126,7 +127,7 @@ def main(argv=None):
         print('FAIL prerequisite: Python 3.10+ is required for canonical verification.', file=sys.stderr)
         return 1
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('mode', nargs='?', choices=('all', 'classify', 'baseline', 'application', 'result'), default='all')
+    parser.add_argument('mode', nargs='?', choices=('all', 'classify', 'baseline', 'application', 'result', 'ci-plan', 'ci', 'ci-result'), default='all')
     parser.add_argument('--full', action='store_true', help='Force full; never provisions dependencies')
     parser.add_argument('--base')
     parser.add_argument('--head')
@@ -134,6 +135,31 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.mode not in ('all', 'classify') and (args.full or args.base or args.head or args.pull_request):
         parser.error('Comparison and forced-full flags belong to all/classify modes.')
+    if args.mode == 'ci-result':
+        names = ('context', 'snapshot', 'plan', 'baseline', 'verify', 'bun', 'install', 'prepare', 'browser')
+        states = {name: os.getenv('CI_' + name.upper()) for name in names}
+        ok = POLICY['ci_result_ok'](os.getenv('CI_PROFILE'), states)
+        print('CI required result: ' + ('PASS' if ok else 'FAIL'))
+        return 0 if ok else 1
+    if args.mode in ('ci-plan', 'ci'):
+        try:
+            event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+            profile = POLICY['ci_profile'](ROOT, os.environ['GITHUB_EVENT_NAME'], event, os.getenv('CI_CHECKOUT_REF'))
+        except (OSError, ValueError, KeyError, TypeError) as error:
+            raise VerificationError('CI context/profile unavailable; no successful omission') from error
+        if args.mode == 'ci-plan':
+            print(profile)
+            return 0
+        if profile == 'docs':
+            print('INTENTIONALLY SKIPPED application checks: docs profile; local QA evidence is separate.')
+            return 0
+        checks = application_checks() if profile == 'full' else list(APPLICATION[:2])
+        if profile == 'critical':
+            checks = [check for check in application_checks() if check[0] != 'e2e']
+        tools = ('bun', 'node', 'age', 'git') if profile in ('critical', 'full') else ('bun', 'git')
+        ok = run_checks(checks, tools)
+        print('CI profile ' + profile + ': ' + ('PASS' if ok else 'FAIL') + '; local full QA is a separate integration gate.')
+        return 0 if ok else 1
     if args.mode == 'result':
         return POLICY['main'](['result'])
     if args.mode == 'baseline':

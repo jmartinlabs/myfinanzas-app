@@ -30,11 +30,11 @@ def docs_path(path):
                 and (parts[1] in CONTEXT_DOCS or FUNCTIONAL_DOC.fullmatch(parts[1]) is not None)))
 
 
-def classify_records(data):
+def record_paths(data):
     """Consume Git --name-status -z bytes, retaining both rename/copy endpoints."""
     try:
         if not isinstance(data, bytes) or not data or not data.endswith(b'\0'):
-            return 'full'
+            return None
         tokens = data[:-1].decode('utf-8', errors='strict').split('\0')
         paths = []
         i = 0
@@ -46,14 +46,19 @@ def classify_records(data):
             elif re.fullmatch(r'[RC](?:100|[1-9]?[0-9])', status):
                 count = 2
             else:
-                return 'full'
+                return None
             if len(tokens) - i < count:
-                return 'full'
+                return None
             paths.extend(tokens[i:i + count])
             i += count
-        return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
+        return paths or None
     except UnicodeError:
-        return 'full'
+        return None
+
+
+def classify_records(data):
+    paths = record_paths(data)
+    return 'docs' if paths and all(docs_path(p) for p in paths) else 'full'
 
 
 def git(root, *args):
@@ -112,6 +117,72 @@ def classify_event(root, event_name, event, checkout_ref=None):
         return original
     except (OSError, subprocess.SubprocessError, UnicodeError, KeyError, TypeError):
         return 'full'
+
+
+# A narrow fast allowlist; everything else retains independent Linux API coverage.
+# UI files can contain financial rules, so TS/TSX are deliberately critical.
+def fast_path(path):
+    return (docs_path(path) or (isinstance(path, str) and all(p not in ('', '.', '..') for p in path.split('/'))
+            and '\\' not in path and path.startswith('apps/web/') and path.endswith('.css')))
+
+
+def profile_records(data):
+    paths = record_paths(data)
+    if not paths:
+        return 'critical'
+    if all(docs_path(p) for p in paths):
+        return 'docs'
+    return 'fast' if all(fast_path(p) for p in paths) else 'critical'
+
+
+def ci_profile(root, event_name, event, checkout_ref=None):
+    """Execution venue differs from docs/full coverage; invalid contexts fail closed."""
+    if event_name == 'workflow_dispatch':
+        return 'full'
+    if event_name == 'push':
+        # No feature push, tag or deleted ref may select the postmerge shortcut.
+        if event.get('ref') != 'refs/heads/main' or not re.fullmatch(r'[0-9a-f]{40}', event.get('after', '')) or event['after'] == '0' * 40:
+            raise ValueError('only main pushes have a fast postmerge gate')
+        if git(root, 'rev-parse', 'HEAD').decode().strip() != event['after'] or checkout_ref != event['after']:
+            raise ValueError('postmerge snapshot differs from event')
+        return 'fast'
+    if event_name != 'pull_request':
+        raise ValueError('unsupported CI event')
+    pr = event.get('pull_request', {})
+    if pr.get('base', {}).get('ref') != 'main':
+        raise ValueError('only PRs targeting main are supported')
+    # Selection compares the complete PR against the exact tested integration base.
+    # Unverified data never opts out of independent API/SQLite validation.
+    try:
+        head = pr['head']['sha']; base = pr['base']['sha']
+        if not re.fullmatch(r'refs/pull/[1-9][0-9]*/merge', checkout_ref or ''):
+            return 'critical'
+        if git(root, 'rev-parse', 'HEAD^2').decode().strip() != head:
+            raise ValueError('integration head changed')
+        if git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all'):
+            return 'critical'
+        tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
+        if tested_base != base:
+            raise ValueError('integration base changed; rerun against current base')
+        if classify_git(root, base, head, pull_request=True) == 'full':
+            if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
+                return 'critical'
+        ancestor = git(root, 'merge-base', base, head).decode().strip()
+        records = git(root, 'diff', '--name-status', '-z', '--find-renames',
+                      '--ignore-submodules=none', '--no-ext-diff', '--no-textconv', ancestor, head, '--')
+        return profile_records(records)
+    except (OSError, subprocess.SubprocessError, KeyError, TypeError):
+        return 'critical'
+
+
+def ci_result_ok(profile, states):
+    if profile not in ('docs', 'fast', 'critical', 'full'):
+        return False
+    expected = {name: 'success' for name in ('context', 'snapshot', 'plan', 'baseline', 'verify')}
+    expected.update({name: 'success' if profile != 'docs' else 'skipped' for name in ('bun', 'install')})
+    expected['prepare'] = 'success' if profile in ('critical', 'full') else 'skipped'
+    expected['browser'] = 'success' if profile == 'full' else 'skipped'
+    return states == expected
 
 
 def result_ok(classification, baseline, full):
