@@ -194,6 +194,47 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),[])
         self.assertIn('INTENTIONALLY SKIPPED',result.stdout); self.assertNotIn('PASS api',result.stdout)
 
+    def advanced_integration_event(self, path):
+        self.git('switch', '-qc', 'fixture-advanced')
+        target = self.root / path; target.parent.mkdir(parents=True, exist_ok=True); target.write_text('fixture\n')
+        head = self.commit()
+        self.git('switch', '-q', 'main')
+        stale = self.git('rev-parse', 'HEAD')
+        (self.root/'apps/api/base-only.ts').parent.mkdir(parents=True, exist_ok=True)
+        (self.root/'apps/api/base-only.ts').write_text('export const base = 1;\n')
+        self.commit()
+        self.git('-c','user.name=Fixture','-c','user.email=fixture@example.invalid','-c','commit.gpgsign=false',
+                 'merge','--no-ff','-qm','integration','fixture-advanced')
+        event = self.home / 'pr-advanced-event.json'
+        event.write_text(json.dumps({'pull_request': {'base': {'sha': stale,'ref':'main'}, 'head': {'sha': head}}}))
+        return {'GITHUB_EVENT_NAME':'pull_request','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':'refs/pull/8/merge'}
+
+    def test_ci_selector_accepts_a_merge_ref_rebuilt_on_a_newer_main(self):
+        extra = self.advanced_integration_event('specs/backlog/advanced.md')
+        plan = self.run_entry('ci-plan', extra=extra)
+        self.assertEqual(plan.returncode, 0, plan.stdout); self.assertEqual(plan.stdout.strip(), 'docs')
+        result = self.run_entry('ci', extra=extra)
+        self.assertEqual(result.returncode, 0, result.stdout); self.assertEqual(self.calls(), [])
+        self.assertIn('INTENTIONALLY SKIPPED', result.stdout); self.assertNotIn('PASS api', result.stdout)
+        # A divergent base is still refused and no check is executed.
+        event = self.home/'pr-advanced-event.json'
+        value = json.loads(event.read_text())
+        value['pull_request']['base']['sha'] = value['pull_request']['head']['sha']
+        event.write_text(json.dumps(value)); self.clear()
+        for mode in ('ci-plan', 'ci'):
+            result = self.run_entry(mode, extra=extra)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertIn('CI context/profile unavailable', result.stdout)
+        self.assertEqual(self.calls(), [])
+
+    def test_ci_selector_keeps_critical_coverage_on_a_rebuilt_merge_ref(self):
+        extra = self.advanced_integration_event('apps/web/src/amount.ts')
+        plan = self.run_entry('ci-plan', extra=extra)
+        self.assertEqual(plan.returncode, 0, plan.stdout); self.assertEqual(plan.stdout.strip(), 'critical')
+        result = self.run_entry('ci', extra=extra)
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertEqual(self.calls(), ['typecheck','build','api'])
+
     def test_ci_main_docs_fast_manual_full_and_invalid_event(self):
         event=self.home/'event.json'; event.write_text(json.dumps({'ref':'refs/heads/main','before':self.base,'after':self.head}))
         extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':self.head}

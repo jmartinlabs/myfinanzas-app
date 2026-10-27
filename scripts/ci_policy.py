@@ -65,6 +65,13 @@ def git(root, *args):
     return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
 
 
+def is_ancestor(root, ancestor, descendant):
+    """True only when Git confirms a complete, existing ancestor relationship."""
+    return subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor',
+                           ancestor, descendant], stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE).returncode == 0
+
+
 def classify_git(root, base, head, *, pull_request=False):
     """Only complete, verified commit comparisons may opt out of full checks."""
     try:
@@ -170,7 +177,14 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             return 'critical'
         tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
         if tested_base != base:
-            raise ValueError('integration base changed; rerun against current base')
+            # A queued run can fetch a merge ref rebuilt on a newer main, so the
+            # event snapshot may be an older base. Only a base that advanced from
+            # that snapshot is legitimate; a rewritten, divergent or older merge
+            # ref still fails closed. Ancestry does not prove the tested base is
+            # the current main tip: the checked-out SHA remains the tested one.
+            if not is_ancestor(root, base, tested_base):
+                raise ValueError('event base is not an ancestor of the tested integration base')
+            base = tested_base
         if classify_git(root, base, head, pull_request=True) == 'full':
             if git(root, 'rev-parse', '--is-shallow-repository').strip() != b'false':
                 return 'critical'

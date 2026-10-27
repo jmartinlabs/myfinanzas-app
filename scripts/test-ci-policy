@@ -372,6 +372,57 @@ class CiClassifierTests(unittest.TestCase):
         self.assertEqual(select(self.root, 'workflow_dispatch', {}, code_head), 'full')
         with self.assertRaises(ValueError): select(self.root, 'unknown', {}, code_head)
 
+    def test_ci_profile_accepts_a_base_that_only_advanced_and_rejects_races(self):
+        select = POLICY['ci_profile']
+        merge = ('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'merge', '--no-ff', '-qm', 'integration')
+        # A docs-only PR whose merge ref was rebuilt after main advanced: the event
+        # still carries the older base, which is a legitimate ancestor.
+        self.git('switch', '-qc', 'advanced-docs')
+        self.write('specs/backlog/advanced.md')
+        docs_head = self.commit()
+        self.git('switch', '-q', 'main')
+        stale_docs = self.git('rev-parse', 'HEAD').decode().strip()
+        self.write('apps/api/base-only-docs.ts', 'export const base = 1;')
+        self.commit()
+        self.git(*merge, 'advanced-docs')
+        docs_event = {'pull_request': {'base': {'ref': 'main', 'sha': stale_docs},
+                                       'head': {'sha': docs_head}}}
+        self.assertEqual(select(self.root, 'pull_request', docs_event, 'refs/pull/7/merge'), 'docs')
+        # The same event with a rewritten/divergent base still fails closed.
+        for forged in (docs_head, self.git('rev-parse', 'HEAD').decode().strip()):
+            event = {'pull_request': {'base': {'ref': 'main', 'sha': forged},
+                                      'head': {'sha': docs_head}}}
+            with self.assertRaises(ValueError):
+                select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        # A head that differs from the checked-out merge ref still fails closed.
+        event = {'pull_request': {'base': {'ref': 'main', 'sha': stale_docs},
+                                  'head': {'sha': stale_docs}}}
+        with self.assertRaises(ValueError):
+            select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        # A merge ref older than the event snapshot is not accepted by ancestry.
+        self.write('apps/api/later-main.ts', 'export const later = 2;')
+        later_main = self.commit()
+        integration = self.git('rev-parse', 'HEAD^').decode().strip()
+        self.git('checkout', '-q', '--detach', integration)
+        event = {'pull_request': {'base': {'ref': 'main', 'sha': later_main},
+                                  'head': {'sha': docs_head}}}
+        with self.assertRaises(ValueError):
+            select(self.root, 'pull_request', event, 'refs/pull/7/merge')
+        # Code in the PR never degrades to docs when the base advanced.
+        self.git('switch', '-q', 'main')
+        self.git('switch', '-qc', 'advanced-code')
+        self.write('apps/web/src/advanced.ts', 'export const total = 3;')
+        code_head = self.commit()
+        self.git('switch', '-q', 'main')
+        stale_code = self.git('rev-parse', 'HEAD').decode().strip()
+        self.write('apps/api/base-only-code.ts', 'export const base = 4;')
+        self.commit()
+        self.git(*merge, 'advanced-code')
+        code_event = {'pull_request': {'base': {'ref': 'main', 'sha': stale_code},
+                                       'head': {'sha': code_head}}}
+        self.assertEqual(select(self.root, 'pull_request', code_event, 'refs/pull/7/merge'), 'critical')
+
 
 
 class CiWorkflowTests(unittest.TestCase):
