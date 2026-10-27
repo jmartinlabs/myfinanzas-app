@@ -19,6 +19,44 @@ v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar l
 autorizaciones de negocio ni afirmar una adopción íntegra.
 El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
 
+## Reparto de responsabilidades — orquestador, asesor y usuario
+
+Aprobado por el usuario el 2026-10-27. No cambia los gates de [approvals](approvals.md):
+especificación, desarrollo, cambio de alcance, merge y despliegue siguen necesitando
+aprobación expresa.
+
+- **Orquestador técnico (OpenCode).** Único responsable de la ejecución: consolida los
+  handoffs, coordina desarrollo, documentación, pruebas, QA, CI y PR, resuelve incidencias
+  dentro del alcance autorizado y gestiona dependencias, ownership, bloqueos y seguimiento
+  global. No traslada al usuario información técnica rutinaria que pueda resolver.
+- **Asesor (Álex, ChatGPT).** Aporta criterio en decisiones financieras, funcionales y de
+  arquitectura; no ejecuta, no asigna trabajo y no aprueba. Su recomendación no autoriza
+  nada por sí sola.
+- **Usuario.** Autoridad final y única fuente de aprobación protegida.
+
+### Materias que exigen consulta
+
+Reglas financieras, cálculos o interpretación de importes; comportamiento funcional de
+cualquier dominio financiero (Ciclos, Cierres, Movimientos, Saldos, Anticipos, Compartidos,
+Presupuestos, Inversiones y los demás); cambios estructurales que afecten al modelo
+financiero, la integridad histórica o la fuente única de verdad; y contradicciones entre
+especificaciones, criterios aprobados o decisiones anteriores.
+
+La consulta se redacta con contexto imprescindible, alternativas, recomendación motivada y
+consecuencias, y no se presenta como decisión tomada.
+
+### Circuito de decisión
+
+1. El agente entrega sus resultados al orquestador.
+2. El orquestador resuelve lo puramente técnico y consolida el estado.
+3. Si aparece una decisión material de las anteriores, prepara la consulta al asesor.
+4. El usuario consulta, evalúa las alternativas y decide.
+5. El usuario comunica la decisión; el orquestador la registra y coordina su ejecución.
+
+No se duplica la coordinación ni el seguimiento entre OpenCode y el asesor. Una duda
+material detiene solo el trabajo afectado; las tareas independientes ya autorizadas
+continúan. Ante un dato o gate ausente se bloquea únicamente el despacho o paso afectado.
+
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de
   desarrollo de esa entrega: solo entonces dev puede pasar a ready. No basta que
