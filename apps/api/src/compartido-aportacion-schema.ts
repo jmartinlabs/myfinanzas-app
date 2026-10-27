@@ -91,6 +91,7 @@ export function compartidoAportacionSchema(db: Database) {
       WHERE m.id=NEW.movimiento AND m.tipo='Transferencia' AND m.origen='S000'
         AND m.destino!='S000' AND m.anulado=0 AND m.referencia=NEW.referencia
         AND r.tipo='Gasto compartido'
+        AND EXISTS(SELECT 1 FROM saldos s WHERE s.id=m.destino AND s.tipo!='Exterior' AND s.control!='Exterior')
     ) BEGIN SELECT RAISE(ABORT,'invalid D5 movement'); END;
   CREATE TRIGGER movimiento_compartido_participant BEFORE INSERT ON movimiento_compartido
     WHEN NOT EXISTS(
@@ -104,6 +105,7 @@ export function compartidoAportacionSchema(db: Database) {
       WHERE m.id=NEW.movimiento AND m.tipo='Transferencia' AND m.origen='S000'
         AND m.destino!='S000' AND m.anulado=0 AND m.referencia=NEW.referencia
         AND r.tipo='Gasto compartido'
+        AND EXISTS(SELECT 1 FROM saldos s WHERE s.id=m.destino AND s.tipo!='Exterior' AND s.control!='Exterior')
     ) BEGIN SELECT RAISE(ABORT,'invalid D5 movement'); END;
   CREATE TRIGGER movimiento_compartido_update_participant BEFORE UPDATE ON movimiento_compartido
     WHEN NOT EXISTS(

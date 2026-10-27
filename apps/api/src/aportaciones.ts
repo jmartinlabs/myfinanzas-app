@@ -1,5 +1,5 @@
 import type { Database } from "bun:sqlite";
-import { Problem } from "./saldos";
+import { getSaldo, Problem } from "./saldos";
 import { getReference } from "./reference-rules";
 import { ledgerRows } from "./movement-ledger";
 
@@ -81,11 +81,13 @@ export function aportacionesReferencia(
   }));
 }
 function text(value: unknown, field: string): string {
+  const normalized = typeof value === "string" ? value.trim() : "";
+  const length = [...normalized].length;
   if (
     typeof value !== "string" ||
     /[\u0000-\u001f\u007f]/.test(value) ||
-    value.trim().length < 10 ||
-    value.trim().length > 500
+    length < 10 ||
+    length > 500
   )
     throw new Problem(
       422,
@@ -93,7 +95,7 @@ function text(value: unknown, field: string): string {
       "La evidencia debe ser un texto identificable de 10 a 500 caracteres.",
       { [field]: "Describe el extracto, justificante o referencia bancaria." },
     );
-  return value.trim();
+  return normalized;
 }
 function procedencia(
   value: unknown,
@@ -166,6 +168,11 @@ function participant(
   return p;
 }
 
+function internalDestination(db: Database, id: string) {
+  const s = getSaldo(db, id);
+  return s.id !== "S000" && s.tipo !== "Exterior" && s.control !== "Exterior";
+}
+
 /**
  * D5 metadata validation. The canonical fact (amount, date, Origen, Destino,
  * Referencia) is never copied: only the participant, evidence and provenance are
@@ -192,6 +199,7 @@ export function validateAportacion(
     next.tipo === "Transferencia" &&
     next.origen === "S000" &&
     next.destino !== "S000" &&
+    internalDestination(db, next.destino) &&
     ref?.tipo === "Gasto compartido";
   if (!isD5) {
     if (value !== undefined && value !== null)
@@ -324,7 +332,15 @@ export function storeAportacion(
   now: number,
   motive: string | null = null,
 ) {
-  if (!installed(db)) return;
+  if (!installed(db)) {
+    if (meta)
+      throw new Problem(
+        503,
+        "SCHEMA_REQUIRED",
+        "La base no tiene el contrato D5 v17; no se puede acreditar la aportación.",
+      );
+    return;
+  }
   const current = ledgerRows(db).find((m) => m.id === movimiento);
   if (!current)
     throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");

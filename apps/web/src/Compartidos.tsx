@@ -1103,9 +1103,11 @@ function ContributionMetrics({
 }
 function ContributionPreview({
   impact,
+  amountLabel,
   destination,
 }: {
   impact: ContributionImpact;
+  amountLabel?: string;
   destination?: string;
 }) {
   return (
@@ -1119,7 +1121,8 @@ function ContributionPreview({
         <ContributionMetrics title="Después" summary={impact.despues} />
       </div>
       <p className="muted">
-        Efecto banco: +importe en el Destino. S000 no computa como saldo interno.
+        Efecto banco: {amountLabel ? `+${amountLabel}` : "+importe"} en{" "}
+        {destination ?? "el Destino"}. S000 no computa como saldo interno.
       </p>
     </section>
   );
@@ -1341,7 +1344,10 @@ function AportacionForm({
         <>
           <ContributionPreview
             impact={plan.compartidoImpacto!}
-            destination={destino}
+            amountLabel={inputAmount(importe)}
+            destination={
+              destinations.find((s) => s.id === destino)?.nombre ?? destino
+            }
           />
           <section className="panel shared-contribution">
             <p>
@@ -1756,6 +1762,8 @@ function HistoricalAportaciones({
               aviso:
                 "Es una Transferencia existente desde Exterior; se acredita sin reescribir importe, fecha, Origen, Destino ni Referencia.",
             }}
+            amountLabel={eur(plan.hecho.importe)}
+            destination={plan.hecho.destino}
           />
           <section className="panel shared-contribution">
             <h2 tabIndex={-1} ref={focus}>

@@ -266,14 +266,14 @@ test("T-D5-01/05/06/07/12 high atomically creates one Movement and one accredita
   // A second accreditation of the same Movement is rejected by the historical route.
   expect(() =>
     previewAportacion(db, ref, m.id, {
-      revision: m.revision + 1,
+      revision: m.revision,
       compartido: {
         participante: bea.id,
         evidencia: evidence,
         procedencia: "Documento bancario",
       },
     }),
-  ).toThrow();
+  ).toThrow("ya tiene una acreditación");
   expect(count(db, "movimiento_compartido")).toBe(1);
   expect(count(db, "movimientos")).toBe(2);
   db.close();
@@ -381,6 +381,61 @@ test("T-D5-02/04 only CAT013 entrance is admitted; Gasto/Ingreso semantics are p
   expect(
     movementOptions(db).saldos.some((s: { id: string }) => s.id === "S000"),
   ).toBe(false);
+  db.close();
+});
+
+test("T-D5-02 regression: an existing internal Movement cannot be converted into a D5 contribution by PATCH", () => {
+  const db = setup();
+  categories(db);
+  const p13 = partida(db, "CAT013"),
+    payer = saldo(db, "Banco pagador"),
+    destination = saldo(db, "Cuenta destino");
+  const ref = caseWith(db);
+  const bea = participant(db, ref, "Bea");
+  const internalBody = {
+    tipo: "Transferencia",
+    fecha: "2026-10-08",
+    importe: "50.00",
+    origen: payer,
+    destino: destination,
+    referencia: ref,
+    concepto: "Transferencia interna previa",
+  };
+  const ip = previewMovement(db, internalBody, null, false, now);
+  const internal = writeMovement(
+    db,
+    { ...internalBody, fingerprint: ip.fingerprint, aceptarCoincidencia: true },
+    randomUUID(),
+    null,
+    false,
+    now,
+  ).movimiento;
+  const conversion = rejection(() =>
+    previewMovement(
+      db,
+      {
+        ...internalBody,
+        origen: "S000",
+        revision: internal.revision,
+        motivo: "Intento ficticio de reclasificación",
+        compartido: {
+          participante: bea.id,
+          evidencia: evidence,
+          procedencia: "Registro del titular",
+        },
+      },
+      internal.id,
+      false,
+      now,
+    ),
+  );
+  expect(conversion.fields?.origen).toContain("no se convierte en aportación");
+  expect(
+    db
+      .query("SELECT origen,referencia FROM movimientos WHERE id=?")
+      .get(internal.id),
+  ).toEqual({ origen: payer, referencia: ref });
+  expect(count(db, "movimiento_compartido")).toBe(0);
   db.close();
 });
 
@@ -500,6 +555,24 @@ test("T-D5-08 historical accreditation only after explicit review of an eligible
       },
     }),
   ).toThrow("anulado");
+  db.run(
+    "INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado) VALUES('S900','Exterior histórico ficticio','Exterior','Exterior','Activa',1,?,?)",
+    [timestamp, timestamp],
+  );
+  db.run(
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES('905','2026-10-06','Transferencia',1000,'S000','S900',?,'Histórico Exterior','',0,1,?,?)",
+    [ref, timestamp, timestamp],
+  );
+  expect(() =>
+    previewAportacion(db, ref, "905", {
+      revision: 1,
+      compartido: {
+        participante: bea.id,
+        evidencia: evidence,
+        procedencia: "Documento bancario",
+      },
+    }),
+  ).toThrow("CAT013");
   // A stale context is rejected before writing.
   db.run(
     "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,anulado,revision,creado,actualizado) VALUES('904','2026-10-05','Transferencia',2000,'S000',?,?,'Histórico contexto','',0,1,?,?)",
@@ -681,6 +754,21 @@ test("T-D5-10/11 rectification preserves historical links, blocks identity chang
     alex = participant(db, ref, "Álex");
   expense(db, ref, payer, p13, "450.00");
   const m = aportacion(db, ref, destination, alex.id, "300.00");
+  const inactiveTarget = createParticipante(
+    db,
+    ref,
+    { nombre: "Tercero de baja ficticio", rol: "Tercero", partes: 1 },
+    randomUUID(),
+    now,
+  ).participantes.find((p) => p.nombre === "Tercero de baja ficticio")!;
+  bajaParticipante(
+    db,
+    ref,
+    inactiveTarget.id,
+    { revision: inactiveTarget.revision, motivo: "Baja ficticia del destino" },
+    randomUUID(),
+    now,
+  );
   db.run("UPDATE referencias SET estado='Inactiva' WHERE id=?", [ref]);
   bajaParticipante(db, ref, alex.id, { revision: alex.revision, motivo: "Baja ficticia" }, randomUUID(), now);
   const before = getMovement(db, m.id).movimiento;
@@ -748,6 +836,24 @@ test("T-D5-10/11 rectification preserves historical links, blocks identity chang
     ),
   ).toThrow("inmutables");
   // Participant identity change requires an active Reference and active Tercero.
+  expect(() =>
+    previewMovement(
+      db,
+      {
+        ...body,
+        revision: changed.revision,
+        motivo: "Intento con Referencia inactiva",
+        compartido: {
+          participante: bea.id,
+          evidencia: evidence,
+          procedencia: "Documento bancario",
+        },
+      },
+      m.id,
+      false,
+      now,
+    ),
+  ).toThrow("Referencia activa");
   const newParticipant = (() => {
     db.run("UPDATE referencias SET estado='Activa' WHERE id=?", [ref]);
     return createParticipante(
@@ -758,6 +864,24 @@ test("T-D5-10/11 rectification preserves historical links, blocks identity chang
       now,
     ).participantes.find((p) => p.nombre === "Tercero activo nuevo")!;
   })();
+  expect(() =>
+    previewMovement(
+      db,
+      {
+        ...body,
+        revision: changed.revision,
+        motivo: "Intento con Tercero de baja",
+        compartido: {
+          participante: inactiveTarget.id,
+          evidencia: evidence,
+          procedencia: "Documento bancario",
+        },
+      },
+      m.id,
+      false,
+      now,
+    ),
+  ).toThrow("baja lógica");
   const identityPreview = previewMovement(
     db,
     {
@@ -931,6 +1055,9 @@ test("T-D5-12 R-MP exact attribution, excess, pending and no-quota incidence", (
   ).toBe(true);
   expect(d2.resumen.recuperado.valor).toBe("500.00");
   expect(d2.resumen.exceso.valor).toBe("350.00");
+  expect(
+    d2.participantes.find((p) => p.id === noQuota.id)!.exceso,
+  ).toMatchObject({ valor: "100.00", estado: "Verificada" });
   expect(distribuirRecuperado(1n, [
     { id: "2", cents: 1n },
     { id: "1", cents: 1n },

@@ -142,13 +142,17 @@ function validated(
       errors.destino = "Selecciona un Saldo interno elegible.";
     if (body.destino === "S000")
       errors.destino = "El Destino debe ser un Saldo interno.";
+    if (body.origen === "S000" && !old && body.compartido == null)
+      errors.origen =
+        "Una Transferencia desde Exterior exige Referencia CAT013 y bloque compartido.";
     if (
       body.origen === "S000" &&
-      body.compartido == null &&
+      old &&
+      body.compartido != null &&
       !oldAportacion
     )
       errors.origen =
-        "Una Transferencia desde Exterior exige Referencia CAT013 y bloque compartido.";
+        "Un Movimiento existente no se convierte en aportación por esta vía; usa Aportaciones históricas para revisar un hecho elegible.";
     if (body.origen === body.destino)
       errors.destino = "Origen y Destino deben ser distintos.";
     for (const field of ["saldo", "subtipo", "partida"])

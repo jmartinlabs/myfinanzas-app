@@ -765,11 +765,11 @@ export function calcularReparto(
           );
     const excesoMetric: Metrica = !activo
       ? metric(null, "No aplica", "Participante de baja lógica.", "No aplica")
-      : esTitular || cero
+      : esTitular || (cero && pagado === 0n)
         ? metric(
             null,
             "No aplica",
-            "Sin aportación exigible o sin cuota asignada positiva.",
+            "Sin aportación exigible o sin cuota y sin aportación.",
             "No aplica",
           )
         : metric(
@@ -1368,6 +1368,17 @@ export function confirmAportacion(
     key,
     now,
     () => {
+      for (const key of Object.keys(body))
+        if (
+          ![
+            "revision",
+            "contexto",
+            "compartido",
+            "fingerprint",
+            "confirmado",
+          ].includes(key)
+        )
+          throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
       historicalMovement(db, referencia, id);
       const current = readCase(db, referencia);
       if (body.contexto !== current.contexto)

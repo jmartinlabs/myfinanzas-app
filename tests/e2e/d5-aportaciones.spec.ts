@@ -169,7 +169,7 @@ test("D5 real MFA: aportación, preview, states, historical review and responsiv
     await expect(page.getByText("300,00 €").first()).toBeVisible();
     await expect(page.getByText("150,00 €").first()).toBeVisible();
     await expect(
-      page.getByText("Efecto banco: +importe en el Destino", { exact: false }),
+      page.getByText("Efecto banco: +300,00 €", { exact: false }),
     ).toBeVisible();
     await expect
       .poll(() =>
