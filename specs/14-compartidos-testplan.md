@@ -387,12 +387,12 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 | Concurrencia/replay/rollback | focal D5 T-D5-09 con dos procesos y trigger de fallo inyectado | PASS |
 | Typecheck | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS (aviso de tamaño de chunk, sin error) |
-| Suite API completa | `NODE_ENV=test bun test apps/api` | 222 PASS / 48 FAIL / 270; 48 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
+| Suite API completa | `NODE_ENV=test bun test apps/api` | **Linux 270 PASS / 0 FAIL / 3872 assertions**; macOS 222 PASS / 48 FAIL de plataforma (`libc.so.6`/B3); ninguna falla D5 |
 | E2E D5 real | `playwright tests/e2e/d5-aportaciones.spec.ts` | 1/1 PASS; MFA real, alta, 422/409/401, histórica y capturas |
 | E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
 | Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
-| Backup/restore v17 | `apps/api/src/d5-backup.test.ts` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
-| `scripts/verify` | `--base 1d539a8 --head 1339113`, Python 3.12.16 | Baseline/typecheck/build PASS; API 222/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
+| Backup/restore v17 | `apps/api/src/d5-backup.test.ts` con fixture ficticia | **PASS Linux** (Ubuntu 24.04.5, Bun 1.4.3): 1/1, 7 assertions; macOS UNRUN por `libc.so.6` |
+| `scripts/verify` | `--base 1d539a8 --head 1339113`, Python 3.12.16 macOS | Baseline/typecheck/build PASS; API 222/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); Linux API cubierto por `bun test apps/api` |
 
 - T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
   salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.
@@ -404,6 +404,10 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 - Histórico: se exige Destino interno (tipo/control no Exterior) pero no un estado
   activo, porque §15.7 no lo impone para hechos existentes; el alta nueva sí exige
   Saldo activo. El trigger de metadata refuerza la misma frontera.
+- Linux (Ubuntu 24.04.5, Bun 1.4.3, VM aislada) sobre `a242a70`:
+  `bun test apps/api` → 270 PASS/0 FAIL/3872; `d5-backup.test.ts` → PASS;
+  `bun run typecheck` y `bun run build` → PASS. Incluye SQLite, migraciones,
+  backup/restore cifrado v17, restauración y revocación de intentos.
 - T-D5-16 fija la frontera: el CHECK solo relaja la forma; el trigger de
   `movimiento_compartido` exige Movimiento D5 y participante de la misma ficha.
 - backup/restore v17 y la suite Linux no se relabelan: permanecen UNRUN en macOS.
