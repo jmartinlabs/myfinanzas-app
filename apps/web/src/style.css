@@ -2042,6 +2042,7 @@ textarea {
   border-left: 4px solid #a33d1c;
   background: #fbe9e1;
   color: #5c230f;
+  overflow-wrap: anywhere;
 }
 .shared-expenses,
 .shared-partidas,
@@ -2145,6 +2146,9 @@ textarea {
   display: none;
   gap: 12px;
   grid-template-columns: 1fr;
+}
+.shared-participant h3 {
+  overflow-wrap: anywhere;
 }
 .shared-form {
   margin-top: 16px;
