@@ -30,16 +30,17 @@ es un gate independiente; sin desarrollo.**
   N17/N18) y **cuatro revisiones focales**: 43 AC `7e2c10d` PASS; 45 AC `c7e9d6a`
   FAIL P5/P7; 45 AC `d8b9449` PASS; decisiones `d261af8` PASS (D1 corregido en
   `806232a`). Informe final vinculado a `806232a`; no es PASS funcional.
-- Estado Git: candidato `806232a6269cc80433ae89368f33abd2576506f2` sobre `main`
-  `1d539a8`; sin push ni PR. Codex tiene autorización separada para publicar rama/PR;
-  el merge exige aprobación propia. Solo el usuario aprueba spec/wireframes; DT7 sigue
-  abierto.
+- Estado Git: PR87 DRAFT actualizada por fast-forward con los commits documentales;
+  sin merge. El SHA publicado, base y merge ref se registran en el handoff de
+  reconciliación; el merge exige aprobación propia. Solo el usuario aprueba
+  spec/wireframes; DT7 sigue abierto.
 - Checks: `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282
   --head 806232a6269cc80433ae89368f33abd2576506f2` **PASS** (docs; application checks
   intentionally skipped, not reported as passed). `validate-template`, `git diff
   --check`, enlaces e IDs 45/45 PASS. No hay pruebas funcionales.
-- PR/CI/merge: no hay PR, CI ni merge desde OpenCode. Codex puede publicar; no se
-  declara PASS funcional.
+- PR/CI/merge: PR87 DRAFT publicada; sin merge. La consulta de CI remoto no está
+  disponible en este entorno sin cliente GitHub autenticado; se distingue de la
+  verificación local del merge ref. No se declara PASS funcional.
 - Siguiente acción segura: handoff a Codex para revisión/publicación. El usuario
   aprueba o rechaza spec/wireframes; DT7 sigue independiente. No desarrollar E4.5 por
   inferencia.
