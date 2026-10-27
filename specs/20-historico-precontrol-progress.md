@@ -4,10 +4,10 @@ Specification: [20-historico-precontrol-specification.md](20-historico-precontro
 
 ## Current checkpoint
 
-Current state: **candidato documental `d7c36a6f28ec6eb1fc77352ba032a1f927b6f65a`
-(47 AC) con QA focal PASS y verificación canónica PASS (docs); pendiente de publicación
-fast-forward en PR87 Draft. Q1–Q10=A confirmadas; spec/wireframes siguen pendientes de
-aprobación completa y DT7 es un gate independiente; sin desarrollo.**
+Current state: **PR87 Draft head `1d6d7e47851684fa3aa0a2bdc1406055548c043c`
+(47 AC) con QA documental PASS y `verify` docs PASS. CI remoto sigue FAIL por desfase
+`baseRefOid` vs merge ref; no se corrige desde este frente. Spec/wireframes pendientes
+de aprobación integral y DT7 independiente; sin desarrollo.**
 
 - Autorizado: preparar brainstorming, specification, wireframes, testplan, progress y
   QA documental independiente de E4.5, exclusivamente con datos ficticios. No autoriza
@@ -31,15 +31,16 @@ aprobación completa y DT7 es un gate independiente; sin desarrollo.**
   FAIL P5/P7; 45 AC `d8b9449` PASS; decisiones `d261af8` PASS (D1 corregido en
   `806232a`); revisión funcional 47 AC `cc201c5`/`d7c36a6` PASS tras F1–F3. Informe
   final vinculado a `d7c36a6`; no es PASS funcional.
-- Estado Git: candidato `d7c36a6f28ec6eb1fc77352ba032a1f927b6f65a` sobre `main`
-  `aad4e6c`; pendiente de fast-forward a PR87 Draft; sin merge. El merge exige
-  aprobación propia. Solo el usuario aprueba spec/wireframes; DT7 sigue abierto.
+- Estado Git: PR87 Draft head `1d6d7e47851684fa3aa0a2bdc1406055548c043c`; merge ref
+  `cade4473ed421b11b3bcb19ba627b26aac51aa14`; `main` `cf6954a87c3e916f422b989df0faf0bc926c46b6`.
+  Sin merge. Solo el usuario aprueba spec/wireframes; DT7 sigue abierto.
 - Checks: `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282
-  --head d7c36a6f28ec6eb1fc77352ba032a1f927b6f65a` **PASS** (docs; application checks
+  --head 1d6d7e47851684fa3aa0a2bdc1406055548c043c` **PASS** (docs; application checks
   intentionally skipped, not reported as passed). `validate-template`, `git diff
   --check`, enlaces e IDs 47/47 PASS. No hay pruebas funcionales.
-- PR/CI/merge: PR87 DRAFT; sin merge. No se intenta corregir CI desde este frente. No
-  se declara PASS funcional.
+- PR/CI/merge: PR87 DRAFT; run `40502943691` FAIL en `Select conservative CI execution
+  profile` por `baseRefOid=1d539a8` frente a merge ref `cf6954a`; no se corrige CI desde
+  este frente. Sin merge; no se declara PASS funcional.
 - Siguiente acción segura: handoff a Codex para revisión/publicación. El usuario
   aprueba o rechaza spec/wireframes; DT7 sigue independiente. No desarrollar E4.5 por
   inferencia.
@@ -54,8 +55,8 @@ aprobación completa y DT7 es un gate independiente; sin desarrollo.**
 | Testplan con casos ficticios | done (diseño) | [testplan](20-historico-precontrol-testplan.md) |
 | QA documental independiente | done | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS de 38 AC, focales 43/45 AC y PASS 47 AC (`d7c36a6`) |
 | Correcciones de QA | done | B1–B4/M1–M11, N1–N18, P1–P7, F1–F3, D1 y m1–m7; 47/47 AC |
-| Verificación canónica documental | done | `verify --head d7c36a6` PASS docs; app checks skipped/UNRUN |
-| Commit local y handoff a Codex | done | Candidato `d7c36a6`; pendiente fast-forward a PR87 Draft |
+| Verificación canónica documental | done | `verify --head 1d6d7e4` PASS docs; app checks skipped/UNRUN |
+| Commit local y handoff a Codex | done | Publicado `1d6d7e4` en PR87 Draft; sin merge |
 
 ## Verified increments
 
@@ -78,12 +79,13 @@ pendientes. Resueltos: F2/subtotal y
 - **Q1–Q10=A confirmadas** por el usuario el 2026-10-27, con precisiones Q5; Q5-A es
   modelo documental, no autorización para una regularización concreta sin evidencia.
   DT7 sigue independiente.
-- Candidato `d7c36a6f28ec6eb1fc77352ba032a1f927b6f65a` (47 AC): `python3 scripts/verify
-  --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282 --head
-  d7c36a6f28ec6eb1fc77352ba032a1f927b6f65a` **PASS** docs; app checks intentionally
-  skipped, not reported as passed. Candidatos históricos `a1a1c70` (38 AC), `7e2c10d`
-  (43 AC), `d8b9449` (45 AC) y `806232a` (45 AC) conservan sus PASS docs. No hay CI
-  remoto, pruebas funcionales, migración ni equivalencia con Excel.
+- Candidato publicado `1d6d7e47851684fa3aa0a2bdc1406055548c043c` (47 AC): `python3
+  scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282 --head
+  1d6d7e47851684fa3aa0a2bdc1406055548c043c` **PASS** docs; app checks intentionally
+  skipped, not reported as passed. CI remoto `40502943691` FAIL por desfase de base,
+  no por los documentos. Candidatos históricos `a1a1c70` (38 AC), `7e2c10d` (43 AC),
+  `d8b9449`/`806232a` (45 AC) y `d7c36a6` (47 AC) conservan sus PASS docs. No hay CI
+  PASS, pruebas funcionales, migración ni equivalencia con Excel.
 
 ## Decisions
 

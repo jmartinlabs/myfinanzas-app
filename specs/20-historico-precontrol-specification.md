@@ -464,13 +464,14 @@ ni cerrar. Los wireframes son propuestas documentales, no UI implementada.
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │ MyFinanzas       Ciclo financiado: 2026-05 · [Histórico] [Movimientos] ... │
 ├──────────────┬───────────────────────────────────────────────────────────────┤
-│ Saldos       │ Histórico precontrol                         Ejercicio [2026 v]│
+│ Saldos       │ Histórico precontrol · Vista consolidada (sin filtro)        │
+│              │ Ejercicio [2026 v]                                      │
 │ Clasificación│ Corte [27/10/2026] · Ejercicio abierto · cobertura hasta 27/10 │
 │ Movimientos  │ PAR100 archivo 01/01–27/08 · detalle sin evidencia hasta corte│
 │ Histórico ◀  │ ┌───────────────────────────────────────────────────────────┐ │
 │ ...          │ │ Aviso: 1 registro sin clasificar. Total no verificable.   │ │
 │              │ └───────────────────────────────────────────────────────────┘ │
-│              │ [Buscar Partida o ID] [Fuente: SRC-1 v] [Limpiar]              │
+│              │ [Buscar Partida o ID] [Fuente: Todas v] [Limpiar]              │
 │              │ ┌───────────────────────────────────────────────────────────┐ │
 │              │ │ Partida          Archivo    Detalle    Total    Cobertura    │ │
 │              │ │ PAR100 Comida    1.200,00       —        —     Parcial      │ │
@@ -489,6 +490,27 @@ ni cerrar. Los wireframes son propuestas documentales, no UI implementada.
 La fila «Sin clasificar» no tiene cobertura ni total propios: su mapping es ambiguo y
 el total global queda `NoVerificable`. «Ambigua» es un estado de mapping, no de
 cobertura.
+
+### Escritorio 1440 — vista filtrada por fuente
+
+```text
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Histórico precontrol · Vista filtrada por fuente SRC-1 · NO CONSOLIDADA     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Corte [27/10/2026] · Ejercicio abierto · cobertura hasta 27/10/2026          │
+│ [Fuente: SRC-1 v] [Limpiar]                                                 │
+│ ┌──────────────────────────────────────────────────────────────────────────┐ │
+│ │ Partida          Archivo    Detalle    Subtotal fuente (informativo)     │ │
+│ │ PAR100 Comida    1.200,00       —       1.200,00                         │ │
+│ │ PAR205 Viajes          —        —             —  No cubierta por SRC-1   │ │
+│ └──────────────────────────────────────────────────────────────────────────┘ │
+│ Total consolidado: —  (no disponible en vista filtrada)                     │
+│ Conflictos globales: SRC-2 · solapamiento visible; no se ocultan             │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+La vista filtrada no sustituye la consolidada: el subtotal es informativo, no un total
+certificado, y los conflictos de otras fuentes siguen visibles.
 
 El ejemplo es un **ejercicio abierto** a 27/10/2026: totales y cobertura son «hasta el
 corte», no anuales. No se reutilizan los 300,00/1.500,00 calculados hasta 31/12; la
@@ -803,9 +825,10 @@ Los cortes `31/12/2026` de estos ejemplos se evalúan con un reloj de prueba pos
 esa fecha (o como ejercicio pasado). No se usa el reloj real para declarar un año en
 curso completo; un corte futuro real devuelve 422/No verificable.
 
-- **F1 — archivo y detalle contiguos.** PAR100/2026; archivo `01/01–27/08` 1.200,00;
-  detalle `28/08–31/12` 300,00; mapping PAR100 v3; corte 31/12; cobertura completa;
-  total 1.500,00, archivo 1.200,00, detalle 300,00, sin doble cómputo.
+- **F1 — archivo y detalle contiguos.** Universo DT7 acreditado para PAR100/PAR205 y
+  fuentes esperadas; PAR100/2026; archivo `01/01–27/08` 1.200,00; detalle `28/08–31/12`
+  300,00; mapping PAR100 v3; corte 31/12; cobertura completa; total 1.500,00, archivo
+  1.200,00, detalle 300,00, sin doble cómputo.
 - **F2 — frontera exacta con solapamiento.** Archivo `01/01–27/08` 1.200,00;
   `controlDetalle.inicio=27/08`; detalle `27/08–31/12` 320,00 (20,00 el 27/08 + 300,00
   después). Hay solapamiento el 27/08 y no se puede aislar de forma demostrada. No se
@@ -814,9 +837,10 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   presenta 1.500,00 como subtotal ni 1.520,00 como total. Q10=A aplica: no se elige fuente ni se prorratea.
 - **F3 — hueco.** Archivo `01/01–30/06` 900,00; detalle `01/08–31/12` 300,00; julio sin
   cobertura. Total `null`; subtotal 1.200,00; hueco `01/07–31/07`.
-- **F4 — ausencia vs cero.** Cobertura completa `01/01–31/12` sin hechos: total 0,00
-  verificado. Cobertura `01/09–31/12` sin archivo y sin control anterior: total `null`,
-  motivo «cobertura anterior no verificada».
+- **F4 — ausencia vs cero.** Universo DT7 acreditado y fuente/intervalo verificado;
+  cobertura completa `01/01–31/12` sin hechos: total 0,00 verificado. Cobertura
+  `01/09–31/12` sin archivo y sin control anterior: total `null`, motivo «cobertura
+  anterior no verificada».
 - **F5 — duplicados.** Dos filas idénticas de F1 (misma identidad/huella): una sola,
   1.200,00. F1 y F2 con el mismo intervalo/Partida, aunque el importe difiera: dos
   candidatos ambiguos, no se suman ni se elige uno; estado `Ambigua`.
@@ -1063,11 +1087,11 @@ AC-16/17/18/24/34/37/39/42/43/44/46; E4.5-AC3 → AC-20/21/22.
 | AC-02 | I | Cargar fixture con `idOrigen`, huella y procedencia; recargar y restaurar | `idArchivo` estable, único e inmutable; `idOrigen`/huella/procedencia conservados; no se reutiliza un ID |
 | AC-03 | I | Renombrar PAR100 y REF100 usados por archivo; consultar | Mismo ID/enlace; nombre vigente en consulta; nombre original en procedencia; mapping y total no cambian |
 | AC-04 | I | Fila con solo nombre y dos Partidas homónimas | Mapping `Ambigua`/`Pendiente`; no asignación automática; fila en «Sin clasificar»; total global `NoVerificable` |
-| AC-05 | I | Archivo 01/01–27/08 1.200,00 y detalle 28/08–31/12 300,00; control 28/08; corte 31/12 con reloj de prueba posterior | Total 1.500,00 una vez; componentes 1.200,00/300,00; cobertura completa; sin doble cómputo |
+| AC-05 | I | Universo DT7 acreditado; archivo 01/01–27/08 1.200,00 y detalle 28/08–31/12 300,00; control 28/08; corte 31/12 con reloj de prueba posterior | Total 1.500,00 una vez; componentes 1.200,00/300,00; cobertura completa; sin doble cómputo |
 | AC-06 | I | Archivo 01/01–27/08 1.200,00; `controlDetalle.inicio=27/08`; detalle 27/08–31/12 320,00 (20,00 el 27/08 + 300,00 después); DTO F2 separado del DTO global | Solapamiento el 27/08 no separable; no se elige fuente ni se prorratea; total y subtotal `null`; archivo 1.200 y detalle 320 visibles; el 20,00 aparece en `conflictos[]`; `estadoCobertura=Solapada`, `estadoTotal=NoVerificable`; no 1.500 ni 1.520 como total/subtotal |
 | AC-07 | I | Archivo hasta 30/06 y detalle desde 01/08 | Hueco 01/07–31/07 visible; cobertura `Parcial`; total `null`; subtotal conocido; no 0 |
 | AC-08 | I | Consultar corte 27/08 y 28/08 con archivo/detalle contiguos | 27/08 solo archivo, cobertura hasta 27/08, sin total anual; 28/08 incorpora detalle una vez; frontera inclusiva |
-| AC-09 | I | Cobertura completa 01/01–31/12 con fuente/intervalo verificado y sin filas | Total 0,00 verificado; texto «sin hechos en intervalo cubierto»; no «No disponible» |
+| AC-09 | I | Universo DT7 acreditado; cobertura completa 01/01–31/12 con fuente/intervalo verificado y sin filas | Total 0,00 verificado; texto «sin hechos en intervalo cubierto»; no «No disponible» |
 | AC-10 | I | Sin archivo y control detallado desde 01/09; consulta anual | Total `null`; motivo «cobertura anterior no verificada»; no 0 |
 | AC-11 | I | Registro explícito 0,00 verificado y ausencia en cobertura completa | El registro 0,00 se muestra como informado; la ausencia se muestra como «sin hechos»; ambos suman 0 sin confundirse |
 | AC-12 | I | Dos filas idénticas de la misma fuente/identidad/huella | Un solo registro; total una vez; aviso de duplicado absorbido |
