@@ -430,6 +430,22 @@ test("T-D5-02 regression: an existing internal Movement cannot be converted into
     ),
   );
   expect(conversion.fields?.origen).toContain("no se convierte en aportación");
+  const plain = rejection(() =>
+    previewMovement(
+      db,
+      {
+        ...internalBody,
+        origen: "S000",
+        referencia: null,
+        revision: internal.revision,
+        motivo: "Intento ficticio sin bloque compartido",
+      },
+      internal.id,
+      false,
+      now,
+    ),
+  );
+  expect(plain.fields?.origen).toContain("no se convierte en aportación");
   expect(
     db
       .query("SELECT origen,referencia FROM movimientos WHERE id=?")

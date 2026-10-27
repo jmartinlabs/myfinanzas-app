@@ -145,12 +145,7 @@ function validated(
     if (body.origen === "S000" && !old && body.compartido == null)
       errors.origen =
         "Una Transferencia desde Exterior exige Referencia CAT013 y bloque compartido.";
-    if (
-      body.origen === "S000" &&
-      old &&
-      body.compartido != null &&
-      !oldAportacion
-    )
+    if (body.origen === "S000" && old && !oldAportacion)
       errors.origen =
         "Un Movimiento existente no se convierte en aportación por esta vía; usa Aportaciones históricas para revisar un hecho elegible.";
     if (body.origen === body.destino)
