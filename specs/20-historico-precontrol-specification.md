@@ -234,7 +234,9 @@ Reglas de cobertura:
 - Precedencia de `estadoCobertura`: `NoAcreditada` > `NoDisponible` > `Solapada` >
   `Parcial` > `Completa`.
   - `NoAcreditada`: no hay universo DT7 acreditado; no se sabe qué Partidas/fuentes
-    faltan. No se usa `Parcial` ni se presenta total/0.
+    faltan. No se usa `Parcial` ni se presenta total/0. En el DTO, `cobertura.estadoCobertura`
+    y `cobertura.coberturaGlobal` expresan el estado global; `items[].estadoCobertura` es
+    el de cada Partida.
   - `NoDisponible`: universo acreditado pero sin fuente/intervalo verificado.
   - `Solapada`: universo acreditado y solapamiento no resuelto.
   - `Parcial`: universo acreditado, hueco demostrado o fuente esperada `Ausente`.
@@ -549,8 +551,7 @@ Reglas visuales:
 - El resumen de procedencia y cobertura es siempre visible; el detalle completo se abre
   en una ficha accesible, también en móvil, sin depender de un tooltip.
 - Los importes usan cifras tabulares y formato `1.234,56 €`; las fechas `dd/mm/aaaa`.
-- El estado no se comunica solo por color: texto «Cobertura: Completa/Parcial/Solapada/
-  No disponible» y «Total: Verificado/No verificable/No disponible».
+- El estado no se comunica solo por color: texto «Cobertura: Completa/Parcial/Solapada/No disponible/No acreditada» y «Total: Verificado/No verificable/No disponible».
 - «—» significa no calculable, no cero. `0,00 €` solo se muestra si es un cero
   verificado.
 - La tabla de escritorio se convierte en tarjetas en móvil; no hay scroll horizontal.
@@ -631,6 +632,7 @@ DTO mínimo propuesto:
   "fuenteFiltrada": null,
   "cobertura": {
     "estadoCobertura": "Parcial",
+    "coberturaGlobal": "Parcial",
     "estadoUniverso": "Acreditado",
     "universoPartidas": ["PAR100", "PAR205"],
     "fuentesEsperadas": [
@@ -644,6 +646,7 @@ DTO mínimo propuesto:
       "fuenteId": "SRC-1",
       "etiqueta": "SRC-1",
       "alcance": "PAR100",
+      "hojaTabla": "Archivo",
       "huella": "ficticia-1",
       "corteArchivo": "2026-08-27",
       "versionFuente": "v1",
@@ -655,6 +658,7 @@ DTO mínimo propuesto:
       "fuenteId": "SRC-2",
       "etiqueta": "SRC-2",
       "alcance": "PAR205",
+      "hojaTabla": "Archivo",
       "huella": "ficticia-2",
       "corteArchivo": "2026-06-30",
       "versionFuente": "v1",
