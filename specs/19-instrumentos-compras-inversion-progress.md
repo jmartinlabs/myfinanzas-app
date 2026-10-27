@@ -307,19 +307,35 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 Mensaje del usuario reproducido literalmente. Autoriza **rev8/contrato 16**, no rev10/18; su
 acreditación formal en este checkpoint queda pendiente y no se usa para aprobar rev10.
 
+## Ventana de espera aceptada — D5/17 (2026-10-27)
+
+- **E4.1 queda congelado:** conserva su código/candidato `51d7f5d` (contrato 16) y la
+  documentación rev10/18 publicada. **No se adapta código, no se integra main 16 y no se toca
+  D5.**
+- **Estado D5 observado:** worktree `dev14-d5` limpio, rama local
+  `codex/dev14-d5-exterior` en `b0b69cf`, `schemaVersion = 17`; el ref no está publicado en
+  `origin` y no está integrado en `main` (`1d539a8`, 16). La 17 está ocupada por D5, no cedida.
+- **Condición de reanudación:** esperar la **integración verificada de D5 en main** y su
+  **cesión explícita**. Después E4.1 reconciliará ese main, resolverá la aprobación de rev10,
+  repetirá el gate (refs + worktrees/estado sin commitear) y solo entonces adaptará código a 18.
+- **Límites de coordinación:** esta coordinación **no aprueba revisiones, merge ni despliegue**
+  y **no concede ownership** sobre harness, workflows, CI ni configuración global. Cualquier
+  aprobación o cesión debe constar explícitamente del owner correspondiente.
+- **Sin PR, merge ni despliegue**; no se contacta ni reanuda la sesión de D5.
+
 ## HANDOFF → CODEX — 2026-10-27
 
 - **Estado:** DEV/QA del contrato 16 completados; **rev10/18 solo documental y pendiente de
-  revisión/aprobación por Codex**. Sin implementación 18, sin integración de main 16, sin PR,
-  merge ni despliegue.
+  revisión/aprobación por Codex**. E4.1 espera la integración verificada de D5/17 y su cesión
+  explícita. Sin implementación 18, sin integración de main 16, sin PR, merge ni despliegue.
 - **Documento propuesto:** SPEC19 + testplan rev10 (destino 18, C16, rutas
   13/14/15/16→18 y 17→18 solo con C17, backup/restore 1..18 y preservación). La 18 está libre;
   la 17 está ocupada en la práctica por D5 sin commitear. El gate debe repetirse antes de
   adaptar código e incluir worktrees/estado sin commitear.
 - **Candidato de código (histórico, contrato 16):**
   `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a`; no publicable como 18.
-- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion`; el SHA documental
-  final se publica con el commit rev10 y se confirma por `git ls-remote`. Sin PR.
+- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion` en `f2bd68f`
+  (rev10/18), confirmado por `git ls-remote`. Sin PR.
 - **Evidencia gate 18:** `main` `1d539a8` = 16 con C16 (135 objetos,
   `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`); ningún ref en 18 y 18
   libre en worktrees; D5 mantiene 17 sin commitear.
@@ -328,6 +344,7 @@ acreditación formal en este checkpoint queda pendiente y no se usa para aprobar
 - **Subagentes:** DEV `ses_e85ef3979ffegZjzgMA7k0PzUT`; QA `ses_e85c21434ffeNTjIjccJrpxTZ2`;
   revisión rev10 `ses_e855c3b42ffeozuhc57VekMFwE`. Ninguno activo. No se contactó la sesión
   anterior.
-- **Siguiente acción segura:** Codex revisa rev10 y su testplan. Si aprueba, se repite el gate,
-  se integra main 16 y se adapta el código a 18; después QA, CI Linux y PR. Sin merge ni
-  despliegue por inferencia.
+- **Siguiente acción segura:** Codex revisa rev10 y su testplan. E4.1 **espera** la integración
+  verificada de D5/17 y su cesión explícita; después reconcilia main, resuelve rev10, repite el
+  gate y adapta código a 18. Después QA, CI Linux y PR. La coordinación no aprueba revisiones,
+  merge ni despliegue. Sin merge ni despliegue por inferencia.
