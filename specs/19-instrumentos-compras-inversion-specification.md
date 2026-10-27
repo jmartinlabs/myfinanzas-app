@@ -1,7 +1,8 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: **APPROVED rev10** — aprobada por el usuario el 2026-10-27; **C16 y C17 congelados**
-en `apps/api/src/schema-contracts.json` el 2026-10-27. Rev10 reconcilia el destino **18** con
+Status: **APPROVED rev10 — IMPLEMENTADA en DEV19 (v18)** — aprobada por el usuario el
+2026-10-27; **C16 y C17 congelados** en `apps/api/src/schema-contracts.json` el 2026-10-27.
+Rev10 reconcilia el destino **18** con
 `origin/main` `9977210` (esquema 17, D5/PR90) y **no cambia ninguna decisión funcional** de
 rev7/rev8. La congelación es documental y de evidencia: **no hay implementación ni integración
 de main 17 en esta rama**, no se adapta código y no se autoriza merge ni despliegue. El DEV/QA
@@ -41,8 +42,8 @@ rev9 (2026-10-27) propuso la progresión canónica 13/14→16 con main v15 y que
 ocupar `main` la 16; rev10 (2026-10-27) fija destino **18**; primero documentó C16 y, tras integrarse D5/PR90
 en `main` `cf6954a`, reconcilia el contrato v17 `C17-D5-CF6954A` (145 objetos, SHA-256
 `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`, congelado), preserva
-datos e identidad de main 16/17 y repite el gate; **aprobada por el usuario el 2026-10-27**,
-sin implementación, integración, merge ni despliegue.
+datos e identidad de main 16/17 y repite el gate; **aprobada por el usuario el 2026-10-27**
+e **implementada en DEV19** sobre la 18; sin merge ni despliegue.
 Solo documentación y ejemplos ficticios; rev10 no autoriza por sí misma desarrollo, SQL,
 migraciones, pruebas ejecutables, datos reales ni despliegue.
 
@@ -76,9 +77,31 @@ exactamente con el artefacto y con la evidencia previa del gate. El artefacto se
 `contracts()` del propio código y los cinco SHA-256 se recalculan con la serialización
 canónica de §5.2. Evidencia independiente: revisión read-only PASS (9/9 comprobaciones).
 
-Límites: no se modificó `schema-contract.ts` ni `database-identity.ts`; `schemaVersion` sigue
-16 y v18 no está implementada. La congelación no habilita por sí sola ningún origen de
-upgrade: el gate de código queda pendiente de una autorización separada de DEV19.
+Límites de esta fase histórica: la congelación no modificó `schema-contract.ts` ni
+`database-identity.ts`; DEV19 se autorizó después y adaptó el código a la 18 (ver registro
+siguiente).
+
+### Registro DEV19 — adaptación a la versión 18 (2026-10-27)
+
+Autorización: el usuario autorizó DEV19 el 2026-10-27. Alcance: reconciliar `origin/main`
+`9977210` en la rama, adaptar E4.1 a `schemaVersion = 18`, admisión C16/C17, cadena 16→17→18
+y backup/restore 13..18. Sin merge ni despliegue.
+
+- Merge de reconciliación `8e9ce67`; candidato de código verificado `261d2fb`.
+- `database-identity.ts` y `database-schema.ts` admiten `1..17` y declaran 18; la cadena
+  ejecuta `revisionComidaSchema` (16), `compartidoAportacionSchema` (17) e `investmentSchema`
+  (18) tanto en base existente como nueva.
+- `schema-contract.ts` admite C16/C17 y rechaza >18; `schema-contracts.json` permanece
+  intacto (C16/C17 sin cambios).
+- `backup.ts` acepta 1..18, etiqueta `e3.4-v16`/`e3.2-d5-v17`/`e4.1-v18` y vacía intentos
+  E4.1 solo en copias 18.
+- Se preservan D5 (`movimiento_compartido`, CHECK de Transferencia), E3.4 Revisión de Comida,
+  Compartidos v15 y Vehículos; la prueba 17→18 con una fila D5 real está versionada.
+- Evidencia: typecheck PASS; suite focal 57/57 PASS; suite API macOS 244 PASS y 50 fallos de
+  plataforma (`libc.so.6`, rutas), sin regresión frente al baseline; CI Linux x86_64
+  `40574297298` SUCCESS sobre `261d2fb`; QA independiente PASS (48 AC PASS, 6 PARCIAL, 0 FAIL).
+- PR #95 en draft; sin merge ni despliegue. Los AC-03/24/27/30/33/34 conservan sus residuales
+  de cobertura declarados en el testplan.
 
 ## 1. Contexto y alcance
 
@@ -576,8 +599,7 @@ Propuesta técnica (DT2), no decisión financiera:
   literalmente. Evidencia reproducible: `git archive cf6954a apps/api/src` + el generador
   `specs/fixtures/e4.1/generate-schema-contract.ts`, con la serialización canónica de §5.2 y
   SHA-256 recalculado. El hash está **congelado** en el artefacto de esta rama (registro de
-  congelación); el gate de código sigue bloqueado hasta que se autorice DEV19, no concedido en
-  esta fase.
+  congelación) y DEV19 adaptó el código a la 18 sin alterarlo.
 - **Relación de D5 con consumidores.** D5 se apoya en una Transferencia `S000 → saldo interno`
   con metadatos 0..1 en `movimiento_compartido`; no crea tipos de Movimiento, Presupuesto,
   Deuda, Ciclo ni efectos de Saldo paralelos. Compartidos mantiene sus reglas de ficha,
@@ -608,7 +630,7 @@ Propuesta técnica (DT2), no decisión financiera:
   queda bloqueado hasta una revisión autorizada. El manifiesto completo de cada contrato debe
   estar congelado en `apps/api/src/schema-contracts.json` con su SHA-256; sin ese artefacto y
   sus hashes, el gate pre-DEV falla. El artefacto de la rama contiene C14 histórico, C14V, C15,
-  **C16 y C17** con sus hashes canónicos; el gate de código sigue pendiente de DEV19.
+  **C16 y C17** con sus hashes canónicos; DEV19 adaptó el código a la 18.
 
   | ID de contrato | Fuente congelada | Objetos distintivos exigidos | Invariante específica |
   | --- | --- | --- | --- |
@@ -1479,9 +1501,8 @@ SPEC19 rev10 está **aprobada por el usuario (2026-10-27)** con C16/C17 **congel
 registro de congelación al inicio. Reconcilia el destino **18** con `main` `9977210` (D5/v17),
 documenta `C17-D5-CF6954A` (145 objetos, SHA-256
 `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`) y mantiene íntegras las
-decisiones funcionales de rev7/rev8. **No hay implementación ni integración de main 17 en esta
-rama**; el código sigue en el candidato 16 y no es publicable. Antes de adaptar código debe
-autorizarse DEV19, repetirse el gate (refs, worktrees y estado sin commitear) y confirmar que
-la 18 sigue libre.
-No se publica PR ni se hace merge hasta adaptar código, repetir QA y obtener CI Linux. Esta
-fase no autoriza por sí misma desarrollo, merge ni despliegue.
+decisiones funcionales de rev7/rev8. **DEV19 está implementado** sobre `main` `9977210`: el
+código declara la 18, admite C16/C17 y ejecuta la cadena 16→17→18. El candidato `261d2fb`
+tiene CI Linux x86_64 SUCCESS y QA independiente PASS (48 PASS / 6 PARCIAL / 0 FAIL). La PR
+#95 sigue en draft; no hay merge ni despliegue. Los residuales de cobertura AC-03/24/27/30/33/34
+están declarados en el testplan.

@@ -9,6 +9,38 @@ Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26
 **STOP 2026-10-27:** `main` avanzó a `2487656` (16, DEV16 Revisión bancaria de Comida); la 16
 está ocupada; rev10 se renumera finalmente a **18** por la colisión con D5. DEV autorizado y ejecutado; **PR, merge y
 despliegue no autorizados**.
+**DEV19 IMPLEMENTADO 2026-10-27** — reconciliación de `origin/main` `9977210` y adaptación a
+`schemaVersion = 18`: admisión C16/C17, cadena 16→17→18 y backup/restore 13..18. Candidato
+verificado `261d2fb`; CI Linux `40574297298` SUCCESS; QA independiente PASS (48 PASS / 6
+PARCIAL / 0 FAIL). PR #95 en draft; sin merge ni despliegue.
+
+## DEV19 — implementación de la versión 18 (2026-10-27)
+
+Autorización: el usuario autorizó DEV19 el 2026-10-27 con las condiciones de gate, reconciliación
+manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
+
+- **Gate pre-DEV:** `origin/main` `9977210` (esquema 17), 18 libre en refs/worktrees, C16/C17
+  intactos (`f9a30cdc…`), sin conflictos de ownership.
+- **Reconciliación:** merge `8e9ce67` de `origin/main` en la rama; 18 conflictos resueltos
+  manualmente preservando D5 (`movimiento_compartido`, CHECK de Transferencia), E3.4 Revisión
+  de Comida, Compartidos v15 y Vehículos. Add/add de `database-v15` resuelto a favor del builder
+  genuino de main.
+- **Implementación:** `schemaVersion = 18`; listas `[1..17, version]`; `admitted` 16/17 y
+  umbral >18; cadena `revisionComida(16) → compartidoAportacion(17) → investment(18)` en base
+  existente y nueva; guarda de `investmentSchema` sobre 17; backup/restore 1..18 con etiquetas
+  `e3.4-v16`/`e3.2-d5-v17`/`e4.1-v18` e intentos E4.1 desde 18.
+- **Pruebas:** typecheck PASS; suite focal 57/57; nueva prueba versionada 17→18 con una fila
+  D5 real (`E4.1-AC-33(f)`); matriz de restore 13..18. Suite API macOS: 244 PASS y 50 fallos de
+  plataforma (`libc.so.6`, rutas), sin regresión frente al baseline (219/48). E2E macOS: 11
+  PASS / 2 fallos de restauración por plataforma; CI Linux cubre esos caminos.
+- **CI Linux x86_64:** run `40574297298` SUCCESS sobre `261d2fb` (293 PASS / 1 FAIL corregido
+  después en `261d2fb`).
+- **QA independiente:** PASS técnico, 48 AC PASS, 6 PARCIAL (AC-03/24/27/30/33/34), 0 FAIL, 0
+  UNRUN bloqueante; validó además 17→18 con preservación de 145 objetos C17 y 0 pérdidas.
+- **Pendiente:** PR #95 sigue en draft; merge y despliegue requieren autorización separada.
+  AC-33 conserva residuales de cobertura (variantes v16/v17 incompletas y tablas heredadas
+  vacías) declarados en el testplan.
+
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
 Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compras-inversion-testplan.md)
@@ -323,7 +355,9 @@ acreditación formal en este checkpoint queda pendiente y no se usa para aprobar
   aprobación o cesión debe constar explícitamente del owner correspondiente.
 - **Sin PR, merge ni despliegue**; no se contacta ni reanuda la sesión de D5.
 
-## HANDOFF → CODEX — 2026-10-27
+## HANDOFF histórico (congelación) → CODEX — 2026-10-27
+
+> Superado por DEV19 (2026-10-27); se conserva como evidencia del cierre de congelación.
 
 - **Estado:** DEV/QA del contrato 16 completados; **rev10/18 solo documental y pendiente de
   revisión/aprobación por Codex**. E4.1 espera la integración verificada de D5/17 y su cesión
