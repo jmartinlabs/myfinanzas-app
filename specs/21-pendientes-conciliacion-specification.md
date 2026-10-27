@@ -1,11 +1,12 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Specification
 
-Status: **PROPUESTA DOCUMENTAL (DRAFT)** — preparada bajo autorización de preparación;
-no aprobada; no autoriza desarrollo, SQL, migraciones, pruebas funcionales, push, PR ni
-merge.
+Status: **APPROVED (documental) — 2026-10-27.** Cierre documental autorizado por el
+usuario; no autoriza desarrollo, SQL, migraciones, pruebas funcionales, merge ni
+despliegue.
 
-Approval source/date: **PENDING**. El usuario autorizó preparar SPEC21 el 2026-10-27;
-no aprobó su contenido.
+Approval source/date: usuario, 2026-10-27. Aprueba Q-S21-01–04 en su opción A y autoriza
+el cierre documental de SPEC21. La publicación de rama/PR queda autorizada; el merge
+requiere aprobación separada. El desarrollo E3.6 sigue sin autorizar.
 
 Context and brainstorming:
 [21-pendientes-conciliacion-brainstorming.md](21-pendientes-conciliacion-brainstorming.md),
@@ -58,10 +59,10 @@ No incluye: implementación de Cierres, endpoints operativos de cierre, migracio
 cambios de esquema, escrituras, cálculo de Neto paralelo, segundo maestro de casos,
 importación de históricos ni equivalencia real con el Excel.
 
-**Reglas condicionadas.** Las secciones y AC marcados `[P-Q-S21-0x]` son propuestas
-condicionadas a la respuesta del usuario; no son contrato aprobado. Mientras la pregunta
-siga abierta, el AC afectado permanece UNRUN y no puede presentarse como aprobado. Las
-reglas sin esa marca son contratos previos o propuestas no financieras de esta spec.
+**Decisiones aprobadas.** Q-S21-01–04 quedan aprobadas en su opción A (usuario,
+2026-10-27). Las secciones marcadas `[Q-S21-0x: A]` aplican esa decisión; los AC
+afectados siguen **UNRUN** hasta que exista implementación y QA. AC-31 permanece
+BLOCKED por Cierres E4.8/E4.9, no por una decisión abierta.
 
 ## 2. Authority and dependency status
 
@@ -106,8 +107,8 @@ reglas sin esa marca son contratos previos o propuestas no financieras de esta s
 | Exceso de Anticipo | Motor Anticipos | REFxxx | Derivada | No se fuerza | No se fuerza | Actual | Según acreditación | Alerta del caso | No se compensa con otros pares | [A][I] |
 | Neto apertura de Anticipo | `fotos_neto_apertura` | REFxxx + ID Ciclo | Inicio del ciclo + fecha de confirmación separada | Ciclo explícito | Año del Inicio | Foto del instante de apertura | Verificada/ND con evidencia | Ficha y pendiente | Pendiente actual; reconstrucción sin evidencia | [A][I] |
 | Bruto de Compartido | Movimientos (Gasto CAT013) | ID Movimiento; REFxxx | Fecha del Gasto | Ciclo de la fecha | Año de la fecha | Inicio ≤ fecha ≤ corte | Verificada/Parcial/ND | Ficha, flujo ajustado | Aportaciones; Gastos inválidos | [A][I] |
-| Recuperado de Compartido | Movimientos (Transferencia S000→interno) + acreditación | ID Movimiento + participante | Fecha de la Transferencia | Ciclo de la fecha de aportación | Año de la fecha | Según regla temporal Q-S21-01 | Verificada/Parcial/ND | Ficha, flujo ajustado | Transferencias internas; Anticipos; Gastos/Ingresos | [A][I] |
-| Neto de Compartido por Gasto | Motor central Compartidos | Gasto ID + REFxxx | Fecha del Gasto | Ciclo del Gasto | Año del Gasto | Decisión Q-S21-01 | Verificada/Parcial/ND | Flujo ajustado, ficha | Neto de caso no se reparte a mano | [A][I] |
+| Recuperado de Compartido | Movimientos (Transferencia S000→interno) + acreditación | ID Movimiento + participante | Fecha de la Transferencia | Ciclo de la fecha de aportación | Año de la fecha | Atribución por Gasto (Q-S21-01=A); memoria de caja separada | Verificada/Parcial/ND | Ficha, flujo ajustado | Transferencias internas; Anticipos; Gastos/Ingresos | [A][I] |
+| Neto de Compartido por Gasto | Motor central Compartidos | Gasto ID + REFxxx | Fecha del Gasto | Ciclo del Gasto | Año del Gasto | Atribución por Gasto (Q-S21-01=A) | Verificada/Parcial/ND | Flujo ajustado, ficha | Neto de caso no se reparte a mano | [A][I] |
 | Neto de Compartido por Partida/caso | Motor central Compartidos | Partida ID / REFxxx | Derivada | No se fuerza | No se fuerza | Según Gastos elegibles | Verificada/Parcial/ND | Ficha, informes | Recuperado global no se reparte directamente | [A][I] |
 | Pendiente/Exceso por participante | Motor central Compartidos | Participante ID | Derivada | No se fuerza | No se fuerza | Según Gastos e inputs | Verificada/Parcial/ND | Pendiente y ficha | Sin compensación cruzada | [A][I] |
 | Estado de reparto | Motor central Compartidos | REFxxx | Derivada | No se fuerza | No se fuerza | Según cobertura | Verificada/Parcial/ND | Pendiente y ficha | No es campo manual | [A][I] |
@@ -117,7 +118,7 @@ reglas sin esa marca son contratos previos o propuestas no financieras de esta s
 | Ejecutado del Plan | Motor Plan R3 | Presupuesto ID + Ciclo ID | Fecha real del hecho | Ciclo | No se usa el año para R3 | Inicio ≤ fecha ≤ Fin/corte | Según periodo y hechos | Plan y flujo | No se netea por recuperaciones | [A][I] |
 | A transferir / Pendiente / Estado del Plan | Motor Plan | Presupuesto ID + Ciclo ID | No propia | Ciclo | No se usa | Ciclo | Según Del mes y ejecución | Plan | No es estado de caso | [A][I] |
 | Gasto bruto registrado | Movimientos | ID Movimiento | Fecha del Gasto | Ciclo | Año de la fecha | Inicio ≤ fecha ≤ corte | Según intervalo | Flujo base | No es H física; no se suma dos veces | [A][I] |
-| Gasto neto ajustado por Recuperado | E3.6 sobre Gasto bruto + Neto central | ID Movimiento + REFxxx | Fecha del Gasto | Ciclo del Gasto | Año del Gasto | Según Q-S21-01 | Verificada/Parcial/ND | Flujo ajustado | No es coste propio, segundo Gasto ni Ingreso | [P] |
+| Gasto neto ajustado por Recuperado | E3.6 sobre Gasto bruto + Neto central | ID Movimiento + REFxxx | Fecha del Gasto | Ciclo del Gasto | Año del Gasto | Atribución por Gasto (Q-S21-01=A) | Verificada/Parcial/ND | Flujo ajustado | No es coste propio, segundo Gasto ni Ingreso | [A] |
 | Saldo inicial comida (S0) | `tblCiclos` | Ciclo ID | Inicio del ciclo | Ciclo | Año del Inicio | Manual al abrir | Dato manual explícito | Comida, diferencia | No se arrastra ni se autorrellena | [A][I] |
 
 Las magnitudes actuales (`Neto pendiente`, `Exceso`, `Neto por Partida/caso`,
@@ -251,7 +252,7 @@ equivalencia.
 - Si falta `FIN_NETA`, el motor E3.5, la cobertura o el proveedor, los agregados
   dependientes son No disponible; no se usan entradas brutas ni cero.
 
-#### 4.3.1 Qué se puede mostrar con E3.4 integrada y qué falta con E3.5 [P-Q-S21-04]
+#### 4.3.1 Qué se puede mostrar con E3.4 integrada y qué falta con E3.5 [Q-S21-04: A]
 
 | Disponibilidad | Se puede mostrar | No se puede mostrar / queda No disponible |
 | --- | --- | --- |
@@ -276,7 +277,7 @@ entradas brutas ni con cero.
   E3.6 puede señalar el Neto de Compartidos como contexto, nunca como ejecución.
 - Si el periodo/corte no es verificable, Ejecutado/Pendiente/Estado no se fabrican.
 
-### 4.5 Flujo mensual: sustitución, no suma [P-Q-S21-01/02]
+### 4.5 Flujo mensual: sustitución, no suma [Q-S21-01/02: A]
 
 E2.6 conserva sus métricas base. E3.6 añade una vista ajustada explícita. El **Neto
 central** de Compartidos es `B − R` (Recuperado real, incluido el exceso); no es el
@@ -287,7 +288,7 @@ separado y no los usa para declarar `Cerrado`.
 G_b      = Gasto bruto registrado del ciclo (Gastos centrales elegibles, una vez)
 B_shared = Σ Bruto(g) de los Gastos compartidos del ciclo
 R_adj    = Recuperado de Compartidos atribuido a esos Gastos
-           según la regla temporal Q-S21-01
+           según atribución por Gasto (Q-S21-01=A)
 G_n      = (G_b − B_shared) + Σ Neto(g)
          = G_b − R_adj
 S_aj     = Total ingresos − G_n − Amortización extraordinaria
@@ -335,7 +336,7 @@ Identidad de control: para una misma revisión y atribución, la suma de `G_n` d
 los ciclos que contienen esos Gastos coincide con `Σ G_b − Σ R_adj`. Un desfase entre
 ciclos es temporal, no una segunda contabilización; no se suma `R_adj` otra vez.
 
-### 4.6 Ciclo, ejercicio natural y cruces [P-Q-S21-01]
+### 4.6 Ciclo, ejercicio natural y cruces [Q-S21-01: A]
 
 - El **ciclo** es la ventana financiada de `tblCiclos`: Inicio, Fin derivado o Abierto,
   corte por referencia central. Gobierna Flujo, Plan, pendientes por ciclo y Comida.
@@ -344,7 +345,8 @@ ciclos es temporal, no una segunda contabilización; no se suma `R_adj` otra vez
 - Un Gasto de diciembre puede pertenecer a un ciclo que termina en enero; su año natural
   y su ciclo pueden diferir. Se muestran ambos.
 - Un Gasto de 2026 y una aportación de 2027 pueden pertenecer al mismo ciclo o a ciclos
-  distintos. La atribución temporal del Recuperado es Q-S21-01.
+  distintos. La atribución temporal del Recuperado es la decisión Q-S21-01=A:
+  atribución por Gasto/Partida, con memoria de caja separada.
 - Mientras no exista fotografía/cierre, la vista es un **cálculo vivo**: un ciclo con
   Fin temporal pero sin cierre financiero puede actualizarse con recuperaciones
   posteriores. El Fin temporal no es cierre.
@@ -389,7 +391,7 @@ duplicadas.
 | Compartido | Incidencia de cobertura / recuperado sin cuota | Motivo; subtotal acreditado | Revisar | Abrir ficha, ver Gasto/participante |
 | Comida | Falta por reponer > 0 | Falta por reponer | Pendiente | Abrir Comida del ciclo |
 | Comida | Reposición parcial o cobertura incompleta | Falta conocida / motivo | Pendiente (cobertura Parcial) | Abrir Comida del ciclo |
-| Comida | Motor E3.5 no integrado, FIN_NETA ausente o sin cobertura `[P-Q-S21-04]` | Sin cifra | No disponible | Abrir alcance/motivo |
+| Comida | Motor E3.5 no integrado, FIN_NETA ausente o sin cobertura `[Q-S21-04: A]` | Sin cifra | No disponible | Abrir alcance/motivo |
 | Conciliación | S0 siguiente distinto del cierre analítico de Comida, con cobertura verificable | Diferencia | Alerta | Abrir Comida y Ciclo |
 | Conciliación | Sin proveedor de cierre/cobertura | Sin cifra | No disponible | Ver motivo |
 
@@ -493,7 +495,7 @@ Reglas del DTO:
   financieros en la URL.
 - No se incluye un campo `total` ni `suma` entre tipos.
 
-### 5.5 Filters, ordering and navigation [P-Q-S21-03]
+### 5.5 Filters, ordering and navigation [Q-S21-03: A]
 
 - Filtros: `tipo`, `estado`, `ciclo`, `ejercicio`, `cobertura`, `alcance`
   (`abiertos`/`historico`) y texto por ID/nombre. `historico` incluye `Resuelto`
@@ -682,7 +684,7 @@ W5; no se dibujan cifras ni filas ficticias.
 Escenario objetivo con E3.5 integrada. Si la cobertura no es completa: «Conciliación
 no disponible» con el motivo; no se muestra la diferencia como definitiva.
 
-### W4 — Flujo ajustado por Neto Compartido [P-Q-S21-02]
+### W4 — Flujo ajustado por Neto Compartido [Q-S21-02: A]
 
 ```text
 ┌ Flujo del ciclo · 01/10/2026 → 31/10/2026 ────────────────────────────────────────┐
@@ -721,7 +723,7 @@ Error:       «No se pudo leer <motor>. El resto de fuentes sigue disponible.»
 Parcial:     «Subtotal conocido; cobertura parcial.» + motivo + enlace a la fuente.
 No disponible: «No disponible — <motivo>». Sin 0,00 €; el guion «—» solo se usa
              con motivo visible, nunca como sustituto de una cifra.
-Comida [P-Q-S21-04]: «E3.4 disponible; agregados Comida/conciliación No disponible —
+Comida [Q-S21-04: A]: «E3.4 disponible; agregados Comida/conciliación No disponible —
              E3.5/FIN_NETA pendiente.» [Abrir Revisión Comida] [Ver motivo]
 Sesión:      conserva filtros/selección y pide reautenticar; sin datos en la URL.
 ```
@@ -811,10 +813,9 @@ No se incluye:
   auxiliar.
 - Neteo del Plan, descuento de recuperaciones del Ejecutado o nuevas fuentes de
   Presupuesto.
-- La **regla definitiva** de atribución cross-ciclo del Recuperado de Compartidos
-  (Q-S21-01), así como la atribución cross-ciclo de reposiciones de Comida (Q3 C). Los
-  escenarios se documentan y quedan condicionados; no se aprueba una regla por
-  inferencia.
+- La atribución cross-ciclo de reposiciones de Comida (Q3 C), que conserva su regla de
+  no atribución. La atribución cross-ciclo del Recuperado de Compartidos **sí** está
+  definida por Q-S21-01=A y no se excluye.
 - Importación de históricos, equivalencia con v5.11(7), integración bancaria o
   conciliación automática.
 - Reanudar DEV17, E4.1, B3, Dev32 u otros frentes.
@@ -870,10 +871,9 @@ Diseño de pruebas, **no ejecutadas**. Todos los AC nuevos quedan UNRUN. Las
 precondiciones que dependen de E3.5 se ejecutarán solo si ese motor se integra y acepta;
 mientras tanto, el resultado observable es No disponible.
 
-**Dependencias de decisión:** AC-01/02/23 están condicionados a Q-S21-01/02; AC-14 a
-Q-S21-04; AC-18 a Q-S21-03. Se mantienen UNRUN y no pueden declararse aprobados hasta
-que el usuario responda. AC-31 (foto/cierre) queda además BLOCKED por E4.8/E4.9 y
-condicionado a Q-S21-01.
+**Decisiones de diseño:** Q-S21-01–04 están aprobadas en opción A. Los AC afectados
+siguen UNRUN hasta que exista implementación y QA; su diseño ya no depende de una
+decisión abierta. AC-31 (foto/cierre) permanece BLOCKED por E4.8/E4.9.
 
 | ID | Acción / precondiciones | Resultado observable esperado | Trazabilidad |
 | --- | --- | --- | --- |
@@ -899,7 +899,7 @@ condicionado a Q-S21-01.
 | **E3.6-AC-20** | Inspeccionar la vista y sus claves. | No hay tabla/maestro nuevo; claves efímeras; IDs de fuente visibles; no se persisten estados ni Netos. | E3.6-AC1/AC3 |
 | **E3.6-AC-21** | Métrica con fuente parcial, otra completa y otra no disponible. | Cada métrica conserva su cobertura; no se colapsa en un único estado; subtotal parcial no es total. | E3.6-AC1 |
 | **E3.6-AC-22** | Neto negativo, exceso, cero explícito y céntimos. | Signo y cero conservados; suma exacta; sin float ni redondeo; sin truncar exceso. | E3.6-AC1 |
-| **E3.6-AC-23** | E1: Gasto 28/12/2026 y aportación 10/01/2027 en el mismo ciclo 20/12–19/01. E2: Gastos 05/01/2027 y 25/01/2027 en ciclos distintos del mismo año. E3: Gasto 28/12/2026 en ciclo 20/12–19/01 y aportación 25/01/2027 en ciclo 20/01–19/02. | Los tres escenarios se muestran por separado con ciclo y año natural; Plan anual usa el año del Gasto; el flujo usa el ciclo como ventana. En E3, sin Q-S21-01 no se atribuye el cobro al ciclo del Gasto: se muestran ambos contextos. La rama con foto se prueba en AC-31. | E3.6-AC1/AC3 |
+| **E3.6-AC-23** | E1: Gasto 28/12/2026 y aportación 10/01/2027 en el mismo ciclo 20/12–19/01. E2: Gastos 05/01/2027 y 25/01/2027 en ciclos distintos del mismo año. E3: Gasto 28/12/2026 en ciclo 20/12–19/01 y aportación 25/01/2027 en ciclo 20/01–19/02. | Los tres escenarios se muestran por separado con ciclo y año natural; Plan anual usa el año del Gasto; el flujo usa el ciclo como ventana. Con Q-S21-01=A, el Recuperado se atribuye al ciclo del Gasto y la aportación se muestra en la memoria de caja de su fecha, sin duplicar. La rama con foto se prueba en AC-31. | E3.6-AC1/AC3 |
 | **E3.6-AC-24** | Gasto de terminal, su Transferencia de financiación, cuota, extraordinaria, devolución de compra y reposición; caso con Gasto terminal sin Transferencia. | Gasto terminal una vez; Transferencia no es Gasto/Ingreso; cuota no se resta dos veces; extraordinaria separada; devolución/reposición no se suman como Ingreso adicional; sin Transferencia no se infiere financiación ni déficit. | E3.6-AC1 |
 | **E3.6-AC-25** | Vista con flujo real, Plan, saldo patrimonial, provisión y pronóstico. | Se muestran separados; no se suman ni se sustituyen; la vista ajustada no se llama flujo completo ni ahorro real. | E3.6-AC1 |
 | **E3.6-AC-26** | Cambio de fuente entre carga y respuesta; dos consultas concurrentes. | No se mezclan revisiones; se conserva la selección; una respuesta antigua no sustituye la nueva. | E3.6-AC1/AC3 |
@@ -907,7 +907,7 @@ condicionado a Q-S21-01.
 | **E3.6-AC-28** | Acceso sin sesión/MFA, errores, URL manipulada, intento de escritura. | 401/403/4xx seguro; sin SQL, importes ni datos en logs/URL; no existe POST/PATCH/DELETE de E3.6. | E3.6-AC3 |
 | **E3.6-AC-29** | Revisar la matriz DT5 y el alcance de Cierres. | La matriz cubre los 10 cambios exigidos y 5 cambios adicionales (tipo de Referencia, acreditación de aportación, Presupuesto, FIN_NETA, Cierre futuro); concurrencia/auditoría/idempotencia/fallos quedan para E4.8/E4.9. No hay endpoints/locks/snapshots. | DT5/E4.8 |
 | **E3.6-AC-30** | Revisar la trazabilidad E3.6-AC1/2/3. | Cada criterio de roadmap tiene AC y prueba asociados; no se declara PASS funcional ni aprobación. | Roadmap E3.6 |
-| **E3.6-AC-31** | Histórico de Compartidos con y sin foto/cierre: recuperación posterior sobre ciclo vivo y sobre ciclo con foto. | Sin foto, el cálculo es vivo y se actualiza; con foto, se usan valores persistidos y no se reescribe; no se inventa cierre. **BLOCKED hasta E4.8/E4.9; condicionado a Q-S21-01.** | E3.6-AC1; DT5 |
+| **E3.6-AC-31** | Histórico de Compartidos con y sin foto/cierre: recuperación posterior sobre ciclo vivo y sobre ciclo con foto. | Sin foto, el cálculo es vivo y se actualiza; con foto, se usan valores persistidos y no se reescribe; no se inventa cierre. **BLOCKED hasta E4.8/E4.9.** | E3.6-AC1; DT5 |
 
 ## 15. Worked examples (fictional)
 
@@ -1005,8 +1005,8 @@ Partida; el Flujo los separa por ciclo. No se suman en una sola ventana.
 
 **E3 — distinto ciclo y distinto año natural:** Gasto 28/12/2026 en ciclo
 20/12/2026–19/01/2027 y aportación 25/01/2027 en ciclo 20/01–19/02/2027. La aportación
-es de otro ciclo y otro año. La vista muestra ambos contextos y no atribuye el cobro al
-ciclo del Gasto sin decisión Q-S21-01.
+es de otro ciclo y otro año. Con Q-S21-01=A, el Recuperado se atribuye al ciclo del
+Gasto y la aportación se muestra en la memoria de caja de su fecha; no se duplica.
 
 En los tres casos, la vista de pendientes muestra «Ciclo» y «Ejercicio» por separado;
 «—» cuando la magnitud actual no tiene fecha propia. No se inventa un ciclo, un año ni
@@ -1021,30 +1021,47 @@ un cierre.
   disponible; Anticipos/Compartidos disponibles siguen visibles.
 - No se simula una reconciliación completada ni se declara E3.6 completo.
 
-## 16. Open decisions and approval gate
+## 16. Decisiones aprobadas y gate
 
-### 16.1 Decisiones pendientes
+### 16.1 Decisiones aprobadas — 2026-10-27
 
-1. **Q-S21-01** — atribución temporal del Recuperado de Compartidos entre ciclos,
-   incluidos histórico, foto y recuperaciones posteriores.
-2. **Q-S21-02** — convivencia o sustitución del S bruto E2.6 por el S ajustado.
-3. **Q-S21-03** — alcance por defecto de la vista y semántica de los filtros de ciclo y
-   ejercicio (abiertos vs todos, importe actual vs al corte).
-4. **Q-S21-04** — presentación de Comida cuando E3.5 no está integrada, distinguiendo
-   lo visible con E3.4 de lo que depende de E3.5/`FIN_NETA`.
+1. **Q-S21-01 = A.** Atribución del Recuperado por Gasto/Partida; `B−R` es Neto de caja
+   del caso; memoria de caja separada; foto/cierre congela el histórico.
+2. **Q-S21-02 = A.** S bruto E2.6 intacto; S ajustado separado y PARCIAL; `G_n = G_b −
+   R_adj` es gasto neto del ciclo por recuperaciones, no coste propio, pendiente ni
+   exceso.
+3. **Q-S21-03 = A.** Por defecto no resueltos (`Pendiente`, `Exceso`, `Revisar`,
+   `Alerta`, `No disponible`); histórico/resueltos explícitos; ciclo y ejercicio
+   separados.
+4. **Q-S21-04 = A.** Detalle E3.4 visible; agregados E3.5/`FIN_NETA` No disponible hasta
+   integración y aceptación.
 
-Las propuestas recomendadas están en el
-[brainstorming §3](21-pendientes-conciliacion-brainstorming.md#3-preguntas-materiales-pendientes).
-No se asumen aprobadas.
+No quedan preguntas materiales de Q-S21-01–04. Las dependencias E3.5/`FIN_NETA`,
+Cierres E4.8–E4.11, B-T11, E3.1-AC36 y E3.4-AC25 son bloqueos de entrega, no decisiones
+de diseño pendientes.
 
 ### 16.2 Gate
 
-- Esta specification no está aprobada.
-- No autoriza desarrollo, SQL, migraciones, pruebas funcionales, push, PR ni merge.
-- La revisión independiente de Álex debe comprobar: fórmulas, no duplicación, estados,
-  cobertura, navegación, wireframes, DT5 y dependencias E3.5/Cierres.
-- Solo tras aprobación explícita del usuario podrá evaluarse una autorización separada
-  de desarrollo.
+- Esta specification está **aprobada documentalmente** el 2026-10-27 para cierre y
+  publicación de PR; no está autorizado el desarrollo.
+- No autoriza SQL, migraciones, pruebas funcionales, merge ni despliegue.
+- La revisión independiente debe comprobar fórmulas, no duplicación, estados, cobertura,
+  navegación, wireframes, DT5 y dependencias E3.5/Cierres.
+- El desarrollo E3.6 requiere una autorización separada y posterior.
+
+### 16.3 Comprobación de no alteración de reglas centrales
+
+- No se modifican Movimientos, Saldos, Ciclos, Plan, Presupuestos, Anticipos,
+  Compartidos, Revisión Comida ni sus esquemas.
+- R2/R3, spec09, spec12, spec13, spec14 y spec16 conservan su autoridad; E3.6 solo
+  consume sus motores.
+- `G_b` cuenta cada Gasto central una vez; `R_adj` solo recuperaciones de Compartidos;
+  no se presenta `G_b + Neto` como segundo gasto.
+- Comida auxiliar no crea Gasto central ni se resta dos veces; la devolución de Anticipo
+  no ejecuta Presupuesto; cuota/extraordinaria y financiación de terminal no se duplican.
+- El Plan R3 no se netea; los Gasto con Referencia conservan Tipo, Partida y ejecución.
+- El diff de esta candidata es exclusivamente documental y no toca código, SQL,
+  migraciones, tablero ni otros specs.
 
 ## 17. Test design
 

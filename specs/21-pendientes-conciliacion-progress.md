@@ -1,7 +1,8 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Progress
 
-Status: **APTA (documental) — con reservas de decisión; sin aprobación, sin desarrollo,
-sin push/PR/merge.** La aprobación funcional corresponde al usuario.
+Status: **APPROVED (documental) — 2026-10-27; cierre autorizado; PR pendiente de
+publicación.** El desarrollo E3.6 no está autorizado; el merge requiere aprobación
+separada.
 
 Fecha: 2026-10-27. Sesión funcional `SPEC21-E3.6`. Cliente externo vía OpenCode;
 modelo/versión observados por el entorno, no verificados por el coordinador.
@@ -47,7 +48,7 @@ expediente duplicado.
 
 | Documento | Contenido |
 | --- | --- |
-| `specs/21-pendientes-conciliacion-brainstorming.md` | Decisiones confirmadas con procedencia, propuestas P-01–P-10, alternativas y preguntas materiales Q-S21-01–04. |
+| `specs/21-pendientes-conciliacion-brainstorming.md` | Decisiones confirmadas con procedencia, propuestas P-01–P-10, alternativas y Q-S21-01–04 aprobadas en opción A. |
 | `specs/21-pendientes-conciliacion-specification.md` | Matriz de magnitudes, semántica Anticipos/Compartidos/Comida/Plan/Flujo, modelo transversal, wireframes 390/1440, API de solo lectura, estados, validación, exclusiones, matriz DT5 y 31 AC (30 originales + AC-31 futuro). |
 | `specs/21-pendientes-conciliacion-testplan.md` | Matriz AC → positivo/negativo/límite → resultado → método → dependencia → UNRUN; riesgos y trazabilidad. |
 | `specs/21-pendientes-conciliacion-progress.md` | Este checkpoint. |
@@ -69,14 +70,17 @@ No se editó ningún otro archivo.
 Decisiones confirmadas: D-01–D-09 en el brainstorming, con fuente/fecha; R-01 es una
 restricción de alcance, no una decisión financiera. No se reabren.
 
-Preguntas materiales pendientes:
+**Q-S21-01–04 aprobadas por el usuario el 2026-10-27, opción A:**
 
-1. Q-S21-01 — atribución temporal del Recuperado de Compartidos entre ciclos.
-2. Q-S21-02 — convivencia o sustitución del S bruto E2.6.
-3. Q-S21-03 — alcance por defecto de la vista (abiertos vs todos).
-4. Q-S21-04 — presentación de Comida cuando E3.5 no está integrada.
+1. **Q-S21-01=A** — atribución por Gasto/Partida; Neto de caja `B−R`; memoria de caja
+   separada; foto/cierre congela el histórico.
+2. **Q-S21-02=A** — S bruto E2.6 intacto; S ajustado separado; `G_n = G_b − R_adj` como
+   gasto neto del ciclo por recuperaciones, no coste propio.
+3. **Q-S21-03=A** — por defecto no resueltos (`Pendiente`, `Exceso`, `Revisar`, `Alerta`,
+   `No disponible`); histórico explícito; ciclo y ejercicio separados.
+4. **Q-S21-04=A** — detalle E3.4 visible; agregados E3.5/`FIN_NETA` No disponible.
 
-No hay respuestas del usuario en esta ronda. No se asumen aprobadas.
+No quedan preguntas materiales de diseño Q-S21. Los bloqueos restantes son de entrega.
 
 ## 6. Verificación documental
 
@@ -88,28 +92,29 @@ No hay respuestas del usuario en esta ronda. No se asumen aprobadas.
   ajenos. Respecto a `origin/main`, el diff son los cuatro archivos nuevos.
 - No se ejecutaron pruebas funcionales, CI remoto, migraciones, deploy, push, PR ni
   merge.
-- No se declara PASS funcional, QA independiente ni aprobación de SPEC21.
+- Aprobación documental registrada; no se declara PASS funcional ni QA independiente.
 
 ## 7. Siguiente acción exacta
 
-1. Álex revisa independientemente este expediente, el diff y las dependencias.
-2. Si procede, presenta al usuario las preguntas Q-S21-01–04 y la propuesta completa.
-3. Solo tras aprobación explícita de la spec se evaluará una autorización separada de
-   desarrollo.
-4. No reanudar DEV17, E4.1, B3, Dev32 ni otros frentes.
+1. Publicar la rama y crear la PR documental; sin merge automático.
+2. Actualizar el seguimiento mediante el coordinador global.
+3. Presentar al usuario el estado de dependencias y la propuesta de desarrollo E3.6
+   para autorización separada.
+4. No reanudar DEV18, DEV18-LINUX, E4.1, DEV17, B3, Dev32 ni otros frentes.
 
 ## 8. Publicación
 
-Prohibida en este encargo: no push, no PR, no merge. La candidata permanece en el
-checkout aislado y rama local.
+Autorizada por el usuario el 2026-10-27: publicar rama y crear PR documental. **No
+autoriza merge**; el merge requiere aprobación explícita e independiente. El estado
+final de rama/PR se registra en §9.5 y en el retorno del handoff.
 
 ## 9. Autorrevisión crítica — 2026-10-27
 
-**Resultado: APTA (documental), con reservas de decisión.** La candidata es coherente y
-está delimitada, pero no está aprobada: Q-S21-01–04 siguen abiertas y
-E3.5/FIN_NETA/Cierres no están integrados. No se declara PASS funcional ni QA. La
-primera revisión independiente fue **NO APTA**; tras corregir A1–A5/M1–M14 y R1–R17, la
-tercera pasada independiente la declara **APTA (documental)** sin bloqueos residuales.
+**Resultado: APPROVED (documental) — 2026-10-27.** Q-S21-01–04 están aprobadas en opción
+A. La candidata es coherente y está delimitada; E3.5/FIN_NETA/Cierres siguen sin
+integrarse y no se declara PASS funcional ni QA. La primera revisión independiente fue
+**NO APTA**; tras corregir A1–A5/M1–M14 y R1–R17, la tercera pasada independiente la
+declaró **APTA (documental)** sin bloqueos residuales.
 
 ### 9.1 Defectos detectados y corregidos
 
@@ -143,7 +148,7 @@ tercera pasada independiente la declara **APTA (documental)** sin bloqueos resid
 | M2–M6 — AC-06/10/12/16/18 | Añadidos importes/residuo, foto precondición, estados spec18, precondición de API fuente, 422 y alcance histórico. |
 | M7 — prefijos AC entre entregas | `E3.5-AC-…`, `E3.4-AC-…`, `E3.1-AC-…` en spec/testplan/progress. |
 | M8 — dependencias omitidas | Añadidas E2.3 y E3.3 (no consumido) a la tabla. |
-| M9 — SHA no actualizado | Se reporta el SHA del commit local en el handoff; no se publica. |
+| M9 — SHA no actualizado | Se reporta el SHA del commit de cierre y la URL de PR en el handoff; publicación autorizada. |
 | M10 — Comida spec18 no aprobada/nomenclatura | Bloque marcado `[P][F]`; nota de nombres lógicos y remisión a E3.5/DT2. |
 | M11 — ciclo abierto sin corte | Corregido: corte = referencia central; CIERRE/DIF No disponible. |
 | M12 — exclusión cross-ciclo | Se excluye solo la regla definitiva; escenarios quedan documentados y condicionados. |
@@ -163,14 +168,14 @@ tercera pasada independiente la declara **APTA (documental)** sin bloqueos resid
 - Todos los AC y escenarios siguen **UNRUN**; AC-31 queda además BLOCKED; no hay PASS
   funcional.
 
-### 9.3 Respuesta propuesta a Q-S21-01–04
+### 9.3 Decisiones Q-S21-01–04 aprobadas
 
-| Pregunta | Propuesta | Autoridad |
+| Pregunta | Decisión | Autoridad |
 | --- | --- | --- |
-| Q-S21-01 | A: atribución económica por Gasto/Partida; memoria de caja separada; sin foto el cálculo es vivo, con foto no se reescribe. | **Decisión nueva propuesta**, no aprobada. |
-| Q-S21-02 | A: convivencia; S bruto E2.6 intacto y S ajustado separado, PARCIAL y por Recuperado (no coste/caja total). | **Decisión nueva propuesta**, no aprobada. |
-| Q-S21-03 | A: por defecto no resueltos; histórico/resueltos con acción; ciclo filtra actividad e importe actual; ejercicio usa último hecho. | **Decisión nueva propuesta**, no aprobada. |
-| Q-S21-04 | A: Comida No disponible sin E3.5; con E3.4 se ve el detalle auxiliar, no los agregados. | **Decisión nueva propuesta**, no aprobada. |
+| Q-S21-01 | A: atribución por Gasto/Partida; Neto de caja `B−R`; memoria de caja separada; sin foto el cálculo es vivo, con foto no se reescribe. | **Aprobada por el usuario, 2026-10-27.** |
+| Q-S21-02 | A: convivencia; S bruto E2.6 intacto y S ajustado separado, PARCIAL y por Recuperado (no coste/caja total). | **Aprobada por el usuario, 2026-10-27.** |
+| Q-S21-03 | A: por defecto no resueltos (incluye Alerta/No disponible); histórico/resueltos con acción; ciclo filtra actividad e importe actual; ejercicio usa último hecho. | **Aprobada por el usuario, 2026-10-27.** |
+| Q-S21-04 | A: Comida No disponible sin E3.5; con E3.4 se ve el detalle auxiliar, no los agregados. | **Aprobada por el usuario, 2026-10-27.** |
 
 Reglas ya aprobadas que no se tocan: Anticipos (R4/spec13), Compartidos (R4/spec14),
 Comida auxiliar y fórmulas R4/spec16, Plan R3/spec09, Flujo E2.6/spec12, Ciclos
@@ -182,8 +187,9 @@ R3/spec03/spec07 y prohibición de doble contabilización.
   BLOCKED. Las pruebas Comida/E3.5 no pueden ejecutarse todavía.
 - Cierres E4.8–E4.11 y proveedor de conciliación ausentes; DT5 es preparatoria.
 - E3.2 B-T11 pendiente; E3.1-AC36 parcial; E3.4-AC25 abierto.
-- Q-S21-01–04 sin respuesta del usuario.
-- Sin pruebas funcionales, QA independiente, aprobación, push, PR ni merge.
+- Aprobación documental registrada; quedan pendientes publicación de PR y aprobación
+  separada de merge.
+- Sin pruebas funcionales ni QA; no se declara PASS.
 
 ### 9.5 Evidencia de la segunda pasada
 
@@ -194,6 +200,24 @@ R3/spec03/spec07 y prohibición de doble contabilización.
   sin bloqueos residuales.
 - Diff completo respecto a `origin/main`: cuatro archivos del expediente, sin cambios en
   código, tablero, roadmap, otros specs ni configuración.
-- La candidata depurada se conserva en el working tree y se incluye en el commit local
-  de cierre de esta rama; su SHA exacto se reporta en el retorno del handoff. No se
-  publica ni se abre PR.
+- La candidata aprobada se incluye en el commit local de cierre y se publica en rama/PR
+  según la autorización del 2026-10-27; el SHA y la URL de PR se registran en §10 y en
+  el retorno del handoff. No se hace merge.
+
+## 10. Cierre documental y publicación
+
+- Aprobación: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
+- Rama: `codex/spec21-e36-pendientes-conciliacion`.
+- PR documental: pendiente de crear en esta ejecución; sin merge automático.
+- Desarrollo E3.6: no autorizado; debe solicitarse por separado.
+- La PR no se fusiona hasta aprobación explícita e independiente del usuario.
+
+## 11. Comprobación de no alteración
+
+- No se modifican reglas centrales de Movimientos, Saldos, Ciclos, Plan, Anticipos,
+  Compartidos, Revisión Comida ni sus esquemas.
+- No se introduce `Bruto + Neto`, segundo Gasto de Comida, doble descuento de Anticipo,
+  doble ejecución de Plan, doble cuota/extraordinaria ni doble financiación de terminal.
+- El diff es exclusivamente documental: cuatro archivos SPEC21, sin código, SQL,
+  migraciones, tablero, roadmap ni otros specs.
+- Validación documental PASS; pruebas funcionales UNRUN; QA no realizada.

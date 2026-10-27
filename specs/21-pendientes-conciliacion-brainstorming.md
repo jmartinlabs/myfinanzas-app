@@ -1,12 +1,17 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Brainstorming
 
-Status: **PROPUESTA DOCUMENTAL — preparación autorizada, sin aprobación de spec ni
-autorización de desarrollo.** No se declara ninguna decisión de esta ronda como
-aprobada por el usuario.
+Status: **APPROVED (documental) — Q-S21-01–04 opción A; 2026-10-27.** No autoriza
+desarrollo E3.6 ni reanudación de tareas bloqueadas.
+
+Approval source/date: usuario, 2026-10-27: «Apruebo las cuatro decisiones propuestas»
+(Q-S21-01–04, opción A) y «Autorizo el cierre documental de SPEC21», sin autorizar
+desarrollo.
 
 Autorización: TASK-SPEC21/E3.6, preparación documental autorizada el 2026-10-27.
 Sesión funcional `SPEC21-E3.6`; cliente externo vía OpenCode; modelo/versión
-observados por el entorno, no verificados por el coordinador.
+observados por el entorno, no verificados por el coordinador. Las propuestas P-01–P-10
+se conservan como historia; las decisiones Q-S21-01–04 quedan aprobadas en su opción A
+(§3 y §7).
 
 Contexto: [roadmap E3.6](roadmap.md#e36--pendientes-y-conciliación-transversal-de-casos),
 [referencia funcional R1–R4/R6](functional-reference-v5.11.md),
@@ -191,10 +196,11 @@ ni una aprobación. Las alternativas se conservan para revisión de Álex.
 - **Consecuencia:** el flujo central y los casos disponibles siguen visibles; solo se
   bloquean los agregados dependientes.
 
-## 3. Preguntas materiales pendientes
+## 3. Decisiones Q-S21-01–04 — aprobadas
 
-No se responden por inferencia. Se presentan a Álex para revisión y, si procede, al
-usuario para decisión.
+Aprobadas por el usuario el 2026-10-27, **opción A en las cuatro**. Las opciones B/C,
+recomendaciones y consecuencias se conservan como historia; no se reabren sin
+contradicción demostrada.
 
 ### Q-S21-01 — Atribución temporal del Recuperado de Compartidos entre ciclos
 
@@ -239,8 +245,9 @@ foto/cierre, se usan los valores persistidos y no se recalcula el pasado. Un cam
 Ciclo que mueva la ventana invalida la lectura viva y exige recalcular; no se cachea
 como verdad.
 
-**Consecuencia de no decidir:** SPEC21 deja la regla marcada como propuesta y no
-declara completa la integración del flujo.
+**Decisión aprobada (usuario, 2026-10-27): opción A.** Atribución por Gasto/Partida,
+memoria de caja separada y foto/cierre que congela el histórico. Las opciones B/C quedan
+como historia.
 
 ### Q-S21-02 — ¿El flujo ajustado sustituye o convive con el S bruto E2.6?
 
@@ -257,13 +264,17 @@ presenta como «flujo real completo» ni como ahorro. `S ajustado` combina ingre
 bancarios con el Neto central por Recuperado: se etiqueta como resultado ajustado por
 Recuperado, no como coste propio ni caja total.
 
+**Decisión aprobada (usuario, 2026-10-27): opción A.** Se confirma `G_n = G_b − R_adj`
+como gasto neto del ciclo por recuperaciones, sin confundirlo con coste propio,
+pendiente o exceso.
+
 ### Q-S21-03 — Alcance de la vista de pendientes
 
 **Opciones:**
 
 - A. **Solo filas no resueltas por defecto (recomendada):** `Pendiente`, `Exceso`,
-  `Revisar` y `No disponible`; histórico, cerrados y resueltos requieren acción
-  explícita.
+  `Revisar`, `Alerta` y `No disponible`; histórico, cerrados y resueltos requieren
+  acción explícita.
 - B. **Todos los casos siempre**, incluidos cerrados/resueltos. Puede ocultar lo
   accionable y mezclar historia con pendiente.
 - C. **Solo Pendiente/Exceso**, ocultando Revisar y No disponible. Se rechaza: oculta
@@ -272,6 +283,9 @@ Recuperado, no como coste propio ni caja total.
 **Recomendación:** A, con contadores por tipo/estado y sin total económico global. El
 filtro de ciclo selecciona casos con actividad en la ventana; el importe actual se
 etiqueta como actual, no como pendiente al corte.
+
+**Decisión aprobada (usuario, 2026-10-27): opción A.** Incluye `Alerta` y `No
+disponible` en el alcance por defecto y acceso explícito al histórico.
 
 ### Q-S21-04 — Comida cuando E3.5 no está integrada
 
@@ -289,6 +303,9 @@ etiqueta como actual, no como pendiente al corte.
 
 **Recomendación:** A. Conserva visibilidad del alcance pendiente sin simular motor y
 distingue lo que E3.4 ya permite ver de lo que depende de E3.5.
+
+**Decisión aprobada (usuario, 2026-10-27): opción A.** Detalle E3.4 visible; agregados
+E3.5/`FIN_NETA` No disponible hasta integrarse y aceptarse.
 
 ## 4. Cobertura del brainstorming
 
@@ -312,3 +329,12 @@ No hay feedback visual del usuario en esta ronda; no se declara aprobada.
 
 Sin clarificaciones posteriores. Las respuestas futuras se añadirán sin reescribir
 las preguntas ni las decisiones anteriores.
+
+## 7. Registro de aprobación — 2026-10-27
+
+Fuente: mensaje real del usuario en la sesión `SPEC21-E3.6`. Texto relevante:
+«Apruebo las cuatro decisiones propuestas» (Q-S21-01–04, opción A) y «Autorizo el
+cierre documental de SPEC21». No autoriza desarrollo E3.6, ni reanudación de DEV18,
+DEV18-LINUX u otras tareas bloqueadas. La publicación de rama/PR se rige por la
+autorización expresa de cierre documental; el merge sigue requiriendo aprobación
+separada.
