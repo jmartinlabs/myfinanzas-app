@@ -4,22 +4,72 @@ Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 ## Estado vigente — recuperación DEV32 (2026-10-27)
 
 La tabla siguiente conserva la evidencia histórica de 3094563/run 39734037872.
-El candidato actual es **ceadd9d** sobre el merge **582846c** (a090112 + main
+El candidato actual es **f0b685c** sobre el merge **582846c** (a090112 + main
 26b6f0c) y no hereda automáticamente esos PASS. Revalidación en curso:
 
 - Esquema real v16; B5 y `infra/release.py` derivan `schemaVersion`/`e3.4-v16` del
   código. Matriz de rollback definida para el baseline anterior main 26b6f0c
   (16→16), con esquema, datos, autenticación y escrituras confirmadas; ejecución
-  pendiente de CI. No acredita rollback de servicio con el bind/Quadlet nuevo,
-  fuera del alcance de AC-18.
-- QA independiente (subagente distinto del autor): APPROVE FOR CI. PASS locales:
-  B5 1/0 (6 aserciones), typecheck, build, `py_compile`, `node --check`, contratos
+  pendiente de CI. La publicación de puerto/Quadlet no forma parte del texto de
+  AC-18 (AC-10/13); si se exige rollback de servicio por el bind nuevo, el
+  baseline main no lo permite y queda como residual explícito, no como reducción
+  del criterio.
+- Cobertura posterior a v6: `infra/tests/release-fixture.mjs` crea filas sintéticas
+  por módulo v7–v16, auditoría/foto/enlace y una segunda escritura tras la
+  actualización; `release-contract.mjs` las incluye en el snapshot y consulta las
+  rutas GET de Deudas, Presupuestos, Ciclos, Plan de ciclo, Plan anual, Nómina,
+  Anticipos, Compartidos, Vehículos y Revisión Comida en ambas imágenes. Las
+  pruebas de módulo existentes en este SHA (tabla siguiente) siguen siendo la
+  evidencia de semántica, migración y backup/restore específicos; la matriz
+  cruzada no las sustituye ni se apoya en un PASS histórico.
+- AC-18 se contrasta cláusula por cláusula en la tabla siguiente, sin afirmar que
+  la matriz prueba por sí sola mantenimiento/único escritor o frontend/API
+  emparejados. Publicación de puerto/Quadlet no forma parte del texto de AC-18
+  (AC-10/13); si se exige rollback de servicio por el bind nuevo, el baseline main
+  no lo permite y queda como residual explícito, no como reducción del criterio.
+- QA independiente (subagente distinto del autor): APPROVE FOR CI para el
+  candidato base y la ampliación de cobertura. PASS locales: B5 1/0 (6
+  aserciones), typecheck, build, `py_compile`, `node --check`, contratos
   schema16/e3.4-v16 para HEAD y 26b6f0c. Suite API local 216/47, mismo conjunto de
-  fallos que main 212/47 por límites macOS (libc.so.6, age-keygen, rutas /private
-  y cascadas de producción); no es PASS de aceptación.
-- `python3 scripts/verify` UNRUN local (Python 3.9.6; requiere 3.10+). Linux/rootless
-  CI y AC-22 permanecen **PENDING** hasta el run real del SHA final en PR #30.
-  Sin retries, omisiones ni relajación de guardas/assertions para obtener verde.
+  fallos que main 212/47 por límites macOS; no es PASS de aceptación.
+  `python3 scripts/verify` UNRUN local (Python 3.9.6; requiere 3.10+).
+  Linux/rootless CI y AC-22 permanecen **PENDING** hasta el run real del SHA final
+  en PR #30. Sin retries, omisiones ni relajación de guardas.
+
+### Cobertura por módulo en este SHA
+
+| Módulo | Pruebas existentes (módulo/backup) | Matriz cruzada nueva |
+| --- | --- | --- |
+| v7 Deuda | `deudas.test.ts`: D4 continuidad v6, D5 rollback de esquema/datos | fila D9001 + D9002 y GET `/api/deudas` |
+| v8 Presupuestos | `presupuestos.test.ts`: B7 continuidad v7, B8 restore8 | fila PRE9001 + PRE9002 y GET `/api/presupuestos` |
+| v9 Ciclos | `cycle-operations.test.ts` para operaciones/auditoría v9; `planes-ciclo.test.ts` P6/P11 desde v9. `ciclos.test.ts` AC20/21 es histórico E1.2/v2 | ciclo 9001 + 9002 y GET `/api/ciclos` |
+| v10 Plan de ciclo | `planes-ciclo.test.ts` P6 upgrade v9 y P11 restore | `cycle_plans/lines` y GET `/api/planes-ciclo/9001` |
+| v11 Plan anual | `plan-anual.test.ts` continuidad v10→v11 | línea 2026/2027 y GET `/api/plan-anual/2026` |
+| v12 Nómina | `nomina.test.ts` P11 migración v11 y P14 rollback | PAY9001/PAY9002 y GET `/api/nomina` |
+| v13 Anticipos | `anticipos.test.ts` AC21/26 continuidad schema12 y AC14/15 foto/neto; fixture incluye `fotos_neto_apertura` | REF9001/REF9004, foto y GET `/api/anticipos/fichas` |
+| v14 Vehículos | `vehiculos.test.ts` v13→v15; `vehiculos-backup.test.ts` v16 | REF9003/REF9006, ficha y GET `/api/vehiculos` |
+| v15 Compartidos | `compartidos.test.ts` B-T01 v13→v15 | REF9002/REF9005, participantes y GET `/api/compartidos/fichas` |
+| v16 Revisión Comida | `revision-comida.test.ts` v13→v16; `revision-comida-backup.test.ts` | RC9001/RC9002 y GET `/api/revision-comida` |
+
+La matriz cruzada crea datos con la imagen anterior, añade una segunda escritura
+con la actual y comprueba snapshots exactos y lectura API al volver a la anterior
+y al restaurar. Las pruebas de módulo cubren semántica, migración y backup/restore
+que la matriz no replica; ninguna sustituye a la otra.
+
+### AC-18 / D2: cláusula y evidencia
+
+| Cláusula AC-18 / D2 | Evidencia | Estado |
+| --- | --- | --- |
+| Esquema SQLite compatible | Dos imágenes v16 y `schemaVersion` derivado; matriz 16→16 | Diseño; CI pendiente |
+| Contrato de datos v7–v16 | `release-fixture.mjs` + snapshots de módulo, auditoría, foto y enlace; pruebas de módulo para intentos/semántica | Diseño; CI pendiente |
+| Autenticación compatible | Enroll/login/MFA/recovery/revocación en la matriz; pruebas 31 | Diseño; CI pendiente |
+| Actualizar release y volver a anterior tras escrituras | Anterior 26b6f0c → actual → anterior; escrituras API y de módulo | Diseño; CI pendiente |
+| Todas las escrituras confirmadas conservadas | Snapshots exactos + lecturas GET de los diez módulos + `payroll_allocations`/`movimiento_anticipo` | Diseño; CI pendiente |
+| Mantenimiento controlado / único escritor | Runbook y AC-16; la matriz es secuencial y no se presenta como prueba de exclusión mutua | Existente, no matrix PASS |
+| Frontend/API emparejados | `release.py` manifiesto/verify + lecturas API de la matriz | Existente, no matrix PASS |
+| Sin rollback/restauración automática incompatible | `require_rollback` negativos y gate de restore | Existente/diseño |
+| D2 cifrado/clave/password/TOTP/sesiones | Restore age/clave, login, MFA y revocaciones | Diseño; CI pendiente |
+| Servicio por bind/Quadlet | No aparece en AC-18; pertenece a AC-10/13. Baseline main sin `API_BIND_HOST` | Residual explícito |
 
 | Acceptance ID | Preconditions and action | Expected result | Automated/manual method and command | Actual result / status | Run date / evidence |
 | --- | --- | --- | --- | --- | --- |
@@ -40,18 +90,18 @@ El candidato actual es **ceadd9d** sobre el merge **582846c** (a090112 + main
 | AC-15 | Parar con SIGTERM durante uso y repetir tras SIGKILL con commit confirmado | Cierre scoped, puerto liberado y reapertura íntegra; sin perder commits confirmados ni borrar sidecars a mano | procesos SIGTERM y SIGKILL reales, health y reapertura integrity/FK | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-16 | Dos arranques/inicializadores compiten en entorno rootless | Garantías 31 conservadas, sin sobrescritura ni doble clave; único servicio escritor activo según runbook | suite API P4/P5/P8 concurrentes en namespace rootless, runbook único escritor | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-17 | Inyectar ENOSPC y fallo fsync antes/después de publicación | Error sin aceptar pareja parcial; post-rename preserva conjunto válido y declara durabilidad incierta, sin borrar/recrear | suite API fallos ENOSPC/fsync/publicación antes/después en imagen final | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-18 | Demostrar compatibilidad de esquema SQLite, contrato de datos y autenticación entre versiones; actualizar release y volver a anterior compatible tras nuevas escrituras confirmadas | Mantenimiento controlado, único escritor, frontend/API emparejados; todas las escrituras confirmadas conservadas, contratos de datos y autenticación comprobados en ambas versiones; no rollback/restauración automática incompatible | release-contract.mjs: anterior seed → actual update → anterior rollback | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
+| AC-18 | Demostrar compatibilidad de esquema SQLite, contrato de datos y autenticación entre versiones; actualizar release y volver a anterior compatible tras nuevas escrituras confirmadas | Mantenimiento controlado, único escritor, frontend/API emparejados; todas las escrituras confirmadas conservadas, contratos de datos y autenticación comprobados en ambas versiones; no rollback/restauración automática incompatible | release-contract.mjs: anterior seed → actual update → anterior rollback + fixture por módulo | PASS histórico 3094563 — no vigente para f0b685c; matriz ampliada PENDING | 2026-10-22; 3094563 / run 39734037872; revalidar en CI |
 | AC-19 | Intentar rollback incompatible/manifiesto corrupto o restore sobre destino existente | Bloqueo sin modificar estado; recuperación solo explícita a destino nuevo conforme a 31 | verify frontend/OCI/pin corruptos + require_rollback negativos + restore existente | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-20 | Crear backup con WAL y restaurar en conjunto nuevo mediante imagen/UID acordados | Integridad/identidad/clave/MFA válidos, revocaciones 31 y no restauración parcial; no copias externas alegadas | release-contract.mjs restore: WAL confirmado, age, key/integrity/revocación/MFA | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-21 | Ejecutar pruebas infraestructura en runner/VM rootless + systemd real | Evidencia de comandos/versiones/resultados, sin omisiones ocultas ni equivalencia de mocks; limpieza limitada a fixtures propios | preflight + integración completos, versiones/UID registrados y cleanup verificado | PASS — imagen final; suite integral sin tests omitidos | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
-| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite91 API/2 E2E + 22/18 controles | PENDING — ceadd9d/582846c: QA APPROVE FOR CI; B5/typecheck/build locales PASS; verify y Linux/rootless pendientes | 2026-10-27; progress32; no reutilizar 3094563 |
+| AC-22 | Ejecutar suites existentes, tipos/build y controles del proyecto | Todo PASS; R6 falla de forma visible si reaparece; no retries/omisión ni cambio financiero para ocultarlo | validate push/PR + B5 determinista + suite API/2 E2E + 22/18 controles | PENDING — código f0b685c/merge 582846c: QA APPROVE FOR CI; B5/typecheck/build locales PASS; matriz ampliada y verify/Linux rootless pendientes | 2026-10-27; progress32; no reutilizar 3094563 |
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Estado vigente: 23/24 verificados; AC-22 PENDING/PAUSED. Candidato B5 y CI completa b8 PASS; pendiente de revisión, sin cierre de Dev32.**
-La tabla es el estado vigente; los bloques inferiores conservan la historia de
-fallos/ensayos y no sustituyen esta aceptación. CI del HEAD documental final se
-vincula en PR #30, sin inferir aprobación de merge ni despliegue.
+**Estado vigente del candidato f0b685c/582846c: AC-18 y AC-22 PENDING; matriz ampliada definida y CI Linux/rootless pendiente. La tabla anterior es histórica de 3094563 y no se hereda.**
+Los bloques inferiores conservan la historia de fallos/ensayos y no sustituyen
+esta aceptación. CI del HEAD documental final se vincula en PR #30, sin inferir
+aprobación de merge ni despliegue.
 
 ## Regression checks
 2026-10-22: typecheck/build PASS, API completa 86 PASS / 1319 assertions,

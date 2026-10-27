@@ -1,6 +1,6 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: RECOVERY CANDIDATE — 23/24 AC históricos; AC-22 pendiente de CI Linux/rootless y aprobación. Candidato ceadd9d reconciliado con main 26b6f0c; sin cierre, merge ni deploy.
+Current state: RECOVERY CANDIDATE — 23/24 AC históricos; AC-22 pendiente de CI Linux/rootless y aprobación. Candidato f0b685c reconciliado con main 26b6f0c; sin cierre, merge ni deploy.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -12,7 +12,7 @@ Current state: RECOVERY CANDIDATE — 23/24 AC históricos; AC-22 pendiente de C
 | Quadlet y WAL/SHM | verified final image | systemd --user real, health→kill→restart, SIGTERM/SIGKILL, 3/60s/5s estable, WAL íntegro; sin reboot/logout remoto |
 | Fallos/update/rollback cruzado | verified | 39734037872: b0bc5a7→3094563→b0bc5a7, datos/auth/escrituras conservados; restore age con WAL/MFA y negativos incompatibles PASS |
 | Regresión local y PR independiente | candidate preserved / review pending | B5 antes FAIL/después PASS; 91 API/1415 aserciones y 2 E2E (47.5s) PASS; corrección de snapshot sin reglas financieras |
-| Reconciliación con main y adaptación al esquema vigente | verified candidate / CI pending | ceadd9d sobre merge 582846c (a090112 + main 26b6f0c); B5 deriva schemaVersion 16; contratos release 16/e3.4-v16; QA independiente APPROVE FOR CI |
+| Reconciliación con main y adaptación al esquema vigente | verified candidate / CI pending | f0b685c sobre merge 582846c (a090112 + main 26b6f0c); B5 deriva schemaVersion 16; contratos release 16/e3.4-v16; QA independiente APPROVE FOR CI |
 
 ## Recuperación DEV32 — reconciliación con main (2026-10-27)
 
@@ -22,7 +22,7 @@ adaptar los ensayos al esquema vigente y completar AC-22 mediante QA independien
 y CI Linux/rootless. Sin merge, VPS, despliegue, datos reales ni publicación.
 
 - Checkout aislado `.../T/opencode/dev32-recovery`; rama `feat/32-ejecucion-rootless`.
-  Base previa a090112, main 26b6f0c, merge 582846c, candidato de código ceadd9d.
+  Base previa a090112, main 26b6f0c, merge 582846c, candidato de código f0b685c.
 - `apps/api/src/database.ts` es idéntico a main 26b6f0c: se conserva el snapshot de
   lectura `db.transaction(() => inspectIdentity(db))()` antes de `prepareSchema` y
   la verificación de pareja efectiva en producción. No se restaura la sonda antigua
@@ -31,21 +31,36 @@ y CI Linux/rootless. Sin merge, VPS, despliegue, datos reales ni publicación.
   del código en vez de fijar v6; `e3.4-v16` procede de `backup.ts`. No se crea ni
   modifica ninguna migración financiera.
 - Matriz de rollback: baseline anterior main 26b6f0c (16→16), compatible en
-  esquema/datos/autenticación. La matriz está definida para cubrir esos contratos
-  y las escrituras confirmadas; su ejecución en Linux/rootless sigue pendiente y
-  no se apoya en el PASS histórico 3094563. No acredita rollback de servicio a
-  través del bind/Quadlet nuevo.
-- QA independiente (subagente distinto del autor, sin escritura): APPROVE FOR CI.
-  B5 PASS 1/0 y 6 aserciones; typecheck/build PASS; Python compila; contratos HEAD y
-  main 26b6f0c = schema16/e3.4-v16; `node --check` PASS. Suite API local 216 PASS/47
-  FAIL, con el mismo conjunto de fallos que main (212/47) por límites del entorno
-  macOS (libc.so.6, age-keygen, rutas /private y cascadas de producción); no es
-  PASS de aceptación. `python3 scripts/verify` UNRUN local por Python 3.9.6;
-  Linux/rootless UNRUN.
-- Hallazgo medio de QA: el baseline anterior main no incluye API_BIND_HOST, así que
-  AC-18 se limita a esquema/datos/autenticación; no se declara rollback de servicio.
-  Hallazgos bajos: contratos de auth no derivados y referencias documentales antiguas;
-  se corrigen las referencias propias y se conserva el resto como riesgo documentado.
+  esquema/datos/autenticación. `release-fixture.mjs` crea filas sintéticas por
+  módulo v7–v16, auditoría, foto y enlace, añade una segunda escritura tras la
+  actualización y `release-contract.mjs` compara snapshots exactos y consulta las
+  diez rutas GET de módulo en ambas imágenes. La ejecución en Linux/rootless sigue
+  pendiente y no se apoya en el PASS histórico 3094563.
+- AC-18 se contrasta cláusula por cláusula en testplan: esquema/datos/autenticación,
+  actualizar y volver a anterior tras escrituras, escrituras conservadas y
+  comprobadas en ambas versiones, sin rollback/restauración automática incompatible.
+  La matriz no se presenta como prueba de único escritor ni de frontend/API
+  emparejados; esas cláusulas dependen de runbook/AC-16 y del manifiesto de release.
+  Publicación de puerto/Quadlet no aparece en AC-18 (AC-10/13); si se exige rollback
+  de servicio por el bind nuevo, el baseline main no lo permite y queda como residual
+  explícito, no como reducción del criterio ni como PASS de este candidato.
+- QA independiente (subagente distinto del autor, sin escritura): APPROVE FOR CI
+  para el candidato base y la ampliación de cobertura. PASS locales: B5 1/0
+  (6 aserciones), typecheck/build, `py_compile`, `node --check`, contratos
+  schema16/e3.4-v16 para HEAD y 26b6f0c. Suite API local 216/47, mismo conjunto de
+  fallos que main 212/47 por límites del entorno macOS (libc.so.6, age-keygen,
+  rutas /private y cascadas de producción); no es PASS de aceptación.
+  `python3 scripts/verify` UNRUN local por Python 3.9.6; Linux/rootless UNRUN. La
+  matriz ampliada se validó localmente en demo: 32 tablas, filas por módulo núcleo
+  más auditoría/foto/enlace, `integrity_check=ok`, FK vacío y las diez rutas GET
+  con 200. Las tablas de intentos y semántica específica siguen cubiertas por las
+  pruebas de módulo.
+- Hallazgos resueltos: cobertura limitada a seis tablas y exclusión del rollback de
+  servicio por interpretación; se amplía el fixture y se contrasta AC-18 por
+  cláusulas, con CI pendiente. Residuales: el baseline main no incluye
+  API_BIND_HOST (rollback de servicio por bind/Quadlet no demostrado), contrato de
+  auth no derivado y barrera B5 dependiente del SQL literal. Se corrigen las
+  referencias documentales propias y el resto queda como riesgo explícito.
 - Estado: AC-22 sigue ABIERTO. El push/CI de PR #30 se coordina con Codex con un
   único responsable; la aprobación de merge sigue siendo del usuario. No se
   reutiliza el PASS histórico 3094563 para este candidato.
