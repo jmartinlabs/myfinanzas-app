@@ -2,16 +2,17 @@
 
 Specification: [22-ventas-posicion-broker-specification.md](22-ventas-posicion-broker-specification.md)
 Brainstorming: [22-ventas-posicion-broker-brainstorming.md](22-ventas-posicion-broker-brainstorming.md)
-Status: **PROPOSED rev2 — matriz de diseño; D1–D7 confirmadas A por el usuario el 2026-10-27;
-wireframes rev3 aprobados visualmente el 2026-10-28; ningún caso ejecutado. Specification completa
-no aprobada; DEV22 no autorizado.**
+Status: **PROPOSED rev2 — matriz de diseño; D1–D7 confirmadas A (2026-10-27); wireframes rev3
+aprobados visualmente (2026-10-28); specification completa aprobada el 2026-10-28. Testplan
+pendiente de aprobación explícita; ningún caso ejecutado. DEV22 no autorizado.**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
-aprobados visualmente el 2026-10-28.
+aprobados visualmente el 2026-10-28; specification completa aprobada por el usuario el
+2026-10-28.
 Base documental: `main` `4edcfeb`, 2026-10-28.
 Historial: rev1 (2026-10-27) matriz inicial de 45 AC; rev2 (2026-10-27) registra Q0 resuelta y
-D1–D7 confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual rev3; no hay
-implementación, código E4.2, migración ni datos reales.
+D1–D7 confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual rev3; la specification
+completa se aprobó el 2026-10-28. No hay implementación, código E4.2, migración ni datos reales.
 
 ## 1. Alcance, entorno y lectura de la matriz
 
@@ -174,8 +175,8 @@ implementación en esta ronda.
 
 ## 7. Siguiente acción
 
-Los wireframes rev3 están aprobados visualmente desde el 2026-10-28 y D1–D7 siguen confirmadas A.
-E4.1 está integrada (`156a50d`, v18). SPEC22 permanece candidata hasta el cierre documental y la
-coordinación D7/SPEC19 (enmienda mínima de SPEC19). Solo con una autorización de desarrollo
-separada se podrá abrir DEV22, implementar y ejecutar esta matriz con candidato y evidencia. No se
-inicia DEV22 por esta ronda documental.
+La specification completa está aprobada desde el 2026-10-28 y los wireframes rev3 también. El
+**testplan sigue pendiente de aprobación explícita**; no se infiere de la aprobación de la spec.
+E4.1 está integrada (`156a50d`, v18) y D7 requiere una enmienda mínima de SPEC19. Solo con el
+testplan aprobado y una autorización de desarrollo separada se podrá abrir DEV22, implementar y
+ejecutar esta matriz con candidato y evidencia. No se inicia DEV22 por esta ronda documental.

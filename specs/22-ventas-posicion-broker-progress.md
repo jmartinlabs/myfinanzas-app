@@ -1,8 +1,8 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
-Status: **PROPOSED rev3 — wireframes rev3 aprobados visualmente el 2026-10-28; SPEC22 sigue
-candidata hasta el cierre documental y la coordinación D7/SPEC19 (E4.1 integrada). NO aprobada en
-conjunto. DEV22 no iniciado.**
+Status: **SPEC22 — specification completa APROBADA el 2026-10-28; wireframes rev3 aprobados
+visualmente. Testplan pendiente de aprobación explícita y coordinación D7/SPEC19. DEV22 no
+iniciado.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -20,8 +20,16 @@ Fecha: 2026-10-28.
   (SHA-256 `50153491…b3cd1f`); `overflow-report.json` 20/20 sin desbordamiento.
 - **Retoques visuales menores:** el usuario los difiere al final del proyecto (2026-10-28); no
   bloquean la aprobación de la specification ni DEV22.
-- **Pendiente:** cierre documental de SPEC22 y coordinación D7/SPEC19 (enmienda mínima de
+- **Pendiente:** aprobación explícita del testplan y coordinación D7/SPEC19 (enmienda mínima de
   SPEC19); E4.1 ya está integrada en `156a50d`. No se inicia DEV22.
+
+## Aprobación de la specification completa — 2026-10-28
+
+- **Mensaje explícito del usuario:** «Apruebo la specification completa de SPEC22.»
+- **Objeto:** contenido de la specification en el candidato de PR #105, head `798e1e6`; este
+  commit solo registra el estado aprobado.
+- **Límite:** no autoriza DEV22, esquema, merge ni despliegue. El testplan requiere aprobación
+  explícita separada.
 
 ## Checkpoint documental — 2026-10-27
 
@@ -112,10 +120,9 @@ CI remoto ni verificación de implementación en esta ronda.
 
 ## Próxima acción segura
 
-1. Publicar la rama documental con la aprobación visual registrada; su merge requiere aprobación
-   expresa.
-2. Presentar la specification completa para aprobación explícita del usuario; la aprobación
-   visual no aprueba la spec.
+1. Publicar la rama documental con la aprobación de la specification; su merge requiere
+   aprobación expresa del nuevo head.
+2. Presentar el testplan para aprobación explícita; no se infiere de la aprobación de la spec.
 3. Preparar la enmienda mínima de SPEC19 para D7 como propuesta separada; no modificar SPEC19 en
    esta ronda.
 4. No iniciar DEV22 ni reservar versión sin autorización de desarrollo separada.

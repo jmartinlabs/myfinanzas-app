@@ -1,13 +1,14 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Specification
 
-Status: **PROPOSED rev2 — D1–D7 confirmadas A por el usuario el 2026-10-27; wireframes rev3 de
-W2/W5 y W11–W16 APROBADOS visualmente el 2026-10-28; la specification completa sigue pendiente
-de cierre documental y de la coordinación D7/SPEC19 (E4.1 integrada). DEV22 no autorizado.**
+Status: **APPROVED rev2 — D1–D7 confirmadas A (2026-10-27); wireframes rev3 aprobadas visualmente
+(2026-10-28); specification completa APROBADA por el usuario el 2026-10-28. Testplan pendiente de
+aprobación explícita. DEV22 no autorizado.**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
 aprobados visualmente por el usuario el 2026-10-28 con el mensaje «Apruebo la revisión visual
-rev3 de W2/W5 y W11–W16 de SPEC22, incluidos los estados y bloqueos D1/D2/D3.» La aprobación
-visual no autoriza DEV22, esquema, commits, push, PR ni merge.
+rev3 de W2/W5 y W11–W16 de SPEC22, incluidos los estados y bloqueos D1/D2/D3»; specification
+completa aprobada por el usuario el 2026-10-28 con el mensaje «Apruebo la specification completa
+de SPEC22». La aprobación no autoriza DEV22, esquema, merge ni despliegue.
 Context and brainstorming: [22-ventas-posicion-broker-brainstorming.md](22-ventas-posicion-broker-brainstorming.md),
 [roadmap E4.2](roadmap.md), [referencia funcional R5](functional-reference-v5.11.md),
 [SPEC19 E4.1](19-instrumentos-compras-inversion-specification.md) y
@@ -17,8 +18,9 @@ Base documental: `main` `4edcfeb` (2026-10-28). Los artefactos se prepararon ini
 sin código ni historia de esa rama. E4.1 rev10 quedó integrada en `156a50d`; no se modifica
 SPEC19.
 Historial: rev1 (2026-10-27) propuesta inicial; rev2 (2026-10-27) registra Q0 resuelta y D1–D7
-confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual de los wireframes rev3. No
-autoriza desarrollo, migraciones, pruebas ejecutables, commits, push, PR, merge ni despliegue.
+confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual de los wireframes rev3; rev2.2
+(2026-10-28) registra la aprobación de la specification completa. No autoriza desarrollo,
+migraciones, pruebas ejecutables, commits, push, PR, merge ni despliegue.
 
 ## 1. Contexto, alcance y estado de las fuentes
 
@@ -87,9 +89,9 @@ valoración o el resultado de E4.3.
 
 Las decisiones D1–D7 del [brainstorming](22-ventas-posicion-broker-brainstorming.md) fueron
 **aprobadas A por el usuario el 2026-10-27**. Las alternativas B quedan descartadas. La revisión
-visual rev3 está aprobada desde el 2026-10-28; la aprobación de la specification completa sigue
-pendiente de forma explícita. Si una decisión cambiara, se revisarían la funcionalidad, los AC y
-el testplan.
+visual rev3 está aprobada desde el 2026-10-28 y la **specification completa fue aprobada por el
+usuario el 2026-10-28**. El testplan sigue pendiente de aprobación explícita. Si una decisión
+cambiara, se revisarían la funcionalidad, los AC y el testplan.
 
 | ID | Decisión confirmada A | Efecto | Alternativa descartada |
 | --- | --- | --- | --- |
@@ -964,13 +966,13 @@ E4.3 (Valoración y resultados de posiciones) necesitará, como mínimo:
 
 ## 16. Siguiente acción
 
-1. Los wireframes W11–W16 y W2/W5 rev3 están **aprobados visualmente** desde el 2026-10-28;
-   D1–D7 siguen confirmadas A y no se reabren. La aprobación visual no autoriza DEV22.
-2. SPEC22 sigue **candidata**: falta el cierre documental y la coordinación D7/SPEC19. E4.1 ya
-   está integrada (`156a50d`, v18), así que no queda una dependencia de integración pendiente.
+1. La specification completa está **aprobada** desde el 2026-10-28; los wireframes rev3 también.
+   D1–D7 siguen confirmadas A y no se reabren. La aprobación no autoriza DEV22.
+2. El **testplan** sigue pendiente de aprobación explícita; no se infiere de la aprobación de la
+   specification.
 3. SPEC19 rev10 está aprobada e integrada en `156a50d`; no se modifica SPEC19 ni se reabre su
    aprobación. D7 requiere una enmienda mínima y explícita de SPEC19 (guard de cantidad vendida)
    que debe aprobarse por separado antes de DEV22.
-4. Solo después de aprobar el cierre documental y con una autorización de desarrollo separada se
-   podrá abrir DEV22, resolver la versión de esquema, implementar y ejecutar el testplan. Esta
-   spec no reserva versión ni inicia DEV22.
+4. Solo con el testplan aprobado y una autorización de desarrollo separada se podrá abrir DEV22,
+   resolver la versión de esquema, implementar y ejecutar el testplan. Esta spec no reserva
+   versión ni inicia DEV22.
