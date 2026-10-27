@@ -773,6 +773,14 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
     expect(db.query("SELECT id FROM referencias WHERE id='REF500'").get()).toEqual({ id: "REF500" });
     expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
+    for (const table of [
+      "fichas_vehiculo",
+      "fichas_compartidos",
+      "participantes_compartido",
+      "revision_comida",
+      "movimiento_compartido",
+    ])
+      expect(db.query(`SELECT COUNT(*) n FROM ${table}`).get()).toEqual({ n: 0 });
     db.close();
 
     const v14 = materializeContract(join(dir, "v14.sqlite"), "C14-VEHICULOS-C69E343", (fixture) => {
@@ -834,6 +842,18 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
     extraDb.exec("CREATE TABLE synthetic_demo(x INTEGER)");
     extraDb.close();
     expect(() => openDatabase(extra)).toThrow("Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.");
+
+    const incomplete16 = materializeContract(join(dir, "incomplete16.sqlite"), "C16-REVISION-COMIDA-26B6F0C");
+    const incomplete16Db = new Database(incomplete16);
+    incomplete16Db.exec("DROP TRIGGER revision_comida_no_delete");
+    incomplete16Db.close();
+    expect(() => openDatabase(incomplete16)).toThrow("Contrato de esquema v16 desconocido o incompleto; no se modificará esta base.");
+
+    const extra17 = materializeContract(join(dir, "extra17.sqlite"), "C17-D5-CF6954A");
+    const extra17Db = new Database(extra17);
+    extra17Db.exec("CREATE TABLE synthetic_d5(x INTEGER)");
+    extra17Db.close();
+    expect(() => openDatabase(extra17)).toThrow("Contrato de esquema v17 desconocido o incompleto; no se modificará esta base.");
 
     const v19 = materializeContract(join(dir, "v19.sqlite"), "C15-COMPARTIDOS-AD2EDFE");
     const v19Db = new Database(v19);
