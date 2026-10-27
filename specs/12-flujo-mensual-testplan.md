@@ -1,9 +1,9 @@
-# 12 — Verificación de desarrollo vigente · 2026-10-25
+# 12 — Verificación de desarrollo integrado · actualizado 2026-10-27
 
 Autorización EXT-CODEX-DEV12 registrada en [progress](12-flujo-mensual-progress.md).
 56 AC actuales; ninguno diferido. Mapa previo al código, responsable único Codex;
-QA independiente posterior OpenCode pendiente. La historia inferior conserva su fecha
-sin sustituir el gate de desarrollo ahora autorizado.
+QA independiente QA12-CLOSE favorable. La historia inferior conserva su fecha y no
+sustituye el estado integrado.
 
 F = `bun test apps/api/src/flujo-mensual.test.ts`, integración SQLite real y API/MFA;
 Q4 = `bun test apps/api/src/nomina-mensual.test.ts`, motor único y vectores M1–M10;
@@ -15,12 +15,14 @@ financiero, fuente ausente no se acredita por tabla vacía, ni ausencia como0.
 Candidato estable: tipos/build y entrada canónica `python3 scripts/verify`;
 full Linux/restore exigidos en CI del SHA publicado, no sustituidos por macOS.
 Evidencia local del árbol de código `519978cbae0e5dbcd915d0859382f7057e029d4e`, base `10bb794`.
-Estado remoto del HEAD candidato y CI por SHA en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67);
-esta consolidación solo cambia checkpoint/evidencias, no código ni pruebas.
+PR67 fusionada; candidato `e66bbd3`, integración `a445f908`; CI `40243368188`
+baseline/full/required SUCCESS. Esta consolidación solo actualiza estado documental,
+no código ni pruebas.
 PASS indica comprobación ejecutada por el autor, no QA independiente. Los escenarios
 positivos que requieren cobertura bancaria completa o identidad de Ahorro no instalada
-conservan UNRUN de integración; no se reclasifican como AC futuros. El usuario confirmó
-«Conservar ausencia de cobertura y subtotal Parcial».
+conservan UNRUN de integración; no se reclasifican como AC futuros. La integración no
+acredita los 56 AC completos. El usuario confirmó «Conservar ausencia de cobertura y
+subtotal Parcial».
 
 | AC | Positivo/negativo e integración | Resultado esperado | Comando/estado |
 | --- | --- | --- | --- |
@@ -93,8 +95,8 @@ conservan UNRUN de integración; no se reclasifican como AC futuros. El usuario 
 | PASS | `bun run typecheck`, `bun run build` | árbol candidato; builds no despliegan |
 | PASS | `python3 scripts/verify baseline` · Python3.12.14 | Baseline canónica completa:57 controles proyecto/CI,23validador,9uso,8hooks,15entrada; no fase application |
 | FAIL | Regresión ampliada Deudas/Plan del ciclo en macOS |60PASS/2FAIL/589assertions; ambos fallos requieren libc.so.6 en copia/restauración. Selección local incompatible, no se repite/omite ni se declara verde; CI Linux obligatoria |
-| UNRUN local | Entrada canónica full Linux del SHA publicado | macOS no la sustituye; resultado remoto vigente por SHA en PR67 |
-| UNRUN | QA independiente OpenCode | revisión del candidato final, no realizada por este autor |
+| UNRUN local | Entrada canónica full Linux del SHA publicado | macOS no la sustituye; resultado remoto PASS en CI 40243368188 |
+| PASS · QA independiente | QA12-CLOSE sobre candidato e66bbd3 | favorable según el registro del merge a445f908; informe no incorporado al repo |
 
 Prerrequisitos existentes reutilizados; sin instalación ni cambios de lockfile. Python3
 por defecto del sistema era anterior a3.10; se usa runtime3.12.14 disponible, sin alterar
@@ -130,6 +132,11 @@ No se afirma equivalencia numérica con Excel ni se cierran B3/Dev32.
 ---
 
 ## Historia documental (supersedida solo en estado de autorización)
+
+> Nota de reconciliación 2026-10-27: las menciones siguientes a dev12 no autorizado,
+> implementación pendiente o QA pendiente son historia documental. Quedaron superadas
+> por la autorización, la implementación, QA12-CLOSE y la integración de PR67; se
+> conservan como registro y no como estado vigente.
 
 # 12 — Flujo mensual base: cobertura diseñada rev3
 
