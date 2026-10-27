@@ -1,14 +1,23 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Progress DEV17
 
-Status: **WAITING — secuencia coordinada D5 → E4.1 → DEV17.** E4.1 y DEV17 conformes con
-la propuesta; **falta confirmación de D5 y no hay liberación efectiva**. No se inició
-implementación, no se modificó código, no se ejecutaron pruebas funcionales ni se creó
-candidato. Se conserva el checkpoint `c768d38`; durante la espera solo se preparan
-progress17/testplan17 propios.
+Status: **STOP REQUESTED — NO AUTO-RESUME.** Secuencia coordinada **D5 → E4.1 →
+DEV17**. **D5 ya confirmó la secuencia, pero no existe liberación efectiva** ni cesión de
+archivos. No se inició implementación ni se creó candidato. El trabajo queda preservado en
+esta rama; no se reanuda automáticamente.
 
 Specification: [17-e44-deuda-completa-specification.md](17-e44-deuda-completa-specification.md)
 Brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md)
 Test plan: [17-e44-deuda-completa-testplan.md](17-e44-deuda-completa-testplan.md)
+
+## Current checkpoint — handoff 2026-10-27
+
+- **Rama/SHA:** `codex/dev17-e44-deuda-completa` @ `1d4f932e64287a424cb80d6dca24ddda3b63ab2a`; árbol limpio; rama publicada en `origin` en el mismo SHA.
+- **Aprobación:** specification 17 y wireframes de la revisión `1d539a8` aprobados («Las apruebo»); desarrollo DEV17-E44 autorizado por separado («Pasamos al desarrollo»).
+- **Implementación:** **no iniciada**. Sin código, SQL, migración, pruebas funcionales, navegador, QA de candidato ni versión de esquema reservada.
+- **Bloqueo:** integraciones aprobadas y cesiones explícitas pendientes de **D5 → E4.1 → DEV17**. D5 ya confirmó la secuencia, pero **no hay liberación efectiva**.
+- **Siguiente gate:** verificar `main`, dependencias, ausencia de escritores, ownership y versión real antes de escribir código. Hasta entonces, DEV17 no reclama archivos compartidos ni versión.
+- **Estado de trabajadores:** ningún worker controlado en ejecución; esta sesión se detiene. No se controlan sesiones externas.
+- **Próxima instrucción:** una petición nueva del usuario/supervisor para inspeccionar este handoff y verificar SHA/aprobaciones. Este checkpoint no autoriza reanudación automática.
 
 ## 1. Aprobación funcional y autorización de desarrollo
 
@@ -166,9 +175,9 @@ funcional cuando exista.
 - No hay PR funcional ni merge; Codex gestiona la operación GitHub que requiera conexión.
 - **Checkpoint conservado:** `c768d384be3fbad67ea73a2d64e29d10b5786ab3`; los cambios
   posteriores solo añaden estado de coordinación, sin reescribirlo.
-- **Siguiente gate:** confirmación de D5 y cesión explícita de D5/E4.1; después, integración
-  aprobada y refresh de `main`. DEV17 revalidará dependencias, ausencia de escritores,
-  ownership y versión real antes de decidir cualquier migración.
+- **Siguiente gate:** D5 ya confirmó la secuencia; faltan las integraciones aprobadas y
+  cesiones explícitas de D5/E4.1. Después, refresh de `main` y verificación de dependencias,
+  ausencia de escritores, ownership y versión real.
 - **No se inicia código** hasta que exista liberación efectiva.
 
 ## 9. Actualización de coordinación — 2026-10-27
@@ -176,13 +185,12 @@ funcional cuando exista.
 Estado recibido del supervisor:
 
 - **E4.1 y DEV17 conformes** con la propuesta de secuencia **D5 → E4.1 → DEV17**.
-- **D5 aún no ha confirmado**; por tanto **no hay liberación efectiva** ni cesión de
+- **D5 ya confirmó la secuencia**, pero **no existe liberación efectiva** ni cesión de
   archivos.
 - DEV17 **espera**:
-  1. confirmación de D5;
-  2. integración aprobada y cesión explícita de D5;
-  3. integración aprobada y cesión explícita de E4.1;
-  4. refresh de `main` y verificación de dependencias, ausencia de escritores y ownership.
+  1. integración aprobada y cesión explícita de D5;
+  2. integración aprobada y cesión explícita de E4.1;
+  3. refresh de `main` y verificación de dependencias, ausencia de escritores y ownership.
 - La lista de archivos compartidos a revisar se amplía, además de la ya registrada, con:
   - `apps/api/src/movement-ledger.ts`;
   - `apps/web/src/api.ts`;
@@ -192,5 +200,5 @@ Estado recibido del supervisor:
   archivos compartidos y no se reabren Q1–Q7.
 - No hay decisión financiera nueva ni cambio de alcance.
 
-**Próximo gate:** confirmación de D5 + integraciones/cesiones de D5 y E4.1. Hasta entonces,
-DEV17 permanece en espera y no reclama ownership ni versión.
+**Próximo gate:** integraciones aprobadas y cesiones de D5 y E4.1; D5 ya confirmó la
+secuencia. Hasta entonces, DEV17 permanece en espera y no reclama ownership ni versión.
