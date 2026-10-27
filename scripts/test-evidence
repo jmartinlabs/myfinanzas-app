@@ -135,8 +135,8 @@ class EvidenceTests(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0, result.stdout)
 
 
-if __name__ == '__main__':
-    unittest.main()
-
     def test_ruleset_probe_intentional_failure(self):
         self.fail("intentional ruleset probe failure")
+
+if __name__ == '__main__':
+    unittest.main()
