@@ -2098,6 +2098,49 @@ textarea {
 .shared-impact {
   margin-top: 16px;
 }
+.shared-actions {
+  margin-bottom: 16px;
+}
+.shared-actions .shared-section-head {
+  align-items: flex-start;
+}
+.shared-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.shared-impact-column h3 {
+  margin-top: 0;
+}
+.shared-contribution {
+  margin-top: 16px;
+}
+.shared-aportaciones {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.shared-aportaciones li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2ead8;
+}
+.shared-aportaciones li small {
+  line-height: 1.35;
+}
+@media (max-width: 760px) {
+  .shared-impact-grid {
+    grid-template-columns: 1fr;
+  }
+  .shared-actions .actions {
+    width: 100%;
+  }
+  .shared-actions .actions button {
+    width: 100%;
+  }
+}
 .shared-cards {
   display: none;
   gap: 12px;
@@ -2192,6 +2235,9 @@ textarea {
 @media (min-width: 761px) {
   .shared-table-scroll table {
     min-width: 0;
+  }
+  .shared-participants td:nth-child(n + 2):nth-child(-n + 5) {
+    white-space: nowrap;
   }
 }
 @media (max-width: 760px) {
