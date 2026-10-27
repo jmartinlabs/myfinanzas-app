@@ -208,7 +208,10 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 
 - Aprobación: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
 - Rama: `codex/spec21-e36-pendientes-conciliacion`.
-- PR documental: pendiente de crear en esta ejecución; sin merge automático.
+- Rama publicada en `origin`; SHA de cierre se reporta en el handoff.
+- PR documental: **no creada en esta ejecución**. El entorno no dispone de `gh` ni de
+  credenciales válidas de la API de GitHub; la URL de comparación queda disponible para
+  que el coordinador cree la PR. Sin merge automático.
 - Desarrollo E3.6: no autorizado; debe solicitarse por separado.
 - La PR no se fusiona hasta aprobación explícita e independiente del usuario.
 
