@@ -11,6 +11,8 @@ import { createInstrumento } from "./instrumentos";
 import { createPurchase } from "./compras";
 import { getSaldo, updateSaldo } from "./saldos";
 import { openDatabaseV13 } from "../test-support/database-v13";
+import { openDatabaseV16 } from "../test-support/database-v16";
+import { openDatabaseV17 } from "../test-support/database-v17";
 import { materializeContract } from "../test-support/inversiones-schema";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
@@ -81,7 +83,7 @@ function run(
           "SELECT name FROM sqlite_master WHERE type='table' AND name='instrumentos'",
         )
         .get();
-      if (schema >= 16) {
+      if (schema >= 18) {
         expect(instruments).not.toBeNull();
         expect(copy.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({
           n: 1,
@@ -104,7 +106,7 @@ function run(
   }
 }
 
-test("E4.1-AC-33(h): backup/restore 13, 14, 15 y 16 en directorio nuevo", () => {
+test("E4.1-AC-33(h): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo", () => {
   run("demo", 13, "e3.1-v13", (path) => {
     const db = openDatabaseV13(path);
     db.run(
@@ -139,7 +141,11 @@ test("E4.1-AC-33(h): backup/restore 13, 14, 15 y 16 en directorio nuevo", () => 
   };
   run("demo", 15, "e3.2-v15", v15);
 
-  run("demo", 16, "e4.1-v16", (path) => openDatabase(path), (db) => {
+  run("demo", 16, "e3.4-v16", (path) => openDatabaseV16(path));
+
+  run("demo", 17, "e3.2-d5-v17", (path) => openDatabaseV17(path));
+
+  run("demo", 18, "e4.1-v18", (path) => openDatabase(path), (db) => {
     updateSaldo(db, "S003", {
       revision: getSaldo(db, "S003").revision,
       saldoApertura: "100.00",
