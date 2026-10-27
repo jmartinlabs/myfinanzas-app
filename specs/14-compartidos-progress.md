@@ -23,15 +23,15 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   [testplan](14-compartidos-testplan.md). Implementados migración técnica,
   acreditación/motor/servicio común, API/UI, rectificación, replay, concurrencia,
   auditoría y fixture de backup/restore.
-- Candidato de código: `a242a70` (incluye correcciones QA y el fixture v16 de R10).
+- Candidato de código: `b2b0b89` (merge final de main `aad4e6c`; código D5 `a242a70`).
   Rama `codex/dev14-d5-exterior` publicada. **PR #90 Draft**:
   https://github.com/josemartin2000/myfinanzas-app/pull/90. Sin merge.
 - Evidencia local macOS: D5 10 PASS/134; Base B 10 PASS/179; E2E D5 y Base B
   2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
-  (plataforma macOS/B3). Linux (Ubuntu 24.04.5, VM aislada, `a242a70`):
+  (plataforma macOS/B3). Linux (Ubuntu 24.04.5, VM aislada, `b2b0b89`):
   **API 270 PASS/0 FAIL/3872**, `d5-backup.test.ts` PASS, typecheck/build PASS;
-  backup/restore cifrado v17 verificado. CI #568 (`required`) **SUCCESS** sobre
-  `a242a70`; perfil critical ejecuta API/SQLite. `scripts/verify` macOS:
+  backup/restore cifrado v17 verificado. CI #572 (`required`) **SUCCESS** sobre
+  `b2b0b89`; perfil critical ejecuta API/SQLite. `scripts/verify` macOS:
   baseline/type/build PASS, API FAIL de plataforma, E2E UNRUN (focal 2/2).
 - Fuera: B-T11/consumo por informes (sigue UNRUN), Exterior ordinario/salidas,
   datos reales, deploy, cambios de guardas/timeouts/harness/metodología.
@@ -318,18 +318,18 @@ decisiones ni se toca Excel/VPS/datos reales.
 - Typecheck/build PASS. Suite API 222 PASS/48 FAIL/270; los 48 son de plataforma
   macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
 - E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
-- Backup/restore v17: PASS Linux; CI #568 required SUCCESS. La ruta macOS sigue UNRUN.
+- Backup/restore v17: PASS Linux; CI #572 required SUCCESS. La ruta macOS sigue UNRUN.
 - `scripts/verify --base 1d539a8 --head 1339113` con Python 3.12.16 portátil:
   baseline, typecheck y build PASS; API 221/48 de plataforma macOS y E2E UNRUN en
   la entrada canónica (los E2E focalizados sí 2/2 PASS). El resultado global no se
-  relabela; el gate Linux se cubre con `bun test apps/api` y CI #568.
+  relabela; el gate Linux se cubre con `bun test apps/api` y CI #572.
 
 ### Límites
 
 B-T11/consumo por informes sigue UNRUN; no se declara E3.2 completa, AC-20 ni
 AC-31 PASS. Sin Exterior ordinario/salidas, datos reales, migración operativa,
 deploy, B3/Dev32 ni cambios de guardas/timeouts/harness. El siguiente gate es QA
-independiente sobre el SHA candidato y CI Linux; merge no autorizado. CI #568 required SUCCESS; CI #552 falló por billing de GitHub, no por código.
+independiente sobre el SHA candidato y CI Linux; merge no autorizado. CI #572 required SUCCESS; CI #552 falló por billing de GitHub, no por código.
 
 ## QA independiente D5 — 2026-10-27
 
@@ -352,7 +352,7 @@ Revisión de contexto nuevo sobre el candidato: **APTO CON RESERVAS** inicial y
 - **Preview (cerrado):** muestra el importe y Destino concretos del efecto banco.
 - **T-D5-13:** solo se acredita seguridad/HTTP; informes, Anticipos y doble
   descuento siguen UNRUN por B-T11. No se declara PASS completo.
-- Backup/restore v17: PASS Linux (1/1); CI #568 required SUCCESS. macOS sigue UNRUN por plataforma.
+- Backup/restore v17: PASS Linux (1/1); CI #572 required SUCCESS. macOS sigue UNRUN por plataforma.
 - Re-QA del bloqueo S000: **APTO**; focal 10 PASS/134 assertions y typecheck PASS.
 
 ## CI Linux — análisis y resultados 2026-10-27
@@ -366,9 +366,9 @@ Revisión de contexto nuevo sobre el candidato: **APTO CON RESERVAS** inicial y
   API/SQLite. Falló 1 test: `05 R10` esperaba manifest v16 pero el fixture usaba
   `openDatabase` (v17). Corregido con `openDatabaseV16` en `a242a70`; no era un
   defecto de producto.
-- **#568 / run 40493244043** (PR #90, `a242a70`): `required` **SUCCESS**
-  (3m13s, perfil critical API/SQLite). La PR #90 sigue Draft, `MERGEABLE`; sin merge.
-- Linux local aislado (Ubuntu 24.04.5, VM Lima, Bun 1.4.3) sobre `a242a70`:
+- **#568 / run 40493244043** (PR #90, `a242a70`) y **#572 / run 40494106854**
+  (PR #90, `b2b0b89`): `required` **SUCCESS** (perfil critical API/SQLite). La PR #90 sigue Draft, `MERGEABLE`; sin merge.
+- Linux local aislado (Ubuntu 24.04.5, VM Lima, Bun 1.4.3) sobre `b2b0b89`:
   `bun test apps/api` → **270 PASS/0 FAIL/3872**; `d5-backup.test.ts` → **PASS**
   (restauración cifrada v17, datos, acreditación, auditoría e intentos revocados);
   typecheck/build PASS. Evidencia en `/private/tmp/linux-api-d5b.log`.
