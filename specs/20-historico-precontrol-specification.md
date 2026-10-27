@@ -115,6 +115,7 @@ nombres son contratos de lectura propuestos, no tablas creadas.
 | `procedencia.fila/columna` | Coordenada de origen si aplica | Extracción / fixture | No es clave por sí sola |
 | `procedencia.extraidoEn` | Fecha/hora técnica UTC | Extracción | No es fecha financiera |
 | `procedencia.versionMapping` | Versión del mapping usada | Mapping | Visible en consulta y auditoría |
+| `procedencia.jerarquiaOrigen` | IDs y nombres de Subcategoría/Categoría en la extracción/versión | Fuente/mapping | Inmutable; no es la jerarquía vigente ni se reescribe |
 | `huellaContenido` | Huella de los valores normalizados del registro | Servidor | Detecta duplicado/conflicto, no autoriza suma |
 | `estadoVerificacion` | `Verificado`, `NoVerificado` o `Rechazado` | Fuente/revisión | Solo `Verificado` entra en un total |
 | `estadoMapeo` | `Mapeado`, `Pendiente`, `Ambigua` o `Excluido` | Mapping | Solo `Mapeado` entra en total por Partida |
@@ -130,6 +131,11 @@ Reglas del registro:
 - `partidaId=null` no se convierte en una Partida «varios» ni se reparte por importe.
   Se muestra en «Sin clasificar» y deja el total global `NoVerificable`; la cobertura
   puede seguir siendo completa.
+- La jerarquía se expone en dos planos: `partida.jerarquiaVigente` (derivada del
+  catálogo actual por `PARxxx`) y `procedencia.jerarquiaOrigen` (capturada en la
+  extracción/versión). La primera puede cambiar por un movimiento de jerarquía E1.2;
+  la segunda es inmutable y permite explicar la clasificación original. No se
+  persiste una tabla de versiones de catálogo.
 - `fecha=null` no se sustituye por el inicio/fin del intervalo ni por el reloj. Si hay
   un importe positivo sin fecha, el importe puede mostrarse, pero la fecha ejecutada
   permanece desconocida.
@@ -395,11 +401,11 @@ La regularización de 2026 es una **excepción documentada**, no una regla gener
   `PARxxx` ni crea una reclasificación del registro a otra Partida, pero es un cambio
   de catálogo con impacto: exige el contrato E1.2 de vista/impacto, motivo,
   confirmación, revisión/huella y protecciones de los consumidores afectados; **no es
-  un simple renombrado**. La procedencia original conserva la jerarquía de extracción;
-  la consulta muestra la jerarquía vigente y la original, y los informes declaran qué
-  jerarquía usan. No se introduce versionado de catálogo no aprobado ni se reescribe
-  la historia. Si además cambia el destino a otro `PARxxx`, es reclasificación y sigue
-  la regla anterior.
+  un simple renombrado**. La consulta expone `partida.jerarquiaVigente` (SUB/CAT
+  actuales por ID) y `procedencia.jerarquiaOrigen` (SUB/CAT de extracción/versión); los
+  informes declaran qué jerarquía usan. No se introduce versionado de catálogo no
+  aprobado ni se reescribe la historia. Si además cambia el destino a otro `PARxxx`, es
+  reclasificación y sigue la regla anterior.
 - **Fecha ejecutada (E2.4):** se toma solo de `fecha` conocida de la versión vigente y
   de las fechas de Gastos elegibles. Si `fecha=null`, no se deriva del intervalo, del
   corte ni del reloj; `fechaEjecutada` queda `null` o se limita a otras fechas conocidas.
@@ -584,7 +590,24 @@ DTO mínimo propuesto:
     }]
   },
   "items": [{
-    "partida": {"id": "PAR100", "nombre": "Comida", "estado": "Activa"},
+    "partida": {
+      "id": "PAR100",
+      "nombre": "Comida",
+      "estado": "Activa",
+      "jerarquiaVigente": {
+        "subcategoriaId": "SUB10",
+        "subcategoria": "Alimentación",
+        "categoriaId": "CAT01",
+        "categoria": "Vida"
+      }
+    },
+    "procedenciaJerarquia": {
+      "subcategoriaId": "SUB09",
+      "subcategoria": "Comida",
+      "categoriaId": "CAT01",
+      "categoria": "Vida",
+      "versionMapping": "v3"
+    },
     "archivo": "1200.00",
     "detalleControl": "300.00",
     "detallePrecontrol": {"vinculado": "0.00", "noVinculado": "0.00"},
@@ -631,7 +654,24 @@ Ejemplo separado de conflicto F2 (consulta distinta; no se mezcla con el DTO ant
   "ejercicio": 2026,
   "corte": "2026-12-31",
   "items": [{
-    "partida": {"id": "PAR100", "nombre": "Comida", "estado": "Activa"},
+    "partida": {
+      "id": "PAR100",
+      "nombre": "Comida",
+      "estado": "Activa",
+      "jerarquiaVigente": {
+        "subcategoriaId": "SUB10",
+        "subcategoria": "Alimentación",
+        "categoriaId": "CAT01",
+        "categoria": "Vida"
+      }
+    },
+    "procedenciaJerarquia": {
+      "subcategoriaId": "SUB09",
+      "subcategoria": "Comida",
+      "categoriaId": "CAT01",
+      "categoria": "Vida",
+      "versionMapping": "v3"
+    },
     "archivo": "1200.00",
     "detalleControl": "320.00",
     "detallePrecontrol": {"vinculado": "0.00", "noVinculado": "0.00"},
@@ -661,7 +701,11 @@ Reglas de API:
 - `estadoCobertura`, `estadoTotal`, `motivoCodigo` y `motivo` acompañan a todo total;
   no se devuelve un total sin cobertura.
 - `procedencia` incluye huella, hoja/tabla, fila/columna, ID de origen, fecha de
-  extracción y versión de mapping; sin contenido personal ni el documento.
+  extracción, versión de mapping y `jerarquiaOrigen`; sin contenido personal ni el
+  documento.
+- `partida.jerarquiaVigente` se deriva del catálogo actual por ID; `procedenciaJerarquia`
+  conserva la jerarquía de extracción/versión. Ambos son de solo lectura y no crean
+  versionado de catálogo.
 - `Cache-Control: no-store`; sin CORS comodín; sin logs de importes/notas.
 - `corte` inválido o futuro -> 422; ejercicio inválido -> 422; Partida inexistente ->
   404; Partida inactiva con historia -> consultable; mapping pendiente -> sección
@@ -775,10 +819,11 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   permanecen intactos; `aperturas=null` si no hay evidencia de apertura de Saldo.
 - **F24 — cambio de jerarquía con el mismo PARxxx.** PAR100 pasa de SUB-A a SUB-B sin
   cambiar de ID. Se aplica E1.2: vista/impacto, motivo, confirmación, revisión/huella
-  y protecciones; no se crea versión de catálogo. La consulta muestra la jerarquía
-  vigente SUB-B y la procedencia original SUB-A; la historia no se reescribe. Sin
-  impacto/motivo/confirmación, el cambio se bloquea o devuelve 409; no se resuelve por
-  renombrado ni por una versión de catálogo inventada.
+  y protecciones; no se crea versión de catálogo. `partida.jerarquiaVigente` muestra
+  SUB-B y `procedenciaJerarquia` conserva SUB-A; la historia no se reescribe. Sin
+  impacto/motivo/confirmación, el cambio se bloquea o produce un conflicto de revisión
+  (409 como ejemplo, no contrato universal); no se resuelve por renombrado ni por una
+  versión de catálogo inventada.
 
 ### Validación
 
@@ -957,4 +1002,4 @@ AC-16/17/18/24/34/37/39/42/43/44; E4.5-AC3 → AC-20/21/22.
 | AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; una fecha corregida solo cuenta si su versión es vigente |
 | AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni se suma; se muestra «No soportado por E4.5; ver E4.4»; Dxxx, capital y condiciones intactos; `aperturas=null` si no hay evidencia de Saldo |
 | AC-44 | I | Agregado 01/01–27/08 y detalle que cubre 01/01–30/06, sin vínculo `representadoEnMovimientos=Si` ni separación/disyunción aprobada | No se prioriza detalle automáticamente; total `NoVerificable`; no total solo-detalle; Q10 abierta. Con vínculo/disyunción aprobada, agregado excluido y detalle una vez |
-| AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2 aplicado: impacto, motivo, confirmación, revisión/huella y protecciones; jerarquía vigente SUB-B y procedencia original SUB-A visibles; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/409 |
+| AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2 aplicado: impacto, motivo, confirmación, revisión/huella y protecciones; `partida.jerarquiaVigente` muestra SUB-B y `procedenciaJerarquia` conserva SUB-A; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/conflicto de revisión (409 como ejemplo) |
