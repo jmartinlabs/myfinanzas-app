@@ -1,3 +1,22 @@
+## Current checkpoint — D5 integrado, C16/C17 congelados y DEV18 bloqueado — 2026-10-27
+
+Resumen vigente del coordinador; reemplaza etiquetas actuales de los apartados históricos
+inferiores (en particular la fila D5 «PR DRAFT» de la sincronización 2026-10-25, superada).
+`origin/main` verificado `9977210` (esquema 17). Actualización autorizada por el usuario el
+2026-10-27; sin merge ni despliegue.
+
+| Task ID / nombre | Cliente y referencia de sesión estable | Estado y procedencia | Última evidencia, gates y siguiente acción |
+| --- | --- | --- | --- |
+| EXT-OPENCODE-DEV14-D5 · aportaciones desde Exterior (v17) | Coordinador OpenCode, checkout `.../T/opencode/dev14-d5`, rama `codex/dev14-d5-exterior` | **INTEGRADO EN MAIN** — PR #90 MERGED `cf6954a`; sin cambios de código posteriores | `main` `9977210` declara `schemaVersion = 17`; el árbol `apps` de la rama D5 es idéntico a `cf6954a`; contrato C17 congelado por E4.1 con cesión temporal autorizada. Sin reanudación de la sesión D5. |
+| E4.1 · SPEC19 rev10 · congelación C16/C17 | OpenCode, sesión E4.1 (continuidad); rama `codex/pilot-full-e41-instrumentos-compras-inversion` | **C16/C17 CONGELADOS — DEV19 NO AUTORIZADO**; PR #95 DRAFT, sin merge | Commits `27c8d07`, `1a6e092`, `3c271d3` sobre `064df64`. Artefacto `f9a30cdc…eac6c`; C16 135/`9d9b0783…`; C17 145/`e0707d40…`. Regeneración reproducible, 32 pruebas focales PASS, typecheck PASS y revisión independiente PASS 9/9. El código sigue en contrato 16; la 18 no está implementada. Próximo: autorización separada de DEV19. |
+| DEV18 · E3.5 Comida por Ciclo y compensaciones | Sesión DEV18-LINUX (handoff `specs/session-handoff.md`, SHA-256 `38e721da…a090e8`) | **STOP — NO AUTO-RESUME**; ARM64 PASS con salvedad, **gate x86_64 BLOCKED** | Candidato `568bf3e`; rama documental `94cb6a0`; sin escritor, workers ni procesos activos. Worktrees y evidencias conservados; no reanudar. |
+
+Límites: esta entrada no autoriza DEV19, no reabre DEV18, no implementa schemaVersion 18 y no
+cambia decisiones funcionales. El gate de código de E4.1 deberá repetir refs, worktrees y estado
+sin commitear antes de adaptar código.
+
+---
+
 ## Current checkpoint — DEV14 Base B v15 en PR75 — 2026-10-26
 
 Continuación autorizada de Base B (E3.2) sobre PR75, sin merge ni despliegue.
