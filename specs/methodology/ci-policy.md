@@ -196,7 +196,9 @@ sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones
   suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
   solo documentación permitida ejecuta `docs`; cualquier otro cambio ejecuta `fast`;
   nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo el rango
-  mediante merge-base.
+  mediante merge-base. El postmerge no repite API/SQLite: la PR ya validó el merge ref
+  contra la base; si la base se mueve, la PR debe repetir. Para un merge de alto riesgo
+  se usa `workflow_dispatch` full, no un `critical` automático que duplique coste.
 - Fast se limita a documentación permitida y CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
   dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
