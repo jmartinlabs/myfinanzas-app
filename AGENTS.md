@@ -1,6 +1,6 @@
 # Agent instructions · MyFinanzas App
 Aplicación web privada para migrar el sistema financiero personal existente en Excel.
-Repositorio privado: E1.1–E1.6 y E2.1–E2.5 integradas; spec12 PR65/42a3efe aprobada/integrada, dev12 autorizado por el usuario el 2026-10-25, candidato externo pendiente de QA independiente. B3 sigue abierto; no reanudar su investigación por inferencia.
+Repositorio privado: E1.1–E1.6 y E2.1–E2.6 integradas (E2.6 con límites de cobertura declarados); spec12 PR65/42a3efe aprobada/integrada; DEV12/PR67 integrado en a445f908 (candidato e66bbd3; QA independiente favorable; CI 40243368188 SUCCESS). B3 sigue abierto; no reanudar su investigación por inferencia.
 Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](specs/project.md) y [estado reanudable](specs/setup-progress.md) en las secciones necesarias, sin recargar documentos completos sin cambios.
 
 - Carga solo las guías aplicables: [architecture](specs/guidelines/architecture.md), [UI](specs/guidelines/ui.md),
