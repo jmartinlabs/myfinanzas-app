@@ -12,7 +12,7 @@ import { createSaldo } from "./saldos";
 import { previewMovement, writeMovement } from "./movimientos";
 
 const now = Date.parse("2026-10-27T12:00:00Z");
-test("D5 AC-01/AC-11: encrypted v17 restore preserves accreditation, evidence, annulment history and revokes attempts", () => {
+test("D5 AC-01: encrypted v17 restore preserves accreditation, evidence and revokes attempts", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "dev14-d5-backup-"));
   try {
