@@ -350,26 +350,37 @@ export function storeAportacion(
   }
   const revision = (before?.revision ?? 0) + 1,
     time = new Date(now).toISOString();
-  db.run(
-    `INSERT INTO movimiento_compartido
-       (movimiento,referencia,participante,evidencia,procedencia,revision_movimiento,revision,creado,actualizado)
-     VALUES(?,?,?,?,?,?,?,?,?)
-     ON CONFLICT(movimiento) DO UPDATE SET
-       participante=excluded.participante,evidencia=excluded.evidencia,
-       procedencia=excluded.procedencia,revision_movimiento=excluded.revision_movimiento,
-       revision=excluded.revision,actualizado=excluded.actualizado`,
-    [
-      movimiento,
-      current.referencia!,
-      meta.participante,
-      meta.evidencia,
-      meta.procedencia,
-      current.revision,
-      revision,
-      before?.creado ?? time,
-      time,
-    ],
-  );
+  if (before)
+    db.run(
+      `UPDATE movimiento_compartido SET participante=?,evidencia=?,procedencia=?,
+         revision_movimiento=?,revision=?,actualizado=? WHERE movimiento=?`,
+      [
+        meta.participante,
+        meta.evidencia,
+        meta.procedencia,
+        current.revision,
+        revision,
+        time,
+        movimiento,
+      ],
+    );
+  else
+    db.run(
+      `INSERT INTO movimiento_compartido
+         (movimiento,referencia,participante,evidencia,procedencia,revision_movimiento,revision,creado,actualizado)
+       VALUES(?,?,?,?,?,?,?,?,?)`,
+      [
+        movimiento,
+        current.referencia!,
+        meta.participante,
+        meta.evidencia,
+        meta.procedencia,
+        current.revision,
+        revision,
+        time,
+        time,
+      ],
+    );
   audit(
     db,
     current.referencia!,

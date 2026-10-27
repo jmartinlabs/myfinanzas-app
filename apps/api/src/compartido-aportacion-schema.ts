@@ -96,19 +96,23 @@ export function compartidoAportacionSchema(db: Database) {
     WHEN NOT EXISTS(
       SELECT 1 FROM participantes_compartido p
       WHERE p.id=NEW.participante AND p.referencia=NEW.referencia
+        AND p.rol='Tercero' AND p.estado='Activa'
     ) BEGIN SELECT RAISE(ABORT,'participant mismatch'); END;
   CREATE TRIGGER movimiento_compartido_update_shape BEFORE UPDATE ON movimiento_compartido
     WHEN NOT EXISTS(
       SELECT 1 FROM movimientos m JOIN referencias r ON r.id=m.referencia
       WHERE m.id=NEW.movimiento AND m.tipo='Transferencia' AND m.origen='S000'
-        AND m.destino!='S000' AND m.referencia=NEW.referencia
+        AND m.destino!='S000' AND m.anulado=0 AND m.referencia=NEW.referencia
         AND r.tipo='Gasto compartido'
     ) BEGIN SELECT RAISE(ABORT,'invalid D5 movement'); END;
   CREATE TRIGGER movimiento_compartido_update_participant BEFORE UPDATE ON movimiento_compartido
     WHEN NOT EXISTS(
       SELECT 1 FROM participantes_compartido p
       WHERE p.id=NEW.participante AND p.referencia=NEW.referencia
+        AND p.rol='Tercero'
     ) BEGIN SELECT RAISE(ABORT,'participant mismatch'); END;
+  CREATE TRIGGER movimiento_compartido_reference_immutable BEFORE UPDATE OF referencia ON movimiento_compartido
+    WHEN NEW.referencia!=OLD.referencia BEGIN SELECT RAISE(ABORT,'immutable reference'); END;
   UPDATE schema_version SET version=17;`);
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw new Error("Upgrade FK validation failed.");
