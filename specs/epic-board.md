@@ -1,3 +1,22 @@
+# DEV19 / E4.1 — INTEGRADO 2026-10-27 (22:36 CET)
+
+Entrada vigente de E4.1; el apartado «Estado DEV19» inferior queda como historia previa al merge.
+
+- **PR #95 MERGED** por squash: `main` pasa de `a7ded54` a **`156a50d`** (head validado `60162e9`).
+- **CI del head final:** `required` `40593315701` SUCCESS (295 API / 0 FAIL); full
+  `40593353747` SUCCESS (295 API, 13 E2E Playwright). CI del push a main en curso al escribir.
+- **Contenido:** 59 archivos (+13.878/−87); `schemaVersion = 18`; manifiestos C16/C17 intactos
+  (`f9a30cdc…`, C16 135/`9d9b0783…`, C17 145/`e0707d40…`).
+- **Aceptación funcional:** 48 AC PASS / 6 PARCIAL aceptados como residuales documentados
+  (opción A del usuario, 2026-10-27), sin convertirlos en PASS; prioridad AC-30 y AC-34.
+- **Sin despliegue.** E3.6 no iniciado; DEV17, DEV18, B3 y DEV32 siguen detenidos o separados y
+  no se reanudan por esta entrada.
+- **Documentación pendiente de dueño:** `specs/19-…-progress.md` conserva la frase «PR #95 draft;
+  sin merge»; corresponde al ejecutor DEV19 actualizarla en su siguiente retorno, sin reabrir
+  decisiones.
+
+---
+
 # Estado DEV19 / E4.1 — 2026-10-27 (22:50 CET)
 
 Actualiza el estado de E4.1; el resto de esta cabecera y la historia inferior se conservan.
