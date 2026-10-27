@@ -1,3 +1,75 @@
+# Coordinación global — estado consolidado 2026-10-27 (21:56 CET)
+
+Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
+Responsable único del tablero: coordinador global (sesión OpenCode). Esta entrada vive en la
+rama `codex/docs-global-board-20261027`, en PR propia; su integración exige aprobación expresa
+del usuario. Solo el coordinador escribe este archivo; no se crea rama competidora. Los
+mensajes a ejecutores se trasladan manualmente por el usuario; un envío significa ESPERANDO
+RETORNO y no acredita ejecución.
+
+## Hechos verificados por el coordinador
+
+- `origin/main` = `2364d9c20439b865edeffcb5f661e4125778aa03` (squash PR #97, base `9977210`).
+  Diff `9977210..2364d9c`: solo altas `specs/21-pendientes-conciliacion-{brainstorming,
+  progress,specification,testplan}.md`; sin código, SQL, migraciones, tablero ni otros specs.
+  Árbol idéntico al HEAD de la PR `132caf1` (`git diff` vacío). Runs `40573819145` (PR97) y
+  `40579993282` (push main) SUCCESS; único workflow declarado `validate.yml`.
+- PR #97 MERGED. El `progress` integrado conserva la línea previa al merge («PR #97 publicada;
+  sin merge»); corregirla requiere PR documental posterior, no ejecutada.
+- PR #95 (E4.1/DEV19): OPEN **Draft**, head `78755c6`, base `main`, **no integrada**. Candidato
+  v18 con 59 archivos (~13.846 líneas: API, UI `Inversiones`, tests, E2E). Manifiestos
+  congelados comprobados por el coordinador en `78755c6`: `schema-contracts.json` SHA-256
+  `f9a30cdcf0d3…562eac6c`, 5 contratos, C16 135 objetos/`9d9b0783…`, C17 145
+  objetos/`e0707d40…`. Job `required` SUCCESS en `261d2fb`, `b0969c8` y `78755c6` (FAIL previo
+  en `8e9ce67`); **no hay run full/E2E** en la rama y la propia PR reconoce E2E Linux completo
+  sin ejecutar como requisito de merge.
+- Autorización **histórica** de DEV19: **no acreditada**; no se registra por inferencia. El
+  usuario autoriza expresamente el 2026-10-27 la **continuidad controlada de DEV19**, limitada
+  al alcance funcional v18 ya definido en SPEC19 rev10: revisar/completar la implementación
+  existente, resolver incidencias del alcance y ejecutar las verificaciones, pruebas y QA
+  pendientes. Condiciones: confirmar ownership y coordinación con el ejecutor de E4.1;
+  preservar C16/C17 congelados y lo integrado en main; completar E2E Linux x86_64, migraciones,
+  backup/restore y AC aplicables; mantener PR #95 en Draft hasta superar los gates; **sin merge
+  ni despliegue**; sin ampliar alcance ni tocar otras entregas. Es **prospectiva**, no prueba de
+  una autorización anterior.
+- PR #96 (`codex/board-c16c17-freeze`, `a76e577`, +19 líneas en `specs/epic-board.md`): abierta
+  fuera del ownership del coordinador y con estado contradictorio (afirmaba DEV19 no autorizado
+  y schema 18 no implementado). **Cerrada sin merge** el 2026-10-27 por autorización expresa y
+  tras contrastar su contenido; D5 integrada en `cf6954a`, congelación C16/C17 y gate DEV18
+  quedan recogidos aquí. No se crea rama competidora.
+
+## Frentes y límites vigentes
+
+| Frente | Estado verificado o retorno registrado | Límite / siguiente acción |
+| --- | --- | --- |
+| DEV19 / E4.1 | Continuidad autorizada (prospectiva); PR #95 Draft, gates completos pendientes | Entregar autorización al ejecutor, confirmar ownership y recibir evidencia; sin merge |
+| SPEC21 / E3.6 | Documentación aprobada e integrada (`2364d9c`); E3.6 **sin iniciar**; Q-S21-01–04 aprobadas, no se reabren | Prioridad posterior a DEV19; DEV E3.6 exige autorización separada |
+| SPEC22 / E4.2 | Retorno recibido: rev2 propuesta, D1–D7 = A, Q0 resuelta; wireframes pendientes de aprobación visual; DEV22 no iniciado | Rev3 **solo wireframes** autorizada; aprobación visual del usuario; publicar exige reconciliar enlaces a `specs/19-*` (ausente en main hasta integrar PR95) |
+| SPEC20 / E4.5 | Aprobada documentalmente; PR87 Draft `fc48f19`, último CI conocido FAIL; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
+| INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
+| DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
+| DEV17 / E4.4 | STOP en `b62ca8c`, sin código | Secuencia D5→E4.1→DEV17; sin reanudación |
+| B3 / DEV32 | Abiertos y separados; PR30 Draft `24ca206` | No reanudar por inferencia |
+| PR50 / PR51 | Abiertas antiguas, no Draft | Sin autorización; no tocar |
+
+Cerrados y no reabiertos por esta entrada: DEV12/PR67, PR94, D5/PR90, PR93, PR92/CI, DEV13/H1
+(AC36 PARCIAL y conciliación documental pendientes), DEV15/E3.3 y SPEC31 (cierre administrativo
+por reconciliar).
+
+## Governance y próxima acción
+
+Una aprobación de spec no autoriza DEV; cada merge exige aprobación expresa de su PR; ningún
+handoff concede publicación, CI remoto, infraestructura, datos reales ni despliegue. Esta
+actualización no cambia permisos. El reparto orquestador técnico (OpenCode), asesor (Álex) y
+usuario quedó formalizado en `specs/methodology/myfinanzas-coordination.md` y `AGENTS.md`
+(PR #98, `6308ad1`). El checkout principal (`codex/dev12-flujo-mensual`, `e66bbd3`) y
+`specs/session-handoff.md` son ajenos y no se tocan.
+
+**Próxima acción:** trasladar al ejecutor E4.1 la autorización de continuidad y pedir retorno con
+ownership, plan de gates y evidencia; sin abrir otros frentes ni fusionar PRs.
+
+---
+
 # HANDOFF GLOBAL — STOP REQUESTED — NO AUTO-RESUME
 
 Fecha: 2026-10-27. Task/sesión: coordinación global MyFinanzas, Codex SUPERVISOR.
