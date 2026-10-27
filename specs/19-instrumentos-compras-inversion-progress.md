@@ -7,7 +7,7 @@ Status: **APPROVED rev7** — specification y wireframes aprobados el 2026-10-26
 **PROPOSED rev9 — pending Codex review; NOT approved** — alinea 13/14→16 con `main` v15
 (`24b48c5`) y las tablas vacías de Compartidos; no cambia decisiones funcionales.
 **STOP 2026-10-27:** `main` avanzó a `2487656` (16, DEV16 Revisión bancaria de Comida); la 16
-está ocupada y se requiere rev10 con destino **17**. DEV autorizado y ejecutado; **PR, merge y
+está ocupada; rev10 se renumera finalmente a **18** por la colisión con D5. DEV autorizado y ejecutado; **PR, merge y
 despliegue no autorizados**.
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
@@ -251,42 +251,83 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - **Nuevo avance de `main`:** tras publicar rev9, `origin/main` pasó a
   `2487656` (PR82/DEV16, «Revisión bancaria de Comida») y declara `schemaVersion = 16`
   (`database-identity.ts`). La **16 ya no está libre**; el gate de destino falla para rev9.
-- **Dictamen:** E4.1 no puede aprobarse ni publicarse como 16. Se requiere **rev10** con destino
-  **17**, contrato de main v16, preservación de las tablas/datos de Revisión bancaria de Comida,
-  rutas 13/14/15/16→17 y repetición de gate, revisión independiente y QA. No implementado ni
-  aprobado.
+- **Dictamen:** E4.1 no puede aprobarse ni publicarse como 16. Se requiere **rev10**, que tras
+  detectar la colisión con D5 se renumera a **18**, con contrato de main v16, preservación de las
+  tablas/datos de Revisión bancaria de Comida, rutas 13/14/15/16→18 (y 17→18 solo con C17) y
+  repetición de gate, revisión independiente y QA. No implementado ni aprobado.
 - **Estado remoto:** rama `codex/pilot-full-e41-instrumentos-compras-inversion` publicada en
-  `7f68a59` (merge `51d7f5d` + docs rev9). **Sin PR**, sin merge y sin despliegue. El candidato
+  `ebcee48` (merge `51d7f5d` + docs rev9/STOP). **Sin PR**, sin merge y sin despliegue. El candidato
   `51d7f5d` sigue siendo válido como evidencia de DEV/QA para el contrato 16, pero **no es
   publicable** con el `main` actual.
 - **Subagentes:** DEV `ses_e85ef3979ffegZjzgMA7k0PzUT`; QA `ses_e85c21434ffeNTjIjccJrpxTZ2`.
   Ninguno activo. No se contactó la sesión anterior.
 
+## Rev10 documental — destino 18 (2026-10-27)
+
+- **Alcance:** solo SPEC19 y testplan rev10 propuestos. **Sin implementación, sin integración
+  de main 16 en la rama y sin adaptar código.** El candidato `51d7f5d` sigue siendo evidencia
+  del contrato 16, no de rev10/18.
+- **Contrato real de main v16:** `origin/main` `1d539a8` (docs; esquema 16 introducido en
+  `2487656`, PR82/DEV16, fuente `26b6f0c`) declara `schemaVersion = 16`. Manifiesto regenerado
+  en `main` y en `26b6f0c`: **135 objetos**, SHA-256
+  `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`; propuesto como
+  `C16-REVISION-COMIDA-26B6F0C`. Incluye `revision_comida`, `revision_comida_audit`,
+  `revision_comida_attempts`, tres índices, siete triggers y el contador `revision_comida`;
+  conserva Compartidos v15, Vehículos y el resto. La 16 queda ocupada.
+- **Colisión con D5 y reserva de la 18:** el barrido de refs no encuentra 17, pero el worktree
+  ajeno `dev14-d5` (rama `codex/dev14-d5-exterior`, HEAD `06f7389`) mantiene cambios **sin
+  commitear** con `schemaVersion = 17`, `compartidoAportacionSchema` y etiqueta
+  `e3.2-d5-v17`. No se toca ni se reanuda. La 17 **no se considera libre en la práctica**; la
+  **18 está libre** en refs y worktrees. Rev10 renumera a 18 y exige que el gate incluya
+  worktrees/estado sin commitear, no solo refs. Si D5 integra un C17 verificado, habrá que
+  congelarlo y añadir 17→18 antes de adaptar E4.1; hasta entonces 17 no es origen admitido.
+- **Rutas propuestas:** 13→14→15→16→18, 14→15→16→18, 15→16→18 y 16→18; 17→18 solo con C17
+  verificado. Las tablas heredadas de Compartidos y Revisión de Comida se crean vacías si el
+  origen no las tenía; no se importan datos ni se reseedea. La extensión propia 16→18 es
+  aditiva y preserva datos, tablas, triggers, índices, contadores e identidad; las migraciones
+  14→15 y 15→16 son de main y no se atribuyen a E4.1.
+- **Backup/restore propuesto:** 1..18, etiqueta `e4.1-v18`, verificación de manifiestos
+  v14/v15/v16 (y C17 si existe) antes de publicar, copias 13-17 verificadas conservan su
+  esquema de origen, copia 18 recupera Instrumentos/Compras/auditorías y vacía sesiones,
+  desafíos e intentos.
+- **Gate pre-código:** repetir `git fetch`, el barrido de refs y de worktrees/estado sin
+  commitear; STOP si `main` llega a 18, la 18 se ocupa, cambia un manifiesto, falta C16 o D5
+  mantiene 17 sin C17. No se adapta código hasta aprobar rev10 y repetir el gate.
+- **Revisión independiente real:** primera revisión `ses_e855c3b42ffeozuhc57VekMFwE` emitió
+  CHANGES por la colisión D5; tras renumerar a 18 y corregir P2–P4, la re-revisión
+  `ses_e83c20310ffenuRa2CztjhFqAn` emitió **PASS** sobre los cinco puntos y confirmó C16
+  (135 objetos/`9d9b…2dc4`), 18 libre en refs/worktrees y D5 intacto. Rev10 queda lista para
+  commit y revisión de Codex, **no aprobada ni publicable**.
+
+## Autorización DEV original (texto reproducido)
+
+> «Autorizo DEV de E4.1 conforme a SPEC19 rev8, aprobada sobre
+> f439010d527ba65953a1ccc0aa47cbeb51cfce31, conservando las decisiones funcionales de rev7.»
+
+Mensaje del usuario reproducido literalmente. Autoriza **rev8/contrato 16**, no rev10/18; su
+acreditación formal en este checkpoint queda pendiente y no se usa para aprobar rev10.
+
 ## HANDOFF → CODEX — 2026-10-27
 
-- **Estado:** DEV/QA del contrato 16 completados; integración con `main` v15 hecha; **STOP
-  final porque `main` ocupa la 16 con DEV16/Revisión bancaria de Comida (PR82)**. Sin PR, merge
-  ni despliegue.
-- **Candidato de código fusionado:** `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a` (padres
-  `30ff49c` + `24b48c5`), válido para el contrato 16 pero **no publicable** hasta renumerar a 17.
-- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion` en `7f68a59`
-  (merge + docs rev9); `git ls-remote` verificado. Sin PR.
-- **Diff documental a revisar:** spec (status rev9/STOP, §5.2 y AC-33), testplan (status, AC-33,
-  evidencia) y progress. Rev9 queda superada; hay que preparar rev10 (17) antes de PR.
-- **Evidencia gate 16:** `origin/main` `24b48c5` era 15 con C15 (122 objetos,
-  `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`) y la 16 estaba libre;
-  después `main` `2487656` pasó a 16 (DEV16). Por eso el gate final es **FAIL/STOP para 16**.
-- **Evidencia DEV/QA:** focal 35 pass / 457 aserciones; typecheck/build PASS; E2E Inversiones,
-  flujo mensual y Compartidos 3 PASS; `bun test apps/api` macOS 219 pass / 48 fail, todos
-  `libc.so.6`/`renameat2`; simulación Linux backup/restore y O4 PASS. CI Linux real **UNKNOWN**
-  porque no hay `gh`/token y el repositorio es privado.
-- **Discrepancia abierta 1:** rev8 decía que 13→16 no crea tablas de Compartidos; rev9 proponía
-  la progresión canónica y tablas vacías. No aprobada.
-- **Discrepancia abierta 2:** la 16 está ocupada por DEV16; se requiere rev10/17 y nueva
-  aprobación. No reabrir ni modificar DEV16 por inferencia.
-- **Matriz:** 48 PASS / 6 PARCIAL (AC-03, AC-24, AC-27, AC-30, AC-33, AC-34), 0 FAIL funcional.
-- **Bloqueo de PR:** sin `gh` ni credenciales GitHub API; el push SSH funciona. Codex debe
-  abrir la PR y consultar CI con su conexión cuando el contrato esté verificado.
-- **Siguiente acción segura:** Codex revisa el STOP y decide rev10 (destino 17 + integración
-  main 16). Solo tras aprobación se renumera, se repite gate/QA, se abre PR y se ejecuta CI
-  Linux. Sin merge ni despliegue por inferencia.
+- **Estado:** DEV/QA del contrato 16 completados; **rev10/18 solo documental y pendiente de
+  revisión/aprobación por Codex**. Sin implementación 18, sin integración de main 16, sin PR,
+  merge ni despliegue.
+- **Documento propuesto:** SPEC19 + testplan rev10 (destino 18, C16, rutas
+  13/14/15/16→18 y 17→18 solo con C17, backup/restore 1..18 y preservación). La 18 está libre;
+  la 17 está ocupada en la práctica por D5 sin commitear. El gate debe repetirse antes de
+  adaptar código e incluir worktrees/estado sin commitear.
+- **Candidato de código (histórico, contrato 16):**
+  `51d7f5d678d358cfcd68a1bf01acc3849a8a4d5a`; no publicable como 18.
+- **Rama remota:** `codex/pilot-full-e41-instrumentos-compras-inversion`; el SHA documental
+  final se publica con el commit rev10 y se confirma por `git ls-remote`. Sin PR.
+- **Evidencia gate 18:** `main` `1d539a8` = 16 con C16 (135 objetos,
+  `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`); ningún ref en 18 y 18
+  libre en worktrees; D5 mantiene 17 sin commitear.
+- **Revisión independiente:** `ses_e855c3b42ffeozuhc57VekMFwE` (CHANGES por D5) y
+  `ses_e83c20310ffenuRa2CztjhFqAn` (**PASS** final de rev10/18).
+- **Subagentes:** DEV `ses_e85ef3979ffegZjzgMA7k0PzUT`; QA `ses_e85c21434ffeNTjIjccJrpxTZ2`;
+  revisión rev10 `ses_e855c3b42ffeozuhc57VekMFwE`. Ninguno activo. No se contactó la sesión
+  anterior.
+- **Siguiente acción segura:** Codex revisa rev10 y su testplan. Si aprueba, se repite el gate,
+  se integra main 16 y se adapta el código a 18; después QA, CI Linux y PR. Sin merge ni
+  despliegue por inferencia.

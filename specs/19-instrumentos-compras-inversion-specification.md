@@ -1,19 +1,15 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Specification
 
-Status: **PROPOSED rev9 — pending independent/Codex review; NOT approved. STOP: rev9 queda
-superada por el avance de `main` a 16 (Revisión bancaria de Comida) y requiere rev10 con
-destino 17.** Rev9 alinea el contrato técnico con `origin/main` `24b48c5` (Compartidos v15
-integrado) y **no cambia las decisiones funcionales** de rev7/rev8. El DEV delegado y el QA
-independiente existen, pero **no se autoriza PR, merge ni despliegue**.
-**Actualización 2026-10-27:** `origin/main` pasó a `2487656` y declara `schemaVersion = 16`
-(DEV16/PR82, Revisión bancaria de Comida). La 16 ya **no está libre**; E4.1 no puede aprobar
-rev9 con destino 16. Se requiere una rev10 que renumere a **17**, integre `main` 16, preserve
-sus tablas/datos y repita el gate y la revisión. Nada de esto está aprobado ni implementado en
-esta rama; no hay PR ni merge.
+Status: **PROPOSED rev10 — pending independent/Codex review; NOT approved.** Rev10
+renumera el destino técnico de E4.1 a la **versión 18** tras la integración de
+`origin/main` `1d539a8` (docs; esquema 16 introducido en `2487656`, Revisión bancaria de Comida) y **no cambia ninguna
+decisión funcional** de rev7/rev8. Es solo documentación: **no hay implementación ni
+integración de main 16 en esta rama**, no se adapta código y no se autoriza PR, merge ni
+despliegue. El DEV/QA existente se refiere al contrato 16 y no acredita rev10.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, manteniendo las decisiones funcionales de rev7.
-Rev9 se propone el 2026-10-27 a partir de la discrepancia detectada al integrar `main` v15;
-no tiene aprobación registrada todavía.
+Rev9 (2026-10-27) quedó superada por la ocupación de la 16; rev10 se propone el 2026-10-27 y
+**no tiene aprobación registrada**.
 Context and brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md),
 [roadmap E4.1](roadmap.md), [referencia R5](functional-reference-v5.11.md).
 Base: `e408b1da5ae9f45c9bfd139d11f362216b5bce26`, rama
@@ -41,11 +37,13 @@ ajuste técnico documental a la versión **16** para respetar la reserva 15 de C
 (contrato real `C15-COMPARTIDOS-AD2EDFE`, rutas 13/14/15→16 y preservación de datos),
 2026-10-26, **aprobada rev8 por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`**, manteniendo las decisiones funcionales de rev7;
-rev9 (2026-10-27) documenta la integración de `origin/main` `24b48c5` (Compartidos v15) y
-propone que 13/14→16 usen la progresión canónica 13→14→15→16, con tablas de Compartidos vacías
-cuando el origen no las tenía y preservación de datos/identidad; queda **pendiente de revisión
-y aprobación**, sin PR, merge ni despliegue.
-Solo documentación y ejemplos ficticios; rev9 no autoriza por sí misma desarrollo, SQL,
+rev9 (2026-10-27) propuso la progresión canónica 13/14→16 con main v15 y quedó superada al
+ocupar `main` la 16; rev10 (2026-10-27) propone destino **18**, integra el contrato real
+`C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256
+`9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`), preserva los datos e
+identidad de main 16 y repite el gate; queda **pendiente de revisión y aprobación**, sin
+implementación, integración, PR, merge ni despliegue.
+Solo documentación y ejemplos ficticios; rev10 no autoriza por sí misma desarrollo, SQL,
 migraciones, pruebas ejecutables, datos reales ni despliegue.
 
 ## 1. Contexto y alcance
@@ -148,16 +146,18 @@ independiente.
 | R7-2 | Revalidación de destino antes de DEV: la reserva 16 es provisional y no prevalece sobre `main`. Si `main` ya está en 16 o más, si la 16 está ocupada o si `main` contiene un v14/v15 no verificado, se detiene la implementación, se renumera en esta spec y se repite la revisión. Un `main` avanzado gana siempre. | §5.2, §13 | AC-33 |
 | R8-1 | Ajuste técnico a la **16**: se respeta la reserva 15 de Compartidos y se añade su contrato real v15 `C15-COMPARTIDOS-AD2EDFE` (`ad2edfe`, 122 objetos) al manifiesto congelado. Se definen las rutas 13→16, 14→16 y 15→16, con preservación explícita de las tablas y filas de Compartidos v15 y Vehículos. No cambia ninguna decisión funcional de rev7. | §5.2, §8, §13 | AC-33 |
 | R8-2 | Compuertas y backup/restore ajustados a 16: `schemaVersion = 16`, `[1..15, version]`, `1..16`, etiqueta `e4.1-v16`, verificación de manifiestos v14/v15 antes de publicar una copia y rechazo de v17. El gate pre-DEV debe repetirse sobre refs locales/remotos antes de DEV. | §5.2, §8, §13 | AC-33 |
+| R10-1 | Destino **18** propuesto: `main` `1d539a8` ocupa la 16 con `C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256 `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`); rutas 13/14/15/16→18 por progresión canónica, tablas heredadas vacías si faltaban y preservación de datos. | §5.2, §8, §13 | AC-33 |
+| R10-2 | Compuertas y backup/restore a 18: `schemaVersion = 18`, `[1..17, version]`, `1..18`, etiqueta `e4.1-v18`, verificación de manifiestos v14/v15/v16 antes de publicar y rechazo de v19; el gate debe repetirse antes de adaptar código. | §5.2, §8, §13 | AC-33 |
 
-Nota de vigencia: las filas R6-1, R7-1 y R7-2 se conservan como historia del proceso; el
-contrato vigente es el de R8 (versión 16, 15 reservada para Compartidos, 14 para Vehículos/main).
+Nota de vigencia: las filas R6-1, R7-1, R7-2, R8-1 y R8-2 se conservan como historia del proceso; el
+contrato vigente es el de R10 (versión 18; 16 Revisión de Comida, 15 Compartidos, 14 Vehículos/main).
 
 ## 4. Funcionalidad
 
 ### 4.1 Instrumentos
 
 - Identidad `Ixxx`, estable e inmutable; el nombre es editable y no es clave. La tabla de
-  Instrumentos se crea en la versión de esquema 16: la secuencia parte de `I1001` y no
+  Instrumentos se crea en la versión de esquema 18: la secuencia parte de `I1001` y no
   reutiliza IDs. Si la migración encontrara filas, continúa desde el mayor `Ixxx` real; E4.1
   no afirma la existencia de Instrumentos previos.
 - Campos: nombre obligatorio (1–120 caracteres, sin caracteres de control, valor literal
@@ -444,7 +444,7 @@ cobertura temporal, la fuente Inversión se declara «pendiente hasta E4.2».
 ## 5. Modelo de datos y contratos
 
 Modelo lógico documental; sin DDL ejecutable, migración ejecutada ni datos reales. La
-versión 16 es un contrato documental que el desarrollo autorizado implementará.
+versión 18 es un contrato documental que el desarrollo autorizado implementará.
 
 | Objeto | Datos persistentes propuestos | Garantías y límites |
 | --- | --- | --- |
@@ -495,7 +495,7 @@ Reglas de integridad:
 Propuesta técnica (DT2), no decisión financiera:
 
 - Instrumentos nuevos: `I` + secuencia decimal. La secuencia parte de `I1001` en la versión
-  16 y no reutiliza IDs; si la migración encontrara filas, continúa desde el mayor `Ixxx`
+  18 y no reutiliza IDs; si la migración encontrara filas, continúa desde el mayor `Ixxx`
   real. El formato exacto es detalle técnico, no una regla financiera, y E4.1 no afirma que
   existan Instrumentos previos.
 - Compras nuevas: ID decimal exacto en TEXT, procedente de un contador atómico, como en
@@ -505,126 +505,157 @@ Propuesta técnica (DT2), no decisión financiera:
 
 ### 5.2 Persistencia y migración (contrato documental)
 
-- **Versión destino: E4.1 usa la 16.** El gate pre-DEV inicial verificó `origin/main` 14 y la
-  reserva 15 de Compartidos. Durante DEV, `origin/main` avanzó a `24b48c5` y **ya contiene el
-  esquema 15 de Compartidos** (Base B, PR75); su manifiesto regenerado es de **122 objetos** y
-  SHA-256 `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5`, idéntico a
-  `C15-COMPARTIDOS-AD2EDFE`. La 16 sigue libre y es la siguiente versión. Rev9 propone aceptar
-  ese `main` v15 verificado como base y subir a la 16; no reabre ni modifica Compartidos, y no
-  comparte el número 16 con otro contrato. La reserva 16 sigue siendo provisional frente a un
-  `main` que avance.
-- **STOP por ocupación de la 16 (2026-10-27).** Tras publicar rev9, `origin/main` avanzó a
-  `2487656` (PR82/DEV16) y declara `schemaVersion = 16`; la 16 está ocupada por Revisión
-  bancaria de Comida. El gate de destino falla y **no se implementa ni publica** E4.1 como 16.
-  Rev9 queda superada: se requiere **rev10** con destino **17**, contrato C16 de main,
-  preservación de sus tablas/datos y repetición de revisión y gate. Sin aprobación de rev10 no
-  hay PR ni merge.
-- **Progresión canónica y tablas vacías (rev9).** Al estar `main` en 15, las rutas 13→16 y
-  14→16 ejecutan la progresión canónica **13→14→15→16** o **14→15→16** con las migraciones de
-  main. Si el origen no tenía Compartidos, la migración 14→15 crea sus tablas **vacías**; no
-  importa datos, no reseedea, no crea hechos y no reutiliza identidades. E4.1 solo añade su
-  propio esquema en 15→16 y actualiza `schema_version`. Esto evita un segundo contrato v16 sin
-  Compartidos y mantiene una única identidad de esquema. La migración 14→15 de Compartidos es
-  la de `main` y puede reconstruir tablas según su contrato ya aprobado; **no forma parte del
-  DDL propio de E4.1**. La garantía de «sin `DROP`/`ALTER` destructivo» se aplica al esquema
-  propio de inversión (15→16) y a tablas ajenas desde E4.1, no a la migración prerequisito de
-  main.
+- **Versión destino: E4.1 usa la 18 (rev10 propuesta).** El gate pre-DEV inicial verificó
+  `origin/main` 14 y la reserva 15 de Compartidos. Después, `main` integró Compartidos v15
+  (`24b48c5`) y Revisión bancaria de Comida v16 (`2487656`); este último declara
+  `schemaVersion = 16` y ocupa la 16. La **18 está libre**: ningún ref local ni remoto declara
+  `schemaVersion = 18` a 2026-10-27. Rev10 propone que E4.1 use la 18, sin reabrir ni
+  modificar Compartidos o Revisión de Comida. La reserva 18 es provisional y no prevalece
+  sobre un `main` que avance ni sobre otra reserva verificada.
+- **Contrato real de main v16.** `origin/main` `1d539a8` (docs; esquema introducido en `2487656`, fuente `26b6f0c`,
+  PR82/DEV16) declara `schemaVersion = 16`. Su manifiesto canónico regenerado tiene **135
+  objetos** y SHA-256
+  `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`; se propone congelarlo
+  como **`C16-REVISION-COMIDA-26B6F0C`**. Objetos distintivos: tablas `revision_comida`,
+  `revision_comida_audit` y `revision_comida_attempts`; índices `revision_comida_fecha`,
+  `revision_comida_movimiento` y `revision_comida_estado`; triggers
+  `revision_comida_id_immutable`, `revision_comida_tipo_immutable`,
+  `revision_comida_created_immutable`, `revision_comida_no_delete`,
+  `revision_comida_annulled_locked`, `revision_comida_audit_no_update` y
+  `revision_comida_audit_no_delete`; contador `revision_comida`; se conservan Compartidos v15,
+  Vehículos y el resto de tablas, triggers, índices y contadores. Una variante v16 con otro
+  manifiesto, un objeto ausente, alterado o extra, o tablas sintéticas se rechaza antes de
+  mutar; el número 16 no acredita compatibilidad.
+- **Colisión con D5 y reserva de la 18.** El barrido de refs no encuentra ningún
+  `schemaVersion = 17`, pero el worktree ajeno `dev14-d5` (rama `codex/dev14-d5-exterior`,
+  HEAD `06f7389`) mantiene cambios **sin commitear** con `schemaVersion = 17`,
+  `compartidoAportacionSchema` y etiqueta `e3.2-d5-v17`. Es un DEV autorizado y activo; no se
+  toca ni se reanuda. Por tanto la 17 **no se considera libre en la práctica** y rev10 renumera
+  E4.1 a la **18**, que está libre en refs y worktrees a 2026-10-27. La compuerta debe incluir
+  worktrees y estado sin commitear, no solo refs. Si D5 integra finalmente un v17, antes de
+  adaptar E4.1 habrá que congelar su contrato `C17` y añadir la ruta 17→18; hasta entonces la
+  17 no es un origen admitido.
+- **Progresión canónica y tablas vacías (rev10).** Al estar `main` en 16, las rutas 13→18,
+  14→18 y 15→18 ejecutan la progresión canónica **13→14→15→16→18**, **14→15→16→18** o
+  **15→16→18** con las migraciones de main. Si el origen no tenía Compartidos o Revisión de
+  Comida, la progresión crea sus tablas **vacías**; no importa datos, no reseedea, no crea
+  hechos y no reutiliza identidades. E4.1 solo añade su propio esquema en 16→18 y actualiza
+  `schema_version`. Esto evita un segundo contrato v18 sin tablas heredadas y mantiene una
+  única identidad de esquema. Las migraciones 14→15 (Compartidos) y 15→16 (Revisión de Comida)
+  son las de `main` y pueden crear o reconstruir tablas según sus contratos aprobados; **no
+  forman parte del DDL propio de E4.1**. La garantía de «sin `DROP`/`ALTER` destructivo» se
+  aplica al esquema propio de inversión (16→18) y a tablas ajenas desde E4.1, no a las
+  migraciones prerequisito de main.
 - **Regla de resolución.** Las versiones se resuelven por orden de integración. La 14 queda
-  para Vehículos o Compartidos v14; la 15 para Compartidos/Base B v15; E4.1 usa la 16. Si otra
-  entrega ocupa la 16 antes de DEV, E4.1 renumera en su rama a la siguiente versión libre y
-  repite el gate; si un v14 o v15 se integra después de una versión superior, renumera en su
-  propia rama. Nunca se comparte el mismo número entre contratos distintos.
+  para Vehículos o Compartidos v14; la 15 para Compartidos/Base B v15; la 16 para Revisión
+  bancaria de Comida; E4.1 usa la 18. Si otra entrega ocupa la 18 antes de DEV, E4.1 renumera
+  en su rama a la siguiente versión libre y repite el gate y la revisión; nunca se comparte el
+  mismo número entre contratos distintos.
 - **Contratos admitidos: lista cerrada y manifiesto obligatorio.** E4.1 **no** acepta una base
   por su número. Solo admite los contratos de la tabla, identificados y verificados en objetos
-  e invariantes; cualquier otro v14 o v15 —incluida una revisión que cambie el manifiesto— es
-  desconocido y se rechaza antes de mutar. El soporte de cualquier otro contrato queda
-  bloqueado hasta una revisión autorizada. El manifiesto completo de cada contrato está
+  e invariantes; cualquier otro v14, v15 o v16 —incluida una revisión que cambie el
+  manifiesto— es desconocido y se rechaza antes de mutar. El soporte de cualquier otro contrato
+  queda bloqueado hasta una revisión autorizada. El manifiesto completo de cada contrato está
   congelado en `apps/api/src/schema-contracts.json` con su SHA-256; sin ese artefacto y sus
   hashes, el gate pre-DEV falla.
 
   | ID de contrato | Fuente congelada | Objetos distintivos exigidos | Invariante específica |
   | --- | --- | --- | --- |
   | `C14-COMPARTIDOS-FCE1107` | Compartidos v14, commit `fce1107`; **histórico, no admitido como origen de upgrade** | `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`; índices `participantes_compartido_referencia` y `participantes_compartido_titular`; triggers `compartido_no_delete`, `participante_compartido_id_immutable`, `participante_compartido_no_delete`, `compartido_audit_no_update` y `compartido_audit_no_delete` | `referencias` admite `'Gasto compartido'`; existe el contador `participantes_compartido`; 114 objetos |
-  | `C14-VEHICULOS-C69E343` | Vehículos v14, commit `c69e343`; admitido como origen de la progresión 14→15→16 | `fichas_vehiculo`; índice `fichas_vehiculo_matricula`; triggers `ficha_vehiculo_identity`, `ficha_vehiculo_no_delete`, `ficha_vehiculo_type`, `referencia_vehicle_type`, `audit_ficha_no_update` y `audit_ficha_no_delete` | `referencias` admite `'Vehículo'`; no crea contador nuevo; 111 objetos |
-  | `C15-COMPARTIDOS-AD2EDFE` | **Compartidos v15 real**, commit `ad2edfe`; admitido como origen 15→16 | Base 14 de Vehículos más `fichas_compartidos`, `participantes_compartido`, `compartido_audit` y `compartido_attempts`; mismos índices y triggers de Compartidos; `fichas_vehiculo` y sus triggers se conservan | `schema_version = 15`; `referencias` admite `'Vehículo'` y `'Gasto compartido'`; 122 objetos; la migración 15→16 debe preservar todas sus tablas y filas |
+  | `C14-VEHICULOS-C69E343` | Vehículos v14, commit `c69e343`; admitido como origen de la progresión 14→15→16→18 | `fichas_vehiculo`; índice `fichas_vehiculo_matricula`; triggers `ficha_vehiculo_identity`, `ficha_vehiculo_no_delete`, `ficha_vehiculo_type`, `referencia_vehicle_type`, `audit_ficha_no_update` y `audit_ficha_no_delete` | `referencias` admite `'Vehículo'`; no crea contador nuevo; 111 objetos |
+  | `C15-COMPARTIDOS-AD2EDFE` | **Compartidos v15 real**, commit `ad2edfe`; admitido como origen 15→16→18 | Base 14 de Vehículos más `fichas_compartidos`, `participantes_compartido`, `compartido_audit` y `compartido_attempts`; mismos índices y triggers de Compartidos; `fichas_vehiculo` y sus triggers se conservan | `schema_version = 15`; `referencias` admite `'Vehículo'` y `'Gasto compartido'`; 122 objetos; la progresión debe preservar todas sus tablas y filas |
+  | `C16-REVISION-COMIDA-26B6F0C` | **Revisión bancaria de Comida v16 real**, esquema `26b6f0c`, verificado en `main` `2487656`/`1d539a8`; admitido como origen 16→18 | `revision_comida`, `revision_comida_audit`, `revision_comida_attempts`, sus tres índices y siete triggers; contador `revision_comida`; conserva Compartidos v15, Vehículos y el resto | `schema_version = 16`; 135 objetos; SHA-256 `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`; la ruta 16→18 preserva todas sus tablas y filas |
 
-  Solo `C14-VEHICULOS-C69E343` y `C15-COMPARTIDOS-AD2EDFE` son orígenes de upgrade. El
-  manifiesto `C14-COMPARTIDOS-FCE1107` se conserva como evidencia histórica, pero una base v14
-  que coincida con él se rechaza/bloquea antes de mutar hasta que una revisión autorizada
-  defina su ruta de Vehículos; no se convierte en un v16 incompleto. La tabla es orientativa;
-  la autoridad es el **manifiesto canónico completo** de cada contrato, que incluye todos los objetos no internos de `sqlite_master` (tablas, índices,
-  triggers y sus `sql` exactos). Serialización: array JSON ordenado por `(type, name)` con
-  campos en orden `type`, `name`, `tbl_name`, `sql` (UTF-8, `sql` recortado en bordes), sin
-  filas `name LIKE 'sqlite_%'` ni `sql` NULL; `JSON.stringify` sin indentación, escape JSON
-  estándar y sin espacios añadidos; el artefacto se parsea y re-serializa así antes de
-  comparar; SHA-256 sobre la cadena UTF-8 exacta.
+  Solo `C14-VEHICULOS-C69E343`, `C15-COMPARTIDOS-AD2EDFE` y
+  `C16-REVISION-COMIDA-26B6F0C` son orígenes de upgrade. El manifiesto
+  `C14-COMPARTIDOS-FCE1107` se conserva como evidencia histórica, pero una base v14 que
+  coincida con él se rechaza/bloquea antes de mutar hasta que una revisión autorizada defina
+  su ruta de Vehículos. La tabla es orientativa; la autoridad es el **manifiesto canónico
+  completo** de cada contrato, que incluye todos los objetos no internos de `sqlite_master`
+  (tablas, índices, triggers y sus `sql` exactos). Serialización: array JSON ordenado por
+  `(type, name)` con campos en orden `type`, `name`, `tbl_name`, `sql` (UTF-8, `sql` recortado
+  en bordes), sin filas `name LIKE 'sqlite_%'` ni `sql` NULL; `JSON.stringify` sin
+  indentación, escape JSON estándar y sin espacios añadidos; el artefacto se parsea y
+  re-serializa así antes de comparar; SHA-256 sobre la cadena UTF-8 exacta.
 - **Verificación del contrato antes de mutar.** El arranque aplica este orden; cualquier fallo
   cierra la base y devuelve el literal correspondiente **antes** de `BEGIN IMMEDIATE`,
   `PRAGMA journal_mode`, DDL, backup, contadores, auditoría o cambio de `schema_version`:
-  1. Leer `schema_version`: exactamente una fila, con valor 14 o 15.
+  1. Leer `schema_version`: exactamente una fila, con valor 14, 15 o 16.
   2. Construir el manifiesto real y compararlo por igualdad exacta con el contrato admitido de
-     esa versión: v14 contra `C14-VEHICULOS-C69E343`; v15 contra `C15-COMPARTIDOS-AD2EDFE`.
-     Si un v14 coincide con `C14-COMPARTIDOS-FCE1107`, se rechaza como origen no admitido. Deben
-     existir todos los objetos con su SQL exacto y no puede aparecer ningún objeto ajeno.
-  3. Comprobar las invariantes (literales del `CHECK` de `referencias`, contador de Compartidos
-     solo cuando el contrato sea de Compartidos, `schema_version` real) y que
+     esa versión: v14 contra `C14-VEHICULOS-C69E343`; v15 contra
+     `C15-COMPARTIDOS-AD2EDFE`; v16 contra `C16-REVISION-COMIDA-26B6F0C`. Si un v14 coincide
+     con `C14-COMPARTIDOS-FCE1107`, se rechaza como origen no admitido. Deben existir todos
+     los objetos con su SQL exacto y no puede aparecer ningún objeto ajeno.
+  3. Comprobar las invariantes (literales del `CHECK` de `referencias`, contador de
+     Compartidos solo cuando el contrato sea de Compartidos, contador y tablas de Revisión de
+     Comida solo cuando el contrato sea v16, `schema_version` real) y que
      `PRAGMA foreign_key_check` esté vacío.
-  4. Solo si el manifiesto y las invariantes coinciden se permite evaluar el upgrade a 16.
+  4. Solo si el manifiesto y las invariantes coinciden se permite evaluar el upgrade a 18.
   - v14 desconocido, incompleto o histórico no admitido:
     `Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.`
   - v15 desconocido o incompleto:
     `Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.`
-  - Tablas sintéticas (`compartidos_demo`, `vehiculos_demo` u otras), objetos ausentes,
-    alterados o extra, o contratos mezclados no acreditan compatibilidad y se rechazan.
+  - v16 desconocido o incompleto:
+    `Contrato de esquema v16 desconocido o incompleto; no se modificará esta base.`
+  - Tablas sintéticas (`compartidos_demo`, `vehiculos_demo`, `revision_comida_demo` u otras),
+    objetos ausentes, alterados o extra, o contratos mezclados no acreditan compatibilidad y
+    se rechazan.
   - **Orden de apertura en DEV.** `database.ts` se reordena para que la comprobación del
     contrato sea la primera operación tras abrir la base en lectura; ninguna PRAGMA persistente
     ni transacción de identidad puede precederla. `database.ts` es compuerta de esta
     verificación.
-- **Revalidación de destino (obligatoria).** La 16 no prevalece sobre `main`. Antes de DEV y
-  antes de publicar: `git fetch origin`, leer `origin/main:apps/api/src/database-identity.ts`,
-  las migraciones vigentes y **todos los refs locales y remotos** que reserven versión.
-  **STOP** si `origin/main` está en 16 o más, si la 16 está ocupada, si `origin/main` contiene
-  un v14/v15 no verificado o si falta un manifiesto/hash. Rev9 documenta el estado observado:
-  `origin/main` = `24b48c5` (15) con C15 verificado y la 16 libre. Un `main` posterior o una
-  reserva no verificada ganan siempre y obligan a repetir el gate; la reserva documental no
-  autoriza por sí misma.
-- **Migración aditiva a la versión 16.** La extensión propia de E4.1 se aplica dentro de
-  `BEGIN IMMEDIATE` y con rollback íntegro. Crea `instrumentos`, `operaciones_inversion`,
-  `instrumento_attempts`, `operacion_attempts`, `instrumento_audit` y
-  `operacion_inversion_audit`; no ejecuta `DROP`, no borra ni renombra tablas y no aplica
-  `ALTER` destructivo sobre tablas ajenas. En una base 15 de Compartidos conserva intactas
+- **Revalidación de destino (obligatoria).** La 18 no prevalece sobre `main`. Antes de adaptar
+  código y antes de publicar: `git fetch origin`, leer
+  `origin/main:apps/api/src/database-identity.ts`, las migraciones vigentes, **todos los refs
+  locales y remotos** y **todos los worktrees y su estado sin commitear** que reserven versión. **STOP** si `origin/main` está en 18 o más, si la
+  18 está ocupada, si `origin/main` contiene un v14/v15/v16 no verificado o si falta un
+  manifiesto/hash. Estado observado en rev10: `origin/main` = `1d539a8` (16) con C16
+  verificado, la 18 libre y ningún ref en 18. Un `main` posterior o una reserva no verificada
+  ganan siempre y obligan a repetir el gate; la reserva documental no autoriza por sí misma.
+- **Migración aditiva a la versión 18.** La extensión propia de E4.1 se aplica dentro de
+  `BEGIN IMMEDIATE` y con rollback íntegro sobre una base 16 verificada. Crea `instrumentos`,
+  `operaciones_inversion`, `instrumento_attempts`, `operacion_attempts`,
+  `instrumento_audit` y `operacion_inversion_audit`; no ejecuta `DROP`, no borra ni renombra
+  tablas y no aplica `ALTER` destructivo sobre tablas ajenas. Conserva intactas
+  `revision_comida`, `revision_comida_audit`, `revision_comida_attempts`,
   `fichas_compartidos`, `participantes_compartido`, `compartido_audit`,
   `compartido_attempts`, `fichas_vehiculo`, `referencias`, Movimientos, auditorías, contadores
-  y el resto de datos; solo añade lo propio y actualiza `schema_version` a 16. La migración
-  14→15 de Compartidos que pueda ejecutarse antes es la de `main`, con su contrato aprobado y
-  sus reconstrucciones; rev9 la declara prerequisito explícito y no la atribuye a E4.1.
+  y el resto de datos; solo añade lo propio y actualiza `schema_version` a 18. Las
+  progresiones 14→15 y 15→16 que puedan ejecutarse antes son las de `main`, con sus contratos
+  aprobados y sus reconstrucciones; rev10 las declara prerequisitos explícitos y no las
+  atribuye a E4.1.
 - **Compuertas explícitas.** `database.ts` verifica el contrato antes de las PRAGMAs
   persistentes y de la transacción de identidad. `database-identity.ts` declara
-  `schemaVersion = 16` y admite `[1..16]`; `database-schema.ts` acepta `[1..15, version]`
-  (con `version = 16`), verifica el contrato de 14/15 y aplica el esquema de inversión cuando
-  la base es `< 16`. `backup.ts` admite `1..16` y etiqueta la copia como `e4.1-v16`. Una
-  versión mayor que 16 se rechaza antes de mutar.
-- **Rutas de upgrade (rev9, pendiente de aprobación).**
-  - **13→16:** crea la base 13, aplica la progresión canónica 13→14 (Vehículos), 14→15
-    (Compartidos de main) y E4.1 15→16. Conserva filas previas; si el origen 13 no tenía
-    Compartidos, crea sus tablas **vacías**. No importa datos ni reseedea.
-  - **14→16:** exige `C14-VEHICULOS-C69E343`; aplica 14→15 (Compartidos de main) y E4.1
-    15→16. Preserva tablas, triggers y filas de Vehículos y crea vacías las de Compartidos si
-    no existían. Un v14 de `C14-COMPARTIDOS-FCE1107` no se admite como origen y se
-    rechaza/bloquea hasta definir una ruta verificada que añada Vehículos.
-  - **15→16:** exige `C15-COMPARTIDOS-AD2EDFE`; aplica E4.1 15→16 preservando Compartidos v15,
-    Vehículos y todos los datos; no reejecuta la migración 14→15 ni reseedea.
-  Cualquier base 14/15 con otro contrato, objeto ausente o alterado, o tablas sintéticas se
-  rechaza antes de mutar y no se convierte en 16. No existe una ruta 14→16 que salte la 15:
-  eso crearía un segundo contrato v16 sin Compartidos y rompería la identidad única.
-- **Backup y restore.** El backup/restore existente reconoce las versiones 13, 14, 15 y 16,
-  copia y restaura Instrumentos, Compras y las dos auditorías, y extiende el vaciado de
-  intentos a `instrumento_attempts` y `operacion_attempts`. El restore exige un **directorio
-  nuevo**, no mezcla versiones y verifica el manifiesto de una copia v14 o v15 antes de
-  publicarla; una copia desconocida o no admitida (incluido v14 de Compartidos) se rechaza sin
-  publicar. Restaurar una copia de 13, 14 o 15
-  conserva su esquema de origen y no incorpora tablas de la 16; una copia de 16 recupera sus
-  tablas propias. Restaurar mantiene la revocación de sesiones, desafíos e intentos vigente.
+  `schemaVersion = 18` y admite `[1..18]`; `database-schema.ts` acepta `[1..17, version]`
+  (con `version = 18`), verifica los contratos de 14/15/16 y aplica el esquema de inversión
+  cuando la base es `< 18`. `backup.ts` admite `1..18` y etiqueta la copia como `e4.1-v18`.
+  Una versión mayor que 18 se rechaza antes de mutar.
+- **Rutas de upgrade (rev10, pendiente de aprobación).**
+  - **13→18:** crea la base 13, aplica la progresión canónica 13→14 (Vehículos), 14→15
+    (Compartidos), 15→16 (Revisión de Comida) y E4.1 16→18. Conserva filas previas; si el
+    origen no tenía Compartidos o Revisión de Comida, crea sus tablas **vacías**. No importa
+    datos ni reseedea.
+  - **14→18:** exige `C14-VEHICULOS-C69E343`; aplica 14→15→16→18. Preserva tablas, triggers y
+    filas de Vehículos y crea vacías las de Compartidos y Revisión de Comida si no existían.
+    Un v14 de `C14-COMPARTIDOS-FCE1107` no se admite como origen y se rechaza/bloquea hasta
+    definir una ruta verificada que añada Vehículos.
+  - **15→18:** exige `C15-COMPARTIDOS-AD2EDFE`; aplica 15→16→18 preservando Compartidos v15,
+    Vehículos y todos los datos; crea vacías las tablas de Revisión de Comida si no existían.
+  - **16→18:** exige `C16-REVISION-COMIDA-26B6F0C`; aplica E4.1 16→18 preservando Revisión de
+    Comida, Compartidos v15, Vehículos y todos los datos; no reejecuta 14→15 ni 15→16 ni
+    reseedea.
+  Cualquier base 14/15/16 con otro contrato, objeto ausente o alterado, o tablas sintéticas se
+  rechaza antes de mutar y no se convierte en 18. No existe una ruta 14/15→18 que salte la 16:
+  eso crearía un segundo contrato v18 sin Revisión de Comida y rompería la identidad única.
+- **Backup y restore.** El backup/restore reconoce las versiones 13, 14, 15, 16, 17 (solo si su C17 está verificado) y 18, copia y
+  restaura Instrumentos, Compras y las dos auditorías, y extiende el vaciado de intentos a
+  `instrumento_attempts`, `operacion_attempts`, `compartido_attempts` y
+  `revision_comida_attempts`. El restore exige un **directorio nuevo**, no mezcla versiones y
+  verifica el manifiesto de una copia v14, v15 o v16 (y C17 si existe) antes de publicarla; una
+  copia desconocida o no admitida (incluido v14 de Compartidos, un v16 distinto de C16 o un v17
+  sin C17) se rechaza sin publicar. Restaurar una copia de 13, 14, 15, 16 o 17 verificada
+  conserva su esquema de origen y no incorpora tablas de la 18; una copia de 18 recupera sus tablas propias. Restaurar mantiene la
+  revocación de sesiones, desafíos e intentos vigente.
 - **DT7 (mapping/importación por campo/ID/apertura/archivo) se aplaza expresamente** a
   E4.5/E4.12. E4.1 no importa datos, no mapea el Excel y no fija cortes ni excepciones de
   conciliación: los fixtures son nuevos, ficticios y deterministas.
@@ -869,15 +900,17 @@ Códigos de error (contrato unívoco; una causa, un código):
   servidor, UTC, revisión resultante, motivo y JSON `anterior`/`posterior`; triggers que
   abortan `UPDATE` y `DELETE`. No se registran contraseñas, tokens, OTP, claves, importes ni
   payloads en logs públicos. La tabla `audit` existente no se modifica.
-- El backup/restore existente reconoce las versiones 13, 14, 15 y 16 y restaura las tablas
-  nuevas; una copia de 16 se etiqueta `e4.1-v16` y una base 13, 14 o 15 sube a 16 con migración
-  aditiva. El restore exige un directorio nuevo —no escribe sobre una base existente ni mezcla
-  tablas de otra entrega—, vacía sesiones, desafíos e intentos (incluidas
-  `instrumento_attempts` y `operacion_attempts`), y verifica el manifiesto de una copia v14 o
-  v15 antes de publicarla. Una copia de 13, 14 o 15 se restaura con su esquema de origen sin
-  incorporar las tablas de la 16; una copia de 16 recupera sus tablas propias. Restaurar revoca
-  sesiones y desafíos según la política vigente. No se añade un mecanismo de copia nuevo. El
-  guard de entorno demo sigue intacto.
+- El backup/restore existente reconoce las versiones 13, 14, 15, 16, 17 (solo con C17 verificado)
+  y 18 y restaura las tablas
+  nuevas; una copia de 18 se etiqueta `e4.1-v18` y una base 13, 14, 15, 16 o 17 verificada sube a 18 con
+  migración aditiva propia de E4.1. El restore exige un directorio nuevo —no escribe sobre una
+  base existente ni mezcla tablas de otra entrega—, vacía sesiones, desafíos e intentos
+  (incluidas `instrumento_attempts`, `operacion_attempts`, `compartido_attempts` y
+  `revision_comida_attempts`), y verifica el manifiesto de una copia v14, v15 o v16 (y C17 si existe) antes de
+  publicarla. Una copia de 13, 14, 15, 16 o 17 verificada se restaura con su esquema de origen sin incorporar
+  las tablas de la 18; una copia de 18 recupera sus tablas propias. Restaurar revoca sesiones y
+  desafíos según la política vigente. No se añade un mecanismo de copia nuevo. El guard de
+  entorno demo sigue intacto.
 - Sin nuevas dependencias, ORM, servicios externos ni cambios de autenticación.
 
 ## 9. Pantallas y wireframes (APROBADAS rev7)
@@ -1291,9 +1324,8 @@ para el guard de impacto de Saldo; 422 `VALIDATION` para validación de campos; 
 existe un 409 ni un 422 genéricos, y la suficiencia nunca se reporta como 409. Los AC marcados
 **(integración/regresión)** —AC-38, AC-39, AC-40, AC-41, AC-42, AC-49 y AC-53— verifican contratos
 previos o consumidores y no cuentan como funcionalidad nueva de E4.1. Total: 54 AC, de los
-que 47 son funcionales de E4.1 y 7 de integración/regresión. AC-33 incluye los contratos
-v14/v15 y la revalidación de la versión destino; su apartado (g) es una comprobación pre-DEV,
-no una migración ejecutada.
+que 47 son funcionales de E4.1 y 7 de integración/regresión. AC-33 incluye los contratos v14, v15 y v16 y la revalidación de la versión destino; su
+apartado (h) es una comprobación pre-DEV, no una migración ejecutada.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
 | --- | --- | --- |
@@ -1329,7 +1361,7 @@ no una migración ejecutada.
 | E4.1-AC-30 | Recorrer listado, ficha, alta, pestaña Compras (W7/W8) e impacto/rectificación/anulación (W9/W10) a 390 y 1440 con teclado; comprobar el filtro de Estado y el alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas asociadas, sin overflow; tema claro; borrador conservado; botones deshabilitados sin motivo o con revisión obsoleta; en W1/W4 «Todos» muestra la fila Inactiva `I1003` y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9 y W10 cubren rectificación y anulación; capturas ficticias inspeccionadas |
 | E4.1-AC-31 | Provocar vacío, carga, error de fuente, 409 y sesión expirada | Estados distintos y accionables; «No disponible» con motivo; nunca 0 ficticio; no se pierde el borrador ni la selección |
 | E4.1-AC-32 | Inspeccionar IDs y `instrumento_audit`/`operacion_inversion_audit` tras alta, edición, desactivación, rectificación y anulación; intentar `UPDATE`/`DELETE` sobre ambas tablas | IDs `Ixxx` y de Compra únicos e inmutables; una fila por revisión con actor, UTC, motivo y JSON `anterior`/`posterior`; los triggers abortan modificaciones; la tabla `audit` existente no cambia; sin DELETE |
-| E4.1-AC-33 | (a) actualizar una base ficticia de esquema 13 a 16 sin tablas v14/v15; (b) verificar el manifiesto histórico `C14-COMPARTIDOS-FCE1107` (114 objetos) y comprobar que un v14 que coincida con él se rechaza/bloquea como origen no admitido antes de mutar; (c) verificar el manifiesto `C14-VEHICULOS-C69E343` (111 objetos) y actualizar su fixture v14 a 16 conservando sus datos; (d) verificar el manifiesto **real** `C15-COMPARTIDOS-AD2EDFE` (122 objetos, commit `ad2edfe`) y actualizar su fixture v15 con filas sintéticas de Compartidos y Vehículos a 16, comprobando que se preservan `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`, `fichas_vehiculo`, `referencias`, contadores y el resto de filas; (e) intentar abrir variantes v14 o v15 desconocidas o incompletas (objeto ausente, SQL alterado, objeto extra, tablas sintéticas o contratos mezclados); (f) abrir una base marcada como versión 17; (g) ejecutar el gate pre-DEV con `main` en 16 o más, con la 16 ocupada, con `main` en 14/15 no verificado, con la 15 no reconocida o sin manifiestos/hashes; (h) inspeccionar las rutas 13→16, 14→16 y 15→16, las compuertas y el restore de copias 13, 14 verificada, 15 verificada, 14/15 desconocida y 16 en directorios nuevos | (a) la base sube 13→16 por la progresión canónica 13→14→15→16, conserva filas previas, crea vacías las tablas de Compartidos si no existían y la 16 incluye Instrumentos, Compras, intentos y las dos auditorías; (b) el manifiesto histórico v14 de Compartidos coincide y su base se rechaza/bloquea como origen no admitido, sin mutar ni producir un v16 incompleto; (c) el manifiesto v14 de Vehículos coincide y la ruta 14→16 conserva sus tablas, triggers y filas y crea vacías las de Compartidos; (d) el manifiesto real v15 de Compartidos coincide y la ruta 15→16 conserva todas sus tablas y las filas sintéticas, sin reejecutar 14→15 ni reseedear; (e) toda variante desconocida o incompleta se rechaza **antes** de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`, con el literal de su versión (`Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.` / `Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.`) y sin escribir; el número no acredita compatibilidad; (f) la versión 17 se rechaza antes de mutar; (g) si `main` está en 16 o más, la 16 está ocupada, `main` contiene un v14/v15 no verificado o faltan manifiestos/hashes, el gate pre-DEV se detiene y no se implementa la 16; (h) la extensión propia de E4.1 (15→16) es aditiva, sin `DROP`/`ALTER` destructivo ni borrado de tablas ajenas; la progresión 14→15 de Compartidos es la migración de main y puede reconstruir sus tablas según su contrato, sin atribuirse a E4.1; `database-identity.ts` admite `1..16`, `database-schema.ts` `[1..15, version]`, `backup.ts` `1..16`, `database.ts` reordena la verificación, la etiqueta es `e4.1-v16`; el restore verifica manifiestos v14/v15 antes de publicar, una copia de 13/14/15 conserva su esquema de origen y no incorpora tablas v16, una copia v14/v15 desconocida o no admitida se rechaza sin publicar, y una copia de 16 recupera Instrumentos, Compras y auditorías y vacía sesiones, desafíos e intentos; rollback íntegro ante fallo |
+| E4.1-AC-33 | (a) actualizar una base ficticia de esquema 13 a 18 sin tablas v14/v15/v16; (b) verificar el manifiesto histórico `C14-COMPARTIDOS-FCE1107` (114 objetos) y comprobar que un v14 que coincida con él se rechaza/bloquea como origen no admitido antes de mutar; (c) verificar `C14-VEHICULOS-C69E343` (111 objetos) y actualizar su fixture v14 a 18 conservando sus datos; (d) verificar `C15-COMPARTIDOS-AD2EDFE` (122 objetos, commit `ad2edfe`) y actualizar su fixture v15 a 18 preservando Compartidos y Vehículos; (e) verificar `C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256 `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`, fuente `26b6f0c`, verificado en main `2487656`/`1d539a8`) y actualizar su fixture v16 con filas sintéticas de Revisión de Comida, Compartidos y Vehículos a 18, comprobando preservación de `revision_comida`, `revision_comida_audit`, `revision_comida_attempts`, `fichas_compartidos`, `participantes_compartido`, `compartido_audit`, `compartido_attempts`, `fichas_vehiculo`, `referencias`, contadores y filas; (f) intentar abrir variantes v14, v15 o v16 desconocidas o incompletas (objeto ausente, SQL alterado, objeto extra, tablas sintéticas o contratos mezclados); (g) abrir una base marcada como versión 19; (h) ejecutar el gate pre-DEV con `main` en 18 o más, con la 18 ocupada, con `main` en 14/15/16 no verificado, con la 15/16 no reconocida, sin manifiestos/hashes o con un worktree que declare 17 sin C17 congelado; (i) inspeccionar las rutas 13→18, 14→18, 15→18 y 16→18 y, solo si D5 integra un C17 verificado, 17→18; las compuertas y el restore de copias 13, 14 verificada, 15 verificada, 16 verificada, 17 verificada si existe, 14/15/16 desconocida y 18 en directorios nuevos | (a) la base sube 13→18 por la progresión canónica 13→14→15→16→18, conserva filas previas, crea vacías las tablas de Compartidos y Revisión de Comida si no existían y la 18 incluye Instrumentos, Compras, intentos y las dos auditorías; (b) el manifiesto histórico v14 de Compartidos coincide y su base se rechaza/bloquea como origen no admitido, sin mutar ni producir un v18 incompleto; (c) el manifiesto v14 de Vehículos coincide y la ruta 14→18 conserva sus tablas, triggers y filas y crea vacías las de Compartidos y Revisión de Comida; (d) el manifiesto real v15 de Compartidos coincide y la ruta 15→18 conserva sus tablas y las filas sintéticas, sin reejecutar 14→15 ni reseedear; (e) el manifiesto real v16 de Revisión de Comida coincide (135 objetos, hash indicado) y la ruta 16→18 conserva todas sus tablas, filas, triggers, índices y contadores, además de Compartidos, Vehículos y el resto, sin reejecutar 14→15 ni 15→16; (f) toda variante desconocida o incompleta se rechaza **antes** de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de `schema_version`, con el literal de su versión (`Contrato de esquema v14 desconocido o incompleto; no se modificará esta base.` / `Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.` / `Contrato de esquema v16 desconocido o incompleto; no se modificará esta base.`) y sin escribir; el número no acredita compatibilidad; (g) la versión 19 se rechaza antes de mutar; (h) si `main` está en 18 o más, la 18 está ocupada, `main` contiene un v14/v15/v16 no verificado, faltan manifiestos/hashes o aparece un worktree con 17 sin C17 congelado, el gate se detiene y no se implementa la 18; (i) la extensión propia de E4.1 (16→18) es aditiva, sin `DROP`/`ALTER` destructivo ni borrado de tablas ajenas; las progresiones 14→15 y 15→16 son migraciones de main y pueden reconstruir/crear sus tablas según sus contratos; si existe un C17 verificado se añade 17→18 con preservación, y si no, una base 17 se rechaza como origen no admitido; `database-identity.ts` admite `1..18`, `database-schema.ts` `[1..17, version]`, `backup.ts` `1..18`, `database.ts` reordena la verificación, la etiqueta es `e4.1-v18`; el restore verifica manifiestos v14/v15/v16 y C17 si existe antes de publicar, una copia de 13/14/15/16/17 verificada conserva su esquema de origen y no incorpora tablas v18, una copia desconocida o no admitida se rechaza sin publicar, y una copia de 18 recupera Instrumentos, Compras y auditorías y vacía sesiones, desafíos e intentos; rollback íntegro ante fallo |
 | E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | La UI muestra «No disponible» con la causa concreta («No se pudo leer el registro de Compras»/«No se pudo calcular el efectivo») y conserva identidad/filtros; no presenta 0, no repara y no permite guardar una rectificación que presuma integridad |
 | E4.1-AC-35 | Compra retroactiva que deja negativo un saldo posterior (entrada/salida vigente después de la fecha) y hechos del mismo día (apertura 1.000,00; entrada 100,00 y Compra 1.050,00 el 2026-02-10; repetir con 1.150,00) | 422 `INSUFFICIENT_CASH` sin escritura con `disponible`, `necesario`, `minimo` y la fecha del mínimo posterior; aperturas y hechos intactos; la retroactiva que no deja ningún saldo posterior negativo se acepta; con 1.050,00 el cierre del día es 50,00 y se acepta, con 1.150,00 se rechaza con fecha 2026-02-10 y mínimo −50,00, sin depender del orden de captura |
 | E4.1-AC-36 | Editar la divisa de referencia de un Instrumento con Compras en divisa no EUR | Solo cambia el dato de presentación del maestro con auditoría; las Compras conservan divisa, cambio, precio, importe EUR y comisión; efectivo y cantidad no cambian |
@@ -1388,9 +1420,12 @@ Otras integraciones declaradas:
 
 ## 15. Siguiente acción
 
-SPEC19 rev9 está **propuesta y pendiente de revisión/aprobación**. Alinea el contrato técnico
-con `origin/main` `24b48c5` (Compartidos v15, C15 verificado) y mantiene íntegras las
-decisiones funcionales de rev7/rev8. La 16 sigue libre y el candidato DEV/QA existe, pero
-**no se publica PR ni se hace merge** hasta que Codex revise y el usuario apruebe rev9. La
-evidencia Linux/CI y la aprobación explícita del PR siguen siendo obligatorias.
-Esta propuesta no autoriza por sí misma merge ni despliegue.
+SPEC19 rev10 está **propuesta y pendiente de revisión/aprobación por Codex**. Renumera el
+destino a **18**, documenta el contrato real de `main` v16
+(`C16-REVISION-COMIDA-26B6F0C`, 135 objetos, SHA-256
+`9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`) y mantiene íntegras las
+decisiones funcionales de rev7/rev8. **No hay implementación ni integración de main 16 en esta
+rama**; el código sigue en el candidato 16 y no es publicable. Antes de adaptar código debe
+repetirse el gate y confirmar que la 18 sigue libre. No se publica PR ni se hace merge hasta
+aprobar rev10, adaptar código, repetir QA y obtener CI Linux. Esta propuesta no autoriza por
+sí misma desarrollo, merge ni despliegue.
