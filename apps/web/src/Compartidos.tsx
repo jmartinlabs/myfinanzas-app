@@ -1643,7 +1643,15 @@ function HistoricalAportaciones({
           {notice}
         </p>
       )}
-      {data.historicos.length === 0 ? (
+      {thirds.length === 0 ? (
+        <section className="panel empty-state">
+          <h2>Sin Terceros activos</h2>
+          <p className="muted">
+            Añade un participante Tercero activo a la ficha antes de revisar una
+            acreditación histórica. No se crean participantes implícitos.
+          </p>
+        </section>
+      ) : data.historicos.length === 0 ? (
         <section className="panel empty-state">
           <h2>Sin históricos elegibles</h2>
           <p className="muted">
