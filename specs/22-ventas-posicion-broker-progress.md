@@ -18,6 +18,8 @@ Fecha: 2026-10-28.
 - **Evidencia:** HTML rev3 (SHA-256 `d337644c…a664a4`), capturas rev3 y ZIP
   `specs/22-ventas-posicion-broker-captures/rev3/spec22-wireframes-rev3-review.zip`
   (SHA-256 `50153491…b3cd1f`); `overflow-report.json` 20/20 sin desbordamiento.
+- **Retoques visuales menores:** el usuario los difiere al final del proyecto (2026-10-28); no
+  bloquean la aprobación de la specification ni DEV22.
 - **Pendiente:** cierre documental de SPEC22 y coordinación D7/SPEC19 (enmienda mínima de
   SPEC19); E4.1 ya está integrada en `156a50d`. No se inicia DEV22.
 
