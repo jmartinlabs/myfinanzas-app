@@ -1,9 +1,16 @@
 import type { Database } from "bun:sqlite";
-import { decimal, Problem } from "./saldos";
+import { decimal, money, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
 import { fingerprint, ledgerRows, type LedgerRow } from "./movement-ledger";
 import { getReference } from "./reference-rules";
 import { createReference } from "./referencias";
+import {
+  aportacionMetadata,
+  aportacionesReferencia,
+  storeAportacion,
+  validateAportacion,
+  type AportacionFuente,
+} from "./aportaciones";
 
 export type RolParticipante = "Titular" | "Tercero";
 export type ParticipanteCompartido = {
@@ -59,6 +66,7 @@ type GastoBase = {
   motivo: string | null;
 };
 
+const euros = (value: string) => value.replace(".", ",") + " €";
 const metric = (
   valor: string | null,
   estado: MetricaEstado,
@@ -70,7 +78,7 @@ const metric = (
   subtotal,
   estado,
   motivo,
-  fuente: "Motor central Compartidos (base B)",
+  fuente: "Motor central Compartidos (D5)",
   cobertura,
 });
 
@@ -168,15 +176,45 @@ export function cuotasExactas(
   return result;
 }
 
-/** Pure base-B engine. No contribution source exists here by design (D5 disabled). */
+/** R-MP exact attribution: proportional to each Gasto's assigned cents, largest remainder, Gasto ID tie-break. */
+export function distribuirRecuperado(
+  totalCents: bigint,
+  pesos: { id: string; cents: bigint }[],
+) {
+  const positive = pesos.filter((p) => p.cents > 0n);
+  const total = positive.reduce((sum, p) => sum + p.cents, 0n);
+  const result = new Map<string, bigint>();
+  if (total === 0n || totalCents <= 0n) return result;
+  const bases = positive.map((p) => ({
+    id: p.id,
+    base: (totalCents * p.cents) / total,
+    resto: (totalCents * p.cents) % total,
+  }));
+  let residual = totalCents - bases.reduce((sum, b) => sum + b.base, 0n);
+  const order = [...bases].sort((a, b) =>
+    a.resto === b.resto ? (a.id < b.id ? -1 : 1) : a.resto > b.resto ? -1 : 1,
+  );
+  for (const b of bases) result.set(b.id, b.base);
+  for (const b of order) {
+    if (residual <= 0n) break;
+    result.set(b.id, result.get(b.id)! + 1n);
+    residual -= 1n;
+  }
+  return result;
+}
+
+/** Pure base engine with D5 accreditations. Canonical amount/date/Ref are read from the Movement. */
 export function calcularReparto(
   participantes: Omit<
     ParticipanteCompartido,
     "referencia" | "creado" | "actualizado" | "revision"
   >[],
   gastos: GastoBase[],
+  aportaciones: AportacionFuente[] = [],
 ): RepartoCalculado {
   const activos = participantes.filter((p) => p.estado === "Activa");
+  const terceros = participantes.filter((p) => p.rol === "Tercero");
+  const tercerosActivos = activos.filter((p) => p.rol === "Tercero");
   const totalPartes = activos.reduce((sum, p) => sum + BigInt(p.partes), 0n);
   const elegibles = gastos.filter((g) => !g.anulado && g.valido);
   const incidencias = gastos.filter((g) => !g.anulado && !g.valido);
@@ -211,12 +249,73 @@ export function calcularReparto(
     }
 
   const asignadoTitular = titular ? (asignadoTotal.get(titular.id) ?? 0n) : null;
-  const tercerosConCuota = activos.some(
-    (p) => p.rol === "Tercero" && (asignadoTotal.get(p.id) ?? 0n) > 0n,
+  const tercerosConCuota = tercerosActivos.some(
+    (p) => (asignadoTotal.get(p.id) ?? 0n) > 0n,
   );
+
+  // D5: Aportado_p only for Terceros, sum of vigente accreditations. Titular has none (F3).
+  const aportado = new Map<string, bigint>(
+    terceros.map((p) => [p.id, 0n]),
+  );
+  for (const a of aportaciones)
+    if (!a.anulado && aportado.has(a.participante))
+      aportado.set(a.participante, aportado.get(a.participante)! + a.importeCents);
+  const recuperadoTotal = [...aportado.values()].reduce(
+    (sum, value) => sum + value,
+    0n,
+  );
+  const recuperadoAplica = tercerosConCuota || recuperadoTotal > 0n;
+  const bajasConAportacion = terceros.filter(
+    (p) => p.estado !== "Activa" && (aportado.get(p.id) ?? 0n) > 0n,
+  );
+
+  // R-MP attribution per Gasto; a Tercero with Recuperado but no quota is an incidence.
+  const recPorGasto = new Map<string, bigint>(
+    elegibles.map((g) => [g.id, 0n]),
+  );
+  const sinCuota = new Map<string, bigint>();
+  if (repartoValido)
+    for (const p of tercerosActivos) {
+      const r = aportado.get(p.id) ?? 0n;
+      if (r === 0n) continue;
+      const asignadoP = asignadoTotal.get(p.id) ?? 0n;
+      if (asignadoP === 0n) {
+        sinCuota.set(p.id, r);
+        continue;
+      }
+      const pesos = elegibles
+        .map((g) => ({
+          id: g.id,
+          cents: porGasto.get(g.id)?.get(p.id) ?? 0n,
+        }))
+        .filter((x) => x.cents > 0n);
+      for (const [gid, cents] of distribuirRecuperado(r, pesos))
+        recPorGasto.set(gid, recPorGasto.get(gid)! + cents);
+    }
+  const atribucionParcial = sinCuota.size > 0 || bajasConAportacion.length > 0;
+
+  const pendientes = new Map<string, bigint>();
+  const excesos = new Map<string, bigint>();
+  for (const p of tercerosActivos) {
+    const asignado = asignadoTotal.get(p.id) ?? 0n,
+      pagado = aportado.get(p.id) ?? 0n;
+    pendientes.set(p.id, asignado > pagado ? asignado - pagado : 0n);
+    excesos.set(p.id, pagado > asignado ? pagado - asignado : 0n);
+  }
+  const pendienteTotal = [...pendientes.values()].reduce(
+    (sum, value) => sum + value,
+    0n,
+  );
+  const excesoTotal = [...excesos.values()].reduce(
+    (sum, value) => sum + value,
+    0n,
+  );
+
   const brutoDecimal = decimal(brutoCents.toString())!;
   const costePropioDecimal =
     asignadoTitular === null ? null : decimal(asignadoTitular.toString())!;
+  const recuperadoDecimal = decimal(recuperadoTotal.toString())!;
+  const netoDecimal = decimal((brutoCents - recuperadoTotal).toString())!;
 
   const bruto: Metrica = !elegibles.length && !incidencias.length
     ? metric(
@@ -235,19 +334,28 @@ export function calcularReparto(
         )
       : metric(brutoDecimal, "Verificada", "Suma exacta de Gastos CAT013 elegibles.");
 
-  const recuperado: Metrica = tercerosConCuota
+  const recuperado: Metrica = !repartoValido
     ? metric(
         null,
         "No disponible",
-        "No disponible — D5 no habilitado: no existe fuente de aportaciones de terceros.",
-        "No disponible",
+        motivoReparto ?? "Sin reparto válido.",
+        "Sin repartir",
       )
-    : metric(
-        null,
-        "No aplica",
-        "Sin terceros con cuota asignada; no hay recuperación que acreditar.",
-        "No aplica",
-      );
+    : !recuperadoAplica
+      ? metric(
+          null,
+          "No aplica",
+          "Sin terceros con cuota ni aportaciones acreditadas.",
+          "No aplica",
+        )
+      : metric(
+          recuperadoDecimal,
+          incidencias.length || atribucionParcial ? "Parcial" : "Verificada",
+          incidencias.length || atribucionParcial
+            ? "Suma de aportaciones D5 acreditadas; la atribución por Gasto queda parcial."
+            : "Suma de aportaciones D5 acreditadas vigentes; incluye el exceso íntegro.",
+          incidencias.length || atribucionParcial ? "Parcial" : "Verificada",
+        );
 
   const neto: Metrica = !repartoValido
     ? metric(
@@ -256,27 +364,20 @@ export function calcularReparto(
         motivoReparto ?? "Sin reparto válido.",
         "Sin repartir",
       )
-    : incidencias.length
+    : incidencias.length || atribucionParcial
       ? metric(
           null,
           "Parcial",
-          "Cobertura comprometida por una incidencia; Neto no se presenta como completo.",
+          "Neto parcial: hay una incidencia o una aportación sin cuota atribuible.",
           "Parcial",
-          brutoDecimal,
+          netoDecimal,
         )
-      : tercerosConCuota
-        ? metric(
-            null,
-            "No disponible",
-            "Depende del Recuperado; D5 no habilitado.",
-            "No disponible",
-          )
-        : metric(
-            brutoDecimal,
-            "Verificada",
-            "Sin terceros con cuota: Neto = Bruto y coincide con el coste propio (F1/F3).",
-            "Verificada",
-          );
+      : metric(
+          netoDecimal,
+          "Verificada",
+          "Neto caso = Bruto − Recuperado; puede ser negativo; no exige cero para cerrar (R-CC).",
+          "Verificada",
+        );
 
   const costePropio: Metrica = !repartoValido
     ? metric(
@@ -314,72 +415,142 @@ export function calcularReparto(
         motivoReparto ?? "Sin reparto válido.",
         "Sin repartir",
       )
-    : tercerosConCuota
+    : !tercerosConCuota
       ? metric(
-          null,
-          "No disponible",
-          "Requiere Aportado acreditado; D5 no habilitado. No se presenta Asignado como pendiente verificado.",
-          "No disponible",
-        )
-      : metric(
           null,
           "No aplica",
           "Sin terceros con cuota asignada.",
           "No aplica",
+        )
+      : metric(
+          decimal(pendienteTotal.toString())!,
+          incidencias.length ? "Parcial" : "Verificada",
+          incidencias.length
+            ? "Subtotal de pendientes sobre Gastos acreditados."
+            : "Suma separada de pendientes de Terceros; no compensa excesos (D7).",
+          incidencias.length ? "Parcial" : "Verificada",
         );
 
-  const exceso: Metrica = tercerosConCuota
+  const exceso: Metrica = !repartoValido
     ? metric(
         null,
         "No disponible",
-        "Requiere Aportado acreditado; D5 no habilitado. Nunca 0,00 verificado por ausencia de fuente.",
-        "No disponible",
+        motivoReparto ?? "Sin reparto válido.",
+        "Sin repartir",
       )
-    : metric(
-        null,
-        "No aplica",
-        "Sin terceros con cuota o sin fuente de aportaciones que pueda exceder.",
-        "No aplica",
-      );
+    : !tercerosConCuota && excesoTotal === 0n
+      ? metric(
+          null,
+          "No aplica",
+          "Sin terceros con cuota ni aportaciones que puedan exceder.",
+          "No aplica",
+        )
+      : metric(
+          decimal(excesoTotal.toString())!,
+          incidencias.length ? "Parcial" : "Verificada",
+          incidencias.length
+            ? "Subtotal de excesos sobre Gastos acreditados."
+            : "Exceso íntegro por Tercero, sin recorte ni compensación cruzada (F2/D7).",
+          incidencias.length ? "Parcial" : "Verificada",
+        );
 
-  const cobertura = incidencias.length
+  const cobertura: RepartoCalculado["cobertura"] = !repartoValido
     ? {
-        estado: "Parcial" as MetricaEstado,
-        motivo: "Cobertura del Bruto comprometida; revisa los Gastos señalados.",
+        estado: "No disponible" as MetricaEstado,
+        motivo: motivoReparto ?? "Sin reparto válido.",
       }
-    : tercerosConCuota
+    : incidencias.length
       ? {
-          estado: "No disponible" as MetricaEstado,
-          motivo: "Cobertura de aportaciones no verificable: D5 no habilitado.",
+          estado: "Parcial" as MetricaEstado,
+          motivo: "Cobertura del Bruto comprometida; revisa los Gastos señalados.",
         }
-      : {
-          estado: "No aplica" as MetricaEstado,
-          motivo: "Sin terceros con cuota; no hay cobertura de aportaciones que verificar.",
-        };
+      : bajasConAportacion.length
+        ? {
+            estado: "Parcial" as MetricaEstado,
+            motivo:
+              "Hay aportaciones de participantes de baja lógica; se conservan y exigen revisión de atribución.",
+          }
+        : sinCuota.size
+          ? {
+              estado: "Parcial" as MetricaEstado,
+              motivo:
+                "Hay Recuperado sin cuota asignada; no se divide ni se declara Cerrado.",
+            }
+          : !tercerosConCuota
+            ? {
+                estado: "No aplica" as MetricaEstado,
+                motivo:
+                  "Sin terceros con cuota; no hay cobertura de aportaciones que verificar.",
+              }
+            : tercerosActivos.some(
+                  (p) =>
+                    (asignadoTotal.get(p.id) ?? 0n) >
+                    (aportado.get(p.id) ?? 0n),
+                )
+              ? {
+                  estado: "Parcial" as MetricaEstado,
+                  motivo:
+                    "Aportaciones acreditadas insuficientes para cubrir el reparto de todos los Terceros.",
+                }
+              : {
+                  estado: "Verificada" as MetricaEstado,
+                  motivo:
+                    "Todos los Terceros con cuota tienen aportaciones D5 acreditadas suficientes.",
+                };
 
   const estado: RepartoCalculado["estado"] = !repartoValido
     ? "Sin repartir"
-    : incidencias.length
+    : incidencias.length || atribucionParcial
       ? "Revisar"
-      : tercerosConCuota
-        ? "Reparto parcial"
-        : "Cerrado";
+      : !tercerosConCuota
+        ? "Cerrado"
+        : pendienteTotal === 0n && excesoTotal === 0n
+          ? "Cerrado"
+          : "Reparto parcial";
   const estadoReparto: RepartoCalculado["estadoReparto"] = !repartoValido
     ? "Sin repartir"
-    : tercerosConCuota
-      ? "Reparto parcial"
-      : "Cerrado";
+    : !tercerosConCuota
+      ? "Cerrado"
+      : "Reparto parcial";
   const alertas: RepartoCalculado["alertas"] = incidencias.map((g) => ({
     tipo: "revisar",
     gastoId: g.id,
     motivo:
       `Movimiento ${g.id} · ${g.motivo ?? "importe incompatible"} · Revisar: bloquea Cerrado y compromete Bruto/Neto.`,
   }));
-  if (tercerosConCuota)
+  for (const p of tercerosActivos) {
+    const pendiente = pendientes.get(p.id) ?? 0n,
+      excesoP = excesos.get(p.id) ?? 0n;
+    if (pendiente > 0n)
+      alertas.push({
+        tipo: "cobertura",
+        participanteId: p.id,
+        importe: decimal(pendiente.toString())!,
+        motivo: `${p.nombre} pendiente ${euros(decimal(pendiente.toString())!)} · no se compensa con excesos de otros Terceros.`,
+      });
+    if (excesoP > 0n)
+      alertas.push({
+        tipo: "exceso",
+        participanteId: p.id,
+        importe: decimal(excesoP.toString())!,
+        motivo: `${p.nombre} exceso ${euros(decimal(excesoP.toString())!)} · se conserva íntegro (F2).`,
+      });
+  }
+  for (const [id, r] of sinCuota) {
+    const p = terceros.find((x) => x.id === id)!;
     alertas.push({
-      tipo: "cobertura",
-      motivo:
-        "Cobertura de aportaciones no disponible — D5 no habilitado. No se declara Cerrado con terceros con cuota.",
+      tipo: "revisar",
+      participanteId: id,
+      importe: decimal(r.toString())!,
+      motivo: `${p.nombre} tiene recuperado sin cuota asignada; no se divide ni se cierra.`,
+    });
+  }
+  for (const p of bajasConAportacion)
+    alertas.push({
+      tipo: "revisar",
+      participanteId: p.id,
+      importe: decimal((aportado.get(p.id) ?? 0n).toString())!,
+      motivo: `${p.nombre} está de baja lógica con aportaciones conservadas; nueva atribución bloqueada y revisión requerida.`,
     });
   if (repartoValido && !titular)
     alertas.push({
@@ -390,6 +561,7 @@ export function calcularReparto(
 
   const gastosDto: RepartoGasto[] = gastos.map((g) => {
     const cuotas = porGasto.get(g.id) ?? null;
+    const rec = recPorGasto.get(g.id) ?? 0n;
     const asignaciones = activos.map((p) => ({
       participanteId: p.id,
       importe: cuotas ? decimal(cuotas.get(p.id)!.toString()) : null,
@@ -410,19 +582,16 @@ export function calcularReparto(
               motivoReparto ?? "Sin reparto válido.",
               "Sin repartir",
             )
-          : tercerosConCuota
-            ? metric(
-                null,
-                "No disponible",
-                "Neto por Gasto depende del Recuperado atribuido; D5 no habilitado.",
-                "No disponible",
-              )
-            : metric(
-                g.importe,
-                "Verificada",
-                "Sin Recuperado de terceros: Neto por Gasto = Bruto del Gasto.",
-                "Verificada",
-              );
+          : metric(
+              decimal((g.importeCents - rec).toString())!,
+              incidencias.length || atribucionParcial ? "Parcial" : "Verificada",
+              incidencias.length || atribucionParcial
+                ? "Neto por Gasto parcial por incidencia o recuperado sin cuota."
+                : "Neto por Gasto = Bruto del Gasto − Recuperado atribuido (R-MP).",
+              incidencias.length || atribucionParcial
+                ? "Parcial"
+                : "Verificada",
+            );
     return {
       id: g.id,
       fecha: g.fecha,
@@ -432,13 +601,34 @@ export function calcularReparto(
       anulado: g.anulado,
       motivo: g.motivo,
       asignaciones,
-      recuperado: metric(
-        null,
-        tercerosConCuota ? "No disponible" : "No aplica",
-        tercerosConCuota
-          ? "Recuperado atribuido por Gasto no disponible; D5 no habilitado."
-          : "Sin terceros con cuota asignada.",
-      ),
+      recuperado: g.anulado
+        ? metric(null, "No aplica", "Gasto anulado: no computa.", "No aplica")
+        : !g.valido
+          ? metric(
+              null,
+              "Parcial",
+              "Gasto con incidencia: Recuperado atribuido no verificable.",
+              "Parcial",
+            )
+          : !repartoValido
+            ? metric(
+                null,
+                "No disponible",
+                motivoReparto ?? "Sin reparto válido.",
+                "Sin repartir",
+              )
+            : metric(
+                decimal(rec.toString())!,
+                incidencias.length || atribucionParcial
+                  ? "Parcial"
+                  : "Verificada",
+                incidencias.length || atribucionParcial
+                  ? "Recuperado atribuido parcial; revisa la incidencia."
+                  : "Recuperado atribuido por Gasto con céntimos exactos (R-MP).",
+                incidencias.length || atribucionParcial
+                  ? "Parcial"
+                  : "Verificada",
+              ),
       neto: netoGasto,
     };
   });
@@ -449,6 +639,10 @@ export function calcularReparto(
   const partidas: RepartoPartida[] = partidaIds.map((id) => {
     const items = elegibles.filter((g) => (g.partida?.id ?? "SIN_PARTIDA") === id);
     const total = items.reduce((sum, g) => sum + g.importeCents, 0n);
+    const netoAtribuido = items.reduce(
+      (sum, g) => sum + g.importeCents - (recPorGasto.get(g.id) ?? 0n),
+      0n,
+    );
     const nombre =
       items.find((g) => g.partida)?.partida?.nombre ??
       "Partida no disponible en el Gasto";
@@ -460,27 +654,20 @@ export function calcularReparto(
             motivoReparto ?? "Sin reparto válido.",
             "Sin repartir",
           )
-        : incidencias.length
+        : incidencias.length || atribucionParcial
           ? metric(
               null,
               "Parcial",
               "Cobertura comprometida; Neto por Partida parcial.",
               "Parcial",
-              decimal(total.toString())!,
+              decimal(netoAtribuido.toString())!,
             )
-          : tercerosConCuota
-            ? metric(
-                null,
-                "No disponible",
-                "Neto por Partida depende del Recuperado atribuido; D5 no habilitado.",
-                "No disponible",
-              )
-            : metric(
-                decimal(total.toString())!,
-                "Verificada",
-                "Suma de Netos de sus Gastos sin Recuperado de terceros.",
-                "Verificada",
-              );
+          : metric(
+              decimal(netoAtribuido.toString())!,
+              "Verificada",
+              "Suma de Netos de sus Gastos con Recuperado atribuido (R-MP).",
+              "Verificada",
+            );
     return {
       id,
       nombre,
@@ -493,11 +680,13 @@ export function calcularReparto(
   const participantesDto: RepartoParticipante[] = participantes.map((p) => {
     const asignadoCents = p.estado === "Activa" ? asignadoTotal.get(p.id) : null;
     const activo = p.estado === "Activa";
+    const esTitular = p.rol === "Titular";
+    const pagado = aportado.get(p.id) ?? 0n;
     const asignado: Metrica = !activo
       ? metric(
           null,
           "No aplica",
-          "Participante de baja lógica: conserva su historia y no computa.",
+          "Participante de baja lógica: conserva su historia y no computa en el reparto actual.",
           "No aplica",
         )
       : !repartoValido
@@ -515,7 +704,6 @@ export function calcularReparto(
               : "Cuota exacta del reparto por Gasto/Partida.",
             incidencias.length ? "Parcial" : "Verificada",
           );
-    const esTitular = p.rol === "Titular";
     const cero = asignadoCents === 0n;
     const pendiente: Metrica = !activo
       ? metric(null, "No aplica", "Participante de baja lógica.", "No aplica")
@@ -541,27 +729,41 @@ export function calcularReparto(
                 "No aplica",
               )
             : metric(
-                null,
-                "No disponible",
-                "Pendiente de tercero no disponible: requiere Aportado y D5 no está habilitado.",
-                "No disponible",
+                decimal(pendientes.get(p.id)!.toString())!,
+                incidencias.length ? "Parcial" : "Verificada",
+                incidencias.length
+                  ? "Pendiente calculado sobre subtotal acreditado."
+                  : "Asignado − Aportado, sin compensación cruzada (D7).",
+                incidencias.length ? "Parcial" : "Verificada",
               );
-    const aportado: Metrica = !activo
-      ? metric(null, "No aplica", "Participante de baja lógica.", "No aplica")
+    const aportadoMetric: Metrica = !activo
+      ? pagado > 0n
+        ? metric(
+            decimal(pagado.toString())!,
+            "Parcial",
+            "Aportación histórica conservada de un participante de baja; nueva atribución bloqueada.",
+            "Parcial",
+          )
+        : metric(
+            null,
+            "No aplica",
+            "Participante de baja lógica sin aportaciones.",
+            "No aplica",
+          )
       : esTitular
         ? metric(
             null,
             "No aplica",
-            "El Titular no tiene aportación exigible ni recuperación que acreditar.",
+            "El Titular no tiene aportación exigible ni recuperación que acreditar (F3).",
             "No aplica",
           )
         : metric(
-            null,
-            "No disponible",
-            "Aportaciones de terceros no disponibles: D5 no habilitado.",
-            "No disponible",
+            decimal(pagado.toString())!,
+            "Verificada",
+            "Suma de aportaciones D5 acreditadas vigentes.",
+            "Verificada",
           );
-    const exceso: Metrica = !activo
+    const excesoMetric: Metrica = !activo
       ? metric(null, "No aplica", "Participante de baja lógica.", "No aplica")
       : esTitular || cero
         ? metric(
@@ -571,10 +773,12 @@ export function calcularReparto(
             "No aplica",
           )
         : metric(
-            null,
-            "No disponible",
-            "Exceso de tercero no disponible: requiere Aportado; nunca 0,00 por ausencia.",
-            "No disponible",
+            decimal(excesos.get(p.id)!.toString())!,
+            incidencias.length ? "Parcial" : "Verificada",
+            incidencias.length
+              ? "Exceso calculado sobre subtotal acreditado."
+              : "Exceso íntegro de Tercero, sin recorte (F2).",
+            incidencias.length ? "Parcial" : "Verificada",
           );
     return {
       id: p.id,
@@ -583,9 +787,9 @@ export function calcularReparto(
       partes: p.partes,
       estado: p.estado,
       asignado,
-      aportado,
+      aportado: aportadoMetric,
       pendiente,
-      exceso,
+      exceso: excesoMetric,
       costePropio: esTitular && activo ? asignado : null,
     };
   });
@@ -595,6 +799,40 @@ export function calcularReparto(
       .map((g) => g.fecha)
       .sort()
       .at(-1) ?? null;
+  const vigentes = aportaciones
+    .filter((a) => !a.anulado)
+    .sort((a, b) =>
+      a.fecha === b.fecha
+        ? a.movimiento < b.movimiento
+          ? -1
+          : 1
+        : a.fecha < b.fecha
+          ? -1
+          : 1,
+    );
+  const ultimaAportacion = vigentes.at(-1)?.fecha ?? null;
+  let repartoSoportado: string | null = null,
+    fechaExceso: string | null = null;
+  if (repartoValido && tercerosConCuota) {
+    const cubiertas: string[] = [];
+    let todas = true;
+    for (const p of tercerosActivos) {
+      const asignado = asignadoTotal.get(p.id) ?? 0n;
+      if (asignado === 0n) continue;
+      let acumulado = 0n,
+        cubierta: string | null = null;
+      for (const a of vigentes.filter((x) => x.participante === p.id)) {
+        acumulado += a.importeCents;
+        if (!cubierta && acumulado >= asignado) cubierta = a.fecha;
+        if (acumulado > asignado && (!fechaExceso || a.fecha < fechaExceso))
+          fechaExceso = a.fecha;
+      }
+      if (cubierta) cubiertas.push(cubierta);
+      else todas = false;
+    }
+    if (todas && cubiertas.length) repartoSoportado = cubiertas.sort().at(-1)!;
+  }
+
   return {
     repartoValido,
     motivoReparto,
@@ -607,18 +845,24 @@ export function calcularReparto(
     cobertura,
     estado,
     estadoReparto,
-    puedeCerrar: repartoValido && !incidencias.length && !tercerosConCuota,
+    puedeCerrar: estado === "Cerrado",
     hayTercerosConCuota: tercerosConCuota,
     alertas,
     fechas: {
       ultimoGasto,
-      ultimaAportacion: null,
-      repartoSoportado: null,
-      exceso: null,
+      ultimaAportacion,
+      repartoSoportado,
+      exceso: fechaExceso,
       motivos: {
-        ultimaAportacion: "No disponible — D5 no habilitado.",
-        repartoSoportado: "No disponible — D5 no habilitado.",
-        exceso: "No aplica — sin fuente de aportaciones.",
+        ultimaAportacion: ultimaAportacion
+          ? "Última fecha de aportación D5 acreditada vigente."
+          : "Sin aportaciones acreditadas.",
+        repartoSoportado: repartoSoportado
+          ? "Fecha en que las aportaciones cubrieron el reparto de todos los Terceros."
+          : "No disponible: reparto no válido o aportaciones insuficientes.",
+        exceso: fechaExceso
+          ? "Primera fecha en que una aportación superó la cuota del Tercero."
+          : "No aplica — sin exceso acreditado.",
       },
     },
     brutoCents,
@@ -732,10 +976,24 @@ function baseGastos(gastos: GastoEvaluado[]): GastoBase[] {
     motivo: g.motivo,
   }));
 }
-function related(db: Database, referencia: string, gastos: GastoEvaluado[]) {
+function related(
+  db: Database,
+  referencia: string,
+  gastos: GastoEvaluado[],
+  aportaciones: { movimiento: string }[],
+  historicos: string[] = [],
+) {
   const gastoIds = new Set(gastos.map((g) => g.id));
+  const aportacionIds = new Set(aportaciones.map((a) => a.movimiento));
+  const historicoIds = new Set(historicos);
   return ledgerRows(db)
-    .filter((r) => r.referencia === referencia && !gastoIds.has(r.id))
+    .filter(
+      (r) =>
+        r.referencia === referencia &&
+        !gastoIds.has(r.id) &&
+        !aportacionIds.has(r.id) &&
+        !historicoIds.has(r.id),
+    )
     .map((r) => ({
       id: r.id,
       fecha: r.fecha,
@@ -772,6 +1030,15 @@ function contexto(
         r.revision,
         r.partida,
       ]),
+    aportacionesReferencia(db, ref.id).map((a) => [
+      a.movimiento,
+      a.participante,
+      a.evidencia,
+      a.procedencia,
+      a.revision,
+      a.revision_movimiento,
+      a.anulado,
+    ]),
   ]);
 }
 function readCase(
@@ -785,14 +1052,33 @@ function readCase(
   const { row: fichaRow, ref } = ficha(db, referencia);
   const rows = applied(participantes(db, referencia), override);
   const gastos = evaluateGastos(db, referencia);
-  const calculo = calcularReparto(rows, baseGastos(gastos));
+  const aportaciones = aportacionesReferencia(db, referencia);
+  const accredited = new Set(aportaciones.map((a) => a.movimiento));
+  const historicos = ledgerRows(db).filter(
+    (r) =>
+      r.referencia === referencia &&
+      r.tipo === "Transferencia" &&
+      r.origen === "S000" &&
+      r.destino !== "S000" &&
+      r.anulado === 0 &&
+      !accredited.has(r.id),
+  );
+  const calculo = calcularReparto(rows, baseGastos(gastos), aportaciones);
   return {
     referencia: ref,
     ficha: fichaRow,
     contexto: contexto(db, ref, fichaRow, rows),
     participantes: rows,
     gastos,
-    relacionados: related(db, referencia, gastos),
+    aportaciones,
+    historicos,
+    relacionados: related(
+      db,
+      referencia,
+      gastos,
+      aportaciones,
+      historicos.map((h) => h.id),
+    ),
     calculo,
     historia: db
       .query("SELECT * FROM compartido_audit WHERE referencia=? ORDER BY id DESC")
@@ -828,7 +1114,7 @@ export function getCompartido(db: Database, referencia: string) {
         hayTercerosConCuota: data.calculo.hayTercerosConCuota,
         alertas: data.calculo.alertas,
         fechas: data.calculo.fechas,
-        d5: "No habilitado: sin aportaciones de terceros, Recuperado, Exceso ni atribución por Gasto.",
+        d5: "D5 habilitado: aportaciones acreditadas desde Exterior. Son Transferencias, no Ingresos ni Gastos; S000 no computa como saldo interno.",
       },
       participantes: data.calculo.participantes.map((p) => {
         const row = data.participantes.find((x) => x.id === p.id)!;
@@ -849,12 +1135,268 @@ export function getCompartido(db: Database, referencia: string) {
         };
       }),
       partidas: data.calculo.partidas,
+      aportaciones: data.aportaciones.map((a) => {
+        const participant = data.participantes.find(
+          (p) => p.id === a.participante,
+        );
+        return {
+          movimiento: a.movimiento,
+          fecha: a.fecha,
+          importe: decimal(a.importeCents.toString())!,
+          origen: a.origen,
+          destino: a.destino,
+          anulado: a.anulado,
+          participante: participant
+            ? {
+                id: participant.id,
+                nombre: participant.nombre,
+                rol: participant.rol,
+                estado: participant.estado,
+              }
+            : {
+                id: a.participante,
+                nombre: "Participante no disponible",
+                rol: "Tercero",
+                estado: "Baja",
+              },
+          evidencia: a.evidencia,
+          procedencia: a.procedencia,
+          revision: a.revision,
+          revisionMovimiento: a.revision_movimiento,
+          creado: a.creado,
+          actualizado: a.actualizado,
+          computa: !a.anulado,
+        };
+      }),
+      historicos: data.historicos.map((h) => ({
+        movimiento: h.id,
+        fecha: h.fecha,
+        importe: decimal(h.importe)!,
+        origen: h.origen,
+        destino: h.destino,
+        revision: h.revision,
+        concepto: h.concepto,
+      })),
       relacionados: data.relacionados,
       historia: data.historia,
     };
   })();
 }
 export type CompartidoDTO = ReturnType<typeof getCompartido>;
+
+export function previewNuevaAportacion(
+  db: Database,
+  referencia: string,
+  body: Record<string, unknown>,
+) {
+  if (!body.compartido) return null;
+  const m = validateAportacion(
+    db,
+    {
+      tipo: "Transferencia",
+      referencia,
+      origen: "S000",
+      destino: String(body.destino ?? ""),
+    },
+    body.compartido,
+    undefined,
+    false,
+  );
+  if (!m) return null;
+  const before = readCase(db, referencia);
+  const importe = money(String(body.importe ?? "")) ?? 0n;
+  const after = calcularReparto(before.participantes, baseGastos(before.gastos), [
+    ...before.aportaciones,
+    {
+      movimiento: "preview",
+      referencia,
+      participante: m.participante,
+      evidencia: m.evidencia,
+      procedencia: m.procedencia,
+      revision_movimiento: 1,
+      revision: 1,
+      creado: new Date().toISOString(),
+      actualizado: new Date().toISOString(),
+      fecha: String(body.fecha ?? ""),
+      importeCents: importe,
+      anulado: false,
+      origen: "S000",
+      destino: String(body.destino ?? ""),
+      movimientoRevision: 1,
+    },
+  ]);
+  return {
+    participante: m.participante,
+    evidencia: m.evidencia,
+    procedencia: m.procedencia,
+    antes: summary(before.calculo),
+    despues: summary(after),
+    aviso:
+      "Es una Transferencia desde Exterior; no es Ingreso ni Gasto. S000 no computa como saldo interno.",
+  };
+}
+function summary(c: RepartoCalculado) {
+  return {
+    bruto: c.bruto,
+    recuperado: c.recuperado,
+    neto: c.neto,
+    costePropio: c.costePropio,
+    pendienteTerceros: c.pendienteTerceros,
+    exceso: c.exceso,
+    cobertura: c.cobertura,
+    estado: c.estado,
+    estadoReparto: c.estadoReparto,
+    puedeCerrar: c.puedeCerrar,
+    alertas: c.alertas,
+  };
+}
+function historicalMovement(db: Database, referencia: string, id: string) {
+  const m = ledgerRows(db).find((x) => x.id === id);
+  if (!m || (m.referencia !== null && m.referencia !== referencia))
+    throw new Problem(404, "NOT_FOUND", "Movimiento no encontrado.");
+  if (m.anulado)
+    throw new Problem(
+      422,
+      "ANULADO",
+      "Un Movimiento anulado no se acredita ni se reactiva.",
+    );
+  return m;
+}
+export function previewAportacion(
+  db: Database,
+  referencia: string,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  return db.transaction(() => {
+    for (const key of Object.keys(body))
+      if (!["revision", "compartido"].includes(key))
+        throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`);
+    const m = historicalMovement(db, referencia, id);
+    if (body.revision !== m.revision)
+      throw new Problem(
+        409,
+        "REVISION_CONFLICT",
+        "El Movimiento ha cambiado. Revisa su ficha actual.",
+      );
+    if (aportacionMetadata(db, id))
+      throw new Problem(
+        409,
+        "APORTACION_UNICA",
+        "El Movimiento ya tiene una acreditación; no se admite una segunda.",
+      );
+    const compartido = validateAportacion(
+      db,
+      {
+        tipo: m.tipo,
+        referencia: m.referencia ?? null,
+        origen: m.origen,
+        destino: m.destino,
+      },
+      body.compartido,
+      id,
+      true,
+    );
+    if (!compartido)
+      throw new Problem(
+        422,
+        "APORTACION_INVALIDA",
+        "Solo una Transferencia S000 con Referencia CAT013 y ficha admite acreditación.",
+      );
+    const before = readCase(db, referencia);
+    const after = calcularReparto(
+      before.participantes,
+      baseGastos(before.gastos),
+      [
+        ...before.aportaciones,
+        {
+          movimiento: id,
+          referencia,
+          participante: compartido.participante,
+          evidencia: compartido.evidencia,
+          procedencia: compartido.procedencia,
+          revision_movimiento: m.revision,
+          revision: 1,
+          creado: new Date().toISOString(),
+          actualizado: new Date().toISOString(),
+          fecha: m.fecha,
+          importeCents: BigInt(m.importe),
+          anulado: false,
+          origen: m.origen,
+          destino: m.destino,
+          movimientoRevision: m.revision,
+        },
+      ],
+    );
+    return {
+      contexto: before.contexto,
+      movimiento: id,
+      revision: m.revision,
+      hecho: {
+        fecha: m.fecha,
+        importe: decimal(m.importe),
+        origen: m.origen,
+        destino: m.destino,
+        tipo: m.tipo,
+      },
+      compartido,
+      impacto: {
+        antes: summary(before.calculo),
+        despues: summary(after),
+      },
+      fingerprint: fingerprint([
+        before.contexto,
+        id,
+        m.revision,
+        compartido,
+      ]),
+    };
+  })();
+}
+export function confirmAportacion(
+  db: Database,
+  referencia: string,
+  id: string,
+  body: Record<string, unknown>,
+  key: string,
+  now = Date.now(),
+) {
+  return attempt(
+    db,
+    "aporte:acreditar:" + referencia + ":" + id,
+    body,
+    key,
+    now,
+    () => {
+      historicalMovement(db, referencia, id);
+      const current = readCase(db, referencia);
+      if (body.contexto !== current.contexto)
+        throw new Problem(
+          409,
+          "REVISION_CONFLICT",
+          "El contexto ha cambiado. Revisa otra vista previa; se conserva tu borrador.",
+        );
+      const p = previewAportacion(db, referencia, id, {
+        revision: body.revision,
+        compartido: body.compartido,
+      });
+      if (body.confirmado !== true)
+        throw new Problem(
+          422,
+          "CONFIRMATION_REQUIRED",
+          "Revisa el impacto y confirma expresamente la acreditación.",
+        );
+      if (body.fingerprint !== p.fingerprint)
+        throw new Problem(
+          409,
+          "IMPACT_CHANGED",
+          "El impacto ha cambiado. Revisa otra vista previa; se conserva tu borrador.",
+        );
+      storeAportacion(db, id, p.compartido, now);
+      return getCompartido(db, referencia);
+    },
+  );
+}
 
 export function listCompartidos(
   db: Database,

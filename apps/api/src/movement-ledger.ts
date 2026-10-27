@@ -88,6 +88,17 @@ export function financeRevision(db: Database) {
           db.query("SELECT MAX(id) revision FROM payroll_audit").get(),
         ]
       : []),
+    ...(db
+      .query("SELECT name FROM sqlite_master WHERE name='movimiento_compartido'")
+      .get()
+      ? [
+          db
+            .query(
+              "SELECT movimiento,participante,evidencia,procedencia,revision_movimiento,revision,actualizado FROM movimiento_compartido ORDER BY movimiento",
+            )
+            .all(),
+        ]
+      : []),
     db
       .query(
         "SELECT id,nombre,inicio,CAST(apertura AS TEXT) apertura,estado,revision FROM deudas ORDER BY id",

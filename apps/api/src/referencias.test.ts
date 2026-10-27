@@ -1087,9 +1087,17 @@ test("05 R9 AC03/06/08/09/15: límites de ciclos/Madrid, FK y revisión de Refer
         facts[0].id,
       ]),
     ).toThrow();
-    expect(() =>
-      db.run("UPDATE movimientos SET origen='S000' WHERE id=?", [facts[0].id]),
-    ).toThrow();
+    // v17 relaxes only the Transfer shape; direct SQL does not create D5 metadata.
+    expect(
+      db.run("UPDATE movimientos SET origen='S000' WHERE id=?", [facts[0].id])
+        .changes,
+    ).toBe(1);
+    expect(
+      db
+        .query("SELECT COUNT(*) n FROM movimiento_compartido WHERE movimiento=?")
+        .get(facts[0].id),
+    ).toEqual({ n: 0 });
+    db.run("UPDATE movimientos SET origen=? WHERE id=?", [a.id, facts[0].id]);
     expect(() => save(db, transfer(a.id, b.id, { referencia: true }))).toThrow(
       "ID registrado",
     );
@@ -1140,6 +1148,7 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [14, openDatabaseV14, "e3.3-v14"],
       [15, openDatabaseV15, "e3.2-v15"],
       [16, openDatabase, "e3.4-v16"],
+      [17, openDatabase, "e3.2-d5-v17"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);

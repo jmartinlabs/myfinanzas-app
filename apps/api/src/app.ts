@@ -6,6 +6,9 @@ import {
   previewParticipante,
   rectificarParticipante,
   bajaParticipante,
+  previewAportacion,
+  confirmAportacion,
+  previewNuevaAportacion,
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
@@ -368,6 +371,27 @@ export function createApp(db: Database, options: AppOptions) {
                 : confirmAccreditation(db, ref, movement, body, key, now()),
           );
         }
+      }
+      const aportacionPath = path.match(
+        /^\/api\/compartidos\/fichas\/(REF\d+)\/movimientos\/(\d+)\/acreditar(?:\/(preview))?$/,
+      );
+      if (aportacionPath) {
+        const [, ref, movement, preview] = aportacionPath;
+        if (preview && req.method === "POST")
+          return reply(
+            previewAportacion(db, ref, movement, await jsonBody(req)),
+          );
+        if (!preview && req.method === "POST")
+          return reply(
+            confirmAportacion(
+              db,
+              ref,
+              movement,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
       }
       if (path === "/api/compartidos/fichas" && req.method === "GET")
         return reply(listCompartidos(db, new URL(req.url).searchParams));
@@ -790,17 +814,30 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")
         return reply(listMovements(db, new URL(req.url).searchParams));
-      if (path === "/api/movimientos/impacto" && req.method === "POST")
-        return reply(
-          previewMovement(
+      if (path === "/api/movimientos/impacto" && req.method === "POST") {
+        const body = await jsonBody(req),
+          plan = previewMovement(
             db,
-            await jsonBody(req),
+            body,
             null,
             false,
             now(),
             options.movementGuard,
-          ),
+          );
+        const referencia =
+          typeof body.referencia === "string" ? body.referencia : null;
+        return reply(
+          referencia &&
+            body.tipo === "Transferencia" &&
+            body.origen === "S000" &&
+            body.compartido
+            ? {
+                ...plan,
+                compartidoImpacto: previewNuevaAportacion(db, referencia, body),
+              }
+            : plan,
         );
+      }
       if (path === "/api/movimientos" && req.method === "POST") {
         const result = writeMovement(
           db,
