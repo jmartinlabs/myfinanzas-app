@@ -1,3 +1,322 @@
+# Coordinación global — estado consolidado 2026-10-27 (21:56 CET)
+
+Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
+Responsable único del tablero: coordinador global (sesión OpenCode). Esta entrada vive en la
+rama `codex/docs-global-board-20261027`, en PR propia; su integración exige aprobación expresa
+del usuario. Solo el coordinador escribe este archivo; no se crea rama competidora. Los
+mensajes a ejecutores se trasladan manualmente por el usuario; un envío significa ESPERANDO
+RETORNO y no acredita ejecución.
+
+## Hechos verificados por el coordinador
+
+- `origin/main` = `2364d9c20439b865edeffcb5f661e4125778aa03` (squash PR #97, base `9977210`).
+  Diff `9977210..2364d9c`: solo altas `specs/21-pendientes-conciliacion-{brainstorming,
+  progress,specification,testplan}.md`; sin código, SQL, migraciones, tablero ni otros specs.
+  Árbol idéntico al HEAD de la PR `132caf1` (`git diff` vacío). Runs `40573819145` (PR97) y
+  `40579993282` (push main) SUCCESS; único workflow declarado `validate.yml`.
+- PR #97 MERGED. El `progress` integrado conserva la línea previa al merge («PR #97 publicada;
+  sin merge»); corregirla requiere PR documental posterior, no ejecutada.
+- PR #95 (E4.1/DEV19): OPEN **Draft**, head `78755c6`, base `main`, **no integrada**. Candidato
+  v18 con 59 archivos (~13.846 líneas: API, UI `Inversiones`, tests, E2E). Manifiestos
+  congelados comprobados por el coordinador en `78755c6`: `schema-contracts.json` SHA-256
+  `f9a30cdcf0d3…562eac6c`, 5 contratos, C16 135 objetos/`9d9b0783…`, C17 145
+  objetos/`e0707d40…`. Job `required` SUCCESS en `261d2fb`, `b0969c8` y `78755c6` (FAIL previo
+  en `8e9ce67`); **no hay run full/E2E** en la rama y la propia PR reconoce E2E Linux completo
+  sin ejecutar como requisito de merge.
+- Autorización **histórica** de DEV19: **no acreditada**; no se registra por inferencia. El
+  usuario autoriza expresamente el 2026-10-27 la **continuidad controlada de DEV19**, limitada
+  al alcance funcional v18 ya definido en SPEC19 rev10: revisar/completar la implementación
+  existente, resolver incidencias del alcance y ejecutar las verificaciones, pruebas y QA
+  pendientes. Condiciones: confirmar ownership y coordinación con el ejecutor de E4.1;
+  preservar C16/C17 congelados y lo integrado en main; completar E2E Linux x86_64, migraciones,
+  backup/restore y AC aplicables; mantener PR #95 en Draft hasta superar los gates; **sin merge
+  ni despliegue**; sin ampliar alcance ni tocar otras entregas. Es **prospectiva**, no prueba de
+  una autorización anterior.
+- PR #96 (`codex/board-c16c17-freeze`, `a76e577`, +19 líneas en `specs/epic-board.md`): abierta
+  fuera del ownership del coordinador y con estado contradictorio (afirmaba DEV19 no autorizado
+  y schema 18 no implementado). **Cerrada sin merge** el 2026-10-27 por autorización expresa y
+  tras contrastar su contenido; D5 integrada en `cf6954a`, congelación C16/C17 y gate DEV18
+  quedan recogidos aquí. No se crea rama competidora.
+
+## Frentes y límites vigentes
+
+| Frente | Estado verificado o retorno registrado | Límite / siguiente acción |
+| --- | --- | --- |
+| DEV19 / E4.1 | Continuidad autorizada (prospectiva); PR #95 Draft, gates completos pendientes | Entregar autorización al ejecutor, confirmar ownership y recibir evidencia; sin merge |
+| SPEC21 / E3.6 | Documentación aprobada e integrada (`2364d9c`); E3.6 **sin iniciar**; Q-S21-01–04 aprobadas, no se reabren | Prioridad posterior a DEV19; DEV E3.6 exige autorización separada |
+| SPEC22 / E4.2 | Retorno recibido: rev2 propuesta, D1–D7 = A, Q0 resuelta; wireframes pendientes de aprobación visual; DEV22 no iniciado | Rev3 **solo wireframes** autorizada; aprobación visual del usuario; publicar exige reconciliar enlaces a `specs/19-*` (ausente en main hasta integrar PR95) |
+| SPEC20 / E4.5 | Aprobada documentalmente; PR87 Draft `fc48f19`, último CI conocido FAIL; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
+| INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
+| DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
+| DEV17 / E4.4 | STOP en `b62ca8c`, sin código | Secuencia D5→E4.1→DEV17; sin reanudación |
+| B3 / DEV32 | Abiertos y separados; PR30 Draft `24ca206` | No reanudar por inferencia |
+| PR50 / PR51 | Abiertas antiguas, no Draft | Sin autorización; no tocar |
+
+Cerrados y no reabiertos por esta entrada: DEV12/PR67, PR94, D5/PR90, PR93, PR92/CI, DEV13/H1
+(AC36 PARCIAL y conciliación documental pendientes), DEV15/E3.3 y SPEC31 (cierre administrativo
+por reconciliar).
+
+## Governance y próxima acción
+
+Una aprobación de spec no autoriza DEV; cada merge exige aprobación expresa de su PR; ningún
+handoff concede publicación, CI remoto, infraestructura, datos reales ni despliegue. Esta
+actualización no cambia permisos. El reparto orquestador técnico (OpenCode), asesor (Álex) y
+usuario quedó formalizado en `specs/methodology/myfinanzas-coordination.md` y `AGENTS.md`
+(PR #98, `6308ad1`). El checkout principal (`codex/dev12-flujo-mensual`, `e66bbd3`) y
+`specs/session-handoff.md` son ajenos y no se tocan.
+
+**Próxima acción:** trasladar al ejecutor E4.1 la autorización de continuidad y pedir retorno con
+ownership, plan de gates y evidencia; sin abrir otros frentes ni fusionar PRs.
+
+---
+
+# HANDOFF GLOBAL — STOP REQUESTED — NO AUTO-RESUME
+
+Fecha: 2026-10-27. Task/sesión: coordinación global MyFinanzas, Codex SUPERVISOR.
+Usuario invoca `$handoff` para trasladar coordinación a DeepSeek. Esta parada solo
+alcanza esta sesión; no detiene ni reanuda sesiones externas. El checkpoint no
+concede desarrollo, publicación, CI, infraestructura, datos reales ni merges.
+
+## Identidad y persistencia
+
+- Repositorio privado `josemartin2000/myfinanzas-app`.
+- Rama propia: `codex/docs-global-board-20261027`.
+- Checkout aislado reutilizado del frente CI ya cerrado:
+  `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/ci-merge-base-lineage`.
+- Commit previo: `1699d83e81de1a420da65e9e68d6c17a7dc69d81`, reconciliación del
+  tablero y numeración SPEC01–32. El commit que contiene este bloque será el HEAD
+  posterior; verificar con `git log -1`. Solo se modifica este tablero.
+- Base/main remoto observado sin fetch en el último preflight: `9977210095472de43a9abf59587ea88587376074`.
+- Rama local sin push/PR; portabilidad remota **NO VERIFICADA**. No merge autorizado
+  para este tablero. Baseline sobre reconciliación previa1699d83 PASS; este handoff
+  solo inspección de diff/whitespace, sin nuevas pruebas/CI.
+- Checkout principal ajeno: rama `codex/dev12-flujo-mensual`, HEAD e66bbd3;
+  único pendiente observado `specs/session-handoff.md` sin seguimiento, propiedad del
+  retorno DEV18-LINUX. Preservado sin edición/commit en esta sesión.
+
+## Modelo de coordinación vigente y encargos
+
+El usuario elimina los chats supervisores intermedios. Un coordinador global
+prepara paquetes y reconcilia retornos; cada sesión DeepSeek orquesta su tarea
+con harness y revisión independiente según permisos. Traslado manual por usuario.
+No asumir mensajería, supervisión o control directo de otras sesiones.
+
+- **SPEC21/E3.6:** usuario confirmó trabajando; actualización de coordinación enviada.
+  Solo documentos propios SPEC21, sin código ni CI/publicación. No duplicar ejecutor.
+- **INV-DT5:** encargo enviado confirmado; inventario de escrituras para futuros
+  SPEC26/E4.8 y SPEC27/E4.9. Lectura de código, escritura limitada a informe
+  `specs/investigations/dt5-write-impact-inventory.md`; sin reglas financieras nuevas.
+- **PREP-DT7:** encargo enviado confirmado; preparación documental/ficticia para
+  E4.5, informe propio con ownership comprobado. Sin Excel/datos reales/importador.
+- **E4.1-OWNERSHIP-C16C17:** continuidad a la sesión existente enviada confirmada.
+  Usuario autoriza asunción temporal limitada de archivos identificados y congelación
+  reproducible C16/C17 en pilot-e41, condicionada a ausencia de ownership incompatible
+  y repetición del inventario. NO autoriza reconciliación del código histórico,
+  migración/DEV funcional v18, publicación/CI remoto/merge/deploy. Parche rev10 y
+  testplan aprobados; conservar documentos locales modificados. Revisión independiente
+  del candidato de manifiestos antes de otra fase. No afirmar ejecución completada.
+- **SPEC22/E4.2:** paquete preparado para Ventas/posición/efectivo de bróker;
+  **PENDIENTE DE ENVIAR**, no hay confirmación explícita. Solo documentos22, lectura
+  SPEC19 aprobada, sin reserva esquema, código/CI/publicación. Confirmar antes de asignar.
+
+Paquetes exactos en conversación de origen y sesiones de destino; no ampliar por
+este resumen. Enviados significa ESPERANDO RETORNO, no demuestra proceso activo.
+Único agente nativo al handoff: coordinador/root; sin subagentes ni comandos en curso
+controlados por esta sesión. DeepSeek/OpenCode externos: **NO CONTROLADOS**, estado
+actual no confirmado; si el usuario quiere detenerlos debe hacerlo en sus clientes.
+No se les solicita parada ni se transmite mensaje por este handoff.
+
+## Último gate DEV18-LINUX / E4.1
+
+DEV18-LINUX archivado, STOP, x86_64 BLOCKED por entorno y sin reintentos automáticos.
+Handoff existente en checkout principal `specs/session-handoff.md`, SHA256 verificado:
+`38e721dac1bc0ad543b2ba7fc24ad5645300f257c7078b389a4031c069a090e8`.
+Declara sin escritor DEV18, workers o procesos de verificación. Esta evidencia
+resuelve el dato de actividad pendiente del preflight, no es cesión general de D5.
+Candidato568bf3e, HEAD documental auditado6f47072, rama real94cb6a0, worktrees/clon
+limpios. ARM64 PASS suplementario con fallback (295API/13E2E); x86_64 UNRUN/BLOCKED.
+QA18 39PASS/4BLOCKED, FIN_NETA ausente, AC12/13/17/39 BLOCKED. No aceptación global.
+
+Preflight leído en host sin fetch/pruebas: evidencia/dev18-linux-qa/repo en568bf3e;
+VM parada registrada19:11:46 Europe/Madrid; no procesos DEV18/pruebas identificados.
+Servidor general OpenCode PID77068 cwd usuario no demuestra ejecución DEV18.
+154refs locales/remotas almacenadas y98ramas remotas consultadas con ls-remote,
+todos sus commits ya locales; sin declaración código schemaVersion18+ encontrada.
+Propuesta documental18 pertenece E4.1. Inventario es evidencia puntual, repetir
+antes de escribir. pilot-e41 HEAD064df64, dos documentos19 modificados, preservados.
+No se ejecutó congelación C16/C17 aquí. Confirmación de recepción de este retorno
+por ejecutor E4.1 no acreditada; contrastar antes de duplicar mensajes.
+
+## Decisiones y límites conservados
+
+- DEV12/PR67 y PR94 cerrados/integrados; no repetir QA ni reabrir por AC futuros.
+- PR92 integrada1cc83f4 por autorización expresa y ejecutada aquí: required40549455121,
+  full40550235588 (270API/12E2E), posmerge40551379119 PASS. PR93 integradaf702e9b;
+  D5/PR90 integradacf6954a. Sus resultados no se transfieren a PR87/DEV18.
+- DEV13 PR71 integrada b146edae, H1c137bae intacto. QA posmerge favorable comunicada;
+  AC36 PARCIAL/proveedor Cierres ausente; UI relacionados fuera de H1. Conciliación
+  documental de progress/testplan13 propuesta, no ejecutada aquí.
+- SPEC19 rev10 aprobada literalmente por usuario; SHA256 de parche
+  `71e4d951974c1fe468991771bbc8161ee44f0faf30470634d0f7e351ae8a4bb1`, QA independiente
+  PASS con6hallazgos CLOSED. G3PASS/G4condicional; C16/C17 físicos/canónicos y
+  ownership requieren cierre según paquete limitado, sin reabrir decisiones.
+- SPEC20 aprobado íntegro27Oct,47AC/QA docsPASS; PR87 Draftfc48f19, último CI propio
+  conocido40509128613 FAIL; DT7 pendiente, DEV no autorizado.
+- DEV17 b62ca8c sin código; spec/wireframes y autorización histórica conservados,
+  STOP NO AUTO-RESUME. Secuencia D5→E4.1→DEV17; integración aprobada E4.1, cesión,
+  gate main/dependencias/escritores/versión y nueva autorización expresa de inicio.
+- B3 abierto, investigación inconclusa por montaje, NO AUTO-RESUME; DEV32 PR30 Draft,
+  AC18/22 y compatibilidad pendientes. Sin infraestructura/VPS/deploy/datos reales.
+- SPEC21–30 numeración asignada a las entregas del registro inferior. No números
+  nuevos por analogía ni reglas financieras inventadas.
+
+## Riesgos y una siguiente acción segura
+
+Historial de resets del checkout principal17:57:49/17:58:29/18:22:41, autor y modo
+no acreditados; resumen local desapareció. Esta rama reconstruye desde evidencias,
+no afirma recuperación byte a byte. No reset/limpieza ni apropiación del principal.
+La copia DEV18 del handoff es local/no versionada: preservar antes de otro cambio.
+
+**Siguiente acción segura del nuevo coordinador:** inspeccionar esta rama/checkpoint,
+Git drift y aprobaciones y devolver un diagnóstico actualizado antes de proponer
+continuidad; confirmar estado de los encargos ya enviados, sin duplicarlos ni
+reanudar automáticamente otros frentes. El usuario abre la nueva sesión manualmente.
+
+---
+
+# Coordinación global — checkpoint vigente 2026-10-27
+
+Responsable único de este tablero: coordinador global. Este resumen sustituye los
+estados históricos inferiores por frente; la historia se conserva. No reasigna
+ownership de producto ni concede permisos de desarrollo, CI, publicación o merge.
+
+Base de esta reconciliación: `origin/main` y PR94 verificados en
+`9977210095472de43a9abf59587ea88587376074`. PR71 y PR92 verificadas integradas.
+Las aprobaciones y QA externas indicadas se registran como retornos del usuario,
+no como nuevas ejecuciones de este coordinador. No repetir pruebas por este registro.
+
+## Registro SPEC / entrega / desarrollo
+
+SPEC21–SPEC30 asignadas expresamente por el usuario en esta coordinación; no son
+expedientes redactados ni autorización de inicio. Se recupera aquí la asignación
+que solo constaba en un resumen local desaparecido. No renumerar las existentes.
+
+| SPEC | Entrega | Alcance | Especificación | Desarrollo / entrega |
+| --- | --- | --- | --- | --- |
+| SPEC01 | E1.1 | Saldos y control | Aprobada/integrada | Integrado |
+| SPEC02 | E1.2 | Clasificación | Aprobada/integrada | Integrado |
+| SPEC03 | E1.3 | Ciclos mínimos | Aprobada/integrada | Integrado |
+| SPEC04 | E1.4 | Movimientos | Aprobada/integrada | Integrado |
+| SPEC05 | E1.5 | Transferencias y Referencias | Aprobada/integrada | Integrado |
+| SPEC06 | E1.6 | Deuda mínima | Aprobada/integrada | Integrado; contratos futuros separados |
+| SPEC07 | E2.1 | Operación de Ciclos | Terminada/aprobada/integrada | Integrado; contratos futuros separados |
+| SPEC08 | E2.2 | Presupuestos | Aprobada/integrada | Integrado |
+| SPEC09 | E2.3 | Plan del ciclo | Aprobada/integrada | Integrado |
+| SPEC10 | E2.4 | Plan anual | Aprobada/integrada | Integrado |
+| SPEC11 | E2.5 | Nómina y previsión | Aprobada/integrada | Integrado |
+| SPEC12 | E2.6 | Flujo mensual base | Aprobada/integrada | CERRADO/INTEGRADO PR67 a445f908; reconciliación PR94 9977210 |
+| SPEC13 | E3.1 | Anticipos | Rev3+Q9/H1 integradas | INTEGRADO PR71 b146edae; QA posmerge favorable comunicada, cierre documental pendiente; AC36 PARCIAL |
+| SPEC14 | E3.2 | Compartidos | Aprobada; D5 integrado | D5 PR90 cf6954a y overflow PR93 f702e9b integrados; D5-AC13 parcial/B-T11 UNRUN conservados |
+| SPEC15 | E3.3 | Vehículos e ITV | Integrada según historial | Integrado según historial; retorno final administrativo por consolidar |
+| SPEC16 | E3.4 | Revisión bancaria de Comida | Aprobada/integrada | CERRADO/INTEGRADO PR82 26b6f0c; AC25 futuro y contratos E3.5 separados |
+| SPEC17 | E4.4 | Deuda completa | Spec/wireframes aprobados | Sin código; autorización histórica conservada, STOP/NO AUTO-RESUME; depende de E4.1 |
+| SPEC18 | E3.5 | Comida y compensaciones | Rev7 aprobada según checkpoint | CIERRE TÉCNICO LOCAL, QA18 PASS CON SALVEDADES; no publicado/integrado/aceptado funcionalmente |
+| SPEC19 | E4.1 | Instrumentos y Compras | Rev10 y testplan aprobados expresamente | Código histórico congelado064df64; nuevo supervisor conciliando gates, sin DEV activo confirmado |
+| SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 Draft, FAIL conocido sin nueva evidencia propia; DT7 pendiente |
+| SPEC21 | E3.6 | Conciliación transversal | Número asignado; no iniciada | No iniciado |
+| SPEC22 | E4.2 | Ventas y efectivo de bróker | Número asignado; no iniciada | No iniciado |
+| SPEC23 | E4.3 | Valoración y resultados | Número asignado; no iniciada | No iniciado |
+| SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
+| SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
+| SPEC26 | E4.8 | Precierre | Número asignado; no iniciada | No iniciado |
+| SPEC27 | E4.9 | Cierre y primera fotografía | Número asignado; no iniciada | No iniciado |
+| SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
+| SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
+| SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
+
+Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
+presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless**, PR30
+Draft, candidato24ca206, AC18/AC22 y compatibilidad con main actual pendientes.
+B3 sigue ABIERTO, investigación cerrada inconclusa por montaje; último checkpoint
+comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por inferencia.
+
+## Cierres y evidencias vigentes
+
+- **DEV12:** PR67 MERGED a445f908, candidatoe66bbd3; QA12-CLOSE favorable y
+  CI40243368188 SUCCESS según retorno. PR94 documental MERGED9977210, candidato
+  405e58a y CI40551580591 SUCCESS según retorno; integración contrastada GitHub.
+  Conserva56AC, UNRUN condicionados AC14/16/17/19/26/43 y AC47 de motores futuros.
+  No reabrir DEV12 ni repetir QA: estos límites no impiden su cierre.
+- **DEV13/H1:** PR71 MERGED b146edae, H1c137bae preservado y ancestro del main
+  conocido. QA posmerge favorable comunicada: Anticipos22/22,199aserciones,
+  fixture amortización4/4 y E2E locales Anticipos/Compartidos PASS. CI posmerge
+  PR71 PASS comunicado; full sobre f702e9b UNRUN. Evidencia posterior separada:
+  full PR92 sobre2384ae2 PASS270API/12E2E, sin cambios propios Anticipos frente a
+  f702e9b. No convierte AC36 PARCIAL/proveedor real Cierres ausente en PASS.
+  UI relacionados excluida de H1. Progress/testplan13 en main mantienen etiquetas
+  obsoletas QA/CI pendientes/no integrado: conciliación documental propuesta,
+  no ejecutada aquí. No nueva aceptación financiera ni restore operativo inferidos.
+- **DEV-D5-OVERFLOW:** PR93 MERGEDf702e9b, candidato4432e17; fix focal CSS/E2E
+  sin cambio financiero/esquema. Integración verificada previamente; no sigue activo.
+- **PR92/CI:** MERGED1cc83f4, candidato2384ae2 sobref702e9b. Baseline local PASS,
+  revisión independiente del supervisor favorable; required40549455121 PASS,
+  full40550235588 PASS (270API/SQLite,3872aserciones,12E2E), posmerge40551379119
+  PASS. Comprobados por este coordinador; checkout aislado limpio al cierre.
+  Frente cerrado. Su verde NO acredita PR87 ni autoriza reactivarla.
+
+## Frentes pendientes y próximos gates
+
+- **DEV18:** cierre técnico local según retorno: código568bf3e, documental6f47072,
+  main integradof702e9b; QA18 independiente PASS CON SALVEDADES,39PASS/4BLOCKED/
+  0FAIL/0UNRUN; check-evidence con registro PASS local. AC12/13/17/39 BLOCKED por
+  FIN_NETA runtime ausente. N4/N5, recuperación de paginación y fingerprint son
+  deuda menor sin otra ronda inmediata. No publicado/integrado/aceptado funcionalmente.
+  Inspección posterior detecta HEAD94cb6a0 en la rama: no atribuirle por inferencia
+  la evidencia de6f47072. Siguiente paquete DEV18-LINUX preparado a petición del
+  usuario: verificación canónica Debian13/glibc aislada y contraste del main actual;
+  envío/inicio NO confirmados. Sin nuevas correcciones, push, PR, merge o deploy.
+- **E4.1/SPEC19:** usuario aprueba literalmente «Apruebo SPEC19 rev10 y su testplan
+  para E4.1/v18». Parche SHA25671e4d951974c1fe468991771bbc8161ee44f0faf30470634d0f7e351ae8a4bb1;
+  QA independiente PASS,seis hallazgos CLOSED según retorno. Rama piloto064df64,
+  cambios documentales locales observados y preservados. Nuevo supervisor creado
+  por el usuario y mensaje enviado; encargo de lectura. Faltan C16/C17 canónicos,
+  cesión D5 de alcance E4.1, checkpoint por owner y revalidación destino18 antes de
+  adaptar. Cesión anterior para overflow NO es cesión general a E4.1. DEV detenido;
+  no reserva definitiva ni autorización de implementación/publicación por aprobación.
+- **DEV17:** checkpointb62ca8c, sin código ni candidato funcional. Spec/wireframes
+  aprobados y autorización histórica conservados; sesión DeepSeek cerrada. Secuencia
+  D5→E4.1→DEV17; espera integración aprobada y cesión explícita E4.1, nueva instrucción
+  de continuación y gate main/dependencias/ownership/versión. STOP NO AUTO-RESUME,
+  sin reservar esquema ni reabrirQ1–Q7. Mensaje de lectura al supervisor preparado;
+  envío no confirmado, sin reanudación del ejecutor.
+- **E4.5/SPEC20:** aprobación íntegra spec/wireframes27Oct según usuario, Q1–Q10
+  confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 Draft
+  fc48f1984130b99993dce60e12a555752fa8396d; último CI conocido40509128613 FAIL
+  por contexto base/merge ref. No sustituirlo con PASS PR92. DT7 pendiente: solo
+  preparación documental/ficticia; sin Excel, datos reales ni conciliación operativa.
+  Sin autorización DEV/merge. No reapertura funcional salvo contradicción material.
+
+## Ownership, continuidad y ejecución
+
+DeepSeek ejecuta tareas; cada encargo tiene un chat supervisor; este coordinador
+consolida dependencias, prioridades y tablero. Última confirmación del usuario:
+ningún ejecutor activo. Mensaje preparado/enviado no demuestra sesión iniciada.
+Responsables por frente: supervisores DEV12,DEV13,DEV18,E4.1,DEV17 y SPEC20;
+identidad de escritores externos y disponibilidad deben contrastarse antes de escribir.
+Solo coordinación documental activa aquí; no se controlan sesiones externas.
+
+Incidencia separada del checkout principal: reflog registra resets27Oct17:57:49,
+17:58:29 y18:22:41 (Europe/Madrid). No acredita ejecutor ni modo. Resumen local del
+coordinador dejó de aparecer; no se encontró copia en tableros de worktrees ni stash.
+No atribuir responsabilidades, limpiar ni restaurar archivos ajenos por inferencia.
+Esta reconciliación se prepara en rama/checkout aislados, sin modificar el principal,
+DEV13, DEV18, E4.1 ni sus documentos. Se reconstruyen estados desde retornos/evidencias,
+no se afirma recuperación byte a byte del cambio desaparecido.
+
+---
+
+## Historia preservada — checkpoints anteriores, no estado vigente
+
 ## Current checkpoint — DEV14 Base B v15 en PR75 — 2026-10-26
 
 Continuación autorizada de Base B (E3.2) sobre PR75, sin merge ni despliegue.
