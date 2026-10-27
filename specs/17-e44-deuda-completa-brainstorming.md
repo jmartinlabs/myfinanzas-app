@@ -1,13 +1,13 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Brainstorming
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-26. Q1–Q7 tienen respuesta
-registrada en la herramienta `question` de OpenCode; el **mensaje humano original y su
-procedencia independiente están pendientes de contraste**. La especificación y los
-wireframes **NO están aprobados**. Sin desarrollo, código, SQL operativo, migración, Excel,
-datos reales, merge ni despliegue.
+Status: **APPROVED (documental) — 2026-10-27.** Q1–Q7 confirmadas expresamente por el
+usuario en el chat supervisor Codex. Specification 17 y wireframes de la revisión
+`1d539a8` aprobados («Las apruebo»); DEV17-E44 autorizado por separado («Pasamos al
+desarrollo»). Sin merge ni despliegue. Los estados históricos de contraste pendiente se
+conservan abajo como historia.
 
 
-**Estado vigente — 2026-10-27:** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Sustituye únicamente los estados históricos de contraste pendiente conservados abajo; specification/wireframes no aprobados.
+**Estado vigente — 2026-10-27:** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Specification 17 y wireframes de la revisión `1d539a8` aprobados («Las apruebo»); DEV17-E44 autorizado por separado. Los estados históricos de contraste pendiente conservados abajo quedan sustituidos por esta aprobación.
 
 Roadmap/context: [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
 [E1.6](06-deuda-specification.md), [R2/R5 y P4–P7](functional-reference-v5.11.md),
@@ -182,6 +182,10 @@ permiso ni inventa quién puede ejecutarlo.
 **Respuesta registrada:** excluir por ahora. **Procedencia:** ver evidencia Q1–Q7; contraste humano pendiente.
 
 ## Evidencia de confirmación Q1–Q7 — 2026-10-26
+
+**Registro histórico:** esta evidencia mediada por `question` queda sustituida por la
+confirmación humana expresa del 2026-10-27 registrada en el estado vigente. Se conserva
+como historia; no se usa para negar la aprobación posterior.
 
 **Lo que existe:** una selección registrada en `question` para el usuario en esta sesión; no
 es un mensaje humano libre. **Lo que no existe:** un mensaje humano libre, firmado o externo

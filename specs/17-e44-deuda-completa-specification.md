@@ -1,8 +1,15 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex; la especificación y los wireframes **NO están aprobados**. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
+Status: **APPROVED (documental) — 2026-10-27.** Specification 17 y wireframes de la
+revisión `1d539a8` aprobados por el usuario a través del chat supervisor Codex («Las
+apruebo»). La autorización de desarrollo **DEV17-E44** es separada («Pasamos al
+desarrollo»); no autoriza merge ni despliegue. Este registro de estado no cambia el
+contenido funcional aprobado.
 
-Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7; no autoriza specification, wireframes, merge ni desarrollo. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
+Approval source/date: usuario, 2026-10-27, mensaje «Las apruebo» en respuesta única a la
+aprobación de specification 17 y wireframes de la revisión
+`1d539a8cb9c38b3a8d2e3921a3651197105ce282`. La autorización de desarrollo se registra por
+separado en [progress17](17-e44-deuda-completa-progress.md).
 
 Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md),
 [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
@@ -10,10 +17,10 @@ Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda
 [spec04](04-movimientos-specification.md), [spec05](05-transferencias-referencias-specification.md),
 [spec07](07-ciclos-operacion-specification.md).
 
-Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`;
+Base de preparación: `origin/main` = `1d539a8cb9c38b3a8d2e3921a3651197105ce282`;
 esquema SQLite v16. Esta spec **no fija** una versión futura de esquema ni escribe SQL.
-El desarrollo deberá comprobar de nuevo `main`, la versión vigente y los contratos
-integrados antes de implementar.
+El desarrollo comprobará de nuevo `main`, la versión vigente y los contratos integrados
+antes de implementar.
 
 ## Functionality
 

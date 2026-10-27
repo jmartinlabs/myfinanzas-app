@@ -1,13 +1,15 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Test plan
 
-Status: **DISEÑO DE PRUEBAS — NO EJECUTADO**. Esta es una entrega documental; no existe
-candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es PASS**. Una
-prueba diseñada no acredita la funcionalidad. Los AC se ejecutarán solo tras autorización
-expresa y separada de desarrollo.
+Status: **BLOQUEADO ANTES DE CÓDIGO — 2026-10-27.** DEV17-E44 autorizado, pero no se
+inició implementación por conflicto de ownership con E4.1 en archivos compartidos. No
+existe candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es PASS**.
+Los 33 AC siguen **UNRUN**. La matriz se conserva como diseño previo al código y deberá
+revalidarse cuando el supervisor serialice los archivos compartidos.
 
-Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`
-(esquema v16). Referencia: [specification](17-e44-deuda-completa-specification.md) y
-[brainstorming](17-e44-deuda-completa-brainstorming.md).
+Base de preparación: `origin/main` = `1d539a8cb9c38b3a8d2e3921a3651197105ce282`
+(esquema v16). Referencia: [specification](17-e44-deuda-completa-specification.md),
+[brainstorming](17-e44-deuda-completa-brainstorming.md) y
+[progress17](17-e44-deuda-completa-progress.md).
 
 ## Estrategia
 
