@@ -14,7 +14,7 @@ import {
 } from "./revision-comida";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
-test("AC21: restore cifrado v16 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría", () => {
+test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones, vínculos, evidencias y auditoría", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "dev16-ac21-"));
   try {

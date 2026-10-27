@@ -106,7 +106,7 @@ function run(
   }
 }
 
-test("E4.1-AC-33(h): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo", () => {
+test("E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo", () => {
   run("demo", 13, "e3.1-v13", (path) => {
     const db = openDatabaseV13(path);
     db.run(
@@ -179,7 +179,7 @@ test("E4.1-AC-33(h): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo"
   });
 });
 
-test("E4.1-AC-33(h): copia 14 desconocida no se publica", () => {
+test("E4.1-AC-33(j): copia 14 desconocida no se publica", () => {
   const dir = mkdtempSync(join(tmpdir(), "e41-unknown-"));
   try {
     const source = join(dir, "source.sqlite");

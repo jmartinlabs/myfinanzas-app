@@ -44,7 +44,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
-    // Contract verification is the first operation on an existing 14/15 database,
+    // Contract verification is the first operation on an existing 14-17 database,
     // before any persistent PRAGMA, identity transaction or DDL.
     verifyAdmittedContract(db);
     if (versions[0].version >= 8) assertBudgetContract(db);

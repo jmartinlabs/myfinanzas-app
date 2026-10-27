@@ -9,6 +9,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { openDatabaseV13 } from "../test-support/database-v13";
+import { openDatabaseV17 } from "../test-support/database-v17";
 import { openDatabaseV15 } from "../test-support/database-v15";
 import { materializeContract } from "../test-support/inversiones-schema";
 import { createInstrumento } from "./instrumentos";
@@ -839,6 +840,69 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
     v19Db.exec("UPDATE schema_version SET version=19");
     v19Db.close();
     expect(() => openDatabase(v19)).toThrow("Esquema no compatible");
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("E4.1-AC-33(f): v17 real con filas D5 preserva movimiento_compartido al subir a 18", () => {
+  const dir = mkdtempSync(join(tmpdir(), "e41-real-v17-"));
+  try {
+    const path = join(dir, "v17.sqlite");
+    const v17 = openDatabaseV17(path);
+    const time = "2026-01-01T00:00:00Z";
+    v17.run(
+      "INSERT INTO referencias VALUES('REF900','Aportación D5 demo','Gasto compartido','Activa',1,?,?)",
+      [time, time],
+    );
+    v17.run("INSERT INTO fichas_compartidos VALUES('REF900',1,?,?)", [time, time]);
+    v17.run(
+      "INSERT INTO participantes_compartido VALUES('CP9001','REF900','Tercero demo','Tercero',50,'Activa',1,?,?)",
+      [time, time],
+    );
+    v17.run(
+      `INSERT INTO movimientos VALUES('1','2026-02-01','Transferencia',30000,'S000','S001',NULL,NULL,
+        'Aportación D5','Nota D5',0,1,?,?,'REF900',NULL,NULL)`,
+      [time, time],
+    );
+    v17.run(
+      `INSERT INTO movimiento_compartido VALUES('1','REF900','CP9001','Evidencia D5 ficticia',
+        'Documento bancario',1,1,?,?)`,
+      [time, time],
+    );
+    v17.close();
+
+    const db = openDatabase(path);
+    try {
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({
+        version: 18,
+      });
+      expect(
+        db.query("SELECT * FROM movimiento_compartido").all(),
+      ).toEqual([
+        {
+          movimiento: "1",
+          referencia: "REF900",
+          participante: "CP9001",
+          evidencia: "Evidencia D5 ficticia",
+          procedencia: "Documento bancario",
+          revision_movimiento: 1,
+          revision: 1,
+          creado: time,
+          actualizado: time,
+        },
+      ]);
+      expect(
+        db.query("SELECT tipo,origen,destino,importe FROM movimientos WHERE id='1'").get(),
+      ).toEqual({ tipo: "Transferencia", origen: "S000", destino: "S001", importe: 30000 });
+      expect(
+        db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='revision_comida'").get(),
+      ).toEqual({ n: 1 });
+      expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      db.close();
+    }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }

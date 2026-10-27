@@ -15,7 +15,7 @@ import { backup, restore } from "./backup";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 
-test("E3.3/E3.2/E3.4 v16 backup manifest and restore preserve vehicle fichas and revoke sessions", () => {
+test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and revoke sessions", () => {
   const dir = mkdtempSync(join(tmpdir(), "e33-backup-"));
   try {
     const sourcePath = join(dir, "source.sqlite"),
