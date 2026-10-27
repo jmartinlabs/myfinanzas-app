@@ -2,6 +2,7 @@ import { openDatabaseV12 } from "../test-support/database-v12";
 import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV14 } from "../test-support/database-v14";
 import { openDatabaseV15 } from "../test-support/database-v15";
+import { openDatabaseV16 } from "../test-support/database-v16";
 import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
@@ -1147,7 +1148,7 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [13, openDatabaseV13, "e3.1-v13"],
       [14, openDatabaseV14, "e3.3-v14"],
       [15, openDatabaseV15, "e3.2-v15"],
-      [16, openDatabase, "e3.4-v16"],
+      [16, openDatabaseV16, "e3.4-v16"],
       [17, openDatabase, "e3.2-d5-v17"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
