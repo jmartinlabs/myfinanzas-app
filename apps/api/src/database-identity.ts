@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 
-export const schemaVersion = 16;
+export const schemaVersion = 17;
 export type Identity = {
   origin: "demo" | "production";
   key_hash: string | null;
@@ -31,7 +31,7 @@ export function inspectIdentity(db: Database): Identity | null {
   }[];
   if (
     versions.length !== 1 ||
-    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16].includes(
+    ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17].includes(
       versions[0].version,
     )
   )
