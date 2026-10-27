@@ -4,8 +4,9 @@ Specification: [20-historico-precontrol-specification.md](20-historico-precontro
 
 ## Current checkpoint
 
-Current state: **candidato documental con QA independiente PASS, pendiente de commit,
-verificación canónica y aprobación; sin desarrollo.**
+Current state: **candidato documental `a1a1c70b823141103181e86e141093dc765de822`
+con QA independiente PASS y verificación canónica PASS (docs), pendiente de aprobación
+y publicación por Codex; sin desarrollo.**
 
 - Autorizado: preparar brainstorming, specification, wireframes, testplan, progress y
   QA documental independiente de E4.5, exclusivamente con datos ficticios. No autoriza
@@ -24,15 +25,16 @@ verificación canónica y aprobación; sin desarrollo.**
   real `ses_e856908a8ffeAnHab97HGCHHun`, sin delegación recursiva. Tres rondas:
   FAIL documental inicial (B1–B4/M1–M11), FAIL de corrección (N1–N11) y **PASS
   documental final** tras N17/N18. No es PASS funcional.
-- Estado Git: documentos sin commit; sin push ni PR. Codex gestiona la publicación y
-  el único responsable del push.
-- Checks: `python3 scripts/validate-template` PASS; `git diff --check` PASS; enlaces,
-  IDs AC y testplan 38/38 PASS. `python3 scripts/verify` pendiente del commit candidato.
-  No hay pruebas funcionales.
+- Estado Git: candidato documental commit `a1a1c70b823141103181e86e141093dc765de822`
+  sobre `main` `1d539a8`; sin push ni PR. Codex gestiona la publicación y el único
+  responsable del push.
+- Checks: `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282
+  --head a1a1c70b823141103181e86e141093dc765de822` **PASS** (docs; application checks
+  intentionally skipped, not reported as passed). `validate-template`, `git diff
+  --check`, enlaces e IDs 38/38 PASS. No hay pruebas funcionales.
 - PR/CI/merge: no hay PR, CI ni merge. No se declara PASS funcional.
-- Siguiente acción segura: commit local, `python3 scripts/verify --base 1d539a8 --head
-  <candidato>` y handoff a Codex. Después, resolver Q1–Q9/DT7 y aprobar (o rechazar)
-  spec/wireframes antes de cualquier desarrollo separado.
+- Siguiente acción segura: Codex revisa, resuelve Q1–Q9/DT7 y decide aprobación
+  documental y publicación. No desarrollar E4.5 por inferencia.
 
 ## Tasks
 
@@ -44,8 +46,8 @@ verificación canónica y aprobación; sin desarrollo.**
 | Testplan con casos ficticios | done (diseño) | [testplan](20-historico-precontrol-testplan.md) |
 | QA documental independiente | done | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS documental final, sin delegación recursiva |
 | Correcciones de QA | done | B1–B4/M1–M11, N1–N18 y m1–m7 resueltos; 38/38 AC |
-| Verificación canónica documental | pending | `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282 --head <candidato>` |
-| Commit local y handoff a Codex | pending | Sin push/PR/merge |
+| Verificación canónica documental | done | `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282 --head a1a1c70b823141103181e86e141093dc765de822` PASS docs; app checks skipped/UNRUN |
+| Commit local y handoff a Codex | done | Candidato `a1a1c70`; sin push/PR/merge |
 
 ## Verified increments
 
@@ -60,8 +62,11 @@ Ninguno funcional. La fase es documental.
   snapshot que recalcula cobertura, 38 AC y testplan 38/38, wireframes 390/1440.
 - Comprobaciones documentales: `python3 scripts/validate-template` PASS;
   `git diff --check` PASS; enlaces/estructura PASS; AC/testplan 38/38 sin huérfanos.
-- `python3 scripts/verify` y CI: **UNRUN** hasta el commit candidato. No se atribuye
-  PASS de implementación, navegador, CI, migración ni equivalencia con el Excel.
+- Candidato `a1a1c70b823141103181e86e141093dc765de822`: `python3 scripts/verify
+  --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282 --head
+  a1a1c70b823141103181e86e141093dc765de822` **PASS** (allowlisted documentation only;
+  application checks intentionally skipped and **not reported as passed**). No hay CI
+  remoto, pruebas funcionales, migración ni equivalencia con el Excel.
 
 ## Decisions
 
