@@ -77,7 +77,10 @@ documental de E4.1. Sin auto-reanudación.
 
 ## Contexto de reanudación
 
-- **Checkpoint:** este apartado. Rama `codex/docs-board-consolidated-20261027`.
+**STOP REQUESTED — NO AUTO-RESUME.** Esta entrada cierra la sesión de coordinación; no
+reanuda ejecutores ni fusiona PRs.
+
+- **Checkpoint:** este apartado. Rama `codex/docs-board-consolidated-20261027` (PR #104).
 - **Ejecutores:** ninguno activo ni controlado por esta sesión; no se lanzaron workers.
   Chats externos, si existen, no son controlables desde aquí.
 - **Evidencia:** `156a50d` (E4.1), `f11cfbe` (cierre documental), runs citados arriba,
