@@ -62,6 +62,10 @@ Guías: [arquitectura](guidelines/architecture.md), [seguridad](guidelines/secur
 
 ## Ronda 1 — 2026-10-27
 
+**Nota append-only:** las confirmaciones vigentes están en “Respuestas confirmadas
+Q1–Q10 — 2026-10-27”; los estados `PENDIENTE` de esta ronda son históricos y no
+contradicen esas respuestas.
+
 Las preguntas siguientes cubren las ambigüedades materiales que no pueden resolverse
 con las fuentes actuales. Cada alternativa incluye impacto y un ejemplo ficticio. Una
 opción marcada `[x]` es solo la recomendación del redactor; **no es una respuesta
