@@ -400,15 +400,17 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
   existente en aportación por PATCH, se exige Destino interno en históricos y se
   refuerzan pruebas negativas de segunda acreditación y participante inactivo.
 - T-D5-13 no cubre informes/Anticipos/doble descuento: esa mitad queda UNRUN y no
-  se declara PASS. Backup/restore v17 sigue UNRUN macOS; CI Linux obligatorio.
+  se declara PASS. Backup/restore v17 es PASS Linux (1/1); macOS sigue UNRUN.
+  CI #572 required SUCCESS sobre `b2b0b89` (perfil critical API/SQLite).
 - Histórico: se exige Destino interno (tipo/control no Exterior) pero no un estado
   activo, porque §15.7 no lo impone para hechos existentes; el alta nueva sí exige
   Saldo activo. El trigger de metadata refuerza la misma frontera.
-- Linux (Ubuntu 24.04.5, Bun 1.4.3, VM aislada) sobre `a242a70`:
+- Linux (Ubuntu 24.04.5, Bun 1.4.3, VM aislada) sobre `b2b0b89`:
   `bun test apps/api` → 270 PASS/0 FAIL/3872; `d5-backup.test.ts` → PASS;
   `bun run typecheck` y `bun run build` → PASS. Incluye SQLite, migraciones,
   backup/restore cifrado v17, restauración y revocación de intentos.
 - T-D5-16 fija la frontera: el CHECK solo relaja la forma; el trigger de
   `movimiento_compartido` exige Movimiento D5 y participante de la misma ficha.
-- backup/restore v17 y la suite Linux no se relabelan: permanecen UNRUN en macOS.
+- La ruta macOS de backup/restore sigue UNRUN; la suite/backup Linux sí se
+  ejecutaron sobre `b2b0b89` y no se extrapolan a otras plataformas.
 - B-T11 sigue UNRUN; D5 no declara E3.2 completa ni AC-20/AC-31 PASS.
