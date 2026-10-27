@@ -1,8 +1,7 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Progress
 
-Status: **APPROVED (documental) — 2026-10-27; cierre autorizado; PR pendiente de
-publicación.** El desarrollo E3.6 no está autorizado; el merge requiere aprobación
-separada.
+Status: **APPROVED (documental) — 2026-10-27; PR #97 publicada; sin merge.** El
+desarrollo E3.6 no está autorizado; el merge requiere aprobación separada.
 
 Fecha: 2026-10-27. Sesión funcional `SPEC21-E3.6`. Cliente externo vía OpenCode;
 modelo/versión observados por el entorno, no verificados por el coordinador.
@@ -208,12 +207,15 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 
 - Aprobación: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
 - Rama: `codex/spec21-e36-pendientes-conciliacion`.
-- Rama publicada en `origin`; SHA de cierre se reporta en el handoff.
-- PR documental: **no creada en esta ejecución**. El entorno no dispone de `gh` ni de
-  credenciales válidas de la API de GitHub; la URL de comparación queda disponible para
-  que el coordinador cree la PR. Sin merge automático.
+- PR documental: `https://github.com/josemartin2000/myfinanzas-app/pull/97`.
+- Base de la PR: `main` (`9977210`); head verificado por `refs/pull/97/head`.
+- Alcance de la PR: solo los cuatro documentos `specs/21-pendientes-conciliacion-*`;
+  sin código, SQL, migraciones, tablero, roadmap ni otros specs.
+- Bloqueo operativo registrado: `gh` no está instalado y la API de GitHub no ofrece
+  credenciales válidas en este entorno; la PR se verificó por refs Git (`head`/`merge`),
+  no por API. No se solicitaron ni expusieron credenciales.
+- Merge: **no realizado**; pendiente de aprobación explícita e independiente.
 - Desarrollo E3.6: no autorizado; debe solicitarse por separado.
-- La PR no se fusiona hasta aprobación explícita e independiente del usuario.
 
 ## 11. Comprobación de no alteración
 
