@@ -187,17 +187,25 @@ sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones
   con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
 - Eventos: PR hacia main —incluido `ready_for_review` para que un draft que pasa a
   listo reciba validación—, push solo main y manual completo. Los drafts conservan el
-  gate rápido; no se desactiva globalmente. PR valida checkout de integración con head
-  y base exactos del evento; una referencia movida falla. No hay filtro de paths que
-  omita el check. Cada nuevo candidato sustituye al PR anterior por concurrencia; main
-  y ejecuciones manuales no se cancelan mutuamente.
+  gate rápido; no se desactiva globalmente. PR valida el head del evento (`HEAD^2`) y
+  exige que la base probada (`HEAD^1`) no reescriba la base del evento: se acepta que
+  main haya avanzado por fast-forward y se clasifica contra esa base efectiva; una
+  base divergente o un merge ref anterior al evento fallan visiblemente. La
+  comprobación de ancestro no demuestra que el merge ref sea el tip vigente de main:
+  una main que avance después del checkout no se detecta en este proceso, el SHA
+  probado queda publicado y la protección exige base actualizada antes del merge. No
+  hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
+  anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
   `docs` ejecuta baseline; `fast` añade tipos/build; `critical` añade **toda** la
   suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
   solo documentación permitida ejecuta `docs`; cualquier otro cambio ejecuta `fast`;
   nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo el rango
-  mediante merge-base. El postmerge no repite API/SQLite: la PR ya validó el merge ref
-  contra la base; si la base se mueve, la PR debe repetir. Para un merge de alto riesgo
+  mediante merge-base sobre la base probada. El postmerge no repite API/SQLite: la PR
+  validó el merge ref contra la base. Si GitHub reconstruye el merge ref sobre una main
+  más nueva antes del checkout, esa misma ejecución es la repetición y solo omite
+  aplicación cuando el diff propio de la PR es documental; un merge ref anterior al
+  evento falla y debe relanzarse. Para un merge de alto riesgo
   se usa `workflow_dispatch` full, no un `critical` automático que duplique coste.
 - Fast se limita a documentación permitida y CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
