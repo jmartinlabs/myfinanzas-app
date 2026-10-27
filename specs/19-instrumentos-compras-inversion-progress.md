@@ -37,9 +37,16 @@ manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
   y **13 E2E Playwright**; perfil `full` con Chromium.
 - **QA independiente:** PASS técnico, 48 AC PASS, 6 PARCIAL (AC-03/24/27/30/33/34), 0 FAIL, 0
   UNRUN bloqueante; validó además 17→18 con preservación de 145 objetos C17 y 0 pérdidas.
-- **Pendiente:** PR #95 sigue en draft; merge y despliegue requieren autorización separada.
+- **Pendiente:** PR #95 está Ready for Review (sin merge); merge y despliegue requieren autorización separada.
   AC-33 conserva residuales de cobertura (variantes v16/v17 incompletas y tablas heredadas
   vacías) declarados en el testplan.
+
+### Aceptación funcional de residuales — Opción A (2026-10-27)
+
+El usuario acepta funcionalmente mantener los seis AC PARCIAL como riesgos residuales
+documentados, **sin convertirlos en PASS**: AC-03, AC-24, AC-27, AC-30, AC-33 y AC-34.
+Prioridad de seguimiento: **AC-30** (teclado/foco) y **AC-34** (error de fuente de efectivo).
+Esta aceptación no autoriza merge; la decisión de merge es independiente y sigue pendiente.
 
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
 Brainstorming: [19-instrumentos-compras-inversion-brainstorming.md](19-instrumentos-compras-inversion-brainstorming.md)
