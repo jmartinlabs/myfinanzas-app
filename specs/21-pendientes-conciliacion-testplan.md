@@ -4,6 +4,9 @@ Status: **DISEÑO DE PRUEBAS — Q-S21-01–04 aprobadas en opción A; ninguna p
 ejecutada.** Todas las pruebas nuevas quedan **UNRUN**. No se declara PASS funcional,
 QA independiente ni autorización de desarrollo.
 
+Approval source/date: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
+Este testplan no autoriza desarrollo.
+
 Context: [specification 21](21-pendientes-conciliacion-specification.md),
 [brainstorming 21](21-pendientes-conciliacion-brainstorming.md),
 [roadmap E3.6](roadmap.md#e36--pendientes-y-conciliación-transversal-de-casos).
