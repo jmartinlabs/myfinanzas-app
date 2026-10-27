@@ -2042,6 +2042,7 @@ textarea {
   border-left: 4px solid #a33d1c;
   background: #fbe9e1;
   color: #5c230f;
+  overflow-wrap: anywhere;
 }
 .shared-expenses,
 .shared-partidas,
@@ -2050,6 +2051,7 @@ textarea {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
+  overflow-wrap: anywhere;
 }
 .shared-expenses li,
 .shared-partidas li,
@@ -2119,6 +2121,7 @@ textarea {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
+  overflow-wrap: anywhere;
 }
 .shared-aportaciones li {
   display: flex;
@@ -2146,8 +2149,14 @@ textarea {
   gap: 12px;
   grid-template-columns: 1fr;
 }
+.shared-participant h3 {
+  overflow-wrap: anywhere;
+}
 .shared-form {
   margin-top: 16px;
+}
+.shared-form h2 {
+  overflow-wrap: anywhere;
 }
 .shared-impact table {
   width: 100%;
@@ -2158,6 +2167,9 @@ textarea {
   text-align: left;
   padding: 8px;
   border-bottom: 1px solid #e2ead8;
+}
+.shared-impact td:first-child {
+  overflow-wrap: anywhere;
 }
 @media (max-width: 1050px) {
   .shared-layout {

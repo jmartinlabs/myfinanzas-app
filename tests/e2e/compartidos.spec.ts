@@ -251,14 +251,20 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
       name: "Añadir participante",
     }).click();
     await expect(page.getByText(longName, { exact: true })).toBeVisible();
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      )
-      .toBe(true);
+    // The admitted name stays contained at desktop, intermediate and mobile widths.
+    for (const width of [1440, 1280, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+    }
+    await expect(
+      page.locator(".shared-cards").getByText(longName, { exact: false }),
+    ).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     child.kill();
