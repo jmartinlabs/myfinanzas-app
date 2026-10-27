@@ -1,3 +1,31 @@
+# Estado DEV19 / E4.1 — 2026-10-27 (22:50 CET)
+
+Actualiza el estado de E4.1; el resto de esta cabecera y la historia inferior se conservan.
+
+| Elemento | Estado verificado por el coordinador |
+| --- | --- |
+| `origin/main` | `5f2b3de` (PR #97, #98, #99 y #100 documentales) |
+| PR #95 | **Ready for Review** (no Draft), head `0760bfd`, `MERGEABLE/CLEAN`; incorpora `main` `5f2b3de`; **no integrada** |
+| CI full | `40591547609` **SUCCESS** sobre `0760bfd`: 295 API / 0 FAIL, 13 E2E; `required` `40591549949` SUCCESS |
+| QA independiente | **PASS** 48 AC / 6 PARCIAL / 0 FAIL / 0 UNRUN bloqueante. Evidencia sobre `dd450de`; `apps`/`tests` idénticos en `0760bfd` (solo documentación entre medias) |
+| C16/C17 | Intactos: `f9a30cdc…`, C16 135/`9d9b0783…`, C17 145/`e0707d40…` |
+| Decisión funcional | **Aceptada la opción A** por el usuario el 2026-10-27, tras consultar con Álex: los seis PARCIAL se mantienen como riesgos residuales documentados, sin convertirlos en PASS |
+| Merge / deploy | **No autorizados**; PR #96 cerrada sin merge y no se reabre |
+
+PARCIAL aceptados, sin convertir a PASS: AC-03 (carrera de dos procesos), AC-24 (rectificación en
+referencia temporal), AC-27 (snapshot de Presupuesto), AC-30 (teclado/foco del panel),
+AC-33 (variantes v16/v17 incompletas y tablas heredadas) y AC-34 (error 500 de efectivo en E2E).
+Seguimiento con prioridad **AC-30** (accesibilidad) y **AC-34** (ruta de error 500) en el
+`progress`/`testplan` de SPEC19, cuyo dueño es el ejecutor DEV19.
+
+Pendiente antes de cualquier merge:
+
+1. Integrar este tablero (PR #101) mediante su flujo y aprobación.
+2. Aprobación expresa e identificable de la PR #95; sin despliegue.
+3. E3.6 no inicia hasta cerrar E4.1; sin nuevo desarrollo por esta entrada.
+
+---
+
 # Coordinación global — estado consolidado 2026-10-27 (21:56 CET)
 
 Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
