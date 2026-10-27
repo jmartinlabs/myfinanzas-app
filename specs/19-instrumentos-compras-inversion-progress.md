@@ -12,7 +12,7 @@ despliegue no autorizados**.
 **DEV19 IMPLEMENTADO 2026-10-27** — reconciliación de `origin/main` `9977210` y adaptación a
 `schemaVersion = 18`: admisión C16/C17, cadena 16→17→18 y backup/restore 13..18. Candidato
 verificado `dd450de`; CI Linux `40583217493` SUCCESS; QA independiente PASS (48 PASS / 6
-PARCIAL / 0 FAIL). PR #95 en draft; sin merge ni despliegue.
+PARCIAL / 0 FAIL). **PR #95 integrada en `main` `156a50d`**; sin despliegue.
 
 ## DEV19 — implementación de la versión 18 (2026-10-27)
 
@@ -37,9 +37,9 @@ manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
   y **13 E2E Playwright**; perfil `full` con Chromium.
 - **QA independiente:** PASS técnico, 48 AC PASS, 6 PARCIAL (AC-03/24/27/30/33/34), 0 FAIL, 0
   UNRUN bloqueante; validó además 17→18 con preservación de 145 objetos C17 y 0 pérdidas.
-- **Pendiente:** PR #95 está Ready for Review (sin merge); merge y despliegue requieren autorización separada.
-  AC-33 conserva residuales de cobertura (variantes v16/v17 incompletas y tablas heredadas
-  vacías) declarados en el testplan.
+- **Integración:** PR #95 **MERGED** en `main` `156a50d` (2026-10-27); sin despliegue. No queda
+  trabajo de DEV19 pendiente. AC-33 conserva residuales de cobertura (variantes v16/v17
+  incompletas y tablas heredadas vacías) declarados en el testplan.
 
 ### Aceptación funcional de residuales — Opción A (2026-10-27)
 
