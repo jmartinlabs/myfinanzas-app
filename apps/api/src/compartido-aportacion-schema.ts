@@ -110,6 +110,7 @@ export function compartidoAportacionSchema(db: Database) {
       SELECT 1 FROM participantes_compartido p
       WHERE p.id=NEW.participante AND p.referencia=NEW.referencia
         AND p.rol='Tercero'
+        AND (p.estado='Activa' OR NEW.participante=OLD.participante)
     ) BEGIN SELECT RAISE(ABORT,'participant mismatch'); END;
   CREATE TRIGGER movimiento_compartido_reference_immutable BEFORE UPDATE OF referencia ON movimiento_compartido
     WHEN NEW.referencia!=OLD.referencia BEGIN SELECT RAISE(ABORT,'immutable reference'); END;
