@@ -10,6 +10,7 @@ export const tables = [
   'fichas_anticipos', 'movimiento_anticipo', 'anticipo_audit',
   'fichas_compartidos', 'participantes_compartido', 'compartido_audit',
   'fichas_vehiculo', 'revision_comida', 'revision_comida_audit',
+  'cycle_audit', 'cycle_plan_audit', 'payroll_audit', 'fotos_neto_apertura',
 ];
 
 export const snapshot = (db) => JSON.stringify(
