@@ -11,7 +11,7 @@ está ocupada; rev10 se renumera finalmente a **18** por la colisión con D5. DE
 despliegue no autorizados**.
 **DEV19 IMPLEMENTADO 2026-10-27** — reconciliación de `origin/main` `9977210` y adaptación a
 `schemaVersion = 18`: admisión C16/C17, cadena 16→17→18 y backup/restore 13..18. Candidato
-verificado `261d2fb`; CI Linux `40574297298` SUCCESS; QA independiente PASS (48 PASS / 6
+verificado `b0969c8`; CI Linux `40576582999` SUCCESS; QA independiente PASS (48 PASS / 6
 PARCIAL / 0 FAIL). PR #95 en draft; sin merge ni despliegue.
 
 ## DEV19 — implementación de la versión 18 (2026-10-27)
@@ -29,12 +29,12 @@ manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
   umbral >18; cadena `revisionComida(16) → compartidoAportacion(17) → investment(18)` en base
   existente y nueva; guarda de `investmentSchema` sobre 17; backup/restore 1..18 con etiquetas
   `e3.4-v16`/`e3.2-d5-v17`/`e4.1-v18` e intentos E4.1 desde 18.
-- **Pruebas:** typecheck PASS; suite focal 57/57; nueva prueba versionada 17→18 con una fila
+- **Pruebas:** typecheck PASS; suite focal 58/58; nueva prueba versionada 17→18 con una fila
   D5 real (`E4.1-AC-33(f)`); matriz de restore 13..18. Suite API macOS: 244 PASS y 50 fallos de
   plataforma (`libc.so.6`, rutas), sin regresión frente al baseline (219/48). E2E macOS: 11
   PASS / 2 fallos de restauración por plataforma; CI Linux cubre esos caminos.
-- **CI Linux x86_64:** run `40574297298` SUCCESS sobre `261d2fb` (293 PASS / 1 FAIL corregido
-  después en `261d2fb`).
+- **CI Linux x86_64:** run `40576582999` SUCCESS sobre `b0969c8` (293 PASS / 1 FAIL corregido
+  después en `b0969c8`).
 - **QA independiente:** PASS técnico, 48 AC PASS, 6 PARCIAL (AC-03/24/27/30/33/34), 0 FAIL, 0
   UNRUN bloqueante; validó además 17→18 con preservación de 145 objetos C17 y 0 pérdidas.
 - **Pendiente:** PR #95 sigue en draft; merge y despliegue requieren autorización separada.
@@ -209,6 +209,8 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 
 ## DEV y QA independiente — 2026-10-27
 
+> Estado histórico del contrato 16; superado por DEV19 (v18, CI Linux verde).
+
 - **Ejecutor DEV:** subagente real `ses_e85ef3979ffegZjzgMA7k0PzUT`, en el checkout del piloto.
   Primer candidato `47a5b56` (implementación completa: esquema 16, API, motor, integraciones,
   UI, tests y testplan).
@@ -236,6 +238,8 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - **Workers:** ninguno activo tras el QA; solo el coordinador continúa.
 
 ## Publicación de rama y bloqueo de PR — 2026-10-27
+
+> Estado histórico; la PR #95 existe y DEV19 tiene CI Linux verde.
 
 - **Push:** rama `codex/pilot-full-e41-instrumentos-compras-inversion` publicada en `origin`
   (`git push -u`), HEAD `424c120`. El push remoto correcto fue confirmado por Git; árbol local

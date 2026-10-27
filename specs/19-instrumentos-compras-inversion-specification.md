@@ -4,9 +4,9 @@ Status: **APPROVED rev10 — IMPLEMENTADA en DEV19 (v18)** — aprobada por el u
 2026-10-27; **C16 y C17 congelados** en `apps/api/src/schema-contracts.json` el 2026-10-27.
 Rev10 reconcilia el destino **18** con
 `origin/main` `9977210` (esquema 17, D5/PR90) y **no cambia ninguna decisión funcional** de
-rev7/rev8. La congelación es documental y de evidencia: **no hay implementación ni integración
-de main 17 en esta rama**, no se adapta código y no se autoriza merge ni despliegue. El DEV/QA
-existente se refiere al contrato 16 y no acredita rev10/18.
+rev7/rev8. **DEV19 implementó la 18** sobre `main` `9977210`: código adaptado, C16/C17
+admitidos y cadena 16→17→18; la congelación de manifiestos se mantiene intacta. Sin merge ni
+despliegue. El DEV/QA histórico del contrato 16 queda superado por la evidencia DEV19.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, manteniendo las decisiones funcionales de rev7.
 Rev9 (2026-10-27) quedó superada por la ocupación de la 16; rev10 fue aprobada por el usuario
@@ -87,7 +87,7 @@ Autorización: el usuario autorizó DEV19 el 2026-10-27. Alcance: reconciliar `o
 `9977210` en la rama, adaptar E4.1 a `schemaVersion = 18`, admisión C16/C17, cadena 16→17→18
 y backup/restore 13..18. Sin merge ni despliegue.
 
-- Merge de reconciliación `8e9ce67`; candidato de código verificado `261d2fb`.
+- Merge de reconciliación `8e9ce67`; candidato de código verificado `b0969c8`.
 - `database-identity.ts` y `database-schema.ts` admiten `1..17` y declaran 18; la cadena
   ejecuta `revisionComidaSchema` (16), `compartidoAportacionSchema` (17) e `investmentSchema`
   (18) tanto en base existente como nueva.
@@ -97,9 +97,9 @@ y backup/restore 13..18. Sin merge ni despliegue.
   E4.1 solo en copias 18.
 - Se preservan D5 (`movimiento_compartido`, CHECK de Transferencia), E3.4 Revisión de Comida,
   Compartidos v15 y Vehículos; la prueba 17→18 con una fila D5 real está versionada.
-- Evidencia: typecheck PASS; suite focal 57/57 PASS; suite API macOS 244 PASS y 50 fallos de
+- Evidencia: typecheck PASS; suite focal 58/58 PASS; suite API macOS 244 PASS y 50 fallos de
   plataforma (`libc.so.6`, rutas), sin regresión frente al baseline; CI Linux x86_64
-  `40574297298` SUCCESS sobre `261d2fb`; QA independiente PASS (48 AC PASS, 6 PARCIAL, 0 FAIL).
+  `40576582999` SUCCESS sobre `b0969c8`; QA independiente PASS (48 AC PASS, 6 PARCIAL, 0 FAIL).
 - PR #95 en draft; sin merge ni despliegue. Los AC-03/24/27/30/33/34 conservan sus residuales
   de cobertura declarados en el testplan.
 
@@ -150,7 +150,7 @@ cierre y fotos (E4.5/E4.8–E4.11); datos reales.
 ## 3. Decisiones confirmadas (ronda 1, 2026-10-26)
 
 Respuestas del usuario registradas en el [brainstorming](19-instrumentos-compras-inversion-brainstorming.md#ronda-1--respuestas-confirmadas-2026-10-26).
-La aprobación de esta especificación sigue pendiente.
+La especificación quedó aprobada (rev7/rev8) y ratificada por rev10; ver cabecera.
 
 | ID | Decisión confirmada | Afecta a | AC |
 | --- | --- | --- | --- |
@@ -1492,8 +1492,8 @@ Otras integraciones declaradas:
 - **DT7 (mapping/importación).** Aplazado expresamente a E4.5/E4.12 (§5.2, §12); E4.1 no
   mapea campos, IDs, aperturas ni archivos, y no fija cortes ni excepciones. La desviación
   queda registrada y no se presenta como cumplimiento diferido implícito.
-- Ningún AC de este documento se declara probado; la aprobación rev7 es del contrato de diseño
-  y rev8 solo ajusta la versión técnica, no una implementación.
+- Los AC se acreditan en el testplan: 48 PASS, 6 PARCIAL y 0 FAIL en DEV19 (v18), con CI Linux
+  `40576582999` SUCCESS; la aprobación rev7/rev8 es del contrato de diseño.
 
 ## 15. Siguiente acción
 
@@ -1502,7 +1502,7 @@ registro de congelación al inicio. Reconcilia el destino **18** con `main` `997
 documenta `C17-D5-CF6954A` (145 objetos, SHA-256
 `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`) y mantiene íntegras las
 decisiones funcionales de rev7/rev8. **DEV19 está implementado** sobre `main` `9977210`: el
-código declara la 18, admite C16/C17 y ejecuta la cadena 16→17→18. El candidato `261d2fb`
+código declara la 18, admite C16/C17 y ejecuta la cadena 16→17→18. El candidato `b0969c8`
 tiene CI Linux x86_64 SUCCESS y QA independiente PASS (48 PASS / 6 PARCIAL / 0 FAIL). La PR
 #95 sigue en draft; no hay merge ni despliegue. Los residuales de cobertura AC-03/24/27/30/33/34
 están declarados en el testplan.
