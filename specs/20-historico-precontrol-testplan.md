@@ -21,7 +21,7 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | AC-03 | I | PAR100/REF100 renombrados; consultar archivo | Mismo ID/enlace; nombre vigente; nombre original en procedencia; total igual | Bun Test de mapping + Playwright | Documental ahora; API/UI futuro | DTO con `nombreOrigen`/`destinoId` | UNRUN — diseño |
 | AC-04 | I | Fila con solo nombre y dos Partidas homónimas | `Ambigua`/`Pendiente`, sin asignación; «Sin clasificar»; total global `NoVerificable` | Bun Test de mapping + API | Documental ahora; API futuro | Registro y motivo | UNRUN — diseño |
 | AC-05 | I | Archivo 01/01–27/08 1.200,00 + detalle 28/08–31/12 300,00; control 28/08; corte 31/12 con reloj posterior | Total 1.500,00 una vez; componentes 1.200/300; cobertura completa | Bun Test del combinador | Documental ahora; API futuro | DTO exacto con strings | UNRUN — diseño |
-| AC-06 | I | Archivo 01/01–27/08 1.200,00; control desde 27/08; detalle 27/08–31/12 320,00 (20,00 el 27/08 + 300,00 después); DTO F2 separado | Solapamiento 27/08; total `null`; archivo 1.200 + detalle 320 visibles; subtotal 1.500; 20,00 en `conflictos[]` fuera del subtotal; `estadoCobertura=Solapada`, `estadoTotal=NoVerificable`; no 1.520 total | Bun Test de frontera inclusiva | Documental ahora; API futuro | DTO con `Solapamiento` y componentes | UNRUN — diseño |
+| AC-06 | I | Archivo 01/01–27/08 1.200,00; control desde 27/08; detalle 27/08–31/12 320,00 (20,00 el 27/08 + 300,00 después); DTO F2 separado | Solapamiento 27/08 no separable; total y subtotal `null`; archivo 1.200 + detalle 320 visibles; 20,00 en `conflictos[]`; `estadoCobertura=Solapada`, `estadoTotal=NoVerificable`; no 1.500 ni 1.520 como total/subtotal | Bun Test de frontera inclusiva | Documental ahora; API futuro | DTO con `Solapamiento` y componentes | UNRUN — diseño |
 | AC-07 | I | Archivo hasta 30/06; detalle desde 01/08 | Hueco 01/07–31/07; cobertura `Parcial`; total `null`; subtotal; no 0 | Bun Test de unión de intervalos | Documental ahora; API futuro | Intervalos/huecos exactos | UNRUN — diseño |
 | AC-08 | I | Cortes 27/08 y 28/08 sobre archivo/detalle contiguos | 27/08 solo archivo y cobertura hasta 27/08; 28/08 incorpora detalle una vez | Bun Test de corte inclusivo | Documental ahora; API futuro | Dos DTO comparables | UNRUN — diseño |
 | AC-09 | I | Cobertura completa 01/01–31/12 con fuente/intervalo verificado y sin filas | Total 0,00 verificado; «sin hechos en intervalo cubierto»; no «No disponible» | Bun Test de cobertura vacía | Documental ahora; API futuro | DTO con `"0.00"` y estado | UNRUN — diseño |
@@ -54,6 +54,11 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | AC-36 | I | Archivo de septiembre y Gasto de septiembre con `representadoEnMovimientos=Desconocido` | Solapamiento no resoluble; total `NoVerificable`; sin exclusión/inclusión automática | Bun Test del combinador | Documental ahora; API futuro | DTO con motivo | UNRUN — diseño |
 | AC-37 | I (Q7) | Archivo solo con `AperturaHistorica` que cubre el año; sin fuente/control de Gastos | Cobertura de Gastos `NoDisponible`; no 0,00 de Gastos; apertura aparte | Bun Test de cobertura | Documental ahora; API futuro | DTO de cobertura | UNRUN — diseño |
 | AC-38 | I | SRC-1 alcance PAR100 control desde 28/08; SRC-2 alcance PAR205 control desde 01/08; Gasto PAR100 del 15/08; solapamiento parcial | Cada fuente conserva su corte/control y solo cubre su alcance; el Gasto PAR100 del 15/08 no se considera control por SRC-2; total `NoVerificable` si no hay vínculo; `Solapada` si hay solapamiento | Bun Test de cobertura por fuente/Partida | Documental ahora; API futuro | DTO con `fuentes[]`/`alcance` | UNRUN — diseño |
+| AC-39 | I | Archivo agregado 01/01–27/08 1.200,00 sin desglose; consulta a 30/06 | No se prorratea ni se recorta; total/subtotal `null`; `estadoCobertura=Completa`, `estadoTotal=NoVerificable`, `motivoCodigo=AgregadoNoAtribuibleAlCorte`; no 1.200,00 como ejecutado hasta 30/06 | Bun Test de corte/agregado | Documental ahora; API futuro | DTO con `agregadoNoAtribuible[]` y motivo | UNRUN — diseño |
+| AC-40 | I | Archivo v1 1.200,00 sustituido por v2 1.150,00 con `reemplazaA`; consultar | Solo v2 suma; v1 visible como historia; no 2.350,00; cadena bifurcada `NoVerificable` | Bun Test de versiones | Documental ahora; API futuro | DTO con versión vigente/histórica | UNRUN — diseño |
+| AC-41 | I | Renombrar PAR100/REF100; después reclasificar un registro de PAR100 a PAR200 con nueva versión de mapping/archivo | Renombrado conserva ID/enlace y no crea versión; reclasificación crea versión nueva, conserva clasificación original y solo la vigente suma | Bun Test de mapping/versiones | Documental ahora; API futuro | DTO con versión y mapping usados | UNRUN — diseño |
+| AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; fecha corregida solo cuenta si es vigente | Bun Test de contrato E2.4 | Documental ahora; contrato futuro | DTO E2.4/fecha|null | UNRUN — diseño |
+| AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni suma; «No soportado por E4.5; ver E4.4»; Dxxx/capital/condiciones intactos; `aperturas=null` si no hay evidencia de Saldo | Bun Test de aperturas | Documental ahora; API futuro | DTO y snapshot de Deuda | UNRUN — diseño |
 
 ## Casos solicitados y trazabilidad
 
@@ -75,6 +80,11 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | Representación en Movimientos desconocida | AC-36 | F16 |
 | Apertura histórica no acredita cobertura de Gastos | AC-37 | F14 |
 | Cortes/controles por fuente, alcance por Partida y solapamiento | AC-38 | F15/F18 |
+| Agregado que excede el corte sin prorrateo | AC-39 | F19 |
+| Corrección/versionado sin sumar original y sustitución | AC-40 | F20 |
+| Renombrado vs reclasificación | AC-41 | F21 |
+| Fecha ejecutada de E2.4 sin fecha inventada | AC-42 | F22 |
+| Apertura de Deuda fuera de E4.5 | AC-43 | F23 |
 
 ## Regression checks (previstos, no ejecutados)
 
@@ -118,6 +128,6 @@ Limitaciones: DT7 no aprobado; mapping/corte/regularización reales no demostrad
 hay implementación, fixtures ejecutables, navegador ni CI funcional en esta fase. No se
 ha abierto Excel ni datos reales. La spec y los wireframes no están aprobados.
 
-Próxima acción segura: Codex revisa el candidato documental, resuelve Q1–Q9/DT7 y
-decide si aprueba spec/wireframes. Después, y solo con autorización separada, se
-autorizaría el desarrollo de E4.5.
+Próxima acción segura: Codex revisa y puede publicar; solo el usuario aprueba
+Q1–Q10/DT7 y spec/wireframes. Después, y solo con autorización separada, se autorizaría
+el desarrollo de E4.5.

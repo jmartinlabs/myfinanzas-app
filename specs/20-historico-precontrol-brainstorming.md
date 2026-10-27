@@ -1,6 +1,6 @@
 # 20 — E4.5 Histórico precontrol y transición de ejercicio: Brainstorming
 
-Status: **DRAFT — propuesta documental, sin respuestas funcionales aprobadas.** Q1–Q9
+Status: **DRAFT — propuesta documental, sin respuestas funcionales aprobadas.** Q1–Q10
 permanecen abiertas. Las recomendaciones marcadas son propuestas, no decisiones del
 usuario ni aprobación de DT7. No hay desarrollo, SQL, migración, importación real,
 Excel, datos personales, PR ni merge.
@@ -34,8 +34,10 @@ Guías: [arquitectura](guidelines/architecture.md), [seguridad](guidelines/secur
 - Checkout aislado: rama `codex/spec20-e45-historico-precontrol`, creada desde
   `origin/main` en un worktree temporal propio. No se modifica `epic-board`,
   `project`, `setup-progress`, `session-handoff` ni documentos de otras entregas.
-- E4.4 está integrada en `main` `1d539a8` (#85); se revisa su frontera de aperturas/
-  precontrol y se confirma que E4.5 no reconstruye amortizaciones ni sustituye su motor.
+- E4.4 está integrada **documentalmente** en `main` `1d539a8` (#85), pero su cabecera
+  mantiene spec/wireframes pendientes: integración no equivale a aprobación. Se revisa
+  su frontera de aperturas/precontrol y se confirma que E4.5 no reconstruye
+  amortizaciones ni sustituye su motor.
 - Fuentes reales: no se ha abierto Excel, base de datos, extracto bancario, archivo
   financiero ni dato personal. La evidencia disponible es la referencia funcional
   sanitizada y los contratos aprobados del repositorio. Los ejemplos de este documento
@@ -212,6 +214,10 @@ de fuente/cobertura, no para una regularización pendiente.
 
 **Confirmada: PENDIENTE. Fuente/fecha: PENDIENTE.**
 
+Las aperturas de **Deuda** quedan fuera de E4.5: E4.4 conserva capital de apertura,
+condiciones e historia de Deuda. E4.5 no las enlaza, no las suma y no las convierte en
+Saldo/Movimiento.
+
 ### Q8 — Filas sin mapping o con verificación parcial
 
 ¿Qué ocurre cuando una fila no se puede clasificar o verificar?
@@ -241,6 +247,26 @@ de fuente/cobertura, no para una regularización pendiente.
   requiere autorización específica.
 - [ ] **Alternativa — importador real del Excel.** Fuera de alcance y prohibido en
   esta fase; no se propone.
+
+**Confirmada: PENDIENTE. Fuente/fecha: PENDIENTE.**
+
+### Q10 — Preferencia ante un solapamiento no separable
+
+Si archivo y detalle se solapan y no se puede aislar la parte duplicada, ¿qué fuente
+prevalece o se muestra?
+
+- [x] **Recomendada — no elegir fuente ni prorratear; mostrar componentes separados,
+  `estadoCobertura=Solapada`, total y subtotal `null`, y el importe solapado en
+  `conflictos[]` hasta conciliación.** Es la opción conservadora: no inventa una
+  preferencia financiera ni atribuye el solape a archivo o detalle.
+  Ejemplo: archivo 1.200 y detalle 320 con 20 solapados; no se presenta 1.500 ni 1.520.
+- [ ] **Alternativa — priorizar archivo:** excluir el detalle solapado y conservar el
+  archivo. Requiere decisión financiera explícita y justificar por qué el archivo es
+  más autoritativo para ese tramo.
+- [ ] **Alternativa — priorizar detalle:** excluir el archivo solapado y conservar el
+  detalle. Requiere la misma decisión y puede infravalorar el histórico.
+- [ ] **Alternativa — repartir/prorratear el solape:** rechazada mientras no exista una
+  regla financiera demostrada; inventaría una atribución.
 
 **Confirmada: PENDIENTE. Fuente/fecha: PENDIENTE.**
 

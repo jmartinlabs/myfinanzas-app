@@ -1,10 +1,10 @@
 # 20 — E4.5 Histórico precontrol y transición de ejercicio: Specification
 
-Status: **PROPUESTA DOCUMENTAL — NO APROBADA.** Q1–Q9 del
+Status: **PROPUESTA DOCUMENTAL — NO APROBADA.** Q1–Q10 del
 [brainstorming](20-historico-precontrol-brainstorming.md) siguen abiertas y DT7 no está
 aprobado. La especificación, los wireframes y los AC son un candidato para revisión de
-Codex; no autorizan desarrollo, SQL, migración, importación real, Excel, datos
-personales, PR, merge ni despliegue.
+Codex y **aprobación exclusiva del usuario**; no autorizan desarrollo, SQL, migración,
+importación real, Excel, datos personales, PR, merge ni despliegue.
 
 Approval source/date: **PENDIENTE.** No existe aprobación humana de esta especificación
 ni de sus wireframes. La autorización recibida el 2026-10-27 solo permite preparar
@@ -62,7 +62,8 @@ Capacidades incluidas:
 | Gastos detallados: solo Movimientos Tipo Gasto, vigentes, con Fecha real | E1.4 | Consume; no crea Movimientos ni suma Ingresos/Transferencias/Amortización |
 | Plan anual por Partida/ejercicio; histórico válido sin doble cómputo | E2.4 | Entrega el proveedor y la cobertura que E2.4/E4.7 consumen |
 | Aperturas de Saldo: posición inicial, no Movimiento; ausencia ≠ cero | E1.1/F3 | Conserva; no escribe ni recalcula aperturas |
-| Deuda: apertura, precontrol y amortización real desde Inicio control | E1.6/E4.4 | No reconstruye amortizaciones ni sustituye el motor de Deuda |
+| Apertura/condiciones de Deuda: E1.6/E4.4, no E4.5 | E1.6/E4.4 | E4.5 no enlaza aperturas de Deuda, no las duplica y no las convierte en Saldo/Movimiento |
+| Deuda: apertura, precontrol y amortización real desde Inicio control | E1.6/E4.4 | No reconstruye amortizaciones ni sustituye el motor de Deuda; el precontrol de Deuda se muestra solo como contexto, no como apertura E4.5 |
 | Cierre y fotografía son posteriores, inmutables y distintos | P1/P5/E4.9–E4.11 | No crea fotos ni convierte archivo en foto |
 | Regularización 2026 específica | R3/E2.4/E4.5-AC3 | Excepción explícita, solo 2026, sin regla general |
 | Datos reales solo con autorización P6/P7 | Seguridad/P6/P7 | Solo fixtures ficticios; sin Excel ni importador real |
@@ -118,7 +119,7 @@ nombres son contratos de lectura propuestos, no tablas creadas.
 | `estadoVerificacion` | `Verificado`, `NoVerificado` o `Rechazado` | Fuente/revisión | Solo `Verificado` entra en un total |
 | `estadoMapeo` | `Mapeado`, `Pendiente`, `Ambigua` o `Excluido` | Mapping | Solo `Mapeado` entra en total por Partida |
 | `representadoEnMovimientos` | `Si`, `No` o `Desconocido` | Vínculo de origen verificado | `Si` exige vínculo y excluye el archivo; el Movimiento vinculado cuenta una vez; `Desconocido` con overlap impide total |
-| `version` | Versión inmutable del registro; `reemplazaA` si corrige | Servidor | No se sobrescribe; no DELETE |
+| `version` | Versión inmutable del registro; `reemplazaA` si corrige | Servidor | Solo la vigente suma; anteriores se conservan como historia; no DELETE |
 | `nota` | Texto opcional acotado | Fuente/revisión | No se usa para clasificar |
 
 Reglas del registro:
@@ -138,6 +139,13 @@ Reglas del registro:
   de Gastos (no puede producir un 0 falso) y no se escribe en `Saldos` ni en `Deudas`.
   Su `saldoId` se resuelve solo por mapping `Saldo`; si Q7 no se aprueba, esta clase no
   se implementa.
+- **Aperturas de Deuda no pertenecen a E4.5.** E4.5 no ofrece `tipoDestino=Deuda` ni
+  enlaza una apertura de Deuda a `Dxxx`. Si la fuente contiene una, se muestra como
+  «No soportado por E4.5; ver E4.4», no se mapea, no se suma y no modifica capital,
+  condiciones ni precontrol de Deuda. E4.4 conserva esa responsabilidad.
+- **Ausencia ≠ cero:** `aperturas=null` significa «sin evidencia de apertura»; solo se
+  muestra `0,00` si existe una apertura cero verificada. No se rellena con cero por
+  defecto ni se deriva de un Gasto o de un importe histórico.
 
 ### Mapping versionado
 
@@ -179,7 +187,7 @@ Reglas de mapping:
 | `huecos` | Intervalos sin cobertura verificada entre el inicio del ejercicio y `corteConsulta` |
 | `estadoCobertura` | `Completa`, `Parcial`, `Solapada` o `NoDisponible` |
 | `estadoTotal` | `Verificado`, `NoVerificable` o `NoDisponible` |
-| `motivoCodigo` | `SinFuente`, `HuecoCobertura`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto` |
+| `motivoCodigo` | `SinFuente`, `HuecoCobertura`, `Solapamiento`, `DuplicadoAmbiguo`, `MappingPendiente`, `VerificacionPendiente`, `RegularizacionPendiente`, `AperturaNoGasto`, `AgregadoNoAtribuibleAlCorte` |
 | `motivo` | Explicación legible y estable; no un importe |
 
 Reglas de cobertura:
@@ -214,6 +222,16 @@ Reglas de cobertura:
   consulta a 30/06 solo puede declarar «cobertura hasta 30/06», no un año completo.
 - Un intervalo verificado sin hechos es cobertura válida y produce 0 para ese intervalo.
   Una tabla instalada o una consulta vacía no acreditan cobertura.
+- Si un registro de archivo es un **agregado cuyo intervalo no está completamente
+  contenido en `[universo.inicio, corteConsulta]`**, no se incluye en el total ni se
+  prorratea. Su parte anterior al corte no se acredita como importe separable: se
+  muestra como contexto y activa `motivoCodigo=AgregadoNoAtribuibleAlCorte`. La
+  cobertura temporal puede ser `Completa` si el intervalo cubre `[inicio, corte]`,
+  pero **no acredita atribución de importe**: `estadoTotal=NoVerificable`, total y
+  subtotal `null`. Si el detalle cubre todo el intervalo consultado
+  `[universo.inicio, corteConsulta]`, el agregado no se suma y el total puede
+  verificarse solo con detalle. No se convierte el agregado en un total parcial
+  inventado.
 - El corte de 2026 de C30 (27/08/2026) y el control desde 28/08/2026 son **solo** el
   ejemplo de las Deudas allí indicadas. No son un default global ni una fecha fija de
   E4.5; cada dataset debe declarar los suyos.
@@ -242,7 +260,9 @@ corte y filtro opcional de Partida, y sigue este orden:
    `detalleControl`: no se añade a precontrol y se deduplica por ID de Movimiento. Solo
    un Movimiento vinculado anterior al control entra como `detallePrecontrolVinculado`.
 4. **Leer archivo.** Registros `Verificado` + `Mapeado`, con intervalo dentro del
-   ejercicio y del corte, y `representadoEnMovimientos` distinto de `Si`.
+   ejercicio y del corte, y `representadoEnMovimientos` distinto de `Si`. Un agregado
+   cuyo intervalo exceda el corte no se recorta ni se prorratea: se conserva como
+   contexto no atribuible y activa `AgregadoNoAtribuibleAlCorte`.
 5. **Aplicar exclusiones.** `representadoEnMovimientos=Si` excluye el archivo. El
    Movimiento vinculado cuenta una vez: si su Fecha está dentro del control de su
    Partida, ya está en `detalleControl`; si es anterior, entra como
@@ -262,13 +282,15 @@ corte y filtro opcional de Partida, y sigue este orden:
    está vacío:
    `total = suma(archivo elegible) + suma(detalleControl) + suma(detallePrecontrolVinculado)`.
    Cada Movimiento y cada registro de archivo cuenta una sola vez, deduplicado por ID.
-   Si no, `total=null` y `subtotalConocido = suma de registros no conflictivos y
-   elegibles`.
+   Si no, `total=null`. `subtotalConocido` solo se calcula si los registros no
+   conflictivos son separables; si un agregado contiene la parte solapada y no puede
+   aislarse, `subtotalConocido=null` (no se elige fuente ni se prorratea).
 9. **Exponer componentes.** `archivo`, `detalleControl`, `detallePrecontrolVinculado`,
    `detallePrecontrolNoVinculado`, `aperturas`, `total`, `subtotalConocido`,
    `estadoCobertura`, `estadoTotal`, `cobertura`, `corte`, `fuentes`, `procedencia`,
-   `motivoCodigo`, `motivo`, `sinClasificar` y `conflictos[]`. No se oculta un componente
-   para que el total parezca completo.
+   `motivoCodigo`, `motivo`, `sinClasificar`, `conflictos[]` y
+   `agregadoNoAtribuible[]`. No se oculta un componente para que el total parezca
+   completo.
 
 Reglas adicionales:
 
@@ -342,6 +364,35 @@ La regularización de 2026 es una **excepción documentada**, no una regla gener
 - Las correcciones de archivo se hacen por una nueva versión con `reemplazaA`, motivo
   y auditoría; no se sobrescribe la anterior. La vía de carga/corrección real queda
   fuera de E4.5.
+
+### Vigencia, versiones y clasificación
+
+- **Solo la versión vigente contribuye.** Para una misma identidad de archivo, el
+  combinador usa la última versión de la cadena `reemplazaA` marcada como vigente; las
+  versiones anteriores se conservan como historia y **no se suman**. Si la cadena se
+  bifurca o hay dos vigentes incompatibles, el total queda `NoVerificable`.
+- **Corrección:** una nueva versión puede cambiar importe, intervalo, fecha, Partida o
+  Referencia, pero debe declarar `reemplazaA`, motivo, actor y fecha. La original no se
+  borra ni se reescribe; deja de contribuir al total en cuanto la sustitución es
+  vigente. No se suma original + sustitución.
+- **Mapping:** cada registro conserva `versionMappingUsada`. Una versión nueva de
+  mapping no reescribe registros anteriores; se aplica a nuevos registros o a una nueva
+  versión de archivo que lo declare. La consulta muestra la versión usada por el
+  registro y la vigente del mapping.
+- **Renombrado:** mismo `destinoId` (`PARxxx`/`REFxxx`) y solo cambia el nombre. No es
+  reclasificación, no crea nueva versión de archivo y conserva enlaces; la consulta
+  muestra el nombre vigente y la procedencia conserva el nombre original.
+- **Reclasificación:** cambia el destino a otro `PARxxx`/`REFxxx` o cambia la Partida de
+  un registro. No es un renombrado: exige nueva versión de mapping y de archivo, motivo,
+  evidencia y auditoría; la clasificación original queda en la versión/procedencia
+  anterior. Solo la versión vigente contribuye.
+- **Cambio de jerarquía con el mismo ID:** mover una Partida a otra Subcategoría/
+  Categoría conserva `PARxxx`; no crea una reclasificación del registro histórico. La
+  historia se lee por ID y no se reescribe por el nombre de la jerarquía.
+- **Fecha ejecutada (E2.4):** se toma solo de `fecha` conocida de la versión vigente y
+  de las fechas de Gastos elegibles. Si `fecha=null`, no se deriva del intervalo, del
+  corte ni del reloj; `fechaEjecutada` queda `null` o se limita a otras fechas conocidas.
+  Una fecha corregida solo cuenta si la nueva versión es la vigente.
 
 ## Screens and interfaces
 
@@ -526,7 +577,7 @@ DTO mínimo propuesto:
     "archivo": "1200.00",
     "detalleControl": "300.00",
     "detallePrecontrol": {"vinculado": "0.00", "noVinculado": "0.00"},
-    "aperturas": "0.00",
+    "aperturas": null,
     "total": "1500.00",
     "subtotalConocido": "1500.00",
     "estadoCobertura": "Completa",
@@ -539,7 +590,7 @@ DTO mínimo propuesto:
     "archivo": "800.00",
     "detalleControl": "0.00",
     "detallePrecontrol": {"vinculado": "0.00", "noVinculado": "0.00"},
-    "aperturas": "0.00",
+    "aperturas": null,
     "total": null,
     "subtotalConocido": "800.00",
     "estadoCobertura": "Parcial",
@@ -550,6 +601,7 @@ DTO mínimo propuesto:
   }],
   "sinClasificar": [{"idArchivo": "AH003", "importe": "150.00", "motivo": "Mapping ambiguo"}],
   "conflictos": [],
+  "agregadoNoAtribuible": [],
   "totales": {
     "valor": null,
     "subtotalConocido": "2300.00",
@@ -573,11 +625,11 @@ Ejemplo separado de conflicto F2 (consulta distinta; no se mezcla con el DTO ant
     "detalleControl": "320.00",
     "detallePrecontrol": {"vinculado": "0.00", "noVinculado": "0.00"},
     "total": null,
-    "subtotalConocido": "1500.00",
+    "subtotalConocido": null,
     "estadoCobertura": "Solapada",
     "estadoTotal": "NoVerificable",
     "motivoCodigo": "Solapamiento",
-    "motivo": "Archivo y detalle se solapan el 27/08"
+    "motivo": "Archivo y detalle se solapan el 27/08; no se elige fuente ni se prorratea"
   }],
   "conflictos": [{
     "tipo": "Solapamiento",
@@ -593,7 +645,8 @@ Ejemplo separado de conflicto F2 (consulta distinta; no se mezcla con el DTO ant
 Reglas de API:
 
 - Importes como string decimal exacto; `null` para desconocido; `"0.00"` para cero
-  verificado. No usar `number` para dinero.
+  verificado. No usar `number` para dinero. `aperturas=null` significa «sin evidencia
+  de apertura»; solo una apertura cero verificada se representa `"0.00"`.
 - `estadoCobertura`, `estadoTotal`, `motivoCodigo` y `motivo` acompañan a todo total;
   no se devuelve un total sin cobertura.
 - `procedencia` incluye huella, hoja/tabla, fila/columna, ID de origen, fecha de
@@ -619,10 +672,11 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   total 1.500,00, archivo 1.200,00, detalle 300,00, sin doble cómputo.
 - **F2 — frontera exacta con solapamiento.** Archivo `01/01–27/08` 1.200,00;
   `controlDetalle.inicio=27/08`; detalle `27/08–31/12` 320,00 (20,00 el 27/08 + 300,00
-  después). Hay solapamiento el 27/08; no se resta; total `null`; archivo 1.200,00 y
-  detalle 320,00 visibles; subtotal conocido 1.500,00 (1.200 + 300 no conflictivos);
-  el 20,00 se muestra aparte como conflicto y no se suma dos veces. No se presenta
-  1.520,00 como total.
+  después). Hay solapamiento el 27/08 y no se puede aislar de forma demostrada. No se
+  elige una fuente ni se prorratea: total y subtotal `null`; archivo 1.200,00 y detalle
+  320,00 se muestran como componentes; el 20,00 aparece en `conflictos[]`. No se
+  presenta 1.500,00 como subtotal ni 1.520,00 como total. La preferencia entre fuentes
+  queda en Q10.
 - **F3 — hueco.** Archivo `01/01–30/06` 900,00; detalle `01/08–31/12` 300,00; julio sin
   cobertura. Total `null`; subtotal 1.200,00; hueco `01/07–31/07`.
 - **F4 — ausencia vs cero.** Cobertura completa `01/01–31/12` sin hechos: total 0,00
@@ -679,6 +733,27 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   28/08; SRC-2 tiene alcance PAR205 y control desde 01/08. Un Gasto PAR100 del 15/08 no
   se considera control por SRC-2: es precontrol/no vinculado de PAR100 y deja el total
   `NoVerificable` si no hay vínculo. No se clasifica por la unión global de controles.
+- **F19 — agregado que excede el corte.** Archivo agregado `01/01–27/08` 1.200,00 sin
+  desglose y consulta a `30/06`. No se prorratea ni se recorta el importe; no hay total
+  ni subtotal verificable, `estadoCobertura=Completa` (el intervalo cubre el corte),
+  `estadoTotal=NoVerificable`, `motivoCodigo=AgregadoNoAtribuibleAlCorte`; el agregado
+  se muestra en `agregadoNoAtribuible[]` como contexto, fuera del total. No se presenta
+  1.200,00 como ejecutado hasta 30/06.
+- **F20 — corrección de versión.** Archivo v1 1.200,00; v2 1.150,00 con
+  `reemplazaA=v1`, motivo y auditoría. Solo v2 contribuye; v1 se muestra como historia
+  y no se suma: no 2.350,00. Si v1 y v2 aparecen como vigentes a la vez, total
+  `NoVerificable`; no se elige una por orden de fila.
+- **F21 — renombrado y reclasificación.** PAR100 «Comida» → «Alimentación» conserva
+  ID/enlace y no crea versión. Un registro que pasa de PAR100 a PAR200 es
+  reclasificación: nueva versión de mapping/archivo, motivo/auditoría y clasificación
+  original preservada en la versión anterior; solo la vigente suma.
+- **F22 — fecha ejecutada E2.4.** Archivo A con `fecha=null` y archivo B con
+  `fecha=15/06/2026`; un Gasto detallado con `fecha=20/06/2026`. `fechaEjecutada` puede
+  ser 20/06/2026 por el Gasto, pero el archivo A no aporta fecha ni se fecha por su
+  intervalo/corte. Una fecha corregida solo cuenta si su versión es la vigente.
+- **F23 — apertura de Deuda.** Fuente con apertura de Deuda D100. E4.5 no la enlaza ni
+  la suma; muestra «No soportado por E4.5; ver E4.4». D100, capital y condiciones
+  permanecen intactos; `aperturas=null` si no hay evidencia de apertura de Saldo.
 
 ### Validación
 
@@ -750,6 +825,9 @@ Estos contratos son mínimos y de solo lectura; no implementan E4.7/E4.11/E4.12.
   E4.5 no la vuelve a restar.
 - Un cambio de año dentro de un Ciclo se resuelve por Fecha natural; no se copia el
   archivo de un año a otro.
+- `fechaEjecutada` de E2.4 usa solo `fecha` conocida de la versión vigente y fechas de
+  Gastos elegibles; un archivo sin fecha no aporta fecha ni se fecha por intervalo,
+  corte o reloj. La corrección de fecha solo cuenta si su versión es la vigente.
 - Si E4.7 necesita Ingresos históricos y Q2 no los aprueba, debe mostrar esa fuente como
   no disponible, no inventarla. E4.5 solo aporta el archivo anual de Gastos; E4.7 sigue
   integrando Neto compartido, Comida, inversiones y las demás fuentes temporales en sus
@@ -803,10 +881,10 @@ Estos contratos son mínimos y de solo lectura; no implementan E4.7/E4.11/E4.12.
 Clase **I** = criterio de implementación futura; **C** = contrato de consumo/
 compatibilidad. Los sufijos `(Q5)` y `(Q7)` indican criterios condicionados a esas
 decisiones; `(E4.x)` indica contrato de consumidor. Todos son **PREVISTOS/NO
-EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-38` son
-`E4.5-AC-01…E4.5-AC-38`. La correspondencia con el roadmap es:
-E4.5-AC1 → AC-02/05/06/12/13/14/15/31; E4.5-AC2 → AC-16/17/18/24/34/37;
-E4.5-AC3 → AC-20/21/22.
+EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-43` son
+`E4.5-AC-01…E4.5-AC-43`. La correspondencia con el roadmap es:
+E4.5-AC1 → AC-02/05/06/12/13/14/15/31/40/41; E4.5-AC2 →
+AC-16/17/18/24/34/37/39/42/43; E4.5-AC3 → AC-20/21/22.
 
 | ID | Clase | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- | --- |
@@ -815,7 +893,7 @@ E4.5-AC3 → AC-20/21/22.
 | AC-03 | I | Renombrar PAR100 y REF100 usados por archivo; consultar | Mismo ID/enlace; nombre vigente en consulta; nombre original en procedencia; mapping y total no cambian |
 | AC-04 | I | Fila con solo nombre y dos Partidas homónimas | Mapping `Ambigua`/`Pendiente`; no asignación automática; fila en «Sin clasificar»; total global `NoVerificable` |
 | AC-05 | I | Archivo 01/01–27/08 1.200,00 y detalle 28/08–31/12 300,00; control 28/08; corte 31/12 con reloj de prueba posterior | Total 1.500,00 una vez; componentes 1.200,00/300,00; cobertura completa; sin doble cómputo |
-| AC-06 | I | Archivo 01/01–27/08 1.200,00; `controlDetalle.inicio=27/08`; detalle 27/08–31/12 320,00 (20,00 el 27/08 + 300,00 después); DTO F2 separado del DTO global | Solapamiento el 27/08; no se resta; total `null`; archivo 1.200 y detalle 320 visibles; subtotal 1.500; el 20,00 aparece en `conflictos[]` fuera del subtotal; `estadoCobertura=Solapada`, `estadoTotal=NoVerificable`; no 1.520 como total |
+| AC-06 | I | Archivo 01/01–27/08 1.200,00; `controlDetalle.inicio=27/08`; detalle 27/08–31/12 320,00 (20,00 el 27/08 + 300,00 después); DTO F2 separado del DTO global | Solapamiento el 27/08 no separable; no se elige fuente ni se prorratea; total y subtotal `null`; archivo 1.200 y detalle 320 visibles; el 20,00 aparece en `conflictos[]`; `estadoCobertura=Solapada`, `estadoTotal=NoVerificable`; no 1.500 ni 1.520 como total/subtotal |
 | AC-07 | I | Archivo hasta 30/06 y detalle desde 01/08 | Hueco 01/07–31/07 visible; cobertura `Parcial`; total `null`; subtotal conocido; no 0 |
 | AC-08 | I | Consultar corte 27/08 y 28/08 con archivo/detalle contiguos | 27/08 solo archivo, cobertura hasta 27/08, sin total anual; 28/08 incorpora detalle una vez; frontera inclusiva |
 | AC-09 | I | Cobertura completa 01/01–31/12 con fuente/intervalo verificado y sin filas | Total 0,00 verificado; texto «sin hechos en intervalo cubierto»; no «No disponible» |
@@ -825,8 +903,8 @@ E4.5-AC3 → AC-20/21/22.
 | AC-13 | I | Dos fuentes distintas con mismo intervalo/Partida, aunque el importe difiera | Dos candidatos ambiguos; no se suman ni se elige por importe; total no verificable; motivo visible |
 | AC-14 | I | Archivo vinculado a Movimiento 123 dentro del control y a Movimiento 124 anterior al control; ambos también presentes en detalle | Se excluye el archivo por `representadoEnMovimientos=Si`; 123 ya está en `detalleControl` y no se suma otra vez; 124 entra una vez como `detallePrecontrolVinculado`; no doble |
 | AC-15 | I | Abrir «Ver cobertura y procedencia» de un registro | Huella, hoja/tabla, fila/columna, ID de origen, fecha de extracción y versión de mapping visibles; sin documento/datos personales |
-| AC-16 | I (Q7) | Consultar archivo con apertura histórica ficticia; comparar Saldo/Deuda antes/después | Aperturas vigentes idénticas; no se crea Movimiento/Saldo/Deuda; archivo se muestra separado |
-| AC-17 | I (Q7) | Intentar que la apertura histórica engrose el total de Gastos o el Saldo actual | No se suma al ejecutado; no se escribe en Saldos/Deudas; sigue como evidencia de solo lectura |
+| AC-16 | I (Q7) | Consultar archivo con apertura histórica ficticia de Saldo; comparar Saldo/Deuda antes/después | Aperturas vigentes idénticas; no se crea Movimiento/Saldo/Deuda; archivo se muestra separado; `aperturas=null` si no hay evidencia |
+| AC-17 | I (Q7) | Intentar que la apertura histórica engrose el total de Gastos o el Saldo actual | No se suma al ejecutado; no se escribe en Saldos/Deudas; `0,00` solo si consta apertura cero; ausencia no se convierte en 0 |
 | AC-18 | I | Consultar 2027 tras 2026 con archivo/detalle | 2027 sin archivo/plan/Movimiento/foto/apertura heredados; `NoDisponible`; 2026 sigue consultable |
 | AC-19 | I | Ciclo con hechos en diciembre 2026 y enero 2027 | Cada importe se asigna a su año natural; no se copia ni se reasigna por Ciclo; totales separados |
 | AC-20 | I (Q5) | Registro `Regularizacion2026` 50,00 en 2026; consultar 2025/2026/2027 | Solo aparece en 2026; 2025/2027 no cambian; no se crea regla general |
@@ -846,5 +924,10 @@ E4.5-AC3 → AC-20/21/22.
 | AC-34 | I | Gasto precontrol vinculado a archivo, Gasto vinculado dentro del control y Gasto precontrol sin vínculo | Vinculado precontrol cuenta una vez como `detallePrecontrolVinculado`; vinculado dentro del control ya está en `detalleControl` y no se duplica; no vinculado se muestra aparte y deja total `NoVerificable` |
 | AC-35 | I | Archivo agregado anual 1.200,00 y detalle parcial de septiembre 100,00, sin desglose separable | No se resta 100,00 del archivo; se muestran ambos; total `NoVerificable`; no 1.100,00 |
 | AC-36 | I | Archivo de septiembre y Gasto de septiembre con `representadoEnMovimientos=Desconocido` | Solapamiento no resoluble; total `NoVerificable`; no se excluye ni incluye automáticamente |
-| AC-37 | I (Q7) | Archivo solo con `AperturaHistorica` que cubre el año; sin fuente/control de Gastos | Cobertura de Gastos `NoDisponible`; no 0,00 de Gastos; apertura se muestra aparte |
+| AC-37 | I (Q7) | Archivo solo con `AperturaHistorica` que cubre el año; sin fuente/control de Gastos | Cobertura de Gastos `NoDisponible`; no 0,00 de Gastos; apertura se muestra aparte; ausencia de evidencia no es apertura cero |
 | AC-38 | I | SRC-1 alcance PAR100 control desde 28/08; SRC-2 alcance PAR205 control desde 01/08; Gasto PAR100 del 15/08; solapamiento parcial entre fuentes | Cada fuente conserva su corte/control y solo cubre su alcance; el Gasto PAR100 del 15/08 no se considera control por SRC-2 y deja total `NoVerificable` si no hay vínculo; solapamiento deja `Solapada`; una fuente no completa la otra |
+| AC-39 | I | Archivo agregado 01/01–27/08 1.200,00 sin desglose; consulta a 30/06 | No se prorratea ni se recorta; total y subtotal `null`; `estadoCobertura=Completa` (cobertura temporal), `estadoTotal=NoVerificable`, `motivoCodigo=AgregadoNoAtribuibleAlCorte`; no se presenta 1.200,00 como ejecutado hasta 30/06 |
+| AC-40 | I | Archivo v1 1.200,00 sustituido por v2 1.150,00 con `reemplazaA`; consultar el ejercicio | Solo v2 contribuye; v1 visible como historia; total una vez; no se suman 2.350,00; cadena bifurcada deja `NoVerificable` |
+| AC-41 | I | Renombrar PAR100 y REF100; después reclasificar un registro de PAR100 a PAR200 con nueva versión de mapping/archivo | Renombrado conserva ID/enlace y no crea versión; reclasificación crea versión nueva, conserva la clasificación original y solo la vigente suma; no se mezclan ambas |
+| AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; una fecha corregida solo cuenta si su versión es vigente |
+| AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni se suma; se muestra «No soportado por E4.5; ver E4.4»; Dxxx, capital y condiciones intactos; `aperturas=null` si no hay evidencia de Saldo |
