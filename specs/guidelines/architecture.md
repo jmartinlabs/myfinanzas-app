@@ -405,3 +405,45 @@ anual la cobertura es parcial y los totales quedan null; las pruebas inyectan
 añade listado 1440/tarjetas 390, ficha, alta/edición, integridad y conversión desde
 Referencias. [Progreso](../15-vehiculos-itv-progress.md) y
 [evidencia](../15-vehiculos-itv-testplan.md).
+
+## D5/Exterior — aportación CAT013 desde S000 (candidato dev14, v17)
+
+`compartido-aportacion-schema.ts` migra v16→v17 dentro del IMMEDIATE de apertura.
+Reconstruye `movimientos`, `movement_audit`, `movimiento_anticipo`,
+`payroll_allocations`, `revision_comida` y `revision_comida_audit` con copias TEMP
+transaccionales. Solo relaja la forma `Transferencia` para admitir Origen S000 y
+Destino interno distinto de S000; CAT013, ficha, participante, evidencia y
+acreditación no se validan en el CHECK. Conserva IDs, importes, JSON de auditoría,
+índices, triggers, FK, identidad, Vehículos, Anticipos, Nómina y Revisión Comida,
+sin reseed ni backfill. Añade `movimiento_compartido` 0..1 por Movimiento
+(participante, evidencia 10–500, procedencia, revisión del Movimiento y propia),
+índices, inmutabilidad de identidad, no DELETE y triggers que exigen un Movimiento
+D5 real y un participante de la misma ficha. El alta de metadata después del
+Movimiento es posible porque los triggers viven en la relación, no en `movimientos`.
+
+`aportaciones.ts` valida la atribución D5: Tercero activo de la ficha, Titular
+rechazado, evidencia/procedencia, Referencia CAT013 activa con ficha, una sola
+acreditación por Movimiento y procedencia histórica suficiente. `movimientos.ts`
+acepta el bloque `compartido` en el mismo alta/rectificación; el hecho canónico
+sigue siendo el Movimiento y el motor lee importe, fecha, Origen, Destino y
+Referencia de él. Tipo/Referencia/Origen S000 son inmutables mientras la
+acreditación está vigente; un hecho con vínculos históricos inactivos puede
+rectificar importe/fecha/Destino elegible conservándolos. La anulación conserva
+metadata, evidencia e historia y la excluye del motor; no hay DELETE ni
+reactivación. Replay, concurrencia, huella y rollback reutilizan el patrón IMMEDIATE
+de Movimientos; la acreditación histórica usa `compartido_attempts` y endpoints
+`POST /api/compartidos/fichas/:ref/movimientos/:id/acreditar[/preview]`.
+
+`compartidos.ts` incorpora Aportado, Recuperado, Neto, Pendiente y Exceso al motor
+central: R-MP reparte Recuperado por Gasto con céntimos exactos, mayor resto y
+desempate por ID; el exceso se conserva íntegro; el Titular mantiene Pendiente 0
+(F3); una aportación sin cuota es incidencia «Revisar» y no se divide. La cobertura
+solo es verificable con aportaciones suficientes y sin incidencias; sin terceros
+con cuota es «No aplica». Cerrado exige cobertura verificable/no aplica, sin
+pendientes, excesos ni incidencias, y no exige Neto cero (R-CC). Los históricos
+solo se acreditan por revisión explícita de un Movimiento existente y elegible; no
+se crean ni reclasifican hechos. El formulario común de Transferencia sigue sin
+S000; la ficha incorpora formulario dedicado, preview antes/después, aviso de que
+no es Ingreso/Gasto y lista de aportaciones/históricos. Backup identifica
+`e3.2-d5-v17`; restore conserva metadata y sigue revocando `compartido_attempts`.
+B-T11 y el consumo por informes siguen UNRUN; D5 no declara E3.2 completa.

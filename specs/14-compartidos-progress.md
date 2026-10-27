@@ -268,3 +268,52 @@ reanuda dev14/D5, no hay SQL/migración, datos reales, merge ni deploy.
   confunde QA documental con evidencia funcional.
 - B-T11 sigue UNRUN; E3.2 no se declara completa. D5 no se declara aprobado ni
   implementado; el siguiente gate es revisión final y aprobación explícita.
+
+## D5/Exterior — desarrollo y QA local — 2026-10-27
+
+Autorización: usuario «Acepto el desarrollo» sobre spec14 §15, wireframes §15.15
+y spec05 §D5 (P-D5-1..6). Base `2487656`/v16; rama `codex/dev14-d5-exterior`,
+checkout aislado `.../T/opencode/dev14-d5`. Esquema **v17**, decidido tras
+contrastar main y la cadena v15 Base B → v16 Revisión Comida. No se reabren
+decisiones ni se toca Excel/VPS/datos reales.
+
+### Entregado
+
+- `compartido-aportacion-schema.ts`: migración v16→v17 que reconstruye
+  Movimientos y dependientes, relaja solo la forma `Transferencia` S000→interno,
+  conserva IDs/auditorías/FK/triggers y añade `movimiento_compartido` con
+  evidencia/procedencia/revisiones, inmutabilidad y guardas de relación.
+- `aportaciones.ts`: validación D5, una acreditación por Movimiento, Tercero
+  activo de la ficha, Titular rechazado, evidencia 10–500, procedencia nueva vs.
+  histórica, almacenamiento/rectificación/auditoría y conservación en anulación.
+- `movimientos.ts`/API: bloque `compartido` en alta/rectificación/preview;
+  inmutabilidad de Tipo/REF/Origen mientras la acreditación está vigente;
+  rectificación de importe/fecha/Destino con vínculos históricos inactivos;
+  anulación sin DELETE; replay/concurrencia/rollback con el patrón IMMEDIATE.
+  Endpoints `POST /api/compartidos/fichas/:ref/movimientos/:id/acreditar[/preview]`.
+- `compartidos.ts`: motor D5 con Aportado/Recuperado/Neto/Pendiente/Exceso,
+  atribución R-MP exacta por Gasto, exceso íntegro, Titular Pendiente 0,
+  recuperado sin cuota → Revisar, cobertura honesta y Cerrado solo sin
+  pendientes/excesos/incidencias; históricos elegibles y contexto ampliado.
+- UI: ficha con acciones, formulario dedicado, preview antes/después, aviso de
+  Transferencia desde Exterior (no Ingreso/Gasto), lista de aportaciones y
+  revisión histórica; formulario común sin S000. Capturas 390/1440 inspeccionadas.
+- Migración técnica, fixture v16, backup manifest v17 y regresiones de Base B,
+  Transferencias, Anticipos, Vehículos y Revisión Comida.
+
+### Evidencia local (macOS arm64, Bun 1.4.3)
+
+- D5 focal: 9 PASS/0 FAIL/126 assertions; Base B: 10 PASS/0 FAIL/179.
+- Typecheck/build PASS. Suite API 221 PASS/47 FAIL/268; los 47 son de plataforma
+  macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
+- E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
+- Backup/restore v17 y CI Linux: **UNRUN macOS**; no se declaran PASS.
+- `scripts/verify` con Python 3.9 nativo queda bloqueado por prerrequisito; se usa
+  Python 3.12.16 portátil y se registra el resultado canónico en el checkpoint/PR.
+
+### Límites
+
+B-T11/consumo por informes sigue UNRUN; no se declara E3.2 completa, AC-20 ni
+AC-31 PASS. Sin Exterior ordinario/salidas, datos reales, migración operativa,
+deploy, B3/Dev32 ni cambios de guardas/timeouts/harness. El siguiente gate es QA
+independiente sobre el SHA candidato y CI Linux; merge no autorizado.

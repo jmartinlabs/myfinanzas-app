@@ -307,8 +307,8 @@ política B3 ni sus3000ms. Linux/restore y QA del nuevo candidato: pendientes.
 
 ## D5/Exterior — plan de pruebas autorizado (ejecución en curso)
 
-Status: **AUTORIZADO 2026-10-27 («Acepto el desarrollo»); resultados por ejecutar.**
-Main de contraste `2487656`/v16; esquema de desarrollo **v17** (contrastado, no
+Status: **IMPLEMENTADO 2026-10-27; resultados locales registrados abajo.**
+Main de contraste `2487656`/v16; esquema implementado **v17** (contrastado, no
 presupuesto). Contrato: spec14 §15, wireframes §15.15 y spec05 §D5, P-D5-1..6.
 Este bloque no declara D5, E3.2, B-T11 ni AC-31 de spec05 PASS hasta que cada
 comprobación se ejecute sobre el candidato exacto. Sin datos reales: fixtures
@@ -338,22 +338,22 @@ ficticias y servicios reales de prueba.
 
 | ID | AC D5 | Precondición / operación | Caso permitido / de control | Caso rechazado / de fallo | Comprobación futura | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| T-D5-01 | AC-01 | REF CAT013+ficha+Tercero; alta S000→interno con evidencia | Un Movimiento + una acreditación; efecto exacto en destino; sin Gasto/Ingreso | Payload con Partida/Subtipo o importe 0 → 422 | API/SQLite; DTO; saldo destino | UNRUN |
-| T-D5-02 | AC-02 | Variante CAT013 válida vs. intentos interno→S000, S000→S000, sin CAT013, Exterior ordinario | Solo la variante CAT013 entrante permitida | Resto 422; formulario común sin S000 | HTTP + UI; gates de servicio | UNRUN |
-| T-D5-03 | AC-03 | Transferencia interna con REF CAT013 | Movimiento interno válido sin acreditación | No altera Recuperado/Neto | Motor + DTO | UNRUN |
-| T-D5-04 | AC-04 | Gasto CAT013 válido; Ingreso S000 sin CAT013; Ingreso CAT013 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5; ninguno acredita | Ingreso CAT013 → 422; no se reclasifica ni se convierte en aportación | Servicio + esquema + DTO | UNRUN |
-| T-D5-05 | AC-05 | Tercero activo de la ficha vs. Titular/inactivo/otra ficha/inexistente | Tercero válido acredita | 422 sin alta parcial; sin creación implícita | API/SQLite | UNRUN |
-| T-D5-06 | AC-06 | Primer alta válida vs. segunda acreditación o división del mismo Movimiento | Una sola fila por Movimiento | Rechazo 409/422 por unicidad/cardinalidad | SQLite UNIQUE + API | UNRUN |
-| T-D5-07 | AC-07 | Evidencia suficiente vs. vacía/genérica; histórico con procedencia insuficiente | Evidencia suficiente acredita | 422 o Revisar/No disponible; no inventa importe/fecha | Validación + UI | UNRUN |
-| T-D5-08 | AC-08 | Histórico elegible vs. Gasto/Ingreso/interno/anulado/sin REF/sin ficha | Solo el elegible tras revisión acredita | Resto no acredita; sin REF retroactiva/backfill | Focal + fixtures | UNRUN |
-| T-D5-09 | AC-09 | Respuesta perdida tras commit; dos idénticas concurrentes; clave reutilizada con payload distinto; contexto obsoleto; fallo transaccional | Replay devuelve respuesta/IDs originales antes de revalidar; concurrentes idénticas → una operación y misma respuesta | Duplicado/contexto obsoleto → 409 sin efectos; fallo → rollback íntegro; sin huérfanos | Dos conexiones + fallo inyectado | UNRUN |
-| T-D5-10 | AC-10 | Positivo: hecho vigente con REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos. Negativo: cambiar participante con REF/Tercero inactivo; rectificar anulado; cambiar Tipo/REF/Origen | Importe/fecha/Destino con impacto/motivo/auditoría; Recuperado/pendiente/exceso/Neto recalculados; historial preservado | Cambio de participante exige REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen bloqueados | API + triggers + auditoría | UNRUN |
-| T-D5-11 | AC-11 | Anular aportación acreditada; reutilizar vínculo | Excluida del motor; historia/evidencia conservadas y visibles | Reactivación, DELETE y nueva atribución bloqueados | SQLite + DTO + UI | UNRUN |
-| T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota; Titular Pendiente 0 | Sin compensación cruzada ni aportación exigible del Titular | Motor + DTO + capturas | UNRUN |
-| T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | UNRUN |
-| T-D5-14 | AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Equivalencia, foco, contraste, borrador conservado | Sin S000 en formulario común | Playwright + PNG `artifacts/e3-2-d5/` | UNRUN |
-| T-D5-15 | AC-15 | Gate sin autorización de dev o sin enmienda spec05; intentar habilitar Exterior ordinario/salidas | D5 no se habilita; alcance intacto; B-T11 UNRUN | Intento de ampliación bloqueado; sin PASS de E3.2 | Inspección + gates | UNRUN |
-| T-D5-16 | AC-01/02 | Frontera SQLite: INSERT directo de Transferencia S000 sin acreditación, con y sin guarda DB futura | Alta válida por servicio con acreditación cuando exista contrato dev | Frontera definida en dev; no se promete trigger hoy; CHECK no valida CAT013 | SQLite directo + contrato dev | UNRUN |
+| T-D5-01 | AC-01 | REF CAT013+ficha+Tercero; alta S000→interno con evidencia | Un Movimiento + una acreditación; efecto exacto en destino; sin Gasto/Ingreso | Payload con Partida/Subtipo o importe 0 → 422 | API/SQLite; DTO; saldo destino | PASS (local; ver resultados) |
+| T-D5-02 | AC-02 | Variante CAT013 válida vs. intentos interno→S000, S000→S000, sin CAT013, Exterior ordinario | Solo la variante CAT013 entrante permitida | Resto 422; formulario común sin S000 | HTTP + UI; gates de servicio | PASS (local; ver resultados) |
+| T-D5-03 | AC-03 | Transferencia interna con REF CAT013 | Movimiento interno válido sin acreditación | No altera Recuperado/Neto | Motor + DTO | PASS (local; ver resultados) |
+| T-D5-04 | AC-04 | Gasto CAT013 válido; Ingreso S000 sin CAT013; Ingreso CAT013 | Gasto CAT013 conserva Base B; Ingreso S000 sin CAT013 conserva E1.5; ninguno acredita | Ingreso CAT013 → 422; no se reclasifica ni se convierte en aportación | Servicio + esquema + DTO | PASS (local; ver resultados) |
+| T-D5-05 | AC-05 | Tercero activo de la ficha vs. Titular/inactivo/otra ficha/inexistente | Tercero válido acredita | 422 sin alta parcial; sin creación implícita | API/SQLite | PASS (local; ver resultados) |
+| T-D5-06 | AC-06 | Primer alta válida vs. segunda acreditación o división del mismo Movimiento | Una sola fila por Movimiento | Rechazo 409/422 por unicidad/cardinalidad | SQLite UNIQUE + API | PASS (local; ver resultados) |
+| T-D5-07 | AC-07 | Evidencia suficiente vs. vacía/genérica; histórico con procedencia insuficiente | Evidencia suficiente acredita | 422 o Revisar/No disponible; no inventa importe/fecha | Validación + UI | PASS (local; ver resultados) |
+| T-D5-08 | AC-08 | Histórico elegible vs. Gasto/Ingreso/interno/anulado/sin REF/sin ficha | Solo el elegible tras revisión acredita | Resto no acredita; sin REF retroactiva/backfill | Focal + fixtures | PASS (local; ver resultados) |
+| T-D5-09 | AC-09 | Respuesta perdida tras commit; dos idénticas concurrentes; clave reutilizada con payload distinto; contexto obsoleto; fallo transaccional | Replay devuelve respuesta/IDs originales antes de revalidar; concurrentes idénticas → una operación y misma respuesta | Duplicado/contexto obsoleto → 409 sin efectos; fallo → rollback íntegro; sin huérfanos | Dos conexiones + fallo inyectado | PASS (local; ver resultados) |
+| T-D5-10 | AC-10 | Positivo: hecho vigente con REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos. Negativo: cambiar participante con REF/Tercero inactivo; rectificar anulado; cambiar Tipo/REF/Origen | Importe/fecha/Destino con impacto/motivo/auditoría; Recuperado/pendiente/exceso/Neto recalculados; historial preservado | Cambio de participante exige REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen bloqueados | API + triggers + auditoría | PASS (local; ver resultados) |
+| T-D5-11 | AC-11 | Anular aportación acreditada; reutilizar vínculo | Excluida del motor; historia/evidencia conservadas y visibles | Reactivación, DELETE y nueva atribución bloqueados | SQLite + DTO + UI | PASS (local; ver resultados) |
+| T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota; Titular Pendiente 0 | Sin compensación cruzada ni aportación exigible del Titular | Motor + DTO + capturas | PASS (local; ver resultados) |
+| T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | PASS (local; ver resultados) |
+| T-D5-14 | AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Equivalencia, foco, contraste, borrador conservado | Sin S000 en formulario común | Playwright + PNG `artifacts/e3-2-d5/` | PASS (local; ver resultados) |
+| T-D5-15 | AC-15 | Gate sin autorización de dev o sin enmienda spec05; intentar habilitar Exterior ordinario/salidas | D5 no se habilita; alcance intacto; B-T11 UNRUN | Intento de ampliación bloqueado; sin PASS de E3.2 | Inspección + gates | PASS (local; ver resultados) |
+| T-D5-16 | AC-01/02 | Frontera SQLite: INSERT directo de Transferencia S000 sin acreditación, con y sin guarda DB futura | Alta válida por servicio con acreditación cuando exista contrato dev | Frontera definida en dev; no se promete trigger hoy; CHECK no valida CAT013 | SQLite directo + contrato dev | PASS (local; ver resultados) |
 
 ### Riesgos cubiertos
 
@@ -372,11 +372,31 @@ ficticias y servicios reales de prueba.
 | Colisión de esquema v15 | T-D5-01, T-D5-15, T-D5-16 |
 | Ampliación de alcance | T-D5-02, T-D5-15 |
 
-### Límites y evidencia
+### Resultados locales D5 — 2026-10-27 (fixtures ficticias)
 
-- Ninguna prueba se ejecutó para D5; no hay PASS funcional, capturas D5 ni
-  migración D5. Una prueba diseñada no es evidencia ejecutada.
-- backup/restore v15 de Base B conserva su estado propio; no acredita D5.
-- B-T11 sigue UNRUN y no se convierte en gate D5.
-- La prueba de UI/migración D5 solo podrá ejecutarse tras autorización de dev y
-  contraste de esquema con main; la versión futura no se fija aquí.
+Candidato de desarrollo: rama `codex/dev14-d5-exterior`, base `2487656`/v16,
+esquema **v17**. Entorno macOS arm64, Bun 1.4.3, Python 3.12.16 portátil,
+Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
+
+| Comprobación | Comando / evidencia | Resultado |
+| --- | --- | --- |
+| Focal D5 T-D5-01..16 | `NODE_ENV=test bun test apps/api/src/d5-aportaciones.test.ts` | 9 PASS / 0 FAIL / 126 assertions |
+| Regresión Base B | `NODE_ENV=test bun test apps/api/src/compartidos.test.ts` | 10 PASS / 0 FAIL / 179 assertions |
+| Migración v16→v17 | incluida en focal D5: filas, auditoría, Revisión Comida, FK, CHECK y variante v18 rechazada | PASS |
+| API/HTTP D5 | focal D5 T-D5-13: 401/403/404/409/422, MFA/CSRF/Origin y metadata | PASS |
+| Concurrencia/replay/rollback | focal D5 T-D5-09 con dos procesos y trigger de fallo inyectado | PASS |
+| Typecheck | `bun run typecheck` | PASS |
+| Build | `bun run build` | PASS (aviso de tamaño de chunk, sin error) |
+| Suite API completa | `NODE_ENV=test bun test apps/api` | 221 PASS / 47 FAIL / 268; 47 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
+| E2E D5 real | `playwright tests/e2e/d5-aportaciones.spec.ts` | 1/1 PASS; MFA real, alta, 422/409/401, histórica y capturas |
+| E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
+| Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
+| Backup/restore v17 | `backup`/`restore` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
+| `scripts/verify` | entrada canónica | Véase checkpoint; baseline/full Linux pendiente de CI |
+
+- T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
+  salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.
+- T-D5-16 fija la frontera: el CHECK solo relaja la forma; el trigger de
+  `movimiento_compartido` exige Movimiento D5 y participante de la misma ficha.
+- backup/restore v17 y la suite Linux no se relabelan: permanecen UNRUN en macOS.
+- B-T11 sigue UNRUN; D5 no declara E3.2 completa ni AC-20/AC-31 PASS.
