@@ -387,12 +387,12 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 | Concurrencia/replay/rollback | focal D5 T-D5-09 con dos procesos y trigger de fallo inyectado | PASS |
 | Typecheck | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS (aviso de tamaño de chunk, sin error) |
-| Suite API completa | `NODE_ENV=test bun test apps/api` | 221 PASS / 47 FAIL / 268; 47 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
+| Suite API completa | `NODE_ENV=test bun test apps/api` | 221 PASS / 48 FAIL / 269; 48 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
 | E2E D5 real | `playwright tests/e2e/d5-aportaciones.spec.ts` | 1/1 PASS; MFA real, alta, 422/409/401, histórica y capturas |
 | E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
 | Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
-| Backup/restore v17 | `backup`/`restore` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
-| `scripts/verify` | entrada canónica | Véase checkpoint; baseline/full Linux pendiente de CI |
+| Backup/restore v17 | `apps/api/src/d5-backup.test.ts` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
+| `scripts/verify` | entrada canónica con Python 3.12.16 | Baseline/typecheck/build PASS; API 221/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
 
 - T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
   salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.
