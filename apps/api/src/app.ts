@@ -6,8 +6,21 @@ import {
   previewParticipante,
   rectificarParticipante,
   bajaParticipante,
+  previewAportacion,
+  confirmAportacion,
+  previewNuevaAportacion,
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
+import {
+  getRevisionComida,
+  listOperaciones,
+  listReposiciones,
+  revisionComidaOptions,
+  createRevisionComida,
+  rectificarRevisionComida,
+  anularRevisionComida,
+  vincularRevisionComida,
+} from "./revision-comida";
 import {
   getAnticipo,
   listAnticipos,
@@ -260,6 +273,92 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/revision-comida/opciones" && req.method === "GET")
+        return reply(revisionComidaOptions(db, now()));
+      if (path === "/api/revision-comida" && req.method === "GET")
+        return reply(listOperaciones(db, new URL(req.url).searchParams));
+      if (path === "/api/revision-comida" && req.method === "POST") {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Detalle",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "GET"
+      )
+        return reply(listReposiciones(db, new URL(req.url).searchParams));
+      if (
+        path === "/api/revision-comida/reposiciones" &&
+        req.method === "POST"
+      ) {
+        const item = createRevisionComida(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+          "Reposicion",
+        );
+        headers.set(
+          "location",
+          "/api/revision-comida/reposiciones/" + item.operacion.id,
+        );
+        return reply(item, 201);
+      }
+      const reposicion = path.match(
+        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (reposicion) {
+        const [, id, action] = reposicion;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Reposicion"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Reposicion"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Reposicion"),
+          );
+        }
+      }
+      const revision = path.match(
+        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+      );
+      if (revision) {
+        const [, id, action] = revision;
+        if (!action && req.method === "GET")
+          return reply(getRevisionComida(db, id, "Detalle"));
+        if (action && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "rectificar")
+            return reply(
+              rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          if (action === "anular")
+            return reply(
+              anularRevisionComida(db, id, body, key, now(), "Detalle"),
+            );
+          return reply(
+            vincularRevisionComida(db, id, body, key, now(), "Detalle"),
+          );
+        }
+      }
       if (path === "/api/anticipos/fichas" && req.method === "GET")
         return reply(listAnticipos(db, new URL(req.url).searchParams));
       if (path === "/api/anticipos/fichas" && req.method === "POST")
@@ -293,6 +392,27 @@ export function createApp(db: Database, options: AppOptions) {
                 : confirmAccreditation(db, ref, movement, body, key, now()),
           );
         }
+      }
+      const aportacionPath = path.match(
+        /^\/api\/compartidos\/fichas\/(REF\d+)\/movimientos\/(\d+)\/acreditar(?:\/(preview))?$/,
+      );
+      if (aportacionPath) {
+        const [, ref, movement, preview] = aportacionPath;
+        if (preview && req.method === "POST")
+          return reply(
+            previewAportacion(db, ref, movement, await jsonBody(req)),
+          );
+        if (!preview && req.method === "POST")
+          return reply(
+            confirmAportacion(
+              db,
+              ref,
+              movement,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
       }
       if (path === "/api/compartidos/fichas" && req.method === "GET")
         return reply(listCompartidos(db, new URL(req.url).searchParams));
@@ -810,17 +930,30 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")
         return reply(listMovements(db, new URL(req.url).searchParams));
-      if (path === "/api/movimientos/impacto" && req.method === "POST")
-        return reply(
-          previewMovement(
+      if (path === "/api/movimientos/impacto" && req.method === "POST") {
+        const body = await jsonBody(req),
+          plan = previewMovement(
             db,
-            await jsonBody(req),
+            body,
             null,
             false,
             now(),
             options.movementGuard,
-          ),
+          );
+        const referencia =
+          typeof body.referencia === "string" ? body.referencia : null;
+        return reply(
+          referencia &&
+            body.tipo === "Transferencia" &&
+            body.origen === "S000" &&
+            body.compartido
+            ? {
+                ...plan,
+                compartidoImpacto: previewNuevaAportacion(db, referencia, body),
+              }
+            : plan,
         );
+      }
       if (path === "/api/movimientos" && req.method === "POST") {
         const result = writeMovement(
           db,

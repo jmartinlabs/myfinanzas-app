@@ -195,6 +195,39 @@ export type SharedPartida = {
   gastos: string[];
   neto: SharedMetric;
 };
+export type SharedContribution = {
+  movimiento: string;
+  fecha: string;
+  importe: string;
+  origen: string;
+  destino: string;
+  anulado: boolean;
+  participante: {
+    id: string;
+    nombre: string;
+    rol: "Titular" | "Tercero";
+    estado: "Activa" | "Baja";
+  };
+  evidencia: string;
+  procedencia:
+    | "Registro del titular"
+    | "Documento bancario"
+    | "Importación histórica autorizada";
+  revision: number;
+  revisionMovimiento: number;
+  creado: string;
+  actualizado: string;
+  computa: boolean;
+};
+export type SharedHistorical = {
+  movimiento: string;
+  fecha: string;
+  importe: string;
+  origen: string;
+  destino: string;
+  revision: number;
+  concepto: string;
+};
 export type SharedCase = {
   referencia: {
     id: string;
@@ -238,6 +271,8 @@ export type SharedCase = {
   participantes: SharedParticipant[];
   gastos: SharedExpense[];
   partidas: SharedPartida[];
+  aportaciones: SharedContribution[];
+  historicos: SharedHistorical[];
   relacionados: {
     id: string;
     fecha: string;

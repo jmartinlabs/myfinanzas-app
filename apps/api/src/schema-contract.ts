@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import contractsJson from "./schema-contracts.json";
+import { schemaVersion } from "./database-identity";
 
 export type ContractObject = {
   type: string;
@@ -52,6 +53,8 @@ export function contract(id: string) {
 export const admitted = {
   14: "C14-VEHICULOS-C69E343",
   15: "C15-COMPARTIDOS-AD2EDFE",
+  16: "C16-REVISION-COMIDA-26B6F0C",
+  17: "C17-D5-CF6954A",
   // Historical evidence only; never an upgrade origin.
   historical14: "C14-COMPARTIDOS-FCE1107",
 } as const;
@@ -82,7 +85,11 @@ export function verifyContract(db: Database, version: number) {
       ? admitted[14]
       : version === 15
         ? admitted[15]
-        : null;
+        : version === 16
+          ? admitted[16]
+          : version === 17
+            ? admitted[17]
+            : null;
   if (!id) return null;
   const expected = contract(id);
   if (
@@ -93,7 +100,7 @@ export function verifyContract(db: Database, version: number) {
   return expected.id;
 }
 
-/** Reads the version and verifies either admitted v14/v15 contract before mutating. */
+/** Reads the version and verifies any admitted v14/v15/v16/v17 contract before mutating. */
 export function verifyAdmittedContract(db: Database) {
   const exists = db
     .query(
@@ -106,7 +113,7 @@ export function verifyAdmittedContract(db: Database) {
   }[];
   if (rows.length !== 1) throw new Error("Esquema no compatible; no se modificará esta base.");
   const version = rows[0].version;
-  if (version > 16)
+  if (version > schemaVersion)
     throw new Error("Esquema no compatible; no se modificará esta base.");
   return verifyContract(db, version);
 }

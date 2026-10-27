@@ -1,10 +1,17 @@
 import type { Database } from "bun:sqlite";
 
 /**
- * E4.1 schema 16. Additive only: it creates its own tables and counters and
- * never drops or destructively alters contracts from earlier deliveries.
+ * E4.1 schema 18 (17→18). Additive only: it creates its own tables and counters
+ * and never drops or destructively alters contracts from earlier deliveries.
  */
 export function investmentSchema(db: Database) {
+  const version = (
+    db.query("SELECT version FROM schema_version").get() as {
+      version: number;
+    } | null
+  )?.version;
+  if (version !== 17)
+    throw new Error("Esquema previo inesperado para migración E4.1 v18.");
   db.exec(`CREATE TABLE instrumentos(
     id TEXT PRIMARY KEY CHECK(id GLOB 'I[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=5),
     nombre TEXT NOT NULL CHECK(length(nombre)>=1 AND length(nombre)<=120),
@@ -95,7 +102,7 @@ export function investmentSchema(db: Database) {
 
   INSERT INTO counters VALUES('instrumento',1001);
   INSERT INTO counters VALUES('operaciones_inversion',1);
-  UPDATE schema_version SET version=16;`);
+  UPDATE schema_version SET version=18;`);
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw new Error("Investment schema FK validation failed.");
 }

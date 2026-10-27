@@ -235,8 +235,10 @@ test("B-T05 AC04/05/06/07/27 exact split by Gasto/Partida with largest remainder
     ["PAR003", "100.00"],
   ]);
   expect(r.estado).toBe("Reparto parcial");
-  expect(r.recuperado.valor).toBeNull();
-  expect(r.recuperado.estado).toBe("No disponible");
+  expect(r.recuperado).toMatchObject({
+    valor: "0.00",
+    estado: "Verificada",
+  });
 });
 
 test("B-T02 AC01 atomic CAT013 Reference+ficha, replay, rollback and no orphans", () => {
@@ -500,12 +502,15 @@ test("B-T04/B-T09 CAT013 gates: Gasto only with ficha, internal Transfer without
         "SELECT name FROM sqlite_master WHERE name IN ('movimiento_compartido','aportaciones_compartido')",
       )
       .all(),
+  ).toEqual([{ name: "movimiento_compartido" }]);
+  // v17 relaxes only the Transfer shape; a direct S000 row without metadata is
+  // not an accreditation and the service does not create it.
+  db.run(
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,revision,creado,actualizado) VALUES('901','2026-10-01','Transferencia',100,'S000','S001','x','',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
+  );
+  expect(
+    db.query("SELECT movimiento FROM movimiento_compartido").all(),
   ).toEqual([]);
-  expect(() =>
-    db.run(
-      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,revision,creado,actualizado) VALUES('901','2026-10-01','Transferencia',100,'S000','S001','x','',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
-    ),
-  ).toThrow();
   expect(() =>
     db.run(
       "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,revision,creado,actualizado) VALUES('902','2026-10-01','Gasto',100,'S001','S000','x','',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
@@ -609,27 +614,30 @@ test("B-T06 AC12/13/15/17/25/29/38/39 states and metrics: no source is never zer
     hayTercerosConCuota: true,
   });
   expect(d.resumen.recuperado).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "0.00",
+    estado: "Verificada",
   });
   expect(d.resumen.neto).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "450.00",
+    estado: "Verificada",
   });
   expect(d.resumen.exceso).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "0.00",
+    estado: "Verificada",
   });
-  expect(d.resumen.pendienteTerceros.estado).toBe("No disponible");
+  expect(d.resumen.pendienteTerceros).toMatchObject({
+    valor: "225.00",
+    estado: "Verificada",
+  });
   const tercero = d.participantes.find((p) => p.rol === "Tercero")!;
   expect(tercero.asignado.valor).toBe("225.00");
   expect(tercero.pendiente).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "225.00",
+    estado: "Verificada",
   });
-  expect(tercero.exceso.valor).toBeNull();
-  expect(d.gastos[0].neto.estado).toBe("No disponible");
-  expect(d.partidas[0].neto.estado).toBe("No disponible");
+  expect(tercero.exceso).toMatchObject({ valor: "0.00", estado: "Verificada" });
+  expect(d.gastos[0].neto.estado).toBe("Verificada");
+  expect(d.partidas[0].neto.estado).toBe("Verificada");
   db.close();
 });
 
@@ -683,7 +691,10 @@ test("B-T06 AC28/29/30/31 incompatible Gasto marks Revisar/partial and P-F6 reso
   expect(d.resumen.alertas[0].motivo).toContain("CAT013");
   expect(d.gastos.find((g) => g.id === historical)!.valido).toBe(false);
   expect(d.gastos.find((g) => g.id === historical)!.computaEnBruto).toBe(false);
-  expect(JSON.stringify(d)).not.toContain('"recuperado":{"valor":"0.00"');
+  expect(d.resumen.recuperado).toMatchObject({
+    valor: null,
+    estado: "No aplica",
+  });
   const historicalRow = getMovement(db, historical).movimiento;
   const fix = {
     tipo: historicalRow.tipo,
@@ -764,7 +775,7 @@ test("B-T07 AC18/19/24 impact, motive, append-only history and untouched bank fa
     randomUUID(),
     now,
   );
-  expect(changed.resumen.recuperado.estado).toBe("No disponible");
+  expect(changed.resumen.recuperado.estado).toBe("Verificada");
   expect(
     JSON.stringify(db.query("SELECT * FROM movimientos ORDER BY id").all()),
   ).toBe(before);
@@ -875,7 +886,7 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
   );
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 16,
+    version: 18,
   });
   for (const table of Object.keys(before))
     expect(JSON.stringify(db.query(`SELECT * FROM ${table} ORDER BY 1`).all())).toBe(
@@ -969,7 +980,7 @@ test("B-T01 v14 Vehículos → v15 preserves vehicle ficha/audit and rejects a v
     audits = db.query("SELECT * FROM audit ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 16,
+    version: 18,
   });
   expect(db.query("SELECT * FROM referencias ORDER BY id").all()).toEqual(refs);
   expect(db.query("SELECT * FROM fichas_vehiculo ORDER BY referencia").all()).toEqual(
@@ -1074,19 +1085,19 @@ test("B-T08 AC22 DTO contract, protected routes, CSRF/Origin, 404/409/422 and re
       );
   const dto = (await read("/api/compartidos/fichas/" + shared)) as any;
   expect(dto.resumen.recuperado).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "0.00",
+    estado: "Verificada",
   });
   expect(dto.resumen.exceso).toMatchObject({
-    valor: null,
-    estado: "No disponible",
+    valor: "0.00",
+    estado: "Verificada",
   });
   expect(
     JSON.stringify({
       recuperado: dto.resumen.recuperado,
       exceso: dto.resumen.exceso,
     }),
-  ).not.toContain("0.00");
+  ).toContain('"valor":"0.00"');
   const closed = (await read("/api/compartidos/fichas/" + empty)) as any;
   expect(closed.resumen.neto.valor).toBe("150.00");
   expect(closed.resumen.costePropio.valor).toBe("150.00");

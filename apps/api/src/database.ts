@@ -25,7 +25,7 @@ export function openDatabase(path: string) {
       throw new Error("Ruta productiva distinta de DATABASE_PATH.");
     const { db, key } = openProductionConnection(config, false);
     try {
-      // The admitted v14/v15 manifest is verified before persistent PRAGMAs.
+      // The admitted v14-v17 manifest is verified before persistent PRAGMAs.
       verifyAdmittedContract(db);
       assertV14VehicleContract(db);
       db.exec(

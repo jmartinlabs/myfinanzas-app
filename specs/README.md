@@ -20,8 +20,8 @@ Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$or
 [contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
-Contrato CI vigente: [v2.7.0](methodology/ci-policy.md#adaptación-vigente-v270),
-entrada local/CI `python3 scripts/verify`; adopción en preparación y pendiente de PR/CI.
+Contrato CI vigente: [local-first](methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27),
+entrada local/CI `python3 scripts/verify`; adopción publicada en PR #86, pendiente de CI/QA Linux y aprobación.
 Procedencia y alcance en [adopción](methodology/orchestration-adoption.md#harness-v270--adaptación-en-curso).
 
 ## Cronología conservada

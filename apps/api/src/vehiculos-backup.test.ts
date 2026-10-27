@@ -15,7 +15,7 @@ import { backup, restore } from "./backup";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
 
-test("E3.3/E3.2 v15 backup manifest and restore preserve vehicle fichas and revoke sessions", () => {
+test("E3.3/E3.2/E3.4 v16 backup manifest and restore preserve vehicle fichas and revoke sessions", () => {
   const dir = mkdtempSync(join(tmpdir(), "e33-backup-"));
   try {
     const sourcePath = join(dir, "source.sqlite"),
@@ -120,8 +120,8 @@ test("E3.3/E3.2 v15 backup manifest and restore preserve vehicle fichas and revo
     expect(decrypted.exitCode).toBe(0);
     const bundle = JSON.parse(decrypted.stdout.toString());
     expect(bundle.manifest).toMatchObject({
-      app: "e4.1-v16",
-      schema: 16,
+      app: "e4.1-v18",
+      schema: 18,
       origin: "demo",
     });
     const snapshotPath = join(dir, "snapshot.sqlite");
@@ -129,7 +129,7 @@ test("E3.3/E3.2 v15 backup manifest and restore preserve vehicle fichas and revo
     const snapshot = new Database(snapshotPath, { readonly: true, strict: true });
     try {
       expect(snapshot.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 16,
+        version: 18,
       });
       expect(
         snapshot
@@ -162,7 +162,7 @@ test("E3.3/E3.2 v15 backup manifest and restore preserve vehicle fichas and revo
     const copy = new Database(restored.database, { readonly: true, strict: true });
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 16,
+        version: 18,
       });
       expect(
         copy.query("SELECT matricula FROM fichas_vehiculo WHERE referencia=?").get(vehicle.id),

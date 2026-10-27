@@ -130,7 +130,7 @@ test("03 AC01/02/05/09/12–15: alta explícita, mes único y orden, sin reloj n
     expect(first.contexto.referencia.fecha).toBeNull();
     expect(first.contexto.referencia.coverage.map((s) => s.state)).toEqual([
       "disponible",
-      "pendiente",
+      "disponible",
       "pendiente",
     ]);
     expect(() => add(db, "2026-10-25")).toThrow("Ciclo duplicado");
@@ -331,7 +331,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 16,
+      version: 18,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
     expect({

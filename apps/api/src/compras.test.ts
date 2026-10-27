@@ -761,7 +761,7 @@ test("E4.1-AC-29: acceso, CSRF y errores heredados sin DELETE ni fixtures", asyn
   }
 });
 
-test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes de mutar", () => {
+test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes de mutar", () => {
   const dir = mkdtempSync(join(tmpdir(), "e41-schema-"));
   try {
     const v13 = join(dir, "v13.sqlite");
@@ -769,7 +769,7 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
     old.run("INSERT INTO referencias VALUES('REF500','Histórica','Viaje','Activa',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     old.close();
     let db = openDatabase(v13);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
     expect(db.query("SELECT id FROM referencias WHERE id='REF500'").get()).toEqual({ id: "REF500" });
     expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
     db.close();
@@ -779,7 +779,7 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
       fixture.run("INSERT INTO fichas_vehiculo VALUES('REF900','1234ABC','2026-07-01','2026-06-01',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     });
     db = openDatabase(v14);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
     expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF900'").get()).toEqual({ matricula: "1234ABC" });
     expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='fichas_compartidos'").get()).toEqual({ n: 1 });
     expect(db.query("SELECT COUNT(*) n FROM fichas_compartidos").get()).toEqual({ n: 0 });
@@ -793,10 +793,29 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
       fixture.run("INSERT INTO fichas_vehiculo VALUES('REF9002','1234ABC','2026-07-01','2026-06-01',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     });
     db = openDatabase(v15);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
     expect(db.query("SELECT revision FROM fichas_compartidos WHERE referencia='REF9001'").get()).toEqual({ revision: 1 });
     expect(db.query("SELECT COUNT(*) n FROM participantes_compartido").get()).toEqual({ n: 1 });
     expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF9002'").get()).toEqual({ matricula: "1234ABC" });
+    expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
+    db.close();
+
+    const v16 = materializeContract(join(dir, "v16.sqlite"), "C16-REVISION-COMIDA-26B6F0C");
+    db = openDatabase(v16);
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
+    expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='revision_comida'").get()).toEqual({ n: 1 });
+    expect(db.query("SELECT COUNT(*) n FROM revision_comida").get()).toEqual({ n: 0 });
+    expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
+    db.close();
+
+    const v17 = materializeContract(join(dir, "v17.sqlite"), "C17-D5-CF6954A");
+    db = openDatabase(v17);
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
+    expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='movimiento_compartido'").get()).toEqual({ n: 1 });
+    expect(db.query("SELECT COUNT(*) n FROM movimiento_compartido").get()).toEqual({ n: 0 });
+    expect(
+      (db.query("SELECT sql FROM sqlite_master WHERE name='movimientos'").get() as { sql: string }).sql,
+    ).toContain("tipo='Transferencia' AND destino!='S000'");
     expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
     db.close();
 
@@ -815,17 +834,17 @@ test("E4.1-AC-33: rutas 13→16, 14→16, 15→16, manifiestos y rechazos antes 
     extraDb.close();
     expect(() => openDatabase(extra)).toThrow("Contrato de esquema v15 desconocido o incompleto; no se modificará esta base.");
 
-    const v17 = materializeContract(join(dir, "v17.sqlite"), "C15-COMPARTIDOS-AD2EDFE");
-    const v17Db = new Database(v17);
-    v17Db.exec("UPDATE schema_version SET version=17");
-    v17Db.close();
-    expect(() => openDatabase(v17)).toThrow("Esquema no compatible");
+    const v19 = materializeContract(join(dir, "v19.sqlite"), "C15-COMPARTIDOS-AD2EDFE");
+    const v19Db = new Database(v19);
+    v19Db.exec("UPDATE schema_version SET version=19");
+    v19Db.close();
+    expect(() => openDatabase(v19)).toThrow("Esquema no compatible");
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
 
-test("E4.1-AC-33(d): v15 real de main preserva Compartidos y Vehículos al subir a 16", () => {
+test("E4.1-AC-33(d): v15 real de main preserva Compartidos y Vehículos al subir a 18", () => {
   const dir = mkdtempSync(join(tmpdir(), "e41-real-v15-"));
   try {
     const path = join(dir, "v15.sqlite");
@@ -861,7 +880,7 @@ test("E4.1-AC-33(d): v15 real de main preserva Compartidos y Vehículos al subir
 
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 16 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
       for (const [table, id, expected] of [
         ["fichas_compartidos", "REF9100", 1],
         ["participantes_compartido", "CP9100", 1],

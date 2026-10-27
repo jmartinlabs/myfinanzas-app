@@ -5,6 +5,41 @@ base B aprobada en §14 (usuario, 2026-10-26). Brainstorming:
 [14-compartidos-brainstorming.md](14-compartidos-brainstorming.md).
 Test plan y mapa completo: [14-compartidos-testplan.md](14-compartidos-testplan.md).
 
+## Current checkpoint — D5/Exterior: desarrollo autorizado — 2026-10-27
+
+**Autorización de desarrollo D5 — 2026-10-27:** usuario «Acepto el desarrollo».
+Objeto: contrato aprobado de spec14 §15, wireframes §15.15 y spec05 §D5,
+incluidos P-D5-1..6. Autoriza implementación, QA independiente, rama/PR de
+desarrollo y pruebas ficticias; **no** autoriza merge, despliegue, datos reales,
+migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
+
+- Base verificada: main `248765661d0ea041030899816527747091312522` (PR84
+  integrada, esquema v16). Sin otra rama/worktree de desarrollo D5 antes de
+  crear el checkout aislado; no hay ejecutor D5 previo que reutilizar.
+- Checkout: `.../T/opencode/dev14-d5`, rama `codex/dev14-d5-exterior`.
+- Esquema implementado: **v17**, contrastado con main v16 (E3.4) y con la cadena
+  v15 Base B → v16 Revisión Comida. No se presupone ninguna versión distinta.
+- Mapa previo al código: D5-AC-01..15 → T-D5-01..16 en
+  [testplan](14-compartidos-testplan.md). Implementados migración técnica,
+  acreditación/motor/servicio común, API/UI, rectificación, replay, concurrencia,
+  auditoría y fixture de backup/restore.
+- Candidato de código: `b2b0b89` (merge final de main `aad4e6c`; código D5 `a242a70`).
+  Rama `codex/dev14-d5-exterior` publicada. **PR #90 Draft**:
+  https://github.com/josemartin2000/myfinanzas-app/pull/90. Sin merge.
+- Evidencia local macOS: D5 10 PASS/134; Base B 10 PASS/179; E2E D5 y Base B
+  2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
+  (plataforma macOS/B3). Linux (Ubuntu 24.04.5, VM aislada, `b2b0b89`):
+  **API 270 PASS/0 FAIL/3872**, `d5-backup.test.ts` PASS, typecheck/build PASS;
+  backup/restore cifrado v17 verificado. CI #572 (`required`) **SUCCESS** sobre
+  `b2b0b89`; perfil critical ejecuta API/SQLite. `scripts/verify` macOS:
+  baseline/type/build PASS, API FAIL de plataforma, E2E UNRUN (focal 2/2).
+- Fuera: B-T11/consumo por informes (sigue UNRUN), Exterior ordinario/salidas,
+  datos reales, deploy, cambios de guardas/timeouts/harness/metodología.
+- Aprobación documental previa conservada: candidato `3b737aa`, PR84, main
+  `2487656`; este checkpoint no reabre decisiones confirmadas.
+
+---
+
 ## Current checkpoint — Base B v15 compatible con main/DEV15 — 2026-10-26
 Continuación autorizada por el usuario sobre PR75, sin merge ni despliegue.
 Estado vigente: **CORRECCIÓN P2 DE RECHAZO v14 / NUEVO CANDIDATO PENDIENTE QA Y CI**.
@@ -225,3 +260,115 @@ suite completa ni backup/restore real: **UNRUN** en macOS.
 
 ## Next action
 See current checkpoint.
+
+## D5/Exterior — preparación documental (no desarrollo) — 2026-10-26
+
+Status: **PROPUESTA DOCUMENTAL; implementación bloqueada.** Base main `24b48c5`
+(PR75/Base B `5ad75ed` integrada, v15). Rama `codex/spec14-d5-exterior-r2`; PR84 en borrador sobre `b30ae57`. La revisión
+final de Codex pidió corregir wireframes, idempotencia, rectificación y mapping
+D5-AC; el delta se registra en los commits posteriores de la misma rama. No se
+reanuda dev14/D5, no hay SQL/migración, datos reales, merge ni deploy.
+
+- Contrato focal: spec14 §15; respuestas D5-Q1–Q6: brainstorming (append-only).
+- Matriz de aceptación/riesgo y pruebas futuras: spec14 §15.13–§15.14 y
+  [testplan](14-compartidos-testplan.md) T-D5-01–16, todas UNRUN.
+- Enmienda consecuente propuesta: [spec05 §D5](05-transferencias-referencias-specification.md),
+  no aprobada; sin ella D5 no sería operativo.
+- QA independiente y veredicto: ver entrega/HANDOFF de esta preparación. No se
+  confunde QA documental con evidencia funcional.
+- B-T11 sigue UNRUN; E3.2 no se declara completa. D5 no se declara aprobado ni
+  implementado; el siguiente gate es revisión final y aprobación explícita.
+
+## D5/Exterior — desarrollo y QA local — 2026-10-27
+
+Autorización: usuario «Acepto el desarrollo» sobre spec14 §15, wireframes §15.15
+y spec05 §D5 (P-D5-1..6). Base `2487656`/v16; rama `codex/dev14-d5-exterior`,
+checkout aislado `.../T/opencode/dev14-d5`. Esquema **v17**, decidido tras
+contrastar main y la cadena v15 Base B → v16 Revisión Comida. No se reabren
+decisiones ni se toca Excel/VPS/datos reales.
+
+### Entregado
+
+- `compartido-aportacion-schema.ts`: migración v16→v17 que reconstruye
+  Movimientos y dependientes, relaja solo la forma `Transferencia` S000→interno,
+  conserva IDs/auditorías/FK/triggers y añade `movimiento_compartido` con
+  evidencia/procedencia/revisiones, inmutabilidad y guardas de relación.
+- `aportaciones.ts`: validación D5, una acreditación por Movimiento, Tercero
+  activo de la ficha, Titular rechazado, evidencia 10–500, procedencia nueva vs.
+  histórica, almacenamiento/rectificación/auditoría y conservación en anulación.
+- `movimientos.ts`/API: bloque `compartido` en alta/rectificación/preview;
+  inmutabilidad de Tipo/REF/Origen mientras la acreditación está vigente;
+  rectificación de importe/fecha/Destino con vínculos históricos inactivos;
+  anulación sin DELETE; replay/concurrencia/rollback con el patrón IMMEDIATE.
+  Endpoints `POST /api/compartidos/fichas/:ref/movimientos/:id/acreditar[/preview]`.
+- `compartidos.ts`: motor D5 con Aportado/Recuperado/Neto/Pendiente/Exceso,
+  atribución R-MP exacta por Gasto, exceso íntegro, Titular Pendiente 0,
+  recuperado sin cuota → Revisar, cobertura honesta y Cerrado solo sin
+  pendientes/excesos/incidencias; históricos elegibles y contexto ampliado.
+- UI: ficha con acciones, formulario dedicado, preview antes/después, aviso de
+  Transferencia desde Exterior (no Ingreso/Gasto), lista de aportaciones y
+  revisión histórica; formulario común sin S000. Capturas 390/1440 inspeccionadas.
+- Migración técnica, fixture v16, backup manifest v17 y regresiones de Base B,
+  Transferencias, Anticipos, Vehículos y Revisión Comida.
+
+### Evidencia local (macOS arm64, Bun 1.4.3)
+
+- D5 focal: 10 PASS/0 FAIL/134 assertions; Base B: 10 PASS/0 FAIL/179.
+- Backup/restore D5 v17: **PASS Linux** (Ubuntu 24.04.5, `d5-backup.test.ts` 1/1); macOS UNRUN por `libc.so.6`.
+- Typecheck/build PASS. Suite API 222 PASS/48 FAIL/270; los 48 son de plataforma
+  macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
+- E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
+- Backup/restore v17: PASS Linux; CI #572 required SUCCESS. La ruta macOS sigue UNRUN.
+- `scripts/verify --base 1d539a8 --head 1339113` con Python 3.12.16 portátil:
+  baseline, typecheck y build PASS; API 221/48 de plataforma macOS y E2E UNRUN en
+  la entrada canónica (los E2E focalizados sí 2/2 PASS). El resultado global no se
+  relabela; el gate Linux se cubre con `bun test apps/api` y CI #572.
+
+### Límites
+
+B-T11/consumo por informes sigue UNRUN; no se declara E3.2 completa, AC-20 ni
+AC-31 PASS. Sin Exterior ordinario/salidas, datos reales, migración operativa,
+deploy, B3/Dev32 ni cambios de guardas/timeouts/harness. El siguiente gate es QA
+independiente sobre el SHA candidato y CI Linux; merge no autorizado. CI #572 required SUCCESS; CI #552 falló por billing de GitHub, no por código.
+
+## QA independiente D5 — 2026-10-27
+
+Revisión de contexto nuevo sobre el candidato: **APTO CON RESERVAS** inicial y
+**APTO** tras cerrar el hallazgo alto. La QA no editó el repositorio.
+
+- **Hallazgo alto (cerrado):** el PATCH genérico de Movimientos permitía convertir
+  una Transferencia interna existente en `origen=S000`, con o sin bloque
+  compartido, reescribiendo el efecto bancario. Se bloquea ahora cualquier
+  `old && origen=S000 && !oldAportacion`; solo una aportación ya acreditada puede
+  conservar S000 y la histórica sigue exigiendo el endpoint explícito. Regresión
+  añadida con y sin `compartido`/CAT013.
+- **Histórico con Destino Exterior (cerrado):** el alta y el trigger exigen Destino
+  interno (tipo/control no Exterior); un histórico S000→Exterior ficticio se
+  rechaza.
+- **T-D5-06/10 (cerrado):** segunda acreditación con revisión correcta y negativos
+  de Referencia inactiva/Tercero de baja.
+- **Exceso individual (cerrado):** un Tercero con cuota 0 y Aportado > 0 muestra su
+  Exceso real; el global no compensa.
+- **Preview (cerrado):** muestra el importe y Destino concretos del efecto banco.
+- **T-D5-13:** solo se acredita seguridad/HTTP; informes, Anticipos y doble
+  descuento siguen UNRUN por B-T11. No se declara PASS completo.
+- Backup/restore v17: PASS Linux (1/1); CI #572 required SUCCESS. macOS sigue UNRUN por plataforma.
+- Re-QA del bloqueo S000: **APTO**; focal 10 PASS/134 assertions y typecheck PASS.
+
+## CI Linux — análisis y resultados 2026-10-27
+
+- **#552 / run 40470392984** (push `06c02ea`): `baseline` y `required` fallaron
+  **sin pasos**. Anotación de GitHub: «The job was not started because recent
+  account payments have failed or your spending limit needs to be increased».
+  `full` quedó skipped. Es **infraestructura/billing de GitHub Actions**, no código
+  ni workflow; no se modificó CI/harness.
+- **#564 / run 40492447805** (PR #90, `06c02ea`): el runner ya arrancó y ejecutó
+  API/SQLite. Falló 1 test: `05 R10` esperaba manifest v16 pero el fixture usaba
+  `openDatabase` (v17). Corregido con `openDatabaseV16` en `a242a70`; no era un
+  defecto de producto.
+- **#568 / run 40493244043** (PR #90, `a242a70`) y **#572 / run 40494106854**
+  (PR #90, `b2b0b89`): `required` **SUCCESS** (perfil critical API/SQLite). La PR #90 sigue Draft, `MERGEABLE`; sin merge.
+- Linux local aislado (Ubuntu 24.04.5, VM Lima, Bun 1.4.3) sobre `b2b0b89`:
+  `bun test apps/api` → **270 PASS/0 FAIL/3872**; `d5-backup.test.ts` → **PASS**
+  (restauración cifrada v17, datos, acreditación, auditoría e intentos revocados);
+  typecheck/build PASS. Evidencia en `/private/tmp/linux-api-d5b.log`.

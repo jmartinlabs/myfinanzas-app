@@ -2042,6 +2042,7 @@ textarea {
   border-left: 4px solid #a33d1c;
   background: #fbe9e1;
   color: #5c230f;
+  overflow-wrap: anywhere;
 }
 .shared-expenses,
 .shared-partidas,
@@ -2050,6 +2051,7 @@ textarea {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
+  overflow-wrap: anywhere;
 }
 .shared-expenses li,
 .shared-partidas li,
@@ -2098,13 +2100,63 @@ textarea {
 .shared-impact {
   margin-top: 16px;
 }
+.shared-actions {
+  margin-bottom: 16px;
+}
+.shared-actions .shared-section-head {
+  align-items: flex-start;
+}
+.shared-impact-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.shared-impact-column h3 {
+  margin-top: 0;
+}
+.shared-contribution {
+  margin-top: 16px;
+}
+.shared-aportaciones {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  overflow-wrap: anywhere;
+}
+.shared-aportaciones li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 0;
+  border-bottom: 1px solid #e2ead8;
+}
+.shared-aportaciones li small {
+  line-height: 1.35;
+}
+@media (max-width: 760px) {
+  .shared-impact-grid {
+    grid-template-columns: 1fr;
+  }
+  .shared-actions .actions {
+    width: 100%;
+  }
+  .shared-actions .actions button {
+    width: 100%;
+  }
+}
 .shared-cards {
   display: none;
   gap: 12px;
   grid-template-columns: 1fr;
 }
+.shared-participant h3 {
+  overflow-wrap: anywhere;
+}
 .shared-form {
   margin-top: 16px;
+}
+.shared-form h2 {
+  overflow-wrap: anywhere;
 }
 .shared-impact table {
   width: 100%;
@@ -2115,6 +2167,9 @@ textarea {
   text-align: left;
   padding: 8px;
   border-bottom: 1px solid #e2ead8;
+}
+.shared-impact td:first-child {
+  overflow-wrap: anywhere;
 }
 @media (max-width: 1050px) {
   .shared-layout {
@@ -2192,6 +2247,9 @@ textarea {
 @media (min-width: 761px) {
   .shared-table-scroll table {
     min-width: 0;
+  }
+  .shared-participants td:nth-child(n + 2):nth-child(-n + 5) {
+    white-space: nowrap;
   }
 }
 @media (max-width: 760px) {
@@ -2500,4 +2558,66 @@ textarea {
 .desktop-list table.inversiones-table th:first-child,
 .desktop-list table.inversiones-table td:first-child {
   padding-left: 10px;
+}
+/* E3.4 — Revisión Comida reuses the approved shell, filters, table and card tokens. */
+.revision-list .filters {
+  grid-template-columns: minmax(12rem, 1.6fr) repeat(3, minmax(9rem, 1fr));
+}
+.revision-list th:nth-child(1),
+.revision-list th:nth-child(2) {
+  width: 6.5rem;
+}
+.revision-list th:nth-child(5),
+.revision-list th:nth-child(6),
+.revision-list th:nth-child(7) {
+  width: 10rem;
+}
+.revision-list .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.revision-list .card-position {
+  margin-top: 0.5rem;
+}
+.revision-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem 1.5rem;
+  margin: 0;
+}
+.revision-facts > div {
+  min-width: 0;
+  padding-bottom: 0.55rem;
+  border-bottom: 1px solid var(--line, #dce8d0);
+}
+.revision-facts dt {
+  color: var(--muted, #536147);
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.revision-facts dd {
+  margin: 0.2rem 0 0;
+  overflow-wrap: anywhere;
+}
+.revision-detail .actions {
+  margin-top: 1rem;
+}
+.revision-detail label {
+  display: block;
+  margin-top: 0.75rem;
+}
+@media (max-width: 1050px) {
+  .revision-list .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .revision-list .filters {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .revision-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -1,3 +1,5 @@
+import { revisionComidaSchema } from "./revision-comida-schema";
+import { compartidoAportacionSchema } from "./compartido-aportacion-schema";
 import { anticipoSchema } from "./anticipo-schema";
 import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
 import { vehicleSchema } from "./vehicle-schema";
@@ -35,7 +37,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -88,7 +90,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -110,7 +112,9 @@ export function prepareSchema(db: Database, identity: Identity) {
         // require the v14 vehicle contract to be present before rebuilding tables.
         if (versions[0].version < 14) vehicleSchema(db);
         if (versions[0].version < 15) compartidoSchema(db);
-        if (versions[0].version < 16) investmentSchema(db);
+        if (versions[0].version < 16) revisionComidaSchema(db);
+        if (versions[0].version < 17) compartidoAportacionSchema(db);
+        if (versions[0].version < 18) investmentSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -224,6 +228,8 @@ export function prepareSchema(db: Database, identity: Identity) {
       anticipoSchema(db);
       vehicleSchema(db);
       compartidoSchema(db);
+      revisionComidaSchema(db);
+      compartidoAportacionSchema(db);
       investmentSchema(db);
     }).immediate();
   } catch (error) {

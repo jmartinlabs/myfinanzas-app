@@ -440,7 +440,7 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
       </div>
       <section className="panel classification-deps">
         <h2>Conciliación comida</h2>
-        <p>No disponible · Revisión Comida pendiente</p>
+        <p>No disponible · conciliación E3.5 pendiente</p>
       </section>
       <CycleHistory id={id} />
       <section className="panel classification-deps">
@@ -1054,11 +1054,11 @@ function CycleOperationForm({
                 </button>
               </div>
               <p>
-                Movimientos comprobado. Revisión Comida / operaciones de
-                inversión pendientes.
+                Movimientos comprobado. Revisión Comida instalada; operaciones
+                de inversión pendientes.
               </p>
               <p>
-                Conciliación comida: No disponible · Revisión Comida pendiente.
+                Conciliación comida: No disponible · E3.5 pendiente.
               </p>
               <p className="help">
                 No se alteran fechas, importes ni identidades de los hechos. Fin

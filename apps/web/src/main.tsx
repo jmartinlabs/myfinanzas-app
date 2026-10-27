@@ -1,3 +1,4 @@
+import { RevisionComida } from "./RevisionComida";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
@@ -190,6 +191,21 @@ function App() {
             }}
           >
             Flujo mensual
+          </a>
+          <a
+            className={
+              path.startsWith("/revision-comida") ? "nav-active" : "nav-link"
+            }
+            href="/revision-comida"
+            aria-current={
+              path.startsWith("/revision-comida") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/revision-comida");
+            }}
+          >
+            Revisión Comida
           </a>
           <a
             className={
@@ -390,7 +406,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/flujo-mensual") ? (
+          {path.startsWith("/revision-comida") ? (
+            <RevisionComida path={path} go={go} />
+          ) : path.startsWith("/flujo-mensual") ? (
             <FlujoMensual path={path} go={go} />
           ) : path.startsWith("/compartidos") ? (
             <Compartidos path={path} go={go} />

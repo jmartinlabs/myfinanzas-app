@@ -492,7 +492,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           ).csrf,
         ).toBe(verified.csrf);
         expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 16,
+          version: 18,
         });
         const { d, p, s } = setup(db);
         save(db, quota(s.id, p.id));
@@ -516,8 +516,8 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
         );
         expect(decrypted.exitCode).toBe(0);
         const bundle = JSON.parse(decrypted.stdout.toString());
-        expect(bundle.manifest.schema).toBe(16);
-        expect(bundle.manifest.app).toBe("e4.1-v16");
+        expect(bundle.manifest.schema).toBe(18);
+        expect(bundle.manifest.app).toBe("e4.1-v18");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, origin + "-restored");
         if (origin === "production")
