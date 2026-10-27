@@ -87,7 +87,7 @@ Autorización: el usuario autorizó DEV19 el 2026-10-27. Alcance: reconciliar `o
 `9977210` en la rama, adaptar E4.1 a `schemaVersion = 18`, admisión C16/C17, cadena 16→17→18
 y backup/restore 13..18. Sin merge ni despliegue.
 
-- Merge de reconciliación `8e9ce67`; candidato de código verificado `b0969c8`.
+- Merge de reconciliación `8e9ce67` y `f57e6da` (`origin/main` `2364d9c`); candidato final `dd450de`.
 - `database-identity.ts` y `database-schema.ts` admiten `1..17` y declaran 18; la cadena
   ejecuta `revisionComidaSchema` (16), `compartidoAportacionSchema` (17) e `investmentSchema`
   (18) tanto en base existente como nueva.
@@ -99,7 +99,8 @@ y backup/restore 13..18. Sin merge ni despliegue.
   Compartidos v15 y Vehículos; la prueba 17→18 con una fila D5 real está versionada.
 - Evidencia: typecheck PASS; suite focal 58/58 PASS; suite API macOS 244 PASS y 50 fallos de
   plataforma (`libc.so.6`, rutas), sin regresión frente al baseline; CI Linux x86_64
-  `40576582999` SUCCESS sobre `b0969c8`; QA independiente PASS (48 AC PASS, 6 PARCIAL, 0 FAIL).
+  `40583217493` SUCCESS (perfil full, 13 E2E) sobre `dd450de`; QA independiente PASS
+  (48 AC PASS, 6 PARCIAL, 0 FAIL).
 - PR #95 en draft; sin merge ni despliegue. Los AC-03/24/27/30/33/34 conservan sus residuales
   de cobertura declarados en el testplan.
 
@@ -1493,7 +1494,7 @@ Otras integraciones declaradas:
   mapea campos, IDs, aperturas ni archivos, y no fija cortes ni excepciones. La desviación
   queda registrada y no se presenta como cumplimiento diferido implícito.
 - Los AC se acreditan en el testplan: 48 PASS, 6 PARCIAL y 0 FAIL en DEV19 (v18), con CI Linux
-  `40576582999` SUCCESS; la aprobación rev7/rev8 es del contrato de diseño.
+  `40583217493` SUCCESS; la aprobación rev7/rev8 es del contrato de diseño.
 
 ## 15. Siguiente acción
 
@@ -1502,7 +1503,7 @@ registro de congelación al inicio. Reconcilia el destino **18** con `main` `997
 documenta `C17-D5-CF6954A` (145 objetos, SHA-256
 `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`) y mantiene íntegras las
 decisiones funcionales de rev7/rev8. **DEV19 está implementado** sobre `main` `9977210`: el
-código declara la 18, admite C16/C17 y ejecuta la cadena 16→17→18. El candidato `b0969c8`
+código declara la 18, admite C16/C17 y ejecuta la cadena 16→17→18. El candidato `dd450de`
 tiene CI Linux x86_64 SUCCESS y QA independiente PASS (48 PASS / 6 PARCIAL / 0 FAIL). La PR
 #95 sigue en draft; no hay merge ni despliegue. Los residuales de cobertura AC-03/24/27/30/33/34
 están declarados en el testplan.

@@ -11,7 +11,7 @@ está ocupada; rev10 se renumera finalmente a **18** por la colisión con D5. DE
 despliegue no autorizados**.
 **DEV19 IMPLEMENTADO 2026-10-27** — reconciliación de `origin/main` `9977210` y adaptación a
 `schemaVersion = 18`: admisión C16/C17, cadena 16→17→18 y backup/restore 13..18. Candidato
-verificado `b0969c8`; CI Linux `40576582999` SUCCESS; QA independiente PASS (48 PASS / 6
+verificado `dd450de`; CI Linux `40583217493` SUCCESS; QA independiente PASS (48 PASS / 6
 PARCIAL / 0 FAIL). PR #95 en draft; sin merge ni despliegue.
 
 ## DEV19 — implementación de la versión 18 (2026-10-27)
@@ -21,7 +21,7 @@ manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
 
 - **Gate pre-DEV:** `origin/main` `9977210` (esquema 17), 18 libre en refs/worktrees, C16/C17
   intactos (`f9a30cdc…`), sin conflictos de ownership.
-- **Reconciliación:** merge `8e9ce67` de `origin/main` en la rama; 18 conflictos resueltos
+- **Reconciliación:** merge `8e9ce67` y `f57e6da` (`origin/main` `2364d9c`, PR #97) en la rama; 18 conflictos resueltos
   manualmente preservando D5 (`movimiento_compartido`, CHECK de Transferencia), E3.4 Revisión
   de Comida, Compartidos v15 y Vehículos. Add/add de `database-v15` resuelto a favor del builder
   genuino de main.
@@ -33,8 +33,8 @@ manual, implementación v18, pruebas/QA/CI y no alteración de C16/C17.
   D5 real (`E4.1-AC-33(f)`); matriz de restore 13..18. Suite API macOS: 244 PASS y 50 fallos de
   plataforma (`libc.so.6`, rutas), sin regresión frente al baseline (219/48). E2E macOS: 11
   PASS / 2 fallos de restauración por plataforma; CI Linux cubre esos caminos.
-- **CI Linux x86_64:** run `40576582999` SUCCESS sobre `b0969c8` (293 PASS / 1 FAIL corregido
-  después en `b0969c8`).
+- **CI Linux x86_64:** run full `40583217493` SUCCESS sobre `dd450de`: **295 API PASS / 0 FAIL**
+  y **13 E2E Playwright**; perfil `full` con Chromium.
 - **QA independiente:** PASS técnico, 48 AC PASS, 6 PARCIAL (AC-03/24/27/30/33/34), 0 FAIL, 0
   UNRUN bloqueante; validó además 17→18 con preservación de 145 objetos C17 y 0 pérdidas.
 - **Pendiente:** PR #95 sigue en draft; merge y despliegue requieren autorización separada.
