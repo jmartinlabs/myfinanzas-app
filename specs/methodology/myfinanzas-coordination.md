@@ -38,6 +38,10 @@ El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo 
   actualizar PR es trabajo ordinario dentro del alcance autorizado; squash merge solo tras
   aprobación expresa de esa PR y checks, nunca auto-merge.
 
+## Consumo de GitHub Actions — control mínimo
+
+En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote intensivo de CI— el coordinador consulta una vez el consumo mensual; no hace polling. Avisa al superar **1.600 min** (referencia GitHub Free) y **2.400 min** (referencia GitHub Pro), indicando plan, restante y renovación cuando Billing los muestre. No repite el mismo umbral en el mismo ciclo sin un cambio relevante. Billing/Included usage es la fuente de cuota; el total de la API incluye minutos gratuitos de repos públicos y no se usa sin filtrar a repos privados. Las alertas son informativas: no bloquean trabajo, CI, PR ni merge, y no modifican planes, presupuestos ni suscripciones. Las alertas nativas 90/100 % se activan en Billing y no sustituyen estos umbrales.
+
 ## Scheduler, propiedad y ejecución
 Solo el coordinador escribe specs/epic-board.md, asigna ownership y reconcilia resultados.
 Crear el menor pool útil para tareas independientes listas, no un número fijo por rol.

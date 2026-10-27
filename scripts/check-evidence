@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+"""Validate the Git facts and raw-log inventory of local QA evidence.
+
+This is deliberately a checker, not a second evidence registry. The coordinator
+records the command, environment and raw logs in the existing testplan/checkpoint;
+this program only refuses stale, dirty or incomplete evidence. It cannot prove
+that a log is authentic: independent QA still inspects the raw output.
+"""
+import argparse
+import hashlib
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parents[1]
+SHA = re.compile(r'[0-9a-f]{40}')
+
+
+def git(root, *args):
+    return subprocess.run(['git', '-C', str(root), *args], text=True,
+                          stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+
+def pairs(values, label):
+    result = {}
+    for value in values or ():
+        name, separator, path = value.partition('=')
+        if not separator or not name or not path:
+            raise ValueError(f'invalid {label} entry; expected name=path')
+        if name in result:
+            raise ValueError(f'duplicate {label} entry: {name}')
+        result[name] = Path(path)
+    return result
+
+
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--candidate', required=True)
+    parser.add_argument('--base', required=True)
+    parser.add_argument('--environment', required=True,
+                        help='tested environment, for example linux-debian13-glibc')
+    parser.add_argument('--base-ref', help='optional ref that must equal --base')
+    parser.add_argument('--linux-required', default='',
+                        help='comma-separated log names that require a Linux/glibc environment')
+    parser.add_argument('--log', action='append', default=[], metavar='NAME=PATH')
+    parser.add_argument('--record', action='append', default=[], metavar='PATH',
+                        help='existing testplan/checkpoint that must name candidate and base')
+    parser.add_argument('--root', type=Path, default=ROOT)
+    args = parser.parse_args(argv)
+    try:
+        root = args.root.resolve()
+        require(SHA.fullmatch(args.candidate or '') is not None, 'candidate must be a full commit SHA')
+        require(SHA.fullmatch(args.base or '') is not None, 'base must be a full commit SHA')
+        head = git(root, 'rev-parse', 'HEAD')
+        require(head.returncode == 0 and head.stdout.strip() == args.candidate,
+                'candidate differs from HEAD')
+        status = git(root, 'status', '--porcelain=v1', '-z', '--untracked-files=all')
+        require(status.returncode == 0 and not status.stdout,
+                'working tree is dirty or untracked files are present')
+        commit = git(root, 'cat-file', '-e', args.base + '^{commit}')
+        require(commit.returncode == 0, 'base commit is unavailable')
+        ancestor = git(root, 'merge-base', '--is-ancestor', args.base, args.candidate)
+        require(ancestor.returncode == 0, 'base is not an ancestor of candidate')
+        if args.base_ref:
+            ref = git(root, 'rev-parse', args.base_ref)
+            require(ref.returncode == 0 and ref.stdout.strip() == args.base,
+                    'base is not the current integration ref')
+
+        logs = pairs(args.log, 'log')
+        require(bool(logs), 'at least one raw log is required')
+        digests = {}
+        for name, path in logs.items():
+            require(path.is_file() and path.stat().st_size > 0,
+                    f'log is missing or empty: {name}')
+            digests[name] = hashlib.sha256(path.read_bytes()).hexdigest()
+
+        linux = [name.strip() for name in args.linux_required.split(',') if name.strip()]
+        if linux:
+            environment = args.environment.lower()
+            require('linux' in environment and ('debian' in environment or 'glibc' in environment),
+                    'Linux/glibc environment is required for: ' + ', '.join(linux))
+            missing = [name for name in linux if name not in logs]
+            require(not missing, 'Linux-required logs are missing: ' + ', '.join(missing))
+
+        for record in args.record:
+            path = Path(record)
+            require(path.is_file(), f'record is missing: {record}')
+            text = path.read_text(encoding='utf-8', errors='replace')
+            require(args.candidate in text and args.base in text,
+                    f'record does not name candidate and base: {record}')
+
+        print('Evidence PASS')
+        print('candidate=' + args.candidate)
+        print('base=' + args.base)
+        print('environment=' + args.environment)
+        for name in sorted(logs):
+            print(f'log.{name}.sha256={digests[name]}')
+        return 0
+    except (OSError, ValueError) as error:
+        print('FAIL evidence: ' + str(error), file=sys.stderr)
+        return 1
+
+
+if __name__ == '__main__':
+    sys.exit(main())
