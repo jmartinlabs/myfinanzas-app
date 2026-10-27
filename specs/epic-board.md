@@ -1,3 +1,97 @@
+# Coordinación global — consolidado 2026-10-27 (post PR #103)
+
+Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
+Responsable único del tablero: coordinador global (OpenCode). Entrada en la rama
+`codex/docs-board-consolidated-20261027`; su merge requiere aprobación expresa del usuario.
+Esta entrada no autoriza DEV, no autoriza el merge de otras PR y no autoriza despliegue.
+
+## Hechos verificados (git + `gh`, 2026-10-27)
+
+| Elemento | Estado verificado |
+| --- | --- |
+| `origin/main` | `f11cfbe` — squash de PR #103; padre `aa6ba7d` (PR #102) |
+| PR #95 / E4.1 | MERGED → `156a50d`; CI `40593315701` (required) y `40593353747` (full) SUCCESS sobre `60162e9` con 295 API / 0 FAIL / 13 E2E según evidencia de PR y QA |
+| CI de `main` | `40594329598` (`156a50d`), `40594910289` (`aa6ba7d`) y `40596043469` (`f11cfbe`) SUCCESS |
+| PR #103 | MERGED `f11cfbe` 2026-10-27T22:35:53Z; diff `aa6ba7d..f11cfbe` = solo `specs/19-…-progress.md` (+4/−4) |
+| Congelación | `apps/api/src/schema-contracts.json` `f9a30cdc…562eac6c`; C16 135 y C17 145 objetos; `schemaVersion = 18` |
+| SPEC21 / E3.6 | documentación integrada (`2364d9c`); 31 AC UNRUN; sin rama y sin DEV autorizado |
+| Checkout principal | `codex/dev12-flujo-mensual` `e66bbd3` + `specs/session-handoff.md` sin seguimiento: ajenos, preservados sin tocar |
+
+## Deuda documental de E4.1 no corregida por PR #103
+
+PR #103 corrigió la cabecera y el bloque «Integración» del `progress`. Quedan cuatro
+afirmaciones falsas o en tensión; **no se editan por inferencia** y su dueño es el flujo
+DEV19 (`progress`/`testplan`):
+
+| Archivo | Afirmación vigente en `main` | Realidad |
+| --- | --- | --- |
+| `19-…-progress.md` §Aceptación | «la decisión de merge es independiente y sigue pendiente» | PR #95 mergeada en `156a50d` |
+| `19-…-progress.md` §DEV19 | «No queda trabajo de DEV19 pendiente» | sigue el seguimiento AC-30/AC-34 |
+| `19-…-testplan.md` §303 | «la evidencia E2E completa en Linux no se ha ejecutado … requisito de merge» | run full Linux con 13 E2E, verde |
+| `19-…-testplan.md` §338 | «La PR #95 sigue en draft; no hay merge» | mergeada, sin draft |
+
+Alcance propuesto: cuatro frases, cero código, sin reabrir decisiones. Requiere autorización
+y dueño identificado; no bloquea E3.6.
+
+## Residuales E4.1 en seguimiento (Opción A, sin convertir a PASS)
+
+| AC | Residual | Prioridad |
+| --- | --- | --- |
+| AC-30 | navegación completa por teclado y foco del panel de impacto no automatizados | alta |
+| AC-34 | error 500 de fuente de efectivo no probado extremo a extremo | alta |
+| AC-03 | carrera real de dos altas no ejecutada | documentada |
+| AC-24 | rectificación en referencia temporal con QA temporal no versionada | documentada |
+| AC-27 | snapshot de Presupuesto sin prueba versionada | documentada |
+| AC-33 | variantes v16/v17 incompletas y tablas heredadas | documentada |
+
+No se convierten a PASS sin DEV y QA. No se cuelan como trabajo implícito de E3.6.
+
+## E3.6 — preparación, sin autorización de desarrollo
+
+- **Documentación:** `specs/21-*` integrados; Q-S21-01–04 en opción A; 31 AC UNRUN; testplan
+  completo y ninguna prueba ejecutada.
+- **Alcance:** vista de lectura de pendientes y conciliación más flujo ajustado; **sin**
+  migraciones, cambios de esquema, escrituras, cierres ni segundo maestro. API propuesta
+  (`GET /api/pendientes`, `GET /api/pendientes/:tipo/:fuenteId`,
+  `GET /api/conciliacion/ciclos/:id` y ampliación de `GET /api/flujo-mensual/:id`) pendiente
+  de aprobación técnica.
+- **Dependencias:** E3.1 PR71 (H1), E3.2 PR75/PR90/PR93, E3.4 y E2.3/E2.6 integradas; E3.5/DEV18
+  en STOP ⇒ Comida y agregados de conciliación «No disponible» con motivo (AC-04/11/12/13/14/18
+  con cobertura parcial); AC-31 BLOCKED por E4.8/E4.9; E3.3 no se consume.
+- **Gates antes de DEV:** `main` en 18 y 19 libre; C16/C17 intactos; rama y worktree dedicados
+  `codex/dev21-*` sin escritor previo; aprobación técnica de rutas; autorización DEV separada;
+  QA independiente; sin despliegue.
+- **Decisión pendiente del usuario:** autorizar DEV E3.6 con ese alcance y ese gate.
+
+## Frentes detenidos
+
+DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20/DEV22 sin DEV;
+PR50/PR51 sin tocar. Sin cambios por esta entrada.
+
+## Governance y próxima acción
+
+Una aprobación de spec no autoriza DEV; cada merge exige aprobación expresa. Esta entrada no
+cambia permisos. **Próxima acción:** decisión del usuario sobre (a) merge de esta
+consolidación, (b) DEV E3.6 con el alcance descrito y (c) dueño y prioridad de la deuda
+documental de E4.1. Sin auto-reanudación.
+
+## Contexto de reanudación
+
+**STOP REQUESTED — NO AUTO-RESUME.** Esta entrada cierra la sesión de coordinación; no
+reanuda ejecutores ni fusiona PRs.
+
+- **Checkpoint:** este apartado. Rama `codex/docs-board-consolidated-20261027` (PR #104).
+- **Ejecutores:** ninguno activo ni controlado por esta sesión; no se lanzaron workers.
+  Chats externos, si existen, no son controlables desde aquí.
+- **Evidencia:** `156a50d` (E4.1), `f11cfbe` (cierre documental), runs citados arriba,
+  `specs/21-*` para E3.6.
+- **Bloqueos:** deuda documental E4.1 pendiente de dueño; E3.6 sin autorización DEV;
+  AC-30/AC-34 sin entrega fechada.
+- **Próxima sesión:** verificar Git/PR y aprobaciones antes de proponer; este checkpoint no
+  autoriza nada por sí mismo.
+
+---
+
 # DEV19 / E4.1 — INTEGRADO 2026-10-27 (22:36 CET)
 
 Entrada vigente de E4.1; el apartado «Estado DEV19» inferior queda como historia previa al merge.
