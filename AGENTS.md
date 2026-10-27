@@ -7,7 +7,7 @@ Antes de actuar verifica Git/PR y el checkpoint relevante; consulta [contexto](s
   [quality](specs/guidelines/quality.md) y [security](specs/guidelines/security.md).
 - Desde la raíz, con Bun 1.4.3: `bun install --frozen-lockfile`, `bun run dev`.
 - Verificación única: `python3 scripts/verify` (auto) o `python3 scripts/verify --full`.
-  Python3.10+; comparación `--base SHA --head SHA [--pull-request]`, prerrequisitos y fases CI en calidad.
+  Python3.10+; comparación `--base SHA --head SHA [--pull-request]`, prerrequisitos y perfiles CI local-first en calidad.
 - Dentro de trabajo autorizado, `$orchestrate` puede gestionar subagentes, ramas y worktrees
   aislados sin permiso operativo adicional, aplicando la política de seguridad y ownership local.
 - Próximas entregas: evitar documentación/rondas redundantes; resolver detalles técnicos

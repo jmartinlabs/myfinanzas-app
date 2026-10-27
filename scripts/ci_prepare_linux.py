@@ -16,7 +16,7 @@ def run(command):
                           env={**os.environ, 'LC_ALL': 'C'}, check=False)
 
 
-def prepare(root, execute=run, os_release=None, machine=None):
+def prepare(root, execute=run, os_release=None, machine=None, mode='full'):
     root = Path(root)
     info = dict(line.split('=', 1) for line in
                 (Path('/etc/os-release').read_text() if os_release is None else os_release).splitlines()
@@ -25,18 +25,22 @@ def prepare(root, execute=run, os_release=None, machine=None):
         raise ValueError('approved Ubuntu 24.04 required')
     if (platform.machine() if machine is None else machine) != 'x86_64':
         raise ValueError('approved x64 runner required')
+    if mode not in ('api', 'full'):
+        raise ValueError('unsupported preparation profile')
     manifest = json.loads((root / 'scripts/ci-linux-packages.json').read_text())
     expected = json.loads((root / 'package.json').read_text())['devDependencies']['@playwright/test']
     if manifest['playwright'] != expected:
         raise ValueError('Playwright package plan must be reviewed for the installed version')
-    version = execute(CLI + ['--version'])
-    if version.returncode or version.stdout.strip() != 'Version ' + expected:
+    version = execute(CLI + ['--version']) if mode == 'full' else None
+    if mode == 'full' and (version.returncode or version.stdout.strip() != 'Version ' + expected):
         raise ValueError('installed Playwright CLI differs from approved dependency')
     packages = manifest['packages']
     if (not isinstance(packages, list) or not packages or 'age' not in packages
             or len(set(packages)) != len(packages)
             or any(not isinstance(p, str) or not re.fullmatch(r'[a-z0-9][a-z0-9+.-]*', p) for p in packages)):
         raise ValueError('invalid approved package list')
+    if mode == 'api':
+        packages = ['age']
     missing = []
     for package in packages:
         result = execute(['dpkg-query', '-W', '-f=${db:Status-Status}', package])
@@ -59,7 +63,8 @@ def prepare(root, execute=run, os_release=None, machine=None):
 
 def main():
     try:
-        prepare(ROOT)
+        mode = sys.argv[1] if len(sys.argv) == 2 else 'full' if len(sys.argv) == 1 else ''
+        prepare(ROOT, mode=mode)
         return 0
     except (OSError, ValueError, KeyError, TypeError, AttributeError):
         print('CI Linux preparation failed; browser checks must not be skipped.', file=sys.stderr)
