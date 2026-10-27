@@ -1244,7 +1244,7 @@ test("T-D5-16 SQLite boundary: shape is relaxed, CAT013/ficha/participant remain
   db.close();
 });
 
-test("T-D5 migration v16 → v17 preserves Movements, audits, Revision Comida and relation; unknown v18 is rejected", () => {
+test("T-D5 migration v16 → v18 preserves Movements, audits, Revision Comida and relation; unknown v19 is rejected", () => {
   const db = new Database(":memory:");
   prepareV16(db);
   const time = new Date(now).toISOString();
@@ -1264,7 +1264,7 @@ test("T-D5 migration v16 → v17 preserves Movements, audits, Revision Comida an
     audits = db.query("SELECT * FROM movement_audit ORDER BY id,revision").all(),
     meals = db.query("SELECT * FROM revision_comida ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
-  expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 17 });
+  expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
   expect(db.query("SELECT * FROM movimientos ORDER BY id").all()).toEqual(movements);
   expect(db.query("SELECT * FROM movement_audit ORDER BY id,revision").all()).toEqual(
     audits,
@@ -1287,7 +1287,7 @@ test("T-D5 migration v16 → v17 preserves Movements, audits, Revision Comida an
     path = join(dir, "demo.sqlite");
   const variant = new Database(path);
   prepareV16(variant);
-  variant.run("UPDATE schema_version SET version=18");
+  variant.run("UPDATE schema_version SET version=19");
   variant.close();
   const before = readFileSync(path);
   expect(() =>
@@ -1296,7 +1296,7 @@ test("T-D5 migration v16 → v17 preserves Movements, audits, Revision Comida an
   expect(readFileSync(path).equals(before)).toBe(true);
   const reopened = new Database(path);
   expect(reopened.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 18,
+    version: 19,
   });
   reopened.close();
   rmSync(dir, { recursive: true, force: true });

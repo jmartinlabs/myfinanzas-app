@@ -9,7 +9,7 @@ import {
 } from "./flujo-mensual";
 import { debtPeriod } from "./deudas";
 import { ledgerRows } from "./movement-ledger";
-import { getSaldo } from "./saldos";
+import { getSaldo, decimal } from "./saldos";
 const now = Date.parse("2026-10-25T12:00:00Z");
 function setup() {
   const db = new Database(":memory:");
@@ -118,11 +118,19 @@ test("F4 AC19–25/48–56: plan fields independent, structural margin exact, no
 test("F5 AC27–32/42–44: unique current position, partial membership, no historical/annual inference", () => {
   const db = setup();
   let r = monthlyFlow(db, "1", now);
-  expect(r.metrics.liquidez.estado).toBe("Parcial");
-  expect(r.metrics.liquidez.subtotal).toBe(
-    getSaldo(db, "S001").posicion.importe,
+  expect(r.metrics.liquidez.estado).toBe("Verificado");
+  expect(r.metrics.liquidez.subtotal).toBeNull();
+  expect(r.liquidez.incluidos.map((s) => s.id)).toEqual(["S001", "S003"]);
+  expect(r.liquidez.excluidos.map((s) => s.id)).not.toContain("S003");
+  expect(r.metrics.liquidez.valor).toBe(
+    decimal(
+      BigInt(getSaldo(db, "S001").posicion.importe!.replace(".", "")) +
+        BigInt(getSaldo(db, "S003").posicion.importe!.replace(".", "")),
+    ),
   );
-  expect(r.liquidez.excluidos.map((s) => s.id)).toContain("S003");
+  expect(r.metrics.liquidez.motivo).toContain(
+    "Cobertura histórica no importada: la posición de inversión solo incluye Compras registradas en la aplicación",
+  );
   expect(r.metrics.liquidezHistorica.valor).toBeNull();
   expect(r.metrics.variacionAhorro.valor).toBeNull();
   expect(r.metrics.ahorroCierre.valor).toBeNull();
@@ -136,7 +144,15 @@ test("F5 AC27–32/42–44: unique current position, partial membership, no hist
   );
   expect(monthlyFlow(db, "2", now).metrics.liquidez.valor).toBe(amount);
   db.exec("UPDATE saldos SET liquidez=NULL WHERE id='S003'");
-  expect(monthlyFlow(db, "1", now).metrics.liquidez.estado).toBe("Parcial");
+  r = monthlyFlow(db, "1", now);
+  expect(r.metrics.liquidez.estado).toBe("Parcial");
+  expect(r.metrics.liquidez.subtotal).toBe(
+    getSaldo(db, "S001").posicion.importe,
+  );
+  expect(r.liquidez.excluidos.map((s) => s.id)).toContain("S003");
+  expect(
+    r.liquidez.excluidos.find((s) => s.id === "S003")?.motivo,
+  ).toContain("Liquidez sin informar");
   db.exec("UPDATE saldos SET estado='Inactiva' WHERE id='S001'");
   expect(monthlyFlow(db, "1", now).metrics.liquidez.estado).toBe(
     "No disponible",
@@ -180,7 +196,14 @@ test("F7 AC33/34/37/38: source failure isolated without SQL leakage, no stale mo
   expect(r.erroresFuente).toContain("Nómina");
   expect(r.metrics.media.valor).toBeNull();
   expect(r.metrics.ingresos.subtotal).toBe("2250.00");
-  expect(r.metrics.liquidez.subtotal).not.toBeNull();
+  expect(r.metrics.liquidez.estado).toBe("Verificado");
+  expect(r.metrics.liquidez.subtotal).toBeNull();
+  expect(r.metrics.liquidez.valor).toBe(
+    decimal(
+      BigInt(getSaldo(db, "S001").posicion.importe!.replace(".", "")) +
+        BigInt(getSaldo(db, "S003").posicion.importe!.replace(".", "")),
+    ),
+  );
   db.exec(
     "ALTER TABLE cycle_plan_lines RENAME TO cycle_plan_lines_unavailable",
   );

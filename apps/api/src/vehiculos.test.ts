@@ -1067,7 +1067,7 @@ test("AC-02/04/26/31: migration v13→v15, FK/audit continuity and HTTP guards",
     old.close();
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 17 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
       expect(db.query("SELECT * FROM referencias").all()).toEqual(refs);
       expect(db.query("SELECT * FROM movimientos").all()).toEqual(movs);
       expect(db.query("SELECT * FROM fichas_anticipos").all()).toEqual(anticipos);

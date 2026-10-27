@@ -3,6 +3,7 @@ import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV14 } from "../test-support/database-v14";
 import { openDatabaseV15 } from "../test-support/database-v15";
 import { openDatabaseV16 } from "../test-support/database-v16";
+import { openDatabaseV17 } from "../test-support/database-v17";
 import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV5 } from "../test-support/database-v5";
 import { test, expect } from "bun:test";
@@ -227,7 +228,9 @@ test("05 R1 AC01–10/20/21: transferencias internas exactas, terminal, ciclos y
     for (const control of ["No controlado", "Terminal", "Inversiones"]) {
       const s = saldo(db, control, "0", control);
       expect(save(db, transfer(b.id, s.id)).destino.id).toBe(s.id);
-      expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      const position = getSaldo(db, s.id).posicion.importe;
+      if (control === "Inversiones") expect(position).not.toBeNull();
+      else expect(position).toBeNull();
     }
     updateSaldo(db, b.id, {
       revision: getSaldo(db, b.id).revision,
@@ -1149,7 +1152,8 @@ test("05 R10 AC29: manifiesto cifrado identifica v1–v5 y restaura cada esquema
       [14, openDatabaseV14, "e3.3-v14"],
       [15, openDatabaseV15, "e3.2-v15"],
       [16, openDatabaseV16, "e3.4-v16"],
-      [17, openDatabase, "e3.2-d5-v17"],
+      [17, openDatabaseV17, "e3.2-d5-v17"],
+      [18, openDatabase, "e4.1-v18"],
     ] as const) {
       const source = initialize(join(dir, `source-${version}.sqlite`));
       const target = join(dir, `backup-${version}`);

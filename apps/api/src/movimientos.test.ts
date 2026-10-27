@@ -199,8 +199,11 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
       );
       expect(save(db, income(s.id)).destino.id).toBe(s.id);
       expect(save(db, expense(s.id, partida.id)).origen.id).toBe(s.id);
-      if (control !== "Movimientos")
-        expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      const computed =
+        control === "Movimientos" ||
+        (tipo === "Efectivo" && control === "Inversiones");
+      if (!computed) expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      else expect(getSaldo(db, s.id).posicion.importe).not.toBeNull();
     }
     const blocked = createSaldo(
       db,
@@ -685,7 +688,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 17,
+      version: 18,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -917,7 +920,7 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
         runE14(opening, "upgrade"),
         runE14(opening, "upgrade"),
       ]),
-    ).toEqual([{ version: 17 }, { version: 17 }]);
+    ).toEqual([{ version: 18 }, { version: 18 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),

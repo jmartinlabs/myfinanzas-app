@@ -11,7 +11,12 @@ export function monthlyFixture(db: Database) {
  INSERT INTO cycle_plans VALUES('1',1);
  INSERT INTO cycle_plan_lines VALUES('1','PRE001',160000,NULL,190000);
  UPDATE saldos SET liquidez=1,apertura=200000 WHERE id='S001';
- UPDATE saldos SET liquidez=1 WHERE id='S003';`);
+ UPDATE saldos SET liquidez=1,apertura=320000 WHERE id='S003';
+ INSERT INTO instrumentos VALUES('I1001','Fondo índice fixture',NULL,NULL,'EUR','Activa',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z');
+ INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado)
+ VALUES('5001','Compra','2026-07-01','I1001','S003','S004',1000000000,100000000,'EUR',NULL,138960,NULL,NULL,NULL,'Vigente',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z');
+ UPDATE counters SET next=1002 WHERE name='instrumento';
+ UPDATE counters SET next=5002 WHERE name='operaciones_inversion';`);
   const insert = db.query(
     "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses) VALUES(?,?,?,?,?,?,?,?,'Fixture','',?,1,'f','f',?,?)",
   );

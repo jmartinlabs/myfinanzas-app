@@ -6,18 +6,10 @@ import {
 import { Schema } from "effect";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
+import { cashAt, cents, investmentInstalled } from "./investment-engine";
 
-export class Problem extends Error {
-  constructor(
-    public status: number,
-    public code: string,
-    message: string,
-    public fields: Record<string, string> = {},
-    public details: Record<string, unknown> = {},
-  ) {
-    super(message);
-  }
-}
+import { Problem } from "./problem";
+export { Problem } from "./problem";
 export const pairs: Record<string, string[]> = {
   Efectivo: ["Movimientos", "Terminal", "No controlado", "Inversiones"],
   Inversión: ["Inversiones"],
@@ -115,7 +107,10 @@ export function position(control: string, manual: string | null = null) {
   return {
     importe: null,
     condicion: "pendiente_motor",
-    motivo: `Motor ${control} pendiente de entrega`,
+    motivo:
+      control === "Inversiones"
+        ? "Valoración de inversión no disponible hasta E4.3"
+        : `Motor ${control} pendiente de entrega`,
   };
 }
 const select = `SELECT id,nombre,tipo,control,estado,finalidad,liquidez,bolsa,exterior,
@@ -159,7 +154,16 @@ function dto(db: Database, r: Row): Saldo {
             motivo:
               "Apertura + entradas − salidas vigentes. Sin filtro por Fecha apertura.",
           }
-        : position(r.control, decimal(r.manual)),
+        : r.tipo === "Efectivo" &&
+            r.control === "Inversiones" &&
+            investmentInstalled(db)
+          ? {
+              importe: cents(cashAt(db, r.id).disponible),
+              condicion: "calculado",
+              motivo:
+                "Apertura + entradas − salidas − compras vigentes + ventas (cero estructural). Sin filtro por Fecha apertura.",
+            }
+          : position(r.control, decimal(r.manual)),
   };
 }
 function readSaldo(db: Database, id: string): Saldo {

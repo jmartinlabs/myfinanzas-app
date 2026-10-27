@@ -12,7 +12,7 @@ import { createSaldo } from "./saldos";
 import { previewMovement, writeMovement } from "./movimientos";
 
 const now = Date.parse("2026-10-27T12:00:00Z");
-test("D5 AC-01: encrypted v17 restore preserves accreditation, evidence and revokes attempts", () => {
+test("D5 AC-01: encrypted v18 restore preserves accreditation, evidence and revokes attempts", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "dev14-d5-backup-"));
   try {
@@ -145,7 +145,7 @@ test("D5 AC-01: encrypted v17 restore preserves accreditation, evidence and revo
     const copy = new Database(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 17,
+        version: 18,
       });
       const after = getCompartido(copy, ref);
       expect(after.aportaciones).toHaveLength(1);

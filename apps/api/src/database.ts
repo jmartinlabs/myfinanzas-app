@@ -8,6 +8,7 @@ import {
   keyHash,
 } from "./database-identity";
 import { prepareSchema } from "./database-schema";
+import { verifyAdmittedContract } from "./schema-contract";
 import { assertV14VehicleContract } from "./compartido-schema";
 import { productionConfig, openProductionConnection } from "./private-state";
 
@@ -24,6 +25,8 @@ export function openDatabase(path: string) {
       throw new Error("Ruta productiva distinta de DATABASE_PATH.");
     const { db, key } = openProductionConnection(config, false);
     try {
+      // The admitted v14-v17 manifest is verified before persistent PRAGMAs.
+      verifyAdmittedContract(db);
       assertV14VehicleContract(db);
       db.exec(
         "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
@@ -56,6 +59,10 @@ export function openDatabase(path: string) {
     db.exec("PRAGMA busy_timeout=3000");
     // 31-E1: verify origin and version from one read snapshot before any persistent
     // PRAGMA, chmod or migration (prepareSchema runs only after this check).
+    // The admitted v14-v17 manifest is verified before any identity transaction,
+    // persistent PRAGMA or write.
+    verifyAdmittedContract(db);
+    assertV14VehicleContract(db);
     assertMode(db.transaction(() => inspectIdentity(db))(), production);
     const identity: Identity = { origin: "demo", key_hash: null };
     prepareSchema(db, identity);

@@ -381,6 +381,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               ...values,
               ...(previousVersion === 7 ? [{ name: "presupuestos", next: 1 }] : []),
               { name: "participantes_compartido", next: 1 },
+              { name: "instrumento", next: 1001 },
+              { name: "operaciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
             ].sort((a: any, b: any) => a.name.localeCompare(b.name));
             expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
@@ -433,8 +435,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(17);
-        expect(bundle.manifest.app).toBe("e3.2-d5-v17");
+        expect(bundle.manifest.schema).toBe(18);
+        expect(bundle.manifest.app).toBe("e4.1-v18");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -636,7 +638,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 17 }, { version: 17 }]);
+    expect(upgraded).toEqual([{ version: 18 }, { version: 18 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {
