@@ -1,14 +1,17 @@
 # 20 — E4.5 Histórico precontrol y transición de ejercicio: Specification
 
-Status: **PROPUESTA DOCUMENTAL — NO APROBADA.** Q1–Q10 del
-[brainstorming](20-historico-precontrol-brainstorming.md) siguen abiertas y DT7 no está
-aprobado. La especificación, los wireframes y los AC son un candidato para revisión de
-Codex y **aprobación exclusiva del usuario**; no autorizan desarrollo, SQL, migración,
-importación real, Excel, datos personales, PR, merge ni despliegue.
+Status: **Q1–Q10 CONFIRMADAS; PROPUESTA DOCUMENTAL ACTUALIZADA — spec/wireframes
+PENDIENTES DE APROBACIÓN COMPLETA.** El usuario confirmó Q1–Q10=A el 2026-10-27;
+Q5-A queda aprobada como modelo documental, no como autorización para incorporar una
+regularización concreta sin evidencia. DT7 sigue siendo un gate independiente. La
+especificación y los wireframes no están aprobados en su totalidad; no autorizan
+desarrollo, SQL, migración, importación real, Excel, datos personales, PR, merge ni
+despliegue.
 
-Approval source/date: **PENDIENTE.** No existe aprobación humana de esta especificación
-ni de sus wireframes. La autorización recibida el 2026-10-27 solo permite preparar
-documentación y QA documental con datos ficticios.
+Approval source/date: **Q1–Q10 y precisiones Q5 confirmadas por el usuario el
+2026-10-27** en la sesión `ses_e8571d99effev1a1aeyemjMuZ3`. La aprobación de la
+specification/wireframes completa sigue **PENDIENTE**; la autorización recibida no
+permite desarrollo, migración, datos reales ni merge.
 
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
@@ -105,9 +108,9 @@ nombres son contratos de lectura propuestos, no tablas creadas.
 | `intervalo.inicio/fin` | Fechas civiles inclusivas, dentro del ejercicio, `inicio <= fin` | Fuente/mapping | No se infiere por mes ni por fecha de carga |
 | `partidaId` | `PARxxx` o `null` | Mapping aprobado | `null` no se rellena por nombre; el total global queda `NoVerificable` |
 | `referenciaId` | `REFxxx` o `null` | Mapping aprobado | El nombre no es clave; renombrar conserva el ID |
-| `clase` | `GastoHistorico`, `Regularizacion2026` o `AperturaHistorica` si Q7 se aprueba | Fuente/mapping | No se inventan clases para Ingresos/Transferencias |
-| `saldoId` | `Sxxx` solo para `AperturaHistorica`; `null` en gastos | Mapping `Saldo` | No se escribe en `Saldos`; no suma a Gastos |
-| `importeCentimos` | Entero exacto de céntimos en el modelo; el DTO expone `importe` como string decimal exacto (`"1200.00"`), nunca `number` | Fuente | `GastoHistorico` no negativo; apertura admite signo; regularización pendiente de Q5 |
+| `clase` | `GastoHistorico`, `Regularizacion2026` o `AperturaHistorica` de Saldo (Q7=A); Deuda fuera | Fuente/mapping | No se inventan clases para Ingresos/Transferencias |
+| `saldoId` | `Sxxx` solo para `AperturaHistorica` de Saldo (Q7=A); `null` en gastos | Mapping `Saldo` | No se escribe en `Saldos`; no suma a Gastos; Deuda fuera |
+| `importeCentimos` | Entero exacto de céntimos en el modelo; el DTO expone `importe` como string decimal exacto (`"1200.00"`), nunca `number` | Fuente | `GastoHistorico` no negativo; apertura admite signo; regularización Q5=A: importe/signo real acreditado, sin inferencia |
 | `fecha` | Fecha civil conocida o `null` | Fuente | No se inventa; si existe, dentro del intervalo |
 | `procedencia.documentoHash` | Huella SHA-256 del documento fuente, sanitizada | Extracción autorizada / fixture | No se publica el documento |
 | `procedencia.hojaTabla` | Hoja/tabla/bloque de origen | Extracción / fixture | Texto acotado, sin datos personales |
@@ -143,8 +146,8 @@ Reglas del registro:
   sí impide atribuir una fecha ejecutada concreta.
 - Un registro `AperturaHistorica` no suma al ejecutado de Gastos, no acredita cobertura
   de Gastos (no puede producir un 0 falso) y no se escribe en `Saldos` ni en `Deudas`.
-  Su `saldoId` se resuelve solo por mapping `Saldo`; si Q7 no se aprueba, esta clase no
-  se implementa.
+  Su `saldoId` se resuelve solo por mapping `Saldo`; Q7=A confirma esta evidencia de
+  Saldo, no una apertura de Deuda.
 - **Aperturas de Deuda no pertenecen a E4.5.** E4.5 no ofrece `tipoDestino=Deuda` ni
   enlaza una apertura de Deuda a `Dxxx`. Si la fuente contiene una, se muestra como
   «No soportado por E4.5; ver E4.4», no se mapea, no se suma y no modifica capital,
@@ -160,7 +163,7 @@ Reglas del registro:
 | `idMapeo` | ID estable de la versión de mapping | No se reutiliza |
 | `identidadOrigen` | Documento + hoja/tabla + ID de origen o coordenada; etiqueta inmutable de origen solo si está aprobada | El nombre editable solo no es identidad |
 | `nombreOrigen` | Nombre original conservado para procedencia | No es clave |
-| `tipoDestino` | `Partida`, `Referencia` o `Saldo` (apertura, si Q7) | No `Deuda` en E4.5 |
+| `tipoDestino` | `Partida`, `Referencia` o `Saldo` (apertura, Q7=A) | No `Deuda` en E4.5 |
 | `destinoId` | `PARxxx`, `REFxxx` o `Sxxx` según tipo | Debe existir; no se crea en la consulta |
 | `estado` | `Aprobado`, `Pendiente`, `Ambigua` o `Rechazado` | Solo `Aprobado` permite sumar |
 | `evidencia` | Fuente/fecha/actor de aprobación, texto acotado | Sin datos personales |
@@ -240,8 +243,9 @@ Reglas de cobertura:
   sumar solo detalle se exige evidencia explícita: vínculo de origen verificado
   (`representadoEnMovimientos=Si` con el Movimiento/registro identificado) o una
   separación/disyunción aprobada que demuestre que el agregado no contiene esos
-  hechos. Sin esa evidencia, el resultado sigue `NoVerificable` y la preferencia queda
-  en Q10. No se convierte el agregado en un total parcial inventado.
+  hechos. Sin esa evidencia, el resultado sigue `NoVerificable`; Q10=A aplica y no se
+  elige fuente ni se prorratea. No se convierte el agregado en un total parcial
+  inventado.
 - El corte de 2026 de C30 (27/08/2026) y el control desde 28/08/2026 son **solo** el
   ejemplo de las Deudas allí indicadas. No son un default global ni una fecha fija de
   E4.5; cada dataset debe declarar los suyos.
@@ -356,7 +360,12 @@ La regularización de 2026 es una **excepción documentada**, no una regla gener
 - Sin evidencia suficiente (naturaleza, signo, inclusión, Partida/Referencia), el
   registro queda `Pendiente`/`NoVerificado` y no se suma. No se rellena con una regla
   inventada.
-- La decisión exacta sigue siendo Q5/DT7; esta spec no la declara aprobada.
+- Q5=A confirma el modelo documental de la regularización; la incorporación de un
+  registro concreto sigue exigiendo evidencia y DT7. El importe y el signo representan
+  el efecto económico real acreditado; no se asigna signo ni efecto por inferencia.
+  La inclusión previa en archivo/Movimientos está pendiente de verificar y no se
+  duplica. Partida, Referencia y fecha usan solo identidades/fechas demostradas; no se
+  completan ausencias artificialmente.
 
 ### IDs, trazabilidad y duplicados
 
@@ -730,8 +739,7 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   después). Hay solapamiento el 27/08 y no se puede aislar de forma demostrada. No se
   elige una fuente ni se prorratea: total y subtotal `null`; archivo 1.200,00 y detalle
   320,00 se muestran como componentes; el 20,00 aparece en `conflictos[]`. No se
-  presenta 1.500,00 como subtotal ni 1.520,00 como total. La preferencia entre fuentes
-  queda en Q10.
+  presenta 1.500,00 como subtotal ni 1.520,00 como total. Q10=A aplica: no se elige fuente ni se prorratea.
 - **F3 — hueco.** Archivo `01/01–30/06` 900,00; detalle `01/08–31/12` 300,00; julio sin
   cobertura. Total `null`; subtotal 1.200,00; hueco `01/07–31/07`.
 - **F4 — ausencia vs cero.** Cobertura completa `01/01–31/12` sin hechos: total 0,00
@@ -799,7 +807,7 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   `representadoEnMovimientos=Si` ni separación/disyunción aprobada. La cobertura
   temporal es completa, pero el agregado puede contener los mismos hechos: total
   `NoVerificable`, no se presenta un total solo-detalle sin evidencia y no se elige
-  detalle por preferencia. Si existe vínculo de origen verificado o disyunción
+  detalle por preferencia (Q10=A). Si existe vínculo de origen verificado o disyunción
   aprobada, el agregado se excluye y el detalle cuenta una vez; solo entonces puede
   verificarse el total.
 - **F20 — corrección de versión.** Archivo v1 1.200,00; v2 1.150,00 con
@@ -831,7 +839,7 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   civiles válidas; corte dentro del ejercicio y no futuro.
 - Importes exactos en céntimos en el modelo; el DTO expone decimal exacto como string
   (`"50.00"`), sin float, redondeo ni overflow. `GastoHistorico` no negativo; apertura
-  admite signo; regularización pendiente de Q5.
+  admite signo; regularización Q5=A con efecto real acreditado.
 - `partidaId`/`referenciaId` deben existir si se informan; `null` es válido y separa.
   No se crean entidades desde la consulta.
 - Mapping: destino existente, tipo correcto, una versión vigente por identidad; dos
@@ -949,8 +957,8 @@ Estos contratos son mínimos y de solo lectura; no implementan E4.7/E4.11/E4.12.
 ## Acceptance checks
 
 Clase **I** = criterio de implementación futura; **C** = contrato de consumo/
-compatibilidad. Los sufijos `(Q5)` y `(Q7)` indican criterios condicionados a esas
-decisiones; `(E4.x)` indica contrato de consumidor. Todos son **PREVISTOS/NO
+compatibilidad. Q5=A y Q7=A están confirmadas; los AC que exigen evidencia concreta
+lo indican en la acción. `(E4.x)` indica contrato de consumidor. Todos son **PREVISTOS/NO
 EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-45` son
 `E4.5-AC-01…E4.5-AC-45`. La correspondencia con el roadmap es:
 E4.5-AC1 → AC-02/05/06/12/13/14/15/31/40/41/45; E4.5-AC2 →
@@ -973,13 +981,13 @@ AC-16/17/18/24/34/37/39/42/43/44; E4.5-AC3 → AC-20/21/22.
 | AC-13 | I | Dos fuentes distintas con mismo intervalo/Partida, aunque el importe difiera | Dos candidatos ambiguos; no se suman ni se elige por importe; total no verificable; motivo visible |
 | AC-14 | I | Archivo vinculado a Movimiento 123 dentro del control y a Movimiento 124 anterior al control; ambos también presentes en detalle | Se excluye el archivo por `representadoEnMovimientos=Si`; 123 ya está en `detalleControl` y no se suma otra vez; 124 entra una vez como `detallePrecontrolVinculado`; no doble |
 | AC-15 | I | Abrir «Ver cobertura y procedencia» de un registro | Huella, hoja/tabla, fila/columna, ID de origen, fecha de extracción y versión de mapping visibles; sin documento/datos personales |
-| AC-16 | I (Q7) | Consultar archivo con apertura histórica ficticia de Saldo; comparar Saldo/Deuda antes/después | Aperturas vigentes idénticas; no se crea Movimiento/Saldo/Deuda; archivo se muestra separado; `aperturas=null` si no hay evidencia |
-| AC-17 | I (Q7) | Intentar que la apertura histórica engrose el total de Gastos o el Saldo actual | No se suma al ejecutado; no se escribe en Saldos/Deudas; `0,00` solo si consta apertura cero; ausencia no se convierte en 0 |
+| AC-16 | I | Consultar archivo con apertura histórica ficticia de Saldo (Q7=A); comparar Saldo/Deuda antes/después | Aperturas vigentes idénticas; no se crea Movimiento/Saldo/Deuda; archivo se muestra separado; `aperturas=null` si no hay evidencia |
+| AC-17 | I | Intentar que la apertura histórica engrose el total de Gastos o el Saldo actual (Q7=A) | No se suma al ejecutado; no se escribe en Saldos/Deudas; `0,00` solo si consta apertura cero; ausencia no se convierte en 0 |
 | AC-18 | I | Consultar 2027 tras 2026 con archivo/detalle | 2027 sin archivo/plan/Movimiento/foto/apertura heredados; `NoDisponible`; 2026 sigue consultable |
 | AC-19 | I | Ciclo con hechos en diciembre 2026 y enero 2027 | Cada importe se asigna a su año natural; no se copia ni se reasigna por Ciclo; totales separados |
-| AC-20 | I (Q5) | Registro `Regularizacion2026` 50,00 en 2026; consultar 2025/2026/2027 | Solo aparece en 2026; 2025/2027 no cambian; no se crea regla general |
-| AC-21 | I (Q5) | Fila llamada «Regularización» sin tipo/mapping aprobado | No se infiere; queda `Pendiente`/no verificable; no se suma; no se aplica por nombre |
-| AC-22 | I (Q5) | Regularización representada por identidad/origen en archivo o Movimiento; y regularización embebida en agregado sin registro separable | Se excluye una vez el registro vinculado; si está embebida y no se puede separar, no se resta y el total queda `NoVerificable` |
+| AC-20 | I | Registro `Regularizacion2026` 50,00 en 2026 con evidencia (Q5=A); consultar 2025/2026/2027 | Solo aparece en 2026; 2025/2027 no cambian; no se crea regla general |
+| AC-21 | I | Fila llamada «Regularización» sin tipo/mapping/evidencia aprobada (Q5=A) | No se infiere; queda `Pendiente`/no verificable; no se suma; no se aplica por nombre |
+| AC-22 | I | Regularización representada por identidad/origen en archivo o Movimiento; y regularización embebida en agregado sin registro separable (Q5=A) | Se excluye una vez el registro vinculado; si está embebida y no se puede separar, no se resta y el total queda `NoVerificable` |
 | AC-23 | C (E4.11) | Consultar E4.11 después de consultar archivo | No se crea foto ni cierre; `tipoRegistro=Archivo` permanece distinto; no se convierte en plan/foto |
 | AC-24 | I | Ejercicio sin archivo, sin control detallado y sin hechos | Estado vacío explicativo; no se crean plan/Movimiento/foto/total 0 |
 | AC-25 | I | Enviar POST/PATCH/DELETE a rutas de histórico | 405/422; no hay endpoint de escritura/importación; datos existentes intactos |
@@ -994,12 +1002,12 @@ AC-16/17/18/24/34/37/39/42/43/44; E4.5-AC3 → AC-20/21/22.
 | AC-34 | I | Gasto precontrol vinculado a archivo, Gasto vinculado dentro del control y Gasto precontrol sin vínculo | Vinculado precontrol cuenta una vez como `detallePrecontrolVinculado`; vinculado dentro del control ya está en `detalleControl` y no se duplica; no vinculado se muestra aparte y deja total `NoVerificable` |
 | AC-35 | I | Archivo agregado anual 1.200,00 y detalle parcial de septiembre 100,00, sin desglose separable | No se resta 100,00 del archivo; se muestran ambos; total `NoVerificable`; no 1.100,00 |
 | AC-36 | I | Archivo de septiembre y Gasto de septiembre con `representadoEnMovimientos=Desconocido` | Solapamiento no resoluble; total `NoVerificable`; no se excluye ni incluye automáticamente |
-| AC-37 | I (Q7) | Archivo solo con `AperturaHistorica` que cubre el año; sin fuente/control de Gastos | Cobertura de Gastos `NoDisponible`; no 0,00 de Gastos; apertura se muestra aparte; ausencia de evidencia no es apertura cero |
+| AC-37 | I | Archivo solo con `AperturaHistorica` de Saldo que cubre el año; sin fuente/control de Gastos (Q7=A) | Cobertura de Gastos `NoDisponible`; no 0,00 de Gastos; apertura se muestra aparte; ausencia de evidencia no es apertura cero |
 | AC-38 | I | SRC-1 alcance PAR100 control desde 28/08; SRC-2 alcance PAR205 control desde 01/08; Gasto PAR100 del 15/08; solapamiento parcial entre fuentes | Cada fuente conserva su corte/control y solo cubre su alcance; el Gasto PAR100 del 15/08 no se considera control por SRC-2 y deja total `NoVerificable` si no hay vínculo; solapamiento deja `Solapada`; una fuente no completa la otra |
 | AC-39 | I | Archivo agregado 01/01–27/08 1.200,00 sin desglose; consulta a 30/06 | No se prorratea ni se recorta; total y subtotal `null`; `estadoCobertura=Completa` (cobertura temporal), `estadoTotal=NoVerificable`, `motivoCodigo=AgregadoNoAtribuibleAlCorte`; no se presenta 1.200,00 como ejecutado hasta 30/06 |
 | AC-40 | I | Archivo v1 1.200,00 sustituido por v2 1.150,00 con `reemplazaA`; consultar el ejercicio | Solo v2 contribuye; v1 visible como historia; total una vez; no se suman 2.350,00; cadena bifurcada deja `NoVerificable` |
 | AC-41 | I | Renombrar PAR100 y REF100; después reclasificar un registro de PAR100 a PAR200 con nueva versión de mapping/archivo | Renombrado conserva ID/enlace y no crea versión; reclasificación crea versión nueva, conserva la clasificación original y solo la vigente suma; no se mezclan ambas |
 | AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; una fecha corregida solo cuenta si su versión es vigente |
-| AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni se suma; se muestra «No soportado por E4.5; ver E4.4»; Dxxx, capital y condiciones intactos; `aperturas=null` si no hay evidencia de Saldo |
-| AC-44 | I | Agregado 01/01–27/08 y detalle que cubre 01/01–30/06, sin vínculo `representadoEnMovimientos=Si` ni separación/disyunción aprobada | No se prioriza detalle automáticamente; total `NoVerificable`; no total solo-detalle; Q10 abierta. Con vínculo/disyunción aprobada, agregado excluido y detalle una vez |
+| AC-43 | I | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda (Q7=A) | No se enlaza ni se suma; se muestra «No soportado por E4.5; ver E4.4»; Dxxx, capital y condiciones intactos; `aperturas=null` si no hay evidencia de Saldo |
+| AC-44 | I | Agregado 01/01–27/08 y detalle que cubre 01/01–30/06, sin vínculo `representadoEnMovimientos=Si` ni separación/disyunción aprobada | No se prioriza detalle automáticamente; total `NoVerificable`; no total solo-detalle; Q10=A aplicada. Con vínculo/disyunción aprobada, agregado excluido y detalle una vez |
 | AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2 aplicado: impacto, motivo, confirmación, revisión/huella y protecciones; `partida.jerarquiaVigente` muestra SUB-B y `procedenciaJerarquia` conserva SUB-A; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/conflicto de revisión (409 como ejemplo) |

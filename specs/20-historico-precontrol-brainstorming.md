@@ -1,9 +1,10 @@
 # 20 — E4.5 Histórico precontrol y transición de ejercicio: Brainstorming
 
-Status: **DRAFT — propuesta documental, sin respuestas funcionales aprobadas.** Q1–Q10
-permanecen abiertas. Las recomendaciones marcadas son propuestas, no decisiones del
-usuario ni aprobación de DT7. No hay desarrollo, SQL, migración, importación real,
-Excel, datos personales, PR ni merge.
+Status: **Q1–Q10 CONFIRMADAS por el usuario el 2026-10-27; propuesta documental
+actualizada.** Q5-A queda aprobada como modelo documental, no como autorización para
+incorporar una regularización concreta sin evidencia. DT7 sigue siendo un gate
+independiente y la spec/wireframes no están aprobados en su totalidad. No hay
+desarrollo, SQL, migración, importación real, Excel, datos personales, PR ni merge.
 
 Roadmap/context: [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
 [P6/DT7](roadmap.md#decisiones-abiertas-y-puntos-de-autorización),
@@ -269,6 +270,47 @@ prevalece o se muestra?
   regla financiera demostrada; inventaría una atribución.
 
 **Confirmada: PENDIENTE. Fuente/fecha: PENDIENTE.**
+
+## Respuestas confirmadas Q1–Q10 — 2026-10-27
+
+Fuente: mensaje real del usuario en la sesión
+`ses_e8571d99effev1a1aeyemjMuZ3`, recibido el 2026-10-27. Confirma
+**Q1=A, Q2=A, Q3=A, Q4=A, Q5=A, Q6=A, Q7=A, Q8=A, Q9=A, Q10=A**.
+
+- **Q1=A:** registro por ejercicio + Partida + intervalo verificado, con fecha opcional;
+  varios intervalos no solapados por Partida; sin reconstruir meses o movimientos.
+- **Q2=A:** solo Gastos históricos/precontrol, más la regularización 2026 y, si se
+  aprueba, evidencia de apertura separada. Sin Ingresos/Transferencias/Amortización
+  históricos en E4.5.
+- **Q3=A:** corte e inicio de control por fuente/dataset, aprobados en DT7. El
+  27/08/2026 de C30 no es una fecha global.
+- **Q4=A:** mapping versionado por identidad de origen estable → destino por ID; el
+  nombre original es procedencia, no clave.
+- **Q5=A:** registro explícito y acotado `Regularización 2026`, con efecto económico
+  real acreditado. **Precisiones confirmadas:**
+  1. El importe y el signo representan el efecto real acreditado; no se asigna signo
+     ni efecto por inferencia.
+  2. La inclusión previa en archivo/Movimientos está pendiente de verificar; queda
+     prohibido duplicarla.
+  3. Partida, Referencia y fecha usan exclusivamente identidades/fechas demostradas;
+     no se completan ausencias artificialmente.
+  Q5-A es modelo documental, **no** autorización para incorporar una regularización
+  concreta sin evidencia suficiente.
+- **Q6=A:** identidad de origen + huella. Misma identidad/huella = un registro;
+  identidad con contenido distinto = conflicto; fuentes distintas con el mismo
+  intervalo/Partida = ambiguas aunque el importe difiera; no se suman hasta conciliar.
+- **Q7=A:** aperturas de Saldo como evidencia histórica de solo lectura, separadas de
+  Gastos y de las aperturas vigentes; aperturas de Deuda fuera de E4.5/E4.4.
+- **Q8=A:** fila sin mapping/verificación excluida del total verificado, mostrada con
+  motivo; total parcial/no calculable, nunca cero.
+- **Q9=A:** solo lectura + fixtures; sin importador real, herramienta definitiva de
+  migración ni UI de mapping.
+- **Q10=A:** ante solapamiento no separable, no se elige fuente ni se prorratea;
+  componentes separados, `estadoCobertura=Solapada`, total/subtotal `null` y conflicto
+  visible hasta conciliación.
+
+Estas respuestas **no** aprueban la especificación completa ni los wireframes, no
+cierran DT7 y no autorizan desarrollo, migración, datos reales ni merge.
 
 ## Casos que la especificación debe resolver
 

@@ -4,9 +4,9 @@ Specification: [20-historico-precontrol-specification.md](20-historico-precontro
 
 ## Current checkpoint
 
-Current state: **candidato documental `d8b94490359bdb8065c1ce3fdc9578080c51e23e`
-(45 AC) con QA focal independiente PASS y verificación canónica PASS (docs); pendiente
-de aprobación del usuario y publicación por Codex; sin desarrollo.**
+Current state: **Q1–Q10=A confirmadas por el usuario el 2026-10-27; delta documental
+de 45 AC en preparación, con QA focal y verificación pendientes. Spec/wireframes
+siguen pendientes de aprobación completa y DT7 es un gate independiente.**
 
 - Autorizado: preparar brainstorming, specification, wireframes, testplan, progress y
   QA documental independiente de E4.5, exclusivamente con datos ficticios. No autoriza
@@ -29,30 +29,30 @@ de aprobación del usuario y publicación por Codex; sin desarrollo.**
   N17/N18) y **tres revisiones focales**: 43 AC `7e2c10d` PASS; 45 AC `c7e9d6a` FAIL
   P5/P7; 45 AC `d8b9449` PASS. Informe final vinculado a `d8b9449`; no es PASS
   funcional.
-- Estado Git: candidato `d8b94490359bdb8065c1ce3fdc9578080c51e23e` sobre `main`
-  `1d539a8`; sin push ni PR. Codex tiene autorización separada para publicar rama/PR;
-  el merge exige aprobación propia. Solo el usuario aprueba spec/wireframes/DT7.
-- Checks: `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282
-  --head d8b94490359bdb8065c1ce3fdc9578080c51e23e` **PASS** (docs; application checks
-  intentionally skipped, not reported as passed). `validate-template`, `git diff
-  --check`, enlaces e IDs 45/45 PASS. No hay pruebas funcionales.
+- Estado Git: delta de decisiones sin commit sobre `d8b9449`; base `main` `1d539a8`.
+  Sin push ni PR. Codex tiene autorización separada para publicar rama/PR; el merge
+  exige aprobación propia. Solo el usuario aprueba spec/wireframes; DT7 sigue abierto.
+- Checks: `validate-template`, `git diff --check`, enlaces e IDs 45/45 PASS locales.
+  `verify` y QA focal del delta **UNRUN** hasta el nuevo commit; `verify` de `d8b9449`
+  (45 AC anterior) sigue PASS docs. No hay pruebas funcionales.
 - PR/CI/merge: no hay PR, CI ni merge desde OpenCode. Codex puede publicar; no se
   declara PASS funcional.
-- Siguiente acción segura: Codex revisa/publica; el usuario aprueba o rechaza
-  Q1–Q10/DT7 y spec/wireframes. No desarrollar E4.5 por inferencia.
+- Siguiente acción segura: QA focal y `verify` del delta, commit local y handoff a
+  Codex. El usuario aprueba o rechaza spec/wireframes; DT7 sigue independiente. No
+  desarrollar E4.5 por inferencia.
 
 ## Tasks
 
 | Task | Status | Evidence |
 | --- | --- | --- |
 | Preflight Git/main/ownership/reserva documental | done | `origin/main` 1d539a8cb9c38b3a8d2e3921a3651197105ce282; rama/worktree propios; 20 libre |
-| Brainstorming con fuentes y Q1–Q10 | done (propuesta) | [brainstorming](20-historico-precontrol-brainstorming.md) |
+| Brainstorming con fuentes y Q1–Q10 | done (confirmadas) | Q1–Q10=A y precisiones Q5; [brainstorming](20-historico-precontrol-brainstorming.md) |
 | Specification, wireframes y AC | done (propuesta) | [specification](20-historico-precontrol-specification.md) |
 | Testplan con casos ficticios | done (diseño) | [testplan](20-historico-precontrol-testplan.md) |
-| QA documental independiente | done | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS de 38 AC + focales 43 AC y 45 AC (`d8b9449`) |
-| Correcciones de QA | done | B1–B4/M1–M11, N1–N18, P1–P7 y m1–m7; 45/45 AC |
-| Verificación canónica documental | done | `verify --head d8b9449` PASS docs; app checks skipped/UNRUN |
-| Commit local y handoff a Codex | done | Candidato `d8b9449`; sin push/PR/merge |
+| QA documental independiente | pending delta | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS histórico hasta `d8b9449`; delta de decisiones pendiente |
+| Correcciones de QA | done base + pending delta | B1–B4/M1–M11, N1–N18, P1–P7 y m1–m7; delta de decisiones pendiente |
+| Verificación canónica documental | pending delta | `d8b9449` PASS docs; nuevo SHA de decisiones UNRUN |
+| Commit local y handoff a Codex | pending delta | Delta de decisiones sin commit; sin push/PR/merge |
 
 ## Verified increments
 
@@ -80,20 +80,20 @@ pendientes. Resueltos: F2/subtotal y
 ## Decisions
 
 - Decisiones heredadas: [brainstorming §Decisiones heredadas](20-historico-precontrol-brainstorming.md#decisiones-heredadas-que-no-se-reabren).
-- Q1–Q10 y DT7: abiertas; no se convierten en aprobadas. **Solo el usuario** aprueba
-  spec/wireframes/DT7; Codex revisa y publica; el merge y el desarrollo son gates
-  separados. Ver [brainstorming](20-historico-precontrol-brainstorming.md) y
+- **Q1–Q10=A confirmadas por el usuario el 2026-10-27**, con las precisiones Q5. Q5-A
+  es modelo documental, no autorización para una regularización concreta sin evidencia.
+  DT7 sigue abierto. **Solo el usuario** aprueba spec/wireframes; Codex revisa y
+  publica; el merge y el desarrollo son gates separados. Ver
+  [brainstorming](20-historico-precontrol-brainstorming.md) y
   [roadmap DT7](roadmap.md#decisiones-abiertas-y-puntos-de-autorización).
 - No se reabren P1–P7, E1/E2.4/E4.4, la regularización 2026 como excepción ni las
   fronteras de cierre/foto.
 
 ## Errors, regressions and blockers
 
-- **Bloqueo material:** no hay evidencia suficiente sobre el grano exacto del archivo,
-  el universo (Gastos/Ingresos), el corte por fuente, el mapping real, la naturaleza/
-  signo/inclusión de la regularización 2026, la deduplicación entre fuentes, el
-  tratamiento de aperturas y la preferencia ante un solapamiento no separable. Se
-  registran como Q1–Q10; no se rellenan con reglas inventadas.
+- **Gate material pendiente:** DT7 y la evidencia concreta de mapping/corte/
+  regularización 2026 siguen sin aprobarse. Q1–Q10 ya están confirmadas; no se
+  rellenan datos ausentes ni se incorpora una regularización concreta sin evidencia.
 - **Límite de autorización:** no se abre Excel, base, extracto ni archivo financiero;
   no se implementa importador ni herramienta definitiva de carga.
 - No hay fallos de aplicación ni CI que registrar: no se ejecutó código.
@@ -103,5 +103,5 @@ pendientes. Resueltos: F2/subtotal y
 ## Next action
 
 Ver [Current checkpoint](#current-checkpoint). Codex revisa y puede publicar; solo el
-usuario aprueba Q1–Q10/DT7 y spec/wireframes. El merge y el desarrollo son gates
-separados. No desarrollar E4.5 por inferencia.
+usuario aprueba spec/wireframes y DT7 sigue independiente. El merge y el desarrollo
+son gates separados. No desarrollar E4.5 por inferencia.
