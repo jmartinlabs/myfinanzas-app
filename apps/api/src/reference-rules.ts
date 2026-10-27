@@ -135,7 +135,7 @@ export function validateSharedReferenceOperation(
     throw new Problem(
       422,
       "SHARED_REFERENCE_OPERATION",
-      "La Referencia de Gasto compartido solo admite Gastos o Transferencias internas.",
+      "La Referencia de Gasto compartido solo admite Gastos o Transferencias; una aportación desde Exterior requiere el bloque compartido.",
       { referencia: "Operación no compatible con la Referencia compartida." },
     );
   if (tipo === "Gasto" && categoria !== "CAT013")

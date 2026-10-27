@@ -1,4 +1,5 @@
 import { revisionComidaSchema } from "./revision-comida-schema";
+import { compartidoAportacionSchema } from "./compartido-aportacion-schema";
 import { anticipoSchema } from "./anticipo-schema";
 import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
 import { vehicleSchema } from "./vehicle-schema";
@@ -34,7 +35,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -84,7 +85,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -107,6 +108,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 14) vehicleSchema(db);
         if (versions[0].version < 15) compartidoSchema(db);
         if (versions[0].version < 16) revisionComidaSchema(db);
+        if (versions[0].version < 17) compartidoAportacionSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -221,6 +223,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       vehicleSchema(db);
       compartidoSchema(db);
       revisionComidaSchema(db);
+      compartidoAportacionSchema(db);
     }).immediate();
   } catch (error) {
     db.close();
