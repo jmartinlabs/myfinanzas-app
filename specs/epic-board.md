@@ -5,9 +5,9 @@ Actualiza el estado de E4.1; el resto de esta cabecera y la historia inferior se
 | Elemento | Estado verificado por el coordinador |
 | --- | --- |
 | `origin/main` | `5f2b3de` (PR #97, #98, #99 y #100 documentales) |
-| PR #95 | **Ready for Review** (no Draft), head `e9da4ac`, `MERGEABLE`; incorpora `main` `5f2b3de`; **no integrada** |
-| CI full | Previo `40586272731` SUCCESS sobre `22353ff` (295 API / 0 FAIL, 13 E2E); nuevo run `40591106873` **en curso** sobre `e9da4ac` |
-| QA independiente | **PASS** 48 AC / 6 PARCIAL / 0 FAIL / 0 UNRUN bloqueante. Evidencia sobre `dd450de`; `apps`/`tests` idénticos en `22353ff` y `e9da4ac` (solo documentación entre medias) |
+| PR #95 | **Ready for Review** (no Draft), head `0760bfd`, `MERGEABLE/CLEAN`; incorpora `main` `5f2b3de`; **no integrada** |
+| CI full | `40591547609` **SUCCESS** sobre `0760bfd`: 295 API / 0 FAIL, 13 E2E; `required` `40591549949` SUCCESS |
+| QA independiente | **PASS** 48 AC / 6 PARCIAL / 0 FAIL / 0 UNRUN bloqueante. Evidencia sobre `dd450de`; `apps`/`tests` idénticos en `0760bfd` (solo documentación entre medias) |
 | C16/C17 | Intactos: `f9a30cdc…`, C16 135/`9d9b0783…`, C17 145/`e0707d40…` |
 | Decisión funcional | **Aceptada la opción A** por el usuario el 2026-10-27, tras consultar con Álex: los seis PARCIAL se mantienen como riesgos residuales documentados, sin convertirlos en PASS |
 | Merge / deploy | **No autorizados**; PR #96 cerrada sin merge y no se reabre |
@@ -20,11 +20,9 @@ Seguimiento con prioridad **AC-30** (accesibilidad) y **AC-34** (ruta de error 5
 
 Pendiente antes de cualquier merge:
 
-1. CI `required`/full sobre `e9da4ac`; si falla, corregir sin relajar guardas.
-2. Integrar este tablero (PR #101) mediante su flujo y aprobación.
-3. Aprobación expresa e identificable de la PR #95; sin despliegue.
-4. Registrar los seis residuales y su prioridad en `specs/19-*` (ejecutor DEV19).
-5. E3.6 no inicia hasta cerrar E4.1; sin nuevo desarrollo por esta entrada.
+1. Integrar este tablero (PR #101) mediante su flujo y aprobación.
+2. Aprobación expresa e identificable de la PR #95; sin despliegue.
+3. E3.6 no inicia hasta cerrar E4.1; sin nuevo desarrollo por esta entrada.
 
 ---
 
