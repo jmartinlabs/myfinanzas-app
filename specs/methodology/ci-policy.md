@@ -185,14 +185,18 @@ sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones
 - CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
   `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
   con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
-- Eventos: PR hacia main, push solo main, manual completo. PR valida checkout de
-  integración con head y base exactos del evento; una referencia movida falla.
-  No hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
-  anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
+- Eventos: PR hacia main —incluido `ready_for_review` para que un draft que pasa a
+  listo reciba validación—, push solo main y manual completo. Los drafts conservan el
+  gate rápido; no se desactiva globalmente. PR valida checkout de integración con head
+  y base exactos del evento; una referencia movida falla. No hay filtro de paths que
+  omita el check. Cada nuevo candidato sustituye al PR anterior por concurrencia; main
+  y ejecuciones manuales no se cancelan mutuamente.
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
   `docs` ejecuta baseline; `fast` añade tipos/build; `critical` añade **toda** la
-  suite API/SQLite Linux; `full` añade además E2E. Push main selecciona fast;
-  manual selecciona full. PR compara todo el rango mediante merge-base.
+  suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
+  solo documentación permitida ejecuta `docs`; cualquier otro cambio ejecuta `fast`;
+  nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo el rango
+  mediante merge-base.
 - Fast se limita a documentación permitida y CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
   dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
@@ -213,7 +217,12 @@ sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones
   código de salida. El coordinador comprueba esos objetos contra Git y los logs;
   QA inspecciona el diff y reproduce los controles de riesgo independientemente.
   Un PASS declarado, log inaccesible o evidencia para otra base/candidato bloquea.
-  El gate rápido **no** autentica pruebas locales; no se añade un registro ni hook.
+  `scripts/check-evidence --candidate SHA --base SHA --environment ENV
+  --log NAME=PATH [--linux-required NAME] [--record TESTPLAN]` comprueba candidato
+  limpio, HEAD, ancestro/base vigente, logs crudos y registro existente; solo exige
+  entorno Linux/glibc para los logs declarados en `--linux-required`. No prueba la
+  autenticidad del log: QA sigue leyendo la salida cruda. El gate rápido **no**
+  autentica pruebas locales; no se añade un registro ni hook.
 - Codex lee AGENTS/Skills; Claude Code importa AGENTS y delega en las mismas Skills.
   No cambia ningún adaptador ni se depende de hooks opcionales. Protección de main
   requiere verificación y autorización separada; el nombre required no la configura.

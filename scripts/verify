@@ -15,7 +15,8 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
 BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.startswith('test-') else None) for name in (
     'check-repository', 'check-project', 'validate-template', 'test-checks',
-    'test-validator', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification')) + (
+    'test-validator', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
+    'test-evidence')) + (
     ('working-whitespace', ['git', 'diff', '--check'], None),
     ('commit-whitespace', ['git', 'show', '--format=', '--check', 'HEAD'], None))
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),

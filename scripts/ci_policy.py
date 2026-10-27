@@ -145,7 +145,14 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             raise ValueError('only main pushes have a fast postmerge gate')
         if git(root, 'rev-parse', 'HEAD').decode().strip() != event['after'] or checkout_ref != event['after']:
             raise ValueError('postmerge snapshot differs from event')
-        return 'fast'
+        before = event.get('before')
+        if not re.fullmatch(r'[0-9a-f]{40}', before or '') or before == '0' * 40:
+            return 'fast'
+        try:
+            git(root, 'merge-base', '--is-ancestor', before, event['after'])
+            return 'docs' if classify_git(root, before, event['after']) == 'docs' else 'fast'
+        except (OSError, subprocess.SubprocessError):
+            return 'fast'
     if event_name != 'pull_request':
         raise ValueError('unsupported CI event')
     pr = event.get('pull_request', {})

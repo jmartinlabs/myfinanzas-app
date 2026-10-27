@@ -36,7 +36,10 @@ def required_workflow():
     states['CI_PROFILE'] = '${{ steps.plan.outputs.profile }}'
     return {
         'name': 'Validate project',
-        'on': {'push': {'branches': ['main']}, 'pull_request': {'branches': ['main']}, 'workflow_dispatch': {}},
+        'on': {'push': {'branches': ['main']},
+               'pull_request': {'branches': ['main'], 'types': [
+                   'opened', 'synchronize', 'reopened', 'ready_for_review']},
+               'workflow_dispatch': {}},
         'permissions': {'contents': 'read'},
         'concurrency': CONCURRENCY,
         'jobs': {'required': {

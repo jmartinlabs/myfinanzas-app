@@ -194,14 +194,19 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),[])
         self.assertIn('INTENTIONALLY SKIPPED',result.stdout); self.assertNotIn('PASS api',result.stdout)
 
-    def test_ci_main_fast_manual_full_and_invalid_event(self):
-        event=self.home/'event.json'; event.write_text(json.dumps({'ref':'refs/heads/main','after':self.head}))
+    def test_ci_main_docs_fast_manual_full_and_invalid_event(self):
+        event=self.home/'event.json'; event.write_text(json.dumps({'ref':'refs/heads/main','before':self.base,'after':self.head}))
         extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':self.head}
+        result=self.run_entry('ci',extra=extra)
+        self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),[])
+        self.clear(); (self.root/'apps/web/src/amount.ts').parent.mkdir(parents=True); (self.root/'apps/web/src/amount.ts').write_text('export const total = 1;')
+        code=self.commit(); event.write_text(json.dumps({'ref':'refs/heads/main','before':self.head,'after':code}))
+        extra={'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(event),'CI_CHECKOUT_REF':code}
         result=self.run_entry('ci',extra=extra)
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),['typecheck','build'])
         self.clear(); result=self.run_entry('ci',extra={**extra,'GITHUB_EVENT_NAME':'workflow_dispatch'})
         self.assertEqual(result.returncode,0,result.stdout); self.assertEqual(self.calls(),APP_NAMES)
-        self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','after':self.head}))
+        self.clear(); event.write_text(json.dumps({'ref':'refs/heads/feature','after':code}))
         for mode in ('ci-plan','ci'):
             result=self.run_entry(mode,extra=extra); self.assertNotEqual(result.returncode,0,result.stdout)
         self.assertEqual(self.calls(),[])

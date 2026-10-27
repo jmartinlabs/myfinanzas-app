@@ -357,11 +357,20 @@ class CiClassifierTests(unittest.TestCase):
             select(self.root, 'pull_request', event, 'refs/pull/7/merge')
         actual = self.git('rev-parse', 'HEAD').decode().strip()
         self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'after': actual}, actual), 'fast')
+        self.write('specs/backlog/main-docs.md')
+        docs_head = self.commit()
+        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'before': actual,
+                                                    'after': docs_head}, docs_head), 'docs')
+        self.write('apps/web/src/main-code.ts', 'export const total = 1;')
+        code_head = self.commit()
+        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'before': docs_head,
+                                                    'after': code_head}, code_head), 'fast')
+        self.assertEqual(select(self.root, 'push', {'ref': 'refs/heads/main', 'after': code_head}, code_head), 'fast')
         for ref in ('refs/heads/feature', 'refs/tags/v1'):
             with self.assertRaises(ValueError):
-                select(self.root, 'push', {'ref': ref, 'after': actual}, actual)
-        self.assertEqual(select(self.root, 'workflow_dispatch', {}, actual), 'full')
-        with self.assertRaises(ValueError): select(self.root, 'unknown', {}, actual)
+                select(self.root, 'push', {'ref': ref, 'before': docs_head, 'after': code_head}, code_head)
+        self.assertEqual(select(self.root, 'workflow_dispatch', {}, code_head), 'full')
+        with self.assertRaises(ValueError): select(self.root, 'unknown', {}, code_head)
 
 
 
@@ -396,6 +405,9 @@ class CiWorkflowTests(unittest.TestCase):
             'job allowed failure': lambda w: w['jobs']['required'].update({'continue-on-error': True}),
             'commented command': lambda w: by_id(w, 'verify').update(run='# python3 scripts/verify ci'),
             'event path filter': lambda w: w['on']['pull_request'].update(paths=['apps/**']),
+            'missing ready_for_review': lambda w: w['on']['pull_request']['types'].remove('ready_for_review'),
+            'draft job skip': lambda w: w['jobs']['required'].update({'if': 'github.event.pull_request.draft == false'}),
+            'draft step skip': lambda w: by_id(w, 'verify').update({'if': 'github.event.pull_request.draft == false'}),
             'redundant feature push': lambda w: w['on'].update(push={}),
             'missing main push': lambda w: w['on'].pop('push'),
             'privileged event': lambda w: w.update({'on': ['pull_request_target']}),

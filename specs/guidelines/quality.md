@@ -75,8 +75,10 @@ archivos deben añadirse al índice antes de la revisión previa al push. Lee hi
 blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
 
 La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
-PR hacia main, push solo main y manual; un job required Ubuntu24.04 con baseline,
-selección conservadora, tipos/build y API/SQLite independiente en cambios críticos.
+PR hacia main —incluido `ready_for_review`, sin desactivar el gate en drafts—, push
+solo main y manual; un job required Ubuntu24.04 con baseline, selección conservadora,
+tipos/build y API/SQLite independiente en cambios críticos. El push de main clasifica
+su rango: solo documentación ejecuta `docs`; el resto, `fast`.
 E2E/regresiones completas se ejecutan localmente con QA independiente; manual CI
 conserva la batería completa. Acciones SHA, historial completo, credenciales no
 persistidas, permisos de lectura y timeout15min permanecen. No configura protecciones.
@@ -256,8 +258,8 @@ macOS no sustituye Linux compatible ni permite omitirlas silenciosamente;
 para SQLite QA local requiere Debian13/glibc equivalente según la política vigente.
 
 Baseline ejecuta check-repository, check-project, validate-template, test-checks,
-test-validator, test-agent-usage, test-auto-agent-usage, test-verification y controles
-Git de whitespace. Full añade typecheck, build, test y test:e2e una vez cada uno;
+test-validator, test-agent-usage, test-auto-agent-usage, test-verification, test-evidence
+y controles Git de whitespace. Full añade typecheck, build, test y test:e2e una vez cada uno;
 permanece la excepción histórica AC23 de su rama. Docs solo omite la aplicación,
 con mensaje explícito. Cero pruebas, skips inesperados y errores fallan.
 Actions usa perfiles explícitos de esta misma entrada: ci-plan, baseline, ci y ci-result.
@@ -279,7 +281,10 @@ y evidencia esperada en el testplan existente. Preflight por alcance y plataform
 ningún ensayo local incompatible sustituye evidencia Linux compatible. Focales por delta y controles
 obligatorios por candidato estable, con revisión/entorno y motivo de repetición.
 QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen del autor.
-Al cierre enlazar un checkpoint vigente con SHA/PR/evidencias, conservando historia.
+`python3 scripts/check-evidence` comprueba candidato, base, árbol limpio, logs crudos y
+registro; solo exige Linux/glibc para los logs declarados. No sustituye la lectura de la
+salida cruda ni convierte un PASS declarado en evidencia. Al cierre enlazar un checkpoint
+vigente con SHA/PR/evidencias, conservando historia.
 [Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);
 [desviaciones/procedencia](../methodology/orchestration-adoption.md#harness-v280--adopción-local).
 
