@@ -1,10 +1,14 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Test plan
 
-Status: **BLOQUEADO ANTES DE CÓDIGO — 2026-10-27.** DEV17-E44 autorizado, pero no se
-inició implementación por conflicto de ownership con E4.1 en archivos compartidos. No
-existe candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es PASS**.
-Los 33 AC siguen **UNRUN**. La matriz se conserva como diseño previo al código y deberá
-revalidarse cuando el supervisor serialice los archivos compartidos.
+Status: **WAITING — secuencia D5 → E4.1 → DEV17; sin liberación efectiva.** DEV17-E44
+autorizado, pero la implementación no se inicia hasta confirmación de D5, integraciones
+aprobadas y cesiones explícitas de D5/E4.1. No existe candidato funcional de E4.4, no hay
+SQL ni migración y **ningún resultado es PASS**. Los 33 AC siguen **UNRUN**. La matriz se
+conserva como diseño previo al código y deberá revalidarse cuando exista ownership efectivo.
+
+Dependencia de coordinación: además de los compartidos ya registrados, los diffs reales
+pueden afectar `apps/api/src/movement-ledger.ts`, `apps/web/src/api.ts`, fixtures y pruebas
+transversales. No se modificarán hasta cesión explícita.
 
 Base de preparación: `origin/main` = `1d539a8cb9c38b3a8d2e3921a3651197105ce282`
 (esquema v16). Referencia: [specification](17-e44-deuda-completa-specification.md),

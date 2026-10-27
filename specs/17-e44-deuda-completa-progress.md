@@ -1,9 +1,10 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Progress DEV17
 
-Status: **BLOCKED — ownership concurrente de archivos compartidos con E4.1.**
-No se inició implementación, no se modificó código, no se ejecutaron pruebas funcionales ni
-se creó candidato. El bloqueo se devuelve al supervisor antes de escribir, conforme a
-`AGENTS.md` y a la autorización DEV17-E44.
+Status: **WAITING — secuencia coordinada D5 → E4.1 → DEV17.** E4.1 y DEV17 conformes con
+la propuesta; **falta confirmación de D5 y no hay liberación efectiva**. No se inició
+implementación, no se modificó código, no se ejecutaron pruebas funcionales ni se creó
+candidato. Se conserva el checkpoint `c768d38`; durante la espera solo se preparan
+progress17/testplan17 propios.
 
 Specification: [17-e44-deuda-completa-specification.md](17-e44-deuda-completa-specification.md)
 Brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md)
@@ -160,17 +161,36 @@ funcional cuando exista.
 
 ## 8. PR y siguiente gate
 
-- Rama local/remota: `codex/dev17-e44-deuda-completa` (se publica solo este estado
-  documental bloqueado; sin código).
+- Rama local/remota: `codex/dev17-e44-deuda-completa` (se publica solo el estado
+  documental de espera; sin código).
 - No hay PR funcional ni merge; Codex gestiona la operación GitHub que requiera conexión.
-- **Siguiente gate:** el supervisor debe serializar el ownership de los archivos
-  compartidos con E4.1. Opciones seguras:
-  1. Esperar a que E4.1 cierre/integre y refrescar `main`; después rebasar DEV17 y
-     revalidar esquema v16→nueva.
-  2. Asignar formalmente a DEV17 una ventana/ownership de los archivos compartidos y
-     congelar E4.1 durante la implementación.
-  3. Delegar a Codex la integración del delta de esquema/rutas/UI después de que E4.1
-     publique su rama.
+- **Checkpoint conservado:** `c768d384be3fbad67ea73a2d64e29d10b5786ab3`; los cambios
+  posteriores solo añaden estado de coordinación, sin reescribirlo.
+- **Siguiente gate:** confirmación de D5 y cesión explícita de D5/E4.1; después, integración
+  aprobada y refresh de `main`. DEV17 revalidará dependencias, ausencia de escritores,
+  ownership y versión real antes de decidir cualquier migración.
+- **No se inicia código** hasta que exista liberación efectiva.
 
-Hasta que exista esa decisión, **no se reanuda código**. No se declara E4.4 implementada,
-aprobada para merge ni desplegada.
+## 9. Actualización de coordinación — 2026-10-27
+
+Estado recibido del supervisor:
+
+- **E4.1 y DEV17 conformes** con la propuesta de secuencia **D5 → E4.1 → DEV17**.
+- **D5 aún no ha confirmado**; por tanto **no hay liberación efectiva** ni cesión de
+  archivos.
+- DEV17 **espera**:
+  1. confirmación de D5;
+  2. integración aprobada y cesión explícita de D5;
+  3. integración aprobada y cesión explícita de E4.1;
+  4. refresh de `main` y verificación de dependencias, ausencia de escritores y ownership.
+- La lista de archivos compartidos a revisar se amplía, además de la ya registrada, con:
+  - `apps/api/src/movement-ledger.ts`;
+  - `apps/web/src/api.ts`;
+  - fixtures y pruebas transversales que los diffs reales afecten.
+- Durante la espera **solo** se permite preparación de `progress17` y `testplan17`
+  propios. No se inicia código, no se reserva versión de esquema, no se modifican
+  archivos compartidos y no se reabren Q1–Q7.
+- No hay decisión financiera nueva ni cambio de alcance.
+
+**Próximo gate:** confirmación de D5 + integraciones/cesiones de D5 y E4.1. Hasta entonces,
+DEV17 permanece en espera y no reclama ownership ni versión.
