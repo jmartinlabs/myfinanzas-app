@@ -350,7 +350,7 @@ ficticias y servicios reales de prueba.
 | T-D5-10 | AC-10 | Positivo: hecho vigente con REF/participante inactivos; rectificar importe 300→250 y Destino activo conservando vínculos. Negativo: cambiar participante con REF/Tercero inactivo; rectificar anulado; cambiar Tipo/REF/Origen | Importe/fecha/Destino con impacto/motivo/auditoría; Recuperado/pendiente/exceso/Neto recalculados; historial preservado | Cambio de participante exige REF/ficha y Tercero activos; anulados no se rectifican; Tipo/REF/Origen bloqueados | API + triggers + auditoría | PASS (local; ver resultados) |
 | T-D5-11 | AC-11 | Anular aportación acreditada; reutilizar vínculo | Excluida del motor; historia/evidencia conservadas y visibles | Reactivación, DELETE y nueva atribución bloqueados | SQLite + DTO + UI | PASS (local; ver resultados) |
 | T-D5-12 | AC-12 | Caso multi-Gasto/Partida; aportación sin cuota; exceso; Titular con coste propio | Recuperado/Neto exactos; exceso íntegro; Revisar sin cuota; Titular Pendiente 0 | Sin compensación cruzada ni aportación exigible del Titular | Motor + DTO + capturas | PASS (local; ver resultados) |
-| T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | PASS (local; ver resultados) |
+| T-D5-13 | AC-13 | Aportación + informes/Anticipos; acceso con y sin MFA/CSRF; errores | Neto central sin doble descuento; acceso autorizado; errores seguros | Sin MFA/CSRF → denegado; nunca Ingreso/ejecución presupuestaria | HTTP + motor + revisión de logs | PASS seguridad local; informes/doble cómputo UNRUN (B-T11 fuera) |
 | T-D5-14 | AC-14 | UI 390/1440: ficha, formulario, preview, vacío/carga/error/409/422/401 | Equivalencia, foco, contraste, borrador conservado | Sin S000 en formulario común | Playwright + PNG `artifacts/e3-2-d5/` | PASS (local; ver resultados) |
 | T-D5-15 | AC-15 | Gate sin autorización de dev o sin enmienda spec05; intentar habilitar Exterior ordinario/salidas | D5 no se habilita; alcance intacto; B-T11 UNRUN | Intento de ampliación bloqueado; sin PASS de E3.2 | Inspección + gates | PASS (local; ver resultados) |
 | T-D5-16 | AC-01/02 | Frontera SQLite: INSERT directo de Transferencia S000 sin acreditación, con y sin guarda DB futura | Alta válida por servicio con acreditación cuando exista contrato dev | Frontera definida en dev; no se promete trigger hoy; CHECK no valida CAT013 | SQLite directo + contrato dev | PASS (local; ver resultados) |
@@ -380,14 +380,14 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 
 | Comprobación | Comando / evidencia | Resultado |
 | --- | --- | --- |
-| Focal D5 T-D5-01..16 | `NODE_ENV=test bun test apps/api/src/d5-aportaciones.test.ts` | 9 PASS / 0 FAIL / 126 assertions |
+| Focal D5 T-D5-01..16 | `NODE_ENV=test bun test apps/api/src/d5-aportaciones.test.ts` | 10 PASS / 0 FAIL / 134 assertions |
 | Regresión Base B | `NODE_ENV=test bun test apps/api/src/compartidos.test.ts` | 10 PASS / 0 FAIL / 179 assertions |
 | Migración v16→v17 | incluida en focal D5: filas, auditoría, Revisión Comida, FK, CHECK y variante v18 rechazada | PASS |
 | API/HTTP D5 | focal D5 T-D5-13: 401/403/404/409/422, MFA/CSRF/Origin y metadata | PASS |
 | Concurrencia/replay/rollback | focal D5 T-D5-09 con dos procesos y trigger de fallo inyectado | PASS |
 | Typecheck | `bun run typecheck` | PASS |
 | Build | `bun run build` | PASS (aviso de tamaño de chunk, sin error) |
-| Suite API completa | `NODE_ENV=test bun test apps/api` | 221 PASS / 48 FAIL / 269; 48 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
+| Suite API completa | `NODE_ENV=test bun test apps/api` | 222 PASS / 48 FAIL / 270; 48 de plataforma macOS (`libc.so.6` en backup/publicación/restore) y B3 heredado; ninguna falla D5 |
 | E2E D5 real | `playwright tests/e2e/d5-aportaciones.spec.ts` | 1/1 PASS; MFA real, alta, 422/409/401, histórica y capturas |
 | E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
 | Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
@@ -396,6 +396,11 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 
 - T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
   salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.
+- Correcciones de QA independiente: se bloquea convertir un Movimiento interno
+  existente en aportación por PATCH, se exige Destino interno en históricos y se
+  refuerzan pruebas negativas de segunda acreditación y participante inactivo.
+- T-D5-13 no cubre informes/Anticipos/doble descuento: esa mitad queda UNRUN y no
+  se declara PASS. Backup/restore v17 sigue UNRUN macOS; CI Linux obligatorio.
 - T-D5-16 fija la frontera: el CHECK solo relaja la forma; el trigger de
   `movimiento_compartido` exige Movimiento D5 y participante de la misma ficha.
 - backup/restore v17 y la suite Linux no se relabelan: permanecen UNRUN en macOS.

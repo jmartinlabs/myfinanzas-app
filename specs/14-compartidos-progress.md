@@ -23,11 +23,11 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   [testplan](14-compartidos-testplan.md). Implementados migración técnica,
   acreditación/motor/servicio común, API/UI, rectificación, replay, concurrencia,
   auditoría y fixture de backup/restore.
-- Candidato de código: `ede9489`; HEAD publicado con merge de main `1d539a8`:
-  `9702a43`. Rama `codex/dev14-d5-exterior` publicada. PR pendiente de creación
+- Candidato de código: `1339113`; HEAD publicado con merge de main `1d539a8`:
+  `9702a43` + correcciones QA `f077311`/`1339113`. Rama `codex/dev14-d5-exterior` publicada. PR pendiente de creación
   por falta de `gh`/token API en este entorno; datos para Codex abajo. Sin merge.
-- Evidencia local: D5 9 PASS/126 assertions; Base B 10 PASS/179; E2E D5 y Base B
-  2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 221 PASS/48 FAIL
+- Evidencia local: D5 10 PASS/134 assertions; Base B 10 PASS/179; E2E D5 y Base B
+  2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
   (plataforma macOS/B3); `scripts/verify --base 1d539a8 --head 9702a43`: baseline,
   typecheck y build PASS, API FAIL de plataforma, E2E UNRUN en la entrada
   (focalizados 2/2 PASS). Backup/restore v17 y CI Linux: UNRUN macOS.
@@ -311,9 +311,9 @@ decisiones ni se toca Excel/VPS/datos reales.
 
 ### Evidencia local (macOS arm64, Bun 1.4.3)
 
-- D5 focal: 9 PASS/0 FAIL/126 assertions; Base B: 10 PASS/0 FAIL/179.
+- D5 focal: 10 PASS/0 FAIL/134 assertions; Base B: 10 PASS/0 FAIL/179.
 - Backup/restore D5 v17: test presente; macOS UNRUN por `libc.so.6`, CI Linux pendiente.
-- Typecheck/build PASS. Suite API 221 PASS/48 FAIL/269; los 48 son de plataforma
+- Typecheck/build PASS. Suite API 222 PASS/48 FAIL/270; los 48 son de plataforma
   macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
 - E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
 - Backup/restore v17 y CI Linux: **UNRUN macOS**; no se declaran PASS.
@@ -328,3 +328,27 @@ B-T11/consumo por informes sigue UNRUN; no se declara E3.2 completa, AC-20 ni
 AC-31 PASS. Sin Exterior ordinario/salidas, datos reales, migración operativa,
 deploy, B3/Dev32 ni cambios de guardas/timeouts/harness. El siguiente gate es QA
 independiente sobre el SHA candidato y CI Linux; merge no autorizado.
+
+## QA independiente D5 — 2026-10-27
+
+Revisión de contexto nuevo sobre el candidato: **APTO CON RESERVAS** inicial y
+**APTO** tras cerrar el hallazgo alto. La QA no editó el repositorio.
+
+- **Hallazgo alto (cerrado):** el PATCH genérico de Movimientos permitía convertir
+  una Transferencia interna existente en `origen=S000`, con o sin bloque
+  compartido, reescribiendo el efecto bancario. Se bloquea ahora cualquier
+  `old && origen=S000 && !oldAportacion`; solo una aportación ya acreditada puede
+  conservar S000 y la histórica sigue exigiendo el endpoint explícito. Regresión
+  añadida con y sin `compartido`/CAT013.
+- **Histórico con Destino Exterior (cerrado):** el alta y el trigger exigen Destino
+  interno (tipo/control no Exterior); un histórico S000→Exterior ficticio se
+  rechaza.
+- **T-D5-06/10 (cerrado):** segunda acreditación con revisión correcta y negativos
+  de Referencia inactiva/Tercero de baja.
+- **Exceso individual (cerrado):** un Tercero con cuota 0 y Aportado > 0 muestra su
+  Exceso real; el global no compensa.
+- **Preview (cerrado):** muestra el importe y Destino concretos del efecto banco.
+- **T-D5-13:** solo se acredita seguridad/HTTP; informes, Anticipos y doble
+  descuento siguen UNRUN por B-T11. No se declara PASS completo.
+- Backup/restore v17 y CI Linux: **UNRUN macOS**; no se relabelan.
+- Re-QA del bloqueo S000: **APTO**; focal 10 PASS/134 assertions y typecheck PASS.
