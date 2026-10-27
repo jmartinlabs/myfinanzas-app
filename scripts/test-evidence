@@ -137,3 +137,6 @@ class EvidenceTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    def test_ruleset_probe_intentional_failure(self):
+        self.fail("intentional ruleset probe failure")
