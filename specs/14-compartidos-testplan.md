@@ -392,7 +392,7 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 | E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
 | Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
 | Backup/restore v17 | `apps/api/src/d5-backup.test.ts` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
-| `scripts/verify` | entrada canónica con Python 3.12.16 | Baseline/typecheck/build PASS; API 221/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
+| `scripts/verify` | `--base 1d539a8 --head 9702a43`, Python 3.12.16 | Baseline/typecheck/build PASS; API 221/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
 
 - T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
   salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.

@@ -23,13 +23,14 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   [testplan](14-compartidos-testplan.md). Implementados migración técnica,
   acreditación/motor/servicio común, API/UI, rectificación, replay, concurrencia,
   auditoría y fixture de backup/restore.
-- Candidato de código: `ede9489` (commits `02f500c`, `a27ed49`, `b0b69cf`,
-  `afb992b`, `03caadc`, `ede9489`). Publicación/PR: ver gate final; sin merge.
+- Candidato de código: `ede9489`; HEAD publicado con merge de main `1d539a8`:
+  `9702a43`. Rama `codex/dev14-d5-exterior` publicada. PR pendiente de creación
+  por falta de `gh`/token API en este entorno; datos para Codex abajo. Sin merge.
 - Evidencia local: D5 9 PASS/126 assertions; Base B 10 PASS/179; E2E D5 y Base B
   2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 221 PASS/48 FAIL
-  (plataforma macOS/B3); `scripts/verify` baseline/type/build PASS, API FAIL de
-  plataforma, E2E UNRUN en la entrada canónica (separado PASS 2/2). Backup/restore
-  v17 y CI Linux: UNRUN macOS.
+  (plataforma macOS/B3); `scripts/verify --base 1d539a8 --head 9702a43`: baseline,
+  typecheck y build PASS, API FAIL de plataforma, E2E UNRUN en la entrada
+  (focalizados 2/2 PASS). Backup/restore v17 y CI Linux: UNRUN macOS.
 - Fuera: B-T11/consumo por informes (sigue UNRUN), Exterior ordinario/salidas,
   datos reales, deploy, cambios de guardas/timeouts/harness/metodología.
 - Aprobación documental previa conservada: candidato `3b737aa`, PR84, main
@@ -316,9 +317,10 @@ decisiones ni se toca Excel/VPS/datos reales.
   macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
 - E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
 - Backup/restore v17 y CI Linux: **UNRUN macOS**; no se declaran PASS.
-- `scripts/verify` se ejecutó con Python 3.12.16 portátil: baseline, typecheck y
-  build PASS; API 221/48 de plataforma macOS y E2E UNRUN en la entrada canónica
-  (los E2E focalizados sí 2/2 PASS). El resultado global no se relabela.
+- `scripts/verify --base 1d539a8 --head 9702a43` con Python 3.12.16 portátil:
+  baseline, typecheck y build PASS; API 221/48 de plataforma macOS y E2E UNRUN en
+  la entrada canónica (los E2E focalizados sí 2/2 PASS). El resultado global no se
+  relabela; CI Linux es el gate portable pendiente.
 
 ### Límites
 
