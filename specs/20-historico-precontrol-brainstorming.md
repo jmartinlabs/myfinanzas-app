@@ -316,6 +316,29 @@ Fuente: mensaje real del usuario en la sesión
 Estas respuestas **no** aprueban la especificación completa ni los wireframes, no
 cierran DT7 y no autorizan desarrollo, migración, datos reales ni merge.
 
+## Revisión funcional del supervisor — 2026-10-27
+
+El supervisor considera favorable la propuesta final de **47 AC** y autoriza su
+incorporación documental, sin desarrollo. Se mantienen Q1–Q10 y AC-01…AC-45; se añaden
+AC-46/47 y se actualizan AC-32/42.
+
+Precisiones incorporadas:
+
+- **Universo:** E2.4/archivo/Movimientos solo descubren candidatos. El universo se
+  declara y acredita en DT7. `NoAcreditada` no se degrada a `Parcial`; se distingue de
+  hueco demostrado y de ausencia verificada de hechos.
+- **Identidad de fuente:** `fuenteId` lógico estable del inventario DT7; hash, versión,
+  ubicación y etiqueta son procedencia. Una nueva versión conserva `fuenteId`.
+- **Filtro:** un solo combinador. La vista filtrada es exploratoria: `total=null`,
+  `subtotalFuente` decimal/null informativo por contexto, conflictos globales visibles.
+- **Fecha:** solo fecha económica acreditada con `procedencia.evidenciaFecha`; agregados
+  sin fecha económica explícita quedan `null`.
+- **Wireframe abierto:** corte 27/10/2026; no se trasladan importes calculados a 31/12;
+  la falta de evidencia se muestra como cobertura insuficiente, no como fixture.
+
+Esto no aprueba spec/wireframes, no cierra DT7 y no autoriza desarrollo, migración,
+datos reales ni merge.
+
 ## Casos que la especificación debe resolver
 
 | Caso | Ejemplo ficticio | Resultado esperado |

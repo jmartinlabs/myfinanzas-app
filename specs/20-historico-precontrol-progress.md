@@ -4,10 +4,10 @@ Specification: [20-historico-precontrol-specification.md](20-historico-precontro
 
 ## Current checkpoint
 
-Current state: **Q1–Q10=A confirmadas por el usuario el 2026-10-27; candidato documental
-`806232a6269cc80433ae89368f33abd2576506f2` (45 AC) con QA focal PASS y verificación
-canónica PASS (docs). Spec/wireframes siguen pendientes de aprobación completa y DT7
-es un gate independiente; sin desarrollo.**
+Current state: **revisión funcional del supervisor incorporada como delta documental
+de 47 AC, pendiente de QA focal y verificación canónica. Q1–Q10=A confirmadas; spec/
+wireframes siguen pendientes de aprobación completa y DT7 es un gate independiente;
+sin desarrollo.**
 
 - Autorizado: preparar brainstorming, specification, wireframes, testplan, progress y
   QA documental independiente de E4.5, exclusivamente con datos ficticios. No autoriza
@@ -30,17 +30,14 @@ es un gate independiente; sin desarrollo.**
   N17/N18) y **cuatro revisiones focales**: 43 AC `7e2c10d` PASS; 45 AC `c7e9d6a`
   FAIL P5/P7; 45 AC `d8b9449` PASS; decisiones `d261af8` PASS (D1 corregido en
   `806232a`). Informe final vinculado a `806232a`; no es PASS funcional.
-- Estado Git: PR87 DRAFT actualizada por fast-forward con los commits documentales;
-  sin merge. El SHA publicado, base y merge ref se registran en el handoff de
-  reconciliación; el merge exige aprobación propia. Solo el usuario aprueba
-  spec/wireframes; DT7 sigue abierto.
-- Checks: `python3 scripts/verify --base 1d539a8cb9c38b3a8d2e3921a3651197105ce282
-  --head 806232a6269cc80433ae89368f33abd2576506f2` **PASS** (docs; application checks
-  intentionally skipped, not reported as passed). `validate-template`, `git diff
-  --check`, enlaces e IDs 45/45 PASS. No hay pruebas funcionales.
-- PR/CI/merge: PR87 DRAFT publicada; sin merge. La consulta de CI remoto no está
-  disponible en este entorno sin cliente GitHub autenticado; se distingue de la
-  verificación local del merge ref. No se declara PASS funcional.
+- Estado Git: delta de 47 AC sin commit sobre `46af44d`; sin push ni merge. Codex tiene
+  autorización separada para publicar rama/PR; el merge exige aprobación propia. Solo
+  el usuario aprueba spec/wireframes; DT7 sigue abierto.
+- Checks: `validate-template`, `git diff --check`, enlaces e IDs 47/47 PASS locales.
+  `verify` y QA focal del delta **UNRUN** hasta el nuevo commit; `verify` de
+  `806232a` (45 AC) sigue PASS docs. No hay pruebas funcionales.
+- PR/CI/merge: PR87 DRAFT; sin merge. No se intenta corregir CI desde este frente. No
+  se declara PASS funcional.
 - Siguiente acción segura: handoff a Codex para revisión/publicación. El usuario
   aprueba o rechaza spec/wireframes; DT7 sigue independiente. No desarrollar E4.5 por
   inferencia.
@@ -53,15 +50,16 @@ es un gate independiente; sin desarrollo.**
 | Brainstorming con fuentes y Q1–Q10 | done (confirmadas) | Q1–Q10=A y precisiones Q5; [brainstorming](20-historico-precontrol-brainstorming.md) |
 | Specification, wireframes y AC | done (propuesta) | [specification](20-historico-precontrol-specification.md) |
 | Testplan con casos ficticios | done (diseño) | [testplan](20-historico-precontrol-testplan.md) |
-| QA documental independiente | done | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS de 38 AC + focales 43/45 AC + decisiones (`806232a`) |
-| Correcciones de QA | done | B1–B4/M1–M11, N1–N18, P1–P7, D1 y m1–m7; 45/45 AC |
-| Verificación canónica documental | done | `verify --head 806232a` PASS docs; app checks skipped/UNRUN |
-| Commit local y handoff a Codex | done | Candidato `806232a`; sin push/PR/merge |
+| QA documental independiente | pending delta | Subagente `ses_e856908a8ffeAnHab97HGCHHun`; PASS histórico hasta 45 AC; QA focal 47 AC pendiente |
+| Correcciones de QA | done base + pending delta | B1–B4/M1–M11, N1–N18, P1–P7, D1 y m1–m7; delta 47 AC pendiente |
+| Verificación canónica documental | pending delta | `806232a` PASS docs (45 AC); nuevo SHA de 47 AC UNRUN |
+| Commit local y handoff a Codex | pending delta | Delta 47 AC sin commit; sin push/PR/merge |
 
 ## Verified increments
 
 Ninguno funcional. La fase es documental.
 
+- **Delta de revisión funcional 2026-10-27:** 47 AC (AC-46/47 nuevos; AC-32/42 actualizados); QA focal y `verify` pendientes; no se declara PASS hasta el nuevo commit.
 - QA independiente `SES-QA-E45` (subagente real `ses_e856908a8ffeAnHab97HGCHHun`):
   cuatro rondas sobre 38 AC (FAIL B1–B4/M1–M11, FAIL N1–N11, FAIL N12/N15/N2/N13/N16,
   PASS N17/N18) y cuatro revisiones focales: 43 AC `7e2c10d` PASS P1–P4; 45 AC
