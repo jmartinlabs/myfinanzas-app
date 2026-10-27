@@ -392,7 +392,7 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
 | E2E Base B regresión | `playwright tests/e2e/compartidos.spec.ts` | 1/1 PASS |
 | Capturas 390/1440 | `artifacts/e3-2-d5/d5-{ficha-inicial,formulario,preview,ficha-acreditada,historico-formulario,historico-preview,ficha-historico}-{390,1440}.png` | Inspeccionadas; sin overflow; foco, contraste y aviso texto verificados |
 | Backup/restore v17 | `apps/api/src/d5-backup.test.ts` con fixture ficticia | **UNRUN macOS**: `libc.so.6`; CI Linux obligatorio |
-| `scripts/verify` | `--base 1d539a8 --head 9702a43`, Python 3.12.16 | Baseline/typecheck/build PASS; API 221/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
+| `scripts/verify` | `--base 1d539a8 --head 1339113`, Python 3.12.16 | Baseline/typecheck/build PASS; API 222/48 plataforma macOS; E2E UNRUN en la entrada (focal 2/2 PASS); CI Linux pendiente |
 
 - T-D5-15 se acredita por inspección de gates: no se añadió Exterior ordinario ni
   salidas, el formulario común no ofrece S000 y B-T11/E3.2 siguen sin PASS.
@@ -401,6 +401,9 @@ Chromium Playwright. Ningún resultado se atribuye a GitHub CI/Linux.
   refuerzan pruebas negativas de segunda acreditación y participante inactivo.
 - T-D5-13 no cubre informes/Anticipos/doble descuento: esa mitad queda UNRUN y no
   se declara PASS. Backup/restore v17 sigue UNRUN macOS; CI Linux obligatorio.
+- Histórico: se exige Destino interno (tipo/control no Exterior) pero no un estado
+  activo, porque §15.7 no lo impone para hechos existentes; el alta nueva sí exige
+  Saldo activo. El trigger de metadata refuerza la misma frontera.
 - T-D5-16 fija la frontera: el CHECK solo relaja la forma; el trigger de
   `movimiento_compartido` exige Movimiento D5 y participante de la misma ficha.
 - backup/restore v17 y la suite Linux no se relabelan: permanecen UNRUN en macOS.

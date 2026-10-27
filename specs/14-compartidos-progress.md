@@ -28,7 +28,7 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   por falta de `gh`/token API en este entorno; datos para Codex abajo. Sin merge.
 - Evidencia local: D5 10 PASS/134 assertions; Base B 10 PASS/179; E2E D5 y Base B
   2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
-  (plataforma macOS/B3); `scripts/verify --base 1d539a8 --head 9702a43`: baseline,
+  (plataforma macOS/B3); `scripts/verify --base 1d539a8 --head 1339113`: baseline,
   typecheck y build PASS, API FAIL de plataforma, E2E UNRUN en la entrada
   (focalizados 2/2 PASS). Backup/restore v17 y CI Linux: UNRUN macOS.
 - Fuera: B-T11/consumo por informes (sigue UNRUN), Exterior ordinario/salidas,
@@ -317,7 +317,7 @@ decisiones ni se toca Excel/VPS/datos reales.
   macOS (`libc.so.6` en backup/publicación/restore) o B3 heredado; ninguna falla D5.
 - E2E D5 1/1 PASS y E2E Base B 1/1 PASS; capturas en `artifacts/e3-2-d5/`.
 - Backup/restore v17 y CI Linux: **UNRUN macOS**; no se declaran PASS.
-- `scripts/verify --base 1d539a8 --head 9702a43` con Python 3.12.16 portátil:
+- `scripts/verify --base 1d539a8 --head 1339113` con Python 3.12.16 portátil:
   baseline, typecheck y build PASS; API 221/48 de plataforma macOS y E2E UNRUN en
   la entrada canónica (los E2E focalizados sí 2/2 PASS). El resultado global no se
   relabela; CI Linux es el gate portable pendiente.
