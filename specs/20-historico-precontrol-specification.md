@@ -227,11 +227,15 @@ Reglas de cobertura:
   prorratea. Su parte anterior al corte no se acredita como importe separable: se
   muestra como contexto y activa `motivoCodigo=AgregadoNoAtribuibleAlCorte`. La
   cobertura temporal puede ser `Completa` si el intervalo cubre `[inicio, corte]`,
-  pero **no acredita atribución de importe**: `estadoTotal=NoVerificable`, total y
-  subtotal `null`. Si el detalle cubre todo el intervalo consultado
-  `[universo.inicio, corteConsulta]`, el agregado no se suma y el total puede
-  verificarse solo con detalle. No se convierte el agregado en un total parcial
-  inventado.
+  pero **no acredita atribución de importe ni ausencia de conflicto**:
+  `estadoTotal=NoVerificable`, total y subtotal `null`. Que el detalle cubra todo
+  `[universo.inicio, corteConsulta]` **no basta** para verificar solo con detalle: el
+  agregado puede solaparse con él y no se prioriza el detalle automáticamente. Para
+  sumar solo detalle se exige evidencia explícita: vínculo de origen verificado
+  (`representadoEnMovimientos=Si` con el Movimiento/registro identificado) o una
+  separación/disyunción aprobada que demuestre que el agregado no contiene esos
+  hechos. Sin esa evidencia, el resultado sigue `NoVerificable` y la preferencia queda
+  en Q10. No se convierte el agregado en un total parcial inventado.
 - El corte de 2026 de C30 (27/08/2026) y el control desde 28/08/2026 son **solo** el
   ejemplo de las Deudas allí indicadas. No son un default global ni una fecha fija de
   E4.5; cada dataset debe declarar los suyos.
@@ -386,9 +390,16 @@ La regularización de 2026 es una **excepción documentada**, no una regla gener
   un registro. No es un renombrado: exige nueva versión de mapping y de archivo, motivo,
   evidencia y auditoría; la clasificación original queda en la versión/procedencia
   anterior. Solo la versión vigente contribuye.
-- **Cambio de jerarquía con el mismo ID:** mover una Partida a otra Subcategoría/
-  Categoría conserva `PARxxx`; no crea una reclasificación del registro histórico. La
-  historia se lee por ID y no se reescribe por el nombre de la jerarquía.
+- **Cambio de jerarquía con el mismo `PARxxx`:** conservar la identidad **no elimina
+  el impacto histórico**. Mover una Partida a otra Subcategoría/Categoría no cambia su
+  `PARxxx` ni crea una reclasificación del registro a otra Partida, pero es un cambio
+  de catálogo con impacto: exige el contrato E1.2 de vista/impacto, motivo,
+  confirmación, revisión/huella y protecciones de los consumidores afectados; **no es
+  un simple renombrado**. La procedencia original conserva la jerarquía de extracción;
+  la consulta muestra la jerarquía vigente y la original, y los informes declaran qué
+  jerarquía usan. No se introduce versionado de catálogo no aprobado ni se reescribe
+  la historia. Si además cambia el destino a otro `PARxxx`, es reclasificación y sigue
+  la regla anterior.
 - **Fecha ejecutada (E2.4):** se toma solo de `fecha` conocida de la versión vigente y
   de las fechas de Gastos elegibles. Si `fecha=null`, no se deriva del intervalo, del
   corte ni del reloj; `fechaEjecutada` queda `null` o se limita a otras fechas conocidas.
@@ -739,6 +750,14 @@ curso completo; un corte futuro real devuelve 422/No verificable.
   `estadoTotal=NoVerificable`, `motivoCodigo=AgregadoNoAtribuibleAlCorte`; el agregado
   se muestra en `agregadoNoAtribuible[]` como contexto, fuera del total. No se presenta
   1.200,00 como ejecutado hasta 30/06.
+- **F19b — detalle completo pero conflicto no demostrado.** El mismo agregado
+  `01/01–27/08` y un detalle que cubre `01/01–30/06`, sin vínculo
+  `representadoEnMovimientos=Si` ni separación/disyunción aprobada. La cobertura
+  temporal es completa, pero el agregado puede contener los mismos hechos: total
+  `NoVerificable`, no se presenta un total solo-detalle sin evidencia y no se elige
+  detalle por preferencia. Si existe vínculo de origen verificado o disyunción
+  aprobada, el agregado se excluye y el detalle cuenta una vez; solo entonces puede
+  verificarse el total.
 - **F20 — corrección de versión.** Archivo v1 1.200,00; v2 1.150,00 con
   `reemplazaA=v1`, motivo y auditoría. Solo v2 contribuye; v1 se muestra como historia
   y no se suma: no 2.350,00. Si v1 y v2 aparecen como vigentes a la vez, total
@@ -754,6 +773,12 @@ curso completo; un corte futuro real devuelve 422/No verificable.
 - **F23 — apertura de Deuda.** Fuente con apertura de Deuda D100. E4.5 no la enlaza ni
   la suma; muestra «No soportado por E4.5; ver E4.4». D100, capital y condiciones
   permanecen intactos; `aperturas=null` si no hay evidencia de apertura de Saldo.
+- **F24 — cambio de jerarquía con el mismo PARxxx.** PAR100 pasa de SUB-A a SUB-B sin
+  cambiar de ID. Se aplica E1.2: vista/impacto, motivo, confirmación, revisión/huella
+  y protecciones; no se crea versión de catálogo. La consulta muestra la jerarquía
+  vigente SUB-B y la procedencia original SUB-A; la historia no se reescribe. Sin
+  impacto/motivo/confirmación, el cambio se bloquea o devuelve 409; no se resuelve por
+  renombrado ni por una versión de catálogo inventada.
 
 ### Validación
 
@@ -881,10 +906,10 @@ Estos contratos son mínimos y de solo lectura; no implementan E4.7/E4.11/E4.12.
 Clase **I** = criterio de implementación futura; **C** = contrato de consumo/
 compatibilidad. Los sufijos `(Q5)` y `(Q7)` indican criterios condicionados a esas
 decisiones; `(E4.x)` indica contrato de consumidor. Todos son **PREVISTOS/NO
-EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-43` son
-`E4.5-AC-01…E4.5-AC-43`. La correspondencia con el roadmap es:
-E4.5-AC1 → AC-02/05/06/12/13/14/15/31/40/41; E4.5-AC2 →
-AC-16/17/18/24/34/37/39/42/43; E4.5-AC3 → AC-20/21/22.
+EJECUTADOS**; una prueba diseñada no es PASS. Los IDs `AC-01…AC-45` son
+`E4.5-AC-01…E4.5-AC-45`. La correspondencia con el roadmap es:
+E4.5-AC1 → AC-02/05/06/12/13/14/15/31/40/41/45; E4.5-AC2 →
+AC-16/17/18/24/34/37/39/42/43/44; E4.5-AC3 → AC-20/21/22.
 
 | ID | Clase | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- | --- |
@@ -931,3 +956,5 @@ AC-16/17/18/24/34/37/39/42/43; E4.5-AC3 → AC-20/21/22.
 | AC-41 | I | Renombrar PAR100 y REF100; después reclasificar un registro de PAR100 a PAR200 con nueva versión de mapping/archivo | Renombrado conserva ID/enlace y no crea versión; reclasificación crea versión nueva, conserva la clasificación original y solo la vigente suma; no se mezclan ambas |
 | AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; una fecha corregida solo cuenta si su versión es vigente |
 | AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni se suma; se muestra «No soportado por E4.5; ver E4.4»; Dxxx, capital y condiciones intactos; `aperturas=null` si no hay evidencia de Saldo |
+| AC-44 | I | Agregado 01/01–27/08 y detalle que cubre 01/01–30/06, sin vínculo `representadoEnMovimientos=Si` ni separación/disyunción aprobada | No se prioriza detalle automáticamente; total `NoVerificable`; no total solo-detalle; Q10 abierta. Con vínculo/disyunción aprobada, agregado excluido y detalle una vez |
+| AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2 aplicado: impacto, motivo, confirmación, revisión/huella y protecciones; jerarquía vigente SUB-B y procedencia original SUB-A visibles; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/409 |

@@ -59,6 +59,8 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | AC-41 | I | Renombrar PAR100/REF100; después reclasificar un registro de PAR100 a PAR200 con nueva versión de mapping/archivo | Renombrado conserva ID/enlace y no crea versión; reclasificación crea versión nueva, conserva clasificación original y solo la vigente suma | Bun Test de mapping/versiones | Documental ahora; API futuro | DTO con versión y mapping usados | UNRUN — diseño |
 | AC-42 | C (E2.4) | Archivo con `fecha=null`, archivo con fecha conocida y Gasto detallado; consultar `fechaEjecutada` de E2.4 | Solo fechas conocidas de versiones vigentes/Gastos; `null` no se sustituye por intervalo, corte ni reloj; fecha corregida solo cuenta si es vigente | Bun Test de contrato E2.4 | Documental ahora; contrato futuro | DTO E2.4/fecha|null | UNRUN — diseño |
 | AC-43 | I (Q7) | Fuente con apertura de Deuda Dxxx; consultar archivo y Deuda | No se enlaza ni suma; «No soportado por E4.5; ver E4.4»; Dxxx/capital/condiciones intactos; `aperturas=null` si no hay evidencia de Saldo | Bun Test de aperturas | Documental ahora; API futuro | DTO y snapshot de Deuda | UNRUN — diseño |
+| AC-44 | I | Agregado 01/01–27/08 y detalle 01/01–30/06, sin vínculo ni disyunción aprobada | No se prioriza detalle; total `NoVerificable`; no total solo-detalle; Q10 abierta. Con vínculo/disyunción, agregado excluido y detalle una vez | Bun Test de corte/agregado + vínculo | Documental ahora; API futuro | DTO con `agregadoNoAtribuible[]` y motivo | UNRUN — diseño |
+| AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2: impacto, motivo, confirmación, revisión/huella y protecciones; jerarquía vigente SUB-B y procedencia original SUB-A; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/409 | Bun Test de impacto E1.2 + UI | Documental ahora; API/UI futuro | DTO de jerarquía/procedencia y 409 | UNRUN — diseño |
 
 ## Casos solicitados y trazabilidad
 
@@ -81,6 +83,8 @@ ejecutan aquí. Cualquier fixture con importes es ficticio.
 | Apertura histórica no acredita cobertura de Gastos | AC-37 | F14 |
 | Cortes/controles por fuente, alcance por Partida y solapamiento | AC-38 | F15/F18 |
 | Agregado que excede el corte sin prorrateo | AC-39 | F19 |
+| Detalle completo pero conflicto con agregado no demostrado | AC-44 | F19b |
+| Cambio de jerarquía con el mismo PARxxx | AC-45 | F24 |
 | Corrección/versionado sin sumar original y sustitución | AC-40 | F20 |
 | Renombrado vs reclasificación | AC-41 | F21 |
 | Fecha ejecutada de E2.4 sin fecha inventada | AC-42 | F22 |
