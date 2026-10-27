@@ -1,11 +1,11 @@
 # 19 — E4.1 Instrumentos y Compras de inversión: Test plan
 
 Specification: [19-instrumentos-compras-inversion-specification.md](19-instrumentos-compras-inversion-specification.md)
-Status: **PROPOSED rev10 — pending independent/Codex review; NOT approved.** Renumera el
-destino a **18** tras la ocupación de la 16 por `origin/main` `1d539a8` (docs; esquema 16 en `2487656`, Revisión bancaria de
-Comida) y no cambia las decisiones funcionales de rev7/rev8. **No hay implementación ni
-integración de main 16 en esta rama**; el candidato DEV/QA existente se refiere al contrato 16
-y no acredita rev10. **No se autoriza PR, merge ni despliegue.**
+Status: **PROPOSED rev10 — pending independent/Codex review; NOT approved.** Reconcilia el
+destino **18** con `origin/main` `cf6954a` (PR90/D5, esquema 17) y no cambia las decisiones
+funcionales de rev7/rev8. **No hay implementación ni integración de main 17 en esta rama**; el
+candidato DEV/QA existente se refiere al contrato 16 y no acredita rev10/18. **No se autoriza
+PR, merge ni despliegue.**
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`. Rev9 quedó superada; rev10 se propone el
 2026-10-27 y no tiene aprobación registrada.
@@ -30,20 +30,25 @@ es el ajuste técnico a la versión 16, con contrato real `C15-COMPARTIDOS-AD2ED
 usuario sobre el commit `f439010d527ba65953a1ccc0aa47cbeb51cfce31`**, manteniendo las
 decisiones funcionales de rev7; rev9 (2026-10-27) propuso la progresión canónica 13/14→16 tras
 integrar `main` v15 y quedó superada al ocupar `main` la 16; rev10 (2026-10-27) propone destino
-**18**, el contrato real `C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256
-`9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`), rutas
-13/14/15/16→18, backup/restore 1..18 y preservación de datos/identidad; pendiente de
-revisión/aprobación, sin implementación, integración, PR, merge ni despliegue.
+**18**, primero con C16 y, tras integrarse D5/PR90 en `main` `cf6954a`, con el contrato v17
+`C17-D5-CF6954A` (145 objetos, SHA-256 propuesto
+`e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`, pendiente de
+congelación/cesión), rutas 13/14/15/16/17→18, backup/restore 1..18 y preservación D5;
+pendiente de revisión/aprobación, sin implementación, integración, PR, merge ni despliegue.
 
 Matriz de diseño rev7 con ajuste técnico rev8 y propuesta rev10. El candidato DEV/QA
 fusionado con `main` v15 es evidencia del contrato 16, no de rev10/18; no hay código adaptado a
-18 ni integración de main 16. Rev10 no está aprobada.
+18 ni integración de main 17. Rev10 no está aprobada.
 Los comandos usan el runner real del repositorio (`bun test` bajo el script `test`,
 `bun run test:e2e` y `python3 scripts/verify --full`). Datos exclusivamente ficticios; sin DB,
 claves, factores ni trazas en la evidencia versionada. Los casos de retroactividad,
 preservación de divisa/factor histórico, motor único, límites de magnitud y cobertura parcial
 se marcan explícitamente; los estados PARCIAL están justificados y la evidencia Linux/CI sigue
 pendiente.
+
+**Lectura de la matriz:** los estados `PASS`/`PARCIAL` son evidencia histórica del candidato
+v16; **no son PASS de rev10/18**. Todo lo relativo a D5/v17, 17→18 y el contrato 18 está
+**UNRUN**; ninguna fila histórica acredita la migración ni la funcionalidad de v18.
 
 | Acceptance ID | Preconditions and action | Expected result | Automated/manual method and command | Local / CI platform and owner | Expected evidence | Actual result / status | Candidate / run date / evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -79,7 +84,7 @@ pendiente.
 | E4.1-AC-30 | Recorrer listado, ficha, alta, W7/W8 y W9/W10 a 390/1440 con teclado; comprobar filtro de Estado y alcance de W8/W10 | Flujos operables, foco visible y devuelto al aviso, etiquetas, sin overflow, tema claro, borrador conservado, botones deshabilitados sin motivo; en W1/W4 «Todos» muestra `I1003` Inactiva y «Activos» la oculta; W8 declara «Todas (3)» y muestra la Anulada solo con «Ver»; W9/W10 cubren rectificación y anulación | Playwright real, capturas 390×844 y 1440×1000; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG ficticios inspeccionados `artifacts/e4-1/`; notas de foco/overflow | PARCIAL — capturas 390/1440 y flujo visual PASS; navegación completa por teclado y foco del impacto no automatizados |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-31 | Provocar vacío, carga, error de fuente, 409 y sesión expirada | Estados distintos/accionables; «No disponible» con motivo; sin 0 ficticio; borrador conservado | Playwright con API real e intercepción solo de estados; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de estados; assertions de borrador y foco |  PASS — E2E ejecutado  |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-32 | Inspeccionar IDs y auditorías dedicadas; intentar UPDATE/DELETE sobre ellas | IDs únicos/inmutables; una fila por revisión con actor, UTC, motivo y JSON antes/después; triggers abortan; `audit` sin cambios | SQLite/API; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de IDs, filas de auditoría y triggers; sin DELETE |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-33 | (a) actualizar una base 13 a 18 sin tablas v14/v15/v16; (b) verificar `C14-COMPARTIDOS-FCE1107` y rechazar su v14; (c) verificar `C14-VEHICULOS-C69E343` y subir su fixture v14 a 18; (d) verificar `C15-COMPARTIDOS-AD2EDFE` y subir su fixture v15 a 18; (e) verificar `C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256 `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`, main `2487656`/`1d539a8`) y subir su fixture v16 con filas sintéticas de Revisión de Comida, Compartidos y Vehículos a 18, comprobando preservación; (f) abrir variantes v14/v15/v16 desconocidas o incompletas; (g) abrir una base 19; (h) gate con main 18+, 18 ocupada, main 14/15/16 no verificado, sin manifiestos o worktree D5 con 17 sin C17; (i) inspeccionar rutas 13/14/15/16→18, 17→18 solo con C17 verificado, compuertas y restore 13/14/15/16/17 verificada/18 | (a) 13→18 por progresión canónica, conserva filas y crea vacías Compartidos/Revisión de Comida si faltaban; (b) histórico v14 rechazado sin mutar; (c) C14V preservado y 14→18 conserva Vehículos; (d) C15 preservado y 15→18 conserva Compartidos; (e) C16 coincide y 16→18 preserva `revision_comida`, `revision_comida_audit`, `revision_comida_attempts`, Compartidos, Vehículos, `referencias`, contadores y filas, sin reejecutar 14→15/15→16; (f) variantes desconocidas/incompletas rechazadas antes de `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup/`schema_version` con el literal v14/v15/v16 y sin escribir; (g) v19 rechazada antes de mutar; (h) gate STOP si main 18+, 18 ocupada, main 14/15/16 no verificado, faltan manifiestos o D5 mantiene 17 sin C17; (i) E4.1 16→18 aditivo sin `DROP`/`ALTER` destructivo; migraciones 14→15/15→16 son de main; `database-identity.ts` `1..18`, `database-schema.ts` `[1..17, version]`, `backup.ts` `1..18`, etiqueta `e4.1-v18`; restore verifica C14/C15/C16 y C17 si existe, copias 13-17 verificadas conservan su esquema, copia desconocida no se publica, copia 18 recupera Instrumentos/Compras/auditorías y vacía sesiones/desafíos/intentos; rollback íntegro | API/SQLite real + fixtures aislados; `bun test apps/api/src/compras.test.ts` + backup/restore | macOS: UNRUN para 18; CI Linux pendiente | Manifiestos/hash, preservación, rechazos sin mutación y restore | UNRUN — rev10 propuesta, sin implementación 18 | — |
+| E4.1-AC-33 | (a) actualizar una base 13 a 18 sin tablas v14/v15/v16/v17; (b) verificar `C14-COMPARTIDOS-FCE1107` y rechazar su v14; (c) verificar `C14-VEHICULOS-C69E343` y subir su fixture v14 a 18; (d) verificar `C15-COMPARTIDOS-AD2EDFE` y subir su fixture v15 a 18; (e) verificar `C16-REVISION-COMIDA-26B6F0C` (135 objetos) y subir su fixture v16 a 18; (f) verificar `C17-D5-CF6954A` (145 objetos, SHA-256 propuesto `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`, `cf6954a`) y subir su fixture v17 con filas sintéticas de D5, Compartidos, Revisión de Comida y Vehículos a 18, comprobando `movimiento_compartido`, índices, triggers y Movimientos/auditorías reconstruidos; (g) abrir variantes v14/v15/v16/v17 desconocidas o incompletas; (h) abrir una base 19; (i) gate con main 18+, 18 ocupada, main 14/15/16/17 no verificado, C16/C17 no canónicos, sin manifiestos o worktree en 18; (j) inspeccionar rutas 13/14/15→18, 16→17→18 y 17→18, compuertas y restore 13/14/15/16/17 verificada/18 | (a) 13→18 por progresión canónica 13→14→15→16→17→18, conserva filas y crea vacías las tablas heredadas que falten; (b) histórico v14 rechazado sin mutar; (c) C14V preservado y 14→18 conserva Vehículos; (d) C15 preservado y 15→18 conserva Compartidos; (e) C16 preservado y 16→17→18 conserva Revisión de Comida; (f) C17 coincide (145 objetos/hash) y 17→18 preserva D5, `movimiento_compartido` y sus índices/triggers, las seis tablas reconstruidas (`movimientos`, `movement_audit`, `movimiento_anticipo`, `payroll_allocations`, `revision_comida`, `revision_comida_audit`), el `CHECK` D5 de Transferencia, Compartidos, Revisión de Comida, Vehículos, `referencias`, auditorías, identidad (`database_origin`/`owner`/`key_hash`), contadores y filas, sin reejecutar 14→15/15→16/16→17; (g) variantes desconocidas/incompletas rechazadas antes de `BEGIN IMMEDIATE`/`journal_mode`/DDL/backup/`schema_version` con literal v14/v15/v16/v17 y sin escribir; (h) v19 rechazada antes de mutar; (i) gate STOP si main 18+, 18 ocupada, main 14/15/16/17 no verificado, C16/C17 no canónicos, faltan manifiestos o hay worktree en 18; (j) E4.1 17→18 aditivo sin `DROP`/`ALTER` destructivo; migraciones 14→15/15→16/16→17 son de main; `database-identity.ts` `1..18`, `database-schema.ts` `[1..17, version]`, `backup.ts` `1..18`, etiqueta `e4.1-v18` (origen D5 `e3.2-d5-v17`); restore verifica el manifiesto de la versión de la copia (C14V/C15/C16/C17; 13 solo integridad; C16/C17 pendientes de congelación), copias 13-17 verificadas conservan su esquema, copia desconocida no se publica, copia 18 recupera Instrumentos/Compras/auditorías y vacía sesiones/desafíos/intentos; todas las rutas conservan datos, identidad, auditorías, referencias, contadores e integridad; rollback íntegro | API/SQLite real + fixtures aislados; `bun test apps/api/src/compras.test.ts` + backup/restore | macOS: UNRUN para 18; CI Linux pendiente | Manifiestos/hash, preservación D5, rechazos sin mutación y restore | UNRUN — rev10 propuesta, sin implementación 18 | — |
 | E4.1-AC-34 | Simular error de la fuente de Compras/efectivo (tabla ilegible o consulta fallida) | «No disponible» con causa concreta; identidad/filtros conservados; sin 0, reparación ni guardado que presuma integridad | API/UI con fallo de fuente; `bun run test:e2e tests/e2e/inversiones.spec.ts` | macOS local ejecutado; CI Ubuntu pendiente | PNG de error; assertions de motivo y ausencia de escritura | PARCIAL — error de Compras cubierto; error de fuente de efectivo no probado extremo a extremo |  `bun run test:e2e tests/e2e/inversiones.spec.ts` |
 | E4.1-AC-35 | Retroactiva con apertura 1.000,00; entrada 500,00 el 2026-02-01; salida 1.800,00 el 2026-03-01; Compra de 100,00 el 2026-02-10; repetir con salida 200,00; mismo día con entrada 100,00 y Compra 1.050,00 / 1.150,00 | Primer caso 422 `INSUFFICIENT_CASH` con fecha 2026-03-01 y mínimo −400,00; segundo 201 y saldo posterior 1.200,00; mismo día: 1.050,00 aceptada (cierre 50,00) y 1.150,00 rechazada con fecha 2026-02-10 y mínimo −50,00, independiente del orden | API + motor puro de suficiencia con ventana posterior; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de 422/201, código, fecha, importe del mínimo y tablas sin cambio |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-36 | Instrumento con Compra USD (cambio 0,900000); editar su divisa de referencia a EUR | Solo cambia el maestro con auditoría; la Compra conserva USD, 0,900000, precio, 1.125,00 € y comisión; efectivo/cantidad iguales | API/SQLite; `bun test apps/api/src/instrumentos.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de campos históricos y auditoría del maestro |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
@@ -102,7 +107,7 @@ pendiente.
 | E4.1-AC-53 (integración/regresión) | Previsualizar Gasto sobre `S003`; registrar una Compra que cambie el efectivo; confirmar con la huella y `contextRevision` previas; repetir con un Gasto previsualizado sobre `S001` (sin Compras) y una Compra en `S003` | 409 `IMPACT_CHANGED` sin escribir el Movimiento (no `REVISION_CONFLICT`: la revisión del Movimiento no cambió); el efectivo refleja solo la Compra; borrador conservado; tras recalcular, la confirmación es válida. El caso ajeno devuelve también 409 `IMPACT_CHANGED` sin escritura y se acepta como sobre-invalidación segura de la huella global, no como defecto; tras recalcular, válido | API/Motor + comparación antes/después; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions 409, huella obsoleta, tablas sin cambio y reintento válido en ambos casos |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-54 | `concepto`/`nota` de 2000 y 2001; `divisa` `US`, `USDD`, `usd`; `comisionEur` `5.001` | 2000 aceptado y literal; 2001, cada divisa inválida y la comisión de 3 decimales devuelven 422 con el campo, sin escritura ni redondeo | API real por campo; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions 201/422 por campo y tablas sin cambio |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 
-## Contratos v14/v15/v16 congelados y gate de destino — 2026-10-27
+## Contratos C14/C15 congelados; C16/C17 pendientes y gate de destino — 2026-10-27
 
 Evidencia PRE-DEV-SCHEMA. No implementa E4.1 ni modifica el esquema de la aplicación: genera
 fixtures aislados desde los commits fuente y congela sus manifiestos. Artefacto versionado:
@@ -113,11 +118,13 @@ fixtures aislados desde los commits fuente y congela sus manifiestos. Artefacto 
 | `C14-COMPARTIDOS-FCE1107` (histórico; no origen) | 14 | `fce1107` | 114 | `df6ad4b2e069392a3aa3e1dd616f15afdd5a78738a64ae0199a57dd67b607c8d` | `e6a490ae25a9c0c3c9d87ce8a599de55a2bb462961a63b03fd05dcb9ec496d96` |
 | `C14-VEHICULOS-C69E343` | 14 | `c69e343` | 111 | `f262020fd1658cf0e7c873c32a0322479dbe91f67d3027e178f89b072a86c857` | `34cadc7ef7f98a0db0153e180b4449a78337a7a43121d0c538fccd4c847de383` |
 | `C15-COMPARTIDOS-AD2EDFE` | 15 | `ad2edfe16abd14e2088e41a6f0e1f8f20ea9cc02` | 122 | `d1a5b5479cc78c5aaa42d07a3c47ed443b475e3b4cfcac81372d99c50d34fff5` | `6c0b9bb51054d74d34cf67494cee8b6b9745b8a3ce4a4acce75fa95b5b2ea226` |
-| `C16-REVISION-COMIDA-26B6F0C` | 16 | `26b6f0c` (verificado en main `2487656`/`1d539a8`) | 135 | `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4` | Pendiente de fixture v16 de datos; no se publica .db |
+| `C16-REVISION-COMIDA-26B6F0C` (**real en main; sin manifiesto canónico**) | 16 | `26b6f0c` (verificado en main `2487656`/`1d539a8`) | 135 | `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4` | Pendiente de fixture v16 de datos; no se publica .db |
+| `C17-D5-CF6954A` (**real en main; propuesto; sin manifiesto canónico**) | 17 | `cf6954a` (PR90/D5) | 145 (57 tablas + 17 índices + 71 triggers) | `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50` (generado; pendiente de congelar) | Pendiente de fixture v17 de datos; no se publica .db |
 
 Comprobaciones:
-- Los cuatro manifiestos se auto-verifican: `SHA-256(JSON.stringify(objects))` coincide con el
-  `sha256` registrado.
+- C14/C14V/C15 se auto-verifican contra `schema-contracts.json`; **C16 y C17 no están en ese
+  artefacto**. Sus hashes son generados (C16: 135 objetos; C17: 145 objetos) y **no canónicos**,
+  pendientes de congelación; C17 además requiere cesión.
 - El fixture de `origin/main` `f5bf0325e52cdd4c875aacb32f086dd67a08befa` (esquema 14) produce
   el mismo manifiesto, el mismo SHA-256 (`f262…c857`) y el mismo fixture SQLite que
   `C14-VEHICULOS-C69E343`: **coincide exactamente**.
@@ -134,25 +141,24 @@ Comprobaciones:
   regenerado en `main` y en su fuente de esquema `26b6f0c` coincide: **135 objetos**, SHA-256
   `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`; se propone como
   `C16-REVISION-COMIDA-26B6F0C`. La 16 queda ocupada; la **18 está libre**: ningún ref local ni
-  remoto declara `schemaVersion = 18` a 2026-10-27. No se ha integrado main 16 en la rama E4.1.
+  remoto declara `schemaVersion = 18` a 2026-10-27. No se ha integrado main 16/17 en la rama E4.1.
+- **Actualización 2026-10-27 (main v17/D5):** `origin/main` avanzó a `cf6954a` (PR90/D5) y
+  declara `schemaVersion = 17`. El manifiesto generado tiene **145 objetos** y SHA-256
+  `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`; se propone como
+  `C17-D5-CF6954A`, **sin manifiesto canónico publicado y pendiente de cesión**. La 17 no es
+  origen de E4.1 hasta congelar C16/C17; la 18 sigue libre en refs y worktrees.
 - Los fixtures se generaron en un directorio aislado temporal, sin abrir ni modificar los
   worktrees de Compartidos o Vehículos y sin datos reales. Los ficheros `.db` no se publican;
   se conservan sus SHA-256 como evidencia. El generador y las instrucciones de reproducción
   están en [`specs/fixtures/e4.1/`](fixtures/e4.1/README.md).
 
-**Resultado del gate:** **STOP para 16; PASS condicional para 18 (documental).** `main`
-`1d539a8` (16) coincide exactamente con `C16-REVISION-COMIDA-26B6F0C`; la 16 está ocupada y la
-18 libre. Rev10 propone la ruta canónica 13/14/15/16→18, con tablas de Compartidos y Revisión de
-Comida vacías si el origen no las tenía y preservación de datos/identidad. **Antes de adaptar
-código debe repetirse el gate**; si `main` llega a 18, la 18 se ocupa o cambia un manifiesto,
-STOP y nueva revisión. Sin implementación/integración en esta fase.
-
-**Colisión material con D5:** el worktree ajeno `dev14-d5` (rama `codex/dev14-d5-exterior`,
-HEAD `06f7389`) mantiene cambios sin commitear con `schemaVersion = 17` y etiqueta
-`e3.2-d5-v17`. Ningún ref declara 17, pero la compuerta debe incluir worktrees y estado sin
-commitear; por eso la 17 **no se considera libre** y rev10 renumera a **18**. Si D5 integra un
-C17 verificado, antes de adaptar E4.1 habrá que congelarlo y añadir 17→18; hasta entonces 17 no
-es origen admitido.
+**Resultado del gate:** **STOP para 17 como destino; PASS condicional documental para 18.**
+`main` `cf6954a` (17, PR90/D5) coincide con el manifiesto generado de **145 objetos** y SHA-256
+`e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`, pero **no existe
+manifiesto canónico C16 ni C17** en `apps/api/src/schema-contracts.json` ni cesión explícita de D5. La
+18 está libre en refs y worktrees. Rev10 propone 13/14/15/16/17→18, tablas heredadas vacías si
+faltaban y preservación D5. El gate de código queda **bloqueado** hasta congelar C16/C17, obtener
+cesión y repetir el gate; si `main` llega a 18, la 18 se ocupa o cambia un manifiesto, STOP.
 
 ## Regression checks
 
@@ -160,7 +166,7 @@ es origen admitido.
 candidato fusionado `51d7f5d` (padres `30ff49c` y `main` `24b48c5`):
 `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts
 apps/api/src/inversiones-ac.test.ts apps/api/src/flujo-mensual.test.ts` → **35 pass / 0 fail /
-457 aserciones**. No hay código adaptado a 18 ni integración de main 16; las pruebas 16→18
+457 aserciones**. No hay código adaptado a 18 ni integración de main 17; las pruebas 16→17→18 y 17→18
 están **UNRUN** por diseño de rev10. Typecheck, build y E2E de Inversiones, flujo mensual y Compartidos **PASS**
 (3 E2E). La matriz sigue en **48 PASS y 6 PARCIAL** (AC-03, AC-24, AC-27, AC-30, AC-33 y
 AC-34), sin FAIL funcional ni UNRUN bloqueante. El backup/restore y las compuertas Linux/glibc
@@ -204,32 +210,44 @@ sin condicionales.
   siguen devolviendo 409 `HISTORY_LOCKED`.
 - **Rev10/18 (propuesta, UNRUN):** `database-identity.ts` deberá declarar `schemaVersion = 18`
   y admitir `1..18`; `database-schema.ts` `[1..17, version]`, verificar los contratos
-  v14/v15/v16 y aplicar el esquema de inversión cuando la base sea `< 18`; `backup.ts` `1..18`
-  y etiqueta `e4.1-v18`; `database.ts` verificará el contrato antes de PRAGMAs persistentes y de
-  la transacción de identidad. Los manifiestos congelados serán `C14-COMPARTIDOS-FCE1107`
-  (histórico, no origen), `C14-VEHICULOS-C69E343`, `C15-COMPARTIDOS-AD2EDFE` y
-  `C16-REVISION-COMIDA-26B6F0C` (135 objetos, SHA-256
-  `9d9b0783c519d32d667ae2a3911310b3667bfc4783089db4e6eea9171a9d2dc4`).
-  Las rutas 13/14/15/16→18 aplicarán la progresión canónica; si faltaban Compartidos o
-  Revisión de Comida, crearán sus tablas vacías. Una base 16 **solo** subirá si coincide con
-  `C16-REVISION-COMIDA-26B6F0C`; preservará `revision_comida`, `revision_comida_audit`,
-  `revision_comida_attempts`, Compartidos, Vehículos, `referencias`, contadores y filas. Una
-  base 14/15/16 con objeto ausente, SQL alterado, objeto extra, tablas sintéticas o contratos
-  mezclados se rechazará con el literal de su versión antes de `BEGIN IMMEDIATE`,
-  `journal_mode`, DDL, backup o cambio de `schema_version`. Una versión 19 se rechazará antes
-  de mutar. Los backups 13, 14/15/16 verificados y 18 se restaurarán en directorio nuevo; los
-  de 13-16 conservarán su esquema de origen y no incorporarán tablas v18; una copia v14/v15/v16
-  desconocida se rechazará antes de publicar; la de 18 recuperará Instrumentos, Compras y
-  auditorías y vaciará sesiones, desafíos e intentos. La extensión propia 16→18 será aditiva;
-  la prueba fallará si su SQL contiene `DROP`/`ALTER` destructivo. Las migraciones 14→15 y
-  15→16 son de main y pueden reconstruir/crear sus tablas. **Nada de esto está implementado ni
-  ejecutado en rev10.**
-- Gate de destino (rev10): antes de adaptar código se comprueba `origin/main` y **todos los
-  refs locales/remotos**. Estado observado: `main` `1d539a8` = 16 con
-  `C16-REVISION-COMIDA-26B6F0C`; la 18 está libre y ningún ref declara 18. Si `main` llega a
-  18 o más, la 18 se ocupa, `main` contiene un v14/v15/v16 no verificado o faltan
+  v14/v15/v16/v17 y aplicar el esquema de inversión cuando la base sea `< 18`; `backup.ts`
+  `1..18` y etiqueta `e4.1-v18` (origen D5 `e3.2-d5-v17`); `database.ts` verificará el contrato
+  antes de PRAGMAs persistentes y de la transacción de identidad. Manifiestos: C14 histórico,
+  C14 Vehículos, C15 Compartidos, C16 Revisión de Comida y **C17-D5-CF6954A** (145 objetos,
+  SHA-256 propuesto `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`,
+  pendiente de congelación y cesión). Las rutas 13/14/15/16/17→18 aplicarán la progresión
+  canónica; si faltaban Compartidos, Revisión de Comida o D5, crearán sus tablas vacías. Una
+  base 17 **solo** subirá si coincide con C17 canónico; preservará `movimiento_compartido`,
+  índices, triggers, Movimientos/auditorías reconstruidos, Compartidos, Revisión de Comida,
+  Vehículos, `referencias`, contadores y filas. Una base 14/15/16/17 con objeto ausente, SQL
+  alterado, objeto extra, tablas sintéticas o contratos mezclados se rechazará con el literal
+  de su versión antes de `BEGIN IMMEDIATE`, `journal_mode`, DDL, backup o cambio de
+  `schema_version`. Una versión 19 se rechazará antes de mutar. Los backups 13, 14/15/16/17
+  verificados y 18 se restaurarán en directorio nuevo; los de 13-17 conservarán su esquema de
+  origen y no incorporarán tablas v18; una copia v14/v15/v16/v17 desconocida se rechazará antes
+  de publicar; la de 18 recuperará Instrumentos, Compras y auditorías y vaciará
+  sesiones/desafíos/intentos. La extensión propia 17→18 será aditiva; la prueba fallará si su
+  SQL contiene `DROP`/`ALTER` destructivo. Las migraciones 14→15, 15→16 y 16→17 son de main y
+  pueden reconstruir/crear sus tablas. **Nada de esto está implementado ni ejecutado en
+  rev10.**
+- **D5/v17 evidencia existente en main (no ejecutada aquí):** `apps/api/src/d5-aportaciones.test.ts`
+  cubre T-D5-01/05/06/07/12 (alta atómica), T-D5-09 (replay, concurrencia, contexto obsoleto y
+  rollback), T-D5-10/11 (rectificación/anulación sin borrado) y la migración v16→v17 con
+  preservación de Movimientos, auditorías y Revisión de Comida; `d5-backup.test.ts` cubre
+  restauración v17 con acreditación/evidencia y revocación de intentos. El `CHECK` literal de
+  `movimientos` que debe conservarse es
+  `tipo='Transferencia' AND destino!='S000' AND origen!=destino AND partida IS NULL AND subtipo IS NULL`.
+  Para E4.1/18 estas pruebas son **UNRUN** y deberán repetirse tras congelar C16/C17 y adaptar 17→18; no acreditan la
+  migración 18 ni sustituyen la QA de E4.1.
+- Gate de destino (rev10): antes de adaptar código se comprueba `origin/main`, **todos los
+  refs locales/remotos** y los worktrees/estado sin commitear. Estado observado: `main`
+  `cf6954a` = 17 con C17 propuesto (145 objetos/hash) pero **sin manifiesto canónico ni cesión
+  explícita**; la 18 está libre y ningún ref/worktree declara 18. Si `main` llega a 18 o más, la
+  18 se ocupa, `main` contiene un v14/v15/v16/v17 no verificado, falta C16/C17 canónicos o faltan
   manifiestos/hashes, **STOP**: no se adapta código y se repite la revisión. La reserva
   documental 18 no prevalece sobre `main` ni sobre una reserva local activa.
+  **Todas las rutas 13–16 deben ejecutar la migración canónica D5 16→17 antes de la extensión
+  E4.1 17→18; no se admite un salto ni una ruta 17→18 sin C17 canónico.**
 - `app.test.ts`/`saldos`/`movimientos` y los endpoints de error: los códigos esperados se
   unifican con la tabla de §7 de la especificación. Una comprobación que hoy espere 409 para
   un rechazo por suficiencia pasa a 422 `INSUFFICIENT_CASH`; una que espere 409 genérico por
@@ -248,8 +266,8 @@ sin condicionales.
 
 **Evidencia histórica del contrato 16:** **48 AC PASS y 6 PARCIAL** (AC-03, AC-24, AC-27,
 AC-30, AC-33 y AC-34) en API/SQLite real, sin FAIL funcional; ese recuento pertenece al
-contrato 16. En rev10, **AC-33 pasa a UNRUN** por la nueva ruta 18. **Rev10/18 no tiene
-implementación ni pruebas ejecutadas: su matriz 18 está UNRUN.** La matriz tiene 54 AC (47 funcionales de E4.1 y 7 de
+contrato 16. En rev10, **AC-33 pasa a UNRUN** por la nueva ruta 18. **Rev10/18 no tiene implementación ni pruebas ejecutadas: su matriz 18 está UNRUN y ningún
+PASS histórico de v16 se reutiliza para v18.** La matriz tiene 54 AC (47 funcionales de E4.1 y 7 de
 integración/regresión). Se ejecutaron API/SQLite real, comparación de tablas antes/después,
 dos procesos para concurrencia, rollback inyectado, upgrades canónicos 13→16/14→16/15→16 con
 `main` `24b48c5` y fixtures congelados de Compartidos v14 (`fce1107`), Vehículos (`c69e343`) y
@@ -299,10 +317,10 @@ Evaluación sobre la UI real del candidato fusionado `51d7f5d`:
 ## Limitations and next action
 
 **Rev10 es solo documental y está pendiente de revisión/aprobación por Codex.** No hay
-implementación ni integración de main 16 en la rama; el candidato `51d7f5d` es evidencia
+implementación ni integración de main 17 en la rama; el candidato `51d7f5d` es evidencia
 histórica del contrato 16 y no acredita 18. La 18 está libre a 2026-10-27, pero antes de
-adaptar código hay que repetir el gate y confirmar el contrato `C16-REVISION-COMIDA-26B6F0C`.
-Después: adaptar código a 18, repetir QA, ejecutar CI Linux (`bun test apps/api`, backup/restore,
+adaptar código hay que congelar C16/C17, obtener la cesión de D5 y repetir el gate. Después: adaptar
+código a 18, repetir QA, ejecutar CI Linux (`bun test apps/api`, backup/restore,
 `scripts/verify --full`) y solo entonces abrir PR. macOS no sustituye esa evidencia por la
 limitación `libc.so.6`/`renameat2`. El aplazamiento de DT7 a E4.5/E4.12 sigue registrado en la
 especificación (§5.2, §12, §14) y no se prueba en E4.1. No hay PR, merge ni despliegue
