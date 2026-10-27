@@ -1,12 +1,12 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Brainstorming
 
-Status: **DRAFT — propuesta rev2.1; D1–D7 confirmadas A (2026-10-27); wireframes rev3 y
-specification completa aprobados (2026-10-28); testplan pendiente de aprobación explícita;
-coordinación D7/SPEC19 (E4.1 integrada).**
+Status: **DRAFT — propuesta rev2.1; D1–D7 confirmadas A (2026-10-27); wireframes rev3,
+specification completa y testplan aprobados (2026-10-28); coordinación D7/SPEC19 (E4.1
+integrada).**
 Roadmap/context: [roadmap E4.2](roadmap.md), [referencia funcional R5](functional-reference-v5.11.md),
 [SPEC19 E4.1](19-instrumentos-compras-inversion-specification.md) y
 [testplan E4.1](19-instrumentos-compras-inversion-testplan.md).
-Next action: registrar la aprobación de la specification, aprobar el testplan y preparar D7/SPEC19; no iniciar DEV22.
+Next action: preparar la enmienda D7/SPEC19 como propuesta separada; no iniciar DEV22.
 
 ## 0. Estado de las fuentes y límites de esta ronda
 
@@ -193,8 +193,7 @@ estados y los bloqueos D1/D2/D3, por mensaje explícito del usuario el 2026-10-2
 revisión visual rev3 de W2/W5 y W11–W16 de SPEC22, incluidos los estados y bloqueos D1/D2/D3.»
 La aprobación visual no autoriza DEV22, esquema, commits, push, PR ni merge.
 
-**Pendiente:** aprobación explícita del testplan y coordinación D7/SPEC19 (enmienda mínima de
-SPEC19; E4.1 integrada en v18).
+**Pendiente:** coordinación D7/SPEC19 (enmienda mínima de SPEC19; E4.1 integrada en v18).
 
 ## 3. Cobertura de la ronda
 
@@ -233,5 +232,5 @@ independiente de la aprobación documental de la specification y no autoriza DEV
   se inicia DEV22.
 - **2026-10-28 — rev3:** wireframes W2/W5 y W11–W16 rev3 aprobados visualmente por el usuario,
   incluidos estados y bloqueos D1/D2/D3. E4.1 queda integrada en `main` `156a50d` (v18); la
-  specification completa se aprueba el 2026-10-28 y el testplan queda pendiente. D7/SPEC19 sigue
-  abierto; no se inicia DEV22.
+  specification completa y el testplan se aprueban el 2026-10-28. D7/SPEC19 sigue abierto; no se
+  inicia DEV22.

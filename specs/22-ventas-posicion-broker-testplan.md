@@ -2,17 +2,19 @@
 
 Specification: [22-ventas-posicion-broker-specification.md](22-ventas-posicion-broker-specification.md)
 Brainstorming: [22-ventas-posicion-broker-brainstorming.md](22-ventas-posicion-broker-brainstorming.md)
-Status: **PROPOSED rev2 — matriz de diseño; D1–D7 confirmadas A (2026-10-27); wireframes rev3
-aprobados visualmente (2026-10-28); specification completa aprobada el 2026-10-28. Testplan
-pendiente de aprobación explícita; ningún caso ejecutado. DEV22 no autorizado.**
+Status: **APPROVED rev2 — matriz de diseño; D1–D7 confirmadas A (2026-10-27); wireframes rev3
+aprobados visualmente (2026-10-28); specification completa y testplan aprobados por el usuario el
+2026-10-28. Ningún caso ejecutado; DEV22 no autorizado.**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
 aprobados visualmente el 2026-10-28; specification completa aprobada por el usuario el
-2026-10-28.
+2026-10-28; testplan aprobado por el usuario el 2026-10-28 con el mensaje «SPEC22 testplan
+apruebo».
 Base documental: `main` `4edcfeb`, 2026-10-28.
 Historial: rev1 (2026-10-27) matriz inicial de 45 AC; rev2 (2026-10-27) registra Q0 resuelta y
 D1–D7 confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual rev3; la specification
-completa se aprobó el 2026-10-28. No hay implementación, código E4.2, migración ni datos reales.
+completa y este testplan se aprobaron el 2026-10-28. No hay implementación, código E4.2,
+migración ni datos reales.
 
 ## 1. Alcance, entorno y lectura de la matriz
 
@@ -152,6 +154,7 @@ explícito.
 | Distinción aprobado/propuesto/implementado | Inspección de §1.1 y brainstorming §0 | **PASS** — rev7/rev8 y rev10 aprobadas (rev10 integrada en `main` `156a50d`); E4.1 integrada en v18; sin implementación E4.2 |
 | Revisión documental independiente | Tres revisores en contexto separado, solo lectura (`ses_e81331174fferO8rj47V8of431`, `ses_e8124bbb8ffeGN2qfdFZOv2nmT`, `ses_e811d99b3ffevf4K5q3804grOn`) | **PASS final** — la primera emitió CHANGES (19 hallazgos), la segunda CHANGES (2 mayores + 7 menores), la tercera **PASS** con 6 menores editoriales; todas las correcciones aplicadas y verificadas |
 | Aprobación visual rev3 | Mensaje explícito del usuario, 2026-10-28 | **PASS** — «Apruebo la revisión visual rev3 de W2/W5 y W11–W16 de SPEC22, incluidos los estados y bloqueos D1/D2/D3.» No autoriza DEV22, esquema, commits, push, PR ni merge |
+| Aprobación del testplan | Mensaje explícito del usuario, 2026-10-28 | **PASS** — «SPEC22 testplan apruebo». Aprobación documental; no ejecuta los 45 AC ni autoriza DEV22 |
 
 Estos estados se actualizarán con la evidencia real de la sesión; no se declarará PASS sin
 comando, entorno y candidato. No hay pruebas funcionales, CI remoto ni verificación de
@@ -175,8 +178,8 @@ implementación en esta ronda.
 
 ## 7. Siguiente acción
 
-La specification completa está aprobada desde el 2026-10-28 y los wireframes rev3 también. El
-**testplan sigue pendiente de aprobación explícita**; no se infiere de la aprobación de la spec.
-E4.1 está integrada (`156a50d`, v18) y D7 requiere una enmienda mínima de SPEC19. Solo con el
-testplan aprobado y una autorización de desarrollo separada se podrá abrir DEV22, implementar y
-ejecutar esta matriz con candidato y evidencia. No se inicia DEV22 por esta ronda documental.
+La specification completa y este testplan están aprobados desde el 2026-10-28; los wireframes
+rev3 también. Los 45 AC siguen **UNRUN** hasta que exista implementación y candidato autorizado.
+E4.1 está integrada (`156a50d`, v18) y D7 requiere una enmienda mínima de SPEC19. Solo con una
+autorización de desarrollo separada se podrá abrir DEV22, implementar y ejecutar esta matriz con
+candidato y evidencia. No se inicia DEV22 por esta ronda documental.
