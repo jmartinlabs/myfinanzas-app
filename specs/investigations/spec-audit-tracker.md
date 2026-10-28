@@ -139,10 +139,10 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/09-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #57 MERGED `7422d23` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
-| 11 | Nómina y previsión | Pendiente | — | — | — | — | — | — |
-| 12 | Flujo mensual | Pendiente | — | — | — | — | — | — |
-| 13 | Anticipos | Pendiente | — | — | — | — | — | — |
-| 14 | Gastos compartidos | Pendiente | — | — | — | — | — | — |
+| 11 | Nómina y previsión | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura: estado integrado bien identificado, N:M y proyección separadas; pendientes pruebas transversales y contraste de reglas. | SPEC 11, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #63 `ed4a272` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
+| 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
+| 13 | Anticipos | En inspección (no cerrada) | H-TRANS-01 (ampliación): progress deja PR #71 DRAFT y QA pendiente pese a integración; motor rol/par cotejado parcialmente. | SPEC 13, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #71 `b146eda` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
+| 14 | Gastos compartidos | En inspección (no cerrada) | H-TRANS-01 (ampliación): checkpoint D5 conserva PR #90 Draft/no merge; Base B y D5 ya integradas, B-T11 todavía futuro. | SPEC 14, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #75 `5ad75ed`; #90 `cf6954a` integradas. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 15 | Vehículos e ITV | Pendiente | — | — | — | — | — | — |
 | 16 | Revisión Comida | Pendiente | — | — | — | — | — | — |
 | 17 | Deuda completa | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
@@ -253,10 +253,11 @@ las PR de entrega funcional y los servicios de Ciclos, Presupuestos, Plan del ci
 y Plan anual. **No hubo ejecución de pruebas nuevas ni revisión del Excel real**.
 Esta ronda NO cierra ninguna SPEC.
 
-### H-TRANS-01 — Progresos de SPEC07–10 sin estado de integración vigente (documental, bajo)
+### H-TRANS-01 — Progresos de varias SPEC sin estado de integración vigente (documental, bajo)
 
-Hallazgo **transversal único** para evitar cuatro hallazgos repetidos de la misma
-naturaleza; se registra su relación con cada SPEC en la tabla de seguimiento.
+Hallazgo **transversal único** para evitar hallazgos repetidos de la misma
+naturaleza; inicialmente observado en SPEC07–10, ampliado después a SPEC13–14.
+La relación con cada SPEC se conserva en su fila de seguimiento.
 
 | SPEC | Evidencia documental que permanece | Integración verificada en GitHub |
 | --- | --- | --- |
@@ -264,6 +265,8 @@ naturaleza; se registra su relación con cada SPEC en la tabla de seguimiento.
 | 08 | `08-presupuestos-progress.md:3-5`: candidato y PR pendiente; la propia `specification.md:3` ya reconoce #44 integrada | PR #44 MERGED, squash `255bf61` |
 | 09 | `09-plan-ciclo-progress.md:3-5,69-86`: «EN CURSO», CI y validación global pendientes | PR #57 MERGED, squash `7422d23` |
 | 10 | `10-plan-anual-progress.md:3-7,90-100`: candidato y gate Linux/merge pendientes; `testplan.md:117-132` remite a CI por SHA | PR #61 MERGED, squash `e1d6dba` |
+| 13 | `13-anticipos-progress.md:4-15`: PR #71 todavía Draft, candidato y gate de aceptación en curso pese a que el primer párrafo se declara vigente; el resto es historia conservada | PR #71 MERGED, squash `b146eda` |
+| 14 | `14-compartidos-progress.md:8-32,282-375`: «PR #90 Draft; sin merge», aun cuando registra QA/CI D5; Base B separada | PR #75 MERGED `5ad75ed` y PR #90 MERGED `cf6954a` |
 
 **Causa documental probable:** los cierres se realizaron mediante integración en
 GitHub sin actualizar después las cabeceras del progreso; los relatos históricos
@@ -295,6 +298,41 @@ H-TRANS-01 en 07–10, sin crear PR por cada documento. No tocar código.
 **Pendiente:** revisar reglas de rectificación de ciclos, efectos sobre presupuestos
 y Plan del ciclo, cierre/corte financiero, históricos y pruebas/regresiones
 transversales. No reclasificar como PASS las dependencias futuras no ejecutadas.
+
+## Auditoría global — tercera pasada del lote C (SPEC11–14), 2026-10-28
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+**Alcance:** specification/progress/testplan de SPEC11–14, verificación de PR
+#63/#67/#71/#75/#90 y lectura selectiva de `nomina.ts`, `flujo-mensual.ts`,
+`anticipos.ts` y `compartidos.ts`; no pruebas ejecutadas ni Excel inspeccionado.
+Estas SPEC **siguen en inspección**.
+
+- **SPEC11 Nómina:** `11-nomina-prevision-progress.md:3-20` registra correctamente
+  PR #63 integrada y QA Linux. El motor mantiene tratamiento explícito de
+  originales y conciliación N:M; falta auditoría de consumidores/fechas en detalle.
+- **SPEC12 Flujo mensual:** `12-flujo-mensual-progress.md:4-17` reconoce PR #67
+  integrada y AC de integración todavía UNRUN. `flujo-mensual.ts:109-173`
+  separa ingreso bancario, Gasto bruto, cuotas y extraordinarias. 
+  **Riesgo previamente conocido** (no hallazgo duplicado): lectura directa
+  `ledgerRows()` en `monthlyFlow()`, incluso si `movementSource()` devuelve error
+  estructurado. H-SPEC03-03 no prometió remediar esa ruta.
+- **SPEC13 Anticipos:** PR #71 integrada (`b146eda`) aunque
+  `13-anticipos-progress.md:4-15` permanece en candidato/PR Draft. En
+  `anticipos.ts:75-177`, la devolución exige metadatos acreditados, par del
+  adelanto y dirección inversa; se alinea con Q9 de spec13 en esta inspección.
+  Ver H-TRANS-01, sin declarar cobertura global de fotos/cierres.
+- **SPEC14 Compartidos:** las PR #75 Base B y #90 D5 están integradas
+  (`5ad75ed`/`cf6954a`). La cabecera y el último checkpoint de
+  `14-compartidos-progress.md` conservan «PR #90 Draft; sin merge».
+  El servicio de aportaciones y el motor compartido están presentes.
+  `B-T11`/informes y aceptación E3.2 global **no se convierten en PASS**
+  por la integración; la propia documentación reconoce esos límites.
+  Se amplía el mismo H-TRANS-01, sin duplicarlo.
+
+**Siguiente contraste necesario:** fecha bancaria Nómina vs ciclo financiado,
+desglose/cobertura de Flujo mensual, protección de foto de Neto de apertura,
+rectificación de recuperaciones y atribución D5/compartidos, incluyendo tests
+actuales y dependencias E3.5/E4. No corregir producto ni ampliar estados sin prueba.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
