@@ -12,12 +12,13 @@ Current state: complete — E1.1 implementado e integrado mediante PR #7; correc
 | 6. Documentación y revisión de historia para PR funcional | complete | Controles locales pasan; rama feat/e1-1-saldos, CI por SHA en la PR |
 
 ## Estado vigente (2026-10-28)
-E1.1 cerrada: PR #7 integrada y PR #9 corrigió la concurrencia (`main` `23e471e`).
-Evidencia del [testplan](01-saldos-control-testplan.md): 38 PASA E1.1, 1 PARCIAL
-(AC-38) y 4 contratos revisados (AC-30/31/32/36). E1.3 se integró después; su
+E1.1 cerrada funcionalmente: PR #7 integrada y PR #9 corrigió la concurrencia
+(`main` `23e471e`). Evidencia del [testplan](01-saldos-control-testplan.md): 38 PASA E1.1,
+1 PARCIAL (AC-38) y 4 contratos revisados (AC-30/31/32/36). E1.3 se integró después; su
 integración no queda acreditada por las pruebas originales de E1.1. Esquema vigente
-**18**. E1.2 y las entregas posteriores avanzaron por sus propias ramas/PR; el estado
-global está en el [tablero](epic-board.md).
+**18**. **Auditoría de coherencia:** H-SPEC01-01 abierto; SPEC01 no se declara cerrada
+hasta resolverlo. E1.2 y las entregas posteriores avanzaron por sus propias ramas/PR; el
+estado global está en el [tablero](epic-board.md).
 
 ## Verified increments
 Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama

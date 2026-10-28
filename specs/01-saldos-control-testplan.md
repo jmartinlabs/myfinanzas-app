@@ -146,6 +146,8 @@ ni custodia definitiva.
 Pruebas locales ejecutadas, sin bloqueo de Codex: Chromium del sistema y age oficial
 verificado disponibles. **PR #7 integrada; PR #9 corrigió la concurrencia. E1.1 cerrada;
 el merge ya no está pendiente.**
+**Coherencia con código:** H-SPEC01-01 abierto (posición con apertura ausente); no reabre
+los AC históricos y se registra en el [tracker](investigations/spec-audit-tracker.md).
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco

@@ -14,7 +14,8 @@ concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9) en `m
 Ciclos, cierres) se rigen por sus propias specs. E1.3 se integró posteriormente; su
 integración **no queda acreditada** por las pruebas originales de E1.1. La evidencia de
 pruebas está en el [testplan](01-saldos-control-testplan.md); el seguimiento global, en
-el [tablero](epic-board.md).
+el [tablero](epic-board.md). **Auditoría de coherencia:** H-SPEC01-01 abierto (posición
+calculada con apertura ausente); ver [tracker](investigations/spec-audit-tracker.md).
 **Regla de lectura:** las menciones a «sin implementación», «futuro», «PR #6 pendiente»,
 «sin merge» o «sin DDL» de los apartados siguientes describen el STEP 5 documental y son
 **contexto histórico**; no son prohibiciones vigentes ni cambian las reglas financieras.
@@ -729,7 +730,9 @@ de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen a
 E1.1 está implementada e integrada por [PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7),
 con la corrección de concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9).
 El cierre documental de PR #6 y la aprobación de la versión completa son históricos y
-están completados. No quedan acciones pendientes de E1.1 ni se reabren Q1–Q8/M1/M2.
+están completados. No quedan acciones documentales pendientes de E1.1; la auditoría de
+coherencia mantiene **H-SPEC01-01 abierto** (posición con apertura ausente), que requiere
+decisión y, si procede, una PR funcional separada. No se reabren Q1–Q8/M1/M2.
 Los motores posteriores y la protección de cierres se rigen por sus specs (SPEC26/27) y
 por el roadmap; este documento no autoriza implementarlos ni declara su runtime. Cualquier
 cambio de regla financiera requiere una contradicción documentada y aprobación expresa.
