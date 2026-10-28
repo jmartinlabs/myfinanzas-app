@@ -178,7 +178,9 @@ adaptations with valid alternate product paths and rejected broad Markdown exemp
 Autorizado por el usuario: implementación y PR independientes, sin merge, deploy,
 protecciones ni intervención en los cinco desarrollos paralelos. Esta adaptación
 aplica el contrato portable anterior; los apartados v2.6/v2.7 inferiores son historia
-sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones vigentes.
+sustituida solo en selección de entorno, eventos y grafo CI. **La actualización de
+documentación del 2026-10-28 sustituye para este repositorio la allowlist genérica y
+v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
 
 - `python3 scripts/verify` y `--full` conservan toda la cobertura local; baseline,
   tipos/build, API/SQLite y E2E. La excepción histórica AC23 sigue limitada a su rama.
@@ -199,15 +201,25 @@ sustituida solo en selección de entorno, eventos y grafo CI. No son excepciones
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
   `docs` ejecuta baseline; `fast` añade tipos/build; `critical` añade **toda** la
   suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
-  solo documentación permitida ejecuta `docs`; cualquier otro cambio ejecuta `fast`;
-  nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo el rango
-  mediante merge-base sobre la base probada. El postmerge no repite API/SQLite: la PR
-  validó el merge ref contra la base. Si GitHub reconstruye el merge ref sobre una main
-  más nueva antes del checkout, esa misma ejecución es la repetición y solo omite
-  aplicación cuando el diff propio de la PR es documental; un merge ref anterior al
-  evento falla y debe relanzarse. Para un merge de alto riesgo
+  solo documentación Markdown no excluida ejecuta `docs`; cualquier otro cambio ejecuta
+  `fast`; nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo
+  el rango mediante merge-base sobre la base probada. El postmerge no repite
+  API/SQLite: la PR validó el merge ref contra la base. Si GitHub reconstruye el merge
+  ref sobre una main más nueva antes del checkout, esa misma ejecución es la repetición
+  y solo omite aplicación cuando el diff propio de la PR es documental; un merge ref
+  anterior al evento falla y debe relanzarse. Para un merge de alto riesgo
   se usa `workflow_dispatch` full, no un `critical` automático que duplique coste.
-- Fast se limita a documentación permitida y CSS en `apps/web/`. Todo TS/TSX,
+- **Documentación (actualización 2026-10-28):** `docs` admite cualquier `.md` de
+  documentación en cualquier directorio, sin allowlist de familias. Se excluyen siempre
+  `AGENTS.md`, `CLAUDE.md`, `SKILL.md`, `instructions.md`, `NEW_PROJECT_PROMPT.md`,
+  `PROMPT_BACKUP*.md`, `.agents/`, `.claude/`, `templates/`, `specs/methodology/`,
+  `specs/guidelines/`, `specs/README.md`, `docs/CLAUDE_CODE.md`,
+  `docs/GUIA_VISUAL_ORQUESTACION.md` y cualquier Markdown funcional bajo `apps/`,
+  `packages/`, `tests/`, `scripts/`, `.github/`, `specs/fixtures/`, `build/` o `dist/`.
+  Mezclar documentación con código/configuración conserva el perfil de mayor riesgo;
+  renombrados y eliminaciones se evalúan en ambos extremos. Non-Markdown, rutas
+  desconocidas y clasificación incierta siguen siendo `full`.
+- Fast se limita a CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
   dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
   Borrados y ambos extremos de renombres cuentan. Clasificación incierta nunca

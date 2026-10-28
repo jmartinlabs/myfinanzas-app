@@ -71,17 +71,76 @@ class CiClassifierTests(unittest.TestCase):
         (self.root / 'specs/backlog/normal.md').unlink()
         self.assertEqual(self.classify(base=changed), 'docs')
 
+    def test_documentation_any_directory_add_modify_rename_delete(self):
+        for name in ('docs/guide.md', 'infra/README.md',
+                     'specs/investigations/note.md', 'unknown.md'):
+            with self.subTest(name=name):
+                before = self.git('rev-parse', 'HEAD').decode().strip()
+                self.write(name, 'docs fixture')
+                added = self.commit(); self.assertEqual(self.classify(added, before), 'docs')
+                self.write(name, 'changed docs fixture')
+                changed = self.commit(); self.assertEqual(self.classify(changed, added), 'docs')
+                renamed = name + '.renamed.md'
+                self.git('mv', name, renamed)
+                moved = self.commit(); self.assertEqual(self.classify(moved, changed), 'docs')
+                (self.root / renamed).unlink()
+                self.assertEqual(self.classify(base=moved), 'docs')
+
+    def test_pr_107_equivalent_markdown_only_is_docs(self):
+        names = [
+            'specs/26-e48-precierre-brainstorming.md',
+            'specs/26-e48-precierre-specification.md',
+            'specs/26-e48-precierre-testplan.md',
+            'specs/27-e49-cierre-financiero-brainstorming.md',
+            'specs/27-e49-cierre-financiero-specification.md',
+            'specs/27-e49-cierre-financiero-testplan.md',
+            'specs/investigations/dt5-write-impact-inventory.md',
+            'specs/investigations/dt5-e48-e49-specification-proposal.md',
+        ]
+        for name in names:
+            self.write(name)
+        head = self.commit()
+        self.assertEqual(self.classify(head, self.base, pr=True), 'docs')
+        self.assertEqual(self.classify(head, self.base), 'docs')
+
+    def test_docs_rename_touching_functional_path_is_full(self):
+        self.write('docs/guide.md', 'same content')
+        start = self.commit()
+        (self.root / 'apps/api').mkdir(parents=True, exist_ok=True)
+        self.git('mv', 'docs/guide.md', 'apps/api/guide.md')
+        moved = self.commit()
+        self.assertEqual(self.classify(moved, start), 'full')
+        self.git('mv', 'apps/api/guide.md', 'docs/guide.md')
+        self.assertEqual(self.classify(base=moved), 'full')
+
     def test_protected_unknown_and_mixed_paths(self):
-        paths = ['AGENTS.md', 'specs/backlog/AGENTS.md', 'specs/backlog/SKILL.md',
-                 '.agents/skills/demo/SKILL.md', 'specs/methodology/ci-policy.md',
-                 'specs/guidelines/quality.md', 'schema.sql', 'package.json', 'bun.lock',
-                 'tsconfig.json', '.github/workflows/validate.yml', 'scripts/check-project',
-                 'apps/web/src/App.tsx', 'specs/backlog/nested/file.md', 'unknown.md',
-                 'specs/backlog/config.yml', 'CLAUDE.md']
-        for name in paths:
+        protected = [
+            'AGENTS.md', 'specs/backlog/AGENTS.md', 'specs/backlog/SKILL.md',
+            '.agents/skills/demo/SKILL.md', '.claude/skills/demo/SKILL.md',
+            'CLAUDE.md', 'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md',
+            'specs/methodology/ci-policy.md', 'specs/guidelines/quality.md',
+            'specs/README.md', 'docs/CLAUDE_CODE.md', 'docs/GUIA_VISUAL_ORQUESTACION.md',
+            'templates/specification.md',
+            'apps/api/contract.md', 'packages/ui/README.md', 'tests/fixtures/expected.md',
+            'scripts/guide.md', '.github/ISSUE_TEMPLATE/config.md',
+            'specs/fixtures/README.md', 'build/notes.md', 'dist/notes.md',
+            'schema.sql', 'package.json', 'bun.lock', 'tsconfig.json',
+            '.github/workflows/validate.yml', 'scripts/check-project',
+            'apps/web/src/App.tsx', 'unknown.txt', 'specs/backlog/config.yml',
+        ]
+        for name in protected:
             with self.subTest(name=name):
                 data = ('A\0specs/backlog/demo.md\0M\0' + name + '\0').encode()
                 self.assertEqual(POLICY['classify_records'](data), 'full')
+        docs = [
+            'README.md', 'infra/README.md', 'docs/USAGE_REPORTS.md',
+            'specs/investigations/new.md', 'specs/31-sqlite-produccion-x.md',
+            'specs/backlog/nested/file.md', 'unknown.md',
+            'specs/09-plan-ciclo/plan-specification.md',
+        ]
+        for name in docs:
+            with self.subTest(name=name):
+                self.assertEqual(POLICY['classify_records'](('A\0' + name + '\0').encode()), 'docs')
 
     def test_each_product_family_and_exact_path_git_lifecycle(self):
         names = ['specs/09-plan-' + kind + '.md' for kind in
@@ -106,9 +165,16 @@ class CiClassifierTests(unittest.TestCase):
 
     def test_protected_categories_git_lifecycle_alone_and_product_mixes(self):
         protected = ['AGENTS.md', 'specs/backlog/AgEnTs.Md', '.agents/skills/demo/SKILL.md',
-                     'specs/methodology/policy.md', 'specs/guidelines/quality.md', 'scripts/verify',
-                     '.github/workflows/validate.yml', 'config.json', 'schema.sql', 'package.json',
-                     'bun.lock', 'apps/api/code.ts', 'unknown.md', 'specs/README.md']
+                     '.claude/skills/demo/SKILL.md', 'specs/methodology/policy.md',
+                     'specs/guidelines/quality.md', 'specs/README.md',
+                     'docs/CLAUDE_CODE.md', 'templates/specification.md',
+                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP_COMPLETE.md',
+                     'apps/api/contract.md', 'tests/fixtures/expected.md',
+                     'scripts/guide.md', 'specs/fixtures/README.md',
+                     '.github/ISSUE_TEMPLATE/config.md',
+                     'scripts/verify', '.github/workflows/validate.yml',
+                     'config.json', 'schema.sql', 'package.json',
+                     'bun.lock', 'apps/api/code.ts']
         families = ['specs/backlog/fixture.md', 'specs/project.md'] + [
                     'specs/09-plan-' + kind + '.md' for kind in
                     ('brainstorming', 'specification', 'progress', 'testplan')]
@@ -168,13 +234,19 @@ class CiClassifierTests(unittest.TestCase):
 
     def test_functional_docs_do_not_allow_unknown_or_operational_markdown(self):
         forbidden = ['specs/AGENTS.md', 'specs/CLAUDE.md', 'specs/SKILL.md',
-                     'specs/instructions.md', 'specs/09-plan-ciclo.md',
-                     'specs/09-plan-ciclo-specification.md.sql',
-                     'specs/09-plan-ciclo-SKILL.md', 'specs/09-plan-ciclo/plan-specification.md',
-                     'specs/methodology/09-policy-specification.md',
+                     'specs/instructions.md', 'specs/methodology/09-policy-specification.md',
                      'specs/guidelines/09-guide-specification.md',
-                     '.agents/skills/09-plan-specification.md', 'README.md',
-                     'specs/unknown.md', 'scripts/09-plan-specification.md', 'specs/README.md']
+                     '.agents/skills/09-plan-specification.md',
+                     '.claude/skills/09-plan-specification.md',
+                     'templates/09-plan-specification.md',
+                     'specs/README.md', 'docs/CLAUDE_CODE.md',
+                     'NEW_PROJECT_PROMPT.md', 'PROMPT_BACKUP.md',
+                     'apps/api/09-plan-specification.md',
+                     'tests/fixtures/09-plan-specification.md',
+                     'scripts/09-plan-specification.md',
+                     'specs/fixtures/09-plan-specification.md',
+                     '.github/09-plan-specification.md',
+                     'unknown.txt', 'specs/backlog/config.yml']
         for name in forbidden:
             with self.subTest(name=name):
                 for status in ('A', 'M', 'D'):
@@ -182,6 +254,10 @@ class CiClassifierTests(unittest.TestCase):
                     self.assertEqual(POLICY['classify_records'](records), 'full')
                     mixed = b'A\0specs/09-plan-specification.md\0' + records
                     self.assertEqual(POLICY['classify_records'](mixed), 'full')
+        for name in ('specs/unknown.md', 'README.md', 'docs/guide.md',
+                     'infra/README.md', 'specs/09-plan-ciclo/plan-specification.md'):
+            with self.subTest(docs=name):
+                self.assertEqual(POLICY['classify_records'](('A\0' + name + '\0').encode()), 'docs')
 
     def test_functional_rename_checks_both_endpoints(self):
         self.write('specs/guidelines/quality.md', 'identical fixture')
@@ -189,7 +265,8 @@ class CiClassifierTests(unittest.TestCase):
         self.git('mv', 'specs/guidelines/quality.md', 'specs/09-plan-specification.md')
         middle = self.commit()
         self.assertEqual(self.classify(middle, before), 'full')
-        self.git('mv', 'specs/09-plan-specification.md', 'specs/unknown.md')
+        (self.root / 'apps/api').mkdir(parents=True, exist_ok=True)
+        self.git('mv', 'specs/09-plan-specification.md', 'apps/api/unknown.md')
         self.assertEqual(self.classify(base=middle), 'full')
 
     def test_deleted_protected_file(self):
@@ -324,15 +401,27 @@ class CiClassifierTests(unittest.TestCase):
 
     def test_ci_profiles_critical_unknown_renames_and_fast_allowlist(self):
         profiles = POLICY['profile_records']
-        for path in ('apps/api/src/database.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
-                     'scripts/verify', 'infra/Containerfile', 'bun.lock', 'unknown.md'):
+        critical = [
+            'apps/api/src/database.ts', 'apps/web/src/Unknown.tsx', 'apps/web/src/amount.ts',
+            'scripts/verify', 'infra/Containerfile', 'bun.lock',
+            'apps/api/contract.md', 'tests/fixtures/expected.md', 'scripts/guide.md',
+            'specs/fixtures/README.md', 'AGENTS.md', 'specs/methodology/policy.md',
+            'templates/specification.md', 'unknown.txt',
+        ]
+        for path in critical:
             for status in ('A', 'M', 'D'):
                 self.assertEqual(profiles((status + '\0' + path + '\0').encode()), 'critical')
             for endpoints in ((path, 'apps/web/src/style.css'), ('apps/web/src/style.css', path)):
                 self.assertEqual(profiles(('R100\0' + '\0'.join(endpoints) + '\0').encode()), 'critical')
+        docs = ['specs/project.md', 'specs/investigations/new.md', 'docs/guide.md',
+                'README.md', 'specs/31-sqlite-produccion-x.md', 'unknown.md']
+        for path in docs:
+            self.assertEqual(profiles(('M\0' + path + '\0').encode()), 'docs')
         self.assertEqual(profiles(b'M\0apps/web/src/style.css\0'), 'fast')
+        self.assertEqual(profiles(('M\0specs/project.md\0M\0apps/web/src/style.css\0').encode()), 'fast')
+        self.assertEqual(profiles(('R100\0specs/project.md\0specs/investigations/new.md\0').encode()), 'docs')
+        self.assertEqual(profiles(('R100\0specs/project.md\0apps/api/code.ts\0').encode()), 'critical')
         self.assertEqual(profiles(b'M\0apps/web/../amount.css\0'), 'critical')
-        self.assertEqual(profiles(b'M\0specs/project.md\0'), 'docs')
         for bad in (b'', b'M\0', b'R100\0apps/web/a.css\0', b'Z\0apps/web/a.css\0', b'M\0bad\xff\0'):
             self.assertEqual(profiles(bad), 'critical')
 

@@ -3,31 +3,52 @@
 import argparse
 import json
 import os
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 import re
 import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-PROTECTED = {'agents.md', 'claude.md', 'skill.md', 'instructions.md'}
-FUNCTIONAL_DOC = re.compile(
-    r'[0-9]{2}-[a-z0-9]+(?:-[a-z0-9]+)*-(?:brainstorming|specification|progress|testplan)\.md')
-CONTEXT_DOCS = {'project.md', 'roadmap.md', 'setup-progress.md', 'epic-board.md',
-                'functional-reference-v5.11.md'}
+PROTECTED_NAMES = {
+    'agents.md', 'claude.md', 'skill.md', 'instructions.md',
+    'new_project_prompt.md',
+}
+PROTECTED_PATHS = {
+    'specs/readme.md',
+    'docs/claude_code.md',
+    'docs/guia_visual_orquestacion.md',
+}
+PROTECTED_PREFIXES = (
+    '.agents/', '.claude/', 'templates/',
+    'specs/methodology/', 'specs/guidelines/',
+)
+# Markdown consumed by the application/build or harness. Non-Markdown paths are
+# already full; these prefixes keep functional Markdown full as well.
+FUNCTIONAL_PREFIXES = (
+    'apps/', 'packages/', 'tests/', 'scripts/', '.github/', 'specs/fixtures/',
+    'build/', 'dist/',
+)
+PROMPT_BACKUP = re.compile(r'prompt_backup.*\.md$')
 
 
 def docs_path(path):
-    # Explicit product-document families only; never all Markdown under specs/.
+    # Documentation Markdown in any directory, except operational/harness files
+    # and Markdown consumed by application/build paths. Non-Markdown is full.
     if not isinstance(path, str) or not path or '\\' in path:
         return False
     parts = path.split('/')
-    if (not all(p not in ('', '.', '..') for p in parts)
-            or PurePosixPath(path).name.lower() in PROTECTED):
+    if not all(p not in ('', '.', '..') for p in parts):
         return False
-    return ((len(parts) == 3 and parts[:2] == ['specs', 'backlog']
-             and parts[2].endswith('.md'))
-            or (len(parts) == 2 and parts[0] == 'specs'
-                and (parts[1] in CONTEXT_DOCS or FUNCTIONAL_DOC.fullmatch(parts[1]) is not None)))
+    lower = path.lower()
+    name = parts[-1].lower()
+    if not lower.endswith('.md'):
+        return False
+    if (name in PROTECTED_NAMES or PROMPT_BACKUP.fullmatch(name)
+            or lower in PROTECTED_PATHS
+            or any(lower.startswith(prefix) for prefix in PROTECTED_PREFIXES)
+            or any(lower.startswith(prefix) for prefix in FUNCTIONAL_PREFIXES)):
+        return False
+    return True
 
 
 def record_paths(data):
