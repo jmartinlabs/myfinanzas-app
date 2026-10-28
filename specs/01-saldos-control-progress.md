@@ -13,10 +13,11 @@ Current state: complete — E1.1 implementado e integrado mediante PR #7; correc
 
 ## Estado vigente (2026-10-28)
 E1.1 cerrada: PR #7 integrada y PR #9 corrigió la concurrencia (`main` `23e471e`).
-Evidencia del [testplan](01-saldos-control-testplan.md): 39 PASA E1.1, 4 contratos
-revisados (AC-30/31/32/36) y AC-38 parcial. Esquema vigente **18**. E1.2 y las
-entregas posteriores avanzaron por sus propias ramas/PR; el estado global está en el
-[tablero](epic-board.md).
+Evidencia del [testplan](01-saldos-control-testplan.md): 38 PASA E1.1, 1 PARCIAL
+(AC-38) y 4 contratos revisados (AC-30/31/32/36). E1.3 se integró después; su
+integración no queda acreditada por las pruebas originales de E1.1. Esquema vigente
+**18**. E1.2 y las entregas posteriores avanzaron por sus propias ramas/PR; el estado
+global está en el [tablero](epic-board.md).
 
 ## Verified increments
 Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama

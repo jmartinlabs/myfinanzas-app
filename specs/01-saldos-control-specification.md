@@ -11,9 +11,10 @@ antes de STEP 7; desarrollo local/ficticio E1.1 autorizado el 2026-10-21.
 **Estado vigente (2026-10-28):** E1.1 cerrada; PR #7 integrada y corrección de
 concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9) en `main`
 (`23e471e`). Esquema vigente **18**; los motores posteriores (Movimientos, Inversiones,
-Ciclos, cierres) se rigen por sus propias specs. La evidencia de pruebas está en el
-[testplan](01-saldos-control-testplan.md); el seguimiento global, en el
-[tablero](epic-board.md).
+Ciclos, cierres) se rigen por sus propias specs. E1.3 se integró posteriormente; su
+integración **no queda acreditada** por las pruebas originales de E1.1. La evidencia de
+pruebas está en el [testplan](01-saldos-control-testplan.md); el seguimiento global, en
+el [tablero](epic-board.md).
 **Regla de lectura:** las menciones a «sin implementación», «futuro», «PR #6 pendiente»,
 «sin merge» o «sin DDL» de los apartados siguientes describen el STEP 5 documental y son
 **contexto histórico**; no son prohibiciones vigentes ni cambian las reglas financieras.
@@ -300,9 +301,9 @@ financiero; no tratar Fin temporal como cierre económico. Cuando existan las fu
 mostrar sus valores reales con etiquetas diferentes; sin fuente, «No disponible».
 
 En el alcance original de E1.1 el maestro aún no estaba entregado (E1.3); E1.3 ya está
-integrado y la cabecera del runtime usa el maestro. El cierre financiero sigue sin
-runtime. La evidencia E1.1 conservó «Ciclo financiado: No disponible»; no se adelantaron
-fuentes para poblarla.
+integrado y la cabecera del runtime usa el maestro. Esa integración **no queda acreditada
+por las pruebas originales de E1.1**. El cierre financiero sigue sin runtime. La evidencia
+E1.1 conservó «Ciclo financiado: No disponible»; no se adelantaron fuentes para poblarla.
 Carga/error/vacío deben diferenciarse cuando exista la consulta; no inventar IDs/meses,
 estados o fechas. Integración posterior respeta DT3 y P5, sin nuevas decisiones económicas
 ni ruta API/SQL de Ciclos aprobada en esta actualización.
@@ -600,10 +601,11 @@ backups de datos reales, fotografías/cierre/reapertura implementados y merge si
 No simular estas capacidades en UI ni considerar aprobados por extensión detalles no confirmados.
 
 ## Acceptance checks
-Estado de evidencia (2026-10-28): **39 AC con PASA del alcance E1.1** (AC-38 parcial en
-su integración futura) y **4 contratos revisados sin motor** (AC-30/31/32/36), según el
+Estado de evidencia (2026-10-28): **38 PASA E1.1**, **1 PARCIAL (AC-38)** y
+**4 contratos revisados sin motor** (AC-30/31/32/36), según el
 [testplan](01-saldos-control-testplan.md). Los AC conservan su texto contractual; no se
-declaran PASS los motores no implementados. Q1–Q8 tienen respuesta registrada;
+declaran PASS los motores no implementados. E1.3 se integró después, pero su integración
+no queda acreditada por estas pruebas. Q1–Q8 tienen respuesta registrada;
 las evidencias F1–F3 están incorporadas. Los extremos residuales condicionan únicamente
 los checks que los necesitan; no se interpreta la muestra como matriz exhaustiva.
 IDs estables locales AC-01…; relación con roadmap: E1.1-AC1 => AC-02/03/17;

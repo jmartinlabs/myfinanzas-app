@@ -3,11 +3,14 @@
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base verificada: `main` `63ee1d0`.
+- Base del inventario: `main` `63ee1d0`.
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
-- Estado inicial: **SPEC01 revisada por Álex, pendiente de correcciones**; las otras 24,
-  pendientes.
-- Ninguna SPEC se ha modificado todavía. Este fichero es el único cambio de esta entrada.
+- **Estado actual:** SPEC01 corregida y publicada en
+  [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115); validación final de
+  Álex pendiente. Las otras 24 SPEC siguen pendientes.
+- **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
+  antes de la PR #115. Se conserva solo como antecedente.
+- SPEC01 es la única SPEC modificada; el resto no se ha tocado.
 
 ## Reglas de la auditoría
 
@@ -70,7 +73,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | PR pendiente | Estado PR #6→PR #7; brainstorming `IN REVIEW`; testplan PASS vs contratos; progress con siguiente paso; refs DT4/DT5/E4.8, DDL/DT6/DT1 históricos; cierres sin runtime. Sin contradicción funcional. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / `fcf3091` / CI de la PR | — | Requiere validación de Álex sobre el HEAD final. |
+| 01 | Saldos y atributos de control | PR pendiente | Correcciones aplicadas: estado PR #7/#9, cabecera `CERRADO`, 38 PASA + 1 PARCIAL + 4 contratos, progress y refs DT4/DT5/cierres. Sin contradicción funcional; E1.3 posterior no acreditado por las pruebas E1.1. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD final / CI de la PR; candidato revisado `c59834f` | Pendiente | Validación final de Álex; AC-38 parcial y E1.3 no acreditado. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
@@ -101,15 +104,13 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
-| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `fcf3091` + HEAD final de la PR | ver checks de la PR | Pendiente | Pendiente |
+| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `c59834f` + precisiones; ver HEAD final | ver checks de la PR | Pendiente | Pendiente |
 
 ## Próxima acción
 
-1. Esperar el mensaje de Álex con las correcciones concretas de **SPEC01**.
-2. Aplicar únicamente ese alcance, verificar y publicar la PR documental.
-3. Actualizar este registro en la misma PR.
-4. Validación de Álex sobre el HEAD final y autorización expresa de merge.
-5. Tras integración y verificación, marcar SPEC01 como `Cerrada` y solo entonces iniciar
+1. Álex valida el **HEAD final** de [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115).
+2. El usuario autoriza expresamente el merge.
+3. Tras integración y verificación, marcar SPEC01 como `Cerrada` y solo entonces iniciar
    SPEC02.
 
-**No se inicia ninguna corrección de SPEC01 hasta recibir el mensaje específico de Álex.**
+No hay correcciones de SPEC01 pendientes de recibir: ya están aplicadas en la PR.
