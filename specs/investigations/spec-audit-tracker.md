@@ -107,7 +107,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
-| 03 | Ciclos financiados | Revisada por Álex — correcciones | H-SPEC03-01/02 documentales y H-SPEC03-03 técnico en la PR de auditoría; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | PR pendiente / HEAD pendiente / CI pendiente | 2026-10-28 · Álex revisada · correcciones autorizadas; merge no autorizado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
+| 03 | Ciclos financiados | Revisada por Álex — correcciones | H-SPEC03-01/02 documentales y H-SPEC03-03 técnico en la PR de auditoría; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `e3cb7b2` / CI `40758050003` critical PASS (298 API, focal H-SPEC03-03) | 2026-10-28 · Álex revisada · correcciones autorizadas; merge no autorizado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
 | 06 | Deuda | Pendiente | — | — | — | — | — | — |
@@ -287,7 +287,8 @@ del `try`, igual que en `revisionComidaSource()`, por lo que un fallo al leer
 `schema_version` sigue siendo un error de base de datos, no de fuente.
 
 **Evidencia:** prueba focal `H-SPEC03-03`; regresiones API; CI Linux `critical`
-(suite API completa, sin Playwright). Detalle de HEAD/PR/run en la tabla de evidencias.
+(`40758050003`, 298 pruebas API) sobre `e3cb7b2`, sin Playwright. El HEAD final del PR
+añade solo la actualización de este registro; su CI se consulta en la PR.
 
 ## Evidencias de la auditoría
 
@@ -297,7 +298,7 @@ del `try`, igual que en `revisionComidaSource()`, por lo que un fallo al leer
 | 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
 | 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `85c00f1` validado / merge `13cc7c6` | `40734932828` PR / `40737846233` main PASS | APROBADA | Integrada |
 | 2026-10-28 | 02 | [#119](https://github.com/jmartinlabs/myfinanzas-app/pull/119) | `6440592` validado / merge `da93682` | `40747193480` PR / `40747195074` full / `40748880562` main PASS | APROBADA | Integrada |
-| 2026-10-28 | 03 | PR pendiente | pendiente | pendiente | Revisada; correcciones en curso | No |
+| 2026-10-28 | 03 | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) | `e3cb7b2` validado | `40758050003` critical PASS (298 API; focal H-SPEC03-03) | Revisada; correcciones en curso | No |
 
 ## Próxima acción
 
