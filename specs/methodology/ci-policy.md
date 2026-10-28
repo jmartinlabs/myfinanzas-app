@@ -199,8 +199,16 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   hay filtro de paths que omita el check. Cada nuevo candidato sustituye al PR
   anterior por concurrencia; main y ejecuciones manuales no se cancelan mutuamente.
 - `docs/full` sigue midiendo cobertura de entrega. El perfil de ejecución CI
-  `docs` ejecuta baseline; `fast` añade tipos/build; `critical` añade **toda** la
-  suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
+  `docs` ejecuta un baseline documental: `check-repository` (historial, índice y
+  seguridad), `check-project` (estructura y workflow), `validate-template`
+  (estructura, enlaces, anclas, contratos y heurísticas) y whitespace de trabajo y
+  commit. Omite las regresiones `test-*` del harness porque un diff compuesto solo
+  por documentación no modifica sus entradas; `fast`, `critical` y `full` las
+  ejecutan todas. La selección se recalcula dentro del paso `baseline` con el
+  mismo `ci_profile` y el contexto verificado; sin contexto, evento inválido o
+  error de clasificación ejecuta la batería completa. No hay skip de workflow ni
+  estado nuevo en `ci-result`. `fast` añade tipos/build; `critical` añade **toda**
+  la suite API/SQLite Linux; `full` añade además E2E. Push main clasifica `before..after`:
   solo documentación Markdown no excluida ejecuta `docs`; cualquier otro cambio ejecuta
   `fast`; nunca `critical` en el postmerge. Manual selecciona `full`. PR compara todo
   el rango mediante merge-base sobre la base probada. El postmerge no repite
@@ -218,7 +226,12 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   `packages/`, `tests/`, `scripts/`, `.github/`, `specs/fixtures/`, `build/` o `dist/`.
   Mezclar documentación con código/configuración conserva el perfil de mayor riesgo;
   renombrados y eliminaciones se evalúan en ambos extremos. Non-Markdown, rutas
-  desconocidas y clasificación incierta siguen siendo `full`.
+  desconocidas y clasificación incierta siguen siendo `full`. Limitación conocida
+  (2026-10-28): `validate-template` comprueba enlaces en `AGENTS.md`, `README.md`,
+  `NEW_PROJECT_PROMPT.md`, `specs/**`, `templates/**` y `.agents/skills/**`; los
+  `.md` admitidos en otros directorios (por ejemplo `docs/` o `infra/`) aún no
+  tienen comprobación completa de enlaces relativos. Se registra como cobertura
+  pendiente y no reduce el baseline actual.
 - Fast se limita a CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
   dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.
@@ -391,7 +404,10 @@ Sin comparación verificable ejecuta full. Admite `--base SHA --head SHA` y
 Las fases `classify`, `baseline`, `application` y `result` permiten al workflow usar
 la misma implementación; una fase aislada no acredita la verificación completa.
 Baseline conserva seguridad, estructura, regresiones del harness y whitespace en
-ambas clases. Application ejecuta tipos, build, API/SQLite y E2E una vez cada uno.
+ambas clases (sustituido para el perfil CI `docs` el 2026-10-28: el baseline
+documental conserva seguridad, estructura, enlaces y whitespace y omite solo las
+regresiones `test-*`; `fast`, `critical`, `full` y `--full` local conservan todo).
+Application ejecuta tipos, build, API/SQLite y E2E una vez cada uno.
 Solo se conserva la repetición histórica explícita AC23 en feat/07-ciclos-operacion.
 La instalación congelada, age y Chromium se preparan por separado en Actions.
 Herramientas ausentes, errores, salida inválida, cero pruebas o skips inesperados

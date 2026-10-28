@@ -18,7 +18,13 @@ BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.
     'test-validator', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
     'test-evidence')) + (
     ('working-whitespace', ['git', 'diff', '--check'], None),
-    ('commit-whitespace', ['git', 'show', '--format=', '--check', 'HEAD'], None))
+    ('commit-whitespace', ['git', 'show', '--format=', '--check', '--first-parent', 'HEAD'], None))
+# Harness regressions read scripts, fixtures and protected instructions; a verified
+# documentation-only comparison leaves all of those byte-identical. Every other
+# baseline control (repository, project, template, links, whitespace) still runs.
+HARNESS_SUITES = frozenset((
+    'test-checks', 'test-validator', 'test-verification', 'test-evidence',
+    'test-agent-usage', 'test-auto-agent-usage'))
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),
                ('build', ['bun', 'run', 'build'], None),
                ('api', ['bun', 'run', 'test'], 'bun'),
@@ -83,6 +89,30 @@ def legacy_required():
         if result.returncode == 0:
             names.append(result.stdout.strip())
     return LEGACY_BRANCH in names
+
+def baseline_checks(profile, checks=None):
+    """Omit harness regressions only for a verified docs profile; all else runs them."""
+    checks = BASELINE if checks is None else tuple(checks)
+    return [check for check in checks
+            if profile != 'docs' or check[0] not in HARNESS_SUITES]
+
+def baseline_profile():
+    """Reuse the shared CI selector; no verified context runs the complete baseline."""
+    try:
+        event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
+        profile = POLICY['ci_profile'](ROOT, os.environ['GITHUB_EVENT_NAME'], event,
+                                       os.getenv('CI_CHECKOUT_REF'))
+        if profile == 'docs':
+            # A local dirty/untracked snapshot cannot inherit the committed comparison.
+            status = subprocess.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'],
+                                    cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            if status.returncode or status.stdout:
+                print('Baseline profile downgraded: working tree is not clean.', file=sys.stderr)
+                return 'full'
+        return profile
+    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+        print('Baseline profile unavailable; running the complete baseline.', file=sys.stderr)
+        return 'full'
 
 def application_checks():
     checks = list(APPLICATION)
@@ -164,7 +194,11 @@ def main(argv=None):
     if args.mode == 'result':
         return POLICY['main'](['result'])
     if args.mode == 'baseline':
-        ok = run_checks(BASELINE, ('git',))
+        profile = baseline_profile()
+        print('Baseline profile: ' + profile)
+        if profile == 'docs':
+            print('INTENTIONALLY SKIPPED harness regressions: docs profile; critical/full retain them.')
+        ok = run_checks(baseline_checks(profile), ('git',))
         print('Baseline phase: ' + ('PASS' if ok else 'FAIL') + '; application phase not included.')
         return 0 if ok else 1
     if args.mode == 'application':
@@ -176,7 +210,9 @@ def main(argv=None):
         print(selected)
         return 0
     print('Classification: ' + selected)
-    if not run_checks(BASELINE, ('git',)):
+    if selected == 'docs':
+        print('INTENTIONALLY SKIPPED harness regressions: documentation-only changes; not reported as passed.')
+    if not run_checks(baseline_checks(selected), ('git',)):
         print('UNRUN application checks')
         return 1
     if selected == 'docs':

@@ -83,7 +83,10 @@
         {
           "id": "baseline",
           "name": "Repository, project and document checks",
-          "run": "python3 scripts/verify baseline"
+          "run": "python3 scripts/verify baseline",
+          "env": {
+            "CI_CHECKOUT_REF": "${{ steps.context.outputs.ref }}"
+          }
         },
         {
           "id": "bun",
