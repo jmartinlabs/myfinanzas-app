@@ -28,7 +28,7 @@ AC nuevos (AC-48…AC-59) sigue pendiente y UNRUN. DT7 independiente; sin desarr
   sigue en `codex/dev12-flujo-mensual` con `session-handoff.md` ajeno preservado.
 - **Checks:** `validate-template` PASS; `test-validator` 26 tests PASS; `git diff
   --check` PASS. `verify` no se ejecutó aquí (Python 3.9.6 < 3.10): UNRUN, no FAIL. CI
-  de `main` `40648989672` en curso al escribir; no se declara PASS hasta verificarla.
+  de `main` `40648989672` **SUCCESS** sobre `3d70fd6`.
 - **Siguiente:** QA independiente de AC-48…AC-59 si se solicita; DEV/DT7 siguen gates
   separados. No desarrollar E4.5 por inferencia.
 
@@ -54,7 +54,7 @@ AC nuevos (AC-48…AC-59) sigue pendiente y UNRUN. DT7 independiente; sin desarr
 
 Ninguno funcional. La fase es documental.
 
-- **Aprobación y merge (2026-10-28):** SPEC20 completa y testplan aprobados por el usuario; PR87 fusionada por squash en `main` `3d70fd6`; CI de `main` `40648989672` en curso al escribir. Sin DEV.
+- **Aprobación y merge (2026-10-28):** SPEC20 completa y testplan aprobados por el usuario; PR87 fusionada por squash en `main` `3d70fd6`; CI `40648989672` **SUCCESS**. Sin DEV.
 - **Enmienda D4/D14 (2026-10-28):** aplicada en `302a5fe`; AC-48…AC-59 y ajustes de AC-04/08/29/32/36/46; `validate-template` PASS, `test-validator` 26 PASS, `git diff --check` PASS; sin QA independiente nueva y sin PASS funcional.
 - **Reconciliación (2026-10-28):** merge `4ffeb1c` con `main` `7073864`; resuelve el `BEHIND` de PR87; integrada en `3d70fd6`.
 - **Revisión funcional 2026-10-27:** 47 AC (AC-46/47 nuevos; AC-32/42 actualizados); QA focal PASS en `cc201c5`/`d7c36a6`; `verify` docs PASS; no es PASS funcional.
@@ -107,7 +107,7 @@ pendientes. Resueltos: F2/subtotal y
 - **Límite de autorización:** no se abre Excel, base, extracto ni archivo financiero;
   no se implementa importador ni herramienta definitiva de carga.
 - No hay fallos de aplicación: no se ejecutó código. La CI de `main` `40648989672`
-  estaba en curso al escribir; no se declara PASS hasta verificarla.
+  terminó **SUCCESS** sobre `3d70fd6`.
 - El desarrollo y DT7 siguen siendo gates separados de la aprobación documental.
 
 ## Next action
