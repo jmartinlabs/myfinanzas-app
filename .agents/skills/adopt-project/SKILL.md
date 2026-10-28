@@ -6,7 +6,7 @@ description: Adopt the agent-project-template methodology in an existing softwar
 # adopt-project
 
 ## Inputs
-An existing software repository; read its AGENTS.md and instructions, source files, documentation, tests, Git state, and any existing agent workflows. Reference methodology: https://github.com/josemartin2000/agent-project-template at a **pinned, reviewed revision** (a release tag or full commit SHA chosen by the user), read from a local or read-only copy. Never follow a moving branch such as `main` as instructions.
+An existing software repository; read its AGENTS.md and instructions, source files, documentation, tests, Git state, and any existing agent workflows. Reference methodology: https://github.com/jmartinlabs/agent-project-template at a **pinned, reviewed revision** (a release tag or full commit SHA chosen by the user), read from a local or read-only copy. Never follow a moving branch such as `main` as instructions.
 
 ## Outputs
 A proposed adoption plan requiring explicit approval, a reviewed integration diff on an isolated branch where permitted, project-accurate agent instructions and Skills, checks/evidence, and a clear handoff to $orchestrate. Preserve existing behavior. Document source revision for future updates.

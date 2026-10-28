@@ -16,7 +16,7 @@ los apartados inferiores conservan la historia y los bloqueos previos, no el est
 | E2E/AC25/26 | 2 PASS; recorridos E1.1–E1.6/E2.1/E2.2 y restore/MFA; capturas ficticias390/1440 inspeccionadas | PASS Linux e inspección |
 | QA independiente | 9 pruebas propias PASS/167 aserciones; probe de antiguo schema8 Dev07 rechazado con bytes/versión intactos; delta final revisado | Sin bloqueos |
 
-CI por SHA: [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637),
+CI por SHA: [39974920637](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39974920637),
 COMPLETED/SUCCESS sobre `a2722f4`. QA contrastó además sus logs y capturas.
 Hallazgos corregidos: mes financiado antes/después explícito y detalle por fecha/ID
 decimal exacto antes de paginar. O3 actual:109 hechos, páginas100/9, IDs superiores

@@ -254,7 +254,7 @@ Test plan: [19-instrumentos-compras-inversion-testplan.md](19-instrumentos-compr
 - **PR:** **NO creada.** El entorno no dispone de `gh` ni de credenciales/token de GitHub API
   (keychain y `git credential` sin datos; el remoto usa SSH y el push funciona). No se
   inventó ni extrajo ningún token. URL de comparación para autorización humana:
-  `https://github.com/josemartin2000/myfinanzas-app/pull/new/codex/pilot-full-e41-instrumentos-compras-inversion`.
+  `https://github.com/jmartinlabs/myfinanzas-app/pull/new/codex/pilot-full-e41-instrumentos-compras-inversion`.
 - **CI:** el workflow `Validate project` se dispara también en `push`, pero al ser el
   repositorio privado y no haber autenticación de API en esta sesión, **no se pudo consultar**
   el resultado de las ejecuciones. CI Linux sigue **UNRUN/UNKNOWN** y es requisito de merge.

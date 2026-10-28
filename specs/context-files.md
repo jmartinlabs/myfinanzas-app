@@ -23,7 +23,7 @@ Los prompts heredados se conservan como referencia, sin presentarlos como instru
 vigentes de creación o publicación de una nueva plantilla.
 
 ## Estado de Git y revisión previa a publicación
-Registro histórico de STEP 2 (antes del cambio de visibilidad): GitHub confirmó públicamente el repositorio josemartin2000/myfinanzas-app;
+Registro histórico de STEP 2 (antes del cambio de visibilidad): GitHub confirmó públicamente el repositorio jmartinlabs/myfinanzas-app;
 el remoto de lectura y main son accesibles. El commit de bootstrap 36f43e8 aún no
 estaba en main al iniciar STEP 2. Se conservó en step-1/bootstrap, con STEP 2 en
 step-2/context-files basado en él. No se reescribió historial ni se cambió visibilidad.

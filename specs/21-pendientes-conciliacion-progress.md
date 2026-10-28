@@ -10,7 +10,7 @@ modelo/versión observados por el entorno, no verificados por el coordinador.
 
 | Comprobación | Resultado |
 | --- | --- |
-| Repositorio | `josemartin2000/myfinanzas-app` |
+| Repositorio | `jmartinlabs/myfinanzas-app` |
 | `origin/main` | `9977210095472de43a9abf59587ea88587376074` (merge PR94) |
 | Checkout principal | `codex/dev12-flujo-mensual`, con `specs/session-handoff.md` sin seguimiento; preservado sin tocar |
 | Ramas remotas SPEC21 | Ninguna |
@@ -207,7 +207,7 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 
 - Aprobación: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
 - Rama: `codex/spec21-e36-pendientes-conciliacion`.
-- PR documental: `https://github.com/josemartin2000/myfinanzas-app/pull/97`.
+- PR documental: `https://github.com/jmartinlabs/myfinanzas-app/pull/97`.
 - Base de la PR: `main` (`9977210`); head verificado por `refs/pull/97/head`.
 - Alcance de la PR: solo los cuatro documentos `specs/21-pendientes-conciliacion-*`;
   sin código, SQL, migraciones, tablero, roadmap ni otros specs.

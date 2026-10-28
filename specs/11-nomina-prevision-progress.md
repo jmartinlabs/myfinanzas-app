@@ -5,9 +5,9 @@ Current state: integrada en main mediante PR63; verificación final Linux PASS.
 
 ## Cierre vigente — 2026-10-24
 
-Usuario «Aprobado merge» tras PR63 lista para revisión. [PR63](https://github.com/josemartin2000/myfinanzas-app/pull/63)
+Usuario «Aprobado merge» tras PR63 lista para revisión. [PR63](https://github.com/jmartinlabs/myfinanzas-app/pull/63)
 integrada en main `ed4a2723de9a8f8b43ba13a44a1bc5703f7a5a70`; candidato validado
-`7d24a7f23bb61082c70655f4bc86ed284b4f7152`. [CI40128422924](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40128422924)
+`7d24a7f23bb61082c70655f4bc86ed284b4f7152`. [CI40128422924](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40128422924)
 SUCCESS: baseline/full/required,169 API/0fallos/2683 aserciones,5 E2E. P11 acredita
 backup/restore v12 demo/production, originales y N:M/auditoría preservados e intentos
 revocados. QA independiente PASS,22 focales/156 aserciones; capturas390/1440 y
