@@ -70,7 +70,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | Corrección en curso | Estado PR #6→PR #7; brainstorming `IN REVIEW`; testplan PASS vs contratos; progress con siguiente paso; refs DT4/DT5/E4.8, DDL/DT6/DT1 históricos; cierres sin runtime. Sin contradicción funcional. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | — | — | Requiere validación de Álex sobre el HEAD final. |
+| 01 | Saldos y atributos de control | PR pendiente | Estado PR #6→PR #7; brainstorming `IN REVIEW`; testplan PASS vs contratos; progress con siguiente paso; refs DT4/DT5/E4.8, DDL/DT6/DT1 históricos; cierres sin runtime. Sin contradicción funcional. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / `fcf3091` / CI de la PR | — | Requiere validación de Álex sobre el HEAD final. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
@@ -101,6 +101,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
+| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `fcf3091` + HEAD final de la PR | ver checks de la PR | Pendiente | Pendiente |
 
 ## Próxima acción
 
