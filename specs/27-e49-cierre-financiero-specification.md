@@ -24,6 +24,10 @@ patrimonio E4.3, Comida E3.5/FIN_NETA, Ventas E4.2 ni conciliaciones E4.4.
 **Interpretación de «plan final»:** el roadmap E4.9-AC1 se lee como **estado final del
 plan**, que puede ser `SinPlan` o líneas capturadas; no exige que existan líneas.
 
+**E3.5/FIN_NETA:** E4.9 **no implementa** el motor de Comida. Cuando E3.5 esté integrado y
+sea verificable, E4.9 **consumirá y capturará sus resultados**; no los reimplementa ni los
+inventa. Mientras no exista, el cierre E4.9 queda bloqueado.
+
 ## Data model and contracts
 
 No hay DDL ni migración en este borrador. Contratos conceptuales:
