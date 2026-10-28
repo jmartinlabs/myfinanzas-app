@@ -4,6 +4,9 @@
 Este documento traduce las decisiones M1–M6 y la reauditoría DT5 en un contrato
 candidato para E4.8/E4.9. No implementa tablas, endpoints, locks ni fotos.
 
+**Actualización 2026-10-28:** DT3 y DT4 quedaron resueltas en SPEC26/SPEC27; este
+documento conserva valor histórico. DT6/T-BKP sigue abierto.
+
 - Fecha: 2026-10-28.
 - Base: `main` `f077b7e84684d9ccf79ed16805f9e8172e7576de` (`f077b7e`), esquema 18.
 - Inventario de soporte: `specs/investigations/dt5-write-impact-inventory.md`.

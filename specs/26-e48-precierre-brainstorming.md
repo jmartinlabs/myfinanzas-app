@@ -43,9 +43,8 @@ no una aprobación visual. Cualquier wireframe deberá revisarse y aprobarse por
 
 ## Gates abiertos
 
-- **DT3:** ventana/corte del último ciclo.
-- **DT4:** contenido, metadatos, versiones y retención de la foto.
-- **DT6/T-BKP:** backup recuperable y restauración efectiva.
+- **DT3/DT4:** resueltas el 2026-10-28 (ver SPEC26/SPEC27).
+- **DT6/T-BKP:** backup recuperable y restauración efectiva; sigue abierto.
 - **E4.1:** integrada `156a50d`; conserva 6 AC PARCIAL. Posiciones disponibles;
   valoración/resultado/patrimonio E4.3 no.
 - **E4.4:** SPEC17 en revisión, no aprobada; sin código.
@@ -59,3 +58,6 @@ no una aprobación visual. Cualquier wireframe deberá revisarse y aprobarse por
   anteriores; `SinPlan` válido y `PlanNoVerificable` bloqueante; Comida opción A
   (precierre parcial, cierre E4.9 bloqueado hasta E3.5/FIN_NETA); ruta canónica
   `GET /api/cierres/:ciclo/estado`.
+- **2026-10-28 — resolución DT3/DT4:** el último ciclo sin siguiente Inicio no se
+  cierra; elegibilidad con aviso de orden y ciclo sin hechos explícito; contrato de
+  foto, versiones y retención aprobados en SPEC27. DT6/T-BKP sigue abierto.

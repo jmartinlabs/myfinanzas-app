@@ -1,3 +1,80 @@
+## Current checkpoint — DT3/DT4 resueltas; DT6/T-BKP abierto — 2026-10-28
+
+Sustituye como resumen vigente al consolidado inferior, que se conserva como historia.
+Responsable único del tablero: coordinador (OpenCode). El merge de esta entrada requiere
+aprobación expresa del usuario. Esta entrada no autoriza DEV, no cierra DT6 y no habilita
+el cierre E4.9.
+
+### Decisiones del usuario (2026-10-28)
+
+- **DT3 · último ciclo:** sin siguiente Inicio no hay cierre ni Fin manual; cuando exista
+  un ciclo posterior, su Inicio acredita el Fin y el ciclo pasa a elegible.
+- **DT3 · elegibilidad:** cerrable todo ciclo con ventana finita, S0 y núcleo consistente.
+  Si hay cierres posteriores, se exige `CIERRE_FUERA_DE_ORDEN` con motivo y una
+  comprobación de coherencia con sus fotos al mismo corte, incluidas las operaciones
+  legítimas posteriores; solo una diferencia no explicable bloquea con
+  `INCOHERENCIA_CON_CIERRE_POSTERIOR`. Un ciclo sin hechos solo se cierra si se acredita
+  ausencia de operaciones imputables; el S0 (incluido 0) y las posiciones heredadas se
+  capturan.
+- **DT3 · plan siguiente:** sin precarga automática; E2.3 mantiene la copia explícita con
+  revisión previa, ya vigente.
+- **DT4 · foto:** contrato de SPEC27 aprobado. Trimestre/año usan la versión vigente al
+  generar el agregado, registran la versión y la congelan; todas se conservan sin poda.
+  Los metadatos inmutables incluyen versión de aplicación y de esquema.
+- **DT6/T-BKP:** el usuario no dispone todavía de destino externo. Criterio fijado: copia
+  externa cifrada + restauración aislada probada + ensayo mensual. El gate sigue abierto.
+
+### Enmienda — revisión funcional de Álex (2026-10-28)
+
+Precisiones compatibles, sin reabrir DT3/DT4:
+
+- **AC-20:** comprobación de coherencia con las fotos de cierres posteriores; una
+  contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; aviso y
+  motivo no bastan. E4.10 no se desarrolla.
+- **AC-21:** `Sin hechos` exige ausencia acreditada en todas las fuentes financieras
+  aplicables según la tabla de fuentes y cobertura; ausencia de Movimientos ≠ ausencia de
+  hechos; un cero informado es un hecho.
+- **DT4:** metadatos inmutables con versión de aplicación y de esquema.
+
+### Segunda revisión funcional de Álex (2026-10-28)
+
+- **E4.10 · «último cierre»:** es el ciclo cerrado con el `Fin` cronológicamente más
+  reciente y sin otro ciclo posterior cerrado; la fecha de registro es solo auditoría.
+  Un cierre tardío de un ciclo anterior no habilita su reapertura ordinaria. E4.10 no se
+  desarrolla.
+- **AC-20:** comparación al mismo corte con las operaciones legítimas posteriores
+  incluidas; solo una diferencia no explicable bloquea.
+- **AC-21:** `Sin hechos` = ausencia de operaciones imputables al ciclo; el S0 (incluido
+  0) y las posiciones heredadas se capturan; la ausencia de Compras nuevas no vacía la
+  inversión ni la clasifica como `Sin hechos`.
+
+### Estado verificado
+
+| Elemento | Estado |
+| --- | --- |
+| `origin/main` / base | `a7808bd` (PR #110, aprobación confirmada por el usuario) |
+| Rama | `codex/docs-dt3-dt4-resolution`, desde `a7808bd` |
+| SPEC26/E4.8 | DT3/DT4 resueltas; DT6 abierto; AC-16 añadido; AC UNRUN |
+| SPEC27/E4.9 | DT3/DT4 resueltas; DT6 abierto; AC-20/AC-21 añadidos; AC UNRUN |
+| E4.8 DEV | no autorizado; desbloqueado por DT3/DT4, sujeto a autorización expresa |
+| E4.9 DEV/cierre | bloqueado por DT6/T-BKP y E3.5/FIN_NETA; no autorizado |
+| PR documental | [#111](https://github.com/jmartinlabs/myfinanzas-app/pull/111) con enmienda de revisión; merge pendiente de aprobación |
+| CI `docs` | ver checks de PR #111; debe estar verde sobre el HEAD final antes del merge |
+| Ejecutores | ninguno activo |
+
+### Próxima acción segura
+
+1. Verificar CI `docs` de la enmienda en la PR #111.
+2. Obtener aprobación explícita del usuario antes del merge.
+3. Tras el merge, decidir la autorización DEV de E4.8. E4.9 sigue bloqueado: no se
+   reanuda ni se cierra por inferencia.
+
+### Checkpoint
+
+**Sin ejecutores activos; no hay reanudación automática.** Evidencia: `a7808bd`, rama
+`codex/docs-dt3-dt4-resolution`, PR #111, SPEC26/SPEC27 y sus testplans. Bloqueos:
+DT6/T-BKP (sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni pruebas.
+
 # Coordinación global — consolidado 2026-10-28 (post PR #107)
 
 Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.

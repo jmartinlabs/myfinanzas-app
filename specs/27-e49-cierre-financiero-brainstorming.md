@@ -41,9 +41,8 @@ aprobados ni capturas.
 
 ## Gates abiertos
 
-- **DT3:** ventana/corte del último ciclo.
-- **DT4:** contenido, metadatos, versiones y retención de la foto.
-- **DT6/T-BKP:** backup recuperable y restauración efectiva.
+- **DT3/DT4:** resueltas el 2026-10-28 (ver SPEC26/SPEC27).
+- **DT6/T-BKP:** backup recuperable y restauración efectiva; sigue abierto.
 - **E4.1:** integrada `156a50d`; posiciones disponibles, 6 AC PARCIAL.
 - **E4.3/E3.5:** no implementadas; `No disponible`.
 - **E4.2/E4.4:** documentales/futuros; no runtime.
@@ -57,3 +56,6 @@ aprobados ni capturas.
   anteriores; `SinPlan` válido y `PlanNoVerificable` bloqueante; Comida opción A
   (cierre E4.9 bloqueado hasta E3.5/FIN_NETA, sin cierre parcial); ruta canónica
   `GET /api/cierres/:ciclo/estado`.
+- **2026-10-28 — resolución DT3/DT4:** el último ciclo sin siguiente Inicio no se
+  cierra; elegibilidad con aviso de orden y ciclo sin hechos explícito; contrato de
+  foto, versiones y retención aprobados en esta spec. DT6/T-BKP sigue abierto.

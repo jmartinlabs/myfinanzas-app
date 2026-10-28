@@ -373,7 +373,8 @@ referencia de inversiones/Comida, Partida no presupuestada y revisión de las in
 
 ### E4.8 — Revisión de precierre y controles de consistencia
 **Capacidad:** revisar conciliación y la lista de impactos antes de solicitar un cierre financiero.
-**Dependencias:** E4.1–E4.7, E2/E3; DT3/DT4/DT5 aprobados para elegibilidad, contenido y protección.
+**Dependencias:** E4.1–E4.7, E2/E3; DT3/DT4 resueltas (2026-10-28) y DT5 aprobado;
+DT6/T-BKP sigue abierto y puede bloquear el precierre, pero no impide su DEV.
 **Aceptación:** E4.8-AC1, mostrar Movimientos, plan, conciliación, auxiliares y relaciones con
 ciclo siguiente; E4.8-AC2, no alterar su Saldo inicial comida automáticamente;
 E4.8-AC3, diferencias informativas y bloqueos tienen tratamiento explícito aprobado.
@@ -383,7 +384,8 @@ auxiliar con efecto económico y clasificación que altera un ciclo; diagnóstic
 
 ### E4.9 — Cierre financiero y primera fotografía
 **Capacidad:** ejecutar Cerrar ciclo manualmente y consultar su foto y plan final inmutables.
-**Dependencias:** E4.8; P1/P5, DT4/DT5, backup recuperable T-BKP ya ensayado.
+**Dependencias:** E4.8; P1/P5, DT4/DT5 resueltas; backup recuperable T-BKP ya ensayado
+(DT6 sigue abierto: sin destino externo y restauración probada no se habilita el cierre).
 **Aceptación:** E4.9-AC1, bloqueo ordinario y foto se producen coherentemente, incluido plan final;
 E4.9-AC2, proteger o revalidar todas las rutas con impacto, no solo formulario de Movimientos;
 E4.9-AC3, fin temporal no crea cierre financiero, ni cerrar crea automáticamente otro ciclo.
@@ -461,6 +463,13 @@ mantiene pendientes proveedor, recursos y operación sin autorizar contratación
 | DT8 | Flujos/wireframes, contraste de identidad, formato y filtros de informes; definiciones incompletas de métricas, división por coste esencial nulo y datos no aplicables | STEP 5 de cada UI; en especial E2.6/E4.6/E4.7 | Usuario revisa UX y criterio financiero, sin suposiciones de relleno |
 | DT9 | Rectificación excepcional de ciclos antiguos y efecto en fotografías trimestrales/anuales y cierres posteriores | No habilitar excepción hasta otra especificación aprobada | Usuario; vía ordinaria solo último cierre según P5 |
 | DT10 | Proveedor/recursos, DNS/TLS del dominio previsto, operación segura, responsabilidades, ensayo privado y ventana de corte | Gate operativo P7 posterior; no compra/despliegue en STEP 4 | Usuario autoriza expresamente recursos, despliegue y traspaso |
+
+**Resueltas desde el 2026-10-28:** DT3 (último ciclo, elegibilidad/orden con coherencia
+de cierres posteriores y plan siguiente) y DT4 (contenido, metadatos, versiones y
+retención de fotos) quedan cerradas en
+[SPEC26](26-e48-precierre-specification.md) y
+[SPEC27](27-e49-cierre-financiero-specification.md). DT6/T-BKP sigue abierto: no hay
+destino externo y el cierre real exige copia externa y restauración probada.
 
 La política de recuperación de backups (DT6) no equivale a reabrir un ciclo (P5).
 P1, P2, P5 son capacidades/decisiones de app: no atribuirlas retroactivamente al Excel.
