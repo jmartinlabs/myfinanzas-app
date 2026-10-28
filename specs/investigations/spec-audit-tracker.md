@@ -137,7 +137,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 06 | Deuda | Pendiente (primera pasada) | H-SPEC06-01 documental provisional: cabecera de progreso y plan histórico de dev aún expresan no integrado; falta auditoría técnica completa. | Progreso y spec 06; servicios/pruebas en inspección. | Conservar el historial. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: estado aparente desactualizado; sin impacto financiero demostrado. |
 | 07 | Operación de Ciclos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/07-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #49 MERGED `1cdbc7c` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
-| 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/09-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #57 MERGED `7422d23` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
+| 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 técnico/semántico: ciclo con Fin temporal pero sin referencia financiera devuelve ejecutado 0 según P12, pese a cobertura no acreditada. | SPEC09, `planes-ciclo.ts`, `ciclos.ts` y test P12. | Requiere confirmar interpretación y añadir prueba de frontera antes de corregir. | PR #57 MERGED `7422d23`. | 2026-10-28 · contradicción contrastada en código y test existente, sin cierre. | Medio/alto: riesgo de 0/Completo ficticios cuando no existe referencia/cobertura. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 11 | Nómina y previsión | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura: estado integrado bien identificado, N:M y proyección separadas; pendientes pruebas transversales y contraste de reglas. | SPEC 11, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #63 `ed4a272` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
@@ -495,6 +495,49 @@ inspección, pero ninguna de SPEC04–32 ha superado todavía la auditoría
 técnica integral ni se ha cerrado; SPEC01–03 permanecen cerradas.
 Siguiente fase: pruebas focales de los hallazgos técnicos y profundización
 transversal por familias, sin corrección hasta aprobación del usuario.
+
+## Segunda inspección transversal — SPEC09, corte financiero vs Fin temporal (2026-10-28)
+
+### H-SPEC09-01 — Ejecución cero con ciclo temporalmente delimitado sin fecha financiera (técnico/semántico, medio-alto; decisión pendiente)
+
+- **Contrato:** `specs/09-plan-ciclo-specification.md:35-45,65-85`
+  exige que, sin periodo/corte financiero verificable, `Ejecutado`,
+  `Pendiente` y `Estado` sean nulos con motivo; un cero solo se acredita
+  en periodo verificable sin hechos. `spec03` distingue el Fin derivado
+  del siguiente Inicio de la referencia/corte financiero; el Fin por sí
+  solo no declara una fotografía o cobertura de hechos.
+- **Código:** `apps/api/src/ciclos.ts:126-160` da `fin` a todo ciclo con
+  un siguiente Inicio, incluso cuando `financialReference` tiene
+  `fecha=null`/`sin_referencia`. En `apps/api/src/planes-ciclo.ts:135-174`
+  `periodReason` es `null` si existe `cycle.fin`, aunque
+  `cycle.corte=null` y la fuente financiera no tenga referencia;
+  `executionFacts` devuelve [] y `planResult` recibe suma `0n`,
+  por lo que el DTO puede mostrar `ejecutado=0.00` y, con `delMes=0`,
+  `estado=Completo`.
+- **Evidencia reproducible en test existente:** `apps/api/src/planes-ciclo.test.ts:41-62`
+  (`setup()`) crea ciclos `2026-10-01` y `2026-11-01` sin ningún hecho;
+  `:877-889` (`P12`) cambia presupuesto a `Gasto real` y **espera
+  expresamente `ejecutado: "0.00"` para el primer ciclo**. Es decir:
+  la batería actual **consagra** el cero de un intervalo cerrado
+  temporalmente sin evidencia financiera. Los casos abiertos
+  `sin_referencia` sí devuelven null.
+- **Contraste:** `apps/api/src/flujo-mensual.ts:68-90` exige una referencia
+  financiera para calcular `cutoff` y además fuente `disponible`;
+  por tanto, los dos consumidores no siguen exactamente la misma
+  condición de disponibilidad para el mismo ciclo.
+- **Juicio:** discrepancia **material** entre contrato, motor y prueba,
+  pero **no se adjudica unilateralmente la semántica correcta**:
+  hay que verificar si la aceptación pretende dar por verificable un
+  Fin temporal sin fecha bancaria ni E3.4 (en contra de la separación
+  Fin/Corte), y decidir el contrato concreto para ciclos históricos,
+  ciclos adelantados y errores de fuente. La evidencia actual permite
+  formular el caso pero no autoriza modificar el motor.
+- **Prueba focal sugerida, sin código nuevo todavía:** fixture de dos
+  inicios y fuentes instaladas sin hechos; comparar `cycleContext`,
+  `getCyclePlan` y `monthlyFlow` para ciclo cerrado, `delMes=0` y
+  `delMes>0`; variante con `revision_comida` corrupta/error y
+  variante con fuente real fechada. Verificar cero vs null y motivo.
+  Se necesita autorización para cualquier modificación funcional/test.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
