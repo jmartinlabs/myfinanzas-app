@@ -250,8 +250,9 @@ merge y verificación posterior en `main`.
 
 Base funcional: E1.3 integrada por PR #13 (squash `ff9d18d`, 2026-10-21). Después se
 incorporaron Movimientos (E1.4) y Revisión Comida (E3.4) como fuentes temporales;
-Inversión sigue pendiente como fuente temporal (sin proveedor conectado) y SPEC22
-(E4.2) permanece en DRAFT. Se conservan los 24 AC con sus resultados históricos.
+Inversión sigue pendiente como fuente temporal (sin proveedor conectado); SPEC22
+aprobada documentalmente; DEV22 no iniciado; proveedor temporal de inversión pendiente.
+Se conservan los 24 AC con sus resultados históricos.
 
 ### H-SPEC03-01 — Estados actuales obsoletos (documental)
 
@@ -287,8 +288,9 @@ del `try`, igual que en `revisionComidaSource()`, por lo que un fallo al leer
 `schema_version` sigue siendo un error de base de datos, no de fuente.
 
 **Evidencia:** prueba focal `H-SPEC03-03`; regresiones API; CI Linux `critical`
-(`40758050003`, 298 pruebas API) sobre `e3cb7b2`, sin Playwright. El HEAD final del PR
-añade solo la actualización de este registro; su CI se consulta en la PR.
+(`40758050003`, 298 pruebas API) sobre `e3cb7b2`, sin Playwright. Los commits
+posteriores a `e3cb7b2` solo actualizan documentación y este registro; su CI se
+consulta en la PR.
 
 ## Evidencias de la auditoría
 

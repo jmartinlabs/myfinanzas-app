@@ -79,7 +79,8 @@ No se crea un selector de fecha alternativa para ocultar esta carencia.
 Comida están integrados como fuentes temporales (`movementSource` y
 `revisionComidaSource`); la referencia toma el máximo de sus fechas civiles disponibles.
 Operaciones de inversión sigue pendiente como fuente temporal: no hay proveedor
-conectado. SPEC22 (E4.2) permanece en DRAFT y no se amplía este alcance. El párrafo
+conectado. SPEC22 aprobada documentalmente; DEV22 no iniciado; proveedor temporal de
+inversión pendiente. No se amplía este alcance. El párrafo
 anterior describe el alcance original de E1.3 y se conserva como evidencia histórica.
 AC-11/23/24 siguen siendo contratos C, no PASS de E1.3.
 

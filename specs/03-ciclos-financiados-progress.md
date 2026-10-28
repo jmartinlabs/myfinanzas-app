@@ -31,8 +31,9 @@ datos reales, nuevas dependencias, despliegue ni infraestructura productiva.
 
 PR #13 integrada por squash `ff9d18d` (2026-10-21). Movimientos (E1.4) y Revisión Comida
 (E3.4) se incorporaron después como fuentes temporales del contexto compartido;
-Inversión sigue pendiente como fuente temporal (sin proveedor conectado) y SPEC22
-(E4.2) permanece en DRAFT. La auditoría SPEC03 registra H-SPEC03-01/02 (documentales)
+Inversión sigue pendiente como fuente temporal (sin proveedor conectado); SPEC22
+aprobada documentalmente; DEV22 no iniciado; proveedor temporal de inversión pendiente.
+La auditoría SPEC03 registra H-SPEC03-01/02 (documentales)
 y H-SPEC03-03 (técnico: estado `error` de `movementSource()`).
 
 Límite explícito: la corrección de H-SPEC03-03 restablece la referencia contractual

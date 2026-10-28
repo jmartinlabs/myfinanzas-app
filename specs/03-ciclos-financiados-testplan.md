@@ -59,7 +59,8 @@ credenciales previas; upgrade no revoca sesiones. Restore sí aplica revocación
 
 **Estado actual (2026-10-28, `main` `3d87511`).** Movimientos (E1.4) y Revisión Comida
 (E3.4) están integrados como fuentes temporales; Inversión sigue pendiente como fuente
-temporal (sin proveedor conectado) y SPEC22 (E4.2) permanece en DRAFT. AC-09/10
+temporal (sin proveedor conectado); SPEC22 aprobada documentalmente; DEV22 no iniciado;
+proveedor temporal de inversión pendiente. AC-09/10
 conservan su resultado histórico como contrato puro; AC-11/23/24 siguen CONTRATO FUTURO
 y no se reclasifican. H-SPEC03-03 añade el estado `error` de `movementSource()` con
 prueba de regresión; el detalle y los límites constan en el tracker de auditoría.
