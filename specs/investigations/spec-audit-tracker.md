@@ -135,7 +135,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02/03 confirmados (referencia posterior/huella obsoleta); H-SPEC04-04 CONFIRMADO en SQLite efímera: alta y rectificación escriben con fuente Comida en error. | SPEC04, `movimientos.ts`, `ciclos.ts`, `revision-comida-ledger.ts`, pruebas; relay #0007/#0009. | Priorizar protección ante error y cubrir alta/rectificación/anulación; luego referencia posterior y concurrencia; sin código autorizado. | `main` `1ed2a83`; reproducciones OpenCode #0007 y #0009. | 2026-10-28 · hallazgos técnicos confirmados por OpenCode y cotejo estático Álex; sin cierre. | Alto de control/contrato H04-04; medio de integridad por escritura en contexto temporal no verificable; sin corrupción monetaria demostrada. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
-| 07 | Operación de Ciclos | En inspección (no cerrada) | H-SPEC07-01 PROVISIONAL: preview/huella de rectificación usan `ledgerRows` y máximo temporal de Comida, pero no filas individuales; posible aceptación con hechos de Comida cambiados bajo máximo constante. AC28 de integración futura sigue pendiente. H-TRANS-01 documental. | `ciclos.ts` `operationPlan`, `revision-comida-ledger.ts`, SPEC07 AC07/17/28, SPEC16, tests O1/O9. | Reproducción independiente antes de calificar bug; verificar contrato de AC28 y efectos en atribución. | PR #49 MERGED `1cdbc7c`; PR #82 MERGED `26b6f0c`; `main` `1ed2a83`. | 2026-10-29 · hipótesis estática pendiente de test, no cierre. | Medio provisional de consentimiento/contexto; no implica datos monetarios alterados, sí posible cambio de atribución no revisado. |
+| 07 | Operación de Ciclos | En inspección (no cerrada) | H-SPEC07-01: C07-F1/F2 CONFIRMAN conducta (huellas iguales ante nueva Comida con máximo constante, confirmación aceptada y reasignación no enumerada); incumplimiento contractual PROVISIONAL por AC28 futuro. C07-F3 descarta fallo de guarda por fuente error; H-TRANS-01 documental. | SPEC07 Q1/AC07,17,28; `ciclos.ts`/`revision-comida-ledger.ts`/`Ciclos.tsx`; relay OpenCode #0015 con SQLite efímera. | Recomendar aviso explícito de cobertura hoy; definir con autorización si se integra toda Comida en preview/huella AC28; no parche financiero ni PR. | PR #49 MERGED; PR #82 MERGED; base `main` `1ed2a83`, relay #0015. | 2026-10-29 · contraste dinámico de OpenCode, estático de Álex; SPEC no cerrada. | Medio de atribución/UX, sin pérdidas de importes/posiciones observadas; fuente rota bloqueada 409. |
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
@@ -1452,7 +1452,7 @@ una prueba nueva ni alterado código/Excel/maestros.
   **no altera por sí solo el fingerprint de Ciclos**, aunque
   `revision-comida.ts:245-255,287-329` derive el ciclo
   de cada operación según los Inicios actuales.
-- **Ejemplo únicamente inferido, sin reproducción:**
+- **Escenario inicialmente inferido; posteriormente REPRODUCIDO por OpenCode en relay #0015:**
   ciclos existentes con Inicio 01/10/2026 y 01/11/2026;
   Comida vigente 20/10/2026 fija máximo. Se revisa
   rectificar Inicio 01/10→05/10. Antes de confirmar,
@@ -1474,7 +1474,7 @@ una prueba nueva ni alterado código/Excel/maestros.
   actual del requisito AC17 de invalidación del contexto.
   No inferir que `conciliacion:pendiente` es un bug:
   se refiere al cierre E3.5, no a la referencia de E3.4.
-- **Pruebas propuestas, UNRUN:** C07-F1: reproducir
+- **Pruebas propuestas inicialmente; C07-F1/F2/F3 ya ejecutadas por OpenCode en SQLite ficticia (NO reejecutadas por Álex):** C07-F1: reproducir
   rectificación 01/10→05/10 con Comida máxima 20/10 y
   alta 03/10 entre preview/confirmación, sin cambios
   de Movimientos ni del máximo; observar 409 o aceptación,
@@ -1487,11 +1487,75 @@ una prueba nueva ni alterado código/Excel/maestros.
   fuente error, que **sí** debe bloquear 409
   `REFERENCE_ERROR`, y control sin Comida instalado
   (pendiente legítimo).
-- **Estatus:** H-SPEC07-01 **PROVISIONAL** hasta contraste
-  dinámico y decisión contractual; no solicitar
-  corrección/PR, no replicar H-SPEC04-03 automáticamente.
+- **Estatus actualizado:** los fenómenos F1/F2 son **CONFIRMADOS como comportamiento** por la reproducción de #0015; la calificación como incumplimiento actual permanece **PROVISIONAL** hasta determinar si AC28 se exige ya para E3.4 o continúa pendiente. No solicitar corrección/PR ni replicar H-SPEC04-03 automáticamente.
   La revalidación de dato temporal y el detalle
   de impactos son dos cuestiones distintas.
+
+### Contraste independiente OpenCode #0015 — C07-F1/F2/F3 (2026-10-29)
+
+**Fuente de evidencia:** mensaje #0015 de OpenCode en
+`coord/spec-audit-relay`, blob
+`8c5084d9a3c145c4248d98ee14c0c86f55a0b8b4`,
+base `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+OpenCode informa pruebas en SQLite **en memoria y ficticia**; Álex contrastó
+estáticamente `apps/api/src/ciclos.ts:473-559,574-655`,
+`apps/web/src/Ciclos.tsx:1015-1070` y
+`revision-comida-ledger.ts:52-73` y SPEC07 Q1/AC07/AC17/AC28.
+Álex **no reejecutó** los casos. No hay prueba sobre Excel real.
+
+| Caso | Resultado observado | Clasificación |
+| --- | --- | --- |
+| **C07-F1** · C1 Inicio 01/10→05/10 y C2 01/11; Comida 20/10 máx.; añadir Comida 03/10 entre preview y confirmación | Máximo sigue 20/10; `contextRevision` `8280342d…e69903ff` e `impactRevision` `7f8b4bd9…b165f722` **idénticos**; confirmación acepta contexto antiguo, escribe auditoría y Comida 03/10 cambia de C1 a sin ciclo | Conducta **CONFIRMADA**; incumplimiento actual **PROVISIONAL** |
+| **C07-F2** · Comida 03/10 ya existente antes de preview | `totalMovimientos=0`, `movimientos=[]`; UI «No hay hechos que cambien de ciclo»; Comida pasa de C1 a sin ciclo tras confirmar. UI informa E3.5 pendiente, pero **no dice** que las operaciones Comida no están enumeradas | Omisión de presentación/atribución **CONFIRMADA**; exigibilidad AC28 **PROVISIONAL** |
+| **C07-F3** · fuente Comida instalada y rota | Preview/confirmación 409 `REFERENCE_ERROR`, sin ciclo ni auditoría modificados | Supuesto fallo de guarda **DESCARTADO** |
+| Control negativo · agregar Comida 24/10 moviendo máximo | Confirmación de preview anterior da 409 `CONTEXT_CHANGED`, sin escrituras | Guarda por cambio de referencia **FUNCIONA** |
+| Control fuente instalada vacía / no instalada | `sin_referencia`; preview permitido | Diferenciación con error **FUNCIONA** |
+
+**Riesgo material:** una fecha de Inicio nueva cambia la atribución
+derivada de una operación real de Revisión Comida sin que aparezca en
+la revisión ni fuerce nueva confirmación; la UI puede inducir a
+interpretar la ausencia de Movimientos como «ningún hecho afectado».
+**No** se ha acreditado corrupción de importes, efectivo,
+principal de Deuda o cantidad de Inversión. La operación Comida
+conserva ID y EUR; su Ciclo se deriva de la fecha y el maestro.
+
+**Frontera contractual:** SPEC07 AC07 I/AC17 I piden hechos
+y revalidación de contexto; AC28 **C** reserva la integración
+de fuentes Comida/inversión a una fase posterior. SPEC16
+ya incorporó fuente de fecha y ciclos derivados de operaciones
+Comida, pero no la cobertura plena E3.5. La reproducción no
+resuelve si la instalación E3.4 **activa** toda la exigencia AC28.
+Por ello no se eleva aún a bug financiero confirmado ni se
+marca SPEC07 cerrada.
+
+**Recomendación de auditoría, sin autorización de desarrollo:**
+
+1. **Protección informativa mínima recomendada:** que la
+   revisión muestre «Hechos de Movimientos afectados: N»,
+   sin el engañoso «No hay hechos que cambien de ciclo»
+   cuando Comida pueda verse afectada; indicar explícitamente
+   «Operaciones de Revisión Comida no enumeradas en esta
+   revisión; su ciclo derivado puede cambiar». Si esa
+   cobertura no es aceptable para confirmar cambios de Inicio,
+   habría que bloquear esas rectificaciones hasta disponer
+   del cálculo completo: decisión funcional del usuario.
+2. **Integración completa AC28 futura:** utilizar fuente
+   única de hechos Comida y su revisión/huella para preview
+   y confirmación de Ciclos, incluyendo antes/después y
+   verificación transaccional de los consumidores realmente
+   instalados; no duplicar maestros, no convertir Comida
+   auxiliar en Gasto central ni exigir E3.5 para consultar
+   atribución por fecha cuando E3.4 ya la conoce.
+3. **Pruebas persistentes solo tras autorización:** F1 debe
+   esperar 409 si se integra huella de operaciones de
+   Comida; F2 debe mostrar su atribución o un
+   límite explícito; conservar F3 y controles de máximo/ausencia.
+   En ningún caso dar por PASS AC28/AC27 de E3.5 a partir
+   de un aviso UI.
+
+**Prioridad:** media de UX/consentimiento, posterior a
+H-SPEC04-02/03/04 en integridad económica. Sin PR,
+sin cambiar SPEC, sin implementar hoy.
 
 ### SPEC08 — controles de Presupuestos verificados estáticamente
 
