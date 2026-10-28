@@ -132,9 +132,9 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | Pendiente | — | — | — | — | — | — |
+| 04 | Movimientos | Pendiente (primera pasada) | H-SPEC04-01 documental provisional: acción de spec/brainstorming obsoleta frente a integración #15; falta auditoría técnica completa. | Spec/brainstorming 04; progreso y pruebas, en inspección. | Conservar el historial. | PR #15 `b51b89b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: lectura incorrecta del estado; sin impacto financiero demostrado. |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
-| 06 | Deuda | Pendiente | — | — | — | — | — | — |
+| 06 | Deuda | Pendiente (primera pasada) | H-SPEC06-01 documental provisional: cabecera de progreso y plan histórico de dev aún expresan no integrado; falta auditoría técnica completa. | Progreso y spec 06; servicios/pruebas en inspección. | Conservar el historial. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: estado aparente desactualizado; sin impacto financiero demostrado. |
 | 07 | Operación de Ciclos | Pendiente | — | — | — | — | — | — |
 | 08 | Presupuestos | Pendiente | — | — | — | — | — | — |
 | 09 | Plan del ciclo | Pendiente | — | — | — | — | — | — |
@@ -154,6 +154,50 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 27 | Cierre financiero | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
 | 31 | SQLite producción | Pendiente | Incluye `enmienda-01`; verificar vigencia. | — | — | — | — | — |
 | 32 | Ejecución rootless | Pendiente | Sin `testplan` ni `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
+
+## Auditoría global — primera pasada del lote A (SPEC04–06), 2026-10-28
+
+**Base de lectura:** `main` `5570d89628480c0be2c575680993951240de2469`.
+**Alcance ya comprobado:** cabeceras, aprobaciones, notas de integración y algunos
+consumidores/pruebas. **No equivale a la revisión integral** de contratos, rutas y
+regresiones; las tres SPEC conservan estado pendiente hasta terminar sus rondas.
+No se ha auditado la base Excel física en esta pasada.
+
+### H-SPEC04-01 — Estado documental de fase anterior (documental, menor, provisional)
+
+- **Evidencia:** `specs/04-movimientos-specification.md:347-354` aún indica
+  «integrar PR #14 y esperar autorización de dev 04»; el `brainstorming:6` repite
+  la siguiente acción de esa fase. Sin embargo, `04-movimientos-progress.md:1-16,41-51`
+  y `04-movimientos-testplan.md:3-5` declaran E1.4 integrada, y la PR #15 figura
+  **MERGED** en GitHub (`b51b89b`). Implementación real presente en
+  `apps/api/src/movimientos.ts` con pruebas en `movimientos.test.ts`.
+- **Diagnóstico:** instrucciones históricas potencialmente interpretables como
+  estado actual; no se denuncia el contrato financiero ni se reabre la aprobación.
+- **Propuesta:** en una futura corrección documental consolidada, añadir una breve
+  nota de vigencia que remita al progreso actual; conservar el relato original.
+  **Sin autorización ni propuesta de PR separada** por este motivo menor.
+
+### H-SPEC06-01 — Estado de desarrollo desactualizado (documental, menor, provisional)
+
+- **Evidencia:** `specs/06-deuda-progress.md:2-12` inicia con «IN PROGRESS» y
+  pendientes de validación; la misma ficha, `:45-50`, documenta integración
+  posterior de PR #34. GitHub confirma **MERGED** (`cb9ba3b`); código y pruebas
+  en `apps/api/src/deudas.ts` y `deudas.test.ts`.
+  `06-deuda-specification.md:423-447` mantiene un plan «dev no iniciado» de
+  etapa histórica.
+- **Diagnóstico:** discrepancia de vigencia documental, no demostración de fallo
+  funcional. La integración final está reconocida al pie de progreso.
+- **Propuesta:** nota mínima sobre estado actual y carácter histórico del plan,
+  sin borrar evidencias ni afirmar cobertura de consumidores futuros.
+
+**SPEC05:** primera lectura de `05-transferencias-referencias-specification.md`
+indica una enmienda D5 aprobada en cabecera el 27/10/2026 y una sección histórica
+«NO APROBADA» expresamente superada. **No se abre hallazgo** por esa diferencia
+sin contradicción vigente demostrada.
+
+**Siguiente ronda:** recorrer guardas, cálculos, efectos de rectificación, migraciones,
+pruebas y dependencias de SPEC04–06; después comprobar hallazgos y gravedad.
+No iniciar correcciones ni declarar ninguna de estas SPEC cerrada.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
