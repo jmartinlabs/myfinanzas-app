@@ -70,7 +70,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | Revisada por Álex | Pendiente del mensaje con correcciones concretas; no iniciar. | — | — | — | — | Sin cambios hasta recibir el mensaje. |
+| 01 | Saldos y atributos de control | Corrección en curso | Estado PR #6→PR #7; brainstorming `IN REVIEW`; testplan PASS vs contratos; progress con siguiente paso; refs DT4/DT5/E4.8, DDL/DT6/DT1 históricos; cierres sin runtime. Sin contradicción funcional. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | — | — | Requiere validación de Álex sobre el HEAD final. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |

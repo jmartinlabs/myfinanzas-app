@@ -1,6 +1,6 @@
 # 01 — E1.1 Saldos: Progress
 Specification: [especificación aprobada](01-saldos-control-specification.md)
-Current state: complete — STEP 7 E1.1 implementado e integrado mediante PR #7
+Current state: complete — E1.1 implementado e integrado mediante PR #7; corrección de concurrencia PR #9; sin acciones pendientes de E1.1.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -10,6 +10,13 @@ Current state: complete — STEP 7 E1.1 implementado e integrado mediante PR #7
 | 4. Listado/ficha/formulario y estados responsive | complete | React real contra Effect HTTP/SQLite; sin motores futuros |
 | 5. QA, restauración, capturas e inspección 390/1440 | complete | [testplan 43 AC](01-saldos-control-testplan.md), 15 Bun/195 aserciones + E2E |
 | 6. Documentación y revisión de historia para PR funcional | complete | Controles locales pasan; rama feat/e1-1-saldos, CI por SHA en la PR |
+
+## Estado vigente (2026-10-28)
+E1.1 cerrada: PR #7 integrada y PR #9 corrigió la concurrencia (`main` `23e471e`).
+Evidencia del [testplan](01-saldos-control-testplan.md): 39 PASA E1.1, 4 contratos
+revisados (AC-30/31/32/36) y AC-38 parcial. Esquema vigente **18**. E1.2 y las
+entregas posteriores avanzaron por sus propias ramas/PR; el estado global está en el
+[tablero](epic-board.md).
 
 ## Verified increments
 Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama
@@ -31,8 +38,9 @@ corregidos y verificados de nuevo. Sin fallos finales conocidos ni pruebas bloqu
 por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
 
 ## Next action
-STEP 8 posteriormente completado e integrado mediante PR #8; ocho etapas iniciales
-cerradas y Skills spec/dev reutilizables. Esperar autorización antes de E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
+E1.1 cerrada; no hay acciones pendientes de esta entrega. No reabrir E1.1 ni usar este
+progress como estado global. Futuras entregas y gates se consultan en el
+[tablero](epic-board.md). Excel v5.11 continúa maestro; sin datos reales ni despliegue.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
