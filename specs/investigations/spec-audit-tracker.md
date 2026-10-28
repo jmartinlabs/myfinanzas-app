@@ -132,8 +132,8 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | Pendiente (primera pasada) | H-SPEC04-01 documental provisional: acción de spec/brainstorming obsoleta frente a integración #15; falta auditoría técnica completa. | Spec/brainstorming 04; progreso y pruebas, en inspección. | Conservar el historial. | PR #15 `b51b89b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: lectura incorrecta del estado; sin impacto financiero demostrado. |
-| 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
+| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental menor; H-SPEC04-02 técnico, vista previa de referencia posterior no agrega fuente Comida (reproducción pendiente). | Spec/brainstorming 04; `movimientos.ts`, `ciclos.ts`, `Movimientos.tsx`, tests. | Conservar historial; no corregir sin aprobación. | PR #15 `b51b89b` integrada; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Medio: posible indicador de impacto temporal engañoso; motor central no afectado. |
+| 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | Pendiente (primera pasada) | H-SPEC06-01 documental provisional: cabecera de progreso y plan histórico de dev aún expresan no integrado; falta auditoría técnica completa. | Progreso y spec 06; servicios/pruebas en inspección. | Conservar el historial. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: estado aparente desactualizado; sin impacto financiero demostrado. |
 | 07 | Operación de Ciclos | Pendiente | — | — | — | — | — | — |
 | 08 | Presupuestos | Pendiente | — | — | — | — | — | — |
@@ -158,9 +158,13 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 ## Auditoría global — primera pasada del lote A (SPEC04–06), 2026-10-28
 
 **Base de lectura:** `main` `5570d89628480c0be2c575680993951240de2469`.
-**Alcance ya comprobado:** cabeceras, aprobaciones, notas de integración y algunos
-consumidores/pruebas. **No equivale a la revisión integral** de contratos, rutas y
-regresiones; las tres SPEC conservan estado pendiente hasta terminar sus rondas.
+Durante la inspección `main` avanzó a `1ed2a83` con un único cambio de
+`scripts/test-validator`; según `compare_commits`, ninguno de los módulos SPEC04–06
+revisados cambió. Se mantiene la base fija para la trazabilidad.
+**Alcance ya comprobado:** cabeceras, aprobaciones, notas de integración, servicios
+Movimientos/Deuda, contrato central de fecha, fuente Comida, UI y pruebas asociadas.
+**No equivale a la revisión integral** de contratos, rutas y regresiones; las tres
+SPEC conservan estado en inspección hasta terminar sus rondas.
 No se ha auditado la base Excel física en esta pasada.
 
 ### H-SPEC04-01 — Estado documental de fase anterior (documental, menor, provisional)
@@ -177,6 +181,49 @@ No se ha auditado la base Excel física en esta pasada.
   nota de vigencia que remita al progreso actual; conservar el relato original.
   **Sin autorización ni propuesta de PR separada** por este motivo menor.
 
+### H-SPEC04-02 — Referencia «después» no integra todas las fuentes (técnico, medio; reproducción pendiente)
+
+- **Contrato y fuente central:** `apps/api/src/ciclos.ts:47-75,159-164` agrega máximos de
+  `movementSource(db)` y `revisionComidaSource(db)` (la fuente de inversión aún
+  pendiente); la cabecera financiera debe usar esa única referencia.
+- **Implementación discordante:** `apps/api/src/movimientos.ts:734-748` calcula
+  `referenciaAntes` con `cycleContext(db).referencia.fecha` (agregado real), pero
+  `referenciaDespues` mediante `dates.sort().at(-1)` donde `dates` solo contiene
+  fechas de Movimientos, excluido el hecho antiguo y aplicada la modificación.
+  Omite fechas vigentes de Revisión Comida y el estado de error de fuentes.
+  `apps/web/src/Movimientos.tsx:899-908` muestra ambas fechas como «Referencia
+  financiera» antes/después.
+- **Impacto potencial:** si el hecho más reciente es de Revisión Comida, el preview
+  puede anunciar un retroceso inexistente; si una fuente está en error, puede
+  mostrar una fecha aparentemente disponible. No se ha probado un cambio del
+  motor central ni de los saldos: el defecto se limita a **la simulación del impacto**.
+- **Prueba focal pendiente:** crear fixture con movimiento anterior y fecha vigente de
+  Revisión Comida posterior; simular anulación/rectificación de Movimiento y
+  comparar referencia posterior esperada con agregado central recalculado.
+  Añadir variante de fuente `error` para definir presentación sin falsa precisión.
+- **Corrección a evaluar después:** reutilizar la lógica central de fuentes en la
+  simulación, evitando modificar tablas, duplicar algoritmos o alterar el contexto
+  persistido. Ninguna implementación autorizada todavía.
+
+### H-SPEC05-01 — Estado D5/Exterior anterior a integración (documental, menor)
+
+- **Evidencia:** `specs/05-transferencias-referencias-specification.md:3-10` registra
+  aprobación documental de D5 pero no integración; `:49-54` aún indica «D5
+  propuesta (no vigente)» y `:355-421` conserva «NO APROBADA», con aclaración
+  histórica en su cabecera. GitHub confirma PR documental #84 **MERGED** como
+  `2487656` y PR funcional D5 #90 **MERGED** como `cf6954a`; el código vigente
+  contiene `apps/api/src/aportaciones.ts` y la variante acotada S000→interno en
+  `apps/api/src/movimientos.ts:145-225`. El progreso de spec14 conserva un
+  checkpoint anterior de PR #90 en Draft.
+- **Diagnóstico:** no se identifica contradicción financiera en las reglas D5.
+  El texto de propuesta se explica como histórico, pero **no se expone claramente el
+  estado de integración actual**, lo que puede llevar a interpretar incorrectamente
+  la disponibilidad de la variante. E1.5 AC-31 sigue parcialmente futuro:
+  la integración D5 no habilita Exterior ordinario, cierre ni todas sus variantes.
+- **Propuesta futura:** nota única de vigencia que diferencie D5 documentalmente
+  aprobada, implementada e integrada, de gates E3.2/B-T11 aún abiertos, sin
+  reescribir la propuesta histórica ni convertir sus AC futuros en PASS.
+
 ### H-SPEC06-01 — Estado de desarrollo desactualizado (documental, menor, provisional)
 
 - **Evidencia:** `specs/06-deuda-progress.md:2-12` inicia con «IN PROGRESS» y
@@ -190,10 +237,9 @@ No se ha auditado la base Excel física en esta pasada.
 - **Propuesta:** nota mínima sobre estado actual y carácter histórico del plan,
   sin borrar evidencias ni afirmar cobertura de consumidores futuros.
 
-**SPEC05:** primera lectura de `05-transferencias-referencias-specification.md`
-indica una enmienda D5 aprobada en cabecera el 27/10/2026 y una sección histórica
-«NO APROBADA» expresamente superada. **No se abre hallazgo** por esa diferencia
-sin contradicción vigente demostrada.
+**SPEC05:** la lectura posterior de estado actual de PR #90 y servicios D5 ha
+permitido registrar H-SPEC05-01 por **vigencia documental**, no por el contenido
+histórico expresamente sustituido ni por una supuesta autorización de Exterior ordinario.
 
 **Siguiente ronda:** recorrer guardas, cálculos, efectos de rectificación, migraciones,
 pruebas y dependencias de SPEC04–06; después comprobar hallazgos y gravedad.
