@@ -87,7 +87,7 @@ se repitieron validador y sus 18 regresiones: PASS. Sin bloqueo pendiente.
 No hay datos reales, Excel, semillas de ciclos, fuentes financieras simuladas, nuevas
 dependencias, despliegue ni infraestructura. SQLite/local y age actuales no equivalen
 a inicialización productiva, custodia externa, automatización ni RPO/RTO demostrados.
-PR de implementación: [#13](https://github.com/josemartin2000/myfinanzas-app/pull/13), abierta sin merge.
+PR de implementación: [#13](https://github.com/jmartinlabs/myfinanzas-app/pull/13), abierta sin merge.
 La CI remota debe comprobarse sobre el HEAD publicado de la PR, separada de estas
 pruebas locales. Su estado/enlaces se adjuntan a la PR para no atribuir un run anterior
 al commit final. Revisión y autorización de merge de implementación siguen pendientes.

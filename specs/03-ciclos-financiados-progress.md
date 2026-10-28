@@ -8,7 +8,7 @@ Rama: feat/e1-3-ciclos-financiados. Fecha: 2026-10-21.
 - [x] UI/listado/ficha/alta/cabecera común, componentes existentes.
 - [x] 21 AC actuales, 3 contratos futuros separados; Bun + Playwright.
 - [x] Capturas 390/1440 inspeccionadas y ajustes justificados, controles locales.
-- [x] [PR funcional #13 publicada](https://github.com/josemartin2000/myfinanzas-app/pull/13), sin merge.
+- [x] [PR funcional #13 publicada](https://github.com/jmartinlabs/myfinanzas-app/pull/13), sin merge.
 - [ ] CI remota del HEAD final: comprobar runs push/pull_request enlazados en PR #13.
 - [ ] Revisión/aprobación expresa del usuario y merge (no autorizado todavía).
 

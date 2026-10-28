@@ -116,7 +116,7 @@ la regresión integral Linux y el recorrido de restauración. Sin repetir CI a c
 
 ## Resultado Linux del candidato 88941e1
 
-[CI40076614284](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40076614284):
+[CI40076614284](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40076614284):
 API137PASS/1FAIL. P1–P13 completos PASS, incluido P11 con continuidad/restore10
 productivo y demo, auditoría, sesiones/intentos revocados. Las tres correcciones de
 fixtures de la primera CI quedan verificadas. El único FAIL es B3 heredado con

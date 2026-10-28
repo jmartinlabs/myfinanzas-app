@@ -574,7 +574,7 @@ puntos abiertos de disponibilidad histórica y fechas permanecen pendientes.
 ## Estado y próximo gate
 
 Comprobación al preparar esta propuesta: main local y remoto en `8fae7a4`, con árbol
-limpio; Dev08 integrado mediante [PR #44](https://github.com/josemartin2000/myfinanzas-app/pull/44),
+limpio; Dev08 integrado mediante [PR #44](https://github.com/jmartinlabs/myfinanzas-app/pull/44),
 squash `255bf61`. Las referencias del texto original a su continuidad conservan su
 procedencia y no sustituyen este estado verificado. AC23 y Dev32 mantienen sus estados
 independientes; este documento no los reanuda ni los resuelve.

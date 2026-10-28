@@ -1,7 +1,7 @@
 # Adopción selectiva de Epic Orchestration v2.3.1 — MyFinanzas
 Status: READY FOR REVIEW — validación local real completada; PR32 Draft. Sin merge autorizado.
 Fecha: 2026-10-22. Rama chore/adopt-orchestration-v2-3-1.
-[PR32 de adopción y resultados CI por SHA](https://github.com/josemartin2000/myfinanzas-app/pull/32).
+[PR32 de adopción y resultados CI por SHA](https://github.com/jmartinlabs/myfinanzas-app/pull/32).
 Reconciliar su HEAD/checks reales; el tablero no sustituye evidencia remota actual.
 
 ## Fuente y autorización
@@ -10,7 +10,7 @@ merge de PR24 primero, adopción en PR independiente después, test real de dele
 y parada antes de dev06/spec07. Es autorización concreta del plan siguiente; no se añade
 otra ronda para aprobar los mismos archivos. Se usa la Skill adopt-project como referencia.
 
-Fuente consultada: main de https://github.com/josemartin2000/agent-project-template
+Fuente consultada: main de https://github.com/jmartinlabs/agent-project-template
 al comenzar; commit **c8fd38522b449f7cdc463a9f248a46a125fdd324** (fix Mermaid/parser).
 README y contratos declaran Dynamic Agent Management v2.3.1. No se infiere un tag de
 release ni se afirma que toda la plantilla haya sido instalada/actualizada.
@@ -21,7 +21,7 @@ antes de leerlos. Solo se adopta la capa metodológica relevante, no código de 
 Se verificó HEAD 3f04f3395723dcd0141606affe7b7aba170bc7e5, ambas CI SUCCESS y ausencia
 de conflictos. Squash merge autorizado: **b60def124e95d692b6021eff9c1049652e21ded0**.
 PR24 MERGED; árbol main idéntico al SHA auditado y limpio al sincronizar.
-[CI posterior39738161833](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39738161833):
+[CI posterior39738161833](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39738161833):
 COMPLETED/SUCCESS. Spec06 cerrada/aprobada documentalmente; no dev06 autorizado.
 En esta PR se reconcilian únicamente sus metadatos de aprobación y cierre, antes aún
 marcados Draft en el snapshot auditado. No se cambian fórmula, AC o wireframes ASCII.
@@ -270,7 +270,7 @@ locales PASS y QA del delta conforme. Confirmación remota pendiente.
 ## Harness v2.8.0 — adopción local
 
 Autorización: usuario «adopta los ultimos cambios del harness»,2026-10-25. Fuente
-`josemartin2000/agent-project-template`, tag v2.8.0 anotado remoto resuelto a commit
+`jmartinlabs/agent-project-template`, tag v2.8.0 anotado remoto resuelto a commit
 `a451dff89a499a15f7b1a30ed17f4d3a67379149`, idéntico a la copia local revisada.
 Base adoptada previa v2.7.0/`ed61c62`; main MyFinanzas inicial `42a3efe` (PR65).
 No init-project/bootstrap ni sustitución de guías, arquitectura o decisiones financieras.
@@ -382,7 +382,7 @@ verificación, commits, rama y PR; sin merge, auto-merge, desarrollo funcional,
 despliegue ni operaciones destructivas. Es workflow Standard sobre un proyecto
 existente: no se ejecuta `init-project` ni `bootstrap`.
 
-Fuente fijada y verificada: repositorio `josemartin2000/agent-project-template`,
+Fuente fijada y verificada: repositorio `jmartinlabs/agent-project-template`,
 tag anotado `v2.14.0` cuyo objeto `3900fb3c4c3d2b7997cc368cfd296a372be902c7`
 resuelve a `98b5351a72eae1df985819c01a47954e6a1a0836`. Clon de solo lectura fuera del
 repositorio; no se ejecutaron scripts del upstream. Base MyFinanzas `origin/main`

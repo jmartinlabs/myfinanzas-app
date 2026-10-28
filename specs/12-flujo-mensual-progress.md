@@ -3,7 +3,7 @@ Specification: [APPROVED rev3](12-flujo-mensual-specification.md)
 
 ## Current checkpoint — integrado · 2026-10-26
 
-DEV12/E2.6 integrado por [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67).
+DEV12/E2.6 integrado por [PR67](https://github.com/jmartinlabs/myfinanzas-app/pull/67).
 - Candidato `e66bbd35229b578096d78a9aba6ff6913b527d88`; código
   `519978cbae0e5dbcd915d0859382f7057e029d4e`; integración
   `a445f90862565a7de4504a9a95eda53a5c5ca410`.
@@ -18,7 +18,7 @@ DEV12/E2.6 integrado por [PR67](https://github.com/josemartin2000/myfinanzas-app
 
 ## Checkpoint anterior — candidato publicado (historia)
 
-EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67), pendiente de QA independiente; no integrado.
+EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.com/jmartinlabs/myfinanzas-app/pull/67), pendiente de QA independiente; no integrado.
 - Autorización real del usuario: «Autorizo dev12 conforme a la especificación y wireframes aprobado».
   Sustituye el gate anterior de desarrollo pendiente; no autoriza merge ni otros motores.
 - Base `10bb794d793b7cd7c8f740831099e4dfb91c7340` (PR66), remoto reconsultado sin avance.
@@ -39,7 +39,7 @@ EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.co
   explicados en justification tras fallo sandbox. Responsable este ejecutor, sin eludir trust.
 - Código revisado en `519978cbae0e5dbcd915d0859382f7057e029d4e`; este delta solo consolida
   checkpoint/evidencias. SHA HEAD candidato y resultado remoto full Linux vigentes en
-  [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67), fuente de CI por SHA.
+  [PR67](https://github.com/jmartinlabs/myfinanzas-app/pull/67), fuente de CI por SHA.
   Al redactar este checkpoint, CI estaba en curso; consolidar resultado en PR, sin otro
   commit documental únicamente para su verde. Sin merge/datos reales/Excel/VPS/deploy/B3/Dev32.
 - Siguiente gate: QA independiente OpenCode sobre HEAD de PR67 y evidencia CI Linux del

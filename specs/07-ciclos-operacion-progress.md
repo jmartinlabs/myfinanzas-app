@@ -4,7 +4,7 @@
 
 Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
 incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
-CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
+CI Linux [39974920637](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39974920637)
 SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
 AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
 QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
@@ -105,7 +105,7 @@ automática tras este cierre.
 
 ### Identidad verificable y entrega
 
-- Repositorio: `josemartin2000/myfinanzas-app`.
+- Repositorio: `jmartinlabs/myfinanzas-app`.
 - Worktree: `work/dev07` (ruta relativa al workspace histórico); rama `feat/07-ciclos-operacion`.
 - HEAD de origen del checkpoint, publicado y verificado:
   `7b7cfced3f5952c440f55a9b89d2ddaf5a94b89f`.

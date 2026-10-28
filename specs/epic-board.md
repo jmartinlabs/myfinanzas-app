@@ -220,7 +220,7 @@ concede desarrollo, publicación, CI, infraestructura, datos reales ni merges.
 
 ## Identidad y persistencia
 
-- Repositorio privado `josemartin2000/myfinanzas-app`.
+- Repositorio privado `jmartinlabs/myfinanzas-app`.
 - Rama propia: `codex/docs-global-board-20261027`.
 - Checkout aislado reutilizado del frente CI ya cerrado:
   `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/ci-merge-base-lineage`.
@@ -509,7 +509,7 @@ acotada DEV13-H1/CI; no reanuda ejecutores ni amplía desarrollo.
   guarda Ancestro no confiable; R11 falla por ruta del stack Bun, reproducido
   también en base1255ef8. Sin cambios de guardas/assertions. TypecheckPASS;
   baseline canónica Python3.12 PASS57/24/9/8/15; diff/historial revisados.
-- CI [40239847535](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40239847535)
+- CI [40239847535](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40239847535)
   del HEADa0e0567: baseline/requiredFAIL, fullSKIPPED. Log baseline121309105938:
   `ci_context.py snapshot` rechaza checkout refs/pull/71/merge6261d54, que integra
   antiguo1255ef8 con fa8a01e. Pruebas Linux de aplicación UNRUN en este candidato.
@@ -532,7 +532,7 @@ acotada DEV13-H1/CI; no reanuda ejecutores ni amplía desarrollo.
 Usuario invoca `$handoff`: alcance congelado. No QA, desarrollo, investigación,
 PR, merge, despliegue ni nuevas asignaciones durante esta parada.
 
-- Repo `josemartin2000/myfinanzas-app`, checkout coordinador
+- Repo `jmartinlabs/myfinanzas-app`, checkout coordinador
   `/private/tmp/myfinanzas-spec14-publication`, rama `codex/comms-v210-integrated`.
   HEAD previo `36321da40f04bb3a0e94c8be5a22234d72907b43`, limpio al inventario.
   Este resumen se guarda en commit local de checkpoint, sin push. Ruta temporal:
@@ -556,7 +556,7 @@ PR, merge, despliegue ni nuevas asignaciones durante esta parada.
   Checkout externo `.../T/opencode/dev13-h1` inspeccionado limpio, rama
   `codex/dev13-anticipos-h1`, HEADa0e0567; schemafix7339b5e local. Nuevo commit
   documental observado NO acredita implementación H1 ni QA. Sin retorno final
-  ni push confirmado. No mergePR71 autorizado. [Progreso base](https://github.com/josemartin2000/myfinanzas-app/blob/1255ef88bb196c8326f7794aa79b1c4715aa0e0a/specs/13-anticipos-progress.md)
+  ni push confirmado. No mergePR71 autorizado. [Progreso base](https://github.com/jmartinlabs/myfinanzas-app/blob/1255ef88bb196c8326f7794aa79b1c4715aa0e0a/specs/13-anticipos-progress.md)
   vive en rama de PR71, no en este main; consultar por SHA remoto.
 - EXT-OPENCODE-QA12-CLOSE (OpenCode, sesión funcional QA12/PR67, ID/versionN/D):
   PENDIENTE DE ENVIAR, envío de nuevo paquete no confirmado. PR67 OPEN/HEADbb24934
@@ -631,7 +631,7 @@ validar/publicar adaptación documental; aprobación de su PR/merge separada.
 
 ## Estado vigente — 2026-10-25 — adopción v2.9.0
 
-- Harness v2.8.0 integrado PR66/main `10bb794`; candidato `ee2f431`. CI [candidato40173694194](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40173694194) y [main40174086170](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40174086170) SUCCESS según entregable externo, no reconsultados en esta adopción; QA documental externa favorable con CI UNRUN por falta de acceso.
+- Harness v2.8.0 integrado PR66/main `10bb794`; candidato `ee2f431`. CI [candidato40173694194](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40173694194) y [main40174086170](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40174086170) SUCCESS según entregable externo, no reconsultados en esta adopción; QA documental externa favorable con CI UNRUN por falta de acceso.
 - Autorización vigente: actualización local Standard v2.9.0 y validaciones/QA independiente, sin merge/deploy. Rama `codex/adopt-harness-v290`, base `10bb794`, fuente `781ffbb`. [Plan/evidencia](methodology/orchestration-adoption.md#harness-v290--adopción-local). Baseline PASS (57/24/9/8/15 regresiones) y H290-QA independiente PASS del diff14rutas; selección efectiva QA `gpt-6.1-sol` + `low` verificada en metadatos. OpenCode deshabilitado en esta ejecución.
 - Dev12 autorizado: usuario «Autorizo dev12 conforme a la especificación y wireframes aprobado». Checkout externo principal MyFinanzas, rama `codex/dev12-flujo-mensual`, HEAD observado `bb24934`, limpio al preflight. Candidato no revisado aquí; QA independiente pendiente, sin merge.
 - Spec13/E3.1 autorizada solo especificación: usuario «Autoriza preparar la especificación E3.1, sin desarrollo». Worktree externo aislado `myfinanzas-spec13-opencode` (ruta local en paquete del usuario), base observada `10bb794`; contenido/progreso externo no verificado. No se inicia ni controla OpenCode desde esta ejecución; inicio/parada del cliente externo corresponden al usuario.
@@ -995,7 +995,7 @@ Este estado prevalece sobre los registros históricos inferiores.
 
 Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
 incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
-CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
+CI Linux [39974920637](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39974920637)
 SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
 AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
 QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
@@ -1095,7 +1095,7 @@ Fuente: aprobación documental final de Álex y autorización expresa de squash 
 | Dev32 / PR30 / AC22 y otras tareas pausadas | PAUSED | No reanudar |
 | E2.3 | Fuera de esta autorización | No implementar planificación/ejecutado/pendientes/estados mensuales en E2.2 |
 
-PR39 se integró únicamente después de verificar HEAD0f3d4e5575cd855558cfd8a8cfb11e980ff55398, mergeable sin conflictos y CI push39851581005/PR39851590534 completed SUCCESS sobre ese SHA. Diff final: solo brainstorming08 y specification08. Su corrección técnica fue una línea portable; contratos financieros y wireframes intactos. CI posterior main: [CI main39853674496](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39853674496) completed SUCCESS sobre main20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad, confirmado después de finalizar el workflow; sin reintentos manuales.
+PR39 se integró únicamente después de verificar HEAD0f3d4e5575cd855558cfd8a8cfb11e980ff55398, mergeable sin conflictos y CI push39851581005/PR39851590534 completed SUCCESS sobre ese SHA. Diff final: solo brainstorming08 y specification08. Su corrección técnica fue una línea portable; contratos financieros y wireframes intactos. CI posterior main: [CI main39853674496](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39853674496) completed SUCCESS sobre main20d8f9a6eef9888e03a5a61ecb11a13b21fbc2ad, confirmado después de finalizar el workflow; sin reintentos manuales.
 
 Documentos canónicos: [brainstorming08](08-presupuestos-brainstorming.md) y [specification08](08-presupuestos-specification.md). Sus marcas DRAFT/PENDING describen la revisión previa; la aprobación completa e integración posterior quedan registradas aquí con la instrucción expresa del usuario, sin modificar los documentos aprobados ni repetir preguntas financieras. La CI acredita regresión del núcleo integrado, no implementación E2.2 ni resolución de AC23.
 
@@ -1176,8 +1176,8 @@ sin reiniciar agentes ni trabajo ya realizado.
 | Item | Prioridad | Spec / autorización | Dev | QA | Dependencias duras | Dueño / aislamiento | Bloqueo | Siguiente acción autorizada | Evidencia |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | ADOPT-ORCH | Cerrada | PR32 integrada; PR33 actualiza autonomía operativa | Metodología vigente | Ensayo nativo previo conservado; no repetido | Satisfechas | Coordinador | Ninguno | Aplicar contrato vigente | PR32 da543f3; PR33 7c5c7d1b |
-| E1.6 | Cerrada actual | Spec06 y merge PR34 aprobados por usuario | Integrada main cb9ba3b | QA independiente y CI de rama SUCCESS | Dependencias satisfechas | Sin trabajador activo; rama feat/06-deuda preservada | Ninguno para alcance actual | Conservar evidencia; 3 contratos futuros pendientes | [PR34](https://github.com/josemartin2000/myfinanzas-app/pull/34), [testplan06](06-deuda-testplan.md) |
-| E2.1 / spec07 | Cerrada documental | Aprobada e integrada PR37; auditoría de Álex favorable | Dev07 autorizado expresamente en ejecución actual | Spec/wireframes aprobados; aceptación funcional pendiente | E1.3/E1.4 integradas; AC2 futuro depende Comida | Coordinador | Ninguno documental | Reutilizar sin reabrir decisiones | [PR37](https://github.com/josemartin2000/myfinanzas-app/pull/37), main c04dc07 |
+| E1.6 | Cerrada actual | Spec06 y merge PR34 aprobados por usuario | Integrada main cb9ba3b | QA independiente y CI de rama SUCCESS | Dependencias satisfechas | Sin trabajador activo; rama feat/06-deuda preservada | Ninguno para alcance actual | Conservar evidencia; 3 contratos futuros pendientes | [PR34](https://github.com/jmartinlabs/myfinanzas-app/pull/34), [testplan06](06-deuda-testplan.md) |
+| E2.1 / spec07 | Cerrada documental | Aprobada e integrada PR37; auditoría de Álex favorable | Dev07 autorizado expresamente en ejecución actual | Spec/wireframes aprobados; aceptación funcional pendiente | E1.3/E1.4 integradas; AC2 futuro depende Comida | Coordinador | Ninguno documental | Reutilizar sin reabrir decisiones | [PR37](https://github.com/jmartinlabs/myfinanzas-app/pull/37), main c04dc07 |
 | E2.2 | Futura | Roadmap aprobado; sin spec/dev nuevos autorizados | not-ready | no ejecutado | E1.1/E1.2/E1.6; P3/R3 | Sin trabajador | E1.6 satisfecha; permiso específico pendiente | No iniciar | [roadmap](roadmap.md) |
 | DEV32 / AC22 | Pausa independiente | Spec PR29 aprobada, aún no integrada; no nueva continuación | 23/24; AC22 pendiente | Revisión independiente NO iniciada | Orden PR29 → PR30 | PR30 Draft; feat/32-ejecucion-rootless; fuera de los worktrees actuales | Pausa expresa; suficiencia AC22 pendiente | Conservar checkpoint sin investigar ni modificar | PR30 a09011224e248edcc83080363660a237d409a7d8 |
 
@@ -1267,13 +1267,13 @@ sin implementación ni tercer trabajador. Dev32 conserva pausa expresa.
 ### Entrega del coordinador
 Conciliado cierre QA f2bfc1b y documentación final fbcf423; los cuatro commits de
 tablero se incorporan por el coordinador a feat/06-deuda, único escritor de tablero.
-Rama preparada para PR hacia main; [comparación](https://github.com/josemartin2000/myfinanzas-app/compare/main...feat/06-deuda).
+Rama preparada para PR hacia main; [comparación](https://github.com/jmartinlabs/myfinanzas-app/compare/main...feat/06-deuda).
 Resultados remotos vigentes se consultan por SHA en la PR, sin inferirlos de pruebas
 locales. Merge sigue pendiente de autorización expresa. SPEC07-FINAL completa
 propuesta documental con las respuestas recibidas; spec/wireframes no aprobados.
 
 ### PR34, corrección de fixture CI y propuesta07
-[PR34](https://github.com/josemartin2000/myfinanzas-app/pull/34) abierta, sin merge.
+[PR34](https://github.com/jmartinlabs/myfinanzas-app/pull/34) abierta, sin merge.
 SHA5c1e4f0: CI push39752272341 yPR39752340189 FAILURE, API96/97; únicamenteD4
 rechazó un sidecar de fixture sin0600. E2E remoto no ejecutado por ese fallo.
 Reproducción determinista umask022 falló; fix28cb52c limita cambios a creación privada
@@ -1311,7 +1311,7 @@ worktrees y temporales previos se conservan; ningún recurso con trabajo pendien
 se elimina. Aprobar spec07 no autoriza automáticamente desarrollo ni su nuevo merge.
 
 ## Cierre documental E2.1 autorizado por Álex — 2026-10-22
-Auditoría funcional y documental de [PR37](https://github.com/josemartin2000/myfinanzas-app/pull/37)
+Auditoría funcional y documental de [PR37](https://github.com/jmartinlabs/myfinanzas-app/pull/37)
 favorable. Spec07 y wireframes aprobados; permiso expreso de squash condicionado
 a ambas CI SUCCESS del HEAD final y ausencia de conflictos. Se corrige únicamente
 la cabecera del brainstorming y se conserva su trazabilidad; ningún cambio de

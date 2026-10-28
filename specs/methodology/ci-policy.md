@@ -45,7 +45,7 @@ Changes to the allowlist or classifier themselves require `full`.
 
 Adapt existing projects without init-project, replacing functional decisions or
 reinitializing their harness. This is a CI scope policy, not product approval.
-Reference: [MyFinanzas PR #55](https://github.com/josemartin2000/myfinanzas-app/pull/55)
+Reference: [MyFinanzas PR #55](https://github.com/jmartinlabs/myfinanzas-app/pull/55)
 illustrates the correction; its project-specific filenames are not universal defaults.
 
 ## Required checks and workflow enforcement

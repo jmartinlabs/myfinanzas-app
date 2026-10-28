@@ -7,7 +7,7 @@ Rama: test/r6-diagnostics. SHA definitivo y CI se registran en la descripción d
 ## Alcance y conservación
 Solo cambia `apps/api/src/referencias.test.ts` y esta evidencia. Sin producto, DB,
 migraciones, dependencias, configuración de CI ni documentación funcional E1.6.
-[PR #24](https://github.com/josemartin2000/myfinanzas-app/pull/24) permanece Draft,
+[PR #24](https://github.com/jmartinlabs/myfinanzas-app/pull/24) permanece Draft,
 E1.6 sin aprobar; no se incorpora su rama. Sin datos reales, Excel, dev 06 o despliegue.
 
 R6 conserva sus tres parejas Promise.all, datos, claves de intento, revisiones y
@@ -69,7 +69,7 @@ para el CI normal ni el producto.
 
 ## Límite de la conclusión
 Esta PR mejora observabilidad, NO corrige ni demuestra la causa raíz del fallo remoto
-[39672873631](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39672873631).
+[39672873631](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39672873631).
 El SQLITE_BUSY del control negativo es una inyección sintética, no diagnóstico del fallo
 original. CI verde no prueba que la carrera desapareció. Si reaparece, usar la evidencia
 para proponer una corrección mínima independiente y autorizada; no ampliar esta PR.

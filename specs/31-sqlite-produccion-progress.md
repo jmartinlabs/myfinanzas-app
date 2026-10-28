@@ -89,7 +89,7 @@ La causa histórica R6 sigue sin atribuir; no se afirma resolverla por una CI ve
 
 ## Estado remoto comprobado — 2026-10-21
 
-GitHub registra #23 integrada por josemartin2000 a las 21:51:50 UTC mediante
+GitHub registra #23 integrada por jmartinlabs a las 21:51:50 UTC mediante
 squash 13f19f6add82ff24be5040674528bdad4b96c75f (head aprobado f064935).
 Su árbol coincide exactamente con el árbol hipotético 115dc61 ya comprobado.
 La sincronización concurrente de la rama de implementación se preserva en
@@ -116,9 +116,9 @@ COMPLETED/SUCCESS y sin conflictos. Integración squash verificada en GitHub:
 
 Los 33 AC quedan verificados: 82 pruebas API / 1243 assertions y 2 E2E,
 tipos/build/controles correctos según evidencia anterior. CI del HEAD aprobado:
-[push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682614034),
-[PR SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682619693).
-CI posterior al squash: [ejecución](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39684386599);
+[push SUCCESS](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39682614034),
+[PR SUCCESS](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39682619693).
+CI posterior al squash: [ejecución](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39684386599);
 COMPLETED/SUCCESS sobre 511fcbad4bb0418af5bc06284ac30abb645cd604,
 incluidos API, tipos/build/controles y Playwright. Entrega técnica integrada;
 despliegue no autorizado.

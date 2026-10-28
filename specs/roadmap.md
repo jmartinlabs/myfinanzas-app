@@ -506,7 +506,7 @@ cuatro capacidades y con permiso específico:
 ## Aprobación y siguiente acción
 El usuario aprobó expresamente PR #5, las cuatro épicas y sus 30 entregas el 2026-10-20,
 y autorizó su integración en main después de comprobar CI y alcance. Registro de
-integración (estado y commit): [PR #5](https://github.com/josemartin2000/myfinanzas-app/pull/5).
+integración (estado y commit): [PR #5](https://github.com/jmartinlabs/myfinanzas-app/pull/5).
 No cambia ningún criterio de entrega, regla financiera ni decisión DT pendiente.
 
 Excel v5.11 continúa como fuente de verdad hasta la migración definitiva autorizada,

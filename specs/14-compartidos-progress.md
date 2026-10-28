@@ -25,7 +25,7 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   auditoría y fixture de backup/restore.
 - Candidato de código: `b2b0b89` (merge final de main `aad4e6c`; código D5 `a242a70`).
   Rama `codex/dev14-d5-exterior` publicada. **PR #90 Draft**:
-  https://github.com/josemartin2000/myfinanzas-app/pull/90. Sin merge.
+  https://github.com/jmartinlabs/myfinanzas-app/pull/90. Sin merge.
 - Evidencia local macOS: D5 10 PASS/134; Base B 10 PASS/179; E2E D5 y Base B
   2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
   (plataforma macOS/B3). Linux (Ubuntu 24.04.5, VM aislada, `b2b0b89`):
@@ -50,7 +50,7 @@ con revalidación dentro de la migración IMMEDIATE. Seis regresiones de archivo
 comparan bytes, objetos, versión, sidecars y journal DELETE/WAL. Control negativo
 sobre `025f1df`: 3 FAIL DELETE/3 PASS WAL; parche restaurado: 6 PASS.
 Focales Compartidos/esquema/Vehículos/Anticipos: 53 PASS; typecheck PASS.
-CI anterior [40402511849](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40402511849)
+CI anterior [40402511849](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40402511849)
 SUCCESS sobre `025f1df`; no acredita esta corrección. QA independiente y CI del
 nuevo candidato pendientes. B3 no investigado; sin merge ni despliegue.
 
@@ -61,7 +61,7 @@ nuevo candidato pendientes. B3 no investigado; sin merge ni despliegue.
   necesarias en PR75. No autorizo merge ni despliegue.» División B aprobada en
   specification §14; PR74/main `f0a5219b2193283a4e3254d13c87c75c9254e845`.
 - Repository / checkout / branch / candidate SHA: PR75
-  `https://github.com/josemartin2000/myfinanzas-app/pull/75`, rama
+  `https://github.com/jmartinlabs/myfinanzas-app/pull/75`, rama
   `codex/dev14-base-b`. Checkout aislado
   `/private/var/folders/45/l03g6c0x15748l6t9c0f7zm80000gp/T/opencode/dev14-baseb`.
   Merge de compatibilidad `e205ba4` (`origin/main` `f5bf032`/DEV15 con Base B

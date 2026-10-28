@@ -50,7 +50,7 @@ siguen pendientes. Sin nuevas dependencias/infraestructura, E1.2, STEP 8 ni merg
 ## Cierre E1.1 — PR #7
 Usuario aprueba expresamente la PR tras revisión final de Álex sobre 4f7cdda,
 2026-10-21, y autoriza merge y cierre documental en la misma entrega.
-E1.1 implementado e integrado mediante [PR #7](https://github.com/josemartin2000/myfinanzas-app/pull/7).
+E1.1 implementado e integrado mediante [PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7).
 CI de 4f7cdda: push 39549364881 y PR 39549369432 SUCCESS; el cierre exclusivamente
 documental vuelve a pasar controles/CI antes del merge. Commit integrado verificable en la PR.
 No se declaran implementados/probados los motores AC-30/31 ni la integración futura
