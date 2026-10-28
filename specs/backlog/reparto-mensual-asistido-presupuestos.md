@@ -106,6 +106,9 @@ cobertura de la fuente. Se muestra el motivo, nunca un cero sustitutivo.
   resultado es mayor que cero.
 - Permitir modificar el importe. Un importe superior al Pendiente puede producir Estado
   Excedido; mostrar el efecto y no truncar el Pendiente negativo a cero.
+- Se permiten varias Transferencias parciales hacia la misma línea presupuestaria si son
+  líneas distintas y el usuario las decide. La interfaz muestra el efecto acumulado y no las
+  presenta como una única Transferencia duplicada.
 - La Transferencia propuesta debe ser ordinaria: sin Referencia y sin origen Exterior. Si se
   añade una Referencia o se cambia el destino, puede dejar de ejecutar esa Aportación a saldo;
   la interfaz debe explicarlo antes de confirmar.
@@ -192,7 +195,9 @@ Al confirmar la preparación del reparto:
 
 La generación es atómica para el conjunto seleccionado: o se crean todos los pendientes
 seleccionados o no se crea ninguno. Si ya existen pendientes de una generación anterior, la
-nueva operación solo crea los que falten y no duplica los existentes.
+nueva operación solo crea los que falten y no duplica los existentes. La identidad técnica
+distingue líneas preparadas; no deduplica por contenido económico. Varias Transferencias
+parciales legítimas pueden coexistir como líneas distintas.
 
 ### Contenido lógico mínimo del pendiente
 
