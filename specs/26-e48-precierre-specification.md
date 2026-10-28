@@ -74,7 +74,9 @@ posiciones anteriores. La valoración, resultado y patrimonio E4.3 siguen `No di
 
 E4.8 puede mostrar precierre parcial con motivo mientras E3.5/FIN_NETA no esté integrado.
 E4.9 no puede cerrar con Comida `No disponible`; el cierre queda bloqueado hasta que E3.5
-sea verificable. No se admite cierre parcial anticipado ni re-cierre como sustituto.
+sea verificable. E4.8 no implementa el motor E3.5; cuando exista, consumirá sus resultados
+verificados sin reimplementarlo. No se admite cierre parcial anticipado ni re-cierre como
+sustituto.
 
 ### Backup preflight
 

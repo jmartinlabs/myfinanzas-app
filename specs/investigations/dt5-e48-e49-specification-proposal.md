@@ -22,7 +22,8 @@ candidato para E4.8/E4.9. No implementa tablas, endpoints, locks ni fotos.
 cobertura, diferencias, bloqueos y avisos, sin alterar S0, sin crear el cierre y sin
 modificar hechos.
 
-**Incluye:** lectura consolidada de ciclo, Movimientos, plan final, Presupuestos,
+**Incluye:** lectura consolidada de ciclo, Movimientos, plan final (`SinPlan` o líneas),
+Presupuestos,
 clasificación/Referencias, Anticipos, Compartidos, Revisión Comida, Deuda E1.6,
 Inversión E4.1, Nómina, archivo E4.5 (si existe) y pendientes/conciliación E3.6 (si
 existe); comprobación de backup; revisión de concurrencia.
@@ -46,6 +47,10 @@ E4.10.
 anuales E4.11, valoración E4.3, Ventas E4.2, conciliaciones E4.4, Comida E3.5 ni
 cálculo de patrimonio no disponible.
 
+**E3.5/FIN_NETA:** E4.9 no implementa el motor de Comida. Cuando E3.5 esté integrado y
+sea verificable, E4.9 consumirá y capturará sus resultados; no los reimplementa ni los
+inventa. Mientras no exista, el cierre E4.9 queda bloqueado.
+
 ## 2. Componentes: implementado, documental y futuro
 
 | Componente | Estado en `f077b7e` | Qué aporta a E4.8/E4.9 | Qué no se puede declarar |
@@ -55,11 +60,11 @@ cálculo de patrimonio no disponible.
 | Compartidos/D5 | Implementado | Fichas, participantes, aportaciones | Guarda de cierre |
 | Revisión Comida E3.4 | Implementado | Registros, vínculos, referencia temporal | E3.5/FIN_NETA/CIERRE analítico |
 | Deuda E1.6 | Implementado | Deuda, apertura, amortizaciones | E4.4 conciliaciones/condiciones completas |
-| Plan de Ciclo/Anual, Presupuestos, Nómina | Implementado | Plan final, ejecución, atribución | Foto de cierre |
+| Plan de Ciclo/Anual, Presupuestos, Nómina | Implementado | `SinPlan` o líneas, ejecución, atribución | Foto de cierre |
 | **E4.1 Inversión** | **Implementado** `156a50d` | Instrumentos, Compras, efectivo, cantidades, posiciones | Ventas E4.2; valoración/resultado/patrimonio E4.3 |
 | E4.2 Ventas | Documental aprobado; DEV no iniciado | Futuro: Venta en `operaciones_inversion`, efectivo/posición | No hay código; 45 AC UNRUN |
 | E4.3 Valoración/resultados | No implementado | Nada runtime | `No disponible`; no poner cero |
-| E3.5 Comida/FIN_NETA | No implementado | Nada runtime | `No disponible`; no duplicar motor |
+| E3.5 Comida/FIN_NETA | No implementado | Nada runtime | `No disponible`; no implementa motor; E4.9 bloqueado hasta integrarlo |
 | E4.4 Deuda completa | Documental **en revisión; no aprobada**; sin código | Futuro: POST/PATCH Deuda y conciliaciones | No hay runtime |
 | E4.5 Histórico/precontrol | Documental **aprobada**; sin código | Fuente de solo lectura (GET) | No es escritura que proteger |
 | E3.6 Pendientes/conciliación | Documental **aprobada**; sin código | Fuente de solo lectura (GET) | No es escritura que proteger |
@@ -104,10 +109,14 @@ foto, pero un cambio de ISIN/divisa con Compras exige revalidación.
 
 | Bloque | Contenido | Condición |
 | --- | --- | --- |
-| **Núcleo obligatorio** | Ciclo/ventana/S0; Movimientos; plan final; clasificación y Referencias de los hechos; **E4.1 instrumentos, Compras, efectivo y posiciones**; metadatos de cierre; backup | Si falta, no hay cierre |
+| **Núcleo obligatorio** | Ciclo/ventana/S0; Movimientos; plan final (`SinPlan` o líneas); clasificación y Referencias de los hechos; **E4.1 instrumentos, Compras, efectivo y posiciones a Fin**; metadatos de cierre; backup | Si falta, no hay cierre |
 | **Capturado si hay hechos** | Anticipos (foto/apertura, acreditaciones); Compartidos (ficha, participantes, aportaciones); Nómina (asignaciones); Revisión Comida (registros/vínculos); **Deuda E1.6** (apertura, capital, amortizaciones) | Si el ciclo tiene hechos, se captura; si no, vacío explícito |
-| **No disponible** | E4.3 valoración/resultado/patrimonio; E3.5 Comida/FIN_NETA; E4.2 Ventas; E4.4 conciliaciones | Se muestra `No disponible` con motivo; nunca cero |
+| **No disponible** | E4.3 valoración/resultado/patrimonio; E4.2 Ventas; E4.4 conciliaciones | Se muestra `No disponible` con motivo; nunca cero |
 | **Fuente de lectura** | E4.5 archivo/precontrol; E3.6 pendientes/conciliación | Se referencia versión/cobertura; no se escriben |
+
+**Comida E3.5:** no está integrada. E4.8 puede mostrar precierre parcial con motivo;
+**E4.9 bloquea el cierre y no crea foto** hasta que E3.5/FIN_NETA sea verificable. No se
+admite cierre parcial anticipado ni re-cierre como sustituto.
 
 **Totales parciales:** cada total lleva `completo | parcial | no_disponible` y motivo:
 
@@ -117,9 +126,9 @@ foto, pero un cambio de ISIN/divisa con Compras exige revalidación.
 - Neto Anticipo: completo si Anticipos se capturó; parcial si no.
 - Neto Compartido: completo si Compartidos se capturó; parcial si no.
 - Nómina/flujo: completo si asignaciones se capturaron; parcial si no.
-- Comida/CIERRE: `No disponible` sin E3.5/FIN_NETA.
+- Comida/CIERRE: no se captura y el cierre se bloquea sin E3.5/FIN_NETA.
 - Patrimonio/resultado: `No disponible` sin E4.3.
-- Plan: completo si plan final se capturó.
+- Plan: `SinPlan` válido o completo si se capturó.
 
 ### 3.4 Backup como preflight (M4)
 
@@ -156,9 +165,9 @@ foto, pero un cambio de ISIN/divisa con Compras exige revalidación.
 
 ### 4.1 Entradas y estados
 
-**Entradas:** ciclo seleccionado, contexto, Movimientos, plan final, Presupuestos,
-clasificación/Referencias, Anticipos, Compartidos, Revisión Comida, Deuda E1.6,
-Inversión E4.1, Nómina, E4.5 si existe, E3.6 si existe, backup.
+**Entradas:** ciclo seleccionado, contexto, Movimientos, plan final (`SinPlan` o líneas),
+Presupuestos, clasificación/Referencias, Anticipos, Compartidos, Revisión Comida, Deuda
+E1.6, Inversión E4.1 a Fin, Nómina, E4.5 si existe, E3.6 si existe, backup.
 
 **Estados de salida:** `Listo`, `Listo con avisos`, `Bloqueado`, `No disponible`.
 Nunca se presenta un cero por ausencia.
@@ -170,10 +179,10 @@ Nunca se presenta un cero por ausencia.
 | P1 | Ventana finita y acreditada | Sin ventana → Bloqueado; DT3 |
 | P2 | S0 presente | Sin S0 → Bloqueado |
 | P3 | Movimientos y clasificación/Referencias consistentes | Inconsistencia estructural → Bloqueado |
-| P4 | Plan final presente | Sin plan final → Bloqueado (núcleo M3) |
-| P5 | E4.1 instrumentos/Compras/efectivo/posiciones capturables | Fuente no disponible → Bloqueado; ciclo sin inversiones → vacío válido; cobertura histórica parcial → aviso |
+| P4 | Plan final o `SinPlan` válido | `SinPlan` no bloquea; `PlanNoVerificable` → Bloqueado |
+| P5 | E4.1 instrumentos/Compras/efectivo/posiciones a Fin | Fuente no disponible → Bloqueado; sin Compras nuevas pero con posiciones previas → posición a Fin, no vacío; cobertura histórica parcial → aviso |
 | P6 | E4.3 valoración/patrimonio | `No disponible` → aviso, no bloqueo por sí solo |
-| P7 | E3.5 Comida/FIN_NETA | `No disponible` → aviso/parcial |
+| P7 | E3.5 Comida/FIN_NETA | `No disponible` → precierre parcial; E4.9 bloqueado, sin foto |
 | P8 | E4.2 Ventas / E4.4 conciliaciones | `No disponible` → aviso/parcial |
 | P9 | Backup preflight | Sin evidencia DT6 → Bloqueado |
 | P10 | Concurrencia | Cambio entre preview y confirmación → 409 |
@@ -186,9 +195,9 @@ Nunca se presenta un cero por ausencia.
 verificable; inconsistencia estructural; cambio concurrente; intención de escribir
 en el precierre.
 
-**Avisan:** E4.3/E3.5/E4.2/E4.4 no disponibles; cobertura histórica parcial de
-inversión; diferencias de conciliación E3.6; archivo E4.5 no disponible; totales
-parciales.
+**Avisan:** E4.3/E4.2/E4.4 no disponibles; E3.5 no disponible (precierre parcial; cierre
+E4.9 bloqueado); cobertura histórica parcial de inversión; diferencias de conciliación
+E3.6; archivo E4.5 no disponible; totales parciales.
 
 **No hacen:** modificar S0; crear ciclo siguiente; cerrar; crear foto; corregir
 hechos; convertir un aviso en bloqueo sin contrato aprobado.
@@ -243,13 +252,13 @@ hechos; convertir un aviso en bloqueo sin contrato aprobado.
 | Identidad | Ciclo, versión de foto, fecha/actor/motivo, fingerprint |
 | Ventana | Inicio, Fin, S0, estado temporal |
 | Hechos | Movimientos del ciclo y totales |
-| Plan | Plan final y líneas capturadas |
+| Plan | `SinPlan` o plan final con líneas capturadas |
 | Clasificación/Referencias | IDs y versiones de nombre |
-| Inversión E4.1 | Instrumentos, Compras, efectivo, posiciones; cobertura histórica parcial |
+| Inversión E4.1 | Instrumentos, Compras, efectivo y posiciones **a Fin** (anteriores incluidas, posteriores excluidas); cobertura histórica parcial |
 | Auxiliares | Anticipos, Compartidos, Nómina, Revisión Comida y **Deuda E1.6** si hay hechos |
 | Cobertura | `completo/parcial/no_disponible` por total y motivo |
 | Backup | Evidencia DT6/T-BKP referenciada |
-| No disponible | E4.3, E3.5, E4.2, E4.4 cuando falten |
+| No disponible | E4.3, E4.2, E4.4 cuando falten; E3.5 bloquea la foto y no se captura como `No disponible` |
 
 ### 5.5 Proveedor de Cierres y AC36
 
@@ -270,7 +279,8 @@ con proveedor ficticio no acredita Cierres.
 
 ### 5.6 Mapeo E4.9
 
-- **E4.9-AC1:** bloqueo ordinario y foto coherentes, incluido plan final.
+- **E4.9-AC1:** bloqueo ordinario y foto coherentes, incluido el estado final del plan
+  (`SinPlan` o líneas).
 - **E4.9-AC2:** proteger o revalidar todas las rutas con impacto, no solo
   Movimientos.
 - **E4.9-AC3:** fin temporal no crea cierre; cerrar no crea otro ciclo.
@@ -285,7 +295,7 @@ con proveedor ficticio no acredita Cierres.
 | E4.1 | Integrado `156a50d`; 6 AC PARCIAL | Fuente real de instrumentos/Compras/efectivo/posiciones; no es E4.2/E4.3 |
 | E4.2 | Documental; sin DEV | Ventas futuras; no capturadas como runtime |
 | E4.3 | No implementado | Valoración/resultado/patrimonio `No disponible` |
-| E3.5 | No implementado | Comida/FIN_NETA/CIERRE analítico `No disponible` |
+| E3.5 | No implementado | Comida/FIN_NETA/CIERRE analítico `No disponible`; E4.9 bloqueado hasta integrarlo |
 | E4.4 | Documental **en revisión; no aprobada**; sin DEV | Deuda E1.6 sí; conciliaciones futuras |
 | E4.5 | Documental **aprobada**; sin código | Fuente de lectura; no escritura |
 | E3.6 | Documental **aprobada**; sin código | Fuente de lectura; no escritura |
@@ -300,8 +310,8 @@ con proveedor ficticio no acredita Cierres.
 - **R4:** declarar backup verificado sin restauración. Mitigación: DT6; bloquear.
 - **R5:** revalidar T2 y recalcular la foto. Mitigación: foto inmutable; vistas vivas
   separadas.
-- **R6:** duplicar el motor de Comida. Mitigación: E4.9 consume el cálculo E3.5
-  cuando exista; no reimplementa.
+- **R6:** duplicar el motor de Comida. Mitigación: E4.9 no lo implementa; consume y
+  captura el resultado verificado de E3.5 cuando exista.
 - **R7:** que E4.2/E4.4/E4.3/E3.5 se cuelen como capturados. Mitigación: estados
   `No disponible` y gates.
 
