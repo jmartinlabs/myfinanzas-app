@@ -3,12 +3,11 @@
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base del inventario: `main` `63ee1d0`.
+- Base del inventario: `main` `63ee1d0`. `main` actual tras el cierre: `e4a26de`.
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
-- **Estado actual:** SPEC01 corregida y publicada en
-  [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115); **H-SPEC01-01
-  resuelto** por decisión expresa del usuario; validación final y merge pendientes.
-  Las otras 24 SPEC siguen pendientes.
+- **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
+  integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
+  `40728150624` SUCCESS. Las otras 24 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01 es la única SPEC modificada; el resto no se ha tocado.
@@ -100,7 +99,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | PR pendiente | Correcciones documentales aplicadas. **H-SPEC01-01 resuelto** por decisión expresa (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo actual. Cobertura de tests revisada; gap de cero explícito + movimientos registrado. **Nota AC-33 fuera de la tabla; AC-01…AC-43 consecutivos.** Sin cambio de código. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD del fix `89f1dbb` / CI `40726648424` PASS; HEAD final en el checks | Pendiente | AC-38 parcial y E1.3 no acreditado; sin contradicción material abierta. |
+| 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
@@ -190,15 +189,13 @@ esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas 
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
-| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `89f1dbb` (fix de tabla); HEAD final en el checks | `40726648424` PASS | Pendiente | Pendiente |
+| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
 
 ## Próxima acción
 
-1. Álex valida el **HEAD final** de [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115).
-2. El usuario autoriza expresamente el merge documental.
-3. Tras la integración, verificar el SHA real y marcar SPEC01 como `Cerrada` si no hay
-   otras contradicciones.
-4. Solo entonces iniciar SPEC02.
+1. **SPEC01 cerrada.** La PR #115 está integrada y este registro refleja el SHA/CI reales.
+2. Integrar esta actualización del tracker para que el cierre quede registrado en `main`.
+3. **No iniciar SPEC02** hasta confirmar que SPEC01 está cerrada en `main` y recibir
+   autorización expresa.
 
-H-SPEC01-01 está resuelto. No hay cambios de código en #115; el gap de cero explícito +
-movimientos queda registrado para una PR de pruebas autorizada.
+El gap de cero explícito + movimientos permanece registrado y no bloquea el cierre.
