@@ -147,9 +147,9 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 16 | Revisión Comida | En inspección (no cerrada) | H-TRANS-01: progreso mantiene PR #82 abierta/no merge; fuente temporal central presente, sin duplicar Movimientos. | SPEC16, `revision-comida.ts`, `revision-comida-ledger.ts` y pruebas. | Conservar historial sin equiparar fixtures al Excel. | PR #82 MERGED `26b6f0c`. | 2026-10-28 · inspección documental/código. | AC-25 (equivalencia física) abierto; E3.5 futuro. |
 | 17 | Deuda completa | Revisada parcialmente (no cerrada) | Sin `progress` coherente con fase de diseño; specification/wireframes no aprobados, 0 pruebas funcionales ejecutadas. No hallazgo funcional por falta de desarrollo. | SPEC17, brainstorming y testplan; Deuda E1.6 como dependencia. | No crear progress innecesario hasta autorización/desarrollo. | Sin DEV17 ni PR funcional acreditada. | 2026-10-28 · revisión de gate documental; sin aprobación de SPEC17. | D1–D7 confirmadas, contrato completo pendiente; mantener UNRUN. |
 | 19 | Instrumentos y Compras de inversión | En inspección (no cerrada) | H-TRANS-01: specification/testplan conservan PR #95 draft/no merge; progreso reconoce integración y seis AC PARCIAL. | SPEC19, `instrumentos.ts`, `ciclos.ts` y fuentes de inversión. | Distinguir evidencia histórica, integración y E4.2 pendiente. | PR #95 MERGED `156a50d`. | 2026-10-28 · documental/código parcial; sin cierre. | AC03/24/27/30/33/34 PARCIAL; fuente temporal inversión fuera de E4.1. |
-| 20 | Histórico precontrol | Pendiente | — | — | — | — | — | — |
-| 21 | Pendientes y conciliación | Pendiente | — | — | — | — | — | — |
-| 22 | Ventas y posición de bróker | Pendiente | Wireframes y capturas asociadas. | — | — | — | — | — |
+| 20 | Histórico precontrol | En inspección (no cerrada) | H-SPEC20-01 documental: testplan aprobado en cabecera pero cierre final dice spec/wireframes no aprobados; desarrollo no autorizado. | SPEC20 specification/progress/testplan, roadmap E4.5. | Mantener 59 AC UNRUN; no preparar implementación por inferencia. | PR #87 documental MERGED `3d70fd6`. | 2026-10-28 · contraste documental y gate; sin cierre. | DT7 independiente; QA documental de AC48–59 pendiente. |
+| 21 | Pendientes y conciliación | En inspección (no cerrada) | H-SPEC21-01 documental: cierre de testplan dice aprobación no concedida pese a cabecera aprobada; progreso #97 sin merge ya desactualizado. | SPEC21 specification/testplan/progress, dependencias E3.5/E4. | Mantener AC nuevos UNRUN; no afirmar integración funcional. | PR #97 documental MERGED `2364d9c`. | 2026-10-28 · contraste documental y gates; sin cierre. | DEV21 no autorizado; 31 AC UNRUN; E3.5 pendiente. |
+| 22 | Ventas y posición de bróker | En inspección (no cerrada) | Contrato documental aprobado con 45 AC UNRUN; no hay defecto por ausencia de DEV22. Enmienda D7 de SPEC19 pendiente. | SPEC22 specification/progress/testplan/wireframes. | Conservar D7 como gate, no iniciar DEV22. | PR #105 documental MERGED `7073864`. | 2026-10-28 · revisión del gate; sin cierre. | Dependencia temporal E4.2-AC3 y guard de cantidad vendida aún no implementados. |
 | 26 | Precierre | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
 | 27 | Cierre financiero | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
 | 31 | SQLite producción | Pendiente | Incluye `enmienda-01`; verificar vigencia. | — | — | — | — | — |
@@ -394,6 +394,53 @@ es ampliación futura distinta.
 vínculos E3.4 y operaciones/posición de inversión, comprobar relaciones E4.2 y
 dependencias antes de clasificar anomalías como defectos técnicos. Ninguna
 SPEC de este lote se declara cerrada. No hay correcciones ni PR autorizadas.
+
+## Auditoría global — quinta pasada del lote E (SPEC20–22), 2026-10-28
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Comparación de specification/progress/testplan, PR documentales y dependencias.
+**No son entregas DEV**; todas las pruebas funcionales nuevas permanecen UNRUN.
+
+### H-SPEC20-01 — Testplan con aprobación contradicha (documental, bajo)
+
+- **Aprobación válida:** `20-historico-precontrol-specification.md:3-11`,
+  `progress.md:5-10` y `testplan.md:5-8` confirman SPEC20 y testplan
+  aprobados el 28/10, PR #87 **MERGED** (`3d70fd6`).
+- **Contradicción:** el cierre de `20-historico-precontrol-testplan.md:149-158`
+  todavía afirma «la spec y los wireframes no están aprobados» y pide
+  aprobación futura. Esa afirmación no representa el estado vigente.
+- **Alcance real:** 59 AC de diseño **UNRUN**, DT7 separado y QA independiente
+  del delta AC48–59 pendiente; no hay desarrollo aprobado, importación ni Excel
+  contrastado. No confundir aprobación documental con cobertura ejecutada.
+- **Propuesta:** sustituir el cierre contradictorio por nota de vigencia
+  remitida al estado aprobado en cabecera; preservar trazabilidad anterior.
+
+### H-SPEC21-01 — Aprobación contradicha y PR documental desactualizada (documental, bajo)
+
+- **Aprobación válida:** `21-pendientes-conciliacion-specification.md:3-9`
+  y `testplan.md:3-8`: SPEC21 aprobada documentalmente 27/10, sin dev.
+  PR #97 **MERGED** (`2364d9c`).
+- **Contradicción:** `21-pendientes-conciliacion-testplan.md:93-103` finaliza
+  con «Aprobación de spec | No concedida»; `progress.md:3-5` conserva
+  «PR #97 publicada; sin merge». Es histórico no identificado como tal.
+- **Alcance real:** 31 AC nuevos **UNRUN**, DEP E3.5 y Cierres abiertas;
+  no existe implementación E3.6 ni autorización de desarrollo.
+- **Propuesta:** aclarar estado documental al cierre del testplan/progress,
+  sin transformar UNRUN en PASS ni abrir una PR por este ajuste menor.
+
+### SPEC22 — aprobada sin DEV, sin hallazgo de ejecución
+
+`22-ventas-posicion-broker-specification.md:3-12`,
+`progress.md:3-5` y `testplan.md:5-19` documentan specification,
+testplan y wireframes rev3 aprobados 28/10. PR #105 **MERGED**
+(`7073864`). Los 45 AC continúan **UNRUN** y DEV22 **no autorizado**.
+La enmienda técnica D7 en SPEC19 sobre límite de cantidad vendida debe
+aprobarse aparte antes de desarrollar; E4.2-AC3 cubrirá fechas de inversión
+del maestro temporal. **No se interpreta como fallo del código E4.1.**
+
+**Recomendación del lote:** agrupar H-SPEC20-01 y H-SPEC21-01 con el ajuste
+documental transversal; no corregir ni fusionar todavía. Revisar después
+SPEC26/27 (cierres), 31 (SQLite) y 32 (rootless) antes de priorizar.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
