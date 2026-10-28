@@ -25,7 +25,7 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-13 | Plan con líneas inconsistentes/duplicadas/no verificables | `Bloqueado`; motivo; no se captura plan | Bun Test | Documental; API futura | DTO con motivo | UNRUN — diseño | — |
 | AC-14 | E3.5/FIN_NETA no disponible | Precierre parcial con motivo; E4.9 bloqueado; no completo | Bun Test + UI | Documental; API/UI futura | DTO y captura | UNRUN — diseño | — |
 | AC-15 | `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura | Bun Test de contrato | Documental; API futura | Respuesta de estado | UNRUN — diseño | — |
-| AC-16 | Ciclo con cierres posteriores ya existentes, coherentes o contradictorios; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; sin contradicción no bloquea; con contradicción bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no escribe | Bun Test + UI | Documental; API/UI futura | DTO con aviso o bloqueo | UNRUN — diseño | — |
+| AC-16 | Ciclo con cierres posteriores ya existentes, coherentes o con diferencia no explicable; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; comprobación al mismo corte; sin diferencia no explicable no bloquea; con diferencia no explicable bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no escribe | Bun Test + UI | Documental; API/UI futura | DTO con aviso o bloqueo | UNRUN — diseño | — |
 
 ## Regression checks
 

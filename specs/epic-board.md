@@ -11,9 +11,11 @@ el cierre E4.9.
   un ciclo posterior, su Inicio acredita el Fin y el ciclo pasa a elegible.
 - **DT3 · elegibilidad:** cerrable todo ciclo con ventana finita, S0 y núcleo consistente.
   Si hay cierres posteriores, se exige `CIERRE_FUERA_DE_ORDEN` con motivo y una
-  comprobación de coherencia con sus fotos; una contradicción financiera bloquea con
+  comprobación de coherencia con sus fotos al mismo corte, incluidas las operaciones
+  legítimas posteriores; solo una diferencia no explicable bloquea con
   `INCOHERENCIA_CON_CIERRE_POSTERIOR`. Un ciclo sin hechos solo se cierra si se acredita
-  ausencia en todas las fuentes aplicables; un cero informado no es ausencia.
+  ausencia de operaciones imputables; el S0 (incluido 0) y las posiciones heredadas se
+  capturan.
 - **DT3 · plan siguiente:** sin precarga automática; E2.3 mantiene la copia explícita con
   revisión previa, ya vigente.
 - **DT4 · foto:** contrato de SPEC27 aprobado. Trimestre/año usan la versión vigente al
@@ -28,12 +30,23 @@ Precisiones compatibles, sin reabrir DT3/DT4:
 
 - **AC-20:** comprobación de coherencia con las fotos de cierres posteriores; una
   contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; aviso y
-  motivo no bastan. «Último cierre» se define por orden de registro, no por Fin; E4.10
-  no se desarrolla.
+  motivo no bastan. E4.10 no se desarrolla.
 - **AC-21:** `Sin hechos` exige ausencia acreditada en todas las fuentes financieras
   aplicables según la tabla de fuentes y cobertura; ausencia de Movimientos ≠ ausencia de
   hechos; un cero informado es un hecho.
 - **DT4:** metadatos inmutables con versión de aplicación y de esquema.
+
+### Segunda revisión funcional de Álex (2026-10-28)
+
+- **E4.10 · «último cierre»:** es el ciclo cerrado con el `Fin` cronológicamente más
+  reciente y sin otro ciclo posterior cerrado; la fecha de registro es solo auditoría.
+  Un cierre tardío de un ciclo anterior no habilita su reapertura ordinaria. E4.10 no se
+  desarrolla.
+- **AC-20:** comparación al mismo corte con las operaciones legítimas posteriores
+  incluidas; solo una diferencia no explicable bloquea.
+- **AC-21:** `Sin hechos` = ausencia de operaciones imputables al ciclo; el S0 (incluido
+  0) y las posiciones heredadas se capturan; la ausencia de Compras nuevas no vacía la
+  inversión ni la clasifica como `Sin hechos`.
 
 ### Estado verificado
 

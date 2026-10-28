@@ -63,21 +63,26 @@ Decisiones del usuario, sin reabrir M1–M6:
   consistente. Sin siguiente Inicio no hay cierre.
 - **DT3 · orden:** si ya existen cierres posteriores, el cierre exige
   `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría, y una comprobación de coherencia con
-  las fotos de esos cierres. Si una foto posterior contradice financieramente el estado
-  que se pretende cerrar (ventana, S0, posiciones/efectivo u otro valor capturado del
-  que dependa), el cierre se **bloquea** con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; el
-  aviso y el motivo no sustituyen el bloqueo. La comprobación compara, para cada foto
-  posterior, los valores capturados que dependen del ciclo que se cierra (al menos
-  ventana, S0 y posiciones/efectivo a Fin) con los que resultan del estado que se
-  pretende cerrar; cualquier diferencia bloquea. La contradicción se resolverá por la
-  vía que corresponda a E4.10/DT9, que no se desarrolla aquí.
-- **DT3 · «último» para E4.10:** «último cierre» es el cierre vigente sin otro cierre
-  registrado posterior, por orden de registro de cierres, no el ciclo con el Fin más
-  reciente. E4.10 sigue fuera de alcance.
-- **DT3 · ciclo sin hechos:** se cierra con `Sin hechos` solo si se acredita ausencia en
-  todas las fuentes financieras aplicables según la tabla de fuentes y cobertura. La
-  ausencia de Movimientos no equivale a ausencia de hechos y un cero informado es un
-  hecho capturado como 0, no `Sin hechos`.
+  las fotos de esos cierres. La comprobación se realiza al mismo corte congelado de cada
+  foto posterior y con todas las operaciones legítimas con fecha ≤ ese Fin, incluidas
+  las posteriores al ciclo que se cierra. Se comparan las magnitudes derivadas
+  comparables a ese corte (al menos posiciones y efectivo a Fin); una diferencia
+  explicable por operaciones posteriores legítimas no es contradicción. Solo una
+  diferencia no explicable bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; el aviso y
+  el motivo no sustituyen el bloqueo. La ventana y el S0 se conservan como identidad
+  congelada y no se recalculan. La contradicción se resolverá por la vía que
+  corresponda a E4.10/DT9, que no se desarrolla aquí.
+- **DT3 · «último» para E4.10:** «último cierre» es el ciclo cerrado con el `Fin`
+  cronológicamente más reciente y sin otro ciclo posterior cerrado. Un cierre tardío de
+  un ciclo anterior no habilita su reapertura ordinaria si existen ciclos posteriores
+  cerrados. La fecha de registro se conserva solo como auditoría. E4.10 sigue fuera de
+  alcance.
+- **DT3 · ciclo sin hechos:** `Sin hechos` significa ausencia acreditada de operaciones
+  imputables al ciclo en todas las fuentes aplicables según la tabla de fuentes y
+  cobertura. No significa ausencia de posiciones heredadas ni de S0: el S0 (incluido 0)
+  es un dato del ciclo y las posiciones heredadas se capturan íntegras en la foto. La
+  ausencia de Compras nuevas no convierte el ciclo en `Sin hechos` ni en inversión
+  vacía. Un cero informado es un hecho, no ausencia.
 - **DT4 · contenido:** se aprueba la tabla «Photo contract» de esta especificación.
 - **DT4 · versiones:** cada cierre crea v1; un re-cierre crea v2 sin alterar v1. Todas
   las versiones son consultables.
@@ -143,12 +148,13 @@ Contratos conceptuales, sin implementación:
   posteriores; valoración no disponible. Un ciclo sin Compras nuevas no es vacío si hay
   posiciones anteriores.
 - Cambio entre preview y confirmación → 409; no foto parcial.
-- Doble cierre del mismo ciclo → conflicto; solo E4.10 reabre el último cierre por orden
-  de registro.
-- Cierre fuera de orden con foto posterior incoherente → `Bloqueado` por
+- Doble cierre del mismo ciclo → conflicto; solo E4.10 reabre el cierre con Fin
+  cronológicamente más reciente y sin otro ciclo posterior cerrado.
+- Cierre fuera de orden con diferencia no explicable al mismo corte → `Bloqueado` por
   `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no se escribe ni se emite foto.
-- `Sin hechos` exige ausencia acreditada en todas las fuentes aplicables; no se deduce de
-  la falta de Movimientos ni de valores 0 informados.
+- `Sin hechos` exige ausencia acreditada de operaciones imputables al ciclo en todas las
+  fuentes aplicables; no se deduce de la falta de Movimientos, del S0 (incluido 0), de
+  posiciones heredadas ni de la ausencia de Compras nuevas.
 - Cierre no crea ciclo siguiente ni altera su S0.
 - Foto inmutable: T2/T3 no la recalculan; vistas vivas pueden cambiar.
 
@@ -214,5 +220,5 @@ fecha UTC, actor, motivo y fingerprint; no se recalculan al consultar.
 | AC-16 | Operación E4.1 anterior al ciclo y operación posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo |
 | AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no se inventan líneas |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto |
-| AC-20 | Cerrar un ciclo con cierres posteriores ya existentes, con y sin contradicción | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación de coherencia con las fotos posteriores; sin contradicción no altera cierres posteriores; con contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR` |
-| AC-21 | Cerrar un ciclo sin hechos | Permitido solo si se acredita ausencia en todas las fuentes financieras aplicables; la foto registra `Sin hechos`. Ausencia de Movimientos no equivale a ausencia de hechos; un cero informado se captura como 0, no como `Sin hechos` |
+| AC-20 | Cerrar un ciclo con cierres posteriores ya existentes, con y sin contradicción | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación de coherencia al mismo corte con las fotos posteriores, incluidas las operaciones legítimas posteriores; sin diferencia no explicable no altera cierres posteriores; una diferencia no explicable bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR` |
+| AC-21 | Cerrar un ciclo sin hechos | Permitido solo si se acredita ausencia de operaciones imputables al ciclo en todas las fuentes aplicables; la foto registra `Sin hechos`. S0 (incluido 0) y posiciones heredadas se capturan; ausencia de Compras nuevas no es `Sin hechos`; un cero informado se captura como 0 |
