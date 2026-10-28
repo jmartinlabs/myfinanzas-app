@@ -1043,6 +1043,87 @@ ningún test nuevo ni se verificaron saldos/datos reales de Excel.
   No se abre hallazgo adicional SPEC12/13/14 sin evidencia de un
   caso que contradiga los contratos ya probados.
 
+## Segunda inspección de inversiones y deuda — control económico transversal (2026-10-28)
+
+**Base de lectura:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Lectura de `compras.ts`, `investment-engine.ts`, `saldos.ts`,
+`deudas.ts`, `movimientos.ts`, SPEC06/SPEC19, tests
+`compras.test.ts`, `inversiones-ac.test.ts` y `deudas.test.ts`.
+**No se ejecutaron pruebas nuevas**, no se modificó producto ni se
+contrastó con Excel físico. Resultado: **sin nuevo defecto técnico
+confirmado** en las rutas examinadas.
+
+### Controles favorables (no emitir falsas incidencias)
+
+- **Efectivo de Inversiones:** `investment-engine.ts:149-250`
+  calcula apertura + entradas − salidas − Compras vigentes.
+  `cashAt` no suma comisiones por segunda vez y conserva Ventas
+  como término estructural cero mientras E4.2 no esté implementada.
+  `spec19:279-289` permite que apertura ausente contribuya cero
+  **solo en cálculo**, sin sobrescribir el dato original. Por eso no
+  registrar `BigInt(saldo.apertura ?? "0")` como defecto.
+- **Suficiencia de Compras:** `investment-engine.ts:268-319` recorre
+  la fecha propuesta y todas las fechas posteriores de movimientos y
+  Compras, evaluando saldo de fin de día. Una rectificación elimina
+  el efecto anterior y aplica la nueva fecha/importe en el escenario
+  antes de guardar. `compras.ts:471-567,588-698` repite validación
+  dentro de transacción `IMMEDIATE`, no solo en preview.
+  `compras.test.ts:291-365,523-557` y
+  `inversiones-ac.test.ts:252-369` fijan fronteras de DST,
+  retroactividad, operaciones del mismo día, 422
+  `INSUFFICIENT_CASH` y 409 de revisión/contexto. No afirmar
+  que esos PASS se han repetido en esta ronda.
+- **Posición y doble registro:** `investment-engine.ts:322-387`
+  agrega cantidades de Compras vigentes por `Saldo inversión +
+  Instrumento`; `compras.ts:502-585,631-744` persiste Compra
+  y auditoría, no un segundo Movimiento/Gasto/Transferencia.
+  `spec19 §4.2/4.4/4.5` conserva la distinción inversión
+  frente a efectivo; precio/cambio histórico no sustituyen el
+  EUR efectivamente cargado.
+- **Integración con Saldos y Movimientos:**
+  `saldos.ts:134-167` y `movimientos.ts:658-710`
+  consumen `cashAt`, sin recalcular un saldo alternativo.
+  `spec19 §4.3.3` admite una huella global de inversiones
+  que sobreinvalida previews de Movimientos para garantizar
+  contexto actualizado; `compras.test.ts:523-557` comprueba
+  `409 IMPACT_CHANGED`. No confundir esta sobreinvalidación
+  autorizada con H-SPEC04-03 (Comida omitida de la huella).
+- **Deuda:** `deudas.ts:23-46` deriva capital pendiente de
+  apertura menos capital amortizado, no cuota íntegra;
+  `:238-290` separa cuotas de Gasto y amortizaciones
+  extraordinarias para el consumidor mensual sin duplicar Gasto.
+  `deudas.test.ts:812-845` cubre frontera de inicio y
+  múltiples Partidas ligadas a un ID de Deuda; el contrato
+  `spec06:43-82` no exige tipo adicional en el SUMIFS de
+  capital si el registro ya valida los desgloses elegibles.
+
+### Límite material y riesgo residual (no hallazgo aún)
+
+**Q7 de SPEC19 solo impone suficiencia estricta al alta/rectificación
+de Compras**, no convierte toda salida bancaria de Movimientos
+en una operación sometida al mismo bloqueo global de saldo.
+Un Gasto/Transferencia posterior puede reducir el efectivo
+del bróker y los motores mostrarían la posición recalculada.
+`spec19:348-365` dispone expresamente que Q7 «no es una regla
+global de Saldos». Por tanto, **no se propone imponer aquí
+el rechazo automático de Movimientos por efectivo negativo**,
+sin verificar el contrato E1.4 y recibir decisión funcional.
+Es una observación de riesgo de liquidez/UX, no prueba de
+violación de un contrato vigente.
+
+**Fuera del alcance implementado:** Ventas E4.2 (incluida cantidad
+no negativa en futuras ventas y fuente temporal de inversión),
+valoración E4.3, conciliación de histórico importado y cierre.
+No atribuir sus ausencias a E4.1 ni declarar cobertura de
+posición patrimonial completa.
+
+**Próximo paso de la auditoría:** profundizar en rectificación de
+Movimientos vinculados a saldos con Compras, protecciones de
+dependencias y estados de fuente para no convertir la
+disponibilidad del efectivo en una garantía implícita de
+suficiencia. Mantener el seguimiento separado de los defectos
+confirmados H-SPEC04-02/03/04.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
