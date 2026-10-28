@@ -11,6 +11,7 @@ import {
 } from "node:fs";
 import { dirname, isAbsolute, resolve, parse, basename } from "node:path";
 import { inspectIdentity, keyHash } from "./database-identity";
+import { verifyAdmittedContract } from "./schema-contract";
 import { Auth } from "./auth";
 
 export type ProductionConfig = {
@@ -170,6 +171,8 @@ export function openProductionConnection(
     db.exec("PRAGMA busy_timeout=3000");
     sameFile(expected, privateFile(config.database));
     privateSidecars(config.database);
+    // The admitted v14/v15 manifest is verified before the identity transaction.
+    verifyAdmittedContract(db);
     // One read transaction: origin, version and key hash come from a single snapshot.
     const id = db.transaction(() => inspectIdentity(db))();
     if (id?.origin !== "production" || id.key_hash !== keyHash(key))

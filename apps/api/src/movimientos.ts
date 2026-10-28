@@ -15,6 +15,12 @@ import {
   operationalReferenceTypes,
 } from "./reference-rules";
 import { vehicleFicha } from "./vehicle-rules";
+import {
+  aportacionMetadata,
+  storeAportacion,
+  validateAportacion,
+  type ProcedenciaAportacion,
+} from "./aportaciones";
 import type { Database } from "bun:sqlite";
 import { getSaldo, money, decimal, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
@@ -26,6 +32,7 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
+import { cashAt, cents as cashDecimal } from "./investment-engine";
 export const incomeSubtypes = ["Nómina", "Bonus", "Intereses", "Promoción"];
 export type MovementProtection = (
   action: string,
@@ -34,6 +41,11 @@ export type MovementProtection = (
 ) => { blocked: boolean; reason?: string };
 type Candidate = {
   anticipo: Attribution | null;
+  compartido: {
+    participante: string;
+    evidencia: string;
+    procedencia: ProcedenciaAportacion;
+  } | null;
   fecha: string;
   tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
   capital: string | null;
@@ -59,6 +71,7 @@ export function spanishToday(now = Date.now()) {
 }
 const inputs = [
   "anticipo",
+  "compartido",
   "capital",
   "intereses",
   "fecha",
@@ -96,6 +109,7 @@ function validated(
         [key]: "Campo no editable.",
       });
   const errors: Record<string, string> = {};
+  const oldAportacion = old ? aportacionMetadata(db, old.id) : null;
   let fecha = "",
     cents: bigint | null = null;
   try {
@@ -123,13 +137,18 @@ function validated(
   )
     errors.tipo = "Selecciona Ingreso, Gasto o Transferencia.";
   if (body.tipo === "Transferencia") {
-    for (const side of ["origen", "destino"])
-      if (
-        typeof body[side] !== "string" ||
-        !body[side] ||
-        body[side] === "S000"
-      )
-        errors[side] = "Selecciona un Saldo interno elegible.";
+    if (typeof body.origen !== "string" || !body.origen)
+      errors.origen = "Selecciona un Origen existente.";
+    if (typeof body.destino !== "string" || !body.destino)
+      errors.destino = "Selecciona un Saldo interno elegible.";
+    if (body.destino === "S000")
+      errors.destino = "El Destino debe ser un Saldo interno.";
+    if (body.origen === "S000" && !old && body.compartido == null)
+      errors.origen =
+        "Una Transferencia desde Exterior exige Referencia CAT013 y bloque compartido.";
+    if (body.origen === "S000" && old && !oldAportacion)
+      errors.origen =
+        "Un Movimiento existente no se convierte en aportación por esta vía; usa Aportaciones históricas para revisar un hecho elegible.";
     if (body.origen === body.destino)
       errors.destino = "Origen y Destino deben ser distintos.";
     for (const field of ["saldo", "subtipo", "partida"])
@@ -177,11 +196,13 @@ function validated(
     id: string,
     field: string,
     previous: string | undefined,
+    strict = false,
   ) => {
     const s = getSaldo(db, id);
     if (
       s.id === "S000" ||
-      (s.estado !== "Activa" && previous !== id) ||
+      s.tipo === "Exterior" ||
+      (s.estado !== "Activa" && (strict || previous !== id)) ||
       s.control === "Manual" ||
       s.control === "Exterior"
     )
@@ -193,21 +214,29 @@ function validated(
       );
     return s;
   };
-  const saldo = eligible(
-    (tipo === "Transferencia" ? body.origen : body.saldo) as string,
-    tipo === "Transferencia" ? "origen" : "saldo",
-    old?.tipo === tipo
-      ? tipo === "Ingreso"
-        ? old.destino
-        : old.origen
-      : undefined,
-  );
+  const d5 =
+    tipo === "Transferencia" &&
+    body.origen === "S000" &&
+    (body.compartido != null || oldAportacion !== null);
+  const saldo =
+    tipo === "Transferencia" && body.origen === "S000"
+      ? getSaldo(db, "S000")
+      : eligible(
+          (tipo === "Transferencia" ? body.origen : body.saldo) as string,
+          tipo === "Transferencia" ? "origen" : "saldo",
+          old?.tipo === tipo
+            ? tipo === "Ingreso"
+              ? old.destino
+              : old.origen
+            : undefined,
+        );
   const target =
     tipo === "Transferencia"
       ? eligible(
           body.destino as string,
           "destino",
           old?.tipo === tipo ? old.destino : undefined,
+          d5,
         )
       : null;
   let category: string | null = null,
@@ -306,6 +335,18 @@ function validated(
     old?.referencia ?? null,
   );
   validateSharedReferenceOperation(db, referencia, tipo, category);
+  const next = {
+    tipo,
+    referencia,
+    origen: tipo === "Ingreso" ? "S000" : saldo.id,
+    destino: outgoing ? "S000" : (target?.id ?? saldo.id),
+  };
+  const compartido = validateAportacion(
+    db,
+    next,
+    body.compartido,
+    old?.id,
+  );
   const anticipo = validateAnticipo(
     db,
     {
@@ -319,6 +360,7 @@ function validated(
   );
   return {
     anticipo,
+    compartido,
     fecha,
     tipo,
     importe: decimal(String(cents))!,
@@ -376,6 +418,7 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
           }
         : { estado: "OK" as const, motivos: [] as string[], mensaje: "Sin incidencias." },
     anticipo: anticipoMetadata(db, r.id),
+    compartido: aportacionMetadata(db, r.id),
     ciclo:
       cycles.find(
         (c) => c.inicio <= r.fecha && (c.fin === null || r.fecha <= c.fin),
@@ -634,6 +677,13 @@ function plan(
       if (next && (next.origen === id || next.destino === id))
         n += (next.destino === id ? 1n : -1n) * money(next.importe)!;
       after = decimal(n.toString());
+    } else if (s.tipo === "Efectivo" && s.control === "Inversiones") {
+      let n = BigInt(cashAt(db, id).disponible);
+      if (old && !old.anulado && (old.origen === id || old.destino === id))
+        n -= (old.destino === id ? 1n : -1n) * BigInt(old.importe);
+      if (next && (next.origen === id || next.destino === id))
+        n += (next.destino === id ? 1n : -1n) * money(next.importe)!;
+      after = cashDecimal(n);
     }
     return {
       id,
@@ -644,7 +694,11 @@ function plan(
       motivo:
         s.control === "Movimientos"
           ? "Motor Movimientos"
-          : "Posición no calculable por este motor",
+          : s.tipo === "Efectivo" && s.control === "Inversiones"
+            ? "Motor de efectivo de inversión"
+            : s.control === "Inversiones"
+              ? "Valoración de inversión no disponible hasta E4.3"
+              : "Posición no calculable por este motor",
     };
   });
   const debtIds = [
@@ -751,7 +805,12 @@ function plan(
       referenciaDespues: dates.sort().at(-1) ?? null,
       cobertura:
         "Movimientos comprobado; posición Control Movimientos y contexto temporal derivados.",
-      pendientes: ["Cierres", "Presupuestos", "Comida", "Inversiones"],
+      pendientes: [
+        "Cierres",
+        "Presupuestos",
+        "Comida",
+        "Valoración de inversión E4.3",
+      ],
     },
     hoy: spanishToday(now),
   };
@@ -885,6 +944,13 @@ export function writeMovement(
           ],
         );
       storeAnticipo(db, id, v?.anticipo ?? null, now);
+      storeAportacion(
+        db,
+        id,
+        v?.compartido ?? null,
+        now,
+        old && typeof body.motivo === "string" ? body.motivo.trim() : null,
+      );
       const after = find(db, id);
       db.run(
         "INSERT INTO movement_audit VALUES(?,?,?,?,?,'usuario-unico',?,?)",

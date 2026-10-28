@@ -224,6 +224,9 @@ test("E2.6 real MFA/read model, coverage, sources, async selection, errors and r
       await expect(
         page.getByRole("article", { name: "Liquidez actual", exact: true }),
       ).toBeVisible();
+      await expect(
+        page.getByRole("article", { name: "Liquidez actual", exact: true }),
+      ).toContainText("Cobertura histórica no importada");
       expect(
         await page.evaluate(
           () => document.documentElement.scrollWidth <= window.innerWidth,

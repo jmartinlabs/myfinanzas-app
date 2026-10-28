@@ -1,0 +1,139 @@
+#!/usr/bin/env python3
+"""Behavioral checks for the local evidence validator."""
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+CHECK = ROOT / 'scripts/check-evidence'
+
+
+class EvidenceTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.home = Path(temp.name)
+        self.root = self.home / 'repo'
+        self.root.mkdir()
+        self.git('init', '-q', '--initial-branch=main')
+        self.git('config', 'gc.auto', '0')
+        self.git('config', 'maintenance.auto', 'false')
+        self.write('README.md', 'fixture\n')
+        self.base = self.commit()
+        self.write('specs/backlog/candidate.md', 'candidate\n')
+        self.candidate = self.commit()
+        self.logs = self.home / 'logs'
+        self.logs.mkdir()
+        self.baseline = self.logs / 'baseline.log'
+        self.baseline.write_text('PASS baseline\n', encoding='utf-8')
+        self.record = self.home / 'testplan.md'
+        self.record.write_text(f'candidate {self.candidate}\nbase {self.base}\n', encoding='utf-8')
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-C', str(self.root), *args],
+                                       stderr=subprocess.PIPE).decode().strip()
+
+    def write(self, name, text):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding='utf-8')
+
+    def commit(self):
+        self.git('add', '.')
+        self.git('-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.invalid',
+                 '-c', 'commit.gpgsign=false', 'commit', '-qm', 'fixture')
+        return self.git('rev-parse', 'HEAD')
+
+    def check(self, *args):
+        return subprocess.run([sys.executable, str(CHECK), '--root', str(self.root), *args],
+                              text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+    def valid(self, *extra):
+        return self.check('--candidate', self.candidate, '--base', self.base,
+                        '--environment', 'linux-debian13-glibc',
+                        '--linux-required', 'baseline',
+                        '--log', f'baseline={self.baseline}',
+                        '--record', str(self.record), *extra)
+
+    def test_valid_evidence_is_bound_to_candidate_base_and_raw_log(self):
+        result = self.valid()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        self.assertIn('Evidence PASS', result.stdout)
+        self.assertIn('log.baseline.sha256=', result.stdout)
+
+    def test_dirty_or_untracked_worktree_is_rejected(self):
+        (self.root / 'untracked.ts').write_text('pending\n', encoding='utf-8')
+        result = self.valid()
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('dirty', result.stdout)
+
+    def test_candidate_must_be_head_and_base_must_be_ancestor(self):
+        result = self.check('--candidate', self.base, '--base', self.base,
+                          '--environment', 'macos', '--log', f'baseline={self.baseline}')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('candidate differs from HEAD', result.stdout)
+        self.git('switch', '-qc', 'sibling', self.base)
+        self.write('sibling.md', 'sibling\n')
+        sibling = self.commit()
+        self.git('switch', '-q', 'main')
+        result = self.check('--candidate', self.candidate, '--base', sibling,
+                          '--environment', 'macos', '--log', f'baseline={self.baseline}')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('not an ancestor', result.stdout)
+
+    def test_missing_empty_and_duplicate_logs_are_rejected(self):
+        for value in ('api=' + str(self.home / 'missing.log'), 'api=' + str(self.home / 'empty.log')):
+            (self.home / 'empty.log').write_text('', encoding='utf-8')
+            result = self.check('--candidate', self.candidate, '--base', self.base,
+                              '--environment', 'macos', '--log', f'baseline={self.baseline}',
+                              '--log', value)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+            self.assertIn('missing or empty', result.stdout)
+        result = self.check('--candidate', self.candidate, '--base', self.base,
+                          '--environment', 'macos', '--log', 'baseline=' + str(self.baseline),
+                          '--log', 'baseline=' + str(self.baseline))
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('duplicate', result.stdout)
+        result = self.check('--candidate', self.candidate, '--base', self.base,
+                          '--environment', 'macos')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('at least one raw log', result.stdout)
+
+    def test_linux_requirement_applies_only_to_declared_logs(self):
+        result = self.check('--candidate', self.candidate, '--base', self.base,
+                          '--environment', 'macos', '--log', f'baseline={self.baseline}')
+        self.assertEqual(result.returncode, 0, result.stdout)
+        result = self.valid()
+        self.assertEqual(result.returncode, 0, result.stdout)
+        result = self.check('--candidate', self.candidate, '--base', self.base,
+                          '--environment', 'macos', '--linux-required', 'baseline',
+                          '--log', f'baseline={self.baseline}')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('Linux/glibc environment', result.stdout)
+
+    def test_record_must_name_candidate_and_base_and_ref_must_match(self):
+        self.record.write_text(f'candidate {self.candidate}\n', encoding='utf-8')
+        result = self.valid()
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('does not name candidate and base', result.stdout)
+        result = self.valid('--base-ref', 'main')
+        self.assertNotEqual(result.returncode, 0, result.stdout)
+        self.assertIn('not the current integration ref', result.stdout)
+
+    def test_invalid_arguments_and_missing_record_fail_closed(self):
+        for args in (('--candidate', 'bad', '--base', self.base, '--environment', 'macos',
+                      '--log', f'baseline={self.baseline}'),
+                     ('--candidate', self.candidate, '--base', self.base, '--environment', 'macos',
+                      '--log', 'no-separator'),
+                     ('--candidate', self.candidate, '--base', self.base, '--environment', 'macos',
+                      '--log', f'baseline={self.baseline}', '--record', str(self.home / 'missing.md'))):
+            result = self.check(*args)
+            self.assertNotEqual(result.returncode, 0, result.stdout)
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,7 +1,22 @@
 # 12 — E2.6 Flujo mensual: Progress
 Specification: [APPROVED rev3](12-flujo-mensual-specification.md)
 
-## Current checkpoint
+## Current checkpoint — integrado · 2026-10-26
+
+DEV12/E2.6 integrado por [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67).
+- Candidato `e66bbd35229b578096d78a9aba6ff6913b527d88`; código
+  `519978cbae0e5dbcd915d0859382f7057e029d4e`; integración
+  `a445f90862565a7de4504a9a95eda53a5c5ca410`.
+- QA independiente QA12-CLOSE favorable; CI `40243368188` baseline/full/required
+  SUCCESS según el registro del merge. Aprobación explícita de merge: «Apruebo PR67».
+- La integración no acredita los 56 AC completos: se conservan los UNRUN de
+  integración AC14/16/17/19/26/43 por fuentes ausentes y AC47 pendiente de motores
+  E3/E4; no se reclasifican como AC futuros. La evidencia local del autor y sus
+  límites siguen en [testplan](12-flujo-mensual-testplan.md).
+- B3/Dev32 siguen abiertos; sin Excel/datos reales, VPS, deploy ni cambios de tablero
+  o metodología.
+
+## Checkpoint anterior — candidato publicado (historia)
 
 EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.com/josemartin2000/myfinanzas-app/pull/67), pendiente de QA independiente; no integrado.
 - Autorización real del usuario: «Autorizo dev12 conforme a la especificación y wireframes aprobado».
@@ -37,11 +52,12 @@ EXT-CODEX-DEV12 · 2026-10-25 · candidato publicado en [PR67](https://github.co
 | Autorización/preflight/mapa56AC | completado | este checkpoint/testplan |
 | Referencia central Q4 y read model | implementado | Q4/F13 PASS |
 | API protegida/UI de consulta | implementado | MFA/read model/E2E/capturas PASS |
-| Candidato/validación/publicación | publicado, QA pendiente | PR67; CI por SHA en PR |
+| Candidato/validación/publicación | integrado | PR67; QA12-CLOSE favorable; CI 40243368188 SUCCESS; merge a445f908 |
 
 ## Verified increments
 
-Evidencias funcionales locales y límites por AC en testplan; QA independiente pendiente; CI Linux por SHA en PR67.
+Evidencias funcionales locales y límites por AC en testplan; QA independiente QA12-CLOSE favorable; CI Linux 40243368188 SUCCESS.
+La integración no acredita los 56 AC completos; los UNRUN condicionados se conservan.
 La evidencia histórica de spec/QA documental permanece identificada como historia.
 Métricas de uso y versión del cliente no disponibles, no se inventan.
 
@@ -57,4 +73,4 @@ La referencia documental mensual y Base/Del mes y Liquidez actual son fuentes in
 Primer incremento Q4: 6 focales/32+ assertions y22 regresiones Nómina PASS; conjunto28tests,
 197assertions. Typecheck PASS. macOS/Bun1.4.3; cambios aún sin commit. Repetición del focal
 por nuevo caso integrado de abono parcial/revisión y ausencia de mutaciones, con regresión
-E2.5 justificada por la extensión del motor. UI/CI/full/QA independiente UNRUN.
+E2.5 justificada por la extensión del motor. UI/CI/full/QA independiente UNRUN en ese momento.

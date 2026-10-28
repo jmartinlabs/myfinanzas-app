@@ -1,7 +1,10 @@
 import { revisionComidaSchema } from "./revision-comida-schema";
+import { compartidoAportacionSchema } from "./compartido-aportacion-schema";
 import { anticipoSchema } from "./anticipo-schema";
 import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
 import { vehicleSchema } from "./vehicle-schema";
+import { investmentSchema } from "./instrumento-schema";
+import { verifyAdmittedContract } from "./schema-contract";
 import { payrollSchema } from "./payroll-schema";
 import { annualPlanSchema } from "./annual-plan-schema";
 import { cyclePlanSchema } from "./cycle-plan-schema";
@@ -34,13 +37,16 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, schemaVersion].includes(
         versions[0].version,
       )
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
+    // Contract verification is the first operation on an existing 14-17 database,
+    // before any persistent PRAGMA, identity transaction or DDL.
+    verifyAdmittedContract(db);
     if (versions[0].version >= 8) assertBudgetContract(db);
     try {
       assertV14VehicleContract(db);
@@ -84,7 +90,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -107,6 +113,8 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 14) vehicleSchema(db);
         if (versions[0].version < 15) compartidoSchema(db);
         if (versions[0].version < 16) revisionComidaSchema(db);
+        if (versions[0].version < 17) compartidoAportacionSchema(db);
+        if (versions[0].version < 18) investmentSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -221,6 +229,8 @@ export function prepareSchema(db: Database, identity: Identity) {
       vehicleSchema(db);
       compartidoSchema(db);
       revisionComidaSchema(db);
+      compartidoAportacionSchema(db);
+      investmentSchema(db);
     }).immediate();
   } catch (error) {
     db.close();

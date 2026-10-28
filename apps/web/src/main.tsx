@@ -9,6 +9,7 @@ import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
 import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
+import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
 import { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
@@ -319,6 +320,20 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/inversiones") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/inversiones") ? "page" : undefined}
+            href="/inversiones"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/inversiones");
+            }}
+          >
+            <span aria-hidden="true">↗</span> Inversiones{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
               path.startsWith("/referencias") ? "nav-active" : "nav-link"
             }
             aria-current={path.startsWith("/referencias") ? "page" : undefined}
@@ -411,6 +426,8 @@ function App() {
             <Deudas path={path} go={go} />
           ) : path.startsWith("/vehiculos") ? (
             <Vehiculos path={path} go={go} />
+          ) : path.startsWith("/inversiones") ? (
+            <Inversiones path={path} go={go} />
           ) : path.startsWith("/referencias") ? (
             <Referencias path={path} go={go} />
           ) : path.startsWith("/movimientos") ? (

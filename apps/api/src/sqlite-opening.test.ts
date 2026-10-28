@@ -79,11 +79,11 @@ test("SQLite B1: timeout is the first SQL on every demo and production handle; n
         const persistent = c.findIndex((s) =>
           /journal_mode|synchronous/i.test(s),
         );
-        expect(firstRead).toBeGreaterThan(0);
-        // The first identity read happens inside a read transaction (31-E1).
         const opened = c.indexOf("<transaction>");
+        expect(firstRead).toBeGreaterThan(0);
+        // E4.1: the admitted contract manifest is verified before identity transaction.
         expect(opened).toBeGreaterThan(0);
-        expect(opened).toBeLessThan(firstRead);
+        expect(firstRead).toBeLessThan(opened);
         if (persistent !== -1) expect(persistent).toBeGreaterThan(firstRead);
       }
     } finally {
