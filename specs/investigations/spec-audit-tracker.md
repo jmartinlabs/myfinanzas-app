@@ -3,17 +3,20 @@
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base del inventario: `main` `63ee1d0`. `main` actual: `da93682` (merge funcional de PR #119); históricos: `13cc7c6` (documental #117), `71866ac` (tracker SPEC01 #116) y `e4a26de` (merge SPEC01 #115).
-- Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
+- Base del inventario: `main` `63ee1d0`. `main` actual: `3d87511` (PR #120); históricos: `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115).
+- Alcance: las 25 SPEC del inventario autorizado. La auditoría es documental; cualquier
+  corrección funcional requiere autorización específica (H-SPEC03-03 es la única
+  aprobada en esta ronda).
 - **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
   integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
   `40728150624` SUCCESS. **SPEC02 CERRADA:** documental #117 (`13cc7c6`) y funcional
   #119 (`da93682`); H-SPEC02-01 resuelto e integrado; validación de Álex sobre
   `6440592`; CI PR `40747193480`, full `40747195074` y main `40748880562` PASS.
-  Las otras 23 SPEC siguen pendientes.
+  **SPEC03 EN CORRECCIÓN:** revisada por Álex sobre `3d87511`; H-SPEC03-01/02
+  documentales y H-SPEC03-03 técnico. Las otras 22 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
-- SPEC01 y SPEC02 son las SPEC modificadas; las otras 23 no se han tocado.
+- SPEC01, SPEC02 y SPEC03 son las SPEC modificadas; las otras 22 no se han tocado.
 
 ## Reglas de la auditoría
 
@@ -104,7 +107,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
-| 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
+| 03 | Ciclos financiados | Revisada por Álex — correcciones | H-SPEC03-01/02 documentales y H-SPEC03-03 técnico en la PR de auditoría; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `e3cb7b2` / CI `40758050003` critical PASS (298 API, focal H-SPEC03-03) | 2026-10-28 · Álex revisada · correcciones autorizadas; merge no autorizado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
 | 06 | Deuda | Pendiente | — | — | — | — | — | — |
@@ -239,6 +242,56 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
   conserva `coverage`; E2E 390/1440 y regresión Partida→Deuda. SPEC02 se cierra al
   integrar esta PR de seguimiento.
 
+## SPEC03 — Revisión y hallazgos
+
+**Estado:** revisada por Álex sobre `main` `3d87511` (2026-10-28); correcciones en
+curso. **No se declara cerrada** hasta revisión del HEAD, autorización expresa de
+merge y verificación posterior en `main`.
+
+Base funcional: E1.3 integrada por PR #13 (squash `ff9d18d`, 2026-10-21). Después se
+incorporaron Movimientos (E1.4) y Revisión Comida (E3.4) como fuentes temporales;
+Inversión sigue pendiente como fuente temporal (sin proveedor conectado); SPEC22
+aprobada documentalmente; DEV22 no iniciado; proveedor temporal de inversión pendiente.
+Se conservan los 24 AC con sus resultados históricos.
+
+### H-SPEC03-01 — Estados actuales obsoletos (documental)
+
+Los cuatro documentos conservaban estados de 2026-10-21: PR #13 pendiente de merge o
+implementación en curso, y —en spec/testplan— las tres fuentes aún inexistentes.
+**Corrección:** cabeceras de estado y bloques «Estado actual (2026-10-28)» en
+spec/testplan/progress/brainstorming; la evidencia de 2026-10-21 se conserva sin
+reescritura.
+
+### H-SPEC03-02 — Consumidores y contratos futuros (documental)
+
+Movimientos y Revisión Comida ya alimentan `financialReference()`; Inversión no.
+AC-09 se mantiene como resultado histórico de E1.3 y AC-11/23/24 conservan C: no se
+reclasifican como PASS. **Corrección:** notas de vigencia y límites en spec/testplan.
+
+### H-SPEC03-03 — Fallo de fuente no contractual (técnico)
+
+**Clasificación:** SPEC correcta, implementación incompleta. `movementSource()`
+devolvía `pendiente`/`disponible`, sin `error`, y no capturaba excepciones, a
+diferencia de `revisionComidaSource()`. Una consulta fallida (esquema parcial) producía
+500 y rompía listado/ficha/contexto, incumpliendo el contrato y «el error de referencia
+no borra el catálogo».
+
+**Corrección:** `movement-ledger.ts` devuelve `{ state: "error" }` al fallar la
+consulta; prueba focal en `ciclos.test.ts` (FAIL antes / PASS después). Sin cambios de
+fórmula, calendario, esquema, migraciones ni UI.
+
+**Límite:** la corrección restablece la referencia contractual, pero no garantiza que
+todos los consumidores recuperen disponibilidad. `monthlyFlow()` y otras rutas siguen
+consultando el ledger con `ledgerRows()` directamente; no se amplía esa cobertura sin
+autorización nueva. La comprobación de instalación (`ledgerInstalled()`) queda fuera
+del `try`, igual que en `revisionComidaSource()`, por lo que un fallo al leer
+`schema_version` sigue siendo un error de base de datos, no de fuente.
+
+**Evidencia:** prueba focal `H-SPEC03-03`; regresiones API; CI Linux `critical`
+(`40758050003`, 298 pruebas API) sobre `e3cb7b2`, sin Playwright. Los commits
+posteriores a `e3cb7b2` solo actualizan documentación y este registro; su CI se
+consulta en la PR.
+
 ## Evidencias de la auditoría
 
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
@@ -247,15 +300,16 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
 | 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
 | 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `85c00f1` validado / merge `13cc7c6` | `40734932828` PR / `40737846233` main PASS | APROBADA | Integrada |
 | 2026-10-28 | 02 | [#119](https://github.com/jmartinlabs/myfinanzas-app/pull/119) | `6440592` validado / merge `da93682` | `40747193480` PR / `40747195074` full / `40748880562` main PASS | APROBADA | Integrada |
+| 2026-10-28 | 03 | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) | `e3cb7b2` validado | `40758050003` critical PASS (298 API; focal H-SPEC03-03) | Revisada; correcciones en curso | No |
 
 ## Próxima acción
 
-1. **SPEC02 CERRADA:** documental #117 (`13cc7c6`) y funcional #119 (`da93682`).
-   H-SPEC02-01 resuelto e integrado.
-2. Integrar esta actualización del tracker (#118) para que el cierre quede registrado
-   en `main`; merge pendiente de autorización expresa.
-3. **No iniciar SPEC03** hasta confirmar el cierre en `main` y recibir autorización.
+1. **SPEC01/SPEC02 CERRADAS** e integradas en `main`; sin acción pendiente.
+2. **SPEC03 EN CORRECCIÓN:** completar H-SPEC03-01/02/03 en la PR de auditoría,
+   verificar CI Linux `critical` y esperar revisión de Álex y autorización expresa de
+   merge. No cerrar SPEC03 ni fusionar sin esa aprobación.
+3. **No iniciar SPEC04** hasta el cierre de SPEC03.
 
-`main` actual: `da93682`. Históricos: `13cc7c6` (documental #117), `71866ac` (tracker
-SPEC01 #116) y `e4a26de` (merge SPEC01 #115). El gap de cero explícito + movimientos
-de SPEC01 permanece registrado y no bloqueante.
+`main` actual: `3d87511` (PR #120). Históricos: `5d8f273` (#121), `da93682` (#119),
+`13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115). El gap de cero explícito +
+movimientos de SPEC01 permanece registrado y no bloqueante.

@@ -1,5 +1,6 @@
 # 03 — E1.3 Ciclos financiados: Specification
-Status: APPROVED — spec 03 integrada; dev 03 autorizado, implementación en curso.
+Status: APROBADA E INTEGRADA — PR #13 (`ff9d18d`); auditoría 2026-10-28 con
+H-SPEC03-03 en corrección.
 Approval source/date: usuario comunica revisión/aprobación de Álex sobre bf3f2eb y autoriza squash merge/dev 03, 2026-10-21. PR #12 MERGED 179942e.
 Context and brainstorming: [ronda única](03-ciclos-financiados-brainstorming.md),
 [roadmap](roadmap.md#e13--periodos-financiados-mínimos-para-imputar-hechos),
@@ -74,6 +75,15 @@ Las pruebas aisladas pueden aportar fechas ficticias al contrato de agregación;
 no equivalen a integración con tablas de hechos reales aún no entregadas.
 No se crea un selector de fecha alternativa para ocultar esta carencia.
 
+**Estado actual de fuentes (2026-10-28, `main` `3d87511`).** Movimientos y Revisión
+Comida están integrados como fuentes temporales (`movementSource` y
+`revisionComidaSource`); la referencia toma el máximo de sus fechas civiles disponibles.
+Operaciones de inversión sigue pendiente como fuente temporal: no hay proveedor
+conectado. SPEC22 aprobada documentalmente; DEV22 no iniciado; proveedor temporal de
+inversión pendiente. No se amplía este alcance. El párrafo
+anterior describe el alcance original de E1.3 y se conserva como evidencia histórica.
+AC-11/23/24 siguen siendo contratos C, no PASS de E1.3.
+
 ### Periodos e independencia de cierre
 Intervalo con siguiente Inicio tiene extremos Inicio/Fin; los futuros consumidores
 atribuirán hechos por las fechas civiles acordadas, nunca por mes natural financiado.
@@ -135,6 +145,10 @@ Cierre financiero             Funcionalidad no disponible
 ```
 No resultado de gasto comida, conciliación, presupuesto, cobro ni duración negativa.
 Si una fuente falla, error de referencia no borra el catálogo ni inventa un corte.
+
+Los textos «No disponible · fuentes pendientes» de los wireframes corresponden al
+estado de E1.3; el runtime actual declara cobertura por fuente y muestra las fuentes
+integradas. No se rediseñan las capturas históricas.
 
 ### Alta
 ```text
@@ -264,6 +278,10 @@ La columna Fuente distingue evidencia financiera de controles técnicos reutiliz
 | AC-23 C | Integrar lectores de hechos y planificación | Periodos/corte del único maestro; no derivar ciclos de Nómina ni meses naturales | R3 / E2.1 y lectores futuros |
 | AC-24 C | Entregar cierre/reapertura y conciliación comida | Fin temporal no cierra; apertura no copia cierre previo ni rectifica automáticamente | R3 / P5 / E2.1 y cierre futuros |
 
+**Nota de vigencia (2026-10-28).** AC-09 documenta el runtime de E1.3; hoy Movimientos
+y Revisión Comida están disponibles cuando sus tablas existen, e Inversión sigue
+pendiente. AC-11/23/24 conservan su clasificación C: no se reclasifican como PASS.
+
 ## Pruebas previstas y siguiente acción
 Bun: calendario/contratos de fuentes y errores, API/SQLite, atomicidad, actualización
 v2→extensión y restauración. Playwright: MFA real, cabecera/listado/ficha/alta, vacíos,
@@ -272,7 +290,8 @@ futuras aisladas se etiquetan contratos, sin atribuir integración económica re
 Q1–Q3 resueltas y wireframes aprobados; spec 03 cerrada por aprobación sobre bf3f2eb.
 Sin nuevas preguntas financieras: el control de corte se conserva sin publicar corte
 inválido cuando no es aplicable, según Q1. PR #12 lista y MERGED en 179942e después
-de verificar el SHA aprobado y ambas CI SUCCESS. Desarrollo autorizado en rama nueva;
-[progreso](03-ciclos-financiados-progress.md). Sin merge de implementación, despliegue,
-datos reales ni cambios al maestro. Detalles técnicos ordinarios se resuelven
-en desarrollo, reutilizando arquitectura/componentes/pruebas.
+de verificar el SHA aprobado y ambas CI SUCCESS. Desarrollo autorizado en rama nueva e
+integrado por PR #13 (squash `ff9d18d`, 2026-10-21); [progreso](03-ciclos-financiados-progress.md)
+y [testplan](03-ciclos-financiados-testplan.md) conservan la evidencia histórica.
+Sin despliegue, datos reales ni cambios al maestro. Detalles técnicos ordinarios se
+resuelven en desarrollo, reutilizando arquitectura/componentes/pruebas.
