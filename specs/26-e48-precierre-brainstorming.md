@@ -55,3 +55,7 @@ no una aprobación visual. Cualquier wireframe deberá revisarse y aprobarse por
 
 - **2026-10-28:** se incorpora la reauditoría DT5 contra `f077b7e`; E4.1 pasa de
   candidato a runtime integrado. No se reabren Q1–Q16.
+- **2026-10-28 — resolución funcional:** inversión a fecha `Fin` con operaciones
+  anteriores; `SinPlan` válido y `PlanNoVerificable` bloqueante; Comida opción A
+  (precierre parcial, cierre E4.9 bloqueado hasta E3.5/FIN_NETA); ruta canónica
+  `GET /api/cierres/:ciclo/estado`.

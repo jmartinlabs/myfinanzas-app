@@ -53,3 +53,7 @@ aprobados ni capturas.
 
 - **2026-10-28:** E4.1 se incorpora como runtime integrado; `financeRevision` cubre
   `operaciones_inversion` pero no es foto financiera. No se reabren Q1–Q16.
+- **2026-10-28 — resolución funcional:** inversión a fecha `Fin` con operaciones
+  anteriores; `SinPlan` válido y `PlanNoVerificable` bloqueante; Comida opción A
+  (cierre E4.9 bloqueado hasta E3.5/FIN_NETA, sin cierre parcial); ruta canónica
+  `GET /api/cierres/:ciclo/estado`.

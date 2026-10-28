@@ -18,7 +18,7 @@ Incluye:
 
 - ventana financiera, S0 y estado del ciclo;
 - Movimientos del ciclo y su clasificación/Referencias;
-- plan final y presupuestos;
+- plan final o `SinPlan`, y presupuestos;
 - Anticipos, Compartidos, Revisión Comida, Deuda E1.6 y Nómina si hay hechos;
 - E4.1 Instrumentos/Compras/efectivo/posiciones;
 - E4.5 histórico/precontrol y E3.6 pendientes/conciliación como fuentes de solo lectura,
@@ -46,7 +46,7 @@ No se crea tabla ni migración en E4.8. El precierre es una lectura derivada.
 | Fuente | Estado esperado | Efecto |
 | --- | --- | --- |
 | Movimientos, clasificación, Referencias | Implementado | Núcleo; inconsistencia estructural bloquea |
-| Plan de Ciclo/Anual, Presupuestos | Implementado | Plan final obligatorio para el núcleo |
+| Plan de Ciclo/Anual, Presupuestos | Implementado | `SinPlan` válido; `PlanNoVerificable` bloquea |
 | Anticipos, Compartidos, Nómina, Revisión Comida, Deuda E1.6 | Implementado | Se capturan si hay hechos |
 | E4.1 Inversión | Integrado `156a50d` | Instrumentos, Compras, efectivo, cantidades y posiciones |
 | E4.3 valoración/resultado/patrimonio | No implementado | `No disponible`; aviso, no cero |
@@ -54,6 +54,27 @@ No se crea tabla ni migración en E4.8. El precierre es una lectura derivada.
 | E4.2 Ventas | Documental; sin DEV | `No disponible`; aviso/parcial |
 | E4.4 Deuda completa/conciliaciones | Documental en revisión; sin código | `No disponible`; Deuda E1.6 sí |
 | E4.5 Histórico y E3.6 Pendientes | Documental; sin código | Solo lectura; no escritura |
+
+### Inversión a fecha Fin
+
+El precierre calcula efectivo con `cashAt(..., fin)` y posiciones con
+`positionsFor(..., fin)`. Incluye operaciones anteriores al ciclo y excluye las
+posteriores a `fin`; un ciclo sin Compras nuevas no es una inversión vacía si existen
+posiciones anteriores. La valoración, resultado y patrimonio E4.3 siguen `No disponible`.
+
+### Plan
+
+- **`SinPlan`:** no existen líneas; es un estado válido y no bloquea el precierre.
+- **`PlanVerificado`:** líneas presentes y consistentes; se capturan.
+- **`PlanNoVerificable`:** líneas presentes pero fuente/revisión inconsistente, duplicada
+  o no verificable; bloquea el cierre.
+- **`SinPlanificar`:** ejecución real sin línea; aviso independiente, no «Sin plan».
+
+### Comida E3.5
+
+E4.8 puede mostrar precierre parcial con motivo mientras E3.5/FIN_NETA no esté integrado.
+E4.9 no puede cerrar con Comida `No disponible`; el cierre queda bloqueado hasta que E3.5
+sea verificable. No se admite cierre parcial anticipado ni re-cierre como sustituto.
 
 ### Backup preflight
 
@@ -90,7 +111,8 @@ Contrato conceptual de solo lectura:
 
 - `GET /api/cierres/precierre/:ciclo` — resumen, fuentes, cobertura, bloqueos, avisos,
   revisión/hash y evidencia de backup.
-- `GET /api/cierres/estado/:ciclo` — estado y versión; sin escritura.
+- `GET /api/cierres/:ciclo/estado` — estado y versión; sin escritura. Ruta canónica
+  compartida con SPEC27.
 - Cualquier `POST/PATCH/DELETE` en E4.8 devuelve 405/422; no hay cierre ni mutación.
 
 Sin servicios externos, importadores ni acceso a datos reales. El backup se lee como
@@ -99,11 +121,12 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 ## Validation and edge cases
 
 - Ventana no finita o sin S0 → `Bloqueado`; no se inventa fecha ni S0.
-- Plan final ausente → `Bloqueado` (núcleo M3).
+- `SinPlan` → válido; no bloquea ni inventa líneas. `PlanNoVerificable` → `Bloqueado`.
 - Inconsistencia estructural en Movimientos/clasificación/Referencias → `Bloqueado`.
 - E4.1 no disponible → `Bloqueado` para el núcleo de inversión; un ciclo sin inversiones
-  es un vacío válido.
-- E4.3/E3.5/E4.2/E4.4 no disponibles → aviso/parcial; no bloqueo por sí solo.
+  nuevas pero con posiciones anteriores muestra posición a Fin, no vacío.
+- E4.3/E4.2/E4.4 no disponibles → aviso/parcial; no bloqueo por sí solo.
+- E3.5/FIN_NETA no disponible → precierre parcial con motivo; E4.9 bloqueado, sin foto.
 - Backup no verificable → `Bloqueado`.
 - Cambio entre preview y confirmación → 409; E4.8 no confirma.
 - Cualquier intento de escritura, cierre o creación del ciclo siguiente → rechazo.
@@ -114,6 +137,7 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 - No crear cierre, foto, reapertura, versión ni ciclo siguiente.
 - No calcular E4.3, E3.5/FIN_NETA, E4.2 ni E4.4.
 - No duplicar motores de Comida, inversión o conciliación.
+- No habilitar cierre parcial anticipado por E3.5/FIN_NETA no disponible.
 - No cerrar DT3, DT4 ni DT6.
 - No escribir en tablas, código, migraciones ni endpoints de mutación.
 
@@ -125,11 +149,14 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 | AC-02 | Ciclo sin siguiente Inicio; abrir precierre | `Bloqueado` con `DT3_PENDIENTE`; no se inventa Fin ni fecha |
 | AC-03 | Ciclo sin S0 | `Bloqueado`; no se crea S0 |
 | AC-04 | Movimientos/clasificación/Referencias inconsistentes | `Bloqueado`; no se corrige ni escribe |
-| AC-05 | Ciclo con hechos E4.1 | Instrumentos, Compras, efectivo y posiciones visibles; valoración/patrimonio `No disponible` |
-| AC-06 | E4.1 sin hechos en el ciclo | Vacío explícito de inversión; no 0 ni bloqueo |
-| AC-07 | E4.3/E3.5/E4.2/E4.4 no disponibles | Aviso/parcial con motivo; no cero y no bloqueo por sí solo |
+| AC-05 | Ciclo con posiciones E4.1, incluidas operaciones anteriores | Instrumentos, Compras, efectivo y posiciones a Fin visibles; valoración/patrimonio `No disponible` |
+| AC-06 | Ciclo sin Compras nuevas pero con posiciones anteriores; después sin ninguna operación histórica | Con posiciones: posición acumulada a Fin, no vacío ni 0; sin operaciones: vacío explícito; no bloqueo automático |
+| AC-07 | E4.3/E4.2/E4.4 no disponibles | Aviso/parcial con motivo; no cero y no bloqueo por sí solo |
 | AC-08 | Backup sin evidencia DT6/T-BKP | `Bloqueado`; no se permite cerrar |
 | AC-09 | Intentar POST/PATCH/DELETE en precierre | 405/422; sin escritura |
 | AC-10 | Abrir precierre y comprobar S0/ventana | No se alteran; no se crea ciclo siguiente ni cierre |
 | AC-11 | Cambiar fuente entre preview y lectura | Revisión/hash cambia; se declara `IMPACT_CHANGED`/409 si se intenta confirmar |
-| AC-12 | Ciclo con plan final ausente | `Bloqueado`; no se inventa plan |
+| AC-12 | Ciclo `SinPlan` | No bloquea; muestra `Sin plan`; no inventa líneas |
+| AC-13 | Plan con líneas inconsistentes, duplicadas o no verificables | `Bloqueado`; motivo; no se captura plan |
+| AC-14 | E3.5/FIN_NETA no disponible | Precierre parcial con motivo; E4.9 queda bloqueado; no se presenta como completo |
+| AC-15 | Consultar estado por `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura |
