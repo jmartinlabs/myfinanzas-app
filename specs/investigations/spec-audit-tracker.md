@@ -601,6 +601,24 @@ cobertura: solo se ha derivado un Fin **temporal**. La diferencia
 contractual con `monthlyFlow` sigue pendiente de resolver por autoridad
 funcional; no se corrige unilateralmente.
 
+## Controles negativos para evitar falsos hallazgos — revisión transversal (2026-10-28)
+
+- **SPEC15 Vehículos:** el filtro `r.partida !== null` de
+  `apps/api/src/vehiculos.ts:90-98` podría parecer en conflicto con
+  `specs/15-vehiculos-itv-specification.md:196-209` («no filtrar
+  por Partida»). Sin embargo, `apps/api/src/movement-schema.ts:19-20`
+  exige `partida IS NOT NULL` para todo `Gasto` válido y
+  `apps/api/src/movimientos.ts:180-190` la exige antes del alta.
+  **No registrar defecto sin demostrar una ruta de histórico/migración
+  admisible que contenga Gastos sin Partida.** El filtro no excluye hoy
+  hechos válidos conforme al contrato SQL vigente.
+- **SPEC16 Revisión Comida:** `revisionComidaSource` convierte fallos
+  en la consulta de máxima fecha instalada en `error`; la prueba
+  `revision-comida.test.ts:525-534` cubre rotura de columna y contexto
+  central en estado `error`. No duplicar como hallazgo un escenario
+  ya probado; la eventual caída del propio detector de tabla queda
+  como riesgo excepcional de error de SQLite, **no defecto verificado**.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
