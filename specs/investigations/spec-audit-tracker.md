@@ -135,7 +135,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02/03 confirmados (referencia posterior/huella obsoleta); H-SPEC04-04 CONFIRMADO en SQLite efímera: alta y rectificación escriben con fuente Comida en error. | SPEC04, `movimientos.ts`, `ciclos.ts`, `revision-comida-ledger.ts`, pruebas; relay #0007/#0009. | Priorizar protección ante error y cubrir alta/rectificación/anulación; luego referencia posterior y concurrencia; sin código autorizado. | `main` `1ed2a83`; reproducciones OpenCode #0007 y #0009. | 2026-10-28 · hallazgos técnicos confirmados por OpenCode y cotejo estático Álex; sin cierre. | Alto de control/contrato H04-04; medio de integridad por escritura en contexto temporal no verificable; sin corrupción monetaria demostrada. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
-| 07 | Operación de Ciclos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/07-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #49 MERGED `1cdbc7c` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
+| 07 | Operación de Ciclos | En inspección (no cerrada) | H-SPEC07-01 PROVISIONAL: preview/huella de rectificación usan `ledgerRows` y máximo temporal de Comida, pero no filas individuales; posible aceptación con hechos de Comida cambiados bajo máximo constante. AC28 de integración futura sigue pendiente. H-TRANS-01 documental. | `ciclos.ts` `operationPlan`, `revision-comida-ledger.ts`, SPEC07 AC07/17/28, SPEC16, tests O1/O9. | Reproducción independiente antes de calificar bug; verificar contrato de AC28 y efectos en atribución. | PR #49 MERGED `1cdbc7c`; PR #82 MERGED `26b6f0c`; `main` `1ed2a83`. | 2026-10-29 · hipótesis estática pendiente de test, no cierre. | Medio provisional de consentimiento/contexto; no implica datos monetarios alterados, sí posible cambio de atribución no revisado. |
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
@@ -1429,6 +1429,92 @@ del runner Ubuntu no sustituyen la validación del Debian
 13 y filesystem reales. La PR no toca Caddy activo.
 No se registra nueva vulnerabilidad sin ejecución/superficie
 de ataque demostrada.
+
+## Contraste transversal SPEC07/08 — revisión de Ciclos con fuente Revisión Comida instalada (2026-10-29)
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Lectura estática de `ciclos.ts:58-81,159-195,377-562,574-685`,
+`revision-comida-ledger.ts:39-74`, `revision-comida.ts:245-329,828-950`,
+`presupuestos.ts:86-181,263-412` y SPEC07/08/16. No se ha ejecutado
+una prueba nueva ni alterado código/Excel/maestros.
+
+### H-SPEC07-01 — Contexto de confirmación de Ciclos puede ignorar cambios de Comida anteriores al máximo (PROVISIONAL, nivel medio)
+
+- `ciclos.ts:481-559` monta `facts = ledgerRows(db)` y
+  `contextRevision = fingerprint([beforeRows, facts, reference])`.
+  Para Comida, `reference` es `financialReference([...,
+  revisionComidaSource(db)])` y esta fuente aporta **solo**
+  `state` y `maxDate`, no todos los registros. El listado de
+  hechos afectados `movimientos` usa únicamente `ledgerRows`.
+- `revision-comida-ledger.ts:52-73` calcula
+  `MAX(fecha)` de filas vigentes. Añadir, corregir o anular
+  una operación anterior a ese máximo, sin moverlo,
+  **no altera por sí solo el fingerprint de Ciclos**, aunque
+  `revision-comida.ts:245-255,287-329` derive el ciclo
+  de cada operación según los Inicios actuales.
+- **Ejemplo únicamente inferido, sin reproducción:**
+  ciclos existentes con Inicio 01/10/2026 y 01/11/2026;
+  Comida vigente 20/10/2026 fija máximo. Se revisa
+  rectificar Inicio 01/10→05/10. Antes de confirmar,
+  aparece una nueva operación de Comida 03/10. El máximo
+  sigue 20/10; el nuevo hecho cambiaría de ciclo a
+  «Sin ciclo asignable» después de rectificar. Si no
+  cambia ningún Movimiento ni el maestro, la huella
+  parece permanecer igual y aceptar una revisión que
+  **no enumeró ese hecho**. No atribuir importes erróneos
+  ni foto de cierre, porque estos cálculos no están en
+  el contrato operativo.
+- **Contrato a interpretar:** SPEC07 §Q1 exige revisar los
+  hechos afectados y bloquear cuando falle consumidor
+  instalado. SPEC07 AC28 es de **integración futura** de
+  Comida/inversión (máximo/periodos/corte/cobertura).
+  SPEC16 ya integra la fuente de fecha de Comida, pero
+  E3.5/conciliación no existe aún. Distinguir una
+  **brecha de integración pendiente** de incumplimiento
+  actual del requisito AC17 de invalidación del contexto.
+  No inferir que `conciliacion:pendiente` es un bug:
+  se refiere al cierre E3.5, no a la referencia de E3.4.
+- **Pruebas propuestas, UNRUN:** C07-F1: reproducir
+  rectificación 01/10→05/10 con Comida máxima 20/10 y
+  alta 03/10 entre preview/confirmación, sin cambios
+  de Movimientos ni del máximo; observar 409 o aceptación,
+  estado de operaciones antes/después y auditoría.
+  C07-F2: Comida ya existente en fecha del tramo que
+  perderá ciclo, preview antes de rectificar, y
+  `totalMovimientos=0`; comprobar si se declara
+  explícitamente **cobertura de Comida pendiente** o
+  si parece «sin efectos». C07-F3: control de Comida
+  fuente error, que **sí** debe bloquear 409
+  `REFERENCE_ERROR`, y control sin Comida instalado
+  (pendiente legítimo).
+- **Estatus:** H-SPEC07-01 **PROVISIONAL** hasta contraste
+  dinámico y decisión contractual; no solicitar
+  corrección/PR, no replicar H-SPEC04-03 automáticamente.
+  La revalidación de dato temporal y el detalle
+  de impactos son dos cuestiones distintas.
+
+### SPEC08 — controles de Presupuestos verificados estáticamente
+
+- `presupuestos.ts:86-181` acepta exactamente
+  Gasto real/Aportación a saldo/No aplica, exige saldo
+  interno para las dos primeras, `null` para la última,
+  conserva destino inactivo solo al renombrar,
+  y rechaza destinos duplicados entre Aportaciones
+  incluidas las inactivas. La unicidad de nombre
+  implementa comparación sin distinguir mayúsculas,
+  conservando acentos y espacios.
+- `presupuestos.ts:263-365` llama a
+  `planConfigurationImpact` en cambios de fuente
+  o destino, compara revisión y fingerprint,
+  solicita motivo cuando hay impacto y vuelve
+  a validar en transacción; `:367-412` impide
+  desactivar con Partidas activas vinculadas.
+  `presupuestos.test.ts` B1–B9 cubre alta,
+  nombres, histórico y concurrencia.
+- **Sin defecto nuevo confirmado** en esta inspección.
+  No se declara PASS nuevo de suites, equivalencia
+  con Excel, ni garantía de motor E2.3
+  fuera de su cobertura ya auditada.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
