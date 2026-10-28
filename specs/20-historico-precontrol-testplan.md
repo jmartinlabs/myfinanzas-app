@@ -2,19 +2,16 @@
 
 Specification: [20-historico-precontrol-specification.md](20-historico-precontrol-specification.md)
 
-Status: **DISEÑO DOCUMENTAL — NO EJECUTADO.** Esta fase solo prepara especificación,
-wireframes y testplan con datos ficticios. No hay implementación, código, SQL, migración,
-importador, Excel, datos reales, PR ni merge. Todos los AC funcionales están `UNRUN`.
-La QA documental independiente se registra en el [progress](20-historico-precontrol-progress.md)
-y no convierte un diseño de prueba en PASS funcional.
-**Enmienda D4/D14 aplicada el 2026-10-28:** 59 AC documentales (`AC-01…AC-59`), todos
-`UNRUN`; no acredita implementación ni aprobación completa de la spec. El
-[progress](20-historico-precontrol-progress.md) conserva el hito histórico de 47 AC;
-esta enmienda añade 12 AC documentales.
+Status: **APPROVED — DISEÑO DOCUMENTAL, NO EJECUTADO.** SPEC20 completa y este testplan
+fueron aprobados por el usuario el 2026-10-28. No hay implementación, código, SQL,
+migración, importador, Excel, datos reales ni despliegue. Los 59 AC siguen `UNRUN`; la
+aprobación del testplan no es PASS funcional.
+**D4/D14 aplicadas:** 59 AC documentales (`AC-01…AC-59`); el
+[progress](20-historico-precontrol-progress.md) conserva el hito histórico de 47 AC y
+registra la enmienda.
 
-Base de la rama: `origin/main` `1d539a8cb9c38b3a8d2e3921a3651197105ce282` (2026-10-27);
-`main` actual `7073864`; la reconciliación de la rama sigue pendiente y no se declara
-aquí.
+Base: `main` `3d70fd6` (2026-10-28); PR87 integrada. La base histórica de preparación
+fue `1d539a8`; la rama se reconcilió con `main` `7073864` antes de integrar.
 Los comandos de implementación se proponen para el futuro desarrollo autorizado; no se
 ejecutan aquí. Cualquier fixture con importes es ficticio.
 
