@@ -679,6 +679,63 @@ juntos: reutilizar estado/corte central, sin una implementación
 paralela de Comida ni un reloj/fallback artificial. No modificar
 código ni tests de producto sin aprobación del usuario.
 
+## Plan de contraste focal sin mutar producto — H-SPEC04-02/03/04 y H-SPEC09-01 (2026-10-28)
+
+Esta matriz es **diseño de pruebas**, no una ejecución ni permiso para modificar
+código. Usar solo SQLite efímera y hechos ficticios; comprobar valores exactos,
+estado de fuente/corte y no escritura antes/después de operaciones bloqueadas.
+
+| Test | Escenario | Oráculo esperado del contrato | Evidencia actual / incertidumbre |
+| --- | --- | --- | --- |
+| F04-T1 | Movimientos tiene máximo 10/10; Comida vigente máximo 12/10; vista previa anular/rectificar movimiento del día 10 | `referenciaDespues` conserva 12/10; no retrocede si Comida aún es máxima | H-SPEC04-02: actual solo reordena fechas de Movimientos; reproducción dinámica UNRUN |
+| F04-T2 | Preview de rectificación; después insertar Comida vigente con nueva fecha máxima; confirmar con huella de preview anterior | Bloqueo `409 IMPACT_CHANGED`, sin modificar Movimiento ni auditoría | H-SPEC04-03: `financeRevision` no contiene Comida, huella no incluye impacto; UNRUN |
+| F04-T3 | Comida instalada con consulta de fecha corrupta **antes** de pedir preview de Movimiento | Error explícito de fuente instalada, sin impacto presentado como comprobado; no confirmar | H-SPEC04-04: código no verifica `contexto.referencia.estado`; UNRUN |
+| F04-T4 | Preview válido; romper solo la consulta temporal Comida **entre preview y confirmación** | Confirmación rechazada sin escritura; distinguir error de fuente de desajuste de huella | Interacción H-SPEC04-03/04; UNRUN |
+| F04-T5 | Comida instalada pero vacía; Movimientos válidos; una alta legítima | No bloquear una fuente `disponible,maxDate=null` solo por ausencia de hechos | Control negativo para no introducir guardas artificiales; UNRUN |
+| F09-T1 | Ciclos 01/10 y 01/11, sin Movimientos/Comida; consulta 24/10 con plan `Del mes=0` y `Del mes=100` | Contrato SPEC09 exige `Ejecutado=null`, `Pendiente/Estado=null`, motivo de corte no acreditado; resolver contradicción con test P12 que espera 0 | H-SPEC09-01: conducta 0 consagrada por P12; necesita criterio definitivo |
+| F09-T2 | Mismos ciclos; máxima referencia financiera antes del `Inicio` del ciclo consultado, o `reference.estado=error` | No convertir un Fin derivado en cobertura verificada; seguir estado central y causa | Verificar además consistencia con `monthlyFlow`; UNRUN |
+| F09-T3 | Dos ciclos, fuente disponible y fecha máxima posterior al comienzo; sin hechos elegibles dentro del periodo seleccionado | **No prejuzgar** cero: distinguir si el intervalo completo está acreditado frente a simple referencia posterior; documentar interpretación R3/SPEC09 antes de cambiar tests | Caso discriminante para decidir semántica histórica y control de cobertura; UNRUN |
+
+### Priorización y acoplamiento
+
+1. **Primero F04-T3/T4**: riesgo de escritura con fuente temporal en `error`.
+   Definir alcance exacto de bloqueo para alta, rectificación y anulación.
+2. **Después F04-T1/T2**: garantizar que vista previa y confirmación operan
+   sobre la misma referencia central, sin copiar una lógica alternativa.
+3. **F09-T1/T2/T3**: resolver ambigüedad del Fin temporal frente a corte
+   verificable; no adaptar el contrato a una expectativa errónea de test.
+4. **Regresión transversal**: mantener `cycleContext`, `monthlyFlow`,
+   Revisión Comida y posiciones Saldos sin fuentes duplicadas ni datos reales.
+   Si los contratos obligan a recalcular fingerprints, controlar también
+   intentos idempotentes y concurrencia tras una alteración de Comida.
+
+**Autorización vigente:** investigación estática y documentación en
+`audit/spec04-25`. No crear/modificar tests o código de producto sin
+aprobación del usuario; el contraste independiente se pidió a OpenCode por
+relay 0006. Ninguna SPEC se da por cerrada.
+
+### Controles de no regresión revisados sin nuevo defecto
+
+- `apps/api/src/plan-anual.ts:97-121` y SPEC10 §«Equivalente esencial»:
+  solo `Esencial=Sí` contribuye al equivalente, `Pendiente` tiene contador
+  separado; `plan-anual.test.ts:296-317` comprueba ambos. No registrar
+  omisión de Pendiente como bug.
+- `apps/api/src/flujo-mensual.ts:297-335`, SPEC12 §Liquidez y
+  `spec19 §4.3.3/N2`: el estado de Liquidez actual puede ser
+  `Verificado` para posiciones calculables y, simultáneamente, advertir
+  falta de histórico de Compras. Es una distinción **explícitamente aprobada**,
+  no un fallo de cálculo de liquidez actual.
+- `apps/api/src/compartidos.ts:318-510` conserva Neto =
+  Bruto − Recuperado y Pendiente/Exceso por Tercero sin compensarlos; el
+  `estado` general considera ambos. `estadoReparto` subyacente se
+  presenta aparte en UI como dato de Base B, no como sustituto del estado
+  general. No registrar estados divergentes como fallo sin incumplimiento
+  adicional demostrado.
+- `apps/api/src/flujo-mensual.ts:80-112` exige fecha de referencia
+  central, sin promover un subtotal bancario parcial a un flujo completo.
+  El error estructural del lector Movimientos que puede impedir construir
+  `ledgerRows` ya está documentado en H-SPEC03-03; no duplicarlo.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
