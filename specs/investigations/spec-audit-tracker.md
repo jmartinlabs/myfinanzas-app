@@ -3,12 +3,13 @@
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base del inventario: `main` `63ee1d0`. `main` actual: `71866ac` (cierre SPEC01 y tracker #116); `e4a26de` fue el merge de PR #115.
+- Base del inventario: `main` `63ee1d0`. `main` actual: `13cc7c6` (merge documental de PR #117); históricos: `71866ac` (tracker SPEC01 #116) y `e4a26de` (merge SPEC01 #115).
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
 - **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
   integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
-  `40728150624` SUCCESS. **SPEC02 revisada por Álex**; correcciones documentales en
-  curso y **H-SPEC02-01 (Funcional) abierto**. Las otras 23 SPEC siguen pendientes.
+  `40728150624` SUCCESS. **SPEC02:** PR #117 documental integrada por squash `13cc7c6`;
+  validación de Álex sobre `85c00f1`; CI post-merge `40737846233` SUCCESS.
+  **H-SPEC02-01 (Funcional) abierto; SPEC02 no cerrada.** Las otras 23 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01 y SPEC02 son las SPEC modificadas; las otras 23 no se han tocado.
@@ -101,7 +102,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
-| 02 | Clasificación | Revisada por Álex · PR pendiente | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **H-SPEC02-01 (Funcional) abierto**: transparencia de cobertura. | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) / `6163e5f` / CI `40732604479` PASS; HEAD final en checks | — | H-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
+| 02 | Clasificación | PR integrada · H abierto | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **H-SPEC02-01 (Funcional) abierto**: transparencia de cobertura. | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) / HEAD `85c00f1` / merge `13cc7c6` / CI `40737846233` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | H-SPEC02-01 abierto; SPEC02 no cerrada. |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
@@ -240,17 +241,16 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
 | 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
-| 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `main` `71866ac`; históricos `6163e5f`, `7d76fe1`; HEAD final en checks | `40732604479` / `40732906872` PASS; HEAD final pendiente | Pendiente | Pendiente |
+| 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `85c00f1` validado / merge `13cc7c6` | `40734932828` PR / `40737846233` main PASS | APROBADA | Integrada |
 
 ## Próxima acción
 
-1. PR #117 documental preparada; validar su **HEAD/CI final** y presentarla a Álex.
-   Merge pendiente de autorización expresa.
-2. **H-SPEC02-01 (Funcional)** sigue abierto: propuesta técnica registrada; no implementar
-   sin autorización específica ni PR funcional separada.
-3. **No cerrar SPEC02** hasta resolver H-SPEC02-01 o aceptarlo expresamente.
-4. **No iniciar SPEC03.**
+1. **SPEC02:** documentación integrada por PR #117 (`13cc7c6`). **No se cierra**:
+   H-SPEC02-01 (Funcional) sigue abierto.
+2. Preparar la corrección funcional de H-SPEC02-01 solo con autorización específica y
+   PR separada; no implementar ahora.
+3. **No iniciar SPEC03** hasta resolver H-SPEC02-01 o aceptarlo expresamente.
 
-`main` actual: `71866ac`. Históricos de la PR #117: `6163e5f` (documentación) y `7d76fe1`
-(tracker); el HEAD final se consulta en los checks de la PR. El gap de cero explícito +
-movimientos de SPEC01 permanece registrado y no bloqueante.
+`main` actual: `13cc7c6`. Históricos: `71866ac` (tracker SPEC01 #116), `e4a26de`
+(merge SPEC01 #115). El gap de cero explícito + movimientos de SPEC01 permanece
+registrado y no bloqueante.
