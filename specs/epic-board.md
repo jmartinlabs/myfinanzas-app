@@ -29,12 +29,12 @@ el cierre E4.9.
 | SPEC27/E4.9 | DT3/DT4 resueltas; DT6 abierto; AC-20/AC-21 añadidos; AC UNRUN |
 | E4.8 DEV | no autorizado; desbloqueado por DT3/DT4, sujeto a autorización expresa |
 | E4.9 DEV/cierre | bloqueado por DT6/T-BKP y E3.5/FIN_NETA; no autorizado |
-| PR documental | pendiente de publicar y de aprobación de merge |
+| PR documental | [#111](https://github.com/jmartinlabs/myfinanzas-app/pull/111) publicada; merge pendiente de aprobación |
 | Ejecutores | ninguno activo |
 
 ### Próxima acción segura
 
-1. Publicar la rama y la PR documental; verificar CI del perfil `docs`.
+1. Verificar CI del perfil `docs` en la PR #111.
 2. Obtener aprobación explícita del usuario antes del merge.
 3. Tras el merge, decidir la autorización DEV de E4.8. E4.9 sigue bloqueado: no se
    reanuda ni se cierra por inferencia.
@@ -42,8 +42,9 @@ el cierre E4.9.
 ### Checkpoint
 
 **Sin ejecutores activos; no hay reanudación automática.** Evidencia: `a7808bd`, rama
-`codex/docs-dt3-dt4-resolution`, SPEC26/SPEC27 y sus testplans. Bloqueos: DT6/T-BKP
-(sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni pruebas.
+`codex/docs-dt3-dt4-resolution` (`377b9bc`), PR #111, SPEC26/SPEC27 y sus testplans.
+Bloqueos: DT6/T-BKP (sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni
+pruebas.
 
 # Coordinación global — consolidado 2026-10-28 (post PR #107)
 
