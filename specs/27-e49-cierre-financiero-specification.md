@@ -1,7 +1,10 @@
 # 27 — E4.9 Cierre financiero y primera fotografía: Specification
 
-Status: **DRAFT — borrador documental; no aprobada.**
-Approval source/date: **PENDIENTE**. Decisiones M1–M6 confirmadas el 2026-10-28; DT3/DT4/DT6 abiertos.
+Status: **APPROVED — SPEC27/E4.9 aprobada documentalmente el 2026-10-28.** Los AC
+siguen UNRUN; no autoriza DEV, cierre real ni despliegue.
+Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
+las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
+`40668646943` SUCCESS. Decisiones M1–M6 confirmadas; DT3/DT4/DT6 abiertos.
 Context and brainstorming: [27-e49-cierre-financiero-brainstorming.md](27-e49-cierre-financiero-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),

@@ -1,7 +1,10 @@
 # 26 — E4.8 Precierre y controles de consistencia: Specification
 
-Status: **DRAFT — borrador documental; no aprobada.**
-Approval source/date: **PENDIENTE**. Decisiones M1–M6 confirmadas por el usuario el 2026-10-28; DT3/DT4/DT6 abiertos.
+Status: **APPROVED — SPEC26/E4.8 aprobada documentalmente el 2026-10-28.** Los AC
+siguen UNRUN; no autoriza DEV, código ni despliegue.
+Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
+las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
+`40668646943` SUCCESS. Decisiones M1–M6 confirmadas; DT3/DT4/DT6 abiertos.
 Context and brainstorming: [26-e48-precierre-brainstorming.md](26-e48-precierre-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),

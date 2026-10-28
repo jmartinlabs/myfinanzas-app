@@ -2,8 +2,9 @@
 
 Specification: [27-e49-cierre-financiero-specification.md](27-e49-cierre-financiero-specification.md)
 
-Status: **DRAFT — diseño documental; todos los AC UNRUN.** No hay implementación, código,
-CI, migración ni datos reales. DT3, DT4 y DT6/T-BKP siguen abiertos.
+Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implementación, código,
+CI, migración ni datos reales. Aprobado con SPEC27 el 2026-10-28; DT3, DT4 y DT6/T-BKP
+siguen abiertos.
 
 Base: `main` `f077b7e`, esquema 18.
 
