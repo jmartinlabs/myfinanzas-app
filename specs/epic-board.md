@@ -30,11 +30,12 @@ el cierre E4.9.
 | E4.8 DEV | no autorizado; desbloqueado por DT3/DT4, sujeto a autorización expresa |
 | E4.9 DEV/cierre | bloqueado por DT6/T-BKP y E3.5/FIN_NETA; no autorizado |
 | PR documental | [#111](https://github.com/jmartinlabs/myfinanzas-app/pull/111) publicada; merge pendiente de aprobación |
+| CI `docs` | run `40698773650` SUCCESS sobre `e8deceb`; el commit de este registro se valida en la misma PR |
 | Ejecutores | ninguno activo |
 
 ### Próxima acción segura
 
-1. Verificar CI del perfil `docs` en la PR #111.
+1. CI `docs` PASS registrada; el commit final del tablero se valida en la misma PR.
 2. Obtener aprobación explícita del usuario antes del merge.
 3. Tras el merge, decidir la autorización DEV de E4.8. E4.9 sigue bloqueado: no se
    reanuda ni se cierra por inferencia.
