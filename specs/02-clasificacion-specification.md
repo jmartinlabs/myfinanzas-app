@@ -1,6 +1,14 @@
 # 02 — E1.2 Clasificación utilizable y conservación histórica: Specification
-Status: APPROVED — especificación/diseños aprobados; implementación E1.2 completada e integrada mediante PR #11.
+Status: APPROVED — E1.2 implementada e integrada por PR #11; revisión documental 2026-10-28.
 Approval source/date: usuario aprueba PR #10 sobre 25cffc0 y autoriza merge/dev 02; 2026-10-21. PR #10 integrada en main 0c7a87e.
+**Estado vigente (2026-10-28):** E1.2 cerrada; PR #11 integrada; esquema actual **18**.
+Los consumidores posteriores (Movimientos, Referencias, Anticipos, Compartidos, Presupuestos,
+Deudas, planes e indicadores) se rigen por sus propias specs. Este documento conserva el
+contrato de E1.2 y no reclasifica sus 4 contratos por implementaciones posteriores.
+**H-SPEC02-01 (Funcional) abierto:** transparencia de cobertura en la vista de impacto.
+**Regla de lectura:** las menciones a «modelo propuesto/sin DDL», «continuidad futura»,
+«pantallas pendientes» o «sin merge» describen la fase documental/desarrollo y son
+contexto histórico, no prohibiciones vigentes.
 Context and brainstorming: [decisiones y evidencias](02-clasificacion-brainstorming.md),
 [roadmap E1.2](roadmap.md#e12--clasificación-utilizable-y-conservación-histórica),
 [referencia](functional-reference-v5.11.md), [UI común](guidelines/ui.md).
@@ -10,8 +18,8 @@ Gestionar Categorías, Subcategorías y Partidas con identidad estable y cadena 
 por ID, consultando activos/inactivos, creando, editando y desactivando/reactivando.
 No duplicar Categoría en Partida ni información económica derivada.
 Conservar historia, permitir gasto sin Presupuesto y distinguir renombrado de cambio
-económico. Sin versionado general de catálogo. Solo local con fixtures ficticios;
-Excel permanece maestro. El desarrollo local está autorizado después del merge de PR #10; implementación aprobada para squash merge de PR #11; sin despliegue.
+económico. Sin versionado general de catálogo. E1.2 se implementó localmente con
+fixtures ficticios y se integró por PR #11; Excel permanece maestro. Sin despliegue.
 
 ### Autoridad y límites de evidencia
 - Excel contrastado por usuario/Álex: atributos y cadena; dominios de Configuración;
@@ -26,7 +34,8 @@ Excel permanece maestro. El desarrollo local está autorizado después del merge
   antes de implementar sus consumidores o validaciones dependientes.
 
 ## Data model and contracts
-Modelo lógico propuesto, sin DDL ni aprobación implícita de esquema físico.
+Modelo lógico implementado en E1.2 (esquema v2; actual 18). Este documento conserva el
+contrato; no reproduce el DDL vigente ni las ampliaciones posteriores.
 
 | Entidad | Datos propios | Derivación / protección |
 | --- | --- | --- |
@@ -77,20 +86,22 @@ obligación histórica. Herencia por Partida alcanza Gasto y Amortización deuda
 No afirmar que Referencia opcional exime otras restricciones del tipo de operación.
 Anticipo/Compartido conservan contratos específicos; no completar matriz por inferencia.
 Sin maestro, selector ni validador de Movimientos en esta entrega. Tipo esperado no
-se añade como atributo arbitrario de Categoría: mapping funcional pendiente de su
-consumidor. No derivarlo de Grupo o nombres.
+se añade como atributo arbitrario de Categoría: el mapping se implementó después en
+E1.5 (`reference-rules.ts`), sin quedar acreditado por E1.2. No derivarlo de Grupo o nombres.
 
 ### Presupuestos y Deudas
-Contratos 0..1 por Partida. En catálogo local nuevo sin esos maestros, no se generan
-vínculos ni se ofrecen IDs libres. Mostrar Sin asignación y explicación de módulo
-pendiente, sin aparentar selector operativo. No registrar referencias provisionales.
-E2.2/E1.6 habilitarán selección validada y guardas de cambio; E1.2 no ejecuta motores.
+Contratos 0..1 por Partida. En el catálogo local de E1.2 no se generaron vínculos ni se
+ofrecieron IDs libres; se mostraba Sin asignación sin aparentar un selector operativo.
+E2.2/E1.6 habilitaron después la selección validada y las guardas; E1.2 no ejecutó sus
+motores. El estado vigente de esos vínculos se rige por sus specs.
 
 ### Continuidad de una base local E1.1 existente
-Contrato de actualización futuro de E1.2, no migración implementada ni autorizada
-por este documento. La base E1.1 actual usa schema_version=1. La incorporación de
-clasificación exige una actualización explícita, transaccional y versionada del
-esquema, sin eliminar/recrear la base ni exigir reiniciar el bootstrap.
+Implementado en E1.2/AC-31: actualización v1→v2 sin reset, con evidencia en el
+[testplan](02-clasificacion-testplan.md); el esquema actual es 18. El texto siguiente
+conserva el plan y la evidencia histórica.
+La base E1.1 usaba schema_version=1. La incorporación de clasificación exigió una
+actualización explícita, transaccional y versionada del esquema, sin eliminar/recrear
+la base ni exigir reiniciar el bootstrap.
 Preservar Saldos y sus IDs/S000, atributos, null/false/cero, revisiones/UTC, contadores,
 auditoría e idempotencia; conservar también propietario, hash de contraseña, secreto
 TOTP cifrado, anti-replay, recuperación, sesiones/desafíos vigentes y límites de acceso.
@@ -151,12 +162,12 @@ futuro conecta su guard antes de permitir cambios que afecten historia; no afirm
 protección completa de módulos inexistentes ni crear fuentes vacías para simularla.
 
 ## Screens and interfaces
-Propuesta visual aceptada como base por revisión de Álex sobre 9317940, comunicada
-por el usuario; especificación completa aún pendiente de aprobación. Reusar shell,
-tema claro, paleta MyFinanzas,
+Diseño implementado y aprobado; evidencia visual en el [testplan](02-clasificacion-testplan.md).
+Se conserva el contrato visual. Reusar shell, tema claro, paleta MyFinanzas,
 texto oscuro sobre verde principal, tablas escritorio/tarjetas móvil y páginas propias.
 IDs visibles en fichas y selectores cuando desambigüen; no saturar todas las celdas.
-Cabecera Ciclo financiado: No disponible hasta maestro correspondiente.
+Cabecera Ciclo financiado: en E1.2 se mostró **No disponible**; E1.3 posterior integra
+el maestro, pero su integración no queda acreditada por las pruebas E1.2.
 
 ### Listado escritorio
 ```text
@@ -247,6 +258,8 @@ fotos/cierre/reapertura; versionado general y catálogo de Conceptos.
 Criterios del contrato aprobado; resultados ejecutados en testplan 02. I: alcance
 actual de E1.2; C: contrato posterior, no motor entregado por tests dobles.
 Se mantienen **31 criterios: 27 I y 4 C (AC-19, AC-24, AC-25, AC-26)**.
+**Estado 2026-10-28:** 27 PASS E1.2 y 4 C; las implementaciones posteriores no
+convierten AC-19/24/25/26 en PASS E1.2.
 AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar criterios.
 
 | ID | Action / preconditions | Expected observable result |
@@ -283,6 +296,49 @@ AC-31 incluye continuidad SQLite además de copia/restauración, sin renumerar c
 | AC-30 I | Petición sin MFA o mutación sin CSRF/Origin válido | Protección E1.1 conservada; sin datos sensibles en respuesta/logs |
 | AC-31 I | Actualizar base local E1.1 versión 1 con Saldos modificados y autenticación ficticia configurada; reabrir, probar rollback/concurrencia y restaurar copia aislada | Esquema evoluciona sin reset/resemilla; todos los datos previos se preservan, login/MFA siguen operativos; actualización idempotente/atómica y restauración compatible; sin afirmar producción |
 
+### Consumidores posteriores (no PASS E1.2)
+
+| AC | Estado real en `main` | Evidencia |
+| --- | --- | --- |
+| AC-19 | **Parcial**: catálogo, Movimientos y Referencia; planes anuales detectados; ejecución presupuestaria solo al cambiar `presupuesto`; indicadores y cierres sin runtime | `clasificacion.ts`, `movement-impact.ts`, `plan-anual.ts`, `planes-ciclo.ts` |
+| AC-24 | **Implementado después** (E1.4/E1.5), no acreditado por E1.2 | `reference-rules.ts`, `movimientos.ts`, tests de Movimientos/Referencias |
+| AC-25 | **Implementado después** (E3.1/E3.2), no acreditado por E1.2 | `anticipos.ts`, `compartidos.ts`, tests propios |
+| AC-26 | **Sin consumidor runtime**: `anual`/`mensual` se almacenan, pero no se encontró motor que los consuma | `plan-anual.ts`, `flujo-mensual.ts`; búsqueda de `anual`/`mensual` |
+
+Estos consumidores se rigen por sus specs/testplans. No modifican los 4 C ni convierten
+sus pruebas posteriores en PASS de E1.2.
+
+### Rectificación: alcance real
+
+- `clasificacion.ts` valida y previsualiza padre, métodos, Referencia, Presupuesto y Deuda.
+- **Partida→Deuda usada:** cambiar `deuda` con cualquier Movimiento en la Partida devuelve
+  `HISTORY_LOCKED`; `deudas.ts` consume el vínculo en `debtPeriod`. **No se relaja.**
+- **Presupuesto:** cambiar `presupuesto` invoca `planConfigurationImpact`, que comprueba
+  R3/ciclos; es una cobertura específica, no general.
+- **Padre/métodos/Referencia:** `classificationMovementImpact` revisa Movimientos y valida
+  Referencias. Los planes anuales se detectan para `used`/fingerprint, pero no se detallan
+  en la vista.
+- `classificationGuard` es opcional y no se suministra en producción; no añade una
+  protección externa efectiva.
+
+### Cobertura de impacto real
+
+| Consumidor | Cobertura actual |
+| --- | --- |
+| Catálogo/descendientes | Completa |
+| Movimientos | Completa si el ledger está instalado; incluye validación de Referencias |
+| Plan anual | **Parcial**: detecta uso y exige confirmación; no muestra líneas |
+| Presupuesto/R3 | Completa solo al cambiar `presupuesto` de Partida |
+| Deuda | Protección específica del vínculo; sin detalle general |
+| Anticipos/Compartidos | Sin cobertura genérica; sus módulos validan sus reglas |
+| Indicadores | Sin runtime |
+| Cierres/fotos | Sin runtime |
+
+**H-SPEC02-01 abierto:** `pending` no es exhaustivo (omite Deudas, Anticipos,
+Compartidos, Referencias y Planes), los planes anuales no se muestran y algunos mensajes
+de Presupuestos están obsoletos. La corrección es una propuesta funcional separada; no
+se modifica código en esta PR ni se presenta la cobertura parcial como total.
+
 ## Validación futura y siguiente paso
 Bun integración SQLite/API: invariantes, rollback/concurrencia, errores y guardas;
 Playwright real con MFA: recorrido de tres niveles, estados, corrección disponible,
@@ -304,7 +360,10 @@ Plan de pruebas de AC-31; ejecución y resultados vigentes en testplan 02:
    binaria del archivo SQLite tras actividad WAL como sustituto de integridad lógica.
 
 Especificación/diseño aprobados y PR #10 integrada; `$dev 02` autorizado con reserva
-SUB resuelta por evidencia posterior. Estado de implementación y pruebas actuales
-en [progreso](02-clasificacion-progress.md) y [testplan](02-clasificacion-testplan.md).
+SUB resuelta por evidencia posterior. Estado de implementación y pruebas actuales en
+[progreso](02-clasificacion-progress.md) y [testplan](02-clasificacion-testplan.md).
 Implementación aprobada por usuario sobre 58b51f9 tras auditoría técnica/visual de
-Álex; cierre incorporado mediante PR #11. Sin autorización para E1.3 ni despliegue.
+Álex; cierre incorporado mediante PR #11. **Estado 2026-10-28:** E1.2 cerrada;
+revisión documental en curso; **H-SPEC02-01 abierto**; no se inicia SPEC03. E1.3 y las
+entregas posteriores avanzaron por sus propias specs, sin quedar acreditadas por las
+pruebas E1.2. Sin autorización de despliegue.

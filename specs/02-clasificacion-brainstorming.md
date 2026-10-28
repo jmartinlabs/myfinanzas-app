@@ -1,8 +1,12 @@
 # 02 — E1.2 Clasificación utilizable y conservación histórica: Brainstorming
-Status: APPROVED — PR #10 aprobada/integrada; reserva SUB resuelta; dev 02 autorizado.
+Status: CERRADO — E1.2 implementada e integrada (PR #11); historial conservado; revisión documental 2026-10-28.
 Roadmap/context: [E1.2](roadmap.md#e12--clasificación-utilizable-y-conservación-histórica),
 [referencia v5.11](functional-reference-v5.11.md), [contexto](project.md).
-Next action: desarrollo local autorizado según progreso 02; sin merge de implementación.
+**Estado vigente (2026-10-28):** las menciones `PENDING`, «sin merge» o «sin implementación»
+de las rondas son históricas y están superadas por los registros posteriores. E1.2 cerró
+en PR #11; los consumidores posteriores se rigen por sus specs. **H-SPEC02-01 (Funcional) abierto**
+(transparencia de cobertura de impacto).
+Next action: revisión documental de SPEC02; no iniciar SPEC03 ni modificar código.
 
 ## Alcance y autorización — 2026-10-21
 Usuario autoriza `$spec 02`, comenzando por preguntas. Base main 2bc92e9;
@@ -180,6 +184,8 @@ No proponer default de nuevas altas hasta conocer dominio y semántica. Pantalla
 Referencias y registro de Movimientos permanecen fuera de E1.2.
 
 ## Siguiente paso reanudable
+**Histórico:** esta parada quedó superada por la aprobación de PR #10, el desarrollo de
+E1.2 y la integración de PR #11. Se conserva para trazabilidad.
 Esperar esta ronda sin inventar respuestas. Después proponer pantallas ASCII
 (listado de jerarquía, ficha, formulario y rectificación con impacto), reutilizando
 identidad/patrones aprobados. Completar especificación y AC tras resolver datos
@@ -272,3 +278,5 @@ de tildes/espacios. App: alcance global, comparación sin mayúsculas conservand
 comodines * y ? literales; probar casos especiales, sin introducir otros cambios.
 Se sustituye la reserva anterior; no hace falta nueva ronda ni reaprobar propuesta.
 Implementación local/ficticia en feat/e1-2-clasificacion; revisión final/merge separados.
+**Cierre vigente:** PR #11 integrada; E1.2 cerrada. Revisión documental 2026-10-28;
+H-SPEC02-01 abierto; no SPEC03.

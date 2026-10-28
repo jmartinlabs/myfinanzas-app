@@ -1,6 +1,7 @@
 # 02 — Clasificación: test plan
-Status: VERIFIED LOCALLY — 27 criterios actuales; 4 contratos futuros revisados.
-Fecha: 2026-10-21. E1.2 aprobada e integrada mediante PR #11; cierre en la misma PR.
+Status: **E1.2 integrada por PR #11; 27 PASS E1.2 + 4 contratos posteriores.**
+Revisión documental 2026-10-28; **H-SPEC02-01 (Funcional) abierto**. La evidencia local es histórica.
+Fecha: 2026-10-21. Cierre documental en PR #11.
 Especificación aprobada: [02](02-clasificacion-specification.md).
 
 ## Evidencia ejecutada
@@ -62,6 +63,22 @@ espacios, NFC/NFD y Straße/STRASSE no se normalizan entre sí; * y ? son litera
 La comparación no pretende equivalencia exhaustiva con collation/COUNTIF de Excel.
 Chequeo y escritura IMMEDIATE, incluye inactivos; sin transformaciones silenciosas.
 
+## Consumidores posteriores (no PASS E1.2)
+
+| AC | Estado real en `main` | Evidencia |
+| --- | --- | --- |
+| AC-19 | Parcial: Movimientos/Referencia y planes anuales detectados; presupuesto solo al cambiar `presupuesto`; indicadores/cierres sin runtime | `clasificacion.ts`, `movement-impact.ts`, `plan-anual.ts`, `planes-ciclo.ts` |
+| AC-24 | Implementado después en E1.4/E1.5; no acreditado por E1.2 | `reference-rules.ts`, `movimientos.ts` |
+| AC-25 | Implementado después en E3.1/E3.2; no acreditado por E1.2 | `anticipos.ts`, `compartidos.ts` |
+| AC-26 | Sin consumidor runtime: `anual`/`mensual` solo se almacenan | `plan-anual.ts`, `flujo-mensual.ts` |
+
+Estas implementaciones no cambian los **27 PASS E1.2** ni los **4 contratos**. AC-19/24/25/26
+siguen C; sus pruebas posteriores pertenecen a sus propias entregas.
+
+**H-SPEC02-01 abierto:** la vista de impacto no declara exhaustivamente los consumidores
+pendientes ni muestra los planes anuales; ver [specification](02-clasificacion-specification.md)
+y tracker. No se corrige en esta PR.
+
 ## Capturas e inspección visual
 Artefactos ignorados: `artifacts/e1-2/*.png`, en CI junto a e1-1 en el artifact
 `e1-1-screenshots` (7 días). No DB/claves/factores en artifacts ni en Git.
@@ -95,4 +112,5 @@ Aprobación final: usuario sobre 58b51f9 tras auditoría de Álex, 2026-10-21.
 CI de ese SHA: push 39569358781 y PR 39569369542 SUCCESS. El cierre documental
 no cambia código/pruebas ni reclasifica aceptación. SHA de squash y CI posterior
 verificables en PR #11; las 27 filas PASS y 4 contratos futuros se conservan.
-Siguiente acción: esperar autorización antes de E1.3; no desplegar.
+**Siguiente acción:** revisión documental de SPEC02 y H-SPEC02-01; no iniciar SPEC03
+ni modificar código. E1.3 y entregas posteriores avanzaron por sus propias specs.
