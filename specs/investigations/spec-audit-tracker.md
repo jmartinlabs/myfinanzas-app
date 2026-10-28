@@ -1147,6 +1147,63 @@ disponibilidad del efectivo en una garantía implícita de
 suficiencia. Mantener seguimiento separado de los defectos
 confirmados H-SPEC04-02/03/04.
 
+## Segunda inspección técnica — SPEC31 SQLite/backup y restauración (2026-10-28)
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Contraste **estático** de `backup.ts`, `private-state.ts`,
+`database-identity.ts`, `database-schema.ts`, SPEC31 y
+su `testplan/progress`. No se ejecutó proceso SQLite, age,
+restauración, prueba sobre VPS ni simulacro físico.
+
+**Resultado de esta revisión:** no se identifica nuevo defecto
+reproducido en las rutas examinadas. Las guardas clave aparecen
+implementadas y existen pruebas históricas asociadas, pero
+**no equivale a certificar despliegue/durabilidad en producción**.
+
+- **Origen y clave:** `private-state.ts:117-195` exige rutas
+  canónicas y área privada, valida archivo DB/clave y sidecars,
+  verifica identidad productiva/huella en el mismo handle SQLite
+  antes de entregar la conexión. Los controles de inode/owner/modo
+  y `O_NOFOLLOW` en la lectura de clave no deben confundirse con
+  cobertura de ataques físicos fuera del modelo.
+- **Copia consistente:** `backup.ts:40-67,69-207` hace
+  `VACUUM INTO` a snapshot privado, comprueba
+  `integrity_check`, `foreign_key_check`, versión/manifest,
+  enlaza DB con su clave y cifra separadamente la base y la clave
+  mediante age. Realiza `fsync` y publica un directorio completo
+  por la rutina de `private-state.ts` en lugar de sobreescribir
+  destino existente. La atomicidad de **publicación lógica**
+  no implica durabilidad física garantizada tras corte eléctrico.
+- **Restore sin pisar datos:** `backup.ts:210-343` exige destino
+  nuevo; valida checksum, antigüedad de la copia (24h salvo
+  aceptación explícita), integridad, versión, origen/identidad y
+  clave. Antes de publicar revoca `sessions`, desafíos y tablas
+  de intentos identificadas por versión; conserva datos y
+  auditorías del snapshot. No reinyecta saldos ni cambia la
+  identidad del usuario por inventar datos.
+- **Límites vigentes:** `31-sqlite-produccion-progress.md:104-135`
+  advierte que un `fsync` fallido después del rename puede
+  dejar un conjunto íntegro cuya durabilidad no se puede
+  prometer, y que UID/root, Linux/glibc/renameat2, WAL/volumen,
+  recuperación tras pérdida física y despliegue real no están
+  certificados. La integración de PR #25/#48 **no elimina**
+  esos riesgos; no tratar CI verde como simulacro de desastre.
+  SPEC32 rootless continúa en PR #30 Draft/no merge.
+
+### Ensayos pendientes recomendados, sin autorización para ejecutarlos
+
+| ID | Escenario | Oráculo / riesgo |
+| --- | --- | --- |
+| F31-T1 | Snapshot con escritor concurrente y WAL activo; restaurar en directorio privado nuevo | Datos, IDs, auditoría, versión y checksum coherentes; clave correcta; no alterar DB fuente |
+| F31-T2 | Crear copia y provocar fallo de `fsync` antes/después de `rename` | Distinguir rechazo/limpieza antes de publicación de conjunto ya publicado que debe preservarse e inspeccionarse; no sobrescribirlo |
+| F31-T3 | Restaurar origen production con identidad distinta o clave cambiada; probar symlink/hardlink y sidecars | Fallo seguro sin reutilizar contraseña/MFA ni sustituir estado preexistente |
+| F31-T4 | Instalar raíz/UID y volumen del entorno rootless real (solo cuando autorizado) | Comprobar permisos 0700/0600, ownership del contenedor, `renameat2`, WAL, espacio y recuperación duradera; no extrapolar desde CI |
+
+**Veredicto:** SPEC31 sigue **en inspección** (ya integrada
+técnicamente), sin nuevo hallazgo técnico confirmado. Riesgos
+de operación y recuperación física abiertos. SPEC32 es dependencia
+de despliegue, no una corrección ya autorizada; no reanudar PR #30.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
