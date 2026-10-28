@@ -143,10 +143,10 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 13 | Anticipos | En inspección (no cerrada) | H-TRANS-01 (ampliación): progress deja PR #71 DRAFT y QA pendiente pese a integración; motor rol/par cotejado parcialmente. | SPEC 13, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #71 `b146eda` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 14 | Gastos compartidos | En inspección (no cerrada) | H-TRANS-01 (ampliación): checkpoint D5 conserva PR #90 Draft/no merge; Base B y D5 ya integradas, B-T11 todavía futuro. | SPEC 14, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #75 `5ad75ed`; #90 `cf6954a` integradas. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
-| 15 | Vehículos e ITV | Pendiente | — | — | — | — | — | — |
-| 16 | Revisión Comida | Pendiente | — | — | — | — | — | — |
-| 17 | Deuda completa | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
-| 19 | Instrumentos y Compras de inversión | Pendiente | — | — | — | — | — | — |
+| 15 | Vehículos e ITV | En inspección (no cerrada) | H-TRANS-01: progreso y testplan anteriores a PR #81 fusionada; compatibilidad anual E2.4 examinada parcialmente. | SPEC15 y `vehiculos.ts`/tests. | Documentos históricos conservados; límites anuales pendientes de contraste exhaustivo. | PR #81 MERGED `f5bf032`. | 2026-10-28 · inspección documental/código. | Cobertura histórica sin proveedor; no declarar total anual completo por ausencia de hechos. |
+| 16 | Revisión Comida | En inspección (no cerrada) | H-TRANS-01: progreso mantiene PR #82 abierta/no merge; fuente temporal central presente, sin duplicar Movimientos. | SPEC16, `revision-comida.ts`, `revision-comida-ledger.ts` y pruebas. | Conservar historial sin equiparar fixtures al Excel. | PR #82 MERGED `26b6f0c`. | 2026-10-28 · inspección documental/código. | AC-25 (equivalencia física) abierto; E3.5 futuro. |
+| 17 | Deuda completa | Revisada parcialmente (no cerrada) | Sin `progress` coherente con fase de diseño; specification/wireframes no aprobados, 0 pruebas funcionales ejecutadas. No hallazgo funcional por falta de desarrollo. | SPEC17, brainstorming y testplan; Deuda E1.6 como dependencia. | No crear progress innecesario hasta autorización/desarrollo. | Sin DEV17 ni PR funcional acreditada. | 2026-10-28 · revisión de gate documental; sin aprobación de SPEC17. | D1–D7 confirmadas, contrato completo pendiente; mantener UNRUN. |
+| 19 | Instrumentos y Compras de inversión | En inspección (no cerrada) | H-TRANS-01: specification/testplan conservan PR #95 draft/no merge; progreso reconoce integración y seis AC PARCIAL. | SPEC19, `instrumentos.ts`, `ciclos.ts` y fuentes de inversión. | Distinguir evidencia histórica, integración y E4.2 pendiente. | PR #95 MERGED `156a50d`. | 2026-10-28 · documental/código parcial; sin cierre. | AC03/24/27/30/33/34 PARCIAL; fuente temporal inversión fuera de E4.1. |
 | 20 | Histórico precontrol | Pendiente | — | — | — | — | — | — |
 | 21 | Pendientes y conciliación | Pendiente | — | — | — | — | — | — |
 | 22 | Ventas y posición de bróker | Pendiente | Wireframes y capturas asociadas. | — | — | — | — | — |
@@ -256,7 +256,7 @@ Esta ronda NO cierra ninguna SPEC.
 ### H-TRANS-01 — Progresos de varias SPEC sin estado de integración vigente (documental, bajo)
 
 Hallazgo **transversal único** para evitar hallazgos repetidos de la misma
-naturaleza; inicialmente observado en SPEC07–10, ampliado después a SPEC13–14.
+naturaleza; inicialmente observado en SPEC07–10 y ampliado a SPEC13–16 y SPEC19.
 La relación con cada SPEC se conserva en su fila de seguimiento.
 
 | SPEC | Evidencia documental que permanece | Integración verificada en GitHub |
@@ -267,6 +267,9 @@ La relación con cada SPEC se conserva en su fila de seguimiento.
 | 10 | `10-plan-anual-progress.md:3-7,90-100`: candidato y gate Linux/merge pendientes; `testplan.md:117-132` remite a CI por SHA | PR #61 MERGED, squash `e1d6dba` |
 | 13 | `13-anticipos-progress.md:4-15`: PR #71 todavía Draft, candidato y gate de aceptación en curso pese a que el primer párrafo se declara vigente; el resto es historia conservada | PR #71 MERGED, squash `b146eda` |
 | 14 | `14-compartidos-progress.md:8-32,282-375`: «PR #90 Draft; sin merge», aun cuando registra QA/CI D5; Base B separada | PR #75 MERGED `5ad75ed` y PR #90 MERGED `cf6954a` |
+| 15 | `15-vehiculos-itv-progress.md:3-9,123-139`: candidato local «sin publicar», CI de SHA nuevo pendiente | PR #81 MERGED `f5bf032` |
+| 16 | `16-revision-comida-progress.md:3-6,88-126`: DEV en revisión, PR #82 abierta y merge pendiente; la spec conserva gates históricos | PR #82 MERGED `26b6f0c` |
+| 19 | `19-instrumentos-compras-inversion-specification.md:1499-1510` y `testplan.md:334-343`: PR #95 Draft/no merge; su propio `progress.md:12-16,38-47` ya registra integración | PR #95 MERGED `156a50d` |
 
 **Causa documental probable:** los cierres se realizaron mediante integración en
 GitHub sin actualizar después las cabeceras del progreso; los relatos históricos
@@ -333,6 +336,64 @@ Estas SPEC **siguen en inspección**.
 desglose/cobertura de Flujo mensual, protección de foto de Neto de apertura,
 rectificación de recuperaciones y atribución D5/compartidos, incluyendo tests
 actuales y dependencias E3.5/E4. No corregir producto ni ampliar estados sin prueba.
+
+## Auditoría global — cuarta pasada del lote D (SPEC15,16,17,19), 2026-10-28
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Se contrastaron la documentación `specification`/`progress`/`testplan`
+disponible, integración de PR reales, código de Vehículos, Revisión Comida,
+Instrumentos y el contrato temporal de Ciclos. **Lectura/inspección estática**,
+sin ejecución nueva de CI ni comparación del Excel físico.
+
+### H-TRANS-01 — ampliación de vigencia documental a SPEC15,16 y 19
+
+- **SPEC15:** `15-vehiculos-itv-progress.md:3-9,123-139` se presenta como
+  candidato sin publicar y declara CI Linux pendiente. La PR funcional #81 está
+  **MERGED** (`f5bf032`). La incidencia móvil P2 descrita en progreso/testplan
+  forma parte del historial de QA; no se presume que siga abierta después del merge.
+- **SPEC16:** `16-revision-comida-progress.md:3-6,88-126` conserva estado
+  de revisión, PR #82 sin merge y autorización futura; #82 está **MERGED**
+  (`26b6f0c`). La documentación mantiene **AC-25 abierto** por falta de
+  contraste autorizado con el Excel v5.11; no falsear equivalencia física ni
+  declarar E3.5 completada.
+- **SPEC19:** `19-instrumentos-compras-inversion-specification.md:1499-1510`
+  y `testplan.md:334-343` todavía indican PR #95 Draft/no merge; el progreso
+  reconoce integración y GitHub confirma **MERGED** (`156a50d`).
+  **Seis AC permanecen PARCIAL:** 03/24/27/30/33/34, aceptados como residuales
+  sin convertirlos en PASS. La integración futura de la fecha de Compras/Ventas a
+  la referencia central está asignada a **E4.2-AC3**, no a E4.1.
+
+**Verificaciones de código realizadas:**
+- `apps/api/src/vehiculos.ts:83-189` filtra Gastos vigentes por REF y año
+  natural, delega por Partida al `annualExecution` E2.4 y separa subtotal,
+  cobertura y hechos fuera de corte. El `AnnualProvider` histórico no está
+  conectado por defecto; el total anual completo **no se infiere** de la
+  mera ausencia de hechos. No se acredita cobertura histórica global.
+- `apps/api/src/revision-comida.ts:108-235` distingue `Detalle`/`Reposicion`,
+  devolución `Entrada` explícita y campos de evidencia; su cobertura por ciclo
+  no presume continuidad histórica a partir de min/max
+  (`revision-comida.ts:911-935`). La fuente de fecha en
+  `revision-comida-ledger.ts` alimenta el contexto único de Ciclos; no
+  genera un segundo Gasto de Movimientos.
+- `apps/api/src/ciclos.ts:159-164` sigue agregando **Movimientos +
+  Revisión Comida**; no hay fuente temporal de operaciones de inversión
+  instalada en este contrato. `spec19 §4.6` asigna expresamente su entrega a
+  E4.2, por lo que **no es un defecto atribuible a DEV19**.
+
+### SPEC17 — diseño pendiente, ausencia justificada de progreso funcional
+
+`17-e44-deuda-completa-specification.md:3-5,765-776` declara Q1–Q7
+confirmadas, pero specification y wireframes **NO aprobados**; el testplan
+`:3-8` marca todos los escenarios funcionales como **UNRUN**.
+No existe `17-*-progress.md` en `main`. En esta fase no se registra como fallo
+de producto ni se crea artificialmente un `progress`: solo se vigila el gate
+documental antes de una eventual implementación. E1.6 ya existe, pero E4.4
+es ampliación futura distinta.
+
+**Siguiente revisión del lote:** profundizar en pruebas de cobertura de Vehículos,
+vínculos E3.4 y operaciones/posición de inversión, comprobar relaciones E4.2 y
+dependencias antes de clasificar anomalías como defectos técnicos. Ninguna
+SPEC de este lote se declara cerrada. No hay correcciones ni PR autorizadas.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
