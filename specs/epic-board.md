@@ -1,3 +1,65 @@
+# Coordinación global — consolidado 2026-10-28 (post PR #107)
+
+Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
+Responsable único del tablero: coordinador global (OpenCode). Entrada en la rama
+`codex/docs-board-20261028`; su merge requiere aprobación expresa del usuario. Esta entrada
+no autoriza DEV, no autoriza el merge de otras PR y no autoriza despliegue.
+
+## Hechos verificados (git + `gh`, 2026-10-28)
+
+| Elemento | Estado verificado |
+| --- | --- |
+| `origin/main` | `a3956cf` — squash de PR #107; padre `2a50fbd` |
+| PR #107 / SPEC26-27 | MERGED `a3956cf`; CI `40679692741` `docs` SUCCESS (1m33s); SPEC26/E4.8 y SPEC27/E4.9 APPROVED |
+| PR #109 | MERGED `2a50fbd`; 86 referencias de GitHub canonicalizadas a `jmartinlabs` |
+| PR #108 | MERGED `ac1773c`; perfil CI `docs` para Markdown documental; `required` intacto |
+| Template #31 | MERGED `feadd6d`; default de Markdown documental con exclusiones protegidas |
+| Cuenta GitHub | `jmartinlabs`; remotos de MyFinanzas y template actualizados |
+| SPEC20 / E4.5 | APPROVED e integrada (`3d70fd6` / `f077b7e`); 59 AC documentales UNRUN |
+| SPEC22 / E4.2 | APPROVED; DEV no iniciado; D7/SPEC19 pendiente |
+| SPEC21 / E3.6 | documentación APPROVED; DEV no autorizado; E3.5/DEV18 STOP |
+| E4.1 | integrada `156a50d`, v18; 6 AC PARCIAL (AC-03/24/27/30/33/34) |
+| E4.8/E4.9 | specs y testplans aprobados; 33 AC UNRUN; DEV no autorizado |
+| Gates abiertos | DT3 (ventana/corte), DT4 (foto), DT6/T-BKP (backup/restauración) |
+| E4.3/E3.5 | no implementadas; valoración/Comida `No disponible` |
+| E4.4 | SPEC17 en revisión, no aprobada; sin código |
+| E4.5/E3.6 runtime | solo documentación; sin código; fuentes de lectura |
+| Checkout principal | `codex/dev12-flujo-mensual` `e66bbd3` + `specs/session-handoff.md` sin seguimiento: preservados |
+
+## Frentes y próxima decisión
+
+- **E4.8/E4.9:** no iniciar DEV hasta cerrar DT3, DT4 y DT6/T-BKP; E4.9 además queda
+  bloqueado hasta integrar E3.5/FIN_NETA. No se admite cierre parcial anticipado.
+- **E3.6:** documentación aprobada; requiere decisión técnica de rutas y autorización DEV
+  separada. E3.5 sigue STOP; agregados de Comida `No disponible`.
+- **E4.2:** especificación aprobada; no iniciar DEV hasta resolver D7/SPEC19 y el gate de
+  esquema.
+- **E4.4:** SPEC17 en revisión; no se reabre por inferencia.
+- **Detenidos:** DEV18/E3.5, DEV17/E4.4, B3/DEV32, PR50/PR51; sin cambios.
+- **CI:** la PR #107 midió `docs` en 1m33s frente a 3m43s de referencia; PR #108 no cambió
+  el workflow ni el check `required`.
+
+## Próxima acción segura
+
+1. Integrar este tablero mediante aprobación expresa.
+2. Elegir el siguiente frente: cerrar DT3/DT4/DT6 para E4.8/E4.9, o autorizar DEV de E3.6/E4.2
+   con sus gates separados.
+3. Recomendado: handoff y nueva sesión tras integrar el tablero; este checkpoint no autoriza
+   DEV ni reanudación automática.
+
+## Contexto de reanudación
+
+**STOP REQUESTED — NO AUTO-RESUME.** No hay ejecutores activos controlados por esta sesión.
+
+- **Checkpoint:** este apartado; rama `codex/docs-board-20261028`; merge pendiente de aprobación.
+- **Evidencia:** `a3956cf` (PR #107), `2a50fbd` (PR #109), `ac1773c` (PR #108),
+  `3d70fd6`/`f077b7e` (E4.5), `156a50d` (E4.1), `feadd6d` (template #31).
+- **Bloqueos:** DT3/DT4/DT6; E3.5/FIN_NETA; D7/SPEC19; SPEC17 E4.4 en revisión.
+- **Próxima sesión:** verificar Git/PR, leer este tablero y elegir frente; no reanudar
+  ejecutores ni fusionar PRs por inferencia.
+
+---
+
 # Coordinación global — consolidado 2026-10-27 (post PR #103)
 
 Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
