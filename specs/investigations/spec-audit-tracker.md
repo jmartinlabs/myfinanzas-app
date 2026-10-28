@@ -153,7 +153,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 26 | Precierre | En inspección (no cerrada) | H-SPEC26-01: falta consulta temporal `positionsFor(...,fin)` en E4.1, dependencia de integración futura, NO bug de código vigente; 16 AC UNRUN. | SPEC26 §Inversión a Fin, SPEC27 y `investment-engine.ts`. | Resolver posición a Fin desde motor único antes de DEV26, sin duplicar lógica ni crear foto. | Sin DEV26; SPEC aprobada documentalmente. | 2026-10-29 · revisión estática de firma y contratos; UNRUN. | Riesgo medio de inconsistencia entre efectivo a corte y unidades actuales si se reutiliza motor sin fecha. |
 | 27 | Cierre financiero | En inspección (no cerrada) | Dependencia H-SPEC26-01: la fotografía exige posiciones a Fin, aún no disponibles en E4.1; sin implementación ni AC ejecutados. | SPEC27 §Photo contract, T1/T2/T3, SPEC26 y `investment-engine.ts`. | Antes de DEV27: posición histórica verificable, E3.5/FIN_NETA, evidencia DT6/T-BKP; prohibido cierre parcial. | Sin DEV27; SPEC aprobada documentalmente. | 2026-10-29 · segunda inspección estática; UNRUN. | Riesgo de foto inconsistente si se combina cash a Fin con posiciones actuales; bloqueo externo/Comida vigente. |
 | 31 | SQLite producción | En inspección (no cerrada) | H-TRANS-01: cabecera specification mantiene implementación pendiente pese a PR #25 y #48 integradas; enmienda 31-E1 aprobada, riesgo R6 histórico no resuelto. | SPEC31, `database-identity.ts`, `private-state.ts`, backup, tests. | Corregir solo vigencia documental tras QA. | PR #25 MERGED `511fcba`; PR #48 MERGED `8fae7a4`. | 2026-10-28 · integración contrastada; sin auditoría de seguridad completa. | Runtime Linux específico y soporte fsync/WAL requieren pruebas operativas antes de despliegue. |
-| 32 | Ejecución rootless | En inspección (no cerrada) | SPEC32 aprobada, DEV32 en PR #30 DRAFT/no merge; testplan/progress existen solo en PR, no en `main`. No asumir completitud ni despliegue. | SPEC32, PR #30, infra y rootless CI. | Respetar fase pausada; no crear documentos duplicados. | PR #29 doc MERGED `a7fb9d8`; PR #30 OPEN DRAFT `24ca206`. | 2026-10-28 · estado remoto corroborado; sin cierre. | Migración/runtime Podman rootless y pruebas AC22 pendientes; VPS no autorizado. |
+| 32 | Ejecución rootless | En inspección (no cerrada) | H-SPEC32-01: candidata PR #30 basada en v16 mientras `main` es v18; matriz AC-18/rollback y snapshot v7–v16 no cubren nuevas tablas v17/v18. AC-18 y AC-22 pendientes para candidato actual, no bug en `main`. | PR #30 `24ca206`, `database-identity.ts` ambas ramas, `release-fixture.mjs`, testplan/progress32 y specs31/32. | Actualizar/reconciliar rama y ampliar fixtures/contratos y CI Linux/rootless para v18 antes de recomendar merge; respetar pausa/no PR. | PR #29 MERGED; #30 OPEN DRAFT head `24ca206`, base histórica `26b6f0c` (esquema16); `main` `1ed2a83` (esquema18). | 2026-10-29 · comparación directa de GitHub y contratos; sin ejecutar ni modificar producto. | Alta de aceptación/compatibilidad del release; no afirmar degradación automática de esquema al fusionar ni despliegue. |
 
 ## Auditoría global — primera pasada del lote A (SPEC04–06), 2026-10-28
 
@@ -1341,6 +1341,94 @@ inversión no verificadas.
 **Estado:** documentación/gates revisados más profundamente, las
 cuatro SPEC siguen **abiertas**; no dar por implementado ni
 probado ningún AC todavía UNRUN.
+
+## Segunda pasada técnica — SPEC32 rootless: desviación de baseline, release y restauración (2026-10-29)
+
+**Lectura remota:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`,
+PR [#30](https://github.com/jmartinlabs/myfinanzas-app/pull/30)
+**OPEN/DRAFT**, HEAD `24ca206e8dab2a40ca504f49ffab2a9756721580`.
+No merge, tests nuevos, acceso a VPS, modificación de infraestructura ni cambio de código.
+La especificación 32 está aprobada para desarrollo, pero las fases de
+exposición Caddy/HTTPS, offsite y activación requieren otros permisos.
+
+### H-SPEC32-01 — Gate de compatibilidad rootless desfasado respecto a `main` (integración, prioridad alta)
+
+**Hechos comprobados en código y documentación:**
+
+1. `apps/api/src/database-identity.ts:4`: rama PR #30 declara
+   `schemaVersion=16`, `main` vigente declara `18`.
+   La PR se reconcilió en 2026-10-27 con `main` `26b6f0c`
+   (v16); aún no demuestra la integración sobre `main` actual.
+2. `specs/32-ejecucion-rootless-testplan.md` **en la propia PR**,
+   sección «Estado vigente» y «AC-18/D2», mantiene una matriz
+   de **rollback 16→16** y continuidad por módulos v7–v16, con
+   ejecución Linux/rootless del candidato pendiente. **AC-18 y
+   AC-22 están pendientes para el candidato vigente**, aunque una
+   tabla inferior conserve PASS históricos para un SHA anterior
+   `3094563`. `specs/32-ejecucion-rootless-progress.md`
+   reitera que la CI posterior no hereda esos resultados.
+3. `infra/tests/release-fixture.mjs:5-17` (PR #30) fotografía
+   32 tablas hasta v16; **no incluye** `movimiento_compartido`
+   (v17) ni `instrumentos`, `operaciones_inversion`,
+   `instrumento_audit`, `operacion_inversion_audit` (v18).
+   `apps/api/src/compartido-aportacion-schema.ts` instala v17;
+   `apps/api/src/instrumento-schema.ts:4-105` instala v18.
+   Que `infra/release.py:42-54` derive dinámicamente la
+   etiqueta de contrato de `schemaVersion` y `backup.ts`
+   **no** completa por sí mismo la matriz de hechos y auditorías.
+4. El contrato aprobado `specs/32-ejecucion-rootless-
+   specification.md:153-177,227-234` exige demostrar
+   actualización y rollback compatibles de esquema, datos,
+   autenticación y **todas las escrituras confirmadas**.
+   Los tests de matriz de PR #30, en su forma actual, **no
+   proporcionan ese oráculo para las novedades de v17/v18**.
+
+**Consecuencia:** no existe evidencia suficiente para aceptar PR
+#30 sobre la base financiera vigente. No se afirma que
+fusionarla **downgrade automáticamente** SQLite: Git podría
+preservar los archivos v18 de `main`, pero aun así la integración
+de scripts/test/imagen con v18 no se ha demostrado. **Esto es un
+bloqueo de verificación/aceptación, no una brecha explotada ni un
+defecto nuevo del código financiero integrado.**
+
+**Pruebas focales propuestas (NO ejecutadas):**
+
+| ID | Escenario ficticio | Oráculo de aceptación |
+| --- | --- | --- |
+| F32-B1 | Reconciliar PR con main v18 y construir imagen/manifiesto desde la nueva base | Contrato/esquema e imagen corresponden al mismo SHA; no se pierde ninguna migración ni guardia de Dev31 |
+| F32-B2 | Datos v17: aportación Compartido + sus relaciones/auditoría; actualizar y retornar a release anterior compatible | Referencias, importes, participaciones, IDs, auditorías, clave y resultados derivables iguales tras ida/vuelta |
+| F32-B3 | Datos v18: Instrumento y Compra vigentes con comisión, cantidad y efectivo, además de auditoría e intentos donde proceda | Conservar cantidades/efectivo EUR, relaciones, estados, auditorías e identidad; ninguna Compra se duplica ni se vuelve Gasto |
+| F32-B4 | Rollback 18→versión anterior de esquema incompatible o manifiesto con prueba insuficiente | Bloqueo seguro, sin pérdida de escrituras ni restore sobre estado existente; mantener DB real intacta |
+| F32-B5 | Suite completa + pruebas de imagen/rootless sobre HEAD final reconciliado en runner compatible | AC-18 y AC-22 con PASS del SHA exacto, no por herencia de 3094563; R6/fsync siguen con límites explícitos |
+
+**Recomendación:** mantener **PR #30 DRAFT/pausada**; cuando el
+usuario autorice reanudar, actualizar baseline y pruebas con
+un propietario serializado, verificar SHA final y revisar
+independientemente antes de pedir permiso de merge. Sin ampliar
+el alcance a Caddy, VPS, copias externas ni permisos de producción.
+
+### Límite con SPEC31 y E4.9
+
+El backup/restore local cifrado e íntegro de SPEC31, y los
+simulacros rootless efímeros de SPEC32, **no cumplen todavía**
+DT6/T-BKP del cierre: ese gate exige copia **externa**,
+custodia independiente y restauración **real acreditada** con
+frecuencia definida. SPEC32 separa explícitamente fase B
+(offsite/retención/alertas) y fase de activación. No concluir
+que el destino externo existe o que se puede cerrar un Ciclo
+por haber instalado `age` o disponer de un snapshot local.
+
+### Observación de seguridad y permisos
+
+`infra/runtime.py` solo **renderiza** una unidad de usuario;
+el runbook indica que no instala ni arranca nada.
+Los parámetros `keep-id`, UID, puerto loopback, permisos
+0700/0600, state/WAL y restricciones rootless
+constan en candidato, pero las evidencias históricas
+del runner Ubuntu no sustituyen la validación del Debian
+13 y filesystem reales. La PR no toca Caddy activo.
+No se registra nueva vulnerabilidad sin ejecución/superficie
+de ataque demostrada.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
