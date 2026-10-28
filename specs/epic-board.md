@@ -10,14 +10,30 @@ el cierre E4.9.
 - **DT3 · último ciclo:** sin siguiente Inicio no hay cierre ni Fin manual; cuando exista
   un ciclo posterior, su Inicio acredita el Fin y el ciclo pasa a elegible.
 - **DT3 · elegibilidad:** cerrable todo ciclo con ventana finita, S0 y núcleo consistente.
-  Si hay cierres posteriores, se exige `CIERRE_FUERA_DE_ORDEN` con motivo; no se alteran.
-  Un ciclo sin hechos se cierra con `Sin hechos` explícito, nunca con totales 0.
+  Si hay cierres posteriores, se exige `CIERRE_FUERA_DE_ORDEN` con motivo y una
+  comprobación de coherencia con sus fotos; una contradicción financiera bloquea con
+  `INCOHERENCIA_CON_CIERRE_POSTERIOR`. Un ciclo sin hechos solo se cierra si se acredita
+  ausencia en todas las fuentes aplicables; un cero informado no es ausencia.
 - **DT3 · plan siguiente:** sin precarga automática; E2.3 mantiene la copia explícita con
   revisión previa, ya vigente.
 - **DT4 · foto:** contrato de SPEC27 aprobado. Trimestre/año usan la versión vigente al
   generar el agregado, registran la versión y la congelan; todas se conservan sin poda.
+  Los metadatos inmutables incluyen versión de aplicación y de esquema.
 - **DT6/T-BKP:** el usuario no dispone todavía de destino externo. Criterio fijado: copia
   externa cifrada + restauración aislada probada + ensayo mensual. El gate sigue abierto.
+
+### Enmienda — revisión funcional de Álex (2026-10-28)
+
+Precisiones compatibles, sin reabrir DT3/DT4:
+
+- **AC-20:** comprobación de coherencia con las fotos de cierres posteriores; una
+  contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; aviso y
+  motivo no bastan. «Último cierre» se define por orden de registro, no por Fin; E4.10
+  no se desarrolla.
+- **AC-21:** `Sin hechos` exige ausencia acreditada en todas las fuentes financieras
+  aplicables según la tabla de fuentes y cobertura; ausencia de Movimientos ≠ ausencia de
+  hechos; un cero informado es un hecho.
+- **DT4:** metadatos inmutables con versión de aplicación y de esquema.
 
 ### Estado verificado
 
@@ -29,13 +45,13 @@ el cierre E4.9.
 | SPEC27/E4.9 | DT3/DT4 resueltas; DT6 abierto; AC-20/AC-21 añadidos; AC UNRUN |
 | E4.8 DEV | no autorizado; desbloqueado por DT3/DT4, sujeto a autorización expresa |
 | E4.9 DEV/cierre | bloqueado por DT6/T-BKP y E3.5/FIN_NETA; no autorizado |
-| PR documental | [#111](https://github.com/jmartinlabs/myfinanzas-app/pull/111) publicada; merge pendiente de aprobación |
-| CI `docs` | run `40698773650` SUCCESS sobre `e8deceb`; el commit de este registro se valida en la misma PR |
+| PR documental | [#111](https://github.com/jmartinlabs/myfinanzas-app/pull/111) con enmienda de revisión; merge pendiente de aprobación |
+| CI `docs` | ver checks de PR #111; debe estar verde sobre el HEAD final antes del merge |
 | Ejecutores | ninguno activo |
 
 ### Próxima acción segura
 
-1. CI `docs` PASS registrada; el commit final del tablero se valida en la misma PR.
+1. Verificar CI `docs` de la enmienda en la PR #111.
 2. Obtener aprobación explícita del usuario antes del merge.
 3. Tras el merge, decidir la autorización DEV de E4.8. E4.9 sigue bloqueado: no se
    reanuda ni se cierra por inferencia.
@@ -43,9 +59,8 @@ el cierre E4.9.
 ### Checkpoint
 
 **Sin ejecutores activos; no hay reanudación automática.** Evidencia: `a7808bd`, rama
-`codex/docs-dt3-dt4-resolution` (`377b9bc`), PR #111, SPEC26/SPEC27 y sus testplans.
-Bloqueos: DT6/T-BKP (sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni
-pruebas.
+`codex/docs-dt3-dt4-resolution`, PR #111, SPEC26/SPEC27 y sus testplans. Bloqueos:
+DT6/T-BKP (sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni pruebas.
 
 # Coordinación global — consolidado 2026-10-28 (post PR #107)
 

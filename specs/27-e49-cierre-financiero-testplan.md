@@ -10,7 +10,7 @@ Base: `main` `f077b7e`, esquema 18.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | UNRUN — diseño | — |
+| AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; metadatos con versión de app y esquema; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | UNRUN — diseño | — |
 | AC-02 | Ciclo sin siguiente Inicio | Bloqueo por `SIN_SIGUIENTE_INICIO`; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | UNRUN — diseño | — |
 | AC-03 | Movimiento en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | UNRUN — diseño | — |
 | AC-04 | Mover Movimiento desde/hacia ventana cerrada | 409; fecha antigua y nueva comprobadas | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | UNRUN — diseño | — |
@@ -28,8 +28,8 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-16 | Operación E4.1 anterior al ciclo y posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo | Bun Test de corte E4.1 | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
 | AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | UNRUN — diseño | — |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto | Bun Test | Documental; API futura | DTO de bloqueo | UNRUN — diseño | — |
-| AC-20 | Cerrar con cierres posteriores ya existentes | Exige `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera posteriores | Bun Test + UI | Documental; API/UI futura | Auditoría y cierres intactos | UNRUN — diseño | — |
-| AC-21 | Cerrar ciclo sin hechos | Permitido; foto con `Sin hechos` explícito; sin totales 0 | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
+| AC-20 | Cerrar con cierres posteriores, coherentes o contradictorios | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación; sin contradicción no altera posteriores; con contradicción bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR` | Bun Test + UI | Documental; API/UI futura | Auditoría, foto posterior y bloqueo | UNRUN — diseño | — |
+| AC-21 | Cerrar ciclo sin hechos | Solo con ausencia acreditada en todas las fuentes aplicables; foto con `Sin hechos`; ausencia de Movimientos ≠ ausencia de hechos; cero informado se captura como 0 | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
 
 ## Regression checks
 
@@ -46,6 +46,9 @@ UNRUN. Wireframes pendientes; no hay capturas 390/1440 de E4.9.
 ## Limitations and next action
 
 AC-19 (cierre parcial anticipado con re-cierre futuro) queda **descartado** por la
-resolución funcional; no se incluye como caso aprobado. La aprobación de spec/wireframes,
-DT6/T-BKP y cualquier DEV son gates separados; DT3/DT4 ya están resueltas. No se ejecutan
-pruebas hasta autorización de desarrollo.
+resolución funcional; no se incluye como caso aprobado. AC-20/AC-21 precisan la revisión
+funcional de Álex del 2026-10-28: coherencia con fotos posteriores, bloqueo por
+contradicción y acreditación de ausencia en todas las fuentes. «Último cierre» se define
+por orden de registro, no por Fin; E4.10 no se desarrolla. La aprobación de
+spec/wireframes, DT6/T-BKP y cualquier DEV son gates separados; DT3/DT4 ya están
+resueltas. No se ejecutan pruebas hasta autorización de desarrollo.

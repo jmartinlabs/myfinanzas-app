@@ -464,9 +464,10 @@ mantiene pendientes proveedor, recursos y operación sin autorizar contratación
 | DT9 | Rectificación excepcional de ciclos antiguos y efecto en fotografías trimestrales/anuales y cierres posteriores | No habilitar excepción hasta otra especificación aprobada | Usuario; vía ordinaria solo último cierre según P5 |
 | DT10 | Proveedor/recursos, DNS/TLS del dominio previsto, operación segura, responsabilidades, ensayo privado y ventana de corte | Gate operativo P7 posterior; no compra/despliegue en STEP 4 | Usuario autoriza expresamente recursos, despliegue y traspaso |
 
-**Resueltas desde el 2026-10-28:** DT3 (último ciclo, elegibilidad/orden y plan
-siguiente) y DT4 (contenido, metadatos, versiones y retención de fotos) quedan cerradas
-en [SPEC26](26-e48-precierre-specification.md) y
+**Resueltas desde el 2026-10-28:** DT3 (último ciclo, elegibilidad/orden con coherencia
+de cierres posteriores y plan siguiente) y DT4 (contenido, metadatos, versiones y
+retención de fotos) quedan cerradas en
+[SPEC26](26-e48-precierre-specification.md) y
 [SPEC27](27-e49-cierre-financiero-specification.md). DT6/T-BKP sigue abierto: no hay
 destino externo y el cierre real exige copia externa y restauración probada.
 

@@ -55,8 +55,13 @@ Decisiones del usuario, sin reabrir M1–M6:
   elegible.
 - **DT3 · elegibilidad y orden:** es cerrable todo ciclo con ventana finita, S0 y núcleo
   consistente. Si ya existen cierres posteriores, el precierre muestra
-  `CIERRE_FUERA_DE_ORDEN` y el cierre exige motivo; no altera cierres posteriores. Un
-  ciclo sin hechos se cierra con `Sin hechos` explícito, nunca con totales 0.
+  `CIERRE_FUERA_DE_ORDEN` y exige motivo; además comprueba la coherencia con las fotos
+  posteriores comparando los valores capturados que dependen del ciclo (al menos
+  ventana, S0 y posiciones/efectivo a Fin). Una contradicción financiera bloquea con
+  `INCOHERENCIA_CON_CIERRE_POSTERIOR`; el aviso no basta. Un ciclo sin hechos solo se
+  cierra si se acredita ausencia en todas las fuentes aplicables según la tabla de
+  fuentes y cobertura; no se deduce de la falta de Movimientos y un cero informado no
+  es ausencia.
 - **DT3 · plan siguiente:** sin precarga automática; E2.3 ya resuelve copia explícita
   con revisión previa y sin inventar histórico.
 - **DT4:** el contenido, metadatos, versiones y retención de la foto se resuelven en
@@ -126,7 +131,9 @@ La UI no muestra `0` por ausencia. Distingue `No disponible`, `Parcial`, `Bloque
 
 ## Empty, loading and error states
 
-- **Vacío:** ciclo sin hechos en una fuente capturable; se muestra vacío explícito, no 0.
+- **Vacío por fuente:** una fuente capturable sin hechos se muestra vacía explícita, no
+  0; no equivale a `Sin hechos` del ciclo. `Sin hechos` exige ausencia acreditada en
+  todas las fuentes aplicables y un cero informado es un hecho, no ausencia.
 - **Carga:** conserva filtros y ciclo; no muestra cifras provisionales.
 - **Error de fuente:** conserva identidad y hechos conocidos; declara la cifra no
   verificable y ofrece reintento.
@@ -156,6 +163,8 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 - E4.3/E4.2/E4.4 no disponibles → aviso/parcial; no bloqueo por sí solo.
 - E3.5/FIN_NETA no disponible → precierre parcial con motivo; E4.9 bloqueado, sin foto.
 - Backup no verificable → `Bloqueado`.
+- Cierre fuera de orden con foto posterior incoherente → `Bloqueado` por
+  `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no se permite cerrar ni se escribe.
 - Cambio entre preview y confirmación → 409; E4.8 no confirma.
 - Cualquier intento de escritura, cierre o creación del ciclo siguiente → rechazo.
 - La vista no altera S0 ni la ventana.
@@ -188,4 +197,4 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 | AC-13 | Plan con líneas inconsistentes, duplicadas o no verificables | `Bloqueado`; motivo; no se captura plan |
 | AC-14 | E3.5/FIN_NETA no disponible | Precierre parcial con motivo; E4.9 queda bloqueado; no se presenta como completo |
 | AC-15 | Consultar estado por `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura |
-| AC-16 | Ciclo con cierres posteriores ya existentes; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; no bloquea por sí solo y no escribe |
+| AC-16 | Ciclo con cierres posteriores ya existentes, coherentes o contradictorios; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; sin contradicción no bloquea por sí solo; con contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no escribe |

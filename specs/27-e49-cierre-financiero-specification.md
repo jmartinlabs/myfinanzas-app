@@ -62,8 +62,22 @@ Decisiones del usuario, sin reabrir M1–M6:
 - **DT3 · elegibilidad:** es cerrable todo ciclo con ventana finita, S0 y núcleo
   consistente. Sin siguiente Inicio no hay cierre.
 - **DT3 · orden:** si ya existen cierres posteriores, el cierre exige
-  `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera cierres posteriores.
-- **DT3 · ciclo sin hechos:** se cierra con `Sin hechos` explícito, nunca con totales 0.
+  `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría, y una comprobación de coherencia con
+  las fotos de esos cierres. Si una foto posterior contradice financieramente el estado
+  que se pretende cerrar (ventana, S0, posiciones/efectivo u otro valor capturado del
+  que dependa), el cierre se **bloquea** con `INCOHERENCIA_CON_CIERRE_POSTERIOR`; el
+  aviso y el motivo no sustituyen el bloqueo. La comprobación compara, para cada foto
+  posterior, los valores capturados que dependen del ciclo que se cierra (al menos
+  ventana, S0 y posiciones/efectivo a Fin) con los que resultan del estado que se
+  pretende cerrar; cualquier diferencia bloquea. La contradicción se resolverá por la
+  vía que corresponda a E4.10/DT9, que no se desarrolla aquí.
+- **DT3 · «último» para E4.10:** «último cierre» es el cierre vigente sin otro cierre
+  registrado posterior, por orden de registro de cierres, no el ciclo con el Fin más
+  reciente. E4.10 sigue fuera de alcance.
+- **DT3 · ciclo sin hechos:** se cierra con `Sin hechos` solo si se acredita ausencia en
+  todas las fuentes financieras aplicables según la tabla de fuentes y cobertura. La
+  ausencia de Movimientos no equivale a ausencia de hechos y un cero informado es un
+  hecho capturado como 0, no `Sin hechos`.
 - **DT4 · contenido:** se aprueba la tabla «Photo contract» de esta especificación.
 - **DT4 · versiones:** cada cierre crea v1; un re-cierre crea v2 sin alterar v1. Todas
   las versiones son consultables.
@@ -129,7 +143,12 @@ Contratos conceptuales, sin implementación:
   posteriores; valoración no disponible. Un ciclo sin Compras nuevas no es vacío si hay
   posiciones anteriores.
 - Cambio entre preview y confirmación → 409; no foto parcial.
-- Doble cierre del mismo ciclo → conflicto; solo E4.10 reabre el último.
+- Doble cierre del mismo ciclo → conflicto; solo E4.10 reabre el último cierre por orden
+  de registro.
+- Cierre fuera de orden con foto posterior incoherente → `Bloqueado` por
+  `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no se escribe ni se emite foto.
+- `Sin hechos` exige ausencia acreditada en todas las fuentes aplicables; no se deduce de
+  la falta de Movimientos ni de valores 0 informados.
 - Cierre no crea ciclo siguiente ni altera su S0.
 - Foto inmutable: T2/T3 no la recalculan; vistas vivas pueden cambiar.
 
@@ -137,7 +156,7 @@ Contratos conceptuales, sin implementación:
 
 | Bloque | Contenido |
 | --- | --- |
-| Identidad | Ciclo, versión, fecha/actor/motivo, fingerprint |
+| Identidad | Ciclo, versión de foto, fecha UTC/actor/motivo, fingerprint, **versión de aplicación y versión de esquema** |
 | Ventana | Inicio, Fin, S0 y estado temporal |
 | Hechos | Movimientos del ciclo y totales |
 | Plan | `SinPlan` o plan final con líneas capturadas; nunca líneas inventadas |
@@ -156,12 +175,15 @@ sin E4.3; plan `SinPlan` o completo si se capturó.
 
 **Versiones y retención (DT4):** la foto nace como v1 y es inmutable; un re-cierre crea
 v2 y conserva v1. Trimestre/año usan la versión vigente al generar el agregado y
-registran cuál usaron; todas las versiones se conservan indefinidamente.
+registran cuál usaron; todas las versiones se conservan indefinidamente. Los metadatos
+inmutables incluyen versión de aplicación y de esquema, además de ciclo, versión de foto,
+fecha UTC, actor, motivo y fingerprint; no se recalculan al consultar.
 
 ## Exclusions
 
 - No `ciclo_id` en Movimientos.
 - No reapertura, fotos trimestrales/anuales ni cierre automático.
+- No se desarrolla E4.10 ni DT9; solo se precisa el significado de «último cierre».
 - No E4.3, E3.5/FIN_NETA, E4.2 ni E4.4.
 - No capturar una fuente como runtime si no existe; `No disponible` con motivo.
 - No habilitar cierre parcial anticipado por E3.5/FIN_NETA no disponible; AC-19
@@ -174,7 +196,7 @@ registran cuál usaron; todas las versiones se conservan indefinidamente.
 
 | ID | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- |
-| AC-01 | Ciclo con ventana finita, S0, plan o `SinPlan` y backup verificado; cerrar | Cierre y foto creados; estado `Cerrado`; sin ciclo siguiente |
+| AC-01 | Ciclo con ventana finita, S0, plan o `SinPlan` y backup verificado; cerrar | Cierre y foto creados; estado `Cerrado`; metadatos inmutables con versión de app y esquema; sin ciclo siguiente |
 | AC-02 | Ciclo sin siguiente Inicio | Bloqueado por `SIN_SIGUIENTE_INICIO`; no se inventa Fin ni se cierra |
 | AC-03 | Alta/rectificación/anulación de Movimiento con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura |
 | AC-04 | Mover un Movimiento desde/hacia una ventana cerrada | 409; fecha antigua y nueva comprobadas; sin escritura |
@@ -192,5 +214,5 @@ registran cuál usaron; todas las versiones se conservan indefinidamente.
 | AC-16 | Operación E4.1 anterior al ciclo y operación posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo |
 | AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no se inventan líneas |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto |
-| AC-20 | Cerrar un ciclo con cierres posteriores ya existentes | Exige `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera cierres posteriores |
-| AC-21 | Cerrar un ciclo sin hechos | Permitido; la foto registra `Sin hechos` explícito; no muestra totales 0 |
+| AC-20 | Cerrar un ciclo con cierres posteriores ya existentes, con y sin contradicción | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación de coherencia con las fotos posteriores; sin contradicción no altera cierres posteriores; con contradicción financiera bloquea con `INCOHERENCIA_CON_CIERRE_POSTERIOR` |
+| AC-21 | Cerrar un ciclo sin hechos | Permitido solo si se acredita ausencia en todas las fuentes financieras aplicables; la foto registra `Sin hechos`. Ausencia de Movimientos no equivale a ausencia de hechos; un cero informado se captura como 0, no como `Sin hechos` |
