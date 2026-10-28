@@ -101,7 +101,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
-| 02 | Clasificación | Revisada por Álex | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **F-SPEC02-01 abierto** (transparencia de cobertura). | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | PR documental pendiente | — | F-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
+| 02 | Clasificación | Revisada por Álex · PR pendiente | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **F-SPEC02-01 abierto** (transparencia de cobertura). | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) / `6163e5f` / CI `40732604479` PASS; HEAD final en checks | — | F-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
@@ -240,6 +240,7 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
 | 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
+| 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `6163e5f` + HEAD final | `40732604479` PASS | Pendiente | Pendiente |
 
 ## Próxima acción
 
