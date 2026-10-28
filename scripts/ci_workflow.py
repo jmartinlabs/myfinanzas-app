@@ -51,7 +51,7 @@ def required_workflow():
                 {'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'], 'ref': '${{ steps.context.outputs.ref }}'}},
                 {'id': 'snapshot', 'name': 'Freeze validated checkout', 'env': context, 'run': 'python3 scripts/ci_context.py snapshot'},
                 {'id': 'plan', 'name': 'Select conservative CI execution profile', 'run': CLASSIFY, 'env': context},
-                {'id': 'baseline', 'name': 'Repository, project and document checks', 'run': BASELINE},
+                {'id': 'baseline', 'name': 'Repository, project and document checks', 'run': BASELINE, 'env': context},
                 {'id': 'bun', 'if': app_if, **BUN},
                 {'id': 'install', 'if': app_if, 'run': 'bun install --frozen-lockfile'},
                 {'id': 'prepare', 'if': api_if, 'name': 'Prepare Linux API or full dependencies',

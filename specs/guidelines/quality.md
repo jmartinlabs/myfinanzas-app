@@ -119,9 +119,11 @@ referencia actualizados localmente; no hay publicación, merge ni evidencia remo
 | `./scripts/test-checks` | Regresiones anteriores más la suite CI compartida |
 | `./scripts/validate-template` / `./scripts/test-validator` | Contratos documentales y regresiones; control CI estructural compartido |
 
-Baseline obligatoria para docs/full: `check-repository`, `check-project`,
-`validate-template`, `test-checks`, `test-validator`, `git diff --check` y
-`git show --format= --check HEAD`. Para full: `bun install --frozen-lockfile`,
+Baseline documental obligatoria en CI `docs`: `check-repository`, `check-project`,
+`validate-template`, `git diff --check` y
+`git show --format= --check --first-parent HEAD`. `fast`, `critical`, `full` y
+`--full` local añaden `test-checks`, `test-validator`, `test-agent-usage`,
+`test-auto-agent-usage`, `test-verification` y `test-evidence`. Para full: `bun install --frozen-lockfile`,
 `bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
 `node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
 gate adicional AC23 conserva su condición actual de rama.
@@ -257,11 +259,13 @@ Chromium. Las pruebas de publicación atómica de copias requieren Linux/glibc;
 macOS no sustituye Linux compatible ni permite omitirlas silenciosamente;
 para SQLite QA local requiere Debian13/glibc equivalente según la política vigente.
 
-Baseline ejecuta check-repository, check-project, validate-template, test-checks,
-test-validator, test-agent-usage, test-auto-agent-usage, test-verification, test-evidence
-y controles Git de whitespace. Full añade typecheck, build, test y test:e2e una vez cada uno;
-permanece la excepción histórica AC23 de su rama. Docs solo omite la aplicación,
-con mensaje explícito. Cero pruebas, skips inesperados y errores fallan.
+El baseline documental de CI (`docs`) ejecuta check-repository, check-project,
+validate-template y los controles Git de whitespace. Las regresiones del harness
+(test-checks, test-validator, test-agent-usage, test-auto-agent-usage, test-verification,
+test-evidence) se ejecutan en fast/critical/full y en `--full` local; un diff solo
+documental no las ejecuta. Full añade typecheck, build, test y test:e2e una vez cada uno;
+permanece la excepción histórica AC23 de su rama. Docs omite la aplicación y las
+regresiones del harness, con mensajes explícitos. Cero pruebas, skips inesperados y errores fallan.
 Actions usa perfiles explícitos de esta misma entrada: ci-plan, baseline, ci y ci-result.
 Application/result conservan la interfaz local anterior; no determinan el grafo CI actual.
 Una fase por separado es evidencia parcial. Las regresiones invocan el CLI real,

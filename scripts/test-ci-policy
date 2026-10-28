@@ -390,6 +390,8 @@ class CiClassifierTests(unittest.TestCase):
         event = self.root / 'event.json'
         event.write_text(json.dumps({'before': self.base, 'after': head}))
         env = {**os.environ, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
+        # The synthetic event must not inherit the CI step's verified integration ref.
+        env.pop('CI_CHECKOUT_REF', None)
         command = ['python3', str(script), 'classify']
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'docs')
         self.assertEqual(subprocess.check_output(command + ['--base', self.base, '--head', head],
@@ -559,6 +561,9 @@ class CiWorkflowTests(unittest.TestCase):
             'selector error suppressed': lambda w: by_id(w, 'plan').update(run='python3 scripts/verify ci-plan || true'),
             'application bypasses entry': lambda w: by_id(w, 'verify').update(run='bun run test'),
             'baseline bypasses entry': lambda w: by_id(w, 'baseline').update(run='./scripts/test-checks'),
+            'baseline loses verified context': lambda w: by_id(w, 'baseline').pop('env'),
+            'baseline trusts declared profile': lambda w: by_id(w, 'baseline')['env'].update(
+                {'CI_PROFILE': '${{ steps.plan.outputs.profile }}'}),
             'missing concurrency': lambda w: w.pop('concurrency'),
             'wrong event group': lambda w: w['concurrency'].update(group='${{ github.event_name }}-${{ github.ref }}'),
             'no cancellation': lambda w: w['concurrency'].update({'cancel-in-progress': False}),
