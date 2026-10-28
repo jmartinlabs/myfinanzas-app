@@ -132,7 +132,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02 técnico, referencia posterior omite Comida; H-SPEC04-03 técnico, cambio Comida no invalida la huella de confirmación (prueba dinámica pendiente). | Spec/brainstorming 04; `movimientos.ts`, `ciclos.ts`, `Movimientos.tsx`, tests. | Conservar historial; no corregir sin aprobación. | PR #15 `b51b89b` integrada; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Medio: fecha/consentimiento de impacto temporal pueden quedar obsoletos; no se ha demostrado alteración directa de datos financieros. |
+| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02 técnico, referencia posterior omite Comida; H-SPEC04-03 técnico, cambio Comida no invalida huella; H-SPEC04-04 técnico, fallo de fuente temporal instalada no bloquea confirmación (repro dinámica pendiente). | Spec/brainstorming 04; `movimientos.ts`, `ciclos.ts`, `Movimientos.tsx`, tests. | Conservar historial; no corregir sin aprobación. | PR #15 `b51b89b` integrada; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Riesgo alto/provisional del control de confirmación ante fuente en error; no se ha demostrado pérdida ni modificación indebida de importes. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
 | 07 | Operación de Ciclos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/07-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #49 MERGED `1cdbc7c` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
@@ -618,6 +618,66 @@ funcional; no se corrige unilateralmente.
   central en estado `error`. No duplicar como hallazgo un escenario
   ya probado; la eventual caída del propio detector de tabla queda
   como riesgo excepcional de error de SQLite, **no defecto verificado**.
+
+## Inspección técnica — SPEC04, guardas ante fuente temporal instalada en error (2026-10-28)
+
+### H-SPEC04-04 — Movimientos admite plan/confirmación sin guardia de error de fuente instalada (técnico, alto provisional)
+
+**Contrato aprobado:** `specs/04-movimientos-specification.md:116-129,230-252`
+exige que el fallo de fuente instalada bloquee la confirmación de operaciones
+cuyo impacto debería verificarse; no tratar fallo como `sin_referencia`,
+`Sin cierres`, `cero` ni cobertura exitosa.
+`specs/03-ciclos-financiados-specification.md:74-86` establece referencia
+central como `error` sin máximo si falla una fuente instalada.
+
+**Ruta real revisada:**
+- `apps/api/src/revision-comida-ledger.ts:51-75` captura el fallo SQL de su
+  lector temporal como `{source:"Revisión Comida",state:"error"}`.
+- `apps/api/src/ciclos.ts:58-82,126-164` propaga el estado global
+  `referencia.estado="error"`, `fecha=null` y deja `corte=null`.
+  La prueba `apps/api/src/revision-comida.test.ts:525-534` acredita el
+  caso de columna `estado_registro` renombrada y el estado central `error`.
+- `apps/api/src/movimientos.ts:632-634` utiliza `cycleMaster(db)`,
+  que devuelve ciclos con referencia en error **sin lanzar excepción**.
+  `movimientos.ts:755-806` vuelve a consultar `cycleContext(db)` para
+  el impacto, pero **no comprueba** `contexto.referencia.estado`.
+  El DTO admite `referenciaAntes=null` y una fecha
+  `referenciaDespues` que ya se calcula de manera distinta
+  (H-SPEC04-02).
+- `movimientos.ts:825-829,831-885`: `previewMovement()` y
+  `writeMovement()` llaman a `plan()` sin un bloqueo por
+  `REFERENCE_ERROR`; validan únicamente huella, revisión de
+  Movimiento y `guard` opcional de cierres. La ruta HTTP de
+  `apps/api/src/app.ts:933-999` no instala ninguna otra guardia
+  de referencia temporal: solo transmite `options.movementGuard`
+  (protección diferente, ajena al lector Comida).
+
+**Hipótesis técnica verificable:** con una BD demo ficticia y contratos
+vigentes, crear primero un Movimiento y registrar una operación Comida;
+provocar `ALTER TABLE revision_comida RENAME COLUMN estado_registro TO
+estado_registro_broken` en fixture aislada (la prueba de Comida ya lo
+utiliza). Comprobar `cycleContext(db).referencia.estado === "error"`.
+Invocar `previewMovement()` y `writeMovement()` para un nuevo Ingreso
+normal o una rectificación permitida sin relación Comida, con sus
+huellas actualizadas. Verificar si se escribe/valida pese al error:
+el contrato exigiría bloqueo explícito y **ausencia de mutación**.
+Control negativo: fuente temporal disponible sin hechos debe seguir
+siendo admitida cuando las demás guardas lo permitan.
+
+**Alcance/gravedad:** a diferencia de H-SPEC04-03 (concurrencia entre
+vista previa y confirmación), H-SPEC04-04 trata de **fallo conocido en
+el momento de ambas operaciones**. La ausencia de la guarda es
+observable estáticamente, pero la ruta completa de API con base
+corrupta no se ha ejecutado; gravedad **alta provisional** por falta
+de comprobación de impacto, no porque se haya demostrado pérdida de
+datos. Revisar autorización de comportamiento para altas vs
+rectificación/anulación antes de imponer una prohibición más amplia
+que el contrato.
+
+**Dependencias:** H-SPEC04-02/03 y H-SPEC09-01 deben considerarse
+juntos: reutilizar estado/corte central, sin una implementación
+paralela de Comida ni un reloj/fallback artificial. No modificar
+código ni tests de producto sin aprobación del usuario.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
