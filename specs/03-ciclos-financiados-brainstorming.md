@@ -1,9 +1,11 @@
 # 03 — E1.3 Ciclos financiados: Brainstorming
-Status: APPROVED — Q1–Q3/diseños/especificación aprobados; PR #12 integrada.
+Status: APPROVED / INTEGRADA — PR #12 (`179942e`) y PR #13 (`ff9d18d`);
+auditoría 2026-10-28 con H-SPEC03-03 en corrección.
 Roadmap/context: [E1.3](roadmap.md#e13--periodos-financiados-mínimos-para-imputar-hechos),
 [R3](functional-reference-v5.11.md#r3--planificación-ciclos-y-nómina-secciones-56),
 [proyecto](project.md), [especificación provisional](03-ciclos-financiados-specification.md).
-Next action: dev 03 autorizado; ver progreso 03. Sin merge de implementación.
+Next action: estado de fuentes, integración y auditoría en
+[progreso 03](03-ciclos-financiados-progress.md); sin nueva ronda financiera.
 
 ## Autorización y procedencia — 2026-10-21
 Usuario autoriza spec 03 desde main; E1.1/E1.2 integradas, base a98d8f7.

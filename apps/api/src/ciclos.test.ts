@@ -24,6 +24,7 @@ import {
   getCycle,
   createCycle,
 } from "./ciclos";
+import { movementSource } from "./movement-ledger";
 const add = (
   db: Database,
   inicio: string,
@@ -117,6 +118,32 @@ test("03 AC03–08/10/16: calendario civil, referencia máxima y actual distinto
       { source: "Movimientos", state: "pendiente" },
     ]),
   ).toThrow("duplicado");
+});
+
+test("03 AC-10 / H-SPEC03-03: fallo instalado de Movimientos produce error de referencia, no excepción", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { ciclo } = add(db, "2026-10-01");
+    expect(movementSource(db).state).toBe("disponible");
+    expect(cycleContext(db).referencia.coverage.map((s) => s.state)).toEqual([
+      "disponible",
+      "disponible",
+      "pendiente",
+    ]);
+    db.exec("ALTER TABLE movimientos RENAME COLUMN fecha TO fecha_rota");
+    expect(movementSource(db)).toEqual({
+      source: "Movimientos",
+      state: "error",
+    });
+    const context = cycleContext(db);
+    expect(context.referencia).toMatchObject({ fecha: null, estado: "error" });
+    expect(context.motivo).toBe("error_referencia");
+    expect(context.actual).toBeNull();
+    expect(getCycle(db, ciclo.id).ciclo.estadoCorte).toBe("error");
+    expect(listCycles(db).total).toBe(1);
+  } finally {
+    db.close();
+  }
 });
 
 test("03 AC01/02/05/09/12–15: alta explícita, mes único y orden, sin reloj ni cálculos financieros", () => {

@@ -53,13 +53,18 @@ export function movementSource(
   db: Database,
 ):
   | { source: "Movimientos"; state: "pendiente" }
-  | { source: "Movimientos"; state: "disponible"; maxDate: string | null } {
+  | { source: "Movimientos"; state: "disponible"; maxDate: string | null }
+  | { source: "Movimientos"; state: "error" } {
   if (!ledgerInstalled(db))
     return { source: "Movimientos", state: "pendiente" };
-  const row = db
-    .query("SELECT MAX(fecha) fecha FROM movimientos WHERE anulado=0")
-    .get() as { fecha: string | null };
-  return { source: "Movimientos", state: "disponible", maxDate: row.fecha };
+  try {
+    const row = db
+      .query("SELECT MAX(fecha) fecha FROM movimientos WHERE anulado=0")
+      .get() as { fecha: string | null };
+    return { source: "Movimientos", state: "disponible", maxDate: row.fecha };
+  } catch {
+    return { source: "Movimientos", state: "error" };
+  }
 }
 export function financeRevision(db: Database) {
   return fingerprint([
