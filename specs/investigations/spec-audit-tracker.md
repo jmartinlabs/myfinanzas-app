@@ -6,9 +6,9 @@ de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 - Base del inventario: `main` `63ee1d0`.
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
 - **Estado actual:** SPEC01 corregida y publicada en
-  [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115); auditoría de
-  coherencia con código realizada con **H-SPEC01-01 abierto**; validación final
-  pendiente. Las otras 24 SPEC siguen pendientes.
+  [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115); **H-SPEC01-01
+  resuelto** por decisión expresa del usuario; validación final y merge pendientes.
+  Las otras 24 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01 es la única SPEC modificada; el resto no se ha tocado.
@@ -100,7 +100,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | PR pendiente · coherencia abierta | Correcciones documentales aplicadas. **H-SPEC01-01 abierto:** la posición calculada trata la apertura ausente como 0 (`positionCents`/`cashAt`; tests lo fijan), mientras la SPEC exige ausencia ≠ cero. Sin cambio de código en #115. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD final / CI de la PR; candidato revisado `c59834f` | Pendiente | H-SPEC01-01 requiere decisión; AC-38 parcial y E1.3 no acreditado. |
+| 01 | Saldos y atributos de control | PR pendiente | Correcciones documentales aplicadas. **H-SPEC01-01 resuelto** por decisión expresa (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo actual. Cobertura de tests revisada; gap de cero explícito + movimientos registrado. Sin cambio de código. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD final / CI de la PR; candidato revisado `c59834f` | Pendiente | AC-38 parcial y E1.3 no acreditado; sin contradicción material abierta. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
@@ -135,41 +135,51 @@ Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica
 | Identidad Sxxx, S000 protegido, sin borrado | Triggers de esquema, `saldos.ts`, UI de ficha | `database-schema.ts` (triggers), `app.test.ts` AC-03/06/34 | Coincide |
 | Pares habilitados y Manual conceptual | `pairs`, `position`, selector de UI | `app.test.ts` AC-06/27/34 | Coincide: S000 técnico y Manual no habilitados |
 | Defaults M2, POST/PATCH y ausencia histórica | `validated`, `args`, formulario | AC-28/35/41 | Coincide |
-| Dinero exacto, fechas y límites | `money`, `decimal`, validación | AC-13/29/33 | Coincide en almacenamiento; ver H-SPEC01-01 en derivados |
-| Saldo actual Movimientos | `positionCents`; `GET /api/saldos`; UI | AC-30; `app.test.ts` | **H-SPEC01-01** |
-| Inversiones/Efectivo | `cashAt`; E4.1; UI | `compras.test.ts` | **H-SPEC01-01**; E4.2/E4.3 delimitados |
+| Dinero exacto, fechas y límites | `money`, `decimal`, validación | AC-13/29/33 | Coincide; apertura null = 0 neutral aprobado (H resuelto) |
+| Saldo actual Movimientos | `positionCents`; `GET /api/saldos`; UI | AC-30; `app.test.ts`; `movimientos.test.ts` | Coincide con la decisión 2026-10-28 |
+| Inversiones/Efectivo | `cashAt`; E4.1; UI | `compras.test.ts` | Coincide con la decisión 2026-10-28; E4.2/E4.3 delimitados |
 | Acceso/API/CSRF/idempotencia | `app.ts`, sesión y pruebas | AC-18/20/23 | Coincide |
 | UI, switches y estados | `Saldos.tsx`, `SaldoForm.tsx`, Playwright | AC-22/28/37/42/43 | Coincide; capturas históricas |
 | Backup/restauración | `backup.ts`; pruebas age | AC-24/25/26 | Coincide en local; destino externo DT6 abierto |
 | Protección de cierres | Sin `api/cierres` ni tablas de cierre | `grep` en `apps/api/src`; SPEC26/27 | Sin runtime; delimitado, no contradicción |
 | Cabecera E1.3 | `CycleHeader` | Sin AC de E1.1 | Integrada después; no acreditada por pruebas E1.1 |
 
-### H-SPEC01-01 — Apertura ausente tratada como 0 en la posición calculada
+### H-SPEC01-01 — Apertura vacía: resuelto por decisión expresa (2026-10-28)
 
-- **Regla documentada:** la ausencia de apertura no es cero; el importe no calculable es
-  `null`/`No disponible` y no se muestra un cero ficticio. Ver la specification de E1.1
-  («Saldo actual», «M1» y «Reservas financieras»).
-- **Código:** `apps/api/src/movement-ledger.ts:42` usa `opening ?? "0"`;
-  `apps/api/src/investment-engine.ts:209` usa `saldo.apertura ?? "0"`;
-  `apps/api/src/saldos.ts:150-166` expone esos cálculos en `posicion`.
-- **Pruebas que fijan el comportamiento actual:** `apps/api/src/app.test.ts:206-209`
-  espera `saldoApertura ?? "0.00"` para Movimientos y `0.00` para Efectivo/Inversiones;
-  `apps/api/src/compras.test.ts:196` espera `0.00` para S001. El seed de S001
-  (`database-schema.ts:185-205`) tiene apertura `null`.
-- **Consumidores:** `GET /api/saldos`, listado/ficha de `Saldos.tsx`, agregados de
-  liquidez y futuras fotos de cierre que consuman la posición.
-- **Impacto financiero:** un Saldo sin apertura puede mostrar `0.00` o una posición
-  derivada de solo Movimientos/Compras, ocultando que falta la apertura. Puede alterar
-  liquidez agregada y la foto de un cierre futuro.
-- **Clasificación:** **SPEC correcta y código/tests discrepantes** (sujeto a confirmar
-  que «ausencia ≠ cero» cubre también la posición derivada). No se propone cambiar la
-  regla financiera para acomodar el código.
-- **Propuesta, sin ejecutar:** (A) alinear código y pruebas con la SPEC: posición
-  `null`/`No disponible` cuando la apertura aplicable está ausente, salvo regla expresa
-  de cero neutral; (B) si se confirma el cero neutral, enmendar SPEC/AC con aprobación
-  financiera explícita; (C) exigir apertura, que contradice M1 y no se recomienda.
-- **Estado:** **ABIERTO.** No se corrige en PR #115; requiere decisión de Álex/usuario y
-  una PR funcional separada. SPEC01 no se declara `Cerrada` mientras siga abierto.
+**Historial del hallazgo:** la SPEC exigía ausencia ≠ cero y el código trataba la
+apertura `null` como 0 en la posición calculada:
+
+- `apps/api/src/movement-ledger.ts:42` usa `opening ?? "0"`.
+- `apps/api/src/investment-engine.ts:209` usa `saldo.apertura ?? "0"`.
+- `apps/api/src/saldos.ts:150-166` expone esos cálculos en `posicion`.
+- `apps/api/src/app.test.ts:206-209` y `apps/api/src/compras.test.ts:196` fijan `0.00`;
+  el seed de S001 (`database-schema.ts:185-205`) tiene apertura `null`.
+
+**Decisión del usuario:** se elige la opción de **cero neutral**:
+
+1. `saldoApertura` `null` y `0` siguen siendo distintos en almacenamiento y API.
+2. El cálculo del Saldo actual usa 0 € como elemento neutro cuando la apertura está vacía.
+3. El campo no se rellena automáticamente.
+4. Se mantienen las fórmulas vigentes de Movimientos y Efectivo/Inversiones.
+5. No se extiende a Objetivo, Manual, datos históricos ni otras ausencias.
+
+**Consecuencia:** la SPEC, el testplan y este registro se actualizan para reflejar la
+decisión. El código y los tests actuales ya implementan el cero neutral; **no se modifica
+código ni se añade cobertura parcial**. La clasificación histórica fue «SPEC correcta y
+código/tests discrepantes»; la decisión resolvió la regla a favor del cero neutral.
+
+**Cobertura de tests revisada:** apertura `null` sin movimientos (`app.test.ts`,
+`compras.test.ts`), apertura `null` con movimientos (`movimientos.test.ts`,
+`cycle-operations.test.ts`) y cero explícito en almacenamiento (`app.test.ts`).
+**Gap:** no hay una aserción específica de cero explícito + movimientos; se propone
+añadirla en una PR de pruebas autorizada, sin modificar código en #115.
+
+**Consumidores:** `GET /api/saldos`, listado/ficha de `Saldos.tsx`, agregados de liquidez
+y futuras fotos de cierre. El impacto esperado del 0 neutral queda aceptado por la
+decisión; no se introduce `null` ni cobertura parcial en la posición.
+
+**Estado:** **RESUELTO.** No se modifica código en PR #115. SPEC01 no se declara
+`Cerrada` hasta la validación e integración de la PR.
 
 **Dependencias futuras delimitadas:** E4.2 Ventas, E4.3 valoración/patrimonio, DT6
 externo y cierres E4.8/E4.9 no tienen runtime; no se exige desarrollarlos para cerrar
@@ -180,17 +190,15 @@ esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas 
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
-| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `c59834f` + precisiones; ver HEAD final | ver checks de la PR | Pendiente (H-SPEC01-01 abierto) | Pendiente |
+| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `c59834f` + precisiones + decisión H-01; ver HEAD final | ver checks de la PR | Pendiente | Pendiente |
 
 ## Próxima acción
 
-1. Álex y el usuario deciden **H-SPEC01-01**. Cualquier cambio de código exige
-   autorización específica y una **PR funcional separada**; no se toca PR #115.
-2. Validar el **HEAD final** de [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115).
-3. Autorizar el merge documental cuando corresponda.
-4. Marcar SPEC01 como `Cerrada` solo con H-SPEC01-01 resuelto, validación e integración
-   completas.
-5. Solo entonces iniciar SPEC02.
+1. Álex valida el **HEAD final** de [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115).
+2. El usuario autoriza expresamente el merge documental.
+3. Tras la integración, verificar el SHA real y marcar SPEC01 como `Cerrada` si no hay
+   otras contradicciones.
+4. Solo entonces iniciar SPEC02.
 
-No hay correcciones documentales pendientes de recibir. H-SPEC01-01 es una decisión de
-coherencia documentación↔código, no una corrección automática.
+H-SPEC01-01 está resuelto. No hay cambios de código en #115; el gap de cero explícito +
+movimientos queda registrado para una PR de pruebas autorizada.

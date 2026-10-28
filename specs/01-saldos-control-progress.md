@@ -16,9 +16,12 @@ E1.1 cerrada funcionalmente: PR #7 integrada y PR #9 corrigió la concurrencia
 (`main` `23e471e`). Evidencia del [testplan](01-saldos-control-testplan.md): 38 PASA E1.1,
 1 PARCIAL (AC-38) y 4 contratos revisados (AC-30/31/32/36). E1.3 se integró después; su
 integración no queda acreditada por las pruebas originales de E1.1. Esquema vigente
-**18**. **Auditoría de coherencia:** H-SPEC01-01 abierto; SPEC01 no se declara cerrada
-hasta resolverlo. E1.2 y las entregas posteriores avanzaron por sus propias ramas/PR; el
-estado global está en el [tablero](epic-board.md).
+**18**. **Auditoría de coherencia:** H-SPEC01-01 **resuelto** por decisión expresa del
+usuario (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo
+actual; no se rellena. Cobertura de tests revisada; el gap de cero explícito + movimientos
+queda registrado. SPEC01 podrá cerrarse tras validación e integración de PR #115. E1.2 y
+las entregas posteriores avanzaron por sus propias ramas/PR; el estado global está en el
+[tablero](epic-board.md).
 
 ## Verified increments
 Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama

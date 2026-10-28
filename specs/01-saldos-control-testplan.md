@@ -89,6 +89,20 @@ revocación de sesiones/códigos y generación de nuevos códigos comprobadas.
 Ensayo local medido: restauración + MFA + lectura UI 2.006 s en una ejecución; no SLA/RTO
 de producción. RPO depende de frecuencia/monitorización aún no desplegadas.
 
+### Apertura vacía — decisión 2026-10-28
+
+`saldoApertura` `null` se conserva en almacenamiento y se usa **0 € como neutro solo en
+el cálculo del Saldo actual**; no se rellena el campo. No se extiende a Objetivo, Manual
+ni históricos.
+
+- Cobertura: `movimientos.test.ts` (apertura null, 0→30 con movimientos),
+  `app.test.ts` (posición 0.00 y cero explícito en almacenamiento),
+  `compras.test.ts` (Efectivo/Inversiones 0.00) y `cycle-operations.test.ts`
+  (null + movimientos).
+- **Gap:** no hay una aserción específica de **cero explícito + movimientos**; se propone
+  añadirla en una PR de pruebas autorizada. No se modifica código en esta PR.
+- H-SPEC01-01 queda **resuelto por decisión expresa del usuario**.
+
 ### Contratos expresamente separados de motores
 - AC-30: referencia 100 + entrada anterior 20 − salida posterior 5 = 115; revisión
   documental confirma NO filtrar Movimientos por Fecha apertura. E1.4 no implementado.
@@ -146,8 +160,10 @@ ni custodia definitiva.
 Pruebas locales ejecutadas, sin bloqueo de Codex: Chromium del sistema y age oficial
 verificado disponibles. **PR #7 integrada; PR #9 corrigió la concurrencia. E1.1 cerrada;
 el merge ya no está pendiente.**
-**Coherencia con código:** H-SPEC01-01 abierto (posición con apertura ausente); no reabre
-los AC históricos y se registra en el [tracker](investigations/spec-audit-tracker.md).
+**Coherencia con código:** H-SPEC01-01 **resuelto** por decisión expresa del usuario
+(2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo; no se rellena. Cobertura
+de tests revisada; el gap de cero explícito + movimientos queda registrado para una PR de
+pruebas autorizada.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco

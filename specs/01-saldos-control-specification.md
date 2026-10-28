@@ -14,8 +14,9 @@ concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9) en `m
 Ciclos, cierres) se rigen por sus propias specs. E1.3 se integró posteriormente; su
 integración **no queda acreditada** por las pruebas originales de E1.1. La evidencia de
 pruebas está en el [testplan](01-saldos-control-testplan.md); el seguimiento global, en
-el [tablero](epic-board.md). **Auditoría de coherencia:** H-SPEC01-01 abierto (posición
-calculada con apertura ausente); ver [tracker](investigations/spec-audit-tracker.md).
+el [tablero](epic-board.md). **Auditoría de coherencia:** H-SPEC01-01 **resuelto** por
+decisión expresa del usuario (2026-10-28): `null` se conserva y se usa 0 neutral en el
+cálculo del Saldo actual; ver [tracker](investigations/spec-audit-tracker.md).
 **Regla de lectura:** las menciones a «sin implementación», «futuro», «PR #6 pendiente»,
 «sin merge» o «sin DDL» de los apartados siguientes describen el STEP 5 documental y son
 **contexto histórico**; no son prohibiciones vigentes ni cambian las reglas financieras.
@@ -140,7 +141,23 @@ N-M: los seis controles demostrados no son Manual. No rechazar/borrar informaci�
 histórica porque no alimente ese motor. Manual permanece previsto sin pareja habilitada,
 con valor directo/vacío y sin fecha efectiva independiente. No inventar un Tipo/Manual.
 Objetivo mantiene céntimos exactos y límites técnicos acordados, sin mínimo/máximo
-financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunca es cero.
+financiero o CHECK de signo inventado. La apertura vacía se conserva `null` y no se
+rellena; su uso como 0 neutral se limita al cálculo del Saldo actual (decisión
+2026-10-28). Manual/Objetivo ausentes siguen `null` y no se convierten en cero.
+
+### Apertura vacía en el cálculo — decisión aprobada 2026-10-28
+
+El usuario confirmó expresamente que `saldoApertura` vacío (`null`) equivale a **0 € a
+efectos del cálculo del Saldo actual**. Condiciones:
+
+- `null` y `0` siguen siendo distintos en almacenamiento y API; el campo no se rellena.
+- Movimientos y Efectivo/Inversiones usan 0 como elemento neutro cuando la apertura está
+  vacía; las fórmulas vigentes no cambian.
+- La posición puede ser `0.00` con apertura `null`; el campo `saldoApertura` sigue `null`.
+- No se extiende a Objetivo, Manual, datos históricos ni otras ausencias.
+- Evidencia: `movimientos.test.ts` (apertura null y movimientos), `app.test.ts` (posición
+  0.00 y cero explícito en almacenamiento), `compras.test.ts` (Efectivo/Inversiones) y
+  `cycle-operations.test.ts` (null + movimientos). Sin cambio de código.
 
 ### Reglas del Excel, observaciones y contrato de aplicación
 
@@ -150,7 +167,7 @@ financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunc
 | Evidencia funcional F2 | Dominios de atributos, vacío en Finalidad y Objetivo opcional | Conservar dominios; no atribuir a la muestra reglas físicas de obligatoriedad |
 | Evidencia funcional F3 | Apertura es posición inicial; Saldo actual sin filtro por Fecha apertura; Manual directo/vacío sin fecha propia | Preservar semántica, no generar Movimientos de apertura ni fecha/filtro nuevos |
 | Observación F1/F2 | Seis pares utilizados, sin registros Manual ni objetivos informados | Fixtures con pares contrastados; no matriz exhaustiva, no prohibición de objetivos |
-| Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin convertir ausencia en cero ni eliminar información existente |
+| Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin rellenar la ausencia; el cálculo del Saldo actual usa 0 neutral para apertura null (decisión 2026-10-28); no eliminar información existente |
 | Contrato aprobado M2, aplicación | Estado Activa al crear; Finalidad/Objetivo opcionales; switches No/false por defecto al alta, POST omitido=false, PATCH omitido=conservar | Revisión M2 sustituye elección manual obligatoria; sin coerción de históricos ausentes ni inferencias; S000 protegido |
 | No demostrado del Excel | Obligatoriedad física por registro, exhaustividad de pares, detalle mensual | No atribuir M1/M2 al Excel ni inventar otros controles; no reabrir M1/M2 |
 
@@ -216,7 +233,7 @@ Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 | Grupo/entidad lógica (implementada en E1.1) | Datos persistentes candidatos | Restricciones/pendientes |
 | --- | --- | --- |
 | saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. M2 aplicación: Estado Activa al crear, tres booleanos explícitos almacenados, con false si omitidos en POST ordinario; Finalidad opcional. S000 protegido; no rellenar registros anteriores ni históricos ausentes. ID inmutable en API y protección SQLite; S000 reservado |
-| saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
+| saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; `null` se conserva y no se rellena; el cálculo del Saldo actual usa 0 neutral cuando falta (decisión 2026-10-28); Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
 | saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo opcional en céntimos, sin default cero ni signo impuesto. Finalidad: vacío/Gastos planificados/Ahorro/Inversión. Estado canónico Activa/Inactiva: selección activa deriva de Estado, no otro booleano persistente |
 | saldos: metadatos | revision INTEGER, creado_en TEXT, actualizado_en TEXT | Revisión positiva creciente; instantes UTC; no cambiar fecha económica por timestamp técnico |
 | reserva de identificadores | siguiente número de Saldo, o mecanismo equivalente transaccional | Nunca MAX(id)+1 sin protección; reserva+alta atómicas, códigos conservados tras desactivación; mínimo tres dígitos y extensión S1000 confirmada Q5 |
@@ -251,7 +268,8 @@ Probar ida/vuelta exacta por encima del entero seguro de JavaScript. Nuevos IDs/
 también se tratan exactamente, sin Number para el contador si supera ese rango seguro.
 
 Admitir aperturas negativas que representen posiciones reales; no aplicar una restricción
-«saldo >= 0». Valor ausente es null, distinto de cero, sin crear Movimientos. El
+«saldo >= 0». El valor ausente se conserva `null`, sin crear Movimientos; la apertura
+`null` usa 0 neutral solo en el cálculo del Saldo actual (decisión 2026-10-28). El
 signo de Objetivo/Manual no se extrapola de la apertura; opcionalidad por par aprobada
 en M1 y validación de atributos en M2 pertenecen al contrato de aplicación.
 Objetivo es opcional, sin imponer un CHECK de signo no demostrado. Rechazar exponentes,
@@ -374,9 +392,10 @@ Estética común y accesibilidad del switch en [guía UI](guidelines/ui.md); com
 ejecutadas en el [testplan](01-saldos-control-testplan.md).
 Estado Activa solo al crear; en edición conserva el Estado existente. Aperturas según
 matriz M1, no editables para S000, sin eliminar información existente por falta de función.
-Finalidad/Objetivo opcionales, ausencia distinta de cero; Manual no se habilita operativo
-ni aparecen combinaciones Tipo/Control no contrastadas. El soporte conceptual no exige
-un campo Manual editable en esta pantalla.
+Finalidad/Objetivo opcionales, ausencia distinta de cero; la apertura vacía se conserva
+`null` y usa 0 neutral solo en el cálculo del Saldo actual (decisión 2026-10-28); Manual
+no se habilita operativo ni aparecen combinaciones Tipo/Control no contrastadas. El
+soporte conceptual no exige un campo Manual editable en esta pantalla.
 
 Formulario conserva entradas tras errores; conflicto permite revisar sin sobrescribir;
 cambios sin guardar avisan al salir. Desactivar muestra impacto/confirmación según Q3.
@@ -404,8 +423,9 @@ exigiría justificar librería adicional y revisar su generación local, sin ser
 ## Empty, loading and error states
 - Carga: estado anunciado, acciones de escritura deshabilitadas mientras se confirma envío.
 - Vacío: distinguir catálogo sin Saldos de filtro sin resultados y de error de API.
-- No calculable: importe null y etiqueta del control. Cero solo si dato explícito autorizado
-  por su contrato o resultado de motor ya entregado; nunca por ausencia de fuente.
+- No calculable: importe null y etiqueta del control. Cero si dato explícito o resultado
+  de motor ya entregado; la apertura vacía usa 0 neutral solo en el cálculo del Saldo
+  actual, sin rellenar el campo. Para otras ausencias, null/`No disponible`.
 - Error campo: mensaje junto a control y resumen navegable; mantener valores escritos.
 - 401: volver al acceso; no conservar payload financiero en almacenamiento persistente
   del navegador. 403/CSRF: rechazo sin escribir. 404: no encontrado con regreso a lista.
@@ -648,6 +668,10 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-31 | Revisar contrato histórico con un periodo inequívocamente anterior a Fecha apertura | No mostrar posición anterior; no borrar ni filtrar los Movimientos de Saldo actual. Límite mensual exacto/fecha ausente quedan sin suposición para la entrega del histórico |
 | AC-32 | Revisar matriz, validaciones y futura nulabilidad contra M1/M2 | O-A, NA-A, DEF-A y SW-A identificados como contrato aprobado de aplicación; separados de evidencia Excel y observaciones; sin preguntas M1/M2 pendientes ni restricciones por inferencia |
 | AC-33 | En cada uno de los cinco pares ordinarios, alta ficticia omitiendo Fecha apertura/Saldo apertura, luego solo uno y luego ambos con apertura cero explícito o negativa | Altas válidas según M1 con datos restantes válidos; campos independientes, ausencias preservadas y cero/negativo conservados exactamente; sin Movimiento/filtro por fecha creado |
+
+**Nota AC-33:** la ausencia se conserva en el campo; la decisión 2026-10-28 permite usar
+0 neutral solo en el cálculo del Saldo actual. No se rellena la apertura ni se modifica
+la evidencia histórica.
 | AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico |
 | AC-35 | Alta omitiendo cada indicador o todos; repetir con true/false y con null/valor inválido; PATCH omitiendo indicador | POST omitido persiste false explícito; true/false se conservan, null/valor inválido rechaza sin coerción/escritura parcial. PATCH omitido conserva false/true/ausencia histórica; Estado Activa solo por default de alta |
 | AC-36 | Revisar fuente/fecha de aprobación visual y estado de implementación | Dirección común y tres pantallas aprobadas por comunicación del usuario el 2026-10-21, separadas de futuras pruebas visuales; no implica aprobación final de PR ni permiso de código |
@@ -701,7 +725,9 @@ Saldo actual «desde vigencia del control» por Fecha apertura.
 F1–F3 ya no se consideran evidencia ausente en bloque. Los extremos residuales se
 mantienen explícitos, sin restricciones nuevas. Defaults aprobados para altas ordinarias:
 Estado Activa y, por revisión M2 del 2026-10-21, tres booleanos false; no defaults de
-lectura/edición/importación o históricos ausentes. M1/M2 no son extremos pendientes. Para operativas
+lectura/edición/importación o históricos ausentes. La decisión de aplicación del
+2026-10-28 mantiene `null` en la apertura y usa 0 neutral solo en el cálculo del Saldo
+actual; no altera F3 ni otras ausencias. M1/M2 no son extremos pendientes. Para operativas
 que dependan de ellos se necesita únicamente el detalle sanitizado correspondiente,
 no reabrir Q1–Q8 ni reclamar dominios/semánticas que el usuario ya ha aportado.
 Los módulos posteriores conservan sus entregas; registrar contrato no autoriza implementarlos.
@@ -713,11 +739,15 @@ Esto no es una incoherencia a «corregir» autónomamente: preservar equivalenci
 no altera ni borra los hechos registrados. Inversiones/Efectivo conserva además Compras
 y Ventas. No existe fecha efectiva Manual independiente. Ningún filtro nuevo de
 Movimientos por fecha de apertura ni fecha Manual se añade sin especificación y prueba
-de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen abiertos.
+de equivalencia. La apertura `null` se conserva y se usa 0 neutral solo en el cálculo del
+Saldo actual; no se rellena y no altera el histórico. Detalles de corte mensual/ausencias
+no demostrados permanecen abiertos.
 
 ### Trazabilidad de decisiones
 - Q1 -> atributos independientes, Objetivo (€), Manual conceptual y F1/F2.
-- Q2/Q6 -> datos separados, negativos de apertura, ausencia distinta de cero, céntimos/fechas y F3.
+- Q2/Q6 -> datos separados, negativos de apertura, ausencia distinta de cero en
+  almacenamiento, céntimos/fechas y F3. Decisión 2026-10-28: apertura `null` = 0 neutral
+  solo para el cálculo del Saldo actual; no se extiende a Objetivo, Manual ni históricos.
 - Q3 -> ciclo de vida, protección de S000/IDs y bloqueo por impacto histórico, no por mera relación.
 - Q4 -> DT1 sin proveedor/correo/registro/administración innecesaria; excepción local justificada.
 - Q5 -> PK Sxxx y asignación atómica sin reutilización ni clave sustituta, crecimiento S1000.
@@ -730,9 +760,10 @@ de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen a
 E1.1 está implementada e integrada por [PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7),
 con la corrección de concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9).
 El cierre documental de PR #6 y la aprobación de la versión completa son históricos y
-están completados. No quedan acciones documentales pendientes de E1.1; la auditoría de
-coherencia mantiene **H-SPEC01-01 abierto** (posición con apertura ausente), que requiere
-decisión y, si procede, una PR funcional separada. No se reabren Q1–Q8/M1/M2.
+están completados. **H-SPEC01-01 quedó resuelto** por decisión expresa del usuario
+(2026-10-28): la apertura `null` se conserva y se usa 0 neutral en el cálculo del Saldo
+actual. No quedan contradicciones materiales abiertas; SPEC01 podrá cerrarse tras la
+validación e integración de la PR. No se reabren Q1–Q8/M1/M2.
 Los motores posteriores y la protección de cierres se rigen por sus specs (SPEC26/27) y
 por el roadmap; este documento no autoriza implementarlos ni declara su runtime. Cualquier
 cambio de regla financiera requiere una contradicción documentada y aprobación expresa.
