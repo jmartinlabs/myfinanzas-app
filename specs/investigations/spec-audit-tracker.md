@@ -962,6 +962,42 @@ referencia salarial verificable**, preservando origen y prioridad
 Q5, sin copiar movimientos ni sumar salarios como ejecución.
 No abrir PR ni asignar prioridad de corrección sin esa decisión.
 
+## Controles de regresión cruzada — SPEC12/13/14 (2026-10-28)
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Revisión estática de fuentes, motores y suites existentes. No se ejecutó
+ningún test nuevo ni se verificaron saldos/datos reales de Excel.
+
+- **SPEC12 Flujo mensual:** `flujo-mensual.ts:68-112,115-203`
+  separa cobros bancarios por fecha del hecho de Nómina documental;
+  cuotas ordinarias son subconjunto de `Gasto`, extraordinarias se
+  descuentan aparte y la suma informativa de Deudas no se resta por
+  segunda vez. `flujo-mensual.test.ts:31-76` fija importes sintéticos
+  y cobertura parcial por falta de histórico. No abrir defecto por
+  `operativo.valor=null`: la especificación prohíbe presentar el
+  subtotal como S completo mientras falte cobertura bancaria.
+- **SPEC13 Anticipos:** `anticipos.ts:75-178,333-550` deriva
+  Adelantado/Recuperado/Neto desde Transferencias con rol y par
+  acreditados, sin crear un Gasto de recuperación ni importar su
+  importe al plan. `anticipos.ts:736-863` conserva una foto manual
+  de apertura por REF+Ciclo con evidencia y revisión, no un neto vivo.
+  `anticipos.test.ts:394-480` ya prueba devolución posterior, foto
+  negativa explícita, cero verificado y corrección excepcional
+  bloqueada. **No registrar una supuesta falta de foto automática**:
+  su confirmación manual es una regla de diseño.
+- **SPEC14 Compartidos:** `compartidos.ts:207-382,434-515`
+  mantiene `Neto=Bruto−Recuperado` y pendientes/excesos
+  individualizados. `d5-aportaciones.test.ts:195-227` prueba que
+  pendiente 150 y exceso 150 de terceros distintos se conservan
+  **sin compensarse** y no declaran el caso Cerrado. B-T11 de
+  informes/E3.6 permanece fuera de la integración, sin duplicar
+  el Neto en Flujo mensual.
+- **Límite de esta pasada:** todas las verificaciones anteriores son
+  de coherencia de contrato/implementación **puntual**, no
+  certificación de importes de la base física ni cobertura global.
+  No se abre hallazgo adicional SPEC12/13/14 sin evidencia de un
+  caso que contradiga los contratos ya probados.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
