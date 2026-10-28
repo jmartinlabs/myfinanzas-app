@@ -7,9 +7,9 @@ PR runs supersede older candidates; main pushes retain a fast postmerge gate.
 import json
 from pathlib import Path
 
-CHECKOUT = {'uses': 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
+CHECKOUT = {'uses': 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
             'with': {'fetch-depth': 0, 'persist-credentials': False}}
-PYTHON = {'uses': 'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065',
+PYTHON = {'uses': 'actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0',
           'with': {'python-version': '3.12'}}
 BUN = {'uses': 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
        'with': {'bun-version-file': '.bun-version'}}
