@@ -668,10 +668,6 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-31 | Revisar contrato histórico con un periodo inequívocamente anterior a Fecha apertura | No mostrar posición anterior; no borrar ni filtrar los Movimientos de Saldo actual. Límite mensual exacto/fecha ausente quedan sin suposición para la entrega del histórico |
 | AC-32 | Revisar matriz, validaciones y futura nulabilidad contra M1/M2 | O-A, NA-A, DEF-A y SW-A identificados como contrato aprobado de aplicación; separados de evidencia Excel y observaciones; sin preguntas M1/M2 pendientes ni restricciones por inferencia |
 | AC-33 | En cada uno de los cinco pares ordinarios, alta ficticia omitiendo Fecha apertura/Saldo apertura, luego solo uno y luego ambos con apertura cero explícito o negativa | Altas válidas según M1 con datos restantes válidos; campos independientes, ausencias preservadas y cero/negativo conservados exactamente; sin Movimiento/filtro por fecha creado |
-
-**Nota AC-33:** la ausencia se conserva en el campo; la decisión 2026-10-28 permite usar
-0 neutral solo en el cálculo del Saldo actual. No se rellena la apertura ni se modifica
-la evidencia histórica.
 | AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico |
 | AC-35 | Alta omitiendo cada indicador o todos; repetir con true/false y con null/valor inválido; PATCH omitiendo indicador | POST omitido persiste false explícito; true/false se conservan, null/valor inválido rechaza sin coerción/escritura parcial. PATCH omitido conserva false/true/ausencia histórica; Estado Activa solo por default de alta |
 | AC-36 | Revisar fuente/fecha de aprobación visual y estado de implementación | Dirección común y tres pantallas aprobadas por comunicación del usuario el 2026-10-21, separadas de futuras pruebas visuales; no implica aprobación final de PR ni permiso de código |
@@ -682,6 +678,11 @@ la evidencia histórica.
 | AC-41 | Fixture histórico ficticio con indicador ausente frente a false/true; consultar, cancelar edición y guardar cambio de otro campo | Ausencia sigue distinguible («Sin informar»/null), nunca No/false silencioso; PATCH omitido no la rellena. Informar booleano requiere elección real y solo cambia ese atributo; sin importar datos reales |
 | AC-42 | En futura UI a 390/1440, inspeccionar y operar cada switch con teclado y foco | true: #8DBB2E/indicador blanco/Sí; false: verde suave de paleta/indicador blanco/No; nombre del atributo accesible, checked binario y etiqueta visible, independencia, sin controles segmentados ni interacción obligatoria al alta |
 | AC-43 | Revisar futura UI con preferencia de sistema clara y oscura | Siempre tema claro de fondos blancos/verdes suaves; sin modo/selector oscuro. No se declara contraste/accesibilidad verificados sin pruebas reales |
+
+**Nota AC-33:** la ausencia se conserva en el campo; la decisión 2026-10-28 permite usar
+0 neutral solo en el cálculo del Saldo actual. No se rellena la apertura ni se modifica
+la evidencia histórica. La nota se mantiene fuera de la tabla para no interrumpir los
+43 criterios.
 
 ### Plan de prueba de E1.1 con fixtures (ejecutado en su alcance)
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
