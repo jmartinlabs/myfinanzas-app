@@ -1,8 +1,12 @@
 # 01 — E1.1 Saldos y atributos de control: Brainstorming
-Status: IN REVIEW — Q1–Q8 y M1/M2 respondidas; contrato de aplicación confirmado en registros posteriores.
+Status: CERRADO — Q1–Q8 y M1/M2 aprobadas; E1.1 implementada e integrada (PR #7); historial conservado.
 Roadmap/context: [E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia v5.11](functional-reference-v5.11.md), [propuesta](01-saldos-control-specification.md).
-Next action: revisar PR #6 con revisión M2 switches/default false y tema claro, aprobada el 2026-10-21; sin merge ni implementación.
+**Estado vigente (2026-10-28):** las menciones `PENDING`/`IN REVIEW`, «sin merge» o «sin
+implementación» de las rondas son históricas y están superadas por los registros
+posteriores. No quedan preguntas abiertas de E1.1; PR #9 corrigió la concurrencia. No
+reabrir Q1–Q8/M1/M2.
+Next action: ninguna pendiente de E1.1; futuras entregas según roadmap/tablero.
 
 ## Confirmaciones recibidas antes de Round 1
 Fuente: solicitud expresa del usuario de STEP 5 para E1.1, 2026-10-20.
@@ -141,8 +145,8 @@ Ver [pantallas propuestas](01-saldos-control-specification.md#screens-and-interf
 Requieren feedback antes de finalizar; ninguna elección visual equivale a aprobar DT1/DT2/DT6.
 
 ## Append-only clarifications
-Sin respuestas posteriores todavía. Próxima entrada: respuestas explícitas Q1–Q8,
-fuente/fecha, discrepancias y nueva ronda solo si sigue faltando una decisión material.
+Nota histórica: este apartado quedó superado por las respuestas de Round 1, Round 2 y
+M1/M2 registradas debajo. Se conserva para trazabilidad.
 
 
 ## Respuestas confirmadas de Round 1 — 2026-10-20
@@ -235,7 +239,8 @@ referencia sanitizada para estos detalles, sin pedir datos financieros personale
 La especificación se completa para revisión documental; no se declara lista para
 implementación mientras F1/F2 y la parte de F3 aplicable a aperturas sigan sin demostrar.
 Manual no se activa por inferencia. Aprobación final del documento y merge de PR #6
-siguen pendientes. No iniciar E1.2 ni otros STEPS.
+siguen pendientes. No iniciar E1.2 ni otros STEPS. *(Histórico: superado por PR #6,
+PR #7 y las entregas posteriores.)*
 
 
 ## Evidencia posterior F1–F3 — 2026-10-20
@@ -267,7 +272,8 @@ Objetivo/Manual y detalle de comparación/fecha ausente en histórico mensual. S
 sin restricciones nuevas. Manual sigue conceptual y los motores/histórico siguen en sus
 entregas posteriores. No se reabren Q1–Q8 ni se reclama evidencia ya aportada.
 Se autoriza únicamente actualizar PR #6/documentación y checks. Aprobación final del
-documento, merge e implementación continúan pendientes.
+documento, merge e implementación continúan pendientes. *(Histórico: PR #6 y PR #7
+integradas; E1.1 cerrada.)*
 
 
 ## Round 2 — Matriz de validaciones — 2026-10-20
@@ -350,6 +356,7 @@ será el siguiente paso ANTES de desarrollar pantallas; se registra, no se inici
 La aceptación anterior de estructura de pantallas Q8 no equivale a aprobar ese diseño global.
 M1/M2 quedan respondidas; no volver a formularlas. Aprobación final de esta versión
 completa y merge de la PR siguen pendientes, sin ampliarlos por la aprobación de contrato.
+*(Histórico: PR #6 y PR #7 integradas; E1.1 cerrada.)*
 
 
 ## Aprobación visual comunicada por el usuario — 2026-10-21
@@ -417,9 +424,12 @@ Actualizar documentación/PR/checks; sin merge, implementación, SQL o E1.2. Pru
 visuales/funcionales futuras no se dan por ejecutadas por aprobar esta decisión.
 
 
-## Aprobación final y autorización STEP 7 — 2026-10-21
+## Aprobación final, STEP 7 y cierre de E1.1 — 2026-10-21
 Usuario confirma PR #6 aprobada y fusionada en ebfe75b, especificación/diseño E1.1 aprobados.
 Posteriormente aprueba plan de seis bloques y autoriza $dev 01 en feat/e1-1-saldos,
 con Handoff/estado dentro de la rama funcional. Fuente: solicitudes expresas del usuario.
-Historial anterior intacto; sin nuevas decisiones financieras/visuales. Desarrollo solo
-local/ficticio, Excel maestro, sin E1.2, despliegue o merge automático.
+**Cierre vigente:** E1.1 se integra en
+[PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7) y la concurrencia de
+inicialización se corrige en [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9)
+(`main` `23e471e`). Historial anterior intacto; sin nuevas decisiones financieras/visuales.
+Desarrollo solo local/ficticio, Excel maestro, sin E1.2, despliegue o merge automático.
