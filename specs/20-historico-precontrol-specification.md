@@ -1,20 +1,14 @@
 # 20 — E4.5 Histórico precontrol y transición de ejercicio: Specification
 
-Status: **Q1–Q10 CONFIRMADAS; PROPUESTA DOCUMENTAL ACTUALIZADA — spec/wireframes
-PENDIENTES DE APROBACIÓN COMPLETA.** El usuario confirmó Q1–Q10=A el 2026-10-27;
-Q5-A queda aprobada como modelo documental, no como autorización para incorporar una
-regularización concreta sin evidencia. DT7 sigue siendo un gate independiente. La
-especificación y los wireframes no están aprobados en su totalidad; no autorizan
-desarrollo, SQL, migración, importación real, Excel, datos personales, PR, merge ni
-despliegue.
-**D4/D14:** aceptadas funcionalmente por el usuario el 2026-10-28 y aplicadas en esta
-revisión; no implican aprobación completa de la spec/wireframes ni autorización de DEV.
+Status: **APPROVED — Q1–Q10 confirmadas; D4/D14 aplicadas; SPEC20 completa y testplan
+APROBADOS por el usuario el 2026-10-28.** No autoriza desarrollo, SQL, migración,
+importación real, Excel, datos personales ni despliegue. DT7 sigue siendo un gate
+independiente.
 
 Approval source/date: **Q1–Q10 y precisiones Q5 confirmadas por el usuario el
 2026-10-27** en la sesión `ses_e8571d99effev1a1aeyemjMuZ3`; **D4/D14 aceptadas
-funcionalmente el 2026-10-28** tras revisión con Álex. La aprobación de la
-specification/wireframes completa sigue **PENDIENTE**; la autorización recibida no
-permite desarrollo, migración, datos reales ni merge.
+funcionalmente el 2026-10-28** tras revisión con Álex; **SPEC20 completa y testplan
+aprobados por el usuario el 2026-10-28**. PR87 integrada en `main` `3d70fd6`.
 
 Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-historico-precontrol-brainstorming.md),
 [E4.5](roadmap.md#e45--histórico-precontrol-y-transición-de-ejercicio),
@@ -27,9 +21,10 @@ Context and brainstorming: [20-historico-precontrol-brainstorming.md](20-histori
 Guías: [arquitectura](guidelines/architecture.md), [seguridad](guidelines/security.md),
 [calidad](guidelines/quality.md) y [UI](guidelines/ui.md).
 
-Base de preparación: `origin/main` = `1d539a8cb9c38b3a8d2e3921a3651197105ce282`
-(2026-10-27), esquema SQLite v16; base inicial `26b6f0c`, refrescada durante la preparación a `2487656` y después a `1d539a8`. La rama de PR87 sigue sobre esa base; `main` actual es `7073864` (esquema 18) y la reconciliación sigue pendiente. Esta spec no fija una versión futura de esquema ni escribe SQL. El desarrollo deberá comprobar de nuevo `main`, la versión vigente y los
-contratos integrados antes de implementar.
+Base: `main` `3d70fd6` (2026-10-28, esquema 18); la rama de PR87 se reconcilió con
+`main` `7073864` mediante el merge `4ffeb1c` y se integró en `3d70fd6`. Esta spec no
+fija una versión futura de esquema ni escribe SQL. El desarrollo deberá comprobar de
+nuevo `main`, la versión vigente y los contratos integrados antes de implementar.
 
 ## Functionality
 
