@@ -150,10 +150,10 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 20 | Histórico precontrol | En inspección (no cerrada) | H-SPEC20-01 documental: testplan aprobado en cabecera pero cierre final dice spec/wireframes no aprobados; desarrollo no autorizado. | SPEC20 specification/progress/testplan, roadmap E4.5. | Mantener 59 AC UNRUN; no preparar implementación por inferencia. | PR #87 documental MERGED `3d70fd6`. | 2026-10-28 · contraste documental y gate; sin cierre. | DT7 independiente; QA documental de AC48–59 pendiente. |
 | 21 | Pendientes y conciliación | En inspección (no cerrada) | H-SPEC21-01 documental: cierre de testplan dice aprobación no concedida pese a cabecera aprobada; progreso #97 sin merge ya desactualizado. | SPEC21 specification/testplan/progress, dependencias E3.5/E4. | Mantener AC nuevos UNRUN; no afirmar integración funcional. | PR #97 documental MERGED `2364d9c`. | 2026-10-28 · contraste documental y gates; sin cierre. | DEV21 no autorizado; 31 AC UNRUN; E3.5 pendiente. |
 | 22 | Ventas y posición de bróker | En inspección (no cerrada) | Contrato documental aprobado con 45 AC UNRUN; no hay defecto por ausencia de DEV22. Enmienda D7 de SPEC19 pendiente. | SPEC22 specification/progress/testplan/wireframes. | Conservar D7 como gate, no iniciar DEV22. | PR #105 documental MERGED `7073864`. | 2026-10-28 · revisión del gate; sin cierre. | Dependencia temporal E4.2-AC3 y guard de cantidad vendida aún no implementados. |
-| 26 | Precierre | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
-| 27 | Cierre financiero | Pendiente | Sin `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
-| 31 | SQLite producción | Pendiente | Incluye `enmienda-01`; verificar vigencia. | — | — | — | — | — |
-| 32 | Ejecución rootless | Pendiente | Sin `testplan` ni `progress`; verificar en la revisión. | — | — | — | — | Documentación incompleta. |
+| 26 | Precierre | Revisada parcialmente (no cerrada) | Contrato documental aprobado, 16 AC UNRUN; ausencia de `progress` coherente con falta de DEV26. | SPEC26 specification/testplan, DT5. | No inventar progress operativo. | Spec aprobada documentalmente, CI docs `40668646943` según fuente. | 2026-10-28 · gate examinado; sin cierre. | E3.5 insuficiente para cierre; DT6/T-BKP abierto. |
+| 27 | Cierre financiero | Revisada parcialmente (no cerrada) | Contrato documental aprobado, AC UNRUN; sin implementación de cierre/foto, ausencia de progress por fase. | SPEC27 specification/testplan, DT5. | No abrir DEV por inferencia ni cerrar ciclos. | Spec aprobada documentalmente, CI docs `40668646943` según fuente. | 2026-10-28 · gate examinado; sin cierre. | DT6/T-BKP, E3.5 y coherencia de cierres posteriores pendientes. |
+| 31 | SQLite producción | En inspección (no cerrada) | H-TRANS-01: cabecera specification mantiene implementación pendiente pese a PR #25 y #48 integradas; enmienda 31-E1 aprobada, riesgo R6 histórico no resuelto. | SPEC31, `database-identity.ts`, `private-state.ts`, backup, tests. | Corregir solo vigencia documental tras QA. | PR #25 MERGED `511fcba`; PR #48 MERGED `8fae7a4`. | 2026-10-28 · integración contrastada; sin auditoría de seguridad completa. | Runtime Linux específico y soporte fsync/WAL requieren pruebas operativas antes de despliegue. |
+| 32 | Ejecución rootless | En inspección (no cerrada) | SPEC32 aprobada, DEV32 en PR #30 DRAFT/no merge; testplan/progress existen solo en PR, no en `main`. No asumir completitud ni despliegue. | SPEC32, PR #30, infra y rootless CI. | Respetar fase pausada; no crear documentos duplicados. | PR #29 doc MERGED `a7fb9d8`; PR #30 OPEN DRAFT `24ca206`. | 2026-10-28 · estado remoto corroborado; sin cierre. | Migración/runtime Podman rootless y pruebas AC22 pendientes; VPS no autorizado. |
 
 ## Auditoría global — primera pasada del lote A (SPEC04–06), 2026-10-28
 
@@ -256,7 +256,8 @@ Esta ronda NO cierra ninguna SPEC.
 ### H-TRANS-01 — Progresos de varias SPEC sin estado de integración vigente (documental, bajo)
 
 Hallazgo **transversal único** para evitar hallazgos repetidos de la misma
-naturaleza; inicialmente observado en SPEC07–10 y ampliado a SPEC13–16 y SPEC19.
+naturaleza; inicialmente observado en SPEC07–10 y ampliado a SPEC13–16, SPEC19
+ y SPEC31.
 La relación con cada SPEC se conserva en su fila de seguimiento.
 
 | SPEC | Evidencia documental que permanece | Integración verificada en GitHub |
@@ -270,6 +271,7 @@ La relación con cada SPEC se conserva en su fila de seguimiento.
 | 15 | `15-vehiculos-itv-progress.md:3-9,123-139`: candidato local «sin publicar», CI de SHA nuevo pendiente | PR #81 MERGED `f5bf032` |
 | 16 | `16-revision-comida-progress.md:3-6,88-126`: DEV en revisión, PR #82 abierta y merge pendiente; la spec conserva gates históricos | PR #82 MERGED `26b6f0c` |
 | 19 | `19-instrumentos-compras-inversion-specification.md:1499-1510` y `testplan.md:334-343`: PR #95 Draft/no merge; su propio `progress.md:12-16,38-47` ya registra integración | PR #95 MERGED `156a50d` |
+| 31 | `31-sqlite-produccion-specification.md:2` indica «implementación pendiente»; la ficha progress registra PR #25 y la enmienda 31-E1 | PR #25 MERGED `511fcba` y PR #48 MERGED `8fae7a4` |
 
 **Causa documental probable:** los cierres se realizaron mediante integración en
 GitHub sin actualizar después las cabeceras del progreso; los relatos históricos
@@ -441,6 +443,58 @@ del maestro temporal. **No se interpreta como fallo del código E4.1.**
 **Recomendación del lote:** agrupar H-SPEC20-01 y H-SPEC21-01 con el ajuste
 documental transversal; no corregir ni fusionar todavía. Revisar después
 SPEC26/27 (cierres), 31 (SQLite) y 32 (rootless) antes de priorizar.
+
+## Auditoría global — sexta pasada del lote F (SPEC26,27,31,32), 2026-10-28
+
+**Base:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Se cotejaron specification/testplan/progress disponibles, inventario físico de
+servicios API/infra y PR de entrega. **No** se ejecutaron pruebas ni se inspeccionó
+un VPS/instalación real.
+
+### SPEC26/27 — futuros contratos de precierre/cierre; no defectos de runtime
+
+- `26-e48-precierre-specification.md:3-14` y `testplan.md:5-9`:
+  SPEC26 aprobada documentalmente 28/10, **16 AC UNRUN**, desarrollo no
+  autorizado; precierre solo lectura, sin fotografía ni cierre.
+- `27-e49-cierre-financiero-specification.md:3-15` y
+  `testplan.md:5-9`: SPEC27 aprobada documentalmente 28/10, AC
+  **UNRUN**, sin DEV ni cierres reales. Para cerrar exige ventana finita,
+  S0 y guardas de consistencia; no se inventa Fin ni fotografía.
+- **DT3/DT4** constan resueltos documentalmente; **DT6/T-BKP** sigue abierto;
+  el contrato E4.9 depende de E3.5/FIN_NETA, y los AC previenen cierre con
+  plan o fuentes no verificables. No clasificar la ausencia actual de motores
+  E4.8/E4.9 como incidencia de implementación.
+- `progress` ausente en ambas SPEC. Dado que siguen exclusivamente en
+  diseño, **no se recomienda crear documentación operativa vacía**.
+
+### SPEC31 — implementación real frente a cabecera histórica (H-TRANS-01)
+
+`31-sqlite-produccion-specification.md:2` sigue diciendo
+«implementación pendiente», aunque `31-sqlite-produccion-progress.md:107-135`
+registra integración de PR #25, y GitHub confirma #25 **MERGED** `511fcba`;
+enmienda 31-E1 documental #47 y funcional #48 **MERGED** `8fae7a4`.
+El código de identidad, backup y pruebas de concurrencia existe en `main`.
+Se incorpora este desajuste al hallazgo transversal documental sin abrir
+H-SPEC31 adicional. Riesgos de fsync/WAL, Linux y despliegue documentados
+siguen siendo riesgos operativos, no automáticamente errores probados.
+**Falta revisión profunda de seguridad/persistencia** antes de cerrar auditoría31.
+
+### SPEC32 — PR técnica pendiente y documentos no integrados
+
+`32-ejecucion-rootless-specification.md:2-11` está aprobada
+documentalmente. PR #29 integrada (`a7fb9d8`). La PR funcional #30 sigue
+**OPEN/DRAFT**, HEAD `24ca206` (consultado directamente): su diff incluye
+`specs/32-ejecucion-rootless-progress.md` y `...-testplan.md`, actualmente
+ausentes de `main`, además de archivos `infra/`, scripts y CI. No duplicar
+documentos ni confundir este código **no integrado** con una entrega aceptada.
+Su AC22 y los gates rootless/SQLite y despliegue requieren pruebas y
+autorizaciones; esta auditoría no reanuda ni fusiona PR #30.
+
+**Estado del inventario:** las 25 SPEC han recibido al menos una primera
+inspección, pero ninguna de SPEC04–32 ha superado todavía la auditoría
+técnica integral ni se ha cerrado; SPEC01–03 permanecen cerradas.
+Siguiente fase: pruebas focales de los hallazgos técnicos y profundización
+transversal por familias, sin corrección hasta aprobación del usuario.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
