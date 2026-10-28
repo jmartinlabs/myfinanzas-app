@@ -139,7 +139,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
-| 11 | Nómina y previsión | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura: estado integrado bien identificado, N:M y proyección separadas; pendientes pruebas transversales y contraste de reglas. | SPEC 11, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #63 `ed4a272` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
+| 11 | Nómina y previsión | En inspección (no cerrada) | H-SPEC11-01 PROVISIONAL: criterios de aptitud salarial documental divergentes entre media estructural y pronóstico; el filtro del pronóstico usa completitud bancaria y excluye discrepancias aun resueltas. | SPEC11 §Referencia de pronóstico/Q5; `nomina.ts` y `nomina-mensual.ts`; P3/P5/P19. | Contrastar semántica de referencia fiscal independiente del banco con fixture ficticia y confirmar política antes de corregir. | PR #63 `ed4a272` integrada; base `main` `1ed2a83`. | 2026-10-28 · contraste estático detallado, reproducción dinámica UNRUN; sin cierre. | Medio provisional: pronóstico injustificadamente no disponible o consumidores incoherentes; sin alteración bancaria. |
 | 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 13 | Anticipos | En inspección (no cerrada) | H-TRANS-01 (ampliación): progress deja PR #71 DRAFT y QA pendiente pese a integración; motor rol/par cotejado parcialmente. | SPEC 13, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #71 `b146eda` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 14 | Gastos compartidos | En inspección (no cerrada) | H-TRANS-01 (ampliación): checkpoint D5 conserva PR #90 Draft/no merge; Base B y D5 ya integradas, B-T11 todavía futuro. | SPEC 14, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #75 `5ad75ed`; #90 `cf6954a` integradas. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
@@ -882,6 +882,85 @@ Por relay #0010 se confirma a OpenCode el cambio de estado, se
 aclara que no debe programar ni abrir PR y que el paso siguiente
 es propuesta de pruebas/corrección acotada sujeta a aprobación
 expresa del usuario. Las 22 SPEC permanecen sin cierre integral.
+
+## Inspección cruzada — Nómina documental, media y pronóstico (2026-10-28)
+
+### H-SPEC11-01 — Elegibilidad de pronóstico puede depender del cobro y contradecir referencia documental estructural (técnico/semántico, medio provisional)
+
+**Fuente:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`,
+`specs/11-nomina-prevision-specification.md:88-122,175-206`,
+`apps/api/src/nomina.ts:147-236,503-543,594-648`,
+`apps/api/src/nomina-mensual.ts:42-121`,
+`apps/api/src/nomina.test.ts:160-183,706-765`.
+Comprobación **estática**, sin ejecución focal nueva ni conclusiones del Excel físico.
+
+**Dos consumidores del mismo maestro con filtros distintos:**
+
+1. `structuralDocumentReference(p)`, consumida por
+   `monthlyReference` para la **Media estructural**, permite Neto
+   documentado verificado como fuente salarial aunque **no existan
+   asociaciones bancarias**. Exige operandos, procedencia y evidencia;
+   admite discrepancias Histórico/Documentado si la resolución
+   conserva `originalContext` vigente. Correctamente no fabrica
+   ingresos bancarios ni exige `fechaCompleta`.
+2. `payrollForecast()` filtra en cambio por
+   `p.netoCompleto && p.exactos.deducciones !== null && !p.discrepancia`
+   sobre `payDetail()`. Si falta Neto histórico, `payDetail`
+   fija `neto` en el **subtotal de abonos bancarios atribuidos**
+   (o null sin abonos) y `netoCompleto` solo es true cuando
+   `referencia === totalCobrado`. Así, una Ordinaria con Neto
+   documentado **completo y verificado**, sin cobro o con cobro parcial,
+   puede contribuir a la media documental y quedar excluida del
+   pronóstico aun teniendo fuente salarial verificable.
+3. Si Histórico y Documentado difieren, `payDetail.discrepancia`
+   permanece true incluso después de seleccionar explícitamente una
+   fuente documental vigente con `accion:"resolver"`. El mismo
+   caso es apto para `structuralDocumentReference` si la
+   resolución sigue vigente, pero `payrollForecast` lo excluye
+   incondicionalmente por `!p.discrepancia`. La resolución para
+   conciliación y la prioridad de Neto Q5 son contratos diferentes;
+   **no** se recomienda eliminar las guardas antes de aclarar
+   cuáles operandos fiscales son válidos para pronosticar.
+
+**Contraste contractual:** SPEC11 §Referencia de pronóstico exige
+Ordinarias documentadas con operandos y contexto de Neto
+**verificables**, independientes de caja/ciclo real, pero no afirma
+de forma inequívoca que una paga pendiente de cobro sea siempre apta.
+Además §Adaptación explícita de Neto a la app conserva el Neto
+histórico con prioridad y declara parciales los derivados hechos con
+un **Neto bancario parcial**. Las pruebas `P3/P19` sí fijan
+conservadoramente la exclusión del caso con cobro parcial y sin
+histórico. Es posible que esa exclusión fuese intencional, por lo que
+**no se califica todavía de defecto confirmado**.
+
+**Pruebas/decisión focal sugeridas (UNRUN):**
+- **N11-F1**: paga Ordinaria con devengo/base/IRPF/variable/guardia y
+  **Neto documentado=1500**, verificado con evidencia; Histórico=null,
+  ningún Movimiento. Comparar `structuralDocumentReference`,
+  `monthlyReference` y `payrollForecast`: registrar qué recibe cada
+  consumidor y si la ausencia bancaria debe bloquear realmente una
+  simulación exclusivamente documental.
+- **N11-F2**: mismas fuentes y un abono atribuido de 600/1500; no
+  alterar ingreso real ni fingir `Neto completo` bancario. Verificar
+  si el pronóstico debe consumir deducciones derivadas del documento
+  completo o seguir bloqueado conforme a P19.
+- **N11-F3**: Histórico=1000 y Documentado=900, ambos verificados,
+  resolución explícita vigente eligiendo Documentado; comprobar
+  referencia de media y elegibilidad del pronóstico. Cambiar después
+  original para invalidar resolución y comprobar que ambos niegan
+  la referencia obsoleta.
+- **Control negativo**: documento ausente/pendiente, operandos
+  incompletos o reconciliación sin evidencia nunca generan
+  referencia ni estimación definitiva.
+
+**Recomendación:** pedir contraste independiente **solo de lectura**
+antes de modificar código/test. Si la política es que «Pronóstico
+requiere Neto bancario completamente conciliado» debe documentarse
+expresamente como requisito más restrictivo que Media documental;
+si es una barrera accidental, definir un **único contrato de
+referencia salarial verificable**, preservando origen y prioridad
+Q5, sin copiar movimientos ni sumar salarios como ejecución.
+No abrir PR ni asignar prioridad de corrección sin esa decisión.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
