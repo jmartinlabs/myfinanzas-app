@@ -1117,11 +1117,34 @@ valoración E4.3, conciliación de histórico importado y cierre.
 No atribuir sus ausencias a E4.1 ni declarar cobertura de
 posición patrimonial completa.
 
+**Verificación posterior de protecciones de maestros:**
+- `movement-ledger.ts:147-170` (`saldoHasEconomicUse`) protege
+  `tipo`, `control`, `saldoApertura`, `fechaApertura` y
+  `permiteSalidaExterior` ante uso histórico tanto por cualquier
+  Movimiento como por una Compra (vigente o anulada), sin reutilizar
+  el estado financiero como identidad. `saldos.ts:383-428` aplica
+  `HISTORY_LOCKED` dentro de transacción y revalida `revision`.
+  `inversiones-ac.test.ts:286-313` contiene los oráculos de los
+  cinco campos, con Compras existentes. Una desactivación no borra
+  los hechos; la ficha sigue computando posición.
+- `clasificacion.ts:253-272` bloquea cambiar la Deuda de
+  una Partida con Movimientos (`HISTORY_LOCKED`).
+  `deudas.ts:183-216` protege Inicio/capital de apertura cuando
+  existe cualquier Movimiento vinculado, conservando auditoría.
+  `movimientos.ts:709-752` evalúa el principal de ambas Deudas
+  afectadas por una rectificación, retirando primero el efecto
+  anterior y rechazando `DEBT_EXCESS` si el resultado aplicable
+  es negativo; `deudas.test.ts:760-810` prueba concurrencia y
+  bloqueo por capital.
+- **Límite:** lectura de mecanismos y pruebas versionadas, no
+  ejecución nueva ni demostración de ausencia absoluta de bypass.
+  No hay incidencia adicional confirmada por estos contratos.
+
 **Próximo paso de la auditoría:** profundizar en rectificación de
 Movimientos vinculados a saldos con Compras, protecciones de
-dependencias y estados de fuente para no convertir la
+dependencias y estados de fuente sin convertir la
 disponibilidad del efectivo en una garantía implícita de
-suficiencia. Mantener el seguimiento separado de los defectos
+suficiencia. Mantener seguimiento separado de los defectos
 confirmados H-SPEC04-02/03/04.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
