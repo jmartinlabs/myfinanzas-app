@@ -264,8 +264,8 @@ validate-template y los controles Git de whitespace. Las regresiones del harness
 (test-checks, test-validator, test-agent-usage, test-auto-agent-usage, test-verification,
 test-evidence) se ejecutan en fast/critical/full y en `--full` local; un diff solo
 documental no las ejecuta. Full añade typecheck, build, test y test:e2e una vez cada uno;
-permanece la excepción histórica AC23 de su rama. Docs solo omite la aplicación,
-con mensaje explícito. Cero pruebas, skips inesperados y errores fallan.
+permanece la excepción histórica AC23 de su rama. Docs omite la aplicación y las
+regresiones del harness, con mensajes explícitos. Cero pruebas, skips inesperados y errores fallan.
 Actions usa perfiles explícitos de esta misma entrada: ci-plan, baseline, ci y ci-result.
 Application/result conservan la interfaz local anterior; no determinan el grafo CI actual.
 Una fase por separado es evidencia parcial. Las regresiones invocan el CLI real,

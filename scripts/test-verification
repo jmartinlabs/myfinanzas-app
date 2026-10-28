@@ -147,11 +147,13 @@ if name=='e2e': print(os.getenv('VERIFY_FIXTURE_E2E_REPORT','3 passed (1.0s)'))
         self.assertEqual(ENTRY['baseline_checks']('full',synthetic),synthetic)
     def test_baseline_without_verified_context_runs_complete_suite(self):
         malformed=self.home/'bad-event.json'; malformed.write_text('{')
+        nonobject=self.home/'nonobject-event.json'; nonobject.write_text('null')
         unverified=self.home/'unverified-event.json'
         unverified.write_text(json.dumps({'ref':'refs/heads/feature','before':self.base,'after':self.head}))
         cases=(
             ({},'missing'),
             ({'GITHUB_EVENT_NAME':'pull_request','GITHUB_EVENT_PATH':str(malformed)},'malformed'),
+            ({'GITHUB_EVENT_NAME':'pull_request','GITHUB_EVENT_PATH':str(nonobject)},'non-object'),
             ({'GITHUB_EVENT_NAME':'push','GITHUB_EVENT_PATH':str(unverified)},'unverified'),
         )
         for extra,label in cases:

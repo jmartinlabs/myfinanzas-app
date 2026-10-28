@@ -182,8 +182,10 @@ sustituida solo en selección de entorno, eventos y grafo CI. **La actualizació
 documentación del 2026-10-28 sustituye para este repositorio la allowlist genérica y
 v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
 
-- `python3 scripts/verify` y `--full` conservan toda la cobertura local; baseline,
-  tipos/build, API/SQLite y E2E. La excepción histórica AC23 sigue limitada a su rama.
+- `python3 scripts/verify` conserva la cobertura local completa cuando la comparación
+  no es `docs`; una comparación `docs` omite aplicación y regresiones del harness.
+  `--full` fuerza toda la cobertura local (baseline, tipos/build, API/SQLite y E2E).
+  La excepción histórica AC23 sigue limitada a su rama.
 - CI usa un único job `required`: `ci-plan`, baseline, preparación y `ci`, más
   `ci-result` siempre. Este último rechaza fases ausentes, fallidas, canceladas o
   con skips fuera de la matriz; no concede un PASS local ni una aprobación de merge.
@@ -228,10 +230,10 @@ v2.6; el resto del contrato sigue vigente.** No son excepciones vigentes.
   renombrados y eliminaciones se evalúan en ambos extremos. Non-Markdown, rutas
   desconocidas y clasificación incierta siguen siendo `full`. Limitación conocida
   (2026-10-28): `validate-template` comprueba enlaces en `AGENTS.md`, `README.md`,
-  `NEW_PROJECT_PROMPT.md`, `specs/**`, `templates/**` y `.agents/skills/**`; los
-  `.md` admitidos en otros directorios (por ejemplo `docs/` o `infra/`) aún no
-  tienen comprobación completa de enlaces relativos. Se registra como cobertura
-  pendiente y no reduce el baseline actual.
+  `NEW_PROJECT_PROMPT.md`, `specs/**`, `templates/**` y `.agents/skills/**`; cualquier
+  `.md` admitido fuera de esas rutas (por ejemplo `docs/`, `infra/` o un futuro
+  `CONTRIBUTING.md`) aún no tiene comprobación completa de enlaces relativos. Se
+  registra como cobertura pendiente y no reduce el baseline actual.
 - Fast se limita a CSS en `apps/web/`. Todo TS/TSX,
   incluida lógica financiera del navegador, API, persistencia, migraciones, infra,
   dependencias, harness e instrucciones, y rutas nuevas/desconocidas son critical.

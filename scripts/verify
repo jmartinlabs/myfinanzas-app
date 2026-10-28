@@ -110,7 +110,7 @@ def baseline_profile():
                 print('Baseline profile downgraded: working tree is not clean.', file=sys.stderr)
                 return 'full'
         return profile
-    except (OSError, ValueError, KeyError, TypeError, subprocess.SubprocessError):
+    except (OSError, ValueError, KeyError, TypeError, AttributeError, subprocess.SubprocessError):
         print('Baseline profile unavailable; running the complete baseline.', file=sys.stderr)
         return 'full'
 
