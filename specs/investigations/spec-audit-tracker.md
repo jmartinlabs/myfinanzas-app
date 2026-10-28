@@ -7,7 +7,8 @@ de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
 - **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
   integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
-  `40728150624` SUCCESS. Las otras 24 SPEC siguen pendientes.
+  `40728150624` SUCCESS. **SPEC02 revisada por Álex**; correcciones documentales en
+  curso y **F-SPEC02-01 abierto**. Las otras 23 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01 es la única SPEC modificada; el resto no se ha tocado.
@@ -100,7 +101,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
-| 02 | Clasificación | Pendiente | — | — | — | — | — | — |
+| 02 | Clasificación | Revisada por Álex | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **F-SPEC02-01 abierto** (transparencia de cobertura). | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | PR documental pendiente | — | F-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
@@ -184,6 +185,55 @@ decisión; no se introduce `null` ni cobertura parcial en la posición.
 externo y cierres E4.8/E4.9 no tienen runtime; no se exige desarrollarlos para cerrar
 esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas E1.1.
 
+## SPEC02 — Revisión y hallazgos
+
+**Estado:** revisada por Álex; correcciones documentales D1–D4 en curso. **F-SPEC02-01
+abierto**; no se cierra SPEC02.
+
+### D1 — Estados históricos
+SPEC02, brainstorming, testplan y progress conservan «modelo propuesto/sin DDL»,
+«continuidad futura», «pantallas pendientes», «sin merge» y «esperar E1.3». Se separará
+estado actual (E1.2 cerrada PR #11, esquema 18) de la evidencia original, conservando
+decisiones y pruebas.
+
+### D2 — AC-19, AC-24, AC-25 y AC-26
+Siguen siendo 4 contratos; las implementaciones posteriores no son PASS E1.2:
+- AC-19 parcial: Movimientos/Referencia, planes anuales detectados, presupuesto solo al
+  cambiar `presupuesto`; indicadores/cierres sin runtime.
+- AC-24 implementado después en E1.4/E1.5 (`reference-rules.ts`, `movimientos.ts`).
+- AC-25 implementado después en E3.1/E3.2 (`anticipos.ts`, `compartidos.ts`).
+- AC-26 sin consumidor runtime de `anual`/`mensual`.
+
+### D3 — Rectificación y Partida→Deuda
+`clasificacion.ts` previsualiza padre/métodos/Referencia/Presupuesto/Deuda.
+`movement-impact.ts` cubre Movimientos y Referencias. Cambiar `deuda` de una Partida con
+Movimientos bloquea con `HISTORY_LOCKED`; `deudas.ts` consume el vínculo en `debtPeriod`.
+**La protección Partida→Deuda no se relaja.** `classificationGuard` es opcional y no se
+suministra en producción.
+
+### D4 — Cobertura real de impacto
+- Completa: catálogo/descendientes; Movimientos si el ledger está instalado.
+- Parcial: plan anual (detecta uso, no muestra líneas); Presupuesto/R3 solo al cambiar
+  `presupuesto`; Deuda con protección específica sin detalle general.
+- Sin cobertura genérica: Anticipos, Compartidos; sin runtime: indicadores y cierres.
+
+### F-SPEC02-01 — Propuesta técnica mínima (sin implementar)
+**Deficiencia:** `pending` no es exhaustivo, `annualPlans` no se muestra y hay mensajes
+obsoletos de Presupuestos. **Clasificación:** SPEC correcta y código/UI incompleto; no
+cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
+
+- **API:** en `clasificacion.ts`/`movement-impact.ts`, mantener `pending` y añadir
+  `parcial` y `noAplica` (o equivalentes) para separar comprobado/parcial/pendiente/no
+  aplicable; incluir Deudas, Anticipos, Compartidos, Referencias, Planes, Indicadores y
+  Cierres según corresponda. No crear un motor paralelo.
+- **UI:** en `Clasificacion.tsx`, mostrar los cuatro grupos y renderizar `annualPlans`
+  ya devueltos por la API; sustituir mensajes obsoletos que presentan Presupuestos como
+  no implementado cuando `budgetExecution` existe.
+- **Pruebas:** `apps/api/src/clasificacion.test.ts` (contrato de cobertura y planes);
+  `tests/e2e/classification.ts`/`catalog.spec.ts` (visibilidad y mensajes); regresión de
+  bloqueo Partida→Deuda. Sin código en la PR documental.
+- **Estado:** abierto; requiere autorización específica y PR funcional separada.
+
 ## Evidencias de la auditoría
 
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
@@ -193,9 +243,11 @@ esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas 
 
 ## Próxima acción
 
-1. **SPEC01 cerrada.** La PR #115 está integrada y este registro refleja el SHA/CI reales.
-2. Integrar esta actualización del tracker para que el cierre quede registrado en `main`.
-3. **No iniciar SPEC02** hasta confirmar que SPEC01 está cerrada en `main` y recibir
-   autorización expresa.
+1. Preparar y verificar la PR documental de **SPEC02** (D1–D4); presentar HEAD y CI a
+   Álex, sin merge automático.
+2. **F-SPEC02-01** sigue abierto: propuesta técnica registrada; no implementar sin
+   autorización específica ni PR funcional separada.
+3. **No cerrar SPEC02** hasta resolver F-SPEC02-01 o aceptarlo expresamente.
+4. **No iniciar SPEC03.**
 
-El gap de cero explícito + movimientos permanece registrado y no bloquea el cierre.
+El gap de cero explícito + movimientos de SPEC01 permanece registrado y no bloqueante.
