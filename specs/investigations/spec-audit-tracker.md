@@ -135,10 +135,10 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental menor; H-SPEC04-02 técnico, vista previa de referencia posterior no agrega fuente Comida (reproducción pendiente). | Spec/brainstorming 04; `movimientos.ts`, `ciclos.ts`, `Movimientos.tsx`, tests. | Conservar historial; no corregir sin aprobación. | PR #15 `b51b89b` integrada; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Medio: posible indicador de impacto temporal engañoso; motor central no afectado. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | Pendiente (primera pasada) | H-SPEC06-01 documental provisional: cabecera de progreso y plan histórico de dev aún expresan no integrado; falta auditoría técnica completa. | Progreso y spec 06; servicios/pruebas en inspección. | Conservar el historial. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · primera pasada de Álex, sin cierre. | Bajo: estado aparente desactualizado; sin impacto financiero demostrado. |
-| 07 | Operación de Ciclos | Pendiente | — | — | — | — | — | — |
-| 08 | Presupuestos | Pendiente | — | — | — | — | — | — |
-| 09 | Plan del ciclo | Pendiente | — | — | — | — | — | — |
-| 10 | Plan anual | Pendiente | — | — | — | — | — | — |
+| 07 | Operación de Ciclos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/07-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #49 MERGED `1cdbc7c` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
+| 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
+| 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/09-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #57 MERGED `7422d23` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
+| 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 11 | Nómina y previsión | Pendiente | — | — | — | — | — | — |
 | 12 | Flujo mensual | Pendiente | — | — | — | — | — | — |
 | 13 | Anticipos | Pendiente | — | — | — | — | — | — |
@@ -244,6 +244,57 @@ histórico expresamente sustituido ni por una supuesta autorización de Exterior
 **Siguiente ronda:** recorrer guardas, cálculos, efectos de rectificación, migraciones,
 pruebas y dependencias de SPEC04–06; después comprobar hallazgos y gravedad.
 No iniciar correcciones ni declarar ninguna de estas SPEC cerrada.
+
+## Auditoría global — segunda pasada del lote B (SPEC07–10), 2026-10-28
+
+**Base de lectura:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Se comprobaron documentos `specification`, `progress`, `testplan` de 07–10;
+las PR de entrega funcional y los servicios de Ciclos, Presupuestos, Plan del ciclo
+y Plan anual. **No hubo ejecución de pruebas nuevas ni revisión del Excel real**.
+Esta ronda NO cierra ninguna SPEC.
+
+### H-TRANS-01 — Progresos de SPEC07–10 sin estado de integración vigente (documental, bajo)
+
+Hallazgo **transversal único** para evitar cuatro hallazgos repetidos de la misma
+naturaleza; se registra su relación con cada SPEC en la tabla de seguimiento.
+
+| SPEC | Evidencia documental que permanece | Integración verificada en GitHub |
+| --- | --- | --- |
+| 07 | `07-ciclos-operacion-specification.md:2`, `progress.md:3-15` y `testplan.md:3-5` aún sitúan dev07/PR #49 fuera de `main` | PR #49 MERGED, squash `1cdbc7c` |
+| 08 | `08-presupuestos-progress.md:3-5`: candidato y PR pendiente; la propia `specification.md:3` ya reconoce #44 integrada | PR #44 MERGED, squash `255bf61` |
+| 09 | `09-plan-ciclo-progress.md:3-5,69-86`: «EN CURSO», CI y validación global pendientes | PR #57 MERGED, squash `7422d23` |
+| 10 | `10-plan-anual-progress.md:3-7,90-100`: candidato y gate Linux/merge pendientes; `testplan.md:117-132` remite a CI por SHA | PR #61 MERGED, squash `e1d6dba` |
+
+**Causa documental probable:** los cierres se realizaron mediante integración en
+GitHub sin actualizar después las cabeceras del progreso; los relatos históricos
+de QA, bloqueos e intentos fallidos permanecen legítimamente como evidencia. No
+se debe transformar una prueba inicialmente fallida en un PASS retroactivo.
+
+**Contrato y código contrastados parcialmente:**
+- `apps/api/src/ciclos.ts`: único maestro y operaciones de ciclo;
+  no se acredita aquí ejecución de pruebas con datos financieros reales.
+- `apps/api/src/presupuestos.ts:86-179`: distingue las tres fuentes, conserva
+  destino opcional solo para «No aplica» y unicidad de destino entre Aportaciones.
+- `apps/api/src/planes-ciclo.ts:63-118,135-183`: Ejecutado de Gasto real por
+  Partida, de Aportación a saldo por Transferencia ordinaria sin Referencia, y
+  ejecución nula para «No aplica»; compatible en lectura con `spec09`.
+- `apps/api/src/plan-anual.ts:125-245`: distingue subtotal registrado de
+  total ejecutado con cobertura histórica verificable; compatible en esta
+  inspección parcial con `spec10`.
+
+**Impacto:** quien interprete las cabeceras de las SPEC como estado operativo
+actual podría repetir entregas ya integradas o confundir límites históricos
+con bloqueos vigentes. No hay evidencia en esta pasada de defecto económico
+nuevo en los servicios analizados.
+
+**Propuesta:** consolidar al final de la auditoría una nota escueta de vigencia
+en los documentos afectados que identifique las PR integradas y distinga
+resultados históricos, contratos futuros y cobertura vigente. Reutilizar
+H-TRANS-01 en 07–10, sin crear PR por cada documento. No tocar código.
+
+**Pendiente:** revisar reglas de rectificación de ciclos, efectos sobre presupuestos
+y Plan del ciclo, cierre/corte financiero, históricos y pruebas/regresiones
+transversales. No reclasificar como PASS las dependencias futuras no ejecutadas.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
