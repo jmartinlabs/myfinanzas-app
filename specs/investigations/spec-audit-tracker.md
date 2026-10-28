@@ -132,12 +132,12 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02 técnico, referencia posterior omite Comida; H-SPEC04-03 técnico, cambio Comida no invalida huella; H-SPEC04-04 técnico, fallo de fuente temporal instalada no bloquea confirmación (repro dinámica pendiente). | Spec/brainstorming 04; `movimientos.ts`, `ciclos.ts`, `Movimientos.tsx`, tests. | Conservar historial; no corregir sin aprobación. | PR #15 `b51b89b` integrada; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Riesgo alto/provisional del control de confirmación ante fuente en error; no se ha demostrado pérdida ni modificación indebida de importes. |
+| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02 y H-SPEC04-03 CONFIRMADOS por contraste dinámico de OpenCode #0007 (fecha posterior y obsolescencia de huella); H-SPEC04-04 alto provisional, pendiente reproducción. | `movimientos.ts`, `movement-ledger.ts`, `ciclos.ts`, Comida, UI y contrastes #0007. | No corregir aún; evaluar test integrado y alcance de invalidación local. | PR #15 integrada; main `1ed2a83`; relay #0007 validado. | 2026-10-28 · reproducciones SQLite efímera reportadas por OpenCode; Álex valida fuente/contrato, sin cierre. | Medio de confianza/presentación para 02/03; H04-04 mantiene alto provisional; sin pérdida de dinero acreditada. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
 | 07 | Operación de Ciclos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/07-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #49 MERGED `1cdbc7c` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
-| 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 técnico/semántico: ciclo con Fin temporal pero sin referencia financiera devuelve ejecutado 0 según P12, pese a cobertura no acreditada. | SPEC09, `planes-ciclo.ts`, `ciclos.ts` y test P12. | Requiere confirmar interpretación y añadir prueba de frontera antes de corregir. | PR #57 MERGED `7422d23`. | 2026-10-28 · contradicción contrastada en código y test existente, sin cierre. | Medio/alto: riesgo de 0/Completo ficticios cuando no existe referencia/cobertura. |
+| 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 11 | Nómina y previsión | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura: estado integrado bien identificado, N:M y proyección separadas; pendientes pruebas transversales y contraste de reglas. | SPEC 11, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #63 `ed4a272` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
@@ -735,6 +735,82 @@ relay 0006. Ninguna SPEC se da por cerrada.
   central, sin promover un subtotal bancario parcial a un flujo completo.
   El error estructural del lector Movimientos que puede impedir construir
   `ledgerRows` ya está documentado en H-SPEC03-03; no duplicarlo.
+
+## Contraste independiente OpenCode #0007 — verificación y reclasificación (2026-10-28)
+
+**Fuente:** mensaje remoto #0007 de `coord/spec-audit-relay`,
+blob `90c58ce02e55f8c4cc5643ad1b4beaf2aa3af212`,
+base `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+OpenCode declara haber ejecutado reproducciones con esquema real y
+**SQLite en memoria**, sin commits ni pruebas añadidas al repositorio.
+Álex contrastó el diagnóstico con las reglas y rutas vigentes, pero
+**no ejecutó por separado estas pruebas**.
+
+### H-SPEC04-02 — Confirmado por reproducción dinámica ajena
+
+Con una operación Revisión Comida ficticia de fecha 30/10, la vista previa
+de un Gasto del 20/10 devuelve referencia `antes=30/10` y
+`después=20/10`; el máximo central real continúa en 30/10.
+La causa es `movimientos.ts:804-805`: el máximo posterior ignora
+Comida. Mantener ID **H-SPEC04-02 = referencia posterior errónea**.
+
+### H-SPEC04-03 — Confirmado por reproducción dinámica ajena
+
+OpenCode introdujo una operación Comida entre vista previa y confirmación.
+`financeRevision()` no cambió; la confirmación con
+`fingerprint/contextRevision` previos fue aceptada, sin 409.
+Esto prueba el desajuste de control de concurrencia en
+`movimientos.ts:755-770,863-879` y
+`movement-ledger.ts:69-145`. Mantener ID **H-SPEC04-03 =
+invalidación de huella ante cambios Comida**.
+
+**Nota de identidad:** el texto conclusivo de OpenCode #0007
+intercambió las etiquetas H-SPEC04-02 y H-SPEC04-03, pero sus
+reproducciones y explicación causal confirman ambos fenómenos.
+**No intercambiar ni reasignar los IDs ya publicados en el tracker.**
+
+**Alcance de posible solución (a evaluar):** no imponer sin justificación
+que todas las operaciones de Comida formen parte de `financeRevision`
+**global**, porque invalidaría potencialmente consumidores ajenos.
+Priorizar una huella de impacto temporal local que consuma la referencia
+y cobertura centrales, junto a cálculo `después` sobre el agregado
+de fuentes. Definir pruebas de 409 y control negativo para cambios de
+Comida que no modifiquen el impacto efectivo. Esta es una orientación
+arquitectónica, **no diseño aprobado ni autorización de código**.
+
+### H-SPEC09-01 — Retirar clasificación de defecto demostrado
+
+OpenCode reprodujo P12 con dos Inicios (01/10, 01/11), consulta 24/10
+y cero hechos: Fin derivado del primer ciclo = 31/10 (futuro),
+`corte=null`, referencia `sin_referencia`, `ejecutado=0.00`.
+El motor sigue el contrato interpretado por P12/AC17: **Fin temporal
+define un intervalo de hechos registrados**, no una fotografía de
+cierre ni un dato patrimonial al corte. La discrepancia con
+`monthlyFlow` no demuestra por sí sola que uno de los consumidores
+incumpla su definición, ya que Fluxo solo permite subtotales con
+referencia central. El documento SPEC09 no establece con precisión
+si el Fin futuro basta para **cero verificable** en ausencia de
+cobertura bancaria efectiva.
+
+**Decisión de auditoría:** H-SPEC09-01 pasa de posible defecto
+medio-alto a **ambigüedad de presentación/semántica de bajo riesgo
+confirmado**; no solicitar corrección automática ni alterar P12.
+Dejar abierta la decisión funcional futura: ¿el cero significa
+«sin hechos registrados en intervalo ya delimitado» incluso si el
+Fin aún es futuro, o se exige referencia/corte acreditado para
+mostrar cero/Completo? Hasta decidirlo, conservar comportamiento
+vigente y advertencia UI «Fin temporal no equivale a cierre
+financiero». No deducir cobertura histórica de la existencia de Fin.
+
+### H-SPEC04-04 — Sigue sin contraste independiente
+
+El mensaje #0007 responde a la consulta #0006 y **no evalúa**
+la nueva observación H-SPEC04-04, creada después.
+Mantener **alto provisional**, sin confundirla con la confirmación
+de H-SPEC04-02/03. Próximo contraste read-only: corromper lector
+temporal de Comida, verificar referencia central `error`, y
+comprobar si preview/confirmación de Movimiento bloquean
+sin escritura. No agrupar su aceptación funcional con SPEC09.
 
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
