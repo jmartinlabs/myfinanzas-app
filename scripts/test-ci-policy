@@ -390,6 +390,8 @@ class CiClassifierTests(unittest.TestCase):
         event = self.root / 'event.json'
         event.write_text(json.dumps({'before': self.base, 'after': head}))
         env = {**os.environ, 'GITHUB_EVENT_NAME': 'push', 'GITHUB_EVENT_PATH': str(event)}
+        # The synthetic event must not inherit the CI step's verified integration ref.
+        env.pop('CI_CHECKOUT_REF', None)
         command = ['python3', str(script), 'classify']
         self.assertEqual(subprocess.check_output(command, env=env).strip(), b'docs')
         self.assertEqual(subprocess.check_output(command + ['--base', self.base, '--head', head],
