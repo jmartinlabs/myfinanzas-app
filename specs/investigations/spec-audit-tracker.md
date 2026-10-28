@@ -1309,6 +1309,39 @@ Base de lectura: `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`. Sin ejecuci�
 
 SPEC26 es **precierre de solo lectura**, admite estado parcial y no crea cierre ni foto. Sin siguiente Inicio no inventa Fin (`SIN_SIGUIENTE_INICIO`). SPEC27 no permite publicar fotografía con **E3.5/FIN_NETA no verificable** ni sin respaldo externo recuperable DT6/T-BKP; la huella propia del cierre no puede sustituirse por `financeRevision`. Sus reglas T1/T2/T3 y comparación con fotos de cierres posteriores aún requieren implementación/pruebas. La ausencia de DEV26/27, E3.5/E4.2 y backup externo **no es defecto del código vigente** sino condición para autorizar y aceptar cierre futuro.
 
+## Segunda pasada de gates de diseño — SPEC17/20/21/22 (2026-10-29)
+
+Contraste de lectura contra las specifications y el estado del repositorio
+`main` `1ed2a834334d94d121df82b77a497a35f75ec50a`; sin ejecuciones
+de tests nuevas, sin desarrollos autorizados en estas cuatro SPEC.
+
+| SPEC | Estado documental | Contrato que no debe reinterpretarse | Gate vivo |
+| --- | --- | --- | --- |
+| 17 / E4.4 Deuda completa | D1–D7 confirmadas, specification/wireframes aún NO aprobadas | Deuda viva es apertura−principal desde Inicio control; conciliación declarada no modifica principal ni crea Saldos | Falta aprobación de specification y DEV; DT7/importe histórico real fuera de alcance |
+| 20 / E4.5 Histórico precontrol | SPEC/testplan aprobados, DEV NO autorizado | Histórico solo suma cuando tiene procedencia, intervalo, mapeo y no representación en Movimientos **acreditados**; universo de fuentes/Partidas requiere DT7 | 59 AC UNRUN; mapping/identidad de fuentes DT7 sin aprobación final |
+| 21 / E3.6 Pendientes y conciliación | SPEC/testplan aprobados, DEV NO autorizado | Reutiliza motores Anticipos/Compartidos/Comida; separa pendiente real, alerta, no disponible y Neto compartido, sin segunda fuente; aportaciones de tercero no son Ingresos ordinarios | 31 AC UNRUN; E3.5/FIN_NETA aún no operativa; no emitir falsa cifra completa |
+| 22 / E4.2 Ventas | SPEC/testplan y wireframes aprobados; DEV NO autorizado | Venta de inversión no es Movimiento/Gasto; la cantidad es Compras−Ventas y no puede bajar de cero en ninguna fecha posterior; referencia temporal compartida incorpora inversión **solo al implementar E4.2-AC3** | 45 AC UNRUN; D7 exige enmienda de SPEC19; sin Ventas, posición E4.1 solo Compras |
+
+**Comprobación transversal:** `specs/20-historico-precontrol-specification.md:82-92,124-140,252-356`
+exige universo y fuentes acreditadas DT7; su proveedor futuro de
+E2.4 no puede transformar datos incompletos en cero o `total` anual.
+`specs/21-pendientes-conciliacion-specification.md:102-120,280-332`
+distingue Neto por Gasto del Neto global de caso y no debe contabilizar
+una aportación como ejecución del Presupuesto. `specs/22-ventas-posicion-
+broker-specification.md:134-174,264-294` exige la comprobación temporal
+de unidades y la referencia central actualizada. No se registra
+defecto en código actual por estas funcionalidades ausentes.
+
+**Relación con H-SPEC26-01:** el acceso a posiciones a Fin
+deberá tener en cuenta el motor temporal de Ventas si E4.2 está
+instalado. No reutilizar sin fecha el `positionsFor` actual
+y no sumar histórico de capital/archivo como unidades de
+inversión no verificadas.
+
+**Estado:** documentación/gates revisados más profundamente, las
+cuatro SPEC siguen **abiertas**; no dar por implementado ni
+probado ningún AC todavía UNRUN.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
