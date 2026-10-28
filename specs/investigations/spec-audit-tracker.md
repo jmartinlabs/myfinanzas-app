@@ -1204,6 +1204,87 @@ técnicamente), sin nuevo hallazgo técnico confirmado. Riesgos
 de operación y recuperación física abiertos. SPEC32 es dependencia
 de despliegue, no una corrección ya autorizada; no reanudar PR #30.
 
+## Segunda inspección transversal — rectificación histórica, Compras y Partidas (2026-10-28)
+
+**Base fija:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Se releen `movimientos.ts:755-985`, `investment-engine.ts:149-320`,
+`compras.ts:471-743`, `clasificacion.ts:416-646`,
+`planes-ciclo.ts:477-567`, SPEC04/08/19 y suites de Movimientos,
+Compras e Inversiones. **Lectura estática, ninguna prueba nueva ejecutada**.
+Esta ronda no confirma un nuevo fallo de cálculo; distingue un
+**riesgo de evolución temporal de caja permitido** de un defecto.
+
+### R-INV-01 — Una rectificación de Movimiento puede dejar negativo el efectivo con Compra histórica (riesgo de uso, no BUG acreditado)
+
+- `investment-engine.ts:149-215` deriva efectivo del bróker de
+  apertura, Movimientos vigentes y Compras. `assertSufficient` es
+  guard de altas/rectificaciones de **Compras** y evalúa mínimos
+  de fin de día en fechas posteriores.
+- `movimientos.ts:658-700,832-885` calcula/enseña el nuevo
+  `antes/despues` usando `cashAt`, pero no invoca
+  `assertSufficient` ni impone saldo positivo al rectificar
+  transferencias o gastos. No debe deducirse automáticamente que
+  omite una guarda obligatoria: **SPEC19 Q7/§4.3.2 declara que
+  suficiencia no es una regla general de Saldos ni de Movimientos**.
+- **Ejemplo sintético para verificar semántica (NO prueba ejecutada):**
+  apertura bróker 0 €; Transferencia a efectivo de inversión de
+  1.000 €; Compra de 800 € válida; rectificación posterior de
+  Transferencia a 500 € ⇒ efectivo resultante **−300 €**. La
+  Compra histórica persiste, pero su suficiencia al capturar no
+  equivale a garantía perpetua de caja positiva tras cambiar
+  otros hechos reales. No inferir cargo, crédito ni autorización
+  bancaria a partir de ese saldo de aplicación.
+- La suite revisada `compras.test.ts:523-666` cubre
+  invalidación de preview por Compra y previsualización de
+  Gasto/Ingreso/Transferencia/Amortización sobre Efectivo/Inversiones.
+  `inversiones-ac.test.ts:252-459` cubre rectificación de Compra,
+  concurrencia y `HISTORY_LOCKED`. **No se encontró en estas suites
+  un test focal que rectifique una Transferencia ya ejecutada
+  después de existir una Compra financiada con ella**. Esto es
+  una brecha de cobertura puntual, no prueba de comportamiento
+  incorrecto.
+
+**Pruebas propuestas (sin implementarlas ni ejecutarlas):**
+
+| ID | Fixture | Oráculo conforme al alcance vigente |
+| --- | --- | --- |
+| F19-M1 | Transferencia 1.000; Compra 800; rectificar Transferencia a 500 con vista previa vigente | No inventar un veto global de suficiencia; si se admite por guardas vigentes, efectivo −300, Compra e importe sin cambio, auditoría y revisiones correctas |
+| F19-M2 | Misma financiación; anular Transferencia histórica después de Compra | Recalcular efectivo al retirar solo ese Movimiento; Compra permanece vigente y se muestra resultado exacto, sin doble gasto ni mutación de inversión |
+| F19-M3 | Vista previa sobre efectivo de bróker, Compra intermedia, confirmar con huella antigua | 409 `IMPACT_CHANGED`, sin escrituras; control ya presente en E4.1-AC53, comprobar también rectificación/anulación |
+| F19-M4 | Cambiar solo nombre de Saldo o Instrumento con Compra registrada, y luego intentar cambiar apertura, control, tipo o salida a Exterior | Los nombres no reescriben historia; campos económicos protegidos dan 409 `HISTORY_LOCKED` y preservan operación/auditoría |
+
+**Criterio:** mantener el comportamiento aprobado. Si se desea que
+una rectificación bancaria que dejaría efectivo negativo sea
+rechazada, requiere **decisión nueva de alcance** y estudio de
+coste de oportunidad: impediría corregir un hecho bancario verdadero
+para satisfacer artificialmente una regla de suficiencia de Compra.
+Una alternativa menos invasiva sería advertir claramente del
+saldo negativo, sin falsear los hechos. No se solicita cambio hoy.
+
+### Control de atribución Presupuesto (sin hallazgo nuevo)
+
+- `clasificacion.ts:491-544,563-637` invoca
+  `planConfigurationImpact` al cambiar
+  `Partida.presupuesto`, aporta diferencias por ciclos e
+  impide la escritura si `budgetExecution.blocked`.
+  Los cambios económicos utilizados requieren previsualización,
+  fingerprint y motivo explícito, con revalidación en transacción.
+- `planes-ciclo.ts:477-566` calcula antes/después por
+  Presupuesto, Partida y Ciclo; detecta hechos afectados que
+  caen fuera de ciclos asignables y periodos no verificables.
+  `clasificacion.test.ts:391-448` acredita bloqueo cuando
+  existe un Gasto anterior al primer Ciclo. No confundir cambio
+  permitido con reescritura de un Movimiento ni inferir que el
+  vínculo presupuestario surge del Concepto.
+- Sigue pendiente la semántica ya abierta H-SPEC09-01 de Fin
+  temporal/periodo verificable: no resolver por una regla
+  genérica ni registrar un segundo hallazgo duplicado.
+
+**Situación del relay:** no se envía mensaje nuevo, al no haber
+consulta material que requiera contraste independiente. Se
+mantienen H-SPEC04-02/03/04 confirmados como prioridad y
+separados de esta nota de riesgo/regresión.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
