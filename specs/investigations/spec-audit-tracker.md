@@ -1,4 +1,4 @@
-# Auditoría secuencial de especificaciones — Registro único
+# Auditoría integral de especificaciones — Registro único
 
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
@@ -22,15 +22,37 @@ de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
 ## Reglas de la auditoría
 
-- Se revisa **una SPEC cada vez**; no se inicia la siguiente sin cierre de la anterior.
-- Álex identifica hallazgos y aprueba funcionalmente; OpenCode aplica solo el alcance
-  autorizado, verifica, publica la PR y actualiza este registro.
+- **Auditoría global previa a correcciones:** Álex revisa las 22 SPEC pendientes del
+  inventario en rondas de 3–5 SPEC afines, contrasta reglas con implementación/pruebas
+  y dependencias transversales, y registra aquí sus propios hallazgos con evidencia.
+  Se conserva el estado **individual** de cada SPEC; «Revisada» no equivale a «Cerrada».
+- OpenCode investiga las cuestiones que Álex remita por relay, pero **no altera los
+  hallazgos de Álex durante la inspección**. Tras terminar la auditoría global,
+  propone lotes de corrección; ejecuta solo lo autorizado por el usuario, prueba y
+  publica PR, con validación final de Álex y autorización humana del merge.
 - **Ningún merge sin autorización expresa** del usuario.
 - No se reabren decisiones financieras aprobadas sin contradicción demostrada.
 - No se elimina ni archiva ningún archivo automáticamente.
-- Las actualizaciones de estado pueden incorporarse a la PR de la SPEC para evitar PR
-  auxiliares.
+- Consolidar hallazgos y correcciones compatibles en el menor número razonable de PR;
+  separar cambios críticos por dependencias/riesgos. Evitar PR de cierre auxiliares.
 - Este registro no duplica el estado funcional general de [epic-board](../epic-board.md).
+
+### Coordinación Álex ↔ OpenCode durante la auditoría global (2026-10-28)
+
+- Base inicial: `main` `5570d89` (SPEC01–03 cerradas). Los hallazgos nuevos se
+  guardan en **esta rama de auditoría**, `audit/spec04-25`, no directamente en `main`.
+- El **único** mensaje de coordinación vigente está en
+  `specs/investigations/spec-audit-relay.md` de la rama
+  **`coord/spec-audit-relay`**. Se reemplaza, con contador `0001`, `0002`…,
+  remitente/destinatario y comprobación de blob SHA; el historial Git conserva
+  mensajes anteriores. No crear PR ni ejecutar CI por cada mensaje.
+- Cada agente resume al usuario qué ha recibido/respondido y, tras confirmar la
+  escritura remota, comunica «Listo - XXXX». Al recibir «Lee XXXX», verifica
+  número y destinatario exactos. Si hay desajuste, no responde ni sobrescribe.
+- Solo Álex escribe los hallazgos de esta ronda; OpenCode trabaja en paralelo solo
+  sobre tareas expresamente autorizadas y no debe sobrescribir este tracker.
+- Una PR consolidada integrará el tracker en `main` tras revisión y autorización;
+  el relay permanece en su rama y **no** se incorpora a la PR ni a `main`.
 
 ### Regla obligatoria de coherencia con el código (2026-10-28)
 
@@ -311,9 +333,10 @@ Playwright; CI posterior de `main` `40761769656` (fast): PASS.
 
 1. **SPEC01, SPEC02 y SPEC03 CERRADAS** e integradas en `main`; sin acción pendiente
    sobre ellas.
-2. **SPEC04 no iniciada:** requiere revisión de Álex y autorización expresa del usuario.
-   No se inicia en este cierre.
-3. Mantener el registro sin ampliar alcance; las 22 SPEC restantes siguen pendientes.
+2. **Auditoría global autorizada:** Álex inicia la revisión en rondas sobre las 22
+   SPEC restantes. Hallazgos y evidencias se consolidan aquí; no iniciar correcciones.
+3. No alterar la evidencia histórica de SPEC01–03. Requerir autorización expresa
+   para todo cambio funcional/documental en las SPEC y para cualquier merge.
 
 `main` actual: `52eaec0` (squash de PR #122). Históricos: `7483709` (HEAD validado de
 #122), `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac`
