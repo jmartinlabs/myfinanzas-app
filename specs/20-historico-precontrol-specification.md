@@ -28,7 +28,7 @@ Guías: [arquitectura](guidelines/architecture.md), [seguridad](guidelines/secur
 [calidad](guidelines/quality.md) y [UI](guidelines/ui.md).
 
 Base de preparación: `origin/main` = `1d539a8cb9c38b3a8d2e3921a3651197105ce282`
-(2026-10-27), esquema SQLite v16; base inicial `26b6f0c`, refrescada durante la preparación a `2487656` y después a `1d539a8`. Esta spec no fija una versión futura de esquema ni escribe SQL. El desarrollo deberá comprobar de nuevo `main`, la versión vigente y los
+(2026-10-27), esquema SQLite v16; base inicial `26b6f0c`, refrescada durante la preparación a `2487656` y después a `1d539a8`. La rama de PR87 sigue sobre esa base; `main` actual es `7073864` (esquema 18) y la reconciliación sigue pendiente. Esta spec no fija una versión futura de esquema ni escribe SQL. El desarrollo deberá comprobar de nuevo `main`, la versión vigente y los
 contratos integrados antes de implementar.
 
 ## Functionality
