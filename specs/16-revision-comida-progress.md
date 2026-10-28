@@ -89,7 +89,7 @@ checkpoint final. Se conserva como historia, no como estado vigente.
 
 - Candidato de código: `77a311d` (merge `d179515` + fix de backup v16).
 - HEAD de la rama: `77a311d`; PR #82 abierta; sin merge.
-- CI Linux [run 40410650558](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40410650558):
+- CI Linux [run 40410650558](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40410650558):
   **PASS**; baseline 1m6s, full 4m28s, required 7s.
 - Full API: **259 PASS / 0 FAIL / 3.721 expect** en 25 archivos.
 - E2E: **11 PASS**.

@@ -5,11 +5,11 @@ Código analizado: `0f8c33020687ae158ed589fb0c83e625bbf03318`; archivos de aplic
 idénticos a main 9336fdd. Investigación autorizada por usuario; no cambios de producto o test.
 
 ## Hechos y límite del diagnóstico
-[CI push original 39672873631](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39672873631)
+[CI push original 39672873631](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39672873631)
 falla en `apps/api/src/referencias.test.ts:662`, llamado desde :696: se esperaba exit=0,
 recibido 1 en un proceso de la fase de rectificación concurrente. No es la aserción final
 que exige [200,409], ni se demuestra un fallo económico o un resultado 409 incorrecto.
-[CI PR del mismo SHA 39672929471](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39672929471)
+[CI PR del mismo SHA 39672929471](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39672929471)
 SUCCESS. Este éxito NO resuelve ni invalida el fallo anterior.
 
 El helper original captura stdout/stderr, pero `expect(exit).toBe(0)` lanza antes de

@@ -284,7 +284,7 @@ datos reales, Excel modificado ni despliegue; Excel v5.11 continúa maestro.
 Auditoría final favorable de Álex; usuario autoriza squash de PR #18 sobre el HEAD
 064ffa295608a8a90152a2f6bf8ea57154855490, ambas CI SUCCESS y sin conflictos con
 main tras PR #19. Integración: `0d6cfc0e4622e00e1084aefb35987b1954c5e3ef`.
-[CI posterior al merge](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39649152132):
+[CI posterior al merge](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39649152132):
 COMPLETED / SUCCESS sobre ese commit. Main sincronizado y limpio tras integración;
 PR #19 preservada. E1.5 completada e integrada: 30 criterios verificados, AC-31–33
 contratos futuros sin implementar. Manifiesto `e1.5-v5` y prueba R10 integrados.
@@ -369,7 +369,7 @@ Los estados previos de propuestas/preguntas pendientes son históricos, no el vi
 ## Spec06 integrada y adopción de coordinación autorizada — 2026-10-22
 Usuario autoriza integrar PR #24 sobre 3f04f33 sin cambios adicionales: HEAD y ambas
 CI SUCCESS, sin conflictos; squash b60def124e95d692b6021eff9c1049652e21ded0 MERGED.
-[CI posterior39738161833](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39738161833)
+[CI posterior39738161833](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39738161833)
 COMPLETED/SUCCESS, main sincronizado y limpio. Spec06 cerrada; dev06/spec07 no autorizados.
 Adopción selectiva v2.3.1 en rama independiente; [plan y evidencia](methodology/orchestration-adoption.md),
 [tablero](epic-board.md) y [límites locales](methodology/myfinanzas-coordination.md).

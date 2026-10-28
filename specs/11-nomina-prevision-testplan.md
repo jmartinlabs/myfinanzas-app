@@ -2,7 +2,7 @@
 Specification: [spec11](11-nomina-prevision-specification.md)
 
 **Resultado vigente: PASS final Linux e integrado PR63.** Candidato `7d24a7f`,
-main `ed4a272`; [CI40128422924](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40128422924)
+main `ed4a272`; [CI40128422924](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40128422924)
 SUCCESS con169 API/2683 aserciones y5 E2E. P11 backup/restore v12 demo/production PASS,
 N:M/originales/auditoría conservados e intentos revocados. Focal final22 PASS/156
 aserciones y QA independiente PASS. [Cierre y procedencia](11-nomina-prevision-progress.md#cierre-vigente--2026-10-24).

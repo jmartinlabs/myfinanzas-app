@@ -6,8 +6,8 @@ antes de cerrar STEP 8. Rama fix/e1-1-sqlite-startup-concurrency desde main 5f1e
 Sin E1.2, nuevas funcionalidades, datos reales, cambios financieros ni despliegue.
 
 ## Evidencia y diagnóstico
-- PR #8 documental, commit 6f816a0: [push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39553450015),
-  [pull_request FAILURE](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39553456240).
+- PR #8 documental, commit 6f816a0: [push SUCCESS](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39553450015),
+  [pull_request FAILURE](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39553456240).
   La anotación de AC03 solo mostraba códigos de salida [0,1] en vez de [0,0]; la prueba
   no consumía ni mostraba stderr de los hijos. Log remoto detallado inaccesible desde Codex.
 - Reproducción local sobre código de main: en la cuarta ronda de cuatro procesos,
