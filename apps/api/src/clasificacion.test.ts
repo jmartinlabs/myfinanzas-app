@@ -277,7 +277,7 @@ test("02 AC15–18/20: rectificación real del catálogo, impacto indirecto y re
     );
     const plan = preview(db, "subcategorias", s.id, changes);
     expect(plan.dependencies.map((d) => d.id)).toEqual([p.id]);
-    expect(plan.coverage).toContain("no comprobado");
+    expect(plan.coverage).toContain("Cobertura declarada");
     expect(plan.pending).not.toContain("Movimientos");
     expect(plan.financial?.movimientos).toEqual([]);
     expect(() =>
@@ -333,6 +333,107 @@ test("02 AC15–18/20: rectificación real del catálogo, impacto indirecto y re
       ),
     ).toThrow("protegida");
     expect(snapshot(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
+test("H-SPEC02-01: cobertura declara estados y planes anuales", () => {
+  const { db, c, s, p } = fixture();
+  try {
+    const other = category(db, "Destino cobertura ficticio");
+    const plan = preview(db, "subcategorias", s.id, {
+      revision: s.revision,
+      padre: other.id,
+    });
+    expect(plan.checked).toEqual(
+      expect.arrayContaining([
+        "Catálogo y descendientes",
+        "Movimientos",
+        "Referencias (hechos existentes)",
+        "Plan anual (sin líneas afectadas)",
+      ]),
+    );
+    expect(plan.partial).toContain(
+      "Deuda (consumo del vínculo; sin detalle general)",
+    );
+    expect(plan.notApplicable).toContain(
+      "Presupuesto/R3 (vínculo no modificado)",
+    );
+    expect(plan.pending).toEqual(
+      expect.arrayContaining([
+        "Anticipos",
+        "Compartidos",
+        "Indicadores",
+        "Cierres/fotos",
+      ]),
+    );
+    expect(plan.pending).not.toContain("Movimientos");
+    expect(plan.coverage).toContain("Cobertura declarada");
+
+    db.run(
+      "INSERT INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,NULL,NULL,'Pendiente',1)",
+      [p.id],
+    );
+    const withPlan = preview(db, "categorias", c.id, {
+      revision: c.revision,
+      mensual: "Ingreso",
+    });
+    expect(withPlan.annualPlans).toHaveLength(1);
+    expect(withPlan.annualPlans[0].partida).toBe(p.id);
+    expect(withPlan.partial.join(" ")).toContain("Plan anual");
+    expect(withPlan.used).toBe(true);
+  } finally {
+    db.close();
+  }
+});
+
+test("H-SPEC02-01: presupuesto bloqueado y protección Partida→Deuda", () => {
+  const { db, p } = fixture();
+  const time = "2026-01-01T00:00:00.000Z";
+  try {
+    db.run(
+      "INSERT INTO presupuestos VALUES('PRE001','Presupuesto ficticio','Gasto real','S001','Activo',1,?,?)",
+      [time, time],
+    );
+    const budget = preview(db, "partidas", p.id, {
+      revision: p.revision,
+      presupuesto: "PRE001",
+    });
+    expect(budget.budgetExecution).not.toBeNull();
+    expect(budget.checked).toContain("Presupuesto/R3");
+
+    db.run(
+      "INSERT INTO deudas VALUES('D001','Deuda ficticia','2026-01-01',NULL,'Activa',1,?,?)",
+      [time, time],
+    );
+    db.run("UPDATE partidas SET deuda='D001' WHERE id=?", [p.id]);
+    const debt = preview(db, "partidas", p.id, {
+      revision: get(db, "partidas", p.id).revision,
+      deuda: null,
+    });
+    expect(debt.checked).toContain("Deuda (protección Partida→Deuda)");
+
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado) VALUES('1','2026-02-01','Gasto',100,'S001','S000',NULL,?,'Ficticio','',0,1,?,?)",
+      [p.id, time, time],
+    );
+    expect(() =>
+      preview(db, "partidas", p.id, {
+        revision: get(db, "partidas", p.id).revision,
+        deuda: null,
+      }),
+    ).toThrow("No se puede cambiar Deuda");
+
+    const blocked = preview(db, "partidas", p.id, {
+      revision: get(db, "partidas", p.id).revision,
+      presupuesto: "PRE001",
+    });
+    expect(blocked.budgetExecution?.blocked).toBe(true);
+    expect(blocked.partial.join(" ")).toContain(
+      "Presupuesto/R3 (bloqueado",
+    );
+    expect(blocked.checked).not.toContain("Presupuesto/R3");
   } finally {
     db.close();
   }

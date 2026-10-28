@@ -410,6 +410,50 @@ function revision(old: Classification, value: unknown) {
       "El elemento ha cambiado. Revisa su versión actual.",
     );
 }
+export type ImpactCoverage = {
+  checked: string[];
+  partial: string[];
+  pending: string[];
+  notApplicable: string[];
+};
+function coverageFor(
+  financial: ReturnType<typeof classificationMovementImpact>,
+  annualPlans: ReturnType<typeof annualClassificationRelations>,
+  budgetExecution: ReturnType<typeof planConfigurationImpact> | null,
+  economic: string[],
+  protection?: { used?: boolean },
+): ImpactCoverage {
+  const checked = ["Catálogo y descendientes"];
+  const partial: string[] = [];
+  const pending: string[] = [];
+  const notApplicable: string[] = [];
+  if (financial) {
+    checked.push("Movimientos");
+    if (economic.length) checked.push("Referencias (hechos existentes)");
+    else notApplicable.push("Referencias (cambio no económico)");
+  } else {
+    pending.push("Movimientos", "Referencias");
+  }
+  if (annualPlans.length)
+    partial.push(
+      `Plan anual (${annualPlans.length} ${
+        annualPlans.length === 1 ? "línea" : "líneas"
+      } de uso detectad${annualPlans.length === 1 ? "a" : "as"})`,
+    );
+  else checked.push("Plan anual (sin líneas afectadas)");
+  if (economic.includes("presupuesto")) {
+    if (!budgetExecution) pending.push("Presupuesto/R3");
+    else if (budgetExecution.blocked)
+      partial.push("Presupuesto/R3 (bloqueado; periodo/corte no verificable)");
+    else checked.push("Presupuesto/R3");
+  } else notApplicable.push("Presupuesto/R3 (vínculo no modificado)");
+  if (economic.includes("deuda"))
+    checked.push("Deuda (protección Partida→Deuda)");
+  else partial.push("Deuda (consumo del vínculo; sin detalle general)");
+  pending.push("Anticipos", "Compartidos", "Indicadores", "Cierres/fotos");
+  if (protection?.used) checked.push("Protección externa");
+  return { checked, partial, pending, notApplicable };
+}
 function snapshot(db: Database) {
   return Object.keys(entities).map((k) =>
     db.query(`SELECT * FROM ${entities[k as Entity].table} ORDER BY id`).all(),
@@ -445,7 +489,7 @@ function impact(
     kind === "partidas"
       ? [id]
       : dependencies.filter((d) => d.kind === "partidas").map((d) => d.id),
-  );
+  ) as { ejercicio: number; partida: string; revision: number }[];
   const budgetExecution =
     kind === "partidas" && economic.includes("presupuesto")
       ? planConfigurationImpact(db, {
@@ -460,6 +504,13 @@ function impact(
       "HISTORY_LOCKED",
       protection.reason ?? "Rectificación financiera protegida.",
     );
+  const coverageItems = coverageFor(
+    financial,
+    annualPlans,
+    budgetExecution,
+    economic,
+    protection,
+  );
   return {
     old,
     value,
@@ -485,16 +536,11 @@ function impact(
     ]),
     coverage: budgetBlocked
       ? budgetExecution!.coverage
-      : financial
-        ? "Catálogo y Movimientos comprobados. Otros consumidores financieros no comprobados; pendientes."
-        : "Solo dependencias verificables del catálogo. Impacto financiero no comprobado; consumidores pendientes.",
-    pending: [
-      ...(budgetBlocked ? ["Periodo/corte"] : []),
-      ...(financial ? [] : ["Movimientos"]),
-      ...(budgetExecution ? [] : ["Presupuestos"]),
-      "Indicadores",
-      "Cierres",
-    ],
+      : "Cobertura declarada por consumidor; revisa checked/partial/pending/notApplicable. pending no implica ausencia de impacto.",
+    checked: coverageItems.checked,
+    partial: coverageItems.partial,
+    pending: coverageItems.pending,
+    notApplicable: coverageItems.notApplicable,
   };
 }
 export function previewClassification(

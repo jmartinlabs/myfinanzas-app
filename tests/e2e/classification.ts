@@ -205,10 +205,17 @@ export async function classificationJourney(page: Page) {
     page.getByRole("heading", { name: "Vista previa del catálogo" }),
   ).toBeVisible();
   await expect(
-    page.getByText("Catálogo y Movimientos comprobados.", {
-      exact: false,
+    page.getByRole("heading", { name: "Cobertura del impacto", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Comprobado", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Pendiente de comprobación",
+      exact: true,
     }),
-  ).toContainText("no comprobado");
+  ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Confirmar rectificación", exact: true }),
   ).toBeDisabled();
@@ -333,6 +340,52 @@ export async function classificationJourney(page: Page) {
     null,
     null,
   ]);
+  // H-SPEC02-01: coverage groups and annual-plan usage in the preview.
+  execFileSync(
+    process.env.BUN_BIN ?? "bun",
+    [
+      "-e",
+      `import { Database } from 'bun:sqlite'; const db=new Database('.local/e2e/demo.sqlite'); db.run("INSERT OR IGNORE INTO annual_plan_lines(ejercicio,partida,presupuesto,periodo,esencial,revision) VALUES(2026,?,NULL,NULL,'Pendiente',1)",[process.argv[1]]); db.close();`,
+      partida,
+    ],
+    { env: { ...process.env, NODE_ENV: "test" }, stdio: "pipe" },
+  );
+  await navigate(`/clasificacion/partidas/${partida}`);
+  await page
+    .getByRole("button", { name: "Rectificar configuración", exact: true })
+    .click();
+  await expect(heading("Rectificar Partida")).toBeVisible();
+  await page
+    .getByLabel("Nombre *", { exact: true })
+    .fill("Gasto cotidiano revisado");
+  await page
+    .getByRole("button", { name: "Revisar dependencias", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Cobertura del impacto", exact: true }),
+  ).toBeVisible();
+  for (const group of [
+    "Comprobado",
+    "Parcial",
+    "Pendiente de comprobación",
+    "No aplica",
+  ])
+    await expect(
+      page.getByRole("heading", { name: group, exact: true }),
+    ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Planes anuales afectados",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.getByText("Ejercicio 2026", { exact: false })).toBeVisible();
+  await expect(
+    page.getByText("Presupuesto pendiente de su entrega", { exact: false }),
+  ).toHaveCount(0);
+  await expect(page.getByText("hasta E2.3", { exact: false })).toHaveCount(0);
+  await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+  await navigate("/clasificacion/partidas");
   // Expired-session presentation retains an unsaved classification draft.
   await navigate("/clasificacion/partidas/nuevo");
   await page
