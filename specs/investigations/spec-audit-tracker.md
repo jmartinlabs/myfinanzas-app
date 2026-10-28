@@ -100,7 +100,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Saldos y atributos de control | PR pendiente | Correcciones documentales aplicadas. **H-SPEC01-01 resuelto** por decisión expresa (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo actual. Cobertura de tests revisada; gap de cero explícito + movimientos registrado. Sin cambio de código. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD final / CI de la PR; candidato revisado `c59834f` | Pendiente | AC-38 parcial y E1.3 no acreditado; sin contradicción material abierta. |
+| 01 | Saldos y atributos de control | PR pendiente | Correcciones documentales aplicadas. **H-SPEC01-01 resuelto** por decisión expresa (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo actual. Cobertura de tests revisada; gap de cero explícito + movimientos registrado. **Nota AC-33 fuera de la tabla; AC-01…AC-43 consecutivos.** Sin cambio de código. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / HEAD del fix `89f1dbb` / CI `40726648424` PASS; HEAD final en el checks | Pendiente | AC-38 parcial y E1.3 no acreditado; sin contradicción material abierta. |
 | 02 | Clasificación | Pendiente | — | — | — | — | — | — |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
@@ -190,7 +190,7 @@ esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas 
 | Fecha | SPEC | PR | HEAD | CI | Validación de Álex | Merge |
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
-| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `c59834f` + precisiones + decisión H-01; ver HEAD final | ver checks de la PR | Pendiente | Pendiente |
+| 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `89f1dbb` (fix de tabla); HEAD final en el checks | `40726648424` PASS | Pendiente | Pendiente |
 
 ## Próxima acción
 
