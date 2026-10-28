@@ -139,7 +139,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
-| 11 | Nómina y previsión | En inspección (no cerrada) | H-SPEC11-01 PROVISIONAL: criterios de aptitud salarial documental divergentes entre media estructural y pronóstico; el filtro del pronóstico usa completitud bancaria y excluye discrepancias aun resueltas. | SPEC11 §Referencia de pronóstico/Q5; `nomina.ts` y `nomina-mensual.ts`; P3/P5/P19. | Contrastar semántica de referencia fiscal independiente del banco con fixture ficticia y confirmar política antes de corregir. | PR #63 `ed4a272` integrada; base `main` `1ed2a83`. | 2026-10-28 · contraste estático detallado, reproducción dinámica UNRUN; sin cierre. | Medio provisional: pronóstico injustificadamente no disponible o consumidores incoherentes; sin alteración bancaria. |
+| 11 | Nómina y previsión | En inspección (no cerrada) | H-SPEC11-01 reclasificado: NO BUG demostrado; diferencia de elegibilidad media documental vs pronóstico reproducida en #0012 y coherente con separación de fuentes. Ambigüedad futura: admitir documento completo sin banco o discrepancia resuelta para pronóstico. | SPEC11 Q5/pronóstico, `nomina.ts`, `nomina-mensual.ts`, pruebas ficticias OpenCode #0012. | Mantener comportamiento y tests actuales; cambio de semántica solo con decisión expresa. | PR #63 integrada; `main` `1ed2a83`, relay #0012 contrastado. | 2026-10-28 · F1–F3 ejecutados por OpenCode en memoria; Álex contrasta evidencia estática, sin cierre integral. | Bajo de cálculo; UX/expectativa de elegibilidad documental, sin modificación bancaria. |
 | 12 | Flujo mensual | En inspección (no cerrada) | Sin hallazgo nuevo en primera lectura; ejecución bancaria y amortización separadas; AC14/16/17/19/26/43/47 con cobertura parcial/UNRUN reconocidos. | SPEC 12, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #67 `a445f90` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 13 | Anticipos | En inspección (no cerrada) | H-TRANS-01 (ampliación): progress deja PR #71 DRAFT y QA pendiente pese a integración; motor rol/par cotejado parcialmente. | SPEC 13, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #71 `b146eda` integrada. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
 | 14 | Gastos compartidos | En inspección (no cerrada) | H-TRANS-01 (ampliación): checkpoint D5 conserva PR #90 Draft/no merge; Base B y D5 ya integradas, B-T11 todavía futuro. | SPEC 14, servicios API y matrices de aceptación. | Conservar historial y límites. | PR #75 `5ad75ed`; #90 `cf6954a` integradas. | 2026-10-28 · contraste documental/código parcial; sin cierre. | Validación integrada y cobertura transversal aún por comprobar. |
@@ -961,6 +961,51 @@ si es una barrera accidental, definir un **único contrato de
 referencia salarial verificable**, preservando origen y prioridad
 Q5, sin copiar movimientos ni sumar salarios como ejecución.
 No abrir PR ni asignar prioridad de corrección sin esa decisión.
+
+## Contraste independiente #0012 — H-SPEC11-01, elegibilidad documental y pronóstico (2026-10-28)
+
+**Fuente:** relay #0012 de OpenCode, rama `coord/spec-audit-relay`,
+blob `7ae4a8fedb69512a0d7610f978b0f1e28177c8dd`,
+base `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+OpenCode declara haber reproducido N11-F1/F2/F3 en SQLite efímera con
+datos ficticios; Álex contrastó las reglas, el código y las conclusiones,
+**sin repetir ejecución dinámica**.
+
+| Caso ficticio | Referencia documental / media | `payDetail` | Pronóstico |
+| --- | --- | --- | --- |
+| N11-F1 · documentado 1.500 verificado, histórico null, banco sin vínculos | `structuralDocumentReference.exacto=1500`; media 1.500, estado Parcial (1 mes) | `neto=null`, `netoCompleto=false`, `referencia=1500` | No disponible |
+| N11-F2 · misma paga con vínculo bancario parcial 600 | Media 1.500 | `neto=600`, `netoCompleto=false`, `referencia=1500`; derivados parciales | No disponible |
+| N11-F3 · Histórico 1.000, Documentado 900, discrepancia resuelta explícitamente hacia Documentado | `structuralDocumentReference.exacto=900`; media 900 | `neto=1000` por prioridad Q5; deducciones 80; `discrepancia=true` | No disponible |
+
+**Juicio:** la divergencia observada es **real y reproducida**, pero
+`spec11` no obliga a utilizar para pronóstico toda fuente apta para la
+media estructural. Q5 distingue original histórico, documentado, saldo
+cobrado, referencia conciliada y fuente fiscal; P3/P19 protegen la
+exclusión conservadora de abonos bancarios parciales. La discrepancia
+resuelta para conciliación tampoco sustituye automáticamente Neto
+histórico Q5 ni acredita deducciones del pronóstico.
+
+**Precisión:** el filtro del pronóstico **no exige siempre ingreso bancario
+completo**. Cuando existe `Neto histórico` verificado,
+`payDetail.netoCompleto` puede ser verdadero sin vinculaciones
+bancarias; la exclusión analizada en F1/F2 surge en la rama
+sin Histórico. F3 cae por `!discrepancia`, incluso tras resolución.
+No describirlo como obligación universal de conciliación bancaria.
+
+**Reclasificación del hallazgo:** H-SPEC11-01 se mantiene como
+**ambigüedad funcional documentada**, **no bug confirmado**,
+riesgo bajo de cálculo y posible sorpresa de UX. No se propone
+cambiar motor ni pruebas actuales. Antes de cualquier extensión
+futura habría que decidir: (a) si documento completo y verificado
+puede alimentar pronóstico sin cobro, y (b) si una discrepancia
+resuelta habilita pronóstico, con qué Neto/deducciones sin mezclar
+fuentes ni reescribir originales. Una decisión afirmativa sería
+cambio de contrato, no parche automático.
+
+**Control de regresión futuro (sin persistir hoy):** fijar F1, F2 y F3
+con su comportamiento vigente y un caso negativo de documento
+incompleto. Si el usuario aprueba un criterio diferente, aprobar
+primero su oráculo y después adaptar test e implementación.
 
 ## Controles de regresión cruzada — SPEC12/13/14 (2026-10-28)
 
