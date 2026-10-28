@@ -98,8 +98,5 @@ export function classificationMovementImpact(
     used: movements.length > 0,
     revision: financeRevision(db),
     movimientos: movements,
-    cobertura:
-      "Movimientos y clasificación comprobados; cambiar clasificación no altera entradas/salidas de Saldos.",
-    pendientes: ["Presupuestos", "Indicadores", "Cierres"],
   };
 }
