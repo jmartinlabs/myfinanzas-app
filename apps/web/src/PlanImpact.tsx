@@ -23,7 +23,11 @@ export function PlanImpact({
   return (
     <section aria-label="Impacto en planes del ciclo">
       <h3>Impacto en planes del ciclo</h3>
-      <p>{impact.coverage}</p>
+      <p>
+        {impact.ciclos.length
+          ? impact.coverage
+          : "Sin diferencias de ejecución por ciclo en la cobertura consultada; no se declara cobertura completa sin periodos."}
+      </p>
       {impact.ciclos.length ? (
         impact.ciclos.map((c) => (
           <div key={c.ciclo}>

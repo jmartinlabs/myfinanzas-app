@@ -384,6 +384,19 @@ export async function classificationJourney(page: Page) {
     page.getByText("Presupuesto pendiente de su entrega", { exact: false }),
   ).toHaveCount(0);
   await expect(page.getByText("hasta E2.3", { exact: false })).toHaveCount(0);
+  await shot("coverage-desktop");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(
+    page.getByRole("heading", { name: "Cobertura del impacto", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", {
+      name: "Planes anuales afectados",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await shot("coverage-mobile");
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Cancelar", exact: true }).click();
   await navigate("/clasificacion/partidas");
   // Expired-session presentation retains an unsaved classification draft.

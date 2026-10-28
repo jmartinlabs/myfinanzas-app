@@ -421,6 +421,7 @@ function coverageFor(
   annualPlans: ReturnType<typeof annualClassificationRelations>,
   budgetExecution: ReturnType<typeof planConfigurationImpact> | null,
   economic: string[],
+  cyclesExist: boolean,
   protection?: { used?: boolean },
 ): ImpactCoverage {
   const checked = ["Catálogo y descendientes"];
@@ -445,6 +446,10 @@ function coverageFor(
     if (!budgetExecution) pending.push("Presupuesto/R3");
     else if (budgetExecution.blocked)
       partial.push("Presupuesto/R3 (bloqueado; periodo/corte no verificable)");
+    else if (!cyclesExist)
+      partial.push(
+        "Presupuesto/R3 (sin ciclos financiados; no hay periodos que verificar)",
+      );
     else checked.push("Presupuesto/R3");
   } else notApplicable.push("Presupuesto/R3 (vínculo no modificado)");
   if (economic.includes("deuda"))
@@ -509,6 +514,7 @@ function impact(
     annualPlans,
     budgetExecution,
     economic,
+    db.query("SELECT 1 FROM ciclos LIMIT 1").get() !== null,
     protection,
   );
   return {

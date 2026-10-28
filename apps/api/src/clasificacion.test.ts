@@ -401,7 +401,20 @@ test("H-SPEC02-01: presupuesto bloqueado y protección Partida→Deuda", () => {
       presupuesto: "PRE001",
     });
     expect(budget.budgetExecution).not.toBeNull();
-    expect(budget.checked).toContain("Presupuesto/R3");
+    expect(budget.partial.join(" ")).toContain(
+      "Presupuesto/R3 (sin ciclos financiados",
+    );
+    expect(budget.checked).not.toContain("Presupuesto/R3");
+
+    db.run(
+      "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('C001','2026-01-01',0,?)",
+      [time],
+    );
+    const withCycle = preview(db, "partidas", p.id, {
+      revision: p.revision,
+      presupuesto: "PRE001",
+    });
+    expect(withCycle.checked).toContain("Presupuesto/R3");
 
     db.run(
       "INSERT INTO deudas VALUES('D001','Deuda ficticia','2026-01-01',NULL,'Activa',1,?,?)",
@@ -415,7 +428,7 @@ test("H-SPEC02-01: presupuesto bloqueado y protección Partida→Deuda", () => {
     expect(debt.checked).toContain("Deuda (protección Partida→Deuda)");
 
     db.run(
-      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado) VALUES('1','2026-02-01','Gasto',100,'S001','S000',NULL,?,'Ficticio','',0,1,?,?)",
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado) VALUES('1','2025-12-01','Gasto',100,'S001','S000',NULL,?,'Ficticio','',0,1,?,?)",
       [p.id, time, time],
     );
     expect(() =>
