@@ -180,7 +180,7 @@ def main(argv=None):
         print('UNRUN application checks')
         return 1
     if selected == 'docs':
-        print('INTENTIONALLY SKIPPED application checks: allowlisted documentation only; not reported as passed.')
+        print('INTENTIONALLY SKIPPED application checks: documentation-only changes; not reported as passed.')
         app_status = 'skipped'
     else:
         if not run_checks(application_checks(), ('bun', 'node', 'age', 'git')):
