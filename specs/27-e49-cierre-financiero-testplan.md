@@ -3,15 +3,15 @@
 Specification: [27-e49-cierre-financiero-specification.md](27-e49-cierre-financiero-specification.md)
 
 Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implementación, código,
-CI, migración ni datos reales. Aprobado con SPEC27 el 2026-10-28; DT3, DT4 y DT6/T-BKP
-siguen abiertos.
+CI, migración ni datos reales. Aprobado con SPEC27 el 2026-10-28; DT3/DT4 resueltas el
+2026-10-28 y DT6/T-BKP sigue abierto.
 
 Base: `main` `f077b7e`, esquema 18.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | UNRUN — diseño | — |
-| AC-02 | Ciclo sin siguiente Inicio y sin DT3 | Bloqueo; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | UNRUN — diseño | — |
+| AC-02 | Ciclo sin siguiente Inicio | Bloqueo por `SIN_SIGUIENTE_INICIO`; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | UNRUN — diseño | — |
 | AC-03 | Movimiento en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | UNRUN — diseño | — |
 | AC-04 | Mover Movimiento desde/hacia ventana cerrada | 409; fecha antigua y nueva comprobadas | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | UNRUN — diseño | — |
 | AC-05 | Reclasificación T2 en ciclo cerrado | Impacto/motivo/auditoría; foto intacta | Bun Test + UI | Documental; API/UI futura | Auditoría y foto | UNRUN — diseño | — |
@@ -28,6 +28,8 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-16 | Operación E4.1 anterior al ciclo y posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo | Bun Test de corte E4.1 | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
 | AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | UNRUN — diseño | — |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto | Bun Test | Documental; API futura | DTO de bloqueo | UNRUN — diseño | — |
+| AC-20 | Cerrar con cierres posteriores ya existentes | Exige `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera posteriores | Bun Test + UI | Documental; API/UI futura | Auditoría y cierres intactos | UNRUN — diseño | — |
+| AC-21 | Cerrar ciclo sin hechos | Permitido; foto con `Sin hechos` explícito; sin totales 0 | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
 
 ## Regression checks
 
@@ -45,5 +47,5 @@ UNRUN. Wireframes pendientes; no hay capturas 390/1440 de E4.9.
 
 AC-19 (cierre parcial anticipado con re-cierre futuro) queda **descartado** por la
 resolución funcional; no se incluye como caso aprobado. La aprobación de spec/wireframes,
-DT3/DT4/DT6 y cualquier DEV son gates separados. No se ejecutan pruebas hasta
-autorización de desarrollo.
+DT6/T-BKP y cualquier DEV son gates separados; DT3/DT4 ya están resueltas. No se ejecutan
+pruebas hasta autorización de desarrollo.

@@ -4,7 +4,8 @@ Status: **APPROVED — SPEC26/E4.8 aprobada documentalmente el 2026-10-28.** Los
 siguen UNRUN; no autoriza DEV, código ni despliegue.
 Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
 las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
-`40668646943` SUCCESS. Decisiones M1–M6 confirmadas; DT3/DT4/DT6 abiertos.
+`40668646943` SUCCESS. Decisiones M1–M6 confirmadas. **DT3 y DT4 resueltas el
+2026-10-28** (ver «DT3/DT4 — resolución»); **DT6/T-BKP sigue abierto** y bloquea E4.9.
 Context and brainstorming: [26-e48-precierre-brainstorming.md](26-e48-precierre-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),
@@ -41,8 +42,30 @@ No se crea tabla ni migración en E4.8. El precierre es una lectura derivada.
 - `ciclo`: identidad existente; `inicio` y `fin` finitos y acreditados.
 - Si existe siguiente Inicio, `fin = día anterior` según la derivación vigente.
 - Si no existe siguiente Inicio, no se inventa `fin`: estado `Bloqueado` con motivo
-  `DT3_PENDIENTE`.
+  `SIN_SIGUIENTE_INICIO`. DT3 resuelta el 2026-10-28: el último ciclo solo es cerrable
+  cuando existe un ciclo posterior que acredita su Fin.
 - `S0`: `saldo_comida` del ciclo; su ausencia bloquea.
+
+### DT3/DT4 — resolución (2026-10-28)
+
+Decisiones del usuario, sin reabrir M1–M6:
+
+- **DT3 · último ciclo:** no se cierra mientras no exista siguiente Inicio; no se admite
+  Fin manual ni fecha inventada. Cuando exista, `fin` se deriva y el ciclo pasa a
+  elegible.
+- **DT3 · elegibilidad y orden:** es cerrable todo ciclo con ventana finita, S0 y núcleo
+  consistente. Si ya existen cierres posteriores, el precierre muestra
+  `CIERRE_FUERA_DE_ORDEN` y el cierre exige motivo; no altera cierres posteriores. Un
+  ciclo sin hechos se cierra con `Sin hechos` explícito, nunca con totales 0.
+- **DT3 · plan siguiente:** sin precarga automática; E2.3 ya resuelve copia explícita
+  con revisión previa y sin inventar histórico.
+- **DT4:** el contenido, metadatos, versiones y retención de la foto se resuelven en
+  SPEC27; E4.8 no crea fotos y solo muestra la evidencia disponible.
+- **DT6/T-BKP:** sigue abierto. No existe aún destino externo; el criterio de evidencia
+  es copia externa cifrada, restauración aislada probada y ensayo mensual. Sin esa
+  evidencia el precierre queda `Bloqueado` y E4.9 no se habilita.
+
+E4.8 no ejecuta ninguna regla de escritura: solo muestra bloqueos y avisos.
 
 ### Fuentes y cobertura
 
@@ -143,7 +166,7 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 - No calcular E4.3, E3.5/FIN_NETA, E4.2 ni E4.4.
 - No duplicar motores de Comida, inversión o conciliación.
 - No habilitar cierre parcial anticipado por E3.5/FIN_NETA no disponible.
-- No cerrar DT3, DT4 ni DT6.
+- No cerrar DT6/T-BKP ni habilitar el cierre; DT3/DT4 ya están resueltas (ver arriba).
 - No escribir en tablas, código, migraciones ni endpoints de mutación.
 
 ## Acceptance checks
@@ -151,7 +174,7 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 | ID | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- |
 | AC-01 | Ciclo con siguiente Inicio y S0; abrir precierre | Ventana finita, S0 visible y `Listo`/`Listo con avisos`; sin escritura |
-| AC-02 | Ciclo sin siguiente Inicio; abrir precierre | `Bloqueado` con `DT3_PENDIENTE`; no se inventa Fin ni fecha |
+| AC-02 | Ciclo sin siguiente Inicio; abrir precierre | `Bloqueado` con `SIN_SIGUIENTE_INICIO`; no se inventa Fin ni fecha |
 | AC-03 | Ciclo sin S0 | `Bloqueado`; no se crea S0 |
 | AC-04 | Movimientos/clasificación/Referencias inconsistentes | `Bloqueado`; no se corrige ni escribe |
 | AC-05 | Ciclo con posiciones E4.1, incluidas operaciones anteriores | Instrumentos, Compras, efectivo y posiciones a Fin visibles; valoración/patrimonio `No disponible` |
@@ -165,3 +188,4 @@ evidencia DT6/T-BKP, no se ejecuta desde este endpoint.
 | AC-13 | Plan con líneas inconsistentes, duplicadas o no verificables | `Bloqueado`; motivo; no se captura plan |
 | AC-14 | E3.5/FIN_NETA no disponible | Precierre parcial con motivo; E4.9 queda bloqueado; no se presenta como completo |
 | AC-15 | Consultar estado por `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura |
+| AC-16 | Ciclo con cierres posteriores ya existentes; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; no bloquea por sí solo y no escribe |

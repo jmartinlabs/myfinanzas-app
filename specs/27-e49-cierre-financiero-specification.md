@@ -4,7 +4,9 @@ Status: **APPROVED — SPEC27/E4.9 aprobada documentalmente el 2026-10-28.** Los
 siguen UNRUN; no autoriza DEV, cierre real ni despliegue.
 Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
 las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
-`40668646943` SUCCESS. Decisiones M1–M6 confirmadas; DT3/DT4/DT6 abiertos.
+`40668646943` SUCCESS. Decisiones M1–M6 confirmadas. **DT3 y DT4 resueltas el
+2026-10-28** (ver «DT3/DT4 — resolución»); **DT6/T-BKP sigue abierto** y bloquea el
+cierre real.
 Context and brainstorming: [27-e49-cierre-financiero-brainstorming.md](27-e49-cierre-financiero-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),
@@ -49,8 +51,28 @@ No hay DDL ni migración en este borrador. Contratos conceptuales:
 
 - `[inicio, fin]` finitos y acreditados.
 - Si existe siguiente Inicio, `fin = día anterior`.
-- Si no existe, no se inventa Fin: DT3 debe definir el corte; sin DT3 no hay cierre.
+- Si no existe, no se inventa Fin: el ciclo no es cerrable (`SIN_SIGUIENTE_INICIO`)
+  hasta que exista un ciclo posterior que acredite su Fin (DT3 resuelta 2026-10-28).
 - La foto guarda la ventana congelada.
+
+### DT3/DT4 — resolución (2026-10-28)
+
+Decisiones del usuario, sin reabrir M1–M6:
+
+- **DT3 · elegibilidad:** es cerrable todo ciclo con ventana finita, S0 y núcleo
+  consistente. Sin siguiente Inicio no hay cierre.
+- **DT3 · orden:** si ya existen cierres posteriores, el cierre exige
+  `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera cierres posteriores.
+- **DT3 · ciclo sin hechos:** se cierra con `Sin hechos` explícito, nunca con totales 0.
+- **DT4 · contenido:** se aprueba la tabla «Photo contract» de esta especificación.
+- **DT4 · versiones:** cada cierre crea v1; un re-cierre crea v2 sin alterar v1. Todas
+  las versiones son consultables.
+- **DT4 · trimestre/año (E4.11):** el agregado usa la versión vigente en el momento de
+  generarse, registra la versión usada y queda congelado; no se recalcula. Las versiones
+  anteriores siguen consultables.
+- **DT4 · retención:** permanente; no se podan fotos ni versiones.
+- **DT6/T-BKP:** abierto; no hay destino externo todavía. Bloquea el cierre real hasta
+  que exista evidencia externa y restauración probada.
 
 ### T1/T2/T3
 
@@ -132,6 +154,10 @@ no disponible; Neto Anticipo/Compartido/Nómina completos solo si se capturaron;
 CIERRE no se captura y el cierre se bloquea sin E3.5/FIN_NETA; patrimonio `No disponible`
 sin E4.3; plan `SinPlan` o completo si se capturó.
 
+**Versiones y retención (DT4):** la foto nace como v1 y es inmutable; un re-cierre crea
+v2 y conserva v1. Trimestre/año usan la versión vigente al generar el agregado y
+registran cuál usaron; todas las versiones se conservan indefinidamente.
+
 ## Exclusions
 
 - No `ciclo_id` en Movimientos.
@@ -141,7 +167,7 @@ sin E4.3; plan `SinPlan` o completo si se capturó.
 - No habilitar cierre parcial anticipado por E3.5/FIN_NETA no disponible; AC-19
   (cierre parcial y re-cierre futuro) queda **descartado**, no aprobado.
 - No declarar AC36 completo sin proveedor real.
-- No cerrar DT3, DT4 ni DT6 por inferencia.
+- No cerrar DT6/T-BKP por inferencia; DT3/DT4 ya están resueltas (ver arriba).
 - No código, migración, tablas ni endpoints en este borrador.
 
 ## Acceptance checks
@@ -149,7 +175,7 @@ sin E4.3; plan `SinPlan` o completo si se capturó.
 | ID | Acción / precondiciones | Resultado esperado |
 | --- | --- | --- |
 | AC-01 | Ciclo con ventana finita, S0, plan o `SinPlan` y backup verificado; cerrar | Cierre y foto creados; estado `Cerrado`; sin ciclo siguiente |
-| AC-02 | Ciclo sin siguiente Inicio y sin DT3 | Bloqueado; no se inventa Fin ni se cierra |
+| AC-02 | Ciclo sin siguiente Inicio | Bloqueado por `SIN_SIGUIENTE_INICIO`; no se inventa Fin ni se cierra |
 | AC-03 | Alta/rectificación/anulación de Movimiento con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura |
 | AC-04 | Mover un Movimiento desde/hacia una ventana cerrada | 409; fecha antigua y nueva comprobadas; sin escritura |
 | AC-05 | Reclasificar un hecho de ciclo cerrado (T2) | Impacto/motivo/auditoría; foto intacta; vista viva actualizada o marcada |
@@ -166,3 +192,5 @@ sin E4.3; plan `SinPlan` o completo si se capturó.
 | AC-16 | Operación E4.1 anterior al ciclo y operación posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo |
 | AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no se inventan líneas |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto |
+| AC-20 | Cerrar un ciclo con cierres posteriores ya existentes | Exige `CIERRE_FUERA_DE_ORDEN` con motivo y auditoría; no altera cierres posteriores |
+| AC-21 | Cerrar un ciclo sin hechos | Permitido; la foto registra `Sin hechos` explícito; no muestra totales 0 |

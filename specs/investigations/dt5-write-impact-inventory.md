@@ -5,6 +5,9 @@ Este informe sustituye las conclusiones de la versión `4329a99` sobre E4.1, E4.
 E3.5. No es una especificación de Cierres, no cierra DT3/DT4/DT6 y no autoriza DEV,
 push, PR ni merge.
 
+**Actualización 2026-10-28:** DT3 y DT4 fueron resueltas después en SPEC26/SPEC27;
+este informe no las cierra. DT6/T-BKP sigue abierto.
+
 - Fecha: 2026-10-28 (Europe/Madrid).
 - Base integrada auditada: `origin/main` =
   `f077b7e84684d9ccf79ed16805f9e8172e7576de` (`f077b7e`), esquema SQLite **18**.
@@ -395,8 +398,9 @@ en código, SPEC21, tablero, checkpoints ajenos ni documentos de otras entregas.
 E2E, CI, migraciones, escrituras reales.
 
 **Riesgos:** huella técnica ≠ foto; `financeRevision` incompleta para la foto;
-E4.1 cobertura histórica parcial; E4.3/E3.5 `No disponible`; DT3/DT4/DT6 abiertos;
-AC36 parcial.
+E4.1 cobertura histórica parcial; E4.3/E3.5 `No disponible`; DT3/DT4/DT6 abiertos
+en la fecha de esta reauditoría (DT3/DT4 resueltas después en SPEC26/27; DT6 sigue
+abierto); AC36 parcial.
 
 **Decisiones necesarias:** ninguna nueva de Q1–Q16; quedan **DT3**, **DT4** y
 **DT6** como gates. Cualquier cambio de alcance de la foto (por ejemplo, incluir

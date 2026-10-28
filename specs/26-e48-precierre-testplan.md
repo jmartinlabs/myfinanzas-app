@@ -3,15 +3,15 @@
 Specification: [26-e48-precierre-specification.md](26-e48-precierre-specification.md)
 
 Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implementación,
-código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3, DT4 y
-DT6/T-BKP siguen abiertos.
+código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3/DT4
+resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
 
 Base: `main` `f077b7e`, esquema 18.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | AC-01 | Ciclo con siguiente Inicio y S0; abrir precierre | Ventana finita, S0 visible; `Listo`/`Listo con avisos`; sin escritura | Bun Test de contrato + Playwright | Documental; API/UI futura | DTO y captura 390/1440 | UNRUN — diseño | — |
-| AC-02 | Ciclo sin siguiente Inicio; abrir precierre | `Bloqueado` por `DT3_PENDIENTE`; no Fin ni fecha inventada | Bun Test + UI | Documental; API/UI futura | DTO con motivo y bloqueo | UNRUN — diseño | — |
+| AC-02 | Ciclo sin siguiente Inicio; abrir precierre | `Bloqueado` por `SIN_SIGUIENTE_INICIO`; no Fin ni fecha inventada | Bun Test + UI | Documental; API/UI futura | DTO con motivo y bloqueo | UNRUN — diseño | — |
 | AC-03 | Ciclo sin S0 | `Bloqueado`; no se crea S0 | Bun Test | Documental; API futura | DTO y ausencia de escritura | UNRUN — diseño | — |
 | AC-04 | Movimientos/clasificación/Referencias inconsistentes | `Bloqueado`; no se corrige ni escribe | Bun Test de consistencia | Documental; API futura | Lista de inconsistencias | UNRUN — diseño | — |
 | AC-05 | Ciclo con posiciones E4.1, incluidas anteriores | Instrumentos/Compras/efectivo/posiciones a Fin; valoración/patrimonio `No disponible` | Bun Test de contrato + Playwright | Documental; API/UI futura | DTO y captura | UNRUN — diseño | — |
@@ -25,6 +25,7 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-13 | Plan con líneas inconsistentes/duplicadas/no verificables | `Bloqueado`; motivo; no se captura plan | Bun Test | Documental; API futura | DTO con motivo | UNRUN — diseño | — |
 | AC-14 | E3.5/FIN_NETA no disponible | Precierre parcial con motivo; E4.9 bloqueado; no completo | Bun Test + UI | Documental; API/UI futura | DTO y captura | UNRUN — diseño | — |
 | AC-15 | `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura | Bun Test de contrato | Documental; API futura | Respuesta de estado | UNRUN — diseño | — |
+| AC-16 | Ciclo con cierres posteriores ya existentes; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; no bloquea por sí solo y no escribe | Bun Test + UI | Documental; API/UI futura | DTO con aviso | UNRUN — diseño | — |
 
 ## Regression checks
 
@@ -40,5 +41,6 @@ UNRUN. Wireframes pendientes de aprobación; no hay capturas 390/1440 de E4.8.
 
 ## Limitations and next action
 
-La aprobación de la spec y los wireframes, DT3/DT4/DT6 y cualquier DEV son gates
-separados. No se ejecutan pruebas hasta autorización de desarrollo.
+La aprobación de la spec y los wireframes, DT6/T-BKP y cualquier DEV son gates
+separados; DT3/DT4 ya están resueltas. No se ejecutan pruebas hasta autorización de
+desarrollo.

@@ -51,7 +51,7 @@ y fecha originales. STEP 7 autorizado y evidencia vigente al final.
 - [Secuencia y parada previa al roadmap](project.md): instrucción explícita del usuario.
 
 ## Pending decisions
-- [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3–DT5/DT7–DT10 siguen en sus puertas correspondientes.
+- [DT1–DT10](roadmap.md): resolución progresiva; E1.1 registra enfoque DT1, identidad/precisión DT2 y propuesta DT6 confirmados en Q4–Q7, no aprobación global de todos sus detalles. DT3/DT4 resueltas el 2026-10-28; DT6/T-BKP y DT7–DT10 siguen en sus puertas correspondientes.
 - Excel de referencia y documentos originales todavía fuera de Codex, sin inspección; únicamente se recibió la especificación funcional adjunta.
 - [Matriz de validaciones](01-saldos-control-specification.md#matriz-compacta-de-campos-y-evidencia-de-validación): M1/M2 cerradas. Diseño y especificación integrados en PR #6. Implementación local en rama, pruebas actuales en testplan; aprobación de PR funcional/merge pendiente. Detalles de histórico/Manual operativo/pares nuevos se contrastan en sus entregas, sin reabrir M1/M2 ni bloquear esta actualización documental.
 
