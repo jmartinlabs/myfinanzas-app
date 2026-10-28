@@ -539,6 +539,68 @@ transversal por familias, sin corrección hasta aprobación del usuario.
   variante con fuente real fechada. Verificar cero vs null y motivo.
   Se necesita autorización para cualquier modificación funcional/test.
 
+## Segunda inspección técnica — SPEC04, huella y concurrencia temporal (2026-10-28)
+
+### H-SPEC04-03 — La vista previa de Movimiento no se invalida al cambiar Revisión Comida (técnico, medio)
+
+**Contrato:** `specs/04-movimientos-specification.md:109-130` requiere
+revalidar huella de impacto y contexto al confirmar, con 409 si cambian
+fuentes que alteran el impacto; `specs/16-revision-comida-specification.md:302-311`
+hace participar toda operación de Comida vigente en la referencia central.
+
+**Causa demostrada en código:**
+
+1. `apps/api/src/movimientos.ts:755-805` calcula
+   `referenciaAntes` con `cycleContext(db)`, que agrega Movimientos y
+   Revisión Comida, pero devuelve `contextRevision=financeRevision(db)` y
+   genera `fingerprint` únicamente con `action,id,old.revision,next,annul`
+   y `financeRevision(db)`. El valor de `impacto` o de la referencia
+   temporal no entra en esa huella.
+2. `apps/api/src/movement-ledger.ts:69-147`: `financeRevision(db)`
+   incluye Movimientos, Anticipos, Nómina, Compartidos, Deuda, Referencias,
+   Saldos, Inversiones, clasificaciones y Ciclos, **pero no**
+   `revision_comida` ni su máxima fecha.
+3. `apps/api/src/movimientos.ts:863-879`: al confirmar solo compara
+   `body.contextRevision` con el mismo `financeRevision` y después
+   `body.fingerprint` con una huella recalculada que sigue excluyendo
+   Revisión Comida. `plan()` recalcula `cycleContext`, pero **no usa
+   su referencia para la huella**, por lo que un cambio de Comida aislado
+   puede pasar sin 409 aunque cambie el impacto temporal observado.
+
+**Escenario focal recomendado (no ejecutado):** preview de rectificación
+con una fecha de Comida vigente, crear/rectificar/anular una operación de
+Comida con fecha que cambie el máximo central, confirmar el Movimiento
+con el fingerprint viejo y comparar el resultado real con el impacto que
+vio el usuario. Resultado esperado según contrato: `IMPACT_CHANGED`/
+nueva revisión de impacto; no confirmar silenciosamente si la referencia
+presentada cambió. Variantes: alta y anulación de Comida; fecha de
+Movimientos más reciente (control negativo sin cambio de máximo).
+Comprobar si el producto define explícitamente algún impacto meramente
+informativo no protegido antes de modificar el contrato.
+
+**Relación con H-SPEC04-02:** H-SPEC04-02 trata del **valor de fecha
+posterior erróneo** incluso sin concurrencia; H-SPEC04-03 trata del
+**control de obsolescencia** de la vista previa aun si se arregla el
+cálculo de fecha. Las correcciones deben considerar ambas sin crear
+fuentes de verdad adicionales.
+
+**Estado:** comprobación estática de dependencias/huellas; pendiente de
+prueba ejecutada con DB ficticia y decisión de alcance. No implica que
+un Movimiento bancario se altere por una operación de Comida; el
+riesgo demostrado es confirmar con información temporal distinta de la revisada.
+
+### Precisión adicional de H-SPEC09-01
+
+El test `apps/api/src/planes-ciclo.test.ts:881-890` corre con
+`now=2026-10-24T12:00Z`, crea Inicio `2026-10-01` y siguiente Inicio
+`2026-11-01` (Fin derivado **2026-10-31**, todavía futuro respecto al
+reloj controlado), sin movimientos ni operaciones de Comida, y espera
+`ejecutado=0.00` en el primer ciclo. Por tanto, no basta denominarlo
+«periodo cerrado» para considerar que el propio test acredita su
+cobertura: solo se ha derivado un Fin **temporal**. La diferencia
+contractual con `monthlyFlow` sigue pendiente de resolver por autoridad
+funcional; no se corrige unilateralmente.
+
 ## Coherencia SPEC01 ↔ código — 2026-10-28
 
 Base de la comprobación: `main` `d6be96b`; PR #115 documental. **No se modifica código.**
