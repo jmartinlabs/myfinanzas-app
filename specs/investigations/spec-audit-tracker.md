@@ -186,7 +186,7 @@ No se ha auditado la base Excel física en esta pasada.
 - **Contrato y fuente central:** `apps/api/src/ciclos.ts:47-75,159-164` agrega máximos de
   `movementSource(db)` y `revisionComidaSource(db)` (la fuente de inversión aún
   pendiente); la cabecera financiera debe usar esa única referencia.
-- **Implementación discordante:** `apps/api/src/movimientos.ts:734-748` calcula
+- **Implementación discordante:** `apps/api/src/movimientos.ts:753-756,804-805` calcula
   `referenciaAntes` con `cycleContext(db).referencia.fecha` (agregado real), pero
   `referenciaDespues` mediante `dates.sort().at(-1)` donde `dates` solo contiene
   fechas de Movimientos, excluido el hecho antiguo y aplicada la modificación.
