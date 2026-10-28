@@ -4,7 +4,7 @@ Roadmap/context: [E1.2](roadmap.md#e12--clasificación-utilizable-y-conservació
 [referencia v5.11](functional-reference-v5.11.md), [contexto](project.md).
 **Estado vigente (2026-10-28):** las menciones `PENDING`, «sin merge» o «sin implementación»
 de las rondas son históricas y están superadas por los registros posteriores. E1.2 cerró
-en PR #11; los consumidores posteriores se rigen por sus specs. **F-SPEC02-01 abierto**
+en PR #11; los consumidores posteriores se rigen por sus specs. **H-SPEC02-01 (Funcional) abierto**
 (transparencia de cobertura de impacto).
 Next action: revisión documental de SPEC02; no iniciar SPEC03 ni modificar código.
 
@@ -279,4 +279,4 @@ comodines * y ? literales; probar casos especiales, sin introducir otros cambios
 Se sustituye la reserva anterior; no hace falta nueva ronda ni reaprobar propuesta.
 Implementación local/ficticia en feat/e1-2-clasificacion; revisión final/merge separados.
 **Cierre vigente:** PR #11 integrada; E1.2 cerrada. Revisión documental 2026-10-28;
-F-SPEC02-01 abierto; no SPEC03.
+H-SPEC02-01 abierto; no SPEC03.

@@ -1,6 +1,6 @@
 # 02 — Clasificación: test plan
 Status: **E1.2 integrada por PR #11; 27 PASS E1.2 + 4 contratos posteriores.**
-Revisión documental 2026-10-28; **F-SPEC02-01 abierto**. La evidencia local es histórica.
+Revisión documental 2026-10-28; **H-SPEC02-01 (Funcional) abierto**. La evidencia local es histórica.
 Fecha: 2026-10-21. Cierre documental en PR #11.
 Especificación aprobada: [02](02-clasificacion-specification.md).
 
@@ -75,7 +75,7 @@ Chequeo y escritura IMMEDIATE, incluye inactivos; sin transformaciones silencios
 Estas implementaciones no cambian los **27 PASS E1.2** ni los **4 contratos**. AC-19/24/25/26
 siguen C; sus pruebas posteriores pertenecen a sus propias entregas.
 
-**F-SPEC02-01 abierto:** la vista de impacto no declara exhaustivamente los consumidores
+**H-SPEC02-01 abierto:** la vista de impacto no declara exhaustivamente los consumidores
 pendientes ni muestra los planes anuales; ver [specification](02-clasificacion-specification.md)
 y tracker. No se corrige en esta PR.
 
@@ -112,5 +112,5 @@ Aprobación final: usuario sobre 58b51f9 tras auditoría de Álex, 2026-10-21.
 CI de ese SHA: push 39569358781 y PR 39569369542 SUCCESS. El cierre documental
 no cambia código/pruebas ni reclasifica aceptación. SHA de squash y CI posterior
 verificables en PR #11; las 27 filas PASS y 4 contratos futuros se conservan.
-**Siguiente acción:** revisión documental de SPEC02 y F-SPEC02-01; no iniciar SPEC03
+**Siguiente acción:** revisión documental de SPEC02 y H-SPEC02-01; no iniciar SPEC03
 ni modificar código. E1.3 y entregas posteriores avanzaron por sus propias specs.

@@ -3,15 +3,15 @@
 **Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
 de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base del inventario: `main` `63ee1d0`. `main` actual tras el cierre: `e4a26de`.
+- Base del inventario: `main` `63ee1d0`. `main` actual: `71866ac` (cierre SPEC01 y tracker #116); `e4a26de` fue el merge de PR #115.
 - Alcance: las 25 SPEC del inventario autorizado; sin código, datos, Excel ni funcionalidad.
 - **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
   integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
   `40728150624` SUCCESS. **SPEC02 revisada por Álex**; correcciones documentales en
-  curso y **F-SPEC02-01 abierto**. Las otras 23 SPEC siguen pendientes.
+  curso y **H-SPEC02-01 (Funcional) abierto**. Las otras 23 SPEC siguen pendientes.
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
-- SPEC01 es la única SPEC modificada; el resto no se ha tocado.
+- SPEC01 y SPEC02 son las SPEC modificadas; las otras 23 no se han tocado.
 
 ## Reglas de la auditoría
 
@@ -101,7 +101,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | SPEC | Funcionalidad | Estado | Hallazgos y correcciones | Archivos afectados | Conservación/archivo | PR / HEAD / CI | Validación y merge | Riesgos |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
-| 02 | Clasificación | Revisada por Álex · PR pendiente | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **F-SPEC02-01 abierto** (transparencia de cobertura). | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) / `6163e5f` / CI `40732604479` PASS; HEAD final en checks | — | F-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
+| 02 | Clasificación | Revisada por Álex · PR pendiente | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real de impacto. **H-SPEC02-01 (Funcional) abierto**: transparencia de cobertura. | 4 docs SPEC02 + tracker | Conservar todo; sin eliminaciones. | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) / `6163e5f` / CI `40732604479` PASS; HEAD final en checks | — | H-SPEC02-01 requiere propuesta funcional separada; no cerrar SPEC02. |
 | 03 | Ciclos financiados | Pendiente | — | — | — | — | — | — |
 | 04 | Movimientos | Pendiente | — | — | — | — | — | — |
 | 05 | Transferencias y Referencias | Pendiente | — | — | — | — | — | — |
@@ -187,7 +187,7 @@ esta auditoría. E1.3 está integrado, pero no queda acreditado por las pruebas 
 
 ## SPEC02 — Revisión y hallazgos
 
-**Estado:** revisada por Álex; correcciones documentales D1–D4 en curso. **F-SPEC02-01
+**Estado:** revisada por Álex; correcciones documentales D1–D4 en curso. **H-SPEC02-01
 abierto**; no se cierra SPEC02.
 
 ### D1 — Estados históricos
@@ -217,7 +217,7 @@ suministra en producción.
   `presupuesto`; Deuda con protección específica sin detalle general.
 - Sin cobertura genérica: Anticipos, Compartidos; sin runtime: indicadores y cierres.
 
-### F-SPEC02-01 — Propuesta técnica mínima (sin implementar)
+### H-SPEC02-01 — Funcional · Propuesta técnica mínima (sin implementar)
 **Deficiencia:** `pending` no es exhaustivo, `annualPlans` no se muestra y hay mensajes
 obsoletos de Presupuestos. **Clasificación:** SPEC correcta y código/UI incompleto; no
 cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
@@ -232,7 +232,7 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
 - **Pruebas:** `apps/api/src/clasificacion.test.ts` (contrato de cobertura y planes);
   `tests/e2e/classification.ts`/`catalog.spec.ts` (visibilidad y mensajes); regresión de
   bloqueo Partida→Deuda. Sin código en la PR documental.
-- **Estado:** abierto; requiere autorización específica y PR funcional separada.
+- **Estado:** abierto (Funcional); requiere autorización específica y PR funcional separada.
 
 ## Evidencias de la auditoría
 
@@ -240,15 +240,17 @@ cambia reglas financieras, permisos de rectificación ni Partida→Deuda.
 | --- | --- | --- | --- | --- | --- | --- |
 | 2026-10-28 | — | — | `63ee1d0` | — | Inventario verificado | — |
 | 2026-10-28 | 01 | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) | `b307c9c` validado / merge `e4a26de` | `40726975597` PR / `40728150624` main PASS | APROBADA | Integrada |
-| 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `6163e5f` + HEAD final | `40732604479` PASS | Pendiente | Pendiente |
+| 2026-10-28 | 02 | [#117](https://github.com/jmartinlabs/myfinanzas-app/pull/117) | `main` `71866ac`; históricos `6163e5f`, `7d76fe1`; HEAD final en checks | `40732604479` / `40732906872` PASS; HEAD final pendiente | Pendiente | Pendiente |
 
 ## Próxima acción
 
-1. Preparar y verificar la PR documental de **SPEC02** (D1–D4); presentar HEAD y CI a
-   Álex, sin merge automático.
-2. **F-SPEC02-01** sigue abierto: propuesta técnica registrada; no implementar sin
-   autorización específica ni PR funcional separada.
-3. **No cerrar SPEC02** hasta resolver F-SPEC02-01 o aceptarlo expresamente.
+1. PR #117 documental preparada; validar su **HEAD/CI final** y presentarla a Álex.
+   Merge pendiente de autorización expresa.
+2. **H-SPEC02-01 (Funcional)** sigue abierto: propuesta técnica registrada; no implementar
+   sin autorización específica ni PR funcional separada.
+3. **No cerrar SPEC02** hasta resolver H-SPEC02-01 o aceptarlo expresamente.
 4. **No iniciar SPEC03.**
 
-El gap de cero explícito + movimientos de SPEC01 permanece registrado y no bloqueante.
+`main` actual: `71866ac`. Históricos de la PR #117: `6163e5f` (documentación) y `7d76fe1`
+(tracker); el HEAD final se consulta en los checks de la PR. El gap de cero explícito +
+movimientos de SPEC01 permanece registrado y no bloqueante.

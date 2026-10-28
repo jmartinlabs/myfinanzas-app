@@ -5,7 +5,7 @@ Approval source/date: usuario aprueba PR #10 sobre 25cffc0 y autoriza merge/dev 
 Los consumidores posteriores (Movimientos, Referencias, Anticipos, Compartidos, Presupuestos,
 Deudas, planes e indicadores) se rigen por sus propias specs. Este documento conserva el
 contrato de E1.2 y no reclasifica sus 4 contratos por implementaciones posteriores.
-**F-SPEC02-01 abierto:** transparencia de cobertura en la vista de impacto.
+**H-SPEC02-01 (Funcional) abierto:** transparencia de cobertura en la vista de impacto.
 **Regla de lectura:** las menciones a «modelo propuesto/sin DDL», «continuidad futura»,
 «pantallas pendientes» o «sin merge» describen la fase documental/desarrollo y son
 contexto histórico, no prohibiciones vigentes.
@@ -334,7 +334,7 @@ sus pruebas posteriores en PASS de E1.2.
 | Indicadores | Sin runtime |
 | Cierres/fotos | Sin runtime |
 
-**F-SPEC02-01 abierto:** `pending` no es exhaustivo (omite Deudas, Anticipos,
+**H-SPEC02-01 abierto:** `pending` no es exhaustivo (omite Deudas, Anticipos,
 Compartidos, Referencias y Planes), los planes anuales no se muestran y algunos mensajes
 de Presupuestos están obsoletos. La corrección es una propuesta funcional separada; no
 se modifica código en esta PR ni se presenta la cobertura parcial como total.
@@ -364,6 +364,6 @@ SUB resuelta por evidencia posterior. Estado de implementación y pruebas actual
 [progreso](02-clasificacion-progress.md) y [testplan](02-clasificacion-testplan.md).
 Implementación aprobada por usuario sobre 58b51f9 tras auditoría técnica/visual de
 Álex; cierre incorporado mediante PR #11. **Estado 2026-10-28:** E1.2 cerrada;
-revisión documental en curso; **F-SPEC02-01 abierto**; no se inicia SPEC03. E1.3 y las
+revisión documental en curso; **H-SPEC02-01 abierto**; no se inicia SPEC03. E1.3 y las
 entregas posteriores avanzaron por sus propias specs, sin quedar acreditadas por las
 pruebas E1.2. Sin autorización de despliegue.
