@@ -8,6 +8,7 @@ import { HttpApp } from "@effect/platform";
 import { openDatabase } from "./database";
 import { openDatabase as openV3 } from "../test-support/database-v3";
 import { getSaldo, createSaldo, updateSaldo } from "./saldos";
+import { createRevisionComida } from "./revision-comida";
 import {
   createClassification,
   getClassification,
@@ -444,6 +445,270 @@ test("04 AC13–16: Madrid, ciclos inclusivos y máximos de hechos vigentes, sin
       );
     expect(cycleContext(db).referencia.fecha).toBeNull();
     expect(cycleContext(db).motivo).toBe("sin_referencia");
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-02: referencia posterior incluye Comida y reevalúa máxima al anular", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        db,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        now,
+      );
+    comida("2026-10-20", "comida-max-20");
+    const body = expense(saldo.id, partida.id, { fecha: "2026-10-15" });
+    const p = previewMovement(db, body, null, false, now);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-20");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-20");
+    const backdate = previewMovement(
+      db,
+      expense(saldo.id, partida.id, { fecha: "2026-10-05" }),
+      null,
+      false,
+      now,
+    );
+    expect(backdate.impacto.referenciaDespues).toBe("2026-10-20");
+    const later = save(db, expense(saldo.id, partida.id, { fecha: "2026-10-21" }));
+    const rectified = previewMovement(
+      db,
+      expense(saldo.id, partida.id, {
+        fecha: "2026-10-06",
+        revision: later.revision,
+        motivo: "Fixture",
+      }),
+      later.id,
+      false,
+      now,
+    );
+    expect(rectified.impacto.referenciaDespues).toBe("2026-10-20");
+    const annul = previewMovement(
+      db,
+      { revision: later.revision, motivo: "Fixture sin hecho real" },
+      later.id,
+      true,
+      now,
+    );
+    expect(annul.impacto.referenciaAntes).toBe("2026-10-21");
+    expect(annul.impacto.referenciaDespues).toBe("2026-10-20");
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-03: la huella temporal solo cambia si Comida altera la referencia", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        db,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        now,
+      );
+    comida("2026-10-20", "comida-base");
+    const body = expense(saldo.id, partida.id, { fecha: "2026-10-15" });
+    const p = previewMovement(db, body, null, false, now);
+    comida("2026-10-10", "comida-anterior");
+    expect(previewMovement(db, body, null, false, now).fingerprint).toBe(
+      p.fingerprint,
+    );
+    comida("2026-10-21", "comida-nueva-max");
+    expect(previewMovement(db, body, null, false, now).fingerprint).not.toBe(
+      p.fingerprint,
+    );
+    expect(() =>
+      writeMovement(
+        db,
+        { ...body, fingerprint: p.fingerprint },
+        randomUUID(),
+        null,
+        false,
+        now,
+      ),
+    ).toThrow("contexto");
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-04: error de fuente instalada bloquea preview/confirmación sin escrituras", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const current = save(db, expense(saldo.id, partida.id));
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
+    );
+    const before = snapshot(db);
+    const error = "fuente instalada ha fallado";
+    expect(() =>
+      previewMovement(
+        db,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      previewMovement(
+        db,
+        {
+          ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+          revision: current.revision,
+          motivo: "Fixture",
+        },
+        current.id,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      previewMovement(
+        db,
+        { revision: current.revision, motivo: "Fixture" },
+        current.id,
+        true,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+          fingerprint: "0".repeat(64),
+        },
+        randomUUID(),
+        null,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(snapshot(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-04: Comida vacía o no instalada no se confunde con error", () => {
+  const empty = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(empty);
+    expect(() =>
+      previewMovement(
+        empty,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).not.toThrow();
+  } finally {
+    empty.close();
+  }
+  const absent = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(absent);
+    absent.exec("ALTER TABLE revision_comida RENAME TO revision_comida_off");
+    expect(() =>
+      previewMovement(
+        absent,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).not.toThrow();
+  } finally {
+    absent.close();
+  }
+});
+
+test("04 H-SPEC04-04: rutas HTTP bloquean con 409 REFERENCE_ERROR", async () => {
+  const db = openDatabase(":memory:"),
+    key = randomBytes(32),
+    origin = "http://127.0.0.1:5173",
+    handler = HttpApp.toWebHandler(createApp(db, { key, now: () => now }));
+  const request = (
+    path: string,
+    method = "GET",
+    body?: unknown,
+    headers: Record<string, string> = {},
+  ) =>
+    handler(
+      new Request(origin + path, {
+        method,
+        headers: { origin, "content-type": "application/json", ...headers },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+  try {
+    const m = masters(db);
+    save(db, expense(m.saldo.id, m.partida.id));
+    const auth = new Auth(db, key, origin, () => now),
+      enrollment = await auth.enroll(
+        provision(db, now),
+        "Contraseña ficticia " + randomUUID(),
+      ),
+      verified = auth.verify(
+        new Request(origin, {
+          headers: { cookie: auth.challengeName + "=" + enrollment.challenge },
+        }),
+        totp(enrollment.secret!).generate({ timestamp: now }),
+      ),
+      headers = {
+        cookie: auth.cookieName + "=" + verified.session,
+        "x-csrf-token": verified.csrf,
+        "idempotency-key": randomUUID(),
+      };
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
+    );
+    const before = snapshot(db);
+    const preview = await request(
+      "/api/movimientos/impacto",
+      "POST",
+      expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+      headers,
+    );
+    expect(preview.status).toBe(409);
+    expect((await preview.json()).code).toBe("REFERENCE_ERROR");
+    const write = await request(
+      "/api/movimientos",
+      "POST",
+      {
+        ...expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+        fingerprint: "0".repeat(64),
+      },
+      headers,
+    );
+    expect(write.status).toBe(409);
+    expect((await write.json()).code).toBe("REFERENCE_ERROR");
+    expect(snapshot(db)).toEqual(before);
   } finally {
     db.close();
   }

@@ -24,7 +24,14 @@ import {
 import type { Database } from "bun:sqlite";
 import { getSaldo, money, decimal, Problem } from "./saldos";
 import { getClassification } from "./clasificacion";
-import { civil, cycleContext, cycleMaster, type Cycle } from "./ciclos";
+import {
+  civil,
+  cycleContext,
+  cycleMaster,
+  financialReference,
+  type Cycle,
+} from "./ciclos";
+import { revisionComidaSource } from "./revision-comida-ledger";
 import {
   ledgerRows,
   financeRevision,
@@ -610,6 +617,13 @@ function plan(
       "REVISION_CONFLICT",
       "El Movimiento ha cambiado o está anulado. Revisa su ficha.",
     );
+  const contexto = cycleContext(db);
+  if (contexto.referencia.estado === "error")
+    throw new Problem(
+      409,
+      "REFERENCE_ERROR",
+      "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
+    );
   const next = annul ? null : validated(db, payload(body), old, now);
   protectAnticipoChange(db, old, next, next?.anticipo ?? null);
   if (old) {
@@ -754,7 +768,15 @@ function plan(
     .filter((r) => !r.anulado && r.id !== id)
     .map((r) => r.fecha);
   if (next) dates.push(next.fecha);
-  const contexto = cycleContext(db);
+  const comidaSource = revisionComidaSource(db);
+  const temporalAfter = financialReference([
+    {
+      source: "Movimientos",
+      state: "disponible",
+      maxDate: dates.sort().at(-1) ?? null,
+    },
+    comidaSource,
+  ]);
   return {
     contextRevision: financeRevision(db),
     accion: action,
@@ -768,6 +790,7 @@ function plan(
       next,
       annul,
       financeRevision(db),
+      comidaSource,
     ]),
     impacto: {
       anticipo: anticipoImpact(db, next),
@@ -802,7 +825,7 @@ function plan(
           ) ?? null)
         : null,
       referenciaAntes: contexto.referencia.fecha,
-      referenciaDespues: dates.sort().at(-1) ?? null,
+      referenciaDespues: temporalAfter.fecha,
       cobertura:
         "Movimientos comprobado; posición Control Movimientos y contexto temporal derivados.",
       pendientes: [
