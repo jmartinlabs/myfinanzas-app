@@ -15,6 +15,7 @@ import {
   createRevisionComida,
   getRevisionComida,
 } from "./revision-comida";
+import { revisionComidaSource } from "./revision-comida-ledger";
 const add = (db: any, inicio: string, saldoInicialComida = "0") =>
   createCycle(
     db,
@@ -67,7 +68,12 @@ function fixture() {
   return { db, a, b };
 }
 const comidaNow = Date.parse("2026-10-29T12:00:00Z");
-const comida = (db: any, fecha: string, evidencia: string) =>
+const comida = (
+  db: any,
+  fecha: string,
+  evidencia: string,
+  now = comidaNow,
+) =>
   createRevisionComida(
     db,
     {
@@ -80,7 +86,7 @@ const comida = (db: any, fecha: string, evidencia: string) =>
       evidenciaBancaria: evidencia,
     },
     randomUUID(),
-    comidaNow,
+    now,
   ).operacion;
 const comidaMovement = (db: any, id: string, fecha: string) =>
   db.run(
@@ -264,15 +270,16 @@ test("07 O4 C07-F1/F2: la vista previa separa Comida y la confirmación antigua 
   const db = openDatabase(":memory:");
   try {
     const a = add(db, "2026-10-01"),
-      b = add(db, "2026-11-01");
-    comida(db, "2026-10-20", "max-20");
+      b = add(db, "2026-11-01"),
+      rc20 = comida(db, "2026-10-20", "max-20");
     const body = input("2026-10-05"),
       first = previewCycleOperation(db, "rectificar", a.id, body);
-    expect(first.comidaImpacto.totalOperacionesComida).toBe(0);
+    expect(first.comidaImpacto.totalVigentesAfectadas).toBe(1);
+    expect(first.comidaImpacto.vigentesAfectadas[0].id).toBe(rc20.id);
     const rc3 = comida(db, "2026-10-03", "afectada-03");
     const second = previewCycleOperation(db, "rectificar", a.id, body);
     expect(second.totalMovimientos).toBe(0);
-    expect(second.comidaImpacto.totalVigentesAfectadas).toBe(1);
+    expect(second.comidaImpacto.totalVigentesAfectadas).toBe(2);
     const item = second.comidaImpacto.vigentesAfectadas.find(
       (r) => r.id === rc3.id,
     )!;
@@ -327,16 +334,18 @@ test("07 O5 C07-F2: Comida existente se enumera y cambia de ciclo al confirmar",
 });
 
 test("07 O6 R1a/R1b: referencia agregada material sin máximo crudo superfluo", () => {
+  const clock = Date.parse("2026-12-20T12:00:00Z");
   const withMovement = openDatabase(":memory:");
   try {
     const a = add(withMovement, "2026-10-01"),
       b = add(withMovement, "2026-11-01");
-    comidaMovement(withMovement, "10", "2026-10-24");
-    comida(withMovement, "2026-10-20", "max-20");
+    comidaMovement(withMovement, "10", "2026-11-24");
+    comida(withMovement, "2026-11-20", "max-20", clock);
     const body = input("2026-10-05"),
       first = previewCycleOperation(withMovement, "rectificar", a.id, body);
-    comida(withMovement, "2026-10-21", "max-21-sin-efecto");
+    comida(withMovement, "2026-11-21", "max-21-sin-efecto", clock);
     const second = previewCycleOperation(withMovement, "rectificar", a.id, body);
+    expect(second.comidaImpacto.totalOperacionesComida).toBe(0);
     expect(second.impactRevision).toBe(first.impactRevision);
     expect(() =>
       writeCycleOperation(
@@ -359,11 +368,12 @@ test("07 O6 R1a/R1b: referencia agregada material sin máximo crudo superfluo", 
   try {
     const a = add(withoutMovement, "2026-10-01"),
       b = add(withoutMovement, "2026-11-01");
-    comida(withoutMovement, "2026-10-20", "max-20");
+    comida(withoutMovement, "2026-11-20", "max-20", clock);
     const body = input("2026-10-05"),
       first = previewCycleOperation(withoutMovement, "rectificar", a.id, body);
-    comida(withoutMovement, "2026-10-21", "max-21-con-efecto");
+    comida(withoutMovement, "2026-11-21", "max-21-con-efecto", clock);
     const second = previewCycleOperation(withoutMovement, "rectificar", a.id, body);
+    expect(second.comidaImpacto.totalOperacionesComida).toBe(0);
     expect(second.impactRevision).not.toBe(first.impactRevision);
     expect(() =>
       writeCycleOperation(
@@ -484,6 +494,45 @@ test("07 O8 cobertura de fuente y error de filas de Comida", () => {
     expect(getCycle(broken, a.id).ciclo.inicio).toBe("2026-10-01");
   } finally {
     broken.close();
+  }
+});
+
+test("07 O10 T1: fallo exclusivo del lector de filas mantiene la fuente disponible y bloquea 409", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01");
+    comida(db, "2026-10-20", "max-20");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(revisionComidaSource(db).state).toBe("disponible");
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN concepto TO concepto_roto",
+    );
+    expect(revisionComidaSource(db).state).toBe("disponible");
+    expect(() =>
+      previewCycleOperation(db, "rectificar", a.id, body),
+    ).toThrow("fuente instalada ha fallado");
+    expect(() =>
+      writeCycleOperation(
+        db,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("fuente instalada ha fallado");
+    expect(getCycle(db, a.id).ciclo.inicio).toBe("2026-10-01");
+    expect(db.query("SELECT COUNT(*) n FROM cycle_audit").get()).toEqual({
+      n: 0,
+    });
+  } finally {
+    db.close();
   }
 });
 

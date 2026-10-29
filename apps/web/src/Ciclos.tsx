@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
+import { hasNextComidaPage } from "./cycle-pagination";
 export type Cycle = {
   id: string;
   inicio: string;
@@ -1167,8 +1168,12 @@ function CycleOperationForm({
                       className="secondary"
                       disabled={
                         busy ||
-                        impact.comidaImpacto.page * 100 >=
-                          impact.comidaImpacto.totalOperacionesComida
+                        !hasNextComidaPage(impact.comidaImpacto.page, {
+                          vigentes:
+                            impact.comidaImpacto.totalVigentesAfectadas,
+                          historicas:
+                            impact.comidaImpacto.totalHistoricasMostradas,
+                        })
                       }
                       onClick={() =>
                         review(impact.page, impact.comidaImpacto.page + 1)

@@ -560,7 +560,7 @@ function operationPlan(
   const comidaAffected: ComidaImpact[] = comidaRows.flatMap((r) => {
     const a = atDate(before, r.fecha),
       b = atDate(after, r.fecha);
-    return (a?.id ?? null) !== (b?.id ?? null)
+    return fingerprint(period(a)) !== fingerprint(period(b))
       ? [
           {
             id: r.id,
