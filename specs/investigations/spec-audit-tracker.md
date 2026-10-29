@@ -426,6 +426,25 @@ autorización expresa posterior del usuario.
 No reclasificar por ello AC28 futuro como
 PASSED ni dar SPEC07 por cerrada.
 
+**Actualización de transporte (postdecisión, 2026-10-29):**
+`main` avanzó a `f69d7d250f0a9440da7e41227233e7c3dcdd5580`
+por squash PR #126, que **no tocó SPEC07 ni su código**,
+pero implantó **Agent Relay v1** como único canal
+vigente y descartó el relay manual paralelo. El
+mensaje #0024 de diseño read-only **sí se publicó
+y verificó en la rama histórica**
+`coord/spec-audit-relay` (commit `fa6bc562`),
+pero esa publicación no equivale al nuevo
+transporte ni acredita que OpenCode lo haya
+recibido. No continuar con el relay heredado;
+para nuevas comunicaciones se necesita una
+conversación Agent Relay v1 inicializada en
+`relay/<id>` mediante el script de su Skill
+y su ID real, sin inventarlo ni crear canal
+paralelo. Hasta entonces, decisión registrada
+y coordinación de la propuesta pendiente.
+No da autorización de desarrollo.
+
 ## Reglas de la auditoría
 
 - **Auditoría global previa a correcciones:** Álex revisa las 22 SPEC pendientes del
@@ -541,7 +560,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 04 | Movimientos | Tres correcciones integradas en `main`, sin cierre formal de SPEC04 | H-SPEC04-04/02/03: PR #125 MERGED por squash `e3ebd76`; R1 huella de referencia agregada y R2 guardas de confirmación histórica validadas previamente en HEAD `401bbff`; CI critical 303 API PASS en ese HEAD, postmerge fast PASS sobre `e3ebd76`. | GitHub PR #125, diff squash de 2 archivos, CI `40835279386` y postmerge `40837093511`, relay #0022, SPEC04 testplan. | Mantener SPEC04 formalmente abierta (AC y contratos futuros); E2E/full UNRUN sobre candidato/merge, no declarar validación global; ninguna acción nueva de código sin aprobación. | `main` `e3ebd76e09115469230766bb2f34f78eb39f1ea1`, PR #125 CLOSED/MERGED, HEAD previo `401bbff`. | 2026-10-29 · verificación GitHub posterior al squash por Álex; suites de tests no reejecutadas por Álex. | Tres defectos solucionados en `main`; no equivale a cierre financiero ni a SPEC04 completa; sin despliegue autorizado. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
-| 07 | Operación de Ciclos | En inspección (no cerrada); OPCIÓN B aprobada funcionalmente | H-SPEC07-01: F1/F2 reproducen omisión de Comida en preview/huella; F3 fuente error descartado. El usuario aprobó 2026-10-29 la integración temporal de operaciones Revisión Comida afectadas por cambio de Ciclo (opción B); ya no basta aviso UX A. No es autorización de desarrollo. | SPEC07 Q1/AC07/17/28; `ciclos.ts`, `revision-comida-ledger.ts`, `Ciclos.tsx`, relays #0015/#0024. | Encargar diseño técnico read-only, oráculos de materialidad, semántica vigente/anulado, paginación y pruebas; someter implementación a aprobación posterior. Mantener conciliación E3.5 e inversiones fuera. | Decisión humana 2026-10-29; `main` `e3ebd76`; sin nueva PR/CI SPEC07. | 2026-10-29 · decisión funcional registrada por Álex, no implementada. | Riesgo medio de atribución temporal y consentimiento, sin impacto monetario demostrado; contrato AC28 futuro debe acotarse explícitamente. |
+| 07 | Operación de Ciclos | En inspección (no cerrada); OPCIÓN B aprobada funcionalmente | H-SPEC07-01: F1/F2 reproducen omisión de Comida en preview/huella; F3 fuente error descartado. El usuario aprobó 2026-10-29 la integración temporal de operaciones Revisión Comida afectadas por cambio de Ciclo (opción B); ya no basta aviso UX A. No es autorización de desarrollo. | SPEC07 Q1/AC07/17/28; `ciclos.ts`, `revision-comida-ledger.ts`, `Ciclos.tsx`, relay histórico #0015/#0024; PR #126 Agent Relay v1. | Encargar diseño técnico read-only, oráculos de materialidad, semántica vigente/anulado, paginación y pruebas; someter implementación a aprobación posterior. Mantener conciliación E3.5 e inversiones fuera. | Decisión humana 2026-10-29; `main` `f69d7d2` (PR #126, transporte); sin nueva PR/CI SPEC07. | 2026-10-29 · decisión funcional registrada por Álex, no implementada. | Riesgo medio de atribución temporal y consentimiento, sin impacto monetario demostrado; contrato AC28 futuro debe acotarse explícitamente. |
 | 08 | Presupuestos | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/08-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #44 MERGED `255bf61` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
 | 09 | Plan del ciclo | En inspección (no cerrada) | H-TRANS-01 documental; H-SPEC09-01 reclasificado como ambigüedad funcional, NO defecto técnico confirmado: Fin temporal deriva 0 conforme a P12/AC17; Fin futuro aún discutible. | `planes-ciclo.ts`, `ciclos.ts`, SPEC09 AC17, P12, relay #0007. | No cambiar motor ni prueba; documentar decisión explícita solo si usuario quiere otra semántica. | PR #57 MERGED; main `1ed2a83`; OpenCode reprodujo caso. | 2026-10-28 · contraste independiente #0007, sin cierre. | Bajo de cálculo confirmado; riesgo de interpretación de cero como ejecución definitiva. |
 | 10 | Plan anual | En inspección (no cerrada) | H-TRANS-01: vigencia documental desactualizada tras merge funcional; coherencia transversal en evaluación. | `specs/10-*` y consumidores API. | Conservar histórica; nota de estado actual, sin reescribir evidencia. | PR #61 MERGED `e1d6dba` (verificado). | 2026-10-28 · ronda documental + contraste parcial Álex; sin cierre. | Documental menor; contratos futuros/test gates requieren verificación específica. |
