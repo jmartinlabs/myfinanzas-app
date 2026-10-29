@@ -365,6 +365,41 @@ verificación del diff final y autorización expresa de integración/desarrollo.
 merge, SQL, infraestructura nueva, VPS, despliegues, datos reales o Excel modificado.
 Los estados previos de propuestas/preguntas pendientes son históricos, no el vigente.
 
+## Spec 32 aprobada; dev 32 iniciado — 2026-10-22
+Fuente: aprobación expresa del usuario en este chat tras revisar #29 con Álex,
+D1–D3 y AC-01–24 con precisiones UID/keep-id y rollback datos/autenticación.
+Spec cerrada en a4de2e1, ambas CI SUCCESS y PR #29 lista, sin merge autorizado.
+Dev en rama independiente dependiente de #29: [progress](32-ejecucion-rootless-progress.md)
+y [testplan](32-ejecucion-rootless-testplan.md). Primer incremento de bind probado;
+rootless/UID/volúmenes/publicación/Quadlet/rollback pendientes de entorno aislado
+compatible. No declarar dev 32 completo, VPS listo ni AC-10 PASS por probar HTTP local.
+Sin VPS/deploy/infraestructura activa/datos reales ni cambios a PR #21/#22.
+
+## Dev 32 verificado; revisión final pendiente — 2026-10-22
+Fuente: continuación expresa del usuario tras revisión con Álex de PR #30.
+24 AC PASS en 3094563, rootless 39734037872 y validate 39734037875/39734032852
+SUCCESS. [Progress](32-ejecucion-rootless-progress.md) y
+[testplan](32-ejecucion-rootless-testplan.md): release OCI/frontend reproducible,
+UID10001/host1001, API publicada/Quadlet/health, 90 API dentro de imagen final,
+matriz datos/auth/escrituras y backup/WAL/restore/MFA. Regresión local 90 API / 1409
+aserciones, 2 E2E, tipos/build/22+18 controles PASS. Historial de fallos preservado.
+PR #29 reconciliada con main ad94426 y CI SUCCESS, dos documentos; secuencia
+#29→#30, sin merge autorizado. SHA/CI del cierre documental final en PR #30.
+R6/fsync/API histórico sin diagnóstico siguen residuales. No VPS ni despliegue,
+infraestructura activa, imágenes publicadas, datos reales/Excel ni PR #21/#22.
+Próximas specs independientes A Caddy/HTTPS y B recuperación externa/custodia;
+ninguna activación ni migración real se infiere del cierre técnico 32.
+
+### Bloqueo posterior vigente Dev 32 — 2026-10-22
+El resultado 24 AC del ensayo 3094563 anterior queda acotado a ese run. Estado
+actual **23/24 verificados, AC-22 abierto**: run39734977613/77e4982 falló en
+concurrencia E1.4 (89 PASS/1 FAIL), fase upgrade v3, causa no diagnosticada.
+9a1dc5d tiene toda la CI verde y prueba proxies/datos/auth/restore, pero no
+resuelve ese fallo. No retries, omisiones ni modificaciones financieras.
+Se añade únicamente observabilidad saneada del reporter existente al harness
+de infra; PR #30 Draft hasta diagnóstico/revisión con el agente financiero o
+autorización técnica acotada. #29 sigue lista/verde; ninguna PR integrada.
+No se inician fases A/B ni VPS/despliegue. Detalles en progress/testplan 32.
 
 ## Spec06 integrada y adopción de coordinación autorizada — 2026-10-22
 Usuario autoriza integrar PR #24 sobre 3f04f33 sin cambios adicionales: HEAD y ambas

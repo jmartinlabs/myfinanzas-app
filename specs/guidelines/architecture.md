@@ -204,6 +204,31 @@ no acredita integración, operación remota ni autorización de datos reales.
 Ver [contrato 31](../31-sqlite-produccion-specification.md) y
 [evidencia](../31-sqlite-produccion-testplan.md).
 
+### Incremento de arranque 32
+`server-config.ts` valida API_BIND_HOST antes de adquirir SQLite: default loopback,
+solo 0.0.0.0 como opt-in explícito para namespace aislado. Puerto 3001 constante,
+sin cambios financieros/clave/origen. Pruebas de procesos reales no acreditan el
+mapeo Podman ni el ciclo Quadlet; [dev 32](../32-ejecucion-rootless-progress.md)
+permanece incompleto; la evidencia del runner añadida abajo supera ese bloqueo
+inicial. Ninguna activación remota.
+
+Ensayo 32: runner ubuntu-24.04 efímero con Podman rootless/systemd de usuario
+reales validado; UID interno 10001 mediante keep-id frente al host 1001,
+volumen privado y publicación 127.0.0.1:18081 probados con API real y restart de
+Quadlet. La imagen de infra/tests es exclusivamente fixture, no release final.
+No se declara operación en Debian/VPS, reproducibilidad de release ni rollback
+completo por estos ensayos. Evidencia por SHA en testplan/progress 32 y PR #30.
+
+Paquete 32 en validación: `infra/Containerfile` multistage fija base Bun/Debian por
+digest, dependencias frozen sin scripts y age por SHA256. `infra/release.py`
+materializa allowlist de Git, exige dos builds sin caché iguales en payload y
+frontend, exporta OCI privado y manifiesto pareado. `infra/runtime.py` solo renderiza
+Quadlet; `infra/compatibility.py` bloquea rollback sin prueba del par exacto de
+imágenes/esquema/datos/auth/escrituras. Ninguno despliega ni cambia estado.
+Tests Python/fcntl de #31 se montan como helper readonly del runner, fuera de la
+imagen productiva. La fixture Containerfile.probe es historia, ya no receta CI.
+Estado de aceptación, fallos y SHA en testplan 32; no anticipar PASS ni cierre R6.
+
 ## E1.6 — Deuda mínima, candidato local
 Esquema7 añade deudas, intentos y relación opcional Partida→Deuda; capital/intereses en el hecho Movimiento único. La migración preserva filas/auditorías/FK/índices/triggers sin reseed/backfill y se ejecuta dentro de IMMEDIATE. En origen production se invoca únicamente después de verificar la pareja efectiva y guardas existentes. Desarrollo autorizado el 2026-10-22, exclusivamente fixtures locales; sin ejecución operativa ni despliegue.
 

@@ -155,3 +155,22 @@ protecciones, añade preflight de identidad sin SHM y nueve regresiones S1–S7.
 Se mantiene bundle.tmp como nombre reservado, sin ampliar rutas aceptadas ni
 introducir otro espacio temporal innecesario. Los conteos anteriores son historia
 local previa a la reconciliación; el resultado combinado se registra al validar.
+
+### Ensayo rootless 32 (no activación)
+Workflow dedicado contents:read, checkout fijado sin persistir credenciales,
+runner efímero ubuntu-24.04; sin self-hosted, pull_request_target, secretos
+productivos ni artefactos de datos. sudo solo instala tooling en el runner;
+Podman/Quadlet/aplicación operan como usuario rootless, sin privileged, host
+network, socket del motor o capabilities extra. Datos/clave son efímeros de fixture.
+Para Podman 4.9 se ensaya tmpcopyup: raíz tmpfs 0711/root del namespace sin datos
+ni escritura/listado por app; TMPDIR privado 0700/UID 10001, verificado por stat
+y escritura real. State 0700 y DB/clave/sidecars 0600 no se relajan ni reparan.
+Solo se borra unidad/contenedores/temporales aleatorios propios; no prune global.
+No implica validación de host real, cifrado de disco, HTTPS o cierre de R6/fsync.
+
+El paquete definitivo 32 usa contexto Git por allowlist, canarios sintéticos
+rechazados antes de build e inspección de capas, sin ARG/ENV de secretos. El
+manifiesto se valida con commit y SHA esperados obtenidos por canal revisado
+independiente; un checksum junto al paquete no autentica su origen. Rollback
+requiere prueba de versiones exactas con escrituras y autenticación, no solo
+schema_version; no automatiza reversión ni restore. Ver runbook de infra.

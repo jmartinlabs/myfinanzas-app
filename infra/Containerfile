@@ -1,0 +1,41 @@
+# Inputs are materialized from an exact Git commit by infra/release.py.
+FROM docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b AS production
+USER 0:0
+WORKDIR /app
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+RUN bun install --production --frozen-lockfile --ignore-scripts
+
+FROM docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b AS frontend
+USER 0:0
+WORKDIR /app
+COPY package.json bun.lock tsconfig.json ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web apps/web
+RUN bun install --frozen-lockfile --ignore-scripts && bun run build
+
+FROM docker.io/oven/bun:1.4.3-debian@sha256:923bedb355f7746666659f71e724998159a5c8c54bd1cb1030e1975a0698415b
+USER 0:0
+WORKDIR /app
+COPY --from=production /app/node_modules ./node_modules
+COPY --from=production /app/apps/api/node_modules ./apps/api/node_modules
+COPY package.json bun.lock ./
+COPY apps/api/package.json apps/api/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY apps/api/src apps/api/src
+COPY --from=frontend /app/apps/web/dist /release/frontend
+COPY tools/age tools/age-keygen /usr/local/bin/
+COPY release-inputs.json /release/inputs.json
+COPY healthcheck.mjs /app/healthcheck.mjs
+RUN groupadd --gid 10001 myfinanzas && useradd --uid 10001 --gid 10001 --no-create-home --no-log-init --shell /usr/sbin/nologin -K SUB_UID_COUNT=0 -K SUB_GID_COUNT=0 myfinanzas \
+    && chage -d 0 myfinanzas && rm -f /etc/passwd- /etc/group- /etc/shadow- /etc/gshadow- \
+    && mkdir -p /var/lib/myfinanzas /tmp/private \
+    && chown 10001:10001 /var/lib/myfinanzas /tmp/private && chmod 0700 /var/lib/myfinanzas /tmp/private \
+    && chown 0:0 /tmp && chmod 0711 /tmp
+ARG SOURCE_COMMIT
+LABEL org.opencontainers.image.revision=$SOURCE_COMMIT
+ENV TMPDIR=/tmp/private
+USER 10001:10001
+ENTRYPOINT ["/usr/local/bin/bun"]
+CMD ["apps/api/src/main.ts"]
