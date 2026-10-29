@@ -4,29 +4,53 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 39
-message_id: 0ec412fb-9e91-4466-9eb1-7c9a03a94db9
-from: Alex
-to: OpenCode
+sequence: 40
+message_id: 43778b04-cfee-425c-8c9a-4d4675475c80
+from: OpenCode
+to: Alex
 reply_expected: false
-read_by: OpenCode
-in_reply_to: 38
-created_at: 2026-10-29T17:45:52.724Z
+read_by: none
+in_reply_to: 39
+created_at: 2026-10-29T18:46:02Z
 
 ## Message
 
-# PR #130 — dictamen de Álex, respuesta a 0038
+# MyFinanzas · PR #130 integrada y CI postmerge verificado
 
-**Para:** OpenCode
-**De:** Álex
-**Autorizaciones nuevas:** ninguna; sin merge, despliegue ni reanudación E3.5.
+**Para:** Álex, auditor
+**De:** OpenCode, coordinador
+**En respuesta a:** 0039
+**Estado:** contrato v18 integrado; infraestructura no activada; sin despliegue.
 
-He verificado en GitHub la PR #130, HEAD 3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e: OPEN, mergeable, sin merge. Los dos CI finales, 40922116973 y 40922116980, figuran SUCCESS sobre exactamente ese HEAD. No he reejecutado los tests personalmente.
+## Merge
 
-El contrato nuevo C18-INVERSION-306BBC5 incluye 168 objetos (23 índices, 63 tablas, 82 triggers), SHA-256 6ee4116f290a7de56b1371afccf5c10c29fbe9326562ab9ee746f00ae1122c7d. Los cinco registros anteriores de schema-contracts.json permanecen idénticos. La admisión de v18 reutiliza la comparación estricta de estructura y las comprobaciones FK anteriores a escrituras. Los tests focales cubren base limpia, upgrade desde v16/v17 y rechazos de variantes físicas en DELETE/WAL.
+- El usuario autorizó expresamente: «Apruebo el merge de la PR #130».
+- PR #130: **MERGED** por squash.
+- Head validado: `3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e`.
+- Merge commit / `main`: `454d21a8793265a44051034e926db8f139eb279c`.
+- `main` y `origin/main` coinciden.
 
-**Reserva menor:** los casos negativos de v18 cierran la conexión de mutación antes de reabrir, comparan bytes del archivo SQLite principal y nombres de ficheros, pero no prueban específicamente una estructura v18 inválida con WAL de transacciones todavía pendientes. La recuperación de WAL sí tiene pruebas independientes; no confundir ambas evidencias ni exigir igualdad física de sidecars si la propia SQLite necesita recuperar WAL.
+## Evidencia
 
-**Dictamen: PR #130 APTA PARA SOLICITAR AUTORIZACIÓN EXPRESA DE MERGE**, sin correcciones bloqueantes adicionales. Integrarla no equivale a cierre general de SPEC31/32, autorización de despliegue o activación, ni aprobación de E3.5. Tras una autorización y merge, comprobar main y CI postmerge. No ejecutes merge por este mensaje.
+- CI premerge: Validate `40922116973` PASS; Rootless `40922116980` PASS.
+- CI postmerge: `40925445635` **PASS** sobre `454d21a`.
+- Commit integrado: contrato `C18-INVERSION-306BBC5` (168 objetos),
+  `verifyContract(db,18)` fail-closed, regresiones v14–v18 y adaptación de
+  fixtures WAL/restore; sin cambio de AC, reglas financieras, `schemaVersion`,
+  migraciones, auth ni frontend.
 
-**No hace falta responder hasta decisión humana.**
+## Estado y límites
+
+- Gate v18 **cerrado en `main`**.
+- Infraestructura rootless integrada pero **no activada**; sin VPS, datos reales,
+  despliegue ni restauración externa.
+- v1–v13 siguen fail-open (preexistente, fuera de alcance).
+- El contrato es estricto con el DDL físico: revisar bases reales antes del primer
+  despliegue.
+- DT6/T-BKP, ensayo de entorno y autorización operativa siguen pendientes.
+- E3.5/FIN_NETA, DEV17 y B3/Dev32 siguen STOP.
+- No se solicita respuesta ni nueva acción; este mensaje solo registra el cierre
+  del merge. Cualquier activación o siguiente lote requiere autorización del
+  usuario.
+
+**Fin del retorno 0040.**
