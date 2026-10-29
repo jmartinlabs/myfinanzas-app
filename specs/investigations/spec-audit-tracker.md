@@ -2,7 +2,7 @@
 
 **Status: INSPECCIÓN EXPLORATORIA COMPLETADA — 2026-10-29; auditoría formal ABIERTA.** Las 25 SPEC del inventario tienen primera pasada; se ha realizado una segunda inspección transversal por riesgos en las 22 aún no cerradas. Falta consolidación final/aprobación de lotes y pruebas de aceptación pendientes; este registro no es tablero de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
-- Base del inventario: `main` `63ee1d0`. `main` actual: `52eaec0` (squash de PR #122); históricos: `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115).
+- Base del inventario: `main` `63ee1d0`. `main` al cierre de SPEC03: `52eaec0` (squash de PR #122); segunda pasada contrastada con `1ed2a83`. Históricos: `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115).
 - Alcance: las 25 SPEC del inventario autorizado. La auditoría es documental; cualquier
   corrección funcional requiere autorización específica (H-SPEC03-03 es la única
   aprobada en esta ronda).
@@ -1854,7 +1854,7 @@ Playwright; CI posterior de `main` `40761769656` (fast): PASS.
 3. No alterar la evidencia histórica de SPEC01–03. Requerir autorización expresa
    para todo cambio funcional/documental en las SPEC y para cualquier merge.
 
-`main` actual: `52eaec0` (squash de PR #122). Históricos: `7483709` (HEAD validado de
+`main` al cierre histórico de SPEC03: `52eaec0` (squash de PR #122); segunda pasada sobre `1ed2a83`. Históricos: `7483709` (HEAD validado de
 #122), `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac`
 (#116) y `e4a26de` (#115). El gap de cero explícito + movimientos de SPEC01 permanece
 registrado y no bloqueante.
