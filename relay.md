@@ -4,32 +4,57 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 11
-message_id: 018667c4-697c-4db4-84b4-a87cb7201e33
-from: Alex
-to: OpenCode
-reply_expected: false
-read_by: OpenCode
-in_reply_to: 10
-created_at: 2026-10-29T10:41:54.148Z
+sequence: 12
+message_id: 07b0f711-4df4-4237-8a73-601285ceb56c
+from: OpenCode
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 11
+created_at: 2026-10-29T11:10:42Z
 
 ## Message
 
-# SPEC07 / PR #128 — criterio de gate: QA independiente + E2E focal
+# SPEC07 · PR #128 — QA independiente y E2E focal completados
 
-**De:** Alex, auditor y asesor. **Para:** OpenCode, coordinador.
-**Recibido:** 0010. **PR:** #128, SHA verificado `6483d062f27f4628263ea03c7d0fab2bfbdcf1e7`, OPEN/no merge.
-**Autorización otorgada por este mensaje:** ninguna; no es aprobación de merge ni ampliación de desarrollo.
+**Para:** Alex
+**De:** OpenCode
+**HEAD:** `a1e1be949649d8e2aed78f43817053cfa91b4400`
+**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
+**Estado:** OPEN, MERGEABLE/CLEAN, sin merge.
 
-Mi criterio es **NO recomendar todavía el merge** solo con el `required` verde, 311 API reportadas y revisión estática. El delta de SPEC07 modifica una pantalla de revisión y confirmación con impacto financiero temporal. `specs/guidelines/quality.md` establece que cambios de aplicación deben verificar los flujos afectados, los visuales requieren navegador/capturas 390/1440 y QA independiente debe examinar candidato/diff/evidencias. No equiparar UNRUN con PASS.
+## QA independiente
 
-**Gate mínimo recomendado, proporcionado al cambio:**
-1. **QA independiente del autor**, focal en la PR #128 / SHA vigente: revisar B1/B2/T1, huella y guardas 409, historial, invariantes y evidencia cruda. Puede reutilizar pruebas verdes existentes; registrar hallazgos y dictamen sobre el candidato real.
-2. **Una validación real de navegador/E2E focal de la UI cambiada** con datos ficticios: preview con `totalMovimientos=0` y Comida afectada, vigentes/históricos, navegación Comida 105/105 o equivalente, presentación de antes/después, conflicto 409 que exige nueva revisión; comprobar al menos legibilidad y ausencia de overflow a 390/1440. No exigir repetir toda la batería no afectada si no hace falta.
-3. El bloqueo de arranque de restauración en `catalog`/`movimientos` debe diagnosticarse solo lo imprescindible para lograr esa evidencia, **sin ampliar el desarrollo, cambiar CI ni tocar otras funciones**. Si no se puede ejecutar por causa del entorno, consignar UNRUN, evidencia exacta y riesgo residual; no declarar funcionalidad visual verificada ni pedir un merge normal sin que el usuario acepte de forma expresa esa excepción al gate.
+Realizada por un agente separado y distinto del autor, solo lectura. **Veredicto: PASS** sobre el código de `6483d06` (idéntico en `a1e1be9` salvo documentación).
 
-La CI `critical` 40856670004 se ha cotejado SUCCESS sobre el SHA de la PR; es positiva, pero no sustituye estas comprobaciones. Para correcciones de pruebas, nuevas rutas, fixtures o tareas fuera de las B1/B2/T1 ya autorizadas, presentar primero **propuesta exacta y gate de alcance al usuario**. No empezar escritores por este mensaje. Mantener AC28, E3.5, inversiones y cierre fuera; actualización documental de runs solo en ámbito autorizado.
+- **B1:** periodo completo en `ciclos.ts`; regresión real de mismo ID con intervalo cambiado. Correcto.
+- **B2:** `hasNextComidaPage` con `max(vigentes,históricas)`; prueba 105/105, 105/0, 0/105. Correcto.
+- **T1:** fallo exclusivo de `revisionComidaRows()` con `revisionComidaSource()` disponible; verificación independiente del `409 REFERENCE_ERROR` y ausencia de escrituras. Correcto.
+- Sin regresión funcional en huella, materialidad, vigentes/anuladas, paginación ni confirmación.
+- Comandos: 17 pass en `cycle-operations` (el único fallo es el backup Linux-only por `age-keygen` en macOS), 1 pass en paginación, typecheck PASS. La suite API completa local tiene fallos ambientales de age/temporales, no del delta.
 
-**Decisión:** PR #128 sigue EN REVISIÓN, **gate QA/E2E focal pendiente**. Cuando haya evidencia verificable, solicitar a Álex el contraste final y, únicamente después, pedir al usuario aprobación del merge de **PR #128 con su HEAD exacto**. No auto-merge ni despliegue.
+## E2E focal real
 
-No hace falta acuse de cortesía; si necesitas autorización adicional para las pruebas, devuelve alcance específico al usuario mediante la coordinación habitual.
+- **Caso principal:** 1 pass. Crea Ciclos, Comida y verifica preview con `totalMovimientos=0` y Comida afectada, antes/después, conflicto 409 al insertar Comida entre preview/confirmación sin cambiar el Ciclo.
+- **Paginación real:** 1 pass con **105 vigentes + 105 anuladas**, no respuesta simulada: página 2 muestra 5+5, totales 105/105/210 y «Siguiente Comida» deshabilitado.
+- Capturas inspeccionadas sin overflow a 390/1440:
+  - `artifacts/spec07/review-desktop-1440.png`
+  - `artifacts/spec07/review-mobile-390.png`
+  - `artifacts/spec07/pagination-real-desktop-1440.png`
+  - `artifacts/spec07/pagination-real-mobile-390.png`
+- Los tests focales fueron efímeros/no commitados, dentro del alcance de QA; no cambian producto.
+
+## CI y documentación
+
+- CI Linux `critical` [40862555880](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40862555880) sobre `a1e1be9`: **PASS, 311 API**.
+- SPEC07 specification/testplan/progress actualizados con la evidencia focal y los límites.
+- **E2E completo: UNRUN**. El bloqueo persiste al arrancar el servidor de restauración en macOS (backup/age; no es el flujo de Ciclos). No se declara PASS global.
+
+## Observaciones no bloqueantes de QA
+
+- El E2E completo sigue sin acreditarse por entorno.
+- No hay test E2E persistente de la nueva UI; la evidencia focal es local/efímera.
+- Deriva documental menor: `pageComida` frente a `comidaImpacto.page`, etiqueta antigua en un punto de la spec y T1 solo comprueba mensaje, no `status/code` en el test persistente.
+- La lista muestra «0 vigentes · 0 históricas» antes del estado vacío cuando no hay Comida.
+
+Ninguna requiere cambio de producto para esta revisión. No hay merge; queda pendiente tu contraste final y la autorización expresa del usuario para integrar PR #128 en el HEAD exacto.
