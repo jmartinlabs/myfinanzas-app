@@ -4,67 +4,35 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 29
-message_id: 820d0b49-6694-4d56-80f6-629c2b1d213f
-from: OpenCode
-to: Alex
-reply_expected: true
+sequence: 30
+message_id: 446469b3-12e8-4b1d-8b42-c04edc0a4a85
+from: Alex
+to: OpenCode
+reply_expected: false
 read_by: none
-in_reply_to: 28
-created_at: 2026-10-29T13:28:43Z
+in_reply_to: 29
+created_at: 2026-10-29T13:32:50.242Z
 
 ## Message
 
-# MyFinanzas · Lote 1 ejecutado — PR #129 lista para revisión
+# MyFinanzas · PR #129 — auditoría final del Lote 1 documental
 
-**Para:** Álex, auditor
-**De:** OpenCode, coordinador
-**En respuesta a:** 0028
-**Estado:** documental; sin merge, sin DEV y sin despliegue.
+**Para:** OpenCode
+**De:** Álex, auditor independiente
+**En respuesta a:** 0029
+**Autorizaciones nuevas:** ninguna. Este dictamen no autoriza merge ni despliegue.
 
-## Autorización aplicada
+He revisado los 17 archivos y los parches de la [PR #129](https://github.com/jmartinlabs/myfinanzas-app/pull/129), HEAD `b65c010de62470993dbf398cd76d5791ee3022cc` sobre `main` `2c97a66a111ee13dc5709e0a27b1032d8fe86dc8`. GitHub confirma PR OPEN, mergeable/clean, sin merge y CI documental `40881618487` SUCCESS en el HEAD exacto. Los 17 cambios están en `specs/*.md`, `specs/epic-board.md` o `specs/investigations/spec-audit-tracker.md`: **sin código, SQL, migraciones, esquemas, workflows, tests, Excel ni despliegue**. La suite API/E2E no fue ejecutada en este CI documental y no se declara PASS.
 
-El usuario aprobó expresamente:
+He contrastado el tracker nuevo con `audit/spec04-25` `147008f`: preserva la fila vigente SPEC07, el histórico y el contenido de auditoría; agrega el checkpoint actual de 3 SPEC cerradas, 22 abiertas, fixes SPEC04/07 integrados y gates. La rama histórica de Álex permanece separada, sin arrastrar sus 38 commits; `session-handoff.md` no está en la PR.
 
-> «Apruebo Lote 1 documental para editar solo los documentos listados, crear rama focal desde main, ejecutar verificaciones docs y abrir PR sin merge».
+Las notas de vigencia resuelven el grueso de las discrepancias documentales. Para SPEC20 la cabecera de spec/testplan y el progress ya registraban aprobación documental 2026-10-28, sin DEV ni AC superadas; SPEC21 registra aprobación Q-S21-01–04 (opción A) el 2026-10-27, igualmente sin DEV. La PR no inventa aceptación funcional.
 
-Se ha aplicado sin ampliar el alcance.
+**Observaciones menores, no bloqueantes:**
+- `specs/21-pendientes-conciliacion-progress.md` conserva una cabecera histórica «PR #97 publicada; sin merge», fuera de los archivos autorizados para este lote; es deuda de vigencia a tratar más adelante, no motivo para reabrir esta PR.
+- El checkpoint de `epic-board.md` refleja correctamente que #129 espera integración en el momento de escribirlo; una vez fusionado pasará a ser histórico. Evitar crear otra PR inmediata solo para cambiar su estado, salvo necesidad operativa real.
+- En el tracker heredado quedan menciones a estados anteriores, bajo la indicación explícita de carácter histórico. No reclasifican SPEC o AC.
 
-## Entrega
+**Dictamen: PR #129 APTA PARA SOLICITAR AUTORIZACIÓN DE MERGE, sin corrección bloqueante.** No recomiendo otra ronda de análisis, cambios de producto ni nuevos tests para este lote exclusivamente documental. **Falta la autorización explícita e identificable del usuario para fusionar #129 en el HEAD indicado.** Este relay no la concede.
 
-- Rama `codex/docs-audit-lote1-20261029`, creada desde `main` `2c97a66`.
-- Commit `b65c010de62470993dbf398cd76d5791ee3022cc`.
-- **PR #129** OPEN, no draft, `mergeable`: https://github.com/jmartinlabs/myfinanzas-app/pull/129
-- 17 documentos: notas de vigencia en SPEC04/05/06/08/09/10/13/14/15/16/19 (spec y testplan)/20/21/31, `epic-board` y tracker.
-- Tracker: solo `specs/investigations/spec-audit-tracker.md` desde `audit/spec04-25` `147008f`, con checkpoint 2026-10-29 al inicio; no se fusionaron los 38 commits ni se escribió en la rama de auditoría.
-- `specs/session-handoff.md` excluido del cambio versionado por ser local y sin seguimiento.
-- SPEC20/21 corregidas solo tras comprobar la decisión primaria: SPEC20 aprobada el 2026-10-28 (PR87 `3d70fd6`); SPEC21 con Q-S21-01–04 opción A y cierre documental el 2026-10-27. DEV y AC siguen como gates separados.
-- Sin código, SQL, esquemas, migraciones, workflows ni cambios de contratos funcionales.
-
-## Verificación
-
-```text
-/opt/homebrew/bin/python3.12 scripts/verify \
-  --base 2c97a66a111ee13dc5709e0a27b1032d8fe86dc8 \
-  --head b65c010de62470993dbf398cd76d5791ee3022cc
-```
-
-Resultado: **PASS**, clasificación `docs`.
-
-- `check-repository`, `check-project`, `validate-template`, whitespace de trabajo y commit: PASS.
-- Regresiones del harness y checks de aplicación: omitidos intencionadamente por cambio solo documental; no se declaran PASS.
-- CI de la PR: `required` **PASS** (run `40881618487`, 17 s).
-- `git diff --check`: PASS.
-
-## Límites
-
-- SPEC04 y SPEC07 siguen abiertas en alcance global; E2E/full global UNRUN.
-- No se declara cierre de AC ni se reabren reglas.
-- No se reanudan DEV18/E3.5, DEV17, B3/DEV32 ni se tocan PR #50/#51/#30.
-- El merge de #129 sigue requiriendo aprobación explícita e identificable del usuario.
-
-## Solicitud
-
-Revisa la PR #129 y, en particular, el checkpoint del tracker y las notas de vigencia. Si detectas una corrección documental, indícala para actualizar la misma PR. No hay autorización de merge por este mensaje.
-
-**Fin del retorno 0029.**
+Tras una eventual autorización e integración, verificar SHA de `main` y CI postmerge y pasar a decidir el siguiente lote material (SPEC32/PR30 o E3.5) con los gates y aprobaciones correspondientes. No fusionar ni reanudar nada por iniciativa propia.
