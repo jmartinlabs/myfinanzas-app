@@ -1,7 +1,8 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: RECOVERY CANDIDATE v18 — merge de `main` `f9c8a0d`; schema 18/e4.1-v18;
-AC-18/AC-22 pendientes de CI Linux/rootless y QA final. Sin cierre, merge ni deploy.
+Current state: CANDIDATE v18 — merge de `main` `f9c8a0d`; schema 18/e4.1-v18;
+AC-18/AC-22 **PASS** en run `40898403837` (matriz 18→18). PR #30 DRAFT, sin cierre
+global, merge ni deploy.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -66,8 +67,14 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
 - Residual heredado de `main`: `schema-contracts.json` solo admite v14–v17;
   `verifyContract(db,18)` devuelve `null` (fail-open) para v18. No se modifica en
   este lote; requiere un contrato v18 propio y su prueba de no regresión.
-- **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
-  el PASS histórico 3094563.
+- CI final `87f9c5b`: Validate `40898403683` **PASS**; Rootless `40898403837`
+  **PASS** (6m39s). Evidencia: dos builds reproducibles, 315 API tests en imagen,
+  matriz seed→update→rollback→restore, backup age/WAL/MFA, gate fail-closed de
+  rollback y limpieza.
+- **AC-18/AC-22 PASS** en el candidato `87f9c5b` con alcance **18→18** (cambio de
+  binario sobre el mismo esquema). La migración 16/17→18 no la cubre esta matriz;
+  se apoya en las pruebas de esquema/backup de módulos. No se reutiliza el PASS
+  histórico 3094563.
 
 ## Recuperación DEV32 — reconciliación con main (2026-10-27, histórico)
 

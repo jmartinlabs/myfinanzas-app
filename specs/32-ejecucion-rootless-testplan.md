@@ -16,9 +16,9 @@ de esquema/backup de los módulos y no se presenta como rollback compatible 18�
   `operacion_inversion_audit` y saldos S900/S901 (Efectivo/Inversión de Inversiones).
 - `release-contract.mjs` consulta también `/instrumentos` y `/compras`.
 
-Estado: implementación y fixture validados localmente; **AC-18/AC-22 PENDING** hasta
-la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histórico
-3094563.
+Estado: **AC-18/AC-22 PASS** en el candidato `87f9c5b`, run Rootless
+`40898403837`, con alcance **18→18**. No se hereda el PASS histórico 3094563 ni se
+declara cobertura de migración 16/17→18 por esta matriz.
 
 ### Evidencia local del candidato v18 — 2026-10-29
 
@@ -50,6 +50,17 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
   `verifyContract(db,18)` devuelve `null` (fail-open). Requiere un contrato v18
   propio; no se aborda en este lote.
 - `git diff --check`: PASS.
+
+### Evidencia CI final — `87f9c5b`
+
+- `Validate project` run `40898403683`: **PASS**.
+- `Rootless infrastructure 32` run `40898403837`: **PASS** (6m39s).
+- Flags verificados: `two-clean-builds-payload-equal=true`,
+  `schema-data-authentication-and-confirmed-writes-roundtrip=true`,
+  `final-image-encrypted-backup-restore-key-mfa-revocation=true`,
+  `incompatible-and-unproven-rollback-rejected=true`,
+  `final-image-api-tests-passed=315`, `cleanup-own-resources=true`.
+- `previous-source=f9c8a0d` (main v18): matriz **18→18**, no migración 16/17→18.
 
 ## Estado histórico — recuperación DEV32 (2026-10-27)
 
@@ -148,10 +159,11 @@ que la matriz no replica; ninguna sustituye a la otra.
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Actualización 2026-10-29:** AC-18 se reevalúa con la matriz **18→18** sobre el merge de
-`main` `f9c8a0d`; el PASS histórico 3094563 sigue sin heredarse. AC-22 y la matriz
-permanecen **PENDING** hasta la CI Linux/rootless del SHA candidato. La tabla anterior
-es histórica y no se hereda.
+**Actualización 2026-10-29:** AC-18 y AC-22 **PASS** en `87f9c5b` con la matriz
+**18→18** sobre el merge de `main` `f9c8a0d` (run `40898403837`; Validate
+`40898403683` PASS). El PASS histórico 3094563 sigue sin heredarse. La migración
+16/17→18 no la demuestra esta matriz; se apoya en las pruebas de esquema/backup de
+módulos. La tabla anterior es histórica y no se hereda.
 Los bloques inferiores conservan la historia de fallos/ensayos y no sustituyen
 esta aceptación. CI del HEAD documental final se vincula en PR #30, sin inferir
 aprobación de merge ni despliegue.
