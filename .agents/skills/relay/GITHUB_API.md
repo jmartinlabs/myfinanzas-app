@@ -51,8 +51,11 @@ not make that capability available inside ChatGPT.
    is not authentication.
 5. Never use `main` as the default `ref` or default `branch` during these calls.
 
-A status request returns metadata only. Reading the body or history is allowed
-only on the user's explicit `Lee` / `read`. Do not add polling or hooks.
+A status request **displays** metadata only. The GitHub contents endpoint
+returns the full file, but the client must discard and not process/expose its
+message body for status. Processing message content is allowed on explicit
+`Lee` / `read`, or when required to carry out another expressly requested
+relay operation. Do not add polling or hooks.
 
 ## Write operations (same document, same CAS)
 
