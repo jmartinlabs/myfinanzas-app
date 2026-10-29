@@ -1,7 +1,6 @@
 # Auditoría integral de especificaciones — Registro único
 
-**Status: ABIERTA — 2026-10-28.** Registro de la auditoría documental; no es un tablero
-de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
+**Status: INSPECCIÓN EXPLORATORIA COMPLETADA — 2026-10-29; auditoría formal ABIERTA.** Las 25 SPEC del inventario tienen primera pasada; se ha realizado una segunda inspección transversal por riesgos en las 22 aún no cerradas. Falta consolidación final/aprobación de lotes y pruebas de aceptación pendientes; este registro no es tablero de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
 - Base del inventario: `main` `63ee1d0`. `main` actual: `52eaec0` (squash de PR #122); históricos: `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115).
 - Alcance: las 25 SPEC del inventario autorizado. La auditoría es documental; cualquier
@@ -19,6 +18,98 @@ de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01, SPEC02 y SPEC03 son las SPEC modificadas; las otras 22 no se han tocado.
+
+## Balance preliminar de cierre exploratorio — 2026-10-29 (criterio de parada)
+
+**Base de evidencia:** `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`;
+25 SPEC del inventario leídas al menos una vez, con segunda
+inspección por riesgos y consumidores. **3 formalmente cerradas**
+(SPEC01–03); **22 aún no cerradas** en la tabla individual,
+incluidas SPEC17/20–22/26/27 que son principalmente
+documentación aprobada o en revisión sin DEV. Esta evaluación
+no ejecutó suite integral ni homologación financiera contra
+Excel físico; parte de los escenarios de SPEC04/07/11 fueron
+reproducidos exclusivamente por OpenCode en SQLite ficticia
+efímera y contrastados estáticamente por Álex.
+
+### Último contraste económico — SPEC12/13/14/21, sin nuevo fallo probado
+
+- `flujo-mensual.ts:68-203,338-405`: el flujo base
+  E2.6 consume ingresos bancarios y **Gasto bruto**
+  registrado; deuda ordinaria es subconjunto del Gasto
+  y amortización extraordinaria resta una sola vez.
+  El Neto Compartido/recuperaciones aparece
+  explícitamente **pendiente**, sin sumarse al
+  Gasto ni inventar ahorro. Operativo de cobertura
+  incompleta no se presenta como ahorro real.
+- `anticipos.ts:333-545` calcula `Adelantado−Recuperado`
+  de Transferencias con rol/par acreditado, informa
+  por separado Transferencias relacionadas sin rol
+  y protege fotos `Neto apertura` del Ciclo.
+  La devolución no se suma a Ingreso ni se resta
+  de Gasto por segunda vez.
+- `compartidos.ts:180-316,915-1187` usa motor
+  único para Bruto por Gastos CAT013, Recuperado
+  acreditado de terceros y Neto de caso;
+  atribuye Recuperado por Gasto en céntimos
+  mediante reparto exacto; pendientes/excesos de
+  terceros no se compensan para declarar cierre.
+  Las aportaciones de terceros son Transferencias
+  `S000→interno`, no Ingreso de Nómina u Otros.
+- SPEC21 `§4.5` define para **futuro E3.6**
+  `G_n=G_b−R_adj` y `S_aj=Ingresos−G_n−Extra`,
+  por **sustitución** de Gasto bruto, nunca
+  `G_b+Neto`. El Recuperado vivo puede
+  redistribuirse con cambios posteriores: no
+  presentar como cierre histórico ni implementado
+  en E2.6.
+- **Resultado:** coherencia conceptual en estas rutas,
+  **sin incidencia nueva confirmada** ni cobertura
+  dinámica nueva. No reabrir fórmulas ya acordadas
+  por duplicación inferida.
+
+### Registro consolidado de decisiones (la clasificación final prevalece sobre notas históricas)
+
+| Prioridad | ID | Evidencia y estado | Siguiente acción separada |
+| --- | --- | --- | --- |
+| Alta · defecto operativo | **H-SPEC04-04** | CONFIRMADO por SQLite efímera: Movimiento puede confirmarse con fuente temporal Comida instalada en `error` | Guardar 409 `REFERENCE_ERROR` en preview/confirmación para todos los tipos relevantes, sin escrituras parciales; tests de alta/rectificación/anulación y control de fuente vacía |
+| Media · cálculo temporal | **H-SPEC04-02** | CONFIRMADO: referencia `después` de un Movimiento retroactivo omite Comida posterior | Usar referencia central de todas las fuentes al calcular después; pruebas de backdate |
+| Media · revalidación | **H-SPEC04-03** | CONFIRMADO: huella de Movimiento no cambia ante algunas operaciones Comida | Diseñar huella de impacto temporal/cobertura que invalide cambios materiales sin sobreinvalidación innecesaria |
+| Media · atribución y UX | **H-SPEC07-01** | F1/F2 CONFIRMADOS como conducta: Comida reasignada no figura ni invalida preview; incumplimiento actual **PROVISIONAL** por AC28 futuro. F3 (fuente error) descartado | Decidir alcance AC28; aviso UX claro mínimo, o impacto/revalidación completa si se aprueba; no llamar «cero hechos» a solo cero Movimientos |
+| Alta · gate de integración | **H-SPEC32-01** | CONFIRMADO por comparación de ramas: PR #30 sigue DRAFT con base v16 y matriz de rollback 16→16, frente a `main` v18 | No merge: reconciliar baseline y ampliar continuidad v17/18 y CI Linux/rootless; autorización para reanudar por separado |
+| Media · diseño futuro | **H-SPEC26-01** | CONFIRMADA dependencia de firma: `positionsFor` E4.1 no admite fecha Fin; precierre/cierre aún no implementados | Antes de DEV26/27 definir posiciones históricas con motor único, incluidas futuras Ventas |
+| Bajo · ambigüedad | **H-SPEC09-01** | NO bug demostrado: cero de Plan con Fin temporal y sin referencia financiera sigue contrato vigente | Mantener y diferenciar Fin temporal/cobertura; decidir si se exige otro oráculo |
+| Bajo · ambigüedad | **H-SPEC11-01** | NO bug demostrado: media documental y pronóstico aplican elegibilidad distinta (pruebas N11-F1/F2/F3) | Conservar, decidir solo si se desea cambio funcional |
+| Operativo · cobertura | **R-INV-01** | Riesgo permitido: rectificar Transferencia puede dejar efectivo del bróker negativo tras Compra; SPEC19 no exige veto global | No bloquear hechos bancarios reales por regla inventada; test futuro de presentación/auditoría |
+| Documental | **H-TRANS-01 / H-SPEC05-01/06-01/20-01/21-01** | Estados históricos de documentos desactualizados, sin nuevo efecto monetario demostrado | Corregir vigencias en un lote documental separado, preservando historia y evidencia |
+
+### Riesgos y pruebas pendientes que **no** justifican seguir explorando sin encargo nuevo
+
+- **SPEC16 AC25:** equivalencia funcional/física con el Excel
+  vigente, aún **sin verificar**. No sustituir con fixtures.
+- **SPEC17/20/21/22/26/27:** aprobaciones y DEV
+  diferenciados; AC UNRUN y dependencias E3.5,
+  DT7, DT6/T-BKP, posiciones a Fin.
+- **SPEC31/32:** durabilidad física/offsite, permisos
+  del VPS, rollback real y restore externo no
+  probados. Mantener gates antes de despliegue y
+  cierre financiero; rootless CI previa no prueba
+  Debian/VPS actual.
+- **SPEC04/07:** para pasar de hallazgos a correcciones
+  hay que aprobar oráculos, scope y PR; no convertir
+  hipótesis previas o cambios futuros en bug confirmado.
+
+**Criterio de parada propuesto:** detener ahora la
+búsqueda exploratoria. Las tres incidencias
+técnicas confirmadas de SPEC04, la UX/atribución
+SPEC07 y los gates de integración 26/32 están
+localizados, priorizados y respaldados por evidencia.
+Las nuevas pasadas estáticas aportan rendimiento
+decreciente. **No equivale a cerrar formalmente
+las 22 SPEC**: falta revisar el informe final,
+autorizar los lotes y ejecutar controles de regresión
+y equivalencia que correspondan. Ningún desarrollo
+ni merge se deriva automáticamente de este hito.
 
 ## Reglas de la auditoría
 
