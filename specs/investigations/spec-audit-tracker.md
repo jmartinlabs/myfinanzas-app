@@ -4,8 +4,9 @@
 
 - Base del inventario: `main` `63ee1d0`. `main` al cierre de SPEC03: `52eaec0` (squash de PR #122); segunda pasada contrastada con `1ed2a83`. Históricos: `3d87511` (#120), `5d8f273` (#121), `da93682` (#119), `13cc7c6` (#117), `71866ac` (#116) y `e4a26de` (#115).
 - Alcance: las 25 SPEC del inventario autorizado. La auditoría es documental; cualquier
-  corrección funcional requiere autorización específica (H-SPEC03-03 es la única
-  aprobada en esta ronda).
+  corrección funcional requiere autorización específica. H-SPEC03-03 y las tres
+  correcciones de SPEC04 de PR #125 han sido aprobadas e integradas con sus respectivos
+  alcances; no implica autorización de nuevas funcionalidades ni de despliegue.
 - **Estado actual:** **SPEC01 CERRADA** — [PR #115](https://github.com/jmartinlabs/myfinanzas-app/pull/115)
   integrada por squash `e4a26de`; validación de Álex sobre `b307c9c`; CI post-merge
   `40728150624` SUCCESS. **SPEC02 CERRADA:** documental #117 (`13cc7c6`) y funcional
@@ -18,6 +19,69 @@
 - **Historial inicial:** SPEC01 fue revisada por Álex y quedó pendiente de correcciones
   antes de la PR #115. Se conserva solo como antecedente.
 - SPEC01, SPEC02 y SPEC03 son las SPEC modificadas; las otras 22 no se han tocado.
+
+## Integración verificada PR #125 — relay #0022 (2026-10-29)
+
+**Evidencia remota contrastada independientemente:**
+relay #0022 de OpenCode, destinatario Álex, informa que
+el usuario **autorizó expresamente** el merge.
+Álex verifica el resultado publicado en GitHub;
+no dispone en este mensaje del texto original de
+esa autorización externa. La PR
+[#125](https://github.com/jmartinlabs/myfinanzas-app/pull/125)
+figura **CLOSED/MERGED**, squash
+`e3ebd76e09115469230766bb2f34f78eb39f1ea1`;
+`main` apunta a ese mismo SHA. El commit tiene
+como único padre `1ed2a834334d94d121df82b77a497a35f75ec50a`
+y cambia exclusivamente `apps/api/src/movimientos.ts`
+y `apps/api/src/movimientos.test.ts` (+453/−3).
+
+- **H-SPEC04-04 — corregido e integrado en `main`:**
+  `plan()` bloquea si `cycleContext(db).referencia.estado === "error"`;
+  preview y confirmación de alta/rectificación/anulación
+  rechazan `409 REFERENCE_ERROR` sin escritura de
+  Movimiento/auditoría/contador/intentona. Controles
+  Comida vacía/no instalada no bloqueados.
+- **H-SPEC04-02 — corregido e integrado:** referencia
+  posterior de Movimiento agrega Movimientos resultantes
+  y `revisionComidaSource()`, sin fecha inventada de
+  inversión pendiente; casos backdate, rectificación
+  y anulación del máximo.
+- **H-SPEC04-03 — corregido e integrado:** fingerprint
+  local incorpora referencia efectiva
+  `{fecha,estado}` antes y después, sin ampliar
+  `financeRevision()` global; los cambios de
+  fecha máxima de Comida sin efecto material
+  no invalidan, y los que cambian la referencia
+  propuesta sí obligan nueva vista previa.
+
+**Evidencia de validación:** GitHub run
+[40835279386](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40835279386)
+sobre PR HEAD `401bbff3f02c702b690e54afc9356d7af41f94ba`
+`required=SUCCESS` perfil `critical`;
+OpenCode declara **303 API PASS**, además de
+focales H-SPEC04 y typecheck/build. Postmerge
+GitHub run
+[40837093511](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40837093511)
+`SUCCESS` perfil `fast` sobre
+**`e3ebd76e09115469230766bb2f34f78eb39f1ea1`**,
+que valida baseline/typecheck/build **sin volver
+a ejecutar la suite API**. Playwright/E2E y
+`full` continúan **UNRUN** en estos perfiles.
+Álex comprobó diff, identidad de SHAs, estado PR,
+archivos del commit y CI; no corrió los tests.
+
+**Estado:** los **tres defectos confirmados
+se consideran corregidos e integrados**,
+pero **SPEC04 NO se cierra globalmente**:
+AC futuros/DT5/E3.5 y E2E no quedan acreditados
+por esta corrección. El tracker sigue en
+`audit/spec04-25` y no forma parte del
+squash #125. No se autoriza despliegue ni
+modificación adicional del producto.
+Los dictámenes anteriores OPEN/NO MERGE
+se preservan abajo como **evidencia histórica
+del estado previo**, no como estado vigente.
 
 ## Balance preliminar de cierre exploratorio — 2026-10-29 (criterio de parada)
 
@@ -400,7 +464,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | Candidata revisada favorablemente (SIN merge; no cerrada formalmente) | PR #125 HEAD `401bbff` implementa H-SPEC04-04/02/03; OpenCode R1/R2 resueltos: huella agregada antes/después evita 409 superfluo, e invalidación material y guardas 409 de confirmaciones histórica/alta probadas; CI critical required PASS SHA exacto, 303 pruebas API reportadas. | PR #125 diff 2 archivos, `movimientos.ts`/`movimientos.test.ts`, relay #0020, CI run `40835279386`. | Apta para solicitar autorización expresa de merge; valorar E2E/full UNRUN como riesgo residual; tras merge verificar `main` y actualizar progreso/hallazgos. | PR OPEN mergeable HEAD `401bbff`, base `1ed2a83`, `main` intacta. | 2026-10-29 · dictamen independiente Álex por diff y GitHub CI; pruebas locales OpenCode, no reejecutadas por Álex. | Los 3 defectos abordados sin migración; no clausurar toda SPEC04 ni contratos futuros por este fix. |
+| 04 | Movimientos | Tres correcciones integradas en `main`, sin cierre formal de SPEC04 | H-SPEC04-04/02/03: PR #125 MERGED por squash `e3ebd76`; R1 huella de referencia agregada y R2 guardas de confirmación histórica validadas previamente en HEAD `401bbff`; CI critical 303 API PASS en ese HEAD, postmerge fast PASS sobre `e3ebd76`. | GitHub PR #125, diff squash de 2 archivos, CI `40835279386` y postmerge `40837093511`, relay #0022, SPEC04 testplan. | Mantener SPEC04 formalmente abierta (AC y contratos futuros); E2E/full UNRUN sobre candidato/merge, no declarar validación global; ninguna acción nueva de código sin aprobación. | `main` `e3ebd76e09115469230766bb2f34f78eb39f1ea1`, PR #125 CLOSED/MERGED, HEAD previo `401bbff`. | 2026-10-29 · verificación GitHub posterior al squash por Álex; suites de tests no reejecutadas por Álex. | Tres defectos solucionados en `main`; no equivale a cierre financiero ni a SPEC04 completa; sin despliegue autorizado. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
 | 07 | Operación de Ciclos | En inspección (no cerrada) | H-SPEC07-01: C07-F1/F2 CONFIRMAN conducta (huellas iguales ante nueva Comida con máximo constante, confirmación aceptada y reasignación no enumerada); incumplimiento contractual PROVISIONAL por AC28 futuro. C07-F3 descarta fallo de guarda por fuente error; H-TRANS-01 documental. | SPEC07 Q1/AC07,17,28; `ciclos.ts`/`revision-comida-ledger.ts`/`Ciclos.tsx`; relay OpenCode #0015 con SQLite efímera. | Recomendar aviso explícito de cobertura hoy; definir con autorización si se integra toda Comida en preview/huella AC28; no parche financiero ni PR. | PR #49 MERGED; PR #82 MERGED; base `main` `1ed2a83`, relay #0015. | 2026-10-29 · contraste dinámico de OpenCode, estático de Álex; SPEC no cerrada. | Medio de atribución/UX, sin pérdidas de importes/posiciones observadas; fuente rota bloqueada 409. |
