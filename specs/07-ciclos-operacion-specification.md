@@ -13,6 +13,15 @@ La autorización actual permite el cierre documental aprobado de E2.1. La aproba
 procede del usuario, no de completar/publicar el documento. No autoriza desarrollo,
 código/DDL, migraciones ni integración automática de una nueva PR.
 
+**Actualización 2026-10-29 — opción B (candidato, no cerrada):** la revisión de
+impactos de Ciclos incorpora, en el candidato de PR #128, las operaciones de
+Revisión Comida afectadas por un cambio de Inicio/intervalos. La vista previa
+separa Movimientos y Comida (vigentes e históricas anuladas), con totales y paginación
+independientes; la confirmación invalida por cambios materiales de referencia
+agregada, cobertura o atribución, y bloquea con `409 REFERENCE_ERROR` si falla una
+lectura instalada. No se suman importes de Comida con Gastos ni se modifica el
+maestro. E3.5/conciliación e inversión siguen fuera; AC28 no se declara completo.
+
 ## Functionality
 Ampliar el único maestro Ciclos para registrar un periodo omitido y rectificar
 Inicio/saldo inicial comida, con revisión explícita y consecuencias verificables.

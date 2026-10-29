@@ -13,6 +13,16 @@ Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futu
 Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
 y aprobación expresa por su número. El cierre posterior solo cambia documentación.
 
+## Opción B — integración temporal de Revisión Comida (candidato PR #128, 2026-10-29)
+
+Implementación en rama `codex/spec07-comida-impact`, base `main` `f69d7d2`, sin merge.
+`operationPlan` separa Movimientos y operaciones Comida; `comidaImpacto` incluye
+vigentes afectadas, históricas anuladas, totales, conteos y `pageComida`; la huella usa
+referencia agregada/cobertura/atribución material y bloquea con 409 ante fallo de filas.
+Pruebas O4–O9 locales: 16 pass; CI crítica inicial `40849539994`: 309 API PASS.
+E2E no acreditado por fallo de arranque del servidor de restauración. AC28/E3.5,
+inversión, conciliación y cierre siguen fuera; SPEC07 no se cierra.
+
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
 La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.
