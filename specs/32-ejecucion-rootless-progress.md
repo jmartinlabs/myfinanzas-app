@@ -1,8 +1,8 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 Current state: CANDIDATE v18 — merge de `main` `f9c8a0d`; schema 18/e4.1-v18;
-AC-18/AC-22 **PASS** en run `40898403837` (matriz 18→18). PR #30 DRAFT, sin cierre
-global, merge ni deploy.
+**AC-18 PASS** y **AC-22 PASS parcial** (API/build/rootless; E2E final UNRUN) en
+run `40898403837`, matriz 18→18. PR #30 DRAFT, sin cierre global, merge ni deploy.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -71,10 +71,16 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   **PASS** (6m39s). Evidencia: dos builds reproducibles, 315 API tests en imagen,
   matriz seed→update→rollback→restore, backup age/WAL/MFA, gate fail-closed de
   rollback y limpieza.
-- **AC-18/AC-22 PASS** en el candidato `87f9c5b` con alcance **18→18** (cambio de
+- **AC-18 PASS** en el candidato `87f9c5b` con alcance **18→18** (cambio de
   binario sobre el mismo esquema). La migración 16/17→18 no la cubre esta matriz;
-  se apoya en las pruebas de esquema/backup de módulos. No se reutiliza el PASS
-  histórico 3094563.
+  se apoya en las pruebas de esquema/backup de módulos.
+- **AC-22 PASS parcial/acotado**: API 315, typecheck/build y rootless PASS; las
+  E2E Playwright finales sobre este HEAD permanecen **UNRUN**. No se declara PASS
+  global de AC-22 ni se reescribe el PASS histórico 3094563.
+- **Gate v18:** `schema-contracts.json` solo admite v14–v17; `verifyContract(db,18)`
+  es fail-open. Se acepta para integrar infraestructura no activada, pero es
+  **BLOQUEANTE para el primer despliegue/activación** hasta congelar el manifiesto
+  v18 y añadir sus regresiones.
 
 ## Recuperación DEV32 — reconciliación con main (2026-10-27, histórico)
 

@@ -16,15 +16,16 @@ de esquema/backup de los módulos y no se presenta como rollback compatible 18�
   `operacion_inversion_audit` y saldos S900/S901 (Efectivo/Inversión de Inversiones).
 - `release-contract.mjs` consulta también `/instrumentos` y `/compras`.
 
-Estado: **AC-18/AC-22 PASS** en el candidato `87f9c5b`, run Rootless
-`40898403837`, con alcance **18→18**. No se hereda el PASS histórico 3094563 ni se
-declara cobertura de migración 16/17→18 por esta matriz.
+Estado: **AC-18 PASS** y **AC-22 PASS parcial/acotado** (API/build/rootless; E2E
+final UNRUN) en el candidato `87f9c5b`, run Rootless `40898403837`, con alcance
+**18→18**. No se hereda el PASS histórico 3094563 ni se declara cobertura de
+migración 16/17→18 por esta matriz.
 
 ### Evidencia local del candidato v18 — 2026-10-29
 
 - `TMPDIR=/private/tmp bun test apps/api/src/database-schema.test.ts`: **10 PASS / 0 FAIL**.
 - `TMPDIR=/private/tmp bun test apps/api/src/compras.test.ts apps/api/src/instrumentos.test.ts apps/api/src/server-config.test.ts apps/api/src/sqlite-migration-opening.test.ts`: **20 PASS / 0 FAIL**.
-- `bun test infra/tests/release-fixture.test.ts`: **1 PASS / 13 aserciones**; fixture v17/v18 con 2 filas por tabla nueva, `integrity_check=ok` y FK vacío.
+- `bun test infra/tests/release-fixture.test.ts`: **1 PASS / 8 aserciones**; fixture v17/v18 con 2 filas por tabla nueva, `integrity_check=ok` y FK vacío.
 - `bun run typecheck`: PASS. `bun run build`: PASS.
 - `python3.12 -m py_compile infra/*.py infra/tests/*.py` y `node --check` de los `.mjs`: PASS.
 - `d5-backup.test.ts` e `inversiones-backup.test.ts`: **BLOCKED** en macOS por
@@ -61,6 +62,9 @@ declara cobertura de migración 16/17→18 por esta matriz.
   `incompatible-and-unproven-rollback-rejected=true`,
   `final-image-api-tests-passed=315`, `cleanup-own-resources=true`.
 - `previous-source=f9c8a0d` (main v18): matriz **18→18**, no migración 16/17→18.
+- **AC-22:** PASS parcial/acotado; E2E Playwright finales **UNRUN** sobre este HEAD.
+- **Gate v18:** `verifyContract(db,18)` fail-open; **BLOQUEANTE para el primer
+  despliegue/activación** hasta congelar el manifiesto v18 y sus regresiones.
 
 ## Estado histórico — recuperación DEV32 (2026-10-27)
 
@@ -159,11 +163,13 @@ que la matriz no replica; ninguna sustituye a la otra.
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Actualización 2026-10-29:** AC-18 y AC-22 **PASS** en `87f9c5b` con la matriz
-**18→18** sobre el merge de `main` `f9c8a0d` (run `40898403837`; Validate
-`40898403683` PASS). El PASS histórico 3094563 sigue sin heredarse. La migración
-16/17→18 no la demuestra esta matriz; se apoya en las pruebas de esquema/backup de
-módulos. La tabla anterior es histórica y no se hereda.
+**Actualización 2026-10-29:** **AC-18 PASS** y **AC-22 PASS parcial/acotado**
+(API/build/rootless; E2E final UNRUN) en `87f9c5b` con la matriz **18→18** sobre el
+merge de `main` `f9c8a0d` (run `40898403837`; Validate `40898403683` PASS). El PASS
+histórico 3094563 sigue sin heredarse. La migración 16/17→18 no la demuestra esta
+matriz; se apoya en las pruebas de esquema/backup de módulos. El gate v18 de
+`schema-contracts.json` es **BLOQUEANTE para el primer despliegue/activación**. La
+tabla anterior es histórica y no se hereda.
 Los bloques inferiores conservan la historia de fallos/ensayos y no sustituyen
 esta aceptación. CI del HEAD documental final se vincula en PR #30, sin inferir
 aprobación de merge ni despliegue.
