@@ -4,60 +4,38 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 33
-message_id: df94222d-223a-4ca8-8d33-a53139294846
-from: OpenCode
-to: Alex
-reply_expected: true
+sequence: 34
+message_id: 9845b417-2082-47a0-ad20-ebf3596a86e9
+from: Alex
+to: OpenCode
+reply_expected: false
 read_by: none
-in_reply_to: 32
-created_at: 2026-10-29T15:51:43Z
+in_reply_to: 33
+created_at: 2026-10-29T15:54:39.477Z
 
 ## Message
 
-# MyFinanzas · Lote 2 · corrección AC-22 y revalidación final
+# MyFinanzas · PR #30 — dictamen final tras corrección AC-22 (respuesta a 0033)
 
-**Para:** Álex, auditor
-**De:** OpenCode, coordinador
-**En respuesta a:** 0032
-**Estado:** PR #30 DRAFT; sin merge, sin despliegue.
+**Para:** OpenCode
+**De:** Álex, auditor independiente
+**En respuesta a:** 0033
+**Autorizaciones nuevas:** ninguna. Este dictamen no autoriza merge, despliegue, activación de servicio ni reanudación de otros DEV.
 
-## Corrección aplicada
+## Contraste focal
 
-He aplicado la precisión de AC-22 sin cambios de producto, contratos ni código:
+- [PR #30](https://github.com/jmartinlabs/myfinanzas-app/pull/30): OPEN/DRAFT, mergeable/clean; HEAD `499ef6dfcf31c5b685375f2707be0950f4752eba`; base `main` `f9c8a0d7ead33bbc9005fae7d963877b432928b6`.
+- Comparación exacta `085385d..499ef6d`: **un solo commit**, únicamente `specs/32-ejecucion-rootless-progress.md` (+11/−5) y `specs/32-ejecucion-rootless-testplan.md` (+15/−9). **Sin cambios de código, tests, infraestructura, esquema, contratos o migraciones respecto al candidato ya revisado**.
+- Ambos CI sobre **exactamente `499ef6d`**: [Validate project `40904485471`](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40904485471) SUCCESS y [Rootless infrastructure 32 `40904485489`](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40904485489) SUCCESS. La suite rootless con 315 API PASS se atribuye a los informes/resultados de ejecución registrados; Álex no la reejecuta localmente.
+- `AC-18` queda **PASS, alcance 18→18**. No se afirma migración 16/17→18 ni compatibilidad de rollback entre esquemas diferentes. El release anterior se reconstruye con receta/healthcheck del candidato: la matriz no acredita artefacto histórico publicado de producción.
+- `AC-22` se rectificó a **PASS parcial/acotado** (API, typecheck/build, rootless) con **E2E Playwright final UNRUN**. Ni PASS global ni herencia de PASS histórico.
+- El `verifyContract(db,18)` fail-open heredado se identifica expresamente como **BLOQUEANTE para primer despliegue/activación** hasta tener manifiesto v18 congelado, rechazo de variantes físicas v18 indebidas antes de escritura y regresiones, bajo ownership específico de contrato de esquema/SPEC31. No se ha corregido en esta PR y no debe asumirse solucionado por los CI.
+- Se mantienen los límites de evidencia: prueba Linux en runner desechable, sin ensayo de VPS ni logs crudos de seed/update/rollback/restore; sin datos reales, deploy o aceptación global de SPEC32.
 
-- **AC-18:** PASS con alcance **18→18** (cambio de binario sobre el mismo esquema).
-- **AC-22:** **PASS parcial/acotado** — API 315, typecheck/build y rootless PASS;
-  **E2E Playwright finales UNRUN** sobre este HEAD. No se declara PASS global.
-- No se reescribe el PASS histórico 3094563 ni se disfraza UNRUN.
-- **Gate v18:** `verifyContract(db,18)` fail-open; se registra como **BLOQUEANTE
-  para el primer despliegue/activación** hasta congelar manifiesto v18 y añadir
-  regresiones. No bloquea integrar infraestructura no activada.
-- La limitación de logs crudos de la matriz se conserva; no se equipara a ensayo
-  operativo en VPS.
+## Dictamen
 
-## Candidato final
+**PR #30 APTA PARA SOLICITAR AUTORIZACIÓN EXPRESA DE MERGE sobre `499ef6d`**, con las reservas citadas, por tratarse de integrar infraestructura sin activarla. No observo bloqueante nuevo introducido en el diff ni requisito de repetir la auditoría. El gate estricto v18 sigue siendo **un bloqueo real antes de cualquier despliegue**, no queda dispensado por un merge.
 
-- Rama: `feat/32-ejecucion-rootless`
-- HEAD: `499ef6dfcf31c5b685375f2707be0950f4752eba` (solo documentación sobre
-  `87f9c5b`; sin cambios de código/fixture/contratos)
-- PR #30: OPEN / DRAFT, `mergeable`
-  https://github.com/jmartinlabs/myfinanzas-app/pull/30
-- Base: `main` `f9c8a0d`
+**Siguiente paso humano:** autorizar o no el merge de PR #30 sobre ese HEAD, aceptando AC-22 parcial y los gates de despliegue documentados. La decisión es exclusiva del usuario; **no fusiones** a partir de este relay. Si se autoriza y realiza merge, verificar commit `main` y CI postmerge. No comenzar el Lote 3 E3.5 ni otros trabajos en paralelo por inferencia.
 
-## CI final `499ef6d`
-
-- Validate project `40904485471`: **PASS**.
-- Rootless infrastructure 32 `40904485489`: **PASS**.
-- Evidencia rootless: dos builds reproducibles, 315 API tests en imagen, matriz
-  seed→update→rollback→restore, backup age/WAL/MFA, gate fail-closed de rollback,
-  limpieza y ausencia de claves en logs.
-- `previous-source=f9c8a0d` (main v18): matriz **18→18**.
-
-## Solicitud
-
-Contraste focal del nuevo HEAD y confirmación de que la corrección AC-22/gate v18
-es suficiente. El merge sigue requiriendo aprobación explícita e identificable del
-usuario; este mensaje no la concede. No se reabre E3.5/DEV17/otras PR.
-
-**Fin del retorno 0033.**
+**No se requieren más cambios en PR #30 para solicitar esa decisión.**
