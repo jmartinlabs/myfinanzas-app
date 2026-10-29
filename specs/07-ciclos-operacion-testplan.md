@@ -45,7 +45,11 @@ AC27–29 y E2.1-AC2 del roadmap permanecen PENDING de sus módulos futuros.
 
 - `cycle-operations.test.ts` sin backup Linux-only: **17 pass / 0 fail** (B1/T1).
 - `cycle-pagination.test.ts`: **1 pass** (B2, 105/105).
-- CI Linux `critical` run `40855942703` sobre `f6fd2bb`: **311 API PASS**.
+- CI Linux `critical` run `40856670004` sobre `6483d06`: **311 API PASS**.
+- QA/E2E focal `2026-10-29`: **1 pass** con preview real de Comida afectada,
+  409 entre preview/confirmación, paginación 105/105 y capturas 390/1440 sin overflow
+  (`artifacts/spec07/`). El E2E completo conserva el fallo de arranque del servidor de
+  restauración en `catalog`/`movimientos`; ese flujo sigue **UNRUN** y no se declara PASS.
 - Typecheck/build PASS. E2E local: fallo de arranque del servidor de restauración en
   `catalog`/`movimientos`; **UNRUN** para este contrato, no se declara PASS.
 - AC28 sigue **PENDING**: solo se integra atribución temporal de Comida; no inversión,

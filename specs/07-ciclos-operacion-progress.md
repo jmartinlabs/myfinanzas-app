@@ -26,7 +26,11 @@ inversión, conciliación y cierre siguen fuera; SPEC07 no se cierra.
 Correcciones B1/B2/T1: periodo completo de Comida con regresión de mismo ID e intervalo;
 paginación por el máximo de ambos totales con prueba 105+105; fallo exclusivo del lector
 de filas con fuente MAX disponible y 409. Pruebas locales 17 pass + B2 1 pass; CI
-`40855942703` sobre `f6fd2bb`: 311 API PASS. Sin merge.
+`40856670004` sobre `6483d06`: 311 API PASS. Sin merge.
+
+QA/E2E focal `2026-10-29`: 1 pass con preview real de Comida, 409 y paginación
+105/105; capturas 390/1440 sin overflow en `artifacts/spec07/`. E2E completo no
+acreditado por el fallo de arranque del servidor de restauración; UNRUN, sin PASS global.
 
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
