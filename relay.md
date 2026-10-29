@@ -1,8 +1,9 @@
 # Agent Relay
 conversation: r-63nqu4dq
 description: Smoke test CLI GitHub API
-type: init
+type: join
 state: open
-participants: coordinator-opencode
+participants: coordinator-opencode, alex-chatgpt
 sequence: 0
-created_at: 2026-10-29T09:09:37Z
+joined: alex-chatgpt
+created_at: 2026-10-29T09:11:15Z
