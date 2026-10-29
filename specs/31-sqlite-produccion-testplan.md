@@ -37,6 +37,21 @@ Specification: [contrato aprobado](31-sqlite-produccion-specification.md)
 | AC-32 | Ejecutar instalación congelada, typecheck, build y controles documentales/repositorio | Checks pasan sin desactivar firmas, guardas ni assertions; lockfile no cambia sin necesidad aprobada | instalación/tipos/build/controles | PASS local | 2026-10-21; controles y revisión manual PASS |
 | AC-33 | Revisar diff/historial, README/guidelines/infra de la futura implementación | Documenta comandos reales, migración v6, canales privados, estados y límites; sin secretos/bases; PR revisable sin deploy | revisión diff/historial y docs | PASS local | 2026-10-21; controles y revisión manual PASS |
 
+## Contrato estricto v18 — 2026-10-29
+
+- Manifiesto canónico `C18-INVERSION-306BBC5` generado desde una base limpia v18
+  (`apps/api/src/schema-contracts.json`).
+- `schema-contract.ts` admite v18 y `verifyContract(db,18)` compara el manifiesto
+  completo, incluyendo FK; rechaza tablas/índices/triggers ausentes o extra y
+  variantes físicas antes de PRAGMA persistentes o escrituras.
+- Cobertura focal: base v18 válida, v16→v18 y v17→v18 con el mismo manifiesto;
+  mutaciones físicas (tabla extra, trigger ausente, FK inválida) rechazadas sin
+  cambiar bytes, journal ni archivos; `openDatabase` y `prepareSchema` cubiertos.
+- Regresión v14–v17 conservada por las pruebas de contrato existentes.
+- Evidencia: `bun test apps/api/src/schema-contract-v18.test.ts` (5 PASS / 49
+  expect), `database-schema.test.ts` + `compras.test.ts` + nuevo test (27 PASS),
+  typecheck/build PASS. CI/PR focal pendiente de publicar.
+
 ## Regression checks
 Record relevant suites, counts, command exit status and failures separately.
 ## Functional verification
