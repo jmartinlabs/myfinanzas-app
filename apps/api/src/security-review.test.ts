@@ -310,9 +310,7 @@ test("31 S7: cross-origin rejection keeps DB/WAL bytes with an open writer, logi
         });
       }
       try {
-        db.exec(
-          "CREATE TABLE review_fixture(n INTEGER);INSERT INTO review_fixture VALUES(1)",
-        );
+        db.exec("INSERT INTO counters VALUES('review_fixture',1)");
         const files = [path, path + "-wal", process.env.AUTH_KEY_PATH!],
           before = files.map((p) => fs.readFileSync(p)),
           content = logical(db);
@@ -477,7 +475,7 @@ test("31 AC35: foreign-origin database with a pending WAL is rejected with logic
           (source === "production"
             ? `import{initializeProduction}from${JSON.stringify(join(import.meta.dir, "production-state.ts"))};initializeProduction();`
             : `import{openDatabase}from${JSON.stringify(join(import.meta.dir, "database.ts"))};openDatabase(${JSON.stringify(path)}).close();`) +
-            `import{Database}from"bun:sqlite";const d=new Database(${JSON.stringify(path)});d.exec("PRAGMA wal_autocheckpoint=0;CREATE TABLE pending_fixture(n INTEGER);INSERT INTO pending_fixture VALUES(7)");process.kill(process.pid,"SIGKILL");`,
+            `import{Database}from"bun:sqlite";const d=new Database(${JSON.stringify(path)});d.exec("PRAGMA wal_autocheckpoint=0;INSERT INTO counters VALUES('pending_fixture',7)");process.kill(process.pid,"SIGKILL");`,
         ],
         { env: { ...process.env }, stderr: "pipe" },
       );

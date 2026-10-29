@@ -685,10 +685,10 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
     db.exec("DROP TABLE budget_contract");
     expect(() =>
       backup(db, secret, join(dir, "foreign-backup"), recipient),
-    ).toThrow("Esquema8 incompatible");
+    ).toThrow("Contrato de esquema v18 desconocido o incompleto; no se modificará esta base.");
     db.close();
     const bytes = readFileSync(path);
-    expect(() => openDatabase(path)).toThrow("Esquema8 incompatible");
+    expect(() => openDatabase(path)).toThrow("Contrato de esquema v18 desconocido o incompleto; no se modificará esta base.");
     expect(readFileSync(path)).toEqual(bytes);
   } finally {
     try {
