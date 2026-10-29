@@ -39,9 +39,13 @@ AC27–29 y E2.1-AC2 del roadmap permanecen PENDING de sus módulos futuros.
 | O7 R2 | Anulada afectada mostrada como histórica; cambio de estado invalida; cambio de concepto no invalida |
 | O8 | Comida vacía/ausente y fallo de lectura de filas: cobertura distinta; error controlado 409 |
 | O9 | 105 operaciones: página 1/2, total completo, misma huella |
+| B1 | Periodo completo: mismo ID con intervalo distinto se enumera; regresión añadida |
+| B2 | Límite de «Siguiente Comida» con `max(vigentes,históricas)`, no suma; prueba 105+105 |
+| T1 | Fallo exclusivo de `revisionComidaRows()` con `revisionComidaSource()` disponible: 409 sin escrituras |
 
-- `cycle-operations.test.ts` sin backup Linux-only: **16 pass / 0 fail**.
-- CI Linux `critical` run `40849539994` sobre el candidato inicial: **309 API PASS**.
+- `cycle-operations.test.ts` sin backup Linux-only: **17 pass / 0 fail** (B1/T1).
+- `cycle-pagination.test.ts`: **1 pass** (B2, 105/105).
+- CI Linux `critical` run `40855942703` sobre `f6fd2bb`: **311 API PASS**.
 - Typecheck/build PASS. E2E local: fallo de arranque del servidor de restauración en
   `catalog`/`movimientos`; **UNRUN** para este contrato, no se declara PASS.
 - AC28 sigue **PENDING**: solo se integra atribución temporal de Comida; no inversión,

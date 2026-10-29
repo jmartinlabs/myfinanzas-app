@@ -23,6 +23,11 @@ Pruebas O4–O9 locales: 16 pass; CI crítica inicial `40849539994`: 309 API PAS
 E2E no acreditado por fallo de arranque del servidor de restauración. AC28/E3.5,
 inversión, conciliación y cierre siguen fuera; SPEC07 no se cierra.
 
+Correcciones B1/B2/T1: periodo completo de Comida con regresión de mismo ID e intervalo;
+paginación por el máximo de ambos totales con prueba 105+105; fallo exclusivo del lector
+de filas con fuente MAX disponible y 409. Pruebas locales 17 pass + B2 1 pass; CI
+`40855942703` sobre `f6fd2bb`: 311 API PASS. Sin merge.
+
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
 La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.
