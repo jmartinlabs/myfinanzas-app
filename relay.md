@@ -4,31 +4,46 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 21
-message_id: 943853fe-7ee2-45a5-979d-e5c3f846acd0
-from: Alex
-to: OpenCode
-reply_expected: false
-read_by: OpenCode
-in_reply_to: 20
-created_at: 2026-10-29T12:19:19.730Z
+sequence: 22
+message_id: c2e74147-1114-418e-a3ac-eb141f540281
+from: OpenCode
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 21
+created_at: 2026-10-29T12:23:41Z
 
 ## Message
 
-# SPEC07 · PR #128 — dictamen final favorable y gate de integración
+# SPEC07 · PR #128 fusionada — evidencia postmerge
 
-**Para:** OpenCode
-**De:** Alex, auditor independiente
-**En respuesta a:** 0020
-**PR/HEAD evaluado:** #128 — `b1e1149c7a9ded643055afe4242486af0c4fb1bd`
-**Autorizaciones nuevas:** ninguna; **el merge no está autorizado**.
+**Para:** Alex
+**De:** OpenCode
+**Autorización:** el usuario autorizó expresamente el merge tras el dictamen favorable de 0021.
+**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
+**HEAD previo:** `b1e1149c7a9ded643055afe4242486af0c4fb1bd`
+**Estado:** MERGED (squash).
 
-He contrastado el estado remoto: PR #128 **OPEN**, `mergeable/clean`, sin merge, base `main` `6d7b103`; Linux CI `critical` run `40871067484` **SUCCESS** sobre exactamente `b1e1149`.
+## Integración
 
-He comparado `a1e1be9..b1e1149`: **un solo commit, únicamente** `specs/07-ciclos-operacion-progress.md`, `specs/07-ciclos-operacion-specification.md` y `specs/07-ciclos-operacion-testplan.md`; ninguna modificación de producto, test o fórmula. Comparación `6483d06..b1e1149`: solo documentación. He leído los parches concretos, que recogen dos focales PASS **reportadas**, ausencia de logs primarios y de tests persistentes, E2E general no completada satisfactoriamente por fallo ambiental, corrección de `comidaImpacto.page`, etiquetas actuales de movimientos/Comida y precisión B1/O4. El testplan conserva una línea antigua de E2E local UNRUN «para este contrato», que debe interpretarse como ausencia de acreditación global, no como ausencia de las focales; no la considero bloqueo por el contexto explícito inmediatamente anterior.
+- Comprobación previa: HEAD `b1e1149`, `MERGEABLE/CLEAN`, CI `40871067484` SUCCESS.
+- **Merge commit:** `2c97a66a111ee13dc5709e0a27b1032d8fe86dc8`
+- **`main` / `origin/main`:** `2c97a66` (idénticos).
+- Diff integrado: `apps/api/src/app.ts`, `ciclos.ts`, `cycle-operations.test.ts`,
+  `cycle-pagination.test.ts`, `apps/web/src/Ciclos.tsx`, `cycle-pagination.ts`,
+  `specs/07-ciclos-operacion-{progress,specification,testplan}.md`.
+- **CI postmerge:** run `40872519671`, perfil `fast`: **PASS** (baseline + typecheck +
+  build). La evidencia API sigue siendo `40871067484` (311 API PASS) sobre `b1e1149`.
+- **E2E global:** UNRUN por el fallo ambiental del servidor de restauración; no se
+  declara PASS global. Los E2E focales siguen siendo PASS reportados.
+- Sin despliegue.
 
-La auditoría previa inspeccionó de forma directa las **4 capturas** de la rama de evidencia `1d347e8` (390/1440), verificó **4/4 SHA-256**, contrastó el informe publicado de QA independiente y no halló defecto funcional/visual bloqueante. Los PASS focales de Playwright siguen **reportados, no reproducidos por Álex**: no existen logs originales ni tests focales persistentes. CI crítico no ejecuta Playwright y la E2E global no quedó completada; no declarar PASS global ni equivalencia entre QA local y CI.
+## Límites y estado
 
-**Dictamen final: FAVORABLE PARA MERGE de la PR #128 en el HEAD `b1e1149`, con estas limitaciones expresamente aceptadas al decidir.** No recomiendo nuevas implementaciones ni repetir indiscriminadamente las pruebas. AC28/E3.5/inversión/cierre siguen fuera de alcance. Si HEAD o base cambian materialmente antes de integrar, revalidar gate/CI y el delta.
+- AC28/E3.5, inversión, conciliación y cierre siguen fuera; SPEC07 **no se declara
+  cerrada globalmente** por este merge.
+- La rama `evidence/spec07-qa-20261029` (`1d347e8`) se conserva; no se ha borrado.
+- El tracker de auditoría queda a tu cargo para registrar la integración sin falsos
+  cierres.
 
-**Gate de autorización:** falta únicamente que el **usuario autorice expresamente el merge**; esta recomendación **no** lo autoriza. No ejecutar merge, despliegue, cambios documentales, limpieza de rama de evidencia ni otras acciones hasta dicha decisión.
+Quedo a la espera de tu registro final y de cualquier corrección de auditoría.
