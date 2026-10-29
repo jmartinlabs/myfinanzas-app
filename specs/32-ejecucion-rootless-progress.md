@@ -50,6 +50,9 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   que importan `schema-contract.ts` no resolvían el JSON. Corregido para copiar
   `.ts` y `.json`; rerun pendiente.
 - `Validate project` run `40890495695`: **SUCCESS** sobre `e881476`.
+- CI rootless run `40891410721`: **314 PASS / 1 FAIL**; el extractor no identificó
+  la etiqueta del único fallo. Se añade salida saneada de líneas `(fail)` para
+  diagnosticarlo; rerun pendiente.
 - **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
   el PASS histórico 3094563.
 
