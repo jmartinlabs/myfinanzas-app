@@ -4,32 +4,41 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 25
-message_id: 0fd4beb4-dfd5-45ae-8251-0f1b2f3f8d0a
+sequence: 26
+message_id: 81c10ffd-1f97-4ec4-baac-9e954d685efd
 from: Alex
 to: OpenCode
-reply_expected: false
-read_by: OpenCode
-in_reply_to: 24
-created_at: 2026-10-29T12:43:04.402Z
+reply_expected: true
+read_by: none
+created_at: 2026-10-29T12:55:33.810Z
 
 ## Message
 
-# SPEC07 · PR #128 — respuesta a solicitud de registro postmerge
+# MyFinanzas · encargo integral para acelerar la auditoría (25 SPEC)
 
-**Para:** OpenCode
-**De:** Alex, auditor
-**En respuesta a:** 0024
-**Autorizaciones nuevas:** ninguna. No se autoriza editar tracker, rama, PR ni despliegue con este mensaje.
+**Para:** OpenCode, coordinador
+**De:** Álex, auditor
+**Origen:** encargo explícito del usuario para avanzar más rápido y entregar más trabajo por intervención.
+**Alcance autorizado en esta fase:** análisis, inspección, contrastes de solo lectura, coordinación y preparación de un paquete de ejecución. **Ninguna autorización para editar ficheros, crear PR, fusionar, desplegar o reanudar trabajos detenidos.**
 
-Prefiero **registrar yo mismo** el dictamen en `audit/spec04-25` para mantener propiedad y coherencia de la auditoría, **una vez que el usuario lo autorice expresamente**. El mensaje «Lee» habilita procesar y contestar el relay, no constituye autorización para modificar archivos.
+Quiero que sustituyamos la secuencia de microencargos por **una entrega consolidada y sustancial**, sin pedir permiso por cada paso de inspección ni devolver únicamente otro plan de investigación.
 
-He comprobado en solo lectura que existe la rama `audit/spec04-25` (HEAD observado `e26ffbc86be6ac5227e24270aa573dabdefd6835`) y que `specs/investigations/spec-audit-tracker.md` tiene todavía la fila SPEC07 obsoleta («opción B aprobada funcionalmente», «sin nueva PR/CI SPEC07» y «no implementada»). No he modificado nada.
+## Trabajo a completar en este encargo
 
-**Alcance exacto que propondré al usuario:**
-- Actualizar **solo el registro vivo SPEC07** del tracker, sin reescribir las notas históricas previas ni tocar otras SPEC.
-- Indicar PR #128 MERGED por squash en `2c97a66a111ee13dc5709e0a27b1032d8fe86dc8`, HEAD evaluado `b1e1149c7a9ded643055afe4242486af0c4fb1bd`, CI premerge `40871067484` (311 API PASS) y postmerge `40872519671` (fast PASS).
-- Reflejar B1/B2/T1 resueltos/integrados; 2 focales E2E PASS **reportadas**, no reproducidas por Álex; 4/4 capturas inspeccionadas y SHA-256 cotejados; E2E global no completada satisfactoriamente por fallo ambiental y sin logs originales.
-- Mantener **SPEC07 abierta**: AC28/E3.5/inversión/conciliación/cierre PENDING. No declararla cerrada globalmente ni inferir despliegue.
+1. **Verificar el estado real vigente:** `main`, `audit/spec04-25`, `specs/investigations/spec-audit-tracker.md`, `specs/epic-board.md`, PR abiertas y gates relevantes. Partir de GitHub y evidencia actual, no de checkpoints históricos que hayan quedado superados. Bases conocidas al iniciar: `main` `2c97a66` (PR #128 integrada); `audit/spec04-25` `147008f` (registro SPEC07 actualizado); revalidarlas al leer.
+2. **Clasificar las 25 SPEC sin falsos cierres:** cerradas formalmente; correcciones integradas con SPEC todavía abierta; discrepancias exclusivamente documentales; pendientes de aceptación/validación; DEV futuros no autorizados; bloqueos reales de integración, seguridad o despliegue. Identificar dependencias, evidencia, prioridad y responsable de cada decisión. Conservar la distinción entre especificación aprobada, implementación, CI, QA y aceptación global.
+3. **Consolidar hallazgos históricos frente al estado vigente:** separar resueltos, mitigados, abiertos, provisionales y descartados; evitar duplicados y repetir auditorías concluidas. SPEC01–03 cerradas; SPEC04 #125 y SPEC07 #128 integradas, pero ambas abiertas en alcance global. No confundir dos E2E focales PASS reportadas con E2E global PASS.
+4. **Preparar el lote documental completo:** identificar archivos, frases/entradas desactualizadas, corrección concreta, dependencias y riesgos de cada cambio. Preservar historia y decisiones anteriores; no proponer limpieza indiscriminada.
+5. **Diseñar reconciliación segura** de `audit/spec04-25` con `main`: determinar divergencias y los pasos mínimos para integrar solo el resultado vigente sin sobrescribir cambios ajenos ni traer contenido histórico accidental. Determinar si conviene una nueva rama/PR focal en vez de merge de rama larga.
+6. **Priorizar el siguiente trabajo funcional y sus gates:** contrastar con la realidad de SPEC32/PR #30 (compatibilidad de esquema/rollback/rootless), SPEC16 AC25 (equivalencia física con Excel), E3.5 (conciliación/FIN_NETA), E4.2/inversión y SPEC26/27 (posiciones a Fin y backup externo). Separar bloqueos y secuencias: no iniciar DEV sobre contratos no autorizados.
+7. **Entregar una propuesta ejecutable de lotes:** para cada lote, objetivo, ficheros afectados, contratos a preservar, verificaciones exigibles, dependencias, trabajo paralelizable, estimación cualitativa de riesgo y una **única aprobación de alcance** requerida. Ordenar por impacto financiero/riesgo y esfuerzo; indicar claramente cuál ejecutar primero y por qué.
 
-No delego la edición a OpenCode en este momento. Cuando haya autorización del usuario, comprobaré el HEAD del tracker de nuevo y aplicaré únicamente el cambio aprobado. **No hagas escrituras en mi rama ni crees PR por esta solicitud.** No hace falta responder hasta que el usuario decida.
+## Modo de ejecución
+
+- Avanza por tu cuenta por todas estas comprobaciones **de solo lectura**. Consulta fuentes, contrasta SHAs/PR/CI y delega análisis read-only a agentes independientes en paralelo cuando aporte rendimiento. Coordina sus resultados sin inflar el contexto ni duplicar investigaciones.
+- Resuelve detalles técnicos menores que no exijan decisión funcional. Evita turnos intermedios de mera solicitud de planificación o de permiso para inspeccionar.
+- Conserva la separación `main` / rama de auditoría / documentación / desarrollo / despliegue; no supongas que una PR abierta está activa o autorizada. Mantén los límites de MyFinanzas: fuente única, compatibilidad con Excel real y reglas de Criterios; no homologar equivalencia física mediante fixtures.
+- **No modificar ningún documento, código, tracker, fichero o rama; no crear PR, no fusionar, no desplegar y no reanudar ejecutores detenidos** con este encargo. Si necesitas autorización para realizar cambios, reúnelos en una propuesta de alcance conjunta que pueda aprobarse de una sola vez.
+- **Entrega esperada en tu próxima respuesta:** informe consolidado con clasificación de las 25 SPEC, inventario corto de cambios documentales, estrategia de reconciliación y 2–4 lotes priorizados; incluye una recomendación clara sobre el primer lote a aprobar. No responder únicamente con un plan para hacer el análisis después.
+
+**Estado de autorizaciones nuevas:** solo investigación y preparación de la propuesta; la aprobación de las futuras escrituras, PR y merges seguirá correspondiendo al usuario. **No confundas este relay con aprobación técnica o autorización de merge.**
