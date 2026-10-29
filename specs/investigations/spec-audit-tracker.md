@@ -111,6 +111,89 @@ autorizar los lotes y ejecutar controles de regresión
 y equivalencia que correspondan. Ningún desarrollo
 ni merge se deriva automáticamente de este hito.
 
+## Revisión independiente de PR #125 — fixes SPEC04 (2026-10-29)
+
+**Entrega:** OpenCode relay #0018, PR [#125](https://github.com/jmartinlabs/myfinanzas-app/pull/125),
+HEAD `af368fffd8eff91a56b75bafbead3fd6b898dc25`,
+base `main` `1ed2a834334d94d121df82b77a497a35f75ec50a`.
+Dos archivos `apps/api/src/movimientos.ts` y
+`apps/api/src/movimientos.test.ts`, **+291/−3**.
+GitHub muestra PR OPEN, no draft, mergeable/clean,
+sin merge. Run [40833602594](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40833602594)
+sobre HEAD exacto: `required=SUCCESS` (perfil critical,
+OpenCode reporta **303 API PASS**). El perfil crítico no
+ejecutó Playwright/E2E; Álex revisó diff y contratos,
+**no ejecutó pruebas localmente**.
+
+### Controles aceptables en candidato (inspección estática)
+
+- **H-SPEC04-04:** `plan()` consulta
+  `cycleContext(db).referencia.estado` y rechaza
+  `error` con 409 `REFERENCE_ERROR` antes de
+  escritura en alta/rectificación/anulación. `writeMovement`
+  usa transacción `immediate` y `plan()` común;
+  una respuesta previamente persistida sigue
+  siendo idempotente. Prueba nueva de preview para
+  los tres caminos, confirmación de **alta** con
+  snapshot y ruta HTTP MFA/CSRF.
+- **H-SPEC04-02:** máximo posterior se calcula con
+  `financialReference` incluyendo Movimientos
+  vigentes propuestos y `revisionComidaSource`.
+  Las pruebas abarcan backdate, rectificación y
+  anulación del máximo. No finge Inversión pendiente.
+- **H-SPEC04-03:** el `fingerprint` local del preview
+  incorpora la fuente Comida; no ensancha
+  `financeRevision` global. La prueba nueva demuestra
+  **409 si cambia máximo de Comida**, y estabilidad de
+  huella al añadir un detalle anterior sin cambiar máximo.
+  El resultado respeta el mecanismo de referencia
+  financiera actual, no resuelve la cobertura
+  atribuida a Ciclos en H-SPEC07-01/AC28.
+
+### Dos puntos de revisión antes de recomendar merge (sin nueva autorización de alcance)
+
+1. **Sobreinvalidación de huella:** el cambio incluye
+   `comidaSource` completo `{state,maxDate}` en el
+   fingerprint. Caso ficticio no ejecutado: Movimiento
+   máximo 24/10, Comida máxima 20/10 y preview de
+   Movimiento 15/10; añadir Comida 21/10 cambia
+   `comidaSource.maxDate` pero **no altera**
+   `referenciaAntes=referenciaDespues=24/10`,
+   ni datos bancarios, saldos o ciclos de la propuesta.
+   La implementación actual invalidaría el preview con
+   `IMPACT_CHANGED`. Contradice el objetivo de
+   evitar conflictos por cambios temporalmente
+   irrelevantes en el mandato #0017; es un
+   **coste UX de sobreinvalidez**, no una vía de
+   escritura incorrecta. Pedir test de control negativo
+   y ajustar solo fingerprint temporal a referencia/
+   cobertura **efectivamente material** antes/después
+   si se puede sin abrir una capa nueva.
+   Mantener control positivo: si rectificar/anular el
+   Movimiento máximo hace que el nuevo máximo de
+   Comida sí determine el `referenciaDespues`,
+   cambiarlo **debe** causar 409.
+2. **Caminos de confirmación bajo error:** hay pruebas
+   de preview de alta/rectificación/anulación, pero
+   el test de `writeMovement` bajo error cubre solo
+   **alta** con fingerprint ficticio y ruta HTTP alta.
+   La guarda común está implementada, pero añadir
+   confirmación **rectificación y anulación** con
+   fingerprints obtenidos válidamente antes de
+   romper la fuente, exigir `409 REFERENCE_ERROR`
+   y constatar snapshot íntegro (Movimiento, auditorías,
+   intentos, contador). El backend debe rechazar
+   antes de consumir identidad o alterar relaciones.
+
+**Condición de revisión:** no se declara error de dinero
+nuevo ni se rechaza el diseño global. H-SPEC04-04/02/03
+están atendidas en código, pero PR #125 **queda
+pendiente de los dos oráculos focales** y de
+la cobertura de aceptación final que corresponda
+(E2E actualmente UNRUN). No modificar SPEC07,
+E3.5, ningún esquema, Excel ni consumidores ajenos.
+Sin autorización para merge/despliegue.
+
 ## Reglas de la auditoría
 
 - **Auditoría global previa a correcciones:** Álex revisa las 22 SPEC pendientes del
@@ -223,7 +306,7 @@ Leyenda: **S** specification, **T** testplan, **P** progress, **B** brainstormin
 | 01 | Saldos y atributos de control | Cerrada | Correcciones aplicadas; **H-SPEC01-01 resuelto** (null = 0 neutral solo en cálculo); **tabla AC-01…AC-43 consecutiva** con nota fuera; PR #115 integrada. | 4 docs SPEC01 + tracker | Conservar todo; sin eliminaciones; posibles simplificaciones históricas futuras con justificación. | [#115](https://github.com/jmartinlabs/myfinanzas-app/pull/115) / merge `e4a26de` / CI `40728150624` PASS | 2026-10-28 · Álex APROBADA · merge autorizado | AC-38 parcial y E1.3 no acreditado; gap cero explícito + movimientos no bloqueante. |
 | 02 | Clasificación | Cerrada | D1 estados históricos; D2 AC-19/24/25/26 sin reclasificar; D3 rectificación y Partida→Deuda; D4 cobertura real; **H-SPEC02-01 resuelto e integrado** (checked/partial/pending/notApplicable, sin ciclos parcial, planes anuales y mensajes). Cierre efectivo al integrar esta PR. | 4 docs SPEC02 + tracker + `clasificacion.ts`, `movement-impact.ts`, `Clasificacion.tsx`, `PlanImpact.tsx`, tests unit/E2E | Conservar todo; sin eliminaciones. | #117 doc `13cc7c6`; #119 funcional `da93682`; HEAD validado `6440592`; CI `40747193480` PR / `40747195074` full / `40748880562` main PASS | 2026-10-28 · Álex APROBADA · merge autorizado | Sin contradicciones materiales abiertas. |
 | 03 | Ciclos financiados | Cerrada | H-SPEC03-01/02/03 **resueltos e integrados**; 24 AC históricos conservados; AC-11/23/24 siguen C. | 4 docs SPEC03, `movement-ledger.ts`, `ciclos.test.ts`, tracker | Conservar todo; sin eliminaciones. | [#122](https://github.com/jmartinlabs/myfinanzas-app/pull/122) / HEAD validado `7483709` / merge `52eaec0` / CI `40760689632` critical (298 API) y `40761769656` main fast PASS | 2026-10-28 · Álex APROBADA (HEAD `7483709`) · merge autorizado e integrado | `monthlyFlow()` y rutas con `ledgerRows()` directo pueden seguir fallando; cobertura no ampliada. |
-| 04 | Movimientos | En inspección (no cerrada) | H-SPEC04-01 documental; H-SPEC04-02/03 confirmados (referencia posterior/huella obsoleta); H-SPEC04-04 CONFIRMADO en SQLite efímera: alta y rectificación escriben con fuente Comida en error. | SPEC04, `movimientos.ts`, `ciclos.ts`, `revision-comida-ledger.ts`, pruebas; relay #0007/#0009. | Priorizar protección ante error y cubrir alta/rectificación/anulación; luego referencia posterior y concurrencia; sin código autorizado. | `main` `1ed2a83`; reproducciones OpenCode #0007 y #0009. | 2026-10-28 · hallazgos técnicos confirmados por OpenCode y cotejo estático Álex; sin cierre. | Alto de control/contrato H04-04; medio de integridad por escritura en contexto temporal no verificable; sin corrupción monetaria demostrada. |
+| 04 | Movimientos | En inspección (no cerrada) | PR #125 HEAD `af368ff`: implementa H-SPEC04-04/02/03 con `movimientos.ts` y pruebas, CI Linux critical 303 API PASS. Revisión Álex: confirmación/anulación ante fuente averiada sin test de escritura explícito; huella Comida max cambia aun si referencia agregada antes/después permanece igual (409 posiblemente innecesario). No recomendado merge hasta contraste focal. | PR #125 diff, `movimientos.ts`, tests agregados, run `40833602594`, SPEC04, relay #0018. | Pedir a OpenCode 2 regresiones focales y ajuste local si se confirma sobreinvalidación; E2E/full no ejecutados; no fusionar. | PR #125 OPEN/CLEAN head `af368ff`, base `1ed2a83`; CI required PASS. | 2026-10-29 · revisión estática independiente; pruebas CI observadas, no reejecutadas por Álex. | Los tres defectos tienen remedio en candidata; aceptación condicionada a oráculos sin escrituras y minimización de falsos conflictos. |
 | 05 | Transferencias y Referencias | En inspección (no cerrada) | H-SPEC05-01 documental: vigencia de excepción D5/Exterior desfasada respecto a integración #90; AC futuros no reclasificados. | Spec05 §D5 y sección Transferencias; progreso D5 spec14 y código `aportaciones.ts`. | Conservar historia y aprobaciones. | PR #84 `2487656` y #90 `cf6954a` MERGED; contraste en `main` `5570d89`. | 2026-10-28 · inspección Álex, sin cierre. | Bajo/medio: ambigüedad de capacidad actual; sin fallo económico demostrado. |
 | 06 | Deuda | En inspección (no cerrada) | H-SPEC06-01 documental preliminar: cabecera y plan histórico de dev expresan no integrado pese a PR #34 fusionada; falta auditoría técnica completa. | SPEC06, `deudas.ts`, `movimientos.ts` y tests de Deuda. | Conservar historial y límites. | PR #34 `cb9ba3b` MERGED, contrastada. | 2026-10-28 · lectura de contrato/servicios, sin cierre. | Estado documental obsoleto; no se demuestra fallo económico en esta pasada. |
 | 07 | Operación de Ciclos | En inspección (no cerrada) | H-SPEC07-01: C07-F1/F2 CONFIRMAN conducta (huellas iguales ante nueva Comida con máximo constante, confirmación aceptada y reasignación no enumerada); incumplimiento contractual PROVISIONAL por AC28 futuro. C07-F3 descarta fallo de guarda por fuente error; H-TRANS-01 documental. | SPEC07 Q1/AC07,17,28; `ciclos.ts`/`revision-comida-ledger.ts`/`Ciclos.tsx`; relay OpenCode #0015 con SQLite efímera. | Recomendar aviso explícito de cobertura hoy; definir con autorización si se integra toda Comida en preview/huella AC28; no parche financiero ni PR. | PR #49 MERGED; PR #82 MERGED; base `main` `1ed2a83`, relay #0015. | 2026-10-29 · contraste dinámico de OpenCode, estático de Álex; SPEC no cerrada. | Medio de atribución/UX, sin pérdidas de importes/posiciones observadas; fuente rota bloqueada 409. |
