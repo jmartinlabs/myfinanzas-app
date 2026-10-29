@@ -37,6 +37,13 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   `py_compile` y `node --check` PASS. Pruebas focales de esquema/compras/instrumentos/
   server-config/migración PASS con `TMPDIR=/private/tmp`; backup age/libc en macOS
   **BLOCKED** por el entorno, no PASS.
+- CI `Validate project` run `40889566377`: **SUCCESS** sobre `2c11e1d`.
+- CI rootless inicial run `40889566563`: **FAILURE** en
+  `explicit-production-fixture-initialization` (exit 1). Causa localizada:
+  `infra/release.py` copiaba solo `.ts` de `apps/api/src` y omitía
+  `schema-contracts.json`, importado por `schema-contract.ts`; la imagen no podía
+  cargar el contrato. Corregido para incluir `.json` de runtime; prueba local de
+  `context` OK (90 archivos, JSON incluido). Rerun pendiente.
 - **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
   el PASS histórico 3094563.
 

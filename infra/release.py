@@ -61,7 +61,11 @@ def files(commit, prefix):
 def context(commit, target, age_bytes):
     paths = ['package.json', 'bun.lock', 'tsconfig.json', 'apps/api/package.json', 'apps/web/package.json',
              'apps/web/index.html', 'apps/web/vite.config.ts']
-    paths += [p for p in files(commit, 'apps/api/src') if p.endswith('.ts') and not p.endswith('.test.ts')]
+    # Runtime JSON manifests (for example the admitted schema contract) are
+    # imported by TS modules and must travel with the image; tests stay out.
+    paths += [p for p in files(commit, 'apps/api/src')
+              if (p.endswith('.ts') or p.endswith('.json'))
+              and not p.endswith('.test.ts')]
     paths += [p for p in files(commit, 'apps/web/src') if Path(p).suffix in ('.ts', '.tsx', '.css')]
     source_hashes = {}
     for relative in paths:

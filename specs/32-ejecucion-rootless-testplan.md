@@ -30,6 +30,10 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
 - `d5-backup.test.ts` e `inversiones-backup.test.ts`: **BLOCKED** en macOS por
   `libc.so.6`/`age-keygen`; no se declaran PASS. La cobertura equivalente se ejecuta
   en Linux/rootless/CI.
+- `infra/release.py` context: **PASS**; incluye `apps/api/src/schema-contracts.json`
+  (90 archivos) tras corregir la omisión que hizo fallar el primer rootless run
+  `40889566563`.
+- CI `Validate project` run `40889566377`: **SUCCESS**.
 - `git diff --check`: PASS.
 
 ## Estado histórico — recuperación DEV32 (2026-10-27)
