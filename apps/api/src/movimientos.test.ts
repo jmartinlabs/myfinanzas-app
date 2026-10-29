@@ -509,7 +509,8 @@ test("04 H-SPEC04-02: referencia posterior incluye Comida y reevalúa máxima al
   }
 });
 
-test("04 H-SPEC04-03: la huella temporal solo cambia si Comida altera la referencia", () => {
+test("04 H-SPEC04-03: huella temporal material sin 409 superfluo y con cambio real de referencia", () => {
+  const clock = Date.parse("2026-10-25T12:00:00Z");
   const db = openDatabase(":memory:");
   try {
     const { saldo, partida } = masters(db);
@@ -526,19 +527,28 @@ test("04 H-SPEC04-03: la huella temporal solo cambia si Comida altera la referen
           evidenciaBancaria: evidencia,
         },
         randomUUID(),
-        now,
+        clock,
       );
     comida("2026-10-20", "comida-base");
+    const maxBody = expense(saldo.id, partida.id, { fecha: "2026-10-24" });
+    const maxPlan = previewMovement(db, maxBody, null, false, clock);
+    writeMovement(
+      db,
+      { ...maxBody, fingerprint: maxPlan.fingerprint },
+      randomUUID(),
+      null,
+      false,
+      clock,
+    );
     const body = expense(saldo.id, partida.id, { fecha: "2026-10-15" });
-    const p = previewMovement(db, body, null, false, now);
-    comida("2026-10-10", "comida-anterior");
-    expect(previewMovement(db, body, null, false, now).fingerprint).toBe(
-      p.fingerprint,
-    );
-    comida("2026-10-21", "comida-nueva-max");
-    expect(previewMovement(db, body, null, false, now).fingerprint).not.toBe(
-      p.fingerprint,
-    );
+    const p = previewMovement(db, body, null, false, clock);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-24");
+    comida("2026-10-21", "comida-nueva-sin-max");
+    const p2 = previewMovement(db, body, null, false, clock);
+    expect(p2.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p2.impacto.referenciaDespues).toBe("2026-10-24");
+    expect(p2.fingerprint).toBe(p.fingerprint);
     expect(() =>
       writeMovement(
         db,
@@ -546,11 +556,66 @@ test("04 H-SPEC04-03: la huella temporal solo cambia si Comida altera la referen
         randomUUID(),
         null,
         false,
-        now,
+        clock,
+      ),
+    ).not.toThrow();
+  } finally {
+    db.close();
+  }
+  const positive = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(positive);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        positive,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        clock,
+      );
+    comida("2026-10-20", "comida-base");
+    const maxBody = expense(saldo.id, partida.id, { fecha: "2026-10-24" });
+    const maxPlan = previewMovement(positive, maxBody, null, false, clock);
+    const max = writeMovement(
+      positive,
+      { ...maxBody, fingerprint: maxPlan.fingerprint },
+      randomUUID(),
+      null,
+      false,
+      clock,
+    ).movimiento;
+    const correction = expense(saldo.id, partida.id, {
+      fecha: "2026-10-10",
+      revision: max.revision,
+      motivo: "Fixture",
+    });
+    const p = previewMovement(positive, correction, max.id, false, clock);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-20");
+    comida("2026-10-21", "comida-nueva-max");
+    const p2 = previewMovement(positive, correction, max.id, false, clock);
+    expect(p2.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p2.impacto.referenciaDespues).toBe("2026-10-21");
+    expect(p2.fingerprint).not.toBe(p.fingerprint);
+    expect(() =>
+      writeMovement(
+        positive,
+        { ...correction, fingerprint: p.fingerprint },
+        randomUUID(),
+        max.id,
+        false,
+        clock,
       ),
     ).toThrow("contexto");
   } finally {
-    db.close();
+    positive.close();
   }
 });
 
@@ -559,6 +624,20 @@ test("04 H-SPEC04-04: error de fuente instalada bloquea preview/confirmación si
   try {
     const { saldo, partida } = masters(db);
     const current = save(db, expense(saldo.id, partida.id));
+    const correction = {
+      ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+      revision: current.revision,
+      motivo: "Fixture",
+    };
+    const correctionPlan = previewMovement(
+      db,
+      correction,
+      current.id,
+      false,
+      now,
+    );
+    const annulBody = { revision: current.revision, motivo: "Fixture" };
+    const annulPlan = previewMovement(db, annulBody, current.id, true, now);
     db.exec(
       "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
     );
@@ -605,6 +684,34 @@ test("04 H-SPEC04-04: error de fuente instalada bloquea preview/confirmación si
         randomUUID(),
         null,
         false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...correction,
+          fingerprint: correctionPlan.fingerprint,
+          contextRevision: correctionPlan.contextRevision,
+        },
+        randomUUID(),
+        current.id,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...annulBody,
+          fingerprint: annulPlan.fingerprint,
+          contextRevision: annulPlan.contextRevision,
+        },
+        randomUUID(),
+        current.id,
+        true,
         now,
       ),
     ).toThrow(error);
@@ -668,7 +775,7 @@ test("04 H-SPEC04-04: rutas HTTP bloquean con 409 REFERENCE_ERROR", async () => 
     );
   try {
     const m = masters(db);
-    save(db, expense(m.saldo.id, m.partida.id));
+    const current = save(db, expense(m.saldo.id, m.partida.id));
     const auth = new Auth(db, key, origin, () => now),
       enrollment = await auth.enroll(
         provision(db, now),
@@ -685,6 +792,27 @@ test("04 H-SPEC04-04: rutas HTTP bloquean con 409 REFERENCE_ERROR", async () => 
         "x-csrf-token": verified.csrf,
         "idempotency-key": randomUUID(),
       };
+    const correction = {
+      ...expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+      revision: current.revision,
+      motivo: "Fixture",
+    };
+    const rectPreview = await (
+      await request(
+        "/api/movimientos/" + current.id + "/impacto",
+        "POST",
+        correction,
+        headers,
+      )
+    ).json();
+    const annulPreview = await (
+      await request(
+        "/api/movimientos/" + current.id + "/impacto-anulacion",
+        "POST",
+        { revision: current.revision, motivo: "Fixture" },
+        headers,
+      )
+    ).json();
     db.exec(
       "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
     );
@@ -708,6 +836,31 @@ test("04 H-SPEC04-04: rutas HTTP bloquean con 409 REFERENCE_ERROR", async () => 
     );
     expect(write.status).toBe(409);
     expect((await write.json()).code).toBe("REFERENCE_ERROR");
+    const rectConfirm = await request(
+      "/api/movimientos/" + current.id + "/rectificar",
+      "POST",
+      {
+        ...correction,
+        fingerprint: rectPreview.fingerprint,
+        contextRevision: rectPreview.contextRevision,
+      },
+      headers,
+    );
+    expect(rectConfirm.status).toBe(409);
+    expect((await rectConfirm.json()).code).toBe("REFERENCE_ERROR");
+    const annulConfirm = await request(
+      "/api/movimientos/" + current.id + "/anular",
+      "POST",
+      {
+        revision: current.revision,
+        motivo: "Fixture",
+        fingerprint: annulPreview.fingerprint,
+        contextRevision: annulPreview.contextRevision,
+      },
+      headers,
+    );
+    expect(annulConfirm.status).toBe(409);
+    expect((await annulConfirm.json()).code).toBe("REFERENCE_ERROR");
     expect(snapshot(db)).toEqual(before);
   } finally {
     db.close();

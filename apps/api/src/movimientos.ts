@@ -790,7 +790,16 @@ function plan(
       next,
       annul,
       financeRevision(db),
-      comidaSource,
+      {
+        antes: {
+          fecha: contexto.referencia.fecha,
+          estado: contexto.referencia.estado,
+        },
+        despues: {
+          fecha: temporalAfter.fecha,
+          estado: temporalAfter.estado,
+        },
+      },
     ]),
     impacto: {
       anticipo: anticipoImpact(db, next),
