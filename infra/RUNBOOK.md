@@ -108,8 +108,9 @@ Nunca borrar WAL/SHM manualmente ni copiar solo DB activa. No auto-update.
 5. Sin evidencia, esquema/datos/auth incompatibles o manifiesto corrupto: bloquear
    antes de abrir DB y solicitar decisión. No rollback automático ni restauración
    automática. El ensayo baseline anterior compatible→release actual solo vale para
-   ese par; la matriz incluye una fila sintética por módulo v7–v18 (incluidas D5/v17
-   e inversión/v18) y lectura API, no solo schema_version o las tablas core.
+   ese par; la matriz ejecuta seed/update/rollback/restore con filas sintéticas
+   representativas de todos los módulos v7–v18 (incluidas D5/v17 e inversión/v18) y
+   lectura API, no solo schema_version o las tablas core.
 
 ## Backup, restauración y fallos parciales
 

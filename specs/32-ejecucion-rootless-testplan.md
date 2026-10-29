@@ -38,7 +38,13 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
   5 PASS / 36 FAIL por omitir el JSON en el montaje de fuentes de prueba. Corregido
   para copiar `.ts` y `.json`; rerun pendiente.
 - CI rootless run `40891410721`: **314 PASS / 1 FAIL**; etiqueta no identificada por
-  el extractor. Se añade salida saneada de líneas `(fail)` para el rerun.
+  el extractor. Se añade salida saneada de clases de error/módulos ausentes para el
+  rerun.
+- Matriz de restore: se corrigen las aserciones históricas `total=3`/`60.00` a
+  `total=7`/`61.98`, confirmadas localmente con el fixture y `positionCents`.
+- Residual heredado de `main`: `schema-contracts.json` solo admite v14–v17;
+  `verifyContract(db,18)` devuelve `null` (fail-open). Requiere un contrato v18
+  propio; no se aborda en este lote.
 - `git diff --check`: PASS.
 
 ## Estado histórico — recuperación DEV32 (2026-10-27)

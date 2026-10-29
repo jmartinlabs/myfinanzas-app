@@ -51,8 +51,15 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   `.ts` y `.json`; rerun pendiente.
 - `Validate project` run `40890495695`: **SUCCESS** sobre `e881476`.
 - CI rootless run `40891410721`: **314 PASS / 1 FAIL**; el extractor no identificó
-  la etiqueta del único fallo. Se añade salida saneada de líneas `(fail)` para
-  diagnosticarlo; rerun pendiente.
+  la etiqueta del único fallo. Se añade salida saneada de clases de error/módulos
+  ausentes para diagnosticarlo; rerun pendiente.
+- Matriz `release-contract`: se corrigen las aserciones históricas de restore
+  (`total=3`, `60.00`) al estado real del fixture (`total=7`, `61.98`), confirmado
+  localmente con `listMovements` y `positionCents`; las lecturas de `/instrumentos`
+  y `/compras` exigen al menos una fila.
+- Residual heredado de `main`: `schema-contracts.json` solo admite v14–v17;
+  `verifyContract(db,18)` devuelve `null` (fail-open) para v18. No se modifica en
+  este lote; requiere un contrato v18 propio y su prueba de no regresión.
 - **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
   el PASS histórico 3094563.
 

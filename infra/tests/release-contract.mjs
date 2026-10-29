@@ -48,10 +48,14 @@ async function main() {
     // Every post-v6 module must still be readable by the release under test.
     for(const path of ['/deudas','/presupuestos','/ciclos','/plan-anual/2026',
       '/planes-ciclo/9001','/nomina','/anticipos/fichas','/compartidos/fichas',
-      '/vehiculos','/revision-comida','/instrumentos','/compras']) {
+      '/vehiculos','/revision-comida']) {
       const data=await request(path);
       check(data!==undefined&&data!==null,'module read contract: '+path);
     }
+    const instruments=await request('/instrumentos');
+    check(instruments.total>=1,'instrument module read contract');
+    const purchases=await request('/compras');
+    check(purchases.total>=1,'purchase module read contract');
   }
   if(mode==='seed') {
     const enrollment=await request('/auth/enroll','POST',{token:provision(db,saved.clock),password:saved.password});
@@ -86,8 +90,9 @@ async function main() {
     await request('/auth/login','POST',{password:saved.password});
     const verified=await mfa();check(verified.recoveryCodes.length===10,'restored MFA recovery reissue');
     await moduleReads();
-    const list=await request('/movimientos');check(list.total===3,'restored confirmed writes');
-    check((await request('/saldos/S001')).saldo.posicion.importe==='60.00','restored derived data contract');
+    // 3 contract incomes + 2 fixture gastos + 2 fixture D5 transfers.
+    const list=await request('/movimientos');check(list.total===7,'restored confirmed writes');
+    check((await request('/saldos/S001')).saldo.posicion.importe==='61.98','restored derived data contract');
     db.close();
     console.log('MFA restore integrity key revocation and confirmed writes verified');
     return;

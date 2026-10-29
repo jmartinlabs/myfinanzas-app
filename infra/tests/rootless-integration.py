@@ -463,7 +463,12 @@ def main():
             # exception payloads, stdout or authentication factors.
             failed_lines = [line.strip()[:200] for line in result.stderr.splitlines()
                             if '(fail) ' in line]
-            print('::error title=Final image regression labels::' + json.dumps({'exit': result.returncode, 'counts': counts.groups() if counts else None, 'failed': sorted(failed), 'failed_lines': failed_lines, 'timeout_present': 'Test timed out after' in result.stderr, 'locations': sorted(set(re.findall(r'apps/api/src/[a-z0-9-]+\.test\.ts:\d+:\d+', result.stderr)))}))
+            # Error classes and module paths only; never raw assertions or payloads.
+            kinds = sorted(set(re.findall(
+                r'\b(Cannot find module|SyntaxError|TypeError|ReferenceError|Unhandled error|panic|ENOENT|EACCES|EADDRINUSE|SQLITE_[A-Z_]+)\b',
+                result.stderr)))
+            missing = sorted(set(re.findall(r"Cannot find module '([^']+)'", result.stderr)))
+            print('::error title=Final image regression labels::' + json.dumps({'exit': result.returncode, 'counts': counts.groups() if counts else None, 'failed': sorted(failed), 'failed_lines': failed_lines, 'error_kinds': kinds, 'missing_modules': missing, 'timeout_present': 'Test timed out after' in result.stderr, 'locations': sorted(set(re.findall(r'apps/api/src/[a-z0-9-]+\.test\.ts:\d+:\d+', result.stderr)))}))
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'
