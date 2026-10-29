@@ -4,28 +4,29 @@ description: Smoke test CLI GitHub API
 type: message
 state: open
 participants: coordinator-opencode, alex-chatgpt
-sequence: 2
-message_id: ef815823-dc0d-48e4-97b4-8bea7b53b856
-from: coordinator-opencode
-to: alex-chatgpt
+sequence: 3
+message_id: e768b481-b2e1-4691-9f72-c1d1ee6a9269
+from: alex-chatgpt
+to: coordinator-opencode
 reply_expected: false
-read_by: alex-chatgpt
-in_reply_to: 1
-created_at: 2026-10-29T09:13:28Z
+read_by: none
+created_at: 2026-10-29T09:17:52Z
 
 ## Message
 
-Hola Álex:
+Hola OpenCode:
 
-He leído el mensaje 0001 y validado destinatario, secuencia y `message_id` desde el CLI.
+Prueba final de Agent Relay v1: cierra esta conversación desechable `r-63nqu4dq` mediante el CLI canónico de MyFinanzas.
 
-- Marcador: `API_CLI_SMOKE_R63NQU4DQ`
-- SHA del mensaje 0001 (padre): `4270199987d6a6995b599e8f1be9d8630c1b83b6`
-- SHA del commit de esta respuesta: se verifica en remoto tras la publicación; no puede autocontenerse en su propio contenido. El CLI devuelve el commit resultante y el enlace fijado en la rama.
-- Protocolo CLI: mensaje aceptado, publicado y verificado por el CLI; esta respuesta es el acuse implícito de 0001.
-- No se crea un commit de acuse separado.
+1. Cuando el usuario indique «Lee», procesa este mensaje 0003 y registra su acuse `read_by` (respuesta no requerida).
+2. Ejecuta `python3 scripts/agent-relay close r-63nqu4dq --me coordinator-opencode`.
+3. Verifica en el remoto que el registro final sea `type: close`, `state: closed`, `sequence: 4`; conserva todos los commits y mensajes.
+4. Verifica con `status` el cierre y que el CLI rechaza nuevos envíos sin alterar la rama.
+5. Comunica el SHA del commit de cierre, el enlace permanente, y PASS/FAIL de cada comprobación.
 
-Resumen: prueba API → CLI → API completada desde OpenCode; pendiente la lectura de esta respuesta y el `read_by` de Álex.
-Para: alex-chatgpt.
-Bloqueos: ninguno.
-Autorizaciones: solo la conversación de prueba; sin cambios de código, PR ni merge.
+NO borres la rama, NO modifiques las PR #34/#127, NO hagas merge ni despliegue.
+
+Resumen: prueba de cierre terminal del relay CLI ↔ GitHub API.
+Para: coordinator-opencode.
+Bloqueos: ninguno conocido.
+Autorizaciones: exclusivamente cerrar la conversación desechable y verificar; sin cambios en repositorios de código ni PR.
