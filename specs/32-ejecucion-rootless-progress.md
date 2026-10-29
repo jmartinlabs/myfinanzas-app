@@ -64,10 +64,10 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   (`total=3`, `60.00`) al estado real del fixture (`total=7`, `61.98`), confirmado
   localmente con `listMovements` y `positionCents`; las lecturas de `/instrumentos`
   y `/compras` exigen al menos una fila.
-- Gate v18: el frente focal `codex/spec31-v18-contract` añade el manifiesto
+- Gate v18: la PR **#130** añade el manifiesto
   `C18-INVERSION-306BBC5`, admite v18 y conecta `verifyContract(db,18)` fail-closed,
-  con regresiones v14–v18. Pendiente de CI/PR/merge; en `main` sigue abierto hasta
-  integrar esa PR.
+  con regresiones v14–v18. CI `40919213207`/`40919213219` PASS; pendiente de merge.
+  En `main` sigue abierto hasta integrar esa PR.
 - CI final `87f9c5b`: Validate `40898403683` **PASS**; Rootless `40898403837`
   **PASS** (6m39s). Evidencia: dos builds reproducibles, 315 API tests en imagen,
   matriz seed→update→rollback→restore, backup age/WAL/MFA, gate fail-closed de
@@ -78,7 +78,7 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
 - **AC-22 PASS parcial/acotado**: API 315, typecheck/build y rootless PASS; las
   E2E Playwright finales sobre este HEAD permanecen **UNRUN**. No se declara PASS
   global de AC-22 ni se reescribe el PASS histórico 3094563.
-- **Gate v18:** en `main` sigue fail-open; el frente `codex/spec31-v18-contract`
+- **Gate v18:** en `main` sigue fail-open; la PR **#130**
   lo cierra con `C18-INVERSION-306BBC5` y `verifyContract(db,18)`. Sigue siendo
   **BLOQUEANTE para el primer despliegue/activación** hasta que esa PR se integre
   y su CI/QA se acredite.

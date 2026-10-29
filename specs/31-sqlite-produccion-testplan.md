@@ -50,7 +50,8 @@ Specification: [contrato aprobado](31-sqlite-produccion-specification.md)
 - Regresión v14–v17 conservada por las pruebas de contrato existentes.
 - Evidencia: `bun test apps/api/src/schema-contract-v18.test.ts` (5 PASS / 49
   expect), `database-schema.test.ts` + `compras.test.ts` + nuevo test (27 PASS),
-  typecheck/build PASS. CI/PR focal pendiente de publicar.
+  typecheck/build PASS. PR **#130** publicada; CI `40919213207` PASS y rootless
+  `40919213219` PASS (320 API tests, backup/restore y gate de rollback).
 
 ## Regression checks
 Record relevant suites, counts, command exit status and failures separately.

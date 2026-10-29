@@ -11,7 +11,8 @@ Current state: IMPLEMENTED / VERIFIED LOCAL — en revisión, no integrado — `
   archivos; `openDatabase` y `prepareSchema` cubiertos.
 - Evidencia local: `schema-contract-v18.test.ts` 5 PASS / 49 expect;
   `database-schema.test.ts` + `compras.test.ts` + nuevo test 27 PASS;
-  typecheck/build PASS. CI/PR focal pendiente.
+  typecheck/build PASS. PR **#130** publicada; CI `40919213207` PASS y rootless
+  `40919213219` PASS (320 API tests, backup/restore y gate de rollback).
 - Sin cambio de AC, reglas financieras, backup/restore, cifrado, auth ni frontend.
 
 | Task | Status | Commit / evidence |

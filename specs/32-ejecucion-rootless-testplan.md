@@ -47,9 +47,10 @@ migración 16/17→18 por esta matriz.
   fuera de la secuencia de `counters`; rerun pendiente.
 - Matriz de restore: se corrigen las aserciones históricas `total=3`/`60.00` a
   `total=7`/`61.98`, confirmadas localmente con el fixture y `positionCents`.
-- Gate v18: el frente `codex/spec31-v18-contract` añade `C18-INVERSION-306BBC5`,
-  admite v18 y conecta `verifyContract(db,18)` fail-closed. Pendiente de CI/PR/merge;
-  en `main` sigue abierto hasta integrar esa PR.
+- Gate v18: la PR **#130** añade `C18-INVERSION-306BBC5`,
+  admite v18 y conecta `verifyContract(db,18)` fail-closed. PR **#130** con CI
+  `40919213207`/`40919213219` PASS; pendiente de merge. En `main` sigue abierto
+  hasta integrar esa PR.
 - `git diff --check`: PASS.
 
 ### Evidencia CI final — `87f9c5b`
@@ -63,7 +64,7 @@ migración 16/17→18 por esta matriz.
   `final-image-api-tests-passed=315`, `cleanup-own-resources=true`.
 - `previous-source=f9c8a0d` (main v18): matriz **18→18**, no migración 16/17→18.
 - **AC-22:** PASS parcial/acotado; E2E Playwright finales **UNRUN** sobre este HEAD.
-- **Gate v18:** en `main` sigue fail-open; el frente `codex/spec31-v18-contract`
+- **Gate v18:** en `main` sigue fail-open; la PR **#130**
   lo cierra con manifiesto `C18-INVERSION-306BBC5`, `verifyContract(db,18)` y
   regresiones. **BLOQUEANTE para el primer despliegue/activación** hasta integrar
   esa PR y acreditar su CI/QA.
@@ -171,7 +172,7 @@ merge de `main` `f9c8a0d` (run `40898403837`; Validate `40898403683` PASS). El P
 histórico 3094563 sigue sin heredarse. La migración 16/17→18 no la demuestra esta
 matriz; se apoya en las pruebas de esquema/backup de módulos. El gate v18 de
 `schema-contracts.json` sigue **BLOQUEANTE para el primer despliegue/activación**
-hasta integrar el frente `codex/spec31-v18-contract`. La
+hasta integrar la PR **#130**. La
 tabla anterior es histórica y no se hereda.
 Los bloques inferiores conservan la historia de fallos/ensayos y no sustituyen
 esta aceptación. CI del HEAD documental final se vincula en PR #30, sin inferir
