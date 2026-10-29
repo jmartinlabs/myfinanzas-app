@@ -39,17 +39,19 @@ AC27–29 y E2.1-AC2 del roadmap permanecen PENDING de sus módulos futuros.
 | O7 R2 | Anulada afectada mostrada como histórica; cambio de estado invalida; cambio de concepto no invalida |
 | O8 | Comida vacía/ausente y fallo de lectura de filas: cobertura distinta; error controlado 409 |
 | O9 | 105 operaciones: página 1/2, total completo, misma huella |
-| B1 | Periodo completo: mismo ID con intervalo distinto se enumera; regresión añadida |
+| B1 | Periodo completo: mismo ID con intervalo distinto se enumera; regresión O4 de mismo ID/intervalo |
 | B2 | Límite de «Siguiente Comida» con `max(vigentes,históricas)`, no suma; prueba 105+105 |
 | T1 | Fallo exclusivo de `revisionComidaRows()` con `revisionComidaSource()` disponible: 409 sin escrituras |
 
 - `cycle-operations.test.ts` sin backup Linux-only: **17 pass / 0 fail** (B1/T1).
 - `cycle-pagination.test.ts`: **1 pass** (B2, 105/105).
-- CI Linux `critical` run `40856670004` sobre `6483d06`: **311 API PASS**.
-- QA/E2E focal `2026-10-29`: **1 pass** con preview real de Comida afectada,
-  409 entre preview/confirmación, paginación 105/105 y capturas 390/1440 sin overflow
-  (`artifacts/spec07/`). El E2E completo conserva el fallo de arranque del servidor de
-  restauración en `catalog`/`movimientos`; ese flujo sigue **UNRUN** y no se declara PASS.
+- CI Linux `critical` run `40862555880` sobre `a1e1be9`: **311 API PASS**.
+- QA/E2E `2026-10-29`: **dos ejecuciones focales PASS reportadas** (caso principal
+  Comida/409 y paginación real 105+105), con capturas 390/1440 sin overflow. La
+  **E2E global no quedó completada satisfactoriamente** por el fallo de arranque del
+  servidor de restauración en `catalog`/`movimientos`; no se declara PASS global.
+  Los logs crudos de terminal y los tests efímeros no se conservaron; su PASS es
+  resultado reportado, no reproducción desde tests persistentes.
 - Typecheck/build PASS. E2E local: fallo de arranque del servidor de restauración en
   `catalog`/`movimientos`; **UNRUN** para este contrato, no se declara PASS.
 - AC28 sigue **PENDING**: solo se integra atribución temporal de Comida; no inversión,

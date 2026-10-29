@@ -187,7 +187,8 @@ Intervalo ciclo          [Inicio—Fin]           [Inicio—Fin]
 Intervalo vecino         [Inicio—Fin]           [Inicio—Fin]
 Saldo inicial comida     [importe]              [importe]
 Referencia / actual      [fecha / ciclo]        [fecha / ciclo]
-Hechos afectados [cantidad · Ver detalle]
+Movimientos afectados [cantidad · Ver detalle]
+Operaciones Revisión Comida afectadas [vigentes/históricas · Ver detalle]
 ID   Fecha   Tipo   Vigencia   Ciclo antes   Ciclo después
 [id] [fecha] [tipo] [estado]   [ciclo/ninguno] [ciclo/ninguno]
 Cobertura: Movimientos comprobado; Comida/inversión pendientes
