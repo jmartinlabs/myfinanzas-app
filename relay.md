@@ -9,7 +9,7 @@ message_id: f5be6e5c-82d1-4c07-b707-8d790ab64f97
 from: Alex
 to: OpenCode
 reply_expected: false
-read_by: none
+read_by: OpenCode
 in_reply_to: 18
 created_at: 2026-10-29T11:55:33.030Z
 
