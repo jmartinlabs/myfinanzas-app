@@ -51,8 +51,10 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   `.ts` y `.json`; rerun pendiente.
 - `Validate project` run `40890495695`: **SUCCESS** sobre `e881476`.
 - CI rootless run `40891410721`: **314 PASS / 1 FAIL**; el extractor no identificó
-  la etiqueta del único fallo. Se añade salida saneada de clases de error/módulos
-  ausentes para diagnosticarlo; rerun pendiente.
+  la etiqueta. Runs `40892972945` y `40894716243` confirmaron `missing_modules:
+  ['../../web/src/cycle-pagination']`: el `/suite` no copiaba `apps/web/src`,
+  importado por `cycle-pagination.test.ts` (#128). Corregido para copiar
+  `apps/web/src` (`.ts/.tsx/.json`); rerun pendiente.
 - Matriz `release-contract`: se corrigen las aserciones históricas de restore
   (`total=3`, `60.00`) al estado real del fixture (`total=7`, `61.98`), confirmado
   localmente con `listMovements` y `positionCents`; las lecturas de `/instrumentos`

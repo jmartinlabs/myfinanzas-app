@@ -37,9 +37,10 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
 - CI rootless run `40890495769`: producción inicializada; `final-image-api-regressions`
   5 PASS / 36 FAIL por omitir el JSON en el montaje de fuentes de prueba. Corregido
   para copiar `.ts` y `.json`; rerun pendiente.
-- CI rootless run `40891410721`: **314 PASS / 1 FAIL**; etiqueta no identificada por
-  el extractor. Se añade salida saneada de clases de error/módulos ausentes para el
-  rerun.
+- CI rootless run `40891410721`: **314 PASS / 1 FAIL**; etiqueta no identificada.
+  Runs `40892972945` y `40894716243` mostraron `missing_modules:
+  ['../../web/src/cycle-pagination']`; el `/suite` no copiaba `apps/web/src`.
+  Corregido para incluir `.ts/.tsx/.json` de web; rerun pendiente.
 - Matriz de restore: se corrigen las aserciones históricas `total=3`/`60.00` a
   `total=7`/`61.98`, confirmadas localmente con el fixture y `positionCents`.
 - Residual heredado de `main`: `schema-contracts.json` solo admite v14–v17;
