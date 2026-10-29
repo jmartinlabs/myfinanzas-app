@@ -2,6 +2,12 @@
 Status: APPROVED — D1–D4 y AC-01–33 aprobados; implementación v6 y enmienda 31-E1
 integradas (PR #25 `511fcba`, PR #48 `8fae7a4`); pendientes R6/fsync y runtime Linux de
 producción.
+
+**Nota de vigencia (2026-10-29):** contrato estricto **v18** congelado y admitido
+(`C18-INVERSION-306BBC5`); `verifyContract(db,18)` compara el manifiesto completo y
+rechaza variantes físicas antes de PRAGMA persistentes o escrituras. Regresiones
+v14–v18 y migraciones v16/v17→18 cubiertas en la PR focal de contrato v18. No
+cambia AC, reglas financieras ni versiones de esquema.
 Enmienda: [31-E1](31-sqlite-produccion-enmienda-01.md) aprobada por el usuario el 2026-10-23 («Apruebo enmienda 31-E1.»); su texto se aplica aquí junto con su implementación (AC-05/06/17 modificados, AC-34–37 nuevos).
 Approval source/date: mensaje expreso del usuario en esta conversación, 2026-10-21, tras revisión con Álex: aprobación íntegra de D1–D4 y AC-01–33; autoriza iniciar `$dev 31` al completar `$spec`. Sin autorización de merge.
 Publicación provisional: el usuario autorizó expresamente una excepción al paso 6

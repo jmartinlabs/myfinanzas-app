@@ -2,6 +2,20 @@
 Specification: [contrato aprobado](31-sqlite-produccion-specification.md)
 Current state: IMPLEMENTED / VERIFIED LOCAL — en revisión, no integrado — `$dev 31` autorizado por usuario el 2026-10-21.
 
+## Checkpoint contrato v18 — 2026-10-29
+
+- Añadido `C18-INVERSION-306BBC5` a `schema-contracts.json` y a `admitted` en
+  `schema-contract.ts`; `verifyContract(db,18)` es fail-closed.
+- Manifiesto idéntico en base limpia v18, v16→v18 y v17→v18 (168 objetos).
+- Rechazo de tabla extra, trigger ausente y FK inválida sin mutar bytes, journal ni
+  archivos; `openDatabase` y `prepareSchema` cubiertos.
+- Evidencia local: `schema-contract-v18.test.ts` 5 PASS / 49 expect;
+  `database-schema.test.ts` + `compras.test.ts` + nuevo test 27 PASS;
+  typecheck/build PASS. PR **#130** publicada; CI de la PR **PASS** en el HEAD final (320 API tests,
+  backup/restore y gate de rollback).
+- Sin cambio de AC, reglas financieras ni código de backup/restore, cifrado, auth o
+  frontend; v18 ahora verifica contrato y FK también en la copia.
+
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
 | Identidad v6 / migración demo | verified | P1/P2 + suites históricas |

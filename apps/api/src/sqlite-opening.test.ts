@@ -120,7 +120,7 @@ const databaseModule = resolve(import.meta.dir, "database.ts");
 
 async function crashedWAL(path: string) {
   // A confirmed commit, then SIGKILL: no graceful checkpoint/close and no synthetic SQLite errors.
-  const script = `import{Database}from'bun:sqlite';const d=new Database(${JSON.stringify(path)});d.exec("PRAGMA wal_autocheckpoint=0;CREATE TABLE recovery_fixture(n INTEGER);INSERT INTO recovery_fixture VALUES(731)");console.log('committed');process.stdin.resume();`;
+  const script = `import{Database}from'bun:sqlite';const d=new Database(${JSON.stringify(path)});d.exec("PRAGMA wal_autocheckpoint=0;INSERT INTO counters VALUES('recovery_fixture',731)");console.log('committed');process.stdin.resume();`;
   const p = Bun.spawn([process.execPath, "-e", script], {
     stdin: "pipe",
     stdout: "pipe",
@@ -132,12 +132,12 @@ async function crashedWAL(path: string) {
   expect(p.signalCode).toBe("SIGKILL");
   expect(await new Response(p.stderr).text()).toBe("");
   expect(fs.statSync(path + "-wal").size).toBeGreaterThan(32);
-  // Immutable main-file reader proves the committed table has not been checkpointed.
+  // Immutable main-file reader proves the committed counter row has not been checkpointed.
   const inspect = Bun.spawnSync(
     [
       process.execPath,
       "-e",
-      `import{Database,constants}from'bun:sqlite';const d=new Database(${JSON.stringify("file:" + path + "?mode=ro&immutable=1")},constants.SQLITE_OPEN_READONLY|constants.SQLITE_OPEN_URI);console.log(JSON.stringify(d.query("SELECT name FROM sqlite_master WHERE name='recovery_fixture'").get()));d.close();`,
+      `import{Database,constants}from'bun:sqlite';const d=new Database(${JSON.stringify("file:" + path + "?mode=ro&immutable=1")},constants.SQLITE_OPEN_READONLY|constants.SQLITE_OPEN_URI);console.log(JSON.stringify(d.query("SELECT next FROM counters WHERE name='recovery_fixture'").get()));d.close();`,
     ],
     { stdout: "pipe", stderr: "pipe" },
   );
@@ -163,7 +163,7 @@ test("SQLite B2: real SIGKILL WAL recovery preserves the uncheckpointed committe
       await crashedWAL(p);
       const db = openDatabase(p);
       try {
-        expect(db.query("SELECT n FROM recovery_fixture").get()).toEqual({
+        expect(db.query("SELECT next AS n FROM counters WHERE name='recovery_fixture'").get()).toEqual({
           n: 731,
         });
         expect(db.query("PRAGMA integrity_check").get()).toEqual({
@@ -287,7 +287,7 @@ test("SQLite B3: actual recovery contention fails before policy, then exhausts t
     // The very same recovered WAL becomes readable after explicit lock release, no SQL retries.
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT n FROM recovery_fixture").get()).toEqual({
+      expect(db.query("SELECT next AS n FROM counters WHERE name='recovery_fixture'").get()).toEqual({
         n: 731,
       });
     } finally {
@@ -322,7 +322,7 @@ test("SQLite B4: release a real recovery lock only after observing the native wa
       expect(after.result.ms).toBeLessThan(3000);
       const db = openDatabase(p);
       try {
-        expect(db.query("SELECT n FROM recovery_fixture").get()).toEqual({
+        expect(db.query("SELECT next AS n FROM counters WHERE name='recovery_fixture'").get()).toEqual({
           n: 731,
         });
       } finally {

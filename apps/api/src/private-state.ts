@@ -171,7 +171,7 @@ export function openProductionConnection(
     db.exec("PRAGMA busy_timeout=3000");
     sameFile(expected, privateFile(config.database));
     privateSidecars(config.database);
-    // The admitted v14/v15 manifest is verified before the identity transaction.
+    // The admitted v14–v18 manifest is verified before the identity transaction.
     verifyAdmittedContract(db);
     // One read transaction: origin, version and key hash come from a single snapshot.
     const id = db.transaction(() => inspectIdentity(db))();

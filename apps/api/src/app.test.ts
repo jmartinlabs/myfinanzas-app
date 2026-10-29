@@ -125,9 +125,9 @@ test("AC01–08/17: persistencia, IDs, atributos independientes, estado y FK his
     expect(s.id).toBe("S006");
     expect(s.posicion.importe).toBe("-10.25");
     db.run(
-      "CREATE TABLE history_fixture(id INTEGER PRIMARY KEY,saldo TEXT REFERENCES saldos(id) ON DELETE RESTRICT) STRICT",
+      "INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado) VALUES('PRE9001','FK histórico','Gasto real',?,'Activo',1,'2026-01-01','2026-01-01')",
+      [s.id],
     );
-    db.run("INSERT INTO history_fixture VALUES(1,?)", [s.id]);
     let u = updateSaldo(db, s.id, {
       revision: 1,
       nombre: "Renombrado ficticio",
@@ -644,7 +644,7 @@ test("AC24: snapshot de archivo WAL mientras otro proceso confirma escrituras", 
     key = randomBytes(32);
   try {
     db.exec(
-      "PRAGMA wal_autocheckpoint=0;CREATE TABLE consistency_fixture(a INTEGER NOT NULL,b INTEGER NOT NULL) STRICT;INSERT INTO consistency_fixture VALUES(0,0)",
+      "PRAGMA wal_autocheckpoint=0;INSERT INTO counters VALUES('consistency_a',1),('consistency_b',1)",
     );
     const identity = join(dir, "identity.txt");
     expect(
@@ -663,7 +663,7 @@ test("AC24: snapshot de archivo WAL mientras otro proceso confirma escrituras", 
       [
         process.execPath,
         "-e",
-        `import{Database}from'bun:sqlite';import{writeFileSync}from'node:fs';const db=new Database(process.argv[1]);db.exec('PRAGMA busy_timeout=3000;PRAGMA wal_autocheckpoint=0');writeFileSync(process.argv[2],'ready');let n=0;const task=setInterval(()=>{db.transaction(()=>{db.run('UPDATE consistency_fixture SET a=a+1');db.run('UPDATE consistency_fixture SET b=b+1')})();if(++n===100){clearInterval(task);db.close();}},2);`,
+        `import{Database}from'bun:sqlite';import{writeFileSync}from'node:fs';const db=new Database(process.argv[1]);db.exec('PRAGMA busy_timeout=3000;PRAGMA wal_autocheckpoint=0');writeFileSync(process.argv[2],'ready');let n=0;const task=setInterval(()=>{db.transaction(()=>{db.run("UPDATE counters SET next=next+1 WHERE name='consistency_a'");db.run("UPDATE counters SET next=next+1 WHERE name='consistency_b'")})();if(++n===100){clearInterval(task);db.close();}},2);`,
         path,
         join(dir, "ready"),
       ],
@@ -682,16 +682,22 @@ test("AC24: snapshot de archivo WAL mientras otro proceso confirma escrituras", 
       );
       const rd = new Database(restored.database, { readonly: true });
       try {
-        const pair = rd.query("SELECT a,b FROM consistency_fixture").get() as {
-          a: number;
-          b: number;
-        };
+        const pair = rd
+          .query(
+            "SELECT (SELECT next FROM counters WHERE name='consistency_a') AS a, (SELECT next FROM counters WHERE name='consistency_b') AS b",
+          )
+          .get() as { a: number; b: number };
         expect(pair.a).toBe(pair.b);
-        expect(pair.a).toBeLessThanOrEqual(100);
+        expect(pair.a).toBeLessThanOrEqual(101);
         expect(
-          (db.query("SELECT a FROM consistency_fixture").get() as { a: number })
-            .a,
-        ).toBe(100);
+          (
+            db
+              .query(
+                "SELECT next AS a FROM counters WHERE name='consistency_a'",
+              )
+              .get() as { a: number }
+          ).a,
+        ).toBe(101);
       } finally {
         rd.close();
       }
