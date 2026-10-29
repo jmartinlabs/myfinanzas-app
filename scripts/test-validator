@@ -48,6 +48,12 @@ class ValidationTests(unittest.TestCase):
   self.change('AGENTS.md','# Agent','# Agent'+'\n'*70); self.assertRule('agents')
  def test_manifest(self):
   self.change('.agents/skills/spec/SKILL.md','name: spec','name: wrong'); self.assertRule('manifest')
+ def test_relay_skill_required(self):
+  (self.root/'.agents/skills/relay/SKILL.md').unlink(); self.assertRule('structure')
+ def test_relay_manifest(self):
+  self.change('.agents/skills/relay/SKILL.md','name: relay','name: wrong'); self.assertRule('manifest')
+ def test_relay_contracts(self):
+  self.change('.agents/skills/relay/SKILL.md','## Stop conditions','## End'); self.assertRule('contracts')
  def test_empty_description(self):
   p=self.root/'.agents/skills/spec/SKILL.md'; p.write_text('\n'.join('description: ' if l.startswith('description:') else l for l in p.read_text().split('\n'))); self.assertRule('manifest')
  def test_contracts(self):

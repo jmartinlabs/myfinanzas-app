@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 POLICY = runpy.run_path(str(ROOT / 'scripts/ci_policy.py'))
 BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.startswith('test-') else None) for name in (
     'check-repository', 'check-project', 'validate-template', 'test-checks',
-    'test-validator', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
+    'test-validator', 'test-agent-relay', 'test-agent-usage', 'test-auto-agent-usage', 'test-verification',
     'test-evidence')) + (
     ('working-whitespace', ['git', 'diff', '--check'], None),
     ('commit-whitespace', ['git', 'show', '--format=', '--check', '--first-parent', 'HEAD'], None))
@@ -23,7 +23,7 @@ BASELINE = tuple((name, [sys.executable, 'scripts/' + name], 'unittest' if name.
 # documentation-only comparison leaves all of those byte-identical. Every other
 # baseline control (repository, project, template, links, whitespace) still runs.
 HARNESS_SUITES = frozenset((
-    'test-checks', 'test-validator', 'test-verification', 'test-evidence',
+    'test-checks', 'test-validator', 'test-agent-relay', 'test-verification', 'test-evidence',
     'test-agent-usage', 'test-auto-agent-usage'))
 APPLICATION = (('typecheck', ['bun', 'run', 'typecheck'], None),
                ('build', ['bun', 'run', 'build'], None),

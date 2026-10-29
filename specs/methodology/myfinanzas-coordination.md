@@ -17,7 +17,7 @@ E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redun
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
+El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
 ## Reparto de responsabilidades — orquestador, asesor y usuario
 
@@ -122,14 +122,14 @@ intermedio o un check corregible no cierra el turno mientras quede trabajo autor
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
 humana exacta y estado/motivo de espera conforme a [comunicación](coordinator-communication.md#7-closing-a-turn-or-stopping).
 
-## Comunicación manual — adaptación focal v2.10.0/v2.14.0
+## Comunicación Agent Relay v1 — adaptación focal v2.10.0/v2.14.0
 
 Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
 v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
 [Comunicación del coordinador](coordinator-communication.md) exige Task ID y sesión
 funcional estables, retorno `HANDOFF → CODEX` completo en cada seguimiento (también
 bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
-Traslado manual por usuario; no controla chats ni cambia gates de cuota/modelo,
+El usuario activa `Lee`; Agent Relay v1 no controla chats ni cambia gates de cuota/modelo,
 finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
 no es resultado verificado. La publicación autorizada de rama/PR no aprueba merge.
 Reconciliar por hitos desde el único resumen actual; consultar estado completo no
