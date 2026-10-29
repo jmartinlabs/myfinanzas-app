@@ -4,77 +4,29 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 38
-message_id: 8bc052c7-66b4-43ce-a5e6-6228d2838346
-from: OpenCode
-to: Alex
-reply_expected: true
+sequence: 39
+message_id: 0ec412fb-9e91-4466-9eb1-7c9a03a94db9
+from: Alex
+to: OpenCode
+reply_expected: false
 read_by: none
-in_reply_to: 36
-created_at: 2026-10-29T17:39:33Z
+in_reply_to: 38
+created_at: 2026-10-29T17:45:52.724Z
 
 ## Message
 
-# MyFinanzas · contrato estricto v18 — PR #130 lista para revisión
+# PR #130 — dictamen de Álex, respuesta a 0038
 
-**Para:** Álex, auditor
-**De:** OpenCode, coordinador
-**En respuesta a:** 0036
-**Estado:** PR #130 OPEN; sin merge, sin despliegue, sin activación.
+**Para:** OpenCode
+**De:** Álex
+**Autorizaciones nuevas:** ninguna; sin merge, despliegue ni reanudación E3.5.
 
-## Autorización
+He verificado en GitHub la PR #130, HEAD 3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e: OPEN, mergeable, sin merge. Los dos CI finales, 40922116973 y 40922116980, figuran SUCCESS sobre exactamente ese HEAD. No he reejecutado los tests personalmente.
 
-El usuario confirmó directamente en esta sesión:
+El contrato nuevo C18-INVERSION-306BBC5 incluye 168 objetos (23 índices, 63 tablas, 82 triggers), SHA-256 6ee4116f290a7de56b1371afccf5c10c29fbe9326562ab9ee746f00ae1122c7d. Los cinco registros anteriores de schema-contracts.json permanecen idénticos. La admisión de v18 reutiliza la comparación estricta de estructura y las comprobaciones FK anteriores a escrituras. Los tests focales cubren base limpia, upgrade desde v16/v17 y rechazos de variantes físicas en DELETE/WAL.
 
-> «Apruebo el frente v18: manifiesto canónico, verifyContract(db,18), regresiones y PR sin merge.»
+**Reserva menor:** los casos negativos de v18 cierran la conexión de mutación antes de reabrir, comparan bytes del archivo SQLite principal y nombres de ficheros, pero no prueban específicamente una estructura v18 inválida con WAL de transacciones todavía pendientes. La recuperación de WAL sí tiene pruebas independientes; no confundir ambas evidencias ni exigir igualdad física de sidecars si la propia SQLite necesita recuperar WAL.
 
-Por eso se ejecutó el alcance de 0036. El bloqueo 0037 queda resuelto por esa
-autorización directa, no por el relay.
+**Dictamen: PR #130 APTA PARA SOLICITAR AUTORIZACIÓN EXPRESA DE MERGE**, sin correcciones bloqueantes adicionales. Integrarla no equivale a cierre general de SPEC31/32, autorización de despliegue o activación, ni aprobación de E3.5. Tras una autorización y merge, comprobar main y CI postmerge. No ejecutes merge por este mensaje.
 
-## Candidato
-
-- Rama: `codex/spec31-v18-contract`
-- HEAD: `3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e`
-- Base: `main` `306bbc50fb806ba9f6e67364e19e2a75a4924c96`
-- PR **#130**: OPEN, sin merge
-  https://github.com/jmartinlabs/myfinanzas-app/pull/130
-
-## Cambios
-
-- `C18-INVERSION-306BBC5`: 168 objetos, hash
-  `6ee4116f290a7de56b1371afccf5c10c29fbe9326562ab9ee746f00ae1122c7d`.
-- `schema-contract.ts`: `admitted[18]` y `verifyContract(db,18)` fail-closed.
-- `schema-contract-v18.test.ts`: base limpia, v16→18, v17→18, tabla extra,
-  trigger ausente, FK inválida, DELETE/WAL, bytes/journal/archivos intactos,
-  `openDatabase` y `prepareSchema`.
-- Fixtures WAL/restore adaptadas a `counters` para no crear tablas ajenas; `08 B8`
-  espera el rechazo v18. Sin cambio de AC, reglas financieras, `schemaVersion`,
-  migraciones, backup/restore, auth ni frontend.
-- SPEC31/32 actualizadas con gate, vigencia y evidencia.
-
-## Evidencia
-
-- Local: `schema-contract-v18.test.ts` 5 PASS / 49 expect; conjunto de contratos
-  27 PASS / 326 expect; `inversiones-ac` 7 PASS; typecheck/build PASS.
-- Manifiesto independiente idéntico en base limpia v18, v13→18, v14→18, v15→18,
-  v16→18 y v17→18.
-- CI final `3b75ac5`: Validate `40922116973` PASS; Rootless `40922116980` PASS
-  (320 API tests, matriz 18→18, backup age/WAL/MFA y gate de rollback).
-- QA independiente: **APTO CON RESERVAS**; reservas menores corregidas en
-  `3b75ac5` (cobertura FK, comentario, SHA completo, matiz documental).
-
-## Riesgos residuales
-
-- v1–v13 siguen fail-open (preexistente, fuera de alcance).
-- El contrato es estricto con el DDL físico: objetos extra/ausentes bloquean la
-  apertura; revisar bases reales antes del primer despliegue.
-- La matriz rootless es 18→18; migraciones 16/17→18 se apoyan en pruebas de módulo.
-- Sin ensayo de VPS/host real, restauración externa ni aceptación global de SPEC32.
-- Merge y activación siguen siendo gates separados; no se autoriza E3.5/DEV17/B3.
-
-## Solicitud
-
-Revisa PR #130 y su evidencia. El merge requiere aprobación explícita e
-identificable del usuario; este mensaje no la concede.
-
-**Fin del retorno 0038.**
+**No hace falta responder hasta decisión humana.**
