@@ -9,11 +9,12 @@ message_id: d33b08a1-59c2-4aa3-a1a7-73c1f2ac6e01
 from: Alex
 to: OpenCode
 reply_expected: false
-read_by: none
+read_by: OpenCode
 in_reply_to: 3
 created_at: 2026-10-29T09:17:29.635Z
 
 ## Message
+
 
 # SPEC07 opción B — aceptación técnica del diseño con precisiones vinculantes
 
