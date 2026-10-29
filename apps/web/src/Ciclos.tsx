@@ -754,6 +754,36 @@ type CycleImpact = {
     despues: Cycle | null;
   }[];
   totalMovimientos: number;
+  comidaImpacto: {
+    vigentesAfectadas: {
+      id: string;
+      fecha: string;
+      tipo: string;
+      estadoRegistro: string;
+      antes: Cycle | null;
+      despues: Cycle | null;
+      efecto: "temporal" | "historico";
+    }[];
+    historicasMostradas: {
+      id: string;
+      fecha: string;
+      tipo: string;
+      estadoRegistro: string;
+      antes: Cycle | null;
+      despues: Cycle | null;
+      efecto: "temporal" | "historico";
+    }[];
+    totalVigentesAfectadas: number;
+    totalHistoricasMostradas: number;
+    totalOperacionesComida: number;
+    conteos: {
+      vigentes: number;
+      anuladas: number;
+      detalle: number;
+      reposicion: number;
+    };
+    page: number;
+  };
   page: number;
   contextoAntes: Context;
   contextoDespues: Context;
@@ -823,14 +853,14 @@ function CycleOperationForm({
     if (err.status === 409) setImpact(null);
     requestAnimationFrame(() => errorRef.current?.focus());
   };
-  async function review(page = 1) {
+  async function review(page = 1, comidaPage = 1) {
     setBusy(true);
     setError("");
     setFields({});
     try {
       setImpact(
         await api<CycleImpact>(
-          endpoint + "/preview?page=" + page,
+          endpoint + "/preview?page=" + page + "&comidaPage=" + comidaPage,
           "POST",
           payload(),
         ),
@@ -1012,9 +1042,9 @@ function CycleOperationForm({
                 Referencia / ciclo actual después:{" "}
                 {reference(impact.contextoDespues)}
               </p>
-              <h3>Hechos afectados: {impact.totalMovimientos}</h3>
+              <h3>Movimientos afectados: {impact.totalMovimientos}</h3>
               {impact.movimientos.length === 0 ? (
-                <p>No hay hechos que cambien de ciclo.</p>
+                <p>No hay Movimientos que cambien de ciclo.</p>
               ) : (
                 <ul className="cycle-facts">
                   {impact.movimientos.map((m) => (
@@ -1037,7 +1067,9 @@ function CycleOperationForm({
                   type="button"
                   className="secondary"
                   disabled={busy || impact.page <= 1}
-                  onClick={() => review(impact.page - 1)}
+                  onClick={() =>
+                    review(impact.page - 1, impact.comidaImpacto.page)
+                  }
                 >
                   Anterior detalle
                 </button>
@@ -1048,17 +1080,117 @@ function CycleOperationForm({
                   disabled={
                     busy || impact.page * 100 >= impact.totalMovimientos
                   }
-                  onClick={() => review(impact.page + 1)}
+                  onClick={() =>
+                    review(impact.page + 1, impact.comidaImpacto.page)
+                  }
                 >
                   Siguiente detalle
                 </button>
               </div>
+              <h3>
+                Operaciones Revisión Comida afectadas:{" "}
+                {impact.comidaImpacto.totalOperacionesComida}
+              </h3>
               <p>
-                Movimientos comprobado. Revisión Comida instalada; operaciones
-                de inversión pendientes.
+                {impact.comidaImpacto.totalVigentesAfectadas} vigentes ·{" "}
+                {impact.comidaImpacto.totalHistoricasMostradas} históricas
+                anuladas
+              </p>
+              {impact.comidaImpacto.totalOperacionesComida === 0 ? (
+                <p>
+                  {impact.contextoAntes.referencia.coverage.find(
+                    (s) => s.source === "Revisión Comida",
+                  )?.state === "pendiente"
+                    ? "Revisión Comida no instalada o pendiente."
+                    : "No hay operaciones de Comida que cambien de ciclo."}
+                </p>
+              ) : (
+                <>
+                  {impact.comidaImpacto.vigentesAfectadas.length > 0 && (
+                    <>
+                      <h4>Vigentes · efecto temporal</h4>
+                      <ul className="cycle-facts">
+                        {impact.comidaImpacto.vigentesAfectadas.map((r) => (
+                          <li key={r.id}>
+                            <strong>
+                              #{r.id} · {dateLabel(r.fecha)} · {r.tipo} ·{" "}
+                              {r.estadoRegistro}
+                            </strong>
+                            <p>
+                              Antes: {cycleName(r.antes)} · {interval(r.antes)}
+                            </p>
+                            <p>
+                              Después: {cycleName(r.despues)} ·{" "}
+                              {interval(r.despues)}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  {impact.comidaImpacto.historicasMostradas.length > 0 && (
+                    <>
+                      <h4>Históricas anuladas · no computan como efecto vigente</h4>
+                      <ul className="cycle-facts">
+                        {impact.comidaImpacto.historicasMostradas.map((r) => (
+                          <li key={r.id}>
+                            <strong>
+                              #{r.id} · {dateLabel(r.fecha)} · {r.tipo} ·{" "}
+                              {r.estadoRegistro}
+                            </strong>
+                            <p>
+                              Antes: {cycleName(r.antes)} · {interval(r.antes)}
+                            </p>
+                            <p>
+                              Después: {cycleName(r.despues)} ·{" "}
+                              {interval(r.despues)}
+                            </p>
+                          </li>
+                        ))}
+                      </ul>
+                    </>
+                  )}
+                  <div className="actions">
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={busy || impact.comidaImpacto.page <= 1}
+                      onClick={() =>
+                        review(impact.page, impact.comidaImpacto.page - 1)
+                      }
+                    >
+                      Anterior Comida
+                    </button>
+                    <span>Página {impact.comidaImpacto.page}</span>
+                    <button
+                      type="button"
+                      className="secondary"
+                      disabled={
+                        busy ||
+                        impact.comidaImpacto.page * 100 >=
+                          impact.comidaImpacto.totalOperacionesComida
+                      }
+                      onClick={() =>
+                        review(impact.page, impact.comidaImpacto.page + 1)
+                      }
+                    >
+                      Siguiente Comida
+                    </button>
+                  </div>
+                </>
+              )}
+              <p>
+                Movimientos comprobado. Revisión Comida{" "}
+                {impact.contextoAntes.referencia.coverage.find(
+                  (s) => s.source === "Revisión Comida",
+                )?.state === "pendiente"
+                  ? "no instalada/pendiente"
+                  : "instalada"}
+                ; operaciones de inversión pendientes.
               </p>
               <p>
-                Conciliación comida: No disponible · E3.5 pendiente.
+                Conciliación comida: No disponible · E3.5 pendiente. El máximo
+                de referencia no certifica conciliación económica.
               </p>
               <p className="help">
                 No se alteran fechas, importes ni identidades de los hechos. Fin

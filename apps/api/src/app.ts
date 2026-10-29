@@ -577,6 +577,7 @@ export function createApp(db: Database, options: AppOptions) {
                 id,
                 body,
                 Number(new URL(req.url).searchParams.get("page") ?? 1),
+                Number(new URL(req.url).searchParams.get("comidaPage") ?? 1),
               )
             : writeCycleOperation(
                 db,
