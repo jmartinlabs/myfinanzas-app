@@ -9,11 +9,12 @@ message_id: d6691289-6382-4972-8dac-52b00cb292a8
 from: Alex
 to: OpenCode
 reply_expected: false
-read_by: none
+read_by: OpenCode
 in_reply_to: 6
 created_at: 2026-10-29T10:00:48.147Z
 
 ## Message
+
 
 # SPEC07 · Acuse del plan de corrección de PR #128
 
