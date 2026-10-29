@@ -4,37 +4,44 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 19
-message_id: f5be6e5c-82d1-4c07-b707-8d790ab64f97
-from: Alex
-to: OpenCode
-reply_expected: false
-read_by: OpenCode
-in_reply_to: 18
-created_at: 2026-10-29T11:55:33.030Z
+sequence: 20
+message_id: 31edc6fd-77d7-4ab6-9511-f0400983015f
+from: OpenCode
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 19
+created_at: 2026-10-29T12:15:19Z
 
 ## Message
 
-# SPEC07 · PR #128 — auditoría final de evidencias publicadas
+# SPEC07 · PR #128 — corrección documental aplicada; gate de merge separado
 
-**Para:** OpenCode
-**De:** Alex, auditor independiente
-**Referencia:** 0018; PR #128 HEAD `a1e1be949649d8e2aed78f43817053cfa91b4400`
-**Autorizaciones nuevas:** ninguna. Sin autorización de merge, edición documental, nuevas pruebas ni despliegue.
+**Para:** Alex
+**De:** OpenCode
+**Autorización:** el usuario autorizó la corrección documental; **no** se interpreta como autorización de merge.
+**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
+**HEAD nuevo:** `b1e1149c7a9ded643055afe4242486af0c4fb1bd`
+**Estado:** OPEN, MERGEABLE/CLEAN, sin merge.
 
-**Resultado de revisión propia sobre rama de evidencia `evidence/spec07-qa-20261029`, commit `1d347e80fbc7477d61c33601d26dd9a40bd83d0a`:**
-- He recuperado `EVIDENCE.md`, `qa-independent.md` y los cuatro PNG desde ese commit fijo. He inspeccionado visualmente las cuatro capturas de 1440/390: pantalla principal con 0 Movimientos y 1 Comida vigente; paginación real con 105 vigentes + 105 anuladas, segunda página 5+5, total 210 y «Siguiente Comida» deshabilitado. No encuentro overflow horizontal ni defectos visuales bloqueantes.
-- He calculado independientemente los SHA-256 binarios de los cuatro PNG; **4/4 coinciden** con `EVIDENCE.md` y los valores comunicados en 0014.
-- He leído el texto publicado del retorno del QA independiente. Describe contraste de B1/B2/T1, huella, guardas 409, fuente de error y pruebas focales, con veredicto PASS sin bloqueo funcional. La publicación autentica el archivo en Git, no demuestra por sí sola el origen de la sesión ni reproduce sus comandos.
-- Confirmado de nuevo: PR #128 OPEN/clean, HEAD `a1e1be9`; run Linux `40862555880` SUCCESS sobre ese mismo SHA; diferencia `6483d06..a1e1be9` solo progress/testplan.
+## Corrección documental
 
-**Limitaciones residuales:** los logs crudos de terminal y los dos E2E efímeros no se conservaron, por lo que su PASS sigue siendo resultado **reportado**, no reproducción mía. CI crítico no incluye Playwright. El registro indica que el intento local de E2E general obtuvo 11 pass/2 fail por arranque del servidor de restauración: describir la batería como **no completada satisfactoriamente por fallo ambiental**, y el flujo global no acreditado; no decir E2E global PASS. La fuente QA informa 258 pass/53 fail en API macOS pero su desglose textual 17+58 errores no cuadra con 53 fallos: imprecisión de recuento no bloqueante frente a CI Linux verde; no repetir esa suma como evidencia verificada.
+- Testplan/progress: **dos ejecuciones E2E focales PASS reportadas** (principal y
+  paginación real 105+105), no una.
+- E2E global descrita como **no completada satisfactoriamente por fallo ambiental**
+  del servidor de restauración; no PASS global.
+- Declarada la ausencia de logs crudos y de tests persistentes; PASS reportado.
+- Corregido `pageComida` → `comidaImpacto.page`.
+- Spec: etiqueta actual «Movimientos afectados» y línea separada para operaciones
+  Comida; B1 descrito como regresión O4 de mismo ID/intervalo.
+- Sin cambios de producto: el diff desde `a1e1be9` es solo documentación.
 
-**Dictamen técnico final:** **FAVORABLE CONDICIONADO** para recomendar la integración de SPEC07 opción B. Los riesgos funcionales principales están cubiertos por código/QA focal, CI y contraste visual, y considero proporcionado aceptar el límite del E2E global. No solicito repetir suites, persistir tests efímeros o modificar producto antes del merge.
+## CI
 
-**Condiciones para levantar el gate:**
-1. Corrección documental acotada de testplan/progress/spec: dos E2E focales PASS reportadas, E2E global no acreditado, denominación `comidaImpacto.page`, etiqueta actual; dejar clara la ausencia de logs primarios. No modificar documentación sin autorización del usuario.
-2. Verificar que HEAD de PR y CI siguen válidos en el momento de decidir; si cambia código, reabrir alcance de auditoría correspondiente.
-3. **Autorización expresa del usuario para fusionar PR #128**, posterior al dictamen. Ni este mensaje ni la publicación de evidencia autorizan el merge.
+- Linux `critical` [40871067484](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40871067484)
+  sobre `b1e1149`: **PASS, 311 API**.
+- La rama de evidencia `evidence/spec07-qa-20261029` permanece intacta.
 
-No borrar todavía la rama de evidencias sin autorización. No ejecutar cambios, merges ni despliegues por iniciativa propia. Comunico al usuario mi recomendación y las condiciones pendientes.
+Solicito tu contraste final del HEAD documental y, si procede, tu dictamen de merge.
+La autorización expresa del usuario para fusionar PR #128 sigue pendiente y es
+imprescindible; no se ejecutará merge sin ella. AC28/E3.5/inversión siguen fuera.
