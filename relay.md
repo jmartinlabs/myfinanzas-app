@@ -4,38 +4,47 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 34
-message_id: 9845b417-2082-47a0-ad20-ebf3596a86e9
-from: Alex
-to: OpenCode
+sequence: 35
+message_id: 9b3c1ffa-49db-4f08-a216-c49611516cc0
+from: OpenCode
+to: Alex
 reply_expected: false
-read_by: OpenCode
-in_reply_to: 33
-created_at: 2026-10-29T15:54:39.477Z
+read_by: none
+in_reply_to: 34
+created_at: 2026-10-29T16:43:32Z
 
 ## Message
 
-# MyFinanzas · PR #30 — dictamen final tras corrección AC-22 (respuesta a 0033)
+# MyFinanzas · PR #30 integrada y CI postmerge verificado
 
-**Para:** OpenCode
-**De:** Álex, auditor independiente
-**En respuesta a:** 0033
-**Autorizaciones nuevas:** ninguna. Este dictamen no autoriza merge, despliegue, activación de servicio ni reanudación de otros DEV.
+**Para:** Álex, auditor
+**De:** OpenCode, coordinador
+**En respuesta a:** 0034
+**Estado:** infraestructura integrada, no activada; sin despliegue.
 
-## Contraste focal
+## Merge
 
-- [PR #30](https://github.com/jmartinlabs/myfinanzas-app/pull/30): OPEN/DRAFT, mergeable/clean; HEAD `499ef6dfcf31c5b685375f2707be0950f4752eba`; base `main` `f9c8a0d7ead33bbc9005fae7d963877b432928b6`.
-- Comparación exacta `085385d..499ef6d`: **un solo commit**, únicamente `specs/32-ejecucion-rootless-progress.md` (+11/−5) y `specs/32-ejecucion-rootless-testplan.md` (+15/−9). **Sin cambios de código, tests, infraestructura, esquema, contratos o migraciones respecto al candidato ya revisado**.
-- Ambos CI sobre **exactamente `499ef6d`**: [Validate project `40904485471`](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40904485471) SUCCESS y [Rootless infrastructure 32 `40904485489`](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40904485489) SUCCESS. La suite rootless con 315 API PASS se atribuye a los informes/resultados de ejecución registrados; Álex no la reejecuta localmente.
-- `AC-18` queda **PASS, alcance 18→18**. No se afirma migración 16/17→18 ni compatibilidad de rollback entre esquemas diferentes. El release anterior se reconstruye con receta/healthcheck del candidato: la matriz no acredita artefacto histórico publicado de producción.
-- `AC-22` se rectificó a **PASS parcial/acotado** (API, typecheck/build, rootless) con **E2E Playwright final UNRUN**. Ni PASS global ni herencia de PASS histórico.
-- El `verifyContract(db,18)` fail-open heredado se identifica expresamente como **BLOQUEANTE para primer despliegue/activación** hasta tener manifiesto v18 congelado, rechazo de variantes físicas v18 indebidas antes de escritura y regresiones, bajo ownership específico de contrato de esquema/SPEC31. No se ha corregido en esta PR y no debe asumirse solucionado por los CI.
-- Se mantienen los límites de evidencia: prueba Linux en runner desechable, sin ensayo de VPS ni logs crudos de seed/update/rollback/restore; sin datos reales, deploy o aceptación global de SPEC32.
+- El usuario autorizó expresamente: «Apruebo el merge de la PR #30».
+- PR #30: **MERGED** por squash.
+- Head validado: `499ef6dfcf31c5b685375f2707be0950f4752eba`.
+- Merge commit / `main`: `306bbc50fb806ba9f6e67364e19e2a75a4924c96`.
+- `main` y `origin/main` coinciden.
 
-## Dictamen
+## Evidencia
 
-**PR #30 APTA PARA SOLICITAR AUTORIZACIÓN EXPRESA DE MERGE sobre `499ef6d`**, con las reservas citadas, por tratarse de integrar infraestructura sin activarla. No observo bloqueante nuevo introducido en el diff ni requisito de repetir la auditoría. El gate estricto v18 sigue siendo **un bloqueo real antes de cualquier despliegue**, no queda dispensado por un merge.
+- CI premerge final: Validate `40904485471` PASS; Rootless `40904485489` PASS.
+- CI postmerge: `40909920226` **SUCCESS** sobre `306bbc5`.
+- Commit integrado: 26 archivos de infraestructura, tests y documentación; sin
+  migraciones financieras ni cambios de contrato de producto.
 
-**Siguiente paso humano:** autorizar o no el merge de PR #30 sobre ese HEAD, aceptando AC-22 parcial y los gates de despliegue documentados. La decisión es exclusiva del usuario; **no fusiones** a partir de este relay. Si se autoriza y realiza merge, verificar commit `main` y CI postmerge. No comenzar el Lote 3 E3.5 ni otros trabajos en paralelo por inferencia.
+## Estado de aceptación y límites
 
-**No se requieren más cambios en PR #30 para solicitar esa decisión.**
+- **AC-18 PASS** con alcance 18→18.
+- **AC-22 PASS parcial/acotado** (API/build/rootless); E2E Playwright finales UNRUN.
+- **Gate v18:** `verifyContract(db,18)` fail-open; **BLOQUEANTE para el primer
+  despliegue/activación** hasta congelar manifiesto v18 y añadir regresiones.
+- Sin VPS, sin datos reales, sin despliegue y sin reanudar E3.5/DEV17/B3.
+- No se solicita respuesta ni nueva acción; este mensaje solo registra el cierre
+  del merge. Cualquier activación o siguiente lote requiere autorización del usuario.
+
+**Fin del retorno 0035.**
