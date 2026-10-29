@@ -34,6 +34,9 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
   (90 archivos) tras corregir la omisión que hizo fallar el primer rootless run
   `40889566563`.
 - CI `Validate project` run `40889566377`: **SUCCESS**.
+- CI rootless run `40890495769`: producción inicializada; `final-image-api-regressions`
+  5 PASS / 36 FAIL por omitir el JSON en el montaje de fuentes de prueba. Corregido
+  para copiar `.ts` y `.json`; rerun pendiente.
 - `git diff --check`: PASS.
 
 ## Estado histórico — recuperación DEV32 (2026-10-27)

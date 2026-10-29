@@ -395,7 +395,9 @@ def main():
         suite.mkdir(mode=0o700)
         for prefix in ('apps/api/src', 'apps/api/test-support'):
             for relative in run(['git', 'ls-tree', '-r', '--name-only', 'HEAD', '--', prefix]).splitlines():
-                if not relative.endswith('.ts'):
+                # Runtime JSON manifests are imported by TS modules and must be
+                # present beside the mounted test sources too.
+                if not relative.endswith(('.ts', '.json')):
                     continue
                 destination = suite / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)

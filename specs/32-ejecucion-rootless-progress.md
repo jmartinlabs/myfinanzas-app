@@ -43,7 +43,13 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   `infra/release.py` copiaba solo `.ts` de `apps/api/src` y omitía
   `schema-contracts.json`, importado por `schema-contract.ts`; la imagen no podía
   cargar el contrato. Corregido para incluir `.json` de runtime; prueba local de
-  `context` OK (90 archivos, JSON incluido). Rerun pendiente.
+  `context` OK (90 archivos, JSON incluido).
+- CI rootless run `40890495769`: producción inicializada; falló después en
+  `final-image-api-regressions` (5 PASS / 36 FAIL). Causa: el montaje read-only de
+  fuentes de prueba copiaba solo `.ts` y omitía `schema-contracts.json`; los tests
+  que importan `schema-contract.ts` no resolvían el JSON. Corregido para copiar
+  `.ts` y `.json`; rerun pendiente.
+- `Validate project` run `40890495695`: **SUCCESS** sobre `e881476`.
 - **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
   el PASS histórico 3094563.
 
