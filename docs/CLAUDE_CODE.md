@@ -41,6 +41,6 @@ autorizado y no duplicar QA ni subagentes innecesariamente.
 Este adaptador no activa Claude, no contrata ninguna suscripción, no instala
 hooks ni configura claves de API, no ejecuta Evals de modelos y no despliega.
 El evaluador multiplataforma se mantiene en
-[agent-project-template](https://github.com/josemartin2000/agent-project-template/tree/main/evals).
+[agent-project-template](https://github.com/jmartinlabs/agent-project-template/tree/main/evals).
 Ejecutar pruebas de comportamiento sobre un agente real antes de comparar
 su cumplimiento con Codex.

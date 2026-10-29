@@ -1,7 +1,7 @@
 ## Estado metodológico vigente — v2.14.0 (adaptación selectiva)
 
 Adaptación local Standard autorizada hasta tag v2.14.0/`98b5351`, sin reinicializar la aplicación ni afirmar una adopción íntegra.
-[Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, OpenCode manual, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
+[Procedencia y comprobaciones](methodology/orchestration-adoption.md#adaptación-selectiva-v2140--2026-10-26). Modelos, cuota, Agent Relay v1 como transporte operativo, publicación autorizada de rama/PR, continuidad y cierre se integran en los contratos existentes; evidencia estructural no acredita comportamiento real. Merge y desarrollo conservan sus gates separados.
 Trabajo entre clientes usa [paquete](../templates/agent-work-packet.md) y
 [contrato central](methodology/dynamic-agents.md#portable-coordination-v280); no implica
 launcher, control remoto, adaptador OpenCode o telemetría multiplataforma instalados.
@@ -20,8 +20,8 @@ Coordinación v2.3.1 integrada PR32, autonomía operativa actualizada PR33: [$or
 [contrato local](methodology/myfinanzas-coordination.md), [tablero](epic-board.md),
 [evidencia/procedencia](methodology/orchestration-adoption.md). No reinicializar.
 
-Contrato CI vigente: [v2.7.0](methodology/ci-policy.md#adaptación-vigente-v270),
-entrada local/CI `python3 scripts/verify`; adopción en preparación y pendiente de PR/CI.
+Contrato CI vigente: [local-first](methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27),
+entrada local/CI `python3 scripts/verify`; adopción publicada en PR #86, pendiente de CI/QA Linux y aprobación.
 Procedencia y alcance en [adopción](methodology/orchestration-adoption.md#harness-v270--adaptación-en-curso).
 
 ## Cronología conservada

@@ -4,11 +4,14 @@ Specification: [rev3 aprobada](13-anticipos-specification.md)
 ## Corrección E2E focal vigente — 2026-10-25
 
 Usuario autoriza CAT013 negativo y CAT012 positivo/negativos, sin cambiar negocio.
-Base04b2ed6, PR71 DRAFT; corrección solo tests/e2e/transferencias.ts y evidencia.
+Base04b2ed6, PR71 entonces DRAFT; corrección solo tests/e2e/transferencias.ts y evidencia.
 Anticipos22PASS, Referencias focal3PASS, tiposPASS; E2E local FAIL posterior en
 restauración3004 tras completar nuevos escenarios. CI Linux del nuevo candidato
 pendiente; no cierre del incidente ni merge. Detalle/comandos en testplan.
 Se conserva debajo el checkpoint original como historia, no estado remoto actual.
+
+> **Nota de vigencia (2026-10-29):** PR #71 integrada por squash `b146eda`; AC36
+> permanece parcial. El «DRAFT/sin merge» anterior es histórico.
 
 ## Current checkpoint
 Current state: CANDIDATE FOR INDEPENDENT QA — implementación local fijada; aceptación global ABIERTA (CI Linux full y QA pendientes; integración de corrección con Cierres no verificada).

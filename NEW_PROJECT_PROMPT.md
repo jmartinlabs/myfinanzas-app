@@ -1,7 +1,7 @@
 # Start a new project
 
 ## Quick instructions
-On GitHub, open <https://github.com/josemartin2000/agent-project-template> and select
+On GitHub, open <https://github.com/jmartinlabs/agent-project-template> and select
 **Use this template → Create a new repository** once the owner has published this content
 and enabled **Template repository**. Choose owner/name and **Private** unless you intend
 otherwise. This creates an independent repository, not a fork; future template changes
@@ -11,7 +11,7 @@ Alternatively, with an authenticated GitHub CLI, replace OWNER and NEW_NAME, the
 this command yourself only after deciding to create the remote repository:
 
 ```sh
-gh repo create OWNER/NEW_NAME --template josemartin2000/agent-project-template --private --clone
+gh repo create OWNER/NEW_NAME --template jmartinlabs/agent-project-template --private --clone
 cd NEW_NAME
 ```
 
@@ -25,7 +25,7 @@ Replace the two bracketed fields, then copy this entire block into Codex:
 We are going to create a new software project.
 Project name: [PROJECT_NAME]
 Initial idea: [SHORT_DESCRIPTION]
-GitHub template: https://github.com/josemartin2000/agent-project-template
+GitHub template: https://github.com/jmartinlabs/agent-project-template
 
 Create an independent project from this template without modifying the original repository.
 If this workspace is already a repository created from the template, inspect and continue

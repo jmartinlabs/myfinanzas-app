@@ -15,13 +15,31 @@ class ValidationTests(unittest.TestCase):
   self.root=Path(temp.name)/'fixture'
   shutil.copytree(ROOT,self.root,ignore=shutil.ignore_patterns('.git','__pycache__','artifacts','node_modules','dist','.local','test-results','playwright-report'))
  def change(self,name,old,new):
-  p=self.root/name; p.write_text(p.read_text().replace(old,new))
+  p=self.root/name; text=p.read_text()
+  self.assertIn(old,text,f'{name}: fixture anchor not found: {old!r}')
+  p.write_text(text.replace(old,new))
+ def append(self,name,text):
+  p=self.root/name; p.write_text(p.read_text()+text)
+ def neutralize_readme_headings(self):
+  # README titles are presentation, not part of the validator contract. Rename
+  # headings before injecting a rule-specific defect so fixtures cannot drift with
+  # documentation wording.
+  p=self.root/'README.md'; lines=[]
+  for line in p.read_text().splitlines():
+   if line.startswith('#'):
+    line=line.replace('Skills','Capacidades').replace('Universal','Plantilla base')
+   lines.append(line)
+  p.write_text('\n'.join(lines)+'\n')
  def assertRule(self,rule): self.assertTrue(any(e.startswith(rule+':') for e in validate(self.root)),rule)
  def test_valid(self): self.assertEqual(validate(self.root),[])
+ def test_change_requires_original_text(self):
+  with self.assertRaisesRegex(AssertionError,'fixture anchor not found'):
+   self.change('README.md','text absent from this README','replacement')
  def test_structure(self):
   (self.root/'templates/progress.md').unlink(); self.assertRule('structure')
  def test_links(self):
-  self.change('README.md','## Skills','[Broken](missing.md)\n## Skills'); self.assertRule('links')
+  self.neutralize_readme_headings()
+  self.append('README.md','\n[Broken](missing.md)\n'); self.assertRule('links')
  def test_fragment_anchor(self):
   self.change('.agents/skills/orchestrate/SKILL.md','coordinator-communication.md#7-closing-a-turn-or-stopping','coordinator-communication.md#missing-anchor'); self.assertRule('fragments')
  def test_agents(self):
@@ -30,6 +48,12 @@ class ValidationTests(unittest.TestCase):
   self.change('AGENTS.md','# Agent','# Agent'+'\n'*70); self.assertRule('agents')
  def test_manifest(self):
   self.change('.agents/skills/spec/SKILL.md','name: spec','name: wrong'); self.assertRule('manifest')
+ def test_relay_skill_required(self):
+  (self.root/'.agents/skills/relay/SKILL.md').unlink(); self.assertRule('structure')
+ def test_relay_manifest(self):
+  self.change('.agents/skills/relay/SKILL.md','name: relay','name: wrong'); self.assertRule('manifest')
+ def test_relay_contracts(self):
+  self.change('.agents/skills/relay/SKILL.md','## Stop conditions','## End'); self.assertRule('contracts')
  def test_empty_description(self):
   p=self.root/'.agents/skills/spec/SKILL.md'; p.write_text('\n'.join('description: ' if l.startswith('description:') else l for l in p.read_text().split('\n'))); self.assertRule('manifest')
  def test_contracts(self):
@@ -41,9 +65,11 @@ class ValidationTests(unittest.TestCase):
  def test_prompt(self):
   self.change('NEW_PROJECT_PROMPT.md','[PROJECT_NAME]','Name'); self.assertRule('prompt')
  def test_secrets(self):
-  self.change('README.md','# Universal','# Universal\n'+'gh'+'p_'+'a'*36); self.assertRule('secrets')
+  self.neutralize_readme_headings()
+  self.append('README.md','\n'+'gh'+'p_'+'a'*36+'\n'); self.assertRule('secrets')
  def test_portability(self):
-  self.change('README.md','# Universal','# Universal\n'+'/'+'home/example/project'); self.assertRule('portability')
+  self.neutralize_readme_headings()
+  self.append('README.md','\n'+'/'+'home/example/project'+'\n'); self.assertRule('portability')
  def test_neutrality(self):
   self.change('AGENTS.md','# Agent','# Agent\nAll projects must use ExampleStack.'); self.assertRule('neutrality')
  def test_coordination_obligations(self):
@@ -163,8 +189,9 @@ class ValidationTests(unittest.TestCase):
      p.write_text(json.dumps(config)); self.assertRule('usage-hooks')
     finally: p.write_text(original)
  def test_legitimate_project(self):
+  self.neutralize_readme_headings()
   self.change('specs/guidelines/architecture.md','# Architecture','# Architecture\nApproved for this project: Rust and SQLite.')
-  self.change('README.md','# Universal','# Universal\n[Folder](templates) [External](https://example.com)\nUNDECIDED api_key: YOUR_KEY')
+  self.append('README.md','\n[Folder](templates) [External](https://example.com)\nUNDECIDED api_key: YOUR_KEY\n')
   self.assertEqual(validate(self.root),[])
  def test_cli_exit_status(self):
   command=[sys.executable,str(ROOT/'scripts/validate-template'),str(self.root)]

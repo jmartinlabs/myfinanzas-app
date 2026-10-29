@@ -74,7 +74,7 @@ for (const journal of ["DELETE", "WAL"] as const) {
           } else {
             db = openDatabase(path);
           }
-        }).toThrow("Variante v14 sin contrato de Vehículos");
+        }).toThrow("Contrato de esquema v14 desconocido o incompleto");
         // Check before reopening: the rejected attempt must not rewrite the file.
         expect(readFileSync(path)).toEqual(bytes);
         expect(readdirSync(dir).sort()).toEqual(files);

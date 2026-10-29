@@ -39,9 +39,9 @@ Recorrido nuevo ahora respeta redirección existente a Saldos tras MFA; no cambi
 flujo de acceso. Todo corregido/reverificado; ningún fallo/skip/bloqueo pendiente local.
 
 ## Integration evidence
-[PR #15](https://github.com/josemartin2000/myfinanzas-app/pull/15) MERGED mediante squash,
+[PR #15](https://github.com/jmartinlabs/myfinanzas-app/pull/15) MERGED mediante squash,
 HEAD auditado 423c8ee sin cambios adicionales. Árbol del squash idéntico al HEAD aprobado.
-CI posterior de implementación: [run 39629917978](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39629917978).
+CI posterior de implementación: [run 39629917978](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39629917978).
 La matriz del testplan mantiene 29 criterios actuales PASS y AC-30–33 CONTRATO FUTURO.
 Este cierre solo cambia documentación; no añade funcionalidades ni amplía cobertura.
 

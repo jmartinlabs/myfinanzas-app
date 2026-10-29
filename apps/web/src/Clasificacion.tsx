@@ -28,7 +28,11 @@ type Plan = {
   fingerprint: string;
   dependencies: Dependency[];
   coverage: string;
+  annualPlans: { ejercicio: number; partida: string; revision: number }[];
+  checked: string[];
+  partial: string[];
   pending: string[];
+  notApplicable: string[];
   financial?: {
     movimientos: {
       id: string;
@@ -45,7 +49,6 @@ type Plan = {
       };
       ciclo: { mesFinanciado: string } | null;
     }[];
-    cobertura: string;
   };
 };
 const plural = {
@@ -607,8 +610,8 @@ function ClassificationDetail({
           <p>Sin descendientes en el catálogo.</p>
         )}
         <p className="help">
-          Impacto financiero no comprobado. Movimientos, indicadores y cierres
-          se integrarán en sus entregas.
+          La cobertura del impacto se detalla al rectificar: Movimientos, planes
+          y consumidores pendientes se declaran por separado.
         </p>
         <button
           className="secondary"
@@ -974,9 +977,9 @@ function ClassificationForm({
                 </select>
               </label>
               <p className="help">
-                0..1 Presupuesto por Partida. El impacto histórico no
-                verificable queda bloqueado hasta E2.3; la Deuda es
-                independiente.
+                0..1 Presupuesto por Partida. El impacto del vínculo
+                presupuestario se comprueba al cambiarlo; no se recalculan
+                importes aquí. La Deuda es independiente.
               </p>
               <label>
                 Deuda opcional
@@ -1000,7 +1003,7 @@ function ClassificationForm({
               <p className="help">
                 Una Partida puede enlazar una Deuda. El enlace de una Partida
                 utilizada está protegido; crea una nueva para el futuro.
-                Presupuesto pendiente de su entrega.
+                Presupuesto y Deuda son opcionales; la protección se conserva.
               </p>
             </>
           )}
@@ -1071,15 +1074,51 @@ function ClassificationForm({
                         </li>
                       ))}
                     </ul>
-                    <p>{plan.financial.cobertura}</p>
                   </div>
                 )}
-                <p>{plan.coverage}</p>
-                <PlanImpact impact={plan.budgetExecution} />
+                {plan.annualPlans.length > 0 && (
+                  <section aria-label="Planes anuales afectados">
+                    <h3>Planes anuales afectados</h3>
+                    <ul>
+                      {plan.annualPlans.map((p) => (
+                        <li key={`${p.ejercicio}-${p.partida}`}>
+                          Ejercicio {p.ejercicio} · {p.partida} · revisión{" "}
+                          {p.revision}
+                        </li>
+                      ))}
+                    </ul>
+                    <p className="muted">
+                      Uso detectado; no se recalculan importes ni se modifica
+                      la atribución histórica.
+                    </p>
+                  </section>
+                )}
+                <h3>Cobertura del impacto</h3>
+                {[
+                  { title: "Comprobado", items: plan.checked },
+                  { title: "Parcial", items: plan.partial },
+                  {
+                    title: "Pendiente de comprobación",
+                    items: plan.pending,
+                  },
+                  { title: "No aplica", items: plan.notApplicable },
+                ].map(
+                  ({ title, items }) =>
+                    items.length > 0 && (
+                      <div key={title}>
+                        <h4>{title}</h4>
+                        <ul>
+                          {items.map((item) => (
+                            <li key={item}>{item}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    ),
+                )}
                 <p className="muted">
-                  Pendientes: {plan.pending.join(", ")}. No se presentan
-                  periodos ni importes estimados como comprobados.
+                  {plan.coverage} Pendiente no implica ausencia de impacto.
                 </p>
+                <PlanImpact impact={plan.budgetExecution} />
                 <label>
                   Motivo de rectificación *
                   <textarea

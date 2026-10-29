@@ -17,7 +17,45 @@ E1.6 conserva su Full/spec06 aprobada; no otra ronda Q1–Q4 ni documentos redun
 La metodología base está integrada desde PR #32 y actualizada selectivamente hasta
 v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar las
 autorizaciones de negocio ni afirmar una adopción íntegra.
-El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución, con traslado manual del paquete existente; no implica control directo.
+El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
+
+## Reparto de responsabilidades — orquestador, asesor y usuario
+
+Aprobado por el usuario el 2026-10-27. No cambia los gates de [approvals](approvals.md):
+especificación, desarrollo, cambio de alcance, merge y despliegue siguen necesitando
+aprobación expresa.
+
+- **Orquestador técnico (OpenCode).** Único responsable de la ejecución: consolida los
+  handoffs, coordina desarrollo, documentación, pruebas, QA, CI y PR, resuelve incidencias
+  dentro del alcance autorizado y gestiona dependencias, ownership, bloqueos y seguimiento
+  global. No traslada al usuario información técnica rutinaria que pueda resolver.
+- **Asesor (Álex, ChatGPT).** Aporta criterio en decisiones financieras, funcionales y de
+  arquitectura; no ejecuta, no asigna trabajo y no aprueba. Su recomendación no autoriza
+  nada por sí sola.
+- **Usuario.** Autoridad final y única fuente de aprobación protegida.
+
+### Materias que exigen consulta
+
+Reglas financieras, cálculos o interpretación de importes; comportamiento funcional de
+cualquier dominio financiero (Ciclos, Cierres, Movimientos, Saldos, Anticipos, Compartidos,
+Presupuestos, Inversiones y los demás); cambios estructurales que afecten al modelo
+financiero, la integridad histórica o la fuente única de verdad; y contradicciones entre
+especificaciones, criterios aprobados o decisiones anteriores.
+
+La consulta se redacta con contexto imprescindible, alternativas, recomendación motivada y
+consecuencias, y no se presenta como decisión tomada.
+
+### Circuito de decisión
+
+1. El agente entrega sus resultados al orquestador.
+2. El orquestador resuelve lo puramente técnico y consolida el estado.
+3. Si aparece una decisión material de las anteriores, prepara la consulta al asesor.
+4. El usuario consulta, evalúa las alternativas y decide.
+5. El usuario comunica la decisión; el orquestador la registra y coordina su ejecución.
+
+No se duplica la coordinación ni el seguimiento entre OpenCode y el asesor. Una duda
+material detiene solo el trabajo afectado; las tareas independientes ya autorizadas
+continúan. Ante un dato o gate ausente se bloquea únicamente el despacho o paso afectado.
 
 ## Gates que NO desaparecen
 - Especificación aprobada + dependencias satisfechas + autorización expresa de
@@ -37,6 +75,10 @@ El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo 
 - Git: rama por ámbito, revisión de historial y datos sensibles. Publicar rama y crear o
   actualizar PR es trabajo ordinario dentro del alcance autorizado; squash merge solo tras
   aprobación expresa de esa PR y checks, nunca auto-merge.
+
+## Consumo de GitHub Actions — control mínimo
+
+En hitos significativos —inicio/cierre de entrega, handoff y antes de un lote intensivo de CI— el coordinador consulta una vez el consumo mensual; no hace polling. Avisa al superar **1.600 min** (referencia GitHub Free) y **2.400 min** (referencia GitHub Pro), indicando plan, restante y renovación cuando Billing los muestre. No repite el mismo umbral en el mismo ciclo sin un cambio relevante. Billing/Included usage es la fuente de cuota; el total de la API incluye minutos gratuitos de repos públicos y no se usa sin filtrar a repos privados. Las alertas son informativas: no bloquean trabajo, CI, PR ni merge, y no modifican planes, presupuestos ni suscripciones. Las alertas nativas 90/100 % se activan en Billing y no sustituyen estos umbrales.
 
 ## Scheduler, propiedad y ejecución
 Solo el coordinador escribe specs/epic-board.md, asigna ownership y reconcilia resultados.
@@ -80,14 +122,14 @@ intermedio o un check corregible no cierra el turno mientras quede trabajo autor
 investigar, corregir y repetir la verificación. El cierre declara responsable, acción
 humana exacta y estado/motivo de espera conforme a [comunicación](coordinator-communication.md#7-closing-a-turn-or-stopping).
 
-## Comunicación manual — adaptación focal v2.10.0/v2.14.0
+## Comunicación Agent Relay v1 — adaptación focal v2.10.0/v2.14.0
 
 Adaptación focal de agent-project-template v2.10.0, PR24/`f43d691`, revisada contra
 v2.14.0/`98b5351`, sobre harness local v2.9.0, sin sustituir sus contratos.
 [Comunicación del coordinador](coordinator-communication.md) exige Task ID y sesión
 funcional estables, retorno `HANDOFF → CODEX` completo en cada seguimiento (también
 bloqueos), procedencia del estado, acción humana exacta y motivo de espera al cerrar.
-Traslado manual por usuario; no controla chats ni cambia gates de cuota/modelo,
+El usuario activa `Lee`; Agent Relay v1 no controla chats ni cambia gates de cuota/modelo,
 finanzas, QA independiente, desarrollo por entrega o merge. Un reporte recibido
 no es resultado verificado. La publicación autorizada de rama/PR no aprueba merge.
 Reconciliar por hitos desde el único resumen actual; consultar estado completo no

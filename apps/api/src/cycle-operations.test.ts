@@ -11,6 +11,11 @@ import {
   listCycles,
 } from "./ciclos";
 import { getSaldo, createSaldo } from "./saldos";
+import {
+  createRevisionComida,
+  getRevisionComida,
+} from "./revision-comida";
+import { revisionComidaSource } from "./revision-comida-ledger";
 const add = (db: any, inicio: string, saldoInicialComida = "0") =>
   createCycle(
     db,
@@ -62,6 +67,32 @@ function fixture() {
     );
   return { db, a, b };
 }
+const comidaNow = Date.parse("2026-10-29T12:00:00Z");
+const comida = (
+  db: any,
+  fecha: string,
+  evidencia: string,
+  now = comidaNow,
+) =>
+  createRevisionComida(
+    db,
+    {
+      fecha,
+      concepto: "Comida ficticia " + evidencia,
+      importe: "10",
+      direccion: "Salida",
+      esDevolucion: false,
+      clasificacion: "Comida",
+      evidenciaBancaria: evidencia,
+    },
+    randomUUID(),
+    now,
+  ).operacion;
+const comidaMovement = (db: any, id: string, fecha: string) =>
+  db.run(
+    "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado) VALUES(?,?,'Ingreso',100,'S000','S001','Bonus',NULL,'Ficticio','',0,1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')",
+    [id, fecha],
+  );
 test("07 O1 AC02/05/07/09/10/11/13/14/15/16: maestro único, impacto completo e invariancia de hechos", () => {
   const { db, a, b } = fixture();
   try {
@@ -235,6 +266,295 @@ test("07 O3 AC08: páginas no limitan el conjunto usado para impacto y huella", 
   }
 });
 
+test("07 O4 C07-F1/F2: la vista previa separa Comida y la confirmación antigua se invalida", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01"),
+      rc20 = comida(db, "2026-10-20", "max-20");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(first.comidaImpacto.totalVigentesAfectadas).toBe(1);
+    expect(first.comidaImpacto.vigentesAfectadas[0].id).toBe(rc20.id);
+    const rc3 = comida(db, "2026-10-03", "afectada-03");
+    const second = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(second.totalMovimientos).toBe(0);
+    expect(second.comidaImpacto.totalVigentesAfectadas).toBe(2);
+    const item = second.comidaImpacto.vigentesAfectadas.find(
+      (r) => r.id === rc3.id,
+    )!;
+    expect(item.antes?.id).toBe(a.id);
+    expect(item.despues).toBeNull();
+    expect(item.efecto).toBe("temporal");
+    expect(second.impactRevision).not.toBe(first.impactRevision);
+    expect(() =>
+      writeCycleOperation(
+        db,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("impacto");
+    expect(getCycle(db, a.id).ciclo.inicio).toBe("2026-10-01");
+    expect(db.query("SELECT COUNT(*) n FROM cycle_audit").get()).toEqual({
+      n: 0,
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O5 C07-F2: Comida existente se enumera y cambia de ciclo al confirmar", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01"),
+      rc3 = comida(db, "2026-10-03", "existente-03");
+    const body = input("2026-10-05"),
+      p = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(p.totalMovimientos).toBe(0);
+    expect(p.comidaImpacto.totalVigentesAfectadas).toBe(1);
+    expect(p.comidaImpacto.historicasMostradas).toEqual([]);
+    const item = p.comidaImpacto.vigentesAfectadas[0];
+    expect(item.id).toBe(rc3.id);
+    expect(item.antes?.id).toBe(a.id);
+    expect(item.despues).toBeNull();
+    commit(db, "rectificar", a.id, body);
+    expect(getCycle(db, a.id).ciclo.inicio).toBe("2026-10-05");
+    expect(getRevisionComida(db, rc3.id).operacion.ciclo).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O6 R1a/R1b: referencia agregada material sin máximo crudo superfluo", () => {
+  const clock = Date.parse("2026-12-20T12:00:00Z");
+  const withMovement = openDatabase(":memory:");
+  try {
+    const a = add(withMovement, "2026-10-01"),
+      b = add(withMovement, "2026-11-01");
+    comidaMovement(withMovement, "10", "2026-11-24");
+    comida(withMovement, "2026-11-20", "max-20", clock);
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(withMovement, "rectificar", a.id, body);
+    comida(withMovement, "2026-11-21", "max-21-sin-efecto", clock);
+    const second = previewCycleOperation(withMovement, "rectificar", a.id, body);
+    expect(second.comidaImpacto.totalOperacionesComida).toBe(0);
+    expect(second.impactRevision).toBe(first.impactRevision);
+    expect(() =>
+      writeCycleOperation(
+        withMovement,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).not.toThrow();
+  } finally {
+    withMovement.close();
+  }
+  const withoutMovement = openDatabase(":memory:");
+  try {
+    const a = add(withoutMovement, "2026-10-01"),
+      b = add(withoutMovement, "2026-11-01");
+    comida(withoutMovement, "2026-11-20", "max-20", clock);
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(withoutMovement, "rectificar", a.id, body);
+    comida(withoutMovement, "2026-11-21", "max-21-con-efecto", clock);
+    const second = previewCycleOperation(withoutMovement, "rectificar", a.id, body);
+    expect(second.comidaImpacto.totalOperacionesComida).toBe(0);
+    expect(second.impactRevision).not.toBe(first.impactRevision);
+    expect(() =>
+      writeCycleOperation(
+        withoutMovement,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("impacto");
+  } finally {
+    withoutMovement.close();
+  }
+});
+
+test("07 O7 R2: históricas anuladas mostradas y materialidad de presentación", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01"),
+      rc3 = comida(db, "2026-10-03", "historica-03");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(db, "rectificar", a.id, body);
+    db.run(
+      "UPDATE revision_comida SET concepto='Otro concepto',revision=revision+1 WHERE id=?",
+      [rc3.id],
+    );
+    const conceptOnly = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(conceptOnly.impactRevision).toBe(first.impactRevision);
+    db.run(
+      "UPDATE revision_comida SET estado_registro='Anulado',revision=revision+1 WHERE id=?",
+      [rc3.id],
+    );
+    const historical = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(historical.impactRevision).not.toBe(first.impactRevision);
+    expect(historical.comidaImpacto.totalVigentesAfectadas).toBe(0);
+    expect(historical.comidaImpacto.totalHistoricasMostradas).toBe(1);
+    expect(historical.comidaImpacto.historicasMostradas[0].id).toBe(rc3.id);
+    expect(() =>
+      writeCycleOperation(
+        db,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("impacto");
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O8 cobertura de fuente y error de filas de Comida", () => {
+  const coverage = openDatabase(":memory:");
+  try {
+    const a = add(coverage, "2026-10-01"),
+      b = add(coverage, "2026-11-01");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(coverage, "rectificar", a.id, body);
+    coverage.exec("ALTER TABLE revision_comida RENAME TO revision_comida_off");
+    const absent = previewCycleOperation(coverage, "rectificar", a.id, body);
+    expect(absent.impactRevision).not.toBe(first.impactRevision);
+    expect(absent.comidaImpacto.totalOperacionesComida).toBe(0);
+    expect(() =>
+      writeCycleOperation(
+        coverage,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("impacto");
+  } finally {
+    coverage.close();
+  }
+  const broken = openDatabase(":memory:");
+  try {
+    const a = add(broken, "2026-10-01"),
+      b = add(broken, "2026-11-01");
+    comida(broken, "2026-10-20", "max-20");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(broken, "rectificar", a.id, body);
+    broken.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
+    );
+    expect(() =>
+      previewCycleOperation(broken, "rectificar", a.id, body),
+    ).toThrow("fuente instalada ha fallado");
+    expect(() =>
+      writeCycleOperation(
+        broken,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("fuente instalada ha fallado");
+    expect(getCycle(broken, a.id).ciclo.inicio).toBe("2026-10-01");
+  } finally {
+    broken.close();
+  }
+});
+
+test("07 O10 T1: fallo exclusivo del lector de filas mantiene la fuente disponible y bloquea 409", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01");
+    comida(db, "2026-10-20", "max-20");
+    const body = input("2026-10-05"),
+      first = previewCycleOperation(db, "rectificar", a.id, body);
+    expect(revisionComidaSource(db).state).toBe("disponible");
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN concepto TO concepto_roto",
+    );
+    expect(revisionComidaSource(db).state).toBe("disponible");
+    expect(() =>
+      previewCycleOperation(db, "rectificar", a.id, body),
+    ).toThrow("fuente instalada ha fallado");
+    expect(() =>
+      writeCycleOperation(
+        db,
+        "rectificar",
+        a.id,
+        {
+          ...body,
+          contextRevision: first.contextRevision,
+          impactRevision: first.impactRevision,
+          confirmado: true,
+        },
+        randomUUID(),
+      ),
+    ).toThrow("fuente instalada ha fallado");
+    expect(getCycle(db, a.id).ciclo.inicio).toBe("2026-10-01");
+    expect(db.query("SELECT COUNT(*) n FROM cycle_audit").get()).toEqual({
+      n: 0,
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("07 O9 paginación de Comida no altera la huella completa", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const a = add(db, "2026-10-01"),
+      b = add(db, "2026-11-01");
+    for (let i = 0; i < 105; i++)
+      comida(db, "2026-10-02", "paginada-" + String(i));
+    const body = input("2026-10-05");
+    const one = previewCycleOperation(db, "rectificar", a.id, body, 1, 1),
+      two = previewCycleOperation(db, "rectificar", a.id, body, 1, 2);
+    expect(one.comidaImpacto.totalOperacionesComida).toBe(105);
+    expect(one.comidaImpacto.vigentesAfectadas).toHaveLength(100);
+    expect(two.comidaImpacto.vigentesAfectadas).toHaveLength(5);
+    expect(one.impactRevision).toBe(two.impactRevision);
+  } finally {
+    db.close();
+  }
+});
+
 import { Database } from "bun:sqlite";
 import { openDatabaseV8 } from "../test-support/database-v8";
 import { openDatabaseV7 } from "../test-support/database-v7";
@@ -381,6 +701,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               ...values,
               ...(previousVersion === 7 ? [{ name: "presupuestos", next: 1 }] : []),
               { name: "participantes_compartido", next: 1 },
+              { name: "instrumento", next: 1001 },
+              { name: "operaciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
             ].sort((a: any, b: any) => a.name.localeCompare(b.name));
             expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
@@ -433,8 +755,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(16);
-        expect(bundle.manifest.app).toBe("e3.4-v16");
+        expect(bundle.manifest.schema).toBe(18);
+        expect(bundle.manifest.app).toBe("e4.1-v18");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -636,7 +958,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 16 }, { version: 16 }]);
+    expect(upgraded).toEqual([{ version: 18 }, { version: 18 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

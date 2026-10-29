@@ -1,7 +1,8 @@
 # 03 — Ciclos financiados: test plan
-Status: VERIFIED LOCAL — 21 criterios actuales verificados; revisión/merge pendientes.
+Status: VERIFIED LOCAL (2026-10-21, histórico) — 21 criterios E1.3 verificados;
+PR #13 integrada en `ff9d18d`; auditoría 2026-10-28 con H-SPEC03-03 en corrección.
 Fecha: 2026-10-21. Contrato: [especificación aprobada](03-ciclos-financiados-specification.md).
-Rama: feat/e1-3-ciclos-financiados, base main 179942e (PR #12 aprobada sobre bf3f2eb).
+Base histórica: `feat/e1-3-ciclos-financiados`, main `179942e` (PR #12 aprobada sobre `bf3f2eb`).
 
 ## Suites y comandos
 Desde la raíz con Bun 1.4.3 y age/age-keygen disponibles:
@@ -56,6 +57,14 @@ B5 usa el inicializador v2 genuino congelado en apps/api/test-support/database-v
 no una base nueva v3 rebautizada. Compara tablas completas e intenta login/TOTP con
 credenciales previas; upgrade no revoca sesiones. Restore sí aplica revocación existente.
 
+**Estado actual (2026-10-28, `main` `3d87511`).** Movimientos (E1.4) y Revisión Comida
+(E3.4) están integrados como fuentes temporales; Inversión sigue pendiente como fuente
+temporal (sin proveedor conectado); SPEC22 aprobada documentalmente; DEV22 no iniciado;
+proveedor temporal de inversión pendiente. AC-09/10
+conservan su resultado histórico como contrato puro; AC-11/23/24 siguen CONTRATO FUTURO
+y no se reclasifican. H-SPEC03-03 añade el estado `error` de `movementSource()` con
+prueba de regresión; el detalle y los límites constan en el tracker de auditoría.
+
 ## Capturas y revisión visual
 Solo datos ficticios; PNG ignorados por Git y publicados por CI como artifact
 `e1-1-screenshots` (nombre heredado, incluye e1-1/e1-2/e1-3), retención 7 días.
@@ -87,7 +96,8 @@ se repitieron validador y sus 18 regresiones: PASS. Sin bloqueo pendiente.
 No hay datos reales, Excel, semillas de ciclos, fuentes financieras simuladas, nuevas
 dependencias, despliegue ni infraestructura. SQLite/local y age actuales no equivalen
 a inicialización productiva, custodia externa, automatización ni RPO/RTO demostrados.
-PR de implementación: [#13](https://github.com/josemartin2000/myfinanzas-app/pull/13), abierta sin merge.
-La CI remota debe comprobarse sobre el HEAD publicado de la PR, separada de estas
-pruebas locales. Su estado/enlaces se adjuntan a la PR para no atribuir un run anterior
-al commit final. Revisión y autorización de merge de implementación siguen pendientes.
+PR de implementación: [#13](https://github.com/jmartinlabs/myfinanzas-app/pull/13),
+**MERGED** por squash `ff9d18d` (2026-10-21). La evidencia local de este documento
+corresponde al HEAD validado en esa PR y no se atribuye a commits posteriores; la CI
+remota quedó registrada en la PR. La auditoría de 2026-10-28 no reescribe estos
+resultados históricos.

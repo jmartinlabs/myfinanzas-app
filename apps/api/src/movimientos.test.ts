@@ -8,6 +8,7 @@ import { HttpApp } from "@effect/platform";
 import { openDatabase } from "./database";
 import { openDatabase as openV3 } from "../test-support/database-v3";
 import { getSaldo, createSaldo, updateSaldo } from "./saldos";
+import { createRevisionComida } from "./revision-comida";
 import {
   createClassification,
   getClassification,
@@ -199,8 +200,11 @@ test("04 AC01–08/17/18/25: reglas financieras, No controlado, EUR positivo y R
       );
       expect(save(db, income(s.id)).destino.id).toBe(s.id);
       expect(save(db, expense(s.id, partida.id)).origen.id).toBe(s.id);
-      if (control !== "Movimientos")
-        expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      const computed =
+        control === "Movimientos" ||
+        (tipo === "Efectivo" && control === "Inversiones");
+      if (!computed) expect(getSaldo(db, s.id).posicion.importe).toBeNull();
+      else expect(getSaldo(db, s.id).posicion.importe).not.toBeNull();
     }
     const blocked = createSaldo(
       db,
@@ -446,6 +450,423 @@ test("04 AC13–16: Madrid, ciclos inclusivos y máximos de hechos vigentes, sin
   }
 });
 
+test("04 H-SPEC04-02: referencia posterior incluye Comida y reevalúa máxima al anular", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        db,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        now,
+      );
+    comida("2026-10-20", "comida-max-20");
+    const body = expense(saldo.id, partida.id, { fecha: "2026-10-15" });
+    const p = previewMovement(db, body, null, false, now);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-20");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-20");
+    const backdate = previewMovement(
+      db,
+      expense(saldo.id, partida.id, { fecha: "2026-10-05" }),
+      null,
+      false,
+      now,
+    );
+    expect(backdate.impacto.referenciaDespues).toBe("2026-10-20");
+    const later = save(db, expense(saldo.id, partida.id, { fecha: "2026-10-21" }));
+    const rectified = previewMovement(
+      db,
+      expense(saldo.id, partida.id, {
+        fecha: "2026-10-06",
+        revision: later.revision,
+        motivo: "Fixture",
+      }),
+      later.id,
+      false,
+      now,
+    );
+    expect(rectified.impacto.referenciaDespues).toBe("2026-10-20");
+    const annul = previewMovement(
+      db,
+      { revision: later.revision, motivo: "Fixture sin hecho real" },
+      later.id,
+      true,
+      now,
+    );
+    expect(annul.impacto.referenciaAntes).toBe("2026-10-21");
+    expect(annul.impacto.referenciaDespues).toBe("2026-10-20");
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-03: huella temporal material sin 409 superfluo y con cambio real de referencia", () => {
+  const clock = Date.parse("2026-10-25T12:00:00Z");
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        db,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        clock,
+      );
+    comida("2026-10-20", "comida-base");
+    const maxBody = expense(saldo.id, partida.id, { fecha: "2026-10-24" });
+    const maxPlan = previewMovement(db, maxBody, null, false, clock);
+    writeMovement(
+      db,
+      { ...maxBody, fingerprint: maxPlan.fingerprint },
+      randomUUID(),
+      null,
+      false,
+      clock,
+    );
+    const body = expense(saldo.id, partida.id, { fecha: "2026-10-15" });
+    const p = previewMovement(db, body, null, false, clock);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-24");
+    comida("2026-10-21", "comida-nueva-sin-max");
+    const p2 = previewMovement(db, body, null, false, clock);
+    expect(p2.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p2.impacto.referenciaDespues).toBe("2026-10-24");
+    expect(p2.fingerprint).toBe(p.fingerprint);
+    expect(() =>
+      writeMovement(
+        db,
+        { ...body, fingerprint: p.fingerprint },
+        randomUUID(),
+        null,
+        false,
+        clock,
+      ),
+    ).not.toThrow();
+  } finally {
+    db.close();
+  }
+  const positive = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(positive);
+    const comida = (fecha: string, evidencia: string) =>
+      createRevisionComida(
+        positive,
+        {
+          fecha,
+          concepto: "Comida ficticia",
+          importe: "10",
+          direccion: "Salida",
+          esDevolucion: false,
+          clasificacion: "Comida",
+          evidenciaBancaria: evidencia,
+        },
+        randomUUID(),
+        clock,
+      );
+    comida("2026-10-20", "comida-base");
+    const maxBody = expense(saldo.id, partida.id, { fecha: "2026-10-24" });
+    const maxPlan = previewMovement(positive, maxBody, null, false, clock);
+    const max = writeMovement(
+      positive,
+      { ...maxBody, fingerprint: maxPlan.fingerprint },
+      randomUUID(),
+      null,
+      false,
+      clock,
+    ).movimiento;
+    const correction = expense(saldo.id, partida.id, {
+      fecha: "2026-10-10",
+      revision: max.revision,
+      motivo: "Fixture",
+    });
+    const p = previewMovement(positive, correction, max.id, false, clock);
+    expect(p.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p.impacto.referenciaDespues).toBe("2026-10-20");
+    comida("2026-10-21", "comida-nueva-max");
+    const p2 = previewMovement(positive, correction, max.id, false, clock);
+    expect(p2.impacto.referenciaAntes).toBe("2026-10-24");
+    expect(p2.impacto.referenciaDespues).toBe("2026-10-21");
+    expect(p2.fingerprint).not.toBe(p.fingerprint);
+    expect(() =>
+      writeMovement(
+        positive,
+        { ...correction, fingerprint: p.fingerprint },
+        randomUUID(),
+        max.id,
+        false,
+        clock,
+      ),
+    ).toThrow("contexto");
+  } finally {
+    positive.close();
+  }
+});
+
+test("04 H-SPEC04-04: error de fuente instalada bloquea preview/confirmación sin escrituras", () => {
+  const db = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(db);
+    const current = save(db, expense(saldo.id, partida.id));
+    const correction = {
+      ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+      revision: current.revision,
+      motivo: "Fixture",
+    };
+    const correctionPlan = previewMovement(
+      db,
+      correction,
+      current.id,
+      false,
+      now,
+    );
+    const annulBody = { revision: current.revision, motivo: "Fixture" };
+    const annulPlan = previewMovement(db, annulBody, current.id, true, now);
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
+    );
+    const before = snapshot(db);
+    const error = "fuente instalada ha fallado";
+    expect(() =>
+      previewMovement(
+        db,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      previewMovement(
+        db,
+        {
+          ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+          revision: current.revision,
+          motivo: "Fixture",
+        },
+        current.id,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      previewMovement(
+        db,
+        { revision: current.revision, motivo: "Fixture" },
+        current.id,
+        true,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+          fingerprint: "0".repeat(64),
+        },
+        randomUUID(),
+        null,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...correction,
+          fingerprint: correctionPlan.fingerprint,
+          contextRevision: correctionPlan.contextRevision,
+        },
+        randomUUID(),
+        current.id,
+        false,
+        now,
+      ),
+    ).toThrow(error);
+    expect(() =>
+      writeMovement(
+        db,
+        {
+          ...annulBody,
+          fingerprint: annulPlan.fingerprint,
+          contextRevision: annulPlan.contextRevision,
+        },
+        randomUUID(),
+        current.id,
+        true,
+        now,
+      ),
+    ).toThrow(error);
+    expect(snapshot(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
+test("04 H-SPEC04-04: Comida vacía o no instalada no se confunde con error", () => {
+  const empty = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(empty);
+    expect(() =>
+      previewMovement(
+        empty,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).not.toThrow();
+  } finally {
+    empty.close();
+  }
+  const absent = openDatabase(":memory:");
+  try {
+    const { saldo, partida } = masters(absent);
+    absent.exec("ALTER TABLE revision_comida RENAME TO revision_comida_off");
+    expect(() =>
+      previewMovement(
+        absent,
+        expense(saldo.id, partida.id, { fecha: "2026-10-14" }),
+        null,
+        false,
+        now,
+      ),
+    ).not.toThrow();
+  } finally {
+    absent.close();
+  }
+});
+
+test("04 H-SPEC04-04: rutas HTTP bloquean con 409 REFERENCE_ERROR", async () => {
+  const db = openDatabase(":memory:"),
+    key = randomBytes(32),
+    origin = "http://127.0.0.1:5173",
+    handler = HttpApp.toWebHandler(createApp(db, { key, now: () => now }));
+  const request = (
+    path: string,
+    method = "GET",
+    body?: unknown,
+    headers: Record<string, string> = {},
+  ) =>
+    handler(
+      new Request(origin + path, {
+        method,
+        headers: { origin, "content-type": "application/json", ...headers },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+  try {
+    const m = masters(db);
+    const current = save(db, expense(m.saldo.id, m.partida.id));
+    const auth = new Auth(db, key, origin, () => now),
+      enrollment = await auth.enroll(
+        provision(db, now),
+        "Contraseña ficticia " + randomUUID(),
+      ),
+      verified = auth.verify(
+        new Request(origin, {
+          headers: { cookie: auth.challengeName + "=" + enrollment.challenge },
+        }),
+        totp(enrollment.secret!).generate({ timestamp: now }),
+      ),
+      headers = {
+        cookie: auth.cookieName + "=" + verified.session,
+        "x-csrf-token": verified.csrf,
+        "idempotency-key": randomUUID(),
+      };
+    const correction = {
+      ...expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+      revision: current.revision,
+      motivo: "Fixture",
+    };
+    const rectPreview = await (
+      await request(
+        "/api/movimientos/" + current.id + "/impacto",
+        "POST",
+        correction,
+        headers,
+      )
+    ).json();
+    const annulPreview = await (
+      await request(
+        "/api/movimientos/" + current.id + "/impacto-anulacion",
+        "POST",
+        { revision: current.revision, motivo: "Fixture" },
+        headers,
+      )
+    ).json();
+    db.exec(
+      "ALTER TABLE revision_comida RENAME COLUMN estado_registro TO estado_registro_broken",
+    );
+    const before = snapshot(db);
+    const preview = await request(
+      "/api/movimientos/impacto",
+      "POST",
+      expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+      headers,
+    );
+    expect(preview.status).toBe(409);
+    expect((await preview.json()).code).toBe("REFERENCE_ERROR");
+    const write = await request(
+      "/api/movimientos",
+      "POST",
+      {
+        ...expense(m.saldo.id, m.partida.id, { fecha: "2026-10-14" }),
+        fingerprint: "0".repeat(64),
+      },
+      headers,
+    );
+    expect(write.status).toBe(409);
+    expect((await write.json()).code).toBe("REFERENCE_ERROR");
+    const rectConfirm = await request(
+      "/api/movimientos/" + current.id + "/rectificar",
+      "POST",
+      {
+        ...correction,
+        fingerprint: rectPreview.fingerprint,
+        contextRevision: rectPreview.contextRevision,
+      },
+      headers,
+    );
+    expect(rectConfirm.status).toBe(409);
+    expect((await rectConfirm.json()).code).toBe("REFERENCE_ERROR");
+    const annulConfirm = await request(
+      "/api/movimientos/" + current.id + "/anular",
+      "POST",
+      {
+        revision: current.revision,
+        motivo: "Fixture",
+        fingerprint: annulPreview.fingerprint,
+        contextRevision: annulPreview.contextRevision,
+      },
+      headers,
+    );
+    expect(annulConfirm.status).toBe(409);
+    expect((await annulConfirm.json()).code).toBe("REFERENCE_ERROR");
+    expect(snapshot(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
 test("04 AC19–24: correcciones/anulaciones auditadas, duplicados revisables, reintentos y rollback", () => {
   const db = openDatabase(":memory:");
   try {
@@ -685,7 +1106,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 16,
+      version: 18,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -917,7 +1338,7 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
         runE14(opening, "upgrade"),
         runE14(opening, "upgrade"),
       ]),
-    ).toEqual([{ version: 16 }, { version: 16 }]);
+    ).toEqual([{ version: 18 }, { version: 18 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),

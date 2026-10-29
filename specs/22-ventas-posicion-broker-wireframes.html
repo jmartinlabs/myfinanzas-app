@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPEC22 · E4.2 — Wireframes W11–W16 y ficha W2/W5</title>
+<style>
+  :root{
+    --green:#8DBB2E; --header:#CBEA7B; --section:#DCECB3; --bg:#EEF7E8; --ink:#2B2B2B;
+    --muted:#5f6b55; --line:#cfdcc0; --white:#fff; --warn:#fff4d6; --warnline:#d9b44a;
+    --danger:#8a2f2f; --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .page{max-width:1240px;margin:0 auto;padding:28px 18px 64px}
+  .doc-head{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:22px}
+  .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  h1{font-size:26px;line-height:1.2;margin:6px 0 8px}
+  h2{font-size:19px;margin:0 0 6px}
+  h3{font-size:15px;margin:0 0 8px}
+  p{margin:0 0 10px}
+  .banner{background:var(--warn);border:1px solid var(--warnline);border-radius:10px;padding:10px 12px;margin:14px 0 0;font-size:13px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .note{background:#f7fbf1;border-left:4px solid var(--green);padding:10px 12px;border-radius:8px;margin:12px 0}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .pill{display:inline-block;border:1px solid var(--line);background:var(--section);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600}
+  .wire-section{margin:30px 0 0}
+  .wire-label{display:flex;align-items:center;gap:10px;margin:0 0 8px}
+  .wire-label .tag{background:var(--ink);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;letter-spacing:.03em}
+  .wire-label .desc{color:var(--muted);font-size:13px}
+  .frame{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(43,43,43,.07);overflow:hidden;max-width:1120px}
+  .mobile{max-width:390px}
+  .topbar{background:var(--header);padding:10px 14px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px;font-weight:600}
+  .topbar .ref{background:rgba(255,255,255,.6);border-radius:6px;padding:2px 7px;font-weight:600}
+  .layout{display:grid;grid-template-columns:170px 1fr;min-height:360px}
+  .sidebar{background:var(--section);padding:14px 10px;border-right:1px solid var(--line);font-size:13px}
+  .sidebar .item{padding:7px 9px;border-radius:7px;margin-bottom:3px;color:#33402a}
+  .sidebar .item.active{background:var(--green);color:#fff;font-weight:700}
+  .content{padding:16px}
+  .content-head{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:12px}
+  .btn{display:inline-block;background:var(--green);color:#fff;border-radius:8px;padding:7px 11px;font-size:13px;font-weight:700;border:0;white-space:nowrap}
+  .btn.secondary{background:var(--white);color:var(--ink);border:1px solid var(--line)}
+  .filters{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+  .field{background:var(--white);border:1px solid var(--line);border-radius:7px;padding:5px 8px;font-size:12px;color:#3d4635}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 7px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f5f9ef;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:#4c5942}
+  .num{text-align:right;white-space:nowrap}
+  .state{display:inline-block;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:700;white-space:nowrap}
+  .vigente{background:#e8f3d5;color:#3f5b12}
+  .anulada{background:#f4e4e4;color:#7b2a2a}
+  .zero{background:#eef2ea;color:#4d5a44}
+  .summary{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px}
+  .summary b{font-size:14px}
+  .coverage{font-size:11.5px;color:var(--muted);margin-top:6px}
+  .card-list{display:grid;gap:9px}
+  .card{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff}
+  .card .row{display:flex;justify-content:space-between;gap:8px}
+  .form-grid{display:grid;grid-template-columns:1.25fr .85fr;gap:14px}
+  .form-grid>*{min-width:0}
+  .layout>*{min-width:0}
+  .form-block{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fcfdf9}
+  .form-row{display:grid;grid-template-columns:1fr 1.2fr;gap:8px;margin-bottom:8px;align-items:center}
+  .form-row label{font-size:12px;color:#46523d;font-weight:600}
+  .input{background:#fff;border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:12.5px;min-height:30px}
+  .impact{background:#f7fbf1;border:1px solid var(--line);border-radius:10px;padding:12px}
+  .impact .line{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .impact .line:last-child{border-bottom:0}
+  .impact .after{font-weight:700;color:#3f5b12}
+  .warn{background:var(--warn);border:1px solid var(--warnline);border-radius:8px;padding:8px 9px;font-size:12px;margin-top:8px}
+  .tabs{display:flex;gap:6px;margin:10px 0}
+  .tab{border:1px solid var(--line);border-radius:7px 7px 0 0;padding:5px 9px;font-size:12px;background:#f5f9ef}
+  .tab.active{background:var(--green);color:#fff;border-color:var(--green);font-weight:700}
+  .decision-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:12px}
+  .decision{background:var(--white);border:1px solid var(--line);border-radius:9px;padding:10px}
+  .decision b{display:block;font-size:12px;color:#3f5b12;margin-bottom:2px}
+  .checklist{columns:2;column-gap:28px;margin:8px 0 0;padding-left:18px}
+  .checklist li{margin:0 0 6px}
+  .footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center}
+  .table-wrap{width:100%;overflow-x:auto}
+  .w11-table th,.w11-table td:first-child{white-space:nowrap}
+  .pos-card,.state-card,.d3-card,.impact,.error-box,.draft{overflow-wrap:break-word}
+  .ficha-mobile{display:none}
+  .pos-card{border:1px solid var(--line);border-radius:9px;padding:10px;background:#fff;margin-bottom:8px}
+  .pos-card .pos-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .pos-card .pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12px}
+  .pos-card .pos-grid span{color:var(--muted)}
+  .pos-card .pos-grid b{font-weight:700;color:var(--ink)}
+  .state-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px;margin-top:12px}
+  .state-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px;min-height:150px}
+  .state-card h4{margin:0 0 4px;font-size:13px}
+  .state-card p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+  .state-card .mini{border:1px dashed var(--line);border-radius:7px;padding:8px;font-size:12px;background:#fbfdf8}
+  .state-card.error{border-color:#d8b4b4;background:#fffafa}
+  .state-card.warncard{border-color:var(--warnline);background:#fffdf4}
+  .state-card.loading .mini{background:linear-gradient(90deg,#f1f6ea 25%,#e7f0dc 37%,#f1f6ea 63%);background-size:400% 100%}
+  .block-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px}
+  .block-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:12px}
+  .block-card.danger{border-color:#d8b4b4;background:#fffafa}
+  .block-card .line{display:flex;justify-content:space-between;gap:8px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .block-card .line:last-child{border-bottom:0}
+  .error-box{background:#fbecec;border:1px solid #d8b4b4;color:var(--danger);border-radius:8px;padding:8px 9px;font-size:12px;margin-top:8px}
+  .ok-box{background:#eef7e2;border:1px solid #b9d58b;color:#3f5b12;border-radius:8px;padding:8px 9px;font-size:12px;margin-top:8px}
+  .btn[disabled],.btn.disabled{background:#d8e3ca;color:#6f7d62;cursor:not-allowed;border:1px solid #c6d4b6;white-space:normal}
+  .btn.secondary[disabled],.btn.secondary.disabled{background:#f1f4ed;color:#87927c;border-color:#d5ddcb}
+  .field.disabled{background:#f1f4ed;color:#87927c;border-style:dashed}
+  .select.disabled{background:#f1f4ed;color:#87927c;border-style:dashed}
+  .draft{background:#f4f8ee;border:1px dashed #b9d58b;border-radius:8px;padding:8px 9px;font-size:12px;margin-top:8px;color:#3f5b12}
+  .recalc{display:inline-block;background:#fff;border:1px solid var(--green);color:#3f5b12;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;margin-top:8px}
+  .d3-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .d3-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+  .d3-card.allowed{border-color:#b9d58b;background:#fbfdf8}
+  .d3-card.blocked{border-color:#d8b4b4;background:#fffafa}
+  .d3-card .select{border:1px solid var(--line);border-radius:7px;padding:6px 8px;font-size:12px;margin:6px 0;background:#fff}
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr}
+    .sidebar{display:flex;flex-wrap:wrap;gap:4px;border-right:0;border-bottom:1px solid var(--line)}
+    .sidebar .item{margin:0}
+    .form-grid{grid-template-columns:1fr}
+    .checklist{columns:1}
+    .ficha-desktop{display:none}
+    .ficha-mobile{display:block}
+    .block-grid,.d3-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:430px){
+    .page{padding:14px 10px 40px}
+    .content{padding:12px}
+    .form-row{grid-template-columns:1fr}
+    .topbar{flex-direction:column;align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-head">
+    <div class="eyebrow">SPEC22 · E4.2 · Documento de revisión visual</div>
+    <h1>Ventas, posición y efectivo de bróker</h1>
+    <p class="muted">Wireframes W11–W16 y ampliación de la ficha W2/W5. Datos ficticios. No es una implementación ni una captura de la aplicación.</p>
+    <div class="banner"><b>Pendiente de aprobación visual.</b> D1–D7 ya están confirmadas A. Esta presentación no autoriza DEV22, cambios de esquema, commits, push, PR ni merge.</div>
+    <div class="legend">
+      <span class="pill">W2/W5 · ficha</span>
+      <span class="pill">W11/W12 · listado</span>
+      <span class="pill">W13/W14 · alta</span>
+      <span class="pill">W15/W16 · impacto y anulación</span>
+      <span class="pill">390 / 1440</span>
+      <span class="pill">Tema claro</span>
+    </div>
+  </header>
+
+  <div class="note">
+    <b>Cómo leerlo.</b> Cada bloque muestra una pantalla o estado. Las etiquetas <b>W11 · 1440</b> y <b>W12 · 390</b> indican escritorio y móvil. Los importes y fechas son ficticios: S003 «Efectivo de inversión demo», S004 «Cartera de inversión demo», S006 «Cartera secundaria demo» e I1001 «Fondo índice demo». La valoración y el resultado no se muestran porque pertenecen a E4.3.
+  </div>
+
+  <section class="wire-section" id="w2-w5">
+    <div class="wire-label"><span class="tag">W2/W5</span><span class="desc">Ficha del Instrumento — ampliación con posiciones e historial de Compras y Ventas</span></div>
+    <div class="frame">
+      <div class="topbar"><span>MyFinanzas · Inversiones · Instrumentos</span><span class="ref">Referencia 20/04/2026</span></div>
+      <div class="content">
+        <div class="content-head">
+          <div><h2>I1001 · Fondo índice demo</h2><div class="muted small">ISIN ES0000000001 · Divisa de referencia EUR · Estado Activa · ID inmutable</div></div>
+          <span class="btn secondary">Editar</span>
+        </div>
+        <div class="tabs"><span class="tab active">Posiciones</span><span class="tab">Compras (2)</span><span class="tab">Ventas (2)</span><span class="tab">Auditoría</span></div>
+        <div class="table-wrap ficha-desktop">
+          <table>
+            <thead><tr><th>Saldo de inversión</th><th class="num">Cantidad</th><th class="num">Compras</th><th class="num">Ventas</th><th>Última compra</th><th>Última venta</th><th>Última operación vigente</th></tr></thead>
+            <tbody>
+              <tr><td>S004 · Cartera de inversión demo</td><td class="num"><b>7,5</b></td><td class="num">1</td><td class="num">1</td><td>10/02/2026</td><td>10/04/2026</td><td>10/04/2026</td></tr>
+              <tr><td>S006 · Cartera secundaria demo</td><td class="num"><b>3</b></td><td class="num">1</td><td class="num">0</td><td>03/03/2026</td><td>—</td><td>03/03/2026</td></tr>
+              <tr><td>S004 · Cartera de inversión demo <span class="small muted">(ejemplo tras venta total)</span></td><td class="num"><span class="state zero">0</span></td><td class="num">1</td><td class="num">2</td><td>10/02/2026</td><td>15/04/2026</td><td>15/04/2026</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="ficha-mobile">
+          <div class="pos-card">
+            <div class="pos-head"><b>S004 · Cartera de inversión demo</b><span class="state">7,5</span></div>
+            <div class="pos-grid"><span>Cantidad</span><b>7,5</b><span>Compras</span><b>1</b><span>Ventas</span><b>1</b><span>Última compra</span><b>10/02/2026</b><span>Última venta</span><b>10/04/2026</b><span>Última operación vigente</span><b>10/04/2026</b></div>
+          </div>
+          <div class="pos-card">
+            <div class="pos-head"><b>S006 · Cartera secundaria demo</b><span class="state">3</span></div>
+            <div class="pos-grid"><span>Cantidad</span><b>3</b><span>Compras</span><b>1</b><span>Ventas</span><b>0</b><span>Última compra</span><b>03/03/2026</b><span>Última venta</span><b>—</b><span>Última operación vigente</span><b>03/03/2026</b></div>
+          </div>
+          <div class="pos-card">
+            <div class="pos-head"><b>S004 · Cartera de inversión demo</b><span class="state zero">0</span></div>
+            <div class="small muted" style="margin-bottom:6px">Ejemplo tras venta total</div>
+            <div class="pos-grid"><span>Cantidad</span><b>0</b><span>Compras</span><b>1</b><span>Ventas</span><b>2</b><span>Última compra</span><b>10/02/2026</b><span>Última venta</span><b>15/04/2026</b><span>Última operación vigente</span><b>15/04/2026</b></div>
+          </div>
+        </div>
+        <div class="summary"><span>Valoración: <b>No disponible hasta E4.3</b></span><span>Resultado / rentabilidad: <b>No calculado</b></span></div>
+        <div class="coverage">Cobertura: solo operaciones registradas; histórico anterior no importado. Una posición con cantidad 0 se conserva con su histórico y no se etiqueta «Cerrada» (D5).</div>
+        <div class="warn"><b>D3 · Instrumento inactivo:</b> si I1001 estuviera inactivo pero tuviera cantidad disponible, se mostraría con aviso y solo se ofrecería para Venta en el Saldo donde tiene posición; no para nuevas Compras.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w11">
+    <div class="wire-label"><span class="tag">W11 · 1440</span><span class="desc">Listado de Ventas — escritorio</span></div>
+    <div class="frame">
+      <div class="topbar"><span>MyFinanzas · Ciclo financiado 05/2026</span><span class="ref">Referencia 20/04/2026</span></div>
+      <div class="layout">
+        <nav class="sidebar">
+          <div class="item">Instrumentos</div>
+          <div class="item">Compras</div>
+          <div class="item active">Ventas</div>
+          <div class="item">Efectivo del bróker</div>
+        </nav>
+        <main class="content">
+          <div class="content-head"><div><h2>Ventas</h2><div class="muted small">Consulta de ventas parciales y totales; sin valoración ni resultado.</div></div><span class="btn">+ Nueva venta</span></div>
+          <div class="filters"><span class="field">Instrumento: Todos</span><span class="field">Saldo: Todos</span><span class="field">Estado: Todos</span><span class="field">Desde: —</span><span class="field">Hasta: —</span></div>
+          <div class="table-wrap">
+            <table class="w11-table">
+              <thead><tr><th>Fecha</th><th>Instrumento</th><th>Saldo inversión</th><th class="num">Cantidad</th><th class="num">Precio</th><th>Divisa</th><th class="num">Cambio</th><th class="num">EUR cobrado</th><th class="num">Comisión</th><th>Estado</th><th></th></tr></thead>
+              <tbody>
+                <tr><td>10/04/2026</td><td>I1001 · Fondo índice demo</td><td>S004 · Cartera demo</td><td class="num">5</td><td class="num">110,00</td><td>USD</td><td class="num">0,920000</td><td class="num">506,00 €</td><td class="num">2,00 €</td><td><span class="state vigente">Vigente</span></td><td><span class="btn secondary">Ver</span></td></tr>
+                <tr><td>15/04/2026</td><td>I1001 · Fondo índice demo</td><td>S004 · Cartera demo</td><td class="num">7,5</td><td class="num">112,00</td><td>USD</td><td class="num">0,930000</td><td class="num">781,20 €</td><td class="num">1,20 €</td><td><span class="state vigente">Vigente</span></td><td><span class="btn secondary">Ver</span></td></tr>
+                <tr><td>20/04/2026</td><td>I1001 · Fondo índice demo</td><td>S006 · Cartera secundaria</td><td class="num">1</td><td class="num">105,00</td><td>EUR</td><td class="num">1,000000</td><td class="num">105,00 €</td><td class="num">0,00 €</td><td><span class="state vigente">Vigente</span></td><td><span class="btn secondary">Ver</span></td></tr>
+                <tr><td>25/04/2026</td><td>I1001 · Fondo índice demo</td><td>S004 · Cartera demo</td><td class="num">1</td><td class="num">108,00</td><td>USD</td><td class="num">0,910000</td><td class="num">98,28 €</td><td class="num">0,00 €</td><td><span class="state anulada">Anulada</span></td><td><span class="btn secondary">Ver</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="summary"><span>Efectivo S003: <b>3.202,60 €</b></span><span>Posición: <b>separada, por Saldo+Instrumento</b></span><span>Valoración: <b>No disponible hasta E4.3</b></span></div>
+          <div class="coverage">Cobertura: solo operaciones registradas; histórico anterior no importado. La tabla completa incluye EUR cobrado, comisión incluida, Estado y «Ver».</div>
+        </main>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w12">
+    <div class="wire-label"><span class="tag">W12 · 390</span><span class="desc">Listado de Ventas — móvil</span></div>
+    <div class="frame mobile">
+      <div class="topbar"><span>MyFinanzas · Ciclo 05/2026</span><span class="ref">Ref. 20/04/2026</span></div>
+      <div class="content">
+        <div class="content-head"><div><h2>Ventas</h2><div class="muted small">Cartera demo</div></div><span class="btn">+ Venta</span></div>
+        <div class="filters"><span class="field">Instrumento</span><span class="field">Estado</span><span class="field">Filtros ▾</span></div>
+        <div class="card-list">
+          <div class="card"><div class="row"><b>10/04/2026 · I1001</b><span class="state vigente">Vigente</span></div><div class="small">S004 · Cartera demo</div><div class="row"><span>5 · 110,00 USD</span><b>506,00 €</b></div><div class="small muted">Cambio 0,920000 · comisión 2,00 € incluida</div><div class="row"><span></span><span class="btn secondary">Ver</span></div></div>
+          <div class="card"><div class="row"><b>15/04/2026 · I1001</b><span class="state vigente">Vigente</span></div><div class="small">S004 · Cartera demo</div><div class="row"><span>7,5 · 112,00 USD</span><b>781,20 €</b></div><div class="small muted">Cambio 0,930000 · comisión 1,20 € incluida</div><div class="row"><span></span><span class="btn secondary">Ver</span></div></div>
+          <div class="card"><div class="row"><b>20/04/2026 · I1001</b><span class="state vigente">Vigente</span></div><div class="small">S006 · Cartera secundaria</div><div class="row"><span>1 · 105,00 EUR</span><b>105,00 €</b></div><div class="small muted">Sin cambio (EUR) · comisión 0,00 €</div><div class="row"><span></span><span class="btn secondary">Ver</span></div></div>
+          <div class="card"><div class="row"><b>25/04/2026 · I1001</b><span class="state anulada">Anulada</span></div><div class="small">S004 · Cartera demo</div><div class="row"><span>1 · 108,00 USD</span><b>98,28 €</b></div><div class="small muted">Cambio 0,910000 · comisión 0,00 €</div><div class="row"><span class="small muted">No computa</span><span class="btn secondary">Ver</span></div></div>
+        </div>
+        <div class="summary"><span>Efectivo S003: <b>3.202,60 €</b></span></div>
+        <div class="coverage">Cobertura: solo operaciones registradas; histórico no importado. Sin valoración hasta E4.3.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w13">
+    <div class="wire-label"><span class="tag">W13 · 1440</span><span class="desc">Alta de Venta — escritorio, con impacto antes/después</span></div>
+    <div class="frame">
+      <div class="topbar"><span>Inversiones · Ventas · Nueva venta</span><span class="ref">Datos ficticios</span></div>
+      <div class="content">
+        <div class="form-grid">
+          <div class="form-block">
+            <h3>Identificación</h3>
+            <div class="form-row"><label>Fecha *</label><div class="input">10/04/2026</div></div>
+            <div class="form-row"><label>Instrumento *</label><div class="input">I1001 · Fondo índice demo</div></div>
+            <div class="form-row"><label>Saldo efectivo *</label><div class="input">S003 · Efectivo de inversión demo</div></div>
+            <div class="form-row"><label>Saldo inversión *</label><div class="input">S004 · Cartera de inversión demo</div></div>
+            <h3 style="margin-top:14px">Ejecución</h3>
+            <div class="form-row"><label>Cantidad *</label><div class="input">5</div></div>
+            <div class="form-row"><label>Precio unitario *</label><div class="input">110,00</div></div>
+            <div class="form-row"><label>Divisa *</label><div class="input">USD</div></div>
+            <div class="form-row"><label>Cambio histórico *</label><div class="input">0,920000</div></div>
+            <div class="form-row"><label>EUR cobrado *</label><div class="input">506,00</div></div>
+            <div class="form-row"><label>Comisión incluida</label><div class="input">2,00</div></div>
+            <div class="form-row"><label>Concepto / Nota</label><div class="input">Venta parcial demo</div></div>
+            <div class="small muted">Referencia 5 × 110 × 0,92 = 506,00 · Diferencia 0,00. La comisión ya está incluida en el EUR cobrado.</div>
+            <div class="warn"><b>D3:</b> si el Instrumento estuviera inactivo con cantidad disponible, aparecería aquí con aviso y solo para el Saldo donde tiene posición.</div>
+          </div>
+          <aside class="impact">
+            <h3>Impacto · no escribe</h3>
+            <div class="line"><span>Efectivo S003 antes</span><b>1.810,40 €</b></div>
+            <div class="line"><span>Efectivo S003 después</span><span class="after">2.316,40 €</span></div>
+            <div class="line"><span>Cantidad S004/I1001 antes</span><b>12,5</b></div>
+            <div class="line"><span>Cantidad después</span><span class="after">7,5</span></div>
+            <div class="line"><span>Disponible</span><b>12,5</b></div>
+            <div class="line"><span>Comisión</span><b>incluida, no se resta otra vez</b></div>
+            <div class="btn" style="width:100%;text-align:center;margin-top:12px">Confirmar venta</div>
+            <div class="small muted" style="margin-top:8px">Si la cantidad supera la disponible, se bloquea con 422 INSUFFICIENT_UNITS (D1). Si el Saldo no está activo, no se ofrece (D3).</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w14">
+    <div class="wire-label"><span class="tag">W14 · 390</span><span class="desc">Alta de Venta — móvil</span></div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Inversiones · Nueva venta</span><span class="ref">Ficticio</span></div>
+      <div class="content">
+        <div class="form-block">
+          <div class="form-row"><label>Fecha *</label><div class="input">10/04/2026</div></div>
+          <div class="form-row"><label>Instrumento *</label><div class="input">I1001 ▾</div></div>
+          <div class="form-row"><label>Saldo efectivo *</label><div class="input">S003 ▾</div></div>
+          <div class="form-row"><label>Saldo inversión *</label><div class="input">S004 ▾</div></div>
+          <div class="form-row"><label>Cantidad *</label><div class="input">5</div></div>
+          <div class="form-row"><label>Precio *</label><div class="input">110,00</div></div>
+          <div class="form-row"><label>Divisa *</label><div class="input">USD</div></div>
+          <div class="form-row"><label>Cambio *</label><div class="input">0,920000</div></div>
+          <div class="form-row"><label>EUR cobrado *</label><div class="input">506,00</div></div>
+          <div class="form-row"><label>Comisión</label><div class="input">2,00</div></div>
+          <div class="small muted">Comisión incluida, no se resta otra vez. Referencia 506,00 · Diferencia 0,00</div>
+        </div>
+        <div class="impact" style="margin-top:10px">
+          <div class="line"><span>Efectivo</span><span><b>1.810,40</b> → <span class="after">2.316,40 €</span></span></div>
+          <div class="line"><span>Cantidad</span><span><b>12,5</b> → <span class="after">7,5</span></span></div>
+          <div class="btn" style="width:100%;text-align:center;margin-top:10px">Confirmar venta</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w15">
+    <div class="wire-label"><span class="tag">W15 · 1440</span><span class="desc">Impacto, rectificación y anulación — escritorio</span></div>
+    <div class="frame">
+      <div class="topbar"><span>Venta 6001 · I1001 · S004 · 10/04/2026</span><span class="ref">Vigente · revisión 1</span></div>
+      <div class="content">
+        <div class="form-grid">
+          <div class="form-block">
+            <h3>Rectificación · reemplazo completo</h3>
+            <div class="form-row"><label>Fecha</label><div class="input">10/04/2026</div></div>
+            <div class="form-row"><label>Cantidad</label><div class="input">3</div></div>
+            <div class="form-row"><label>Precio</label><div class="input">110,00</div></div>
+            <div class="form-row"><label>Divisa</label><div class="input">USD</div></div>
+            <div class="form-row"><label>Cambio</label><div class="input">0,920000</div></div>
+            <div class="form-row"><label>EUR cobrado</label><div class="input">303,00</div></div>
+            <div class="form-row"><label>Comisión</label><div class="input">1,00</div></div>
+            <div class="form-row"><label>Motivo *</label><div class="input">Corrección de cantidad ficticia</div></div>
+            <div class="small muted">Comisión incluida, no se resta otra vez. Referencia 3 × 110 × 0,92 = 303,60 · Diferencia −0,60 informativa; no se corrige sola.</div>
+            <div class="btn" style="margin-top:10px">Confirmar rectificación</div>
+          </div>
+          <aside class="impact">
+            <h3>Antes / después</h3>
+            <div class="line"><span>Efectivo S003</span><span>2.316,40 → <span class="after">2.113,40 €</span></span></div>
+            <div class="line"><span>Cantidad S004/I1001</span><span>7,5 → <span class="after">9,5</span></span></div>
+            <div class="line"><span>Revisión</span><b>1 → 2</b></div>
+            <h3 style="margin-top:14px">Anulación</h3>
+            <div class="line"><span>Efectivo</span><span>2.113,40 → <span class="after">1.810,40 €</span></span></div>
+            <div class="line"><span>Cantidad</span><span>9,5 → <span class="after">12,5</span></span></div>
+            <div class="form-row"><label>Motivo *</label><div class="input">Duplicado ficticio</div></div>
+            <div class="btn secondary" style="width:100%;text-align:center">Confirmar anulación</div>
+            <div class="warn"><b>D2:</b> si la anulación o una rectificación a la baja dejara el efectivo negativo en alguna fecha, se bloquea con 422 INSUFFICIENT_CASH y no se escribe.</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w16">
+    <div class="wire-label"><span class="tag">W16 · 390</span><span class="desc">Impacto, rectificación y anulación — móvil</span></div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Venta 6001 · I1001</span><span class="ref">S004</span></div>
+      <div class="content">
+        <div class="impact">
+          <div class="line"><span>Efectivo</span><span>2.316,40 → <span class="after">2.113,40 €</span></span></div>
+          <div class="line"><span>Cantidad</span><span>7,5 → <span class="after">9,5</span></span></div>
+          <div class="line"><span>Revisión</span><b>1 → 2</b></div>
+        </div>
+        <div class="form-block" style="margin-top:10px">
+          <div class="form-row"><label>Fecha</label><div class="input">10/04/2026</div></div>
+          <div class="form-row"><label>Cantidad</label><div class="input">3</div></div>
+          <div class="form-row"><label>Precio</label><div class="input">110,00</div></div>
+          <div class="form-row"><label>Divisa</label><div class="input">USD</div></div>
+          <div class="form-row"><label>Cambio</label><div class="input">0,920000</div></div>
+          <div class="form-row"><label>EUR cobrado</label><div class="input">303,00</div></div>
+          <div class="form-row"><label>Comisión</label><div class="input">1,00</div></div>
+          <div class="form-row"><label>Motivo *</label><div class="input">Corrección ficticia</div></div>
+          <div class="small muted">Comisión incluida, no se resta otra vez. Referencia 303,60 · Diferencia −0,60</div>
+          <div class="btn" style="width:100%;text-align:center;margin-top:8px">Confirmar rectificación</div>
+        </div>
+        <div class="impact" style="margin-top:10px">
+          <h3>Anulación</h3>
+          <div class="line"><span>Efectivo</span><span>2.113,40 → <span class="after">1.810,40 €</span></span></div>
+          <div class="line"><span>Cantidad</span><span>9,5 → <span class="after">12,5</span></span></div>
+          <div class="btn secondary" style="width:100%;text-align:center;margin-top:8px">Confirmar anulación</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="states">
+    <div class="wire-label"><span class="tag">Estados</span><span class="desc">Vacío, carga, error de fuente y sesión expirada</span></div>
+    <div class="frame" style="padding:14px">
+      <div class="state-grid">
+        <div class="state-card">
+          <h4>Listado vacío</h4>
+          <p>Sin ventas registradas; no se inventa una fila de ejemplo.</p>
+          <div class="mini">Sin ventas registradas<br><span class="btn secondary" style="margin-top:8px">+ Nueva venta</span></div>
+        </div>
+        <div class="state-card loading">
+          <h4>Carga</h4>
+          <p>Estado visible; los filtros y la selección se conservan. No se muestra 0 mientras carga.</p>
+          <div class="mini">Cargando ventas…<br><span class="small muted">Filtros conservados</span></div>
+        </div>
+        <div class="state-card error">
+          <h4>Error de fuente</h4>
+          <p>La identidad y los hechos conocidos permanecen visibles; la cifra no verificable se declara.</p>
+          <div class="mini">No disponible: no se pudo leer el registro de Ventas.<br><span class="small">Venta 6001 · 10/04/2026 visible; efectivo no disponible.</span><br><span class="btn secondary" style="margin-top:8px">Reintentar</span></div>
+        </div>
+        <div class="state-card warncard">
+          <h4>Sesión expirada</h4>
+          <p>Se conserva el borrador y se pide reautenticar sin exponer datos.</p>
+          <div class="mini">Tu borrador se conserva.<br><span class="btn secondary" style="margin-top:8px">Reautenticar</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="w15b">
+    <div class="wire-label"><span class="tag">W15b · 1440/390</span><span class="desc">Revisión obsoleta: recalcular el impacto antes de confirmar, conservando el borrador</span></div>
+    <div class="frame">
+      <div class="topbar"><span>Venta 6001 · I1001 · S004 · 10/04/2026</span><span class="ref">Tu revisión 1 · vigente 2</span></div>
+      <div class="content">
+        <div class="form-grid">
+          <div class="form-block">
+            <h3>Rectificación · borrador conservado</h3>
+            <div class="form-row"><label>Fecha</label><div class="input">10/04/2026</div></div>
+            <div class="form-row"><label>Cantidad</label><div class="input">3</div></div>
+            <div class="form-row"><label>EUR cobrado</label><div class="input">303,00</div></div>
+            <div class="form-row"><label>Comisión</label><div class="input">1,00</div></div>
+            <div class="form-row"><label>Motivo *</label><div class="input">Corrección de cantidad ficticia</div></div>
+            <div class="draft">Borrador conservado. La operación cambió desde que abriste el impacto; no se confirmará con datos antiguos.</div>
+          </div>
+          <aside class="impact">
+            <h3>Impacto que debe recalcularse</h3>
+            <div class="line"><span>Efectivo S003</span><span>2.316,40 → <span class="after">2.113,40 €</span></span></div>
+            <div class="line"><span>Cantidad S004/I1001</span><span>7,5 → <span class="after">9,5</span></span></div>
+            <div class="error-box"><b>409 REVISION_CONFLICT</b><br>La venta tiene una revisión más reciente. Actualiza el impacto antes de confirmar.</div>
+            <span class="recalc">Actualizar impacto</span>
+            <div class="btn disabled" style="width:100%;text-align:center;margin-top:8px">Confirmar rectificación (deshabilitado)</div>
+            <div class="small muted" style="margin-top:8px">No se sobrescribe la revisión vigente ni se escribe con el borrador antiguo.</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="d1-block">
+    <div class="wire-label"><span class="tag">D1 · bloqueo</span><span class="desc">Cantidad insuficiente: impacto visible y confirmación deshabilitada</span></div>
+    <div class="frame">
+      <div class="topbar"><span>Nueva venta · I1001 · S004</span><span class="ref">D1 = A</span></div>
+      <div class="content">
+        <div class="form-grid">
+          <div class="form-block">
+            <h3>Datos de la venta</h3>
+            <div class="form-row"><label>Cantidad solicitada</label><div class="input">8</div></div>
+            <div class="form-row"><label>Disponible</label><div class="input disabled">7,5</div></div>
+            <div class="form-row"><label>Saldo inversión</label><div class="input">S004 · Cartera de inversión demo</div></div>
+            <div class="form-row"><label>Saldo efectivo</label><div class="input">S003 · Efectivo de inversión demo</div></div>
+            <div class="error-box"><b>422 INSUFFICIENT_UNITS</b><br>No puedes vender 8 si la posición disponible es 7,5.</div>
+          </div>
+          <aside class="impact">
+            <h3>Impacto bloqueado</h3>
+            <div class="line"><span>Cantidad antes</span><b>7,5</b></div>
+            <div class="line"><span>Cantidad después</span><span style="color:var(--danger);font-weight:700">−0,5</span></div>
+            <div class="line"><span>Disponible</span><b>7,5</b></div>
+            <div class="line"><span>Necesario</span><b>8</b></div>
+            <div class="line"><span>Mínimo</span><span style="color:var(--danger);font-weight:700">−0,5</span></div>
+            <div class="line"><span>Fecha del mínimo</span><b>20/04/2026</b></div>
+            <div class="btn disabled" style="width:100%;text-align:center;margin-top:10px">Confirmar venta (deshabilitado)</div>
+            <div class="small muted" style="margin-top:8px">Corrige la cantidad. No hay override ni se escribe la operación.</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="d2-block">
+    <div class="wire-label"><span class="tag">D2 · bloqueo</span><span class="desc">Efectivo negativo al anular: impacto visible y confirmación deshabilitada</span></div>
+    <div class="frame">
+      <div class="topbar"><span>Venta 6001 · anulación</span><span class="ref">D2 = A</span></div>
+      <div class="content">
+        <div class="form-grid">
+          <div class="form-block">
+            <h3>Anulación</h3>
+            <div class="form-row"><label>Venta</label><div class="input">500,00 € · 10/04/2026</div></div>
+            <div class="form-row"><label>Gasto posterior</label><div class="input">2.200,00 € · 11/04/2026</div></div>
+            <div class="form-row"><label>Efectivo actual</label><div class="input">300,00 €</div></div>
+            <div class="form-row"><label>Motivo *</label><div class="input">Duplicado ficticio</div></div>
+            <div class="error-box"><b>422 INSUFFICIENT_CASH</b><br>La anulación dejaría el efectivo en −200,00 €.</div>
+          </div>
+          <aside class="impact">
+            <h3>Impacto bloqueado</h3>
+            <div class="line"><span>Efectivo antes</span><b>300,00 €</b></div>
+            <div class="line"><span>Efectivo después</span><span style="color:var(--danger);font-weight:700">−200,00 €</span></div>
+            <div class="line"><span>Disponible</span><b>300,00 €</b></div>
+            <div class="line"><span>Necesario</span><b>500,00 €</b></div>
+            <div class="line"><span>Mínimo</span><span style="color:var(--danger);font-weight:700">−200,00 €</span></div>
+            <div class="line"><span>Fecha del mínimo</span><b>11/04/2026</b></div>
+            <div class="btn disabled" style="width:100%;text-align:center;margin-top:10px">Confirmar anulación (deshabilitado)</div>
+            <div class="small muted" style="margin-top:8px">Revisa el gasto posterior o la operación. No se escribe la anulación.</div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="d3-block">
+    <div class="wire-label"><span class="tag">D3 · inactivos</span><span class="desc">Instrumento inactivo con venta permitida vs. Saldo inactivo bloqueado</span></div>
+    <div class="frame" style="padding:14px">
+      <div class="d3-grid">
+        <div class="d3-card allowed">
+          <h4>Instrumento inactivo con posición</h4>
+          <p class="small muted">Se puede liquidar; no se ofrece para nuevas Compras.</p>
+          <div class="select">I1001 · Fondo índice demo · <b>Inactivo</b> · cantidad 7,5 en S004</div>
+          <div class="ok-box"><b>Venta permitida con aviso.</b> Se ofrece solo para el Saldo donde tiene posición.</div>
+          <div class="btn" style="margin-top:8px">Continuar venta</div>
+        </div>
+        <div class="d3-card blocked">
+          <h4>Saldo inactivo</h4>
+          <p class="small muted">No admite nuevas Ventas hasta reactivarlo.</p>
+          <div class="select disabled">S004 · Cartera de inversión demo · <b>Inactivo</b></div>
+          <div class="error-box"><b>Operación bloqueada.</b> Reactiva el Saldo para operar; su posición e historial siguen consultables.</div>
+          <div class="btn secondary disabled" style="margin-top:8px">Continuar venta (deshabilitado)</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="decisions">
+    <div class="wire-label"><span class="tag">Decisiones</span><span class="desc">Aplicadas en esta propuesta visual</span></div>
+    <div class="decision-grid">
+      <div class="decision"><b>D1 = A · cantidad</b>Rechazo 422 INSUFFICIENT_UNITS; no se permite posición negativa.</div>
+      <div class="decision"><b>D2 = A · efectivo</b>Rectificar/anular no puede dejar efectivo negativo; 422 INSUFFICIENT_CASH.</div>
+      <div class="decision"><b>D3 = A · inactivos</b>Instrumento inactivo con posición se puede vender con aviso; Saldo inactivo se bloquea.</div>
+      <div class="decision"><b>D4 = A · navegación</b>Se conservan Instrumentos/Compras y se añade Ventas.</div>
+      <div class="decision"><b>D5 = A · posición 0</b>Se conserva la fila con 0, conteos e histórico; sin «Cerrada» ni valoración.</div>
+      <div class="decision"><b>D6 = A · referencia</b>Solo operaciones vigentes; la auditoría conserva las anuladas.</div>
+      <div class="decision"><b>D7 = A · compras</b>Rectificar/anular una Compra por debajo de lo vendido se rechaza; coordinar SPEC19.</div>
+    </div>
+  </section>
+
+  <section class="wire-section" id="review">
+    <div class="wire-label"><span class="tag">Revisión</span><span class="desc">Qué conviene comprobar antes de aprobar</span></div>
+    <div class="frame" style="padding:14px 18px">
+      <ul class="checklist">
+        <li>¿La pestaña Ventas se entiende sin reabrir Instrumentos/Compras?</li>
+        <li>¿La tabla de escritorio y las tarjetas de móvil muestran la misma información?</li>
+        <li>¿El formulario deja claro que el EUR cobrado es neto y la comisión ya está incluida?</li>
+        <li>¿El panel de impacto antes/después se lee sin confundir efectivo con cantidad?</li>
+        <li>¿La posición a 0 se conserva con histórico y sin etiqueta «Cerrada»?</li>
+        <li>¿El aviso de Instrumento inactivo con posición es suficiente?</li>
+        <li>¿La anulación muestra su propio impacto y el caso D2?</li>
+        <li>¿Faltan estados de vacío, carga, error, revisión obsoleta o sesión expirada?</li>
+        <li>¿La referencia temporal y la cobertura se ven sin sugerir que E4.3 está entregada?</li>
+        <li>¿Hay algún texto que parezca una regla financiera nueva no aprobada?</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="footer">SPEC22 · E4.2 · Propuesta documental de wireframes · Datos ficticios · No implementación · Pendiente de aprobación · No autoriza DEV22, esquema, commits, push, PR ni merge.</div>
+</div>
+</body>
+</html>

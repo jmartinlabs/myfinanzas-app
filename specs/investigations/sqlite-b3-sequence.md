@@ -24,12 +24,12 @@ B3 observado en la suite completa. Comparación en Ubuntu24.04, Bun1.4.3:
 Rama exclusiva `codex/diagnose-b3-sequence`, sin PR ni intención de merge. Su workflow
 se identifica como diagnóstico y no sustituye la validación de dev09. Aplicación,
 guardas y pruebas originales sin cambios. Script y parser en
-[commit7314a88](https://github.com/josemartin2000/myfinanzas-app/commit/7314a88a12e1d45717b8b9be786df2abf94cbd74).
+[commit7314a88](https://github.com/jmartinlabs/myfinanzas-app/commit/7314a88a12e1d45717b8b9be786df2abf94cbd74).
 Parser:6 pruebas locales PASS; revisión estática independiente sin bloqueos.
 
 ## Resultado válido
 
-[Run40078520525](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40078520525),
+[Run40078520525](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40078520525),
 job120826972832, COMPLETED/SUCCESS:
 
 | Versión | Selección | Casos correctos | Timeout / selección inválida |
@@ -45,7 +45,7 @@ No apareció SQLITE_IOERR_SHORT_READ en esta matriz.
 
 ## Intento de preparación anterior — excluido de la evidencia
 
-[Run40078265490](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40078265490)
+[Run40078265490](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40078265490)
 terminó rojo porque el enlace de node_modules raíz no resolvía otpauth en los
 workspaces temporales de Bun. No ejecutó pruebas B3. Se corrigió el montaje mediante
 instalación congelada por checkout y preflight; no fue un reintento de B3 hasta verde.
@@ -59,7 +59,7 @@ No permite descartar carreras, efectos de descubrimiento/importación de otros t
 o historia de conexiones SQLite. Esas posibilidades siguen siendo hipótesis.
 
 El fallo de aceptación del candidato permanece:
-[CI40076614284](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40076614284),
+[CI40076614284](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40076614284),
 137 API PASS/1 FAIL, B3 errno522 al reabrir tras contención en
 sqlite-opening.test.ts:288. Las13 pruebas nuevas de dev09 pasan, pero E2E global no
 se ejecutó. Ni esta sonda verde ni los probes anteriores16/16 sustituyen ese gate.

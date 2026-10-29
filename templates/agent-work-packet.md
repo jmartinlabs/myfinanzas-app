@@ -6,7 +6,7 @@
 - **Epic / stream:** UNSET
 - **Profile:** Functional | Implementation | QA | Infrastructure | bounded custom
 - **Client / version / session ID:** verified client/version or UNVERIFIED; runtime-controlled | external. Technical session ID only if known; otherwise stable functional session reference. Never invent an ID; corrections preserve Task ID and session.
-- **Start/stop owner and permitted communication route:** UNSET; manual user relay without verified integration
+- **Start/stop owner and permitted communication route:** UNSET; Agent Relay v1 conversation ID (explicit); no automatic conversation
 - **Instruction entry points / capability check:** UNVERIFIED; confirm canonical rules are readable
 - **Context:** fresh bounded context by default | inherited with concrete reason | unsupported/disclosed
 - **Objective and done criteria:** UNSET
@@ -35,15 +35,17 @@
 
 Coordinator updates `specs/epic-board.md` only after verifying the returned evidence and current canonical documents.
 
-## Copyable manual OpenCode prompt
-Fill every relevant placeholder before the user copies this block. Include the applicable
+## Copyable packet content for Agent Relay v1
+Fill every relevant placeholder before publishing the relay message. Include the applicable
 rules themselves; local source links alone are insufficient if the worker cannot read them.
 Use the packet above as the single source of scope and authorization, not a second board.
+The coordinator publishes this content through Agent Relay v1; the recipient reads it on
+`Lee` and returns through the same conversation.
 
 ```text
 Task ID and name: <packet ID> — <functional name>
 Session reference: <known technical ID or stable functional reference; never invent>
-Client: OpenCode <verified version or UNVERIFIED>; external, manually started/stopped by the user.
+Client: OpenCode <verified version or UNVERIFIED>; external, user-controlled start/stop.
 Repository, branch or worktree, base SHA, PR: <verified values or absent/unknown; PR none unless the authorized scope includes publication>.
 Recommended model: <verified available model with rationale> | UNVERIFIED: catalog not checked; request before assigning.
 Objective and minimum context: <task, relevant decisions, source paths and instruction entry points>.

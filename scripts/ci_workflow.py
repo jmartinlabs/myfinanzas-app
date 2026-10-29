@@ -2,84 +2,67 @@
 
 The candidate uses JSON (a YAML subset accepted by Actions). This avoids a new YAML
 dependency or pretending a regex is a general Actions expression/YAML interpreter.
-Automatic push/PR runs share one concurrency group and one verified checkout.
+PR runs supersede older candidates; main pushes retain a fast postmerge gate.
 """
 import json
 from pathlib import Path
 
-CHECKOUT = {'uses': 'actions/checkout@11d5960a326750d5838078e36cf38b85af677262',
+CHECKOUT = {'uses': 'actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1',
             'with': {'fetch-depth': 0, 'persist-credentials': False}}
-PYTHON = {'uses': 'actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065',
+PYTHON = {'uses': 'actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0',
           'with': {'python-version': '3.12'}}
 BUN = {'uses': 'oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6',
        'with': {'bun-version-file': '.bun-version'}}
 BASELINE = 'python3 scripts/verify baseline'
-CLASSIFY = '''set -eu
-classification="$(python3 scripts/verify classify)"
-case "$classification" in docs|full) ;; *) echo "Invalid CI classification" >&2; exit 1;; esac
-printf 'class=%s\\n' "$classification" >> "$GITHUB_OUTPUT"'''
+CLASSIFY = """set -eu
+profile="$(python3 scripts/verify ci-plan)"
+case "$profile" in docs|fast|critical|full) ;; *) echo "Invalid CI profile" >&2; exit 1;; esac
+printf 'profile=%s\\n' "$profile" >> "$GITHUB_OUTPUT"
+"""
 CONCURRENCY = {
     'group': "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
     'cancel-in-progress': "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}",
 }
-FULL_IF = "${{ needs.baseline.result == 'success' && needs.baseline.outputs.class != 'docs' }}"
-ARTIFACT = {'name': 'Fictional E1.1–E1.5 screenshots', 'if': 'always()',
-            'uses': 'actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02',
-            'with': {'name': 'e1-1-screenshots', 'path': '\n'.join(
-                'artifacts/' + n + '/*.png' for n in
-                ('e1-1', 'e1-2', 'e1-3', 'e1-4', 'e1-5', 'e1-6', 'e2-1', 'e2-3', 'e2-4')),
-                'if-no-files-found': 'ignore', 'retention-days': 7}}
 
 
 def required_workflow():
-    """Deliberately narrow supported recipe: no unchecked jobs, shell or expressions."""
+    """One required runner; strict reviewed phases retain failure/skip propagation."""
+    app_if = "${{ steps.plan.outputs.profile != 'docs' }}"
+    api_if = "${{ steps.plan.outputs.profile == 'critical' || steps.plan.outputs.profile == 'full' }}"
+    full_if = "${{ steps.plan.outputs.profile == 'full' }}"
+    context = {'CI_CHECKOUT_REF': '${{ steps.context.outputs.ref }}'}
+    states = {name: '${{ steps.' + name[3:].lower() + '.outcome }}' for name in (
+        'CI_CONTEXT', 'CI_SNAPSHOT', 'CI_PLAN', 'CI_BASELINE', 'CI_VERIFY', 'CI_BUN', 'CI_INSTALL', 'CI_PREPARE', 'CI_BROWSER')}
+    states['CI_PROFILE'] = '${{ steps.plan.outputs.profile }}'
     return {
         'name': 'Validate project',
-        'on': ['push', 'pull_request', 'workflow_dispatch'],
+        'on': {'push': {'branches': ['main']},
+               'pull_request': {'branches': ['main'], 'types': [
+                   'opened', 'synchronize', 'reopened', 'ready_for_review']},
+               'workflow_dispatch': {}},
         'permissions': {'contents': 'read'},
         'concurrency': CONCURRENCY,
-        'jobs': {
-            'baseline': {
-                'runs-on': 'ubuntu-24.04', 'timeout-minutes': 15,
-                'permissions': {'contents': 'read', 'pull-requests': 'read'},
-                'outputs': {'class': '${{ steps.classify.outputs.class }}',
-                            'checkout': '${{ steps.snapshot.outputs.sha }}'},
-                'steps': [CHECKOUT, PYTHON,
-                          {'id': 'context', 'name': 'Resolve integration context',
-                           'env': {'GH_TOKEN': '${{ github.token }}'},
-                           'run': 'python3 scripts/ci_context.py'},
-                          {'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'],
-                           'ref': '${{ steps.context.outputs.ref }}'}},
-                          {'id': 'snapshot', 'name': 'Freeze validated checkout',
-                           'env': {'CI_CHECKOUT_REF': '${{ steps.context.outputs.ref }}'},
-                           'run': 'python3 scripts/ci_context.py snapshot'},
-                          {'id': 'classify', 'name': 'Classify complete change', 'run': CLASSIFY,
-                           'env': {'CI_CHECKOUT_REF': '${{ steps.context.outputs.ref }}'}},
-                          {'name': 'Repository, project and document checks', 'run': BASELINE}],
-            },
-            'full': {
-                'needs': ['baseline'], 'if': FULL_IF,
-                'runs-on': 'ubuntu-24.04', 'timeout-minutes': 15,
-                'steps': [{'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'],
-                           'ref': '${{ needs.baseline.outputs.checkout }}'}}, BUN, PYTHON,
-                          {'run': 'bun install --frozen-lockfile'},
-                          {'name': 'Prepare missing Linux packages once',
-                           'run': 'python3 scripts/ci_prepare_linux.py'},
-                          {'run': 'node node_modules/@playwright/test/cli.js install chromium'},
-                          {'name': 'Canonical application verification', 'run': 'python3 scripts/verify application'}, ARTIFACT],
-            },
-            'required': {
-                'needs': ['baseline', 'full'], 'if': '${{ always() }}',
-                'runs-on': 'ubuntu-24.04', 'timeout-minutes': 5,
-                'steps': [{'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'],
-                           'ref': '${{ needs.baseline.outputs.checkout || github.sha }}'}}, PYTHON,
-                          {'name': 'Reject failed or unexpectedly skipped checks',
-                           'env': {'CI_CLASS': '${{ needs.baseline.outputs.class }}',
-                                   'CI_BASELINE': '${{ needs.baseline.result }}',
-                                   'CI_FULL': '${{ needs.full.result }}'},
-                           'run': 'python3 scripts/verify result'}],
-            },
-        },
+        'jobs': {'required': {
+            'runs-on': 'ubuntu-24.04', 'timeout-minutes': 15,
+            'permissions': {'contents': 'read', 'pull-requests': 'read'},
+            'steps': [CHECKOUT, PYTHON,
+                {'id': 'context', 'name': 'Resolve integration context',
+                 'env': {'GH_TOKEN': '${{ github.token }}'}, 'run': 'python3 scripts/ci_context.py'},
+                {'uses': CHECKOUT['uses'], 'with': {**CHECKOUT['with'], 'ref': '${{ steps.context.outputs.ref }}'}},
+                {'id': 'snapshot', 'name': 'Freeze validated checkout', 'env': context, 'run': 'python3 scripts/ci_context.py snapshot'},
+                {'id': 'plan', 'name': 'Select conservative CI execution profile', 'run': CLASSIFY, 'env': context},
+                {'id': 'baseline', 'name': 'Repository, project and document checks', 'run': BASELINE, 'env': context},
+                {'id': 'bun', 'if': app_if, **BUN},
+                {'id': 'install', 'if': app_if, 'run': 'bun install --frozen-lockfile'},
+                {'id': 'prepare', 'if': api_if, 'name': 'Prepare Linux API or full dependencies',
+                 'env': {'CI_PROFILE': '${{ steps.plan.outputs.profile }}'},
+                 'run': 'if [ "$CI_PROFILE" = full ]; then python3 scripts/ci_prepare_linux.py; else python3 scripts/ci_prepare_linux.py api; fi'},
+                {'id': 'browser', 'if': full_if, 'run': 'node node_modules/@playwright/test/cli.js install chromium'},
+                {'id': 'verify', 'name': 'Canonical CI application verification', 'env': context, 'run': 'python3 scripts/verify ci'},
+                {'name': 'Reject failed, cancelled or unexpectedly skipped phases', 'if': '${{ always() }}',
+                 'env': states, 'run': 'python3 scripts/verify ci-result'},
+            ],
+        }},
     }
 
 
@@ -116,7 +99,7 @@ def validate_workflow(path):
                 errors.append(f'ci: unsupported {key}; reviewed events/concurrency/read-only permissions required')
         jobs = value['jobs']
         if not isinstance(jobs, dict) or jobs.keys() != expected['jobs'].keys():
-            errors.append('ci: baseline, full and required jobs must all be present, without extras')
+            errors.append('ci: one required job must be present, without extras')
         else:
             for job, recipe in expected['jobs'].items():
                 if not same(jobs[job], recipe):

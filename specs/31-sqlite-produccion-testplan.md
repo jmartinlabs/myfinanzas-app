@@ -266,7 +266,7 @@ Se revalida sobre HEAD definitivo antes del push; SHA/CI definitivos en PR #25.
 
 ## Estado remoto comprobado — 2026-10-21
 
-GitHub registra #23 integrada por josemartin2000 a las 21:51:50 UTC mediante
+GitHub registra #23 integrada por jmartinlabs a las 21:51:50 UTC mediante
 squash 13f19f6add82ff24be5040674528bdad4b96c75f (head aprobado f064935).
 Su árbol coincide exactamente con el árbol hipotético 115dc61 ya comprobado.
 La sincronización concurrente de la rama de implementación se preserva en
@@ -293,9 +293,9 @@ COMPLETED/SUCCESS y sin conflictos. Integración squash verificada en GitHub:
 
 Los 33 AC quedan verificados: 82 pruebas API / 1243 assertions y 2 E2E,
 tipos/build/controles correctos según evidencia anterior. CI del HEAD aprobado:
-[push SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682614034),
-[PR SUCCESS](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39682619693).
-CI posterior al squash: [ejecución](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39684386599);
+[push SUCCESS](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39682614034),
+[PR SUCCESS](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39682619693).
+CI posterior al squash: [ejecución](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39684386599);
 COMPLETED/SUCCESS sobre 511fcbad4bb0418af5bc06284ac30abb645cd604,
 incluidos API, tipos/build/controles y Playwright. Entrega técnica integrada;
 despliegue no autorizado.
@@ -330,10 +330,10 @@ pruebas por entorno.
 
 | SHA | CI | API | E2E | Nota |
 | --- | --- | --- | --- | --- |
-| `58015a1` | [39941271047](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39941271047) | 108/2 | no ejecutado | P16 (montaje) y AC35 (montaje); corregido |
-| `7b571ef` | [39941586636](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39941586636) | **110/0** | **2 PASS** | Candidato revisado por QA31E1-1 |
-| `e4bddfa` | [39943120470](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39943120470) | **112/0** | **2 PASS** | Hallazgos menores F2–F5 (QA31E1-2) |
-| `07e0369` | [39957909451](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39957909451) | **114/0** | **2 PASS** | AC-34 determinista (F1, QA31E1-3) |
+| `58015a1` | [39941271047](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39941271047) | 108/2 | no ejecutado | P16 (montaje) y AC35 (montaje); corregido |
+| `7b571ef` | [39941586636](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39941586636) | **110/0** | **2 PASS** | Candidato revisado por QA31E1-1 |
+| `e4bddfa` | [39943120470](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39943120470) | **112/0** | **2 PASS** | Hallazgos menores F2–F5 (QA31E1-2) |
+| `07e0369` | [39957909451](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39957909451) | **114/0** | **2 PASS** | AC-34 determinista (F1, QA31E1-3) |
 
 Typecheck y build PASS (local y CI). Controles documentales en la PR.
 

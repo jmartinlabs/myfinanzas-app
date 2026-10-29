@@ -4,7 +4,7 @@
 
 Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`
 incorporado preservando el checkpoint `d1868dc`. SQLite31-E1 intacto; E2.2 v8 y E2.1 v9.
-CI Linux [39974920637](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39974920637)
+CI Linux [39974920637](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39974920637)
 SUCCESS: API 125/0 (2228 aserciones), E2E 2 PASS, tipos/build/controles PASS.
 AC23 verificado por cinco pasadas locales + cinco Linux, O4/O5/O7 v7/v8 y suite global;
 QA independiente9/167 y probe de antiguo schema8, sin bloqueos; capturas390/1440 inspeccionadas.
@@ -12,6 +12,27 @@ Evidencia completa y límites en [testplan07](07-ciclos-operacion-testplan.md).
 Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futuros.
 Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
 y aprobación expresa por su número. El cierre posterior solo cambia documentación.
+
+## Opción B — integración temporal de Revisión Comida (candidato PR #128, 2026-10-29)
+
+Implementación en rama `codex/spec07-comida-impact`, base `main` `f69d7d2`, sin merge.
+`operationPlan` separa Movimientos y operaciones Comida; `comidaImpacto` incluye
+vigentes afectadas, históricas anuladas, totales, conteos y `comidaImpacto.page`; la huella usa
+referencia agregada/cobertura/atribución material y bloquea con 409 ante fallo de filas.
+Pruebas O4–O9 locales: 16 pass; CI crítica inicial `40849539994`: 309 API PASS.
+E2E no acreditado por fallo de arranque del servidor de restauración. AC28/E3.5,
+inversión, conciliación y cierre siguen fuera; SPEC07 no se cierra.
+
+Correcciones B1/B2/T1: periodo completo de Comida con regresión de mismo ID e intervalo;
+paginación por el máximo de ambos totales con prueba 105+105; fallo exclusivo del lector
+de filas con fuente MAX disponible y 409. Pruebas locales 17 pass + B2 1 pass; CI
+`40856670004` sobre `6483d06`: 311 API PASS. Sin merge.
+
+QA/E2E `2026-10-29`: **dos ejecuciones focales PASS reportadas** (caso principal
+Comida/409 y paginación real 105+105), capturas 390/1440 sin overflow en
+`artifacts/spec07/`. La E2E global no quedó completada por el fallo de arranque del
+servidor de restauración; sin PASS global. Logs crudos y tests efímeros no conservados;
+su PASS es reportado, no reproducción desde tests persistentes.
 
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
@@ -105,7 +126,7 @@ automática tras este cierre.
 
 ### Identidad verificable y entrega
 
-- Repositorio: `josemartin2000/myfinanzas-app`.
+- Repositorio: `jmartinlabs/myfinanzas-app`.
 - Worktree: `work/dev07` (ruta relativa al workspace histórico); rama `feat/07-ciclos-operacion`.
 - HEAD de origen del checkpoint, publicado y verificado:
   `7b7cfced3f5952c440f55a9b89d2ddaf5a94b89f`.

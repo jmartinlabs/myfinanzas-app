@@ -65,7 +65,7 @@ no demuestra un error económico, una anulación o un resultado 409 incorrecto. 
 registro diagnóstico aparece ANTES de la aserción exit0, que continúa fallando.
 
 Esto demuestra un fallo LOCAL de apertura durante recuperación SQLite. La CI histórica
-[39680804651](https://github.com/josemartin2000/myfinanzas-app/actions/runs/39680804651)
+[39680804651](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/39680804651)
 falló en el hijo de RECTIFICACIÓN, con exit1 sin stderr interno publicado en la anotación,
 y sobre código de #25, no este main. No se afirma equivalencia causal ni que toda la
 incidencia remota esté resuelta. El error sintético SQLITE_BUSY usado en controles

@@ -3,7 +3,7 @@ import { spawn } from "node:child_process";
 import { readFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
-test("E3.2 base B real MFA, ficha, participants, impact, statuses and no D5 form 390/1440", async ({
+test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/1440", async ({
   page,
   request,
 }) => {
@@ -106,11 +106,15 @@ test("E3.2 base B real MFA, ficha, participants, impact, statuses and no D5 form
     const metrics = page.locator(".shared-metrics");
     await expect(metrics).toContainText("450,00 €");
     await expect(metrics).toContainText("150,00 €");
-    await expect(metrics).toContainText("No disponible");
-    await expect(metrics).toContainText("No disponible — D5 no habilitado");
-    await expect(page.getByText("Cobertura de aportaciones no disponible")).toBeVisible();
-    await expect(page.getByRole("button", { name: /Aportación/ })).toHaveCount(0);
-    await expect(page.getByText("Quién paga")).toHaveCount(0);
+    await expect(metrics).toContainText("0,00 €");
+    await expect(metrics).toContainText("450,00 €");
+    await expect(
+      page.getByRole("button", { name: "Registrar aportación" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Aportaciones históricas" }),
+    ).toBeVisible();
+    await expect(page.getByText("Cobertura: Parcial")).toBeVisible();
     await expect(
       page.getByText("Movimiento interno con la Referencia del caso", {
         exact: false,
@@ -247,14 +251,20 @@ test("E3.2 base B real MFA, ficha, participants, impact, statuses and no D5 form
       name: "Añadir participante",
     }).click();
     await expect(page.getByText(longName, { exact: true })).toBeVisible();
-    await page.setViewportSize({ width: 1440, height: 1000 });
-    await expect
-      .poll(() =>
-        page.evaluate(
-          () => document.documentElement.scrollWidth <= innerWidth,
-        ),
-      )
-      .toBe(true);
+    // The admitted name stays contained at desktop, intermediate and mobile widths.
+    for (const width of [1440, 1280, 390]) {
+      await page.setViewportSize({ width, height: 1000 });
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+    }
+    await expect(
+      page.locator(".shared-cards").getByText(longName, { exact: false }),
+    ).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     child.kill();

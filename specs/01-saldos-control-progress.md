@@ -1,6 +1,6 @@
 # 01 — E1.1 Saldos: Progress
 Specification: [especificación aprobada](01-saldos-control-specification.md)
-Current state: complete — STEP 7 E1.1 implementado e integrado mediante PR #7
+Current state: complete — E1.1 implementado e integrado mediante PR #7; corrección de concurrencia PR #9; sin acciones pendientes de E1.1.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -10,6 +10,18 @@ Current state: complete — STEP 7 E1.1 implementado e integrado mediante PR #7
 | 4. Listado/ficha/formulario y estados responsive | complete | React real contra Effect HTTP/SQLite; sin motores futuros |
 | 5. QA, restauración, capturas e inspección 390/1440 | complete | [testplan 43 AC](01-saldos-control-testplan.md), 15 Bun/195 aserciones + E2E |
 | 6. Documentación y revisión de historia para PR funcional | complete | Controles locales pasan; rama feat/e1-1-saldos, CI por SHA en la PR |
+
+## Estado vigente (2026-10-28)
+E1.1 cerrada funcionalmente: PR #7 integrada y PR #9 corrigió la concurrencia
+(`main` `23e471e`). Evidencia del [testplan](01-saldos-control-testplan.md): 38 PASA E1.1,
+1 PARCIAL (AC-38) y 4 contratos revisados (AC-30/31/32/36). E1.3 se integró después; su
+integración no queda acreditada por las pruebas originales de E1.1. Esquema vigente
+**18**. **Auditoría de coherencia:** H-SPEC01-01 **resuelto** por decisión expresa del
+usuario (2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo del Saldo
+actual; no se rellena. Cobertura de tests revisada; el gap de cero explícito + movimientos
+queda registrado. SPEC01 podrá cerrarse tras validación e integración de PR #115. E1.2 y
+las entregas posteriores avanzaron por sus propias ramas/PR; el estado global está en el
+[tablero](epic-board.md).
 
 ## Verified increments
 Baseline main ebfe75b: CI success; Handoff y estados pendientes resueltos dentro de rama
@@ -31,8 +43,9 @@ corregidos y verificados de nuevo. Sin fallos finales conocidos ni pruebas bloqu
 por Codex. No hay auditoría completa de seguridad/WCAG ni producción validada.
 
 ## Next action
-STEP 8 posteriormente completado e integrado mediante PR #8; ocho etapas iniciales
-cerradas y Skills spec/dev reutilizables. Esperar autorización antes de E1.2 o despliegues. Excel v5.11 continúa maestro; sin datos reales.
+E1.1 cerrada; no hay acciones pendientes de esta entrega. No reabrir E1.1 ni usar este
+progress como estado global. Futuras entregas y gates se consultan en el
+[tablero](epic-board.md). Excel v5.11 continúa maestro; sin datos reales ni despliegue.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
@@ -50,7 +63,7 @@ siguen pendientes. Sin nuevas dependencias/infraestructura, E1.2, STEP 8 ni merg
 ## Cierre E1.1 — PR #7
 Usuario aprueba expresamente la PR tras revisión final de Álex sobre 4f7cdda,
 2026-10-21, y autoriza merge y cierre documental en la misma entrega.
-E1.1 implementado e integrado mediante [PR #7](https://github.com/josemartin2000/myfinanzas-app/pull/7).
+E1.1 implementado e integrado mediante [PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7).
 CI de 4f7cdda: push 39549364881 y PR 39549369432 SUCCESS; el cierre exclusivamente
 documental vuelve a pasar controles/CI antes del merge. Commit integrado verificable en la PR.
 No se declaran implementados/probados los motores AC-30/31 ni la integración futura

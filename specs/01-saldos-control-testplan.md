@@ -1,5 +1,11 @@
 # 01 — E1.1 Saldos: Test plan
 Specification: [aprobada](01-saldos-control-specification.md)
+Status: **E1.1 implementada e integrada (PR #7); corrección de concurrencia PR #9.**
+Evidencia histórica del alcance E1.1; no es PASS de motores futuros.
+Leyenda: **PASA E1.1** = prueba ejecutada para el alcance entregado; **CONTRATO
+REVISADO** = revisión documental sin motor; **PARCIAL** = solo la parte con fuente
+disponible. Resumen: **38 PASA E1.1** · **1 PARCIAL (AC-38)** · **4 CONTRATO
+REVISADO** (AC-30/31/32/36).
 
 | Acceptance ID | Preconditions and action | Expected result | Automated/manual method and command | Actual result / status | Run date / evidence |
 | --- | --- | --- | --- | --- | --- |
@@ -39,13 +45,20 @@ Specification: [aprobada](01-saldos-control-specification.md)
 | AC-34 | Consultar S000 y conservar fixture de información existente no usada por su motor; intentar editarlo como Saldo ordinario | Aperturas no aplicables al contrato de S000 y edición bloqueada; no borrar/rechazar información existente por no tener función ni asignar defaults de alta al registro técnico | Bun integración API/SQLite: bun run test | PASA · alcance E1.1 | 2026-10-21 · Bun `apps/api/src/app.test.ts` |
 | AC-35 | Alta omitiendo cada indicador o todos; repetir con true/false y con null/valor inválido; PATCH omitiendo indicador | POST omitido persiste false explícito; true/false se conservan, null/valor inválido rechaza sin coerción/escritura parcial. PATCH omitido conserva false/true/ausencia histórica; Estado Activa solo por default de alta | Bun integración API/SQLite: bun run test | PASA · alcance E1.1 | 2026-10-21 · Bun `apps/api/src/app.test.ts` |
 | AC-36 | Revisar fuente/fecha de aprobación visual y estado de implementación | Dirección común y tres pantallas aprobadas por comunicación del usuario el 2026-10-21, separadas de futuras pruebas visuales; no implica aprobación final de PR ni permiso de código | Playwright + revisión visual: bun run test:e2e | CONTRATO REVISADO · no motor implementado | 2026-10-21 · Aprobación comunicada del usuario, PR #6/ebfe75b; evidencia nueva independiente |
-| AC-37 | En futura UI, recorrer listado, ficha y alta/edición a 390 y 1440 px | Menú lateral escritorio/navegación móvil accesibles, tabla/tarjetas compactas, ID visible/inmutable y edición en página propia; misma información/acciones disponibles | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
-| AC-38 | Revisar cabecera sin maestro disponible y después con fuente de Ciclos entregada, incluyendo carga/error/vacío | Sin fuente: No disponible, sin datos inventados. Con fuente: ciclo del maestro único; estado temporal y cierre financiero separados, sin inferencia desde reloj/Nómina o Fin temporal | Playwright estado sin fuente E1.1; integración maestro posterior no entregada | PASA sin maestro · integración futura pendiente | 2026-10-21 · Playwright cabecera No disponible; no se prueba Ciclos/cierre |
-| AC-39 | Recorrer formulario futuro y sus errores, modificando tres Sí/No independientemente | Tres bloques aprobados, Estado inicial Activa, opcionalidad M1/M2 y switches No/false iniciales solo en alta; edición conserva guardado e independencia. Sin Manual operativo ni pares no contrastados | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
+| AC-37 | En la UI de E1.1, recorrer listado, ficha y alta/edición a 390 y 1440 px | Menú lateral escritorio/navegación móvil accesibles, tabla/tarjetas compactas, ID visible/inmutable y edición en página propia; misma información/acciones disponibles | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
+| AC-38 | Revisar cabecera sin maestro disponible y después con fuente de Ciclos entregada, incluyendo carga/error/vacío | Sin fuente: No disponible, sin datos inventados. Con fuente: ciclo del maestro único; estado temporal y cierre financiero separados, sin inferencia desde reloj/Nómina o Fin temporal | Playwright estado sin fuente E1.1; integración maestro posterior no entregada | PARCIAL · sin maestro; E1.3 posterior no acreditado | 2026-10-21 · Playwright cabecera No disponible; no se prueba Ciclos/cierre |
+| AC-39 | Recorrer el formulario de E1.1 y sus errores, modificando tres Sí/No independientemente | Tres bloques aprobados, Estado inicial Activa, opcionalidad M1/M2 y switches No/false iniciales solo en alta; edición conserva guardado e independencia. Sin Manual operativo ni pares no contrastados | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
 | AC-40 | Revisar evidencia antes de declarar diseño implementado/validado | Capturas nuevas 390/1440 inspeccionadas y pruebas de teclado/foco/etiquetas/contraste/estados; ni aprobación textual, ASCII ni screenshots del bootstrap sustituyen la comprobación futura | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
 | AC-41 | Fixture histórico ficticio con indicador ausente frente a false/true; consultar, cancelar edición y guardar cambio de otro campo | Ausencia sigue distinguible («Sin informar»/null), nunca No/false silencioso; PATCH omitido no la rellena. Informar booleano requiere elección real y solo cambia ese atributo; sin importar datos reales | Bun integración API/SQLite: bun run test | PASA · alcance E1.1 | 2026-10-21 · Bun `apps/api/src/app.test.ts` + Playwright ausencia/cancelación/PATCH/Informar No |
-| AC-42 | En futura UI a 390/1440, inspeccionar y operar cada switch con teclado y foco | true: #8DBB2E/indicador blanco/Sí; false: verde suave de paleta/indicador blanco/No; nombre del atributo accesible, checked binario y etiqueta visible, independencia, sin controles segmentados ni interacción obligatoria al alta | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
-| AC-43 | Revisar futura UI con preferencia de sistema clara y oscura | Siempre tema claro de fondos blancos/verdes suaves; sin modo/selector oscuro. No se declara contraste/accesibilidad verificados sin pruebas reales | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
+| AC-42 | En la UI de E1.1 a 390/1440, inspeccionar y operar cada switch con teclado y foco | true: #8DBB2E/indicador blanco/Sí; false: verde suave de paleta/indicador blanco/No; nombre del atributo accesible, checked binario y etiqueta visible, independencia, sin controles segmentados ni interacción obligatoria al alta | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
+| AC-43 | Revisar la UI de E1.1 con preferencia de sistema clara y oscura | Siempre tema claro de fondos blancos/verdes suaves; sin modo/selector oscuro. No se declara contraste/accesibilidad verificados sin pruebas reales | Playwright + revisión visual: bun run test:e2e | PASA · alcance E1.1 | 2026-10-21 · Playwright `tests/e2e/catalog.spec.ts` + capturas inspeccionadas |
+
+## Lectura del estado
+- **Histórico superado (38 PASA E1.1):** AC-01…29, AC-33…35, AC-37, AC-39…43.
+- **Parcial (1):** AC-38 (cabecera sin maestro). E1.3 se integró después, pero su
+  integración no queda acreditada por las pruebas originales de E1.1.
+- **Contratos revisados (4):** AC-30, AC-31, AC-32, AC-36.
+- No se convierten contratos ni parciales en PASS de motores futuros.
 
 ## Regression checks
 Ejecución local 2026-10-21 (Europe/Madrid), Bun 1.4.3, Chromium del sistema:
@@ -75,6 +88,20 @@ Snapshot restaurado leído por API y UI de otra instancia con contraseña/TOTP r
 revocación de sesiones/códigos y generación de nuevos códigos comprobadas.
 Ensayo local medido: restauración + MFA + lectura UI 2.006 s en una ejecución; no SLA/RTO
 de producción. RPO depende de frecuencia/monitorización aún no desplegadas.
+
+### Apertura vacía — decisión 2026-10-28
+
+`saldoApertura` `null` se conserva en almacenamiento y se usa **0 € como neutro solo en
+el cálculo del Saldo actual**; no se rellena el campo. No se extiende a Objetivo, Manual
+ni históricos.
+
+- Cobertura: `movimientos.test.ts` (apertura null, 0→30 con movimientos),
+  `app.test.ts` (posición 0.00 y cero explícito en almacenamiento),
+  `compras.test.ts` (Efectivo/Inversiones 0.00) y `cycle-operations.test.ts`
+  (null + movimientos).
+- **Gap:** no hay una aserción específica de **cero explícito + movimientos**; se propone
+  añadirla en una PR de pruebas autorizada. No se modifica código en esta PR.
+- H-SPEC01-01 queda **resuelto por decisión expresa del usuario**.
 
 ### Contratos expresamente separados de motores
 - AC-30: referencia 100 + entrada anterior 20 − salida posterior 5 = 115; revisión
@@ -126,10 +153,17 @@ Cinco mejoras identificadas y aplicadas durante inspección; recorrido/capturas 
 ## Limitations and next action
 Aceptación **del alcance E1.1**, no de motores futuros. Fuente de historia no existe;
 guard y FK probados con fixtures, deberán integrarse al implementar operaciones.
-Sin Manual operativo, cálculos, módulos E1.2, importador ni datos reales. Cabecera Ciclos
-No disponible. Sin deploy/HTTPS real, copia externa, scheduler/poda ni custodia definitiva.
+Sin Manual operativo, cálculos, módulos E1.2, importador ni datos reales. En la evidencia
+E1.1 la cabecera Ciclos figuraba No disponible; E1.3 se integró después y su integración
+no queda acreditada por estas pruebas. Sin deploy/HTTPS real, copia externa, scheduler/poda
+ni custodia definitiva.
 Pruebas locales ejecutadas, sin bloqueo de Codex: Chromium del sistema y age oficial
-verificado disponibles. Revisión final de PR por Álex/usuario, sin merge autorizado.
+verificado disponibles. **PR #7 integrada; PR #9 corrigió la concurrencia. E1.1 cerrada;
+el merge ya no está pendiente.**
+**Coherencia con código:** H-SPEC01-01 **resuelto** por decisión expresa del usuario
+(2026-10-28): `null` se conserva y se usa 0 neutral en el cálculo; no se rellena. Cobertura
+de tests revisada; el gap de cero explícito + movimientos queda registrado para una PR de
+pruebas autorizada.
 
 ## Revisión posterior de Álex sobre ce7a92c — 2026-10-21
 Contraste: excepción de texto oscuro documentada en guía UI (6.04:1 frente a blanco
@@ -149,7 +183,8 @@ PR #7 aprobada expresamente por el usuario tras revisión de Álex sobre 4f7cdda
 2026-10-21; E1.1 implementado e integrado con cierre documental. Los registros anteriores
 de espera/sin merge son históricos. La aprobación no completa motores financieros:
 AC-30/31 siguen contractuales y la integración futura de AC-38 sigue pendiente.
-STEP 8, E1.2 y despliegues no iniciados; Excel v5.11 continúa fuente de verdad.
+En el momento del cierre, STEP 8/E1.2 no se habían iniciado; después avanzaron por sus
+propias entregas. Excel v5.11 continúa fuente de verdad.
 
 ## Incidencia posterior AC-03 — corrección propuesta
 Fallo real de concurrencia reproducido tras PR #7; no atribuido a documentación de STEP 8.

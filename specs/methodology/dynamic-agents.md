@@ -39,7 +39,7 @@ from Claude/OpenCode usage or assume this desktop tool exists in other clients.
   Codex for complex/critical work; consider enabled OpenCode for bounded verifiable work.
 - **25% or less:** warn; no new Codex task or subagent, **including QA**, without explicit
   authorization for that identified task. General development approval is insufficient.
-  Propose manual OpenCode only if enabled and suitable. Required QA stays pending until
+  Propose an Agent Relay v1 conversation only if enabled and suitable. Required QA stays pending until
   authorized or otherwise independently performed under the existing quality contract.
 - **5% or less:** warn and stop initiating new tasks. Previous authorizations do not
   suffice: require a new explicit task authorization after this warning. Preserve state
@@ -70,7 +70,7 @@ gates.
 If higher-priority runtime instructions require a direct escalation retry without a prior user message,
 respect that sequence and explain the blocking operation in justification. Never promise
 a coordinator notification while the runtime has suspended communication. Without a
-notification route, agree on manual relay or coordinator execution
+notification route, agree on Agent Relay v1 or coordinator execution
 before that operation. Report unexpected denials at the next controllable boundary;
 pause only affected work. Never race another executor on the same resource.
 
@@ -98,16 +98,8 @@ inspects the candidate and evidence, runs checks that resolve risks and records 
 for repeats; it does not merely accept the author's summary. Consolidate findings into
 a bounded correction packet, then review the delta.
 
-## Manual OpenCode allocation
-The user declares external availability for each execution; absent a declaration,
-OpenCode is not enabled. Do not launch or integrate it via CLI, MCP or APIs. When enabled,
-use the copyable variant of the existing work packet, including a recommended model from
-that installation's verified available catalog (otherwise mark recommendation unverified
-and request the catalog before assigning a model). The user copies the prompt and returns
-`HANDOFF → CODEX` manually. Stable task/session identity, manual states, corrections and mandatory full returns in every interaction follow [coordinator communication](coordinator-communication.md). Commits and PR preparation are permitted only within existing
-project authorization; the packet grants none. Notify significant assignments, models,
-blockers and deliveries. Continue useful independent authorized work, then wait when none
-remains; never repeatedly query the user or a worker for unchanged status.
+## Agent Relay v1 allocation
+The user declares external availability and opens a conversation explicitly with `relay init`; absent that declaration, OpenCode is not enabled and no conversation is created. Do not launch or integrate OpenCode via CLI, MCP or APIs. When enabled, use the existing work packet as the relay message body, including a recommended model from that installation's verified available catalog (otherwise mark the recommendation unverified and request the catalog before assigning a model). The recipient reads on `Lee`; the coordinator publishes through Agent Relay v1 and the recipient returns `HANDOFF → CODEX` through the same relay. Stable task/session identity, relay states, corrections and mandatory full returns follow [coordinator communication](coordinator-communication.md). Commits and PR preparation are permitted only within existing project authorization; the packet grants none. Notify significant assignments, models, blockers and deliveries. Continue useful independent authorized work, then wait when none remains; never repeatedly query the user or a worker for unchanged status.
 
 On return, independently inspect the actual diff and candidate SHA, acceptance evidence
 and CI, preferably using independent QA. Request bounded corrections where needed; an
@@ -124,10 +116,10 @@ start/stop owner, communication route, instruction entry points and evidence des
 in the existing packet. Confirm the worker can read applicable canonical rules and return
 packet ID, candidate, checks and blockers. Client adapters expose the same rules without
 duplicating or weakening them. No OpenCode adapter is supplied: verify its instruction
-loading/configuration in the chosen installation. Never assume Claude hooks run elsewhere.
+loading/configuration in the chosen installation. Never assume Claude hooks run elsewhere. Agent Relay v1 is user-triggered transport; it does not launch, poll, control or replace start/stop ownership.
 
 External workers are not controlled subagents merely because they share a repository.
-Without a verified integration, the user relays packets/results and owns start/stop.
+Without repository access, the user cannot use Agent Relay v1; the coordinator executes or access is resolved. When available, Agent Relay v1 is the canonical transport and the user owns start/stop.
 Messaging another chat/service requires explicit user authorization and supported tools;
 a worker asking to report back does not grant it. Never claim an external worker stopped
 without confirmation. Handoff identifies uncontrolled workers and asks their owner to

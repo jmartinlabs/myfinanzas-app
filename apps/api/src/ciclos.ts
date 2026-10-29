@@ -1,5 +1,9 @@
 import { movementSource, ledgerRows } from "./movement-ledger";
-import { revisionComidaSource } from "./revision-comida-ledger";
+import {
+  revisionComidaRows,
+  revisionComidaSource,
+  type RevisionComidaRow,
+} from "./revision-comida-ledger";
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Schema } from "effect";
@@ -103,6 +107,15 @@ export type Cycle = {
     | "no_aplicable"
     | "no_abierto"
     | "error";
+};
+export type ComidaImpact = {
+  id: string;
+  fecha: string;
+  tipo: RevisionComidaRow["tipo"];
+  estadoRegistro: RevisionComidaRow["estadoRegistro"];
+  antes: Cycle | null;
+  despues: Cycle | null;
+  efecto: "temporal" | "historico";
 };
 const select =
   "SELECT id,inicio,mes_financiado,CAST(saldo_comida AS TEXT) saldo_comida,creado,revision,actualizado FROM ciclos ORDER BY inicio";
@@ -419,8 +432,16 @@ function operationPlan(
   id: string | null,
   body: Record<string, unknown>,
   page = 1,
+  comidaPage = 1,
 ) {
-  if (!Number.isSafeInteger(page) || page < 1 || page > 100000)
+  if (
+    !Number.isSafeInteger(page) ||
+    page < 1 ||
+    page > 100000 ||
+    !Number.isSafeInteger(comidaPage) ||
+    comidaPage < 1 ||
+    comidaPage > 100000
+  )
     throw new Problem(422, "VALIDATION", "Página inválida.");
   const beforeRows = rows(db),
     old =
@@ -483,6 +504,16 @@ function operationPlan(
       "REFERENCE_ERROR",
       "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
     );
+  let comidaRows: RevisionComidaRow[];
+  try {
+    comidaRows = revisionComidaRows(db);
+  } catch {
+    throw new Problem(
+      409,
+      "REFERENCE_ERROR",
+      "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
+    );
+  }
   const key = old?.id ?? "nuevo";
   const proposed: Row = {
     id: key,
@@ -502,11 +533,11 @@ function operationPlan(
   const atDate = (all: Cycle[], date: string) =>
     all.find((c) => c.inicio <= date && (c.fin === null || date <= c.fin)) ??
     null;
+  const period = (c: Cycle | null) =>
+    c ? [c.id, c.inicio, c.fin, c.mesFinanciado] : null;
   const affected = facts.flatMap((m) => {
     const a = atDate(before, m.fecha),
       b = atDate(after, m.fecha);
-    const period = (c: Cycle | null) =>
-      c ? [c.id, c.inicio, c.fin, c.mesFinanciado] : null;
     return fingerprint(period(a)) !== fingerprint(period(b))
       ? [
           {
@@ -526,13 +557,78 @@ function operationPlan(
       a.id.length - b.id.length ||
       a.id.localeCompare(b.id),
   );
+  const comidaAffected: ComidaImpact[] = comidaRows.flatMap((r) => {
+    const a = atDate(before, r.fecha),
+      b = atDate(after, r.fecha);
+    return fingerprint(period(a)) !== fingerprint(period(b))
+      ? [
+          {
+            id: r.id,
+            fecha: r.fecha,
+            tipo: r.tipo,
+            estadoRegistro: r.estadoRegistro,
+            antes: a,
+            despues: b,
+            efecto:
+              r.estadoRegistro === "Vigente"
+                ? ("temporal" as const)
+                : ("historico" as const),
+          },
+        ]
+      : [];
+  });
+  comidaAffected.sort(
+    (a, b) =>
+      a.fecha.localeCompare(b.fecha) ||
+      a.id.length - b.id.length ||
+      a.id.localeCompare(b.id),
+  );
+  const comidaVigentes = comidaAffected.filter(
+      (r) => r.estadoRegistro === "Vigente",
+    ),
+    comidaHistoricas = comidaAffected.filter(
+      (r) => r.estadoRegistro === "Anulado",
+    );
   const cycles = after.flatMap((c) => {
     const a = before.find((v) => v.id === c.id) ?? null;
     return JSON.stringify(a) !== JSON.stringify(c)
       ? [{ antes: a, despues: c }]
       : [];
   });
-  const contextRevision = fingerprint([beforeRows, facts, reference]);
+  const contextoAntes = contextFrom(beforeRows, reference),
+    contextoDespues = contextFrom(afterRows, reference);
+  const sourceState = (context: ReturnType<typeof contextFrom>) => ({
+    referencia: {
+      fecha: context.referencia.fecha,
+      estado: context.referencia.estado,
+    },
+    actual: context.actual?.id ?? null,
+    coverage: context.referencia.coverage.map(({ source, state }) => ({
+      source,
+      state,
+    })),
+  });
+  const materialComida = (items: ComidaImpact[]) =>
+    items.map((r) => ({
+      id: r.id,
+      fecha: r.fecha,
+      tipo: r.tipo,
+      estadoRegistro: r.estadoRegistro,
+      antes: period(r.antes),
+      despues: period(r.despues),
+    }));
+  const contextRevision = fingerprint([
+    beforeRows,
+    facts,
+    {
+      antes: sourceState(contextoAntes),
+      despues: sourceState(contextoDespues),
+    },
+    {
+      vigentes: materialComida(comidaVigentes),
+      historicas: materialComida(comidaHistoricas),
+    },
+  ]);
   const impactRevision = fingerprint([
     operation,
     id,
@@ -553,9 +649,30 @@ function operationPlan(
     ciclos: cycles,
     movimientos: affected.slice((page - 1) * 100, page * 100),
     totalMovimientos: affected.length,
+    comidaImpacto: {
+      vigentesAfectadas: comidaVigentes.slice(
+        (comidaPage - 1) * 100,
+        comidaPage * 100,
+      ),
+      historicasMostradas: comidaHistoricas.slice(
+        (comidaPage - 1) * 100,
+        comidaPage * 100,
+      ),
+      totalVigentesAfectadas: comidaVigentes.length,
+      totalHistoricasMostradas: comidaHistoricas.length,
+      totalOperacionesComida: comidaAffected.length,
+      conteos: {
+        vigentes: comidaVigentes.length,
+        anuladas: comidaHistoricas.length,
+        detalle: comidaAffected.filter((r) => r.tipo === "Detalle").length,
+        reposicion: comidaAffected.filter((r) => r.tipo === "Reposicion")
+          .length,
+      },
+      page: comidaPage,
+    },
     page,
-    contextoAntes: contextFrom(beforeRows, reference),
-    contextoDespues: contextFrom(afterRows, reference),
+    contextoAntes,
+    contextoDespues,
     conciliacion: { estado: "pendiente", motivo: "Revisión Comida pendiente" },
   };
 }
@@ -565,9 +682,17 @@ export function previewCycleOperation(
   id: string | null,
   body: Record<string, unknown>,
   page = 1,
+  comidaPage = 1,
 ) {
   return db.transaction(() => {
-    const { values, ...result } = operationPlan(db, operation, id, body, page);
+    const { values, ...result } = operationPlan(
+      db,
+      operation,
+      id,
+      body,
+      page,
+      comidaPage,
+    );
     return result;
   })();
 }

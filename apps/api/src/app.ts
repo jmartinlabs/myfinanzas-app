@@ -6,6 +6,9 @@ import {
   previewParticipante,
   rectificarParticipante,
   bajaParticipante,
+  previewAportacion,
+  confirmAportacion,
+  previewNuevaAportacion,
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
@@ -74,6 +77,27 @@ import {
   listVehicles,
   vehicleIntegrity,
 } from "./vehiculos";
+import {
+  changeInstrumentoState,
+  createInstrumento,
+  getInstrumento,
+  instrumentoAudit,
+  instrumentOptions,
+  listInstrumentos,
+  updateInstrumento,
+} from "./instrumentos";
+import {
+  annulPurchase,
+  createPurchase,
+  getPurchase,
+  listPurchases,
+  previewAnnulment,
+  previewPurchase,
+  previewRectification,
+  purchaseAudit,
+  rectifyPurchase,
+} from "./compras";
+import { cashDto, civil } from "./investment-engine";
 import {
   nonVehicleFicha,
   vehicleFicha,
@@ -369,6 +393,27 @@ export function createApp(db: Database, options: AppOptions) {
           );
         }
       }
+      const aportacionPath = path.match(
+        /^\/api\/compartidos\/fichas\/(REF\d+)\/movimientos\/(\d+)\/acreditar(?:\/(preview))?$/,
+      );
+      if (aportacionPath) {
+        const [, ref, movement, preview] = aportacionPath;
+        if (preview && req.method === "POST")
+          return reply(
+            previewAportacion(db, ref, movement, await jsonBody(req)),
+          );
+        if (!preview && req.method === "POST")
+          return reply(
+            confirmAportacion(
+              db,
+              ref,
+              movement,
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+      }
       if (path === "/api/compartidos/fichas" && req.method === "GET")
         return reply(listCompartidos(db, new URL(req.url).searchParams));
       if (path === "/api/compartidos/fichas" && req.method === "POST")
@@ -532,6 +577,7 @@ export function createApp(db: Database, options: AppOptions) {
                 id,
                 body,
                 Number(new URL(req.url).searchParams.get("page") ?? 1),
+                Number(new URL(req.url).searchParams.get("comidaPage") ?? 1),
               )
             : writeCycleOperation(
                 db,
@@ -786,21 +832,129 @@ export function createApp(db: Database, options: AppOptions) {
             options.annualProvider,
           ),
         );
+      if (path === "/api/inversiones/efectivo" && req.method === "GET") {
+        const params = new URL(req.url).searchParams,
+          saldo = params.get("saldo") ?? "",
+          fecha = params.get("fecha") || null;
+        if (!/^S\d+$/.test(saldo))
+          throw new Problem(422, "VALIDATION", "Saldo inválido.", {
+            saldo: "Selecciona un Saldo existente.",
+          });
+        return reply(cashDto(db, saldo, fecha ? civil(fecha) : null));
+      }
+      if (path === "/api/instrumentos/opciones" && req.method === "GET")
+        return reply(instrumentOptions(db));
+      if (path === "/api/instrumentos" && req.method === "GET")
+        return reply(listInstrumentos(db, new URL(req.url).searchParams));
+      if (path === "/api/instrumentos" && req.method === "POST") {
+        const result = createInstrumento(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set(
+          "location",
+          `/api/instrumentos/${result.instrumento.id}`,
+        );
+        return reply(result, 201);
+      }
+      const instrumentAudit = path.match(
+        /^\/api\/instrumentos\/(I\d+)\/auditoria$/,
+      );
+      if (instrumentAudit && req.method === "GET")
+        return reply(instrumentoAudit(db, instrumentAudit[1]));
+      const instrumentState = path.match(
+        /^\/api\/instrumentos\/(I\d+)\/(desactivar|reactivar)$/,
+      );
+      if (instrumentState && req.method === "POST")
+        return reply({
+          instrumento: changeInstrumentoState(
+            db,
+            instrumentState[1],
+            await jsonBody(req),
+            instrumentState[2] === "reactivar",
+            now(),
+          ),
+        });
+      const instrument = path.match(/^\/api\/instrumentos\/(I\d+)$/);
+      if (instrument && req.method === "GET")
+        return reply(getInstrumento(db, instrument[1]));
+      if (instrument && req.method === "PATCH")
+        return reply({
+          instrumento: updateInstrumento(
+            db,
+            instrument[1],
+            await jsonBody(req),
+            now(),
+          ),
+        });
+      if (path === "/api/compras/impacto" && req.method === "POST")
+        return reply(
+          previewPurchase(db, await jsonBody(req), now()),
+        );
+      if (path === "/api/compras" && req.method === "GET")
+        return reply(listPurchases(db, new URL(req.url).searchParams));
+      if (path === "/api/compras" && req.method === "POST") {
+        const result = createPurchase(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", `/api/compras/${result.compra.id}`);
+        return reply(result, 201);
+      }
+      const purchaseAuditPath = path.match(
+        /^\/api\/compras\/(\d+)\/auditoria$/,
+      );
+      if (purchaseAuditPath && req.method === "GET")
+        return reply(purchaseAudit(db, purchaseAuditPath[1]));
+      const purchaseAction = path.match(
+        /^\/api\/compras\/(\d+)\/(impacto|impacto-anulacion|rectificar|anular)$/,
+      );
+      if (purchaseAction && req.method === "POST") {
+        const [, id, action] = purchaseAction,
+          body = await jsonBody(req);
+        if (action === "impacto")
+          return reply(previewRectification(db, id, body, now()));
+        if (action === "impacto-anulacion")
+          return reply(previewAnnulment(db, id, body));
+        if (action === "rectificar")
+          return reply(rectifyPurchase(db, id, body, now()));
+        return reply(annulPurchase(db, id, body, now()));
+      }
+      const purchase = path.match(/^\/api\/compras\/(\d+)$/);
+      if (purchase && req.method === "GET")
+        return reply(getPurchase(db, purchase[1]));
       if (path === "/api/movimientos/opciones" && req.method === "GET")
         return reply(movementOptions(db, now()));
       if (path === "/api/movimientos" && req.method === "GET")
         return reply(listMovements(db, new URL(req.url).searchParams));
-      if (path === "/api/movimientos/impacto" && req.method === "POST")
-        return reply(
-          previewMovement(
+      if (path === "/api/movimientos/impacto" && req.method === "POST") {
+        const body = await jsonBody(req),
+          plan = previewMovement(
             db,
-            await jsonBody(req),
+            body,
             null,
             false,
             now(),
             options.movementGuard,
-          ),
+          );
+        const referencia =
+          typeof body.referencia === "string" ? body.referencia : null;
+        return reply(
+          referencia &&
+            body.tipo === "Transferencia" &&
+            body.origen === "S000" &&
+            body.compartido
+            ? {
+                ...plan,
+                compartidoImpacto: previewNuevaAportacion(db, referencia, body),
+              }
+            : plan,
         );
+      }
       if (path === "/api/movimientos" && req.method === "POST") {
         const result = writeMovement(
           db,

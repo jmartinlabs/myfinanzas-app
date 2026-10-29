@@ -8,7 +8,7 @@ Skill ni se cambia la metodología de ocho etapas. E1.1 permanece completada e i
 ## Contraste con experiencia real
 Fuentes: [progreso E1.1](01-saldos-control-progress.md),
 [testplan y revisión visual](01-saldos-control-testplan.md),
-[revisión final e integración de PR #7](https://github.com/josemartin2000/myfinanzas-app/pull/7).
+[revisión final e integración de PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7).
 No se generalizan reglas financieras ni decisiones de producción a partir de esos casos.
 
 | Evidencia real de E1.1 | Cobertura previa | Ajuste general mínimo |
@@ -90,7 +90,7 @@ recibir aprobación final del usuario. No autorizaba E1.2 ni despliegue.
 CI de ese HEAD: push 39556146404 y PR 39556151938 SUCCESS, sin conflictos.
 Este cierre cambia solo estados documentales; las Skills spec/dev y la aplicación no
 se modifican respecto al HEAD aprobado. CI del cierre se verifica antes de su merge.
-Integración y SHA final verificables en [PR #8](https://github.com/josemartin2000/myfinanzas-app/pull/8).
+Integración y SHA final verificables en [PR #8](https://github.com/jmartinlabs/myfinanzas-app/pull/8).
 Skills spec/dev existentes listas para próximas entregas; no se inicia ninguna ahora.
 E1.1 y corrección de concurrencia PR #9 integradas; motores financieros posteriores,
 inicialización/migración reales y producción mantienen sus límites y autorizaciones.

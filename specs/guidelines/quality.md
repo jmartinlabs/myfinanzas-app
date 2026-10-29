@@ -74,17 +74,14 @@ patrones conocidos de secretos. Redacta valores; no es un escáner exhaustivo. N
 archivos deben añadirse al índice antes de la revisión previa al push. Lee historia y
 blobs, sin modificarlos. También detecta secretos borrados en commits posteriores.
 
-La configuración local de CI .github/workflows/validate.yml conserva push,
-pull_request y workflow_dispatch. Baseline ejecuta siempre controles documentales y
-de seguridad; full conserva tipos/build, API/SQLite y E2E salvo clasificación docs
-válida; required rechaza fallos/skips inesperados. Jobs Ubuntu24.04, checkout completo
-sin credenciales persistidas y acciones por SHA. Permisos contents:read; baseline añade
-pull-requests:read exclusivamente para resolver contexto de integración. No secretos
-de aplicación, pull_request_target ni permisos de escritura. Timeout 15 min para baseline
-/full y 5 min para required. Capturas ficticias en las rutas explícitas e1.1–e2.1, retención
-siete días; no DB/env/trazas. Concurrencia, preparación Linux y límites debajo.
-Publicación y ejecución remota pendientes; esto no atribuye resultados a Actions ni
-configura reglas obligatorias de protección de main.
+La configuración vigente es [local-first](../methodology/ci-policy.md#myfinanzas--local-first-vigente-2026-10-27):
+PR hacia main —incluido `ready_for_review`, sin desactivar el gate en drafts—, push
+solo main y manual; un job required Ubuntu24.04 con baseline, selección conservadora,
+tipos/build y API/SQLite independiente en cambios críticos. El push de main clasifica
+su rango: solo documentación ejecuta `docs`; el resto, `fast`.
+E2E/regresiones completas se ejecutan localmente con QA independiente; manual CI
+conserva la batería completa. Acciones SHA, historial completo, credenciales no
+persistidas, permisos de lectura y timeout15min permanecen. No configura protecciones.
 
 No atribuir a GitHub resultados locales: estado de ejecución en [STEP 3](../automated-checks.md).
 Un exit 1 esperado dentro de un test negativo no es un fallo de la suite: demuestra que
@@ -104,6 +101,9 @@ Las reglas económicas requieren especificaciones funcionales revisadas antes de
 
 ## Contrato CI v2.6.0 — preparación local
 
+Selección de entorno/eventos/grafo sustituida por la política local-first vigente.
+Los resultados y decisiones funcionales históricos se conservan.
+
 Adopción acotada de [ci-policy](../methodology/ci-policy.md), fuente fijada
 `267bd75f7c4a856f35a7a7a4c1d8a40f5a0de833`. Primera entrega local conservada en ac059f7;
 usuario autoriza después preparar las mejoras Actions en la misma rama. Workflow y
@@ -119,9 +119,11 @@ referencia actualizados localmente; no hay publicación, merge ni evidencia remo
 | `./scripts/test-checks` | Regresiones anteriores más la suite CI compartida |
 | `./scripts/validate-template` / `./scripts/test-validator` | Contratos documentales y regresiones; control CI estructural compartido |
 
-Baseline obligatoria para docs/full: `check-repository`, `check-project`,
-`validate-template`, `test-checks`, `test-validator`, `git diff --check` y
-`git show --format= --check HEAD`. Para full: `bun install --frozen-lockfile`,
+Baseline documental obligatoria en CI `docs`: `check-repository`, `check-project`,
+`validate-template`, `git diff --check` y
+`git show --format= --check --first-parent HEAD`. `fast`, `critical`, `full` y
+`--full` local añaden `test-checks`, `test-validator`, `test-agent-usage`,
+`test-auto-agent-usage`, `test-verification` y `test-evidence`. Para full: `bun install --frozen-lockfile`,
 `bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
 `node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
 gate adicional AC23 conserva su condición actual de rama.
@@ -246,22 +248,28 @@ las guardas de ancestros. Evidencia actual en testplan09, no en estas instruccio
 
 ## Entrada compartida v2.7.0 — vigente
 
+Cobertura local vigente; selección de CI sustituida por la política local-first.
+
 Desde la raíz: `python3 scripts/verify`. Python 3.10+, Git completo y comparación
 verificable son necesarios para seleccionar docs; sin comparación se selecciona full.
 Usar `--base SHA --head SHA [--pull-request]` para una comparación explícita y
 `--full` para forzar full. La entrada nunca instala dependencias ni prepara servicios.
 Preparar antes Bun 1.4.3, Node, `bun install --frozen-lockfile`, age/age-keygen y
 Chromium. Las pruebas de publicación atómica de copias requieren Linux/glibc;
-macOS no sustituye la evidencia Linux de CI ni permite omitirlas silenciosamente.
+macOS no sustituye Linux compatible ni permite omitirlas silenciosamente;
+para SQLite QA local requiere Debian13/glibc equivalente según la política vigente.
 
-Baseline ejecuta check-repository, check-project, validate-template, test-checks,
-test-validator, test-agent-usage, test-auto-agent-usage, test-verification y controles
-Git de whitespace. Full añade typecheck, build, test y test:e2e una vez cada uno;
-permanece la excepción histórica AC23 de su rama. Docs solo omite la aplicación,
-con mensaje explícito. Cero pruebas, skips inesperados y errores fallan.
-Actions usa fases de esta misma entrada: classify, baseline, application y result.
+El baseline documental de CI (`docs`) ejecuta check-repository, check-project,
+validate-template y los controles Git de whitespace. Las regresiones del harness
+(test-checks, test-validator, test-agent-usage, test-auto-agent-usage, test-verification,
+test-evidence) se ejecutan en fast/critical/full y en `--full` local; un diff solo
+documental no las ejecuta. Full añade typecheck, build, test y test:e2e una vez cada uno;
+permanece la excepción histórica AC23 de su rama. Docs omite la aplicación y las
+regresiones del harness, con mensajes explícitos. Cero pruebas, skips inesperados y errores fallan.
+Actions usa perfiles explícitos de esta misma entrada: ci-plan, baseline, ci y ci-result.
+Application/result conservan la interfaz local anterior; no determinan el grafo CI actual.
 Una fase por separado es evidencia parcial. Las regresiones invocan el CLI real,
-comprueban propagación de errores, cobertura y paridad local/CI mediante fixtures.
+comprueban propagación de errores, cobertura y paridad dentro de cada perfil mediante fixtures.
 Los [informes de uso](../../docs/USAGE_REPORTS.md) son opcionales, locales y no
 miden cuota ni facturación. Sus hooks requieren confianza explícita del cliente;
 la adopción prueba replays sintéticos, no su ejecución automática real.
@@ -274,10 +282,13 @@ Cambios locales sin commit o un snapshot distinto fuerzan full conservadoramente
 
 Antes del código mapear AC, casos negativos/integración, entorno local/CI, responsable
 y evidencia esperada en el testplan existente. Preflight por alcance y plataforma;
-ningún ensayo local incompatible sustituye CI Linux. Focales por delta y controles
+ningún ensayo local incompatible sustituye evidencia Linux compatible. Focales por delta y controles
 obligatorios por candidato estable, con revisión/entorno y motivo de repetición.
 QA independiente revisa candidato/diff/evidencia y riesgos; no solo el resumen del autor.
-Al cierre enlazar un checkpoint vigente con SHA/PR/evidencias, conservando historia.
+`python3 scripts/check-evidence` comprueba candidato, base, árbol limpio, logs crudos y
+registro; solo exige Linux/glibc para los logs declarados. No sustituye la lectura de la
+salida cruda ni convierte un PASS declarado en evidencia. Al cierre enlazar un checkpoint
+vigente con SHA/PR/evidencias, conservando historia.
 [Contrato portable y clientes externos](../methodology/dynamic-agents.md#portable-coordination-v280);
 [desviaciones/procedencia](../methodology/orchestration-adoption.md#harness-v280--adopción-local).
 

@@ -6,17 +6,23 @@
 > [Precedencia local](myfinanzas-coordination.md), AGENTS y aprobaciones del usuario
 > prevalecen; no cambia modelos/cuota, ownership, reglas financieras ni gates.
 
-How the coordinator (Codex or Claude Code) talks to a manual external client such as OpenCode
+How the coordinator (Codex or Claude Code) talks to an external client such as OpenCode
 and reports open work to the user. Read on demand from [orchestrate](../../.agents/skills/orchestrate/SKILL.md)
 when delegating, receiving a return, or answering a status request.
 
-This contract adds no service, hook, integration, polling or second source of truth. The
-user relays every prompt and every return by hand. Canonical packet fields live in the
-[work packet](../../templates/agent-work-packet.md); this file defines how they are used.
+This contract adds no external service, hook, polling or second source of truth. Agent
+Relay v1 is the canonical repository-local transport when the user explicitly opens a
+conversation; the user triggers reads and retains start/stop. Canonical packet fields live
+in the [work packet](../../templates/agent-work-packet.md); this file defines how they are
+used.
+
+Agent Relay v1 is the only relay mechanism. Its Skill and script govern read, acknowledgement
+and verified publication; this contract governs packet fields, relay states, returns and
+approvals. Do not maintain a parallel relay or an alternative relay branch.
 
 ## 1. Identity
 
-Every manual delegation, correction or query states:
+Every relay delegation, correction or query states:
 
 - **Task ID** (unique, for example `ORCH-COMMS-01`) and its functional name;
 - **Client:** OpenCode with its verified version, or `unverified`;
@@ -28,23 +34,23 @@ Corrections and follow-ups keep the same Task ID and session. Attribute feedback
 and session written in the return. If the origin is ambiguous, ask one short question **before**
 changing any task state. Never attribute feedback to the last session by intuition.
 
-## 2. Manual states
+## 2. Relay states
 
 | State | Use when | It does not mean |
 | --- | --- | --- |
-| PENDIENTE DE ENVIAR | The prompt is prepared; the user has not confirmed sending it. | Work has started. |
-| ESPERANDO RETORNO | The user confirmed sending it. | The client is running or will return. |
+| PENDIENTE DE ENVIAR | The relay message is prepared; the user has not confirmed its publication. | It was published. |
+| ESPERANDO RETORNO | The user confirmed the recipient was told to read it. | The client is running or will return. |
 | RETORNO RECIBIDO | A return arrived and has not been verified. | The result is accepted. |
 | EN REVISIÓN | The coordinator or QA has started verifying the candidate. | Verification passed. |
-| CORRECCIÓN PENDIENTE | A correction message is prepared to send. | It was sent. |
+| CORRECCIÓN PENDIENTE | A correction message is prepared to publish. | It was sent. |
 | BLOQUEADO | A decision, authorization or impediment must be resolved first. | The whole project is blocked. |
 | COMPLETADO | The result is verified against evidence and the task has no pending work. | Merge approval; that is a separate gate. |
 | DESCONOCIDO | The evidence is insufficient to choose a state. | Failure. |
 
 Rules:
 
-- Delivering a prompt never proves execution. Only the user's confirmation moves a task to
-  ESPERANDO RETORNO, and only a return moves it to RETORNO RECIBIDO.
+- Publishing a relay message never proves execution. Only the user's confirmation moves a
+  task to ESPERANDO RETORNO, and only a return moves it to RETORNO RECIBIDO.
 - Only the coordinator marks COMPLETADO, after checking the return's candidate SHA, diff and checks.
   A return that says "validated" or "tests green" without evidence stays RETORNO RECIBIDO or DESCONOCIDO.
 - Report external work completion and the later merge gate separately, for example
@@ -122,8 +128,8 @@ Every final or stopped reply states, explicitly:
 
 Avoid ambiguous closings such as "next step: review the PR". Name who must review and what
 they must decide. When no action is needed, say so and do not imply that a reply is required.
-These rules apply to native and manual clients; manual relays keep their identity, copyable
-messages and mandatory return.
+These rules apply to native and Agent Relay clients; relay messages keep their identity,
+copyable content and mandatory return.
 
 ## 8. Compact status (end of reply)
 
@@ -159,7 +165,8 @@ State what was not updated. This view writes nothing.
 A return from session B updates only task B; tasks in sessions A and C keep their states. Every later
 message keeps the Task ID and the destination session. The same rules serve Codex and Claude Code.
 Only the client name changes: use `HANDOFF → CODEX` when Codex coordinates and `HANDOFF → CLAUDE CODE`
-when Claude Code does. Manual relay remains the only route to OpenCode.
+when Claude Code does. Agent Relay v1 is the canonical route to OpenCode; the user
+triggers `Lee`. No parallel relay or alternative branch is maintained.
 
 ## 11. Gates and supervision
 

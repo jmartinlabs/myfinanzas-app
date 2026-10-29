@@ -88,8 +88,9 @@ checkpoint final. Se conserva como historia, no como estado vigente.
 ### 2026-10-26 · Candidato final y CI Linux
 
 - Candidato de código: `77a311d` (merge `d179515` + fix de backup v16).
-- HEAD de la rama: `77a311d`; PR #82 abierta; sin merge.
-- CI Linux [run 40410650558](https://github.com/josemartin2000/myfinanzas-app/actions/runs/40410650558):
+- HEAD de la rama: `77a311d`; PR #82 abierta entonces; integrada después por squash
+  `26b6f0c`. Nota de vigencia 2026-10-29: AC25 físico sigue abierto.
+- CI Linux [run 40410650558](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40410650558):
   **PASS**; baseline 1m6s, full 4m28s, required 7s.
 - Full API: **259 PASS / 0 FAIL / 3.721 expect** en 25 archivos.
 - E2E: **11 PASS**.

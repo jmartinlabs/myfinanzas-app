@@ -1,34 +1,49 @@
 # 01 — E1.1 Saldos y atributos de control: Specification
-Status: APPROVED — PR #6 integrada en main ebfe75b; aprobación confirmada por el usuario.
+Status: APPROVED — contrato E1.1 implementado e integrado mediante
+[PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7); PR #6 fue la base documental.
 Approval source/date: decisiones Q1–Q8 y estructura visual confirmadas por el usuario el 2026-10-20.
 M1/M2: contrato aprobado por el usuario el 2026-10-20, distinto de evidencia del Excel.
 Diseño común y tres pantallas E1.1: aprobación comunicada por el usuario el 2026-10-21;
-no implementación ni comprobación visual de una UI nueva.
+implementación posterior en E1.1, no comprobación de motores futuros.
 Revisión M2 de switches/default false y tema claro: aprobada el 2026-10-21, sustituye
 elección manual obligatoria anterior. Especificación y diseño aprobados por el usuario
 antes de STEP 7; desarrollo local/ficticio E1.1 autorizado el 2026-10-21.
-Los límites «sin implementación/SQL» posteriores describen el STEP 5 documental, no
-prohibiciones de desarrollar E1.1 tras esta autorización. Reglas y exclusiones financieras intactas.
+**Estado vigente (2026-10-28):** E1.1 cerrada; PR #7 integrada y corrección de
+concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9) en `main`
+(`23e471e`). Esquema vigente **18**; los motores posteriores (Movimientos, Inversiones,
+Ciclos, cierres) se rigen por sus propias specs. E1.3 se integró posteriormente; su
+integración **no queda acreditada** por las pruebas originales de E1.1. La evidencia de
+pruebas está en el [testplan](01-saldos-control-testplan.md); el seguimiento global, en
+el [tablero](epic-board.md). **Auditoría de coherencia:** H-SPEC01-01 **resuelto** por
+decisión expresa del usuario (2026-10-28): `null` se conserva y se usa 0 neutral en el
+cálculo del Saldo actual; ver [tracker](investigations/spec-audit-tracker.md).
+**Regla de lectura:** las menciones a «sin implementación», «futuro», «PR #6 pendiente»,
+«sin merge» o «sin DDL» de los apartados siguientes describen el STEP 5 documental y son
+**contexto histórico**; no son prohibiciones vigentes ni cambian las reglas financieras.
+Q1–Q8 y M1/M2 siguen intactas.
 Context and brainstorming: [ronda 1](01-saldos-control-brainstorming.md),
 [roadmap E1.1](roadmap.md#e11--saldos-y-atributos-de-control),
 [referencia funcional](functional-reference-v5.11.md).
 
 ## Autoridad y alcance
 El usuario autorizó actualizar/completar la documentación y la PR #6 tras responder
-Q1–Q8 el 2026-10-20. Sus respuestas están registradas de forma append-only en el
-brainstorming. Esta versión integra esas decisiones y los detalles técnicos menores
-resueltos bajo su autorización. No extiende su aprobación a reglas económicas no
-probadas ni a parámetros/recomendaciones del borrador que no confirmó. Posteriormente
-el usuario contrastó F1–F3 contra el Excel físico y aportó evidencia sanitizada; registro
-append-only en brainstorming y precisión canónica en la referencia funcional. M1/M2
-se aprobaron después como contrato de la aplicación, no como hechos del Excel. La
-primera propuesta visual global y tres pantallas E1.1 fueron aprobadas por el usuario
-con Álex según comunicación del 2026-10-21; se documenta sin implementar.
+Q1–Q8 el 2026-10-20 (contexto histórico del STEP 5). E1.1 se implementó después con
+autorización propia y se integró en PR #7. Sus respuestas están registradas de forma
+append-only en el brainstorming. Esta versión integra esas decisiones y los detalles
+técnicos menores resueltos bajo su autorización. No extiende su aprobación a reglas
+económicas no probadas ni a parámetros/recomendaciones del borrador que no confirmó.
+Posteriormente el usuario contrastó F1–F3 contra el Excel físico y aportó evidencia
+sanitizada; registro append-only en brainstorming y precisión canónica en la referencia
+funcional. M1/M2 se aprobaron después como contrato de la aplicación, no como hechos del
+Excel. La primera propuesta visual global y tres pantallas E1.1 fueron aprobadas por el
+usuario con Álex según comunicación del 2026-10-21 y se implementaron en E1.1.
 
 Se conocen el extracto y la especificación funcional recibida, no el Excel físico ni
 sus manuales originales completos. Solo reglas sanitizadas y fixtures inventados en
 este documento. Excel v5.11 conserva la condición de maestro hasta P7. No se altera
-el roadmap, el stack ni P1–P7. Sin implementación, archivos SQL, migraciones ni despliegue.
+el roadmap, el stack ni P1–P7. El STEP 5 no incluía implementación, archivos SQL,
+migraciones ni despliegue; E1.1 se implementó después en PR #7 y el esquema evolucionó
+hasta 18. Este documento conserva el contrato funcional, no el DDL vigente.
 
 ## Functionality
 
@@ -38,9 +53,9 @@ el roadmap, el stack ni P1–P7. Sin implementación, archivos SQL, migraciones 
 | Identidad | Sxxx estable, único, no reutilizable; nombre no es clave | Alta/consulta/edición por ID; generación atómica, al menos tres dígitos y continuidad S1000; Q5 confirmado |
 | Tipo | Exterior, Efectivo, Inversión | Atributo independiente de Control; seis pares utilizados demostrados F1, sin asumir exhaustividad ni invalidez del resto |
 | Control | Exterior, Movimientos, Terminal, No controlado, Inversiones, Manual | Mostrar motor y disponibilidad, no inventar uno |
-| Movimientos | Apertura + entradas − salidas, sin filtro por Fecha apertura en Saldo actual | Configurar apertura/fecha y conservar distinción actual/histórico; cálculo E1.4, no E1.1 |
-| Inversiones + Efectivo | Apertura + entradas − salidas de Movimientos − Compras + Ventas | Configuración, posición no disponible hasta E4.1/E4.2; sin falso cero |
-| Inversiones + Inversión | Valoración agregada de posiciones de inversión | No implementar ni duplicar tblInversionesResumen; hasta E4.3 no disponible |
+| Movimientos | Apertura + entradas − salidas, sin filtro por Fecha apertura en Saldo actual | Configurar apertura/fecha y conservar distinción actual/histórico; cálculo E1.4 integrado; histórico mensual según sus specs |
+| Inversiones + Efectivo | Apertura + entradas − salidas de Movimientos − Compras + Ventas | Configuración; E4.1 integrado aporta efectivo/posiciones; E4.2 Ventas sin runtime (cero estructural); sin falso cero |
+| Inversiones + Inversión | Valoración agregada de posiciones de inversión | E4.1 integrado para posiciones; valoración/resultado/patrimonio E4.3 no disponible; no duplicar tblInversionesResumen |
 | Manual | Valor manual autorizado | Valor manual directamente o vacío si ausente; sin fecha efectiva propia. Soporte conceptual, sin habilitar pares no contrastados |
 | Terminal | Financiación por transferencia y gasto desde terminal, sin duplicar compras | Maestro consultable; sin posición monetaria ficticia ni operaciones todavía |
 | No controlado | No fingir posición calculada | Maestro consultable; etiqueta «No controlado», importe no aplicable |
@@ -79,7 +94,7 @@ no usado como entrada del motor de ese control, no prohibición de almacenamient
 | Fecha apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
 | Saldo apertura | NA-A / SYS | O-A | O-A | O-A | O-A | O-A |
 | Valor manual | N-M / SYS | N-M | N-M | N-M | N-M | N-M |
-| Saldo actual (resultado, no campo de alta) | N-C | D, futuro E1.4 | N-C | N-C | D, futuro E4 | D, futuro E4 |
+| Saldo actual (resultado, no campo de alta) | N-C | D, E1.4 integrado | N-C | N-C | D, E4.1 integrado (E4.2 sin ventas) | D, E4.1 integrado; valoración E4.3 no disponible |
 
 M1: en Efectivo/Terminal y Efectivo/No controlado, los dos campos de apertura son
 opcionales sin función actual demostrada. En Inversión/Inversiones ambos son opcionales
@@ -126,7 +141,23 @@ N-M: los seis controles demostrados no son Manual. No rechazar/borrar informaci�
 histórica porque no alimente ese motor. Manual permanece previsto sin pareja habilitada,
 con valor directo/vacío y sin fecha efectiva independiente. No inventar un Tipo/Manual.
 Objetivo mantiene céntimos exactos y límites técnicos acordados, sin mínimo/máximo
-financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunca es cero.
+financiero o CHECK de signo inventado. La apertura vacía se conserva `null` y no se
+rellena; su uso como 0 neutral se limita al cálculo del Saldo actual (decisión
+2026-10-28). Manual/Objetivo ausentes siguen `null` y no se convierten en cero.
+
+### Apertura vacía en el cálculo — decisión aprobada 2026-10-28
+
+El usuario confirmó expresamente que `saldoApertura` vacío (`null`) equivale a **0 € a
+efectos del cálculo del Saldo actual**. Condiciones:
+
+- `null` y `0` siguen siendo distintos en almacenamiento y API; el campo no se rellena.
+- Movimientos y Efectivo/Inversiones usan 0 como elemento neutro cuando la apertura está
+  vacía; las fórmulas vigentes no cambian.
+- La posición puede ser `0.00` con apertura `null`; el campo `saldoApertura` sigue `null`.
+- No se extiende a Objetivo, Manual, datos históricos ni otras ausencias.
+- Evidencia: `movimientos.test.ts` (apertura null y movimientos), `app.test.ts` (posición
+  0.00 y cero explícito en almacenamiento), `compras.test.ts` (Efectivo/Inversiones) y
+  `cycle-operations.test.ts` (null + movimientos). Sin cambio de código.
 
 ### Reglas del Excel, observaciones y contrato de aplicación
 
@@ -136,7 +167,7 @@ financiero o CHECK de signo inventado. Ausencia de apertura/Manual/Objetivo nunc
 | Evidencia funcional F2 | Dominios de atributos, vacío en Finalidad y Objetivo opcional | Conservar dominios; no atribuir a la muestra reglas físicas de obligatoriedad |
 | Evidencia funcional F3 | Apertura es posición inicial; Saldo actual sin filtro por Fecha apertura; Manual directo/vacío sin fecha propia | Preservar semántica, no generar Movimientos de apertura ni fecha/filtro nuevos |
 | Observación F1/F2 | Seis pares utilizados, sin registros Manual ni objetivos informados | Fixtures con pares contrastados; no matriz exhaustiva, no prohibición de objetivos |
-| Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin convertir ausencia en cero ni eliminar información existente |
+| Contrato aprobado M1, aplicación | NA-A para apertura Exterior; O-A para ambos campos en los cinco pares ordinarios | Aplicar opcionalidad sin rellenar la ausencia; el cálculo del Saldo actual usa 0 neutral para apertura null (decisión 2026-10-28); no eliminar información existente |
 | Contrato aprobado M2, aplicación | Estado Activa al crear; Finalidad/Objetivo opcionales; switches No/false por defecto al alta, POST omitido=false, PATCH omitido=conservar | Revisión M2 sustituye elección manual obligatoria; sin coerción de históricos ausentes ni inferencias; S000 protegido |
 | No demostrado del Excel | Obligatoriedad física por registro, exhaustividad de pares, detalle mensual | No atribuir M1/M2 al Excel ni inventar otros controles; no reabrir M1/M2 |
 
@@ -148,11 +179,11 @@ se contrasta en la entrega de histórico sin cambiar Saldo actual. Nuevos pares 
 operativo Manual requieren su propio contraste antes de habilitarse, sin bloquear esta
 ronda ni convertir la muestra en regla universal. No imponer signo a Objetivo por lagunas.
 
-La revisión de la primera propuesta visual GLOBAL y las tres pantallas E1.1 ya se
-comunicó como aprobada el 2026-10-21. Registro común en [UI](guidelines/ui.md), sin
-reabrir Q8 ni M1/M2. No equivale a comprobación de aplicación implementada ni permiso
-de construir componentes/pantallas. Aprobación final de esta versión completa y merge
-continúan pendientes.
+La revisión de la primera propuesta visual GLOBAL y las tres pantallas E1.1 se comunicó
+como aprobada el 2026-10-21 y se implementó después en E1.1. Registro común en
+[UI](guidelines/ui.md), sin reabrir Q8 ni M1/M2. Esa aprobación no certifica motores
+futuros ni sustituye la evidencia del testplan. Aprobación final y merge completados:
+PR #6 (documental) y PR #7 (E1.1) integradas.
 
 ### Ciclo de vida — Q3 confirmado
 1. Alta con atributos explícitos y combinaciones existentes contrastadas en F1; no crear una operación financiera.
@@ -173,13 +204,13 @@ continúan pendientes.
 6. Sin borrado físico ni endpoint DELETE, también para no usados: Q3 confirmado.
    S000 queda excluido del ciclo ordinario.
 
-### Protección histórica — Q3 confirmado; extensión transversal DT5 pendiente
+### Protección histórica — Q3 confirmado; DT5 resuelto, sin runtime de cierres
 | Cambio | Regla y consecuencia observable |
 | --- | --- |
 | ID / S000 técnico | Rechazar cambios de identidad; S000 sin edición ordinaria |
-| Nombre | Renombrar por ID sin reescribir hechos/fotos; no prometer etiquetas congeladas hasta DT4 |
+| Nombre | Renombrar por ID sin reescribir hechos/fotos; DT4 resuelto: la foto conserva ID + versión del nombre (SPEC27) |
 | Tipo, Control, Saldo apertura, Fecha apertura, Manual | Validar/auditar; si altera operaciones históricas, bloquear edición ordinaria hasta rectificación explícita; no prohibir por una relación sin impacto. Manual conserva alcance conceptual y no tiene fecha independiente |
-| Liquidez, Finalidad, Objetivo, bolsa, permiso | Presentar impacto; no inferir cambios entre atributos. No invalidar retrospectivamente hechos válidos; si puede afectar un cierre, bloquear hasta definir procedimiento DT5 |
+| Liquidez, Finalidad, Objetivo, bolsa, permiso | Presentar impacto; no inferir cambios entre atributos. No invalidar retrospectivamente hechos válidos; si puede afectar un cierre, aplicar la protección/revalidación de SPEC26/27 (DT5 resuelto) |
 | Desactivar | Validar referencias activas, conservar todas las históricas y rechazar nuevas selecciones una vez inactivo |
 | Reactivar | Validar atributos y relaciones vigentes, sin nuevo ID ni nueva apertura |
 
@@ -187,32 +218,34 @@ No implementar un sistema universal de versiones por cada edición: no se ha apr
 Auditoría técnica de mutaciones no equivale a catálogo versionado ni fotografía financiera.
 E1.1 no crea tablas financieras de entregas futuras para simular referencias. Contratos
 de protección se probarán con fixtures aislados; antes de cada nueva fuente se amplía
-la comprobación de dependencias en la misma transacción. No declarar protección de
-cierres completa hasta DT5/E4.8; hasta entonces esa operación financiera no existe.
+la comprobación de dependencias en la misma transacción. DT5 está resuelto y SPEC26/27
+aprobadas; la protección efectiva de cierres aún no tiene runtime y no debe declararse
+implementada.
 
 ## Data model and contracts
 
-### DT2 — decisiones confirmadas y diseño lógico inicial; sin DDL aprobado
+### DT2 — decisiones confirmadas y diseño lógico; DDL implementado en E1.1
 Q5 confirmado: claves de negocio Sxxx como PK TEXT inmutables. Detalle técnico: SQLite STRICT, SQL
 parametrizado con bun:sqlite y Effect para recursos/errores. Evitar ID interno duplicado
 sin necesidad demostrada. La alternativa INTEGER interno + Sxxx UNIQUE queda descartada para E1.1 por Q5.
 Ninguna decisión autoriza copiar IDs/datos desde fuentes reales todavía.
 
-| Grupo/entidad lógica propuesta | Datos persistentes candidatos | Restricciones/pendientes |
+| Grupo/entidad lógica (implementada en E1.1) | Datos persistentes candidatos | Restricciones/pendientes |
 | --- | --- | --- |
 | saldos | id TEXT PK, nombre TEXT, tipo TEXT, control TEXT, estado TEXT, liquidez INTEGER, mostrar_como_bolsa INTEGER, permite_salida_exterior INTEGER | Identidad/nombre/Tipo/Control requeridos; booleanos 0/1 para Sí/No; Estado Activa/Inactiva y dominios F2. M2 aplicación: Estado Activa al crear, tres booleanos explícitos almacenados, con false si omitidos en POST ordinario; Finalidad opcional. S000 protegido; no rellenar registros anteriores ni históricos ausentes. ID inmutable en API y protección SQLite; S000 reservado |
-| saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; null no es cero; Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
+| saldos: datos económicos | apertura_minor INTEGER nullable, fecha_apertura TEXT nullable, valor_manual_minor INTEGER nullable (soporte conceptual) | Apertura negativa válida; `null` se conserva y no se rellena; el cálculo del Saldo actual usa 0 neutral cuando falta (decisión 2026-10-28); Manual no sobrescribe apertura y devuelve vacío si ausente. Sin fecha Manual; fecha de apertura solo afecta a la comprobación del histórico mensual, no al filtro de Saldo actual. M1 aplicación: opcionales en cinco pares ordinarios, no aplicables Exterior; conservar datos existentes |
 | saldos: clasificación/objetivo | finalidad TEXT y objetivo_minor INTEGER nullable | Objetivo opcional en céntimos, sin default cero ni signo impuesto. Finalidad: vacío/Gastos planificados/Ahorro/Inversión. Estado canónico Activa/Inactiva: selección activa deriva de Estado, no otro booleano persistente |
 | saldos: metadatos | revision INTEGER, creado_en TEXT, actualizado_en TEXT | Revisión positiva creciente; instantes UTC; no cambiar fecha económica por timestamp técnico |
 | reserva de identificadores | siguiente número de Saldo, o mecanismo equivalente transaccional | Nunca MAX(id)+1 sin protección; reserva+alta atómicas, códigos conservados tras desactivación; mínimo tres dígitos y extensión S1000 confirmada Q5 |
 | auditoría técnica | entidad/id, acción, revisión previa/nueva, instante UTC, actor, campos cambiados y motivo cuando sensible | Sin contraseña, token, secreto TOTP ni clave; auditoría mínima de acción/campos/revisión sin duplicar cifras financieras ni versionar catálogo; sin panel administrativo nuevo |
 | principal único / factor / recuperación | hash Argon2id, secreto TOTP cifrado/nonce/versión de clave, último paso TOTP usado, hashes de códigos de recuperación | Único usuario; alta local exclusiva; códigos de un uso consumidos atómicamente; clave de cifrado fuera de base |
 | sesiones y desafíos | hash token, principal, creado/expira/último uso, estado MFA; desafío temporal limitado | Sin token crudo en DB/log; desafío no autoriza rutas financieras; sesiones revocables y expiración servidor |
-| versión de esquema técnica | versión aplicada | Diseño de futuras migraciones, no ejecutar/crear ninguna en STEP 5 |
+| versión de esquema técnica | versión aplicada | Versión aplicada por las migraciones; el esquema vigente es **18** |
 
 El diseño lógico debe preservar una posible ausencia histórica separada de 0/1,
 sin backfill ni defaults de lectura. El default false de alta no autoriza imponer
-un default global sobre importación/legacy. No se fija ni ejecuta aquí el DDL necesario.
+un default global sobre importación/legacy. El DDL de E1.1 se ejecutó en PR #7; este
+documento no reproduce el esquema vigente (18) ni sus ampliaciones posteriores.
 
 No fijar el modelo entero de Movimientos, inversión, ciclos, deuda, presupuesto o fotos.
 Claves foráneas futuras referencian Sxxx; activar foreign_keys en cada conexión y
@@ -235,7 +268,8 @@ Probar ida/vuelta exacta por encima del entero seguro de JavaScript. Nuevos IDs/
 también se tratan exactamente, sin Number para el contador si supera ese rango seguro.
 
 Admitir aperturas negativas que representen posiciones reales; no aplicar una restricción
-«saldo >= 0». Valor ausente es null, distinto de cero, sin crear Movimientos. El
+«saldo >= 0». El valor ausente se conserva `null`, sin crear Movimientos; la apertura
+`null` usa 0 neutral solo en el cálculo del Saldo actual (decisión 2026-10-28). El
 signo de Objetivo/Manual no se extrapola de la apertura; opcionalidad por par aprobada
 en M1 y validación de atributos en M2 pertenecen al contrato de aplicación.
 Objetivo es opcional, sin imponer un CHECK de signo no demostrado. Rechazar exponentes,
@@ -285,8 +319,10 @@ no derivarlo de Nómina ni usar hoy para inventarlo. Separar estado temporal del
 financiero; no tratar Fin temporal como cierre económico. Cuando existan las fuentes,
 mostrar sus valores reales con etiquetas diferentes; sin fuente, «No disponible».
 
-En E1.1 el maestro todavía no está entregado (E1.3) y el cierre financiero llega después.
-No adelantarlos para poblar la cabecera: informar «Ciclo financiado: No disponible».
+En el alcance original de E1.1 el maestro aún no estaba entregado (E1.3); E1.3 ya está
+integrado y la cabecera del runtime usa el maestro. Esa integración **no queda acreditada
+por las pruebas originales de E1.1**. El cierre financiero sigue sin runtime. La evidencia
+E1.1 conservó «Ciclo financiado: No disponible»; no se adelantaron fuentes para poblarla.
 Carga/error/vacío deben diferenciarse cuando exista la consulta; no inventar IDs/meses,
 estados o fechas. Integración posterior respeta DT3 y P5, sin nuevas decisiones económicas
 ni ruta API/SQL de Ciclos aprobada en esta actualización.
@@ -352,28 +388,32 @@ Switch true: fondo #8DBB2E, indicador blanco y «Sí» visible. Switch false: fo
 suave de paleta MyFinanzas, indicador blanco y «No» visible. No hay selección segmentada.
 Si un histórico futuro está ausente, «Sin informar» separado de No y sin default silencioso.
 Tema únicamente claro, superficies blancas/verdes suaves; sin modo/selector oscuro.
-Estética común y futura accesibilidad del switch en [guía UI](guidelines/ui.md).
+Estética común y accesibilidad del switch en [guía UI](guidelines/ui.md); comprobaciones
+ejecutadas en el [testplan](01-saldos-control-testplan.md).
 Estado Activa solo al crear; en edición conserva el Estado existente. Aperturas según
 matriz M1, no editables para S000, sin eliminar información existente por falta de función.
-Finalidad/Objetivo opcionales, ausencia distinta de cero; Manual no se habilita operativo
-ni aparecen combinaciones Tipo/Control no contrastadas. El soporte conceptual no exige
-un campo Manual editable en esta pantalla.
+Finalidad/Objetivo opcionales, ausencia distinta de cero; la apertura vacía se conserva
+`null` y usa 0 neutral solo en el cálculo del Saldo actual (decisión 2026-10-28); Manual
+no se habilita operativo ni aparecen combinaciones Tipo/Control no contrastadas. El
+soporte conceptual no exige un campo Manual editable en esta pantalla.
 
 Formulario conserva entradas tras errores; conflicto permite revisar sin sobrescribir;
 cambios sin guardar avisan al salir. Desactivar muestra impacto/confirmación según Q3.
-Navegación móvil, foco/teclado, etiquetas, estados y contraste se verificarán al implementar,
-sin usar solo color ni reducir accesibilidad para hacer la pantalla compacta. Los patrones
-reutilizables de guía UI son contratos visuales futuros, no componentes creados aquí.
+Navegación móvil, foco/teclado, etiquetas, estados y contraste se verificaron en el
+testplan de E1.1; no se certifica WCAG ni se reduce accesibilidad para compactar la
+pantalla. Los patrones
+reutilizables de guía UI se implementaron en E1.1 y siguen siendo contratos visuales para
+futuras pantallas.
 
-### Diseño aprobado y verificación futura
-La aprobación cubre la dirección común y las tres pantallas descritas. No certifica la
-implementación, contraste real, accesibilidad o responsive. Futuras pruebas/capturas a
-390×844 y 1440×1000 e inspección efectiva siguen pendientes de desarrollo autorizado.
-Las capturas/CI del bootstrap no validan estas pantallas. No se modifica CSS ni se añaden
+### Diseño aprobado y verificación ejecutada
+La aprobación cubre la dirección común y las tres pantallas descritas. Las pruebas y
+capturas a 390×844 y 1440×1000 se ejecutaron en E1.1; evidencia en el
+[testplan](01-saldos-control-testplan.md). No certifican motores futuros ni sustituyen
+la comprobación de cierres. Las capturas/CI del bootstrap no validan estas pantallas. No se modifica CSS ni se añaden
 componentes, dependencias o SQL por documentar diseño aprobado.
 
-### Acceso propuesto DT1
-Pantalla de contraseña -> desafío TOTP/código de recuperación -> aplicación. Estados
+### Acceso DT1 — contrato implementado
+Implementado en E1.1; se conserva el contrato. Pantalla de contraseña -> desafío TOTP/código de recuperación -> aplicación. Estados
 neutros de error, límites de intentos y expiración. Alta inicial única mediante procedimiento local mínimo, sin panel administrativo
 ni endpoint público de registro; no confundirla con rescate excepcional. Enrolado confirma un TOTP
 antes de activar el factor; URI/semilla solo una vez en pantalla protegida, no en logs.
@@ -383,8 +423,9 @@ exigiría justificar librería adicional y revisar su generación local, sin ser
 ## Empty, loading and error states
 - Carga: estado anunciado, acciones de escritura deshabilitadas mientras se confirma envío.
 - Vacío: distinguir catálogo sin Saldos de filtro sin resultados y de error de API.
-- No calculable: importe null y etiqueta del control. Cero solo si dato explícito autorizado
-  por su contrato o resultado de motor ya entregado; nunca por ausencia de fuente.
+- No calculable: importe null y etiqueta del control. Cero si dato explícito o resultado
+  de motor ya entregado; la apertura vacía usa 0 neutral solo en el cálculo del Saldo
+  actual, sin rellenar el campo. Para otras ausencias, null/`No disponible`.
 - Error campo: mensaje junto a control y resumen navegable; mantener valores escritos.
 - 401: volver al acceso; no conservar payload financiero en almacenamiento persistente
   del navegador. 403/CSRF: rechazo sin escribir. 404: no encontrado con regreso a lista.
@@ -461,20 +502,22 @@ exige política de dispositivos de reserva, verificación de usuario/segundo fac
 orígenes local/producción. IdP OIDC con MFA reduce código de identidad, añade servicio,
 metadatos externos y dependencia de disponibilidad/operación. No seleccionados.
 
-**Dependencias previstas, ninguna instalada:** biblioteca TOTP consolidada (candidata
-`otpauth`) y `age` CLI para backup cifrado, este último enfoque aceptado como propuesta
-en Q7. No implementar algoritmos TOTP/cifrado propios ni framework de identidad.
+**Dependencias implementadas:** OTPAuth 9.5.2 (TOTP, MIT) y `age` para cifrado y
+restauración, justificados por DT1/DT6 y probados en E1.1. No implementar algoritmos
+TOTP/cifrado propios ni framework de identidad.
 Bun.password y APIs criptográficas nativas cubren hash/aleatoriedad/cifrado estándar;
 si una biblioteca mantenida compatible simplifica las sesiones, justificar su necesidad
 antes de añadirla. Sin ORM, correo, proveedor externo ni paquete por comodidad. Antes de autorizar uso: revisar mantenimiento, licencia,
 compatibilidad Bun, advisories, versión exacta y lockfile/verificación del binario.
-No se afirma aquí que se haya realizado esa auditoría o comprobado la API de esas herramientas.
+La revisión de mantenimiento, licencia, compatibilidad y versión de esas herramientas se
+realizó al implementar E1.1 (evidencia en testplan/progress); no se afirma una auditoría
+de seguridad completa.
 
-### Contrato HTTP especificado; validación económica sujeta a evidencia F1–F3
+### Contrato HTTP implementado; validación económica según F1–F3/M1/M2
 Rutas bajo /api; errores JSON con code, mensaje no sensible, campos cuando proceda y
 correlación; no revelar existencia de entidades a no autenticados.
 
-| Operación | Respuesta esperada futura |
+| Operación | Respuesta esperada (implementada en E1.1) |
 | --- | --- |
 | POST /api/auth/login y desafío MFA | Desafío limitado; cookie autorizada solo al completar MFA; credenciales inválidas => error genérico |
 | POST /api/auth/logout | Revocar sesión y cookie; requiere defensa CSRF |
@@ -490,10 +533,15 @@ Contrato conceptual de posición: importe decimal o null + moneda cuando aplica 
 condición (`manual`, `no_aplica`, `pendiente_motor`, `error_calculo`) + motivo. Estos
 valores son de presentación, no nuevos controles financieros. Resultado calculado se
 agregará al existir su motor; no persistir condición derivada como saldo independiente.
-El GET demo actual cambia a contrato protegido únicamente en futura implementación
-autorizada; no mantener una ruta de datos sin sesión por compatibilidad del bootstrap.
+Implementado: las rutas financieras, incluido `GET /api/saldos`, exigen sesión; no se
+conserva una ruta de datos sin sesión del bootstrap.
 
-## DT6 — propuesta aceptada Q7; operación definitiva antes del despliegue
+## DT6 — propuesta aceptada Q7; implementación local y operación externa pendiente
+
+**Estado vigente:** snapshot, cifrado `age` y restauración aislada se implementaron y
+probaron localmente en PR #7. Destino externo, custodia de claves, scheduler/poda y
+RPO/RTO operativos siguen abiertos (DT6/T-BKP). El texto siguiente conserva el contrato
+de la propuesta.
 
 **Mecanismo aceptado como propuesta:** VACUUM INTO desde conexión dedicada, fuera de una transacción de
 usuario, para producir snapshot SQLite coherente (incluido estado confirmado en WAL),
@@ -528,7 +576,8 @@ operación en Bun/SQLite y parámetro de ruta seguro antes de implementarla.
    compatibilidad, sustituir atómicamente sin arrastrar WAL/SHM anteriores, revocar todas
    las sesiones/desafíos y regenerar códigos de recuperación (evitar resucitar usados);
    comprobar MFA/clave, reiniciar y verificar flujo. Si falla, rollback controlado.
-   No implementar ahora comandos de restauración ni borrados.
+   La restauración aislada se implementó y probó en E1.1; los comandos operativos sobre
+   una base activa y los borrados siguen fuera de alcance.
 8. Copia externa cifrada futura en soporte/proveedor independiente, preferencia UE,
    credenciales de mínimo privilegio y retención/inmutabilidad por decidir DT10;
    no configurar dominio, proveedor, VPS ni servicio. Una copia en el mismo disco no
@@ -565,6 +614,7 @@ clave de restauración perdida y copia demasiado antigua. Errores de validación
 deben modificar ninguna fila ni consumir un ID de forma reutilizable accidentalmente.
 
 ## Exclusions
+Límites del alcance E1.1; no describen el estado actual de integración.
 E1.2 y otras entregas; motores de Movimientos/inversión; agregados de liquidez/patrimonio;
 crear Deudas como Saldos; operaciones reales; importación o mapping real; SQL/DDL ejecutable,
 migraciones, instalaciones de dependencias, autenticación implementada, servicios online,
@@ -572,7 +622,11 @@ backups de datos reales, fotografías/cierre/reapertura implementados y merge si
 No simular estas capacidades en UI ni considerar aprobados por extensión detalles no confirmados.
 
 ## Acceptance checks
-TODOS FUTUROS; ninguno ejecutado sobre E1.1. Q1–Q8 tienen respuesta registrada;
+Estado de evidencia (2026-10-28): **38 PASA E1.1**, **1 PARCIAL (AC-38)** y
+**4 contratos revisados sin motor** (AC-30/31/32/36), según el
+[testplan](01-saldos-control-testplan.md). Los AC conservan su texto contractual; no se
+declaran PASS los motores no implementados. E1.3 se integró después, pero su integración
+no queda acreditada por estas pruebas. Q1–Q8 tienen respuesta registrada;
 las evidencias F1–F3 están incorporadas. Los extremos residuales condicionan únicamente
 los checks que los necesitan; no se interpreta la muestra como matriz exhaustiva.
 IDs estables locales AC-01…; relación con roadmap: E1.1-AC1 => AC-02/03/17;
@@ -625,7 +679,12 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 | AC-42 | En futura UI a 390/1440, inspeccionar y operar cada switch con teclado y foco | true: #8DBB2E/indicador blanco/Sí; false: verde suave de paleta/indicador blanco/No; nombre del atributo accesible, checked binario y etiqueta visible, independencia, sin controles segmentados ni interacción obligatoria al alta |
 | AC-43 | Revisar futura UI con preferencia de sistema clara y oscura | Siempre tema claro de fondos blancos/verdes suaves; sin modo/selector oscuro. No se declara contraste/accesibilidad verificados sin pruebas reales |
 
-### Plan de prueba futuro con fixtures
+**Nota AC-33:** la ausencia se conserva en el campo; la decisión 2026-10-28 permite usar
+0 neutral solo en el cálculo del Saldo actual. No se rellena la apertura ni se modifica
+la evidencia histórica. La nota se mantiene fuera de la tabla para no interrumpir los
+43 criterios.
+
+### Plan de prueba de E1.1 con fixtures (ejecutado en su alcance)
 - Unitarias Bun: validaciones autorizadas, parseo exacto, fechas, disponibilidad, transiciones,
   decisiones de impacto, MFA/recuperación usando reloj de prueba, sin debilitar seguridad real.
 - Integración Bun + Effect HTTP + bun:sqlite temporal: AC-01…21/23, FK y rollback real,
@@ -645,11 +704,11 @@ fuera; se comprueba ausencia de resultado falso, no resultados que todavía no e
 - AC-27 y AC-30/31 verifican contratos documentados; cálculo actual e histórico se
   probarán al entregar sus motores. No ampliar E1.1 a ejecutar esos módulos. Añadir
   equivalencia antes de cualquier filtro temporal nuevo o fecha Manual independiente.
-- AC-38: E1.1 verifica estado sin fuente, sin adelantar Ciclos. Lectura real del
-  maestro y sus estados se verificará al entregar E1.3 y las fuentes de cierre
-  correspondientes; no declarar esa integración pasada ni exigir implementarla en E1.1.
-- Cada AC se marcará pasado/fallido/no ejecutado en etapa de desarrollo autorizada;
-  este plan no sustituye evidencia ni autoriza implementarlo. Datos/DB/capturas sensibles fuera de Git.
+- AC-38: este testplan solo acredita el estado sin fuente de E1.1. E1.3 ya está
+  integrado; la lectura real del maestro y las fuentes de cierre no se re-ejecutan
+  aquí y no se declaran PASS en este documento.
+- Cada AC quedó marcado en el testplan de E1.1; los contratos de motores futuros siguen
+  sin PASS funcional. Datos/DB/capturas sensibles fuera de Git.
 
 ## Reservas financieras y trazabilidad
 Evidencias F1–F3 recibidas del usuario el 2026-10-20 tras su inspección directa del
@@ -667,7 +726,9 @@ Saldo actual «desde vigencia del control» por Fecha apertura.
 F1–F3 ya no se consideran evidencia ausente en bloque. Los extremos residuales se
 mantienen explícitos, sin restricciones nuevas. Defaults aprobados para altas ordinarias:
 Estado Activa y, por revisión M2 del 2026-10-21, tres booleanos false; no defaults de
-lectura/edición/importación o históricos ausentes. M1/M2 no son extremos pendientes. Para operativas
+lectura/edición/importación o históricos ausentes. La decisión de aplicación del
+2026-10-28 mantiene `null` en la apertura y usa 0 neutral solo en el cálculo del Saldo
+actual; no altera F3 ni otras ausencias. M1/M2 no son extremos pendientes. Para operativas
 que dependan de ellos se necesita únicamente el detalle sanitizado correspondiente,
 no reabrir Q1–Q8 ni reclamar dominios/semánticas que el usuario ya ha aportado.
 Los módulos posteriores conservan sus entregas; registrar contrato no autoriza implementarlos.
@@ -679,27 +740,31 @@ Esto no es una incoherencia a «corregir» autónomamente: preservar equivalenci
 no altera ni borra los hechos registrados. Inversiones/Efectivo conserva además Compras
 y Ventas. No existe fecha efectiva Manual independiente. Ningún filtro nuevo de
 Movimientos por fecha de apertura ni fecha Manual se añade sin especificación y prueba
-de equivalencia. Detalles de corte mensual/ausencias no demostrados permanecen abiertos.
+de equivalencia. La apertura `null` se conserva y se usa 0 neutral solo en el cálculo del
+Saldo actual; no se rellena y no altera el histórico. Detalles de corte mensual/ausencias
+no demostrados permanecen abiertos.
 
 ### Trazabilidad de decisiones
 - Q1 -> atributos independientes, Objetivo (€), Manual conceptual y F1/F2.
-- Q2/Q6 -> datos separados, negativos de apertura, ausencia distinta de cero, céntimos/fechas y F3.
+- Q2/Q6 -> datos separados, negativos de apertura, ausencia distinta de cero en
+  almacenamiento, céntimos/fechas y F3. Decisión 2026-10-28: apertura `null` = 0 neutral
+  solo para el cálculo del Saldo actual; no se extiende a Objetivo, Manual ni históricos.
 - Q3 -> ciclo de vida, protección de S000/IDs y bloqueo por impacto histórico, no por mera relación.
 - Q4 -> DT1 sin proveedor/correo/registro/administración innecesaria; excepción local justificada.
 - Q5 -> PK Sxxx y asignación atómica sin reutilización ni clave sustituta, crecimiento S1000.
 - Q7 -> propuesta DT6 aceptada; custodia/destino externo aún pendientes antes de despliegue.
-- Q8 -> estructura visual confirmada, identidad MyFinanzas, sin afirmar prueba visual implementada.
+- Q8 -> estructura visual confirmada, identidad MyFinanzas, con prueba visual en E1.1; no certifica motores futuros.
 - Detalles técnicos menores: revisión optimista, idempotencia, paginación, int64/BigInt,
   parseo exacto y protecciones estándar de sesión/API, resueltos con la autorización recibida.
 
-## Puerta de revisión y siguiente acción
-Presentar PR #6 con diseño común/pantallas aprobados documentados y resultados de
-controles; esperar aprobación final de la versión completa/merge. M1/M2 y aprobación
-visual no se reabren ni autorizan implementación. Las futuras verificaciones de la UI
-quedan pendientes hasta desarrollo autorizado; no afirmar que la aprobación textual
-sea una prueba de navegador o inspección de prototipo recibido.
-Aplicar revisión M2 vigente de switches y tema claro; no recuperar la antigua elección
-manual obligatoria. No merge, pantallas/componentes, CSS, SQL, migraciones, servicios,
-E1.2 u otros STEPS.
-Pares nuevos, Manual operativo y detalle de histórico se contrastan cuando corresponda,
-sin cambiar reglas financieras ni adelantar el maestro de Ciclos para una cabecera.
+## Estado de cierre y siguiente acción
+E1.1 está implementada e integrada por [PR #7](https://github.com/jmartinlabs/myfinanzas-app/pull/7),
+con la corrección de concurrencia [PR #9](https://github.com/jmartinlabs/myfinanzas-app/pull/9).
+El cierre documental de PR #6 y la aprobación de la versión completa son históricos y
+están completados. **H-SPEC01-01 quedó resuelto** por decisión expresa del usuario
+(2026-10-28): la apertura `null` se conserva y se usa 0 neutral en el cálculo del Saldo
+actual. No quedan contradicciones materiales abiertas; SPEC01 podrá cerrarse tras la
+validación e integración de la PR. No se reabren Q1–Q8/M1/M2.
+Los motores posteriores y la protección de cierres se rigen por sus specs (SPEC26/27) y
+por el roadmap; este documento no autoriza implementarlos ni declara su runtime. Cualquier
+cambio de regla financiera requiere una contradicción documentada y aprobación expresa.
