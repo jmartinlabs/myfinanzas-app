@@ -135,6 +135,17 @@ class RelayTests(unittest.TestCase):
         self.assertIn("sequence: 2", response_doc)
         self.assertIn("Respuesta A", self.read(self.a, "A", conversation).stdout)
 
+    def test_ack_preserves_exact_body_bytes_for_cli_and_api(self):
+        conversation = self.init()
+        self.join(conversation)
+        self.send(self.a, "A", conversation, "\nPrimera\n\nUltima\n", reply="false")
+        original = self.doc(conversation)
+        received = self.read(self.b, "B", conversation)
+        self.relay(self.b, "B", "read", conversation, "--ack", "--message-id", self.message_id(received.stdout))
+        acknowledged = self.doc(conversation)
+        self.assertEqual(acknowledged, original.replace("read_by: none", "read_by: B", 1))
+        self.assertEqual(self.api["render_document"](*self.api["parse_document"](acknowledged)), acknowledged)
+
     def test_response_is_implicit_ack_without_extra_commit(self):
         conversation = self.init()
         self.join(conversation)
