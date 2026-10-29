@@ -124,6 +124,10 @@ test("AC01–08/17: persistencia, IDs, atributos independientes, estado y FK his
     });
     expect(s.id).toBe("S006");
     expect(s.posicion.importe).toBe("-10.25");
+    db.run(
+      "INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado) VALUES('PRE9001','FK histórico','Gasto real',?,'Activo',1,'2026-01-01','2026-01-01')",
+      [s.id],
+    );
     let u = updateSaldo(db, s.id, {
       revision: 1,
       nombre: "Renombrado ficticio",

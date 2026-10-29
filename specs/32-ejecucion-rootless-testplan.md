@@ -48,9 +48,8 @@ migración 16/17→18 por esta matriz.
 - Matriz de restore: se corrigen las aserciones históricas `total=3`/`60.00` a
   `total=7`/`61.98`, confirmadas localmente con el fixture y `positionCents`.
 - Gate v18: la PR **#130** añade `C18-INVERSION-306BBC5`,
-  admite v18 y conecta `verifyContract(db,18)` fail-closed. PR **#130** con CI
-  `40919213207`/`40919213219` PASS; pendiente de merge. En `main` sigue abierto
-  hasta integrar esa PR.
+  admite v18 y conecta `verifyContract(db,18)` fail-closed. CI de PR #130 PASS;
+  pendiente de merge. En `main` sigue abierto hasta integrar esa PR.
 - `git diff --check`: PASS.
 
 ### Evidencia CI final — `87f9c5b`

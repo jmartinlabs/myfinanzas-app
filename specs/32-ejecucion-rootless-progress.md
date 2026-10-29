@@ -66,7 +66,7 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   y `/compras` exigen al menos una fila.
 - Gate v18: la PR **#130** añade el manifiesto
   `C18-INVERSION-306BBC5`, admite v18 y conecta `verifyContract(db,18)` fail-closed,
-  con regresiones v14–v18. CI `40919213207`/`40919213219` PASS; pendiente de merge.
+  con regresiones v14–v18. CI de PR #130 PASS; pendiente de merge.
   En `main` sigue abierto hasta integrar esa PR.
 - CI final `87f9c5b`: Validate `40898403683` **PASS**; Rootless `40898403837`
   **PASS** (6m39s). Evidencia: dos builds reproducibles, 315 API tests en imagen,

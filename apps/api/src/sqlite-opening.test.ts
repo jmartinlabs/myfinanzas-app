@@ -132,7 +132,7 @@ async function crashedWAL(path: string) {
   expect(p.signalCode).toBe("SIGKILL");
   expect(await new Response(p.stderr).text()).toBe("");
   expect(fs.statSync(path + "-wal").size).toBeGreaterThan(32);
-  // Immutable main-file reader proves the committed table has not been checkpointed.
+  // Immutable main-file reader proves the committed counter row has not been checkpointed.
   const inspect = Bun.spawnSync(
     [
       process.execPath,
