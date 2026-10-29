@@ -490,5 +490,99 @@ class RelayTests(unittest.TestCase):
         self.assertIn(f"Publicado, no verificado - {conversation} close 0002", err.getvalue())
 
 
+    def fetch(self, conversation):
+        branch = f"relay/{conversation}"
+        self.git(self.a, "fetch", "-q", "origin", f"refs/heads/{branch}:refs/remotes/origin/{branch}")
+        return self.git(self.a, "rev-parse", f"refs/remotes/origin/{branch}").stdout.strip()
+
+    def _message_meta(self, conversation, sequence, message_id, sender, recipient):
+        base, _ = self.api["parse_document"](self.doc(conversation), conversation)
+        return {
+            "conversation": conversation,
+            "description": base["description"],
+            "type": "message",
+            "state": "open",
+            "participants": base["participants"],
+            "sequence": sequence,
+            "message_id": message_id,
+            "from": sender,
+            "to": recipient,
+            "reply_expected": "false",
+            "read_by": [],
+            "created_at": "2026-01-01T00:00:00Z",
+        }
+
+    def _commit_message(self, conversation, parent, sequence, message_id, sender, recipient, marker):
+        meta = self._message_meta(conversation, sequence, message_id, sender, recipient)
+        return self.api["commit_file"](
+            self.a, parent, self.api["render_document"](meta, marker + "\n"),
+            f"relay: message {sequence:04d} {sender} -> {recipient}",
+        )
+
+    def test_send_send_same_head_rejects_stale_without_overwrite(self):
+        conversation = self.init()
+        self.join(conversation)
+        branch = f"relay/{conversation}"
+        parent = self.fetch(conversation)
+        before = self.count(conversation)
+        first = self._commit_message(conversation, parent, 1, "11111111-1111-1111-1111-111111111111", "A", "B", "Mensaje uno")
+        stale = self._commit_message(conversation, parent, 1, "22222222-2222-2222-2222-222222222222", "A", "B", "Mensaje dos")
+        self.api["publish"](self.a, "origin", branch, first)
+        with self.assertRaises(self.api["RelayError"]):
+            self.api["publish"](self.a, "origin", branch, stale)
+        self.assertEqual(self.head(conversation), first)
+        self.assertEqual(self.count(conversation), before + 1)
+        current = self.doc(conversation)
+        self.assertIn("Mensaje uno", current)
+        self.assertNotIn("Mensaje dos", current)
+        self.assertNotEqual(self.git(self.origin, "merge-base", "--is-ancestor", stale, branch, check=False).returncode, 0)
+
+    def test_send_ack_same_head_ack_wins_without_overwrite(self):
+        conversation = self.init()
+        self.join(conversation)
+        self.send(self.a, "A", conversation, "Pregunta")
+        branch = f"relay/{conversation}"
+        parent = self.fetch(conversation)
+        before = self.count(conversation)
+        meta, body = self.api["parse_document"](self.doc(conversation), conversation)
+        ack_meta = dict(meta)
+        ack_meta["read_by"] = ["B"]
+        ack = self.api["commit_file"](self.a, parent, self.api["render_document"](ack_meta, body), "relay: ack 0001 by B")
+        send = self._commit_message(conversation, parent, 2, "33333333-3333-3333-3333-333333333333", "B", "A", "Respuesta B")
+        self.api["publish"](self.a, "origin", branch, ack)
+        with self.assertRaises(self.api["RelayError"]):
+            self.api["publish"](self.a, "origin", branch, send)
+        self.assertEqual(self.head(conversation), ack)
+        self.assertEqual(self.count(conversation), before + 1)
+        current = self.doc(conversation)
+        self.assertIn("read_by: B", current)
+        self.assertIn("sequence: 1", current)
+        self.assertNotIn("Respuesta B", current)
+        self.assertNotEqual(self.git(self.origin, "merge-base", "--is-ancestor", send, branch, check=False).returncode, 0)
+
+    def test_send_ack_same_head_send_wins_without_overwrite(self):
+        conversation = self.init()
+        self.join(conversation)
+        self.send(self.a, "A", conversation, "Pregunta")
+        branch = f"relay/{conversation}"
+        parent = self.fetch(conversation)
+        before = self.count(conversation)
+        meta, body = self.api["parse_document"](self.doc(conversation), conversation)
+        ack_meta = dict(meta)
+        ack_meta["read_by"] = ["B"]
+        ack = self.api["commit_file"](self.a, parent, self.api["render_document"](ack_meta, body), "relay: ack 0001 by B")
+        send = self._commit_message(conversation, parent, 2, "44444444-4444-4444-4444-444444444444", "B", "A", "Respuesta B")
+        self.api["publish"](self.a, "origin", branch, send)
+        with self.assertRaises(self.api["RelayError"]):
+            self.api["publish"](self.a, "origin", branch, ack)
+        self.assertEqual(self.head(conversation), send)
+        self.assertEqual(self.count(conversation), before + 1)
+        current = self.doc(conversation)
+        self.assertIn("Respuesta B", current)
+        self.assertIn("read_by: none", current)
+        self.assertIn("sequence: 2", current)
+        self.assertNotEqual(self.git(self.origin, "merge-base", "--is-ancestor", ack, branch, check=False).returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()
