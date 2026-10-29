@@ -150,8 +150,10 @@ ni equivalencia visual por estos wireframes.
 
 Limitaciones: Q1–Q10 confirmadas; DT7 no aprobado; mapping/corte/regularización reales no demostrados; no
 hay implementación, fixtures ejecutables, navegador ni CI funcional en esta fase. No se
-ha abierto Excel ni datos reales. La spec y los wireframes no están aprobados.
+ha abierto Excel ni datos reales. La spec, los wireframes y este testplan fueron aprobados
+por el usuario el 2026-10-28 (PR87, `3d70fd6`); DT7, mapping/corte/regularización reales y
+los 59 AC siguen pendientes/UNRUN.
 
-Próxima acción segura: Codex revisa y puede publicar; solo el usuario aprueba
-spec/wireframes; DT7 sigue como gate independiente. Después, y solo con autorización
-separada, se autorizaría el desarrollo de E4.5.
+Próxima acción segura: la spec, los wireframes y este testplan ya fueron aprobados por
+el usuario el 2026-10-28 (PR87, `3d70fd6`); DT7 sigue como gate independiente y el
+desarrollo de E4.5 requiere autorización separada.

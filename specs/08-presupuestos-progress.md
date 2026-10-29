@@ -1,6 +1,7 @@
 # 08 — E2.2 Presupuestos: progreso de desarrollo
 
-Estado: **CANDIDATO VERIFICADO — PR funcional pendiente de aprobación de merge**.
+Estado: **INTEGRADO — PR #44 (`255bf61`)**. Nota de vigencia 2026-10-29: el estado
+anterior («candidato verificado; pendiente de aprobación de merge») es histórico.
 Fecha: 2026-10-23 (Europe/Madrid). Rama `feat/08-presupuestos`; base main `ca5de20`.
 Autorización: «Álex — Autorización de desarrollo E2.2 · `$dev 08`» (registrada en el
 [tablero](epic-board.md)). No autoriza merge, despliegue, Excel real ni E2.3.

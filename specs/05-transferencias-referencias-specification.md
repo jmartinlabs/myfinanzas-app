@@ -47,10 +47,9 @@ para financiación y No controlado sin un veto general por Tipo/Control. Manual 
 No seleccionar S000 en ningún extremo de Transferencias E1.5. TODAS las Transferencias
 con Exterior se reservan para una entrega posterior, incluidas las ordinarias y las
 variantes E3; no quedan habilitadas por carecer de Referencia o no ser casos especiales.
-**Excepción D5 propuesta (no vigente):** la aportación de tercero CAT013
-S000→Saldo interno queda fuera de E1.5 y se rige por spec14 §15; no habilita
-Exterior ordinario ni salidas y requiere aprobación/implementación propias. Ver
-§D5 al final.
+**Excepción D5 aprobada e integrada (PR #84/#90, `cf6954a`):** la aportación de tercero
+CAT013 S000→Saldo interno queda fuera de E1.5 y se rige por spec14 §15; no habilita
+Exterior ordinario ni salidas. Ver §D5 al final.
 Observación de continuidad aprobada: asignar una entrega futura responsable para las
 Transferencias ordinarias con Exterior, todavía pendiente de planificación autorizada.
 No se asigna por inferencia a E3 ni se amplía E1.5; conservar reglas/pruebas como trabajo futuro.

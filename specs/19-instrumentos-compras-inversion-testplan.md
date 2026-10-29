@@ -6,6 +6,10 @@ en `apps/api/src/schema-contracts.json` el 2026-10-27. Reconcilia el destino **1
 `origin/main` `9977210` (esquema 17, D5/PR90) y no cambia las decisiones funcionales de
 rev7/rev8. **DEV19 implementó la 18** sobre `main` `2364d9c`; el candidato final `dd450de`
 acredita rev10/18 con CI Linux full `40583217493` SUCCESS (13 E2E). **No se autoriza merge ni despliegue.**
+
+**Nota de vigencia (2026-10-29):** PR #95 se integró por squash en `main` `156a50d`;
+las menciones posteriores a «PR #95 draft / sin merge» son históricas. Los AC parciales
+se conservan y no se reclasifican.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`. Rev9 quedó superada; rev10 fue aprobada por el
 usuario el 2026-10-27.

@@ -351,3 +351,8 @@ ajuste aclaratorio AC-20 solicitado por usuario incorporado sin cambio de regla.
 Integrar PR #14 mediante squash tras ambas CI verdes del commit definitivo. Después
 esperar autorización expresa de dev 04; no iniciar implementación por extensión.
 No pruebas de funcionalidad ejecutadas en esta fase: controles son documentales.
+
+**Nota de vigencia (2026-10-29):** este apartado conserva el estado de la fase
+documental. E1.4 se integró después por PR #15 (`b51b89b`); los fixes de auditoría
+H-SPEC04-04/02/03 se integraron por PR #125 (`e3ebd76`). SPEC04 sigue sin cierre
+formal global: E2E/full continúan UNRUN. No se reabren reglas ni se infiere DEV.

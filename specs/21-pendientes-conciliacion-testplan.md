@@ -99,4 +99,4 @@ son **UNRUN**.
 | Pruebas Comida/E3.5 | UNRUN; ejecución futura bloqueada hasta integración/aceptación |
 | Pruebas de Cierres | No diseñadas como operativas; solo revisión documental DT5 |
 | QA independiente | No realizada |
-| Aprobación de spec | No concedida |
+| Aprobación de spec | **Aprobada por el usuario el 2026-10-27** (Q-S21-01–04 opción A y cierre documental); no autoriza DEV |

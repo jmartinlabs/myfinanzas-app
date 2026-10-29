@@ -7,6 +7,10 @@ Rev10 reconcilia el destino **18** con
 rev7/rev8. **DEV19 implementó la 18** sobre `main` `9977210`: código adaptado, C16/C17
 admitidos y cadena 16→17→18; la congelación de manifiestos se mantiene intacta. Sin merge ni
 despliegue. El DEV/QA histórico del contrato 16 queda superado por la evidencia DEV19.
+
+**Nota de vigencia (2026-10-29):** PR #95 se integró por squash en `main` `156a50d`;
+las referencias posteriores a «draft/sin merge» describen la fase y no el estado vigente.
+Los AC-03/24/27/30/33/34 conservan su cobertura parcial.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, manteniendo las decisiones funcionales de rev7.
 Rev9 (2026-10-27) quedó superada por la ocupación de la 16; rev10 fue aprobada por el usuario

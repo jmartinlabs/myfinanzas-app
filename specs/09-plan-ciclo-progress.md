@@ -1,5 +1,9 @@
 # 09 — Plan del ciclo: progreso
 
+> **Nota de vigencia (2026-10-29):** PR #57 (`7422d23`) integrada. El estado «EN CURSO»
+> y las referencias a «sin merge» o «gate Linux pendiente» describen la fase histórica;
+> no son el estado remoto actual.
+
 Estado: EN CURSO. Rama codex/dev09-plan-ciclo; base main 568aeed.
 Autorización: usuario «Autorizo dev 09», 2026-10-24. Spec09 rev4 aprobada.
 Un ejecutor; sin merge, despliegue, Excel real ni reanudación Dev32/B3.

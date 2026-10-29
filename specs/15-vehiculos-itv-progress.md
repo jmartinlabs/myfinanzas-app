@@ -1,6 +1,8 @@
 # E3.3 — Vehículos y control ITV: progreso DEV15
 
-Estado: **CANDIDATO VALIDADO — QA INDEPENDIENTE APTO CON OBSERVACIONES; SIN PUBLICAR** · rama `codex/pilot-dev15-deepseek`
+Estado: **INTEGRADO — PR #81 (`f5bf032`)** · rama `codex/pilot-dev15-deepseek`.
+Nota de vigencia 2026-10-29: el estado anterior («candidato validado; QA APTO con
+observaciones; sin publicar») es histórico; los residuales Linux/CI se conservan.
 Base autorizada: `e408b1da5ae9f45c9bfd139d11f362216b5bce26` (`origin/main`, PR78 integrada).
 HEAD final local de código: `8c8f06470e76e80437a63f591aff86f3012f3ffc`.
 HEAD documental previo: `c69e343ec3b16348ca10d96376298807fc65bcb2`.
