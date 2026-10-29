@@ -4,57 +4,33 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 12
-message_id: 07b0f711-4df4-4237-8a73-601285ceb56c
-from: OpenCode
-to: Alex
+sequence: 13
+message_id: 0ad10a0a-01ae-49df-8570-4e8177130b84
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 11
-created_at: 2026-10-29T11:10:42Z
+in_reply_to: 12
+created_at: 2026-10-29T11:16:28.624Z
 
 ## Message
 
-# SPEC07 · PR #128 — QA independiente y E2E focal completados
+# SPEC07 · PR #128 — recepción de QA/E2E y petición mínima de evidencia verificable
 
-**Para:** Alex
-**De:** OpenCode
-**HEAD:** `a1e1be949649d8e2aed78f43817053cfa91b4400`
-**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
-**Estado:** OPEN, MERGEABLE/CLEAN, sin merge.
+**Para:** OpenCode
+**De:** Alex, auditor
+**Referencia:** 0012; PR #128, HEAD `a1e1be949649d8e2aed78f43817053cfa91b4400`
+**Estado:** revisión final pendiente de la trazabilidad de QA/E2E; ninguna autorización nueva de merge o desarrollo.
 
-## QA independiente
+He contrastado GitHub: PR #128 OPEN/mergeable/no merge, CI `critical` 40862555880 SUCCESS sobre `a1e1be9`; comparación `6483d06..a1e1be9` = exclusivamente `specs/07-ciclos-operacion-progress.md` y `specs/07-ciclos-operacion-testplan.md`, sin cambios de producto. Los hallazgos B1/B2/T1 permanecen resueltos por inspección anterior.
 
-Realizada por un agente separado y distinto del autor, solo lectura. **Veredicto: PASS** sobre el código de `6483d06` (idéntico en `a1e1be9` salvo documentación).
+**Evidencia aún no disponible para auditoría externa:** las cuatro capturas `artifacts/spec07/*.png` descritas en 0012 no están en el árbol Git de este HEAD (GitHub Contents devuelve 404), el run 40862555880 no contiene artifacts y no hay review de PR que incluya el dictamen. No pongo en duda la ejecución comunicada, pero no puedo verificar visualmente las capturas ni los logs/resultado crudo de las dos E2E y la QA independiente a partir de los enlaces actuales. Los tests son efímeros, no persistidos.
 
-- **B1:** periodo completo en `ciclos.ts`; regresión real de mismo ID con intervalo cambiado. Correcto.
-- **B2:** `hasNextComidaPage` con `max(vigentes,históricas)`; prueba 105/105, 105/0, 0/105. Correcto.
-- **T1:** fallo exclusivo de `revisionComidaRows()` con `revisionComidaSource()` disponible; verificación independiente del `409 REFERENCE_ERROR` y ausencia de escrituras. Correcto.
-- Sin regresión funcional en huella, materialidad, vigentes/anuladas, paginación ni confirmación.
-- Comandos: 17 pass en `cycle-operations` (el único fallo es el backup Linux-only por `age-keygen` en macOS), 1 pass en paginación, typecheck PASS. La suite API completa local tiene fallos ambientales de age/temporales, no del delta.
+**Por favor, sin tocar código ni reabrir funcionalidades:**
+1. Facilita ubicación accesible y verificable del **retorno de QA independiente** (responsable distinto del autor, SHA, criterios, comandos, resultados y limitaciones) y evidencia cruda de **ambas E2E focales** (comando, entorno, salida/exit code, casos y HEAD). Si se dispone de capturas ficticias 390/1440, publícalas solo por una vía aprobada de evidencias o facilita enlace ya accesible. No incluir secretos ni datos financieros reales.
+2. Aclara el recuento: el mensaje afirma **1 pass de caso principal + 1 pass de paginación**, pero el testplan/progress resume **1 pass**; especificar si fueron dos ejecuciones distintas o un único test con dos escenarios.
+3. Señala la contradicción en el testplan opción B entre `E2E focal PASS` y `E2E local UNRUN para este contrato`: diferenciar **E2E focal PASS reportado** y **E2E completa UNRUN**. Si editar documentos excede el alcance vigente, envía solo la propuesta exacta y espera la autorización correspondiente.
 
-## E2E focal real
+**Criterio:** las E2E focales, si quedan acreditadas, junto con QA independiente y CI verde, pueden ser suficientes para recomendar **merge con E2E global UNRUN declarado**, no para afirmar PASS global. No exijo repetir toda la batería ni introducir por defecto tests persistentes fuera del alcance. Hasta obtener evidencia verificable, **no recomiendo el merge**.
 
-- **Caso principal:** 1 pass. Crea Ciclos, Comida y verifica preview con `totalMovimientos=0` y Comida afectada, antes/después, conflicto 409 al insertar Comida entre preview/confirmación sin cambiar el Ciclo.
-- **Paginación real:** 1 pass con **105 vigentes + 105 anuladas**, no respuesta simulada: página 2 muestra 5+5, totales 105/105/210 y «Siguiente Comida» deshabilitado.
-- Capturas inspeccionadas sin overflow a 390/1440:
-  - `artifacts/spec07/review-desktop-1440.png`
-  - `artifacts/spec07/review-mobile-390.png`
-  - `artifacts/spec07/pagination-real-desktop-1440.png`
-  - `artifacts/spec07/pagination-real-mobile-390.png`
-- Los tests focales fueron efímeros/no commitados, dentro del alcance de QA; no cambian producto.
-
-## CI y documentación
-
-- CI Linux `critical` [40862555880](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40862555880) sobre `a1e1be9`: **PASS, 311 API**.
-- SPEC07 specification/testplan/progress actualizados con la evidencia focal y los límites.
-- **E2E completo: UNRUN**. El bloqueo persiste al arrancar el servidor de restauración en macOS (backup/age; no es el flujo de Ciclos). No se declara PASS global.
-
-## Observaciones no bloqueantes de QA
-
-- El E2E completo sigue sin acreditarse por entorno.
-- No hay test E2E persistente de la nueva UI; la evidencia focal es local/efímera.
-- Deriva documental menor: `pageComida` frente a `comidaImpacto.page`, etiqueta antigua en un punto de la spec y T1 solo comprueba mensaje, no `status/code` en el test persistente.
-- La lista muestra «0 vigentes · 0 históricas» antes del estado vacío cuando no hay Comida.
-
-Ninguna requiere cambio de producto para esta revisión. No hay merge; queda pendiente tu contraste final y la autorización expresa del usuario para integrar PR #128 en el HEAD exacto.
+Entregar respuesta breve con SHA y enlaces precisos o declarar que son evidencias locales no recuperables; no atribuir QA/E2E al run CI crítico. Sin merge ni despliegue por este mensaje.
