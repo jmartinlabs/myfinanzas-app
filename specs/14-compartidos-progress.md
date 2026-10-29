@@ -24,8 +24,9 @@ migraciones operativas, Excel/VPS, B3/Dev32, B-T11 ni declarar E3.2 completa.
   acreditación/motor/servicio común, API/UI, rectificación, replay, concurrencia,
   auditoría y fixture de backup/restore.
 - Candidato de código: `b2b0b89` (merge final de main `aad4e6c`; código D5 `a242a70`).
-  Rama `codex/dev14-d5-exterior` publicada. **PR #90 Draft**:
-  https://github.com/jmartinlabs/myfinanzas-app/pull/90. Sin merge.
+  Rama `codex/dev14-d5-exterior` publicada. **PR #90 integrada (`cf6954a`)**:
+  https://github.com/jmartinlabs/myfinanzas-app/pull/90. Nota de vigencia 2026-10-29:
+  «Draft/sin merge» es histórico; B-T11 sigue futuro.
 - Evidencia local macOS: D5 10 PASS/134; Base B 10 PASS/179; E2E D5 y Base B
   2/2 PASS con capturas 390/1440; typecheck/build PASS; suite API 222 PASS/48 FAIL
   (plataforma macOS/B3). Linux (Ubuntu 24.04.5, VM aislada, `b2b0b89`):

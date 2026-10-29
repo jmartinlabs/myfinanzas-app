@@ -1,9 +1,13 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Specification
-Status: APPROVED AND INTEGRATED — PR #24, squash b60def124e95d692b6021eff9c1049652e21ded0.
+Status: APPROVED AND INTEGRATED — spec PR #24 (`b60def1`); implementación funcional PR #34 (`cb9ba3b`).
 Q1–Q4 validadas y decisiones app de exceso, fecha futura y ciclo de vida consolidadas
 por auditoría final del usuario 2026-10-22; integración verificada, desarrollo NO autorizado.
 Approval source/date: usuario autoriza cierre e integración del SHA 3f04f33 el
 2026-10-22; merge y CI posterior verificados. No autorización de dev06.
+
+**Nota de vigencia (2026-10-29):** #24 fue la propuesta documental y #34 la
+implementación funcional (`cb9ba3b`). La auditoría técnica de SPEC06 sigue abierta; no
+se declara cierre global.
 Context and brainstorming: [decisiones y ronda única](06-deuda-brainstorming.md),
 [roadmap E1.6/E4.4](roadmap.md), [R1/R2/R5](functional-reference-v5.11.md),
 [contratos E1.4](04-movimientos-testplan.md), [cierre E1.5](05-transferencias-referencias-testplan.md).

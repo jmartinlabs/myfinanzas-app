@@ -1,6 +1,8 @@
 # 10 — Plan anual: Progress
 Specification: [spec10](10-plan-anual-specification.md)
-Current state: candidato local verificado; QA y navegador PASS; gate global Linux pendiente.
+Current state: **integrado por PR #61 (`e1d6dba`)**. Nota de vigencia 2026-10-29: el
+estado anterior («candidato local verificado; gate global Linux pendiente») es histórico
+de la fase.
 
 Desarrollo autorizado por el usuario «Autorizo» el 2026-10-24, tras integración
 spec10 rev2/PR60. Rama `codex/dev10-plan-anual`, base `72833b9`. La aprobación

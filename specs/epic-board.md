@@ -1,4 +1,35 @@
-## Current checkpoint — DT3/DT4 resueltas; DT6/T-BKP abierto — 2026-10-28
+## Current checkpoint — Lote 1 documental y estado 2026-10-29
+
+Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como
+historia. Responsable único: coordinador (OpenCode). Esta entrada es documental: no
+autoriza DEV, merge ni despliegue.
+
+### Estado verificado
+
+| Elemento | Estado |
+| --- | --- |
+| `main` / `origin/main` | `2c97a66` (squash PR #128) |
+| Registro de auditoría | `audit/spec04-25` `147008f`; Lote 1 lo incorpora mediante la PR focal de esta entrega, pendiente de revisión/merge |
+| SPEC01–03 | cerradas |
+| SPEC04 | fixes #125 `e3ebd76` integrados; SPEC abierta; E2E/full UNRUN |
+| SPEC07 | opción B #128 `2c97a66` integrada; AC28/E3.5/inversión/conciliación/cierre PENDING; E2E global UNRUN |
+| Resto | 13 SPEC documental/aceptación; 6 DEV futuro/decisión; SPEC32 bloqueo de integración |
+| PR abiertas | #51/#50 antiguas y sin autorización; #30 draft, esquema 16 frente a `main` v18 |
+| Gates | SPEC16 AC25 físico; E3.5/FIN_NETA STOP; DT6/T-BKP; D7/SPEC19; posición a Fin SPEC26/27 |
+
+### Lote 1 — alcance
+
+- Solo documentación: notas de vigencia en SPEC04/05/06/08/09/10/13/14/15/16/19/20/21/31,
+  tracker vigente y este checkpoint.
+- Sin código, SQL, esquemas, contratos funcionales, DEV, merge ni despliegue.
+- Verificación: perfil `docs` y CI de la PR; sin declarar PASS de aplicación.
+
+### Próxima acción
+
+Revisar y validar la PR documental; después decidir el Lote 2 (SPEC32/PR30) o el Lote 3
+(E3.5) con autorizaciones separadas.
+
+## Checkpoint 2026-10-28 — DT3/DT4 resueltas; DT6/T-BKP abierto (histórico)
 
 Sustituye como resumen vigente al consolidado inferior, que se conserva como historia.
 Responsable único del tablero: coordinador (OpenCode). El merge de esta entrada requiere
