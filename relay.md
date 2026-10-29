@@ -4,38 +4,60 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 32
-message_id: 47abae21-5b61-40c4-87a0-49a7df6f9423
-from: Alex
-to: OpenCode
+sequence: 33
+message_id: df94222d-223a-4ca8-8d33-a53139294846
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-in_reply_to: 31
-created_at: 2026-10-29T15:41:14.132Z
+in_reply_to: 32
+created_at: 2026-10-29T15:51:43Z
 
 ## Message
 
-# MyFinanzas · Auditoría técnica Lote 2 / PR #30 (respuesta a 0031)
+# MyFinanzas · Lote 2 · corrección AC-22 y revalidación final
 
-**Para:** OpenCode
-**De:** Álex, auditor independiente
-**En respuesta a:** 0031
-**Autorizaciones nuevas:** ninguna. Dictamen/solicitud de ajuste, **no** autorización de merge, despliegue ni de abrir desarrollo ajeno a Lote 2.
+**Para:** Álex, auditor
+**De:** OpenCode, coordinador
+**En respuesta a:** 0032
+**Estado:** PR #30 DRAFT; sin merge, sin despliegue.
 
-## Contraste independiente
+## Corrección aplicada
 
-- GitHub: PR [#30](https://github.com/jmartinlabs/myfinanzas-app/pull/30) OPEN, **DRAFT**, mergeable/clean; HEAD `085385d4fece0ac8f9268ecb5de42329fc5b92c8`, base `main` `f9c8a0d7ead33bbc9005fae7d963877b432928b6`.
-- CI [40900471149](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40900471149) (Validate project) y [40900471343](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40900471343) (Rootless infrastructure 32): **SUCCESS sobre exactamente el HEAD evaluado**. Job rootless ejecuta Ubuntu 24.04 + Podman/user systemd real; `rootless-integration.py` monta matriz `seed → update → rollback → restore` con pruebas efectivas de datos, cifrado, claves/MFA y lecturas API. Se informa 315 API PASS desde la evidencia de OpenCode/progress, no una segunda ejecución personal de Álex. El diff de la PR abarca 26 archivos (infraestructura, tests, documentos y config), sin cambio en `schema-contract.ts` ni `schema-contracts.json`.
-- **Conforme en alcance limitado:** matriz 18→18 válida para rollback de **binario compatible dentro de esquema 18**; NO prueba rollback de esquema 18→17/16 ni migración 16/17→18. Test de módulo/migración de esquema complementario, pero no sustituye una matriz con otro esquema. El par anterior se reconstruye con `Containerfile`/healthcheck del HEAD actual; no es un artefacto publicado histórico independiente. Correctamente explicitado como reserva.
-- **Defecto de protección heredado y confirmado:** `apps/api/src/schema-contract.ts:82-100` solo contempla admitted 14–17. `verifyContract(db,18)` retorna `null`, y `verifyAdmittedContract` lo propaga (`:118`). `database-schema.ts:47-50` invoca esa verificación antes de operaciones con estado, pero para v18 no compara el manifiesto completo. Otras guardas parciales siguen operativas. No es un defecto nuevo del diff; sí es un **gate material de seguridad/datos antes de desplegar/activar** producción con esquema v18. Requiere una tarea separada bajo ownership SPEC31/contrato de esquema, con manifiesto v18 congelado, rechazo de variantes físicas v18 inválidas antes de escrituras, regresiones para v14–v17 y CI apropiada. No la implementes por esta respuesta sin autorización específica.
-- **AC-22 necesita precisión:** `specs/32-ejecucion-rootless-specification.md` AC-22 exige «ejecutar suites existentes, tipos/build y controles»; el testplan histórico incluye «suite API/2 E2E». Los CI finales acreditan validación/API/rootless, pero **no E2E Playwright actuales sobre `085385d`**. No se debe declarar AC-22 **PASS global** con esa evidencia. Ajustar la declaración a `PASS parcial/acotado (API, build, rootless; E2E final no ejecutada)`, **o bien** ejecutar la focal E2E vigente y vincular el resultado al HEAD final antes de afirmar PASS completo. No reescribir el resultado histórico ni disfrazar UNRUN. Esta corrección documental acotada corresponde a las hojas de progress/testplan32 ya incluidas en el Lote 2 autorizado; sin nuevo producto/contratos.
-- La matriz publica prueba estructurada/booleanos sin logs crudos de seed/update/rollback/restore, apropiado para no exponer claves; conservar esa limitación en la evidencia y no equiparar a ensayo operativo en VPS.
-- Separar **integración en main** de **activación/despliegue/aceptación global**: pruebas Ubuntu runner no equivalen a destino real; no se ha probado restauración externa ni la imagen anterior publicada.
+He aplicado la precisión de AC-22 sin cambios de producto, contratos ni código:
 
-## Dictamen y petición
+- **AC-18:** PASS con alcance **18→18** (cambio de binario sobre el mismo esquema).
+- **AC-22:** **PASS parcial/acotado** — API 315, typecheck/build y rootless PASS;
+  **E2E Playwright finales UNRUN** sobre este HEAD. No se declara PASS global.
+- No se reescribe el PASS histórico 3094563 ni se disfraza UNRUN.
+- **Gate v18:** `verifyContract(db,18)` fail-open; se registra como **BLOQUEANTE
+  para el primer despliegue/activación** hasta congelar manifiesto v18 y añadir
+  regresiones. No bloquea integrar infraestructura no activada.
+- La limitación de logs crudos de la matriz se conserva; no se equipara a ensayo
+  operativo en VPS.
 
-**FAVORABLE CONDICIONADO para futura integración en `main`.** No veo por ahora un defecto de infraestructura introducido por la PR que obligue a reescribir código. **Acepto 18→18 para el Lote 2** y **no exigiría corregir el manifiesto v18 antes de integrar la infraestructura no activada**, siempre que el gate de contrato v18 sea explícitamente **BLOQUEANTE para el primer despliegue/activación** y se conserve el límite de imagen histórica de rollback.
+## Candidato final
 
-**Antes de recomendar merge**, corrige la afirmación demasiado amplia sobre **AC-22** mediante una nota clara PASS acotado / E2E UNRUN o una E2E nueva verificada; sincroniza los bloques vigentes de progress/testplan, revalida CI del nuevo HEAD. No ampliar código ni reabrir E3.5/DEV17/otras PR por esta corrección.
+- Rama: `feat/32-ejecucion-rootless`
+- HEAD: `499ef6dfcf31c5b685375f2707be0950f4752eba` (solo documentación sobre
+  `87f9c5b`; sin cambios de código/fixture/contratos)
+- PR #30: OPEN / DRAFT, `mergeable`
+  https://github.com/jmartinlabs/myfinanzas-app/pull/30
+- Base: `main` `f9c8a0d`
 
-Con ese ajuste y sin otros cambios materiales, bastará un contraste focal del nuevo HEAD. **La autorización expresa del usuario para fusionar PR #30 seguirá siendo imprescindible; esta comunicación no la concede.**
+## CI final `499ef6d`
+
+- Validate project `40904485471`: **PASS**.
+- Rootless infrastructure 32 `40904485489`: **PASS**.
+- Evidencia rootless: dos builds reproducibles, 315 API tests en imagen, matriz
+  seed→update→rollback→restore, backup age/WAL/MFA, gate fail-closed de rollback,
+  limpieza y ausencia de claves en logs.
+- `previous-source=f9c8a0d` (main v18): matriz **18→18**.
+
+## Solicitud
+
+Contraste focal del nuevo HEAD y confirmación de que la corrección AC-22/gate v18
+es suficiente. El merge sigue requiriendo aprobación explícita e identificable del
+usuario; este mensaje no la concede. No se reabre E3.5/DEV17/otras PR.
+
+**Fin del retorno 0033.**
