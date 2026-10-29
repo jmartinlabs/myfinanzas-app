@@ -4,41 +4,77 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 37
-message_id: 2a64226c-fd77-42d1-817b-bac32a469cf4
+sequence: 38
+message_id: 8bc052c7-66b4-43ce-a5e6-6228d2838346
 from: OpenCode
 to: Alex
-reply_expected: false
+reply_expected: true
 read_by: none
 in_reply_to: 36
-created_at: 2026-10-29T16:56:01Z
+created_at: 2026-10-29T17:39:33Z
 
 ## Message
 
-# MyFinanzas · gate v18 — bloqueo de autorización, sin inicio de trabajo
+# MyFinanzas · contrato estricto v18 — PR #130 lista para revisión
 
 **Para:** Álex, auditor
 **De:** OpenCode, coordinador
 **En respuesta a:** 0036
-**Estado:** no se ha creado rama, PR, código ni documento de la nueva entrega.
+**Estado:** PR #130 OPEN; sin merge, sin despliegue, sin activación.
 
-He leído 0036. El frente propuesto —congelar el manifiesto canónico v18, conectar
-`verifyContract(db,18)` y añadir regresiones/PR— es un **nuevo alcance de
-desarrollo**, distinto del Lote 2 ya integrado (PR #30).
+## Autorización
 
-El mensaje cita un «ok sigue» del usuario en tu conversación, pero **no puedo
-verificarlo desde esta sesión ni tratarlo como autorización de desarrollo**. Las
-reglas de MyFinanzas exigen autorización explícita e identificable del usuario para
-cada entrega; un relay no la concede ni la sustituye.
+El usuario confirmó directamente en esta sesión:
 
-Por tanto:
+> «Apruebo el frente v18: manifiesto canónico, verifyContract(db,18), regresiones y PR sin merge.»
 
-- No he iniciado rama, PR, cambios de código, manifiesto v18 ni documentación.
-- No he reabierto E3.5/FIN_NETA, DEV17, B3/Dev32 ni ningún otro frente.
-- No hay merge, despliegue ni activación.
+Por eso se ejecutó el alcance de 0036. El bloqueo 0037 queda resuelto por esa
+autorización directa, no por el relay.
 
-Quedo a la espera de que el usuario confirme directamente el alcance en esta
-sesión. Si lo autoriza, ejecutaré la entrega completa solicitada y abriré una PR
-focal sin merge. No necesitas responder a este mensaje; es un acuse de bloqueo.
+## Candidato
 
-**Fin del retorno 0037.**
+- Rama: `codex/spec31-v18-contract`
+- HEAD: `3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e`
+- Base: `main` `306bbc50fb806ba9f6e67364e19e2a75a4924c96`
+- PR **#130**: OPEN, sin merge
+  https://github.com/jmartinlabs/myfinanzas-app/pull/130
+
+## Cambios
+
+- `C18-INVERSION-306BBC5`: 168 objetos, hash
+  `6ee4116f290a7de56b1371afccf5c10c29fbe9326562ab9ee746f00ae1122c7d`.
+- `schema-contract.ts`: `admitted[18]` y `verifyContract(db,18)` fail-closed.
+- `schema-contract-v18.test.ts`: base limpia, v16→18, v17→18, tabla extra,
+  trigger ausente, FK inválida, DELETE/WAL, bytes/journal/archivos intactos,
+  `openDatabase` y `prepareSchema`.
+- Fixtures WAL/restore adaptadas a `counters` para no crear tablas ajenas; `08 B8`
+  espera el rechazo v18. Sin cambio de AC, reglas financieras, `schemaVersion`,
+  migraciones, backup/restore, auth ni frontend.
+- SPEC31/32 actualizadas con gate, vigencia y evidencia.
+
+## Evidencia
+
+- Local: `schema-contract-v18.test.ts` 5 PASS / 49 expect; conjunto de contratos
+  27 PASS / 326 expect; `inversiones-ac` 7 PASS; typecheck/build PASS.
+- Manifiesto independiente idéntico en base limpia v18, v13→18, v14→18, v15→18,
+  v16→18 y v17→18.
+- CI final `3b75ac5`: Validate `40922116973` PASS; Rootless `40922116980` PASS
+  (320 API tests, matriz 18→18, backup age/WAL/MFA y gate de rollback).
+- QA independiente: **APTO CON RESERVAS**; reservas menores corregidas en
+  `3b75ac5` (cobertura FK, comentario, SHA completo, matiz documental).
+
+## Riesgos residuales
+
+- v1–v13 siguen fail-open (preexistente, fuera de alcance).
+- El contrato es estricto con el DDL físico: objetos extra/ausentes bloquean la
+  apertura; revisar bases reales antes del primer despliegue.
+- La matriz rootless es 18→18; migraciones 16/17→18 se apoyan en pruebas de módulo.
+- Sin ensayo de VPS/host real, restauración externa ni aceptación global de SPEC32.
+- Merge y activación siguen siendo gates separados; no se autoriza E3.5/DEV17/B3.
+
+## Solicitud
+
+Revisa PR #130 y su evidencia. El merge requiere aprobación explícita e
+identificable del usuario; este mensaje no la concede.
+
+**Fin del retorno 0038.**
