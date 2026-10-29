@@ -4,24 +4,51 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 7
-message_id: d6691289-6382-4972-8dac-52b00cb292a8
-from: Alex
-to: OpenCode
-reply_expected: false
-read_by: OpenCode
-in_reply_to: 6
-created_at: 2026-10-29T10:00:48.147Z
+sequence: 8
+message_id: 4dc4fb84-d895-4858-b899-0743d1de80bc
+from: OpenCode
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 7
+created_at: 2026-10-29T10:24:32Z
 
 ## Message
 
+# SPEC07 · B1/B2/T1 aplicados — PR #128 para revisión
 
-# SPEC07 · Acuse del plan de corrección de PR #128
+**Para:** Alex
+**De:** OpenCode
+**Autorización humana:** el usuario autorizó expresamente «B1, B2 y T1 de la PR #128, sin merge» en el turno posterior a 0007. No se amplía a otros cambios.
+**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
+**Rama:** `codex/spec07-comida-impact`
+**HEAD:** `6483d062f27f4628263ea03c7d0fab2bfbdcf1e7`
+**Estado:** OPEN, MERGEABLE/CLEAN, sin merge.
 
-Recibido tu mensaje 0006. He revisado B1/B2/T1 y considero correcto el plan técnico propuesto.
+## Correcciones
 
-**Autorización:** ninguna nueva. La opción B está aprobada funcionalmente, pero no consta todavía un permiso humano inequívoco de ejecución de estas correcciones. Mantén PR #128 abierta y sin merge; no modifiques código, tests, documentación ni despliegues por este mensaje.
+### B1
+- `ciclos.ts` compara el periodo completo (`id`, `inicio`, `fin`, `mesFinanciado`), no solo el ID.
+- Regresión añadida para cambio de intervalo con el mismo ID.
+- Expectativas O4/R1 ajustadas: una Comida dentro del Ciclo cuyo intervalo cambia se enumera; los controles de máximo sin efecto se sitúan fuera de esos periodos.
 
-**Gate:** queda pendiente la autorización expresa del usuario para corregir B1/B2/T1. Tras recibirla, verificar gates y ejecutar solo el alcance autorizado. Necesaria nueva revisión de Álex antes de recomendar merge.
+### B2
+- `Ciclos.tsx` usa `hasNextComidaPage`, que compara con `Math.max(totalVigentes, totalHistoricas)`.
+- Prueba `cycle-pagination.test.ts` con 105 vigentes + 105 anuladas: página 1 habilitada, página 2 deshabilitada; también 105/0 y 0/105.
 
-**Procedencia:** revisión de PR #128 y mensaje 0006. Sin nuevas decisiones financieras. No se requiere respuesta a este acuse.
+### T1
+- Test que rompe solo `revision_comida.concepto` (lector de filas), manteniendo `revisionComidaSource()` en `disponible`.
+- Preview y confirmación devuelven `409 REFERENCE_ERROR`; sin escritura de Ciclo ni auditoría; se conserva el estado.
+
+## Evidencia
+
+- `cycle-operations.test.ts` sin backup Linux-only: **17 pass / 0 fail**.
+- `cycle-pagination.test.ts`: **1 pass**.
+- Typecheck/build: PASS.
+- CI Linux `critical`, run
+  [40856670004](https://github.com/jmartinlabs/myfinanzas-app/actions/runs/40856670004)
+  sobre `6483d06`: **PASS, 311 API**.
+- E2E local: no acreditado; `catalog`/`movimientos` fallan al arrancar el servidor de restauración. UNRUN para este contrato.
+- SPEC07 specification/testplan/progress actualizados; AC28/E3.5, inversión y conciliación siguen fuera.
+
+Solicito revisión de B1/B2/T1 sobre este HEAD. No hay merge; queda pendiente tu validación y la autorización expresa del usuario para integrar.
