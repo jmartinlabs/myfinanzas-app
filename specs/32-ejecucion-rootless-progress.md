@@ -28,7 +28,7 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   pruebas de esquema/backup de módulos.
 - `release-fixture.mjs`: añade v17 (`movimiento_compartido` con transferencia
   S000→S001, referencia compartida y Tercero) y v18 (`instrumentos`,
-  `operaciones_inversion`, auditorías y saldos S002/S003).
+  `operaciones_inversion`, auditorías y saldos S900/S901).
 - `release-contract.mjs`: añade lecturas `/instrumentos` y `/compras`.
 - `rootless-integration.py`: el release anterior se obtiene con `git merge-base HEAD
   origin/main`, no con un SHA fijo; se registra en evidencia.
@@ -54,7 +54,11 @@ Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
   la etiqueta. Runs `40892972945` y `40894716243` confirmaron `missing_modules:
   ['../../web/src/cycle-pagination']`: el `/suite` no copiaba `apps/web/src`,
   importado por `cycle-pagination.test.ts` (#128). Corregido para copiar
-  `apps/web/src` (`.ts/.tsx/.json`); rerun pendiente.
+  `apps/web/src` (`.ts/.tsx/.json`).
+- CI rootless run `40896241906`: la matriz alcanzó `real-cross-version-update` y
+  falló con 500 al crear `S002` vía API: el fixture insertaba `S002/S003` sin
+  avanzar `counters('saldo')`. Se mueven a `S900/S901`, fuera de la secuencia
+  gestionada por la API; rerun pendiente.
 - Matriz `release-contract`: se corrigen las aserciones históricas de restore
   (`total=3`, `60.00`) al estado real del fixture (`total=7`, `61.98`), confirmado
   localmente con `listMovements` y `positionCents`; las lecturas de `/instrumentos`

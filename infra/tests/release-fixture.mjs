@@ -35,9 +35,9 @@ const masters = (db) => {
   db.run(`INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda,presupuesto)
     VALUES('PAR900','Partida fixture','SUB900','Activa',1,'fixture','fixture',NULL,NULL)`);
   db.run(`INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
-    VALUES('S002','Efectivo inversión fixture','Efectivo','Inversiones','Activa',1,'fixture','fixture')`);
+    VALUES('S900','Efectivo inversión fixture','Efectivo','Inversiones','Activa',1,'fixture','fixture')`);
   db.run(`INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
-    VALUES('S003','Inversión fixture','Inversión','Inversiones','Activa',1,'fixture','fixture')`);
+    VALUES('S901','Inversión fixture','Inversión','Inversiones','Activa',1,'fixture','fixture')`);
   for (const [id, nombre, tipo] of [
     ['REF9001', 'Anticipo fixture', 'Anticipo'],
     ['REF9002', 'Compartido fixture', 'Gasto compartido'],
@@ -110,7 +110,7 @@ const moduleRows = (db, suffix, cycle, inicio, extra) => {
     VALUES(?,?,NULL,NULL,'EUR','Activa',1,'fixture','fixture')`,
     ['I900' + suffix, 'Instrumento fixture ' + suffix]);
   db.run(`INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado)
-    VALUES(?, 'Compra', '2026-01-01', ?, 'S002', 'S003', 10, 1000, 'EUR', NULL, 10000, 0, 'Compra fixture', '', 'Vigente', 1, 'fixture', 'fixture')`,
+    VALUES(?, 'Compra', '2026-01-01', ?, 'S900', 'S901', 10, 1000, 'EUR', NULL, 10000, 0, 'Compra fixture', '', 'Vigente', 1, 'fixture', 'fixture')`,
     ['900' + suffix, 'I900' + suffix]);
   db.run(`INSERT INTO instrumento_audit(instrumento,revision,accion,motivo,instante,actor,anterior,posterior)
     VALUES(?,1,'alta',NULL,'fixture','usuario-unico',NULL,'{}')`, ['I900' + suffix]);

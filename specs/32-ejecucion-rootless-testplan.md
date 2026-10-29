@@ -13,7 +13,7 @@ de esquema/backup de los módulos y no se presenta como rollback compatible 18�
 - v17: `movimiento_compartido` con transferencia S000→S001, referencia de Gasto
   compartido y participante Tercero.
 - v18: `instrumentos`, `operaciones_inversion`, `instrumento_audit`,
-  `operacion_inversion_audit` y saldos S002/S003 (Efectivo/Inversión de Inversiones).
+  `operacion_inversion_audit` y saldos S900/S901 (Efectivo/Inversión de Inversiones).
 - `release-contract.mjs` consulta también `/instrumentos` y `/compras`.
 
 Estado: implementación y fixture validados localmente; **AC-18/AC-22 PENDING** hasta
@@ -40,7 +40,10 @@ la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histó
 - CI rootless run `40891410721`: **314 PASS / 1 FAIL**; etiqueta no identificada.
   Runs `40892972945` y `40894716243` mostraron `missing_modules:
   ['../../web/src/cycle-pagination']`; el `/suite` no copiaba `apps/web/src`.
-  Corregido para incluir `.ts/.tsx/.json` de web; rerun pendiente.
+  Corregido para incluir `.ts/.tsx/.json` de web.
+- CI rootless run `40896241906`: la matriz alcanzó `real-cross-version-update` y
+  falló por colisión `S002` entre fixture y `POST /saldos`; se usan `S900/S901`
+  fuera de la secuencia de `counters`; rerun pendiente.
 - Matriz de restore: se corrigen las aserciones históricas `total=3`/`60.00` a
   `total=7`/`61.98`, confirmadas localmente con el fixture y `positionCents`.
 - Residual heredado de `main`: `schema-contracts.json` solo admite v14–v17;
