@@ -1,6 +1,7 @@
 # 32 — Ejecución rootless: Progress
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
-Current state: RECOVERY CANDIDATE — 23/24 AC históricos; AC-22 pendiente de CI Linux/rootless y aprobación. Candidato f0b685c reconciliado con main 26b6f0c; sin cierre, merge ni deploy.
+Current state: RECOVERY CANDIDATE v18 — merge de `main` `f9c8a0d`; schema 18/e4.1-v18;
+AC-18/AC-22 pendientes de CI Linux/rootless y QA final. Sin cierre, merge ni deploy.
 
 | Task | Status | Commit / evidence |
 | --- | --- | --- |
@@ -14,7 +15,32 @@ Current state: RECOVERY CANDIDATE — 23/24 AC históricos; AC-22 pendiente de C
 | Regresión local y PR independiente | candidate preserved / review pending | B5 antes FAIL/después PASS; 91 API/1415 aserciones y 2 E2E (47.5s) PASS; corrección de snapshot sin reglas financieras |
 | Reconciliación con main y adaptación al esquema vigente | verified candidate / CI pending | f0b685c sobre merge 582846c (a090112 + main 26b6f0c); B5 deriva schemaVersion 16; contratos release 16/e3.4-v16; QA independiente APPROVE FOR CI |
 
-## Recuperación DEV32 — reconciliación con main (2026-10-27)
+## Reconciliación v18 — Lote 2 (2026-10-29)
+
+Fuente: autorización expresa del usuario para reanudar el Lote 2 (SPEC32/PR30),
+reconciliar con `main` v18, ampliar compatibilidad/rollback/restore, ejecutar
+Linux/rootless, QA independiente y documentación, sin merge ni despliegue.
+
+- Merge de `main` `f9c8a0d` en `feat/32-ejecucion-rootless`; `schemaVersion = 18`,
+  contrato de datos `e4.1-v18`, ambos derivados por `infra/release.py`.
+- Matriz anterior/actual: merge-base con `origin/main` (`f9c8a0d`) → candidato;
+  **18→18**, sin fingir rollback 18→16. La migración 16→17→18 queda cubierta por
+  pruebas de esquema/backup de módulos.
+- `release-fixture.mjs`: añade v17 (`movimiento_compartido` con transferencia
+  S000→S001, referencia compartida y Tercero) y v18 (`instrumentos`,
+  `operaciones_inversion`, auditorías y saldos S002/S003).
+- `release-contract.mjs`: añade lecturas `/instrumentos` y `/compras`.
+- `rootless-integration.py`: el release anterior se obtiene con `git merge-base HEAD
+  origin/main`, no con un SHA fijo; se registra en evidencia.
+- Validación local: fixture v17/v18 en SQLite v18 (2 filas por tabla nueva), funciones
+  `listInstrumentos`/`listPurchases` y opciones con datos; typecheck y build PASS;
+  `py_compile` y `node --check` PASS. Pruebas focales de esquema/compras/instrumentos/
+  server-config/migración PASS con `TMPDIR=/private/tmp`; backup age/libc en macOS
+  **BLOCKED** por el entorno, no PASS.
+- **AC-18/AC-22 PENDING** hasta CI Linux/rootless del SHA candidato. No se reutiliza
+  el PASS histórico 3094563.
+
+## Recuperación DEV32 — reconciliación con main (2026-10-27, histórico)
 
 Fuente: autorización expresa del usuario en este chat para continuar DEV32,
 reconciliar el candidato conservado con main, preservar las protecciones SQLite,

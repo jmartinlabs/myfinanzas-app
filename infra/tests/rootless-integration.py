@@ -461,7 +461,10 @@ def main():
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'
-        previous = build(root / 'previous', ref='26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f')
+        previous_ref = subprocess.check_output(
+            ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
+            text=True).strip()
+        previous = build(root / 'previous', ref=previous_ref)
         if previous['inputs']['contracts'] != manifest['inputs']['contracts']:
             raise ProbeError('incompatible contract metadata; no rollback authorized')
         matrix = root / 'matrix'

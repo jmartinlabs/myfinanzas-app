@@ -11,6 +11,8 @@ export const tables = [
   'fichas_compartidos', 'participantes_compartido', 'compartido_audit',
   'fichas_vehiculo', 'revision_comida', 'revision_comida_audit',
   'cycle_audit', 'cycle_plan_audit', 'payroll_audit', 'fotos_neto_apertura',
+  'movimiento_compartido', 'instrumentos', 'operaciones_inversion',
+  'instrumento_audit', 'operacion_inversion_audit',
 ];
 
 export const snapshot = (db) => JSON.stringify(
@@ -32,6 +34,10 @@ const masters = (db) => {
     VALUES('SUB900','Sub fixture','CAT900','Activa',1,'fixture','fixture')`);
   db.run(`INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda,presupuesto)
     VALUES('PAR900','Partida fixture','SUB900','Activa',1,'fixture','fixture',NULL,NULL)`);
+  db.run(`INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
+    VALUES('S002','Efectivo inversión fixture','Efectivo','Inversiones','Activa',1,'fixture','fixture')`);
+  db.run(`INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
+    VALUES('S003','Inversión fixture','Inversión','Inversiones','Activa',1,'fixture','fixture')`);
   for (const [id, nombre, tipo] of [
     ['REF9001', 'Anticipo fixture', 'Anticipo'],
     ['REF9002', 'Compartido fixture', 'Gasto compartido'],
@@ -59,6 +65,8 @@ const moduleRows = (db, suffix, cycle, inicio, extra) => {
     VALUES(?,1,'fixture','fixture')`, ['REF900' + (suffix === '1' ? 2 : 5)]);
   db.run('INSERT INTO participantes_compartido VALUES(?,?,?,?,?,?,?,\'fixture\',\'fixture\')',
     ['CP900' + suffix, 'REF900' + (suffix === '1' ? 2 : 5), 'Titular fixture ' + suffix, 'Titular', 100, 'Activa', 1]);
+  db.run('INSERT INTO participantes_compartido VALUES(?,?,?,?,?,?,?,\'fixture\',\'fixture\')',
+    ['CP910' + suffix, 'REF900' + (suffix === '1' ? 2 : 5), 'Tercero fixture ' + suffix, 'Tercero', 100, 'Activa', 1]);
   db.run(`INSERT INTO fichas_vehiculo(referencia,matricula,proxima_itv,fecha_cita,revision,creado,actualizado)
     VALUES(?,?,NULL,NULL,1,'fixture','fixture')`, ['REF900' + (suffix === '1' ? 3 : 6), 'FIX ' + suffix]);
   db.run(`INSERT INTO revision_comida(id,tipo,fecha,concepto,importe,direccion,es_devolucion,clasificacion,
@@ -71,10 +79,17 @@ const moduleRows = (db, suffix, cycle, inicio, extra) => {
   const anticipo = 'REF900' + (suffix === '1' ? 1 : 4);
   const compartido = 'REF900' + (suffix === '1' ? 2 : 5);
   db.run(`INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
-    VALUES(?, '2026-01-01', 'Gasto', 1, 'S001', 'S000', NULL, 'PAR900', 'Anticipo fixture', '', 1, 1, 'fixture', 'fixture', NULL, NULL)`,
+    VALUES(?, '2026-01-01', 'Gasto', 1, 'S001', 'S000', NULL, 'PAR900', 'Anticipo fixture', '', 0, 1, 'fixture', 'fixture', NULL, NULL)`,
     ['910' + suffix]);
   db.run(`INSERT INTO movimiento_anticipo VALUES(?,?, 'Adelanto', 'S001', 'S000', 1, 'fixture', 'fixture', 1, 'fixture')`,
     ['910' + suffix, anticipo]);
+  // v17 D5: S000 -> internal transfer with a third-party participant.
+  db.run(`INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
+    VALUES(?, '2026-01-01', 'Transferencia', 100, 'S000', 'S001', NULL, NULL, ?, 'Aportación D5 fixture', '', 0, 1, 'fixture', 'fixture', NULL, NULL)`,
+    ['920' + suffix, compartido]);
+  db.run(`INSERT INTO movimiento_compartido(movimiento,referencia,participante,evidencia,procedencia,revision_movimiento,revision,creado,actualizado)
+    VALUES(?,?,?, 'evidencia fixture', 'Registro del titular', 1, 1, 'fixture', 'fixture')`,
+    ['920' + suffix, compartido, 'CP910' + suffix]);
   db.run(`INSERT INTO cycle_audit VALUES(?,1,'fixture','fixture','fixture','usuario-unico',NULL,'{}')`, [cycle]);
   db.run(`INSERT INTO cycle_plan_audit(ciclo,presupuesto,revision,actor,instante,motivo,delta)
     VALUES(?,?,1,'usuario-unico','fixture','fixture','{}')`, [cycle, 'PRE900' + suffix]);
@@ -90,6 +105,17 @@ const moduleRows = (db, suffix, cycle, inicio, extra) => {
     VALUES(?,'fixture',NULL,'{}','fixture','fixture','usuario-unico')`, [compartido]);
   db.run(`INSERT INTO revision_comida_audit(operacion,accion,revision,anterior,posterior,motivo,instante,actor)
     VALUES(?,'fixture',1,NULL,'{}','fixture','fixture','usuario-unico')`, ['RC900' + suffix]);
+  // v18 E4.1: one instrument and one confirmed purchase, with audit continuity.
+  db.run(`INSERT INTO instrumentos(id,nombre,isin,isin_evidencia,divisa_referencia,estado,revision,creado_en,actualizado_en)
+    VALUES(?,?,NULL,NULL,'EUR','Activa',1,'fixture','fixture')`,
+    ['I900' + suffix, 'Instrumento fixture ' + suffix]);
+  db.run(`INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado)
+    VALUES(?, 'Compra', '2026-01-01', ?, 'S002', 'S003', 10, 1000, 'EUR', NULL, 10000, 0, 'Compra fixture', '', 'Vigente', 1, 'fixture', 'fixture')`,
+    ['900' + suffix, 'I900' + suffix]);
+  db.run(`INSERT INTO instrumento_audit(instrumento,revision,accion,motivo,instante,actor,anterior,posterior)
+    VALUES(?,1,'alta',NULL,'fixture','usuario-unico',NULL,'{}')`, ['I900' + suffix]);
+  db.run(`INSERT INTO operacion_inversion_audit(operacion,revision,accion,motivo,instante,actor,anterior,posterior)
+    VALUES(?,1,'alta',NULL,'fixture','usuario-unico',NULL,'{}')`, ['900' + suffix]);
 }
 
 export function linkFixture(db, mode) {

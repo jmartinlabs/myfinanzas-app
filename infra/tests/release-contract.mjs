@@ -48,7 +48,7 @@ async function main() {
     // Every post-v6 module must still be readable by the release under test.
     for(const path of ['/deudas','/presupuestos','/ciclos','/plan-anual/2026',
       '/planes-ciclo/9001','/nomina','/anticipos/fichas','/compartidos/fichas',
-      '/vehiculos','/revision-comida']) {
+      '/vehiculos','/revision-comida','/instrumentos','/compras']) {
       const data=await request(path);
       check(data!==undefined&&data!==null,'module read contract: '+path);
     }

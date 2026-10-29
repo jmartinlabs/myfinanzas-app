@@ -1,7 +1,38 @@
 # 32 — Ejecución rootless: Test plan
 Specification: [contrato aprobado](32-ejecucion-rootless-specification.md)
 
-## Estado vigente — recuperación DEV32 (2026-10-27)
+## Estado vigente — reconciliación v18 (2026-10-29)
+
+El candidato actual es el merge de `main` `f9c8a0d` en `feat/32-ejecucion-rootless`.
+`schemaVersion` es 18 y `backup.ts` declara `e4.1-v18`; `infra/release.py` deriva ambos
+del código. La matriz de rollback usa como anterior el merge-base con `origin/main`
+(`f9c8a0d`), no un SHA fijo: **18→18**. La migración 16→17→18 se cubre con las pruebas
+de esquema/backup de los módulos y no se presenta como rollback compatible 18→16.
+
+`release-fixture.mjs` añade:
+- v17: `movimiento_compartido` con transferencia S000→S001, referencia de Gasto
+  compartido y participante Tercero.
+- v18: `instrumentos`, `operaciones_inversion`, `instrumento_audit`,
+  `operacion_inversion_audit` y saldos S002/S003 (Efectivo/Inversión de Inversiones).
+- `release-contract.mjs` consulta también `/instrumentos` y `/compras`.
+
+Estado: implementación y fixture validados localmente; **AC-18/AC-22 PENDING** hasta
+la ejecución real Linux/rootless del SHA candidato. No se hereda el PASS histórico
+3094563.
+
+### Evidencia local del candidato v18 — 2026-10-29
+
+- `TMPDIR=/private/tmp bun test apps/api/src/database-schema.test.ts`: **10 PASS / 0 FAIL**.
+- `TMPDIR=/private/tmp bun test apps/api/src/compras.test.ts apps/api/src/instrumentos.test.ts apps/api/src/server-config.test.ts apps/api/src/sqlite-migration-opening.test.ts`: **20 PASS / 0 FAIL**.
+- `bun test infra/tests/release-fixture.test.ts`: **1 PASS / 13 aserciones**; fixture v17/v18 con 2 filas por tabla nueva, `integrity_check=ok` y FK vacío.
+- `bun run typecheck`: PASS. `bun run build`: PASS.
+- `python3.12 -m py_compile infra/*.py infra/tests/*.py` y `node --check` de los `.mjs`: PASS.
+- `d5-backup.test.ts` e `inversiones-backup.test.ts`: **BLOCKED** en macOS por
+  `libc.so.6`/`age-keygen`; no se declaran PASS. La cobertura equivalente se ejecuta
+  en Linux/rootless/CI.
+- `git diff --check`: PASS.
+
+## Estado histórico — recuperación DEV32 (2026-10-27)
 
 La tabla siguiente conserva la evidencia histórica de 3094563/run 39734037872.
 El candidato actual es **f0b685c** sobre el merge **582846c** (a090112 + main
@@ -98,7 +129,10 @@ que la matriz no replica; ninguna sustituye a la otra.
 | AC-23 | Revisar runbook de inicio/parada/update/rollback y límites de datos | Operaciones deliberadas, paths/UID/mount coherentes, secretos fuera de argumentos y pasos no destructivos ante fallo | revisión infra/RUNBOOK.md + render-unit/rollback-check, sin efectos de despliegue | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 | AC-24 | Revisar matriz de gates con A/B/activación y riesgos R6/fsync | 32 no declara VPS listo; HTTPS, offsite, custodia, recuperación y autorización de despliegue permanecen explícitos | revisión gates A/B/activación y riesgos R6/fsync/API histórico sin diagnóstico | PASS — runner real, imagen final y revisión de runbook/gates | 2026-10-22; 3094563 / run 39734037872; validate 39734037875 + 39734032852 |
 
-**Estado vigente del candidato f0b685c/582846c: AC-18 y AC-22 PENDING; matriz ampliada definida y CI Linux/rootless pendiente. La tabla anterior es histórica de 3094563 y no se hereda.**
+**Actualización 2026-10-29:** AC-18 se reevalúa con la matriz **18→18** sobre el merge de
+`main` `f9c8a0d`; el PASS histórico 3094563 sigue sin heredarse. AC-22 y la matriz
+permanecen **PENDING** hasta la CI Linux/rootless del SHA candidato. La tabla anterior
+es histórica y no se hereda.
 Los bloques inferiores conservan la historia de fallos/ensayos y no sustituyen
 esta aceptación. CI del HEAD documental final se vincula en PR #30, sin inferir
 aprobación de merge ni despliegue.
