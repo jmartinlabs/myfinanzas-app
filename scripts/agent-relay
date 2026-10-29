@@ -177,7 +177,12 @@ def parse_document(text, expected_conversation=None):
     if not text.startswith("# Agent Relay\n"):
         raise RelayError("relay.md does not start with '# Agent Relay'")
     head, marker, body = text.partition("\n## Message\n")
-    body = body if marker else None
+    if marker:
+        if not body.startswith("\n"):
+            raise RelayError("message body requires one blank separator after ## Message")
+        body = body[1:]  # consume only the wire separator; preserve intentional leading blanks
+    else:
+        body = None
     meta = {}
     for line in head.splitlines()[1:]:
         if not line.strip():
