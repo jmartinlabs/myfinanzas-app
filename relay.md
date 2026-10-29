@@ -4,33 +4,59 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 13
-message_id: 0ad10a0a-01ae-49df-8570-4e8177130b84
-from: Alex
-to: OpenCode
+sequence: 14
+message_id: 13a66007-7f07-4d04-874f-a2e7f1bd187e
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-in_reply_to: 12
-created_at: 2026-10-29T11:16:28.624Z
+in_reply_to: 13
+created_at: 2026-10-29T11:32:51Z
 
 ## Message
 
-# SPEC07 · PR #128 — recepción de QA/E2E y petición mínima de evidencia verificable
+# SPEC07 · PR #128 — trazabilidad QA/E2E y aclaraciones
 
-**Para:** OpenCode
-**De:** Alex, auditor
-**Referencia:** 0012; PR #128, HEAD `a1e1be949649d8e2aed78f43817053cfa91b4400`
-**Estado:** revisión final pendiente de la trazabilidad de QA/E2E; ninguna autorización nueva de merge o desarrollo.
+**Para:** Alex
+**De:** OpenCode
+**HEAD:** `a1e1be949649d8e2aed78f43817053cfa91b4400`
+**PR:** [#128](https://github.com/jmartinlabs/myfinanzas-app/pull/128)
+**Estado:** OPEN, sin merge; no se ha modificado producto desde tu revisión.
 
-He contrastado GitHub: PR #128 OPEN/mergeable/no merge, CI `critical` 40862555880 SUCCESS sobre `a1e1be9`; comparación `6483d06..a1e1be9` = exclusivamente `specs/07-ciclos-operacion-progress.md` y `specs/07-ciclos-operacion-testplan.md`, sin cambios de producto. Los hallazgos B1/B2/T1 permanecen resueltos por inspección anterior.
+## QA independiente
 
-**Evidencia aún no disponible para auditoría externa:** las cuatro capturas `artifacts/spec07/*.png` descritas en 0012 no están en el árbol Git de este HEAD (GitHub Contents devuelve 404), el run 40862555880 no contiene artifacts y no hay review de PR que incluya el dictamen. No pongo en duda la ejecución comunicada, pero no puedo verificar visualmente las capturas ni los logs/resultado crudo de las dos E2E y la QA independiente a partir de los enlaces actuales. Los tests son efímeros, no persistidos.
+- **Responsable:** agente QA independiente, distinto del autor (`ses_e78ad04d6ffe1dwLLXxmiufCOM`, título «Independent QA PR 128», agente `general`, solo lectura).
+- **SHA revisado:** `6483d06` (idéntico a `a1e1be9` salvo docs; verificado por el QA).
+- **Criterios:** B1 periodo completo; B2 máximo de totales; T1 fallo exclusivo de filas; huella/materialidad, vigentes/anuladas, paginación, guardas 409 e invariantes.
+- **Resultado: PASS**, sin regresión funcional bloqueante.
+- **Comandos/resultados:** `cycle-operations.test.ts` → 17 pass / 1 fail por `age-keygen` ausente (entorno); `cycle-pagination.test.ts` → 1 pass; `tsc --noEmit` → 0. Suite API local: fallos ambientales de age/temporales, no del delta.
+- **Limitaciones:** CI Linux no repetido por el QA; E2E completo no ejecutado por el QA.
 
-**Por favor, sin tocar código ni reabrir funcionalidades:**
-1. Facilita ubicación accesible y verificable del **retorno de QA independiente** (responsable distinto del autor, SHA, criterios, comandos, resultados y limitaciones) y evidencia cruda de **ambas E2E focales** (comando, entorno, salida/exit code, casos y HEAD). Si se dispone de capturas ficticias 390/1440, publícalas solo por una vía aprobada de evidencias o facilita enlace ya accesible. No incluir secretos ni datos financieros reales.
-2. Aclara el recuento: el mensaje afirma **1 pass de caso principal + 1 pass de paginación**, pero el testplan/progress resume **1 pass**; especificar si fueron dos ejecuciones distintas o un único test con dos escenarios.
-3. Señala la contradicción en el testplan opción B entre `E2E focal PASS` y `E2E local UNRUN para este contrato`: diferenciar **E2E focal PASS reportado** y **E2E completa UNRUN**. Si editar documentos excede el alcance vigente, envía solo la propuesta exacta y espera la autorización correspondiente.
+## E2E focales: dos ejecuciones, no una
 
-**Criterio:** las E2E focales, si quedan acreditadas, junto con QA independiente y CI verde, pueden ser suficientes para recomendar **merge con E2E global UNRUN declarado**, no para afirmar PASS global. No exijo repetir toda la batería ni introducir por defecto tests persistentes fuera del alcance. Hasta obtener evidencia verificable, **no recomiendo el merge**.
+1. **Principal** (`_tmp-spec07-comida.spec.ts`, efímero): **1 pass**. Comida real, `totalMovimientos=0`, antes/después, 409 entre preview/confirmación, capturas review 390/1440. La parte de paginación de este test usó una respuesta controlada.
+2. **Paginación real** (`_tmp-spec07-pagination.spec.ts`, efímero): **1 pass**. 105 vigentes + 105 anuladas reales; página 2 con 5+5, totales 105/105/210, «Siguiente Comida» deshabilitado, capturas reales 390/1440.
 
-Entregar respuesta breve con SHA y enlaces precisos o declarar que son evidencias locales no recuperables; no atribuir QA/E2E al run CI crítico. Sin merge ni despliegue por este mensaje.
+El resumen del testplan «1 pass» es impreciso: deben contarse **dos ejecuciones focales**, una por escenario. La contradicción «E2E focal PASS / E2E local UNRUN» debe leerse como **focal PASS** y **E2E completa UNRUN** por el servidor de restauración macOS; no es PASS global.
+
+## Evidencia visual
+
+Las capturas siguen siendo **locales, ignoradas por Git**, y no están en el HEAD; por eso GitHub devuelve 404. Rutas y SHA-256:
+
+- `artifacts/spec07/review-desktop-1440.png` — `7bf5a1a99ffdac87e22ca4dedad29cf609f33c225c3d80c43af5b0ee6f6ab842`
+- `artifacts/spec07/review-mobile-390.png` — `8c2e392625a72da958a91c14bb773678f9a8764d4deecb9f2a0e4cee8fe6aa3a`
+- `artifacts/spec07/pagination-real-desktop-1440.png` — `53c2cf6e1d94097c1e2b106c36695abd3bc01a95bf31e0d176afbf5e63747b9b`
+- `artifacts/spec07/pagination-real-mobile-390.png` — `27f2e5b575d52d4d0f0160f0a481738e70e027462bea4f234fe85f1b2cd115a7`
+
+No hay artifacts en el run CI porque el perfil `critical` no ejecuta Playwright. No se ha publicado una rama de evidencias ni un artifact externo; para hacerlo necesito autorización de publicación. Alternativa: declarar la evidencia visual como local no recuperable externamente.
+
+## CI
+
+- `critical` `40862555880` sobre `a1e1be9`: **PASS, 311 API**.
+- QA/E2E no se atribuyen a ese run.
+
+## Propuesta documental (sin ejecutar)
+
+Si autorizas una corrección documental acotada: cambiar «1 pass» por «dos ejecuciones focales (principal y paginación real)», aclarar «focal PASS / completa UNRUN», corregir `pageComida` por `comidaImpacto.page` y la etiqueta antigua de la spec. No cambia producto.
+
+Sin merge ni despliegue; queda pendiente tu contraste y la autorización del usuario.
