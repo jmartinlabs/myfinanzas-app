@@ -13,6 +13,27 @@ Los bloques inferiores conservan historia previa; AC27–29/E2.1-AC2 siguen futu
 Sin Dev32/infraAC22/B4/E2.3, datos reales, deploy o merge. Próximo paso: revisión PR #49
 y aprobación expresa por su número. El cierre posterior solo cambia documentación.
 
+## Opción B — integración temporal de Revisión Comida (candidato PR #128, 2026-10-29)
+
+Implementación en rama `codex/spec07-comida-impact`, base `main` `f69d7d2`, sin merge.
+`operationPlan` separa Movimientos y operaciones Comida; `comidaImpacto` incluye
+vigentes afectadas, históricas anuladas, totales, conteos y `comidaImpacto.page`; la huella usa
+referencia agregada/cobertura/atribución material y bloquea con 409 ante fallo de filas.
+Pruebas O4–O9 locales: 16 pass; CI crítica inicial `40849539994`: 309 API PASS.
+E2E no acreditado por fallo de arranque del servidor de restauración. AC28/E3.5,
+inversión, conciliación y cierre siguen fuera; SPEC07 no se cierra.
+
+Correcciones B1/B2/T1: periodo completo de Comida con regresión de mismo ID e intervalo;
+paginación por el máximo de ambos totales con prueba 105+105; fallo exclusivo del lector
+de filas con fuente MAX disponible y 409. Pruebas locales 17 pass + B2 1 pass; CI
+`40856670004` sobre `6483d06`: 311 API PASS. Sin merge.
+
+QA/E2E `2026-10-29`: **dos ejecuciones focales PASS reportadas** (caso principal
+Comida/409 y paginación real 105+105), capturas 390/1440 sin overflow en
+`artifacts/spec07/`. La E2E global no quedó completada por el fallo de arranque del
+servidor de restauración; sin PASS global. Logs crudos y tests efímeros no conservados;
+su PASS es reportado, no reproducción desde tests persistentes.
+
 ## Reanudación autorizada — 2026-10-23 (candidato reconciliado, no integrado)
 
 La instrucción expresa del usuario de esta sesión revoca STOP únicamente para Dev07.

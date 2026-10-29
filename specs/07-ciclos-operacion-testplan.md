@@ -27,6 +27,36 @@ AC23 deja de bloquear esta entrega por la evidencia acumulada de regresiones, co
 suite global y QA, no por una ejecución aislada. No se afirma ausencia absoluta de carreras.
 AC27–29 y E2.1-AC2 del roadmap permanecen PENDING de sus módulos futuros.
 
+## Opción B — impacto temporal de Revisión Comida (candidato PR #128, 2026-10-29)
+
+**Estado:** candidato implementado, sin merge ni cierre de SPEC07. Base `main` `f69d7d2`.
+
+| Caso nuevo | Evidencia |
+| --- | --- |
+| O4 C07-F1/F2 | Comida creada tras la preview no aparece retroactivamente; nueva preview la enumera; confirmación antigua 409 sin escrituras |
+| O5 C07-F2 | Comida existente: `totalMovimientos=0`, `totalVigentesAfectadas=1`, antes C1/después sin ciclo; confirmación la reatribuye |
+| O6 R1a/R1b | Máximo crudo sin efecto → huella estable; referencia agregada 20→21 → huella distinta y 409 |
+| O7 R2 | Anulada afectada mostrada como histórica; cambio de estado invalida; cambio de concepto no invalida |
+| O8 | Comida vacía/ausente y fallo de lectura de filas: cobertura distinta; error controlado 409 |
+| O9 | 105 operaciones: página 1/2, total completo, misma huella |
+| B1 | Periodo completo: mismo ID con intervalo distinto se enumera; regresión O4 de mismo ID/intervalo |
+| B2 | Límite de «Siguiente Comida» con `max(vigentes,históricas)`, no suma; prueba 105+105 |
+| T1 | Fallo exclusivo de `revisionComidaRows()` con `revisionComidaSource()` disponible: 409 sin escrituras |
+
+- `cycle-operations.test.ts` sin backup Linux-only: **17 pass / 0 fail** (B1/T1).
+- `cycle-pagination.test.ts`: **1 pass** (B2, 105/105).
+- CI Linux `critical` run `40862555880` sobre `a1e1be9`: **311 API PASS**.
+- QA/E2E `2026-10-29`: **dos ejecuciones focales PASS reportadas** (caso principal
+  Comida/409 y paginación real 105+105), con capturas 390/1440 sin overflow. La
+  **E2E global no quedó completada satisfactoriamente** por el fallo de arranque del
+  servidor de restauración en `catalog`/`movimientos`; no se declara PASS global.
+  Los logs crudos de terminal y los tests efímeros no se conservaron; su PASS es
+  resultado reportado, no reproducción desde tests persistentes.
+- Typecheck/build PASS. E2E local: fallo de arranque del servidor de restauración en
+  `catalog`/`movimientos`; **UNRUN** para este contrato, no se declara PASS.
+- AC28 sigue **PENDING**: solo se integra atribución temporal de Comida; no inversión,
+  E3.5, conciliación, cierre ni maestros adicionales.
+
 Capturas: `artifacts/e2-1/` del artifact de CI, incluyendo listado/ficha/formulario,
 revisión/errores/historial y cambio de mes en390/1440. Se conserva diseño claro aprobado,
 teclado/foco y contraste; el delta añade los dos meses explícitos sin rediseñar.

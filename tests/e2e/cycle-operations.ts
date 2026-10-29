@@ -241,7 +241,9 @@ export async function cycleOperationsJourney(page: Page) {
     .getByRole("button", { name: "Revisar impacto", exact: true })
     .click();
   await expect(
-    page.getByText("No hay hechos que cambien de ciclo.", { exact: true }),
+    page.getByText("No hay Movimientos que cambien de ciclo.", {
+      exact: true,
+    }),
   ).toBeVisible();
   await shot("omitted-preview-mobile");
   const priorTotal = (await get("/ciclos")).total;
