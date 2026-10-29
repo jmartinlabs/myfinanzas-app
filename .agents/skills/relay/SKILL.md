@@ -10,6 +10,10 @@ queue, a controller, an approval channel or a second source of truth. The canoni
 and return contracts remain in [the work packet](../../../templates/agent-work-packet.md)
 and [coordinator communication](../../../specs/methodology/coordinator-communication.md).
 
+Clients without Git/Python can use the [GitHub API transport procedure](GITHUB_API.md)
+with an already-connected GitHub tool. This is the same relay format and semantics,
+not another protocol. A repository Skill does not enable tools in ChatGPT automatically.
+
 ## Inputs
 - An explicit user request to use the relay: `Lee`, `$relay read` or another named relay
   command. Never read relay messages proactively, on a timer or through a hook.
@@ -104,9 +108,9 @@ and [coordinator communication](../../../specs/methodology/coordinator-communica
 - Stop if the recipient does not match, the conversation is closed, the agent is not a
   participant, a join would create a third participant, the ID is missing or the remote
   cannot be verified.
-- Stop if the client cannot run Git or access the relay branch; report the blocker and
-  resolve access. No parallel manual relay or alternative relay branch is maintained.
-  This Skill supplies no API adapter or automatic client integration.
+- Stop if neither Git CLI nor verified GitHub API operations can access the relay
+  branch; report the blocker and resolve access. No parallel relay is maintained.
+  This Skill does not automatically install or enable client tools.
 - Stop if the body is empty, exceeds the size limit, is not UTF-8 text or contains an
   evident credential. The relay is repository-visible; never publish secrets or private
   personal data.
