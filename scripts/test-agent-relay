@@ -135,7 +135,7 @@ class RelayTests(unittest.TestCase):
         self.assertIn("sequence: 2", response_doc)
         self.assertIn("Respuesta A", self.read(self.a, "A", conversation).stdout)
 
-    def test_ack_preserves_exact_body_bytes_for_cli_and_api(self):
+    def test_ack_preserves_exact_wire_body_bytes(self):
         conversation = self.init()
         self.join(conversation)
         self.send(self.a, "A", conversation, "\nPrimera\n\nUltima\n", reply="false")
