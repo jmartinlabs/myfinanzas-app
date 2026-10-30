@@ -4,6 +4,11 @@ Estado: **BORRADOR PARA REVISIÓN — no aprobado**. Fecha: 2026-10-30.
 Autor del diagnóstico independiente: Codex; pendiente de contraste con Álex y decisión
 expresa del usuario. Base documental: `454d21a` (main).
 
+Este documento consolida dos borradores de la misma consulta: conserva el marco y la
+recomendación gradual del primero y añade la evidencia de esquema, las alternativas
+comparadas y los controles de histórico del segundo. No es una especificación, no aprueba
+una alternativa y no autoriza implementación, migración ni merge.
+
 ## Alcance y autoridad
 
 Solicitud: evaluar críticamente Categorías, Subcategorías, Partidas y Presupuestos,
@@ -23,41 +28,238 @@ Fuentes internas contrastadas:
 - [Plan de ciclo, SPEC09](../09-plan-ciclo-specification.md).
 - [Plan anual, SPEC10](../10-plan-anual-specification.md).
 - [Referencia funcional](../functional-reference-v5.11.md).
+- Esquema y código vigentes: `apps/api/src/schema-contracts.json`,
+  `apps/api/src/planes-ciclo.ts`, `apps/api/src/plan-anual.ts`,
+  `apps/api/src/movimiento-impact.ts`.
 
 No se ha inspeccionado físicamente el Excel ni consultado datos financieros reales.
 Las conclusiones evalúan coherencia conceptual; no demuestran qué niveles del catálogo
 se utilizan realmente ni cuantifican el coste de implementación. El estado de entrega
 se consulta en los checkpoints propietarios, no se infiere de cabeceras históricas.
 
-## Diagnóstico independiente
+## Resumen ejecutivo
 
-Hay complejidad innecesaria, pero fusionar Partida y Presupuesto no resuelve su causa
-principal. Clasificación económica y financiación son necesidades diferentes.
+No hay cuatro niveles. Hay **tres niveles de clasificación** (`Categoría →
+Subcategoría → Partida`) y **un eje ortogonal de financiación** (`Presupuesto`)
+que se ha convertido en la clave del plan mensual. La complejidad excesiva no
+está en la profundidad del árbol: está en que el eje de financiación se presenta
+como si fuera un cuarto nivel y en que el sistema tiene **dos unidades de
+planificación sin un puente explícito**.
 
-Partida responde a «¿en qué he gastado?» y debe existir aunque nunca se planifique ese
-gasto. El actual Presupuesto mezcla objetivos distintos:
+Diagnóstico en cinco frases:
 
-- **Gasto real:** controlar el gasto de un conjunto de Partidas.
-- **Aportación a saldo:** controlar transferencias elegibles hacia un destino.
-- **No aplica:** conservar planificación sin ejecución comparable.
+1. `Presupuesto` no contiene presupuesto: es una regla de financiación
+   (`fuente` + `saldo destino`). Los importes viven en otras tablas.
+2. El plan anual se cuelga de la Partida; el mensual, del Presupuesto. No hay
+   relación de datos entre ambos.
+3. El fondo de un gasto histórico se deriva del vínculo **actual**
+   `Partida → Presupuesto`; si cambia el catálogo, cambia la historia.
+4. La restricción de destino único entre “Aportación a saldo” es un parche de
+   atribución, no una ley económica.
+5. Varios atributos de Categoría no tienen consumidor real y el `Esencial` está
+   duplicado en dos planes con semánticas distintas.
 
-Comparten un importe objetivo y un periodo, pero no la misma magnitud económica.
-Presupuesto tampoco es un cuarto nivel de clasificación: es una agrupación transversal,
-con relación opcional desde Partida y posibilidad de agrupar varias Partidas.
+Recomendación: **no fusionar Partida y Presupuesto en caliente**. Desde cero,
+separaría clasificación, gasto previsto y objetivos de financiación. En el
+sistema existente, evolucionaría gradualmente: vocabulario, evidencia, puente
+explícito si se demuestra necesario y snapshot de financiación en el hecho,
+sin reescribir la historia.
 
-La diferencia anual/ciclo tiene una finalidad defendible: detallar obligaciones anuales
-y financiar conjuntamente varias de ellas durante los ciclos. Lo cuestionable es hacer
-que el horizonte temporal determine la entidad utilizada, en lugar de explicitar qué
-se planifica: gasto o financiación.
+## Modelo observado
 
-Dos síntomas concretos merecen revisión:
+### Entidades y responsabilidades
 
-1. SPEC08 exige destino para Gasto real, pero ese destino no determina su ejecución ni
-   constituye reserva exclusiva. Su necesidad no se deduce del cálculo.
-2. SPEC09 define «A transferir = Del mes» incluso para Gasto real. El nombre sugiere una
-   acción bancaria que el importe y su fuente no implican.
+| Entidad | Qué es hoy | Qué no es | Problema principal |
+| --- | --- | --- | --- |
+| Categoría | Nodo de taxonomía + política de Referencia + configuración de cálculo anual/mensual | No es un plan | `anual`/`mensual` sin consumidor; `grupo` sin uso |
+| Subcategoría | Nodo de agrupación con nombre, padre y estado | No aporta semántica económica propia | Nivel heredado, coste de mantenimiento |
+| Partida | Hoja de clasificación + enlace opcional a Presupuesto + enlace opcional a Deuda | No es un plan | Dos relaciones temporales modeladas como atributos estáticos |
+| Presupuesto | Regla de financiación: fuente, destino, estado | No contiene importe ni planificación | Nombre engañoso; fuente heterogénea; destino obligatorio |
+| Plan anual | Importe manual por Partida/ejercicio, periodo y Esencial | No financia | Sin vínculo explícito al plan mensual |
+| Plan del ciclo | Base/Esencial/Del mes por Presupuesto/ciclo | No clasifica | Sujeto distinto; ejecución por fuente |
 
-Estas observaciones son propuestas de revisión, no correcciones autorizadas de las specs.
+### La colisión de nombre “presupuesto”
+
+La palabra se usa con cuatro significados distintos:
+
+| Dónde | Qué significa |
+| --- | --- |
+| Tabla `presupuestos` | Maestro de financiación |
+| `partidas.presupuesto` | FK al maestro |
+| `cycle_plan_lines.presupuesto` | FK al maestro |
+| `annual_plan_lines.presupuesto` | **Importe anual en céntimos**, no una FK |
+
+Esto no es solo estética. Indica que el dominio mezcla la entidad que financia,
+la relación que la asigna y el importe que se planifica. Cualquier lector nuevo
+—o cualquier informe— tiene que conocer el contexto de la tabla para saber qué
+significa el mismo nombre.
+
+### Por qué existen dos planes
+
+El plan anual responde “¿cuánto espero que cueste esto este año, por Partida?”.
+El plan del ciclo responde “¿cuánto asigno este ciclo a este fondo y con qué
+fuente?”. Son preguntas distintas.
+
+Hay además una razón estructural: en `movimientos`, una `Transferencia` **no
+puede llevar Partida** y un `Ingreso` **tampoco**. Por tanto, una provisión o
+una aportación a saldo no puede planificarse sobre la Partida. Necesita otro
+sujeto: el Presupuesto. Eso explica el diseño actual, pero no lo hace explícito.
+
+## Diagnóstico
+
+### H1 — No son cuatro niveles; son tres + un eje
+
+`Categoría → Subcategoría → Partida` es una taxonomía. `Presupuesto` no es un
+nivel jerárquico: es una regla de financiación. La confusión aparece al usarlo
+como clave del plan mensual y al presentarlo como una cuarta entidad del mismo
+tipo.
+
+### H2 — “Presupuesto” no es un presupuesto
+
+La tabla `presupuestos` guarda `id`, `nombre`, `fuente`, `destino`, `estado` y
+metadatos. No tiene importe. Los importes están en `annual_plan_lines` y
+`cycle_plan_lines`.
+
+Además, `Presupuesto.fuente` mezcla tres comportamientos:
+
+- `Gasto real`: ejecuta sumando Gastos por Partidas vinculadas.
+- `Aportación a saldo`: ejecuta sumando Transferencias al destino.
+- `No aplica`: no tiene ejecución comparable.
+
+No es una propiedad de un fondo; es un discriminador de reglas de ejecución.
+
+### H3 — Dos unidades de planificación sin puente explícito
+
+- Anual: `(ejercicio, partida) → importe`.
+- Mensual: `(ciclo, presupuesto) → base/esencial/del mes`.
+
+No existe FK entre una línea anual y un fondo mensual. El único puente es la
+cadena del Esencial: anual esencial /12 → Esencial del Presupuesto mensual
+“Gastos anuales” → coste esencial global. Es una convención semántica, no una
+relación de datos. El propio `spec10` prohíbe buscar por nombre y no autoriza
+sincronización automática.
+
+Consecuencia: el sistema no puede responder por ID “¿qué fondo cubre esta línea
+anual?” ni “¿esta provisión está financiando este gasto anual?”.
+
+### H4 — La historia se atribuye con el catálogo actual
+
+`movimientos` solo guarda `partida`. La ejecución mensual deriva el Presupuesto
+del vínculo actual:
+
+```ts
+relations.filter((p) => p.presupuesto === budget.id)
+```
+
+Si se cambia `Partida → Presupuesto`, los gastos pasados cambian de fondo. Lo
+mismo ocurre con `Partida → Deuda`. La spec lo mitiga con preview de impacto y
+motivo, pero el hecho no conserva la financiación que tenía en el momento de
+ocurrir.
+
+Para un sistema que prioriza integridad histórica, esto es una debilidad
+estructural, no solo de experiencia de usuario.
+
+### H5 — La restricción de destino único delata el problema
+
+El índice `budget_contribution_destination` impide que dos Presupuestos de
+fuente “Aportación a saldo” compartan Saldo destino. Es necesario porque la
+ejecución de una Transferencia se atribuye por destino y el modelo no tiene otra
+forma de repartirla.
+
+Pero no es una ley económica: dos propósitos distintos en la misma cuenta de
+ahorro son legítimos y hoy no se pueden representar. Es un parche de atribución.
+
+### H6 — El plan mensual es un plan de caja, no un presupuesto de gastos
+
+Incluye Gastos (`Gasto real`) y Transferencias (`Aportación a saldo`), pero no
+Ingresos: un Ingreso no lleva Partida y no tiene fuente de presupuesto. Por
+tanto, el “plan mensual” es una asignación de salidas, no un presupuesto
+completo. Compararlo con el plan anual de gastos es comparar dos objetos
+distintos.
+
+### H7 — Atributos que no pagan su coste
+
+- `Categoría.anual` y `Categoría.mensual`: se guardan y se muestran, pero no
+  tienen consumidor runtime. `AC-26` de `spec02` lo declara expresamente.
+- `Categoría.grupo`: texto libre sin consumidor.
+- `Esencial`: está en la línea anual y en la línea del ciclo, con reglas
+  distintas y una cadena convencional entre ambas.
+- `Partida.presupuesto` y `Partida.deuda`: relaciones temporales modeladas como
+  atributos estáticos.
+- `Presupuesto.destino` en `Gasto real`: es obligatorio, pero la propia spec
+  dice que no imputa; la imputación va por Partida. Es una relación de contexto
+  que puede ser artificial.
+
+## Respuestas a las preguntas planteadas
+
+### Partida vs Presupuesto
+
+No, pero tampoco son pares. Partida responde “¿para qué?”; Presupuesto responde
+“¿con qué se financia?”. Son ejes distintos.
+
+Se pueden unificar solo creando una **tercera entidad**: una línea planificable
+con naturaleza (gasto, provisión, ingreso) y un fondo. Eso no es fusionar las dos
+actuales; es sustituirlas como sujetos de planificación.
+
+- **Ganarías:** una sola clave de plan, un solo ciclo de vida, financiación
+  explícita en la línea e informes más simples.
+- **Perderías:** la separación “para qué / con qué”, la bolsa compartida como
+  objeto de primera clase (varias Partidas con un mismo techo mensual) y
+  posiblemente IDs/contratos históricos.
+
+En el sistema actual no lo haría. En un diseño desde cero, sí.
+
+### Plan anual y mensual
+
+No por decreto; deben compartir contrato y un puente explícito.
+
+- El anual es un objetivo económico por Partida.
+- El mensual es una asignación de caja por fondo.
+
+Si se fuerzan en una sola tabla sin un discriminador, aparecen nulos y reglas
+condicionales. Si se mantienen separados sin puente, aparecen dos verdades.
+
+La solución intermedia es mantener ambos planes con sus claves naturales y
+añadir, **solo si responde a una pregunta concreta y verificable**, una relación
+de cobertura entre línea anual y fondo mensual (N:M, con reparto opcional). La
+cobertura dice “este fondo cubre esta línea”, no “este importe es el mismo”. No
+se copian importes automáticamente.
+
+### Categorías y Subcategorías
+
+Subcategoría no aporta semántica financiera: no tiene atributos propios, solo
+nombre, padre y estado. Es un nodo de agrupación, navegación y unicidad.
+Categoría es el único nivel con atributos reales.
+
+Por tanto, la jerarquía efectiva es “Categoría → grupo → Partida”. En el sistema
+actual no eliminaría Subcategoría: los IDs `SUBxxx`, los informes y el histórico
+son contractuales. La congelaría: no añadir más atributos ni más niveles.
+
+Desde cero usaría un árbol autorreferenciado o dos niveles + etiquetas, no tres
+niveles fijos. Tres niveles solo si los informes los exigen de verdad.
+
+### Atributos y responsabilidades
+
+| Atributo | Dónde está | Dónde debería estar |
+| --- | --- | --- |
+| Cálculo anual/mensual | Categoría | Configuración de informes, no clasificación; hoy sin consumidor |
+| Grupo | Categoría | Etiqueta descriptiva o eliminarse |
+| Referencia obligatoria | Categoría | Política de validación; aceptable si es uniforme por categoría, pero es política, no taxonomía |
+| Partida → Presupuesto | Partida | Asignación temporal o snapshot en el hecho |
+| Partida → Deuda | Partida | Snapshot en el hecho o intervalo de vigencia |
+| Fuente de ejecución | Presupuesto | Tipo de línea de plan o regla de ejecución |
+| Esencial | Línea anual y línea de ciclo | Un único sitio canónico; si se encadena, con relación explícita |
+
+### Casos difíciles
+
+| Caso | Cómo lo resuelve hoy | Dónde duele |
+| --- | --- | --- |
+| **Provisiones** | Presupuesto con fuente “Aportación a saldo” y destino único; el plan mensual ejecuta Transferencias al destino; el Gasto posterior no vuelve a ejecutar | La provisión y el Gasto final no están vinculados. No se puede responder “¿qué provisión cubre qué Partida?” sin mirar nombres |
+| **Gastos anuales financiados mensualmente** | Línea anual por Partida + Presupuesto de aportación; cadena del Esencial por convención | No hay vínculo explícito entre la línea anual y el fondo que la financia; el Esencial mensual se rellena a mano o por nombre |
+| **Varias Partidas comparten financiación** | N Partidas → 1 Presupuesto; ejecución agregada por Presupuesto | No se puede repartir el objetivo mensual entre Partidas; el pool es todo o nada |
+| **Gastos sin presupuesto** | `partida.presupuesto = NULL`; el Gasto es válido; aviso “sin planificar” | No distingue “no planificado” de “pendiente de asignar”; un gasto recurrente puede quedar invisible al control mensual |
+| **Transferencias que financian saldos** | Transferencia sin Partida; Presupuesto de aportación; ejecución por destino; el Gasto posterior no duplica | El destino único impide dos propósitos en la misma cuenta; una Transferencia con Referencia no ejecuta; no se atribuye a Partida |
+| **Deuda** | Partida → Deuda; cuota = Gasto; amortización extra = Amortización sin ejecución presupuestaria | La relación es estática en el catálogo; cambiarla está bloqueada; la deuda no se puede planificar como tal |
 
 ## Alternativas
 
@@ -136,6 +338,23 @@ No distribuir importes automáticamente ni duplicar el total en cada Partida. La
 No aplica deben conservar su importe y falta de comparabilidad hasta decidir su destino;
 no convertirlas en cero ni asignarles una ejecución ficticia.
 
+### Opción intermedia para el sistema existente
+
+Antes de un rediseño completo, se puede conservar el modelo y añadir dos piezas
+quirúrgicas, solo si se demuestra su necesidad:
+
+1. **Cobertura explícita** entre línea anual y fondo/objetivo de financiación, con
+   reparto opcional. Resolvería “¿qué aportación cubre este gasto anual?” sin
+   depender de nombres.
+2. **Snapshot de financiación en el hecho**: `fondo_id` y `deuda_id` en
+   `movimientos`, con backfill y corte documentado. La historia dejaría de
+   reinterpretarse cuando cambie el catálogo.
+
+No es una cuarta alternativa cerrada ni una autorización. Es una fase posible
+de C, y requiere reglas propias, análisis de impacto y migración aprobada. La
+cobertura no debe imponer una relación permanente Partida–financiación ni
+repartir importes automáticamente.
+
 ## Planificación anual y por ciclo
 
 Compartiría Partida para planificar **gasto** anual y por ciclo. No obligaría a planificar
@@ -208,12 +427,58 @@ por Saldo. Evitaría el maestro universal que mezcla consumo y aportaciones.
 2. Evaluar destino obligatorio de Gasto real y utilidad de cada vínculo Partida–Presupuesto.
 3. Inventariar consumidores y datos; resolver objetivos agregados y No aplica sin repartos
    automáticos. Definir conservación y reconciliación histórica antes de migrar.
-4. Simplificar jerarquía solo donde se demuestre redundancia y exista mapping aprobado.
+4. Si se demuestra necesario, añadir cobertura explícita y snapshot de financiación en el
+   hecho, con reglas propias y corte de backfill documentado.
+5. Simplificar jerarquía solo donde se demuestre redundancia y exista mapping aprobado.
 
 No fusionar Partidas ni recalcular retrospectivamente el histórico para adaptarlo al
 vocabulario. La arquitectura elegida debe reducir decisiones cotidianas y relaciones
 artificiales, no solo el número de tablas.
 
+### Puntos concretos para contrastar con Álex
+
+1. ¿El negocio necesita **dos propósitos en un mismo Saldo destino**? Si sí, la
+   unicidad de “Aportación a saldo” es una limitación y la cobertura debe admitir
+   reparto explícito.
+2. ¿El **Esencial anual** debe alimentar automáticamente el Esencial mensual, o
+   son decisiones independientes? Si son independientes, la cadena actual es una
+   convención peligrosa; si se alimentan, debe ser por relación explícita.
+3. ¿La **atribución histórica** debe congelarse en el hecho? Para este análisis
+   es un sí: es la diferencia entre conservar historia y reinterpretarla.
+4. ¿La **bolsa compartida** es un objeto de negocio real o solo una agregación
+   de informe? Si es lo segundo, C es viable antes; si es lo primero, hay que
+   modelarla explícitamente.
+
 Pendiente: contraste de Álex y decisión del usuario sobre alternativa y alcance.
 Después, si se decide avanzar, los cambios deben especificarse en sus documentos
 propietarios y obtener autorización separada de desarrollo. Esta PR no adopta C.
+
+## Evidencia y límites
+
+Evidencia consultada:
+
+- `specs/02-clasificacion-specification.md`, incluido `AC-26`.
+- `specs/08-presupuestos-specification.md`, reglas 1–5 y contrato de nombres.
+- `specs/09-plan-ciclo-specification.md`, motor R3 y matriz de estados.
+- `specs/10-plan-anual-specification.md`, ejecución anual y cadena del equivalente esencial.
+- `apps/api/src/schema-contracts.json`: tablas `presupuestos`, `partidas`,
+  `annual_plan_lines`, `cycle_plan_lines`, `movimientos` e índices.
+- `apps/api/src/planes-ciclo.ts`, `plan-anual.ts` y `movimiento-impact.ts`.
+
+Límites:
+
+- No se ha inspeccionado el Excel físico ni se han usado datos financieros reales.
+- No se ha ejecutado una migración ni una prueba de equivalencia.
+- Las alternativas son hipótesis de arquitectura, no especificaciones aprobadas.
+  Cualquier cambio requiere su propia spec, análisis de impacto y autorización.
+- Este documento no reabre decisiones aprobadas de `spec02`, `spec08`, `spec09`
+  ni `spec10`; identifica tensiones y propone líneas de contraste.
+
+## Referencias
+
+- [Clasificación](../02-clasificacion-specification.md)
+- [Presupuestos](../08-presupuestos-specification.md)
+- [Plan del ciclo](../09-plan-ciclo-specification.md)
+- [Plan anual](../10-plan-anual-specification.md)
+- [Referencia funcional](../functional-reference-v5.11.md)
+- [Arquitectura](../guidelines/architecture.md)
