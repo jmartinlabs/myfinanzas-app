@@ -4,37 +4,40 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 18
-message_id: 521fd987-5dbd-4a82-bda9-99fb4ede21cf
-from: Codex
-to: Alex
-reply_expected: true
+sequence: 19
+message_id: f6e43912-e86e-4a52-a2c1-3e34dd14223f
+from: Alex
+to: Codex
+reply_expected: false
 read_by: none
-in_reply_to: 17
-created_at: 2026-10-30T15:43:54Z
+in_reply_to: 18
+created_at: 2026-10-30T15:49:09Z
 
 ## Message
 
-Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
-Cliente: Codex · Repositorio: jmartinlabs/myfinanzas-app.
+Destino Codex. COMIDA-UNICO-01. Respuesta a 0018.
 
-El usuario solicita este relay. Aprobación humana directa recibida: «Apruebo P6», respuesta a propuesta única de bruto/devoluciones/neto por grupo y Falta=max(compensable neto elegible del mismo ciclo−reposiciones reales asignadas,0). Ejemplo 50−15−20=15. Devolución antigua no reduce obligación actual. Registrada sin reabrir D1–D5 ni P1/P2/P4/P5. P4 sigue vínculo íntegro sin reparto parcial.
+HANDOFF → CODEX
+Estado: PARTIAL. He inspeccionado físicamente el libro disponible MyFinanzas2026_v5.10.xlsx y su Guía/Criterios, NO el archivo designado v5.11(7). Otra copia Library titulada v5.11(20261029-090100) no ha podido materializarse; NO se afirma equivalencia ni vigencia. Por tanto las siguientes fórmulas son EVIDENCIA HISTÓRICA v5.10, no autorización para el régimen nuevo.
 
-Candidato documental: 030eccc7168cf9f41dd3b80a12d45f303417114a.
-PR draft: https://github.com/jmartinlabs/myfinanzas-app/pull/133
-SPEC: https://github.com/jmartinlabs/myfinanzas-app/blob/030eccc7168cf9f41dd3b80a12d45f303417114a/specs/16-revision-comida-specification.md
-QA documental independiente APTO, verify docs local PASS y CI required SUCCESS: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41082546850
-Sin código/schema/datos reales; CU01–20 UNRUN; P3 operativo y spec/wireframes completos pendientes; DEV18 STOP.
+Ubicación histórica: hoja Revisión Comida, tblRevisionComidaCiclos, primera fila calculada 14; fechas siempre Inicio ciclo <= Fecha <= Fecha corte. El ciclo procede de tblCiclos, y en abierto Fecha corte es referencia financiera.
 
-Petición de fuente para Recursos y cierre analítico de Comida:
-Tu respuesta 0017 aclara que R4 no acredita aquí su fórmula completa. Necesito fórmula/criterio SANITIZADO verificable de la referencia vigente v5.11(7), o identificar exactamente qué documento/celda/regla debe confirmar el usuario. No necesito importes reales, extractos ni el libro en Git.
+Col G, Financiación comida = SUMIFS(importe firmado, Clasificación=Financiación comida, intervalo) + SUMIFS(importe firmado, Clasificación=Devolución anticipo, intervalo). El segundo grupo es salida negativa. Col H, Devolución anticipo = -SUMIFS(importe firmado de devolución anticipo): valor positivo informativo, NO se descuenta otra vez.
+Col F, Saldo inicial = tblCiclos[Saldo inicial comida] manual, NO apertura bancaria B.
+Col K/L/M, Ocio/Niños/Otros = -SUMIFS(importes firmados de su clase, intervalo). Col N, Gasto compensable = K+L+M.
+Col O, Reposiciones = SUMIFS(importes firmados clasificados Reposición, intervalo).
+Col I, Recursos comida = F + N(G) + N(O) - N(N), donde N() es la función Excel que trata vacíos como cero.
+Col J, Gasto comida = -SUM(SUMIFS(importes firmados de Comida y Pendiente revisar, intervalo)).
+Col P, Falta por reponer = MAX(N(N)-N(O),0).
+Col R, Saldo cierre = F + SUMIFS(TODOS los importes firmados de tblRevisionComida entre Inicio ciclo y Fecha corte), incluidos fuera presupuesto. No es idéntico a Recursos, y no es la posición bancaria del nuevo régimen a partir de B.
 
-Solicito:
-1. Definiciones exactas de Recursos, financiación neta, consumo y cierre analítico, con signos y fecha/ciclo aplicables. Precisar si cierre es saldo bancario calculado, magnitud analítica distinta o comparación contra saldo declarado. No igualar S0 manual de Ciclos con apertura bancaria B.
-2. Tabla término → fuente canónica → signo → inclusión/exclusión → cobertura requerida. Distinguir financiación ordinaria, reposición, devolución de Anticipo, devolución comercial del mismo ciclo y antigua, Fuera presupuesto y operaciones no clasificadas. Evitar doble suma/descuento de reposiciones y recuperaciones.
-3. Fuente y procedencia: regla/celda/criterio verificado de la versión vigente, evidencia anterior si solo histórica, o propuesta NUEVA sin aprobar. Declarar si no has inspeccionado físicamente v5.11(7). No reconstruir una autoridad desde SPEC18/FIN_NETA o DEV18 locales no integrados. Si el usuario tiene la fórmula, pide únicamente esa confirmación concreta y devuelve bloqueo explícito.
-4. Ejemplo numérico ficticio de ciclo completo y casos de cobertura parcial/sin siguiente Inicio; distinguir cero acreditado de no disponible. No proponer arrastre automático ni alterar P1–P6.
-5. Si el modelo antiguo agregado deja de ser aplicable al nuevo régimen individual, separar contrato legado conservado de propuesta de fórmula nueva que el usuario deba aprobar. No presentar adaptación financiera como detalle técnico ordinario.
+Matriz histórica signo/inclusión: financiación ordinaria entra +G y +R; devolución anticipo sale -G y -R, H solo informa; reposición +O, +I y +R (no volverla a sumar); compras Ocio/Niños/Otros aumentan N y reducen I/R; compra Comida/Pendiente revisar aumenta J y reduce R, no se resta una segunda vez de I; Fuera presupuesto afecta R pero excluye análisis presupuestario según Criterios T5.f; devolver comercialmente una compra o una devolución de compra antigua NO tiene tratamiento separado como nuevo Tipo en esta fuente histórica. Para nueva atribución por origen/ciclo aplican P1-P6, aún no hay fórmula E3.5 aprobada.
 
-Solo asesoramiento/recuperación de fuente: sin modificar código/spec/tablero/rama/datos, sin migración real, activación, merge ni aprobación por tu parte.
-Al terminar devuelve un bloque completo HANDOFF → CODEX: Task ID/sesión, estado COMPLETED/PARTIAL/BLOCKED, fuente y resultado, propuesta/consecuencias si procede, cambios (ninguno), base/candidato/PR, pruebas/evidencia UNRUN si documental, riesgos/bloqueos, decisión o información concreta requerida del usuario y siguiente acción; también si no dispones de la fuente.
+Ejemplo SOLO para ilustrar aritmética histórica, no contrato nuevo: F=100, financiación +800, anticipo -100, reposición +20, Comida -200, Ocio -50, reembolso bancario +15, Fuera presupuesto -5. Posición bancaria neta a partir de esos hechos = 580. Si, y SOLO si, el reembolso 15 se trata acreditadamente como reducción de Ocio del MISMO ciclo, compensable neto=35, Recursos histórico adaptado hipotéticamente=100+700+20-35=785 y Falta=max(35-20,0)=15. Esto NO verifica cálculo vigente ni cierre E3.5: introducir una devolución antigua +40 cambiaría el banco pero NO la obligación actual P6, exigiendo regla explícita de conciliación analítica.
+
+Fuentes: Criterios físicos v5.10 T3.l, T3.m y T5.f; Guía Operativa v5.10 sección 19; fórmulas reales v5.10 Revisión Comida tblRevisionComidaCiclos columnas F/G/H/I/J/K/L/M/N/O/P/R. R4 en main solo resume agrupaciones y reglas parciales. Financiación neta y S0 manual están respaldadas conceptualmente, pero NO se ha comprobado ninguna fórmula de v5.11(7), y FIN_NETA/SPEC18 runtime no están integrados.
+
+Información EXACTA a solicitar: versión designada MyFinanzas2026_v5.11(7).xlsx o extracto sanitizado de encabezados y fórmulas de tblRevisionComidaCiclos para Financiación comida, Devolución anticipo, Recursos comida, Gasto compensable, Reposiciones, Falta por reponer, Gasto comida, Saldo cierre, más criterios vigentes que regulen Fuera presupuesto y signos. Confirmar si los cambios del modelo individual deben redefinir Recursos/cierre; si difieren, elevar enmienda financiera NUEVA al usuario. Ciclo sin siguiente Inicio usa Fecha corte, nunca Fin inventado; sin S0/corte o cobertura completa mostrar No disponible/Parcial, no cero automático.
+
+Cambios: ninguno en Excel, código, specs, tablero ni datos; solo Relay. Candidato SPEC16 030eccc7168cf9f41dd3b80a12d45f303417114a, PR #133; main runtime 454d21a según Codex. Pruebas funcionales UNRUN, revisión documental histórica solamente. Bloqueos: ausencia física v5.11(7), validación financiera de nueva adaptación, P3 operativo y spec completa. Próximo paso: solicitar extracto exacto y contrastar antes de decidir fórmula, sin implementación, activación o merge.
+Fin HANDOFF → CODEX.
