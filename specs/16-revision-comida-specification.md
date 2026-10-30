@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5 y representación P1 aprobadas; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5, representación P1 e identidad P2 aprobadas; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -926,11 +926,35 @@ estricto de esquema, conservando la tabla, identidad y auditoría de Movimientos
 P1 no aprueba los casos de atribución P4, neteo presupuestario P5, identidad P2,
 apertura real P3 ni la especificación completa. No se ejecuta cambio de esquema.
 
+### P2 — continuidad del Saldo aprobada (2026-10-30)
+
+Fuente: mensaje directo del usuario: «Apruebo P2: mantener ING Comida como el mismo
+Saldo, con régimen fechado sujeto a verificación».
+ING Comida conserva su ID técnico y representa la misma cuenta bancaria. No se migran
+compras históricas ni se reasignan hechos, relaciones o presupuestos anteriores.
+Antes de C conserva lectura Terminal sin posición convencional; desde C, posición
+centralizada B + entradas vigentes con fecha >= C − salidas vigentes con fecha >= C.
+B se acredita antes de las operaciones de C; las transferencias anteriores no vuelven
+a sumarse a B y mantienen íntegro su efecto en la otra cuenta. B no sustituye S0 manual
+de Ciclos. Consultas que crucen C distinguen régimen y cobertura.
+
+La verificación debe cubrir Saldos, Movimientos/preview/rectificación/anulación,
+Revisión, Ciclos/referencia temporal, plan mensual, flujo, Anticipos/Compartidos,
+lecturas anuales y contratos futuros de conciliación/cierre. Sin filtros locales
+dispersos ni filtro global por Fecha apertura. HISTORY_LOCKED se mantiene; la
+transición requiere procedimiento explícito auditado y revalidación de operaciones
+que atraviesen C. Apertura, cobertura, ausencia de solapes y recuperación deben
+probarse con fixtures antes de cualquier activación autorizada.
+
+Si no se demuestra seguridad, se bloquea el régimen y se presenta una cuenta sucesora
+como alternativa a decidir; no se crea automáticamente ni se simula Transferencia de
+apertura. P2 no fija fecha C, importe B, evidencia bancaria ni autorización operativa;
+P3, P4/P5 y spec/wireframes completos siguen pendientes. No se modifica el esquema.
+
 ### Decisiones materiales pendientes — recomendaciones, no decisiones
 
 | ID | Alternativas | Recomendación y consecuencias |
 | --- | --- | --- |
-| P2: identidad de ING Comida | Mismo ID con régimen fechado; o cuenta sucesora trazable | Recomendar conservar ID si se demuestra cálculo por corte seguro en todos los consumidores. Requiere configuración explícita, apertura propia y guard; no editar apertura/control usados por vía ordinaria. Sucesor simplifica separación pero fragmenta trazabilidad, destino presupuestario y transferencias; solo elevar si régimen no es verificable. |
 | P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
 | P4: atribución de devolución | Exigir compra; o hecho real con relación opcional revisable | Recomendar hecho acreditado sin exigir compra histórica inexistente. Partida y relación pendientes deben distinguirse. Compra de 20 con devoluciones 12+13: banco +25, máximo 20 atribuido a esa compra; exceso 5 por justificar. Concurrencia/revisión atómicas; rectificar/anular compra invalida atribución sin borrar entrada. Partida obligatoria D3 para Gastos no decide requisitos de devolución: resolver antes de schema/API. |
 | P5: presupuestos e informes | Mantener ejecutado bruto y exponer devolución/neto separados; o sustituir ejecutado por neto | Recomendar mantener ejecutado vigente y añadir consulta separada con cobertura para Comida en esta entrega, sin alterar anual. Si se desea netear ejecutado mensual, aprobar antes el efecto por Partida/ciclo, desviaciones y casos sin atribución. Informes mixtos deben separar regímenes y no presentar una serie neta homogénea. |
@@ -939,7 +963,7 @@ apertura real P3 ni la especificación completa. No se ejecuta cambio de esquema
 
 Sin endpoints nuevos decididos: reutilizar rutas de Movimientos para hechos económicos
 y limitar escritura de Revisión a metadatos. Nombres/campos concretos quedan pendientes
-de P1/P4 y revisión de contrato. Sin API financiera paralela. MFA, Origin/CSRF,
+de P4 y revisión de contrato. Sin API financiera paralela. MFA, Origin/CSRF,
 no-store, revisiones, huellas e idempotencia se mantienen; servidor revalida bajo
 transacción IMMEDIATE, no solo UI.
 
@@ -984,6 +1008,6 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: resolver P2/P4/P5 y aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: resolver P4/P5 y aprobar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.

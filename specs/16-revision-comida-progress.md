@@ -150,3 +150,10 @@ Pruebas de aplicación UNRUN: solo documentación; no hay candidato funcional.
 Usuario: «Apruebo P1: nuevo tipo Devolución de gasto». Registro canónico actualizado
 en specification; brainstorming conserva confirmación append-only. Sin implementación.
 P2/P3/P4/P5 y spec completa permanecen pendientes; siguiente gate P2.
+
+### Aprobación P2 — 2026-10-30
+
+Mensaje humano directo: «Apruebo P2: mantener ING Comida como el mismo Saldo, con
+régimen fechado sujeto a verificación». Registro en specification y brainstorming.
+Matriz de consumidores y condiciones de bloqueo documentadas; sin código ni esquema.
+P3/P4/P5 y spec/wireframes completos pendientes. Próxima decisión funcional: P4.

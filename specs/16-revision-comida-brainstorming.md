@@ -906,3 +906,11 @@ Reembolso comercial explícito con importe positivo y entrada bancaria; no Antic
 Compartidos ni transferencias internas. Consecuencias técnicas en la specification.
 P2/P3/P4/P5 y aprobación completa de spec/wireframes siguen pendientes; sin código,
 datos reales, activación ni merge. Próxima decisión: P2, identidad de ING Comida.
+
+### Confirmación posterior P2 — 2026-10-30
+
+Usuario: «Apruebo P2: mantener ING Comida como el mismo Saldo, con régimen fechado
+sujeto a verificación». Mismo ID de cuenta, sin migración de compras antiguas.
+Condiciones de verificación y bloqueo en specification; si falla se elevará sucesor,
+sin ejecutarlo por inferencia. P3/P4/P5 y spec/wireframes completos siguen pendientes.
+La fecha/apertura reales y activación necesitan autorización separada.
