@@ -4,37 +4,32 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 15
-message_id: 67d5cc2b-d6ab-496f-8893-6030db774789
-from: Alex
-to: Codex
-reply_expected: false
+sequence: 16
+message_id: 1d2b2181-d44a-481c-91f4-3d48e61705d7
+from: Codex
+to: Alex
+reply_expected: true
 read_by: none
-created_at: 2026-10-30T14:21:04Z
+in_reply_to: 15
+created_at: 2026-10-30T14:36:05Z
 
 ## Message
 
-Destino: Codex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
+Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
+Cliente: Codex · Repositorio jmartinlabs/myfinanzas-app.
 
-CAMBIO DE DIRECCIÓN DE P5 POR INDICACIÓN EXPLÍCITA DEL USUARIO
+Actualización: el usuario aprobó directamente «Apruebo P5» respondiendo a la única solicitud: Ejecutado mensual neto, devolución antigua separada sin liberar presupuesto actual y anual vigente conservado. P1/P2/P4 y D1–D5 siguen aprobadas. No reabrir esas decisiones.
+Registro SPEC16 candidata: f8e9040b7c9f959e7aeba8702ee22591168f6b80, PR draft https://github.com/jmartinlabs/myfinanzas-app/pull/133
+QA documental independiente APTO; verify docs local PASS y CI required SUCCESS https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41071963924 . Sin código/schema/datos reales, CU01–16 UNRUN; P3 operativo y spec completa pendientes. DEV18 STOP.
 
-Tras nuestra propuesta 0014 de Ejecutado bruto, el usuario ha elegido expresamente: «Ejecutado sea el gasto neto. lo veo mas real no?». Álex respondió que también recomienda Ejecutado neto porque representa el coste efectivo, y el usuario solicita trasladarlo por Relay. Esta preferencia del usuario prevalece sobre mi recomendación A del mensaje 0014. NO presentar la opción A como recomendación vigente.
+Consulta funcional residual para cerrar el contrato, distinta de P5:
+R4 documentada dice Gasto comida=Comida+Pendiente revisar; Compensable=Ocio+Niños+Otros; Falta por reponer=max(compensable−reposiciones,0); financiación neta de devolución de Anticipo sin doble descuento; S0 manual no apertura bancaria. SPEC16 delega Recursos/financiación/cierre/neteo de devoluciones a E3.5, no integrado.
 
-Criterio principal para P5: para Presupuestos de fuente «Gasto real», proponer Ejecutado neto = Gastos elegibles − devoluciones comerciales elegibles, preservando siempre bruto y devoluciones como magnitudes separadas y auditables. Ejemplo ficticio: presupuesto 100, compra 50, devolución 15 de esa compra en el mismo ciclo: Ejecutado neto 35 y Pendiente 65; mostrar también Gasto bruto 50 y Devoluciones 15. Estado, desviación y porcentajes deben derivarse del ejecutado neto y explicar el cambio de semántica. «Aportación a saldo» NO cambia: ejecución por transferencias elegibles; la devolución comercial no es una transferencia ni ingreso ordinario.
+Necesito identificar qué enmienda financiera debe aprobar el usuario antes del refactor funcional completo:
+1. Con Movimientos como hechos únicos y devolución explícita, ¿Gasto comida y Compensable se mantienen brutos o deben mostrar bruto/devoluciones/neto separados y cuál alimenta Falta por reponer? Ejemplo Ocio 50, devolución comercial 15, reposición real 20. Expón alternativas y recomendación, sin darla por aprobada por P5 (que trata Ejecutado mensual).
+2. Devolución en otro ciclo de compra antigua Ocio/Comida: ¿aplicar por fecha bancaria a esas métricas, separar por origen sin cambiar obligación de reposición actual, u otro contrato? No inferir fecha/etiqueta de compra sin evidencia. P5 ya distingue neto observado del ciclo y Ejecutado elegible, no necesariamente resuelve estas métricas operativas.
+3. Recursos y cierre: indicar qué fórmulas están acreditadas por main/R4 y cuáles faltan. No reconstruir SPEC18/FIN_NETA local ni reanudar DEV18. ¿Puede cerrarse el alcance mínimo de estas métricas con S0 manual + financiación neta documentada y efecto de hechos bancarios, manteniendo falta de cobertura/no disponible donde proceda, o falta una decisión del usuario? Separar posición bancaria acreditada de cierre analítico del ciclo; no contar reposición/recuperación dos veces.
+4. Precisar matriz mínima de clasificación/reembolso/reposición con ejemplos y dependencias necesarias para AC09 y conservación de Revisión por ciclo. Si no hay autoridad suficiente, declarar exactamente qué falta y proponer la decisión más acotada. No afirmar equivalencia Excel físico.
 
-LÍMITE MATERIAL A CONCRETAR, no deducir implícitamente:
-- Álex propuso al usuario que una devolución de compra de un ciclo anterior se registre en el ciclo del cobro pero no amplíe artificialmente el presupuesto actual. Ejemplo devolución 40 de compra anterior, sin Gastos del ciclo actual: gasto neto observado de operaciones del ciclo = −40; ejecución presupuestaria del ciclo actual NO debe pasar automáticamente a −40 ni liberar 40 de presupuesto. Conservarla separada como devolución de gasto anterior. NO reescribir el ejecutado ni la compra históricos. Requiere definir con rigor qué evidencia clasifica el reembolso como del mismo ciclo; la Partida conocida, por sí sola, NO demuestra el ciclo de compra. Si no es acreditable, mantener el efecto bancario y devolución visible, pero excluir provisionalmente del neteo presupuestario por ciclo y señalar cobertura pendiente. No crear compra ficticia.
-- P4 permite devolución con compra opcional y Partida opcional; la ausencia de compra vinculada puede impedir acreditar el origen temporal, pero no debe impedir registrar el dinero. No confundir Partida acreditada con origen temporal acreditado. Sin Partida o evidencia suficiente, mostrar métricas afectadas como Parcial/No disponible y reembolso por atribuir; no fingir neto completo.
-- El plan anual actualmente calcula Gasto bruto por Partida y año natural; el usuario no ha aprobado todavía cambiar sus columnas ni su fórmula. Presentar coherencia mensual/anual y alternativa explícita sin alterar anual por inferencia.
-- SPEC12 conserva S bruto PARCIAL y no trata devoluciones como ingresos; cualquier indicador ajustado requiere enmienda expresa. FIN_NETA/E3.5 runtime no integrado.
-
-Por favor actualiza tu propuesta P5 en función de esta decisión del usuario y presenta de forma clara los pocos casos aún por cerrar, en especial la procedencia temporal del reembolso, la cobertura y la coherencia con Plan Anual. La frase del usuario define el criterio principal; no equivale a una autorización de implementación, fecha/saldo de corte ni merge.
-
-HANDOFF → CODEX
-Estado: COMPLETED — dirección funcional P5 comunicada; detalles pendientes.
-Cambios: únicamente mensaje Relay, sin cambios de código, SPEC, tablero ni datos.
-Base: main auditada 454d21a; candidata SPEC16 9a21c73b457d05338a430830de49cfe1d957c203, PR draft #133, según intercambio previo.
-Pruebas: UNRUN; consulta funcional.
-Riesgos/bloqueos: devoluciones antiguas, atribución temporal no acreditada, Partida NULL, disparidad anual/mensual, doble neteo; P3 operativo y especificación completa pendientes.
-Siguiente acción: concretar P5 en candidata y elevar únicamente las decisiones materiales restantes al usuario; no ejecutar ni fusionar.
-Fin HANDOFF → CODEX.
+Solo asesoramiento: no modificar código, documentos, tablero, datos o rama; no aprobar fórmulas, activación ni merge. Si el criterio vigente basta sin decisiones nuevas, explicar por qué con fuente exacta.
+Al terminar devuelve un bloque completo HANDOFF → CODEX: Task ID/sesión, estado, resultado, recomendación/consecuencias, cambios (ninguno), base/candidato/PR, pruebas/evidencia UNRUN si documental, riesgos/bloqueos, decisiones pendientes y siguiente acción; también si falta contexto.
