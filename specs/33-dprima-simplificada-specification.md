@@ -1,13 +1,13 @@
 # 33 — D′ simplificada: Specification
 
-Status: APPROVED — revisión2 y wireframes, más enmienda E1 de integridad de T,
-2026-10-31. Enmienda sobre fuente de aportación pendiente; sin implementación.
+Status: APPROVED — revisión2 y wireframes, más enmiendas E1 (integridad de T)
+y E2 (fuente de la aportación), 2026-10-31. Sin implementación.
 Approval source/date: mensaje humano directo «Apruebo SPEC33 D′ revisión 2 y sus wireframes»».
 La comilla final adicional pertenece al mensaje recibido y no cambia su objeto inequívoco.
 Candidato aprobado: specification SHA-256 cd7a4baea00f05fdd3813ff259621c7e9ec061df127e51db446853994e30ec49;
 brainstorming SHA-256 4c973f5de8cc70fe41221c9d44a9d2ebb3d856758e24cffb90854b828530aefd.
-Las huellas anteriores identifican revisión2 original; E1 queda registrada después
-con su propia fuente humana. No se atribuye E1 al hash anterior.
+Las huellas anteriores identifican revisión2 original; E1 y E2 se registran después
+con sus propias fuentes humanas. No se atribuyen las enmiendas al hash anterior.
 No autoriza desarrollo, migración real, activación, despliegue ni merge.
 Autorización de redacción: usuario «Autorizo», tras solicitud única de especificar D′.
 Task ID: DPRIMA-SPEC-01. Context and brainstorming:
@@ -92,6 +92,32 @@ Ejemplo: IBI100, Seguro sin importe, S100/G0/N2 => subtotal previsto100, T/P/sug
 no verificables; no sugerir0. Si se excluye expresamente Seguro, T100/P0/sugerida0
 son resultados legítimos con alcance y exclusión visibles. No se modifica el banco.
 
+### E2 — P/N solo para fuente Aportación a saldo, aprobada 2026-10-31
+
+Fuente humana directa: «Apruebo E2: P/N solo genera aportaciones para raíces con
+fuente Aportación a saldo». Es enmienda explícita al alcance de la fórmula, no una
+interpretación inferida de respuestas anteriores ni autorización de desarrollo.
+
+| Fuente aplicada de la raíz | Ejecución mensual | Uso de P/N |
+| --- | --- | --- |
+| Gasto real | Gasto elegible de la raíz simple o de sus hijas, según contratos de ejecución mensual aplicables | No genera cuota ni rellena Del mes como aportación. Plan mensual de gasto conserva importe manual y pendiente frente a ese gasto. |
+| Aportación a saldo | Transferencias reales elegibles al destino inequívoco del ciclo, sin doble cómputo de compras posteriores | P/N puede proponer aportación si existe planificación, saldo exclusivo y datos completos E1/G/S/N verificables. Confirmar propuesta no ejecuta transferencia. |
+| No aplica histórico | Sin comparable según fuente histórica | Sin cuota ni conversión automática a otra fuente. |
+
+G neto para calcular financiación no autoriza por extensión un nuevo neto mensual;
+la ejecución Gasto real conserva su contrato propietario aplicable.
+Una planificación con raíz Gasto real puede consultar previsiones y ejecución por
+hijas; no por ello se ofrece una cuota transferible. P/N figura No aplica por fuente,
+distinto de No verificable por T incompleto cuando sí se intenta calcular aportación.
+Una raíz simple de aportación sin planificación mantiene importe mensual manual;
+no inventar T, hijas ni una planificación para aplicar fórmula.
+
+La fuente aplicada en el ciclo y sus fotos históricas manda sobre su ejecución.
+Cambiar fuente para ciclos abiertos/futuros exige impacto y revisión; no ejecutar
+ambas modalidades simultáneamente en una misma línea ni reinterpretar cerrado.
+Combinar gasto y aportación en una raíz como nueva modalidad necesitaría decisión
+material aparte; E2 no la crea ni cambia los hechos económicos centrales.
+
 ### Apertura y cálculo de financiación
 
 Cada planificación tiene rango de etiquetas de mes financiado, por ejemplo enero–marzo.
@@ -103,7 +129,7 @@ no cantidad de filas existentes ni nómina/reloj. Si falta el ciclo real que deb
 no ejecutar recálculo. Un salto/rectificación de ciclos que invalide el rango exige
 revisión, no crear o reasignar hechos automáticamente.
 
-Fórmula confirmada para el candidato:
+Fórmula de financiación, aplicable solo a raíz con fuente Aportación a saldo según E2:
 - T: suma de cada línea incluida una sola vez, incluidas varias líneas de la misma
   hija, con completitud E1. No deduplicar previsiones por ID Partida ni contar una
   exclusión manual como dato perdido. La deduplicación de hechos corresponde a G.
@@ -298,7 +324,8 @@ Wireframes aprobados con revisión2; no UI implementada; conservar shell/tokens 
     S al corte de apertura [...] (distinto de saldo actual)
     Pendiente P [...]  Restantes N [...]
     T incompleto: No verificable [Ver líneas pendientes / exclusiones]
-    Sugerida [...]   Importe a incorporar al mensual [editable]
+    Sugerida [solo Aportación a saldo; otras fuentes: No aplica]
+    Importe a incorporar al mensual [editable, no ejecuta transferencia]
     Fuentes/advertencias [...]   [Cancelar] [Confirmar propuesta]
 
 Móvil (390), complemento de las pantallas de Maestro y Mensual, mismos campos aprobados:
@@ -340,7 +367,8 @@ Móvil (390), propuesta ASCII específica:
     T [...]   Bruto [...] / Devoluciones [...] / Neto G [...]
     S al corte de apertura [...] (distinto de saldo actual)
     Pendiente P [...]  Restantes N [...]
-    Sugerida [...]  Incorporar al mensual [importe editable]
+    Sugerida [solo Aportación a saldo / No aplica por fuente]
+    Incorporar al mensual [importe editable, sin transferir]
     [Desplegar fuentes y motivos]
     [Cancelar]   [Confirmar propuesta]
 
@@ -376,7 +404,7 @@ Ciclos es maestro único; Saldos posición; Movimientos hechos; Deuda/Referencia
 contratos. Fotografías y edición cerrada dependen del proveedor de cierre, actualmente
 no instalado en los motores de planes; especificarlo no equivale a disponer de él.
 Los eventos de apertura/fin necesitan fuente central acreditada; no scheduler paralelo.
-La sugerencia de apertura NO depende de foto/cierre financiero previo: sí depende de
+La sugerencia para fuente Aportación a saldo NO depende de foto/cierre financiero previo: sí depende de
 posición y hechos reconstruibles al corte común. Si faltan S0/movimientos o evidencia
 de devolución, no afirmar saldo histórico ni sugerencia verificables.
 
@@ -438,14 +466,15 @@ Todos UNRUN: criterios aprobados de acciones/resultados, no pruebas de aplicaci�
 | AC-23 | Propuestas de P100/N3 y S−50 con T1000/G200/N2 | Sugerida33,33 con redondeo explícito; saldo firmado conserva P850/sugerida425. |
 | AC-24 | Reembolso atribuible actual, de plan anterior o sin origen, y hecho tardío cerrado | No duplicar crédito ni trasladar ejecución; banco conserva hecho; cobertura afectada visible y fotos sin reescritura automática. |
 | AC-25 / E1 | IBI100/Seguro sin importe/G0/S100/N2; después excluir Seguro explícitamente | Primero subtotal100 y T/P/sugerida null con motivo; después T100/P0/sugerida0 con exclusión visible/auditada. Cero explícito no es ausencia; hechos y cerrado intactos. |
+| AC-26 / E2 | Raíz Gasto real con hijas, gasto elegible80 y Del mes manual100; aparte raíz Aportación con T200/G80/S20/N2 al abrir | Gasto real ejecuta80/pendiente20 sin cuota P/N ni autollenado por transferencia. Aportación sugiere50; si se acepta50 y se transfiere25 en el ciclo, ejecutado25/pendiente25 sin sumar gastos de hijas a la financiación. |
 
 ## Gates posteriores a la aprobación documental
 
 La revisión2 y sus wireframes están aprobados. Las reglas del cuadro de cálculo y
 el alcance raíz/hija forman parte de esa aprobación; no requieren otra ronda idéntica.
-E1 está aprobada. La observación material de Álex0010 sobre ofrecer P/N solo para
-fuente Aportación a saldo sigue pendiente de decisión; no se modifica esa regla por
-inferencia ni se declara integración lista antes de resolverla.
+E1 y E2 están aprobadas por mensajes humanos separados. Las observaciones materiales
+de Álex0010 tienen enmiendas explícitas; su aprobación no acredita código ni elimina
+gates de implementación, migración, activación o merge.
 Permanecen además los siguientes gates de ejecución, sin ampliar la autorización:
 1. Autorización expresa y separada de desarrollo de SPEC33; la redacción/spec aprobada
    no la sustituye. Identificar dependencias satisfechas antes de despachar implementación.

@@ -167,3 +167,18 @@ Correcciones menores: estados actuales coherentes con revisión2 aprobada, fuent
 No aplica preservada históricamente sin conversión, ASCII390 Maestro/Mensual y saldo
 al corte diferenciado de actual. No cambian las demás reglas financieras ni el alcance.
 Las huellas originales de revisión2 no se presentan como hash de esta enmienda.
+
+## Enmienda E2 — fuente de la cuota, 2026-10-31
+
+Mensaje directo: «Apruebo E2: P/N solo genera aportaciones para raíces con fuente
+Aportación a saldo». Sustituye el estado pendiente de E2 anterior; no se infiere de
+«Aprobados» para E1 ni del «Si» intermedio tras explicación. Fórmula solo propone
+cuota para aportación; Gasto real sigue ejecutándose por gasto de raíz/hijas con
+importe mensual manual, sin modalidad mixta nueva. No aplica histórico preservado.
+Fuente/destino/cobertura aplicados a ciclo permanecen trazables. AC26 UNRUN.
+Sin código, datos, migración, activación, DEV ni merge; revisión2 original y E1 intactas.
+
+QA del delta E2: precisión incorporada antes de publicación: G neto pertenece al
+cálculo de financiación aprobado; no extenderlo silenciosamente al mensual de Gasto
+real, que conserva contratos aplicables. E2 limita uso de P/N, no aprueba un nuevo
+neto mensual por inferencia. AC26 mantiene escenarios separados y UNRUN.
