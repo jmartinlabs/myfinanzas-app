@@ -4,31 +4,27 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 2
-message_id: 9b6ff190-a6cb-4468-81b3-c6c60051eabb
+sequence: 3
+message_id: 4c95cc25-68bd-446a-a949-1965b483122f
 from: Alex
 to: Codex
 reply_expected: false
-read_by: Codex
-in_reply_to: 1
-created_at: 2026-10-30T08:22:00Z
+read_by: none
+created_at: 2026-10-30T08:49:46Z
 
 ## Message
 
-HANDOFF A CODEX. COMIDA-UNICO-01. Estado COMPLETED, asesoramiento; sin cambios de codigo ni nueva autorizacion.
+Destino: Codex. Tarea COMIDA-UNICO-01. Actualización de decisión funcional del usuario.
 
-Recomiendo conservar Saldos, Movimientos, Partidas, Presupuestos mensual y anual y Ciclos. Cada compra real debe registrarse una vez en Movimientos; Revision Comida debe leer esos hechos y guardar solo clasificacion analitica, estado y evidencias. Las transferencias de financiacion no son gastos.
+El usuario prefiere NO migrar las compras históricas individuales de Revisión Comida a Movimientos. Rectifico cualquier interpretación previa que recomendara una migración retrospectiva completa.
 
-Devoluciones: recomiendo operacion explicita de devolucion de gasto con importe positivo, entrada bancaria y reduccion separada del gasto neto. No es ingreso ordinario ni anulacion. Vinculo acreditado opcional con compra, limites a devoluciones parciales vinculadas, y sin inferir compra historica inexistente. Fecha de devolucion determina su ciclo efectivo; el ciclo de compra permanece intacto. Deben aprobarse tipo/subtipo y tratamiento de casos sin origen.
+Propuesta prioritaria:
+1. Conservar intactos los Movimientos agregados anteriores y el detalle antiguo de Revisión Comida como histórico consultable. No copiar compras antiguas a Movimientos ni contabilizarlas por segunda vez.
+2. Si hacen falta cifras históricas por ciclo para la nueva vista, conservar o derivar únicamente TOTALES DE CONSULTA diferenciados por origen (gasto agregado reconocido, detalle bancario disponible, financiación y saldo de cierre verificable). No crear nuevos Movimientos para representar esos totales; evitar duplicar importes ya derivados del legado.
+3. Establecer una fecha de corte al inicio de un ciclo financiado, pendiente de elección y validación. Desde ese momento, compras y devoluciones reales individuales en Movimientos; Revisión Comida como vista y metadatos de revisión. Ningún gasto agregado nuevo que duplique esas compras.
+4. Activar posición conciliable de ING Comida solo desde apertura bancaria real acreditada en el corte y con cobertura completa de movimientos posteriores. El Saldo inicial comida de Ciclos es distinto de la apertura bancaria. Preservar ID únicamente si el régimen fechado es seguro; si no, elevar alternativa de cuenta sucesora.
+5. Antes de implementar, comprobar agregados que crucen el corte, operaciones tardías, devoluciones de compras antiguas, transferencias ya registradas y compatibilidad de informes. Mostrar 'cobertura parcial/no disponible' cuando proceda; no inventar importes ni afirmar conciliación sin extractos.
 
-Transicion: corte al inicio de un ciclo elegido tras verificar cobertura. Antes, conservar agregados y auxiliares sin volver a reconocer gastos. Despues, cada compra individual sustituye al agregado. Investigar solapes, altas tardias y rectificaciones; no convertir retrospectivamente por defecto.
+Esta es la preferencia de diseño transmitida por el usuario, NO autorización de una fecha, saldo, migración de datos, cambio de esquema ni merge. Actualiza la matriz de decisiones y especificación propuesta. Mantener fuera del alcance Pockets, reservas globales, rediseño anual y extensión a Ocio/Niños.
 
-ING Comida: no basta cambiar Terminal a Movimientos, pues el motor suma hechos antiguos. Comparar ID conservado con regimen fechado y apertura bancaria acreditada, frente a Saldo sucesor trazable. Preferir el primero solo si la posicion es verificable. Apertura bancaria no equivale al Saldo inicial comida de Ciclos. Sin cobertura completa, mostrar posicion parcial/no disponible.
-
-Clasificacion: Partida economica distinta de etiquetas de revision; Fuera presupuesto nunca borra efecto bancario. Reposiciones se derivan de Transferencias reales.
-
-E3.5: revisar gasto bruto, devoluciones, neto, financiacion, anticipos, planes y flujo por ciclo; no descontar recuperaciones dos veces. No reanudar DEV18 ni modificar Presupuesto Anual. Revisar SPEC04, SPEC07, SPEC12, SPEC13, SPEC16; Movimientos, Saldos, Revision Comida, planes-ciclo, flujo-mensual y consumidores historicos.
-
-Ejemplo sintetico: apertura 100 + transferencia 800 - compra 45 + devolucion 10 = posicion 865; gasto bruto 45, neto 35. Agregado antiguo 300 + detalles antiguos 300 = gasto reconocido 300, no 600.
-
-Riesgos/bloqueos: solape historico, posicion falsa, devoluciones sin compra y cobertura incompleta. Elevar al usuario las decisiones sobre devoluciones, corte, apertura, preservacion de ID y evidencias antes de implementar. Pruebas UNRUN. Rama/PR de Alex: ninguna. Proximo paso: matriz de decisiones y propuesta de especificacion; sin merge automatico.
+HANDOFF a Codex: estado COMPLETED para esta aclaración; código y pruebas UNRUN; rama y PR de Alex ninguna. Bloqueos: fecha de corte, apertura acreditada y demostración de no solapamiento. Siguiente acción: plantear el plan de transición por ciclos y sus invariantes antes de implementar.
