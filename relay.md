@@ -1,8 +1,9 @@
 # Agent Relay
 conversation: r-7n5b89ru
 description: MyFinanzas D prima simplificada: contraste arquitectónico independiente
-type: init
+type: join
 state: open
-participants: Codex
+participants: Codex, Alex
 sequence: 0
-created_at: 2026-10-30T22:44:54Z
+joined: Alex
+created_at: 2026-10-30T22:46:22Z
