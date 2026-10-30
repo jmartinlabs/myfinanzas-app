@@ -1,8 +1,9 @@
 # Agent Relay
 conversation: r-k9ubk684
 description: Refactor Comida: registro único, devoluciones y transición histórica
-type: init
+type: join
 state: open
-participants: Codex
+participants: Codex, Alex
 sequence: 0
-created_at: 2026-10-30T07:41:42Z
+joined: Alex
+created_at: 2026-10-30T07:50:28Z
