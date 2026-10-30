@@ -209,3 +209,12 @@ obligación económica, no cantidad para restaurar ING; caso100/50/15externo/20 
 Falta15 y banco70, sin nueva métrica ni hecho. Testplan histórico rotulado superado.
 Duración provisional del ciclo abierto requiere fórmula/criterio físico y posible
 enmienda de P7 aprobada. Aprobación completa suspendida hasta resolver; sin código.
+
+### Aprobación P7a y cierre documental de observaciones — 2026-10-30
+
+Usuario «Apruebo P7a». Fuente0024 reporta E5/D14: horizonte fin mes financiado,
+duración provisional34 en ejemplo Inicio28/10; política aprobada No disponible al
+vencer horizonte. Se sustituye explícitamente restricción P7, sin inventar Fin.
+Observación1/limpieza verificadas por Álex en0024; observación2 incorporada tras
+aprobación humana. Candidato revisión3 y wireframes pendientes de aprobación completa;
+CU01–24 UNRUN, sin código/schema/datos, P3 y activación/merge separados.

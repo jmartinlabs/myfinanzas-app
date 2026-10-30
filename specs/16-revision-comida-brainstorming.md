@@ -977,3 +977,13 @@ Candidato581d36c no aprobado por usuario. Aprobación completa suspendida: se ac
 Falta como obligación económica y se solicita a Álex fórmula física de duración
 provisional/Días ciclo y días transcurridos. Posible enmienda de P7 requiere decisión
 humana; no se altera P7 por inferencia. Rótulo histórico de testplan marcado superado.
+
+### Confirmación P7a y candidato revisión3 — 2026-10-30
+
+Usuario «Apruebo P7a», tras única propuesta que incluía No disponible al vencer
+horizonte provisional. Fuente física reportada relay0024 (Días ciclo E5 y lectura
+D14), no identidad certificada con (7). Enmienda expresa a restricción previa P7:
+provisional hasta fin de mes financiado, Fin vacío; al vencer no extrapolar/recortar.
+La solicitud de aprobación completa revisión2 queda superada por revisión3 propuesta;
+P1–P7 intactos excepto la enmienda declarada P7a, P3 operativo separado.
+Respuesta de aprobación completa revisión3/wireframes: PENDIENTE.

@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterios P5/P6/P7 aprobados; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterios P5/P6/P7 y enmienda P7a aprobados; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -1104,14 +1104,14 @@ es referencia financiera; Fin sigue vacío. La función Excel N() trata vacíos 
 cero; no trasladar esa conducta a una cobertura incompleta. No se cierra AC-25 global
 ni se declara equivalencia completa del libro por esta extracción parcial.
 
-### Observaciones de revisión 0022 — aprobación completa suspendida
+### Observaciones 0022 — resueltas documentalmente, 2026-10-30
 
-Álex revisa 581d36c en relay0022. La solicitud de aprobación completa de revisión2
-queda suspendida hasta resolver estas observaciones. P1–P7 no se revocan ni amplían.
-Primera observación: precisión de significado de Falta por reponer, concretada debajo.
-Segunda: posible duración provisional acreditada del ciclo abierto. P7 aprobada exige
-siguiente Inicio para equivalentes/margen; cambiar esa regla requiere contraste de
-fórmula/criterio y una enmienda humana expresa, no corrección silenciosa.
+Álex revisó 581d36c; la solicitud de aprobación de revisión2 quedó suspendida.
+Primera observación: Falta por reponer se aclara como obligación económica, no dinero
+para restaurar ING, con ejemplo numérico abajo. Segunda: duración provisional del
+ciclo abierto contrastada en relay0024 y enmienda P7a aprobada directamente por usuario.
+La revisión3 incorpora ambos cambios para nueva aprobación completa; la revisión2 no
+se aprueba retroactivamente. No se revocan ni amplían otras decisiones.
 
 ### P7 — Recursos y cierre para régimen individual aprobados (2026-10-30)
 
@@ -1191,9 +1191,51 @@ el dinero; Recursos/J_n/C_n afectados se presentan parciales/no disponibles, no 
 Ritmo propuesto: usar J_n para consumo del ciclo y conservar bruto/devoluciones visibles.
 Ritmo semanal=J_n/días transcurridos×7 con denominador positivo y conocido.
 Recursos equivalentes=Recursos×días transcurridos/duración total; Margen=equivalentes−J_n.
-Sin duración finita derivada del siguiente Inicio, equivalentes y margen no disponibles;
-se puede mostrar ritmo observado si corte/días/cobertura son válidos. No inferir duración
-por mes natural ni inventar Fin. Esta adaptación del ritmo forma parte de P7 aprobada.
+La restricción original de P7 a duración derivada del siguiente Inicio queda
+sustituida expresamente por P7a a continuación; se preserva su procedencia en el
+brainstorming y la revisión de relay0022/24. No es una corrección silenciosa.
+
+### P7a — duración provisional y horizonte vencido aprobados (2026-10-30)
+
+Fuente humana: «Apruebo P7a», respuesta a la única propuesta: Recursos equivalentes y
+Margen provisionales con duración/cobertura acreditadas y No disponible al vencer el
+horizonte. La confirmación incluye ese comportamiento de vencimiento, presentado en
+la solicitud inmediatamente anterior; no autoriza activación, schema ni merge.
+
+Fuente física reportada por Álex en
+[relay0024](https://github.com/jmartinlabs/myfinanzas-app/blob/25d014d9ace73c6fd65688f94c7bf794ac4177dd/relay.md),
+archivo de usuario v5.11(20261030-155958), no equivalencia certificada con (7):
+tblCiclos[E5 Días ciclo] usa Fin−Inicio+1 si existe siguiente Inicio; si Fin vacío,
+EOMONTH(Ciclo financiado,0)−Inicio+1. Ciclo financiado procede del Inicio según maestro.
+El denominador provisional es fin del mes FINANCIADO, no fin del mes del Inicio ni
+Fecha corte; no crea un Fin ni un siguiente Inicio provisional. tblRevisionComidaCiclos
+D14 lee ese valor del maestro; días transcurridos=corte−Inicio+1, inclusivo.
+
+| Situación | Duración / salida de la propuesta aprobada |
+| --- | --- |
+| Hay siguiente Inicio válido | Duración real=Fin−Inicio+1, Fin=siguiente Inicio−1; métricas según corte/cobertura central. |
+| Ciclo abierto, Inicio/mes financiado/corte válidos, duración positiva y transcurridos<=duración provisional | Duración provisional=fin de mes financiado−Inicio+1; equivalentes y Margen calculados con esa duración y etiqueta Provisional, si Recursos/J_n y cobertura suficientes. Fin sigue vacío. |
+| Ciclo abierto, corte posterior al horizonte provisional | Estado Horizonte provisional vencido; equivalentes y Margen null/No disponible con motivo. No extrapolar, no recortar días ni inventar Fin. |
+| Duración/origen/corte no acreditables, corte anterior al Inicio o métricas sin cobertura | Equivalentes/Margen no disponibles o parciales según fuente; nunca cero por omisión. No sustituir corte por reloj. |
+
+El ritmo semanal observado J_n/transcurridos×7 no necesita duración total y puede
+seguir disponible con días positivos/cobertura acreditados aunque venza el horizonte;
+se etiqueta observado y no se presenta como proyección válida. Un total parcial puede
+mostrarse separado, sin transformar Recursos/Margen completos en una cifra aparente.
+Duración/estado son derivados centrales del maestro Ciclos, no entradas manuales ni
+otra tabla de fechas. Rectificar/añadir Inicio invalida huellas y recalcula duración,
+provisionalidad y métricas; no reescribe ni autocorrige hechos/cierres históricos.
+
+Ejemplo ficticio: Inicio 2026-10-28; ciclo financiado noviembre; Fin vacío; corte
+2026-10-30. Horizonte=2026-11-30, duración provisional34, transcurridos3. Recursos340,
+J_n30: equivalentes30, Margen0, ritmo semanal70; equivalentes/Margen Provisionales.
+Si corte=2026-12-02 sin siguiente Inicio, transcurridos36>34: equivalentes/Margen
+No disponibles por horizonte vencido. No extrapolar a360 ni afirmar un Fin real.
+
+P7a conserva el denominador provisional de la fuente, pero la política al vencer el
+horizonte es una enmienda explícita aprobada: no copiar la extrapolación que permitía
+Excel sin guarda. Con cobertura ausente tampoco se copian ceros de N().
+
 
 No aprobar implícitamente un arrastre automático, una nueva financiación, compensación
 virtual o reparto monetario parcial. La aprobación P7 cubre el contrato
@@ -1206,10 +1248,10 @@ schema/API y spec/wireframes completos siguen necesitando revisión antes de imp
 | --- | --- | --- |
 | P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
 
-### Contrato técnico candidato — revisión 2, 2026-10-30
+### Contrato técnico candidato — revisión 3, 2026-10-30
 
 Este contrato es propuesta técnica dentro del alcance; no implementado. La aprobación
-completa solicitada debe identificar COMIDA-UNICO-01 revisión 2 y su SHA final, junto
+completa solicitada debe identificar COMIDA-UNICO-01 revisión 3 y su SHA final, junto
 con los wireframes. Los apartados anteriores a COMIDA-UNICO-01 describen el runtime
 legado; cuando contradigan el régimen individual, esta enmienda solo lo sustituirá
 tras implementación autorizada. Los AC legados no transfieren sus PASS a CU01–24.
@@ -1327,6 +1369,7 @@ Recursos analíticos [...] · Cierre analítico [...] · Banco al corte [...]
 Diferencia S0/apertura [...] · Otros efectos [Ver desglose]
 Bruto [...]  Devoluciones [...]  Neto [...]  Financiación [...]
 Falta por reponer · obligación económica [...] (no conciliación bancaria)
+Ritmo observado [...] · Equivalentes/Margen [Provisional / Real / No disponible]
 Fecha | Movimiento | Concepto | Partida | Revisión | Importe | Estado
 [Registrar compra en Movimientos] [Ver financiación] [Evidencias]
 Histórico: agregado reconocido [...] · detalle disponible [...] (no se suman)
@@ -1368,13 +1411,13 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 | CU-21 / P7 aprobado | Aplicar ejemplo completo con S0 100 y D 480 | Recursos 785, Falta 15, cierre analítico 580; puente −5, sin duplicar reposición/Anticipo/Comida. |
 | CU-22 / P7 aprobado | Añadir devolución antigua 40 y B_A 250 | Recursos/Falta no cambian; cierre 620, banco 770, diferencia −150 explicada; sin ajustes. |
 | CU-23 / P7 aprobado | Omitir S0, apertura, clasificación o cobertura; cruzar C | Disponibilidad por métrica y régimen; nunca cero implícito ni falso conciliado. |
-| CU-24 / P7 aprobado | Ciclo abierto sin siguiente Inicio y corte válido | Ritmo observado solo si días/cobertura válidos; equivalentes/margen no disponibles sin duración, Fin vacío. |
+| CU-24 / P7–P7a aprobados | Ciclo abierto con duración provisional acreditada, duración desconocida, corte vencido, corte anterior al Inicio y siguiente Inicio real | Ejemplo34/3/340/30=>equivalentes30/Margen0 Provisionales; 36>34=>No disponibles; desconocido/futuro inválido no inventa datos; al existir siguiente Inicio usar duración real y revalidar huella. Fin abierto siempre vacío. |
 
 ### Exclusiones y siguiente gate
 
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: resolver observación de duración provisional de 0022 y volver a presentar spec/wireframes completos; P3 y activación
+Siguiente gate: aprobar spec/wireframes completos revisión3; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.

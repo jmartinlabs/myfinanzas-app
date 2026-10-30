@@ -168,3 +168,17 @@ para restaurar banco; sin transferencias ficticias ni nueva métrica de restaura
 CU24: añadir variantes a contrastar de duración provisional acreditada/desconocida y
 falta de cobertura. Son casos propuestos pendientes de fuente/enmienda a P7; no se
 sustituye la regla aprobada de duración ni se inventa Fin. Todos siguen UNRUN.
+
+### Estado vigente P7a / candidato revisión3 — 2026-10-30
+
+Observaciones0022 resueltas documentalmente: Álex0024 verifica obligación vs banco y
+limpieza; usuario aprueba enmienda P7a. Los estados anteriores abiertos se conservan
+como historia superada. CU01–24 siguen UNRUN; aprobación no demuestra implementación.
+CU24 cubre: Inicio2026-10-28, noviembre financiado, corte2026-10-30 => duración34,
+transcurridos3, Recursos340/J_n30 => equivalentes30/Margen0 Provisionales y ritmo70.
+Corte2026-12-02=>36>34 => equivalentes/Margen null por horizonte vencido, sin extrapolar
+ni recortar a34; observado solo con días/cobertura válidos. Sin duración/cobertura,
+No disponible; corte<Inicio inválido. Siguiente Inicio real recalcula duración, quita
+provisionalidad e invalida preview. E2E verifica etiquetas/Fin vacío, teclado y estados
+sin falsear cobertura ni compartir fechas editables paralelas. verify --full y QA
+independiente futuros sobre código; esta revisión solo verifica documentación.
