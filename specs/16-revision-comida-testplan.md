@@ -144,3 +144,16 @@ Anticipo. Ciclo abierto mantiene Fin vacío; sin duración, equivalentes/margen 
 disponibles. Revisión E2E mostrará desglose y procedencia, sin columna económica
 editable paralela. Futuras suites verifican por métrica; no reemplaza CI Linux ni QA.
 No se afirman fórmulas aprobadas ni pruebas funcionales ejecutadas por esta matriz.
+
+### Estado vigente P7 / contrato candidato revisión 2 — 2026-10-30
+
+P7 aprobada por mensaje humano «Apruebo P7» sobre 96a07d1; reemplaza el estado
+propuesto de la matriz anterior, que conserva su historia. Fuente aportada según
+relay0020/21, sin inspección propia de Codex ni equivalencia certificada con (7).
+CU01–24 siguen UNRUN: aprobación de fórmula no prueba funcionalidad.
+Contrato técnico candidato revisión2 y wireframes pendientes de aprobación completa.
+Ampliar CU06/CU09 con devolución de compra ING recibida en otro Saldo: efecto bancario
+solo en receptor real, D de ING excluye esa entrada; puente identifica efecto externo,
+netos solo con elegibilidad acreditada, sin Transferencia ficticia. Metadata/legado
+con IDs numéricos coincidentes se resuelven por ruta/procedencia, nunca por adivinación.
+Esquema/restore y guards se verifican contra candidato real posterior, sin datos reales.

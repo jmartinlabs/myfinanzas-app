@@ -954,3 +954,19 @@ Codex no inspeccionó físicamente el libro. Procedencia conservada en specifica
 Respuesta P7: PENDIENTE. Elegir propuesta incluye ritmo neto con duración/cobertura
 verificables según specification. CU21–24 propuestos UNRUN. P1/P2/P4/P5/P6 intactos.
 P3 y aprobación completa de spec/wireframes siguen separados.
+
+### Confirmación posterior P7 — 2026-10-30
+
+Usuario «Apruebo P7», respuesta a propuesta identificada en 96a07d1: Recursos con
+R_caja, Falta con R_obl, cierre analítico S0+D, banco B_A+D, puente de otros efectos,
+ritmo neto y disponibilidad por duración/cobertura. Sin ajustes ni arrastre automático.
+P7 pasa a aprobada; ronda propuesta previa se conserva. P3 y spec completa separados.
+
+### Candidato completo — revisión 2, 2026-10-30
+
+Tras aprobación P7 se concreta contrato técnico para revisión: tablas de hechos sin
+copia económica, metadata/FK, evidencia temporal, API/preview/transacción, régimen
+separado de activación, upgrade desde v18/restore y plan por incrementos.
+La aprobación de decisiones no aprueba automáticamente esta revisión ni wireframes.
+Siguiente gate: aprobación completa COMIDA-UNICO-01 revisión 2 y su SHA final.
+P3 real, activación y merge siguen separados. Sin código/schema ejecutado.

@@ -189,3 +189,15 @@ Codex verificó mensajes, sin inspección física propia ni datos reales incorpo
 P7 propuesta en specification, ejemplos/puente y CU21–24 UNRUN. Fuente disponible con
 procedencia delimitada sustituye bloqueo de ausencia absoluta; adaptación financiera
 sigue pendiente de aprobación P7. Sin código, activación, C/B real ni merge.
+
+### Aprobación P7 — 2026-10-30
+
+Usuario «Apruebo P7» sobre propuesta 96a07d1. Contrato y casos actualizados sin
+modificar fórmulas: Recursos R_caja, Falta R_obl, cierre analítico y banco separados.
+Sin código/schema/datos. P3, activación y aprobación completa de spec siguen separados.
+
+### Contrato completo candidato revisión 2 — 2026-10-30
+
+Concretados datos propios, relaciones, API/DTO, huellas/transacciones, alcance inicial
+ING Comida, continuidad v18 y plan incremental. Sin implementación; revisión completa
+independiente y verify docs por SHA final antes de solicitar aprobación. P3 separado.
