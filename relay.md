@@ -4,32 +4,33 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 22
-message_id: 2a1ca0eb-c960-430b-8b33-56fa7a2fcf8f
-from: Alex
-to: Codex
+sequence: 23
+message_id: 41db3915-3d74-4185-9ebd-346fb9055d00
+from: Codex
+to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-10-30T16:51:17Z
+in_reply_to: 22
+created_at: 2026-10-30T17:01:05Z
 
 ## Message
 
-Destino: Codex · COMIDA-UNICO-01. Revisión crítica de PR #133, candidato completo revisión 2, SHA 581d36cd5e77c8c2b2c07168458beb943f19ba02. El usuario pide transmitir estas observaciones, NO aprueba la spec/los wireframes ni autoriza merge.
+Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
+Recibida y contrastada revisión0022 de 581d36c. No implica aprobación de spec. Respuesta con corrección y consulta de fuente; no se reabren P1–P7 ni se altera silenciosamente P7.
 
-La PR documental está bien encaminada: fuente única de hechos en Movimientos, legado conservado, S0 distinto de B_A, P1–P7 recogidos, protección de metadata, auditable e idempotente; docs CI required SUCCESS en SHA revisado. CU01–24 UNRUN; no implementación. Recomendación actual: FAVORABLE CON OBSERVACIONES, NO APROBAR revisión 2 aún.
+Corrección documental c05b82ae51826f1742f981e94eb5b14cb884d4d6, PR https://github.com/jmartinlabs/myfinanzas-app/pull/133
+SPEC https://github.com/jmartinlabs/myfinanzas-app/blob/c05b82ae51826f1742f981e94eb5b14cb884d4d6/specs/16-revision-comida-specification.md
+La solicitud de aprobación completa revisión2 queda SUSPENDIDA hasta resolver duración provisional. Sin código/schema/datos/activación/merge.
 
-OBSERVACIÓN MATERIAL 1 — devolución recibida en un Saldo distinto de ING Comida.
-Caso sintético: S0 ING=100, compra Ocio desde ING=50, devolución comercial de esa compra=15 COBRADA EN OTRA CUENTA real, reposición a ING=20, sin otros hechos. Posición ING después=70 (100−50+20); para restaurar la cuenta a 100 faltarían 30 de entrada bancaria, mientras P6 «Falta por reponer» por obligación económica es max((50−15)−20,0)=15. Ambas cifras correctas responden a preguntas distintas. El diseño ya reconoce receptor distinto, D de ING excluye esa entrada y puente P7 explica efectos externos. Verificar si la UI/contrato los distinguen de forma suficientemente explícita: no etiquetar «Falta por reponer=15» como cantidad necesaria para restaurar ING o conciliar la cuenta. Mostrar discrepancia/explicación usando magnitudes verificables existentes, sin nueva reposición ficticia ni doble contabilidad. Si para resolverlo se requiere métrica financiera NUEVA o cambio P6/P7, presentarlo como decisión material, no implementarlo por inferencia. Añadir prueba de receptor distinto con números y comprobación de semántica/cobertura (CU06/CU09/CU17/CU21–23 según proceda).
+Observación1 corregida: etiqueta «Falta por reponer · obligación económica»; no representa dinero necesario para restaurar ING ni conciliación bancaria. Tu caso S0=B_A100, Ocio ING50, devolución15 en otra cuenta y reposición ING20 => C_n35, Falta15, D_ING−30, banco/cierre70, Recursos85, puente−15 por reembolso externo. Comparación ilustrativa con100 da30, pero no se crea una métrica financiera de restauración ni obligación/transferencia ficticia. CU06/09/17/21–23 amplían prueba numérica/semántica/cobertura. No se modifican fórmulas P6/P7.
 
-OBSERVACIÓN MATERIAL 2 — duración provisional del ciclo abierto.
-La spec actual P7 (líneas 1171–1174 y CU24) indica que sin siguiente Inicio no se ofrecen Recursos equivalentes ni Margen por falta de duración finita. Pero las Instrucciones/Criterios de MyFinanzas indican «Días ciclo conserva la duración total real/provisional necesaria para ritmo», y el Excel aportado calculaba ritmo/equivalentes según Días ciclo. Contrastar en la fuente física vigente si un ciclo abierto puede tener duración provisional acreditada y, de ser así, conservar la funcionalidad etiquetada como provisional sin inventar Fin ni siguiente Inicio. Si la política P7 aprobada excluyó deliberadamente la duración provisional, explicitar contradicción y elevar corrección al usuario, NO alterar la aprobación P7 silenciosamente. Distinguir período provisional fiable, duración desconocida y ausencia de cobertura; añadir test CU24 para estas variantes.
+Limpieza menor corregida: rótulo testplan P7 propuesto marcado HISTÓRICO SUPERADO; estado vigente P7 aprobada/CU UNRUN explícito. Se conserva evidencia de rondas.
 
-LIMPIEZA DOCUMENTAL MENOR — testplan conserva encabezado «P7 — cobertura propuesta (no aprobada)» y párrafo posterior «Estado vigente P7 aprobada». Historial append-only es válido; añadir un aviso inequívoco de estado supersedido o ajustar la presentación sin borrar la evidencia histórica, para evitar confusión al implementar. Revisar si otros rótulos obsoletos afectan lectores.
+Observación2: contraste local de SPEC03, R3/R4 sanitizada y ciclos.ts no aporta fórmula acreditada de duración provisional. P7 aprobada exige duración finita derivada de siguiente Inicio para equivalentes/margen; no puedo sustituirla por provisional sin enmienda humana. Necesito del archivo aportado, solo fórmulas/criterios sanitizados:
+- Días ciclo (columna D o la real), Días transcurridos y sus fuentes exactas en tblCiclos/tblRevisionComidaCiclos.
+- Cómo se obtiene duración provisional si Fin vacío: fuente, denominador y condiciones; no basta texto «real/provisional». ¿Se deriva de siguiente Inicio provisional, fecha objetivo, otra regla? Distinguir dato existente de propuesta nueva.
+- Fórmulas de referencia/corte pertinentes y criterio que impida inventar Fin. Qué ocurre cuando corte supera duración provisional, faltan valores o ciclo es futuro.
+- Ejemplo ficticio con duración provisional acreditada y otro con duración desconocida. No usar datos personales ni declarar identidad con v5.11(7).
+Solicito recomendación de enmienda mínima P7: permitir equivalentes/margen etiquetados Provisional solo con duración acreditada y cobertura suficiente; conservar Fin vacío y No disponible si duración desconocida. Esta recomendación NO está aprobada todavía. Si no hay fuente suficiente, declara exactamente el dato que debe decidir el usuario, sin proponer meses naturales por intuición.
 
-HANDOFF → CODEX
-Task: COMIDA-UNICO-01 · Estado: REVIEWED WITH OPEN FINDINGS, approval withheld.
-Base main 454d21a; candidata PR #133 HEAD 581d36cd5e77c8c2b2c07168458beb943f19ba02; sin modificaciones por Álex salvo este mensaje Relay. Pruebas: docs CI success, CU01–24 UNRUN, sin verificación de runtime/operaciones reales.
-Riesgos: confundir obligación de reposición con efectivo faltante en ING; perder ritmo provisional del ciclo abierto; etiquetas documentales históricas como vigentes.
-Pendientes: explicación/ajuste propuesto y QA documental sobre las dos observaciones; P3 corte/apertura y autorización operativa siguen separados.
-Siguiente acción: contrastar contra criterios físicos y P6/P7, responder con cambios exactos o motivos documentados para no cambiarlos, y volver a someter revisión 2 a aprobación; sin código, merge, despliegue ni activación por este encargo.
-Fin HANDOFF → CODEX.
+Por favor comprueba también la precisión de observación1 y la limpieza contra el SHA enlazado. Devuelve un único HANDOFF → CODEX completo: Task ID/sesión, estado, correcciones revisadas, fuente/fórmulas y recomendación de enmienda, cambios (ninguno), candidato/PR, pruebas/evidencia con límites, riesgos/bloqueos, decisión concreta requerida del usuario y siguiente acción; también si falta fuente. Sin editar código/spec/tablero/rama ni aprobar por el usuario.
