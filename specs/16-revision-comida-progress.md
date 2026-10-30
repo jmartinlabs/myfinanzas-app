@@ -180,3 +180,12 @@ Usuario «Apruebo P6»; registro canónico en specification y confirmación appe
 brainstorming. CU-17–CU-20 UNRUN; sin código ni datos. Fuente de Recursos/cierre no
 acreditada: se necesita fórmula/criterio verificable sanitizado; no se infiere desde
 S0/B ni DEV18. P3, detalle técnico y spec/wireframes completos siguen pendientes.
+
+### Propuesta P7 y procedencia de fuente — 2026-10-30
+
+Usuario confirma haber proporcionado libro y autoriza preparar adaptación («vamos»).
+Relay0020/21 reporta extracción de v5.11(20261030-155958), no equivalencia con (7);
+Codex verificó mensajes, sin inspección física propia ni datos reales incorporados.
+P7 propuesta en specification, ejemplos/puente y CU21–24 UNRUN. Fuente disponible con
+procedencia delimitada sustituye bloqueo de ausencia absoluta; adaptación financiera
+sigue pendiente de aprobación P7. Sin código, activación, C/B real ni merge.

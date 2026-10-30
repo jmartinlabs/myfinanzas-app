@@ -940,3 +940,17 @@ Falta=max(compensable neto elegible del mismo ciclo−reposiciones reales asigna
 Devolución antigua no reduce obligación actual; sin origen/etiqueta acreditados,
 cobertura pendiente. Fuente y CU-17–CU-20 en specification. Recursos/cierre completos
 no aprobados: falta fuente verificable; P3 y spec/wireframes completos pendientes.
+
+### Ronda P7 — Recursos/cierre propuestos, 2026-10-30
+
+Usuario confirma que proporcionó a Álex el libro y pide «vamos» para preparar la
+adaptación. No aprueba nuevas fórmulas ni sustituye formalmente la referencia v5.11(7).
+Fuente externa comunicada por Álex: archivo v5.11(20261030-155958), relay0020/21;
+Codex no inspeccionó físicamente el libro. Procedencia conservada en specification.
+- [x] Propuesta: Recursos=S0+F+R_caja−C_n, cierre analítico=S0+D y banco=B_A+D;
+  puente explicable de otros efectos, sin ajustes/arrastres automáticos.
+- [ ] Alternativa: igualar Recursos/cierre a banco. No recomendada: confunde S0 y B,
+  pierde el significado de Recursos y oculta efectos excluidos del análisis.
+Respuesta P7: PENDIENTE. Elegir propuesta incluye ritmo neto con duración/cobertura
+verificables según specification. CU21–24 propuestos UNRUN. P1/P2/P4/P5/P6 intactos.
+P3 y aprobación completa de spec/wireframes siguen separados.

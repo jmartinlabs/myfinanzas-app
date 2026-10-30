@@ -133,3 +133,14 @@ no equivale a estado de Partida NULL; Fuera presupuesto preserva banco; reintent
 asignación acreditada no duplican reposición ni recuperación Anticipo. Comandos focales
 se concretarán con implementación; entrada verify --full y QA independiente. Recursos
 y cierre analítico: contrato bloqueado por fuente ausente, no caso simulado ni PASS.
+
+### P7 — cobertura propuesta (no aprobada), 2026-10-30
+
+CU21–24 UNRUN: dominio/API comprobará 100+700+20−35=Recursos785, Falta15,
+D480/cierre580, devolución antigua40=>cierre620 sin cambiar Recursos, B_A250=>banco770
+con diferencia−150. Casos negativos: falta S0/B/cobertura/clasificación, residual sin
+explicación, reposición de otra obligación, Fuera presupuesto y doble descuento de
+Anticipo. Ciclo abierto mantiene Fin vacío; sin duración, equivalentes/margen no
+disponibles. Revisión E2E mostrará desglose y procedencia, sin columna económica
+editable paralela. Futuras suites verifican por métrica; no reemplaza CI Linux ni QA.
+No se afirman fórmulas aprobadas ni pruebas funcionales ejecutadas por esta matriz.
