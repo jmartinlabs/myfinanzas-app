@@ -144,3 +144,9 @@ Cuota consultada: 85% restante ventana 300 min y 92% semanal; sin despacho adici
 Consumo Actions N/D: Billing API requiere scope `user` ausente; sin ampliar permisos.
 Python sistema 3.9.6 no cumple prerrequisito; verificación usa Python 3.12 disponible.
 Pruebas de aplicación UNRUN: solo documentación; no hay candidato funcional.
+
+### Aprobación P1 — 2026-10-30
+
+Usuario: «Apruebo P1: nuevo tipo Devolución de gasto». Registro canónico actualizado
+en specification; brainstorming conserva confirmación append-only. Sin implementación.
+P2/P3/P4/P5 y spec completa permanecen pendientes; siguiente gate P2.

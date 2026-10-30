@@ -897,3 +897,12 @@ junto con evidencia técnica, wireframes candidatos y CU-01–CU-12 UNRUN.
 Las marcas son recomendaciones, no respuestas del usuario. Respuestas P1–P5:
 **PENDIENTES**. Wireframes: PENDIENTES. Próxima acción: decisión identificable sobre
 P1/P2/P4/P5; P3 queda para activación operativa posterior. Sin implementación material.
+
+### Confirmación posterior P1 — 2026-10-30
+
+Respuesta directa del usuario: «Apruebo P1: nuevo tipo Devolución de gasto».
+P1 pasa de propuesta a aprobada, sin alterar el registro histórico de la ronda.
+Reembolso comercial explícito con importe positivo y entrada bancaria; no Anticipos,
+Compartidos ni transferencias internas. Consecuencias técnicas en la specification.
+P2/P3/P4/P5 y aprobación completa de spec/wireframes siguen pendientes; sin código,
+datos reales, activación ni merge. Próxima decisión: P2, identidad de ING Comida.

@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5 aprobadas; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5 y representación P1 aprobadas; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -808,8 +808,10 @@ el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime 
 Fuente: mensaje directo del usuario de 2026-10-30: «COMIDA-UNICO-01 — Aprobamos las
 cinco decisiones funcionales recogidas en el mensaje 0006». El usuario autoriza
 «consolidar estas decisiones en la especificación candidata y continuar con el análisis
-técnico». No autoriza migraciones reales, activación ni merges. La aprobación no decide
+técnico». No autoriza migraciones reales, activación ni merges. Esa aprobación inicial no decidió
 representación técnica de devoluciones, identidad de ING Comida ni fecha/saldo real.
+P1 queda aprobada posteriormente por mensaje directo del usuario de 2026-10-30:
+«Apruebo P1: nuevo tipo Devolución de gasto».
 El encargo inicial autoriza implementación una vez resueltas las decisiones materiales;
 este candidato no supera por sí solo el gate de spec completa.
 
@@ -911,11 +913,23 @@ no volver automáticamente a Terminal tras hechos individuales ni borrar hechos 
 revertir. Rollback técnico y recuperación financiera son procedimientos distintos;
 su prueba exige candidato y autorización correspondiente, no datos reales.
 
+### P1 — representación aprobada (2026-10-30)
+
+Tipo explícito `Devolución de gasto` en Movimientos, importe positivo y entrada al
+Saldo bancario receptor. Representa reembolsos comerciales totales o parciales de
+una compra/gasto real; bruto, devoluciones y neto permanecen separados. No es Ingreso
+ordinario ni anulación de la compra; no se usa para devolución de Anticipo,
+recuperación de Compartidos o Transferencia interna, que conservan sus contratos.
+La alternativa de ampliar Gasto con discriminador no se adopta. La implementación
+requerirá enmendar CHECK, DTO, filtros, preview, referencias, consumidores y contrato
+estricto de esquema, conservando la tabla, identidad y auditoría de Movimientos.
+P1 no aprueba los casos de atribución P4, neteo presupuestario P5, identidad P2,
+apertura real P3 ni la especificación completa. No se ejecuta cambio de esquema.
+
 ### Decisiones materiales pendientes — recomendaciones, no decisiones
 
 | ID | Alternativas | Recomendación y consecuencias |
 | --- | --- | --- |
-| P1: representación de devolución | Nuevo Tipo explícito; o ampliar Gasto con discriminador de devolución/dirección | Recomendar Tipo `Devolución de gasto`, positivo, Exterior → cuenta real, misma tabla/ID/auditoría. Semántica explícita, sin otro ledger. Amplía el contrato de cuatro tipos: exige aprobación y actualizar CHECK, DTO, filtros, preview, referencias, consumidores y esquema estricto. Alternativa conserva enum pero altera el significado de Gasto y todos los filtros actuales `tipo=Gasto`; no es menor por evitar enum. |
 | P2: identidad de ING Comida | Mismo ID con régimen fechado; o cuenta sucesora trazable | Recomendar conservar ID si se demuestra cálculo por corte seguro en todos los consumidores. Requiere configuración explícita, apertura propia y guard; no editar apertura/control usados por vía ordinaria. Sucesor simplifica separación pero fragmenta trazabilidad, destino presupuestario y transferencias; solo elevar si régimen no es verificable. |
 | P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
 | P4: atribución de devolución | Exigir compra; o hecho real con relación opcional revisable | Recomendar hecho acreditado sin exigir compra histórica inexistente. Partida y relación pendientes deben distinguirse. Compra de 20 con devoluciones 12+13: banco +25, máximo 20 atribuido a esa compra; exceso 5 por justificar. Concurrencia/revisión atómicas; rectificar/anular compra invalida atribución sin borrar entrada. Partida obligatoria D3 para Gastos no decide requisitos de devolución: resolver antes de schema/API. |
@@ -957,7 +971,7 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 | CU-03 / AC03 | Consultar plan/informes de esa compra | Una contribución por consumidor; financiación no sumada a consumo. |
 | CU-04 / AC04 | Registrar en Inicio/Fin y fuera de intervalos | Ciclo derivado del maestro; Sin ciclo cuando proceda, sin fecha alternativa. |
 | CU-05 / AC05 | Cambiar etiqueta/evidencia y abrir rectificación | Metadatos no crean hechos; cambio económico usa Movimientos. |
-| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; detalle condicionado a P1/P4/P5. |
+| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; detalle condicionado a P4/P5. |
 | CU-07 / AC07 | B=100, +800, −45, +10 con cobertura demostrada | Posición 865; ocultar prueba de cobertura cambia disponibilidad, no inventa conciliación. |
 | CU-08 / AC08 | Conservar agregado 300 y detalles antiguos 300 | Gasto reconocido 300; no copia individual; origen y cobertura visibles. |
 | CU-09 / AC09 | Recuperación de Anticipo, reposición, Compartidos y plan/flujo/anual | Significados previos preservados, sin doble descuento ni modificación anual. |
@@ -970,6 +984,6 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: resolver P1/P2/P4/P5 y aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: resolver P2/P4/P5 y aprobar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.
