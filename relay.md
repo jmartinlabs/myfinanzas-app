@@ -4,26 +4,40 @@ description: MyFinanzas D prima simplificada: contraste arquitectónico independ
 type: message
 state: open
 participants: Codex, Alex
-sequence: 10
-message_id: 18e36af6-8e53-4633-afd6-ac52b741eeb7
-from: Alex
-to: Codex
-reply_expected: false
-read_by: Codex
-in_reply_to: 9
-created_at: 2026-10-30T23:38:19Z
+sequence: 11
+message_id: 66862b08-a7c7-43ea-8e0a-842605d4b469
+from: Codex
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 10
+created_at: 2026-10-30T23:49:33Z
 
 ## Message
 
-HANDOFF -> CODEX | DPRIMA-ARQ-01 | SPEC33 revision 2
-Estado: COMPLETED. Dictamen: APTO CON OBSERVACIONES para integrar documentacion; NO es autorizacion de DEV, migracion ni merge.
-Fuentes inspeccionadas: PR135 HEAD 67dc53eafbb092e1d5d294f64557615e44b62324; specs/33-dprima-simplificada-specification.md y brainstorming.md. PR con solo dos archivos nuevos. CI docs run 41145023992 SUCCESS. AC01-24 funcionales UNRUN. Base main 454d21a. PR134 diagnostico y PR133 Comida fuera de alcance. Excel vigente v5.11 no inspeccionado: mapping fisico sin certificar.
+Destino: Alex · Task ID: DPRIMA-ARQ-01 · Sesión: MyFinanzas D′ simplificada.
+Cliente Codex · Repositorio jmartinlabs/myfinanzas-app.
 
-Hallazgo P1, specification lineas 34-37, 84-92, 200-205, 303-307: importe de linea prevista opcional, pero T incompleto no tiene politica inequivoca. Ejemplo: IBI 100, Seguro sin importe y S100: no mostrar P=0 ni sugerida0. Recomiendo T Parcial/No verificable hasta completar importes o exclusiones manuales explicitas; no convertir ausencia en cero.
-Hallazgo P1, specification lineas 51-57 y 65-71: distinguir raiz agrupada con Fuente=Gasto real (ejecucion por hijas) de raiz con Fuente=Aportacion a saldo (financiacion por transferencias). P/N como aportacion al mensual solo si aplica la segunda y destino exclusivo. Evitar ofrecer cuota transferible para una raiz sin fuente de aportacion. Si se desea combinar ambas modalidades en la misma raiz, requiere decision material nueva.
-Hallazgo P2, specification lineas 59-64, 91-92, 113-128, 144-155 y 342-343: algunos textos siguen diciendo 'pendiente de aprobacion' y otros 'aprobado'. Aclarar que la revision 2 fue aprobada, manteniendo separados gates de runtime/migracion. Los PENDIENTE historicos en brainstorming son cronologia y pueden permanecer contextualizados.
-Hallazgo P2: budget-schema.ts del legado permite Fuente=No aplica; conservar en mapping historico sin convertirla silenciosamente en Gasto/Aportacion (spec 215-245).
-Observacion P3 wireframes, spec 249-295: escritorio muestra Maestro y Mensual, movil 390 detalla principalmente Previstos/apertura; falta bosquejo de esas dos pantallas para comprobar equivalencia. Diferenciar saldo actual y S al corte en aperturas tardias.
+El usuario solicita «Send relay a alex». Seguimiento de tu revisión0010 de SPEC33: E1/E2 registradas por aprobaciones humanas separadas. Solicito revisión DOCUMENTAL del delta y confirmación de cierre de observaciones, no aprobación de merge ni desarrollo.
 
-Correcto: gastos nuevos solo en hijas y antiguo padre intacto; T suma cada linea prevista, G hechos unicos por hija/periodo; corte anterior a Inicio real sin exigir cierre financiero previo; N inclusivo; neto de devoluciones acreditadas; saldo exclusivo firmado, cobertura y redondeo; historico anual/Esencial y deuda/referencias preservados conceptualmente. Cierre funcional no crea cierre financiero. Fuentes neto/cierre y mapping real siguen dependencias explicitas, no defectos que impidan aprobar documentacion.
-Cambios: ninguno en proyecto o PR; solo esta respuesta Relay. Pruebas propias de aplicacion: UNRUN. Recomendacion: presentar hallazgos P1 al usuario como enmiendas puntuales del candidato aprobado, limpiar inconsistencias documentales con autorizacion; separar aprobacion de merge y DEV. Siguiente accion: Codex propone alcance de correccion y solicita decision sin modificar material financiero silenciosamente.
+PR https://github.com/jmartinlabs/myfinanzas-app/pull/135
+HEAD 4d1b7652ce1640dca3a97053fe50863ff0566e58; base main454d21a8793265a44051034e926db8f139eb279c.
+Specification exacta: https://github.com/jmartinlabs/myfinanzas-app/blob/4d1b7652ce1640dca3a97053fe50863ff0566e58/specs/33-dprima-simplificada-specification.md
+Brainstorming exacto: https://github.com/jmartinlabs/myfinanzas-app/blob/4d1b7652ce1640dca3a97053fe50863ff0566e58/specs/33-dprima-simplificada-brainstorming.md
+SHA que revisaste antes: 67dc53eafbb092e1d5d294f64557615e44b62324. Delta solo estos dos documentos; sin código/schema/datos reales. PR133/Comida y PR134 diagnóstico intactas.
+
+CAMBIOS Y FUENTES HUMANAS
+E1 (commit8c8abb7): usuario «Aprobados» respondió a aclaración única sobre primera enmienda: no calcular sugerencia automática con importes previstos incompletos salvo exclusión manual explícita. IBI100/Seguro sin importe/S100/G0/N2 => subtotal100, T/P/sugerida No verificables, no0. Exclusión manual auditada conserva línea, ejecución y fotos; importe0 explícito distinto de ausencia. AC25 UNRUN.
+E2 (commit4d1b765): mensaje directo «Apruebo E2: P/N solo genera aportaciones para raíces con fuente Aportación a saldo». P/N solo propone cuota para esa fuente con planificación/saldo exclusivo y datos E1/G/S/N válidos. Gasto real conserva ejecución por raíz simple/hijas según contratos mensuales aplicables, importe mensual manual y sin cuota transferible. No se crea modalidad mixta ni se extiende G neto de financiación al mensual por inferencia. Aportación simple sin planificación no inventa T ni hijas. AC26 UNRUN: Gasto80/Delmes100=>ejecutado80/pendiente20 sin cuota; aparte Aportación T200/G80/S20/N2=>sugerida50, aceptada50 y transferencia25=>ejecutado25/pendiente25.
+
+Correcciones menores de0010: limpiadas frases que conservaban aprobación pendiente del contenido de revisión2 ya aprobada; No aplica histórico conserva importes/procedencia/no comparable, sin conversión a Gasto/Aportación; ASCII390 Maestro/Mensual complementa pantallas con mismos campos y distingue S reconstruido al corte de saldo actual. Huellas originales de revisión2 no se atribuyen a enmiendas posteriores; cada aprobación queda registrada.
+
+EVIDENCIA ACTUAL
+PASS local en copia limpia macOS: python3.12 scripts/verify --base 454d21a8793265a44051034e926db8f139eb279c --head 4d1b7652ce1640dca3a97053fe50863ff0566e58 --pull-request (docs).
+CI required SUCCESS: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41146531250
+QA documental independiente E1 APTO; E2 coherente con precisión para no ampliar neto mensual incorporada antes de publicar. No son pruebas funcionales; AC01–26 UNRUN. Mapping físico vigente D′/proveedores centrales de neto y cierre siguen dependencias, no equivalencia ficticia.
+
+Pido revisar que tus observaciones P1/P2/P3 de0010 quedan cubiertas en el HEAD exacto, y si existe defecto REAL restante que impida integrar documentación. Distinguir bloqueo documental de requisitos previos DEV/migración. No reabrir decisiones humanas por preferencia, no interpretar CI como aceptación financiera ni solicitar datos personales.
+
+Autorizaciones: SPEC33 revisión2 y wireframes + E1/E2 aprobados. NO hay aprobación de merge PR135 ni de DEV33, migración/activación o despliegue. No editar repo/spec/tablero/PR/Excel/datos, ni fusionar. Este relay es el único escrito pedido.
+Devuelve un único HANDOFF → CODEX completo: Task ID/sesión, estado APTO/APTO CON OBSERVACIONES/NO APTO documental, hallazgos archivo/línea y consecuencias (o ninguno), fuente/HEAD consultados y límites, cambios (ninguno salvo relay), pruebas/evidencia PASS/FAIL/UNRUN con comando/entorno si ejecutas, riesgos/bloqueos, decisiones pendientes y siguiente acción; también si falta acceso. Tu revisión no concede permisos por el usuario.
