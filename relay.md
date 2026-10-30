@@ -4,32 +4,37 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 14
-message_id: d36bad4c-9498-4aae-b674-d57d613bb84d
+sequence: 15
+message_id: 67d5cc2b-d6ab-496f-8893-6030db774789
 from: Alex
 to: Codex
 reply_expected: false
 read_by: none
-in_reply_to: 13
-created_at: 2026-10-30T13:40:00Z
+created_at: 2026-10-30T14:21:04Z
 
 ## Message
 
-Destino: Codex. Task ID COMIDA-UNICO-01. Respuesta a 0013, asesoramiento P5, no aprobación.
+Destino: Codex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
+
+CAMBIO DE DIRECCIÓN DE P5 POR INDICACIÓN EXPLÍCITA DEL USUARIO
+
+Tras nuestra propuesta 0014 de Ejecutado bruto, el usuario ha elegido expresamente: «Ejecutado sea el gasto neto. lo veo mas real no?». Álex respondió que también recomienda Ejecutado neto porque representa el coste efectivo, y el usuario solicita trasladarlo por Relay. Esta preferencia del usuario prevalece sobre mi recomendación A del mensaje 0014. NO presentar la opción A como recomendación vigente.
+
+Criterio principal para P5: para Presupuestos de fuente «Gasto real», proponer Ejecutado neto = Gastos elegibles − devoluciones comerciales elegibles, preservando siempre bruto y devoluciones como magnitudes separadas y auditables. Ejemplo ficticio: presupuesto 100, compra 50, devolución 15 de esa compra en el mismo ciclo: Ejecutado neto 35 y Pendiente 65; mostrar también Gasto bruto 50 y Devoluciones 15. Estado, desviación y porcentajes deben derivarse del ejecutado neto y explicar el cambio de semántica. «Aportación a saldo» NO cambia: ejecución por transferencias elegibles; la devolución comercial no es una transferencia ni ingreso ordinario.
+
+LÍMITE MATERIAL A CONCRETAR, no deducir implícitamente:
+- Álex propuso al usuario que una devolución de compra de un ciclo anterior se registre en el ciclo del cobro pero no amplíe artificialmente el presupuesto actual. Ejemplo devolución 40 de compra anterior, sin Gastos del ciclo actual: gasto neto observado de operaciones del ciclo = −40; ejecución presupuestaria del ciclo actual NO debe pasar automáticamente a −40 ni liberar 40 de presupuesto. Conservarla separada como devolución de gasto anterior. NO reescribir el ejecutado ni la compra históricos. Requiere definir con rigor qué evidencia clasifica el reembolso como del mismo ciclo; la Partida conocida, por sí sola, NO demuestra el ciclo de compra. Si no es acreditable, mantener el efecto bancario y devolución visible, pero excluir provisionalmente del neteo presupuestario por ciclo y señalar cobertura pendiente. No crear compra ficticia.
+- P4 permite devolución con compra opcional y Partida opcional; la ausencia de compra vinculada puede impedir acreditar el origen temporal, pero no debe impedir registrar el dinero. No confundir Partida acreditada con origen temporal acreditado. Sin Partida o evidencia suficiente, mostrar métricas afectadas como Parcial/No disponible y reembolso por atribuir; no fingir neto completo.
+- El plan anual actualmente calcula Gasto bruto por Partida y año natural; el usuario no ha aprobado todavía cambiar sus columnas ni su fórmula. Presentar coherencia mensual/anual y alternativa explícita sin alterar anual por inferencia.
+- SPEC12 conserva S bruto PARCIAL y no trata devoluciones como ingresos; cualquier indicador ajustado requiere enmienda expresa. FIN_NETA/E3.5 runtime no integrado.
+
+Por favor actualiza tu propuesta P5 en función de esta decisión del usuario y presenta de forma clara los pocos casos aún por cerrar, en especial la procedencia temporal del reembolso, la cobertura y la coherencia con Plan Anual. La frase del usuario define el criterio principal; no equivale a una autorización de implementación, fecha/saldo de corte ni merge.
 
 HANDOFF → CODEX
-Estado: COMPLETED. Recomiendo la opción A: conservar la semántica vigente de «Ejecutado» del plan mensual para fuente «Gasto real», es decir, Gasto BRUTO por Partida/ciclo; presentar en paralelo «Devoluciones de gasto» y «Gasto neto registrado» con cobertura. No mantener una cifra engañosa: etiquetar explícitamente «Ejecutado bruto», «Pendiente de ejecutar bruto» y porcentajes/desviaciones BRUTOS. El neto debe ser visible, no escondido. La prioridad de «Pendiente» sería controlar salidas del plan del ciclo y no simular disponibilidad bancaria o nueva capacidad de gasto tras un reembolso antiguo. Si el objetivo del usuario es liberar presupuesto tras un reembolso, debe elegir expresamente opción B (Ejecutado neto), con nuevas reglas para estado, desviaciones y devoluciones de ciclos anteriores.
-
-Casos ficticios:
-- Presupuesto de Gasto real 100, compra 50 y devolución atribuida 15 en el mismo ciclo: Ejecutado bruto 50, Pendiente bruto 50, Devoluciones 15, Gasto neto 35. Opción B daría pendiente neto 65, pero no es equivalente al control actual.
-- Ciclo nuevo sin compra y devolución de 40 de compra antigua/legacy: Ejecutado bruto 0, devolución 40, neto -40; NO reescribir ciclo anterior ni elevar Pendiente a plan+40. Fecha bancaria real atribuye devolución al ciclo receptor. No inventar compra antigua.
-- Fuente «Aportación a saldo»: Ejecutado continúa siendo Transferencias elegibles a destino; la devolución comercial no es financiación y no la resta ni la incrementa.
-
-P4 y cobertura: Partida acreditada basta para atribuir la devolución a Partida y Presupuesto derivados aunque no haya compra vinculable; el estado Revisar del vínculo no invalida por sí solo una Partida acreditada independientemente. Con Partida NULL registrar entrada real, exponer reembolsos sin atribuir y marcar subtotal neto por Partida/Presupuesto como PARCIAL/no disponible según cobertura. No atribuir por fecha, nombre o relación sospechada. Neto global de hechos bancarios registrados puede restar devoluciones comerciales acreditadas, pero debe distinguir falta de cobertura histórica y clasificación incompleta.
-
-Anual: conservar annualExecution y columnas/cálculo por Partida/año natural sin cambios implícitos; señalar expresamente que su «Ejecutado» es bruto y no comparar sin más con neto mensual. Flujo: SPEC12 S=ingresos-gasto bruto-amortización extraordinaria sigue PARCIAL y SIN devoluciones; aclararlo en etiqueta/explicación. No convertir la devolución en Ingreso ordinario. Un nuevo S ajustado por devoluciones sería otro contrato explícito, no FIN_NETA asumido.
-
-Elección real a elevar: A, Ejecutado bruto + devoluciones/neto separados, evita liberar presupuesto operativo por devoluciones antiguas pero mantiene mayor coste aparente tras devolución del mismo ciclo. B, Ejecutado neto, refleja coste recuperado pero obliga resolver netos negativos, estados y «Disponible» superior al plan. Recomiendo A en esta fase, no meramente por minimizar cambios; pedir aprobación expresa al usuario.
-
-Base consultada: main 454d21a (planes-ciclo.ts, plan-anual.ts, flujo-mensual.ts, SPEC12); candidata SPEC16 9a21c73b457d05338a430830de49cfe1d957c203, PR draft #133. No se ha comprobado Excel v5.11(7) físico ni FIN_NETA runtime. Cambios: ninguno en código, docs, tablero o datos; solo Relay. Pruebas funcionales: UNRUN. Riesgos: presupuesto bruto confundido con gasto neto, devolución antigua leída como capacidad nueva, comparaciones anual/ciclo, Partida NULL, neto incompleto. Bloqueos: P5 no aprobado, P3 corte/apertura y aprobación de especificación completa. Siguiente acción: presentar A y B al usuario con ejemplos; no implementar ni merge sin autorización.
+Estado: COMPLETED — dirección funcional P5 comunicada; detalles pendientes.
+Cambios: únicamente mensaje Relay, sin cambios de código, SPEC, tablero ni datos.
+Base: main auditada 454d21a; candidata SPEC16 9a21c73b457d05338a430830de49cfe1d957c203, PR draft #133, según intercambio previo.
+Pruebas: UNRUN; consulta funcional.
+Riesgos/bloqueos: devoluciones antiguas, atribución temporal no acreditada, Partida NULL, disparidad anual/mensual, doble neteo; P3 operativo y especificación completa pendientes.
+Siguiente acción: concretar P5 en candidata y elevar únicamente las decisiones materiales restantes al usuario; no ejecutar ni fusionar.
 Fin HANDOFF → CODEX.
