@@ -1104,6 +1104,15 @@ es referencia financiera; Fin sigue vacío. La función Excel N() trata vacíos 
 cero; no trasladar esa conducta a una cobertura incompleta. No se cierra AC-25 global
 ni se declara equivalencia completa del libro por esta extracción parcial.
 
+### Observaciones de revisión 0022 — aprobación completa suspendida
+
+Álex revisa 581d36c en relay0022. La solicitud de aprobación completa de revisión2
+queda suspendida hasta resolver estas observaciones. P1–P7 no se revocan ni amplían.
+Primera observación: precisión de significado de Falta por reponer, concretada debajo.
+Segunda: posible duración provisional acreditada del ciclo abierto. P7 aprobada exige
+siguiente Inicio para equivalentes/margen; cambiar esa regla requiere contraste de
+fórmula/criterio y una enmienda humana expresa, no corrección silenciosa.
+
 ### P7 — Recursos y cierre para régimen individual aprobados (2026-10-30)
 
 Preparación autorizada por «vamos». Aprobación posterior directa del usuario:
@@ -1127,6 +1136,18 @@ Para ciclo con Inicio A y corte T, ambos derivados del maestro:
 
 **Recursos propuestos = S0 + F + R_caja − C_n.**
 **Falta por reponer = max(C_n − R_obl,0)** conserva P6.
+Falta por reponer expresa la obligación económica compensable pendiente; NO es la
+cantidad de dinero necesaria para devolver ING Comida a una posición objetivo ni
+un resultado de conciliación bancaria. UI: «Falta por reponer · obligación económica»
+y enlace a posición/cierre y desglose de efectos externos. No crear una métrica de
+restauración a S0/objetivo ni una Transferencia de regularización por inferencia.
+Ejemplo: S0=B_A=100, Ocio pagado desde ING 50, devolución comercial 15 recibida en otra
+cuenta, reposición real a ING 20. C_n=35, R_caja=R_obl=20, Falta=15; D de ING=−30,
+Banco/cierre analítico=70, Recursos=85 y otros efectos=−15 por reembolso externo.
+La comparación ilustrativa con 100 daría una diferencia de 30, pero no convierte
+Falta en 30 ni crea una obligación/reposición nueva; son preguntas distintas.
+Sin apertura/cobertura, banco sigue parcial/no disponible aunque Falta sea verificable.
+
 R_caja responde a cuándo entró dinero; R_obl a qué obligación se acredita. No se suman
 entre sí. Cobro actual asignado a una obligación antigua entra en Recursos actuales,
 como en O histórico, pero no reduce Falta actual. Reposición anterior ya incluida en
@@ -1305,6 +1326,7 @@ Cobertura [Parcial / Verificable / No disponible] · procedencia visible
 Recursos analíticos [...] · Cierre analítico [...] · Banco al corte [...]
 Diferencia S0/apertura [...] · Otros efectos [Ver desglose]
 Bruto [...]  Devoluciones [...]  Neto [...]  Financiación [...]
+Falta por reponer · obligación económica [...] (no conciliación bancaria)
 Fecha | Movimiento | Concepto | Partida | Revisión | Importe | Estado
 [Registrar compra en Movimientos] [Ver financiación] [Evidencias]
 Histórico: agregado reconocido [...] · detalle disponible [...] (no se suman)
@@ -1353,6 +1375,6 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: resolver observación de duración provisional de 0022 y volver a presentar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.

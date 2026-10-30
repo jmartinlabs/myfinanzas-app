@@ -134,7 +134,7 @@ asignación acreditada no duplican reposición ni recuperación Anticipo. Comand
 se concretarán con implementación; entrada verify --full y QA independiente. Recursos
 y cierre analítico: contrato bloqueado por fuente ausente, no caso simulado ni PASS.
 
-### P7 — cobertura propuesta (no aprobada), 2026-10-30
+### P7 — cobertura propuesta (no aprobada), 2026-10-30 [HISTÓRICO SUPERADO]
 
 CU21–24 UNRUN: dominio/API comprobará 100+700+20−35=Recursos785, Falta15,
 D480/cierre580, devolución antigua40=>cierre620 sin cambiar Recursos, B_A250=>banco770
@@ -143,7 +143,8 @@ explicación, reposición de otra obligación, Fuera presupuesto y doble descuen
 Anticipo. Ciclo abierto mantiene Fin vacío; sin duración, equivalentes/margen no
 disponibles. Revisión E2E mostrará desglose y procedencia, sin columna económica
 editable paralela. Futuras suites verifican por métrica; no reemplaza CI Linux ni QA.
-No se afirman fórmulas aprobadas ni pruebas funcionales ejecutadas por esta matriz.
+Estado histórico de esta matriz: entonces no se afirmaban fórmulas aprobadas; la
+confirmación P7 posterior sustituye ese estado. Pruebas funcionales siguen UNRUN.
 
 ### Estado vigente P7 / contrato candidato revisión 2 — 2026-10-30
 
@@ -157,3 +158,13 @@ solo en receptor real, D de ING excluye esa entrada; puente identifica efecto ex
 netos solo con elegibilidad acreditada, sin Transferencia ficticia. Metadata/legado
 con IDs numéricos coincidentes se resuelven por ruta/procedencia, nunca por adivinación.
 Esquema/restore y guards se verifican contra candidato real posterior, sin datos reales.
+
+### Revisión 0022 — observaciones abiertas, 2026-10-30
+
+Aprobación completa de revisión2 suspendida. CU06/09/17/21–23 amplían caso con números:
+S0=B_A100, compra Ocio ING50, devolución15 en otra cuenta, reposición ING20 => Falta15,
+banco70, Recursos85, puente−15. Comprobar etiqueta «obligación económica», no dinero
+para restaurar banco; sin transferencias ficticias ni nueva métrica de restauración.
+CU24: añadir variantes a contrastar de duración provisional acreditada/desconocida y
+falta de cobertura. Son casos propuestos pendientes de fuente/enmienda a P7; no se
+sustituye la regla aprobada de duración ni se inventa Fin. Todos siguen UNRUN.

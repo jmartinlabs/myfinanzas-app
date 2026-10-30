@@ -970,3 +970,10 @@ separado de activación, upgrade desde v18/restore y plan por incrementos.
 La aprobación de decisiones no aprueba automáticamente esta revisión ni wireframes.
 Siguiente gate: aprobación completa COMIDA-UNICO-01 revisión 2 y su SHA final.
 P3 real, activación y merge siguen separados. Sin código/schema ejecutado.
+
+### Revisión externa 0022 — 2026-10-30
+
+Candidato581d36c no aprobado por usuario. Aprobación completa suspendida: se aclara
+Falta como obligación económica y se solicita a Álex fórmula física de duración
+provisional/Días ciclo y días transcurridos. Posible enmienda de P7 requiere decisión
+humana; no se altera P7 por inferencia. Rótulo histórico de testplan marcado superado.

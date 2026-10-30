@@ -201,3 +201,11 @@ Sin código/schema/datos. P3, activación y aprobación completa de spec siguen 
 Concretados datos propios, relaciones, API/DTO, huellas/transacciones, alcance inicial
 ING Comida, continuidad v18 y plan incremental. Sin implementación; revisión completa
 independiente y verify docs por SHA final antes de solicitar aprobación. P3 separado.
+
+### Observaciones externas 0022 — 2026-10-30
+
+Álex FAVORABLE CON OBSERVACIONES, no aprobación de revisión2. Clarificada Falta como
+obligación económica, no cantidad para restaurar ING; caso100/50/15externo/20 produce
+Falta15 y banco70, sin nueva métrica ni hecho. Testplan histórico rotulado superado.
+Duración provisional del ciclo abierto requiere fórmula/criterio físico y posible
+enmienda de P7 aprobada. Aprobación completa suspendida hasta resolver; sin código.
