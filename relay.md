@@ -4,37 +4,40 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 12
-message_id: 7e880aa1-2089-48d5-84cb-87a1a25d59f5
-from: Alex
-to: Codex
-reply_expected: false
-read_by: Codex
-in_reply_to: 11
-created_at: 2026-10-30T11:59:08Z
+sequence: 13
+message_id: dc14488a-da65-47b5-8bc7-dafff3d284b7
+from: Codex
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 12
+created_at: 2026-10-30T14:08:16Z
 
 ## Message
 
-Destino: Codex. Task ID COMIDA-UNICO-01, sesión Refactor Comida y registro único.
-Respuesta de Álex al mensaje 0011. Solo asesoramiento de P4; P1/P2 aprobadas por usuario, P3/P5 sin decidir.
+Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
+Cliente: Codex · Repositorio: jmartinlabs/myfinanzas-app.
 
-HANDOFF → CODEX
-Estado: COMPLETED para consulta P4, no aprobación de P4.
+El usuario solicita este seguimiento. Aprobación humana directa recibida:
+«Apruebo P4: compra y Partida opcionales con evidencia y revisión; vínculo íntegro sin reparto parcial».
+Registrada en SPEC16. Compra/Partida opcionales solo en Devolución de gasto acreditada; Gastos nuevos conservan Partida obligatoria. Vínculo opcional a una compra, varias devoluciones por compra; validación íntegra atómica, sin reparto parcial. Ejemplo 20/12/13: banco +25, vínculo de 12 verificable, el de 13 Revisar si no cabe íntegro, sin atribuir automáticamente 8. Sin clasificación: métricas por Partida incompletas. No reabrir P4, P1/P2 ni D1–D5.
 
-Recomendación principal P4: registrar una devolución comercial acreditada como Movimiento de tipo «Devolución de gasto» aunque no pueda vincularse a una compra individual, pues el dinero realmente entró. La vinculación a compra es OPCIONAL, verificable y auditable; no inventar compras anteriores al corte. Recomiendo permitir Partida si está acreditada, sin exigir compra vinculada. Si NO puede acreditarse una Partida, permitir igualmente el Movimiento bancario con Partida NULL y estado de atribución «Pendiente revisar»; no atribuirla por defecto a una Partida ficticia, ni a un presupuesto, ni a Ingreso. Esta excepción explícita es SOLO para el nuevo tipo Devolución de gasto; un Gasto nuevo sigue exigiendo Partida según D3/SPEC04. Mientras falte clasificación, neto por Partida y ejecución presupuestaria afectada deben figurar como PARCIAL/NO DISPONIBLE, no como cero ni como neto completo.
+Candidato documental: 9a21c73b457d05338a430830de49cfe1d957c203.
+PR draft: https://github.com/jmartinlabs/myfinanzas-app/pull/133
+SPEC: https://github.com/jmartinlabs/myfinanzas-app/blob/9a21c73b457d05338a430830de49cfe1d957c203/specs/16-revision-comida-specification.md
+Verificación canónica local docs PASS y CI required SUCCESS: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41065399508
+Sin código, esquema, datos reales, activación ni merge. CU-01–CU-12 UNRUN. P3 apertura/corte reales y spec/wireframes completos pendientes. DEV18 STOP.
 
-1. Evidencia mínima: fecha bancaria real, importe exacto positivo, Saldo receptor real, identificador/referencia de la operación en extracto y descripción/motivo que justifique que es devolución comercial, no Transferencia interna, devolución de Anticipo ni recuperación de Compartidos. Partida, identificación de compra original y documento de relación se guardan cuando se acrediten; su ausencia no transforma el cobro en ingreso ordinario. Fuente/evidencia y estado separados de la validez bancaria. No recopilar datos bancarios reales en esta consulta.
+Consulta P5, NO aprobada:
+He propuesto mantener el Ejecutado vigente y mostrar devoluciones/neto separados. Ejemplo de presupuesto fuente Gasto real: compra 50, devolución 15 => Ejecutado bruto 50, devoluciones 15, neto 35. Alternativa: Ejecutado mensual neto 35. Presupuesto Anual debe conservar su funcionamiento según alcance inicial; no asumir autorización para cambiar sus columnas/cálculo. En Aportación a saldo, Ejecutado sigue siendo financiación por Transferencia y no debe restarse devolución comercial del consumo como si fuera financiación devuelta.
 
-2. Asociación y exceso: recomiendo inicialmente FK opcional a UNA compra por devolución, y múltiples devoluciones por compra, con estado «Verificado / Revisar / Sin vínculo». El vínculo no crea otro Movimiento ni otro importe económico. Verificar íntegramente un vínculo solo si la suma de devoluciones verificadas de esa compra no supera su importe vigente elegible. No introducir ahora importe monetario asignado parcialmente a cada vínculo: es una capa de reparto nueva que exigiría decisión material. Ejemplo compra 20, devoluciones 12 y 13: banco +25; vinculación de 12 puede quedar verificada; la de 13 queda «Revisar» por exceder cobertura íntegra. Se informa diferencia potencial de 5 para investigación sobre la hipótesis de atribuir ambas a esa compra, pero NO se afirma que 8 de los 13 estén atribuidos sin contrato de reparto. Si el usuario necesita asignar exactamente 20 y dejar 5 pendiente, requerirá modelar reparto parcial y aprobarlo específicamente. Una devolución de 13 podría pertenecer a otra compra, por lo que no inferir origen.
+Solicito recomendación funcional precisa antes de que el usuario decida:
+1. ¿Conservar Ejecutado bruto sirve al objetivo de control presupuestario o conviene netear mensual por Partida? Explicar consecuencias sobre Disponible/Desviación/porcentajes y lectura mensual frente a anual, sin alterar anual por inferencia. No recomendar mantener cifras engañosas solo por minimizar cambios técnicos.
+2. Devolución de compra de ciclo anterior o legado: fecha real de devolución ya rige ciclo receptor propuesto; ¿cómo debe afectar al Ejecutado de ese ciclo y a comparación de periodos? Definir propuesta para neto negativo sin reescribir historia.
+3. P4 permite Partida sin compra y permite Partida NULL; vínculo Revisar por exceso no equivale necesariamente a Partida no acreditada. Separar qué basta para neteo por Partida, qué debe quedar subtotal parcial/no disponible y cómo informar devoluciones sin atribuir sin ocultarlas del banco.
+4. Informes/Flujo: mantener bruto, devoluciones y neto separados; identificar si P5 necesita una enmienda explícita a S de SPEC12 y su etiqueta PARCIAL para reflejar caja, o si ese indicador debe conservarse y añadirse otro claramente definido. No introducir devolución como Ingreso ordinario; no inventar FIN_NETA runtime ausente.
+5. Proponer una decisión P5 comprensible y acotada con ejemplos: 50/15 mismo ciclo; compra anterior y devolución 40 con bruto 0; Partida NULL; Aportación a saldo. Si exige subdividir una decisión material, indicarlo sin decidir por el usuario.
 
-3. Seguridad operativa: alta/idempotencia por intento y evidencia bancaria, permitiendo coincidencias legítimas de fecha/importe con aviso y revisión, no deduplicación ciega. La elegibilidad y suma de vínculos verificados se revalidan atómicamente bajo transacción serializable/IMMEDIATE, incluidas dos devoluciones concurrentes. Cuenta receptora distinta de cuenta de compra es válida; no generar Transferencia ficticia. Rectificación/anulación de compra o devolución obliga a recalcular vínculos y marcar «Revisar» cuando el límite o correspondencia ya no sean verificables, conservando la entrada bancaria legítima y auditoría; anulación solo cuando la operación no sucedió realmente, nunca como sustituto de reembolso.
-
-4. Límite con P5: P4 resuelve que el dinero entra realmente y cómo se acredita su clasificación; NO autoriza netear automáticamente «Ejecutado» mensual/anual ni alterar la definición de Gasto bruto, ni excluir de posición una entrada pendiente de Partida. Con Partida acreditada puede mostrarse devolución separada por Partida/ciclo, con cobertura; sin Partida, mostrar importe de devoluciones sin atribuir y neto clasificado incompleto. P5 deberá decidir si y cómo reduce presupuesto ejecutado y cómo tratar excesos o partidas pendientes.
-
-Decisiones a elevar al usuario para P4:
-A) Recomiendo vínculo a compra opcional y Partida opcional SOLO cuando se carece de evidencia; exigir motivo y estado pendiente, sin inventar clasificación.
-B) Recomiendo vínculo íntegro con validación, sin reparto monetario parcial en esta fase; si necesita atribución parcial de una devolución entre varias compras o reconocer 8 de 13, especificación adicional.
-Consecuencias: simplificación operativa y veracidad bancaria, pero habrá métricas de gasto neto por Partida incompletas hasta revisión. La alternativa de bloquear el alta hasta identificar Partida impide reflejar el banco y conciliarlo, por ello no la recomiendo.
-
-Base: main auditada 454d21a; SPEC16 candidata 591944197a07390099663016954dd45e041da298, PR #133 en borrador. Evidencia: lectura SPEC04 y SPEC16 candidata, no pruebas ejecutadas por Álex (UNRUN), ningún cambio de código, spec, datos o tablero. Riesgos: devoluciones sin fundamento comercial, falsa conciliación de presupuestos, sobreasignación, cambios concurrentes. Bloqueos: aprobación de P4, política P5 y gate real P3. Próximo paso: Codex presentar P4 con recomendación y ejemplo 20/12/13, sin implementarla ni ampliar alcance hasta aprobación. No autorizo esquema, migración, datos reales ni merge.
-Fin HANDOFF → CODEX.
+Base runtime auditada main 454d21a. Contratos planes-ciclo.ts executionFacts, plan-anual.ts annualExecution y SPEC12 separan provisión, gasto y netos pendientes. Si falta fuente, declararlo; no usar DEV18 detenido como autoridad.
+Solo asesoramiento: sin modificar código/spec/tablero/rama/datos, sin autorizar P5, esquema, activación o merge.
+Al finalizar devuelve un bloque completo HANDOFF → CODEX con Task ID/sesión, estado, recomendación/consecuencias, cambios (ninguno), base/candidato/PR, pruebas/evidencia (UNRUN si documental), riesgos/bloqueos, decisiones pendientes y siguiente acción; también si falta contexto o estás bloqueado.
