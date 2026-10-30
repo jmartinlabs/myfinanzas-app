@@ -157,3 +157,11 @@ Mensaje humano directo: «Apruebo P2: mantener ING Comida como el mismo Saldo, c
 régimen fechado sujeto a verificación». Registro en specification y brainstorming.
 Matriz de consumidores y condiciones de bloqueo documentadas; sin código ni esquema.
 P3/P4/P5 y spec/wireframes completos pendientes. Próxima decisión funcional: P4.
+
+### Aprobación P4 — 2026-10-30
+
+Usuario: «Apruebo P4: compra y Partida opcionales con evidencia y revisión; vínculo
+íntegro sin reparto parcial». Registro canónico en specification; confirmación
+append-only en brainstorming. Retirada la propuesta de atribución parcial implícita
+20/25; banco conserva +25 y el vínculo íntegro de 13 queda Revisar. Sin código/schema.
+Siguiente decisión P5; P3 y aprobación de spec/wireframes completos siguen separados.

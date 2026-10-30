@@ -914,3 +914,12 @@ sujeto a verificación». Mismo ID de cuenta, sin migración de compras antiguas
 Condiciones de verificación y bloqueo en specification; si falla se elevará sucesor,
 sin ejecutarlo por inferencia. P3/P4/P5 y spec/wireframes completos siguen pendientes.
 La fecha/apertura reales y activación necesitan autorización separada.
+
+### Confirmación posterior P4 — 2026-10-30
+
+Usuario: «Apruebo P4: compra y Partida opcionales con evidencia y revisión; vínculo
+íntegro sin reparto parcial». Contrato consolidado en specification: excepción para
+Devolución de gasto, no para Gastos nuevos; evidencia, revisión, vínculo 0..1 compra
+por devolución, sin reparto parcial. Ejemplo 20/12/13 conserva banco +25 y vínculo de
+13 Revisar si no cabe íntegro, sin atribuir automáticamente 8. P5 y spec/wireframes
+completos pendientes; P3 operativo separado. Sin implementación ni activación.

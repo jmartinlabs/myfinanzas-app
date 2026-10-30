@@ -104,7 +104,7 @@ P1–P5 en [specification](16-revision-comida-specification.md#comida-unico-01--
 | CU-01/02/03/12 | Transferencia/compra única, banco y ejecución; snapshots antes/después de tablas | Tests de dominio/API de Movimientos, Revisión y planes; fixtures Bun/SQLite | UNRUN |
 | CU-04/08 | Bordes Inicio/Fin, alta tardía, agregado solapado y legado sin doble reconocimiento | Tests de Ciclos y Revisión con ventanas sintéticas | UNRUN |
 | CU-05/10 | Metadatos, rectificación/anulación, coincidencias e idempotencia concurrente | Tests API/HTTP con MFA/CSRF y dos escritores; E2E flujo de revisión | UNRUN |
-| CU-06 | Devoluciones parciales/múltiples, sin origen, exceso, compra anulada, cuenta distinta, cruce de ciclos y neto negativo | Tests Movimientos/consumidores condicionados a P1/P4/P5 | UNRUN |
+| CU-06 | Devoluciones parciales/múltiples, sin origen, exceso, compra anulada, cuenta distinta, cruce de ciclos y neto negativo | Tests Movimientos/consumidores según P1/P4 aprobadas; neteo condicionado a P5 | UNRUN |
 | CU-07 | Apertura acreditada/ausente, transferencias previas no resuman, cobertura insuficiente y no conciliado | Tests posición por régimen con fixture 100+800−45+10=865; régimen condicionado a P2 | UNRUN |
 | CU-09 | Anticipos, reposiciones, Compartidos, plan mensual, flujo y anual sin regresión | Suites de cada consumidor; comparación de resultados legado por mismo fixture | UNRUN |
 | CU-11 | Upgrade desde v18, rollback de fallo, reapertura, contrato estricto/FK, restore e intentos revocados | Suite esquema/backup en CI Linux; sin bases reales; versión futura aún no asignada | UNRUN |

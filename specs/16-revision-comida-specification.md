@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5, representación P1 e identidad P2 aprobadas; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5, representación P1, identidad P2 y atribución P4 aprobadas; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -949,21 +949,60 @@ probarse con fixtures antes de cualquier activación autorizada.
 Si no se demuestra seguridad, se bloquea el régimen y se presenta una cuenta sucesora
 como alternativa a decidir; no se crea automáticamente ni se simula Transferencia de
 apertura. P2 no fija fecha C, importe B, evidencia bancaria ni autorización operativa;
-P3, P4/P5 y spec/wireframes completos siguen pendientes. No se modifica el esquema.
+P3, P5 y spec/wireframes completos siguen pendientes. No se modifica el esquema.
+
+### P4 — atribución de devoluciones aprobada (2026-10-30)
+
+Fuente: mensaje directo del usuario: «Apruebo P4: compra y Partida opcionales con
+evidencia y revisión; vínculo íntegro sin reparto parcial».
+Una devolución comercial acreditada se registra aunque no exista compra individual
+vinculable o no pueda acreditarse aún su Partida. Compra y Partida son opcionales;
+no inventar compras históricas, Partidas puente ni Ingresos ordinarios. Sin Partida,
+queda Pendiente revisar; sigue afectando al banco y no presenta análisis clasificado
+como completo. Esta excepción solo corresponde a Devolución de gasto: D3 conserva
+Partida obligatoria para todo Gasto nuevo.
+
+Evidencia mínima: fecha bancaria real, importe exacto positivo, Saldo receptor real,
+identificador/referencia de operación en extracto y descripción/motivo comercial.
+Clasificación y vínculo se acreditan separadamente; su ausencia no elimina una
+entrada real. Evidencias privadas solo en persistencia/API autenticadas, no en Git,
+logs ni artefactos; fixtures sintéticas para desarrollo.
+
+Cada devolución puede vincularse a una compra y una compra recibir varias devoluciones.
+Estados de vínculo: Sin vínculo, Verificado, Revisar. Solo se verifica íntegramente
+si la suma de devoluciones verificadas no supera el importe vigente elegible de la
+compra. No hay importe asignado parcialmente ni reparto entre compras en esta fase.
+Compra 20, devoluciones 12 y 13: posición bancaria +25; vínculo de 12 verificable;
+el de 13 queda Revisar si no cabe íntegro. Diferencia potencial 5 informativa bajo
+esa hipótesis, sin afirmar que 8 de 13 están atribuidos. No inferir otra compra.
+Partida acreditada puede existir sin compra vinculada; vínculo y clasificación son
+dimensiones distintas y auditadas. Cuenta receptora distinta de la compra es válida,
+sin Transferencia ficticia.
+
+Alta/reintento conserva la idempotencia de Movimientos. Coincidencias legítimas de
+fecha/importe reciben advertencia, sin deduplicación ciega. Elegibilidad y suma de
+vínculos se revalidan en la misma transacción IMMEDIATE bajo concurrencia.
+Rectificar/anular compra o devolución recalcula elegibilidad y marca Revisar cuando
+corresponda, preservando historia; no borra una entrada bancaria legítima. Anulación
+solo corrige un hecho que no sucedió, no representa un reembolso comercial.
+
+Sin clasificación se muestra importe sin atribuir y cobertura parcial/no disponible
+en netos por Partida y ejecución afectada, nunca cero o completo por omisión. P4 no
+autoriza netear automáticamente ejecutados ni decide P5. El importe/fecha económico
+solo existe en Movimientos; metadata de vínculo/evidencia no crea otro ledger.
 
 ### Decisiones materiales pendientes — recomendaciones, no decisiones
 
 | ID | Alternativas | Recomendación y consecuencias |
 | --- | --- | --- |
 | P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
-| P4: atribución de devolución | Exigir compra; o hecho real con relación opcional revisable | Recomendar hecho acreditado sin exigir compra histórica inexistente. Partida y relación pendientes deben distinguirse. Compra de 20 con devoluciones 12+13: banco +25, máximo 20 atribuido a esa compra; exceso 5 por justificar. Concurrencia/revisión atómicas; rectificar/anular compra invalida atribución sin borrar entrada. Partida obligatoria D3 para Gastos no decide requisitos de devolución: resolver antes de schema/API. |
 | P5: presupuestos e informes | Mantener ejecutado bruto y exponer devolución/neto separados; o sustituir ejecutado por neto | Recomendar mantener ejecutado vigente y añadir consulta separada con cobertura para Comida en esta entrega, sin alterar anual. Si se desea netear ejecutado mensual, aprobar antes el efecto por Partida/ciclo, desviaciones y casos sin atribución. Informes mixtos deben separar regímenes y no presentar una serie neta homogénea. |
 
 ### Interfaces propuestas, todavía no aprobadas
 
 Sin endpoints nuevos decididos: reutilizar rutas de Movimientos para hechos económicos
 y limitar escritura de Revisión a metadatos. Nombres/campos concretos quedan pendientes
-de P4 y revisión de contrato. Sin API financiera paralela. MFA, Origin/CSRF,
+de revisión del contrato completo. Sin API financiera paralela. MFA, Origin/CSRF,
 no-store, revisiones, huellas e idempotencia se mantienen; servidor revalida bajo
 transacción IMMEDIATE, no solo UI.
 
@@ -995,7 +1034,7 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 | CU-03 / AC03 | Consultar plan/informes de esa compra | Una contribución por consumidor; financiación no sumada a consumo. |
 | CU-04 / AC04 | Registrar en Inicio/Fin y fuera de intervalos | Ciclo derivado del maestro; Sin ciclo cuando proceda, sin fecha alternativa. |
 | CU-05 / AC05 | Cambiar etiqueta/evidencia y abrir rectificación | Metadatos no crean hechos; cambio económico usa Movimientos. |
-| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; detalle condicionado a P4/P5. |
+| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; atribución según P4; neteo presupuestario condicionado a P5. |
 | CU-07 / AC07 | B=100, +800, −45, +10 con cobertura demostrada | Posición 865; ocultar prueba de cobertura cambia disponibilidad, no inventa conciliación. |
 | CU-08 / AC08 | Conservar agregado 300 y detalles antiguos 300 | Gasto reconocido 300; no copia individual; origen y cobertura visibles. |
 | CU-09 / AC09 | Recuperación de Anticipo, reposición, Compartidos y plan/flujo/anual | Significados previos preservados, sin doble descuento ni modificación anual. |
@@ -1008,6 +1047,6 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: resolver P4/P5 y aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: resolver P5 y aprobar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.
