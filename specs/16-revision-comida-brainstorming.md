@@ -923,3 +923,12 @@ Devolución de gasto, no para Gastos nuevos; evidencia, revisión, vínculo 0..1
 por devolución, sin reparto parcial. Ejemplo 20/12/13 conserva banco +25 y vínculo de
 13 Revisar si no cabe íntegro, sin atribuir automáticamente 8. P5 y spec/wireframes
 completos pendientes; P3 operativo separado. Sin implementación ni activación.
+
+### Confirmación posterior P5 — 2026-10-30
+
+Respuesta humana «Apruebo P5» a solicitud inequívoca: Ejecutado mensual neto y
+reembolsos de compras de ciclos anteriores separados sin liberar presupuesto actual;
+anual conserva cálculo. Reemplaza propuesta inicial de Ejecutado bruto; no reescribe
+historia de rondas. Elegibilidad requiere Partida y origen temporal acreditados;
+ausencia deja cobertura pendiente. P3 operativo separado; spec/wireframes completos
+pendientes, sin implementación. Ejemplos y CU-13–CU-16 en specification.

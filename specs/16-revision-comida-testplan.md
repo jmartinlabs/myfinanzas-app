@@ -114,3 +114,13 @@ Entrada canónica futura: `python3 scripts/verify --full` sobre SHA de código e
 con comandos focales definidos al aprobar esquema/API; no se inventan nombres de tests
 que todavía no existen. CI Linux global y QA independiente exigidas. La validación
 documental de este candidato no acredita conciliación bancaria ni equivalencia Excel.
+
+### P5 — ampliación de cobertura, 2026-10-30
+
+CU-13–CU-16 UNRUN (ver acciones/resultados en specification). Futuras pruebas de
+planes-ciclo: 100/50/15 => 35/65; devolución anterior 40 => banco +40/neto observado
+−40/Ejecutado 0; Partida sin temporalidad y NULL => cobertura pendiente sin neteo
+provisional; Aportación conserva 800. Regresiones plan-anual/flujo conservan bruto
+con explicación de semántica; E2E comprueba métricas/estado/% y origen separado.
+No se simula FIN_NETA ni se atribuye 8 de 13 sin reparto aprobado. Tests funcionales
+pendientes de candidato; entrada canónica futura verify --full y QA independiente.

@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5, representación P1, identidad P2 y atribución P4 aprobadas; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterio P5 aprobados; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -949,7 +949,7 @@ probarse con fixtures antes de cualquier activación autorizada.
 Si no se demuestra seguridad, se bloquea el régimen y se presenta una cuenta sucesora
 como alternativa a decidir; no se crea automáticamente ni se simula Transferencia de
 apertura. P2 no fija fecha C, importe B, evidencia bancaria ni autorización operativa;
-P3, P5 y spec/wireframes completos siguen pendientes. No se modifica el esquema.
+P3 y spec/wireframes completos siguen pendientes; P5 se aprueba posteriormente en su apartado. No se modifica el esquema.
 
 ### P4 — atribución de devoluciones aprobada (2026-10-30)
 
@@ -991,12 +991,63 @@ en netos por Partida y ejecución afectada, nunca cero o completo por omisión. 
 autoriza netear automáticamente ejecutados ni decide P5. El importe/fecha económico
 solo existe en Movimientos; metadata de vínculo/evidencia no crea otro ledger.
 
-### Decisiones materiales pendientes — recomendaciones, no decisiones
+### P5 — Ejecutado mensual neto aprobado (2026-10-30)
+
+Fuente: respuesta directa del usuario «Apruebo P5» a la solicitud inmediata y única:
+Ejecutado mensual neto, con devoluciones de compras de ciclos anteriores separadas sin
+liberar presupuesto actual; cálculo anual vigente conservado. La preferencia transmitida
+por Álex en relay 0015 sustituye su recomendación previa de bruto de 0014; la aprobación
+procede de este mensaje humano, no del relay. No autoriza implementación ni activación.
+
+Para fuente Gasto real: Ejecutado mensual = Gastos elegibles por Partida/ciclo −
+devoluciones comerciales elegibles del mismo ciclo de compra, cobradas en ese ciclo.
+Bruto y devoluciones siguen visibles por separado. Pendiente/Desviación/porcentajes y
+estado usan este Ejecutado neto, conservando el contrato de plan sin informar y plan 0;
+no introducir divisiones por cero ni convertir falta de plan en cero.
+Para fuente Aportación a saldo, Ejecutado conserva Transferencias elegibles a destino;
+una devolución comercial no financia ni reduce aportaciones. No aplica conserva su
+semántica. No sumar ejecución por provisión y por consumo como si fueran la misma cifra.
+
+Evidencia de origen temporal y Partida son dimensiones distintas. Partida acreditada
+por sí sola no demuestra ciclo de compra. Puede acreditarse temporalidad sin FK a una
+compra individual (por ejemplo, documentación de la compra histórica), sin crear esa
+compra. La evidencia debe justificar fecha/ciclo de origen y clasificación; no inferir
+origen por nombre, fecha de devolución o etiqueta. El contrato técnico de evidencia y
+su revalidación debe concretarse antes de cerrar la spec completa.
+
+Devolución de compra de ciclo anterior: entra al banco en su fecha real y se muestra
+separada como devolución de gasto anterior. No reduce Ejecutado del ciclo receptor,
+no amplía Pendiente y no reescribe Ejecutado histórico. El gasto neto observado del
+ciclo receptor sí resta esa devolución y puede ser negativo: es una magnitud distinta
+del Ejecutado presupuestario neto elegible.
+Sin Partida u origen temporal acreditable, registrar el hecho según P4, excluirlo
+provisionalmente del neteo presupuestario por ciclo y mostrar reembolso por atribuir
+con cobertura pendiente. No presentarlo como cero o neto completo. Si el vínculo
+está Revisar, no inferir ni elegibilidad ni invalidez de una Partida acreditada por
+otra evidencia; temporalidad y elegibilidad requieren comprobación propia. P4 mantiene
+vínculo íntegro sin reparto parcial; P5 no autoriza verificar 8 de una devolución 13.
+
+| Ejemplo ficticio | Banco / neto observado | Ejecutado y lectura presupuestaria |
+| --- | --- | --- |
+| Plan 100, compra 50 y devolución acreditada 15 del mismo ciclo/Partida | Bruto 50, devoluciones 15, neto 35 | Ejecutado 35, Pendiente 65; estados/porcentajes basados en 35. |
+| Sin compras actuales, devolución 40 de compra de ciclo anterior | Entrada 40; bruto 0, devolución anterior 40, neto observado −40 | Ejecutado actual 0, sin liberar 40; anterior intacto. |
+| Devolución sin Partida o sin ciclo de origen acreditado | Entrada real; importe pendiente visible | No netear provisionalmente; métricas afectadas parciales/no disponibles, con motivo. |
+| Fuente Aportación a saldo: transferencia 800 y devolución comercial 15 | Ambos hechos bancarios conservados | Ejecutado de aportación 800; devolución no se incorpora a financiación. |
+
+Plan Anual conserva annualExecution y columnas/cálculo por Partida/año natural, bruto.
+Etiquetar la diferencia de semántica frente al mensual neto y no comparar sus totales
+como homogéneos ni introducir sincronización. Sin rediseño anual.
+SPEC12 conserva S = ingresos − gasto bruto − amortización extraordinaria, PARCIAL y
+sin devoluciones; explicitar su cobertura. No incorporar devolución como Ingreso ni
+modificar S o crear un indicador ajustado sin enmienda expresa. FIN_NETA/E3.5 runtime
+no se presume instalado. Bruto, devolución y neto registrados deben conservar origen,
+cobertura y régimen; legado agregado y detalle nunca se suman como doble gasto.
+
+### Decisiones materiales pendientes — apertura operativa separada
 
 | ID | Alternativas | Recomendación y consecuencias |
 | --- | --- | --- |
 | P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
-| P5: presupuestos e informes | Mantener ejecutado bruto y exponer devolución/neto separados; o sustituir ejecutado por neto | Recomendar mantener ejecutado vigente y añadir consulta separada con cobertura para Comida en esta entrega, sin alterar anual. Si se desea netear ejecutado mensual, aprobar antes el efecto por Partida/ciclo, desviaciones y casos sin atribución. Informes mixtos deben separar regímenes y no presentar una serie neta homogénea. |
 
 ### Interfaces propuestas, todavía no aprobadas
 
@@ -1034,19 +1085,23 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 | CU-03 / AC03 | Consultar plan/informes de esa compra | Una contribución por consumidor; financiación no sumada a consumo. |
 | CU-04 / AC04 | Registrar en Inicio/Fin y fuera de intervalos | Ciclo derivado del maestro; Sin ciclo cuando proceda, sin fecha alternativa. |
 | CU-05 / AC05 | Cambiar etiqueta/evidencia y abrir rectificación | Metadatos no crean hechos; cambio económico usa Movimientos. |
-| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; atribución según P4; neteo presupuestario condicionado a P5. |
+| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; atribución según P4; neteo presupuestario según P5, distinguiendo origen temporal y cobertura. |
 | CU-07 / AC07 | B=100, +800, −45, +10 con cobertura demostrada | Posición 865; ocultar prueba de cobertura cambia disponibilidad, no inventa conciliación. |
 | CU-08 / AC08 | Conservar agregado 300 y detalles antiguos 300 | Gasto reconocido 300; no copia individual; origen y cobertura visibles. |
 | CU-09 / AC09 | Recuperación de Anticipo, reposición, Compartidos y plan/flujo/anual | Significados previos preservados, sin doble descuento ni modificación anual. |
 | CU-10 / AC10 | Reintento, coincidencia legítima, anulación, falta de Partida, solape y fuente fallida | Idempotencia, auditoría y errores verificables; solape bloquea activación, incompleto no concilia. |
 | CU-11 / AC11 | Upgrade ficticio, reapertura y restore más E2E 390/1440 | Identidad, relaciones, auditoría y autenticación preservadas; QA independiente y CI requeridas. |
 | CU-12 / AC12 | Revisar escrituras/lecturas y SQL | Sin segundo ledger nuevo, sin importes/fechas duplicados editables en metadatos. |
+| CU-13 / P5 | Plan 100, compra 50 y devolución 15 acreditadas del mismo ciclo | Ejecutado 35, Pendiente 65; bruto 50/devolución 15 visibles; estado/desviación/% usan neto. |
+| CU-14 / P5 | Devolución 40 de compra de ciclo anterior, sin compras nuevas | Banco +40, neto observado −40; Ejecutado actual 0, sin liberar presupuesto ni rectificar ciclo anterior. |
+| CU-15 / P4–P5 | Partida conocida sin temporalidad, Partida NULL y vínculo Revisar | Banco conserva devolución; neteo presupuestario solo con elegibilidad acreditada, resto pendiente y cobertura parcial; sin reparto implícito. |
+| CU-16 / P5 | Aportación 800 y devolución comercial 15; comparar anual/flujo | Aportación ejecutada 800; anual bruto y S bruto PARCIAL conservados y explicados frente al mensual neto. |
 
 ### Exclusiones y siguiente gate
 
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: resolver P5 y aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: concretar contratos técnicos pendientes y aprobar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.

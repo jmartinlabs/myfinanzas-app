@@ -165,3 +165,11 @@ Usuario: «Apruebo P4: compra y Partida opcionales con evidencia y revisión; v�
 append-only en brainstorming. Retirada la propuesta de atribución parcial implícita
 20/25; banco conserva +25 y el vínculo íntegro de 13 queda Revisar. Sin código/schema.
 Siguiente decisión P5; P3 y aprobación de spec/wireframes completos siguen separados.
+
+### Aprobación P5 — 2026-10-30
+
+Usuario «Apruebo P5» tras solicitud única de Ejecutado mensual neto y devolución
+anterior separada sin liberar presupuesto. Consolidado en specification/brainstorming;
+CU-13–CU-16 UNRUN. Anual y S de SPEC12 conservan bruto con límites explicados.
+Sin código/schema. Siguiente trabajo: cerrar detalle técnico y revisión de candidato
+completo/wireframes; P3 operativo sigue pendiente y no autoriza activación.
