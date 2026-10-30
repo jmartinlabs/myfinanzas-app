@@ -794,3 +794,182 @@ Excel, y las pruebas no sustituirán datos reales por ficticios.
 
 La aprobación de esta specification no autorizará desarrollo, SQL, cambios estructurales,
 tests, push ni merge.
+
+
+## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
+
+**Estado: decisiones funcionales D1–D5 aprobadas; especificación completa y wireframes
+PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
+el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
+`main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
+
+### Autoridad, aprobación y límites
+
+Fuente: mensaje directo del usuario de 2026-10-30: «COMIDA-UNICO-01 — Aprobamos las
+cinco decisiones funcionales recogidas en el mensaje 0006». El usuario autoriza
+«consolidar estas decisiones en la especificación candidata y continuar con el análisis
+técnico». No autoriza migraciones reales, activación ni merges. La aprobación no decide
+representación técnica de devoluciones, identidad de ING Comida ni fecha/saldo real.
+El encargo inicial autoriza implementación una vez resueltas las decisiones materiales;
+este candidato no supera por sí solo el gate de spec completa.
+
+| ID | Decisión aprobada |
+| --- | --- |
+| D1 | Conservar histórico agregado y auxiliar consultables; no migrar compras antiguas individualmente ni reconocerlas de nuevo. |
+| D2 | Devolución bancaria explícita: entrada real, sin Ingreso artificial ni anulación de una compra real. |
+| D3 | Partida real existente obligatoria para contabilizar gastos nuevos; etiqueta de revisión no la sustituye. |
+| D4 | Transición al Inicio de un ciclo financiado, condicionada a cobertura y ausencia de solapamiento. |
+| D5 | Separar gasto bruto, devoluciones y neto; financiación interna sigue siendo Transferencia. |
+
+La fuente de aprobación es el mensaje humano, no el relay. Respuesta asesora:
+[0005](https://github.com/jmartinlabs/myfinanzas-app/blob/1c5bcbc303e165700a7ca8868a99bae9ba116feb/relay.md)
+y síntesis/acuse de Codex
+[0006](https://github.com/jmartinlabs/myfinanzas-app/blob/603365b35b65fb64c088efe22d9e37c1674b0b70/relay.md).
+Las recomendaciones más detalladas de Álex no aprobadas explícitamente conservan ese estado.
+
+### Auditoría técnica y dependencias
+
+Base remota contrastada: `454d21a8793265a44051034e926db8f139eb279c`, esquema v18.
+PR abiertas al preflight: #50/#51 (anteriores), #131/#132 (auditorías propuestas).
+No son dependencias aprobadas de esta entrega. El Excel físico no se ha inspeccionado;
+AC-25 sigue abierto. Sin bases reales abiertas ni pruebas funcionales nuevas.
+
+| Área | Runtime / contrato comprobado | Consecuencia para el refactor |
+| --- | --- | --- |
+| Movimientos | `movement-ledger.ts`, `movimientos.ts`: cuatro tipos, importe positivo, Partida para Gasto, revisión/idempotencia/auditoría | Devolución requiere contrato nuevo; no reutilizar Ingreso o signo negativo por inferencia. |
+| Financiación | SPEC05 y Transferencia: no genera Gasto automáticamente | Eliminar duplicidad operativa no significa corregir una creación automática de Gasto inexistente. |
+| Saldos | `positionCents` suma todos los hechos vigentes; Terminal sin posición; `updateSaldo` bloquea cambio histórico | No basta cambiar Control ni Fecha apertura; hace falta régimen explícito o sucesor. |
+| Revisión | `revision_comida` conserva fecha/importe/dirección y vínculos independientes, incluso Sin vínculo | Preservar legado; nuevas operaciones deben leer hechos centrales, sin copia económica editable. |
+| Ciclos | SPEC07 y `ciclos.ts` leen ambas fuentes para impacto y referencia | Evitar duplicar la fuente temporal de nuevos hechos; mantener legado y anulados consultables. |
+| Plan mensual | `planes-ciclo.ts:executionFacts`: Gasto real por Partida; Aportación por Transferencia elegible | No sumar financiación y consumo; neteo de devolución necesita definición pendiente. |
+| Anual | `plan-anual.ts:annualExecution`: Gastos vigentes por Partida/ejercicio | Conservar funcionamiento y columnas; no introducir neteo anual silencioso. |
+| Flujo | SPEC12/`flujo-mensual.ts`: gasto bruto; netos Comida no disponibles | Mostrar procedencia/cobertura; no insertar devolución como ingreso ordinario para cuadrar flujo. |
+| Anticipos / Compartidos | Referencias y relaciones propias sobre Movimientos | Recuperación de Anticipo sigue Transferencia inversa, sin doble descuento; devolución comercial no es recuperación compartida por defecto. |
+| Histórico / conciliación / fotos | SPEC20/21/26/27 documentales; no prueba de runtime de cierre/conciliación | No afirmar bloqueo de cierre o conciliación ya implementados; incorporar contratos cuando existan. |
+| Esquema y copias | Contrato estricto v18; FK de auditoría, Anticipos, Nómina y Revisión; reconstrucción precedente en v17 | Futuro upgrade debe conservar relaciones, auditorías, identidad y backup/restore; no asignar versión nueva aún. |
+| E3.5 | SPEC18/FIN_NETA no integrados; DEV18 STOP | No reutilizar ni reanudar candidato local. Delimitar futura enmienda R4 y consumidores antes de implementarlos. |
+
+### Contrato funcional candidato
+
+Una compra nueva se registra una vez en Movimientos: fecha real, importe positivo,
+ING Comida como origen, Exterior como destino y Partida existente. Revisión muestra
+ese ID y sus campos centrales; solo guarda metadatos de clasificación analítica,
+estado y evidencia. Edición económica redirige al procedimiento de impacto y
+rectificación de Movimientos. Anulación conserva ID/auditoría y se refleja en ambas
+vistas, sin borrado. Reintento del mismo intento no crea otro hecho; coincidencias
+económicas legítimas siguen el contrato de advertencia y confirmación, no una
+unicidad por fecha/importe.
+
+Partida determina clasificación económica; Comida/Pendiente revisar/Ocio/Niños/Otros/
+Fuera presupuesto son etiquetas de revisión. Nunca eliminan efecto bancario ni
+suprimen el Gasto central. No ampliar a cuentas Ocio/Niños por compartir etiquetas.
+Sin Partida no se contabiliza el nuevo Gasto, sin Partida puente automática.
+
+Financiación y reposiciones se consultan desde Transferencias reales elegibles, con
+evidencia/metadatos cuando corresponda. No crear transferencia por clasificar o
+aprobar una revisión. Recuperación de Anticipo conserva Referencia y no se resta
+dos veces de Recursos. R4 documentada conserva sus significados de Gasto comida,
+Compensable y Falta por reponer; fórmulas netas nuevas y sus entradas quedan
+pendientes de enmienda aprobada, sin simular FIN_NETA ausente.
+
+Devoluciones se muestran separadas del bruto. Propuesta pendiente de detalle:
+fecha bancaria determina ciclo receptor; compra/ciclo original no se reescriben,
+incluida compra histórica agregada. Neto negativo es representable analíticamente.
+La aprobación D2/D5 no aprueba todavía reglas de atribución, excesos o neteo de
+ejecución presupuestaria.
+
+### Transición propuesta y controles de activación
+
+C es el Inicio de un ciclo elegido y B la apertura bancaria acreditada al comienzo
+de C, antes de sus operaciones. No se fija aquí fecha ni importe. B no es el Saldo
+inicial comida de Ciclos: éste sigue confirmado manualmente sin arrastre automático.
+
+Antes de C: Movimientos agregados y auxiliar se conservan con su origen y cobertura.
+Sus totales de consulta se derivan sin crear Movimientos resumen ni sumar detalle
+legado al agregado reconocido. Desde C: compras individuales y devoluciones reales;
+ningún agregado nuevo puede representar esas mismas compras.
+
+Posición objetivo desde C = B + entradas vigentes desde C − salidas vigentes desde C.
+Transferencias anteriores ya incluidas en B no se vuelven a sumar. Este cálculo
+es un contrato candidato para ING Comida, no un filtro global por Fecha apertura.
+
+Un agregado que atraviese C bloquea activación hasta acreditar su cobertura o elegir
+otro corte: sin prorrateo inventado. Alta tardía con fecha anterior conserva su periodo;
+si ya cubierta por agregado no crea Gasto nuevo. Una omisión demostrada requiere
+rectificación histórica explícita, nunca fecha artificial del ciclo nuevo.
+
+Gate de activación: corte/apertura aprobados específicamente, evidencia bancaria,
+cobertura íntegra posterior, inventario de transferencias, ausencia de solapamientos
+y conciliación de consumidores. Sin cobertura se informa parcial/no disponible,
+nunca conciliado. Evidencia de saldo aislada no demuestra cobertura completa.
+Ejemplo ficticio objetivo: B=100; financiación=800; compra=45; devolución=10:
+posición=865, bruto=45, devoluciones=10, neto=35. Legado: agregado=300 y detalle=300
+conservan gasto reconocido=300, nunca 600.
+
+Reversibilidad propuesta: versión/configuración auditada y copia restaurable aislada;
+no volver automáticamente a Terminal tras hechos individuales ni borrar hechos para
+revertir. Rollback técnico y recuperación financiera son procedimientos distintos;
+su prueba exige candidato y autorización correspondiente, no datos reales.
+
+### Decisiones materiales pendientes — recomendaciones, no decisiones
+
+| ID | Alternativas | Recomendación y consecuencias |
+| --- | --- | --- |
+| P1: representación de devolución | Nuevo Tipo explícito; o ampliar Gasto con discriminador de devolución/dirección | Recomendar Tipo `Devolución de gasto`, positivo, Exterior → cuenta real, misma tabla/ID/auditoría. Semántica explícita, sin otro ledger. Amplía el contrato de cuatro tipos: exige aprobación y actualizar CHECK, DTO, filtros, preview, referencias, consumidores y esquema estricto. Alternativa conserva enum pero altera el significado de Gasto y todos los filtros actuales `tipo=Gasto`; no es menor por evitar enum. |
+| P2: identidad de ING Comida | Mismo ID con régimen fechado; o cuenta sucesora trazable | Recomendar conservar ID si se demuestra cálculo por corte seguro en todos los consumidores. Requiere configuración explícita, apertura propia y guard; no editar apertura/control usados por vía ordinaria. Sucesor simplifica separación pero fragmenta trazabilidad, destino presupuestario y transferencias; solo elevar si régimen no es verificable. |
+| P3: corte/apertura reales | Seleccionar C/B con evidencia; o diferir activación | Diferir fecha/importe hasta contar con cobertura y extractos autorizados. Desarrollo ficticio no necesita datos reales; activación sí necesita autorización separada. |
+| P4: atribución de devolución | Exigir compra; o hecho real con relación opcional revisable | Recomendar hecho acreditado sin exigir compra histórica inexistente. Partida y relación pendientes deben distinguirse. Compra de 20 con devoluciones 12+13: banco +25, máximo 20 atribuido a esa compra; exceso 5 por justificar. Concurrencia/revisión atómicas; rectificar/anular compra invalida atribución sin borrar entrada. Partida obligatoria D3 para Gastos no decide requisitos de devolución: resolver antes de schema/API. |
+| P5: presupuestos e informes | Mantener ejecutado bruto y exponer devolución/neto separados; o sustituir ejecutado por neto | Recomendar mantener ejecutado vigente y añadir consulta separada con cobertura para Comida en esta entrega, sin alterar anual. Si se desea netear ejecutado mensual, aprobar antes el efecto por Partida/ciclo, desviaciones y casos sin atribución. Informes mixtos deben separar regímenes y no presentar una serie neta homogénea. |
+
+### Interfaces propuestas, todavía no aprobadas
+
+Sin endpoints nuevos decididos: reutilizar rutas de Movimientos para hechos económicos
+y limitar escritura de Revisión a metadatos. Nombres/campos concretos quedan pendientes
+de P1/P4 y revisión de contrato. Sin API financiera paralela. MFA, Origin/CSRF,
+no-store, revisiones, huellas e idempotencia se mantienen; servidor revalida bajo
+transacción IMMEDIATE, no solo UI.
+
+Escritorio (1440):
+```text
+Revisión Comida | Ciclo [maestro Ciclos] | Régimen [Histórico / Individual]
+Cobertura [Parcial / Verificable / No disponible] · procedencia visible
+Bruto [...]  Devoluciones [...]  Neto [...]  Financiación [...]
+Fecha | Movimiento | Concepto | Partida | Revisión | Importe | Estado
+[Registrar compra en Movimientos] [Ver financiación] [Evidencias]
+Histórico: agregado reconocido [...] · detalle disponible [...] (no se suman)
+```
+Móvil (390): mismos datos en tarjetas; acciones con etiquetas y teclado; ficha enlaza
+Movimiento. Sin segunda fecha/importe editable. Vacío con cobertura acreditada difiere
+de Sin cobertura; fallo de fuente no devuelve cero. Conflicto 409 conserva borrador y
+exige refrescar impacto; 422 identifica campo, 401 exige acceso, 404 conserva contexto.
+Operaciones anuladas consultables sin contribuir a totales; pendientes y duplicados
+no se presentan como conciliados. No usar color como único estado.
+Wireframes y formulación de métricas requieren revisión final de spec, no se afirman aprobados.
+
+### Aceptación del refactor — IDs CU, sin sustituir los AC legados
+
+Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
+
+| ID / encargo | Acción con fixtures ficticias | Resultado exigido |
+| --- | --- | --- |
+| CU-01 / AC01 | Transferir 800 de cuenta ordinaria a ING Comida en régimen individual | Origen −800, destino +800, ningún Gasto creado. |
+| CU-02 / AC02 | Registrar compra de 45 con Partida | Una fila económica, posición −45 y mismo ID en Revisión. |
+| CU-03 / AC03 | Consultar plan/informes de esa compra | Una contribución por consumidor; financiación no sumada a consumo. |
+| CU-04 / AC04 | Registrar en Inicio/Fin y fuera de intervalos | Ciclo derivado del maestro; Sin ciclo cuando proceda, sin fecha alternativa. |
+| CU-05 / AC05 | Cambiar etiqueta/evidencia y abrir rectificación | Metadatos no crean hechos; cambio económico usa Movimientos. |
+| CU-06 / AC06 | Devolver 10, incluso de compra anterior al corte | Entrada bancaria una vez, bruto separado, sin Ingreso artificial; detalle condicionado a P1/P4/P5. |
+| CU-07 / AC07 | B=100, +800, −45, +10 con cobertura demostrada | Posición 865; ocultar prueba de cobertura cambia disponibilidad, no inventa conciliación. |
+| CU-08 / AC08 | Conservar agregado 300 y detalles antiguos 300 | Gasto reconocido 300; no copia individual; origen y cobertura visibles. |
+| CU-09 / AC09 | Recuperación de Anticipo, reposición, Compartidos y plan/flujo/anual | Significados previos preservados, sin doble descuento ni modificación anual. |
+| CU-10 / AC10 | Reintento, coincidencia legítima, anulación, falta de Partida, solape y fuente fallida | Idempotencia, auditoría y errores verificables; solape bloquea activación, incompleto no concilia. |
+| CU-11 / AC11 | Upgrade ficticio, reapertura y restore más E2E 390/1440 | Identidad, relaciones, auditoría y autenticación preservadas; QA independiente y CI requeridas. |
+| CU-12 / AC12 | Revisar escrituras/lecturas y SQL | Sin segundo ledger nuevo, sin importes/fechas duplicados editables en metadatos. |
+
+### Exclusiones y siguiente gate
+
+Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
+merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
+extensión del régimen a otras cuentas. No reanudar DEV18.
+Siguiente gate: resolver P1/P2/P4/P5 y aprobar spec/wireframes completos; P3 y activación
+siguen gate operativo separado. Después implementar por incrementos con testplan y
+QA independiente; esta consolidación documental no declara el refactor completado.

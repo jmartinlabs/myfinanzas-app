@@ -874,3 +874,26 @@ evidencias, §9.2 (bullet PD-01), §9.3.3, §9.4 (filas «Vínculo» y «Reposic
 única salida de toda `Entrada`», y párrafo de cierre), §9.4.1, §9.4.2, §9.5, la fila PD-01
 de §10, la fila A5 de §11 y el «Pendiente real» de §11. AC-10 deja de estar bloqueado por PD-01. D-01-R(app)
 queda propuesto y D-01-R(v5.11(7)) sigue en AC-25. No se declara aprobación ni equivalencia.
+
+
+## COMIDA-UNICO-01 — ronda de refinamiento, 2026-10-30
+
+Estado: D1–D5 confirmadas por mensaje humano directo del 2026-10-30; candidato completo
+no aprobado. Se conserva la historia anterior; runtime todavía auxiliar.
+Fuente literal: «Aprobamos las cinco decisiones funcionales recogidas en el mensaje
+0006». Alcance confirmado: conservar histórico agregado sin migración individual,
+devolución bancaria explícita, Partida obligatoria para gastos nuevos, transición al
+Inicio de ciclo y separación bruto/devoluciones/neto. No autoriza datos reales,
+activación ni merge. No se amplía esa aprobación a toda recomendación de Álex.
+
+Preguntas materiales pendientes y alternativas se conservan como P1–P5 en
+[specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30),
+junto con evidencia técnica, wireframes candidatos y CU-01–CU-12 UNRUN.
+- [x] Propuesta P1: Tipo explícito Devolución de gasto; alternativa discriminador de Gasto.
+- [x] Propuesta P2: preservar ID con régimen fechado verificable; alternativa sucesor.
+- [x] Propuesta P3: diferir selección real hasta evidencia autorizada.
+- [x] Propuesta P4: hecho acreditado con atribución revisable, sin compra obligatoria.
+- [x] Propuesta P5: conservar ejecutado vigente y consultar bruto/devolución/neto separados.
+Las marcas son recomendaciones, no respuestas del usuario. Respuestas P1–P5:
+**PENDIENTES**. Wireframes: PENDIENTES. Próxima acción: decisión identificable sobre
+P1/P2/P4/P5; P3 queda para activación operativa posterior. Sin implementación material.

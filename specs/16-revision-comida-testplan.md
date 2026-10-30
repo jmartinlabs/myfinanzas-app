@@ -91,3 +91,26 @@ guardas ni se investiga fuera de alcance.
 | 2026-10-26 | `bun test apps/api` en worktree base `main` 5ad75ed (mismo entorno) | 197 PASS / 46 FAIL | — | Fallos de plataforma sin DEV16; el candidato local 212 PASS / 47 FAIL (el fallo adicional es restore v16, PASS en CI Linux) |
 | 2026-10-26 | `bun test apps/api/src/ciclos.test.ts -t "03 AC01"`; `movimientos.test.ts -t "04 AC13"`; `flujo-mensual.test.ts` | **PASS** 2/2, 1/1, 13/13 | Regresión de referencia/cobertura | La fuente Revisión Comida se integra sin alterar Movimientos ni el maestro Ciclos |
 | 2026-10-26 | `bunx playwright test tests/e2e/movimientos.spec.ts` | **FAIL platform** en restore server | Regresión UI de Ciclos | El recorrido previo (incluido el texto de conciliación actualizado) pasa; el restore cifrado no arranca en macOS por la misma limitación de `libc.so.6` |
+
+
+## COMIDA-UNICO-01 — cobertura candidata CU (2026-10-30)
+
+No sustituye ni hereda resultados de los 37 AC anteriores. Todos los CU son UNRUN:
+no existe candidato de implementación. Matriz de acciones/resultados y decisiones
+P1–P5 en [specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30).
+
+| Casos | Riesgo y prueba prevista | Verificación / entorno | Estado |
+| --- | --- | --- | --- |
+| CU-01/02/03/12 | Transferencia/compra única, banco y ejecución; snapshots antes/después de tablas | Tests de dominio/API de Movimientos, Revisión y planes; fixtures Bun/SQLite | UNRUN |
+| CU-04/08 | Bordes Inicio/Fin, alta tardía, agregado solapado y legado sin doble reconocimiento | Tests de Ciclos y Revisión con ventanas sintéticas | UNRUN |
+| CU-05/10 | Metadatos, rectificación/anulación, coincidencias e idempotencia concurrente | Tests API/HTTP con MFA/CSRF y dos escritores; E2E flujo de revisión | UNRUN |
+| CU-06 | Devoluciones parciales/múltiples, sin origen, exceso, compra anulada, cuenta distinta, cruce de ciclos y neto negativo | Tests Movimientos/consumidores condicionados a P1/P4/P5 | UNRUN |
+| CU-07 | Apertura acreditada/ausente, transferencias previas no resuman, cobertura insuficiente y no conciliado | Tests posición por régimen con fixture 100+800−45+10=865; régimen condicionado a P2 | UNRUN |
+| CU-09 | Anticipos, reposiciones, Compartidos, plan mensual, flujo y anual sin regresión | Suites de cada consumidor; comparación de resultados legado por mismo fixture | UNRUN |
+| CU-11 | Upgrade desde v18, rollback de fallo, reapertura, contrato estricto/FK, restore e intentos revocados | Suite esquema/backup en CI Linux; sin bases reales; versión futura aún no asignada | UNRUN |
+| CU-05/10/11 | 390/1440, foco/teclado, vacío/error/409/422, navegación al mismo Movimiento | Playwright de Revisión/Movimientos con capturas ficticias | UNRUN |
+
+Entrada canónica futura: `python3 scripts/verify --full` sobre SHA de código estable,
+con comandos focales definidos al aprobar esquema/API; no se inventan nombres de tests
+que todavía no existen. CI Linux global y QA independiente exigidas. La validación
+documental de este candidato no acredita conciliación bancaria ni equivalencia Excel.

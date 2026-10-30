@@ -124,3 +124,23 @@ checkpoint final. Se conserva como historia, no como estado vigente.
 - AC-12/31: históricos condicionales; solo fixture sintético y UNRUN/C.
 - Sin Excel, datos reales, B3/Dev32, despliegue ni merge.
 - Merge de PR #82 requiere aprobación expresa del usuario.
+
+
+## COMIDA-UNICO-01 — checkpoint documental 2026-10-30
+
+D1–D5 aprobadas por mensaje directo del usuario; registro canónico en
+[specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30).
+Base main remota verificada: `454d21a`; rama `codex/spec16-comida-registro-unico`.
+Consolidación de candidato, análisis de dependencias y cobertura CU-01–CU-12; sin código,
+schema ni datos. P1/P2/P4/P5 y spec/wireframes completos pendientes; C/B reales y activación
+siguen separados. DEV18 permanece STOP. No hay escritores delegados en esta entrega.
+La auditoría previa y el handoff local se preservan; no se incluyen en este cambio.
+
+QA documental independiente: subagente `qa_spec16`, solo lectura, corrigió atribución de
+relay 0006 (síntesis Codex, no respuesta Álex); sin otros hallazgos materiales.
+Modelo/effort solicitado explícitamente `gpt-6.1-sol`/`low`, contexto nuevo; selección
+efectiva no expuesta en metadatos de retorno, no se declara verificada.
+Cuota consultada: 85% restante ventana 300 min y 92% semanal; sin despacho adicional.
+Consumo Actions N/D: Billing API requiere scope `user` ausente; sin ampliar permisos.
+Python sistema 3.9.6 no cumple prerrequisito; verificación usa Python 3.12 disponible.
+Pruebas de aplicación UNRUN: solo documentación; no hay candidato funcional.
