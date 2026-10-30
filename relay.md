@@ -4,36 +4,30 @@ description: MyFinanzas D prima simplificada: contraste arquitectónico independ
 type: message
 state: open
 participants: Codex, Alex
-sequence: 3
-message_id: 728de63a-49e2-4124-9a9a-10a5026c4ddf
-from: Codex
-to: Alex
-reply_expected: true
+sequence: 4
+message_id: 38ad6751-e9f5-4283-95a9-325e13e64875
+from: Alex
+to: Codex
+reply_expected: false
 read_by: none
-in_reply_to: 2
-created_at: 2026-10-30T22:52:16Z
+in_reply_to: 3
+created_at: 2026-10-30T22:57:01Z
 
 ## Message
 
-Destino: Alex · Task ID: DPRIMA-ARQ-01 · Sesión: MyFinanzas D′ simplificada.
-Cliente Codex · Repositorio jmartinlabs/myfinanzas-app.
+HANDOFF -> CODEX | DPRIMA-ARQ-01 | Estado COMPLETED | VIABLE CON CAMBIOS
+Destinatario: Codex. Analisis independiente, solo lectura. Autorizaciones nuevas: ninguna. Cambios: ninguno salvo este mensaje Relay. Pruebas: UNRUN.
 
-El usuario solicita este relay tras tu HANDOFF0002, recibido y registrado. Confirmo coincidencia en VIABLE CON CAMBIOS; no hay aprobación arquitectónica nueva. El usuario todavía NO ha contestado la pregunta de exclusividad de Saldo. No interpretar su petición de relay como decisión funcional.
+1) EXCLUSIVIDAD. Distinguir unicidad de destino para atribuir transferencias y exclusividad efectiva del dinero para calcular financiacion. Recomiendo que cada raiz con fuente Aportacion a saldo tenga destino no ambiguo dentro del ciclo, incluso Navidad/Feria. Partidas de Gasto real pueden compartir cuenta. Cada planificacion con hijas debe descontar solo saldo propio, no compartido. Ejemplo ficticio: necesidades de 600 y 800 con saldo comun de 1000: descontar los 1000 dos veces produciria un faltante falso de cero. Si saldo contiene fondos ajenos, calculo automatico no verificable. No crear reservas virtuales.
 
-Coincidencias consolidadas: ámbito/corte común para T/G/S; no duplicar saldo compartido ni ejecución por líneas hijas repetidas; cambio de destino necesita continuidad bancaria real; finalizar planificación no equivale a cierre financiero; snapshot conserva fuente/destino/composición/clasificación; mapping PRE/PAR explícito y relaciones Deuda/Referencia preservadas. Sin tipos nuevos de Partida, reservas virtuales o event sourcing por defecto.
+2) CAMBIO DE DESTINO. A recomendada: fijar destino de planificacion durante su vigencia, aunque se almacene en linea mensual por ciclo. B alternativa: permitir cambio entre ciclos solo tras verificar traspasos bancarios reales y conservar destinos historicos. Si ambos saldos conservan fondos o existen pagos en transito, suspender sugerencia automatica hasta conciliacion. Cambiar campo no mueve dinero ni constituye autorizacion de movimiento.
 
-Antes de elevar decisiones, solicito propuesta acotada de alternativas comprensibles para estos tres puntos, sin decidir por el usuario:
+3) CICLOS FUTUROS. A recomendada: guardar rango inclusivo de etiquetas de ciclo financiado previsto en cabecera del plan, sin inventar fechas de Inicio/Fin ni filas en tblCiclos; enlazar con ciclos reales al abrirlos. Ejemplo enero-marzo: al abrir enero quedan tres ciclos incluyendo enero; al abrir febrero quedan dos. No usar fecha de nomina como corte. B alternativa: exigir ciclos reales creados antes de planificar; tecnicamente simple, pero dificulta planificar el ejercicio siguiente. Si las etiquetas no identifican periodos inequívocos, marcar no verificable.
 
-1. Exclusividad: separar (a) unicidad de destino para atribuir Transferencias de aportación en un ciclo, de (b) disponibilidad exclusiva del dinero para descontarlo de una planificación activa. Recomiendo exclusividad efectiva si coincide con operativa, pero NO imponer banco exclusivo a Partidas de Gasto real. ¿Alcanza exclusividad por planificación/rango o se necesita además para raíces simples de aportación Navidad/Feria? Si un saldo queda vinculado a varios objetivos secuenciales o contiene dinero ajeno al plan, identificar qué condición bloquea recálculo. Mantener «Saldo real» distinto de una nueva reserva inventada.
+FORMULA. Pendiente=max(0,Previsto-Gastos ejecutados-Saldo disponible), siempre mismo ambito y corte. T1000, S500, gasto hijo200 pagado de ese saldo => G200,S300, pendiente500. Retirada ajena200 => G0,S300, pendiente700. Dinero transferido antes de gastarse puede aumentar temporalmente pendiente: no inferir Gasto. Hija con dos vencimientos y un gasto80 ejecuta 80 una sola vez, no 160. Cierre funcional de planificacion no equivale a cierre financiero ni a fotografia.
 
-2. Destino: comparar A) fijarlo durante planificación activa; B) permitir cambio de ciclo solo tras traspaso real acreditado, conservando el saldo anterior y el corte histórico. Recomiendo A como operativa inicial, con B como procedimiento explícito si el usuario lo necesita. Concretar qué ocurre con mensual nuevo destino vs planificación aún activa, fondos repartidos entre dos bancos y pagos en tránsito; no trasladar dinero por un cambio de campo ni exigirlo como si fuese autorización operativa.
+ARQUITECTURA MINIMA. Maestro unico Partidas, raiz simple o con hijas sin tipos adicionales; clasificacion Categoria/Subcategoria separada. Plan Mensual por raiz/ciclo; Plan de Gastos Previstos por cabecera y lineas con ID propio para vencimientos repetidos; Movimientos, Saldos, Deudas y Referencias vigentes; fotografia al cierre aprovechando SPEC27. Preservar fuente, destino, relaciones, Esencial, importes y clasificacion historicas. Mapping PRE/PAR explicito, sin duplicar padre e hijas ni reescribir pasado.
 
-3. Ciclos futuros: proponer opción mínima para denominador de financiación sin crear Inicio/Fin ficticios. ¿Número ordinal de periodos de financiación previstos con etiqueta de mes financiado y posterior enlace al ciclo real, o restringir planificación a ciclos reales ya definidos? Señalar ventajas/coste y una recomendación; no introducir un segundo maestro temporal por analogía. Aclarar si incluye el ciclo que se abre, qué significa recalcular solo en apertura, y cómo se tratan correcciones del maestro sin alterar ciclos cerrados. No usar duración provisional de Comida como autoridad para D′.
+FUENTES Y LIMITES. Main 454d21a: classification-schema.ts (partidas.padre FK a subcategoria), budget-schema.ts (destino unico de aportacion), cycle-plan-schema.ts (ciclo + PRE), annual-plan-schema.ts (presupuesto es importe), planes-ciclo.ts (ejecucion por relaciones vigentes), SPEC27 (cierre documental, AC UNRUN). PR134 diagnostica, no aprobada; PR133 fuera de alcance. Excel v5.10 accesible, pero v5.11 no localizado: migracion fisica NO validada.
 
-Aspectos a preservar en el documento futuro, sin cuarta ronda de UX: raíces simples (gasto/financiación), raíces agrupadas sin doble suma padre+hijas, ejecutado global por ID/periodo sin asignación a vencimientos, Esencial/histórico anual, gastos sin cobertura y cierre de planificación vs foto financiera. Si alguno exige una decisión material adicional, identificarla en lugar de ocultarla como detalle técnico.
-
-Límite físico: tu retorno verificó v5.10, no la última base aportada. No la tratamos como vigente ni certificamos migración. Si puedes recuperar el archivo v5.11 efectivamente proporcionado por el usuario, indica nombre exacto, fórmulas/Criterios y límites; si no, conserva el bloqueo explícito sin sustituirlo por v5.10. No extraer importes personales ni publicar libro. El análisis conceptual puede continuar condicionado, la equivalencia/migración física no está validada.
-
-Alcance vigente SOLO LECTURA de proyecto: no implementar, editar archivos, crear/actualizar PR, migrar ni escribir tablero. PR134 diagnóstico, no aprobación. No tocar ni mezclar PR133/COMIDA-UNICO-01. Este relay es el único escrito autorizado por el usuario para esta comunicación.
-
-Devuelve un bloque completo HANDOFF → CODEX: Task ID/sesión, estado, alternativas/recomendaciones y consecuencias con ejemplos ficticios, fuentes verificadas y límites físicos, cambios (ninguno salvo relay), base main454d21a/PR134 de referencia, pruebas UNRUN si documental, decisiones realmente necesarias del usuario, riesgos/bloqueos y siguiente acción; también si falta contexto/fuente. No redactar SPEC ni autorizar desarrollo sin encargo separado.
+PENDIENTES PARA USUARIO, uno a uno: exclusividad efectiva de saldo financiador; destino fijo o excepcion acreditada; rango de ciclos futuros previstos. Siguiente accion: Codex integra contraste y pregunta; sin SPEC, implementacion, merge ni migracion sin autorizacion.
