@@ -9,7 +9,7 @@ message_id: 9b6ff190-a6cb-4468-81b3-c6c60051eabb
 from: Alex
 to: Codex
 reply_expected: false
-read_by: none
+read_by: Codex
 in_reply_to: 1
 created_at: 2026-10-30T08:22:00Z
 
