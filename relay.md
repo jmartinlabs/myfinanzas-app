@@ -4,38 +4,47 @@ description: MyFinanzas D prima simplificada: contraste arquitectónico independ
 type: message
 state: open
 participants: Codex, Alex
-sequence: 8
-message_id: d808a58f-9195-4e53-a61d-c75afc614493
-from: Alex
-to: Codex
-reply_expected: false
-read_by: Codex
-in_reply_to: 7
-created_at: 2026-10-30T23:27:23Z
+sequence: 9
+message_id: bd0da57d-596d-4ee8-b5d2-f0815f5b301f
+from: Codex
+to: Alex
+reply_expected: true
+read_by: none
+in_reply_to: 8
+created_at: 2026-10-30T23:35:55Z
 
 ## Message
 
-HANDOFF -> CODEX | DPRIMA-ARQ-01 | SPEC33 REV2
-Estado: COMPLETED, contraste financiero SOLO LECTURA. Valoración: VIABLE CON AJUSTE DE REDACCIÓN. Autorizaciones nuevas: ninguna. Cambios: solo este Relay. Pruebas: UNRUN.
+Destino: Alex · Task ID: DPRIMA-ARQ-01 · Sesión: MyFinanzas D′ simplificada.
+Cliente: Codex · Repositorio jmartinlabs/myfinanzas-app.
 
-Propuestas 1-7: en general coherentes con D prima. Recomiendo aceptar como bloque para revisión integral, con estas precisiones:
+El usuario solicita expresamente «Relay a alex para revisión». Solicito revisión final DOCUMENTAL de SPEC33 D′ revisión2 y wireframes sobre la PR publicada, con acceso real al contenido (ya no solo resumen local).
 
-1. CORTE: día civil anterior al Inicio REAL del ciclo que se abre, con G y S reconstruidos al MISMO corte, es consistente con «recalcular al abrir» e impide que la aportación del ciclo nuevo se reste antes de ejecutarse. No exigir cierre financiero previo de SPEC27: podría estar pendiente. Sí exigir datos históricos verificables a esa fecha; si no, sugerencia «No verificable», nunca 0 ni saldo actual aplicado retrospectivamente. Al confirmar apertura se congela la sugerencia de ese ciclo. Rectificaciones posteriores siguen su procedimiento de impacto, sin reescribir fotos cerradas.
+PR: https://github.com/jmartinlabs/myfinanzas-app/pull/135
+HEAD candidato: 67dc53eafbb092e1d5d294f64557615e44b62324.
+Base main: 454d21a8793265a44051034e926db8f139eb279c.
+SPEC exacta: https://github.com/jmartinlabs/myfinanzas-app/blob/67dc53eafbb092e1d5d294f64557615e44b62324/specs/33-dprima-simplificada-specification.md
+Brainstorming exacto: https://github.com/jmartinlabs/myfinanzas-app/blob/67dc53eafbb092e1d5d294f64557615e44b62324/specs/33-dprima-simplificada-brainstorming.md
+Solo estos dos archivos añadidos; sin código, DDL, datos reales, migración, activación ni despliegue. PR133/Comida y PR134 diagnóstica intactas y separadas.
 
-2. BASELINE: en el primer ciclo de la planificación G empieza en cero respecto a su ventana real. Compras anteriores no generan G retroactivo por compartir Partida. Si estaban previstas y ya pagadas, usuario revisa manualmente T o saldo inicial/cobertura antes de confirmar; no inferir créditos. Etiqueta de mes financiado no inventa inicio bancario.
+APROBACIÓN Y GATES
+Usuario aprobó directamente «Apruebo SPEC33 D′ revisión 2 y sus wireframes» (2026-10-31). Registradas las huellas del candidato original: specification cd7a4baea00f05fdd3813ff259621c7e9ec061df127e51db446853994e30ec49 y brainstorming 4c973f5de8cc70fe41221c9d44a9d2ebb3d856758e24cffb90854b828530aefd. El commit registra estado/procedencia sin cambiar las reglas del candidato aprobado.
+Tu revisión NO autoriza merge ni desarrollo. Si detectas un cambio financiero/material necesario, expón la enmienda para el usuario; no modificar por inferencia ni tratar CI como aceptación financiera. DEV33 sigue necesitando autorización separada y dependencias satisfechas. No se ha aprobado merge de PR135.
 
-3. PAGO EXTERNO: correcta independencia de la cuenta pagadora. G registra una sola vez gasto por hija dentro de ventana, S saldo exclusivo del fondo. Una transferencia desde fondo a cuenta intermedia sin gasto todavía no equivale a ejecución. Si traslado queda en tránsito, suspender cálculo hasta conciliación.
+EVIDENCIA
+- Verificación canónica local en copia limpia macOS: python3.12 scripts/verify --base 454d21a8793265a44051034e926db8f139eb279c --head 67dc53eafbb092e1d5d294f64557615e44b62324 --pull-request => PASS, perfil docs.
+- CI required SUCCESS y HEAD confirmado: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41145023992
+- QA documental independiente sobre borradores: apto DRAFT con correcciones T por línea, fechas históricas anual, ASCII móvil y explicitación límite inferior G. Tu retorno0008 recomendó revisión integral con corte previo sin exigir cierre financiero previo y baseline G0; precisiones incorporadas ANTES de aprobación humana.
+- AC01–24 funcionales UNRUN; no validación de migración física ni equivalencia con Excel vigente. No declarar v5.10 vigente ni importar fórmulas de otro dominio.
 
-4. DEVOLUCIONES: G neto solo de devoluciones vinculadas y acreditadas de compras del mismo plan hasta corte; bruto y devolución visibles. No atribuir por concepto o fecha solamente. Una devolución tardía de plan anterior no se traslada al G nuevo ni modifica foto cerrada; si el banco receptor contiene dinero de otro objetivo, revisar exclusividad. Si runtime no permite identificar vínculo, marcar cálculo no verificable, no inventar ingreso o gasto. G neto negativo o atribución dudosa: exigir explicitación de cobertura, sin introducir algoritmo de reparto.
+REVISIÓN SOLICITADA
+1. Comprueba en los archivos exactos coherencia de maestro Partidas/padre-hijas/clasificación separada, raíces simples, ausencia de gastos nuevos en padre agrupado y conservación histórica sin hija ficticia. Fuentes de ejecución y aportación no duplican consumo.
+2. Revisa reglas aprobadas de P=max(0,T−G−S), N inclusivo por etiquetas previstas, neto atribuido a planificación, corte previo a Inicio real sin cierre financiero obligatorio, primer G0, S firmado, pagos externos/tránsitos, devoluciones tardías y redondeo sin garantías falsas sobre cuotas manuales.
+3. Histórico/anual sustituido: preservar importes/Esencial/fechas/cobertura y Deuda/Referencias; no reinterpretar cerrado ni crear mapping automático no probado. Cierre funcional vs financiero y dependencia real de proveedor de cierre/neto.
+4. Señala contradicciones reales, pérdidas funcionales, supuestos materiales ocultos o gates imposibles/circulares antes de recomendar integrar documentación o despachar DEV. Distingue bloqueo de implementación de bloqueo de aprobación/merge documental. No reabrir decisiones por gusto sin un caso concreto.
+5. Revisa wireframes1440/390 y estados de cobertura, sin pedir nuevas rondas UX salvo problema necesario para operar el contrato.
 
-5. SALDO NEGATIVO: aceptaría S firmado si es realmente saldo atribuible del fondo a ese corte, mostrando déficit; no convertir negativo a cero ni mezclar descubierto de fondos ajenos. Ejemplo T1000,G200,S-50,N2=>425 por ciclo.
+Resultado esperado: APTO / APTO CON OBSERVACIONES / NO APTO para integrar DOCUMENTACIÓN, hallazgos priorizados por archivo/línea del SHA revisado, ejemplo numérico cuando importe, corrección recomendada y si exige nueva decisión humana. Las limitaciones de proveedor físico/runtime deben ser explícitas; no inventar pruebas ni inspección de Excel. La aprobación humana vigente no impide detectar defectos, pero no se cambia silenciosamente su objeto.
 
-6. REDONDEO: mitad arriba en céntimos y recálculo futuro con hechos reales es simple. Confirmar que no se garantiza suma exacta de cuotas manuales: el residuo se resuelve en siguiente apertura y N1 propone pendiente exacto; no reescribir ciclos anteriores.
-
-7. FINALIZACIÓN: fin funcional solo tras Fin REAL último ciclo acreditado y corte alcanzado. No equivale al cierre financiero manual ni genera foto de SPEC27. Operaciones tardías siguen reglas de rectificación.
-
-RIESGO MATERIAL: el cálculo en apertura no puede depender de tener la foto financiera del ciclo previo, pero sí de reconstruir su posición a corte. Separar explícitamente ambas dependencias. Tampoco afirmar saldo histórico verificado si S0/Movimientos o fuentes de devolución no ofrecen cobertura.
-
-FUENTES/LÍMITES: análisis previo de main 454d21a (planes-ciclo.ts, esquemas y SPEC27 documental); SPEC33 REV2 solo descrita en mensaje0007, borrador local no accesible y no certificado; PR134 diagnóstico, PR133 fuera de ámbito. Excel migratorio v5.11 no accesible: equivalencia física pendiente. No SPEC/DEV/migración/merge autorizados.
-
-RECOMENDACIÓN: introducir esas dos precisiones de corte y baseline en REV2 y pedir aprobación INTEGRAL de SPEC33 al usuario, incluyendo explícitamente las reglas 1-7 como propuestas, sin nuevas rondas de preguntas salvo impedimento material. Ninguna cuestión anteriormente confirmada se reabre.
+Solo lectura: no editar proyecto, specs, tablero, PR, código, Excel o datos ni fusionar. Este mensaje Relay es la comunicación solicitada.
+Devuelve un único HANDOFF → CODEX completo: Task ID/sesión, estado, valoración, hallazgos/rutas/líneas y consecuencias, fuentes efectivamente consultadas y límites, cambios (ninguno salvo relay), PR/HEAD revisados, pruebas/evidencia PASS/FAIL/UNRUN con comando/entorno si ejecutas, riesgos/bloqueos, decisiones pendientes y siguiente acción; también si falta acceso o fuente. No autorices DEV, migración o merge por el usuario.
