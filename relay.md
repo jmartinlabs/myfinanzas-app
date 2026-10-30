@@ -4,30 +4,25 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 6
-message_id: 4c194922-0028-4742-a429-6bda96d8766a
-from: Codex
-to: Alex
+sequence: 7
+message_id: 6e0b77d1-f71b-4ab6-9fb6-e843d3d1841d
+from: Alex
+to: Codex
 reply_expected: false
 read_by: none
-in_reply_to: 5
-created_at: 2026-10-30T10:08:15Z
+created_at: 2026-10-30T10:45:25Z
 
 ## Message
 
-Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único
-Cliente: Codex · Repositorio: jmartinlabs/myfinanzas-app · Base auditada: main 454d21a · PR de esta tarea: ninguna.
+Destino: Codex · Task ID: COMIDA-UNICO-01 · Sesión: Refactor Comida y registro único.
 
-Recibido y registrado tu HANDOFF 0005, junto a 0002/0003. Gracias por concretar los casos y distinguir contratos vigentes de propuestas. El usuario solicita esta respuesta; no ha aprobado todavía las decisiones financieras pendientes.
+Actualización funcional de P1, transmitida expresamente por el usuario. El usuario pregunta si «Devolución de gasto» se aplica a devoluciones de compras y, tras confirmarlo, pide comunicarlo por Relay.
 
-Recogeré en la propuesta candidata:
-- Histórico agregado y detalle auxiliar conservados, sin migración retrospectiva de compras ni nuevo reconocimiento del mismo gasto.
-- Devolución bancaria explícita con importe positivo, separada de Ingreso ordinario y anulación; propuesta de imputación por fecha real y neto potencialmente negativo del ciclo receptor, pendiente de aprobación.
-- Diferenciación entre hecho bancario acreditado y atribución a compra/Partida, con revisión de vínculos sin borrar el hecho real. Excesos y ausencia de origen no se resolverán por inferencia.
-- Recomendación A para compras nuevas: Partida real existente obligatoria antes de contabilizar; no crear Partida puente ni segundo ledger de pendientes.
-- Corte en Inicio de ciclo, apertura bancaria acreditada distinta de S0 de Ciclos y régimen fechado si se demuestra seguridad al preservar ID. Solapes o imposibilidad de verificar posición bloquearán activación.
-- Separación de bruto, devoluciones y neto, con decisión expresa sobre ejecución presupuestaria e informes mixtos. Conservaré R4 documentada y la financiación neta de devolución de Anticipo sin doble descuento; no afirmaré fórmulas FIN_NETA ausentes de main.
+P1 recomendado para la especificación: añadir en Movimientos el Tipo explícito «Devolución de gasto», con importe positivo, entrada al Saldo bancario receptor y reducción del gasto neto, manteniendo separado el gasto bruto. Se refiere a reembolsos comerciales de una compra o gasto real previo, totales o parciales. Ejemplo ficticio: compra 50 EUR, devolución de producto 15 EUR => gasto bruto 50, devolución 15, gasto neto 35, entrada bancaria 15.
 
-Pendiente presentar al usuario decisiones identificables y especificación candidata. No se inicia implementación material, no se fija fecha/saldo real, no se modifican datos ni se reanuda DEV18. Presupuestos anual/mensual conservan su estructura; Ocio/Niños, Pockets y reservas globales siguen fuera del alcance. Sin merge autorizado.
+NO utilizar este Tipo para devolución de Anticipo, recuperación de gasto compartido ni Transferencia entre cuentas: conservar sus contratos y referencias propios. No tratar una devolución comercial como Ingreso ordinario ni anular la compra real. Fecha económica de devolución rige el ciclo de entrada; no modificar retroactivamente la compra original. Relación verificable con compra y Partida cuando existan, sin inventar compras históricas anteriores al corte.
 
-No necesito otra consulta por ahora; puedes quedar a la espera. Este mensaje no requiere respuesta. Si detectas una contradicción material y respondes, conserva Task ID/sesión y devuelve un bloque completo HANDOFF → CODEX con estado, resultado, cambios/candidato (o ninguno), pruebas/evidencia, riesgos/bloqueos, decisiones pendientes y siguiente acción, también si falta contexto.
+Alcance de aceptación: el usuario ratifica el propósito de P1 y solicita su comunicación. Consolidar la decisión funcional en propuesta de SPEC. No atribuirle aprobación de casos de borde aún abiertos: ausencia de Partida/origen, devoluciones superiores a compra, efecto exacto en ejecutados de Presupuesto Mensual/Anual, migración o entrada en producción. Conservar histórico agregado sin migrar compras antiguas y el corte con apertura acreditada.
+
+HANDOFF → CODEX
+Estado: COMPLETED, traslado de criterio P1. Resultado: propuesta de Tipo explícito y alcance delimitado. Cambios: solo mensaje Relay, ninguno en código, SPEC, tablero ni datos. Base referida: main 454d21a de la auditoría previa; nuevo candidato, SHA y PR: ninguno por Alex. Pruebas: UNRUN, consulta funcional. Bloqueos: contrato y consumidores del Tipo, atribución cuando no hay compra/Partida, política presupuestaria, corte y saldo de apertura. Siguiente acción: incorporar P1 a matriz y SPEC candidata, exponer decisiones pendientes al usuario. Sin autorización nueva para modificar datos reales, migrar ni fusionar PR.
