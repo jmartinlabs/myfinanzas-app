@@ -155,3 +155,15 @@ Se aprueban reglas/alcance/wireframes del candidato; los estados propuestos/pend
 anteriores se conservan como historia superada, no como preguntas todavía abiertas.
 No autoriza DEV, datos reales, migración/activación, despliegue ni merge. Proveedores,
 mapping y pruebas de aplicación siguen gates de ejecución posteriores. AC01–24 UNRUN.
+
+## Enmienda E1 tras revisión Álex0010 — 2026-10-31
+
+Álex0010 revisa PR135/67dc53e: APTO CON OBSERVACIONES documental, sin permiso merge/DEV.
+Usuario responde «Añrot» (no se interpreta como aprobación). Tras aclaración única
+sobre primera enmienda (T incompleto sin sugerida salvo exclusión manual explícita),
+responde «Aprobados»: se registra aprobación E1 solo, sin extenderla a segunda enmienda.
+E1 explícita en specification y AC25 UNRUN. Regla de fuente de aportación aún pendiente.
+Correcciones menores: estados actuales coherentes con revisión2 aprobada, fuente
+No aplica preservada históricamente sin conversión, ASCII390 Maestro/Mensual y saldo
+al corte diferenciado de actual. No cambian las demás reglas financieras ni el alcance.
+Las huellas originales de revisión2 no se presentan como hash de esta enmienda.

@@ -1,11 +1,13 @@
 # 33 — D′ simplificada: Specification
 
-Status: APPROVED — revisión 2 y wireframes, 2026-10-31. Sin implementación.
+Status: APPROVED — revisión2 y wireframes, más enmienda E1 de integridad de T,
+2026-10-31. Enmienda sobre fuente de aportación pendiente; sin implementación.
 Approval source/date: mensaje humano directo «Apruebo SPEC33 D′ revisión 2 y sus wireframes»».
 La comilla final adicional pertenece al mensaje recibido y no cambia su objeto inequívoco.
 Candidato aprobado: specification SHA-256 cd7a4baea00f05fdd3813ff259621c7e9ec061df127e51db446853994e30ec49;
 brainstorming SHA-256 4c973f5de8cc70fe41221c9d44a9d2ebb3d856758e24cffb90854b828530aefd.
-Este registro modifica estado/procedencia, no las reglas del candidato aprobado.
+Las huellas anteriores identifican revisión2 original; E1 queda registrada después
+con su propia fuente humana. No se atribuye E1 al hash anterior.
 No autoriza desarrollo, migración real, activación, despliegue ni merge.
 Autorización de redacción: usuario «Autorizo», tras solicitud única de especificar D′.
 Task ID: DPRIMA-SPEC-01. Context and brainstorming:
@@ -59,9 +61,9 @@ aportar. Una Partida simple sin planificación agrupada admite importe mensual m
 Jerarquía candidata: dos niveles raíz/hija, sin ciclos ni autorreferencias.
 Criterio comunicado por Álex en
 [relay0006](https://github.com/jmartinlabs/myfinanzas-app/blob/4435b676d43b3db902df55f8194850c9ebd0bf3d/relay.md):
-el usuario le indicó «confirmo gastos a los hijos». Se incorpora al candidato como
-preferencia transmitida, pendiente de la aprobación humana integral de SPEC33; el
-relay no concede aprobación protegida por sí solo.
+el usuario le indicó «confirmo gastos a los hijos». Se incorporó al candidato como
+preferencia transmitida y después quedó cubierta por aprobación humana integral
+de revisión2; el relay no concede aprobación protegida por sí solo.
 Si hay hijas, los Gastos NUEVOS van exclusivamente a ellas; la raíz agrupa/financia.
 Una raíz simple sí admite gasto propio según su fuente y clasificación válida.
 Sin hija puente ficticia ni tipo adicional. Gastos antiguos del padre conservan su ID,
@@ -69,6 +71,26 @@ Partida, clasificación y resultado original; no se reclasifican automáticament
 Añadir hijas a una raíz con historia exige revisión de impacto y corte de uso nuevo,
 para no excluir sus gastos antiguos ni mezclarlos con G de una planificación de hijas.
 No inferir fuente por tener hijos, nombre o Categoría. No añadir un enum oculto de tipos.
+
+### E1 — importes previstos incompletos, aprobada 2026-10-31
+
+Fuente humana: «Aprobados», respuesta inmediata a la única aclaración «¿Querías decir
+Apruebo la primera enmienda —no calcular la sugerencia automática mientras falten
+importes previstos, salvo exclusión manual explícita—?». Se registra E1, no se infiere
+aprobación de la segunda enmienda de fuente por el plural de la respuesta.
+
+T requiere importe informado en cada línea incluida. Si falta alguno, mostrar suma
+conocida como subtotal Parcial; T completo, P y aportación sugerida son null/No
+verificables, con IDs de líneas pendientes. No sustituir ausencias por cero ni dividir
+el subtotal como si fuera total completo. G/S/N válidos no corrigen T incompleto.
+Exclusión manual explícita y auditada permite retirar una línea de T para el ciclo
+abierto/futuro; conservar línea, motivo y fotos cerradas. No excluir por omisión ni
+por etiqueta, y no suprimir un Gasto real del ejecutado por excluir su previsión.
+Importe0 informado es un dato válido y distinto de Sin informar o Exclusión.
+
+Ejemplo: IBI100, Seguro sin importe, S100/G0/N2 => subtotal previsto100, T/P/sugerida
+no verificables; no sugerir0. Si se excluye expresamente Seguro, T100/P0/sugerida0
+son resultados legítimos con alcance y exclusión visibles. No se modifica el banco.
 
 ### Apertura y cálculo de financiación
 
@@ -82,14 +104,15 @@ no ejecutar recálculo. Un salto/rectificación de ciclos que invalide el rango 
 revisión, no crear o reasignar hechos automáticamente.
 
 Fórmula confirmada para el candidato:
-- T: suma de cada línea prevista una sola vez, incluidas varias líneas de la misma
-  hija; no deduplicar previsiones por ID Partida. La deduplicación de hechos corresponde a G.
+- T: suma de cada línea incluida una sola vez, incluidas varias líneas de la misma
+  hija, con completitud E1. No deduplicar previsiones por ID Partida ni contar una
+  exclusión manual como dato perdido. La deduplicación de hechos corresponde a G.
 - G: gasto neto acumulado elegible de esa planificación al corte común de apertura.
 - S: saldo real exclusivo disponible al mismo corte; no sumarle de nuevo saldo inicial.
 - P = max(0, T − G − S).
 - N: etiquetas financiadas restantes incluyendo la que se abre, positivo.
-- Aportación sugerida = P/N, importe EUR exacto; propuesta de céntimos en el cierre
-  de reglas siguiente, sin considerarla aprobada por esta fórmula conceptual.
+- Aportación sugerida = P/N, importe EUR exacto, con política de céntimos del cuadro
+  aprobada junto con revisión2. Requiere T completo según E1.
 
 Ejemplo ficticio T=1000, G=200, S=300, N=2: P=500, sugerida=250.
 Con dos previsiones 100 de una hija y gasto real 80: T=200, G=80, no G=160.
@@ -127,7 +150,7 @@ brainstorming. La aprobación financiera/funcional no autoriza implementación.
 | Céntimos | Calcular P/N racionalmente, mostrar sugerida redondeada al céntimo más próximo, mitad hacia arriba, sin float. N=1 sugiere P exacto. Siguiente apertura recalcula con aportaciones/gastos reales, por lo que un céntimo pendiente no se convierte en hecho ni arrastre de ejecución. Confirmar sigue permitiendo ajuste manual; no garantizar suma exacta de cuotas manuales ni reescribirlas para cuadrar un residuo. |
 | Finalización y hechos tardíos | Finalizar funcionalmente al acreditarse el Fin real del último ciclo y un corte que lo alcance; sin esos datos, estado Pendiente de finalización. No generar cierre financiero. Foto final solo mediante proveedor SPEC27. Hecho tardío real se registra con su fecha; no reescribir foto ni plan siguiente. Revisión de impacto/rectificación según contrato de cierre antes de modificar resultados congelados. |
 
-Ejemplos ficticios de estas propuestas:
+Ejemplos ficticios de estas reglas aprobadas:
 - P100/N3 => sugerida33,33; las siguientes aperturas usan saldo/hechos reales y N
   restante, no una ejecución arrastrada. Si al último ciclo P=33,34, sugiere33,34.
 - T1000/G200/S−50/N2 => P850/sugerida425; no ocultar50 de déficit ni truncar S.
@@ -151,8 +174,8 @@ simple también lo usa para aportar durante el mismo ciclo.
 
 Gasto neto requiere evidencia de Partida y pertenencia al periodo de planificación;
 compra anterior a la planificación o devolución sin origen no se atribuyen por nombre.
-Las devoluciones reales siguen en su banco receptor. Reglas propuestas de tardíos,
-exceso y cobertura están en el cuadro anterior, pendientes de aprobación conjunta.
+Las devoluciones reales siguen en su banco receptor. Reglas de tardíos,
+exceso y cobertura del cuadro anterior están aprobadas con revisión2.
 Compra anulada/rectificada invalida atribución afectada y exige revisión, sin borrar
 una entrada bancaria real. No importar decisiones de SPEC16 por analogía ni duplicar
 Movimiento económico.
@@ -214,7 +237,9 @@ la spec; no modificar el catálogo real para adaptarlo.
 
 No mantener Presupuestos como segundo maestro editable en el nuevo régimen. Sus IDs y
 configuración anteriores se conservan como legado/mapping y fotos históricas, sin
-destruir referencias. El formato del mapping no convierte dos maestros en uno por
+destruir referencias. Las líneas/fuentes históricas No aplica conservan importes,
+ausencia de comparable y procedencia; no se convierten por defecto en Gasto real o
+Aportación. El formato del mapping no convierte dos maestros en uno por
 renombrar columnas. Un PRE con varias PAR requiere raíz/mapping explícito; no repartir
 automáticamente su objetivo entre hijas ni fusionar PAR usados por deuda.
 
@@ -270,9 +295,33 @@ Wireframes aprobados con revisión2; no UI implementada; conservar shell/tokens 
 
     Apertura · ciclo real [...] · corte [...]
     Total previsto T [...]   Bruto [...]   Devoluciones [...]   Neto G [...]
-    Saldo exclusivo S [...]  Pendiente P [...]  Restantes N [...]
+    S al corte de apertura [...] (distinto de saldo actual)
+    Pendiente P [...]  Restantes N [...]
+    T incompleto: No verificable [Ver líneas pendientes / exclusiones]
     Sugerida [...]   Importe a incorporar al mensual [editable]
     Fuentes/advertencias [...]   [Cancelar] [Confirmar propuesta]
+
+Móvil (390), complemento de las pantallas de Maestro y Mensual, mismos campos aprobados:
+
+    Partidas · [Filtros]
+    Raíz gastos · ID PAR[...] · Padre planificación [Ninguno]
+    Clasificación [Sin informar] · Fuente [Aportación] · Estado [Activo]
+    [Ver hijas] [Ver detalle]
+    Seguro coche · ID PAR[...] · Padre [Raíz gastos]
+    Clasificación [Seguros / ...] · Estado [Activa]
+    [Ver detalle]
+
+    Mensual · Ciclo real [...] · Cobertura [...]
+    Raíz [...] · Fuente aplicada [...]
+    Destino del ciclo [...]
+    Base [...] · Esencial manual [...] · Del mes [...]
+    Ejecutado [magnitud según fuente] · Pendiente [...]
+    [Ver hechos] [Ver previsión] [Revisar apertura]
+
+    Apertura tardía
+    Corte histórico [...] · S reconstruido al corte [importe / No verificable]
+    Saldo actual [solo consulta, no sustituto de S]
+    [Ver evidencia] [Revisar propuesta]
 
 Móvil (390), propuesta ASCII específica:
 
@@ -289,7 +338,8 @@ Móvil (390), propuesta ASCII específica:
 
     Revisión de apertura
     T [...]   Bruto [...] / Devoluciones [...] / Neto G [...]
-    Saldo exclusivo S [...]  Pendiente P [...]  Restantes N [...]
+    S al corte de apertura [...] (distinto de saldo actual)
+    Pendiente P [...]  Restantes N [...]
     Sugerida [...]  Incorporar al mensual [importe editable]
     [Desplegar fuentes y motivos]
     [Cancelar]   [Confirmar propuesta]
@@ -339,8 +389,9 @@ de devolución, no afirmar saldo histórico ni sugerencia verificables.
 - Saldo de planificación exclusivo y destino mensual no ambiguo; si falta evidencia de
   exclusividad/cobertura bloquear cálculo automático, no simular fondos reservados.
 - Alta/cambio de maestro no reinterpreta cerrado. Cambio de fuente/destino tiene preview.
-- Importe previsto/plan sin informar se conserva; políticas propuestas de saldo negativo,
-  devoluciones tardías/exceso y céntimos requieren aprobación integral antes de aplicarse.
+- Importe previsto/plan sin informar se conserva; políticas de saldo negativo,
+  devoluciones tardías/exceso y céntimos fueron aprobadas con revisión2; ejecutar
+  esas reglas sigue requiriendo autorización de desarrollo.
 - Gasto sin Partida/clasificación válida sigue contrato propietario; no crear Partida puente.
 - Copia de renovación no arrastra ejecución. Fechas se ofrecen como propuesta y deben
   revisarse; no mover vencimientos automáticamente al nuevo año.
@@ -386,12 +437,16 @@ Todos UNRUN: criterios aprobados de acciones/resultados, no pruebas de aplicaci�
 | AC-22 | Corte previo sin foto financiera anterior, primer ciclo, pago externo y tránsito | Apertura posible con datos a corte acreditados aunque no haya cierre financiero; G inicial0 sin compras previas; pago por Partida sin banco impuesto; tránsito sin resolver no produce sugerida verificable. |
 | AC-23 | Propuestas de P100/N3 y S−50 con T1000/G200/N2 | Sugerida33,33 con redondeo explícito; saldo firmado conserva P850/sugerida425. |
 | AC-24 | Reembolso atribuible actual, de plan anterior o sin origen, y hecho tardío cerrado | No duplicar crédito ni trasladar ejecución; banco conserva hecho; cobertura afectada visible y fotos sin reescritura automática. |
+| AC-25 / E1 | IBI100/Seguro sin importe/G0/S100/N2; después excluir Seguro explícitamente | Primero subtotal100 y T/P/sugerida null con motivo; después T100/P0/sugerida0 con exclusión visible/auditada. Cero explícito no es ausencia; hechos y cerrado intactos. |
 
 ## Gates posteriores a la aprobación documental
 
 La revisión2 y sus wireframes están aprobados. Las reglas del cuadro de cálculo y
 el alcance raíz/hija forman parte de esa aprobación; no requieren otra ronda idéntica.
-Permanecen los siguientes gates de ejecución, sin ampliar la autorización:
+E1 está aprobada. La observación material de Álex0010 sobre ofrecer P/N solo para
+fuente Aportación a saldo sigue pendiente de decisión; no se modifica esa regla por
+inferencia ni se declara integración lista antes de resolverla.
+Permanecen además los siguientes gates de ejecución, sin ampliar la autorización:
 1. Autorización expresa y separada de desarrollo de SPEC33; la redacción/spec aprobada
    no la sustituye. Identificar dependencias satisfechas antes de despachar implementación.
 2. Proveedor central de neto/devoluciones y cierre verificable, pruebas y enmiendas de
