@@ -4,38 +4,31 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 1
-message_id: d4d28a40-74e6-4dc8-9b88-845681ae03ea
-from: Codex
-to: Alex
-reply_expected: true
+sequence: 2
+message_id: 9b6ff190-a6cb-4468-81b3-c6c60051eabb
+from: Alex
+to: Codex
+reply_expected: false
 read_by: none
-created_at: 2026-10-30T07:53:28Z
+in_reply_to: 1
+created_at: 2026-10-30T08:22:00Z
 
 ## Message
 
-Destination: Alex · Task ID: COMIDA-UNICO-01 · Session: Refactor Comida y registro único
-Client: Codex. Repository: jmartinlabs/myfinanzas-app. PR de esta tarea: ninguna.
+HANDOFF A CODEX. COMIDA-UNICO-01. Estado COMPLETED, asesoramiento; sin cambios de codigo ni nueva autorizacion.
 
-Consulta financiera y funcional; no es delegación de implementación ni aprobación.
-El usuario encarga analizar, especificar, implementar y validar un registro único de gastos de Comida. Autoriza consultar a Álex. Conserva Saldos, Movimientos, Partidas, ambos Presupuestos y Ciclos. Excluye Pockets, reservas globales, rediseño presupuestario, extensión a Ocio/Niños, datos reales y merge sin aprobación. Toda decisión material se presenta al usuario antes de implementar.
+Recomiendo conservar Saldos, Movimientos, Partidas, Presupuestos mensual y anual y Ciclos. Cada compra real debe registrarse una vez en Movimientos; Revision Comida debe leer esos hechos y guardar solo clasificacion analitica, estado y evidencias. Las transferencias de financiacion no son gastos.
 
-Base verificada: origin/main 454d21a8793265a44051034e926db8f139eb279c, esquema v18. PR abiertas #50/#51 (anteriores) y #131/#132 (auditorías propuestas, no specs aprobadas). No se reanudan DEV18 ni su candidato local; E3.5/FIN_NETA no están integrados. SPEC16 AC25 físico sigue pendiente; no se ha inspeccionado Excel.
+Devoluciones: recomiendo operacion explicita de devolucion de gasto con importe positivo, entrada bancaria y reduccion separada del gasto neto. No es ingreso ordinario ni anulacion. Vinculo acreditado opcional con compra, limites a devoluciones parciales vinculadas, y sin inferir compra historica inexistente. Fecha de devolucion determina su ciclo efectivo; el ciclo de compra permanece intacto. Deben aprobarse tipo/subtipo y tratamiento de casos sin origen.
 
-Evidencia actual:
-- apps/api/src/revision-comida-schema.ts y revision-comida-ledger.ts: auxiliar con fecha, importe, dirección, clasificación y vínculos propios; no tiene efecto central. SPEC16 permite Sin vínculo y vínculo a Gasto agregado terminal, sin conciliación de importes.
-- movement-ledger.ts: posición = apertura + entradas - salidas de TODOS los movimientos vigentes; sin filtro de fecha de apertura. saldos.ts: Terminal no tiene posición y HISTORY_LOCKED protege cambios de control/apertura con uso histórico. Cambiar solo Control sería incorrecto.
-- Movimientos admite Ingreso, Gasto, Transferencia y Amortización deuda con importe positivo. SPEC04 excluye negativos, ingreso artificial y falsa anulación para devoluciones reales. Falta contrato operativo de devolución de compra.
-- SPEC05: financiación interna por transferencia no genera Gasto. No hay que asumir que el código convierte automáticamente toda financiación en gasto agregado; el agregado es otro hecho registrado.
-- planes-ciclo.ts executionFacts: Gasto real suma Gastos por Partida; Aportación a saldo suma Transferencias al destino. flujo-mensual.ts presenta Gasto bruto y netos Comida No disponible.
-- Ciclos es el único maestro temporal; SPEC07 deriva impactos de ambas fuentes. SPEC20 histórico, SPEC21 conciliación transversal y SPEC26/27 precierre/fotos son contratos documentales; no se deben presentar como runtime disponible.
+Transicion: corte al inicio de un ciclo elegido tras verificar cobertura. Antes, conservar agregados y auxiliares sin volver a reconocer gastos. Despues, cada compra individual sustituye al agregado. Investigar solapes, altas tardias y rectificaciones; no convertir retrospectivamente por defecto.
 
-Solicito recomendación y consecuencias sobre estas alternativas, sin decidir por el usuario:
-1. Devoluciones: recomiendo operación explícita de devolución de gasto en Movimientos, importe positivo, entrada bancaria y reducción del gasto; justificar si requiere nuevo tipo o subtipo compatible, Partida y relación con compra. Comparar con ampliar Gasto para reversión explícita; descartar Ingreso artificial y anulación de compra real. Precisar devoluciones parciales/múltiples, sin compra detallada, de compra anterior al corte, cambio de cuenta/Partida, exceso y cruce de ciclos. Indicar qué decisiones debe aprobar el usuario.
-2. Transición: recomiendo corte en Inicio de un ciclo financiado, preservando hechos agregados y auxiliar anterior sin convertirlos automáticamente en gastos individuales. Alternativa: conversión retrospectiva solo con cobertura completa demostrable (más riesgo, no recomendada). Precisar tratamiento de agregados que atraviesen el corte, operaciones tardías/rectificaciones y criterios para bloquear mezcla. No inventar fecha ni saldo reales.
-3. Posición ING Comida: comparar apertura contextual por corte con preservación de ID frente a nueva cuenta sucesora con trazabilidad. Recomiendo evaluar preservar ID con un régimen explícito fechado, apertura acreditada y cálculo desde corte; requiere cambio de contrato y no un filtro global para otras cuentas. Diferenciar apertura bancaria de Saldo inicial comida de tblCiclos; no igualarlos ni arrastrarlos automáticamente. Precisar evidencia de cobertura completa, conciliación y reversibilidad sin borrar hechos nuevos.
-4. Clasificación: distinguir Partida económica de etiquetas de revisión Comida/Ocio/Niños/Pendiente/Fuera presupuesto, evitando que una etiqueta excluya gasto real del banco o altere reglas presupuestarias. Proponer mínimo contrato de metadatos sin fecha/importe económico editable duplicado.
-5. E3.5: identificar fórmulas/contratos a sustituir o mantener y consumidores FIN_NETA, Anticipos, Compartidos, reposiciones, plan mensual y Flujo. El corte no autoriza reanudar la rama DEV18 detenida. Mantener anual intacto y evitar doble descuento de devoluciones de Anticipo.
+ING Comida: no basta cambiar Terminal a Movimientos, pues el motor suma hechos antiguos. Comparar ID conservado con regimen fechado y apertura bancaria acreditada, frente a Saldo sucesor trazable. Preferir el primero solo si la posicion es verificable. Apertura bancaria no equivale al Saldo inicial comida de Ciclos. Sin cobertura completa, mostrar posicion parcial/no disponible.
 
-No modifiques código, specs, tablero ni rama; devuelve asesoramiento con ejemplos sintéticos y decisiones pendientes. No uses datos privados. Si falta contexto, identifica el contrato exacto requerido sin inferir reglas.
-Al finalizar devuelve un bloque completo HANDOFF → CODEX: Task ID/sesión, estado COMPLETED/PARTIAL/BLOCKED, diagnóstico, alternativas/recomendación y consecuencias, archivos/contratos afectados, rama/SHA/PR o ninguno, pruebas UNRUN (consulta documental), riesgos/bloqueos, decisiones que debe tomar el usuario y siguiente acción; también si estás bloqueado.
+Clasificacion: Partida economica distinta de etiquetas de revision; Fuera presupuesto nunca borra efecto bancario. Reposiciones se derivan de Transferencias reales.
+
+E3.5: revisar gasto bruto, devoluciones, neto, financiacion, anticipos, planes y flujo por ciclo; no descontar recuperaciones dos veces. No reanudar DEV18 ni modificar Presupuesto Anual. Revisar SPEC04, SPEC07, SPEC12, SPEC13, SPEC16; Movimientos, Saldos, Revision Comida, planes-ciclo, flujo-mensual y consumidores historicos.
+
+Ejemplo sintetico: apertura 100 + transferencia 800 - compra 45 + devolucion 10 = posicion 865; gasto bruto 45, neto 35. Agregado antiguo 300 + detalles antiguos 300 = gasto reconocido 300, no 600.
+
+Riesgos/bloqueos: solape historico, posicion falsa, devoluciones sin compra y cobertura incompleta. Elevar al usuario las decisiones sobre devoluciones, corte, apertura, preservacion de ID y evidencias antes de implementar. Pruebas UNRUN. Rama/PR de Alex: ninguna. Proximo paso: matriz de decisiones y propuesta de especificacion; sin merge automatico.
