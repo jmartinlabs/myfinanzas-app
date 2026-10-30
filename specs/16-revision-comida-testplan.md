@@ -124,3 +124,12 @@ provisional; Aportación conserva 800. Regresiones plan-anual/flujo conservan br
 con explicación de semántica; E2E comprueba métricas/estado/% y origen separado.
 No se simula FIN_NETA ni se atribuye 8 de 13 sin reparto aprobado. Tests funcionales
 pendientes de candidato; entrada canónica futura verify --full y QA independiente.
+
+### P6 — ampliación de cobertura, 2026-10-30
+
+CU-17–CU-20 UNRUN: fixtures de clasificación, devolución y reposición prueban 50−15−20
+=> Falta 15; devolución antigua no reduce obligación actual; etiqueta Pendiente revisar
+no equivale a estado de Partida NULL; Fuera presupuesto preserva banco; reintentos y
+asignación acreditada no duplican reposición ni recuperación Anticipo. Comandos focales
+se concretarán con implementación; entrada verify --full y QA independiente. Recursos
+y cierre analítico: contrato bloqueado por fuente ausente, no caso simulado ni PASS.

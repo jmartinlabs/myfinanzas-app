@@ -932,3 +932,11 @@ anual conserva cálculo. Reemplaza propuesta inicial de Ejecutado bruto; no rees
 historia de rondas. Elegibilidad requiere Partida y origen temporal acreditados;
 ausencia deja cobertura pendiente. P3 operativo separado; spec/wireframes completos
 pendientes, sin implementación. Ejemplos y CU-13–CU-16 en specification.
+
+### Confirmación posterior P6 — 2026-10-30
+
+Usuario «Apruebo P6», tras solicitud inequívoca de grupos bruto/devoluciones/neto y
+Falta=max(compensable neto elegible del mismo ciclo−reposiciones reales asignadas,0).
+Devolución antigua no reduce obligación actual; sin origen/etiqueta acreditados,
+cobertura pendiente. Fuente y CU-17–CU-20 en specification. Recursos/cierre completos
+no aprobados: falta fuente verificable; P3 y spec/wireframes completos pendientes.

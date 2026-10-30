@@ -173,3 +173,10 @@ anterior separada sin liberar presupuesto. Consolidado en specification/brainsto
 CU-13–CU-16 UNRUN. Anual y S de SPEC12 conservan bruto con límites explicados.
 Sin código/schema. Siguiente trabajo: cerrar detalle técnico y revisión de candidato
 completo/wireframes; P3 operativo sigue pendiente y no autoriza activación.
+
+### Aprobación P6 — 2026-10-30
+
+Usuario «Apruebo P6»; registro canónico en specification y confirmación append-only
+brainstorming. CU-17–CU-20 UNRUN; sin código ni datos. Fuente de Recursos/cierre no
+acreditada: se necesita fórmula/criterio verificable sanitizado; no se infiere desde
+S0/B ni DEV18. P3, detalle técnico y spec/wireframes completos siguen pendientes.

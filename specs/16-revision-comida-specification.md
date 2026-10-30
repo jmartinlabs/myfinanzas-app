@@ -798,7 +798,7 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterio P5 aprobados; especificación completa y wireframes
+**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterios P5/P6 aprobados; especificación completa y wireframes
 PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
@@ -1043,6 +1043,51 @@ modificar S o crear un indicador ajustado sin enmienda expresa. FIN_NETA/E3.5 ru
 no se presume instalado. Bruto, devolución y neto registrados deben conservar origen,
 cobertura y régimen; legado agregado y detalle nunca se suman como doble gasto.
 
+### P6 — métricas de Comida y reposición aprobadas (2026-10-30)
+
+Fuente: mensaje humano directo «Apruebo P6», respuesta a la solicitud única de
+bruto/devoluciones/neto en Comida y Compensable, y Falta por reponer basada en
+compensable neto del mismo ciclo menos reposiciones reales asignadas, mínimo cero.
+La aprobación no cubre fórmulas completas de Recursos ni cierre analítico pendientes.
+
+Grupos conservados: Gasto comida = Comida + Pendiente revisar; Compensable = Ocio +
+Niños + Otros. Mostrar bruto, devoluciones y neto separados por grupo. Para obligación
+de reposición del ciclo: compensable neto elegible = bruto compensable − devoluciones
+comerciales acreditadas de compras de ese mismo ciclo. Falta por reponer =
+máx(compensable neto elegible − reposiciones reales asignadas a esa obligación, 0).
+Exceso permanece visible; no crear transferencias ni borrar hechos para cuadrarlo.
+
+Ejemplo sintético: Ocio 50, devolución de esa compra/ciclo 15, reposición real asignada
+20: compensable bruto 50, devoluciones 15, neto 35, Falta por reponer 15. Sin devolución,
+Falta sería 30. La reposición no es devolución comercial ni Gasto adicional.
+Devolución de compra anterior entra en fecha real y se muestra separada en neto
+bancario observado; no reduce obligación del ciclo actual ni reescribe el de origen.
+Sin origen/etiqueta acreditados no atribuir grupo o ciclo por inferencia: métricas
+Parcial/No disponible con motivo, sin conciliación ficticia.
+
+Pendiente revisar es una clasificación analítica válida que cuenta como Comida,
+no el estado genérico de una devolución con Partida NULL de P4. Deben distinguirse
+en DTO/UI. Fuera presupuesto conserva efecto bancario, pero se excluye del análisis
+auxiliar. Partida y etiqueta de revisión conservan responsabilidades distintas.
+Reposiciones exigen Transferencia real y asignación acreditada a la obligación, sin
+duplicados ni reparto monetario nuevo implícito. Devolución de Anticipo conserva
+Transferencia inversa referenciada y financiación neta sin segundo descuento.
+P4 sigue imponiendo vínculo íntegro sin reparto parcial; P6 no habilita repartir
+una devolución entre compras ni clasificar excesos sin evidencia.
+
+### Fuente pendiente — Recursos y cierre analítico
+
+R4 acredita agrupaciones, Falta por reponer, financiación neta de devolución de
+Anticipo, S0 manual y aviso de diferencia. No acredita aquí la fórmula completa de
+Recursos ni de cierre analítico. No reconstruirla por intuición desde la posición
+bancaria ni desde un candidato local de DEV18; E3.5/FIN_NETA no están integrados.
+AC-25 de contraste físico permanece abierto. Se necesita fórmula/criterio verificable
+sanitizado de la referencia vigente antes de especificar esas métricas. No se requieren
+importes reales ni copiar el libro al repositorio. Ausencia de fuente bloquea solo ese
+contrato; no se declaran cierre, Recursos ni conciliación completos.
+S0 de Ciclos y B bancario siguen distintos. P6 no autoriza una fórmula adicional de
+Recursos, importación, uso de datos reales, activación ni reanudación DEV18.
+
 ### Decisiones materiales pendientes — apertura operativa separada
 
 | ID | Alternativas | Recomendación y consecuencias |
@@ -1096,12 +1141,16 @@ Todos los casos siguientes son **UNRUN**; no heredan PASS de DEV16.
 | CU-14 / P5 | Devolución 40 de compra de ciclo anterior, sin compras nuevas | Banco +40, neto observado −40; Ejecutado actual 0, sin liberar presupuesto ni rectificar ciclo anterior. |
 | CU-15 / P4–P5 | Partida conocida sin temporalidad, Partida NULL y vínculo Revisar | Banco conserva devolución; neteo presupuestario solo con elegibilidad acreditada, resto pendiente y cobertura parcial; sin reparto implícito. |
 | CU-16 / P5 | Aportación 800 y devolución comercial 15; comparar anual/flujo | Aportación ejecutada 800; anual bruto y S bruto PARCIAL conservados y explicados frente al mensual neto. |
+| CU-17 / P6 | Ocio 50, devolución misma compra/ciclo 15 y reposición asignada 20 | Compensable bruto 50, devoluciones 15, neto 35 y Falta 15; exceso visible y sin segundo hecho. |
+| CU-18 / P6 | Devolución de compra anterior o etiqueta/origen desconocidos | Entrada conservada; obligación actual intacta o cobertura pendiente; neto observado separado. |
+| CU-19 / P4/P6 | Etiqueta Pendiente revisar, devolución Partida NULL y Fuera presupuesto | Etiqueta cuenta como Comida; estado de atribución no la asigna automáticamente; Fuera presupuesto no borra banco. |
+| CU-20 / P6 | Transferencia de reposición reintentada/asignación duplicada y recuperación Anticipo | Mismo hecho una vez; asignación acreditada, sin doble descuento ni reposición ficticia. |
 
 ### Exclusiones y siguiente gate
 
 Sin Excel/datos reales, migración retrospectiva individual, activación, despliegue o
 merge. Sin Pockets/reservas globales, cambios de jerarquías, presupuesto anual ni
 extensión del régimen a otras cuentas. No reanudar DEV18.
-Siguiente gate: concretar contratos técnicos pendientes y aprobar spec/wireframes completos; P3 y activación
+Siguiente gate: acreditar fórmulas de Recursos/cierre, concretar contratos técnicos y aprobar spec/wireframes completos; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.
