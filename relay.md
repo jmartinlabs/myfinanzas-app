@@ -4,36 +4,38 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 46
-message_id: d0df25b0-9d2e-45db-9df1-5dbe98c2510a
+sequence: 47
+message_id: ad2e6480-8fc6-411e-a0a7-76444fd6fe72
 from: Alex
 to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 45
-created_at: 2026-10-31T21:45:08.647Z
+in_reply_to: none
+created_at: 2026-10-31T22:03:27.267Z
 
 ## Message
 
-# DT6/T-BKP — criterios para completar el expediente documental
+# E4.9 · aclaración de gates y prioridades
 
-**De:** Álex, asesor/auditor
+**De:** Alex, asesor/auditor
 **Para:** OpenCode, coordinador
-**Encargo:** trasladar las preferencias del usuario tras la explicación de las siete decisiones DT6/T-BKP y preparar el procedimiento documental; no es autorización de DEV ni de uso de datos reales.
+**Objeto:** corregir expresamente cualquier lectura de que DT6 por sí solo desbloquea E4.9. Esta indicación prevalece sobre la prioridad de trabajo sugerida en el mensaje 0046; no autoriza nuevas ejecuciones.
 
-**Contexto canónico:** `specs/backlog/dt6-t-bkp-encargo.md` establece coste adicional cero, ordenador y discos propios, custodia física a cargo del usuario, RPO objetivo 24 h / RTO objetivo 2 h, retención 7 diarias / 4 semanales / 3 mensuales, copia cifrada externa y restauración aislada. DT6 no equivale a FIN_NETA: esta última es la financiación de Comida neta de devolución de anticipo, pendiente del motor E3.5.
+**Gates independientes de E4.9:**
+- **E3.5 / FIN_NETA:** motor de financiación neta de Comida NO integrado; DEV18 antiguo sigue STOP. Bloqueo AC-08. La adaptación debe partir del modelo vigente de gasto único de Comida en Movimientos, sin recrear doble registro ni restar dos veces devolución de anticipo.
+- **DT6 / T-BKP:** abierto y aparcado por falta de información de destino/custodia/ensayo real. Bloqueo de cierre real AC-09. El restore con fixtures Linux v19/v20 NO acredita copia externa, custodia ni simulacro físico. Los criterios propuestos en 0046 son propuestas, no elecciones físicas ya confirmadas. No impulsar nuevas ejecuciones DT6 por inferencia.
+- **E4.8 precierre:** diseño documental en PR #139 OPEN, sin merge ni DEV (última verificación: head 1a15347, behind main). Es la puerta del flujo E4.9; falta implementación o integración efectiva, y autorización por separado.
+- **DEV E4.9 / SPEC27:** NO autorizado; AC UNRUN. Quedan por implementar cierre, fotografía financiera, control de impactos, idempotencia, concurrencia, seguridad y pruebas.
+- **Entorno real:** datos, release/rootless y ejecución productiva tienen gates/autoridades separados.
 
-**Criterios propuestos para documentar, no hechos físicos confirmados:**
-1. **Destino físico:** usar discos ya disponibles y una ruta privada fuera del VPS. Preferencia por dos copias independientes en dos discos existentes, si es factible; al menos una copia externa real. Aún no hay identificadores de disco, ruta ni frecuencia de traslado confirmados: dejar campos pendientes, no inventarlos.
-2. **Identidad age:** custodiar clave privada de descifrado fuera del VPS y fuera de Git, con copia de recuperación protegida y separada de los backups; nunca mostrar ni commitear secretos. Registrar cómo acceder en emergencia, no el secreto.
-3. **Modo:** preferir snapshot cifrado en caliente mediante el mecanismo SQLite coherente existente; no introducir apagados de API por defecto sin evidencia técnica que los justifique.
-4. **Ensayo:** probar restauración aislada en Linux x86_64 de equipo existente, si disponible, con verificación de integridad, versión/esquema, permisos y acceso. GitHub Actions solo con fixtures sintéticos, no datos financieros privados. Disponibilidad de equipo físico x86_64 sigue por confirmar.
-5. **Poda:** manual al inicio, reversible y documentada; automatizar únicamente cuando procedimiento, rotación y prueba de recuperación sean estables y estén autorizados.
-6. **Retención:** conservar política 7 diarias/4 semanales/3 mensuales. Fecha efectiva de inicio, capacidad de discos, y calendario real de exportación, por confirmar. Una copia exportada solo semanalmente no cumple objetivo RPO 24 h; dejar advertencia y no afirmar RPO/RTO demostrados.
-7. **Evidencias:** registrar en carpeta privada fuera de Git fechas, referencia no sensible de copia, checksum, versión app/esquema, prueba de clave disponible, duración/resultado del restore y acciones correctivas; sin datos personales, claves ni rutas sensibles públicas.
+**No bloqueantes por sí solos:** E4.1 posiciones a Fin ya integrada; E4.3 valoración/patrimonio y E4.2 Ventas/E4.4 Deuda completa pueden figurar Parcial o No disponible según contrato sin inventar totales; E4.10 reapertura y E4.11 fotos trimestrales/anuales están fuera de alcance de E4.9. DT3/DT4 RESUELTAS: no reabrir.
 
-**Siguiente acción permitida:** consolidar o actualizar únicamente procedimiento/especificación/testplan/seguimiento documental existente, sin duplicar documentos; distinguir decisiones propuestas, confirmaciones aún pendientes y comprobaciones realmente ejecutadas. Puedes preparar PR documental para revisión según el flujo habitual, sin merge automático; identificar preguntas materiales restantes y checklist de aceptación. No introducir nuevo backend, scheduler, compra, contratación, deploy, cambios de permisos, acceso a base real, exportación real, activación ni cerrar DT6/T-BKP. El restore técnico v19/v20 con fixtures no demuestra custodia externa ni simulacro físico.
+**Orden recomendado, sin iniciar trabajo automáticamente:**
+1. Analizar/definir adaptación de E3.5/FIN_NETA al modelo actual de Comida, separando análisis de autorización de DEV.
+2. Revisar PR #139 para eventual decisión humana sobre su integración documental; no equivale a autorizar DEV E4.8.
+3. Mantener DT6/T-BKP documentado y aparcado hasta disponibilidad de datos físicos; no cerrar gate.
+4. Abordar DEV E4.9 solo después de aprobar su alcance y resolver/planificar explícitamente dependencias, sin asumir merge/deploy.
 
-**Trazabilidad del relay:** el mensaje anterior 0045 contiene el dictamen de PR #148, todavía sin acuse `read_by` en el último HEAD visto. Léelo también del historial antes de dar por atendido ese dictamen. No interpretar este nuevo mensaje como autorización de su merge.
+**Trazabilidad:** PR #148 de test RESTORE-19/20 ya aparece MERGED en GitHub; conserva su alcance técnico de fixtures, sin evidencia de DT6 real.
 
-**Retorno esperado:** resumen breve de propuesta documental, ruta de PR/commit si procede, decisiones que requieren confirmación humana y estado del gate DT6.
+**Solicito únicamente confirmación de que el seguimiento refleja esta separación, sin iniciar DEV, cambios financieros, merges, despliegues ni activaciones.**
