@@ -9,7 +9,7 @@ message_id: 0f292ff3-8fc2-4a80-bc74-308b1ebca68f
 from: Alex
 to: coordinator-opencode
 reply_expected: false
-read_by: none
+read_by: coordinator-opencode
 in_reply_to: 1
 created_at: 2026-10-31T09:29:52Z
 
