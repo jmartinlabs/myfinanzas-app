@@ -7,12 +7,22 @@ import { backup, restore } from '/app/apps/api/src/backup.ts';
 import { HttpApp } from '@effect/platform';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { installFixture, linkFixture, snapshot } from './release-fixture.mjs';
+import { installFixture, linkFixture, snapshot, tables } from './release-fixture.mjs';
 const mode = process.argv[2];
 const root = '/var/lib/myfinanzas';
 const privatePath = process.env.STATE_FILE || root + '/fixture-private.json';
 const check = (value, label) => { if (!value) throw new Error(label); };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const business = (db, saved, label) => {
+  const now = snapshot(db);
+  if (now === saved) return;
+  if (process.env.RELEASE_DEBUG) {
+    const a = JSON.parse(now), b = JSON.parse(saved);
+    const differ = tables.filter((_, i) => JSON.stringify(a[i]) !== JSON.stringify(b[i]));
+    console.error('Business tables differ: ' + differ.join(','));
+  }
+  check(false, label);
+};
 
 async function main() {
   let db = openDatabase(process.env.DATABASE_PATH);
@@ -21,7 +31,7 @@ async function main() {
   check(db.query('SELECT origin FROM database_origin').get().origin==='production','production identity contract');
   let saved = mode === 'seed' ? { password:'Synthetic fixture ' + randomUUID(), clock:Date.now(), cookie:'', csrf:'' } : JSON.parse(readFileSync(privatePath,'utf8'));
   if (mode !== 'seed' && mode !== 'verify') {
-    check(snapshot(db) === saved.business, 'confirmed data changed between versions');
+    business(db, saved.business, 'confirmed data changed between versions');
     check(hash(key) === saved.keyHash, 'key changed between versions');
     const owner = db.query('SELECT password,secret FROM owner').get();
     check(JSON.stringify(owner) === saved.owner, 'password or encrypted TOTP changed unexpectedly');
@@ -59,7 +69,7 @@ async function main() {
   }
   if(mode==='verify') {
     check(db.query('SELECT version FROM schema_version').get().version===schemaVersion,'verify schema contract');
-    check(snapshot(db) === saved.business, 'restored previous data changed');
+    business(db, saved.business, 'restored previous data changed');
     check(hash(key) === saved.keyHash, 'restored previous key changed');
     const owner = db.query('SELECT password,secret FROM owner').get();
     check(JSON.stringify(owner) === saved.owner, 'restored previous owner changed');
@@ -93,7 +103,7 @@ async function main() {
     const result=restore(root+'/encrypted-copy',root+'/restored-'+schemaVersion,recipientFile);
     db=openDatabase(result.database);key=loadKey(db,result.key);
     check(hash(key)===saved.keyHash,'restored key mismatch');
-    check(snapshot(db)===saved.business,'restored data mismatch');
+    business(db,saved.business,'restored data mismatch');
     for(const table of ['sessions','challenges','recovery','bootstrap']) check(db.query(`SELECT * FROM ${table}`).all().length===0,'restore revocation');
     handler=HttpApp.toWebHandler(createApp(db,{key,origin:process.env.APP_ORIGIN,now:()=>saved.clock}));
     await request('/saldos','GET',undefined,401);
