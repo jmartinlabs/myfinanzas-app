@@ -137,4 +137,4 @@ async function main() {
   db.close();
   console.log('Synthetic data authentication and committed-write contract verified');
 }
-main().catch(()=>{console.error('Synthetic release contract failed: '+mode);process.exit(1);});
+main().catch((error)=>{console.error('Synthetic release contract failed: '+mode+(process.env.RELEASE_DEBUG?' :: '+error.message:''));process.exit(1);});
