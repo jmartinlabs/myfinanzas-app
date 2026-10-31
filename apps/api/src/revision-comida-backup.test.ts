@@ -120,7 +120,7 @@ test("AC21: restore cifrado v18 conserva operaciones, devoluciones, reposiciones
     try {
       expect(
         copy.query("SELECT version FROM schema_version").get(),
-      ).toEqual({ version: 19 });
+      ).toEqual({ version: 20 });
       const after = getRevisionComida(copy, detail.id);
       expect(after.operacion).toMatchObject({
         id: detail.id,

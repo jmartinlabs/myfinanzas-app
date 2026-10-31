@@ -18,6 +18,20 @@ rollback: [informe](investigations/rootless-schema-upgrade-2026-10-31.md).
 QA final **PASS** en `c96cb79` (H10/H11/OBS2). DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
+## SPEC33 D′ — candidato de implementación 2026-10-31
+
+Responsable: OpenCode, orquestador por encargo del usuario. Especificación
+revisión2 + E1/E2 aprobadas. Rama `codex/dprima-simplificada`, apilada sobre
+`codex/comida-unico-01` (PR #136) por el proveedor central de devoluciones;
+esquema v20. PR #137 (base `codex/comida-unico-01`, depende de PR #136, sin
+merge autorizado). Implementado: maestro Partidas
+raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2,
+G neto con devoluciones acreditadas, mapping diagnóstico explícito y UI básica.
+Checkpoint: [progress33](33-dprima-simplificada-progress.md).
+Límites: migración real, activación, cierre/fotos, mapping físico, restore v20,
+E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. Presupuestos/Plan Anual permanecen
+consultables sin conversión.
+
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29
 
 Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como

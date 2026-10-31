@@ -622,7 +622,12 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
           db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
         ).toEqual(
           table === "partidas"
-            ? (rows as any[]).map((r) => ({ ...r, presupuesto: null }))
+            ? (rows as any[]).map((r) => ({
+                ...r,
+                presupuesto: null,
+                fuente: null,
+                padre_partida: null,
+              }))
             : table === "ciclos"
               ? (rows as any[]).map((r) => ({
                   ...r,
@@ -685,10 +690,10 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
     db.exec("DROP TABLE budget_contract");
     expect(() =>
       backup(db, secret, join(dir, "foreign-backup"), recipient),
-    ).toThrow("Contrato de esquema v19 desconocido o incompleto; no se modificará esta base.");
+    ).toThrow("Contrato de esquema v20 desconocido o incompleto; no se modificará esta base.");
     db.close();
     const bytes = readFileSync(path);
-    expect(() => openDatabase(path)).toThrow("Contrato de esquema v19 desconocido o incompleto; no se modificará esta base.");
+    expect(() => openDatabase(path)).toThrow("Contrato de esquema v20 desconocido o incompleto; no se modificará esta base.");
     expect(readFileSync(path)).toEqual(bytes);
   } finally {
     try {

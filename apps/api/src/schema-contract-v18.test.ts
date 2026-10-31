@@ -18,6 +18,7 @@ import { openDatabaseV17 } from "../test-support/database-v17";
 
 const contract18 = "C18-INVERSION-306BBC5";
 const contract19 = "C19-COMIDA-UNICO-01";
+const contract20 = "C20-DPRIMA-SIMPLIFICADA";
 
 function files(dir: string) {
   return readdirSync(dir).sort();
@@ -55,27 +56,27 @@ test("C18/C19: fresh and v16/v17 upgrades produce the frozen v19 manifest", () =
     const fresh = new Database(join(dir, "fresh.sqlite"));
     prepareSchema(fresh, { origin: "demo", key_hash: null });
     const expected = manifest(fresh);
-    expect(verifyContract(fresh, 19)).toBe(contract19);
+    expect(verifyContract(fresh, 20)).toBe(contract20);
     fresh.close();
 
     const v17path = join(dir, "v17.sqlite");
     openDatabaseV17(v17path).close();
     const v17 = openDatabase(v17path);
     expect(v17.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 19,
+      version: 20,
     });
     expect(manifest(v17)).toEqual(expected);
-    expect(verifyContract(v17, 19)).toBe(contract19);
+    expect(verifyContract(v17, 20)).toBe(contract20);
     v17.close();
 
     const v16path = join(dir, "v16.sqlite");
     openDatabaseV16(v16path).close();
     const v16 = openDatabase(v16path);
     expect(v16.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 19,
+      version: 20,
     });
     expect(manifest(v16)).toEqual(expected);
-    expect(verifyContract(v16, 19)).toBe(contract19);
+    expect(verifyContract(v16, 20)).toBe(contract20);
     v16.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -136,7 +137,7 @@ for (const journal of ["DELETE", "WAL"] as const) {
       seed.close();
       chmodSync(valid, 0o600);
       const db = openDatabase(valid);
-      expect(verifyContract(db, 19)).toBe(contract19);
+      expect(verifyContract(db, 20)).toBe(contract20);
       db.close();
 
       const extra = join(dir, "extra.sqlite");

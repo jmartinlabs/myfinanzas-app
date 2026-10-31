@@ -1,5 +1,6 @@
 import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
+import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
@@ -192,6 +193,17 @@ function App() {
             }}
           >
             Flujo mensual
+          </a>
+          <a
+            className={path.startsWith("/dprima") ? "nav-active" : "nav-link"}
+            href="/dprima"
+            aria-current={path.startsWith("/dprima") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/dprima");
+            }}
+          >
+            D′ · Partidas
           </a>
           <a
             className={path.startsWith("/comida") ? "nav-active" : "nav-link"}
@@ -418,7 +430,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/comida") ? (
+          {path.startsWith("/dprima") ? (
+            <Dprima go={go} />
+          ) : path.startsWith("/comida") ? (
             <Comida go={go} />
           ) : path.startsWith("/revision-comida") ? (
             <RevisionComida path={path} go={go} />

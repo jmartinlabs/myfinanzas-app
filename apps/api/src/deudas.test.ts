@@ -464,7 +464,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           if (table === "schema_version" || table === "counters") continue;
           const expected =
             table === "partidas"
-              ? rows.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
+              ? rows.map((r: any) => ({ ...r, deuda: null, presupuesto: null, fuente: null, padre_partida: null }))
               : table === "movimientos"
                 ? rows.map((r: any) => ({
                     ...r,
@@ -492,7 +492,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           ).csrf,
         ).toBe(verified.csrf);
         expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 19,
+          version: 20,
         });
         const { d, p, s } = setup(db);
         save(db, quota(s.id, p.id));
@@ -516,8 +516,8 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
         );
         expect(decrypted.exitCode).toBe(0);
         const bundle = JSON.parse(decrypted.stdout.toString());
-        expect(bundle.manifest.schema).toBe(19);
-        expect(bundle.manifest.app).toBe("e3.4-v19");
+        expect(bundle.manifest.schema).toBe(20);
+        expect(bundle.manifest.app).toBe("e2.7-v20");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, origin + "-restored");
         if (origin === "production")

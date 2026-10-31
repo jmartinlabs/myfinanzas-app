@@ -704,6 +704,9 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               { name: "instrumento", next: 1001 },
               { name: "operaciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
+              { name: "dprima_planificacion", next: 1 },
+              { name: "dprima_linea", next: 1 },
+              { name: "dprima_apertura", next: 1 },
             ].sort((a: any, b: any) => a.name.localeCompare(b.name));
             expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
             continue;
@@ -717,8 +720,13 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
                   revision: 1,
                   actualizado: null,
                 }))
-              : table === "partidas" && previousVersion === 7
-                ? values.map((r: any) => ({...r, presupuesto: null}))
+              : table === "partidas"
+                ? values.map((r: any) => ({
+                    ...r,
+                    ...(previousVersion === 7 ? { presupuesto: null } : {}),
+                    fuente: null,
+                    padre_partida: null,
+                  }))
                 : values,
           );
         }
@@ -755,8 +763,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(19);
-        expect(bundle.manifest.app).toBe("e3.4-v19");
+        expect(bundle.manifest.schema).toBe(20);
+        expect(bundle.manifest.app).toBe("e2.7-v20");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -958,7 +966,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 19 }, { version: 19 }]);
+    expect(upgraded).toEqual([{ version: 20 }, { version: 20 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

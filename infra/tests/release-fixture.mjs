@@ -17,7 +17,7 @@ export const tables = [
 
 export const snapshot = (db) => JSON.stringify(
   tables.map((table) => [table, db.query(`SELECT * FROM ${table} ORDER BY rowid`).all()
-    .filter((row) => table !== 'counters' || row.name !== 'infra32_backup_wal')
+    .filter((row) => table !== 'counters' || (row.name !== 'infra32_backup_wal' && !row.name.startsWith('dprima_')))
     .map((row) => {
       // Added schema columns are not business facts: compare the common
       // projection so a reviewed migration preserves every existing row.

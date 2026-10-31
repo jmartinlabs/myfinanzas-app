@@ -51,7 +51,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(
         versions[0].version,
       ) ||
       (expected !== undefined && versions[0].version !== expected)
@@ -151,7 +151,9 @@ export function backup(
                                           ? "e3.2-d5-v17"
                                           : sourceVersion === 18
                                             ? "e4.1-v18"
-                                            : "e3.4-v19",
+                                            : sourceVersion === 19
+                                              ? "e3.4-v19"
+                                              : "e2.7-v20",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -260,7 +262,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20].includes(
         bundle.manifest.schema,
       ) ||
       hash(bytes) !== bundle.manifest.sha256
@@ -326,6 +328,16 @@ export function restore(
                 "comida_devolucion_attempts",
                 "comida_rol_attempts",
                 "comida_regimen_attempts",
+              ]
+            : []),
+          ...(bundle.manifest.schema >= 20
+            ? [
+                "dprima_planificacion_attempts",
+                "dprima_partida_attempts",
+                "dprima_linea_attempts",
+                "dprima_apertura_attempts",
+                "dprima_mapping_attempts",
+                "dprima_mensual_attempts",
               ]
             : []),
         ])

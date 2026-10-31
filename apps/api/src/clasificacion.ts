@@ -679,6 +679,37 @@ export function changeClassificationState(
             "Desactiva primero: " +
               deps.map((d) => `${d.id} · ${d.nombre}`).join(", "),
           );
+        if (
+          kind === "partidas" &&
+          db
+            .query(
+              "SELECT name FROM sqlite_master WHERE type='table' AND name='dprima_lineas'",
+            )
+            .get()
+        ) {
+          const used =
+            !!db
+              .query(
+                `SELECT 1 FROM dprima_lineas l
+                 JOIN dprima_planificaciones p ON p.id=l.planificacion
+                 WHERE l.hija=? AND l.anulada=0 AND p.estado<>'Finalizada' LIMIT 1`,
+              )
+              .get(id) ||
+            !!db
+              .query(
+                "SELECT 1 FROM dprima_planificaciones WHERE padre=? AND estado<>'Finalizada' LIMIT 1",
+              )
+              .get(id) ||
+            !!db
+              .query("SELECT 1 FROM dprima_plan_mensual WHERE raiz=? LIMIT 1")
+              .get(id);
+          if (used)
+            throw new Problem(
+              409,
+              "DPRIMA_USED_PARTIDA",
+              "La Partida participa en una planificación activa; no se desactiva sin revisar su impacto.",
+            );
+        }
       } else if (
         kind !== "categorias" &&
         raw(db, entities[kind].parent!, old.padre!).estado !== "Activa"
