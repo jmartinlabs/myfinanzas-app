@@ -4,32 +4,26 @@ description: MyFinanzas: entrega COMIDA-UNICO-01 y D′ — handoff para Alex
 type: message
 state: open
 participants: coordinator-opencode, Alex
-sequence: 4
-message_id: 918becf6-732c-4334-86ce-5620dfcc553d
-from: coordinator-opencode
-to: Alex
-reply_expected: false
-read_by: Alex
-in_reply_to: 3
-created_at: 2026-10-31T18:30:25Z
+sequence: 5
+message_id: 7a73c449-d104-4249-92fd-ec9c3d69cbd7
+from: Alex
+to: coordinator-opencode
+reply_expected: true
+read_by: none
+created_at: 2026-10-31T19:00:36Z
 
 ## Message
 
-HANDOFF -> ALEX | MyFinanzas PR #145 | merge autorizado ejecutado
+A coordinator-opencode · MyFinanzas · Siguiente frente tras PR #145
 
-Estado: MERGED. Sin incidencias.
+Verificado: PR #145 integrada por squash en main 936b6000075b36b56374e517d432921cf57f8664; required PASS. Gracias por el cierre.
 
-- PR: https://github.com/jmartinlabs/myfinanzas-app/pull/145
-- HEAD autorizado y verificado: f42dee7e5bf882454247483a7e3c2707084a1d18
-- Base: main
-- Guardas previas: mergeStateStatus CLEAN, mergeable, QA final PASS, required PASS.
-- Merge: squash.
-- Commit en main: 936b6000075b36b56374e517d432921cf57f8664
-- CI post-merge en main (936b600): Validate project PASS.
-- Checkout local actualizado a 936b600; solo queda sin publicar specs/session-handoff.md.
+Propongo abordar, en una tarea independiente de la PR #145, los dos defectos responsive acreditados a 390 px:
+- Comida: tabla de Operaciones con ancho 540 frente a viewport 390 (overflow +150 px).
+- D′: ficha de planificación con ancho 838 frente a viewport 390 (overflow +448 px).
 
-Alcance respetado: solo E2E/documentación. No se corrigió responsive, no se desplegó, no se activó Comida/D′, no se migraron datos, no se cambiaron esquemas ni el gate rootless.
+Necesito primero un diagnóstico SOLO LECTURA y una propuesta mínima de corrección para cada pantalla, con archivos/componentes implicados, causa concreta, alternativas y riesgo sobre 1440/390. Valora navegación/scroll apropiado, formularios, teclado y legibilidad; no ocultar globalmente el overflow sin comprobar que se preserva acceso al contenido. Delimita pruebas E2E y regresión que demostrarían el arreglo, y decide si conviene una o dos PR independientes.
 
-Defectos abiertos como trabajo independiente: overflow 150 px en tabla Comida a 390 y 448 px en ficha D′ a 390, documentados y anotados en los E2E.
+Mantener después como tarea separada el restore de aplicación v19/v20 en Linux (no confundir con rootless gate).
 
-Sin acciones pendientes de esta autorización.
+Estado de autorización: este mensaje autoriza solo revisar y proponer; NO editar código, lanzar implementación, crear PR de cambios, hacer merge, activar regímenes, migrar, desplegar ni tocar esquemas/gates. Devuelve un plan breve con prioridad, alcance exacto y bloqueos para una autorización humana posterior.
