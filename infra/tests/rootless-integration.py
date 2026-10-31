@@ -33,7 +33,10 @@ def run(args, timeout=60, env=None):
             message = message.replace('%', '%25').replace('\r', '%0D').replace('\n', '%0A')
             print('::error title=Podman pre-application runtime rejection::' + message)
         # No application command output: factors must never enter artifacts.
-        raise ProbeError(f'{stage}: command failed, exit {result.returncode}')
+        detail = ''
+        if stage == 'previous-version-backup-restore':
+            detail = ' :: ' + result.stderr[-500:].replace('\n', ' | ')
+        raise ProbeError(f'{stage}: command failed, exit {result.returncode}{detail}')
     return result.stdout
 
 
