@@ -521,7 +521,7 @@ def main():
             shutil.copyfile(seed_state, seed_copy)
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
                  '--env=RELEASE_DEBUG=1',
-                 '--env=EXPECTED_MOVEMENTS=3',
+                 '--env=EXPECTED_MOVEMENTS=3', '--env=SKIP_DERIVED=1',
                  previous['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             shutil.copyfile(seed_state, matrix / 'fixture-private-previous.json')
             shutil.copyfile(seed_copy, seed_state)
