@@ -173,7 +173,7 @@ Navegación            │ Revisión de precierre
                       │ Plan del ciclo                SinPlan          Válido          sin líneas
                       │ Anticipos/Compartidos/Nómina  «n» hechos       Verificado      hechos
                       │ Revisión Comida/Deuda E1.6    «n» hechos       Verificado      hechos
-                      │ E4.1 Inversión                posiciones a Fin Integrado       a Fin
+                      │ E4.1 Inversión                posiciones a Fin Integrado       integrado; posiciones a Fin
                       │ E4.3 valoración/patrimonio    —                No disponible   sin motor E4.3
                       │ E3.5 Comida/FIN_NETA          —                No disponible   FIN_NETA no integrado
                       │ E4.2 Ventas                   —                No disponible   sin DEV
@@ -188,7 +188,7 @@ Navegación            │ Revisión de precierre
                       │   muestran como 0
                       │ • E4.1 sin Compras nuevas: se muestran las posiciones
                       │   anteriores a Fin
-                      │ • La pantalla es Parcial por E3.5; el bloqueo de backup
+                      │ • Cobertura parcial por E3.5; el bloqueo de backup
                       │   prevalece y el estado global es Bloqueado
                       │
                       │ EVIDENCIA DE BACKUP (DT6/T-BKP)
@@ -225,9 +225,9 @@ BLOQUEOS «k»
 FUENTES «n»/«m»
 Movimientos        «n» hechos    Verificado     núcleo →
 Plan               SinPlan       Válido         sin líneas →
-Anticipos/…        «n» hechos    Verificado     hechos →
-Revisión Comida…   «n» hechos    Verificado     hechos →
-E4.1 Inversión     a Fin         Integrado      posiciones →
+Anticipos/Compartidos/Nómina  «n» hechos  Verificado  hechos →
+Revisión Comida/Deuda E1.6    «n» hechos  Verificado  hechos →
+E4.1 Inversión     a Fin         Integrado      integrado; posiciones →
 E4.3 valoración    —             No disponible  sin motor →
 E3.5 Comida        —             No disponible  FIN_NETA →
 E4.2 Ventas        —             No disponible  sin DEV →
@@ -236,11 +236,12 @@ E4.5 Histórico     —             No disponible  documental →
 E3.6 Pendientes    —             No disponible  documental →
 ──────────────────────────────────────
 AVISOS
-• E3.5 parcial; E4.9 bloqueado
+• E3.5 no disponible; precierre
+  parcial; E4.9 bloqueado
 • E4.3 no se muestra como 0
 • E4.1 sin Compras nuevas:
   posiciones anteriores a Fin
-• Pantalla Parcial por E3.5;
+• Cobertura parcial por E3.5;
   bloqueo de backup prevalece
 ──────────────────────────────────────
 BACKUP DT6/T-BKP
@@ -356,8 +357,8 @@ comportamiento previsto; ningún endpoint existe en `main` y no se declara prueb
   revisión/hash y evidencia de backup.
 - `GET /api/cierres/:ciclo/estado` — estado y versión; sin escritura. Ruta canónica
   compartida con SPEC27.
-- Cualquier `POST/PATCH/DELETE` en E4.8 devuelve 405/422 (405 si el método o la ruta no
-  se admiten; 422 si la operación o el cuerpo se rechazan); no hay cierre ni mutación.
+- Cualquier `POST/PATCH/DELETE` en E4.8 devuelve 405/422 (405 si el método no se admite;
+  422 si la operación o el cuerpo se rechazan); no hay cierre ni mutación.
 
 ### Permisos y sesión
 
