@@ -40,6 +40,14 @@ import {
   type LedgerRow,
 } from "./movement-ledger";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
+import {
+  applyComidaDevolucion,
+  applyComidaMetadata,
+  comidaDevolucion,
+  comidaMetadata,
+  revalidateDevolucionPropia,
+  revalidateDevolucionesCompra,
+} from "./comida";
 export const incomeSubtypes = ["Nómina", "Bonus", "Intereses", "Promoción"];
 export type MovementProtection = (
   action: string,
@@ -54,7 +62,12 @@ type Candidate = {
     procedencia: ProcedenciaAportacion;
   } | null;
   fecha: string;
-  tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
+  tipo:
+    | "Ingreso"
+    | "Gasto"
+    | "Transferencia"
+    | "Amortización deuda"
+    | "Devolución de gasto";
   capital: string | null;
   intereses: string | null;
   referencia: string | null;
@@ -93,6 +106,7 @@ const inputs = [
   "concepto",
   "nota",
 ];
+const extras = ["comida", "devolucion"] as const;
 function text(value: unknown, name: string, max = 2000) {
   if (
     typeof value !== "string" ||
@@ -111,7 +125,7 @@ function validated(
   now: number,
 ): Candidate {
   for (const key of Object.keys(body))
-    if (!inputs.includes(key))
+    if (!inputs.includes(key) && !extras.includes(key as (typeof extras)[number]))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${key}.`, {
         [key]: "Campo no editable.",
       });
@@ -138,11 +152,15 @@ function validated(
       "Indica un importe EUR exacto mayor que cero, hasta dos decimales.";
   }
   if (
-    !["Ingreso", "Gasto", "Transferencia", "Amortización deuda"].includes(
-      body.tipo as string,
-    )
+    ![
+      "Ingreso",
+      "Gasto",
+      "Transferencia",
+      "Amortización deuda",
+      "Devolución de gasto",
+    ].includes(body.tipo as string)
   )
-    errors.tipo = "Selecciona Ingreso, Gasto o Transferencia.";
+    errors.tipo = "Selecciona un Tipo válido.";
   if (body.tipo === "Transferencia") {
     if (typeof body.origen !== "string" || !body.origen)
       errors.origen = "Selecciona un Origen existente.";
@@ -181,6 +199,25 @@ function validated(
       body.partida !== ""
     )
       errors.partida = "Ingreso no admite Partida.";
+  } else if (body.tipo === "Devolución de gasto") {
+    if (
+      body.subtipo !== undefined &&
+      body.subtipo !== null &&
+      body.subtipo !== ""
+    )
+      errors.subtipo = "Devolución de gasto no admite Subtipo de Ingreso.";
+    if (
+      body.referencia !== undefined &&
+      body.referencia !== null &&
+      body.referencia !== ""
+    )
+      errors.referencia =
+        "La Devolución de gasto no admite Referencia en este contrato.";
+    if (
+      body.capital !== undefined ||
+      body.intereses !== undefined
+    )
+      errors.capital = "No aplicable a Devolución de gasto.";
   } else if (body.tipo === "Gasto" || body.tipo === "Amortización deuda") {
     if (typeof body.partida !== "string" || !body.partida)
       errors.partida = "Selecciona una Partida.";
@@ -334,6 +371,22 @@ function validated(
       "VALIDATION",
       "Este hecho no admite desglose de Deuda.",
     );
+  if (tipo === "Devolución de gasto" && body.partida != null && body.partida !== "") {
+    if (typeof body.partida !== "string")
+      throw new Problem(422, "VALIDATION", "Partida no válida.", {
+        partida: "Selecciona una Partida existente.",
+      });
+    const p = getClassification(db, "partidas", body.partida),
+      sub = getClassification(db, "subcategorias", p.padre!),
+      cat = getClassification(db, "categorias", sub.padre!);
+    if ([p, sub, cat].some((v) => v.estado !== "Activa"))
+      throw new Problem(
+        422,
+        "INACTIVE_CLASSIFICATION",
+        "La Partida acreditada debe estar activa.",
+        { partida: "Selecciona una Partida y ancestros activos." },
+      );
+  }
   const referencia = validateReference(
     db,
     body.referencia,
@@ -345,7 +398,8 @@ function validated(
   const next = {
     tipo,
     referencia,
-    origen: tipo === "Ingreso" ? "S000" : saldo.id,
+    origen:
+      tipo === "Ingreso" || tipo === "Devolución de gasto" ? "S000" : saldo.id,
     destino: outgoing ? "S000" : (target?.id ?? saldo.id),
   };
   const compartido = validateAportacion(
@@ -359,7 +413,8 @@ function validated(
     {
       tipo,
       referencia,
-      origen: tipo === "Ingreso" ? "S000" : saldo.id,
+      origen:
+      tipo === "Ingreso" || tipo === "Devolución de gasto" ? "S000" : saldo.id,
       destino: outgoing ? "S000" : (target?.id ?? saldo.id),
     },
     body.anticipo,
@@ -371,13 +426,20 @@ function validated(
     fecha,
     tipo,
     importe: decimal(String(cents))!,
-    origen: tipo === "Ingreso" ? "S000" : saldo.id,
+    origen:
+      tipo === "Ingreso" || tipo === "Devolución de gasto" ? "S000" : saldo.id,
     referencia,
     capital,
     intereses,
     destino: outgoing ? "S000" : (target?.id ?? saldo.id),
     subtipo: tipo === "Ingreso" ? (body.subtipo as string) : null,
-    partida: outgoing ? (body.partida as string) : null,
+    partida: outgoing
+      ? (body.partida as string)
+      : tipo === "Devolución de gasto" &&
+          typeof body.partida === "string" &&
+          body.partida
+        ? body.partida
+        : null,
     concepto: text(body.concepto ?? "", "concepto"),
     nota: text(body.nota ?? "", "nota", 4000),
   };
@@ -426,6 +488,12 @@ function decorate(db: Database, r: LedgerRow, cycles: Cycle[]) {
         : { estado: "OK" as const, motivos: [] as string[], mensaje: "Sin incidencias." },
     anticipo: anticipoMetadata(db, r.id),
     compartido: aportacionMetadata(db, r.id),
+    comida:
+      r.tipo === "Gasto" || r.tipo === "Devolución de gasto"
+        ? comidaMetadata(db, r.id)
+        : null,
+    devolucion:
+      r.tipo === "Devolución de gasto" ? comidaDevolucion(db, r.id) : null,
     ciclo:
       cycles.find(
         (c) => c.inicio <= r.fecha && (c.fin === null || r.fecha <= c.fin),
@@ -513,9 +581,14 @@ export function listMovements(db: Database, params = new URLSearchParams()) {
       page < 1 ||
       page > 100000 ||
       !["", "Vigente", "Anulado"].includes(state) ||
-      !["", "Ingreso", "Gasto", "Transferencia", "Amortización deuda"].includes(
-        tipo,
-      )
+      ![
+        "",
+        "Ingreso",
+        "Gasto",
+        "Transferencia",
+        "Amortización deuda",
+        "Devolución de gasto",
+      ].includes(tipo)
     )
       throw new Problem(422, "VALIDATION", "Filtro o página inválidos.");
     const from = params.get("desde"),
@@ -606,11 +679,26 @@ function plan(
     "fingerprint",
     "contextRevision",
     "aceptarCoincidencia",
+    ...extras,
   ];
   for (const name of Object.keys(body))
     if (!permitted.includes(name) || (annul && inputs.includes(name)))
       throw new Problem(422, "VALIDATION", `Campo no editable: ${name}.`);
   const old = id ? find(db, id) : null;
+  if (annul || old)
+    for (const name of extras)
+      if (name in body)
+        throw new Problem(
+          422,
+          "VALIDATION",
+          "Los metadatos de Comida se rectifican por su recurso dedicado.",
+          { [name]: "No se editan en el alta/rectificación económica." },
+        );
+  for (const name of extras)
+    if (name in body && (!body[name] || typeof body[name] !== "object" || Array.isArray(body[name])))
+      throw new Problem(422, "VALIDATION", `Bloque ${name} inválido.`, {
+        [name]: "Objeto de metadatos.",
+      });
   if (old && (body.revision !== old.revision || old.anulado))
     throw new Problem(
       409,
@@ -625,6 +713,34 @@ function plan(
       "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
     );
   const next = annul ? null : validated(db, payload(body), old, now);
+  if (old && next && old.tipo !== next.tipo) {
+    if (
+      old.tipo === "Gasto" &&
+      db
+        .query(
+          "SELECT 1 FROM movimiento_devolucion WHERE compra=? LIMIT 1",
+        )
+        .get(old.id)
+    )
+      throw new Problem(
+        422,
+        "DEVOLUTION_LINKED",
+        "La compra tiene devoluciones verificadas. Rectifica o desancla esos vínculos antes de cambiar el Tipo; no se reasigna automáticamente.",
+        { tipo: "Cambia primero los vínculos afectados." },
+      );
+    if (
+      old.tipo === "Devolución de gasto" &&
+      db
+        .query("SELECT 1 FROM movimiento_devolucion WHERE movimiento=? LIMIT 1")
+        .get(old.id)
+    )
+      throw new Problem(
+        422,
+        "ATTRIBUTION_EXISTS",
+        "La devolución tiene atribución registrada. No puede retipificarse sin revisar su vínculo.",
+        { tipo: "Conserva el Tipo Devolución de gasto." },
+      );
+  }
   protectAnticipoChange(db, old, next, next?.anticipo ?? null);
   if (old) {
     const motive = text(body.motivo, "motivo");
@@ -788,6 +904,8 @@ function plan(
       id,
       old?.revision,
       next,
+      body.comida ?? null,
+      body.devolucion ?? null,
       annul,
       financeRevision(db),
       {
@@ -975,6 +1093,41 @@ export function writeMovement(
             time,
           ],
         );
+      const stored = find(db, id);
+      if (v && body.comida !== undefined) {
+        if (v.tipo !== "Gasto" && v.tipo !== "Devolución de gasto")
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "Los metadatos de Comida solo aplican a una compra o devolución.",
+          );
+        applyComidaMetadata(
+          db,
+          id,
+          stored,
+          body.comida as Record<string, unknown>,
+          now,
+        );
+      }
+      if (v && body.devolucion !== undefined) {
+        if (v.tipo !== "Devolución de gasto")
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "La atribución solo aplica a una Devolución de gasto.",
+          );
+        applyComidaDevolucion(
+          db,
+          id,
+          stored,
+          body.devolucion as Record<string, unknown>,
+          now,
+        );
+      }
+      if (old?.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
+      if (stored.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
+      if (stored.tipo === "Devolución de gasto")
+        revalidateDevolucionPropia(db, id, now);
       storeAnticipo(db, id, v?.anticipo ?? null, now);
       storeAportacion(
         db,

@@ -298,7 +298,7 @@ function MovementList({
       <PageHead
         eyebrow="NÚCLEO FINANCIERO"
         title="Movimientos"
-        description="Hechos ejecutados · Ingresos, Gastos, Transferencias y amortizaciones"
+        description="Hechos ejecutados · Ingresos, Gastos, Transferencias, amortizaciones y devoluciones de gasto"
       >
         <button className="primary" onClick={() => go(base + "/nuevo")}>
           Nuevo movimiento
@@ -503,7 +503,9 @@ function MovementList({
                       <td>
                         {m.tipo === "Transferencia"
                           ? m.origen.nombre + " → " + m.destino.nombre
-                          : (m.tipo === "Ingreso" ? m.destino : m.origen)
+                          : (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
+                              ? m.destino
+                              : m.origen)
                               .nombre}
                       </td>
                       <td>
@@ -535,7 +537,10 @@ function MovementList({
                     #{m.id} ·{" "}
                     {m.tipo === "Transferencia"
                       ? m.origen.nombre + " → " + m.destino.nombre
-                      : (m.tipo === "Ingreso" ? m.destino : m.origen).nombre}
+                      : (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
+                          ? m.destino
+                          : m.origen
+                        ).nombre}
                   </p>
                   <p>{m.subtipo ?? m.partida?.nombre}</p>
                   {m.referencia && (
@@ -1008,7 +1013,11 @@ function MovementForm({
             tipo: m.tipo,
             fecha: m.fecha,
             importe: m.importe,
-            saldo: (m.tipo === "Ingreso" ? m.destino : m.origen).id,
+            saldo:
+              (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
+                ? m.destino
+                : m.origen
+              ).id,
             origen: m.tipo === "Transferencia" ? m.origen.id : "",
             destino: m.tipo === "Transferencia" ? m.destino.id : "",
             referencia: m.referencia?.id ?? "",
@@ -1124,8 +1133,10 @@ function MovementForm({
             importe: form.importe.replace(",", "."),
             subtipo: form.tipo === "Ingreso" ? form.subtipo : null,
             partida:
-              form.tipo === "Gasto" || form.tipo === "Amortización deuda"
-                ? form.partida
+              form.tipo === "Gasto" ||
+              form.tipo === "Amortización deuda" ||
+              form.tipo === "Devolución de gasto"
+                ? form.partida || null
                 : null,
           }),
       ...(id ? { revision: old?.revision, motivo: reason } : {}),
@@ -1268,7 +1279,7 @@ function MovementForm({
         description={
           annul
             ? "Anula una captura errónea que no representa un hecho económico real. No es una devolución."
-            : "Ingreso, Gasto, Transferencia interna o Amortización deuda"
+            : "Ingreso, Gasto, Transferencia interna, Amortización deuda o Devolución de gasto"
         }
       />
       {optionsError && <Alert retry={reload}>{optionsError}</Alert>}
@@ -1333,6 +1344,7 @@ function MovementForm({
                       <option>Gasto</option>
                       <option>Transferencia</option>
                       <option>Amortización deuda</option>
+                      <option>Devolución de gasto</option>
                     </select>,
                   )}
                   {field("fecha", "Fecha económica *")}
@@ -1461,12 +1473,19 @@ function MovementForm({
                       </select>,
                     )}
                   {(form.tipo === "Gasto" ||
-                    form.tipo === "Amortización deuda") &&
+                    form.tipo === "Amortización deuda" ||
+                    form.tipo === "Devolución de gasto") &&
                     field(
                       "partida",
-                      "Partida *",
+                      form.tipo === "Devolución de gasto"
+                        ? "Partida acreditada (opcional)"
+                        : "Partida *",
                       <select
-                        aria-label="Partida *"
+                        aria-label={
+                          form.tipo === "Devolución de gasto"
+                            ? "Partida acreditada (opcional)"
+                            : "Partida *"
+                        }
                         value={form.partida}
                         aria-invalid={!!fields.partida}
                         aria-describedby={
@@ -1487,7 +1506,9 @@ function MovementForm({
                 <p>
                   {form.tipo === "Ingreso"
                     ? "Origen: Exterior técnico S000"
-                    : form.tipo === "Gasto" ||
+                    : form.tipo === "Devolución de gasto"
+                      ? "Entrada real desde Exterior técnico S000 al Saldo receptor. Es una devolución de gasto, no un Ingreso ordinario ni la anulación de una compra."
+                      : form.tipo === "Gasto" ||
                         form.tipo === "Amortización deuda"
                       ? "Destino: Exterior técnico S000"
                       : form.tipo === "Transferencia"
@@ -1513,7 +1534,7 @@ function MovementForm({
                     </p>
                   </>
                 )}
-                {field(
+                {form.tipo !== "Devolución de gasto" && field(
                   "referencia",
                   (form.tipo === "Gasto" ||
                     form.tipo === "Amortización deuda") &&

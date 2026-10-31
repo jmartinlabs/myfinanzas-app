@@ -12,6 +12,18 @@ import {
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
+  activateRegimen,
+  comidaMetrics,
+  comidaOptions,
+  getComidaMovement,
+  listComida,
+  prepareRegimen,
+  regimenDto,
+  writeComidaDevolucion,
+  writeComidaMetadata,
+  writeComidaRol,
+} from "./comida";
+import {
   getRevisionComida,
   listOperaciones,
   listReposiciones,
@@ -273,6 +285,54 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/comida/opciones" && req.method === "GET")
+        return reply(comidaOptions(db));
+      if (path === "/api/comida/regimen" && req.method === "GET")
+        return reply(regimenDto(db));
+      if (path === "/api/comida/regimen/preparar" && req.method === "POST")
+        return reply(
+          prepareRegimen(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      if (path === "/api/comida/regimen/activar" && req.method === "POST")
+        return reply(
+          activateRegimen(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      const comidaMetricsPath = path.match(
+        /^\/api\/comida\/metricas\/(\d+)$/,
+      );
+      if (comidaMetricsPath && req.method === "GET")
+        return reply(comidaMetrics(db, comidaMetricsPath[1], now()));
+      if (path === "/api/comida" && req.method === "GET")
+        return reply(listComida(db, new URL(req.url).searchParams));
+      const comidaAction = path.match(
+        /^\/api\/comida\/(\d+)\/(metadata|devolucion|rol)$/,
+      );
+      if (comidaAction && req.method === "POST") {
+        const body = await jsonBody(req),
+          key = req.headers.get("idempotency-key") ?? "";
+        if (comidaAction[2] === "metadata")
+          return reply(
+            writeComidaMetadata(db, comidaAction[1], body, key, now()),
+          );
+        if (comidaAction[2] === "devolucion")
+          return reply(
+            writeComidaDevolucion(db, comidaAction[1], body, key, now()),
+          );
+        return reply(writeComidaRol(db, comidaAction[1], body, key, now()));
+      }
+      const comida = path.match(/^\/api\/comida\/(\d+)$/);
+      if (comida && req.method === "GET")
+        return reply(getComidaMovement(db, comida[1]));
       if (path === "/api/revision-comida/opciones" && req.method === "GET")
         return reply(revisionComidaOptions(db, now()));
       if (path === "/api/revision-comida" && req.method === "GET")

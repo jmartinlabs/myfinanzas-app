@@ -228,3 +228,112 @@ PR133 sigue sin merge autorizado; CU01–24 UNRUN. P3 real y activación separad
 D′/SPEC33 integrada por PR135 es otro frente; sin código ni cambios financieros
 en este registro. Secuencia propuesta: base Movimientos/devoluciones, registro único
 y métricas Comida, después transición de planificación D′ con autorización propia.
+
+## COMIDA-UNICO-01 — candidato de implementación 2026-10-31
+
+Status: implementación técnica del régimen individual y su base común en curso,
+sin activación real, sin datos reales y sin merge. P3 (fecha, saldo y cobertura
+reales) sigue pendiente; el régimen solo se activa con fixtures ficticias.
+
+### Autorización y preflight
+
+- Encargo humano del 2026-10-31: desarrollo de COMIDA-UNICO-01 dentro de la
+  especificación revisión 3 y wireframes aprobados, con QA independiente y
+  publicación de PR; sin merge ni activación operativa.
+- `main` contrastado en `98b9792` (squash PR #133). La rama parte de ese commit.
+- Rama: `codex/comida-unico-01`. Worktree aislado.
+- Datos exclusivamente ficticios; sin Excel, bases reales, secretos ni despliegue.
+
+### Alcance implementado
+
+- Esquema v19 (`comida-schema.ts`): `Devolución de gasto` como Tipo explícito de
+  Movimientos, reconstrucción de la tabla conservando filas, índices, triggers,
+  auditorías y dependientes; metadatos analíticos por Movimiento; atribución
+  íntegra de devolución; rol explícito de Transferencia; régimen fechado de ING
+  Comida; auditorías append-only e intentos idempotentes.
+- Movimientos: alta/rectificación/anulación del nuevo Tipo, evidencia y
+  atribución atómicas en el alta (`comida` y `devolucion`), integridad
+  devolución ≤ compra, revalidación a `Revisar` al rectificar/anular la compra.
+  La posición central usa `positionCents`; no hay saldo paralelo.
+- Revisión Comida individual (`comida.ts` + `/api/comida`): consulta de compras y
+  devoluciones centrales, metadatos, atribución, roles y métricas P5/P6/P7/P7a
+  con estados Verificado/Parcial/No disponible y procedencia.
+- P5: el Ejecutado del plan mensual por Partida se calcula neto de devoluciones
+  elegibles del mismo ciclo, con bruto y devoluciones visibles.
+- UI: nueva pantalla `Comida · hechos` (390/1440 por reutilización de shell y
+  tarjetas/tabla), formularios de metadatos, atribución, rol y régimen; el
+  histórico auxiliar legado sigue en la pantalla anterior.
+- Contrato estricto v19 publicado en `schema-contracts.json`; v18 se conserva
+  como origen de upgrade verificado. Backup/restore reconoce v19.
+
+### Evidencia local (macOS, Bun 1.4.3)
+
+- `bun run typecheck`: PASS.
+- `bun run build`: PASS (aviso de tamaño de chunk).
+- `bun test apps/api/src/comida.test.ts`: 21 PASS / 0 FAIL.
+- Suite API completa: 53 FAIL locales, los mismos que `main` en este host
+  (`Ancestro no confiable` de `private-state` por `/var` simbólico en macOS y
+  pruebas de señales/WAL). No se declaran PASS de esos casos.
+- CI Linux, E2E de la nueva pantalla y restore/backup v19: UNRUN.
+
+### Límites vigentes
+
+- Activación real del régimen, C/B reales y migración de datos: no ejecutadas.
+- AC-25 físico y D-01-R(v5.11(7)): abiertos.
+- E3.5/FIN_NETA y DEV18: no reanudados.
+- La pantalla nueva no sustituye los AC legados de DEV16; CU-01–CU-24 se
+  acreditan por el testplan de esta entrega.
+
+### Ronda QA independiente y correcciones 2026-10-31
+
+La QA independiente devolvió FAIL con hallazgos reproducibles. Correcciones
+aplicadas en el mismo candidato:
+
+- Rectificar una devolución por encima de la compra, o anular/reducir la compra,
+  degrada el vínculo a `Revisar` en la misma transacción, conservando el hecho
+  bancario. Retipificar una compra con vínculos o una devolución con atribución
+  se rechaza con 422 y causa explícita: no hay reasignación silenciosa.
+- La etiqueta de una devolución acreditada sin compra se lee de la propia
+  devolución; Compensable/Falta dejan de divergir del plan mensual.
+- El neteo P5 exige vínculo vigente y compra válida: una compra anulada ya no
+  produce Ejecutado negativo.
+- Una devolución acreditada de otro ciclo se muestra separada y no bloquea
+  Recursos/Falta del receptor (CU-22).
+- El ámbito de compras se acota al Saldo del régimen (o a metadatos explícitos);
+  una compra del Saldo de Comida sin etiqueta aparece para clasificarse.
+- El preview de impacto de configuración conserva el neteo P5.
+- Las huellas incluyen metadatos, devoluciones, roles y régimen.
+- El régimen exige elegir cobertura explícita en la UI.
+- Una devolución acreditada sin grupo analítico deja cobertura Parcial; no se
+  presenta Falta/Recursos como completos. La etiqueta propia de la devolución
+  manda sobre la de la compra para el grupo.
+- La retipificación con atribución se rechaza antes de tocar la base (sin 500);
+  no queda atribución huérfana.
+- Testplan corregido: CU-07 con 865 y CU-24 con 34/3.
+
+Evidencia: `bun test apps/api/src/comida.test.ts` 31 PASS / 0 FAIL; suite API
+con los mismos fallos de entorno de `main` (0 nuevos con `TMPDIR` seguro).
+
+Ronda final de QA: **PASS para `c96cb79`** (código idéntico al HEAD actual; los
+commits posteriores son solo `specs/`). H10 PASS; H11 PASS con vínculo
+`Verificado` o `Revisar`, sin atribución huérfana ni 500; OBS2 PASS (lista y
+métricas comparten ámbito activo; régimen Preparado no filtra). Sin fallos
+nuevos frente a `main`. Observaciones no bloqueantes: devolución antigua sin
+grupo deja el receptor en Parcial; metadatos huérfanos al retipificar un Gasto
+sin vínculos (pre-existente).
+
+CI: `Validate project` **PASS** en `b51764d`. Los runs posteriores fallan en
+~3 s sin pasos; la anotación del check-run indica **límite de pago/cuota de
+GitHub Actions** («recent account payments have failed or your spending limit
+needs to be increased»). Se reproduce con `workflow_dispatch` sobre `main`, por
+lo que el SHA final no tiene PASS de CI y la causa requiere acción humana en
+*Billing & plans*. Diagnóstico completo en
+[rootless-schema-upgrade-2026-10-31](investigations/rootless-schema-upgrade-2026-10-31.md). `Rootless capability gate` falla en
+`previous-private-release-build / incompatible contract metadata; no rollback
+authorized`: el gate exige contratos idénticos frente a `main` y no admite un
+upgrade de esquema sin una autorización de release/rollback que no está definida.
+No se desactiva ni se modifica la verificación.
+
+E2E local: **11 PASS / 2 FAIL**, y los mismos 2 fallos se reproducen en `main`
+(restore/`libc.so.6` y toggle responsive); no hay regresión, pero la pantalla
+Comida no tiene E2E propio: UNRUN. Restore v19: UNRUN por plataforma.

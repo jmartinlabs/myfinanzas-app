@@ -8,6 +8,7 @@ import {
 } from "./movement-ledger";
 import { Problem, money, decimal } from "./saldos";
 import { spanishToday } from "./movimientos";
+import { eligibleDevolutionCents } from "./comida";
 
 export type PlanBudget = {
   id: string;
@@ -89,6 +90,7 @@ export function planResult(
   line: PlanLine | undefined,
   total: bigint | null,
   reason: string | null,
+  detail?: { bruto: bigint; devoluciones: bigint },
 ) {
   const planned = line?.delMes ?? null,
     pending =
@@ -104,6 +106,8 @@ export function planResult(
         }
       : null,
     aTransferir: decimal(planned),
+    bruto: detail ? decimal(detail.bruto) : null,
+    devoluciones: detail ? decimal(detail.devoluciones) : null,
     ejecutado: total === null ? null : decimal(total),
     pendiente: pending === null ? null : decimal(pending),
     estado:
@@ -145,7 +149,8 @@ export function cycleExecution(
     lines = planLines(db, ciclo),
     rows = ledgerRows(db),
     catalog = overrides?.budgets ?? budgets(db),
-    links = overrides?.parts ?? parts(db);
+    links = overrides?.parts ?? parts(db),
+    devolutions = eligibleDevolutionCents(db, ciclo);
   const periodReason =
     cycle.inicio > spanishToday(now)
       ? "Ciclo no iniciado"
@@ -172,11 +177,22 @@ export function cycleExecution(
             cycle.inicio,
             (cycle.fin ?? cycle.corte)!,
           );
+      const gross = facts.reduce((n, r) => n + BigInt(r.importe), 0n);
+      const ids = new Set(
+        links.filter((p) => p.presupuesto === b.id).map((p) => p.id),
+      );
+      const netted =
+        b.fuente === "Gasto real"
+          ? [...devolutions.entries()]
+              .filter(([partida]) => ids.has(partida))
+              .reduce((n, [, d]) => n + d.cents, 0n)
+          : 0n;
       return planResult(
         b,
         lines.find((l) => l.presupuesto === b.id),
-        reason ? null : facts.reduce((n, r) => n + BigInt(r.importe), 0n),
+        reason ? null : gross - netted,
         reason,
+        reason ? undefined : { bruto: gross, devoluciones: netted },
       );
     }),
   };
@@ -356,6 +372,12 @@ function proposal(
       line,
       i.ejecutado === null ? null : aggregateCents(i.ejecutado),
       i.motivo,
+      i.bruto === null || i.devoluciones === null
+        ? undefined
+        : {
+            bruto: aggregateCents(i.bruto),
+            devoluciones: aggregateCents(i.devoluciones),
+          },
     );
   });
   const fingerprintValue = fingerprint([
