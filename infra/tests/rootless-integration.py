@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+os.environ['ROOTLESS_TRACEBACK']='1'
 
 
 class ProbeError(Exception):
