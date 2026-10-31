@@ -16,7 +16,7 @@ frente debe entregar primero), **bloqueo** (impide avanzar), **mejora opcional**
 Los nombres de frente son de seguimiento del tablero; no crean AC ni
 identificadores de spec.
 
-### 1. RESTORE-19/20 — evidencia Linux disponible
+### 1. RESTORE-19/20 — evidencia Linux integrada
 
 **Tipo:** pendiente técnico · **requiere autorización** para DEV/ejecución Linux.
 Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-10-31.md).
@@ -31,14 +31,16 @@ Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-1
   `inversiones-backup.test.ts`, `referencias.test.ts`, `d5-backup.test.ts` y
   `app.test.ts`; límites y huecos en el expediente.
 - **Evidencia 2026-10-31:** PR #148 (test-only) con CI Linux `required` **PASS**
-  (run `41241521688`; 377 PASS / 0 FAIL). Casos v19, v20 y negativos PASS. No
-  cierra AC ni DT6; pendiente revisión/aprobación y merge separado.
+  (run `41241521688`; 377 PASS / 0 FAIL). Casos v19, v20 y negativos PASS.
+  Integrada en `main` `2019fea`; CI postmerge `41243496311` **PASS**.
+- No cierra AC ni DT6; el restore técnico queda acreditado, pero no la custodia
+  externa, el gate rootless ni la restauración productiva con claves reales.
 - Criterio de salida: v19 y v20 restauran con manifiesto/esquema correctos;
   v19 abierta migra a v20 conservando hechos, vínculos, auditoría e identidad;
   negativos fallan cerrado sin destino parcial. Sin datos reales.
 
-**Siguiente paso:** revisar [PR #148](https://github.com/jmartinlabs/myfinanzas-app/pull/148)
-y decidir su integración; el merge exige aprobación separada.
+**Siguiente paso:** ninguno sobre #148; queda integrada. DT6/T-BKP, rootless y
+datos reales mantienen sus propios gates.
 
 ### 2. Comida — P3 y AC-25
 

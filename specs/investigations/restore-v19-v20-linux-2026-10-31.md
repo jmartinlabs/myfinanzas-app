@@ -108,8 +108,9 @@ separado; no autoriza despliegue ni activación.
 ## 9. Evidencia Linux — 2026-10-31
 
 - PR [#148](https://github.com/jmartinlabs/myfinanzas-app/pull/148), test-only:
-  `apps/api/src/restore-v19-v20.test.ts`.
-- CI `required` **PASS**: run `41241521688`; 377 PASS / 0 FAIL.
+  `apps/api/src/restore-v19-v20.test.ts`. Integrada en `main` `2019fea`.
+- CI premerge `required` **PASS**: run `41241521688`; 377 PASS / 0 FAIL.
+- CI postmerge **PASS**: run `41243496311`.
 - Casos PASS:
   - v19 cifrado conserva Comida y migra a v20;
   - v20 cifrado conserva D′ y revoca accesos;
