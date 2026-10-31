@@ -110,6 +110,26 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
 - **Gate rootless:** validar sobre una release real autorizada. No sustituye
   RESTORE-19/20. Sin despliegue ni activación.
 
+#### E4.9 — gates separados
+
+E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
+
+| Gate | Estado | Efecto |
+| --- | --- | --- |
+| E3.5 / FIN_NETA | No integrado; DEV18 STOP | Bloquea **AC-08**; adaptación pendiente al gasto único de Comida en Movimientos |
+| DT6 / T-BKP | Abierto y aparcado; sin datos físicos | Bloquea **AC-09**; los fixtures v19/v20 no acreditan custodia externa ni simulacro |
+| E4.8 precierre | [PR #139](https://github.com/jmartinlabs/myfinanzas-app/pull/139) OPEN; sin merge ni DEV | Puerta del flujo E4.9; falta implementación o integración efectiva |
+| DEV E4.9 / SPEC27 | No autorizado; AC **UNRUN** | Faltan cierre, foto, impactos, idempotencia, concurrencia, seguridad y pruebas |
+| Entorno real | Gates separados | Datos, release/rootless y ejecución productiva no autorizados |
+
+No bloqueantes por sí solos: E4.1 posiciones a Fin está integrada; E4.3, E4.2 y
+E4.4 pueden figurar `Parcial`/`No disponible`; E4.10 y E4.11 están fuera de
+alcance; DT3/DT4 están resueltas y no se reabren.
+
+Orden recomendado, sin iniciar trabajo automáticamente: analizar la adaptación de
+E3.5/FIN_NETA; revisar #139 para una eventual decisión documental; mantener DT6
+aparcado; abordar DEV E4.9 solo tras aprobar alcance y dependencias.
+
 ### 6. Mejoras opcionales
 
 **Tipo:** mejora opcional; sin AC ni prioridad de release.

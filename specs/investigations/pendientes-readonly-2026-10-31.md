@@ -144,11 +144,18 @@ autorización específica.
 | Dependencia | Estado | Qué bloquea | Evidencia necesaria | Gate |
 | --- | --- | --- | --- | --- |
 | SPEC27 / E4.9 | Diseño aprobado; AC UNRUN; sin DEV | Cierre real, foto y estado `Cerrado` | Implementación autorizada, pruebas de cierre y foto inmutable | Autorización DEV separada |
+| DEV E4.9 | No autorizado; AC UNRUN | Cierre, foto, impactos, idempotencia, concurrencia y pruebas | Alcance aprobado y dependencias resueltas o planificadas | Autorización DEV separada |
+| E4.8 precierre | PR #139 OPEN; sin merge ni DEV | Entrada del flujo E4.9 | Precierre implementado o integrado y autorizado | Decisión documental + DEV separado |
 | E3.5 / FIN_NETA | No integrado; DEV18 STOP | AC-08 de cierre; totales de Comida | Motor verificable y consumidores conciliados | Autorización y adaptación posterior |
-| DT6/T-BKP | Abierto; sin destino externo | AC-09 de cierre; recuperación real | Manifiesto, checksum, clave, restauración aislada y custodia | Decisión del usuario y evidencia externa |
-| RESTORE-19/20 | Pendiente; prioridad inmediata | Acreditación de restore v19/v20 | Fixtures v19/v20, Linux, migración v19→v20 y negativos | Autorización de ejecución |
+| DT6/T-BKP | Abierto y aparcado; sin destino externo | AC-09 de cierre; recuperación real | Manifiesto, checksum, clave, restauración aislada y custodia | Decisión del usuario y evidencia externa |
+| RESTORE-19/20 | Integrado en `2019fea`; CI Linux PASS | Nada por sí solo; no acredita DT6 real | Fixtures v19/v20, migración v19→v20 y negativos | Cerrado técnicamente |
 | Gate rootless | Gate integrado; validación real pendiente | Release/rollback autorizado | Release real autorizada y matriz de compatibilidad | Autorización de release |
 | Datos reales / activación | No autorizado | P3, AC-25, mapping físico y migración | Evidencia y contraste físico aprobados | Autorización específica |
+
+**DT6 solo no desbloquea E4.9.** E3.5/FIN_NETA, E4.8 precierre y el DEV de E4.9
+son gates independientes. E4.1 posiciones a Fin está integrada; E4.3/E4.2/E4.4
+pueden figurar parcial/no disponible; E4.10/E4.11 quedan fuera de alcance; DT3/DT4
+están resueltas.
 
 ### 3.1 Cierre y hechos tardíos
 
