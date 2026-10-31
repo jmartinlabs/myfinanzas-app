@@ -283,3 +283,28 @@ reales) sigue pendiente; el régimen solo se activa con fixtures ficticias.
 - E3.5/FIN_NETA y DEV18: no reanudados.
 - La pantalla nueva no sustituye los AC legados de DEV16; CU-01–CU-24 se
   acreditan por el testplan de esta entrega.
+
+### Ronda QA independiente y correcciones 2026-10-31
+
+La QA independiente devolvió FAIL con hallazgos reproducibles. Correcciones
+aplicadas en el mismo candidato:
+
+- Rectificar una devolución por encima de la compra, o retipificar/anular la
+  compra, degrada el vínculo a `Revisar` en la misma transacción, conservando el
+  hecho bancario.
+- La etiqueta de una devolución acreditada sin compra se lee de la propia
+  devolución; Compensable/Falta dejan de divergir del plan mensual.
+- El neteo P5 exige vínculo vigente y compra válida: una compra anulada ya no
+  produce Ejecutado negativo.
+- Una devolución acreditada de otro ciclo se muestra separada y no bloquea
+  Recursos/Falta del receptor (CU-22).
+- El ámbito de compras se acota al Saldo del régimen (o a metadatos explícitos);
+  una compra del Saldo de Comida sin etiqueta aparece para clasificarse.
+- El preview de impacto de configuración conserva el neteo P5.
+- Las huellas incluyen metadatos, devoluciones, roles y régimen.
+- El régimen exige elegir cobertura explícita en la UI.
+- Testplan corregido: CU-07 con 865 y CU-24 con 34/3.
+
+Evidencia: `bun test apps/api/src/comida.test.ts` 29 PASS / 0 FAIL; suite API
+con los mismos 53 fallos de entorno de `main`. CI Linux, E2E y restore siguen
+UNRUN. Nueva ronda de QA independiente pendiente.

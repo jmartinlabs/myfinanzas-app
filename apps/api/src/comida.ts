@@ -241,11 +241,14 @@ export function listComida(db: Database, params = new URLSearchParams()) {
         control: string;
       };
     const cycles = cycleMaster(db);
+    const comidaSaldo = regimenRaw(db)?.saldo ?? null;
     const individual = ledgerRows(db)
       .filter(
         (r) =>
           r.tipo === "Devolución de gasto" ||
-          (r.tipo === "Gasto" && metadata.has(r.id)),
+          (r.tipo === "Gasto" &&
+            (metadata.has(r.id) ||
+              (comidaSaldo !== null && r.origen === comidaSaldo))),
       )
       .map((r) => {
         const m = metadata.get(r.id) ?? null,
@@ -676,7 +679,7 @@ export function applyComidaDevolucion(
           evidenciaOrigenTemporal: "Aporta la evidencia de origen.",
         },
       );
-    if (!partida && !purchase?.partida)
+    if (!partida && !purchase?.partida && !row.partida)
       throw new Problem(422, "VALIDATION", "La elegibilidad exige Partida real.", {
         partida: "Selecciona o vincula una Partida.",
       });
@@ -1257,7 +1260,9 @@ export function comidaMetrics(
     const purchases = rows
       .filter(
         (r) =>
-          r.tipo === "Gasto" && saldoOf(r.origen).control !== "Terminal",
+          r.tipo === "Gasto" &&
+          saldoOf(r.origen).control !== "Terminal" &&
+          (saldo ? r.origen === saldo : metadata.has(r.id)),
       )
       .map((r) => ({ row: r, meta: metadata.get(r.id) ?? null }));
     const unclassified = purchases.filter((p) => p.meta?.etiqueta == null);
@@ -1277,13 +1282,27 @@ export function comidaMetrics(
       const d = devolutions.get(r.id) ?? null;
       if (!d) return null;
       const purchase = d.compra ? purchaseById.get(d.compra) ?? null : null;
-      const partida = d.partida ?? purchase?.row.partida ?? null;
-      const label = purchase?.meta?.etiqueta ?? null;
-      const eligible =
+      const partida = d.partida ?? r.partida ?? purchase?.row.partida ?? null;
+      const label =
+        purchase?.meta?.etiqueta ?? metadata.get(r.id)?.etiqueta ?? null;
+      // A link in Revisar never proves eligibility by itself when a purchase is
+      // present; external accreditation without FK remains valid (P4).
+      const linkValid = !d.compra || d.estado === "Verificado";
+      const accredited =
         d.elegibilidad === "Acreditada" &&
-        d.cicloOrigen === ciclo.id &&
-        partida !== null;
-      return { d, purchase, partida, label, eligible, importe: r.importe };
+        d.cicloOrigen !== null &&
+        partida !== null &&
+        linkValid;
+      const eligible = accredited && d.cicloOrigen === ciclo.id;
+      return {
+        d,
+        purchase,
+        partida,
+        label,
+        eligible,
+        accredited,
+        importe: r.importe,
+      };
     };
     const eligibleFood = devoluciones
       .map(attributed)
@@ -1299,7 +1318,10 @@ export function comidaMetrics(
       );
     const pendingDev = devoluciones.filter((r) => {
       const a = attributed(r);
-      return !a || !a.eligible;
+
+      // A refund accredited to another cycle is observed, not pending, and must
+      // not block the receiver cycle resources (P5/CU-22).
+      return !a || !a.accredited;
     });
     const foodBruto = sum(food.map((p) => BigInt(p.row.importe)));
     const foodDev = sum(eligibleFood.map((a) => BigInt(a.importe)));
@@ -1667,7 +1689,12 @@ export function revalidateDevolucionesCompra(
     ).n;
     const total =
       BigInt(others) + (row.anulado ? 0n : BigInt(row.importe));
-    if (!purchase.anulado && total <= BigInt(purchase.importe)) continue;
+    if (
+      !purchase.anulado &&
+      purchase.tipo === "Gasto" &&
+      total <= BigInt(purchase.importe)
+    )
+      continue;
     const before = comidaDevolucion(db, link.movimiento)!;
     db.run(
       `UPDATE movimiento_devolucion SET estado='Revisar',revision=revision+1,
@@ -1686,13 +1713,73 @@ export function revalidateDevolucionesCompra(
         JSON.stringify(after),
         purchase.anulado
           ? "Compra vinculada anulada; el vínculo queda en revisión."
-          : "La compra ya no cubre íntegramente las devoluciones verificadas.",
+          : purchase.tipo !== "Gasto"
+            ? "La compra vinculada ya no es un Gasto; el vínculo queda en revisión."
+            : "La compra ya no cubre íntegramente las devoluciones verificadas.",
         time,
       ],
     );
     changed.push(link.movimiento);
   }
   return changed;
+}
+
+/**
+ * A refund rectified above the linked purchase, or whose purchase is no longer
+ * valid, cannot remain `Verificado`: the bank fact is preserved and the link is
+ * demoted to `Revisar` inside the same movement transaction.
+ */
+export function revalidateDevolucionPropia(
+  db: Database,
+  movimientoId: string,
+  now = Date.now(),
+) {
+  if (!comidaInstalled(db, "movimiento_devolucion")) return false;
+  const link = comidaDevolucion(db, movimientoId);
+  if (!link || link.estado !== "Verificado" || !link.compra) return false;
+  const purchase = movement(db, link.compra);
+  const own = movement(db, movimientoId);
+  const others = (
+    db
+      .query(
+        `SELECT COALESCE(SUM(m.importe),0) n FROM movimiento_devolucion d
+         JOIN movimientos m ON m.id=d.movimiento
+         WHERE d.compra=? AND d.estado='Verificado' AND m.anulado=0 AND d.movimiento<>?`,
+      )
+      .get(link.compra, movimientoId) as { n: number }
+  ).n;
+  const total = BigInt(others) + BigInt(own.importe);
+  if (
+    !purchase.anulado &&
+    purchase.tipo === "Gasto" &&
+    total <= BigInt(purchase.importe)
+  )
+    return false;
+  const time = new Date(now).toISOString();
+  db.run(
+    `UPDATE movimiento_devolucion SET estado='Revisar',revision=revision+1,
+     actualizado=? WHERE movimiento=?`,
+    [time, movimientoId],
+  );
+  const after = comidaDevolucion(db, movimientoId)!;
+  db.run(
+    `INSERT INTO movimiento_devolucion_audit(movimiento,accion,revision,anterior,
+     posterior,motivo,instante,actor) VALUES(?,?,?,?,?,?,?,'sistema-comida')`,
+    [
+      movimientoId,
+      "rectificación",
+      after.revision,
+      JSON.stringify(link),
+      JSON.stringify(after),
+      purchase.anulado
+        ? "Compra vinculada anulada; el vínculo queda en revisión."
+        : purchase.tipo !== "Gasto"
+          ? "La compra vinculada ya no es un Gasto; el vínculo queda en revisión."
+          : "La devolución ya no cabe íntegramente en la compra vinculada.",
+      time,
+    ],
+  );
+  return true;
 }
 
 /** Devolution cents per effective Partida for a cycle, for P5 net execution. */
@@ -1712,21 +1799,24 @@ export function eligibleDevolutionCents(
   const result = new Map<string, { cents: bigint; ids: string[] }>();
   const rows = db
     .query(
-      `SELECT d.movimiento,m.importe,d.partida,c.partida compraPartida
+      `SELECT d.movimiento,m.importe,d.partida,m.partida movimientoPartida,
+         c.partida compraPartida
        FROM movimiento_devolucion d
        JOIN movimientos m ON m.id=d.movimiento
        LEFT JOIN movimientos c ON c.id=d.compra
        WHERE d.elegibilidad='Acreditada' AND d.ciclo_origen=?
-         AND m.anulado=0 AND m.fecha>=? AND m.fecha<=?`,
+         AND m.anulado=0 AND m.fecha>=? AND m.fecha<=?
+         AND (d.compra IS NULL OR (d.estado='Verificado' AND c.anulado=0 AND c.tipo='Gasto'))`,
     )
     .all(cicloId, start, end) as {
     movimiento: string;
     importe: number;
     partida: string | null;
+    movimientoPartida: string | null;
     compraPartida: string | null;
   }[];
   for (const r of rows) {
-    const partida = r.partida ?? r.compraPartida;
+    const partida = r.partida ?? r.movimientoPartida ?? r.compraPartida;
     if (!partida) continue;
     const current = result.get(partida) ?? { cents: 0n, ids: [] };
     current.cents += BigInt(r.importe);

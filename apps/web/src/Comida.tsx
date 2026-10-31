@@ -548,7 +548,7 @@ function RegimenForm({
     [ciclo, setCiclo] = useState(options.ciclos.at(-1)?.id ?? ""),
     [apertura, setApertura] = useState(""),
     [evidencia, setEvidencia] = useState(""),
-    [cobertura, setCobertura] = useState("Verificable"),
+    [cobertura, setCobertura] = useState(""),
     [motivo, setMotivo] = useState("");
   return (
     <section className="panel" aria-label="Preparar régimen">
@@ -601,6 +601,7 @@ function RegimenForm({
           <label>
             Cobertura
             <select value={cobertura} onChange={(e) => setCobertura(e.target.value)}>
+              <option value="">Selecciona cobertura</option>
               <option value="Verificable">Verificable</option>
               <option value="Parcial">Parcial</option>
             </select>
@@ -615,7 +616,10 @@ function RegimenForm({
           </label>
         </div>
         <div className="actions">
-          <button type="submit" disabled={!saldo || !apertura || !evidencia || !motivo}>
+          <button
+            type="submit"
+            disabled={!saldo || !apertura || !evidencia || !motivo || !cobertura}
+          >
             Preparar
           </button>
           <button type="button" className="secondary" onClick={onCancel}>

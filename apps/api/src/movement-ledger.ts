@@ -109,6 +109,35 @@ export function financeRevision(db: Database) {
             .all(),
         ]
       : []),
+    ...(db
+      .query(
+        "SELECT name FROM sqlite_master WHERE name='movimiento_revision_comida'",
+      )
+      .get()
+      ? [
+          db
+            .query(
+              `SELECT movimiento,etiqueta,evidencia_bancaria,evidencia_comercial,
+                estado_revision,revision_movimiento,revision,actualizado
+               FROM movimiento_revision_comida ORDER BY movimiento`,
+            )
+            .all(),
+          db
+            .query(
+              `SELECT movimiento,compra,partida,ciclo_origen,evidencia_relacion,
+                evidencia_origen_temporal,elegibilidad,estado,revision_movimiento,
+                revision,actualizado FROM movimiento_devolucion ORDER BY movimiento`,
+            )
+            .all(),
+          db
+            .query(
+              `SELECT movimiento,rol,obligacion_ciclo,evidencia,revision_movimiento,
+                revision,actualizado FROM movimiento_rol_financiacion ORDER BY movimiento`,
+            )
+            .all(),
+          db.query("SELECT * FROM regimen_comida ORDER BY saldo").all(),
+        ]
+      : []),
     db
       .query(
         "SELECT id,nombre,inicio,CAST(apertura AS TEXT) apertura,estado,revision FROM deudas ORDER BY id",
