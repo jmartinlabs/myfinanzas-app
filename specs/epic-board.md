@@ -1,3 +1,16 @@
+## COMIDA-UNICO-01 — consolidación candidata 2026-10-30
+
+Responsable de esta entrega: Codex, coordinador técnico por encargo directo del usuario.
+Base main contrastada: `454d21a`; rama `codex/spec16-comida-registro-unico`.
+D1–D5, P1, P2, P4, P5, P6, P7 y P7a aprobadas por mensajes humanos del 2026-10-30; fuente y alcance en
+[SPEC16, candidato revisión 1](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30).
+Estado: revisión3 y wireframes aprobados por mensaje humano «Apruebo especificaciones,
+Pero luego tengo otras» sobre648b4a7; aprobación consolidada el2026-10-31.
+PR133 sigue abierta, sin merge autorizado. Fecha/saldo reales y activación no autorizados. CU-01–CU-24
+UNRUN; sin código ni datos. DEV18 sigue STOP. Checkpoint detallado en
+[progress16](16-revision-comida-progress.md#comida-unico-01--checkpoint-documental-2026-10-30).
+No reemplaza el estado de otros frentes; los checkpoints inferiores conservan su fecha.
+
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29
 
 Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como

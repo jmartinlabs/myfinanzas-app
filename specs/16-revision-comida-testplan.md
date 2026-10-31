@@ -91,3 +91,94 @@ guardas ni se investiga fuera de alcance.
 | 2026-10-26 | `bun test apps/api` en worktree base `main` 5ad75ed (mismo entorno) | 197 PASS / 46 FAIL | — | Fallos de plataforma sin DEV16; el candidato local 212 PASS / 47 FAIL (el fallo adicional es restore v16, PASS en CI Linux) |
 | 2026-10-26 | `bun test apps/api/src/ciclos.test.ts -t "03 AC01"`; `movimientos.test.ts -t "04 AC13"`; `flujo-mensual.test.ts` | **PASS** 2/2, 1/1, 13/13 | Regresión de referencia/cobertura | La fuente Revisión Comida se integra sin alterar Movimientos ni el maestro Ciclos |
 | 2026-10-26 | `bunx playwright test tests/e2e/movimientos.spec.ts` | **FAIL platform** en restore server | Regresión UI de Ciclos | El recorrido previo (incluido el texto de conciliación actualizado) pasa; el restore cifrado no arranca en macOS por la misma limitación de `libc.so.6` |
+
+
+## COMIDA-UNICO-01 — cobertura candidata CU (2026-10-30)
+
+No sustituye ni hereda resultados de los 37 AC anteriores. Todos los CU son UNRUN:
+no existe candidato de implementación. Matriz de acciones/resultados y decisiones
+P1–P5 en [specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30).
+
+| Casos | Riesgo y prueba prevista | Verificación / entorno | Estado |
+| --- | --- | --- | --- |
+| CU-01/02/03/12 | Transferencia/compra única, banco y ejecución; snapshots antes/después de tablas | Tests de dominio/API de Movimientos, Revisión y planes; fixtures Bun/SQLite | UNRUN |
+| CU-04/08 | Bordes Inicio/Fin, alta tardía, agregado solapado y legado sin doble reconocimiento | Tests de Ciclos y Revisión con ventanas sintéticas | UNRUN |
+| CU-05/10 | Metadatos, rectificación/anulación, coincidencias e idempotencia concurrente | Tests API/HTTP con MFA/CSRF y dos escritores; E2E flujo de revisión | UNRUN |
+| CU-06 | Devoluciones parciales/múltiples, sin origen, exceso, compra anulada, cuenta distinta, cruce de ciclos y neto negativo | Tests Movimientos/consumidores según P1/P4 aprobadas; neteo condicionado a P5 | UNRUN |
+| CU-07 | Apertura acreditada/ausente, transferencias previas no resuman, cobertura insuficiente y no conciliado | Tests posición por régimen con fixture 100+800−45+10=865; régimen condicionado a P2 | UNRUN |
+| CU-09 | Anticipos, reposiciones, Compartidos, plan mensual, flujo y anual sin regresión | Suites de cada consumidor; comparación de resultados legado por mismo fixture | UNRUN |
+| CU-11 | Upgrade desde v18, rollback de fallo, reapertura, contrato estricto/FK, restore e intentos revocados | Suite esquema/backup en CI Linux; sin bases reales; versión futura aún no asignada | UNRUN |
+| CU-05/10/11 | 390/1440, foco/teclado, vacío/error/409/422, navegación al mismo Movimiento | Playwright de Revisión/Movimientos con capturas ficticias | UNRUN |
+
+Entrada canónica futura: `python3 scripts/verify --full` sobre SHA de código estable,
+con comandos focales definidos al aprobar esquema/API; no se inventan nombres de tests
+que todavía no existen. CI Linux global y QA independiente exigidas. La validación
+documental de este candidato no acredita conciliación bancaria ni equivalencia Excel.
+
+### P5 — ampliación de cobertura, 2026-10-30
+
+CU-13–CU-16 UNRUN (ver acciones/resultados en specification). Futuras pruebas de
+planes-ciclo: 100/50/15 => 35/65; devolución anterior 40 => banco +40/neto observado
+−40/Ejecutado 0; Partida sin temporalidad y NULL => cobertura pendiente sin neteo
+provisional; Aportación conserva 800. Regresiones plan-anual/flujo conservan bruto
+con explicación de semántica; E2E comprueba métricas/estado/% y origen separado.
+No se simula FIN_NETA ni se atribuye 8 de 13 sin reparto aprobado. Tests funcionales
+pendientes de candidato; entrada canónica futura verify --full y QA independiente.
+
+### P6 — ampliación de cobertura, 2026-10-30
+
+CU-17–CU-20 UNRUN: fixtures de clasificación, devolución y reposición prueban 50−15−20
+=> Falta 15; devolución antigua no reduce obligación actual; etiqueta Pendiente revisar
+no equivale a estado de Partida NULL; Fuera presupuesto preserva banco; reintentos y
+asignación acreditada no duplican reposición ni recuperación Anticipo. Comandos focales
+se concretarán con implementación; entrada verify --full y QA independiente. Recursos
+y cierre analítico: contrato bloqueado por fuente ausente, no caso simulado ni PASS.
+
+### P7 — cobertura propuesta (no aprobada), 2026-10-30 [HISTÓRICO SUPERADO]
+
+CU21–24 UNRUN: dominio/API comprobará 100+700+20−35=Recursos785, Falta15,
+D480/cierre580, devolución antigua40=>cierre620 sin cambiar Recursos, B_A250=>banco770
+con diferencia−150. Casos negativos: falta S0/B/cobertura/clasificación, residual sin
+explicación, reposición de otra obligación, Fuera presupuesto y doble descuento de
+Anticipo. Ciclo abierto mantiene Fin vacío; sin duración, equivalentes/margen no
+disponibles. Revisión E2E mostrará desglose y procedencia, sin columna económica
+editable paralela. Futuras suites verifican por métrica; no reemplaza CI Linux ni QA.
+Estado histórico de esta matriz: entonces no se afirmaban fórmulas aprobadas; la
+confirmación P7 posterior sustituye ese estado. Pruebas funcionales siguen UNRUN.
+
+### Estado vigente P7 / contrato candidato revisión 2 — 2026-10-30
+
+P7 aprobada por mensaje humano «Apruebo P7» sobre 96a07d1; reemplaza el estado
+propuesto de la matriz anterior, que conserva su historia. Fuente aportada según
+relay0020/21, sin inspección propia de Codex ni equivalencia certificada con (7).
+CU01–24 siguen UNRUN: aprobación de fórmula no prueba funcionalidad.
+Contrato técnico candidato revisión2 y wireframes pendientes de aprobación completa.
+Ampliar CU06/CU09 con devolución de compra ING recibida en otro Saldo: efecto bancario
+solo en receptor real, D de ING excluye esa entrada; puente identifica efecto externo,
+netos solo con elegibilidad acreditada, sin Transferencia ficticia. Metadata/legado
+con IDs numéricos coincidentes se resuelven por ruta/procedencia, nunca por adivinación.
+Esquema/restore y guards se verifican contra candidato real posterior, sin datos reales.
+
+### Revisión 0022 — observaciones abiertas, 2026-10-30
+
+Aprobación completa de revisión2 suspendida. CU06/09/17/21–23 amplían caso con números:
+S0=B_A100, compra Ocio ING50, devolución15 en otra cuenta, reposición ING20 => Falta15,
+banco70, Recursos85, puente−15. Comprobar etiqueta «obligación económica», no dinero
+para restaurar banco; sin transferencias ficticias ni nueva métrica de restauración.
+CU24: añadir variantes a contrastar de duración provisional acreditada/desconocida y
+falta de cobertura. Son casos propuestos pendientes de fuente/enmienda a P7; no se
+sustituye la regla aprobada de duración ni se inventa Fin. Todos siguen UNRUN.
+
+### Estado vigente P7a / candidato revisión3 — 2026-10-30
+
+Observaciones0022 resueltas documentalmente: Álex0024 verifica obligación vs banco y
+limpieza; usuario aprueba enmienda P7a. Los estados anteriores abiertos se conservan
+como historia superada. CU01–24 siguen UNRUN; aprobación no demuestra implementación.
+CU24 cubre: Inicio2026-10-28, noviembre financiado, corte2026-10-30 => duración34,
+transcurridos3, Recursos340/J_n30 => equivalentes30/Margen0 Provisionales y ritmo70.
+Corte2026-12-02=>36>34 => equivalentes/Margen null por horizonte vencido, sin extrapolar
+ni recortar a34; observado solo con días/cobertura válidos. Sin duración/cobertura,
+No disponible; corte<Inicio inválido. Siguiente Inicio real recalcula duración, quita
+provisionalidad e invalida preview. E2E verifica etiquetas/Fin vacío, teclado y estados
+sin falsear cobertura ni compartir fechas editables paralelas. verify --full y QA
+independiente futuros sobre código; esta revisión solo verifica documentación.

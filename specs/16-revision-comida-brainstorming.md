@@ -874,3 +874,126 @@ evidencias, §9.2 (bullet PD-01), §9.3.3, §9.4 (filas «Vínculo» y «Reposic
 única salida de toda `Entrada`», y párrafo de cierre), §9.4.1, §9.4.2, §9.5, la fila PD-01
 de §10, la fila A5 de §11 y el «Pendiente real» de §11. AC-10 deja de estar bloqueado por PD-01. D-01-R(app)
 queda propuesto y D-01-R(v5.11(7)) sigue en AC-25. No se declara aprobación ni equivalencia.
+
+
+## COMIDA-UNICO-01 — ronda de refinamiento, 2026-10-30
+
+Estado: D1–D5 confirmadas por mensaje humano directo del 2026-10-30; candidato completo
+no aprobado. Se conserva la historia anterior; runtime todavía auxiliar.
+Fuente literal: «Aprobamos las cinco decisiones funcionales recogidas en el mensaje
+0006». Alcance confirmado: conservar histórico agregado sin migración individual,
+devolución bancaria explícita, Partida obligatoria para gastos nuevos, transición al
+Inicio de ciclo y separación bruto/devoluciones/neto. No autoriza datos reales,
+activación ni merge. No se amplía esa aprobación a toda recomendación de Álex.
+
+Preguntas materiales pendientes y alternativas se conservan como P1–P5 en
+[specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30),
+junto con evidencia técnica, wireframes candidatos y CU-01–CU-12 UNRUN.
+- [x] Propuesta P1: Tipo explícito Devolución de gasto; alternativa discriminador de Gasto.
+- [x] Propuesta P2: preservar ID con régimen fechado verificable; alternativa sucesor.
+- [x] Propuesta P3: diferir selección real hasta evidencia autorizada.
+- [x] Propuesta P4: hecho acreditado con atribución revisable, sin compra obligatoria.
+- [x] Propuesta P5: conservar ejecutado vigente y consultar bruto/devolución/neto separados.
+Las marcas son recomendaciones, no respuestas del usuario. Respuestas P1–P5:
+**PENDIENTES**. Wireframes: PENDIENTES. Próxima acción: decisión identificable sobre
+P1/P2/P4/P5; P3 queda para activación operativa posterior. Sin implementación material.
+
+### Confirmación posterior P1 — 2026-10-30
+
+Respuesta directa del usuario: «Apruebo P1: nuevo tipo Devolución de gasto».
+P1 pasa de propuesta a aprobada, sin alterar el registro histórico de la ronda.
+Reembolso comercial explícito con importe positivo y entrada bancaria; no Anticipos,
+Compartidos ni transferencias internas. Consecuencias técnicas en la specification.
+P2/P3/P4/P5 y aprobación completa de spec/wireframes siguen pendientes; sin código,
+datos reales, activación ni merge. Próxima decisión: P2, identidad de ING Comida.
+
+### Confirmación posterior P2 — 2026-10-30
+
+Usuario: «Apruebo P2: mantener ING Comida como el mismo Saldo, con régimen fechado
+sujeto a verificación». Mismo ID de cuenta, sin migración de compras antiguas.
+Condiciones de verificación y bloqueo en specification; si falla se elevará sucesor,
+sin ejecutarlo por inferencia. P3/P4/P5 y spec/wireframes completos siguen pendientes.
+La fecha/apertura reales y activación necesitan autorización separada.
+
+### Confirmación posterior P4 — 2026-10-30
+
+Usuario: «Apruebo P4: compra y Partida opcionales con evidencia y revisión; vínculo
+íntegro sin reparto parcial». Contrato consolidado en specification: excepción para
+Devolución de gasto, no para Gastos nuevos; evidencia, revisión, vínculo 0..1 compra
+por devolución, sin reparto parcial. Ejemplo 20/12/13 conserva banco +25 y vínculo de
+13 Revisar si no cabe íntegro, sin atribuir automáticamente 8. P5 y spec/wireframes
+completos pendientes; P3 operativo separado. Sin implementación ni activación.
+
+### Confirmación posterior P5 — 2026-10-30
+
+Respuesta humana «Apruebo P5» a solicitud inequívoca: Ejecutado mensual neto y
+reembolsos de compras de ciclos anteriores separados sin liberar presupuesto actual;
+anual conserva cálculo. Reemplaza propuesta inicial de Ejecutado bruto; no reescribe
+historia de rondas. Elegibilidad requiere Partida y origen temporal acreditados;
+ausencia deja cobertura pendiente. P3 operativo separado; spec/wireframes completos
+pendientes, sin implementación. Ejemplos y CU-13–CU-16 en specification.
+
+### Confirmación posterior P6 — 2026-10-30
+
+Usuario «Apruebo P6», tras solicitud inequívoca de grupos bruto/devoluciones/neto y
+Falta=max(compensable neto elegible del mismo ciclo−reposiciones reales asignadas,0).
+Devolución antigua no reduce obligación actual; sin origen/etiqueta acreditados,
+cobertura pendiente. Fuente y CU-17–CU-20 en specification. Recursos/cierre completos
+no aprobados: falta fuente verificable; P3 y spec/wireframes completos pendientes.
+
+### Ronda P7 — Recursos/cierre propuestos, 2026-10-30
+
+Usuario confirma que proporcionó a Álex el libro y pide «vamos» para preparar la
+adaptación. No aprueba nuevas fórmulas ni sustituye formalmente la referencia v5.11(7).
+Fuente externa comunicada por Álex: archivo v5.11(20261030-155958), relay0020/21;
+Codex no inspeccionó físicamente el libro. Procedencia conservada en specification.
+- [x] Propuesta: Recursos=S0+F+R_caja−C_n, cierre analítico=S0+D y banco=B_A+D;
+  puente explicable de otros efectos, sin ajustes/arrastres automáticos.
+- [ ] Alternativa: igualar Recursos/cierre a banco. No recomendada: confunde S0 y B,
+  pierde el significado de Recursos y oculta efectos excluidos del análisis.
+Respuesta P7: PENDIENTE. Elegir propuesta incluye ritmo neto con duración/cobertura
+verificables según specification. CU21–24 propuestos UNRUN. P1/P2/P4/P5/P6 intactos.
+P3 y aprobación completa de spec/wireframes siguen separados.
+
+### Confirmación posterior P7 — 2026-10-30
+
+Usuario «Apruebo P7», respuesta a propuesta identificada en 96a07d1: Recursos con
+R_caja, Falta con R_obl, cierre analítico S0+D, banco B_A+D, puente de otros efectos,
+ritmo neto y disponibilidad por duración/cobertura. Sin ajustes ni arrastre automático.
+P7 pasa a aprobada; ronda propuesta previa se conserva. P3 y spec completa separados.
+
+### Candidato completo — revisión 2, 2026-10-30
+
+Tras aprobación P7 se concreta contrato técnico para revisión: tablas de hechos sin
+copia económica, metadata/FK, evidencia temporal, API/preview/transacción, régimen
+separado de activación, upgrade desde v18/restore y plan por incrementos.
+La aprobación de decisiones no aprueba automáticamente esta revisión ni wireframes.
+Siguiente gate: aprobación completa COMIDA-UNICO-01 revisión 2 y su SHA final.
+P3 real, activación y merge siguen separados. Sin código/schema ejecutado.
+
+### Revisión externa 0022 — 2026-10-30
+
+Candidato581d36c no aprobado por usuario. Aprobación completa suspendida: se aclara
+Falta como obligación económica y se solicita a Álex fórmula física de duración
+provisional/Días ciclo y días transcurridos. Posible enmienda de P7 requiere decisión
+humana; no se altera P7 por inferencia. Rótulo histórico de testplan marcado superado.
+
+### Confirmación P7a y candidato revisión3 — 2026-10-30
+
+Usuario «Apruebo P7a», tras única propuesta que incluía No disponible al vencer
+horizonte provisional. Fuente física reportada relay0024 (Días ciclo E5 y lectura
+D14), no identidad certificada con (7). Enmienda expresa a restricción previa P7:
+provisional hasta fin de mes financiado, Fin vacío; al vencer no extrapolar/recortar.
+La solicitud de aprobación completa revisión2 queda superada por revisión3 propuesta;
+P1–P7 intactos excepto la enmienda declarada P7a, P3 operativo separado.
+Respuesta de aprobación completa revisión3/wireframes: PENDIENTE.
+
+### Aprobación integral registrada — 2026-10-31
+
+Usuario «Apruebo especificaciones, Pero luego tengo otras» aprobó revisión3 y
+wireframes del candidato648b4a7. Se consolida la aprobación ya concedida, sin
+reabrir decisiones. Las menciones previas PENDIENTE son históricas.
+PR133 sigue sin merge autorizado; CU01–24 UNRUN. P3 real y activación separados.
+D′/SPEC33 integrada por PR135 es otro frente; sin código ni cambios financieros
+en este registro. Secuencia propuesta: base Movimientos/devoluciones, registro único
+y métricas Comida, después transición de planificación D′ con autorización propia.

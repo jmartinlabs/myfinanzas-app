@@ -124,3 +124,107 @@ checkpoint final. Se conserva como historia, no como estado vigente.
 - AC-12/31: históricos condicionales; solo fixture sintético y UNRUN/C.
 - Sin Excel, datos reales, B3/Dev32, despliegue ni merge.
 - Merge de PR #82 requiere aprobación expresa del usuario.
+
+
+## COMIDA-UNICO-01 — checkpoint documental 2026-10-30
+
+D1–D5 aprobadas por mensaje directo del usuario; registro canónico en
+[specification](16-revision-comida-specification.md#comida-unico-01--candidato-de-refinamiento-revisión-1-2026-10-30).
+Base main remota verificada: `454d21a`; rama `codex/spec16-comida-registro-unico`.
+Consolidación de candidato, análisis de dependencias y cobertura CU-01–CU-12; sin código,
+schema ni datos. P1/P2/P4/P5 y spec/wireframes completos pendientes; C/B reales y activación
+siguen separados. DEV18 permanece STOP. No hay escritores delegados en esta entrega.
+La auditoría previa y el handoff local se preservan; no se incluyen en este cambio.
+
+QA documental independiente: subagente `qa_spec16`, solo lectura, corrigió atribución de
+relay 0006 (síntesis Codex, no respuesta Álex); sin otros hallazgos materiales.
+Modelo/effort solicitado explícitamente `gpt-6.1-sol`/`low`, contexto nuevo; selección
+efectiva no expuesta en metadatos de retorno, no se declara verificada.
+Cuota consultada: 85% restante ventana 300 min y 92% semanal; sin despacho adicional.
+Consumo Actions N/D: Billing API requiere scope `user` ausente; sin ampliar permisos.
+Python sistema 3.9.6 no cumple prerrequisito; verificación usa Python 3.12 disponible.
+Pruebas de aplicación UNRUN: solo documentación; no hay candidato funcional.
+
+### Aprobación P1 — 2026-10-30
+
+Usuario: «Apruebo P1: nuevo tipo Devolución de gasto». Registro canónico actualizado
+en specification; brainstorming conserva confirmación append-only. Sin implementación.
+P2/P3/P4/P5 y spec completa permanecen pendientes; siguiente gate P2.
+
+### Aprobación P2 — 2026-10-30
+
+Mensaje humano directo: «Apruebo P2: mantener ING Comida como el mismo Saldo, con
+régimen fechado sujeto a verificación». Registro en specification y brainstorming.
+Matriz de consumidores y condiciones de bloqueo documentadas; sin código ni esquema.
+P3/P4/P5 y spec/wireframes completos pendientes. Próxima decisión funcional: P4.
+
+### Aprobación P4 — 2026-10-30
+
+Usuario: «Apruebo P4: compra y Partida opcionales con evidencia y revisión; vínculo
+íntegro sin reparto parcial». Registro canónico en specification; confirmación
+append-only en brainstorming. Retirada la propuesta de atribución parcial implícita
+20/25; banco conserva +25 y el vínculo íntegro de 13 queda Revisar. Sin código/schema.
+Siguiente decisión P5; P3 y aprobación de spec/wireframes completos siguen separados.
+
+### Aprobación P5 — 2026-10-30
+
+Usuario «Apruebo P5» tras solicitud única de Ejecutado mensual neto y devolución
+anterior separada sin liberar presupuesto. Consolidado en specification/brainstorming;
+CU-13–CU-16 UNRUN. Anual y S de SPEC12 conservan bruto con límites explicados.
+Sin código/schema. Siguiente trabajo: cerrar detalle técnico y revisión de candidato
+completo/wireframes; P3 operativo sigue pendiente y no autoriza activación.
+
+### Aprobación P6 — 2026-10-30
+
+Usuario «Apruebo P6»; registro canónico en specification y confirmación append-only
+brainstorming. CU-17–CU-20 UNRUN; sin código ni datos. Fuente de Recursos/cierre no
+acreditada: se necesita fórmula/criterio verificable sanitizado; no se infiere desde
+S0/B ni DEV18. P3, detalle técnico y spec/wireframes completos siguen pendientes.
+
+### Propuesta P7 y procedencia de fuente — 2026-10-30
+
+Usuario confirma haber proporcionado libro y autoriza preparar adaptación («vamos»).
+Relay0020/21 reporta extracción de v5.11(20261030-155958), no equivalencia con (7);
+Codex verificó mensajes, sin inspección física propia ni datos reales incorporados.
+P7 propuesta en specification, ejemplos/puente y CU21–24 UNRUN. Fuente disponible con
+procedencia delimitada sustituye bloqueo de ausencia absoluta; adaptación financiera
+sigue pendiente de aprobación P7. Sin código, activación, C/B real ni merge.
+
+### Aprobación P7 — 2026-10-30
+
+Usuario «Apruebo P7» sobre propuesta 96a07d1. Contrato y casos actualizados sin
+modificar fórmulas: Recursos R_caja, Falta R_obl, cierre analítico y banco separados.
+Sin código/schema/datos. P3, activación y aprobación completa de spec siguen separados.
+
+### Contrato completo candidato revisión 2 — 2026-10-30
+
+Concretados datos propios, relaciones, API/DTO, huellas/transacciones, alcance inicial
+ING Comida, continuidad v18 y plan incremental. Sin implementación; revisión completa
+independiente y verify docs por SHA final antes de solicitar aprobación. P3 separado.
+
+### Observaciones externas 0022 — 2026-10-30
+
+Álex FAVORABLE CON OBSERVACIONES, no aprobación de revisión2. Clarificada Falta como
+obligación económica, no cantidad para restaurar ING; caso100/50/15externo/20 produce
+Falta15 y banco70, sin nueva métrica ni hecho. Testplan histórico rotulado superado.
+Duración provisional del ciclo abierto requiere fórmula/criterio físico y posible
+enmienda de P7 aprobada. Aprobación completa suspendida hasta resolver; sin código.
+
+### Aprobación P7a y cierre documental de observaciones — 2026-10-30
+
+Usuario «Apruebo P7a». Fuente0024 reporta E5/D14: horizonte fin mes financiado,
+duración provisional34 en ejemplo Inicio28/10; política aprobada No disponible al
+vencer horizonte. Se sustituye explícitamente restricción P7, sin inventar Fin.
+Observación1/limpieza verificadas por Álex en0024; observación2 incorporada tras
+aprobación humana. Candidato revisión3 y wireframes pendientes de aprobación completa;
+CU01–24 UNRUN, sin código/schema/datos, P3 y activación/merge separados.
+
+### Aprobación integral registrada — 2026-10-31
+
+Usuario «Apruebo especificaciones, Pero luego tengo otras» aprobó revisión3 y
+wireframes del candidato648b4a7. Se consolida la aprobación ya concedida, sin
+reabrir decisiones. Las menciones previas PENDIENTE son históricas.
+PR133 sigue sin merge autorizado; CU01–24 UNRUN. P3 real y activación separados.
+D′/SPEC33 integrada por PR135 es otro frente; sin código ni cambios financieros
+en este registro. Secuencia propuesta: base Movimientos/devoluciones, registro único
+y métricas Comida, después transición de planificación D′ con autorización propia.
