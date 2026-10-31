@@ -80,7 +80,7 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 
 ## E2E 2026-10-31 — D′ · Partidas y previsión
 
-Entorno: Playwright Chromium local, servidor de fixture ficticio en 3011, MFA real.
+Entorno: Playwright Chromium local, servidor de fixture ficticio en 3021, MFA real.
 Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 
 | Comprobación | 1440 | 390 |
@@ -92,8 +92,14 @@ Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 | Mensual: Gasto vs Aportación separados, guardado y recarga | PASS | — |
 | 409 real de rango solapado por API | PASS | — |
 | Mapping diagnóstico y acción de confirmación | PASS | — |
-| Overflow horizontal | PASS | **DEFECTO CONOCIDO** al abrir ficha (anotado) |
+| Región desplazable y overflow | PASS | PASS (ficha en región accesible; página sin overflow) |
 
 Ambas resoluciones abren la pantalla; a 390 se abre además la ficha de
-planificación y se registra el overflow conocido. No se activa ningún régimen
-real ni se usan datos reales.
+planificación dentro de una región desplazable accesible. No se activa ningún
+régimen real ni se usan datos reales.
+
+## Responsive 390 — corrección 2026-10-31
+
+`TableScroll` envuelve las tablas de Maestro, planificaciones, mensual y líneas
+previstas. La ficha D′ a 390 mantiene la página en 390 y desplaza la tabla
+internamente; foco y etiqueta accesibles; a 1440 sin scroll interno.

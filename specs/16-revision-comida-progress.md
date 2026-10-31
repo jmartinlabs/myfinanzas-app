@@ -343,8 +343,8 @@ Comida no tiene E2E propio: UNRUN. Restore v19: UNRUN por plataforma.
 - Añadido `tests/e2e/comida-dprima.spec.ts` y servidor de fixture ficticio.
 - Comida: PASS 1440/390 en navegación, métricas, clasificación, atribución,
   422 real, persistencia y ausencia de duplicación.
-- Defecto conocido: overflow horizontal de la tabla a 390 (540 px); no se
-  modifica UI en esta tarea.
+- Corrección responsive: la tabla a 390 vive en `TableScroll` (región
+  focusable con scroll interno); página sin overflow; 1440 sin cambios.
 - D′: PASS 1440/390 en Partidas, previsión, apertura, mensual, 409 real,
   mapping y no creación de Movimientos al confirmar apertura.
 - Regresión E2E completa: 13 PASS y los 2 fallos de plataforma ya presentes en

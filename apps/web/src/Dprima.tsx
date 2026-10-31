@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, PageHead, TableScroll, Tag } from "./ui";
 
 type Cycle = {
   id: string;
@@ -203,7 +203,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
           <p role="status">Cargando Partidas…</p>
         ) : (
           <>
-            <table className="table">
+            <TableScroll label="Tabla del maestro de Partidas"><table className="table">
               <caption className="muted">
                 {partidas.raices.length} raíces
               </caption>
@@ -221,7 +221,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
                   <PartidaRows key={r.id} root={r} />
                 ))}
               </tbody>
-            </table>
+            </table></TableScroll>
             <PartidaConfigForm
               partidas={partidas.raices}
               onPreview={async (id, cambios) => {
@@ -261,7 +261,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         {plans.length === 0 ? (
           <p>Sin planificaciones.</p>
         ) : (
-          <table className="table">
+          <TableScroll label="Tabla de planificaciones"><table className="table">
             <thead>
               <tr>
                 <th>ID</th>
@@ -298,7 +298,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></TableScroll>
         )}
         {selected && (
           <PlanDetail
@@ -370,7 +370,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         {mensual ? (
           <>
             <p className="muted">{mensual.nota}</p>
-            <table className="table">
+            <TableScroll label="Tabla del plan mensual"><table className="table">
               <thead>
                 <tr>
                   <th>Raíz</th>
@@ -396,7 +396,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
                   />
                 ))}
               </tbody>
-            </table>
+            </table></TableScroll>
           </>
         ) : (
           <p role="status">Cargando plan mensual…</p>
@@ -732,7 +732,7 @@ function PlanDetail({
         Revisión {plan.revision} · Saldo inicial confirmado{" "}
         {eur(plan.saldoInicial)}
       </p>
-      <table className="table">
+      <TableScroll label="Tabla de líneas previstas"><table className="table">
         <thead>
           <tr>
             <th>Línea</th>
@@ -796,7 +796,7 @@ function PlanDetail({
             </tr>
           ))}
         </tbody>
-      </table>
+      </table></TableScroll>
       {root && (
         <div className="form-grid">
           <label>
