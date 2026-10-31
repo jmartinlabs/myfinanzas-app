@@ -1,0 +1,8 @@
+{
+  "from_schema": 19,
+  "to_schema": 20,
+  "authorized_by": "usuario",
+  "authorized_at": "2026-10-31",
+  "authorization": "Aprobada la propuesta limitada de migración con backup/restore y rollback solo por restauración; sin downgrade in-place y sin autorización genérica de rollback.",
+  "downgrade": "restore-only"
+}

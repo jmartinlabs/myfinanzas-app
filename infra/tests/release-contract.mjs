@@ -10,7 +10,7 @@ import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { installFixture, linkFixture, snapshot } from './release-fixture.mjs';
 const mode = process.argv[2];
 const root = '/var/lib/myfinanzas';
-const privatePath = root + '/fixture-private.json';
+const privatePath = process.env.STATE_FILE || root + '/fixture-private.json';
 const check = (value, label) => { if (!value) throw new Error(label); };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 
@@ -20,7 +20,7 @@ async function main() {
   check(db.query('SELECT version FROM schema_version').get().version===schemaVersion,'actual SQLite schema contract');
   check(db.query('SELECT origin FROM database_origin').get().origin==='production','production identity contract');
   let saved = mode === 'seed' ? { password:'Synthetic fixture ' + randomUUID(), clock:Date.now(), cookie:'', csrf:'' } : JSON.parse(readFileSync(privatePath,'utf8'));
-  if (mode !== 'seed') {
+  if (mode !== 'seed' && mode !== 'verify') {
     check(snapshot(db) === saved.business, 'confirmed data changed between versions');
     check(hash(key) === saved.keyHash, 'key changed between versions');
     const owner = db.query('SELECT password,secret FROM owner').get();
@@ -57,6 +57,17 @@ async function main() {
     const purchases=await request('/compras');
     check(purchases.total>=1,'purchase module read contract');
   }
+  if(mode==='verify') {
+    check(db.query('SELECT version FROM schema_version').get().version===schemaVersion,'verify schema contract');
+    check(snapshot(db) === saved.business, 'restored previous data changed');
+    check(hash(key) === saved.keyHash, 'restored previous key changed');
+    const owner = db.query('SELECT password,secret FROM owner').get();
+    check(JSON.stringify(owner) === saved.owner, 'restored previous owner changed');
+    await moduleReads();
+    db.close();
+    console.log('Previous restore remains readable without in-place downgrade');
+    return;
+  }
   if(mode==='seed') {
     const enrollment=await request('/auth/enroll','POST',{token:provision(db,saved.clock),password:saved.password});
     saved.secret=enrollment.secret;
@@ -77,9 +88,9 @@ async function main() {
     backup(db,key,root+'/encrypted-copy',recipient.stdout.toString().trim());
     check(readdirSync(root+'/encrypted-copy').sort().join(',')==='access-key.age,database.age','backup plaintext residue');
     db.close();
-    process.env.DATABASE_PATH=root+'/restored/database.sqlite';
+    process.env.DATABASE_PATH=root+'/restored-'+schemaVersion+'/database.sqlite';
     process.env.AUTH_KEY_PATH=root+'/restored/auth.key';
-    const result=restore(root+'/encrypted-copy',root+'/restored',recipientFile);
+    const result=restore(root+'/encrypted-copy',root+'/restored-'+schemaVersion,recipientFile);
     db=openDatabase(result.database);key=loadKey(db,result.key);
     check(hash(key)===saved.keyHash,'restored key mismatch');
     check(snapshot(db)===saved.business,'restored data mismatch');
