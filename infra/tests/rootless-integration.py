@@ -615,6 +615,9 @@ if __name__ == '__main__':
         main()
     except Exception as error:
         # Fixed stage and class only: no keys, data, env or command output.
+        if os.environ.get('ROOTLESS_TRACEBACK'):
+            import traceback
+            print(traceback.format_exc(), file=sys.stderr)
         detail = str(error) if isinstance(error, ProbeError) else type(error).__name__
         print('::error title=Rootless integration failed::stage=' + stage + '; reason=' + detail)
         sys.exit(1)
