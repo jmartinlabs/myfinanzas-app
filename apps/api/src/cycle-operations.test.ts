@@ -720,8 +720,13 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
                   revision: 1,
                   actualizado: null,
                 }))
-              : table === "partidas" && previousVersion === 7
-                ? values.map((r: any) => ({...r, presupuesto: null, fuente: null, padre_partida: null}))
+              : table === "partidas"
+                ? values.map((r: any) => ({
+                    ...r,
+                    ...(previousVersion === 7 ? { presupuesto: null, deuda: null } : {}),
+                    fuente: null,
+                    padre_partida: null,
+                  }))
                 : values,
           );
         }
