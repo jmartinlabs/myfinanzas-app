@@ -1435,7 +1435,7 @@ test("H11: no se retipifica una devolución con atribución ni una compra con v�
     comida: { etiqueta: "Comida" },
   });
   refund(db, ing, {
-    importe: "10",
+    importe: "11",
     partida: food.id,
     devolucion: {
       estado: "Revisar",
