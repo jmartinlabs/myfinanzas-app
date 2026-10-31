@@ -517,6 +517,7 @@ def main():
             seed_copy = matrix / 'fixture-private-seed.json'
             shutil.copyfile(seed_state, seed_copy)
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env=EXPECTED_MOVEMENTS=3', '--env=SKIP_DERIVED=1',
                  previous['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             shutil.copyfile(seed_state, matrix / 'fixture-private-previous.json')
             shutil.copyfile(seed_copy, seed_state)
@@ -532,10 +533,11 @@ def main():
                 raise ProbeError('previous release accepted upgraded schema in place')
             stage = 'current-version-backup-restore'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env=EXPECTED_MOVEMENTS=6', '--env=SKIP_DERIVED=1',
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             stage = 'previous-version-restored-copy'
             prev_schema = str(previous['inputs']['contracts']['schema'])
-            run(['podman', 'run', '--rm', '--network=none', *matrix_flags,
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
                  '--env', 'DATABASE_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/database.sqlite',
                  '--env', 'AUTH_KEY_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/auth.key',
                  '--env', 'STATE_FILE=/var/lib/myfinanzas/fixture-private-previous.json',
@@ -566,9 +568,13 @@ def main():
             elif kind == 'foreign_pair':
                 evidence_copy['previous_image'] = 'sha256:' + '0' * 64
             else:
-                del evidence_copy['confirmed_writes']
+                evidence_copy.pop('confirmed_writes', None)
+                evidence_copy.pop('no_in_place_downgrade', None)
             try:
-                require_rollback(other, manifest, evidence_copy)
+                if same_contracts:
+                    require_rollback(other, manifest, evidence_copy)
+                else:
+                    require_migration(other, manifest, evidence_copy, authorization)
             except ValueError:
                 pass
             else:
