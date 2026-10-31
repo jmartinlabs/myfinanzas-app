@@ -6536,6 +6536,12 @@
       },
       {
         "type": "table",
+        "name": "dprima_partida_attempts",
+        "tbl_name": "dprima_partida_attempts",
+        "sql": "CREATE TABLE dprima_partida_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
         "name": "dprima_plan_mensual",
         "tbl_name": "dprima_plan_mensual",
         "sql": "CREATE TABLE dprima_plan_mensual(\n    ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    raiz TEXT NOT NULL REFERENCES partidas(id) ON DELETE RESTRICT,\n    fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n    destino TEXT REFERENCES saldos(id) ON DELETE RESTRICT,\n    base INTEGER CHECK(base IS NULL OR base>=0),\n    esencial INTEGER CHECK(esencial IS NULL OR esencial>=0),\n    del_mes INTEGER CHECK(del_mes IS NULL OR del_mes>=0),\n    corte_sugerencia TEXT,\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    PRIMARY KEY(ciclo,raiz)\n  ) STRICT"
@@ -7298,6 +7304,12 @@
       },
       {
         "type": "trigger",
+        "name": "movimiento_partida_root_group_update",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TRIGGER movimiento_partida_root_group_update BEFORE UPDATE OF partida ON movimientos\n    WHEN NEW.tipo='Gasto' AND NEW.partida IS NOT OLD.partida AND EXISTS(\n      SELECT 1 FROM partidas p WHERE p.id=NEW.partida AND p.padre_partida IS NULL\n    ) AND EXISTS(\n      SELECT 1 FROM partidas h WHERE h.padre_partida=NEW.partida\n    ) BEGIN SELECT RAISE(ABORT,'dprima grouped root does not accept new Gasto'); END"
+      },
+      {
+        "type": "trigger",
         "name": "movimiento_revision_comida_audit_no_delete",
         "tbl_name": "movimiento_revision_comida_audit",
         "sql": "CREATE TRIGGER movimiento_revision_comida_audit_no_delete BEFORE DELETE ON movimiento_revision_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
@@ -7427,6 +7439,12 @@
         "name": "partida_dprima_fuente_used",
         "tbl_name": "partidas",
         "sql": "CREATE TRIGGER partida_dprima_fuente_used BEFORE UPDATE OF fuente ON partidas\n    WHEN NEW.fuente IS NOT OLD.fuente AND EXISTS(\n      SELECT 1 FROM dprima_plan_mensual WHERE raiz=OLD.id\n    ) BEGIN SELECT RAISE(ABORT,'dprima source of used partida'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_dprima_inactive_used",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_dprima_inactive_used BEFORE UPDATE OF estado ON partidas\n    WHEN NEW.estado='Inactiva' AND NEW.estado IS NOT OLD.estado AND (\n      EXISTS(SELECT 1 FROM dprima_lineas l JOIN dprima_planificaciones p ON p.id=l.planificacion\n        WHERE l.hija=OLD.id AND l.anulada=0 AND p.estado<>'Finalizada')\n      OR EXISTS(SELECT 1 FROM dprima_plan_mensual m WHERE m.raiz=OLD.id)\n      OR EXISTS(SELECT 1 FROM dprima_planificaciones p WHERE p.padre=OLD.id AND p.estado<>'Finalizada')\n    ) BEGIN SELECT RAISE(ABORT,'dprima used daughter cannot be deactivated'); END"
       },
       {
         "type": "trigger",
@@ -7615,6 +7633,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "35ca1afbb3e84edbbc0b65ac79711a0b3c2dbf78bd24df06fceda5eb39af1bd8"
+    "sha256": "454b9f164febaa15a3fe6ff71e7571ee07280ef902a772849e2e8a1e89e64226"
   }
 ]

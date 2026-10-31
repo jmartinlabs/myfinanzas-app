@@ -43,7 +43,7 @@ type Preview = {
   G: { bruto: string; devoluciones: string; neto: string | null; parcial: boolean };
   S: string | null;
   P: string | null;
-  N: number;
+  N: number | null;
   fuente: string;
   sugerida: string | null;
   motivos: string[];
@@ -947,7 +947,7 @@ function PlanDetail({
             <div className="metric">
               <dt>Pendiente P / Restantes N</dt>
               <dd>
-                {amount(preview.P)} / {preview.N}
+                {amount(preview.P)} / {preview.N ?? "No aplica"}
               </dd>
             </div>
             <div className="metric">
@@ -1032,7 +1032,7 @@ function MensualRow({
       <td>{amount(item.ejecutado)}</td>
       <td>{amount(item.pendiente)}</td>
       <td>
-        <Tag inactive={item.estado !== "Verificado"}>{item.estado}</Tag>
+        <Tag inactive={item.estado === "No disponible"}>{item.estado}</Tag>
         {item.motivo && <small>{item.motivo}</small>}
       </td>
       <td>
@@ -1074,25 +1074,31 @@ function MappingConfirm({
         Confirmar una correspondencia guarda el mapping explícito; no cambia
         Partidas, Presupuestos, Deuda ni líneas anuales.
       </p>
-      {pending.map((p, index) => (
-        <button
-          key={index}
-          type="button"
-          className="secondary"
-          onClick={() =>
-            onConfirm([
-              {
-                presupuesto: p.presupuesto,
-                partida: p.partida,
-                relacion: p.relacion,
-                motivo: "Correspondencia revisada explícitamente",
-              },
-            ])
-          }
-        >
-          Confirmar {p.presupuesto ?? "—"} → {p.partida}
-        </button>
-      ))}
+      {pending.map((p, index) =>
+        p.partida ? (
+          <button
+            key={index}
+            type="button"
+            className="secondary"
+            onClick={() =>
+              onConfirm([
+                {
+                  presupuesto: p.presupuesto,
+                  partida: p.partida,
+                  relacion: p.relacion,
+                  motivo: "Correspondencia revisada explícitamente",
+                },
+              ])
+            }
+          >
+            Confirmar {p.presupuesto ?? "—"} → {p.partida}
+          </button>
+        ) : (
+          <p key={index} className="muted">
+            {p.presupuesto}: varias Partidas; elige raíz explícita antes de confirmar.
+          </p>
+        ),
+      )}
     </div>
   );
 }

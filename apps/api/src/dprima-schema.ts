@@ -45,6 +45,12 @@ export function dprimaSchema(db: Database) {
     ) AND EXISTS(
       SELECT 1 FROM partidas h WHERE h.padre_partida=NEW.partida
     ) BEGIN SELECT RAISE(ABORT,'dprima grouped root does not accept new Gasto'); END;
+  CREATE TRIGGER movimiento_partida_root_group_update BEFORE UPDATE OF partida ON movimientos
+    WHEN NEW.tipo='Gasto' AND NEW.partida IS NOT OLD.partida AND EXISTS(
+      SELECT 1 FROM partidas p WHERE p.id=NEW.partida AND p.padre_partida IS NULL
+    ) AND EXISTS(
+      SELECT 1 FROM partidas h WHERE h.padre_partida=NEW.partida
+    ) BEGIN SELECT RAISE(ABORT,'dprima grouped root does not accept new Gasto'); END;
 
   CREATE TABLE dprima_planificaciones(
     id TEXT PRIMARY KEY CHECK(id GLOB 'DP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),
@@ -106,6 +112,13 @@ export function dprimaSchema(db: Database) {
     WHEN NEW.id<>OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END;
   CREATE TRIGGER dprima_linea_no_delete BEFORE DELETE ON dprima_lineas
     BEGIN SELECT RAISE(ABORT,'no delete'); END;
+  CREATE TRIGGER partida_dprima_inactive_used BEFORE UPDATE OF estado ON partidas
+    WHEN NEW.estado='Inactiva' AND NEW.estado IS NOT OLD.estado AND (
+      EXISTS(SELECT 1 FROM dprima_lineas l JOIN dprima_planificaciones p ON p.id=l.planificacion
+        WHERE l.hija=OLD.id AND l.anulada=0 AND p.estado<>'Finalizada')
+      OR EXISTS(SELECT 1 FROM dprima_plan_mensual m WHERE m.raiz=OLD.id)
+      OR EXISTS(SELECT 1 FROM dprima_planificaciones p WHERE p.padre=OLD.id AND p.estado<>'Finalizada')
+    ) BEGIN SELECT RAISE(ABORT,'dprima used daughter cannot be deactivated'); END;
 
   CREATE TABLE dprima_plan_mensual(
     ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,
@@ -251,6 +264,7 @@ export function dprimaSchema(db: Database) {
   CREATE TABLE dprima_linea_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
   CREATE TABLE dprima_apertura_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
   CREATE TABLE dprima_mapping_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
+  CREATE TABLE dprima_partida_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
   CREATE TABLE dprima_mensual_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT;
 
   INSERT INTO counters VALUES('dprima_planificacion',1);

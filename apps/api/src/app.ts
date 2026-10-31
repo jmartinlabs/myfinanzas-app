@@ -1285,7 +1285,15 @@ export function createApp(db: Database, options: AppOptions) {
       const p =
         e instanceof Problem
           ? e
-          : new Problem(500, "INTERNAL", "No se pudo completar la operación.");
+          : e instanceof Error && /SQLITE_CONSTRAINT/.test(e.message)
+            ? new Problem(
+                409,
+                "CONFLICT",
+                /overlapping forecast/.test(e.message)
+                  ? "El rango previsto se solapa con otra planificación del mismo padre."
+                  : "La operación choca con una regla de integridad vigente.",
+              )
+            : new Problem(500, "INTERNAL", "No se pudo completar la operación.");
       if (p.status === 429) headers.set("retry-after", "60");
       return reply(
         {

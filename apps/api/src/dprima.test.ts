@@ -640,3 +640,492 @@ test("AC-10: una apertura reintentada no duplica el hecho ni el importe", () => 
   });
   db.close();
 });
+
+test("A1/AC-11: no se desactiva una hija usada en planificación activa", async () => {
+  const { changeClassificationState } = require("./clasificacion");
+  const { db, sub, account } = setup("1000");
+  const root = partida(db, sub.id, "Raíz AC11");
+  configure(db, root.id, { fuente: "Gasto real" });
+  const daughter = partida(db, sub.id, "Hija AC11");
+  configure(db, daughter.id, { padrePartida: root.id });
+  forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-05-01",
+    saldoInicial: "1000",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  expect(() =>
+    changeClassificationState(
+      db,
+      "partidas",
+      daughter.id,
+      {
+        revision: (
+          db.query("SELECT revision FROM partidas WHERE id=?").get(daughter.id) as {
+            revision: number;
+          }
+        ).revision,
+      },
+      false,
+      now,
+    ),
+  ).toThrow("planificación activa");
+  expect(
+    db.query("SELECT estado FROM partidas WHERE id=?").get(daughter.id),
+  ).toEqual({ estado: "Activa" });
+  db.close();
+});
+
+test("A2/E2: una raíz Gasto real no devuelve P ni N", () => {
+  const { db, sub, account } = setup("100");
+  const root = partida(db, sub.id, "Raíz gasto real E2");
+  configure(db, root.id, { fuente: "Gasto real" });
+  const daughter = partida(db, sub.id, "Hija gasto real E2");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "100",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "100", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  expect(preview.P).toBeNull();
+  expect(preview.N).toBeNull();
+  expect(preview.sugerida).toBeNull();
+  expect(preview.motivos.join(" ")).toContain("no aplica por fuente");
+  db.close();
+});
+
+test("A3: una devolución de compra anterior a la planificación no reduce G", () => {
+  const { db, sub, account } = setup("500");
+  const root = partida(db, sub.id, "Raíz G previo");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const daughter = partida(db, sub.id, "Hija G previo");
+  configure(db, daughter.id, { padrePartida: root.id });
+  cycle(db, "2026-05-20");
+  const c = cycle(db, "2026-06-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-07-01",
+    saldoInicial: "500",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "1000", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  const previous = expense(db, account.id, daughter.id, "2026-01-10", "30");
+  const current = expense(db, account.id, daughter.id, "2026-05-25", "100");
+  const legacy = add(db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-06-05",
+    importe: "10",
+    saldo: account.id,
+    partida: daughter.id,
+    concepto: "Devolución previa ficticia",
+    nota: "",
+    devolucion: {
+      estado: "Verificado",
+      compra: previous.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: "1",
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  expect(legacy.movimiento.tipo).toBe("Devolución de gasto");
+  add(db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-06-06",
+    importe: "20",
+    saldo: account.id,
+    partida: daughter.id,
+    concepto: "Devolución actual ficticia",
+    nota: "",
+    devolucion: {
+      estado: "Verificado",
+      compra: current.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: "1",
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  expect(preview.G.bruto).toBe("100.00");
+  expect(preview.G.devoluciones).toBe("20.00");
+  expect(preview.G.neto).toBe("80.00");
+  db.close();
+});
+
+test("A4: la fuente aplicada en el ciclo manda en la apertura", () => {
+  const { db, sub, account } = setup("0");
+  const root = partida(db, sub.id, "Raíz fuente aplicada");
+  const daughter = partida(db, sub.id, "Hija fuente aplicada");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "100",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "50", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  writeMensual(
+    db,
+    c.id,
+    {
+      raiz: root.id,
+      fuente: "Aportación a saldo",
+      destino: account.id,
+      base: null,
+      esencial: null,
+      delMes: null,
+      revision: 0,
+    },
+    randomUUID(),
+    now,
+  );
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  expect(preview.fuente).toBe("Aportación a saldo");
+  expect(preview.N).toBe(1);
+  expect(preview.sugerida).toBe("50.00");
+  db.close();
+});
+
+test("A5: el mensual de Gasto real conserva el importe íntegro", () => {
+  const { db, sub, account } = setup("500");
+  const root = partida(db, sub.id, "Raíz íntegra");
+  configure(db, root.id, { fuente: "Gasto real" });
+  const daughter = partida(db, sub.id, "Hija íntegra");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const buy = expense(db, account.id, daughter.id, "2026-05-21", "100");
+  add(db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-05-22",
+    importe: "20",
+    saldo: account.id,
+    partida: daughter.id,
+    concepto: "Devolución ficticia",
+    nota: "",
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: "1",
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const mensual = getPlanMensualDprima(db, c.id, now);
+  const item = mensual.items.find((i) => i.raiz === root.id)!;
+  expect(item.bruto).toBe("100.00");
+  expect(item.devoluciones).toBe("20.00");
+  expect(item.ejecutado).toBe("100.00");
+  expect(item.pendiente).toBeNull();
+  db.close();
+});
+
+test("M1/M2: el mensual incluye todas las raíces y una previsión reserva el destino", () => {
+  const { db, sub, account } = setup("1000");
+  const a = partida(db, sub.id, "Raíz mensual A");
+  configure(db, a.id, { fuente: "Aportación a saldo" });
+  const b = partida(db, sub.id, "Raíz mensual B");
+  configure(db, b.id, { fuente: "Aportación a saldo" });
+  const c = cycle(db, "2026-05-20");
+  cycle(db, "2026-06-20");
+  writeMensual(
+    db,
+    c.id,
+    {
+      raiz: a.id,
+      fuente: "Aportación a saldo",
+      destino: account.id,
+      base: null,
+      esencial: null,
+      delMes: "100",
+      revision: 0,
+    },
+    randomUUID(),
+    now,
+  );
+  forecast(db, {
+    padre: b.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "1000",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const mensual = getPlanMensualDprima(db, c.id, now);
+  expect(mensual.items.map((i) => i.raiz).sort()).toEqual([a.id, b.id].sort());
+  const item = mensual.items.find((i) => i.raiz === a.id)!;
+  expect(item.ejecutado).toBeNull();
+  expect(item.motivo).toContain("Destino compartido");
+  db.close();
+});
+
+test("M7: una rectificación no puede mover un Gasto a una raíz con hijas", () => {
+  const { db, sub, account } = setup("1000");
+  const root = partida(db, sub.id, "Raíz protegida rectificación");
+  configure(db, root.id, { fuente: "Gasto real" });
+  const daughter = partida(db, sub.id, "Hija protegida");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const simple = partida(db, sub.id, "Partida simple rectificación");
+  configure(db, simple.id, { fuente: "Gasto real" });
+  const buy = expense(db, account.id, simple.id, "2026-05-21", "10");
+  const current = buy.movimiento;
+  const body = {
+    tipo: "Gasto",
+    fecha: current.fecha,
+    importe: current.importe,
+    saldo: current.origen.id,
+    partida: root.id,
+    concepto: current.concepto,
+    nota: current.nota,
+    revision: current.revision,
+    motivo: "Reatribución ficticia",
+  };
+  const plan = previewMovement(db, body, current.id, false, now);
+  expect(() =>
+    writeMovement(
+      db,
+      { ...body, fingerprint: plan.fingerprint, contextRevision: plan.contextRevision },
+      randomUUID(),
+      current.id,
+      false,
+      now,
+    ),
+  ).toThrow();
+  expect(
+    db.query("SELECT partida FROM movimientos WHERE id=?").get(current.id),
+  ).toEqual({ partida: simple.id });
+  db.close();
+});
+
+test("M5: la apertura no escribe del mes con un destino distinto del Saldo exclusivo", () => {
+  const { db, sub, account } = setup("0");
+  const root = partida(db, sub.id, "Raíz destino coherente");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const daughter = partida(db, sub.id, "Hija destino coherente");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "0",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "50", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  writeMensual(
+    db,
+    c.id,
+    {
+      raiz: root.id,
+      fuente: "Aportación a saldo",
+      destino: "S001",
+      base: null,
+      esencial: null,
+      delMes: null,
+      revision: 0,
+    },
+    randomUUID(),
+    now,
+  );
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  expect(() =>
+    confirmApertura(
+      db,
+      plan.planificacion.id,
+      {
+        ciclo: c.id,
+        exclusiones: [],
+        fingerprint: preview.fingerprint,
+        motivo: "Apertura ficticia",
+      },
+      randomUUID(),
+      now,
+    ),
+  ).toThrow("destino mensual no coincide");
+  db.close();
+});
+
+test("M6: una segunda apertura con otra clave devuelve conflicto coherente", () => {
+  const { db, sub, account } = setup("0");
+  const root = partida(db, sub.id, "Raíz apertura única");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const daughter = partida(db, sub.id, "Hija apertura única");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "0",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "50", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  const body = {
+    ciclo: c.id,
+    exclusiones: [],
+    fingerprint: preview.fingerprint,
+    motivo: "Apertura ficticia",
+  };
+  confirmApertura(db, plan.planificacion.id, body, randomUUID(), now);
+  expect(() =>
+    confirmApertura(db, plan.planificacion.id, body, randomUUID(), now),
+  ).toThrow("ya está confirmada");
+  db.close();
+});
+
+test("A6: cambiar fuente o destino de una fila mensual exige impacto", () => {
+  const { db, sub, account } = setup("0");
+  const root = partida(db, sub.id, "Raíz sin cambio libre");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const c = cycle(db, "2026-05-20");
+  writeMensual(
+    db,
+    c.id,
+    {
+      raiz: root.id,
+      fuente: "Aportación a saldo",
+      destino: account.id,
+      base: null,
+      esencial: null,
+      delMes: "10",
+      revision: 0,
+    },
+    randomUUID(),
+    now,
+  );
+  expect(() =>
+    writeMensual(
+      db,
+      c.id,
+      {
+        raiz: root.id,
+        fuente: "Aportación a saldo",
+        destino: "S001",
+        base: null,
+        esencial: null,
+        delMes: "10",
+        revision: 1,
+      },
+      randomUUID(),
+      now,
+    ),
+  ).toThrow("revisión de impacto");
+  db.close();
+});

@@ -293,7 +293,7 @@ export function confirmPartidaConfig(
   const requestHash = hash([id, body]);
   return db
     .transaction(() =>
-      retry(db, "dprima_mapping_attempts", attempt, requestHash, now, () => {
+      retry(db, "dprima_partida_attempts", attempt, requestHash, now, () => {
         const preview = previewPartidaConfig(db, id, {
           cambios: body.cambios,
           motivo: body.motivo,
@@ -765,8 +765,7 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
       r.fecha >= from &&
       r.fecha < cut &&
       r.partida !== null &&
-      set.has(r.partida) &&
-      getSaldo(db, r.origen).control !== "Terminal",
+      set.has(r.partida),
   );
   const gross = sum(purchases.map((r) => BigInt(r.importe)));
   let net = 0n;
@@ -777,7 +776,8 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
         `SELECT d.movimiento,d.elegibilidad,d.estado,d.partida partida,
            m.partida movimientoPartida,d.compra compra,
            m.fecha,CAST(m.importe AS TEXT) importe,
-           c.partida compraPartida,c.anulado compraAnulada,c.tipo compraTipo
+           c.partida compraPartida,c.fecha compraFecha,
+           c.anulado compraAnulada,c.tipo compraTipo
          FROM movimiento_devolucion d
          JOIN movimientos m ON m.id=d.movimiento
          LEFT JOIN movimientos c ON c.id=d.compra
@@ -793,12 +793,16 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
       fecha: string;
       importe: string;
       compraPartida: string | null;
+      compraFecha: string | null;
       compraAnulada: number | null;
       compraTipo: string | null;
     }[];
     for (const l of links) {
       const partida = l.partida ?? l.movimientoPartida ?? l.compraPartida;
       if (!partida || !set.has(partida)) continue;
+      // A refund from a previous planning never reduces this G.
+      if (l.compra && (!l.compraFecha || l.compraFecha < from || l.compraFecha >= cut))
+        continue;
       if (l.fecha >= from && l.fecha < cut) {
         const validLink =
           !l.compra ||
@@ -839,14 +843,28 @@ export function aperturaPreview(
       "El ciclo no cae en el rango financiado de la planificación.",
       { ciclo: "Selecciona un ciclo del rango previsto." },
     );
-  const exclusions = body.exclusiones ?? [];
-  if (!Array.isArray(exclusions) || exclusions.some((x) => typeof x !== "string"))
+  const rawExclusions = body.exclusiones ?? [];
+  if (!Array.isArray(rawExclusions))
     throw new Problem(422, "VALIDATION", "Exclusiones inválidas.");
+  const exclusionMap = new Map<string, string>();
+  for (const raw of rawExclusions) {
+    if (typeof raw === "string") exclusionMap.set(raw, "");
+    else if (raw && typeof raw === "object" && !Array.isArray(raw)) {
+      const entry = raw as Record<string, unknown>;
+      only(entry, ["linea", "motivo"]);
+      if (typeof entry.linea !== "string" || !entry.linea)
+        throw new Problem(422, "VALIDATION", "Exclusión sin línea.");
+      exclusionMap.set(
+        entry.linea,
+        text(entry.motivo, "motivo", 500) ?? "",
+      );
+    } else throw new Problem(422, "VALIDATION", "Exclusión inválida.");
+  }
   const all = lineas(db, id).filter((l) => !l.anulada);
-  for (const lineId of exclusions)
+  for (const lineId of exclusionMap.keys())
     if (!all.some((l) => l.id === lineId))
       throw new Problem(404, "NOT_FOUND", "Línea excluida no encontrada.");
-  const included = all.filter((l) => !exclusions.includes(l.id as string));
+  const included = all.filter((l) => !exclusionMap.has(l.id));
   const missing = included.filter((l) => l.importe === null);
   const subtotal = sum(
     included
@@ -871,21 +889,30 @@ export function aperturaPreview(
       .get(id, plan.saldo, plan.mesFinal, plan.mesInicial) as { n: number };
   const S =
     exclusive.n === 0 ? positionAt(db, plan.saldo as string, cut) : null;
-  const N = months(ciclo.mesFinanciado, plan.mesFinal as string).length;
+  const applied = db
+    .query(
+      "SELECT fuente FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?",
+    )
+    .get(ciclo.id, plan.padre) as { fuente: Fuente } | null;
   const fuente =
+    applied?.fuente ??
     (partidaRows(db).find((r) => r.id === plan.padre)?.fuente as Fuente | null) ??
     "No aplica";
-  const exclusionsDetail = exclusions.map((lineId) => {
-    const line = all.find((l) => l.id === lineId)!;
-    return { linea: lineId, motivo: "Exclusión manual en revisión de apertura" };
-  });
+  const exclusionsDetail = [...exclusionMap.entries()].map(([lineId, motivo]) => ({
+    linea: lineId,
+    motivo: motivo || "Exclusión manual en revisión de apertura",
+  }));
+  const Ncalc = months(ciclo.mesFinanciado, plan.mesFinal as string).length;
+  const N = fuente === "Aportación a saldo" ? Ncalc : null;
   let P: bigint | null = null;
-  if (T !== null && G.neto !== null && S !== null) {
+  if (fuente === "Aportación a saldo" && T !== null && G.neto !== null && S !== null) {
     const raw = T - G.neto - S;
     P = raw > 0n ? raw : 0n;
   }
   const sugerida =
-    fuente === "Aportación a saldo" && P !== null ? divRound(P, BigInt(N)) : null;
+    fuente === "Aportación a saldo" && P !== null && N !== null
+      ? divRound(P, BigInt(N))
+      : null;
   const motivos: string[] = [];
   if (missing.length)
     motivos.push(
@@ -924,12 +951,17 @@ export function aperturaPreview(
     fingerprint: hash([
       id,
       ciclo.id,
-      exclusions,
+      exclusionsDetail,
       T === null ? null : decimal(T),
+      decimal(G.bruto),
+      decimal(G.devoluciones),
       G.neto === null ? null : decimal(G.neto),
       S === null ? null : decimal(S),
+      P === null ? null : decimal(P),
       N,
       fuente,
+      cut,
+      plan.saldo,
     ]),
   };
 }
@@ -966,14 +998,35 @@ export function confirmApertura(
             "Las fuentes han cambiado; revisa la apertura.",
           );
         const motivo = text(body.motivo, "motivo", 2000, true)!;
+        const plan = planificacionRow(db, id);
+        const ciclo = preview.planificacion.ciclo.id;
+        if (
+          db
+            .query("SELECT 1 FROM dprima_aperturas WHERE planificacion=? AND ciclo=?")
+            .get(id, ciclo)
+        )
+          throw new Problem(
+            409,
+            "APERTURA_EXISTS",
+            "La apertura de este ciclo ya está confirmada; revisa su ficha.",
+          );
+        if (
+          preview.fuente !== "Aportación a saldo" &&
+          body.importe !== undefined &&
+          body.importe !== null
+        )
+          throw new Problem(
+            422,
+            "SOURCE_NOT_APPLICABLE",
+            "La fuente no admite importe de aportación (E2).",
+            { importe: "No aplica por fuente." },
+          );
         const importe =
           body.importe === undefined || body.importe === null
             ? preview.sugerida
             : decimal(amount(body.importe, "importe"));
-        const plan = planificacionRow(db, id);
         const aperturaId = nextId(db, "dprima_apertura", "AP");
         const time = new Date(now).toISOString();
-        const ciclo = preview.planificacion.ciclo.id;
         db.run(
           `INSERT INTO dprima_aperturas(id,planificacion,ciclo,total,gasto_neto,saldo,
            pendiente,restantes,sugerida,importe,fuente,corte,huella,confirmado,creado)
@@ -1003,6 +1056,17 @@ export function confirmApertura(
             [aperturaId, exclusion.linea, exclusion.motivo, time],
           );
         if (importe !== null && preview.fuente === "Aportación a saldo") {
+          const existing = db
+            .query(
+              "SELECT destino FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?",
+            )
+            .get(ciclo, plan.padre) as { destino: string | null } | null;
+          if (existing?.destino && existing.destino !== plan.saldo)
+            throw new Problem(
+              409,
+              "DESTINATION_MISMATCH",
+              "El destino mensual no coincide con el Saldo exclusivo de la apertura; revisa el destino antes de confirmar.",
+            );
           db.run(
             `INSERT INTO dprima_plan_mensual(ciclo,raiz,fuente,destino,base,esencial,
              del_mes,corte_sugerencia,revision,creado,actualizado)
@@ -1088,26 +1152,45 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
     nombre: string;
   }[];
   const parts = partidaRows(db);
-  const roots =
-    lines.length > 0
-      ? lines
-      : parts
-          .filter((p) => p.padrePartida === null)
-          .map((p) => ({
-            ciclo: cicloId,
-            raiz: p.id,
-            fuente: (p.fuente ?? "No aplica") as Fuente,
-            destino: null,
-            base: null,
-            esencial: null,
-            delMes: null,
-            revision: 0,
-            nombre: p.nombre,
-          }));
+  const lineByRoot = new Map(lines.map((l) => [l.raiz, l]));
+  const roots = parts
+    .filter((p) => p.padrePartida === null)
+    .map((p) => {
+      const line = lineByRoot.get(p.id);
+      return {
+        ciclo: cicloId,
+        raiz: p.id,
+        fuente: (line?.fuente ?? p.fuente ?? "No aplica") as Fuente,
+        destino: line?.destino ?? null,
+        base: line?.base ?? null,
+        esencial: line?.esencial ?? null,
+        delMes: line?.delMes ?? null,
+        revision: line?.revision ?? 0,
+        nombre: p.nombre,
+      };
+    });
   const destinations = new Map<string, number>();
   for (const r of roots)
     if (r.destino)
       destinations.set(r.destino, (destinations.get(r.destino) ?? 0) + 1);
+  // A forecast reserves its exclusive Saldo even before a monthly row exists.
+  for (const forecast of db
+    .query(
+      `SELECT padre,saldo FROM dprima_planificaciones
+       WHERE estado<>'Finalizada' AND mes_inicial<=? AND ?<=mes_final`,
+    )
+    .all(ciclo.mesFinanciado, ciclo.mesFinanciado) as {
+    padre: string;
+    saldo: string;
+  }[]) {
+    const root = roots.find((r) => r.raiz === forecast.padre);
+    if (!root) continue;
+    if (root.destino !== forecast.saldo)
+      destinations.set(
+        forecast.saldo,
+        (destinations.get(forecast.saldo) ?? 0) + 1,
+      );
+  }
   const rows = ledgerRows(db).filter(
     (r) =>
       end !== null && !r.anulado && r.fecha >= ciclo.inicio && r.fecha <= end,
@@ -1148,8 +1231,7 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
           (r) =>
             r.tipo === "Gasto" &&
             r.partida !== null &&
-            set.has(r.partida) &&
-            getSaldo(db, r.origen).control !== "Terminal",
+            set.has(r.partida),
         );
         bruto = sum(purchases.map((r) => BigInt(r.importe)));
         const pending: string[] = [];
@@ -1172,9 +1254,8 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
             })
             .map((d) => BigInt(d.importe)),
         );
-        executed = pending.length ? null : bruto - devoluciones;
-        if (pending.length)
-          reason = `Devoluciones sin origen acreditado: ${pending.join(", ")}.`;
+        // E2: Gasto real conserva la ejecución íntegra; el neto pertenece a G/financiación.
+        executed = bruto;
       } else {
         if (!line.destino) reason = "Destino no definido";
         else if ((destinations.get(line.destino) ?? 0) > 1)
@@ -1271,8 +1352,24 @@ export function writeMensual(
         const esencial = amount(body.esencial, "esencial");
         const delMes = amount(body.delMes, "delMes");
         const existing = db
-          .query("SELECT revision FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?")
-          .get(cicloId, root.id) as { revision: number } | null;
+          .query(
+            "SELECT revision,fuente,destino FROM dprima_plan_mensual WHERE ciclo=? AND raiz=?",
+          )
+          .get(cicloId, root.id) as {
+          revision: number;
+          fuente: string;
+          destino: string | null;
+        } | null;
+        if (
+          existing &&
+          (existing.fuente !== body.fuente ||
+            existing.destino !== destino)
+        )
+          throw new Problem(
+            409,
+            "IMPACT_REQUIRED",
+            "Cambiar la fuente o el destino aplicados exige una revisión de impacto; no se sobrescribe en la tabla.",
+          );
         if ((existing?.revision ?? 0) !== body.revision)
           throw new Problem(
             409,
