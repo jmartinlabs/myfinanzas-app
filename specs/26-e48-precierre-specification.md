@@ -200,7 +200,7 @@ Navegación            │ Revisión de precierre
                       │   muestran como 0
                       │ • E4.1 sin Compras nuevas: se muestran las posiciones
                       │   anteriores a Fin
-                      │ • Cobertura parcial por E3.5; el bloqueo de backup
+                      │ • Precierre parcial por E3.5; el bloqueo de backup
                       │   prevalece y el estado global es Bloqueado
                       │
                       │ EVIDENCIA DE BACKUP (DT6/T-BKP)
@@ -258,7 +258,7 @@ AVISOS
 • E4.3 no se muestra como 0
 • E4.1 sin Compras nuevas:
   posiciones anteriores a Fin
-• Cobertura parcial por E3.5;
+• Precierre parcial por E3.5;
   bloqueo de backup prevalece
 ──────────────────────────────────────
 BACKUP DT6/T-BKP
@@ -320,6 +320,7 @@ Verificado        La fuente responde y cubre el corte; se muestran sus hechos
 Integrado         Motor integrado (E4.1); se muestran sus hechos y cobertura
 
 Vacío ≠ No disponible ≠ Error de lectura ≠ 0.
+Los estados del plan se detallan en W3.
 ```
 
 ### W5 · Inconsistencias y cierres posteriores
@@ -357,8 +358,8 @@ escritorio, agrupación de bloqueos frente a avisos, representación del control
 deshabilitado y orden de tarjetas en móvil. La aprobación de estos wireframes es un gate
 visual separado de la aprobación de la spec y no autoriza DEV.
 
-La UI no muestra `0` por ausencia. Distingue `No disponible`, `Parcial`, `Bloqueado` y
-`Listo con avisos`.
+La UI no muestra `0` por ausencia. Distingue `Vacío`, `No disponible`, `Error de lectura`,
+`Parcial`, `Bloqueado`, `Listo` y `Listo con avisos`.
 
 ## Empty, loading and error states
 

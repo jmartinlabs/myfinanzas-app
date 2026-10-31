@@ -36,7 +36,7 @@
   .layout{display:grid;grid-template-columns:196px 1fr;min-height:640px}
   .sidebar{background:var(--section);padding:14px 10px;border-right:1px solid var(--line);font-size:13px}
   .sidebar .item{padding:7px 9px;border-radius:7px;margin-bottom:3px;color:#33402a}
-  .sidebar .item.active{background:var(--green);color:#fff;font-weight:700}
+  .sidebar .item.active{background:var(--header);color:#354d19;font-weight:700;box-shadow:inset 3px 0 0 var(--green)}
   .content{padding:18px;min-width:0}
   .content-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap}
   .content-head h3{margin:0;font-size:20px}
@@ -129,7 +129,7 @@
             </div>
             <div class="controls">
               <label class="small muted" for="w1-cycle">Ciclo</label>
-              <select class="select" id="w1-cycle" disabled><option>«periodo»</option></select>
+              <select class="select" id="w1-cycle"><option>«periodo»</option></select>
               <span class="state blocked">● Bloqueado</span>
             </div>
           </div>
@@ -150,7 +150,7 @@
           <div class="block">
             <h4>Fuentes y cobertura</h4>
             <table>
-              <thead><tr><th>Fuente</th><th>Cobertura</th><th>Estado</th><th>Motivo</th><th>Revisión</th></tr></thead>
+              <thead><tr><th>Fuente</th><th>Cobertura</th><th>Estado</th><th>Motivo</th><th>Enlace</th></tr></thead>
               <tbody>
                 <tr><td>Movimientos / clasificación / Referencias</td><td>«n» hechos</td><td><span class="state ready">Verificado</span></td><td>Núcleo</td><td><span class="link">Abrir</span></td></tr>
                 <tr><td>Plan del ciclo</td><td>SinPlan</td><td><span class="state ready">Válido</span></td><td>No bloquea; no inventa líneas</td><td><span class="link">Abrir plan</span></td></tr>
@@ -174,10 +174,10 @@
           <div class="block warnbox">
             <h4>Avisos</h4>
             <ul class="plain">
-              <li>E3.5/FIN_NETA no disponible: cobertura parcial; E4.9 queda bloqueado.</li>
+              <li>E3.5/FIN_NETA no disponible: precierre parcial; E4.9 queda bloqueado.</li>
               <li>E4.3 no disponible: valoración y patrimonio no se muestran como 0.</li>
               <li>E4.1 sin Compras nuevas: se muestran las posiciones anteriores a Fin.</li>
-              <li>Cobertura parcial por E3.5; el bloqueo de backup prevalece y el estado global es Bloqueado.</li>
+              <li>Precierre parcial por E3.5; el bloqueo de backup prevalece y el estado global es Bloqueado.</li>
             </ul>
           </div>
 
@@ -209,13 +209,13 @@
   </section>
 
   <section class="wire-section" id="w2">
-    <div class="wire-label"><span class="tag">W2</span><span class="desc">Móvil 390 · misma información apilada, con las 11 fuentes, sus motivos y enlaces individuales. Los motores inexistentes se muestran inactivos.</span></div>
+    <div class="wire-label"><span class="tag">W2</span><span class="desc">Móvil 390 · misma información apilada, con todas las fuentes, sus motivos y enlaces individuales. Los motores inexistentes se muestran inactivos.</span></div>
     <div class="frame mobile" id="w2-frame">
       <div class="topbar"><span>MyFinanzas · Precierre</span><span class="ref">Revisión «hash…»</span></div>
       <div class="content">
         <div class="controls" style="margin-bottom:10px">
           <label class="small muted" for="w2-cycle">Ciclo</label>
-          <select class="select" id="w2-cycle" disabled><option>«periodo»</option></select>
+          <select class="select" id="w2-cycle"><option>«periodo»</option></select>
           <span class="state blocked">● Bloqueado</span>
         </div>
 
@@ -247,7 +247,7 @@
 
         <div class="m-card" style="border-color:var(--warnline);background:#fffdf4">
           <b>Avisos</b>
-          <div class="meta">• E3.5 no disponible; cobertura parcial; E4.9 bloqueado<br>• E4.3 no se muestra como 0<br>• E4.1 sin Compras nuevas: posiciones anteriores a Fin<br>• El bloqueo de backup prevalece: estado global Bloqueado</div>
+          <div class="meta">• E3.5 no disponible; precierre parcial; E4.9 bloqueado<br>• E4.3 no se muestra como 0<br>• E4.1 sin Compras nuevas: posiciones anteriores a Fin<br>• El bloqueo de backup prevalece: estado global Bloqueado</div>
         </div>
 
         <div class="m-group">Evidencia de backup (DT6/T-BKP)</div>
@@ -284,11 +284,12 @@
 
     <h3>Estado de cada fuente</h3>
     <div class="state-grid">
-      <div class="state-card bad"><h4>Vacío · <span class="state empty">Vacío</span></h4><p>Ausencia acreditada de operaciones imputables al ciclo en esa fuente.</p><div class="mini">Se muestra vacío explícito, nunca 0.<br>No equivale a «Sin hechos» del ciclo.</div></div>
+      <div class="state-card"><h4>Vacío · <span class="state empty">Vacío</span></h4><p>Ausencia acreditada de operaciones imputables al ciclo en esa fuente.</p><div class="mini">Se muestra vacío explícito, nunca 0.<br>No equivale a «Sin hechos» del ciclo.</div></div>
       <div class="state-card"><h4>No disponible · <span class="state unavailable">No disponible</span></h4><p>Sin motor, sin datos verificables o fuente documental sin código.</p><div class="mini">Motivo visible por fuente.<br>No es 0, no es vacío y no bloquea por sí solo salvo excepción aprobada.</div></div>
       <div class="state-card bad"><h4>Error de lectura · <span class="state error">Error</span></h4><p>Fallo al leer la fuente; no es ausencia ni dato faltante.</p><div class="mini">Conserva identidad y hechos conocidos.<br>Cifra no verificable · <span class="link">Reintentar</span></div></div>
       <div class="state-card ok"><h4>Verificado / Integrado</h4><p>La fuente responde y cubre el corte.</p><div class="mini">Se muestran hechos y cobertura.<br>No se recalcula ni se escribe.</div></div>
     </div>
+    <p class="small muted">Estados del plan: ver W3 (SinPlan <strong>Válido</strong>, SinPlanificar <strong>Aviso</strong>, PlanVerificado <strong>Verificado</strong> y PlanNoVerificable <strong>Bloqueado</strong>).</p>
     <div class="note"><strong>Distinción obligatoria:</strong> Vacío ≠ No disponible ≠ Error de lectura ≠ 0. Una fuente sin operaciones imputables es un vacío acreditado; una fuente sin motor es No disponible; un fallo es Error y ofrece reintento.</div>
   </section>
 
