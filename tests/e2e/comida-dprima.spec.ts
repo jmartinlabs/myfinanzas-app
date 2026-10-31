@@ -281,6 +281,12 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
         exact: false,
       }),
     ).toBeVisible();
+    const realMonthly = page
+      .locator("tbody tr", { hasText: "Raíz gasto E2E" })
+      .last();
+    await expect(realMonthly).toContainText("Gasto real");
+    await expect(realMonthly).not.toContainText("Aportación a saldo");
+    await expect(monthlyReloaded).toContainText("Aportación a saldo");
 
     // 409 real: rango solapado del mismo padre.
     const overlapStatus = await page.evaluate(async () => {
