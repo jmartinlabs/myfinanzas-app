@@ -1,4 +1,109 @@
+## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
+
+Entrada vigente de seguimiento. **No reabre** PR #136/#137 ni sus QA: ambas
+entregas están integradas y se conservan como historia. Esta sección sustituye
+las afirmaciones de «sin merge» y los límites sueltos de las dos entradas
+siguientes, sin duplicar sus tareas.
+
+Base contrastada: `main`/`origin/main` **`2e710c0`** (PR #146). Integradas:
+#136 `7f3a66c` (Comida, v19), #137 `e0249c5` (D′, v20), #145 `936b600` (E2E) y
+#146 `2e710c0` (tablas 390). CI postmerge `Validate project` **PASS**:
+run `41235452202`.
+
+Clasificación: **pendiente técnico** (trabajo acotado), **dependencia** (otro
+frente debe entregar primero), **bloqueo** (impide avanzar), **mejora opcional**
+(no bloquea) y **requiere autorización** (sin permiso específico no se ejecuta).
+Los nombres de frente son de seguimiento del tablero; no crean AC ni
+identificadores de spec.
+
+### 1. RESTORE-19/20 — prioridad inmediata
+
+**Tipo:** pendiente técnico · **requiere autorización** para DEV/ejecución Linux.
+Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-10-31.md).
+
+- Validar en **Linux** el restore de copias de aplicación **v19 y v20** con
+  fixtures ficticias. v20 tiene cobertura en las matrices actuales; **v19 no
+  tiene prueba dedicada**.
+- El fallo de macOS por `libc.so.6` **no constituye validación**. El gate rootless
+  **no sustituye** esta prueba.
+- No existía expediente previo dedicado. Reutilizables: `restore-server.ts`,
+  `materializeContract()` con `C19-COMIDA-UNICO-01`/`C20-DPRIMA-SIMPLIFICADA`,
+  `inversiones-backup.test.ts`, `referencias.test.ts`, `d5-backup.test.ts` y
+  `app.test.ts`; límites y huecos en el expediente.
+- Criterio de salida: v19 y v20 restauran con manifiesto/esquema correctos;
+  v19 abierta migra a v20 conservando hechos, vínculos, auditoría e identidad;
+  negativos fallan cerrado sin destino parcial. Sin datos reales.
+
+**Siguiente tarea independiente propuesta:** ejecutar RESTORE-19/20 en Linux.
+
+### 2. Comida — P3 y AC-25
+
+**Tipo:** pendiente técnico + dependencia de datos/evidencia · **requiere
+autorización** para datos reales.
+
+- **P3:** determinar fecha de corte **C** y saldo bancario **B** con evidencia;
+  verificar cobertura íntegra posterior a C, inventario de transferencias y
+  conciliación de consumidores. Sin cobertura se informa parcial/no disponible,
+  nunca conciliado; sin prorrateo ni inferencia.
+- **AC-25:** contrastar físicamente con `MyFinanzas2026_v5.11(7).xlsx`; no
+  declarar equivalencia ni cerrar AC-25 sin contraste acreditado. v5.10 es
+  histórica, no fuente equivalente.
+- **CU parciales identificados:** 01, 03, 04, 05, 08, 10, 11, 15, 16, 20, 21 y
+  23. CU-11 incluye el restore UNRUN, que se acredita con RESTORE-19/20.
+- No activar el régimen ni migrar datos reales. DEV18 sigue STOP.
+
+### 3. D′ — operativa real
+
+**Tipo:** pendiente técnico + dependencia de SPEC27 · **requiere autorización**.
+
+- Preparar inventario y mapping físico de **Presupuestos** y **Plan Anual**,
+  inicialmente en modo lectura. Preservar su funcionamiento; sin conversión,
+  migración ni activación real.
+- **Pendientes de operativa real:** AC-02, 07, 08, 09, 15, 16, 22, 24 y 26.
+  Estado del testplan, que no se reclasifica aquí: 02/08/09/15/22/24/26 PARCIAL;
+  07 UNRUN; 16 PASS (E1/S) con cobertura real pendiente.
+- **UNRUN:** AC-12, 13, 18 y 19. AC-12/13 dependen de SPEC27; AC-18 es UI/E2E;
+  AC-19 es restore v20 y se acredita con RESTORE-19/20.
+- Sin migración ni activación real.
+
+### 4. E3.5 / FIN_NETA
+
+**Tipo:** dependencia + pendiente técnico · **requiere autorización**.
+
+- Mantener **DEV18 antiguo detenido**; no reanudarlo.
+- Preparar posteriormente su adaptación al modelo integrado de **registro único
+  de Comida en Movimientos**.
+- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no
+  reconstruir FIN_NETA por inferencia**.
+- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
+  bloqueado mientras E3.5 no sea verificable.
+
+### 5. Dependencias de cierre y release
+
+**Tipo:** dependencias/bloqueos · **requiere autorización**; nada ejecutable ahora.
+
+- **SPEC27:** fotografías de cierre, hechos tardíos y dependencias operativas.
+  Diseño aprobado, AC UNRUN, sin DEV.
+- **DT6/T-BKP:** evidencia de backup/restauración y recuperación externa. Sigue
+  abierto y bloquea el cierre real; no se cierra por esta entrada.
+- **Gate rootless:** validar sobre una release real autorizada. No sustituye
+  RESTORE-19/20. Sin despliegue ni activación.
+
+### 6. Mejoras opcionales
+
+**Tipo:** mejora opcional; sin AC ni prioridad de release.
+
+- Evitar regiones de tabla focusables cuando no hay scroll necesario a 1440
+  (`TableScroll`, `apps/web/src/ui.tsx`).
+- Evaluar primera columna sticky a 390.
+
+No bloquean release ni justifican DEV por sí solas.
+
 ## COMIDA-UNICO-01 — candidato de implementación 2026-10-31
+
+> **Nota de vigencia 2026-10-31:** entrada histórica pre-merge. PR #136 está
+> integrada en `7f3a66c`; el seguimiento vigente y los pendientes están en
+> «Pendientes consolidados post Comida/Partidas».
 
 Responsable de esta entrega: OpenCode, orquestador por encargo directo del usuario.
 Especificación revisión 3 y wireframes aprobados (D1–D5, P1/P2/P4–P7/P7a) en
@@ -19,6 +124,10 @@ QA final **PASS** en `c96cb79` (H10/H11/OBS2). E2E 1440/390 PASS; tabla responsi
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## SPEC33 D′ — candidato de implementación 2026-10-31
+
+> **Nota de vigencia 2026-10-31:** entrada histórica pre-merge. PR #137 está
+> integrada en `e0249c5`; el seguimiento vigente y los pendientes están en
+> «Pendientes consolidados post Comida/Partidas».
 
 Responsable: OpenCode, orquestador por encargo del usuario. Especificación
 revisión2 + E1/E2 aprobadas. Rama `codex/dprima-simplificada`, apilada sobre
