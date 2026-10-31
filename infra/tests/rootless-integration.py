@@ -34,7 +34,7 @@ def run(args, timeout=60, env=None):
             print('::error title=Podman pre-application runtime rejection::' + message)
         # No application command output: factors must never enter artifacts.
         detail = ''
-        if stage == 'previous-version-backup-restore':
+        if stage in ('previous-version-backup-restore', 'real-cross-version-update'):
             detail = ' :: ' + result.stderr[-500:].replace('\n', ' | ')
         raise ProbeError(f'{stage}: command failed, exit {result.returncode}{detail}')
     return result.stdout
@@ -527,6 +527,7 @@ def main():
             shutil.copyfile(seed_copy, seed_state)
             stage = 'real-cross-version-update'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env=RELEASE_DEBUG=1',
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'update'], timeout=180)
             stage = 'reject-in-place-downgrade'
             negative = subprocess.run(
