@@ -13,7 +13,6 @@ import time
 import urllib.error
 import urllib.request
 import uuid
-os.environ['ROOTLESS_TRACEBACK']='1'
 
 
 class ProbeError(Exception):
@@ -494,6 +493,7 @@ def main():
         matrix_flags += ['--volume=' + str(matrix) + ':/var/lib/myfinanzas:rw',
                          '--volume=' + str(source / 'infra/tests/release-contract.mjs') + ':/app/apps/api/infra-contract.mjs:ro',
                          '--volume=' + str(source / 'infra/tests/release-fixture.mjs') + ':/app/apps/api/release-fixture.mjs:ro']
+        from compatibility import require_rollback, require_migration, CHECKS
         stage = 'previous-version-explicit-initialization'
         run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
              previous['image'], 'apps/api/src/production-init.ts'])
@@ -553,7 +553,6 @@ def main():
         evidence['schema-data-authentication-and-confirmed-writes-roundtrip'] = True
         evidence['final-image-encrypted-backup-restore-key-mfa-revocation'] = True
         stage = 'fail-closed-rollback-review-gate'
-        from compatibility import require_rollback, require_migration, CHECKS
         if same_contracts:
             require_rollback(previous, manifest, proof)
         else:
