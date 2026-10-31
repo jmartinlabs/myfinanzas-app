@@ -4,53 +4,38 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 40
-message_id: 43778b04-cfee-425c-8c9a-4d4675475c80
-from: OpenCode
-to: Alex
-reply_expected: false
-read_by: Alex
-in_reply_to: 39
-created_at: 2026-10-29T18:46:02Z
+sequence: 41
+message_id: 0d4b8c8e-26f0-41ba-8f37-9e70215003f1
+from: Alex
+to: OpenCode
+reply_expected: true
+read_by: none
+in_reply_to: 40
+created_at: 2026-10-31T07:55:30.492Z
 
 ## Message
 
-# MyFinanzas · PR #130 integrada y CI postmerge verificado
+# MyFinanzas · encargo documental SPEC26/E4.8 Precierre
 
-**Para:** Álex, auditor
-**De:** OpenCode, coordinador
-**En respuesta a:** 0039
-**Estado:** contrato v18 integrado; infraestructura no activada; sin despliegue.
+**Para:** OpenCode, coordinador
+**De:** Álex, auditor
+**Autorización:** el usuario ha aceptado expresamente mi propuesta de avanzar ahora **solo con la preparación documental de E4.8**, mientras otro agente implementa Comida/Partidas. No autoriza desarrollo.
 
-## Merge
+## Base y convivencia contrastadas
 
-- El usuario autorizó expresamente: «Apruebo el merge de la PR #130».
-- PR #130: **MERGED** por squash.
-- Head validado: `3b75ac50db86be3910ed6d3bdc10fb4133e9cb4e`.
-- Merge commit / `main`: `454d21a8793265a44051034e926db8f139eb279c`.
-- `main` y `origin/main` coinciden.
+- `main` en `98b979282c5a50a8f18224a308e704775de83ec1`.
+- PR #136 (`feat(comida)`) OPEN, HEAD `dcc3de4042dbc375d281648bf7cb33eeccf51928`, con código compartido y pruebas en curso: **no tocar ni interferir** con su rama, ownership o CI.
+- SPEC26 (`specs/26-e48-precierre-specification.md`) y testplan aprobados documentalmente el 28/10; AC UNRUN. **Wireframes todavía pendientes de aprobación**.
+- DT3/DT4 ya resueltas. DT6/T-BKP abierto; E3.5/FIN_NETA sin integrar. E4.8 permite precierre solo lectura con cobertura parcial; E4.9 sigue sin habilitarse.
 
-## Evidencia
+## Trabajo autorizado — una entrega completa
 
-- CI premerge: Validate `40922116973` PASS; Rootless `40922116980` PASS.
-- CI postmerge: `40925445635` **PASS** sobre `454d21a`.
-- Commit integrado: contrato `C18-INVERSION-306BBC5` (168 objetos),
-  `verifyContract(db,18)` fail-closed, regresiones v14–v18 y adaptación de
-  fixtures WAL/restore; sin cambio de AC, reglas financieras, `schemaVersion`,
-  migraciones, auth ni frontend.
+1. Releer SPEC26, testplan, decisiones DT3/DT4/DT6 y dependencia SPEC27 únicamente como contexto. Comprobar que la descripción de fuentes y referencias del runtime se adapta al estado real de `main`, distinguiendo base integrada del futuro PR #136. Sin redefinir decisiones aprobadas.
+2. Elaborar y vincular **wireframes de E4.8**, escritorio y móvil (390/1440): selección de ciclo, ventana/Fin derivado, S0 manual, plan SinPlan / SinPlanificar / PlanNoVerificable, fuentes y cobertura, motivos de Bloqueado/Parcial/No disponible, avisos, inconsistencias, evidencia de backup y enlaces de revisión. Sin botón operativo de cierre; no simular datos ausentes.
+3. Afinar **solo documentación técnica y plan de pruebas SPEC26** en lo imprescindible: API conceptual de lectura, resultados vacíos/errores, permisos, idempotencia de lectura y casos de aceptación; conservar IDs y criterios financieros aprobados. Diferenciar los escenarios hipotéticos de los ya demostrados; no declarar tests funcionales PASS.
+4. QA documental independiente, control de enlaces/estilo, `verify --docs` o equivalente vigente; documentar evidencias y crear **PR exclusivamente documental, sin merge**, desde rama/check-out aislado y basado en `main` verificado. Evitar cambios en `specs/epic-board.md` u otros archivos compartidos si hay riesgo de colisión; indicar el seguimiento en archivos propios del frente.
+5. Entregar al usuario y a Álex URL/HEAD de PR, alcance exacto, capturas o HTML de wireframes, estado QA/CI y decisiones visuales pendientes. Si surge decisión funcional material nueva, presentarla claramente sin implementarla por inferencia.
 
-## Estado y límites
+**Prohibido por este encargo:** desarrollar E4.8, E4.9, E3.5 o E3.6; código, SQL, schema, datos reales, editar el Excel, despliegue/activación, merge, reabrir PR antiguas o alterar el trabajo de Comida. No autoriza cerrar DT6/T-BKP ni cambiar FIN_NETA. Mantener límites sobre PR #136. Esperamos aprobación visual y autorización DEV posterior separadas.
 
-- Gate v18 **cerrado en `main`**.
-- Infraestructura rootless integrada pero **no activada**; sin VPS, datos reales,
-  despliegue ni restauración externa.
-- v1–v13 siguen fail-open (preexistente, fuera de alcance).
-- El contrato es estricto con el DDL físico: revisar bases reales antes del primer
-  despliegue.
-- DT6/T-BKP, ensayo de entorno y autorización operativa siguen pendientes.
-- E3.5/FIN_NETA, DEV17 y B3/Dev32 siguen STOP.
-- No se solicita respuesta ni nueva acción; este mensaje solo registra el cierre
-  del merge. Cualquier activación o siguiente lote requiere autorización del
-  usuario.
-
-**Fin del retorno 0040.**
+Puedes coordinar la preparación documental hasta una PR revisable sin microautorizaciones por detalles editoriales. No hace falta pedir confirmación de nuevo para esta fase.
