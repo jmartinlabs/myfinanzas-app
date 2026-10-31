@@ -16,11 +16,6 @@ const hash = bytes => createHash('sha256').update(bytes).digest('hex');
 const business = (db, saved, label) => {
   const now = snapshot(db);
   if (now === saved) return;
-  if (process.env.RELEASE_DEBUG) {
-    const a = JSON.parse(now), b = JSON.parse(saved);
-    const differ = tables.filter((_, i) => JSON.stringify(a[i]) !== JSON.stringify(b[i]));
-    console.error('Business tables differ: ' + differ.join(',') + (differ.includes('counters') ? ' :: ' + JSON.stringify([a[tables.indexOf('counters')], b[tables.indexOf('counters')]]) : ''));
-  }
   check(false, label);
 };
 
@@ -149,4 +144,4 @@ async function main() {
   db.close();
   console.log('Synthetic data authentication and committed-write contract verified');
 }
-main().catch((error)=>{console.error('Synthetic release contract failed: '+mode+(process.env.RELEASE_DEBUG?' :: '+error.message:''));process.exit(1);});
+main().catch(()=>{console.error('Synthetic release contract failed: '+mode);process.exit(1);});
