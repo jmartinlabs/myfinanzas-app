@@ -10,8 +10,10 @@ Estado: candidato técnico local con base común de Movimientos (Tipo
 P5/P6/P7/P7a; esquema v19 con contrato estricto y upgrade v18 verificado.
 Checkpoint: [progress16](16-revision-comida-progress.md#comida-unico-01--candidato-de-implementación-2026-10-31).
 Límites: P3 (fecha/saldo/cobertura reales), activación, migración real, AC-25,
-CI Linux, E2E de la nueva pantalla y restore v19 UNRUN. QA independiente ronda 1
-FAIL; defectos H1–H11 corregidos en `87becd0` y segunda ronda en curso. DEV18 sigue STOP.
+CI `required` PASS en `b51764d`; E2E y restore v19 UNRUN. Rootless bloquea por
+cambio de contrato de esquema sin autorización de rollback (gate de release, no
+código). QA ronda 1 FAIL; H1–H11 corregidos; última pasada pendiente sobre
+`73673dd`. DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## SPEC33 D′ — candidato de implementación 2026-10-31

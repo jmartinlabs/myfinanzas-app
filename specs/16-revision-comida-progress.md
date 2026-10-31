@@ -311,6 +311,20 @@ aplicadas en el mismo candidato:
   no queda atribución huérfana.
 - Testplan corregido: CU-07 con 865 y CU-24 con 34/3.
 
-Evidencia: `bun test apps/api/src/comida.test.ts` 29 PASS / 0 FAIL; suite API
-con los mismos 53 fallos de entorno de `main`. CI Linux, E2E y restore siguen
-UNRUN. Nueva ronda de QA independiente pendiente.
+Evidencia: `bun test apps/api/src/comida.test.ts` 31 PASS / 0 FAIL; suite API
+con los mismos fallos de entorno de `main` (0 nuevos con `TMPDIR` seguro).
+
+Ronda 2/3 de QA: H10 (cobertura falsamente completa con devolución acreditada
+sin grupo) corregido; H11 ampliado para rechazar cualquier vínculo (`Verificado`
+o `Revisar`) al retipificar compra o devolución, sin atribución huérfana; lista y
+métricas comparten ámbito con régimen activo. La QA no repitió la última pasada
+sobre `73673dd`: pendiente de confirmación final.
+
+CI: `Validate project` **PASS** en `b51764d`. Los runs posteriores, solo de
+pruebas y guardas, terminaron sin arrancar pasos (fallo de infraestructura de
+GitHub Actions; sin logs), por lo que el SHA final no tiene un PASS de CI
+registrado. `Rootless capability gate` falla en
+`previous-private-release-build / incompatible contract metadata; no rollback
+authorized`: el gate exige contratos idénticos frente a `main` y no admite un
+upgrade de esquema sin una autorización de release/rollback que no está definida.
+No se desactiva ni se modifica la verificación. E2E y restore: UNRUN.
