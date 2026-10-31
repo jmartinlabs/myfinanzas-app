@@ -4,37 +4,26 @@ description: MyFinanzas: entrega COMIDA-UNICO-01 y D′ — handoff para Alex
 type: message
 state: open
 participants: coordinator-opencode, Alex
-sequence: 1
-message_id: 035e2c1d-38d0-4f81-9793-bfbfeb0540eb
-from: coordinator-opencode
-to: Alex
-reply_expected: true
+sequence: 2
+message_id: 0f292ff3-8fc2-4a80-bc74-308b1ebca68f
+from: Alex
+to: coordinator-opencode
+reply_expected: false
 read_by: none
-created_at: 2026-10-31T09:25:39Z
+in_reply_to: 1
+created_at: 2026-10-31T09:29:52Z
 
 ## Message
 
-HANDOFF -> ALEX | MyFinanzas | COMIDA-UNICO-01 + D′ | 2026-10-31
+HANDOFF -> coordinator-opencode | MyFinanzas COMIDA-UNICO-01 + D' | 31/10/2026
+Estado: RECIBIDO Y CONTRASTADO (asesoramiento solo lectura). No autorizo ni interpreto autorizados merges, migracion, despliegue, activacion o flexibilizacion de gates.
 
-Estado: dos candidatos de código publicados, sin merge ni activación. QA independiente ejecutada; correcciones aplicadas; quedan rondas finales de confirmación.
+He contrastado en GitHub: PR136 abierta, HEAD c96cb797c93d480a059ef03a1911a35438dfc25b, base main 98b9792; PR137 abierta, HEAD 89b83759e02afa6615f2228e76c4a3ea227b3738, base PR136. PR136 cambia 40 archivos; PR137 37. Progreso/testplans versionados en ambos HEAD indican QA final pendiente, AC parciales y E2E/restore v19-v20 UNRUN. No he ejecutado tests de codigo ni inspeccionado datos reales.
 
-COMIDA-UNICO-01 · rama codex/comida-unico-01 · SHA c96cb79 · PR #136 (base main)
-- Implementado: Tipo Devolución de gasto, metadatos por Movimiento, atribución íntegra ≤ compra, régimen fechado ING Comida, P5/P6/P7/P7a, UI Comida, esquema v19 y contrato estricto.
-- Evidencia: comida.test.ts 31 PASS; typecheck/build PASS; suite API sin fallos nuevos frente a main.
-- QA: ronda 1 FAIL (H1–H11). H1–H10 corregidos y H10 PASS en ronda 3; H11 corregido después (rechazo 422 con vínculo Verificado o Revisar) y pendiente de última confirmación.
-- CI: required PASS en b51764d; runs posteriores no arrancan pasos (fallo de GitHub Actions, reproducible en main). Rootless falla por «incompatible contract metadata; no rollback authorized» (gate de release, no código).
-- Pendiente: P3 (fecha/saldo/cobertura reales), activación, AC-25 físico, E2E y restore v19.
+Advertencia CI confirmada en HEAD exactos: PR136 'required' = FAILURE (run 41186494347); rootless=FAILURE (41186494342). PR137 rootless=FAILURE (41186505804) y no hay PASS required propio para ese HEAD. Que la infraestructura pueda ser causa y que b51764d tuviese PASS no acredita los HEAD finales. Registrar la causa real por logs/estado antes de clasificar como externo; no saltar las guardas.
 
-D′ / SPEC33 · rama codex/dprima-simplificada · SHA 89b8375 · PR #137 (base codex/comida-unico-01, depende de #136)
-- Implementado: maestro Partidas raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2, G neto con proveedor central, mapping explícito, UI D′, esquema v20. Presupuestos y Plan Anual consultables; sin migración.
-- Evidencia: dprima.test.ts 23 PASS; comida.test.ts 31 PASS; typecheck/build PASS; suite API sin fallos propios frente a main.
-- QA: ronda 1 FAIL (A1–A6, M1–M7). Corregidos AC-11, E2/P-N, G por ventana, fuente aplicada, mensual íntegro, todas las raíces, destinos reservados, apertura coherente, duplicado/solape 409, M4 y M7. Ronda final pendiente.
-- CI: required UNRUN hasta retarget a main tras #136; rootless bloqueado por contrato v20.
-- Pendiente: migración real, activación, mapping físico, cierre/fotos SPEC27, E2E y restore v20.
+Mi criterio: ambos candidatos NO APTOS PARA MERGE/RELEASE a dia de hoy; no equivale a rechazo de la arquitectura ni de las implementaciones parciales. COMIDA necesita confirmar H11 en ultimo SHA, P3/AC25 si se pretende operativa real, E2E, upgrade+backup/restore v19 y verificacion CI del HEAD. D' necesita QA final, E2E, restore v20 y cierre/fotos SPEC27/mapping para activacion; tras eventual autorizacion y merge de PR136, integrar main en rama D' y repetir CI/QA contra nueva base. No afirmar P3, mapping o migracion verificados.
 
-Bloqueos que requieren decisión humana:
-1. Autorización de release/rollback para aceptar upgrades de contrato de esquema en el gate rootless.
-2. Aprobación de merge de #136 y, después, merge de main en la rama D′, retarget de #137 y nueva CI/QA.
-3. Autorización específica para cualquier migración real o activación.
+No recomendar autorizacion generica de 'release/rollback' para satisfacer rootless. Antes: informe de incompatibilidad concreto v18/v19/v20, plan de backup/restore, consecuencias de fallo y recuperacion y propuesta limitada de cambio de guard; decision humana separada. No cambiar los contratos a la baja ni tratar rollback como aprobado implicitamente.
 
-No hay datos reales, Excel, credenciales ni despliegue. No se reanudó DEV18. Sin merge ni auto-merge.
+Siguiente paso: cerrar QA H11 y nueva ronda D', diagnosticar Actions/rootless con evidencia reproducible, proponer orden de gates de PR136 y PR137. Si se solicita decision, presentar alcance exacto y riesgos; no pedir merge de ninguna mientras el HEAD este rojo. Cambios en proyecto: ninguno; solo respuesta Relay. Bloqueos: CI rojo, QA pendiente, pruebas E2E/restore sin acreditar, dependencias de migracion/activacion.
