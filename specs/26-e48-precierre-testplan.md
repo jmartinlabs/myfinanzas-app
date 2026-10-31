@@ -6,7 +6,12 @@ Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implemen
 código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3/DT4
 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
 
-Base: `main` `f077b7e`, esquema 18.
+Revisión documental 2026-10-31, actualizada 2026-11-01 sobre `main` `46c7dd1`: se precisan
+permisos, idempotencia de lectura, resultados vacíos/errores y referencias a los
+wireframes propuestos. Ningún escenario está demostrado: la matriz sigue siendo
+hipótesis de diseño y no declara PASS.
+
+Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `46c7dd1`.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -27,20 +32,43 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-15 | `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura | Bun Test de contrato | Documental; API futura | Respuesta de estado | UNRUN — diseño | — |
 | AC-16 | Ciclo con cierres posteriores ya existentes, coherentes o con diferencia no explicable; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; comprobación al mismo corte; sin diferencia no explicable no bloquea; con diferencia no explicable bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no escribe | Bun Test + UI | Documental; API/UI futura | DTO con aviso o bloqueo | UNRUN — diseño | — |
 
+### Casos de contrato conceptuales (diseño, UNRUN)
+
+Complementan la matriz sin añadir AC ni cambiar sus criterios:
+
+- **Permisos:** lectura solo con sesión autenticada vigente; sin sesión `401` sin datos.
+  No se definen roles nuevos. Se verifica junto con AC-09/AC-15.
+- **Idempotencia:** dos `GET` consecutivos sin cambios en las fuentes devuelven la misma
+  `revision`/hash y no alteran S0, ventana, hechos ni cierres (AC-10). Si cambia una
+  fuente, la `revision` cambia (AC-11).
+- **Vacío, no disponible y error:** una fuente vacía se distingue de `No disponible` y de
+  error; ninguna se presenta como `0` (AC-06/AC-07). Un error conserva identidad y hechos
+  conocidos y es reintentable.
+- **Sin escritura:** `POST/PATCH/DELETE` devuelven 405/422 y no dejan snapshot alterado
+  (AC-09). La lectura no ejecuta cierre, foto ni backup.
+- **Wireframes:** revisión visual de W1–W6 en SPEC26; su aprobación es un gate separado y
+  no sustituye pruebas funcionales ni auditoría de accesibilidad.
+
 ## Regression checks
 
 Pendientes de implementación. No se declara PASS; la matriz es de diseño.
 
 ## Functional verification
 
-UNRUN. No hay endpoints ni UI de E4.8 implementados.
+UNRUN. No hay endpoints ni UI de E4.8 implementados; los casos anteriores son
+hipótesis de contrato, no resultados.
 
 ## Browser verification
 
-UNRUN. Wireframes pendientes de aprobación; no hay capturas 390/1440 de E4.8.
+UNRUN funcional. Wireframes W1–W6 propuestos en SPEC26 el 2026-10-31, con vista HTML
+documental y capturas estáticas 1440×1565 y 390×1985 en
+`26-e48-precierre-captures/`; pendientes de aprobación visual. No hay UI de E4.8
+implementada ni capturas de aplicación. Las capturas documentales no demuestran
+accesibilidad, cálculo financiero ni PASS funcional.
 
 ## Limitations and next action
 
 La aprobación de la spec y los wireframes, DT6/T-BKP y cualquier DEV son gates
 separados; DT3/DT4 ya están resueltas. No se ejecutan pruebas hasta autorización de
-desarrollo.
+desarrollo. La autorización vigente cubre solo preparación documental: esta matriz no
+habilita DEV, cierre, E4.9 ni datos reales.
