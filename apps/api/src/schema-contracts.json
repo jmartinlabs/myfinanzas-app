@@ -6078,5 +6078,1543 @@
       }
     ],
     "sha256": "9735a8f986a8443abe17a5a92d4e20f73c56247fc341518c18c1f9fe2470d8b7"
+  },
+  {
+    "id": "C20-DPRIMA-SIMPLIFICADA",
+    "sourceCommit": "dcc3de4042dbc375d281648bf7cb33eeccf51928",
+    "schemaVersion": 20,
+    "objects": [
+      {
+        "type": "index",
+        "name": "budget_contribution_destination",
+        "tbl_name": "presupuestos",
+        "sql": "CREATE UNIQUE INDEX budget_contribution_destination ON presupuestos(destino) WHERE fuente='Aportación a saldo'"
+      },
+      {
+        "type": "index",
+        "name": "dprima_lineas_planificacion",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE INDEX dprima_lineas_planificacion ON dprima_lineas(planificacion)"
+      },
+      {
+        "type": "index",
+        "name": "dprima_planificaciones_padre",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE INDEX dprima_planificaciones_padre ON dprima_planificaciones(padre)"
+      },
+      {
+        "type": "index",
+        "name": "fichas_vehiculo_matricula",
+        "tbl_name": "fichas_vehiculo",
+        "sql": "CREATE INDEX fichas_vehiculo_matricula ON fichas_vehiculo(matricula)"
+      },
+      {
+        "type": "index",
+        "name": "instrumentos_isin",
+        "tbl_name": "instrumentos",
+        "sql": "CREATE UNIQUE INDEX instrumentos_isin ON instrumentos(isin) WHERE isin IS NOT NULL"
+      },
+      {
+        "type": "index",
+        "name": "instrumentos_nombre",
+        "tbl_name": "instrumentos",
+        "sql": "CREATE INDEX instrumentos_nombre ON instrumentos(nombre)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_compartido_participante",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE INDEX movimiento_compartido_participante ON movimiento_compartido(participante)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_compartido_referencia",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE INDEX movimiento_compartido_referencia ON movimiento_compartido(referencia)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_devolucion_ciclo",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE INDEX movimiento_devolucion_ciclo ON movimiento_devolucion(ciclo_origen)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_devolucion_compra",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE INDEX movimiento_devolucion_compra ON movimiento_devolucion(compra)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_devolucion_partida",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE INDEX movimiento_devolucion_partida ON movimiento_devolucion(partida)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_revision_comida_etiqueta",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE INDEX movimiento_revision_comida_etiqueta ON movimiento_revision_comida(etiqueta)"
+      },
+      {
+        "type": "index",
+        "name": "movimiento_rol_financiacion_rol",
+        "tbl_name": "movimiento_rol_financiacion",
+        "sql": "CREATE INDEX movimiento_rol_financiacion_rol ON movimiento_rol_financiacion(rol,obligacion_ciclo)"
+      },
+      {
+        "type": "index",
+        "name": "movimientos_destino",
+        "tbl_name": "movimientos",
+        "sql": "CREATE INDEX movimientos_destino ON movimientos(destino)"
+      },
+      {
+        "type": "index",
+        "name": "movimientos_fecha",
+        "tbl_name": "movimientos",
+        "sql": "CREATE INDEX movimientos_fecha ON movimientos(fecha)"
+      },
+      {
+        "type": "index",
+        "name": "movimientos_origen",
+        "tbl_name": "movimientos",
+        "sql": "CREATE INDEX movimientos_origen ON movimientos(origen)"
+      },
+      {
+        "type": "index",
+        "name": "movimientos_partida",
+        "tbl_name": "movimientos",
+        "sql": "CREATE INDEX movimientos_partida ON movimientos(partida)"
+      },
+      {
+        "type": "index",
+        "name": "movimientos_referencia",
+        "tbl_name": "movimientos",
+        "sql": "CREATE INDEX movimientos_referencia ON movimientos(referencia)"
+      },
+      {
+        "type": "index",
+        "name": "operaciones_inversion_efectivo",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE INDEX operaciones_inversion_efectivo ON operaciones_inversion(saldo_efectivo)"
+      },
+      {
+        "type": "index",
+        "name": "operaciones_inversion_fecha",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE INDEX operaciones_inversion_fecha ON operaciones_inversion(fecha)"
+      },
+      {
+        "type": "index",
+        "name": "operaciones_inversion_instrumento",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE INDEX operaciones_inversion_instrumento ON operaciones_inversion(instrumento)"
+      },
+      {
+        "type": "index",
+        "name": "operaciones_inversion_inversion",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE INDEX operaciones_inversion_inversion ON operaciones_inversion(saldo_inversion)"
+      },
+      {
+        "type": "index",
+        "name": "participantes_compartido_referencia",
+        "tbl_name": "participantes_compartido",
+        "sql": "CREATE INDEX participantes_compartido_referencia ON participantes_compartido(referencia)"
+      },
+      {
+        "type": "index",
+        "name": "participantes_compartido_titular",
+        "tbl_name": "participantes_compartido",
+        "sql": "CREATE UNIQUE INDEX participantes_compartido_titular ON participantes_compartido(referencia) WHERE rol='Titular' AND estado='Activa'"
+      },
+      {
+        "type": "index",
+        "name": "partidas_padre",
+        "tbl_name": "partidas",
+        "sql": "CREATE INDEX partidas_padre ON partidas(padre)"
+      },
+      {
+        "type": "index",
+        "name": "partidas_padre_partida",
+        "tbl_name": "partidas",
+        "sql": "CREATE INDEX partidas_padre_partida ON partidas(padre_partida)"
+      },
+      {
+        "type": "index",
+        "name": "partidas_presupuesto",
+        "tbl_name": "partidas",
+        "sql": "CREATE INDEX partidas_presupuesto ON partidas(presupuesto)"
+      },
+      {
+        "type": "index",
+        "name": "revision_comida_estado",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE INDEX revision_comida_estado ON revision_comida(estado_registro,tipo)"
+      },
+      {
+        "type": "index",
+        "name": "revision_comida_fecha",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE INDEX revision_comida_fecha ON revision_comida(fecha)"
+      },
+      {
+        "type": "index",
+        "name": "revision_comida_movimiento",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE INDEX revision_comida_movimiento ON revision_comida(movimiento)"
+      },
+      {
+        "type": "index",
+        "name": "subcategorias_padre",
+        "tbl_name": "subcategorias",
+        "sql": "CREATE INDEX subcategorias_padre ON subcategorias(padre)"
+      },
+      {
+        "type": "table",
+        "name": "annual_plan_attempts",
+        "tbl_name": "annual_plan_attempts",
+        "sql": "CREATE TABLE annual_plan_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "annual_plan_audit",
+        "tbl_name": "annual_plan_audit",
+        "sql": "CREATE TABLE annual_plan_audit(id INTEGER PRIMARY KEY,ejercicio INTEGER NOT NULL,partida TEXT NOT NULL REFERENCES partidas(id),revision INTEGER NOT NULL,actor TEXT NOT NULL,instante TEXT NOT NULL,motivo TEXT,delta TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "annual_plan_lines",
+        "tbl_name": "annual_plan_lines",
+        "sql": "CREATE TABLE annual_plan_lines(\n    ejercicio INTEGER NOT NULL CHECK(ejercicio BETWEEN 1 AND 9999),\n    partida TEXT NOT NULL REFERENCES partidas(id), presupuesto INTEGER CHECK(presupuesto IS NULL OR presupuesto>=0),\n    periodo TEXT, esencial TEXT NOT NULL CHECK(esencial IN ('Sí','No','Pendiente')),\n    revision INTEGER NOT NULL CHECK(revision>0), PRIMARY KEY(ejercicio,partida)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "anticipo_attempts",
+        "tbl_name": "anticipo_attempts",
+        "sql": "CREATE TABLE anticipo_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "anticipo_audit",
+        "tbl_name": "anticipo_audit",
+        "sql": "CREATE TABLE anticipo_audit(id INTEGER PRIMARY KEY, referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia), accion TEXT NOT NULL,\n    anterior TEXT, posterior TEXT NOT NULL, motivo TEXT, instante TEXT NOT NULL, actor TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "audit",
+        "tbl_name": "audit",
+        "sql": "CREATE TABLE audit(id INTEGER PRIMARY KEY, entidad TEXT NOT NULL, accion TEXT NOT NULL,\n        revision INTEGER NOT NULL, campos TEXT NOT NULL, instante TEXT NOT NULL,\n        revision_previa INTEGER NOT NULL, actor TEXT NOT NULL, motivo TEXT) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "auth_events",
+        "tbl_name": "auth_events",
+        "sql": "CREATE TABLE auth_events(id INTEGER PRIMARY KEY, accion TEXT NOT NULL, instante INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "auth_limits",
+        "tbl_name": "auth_limits",
+        "sql": "CREATE TABLE auth_limits(id INTEGER PRIMARY KEY CHECK(id=1), failures INTEGER NOT NULL,\n        window INTEGER NOT NULL, blocked INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "bootstrap",
+        "tbl_name": "bootstrap",
+        "sql": "CREATE TABLE bootstrap(hash TEXT PRIMARY KEY, expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "budget_attempts",
+        "tbl_name": "budget_attempts",
+        "sql": "CREATE TABLE budget_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "budget_contract",
+        "tbl_name": "budget_contract",
+        "sql": "CREATE TABLE budget_contract(id INTEGER PRIMARY KEY CHECK(id=1), contract TEXT NOT NULL CHECK(contract='e2.2-presupuestos-v8')) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "categorias",
+        "tbl_name": "categorias",
+        "sql": "CREATE TABLE categorias (\n      id TEXT PRIMARY KEY, nombre TEXT NOT NULL CHECK(length(nombre)>0), grupo TEXT,\n      anual TEXT CHECK(anual IN ('Ingreso','Gasto','No aplica')),\n      mensual TEXT CHECK(mensual IN ('Ingreso','Gasto','Gasto compartido neto','No aplica')),\n      referencia INTEGER CHECK(referencia IN (0,1)),\n      estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')),\n      revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "challenges",
+        "tbl_name": "challenges",
+        "sql": "CREATE TABLE challenges(hash TEXT PRIMARY KEY, expires INTEGER NOT NULL, attempts INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "ciclos",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TABLE ciclos(\n    id TEXT PRIMARY KEY,\n    inicio TEXT NOT NULL UNIQUE CHECK(length(inicio)=10 AND inicio GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(inicio) IS NOT NULL AND date(inicio)=inicio),\n    mes_financiado TEXT GENERATED ALWAYS AS (date(substr(inicio,1,7)||'-01','+1 month')) VIRTUAL NOT NULL UNIQUE,\n    saldo_comida INTEGER NOT NULL,\n    creado TEXT NOT NULL\n  , revision INTEGER NOT NULL DEFAULT 1 CHECK(revision>0), actualizado TEXT) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "classification_attempts",
+        "tbl_name": "classification_attempts",
+        "sql": "CREATE TABLE classification_attempts (\n      key TEXT PRIMARY KEY, entidad TEXT NOT NULL, hash TEXT NOT NULL,\n      id TEXT NOT NULL, expires INTEGER NOT NULL\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "comida_devolucion_attempts",
+        "tbl_name": "comida_devolucion_attempts",
+        "sql": "CREATE TABLE comida_devolucion_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "comida_metadata_attempts",
+        "tbl_name": "comida_metadata_attempts",
+        "sql": "CREATE TABLE comida_metadata_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "comida_regimen_attempts",
+        "tbl_name": "comida_regimen_attempts",
+        "sql": "CREATE TABLE comida_regimen_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "comida_rol_attempts",
+        "tbl_name": "comida_rol_attempts",
+        "sql": "CREATE TABLE comida_rol_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "compartido_attempts",
+        "tbl_name": "compartido_attempts",
+        "sql": "CREATE TABLE compartido_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "compartido_audit",
+        "tbl_name": "compartido_audit",
+        "sql": "CREATE TABLE compartido_audit(id INTEGER PRIMARY KEY, referencia TEXT NOT NULL REFERENCES fichas_compartidos(referencia),\n    accion TEXT NOT NULL, anterior TEXT, posterior TEXT NOT NULL, motivo TEXT, instante TEXT NOT NULL, actor TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "counters",
+        "tbl_name": "counters",
+        "sql": "CREATE TABLE counters(name TEXT PRIMARY KEY, next INTEGER NOT NULL CHECK(next>0)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_attempts",
+        "tbl_name": "cycle_attempts",
+        "sql": "CREATE TABLE cycle_attempts(\n    key TEXT PRIMARY KEY, hash TEXT NOT NULL, ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    expires INTEGER NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_audit",
+        "tbl_name": "cycle_audit",
+        "sql": "CREATE TABLE cycle_audit(ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT, revision INTEGER NOT NULL, accion TEXT NOT NULL, motivo TEXT NOT NULL, instante TEXT NOT NULL, actor TEXT NOT NULL, anterior TEXT, posterior TEXT NOT NULL, PRIMARY KEY(ciclo,revision)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_operation_attempts",
+        "tbl_name": "cycle_operation_attempts",
+        "sql": "CREATE TABLE cycle_operation_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_operation_guard",
+        "tbl_name": "cycle_operation_guard",
+        "sql": "CREATE TABLE cycle_operation_guard(id INTEGER PRIMARY KEY CHECK(id=1)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_plan_attempts",
+        "tbl_name": "cycle_plan_attempts",
+        "sql": "CREATE TABLE cycle_plan_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_plan_audit",
+        "tbl_name": "cycle_plan_audit",
+        "sql": "CREATE TABLE cycle_plan_audit(id INTEGER PRIMARY KEY,ciclo TEXT NOT NULL REFERENCES ciclos(id),presupuesto TEXT NOT NULL REFERENCES presupuestos(id),revision INTEGER NOT NULL,actor TEXT NOT NULL,instante TEXT NOT NULL,motivo TEXT,delta TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_plan_lines",
+        "tbl_name": "cycle_plan_lines",
+        "sql": "CREATE TABLE cycle_plan_lines(ciclo TEXT NOT NULL REFERENCES cycle_plans(ciclo),presupuesto TEXT NOT NULL REFERENCES presupuestos(id),base INTEGER CHECK(base IS NULL OR base>=0),esencial INTEGER CHECK(esencial IS NULL OR esencial>=0),del_mes INTEGER CHECK(del_mes IS NULL OR del_mes>=0),PRIMARY KEY(ciclo,presupuesto)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "cycle_plans",
+        "tbl_name": "cycle_plans",
+        "sql": "CREATE TABLE cycle_plans(ciclo TEXT PRIMARY KEY REFERENCES ciclos(id),revision INTEGER NOT NULL CHECK(revision>0)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "database_origin",
+        "tbl_name": "database_origin",
+        "sql": "CREATE TABLE database_origin(\n    id INTEGER PRIMARY KEY CHECK(id=1), contract INTEGER NOT NULL CHECK(contract=1),\n    origin TEXT NOT NULL CHECK(origin IN ('demo','production')), key_hash TEXT,\n    CHECK((origin='demo' AND key_hash IS NULL) OR (origin='production' AND length(key_hash)=64))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "debt_attempts",
+        "tbl_name": "debt_attempts",
+        "sql": "CREATE TABLE debt_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "deudas",
+        "tbl_name": "deudas",
+        "sql": "CREATE TABLE deudas(\n id TEXT PRIMARY KEY CHECK(id GLOB 'D[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),\n nombre TEXT NOT NULL CHECK(length(trim(nombre))>0), inicio TEXT, apertura INTEGER,\n estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')), revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_apertura_attempts",
+        "tbl_name": "dprima_apertura_attempts",
+        "sql": "CREATE TABLE dprima_apertura_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_apertura_audit",
+        "tbl_name": "dprima_apertura_audit",
+        "sql": "CREATE TABLE dprima_apertura_audit(\n    id INTEGER PRIMARY KEY,\n    apertura TEXT NOT NULL REFERENCES dprima_aperturas(id),\n    accion TEXT NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_aperturas",
+        "tbl_name": "dprima_aperturas",
+        "sql": "CREATE TABLE dprima_aperturas(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'AP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    planificacion TEXT NOT NULL REFERENCES dprima_planificaciones(id) ON DELETE RESTRICT,\n    ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    total INTEGER,\n    gasto_neto INTEGER,\n    saldo INTEGER,\n    pendiente INTEGER,\n    restantes INTEGER NOT NULL CHECK(restantes>0),\n    sugerida INTEGER,\n    importe INTEGER,\n    fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n    corte TEXT NOT NULL,\n    huella TEXT NOT NULL,\n    confirmado TEXT NOT NULL,\n    creado TEXT NOT NULL,\n    UNIQUE(planificacion,ciclo)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_exclusiones",
+        "tbl_name": "dprima_exclusiones",
+        "sql": "CREATE TABLE dprima_exclusiones(\n    id INTEGER PRIMARY KEY,\n    apertura TEXT NOT NULL REFERENCES dprima_aperturas(id),\n    linea TEXT NOT NULL REFERENCES dprima_lineas(id),\n    motivo TEXT NOT NULL CHECK(length(trim(motivo))>0),\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_linea_attempts",
+        "tbl_name": "dprima_linea_attempts",
+        "sql": "CREATE TABLE dprima_linea_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_linea_audit",
+        "tbl_name": "dprima_linea_audit",
+        "sql": "CREATE TABLE dprima_linea_audit(\n    id INTEGER PRIMARY KEY,\n    linea TEXT NOT NULL REFERENCES dprima_lineas(id),\n    accion TEXT NOT NULL,\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_lineas",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE TABLE dprima_lineas(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'LP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    planificacion TEXT NOT NULL REFERENCES dprima_planificaciones(id) ON DELETE RESTRICT,\n    hija TEXT NOT NULL REFERENCES partidas(id) ON DELETE RESTRICT,\n    importe INTEGER CHECK(importe IS NULL OR importe>=0),\n    fecha TEXT CHECK(fecha IS NULL OR (length(fecha)=10 AND fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha)=fecha)),\n    esencial INTEGER NOT NULL CHECK(esencial IN (0,1)),\n    anulada INTEGER NOT NULL DEFAULT 0 CHECK(anulada IN (0,1)),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_mapping",
+        "tbl_name": "dprima_mapping",
+        "sql": "CREATE TABLE dprima_mapping(\n    id INTEGER PRIMARY KEY,\n    presupuesto TEXT REFERENCES presupuestos(id) ON DELETE RESTRICT,\n    partida TEXT REFERENCES partidas(id) ON DELETE RESTRICT,\n    relacion TEXT NOT NULL CHECK(relacion IN ('Raíz','Hija','Presupuesto sin Partida','Partida sin planificación')),\n    motivo TEXT NOT NULL CHECK(length(trim(motivo))>0),\n    evidencia TEXT,\n    estado TEXT NOT NULL CHECK(estado IN ('Propuesta','Confirmada')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    CHECK((relacion IN ('Presupuesto sin Partida','Partida sin planificación')) OR partida IS NOT NULL)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_mapping_attempts",
+        "tbl_name": "dprima_mapping_attempts",
+        "sql": "CREATE TABLE dprima_mapping_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_mapping_audit",
+        "tbl_name": "dprima_mapping_audit",
+        "sql": "CREATE TABLE dprima_mapping_audit(\n    id INTEGER PRIMARY KEY,\n    mapping INTEGER NOT NULL REFERENCES dprima_mapping(id),\n    accion TEXT NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_mensual_attempts",
+        "tbl_name": "dprima_mensual_attempts",
+        "sql": "CREATE TABLE dprima_mensual_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_plan_mensual",
+        "tbl_name": "dprima_plan_mensual",
+        "sql": "CREATE TABLE dprima_plan_mensual(\n    ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    raiz TEXT NOT NULL REFERENCES partidas(id) ON DELETE RESTRICT,\n    fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n    destino TEXT REFERENCES saldos(id) ON DELETE RESTRICT,\n    base INTEGER CHECK(base IS NULL OR base>=0),\n    esencial INTEGER CHECK(esencial IS NULL OR esencial>=0),\n    del_mes INTEGER CHECK(del_mes IS NULL OR del_mes>=0),\n    corte_sugerencia TEXT,\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    PRIMARY KEY(ciclo,raiz)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_planificacion_attempts",
+        "tbl_name": "dprima_planificacion_attempts",
+        "sql": "CREATE TABLE dprima_planificacion_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_planificacion_audit",
+        "tbl_name": "dprima_planificacion_audit",
+        "sql": "CREATE TABLE dprima_planificacion_audit(\n    id INTEGER PRIMARY KEY,\n    planificacion TEXT NOT NULL REFERENCES dprima_planificaciones(id),\n    accion TEXT NOT NULL,\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "dprima_planificaciones",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TABLE dprima_planificaciones(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'DP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    padre TEXT NOT NULL REFERENCES partidas(id) ON DELETE RESTRICT,\n    saldo TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n    mes_inicial TEXT NOT NULL CHECK(length(mes_inicial)=10 AND mes_inicial GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-01'),\n    mes_final TEXT NOT NULL CHECK(length(mes_final)=10 AND mes_final GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-01'),\n    saldo_inicial INTEGER NOT NULL,\n    saldo_evidencia TEXT NOT NULL CHECK(length(trim(saldo_evidencia)) BETWEEN 1 AND 500),\n    estado TEXT NOT NULL CHECK(estado IN ('Borrador','Activa','Finalizada')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    CHECK(mes_inicial<=mes_final)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "fichas_anticipos",
+        "tbl_name": "fichas_anticipos",
+        "sql": "CREATE TABLE fichas_anticipos(\n    referencia TEXT PRIMARY KEY REFERENCES referencias(id), apertura TEXT, evidencia TEXT,\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL,\n    CHECK((apertura IS NULL AND evidencia IS NULL) OR (apertura IS NOT NULL AND length(trim(evidencia))>0))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "fichas_compartidos",
+        "tbl_name": "fichas_compartidos",
+        "sql": "CREATE TABLE fichas_compartidos(\n    referencia TEXT PRIMARY KEY REFERENCES referencias(id),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "fichas_vehiculo",
+        "tbl_name": "fichas_vehiculo",
+        "sql": "CREATE TABLE fichas_vehiculo(\n    referencia TEXT PRIMARY KEY REFERENCES referencias(id) ON DELETE RESTRICT,\n    matricula TEXT CHECK(matricula IS NULL OR (length(matricula)>0 AND length(matricula)<=32)),\n    proxima_itv TEXT CHECK(proxima_itv IS NULL OR (length(proxima_itv)=10 AND proxima_itv GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(proxima_itv) IS NOT NULL AND date(proxima_itv)=proxima_itv)),\n    fecha_cita TEXT CHECK(fecha_cita IS NULL OR (length(fecha_cita)=10 AND fecha_cita GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha_cita) IS NOT NULL AND date(fecha_cita)=fecha_cita)),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "fotos_neto_apertura",
+        "tbl_name": "fotos_neto_apertura",
+        "sql": "CREATE TABLE fotos_neto_apertura(\n    referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia), ciclo TEXT NOT NULL REFERENCES ciclos(id), inicio TEXT NOT NULL,\n    importe INTEGER NOT NULL, evidencia TEXT NOT NULL, procedencia TEXT NOT NULL, cobertura TEXT NOT NULL,\n    confirmado TEXT NOT NULL, revision INTEGER NOT NULL, PRIMARY KEY(referencia,ciclo)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "idempotency",
+        "tbl_name": "idempotency",
+        "sql": "CREATE TABLE idempotency(key TEXT PRIMARY KEY, hash TEXT NOT NULL, saldo TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n        expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "instrumento_attempts",
+        "tbl_name": "instrumento_attempts",
+        "sql": "CREATE TABLE instrumento_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "instrumento_audit",
+        "tbl_name": "instrumento_audit",
+        "sql": "CREATE TABLE instrumento_audit(\n    instrumento TEXT NOT NULL REFERENCES instrumentos(id),\n    revision INTEGER NOT NULL,\n    accion TEXT NOT NULL CHECK(accion IN ('alta','edición','desactivación','reactivación')),\n    motivo TEXT, instante TEXT NOT NULL, actor TEXT NOT NULL,\n    anterior TEXT, posterior TEXT NOT NULL,\n    PRIMARY KEY(instrumento,revision)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "instrumentos",
+        "tbl_name": "instrumentos",
+        "sql": "CREATE TABLE instrumentos(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'I[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    nombre TEXT NOT NULL CHECK(length(nombre)>=1 AND length(nombre)<=120),\n    isin TEXT CHECK(isin IS NULL OR (length(isin)=12 AND isin NOT GLOB '*[^A-Z0-9]*')),\n    isin_evidencia TEXT CHECK(isin_evidencia IS NULL OR (length(isin_evidencia)>=1 AND length(isin_evidencia)<=200)),\n    divisa_referencia TEXT CHECK(divisa_referencia IS NULL OR (length(divisa_referencia)=3 AND divisa_referencia NOT GLOB '*[^A-Z]*')),\n    estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado_en TEXT NOT NULL, actualizado_en TEXT NOT NULL,\n    CHECK((isin IS NULL AND isin_evidencia IS NULL) OR (isin IS NOT NULL AND isin_evidencia IS NOT NULL))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movement_attempts",
+        "tbl_name": "movement_attempts",
+        "sql": "CREATE TABLE movement_attempts(key TEXT PRIMARY KEY, hash TEXT NOT NULL, response TEXT NOT NULL, expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movement_audit",
+        "tbl_name": "movement_audit",
+        "sql": "CREATE TABLE movement_audit(\n    id TEXT NOT NULL REFERENCES movimientos(id), revision INTEGER NOT NULL,\n    accion TEXT NOT NULL CHECK(accion IN ('alta','rectificación','anulación')),\n    motivo TEXT, instante TEXT NOT NULL, actor TEXT NOT NULL,\n    anterior TEXT, posterior TEXT NOT NULL, PRIMARY KEY(id,revision)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_anticipo",
+        "tbl_name": "movimiento_anticipo",
+        "sql": "CREATE TABLE movimiento_anticipo(\n    movimiento TEXT PRIMARY KEY REFERENCES movimientos(id), referencia TEXT NOT NULL REFERENCES fichas_anticipos(referencia),\n    rol TEXT NOT NULL CHECK(rol IN ('Adelanto','Devolución')), origen TEXT NOT NULL REFERENCES saldos(id), destino TEXT NOT NULL REFERENCES saldos(id),\n    revision_movimiento INTEGER NOT NULL, evidencia TEXT NOT NULL CHECK(length(trim(evidencia))>0), procedencia TEXT NOT NULL CHECK(length(trim(procedencia))>0),\n    revision INTEGER NOT NULL, actualizado TEXT NOT NULL, CHECK(origen!=destino)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_compartido",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TABLE movimiento_compartido(\n    movimiento TEXT PRIMARY KEY REFERENCES movimientos(id) ON DELETE RESTRICT,\n    referencia TEXT NOT NULL REFERENCES fichas_compartidos(referencia) ON DELETE RESTRICT,\n    participante TEXT NOT NULL REFERENCES participantes_compartido(id) ON DELETE RESTRICT,\n    evidencia TEXT NOT NULL CHECK(length(trim(evidencia)) BETWEEN 10 AND 500),\n    procedencia TEXT NOT NULL CHECK(procedencia IN ('Registro del titular','Documento bancario','Importación histórica autorizada')),\n    revision_movimiento INTEGER NOT NULL CHECK(revision_movimiento>0),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_devolucion",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TABLE movimiento_devolucion(\n    movimiento TEXT PRIMARY KEY REFERENCES movimientos(id) ON DELETE RESTRICT,\n    compra TEXT REFERENCES movimientos(id) ON DELETE RESTRICT,\n    partida TEXT REFERENCES partidas(id) ON DELETE RESTRICT,\n    ciclo_origen TEXT REFERENCES ciclos(id) ON DELETE RESTRICT,\n    evidencia_relacion TEXT CHECK(evidencia_relacion IS NULL OR length(trim(evidencia_relacion)) BETWEEN 1 AND 500),\n    evidencia_origen_temporal TEXT CHECK(evidencia_origen_temporal IS NULL OR length(trim(evidencia_origen_temporal)) BETWEEN 1 AND 500),\n    elegibilidad TEXT NOT NULL CHECK(elegibilidad IN ('Acreditada','No acreditada')),\n    estado TEXT NOT NULL CHECK(estado IN ('Sin vínculo','Verificado','Revisar')),\n    revision_movimiento INTEGER NOT NULL CHECK(revision_movimiento>0),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    CHECK(compra IS NULL OR compra<>movimiento),\n    CHECK((estado='Sin vínculo' AND compra IS NULL AND evidencia_relacion IS NULL AND evidencia_origen_temporal IS NULL AND partida IS NULL AND ciclo_origen IS NULL)\n      OR (estado='Verificado' AND compra IS NOT NULL AND length(trim(evidencia_relacion))>0)\n      OR (estado='Revisar' AND (compra IS NOT NULL OR evidencia_relacion IS NOT NULL OR evidencia_origen_temporal IS NOT NULL OR partida IS NOT NULL OR ciclo_origen IS NOT NULL)))\n    ,CHECK(elegibilidad<>'Acreditada' OR (length(trim(evidencia_origen_temporal))>0 AND ciclo_origen IS NOT NULL AND (partida IS NOT NULL OR compra IS NOT NULL)))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_devolucion_audit",
+        "tbl_name": "movimiento_devolucion_audit",
+        "sql": "CREATE TABLE movimiento_devolucion_audit(\n    id INTEGER PRIMARY KEY,\n    movimiento TEXT NOT NULL REFERENCES movimiento_devolucion(movimiento),\n    accion TEXT NOT NULL CHECK(accion IN ('alta','rectificación')),\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_revision_comida",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE TABLE movimiento_revision_comida(\n    movimiento TEXT PRIMARY KEY REFERENCES movimientos(id) ON DELETE RESTRICT,\n    etiqueta TEXT CHECK(etiqueta IS NULL OR etiqueta IN ('Comida','Pendiente revisar','Ocio','Niños','Otros','Fuera presupuesto')),\n    evidencia_bancaria TEXT CHECK(evidencia_bancaria IS NULL OR length(trim(evidencia_bancaria)) BETWEEN 1 AND 500),\n    evidencia_comercial TEXT CHECK(evidencia_comercial IS NULL OR length(trim(evidencia_comercial)) BETWEEN 1 AND 500),\n    estado_revision TEXT NOT NULL CHECK(estado_revision IN ('Pendiente revisar','Revisada')),\n    revision_movimiento INTEGER NOT NULL CHECK(revision_movimiento>0),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_revision_comida_audit",
+        "tbl_name": "movimiento_revision_comida_audit",
+        "sql": "CREATE TABLE movimiento_revision_comida_audit(\n    id INTEGER PRIMARY KEY,\n    movimiento TEXT NOT NULL REFERENCES movimiento_revision_comida(movimiento),\n    accion TEXT NOT NULL CHECK(accion IN ('alta','rectificación')),\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_rol_financiacion",
+        "tbl_name": "movimiento_rol_financiacion",
+        "sql": "CREATE TABLE movimiento_rol_financiacion(\n    movimiento TEXT PRIMARY KEY REFERENCES movimientos(id) ON DELETE RESTRICT,\n    rol TEXT NOT NULL CHECK(rol IN ('Financiación','Reposición','Devolución Anticipo')),\n    obligacion_ciclo TEXT REFERENCES ciclos(id) ON DELETE RESTRICT,\n    evidencia TEXT NOT NULL CHECK(length(trim(evidencia)) BETWEEN 1 AND 500),\n    revision_movimiento INTEGER NOT NULL CHECK(revision_movimiento>0),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    CHECK(rol<>'Reposición' OR obligacion_ciclo IS NOT NULL)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimiento_rol_financiacion_audit",
+        "tbl_name": "movimiento_rol_financiacion_audit",
+        "sql": "CREATE TABLE movimiento_rol_financiacion_audit(\n    id INTEGER PRIMARY KEY,\n    movimiento TEXT NOT NULL REFERENCES movimiento_rol_financiacion(movimiento),\n    accion TEXT NOT NULL CHECK(accion IN ('alta','rectificación','anulación')),\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "movimientos",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TABLE \"movimientos\"(\n      id TEXT PRIMARY KEY CHECK(id NOT GLOB '*[^0-9]*' AND length(id)>0 AND substr(id,1,1)!='0'),\n      fecha TEXT NOT NULL CHECK(length(fecha)=10 AND fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha) IS NOT NULL AND date(fecha)=fecha),\n      tipo TEXT NOT NULL CHECK(tipo IN ('Ingreso','Gasto','Transferencia','Amortización deuda','Devolución de gasto')),\n      importe INTEGER NOT NULL CHECK(importe>0),\n      origen TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n      destino TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n      subtipo TEXT CHECK(subtipo IN ('Nómina','Bonus','Intereses','Promoción')),\n      partida TEXT REFERENCES partidas(id) ON DELETE RESTRICT,\n      concepto TEXT NOT NULL, nota TEXT NOT NULL,\n      anulado INTEGER NOT NULL DEFAULT 0 CHECK(anulado IN (0,1)),\n      revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL,\n      referencia TEXT REFERENCES referencias(id) ON DELETE RESTRICT, capital INTEGER CHECK(capital>0), intereses INTEGER CHECK(intereses>=0),\n      CHECK((tipo='Ingreso' AND origen='S000' AND destino!='S000' AND subtipo IS NOT NULL AND partida IS NULL)\n        OR (tipo IN ('Gasto','Amortización deuda') AND destino='S000' AND origen!='S000' AND partida IS NOT NULL AND subtipo IS NULL)\n        OR (tipo='Transferencia' AND destino!='S000' AND origen!=destino AND partida IS NULL AND subtipo IS NULL)\n        OR (tipo='Devolución de gasto' AND origen='S000' AND destino!='S000' AND subtipo IS NULL AND capital IS NULL AND intereses IS NULL))\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "operacion_attempts",
+        "tbl_name": "operacion_attempts",
+        "sql": "CREATE TABLE operacion_attempts(key TEXT PRIMARY KEY,hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "operacion_inversion_audit",
+        "tbl_name": "operacion_inversion_audit",
+        "sql": "CREATE TABLE operacion_inversion_audit(\n    operacion TEXT NOT NULL REFERENCES operaciones_inversion(id),\n    revision INTEGER NOT NULL,\n    accion TEXT NOT NULL CHECK(accion IN ('alta','rectificación','anulación')),\n    motivo TEXT, instante TEXT NOT NULL, actor TEXT NOT NULL,\n    anterior TEXT, posterior TEXT NOT NULL,\n    PRIMARY KEY(operacion,revision)\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "operaciones_inversion",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TABLE operaciones_inversion(\n    id TEXT PRIMARY KEY CHECK(id NOT GLOB '*[^0-9]*' AND length(id)>0 AND substr(id,1,1)!='0'),\n    clase TEXT NOT NULL CHECK(clase='Compra'),\n    fecha TEXT NOT NULL CHECK(length(fecha)=10 AND fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha) IS NOT NULL AND date(fecha)=fecha),\n    instrumento TEXT NOT NULL REFERENCES instrumentos(id) ON DELETE RESTRICT,\n    saldo_efectivo TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n    saldo_inversion TEXT NOT NULL REFERENCES saldos(id) ON DELETE RESTRICT,\n    cantidad INTEGER NOT NULL CHECK(cantidad>0 AND cantidad<=9007199254740991),\n    precio_divisa INTEGER NOT NULL CHECK(precio_divisa>0 AND precio_divisa<=9007199254740991),\n    divisa TEXT NOT NULL CHECK(length(divisa)=3 AND divisa NOT GLOB '*[^A-Z]*'),\n    cambio INTEGER CHECK(cambio IS NULL OR (cambio>0 AND cambio<=9007199254740991)),\n    importe_eur INTEGER NOT NULL CHECK(importe_eur>0),\n    comision_eur INTEGER CHECK(comision_eur IS NULL OR (comision_eur>=0 AND comision_eur<=importe_eur)),\n    concepto TEXT CHECK(concepto IS NULL OR length(concepto)<=2000),\n    nota TEXT CHECK(nota IS NULL OR length(nota)<=2000),\n    estado TEXT NOT NULL CHECK(estado IN ('Vigente','Anulada')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL,\n    CHECK(saldo_efectivo<>saldo_inversion),\n    CHECK((divisa='EUR' AND (cambio IS NULL OR cambio=1000000)) OR (divisa!='EUR' AND cambio IS NOT NULL))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "owner",
+        "tbl_name": "owner",
+        "sql": "CREATE TABLE owner(id INTEGER PRIMARY KEY CHECK(id=1), password TEXT NOT NULL, secret TEXT NOT NULL,\n        enabled INTEGER NOT NULL CHECK(enabled IN(0,1)), last_step INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "participantes_compartido",
+        "tbl_name": "participantes_compartido",
+        "sql": "CREATE TABLE participantes_compartido(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'CP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    referencia TEXT NOT NULL REFERENCES fichas_compartidos(referencia),\n    nombre TEXT NOT NULL CHECK(length(trim(nombre))>0),\n    rol TEXT NOT NULL CHECK(rol IN ('Titular','Tercero')),\n    partes INTEGER NOT NULL CHECK(partes>=0 AND partes<=1000000),\n    estado TEXT NOT NULL CHECK(estado IN ('Activa','Baja')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL, actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "partidas",
+        "tbl_name": "partidas",
+        "sql": "CREATE TABLE partidas (\n      id TEXT PRIMARY KEY, nombre TEXT NOT NULL CHECK(length(nombre)>0),\n      padre TEXT NOT NULL REFERENCES subcategorias(id) ON DELETE RESTRICT,\n      estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')),\n      revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n    , deuda TEXT REFERENCES deudas(id) ON DELETE RESTRICT, presupuesto TEXT REFERENCES presupuestos(id) ON DELETE RESTRICT, padre_partida TEXT REFERENCES partidas(id) ON DELETE RESTRICT, fuente TEXT CHECK(fuente IS NULL OR fuente IN ('Gasto real','Aportación a saldo','No aplica'))) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "payroll",
+        "tbl_name": "payroll",
+        "sql": "CREATE TABLE payroll(id TEXT PRIMARY KEY, revision INTEGER NOT NULL CHECK(revision>0), data TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "payroll_allocations",
+        "tbl_name": "payroll_allocations",
+        "sql": "CREATE TABLE payroll_allocations(paga TEXT NOT NULL REFERENCES payroll(id), movimiento TEXT NOT NULL REFERENCES movimientos(id), importe TEXT NOT NULL, revision_movimiento INTEGER NOT NULL, evidencia TEXT NOT NULL, PRIMARY KEY(paga,movimiento)) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "payroll_attempts",
+        "tbl_name": "payroll_attempts",
+        "sql": "CREATE TABLE payroll_attempts(key TEXT PRIMARY KEY, hash TEXT NOT NULL,response TEXT NOT NULL,expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "payroll_audit",
+        "tbl_name": "payroll_audit",
+        "sql": "CREATE TABLE payroll_audit(id INTEGER PRIMARY KEY,paga TEXT REFERENCES payroll(id),actor TEXT NOT NULL,instante TEXT NOT NULL,motivo TEXT NOT NULL,delta TEXT NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "presupuestos",
+        "tbl_name": "presupuestos",
+        "sql": "CREATE TABLE presupuestos(\n      id TEXT PRIMARY KEY CHECK(id GLOB 'PRE[0-9]*' AND substr(id,4) NOT GLOB '*[^0-9]*' AND length(id)>=6),\n      nombre TEXT NOT NULL CHECK(length(trim(nombre))>0),\n      fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n      destino TEXT REFERENCES saldos(id) ON DELETE RESTRICT,\n      estado TEXT NOT NULL CHECK(estado IN ('Activo','Inactivo')),\n      revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL,\n      CHECK((fuente='No aplica' AND destino IS NULL) OR (fuente!='No aplica' AND destino IS NOT NULL AND destino!='S000'))\n    ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "recovery",
+        "tbl_name": "recovery",
+        "sql": "CREATE TABLE recovery(hash TEXT PRIMARY KEY) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "reference_attempts",
+        "tbl_name": "reference_attempts",
+        "sql": "CREATE TABLE reference_attempts(key TEXT PRIMARY KEY, hash TEXT NOT NULL, response TEXT NOT NULL, expires INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "referencias",
+        "tbl_name": "referencias",
+        "sql": "CREATE TABLE referencias(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'REF[0-9]*' AND substr(id,4) NOT GLOB '*[^0-9]*' AND length(id)>=6),\n    nombre TEXT NOT NULL CHECK(length(trim(nombre))>0),\n    tipo TEXT NOT NULL CHECK(tipo IN ('Viaje','Evento','Anticipo','Vehículo','Gasto compartido')),\n    estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')),\n    revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "regimen_comida",
+        "tbl_name": "regimen_comida",
+        "sql": "CREATE TABLE regimen_comida(\n    saldo TEXT PRIMARY KEY REFERENCES saldos(id) ON DELETE RESTRICT,\n    ciclo_corte TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    apertura INTEGER NOT NULL,\n    evidencia TEXT NOT NULL CHECK(length(trim(evidencia)) BETWEEN 1 AND 500),\n    cobertura TEXT NOT NULL CHECK(cobertura IN ('Verificable','Parcial')),\n    estado TEXT NOT NULL CHECK(estado IN ('Preparado','Activo','Suspendido')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "regimen_comida_audit",
+        "tbl_name": "regimen_comida_audit",
+        "sql": "CREATE TABLE regimen_comida_audit(\n    id INTEGER PRIMARY KEY,\n    saldo TEXT NOT NULL REFERENCES regimen_comida(saldo),\n    accion TEXT NOT NULL CHECK(accion IN ('preparación','activación','suspensión')),\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT NOT NULL,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "revision_comida",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TABLE revision_comida(\n    id TEXT PRIMARY KEY,\n    tipo TEXT NOT NULL CHECK(tipo IN ('Detalle','Reposicion')),\n    fecha TEXT NOT NULL CHECK(length(fecha)=10 AND fecha GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND date(fecha)=fecha),\n    concepto TEXT NOT NULL CHECK(length(trim(concepto))>0),\n    importe INTEGER NOT NULL CHECK(importe>0),\n    direccion TEXT NOT NULL CHECK(direccion IN ('Salida','Entrada')),\n    es_devolucion INTEGER NOT NULL CHECK(es_devolucion IN (0,1)),\n    clasificacion TEXT CHECK(clasificacion IN ('Comida','Pendiente revisar','Ocio','Niños','Otros','Fuera presupuesto')),\n    fuera_presupuesto_historico INTEGER CHECK(fuera_presupuesto_historico IS NULL OR fuera_presupuesto_historico=1),\n    evidencia_bancaria TEXT CHECK(evidencia_bancaria IS NULL OR length(trim(evidencia_bancaria))>0),\n    evidencia_relacion_compra TEXT CHECK(evidencia_relacion_compra IS NULL OR length(trim(evidencia_relacion_compra))>0),\n    cuenta_origen TEXT CHECK(cuenta_origen IS NULL OR length(trim(cuenta_origen))>0),\n    tipo_vinculo TEXT CHECK(tipo_vinculo IN ('Individual','Agregado terminal')),\n    estado_vinculo TEXT NOT NULL CHECK(estado_vinculo IN ('Sin vínculo','Verificado')),\n    evidencia_vinculo TEXT CHECK(evidencia_vinculo IS NULL OR length(trim(evidencia_vinculo))>0),\n    movimiento TEXT REFERENCES movimientos(id),\n    revision_movimiento INTEGER CHECK(revision_movimiento IS NULL OR revision_movimiento>0),\n    estado_registro TEXT NOT NULL CHECK(estado_registro IN ('Vigente','Anulado')),\n    estado_trazabilidad TEXT NOT NULL CHECK(estado_trazabilidad IN ('Asignada','Sin asignación')),\n    revision INTEGER NOT NULL CHECK(revision>0),\n    creado TEXT NOT NULL,\n    actualizado TEXT NOT NULL,\n    CHECK((tipo='Detalle' AND clasificacion IS NOT NULL) OR (tipo='Reposicion' AND clasificacion IS NULL)),\n    CHECK((tipo='Detalle' AND direccion='Salida' AND es_devolucion=0) OR (tipo='Detalle' AND direccion='Entrada' AND es_devolucion=1) OR (tipo='Reposicion' AND direccion='Entrada' AND es_devolucion=0)),\n    CHECK(tipo<>'Reposicion' OR length(trim(evidencia_bancaria))>0),\n    CHECK(estado_trazabilidad<>'Asignada' OR tipo='Reposicion'),\n    CHECK(fuera_presupuesto_historico IS NULL OR (clasificacion IS NOT NULL AND clasificacion<>'Fuera presupuesto')),\n    CHECK((estado_vinculo='Sin vínculo' AND movimiento IS NULL AND tipo_vinculo IS NULL AND evidencia_vinculo IS NULL AND revision_movimiento IS NULL)\n      OR (estado_vinculo='Verificado' AND movimiento IS NOT NULL AND tipo_vinculo IS NOT NULL AND length(trim(evidencia_vinculo))>0 AND revision_movimiento IS NOT NULL))\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "revision_comida_attempts",
+        "tbl_name": "revision_comida_attempts",
+        "sql": "CREATE TABLE revision_comida_attempts(\n    key TEXT PRIMARY KEY,\n    hash TEXT NOT NULL,\n    response TEXT NOT NULL,\n    expires INTEGER NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "revision_comida_audit",
+        "tbl_name": "revision_comida_audit",
+        "sql": "CREATE TABLE revision_comida_audit(\n    id INTEGER PRIMARY KEY,\n    operacion TEXT NOT NULL REFERENCES revision_comida(id),\n    accion TEXT NOT NULL,\n    revision INTEGER NOT NULL,\n    anterior TEXT,\n    posterior TEXT NOT NULL,\n    motivo TEXT,\n    instante TEXT NOT NULL,\n    actor TEXT NOT NULL\n  ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "saldos",
+        "tbl_name": "saldos",
+        "sql": "CREATE TABLE saldos(\n        id TEXT PRIMARY KEY, nombre TEXT NOT NULL, tipo TEXT NOT NULL CHECK(tipo IN ('Exterior','Efectivo','Inversión')),\n        control TEXT NOT NULL CHECK(control IN ('Exterior','Movimientos','Terminal','No controlado','Inversiones','Manual')),\n        estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')), finalidad TEXT,\n        liquidez INTEGER CHECK(liquidez IN (0,1)), bolsa INTEGER CHECK(bolsa IN (0,1)), exterior INTEGER CHECK(exterior IN (0,1)),\n        apertura INTEGER, fecha_apertura TEXT, objetivo INTEGER, manual INTEGER,\n        revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n      ) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "schema_version",
+        "tbl_name": "schema_version",
+        "sql": "CREATE TABLE schema_version(version INTEGER PRIMARY KEY) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "sessions",
+        "tbl_name": "sessions",
+        "sql": "CREATE TABLE sessions(hash TEXT PRIMARY KEY, csrf TEXT NOT NULL, created INTEGER NOT NULL, seen INTEGER NOT NULL) STRICT"
+      },
+      {
+        "type": "table",
+        "name": "subcategorias",
+        "tbl_name": "subcategorias",
+        "sql": "CREATE TABLE subcategorias (\n      id TEXT PRIMARY KEY, nombre TEXT NOT NULL CHECK(length(nombre)>0),\n      padre TEXT NOT NULL REFERENCES categorias(id) ON DELETE RESTRICT,\n      estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')),\n      revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n    ) STRICT"
+      },
+      {
+        "type": "trigger",
+        "name": "annual_audit_no_delete",
+        "tbl_name": "annual_plan_audit",
+        "sql": "CREATE TRIGGER annual_audit_no_delete BEFORE DELETE ON annual_plan_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "annual_audit_no_update",
+        "tbl_name": "annual_plan_audit",
+        "sql": "CREATE TRIGGER annual_audit_no_update BEFORE UPDATE ON annual_plan_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "annual_line_identity",
+        "tbl_name": "annual_plan_lines",
+        "sql": "CREATE TRIGGER annual_line_identity BEFORE UPDATE OF ejercicio,partida ON annual_plan_lines BEGIN SELECT RAISE(ABORT,'immutable identity'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "annual_line_no_delete",
+        "tbl_name": "annual_plan_lines",
+        "sql": "CREATE TRIGGER annual_line_no_delete BEFORE DELETE ON annual_plan_lines BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_audit_no_delete",
+        "tbl_name": "anticipo_audit",
+        "sql": "CREATE TRIGGER anticipo_audit_no_delete BEFORE DELETE ON anticipo_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_audit_no_update",
+        "tbl_name": "anticipo_audit",
+        "sql": "CREATE TRIGGER anticipo_audit_no_update BEFORE UPDATE ON anticipo_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_cycle_photo",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TRIGGER anticipo_cycle_photo BEFORE UPDATE OF inicio ON ciclos WHEN NEW.inicio!=OLD.inicio AND EXISTS(SELECT 1 FROM fotos_neto_apertura WHERE ciclo=OLD.id) BEGIN SELECT RAISE(ABORT,'protected anticipo opening'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_no_delete",
+        "tbl_name": "fichas_anticipos",
+        "sql": "CREATE TRIGGER anticipo_no_delete BEFORE DELETE ON fichas_anticipos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "anticipo_photo_no_delete",
+        "tbl_name": "fotos_neto_apertura",
+        "sql": "CREATE TRIGGER anticipo_photo_no_delete BEFORE DELETE ON fotos_neto_apertura BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "audit_ficha_no_delete",
+        "tbl_name": "audit",
+        "sql": "CREATE TRIGGER audit_ficha_no_delete BEFORE DELETE ON audit\n    WHEN OLD.entidad='ficha_vehiculo' BEGIN SELECT RAISE(ABORT,'immutable vehicle audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "audit_ficha_no_update",
+        "tbl_name": "audit",
+        "sql": "CREATE TRIGGER audit_ficha_no_update BEFORE UPDATE ON audit\n    WHEN OLD.entidad='ficha_vehiculo' BEGIN SELECT RAISE(ABORT,'immutable vehicle audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "categorias_id_immutable",
+        "tbl_name": "categorias",
+        "sql": "CREATE TRIGGER categorias_id_immutable BEFORE UPDATE OF id ON categorias\n      WHEN NEW.id != OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "categorias_no_delete",
+        "tbl_name": "categorias",
+        "sql": "CREATE TRIGGER categorias_no_delete BEFORE DELETE ON categorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ciclo_append",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TRIGGER ciclo_append BEFORE INSERT ON ciclos WHEN EXISTS(SELECT 1 FROM ciclos WHERE inicio>=NEW.inicio) AND NOT EXISTS(SELECT 1 FROM cycle_operation_guard) BEGIN SELECT RAISE(ABORT,'cycle must follow latest start'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ciclo_id_immutable",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TRIGGER ciclo_id_immutable BEFORE UPDATE OF id ON ciclos WHEN NEW.id IS NOT OLD.id BEGIN SELECT RAISE(ABORT,'immutable cycle id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ciclo_no_delete",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TRIGGER ciclo_no_delete BEFORE DELETE ON ciclos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ciclo_no_update",
+        "tbl_name": "ciclos",
+        "sql": "CREATE TRIGGER ciclo_no_update BEFORE UPDATE ON ciclos WHEN NOT EXISTS(SELECT 1 FROM cycle_operation_guard) BEGIN SELECT RAISE(ABORT,'cycle correction requires reviewed procedure'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "compartido_audit_no_delete",
+        "tbl_name": "compartido_audit",
+        "sql": "CREATE TRIGGER compartido_audit_no_delete BEFORE DELETE ON compartido_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "compartido_audit_no_update",
+        "tbl_name": "compartido_audit",
+        "sql": "CREATE TRIGGER compartido_audit_no_update BEFORE UPDATE ON compartido_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "compartido_no_delete",
+        "tbl_name": "fichas_compartidos",
+        "sql": "CREATE TRIGGER compartido_no_delete BEFORE DELETE ON fichas_compartidos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cycle_audit_no_delete",
+        "tbl_name": "cycle_audit",
+        "sql": "CREATE TRIGGER cycle_audit_no_delete BEFORE DELETE ON cycle_audit BEGIN SELECT RAISE(ABORT,'immutable cycle audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cycle_audit_no_update",
+        "tbl_name": "cycle_audit",
+        "sql": "CREATE TRIGGER cycle_audit_no_update BEFORE UPDATE ON cycle_audit BEGIN SELECT RAISE(ABORT,'immutable cycle audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cycle_plan_audit_immutable_delete",
+        "tbl_name": "cycle_plan_audit",
+        "sql": "CREATE TRIGGER cycle_plan_audit_immutable_delete BEFORE DELETE ON cycle_plan_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cycle_plan_audit_immutable_update",
+        "tbl_name": "cycle_plan_audit",
+        "sql": "CREATE TRIGGER cycle_plan_audit_immutable_update BEFORE UPDATE ON cycle_plan_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "deuda_id_immutable",
+        "tbl_name": "deudas",
+        "sql": "CREATE TRIGGER deuda_id_immutable BEFORE UPDATE OF id ON deudas WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "deuda_no_delete",
+        "tbl_name": "deudas",
+        "sql": "CREATE TRIGGER deuda_no_delete BEFORE DELETE ON deudas BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "deuda_used_opening",
+        "tbl_name": "deudas",
+        "sql": "CREATE TRIGGER deuda_used_opening BEFORE UPDATE OF inicio,apertura ON deudas WHEN (NEW.inicio IS NOT OLD.inicio OR NEW.apertura IS NOT OLD.apertura) AND EXISTS(SELECT 1 FROM movimientos m JOIN partidas p ON p.id=m.partida WHERE p.deuda=OLD.id) BEGIN SELECT RAISE(ABORT,'used debt opening'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_apertura_audit_no_delete",
+        "tbl_name": "dprima_apertura_audit",
+        "sql": "CREATE TRIGGER dprima_apertura_audit_no_delete BEFORE DELETE ON dprima_apertura_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_apertura_audit_no_update",
+        "tbl_name": "dprima_apertura_audit",
+        "sql": "CREATE TRIGGER dprima_apertura_audit_no_update BEFORE UPDATE ON dprima_apertura_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_apertura_no_delete",
+        "tbl_name": "dprima_aperturas",
+        "sql": "CREATE TRIGGER dprima_apertura_no_delete BEFORE DELETE ON dprima_aperturas\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_exclusion_no_delete",
+        "tbl_name": "dprima_exclusiones",
+        "sql": "CREATE TRIGGER dprima_exclusion_no_delete BEFORE DELETE ON dprima_exclusiones\n    BEGIN SELECT RAISE(ABORT,'immutable exclusion'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_exclusion_no_update",
+        "tbl_name": "dprima_exclusiones",
+        "sql": "CREATE TRIGGER dprima_exclusion_no_update BEFORE UPDATE ON dprima_exclusiones\n    BEGIN SELECT RAISE(ABORT,'immutable exclusion'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_audit_no_delete",
+        "tbl_name": "dprima_linea_audit",
+        "sql": "CREATE TRIGGER dprima_linea_audit_no_delete BEFORE DELETE ON dprima_linea_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_audit_no_update",
+        "tbl_name": "dprima_linea_audit",
+        "sql": "CREATE TRIGGER dprima_linea_audit_no_update BEFORE UPDATE ON dprima_linea_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_hija",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE TRIGGER dprima_linea_hija BEFORE INSERT ON dprima_lineas\n    WHEN NOT EXISTS(\n      SELECT 1 FROM partidas h JOIN dprima_planificaciones p ON p.id=NEW.planificacion\n      WHERE h.id=NEW.hija AND (h.padre_partida=p.padre OR h.id=p.padre)\n        AND p.estado<>'Finalizada'\n    ) BEGIN SELECT RAISE(ABORT,'line must use an active daughter'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_hija_update",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE TRIGGER dprima_linea_hija_update BEFORE UPDATE OF hija,planificacion ON dprima_lineas\n    WHEN NOT EXISTS(\n      SELECT 1 FROM partidas h JOIN dprima_planificaciones p ON p.id=NEW.planificacion\n      WHERE h.id=NEW.hija AND (h.padre_partida=p.padre OR h.id=p.padre)\n        AND p.estado<>'Finalizada'\n    ) BEGIN SELECT RAISE(ABORT,'line must use an active daughter'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_id_immutable",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE TRIGGER dprima_linea_id_immutable BEFORE UPDATE OF id ON dprima_lineas\n    WHEN NEW.id<>OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_linea_no_delete",
+        "tbl_name": "dprima_lineas",
+        "sql": "CREATE TRIGGER dprima_linea_no_delete BEFORE DELETE ON dprima_lineas\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_mapping_audit_no_delete",
+        "tbl_name": "dprima_mapping_audit",
+        "sql": "CREATE TRIGGER dprima_mapping_audit_no_delete BEFORE DELETE ON dprima_mapping_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_mapping_audit_no_update",
+        "tbl_name": "dprima_mapping_audit",
+        "sql": "CREATE TRIGGER dprima_mapping_audit_no_update BEFORE UPDATE ON dprima_mapping_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_mapping_no_delete",
+        "tbl_name": "dprima_mapping",
+        "sql": "CREATE TRIGGER dprima_mapping_no_delete BEFORE DELETE ON dprima_mapping\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_mensual_destination",
+        "tbl_name": "dprima_plan_mensual",
+        "sql": "CREATE TRIGGER dprima_mensual_destination BEFORE INSERT ON dprima_plan_mensual\n    WHEN NEW.fuente='Aportación a saldo' AND NEW.destino IS NULL\n    BEGIN SELECT RAISE(ABORT,'destination required'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_mensual_root",
+        "tbl_name": "dprima_plan_mensual",
+        "sql": "CREATE TRIGGER dprima_mensual_root BEFORE INSERT ON dprima_plan_mensual\n    WHEN NOT EXISTS(SELECT 1 FROM partidas p WHERE p.id=NEW.raiz AND p.padre_partida IS NULL)\n    BEGIN SELECT RAISE(ABORT,'monthly line requires a root'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_audit_no_delete",
+        "tbl_name": "dprima_planificacion_audit",
+        "sql": "CREATE TRIGGER dprima_planificacion_audit_no_delete BEFORE DELETE ON dprima_planificacion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_audit_no_update",
+        "tbl_name": "dprima_planificacion_audit",
+        "sql": "CREATE TRIGGER dprima_planificacion_audit_no_update BEFORE UPDATE ON dprima_planificacion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_id_immutable",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TRIGGER dprima_planificacion_id_immutable BEFORE UPDATE OF id ON dprima_planificaciones\n    WHEN NEW.id<>OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_no_delete",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TRIGGER dprima_planificacion_no_delete BEFORE DELETE ON dprima_planificaciones\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_overlap",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TRIGGER dprima_planificacion_overlap BEFORE INSERT ON dprima_planificaciones\n    WHEN EXISTS(SELECT 1 FROM dprima_planificaciones p\n      WHERE p.padre=NEW.padre AND NEW.mes_inicial<=p.mes_final AND p.mes_inicial<=NEW.mes_final)\n    BEGIN SELECT RAISE(ABORT,'overlapping forecast'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_overlap_update",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TRIGGER dprima_planificacion_overlap_update BEFORE UPDATE OF padre,mes_inicial,mes_final ON dprima_planificaciones\n    WHEN EXISTS(SELECT 1 FROM dprima_planificaciones p\n      WHERE p.id<>OLD.id AND p.padre=NEW.padre AND NEW.mes_inicial<=p.mes_final AND p.mes_inicial<=NEW.mes_final)\n    BEGIN SELECT RAISE(ABORT,'overlapping forecast'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "dprima_planificacion_root",
+        "tbl_name": "dprima_planificaciones",
+        "sql": "CREATE TRIGGER dprima_planificacion_root BEFORE INSERT ON dprima_planificaciones\n    WHEN NOT EXISTS(SELECT 1 FROM partidas p WHERE p.id=NEW.padre AND p.padre_partida IS NULL)\n    BEGIN SELECT RAISE(ABORT,'forecast requires a root'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "exterior_protected",
+        "tbl_name": "saldos",
+        "sql": "CREATE TRIGGER exterior_protected BEFORE UPDATE ON saldos\n        WHEN OLD.id='S000' BEGIN SELECT RAISE(ABORT,'protected system saldo'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ficha_vehiculo_identity",
+        "tbl_name": "fichas_vehiculo",
+        "sql": "CREATE TRIGGER ficha_vehiculo_identity BEFORE UPDATE OF referencia ON fichas_vehiculo\n    WHEN NEW.referencia!=OLD.referencia BEGIN SELECT RAISE(ABORT,'immutable vehicle reference'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ficha_vehiculo_no_delete",
+        "tbl_name": "fichas_vehiculo",
+        "sql": "CREATE TRIGGER ficha_vehiculo_no_delete BEFORE DELETE ON fichas_vehiculo\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "ficha_vehiculo_type",
+        "tbl_name": "fichas_vehiculo",
+        "sql": "CREATE TRIGGER ficha_vehiculo_type BEFORE INSERT ON fichas_vehiculo\n    WHEN (SELECT tipo FROM referencias WHERE id=NEW.referencia) IS NOT 'Vehículo'\n    BEGIN SELECT RAISE(ABORT,'invalid vehicle reference type'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "instrumento_audit_no_delete",
+        "tbl_name": "instrumento_audit",
+        "sql": "CREATE TRIGGER instrumento_audit_no_delete BEFORE DELETE ON instrumento_audit\n    BEGIN SELECT RAISE(ABORT,'immutable instrument audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "instrumento_audit_no_update",
+        "tbl_name": "instrumento_audit",
+        "sql": "CREATE TRIGGER instrumento_audit_no_update BEFORE UPDATE ON instrumento_audit\n    BEGIN SELECT RAISE(ABORT,'immutable instrument audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "instrumento_id_immutable",
+        "tbl_name": "instrumentos",
+        "sql": "CREATE TRIGGER instrumento_id_immutable BEFORE UPDATE OF id ON instrumentos\n    WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable instrument id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "instrumento_no_delete",
+        "tbl_name": "instrumentos",
+        "sql": "CREATE TRIGGER instrumento_no_delete BEFORE DELETE ON instrumentos\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movement_audit_no_delete",
+        "tbl_name": "movement_audit",
+        "sql": "CREATE TRIGGER movement_audit_no_delete BEFORE DELETE ON movement_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movement_audit_no_update",
+        "tbl_name": "movement_audit",
+        "sql": "CREATE TRIGGER movement_audit_no_update BEFORE UPDATE ON movement_audit BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_annulled_immutable",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TRIGGER movimiento_annulled_immutable BEFORE UPDATE ON movimientos WHEN OLD.anulado=1 BEGIN SELECT RAISE(ABORT,'annulled record is immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_id_immutable",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_id_immutable BEFORE UPDATE OF movimiento ON movimiento_compartido\n    WHEN NEW.movimiento!=OLD.movimiento BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_no_delete",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_no_delete BEFORE DELETE ON movimiento_compartido\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_participant",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_participant BEFORE INSERT ON movimiento_compartido\n    WHEN NOT EXISTS(\n      SELECT 1 FROM participantes_compartido p\n      WHERE p.id=NEW.participante AND p.referencia=NEW.referencia\n        AND p.rol='Tercero' AND p.estado='Activa'\n    ) BEGIN SELECT RAISE(ABORT,'participant mismatch'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_reference_immutable",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_reference_immutable BEFORE UPDATE OF referencia ON movimiento_compartido\n    WHEN NEW.referencia!=OLD.referencia BEGIN SELECT RAISE(ABORT,'immutable reference'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_shape",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_shape BEFORE INSERT ON movimiento_compartido\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m JOIN referencias r ON r.id=m.referencia\n      WHERE m.id=NEW.movimiento AND m.tipo='Transferencia' AND m.origen='S000'\n        AND m.destino!='S000' AND m.anulado=0 AND m.referencia=NEW.referencia\n        AND r.tipo='Gasto compartido'\n        AND EXISTS(SELECT 1 FROM saldos s WHERE s.id=m.destino AND s.tipo!='Exterior' AND s.control!='Exterior')\n    ) BEGIN SELECT RAISE(ABORT,'invalid D5 movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_update_participant",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_update_participant BEFORE UPDATE ON movimiento_compartido\n    WHEN NOT EXISTS(\n      SELECT 1 FROM participantes_compartido p\n      WHERE p.id=NEW.participante AND p.referencia=NEW.referencia\n        AND p.rol='Tercero'\n        AND (p.estado='Activa' OR NEW.participante=OLD.participante)\n    ) BEGIN SELECT RAISE(ABORT,'participant mismatch'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_compartido_update_shape",
+        "tbl_name": "movimiento_compartido",
+        "sql": "CREATE TRIGGER movimiento_compartido_update_shape BEFORE UPDATE ON movimiento_compartido\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m JOIN referencias r ON r.id=m.referencia\n      WHERE m.id=NEW.movimiento AND m.tipo='Transferencia' AND m.origen='S000'\n        AND m.destino!='S000' AND m.anulado=0 AND m.referencia=NEW.referencia\n        AND r.tipo='Gasto compartido'\n        AND EXISTS(SELECT 1 FROM saldos s WHERE s.id=m.destino AND s.tipo!='Exterior' AND s.control!='Exterior')\n    ) BEGIN SELECT RAISE(ABORT,'invalid D5 movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_audit_no_delete",
+        "tbl_name": "movimiento_devolucion_audit",
+        "sql": "CREATE TRIGGER movimiento_devolucion_audit_no_delete BEFORE DELETE ON movimiento_devolucion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_audit_no_update",
+        "tbl_name": "movimiento_devolucion_audit",
+        "sql": "CREATE TRIGGER movimiento_devolucion_audit_no_update BEFORE UPDATE ON movimiento_devolucion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_id_immutable",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_id_immutable BEFORE UPDATE OF movimiento ON movimiento_devolucion\n    WHEN NEW.movimiento!=OLD.movimiento BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_integrity",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_integrity BEFORE INSERT ON movimiento_devolucion\n    WHEN NEW.estado='Verificado' AND NEW.compra IS NOT NULL AND (\n      SELECT COALESCE(SUM(d.dev_importe),0) FROM (\n        SELECT m.importe dev_importe FROM movimiento_devolucion x\n          JOIN movimientos m ON m.id=x.movimiento\n        WHERE x.compra=NEW.compra AND x.estado='Verificado' AND x.movimiento<>NEW.movimiento AND m.anulado=0\n      ) d\n    ) + (SELECT importe FROM movimientos WHERE id=NEW.movimiento) >\n      (SELECT importe FROM movimientos WHERE id=NEW.compra)\n    BEGIN SELECT RAISE(ABORT,'devolution exceeds purchase'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_no_delete",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_no_delete BEFORE DELETE ON movimiento_devolucion\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_purchase",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_purchase BEFORE INSERT ON movimiento_devolucion\n    WHEN NEW.compra IS NOT NULL AND NOT EXISTS(\n      SELECT 1 FROM movimientos c JOIN saldos s ON s.id=c.origen\n      WHERE c.id=NEW.compra AND c.anulado=0 AND c.tipo='Gasto'\n        AND s.control<>'Terminal'\n    ) BEGIN SELECT RAISE(ABORT,'invalid purchase attribution'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_shape",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_shape BEFORE INSERT ON movimiento_devolucion\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m\n      WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Devolución de gasto'\n    ) BEGIN SELECT RAISE(ABORT,'invalid devolution movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_update_integrity",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_update_integrity BEFORE UPDATE ON movimiento_devolucion\n    WHEN NEW.estado='Verificado' AND NEW.compra IS NOT NULL AND (\n      SELECT COALESCE(SUM(d.dev_importe),0) FROM (\n        SELECT m.importe dev_importe FROM movimiento_devolucion x\n          JOIN movimientos m ON m.id=x.movimiento\n        WHERE x.compra=NEW.compra AND x.estado='Verificado' AND x.movimiento<>NEW.movimiento AND m.anulado=0\n      ) d\n    ) + (SELECT importe FROM movimientos WHERE id=NEW.movimiento) >\n      (SELECT importe FROM movimientos WHERE id=NEW.compra)\n    BEGIN SELECT RAISE(ABORT,'devolution exceeds purchase'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_update_purchase",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_update_purchase BEFORE UPDATE ON movimiento_devolucion\n    WHEN NEW.compra IS NOT NULL AND NOT EXISTS(\n      SELECT 1 FROM movimientos c JOIN saldos s ON s.id=c.origen\n      WHERE c.id=NEW.compra AND c.tipo='Gasto'\n        AND s.control<>'Terminal'\n    ) BEGIN SELECT RAISE(ABORT,'invalid purchase attribution'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_devolucion_update_shape",
+        "tbl_name": "movimiento_devolucion",
+        "sql": "CREATE TRIGGER movimiento_devolucion_update_shape BEFORE UPDATE ON movimiento_devolucion\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m\n      WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Devolución de gasto'\n    ) BEGIN SELECT RAISE(ABORT,'invalid devolution movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_id_immutable",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TRIGGER movimiento_id_immutable BEFORE UPDATE OF id ON movimientos WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_no_delete",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TRIGGER movimiento_no_delete BEFORE DELETE ON movimientos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_partida_root_group",
+        "tbl_name": "movimientos",
+        "sql": "CREATE TRIGGER movimiento_partida_root_group BEFORE INSERT ON movimientos\n    WHEN NEW.tipo='Gasto' AND EXISTS(\n      SELECT 1 FROM partidas p WHERE p.id=NEW.partida AND p.padre_partida IS NULL\n    ) AND EXISTS(\n      SELECT 1 FROM partidas h WHERE h.padre_partida=NEW.partida\n    ) BEGIN SELECT RAISE(ABORT,'dprima grouped root does not accept new Gasto'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_audit_no_delete",
+        "tbl_name": "movimiento_revision_comida_audit",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_audit_no_delete BEFORE DELETE ON movimiento_revision_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_audit_no_update",
+        "tbl_name": "movimiento_revision_comida_audit",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_audit_no_update BEFORE UPDATE ON movimiento_revision_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_id_immutable",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_id_immutable BEFORE UPDATE OF movimiento ON movimiento_revision_comida\n    WHEN NEW.movimiento!=OLD.movimiento BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_no_delete",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_no_delete BEFORE DELETE ON movimiento_revision_comida\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_shape",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_shape BEFORE INSERT ON movimiento_revision_comida\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m\n      WHERE m.id=NEW.movimiento AND m.anulado=0\n        AND m.tipo IN ('Gasto','Devolución de gasto')\n    ) BEGIN SELECT RAISE(ABORT,'invalid comida movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_revision_comida_update_shape",
+        "tbl_name": "movimiento_revision_comida",
+        "sql": "CREATE TRIGGER movimiento_revision_comida_update_shape BEFORE UPDATE ON movimiento_revision_comida\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m\n      WHERE m.id=NEW.movimiento AND m.anulado=0\n        AND m.tipo IN ('Gasto','Devolución de gasto')\n    ) BEGIN SELECT RAISE(ABORT,'invalid comida movement'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_rol_financiacion_audit_no_delete",
+        "tbl_name": "movimiento_rol_financiacion_audit",
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_audit_no_delete BEFORE DELETE ON movimiento_rol_financiacion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_rol_financiacion_audit_no_update",
+        "tbl_name": "movimiento_rol_financiacion_audit",
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_audit_no_update BEFORE UPDATE ON movimiento_rol_financiacion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_rol_financiacion_no_delete",
+        "tbl_name": "movimiento_rol_financiacion",
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_no_delete BEFORE DELETE ON movimiento_rol_financiacion\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "movimiento_rol_financiacion_shape",
+        "tbl_name": "movimiento_rol_financiacion",
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_shape BEFORE INSERT ON movimiento_rol_financiacion\n    WHEN NOT EXISTS(\n      SELECT 1 FROM movimientos m WHERE m.id=NEW.movimiento AND m.anulado=0\n        AND m.tipo IN ('Transferencia','Amortización deuda')\n    ) BEGIN SELECT RAISE(ABORT,'invalid financing role'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_annulled_immutable",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TRIGGER operacion_inversion_annulled_immutable BEFORE UPDATE ON operaciones_inversion\n    WHEN OLD.estado='Anulada' BEGIN SELECT RAISE(ABORT,'annulled operation is immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_audit_no_delete",
+        "tbl_name": "operacion_inversion_audit",
+        "sql": "CREATE TRIGGER operacion_inversion_audit_no_delete BEFORE DELETE ON operacion_inversion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable operation audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_audit_no_update",
+        "tbl_name": "operacion_inversion_audit",
+        "sql": "CREATE TRIGGER operacion_inversion_audit_no_update BEFORE UPDATE ON operacion_inversion_audit\n    BEGIN SELECT RAISE(ABORT,'immutable operation audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_id_immutable",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TRIGGER operacion_inversion_id_immutable BEFORE UPDATE OF id ON operaciones_inversion\n    WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable operation id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_identity_immutable",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TRIGGER operacion_inversion_identity_immutable BEFORE UPDATE OF instrumento,saldo_efectivo,saldo_inversion ON operaciones_inversion\n    WHEN NEW.instrumento!=OLD.instrumento OR NEW.saldo_efectivo!=OLD.saldo_efectivo OR NEW.saldo_inversion!=OLD.saldo_inversion\n    BEGIN SELECT RAISE(ABORT,'immutable operation identity'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_no_delete",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TRIGGER operacion_inversion_no_delete BEFORE DELETE ON operaciones_inversion\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "operacion_inversion_saldos_type",
+        "tbl_name": "operaciones_inversion",
+        "sql": "CREATE TRIGGER operacion_inversion_saldos_type BEFORE INSERT ON operaciones_inversion\n    WHEN (SELECT tipo FROM saldos WHERE id=NEW.saldo_efectivo) IS NOT 'Efectivo'\n      OR (SELECT control FROM saldos WHERE id=NEW.saldo_efectivo) IS NOT 'Inversiones'\n      OR (SELECT tipo FROM saldos WHERE id=NEW.saldo_inversion) IS NOT 'Inversión'\n      OR (SELECT control FROM saldos WHERE id=NEW.saldo_inversion) IS NOT 'Inversiones'\n    BEGIN SELECT RAISE(ABORT,'invalid investment saldo pair'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "origin_no_delete",
+        "tbl_name": "database_origin",
+        "sql": "CREATE TRIGGER origin_no_delete BEFORE DELETE ON database_origin BEGIN SELECT RAISE(ABORT,'immutable origin'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "origin_no_update",
+        "tbl_name": "database_origin",
+        "sql": "CREATE TRIGGER origin_no_update BEFORE UPDATE ON database_origin BEGIN SELECT RAISE(ABORT,'immutable origin'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "participante_compartido_id_immutable",
+        "tbl_name": "participantes_compartido",
+        "sql": "CREATE TRIGGER participante_compartido_id_immutable BEFORE UPDATE OF id ON participantes_compartido WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "participante_compartido_no_delete",
+        "tbl_name": "participantes_compartido",
+        "sql": "CREATE TRIGGER participante_compartido_no_delete BEFORE DELETE ON participantes_compartido BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_dprima_fuente_used",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_dprima_fuente_used BEFORE UPDATE OF fuente ON partidas\n    WHEN NEW.fuente IS NOT OLD.fuente AND EXISTS(\n      SELECT 1 FROM dprima_plan_mensual WHERE raiz=OLD.id\n    ) BEGIN SELECT RAISE(ABORT,'dprima source of used partida'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_dprima_parent_root",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_dprima_parent_root BEFORE INSERT ON partidas\n    WHEN NEW.padre_partida IS NOT NULL AND NOT EXISTS(\n      SELECT 1 FROM partidas p WHERE p.id=NEW.padre_partida AND p.padre_partida IS NULL\n    ) BEGIN SELECT RAISE(ABORT,'dprima parent must be a root'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_dprima_parent_update",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_dprima_parent_update BEFORE UPDATE OF padre_partida ON partidas\n    WHEN NEW.padre_partida IS NOT NULL AND (\n      NEW.padre_partida=NEW.id OR NOT EXISTS(\n        SELECT 1 FROM partidas p WHERE p.id=NEW.padre_partida AND p.padre_partida IS NULL\n      )\n    ) BEGIN SELECT RAISE(ABORT,'dprima parent must be a root'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_dprima_parent_used",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_dprima_parent_used BEFORE UPDATE OF padre_partida ON partidas\n    WHEN NEW.padre_partida IS NOT OLD.padre_partida AND (\n      EXISTS(SELECT 1 FROM movimientos WHERE partida=OLD.id)\n      OR EXISTS(SELECT 1 FROM dprima_lineas WHERE hija=OLD.id)\n      OR EXISTS(SELECT 1 FROM dprima_plan_mensual WHERE raiz=OLD.id)\n    ) BEGIN SELECT RAISE(ABORT,'dprima reparent of used partida'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partida_used_debt",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partida_used_debt BEFORE UPDATE OF deuda ON partidas WHEN NEW.deuda IS NOT OLD.deuda AND EXISTS(SELECT 1 FROM movimientos WHERE partida=OLD.id) BEGIN SELECT RAISE(ABORT,'used debt relation'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partidas_id_immutable",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partidas_id_immutable BEFORE UPDATE OF id ON partidas\n      WHEN NEW.id != OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "partidas_no_delete",
+        "tbl_name": "partidas",
+        "sql": "CREATE TRIGGER partidas_no_delete BEFORE DELETE ON partidas\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "payroll_audit_no_delete",
+        "tbl_name": "payroll_audit",
+        "sql": "CREATE TRIGGER payroll_audit_no_delete BEFORE DELETE ON payroll_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "payroll_audit_no_update",
+        "tbl_name": "payroll_audit",
+        "sql": "CREATE TRIGGER payroll_audit_no_update BEFORE UPDATE ON payroll_audit BEGIN SELECT RAISE(ABORT,'append only'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "payroll_identity",
+        "tbl_name": "payroll",
+        "sql": "CREATE TRIGGER payroll_identity BEFORE UPDATE OF id ON payroll BEGIN SELECT RAISE(ABORT,'immutable identity'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "payroll_no_delete",
+        "tbl_name": "payroll",
+        "sql": "CREATE TRIGGER payroll_no_delete BEFORE DELETE ON payroll BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "presupuesto_id_immutable",
+        "tbl_name": "presupuestos",
+        "sql": "CREATE TRIGGER presupuesto_id_immutable BEFORE UPDATE OF id ON presupuestos WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable budget id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "presupuesto_no_delete",
+        "tbl_name": "presupuestos",
+        "sql": "CREATE TRIGGER presupuesto_no_delete BEFORE DELETE ON presupuestos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "referencia_id_immutable",
+        "tbl_name": "referencias",
+        "sql": "CREATE TRIGGER referencia_id_immutable BEFORE UPDATE OF id ON referencias WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "referencia_no_delete",
+        "tbl_name": "referencias",
+        "sql": "CREATE TRIGGER referencia_no_delete BEFORE DELETE ON referencias BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "referencia_used_type",
+        "tbl_name": "referencias",
+        "sql": "CREATE TRIGGER referencia_used_type BEFORE UPDATE OF tipo ON referencias WHEN NEW.tipo!=OLD.tipo AND EXISTS(SELECT 1 FROM movimientos WHERE referencia=OLD.id) BEGIN SELECT RAISE(ABORT,'used reference type'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "referencia_vehicle_type",
+        "tbl_name": "referencias",
+        "sql": "CREATE TRIGGER referencia_vehicle_type BEFORE UPDATE OF tipo ON referencias\n    WHEN OLD.tipo='Vehículo' AND NEW.tipo!='Vehículo'\n      AND EXISTS(SELECT 1 FROM fichas_vehiculo WHERE referencia=OLD.id)\n    BEGIN SELECT RAISE(ABORT,'vehicle reference type locked'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "regimen_comida_audit_no_delete",
+        "tbl_name": "regimen_comida_audit",
+        "sql": "CREATE TRIGGER regimen_comida_audit_no_delete BEFORE DELETE ON regimen_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "regimen_comida_audit_no_update",
+        "tbl_name": "regimen_comida_audit",
+        "sql": "CREATE TRIGGER regimen_comida_audit_no_update BEFORE UPDATE ON regimen_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "regimen_comida_no_delete",
+        "tbl_name": "regimen_comida",
+        "sql": "CREATE TRIGGER regimen_comida_no_delete BEFORE DELETE ON regimen_comida\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "regimen_comida_saldo_immutable",
+        "tbl_name": "regimen_comida",
+        "sql": "CREATE TRIGGER regimen_comida_saldo_immutable BEFORE UPDATE OF saldo ON regimen_comida\n    WHEN NEW.saldo!=OLD.saldo BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_annulled_locked",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TRIGGER revision_comida_annulled_locked BEFORE UPDATE ON revision_comida\n    WHEN OLD.estado_registro='Anulado' BEGIN SELECT RAISE(ABORT,'annulled record is immutable'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_audit_no_delete",
+        "tbl_name": "revision_comida_audit",
+        "sql": "CREATE TRIGGER revision_comida_audit_no_delete BEFORE DELETE ON revision_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_audit_no_update",
+        "tbl_name": "revision_comida_audit",
+        "sql": "CREATE TRIGGER revision_comida_audit_no_update BEFORE UPDATE ON revision_comida_audit\n    BEGIN SELECT RAISE(ABORT,'immutable audit'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_created_immutable",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TRIGGER revision_comida_created_immutable BEFORE UPDATE OF creado ON revision_comida\n    WHEN NEW.creado!=OLD.creado BEGIN SELECT RAISE(ABORT,'immutable created'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_id_immutable",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TRIGGER revision_comida_id_immutable BEFORE UPDATE OF id ON revision_comida\n    WHEN NEW.id!=OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_no_delete",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TRIGGER revision_comida_no_delete BEFORE DELETE ON revision_comida\n    BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "revision_comida_tipo_immutable",
+        "tbl_name": "revision_comida",
+        "sql": "CREATE TRIGGER revision_comida_tipo_immutable BEFORE UPDATE OF tipo ON revision_comida\n    WHEN NEW.tipo!=OLD.tipo BEGIN SELECT RAISE(ABORT,'immutable type'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "saldo_id_immutable",
+        "tbl_name": "saldos",
+        "sql": "CREATE TRIGGER saldo_id_immutable BEFORE UPDATE OF id ON saldos\n        WHEN NEW.id != OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "saldo_no_delete",
+        "tbl_name": "saldos",
+        "sql": "CREATE TRIGGER saldo_no_delete BEFORE DELETE ON saldos BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "subcategorias_id_immutable",
+        "tbl_name": "subcategorias",
+        "sql": "CREATE TRIGGER subcategorias_id_immutable BEFORE UPDATE OF id ON subcategorias\n      WHEN NEW.id != OLD.id BEGIN SELECT RAISE(ABORT,'immutable id'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "subcategorias_no_delete",
+        "tbl_name": "subcategorias",
+        "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
+      }
+    ],
+    "sha256": "35ca1afbb3e84edbbc0b65ac79711a0b3c2dbf78bd24df06fceda5eb39af1bd8"
   }
 ]

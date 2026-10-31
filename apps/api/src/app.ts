@@ -12,6 +12,22 @@ import {
 } from "./compartidos";
 import { monthlyFlow } from "./flujo-mensual";
 import {
+  aperturaPreview,
+  confirmApertura,
+  confirmLineas,
+  confirmMapping,
+  confirmPartidaConfig,
+  createPlanificacion,
+  getPlanificacion,
+  getPlanMensualDprima,
+  listDprimaPartidas,
+  listPlanificaciones,
+  mappingProposal,
+  previewLineas,
+  previewPartidaConfig,
+  writeMensual,
+} from "./dprima";
+import {
   activateRegimen,
   comidaMetrics,
   comidaOptions,
@@ -285,6 +301,92 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      if (path === "/api/dprima/partidas" && req.method === "GET")
+        return reply(listDprimaPartidas(db));
+      if (
+        path === "/api/dprima/planificaciones" &&
+        req.method === "GET"
+      )
+        return reply({ planificaciones: listPlanificaciones(db) });
+      if (
+        path === "/api/dprima/planificaciones" &&
+        req.method === "POST"
+      ) {
+        const item = createPlanificacion(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", "/api/dprima/planificaciones/" + item.planificacion.id);
+        return reply(item, 201);
+      }
+      if (path === "/api/dprima/mapping" && req.method === "GET")
+        return reply(mappingProposal(db));
+      if (path === "/api/dprima/mapping/confirmar" && req.method === "POST")
+        return reply(
+          confirmMapping(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          ),
+        );
+      const dprimaMensual = path.match(/^\/api\/dprima\/mensual\/(\d+)$/);
+      if (dprimaMensual) {
+        if (req.method === "GET")
+          return reply(getPlanMensualDprima(db, dprimaMensual[1], now()));
+        if (req.method === "POST")
+          return reply(
+            writeMensual(
+              db,
+              dprimaMensual[1],
+              await jsonBody(req),
+              req.headers.get("idempotency-key") ?? "",
+              now(),
+            ),
+          );
+      }
+      const dprimaPartida = path.match(
+        /^\/api\/dprima\/partidas\/(PAR\d+)\/(impacto|confirmar)$/,
+      );
+      if (dprimaPartida && req.method === "POST") {
+        const body = await jsonBody(req);
+        return reply(
+          dprimaPartida[2] === "impacto"
+            ? previewPartidaConfig(db, dprimaPartida[1], body)
+            : confirmPartidaConfig(
+                db,
+                dprimaPartida[1],
+                body,
+                req.headers.get("idempotency-key") ?? "",
+                now(),
+              ),
+        );
+      }
+      const dprimaPlan = path.match(
+        /^\/api\/dprima\/planificaciones\/(DP\d+)(?:\/(lineas|apertura)\/(impacto|confirmar))?$/,
+      );
+      if (dprimaPlan) {
+        const [, id, action, phase] = dprimaPlan;
+        if (!action && req.method === "GET")
+          return reply(getPlanificacion(db, id));
+        if (action && phase && req.method === "POST") {
+          const body = await jsonBody(req),
+            key = req.headers.get("idempotency-key") ?? "";
+          if (action === "lineas")
+            return reply(
+              phase === "impacto"
+                ? previewLineas(db, id, body)
+                : confirmLineas(db, id, body, key, now()),
+            );
+          return reply(
+            phase === "impacto"
+              ? aperturaPreview(db, id, body, now())
+              : confirmApertura(db, id, body, key, now()),
+          );
+        }
+      }
       if (path === "/api/comida/opciones" && req.method === "GET")
         return reply(comidaOptions(db));
       if (path === "/api/comida/regimen" && req.method === "GET")

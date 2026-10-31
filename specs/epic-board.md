@@ -13,6 +13,19 @@ Límites: P3 (fecha/saldo/cobertura reales), activación, migración real, AC-25
 CI Linux, E2E de la nueva pantalla y restore v19 UNRUN. DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
+## SPEC33 D′ — candidato de implementación 2026-10-31
+
+Responsable: OpenCode, orquestador por encargo del usuario. Especificación
+revisión2 + E1/E2 aprobadas. Rama `codex/dprima-simplificada`, apilada sobre
+`codex/comida-unico-01` (PR #136) por el proveedor central de devoluciones;
+esquema v20. PR pendiente de publicación. Implementado: maestro Partidas
+raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2,
+G neto con devoluciones acreditadas, mapping diagnóstico explícito y UI básica.
+Checkpoint: [progress33](33-dprima-simplificada-progress.md).
+Límites: migración real, activación, cierre/fotos, mapping físico, restore v20,
+E2E, CI Linux y QA independiente pendientes. Presupuestos/Plan Anual permanecen
+consultables sin conversión.
+
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29
 
 Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como

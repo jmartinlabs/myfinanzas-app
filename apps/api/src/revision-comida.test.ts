@@ -797,7 +797,7 @@ test("AC21: continuidad al cerrar y reabrir una base de archivo con vínculos y 
     expect(
       (reopened.query("SELECT version FROM schema_version").get() as { version: number })
         .version,
-    ).toBe(19);
+    ).toBe(20);
     const after = getRevisionComida(reopened, r.operacion.id);
     expect(after.operacion).toMatchObject({
       id: before.operacion.id,
@@ -829,7 +829,7 @@ test("AC21: migración v13→v18 conserva identidad y datos; reapertura verifica
   prepareSchema(migrated, { origin: "demo", key_hash: null });
   expect(
     migrated.query("SELECT version FROM schema_version").get(),
-  ).toEqual({ version: 19 });
+  ).toEqual({ version: 20 });
   expect(migrated.query("SELECT * FROM movimientos ORDER BY id").all()).toEqual(
     movements,
   );
