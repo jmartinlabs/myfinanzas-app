@@ -538,7 +538,8 @@ def main():
                 raise ProbeError('previous release accepted upgraded schema in place')
             stage = 'current-version-backup-restore'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
-                 '--env=EXPECTED_MOVEMENTS=6', '--env=RELEASE_DEBUG=1',
+                 '--env=EXPECTED_MOVEMENTS=6', '--env=SKIP_DERIVED=1',
+                 '--env=RELEASE_DEBUG=1',
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             stage = 'previous-version-restored-copy'
             prev_schema = str(previous['inputs']['contracts']['schema'])
