@@ -44,11 +44,11 @@ proveedor central de devoluciones y el esquema v19.
 
 ## Evidencia local (macOS, Bun 1.4.3)
 
-- `NODE_ENV=test bun test apps/api/src/dprima.test.ts`: 10 PASS / 0 FAIL.
+- `NODE_ENV=test bun test apps/api/src/dprima.test.ts`: 20 PASS / 0 FAIL.
 - `bun run typecheck`: PASS.
 - `bun run build`: PASS.
-- Suite API completa: 55 FAIL locales; 53 son los mismos fallos de entorno de
-  `main` (`Ancestro no confiable` y señales/WAL). No se declaran PASS.
+- Suite API completa con `TMPDIR` seguro: los mismos fallos de entorno que
+  `main` (backup/age, señales/WAL y `libc.so.6`). No se declaran PASS.
 - Contrato v20 generado y verificado; upgrade v19→v20 UNRUN como prueba
   dedicada, v18→v20 cubierto por la suite existente ajustada.
 
@@ -62,3 +62,15 @@ proveedor central de devoluciones y el esquema v19.
 - Correlación automática de Transferencias entre raíces: bloqueada si el destino
   no es inequívoco.
 - CI Linux, restore v20, QA independiente: pendientes.
+
+### Correcciones tras QA independiente
+
+La QA devolvió FAIL por AC-11, P/N en Gasto real, G con devoluciones fuera de
+ventana, fuente aplicada, neto mensual, cambio de fuente/destino y omisiones del
+mensual. Corregido en el candidato: guard de desactivación de hijas usadas,
+P/N solo Aportación, G acotado a compras de la ventana, fuente aplicada en
+apertura, mensual íntegro con devoluciones visibles, todas las raíces en el
+mensual, bloqueo de destinos reservados por previsiones, apertura con destino
+exclusivo, duplicados/solapes 409, rectificación a raíz agrupada rechazada,
+exclusiones con motivo y mapping sin duplicados. Suite focal: 20 PASS.
+Nueva ronda de QA independiente y CI Linux: pendientes.

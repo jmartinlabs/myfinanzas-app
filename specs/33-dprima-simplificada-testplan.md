@@ -16,9 +16,9 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 | AC-05 | T1000/G200/S300/N2 | P500; sugerida250 (N2, céntimos) | PASS |
 | AC-06 | Dos planes con el mismo saldo 1000 | S null y sugerida null, sin cero falso | PASS |
 | AC-07 | Rango ene–mar y apertura feb | N incluye el ciclo que se abre | UNRUN (ejemplo concreto no montado) |
-| AC-08 | Cambio de destino/tránsito | Destino compartido bloquea; tránsito no implementado | PARCIAL |
+| AC-08 | Cambio de destino/tránsito | Destino compartido y previsión bloquean; cambio libre rechazado; tránsito no implementado | PARCIAL |
 | AC-09 | Ajuste manual de sugerida y gasto nuevo | Importe manual persistido | PARCIAL: no se prueba que un gasto posterior no lo sobrescriba |
-| AC-10 | Reintento de apertura | Una sola apertura e importe | PASS |
+| AC-10 | Reintento de apertura | Una sola apertura; segunda clave ⇒ 409 | PASS |
 | AC-11 | Reparentar/desactivar hija usada | Trigger/servicio rechaza íntegro | PASS |
 | AC-12 | Cambio de maestro tras foto cerrada | Depende del proveedor de cierre | UNRUN |
 | AC-13 | Finalizar último ciclo y nueva planificación | Cierre funcional no implementado | UNRUN |
@@ -30,11 +30,11 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 | AC-19 | Reabrir/restore futuro esquema | Sin prueba de restore v20 | UNRUN |
 | AC-20 | Diff documental sin tocar Comida | Esta entrega no modifica Comida salvo dependencia | PASS (revisión de diff) |
 | AC-21 | Raíz con hijas e histórico | Gasto nuevo en padre rechazado; histórico intacto | PASS |
-| AC-22 | Corte previo sin foto, primer ciclo, pago externo y tránsito | Apertura sin cierre previo; G inicial 0; tránsito no implementado | PARCIAL |
+| AC-22 | Corte previo sin foto, primer ciclo, pago externo y tránsito | Apertura sin cierre previo; G inicial 0; pago Terminal incluido; tránsito no implementado | PARCIAL |
 | AC-23 | P100/N3 y S−50 | 33,33 y 850/425 con saldo firmado | PASS (283,33 con N3 y S−50) |
 | AC-24 | Reembolso actual/anterior/sin origen y hecho tardío | Neto solo con elegibilidad; no reescribe cerrado | PARCIAL (cierre UNRUN) |
 | AC-25/E1 | IBI100/Seguro sin importe; exclusión | Subtotal100, T/P/sugerida null; tras excluir T100/P0/0 | PASS |
-| AC-26/E2 | Gasto real manual y Aportación T200/G80/S20/N2 | Sin cuota para Gasto real; Aportación sugiere; hechos no se crean | PARCIAL: ejecución 25 pendiente |
+| AC-26/E2 | Gasto real manual y Aportación T200/G80/S20/N2 | Sin P/N para Gasto real; Aportación sugiere; hechos no se crean | PARCIAL: ejecución 25 no montada en suite |
 
 ## Límites de evidencia
 
@@ -42,3 +42,26 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 - El mapping probado es diagnóstico y una confirmación explícita; no se ejecutó
   sobre datos reales.
 - La UI no tiene E2E ni capturas verificadas.
+
+## Correcciones tras QA independiente (2026-10-31)
+
+| Hallazgo | Corrección | Evidencia |
+| --- | --- | --- |
+| A1/AC-11 | Guard de desactivación de hija/raíz usada y trigger v20 | Test A1 |
+| A2/E2 | P y N null para fuente distinta de Aportación | Test A2 |
+| A3 | G ignora devoluciones de compras fuera de la ventana | Test A3 |
+| A4 | La fuente aplicada en el ciclo manda en apertura | Test A4 |
+| A5 | Mensual Gasto real conserva importe íntegro y muestra devoluciones | Test A5 |
+| A6 | Cambio de fuente/destino mensual exige impacto (se rechaza) | Test A6 |
+| M1 | El mensual incluye todas las raíces | Test M1/M2 |
+| M2 | Previsión sobre Saldo compartido bloquea atribución | Test M1/M2 |
+| M3 | G incluye Gastos pagados desde Terminal | Revisión de código + tests |
+| M4 | Primera hija de raíz con histórico exige revisión | Guard de configuración |
+| M5 | Apertura coherente con el destino exclusivo | Test M5 |
+| M6 | Apertura duplicada y restricciones ⇒ 409 | Test M6 + mapeo de errores |
+| M7 | Rectificación a raíz con hijas rechazada por trigger | Test M7 |
+| B1 | Exclusión con motivo del usuario y sin duplicados | Código |
+| B3 | Importe de apertura no aplicable a Gasto real ⇒ 422 | Código |
+| B4–B5 | UI no ofrece confirmación sin Partida; estado de tag corregido | UI |
+| B6 | Huella con bruto/devoluciones/ventana/saldo/P | Código |
+| B7 | Tabla de intentos propia para configuración de Partida | Esquema v20 |
