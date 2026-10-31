@@ -6,15 +6,15 @@ Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condi
 las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
 `40668646943` SUCCESS. Decisiones M1–M6 confirmadas. **DT3 y DT4 resueltas el
 2026-10-28** (ver «DT3/DT4 — resolución»); **DT6/T-BKP sigue abierto** y bloquea E4.9.
-Revisión documental del 2026-10-31: fuentes y referencias contrastadas con `main`
-`98b9792`; se distinguen los hechos integrados del PR #136 en revisión; sin cambios en
-las decisiones aprobadas ni en los AC. Wireframes propuestos a continuación, pendientes
-de aprobación visual.
+Revisión documental del 2026-10-31, actualizada el 2026-11-01 sobre `main` `46c7dd1`:
+#136 (Comida v19), #137 (D′ v20) y #145/#146 están integrados; se conservan las
+decisiones aprobadas y los AC. Wireframes propuestos a continuación, pendientes de
+aprobación visual.
 Context and brainstorming: [26-e48-precierre-brainstorming.md](26-e48-precierre-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),
 [E4.8](roadmap.md#e48--revisión-de-precierre-y-controles-de-consistencia).
-Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `98b9792`.
+Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `46c7dd1`.
 
 ## Functionality
 
@@ -85,16 +85,15 @@ E4.8 no ejecuta ninguna regla de escritura: solo muestra bloqueos y avisos.
 | Anticipos, Compartidos, Nómina, Revisión Comida, Deuda E1.6 | Implementado | Se capturan si hay hechos |
 | E4.1 Inversión | Integrado `156a50d` | Instrumentos, Compras, efectivo, cantidades y posiciones |
 | E4.3 valoración/resultado/patrimonio | No implementado | `No disponible`; aviso, no cero |
-| E3.5 Comida/FIN_NETA | No implementado | `No disponible`; aviso/parcial |
+| E3.5 Comida/FIN_NETA | Motor completo no integrado; P7 parcial | `No disponible`; aviso/parcial |
 | E4.2 Ventas | Documental; sin DEV | `No disponible`; aviso/parcial |
 | E4.4 Deuda completa/conciliaciones | Documental en revisión; sin código | `No disponible`; Deuda E1.6 sí |
 | E4.5 Histórico y E3.6 Pendientes | Documental; sin código | `No disponible`; solo lectura cuando exista; no escritura |
 
-Contraste con la base real (`main` `98b9792`): E4.1 está integrado; E4.5 y E3.6 son
-documentales sin código; E4.2 y E4.4 siguen sin DEV. El PR #136 de Comida/Partidas está
-OPEN y **no forma parte de esta base**: no se presume su código integrado ni cambia el
-estado `No disponible` de E3.5/FIN_NETA hasta el merge y la verificación correspondientes.
-Esta spec no modifica ni depende de su rama.
+Contraste con la base real (`main` `46c7dd1`): E4.1 está integrado; E4.5 y E3.6 son
+documentales sin código; E4.2 y E4.4 siguen sin DEV. #136 (Comida v19) y #137 (D′ v20)
+están integrados; el motor E3.5 completo sigue sin integrar y FIN_NETA no se reconstruye
+por inferencia. Esta spec no modifica ni depende de esas ramas.
 
 ### Inversión a fecha Fin
 

@@ -6,11 +6,12 @@ Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implemen
 código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3/DT4
 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
 
-Revisión documental 2026-10-31 sobre `main` `98b9792`: se precisan permisos, idempotencia
-de lectura, resultados vacíos/errores y referencias a los wireframes propuestos. Ningún
-escenario está demostrado: la matriz sigue siendo hipótesis de diseño y no declara PASS.
+Revisión documental 2026-10-31, actualizada 2026-11-01 sobre `main` `46c7dd1`: se precisan
+permisos, idempotencia de lectura, resultados vacíos/errores y referencias a los
+wireframes propuestos. Ningún escenario está demostrado: la matriz sigue siendo
+hipótesis de diseño y no declara PASS.
 
-Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `98b9792`.
+Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `46c7dd1`.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
