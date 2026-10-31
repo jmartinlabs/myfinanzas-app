@@ -45,6 +45,7 @@ import {
   applyComidaMetadata,
   comidaDevolucion,
   comidaMetadata,
+  revalidateDevolucionPropia,
   revalidateDevolucionesCompra,
 } from "./comida";
 export const incomeSubtypes = ["Nómina", "Bonus", "Intereses", "Promoción"];
@@ -1066,11 +1067,11 @@ export function writeMovement(
         );
       const stored = find(db, id);
       if (v && body.comida !== undefined) {
-        if (v.tipo !== "Gasto")
+        if (v.tipo !== "Gasto" && v.tipo !== "Devolución de gasto")
           throw new Problem(
             422,
             "VALIDATION",
-            "Los metadatos de compra solo aplican a un Gasto.",
+            "Los metadatos de Comida solo aplican a una compra o devolución.",
           );
         applyComidaMetadata(
           db,
@@ -1095,7 +1096,10 @@ export function writeMovement(
           now,
         );
       }
+      if (old?.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
       if (stored.tipo === "Gasto") revalidateDevolucionesCompra(db, id, now);
+      if (stored.tipo === "Devolución de gasto")
+        revalidateDevolucionPropia(db, id, now);
       storeAnticipo(db, id, v?.anticipo ?? null, now);
       storeAportacion(
         db,

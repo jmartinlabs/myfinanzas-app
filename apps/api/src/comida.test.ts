@@ -22,7 +22,7 @@ import {
   writeComidaMetadata,
   writeComidaRol,
 } from "./comida";
-import { getCyclePlan } from "./planes-ciclo";
+import { getCyclePlan, planConfigurationImpact } from "./planes-ciclo";
 
 const now = Date.parse("2026-10-21T12:00:00Z");
 process.env.NODE_ENV = "test";
@@ -512,7 +512,7 @@ test("AC: sin régimen activo, las métricas que dependen de ING quedan No dispo
 
 test("E1/cobertura: compras sin etiqueta o devoluciones sin atribución presentan Parcial con IDs", () => {
   const { db, ing, food, cycle1 } = setup();
-  purchase(db, ing, food.id, { importe: "50" });
+  purchase(db, ing, food.id, { importe: "50", comida: {} });
   refund(db, ing, { importe: "10", partida: food.id });
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.cobertura.estado).toBe("Parcial");
@@ -941,5 +941,419 @@ test("AC-19: las rutas de Comida heredan MFA, Origin/CSRF y errores seguros", as
     }),
   );
   expect(badJson.status).toBe(422);
+  db.close();
+});
+
+test("H1: rectificar la devolución por encima de la compra la degrada a Revisar sin borrar el hecho", () => {
+  const { db, ing, food, cycle1 } = setup();
+  const buy = purchase(db, ing, food.id, { importe: "20" });
+  const r = refund(db, ing, {
+    importe: "12",
+    partida: food.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const current = getComidaMovement(db, r.movimiento.id).movimiento as any;
+  const plan = previewMovement(
+    db,
+    {
+      tipo: "Devolución de gasto",
+      fecha: "2026-07-10",
+      importe: "25",
+      saldo: ing.id,
+      partida: food.id,
+      concepto: "Devolución ficticia",
+      nota: "",
+      revision: current.revision,
+      motivo: "Rectificación ficticia",
+    },
+    r.movimiento.id,
+    false,
+    now,
+  );
+  writeMovement(
+    db,
+    {
+      tipo: "Devolución de gasto",
+      fecha: "2026-07-10",
+      importe: "25",
+      saldo: ing.id,
+      partida: food.id,
+      concepto: "Devolución ficticia",
+      nota: "",
+      revision: current.revision,
+      motivo: "Rectificación ficticia",
+      fingerprint: plan.fingerprint,
+      contextRevision: plan.contextRevision,
+    },
+    randomUUID(),
+    r.movimiento.id,
+    false,
+    now,
+  );
+  expect(getComidaMovement(db, r.movimiento.id).devolucion?.estado).toBe(
+    "Revisar",
+  );
+  expect(getComidaMovement(db, r.movimiento.id).movimiento.importe).toBe(
+    "25.00",
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.cobertura.estado).toBe("Parcial");
+  db.close();
+});
+
+test("H2: una devolución acreditada sin compra usa su etiqueta y reduce Compensable/Falta", () => {
+  const { db, ing, leisure, cycle1 } = setup();
+  purchase(db, ing, leisure.id, {
+    importe: "50",
+    comida: { etiqueta: "Ocio" },
+  });
+  const r = refund(db, ing, {
+    importe: "15",
+    partida: leisure.id,
+    comida: { etiqueta: "Ocio" },
+    devolucion: {
+      estado: "Revisar",
+      partida: leisure.id,
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  expect(r.movimiento.tipo).toBe("Devolución de gasto");
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.compensable.devoluciones.valor).toBe("15.00");
+  expect(metrics.compensable.neto.valor).toBe("35.00");
+  expect(metrics.faltaPorReponer.valor).toBe("35.00");
+  expect(metrics.cobertura.estado).not.toBe("Verificable");
+  db.close();
+});
+
+test("H3: al anular la compra, el plan deja de netear una devolución no verificable", () => {
+  const { db, ing, leisure, cycle1, budget } = setup();
+  const buy = purchase(db, ing, leisure.id, {
+    importe: "50",
+    comida: { etiqueta: "Ocio" },
+  });
+  refund(db, ing, {
+    importe: "15",
+    partida: leisure.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  db.run("INSERT INTO cycle_plans VALUES(?,1)", [cycle1.id]);
+  db.run("INSERT INTO cycle_plan_lines VALUES(?,?,?,?,?)", [
+    cycle1.id,
+    budget.id,
+    null,
+    null,
+    "10000",
+  ]);
+  const plan = previewMovement(
+    db,
+    { revision: 1, motivo: "Anulación ficticia" },
+    buy.movimiento.id,
+    true,
+    now,
+  );
+  writeMovement(
+    db,
+    {
+      revision: 1,
+      motivo: "Anulación ficticia",
+      fingerprint: plan.fingerprint,
+      contextRevision: plan.contextRevision,
+    },
+    randomUUID(),
+    buy.movimiento.id,
+    true,
+    now,
+  );
+  const executed = getCyclePlan(db, cycle1.id, now).items.find(
+    (i) => i.presupuesto.id === budget.id,
+  )!;
+  expect(executed.devoluciones).toBe("0.00");
+  expect(executed.ejecutado).toBe("0.00");
+  db.close();
+});
+
+test("H4/CU-22: una devolución de ciclo anterior no bloquea Recursos/Falta del receptor", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const cycle2 = db
+    .query("SELECT id FROM ciclos ORDER BY inicio LIMIT 1 OFFSET 1")
+    .get() as { id: string };
+  const finance = transfer(db, account, ing, "800");
+  writeComidaRol(
+    db,
+    finance.movimiento.id,
+    { revision: 1, rol: "Financiación", evidencia: "Evidencia ficticia" },
+    randomUUID(),
+    now,
+  );
+  const buy = purchase(db, ing, food.id, {
+    fecha: "2026-06-21",
+    importe: "50",
+    comida: { etiqueta: "Comida" },
+  });
+  refund(db, ing, {
+    fecha: "2026-07-25",
+    importe: "40",
+    partida: food.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const receiver = comidaMetrics(db, cycle2.id, now);
+  console.log(JSON.stringify({ cobertura: receiver.cobertura, fin: receiver.financiacion, recursos: receiver.recursos }, null, 2));
+  expect(receiver.recursos.valor).toBe("100.00"); // 100 + 800, sin C_n en el receptor
+  expect(receiver.faltaPorReponer.valor).toBe("0.00");
+  expect(receiver.cobertura.estado).toBe("Verificable");
+  expect(receiver.netoObservado.valor).toBe("-40.00");
+  db.close();
+});
+
+test("H5/H7: una compra del Saldo de Comida sin metadatos es visible; otra cuenta no entra", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const inScope = purchase(db, ing, food.id, { importe: "30" });
+  purchase(db, account, food.id, {
+    importe: "100",
+    comida: { etiqueta: "Comida" },
+  });
+  const list = listComida(db);
+  expect(list.items.map((i) => i.id)).toContain(inScope.movimiento.id);
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.cobertura.sinClasificar).toEqual([inScope.movimiento.id]);
+  expect(metrics.compras.bruto.valor).toBe("0.00");
+  expect(metrics.netoObservado.valor).toBe("30.00");
+  db.close();
+});
+
+test("H6: el impacto de configuración conserva el neteo P5", () => {
+  const { db, ing, food, cycle1, budget } = setup();
+  const buy = purchase(db, ing, food.id, {
+    importe: "50",
+    comida: { etiqueta: "Comida" },
+  });
+  refund(db, ing, {
+    importe: "15",
+    partida: food.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  db.run("INSERT INTO cycle_plans VALUES(?,1)", [cycle1.id]);
+  db.run("INSERT INTO cycle_plan_lines VALUES(?,?,?,?,?)", [
+    cycle1.id,
+    budget.id,
+    null,
+    null,
+    "10000",
+  ]);
+  const impact = planConfigurationImpact(
+    db,
+    { budget: { id: budget.id, value: { nombre: "Plan renombrado ficticio" } } },
+    now,
+  );
+  const after = impact.ciclos[0]?.diferencias[0]?.despues;
+  expect(after?.ejecutado).toBe("35.00");
+  expect(after?.devoluciones).toBe("15.00");
+  db.close();
+});
+
+test("H9/CU-07: B=100, +800, compra 45 y devolución 10 ⇒ posición 865", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const finance = transfer(db, account, ing, "800");
+  writeComidaRol(
+    db,
+    finance.movimiento.id,
+    { revision: 1, rol: "Financiación", evidencia: "Evidencia ficticia" },
+    randomUUID(),
+    now,
+  );
+  const buy = purchase(db, ing, food.id, {
+    importe: "45",
+    comida: { etiqueta: "Comida" },
+  });
+  refund(db, ing, {
+    importe: "10",
+    partida: food.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect((metrics.posicionBancaria as any).alCorte).toBe("865.00");
+  expect(metrics.compras.bruto.valor).toBe("45.00");
+  expect(metrics.compras.devoluciones.valor).toBe("10.00");
+  expect(metrics.compras.neto.valor).toBe("35.00");
+  db.close();
+});
+
+test("H9/CU-24: Inicio 28/10, corte 30/10 ⇒ duración 34 y 3 transcurridos", () => {
+  const { db, ing, food } = setup();
+  const c = createCycle(
+    db,
+    {
+      inicio: "2026-10-28",
+      saldoInicialComida: "340",
+      contextRevision: cycleContext(db).revision,
+    },
+    randomUUID(),
+    now,
+  ).ciclo;
+  db.run("UPDATE saldos SET exterior=1 WHERE id='S001'");
+  add(
+    db,
+    {
+      tipo: "Gasto",
+      fecha: "2026-10-29",
+      importe: "30",
+      saldo: ing.id,
+      partida: food.id,
+      concepto: "Compra ficticia",
+      nota: "",
+      comida: { etiqueta: "Comida" },
+    },
+    Date.parse("2026-10-30T12:00:00Z"),
+  );
+  add(
+    db,
+    {
+      tipo: "Ingreso",
+      fecha: "2026-10-30",
+      importe: "1",
+      saldo: "S001",
+      subtipo: "Bonus",
+      concepto: "Referencia ficticia",
+      nota: "",
+    },
+    Date.parse("2026-10-30T12:00:00Z"),
+  );
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: c.id,
+      apertura: "340",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, c.id, Date.parse("2026-10-30T12:00:00Z"));
+  expect((metrics.ritmo.duracion as any).total).toBe(34);
+  expect((metrics.ritmo.duracion as any).elapsed).toBe(3);
+  expect(metrics.recursos.valor).toBe("340.00");
+  expect(metrics.ritmo.equivalentes.valor).toBe("30.00");
+  expect(metrics.ritmo.margen.valor).toBe("0.00");
+  expect(metrics.ritmo.semanalObservado.valor).toBe("70.00");
   db.close();
 });

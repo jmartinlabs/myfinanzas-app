@@ -150,7 +150,7 @@ export function cycleExecution(
     rows = ledgerRows(db),
     catalog = overrides?.budgets ?? budgets(db),
     links = overrides?.parts ?? parts(db),
-    devolutions = overrides ? new Map<string, { cents: bigint; ids: string[] }>() : eligibleDevolutionCents(db, ciclo);
+    devolutions = eligibleDevolutionCents(db, ciclo);
   const periodReason =
     cycle.inicio > spanishToday(now)
       ? "Ciclo no iniciado"

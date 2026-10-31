@@ -197,7 +197,7 @@ Estados `PASS` se refieren solo a la prueba citada; CI Linux y E2E quedan UNRUN.
 | CU-04 | Ciclo derivado del maestro; sin fecha alternativa | PASS |
 | CU-05 | Metadatos no crean hechos; rectificación económica usa Movimientos | PASS |
 | CU-06 | Devolución 12/13: entrada real, vínculo íntegro, no Ingreso | PASS |
-| CU-07 | B=100, +800, −45 ⇒ posición 855; diferencia analítico/banco 0 | PASS |
+| CU-07 | B=100, +800, −45 y devolución 10 ⇒ posición 865; diferencia 0 | PASS |
 | CU-08 | Agregado 300 y auxiliar 300 conservados; no se suman | PASS |
 | CU-09 | Devolución de Anticipo resta F una vez; reposición no es Gasto | PASS |
 | CU-10 | Idempotencia, anulación, compra no elegible y rechazo atómico | PASS |
@@ -211,9 +211,9 @@ Estados `PASS` se refieren solo a la prueba citada; CI Linux y E2E quedan UNRUN.
 | CU-18 | Devolución antigua separada; obligación actual intacta | PASS |
 | CU-19 | Pendiente revisar cuenta como Comida; Fuera presupuesto conserva banco | PASS |
 | CU-20 | Rol de reposición único; sin doble descuento | PASS |
-| CU-21 | Recursos/cierre/puente con S0, F y C_n completos | PASS |
-| CU-22 | Devolución antigua y B_A: sin ajuste automático | PARCIAL (fórmula cubierta; ejemplo completo no montado) |
+| CU-21 | Recursos/cierre/puente con S0, F y C_n completos | PARCIAL: Recursos probado; ejemplo completo 785/580/puente−5 no montado |
+| CU-22 | Devolución antigua no bloquea Recursos/Falta del receptor | PASS |
 | CU-23 | Sin régimen ⇒ métricas dependientes No disponibles, nunca cero | PASS |
-| CU-24 | Duración provisional 42 días y horizonte vencido sin extrapolar | PASS |
+| CU-24 | Inicio 28/10, corte 30/10 ⇒ 34/3/340/30/0/70; horizonte vencido | PASS |
 
 UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
