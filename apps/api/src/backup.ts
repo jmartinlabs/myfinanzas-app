@@ -152,7 +152,7 @@ export function backup(
                                           : sourceVersion === 18
                                             ? "e4.1-v18"
                                             : sourceVersion === 19
-                                              ? "comida-unico-01-v19"
+                                              ? "e3.4-v19"
                                               : "e2.7-v20",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
