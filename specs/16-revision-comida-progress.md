@@ -289,9 +289,10 @@ reales) sigue pendiente; el régimen solo se activa con fixtures ficticias.
 La QA independiente devolvió FAIL con hallazgos reproducibles. Correcciones
 aplicadas en el mismo candidato:
 
-- Rectificar una devolución por encima de la compra, o retipificar/anular la
-  compra, degrada el vínculo a `Revisar` en la misma transacción, conservando el
-  hecho bancario.
+- Rectificar una devolución por encima de la compra, o anular/reducir la compra,
+  degrada el vínculo a `Revisar` en la misma transacción, conservando el hecho
+  bancario. Retipificar una compra con vínculos o una devolución con atribución
+  se rechaza con 422 y causa explícita: no hay reasignación silenciosa.
 - La etiqueta de una devolución acreditada sin compra se lee de la propia
   devolución; Compensable/Falta dejan de divergir del plan mensual.
 - El neteo P5 exige vínculo vigente y compra válida: una compra anulada ya no
@@ -303,6 +304,11 @@ aplicadas en el mismo candidato:
 - El preview de impacto de configuración conserva el neteo P5.
 - Las huellas incluyen metadatos, devoluciones, roles y régimen.
 - El régimen exige elegir cobertura explícita en la UI.
+- Una devolución acreditada sin grupo analítico deja cobertura Parcial; no se
+  presenta Falta/Recursos como completos. La etiqueta propia de la devolución
+  manda sobre la de la compra para el grupo.
+- La retipificación con atribución se rechaza antes de tocar la base (sin 500);
+  no queda atribución huérfana.
 - Testplan corregido: CU-07 con 865 y CU-24 con 34/3.
 
 Evidencia: `bun test apps/api/src/comida.test.ts` 29 PASS / 0 FAIL; suite API

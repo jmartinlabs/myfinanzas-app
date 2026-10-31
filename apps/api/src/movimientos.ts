@@ -713,6 +713,34 @@ function plan(
       "Una fuente instalada ha fallado. No puede confirmarse el impacto.",
     );
   const next = annul ? null : validated(db, payload(body), old, now);
+  if (old && next && old.tipo !== next.tipo) {
+    if (
+      old.tipo === "Gasto" &&
+      db
+        .query(
+          "SELECT 1 FROM movimiento_devolucion WHERE compra=? AND estado='Verificado' LIMIT 1",
+        )
+        .get(old.id)
+    )
+      throw new Problem(
+        422,
+        "DEVOLUTION_LINKED",
+        "La compra tiene devoluciones verificadas. Rectifica o desancla esos vínculos antes de cambiar el Tipo; no se reasigna automáticamente.",
+        { tipo: "Cambia primero los vínculos afectados." },
+      );
+    if (
+      old.tipo === "Devolución de gasto" &&
+      db
+        .query("SELECT 1 FROM movimiento_devolucion WHERE movimiento=? LIMIT 1")
+        .get(old.id)
+    )
+      throw new Problem(
+        422,
+        "ATTRIBUTION_EXISTS",
+        "La devolución tiene atribución registrada. No puede retipificarse sin revisar su vínculo.",
+        { tipo: "Conserva el Tipo Devolución de gasto." },
+      );
+  }
   protectAnticipoChange(db, old, next, next?.anticipo ?? null);
   if (old) {
     const motive = text(body.motivo, "motivo");

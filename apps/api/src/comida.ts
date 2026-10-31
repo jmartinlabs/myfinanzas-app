@@ -241,7 +241,8 @@ export function listComida(db: Database, params = new URLSearchParams()) {
         control: string;
       };
     const cycles = cycleMaster(db);
-    const comidaSaldo = regimenRaw(db)?.saldo ?? null;
+    const regime = regimenRaw(db);
+    const comidaSaldo = regime?.estado === "Activo" ? regime.saldo : null;
     const individual = ledgerRows(db)
       .filter(
         (r) =>
@@ -1228,7 +1229,7 @@ export function comidaMetrics(
       );
     const regime = regimenRaw(db);
     const active = regime?.estado === "Activo";
-    const saldo = regime?.saldo ?? null;
+    const saldo = active ? regime.saldo ?? null : null;
     const start = ciclo.inicio;
     const rows = ledgerRows(db).filter(
       (r) => !r.anulado && r.fecha >= start && r.fecha <= corte,
@@ -1282,9 +1283,21 @@ export function comidaMetrics(
       const d = devolutions.get(r.id) ?? null;
       if (!d) return null;
       const purchase = d.compra ? purchaseById.get(d.compra) ?? null : null;
-      const partida = d.partida ?? r.partida ?? purchase?.row.partida ?? null;
+      const external = d.compra && !purchase
+        ? (db
+            .query("SELECT partida FROM movimientos WHERE id=?")
+            .get(d.compra) as { partida: string | null } | null)
+        : null;
+      const partida =
+        d.partida ??
+        r.partida ??
+        purchase?.row.partida ??
+        external?.partida ??
+        null;
       const label =
-        purchase?.meta?.etiqueta ?? metadata.get(r.id)?.etiqueta ?? null;
+        metadata.get(r.id)?.etiqueta ??
+        purchase?.meta?.etiqueta ??
+        (d.compra ? metadata.get(d.compra)?.etiqueta ?? null : null);
       // A link in Revisar never proves eligibility by itself when a purchase is
       // present; external accreditation without FK remains valid (P4).
       const linkValid = !d.compra || d.estado === "Verificado";
@@ -1293,7 +1306,8 @@ export function comidaMetrics(
         d.cicloOrigen !== null &&
         partida !== null &&
         linkValid;
-      const eligible = accredited && d.cicloOrigen === ciclo.id;
+      const grouped = label !== null;
+      const eligible = accredited && grouped && d.cicloOrigen === ciclo.id;
       return {
         d,
         purchase,
@@ -1301,6 +1315,7 @@ export function comidaMetrics(
         label,
         eligible,
         accredited,
+        grouped,
         importe: r.importe,
       };
     };
@@ -1321,7 +1336,7 @@ export function comidaMetrics(
 
       // A refund accredited to another cycle is observed, not pending, and must
       // not block the receiver cycle resources (P5/CU-22).
-      return !a || !a.accredited;
+      return !a || !a.accredited || !a.grouped;
     });
     const foodBruto = sum(food.map((p) => BigInt(p.row.importe)));
     const foodDev = sum(eligibleFood.map((a) => BigInt(a.importe)));
