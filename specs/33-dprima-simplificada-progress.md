@@ -84,7 +84,7 @@ CI: `Validate project` no se ejecuta mientras la base sea
 retarget tras el merge de #136. `Rootless capability gate` falla por
 `incompatible contract metadata` del esquema v20 frente a `main`, igual que #136;
 el diagnóstico y la propuesta limitada están en
-[rootless-schema-upgrade-2026-10-31](../investigations/rootless-schema-upgrade-2026-10-31.md).
+[rootless-schema-upgrade-2026-10-31](investigations/rootless-schema-upgrade-2026-10-31.md).
 Los runs de Actions están además bloqueados por límite de pago/cuota (anotación
 del check-run, reproducible en `main`).
 
