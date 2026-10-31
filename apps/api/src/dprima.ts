@@ -773,8 +773,10 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
   if (comidaInstalled(db, "movimiento_devolucion")) {
     const links = db
       .query(
-        `SELECT d.movimiento,d.elegibilidad,d.partida partida,d.compra compra,
-           m.fecha,CAST(m.importe AS TEXT) importe,c.partida compraPartida
+        `SELECT d.movimiento,d.elegibilidad,d.estado,d.partida partida,
+           m.partida movimientoPartida,d.compra compra,
+           m.fecha,CAST(m.importe AS TEXT) importe,
+           c.partida compraPartida,c.anulado compraAnulada,c.tipo compraTipo
          FROM movimiento_devolucion d
          JOIN movimientos m ON m.id=d.movimiento
          LEFT JOIN movimientos c ON c.id=d.compra
@@ -783,17 +785,26 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
       .all() as {
       movimiento: string;
       elegibilidad: string;
+      estado: string;
       partida: string | null;
+      movimientoPartida: string | null;
       compra: string | null;
       fecha: string;
       importe: string;
       compraPartida: string | null;
+      compraAnulada: number | null;
+      compraTipo: string | null;
     }[];
     for (const l of links) {
-      const partida = l.partida ?? l.compraPartida;
+      const partida = l.partida ?? l.movimientoPartida ?? l.compraPartida;
       if (!partida || !set.has(partida)) continue;
       if (l.fecha >= from && l.fecha < cut) {
-        if (l.elegibilidad === "Acreditada" && l.compra) net += BigInt(l.importe);
+        const validLink =
+          !l.compra ||
+          (l.estado === "Verificado" &&
+            l.compraAnulada === 0 &&
+            l.compraTipo === "Gasto");
+        if (l.elegibilidad === "Acreditada" && validLink) net += BigInt(l.importe);
         else pending.push(l.movimiento);
       }
     }
@@ -1102,15 +1113,20 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
   );
   const devolutions = comidaInstalled(db, "movimiento_devolucion")
     ? (db.query(
-        `SELECT d.movimiento,d.partida,d.compra,c.partida compraPartida,
-          m.fecha,CAST(m.importe AS TEXT) importe,d.elegibilidad
+        `SELECT d.movimiento,d.partida,m.partida movimientoPartida,d.compra,
+          d.estado,c.partida compraPartida,c.anulado compraAnulada,
+          c.tipo compraTipo,m.fecha,CAST(m.importe AS TEXT) importe,d.elegibilidad
          FROM movimiento_devolucion d JOIN movimientos m ON m.id=d.movimiento
          LEFT JOIN movimientos c ON c.id=d.compra WHERE m.anulado=0`,
       ).all() as {
         movimiento: string;
         partida: string | null;
+        movimientoPartida: string | null;
         compra: string | null;
+        estado: string;
         compraPartida: string | null;
+        compraAnulada: number | null;
+        compraTipo: string | null;
         fecha: string;
         importe: string;
         elegibilidad: string;
@@ -1139,10 +1155,15 @@ export function getPlanMensualDprima(db: Database, cicloId: string, now = Date.n
         devoluciones = sum(
           devolutions
             .filter((d) => {
-              const partida = d.partida ?? d.compraPartida;
+              const partida = d.partida ?? d.movimientoPartida ?? d.compraPartida;
               if (!partida || !set.has(partida)) return false;
               if (d.fecha < ciclo.inicio || d.fecha > end!) return false;
-              if (d.elegibilidad !== "Acreditada" || !d.compra) {
+              const validLink =
+                !d.compra ||
+                (d.estado === "Verificado" &&
+                  d.compraAnulada === 0 &&
+                  d.compraTipo === "Gasto");
+              if (d.elegibilidad !== "Acreditada" || !validLink) {
                 pending.push(d.movimiento);
                 return false;
               }
