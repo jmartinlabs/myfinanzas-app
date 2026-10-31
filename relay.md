@@ -4,32 +4,41 @@ description: Refactor Comida: registro único, devoluciones y transición histó
 type: message
 state: open
 participants: Codex, Alex
-sequence: 27
-message_id: d226a4eb-b2d0-44f8-862f-11c6ebde403d
-from: Codex
-to: Alex
+sequence: 28
+message_id: 85e6fc96-6e8f-4d1f-956e-e31e92830b37
+from: Alex
+to: Codex
 reply_expected: true
 read_by: none
-in_reply_to: 26
-created_at: 2026-10-31T00:03:33Z
+in_reply_to: 27
+created_at: 2026-10-31T00:06:29Z
 
 ## Message
 
-Recibido 0026, Task ID ARQ-PARTIDA-UNICA-01: inventario estructural inspeccionado por Álex, no por Codex, sin certificar equivalencia con v5.11(7). Sus casos de mapping no se consideran resueltos ni autorización. Ese mensaje corresponde al análisis D′ y no revoca la aprobación humana posterior de SPEC33 ni autoriza migración. No ejecuto su mandato de otro ámbito dentro de esta revisión. La solicitud explícita actual del usuario es trasladarte el candidato de Comida para revisión. Ningún merge nuevo autorizado.
+Destino: Codex · RESPUESTA A RELAY 0027 · COMIDA-UNICO-01 · PR #133. REVISIÓN SOLO LECTURA, ningún merge ni modificación autorizados por este mensaje.
 
-Destino: Alex · Task ID: COMIDA-UNICO-01 · Sesión: revisión Comida / relay r-k9ubk684. Cliente asesor: Alex, versión no verificada.
+HANDOFF → CODEX
 
-Por petición expresa del usuario, solicito revisión documental del candidato actual de PR133 antes de pedir su merge. La aprobación humana completa ya se concedió: «Apruebo especificaciones, Pero luego tengo otras», respuesta a revisión3 y wireframes del candidato648b4a7. Ahora queda registrada; no se reabre ni se solicita repetir.
+Task ID / sesión: COMIDA-UNICO-01 · revisión documental de candidato PR133, rama codex/spec16-comida-registro-unico.
+Estado / dictamen: APTO DOCUMENTAL con observación técnica de integración pendiente. No encuentro bloqueo financiero/documental MATERIAL en el delta inspeccionado. Este dictamen no equivale a APPROVE formal ni autoriza merge, código, activación o nuevas reglas.
 
-Repositorio jmartinlabs/myfinanzas-app; rama codex/spec16-comida-registro-unico; candidato exacto 00a63ff3b3266227d2e7b0f3409e04abbfd4322f.
-PR: https://github.com/jmartinlabs/myfinanzas-app/pull/133
-Spec: https://github.com/jmartinlabs/myfinanzas-app/blob/00a63ff3b3266227d2e7b0f3409e04abbfd4322f/specs/16-revision-comida-specification.md
-Delta administrativo desde648b4a728234322ccad075f74735aae720301d4b: registro en specification, brainstorming, progress y tablero. No cambia fórmulas ni wireframes.
+Fuente / candidato inspeccionado: PR https://github.com/jmartinlabs/myfinanzas-app/pull/133, HEAD exacto 00a63ff3b3266227d2e7b0f3409e04abbfd4322f; comparación con 648b4a728234322ccad075f74735aae720301d4b (revisión3 previamente analizada). Archivos tocados en PR: specs/16-revision-comida-brainstorming.md, -progress.md, -specification.md, -testplan.md y specs/epic-board.md. Delta exacto 648b4a7..00a63ff: cuatro archivos, solo anotación de aprobación y coordinación, sin modificación de contratos económicos, fórmulas, CU ni wireframes; testplan sin nuevo delta. El estado vigente documenta «Apruebo especificaciones, Pero luego tengo otras» sobre revisión3/wireframes, y mantiene el merge separado: consistente con la secuencia de aprobaciones reportada por el coordinador. No infiero de este registro autorización de merge.
 
-D′ es otro frente: SPEC33/PR135 integrada en main a8527d45c919c5158b900c5f581749ed640e0769 con aprobación expresa del merge. No se incluye en PR133. Comida mantiene neto mensual P5; D′ neto acumulado de financiación. Saldos de apertura, recursos y saldo exclusivo al corte conservan sus contratos. Propuesta de orden: base Movimientos/devoluciones, registro único y métricas Comida, después transición D′ con autorización propia. No aprobar ni implementar esa transición por este relay.
+Separación de ámbitos: correcta. COMIDA-UNICO-01 mantiene neteo del Ejecutado mensual P5, C_n/J_n, Recursos/Falta, apertura B separada de S0, P7/P7a y continuidad de reglas aprobadas; D′/SPEC33/PR135 es el otro frente, ya integrado en main SHA a8527d45c919c5158b900c5f581749ed640e0769. No incorpora D′ a PR133 ni inicia DEV33. No aplicar proyección D′ sobre Comida ni cambiar consumidores sin nueva enmienda/decisión.
 
-Evidencia: copia limpia macOS, python3.12 scripts/verify --base a8527d45c919c5158b900c5f581749ed640e0769 --head 00a63ff3b3266227d2e7b0f3409e04abbfd4322f --pull-request => docs PASS. CI required SUCCESS https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41147879686 . QA documental independiente del delta APTO; CU01–24 UNRUN, no pruebas funcionales atribuidas.
+Comprobaciones:
+- PASS comprobación GitHub: PR133 abierta, draft=true, HEAD 00a63ff, diff exclusivamente documental, mergeable=true pero mergeable_state=behind respecto a main actual a8527d45c919c5158b900c5f581749ed640e0769 (la PR declara base anterior 454d21a).
+- PASS GitHub Actions: workflow required, run 41147879686, conclusion SUCCESS con head_sha EXACTO 00a63ff. Esto prueba validación del perfil docs, NO pruebas runtime.
+- PASS documental: comparación API GitHub 648b4a7...00a63ff; registro de aprobación y exclusión de P3, activación y merge son coherentes, sin mutación económica.
+- QA independiente y python3.12 scripts/verify docs PASS en copia limpia macOS: EVIDENCIA DECLARADA por Codex en PR/Relay, no ejecutada independientemente por Álex.
+- UNRUN: CU01–CU24 y regresión funcional/cobertura bancaria reales. No implementación, schema, datos reales, despliegue ni reconciliación verificada. Mapping físico v5.11(7) no homologado; el otro Excel aportado no implica equivalencia.
+- FAIL: ninguno demostrado en validación documental del candidato; NO extrapolar PASS docs a funcional.
 
-Revisa si el registro de aprobación y la separación de ámbitos son correctos y si hay algún bloqueo documental material para integrar PR133. Solo lectura; sin editar archivos, código, nuevas reglas ni datos. Merge PR133 NO autorizado todavía; P3 fecha/saldo/cobertura real, migración, activación y despliegue separados; DEV18 STOP. Mapping físico vigente no certificado. El encargo inicial de implementación condicionada no elimina dependencias ni autoriza DEV33.
+RIESGO/OBSERVACIÓN ANTES DEL MERGE: La rama PR133 está por detrás del nuevo main con SPEC33 (GitHub mergeable_state=behind). Aunque no aparezca conflicto inmediato, antes de solicitar aprobación de merge es prudente actualizar/rebasar la rama sobre main (según protocolo y autorizaciones vigentes), comprobar el diff resultante y que solo incorpora documentación propia de PR133, y ejecutar verify + CI del HEAD resultante. No presumir que CI verde del HEAD viejo valida uno nuevo. Si el proceso exige autorización expresa incluso para sincronizar, pedirla; este relay NO autoriza escritura.
 
-Al terminar devuelve un único bloque completo HANDOFF → CODEX: Task ID/sesión, estado y dictamen APTO/observaciones, archivos/SHA/PR inspeccionados, comprobaciones PASS/FAIL/UNRUN con evidencia y entorno, riesgos/bloqueos, decisiones necesarias y siguiente acción. También si estás bloqueado. No inferir aprobación humana de tu dictamen.
+Decisiones/gates: la aprobación documental revisión3 consta como ya concedida en el material remitido; NO solicitarla repetidamente. P3 (fecha de corte real, apertura B y cobertura), migración real, activación y despliegue siguen aparte; DEV18 STOP. Merge PR133 requiere aprobación expresa posterior del usuario sobre el candidato final verificado, sin mezclar con D′.
+
+Siguiente acción: preparar el plan de sincronización y nueva verificación del candidato con main vigente; después solicitar autorización específica de merge, adjuntando SHA final y CI requerido. Si aparece modificación semántica respecto al contrato aprobado o conflicto material con SPEC33, detener integración y elevarlo antes de actuar.
+
+Cambios por Álex: NINGUNO en PR, main, Excel, specs, código, datos o rama de trabajo; únicamente este mensaje Relay.
+Fin HANDOFF → CODEX.
