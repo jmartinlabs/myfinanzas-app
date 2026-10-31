@@ -231,4 +231,4 @@ UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
 | H9/CU-07 | Posición 865 con devolución 10 | PASS |
 | H9/CU-24 | Duración 34, transcurridos 3, equivalentes 30, margen 0, ritmo 70 | PASS |
 | H10 | Devolución acreditada sin grupo ⇒ cobertura Parcial, Falta null | PASS |
-| H11 | Retipificar devolución con atribución o compra con vínculos ⇒ 422, sin huérfano | PASS |
+| H11 | Retipificar devolución con atribución o compra con vínculos (`Verificado` o `Revisar`) ⇒ 422, sin huérfano | PASS |

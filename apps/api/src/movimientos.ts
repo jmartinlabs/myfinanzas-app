@@ -718,7 +718,7 @@ function plan(
       old.tipo === "Gasto" &&
       db
         .query(
-          "SELECT 1 FROM movimiento_devolucion WHERE compra=? AND estado='Verificado' LIMIT 1",
+          "SELECT 1 FROM movimiento_devolucion WHERE compra=? LIMIT 1",
         )
         .get(old.id)
     )

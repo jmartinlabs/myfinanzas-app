@@ -1430,5 +1430,37 @@ test("H11: no se retipifica una devolución con atribución ni una compra con v�
   expect(() =>
     previewMovement(db, buyBody, buy.movimiento.id, false, now),
   ).toThrow("devoluciones verificadas");
+  const reviewBuy = purchase(db, ing, food.id, {
+    importe: "31",
+    comida: { etiqueta: "Comida" },
+  });
+  refund(db, ing, {
+    importe: "11",
+    partida: food.id,
+    devolucion: {
+      estado: "Revisar",
+      compra: reviewBuy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const reviewCurrent = getComidaMovement(db, reviewBuy.movimiento.id)
+    .movimiento as any;
+  const reviewBody = {
+    tipo: "Transferencia",
+    fecha: reviewCurrent.fecha,
+    importe: reviewCurrent.importe,
+    origen: ing.id,
+    destino: "S001",
+    concepto: reviewCurrent.concepto,
+    nota: reviewCurrent.nota,
+    revision: reviewCurrent.revision,
+    motivo: "Retipificación ficticia",
+  };
+  expect(() =>
+    previewMovement(db, reviewBody, reviewBuy.movimiento.id, false, now),
+  ).toThrow("devoluciones verificadas");
   db.close();
 });

@@ -248,8 +248,9 @@ export function listComida(db: Database, params = new URLSearchParams()) {
         (r) =>
           r.tipo === "Devolución de gasto" ||
           (r.tipo === "Gasto" &&
-            (metadata.has(r.id) ||
-              (comidaSaldo !== null && r.origen === comidaSaldo))),
+            (comidaSaldo !== null
+              ? r.origen === comidaSaldo
+              : metadata.has(r.id))),
       )
       .map((r) => {
         const m = metadata.get(r.id) ?? null,
