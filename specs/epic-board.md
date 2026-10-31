@@ -57,7 +57,8 @@ autorización** para datos reales. Checklist en la
   AC-25 siguen pendientes; no se sustituye v5.11(7) ni se infieren datos. No
   bloquea RESTORE-19/20, que usa fixtures sintéticos.
 - **CU parciales identificados:** 01, 03, 04, 05, 08, 10, 11, 15, 16, 20, 21 y
-  23. CU-11 incluye el restore UNRUN, que se acredita con RESTORE-19/20.
+  23. CU-11 conserva evidencia Linux de restore en PR #148; el CU sigue PARCIAL
+  por sus otros extremos.
 - No activar el régimen ni migrar datos reales. DEV18 sigue STOP.
 
 ### 3. D′ — operativa real
@@ -76,7 +77,7 @@ Inventario y mapping read-only en la
   Estado del testplan, que no se reclasifica aquí: 02/08/09/15/22/24/26 PARCIAL;
   07 UNRUN; 16 PASS (E1/S) con cobertura real pendiente.
 - **UNRUN:** AC-12, 13, 18 y 19. AC-12/13 dependen de SPEC27; AC-18 es UI/E2E;
-  AC-19 es restore v20 y se acredita con RESTORE-19/20.
+  AC-19 tiene evidencia de restore v20 en PR #148, pero sigue UNRUN como AC.
 - Sin migración ni activación real.
 
 ### 4. E3.5 / FIN_NETA

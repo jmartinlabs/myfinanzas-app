@@ -73,8 +73,8 @@ acreditado.
 ### 1.3 CU parciales y huecos
 
 Se mantienen identificados: **01, 03, 04, 05, 08, 10, 11, 15, 16, 20, 21 y 23**.
-CU-11 incluye restore UNRUN y se acredita con RESTORE-19/20. No se reclasifican por
-esta preparación.
+CU-11 conserva evidencia Linux de restore en PR #148; el CU sigue PARCIAL por sus
+otros extremos. No se reclasifican por esta preparación.
 
 Huecos principales a cubrir: rol de activación, fixture que sume consumidores,
 bordes de ciclo, redirección económica sin E2E, agregado Terminal, coincidencia o
@@ -133,7 +133,7 @@ de un PRE entre varias PAR ni conversión de `No aplica` en Gasto real/Aportaci�
 - Estado del testplan que no se reclasifica: 02/08/09/15/22/24/26 PARCIAL; 07
   UNRUN; 16 PASS (E1/S) con cobertura real pendiente.
 - **UNRUN:** AC-12, 13, 18 y 19. AC-12/13 dependen de SPEC27; AC-18 es UI/E2E;
-  AC-19 es restore v20 y se acredita con RESTORE-19/20.
+  AC-19 tiene evidencia de restore v20 en PR #148, pero sigue UNRUN como AC.
 - Sin migración ni activación real.
 
 ## 3. SPEC27 y DT6/T-BKP — matriz de dependencias
