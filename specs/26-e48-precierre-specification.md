@@ -7,14 +7,14 @@ las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas
 `40668646943` SUCCESS. Decisiones M1–M6 confirmadas. **DT3 y DT4 resueltas el
 2026-10-28** (ver «DT3/DT4 — resolución»); **DT6/T-BKP sigue abierto** y bloquea E4.9.
 Revisión documental del 2026-10-31: fuentes y referencias contrastadas con `main`
-`98b9792`; se distinguen los hechos integrados del futuro PR #136; sin cambios en las
-decisiones aprobadas ni en los AC. Wireframes propuestos a continuación, pendientes de
-aprobación visual.
+`98b9792`; se distinguen los hechos integrados del PR #136 en revisión; sin cambios en
+las decisiones aprobadas ni en los AC. Wireframes propuestos a continuación, pendientes
+de aprobación visual.
 Context and brainstorming: [26-e48-precierre-brainstorming.md](26-e48-precierre-brainstorming.md),
 [inventario DT5](investigations/dt5-write-impact-inventory.md),
 [propuesta E4.8/E4.9](investigations/dt5-e48-e49-specification-proposal.md),
 [E4.8](roadmap.md#e48--revisión-de-precierre-y-controles-de-consistencia).
-Base: `main` `f077b7e`, esquema 18.
+Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `98b9792`.
 
 ## Functionality
 
@@ -88,7 +88,7 @@ E4.8 no ejecuta ninguna regla de escritura: solo muestra bloqueos y avisos.
 | E3.5 Comida/FIN_NETA | No implementado | `No disponible`; aviso/parcial |
 | E4.2 Ventas | Documental; sin DEV | `No disponible`; aviso/parcial |
 | E4.4 Deuda completa/conciliaciones | Documental en revisión; sin código | `No disponible`; Deuda E1.6 sí |
-| E4.5 Histórico y E3.6 Pendientes | Documental; sin código | Solo lectura; no escritura |
+| E4.5 Histórico y E3.6 Pendientes | Documental; sin código | `No disponible`; solo lectura cuando exista; no escritura |
 
 Contraste con la base real (`main` `98b9792`): E4.1 está integrado; E4.5 y E3.6 son
 documentales sin código; E4.2 y E4.4 siguen sin DEV. El PR #136 de Comida/Partidas está
@@ -128,8 +128,8 @@ el resultado es `Bloqueado`; no se sustituye por un checkbox.
 ## Screens and interfaces
 
 Wireframes **propuestos el 2026-10-31 para aprobación visual**; no aprobados todavía, sin
-UI implementada. Sustituyen la descripción preliminar anterior sin cambiar ninguna regla
-financiera ni AC.
+UI implementada. Sustituirán, si se aprueban, la descripción preliminar anterior sin
+cambiar ninguna regla financiera ni AC.
 
 Convenciones:
 
@@ -137,9 +137,13 @@ Convenciones:
   `#8DBB2E`; fondo claro, sin tema oscuro.
 - Escritorio 1440 px y móvil 390 px. En móvil las tablas pasan a tarjetas apiladas; no se
   oculta ninguna fuente ni motivo.
-- Los importes, cantidades, IDs y hashes se muestran como marcadores `«…»`: son ejemplos
-  de composición, no datos reales ni cifras calculadas. El ciclo `2026-09` de los ejemplos
+- Los importes, cantidades, fechas, IDs y hashes se muestran como marcadores `«…»`: son
+  ejemplos de composición, no datos reales ni cifras calculadas. El ciclo de los ejemplos
   es ficticio.
+- El ASCII es una composición simbólica, no una captura a escala: el ancho real y el
+  comportamiento a 1440/390 se verificarán con capturas cuando exista UI autorizada.
+- El selector de ciclo es el único control de contexto; no se añade un selector de
+  contexto separado.
 - No existe botón operativo de cierre, foto ni escritura. El control de cierre de E4.9 se
   representa **deshabilitado**, con el motivo visible.
 - `No disponible` nunca se representa como `0`; una fuente vacía se muestra vacía explícita.
@@ -149,10 +153,10 @@ Convenciones:
 
 ```text
 MyFinanzas · Precierre                                    Revisión «hash…»  [↻]
-Ciclo 2026-09 · 01/09/2026 → 30/09/2026 · solo lectura
+Ciclo «periodo» · «inicio» → «fin» · solo lectura
 ════════════════════════════════════════════════════════════════════════════════
 Navegación            │ Revisión de precierre
-· Ciclos              │ Ciclo [2026-09 ▾]       Estado: ● Bloqueado
+· Ciclos              │ Ciclo [«periodo» ▾]       Estado: ● Bloqueado
 · Movimientos         │ Ventana  Inicio «fecha» · Fin «fecha» derivado del
 · Plan                │          siguiente Inicio · no editable en E4.8
 · Auxiliares          │ S0       «importe» · S0 informado manualmente en el ciclo
@@ -162,22 +166,20 @@ Navegación            │ Revisión de precierre
                       │ BLOQUEOS
                       │ • BACKUP_NO_VERIFICABLE — falta evidencia DT6/T-BKP
                       │   restaurable
-                      │ • SIN_SIGUIENTE_INICIO — no hay ciclo posterior que
-                      │   acredite Fin (solo si concurre; no se inventa fecha)
                       │
                       │ FUENTES Y COBERTURA
-                      │ Fuente                         Cobertura         Estado
-                      │ Movimientos/clasificación/Ref. «n» hechos        Verificado
-                      │ Plan del ciclo                 SinPlan           Válido
-                      │ Anticipos/Compartidos/Nómina   «n» hechos        Verificado
-                      │ Revisión Comida/Deuda E1.6     «n» hechos        Verificado
-                      │ E4.1 Inversión                 posiciones a Fin  Verificado
-                      │ E4.3 valoración/patrimonio     —                 No disponible
-                      │ E3.5 Comida/FIN_NETA           —                 Parcial
-                      │ E4.2 Ventas                    —                 No disponible
-                      │ E4.4 Deuda completa            —                 No disponible
-                      │ E4.5 Histórico/precontrol      —                 No disponible
-                      │ E3.6 Pendientes/conciliación   —                 No disponible
+                      │ Fuente                        Cobertura        Estado          Motivo
+                      │ Movimientos/clasificación/Ref «n» hechos       Verificado      núcleo
+                      │ Plan del ciclo                SinPlan          Válido          sin líneas
+                      │ Anticipos/Compartidos/Nómina  «n» hechos       Verificado      hechos
+                      │ Revisión Comida/Deuda E1.6    «n» hechos       Verificado      hechos
+                      │ E4.1 Inversión                posiciones a Fin Integrado       a Fin
+                      │ E4.3 valoración/patrimonio    —                No disponible   sin motor E4.3
+                      │ E3.5 Comida/FIN_NETA          —                No disponible   FIN_NETA no integrado
+                      │ E4.2 Ventas                   —                No disponible   sin DEV
+                      │ E4.4 Deuda completa           —                No disponible   documental en revisión
+                      │ E4.5 Histórico/precontrol     —                No disponible   documental sin código
+                      │ E3.6 Pendientes/conciliación  —                No disponible   documental sin código
                       │
                       │ AVISOS
                       │ • E3.5/FIN_NETA no disponible: precierre parcial;
@@ -186,6 +188,8 @@ Navegación            │ Revisión de precierre
                       │   muestran como 0
                       │ • E4.1 sin Compras nuevas: se muestran las posiciones
                       │   anteriores a Fin
+                      │ • La pantalla es Parcial por E3.5; el bloqueo de backup
+                      │   prevalece y el estado global es Bloqueado
                       │
                       │ EVIDENCIA DE BACKUP (DT6/T-BKP)
                       │ Manifiesto «no verificable» · Checksum «no verificable»
@@ -206,7 +210,7 @@ Navegación            │ Revisión de precierre
 ```text
 MyFinanzas · Precierre      Revisión «hash…»
 ← Ciclos
-Ciclo [2026-09 ▾]
+Ciclo [«periodo» ▾]
 ● Bloqueado
 ──────────────────────────────────────
 Ventana
@@ -217,22 +221,27 @@ S0 «importe» · manual, no editable
 BLOQUEOS «k»
 • BACKUP_NO_VERIFICABLE
   Falta evidencia DT6/T-BKP
-• SIN_SIGUIENTE_INICIO
-  No se inventa Fin
 ──────────────────────────────────────
 FUENTES «n»/«m»
-Movimientos        «n» hechos   Verificado  →
-Plan               SinPlan      Válido      →
-E3.5 Comida        —            Parcial     →
-E4.3 valoración    —            No disponible →
-E4.2 Ventas        —            No disponible →
-E4.4 Deuda         —            No disponible →
-E4.5 Histórico     —            No disponible →
-E3.6 Pendientes    —            No disponible →
+Movimientos        «n» hechos    Verificado     núcleo →
+Plan               SinPlan       Válido         sin líneas →
+Anticipos/…        «n» hechos    Verificado     hechos →
+Revisión Comida…   «n» hechos    Verificado     hechos →
+E4.1 Inversión     a Fin         Integrado      posiciones →
+E4.3 valoración    —             No disponible  sin motor →
+E3.5 Comida        —             No disponible  FIN_NETA →
+E4.2 Ventas        —             No disponible  sin DEV →
+E4.4 Deuda         —             No disponible  documental →
+E4.5 Histórico     —             No disponible  documental →
+E3.6 Pendientes    —             No disponible  documental →
 ──────────────────────────────────────
 AVISOS
 • E3.5 parcial; E4.9 bloqueado
 • E4.3 no se muestra como 0
+• E4.1 sin Compras nuevas:
+  posiciones anteriores a Fin
+• Pantalla Parcial por E3.5;
+  bloqueo de backup prevalece
 ──────────────────────────────────────
 BACKUP DT6/T-BKP
 Manifiesto     «no verificable»
@@ -241,11 +250,23 @@ Clave          «no verificable»
 Restauración   «no probada»
 ──────────────────────────────────────
 ENLACES
-Movimientos · Plan · Auxiliares
-Inversión · Histórico · Pendientes
+Movimientos · Plan · Anticipos ·
+Compartidos · Nómina · Revisión
+Comida · Deuda E1.6 · Inversión ·
+Histórico · Pendientes
 ──────────────────────────────────────
 [Cerrar ciclo (E4.9)] deshabilitado
 No disponible en E4.8
+```
+
+Variante no simultánea (AC-02): sin siguiente Inicio no hay Fin derivado.
+
+```text
+VARIANTE · ciclo sin siguiente Inicio
+● Bloqueado · SIN_SIGUIENTE_INICIO
+Ventana  Inicio «fecha» · Fin «no derivable»
+No se inventa fecha, no se crea el ciclo siguiente
+y no se permite cerrar.
 ```
 
 ### W3 · Estados del plan
@@ -283,7 +304,7 @@ INCONSISTENCIAS
 
 [AVISO] CIERRE_FUERA_DE_ORDEN
   Existen cierres posteriores («referencias»). Se compara al mismo corte.
-  El precierre exige motivo; al ser solo lectura no lo captura ni lo escribe.
+  El cierre exige motivo; E4.8 solo declara el aviso y no lo captura ni lo escribe.
   Sin diferencia no explicable no bloquea por sí solo.
 
 [BLOQUEADO] INCOHERENCIA_CON_CIERRE_POSTERIOR
@@ -335,7 +356,8 @@ comportamiento previsto; ningún endpoint existe en `main` y no se declara prueb
   revisión/hash y evidencia de backup.
 - `GET /api/cierres/:ciclo/estado` — estado y versión; sin escritura. Ruta canónica
   compartida con SPEC27.
-- Cualquier `POST/PATCH/DELETE` en E4.8 devuelve 405/422; no hay cierre ni mutación.
+- Cualquier `POST/PATCH/DELETE` en E4.8 devuelve 405/422 (405 si el método o la ruta no
+  se admiten; 422 si la operación o el cuerpo se rechazan); no hay cierre ni mutación.
 
 ### Permisos y sesión
 
@@ -343,17 +365,19 @@ comportamiento previsto; ningún endpoint existe en `main` y no se declara prueb
   delegación nuevos. La lectura exige la sesión autenticada vigente del producto.
 - Sin sesión válida: `401`, sin datos financieros en el cuerpo. La UI conserva ciclo y
   contexto y exige reautenticación, sin mostrar cifras.
+- Hereda la sesión MFA completa, la verificación de Origin/CSRF y las cookies existentes
+  descritas en [security](guidelines/security.md); no diseña autenticación nueva.
 - El endpoint de precierre no es público, no se comparte con terceros y no admite
   credenciales embebidas en URL.
-- Las pruebas de contrato usan fixtures sintéticos; no requieren datos reales.
+- Las pruebas de contrato usarán fixtures sintéticos; no requieren datos reales.
 
 ### Idempotencia y revisión
 
 - Los `GET` son idempotentes y sin efectos: repetir la misma lectura sobre fuentes sin
   cambios devuelve la misma `revision`/hash y no altera S0, ventana, hechos ni cierres.
 - La `revision` cambia si cambia cualquier fuente que compone el resultado. La UI la
-  muestra; cualquier confirmación posterior usa esa revisión para detectar
-  `IMPACT_CHANGED`/409. E4.8 no confirma ni escribe.
+  muestra. E4.8 no expone confirmación ni escribe; el flujo de cierre E4.9/SPEC27 es quien
+  usa esa revisión para detectar `IMPACT_CHANGED`/409.
 - La lectura no cachea cifras provisionales ni mezcla revisiones entre fuentes: si una
   fuente falla, se conserva la identidad del ciclo y se declara esa fuente no verificable.
 - No se define paginación ni escritura diferida: el precierre es una lectura derivada y
@@ -369,8 +393,9 @@ comportamiento previsto; ningún endpoint existe en `main` y no se declara prueb
   identidad y hechos conocidos.
 - Núcleo inconsistente o backup sin evidencia: bloqueo con motivo estable; la respuesta
   no incluye una operación de corrección.
-- Cambio de revisión entre lecturas: se declara la nueva `revision`; cualquier intento de
-  confirmar con una revisión anterior devuelve `409` con `IMPACT_CHANGED`.
+- Cambio de revisión entre lecturas: se declara la nueva `revision`. En E4.8 toda
+  mutación se rechaza con 405/422; el flujo de cierre E4.9/SPEC27 responde `409` con
+  `IMPACT_CHANGED` si se intenta confirmar con una revisión anterior.
 
 Sin servicios externos, importadores ni acceso a datos reales. El backup se lee como
 evidencia DT6/T-BKP, no se ejecuta desde este endpoint.

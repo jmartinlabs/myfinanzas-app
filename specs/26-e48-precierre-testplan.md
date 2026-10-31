@@ -7,10 +7,10 @@ código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3/
 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
 
 Revisión documental 2026-10-31 sobre `main` `98b9792`: se precisan permisos, idempotencia
-de lectura, resultados vacíos/errores y evidencia de wireframes. Ningún escenario está
-demostrado: la matriz sigue siendo hipótesis de diseño y no declara PASS.
+de lectura, resultados vacíos/errores y referencias a los wireframes propuestos. Ningún
+escenario está demostrado: la matriz sigue siendo hipótesis de diseño y no declara PASS.
 
-Base original: `main` `f077b7e`, esquema 18.
+Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` `98b9792`.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
