@@ -103,7 +103,9 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
   Diseño aprobado, AC UNRUN, sin DEV.
 - **DT6/T-BKP:** evidencia de backup/restauración y recuperación externa. Sigue
   abierto y bloquea el cierre real; no se cierra por esta entrada. RESTORE-19/20
-  acredita el restore técnico, no la custodia externa ni el gate DT6.
+  acredita el restore técnico, no la custodia externa ni el gate DT6. Procedimiento
+  propuesto en [DT6/T-BKP](investigations/dt6-t-bkp-procedure-2026-10-31.md);
+  destino, custodia y ensayo real siguen pendientes de decisión.
 - **Gate rootless:** validar sobre una release real autorizada. No sustituye
   RESTORE-19/20. Sin despliegue ni activación.
 
