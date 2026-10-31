@@ -523,7 +523,7 @@ test("E1/cobertura: compras sin etiqueta o devoluciones sin atribución presenta
   db.close();
 });
 
-test("CU-07: la posición bancaria usa B + entradas − salidas y no un saldo paralelo", () => {
+test("CU-07 (histórico): posición con B + entradas − salidas sin devolución", () => {
   const { db, account, ing, food, cycle1 } = setup();
   const finance = transfer(db, account, ing, "800");
   writeComidaRol(
@@ -1144,7 +1144,6 @@ test("H4/CU-22: una devolución de ciclo anterior no bloquea Recursos/Falta del 
     now,
   );
   const receiver = comidaMetrics(db, cycle2.id, now);
-  console.log(JSON.stringify({ cobertura: receiver.cobertura, fin: receiver.financiacion, recursos: receiver.recursos }, null, 2));
   expect(receiver.recursos.valor).toBe("100.00"); // 100 + 800, sin C_n en el receptor
   expect(receiver.faltaPorReponer.valor).toBe("0.00");
   expect(receiver.cobertura.estado).toBe("Verificable");
@@ -1355,5 +1354,81 @@ test("H9/CU-24: Inicio 28/10, corte 30/10 ⇒ duración 34 y 3 transcurridos", (
   expect(metrics.ritmo.equivalentes.valor).toBe("30.00");
   expect(metrics.ritmo.margen.valor).toBe("0.00");
   expect(metrics.ritmo.semanalObservado.valor).toBe("70.00");
+  db.close();
+});
+
+test("H10: una devolución acreditada sin grupo deja la cobertura en Parcial", () => {
+  const { db, ing, leisure, cycle1 } = setup();
+  purchase(db, ing, leisure.id, {
+    importe: "50",
+    comida: { etiqueta: "Ocio" },
+  });
+  refund(db, ing, {
+    importe: "15",
+    partida: leisure.id,
+    devolucion: {
+      estado: "Revisar",
+      partida: leisure.id,
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.cobertura.estado).toBe("Parcial");
+  expect(metrics.cobertura.motivos.join(" ")).toContain("sin atribución elegible");
+  expect(metrics.faltaPorReponer.valor).toBeNull();
+  expect(metrics.compensable.devoluciones.valor).not.toBe("15.00");
+  db.close();
+});
+
+test("H11: no se retipifica una devolución con atribución ni una compra con vínculos", () => {
+  const { db, ing, food, cycle1 } = setup();
+  const buy = purchase(db, ing, food.id, {
+    importe: "30",
+    comida: { etiqueta: "Comida" },
+  });
+  const r = refund(db, ing, {
+    importe: "10",
+    partida: food.id,
+    devolucion: {
+      estado: "Verificado",
+      compra: buy.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: cycle1.id,
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const current = getComidaMovement(db, r.movimiento.id).movimiento as any;
+  const devBody = {
+    tipo: "Gasto",
+    fecha: current.fecha,
+    importe: current.importe,
+    saldo: ing.id,
+    partida: food.id,
+    concepto: current.concepto,
+    nota: current.nota,
+    revision: current.revision,
+    motivo: "Retipificación ficticia",
+  };
+  expect(() =>
+    previewMovement(db, devBody, r.movimiento.id, false, now),
+  ).toThrow("atribución registrada");
+  const bought = getComidaMovement(db, buy.movimiento.id).movimiento as any;
+  const buyBody = {
+    tipo: "Transferencia",
+    fecha: bought.fecha,
+    importe: bought.importe,
+    origen: ing.id,
+    destino: "S001",
+    concepto: bought.concepto,
+    nota: bought.nota,
+    revision: bought.revision,
+    motivo: "Retipificación ficticia",
+  };
+  expect(() =>
+    previewMovement(db, buyBody, buy.movimiento.id, false, now),
+  ).toThrow("devoluciones verificadas");
   db.close();
 });
