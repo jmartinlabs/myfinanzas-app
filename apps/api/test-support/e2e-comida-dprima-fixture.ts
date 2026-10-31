@@ -1,4 +1,5 @@
 // Fictitious E2E source for COMIDA-UNICO-01 and D′. Never imported by runtime.
+// The active Comida régime is a fictitious fixture; no real data is touched.
 import type { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { createSaldo } from "../src/saldos";

@@ -92,7 +92,8 @@ Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 | Mensual: Gasto vs Aportación separados, guardado y recarga | PASS | — |
 | 409 real de rango solapado por API | PASS | — |
 | Mapping diagnóstico y acción de confirmación | PASS | — |
-| Sin overflow horizontal | PASS | PASS |
+| Overflow horizontal | PASS | **DEFECTO CONOCIDO** al abrir ficha (anotado) |
 
-Ambas resoluciones ejecutan el recorrido desde una base ficticia reiniciada por
-servidor. No se activa ningún régimen ni se usan datos reales.
+Ambas resoluciones abren la pantalla; a 390 se abre además la ficha de
+planificación y se registra el overflow conocido. No se activa ningún régimen
+real ni se usan datos reales.

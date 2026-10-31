@@ -248,6 +248,7 @@ Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 | Compra del Saldo sin metadatos visible para clasificar | PASS | — |
 | Sin duplicación de la compra | PASS | — |
 | Captura | PASS | PASS (conocido: tabla 540 px de ancho) |
+| Valores de métricas | PASS (50/15/50 y Falta No disponible por cobertura parcial) | — |
 
 **Defecto conocido:** a 390 la tabla de operaciones provoca overflow horizontal
 (540 px frente a 390). No se corrige en esta tarea de pruebas; requiere
