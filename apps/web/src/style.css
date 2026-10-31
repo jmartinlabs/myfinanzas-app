@@ -2628,6 +2628,3 @@ textarea {
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
-.table-scroll > table {
-  width: 100%;
-}
