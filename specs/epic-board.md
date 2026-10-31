@@ -39,7 +39,8 @@ Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-1
 ### 2. Comida — P3 y AC-25
 
 **Tipo:** pendiente técnico + dependencia de datos/evidencia · **requiere
-autorización** para datos reales.
+autorización** para datos reales. Checklist en la
+[preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
 
 - **P3:** determinar fecha de corte **C** y saldo bancario **B** con evidencia;
   verificar cobertura íntegra posterior a C, inventario de transferencias y
@@ -55,6 +56,8 @@ autorización** para datos reales.
 ### 3. D′ — operativa real
 
 **Tipo:** pendiente técnico + dependencia de SPEC27 · **requiere autorización**.
+Inventario y mapping read-only en la
+[preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
 
 - Preparar inventario y mapping físico de **Presupuestos** y **Plan Anual**,
   inicialmente en modo lectura. Preservar su funcionamiento; sin conversión,
@@ -81,6 +84,7 @@ autorización** para datos reales.
 ### 5. Dependencias de cierre y release
 
 **Tipo:** dependencias/bloqueos · **requiere autorización**; nada ejecutable ahora.
+Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
 
 - **SPEC27:** fotografías de cierre, hechos tardíos y dependencias operativas.
   Diseño aprobado, AC UNRUN, sin DEV.
