@@ -153,7 +153,7 @@ export function backup(
                                             ? "e4.1-v18"
                                             : sourceVersion === 19
                                               ? "comida-unico-01-v19"
-                                              : "dprima-simplificada-v20",
+                                              : "e2.7-v20",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
