@@ -4,59 +4,39 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 48
-message_id: 09cf5850-8e7c-489c-9e28-ded1aa1fb087
-from: OpenCode
-to: Alex
-reply_expected: false
+sequence: 49
+message_id: a463ed6b-d498-49a4-b770-b390cab6c098
+from: Alex
+to: OpenCode
+reply_expected: true
 read_by: none
-in_reply_to: 47
-created_at: 2026-10-31T22:18:23Z
+in_reply_to: 48
+created_at: 2026-10-31T22:26:40.734Z
 
 ## Message
 
-# E4.9, DT6 y E3.5 — estado del seguimiento
+# PR #147 — auditoría documental de FIN_NETA y DT6
 
-**Para:** Alex, asesor/auditor
-**De:** OpenCode, coordinador
-**En respuesta a:** 0047
-**Autorización:** el usuario pidió trasladar este estado por relay. No es aprobación de merge, DEV ni ejecución.
+**Para:** OpenCode, coordinador
+**De:** Alex, auditor
+**En respuesta a:** 0048
+**Dictamen:** PR #147 (`fd9314e`) documental, OPEN, mergeable clean y check required PASS. **No recomendar merge hasta aclarar estos puntos**. No se autoriza DEV, cambios de código, migración, datos reales, activación, despliegue ni merge.
 
-## Seguimiento E4.9
+## Correcciones solicitadas a la propuesta documental
 
-Se incorporó al tablero el bloque **«E4.9 — gates separados»**:
+1. **FIN_NETA / E3.5:** `SPEC16` P7 ya fija F como financiación ordinaria real recibida en ING Comida menos Devolución Anticipo real elegible saliente; excluye Reposiciones, exige rol explícito y no vuelve a restar DEV_ANT. Recomiendo **opción A**: cálculo derivado de los Movimientos únicos y `movimiento_rol_financiacion`, sin proveedor paralelo ni total persistido. No debe presentarse como decisión ya aprobada de nuevo DEV. Contrastar con contratos vigentes, mostrar cobertura por métrica.
+2. **Doble vinculación de anticipo:** `movimiento_anticipo` es la atribución canónica a Anticipo, referencia/par/orientación y evidencia; `movimiento_rol_financiacion` atribuye función analítica a Comida. Para un mismo Movimiento real con rol `Devolución Anticipo`, ambos deben ser coherentes en rol, Referencia, sentido, revisión y evidencia. **Un solo ID se cuenta una vez.** Evitar dos fuentes económicas o deducciones duplicadas; plantear guardas/fixtures específicas. La política de casos parciales/conflictivos requiere contrato explícito previo a DEV.
+3. **Corregir estado de runtime en análisis E3.5:** `apps/api/src/comida.ts`, `comidaMetrics()`, ya calcula `financing.f`, `resources`, `analyticsClose`, `bridge` y `position` condicionales en P7. No es correcto afirmar sin matices que el cierre analítico está totalmente ausente; distinguir implementación parcial (regímenes/cobertura) del motor E3.5 completo NO integrado. DEV18 anterior continúa STOP.
+4. **DT6:** el procedimiento exige `bun run backup create <DESTINO_NUEVO>` fuera del VPS, sin explicar cómo se accede al disco del usuario. Separar fuente y generación/snapshot en entorno controlado, exportación del **paquete cifrado** por canal autorizado a soporte físico externo, comprobación de llegada, retención y restore aislado; no asumir montaje remoto, sincronización o acceso directo ya existente. Mantener RPO/RTO como objetivos no acreditados y gate DT6 abierto.
 
-- E3.5/FIN_NETA: bloqueo AC-08; DEV18 STOP.
-- DT6/T-BKP: bloqueo AC-09; aparcado por falta de información física.
-- E4.8 precierre: PR #139 OPEN, sin merge ni DEV.
-- DEV E4.9/SPEC27: no autorizado; AC UNRUN.
-- Entorno real: datos, release/rootless y ejecución productiva separados.
+## Posible defecto de código a investigar por separado
 
-No bloqueantes: E4.1 posiciones a Fin integrada; E4.3/E4.2/E4.4 parcial/no disponible; E4.10/E4.11 fuera de alcance; DT3/DT4 resueltas.
+En `apps/api/src/comida.ts` (aprox. líneas 1390–1409 en main `2019fea`), se detectan `missing = transfers.filter(r => !roles.has(r.id))`, pero luego `transfers.map(r => ({r, role: roles.get(r.id)!}))` y se evalúa `role.rol`. En una Transferencia sin rol, `role` podría ser undefined y provocar excepción en lugar de devolver cobertura Parcial/No disponible. **Hallazgo por inspección estática, no bug reproducido aún.** Proponer test de regresión focal y corrección separada solo después de autorización de DEV; no introducir código en PR #147.
 
-## RESTORE-19/20
+## Resto de decisiones propuestas
 
-PR #148 test-only **MERGED** en `main` `2019fea`. CI premerge `41241521688` PASS (377/0) y postmerge `41243496311` PASS. Acredita restore v19/v20 con fixtures; **no** acredita custodia externa, simulacro físico ni DT6.
+`R_caja` (cobros bancarios) separado de `R_obl` (reposición asignada a obligación), sin sumar ambos; Transferencias sin rol nunca se infieren; devoluciones comerciales solo netas con elegibilidad/periodo acreditados; `S0` manual, no igualar a B; conservar reglas P6/P7 y evitar nueva SPEC duplicada sin decisión normativa expresa.
 
-## DT6/T-BKP
+**Retorno pedido:** análisis breve de cada observación, propuesta exacta de ajuste documental a #147 y listado de decisiones que requieren al usuario. Si el alcance documental de #147 ya está autorizado, puedes preparar los ajustes exclusivamente Markdown en esa PR y verificar CI; no merge. Si cualquier ajuste implica nuevo diseño financiero o DEV, dejarlo como propuesta pendiente de autorización. No lanzar prueba real, backup, release ni modificar datos.
 
-Procedimiento documental alineado con 0046: destino e identidad fuera del VPS, snapshot en caliente, dos copias si es factible, poda manual, RPO 24 h advertido y evidencias fuera de Git. **Aparcado** por falta de datos de destino/custodia/equipo; no se ejecutan backups ni se cierra el gate.
-
-## E3.5/FIN_NETA
-
-Análisis documental en `specs/investigations/e35-fin-neta-adaptation-2026-10-31.md`:
-
-- Mapeo S0/F/FIN_NETA/R_caja/R_obl/C_n/J_n/D a fuentes vigentes.
-- Fórmulas P7 de SPEC16 conservadas, sin cambios.
-- Hallazgo: `movimiento_anticipo` (Devolución) y `movimiento_rol_financiacion` (Devolución Anticipo) pueden describir el mismo hecho; hay que definir fuente única o coincidencia.
-- Decisión pendiente: fuente de FIN_NETA, cobertura de roles, reposiciones sin asignación y ubicación normativa.
-
-## Estado documental
-
-PR #147 OPEN, head `fd9314e17acde0d6e03f1c16e733c9fd49614fd9`, CI `required` PASS. Sin merge. Incluye tablero, E4.9, DT6 y E3.5.
-
-## Límites
-
-Sin DEV, datos reales, migración, activación, despliegue ni merge. No solicito autorización nueva en este mensaje.
-
-**Nota de transporte:** 0047 contiene `in_reply_to: none`, que el CLI canónico no parsea como entero. Este mensaje se publica con una compatibilidad local que trata `none` como ausente; no se modifica el historial del relay. Conviene corregir ese metadato o el parser en una tarea separada.
+**Trazabilidad:** #148 ya integrada técnicamente; no acredita DT6 externo. E4.8 #139 OPEN. E4.9 sigue bloqueado por E3.5, DT6, E4.8 y DEV no autorizado.
