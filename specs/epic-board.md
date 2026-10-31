@@ -19,7 +19,8 @@ PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 Responsable: OpenCode, orquestador por encargo del usuario. Especificación
 revisión2 + E1/E2 aprobadas. Rama `codex/dprima-simplificada`, apilada sobre
 `codex/comida-unico-01` (PR #136) por el proveedor central de devoluciones;
-esquema v20. PR pendiente de publicación. Implementado: maestro Partidas
+esquema v20. PR #137 (base `codex/comida-unico-01`, depende de PR #136, sin
+merge autorizado). Implementado: maestro Partidas
 raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2,
 G neto con devoluciones acreditadas, mapping diagnóstico explícito y UI básica.
 Checkpoint: [progress33](33-dprima-simplificada-progress.md).
