@@ -49,8 +49,9 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 - Evita documentación redundante; resuelve lo técnico ordinario dentro del alcance.
 
 ## Política permanente de Git y GitHub
-- Aprobada el 2026-10-20. Gestiona Git/GitHub de forma autónoma; repositorio privado, sin
-  cambiar visibilidad. Rama por ámbito, nunca en `main`; preserva trabajo ajeno.
+- Aprobada el 2026-10-20. Gestiona Git/GitHub de forma autónoma; repositorio público
+  (visibilidad confirmada intencional el 2026-10-31), sin cambiar visibilidad. Rama por
+  ámbito, nunca en `main`; preserva trabajo ajeno.
 - Antes de push revisa commits, rutas, diff y archivos borrados; no confíes solo en `.gitignore`.
   Publica rama y PR con resumen, cambios, pruebas y limitaciones; declara dependencias.
 - Espera aprobación explícita antes del merge; el permiso de push no la sustituye. Tras el
