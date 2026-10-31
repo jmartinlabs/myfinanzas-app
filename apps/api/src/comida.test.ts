@@ -1431,7 +1431,7 @@ test("H11: no se retipifica una devolución con atribución ni una compra con v�
     previewMovement(db, buyBody, buy.movimiento.id, false, now),
   ).toThrow("devoluciones verificadas");
   const reviewBuy = purchase(db, ing, food.id, {
-    importe: "30",
+    importe: "31",
     comida: { etiqueta: "Comida" },
   });
   refund(db, ing, {
