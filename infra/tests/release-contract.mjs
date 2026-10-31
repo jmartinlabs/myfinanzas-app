@@ -87,7 +87,7 @@ async function main() {
     installFixture(db,'seed');
     await moduleReads();
   } else if(mode==='restore') {
-    const recipientFile=root+'/recipient.identity';
+    const recipientFile=root+'/recipient-'+schemaVersion+'.identity';
     const generated=Bun.spawnSync(['age-keygen','-o',recipientFile],{stdout:'pipe',stderr:'pipe'});
     check(generated.exitCode===0,'age identity generation');
     const recipient=Bun.spawnSync(['age-keygen','-y',recipientFile],{stdout:'pipe',stderr:'pipe'});
@@ -95,12 +95,12 @@ async function main() {
     db.exec("PRAGMA wal_autocheckpoint=0; INSERT INTO counters VALUES('infra32_backup_wal',23)");
     saved.business=snapshot(db);
     check(readFileSync(process.env.DATABASE_PATH+'-wal').length>32,'backup must include an actual committed WAL');
-    backup(db,key,root+'/encrypted-copy',recipient.stdout.toString().trim());
-    check(readdirSync(root+'/encrypted-copy').sort().join(',')==='access-key.age,database.age','backup plaintext residue');
+    backup(db,key,root+'/encrypted-copy-'+schemaVersion,recipient.stdout.toString().trim());
+    check(readdirSync(root+'/encrypted-copy-'+schemaVersion).sort().join(',')==='access-key.age,database.age','backup plaintext residue');
     db.close();
     process.env.DATABASE_PATH=root+'/restored-'+schemaVersion+'/database.sqlite';
     process.env.AUTH_KEY_PATH=root+'/restored-'+schemaVersion+'/auth.key';
-    const result=restore(root+'/encrypted-copy',root+'/restored-'+schemaVersion,recipientFile);
+    const result=restore(root+'/encrypted-copy-'+schemaVersion,root+'/restored-'+schemaVersion,recipientFile);
     db=openDatabase(result.database);key=loadKey(db,result.key);
     check(hash(key)===saved.keyHash,'restored key mismatch');
     business(db,saved.business,'restored data mismatch');
