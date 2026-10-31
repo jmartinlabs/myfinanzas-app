@@ -1,4 +1,160 @@
+## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
+
+Entrada vigente de seguimiento. **No reabre** PR #136/#137 ni sus QA: ambas
+entregas están integradas y se conservan como historia. Esta sección sustituye
+las afirmaciones de «sin merge» y los límites sueltos de las dos entradas
+siguientes, sin duplicar sus tareas.
+
+Base contrastada: `main`/`origin/main` **`2e710c0`** (PR #146). Integradas:
+#136 `7f3a66c` (Comida, v19), #137 `e0249c5` (D′, v20), #145 `936b600` (E2E) y
+#146 `2e710c0` (tablas 390). CI postmerge `Validate project` **PASS**:
+run `41235452202`.
+
+Clasificación: **pendiente técnico** (trabajo acotado), **dependencia** (otro
+frente debe entregar primero), **bloqueo** (impide avanzar), **mejora opcional**
+(no bloquea) y **requiere autorización** (sin permiso específico no se ejecuta).
+Los nombres de frente son de seguimiento del tablero; no crean AC ni
+identificadores de spec.
+
+### 1. RESTORE-19/20 — evidencia Linux integrada
+
+**Tipo:** pendiente técnico · **requiere autorización** para DEV/ejecución Linux.
+Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-10-31.md).
+
+- Validar en **Linux** el restore de copias de aplicación **v19 y v20** con
+  fixtures ficticias. v20 tiene cobertura en las matrices actuales; **v19 no
+  tiene prueba dedicada**.
+- El fallo de macOS por `libc.so.6` **no constituye validación**. El gate rootless
+  **no sustituye** esta prueba.
+- No existía expediente previo dedicado. Reutilizables: `restore-server.ts`,
+  `materializeContract()` con `C19-COMIDA-UNICO-01`/`C20-DPRIMA-SIMPLIFICADA`,
+  `inversiones-backup.test.ts`, `referencias.test.ts`, `d5-backup.test.ts` y
+  `app.test.ts`; límites y huecos en el expediente.
+- **Evidencia 2026-10-31:** PR #148 (test-only) con CI Linux `required` **PASS**
+  (run `41241521688`; 377 PASS / 0 FAIL). Casos v19, v20 y negativos PASS.
+  Integrada en `main` `2019fea`; CI postmerge `41243496311` **PASS**.
+- No cierra AC ni DT6; el restore técnico queda acreditado, pero no la custodia
+  externa, el gate rootless ni la restauración productiva con claves reales.
+- Criterio de salida: v19 y v20 restauran con manifiesto/esquema correctos;
+  v19 abierta migra a v20 conservando hechos, vínculos, auditoría e identidad;
+  negativos fallan cerrado sin destino parcial. Sin datos reales.
+
+**Siguiente paso:** ninguno sobre #148; queda integrada. DT6/T-BKP, rootless y
+datos reales mantienen sus propios gates.
+
+### 2. Comida — P3 y AC-25
+
+**Tipo:** pendiente técnico + dependencia de datos/evidencia · **requiere
+autorización** para datos reales. Checklist en la
+[preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
+
+- **P3:** determinar fecha de corte **C** y saldo bancario **B** con evidencia;
+  verificar cobertura íntegra posterior a C, inventario de transferencias y
+  conciliación de consumidores. Sin cobertura se informa parcial/no disponible,
+  nunca conciliado; sin prorrateo ni inferencia.
+- **AC-25:** contrastar físicamente con `MyFinanzas2026_v5.11(7).xlsx`; no
+  declarar equivalencia ni cerrar AC-25 sin contraste acreditado. v5.10 es
+  histórica, no fuente equivalente.
+- **Estado 2026-10-31:** el acceso a la fuente real no está disponible. P3 y
+  AC-25 siguen pendientes; no se sustituye v5.11(7) ni se infieren datos. No
+  bloquea RESTORE-19/20, que usa fixtures sintéticos.
+- **CU parciales identificados:** 01, 03, 04, 05, 08, 10, 11, 15, 16, 20, 21 y
+  23. CU-11 conserva evidencia Linux de restore en PR #148; el CU sigue PARCIAL
+  por sus otros extremos.
+- No activar el régimen ni migrar datos reales. DEV18 sigue STOP.
+
+### 3. D′ — operativa real
+
+**Tipo:** pendiente técnico + dependencia de SPEC27 · **requiere autorización**.
+Inventario y mapping read-only en la
+[preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
+
+- Preparar inventario y mapping físico de **Presupuestos** y **Plan Anual**,
+  inicialmente en modo lectura. Preservar su funcionamiento; sin conversión,
+  migración ni activación real.
+- **Estado 2026-10-31:** el acceso a la base/Excel real no está disponible.
+  Inventario y mapping quedan pendientes; no se infiere ni se migra. No bloquea
+  RESTORE-19/20, que usa fixtures sintéticos.
+- **Pendientes de operativa real:** AC-02, 07, 08, 09, 15, 16, 22, 24 y 26.
+  Estado del testplan, que no se reclasifica aquí: 02/08/09/15/22/24/26 PARCIAL;
+  07 UNRUN; 16 PASS (E1/S) con cobertura real pendiente.
+- **UNRUN:** AC-12, 13, 18 y 19. AC-12/13 dependen de SPEC27; AC-18 es UI/E2E;
+  AC-19 tiene evidencia de restore v20 en PR #148, pero sigue UNRUN como AC.
+- Sin migración ni activación real.
+
+### 4. E3.5 / FIN_NETA
+
+**Tipo:** dependencia + pendiente técnico · **requiere autorización**.
+Análisis de adaptación en
+[E3.5/FIN_NETA](investigations/e35-fin-neta-adaptation-2026-10-31.md).
+
+- Mantener **DEV18 antiguo detenido**; no reanudarlo.
+- Preparar posteriormente su adaptación al modelo integrado de **registro único
+  de Comida en Movimientos**.
+- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no
+  reconstruir FIN_NETA por inferencia**. `comidaMetrics()` ya calcula P7 de forma
+  condicional; no es el motor E3.5 completo.
+- **Riesgo estático:** una Transferencia sin rol podría evaluar `role.rol` sobre
+  `undefined` en `comida.ts` (~1390–1409). No reproducido; requiere test/corrección
+  separada con autorización de DEV.
+- **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal; un solo ID
+  se cuenta una vez y los conflictos se tratan como parcial/no disponible.
+- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
+  bloqueado mientras E3.5 no sea verificable.
+
+### 5. Dependencias de cierre y release
+
+**Tipo:** dependencias/bloqueos · **requiere autorización**; nada ejecutable ahora.
+Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10-31.md).
+
+- **SPEC27:** fotografías de cierre, hechos tardíos y dependencias operativas.
+  Diseño aprobado, AC UNRUN, sin DEV.
+- **DT6/T-BKP:** evidencia de backup/restauración y recuperación externa. Sigue
+  abierto y bloquea el cierre real; no se cierra por esta entrada. RESTORE-19/20
+  acredita el restore técnico, no la custodia externa ni el gate DT6. Procedimiento
+  propuesto en [DT6/T-BKP](investigations/dt6-t-bkp-procedure-2026-10-31.md),
+  alineado con los criterios 0046; destino, custodia, modo, poda y ensayo real
+  siguen pendientes de confirmación y no se ejecutan backups. Las copias de más de
+  24 h exigen `--allow-older` con motivo, riesgo y aprobación; los temporales son
+  privados y no se promete procesamiento solo en memoria.
+- **Gate rootless:** validar sobre una release real autorizada. No sustituye
+  RESTORE-19/20. Sin despliegue ni activación.
+
+#### E4.9 — gates separados
+
+E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
+
+| Gate | Estado | Efecto |
+| --- | --- | --- |
+| E3.5 / FIN_NETA | No integrado; DEV18 STOP | Bloquea **AC-08**; adaptación pendiente al gasto único de Comida en Movimientos |
+| DT6 / T-BKP | Abierto y aparcado; sin datos físicos | Bloquea **AC-09**; los fixtures v19/v20 no acreditan custodia externa ni simulacro |
+| E4.8 precierre | [PR #139](https://github.com/jmartinlabs/myfinanzas-app/pull/139) OPEN; sin merge ni DEV | Puerta del flujo E4.9; falta implementación o integración efectiva |
+| DEV E4.9 / SPEC27 | No autorizado; AC **UNRUN** | Faltan cierre, foto, impactos, idempotencia, concurrencia, seguridad y pruebas |
+| Entorno real | Gates separados | Datos, release/rootless y ejecución productiva no autorizados |
+
+No bloqueantes por sí solos: E4.1 posiciones a Fin está integrada; E4.3, E4.2 y
+E4.4 pueden figurar `Parcial`/`No disponible`; E4.10 y E4.11 están fuera de
+alcance; DT3/DT4 están resueltas y no se reabren.
+
+Orden recomendado, sin iniciar trabajo automáticamente: analizar la adaptación de
+E3.5/FIN_NETA; revisar #139 para una eventual decisión documental; mantener DT6
+aparcado; abordar DEV E4.9 solo tras aprobar alcance y dependencias.
+
+### 6. Mejoras opcionales
+
+**Tipo:** mejora opcional; sin AC ni prioridad de release.
+
+- Evitar regiones de tabla focusables cuando no hay scroll necesario a 1440
+  (`TableScroll`, `apps/web/src/ui.tsx`).
+- Evaluar primera columna sticky a 390.
+
+No bloquean release ni justifican DEV por sí solas.
+
 ## COMIDA-UNICO-01 — candidato de implementación 2026-10-31
+
+> **Nota de vigencia 2026-10-31:** entrada histórica pre-merge. PR #136 está
+> integrada en `7f3a66c`; el seguimiento vigente y los pendientes están en
+> «Pendientes consolidados post Comida/Partidas».
 
 Responsable de esta entrega: OpenCode, orquestador por encargo directo del usuario.
 Especificación revisión 3 y wireframes aprobados (D1–D5, P1/P2/P4–P7/P7a) en
@@ -19,6 +175,10 @@ QA final **PASS** en `c96cb79` (H10/H11/OBS2). E2E 1440/390 PASS; tabla responsi
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## SPEC33 D′ — candidato de implementación 2026-10-31
+
+> **Nota de vigencia 2026-10-31:** entrada histórica pre-merge. PR #137 está
+> integrada en `e0249c5`; el seguimiento vigente y los pendientes están en
+> «Pendientes consolidados post Comida/Partidas».
 
 Responsable: OpenCode, orquestador por encargo del usuario. Especificación
 revisión2 + E1/E2 aprobadas. Rama `codex/dprima-simplificada`, apilada sobre

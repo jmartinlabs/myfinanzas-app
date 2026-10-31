@@ -4,6 +4,9 @@
 No autoriza compras, contratación, DEV, cambios de criterios ni cierre de DT6/FIN_NETA.
 Registrado el 2026-10-28 a petición del usuario para no perder el encargo.
 Base: `main` `170d511` (PR #111 integrada); E4.9 sigue bloqueado.
+Procedimiento propuesto el 2026-10-31:
+[dt6-t-bkp-procedure](../investigations/dt6-t-bkp-procedure-2026-10-31.md). No ejecuta
+backups ni cierra el gate.
 
 ## Contexto y decisión del usuario
 
