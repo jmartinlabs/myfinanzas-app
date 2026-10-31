@@ -217,3 +217,16 @@ Estados `PASS` se refieren solo a la prueba citada; CI Linux y E2E quedan UNRUN.
 | CU-24 | Inicio 28/10, corte 30/10 ⇒ 34/3/340/30/0/70; horizonte vencido | PASS |
 
 UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
+
+## Correcciones QA y evidencia adicional (2026-10-31)
+
+| Caso | Evidencia | Estado |
+| --- | --- | --- |
+| H1 · devolución rectificada por encima de la compra | `comida.test.ts` H1: vínculo `Revisar`, importe conservado, cobertura Parcial | PASS |
+| H2 · devolución acreditada sin compra con etiqueta propia | Compensable 15, neto 35, Falta 35, cobertura no verificable | PASS |
+| H3 · compra anulada | Plan: devoluciones 0, ejecutado 0, sin negativo | PASS |
+| H4/CU-22 · devolución de ciclo anterior | Recursos 100, Falta 0, cobertura verificable, neto observado −40 | PASS |
+| H5/H7 · ámbito de compras | Compra del Saldo de Comida sin metadatos visible; otra cuenta no altera bruto | PASS |
+| H6 · impacto de configuración | Preview conserva bruto 50/dev 15/ejecutado 35 | PASS |
+| H9/CU-07 | Posición 865 con devolución 10 | PASS |
+| H9/CU-24 | Duración 34, transcurridos 3, equivalentes 30, margen 0, ritmo 70 | PASS |
