@@ -15,7 +15,7 @@ de Actions (anotación del check-run, reproducible en `main`). E2E local: 11 PAS
 y 2 fallos de plataforma (`libc.so.6`/restore), sin acreditar E2E de la pantalla
 nueva. Rootless bloquea por cambio de contrato de esquema sin autorización de
 rollback: [informe](investigations/rootless-schema-upgrade-2026-10-31.md).
-QA final **PASS** en `c96cb79` (H10/H11/OBS2). DEV18 sigue STOP.
+QA final **PASS** en `c96cb79` (H10/H11/OBS2). E2E 1440/390 PASS; overflow conocido a 390 en tabla. DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## SPEC33 D′ — candidato de implementación 2026-10-31
@@ -29,7 +29,7 @@ raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2,
 G neto con devoluciones acreditadas, mapping diagnóstico explícito y UI básica.
 Checkpoint: [progress33](33-dprima-simplificada-progress.md).
 Límites: migración real, activación, cierre/fotos, mapping físico, restore v20,
-E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. Presupuestos/Plan Anual permanecen
+E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. E2E 1440/390 PASS. Presupuestos/Plan Anual permanecen
 consultables sin conversión.
 
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29

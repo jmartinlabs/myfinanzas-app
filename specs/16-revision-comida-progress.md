@@ -337,3 +337,15 @@ No se desactiva ni se modifica la verificación.
 E2E local: **11 PASS / 2 FAIL**, y los mismos 2 fallos se reproducen en `main`
 (restore/`libc.so.6` y toggle responsive); no hay regresión, pero la pantalla
 Comida no tiene E2E propio: UNRUN. Restore v19: UNRUN por plataforma.
+
+### E2E 2026-10-31
+
+- Añadido `tests/e2e/comida-dprima.spec.ts` y servidor de fixture ficticio.
+- Comida: PASS 1440/390 en navegación, métricas, clasificación, atribución,
+  422 real, persistencia y ausencia de duplicación.
+- Defecto conocido: overflow horizontal de la tabla a 390 (540 px); no se
+  modifica UI en esta tarea.
+- D′: PASS 1440/390 en Partidas, previsión, apertura, mensual, 409 real,
+  mapping y no creación de Movimientos al confirmar apertura.
+- Regresión E2E completa: 13 PASS y los 2 fallos de plataforma ya presentes en
+  `main`; typecheck/build PASS; verify canónica con los 53 fallos de entorno.
