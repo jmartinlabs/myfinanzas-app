@@ -89,7 +89,7 @@ async function main() {
     check(readdirSync(root+'/encrypted-copy').sort().join(',')==='access-key.age,database.age','backup plaintext residue');
     db.close();
     process.env.DATABASE_PATH=root+'/restored-'+schemaVersion+'/database.sqlite';
-    process.env.AUTH_KEY_PATH=root+'/restored/auth.key';
+    process.env.AUTH_KEY_PATH=root+'/restored-'+schemaVersion+'/auth.key';
     const result=restore(root+'/encrypted-copy',root+'/restored-'+schemaVersion,recipientFile);
     db=openDatabase(result.database);key=loadKey(db,result.key);
     check(hash(key)===saved.keyHash,'restored key mismatch');
