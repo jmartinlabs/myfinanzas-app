@@ -105,6 +105,15 @@ After a successful conditional write:
    specifically; do not infer success. Lost responses may represent an
    already published commit: inspect history before any user-authorized retry.
 
+On a blocked or failed write, classify from observed evidence only (platform policy,
+provider/API error, conflict, network, unknown) and report: operation, UTC time, tool,
+repository/branch, last verified HEAD, expected blob SHA, content length, sanitized
+error, HTTP status/request ID if exposed, and the read-only post-check. Do not infer
+the cause, record request bodies or credentials, retry automatically, or reword the
+call to evade a safety control. A block does not prove GitHub received it; checking
+HEAD and history reduces uncertainty but does not prove the original call never
+executed.
+
 The contents API's conditional **blob** SHA protects one-file relay updates
 against ordinary competing writes. It is not a general branch-head transaction
 or an identity/authentication mechanism. A read acknowledgement remains

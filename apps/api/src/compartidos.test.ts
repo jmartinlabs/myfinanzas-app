@@ -867,6 +867,10 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
     false,
     now,
   );
+  const snapshot = (table: string) =>
+    table === "partidas"
+      ? "SELECT id,nombre,padre,estado,revision,creado,actualizado,deuda,presupuesto FROM partidas ORDER BY 1"
+      : `SELECT * FROM ${table} ORDER BY 1`;
   const before = Object.fromEntries(
     [
       "referencias",
@@ -879,19 +883,14 @@ test("B-T01 genuine v13 migration preserves rows, reject unknown version and rol
       "saldos",
       "partidas",
       "database_origin",
-    ].map((table) => [
-      table,
-      JSON.stringify(db.query(`SELECT * FROM ${table} ORDER BY 1`).all()),
-    ]),
+    ].map((table) => [table, JSON.stringify(db.query(snapshot(table)).all())]),
   );
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 18,
+    version: 20,
   });
   for (const table of Object.keys(before))
-    expect(JSON.stringify(db.query(`SELECT * FROM ${table} ORDER BY 1`).all())).toBe(
-      before[table],
-    );
+    expect(JSON.stringify(db.query(snapshot(table)).all())).toBe(before[table]);
   expect(
     db
       .query(
@@ -980,7 +979,7 @@ test("B-T01 v14 Vehículos → v15 preserves vehicle ficha/audit and rejects a v
     audits = db.query("SELECT * FROM audit ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 18,
+    version: 20,
   });
   expect(db.query("SELECT * FROM referencias ORDER BY id").all()).toEqual(refs);
   expect(db.query("SELECT * FROM fichas_vehiculo ORDER BY referencia").all()).toEqual(

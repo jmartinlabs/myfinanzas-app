@@ -182,3 +182,81 @@ No disponible; corte<Inicio inválido. Siguiente Inicio real recalcula duración
 provisionalidad e invalida preview. E2E verifica etiquetas/Fin vacío, teclado y estados
 sin falsear cobertura ni compartir fechas editables paralelas. verify --full y QA
 independiente futuros sobre código; esta revisión solo verifica documentación.
+
+## COMIDA-UNICO-01 — matriz CU (candidato 2026-10-31)
+
+Entorno local: macOS, Bun 1.4.3, SQLite `bun:sqlite`, fixtures ficticias.
+Comando: `NODE_ENV=test bun test apps/api/src/comida.test.ts`.
+Estados `PASS` se refieren solo a la prueba citada; CI Linux y E2E quedan UNRUN.
+
+| CU | Evidencia local | Estado |
+| --- | --- | --- |
+| CU-01 | Transferencia 800 sin Gasto | PARCIAL: rol de activación no probado |
+| CU-02 | Compra 45: una fila, posición −45, mismo ID en Revisión | PASS |
+| CU-03 | Plan mensual cuenta el Gasto una vez | PARCIAL: sin fixture que sume consumidores |
+| CU-04 | Ciclo derivado del maestro | PARCIAL: bordes Inicio/Fin no probados |
+| CU-05 | Metadatos no crean hechos; auditoría | PARCIAL: redirección económica sin E2E |
+| CU-06 | Devolución 12/13: entrada real, vínculo íntegro, no Ingreso | PASS |
+| CU-07 | B=100, +800, −45 y devolución 10 ⇒ posición 865; diferencia 0 | PASS |
+| CU-08 | Auxiliar legado no se suma | PARCIAL: agregado Terminal 300 no montado |
+| CU-09 | Devolución de Anticipo resta F una vez; reposición no es Gasto | PASS |
+| CU-10 | Idempotencia de metadatos y rechazo atómico | PARCIAL: coincidencia/fuente fallida no |
+| CU-11 | Upgrade v18→v19 preserva filas y acepta el Tipo nuevo; restore UNRUN | PARCIAL |
+| CU-12 | Sin segundo ledger; metadatos rechazan importe/fecha | PASS |
+| CU-13 | Plan 100, compra 50, devolución 15 ⇒ Ejecutado 35 / Pendiente 65 | PASS |
+| CU-14 | Devolución 40 de ciclo anterior ⇒ neto observado −40, origen intacto | PASS |
+| CU-15 | Sin atribución acreditable ⇒ Parcial, sin neteo | PARCIAL: Partida sin temporalidad no montada |
+| CU-16 | Financiación separada de devolución | PARCIAL: anual/flujo no montado |
+| CU-17 | Ocio 50, devolución 15, reposición 20 ⇒ Falta 15 | PASS |
+| CU-18 | Devolución antigua separada; obligación actual intacta | PASS |
+| CU-19 | Pendiente revisar cuenta como Comida; Fuera presupuesto conserva banco | PASS |
+| CU-20 | Rol de reposición único | PARCIAL: reintento de reposición no |
+| CU-21 | Recursos/cierre/puente con S0, F y C_n completos | PARCIAL: Recursos probado; ejemplo completo 785/580/puente−5 no montado |
+| CU-22 | Devolución antigua no bloquea Recursos/Falta del receptor | PASS |
+| CU-23 | Sin régimen ⇒ No disponible, nunca cero | PARCIAL: cruce C y S0 ausente no |
+| CU-24 | Inicio 28/10, corte 30/10 ⇒ 34/3/340/30/0/70; horizonte vencido | PASS |
+
+UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
+
+## Correcciones QA y evidencia adicional (2026-10-31)
+
+| Caso | Evidencia | Estado |
+| --- | --- | --- |
+| H1 · devolución rectificada por encima de la compra | `comida.test.ts` H1: vínculo `Revisar`, importe conservado, cobertura Parcial | PASS |
+| H2 · devolución acreditada sin compra con etiqueta propia | Compensable 15, neto 35, Falta 35, cobertura no verificable | PASS |
+| H3 · compra anulada | Plan: devoluciones 0, ejecutado 0, sin negativo | PASS |
+| H4/CU-22 · devolución de ciclo anterior | Recursos 100, Falta 0, cobertura verificable, neto observado −40 | PASS |
+| H5/H7 · ámbito de compras | Compra del Saldo de Comida sin metadatos visible; otra cuenta no altera bruto | PASS |
+| H6 · impacto de configuración | Preview conserva bruto 50/dev 15/ejecutado 35 | PASS |
+| H9/CU-07 | Posición 865 con devolución 10 | PASS |
+| H9/CU-24 | Duración 34, transcurridos 3, equivalentes 30, margen 0, ritmo 70 | PASS |
+| H10 | Devolución acreditada sin grupo ⇒ cobertura Parcial, Falta null | PASS |
+| H11 | Retipificar devolución con atribución o compra con vínculos (`Verificado` o `Revisar`) ⇒ 422, sin huérfano | PASS |
+
+## E2E 2026-10-31 — Comida · hechos
+
+Entorno: Playwright Chromium local, servidor de fixture ficticio en 3020, MFA real.
+Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
+
+| Comprobación | 1440 | 390 |
+| --- | --- | --- |
+| Navegación y cabecera `Revisión Comida` | PASS | PASS |
+| Métricas de Comida, devoluciones y Compensable | PASS | PASS |
+| Clasificación y persistencia tras recarga | PASS | — |
+| Atribución de devolución y persistencia | PASS | — |
+| 422 real con compra no elegible, sin perder borrador | PASS | — |
+| Compra del Saldo sin metadatos visible para clasificar | PASS | — |
+| Sin duplicación de la compra | PASS | — |
+| Captura y región desplazable | PASS | PASS (tabla en región accesible; página sin overflow) |
+| Valores de métricas | PASS (50/15/50 y Falta No disponible por cobertura parcial) | — |
+
+La tabla de operaciones se presenta en una región desplazable con foco y
+etiqueta accesible; la página ya no desborda a 390. El test verifica foco,
+scroll interno y ausencia de overflow de página.
+
+## Responsive 390 — corrección 2026-10-31
+
+`TableScroll` envuelve la tabla de operaciones: región con `role`, etiqueta,
+`tabIndex=0` y `overflow-x:auto`. A 390 la página mide 390 y la tabla conserva
+el contenido en su región; a 1440 no hay scroll interno. E2E actualizado sin
+anotaciones `known-issue`.

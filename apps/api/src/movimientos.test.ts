@@ -1093,7 +1093,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
           db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
         ).toEqual(
           table === "partidas"
-            ? data.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
+            ? data.map((r: any) => ({ ...r, deuda: null, presupuesto: null, fuente: null, padre_partida: null }))
             : table === "ciclos"
               ? data.map((r: any) => ({ ...r, revision: 1, actualizado: null }))
               : data,
@@ -1106,7 +1106,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
         db.query("SELECT * FROM counters WHERE name=?").get(counter.name),
       ).toEqual(counter);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 18,
+      version: 20,
     });
     expect(listMovements(db).total).toBe(0);
     const nextAuth = new Auth(db, readFileSync(join(dir, "auth.key")));
@@ -1338,7 +1338,7 @@ test("04 AC22/23/28: dos procesos actualizan v3, reintentan alta y compiten en r
         runE14(opening, "upgrade"),
         runE14(opening, "upgrade"),
       ]),
-    ).toEqual([{ version: 18 }, { version: 18 }]);
+    ).toEqual([{ version: 20 }, { version: 20 }]);
     db = openDatabase(path);
     const body = income(m.saldo.id),
       plan = previewMovement(db, body, null, false, now),

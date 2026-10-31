@@ -431,7 +431,7 @@ test("v10→v11 continuity preserves financial/auth data, migration rollback and
     const rows = db.query("SELECT * FROM saldos").all();
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 18,
+      version: 20,
     });
     expect(db.query("SELECT * FROM saldos").all()).toEqual(rows);
     expect(db.query("SELECT * FROM sessions").all()).toHaveLength(1);

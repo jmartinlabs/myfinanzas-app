@@ -5,7 +5,12 @@ export const fingerprint = (v: unknown) =>
 export type LedgerRow = {
   id: string;
   fecha: string;
-  tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
+  tipo:
+    | "Ingreso"
+    | "Gasto"
+    | "Transferencia"
+    | "Amortización deuda"
+    | "Devolución de gasto";
   capital: string | null;
   intereses: string | null;
   referencia?: string | null;
@@ -102,6 +107,35 @@ export function financeRevision(db: Database) {
               "SELECT movimiento,participante,evidencia,procedencia,revision_movimiento,revision,actualizado FROM movimiento_compartido ORDER BY movimiento",
             )
             .all(),
+        ]
+      : []),
+    ...(db
+      .query(
+        "SELECT name FROM sqlite_master WHERE name='movimiento_revision_comida'",
+      )
+      .get()
+      ? [
+          db
+            .query(
+              `SELECT movimiento,etiqueta,evidencia_bancaria,evidencia_comercial,
+                estado_revision,revision_movimiento,revision,actualizado
+               FROM movimiento_revision_comida ORDER BY movimiento`,
+            )
+            .all(),
+          db
+            .query(
+              `SELECT movimiento,compra,partida,ciclo_origen,evidencia_relacion,
+                evidencia_origen_temporal,elegibilidad,estado,revision_movimiento,
+                revision,actualizado FROM movimiento_devolucion ORDER BY movimiento`,
+            )
+            .all(),
+          db
+            .query(
+              `SELECT movimiento,rol,obligacion_ciclo,evidencia,revision_movimiento,
+                revision,actualizado FROM movimiento_rol_financiacion ORDER BY movimiento`,
+            )
+            .all(),
+          db.query("SELECT * FROM regimen_comida ORDER BY saldo").all(),
         ]
       : []),
     db
