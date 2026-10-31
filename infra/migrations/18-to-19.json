@@ -7,5 +7,7 @@
   "downgrade": "restore-only",
   "from_data": "e4.1-v18",
   "to_data": "e3.4-v19",
-  "authentication": "argon2id-aesgcm-totp-session-v1"
+  "authentication": "argon2id-aesgcm-totp-session-v1",
+  "from_authentication": "argon2id-aesgcm-totp-session-v1",
+  "to_authentication": "argon2id-aesgcm-totp-session-v1"
 }
