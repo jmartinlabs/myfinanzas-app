@@ -16,7 +16,7 @@ frente debe entregar primero), **bloqueo** (impide avanzar), **mejora opcional**
 Los nombres de frente son de seguimiento del tablero; no crean AC ni
 identificadores de spec.
 
-### 1. RESTORE-19/20 — prioridad inmediata
+### 1. RESTORE-19/20 — evidencia Linux disponible
 
 **Tipo:** pendiente técnico · **requiere autorización** para DEV/ejecución Linux.
 Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-10-31.md).
@@ -30,11 +30,15 @@ Alcance preparado en el [expediente](investigations/restore-v19-v20-linux-2026-1
   `materializeContract()` con `C19-COMIDA-UNICO-01`/`C20-DPRIMA-SIMPLIFICADA`,
   `inversiones-backup.test.ts`, `referencias.test.ts`, `d5-backup.test.ts` y
   `app.test.ts`; límites y huecos en el expediente.
+- **Evidencia 2026-10-31:** PR #148 (test-only) con CI Linux `required` **PASS**
+  (run `41241521688`; 377 PASS / 0 FAIL). Casos v19, v20 y negativos PASS. No
+  cierra AC ni DT6; pendiente revisión/aprobación y merge separado.
 - Criterio de salida: v19 y v20 restauran con manifiesto/esquema correctos;
   v19 abierta migra a v20 conservando hechos, vínculos, auditoría e identidad;
   negativos fallan cerrado sin destino parcial. Sin datos reales.
 
-**Siguiente tarea independiente propuesta:** ejecutar RESTORE-19/20 en Linux.
+**Siguiente paso:** revisar [PR #148](https://github.com/jmartinlabs/myfinanzas-app/pull/148)
+y decidir su integración; el merge exige aprobación separada.
 
 ### 2. Comida — P3 y AC-25
 
@@ -49,6 +53,9 @@ autorización** para datos reales. Checklist en la
 - **AC-25:** contrastar físicamente con `MyFinanzas2026_v5.11(7).xlsx`; no
   declarar equivalencia ni cerrar AC-25 sin contraste acreditado. v5.10 es
   histórica, no fuente equivalente.
+- **Estado 2026-10-31:** el acceso a la fuente real no está disponible. P3 y
+  AC-25 siguen pendientes; no se sustituye v5.11(7) ni se infieren datos. No
+  bloquea RESTORE-19/20, que usa fixtures sintéticos.
 - **CU parciales identificados:** 01, 03, 04, 05, 08, 10, 11, 15, 16, 20, 21 y
   23. CU-11 incluye el restore UNRUN, que se acredita con RESTORE-19/20.
 - No activar el régimen ni migrar datos reales. DEV18 sigue STOP.
@@ -62,6 +69,9 @@ Inventario y mapping read-only en la
 - Preparar inventario y mapping físico de **Presupuestos** y **Plan Anual**,
   inicialmente en modo lectura. Preservar su funcionamiento; sin conversión,
   migración ni activación real.
+- **Estado 2026-10-31:** el acceso a la base/Excel real no está disponible.
+  Inventario y mapping quedan pendientes; no se infiere ni se migra. No bloquea
+  RESTORE-19/20, que usa fixtures sintéticos.
 - **Pendientes de operativa real:** AC-02, 07, 08, 09, 15, 16, 22, 24 y 26.
   Estado del testplan, que no se reclasifica aquí: 02/08/09/15/22/24/26 PARCIAL;
   07 UNRUN; 16 PASS (E1/S) con cobertura real pendiente.
@@ -89,7 +99,8 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
 - **SPEC27:** fotografías de cierre, hechos tardíos y dependencias operativas.
   Diseño aprobado, AC UNRUN, sin DEV.
 - **DT6/T-BKP:** evidencia de backup/restauración y recuperación externa. Sigue
-  abierto y bloquea el cierre real; no se cierra por esta entrada.
+  abierto y bloquea el cierre real; no se cierra por esta entrada. RESTORE-19/20
+  acredita el restore técnico, no la custodia externa ni el gate DT6.
 - **Gate rootless:** validar sobre una release real autorizada. No sustituye
   RESTORE-19/20. Sin despliegue ni activación.
 

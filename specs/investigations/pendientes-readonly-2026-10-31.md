@@ -5,6 +5,12 @@ No se ha accedido a datos reales, Excel, bases productivas ni secretos. No autor
 DEV, migración, activación, despliegue ni merge. Los checklists describen qué
 evidencia reunir y qué comprobar; no declaran AC cerrados ni PASS funcional.
 
+**Estado de fuentes (2026-10-31):** el acceso al Excel `MyFinanzas2026_v5.11(7).xlsx`
+y a la base real **no está disponible**. P3/AC-25 y el inventario/mapping D′ quedan
+pendientes de acceso; no se sustituye v5.11(7) por otra versión ni se infieren datos.
+RESTORE-19/20 se ejecuta por separado con fixtures sintéticos y no depende de estas
+fuentes.
+
 Base: `main`/`origin/main` `2e710c0`. Contexto: [tablero](../epic-board.md),
 [SPEC16](../16-revision-comida-specification.md),
 [SPEC33](../33-dprima-simplificada-specification.md),

@@ -99,7 +99,20 @@ Tarea independiente, solo fixtures ficticias y sin datos reales:
 - El resultado en macOS no se extrapola a Linux ni al contrario.
 - La tarea requiere autorización separada de DEV/ejecución y no autoriza merge.
 
-## 8. Siguiente paso
+## 8. Estado de ejecución
 
-Solicitar autorización para ejecutar **RESTORE-19/20** como tarea independiente,
-con este alcance y sin ampliar a rootless, release, datos reales ni activación.
+Ejecutado en Linux mediante la PR test-only #148, con fixtures sintéticos y sin
+datos reales. Evidencia registrada en el apartado 9. Pendiente revisión y merge
+separado; no autoriza despliegue ni activación.
+
+## 9. Evidencia Linux — 2026-10-31
+
+- PR [#148](https://github.com/jmartinlabs/myfinanzas-app/pull/148), test-only:
+  `apps/api/src/restore-v19-v20.test.ts`.
+- CI `required` **PASS**: run `41241521688`; 377 PASS / 0 FAIL.
+- Casos PASS:
+  - v19 cifrado conserva Comida y migra a v20;
+  - v20 cifrado conserva D′ y revoca accesos;
+  - negativos (corrupción, antigüedad y clave ajena) sin destino parcial.
+- El fallo local de macOS sigue sin usarse como evidencia.
+- No cierra AC de producto, no cierra DT6/T-BKP y no sustituye el gate rootless.
