@@ -131,6 +131,12 @@ Wireframes **propuestos el 2026-10-31 para aprobación visual**; no aprobados to
 UI implementada. Sustituirán, si se aprueban, la descripción preliminar anterior sin
 cambiar ninguna regla financiera ni AC.
 
+Vista estática reproducible:
+[26-e48-precierre-wireframes.html](26-e48-precierre-wireframes.html), con capturas
+`26-e48-precierre-captures/w1-desktop-1440.png` (1440×1565) y
+`26-e48-precierre-captures/w2-mobile-390.png` (390×1985). Son artefactos documentales de
+revisión, no una implementación ni una prueba funcional.
+
 Convenciones:
 
 - Reutilizan shell, cabecera, paneles, etiquetas, tabla/tarjetas y texto oscuro sobre verde
@@ -140,8 +146,9 @@ Convenciones:
 - Los importes, cantidades, fechas, IDs y hashes se muestran como marcadores `«…»`: son
   ejemplos de composición, no datos reales ni cifras calculadas. El ciclo de los ejemplos
   es ficticio.
-- El ASCII es una composición simbólica, no una captura a escala: el ancho real y el
-  comportamiento a 1440/390 se verificarán con capturas cuando exista UI autorizada.
+- El ASCII es una composición simbólica. La vista HTML documental y sus capturas fijan la
+  composición a 1440/390, pero no son UI implementada; el ancho real de la futura UI se
+  verificará con capturas cuando exista UI autorizada.
 - El selector de ciclo es el único control de contexto; no se añade un selector de
   contexto separado.
 - No existe botón operativo de cierre, foto ni escritura. El control de cierre de E4.9 se
@@ -168,18 +175,23 @@ Navegación            │ Revisión de precierre
                       │   restaurable
                       │
                       │ FUENTES Y COBERTURA
-                      │ Fuente                        Cobertura        Estado          Motivo
-                      │ Movimientos/clasificación/Ref «n» hechos       Verificado      núcleo
-                      │ Plan del ciclo                SinPlan          Válido          sin líneas
-                      │ Anticipos/Compartidos/Nómina  «n» hechos       Verificado      hechos
-                      │ Revisión Comida/Deuda E1.6    «n» hechos       Verificado      hechos
-                      │ E4.1 Inversión                posiciones a Fin Integrado       integrado; posiciones a Fin
-                      │ E4.3 valoración/patrimonio    —                No disponible   sin motor E4.3
-                      │ E3.5 Comida/FIN_NETA          —                No disponible   FIN_NETA no integrado
-                      │ E4.2 Ventas                   —                No disponible   sin DEV
-                      │ E4.4 Deuda completa           —                No disponible   documental en revisión
-                      │ E4.5 Histórico/precontrol     —                No disponible   documental sin código
-                      │ E3.6 Pendientes/conciliación  —                No disponible   documental sin código
+                      │ Fuente                        Cobertura        Estado        Motivo                      Enlace
+                      │ Movimientos/clasificación/Ref «n» hechos       Verificado    núcleo                      Abrir
+                      │ Plan del ciclo                SinPlan          Válido        sin líneas                  Abrir plan
+                      │ Auxiliares (estado y enlace individuales)
+                      │   Anticipos                   «n» hechos       Verificado    con hechos                  Abrir
+                      │   Compartidos                 «n» hechos       Verificado    con hechos                  Abrir
+                      │   Nómina                      «n» hechos       Verificado    con hechos                  Abrir
+                      │   Revisión Comida             «n» hechos       Verificado    con hechos                  Abrir
+                      │   Deuda E1.6                  «n» hechos       Verificado    con hechos                  Abrir
+                      │ E4.1 Inversión                posiciones a Fin Integrado     efectivo/cantidades a Fin   Abrir
+                      │ E4.3 valoración/patrimonio    —                No disponible sin motor E4.3              No disp.
+                      │ E3.5 Comida/FIN_NETA          —                No disponible FIN_NETA no integrado        No disp.
+                      │ E4.2 Ventas                   —                No disponible sin DEV                     No disp.
+                      │ E4.4 Deuda completa           —                No disponible documental en revisión      No disp.
+                      │ E4.5 Histórico/precontrol     —                No disponible documental sin código       No disp.
+                      │ E3.6 Pendientes/conciliación  —                No disponible documental sin código       No disp.
+                      │ «No disp.» = enlace inactivo; el motor no existe todavía.
                       │
                       │ AVISOS
                       │ • E3.5/FIN_NETA no disponible: precierre parcial;
@@ -223,17 +235,22 @@ BLOQUEOS «k»
   Falta evidencia DT6/T-BKP
 ──────────────────────────────────────
 FUENTES «n»/«m»
-Movimientos        «n» hechos    Verificado     núcleo →
-Plan               SinPlan       Válido         sin líneas →
-Anticipos/Compartidos/Nómina  «n» hechos  Verificado  hechos →
-Revisión Comida/Deuda E1.6    «n» hechos  Verificado  hechos →
-E4.1 Inversión     a Fin         Integrado      integrado; posiciones →
-E4.3 valoración    —             No disponible  sin motor →
-E3.5 Comida        —             No disponible  FIN_NETA →
-E4.2 Ventas        —             No disponible  sin DEV →
-E4.4 Deuda         —             No disponible  documental →
-E4.5 Histórico     —             No disponible  documental →
-E3.6 Pendientes    —             No disponible  documental →
+Movimientos        «n» hechos    Verificado     núcleo → Abrir
+Plan               SinPlan       Válido         sin líneas → Abrir plan
+AUXILIARES · estado y enlace por fuente
+Anticipos          «n» hechos    Verificado     hechos → Abrir
+Compartidos        «n» hechos    Verificado     hechos → Abrir
+Nómina             «n» hechos    Verificado     hechos → Abrir
+Revisión Comida    «n» hechos    Verificado     hechos → Abrir
+Deuda E1.6         «n» hechos    Verificado     hechos → Abrir
+E4.1 Inversión     a Fin         Integrado      posiciones → Abrir
+E4.3 valoración    —             No disponible  sin motor → No disp.
+E3.5 Comida        —             No disponible  FIN_NETA → No disp.
+E4.2 Ventas        —             No disponible  sin DEV → No disp.
+E4.4 Deuda         —             No disponible  documental → No disp.
+E4.5 Histórico     —             No disponible  documental → No disp.
+E3.6 Pendientes    —             No disponible  documental → No disp.
+«No disp.» = enlace inactivo; el motor no existe todavía.
 ──────────────────────────────────────
 AVISOS
 • E3.5 no disponible; precierre
@@ -283,15 +300,26 @@ PlanNoVerificable  Bloqueado    Líneas duplicadas, revisión inconsistente o fu
 [Ver plan del ciclo]   [Ver ejecución]   [Ver detalle de inconsistencias]
 ```
 
-### W4 · Cobertura y estados de la pantalla
+### W4 · Cobertura y estados
 
 ```text
-ESTADOS DE LA PANTALLA
+ESTADO DE LA PANTALLA
 Listo             Núcleo verificado; sin bloqueos ni avisos
 Listo con avisos  Núcleo verificado; «j» avisos sin bloqueo
 Parcial           Fuente no disponible con motivo; no se presenta como completo
 Bloqueado         Uno o más motivos; no se cierra; corregir fuera de E4.8
-No disponible     Por fuente: sin motor o sin datos; motivo visible; nunca 0
+
+ESTADO DE CADA FUENTE
+Vacío             Ausencia acreditada de operaciones imputables al ciclo;
+                  vacío explícito, nunca 0; no equivale a «Sin hechos»
+No disponible     Sin motor, sin datos verificables o documental sin código;
+                  motivo visible; no es 0 ni vacío; no bloquea salvo excepción
+Error de lectura  Fallo al leer la fuente; conserva identidad y hechos conocidos;
+                  cifra no verificable; [Reintentar]
+Verificado        La fuente responde y cubre el corte; se muestran sus hechos
+Integrado         Motor integrado (E4.1); se muestran sus hechos y cobertura
+
+Vacío ≠ No disponible ≠ Error de lectura ≠ 0.
 ```
 
 ### W5 · Inconsistencias y cierres posteriores
@@ -313,17 +341,16 @@ INCONSISTENCIAS
   No se permite cerrar; no se escribe ni se corrige el histórico.
 ```
 
-### W6 · Vacío, carga, error y sesión
+### W6 · Carga y sesión
 
 ```text
-VACÍO, CARGA, ERROR Y SESIÓN
-Vacío por fuente  Sin operaciones imputables al ciclo; vacío explícito, no 0;
-                  no equivale a «Sin hechos»
-Carga             Conserva ciclo y filtros; sin cifras provisionales
-Error de fuente   Conserva identidad y hechos conocidos; cifra no verificable;
-                  [Reintentar]
+CARGA Y SESIÓN
+Carga             Conserva ciclo y filtros; sin cifras provisionales;
+                  sin mezcla de revisiones
 Sesión expirada   Conserva el contexto; exige reautenticación; sin cifras ni cierre
 ```
+
+El error de lectura se detalla en W4 y no se confunde con vacío ni con no disponible.
 
 Decisiones visuales pendientes de aprobación: jerarquía de la tabla de fuentes en
 escritorio, agrupación de bloqueos frente a avisos, representación del control de cierre

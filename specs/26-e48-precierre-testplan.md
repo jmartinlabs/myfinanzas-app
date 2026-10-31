@@ -59,9 +59,11 @@ hipótesis de contrato, no resultados.
 
 ## Browser verification
 
-UNRUN. Wireframes W1–W6 propuestos en SPEC26 el 2026-10-31, pendientes de aprobación
-visual; no hay capturas 390/1440 de E4.8 ni UI implementada. Las capturas futuras no
-demostrarán por sí solas accesibilidad ni cálculo financiero.
+UNRUN funcional. Wireframes W1–W6 propuestos en SPEC26 el 2026-10-31, con vista HTML
+documental y capturas estáticas 1440×1565 y 390×1985 en
+`26-e48-precierre-captures/`; pendientes de aprobación visual. No hay UI de E4.8
+implementada ni capturas de aplicación. Las capturas documentales no demuestran
+accesibilidad, cálculo financiero ni PASS funcional.
 
 ## Limitations and next action
 
