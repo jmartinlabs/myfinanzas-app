@@ -19,7 +19,7 @@ const business = (db, saved, label) => {
   if (process.env.RELEASE_DEBUG) {
     const a = JSON.parse(now), b = JSON.parse(saved);
     const differ = tables.filter((_, i) => JSON.stringify(a[i]) !== JSON.stringify(b[i]));
-    console.error('Business tables differ: ' + differ.join(','));
+    console.error('Business tables differ: ' + differ.join(',') + (differ.includes('counters') ? ' :: ' + JSON.stringify([a[tables.indexOf('counters')], b[tables.indexOf('counters')]]) : ''));
   }
   check(false, label);
 };
