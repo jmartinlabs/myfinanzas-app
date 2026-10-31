@@ -77,3 +77,23 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 - Restore limpia `dprima_partida_attempts`.
 - Snapshot de `partidas` en pruebas de continuidad incluye las columnas v20.
 - Suite focal: 23 PASS; suite API sin fallos propios frente a main.
+
+## E2E 2026-10-31 — D′ · Partidas y previsión
+
+Entorno: Playwright Chromium local, servidor de fixture ficticio en 3011, MFA real.
+Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
+
+| Comprobación | 1440 | 390 |
+| --- | --- | --- |
+| Navegación y Maestro de Partidas | PASS | PASS |
+| Previsión: edición de línea y persistencia | PASS | — |
+| Apertura: T/S/sugerida y confirmación | PASS | — |
+| Confirmar apertura no crea Movimientos (conteo antes/después) | PASS | — |
+| Mensual: Gasto vs Aportación separados, guardado y recarga | PASS | — |
+| 409 real de rango solapado por API | PASS | — |
+| Mapping diagnóstico y acción de confirmación | PASS | — |
+| Overflow horizontal | PASS | **DEFECTO CONOCIDO** al abrir ficha (anotado) |
+
+Ambas resoluciones abren la pantalla; a 390 se abre además la ficha de
+planificación y se registra el overflow conocido. No se activa ningún régimen
+real ni se usan datos reales.

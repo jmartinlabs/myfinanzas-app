@@ -94,3 +94,11 @@ por inspección y paridad de `presupuestos.test.ts` verificados; `dprima.test.ts
 23 PASS, `comida.test.ts` 31 PASS, typecheck/build PASS, sin fallos propios
 frente a `main`. UNRUN: restore v20 completo, upgrade v19→v20 dedicado, CI
 Linux, E2E 390/1440 y cierre/fotos SPEC27.
+
+### E2E 2026-10-31
+
+Añadido el mismo spec/servidor ficticio. D′: PASS 1440/390 en Maestro,
+previsión con persistencia, apertura E1/E2 con importes T/S/sugerida y sin
+Movimientos nuevos, mensual Gasto/Aportación, 409 real de solape y mapping
+diagnóstico. Defecto conocido: la ficha de plan a 390 provoca overflow
+horizontal; se anota y no se modifica UI en esta tarea.

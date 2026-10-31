@@ -232,3 +232,27 @@ UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
 | H9/CU-24 | Duración 34, transcurridos 3, equivalentes 30, margen 0, ritmo 70 | PASS |
 | H10 | Devolución acreditada sin grupo ⇒ cobertura Parcial, Falta null | PASS |
 | H11 | Retipificar devolución con atribución o compra con vínculos (`Verificado` o `Revisar`) ⇒ 422, sin huérfano | PASS |
+
+## E2E 2026-10-31 — Comida · hechos
+
+Entorno: Playwright Chromium local, servidor de fixture ficticio en 3010, MFA real.
+Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
+
+| Comprobación | 1440 | 390 |
+| --- | --- | --- |
+| Navegación y cabecera `Revisión Comida` | PASS | PASS |
+| Métricas de Comida, devoluciones y Compensable | PASS | PASS |
+| Clasificación y persistencia tras recarga | PASS | — |
+| Atribución de devolución y persistencia | PASS | — |
+| 422 real con compra no elegible, sin perder borrador | PASS | — |
+| Compra del Saldo sin metadatos visible para clasificar | PASS | — |
+| Sin duplicación de la compra | PASS | — |
+| Captura | PASS | PASS (conocido: tabla 540 px de ancho) |
+| Valores de métricas | PASS (50/15/50 y Falta No disponible por cobertura parcial) | — |
+
+**Defecto conocido:** a 390 la tabla de operaciones provoca overflow horizontal
+(540 px frente a 390). No se corrige en esta tarea de pruebas; requiere
+autorización separada de UI.
+
+El test se considera PASS con la anotación `known-issue`; no se declara la
+pantalla responsive completa.
