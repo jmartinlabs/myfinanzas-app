@@ -74,6 +74,14 @@ mensual, bloqueo de destinos reservados por previsiones, apertura con destino
 exclusivo, duplicados/solapes 409, rectificación a raíz agrupada rechazada,
 exclusiones con motivo y mapping sin duplicados. Suite focal: 20 PASS.
 Segunda ronda QA focal: A1–A6, M1–M3, M5–M7 y B1/B3–B6 acreditados. Se
-corrigieron además M4, el solape 409, la apertura no-Aportación (`restantes`
-nullable), la limpieza de intentos en restore y el snapshot de Partidas. CI
-Linux y una última pasada de QA: pendientes.
+corrigieron además M4 (hija nueva sobre raíz con histórico), el solape 409, la
+apertura no-Aportación (`restantes` nullable), la limpieza de intentos en
+restore y el snapshot de Partidas. Suite focal: 23 PASS; suite API sin fallos
+propios frente a `main`.
+
+CI: `Validate project` no se ejecuta mientras la base sea
+`codex/comida-unico-01` (el workflow solo corre contra `main`); queda UNRUN hasta
+retarget tras el merge de #136. `Rootless capability gate` falla por
+`incompatible contract metadata` del esquema v20 frente a `main`, igual que #136:
+requiere autorización de release/rollback, no un cambio de código.
+Tercera pasada de QA independiente: pendiente.
