@@ -11,6 +11,9 @@ on:
       - 'infra/**'
       - 'bun.lock'
       - 'package.json'
+      # Excluye Markdown de infra, incluidos subdirectorios y nombres ocultos.
+      - '!infra/**/*.md'
+      - '!infra/**/.*.md'
   workflow_dispatch:
 permissions:
   contents: read
