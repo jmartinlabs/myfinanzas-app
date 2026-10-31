@@ -4,13 +4,14 @@ Responsable de esta entrega: OpenCode, orquestador por encargo directo del usuar
 Especificación revisión 3 y wireframes aprobados (D1–D5, P1/P2/P4–P7/P7a) en
 [SPEC16](16-revision-comida-specification.md#registro-de-aprobación-integral-y-coordinación--2026-10-31).
 Base `main` contrastada: `98b9792` (squash PR #133). Rama de código:
-`codex/comida-unico-01`; PR pendiente de publicación.
+`codex/comida-unico-01`; PR #136, sin merge autorizado.
 Estado: candidato técnico local con base común de Movimientos (Tipo
 `Devolución de gasto`), metadatos, atribución íntegra, roles y métricas
 P5/P6/P7/P7a; esquema v19 con contrato estricto y upgrade v18 verificado.
 Checkpoint: [progress16](16-revision-comida-progress.md#comida-unico-01--candidato-de-implementación-2026-10-31).
 Límites: P3 (fecha/saldo/cobertura reales), activación, migración real, AC-25,
-CI Linux, E2E de la nueva pantalla y restore v19 UNRUN. DEV18 sigue STOP.
+CI Linux, E2E de la nueva pantalla y restore v19 UNRUN. QA independiente ronda 1
+FAIL; defectos H1–H11 corregidos en `87becd0` y segunda ronda en curso. DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## SPEC33 D′ — candidato de implementación 2026-10-31
