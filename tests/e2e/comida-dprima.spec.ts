@@ -96,8 +96,14 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
       page.locator(".metric", { hasText: "Comida neto" }).locator("strong"),
     ).toHaveText("50,00 €");
     await expect(
+      page.locator(".metric", { hasText: "Compensable neto" }).locator("strong"),
+    ).toHaveText("35,00 €");
+    await expect(
       page.locator(".metric", { hasText: "Falta por reponer" }),
     ).toContainText("No disponible");
+    await expect(page.getByText("Cobertura:", { exact: false })).toContainText(
+      "Parcial",
+    );
     await expect(
       page.locator("tbody tr", { hasText: "Compra comida E2E" }),
     ).toHaveCount(1);
@@ -160,7 +166,7 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
       page.getByRole("heading", { name: "Revisión Comida", exact: true }),
     ).toBeVisible();
 
-    // 390: contenido y sin overflow horizontal.
+    // 390: contenido y overflow conocido anotado (no se corrige UI aquí).
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/comida");
     await expect(page.getByText("Comida bruto", { exact: true })).toBeVisible();
@@ -311,7 +317,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
       page.getByRole("button", { name: /Confirmar PRE900/ }),
     ).toBeVisible();
 
-    // 390: contenido y sin overflow horizontal.
+    // 390: contenido y overflow conocido anotado (no se corrige UI aquí).
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dprima");
     await expect(page.getByText("Maestro de Partidas", { exact: true })).toBeVisible();

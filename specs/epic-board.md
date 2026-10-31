@@ -29,7 +29,7 @@ raíz/hija con fuente, Gastos Previstos, Plan Mensual por raíz, apertura E1/E2,
 G neto con devoluciones acreditadas, mapping diagnóstico explícito y UI básica.
 Checkpoint: [progress33](33-dprima-simplificada-progress.md).
 Límites: migración real, activación, cierre/fotos, mapping físico, restore v20,
-E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. E2E 1440/390 PASS. Presupuestos/Plan Anual permanecen
+E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. E2E 1440/390 PASS; overflow conocido al abrir ficha a 390. Presupuestos/Plan Anual permanecen
 consultables sin conversión.
 
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29
