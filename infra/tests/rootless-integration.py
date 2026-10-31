@@ -513,12 +513,12 @@ def main():
             # Restore-only rollback: previous version keeps a restored copy made
             # before the upgrade; the upgraded state is never downgraded in place.
             stage = 'previous-version-backup-restore'
-            seed_state = matrix / 'state' / 'fixture-private.json'
-            seed_copy = matrix / 'state' / 'fixture-private-seed.json'
+            seed_state = matrix / 'fixture-private.json'
+            seed_copy = matrix / 'fixture-private-seed.json'
             shutil.copyfile(seed_state, seed_copy)
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
                  previous['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
-            shutil.copyfile(seed_state, matrix / 'state' / 'fixture-private-previous.json')
+            shutil.copyfile(seed_state, matrix / 'fixture-private-previous.json')
             shutil.copyfile(seed_copy, seed_state)
             stage = 'real-cross-version-update'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
