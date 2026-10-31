@@ -258,7 +258,12 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
 
     // Mensual por raíz: gasto y aportación separados.
     await page.getByLabel("Ciclo del plan mensual").selectOption({ index: 1 });
-    const monthly = page.locator("tbody tr", { hasText: "Raíz aportación E2E" }).last();
+    const monthlySection = page.getByRole("region", {
+      name: "Plan Mensual D′",
+    });
+    const monthly = monthlySection
+      .locator("tbody tr", { hasText: "Raíz aportación E2E" })
+      .last();
     await expect(monthly).toContainText("Aportación a saldo");
     await expect(
       page.getByRole("columnheader", { name: "Ejecutado", exact: true }),
@@ -270,7 +275,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
     await page
       .getByLabel("Ciclo del plan mensual")
       .selectOption({ label: "20/10/2026 → abierto" });
-    const monthlyReloaded = page
+    const monthlyReloaded = monthlySection
       .locator("tbody tr", { hasText: "Raíz aportación E2E" })
       .last();
     await expect(monthlyReloaded.locator('input[aria-label^="delMes "]')).toHaveValue(
@@ -281,7 +286,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
         exact: false,
       }),
     ).toBeVisible();
-    const realMonthly = page
+    const realMonthly = monthlySection
       .locator("tbody tr", { hasText: "Raíz gasto E2E" })
       .last();
     await expect(realMonthly).toContainText("Gasto real");
