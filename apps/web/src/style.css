@@ -2621,3 +2621,13 @@ textarea {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* Accessible horizontal scroll for wide data tables on narrow screens. */
+.table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+.table-scroll > table {
+  width: 100%;
+}

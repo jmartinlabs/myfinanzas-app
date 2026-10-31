@@ -4,9 +4,9 @@ import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
 
-const comidaOrigin = "http://127.0.0.1:3010";
+const comidaOrigin = "http://127.0.0.1:3020";
 const comidaState = ".local/e2e-comida-dprima";
-const dprimaOrigin = "http://127.0.0.1:3011";
+const dprimaOrigin = "http://127.0.0.1:3021";
 const dprimaState = ".local/e2e-dprima";
 
 async function login(page: any, request: any, origin: string, state: string) {
@@ -71,7 +71,7 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   mkdirSync("artifacts/e2e-comida", { recursive: true });
-  const child = startServer(3010, comidaState);
+  const child = startServer(3020, comidaState);
     await login(page, request, comidaOrigin, comidaState);
     const shot = (name: string) =>
       page.screenshot({ path: `artifacts/e2e-comida/${name}.png`, fullPage: true });
@@ -104,6 +104,20 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
     await expect(page.getByText("Cobertura:", { exact: false })).toContainText(
       "Parcial",
     );
+    const comidaTable1440 = page.getByRole("region", {
+      name: "Tabla de operaciones individuales",
+    });
+    await expect(comidaTable1440).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    expect(
+      await comidaTable1440.evaluate(
+        (element) => element.scrollWidth <= element.clientWidth,
+      ),
+    ).toBe(true);
     await expect(
       page.locator("tbody tr", { hasText: "Compra comida E2E" }),
     ).toHaveCount(1);
@@ -166,22 +180,40 @@ test("COMIDA-UNICO-01: métricas, clasificación, atribución, errores y persist
       page.getByRole("heading", { name: "Revisión Comida", exact: true }),
     ).toBeVisible();
 
-    // 390: contenido y overflow conocido anotado (no se corrige UI aquí).
+    // 390: la tabla conserva el contenido en una región desplazable.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/comida");
     await expect(page.getByText("Comida bruto", { exact: true })).toBeVisible();
     await expect(
       page.locator("tbody tr", { hasText: "Compra comida E2E" }),
     ).toHaveCount(1);
-    // Known responsive gap: the operations table is the desktop table at 390.
-    // It is recorded in the PR instead of changing product UI under this task.
-    const overflow390 = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
-    test.info().annotations.push({
-      type: "known-issue",
-      description: `Comida table horizontal overflow at 390: ${overflow390}px`,
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    const comidaTable390 = page.getByRole("region", {
+      name: "Tabla de operaciones individuales",
     });
+    await expect(comidaTable390).toBeVisible();
+    expect(
+      await comidaTable390.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+      ),
+    ).toBe(true);
+    await comidaTable390.focus();
+    expect(
+      await page.evaluate(() => document.activeElement?.className),
+    ).toContain("table-scroll");
+    expect(
+      await comidaTable390.evaluate((element) => {
+        element.scrollLeft = element.scrollWidth;
+        return element.scrollLeft;
+      }),
+    ).toBeGreaterThan(0);
+    await expect(
+      page.locator("tbody tr", { hasText: "Compra comida E2E" }),
+    ).toBeVisible();
     await shot("comida-390");
     expect(errors).toEqual([]);
   child.kill("SIGKILL");
@@ -195,7 +227,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   mkdirSync("artifacts/e2e-dprima", { recursive: true });
-  const child = startServer(3011, dprimaState);
+  const child = startServer(3021, dprimaState);
     await login(page, request, dprimaOrigin, dprimaState);
     const shot = (name: string) =>
       page.screenshot({ path: `artifacts/e2e-dprima/${name}.png`, fullPage: true });
@@ -215,6 +247,16 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
       .getByRole("button", { name: "Abrir" })
       .click();
     await expect(page.getByRole("heading", { name: /DP/ })).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    expect(
+      await page
+        .getByRole("region", { name: "Tabla de líneas previstas" })
+        .evaluate((element) => element.scrollWidth <= element.clientWidth),
+    ).toBe(true);
     const importe = page.locator('input[aria-label^="Importe LP"]').first();
     await importe.fill("320");
     await page.getByLabel("Motivo de las líneas").fill("Ajuste E2E");
@@ -328,7 +370,7 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
       page.getByRole("button", { name: /Confirmar PRE900/ }),
     ).toBeVisible();
 
-    // 390: contenido y overflow conocido anotado (no se corrige UI aquí).
+    // 390: la tabla de líneas conserva el contenido en una región desplazable.
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/dprima");
     await expect(page.getByText("Maestro de Partidas", { exact: true })).toBeVisible();
@@ -337,13 +379,33 @@ test("D′: Partidas, previsión, apertura, mensual, mapping y errores 1440/390"
       .getByRole("button", { name: "Abrir" })
       .click();
     await expect(page.getByText("Revisión de apertura", { exact: true })).toBeVisible();
-    const dprimaOverflow = await page.evaluate(
-      () => document.documentElement.scrollWidth - window.innerWidth,
-    );
-    test.info().annotations.push({
-      type: "known-issue",
-      description: `D-prime plan detail horizontal overflow at 390: ${dprimaOverflow}px`,
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth + 1,
+      ),
+    ).toBe(true);
+    const dprimaLines = page.getByRole("region", {
+      name: "Tabla de líneas previstas",
     });
+    await expect(dprimaLines).toBeVisible();
+    expect(
+      await dprimaLines.evaluate(
+        (element) => element.scrollWidth > element.clientWidth,
+      ),
+    ).toBe(true);
+    await dprimaLines.focus();
+    expect(
+      await page.evaluate(() => document.activeElement?.className),
+    ).toContain("table-scroll");
+    expect(
+      await dprimaLines.evaluate((element) => {
+        element.scrollLeft = element.scrollWidth;
+        return element.scrollLeft;
+      }),
+    ).toBeGreaterThan(0);
+    await expect(
+      page.locator('input[aria-label^="Importe LP"]').first(),
+    ).toBeEditable();
     await shot("dprima-390");
     expect(errors).toEqual([]);
   child.kill("SIGKILL");

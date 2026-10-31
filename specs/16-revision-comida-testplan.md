@@ -235,7 +235,7 @@ UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
 
 ## E2E 2026-10-31 — Comida · hechos
 
-Entorno: Playwright Chromium local, servidor de fixture ficticio en 3010, MFA real.
+Entorno: Playwright Chromium local, servidor de fixture ficticio en 3020, MFA real.
 Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 
 | Comprobación | 1440 | 390 |
@@ -247,12 +247,16 @@ Comando: `bunx playwright test tests/e2e/comida-dprima.spec.ts --reporter=line`.
 | 422 real con compra no elegible, sin perder borrador | PASS | — |
 | Compra del Saldo sin metadatos visible para clasificar | PASS | — |
 | Sin duplicación de la compra | PASS | — |
-| Captura | PASS | PASS (conocido: tabla 540 px de ancho) |
+| Captura y región desplazable | PASS | PASS (tabla en región accesible; página sin overflow) |
 | Valores de métricas | PASS (50/15/50 y Falta No disponible por cobertura parcial) | — |
 
-**Defecto conocido:** a 390 la tabla de operaciones provoca overflow horizontal
-(540 px frente a 390). No se corrige en esta tarea de pruebas; requiere
-autorización separada de UI.
+La tabla de operaciones se presenta en una región desplazable con foco y
+etiqueta accesible; la página ya no desborda a 390. El test verifica foco,
+scroll interno y ausencia de overflow de página.
 
-El test se considera PASS con la anotación `known-issue`; no se declara la
-pantalla responsive completa.
+## Responsive 390 — corrección 2026-10-31
+
+`TableScroll` envuelve la tabla de operaciones: región con `role`, etiqueta,
+`tabIndex=0` y `overflow-x:auto`. A 390 la página mide 390 y la tabla conserva
+el contenido en su región; a 1440 no hay scroll interno. E2E actualizado sin
+anotaciones `known-issue`.

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, PageHead, TableScroll, Tag } from "./ui";
 
 type Cycle = {
   id: string;
@@ -379,7 +379,7 @@ export function Comida({ go }: { go: (p: string) => void }) {
             {list && list.items.length === 0 ? (
               <p>Sin operaciones individuales registradas.</p>
             ) : (
-              <table className="table">
+              <TableScroll label="Tabla de operaciones individuales"><table className="table">
                 <caption className="muted">
                   {list?.total ?? 0} operaciones individuales
                 </caption>
@@ -446,7 +446,7 @@ export function Comida({ go }: { go: (p: string) => void }) {
                     </tr>
                   ))}
                 </tbody>
-              </table>
+              </table></TableScroll>
             )}
             <div className="actions">
               <button type="button" onClick={() => go("/movimientos/nuevo?tipo=Gasto")}>
