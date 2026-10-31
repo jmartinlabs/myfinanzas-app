@@ -34,7 +34,7 @@ def run(args, timeout=60, env=None):
             print('::error title=Podman pre-application runtime rejection::' + message)
         # No application command output: factors must never enter artifacts.
         detail = ''
-        if stage in ('previous-version-backup-restore', 'real-cross-version-update'):
+        if stage in ('previous-version-backup-restore', 'real-cross-version-update', 'current-version-backup-restore'):
             detail = ' :: ' + result.stderr[-500:].replace('\n', ' | ')
         raise ProbeError(f'{stage}: command failed, exit {result.returncode}{detail}')
     return result.stdout
@@ -538,7 +538,7 @@ def main():
                 raise ProbeError('previous release accepted upgraded schema in place')
             stage = 'current-version-backup-restore'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
-                 '--env=EXPECTED_MOVEMENTS=6',
+                 '--env=EXPECTED_MOVEMENTS=6', '--env=RELEASE_DEBUG=1',
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             stage = 'previous-version-restored-copy'
             prev_schema = str(previous['inputs']['contracts']['schema'])
