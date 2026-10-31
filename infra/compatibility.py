@@ -44,6 +44,12 @@ def require_migration(previous, current, proof, authorization):
         raise ValueError('migration authorization origin mismatch')
     if authorization.get('to_schema') != after.get('schema'):
         raise ValueError('migration authorization destination mismatch')
+    if authorization.get('from_data') != before.get('data'):
+        raise ValueError('migration authorization origin data mismatch')
+    if authorization.get('to_data') != after.get('data'):
+        raise ValueError('migration authorization destination data mismatch')
+    if authorization.get('authentication') != after.get('authentication'):
+        raise ValueError('migration authorization authentication mismatch')
     if authorization.get('downgrade') != 'restore-only':
         raise ValueError('migration authorization must be restore-only')
     if not str(authorization.get('authorized_by', '')).strip():

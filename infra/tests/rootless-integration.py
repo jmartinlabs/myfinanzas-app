@@ -575,9 +575,13 @@ def main():
             elif kind == 'foreign_pair':
                 evidence_copy['previous_image'] = 'sha256:' + '0' * 64
             else:
-                del evidence_copy['confirmed_writes']
+                evidence_copy.pop('confirmed_writes', None)
+                evidence_copy.pop('no_in_place_downgrade', None)
             try:
-                require_rollback(other, manifest, evidence_copy)
+                if same_contracts:
+                    require_rollback(other, manifest, evidence_copy)
+                else:
+                    require_migration(other, manifest, evidence_copy, authorization)
             except ValueError:
                 pass
             else:

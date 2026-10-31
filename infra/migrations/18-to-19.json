@@ -4,5 +4,8 @@
   "authorized_by": "usuario",
   "authorized_at": "2026-10-31",
   "authorization": "Aprobada la propuesta limitada de migración con backup/restore y rollback solo por restauración; sin downgrade in-place y sin autorización genérica de rollback.",
-  "downgrade": "restore-only"
+  "downgrade": "restore-only",
+  "from_data": "e4.1-v18",
+  "to_data": "e3.4-v19",
+  "authentication": "argon2id-aesgcm-totp-session-v1"
 }
