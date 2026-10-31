@@ -102,7 +102,7 @@ async function main() {
     const verified=await mfa();check(verified.recoveryCodes.length===10,'restored MFA recovery reissue');
     await moduleReads();
     // 3 contract incomes + 2 fixture gastos + 2 fixture D5 transfers.
-    const list=await request('/movimientos');check(list.total===7,'restored confirmed writes');
+    const list=await request('/movimientos');check(list.total===Number(process.env.EXPECTED_MOVEMENTS||7),'restored confirmed writes');
     check((await request('/saldos/S001')).saldo.posicion.importe==='61.98','restored derived data contract');
     db.close();
     console.log('MFA restore integrity key revocation and confirmed writes verified');

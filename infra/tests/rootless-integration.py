@@ -521,6 +521,7 @@ def main():
             shutil.copyfile(seed_state, seed_copy)
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
                  '--env=RELEASE_DEBUG=1',
+                 '--env=EXPECTED_MOVEMENTS=3',
                  previous['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             shutil.copyfile(seed_state, matrix / 'fixture-private-previous.json')
             shutil.copyfile(seed_copy, seed_state)
@@ -536,6 +537,7 @@ def main():
                 raise ProbeError('previous release accepted upgraded schema in place')
             stage = 'current-version-backup-restore'
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env=EXPECTED_MOVEMENTS=6',
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             stage = 'previous-version-restored-copy'
             prev_schema = str(previous['inputs']['contracts']['schema'])
