@@ -191,29 +191,29 @@ Estados `PASS` se refieren solo a la prueba citada; CI Linux y E2E quedan UNRUN.
 
 | CU | Evidencia local | Estado |
 | --- | --- | --- |
-| CU-01 | Transferencia 800 sin Gasto; rol Financiación obligatorio para activar | PASS |
+| CU-01 | Transferencia 800 sin Gasto | PARCIAL: rol de activación no probado |
 | CU-02 | Compra 45: una fila, posición −45, mismo ID en Revisión | PASS |
-| CU-03 | Plan mensual cuenta el Gasto una vez; financiación no es consumo | PASS |
-| CU-04 | Ciclo derivado del maestro; sin fecha alternativa | PASS |
-| CU-05 | Metadatos no crean hechos; rectificación económica usa Movimientos | PASS |
+| CU-03 | Plan mensual cuenta el Gasto una vez | PARCIAL: sin fixture que sume consumidores |
+| CU-04 | Ciclo derivado del maestro | PARCIAL: bordes Inicio/Fin no probados |
+| CU-05 | Metadatos no crean hechos; auditoría | PARCIAL: redirección económica sin E2E |
 | CU-06 | Devolución 12/13: entrada real, vínculo íntegro, no Ingreso | PASS |
 | CU-07 | B=100, +800, −45 y devolución 10 ⇒ posición 865; diferencia 0 | PASS |
-| CU-08 | Agregado 300 y auxiliar 300 conservados; no se suman | PASS |
+| CU-08 | Auxiliar legado no se suma | PARCIAL: agregado Terminal 300 no montado |
 | CU-09 | Devolución de Anticipo resta F una vez; reposición no es Gasto | PASS |
-| CU-10 | Idempotencia, anulación, compra no elegible y rechazo atómico | PASS |
+| CU-10 | Idempotencia de metadatos y rechazo atómico | PARCIAL: coincidencia/fuente fallida no |
 | CU-11 | Upgrade v18→v19 preserva filas y acepta el Tipo nuevo; restore UNRUN | PARCIAL |
 | CU-12 | Sin segundo ledger; metadatos rechazan importe/fecha | PASS |
 | CU-13 | Plan 100, compra 50, devolución 15 ⇒ Ejecutado 35 / Pendiente 65 | PASS |
 | CU-14 | Devolución 40 de ciclo anterior ⇒ neto observado −40, origen intacto | PASS |
-| CU-15 | Sin Partida/origen acreditable ⇒ cobertura Parcial, sin neteo | PASS |
-| CU-16 | Aportación 800 no se mezcla con devolución comercial | PASS |
+| CU-15 | Sin atribución acreditable ⇒ Parcial, sin neteo | PARCIAL: Partida sin temporalidad no montada |
+| CU-16 | Financiación separada de devolución | PARCIAL: anual/flujo no montado |
 | CU-17 | Ocio 50, devolución 15, reposición 20 ⇒ Falta 15 | PASS |
 | CU-18 | Devolución antigua separada; obligación actual intacta | PASS |
 | CU-19 | Pendiente revisar cuenta como Comida; Fuera presupuesto conserva banco | PASS |
-| CU-20 | Rol de reposición único; sin doble descuento | PASS |
+| CU-20 | Rol de reposición único | PARCIAL: reintento de reposición no |
 | CU-21 | Recursos/cierre/puente con S0, F y C_n completos | PARCIAL: Recursos probado; ejemplo completo 785/580/puente−5 no montado |
 | CU-22 | Devolución antigua no bloquea Recursos/Falta del receptor | PASS |
-| CU-23 | Sin régimen ⇒ métricas dependientes No disponibles, nunca cero | PASS |
+| CU-23 | Sin régimen ⇒ No disponible, nunca cero | PARCIAL: cruce C y S0 ausente no |
 | CU-24 | Inicio 28/10, corte 30/10 ⇒ 34/3/340/30/0/70; horizonte vencido | PASS |
 
 UI 390/1440, teclado, estados de error y capturas: UNRUN en esta fase.
