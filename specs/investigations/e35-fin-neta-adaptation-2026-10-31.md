@@ -36,8 +36,10 @@ Este documento separa:
   **Devolución Anticipo**; la reposición exige `obligacion_ciclo`.
 - `regimen_comida`: régimen fechado, corte, apertura, evidencia y cobertura.
 - `movimiento_anticipo`: rol **Adelanto** o **Devolución** con referencia y evidencia.
-- Métricas P5/P6/P7 actuales de la pantalla Comida; no incluyen FIN_NETA ni el cierre
-  analítico completo de E3.5.
+- `comidaMetrics()` ya calcula, de forma condicional, `financing.f`, `resources`,
+  `analyticsClose`, `bridge` y `position` cuando el régimen y la cobertura lo permiten.
+  No es el motor E3.5 completo: faltan regímenes/cobertura, consumidores y contrato
+  definitivo. DEV18 anterior sigue STOP.
 
 ### 2.2 Fórmulas ya aprobadas
 
@@ -67,7 +69,7 @@ fuente actual puede obtenerse cada entrada.
 | `J_n` | Etiquetas `Comida`/`Pendiente revisar` menos devoluciones elegibles | Requiere cobertura y neto observado separado |
 | `D` | Todos los Movimientos vigentes de ING en `[A,T]`, incluidos `Fuera presupuesto` | No sumar auxiliar legado ni duplicar devoluciones |
 | `B_A` / `B` | Régimen/apertura y Movimientos desde el corte | Solo con cobertura; no copiar a S0 |
-| `FIN_NETA` | No se almacena como cifra propia | No reconstruir por inferencia; debe salir de F o de un proveedor explícito |
+| `FIN_NETA` | No se almacena como cifra propia; `comidaMetrics()` calcula `F` condicionalmente | No reconstruir por inferencia; debe salir de F o de un proveedor explícito |
 
 **Equivalencia propuesta, a confirmar:** `FIN_NETA` es la financiación ya neta de la
 devolución de Anticipo; en P7 corresponde a `F`. Si el usuario o una spec posterior
@@ -93,13 +95,18 @@ definen otra fuente, prevalece esa definición.
 
 ## 5. Huecos y decisiones pendientes
 
-1. **Fuente de FIN_NETA:** ¿F calculada desde roles explícitos o proveedor E3.5
-   dedicado? No se acepta inferir por nombre, importe o fecha.
+1. **Fuente de FIN_NETA:** SPEC16 P7 ya fija `F` como financiación ordinaria menos
+   Devolución Anticipo, con rol explícito. La opción A es la recomendada para revisión;
+   no es una decisión nueva aprobada ni autoriza DEV. No se acepta inferir por nombre,
+   importe o fecha.
 2. **Rol de cada Transferencia:** ¿qué hacer si una transferencia de ING no tiene rol
    declarado? Cobertura parcial/no disponible, no asignación silenciosa.
-3. **Doble vínculo Anticipo:** `movimiento_anticipo` con rol `Devolución` y
-   `movimiento_rol_financiacion` con `Devolución Anticipo` pueden describir el mismo
-   hecho. ¿Se exige que coincidan o que uno sea la fuente única?
+3. **Doble vínculo Anticipo:** `movimiento_anticipo` es la atribución canónica al
+   Anticipo (referencia, par, orientación y evidencia); `movimiento_rol_financiacion`
+   atribuye la función analítica de Comida. Para el mismo Movimiento deben coincidir en
+   rol, Referencia, sentido, revisión y evidencia. **Un solo ID se cuenta una vez.**
+   Faltan guardas, fixtures y contrato explícito de casos parciales/conflictivos antes
+   de DEV.
 4. **Reposiciones:** confirmar que `obligacion_ciclo` identifica la obligación y que
    R_caja/R_obl no se suman; qué pasa con reposiciones sin asignación.
 5. **Compensable:** confirmar que solo Ocio/Niños/Otros entran en C_n y que
@@ -120,7 +127,9 @@ definen otra fuente, prevalece esa definición.
 E3.5 consume Movimientos, metadatos, devoluciones y roles explícitos; calcula F,
 R_caja, R_obl, C_n, J_n, D y cobertura. No crea tablas de hechos ni un segundo ledger.
 
-- Ventaja: conserva el registro único y evita duplicación.
+- **Recomendada por el auditor para revisión**, no aprobada ni autorizada para DEV.
+- Ventaja: conserva el registro único y evita duplicación; `comidaMetrics()` ya tiene
+  una base parcial de P7.
 - Límite: depende de que los roles y vínculos estén completos; sin ellos, parcial.
 
 ### Opción B — proveedor explícito de FIN_NETA
@@ -138,7 +147,16 @@ Persistir totales o una posición paralela.
 - No recomendada: duplica verdad, complica cierres y contradice el registro único.
 - Solo tendría sentido con una spec y autorización explícitas.
 
-## 7. Evidencia mínima antes de DEV
+## 7. Riesgo técnico observado (fuera de alcance)
+
+En `apps/api/src/comida.ts` (~1390–1409 en `main` `2019fea`), `missing` detecta
+Transferencias sin rol, pero después se usa `roles.get(r.id)!` y se evalúa `role.rol`.
+Una Transferencia sin rol podría provocar una excepción en lugar de devolver cobertura
+`Parcial`/`No disponible`. Es **inspección estática, no bug reproducido**. Requiere
+test de regresión y corrección separada, solo con autorización de DEV; no se introduce
+código en la PR documental.
+
+## 8. Evidencia mínima antes de DEV
 
 - Casos P7/CU-21/CU-22 con S0, F, R_caja/R_obl, C_n, J_n, D y puente.
 - Devolución de Anticipo una sola vez, con doble vínculo controlado.
@@ -151,7 +169,7 @@ Persistir totales o una posición paralela.
 
 Sin datos reales; fixtures sintéticas y autorización de DEV separada.
 
-## 8. Siguiente paso
+## 9. Siguiente paso
 
 Confirmar las decisiones del apartado 5, especialmente la fuente de FIN_NETA y el
 tratamiento del doble vínculo de Anticipo. Después podrá proponerse una enmienda

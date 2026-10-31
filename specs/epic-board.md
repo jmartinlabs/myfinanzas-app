@@ -92,7 +92,11 @@ Análisis de adaptación en
 - Preparar posteriormente su adaptación al modelo integrado de **registro único
   de Comida en Movimientos**.
 - Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no
-  reconstruir FIN_NETA por inferencia**.
+  reconstruir FIN_NETA por inferencia**. `comidaMetrics()` ya calcula P7 de forma
+  condicional; no es el motor E3.5 completo.
+- **Riesgo estático:** una Transferencia sin rol podría evaluar `role.rol` sobre
+  `undefined` en `comida.ts` (~1390–1409). No reproducido; requiere test/corrección
+  separada con autorización de DEV.
 - Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
   bloqueado mientras E3.5 no sea verificable.
 

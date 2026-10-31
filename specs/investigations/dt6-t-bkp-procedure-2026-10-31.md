@@ -37,8 +37,8 @@ Fuera de alcance:
 
 ### 3.1 Preflight
 
-1. Confirmar que el destino físico está conectado, tiene espacio suficiente y es una
-   ruta privada **fuera del VPS**.
+1. Confirmar el **soporte físico** y el **canal autorizado** de exportación. No asumir
+   que el disco del usuario está montado, sincronizado o accesible desde el VPS.
 2. Preferir **dos copias independientes en dos discos existentes**, si es factible, con
    al menos una copia externa real. Identificadores de disco, rutas y frecuencia de
    traslado quedan pendientes; no se inventan.
@@ -51,17 +51,32 @@ Fuera de alcance:
 5. Registrar fecha, operador, versión de app/esquema y una referencia no sensible del
    destino. No registrar importes, nombres, rutas sensibles ni datos personales.
 
-### 3.2 Exportación
+### 3.2 Generación del paquete cifrado
 
 ```text
-bun run backup create <DESTINO_NUEVO> <DESTINATARIO_AGE>
+bun run backup create <STAGING_NUEVO> <DESTINATARIO_AGE>
 ```
 
-- `<DESTINO_NUEVO>` no debe existir y debe estar fuera del VPS.
+- `<STAGING_NUEVO>` no debe existir y debe ser un directorio privado controlado.
 - El comando usa `DATABASE_PATH` y `AUTH_KEY_PATH` del entorno; no se copian a Git.
 - El resultado debe contener `database.age` y `access-key.age`.
 - La copia queda cifrada; el snapshot temporal se elimina y el directorio se publica
   por rename.
+- El staging es transitorio: no es el destino final ni sustituye la copia externa.
+
+### 3.2.1 Exportación al soporte externo
+
+1. Elegir un canal autorizado: copia manual a disco, paquete cifrado por un medio
+   controlado u otro mecanismo aprobado. No asumir montaje remoto, sincronización ni
+   acceso directo al disco del usuario.
+2. Copiar solo `database.age` y `access-key.age`; nunca la identidad `age` ni texto
+   plano.
+3. Calcular SHA-256 de ambos archivos en origen y destino, y comparar. Verificar también
+   nombre, tamaño y número de archivos.
+4. Registrar la comprobación de llegada y la referencia no sensible del soporte.
+5. Borrar el staging tras la verificación, salvo que la política exija conservarlo.
+6. Confirmar que la copia final está **fuera del VPS** y que existe al menos una segunda
+   copia si se aprobó.
 
 ### 3.3 Verificación de integridad
 
@@ -130,6 +145,7 @@ datos personales ni rutas sensibles públicas.
 | Datos | Conteos/muestra funcional acordada, sin datos personales publicados |
 | Accesos | Sesiones, desafíos, códigos e intentos revocados |
 | Entorno | Equipo aislado, fecha, operador, versión y duración |
+| Llegada | Canal autorizado, SHA-256 origen/destino y número de archivos |
 | Custodia | Referencia no sensible de copia, destino físico y segunda copia |
 | Acciones | Incidencias, resultado y acciones correctivas |
 
@@ -151,6 +167,7 @@ datos personales ni rutas sensibles públicas.
 | Criterio | Propuesta | Confirmación pendiente | Comprobación ejecutada |
 | --- | --- | --- | --- |
 | Destino | Discos existentes, ruta privada fuera del VPS; preferir dos copias | IDs de disco, rutas, capacidad y frecuencia | Ninguna |
+| Exportación | Staging cifrado + canal autorizado + comprobación de llegada | Canal, responsable y ubicación del staging | Ninguna |
 | Identidad age | Fuera del VPS y Git; recuperación separada y protegida | Ubicación, custodio y rotación | Ninguna |
 | Modo | Snapshot en caliente; sin apagado por defecto | Validación técnica en el entorno real | Solo fixtures sintéticos |
 | Ensayo | Linux x86_64 aislado; permisos y acceso | Equipo disponible y fecha | Solo RESTORE-19/20 sintético |
@@ -163,16 +180,18 @@ datos personales ni rutas sensibles públicas.
 Preguntas que requieren confirmación humana:
 
 1. ¿Qué discos existentes se usan y cuál es la ruta privada fuera del VPS?
-2. ¿Habrá dos copias independientes? ¿Dónde se guarda la segunda?
-3. ¿Dónde y cómo se custodia la identidad `age` y su copia de recuperación?
-4. ¿Qué equipo Linux x86_64 aislado está disponible para el ensayo?
-5. ¿Cuándo empieza la retención 7/4/3 y qué capacidad hay?
-6. ¿Quién ejecuta la poda manual y dónde se registra?
-7. ¿Dónde está la carpeta privada de evidencias fuera de Git?
+2. ¿Cómo se accede al soporte externo y qué canal autorizado se usa para exportar?
+3. ¿Habrá dos copias independientes? ¿Dónde se guarda la segunda?
+4. ¿Dónde y cómo se custodia la identidad `age` y su copia de recuperación?
+5. ¿Qué equipo Linux x86_64 aislado está disponible para el ensayo?
+6. ¿Cuándo empieza la retención 7/4/3 y qué capacidad hay?
+7. ¿Quién ejecuta la poda manual y dónde se registra?
+8. ¿Dónde está la carpeta privada de evidencias fuera de Git?
 
 Checklist de aceptación del gate:
 
 - manifiesto y checksum verificados;
+- comprobación de llegada al soporte externo;
 - versión de app/esquema correcta;
 - clave de aplicación e identidad `age` disponibles;
 - restore en directorio nuevo y sin destino parcial;
