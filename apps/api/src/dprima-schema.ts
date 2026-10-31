@@ -159,7 +159,7 @@ export function dprimaSchema(db: Database) {
     gasto_neto INTEGER,
     saldo INTEGER,
     pendiente INTEGER,
-    restantes INTEGER NOT NULL CHECK(restantes>0),
+    restantes INTEGER CHECK(restantes IS NULL OR restantes>0),
     sugerida INTEGER,
     importe INTEGER,
     fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),

@@ -1129,3 +1129,112 @@ test("A6: cambiar fuente o destino de una fila mensual exige impacto", () => {
   ).toThrow("revisión de impacto");
   db.close();
 });
+
+test("M4: añadir la primera hija a una raíz con histórico exige revisión", () => {
+  const { db, sub, account } = setup("1000");
+  const root = partida(db, sub.id, "Raíz con histórico M4");
+  configure(db, root.id, { fuente: "Gasto real" });
+  expense(db, account.id, root.id, "2026-01-10", "10");
+  const daughter = partida(db, sub.id, "Hija nueva M4");
+  const preview = previewPartidaConfig(db, daughter.id, {
+    cambios: { padrePartida: root.id },
+    motivo: "Alta de hija ficticia",
+  });
+  expect(preview.bloqueos.join(" ")).toContain("Gastos históricos");
+  expect(() =>
+    confirmPartidaConfig(
+      db,
+      daughter.id,
+      {
+        cambios: { padrePartida: root.id },
+        motivo: "Alta de hija ficticia",
+        fingerprint: preview.fingerprint,
+      },
+      randomUUID(),
+      now,
+    ),
+  ).toThrow("Gastos históricos");
+  expect(
+    db.query("SELECT padre_partida FROM partidas WHERE id=?").get(daughter.id),
+  ).toEqual({ padre_partida: null });
+  db.close();
+});
+
+test("A2b: una apertura de Gasto real se confirma sin N, sin romper la fila", () => {
+  const { db, sub, account } = setup("100");
+  const root = partida(db, sub.id, "Raíz apertura real");
+  configure(db, root.id, { fuente: "Gasto real" });
+  const daughter = partida(db, sub.id, "Hija apertura real");
+  configure(db, daughter.id, { padrePartida: root.id });
+  const c = cycle(db, "2026-05-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "100",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === daughter.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "100", esencial: false }],
+    motivo: "Previsión ficticia",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: c.id,
+    exclusiones: [],
+  });
+  const confirmed = confirmApertura(
+    db,
+    plan.planificacion.id,
+    {
+      ciclo: c.id,
+      exclusiones: [],
+      fingerprint: preview.fingerprint,
+      motivo: "Apertura ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  expect(confirmed.apertura.importe).toBeNull();
+  expect(confirmed.apertura.restantes).toBeNull();
+  db.close();
+});
+
+test("M6: el solape de planificación devuelve 409, no error interno", () => {
+  const { db, sub, account } = setup("1000");
+  const root = partida(db, sub.id, "Raíz solape");
+  configure(db, root.id, { fuente: "Gasto real" });
+  forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-06-01",
+    saldoInicial: "1000",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  expect(() =>
+    forecast(db, {
+      padre: root.id,
+      saldo: account.id,
+      mesInicial: "2026-06-01",
+      mesFinal: "2026-07-01",
+      saldoInicial: "1000",
+      saldoEvidencia: "Extracto ficticio",
+    }),
+  ).toThrow("solapa");
+  db.close();
+});

@@ -18,7 +18,7 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 | AC-07 | Rango ene–mar y apertura feb | N incluye el ciclo que se abre | UNRUN (ejemplo concreto no montado) |
 | AC-08 | Cambio de destino/tránsito | Destino compartido y previsión bloquean; cambio libre rechazado; tránsito no implementado | PARCIAL |
 | AC-09 | Ajuste manual de sugerida y gasto nuevo | Importe manual persistido | PARCIAL: no se prueba que un gasto posterior no lo sobrescriba |
-| AC-10 | Reintento de apertura | Una sola apertura; segunda clave ⇒ 409 | PASS |
+| AC-10 | Reintento de apertura | Una sola apertura; segunda clave y solape ⇒ 409 | PASS |
 | AC-11 | Reparentar/desactivar hija usada | Trigger/servicio rechaza íntegro | PASS |
 | AC-12 | Cambio de maestro tras foto cerrada | Depende del proveedor de cierre | UNRUN |
 | AC-13 | Finalizar último ciclo y nueva planificación | Cierre funcional no implementado | UNRUN |
@@ -56,12 +56,24 @@ Canónica/CI: `python3 scripts/verify --full` (Python 3.10+) y CI Linux.
 | M1 | El mensual incluye todas las raíces | Test M1/M2 |
 | M2 | Previsión sobre Saldo compartido bloquea atribución | Test M1/M2 |
 | M3 | G incluye Gastos pagados desde Terminal | Revisión de código + tests |
-| M4 | Primera hija de raíz con histórico exige revisión | Guard de configuración |
+| M4 | Primera hija de raíz con histórico exige revisión | Test M4: bloqueo y rechazo |
 | M5 | Apertura coherente con el destino exclusivo | Test M5 |
-| M6 | Apertura duplicada y restricciones ⇒ 409 | Test M6 + mapeo de errores |
+| M6 | Apertura duplicada y solape ⇒ 409 | Tests M6 y duplicado |
 | M7 | Rectificación a raíz con hijas rechazada por trigger | Test M7 |
 | B1 | Exclusión con motivo del usuario y sin duplicados | Código |
 | B3 | Importe de apertura no aplicable a Gasto real ⇒ 422 | Código |
 | B4–B5 | UI no ofrece confirmación sin Partida; estado de tag corregido | UI |
 | B6 | Huella con bruto/devoluciones/ventana/saldo/P | Código |
 | B7 | Tabla de intentos propia para configuración de Partida | Esquema v20 |
+
+## Segunda ronda QA — correcciones 2026-10-31
+
+- M4 implementado con guard y prueba: añadir hija a raíz con Gastos históricos
+  queda bloqueado con motivo de revisión de impacto.
+- Solapes de planificación se traducen a 409; errores SQL no relacionados
+  siguen siendo 500 genéricos sin filtrar detalles.
+- Confirmar apertura de fuente no-Aportación ya no rompe por `restantes`:
+  la columna admite null y la respuesta devuelve null (E2).
+- Restore limpia `dprima_partida_attempts`.
+- Snapshot de `partidas` en pruebas de continuidad incluye las columnas v20.
+- Suite focal: 23 PASS; suite API sin fallos propios frente a main.

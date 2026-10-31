@@ -622,7 +622,12 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
           db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
         ).toEqual(
           table === "partidas"
-            ? (rows as any[]).map((r) => ({ ...r, presupuesto: null }))
+            ? (rows as any[]).map((r) => ({
+                ...r,
+                presupuesto: null,
+                fuente: null,
+                padre_partida: null,
+              }))
             : table === "ciclos"
               ? (rows as any[]).map((r) => ({
                   ...r,

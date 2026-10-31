@@ -44,7 +44,7 @@ proveedor central de devoluciones y el esquema v19.
 
 ## Evidencia local (macOS, Bun 1.4.3)
 
-- `NODE_ENV=test bun test apps/api/src/dprima.test.ts`: 20 PASS / 0 FAIL.
+- `NODE_ENV=test bun test apps/api/src/dprima.test.ts`: 23 PASS / 0 FAIL.
 - `bun run typecheck`: PASS.
 - `bun run build`: PASS.
 - Suite API completa con `TMPDIR` seguro: los mismos fallos de entorno que
@@ -73,4 +73,7 @@ apertura, mensual íntegro con devoluciones visibles, todas las raíces en el
 mensual, bloqueo de destinos reservados por previsiones, apertura con destino
 exclusivo, duplicados/solapes 409, rectificación a raíz agrupada rechazada,
 exclusiones con motivo y mapping sin duplicados. Suite focal: 20 PASS.
-Nueva ronda de QA independiente y CI Linux: pendientes.
+Segunda ronda QA focal: A1–A6, M1–M3, M5–M7 y B1/B3–B6 acreditados. Se
+corrigieron además M4, el solape 409, la apertura no-Aportación (`restantes`
+nullable), la limpieza de intentos en restore y el snapshot de Partidas. CI
+Linux y una última pasada de QA: pendientes.

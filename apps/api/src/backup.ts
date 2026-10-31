@@ -333,6 +333,7 @@ export function restore(
           ...(bundle.manifest.schema >= 20
             ? [
                 "dprima_planificacion_attempts",
+                "dprima_partida_attempts",
                 "dprima_linea_attempts",
                 "dprima_apertura_attempts",
                 "dprima_mapping_attempts",

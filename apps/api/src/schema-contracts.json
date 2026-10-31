@@ -6484,7 +6484,7 @@
         "type": "table",
         "name": "dprima_aperturas",
         "tbl_name": "dprima_aperturas",
-        "sql": "CREATE TABLE dprima_aperturas(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'AP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    planificacion TEXT NOT NULL REFERENCES dprima_planificaciones(id) ON DELETE RESTRICT,\n    ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    total INTEGER,\n    gasto_neto INTEGER,\n    saldo INTEGER,\n    pendiente INTEGER,\n    restantes INTEGER NOT NULL CHECK(restantes>0),\n    sugerida INTEGER,\n    importe INTEGER,\n    fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n    corte TEXT NOT NULL,\n    huella TEXT NOT NULL,\n    confirmado TEXT NOT NULL,\n    creado TEXT NOT NULL,\n    UNIQUE(planificacion,ciclo)\n  ) STRICT"
+        "sql": "CREATE TABLE dprima_aperturas(\n    id TEXT PRIMARY KEY CHECK(id GLOB 'AP[0-9]*' AND substr(id,3) NOT GLOB '*[^0-9]*' AND length(id)>=5),\n    planificacion TEXT NOT NULL REFERENCES dprima_planificaciones(id) ON DELETE RESTRICT,\n    ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n    total INTEGER,\n    gasto_neto INTEGER,\n    saldo INTEGER,\n    pendiente INTEGER,\n    restantes INTEGER CHECK(restantes IS NULL OR restantes>0),\n    sugerida INTEGER,\n    importe INTEGER,\n    fuente TEXT NOT NULL CHECK(fuente IN ('Gasto real','Aportación a saldo','No aplica')),\n    corte TEXT NOT NULL,\n    huella TEXT NOT NULL,\n    confirmado TEXT NOT NULL,\n    creado TEXT NOT NULL,\n    UNIQUE(planificacion,ciclo)\n  ) STRICT"
       },
       {
         "type": "table",
@@ -7633,6 +7633,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "454b9f164febaa15a3fe6ff71e7571ee07280ef902a772849e2e8a1e89e64226"
+    "sha256": "0b2ed8081c171c31dc44ed4e0e1b9bfe84132643d9e0abf8410e3a5bf3676d53"
   }
 ]

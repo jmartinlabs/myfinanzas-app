@@ -254,6 +254,16 @@ export function previewPartidaConfig(
     !!db.query("SELECT 1 FROM dprima_lineas WHERE hija=? LIMIT 1").get(id) ||
     !!db.query("SELECT 1 FROM dprima_plan_mensual WHERE raiz=? LIMIT 1").get(id);
   const blocks: string[] = [];
+  if (
+    next.padrePartida !== null &&
+    next.padrePartida !== partida.padrePartida &&
+    db
+      .query("SELECT 1 FROM movimientos WHERE partida=? LIMIT 1")
+      .get(next.padrePartida)
+  )
+    blocks.push(
+      "La raíz ya tiene Gastos históricos; añadir una hija exige revisión de impacto y un corte de uso nuevo.",
+    );
   if (used && next.padrePartida !== partida.padrePartida)
     blocks.push(
       "La Partida ya participa en hechos o planificación; cambiar el padre exigiría una operación de impacto no implementada.",
@@ -482,22 +492,32 @@ export function createPlanificacion(
         )!;
         const id = nextId(db, "dprima_planificacion", "DP");
         const time = new Date(now).toISOString();
-        db.run(
-          `INSERT INTO dprima_planificaciones(id,padre,saldo,mes_inicial,mes_final,
-           saldo_inicial,saldo_evidencia,estado,revision,creado,actualizado)
-           VALUES(?,?,?,?,?,?,?,'Borrador',1,?,?)`,
-          [
-            id,
-            padre.id,
-            saldo.id,
-            mesInicial,
-            mesFinal,
-            String(saldoInicial),
-            saldoEvidencia,
-            time,
-            time,
-          ],
-        );
+        try {
+          db.run(
+            `INSERT INTO dprima_planificaciones(id,padre,saldo,mes_inicial,mes_final,
+             saldo_inicial,saldo_evidencia,estado,revision,creado,actualizado)
+             VALUES(?,?,?,?,?,?,?,'Borrador',1,?,?)`,
+            [
+              id,
+              padre.id,
+              saldo.id,
+              mesInicial,
+              mesFinal,
+              String(saldoInicial),
+              saldoEvidencia,
+              time,
+              time,
+            ],
+          );
+        } catch (error) {
+          if (/overlapping forecast/.test((error as Error).message))
+            throw new Problem(
+              409,
+              "OVERLAP",
+              "El rango previsto se solapa con otra planificación del mismo padre.",
+            );
+          throw error;
+        }
         if (body.copiarHijas !== false) {
           const daughters = partidaRows(db).filter(
             (r) => r.padrePartida === padre.id && r.estado === "Activa",
