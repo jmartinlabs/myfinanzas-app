@@ -543,7 +543,7 @@ def main():
                  manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
             stage = 'previous-version-restored-copy'
             prev_schema = str(previous['inputs']['contracts']['schema'])
-            run(['podman', 'run', '--rm', '--network=none', *matrix_flags,
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
                  '--env', 'DATABASE_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/database.sqlite',
                  '--env', 'AUTH_KEY_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/auth.key',
                  '--env', 'STATE_FILE=/var/lib/myfinanzas/fixture-private-previous.json',
