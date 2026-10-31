@@ -704,6 +704,9 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               { name: "instrumento", next: 1001 },
               { name: "operaciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
+              { name: "dprima_planificacion", next: 1 },
+              { name: "dprima_linea", next: 1 },
+              { name: "dprima_apertura", next: 1 },
             ].sort((a: any, b: any) => a.name.localeCompare(b.name));
             expect(db.query("SELECT * FROM counters ORDER BY name").all()).toEqual(expected);
             continue;
@@ -718,7 +721,7 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
                   actualizado: null,
                 }))
               : table === "partidas" && previousVersion === 7
-                ? values.map((r: any) => ({...r, presupuesto: null}))
+                ? values.map((r: any) => ({...r, presupuesto: null, fuente: null, padre_partida: null}))
                 : values,
           );
         }

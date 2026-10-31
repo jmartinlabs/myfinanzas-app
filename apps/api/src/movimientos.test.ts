@@ -1093,7 +1093,7 @@ test("04 AC28/29: upgrade v3 genuino conserva tablas/acceso, backup v3/v5 y rest
           db.query(`SELECT * FROM "${table}" ORDER BY rowid`).all(),
         ).toEqual(
           table === "partidas"
-            ? data.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
+            ? data.map((r: any) => ({ ...r, deuda: null, presupuesto: null, fuente: null, padre_partida: null }))
             : table === "ciclos"
               ? data.map((r: any) => ({ ...r, revision: 1, actualizado: null }))
               : data,

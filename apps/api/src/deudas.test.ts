@@ -464,7 +464,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           if (table === "schema_version" || table === "counters") continue;
           const expected =
             table === "partidas"
-              ? rows.map((r: any) => ({ ...r, deuda: null, presupuesto: null }))
+              ? rows.map((r: any) => ({ ...r, deuda: null, presupuesto: null, fuente: null, padre_partida: null }))
               : table === "movimientos"
                 ? rows.map((r: any) => ({
                     ...r,
