@@ -86,5 +86,11 @@ retarget tras el merge de #136. `Rootless capability gate` falla por
 el diagnóstico y la propuesta limitada están en
 [rootless-schema-upgrade-2026-10-31](../investigations/rootless-schema-upgrade-2026-10-31.md).
 Los runs de Actions están además bloqueados por límite de pago/cuota (anotación
-del check-run, reproducible en `main`). Tercera pasada de QA independiente:
-pendiente.
+del check-run, reproducible en `main`).
+
+QA final: **PASS para `89b8375`** (código D′ sin cambios en commits posteriores
+de documentación). M4, M6 (409 servicio/HTTP), A2b (`restantes` nullable), B7
+por inspección y paridad de `presupuestos.test.ts` verificados; `dprima.test.ts`
+23 PASS, `comida.test.ts` 31 PASS, typecheck/build PASS, sin fallos propios
+frente a `main`. UNRUN: restore v20 completo, upgrade v19→v20 dedicado, CI
+Linux, E2E 390/1440 y cierre/fotos SPEC27.
