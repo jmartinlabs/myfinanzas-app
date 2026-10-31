@@ -34,7 +34,7 @@ def run(args, timeout=60, env=None):
             print('::error title=Podman pre-application runtime rejection::' + message)
         # No application command output: factors must never enter artifacts.
         detail = ''
-        if stage in ('previous-version-backup-restore', 'real-cross-version-update', 'current-version-backup-restore'):
+        if stage in ('previous-version-backup-restore', 'real-cross-version-update', 'current-version-backup-restore', 'previous-version-restored-copy'):
             detail = ' :: ' + result.stderr[-500:].replace('\n', ' | ')
         raise ProbeError(f'{stage}: command failed, exit {result.returncode}{detail}')
     return result.stdout
@@ -547,6 +547,7 @@ def main():
                  '--env', 'DATABASE_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/database.sqlite',
                  '--env', 'AUTH_KEY_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/auth.key',
                  '--env', 'STATE_FILE=/var/lib/myfinanzas/fixture-private-previous.json',
+                 '--env=RELEASE_DEBUG=1',
                  previous['image'], '/app/apps/api/infra-contract.mjs', 'verify'], timeout=180)
             proof = {'previous_source': previous['inputs']['source'],
                      'current_source': manifest['inputs']['source'],
