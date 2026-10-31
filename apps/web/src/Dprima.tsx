@@ -303,6 +303,7 @@ export function Dprima({ go }: { go: (p: string) => void }) {
         {selected && (
           <PlanDetail
             plan={selected}
+            root={partidas?.raices.find((r) => r.id === selected.padre)}
             cycles={cycles}
             preview={preview}
             onClose={() => {
@@ -676,6 +677,7 @@ function PlanCreateForm({
 
 function PlanDetail({
   plan,
+  root,
   cycles,
   preview,
   onClose,
@@ -684,6 +686,7 @@ function PlanDetail({
   onConfirmApertura,
 }: {
   plan: Plan;
+  root?: Partida;
   cycles: Cycle[];
   preview: Preview | null;
   onClose: () => void;
@@ -714,7 +717,11 @@ function PlanDetail({
   const [motivo, setMotivo] = useState(""),
     [cycle, setCycle] = useState(""),
     [exclusions, setExclusions] = useState<string[]>([]),
-    [importe, setImporte] = useState("");
+    [importe, setImporte] = useState(""),
+    [extra, setExtra] = useState<
+      { hija: string; importe: string; fecha: string; esencial: boolean }[]
+    >([]),
+    [newHija, setNewHija] = useState("");
   return (
     <section className="panel" aria-label="Detalle de planificación">
       <h2>
@@ -790,6 +797,43 @@ function PlanDetail({
           ))}
         </tbody>
       </table>
+      {root && (
+        <div className="form-grid">
+          <label>
+            Añadir línea
+            <select value={newHija} onChange={(e) => setNewHija(e.target.value)}>
+              <option value="">Selecciona hija o raíz simple</option>
+              {[root, ...(root.hijas ?? [])].map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.id} · {p.nombre}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Acción
+            <button
+              type="button"
+              className="secondary"
+              disabled={!newHija}
+              onClick={() => {
+                setExtra((v) => [
+                  ...v,
+                  { hija: newHija, importe: "", fecha: "", esencial: false },
+                ]);
+                setNewHija("");
+              }}
+            >
+              Añadir línea manual
+            </button>
+          </label>
+        </div>
+      )}
+      {extra.length > 0 && (
+        <p className="muted">
+          Líneas nuevas: {extra.map((e) => e.hija).join(", ")}
+        </p>
+      )}
       <div className="form-grid">
         <label>
           Motivo de las líneas
@@ -802,14 +846,22 @@ function PlanDetail({
           disabled={!motivo}
           onClick={() =>
             onSaveLines(
-              (plan.lineas ?? [])
-                .filter((l) => !l.anulada)
-                .map((l) => ({
-                  id: l.id,
-                  importe: values[l.id]?.importe || null,
-                  fecha: values[l.id]?.fecha || null,
-                  esencial: values[l.id]?.esencial === "Sí",
+              [
+                ...(plan.lineas ?? [])
+                  .filter((l) => !l.anulada)
+                  .map((l) => ({
+                    id: l.id,
+                    importe: values[l.id]?.importe || null,
+                    fecha: values[l.id]?.fecha || null,
+                    esencial: values[l.id]?.esencial === "Sí",
+                  })),
+                ...extra.map((e) => ({
+                  hija: e.hija,
+                  importe: e.importe || null,
+                  fecha: e.fecha || null,
+                  esencial: e.esencial,
                 })),
+              ],
               motivo,
             )
           }

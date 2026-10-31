@@ -156,11 +156,12 @@ type PartidaRow = {
   fuente: Fuente | null;
   presupuesto: string | null;
   deuda: string | null;
+  revision: number;
 };
 function partidaRows(db: Database) {
   return db
     .query(
-      `SELECT id,nombre,estado,padre,padre_partida padrePartida,fuente,presupuesto,deuda
+      `SELECT id,nombre,estado,padre,padre_partida padrePartida,fuente,presupuesto,deuda,revision
        FROM partidas ORDER BY length(id),id`,
     )
     .all() as PartidaRow[];
@@ -324,10 +325,10 @@ export function confirmPartidaConfig(
           [
             "partida-dprima:" + id,
             "configuración",
-            before.nombre ? 1 : 1,
+            before.revision + 1,
             JSON.stringify(Object.keys(input)),
             new Date(now).toISOString(),
-            before ? 1 : 0,
+            before.revision,
             motivo.trim(),
           ],
         );
@@ -1444,6 +1445,20 @@ export function confirmMapping(
             2000,
             true,
           )!;
+          if (
+            db
+              .query(
+                `SELECT 1 FROM dprima_mapping WHERE estado='Confirmada'
+                 AND COALESCE(presupuesto,'')=? AND COALESCE(partida,'')=?
+                 AND relacion=?`,
+              )
+              .get(presupuesto ?? "", partida ?? "", String(p.relacion))
+          )
+            throw new Problem(
+              409,
+              "MAPPING_EXISTS",
+              "Esa correspondencia ya está confirmada; no se duplica.",
+            );
           db.run(
             `INSERT INTO dprima_mapping(presupuesto,partida,relacion,motivo,evidencia,
              estado,revision,creado,actualizado) VALUES(?,?,?,?,?,'Confirmada',1,?,?)`,
