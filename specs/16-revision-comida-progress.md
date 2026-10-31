@@ -218,3 +218,13 @@ vencer horizonte. Se sustituye explícitamente restricción P7, sin inventar Fin
 Observación1/limpieza verificadas por Álex en0024; observación2 incorporada tras
 aprobación humana. Candidato revisión3 y wireframes pendientes de aprobación completa;
 CU01–24 UNRUN, sin código/schema/datos, P3 y activación/merge separados.
+
+### Aprobación integral registrada — 2026-10-31
+
+Usuario «Apruebo especificaciones, Pero luego tengo otras» aprobó revisión3 y
+wireframes del candidato648b4a7. Se consolida la aprobación ya concedida, sin
+reabrir decisiones. Las menciones previas PENDIENTE son históricas.
+PR133 sigue sin merge autorizado; CU01–24 UNRUN. P3 real y activación separados.
+D′/SPEC33 integrada por PR135 es otro frente; sin código ni cambios financieros
+en este registro. Secuencia propuesta: base Movimientos/devoluciones, registro único
+y métricas Comida, después transición de planificación D′ con autorización propia.

@@ -798,8 +798,8 @@ tests, push ni merge.
 
 ## COMIDA-UNICO-01 — candidato de refinamiento, revisión 1 (2026-10-30)
 
-**Estado: decisiones funcionales D1–D5, representación P1, identidad P2, atribución P4 y criterios P5/P6/P7 y enmienda P7a aprobados; especificación completa y wireframes
-PENDIENTES de aprobación. Sin implementación de este refactor.** Este apartado propone
+**Estado vigente: COMIDA-UNICO-01 revisión3 y wireframes APROBADOS por el usuario;
+D1–D5, P1/P2/P4/P5/P6/P7 y P7a conservados. Sin implementación de este refactor.** Este apartado propone
 el régimen futuro; el contrato auxiliar anterior sigue describiendo el runtime de
 `main` hasta implementar y activar un cambio autorizado. No se reinterpreta su QA.
 
@@ -1421,3 +1421,18 @@ extensión del régimen a otras cuentas. No reanudar DEV18.
 Siguiente gate: aprobar spec/wireframes completos revisión3; P3 y activación
 siguen gate operativo separado. Después implementar por incrementos con testplan y
 QA independiente; esta consolidación documental no declara el refactor completado.
+
+### Registro de aprobación integral y coordinación — 2026-10-31
+
+Fuente humana directa: «Apruebo especificaciones, Pero luego tengo otras», respuesta
+a la solicitud de aprobación de COMIDA-UNICO-01 revisión3 y sus wireframes sobre
+candidato `648b4a728234322ccad075f74735aae720301d4b`. La posterior propuesta D′
+es otro frente; no revoca esta aprobación. Las marcas anteriores de aprobación
+pendiente describen la preparación histórica, no el estado vigente.
+
+Este registro no modifica reglas ni wireframes. P3 (fecha/saldo/cobertura reales),
+activación, migración real y merge PR133 siguen separados. El encargo inicial de
+implementación condicionada no permite omitir integración documental ni dependencias.
+SPEC33 integrada por PR135 no se incorpora a esta entrega: el neto mensual P5 y el
+neto acumulado de financiación D′ conservan sus ámbitos propietarios. El histórico
+de Presupuestos/Anual se preserva; su sustitución futura corresponde a SPEC33.
