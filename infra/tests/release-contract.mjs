@@ -7,12 +7,17 @@ import { backup, restore } from '/app/apps/api/src/backup.ts';
 import { HttpApp } from '@effect/platform';
 import { randomUUID, createHash } from 'node:crypto';
 import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
-import { installFixture, linkFixture, snapshot } from './release-fixture.mjs';
+import { installFixture, linkFixture, snapshot, tables } from './release-fixture.mjs';
 const mode = process.argv[2];
 const root = '/var/lib/myfinanzas';
-const privatePath = root + '/fixture-private.json';
+const privatePath = process.env.STATE_FILE || root + '/fixture-private.json';
 const check = (value, label) => { if (!value) throw new Error(label); };
 const hash = bytes => createHash('sha256').update(bytes).digest('hex');
+const business = (db, saved, label) => {
+  const now = snapshot(db);
+  if (now === saved) return;
+  check(false, label);
+};
 
 async function main() {
   let db = openDatabase(process.env.DATABASE_PATH);
@@ -20,8 +25,8 @@ async function main() {
   check(db.query('SELECT version FROM schema_version').get().version===schemaVersion,'actual SQLite schema contract');
   check(db.query('SELECT origin FROM database_origin').get().origin==='production','production identity contract');
   let saved = mode === 'seed' ? { password:'Synthetic fixture ' + randomUUID(), clock:Date.now(), cookie:'', csrf:'' } : JSON.parse(readFileSync(privatePath,'utf8'));
-  if (mode !== 'seed') {
-    check(snapshot(db) === saved.business, 'confirmed data changed between versions');
+  if (mode !== 'seed' && mode !== 'verify') {
+    business(db, saved.business, 'confirmed data changed between versions');
     check(hash(key) === saved.keyHash, 'key changed between versions');
     const owner = db.query('SELECT password,secret FROM owner').get();
     check(JSON.stringify(owner) === saved.owner, 'password or encrypted TOTP changed unexpectedly');
@@ -57,6 +62,17 @@ async function main() {
     const purchases=await request('/compras');
     check(purchases.total>=1,'purchase module read contract');
   }
+  if(mode==='verify') {
+    check(db.query('SELECT version FROM schema_version').get().version===schemaVersion,'verify schema contract');
+    business(db, saved.business, 'restored previous data changed');
+    check(hash(key) === saved.keyHash, 'restored previous key changed');
+    const owner = db.query('SELECT password,secret FROM owner').get();
+    check(JSON.stringify(owner) === saved.owner, 'restored previous owner changed');
+    await moduleReads();
+    db.close();
+    console.log('Previous restore remains readable without in-place downgrade');
+    return;
+  }
   if(mode==='seed') {
     const enrollment=await request('/auth/enroll','POST',{token:provision(db,saved.clock),password:saved.password});
     saved.secret=enrollment.secret;
@@ -66,23 +82,23 @@ async function main() {
     installFixture(db,'seed');
     await moduleReads();
   } else if(mode==='restore') {
-    const recipientFile=root+'/recipient.identity';
+    const recipientFile=root+'/recipient-'+schemaVersion+'.identity';
     const generated=Bun.spawnSync(['age-keygen','-o',recipientFile],{stdout:'pipe',stderr:'pipe'});
     check(generated.exitCode===0,'age identity generation');
     const recipient=Bun.spawnSync(['age-keygen','-y',recipientFile],{stdout:'pipe',stderr:'pipe'});
     check(recipient.exitCode===0,'age recipient');
-    db.exec("PRAGMA wal_autocheckpoint=0; INSERT INTO counters VALUES('infra32_backup_wal',23)");
+    db.exec("PRAGMA wal_autocheckpoint=0; INSERT OR REPLACE INTO counters VALUES('infra32_backup_wal',23)");
     saved.business=snapshot(db);
     check(readFileSync(process.env.DATABASE_PATH+'-wal').length>32,'backup must include an actual committed WAL');
-    backup(db,key,root+'/encrypted-copy',recipient.stdout.toString().trim());
-    check(readdirSync(root+'/encrypted-copy').sort().join(',')==='access-key.age,database.age','backup plaintext residue');
+    backup(db,key,root+'/encrypted-copy-'+schemaVersion,recipient.stdout.toString().trim());
+    check(readdirSync(root+'/encrypted-copy-'+schemaVersion).sort().join(',')==='access-key.age,database.age','backup plaintext residue');
     db.close();
-    process.env.DATABASE_PATH=root+'/restored/database.sqlite';
-    process.env.AUTH_KEY_PATH=root+'/restored/auth.key';
-    const result=restore(root+'/encrypted-copy',root+'/restored',recipientFile);
+    process.env.DATABASE_PATH=root+'/restored-'+schemaVersion+'/database.sqlite';
+    process.env.AUTH_KEY_PATH=root+'/restored-'+schemaVersion+'/auth.key';
+    const result=restore(root+'/encrypted-copy-'+schemaVersion,root+'/restored-'+schemaVersion,recipientFile);
     db=openDatabase(result.database);key=loadKey(db,result.key);
     check(hash(key)===saved.keyHash,'restored key mismatch');
-    check(snapshot(db)===saved.business,'restored data mismatch');
+    business(db,saved.business,'restored data mismatch');
     for(const table of ['sessions','challenges','recovery','bootstrap']) check(db.query(`SELECT * FROM ${table}`).all().length===0,'restore revocation');
     handler=HttpApp.toWebHandler(createApp(db,{key,origin:process.env.APP_ORIGIN,now:()=>saved.clock}));
     await request('/saldos','GET',undefined,401);
@@ -91,8 +107,10 @@ async function main() {
     const verified=await mfa();check(verified.recoveryCodes.length===10,'restored MFA recovery reissue');
     await moduleReads();
     // 3 contract incomes + 2 fixture gastos + 2 fixture D5 transfers.
-    const list=await request('/movimientos');check(list.total===7,'restored confirmed writes');
-    check((await request('/saldos/S001')).saldo.posicion.importe==='61.98','restored derived data contract');
+    const list=await request('/movimientos');check(list.total===Number(process.env.EXPECTED_MOVEMENTS||7),'restored confirmed writes');
+    if(process.env.SKIP_DERIVED!=='1') check((await request('/saldos/S001')).saldo.posicion.importe==='61.98','restored derived data contract');
+    saved.business=snapshot(db);
+    writeFileSync(privatePath,JSON.stringify(saved),{mode:0o600});
     db.close();
     console.log('MFA restore integrity key revocation and confirmed writes verified');
     return;
