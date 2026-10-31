@@ -1,6 +1,10 @@
 # Setup progress
 Current stage: 7
 
+Visibilidad de GitHub: repositorio público confirmado intencional por el usuario el
+2026-10-31. Los registros históricos inferiores que mencionan `private=true` se conservan
+como evidencia de su fecha.
+
 ## Especificación técnica 31 — aprobada, 2026-10-21
 
 El usuario aprueba íntegramente D1–D4 y AC-01–33 tras revisión con Álex y autoriza
