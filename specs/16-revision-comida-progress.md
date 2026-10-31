@@ -314,11 +314,13 @@ aplicadas en el mismo candidato:
 Evidencia: `bun test apps/api/src/comida.test.ts` 31 PASS / 0 FAIL; suite API
 con los mismos fallos de entorno de `main` (0 nuevos con `TMPDIR` seguro).
 
-Ronda 2/3 de QA: H10 (cobertura falsamente completa con devolución acreditada
-sin grupo) corregido; H11 ampliado para rechazar cualquier vínculo (`Verificado`
-o `Revisar`) al retipificar compra o devolución, sin atribución huérfana; lista y
-métricas comparten ámbito con régimen activo. La QA no repitió la última pasada
-sobre `73673dd`: pendiente de confirmación final.
+Ronda final de QA: **PASS para `c96cb79`** (código idéntico al HEAD actual; los
+commits posteriores son solo `specs/`). H10 PASS; H11 PASS con vínculo
+`Verificado` o `Revisar`, sin atribución huérfana ni 500; OBS2 PASS (lista y
+métricas comparten ámbito activo; régimen Preparado no filtra). Sin fallos
+nuevos frente a `main`. Observaciones no bloqueantes: devolución antigua sin
+grupo deja el receptor en Parcial; metadatos huérfanos al retipificar un Gasto
+sin vínculos (pre-existente).
 
 CI: `Validate project` **PASS** en `b51764d`. Los runs posteriores fallan en
 ~3 s sin pasos; la anotación del check-run indica **límite de pago/cuota de
@@ -330,4 +332,8 @@ lo que el SHA final no tiene PASS de CI y la causa requiere acción humana en
 `previous-private-release-build / incompatible contract metadata; no rollback
 authorized`: el gate exige contratos idénticos frente a `main` y no admite un
 upgrade de esquema sin una autorización de release/rollback que no está definida.
-No se desactiva ni se modifica la verificación. E2E y restore: UNRUN.
+No se desactiva ni se modifica la verificación.
+
+E2E local: **11 PASS / 2 FAIL**, y los mismos 2 fallos se reproducen en `main`
+(restore/`libc.so.6` y toggle responsive); no hay regresión, pero la pantalla
+Comida no tiene E2E propio: UNRUN. Restore v19: UNRUN por plataforma.

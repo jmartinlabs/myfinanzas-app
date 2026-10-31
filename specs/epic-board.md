@@ -15,7 +15,7 @@ de Actions (anotación del check-run, reproducible en `main`). E2E local: 11 PAS
 y 2 fallos de plataforma (`libc.so.6`/restore), sin acreditar E2E de la pantalla
 nueva. Rootless bloquea por cambio de contrato de esquema sin autorización de
 rollback: [informe](investigations/rootless-schema-upgrade-2026-10-31.md).
-QA ronda 1 FAIL; H1–H11 corregidos; pasada final en curso. DEV18 sigue STOP.
+QA final **PASS** en `c96cb79` (H10/H11/OBS2). DEV18 sigue STOP.
 PR133 (documental) sigue sin merge autorizado; esta rama no la modifica.
 
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29
