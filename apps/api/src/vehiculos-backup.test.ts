@@ -129,7 +129,7 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     const snapshot = new Database(snapshotPath, { readonly: true, strict: true });
     try {
       expect(snapshot.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 18,
+        version: 19,
       });
       expect(
         snapshot
@@ -162,7 +162,7 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     const copy = new Database(restored.database, { readonly: true, strict: true });
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 18,
+        version: 19,
       });
       expect(
         copy.query("SELECT matricula FROM fichas_vehiculo WHERE referencia=?").get(vehicle.id),

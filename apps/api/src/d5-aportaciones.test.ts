@@ -1264,7 +1264,7 @@ test("T-D5 migration v16 → v18 preserves Movements, audits, Revision Comida an
     audits = db.query("SELECT * FROM movement_audit ORDER BY id,revision").all(),
     meals = db.query("SELECT * FROM revision_comida ORDER BY id").all();
   prepareSchema(db, { origin: "demo", key_hash: null });
-  expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 18 });
+  expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 19 });
   expect(db.query("SELECT * FROM movimientos ORDER BY id").all()).toEqual(movements);
   expect(db.query("SELECT * FROM movement_audit ORDER BY id,revision").all()).toEqual(
     audits,

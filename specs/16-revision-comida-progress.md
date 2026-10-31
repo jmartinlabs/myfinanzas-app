@@ -228,3 +228,58 @@ PR133 sigue sin merge autorizado; CU01–24 UNRUN. P3 real y activación separad
 D′/SPEC33 integrada por PR135 es otro frente; sin código ni cambios financieros
 en este registro. Secuencia propuesta: base Movimientos/devoluciones, registro único
 y métricas Comida, después transición de planificación D′ con autorización propia.
+
+## COMIDA-UNICO-01 — candidato de implementación 2026-10-31
+
+Status: implementación técnica del régimen individual y su base común en curso,
+sin activación real, sin datos reales y sin merge. P3 (fecha, saldo y cobertura
+reales) sigue pendiente; el régimen solo se activa con fixtures ficticias.
+
+### Autorización y preflight
+
+- Encargo humano del 2026-10-31: desarrollo de COMIDA-UNICO-01 dentro de la
+  especificación revisión 3 y wireframes aprobados, con QA independiente y
+  publicación de PR; sin merge ni activación operativa.
+- `main` contrastado en `98b9792` (squash PR #133). La rama parte de ese commit.
+- Rama: `codex/comida-unico-01`. Worktree aislado.
+- Datos exclusivamente ficticios; sin Excel, bases reales, secretos ni despliegue.
+
+### Alcance implementado
+
+- Esquema v19 (`comida-schema.ts`): `Devolución de gasto` como Tipo explícito de
+  Movimientos, reconstrucción de la tabla conservando filas, índices, triggers,
+  auditorías y dependientes; metadatos analíticos por Movimiento; atribución
+  íntegra de devolución; rol explícito de Transferencia; régimen fechado de ING
+  Comida; auditorías append-only e intentos idempotentes.
+- Movimientos: alta/rectificación/anulación del nuevo Tipo, evidencia y
+  atribución atómicas en el alta (`comida` y `devolucion`), integridad
+  devolución ≤ compra, revalidación a `Revisar` al rectificar/anular la compra.
+  La posición central usa `positionCents`; no hay saldo paralelo.
+- Revisión Comida individual (`comida.ts` + `/api/comida`): consulta de compras y
+  devoluciones centrales, metadatos, atribución, roles y métricas P5/P6/P7/P7a
+  con estados Verificado/Parcial/No disponible y procedencia.
+- P5: el Ejecutado del plan mensual por Partida se calcula neto de devoluciones
+  elegibles del mismo ciclo, con bruto y devoluciones visibles.
+- UI: nueva pantalla `Comida · hechos` (390/1440 por reutilización de shell y
+  tarjetas/tabla), formularios de metadatos, atribución, rol y régimen; el
+  histórico auxiliar legado sigue en la pantalla anterior.
+- Contrato estricto v19 publicado en `schema-contracts.json`; v18 se conserva
+  como origen de upgrade verificado. Backup/restore reconoce v19.
+
+### Evidencia local (macOS, Bun 1.4.3)
+
+- `bun run typecheck`: PASS.
+- `bun run build`: PASS (aviso de tamaño de chunk).
+- `bun test apps/api/src/comida.test.ts`: 21 PASS / 0 FAIL.
+- Suite API completa: 53 FAIL locales, los mismos que `main` en este host
+  (`Ancestro no confiable` de `private-state` por `/var` simbólico en macOS y
+  pruebas de señales/WAL). No se declaran PASS de esos casos.
+- CI Linux, E2E de la nueva pantalla y restore/backup v19: UNRUN.
+
+### Límites vigentes
+
+- Activación real del régimen, C/B reales y migración de datos: no ejecutadas.
+- AC-25 físico y D-01-R(v5.11(7)): abiertos.
+- E3.5/FIN_NETA y DEV18: no reanudados.
+- La pantalla nueva no sustituye los AC legados de DEV16; CU-01–CU-24 se
+  acreditan por el testplan de esta entrega.

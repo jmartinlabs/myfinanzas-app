@@ -5,7 +5,12 @@ export const fingerprint = (v: unknown) =>
 export type LedgerRow = {
   id: string;
   fecha: string;
-  tipo: "Ingreso" | "Gasto" | "Transferencia" | "Amortización deuda";
+  tipo:
+    | "Ingreso"
+    | "Gasto"
+    | "Transferencia"
+    | "Amortización deuda"
+    | "Devolución de gasto";
   capital: string | null;
   intereses: string | null;
   referencia?: string | null;
