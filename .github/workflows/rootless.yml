@@ -1,16 +1,25 @@
 name: Rootless infrastructure 32
 on:
   pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - ready_for_review
     paths:
       - '.github/workflows/rootless.yml'
       - 'infra/**'
-      - 'apps/api/**'
       - 'bun.lock'
       - 'package.json'
-      - 'specs/32-*'
+      # Excluye Markdown de infra, incluidos subdirectorios y nombres ocultos.
+      - '!infra/**/*.md'
+      - '!infra/**/.*.md'
   workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: rootless-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   capability:
     name: Rootless capability gate

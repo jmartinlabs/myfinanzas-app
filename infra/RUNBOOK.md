@@ -85,7 +85,41 @@ sin reparar estado. Salud no acredita backup, HTTPS ni recuperación. Readiness:
 arranque valida pareja productiva, petición host al puerto publicado y 401 en
 ruta protegida sin sesión. Mantenimiento debe impedir tráfico antes de parar.
 
+## Gate obligatorio de Rootless previo al despliegue
+
+Este gate es adicional a los demás y no autoriza por sí mismo ningún despliegue.
+Se aplica a todo despliegue inicial, actualización o rollback que instale o
+reemplace la aplicación o su imagen. Tras #141, Rootless no se ejecuta
+automáticamente en PRs que solo cambian `apps/api/**`; eso no lo hace opcional
+para desplegar.
+
+Antes de desplegar, conservar en el expediente de la release:
+
+1. **SHA exacto del candidato definitivo**, completo (40 caracteres), no una rama,
+   etiqueta o merge ref móvil.
+2. **Ejecución Rootless asociada a ese SHA**. Si no se ejecutó automáticamente,
+   lanzar `Rootless infrastructure 32` con `workflow_dispatch` sobre la ref cuyo
+   HEAD sea exactamente ese SHA. No usar una ejecución de otro commit ni una ref
+   posterior.
+3. **Resultado SUCCESS y enlace al run de GitHub Actions** que permita verificar
+   el SHA y el resultado.
+4. **Coincidencia entre el SHA validado y el SHA usado para construir la release**:
+   construir con ese mismo commit y verificar el manifiesto con
+   `--expected-commit`; un rebuild desde otro SHA exige repetir el gate.
+
+Si falta cualquiera de las evidencias, Rootless falla o el candidato cambia
+—nuevo commit, rebase, merge, rebuild o sustitución de la release—, **bloquear el
+despliegue** hasta repetir la validación sobre el nuevo candidato. Que Rootless no
+sea un check requerido del repositorio no lo hace opcional para desplegar.
+
+Este gate no sustituye los gates A/B, activación, preflight Debian/UID/filesystem,
+compatibilidad, backup/restauración, rollback ni la autorización expresa de
+despliegue. El estado del proyecto sigue siendo **NOT deployable**.
+
 ## Parada, actualización y rollback
+
+Antes de iniciar esta secuencia, cumplir el
+[gate obligatorio de Rootless](#gate-obligatorio-de-rootless-previo-al-despliegue).
 
 En instalación futura autorizada, usar `systemctl --user stop UNIDAD` y comprobar
 inactive, ausencia del contenedor/puerto y ningún escritor antes de tareas offline.

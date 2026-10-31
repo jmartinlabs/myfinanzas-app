@@ -22,8 +22,9 @@ class ProbeError(Exception):
 stage = 'setup'
 
 
-def run(args, timeout=60):
-    result = subprocess.run(args, capture_output=True, text=True, timeout=timeout)
+def run(args, timeout=60, env=None):
+    result = subprocess.run(args, capture_output=True, text=True, timeout=timeout,
+                            env={**os.environ, **(env or {})})
     if result.returncode:
         # Podman 125 means the application was not started. At this first run no
         # key/DB has been created; expose only the bounded runtime diagnostic.
@@ -476,33 +477,86 @@ def main():
             ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
             text=True).strip()
         previous = build(root / 'previous', ref=previous_ref)
-        if previous['inputs']['contracts'] != manifest['inputs']['contracts']:
-            raise ProbeError('incompatible contract metadata; no rollback authorized')
+        same_contracts = previous['inputs']['contracts'] == manifest['inputs']['contracts']
+        authorization = None
+        if not same_contracts:
+            before = previous['inputs']['contracts'].get('schema')
+            after = manifest['inputs']['contracts'].get('schema')
+            auth_path = source / 'infra/migrations' / f'{before}-to-{after}.json'
+            try:
+                authorization = json.loads(auth_path.read_text())
+            except (OSError, ValueError):
+                raise ProbeError('missing migration authorization; no rollback authorized')
         matrix = root / 'matrix'
         matrix.mkdir(mode=0o700)
         matrix_flags = [flag for flag in hardened if not flag.startswith('--volume=')]
         matrix_flags += ['--volume=' + str(matrix) + ':/var/lib/myfinanzas:rw',
                          '--volume=' + str(source / 'infra/tests/release-contract.mjs') + ':/app/apps/api/infra-contract.mjs:ro',
                          '--volume=' + str(source / 'infra/tests/release-fixture.mjs') + ':/app/apps/api/release-fixture.mjs:ro']
+        from compatibility import require_rollback, require_migration, CHECKS
         stage = 'previous-version-explicit-initialization'
         run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
              previous['image'], 'apps/api/src/production-init.ts'])
-        for version, action in [(previous, 'seed'), (manifest, 'update'),
-                                (previous, 'rollback'), (manifest, 'restore')]:
-            stage = 'real-cross-version-' + action
+        stage = 'real-cross-version-seed'
+        run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+             previous['image'], '/app/apps/api/infra-contract.mjs', 'seed'], timeout=180)
+        if same_contracts:
+            for version, action in [(manifest, 'update'),
+                                    (previous, 'rollback'), (manifest, 'restore')]:
+                stage = 'real-cross-version-' + action
+                run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                     version['image'], '/app/apps/api/infra-contract.mjs', action], timeout=180)
+            proof = {'previous_source': previous['inputs']['source'],
+                     'current_source': manifest['inputs']['source'],
+                     'previous_image': previous['image'], 'current_image': manifest['image'],
+                     **{check: True for check in CHECKS}}
+        else:
+            # Restore-only rollback: previous version keeps a restored copy made
+            # before the upgrade; the upgraded state is never downgraded in place.
+            stage = 'previous-version-backup-restore'
+            seed_state = matrix / 'fixture-private.json'
+            seed_copy = matrix / 'fixture-private-seed.json'
+            shutil.copyfile(seed_state, seed_copy)
             run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
-                 version['image'], '/app/apps/api/infra-contract.mjs', action], timeout=180)
+                 '--env=EXPECTED_MOVEMENTS=3', '--env=SKIP_DERIVED=1',
+                 previous['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
+            shutil.copyfile(seed_state, matrix / 'fixture-private-previous.json')
+            shutil.copyfile(seed_copy, seed_state)
+            stage = 'real-cross-version-update'
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 manifest['image'], '/app/apps/api/infra-contract.mjs', 'update'], timeout=180)
+            stage = 'reject-in-place-downgrade'
+            negative = subprocess.run(
+                ['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 previous['image'], '/app/apps/api/infra-contract.mjs', 'verify'],
+                capture_output=True, text=True, timeout=180)
+            if negative.returncode == 0:
+                raise ProbeError('previous release accepted upgraded schema in place')
+            stage = 'current-version-backup-restore'
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env=EXPECTED_MOVEMENTS=6', '--env=SKIP_DERIVED=1',
+                 manifest['image'], '/app/apps/api/infra-contract.mjs', 'restore'], timeout=180)
+            stage = 'previous-version-restored-copy'
+            prev_schema = str(previous['inputs']['contracts']['schema'])
+            run(['podman', 'run', '--rm', '--network=none', *matrix_flags, *env,
+                 '--env', 'DATABASE_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/database.sqlite',
+                 '--env', 'AUTH_KEY_PATH=/var/lib/myfinanzas/restored-' + prev_schema + '/auth.key',
+                 '--env', 'STATE_FILE=/var/lib/myfinanzas/fixture-private-previous.json',
+                 previous['image'], '/app/apps/api/infra-contract.mjs', 'verify'], timeout=180)
+            proof = {'previous_source': previous['inputs']['source'],
+                     'current_source': manifest['inputs']['source'],
+                     'previous_image': previous['image'], 'current_image': manifest['image'],
+                     'data_retention': True, 'current_backup_restore': True,
+                     'previous_restore': True, 'no_in_place_downgrade': True}
         evidence['previous-source'] = previous['inputs']['source']
         evidence['previous-image'] = previous['image']
         evidence['schema-data-authentication-and-confirmed-writes-roundtrip'] = True
         evidence['final-image-encrypted-backup-restore-key-mfa-revocation'] = True
         stage = 'fail-closed-rollback-review-gate'
-        from compatibility import require_rollback, CHECKS
-        proof = {'previous_source': previous['inputs']['source'],
-                 'current_source': manifest['inputs']['source'],
-                 'previous_image': previous['image'], 'current_image': manifest['image'],
-                 **{check: True for check in CHECKS}}
-        require_rollback(previous, manifest, proof)
+        if same_contracts:
+            require_rollback(previous, manifest, proof)
+        else:
+            require_migration(previous, manifest, proof, authorization)
         # Real negative calls: none can open or mutate the application DB.
         import copy
         baseline = {p.name: sha(p.read_bytes()) for p in (matrix / 'state').iterdir() if p.is_file()}
@@ -514,9 +568,13 @@ def main():
             elif kind == 'foreign_pair':
                 evidence_copy['previous_image'] = 'sha256:' + '0' * 64
             else:
-                del evidence_copy['confirmed_writes']
+                evidence_copy.pop('confirmed_writes', None)
+                evidence_copy.pop('no_in_place_downgrade', None)
             try:
-                require_rollback(other, manifest, evidence_copy)
+                if same_contracts:
+                    require_rollback(other, manifest, evidence_copy)
+                else:
+                    require_migration(other, manifest, evidence_copy, authorization)
             except ValueError:
                 pass
             else:

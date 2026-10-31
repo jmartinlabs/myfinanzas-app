@@ -103,3 +103,7 @@ verificado de los 24 criterios está en el [testplan](../specs/32-ejecucion-root
 preparar un script no acredita su ejecución. VPS/Caddy/HTTPS, copias externas,
 custodia y despliegue siguen sujetos a sus gates independientes. R6/fsync y el
 fallo API histórico permanecen abiertos.
+
+El [gate obligatorio de Rootless previo al despliegue](RUNBOOK.md#gate-obligatorio-de-rootless-previo-al-despliegue)
+se define únicamente en el runbook y es requisito para cualquier despliegue que
+afecte a la aplicación o su imagen; este README no duplica sus condiciones.
