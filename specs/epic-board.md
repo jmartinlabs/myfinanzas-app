@@ -97,6 +97,8 @@ Análisis de adaptación en
 - **Riesgo estático:** una Transferencia sin rol podría evaluar `role.rol` sobre
   `undefined` en `comida.ts` (~1390–1409). No reproducido; requiere test/corrección
   separada con autorización de DEV.
+- **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal; un solo ID
+  se cuenta una vez y los conflictos se tratan como parcial/no disponible.
 - Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
   bloqueado mientras E3.5 no sea verificable.
 
@@ -112,7 +114,9 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
   acredita el restore técnico, no la custodia externa ni el gate DT6. Procedimiento
   propuesto en [DT6/T-BKP](investigations/dt6-t-bkp-procedure-2026-10-31.md),
   alineado con los criterios 0046; destino, custodia, modo, poda y ensayo real
-  siguen pendientes de confirmación y no se ejecutan backups.
+  siguen pendientes de confirmación y no se ejecutan backups. Las copias de más de
+  24 h exigen `--allow-older` con motivo, riesgo y aprobación; los temporales son
+  privados y no se promete procesamiento solo en memoria.
 - **Gate rootless:** validar sobre una release real autorizada. No sustituye
   RESTORE-19/20. Sin despliegue ni activación.
 

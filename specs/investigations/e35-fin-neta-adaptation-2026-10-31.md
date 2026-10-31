@@ -101,12 +101,15 @@ definen otra fuente, prevalece esa definición.
    importe o fecha.
 2. **Rol de cada Transferencia:** ¿qué hacer si una transferencia de ING no tiene rol
    declarado? Cobertura parcial/no disponible, no asignación silenciosa.
-3. **Doble vínculo Anticipo:** `movimiento_anticipo` es la atribución canónica al
-   Anticipo (referencia, par, orientación y evidencia); `movimiento_rol_financiacion`
-   atribuye la función analítica de Comida. Para el mismo Movimiento deben coincidir en
-   rol, Referencia, sentido, revisión y evidencia. **Un solo ID se cuenta una vez.**
-   Faltan guardas, fixtures y contrato explícito de casos parciales/conflictivos antes
-   de DEV.
+3. **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal.
+   `movimiento_anticipo` es la atribución canónica al Anticipo (Referencia, par y
+   orientación). `movimiento_rol_financiacion` aporta la función analítica de Comida;
+   no tiene Referencia ni el mismo vocabulario (`Devolución` frente a
+   `Devolución Anticipo`). Para el mismo ID de Movimiento se exige: atribución de
+   Anticipo acreditada, Transferencia real saliente elegible de ING, función
+   `Devolución Anticipo` compatible, revisión y evidencias vigentes, y **una sola
+   deducción**. Los conflictos se tratan como cobertura parcial/no disponible y su
+   contrato se especifica antes de DEV. No añadir FKs ni columnas sin permiso.
 4. **Reposiciones:** confirmar que `obligacion_ciclo` identifica la obligación y que
    R_caja/R_obl no se suman; qué pasa con reposiciones sin asignación.
 5. **Compensable:** confirmar que solo Ocio/Niños/Otros entran en C_n y que

@@ -51,6 +51,21 @@ Fuera de alcance:
 5. Registrar fecha, operador, versión de app/esquema y una referencia no sensible del
    destino. No registrar importes, nombres, rutas sensibles ni datos personales.
 
+### 3.1.1 Preflight de configuración productiva
+
+Antes de generar o restaurar una copia real, verificar en el entorno aislado:
+
+- `NODE_ENV=production` cuando corresponda, `DATABASE_PATH`, `AUTH_KEY_PATH` y
+  `APP_ORIGIN` coherentes con el despliegue.
+- Identidad de origen y `database_origin`/`key_hash` compatibles; sin mezclar una
+  identidad productiva con una demo.
+- Rutas de destino nuevas, permisos `0700` en directorios y `0600` en archivos,
+  aislamiento de red/loopback y ausencia de acceso a la base en servicio.
+- Referencia a `private-state.ts` e `infra/RUNBOOK.md`.
+
+No abrir una base `production` como demo ni conectar el ensayo a la producción. El
+ensayo usa una copia restaurada en un entorno aislado.
+
 ### 3.2 Generación del paquete cifrado
 
 ```text
@@ -80,7 +95,8 @@ bun run backup create <STAGING_NUEVO> <DESTINATARIO_AGE>
 
 ### 3.3 Verificación de integridad
 
-En un entorno aislado y sin volcar datos a disco:
+En un entorno aislado y con temporales privados; **no se promete procesamiento solo en
+memoria**:
 
 1. Leer el manifiesto cifrado y comprobar `app`, `schema`, `origin`, `created` y
    `sha256`.
@@ -89,6 +105,10 @@ En un entorno aislado y sin volcar datos a disco:
    aplicación tiene 32 bytes.
 4. Confirmar que no hay archivos temporales, texto plano ni claves dentro del destino
    de copias.
+5. Reconocer los temporales reales: `backup` crea `snapshot.sqlite`, `bundle.tmp` y
+   `key.tmp`; `restore` usa un temporal privado para el bundle descifrado, la base y la
+   clave de acceso. Directorios `0700` y archivos `0600`; borrado en éxito y fallo;
+   soporte cifrado. La recuperación forense de restos no se puede descartar.
 
 No pegar el manifiesto completo, rutas sensibles ni el contenido descifrado en issues,
 PRs, logs o documentación pública.
@@ -131,6 +151,25 @@ bun run backup restore <COPIA> <DESTINO_NUEVO> <IDENTIDAD_AGE>
 GitHub Actions solo se usa con **fixtures sintéticos**; nunca con datos financieros
 privados.
 
+### 3.5.1 Copias de más de 24 h
+
+`backup.ts` rechaza por defecto copias de más de **24 h**. Para restaurar una copia
+semanal o mensual de la retención se requiere la opción explícita:
+
+```text
+bun run backup restore <COPIA> <DESTINO_NUEVO> <IDENTIDAD_AGE> --allow-older
+```
+
+Antes de usarla, registrar:
+
+- motivo de la copia histórica;
+- riesgo aceptado y alcance;
+- aprobación identificable;
+- verificación de manifiesto/checksum y resultado del restore.
+
+`--allow-older` no es un bypass general ni se usa para evitar una copia reciente. Sin
+este tratamiento, no se promete recuperabilidad de la retención 7/4/3.
+
 ### 3.6 Evidencia del gate
 
 Guardar el registro en una **carpeta privada fuera de Git**, sin claves, secretos,
@@ -145,6 +184,8 @@ datos personales ni rutas sensibles públicas.
 | Datos | Conteos/muestra funcional acordada, sin datos personales publicados |
 | Accesos | Sesiones, desafíos, códigos e intentos revocados |
 | Entorno | Equipo aislado, fecha, operador, versión y duración |
+| Temporales | Rutas privadas 0700/0600, borrado en éxito/fallo y limitación forense |
+| Histórico | `--allow-older`, motivo, riesgo, aprobación y evidencia |
 | Llegada | Canal autorizado, SHA-256 origen/destino y número de archivos |
 | Custodia | Referencia no sensible de copia, destino físico y segunda copia |
 | Acciones | Incidencias, resultado y acciones correctivas |
@@ -173,6 +214,8 @@ datos personales ni rutas sensibles públicas.
 | Ensayo | Linux x86_64 aislado; permisos y acceso | Equipo disponible y fecha | Solo RESTORE-19/20 sintético |
 | Poda | Manual, reversible y documentada | Inicio y responsable | Ninguna |
 | Retención | 7 diarias / 4 semanales / 3 mensuales | Fecha efectiva, capacidad y calendario | Ninguna |
+| Histórico >24 h | `--allow-older` con motivo, riesgo y aprobación | Autorización y evidencia | Ninguna |
+| Temporales | Temporales privados 0700/0600 y borrado | Verificación en el entorno real | Ninguna |
 | Evidencias | Carpeta privada fuera de Git | Ruta y formato | Ninguna |
 
 ## 6. Preguntas materiales y checklist de aceptación
@@ -187,6 +230,10 @@ Preguntas que requieren confirmación humana:
 6. ¿Cuándo empieza la retención 7/4/3 y qué capacidad hay?
 7. ¿Quién ejecuta la poda manual y dónde se registra?
 8. ¿Dónde está la carpeta privada de evidencias fuera de Git?
+9. ¿Se autoriza `--allow-older` para copias históricas? ¿Con qué motivo, riesgo y
+   aprobación?
+10. ¿Qué configuración productiva (`NODE_ENV`, `DATABASE_PATH`, `AUTH_KEY_PATH`,
+    `APP_ORIGIN`) y qué aislamiento se usarán en el ensayo?
 
 Checklist de aceptación del gate:
 
@@ -196,6 +243,9 @@ Checklist de aceptación del gate:
 - clave de aplicación e identidad `age` disponibles;
 - restore en directorio nuevo y sin destino parcial;
 - permisos y acceso correctos;
+- preflight de configuración productiva verificado;
+- copias de más de 24 h tratadas con `--allow-older`, motivo, riesgo y aprobación;
+- temporales privados y borrados en éxito/fallo;
 - sesiones, desafíos, códigos e intentos revocados;
 - evidencia registrada sin datos personales ni secretos;
 - calendario real coherente con RPO 24 h;
@@ -207,6 +257,10 @@ Checklist de aceptación del gate:
 - Una copia en el mismo disco no cubre fallo de hardware, robo o ransomware.
 - El snapshot WAL es consistente; una ventana fría solo se usa si se justifica.
 - Una copia solo semanal no cumple RPO 24 h; no se declara RPO/RTO demostrado.
+- `backup` y `restore` usan temporales privados; no se promete procesamiento solo en
+  memoria ni borrado forense garantizado.
+- Las copias de más de 24 h requieren `--allow-older`; sin motivo, riesgo y aprobación
+  no se consideran recuperables para el gate.
 - El restore real con datos reales requiere autorización específica y un entorno
   aislado; no se ejecuta en CI.
 - Este procedimiento no cierra DT6/T-BKP, no sustituye el gate rootless y no
