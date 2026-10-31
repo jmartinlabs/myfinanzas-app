@@ -320,10 +320,13 @@ o `Revisar`) al retipificar compra o devolución, sin atribución huérfana; lis
 métricas comparten ámbito con régimen activo. La QA no repitió la última pasada
 sobre `73673dd`: pendiente de confirmación final.
 
-CI: `Validate project` **PASS** en `b51764d`. Los runs posteriores, solo de
-pruebas y guardas, terminaron sin arrancar pasos (fallo de infraestructura de
-GitHub Actions; sin logs), por lo que el SHA final no tiene un PASS de CI
-registrado. `Rootless capability gate` falla en
+CI: `Validate project` **PASS** en `b51764d`. Los runs posteriores fallan en
+~3 s sin pasos; la anotación del check-run indica **límite de pago/cuota de
+GitHub Actions** («recent account payments have failed or your spending limit
+needs to be increased»). Se reproduce con `workflow_dispatch` sobre `main`, por
+lo que el SHA final no tiene PASS de CI y la causa requiere acción humana en
+*Billing & plans*. Diagnóstico completo en
+[rootless-schema-upgrade-2026-10-31](investigations/rootless-schema-upgrade-2026-10-31.md). `Rootless capability gate` falla en
 `previous-private-release-build / incompatible contract metadata; no rollback
 authorized`: el gate exige contratos idénticos frente a `main` y no admite un
 upgrade de esquema sin una autorización de release/rollback que no está definida.
