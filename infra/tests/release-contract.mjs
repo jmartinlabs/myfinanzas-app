@@ -114,6 +114,8 @@ async function main() {
     // 3 contract incomes + 2 fixture gastos + 2 fixture D5 transfers.
     const list=await request('/movimientos');check(list.total===Number(process.env.EXPECTED_MOVEMENTS||7),'restored confirmed writes');
     if(process.env.SKIP_DERIVED!=='1') check((await request('/saldos/S001')).saldo.posicion.importe==='61.98','restored derived data contract');
+    saved.business=snapshot(db);
+    writeFileSync(privatePath,JSON.stringify(saved),{mode:0o600});
     db.close();
     console.log('MFA restore integrity key revocation and confirmed writes verified');
     return;
