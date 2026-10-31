@@ -85,6 +85,8 @@ Inventario y mapping read-only en la
 ### 4. E3.5 / FIN_NETA
 
 **Tipo:** dependencia + pendiente técnico · **requiere autorización**.
+Análisis de adaptación en
+[E3.5/FIN_NETA](investigations/e35-fin-neta-adaptation-2026-10-31.md).
 
 - Mantener **DEV18 antiguo detenido**; no reanudarlo.
 - Preparar posteriormente su adaptación al modelo integrado de **registro único
