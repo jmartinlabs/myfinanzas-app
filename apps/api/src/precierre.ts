@@ -4,7 +4,6 @@ import { getCyclePlan } from "./planes-ciclo";
 import {
   cashAt,
   investmentInstalled,
-  positionsFor,
 } from "./investment-engine";
 import { decimal } from "./saldos";
 import { fingerprint, financeRevision, ledgerRows, type LedgerRow } from "./movement-ledger";
@@ -79,14 +78,28 @@ function movementSource(
   const inWindow = rows.filter(
     (r) => !r.anulado && start <= r.fecha && r.fecha <= end,
   );
-  let inconsistent: { id: string }[] = [];
+  let inconsistent: { id: string; motivo: string }[] = [];
   try {
     inconsistent = db
       .query(
-        `SELECT m.id FROM movimientos m JOIN referencias r ON r.id=m.referencia
-         WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ? AND r.estado<>'Activa'`,
+        `SELECT m.id, 'referencia inactiva' motivo
+           FROM movimientos m JOIN referencias r ON r.id=m.referencia
+          WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ? AND r.estado<>'Activa'
+         UNION ALL
+         SELECT m.id, 'partida inactiva' motivo
+           FROM movimientos m JOIN partidas p ON p.id=m.partida
+          WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ?
+            AND m.tipo IN ('Gasto','Amortización deuda') AND p.estado<>'Activa'
+         UNION ALL
+         SELECT m.id, 'partida obligatoria ausente' motivo
+           FROM movimientos m
+          WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ?
+            AND m.tipo IN ('Gasto','Amortización deuda') AND m.partida IS NULL`,
       )
-      .all(start, end) as { id: string }[];
+      .all(start, end, start, end, start, end) as {
+      id: string;
+      motivo: string;
+    }[];
   } catch {
     return {
       key: "movimientos",
@@ -104,8 +117,8 @@ function movementSource(
       label: "Movimientos / clasificación / Referencias",
       cobertura: `${inWindow.length} hechos · ${inconsistent.length} inconsistencias`,
       estado: "Bloqueado",
-      motivo: `Referencias inactivas usadas: ${inconsistent
-        .map((r) => r.id)
+      motivo: `Inconsistencias: ${inconsistent
+        .map((r) => `${r.id} (${r.motivo})`)
         .join(", ")}.`,
       enlace: "/movimientos",
       aplicable: true,
@@ -129,17 +142,29 @@ function planSource(
   source: PrecierreSource;
   sinPlanificar: boolean;
   planState: "SinPlan" | "PlanVerificado" | "PlanNoVerificable";
+  contextRevision: string;
 } {
   try {
     const plan = getCyclePlan(db, id, now);
+    const planRow = db
+      .query("SELECT revision FROM cycle_plans WHERE ciclo=?")
+      .get(id) as { revision: number } | null;
+    const audit = db
+      .query("SELECT MAX(revision) m FROM cycle_plan_audit WHERE ciclo=?")
+      .get(id) as { m: number | null } | null;
+    const mismatch =
+      !!planRow && audit?.m !== null && audit?.m !== undefined && audit.m !== planRow.revision;
     const planState = plan.sinPlan
       ? "SinPlan"
-      : (options.planState ?? "PlanVerificado");
+      : options.planState === "PlanNoVerificable" || mismatch
+        ? "PlanNoVerificable"
+        : "PlanVerificado";
     const sinPlanificar = plan.items.some((i) => i.sinPlanificar);
     if (planState === "PlanNoVerificable")
       return {
         sinPlanificar,
         planState,
+        contextRevision: plan.contextRevision,
         source: {
           key: "plan",
           label: "Plan del ciclo",
@@ -153,6 +178,7 @@ function planSource(
     return {
       sinPlanificar,
       planState,
+      contextRevision: plan.contextRevision,
       source: {
         key: "plan",
         label: "Plan del ciclo",
@@ -167,6 +193,7 @@ function planSource(
     return {
       sinPlanificar: false,
       planState: "PlanNoVerificable",
+      contextRevision: "",
       source: {
         key: "plan",
         label: "Plan del ciclo",
@@ -202,9 +229,12 @@ function auxiliary(
   return {
     key,
     label,
-    cobertura: n ? `${n} hechos` : empty,
-    estado: n ? "Verificado" : "Vacío",
-    motivo: n ? "Con hechos en la ventana." : "Sin hechos imputables.",
+    cobertura: `${n} hechos`,
+    estado: "Parcial",
+    motivo:
+      n > 0
+        ? "Conteo informativo; cobertura al corte no acreditada."
+        : "Conteo 0; ausencia total no acreditada.",
     enlace,
     aplicable: false,
   };
@@ -212,44 +242,76 @@ function auxiliary(
 function investmentSource(
   db: Database,
   end: string,
-): { source: PrecierreSource; efectivo: string | null; instrumentos: number } {
+): {
+  source: PrecierreSource;
+  efectivo: string | null;
+  instrumentos: number;
+  cantidad: string | null;
+  posiciones: { instrumento: string; nombre: string; cantidad: string }[];
+} {
+  const noDisponible = (motivo: string) => ({
+    instrumentos: 0,
+    efectivo: null,
+    cantidad: null,
+    posiciones: [],
+    source: {
+      key: "inversion",
+      label: "E4.1 Inversión",
+      cobertura: "No disponible",
+      estado: "No disponible" as const,
+      motivo,
+      enlace: "/inversiones",
+      aplicable: true,
+    },
+  });
   if (!investmentInstalled(db))
-    return {
-      instrumentos: 0,
-      efectivo: null,
-      source: {
-        key: "inversion",
-        label: "E4.1 Inversión",
-        cobertura: "No disponible",
-        estado: "No disponible",
-        motivo: "Motor de inversión no instalado.",
-        enlace: "/inversiones",
-        aplicable: true,
-      },
-    };
+    return noDisponible("Motor de inversión no instalado.");
   try {
-    const cash = cashAt(db, "S003", end);
-    const instruments = db
-      .query("SELECT id FROM instrumentos WHERE estado='Activa' ORDER BY id")
+    const cashAccounts = db
+      .query(
+        "SELECT id FROM saldos WHERE tipo='Efectivo' AND control='Inversiones' ORDER BY id",
+      )
       .all() as { id: string }[];
-    let positions = 0;
-    for (const instrument of instruments)
-      positions += positionsFor(db, instrument.id).length;
-    const value = decimal(cash.disponible) ?? "0.00";
-    const empty = instruments.length === 0 && cash.disponible === 0n;
+    const investmentAccounts = db
+      .query(
+        "SELECT id FROM saldos WHERE tipo='Inversión' AND control='Inversiones' ORDER BY id",
+      )
+      .all() as { id: string }[];
+    if (!cashAccounts.length || !investmentAccounts.length)
+      return noDisponible(
+        "No hay cuentas de efectivo/inversión aplicables para leer E4.1.",
+      );
+    let cashTotal = 0n;
+    for (const account of cashAccounts)
+      cashTotal += cashAt(db, account.id, end).disponible;
+    const rows = db
+      .query(
+        `SELECT o.instrumento instrumento,i.nombre nombre,
+                CAST(SUM(o.cantidad) AS TEXT) cantidad
+         FROM operaciones_inversion o JOIN instrumentos i ON i.id=o.instrumento
+         WHERE o.estado='Vigente' AND o.fecha<=?
+         GROUP BY o.instrumento,i.nombre ORDER BY o.instrumento`,
+      )
+      .all(end) as { instrumento: string; nombre: string; cantidad: string }[];
+    let quantity = 0n;
+    for (const row of rows) quantity += BigInt(row.cantidad);
+    const value = decimal(cashTotal) ?? "0.00";
+    const empty = rows.length === 0 && cashTotal === 0n;
     return {
       efectivo: value,
-      instrumentos: instruments.length,
+      instrumentos: rows.length,
+      cantidad: quantity.toString(),
+      posiciones: rows,
       source: {
         key: "inversion",
         label: "E4.1 Inversión",
         cobertura: empty
           ? "Vacío"
-          : `${instruments.length} instrumentos · ${positions} posiciones · efectivo ${value}`,
+          : `${rows.length} instrumentos · cantidad ${quantity} · efectivo ${value}`,
         estado: empty ? "Vacío" : "Integrado",
         motivo: empty
-          ? "Sin posiciones ni efectivo de inversión."
-          : "Instrumentos, efectivo y posiciones a Fin.",
+          ? "Sin posiciones ni efectivo de inversión a Fin."
+          : "Efectivo y cantidades a Fin; operaciones posteriores excluidas.",
         enlace: "/inversiones",
         aplicable: true,
       },
@@ -258,6 +320,8 @@ function investmentSource(
     return {
       instrumentos: 0,
       efectivo: null,
+      cantidad: null,
+      posiciones: [],
       source: {
         key: "inversion",
         label: "E4.1 Inversión",
@@ -333,6 +397,14 @@ export function getPrecierre(
       message: "Diferencia no explicable frente a un cierre posterior al mismo corte.",
     });
   const investment = investmentSource(db, end);
+  if (
+    investment.source.estado === "No disponible" ||
+    investment.source.estado === "Error"
+  )
+    bloqueos.push({
+      code: "E4_1_NO_DISPONIBLE",
+      message: investment.source.motivo,
+    });
   if (investment.source.estado === "Error")
     avisos.push({
       code: "INVERSION_ERROR",
@@ -384,9 +456,9 @@ export function getPrecierre(
     {
       key: "deuda",
       label: "Deuda E1.6",
-      cobertura: "Disponible",
-      estado: "Verificado",
-      motivo: "Maestro de Deuda E1.6; no incluye E4.4.",
+      cobertura: "Maestro E1.6",
+      estado: "Parcial",
+      motivo: "Maestro de Deuda E1.6; cobertura global al corte no acreditada.",
       enlace: "/deudas",
       aplicable: false,
     },
@@ -403,15 +475,25 @@ export function getPrecierre(
     unavailable("e36", "E3.6 Pendientes / conciliación", "Documental sin código."),
   ];
   const corePartial =
-    movements.estado === "Error" || investment.source.estado === "Error";
+    movements.estado === "Error" ||
+    investment.source.estado === "Error" ||
+    fuentes.some((s) => s.estado === "Error");
   const optionalUnavailable = fuentes.some(
     (s) => !s.aplicable && s.estado === "No disponible",
   );
+  const auxiliaryPartial = fuentes.some(
+    (s) => !s.aplicable && s.estado === "Parcial",
+  );
+  if (auxiliaryPartial)
+    avisos.push({
+      code: "COBERTURA_AUXILIAR_PARCIAL",
+      message: "Hay fuentes auxiliares con cobertura no acreditada al corte.",
+    });
   const estado: PrecierreEstado = bloqueos.length
     ? "Bloqueado"
     : corePartial
       ? "Parcial"
-      : avisos.length || optionalUnavailable
+      : avisos.length || optionalUnavailable || auxiliaryPartial
         ? "Listo con avisos"
         : "Listo";
   const body = {
@@ -424,7 +506,8 @@ export function getPrecierre(
       revision: ciclo.revision,
     },
     estado,
-    cobertura: optionalUnavailable ? "Parcial" : "Completa",
+    cobertura:
+      optionalUnavailable || auxiliaryPartial ? "Parcial" : "Completa",
     e4_9Bloqueado:
       bloqueos.length > 0 ||
       fuentes.find((s) => s.key === "e35")?.estado === "No disponible",
@@ -434,10 +517,13 @@ export function getPrecierre(
     plan: {
       estado: plan.planState,
       sinPlanificar: plan.sinPlanificar,
+      contextRevision: plan.contextRevision,
     },
     inversion: {
       efectivo: investment.efectivo,
+      cantidad: investment.cantidad,
       instrumentos: investment.instrumentos,
+      posiciones: investment.posiciones,
       valoracion: "No disponible",
       motivo: "E4.3 valoración/patrimonio no implementado.",
     },
@@ -450,6 +536,7 @@ export function getPrecierre(
     },
     cierres: closures,
     sourceRevision: financeRevision(db),
+    planContextRevision: plan.contextRevision,
   };
   return { ...body, revision: fingerprint(body) };
 }

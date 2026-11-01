@@ -42,7 +42,7 @@ ni ejecución de backups.
 
 Comandos ejecutados:
 
-- `NODE_ENV=test bun test apps/api/src/precierre.test.ts` → **16 PASS / 0 FAIL**.
+- `NODE_ENV=test bun test apps/api/src/precierre.test.ts` → **19 PASS / 0 FAIL**.
 - `bun run test:e2e tests/e2e/precierre.spec.ts` → **1 PASS** (1440/390, estados y
   solo lectura).
 - `bun run typecheck` y `bun run build` → **PASS**.
@@ -52,23 +52,26 @@ Comandos ejecutados:
 | AC-01 | PASS | Ventana, S0 y estado; API + E2E |
 | AC-02 | PASS | `SIN_SIGUIENTE_INICIO`; sin Fin inventado |
 | AC-03 | PASS | `S0_AUSENTE` con seam de test; no se crea S0 |
-| AC-04 | PASS parcial | Referencia inactiva bloquea el núcleo; la clasificación inconsistente no se modela por separado en esta entrega |
-| AC-05 | PASS | E4.1 efectivo/posiciones; valoración `No disponible` |
+| AC-04 | PASS parcial | Referencia y partida inactiva bloquean; no se modela toda clasificación inconsistente |
+| AC-05 | PASS | E4.1 efectivo/cantidades a Fin; operación posterior excluida y múltiples cuentas; valoración `No disponible` |
 | AC-06 | PASS | Posición previa no es vacío; sin posición, vacío explícito |
 | AC-07 | PASS | E4.3/E4.2/E4.4 como aviso/no disponible, no cero |
 | AC-08 | PASS | `BACKUP_NO_VERIFICABLE` bloquea por defecto |
 | AC-09 | PASS | POST/PATCH/DELETE → 405, `Allow: GET`, sin escritura |
 | AC-10 | PASS | GET repetido conserva `revision`; sin escritura |
-| AC-11 | PASS revisión | Cambio de fuente cambia `revision`; el 409 de confirmación pertenece a E4.9 |
+| AC-11 | PASS revisión | Cambio de Movimiento o de importe del plan cambia `revision`; el 409 de confirmación pertenece a E4.9 |
 | AC-12 | PASS | `SinPlan` válido; no bloquea |
-| AC-13 | PASS contrato | `PlanNoVerificable` con seam de test; no hay inconsistencia DB alcanzable |
+| AC-13 | PASS | Revisión de plan divergente en `cycle_plan_audit` bloquea; sin seam |
 | AC-14 | PASS | E3.5 `No disponible`, cobertura parcial y E4.9 bloqueado |
 | AC-15 | PASS | `/estado` comparte `revision` y estado con precierre |
 | AC-16 | PASS contrato | Cierre posterior coherente avisa; incoherente bloquea; proveedor de cierres es seam hasta SPEC27 |
 
 **Límites:** los proveedores de backup y cierres posteriores son seams de contrato;
-por defecto no hay evidencia DT6 y el precierre queda bloqueado. No se ha ejecutado
-restore real, cierre, foto ni backup. La aprobación visual de W1–W6 sigue pendiente.
+por defecto no hay evidencia DT6 y el precierre queda bloqueado. Las fuentes auxiliares
+son conteos informativos con cobertura parcial/no acreditada; no se presentan como
+conciliadas. E4.1 exige cuentas aplicables y bloquea si no están disponibles. No se ha
+ejecutado restore real, cierre, foto ni backup. La aprobación visual de W1–W6 sigue
+pendiente.
 
 ### Casos de contrato conceptuales (diseño, UNRUN)
 
@@ -96,10 +99,11 @@ no se ejecuta en ese perfil).
 
 ## Functional verification
 
-**PASS de contrato** para los 16 AC en `apps/api/src/precierre.test.ts` (16/16) y la
-ruta HTTP de solo lectura. AC-11 acredita cambio de `revision`; el 409 de confirmación
-pertenece a E4.9. AC-13 y AC-16 usan seams de contrato para estados no alcanzables sin
-un plan inconsistente o un proveedor de cierres.
+**PASS de contrato** para los 16 AC en `apps/api/src/precierre.test.ts` (19/19) y la
+ruta HTTP de solo lectura. AC-11 acredita cambio de `revision` por Movimiento y por
+importe del plan; el 409 de confirmación pertenece a E4.9. AC-13 usa una revisión de
+plan divergente real; AC-16 usa el seam del proveedor de cierres hasta SPEC27. AC-04
+queda parcial: cubre referencia/partida inactiva, no toda clasificación inconsistente.
 
 ## Browser verification
 

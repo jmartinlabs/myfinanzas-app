@@ -30,7 +30,9 @@ type Precierre = {
   plan: { estado: string; sinPlanificar: boolean };
   inversion: {
     efectivo: string | null;
+    cantidad: string | null;
     instrumentos: number;
+    posiciones: { instrumento: string; nombre: string; cantidad: string }[];
     valoracion: string;
     motivo: string;
   };
@@ -278,7 +280,8 @@ export function Precierre({ go }: { go: (p: string) => void }) {
               {data.plan.sinPlanificar ? " · con hechos sin planificar" : ""}
             </p>
             <p>
-              Inversión: {data.inversion.instrumentos} instrumentos · efectivo{" "}
+              Inversión: {data.inversion.instrumentos} instrumentos · cantidad{" "}
+              {data.inversion.cantidad ?? "No disponible"} · efectivo{" "}
               {amount(data.inversion.efectivo)}. Valoración:{" "}
               <strong>{data.inversion.valoracion}</strong>.
             </p>

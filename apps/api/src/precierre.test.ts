@@ -97,7 +97,7 @@ test("AC-03: S0 ausente bloquea y no se crea", () => {
   }
 });
 
-test("AC-04: referencia inactiva bloquea el núcleo", () => {
+test("AC-04: referencia o partida inactiva bloquea el núcleo", () => {
   const db = fixture({ reference: true, plan: true });
   try {
     const result = getPrecierre(db, "1", now, { backup });
@@ -106,16 +106,57 @@ test("AC-04: referencia inactiva bloquea el núcleo", () => {
   } finally {
     close(db);
   }
+  const classification = fixture({ plan: true });
+  try {
+    classification.run("UPDATE partidas SET estado='Inactiva' WHERE id='PAR001'");
+    const result = getPrecierre(classification, "1", now, { backup });
+    expect(result.bloqueos.map((b) => b.code)).toContain("INCONSISTENCIA_NUCLEO");
+  } finally {
+    close(classification);
+  }
 });
 
-test("AC-05: E4.1 muestra efectivo/posiciones y valoración no disponible", () => {
+test("AC-05: E4.1 muestra efectivo/posiciones a Fin y excluye el futuro", () => {
   const db = fixture({ investment: true, plan: true });
   try {
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Compra','2026-02-05','I0001','S003','S004',50,1000,'EUR',NULL,500,NULL,'Compra futura',NULL,'Vigente',1,'f','f')",
+    );
     const result = getPrecierre(db, "1", now, { backup });
     const source = result.fuentes.find((f) => f.key === "inversion")!;
     expect(source.estado).toBe("Integrado");
     expect(source.cobertura).toContain("1 instrumentos");
+    expect(result.inversion.cantidad).toBe("100");
+    expect(result.inversion.posiciones).toHaveLength(1);
     expect(result.inversion.valoracion).toBe("No disponible");
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: múltiples cuentas de efectivo, incluida inactiva histórica", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run(
+      "INSERT INTO saldos(id,nombre,tipo,control,estado,finalidad,liquidez,bolsa,exterior,apertura,fecha_apertura,objetivo,manual,revision,creado,actualizado) VALUES('S006','Efectivo inversión 2','Efectivo','Inversiones','Inactiva',NULL,0,0,0,2000,NULL,NULL,NULL,1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.efectivo).toBe("10.00");
+    expect(result.fuentes.find((f) => f.key === "inversion")!.estado).toBe(
+      "Integrado",
+    );
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: E4.1 no disponible bloquea el precierre", () => {
+  const db = fixture({ plan: true });
+  try {
+    db.run("UPDATE saldos SET tipo='Exterior', control='Exterior' WHERE id='S003'");
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.estado).toBe("Bloqueado");
+    expect(result.bloqueos.map((b) => b.code)).toContain("E4_1_NO_DISPONIBLE");
   } finally {
     close(db);
   }
@@ -147,7 +188,13 @@ test("AC-07: fuentes no disponibles son aviso, no cero ni bloqueo", () => {
       expect(source.estado).toBe("No disponible");
       expect(source.cobertura).toBe("No disponible");
     }
-    expect(result.estado).not.toBe("Bloqueado");
+    const auxiliary = result.fuentes.find((f) => f.key === "anticipos")!;
+    expect(auxiliary.estado).toBe("Parcial");
+    expect(auxiliary.motivo).toContain("no acreditada");
+    expect(result.avisos.map((a) => a.code)).toContain(
+      "COBERTURA_AUXILIAR_PARCIAL",
+    );
+    expect(result.estado).toBe("Listo con avisos");
     expect(result.cobertura).toBe("Parcial");
   } finally {
     close(db);
@@ -248,6 +295,18 @@ test("AC-11: cambio de fuente cambia la revisión", () => {
   }
 });
 
+test("AC-11: cambio de importe del plan cambia la huella", () => {
+  const db = fixture({ plan: true });
+  try {
+    const first = getPrecierre(db, "1", now, { backup });
+    db.run("UPDATE cycle_plan_lines SET del_mes=2000 WHERE ciclo='1'");
+    const second = getPrecierre(db, "1", now, { backup });
+    expect(second.revision).not.toBe(first.revision);
+  } finally {
+    close(db);
+  }
+});
+
 test("AC-12: SinPlan es válido y no bloquea", () => {
   const db = fixture();
   try {
@@ -260,13 +319,13 @@ test("AC-12: SinPlan es válido y no bloquea", () => {
   }
 });
 
-test("AC-13: plan no verificable bloquea", () => {
+test("AC-13: plan no verificable bloquea con inconsistencia real", () => {
   const db = fixture({ plan: true });
   try {
-    const result = getPrecierre(db, "1", now, {
-      backup,
-      planState: "PlanNoVerificable",
-    });
+    db.run(
+      "INSERT INTO cycle_plan_audit(ciclo,presupuesto,revision,actor,instante,motivo,delta) VALUES('1','PRE0001',2,'f','f','revisión divergente','{}')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
     expect(result.plan.estado).toBe("PlanNoVerificable");
     expect(result.bloqueos.map((b) => b.code)).toContain("PLAN_NO_VERIFICABLE");
   } finally {
