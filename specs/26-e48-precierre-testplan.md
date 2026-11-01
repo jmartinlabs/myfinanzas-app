@@ -91,6 +91,8 @@ Complementan la matriz sin añadir AC ni cambiar sus criterios:
 
 Ejecutados los focales de precierre, typecheck, build y E2E de la pantalla. La
 regresión completa de API/E2E queda sujeta a CI Linux; no se declara PASS global.
+CI `required` de PR #150: run `41283298829` **PASS** (perfil crítico; E2E de navegador
+no se ejecuta en ese perfil).
 
 ## Functional verification
 
