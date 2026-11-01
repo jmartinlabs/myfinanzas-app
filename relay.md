@@ -4,38 +4,39 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 53
-message_id: 53a8ccf2-e166-48ab-9181-c7dc3b298ebb
+sequence: 54
+message_id: 6b286f14-169d-45d9-8fe4-efbf923990f6
 from: Alex
 to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-01T08:51:09.525Z
+created_at: 2026-11-01T09:13:20.687Z
 
 ## Message
 
-# PR #150 — auditoría de seguimiento: agregación E4.1 sin overflow
+# PR #150 — auditoría final E4.8: apta para solicitar autorización de merge
 
-**Para:** OpenCode, coordinador
-**De:** Álex, auditor
+**De:** Álex (auditor) · **Para:** OpenCode (coordinador)
 **PR:** https://github.com/jmartinlabs/myfinanzas-app/pull/150
-**HEAD revisado:** `8c5495f7c130c82888caa3f609f9bdd1b14dd6ac` (OPEN, mergeable clean, sin merge). CI `required` PASS en dicho HEAD: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41288150318
-**Relación:** complementa las auditorías relay 0051 y 0052; las tres observaciones de 0052 están corregidas en código. No se solicitan nuevas mejoras visuales.
+**HEAD revisado:** `e89e1e3c4312122f96676ab03fad8c5205446829`
+**Estado comprobado:** OPEN, sin merge, mergeable clean; CI `required` SUCCESS en este HEAD: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41291350031/job/124803086962
 
-## Una corrección técnica focalizada
+## Resultado de la auditoría
 
-En `apps/api/src/precierre.ts`, `investmentSource()`, consulta `CAST(SUM(o.cantidad) AS TEXT)` agrupada por `saldo_inversion + instrumento`. La suma `SUM` de enteros SQLite puede provocar `integer overflow` al superar el límite signed 64-bit; `CAST` posterior no evita el desbordamiento. El motor E4.1 ya dispone de `BigInt` y `quantityText()` exactos.
+**Dictamen: apta técnicamente para pedir autorización expresa de merge.** No se detectó un nuevo defecto bloqueante en los cambios de la última revisión. Verificada la corrección solicitada en relay 0053: eliminación de `SUM(o.cantidad)` en SQLite, acumulación exacta por `BigInt` de operaciones `Vigente` hasta Fin, identidad `Saldo de inversión + Instrumento`, y presentación por `quantityText` (escala 10^8). Pruebas añadidas para dos compras con fracción y suma escalada por encima de 2^63-1; se conservan pruebas de posición por Saldo, histórico inactivo y exclusión de operaciones posteriores.
 
-**Encargo:** cambiar únicamente la agregación de cantidades para sumar *hechos vigentes hasta Fin* usando aritmética `BigInt` exacta, conservando clave de agrupación `Saldo de inversión + Instrumento`, identidad y presentación escalada por 10^8; preferir reutilizar motor/helpers ya existentes y evitar segundo motor o cambio de esquema. Mantener cuentas múltiples, históricos inactivos, corte Fin, ausencia acreditada y no sumar unidades de instrumentos distintos.
+**Evidencia:** PR declara 22/22 tests API, E2E local 1 PASS en 390/1440, typecheck/build PASS y CI Linux `required` SUCCESS. E2E de navegador no se ejecuta en perfil crítico Linux; no afirmar lo contrario.
 
-**Pruebas:** (1) dos compras sobre misma posición con escala/fracciones; (2) mismo instrumento en dos Saldos, independientes; (3) compra posterior a Fin excluida; (4) suma acumulada > 9223372036854775807 en enteros escalados, construida con operaciones individualmente válidas dentro del límite por operación, sin `integer overflow` ni pérdida de precisión. Si no es viable obtener caso extremo válido según restricciones del modelo, registrar el límite exacto en lugar de afirmar cobertura.
+## Límites y precisión documental
 
-**QA:** pruebas focales y regresión de precierre, typecheck, build y CI sobre nuevo HEAD. Mantener AC-04 **parcial** según evidencia; AC-16 sigue seam hasta SPEC27; no afirmar integración real de FIN_NETA/DT6/E4.9. Si el hallazgo requiere decisiones financieras o cambios en motor compartido fuera de E4.8, detener ese alcance y proponer cambio preciso para autorización separada.
+1. **AC-04 permanece PASS parcial:** no se acreditan *todas* las variantes de inconsistencia estructural/clasificación. No promover artificialmente a PASS completo.
+2. **AC-16 es PASS de contrato con seam** hasta integrar proveedor real SPEC27/E4.9; no declarar cierres posteriores reales implementados.
+3. **DT6/T-BKP y E3.5/FIN_NETA siguen abiertos** y mantienen bloqueado E4.9. El precierre E4.8 es solo lectura, sin cierres/fotos, escrituras financieras, backup/restore o activación.
+4. **Decisión explícita del usuario:** aplazar la revisión estética/visual W1–W6 hasta el FINAL del proyecto; no debe bloquear el merge de E4.8. La UI queda funcional y provisional, **no visualmente aprobada**. Mantener mínimos de navegación/usabilidad/regresión.
+5. **Ajuste documental menor recomendado, no nuevo DEV:** en la descripción de PR/testplan/tablero, quitar de «pendientes para merge» las verificaciones CI ya satisfechas y la aprobación visual aplazada; evitar confundir `CI PASS` y `visual aplazado` con gates abiertos. No cambiar semántica financiera ni reabrir diseño.
 
-## Decisiones del usuario y límites
+## Qué hacer ahora
 
-- La revisión/aprobación visual W1–W6 queda **aplazada hasta el final del proyecto**; interfaz funcional provisional, no aprobada visualmente. No bloquear merge exclusivamente por estética; conservar mínima operabilidad, accesibilidad y ausencia de errores graves.
-- **Autorizado solo el arreglo DEV E4.8 y su QA en PR #150.** No merge automático, despliegue, datos reales, cierre E4.9, backup/restauración ni migraciones.
-- Retorno: ID/estado, SHA, archivos cambiados, solución exacta, resultados de pruebas y CI para ese SHA, riesgo residual y dictamen **apta/no apta para solicitar autorización de merge**.
+Preparar un retorno breve con SHA y estado de CI, AC parciales/UNRUN y propuesta de autorización de merge para el usuario. **Este mensaje NO autoriza a hacer merge**: no integrar hasta consentimiento explícito e identificable del usuario. No iniciar E4.9, migración, datos reales ni despliegue. No pedir otra auditoría E4.8 sin nuevo hallazgo material.
 
-**Nota de transporte:** el mensaje 0052 seguía marcado `read_by: none` en la cabecera más reciente. Este mensaje no presume que OpenCode lo haya reconocido; consolida el estado de la revisión.
+**Contexto siguiente:** tras E4.8 corresponde el review conjunto de specs/arquitectura (PRs draft #131, #132 y #134) antes de ejecutar cambios de clasificación/planificación/Comida; E4.2 Ventas tiene spec aprobada pero DEV22 requiere autorización independiente.
