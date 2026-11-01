@@ -268,6 +268,81 @@ test("AC-05: T1000/G200/S300/N2 produce P500 y sugerida250 sin doble saldo inici
   db.close();
 });
 
+test("AC-22/corte: el gasto del día de corte entra en G y S usa el mismo corte", () => {
+  const { db, sub, account } = setup("500");
+  const root = partida(db, sub.id, "Raíz corte");
+  configure(db, root.id, { fuente: "Aportación a saldo" });
+  const hija = partida(db, sub.id, "Hija corte");
+  configure(db, hija.id, { padrePartida: root.id });
+  cycle(db, "2026-05-20");
+  const june = cycle(db, "2026-06-20");
+  const plan = forecast(db, {
+    padre: root.id,
+    saldo: account.id,
+    mesInicial: "2026-05-01",
+    mesFinal: "2026-08-01",
+    saldoInicial: "500",
+    saldoEvidencia: "Extracto ficticio",
+  });
+  const line = plan.lineas.find((l) => l.hija === hija.id)!;
+  const p = previewLineas(db, plan.planificacion.id, {
+    revision: plan.planificacion.revision,
+    cambios: [{ id: line.id, importe: "1000", esencial: true }],
+    motivo: "Previsión ficticia de corte",
+  });
+  confirmLineas(
+    db,
+    plan.planificacion.id,
+    {
+      revision: plan.planificacion.revision,
+      cambios: p.cambios,
+      motivo: "Previsión ficticia de corte",
+      fingerprint: p.fingerprint,
+    },
+    randomUUID(),
+    now,
+  );
+  expense(db, account.id, hija.id, "2026-05-25", "100");
+  const cutPurchase = expense(db, account.id, hija.id, "2026-06-19", "200");
+  expense(db, account.id, hija.id, "2026-06-20", "400");
+  const preview = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: june.id,
+    exclusiones: [],
+  });
+  expect(preview.corte).toBe("2026-06-19");
+  expect(preview.G.bruto).toBe("300.00");
+  expect(preview.G.neto).toBe("300.00");
+  expect(preview.S).toBe("200.00");
+  expect(preview.P).toBe("500.00");
+  add(db, {
+    tipo: "Devolución de gasto",
+    fecha: "2026-06-19",
+    importe: "50",
+    saldo: account.id,
+    partida: hija.id,
+    concepto: "Devolución ficticia del día de corte",
+    nota: "",
+    devolucion: {
+      estado: "Verificado",
+      compra: cutPurchase.movimiento.id,
+      evidenciaRelacion: "Motivo comercial ficticio",
+      elegibilidad: "Acreditada",
+      cicloOrigen: "1",
+      evidenciaOrigenTemporal: "Documento de compra ficticio",
+    },
+  });
+  const withRefund = aperturaPreview(db, plan.planificacion.id, {
+    ciclo: june.id,
+    exclusiones: [],
+  });
+  expect(withRefund.G.bruto).toBe("300.00");
+  expect(withRefund.G.devoluciones).toBe("50.00");
+  expect(withRefund.G.neto).toBe("250.00");
+  expect(withRefund.S).toBe("250.00");
+  expect(withRefund.P).toBe("500.00");
+  db.close();
+});
+
 test("AC-06: dos planificaciones con el mismo Saldo bloquean S y no sugieren cero", () => {
   const { db, sub, account } = setup("1000");
   const r1 = partida(db, sub.id, "Raíz A");

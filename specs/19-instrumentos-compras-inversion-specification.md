@@ -11,6 +11,12 @@ despliegue. El DEV/QA histórico del contrato 16 queda superado por la evidencia
 **Nota de vigencia (2026-10-29):** PR #95 se integró por squash en `main` `156a50d`;
 las referencias posteriores a «draft/sin merge» describen la fase y no el estado vigente.
 Los AC-03/24/27/30/33/34 conservan su cobertura parcial.
+
+**Enmienda D7 (aprobada por el usuario el 2026-11-01).** Extensión mínima de integración
+con E4.2: rectificar (incluido cualquier cambio de fecha) o anular una Compra con Ventas
+vigentes no puede dejar la cantidad del par `saldo_inversion + instrumento` negativa en
+ninguna fecha. Añade AC-55 y **no modifica** las decisiones ni los AC aprobados de rev10.
+La aprobación **no autoriza DEV22**, que requiere autorización separada.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`, manteniendo las decisiones funcionales de rev7.
 Rev9 (2026-10-27) quedó superada por la ocupación de la 16; rev10 fue aprobada por el usuario
@@ -48,6 +54,8 @@ en `main` `cf6954a`, reconcilia el contrato v17 `C17-D5-CF6954A` (145 objetos, S
 `e0707d4056522979b26692beb1fe7dfc26984b06afceb7b54a5f6d7011a50e50`, congelado), preserva
 datos e identidad de main 16/17 y repite el gate; **aprobada por el usuario el 2026-10-27**
 e **implementada en DEV19** sobre la 18; sin merge ni despliegue.
+Enmienda D7 aprobada por el usuario el 2026-11-01 e integrada en `main` `e6475e6`;
+DEV22 no autorizado.
 Solo documentación y ejemplos ficticios; rev10 no autoriza por sí misma desarrollo, SQL,
 migraciones, pruebas ejecutables, datos reales ni despliegue.
 
@@ -485,6 +493,39 @@ contratos de los consumidores ni la regla R6. Contrato explícito:
 - Una rectificación que deje negativo cualquier saldo posterior se rechaza con 422
   `INSUFFICIENT_CASH` y la fecha/importe del mínimo (§4.3.2); no hay escritura parcial ni
   cambio de fecha parcial.
+- **Enmienda D7 — cantidad no negativa con Ventas (aprobada por el usuario el 2026-11-01).** Cuando existan
+  Ventas vigentes, **cualquier rectificación —incluido un cambio de fecha que no modifique
+  la cantidad— o anulación** de una Compra se somete a una comprobación de cantidad análoga
+  a la de efectivo, alineada con
+  [SPEC22 §4.1](22-ventas-posicion-broker-specification.md) (D7):
+
+  ```text
+  posicion_base(t) = Σ cantidad(Compras vigentes excluida la original, fecha ≤ t)
+                   − Σ cantidad(Ventas vigentes, fecha ≤ t)
+  candidato(t) = posicion_base(t) + cantidad_nueva, si t ≥ fecha_nueva
+               = posicion_base(t), en otro caso
+  ```
+
+  La Compra rectificada **no contribuye a la posición antes de `fecha_nueva`**, aunque su
+  cantidad permanezca igual o aumente; el término `cantidad_nueva` solo se aplica desde esa
+  fecha. Por eso mover la fecha hacia delante puede dejar negativa una fecha intermedia
+  donde ya existía una Venta. Se evalúa desde `min(fecha original, fecha resultante)` y en
+  cada fecha posterior con una Compra o Venta vigente del mismo par
+  `saldo_inversion + instrumento`. Los hechos de la misma fecha se agregan a fin de día
+  (DT2) y las cantidades se calculan con enteros escalados a 8 decimales, sin `float`. Si el
+  mínimo es negativo se rechaza con 422 `INSUFFICIENT_UNITS`, con `disponible` (posición
+  vigente antes del cambio en la fecha del mínimo), `necesario` (cantidad que el cambio
+  retira en esa fecha), `minimo` (candidato negativo), `fecha`, `saldoInversion` e
+  `instrumento`, sin escritura, sin auditoría de éxito y sin override. La comprobación de
+  cantidad se ejecuta antes que la de efectivo; si ambas fallan, la respuesta es
+  `INSUFFICIENT_UNITS`. En un runtime sin Ventas la comprobación no puede fallar y E4.1
+  conserva su comportamiento. Esta extensión no reabre D1–D7 de SPEC22 ni las decisiones de
+  rev10.
+
+  Ejemplo ficticio: Compra de 10 el 2026-01-01 y Venta de 6 el 2026-01-05. Mover la Compra
+  al 2026-01-10 sin cambiar su cantidad deja el 2026-01-05 en −6 y se rechaza con 422
+  `INSUFFICIENT_UNITS`, `fecha` 2026-01-05, sin escritura. Mover la fecha hacia atrás solo es
+  válido si ninguna fecha del recorrido queda negativa.
 - Anular conserva el registro, lo marca `Anulada`, lo excluye de efectivo y cantidad y no
   permite una segunda anulación. Exige `revision` vigente y `motivo` no vacío; revisión
   obsoleta devuelve 409 `REVISION_CONFLICT` sin escritura. Sin DELETE.
@@ -1402,11 +1443,13 @@ contador ni auditoría. Los códigos esperados se fijan por caso y no se solapan
 `revision` obsoleta; 409 `IMPACT_CHANGED` para huella/contexto de **Movimiento** obsoleto
 (no para rutas de Compra); 409 `HISTORY_LOCKED`
 para el guard de impacto de Saldo; 422 `VALIDATION` para validación de campos; 422
-`INSUFFICIENT_CASH` para suficiencia, incluida la recalculada; 401/403 para acceso o CSRF. No
+`INSUFFICIENT_CASH` para suficiencia, incluida la recalculada; 422 `INSUFFICIENT_UNITS`
+para la invariante de cantidad de la enmienda D7; 401/403 para acceso o CSRF. No
 existe un 409 ni un 422 genéricos, y la suficiencia nunca se reporta como 409. Los AC marcados
 **(integración/regresión)** —AC-38, AC-39, AC-40, AC-41, AC-42, AC-49 y AC-53— verifican contratos
-previos o consumidores y no cuentan como funcionalidad nueva de E4.1. Total: 54 AC, de los
-que 47 son funcionales de E4.1 y 7 de integración/regresión. AC-33 incluye los contratos v14, v15, v16 y v17 y la revalidación de la versión
+previos o consumidores y no cuentan como funcionalidad nueva de E4.1. Total: 54 AC
+aprobados (47 funcionales de E4.1 y 7 de integración/regresión) más **AC-55**, aprobado en
+la enmienda D7: la matriz pasa a 55 AC (48 funcionales y 7 de integración/regresión). AC-33 incluye los contratos v14, v15, v16 y v17 y la revalidación de la versión
 destino; su apartado (h) es una comprobación pre-DEV, no una migración ejecutada.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
@@ -1465,6 +1508,7 @@ destino; su apartado (h) es una comprobación pre-DEV, no una migración ejecuta
 | E4.1-AC-52 | Invocar `POST /api/compras/impacto`, `POST /api/compras/{id}/impacto`, `POST /api/compras/{id}/impacto-anulacion` y los GET de listado, ficha, auditoría, efectivo y opciones; comparar tablas, contadores, revisiones y auditoría antes/después | Ninguna ruta escribe: no hay filas nuevas ni modificadas en `instrumentos`, `operaciones_inversion`, tablas de auditoría o intentos; los contadores no se mueven, no se reserva ID y las revisiones no cambian; las respuestas de impacto son solo lectura |
 | E4.1-AC-53 (integración/regresión) | Previsualizar un Gasto sobre `S003`; registrar una Compra en `S003` que cambie su efectivo; confirmar el Movimiento con el `contextRevision` y la huella de la vista previa. Repetir con una previsualización de Gasto sobre `S001` (`Efectivo`/`Movimientos`, sin Compras) y una Compra en `S003` | La confirmación devuelve 409 `IMPACT_CHANGED` —no `REVISION_CONFLICT`, porque la `revision` del Movimiento no cambió— sin escribir el Movimiento; el efectivo refleja solo la Compra registrada; el borrador se conserva y, tras recalcular la vista previa, la confirmación es válida. El caso ajeno también devuelve 409 `IMPACT_CHANGED` sin escritura: se registra como sobre-invalidación segura de la huella global, no como defecto, y la confirmación tras recalcular es válida |
 | E4.1-AC-54 | Alta o rectificación con `concepto` y `nota` de 2000 y de 2001 caracteres; `divisa` `US`, `USDD` y `usd`; `comisionEur` `5.001` | 2000 se acepta y persiste literal; 2001, cada divisa inválida y la comisión con 3 decimales devuelven 422 con el campo señalado, sin escritura ni redondeo |
+| E4.1-AC-55 (enmienda D7, aprobada) | Con Ventas vigentes: rectificar a la baja una Compra por debajo de la cantidad vendida; anular una Compra ya consumida por una Venta posterior; mover la fecha de una Compra hacia delante **sin cambiar la cantidad** (y otra variante aumentándola) dejando una Venta en el hueco; mover la fecha hacia atrás sin negativos; repetir con una rectificación válida; repetir sin Ventas; probar ambos órdenes de captura del mismo día | Los casos inválidos devuelven 422 `INSUFFICIENT_UNITS` con `disponible`, `necesario`, `minimo`, `fecha`, `saldoInversion` e `instrumento`, sin escritura, sin auditoría de éxito ni ID consumido, **también cuando solo cambia la fecha y la cantidad no disminuye**; la válida se acepta y recalcula la cantidad; sin Ventas no aparece un rechazo nuevo; el resultado es idéntico en ambos órdenes de captura (DT2); si también falla el efectivo, el código es `INSUFFICIENT_UNITS` |
 
 ## 14. Trazabilidad a los criterios del roadmap
 
@@ -1473,6 +1517,7 @@ destino; su apartado (h) es una comprobación pre-DEV, no una migración ejecuta
 | E4.1-AC1: registro solo en operaciones de inversión, nunca Gasto/Compra en Movimientos | AC-09, AC-10, AC-27, AC-28, AC-41, AC-52 | Comparar tablas Movimientos, Presupuesto, Compra, efectivo y `flujo-mensual` antes/después de alta, rectificación y anulación; la financiación es una Transferencia independiente y su previsualización no escribe. |
 | E4.1-AC2: cash de bróker y saldo de inversión distintos, Ixxx/ISIN con evidencia | AC-01, AC-02, AC-03, AC-04, AC-08, AC-17, AC-22, AC-23, AC-37, AC-38, AC-40, AC-48, AC-49 | Instrumento con ID/evidencia; posiciones por Saldo+Instrumento; efectivo separado de cantidad y no agregado; `S004` sigue sin valoración; varios Saldos de efectivo por separado; cobertura parcial declarada. |
 | E4.1-AC3: preservar cantidad/precio/divisa/cambio histórico/EUR efectivo y comisiones aplicables | AC-10, AC-11, AC-12, AC-13, AC-14, AC-25, AC-26, AC-32, AC-35, AC-36, AC-43, AC-45, AC-46, AC-47, AC-50, AC-51, AC-54 | Leer la Compra después de un cambio actual, editar el maestro, rectificar con reemplazo completo y anular; comparar campos exactos, efectivo, cantidad, límites de entrada, cálculo interno y auditoría dedicada. |
+| E4.2-AC1 (D7, extensión de integración) | AC-55 | Con Ventas vigentes, rectificar (incluido un cambio de fecha sin cambiar la cantidad) o anular una Compra y comprobar que la cantidad por `saldo_inversion + instrumento` nunca queda negativa; 422 `INSUFFICIENT_UNITS` sin escritura. |
 
 Los AC de integración/regresión (AC-38, AC-39, AC-40, AC-41, AC-42, AC-49 y AC-53) se declaran
 como tales en §13 y no amplían la funcionalidad de E4.1; AC-52 acredita que las vistas previas

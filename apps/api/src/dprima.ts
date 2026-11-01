@@ -783,7 +783,7 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
       !r.anulado &&
       r.tipo === "Gasto" &&
       r.fecha >= from &&
-      r.fecha < cut &&
+      r.fecha <= cut &&
       r.partida !== null &&
       set.has(r.partida),
   );
@@ -821,9 +821,9 @@ function gastoNeto(db: Database, padre: string, from: string, cut: string) {
       const partida = l.partida ?? l.movimientoPartida ?? l.compraPartida;
       if (!partida || !set.has(partida)) continue;
       // A refund from a previous planning never reduces this G.
-      if (l.compra && (!l.compraFecha || l.compraFecha < from || l.compraFecha >= cut))
+      if (l.compra && (!l.compraFecha || l.compraFecha < from || l.compraFecha > cut))
         continue;
-      if (l.fecha >= from && l.fecha < cut) {
+      if (l.fecha >= from && l.fecha <= cut) {
         const validLink =
           !l.compra ||
           (l.estado === "Verificado" &&
