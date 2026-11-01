@@ -11,9 +11,10 @@ acredita rev10/18 con CI Linux full `40583217493` SUCCESS (13 E2E). **No se auto
 las menciones posteriores a «PR #95 draft / sin merge» son históricas. Los AC parciales
 se conservan y no se reclasifican.
 
-**Enmienda D7 (propuesta 2026-11-01).** Añade la fila AC-55 (cantidad no negativa al
-rectificar o anular Compras con Ventas vigentes), **UNRUN**: DEV22 no está autorizado y no
-hay implementación. No altera la evidencia de los 54 AC aprobados.
+**Enmienda D7 (aprobada 2026-11-01).** Añade la fila AC-55 (cantidad no negativa al
+rectificar —incluido cambio de fecha— o anular Compras con Ventas vigentes), **UNRUN**:
+DEV22 no está autorizado y no hay implementación. Integrada en `main` `e6475e6`; no altera
+la evidencia de los 54 AC aprobados.
 Approval source/date: rev8 fue aprobada por el usuario el 2026-10-26 sobre el commit
 `f439010d527ba65953a1ccc0aa47cbeb51cfce31`. Rev9 quedó superada; rev10 fue aprobada por el
 usuario el 2026-10-27.
@@ -120,7 +121,7 @@ prueba versionada propia.
 | E4.1-AC-52 | Invocar los tres `POST` de impacto y los GET de listado, ficha, auditoría, efectivo y opciones; comparar tablas, contadores, revisiones y auditoría | Ninguna ruta escribe: sin filas nuevas ni modificadas en Compras, Instrumentos, operaciones, auditorías o intentos; contadores sin mover, sin ID reservado y sin cambio de revisión | API/SQLite con snapshot antes/después; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions de tablas, contadores y revisiones idénticas; respuestas de solo lectura |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-53 (integración/regresión) | Previsualizar Gasto sobre `S003`; registrar una Compra que cambie el efectivo; confirmar con la huella y `contextRevision` previas; repetir con un Gasto previsualizado sobre `S001` (sin Compras) y una Compra en `S003` | 409 `IMPACT_CHANGED` sin escribir el Movimiento (no `REVISION_CONFLICT`: la revisión del Movimiento no cambió); el efectivo refleja solo la Compra; borrador conservado; tras recalcular, la confirmación es válida. El caso ajeno devuelve también 409 `IMPACT_CHANGED` sin escritura y se acepta como sobre-invalidación segura de la huella global, no como defecto; tras recalcular, válido | API/Motor + comparación antes/después; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions 409, huella obsoleta, tablas sin cambio y reintento válido en ambos casos |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
 | E4.1-AC-54 | `concepto`/`nota` de 2000 y 2001; `divisa` `US`, `USDD`, `usd`; `comisionEur` `5.001` | 2000 aceptado y literal; 2001, cada divisa inválida y la comisión de 3 decimales devuelven 422 con el campo, sin escritura ni redondeo | API real por campo; `bun test apps/api/src/compras.test.ts` | macOS local ejecutado; CI Ubuntu pendiente | Assertions 201/422 por campo y tablas sin cambio |  PASS — suite focal ejecutada  |  `bun test apps/api/src/instrumentos.test.ts apps/api/src/compras.test.ts apps/api/src/inversiones-ac.test.ts` |
-| E4.1-AC-55 (enmienda D7, propuesta) | Con Ventas vigentes: rectificación a la baja por debajo de lo vendido; anulación de una Compra consumida por una Venta posterior; cambio de fecha hacia delante **sin cambiar la cantidad** y variante aumentándola, dejando una Venta en el hueco; cambio de fecha hacia atrás sin negativos; rectificación válida; caso sin Ventas; ambos órdenes de captura del mismo día | 422 `INSUFFICIENT_UNITS` con `disponible`, `necesario`, `minimo`, `fecha`, `saldoInversion` e `instrumento`, sin escritura, sin auditoría de éxito ni ID consumido, **también cuando solo cambia la fecha y la cantidad no disminuye**; la válida se acepta y recalcula la cantidad; sin Ventas no hay rechazo nuevo; resultado idéntico en ambos órdenes (DT2); si también falla el efectivo, el código es `INSUFFICIENT_UNITS` | API real con Ventas sintéticas (DEV22 futuro); sin ejecutar | Pendiente; requiere DEV22 y autorización | Assertions 422/201, campos del error, tablas y auditoría sin cambio | UNRUN — DEV22 no autorizado, sin implementación | — |
+| E4.1-AC-55 (enmienda D7, aprobada) | Con Ventas vigentes: rectificación a la baja por debajo de lo vendido; anulación de una Compra consumida por una Venta posterior; cambio de fecha hacia delante **sin cambiar la cantidad** y variante aumentándola, dejando una Venta en el hueco; cambio de fecha hacia atrás sin negativos; rectificación válida; caso sin Ventas; ambos órdenes de captura del mismo día | 422 `INSUFFICIENT_UNITS` con `disponible`, `necesario`, `minimo`, `fecha`, `saldoInversion` e `instrumento`, sin escritura, sin auditoría de éxito ni ID consumido, **también cuando solo cambia la fecha y la cantidad no disminuye**; la válida se acepta y recalcula la cantidad; sin Ventas no hay rechazo nuevo; resultado idéntico en ambos órdenes (DT2); si también falla el efectivo, el código es `INSUFFICIENT_UNITS` | API real con Ventas sintéticas (DEV22 futuro); sin ejecutar | Pendiente; requiere DEV22 y autorización | Assertions 422/201, campos del error, tablas y auditoría sin cambio | UNRUN — DEV22 no autorizado, sin implementación | — |
 
 ## Contratos C14/C15/C16/C17 congelados y gate de destino — 2026-10-27
 
@@ -291,8 +292,8 @@ sin condicionales.
 
 **Evidencia DEV19 (v18):** **48 AC PASS y 6 PARCIAL** (AC-03, AC-24, AC-27, AC-30, AC-33 y
 AC-34) en API/SQLite real, sin FAIL. La matriz mantiene 54 AC aprobados (47 funcionales de
-E4.1 y 7 de integración/regresión) más **AC-55 propuesto (UNRUN)**, dependiente de DEV22 y
-sin implementación; al aprobarse la enmienda D7 pasará a 55 AC (48 funcionales y 7 de
+E4.1 y 7 de integración/regresión) más **AC-55 (UNRUN)**, aprobado con la enmienda D7 y
+dependiente de DEV22, sin implementación: la matriz pasa a 55 AC (48 funcionales y 7 de
 integración/regresión). Sobre `main` `9977210` se ejecutaron
 API/SQLite real, comparación de tablas antes/después, dos procesos para concurrencia, rollback
 inyectado, las rutas 13→18, 14→18, 15→18, 16→17→18 y 17→18 con fixtures congelados C14/C14V/
