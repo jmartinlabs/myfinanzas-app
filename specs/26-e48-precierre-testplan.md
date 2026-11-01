@@ -2,9 +2,11 @@
 
 Specification: [26-e48-precierre-specification.md](26-e48-precierre-specification.md)
 
-Status: **APPROVED — diseño documental; todos los AC UNRUN.** No hay implementación,
-código, CI, migración ni datos reales. Aprobado con SPEC26 el 2026-10-28; DT3/DT4
-resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
+Status: **APPROVED — diseño documental; DEV funcional implementado el 2026-11-01.**
+La matriz original conserva sus estados de diseño; la evidencia funcional se registra
+en «Evidencia funcional E4.8 — 2026-11-01». La revisión visual de W1–W6 queda
+**aplazada al final del proyecto** por decisión del usuario y no bloquea el merge
+funcional; la UI no se declara visualmente aprobada.
 
 Revisión documental 2026-10-31, actualizada 2026-11-01 sobre `main` `46c7dd1`: se precisan
 permisos, idempotencia de lectura, resultados vacíos/errores y referencias a los
@@ -32,6 +34,46 @@ Base de aprobación: `main` `f077b7e`, esquema 18; revisión documental: `main` 
 | AC-15 | `GET /api/cierres/:ciclo/estado` | Ruta canónica compartida con SPEC27; misma versión/estado; solo lectura | Bun Test de contrato | Documental; API futura | Respuesta de estado | UNRUN — diseño | — |
 | AC-16 | Ciclo con cierres posteriores ya existentes, coherentes o con diferencia no explicable; abrir precierre | Aviso `CIERRE_FUERA_DE_ORDEN`; comprobación al mismo corte; sin diferencia no explicable no bloquea; con diferencia no explicable bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR`; no escribe | Bun Test + UI | Documental; API/UI futura | DTO con aviso o bloqueo | UNRUN — diseño | — |
 
+## Evidencia funcional E4.8 — 2026-11-01
+
+Implementación funcional de solo lectura en `apps/api/src/precierre.ts`, rutas
+`GET /api/cierres/precierre/:ciclo` y `GET /api/cierres/:ciclo/estado`, y pantalla
+provisional `apps/web/src/Precierre.tsx`. Sin cierre, fotos, escritura, cambios de S0
+ni ejecución de backups.
+
+Comandos ejecutados:
+
+- `NODE_ENV=test bun test apps/api/src/precierre.test.ts` → **22 PASS / 0 FAIL**.
+- `bun run test:e2e tests/e2e/precierre.spec.ts` → **1 PASS** (1440/390, estados y
+  solo lectura).
+- `bun run typecheck` y `bun run build` → **PASS**.
+
+| AC | Resultado | Evidencia / límite |
+| --- | --- | --- |
+| AC-01 | PASS | Ventana, S0 y estado; API + E2E |
+| AC-02 | PASS | `SIN_SIGUIENTE_INICIO`; sin Fin inventado |
+| AC-03 | PASS | `S0_AUSENTE` con seam de test; no se crea S0 |
+| AC-04 | PASS parcial | Vínculos históricos inactivos no bloquean; clasificación incompatible real sí. No se modela toda inconsistencia |
+| AC-05 | PASS | E4.1 efectivo y posiciones Saldo+Instrumento a Fin; cantidades BigInt/10^8, fracciones, múltiples cuentas, posteriores excluidas y suma >2^63-1 sin overflow |
+| AC-06 | PASS | Posición previa no es vacío; sin posición, vacío explícito |
+| AC-07 | PASS | E4.3/E4.2/E4.4 como aviso/no disponible, no cero |
+| AC-08 | PASS | `BACKUP_NO_VERIFICABLE` bloquea por defecto |
+| AC-09 | PASS | POST/PATCH/DELETE → 405, `Allow: GET`, sin escritura |
+| AC-10 | PASS | GET repetido conserva `revision`; sin escritura |
+| AC-11 | PASS revisión | Cambio de Movimiento o de importe del plan cambia `revision`; el 409 de confirmación pertenece a E4.9 |
+| AC-12 | PASS | `SinPlan` válido; no bloquea |
+| AC-13 | PASS | Revisión de plan divergente en `cycle_plan_audit` bloquea; sin seam |
+| AC-14 | PASS | E3.5 `No disponible`, cobertura parcial y E4.9 bloqueado |
+| AC-15 | PASS | `/estado` comparte `revision` y estado con precierre |
+| AC-16 | PASS contrato | Cierre posterior coherente avisa; incoherente bloquea; proveedor de cierres es seam hasta SPEC27 |
+
+**Límites:** los proveedores de backup y cierres posteriores son seams de contrato;
+por defecto no hay evidencia DT6 y el precierre queda bloqueado. Las fuentes auxiliares
+son conteos informativos con cobertura parcial/no acreditada; no se presentan como
+conciliadas. E4.1 exige cuentas aplicables y bloquea si no están disponibles. No se ha
+ejecutado restore real, cierre, foto ni backup. La revisión visual W1–W6 queda aplazada
+al final del proyecto; la UI es provisional y no se declara visualmente aprobada.
+
 ### Casos de contrato conceptuales (diseño, UNRUN)
 
 Complementan la matriz sin añadir AC ni cambiar sus criterios:
@@ -51,24 +93,31 @@ Complementan la matriz sin añadir AC ni cambiar sus criterios:
 
 ## Regression checks
 
-Pendientes de implementación. No se declara PASS; la matriz es de diseño.
+Ejecutados los focales de precierre, typecheck, build y E2E de la pantalla. La
+regresión completa de API/E2E queda sujeta a CI Linux; no se declara PASS global.
+CI `required` de PR #150: run `41291066563` **PASS** (perfil crítico; E2E de navegador
+no se ejecuta en ese perfil).
 
 ## Functional verification
 
-UNRUN. No hay endpoints ni UI de E4.8 implementados; los casos anteriores son
-hipótesis de contrato, no resultados.
+**PASS de contrato** para los 16 AC en `apps/api/src/precierre.test.ts` (22/22) y la
+ruta HTTP de solo lectura. AC-11 acredita cambio de `revision` por Movimiento y por
+importe del plan; el 409 de confirmación pertenece a E4.9. AC-13 usa una revisión de
+plan divergente real; AC-16 usa el seam del proveedor de cierres hasta SPEC27. AC-04
+queda parcial: distingue vínculos históricos inactivos de una clasificación incompatible
+real, pero no modela toda inconsistencia.
 
 ## Browser verification
 
-UNRUN funcional. Wireframes W1–W6 propuestos en SPEC26 el 2026-10-31, con vista HTML
-documental y capturas estáticas 1440×1565 y 390×1985 en
-`26-e48-precierre-captures/`; pendientes de aprobación visual. No hay UI de E4.8
-implementada ni capturas de aplicación. Las capturas documentales no demuestran
-accesibilidad, cálculo financiero ni PASS funcional.
+**PASS funcional provisional**: E2E 1440/390 en `tests/e2e/precierre.spec.ts`, con
+estados, fuentes, backup y control de cierre deshabilitado. La UI es provisional. La
+revisión visual de W1–W6 queda aplazada al final del proyecto por decisión del usuario;
+no bloquea el merge funcional, pero la UI no se declara visualmente aprobada. Las
+capturas E2E no sustituyen esa revisión ni una auditoría de accesibilidad.
 
 ## Limitations and next action
 
-La aprobación de la spec y los wireframes, DT6/T-BKP y cualquier DEV son gates
-separados; DT3/DT4 ya están resueltas. No se ejecutan pruebas hasta autorización de
-desarrollo. La autorización vigente cubre solo preparación documental: esta matriz no
-habilita DEV, cierre, E4.9 ni datos reales.
+La aprobación visual de los wireframes, DT6/T-BKP, el cierre E4.9 y cualquier uso con
+datos reales son gates separados. El precierre implementado es de solo lectura; por
+defecto el backup no tiene evidencia y queda bloqueado. No se cierra E4.9 ni se
+autoriza escritura, migración, activación o despliegue.

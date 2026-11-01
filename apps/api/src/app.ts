@@ -177,11 +177,17 @@ import {
   writeCycleOperation,
   cycleHistory,
 } from "./ciclos";
+import {
+  getPrecierre,
+  getPrecierreEstado,
+  type PrecierreOptions,
+} from "./precierre";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
   classificationGuard?: ClassificationGuard;
   movementGuard?: MovementProtection;
+  precierre?: PrecierreOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -706,6 +712,38 @@ export function createApp(db: Database, options: AppOptions) {
               now(),
             ),
           );
+      }
+      const precierre = path.match(/^\/api\/cierres\/precierre\/(\d+)$/);
+      if (precierre) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El precierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getPrecierre(db, precierre[1], now(), options.precierre),
+          )(),
+        );
+      }
+      const cierreEstado = path.match(/^\/api\/cierres\/(\d+)\/estado$/);
+      if (cierreEstado) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El estado de cierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
+          )(),
+        );
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());

@@ -128,7 +128,7 @@ E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
 | --- | --- | --- |
 | E3.5 / FIN_NETA | No integrado; DEV18 STOP | Bloquea **AC-08**; adaptación pendiente al gasto único de Comida en Movimientos |
 | DT6 / T-BKP | Abierto y aparcado; sin datos físicos | Bloquea **AC-09**; los fixtures v19/v20 no acreditan custodia externa ni simulacro |
-| E4.8 precierre | Documentación integrada en `ab730cf`; DEV no autorizado | Puerta del flujo E4.9; falta desarrollo o integración efectiva |
+| E4.8 precierre | [PR #150](https://github.com/jmartinlabs/myfinanzas-app/pull/150) OPEN; DEV funcional; CI PASS; UI provisional; visual aplazada al final y no bloquea merge | Puerta del flujo E4.9; pendiente decisión de merge |
 | DEV E4.9 / SPEC27 | No autorizado; AC **UNRUN** | Faltan cierre, foto, impactos, idempotencia, concurrencia, seguridad y pruebas |
 | Entorno real | Gates separados | Datos, release/rootless y ejecución productiva no autorizados |
 
@@ -137,7 +137,7 @@ E4.4 pueden figurar `Parcial`/`No disponible`; E4.10 y E4.11 están fuera de
 alcance; DT3/DT4 están resueltas y no se reabren.
 
 Orden recomendado, sin iniciar trabajo automáticamente: analizar la adaptación de
-E3.5/FIN_NETA; mantener E4.8 documentado y no iniciar su DEV sin autorización;
+E3.5/FIN_NETA; decidir el merge funcional de E4.8 manteniendo la visual aplazada;
 mantener DT6 aparcado; abordar DEV E4.9 solo tras aprobar alcance y dependencias.
 
 ### 6. Mejoras opcionales
