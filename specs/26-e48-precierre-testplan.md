@@ -42,7 +42,7 @@ ni ejecución de backups.
 
 Comandos ejecutados:
 
-- `NODE_ENV=test bun test apps/api/src/precierre.test.ts` → **20 PASS / 0 FAIL**.
+- `NODE_ENV=test bun test apps/api/src/precierre.test.ts` → **22 PASS / 0 FAIL**.
 - `bun run test:e2e tests/e2e/precierre.spec.ts` → **1 PASS** (1440/390, estados y
   solo lectura).
 - `bun run typecheck` y `bun run build` → **PASS**.
@@ -53,7 +53,7 @@ Comandos ejecutados:
 | AC-02 | PASS | `SIN_SIGUIENTE_INICIO`; sin Fin inventado |
 | AC-03 | PASS | `S0_AUSENTE` con seam de test; no se crea S0 |
 | AC-04 | PASS parcial | Vínculos históricos inactivos no bloquean; clasificación incompatible real sí. No se modela toda inconsistencia |
-| AC-05 | PASS | E4.1 efectivo y posiciones Saldo+Instrumento a Fin; cantidades escaladas, posteriores excluidas y múltiples cuentas |
+| AC-05 | PASS | E4.1 efectivo y posiciones Saldo+Instrumento a Fin; cantidades BigInt/10^8, fracciones, múltiples cuentas, posteriores excluidas y suma >2^63-1 sin overflow |
 | AC-06 | PASS | Posición previa no es vacío; sin posición, vacío explícito |
 | AC-07 | PASS | E4.3/E4.2/E4.4 como aviso/no disponible, no cero |
 | AC-08 | PASS | `BACKUP_NO_VERIFICABLE` bloquea por defecto |
@@ -99,7 +99,7 @@ no se ejecuta en ese perfil).
 
 ## Functional verification
 
-**PASS de contrato** para los 16 AC en `apps/api/src/precierre.test.ts` (20/20) y la
+**PASS de contrato** para los 16 AC en `apps/api/src/precierre.test.ts` (22/22) y la
 ruta HTTP de solo lectura. AC-11 acredita cambio de `revision` por Movimiento y por
 importe del plan; el 409 de confirmación pertenece a E4.9. AC-13 usa una revisión de
 plan divergente real; AC-16 usa el seam del proveedor de cierres hasta SPEC27. AC-04

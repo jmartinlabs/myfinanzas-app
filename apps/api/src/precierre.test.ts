@@ -6,6 +6,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { getPrecierre, getPrecierreEstado } from "./precierre";
+import { quantityText } from "./investment-engine";
 
 process.env.NODE_ENV = "test";
 const now = Date.parse("2026-01-20T12:00:00Z");
@@ -180,6 +181,43 @@ test("AC-05: misma posición se separa por Saldo+Instrumento", () => {
     expect(
       result.inversion.posiciones.map((p) => p.saldoInversion.id).sort(),
     ).toEqual(["S004", "S006"]);
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: dos compras de la misma posición suman en BigInt exacto", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('4','Compra','2026-01-15','I0001','S003','S004',150000000,1000,'EUR',NULL,1500,NULL,'Compra fracción',NULL,'Vigente',1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.posiciones).toHaveLength(1);
+    expect(result.inversion.posiciones[0].cantidad).toBe("2.5");
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: suma agregada por encima de 2^63-1 sin overflow", () => {
+  const db = fixture({ plan: true });
+  try {
+    db.run(
+      "INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en) VALUES('I0001','Instrumento overflow','Activa',1,'f','f')",
+    );
+    const insert = db.prepare(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES(?, 'Compra','2026-01-05','I0001','S003','S004',?,1,'EUR',NULL,1,NULL,'Compra overflow',NULL,'Vigente',1,'f','f')",
+    );
+    const max = 9007199254740991n;
+    db.transaction(() => {
+      for (let i = 0; i < 1025; i++) insert.run(String(1000 + i), max);
+    })();
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.posiciones).toHaveLength(1);
+    expect(result.inversion.posiciones[0].cantidad).toBe(
+      quantityText(max * 1025n),
+    );
   } finally {
     close(db);
   }

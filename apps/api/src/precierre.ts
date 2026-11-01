@@ -296,13 +296,12 @@ function investmentSource(
       .query(
         `SELECT o.instrumento instrumento,i.nombre nombre,
                 o.saldo_inversion saldoInversion,s.nombre saldoNombre,
-                CAST(SUM(o.cantidad) AS TEXT) cantidad
+                CAST(o.cantidad AS TEXT) cantidad
          FROM operaciones_inversion o
          JOIN instrumentos i ON i.id=o.instrumento
          JOIN saldos s ON s.id=o.saldo_inversion
          WHERE o.estado='Vigente' AND o.fecha<=?
-         GROUP BY o.saldo_inversion,o.instrumento,i.nombre,s.nombre
-         ORDER BY o.saldo_inversion,o.instrumento`,
+         ORDER BY o.saldo_inversion,o.instrumento,o.fecha,o.id`,
       )
       .all(end) as {
       instrumento: string;
@@ -311,11 +310,35 @@ function investmentSource(
       saldoNombre: string;
       cantidad: string;
     }[];
-    const posiciones = rows.map((row) => ({
-      instrumento: row.instrumento,
-      nombre: row.nombre,
-      saldoInversion: { id: row.saldoInversion, nombre: row.saldoNombre },
-      cantidad: quantityText(BigInt(row.cantidad)),
+    const grouped = new Map<
+      string,
+      {
+        instrumento: string;
+        nombre: string;
+        saldoInversion: { id: string; nombre: string };
+        cantidad: bigint;
+      }
+    >();
+    for (const row of rows) {
+      const key = row.saldoInversion + "\u0000" + row.instrumento;
+      const current = grouped.get(key);
+      if (current) current.cantidad += BigInt(row.cantidad);
+      else
+        grouped.set(key, {
+          instrumento: row.instrumento,
+          nombre: row.nombre,
+          saldoInversion: {
+            id: row.saldoInversion,
+            nombre: row.saldoNombre,
+          },
+          cantidad: BigInt(row.cantidad),
+        });
+    }
+    const posiciones = [...grouped.values()].map((position) => ({
+      instrumento: position.instrumento,
+      nombre: position.nombre,
+      saldoInversion: position.saldoInversion,
+      cantidad: quantityText(position.cantidad),
     }));
     const instruments = new Set(rows.map((row) => row.instrumento));
     const value = decimal(cashTotal) ?? "0.00";
