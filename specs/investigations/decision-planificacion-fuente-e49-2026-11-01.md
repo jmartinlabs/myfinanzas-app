@@ -1,8 +1,10 @@
 # Decisión — modelo de planificación y fuente de plan para E4.9
 
 Fecha: 2026-11-01. Autor del registro: orquestador OpenCode, por decisión del usuario.
-Estado: **aprobada por el usuario el 2026-11-01**. Este documento registra decisiones; no
-implementa, no migra, no usa datos reales y no autoriza DEV ni merge.
+Estado: **aprobada por el usuario el 2026-11-01**; D3 incorpora una precisión
+contractual propuesta por el asesor (2026-11-01) **pendiente de ratificación**. Este
+documento registra decisiones; no implementa, no migra, no usa datos reales y no autoriza
+DEV ni merge.
 
 Contexto: revisión read-only de [PR #131](https://github.com/jmartinlabs/myfinanzas-app/pull/131),
 [PR #132](https://github.com/jmartinlabs/myfinanzas-app/pull/132) y
@@ -35,17 +37,31 @@ merge; la regla no cambia de significado, solo alinea la implementación con SPE
 
 ### D3 — Fuente de plan que consumirá E4.9
 
-- Si el ciclo tiene **Plan Mensual D′**, el cierre E4.9 captura ese plan como plan final
-  (líneas por raíz con Base, Esencial y Del mes).
-- Si el ciclo no tiene plan D′, conserva el **plan legado del ciclo**
-  (`cycle_plan_lines` por Presupuesto).
-- **Nunca se suman ni se sustituyen en silencio**: la foto registra la fuente aplicada y
-  su composición, y el ciclo conserva la fuente con la que se planificó.
-- Sin plan, el cierre admite `SinPlan`; un plan no verificable bloquea, conforme a
-  [SPEC27](../27-e49-cierre-financiero-specification.md).
+- La selección es **por ciclo y plan aplicable**, no por la mera existencia de un
+  registro D′ en otra fecha o de una planificación general.
+- Si ese ciclo tiene **Plan Mensual D′ aplicable**, el cierre E4.9 captura ese plan como
+  plan final (líneas por raíz con Base, Esencial y Del mes).
+- Si el Plan Mensual D′ **existe pero está incompleto o no es verificable**, el cierre
+  queda en `PlanNoVerificable` y **bloquea**; no se usa el legado como respaldo silencioso.
+- Si el ciclo no tiene fuente D′ aplicable, conserva el **plan legado del ciclo**
+  (`cycle_plan_lines` por Presupuesto) cuando esté acreditado.
+- Si tampoco existe plan legado acreditado, el cierre admite `SinPlan`; no se confunde
+  «sin líneas por ausencia acreditada» con «lectura fallida» o «cobertura incompleta»
+  (contrato de [SPEC27](../27-e49-cierre-financiero-specification.md)).
+- **Nunca se suman ni se sustituyen en silencio**. Si coexisten ambos planes para un
+  ciclo, se registran ambas presencias, la fuente aplicada y el motivo de precedencia,
+  sin sumar líneas.
+- La foto conserva **IDs, versión/revisión, líneas, importes, composición y criterio de
+  selección al corte**, no referencias vivas que puedan reinterpretar el plan histórico.
 - No hay conversión retroactiva ni backfill de ciclos históricos.
 - El **precierre E4.8 sigue leyendo el plan legado** mientras no exista autorización de
-  DEV para alinearlo; este documento no lo cambia.
+  DEV para alinearlo. Antes de permitir un cierre real debe alinearse la vista previa con
+  esta selección, o **señalar la discrepancia y bloquear la confirmación**; no puede
+  mostrarse legado en precierre y capturarse D′ de forma inesperada en la foto.
+
+Estas precisiones provienen del dictamen del asesor y quedan **pendientes de ratificación
+expresa del usuario**. No autorizan cambio de código; su implementación en E4.8/E4.9
+requiere autorización de DEV separada.
 
 ### D4 — Auditorías de arquitectura: archivo sin merge
 
@@ -67,10 +83,10 @@ merge; la regla no cambia de significado, solo alinea la implementación con SPE
 
 ## 3. Siguiente acción segura
 
-Revisar y, si procede, aprobar el merge de la corrección de corte (#152) y de este
-registro. Después, decidir la enmienda mínima de SPEC19 que desbloquea E4.2 y la
-adaptación de E3.5/FIN_NETA al registro único de Comida. Nada de ello ocurre por
-publicar este documento.
+Ratificar la precisión de D3 y, si procede, aprobar el merge de la corrección de corte
+(#152) y de este registro. Después, decidir la enmienda mínima de SPEC19 que desbloquea
+E4.2 y la adaptación de E3.5/FIN_NETA al registro único de Comida. Nada de ello ocurre
+por publicar este documento.
 
 ## Referencias
 
