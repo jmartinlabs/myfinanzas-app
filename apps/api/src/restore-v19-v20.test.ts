@@ -15,6 +15,7 @@ import { randomBytes } from "node:crypto";
 import { backup, restore } from "./backup";
 import { openDatabase } from "./database";
 import { comidaSchema } from "./comida-schema";
+import { dprimaSchema } from "./dprima-schema";
 import { openDatabaseV18 } from "../test-support/database-v18";
 import { revisionComidaFixture } from "../test-support/revision-comida-fixture";
 
@@ -95,8 +96,10 @@ function seedV19(path: string) {
 
 function seedV20(path: string) {
   process.env.NODE_ENV = "test";
-  const db = openDatabase(path);
+  const db = openDatabaseV18(path);
   try {
+    db.transaction(() => comidaSchema(db)).immediate();
+    db.transaction(() => dprimaSchema(db)).immediate();
     revisionComidaFixture(db);
     db.run(`
       INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado)
@@ -117,7 +120,7 @@ function seedV20(path: string) {
   }
 }
 
-test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v20", () => {
+test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v21", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "restore-v19-"));
   try {
@@ -177,7 +180,7 @@ test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v20", () => {
     const migrated = openDatabase(restored.database);
     try {
       expect(migrated.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 20,
+        version: 21,
       });
       expect(
         migrated.query("SELECT COUNT(*) n FROM movimientos WHERE id IN ('301','302')").get(),

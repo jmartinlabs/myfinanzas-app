@@ -6,6 +6,7 @@ import {
   PRICE_SCALE,
   QUANTITY_SCALE,
   assertSufficient,
+  assertUnitsAvailable,
   cashAt,
   cents,
   changeText,
@@ -20,8 +21,8 @@ import {
 } from "./investment-engine";
 
 export const COBERTURA =
-  "Posición calculada solo con las compras registradas; no incluye histórico anterior no importado";
-const RECTIFICABLE = [
+  "Posición calculada solo con las operaciones registradas; no incluye histórico anterior no importado";
+export const RECTIFICABLE = [
   "fecha",
   "cantidad",
   "precio",
@@ -54,7 +55,7 @@ const IDENTITY_FIELDS = [
   "estado",
   "id",
 ];
-type Row = {
+export type OperationRow = {
   id: string;
   fecha: string;
   clase: string;
@@ -92,11 +93,13 @@ const select = `SELECT id,fecha,clase,instrumento,saldo_efectivo,saldo_inversion
   FROM operaciones_inversion`;
 
 function find(db: Database, id: string) {
-  const row = db.query(select + " WHERE id=?").get(id) as Row | null;
+  const row = db
+    .query(select + " WHERE id=? AND clase='Compra'")
+    .get(id) as OperationRow | null;
   if (!row) throw new Problem(404, "NOT_FOUND", "Compra no encontrada.");
   return row;
 }
-function saldoRef(db: Database, id: string) {
+export function saldoRef(db: Database, id: string) {
   return db
     .query("SELECT id,nombre,tipo,control,estado FROM saldos WHERE id=?")
     .get(id) as
@@ -109,12 +112,12 @@ function saldoRef(db: Database, id: string) {
       }
     | null;
 }
-function instrumentRef(db: Database, id: string) {
+export function instrumentRef(db: Database, id: string) {
   return db
     .query("SELECT id,nombre,estado FROM instrumentos WHERE id=?")
     .get(id) as { id: string; nombre: string; estado: string } | null;
 }
-function economic(row: Row): Economic {
+export function economic(row: OperationRow): Economic {
   return {
     fecha: row.fecha,
     cantidad: BigInt(row.cantidad),
@@ -128,7 +131,7 @@ function economic(row: Row): Economic {
     nota: row.nota,
   };
 }
-function reference(value: Economic) {
+export function operationReference(value: Economic) {
   const cambio = value.cambio ?? 10n ** BigInt(CHANGE_SCALE),
     total = referenceEur(value.cantidad, value.precio, cambio);
   return {
@@ -137,7 +140,7 @@ function reference(value: Economic) {
     nota: "Informativa; no corrige el importe EUR cargado.",
   };
 }
-export function purchaseDto(db: Database, row: Row) {
+export function purchaseDto(db: Database, row: OperationRow) {
   const economicValue = economic(row);
   return {
     id: row.id,
@@ -161,10 +164,10 @@ export function purchaseDto(db: Database, row: Row) {
     instrumento: instrumentRef(db, row.instrumento),
     saldoEfectivo: saldoRef(db, row.saldo_efectivo),
     saldoInversion: saldoRef(db, row.saldo_inversion),
-    referencia: reference(economicValue),
+    referencia: operationReference(economicValue),
   };
 }
-function auditValue(row: Row) {
+export function auditValue(row: OperationRow) {
   const value = economic(row);
   return {
     id: row.id,
@@ -186,7 +189,7 @@ function auditValue(row: Row) {
     revision: row.revision,
   };
 }
-function audits(db: Database, id: string) {
+export function operacionAudits(db: Database, id: string) {
   return (
     db
       .query(
@@ -207,7 +210,7 @@ function audits(db: Database, id: string) {
     posterior: JSON.parse(row.posterior),
   }));
 }
-function writeAudit(
+export function writeOperationAudit(
   db: Database,
   operation: string,
   revision: number,
@@ -230,7 +233,7 @@ function writeAudit(
     ],
   );
 }
-function text(value: unknown, field: string, max: number) {
+export function text(value: unknown, field: string, max: number) {
   if (
     typeof value !== "string" ||
     value.length > max ||
@@ -241,7 +244,7 @@ function text(value: unknown, field: string, max: number) {
     });
   return value;
 }
-function validateEconomic(
+export function validateEconomic(
   db: Database,
   body: Record<string, unknown>,
   options: { full: boolean; now: number },
@@ -369,7 +372,7 @@ function validateEconomic(
     nota,
   };
 }
-function validReferences(db: Database, body: Record<string, unknown>) {
+export function validReferences(db: Database, body: Record<string, unknown>) {
   const errors: Record<string, string> = {};
   const instrumento =
     typeof body.instrumento === "string"
@@ -406,10 +409,10 @@ function validReferences(db: Database, body: Record<string, unknown>) {
     saldoInversion: inversion!.id,
   };
 }
-function impact(
+function purchaseImpact(
   db: Database,
   action: "alta" | "rectificación" | "anulación",
-  old: Row | null,
+  old: OperationRow | null,
   next: (Economic & { saldoEfectivo?: string; saldoInversion?: string; instrumento?: string }) | null,
 ) {
   const effectiveId = next
@@ -442,24 +445,24 @@ function impact(
         despues: quantityText(afterQuantity),
       },
     },
-    referencia: next ? reference(next) : null,
+    referencia: next ? operationReference(next) : null,
     aviso: "Vista previa de solo lectura: no escribe hasta confirmar.",
   };
 }
-function revisionConflict() {
+export function revisionConflict(message = "La Compra ha cambiado. Revisa la versión actual.") {
   return new Problem(
     409,
     "REVISION_CONFLICT",
-    "La Compra ha cambiado. Revisa la versión actual.",
+    message,
   );
 }
-function assertEditable(row: Row) {
+export function assertEditable(row: OperationRow, label = "Compra") {
   if (row.estado !== "Vigente")
-    throw new Problem(422, "VALIDATION", "La Compra está anulada.", {
+    throw new Problem(422, "VALIDATION", `La ${label} está anulada.`, {
       estado: "Estado no elegible.",
     });
 }
-function motive(value: unknown) {
+export function motive(value: unknown) {
   const motivo = text(value, "motivo", 2000).trim();
   if (!motivo)
     throw new Problem(422, "VALIDATION", "Indica un motivo.", {
@@ -488,7 +491,7 @@ export function previewPurchase(
     });
     const next = { ...value, ...refs };
     return {
-      ...impact(
+      ...purchaseImpact(
         db,
         "alta",
         null,
@@ -517,9 +520,10 @@ export function createPurchase(
       db.run("DELETE FROM operacion_attempts WHERE expires<?", [now]);
       const hash = createHash("sha256")
         .update(
-          JSON.stringify(
-            Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
-          ),
+          JSON.stringify([
+            ["clase", "Compra"],
+            ...Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+          ]),
         )
         .digest("hex");
       const retry = db
@@ -572,7 +576,7 @@ export function createPurchase(
         ],
       );
       const row = find(db, id);
-      writeAudit(db, id, 1, "alta", null, null, auditValue(row), now);
+      writeOperationAudit(db, id, 1, "alta", null, null, auditValue(row), now);
       const response = getPurchase(db, id);
       db.run("INSERT INTO operacion_attempts VALUES(?,?,?,?)", [
         key,
@@ -606,6 +610,24 @@ export function previewRectification(
         });
     motive(body.motivo);
     const value = validateEconomic(db, body, { full: true, now });
+    assertUnitsAvailable(
+      db,
+      {
+        clase: "Compra",
+        fecha: value.fecha,
+        cantidad: value.cantidad,
+        saldoInversion: old.saldo_inversion,
+        instrumento: old.instrumento,
+      },
+      {
+        id,
+        clase: "Compra",
+        fecha: old.fecha,
+        cantidad: BigInt(old.cantidad),
+        saldoInversion: old.saldo_inversion,
+        instrumento: old.instrumento,
+      },
+    );
     assertSufficient(
       db,
       {
@@ -622,7 +644,7 @@ export function previewRectification(
       },
     );
     return {
-      ...impact(db, "rectificación", old, value),
+      ...purchaseImpact(db, "rectificación", old, value),
       cobertura: COBERTURA,
     };
   })();
@@ -648,6 +670,24 @@ export function rectifyPurchase(
           });
       const motivo = motive(body.motivo),
         value = validateEconomic(db, body, { full: true, now });
+      assertUnitsAvailable(
+        db,
+        {
+          clase: "Compra",
+          fecha: value.fecha,
+          cantidad: value.cantidad,
+          saldoInversion: old.saldo_inversion,
+          instrumento: old.instrumento,
+        },
+        {
+          id,
+          clase: "Compra",
+          fecha: old.fecha,
+          cantidad: BigInt(old.cantidad),
+          saldoInversion: old.saldo_inversion,
+          instrumento: old.instrumento,
+        },
+      );
       assertSufficient(
         db,
         {
@@ -681,7 +721,7 @@ export function rectifyPurchase(
         ],
       );
       const row = find(db, id);
-      writeAudit(
+      writeOperationAudit(
         db,
         id,
         row.revision,
@@ -705,7 +745,25 @@ export function previewAnnulment(
     const old = find(db, id);
     if (body.revision !== old.revision) throw revisionConflict();
     assertEditable(old);
-    return { ...impact(db, "anulación", old, null), cobertura: COBERTURA };
+    assertUnitsAvailable(
+      db,
+      {
+        clase: "Compra",
+        fecha: old.fecha,
+        cantidad: 0n,
+        saldoInversion: old.saldo_inversion,
+        instrumento: old.instrumento,
+      },
+      {
+        id,
+        clase: "Compra",
+        fecha: old.fecha,
+        cantidad: BigInt(old.cantidad),
+        saldoInversion: old.saldo_inversion,
+        instrumento: old.instrumento,
+      },
+    );
+    return { ...purchaseImpact(db, "anulación", old, null), cobertura: COBERTURA };
   })();
 }
 
@@ -726,12 +784,30 @@ export function annulPurchase(
       if (body.revision !== old.revision) throw revisionConflict();
       assertEditable(old);
       const motivo = motive(body.motivo);
+      assertUnitsAvailable(
+        db,
+        {
+          clase: "Compra",
+          fecha: old.fecha,
+          cantidad: 0n,
+          saldoInversion: old.saldo_inversion,
+          instrumento: old.instrumento,
+        },
+        {
+          id,
+          clase: "Compra",
+          fecha: old.fecha,
+          cantidad: BigInt(old.cantidad),
+          saldoInversion: old.saldo_inversion,
+          instrumento: old.instrumento,
+        },
+      );
       db.run(
         "UPDATE operaciones_inversion SET estado='Anulada',revision=revision+1,actualizado=? WHERE id=? AND revision=?",
         [new Date(now).toISOString(), id, old.revision],
       );
       const row = find(db, id);
-      writeAudit(
+      writeOperationAudit(
         db,
         id,
         row.revision,
@@ -749,22 +825,22 @@ export function annulPurchase(
 export function getPurchase(db: Database, id: string) {
   return db.transaction(() => {
     const row = find(db, id);
-    return { compra: purchaseDto(db, row), auditoria: audits(db, id) };
+    return { compra: purchaseDto(db, row), auditoria: operacionAudits(db, id) };
   })();
 }
 
 export function purchaseAudit(db: Database, id: string) {
   return db.transaction(() => {
     find(db, id);
-    return { items: audits(db, id) };
+    return { items: operacionAudits(db, id) };
   })();
 }
 
 export function purchasesForInstrumento(db: Database, instrumento: string) {
   return (
     db
-      .query(select + " WHERE instrumento=? ORDER BY fecha DESC,length(id) DESC,id DESC")
-      .all(instrumento) as Row[]
+      .query(select + " WHERE instrumento=? AND clase='Compra' ORDER BY fecha DESC,length(id) DESC,id DESC")
+      .all(instrumento) as OperationRow[]
   ).map((row) => purchaseDto(db, row));
 }
 
@@ -792,7 +868,7 @@ export function listPurchases(
     saldoInversion: params.get("saldoInversion"),
   };
   return db.transaction(() => {
-    const all = (db.query(select + " ORDER BY fecha DESC,length(id) DESC,id DESC").all() as Row[])
+    const all = (db.query(select + " WHERE clase='Compra' ORDER BY fecha DESC,length(id) DESC,id DESC").all() as OperationRow[])
       .filter(
         (row) =>
           (!estado || row.estado === estado) &&

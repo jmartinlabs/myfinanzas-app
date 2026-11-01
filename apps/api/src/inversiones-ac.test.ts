@@ -222,8 +222,9 @@ test("E4.1-AC-06/12/24/38/54: ISIN con Compras, comisión, referencia temporal y
     });
     expect(cashDto(db, "S003", null).efectivo.disponible).toBe("699.00");
 
-    // AC-24: purchases never enter the shared temporal reference.
-    expect(cycleContext(db).referencia.fecha).toBeNull();
+    // AC-24 (E4.1) / E4.2-AC3: tras E4.2 las Compras entran en la referencia
+    // temporal compartida; E4.1 por sí sola no la modificaba.
+    expect(cycleContext(db).referencia.fecha).toBe("2026-03-10");
     const reference = master(db);
     writeFromPreview(db, gasto(reference.partida));
     expect(cycleContext(db).referencia.fecha).toBe("2026-04-01");
@@ -233,9 +234,9 @@ test("E4.1-AC-06/12/24/38/54: ISIN con Compras, comisión, referencia temporal y
       cantidad: "1",
       precio: "1.00",
     });
-    expect(cycleContext(db).referencia.fecha).toBe("2026-04-01");
+    expect(cycleContext(db).referencia.fecha).toBe("2026-09-30");
     annulPurchase(db, purchase.compra.id, { revision: 1, motivo: "Anulación AC" }, now);
-    expect(cycleContext(db).referencia.fecha).toBe("2026-04-01");
+    expect(cycleContext(db).referencia.fecha).toBe("2026-09-30");
   } finally {
     db.close();
   }

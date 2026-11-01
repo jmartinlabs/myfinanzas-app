@@ -1,13 +1,57 @@
 import { openDatabase } from "../src/database";
 import { createPurchase, rectifyPurchase } from "../src/compras";
+import { createSale, rectifySale } from "../src/ventas";
 
-const [path, action, instrumento, operation, amount, revision, key] =
-  process.argv.slice(2);
+const [
+  path,
+  action,
+  instrumento,
+  operation,
+  amount,
+  revision,
+  key,
+  cantidad,
+] = process.argv.slice(2);
+const saleBody = {
+  fecha: "2026-04-10",
+  instrumento,
+  saldoEfectivo: "S003",
+  saldoInversion: "S004",
+  cantidad: cantidad ?? "1",
+  precio: "1.00",
+  divisa: "EUR",
+  cambio: null,
+  importeEur: amount,
+  comisionEur: null,
+  concepto: "Carrera ficticia",
+  nota: null,
+};
 try {
   const db = openDatabase(path);
   try {
     const result =
-      action === "create"
+      action === "create-venta"
+        ? createSale(db, saleBody, key)
+        : action === "rectify-venta"
+          ? rectifySale(
+              db,
+              operation,
+              {
+                revision: Number(revision),
+                motivo: "Carrera ficticia",
+                fecha: saleBody.fecha,
+                cantidad: saleBody.cantidad,
+                precio: saleBody.precio,
+                divisa: saleBody.divisa,
+                cambio: saleBody.cambio,
+                importeEur: saleBody.importeEur,
+                comisionEur: saleBody.comisionEur,
+                concepto: saleBody.concepto,
+                nota: saleBody.nota,
+              },
+              Date.parse("2026-10-26T12:00:00Z"),
+            )
+        : action === "create"
         ? createPurchase(
             db,
             {
@@ -47,8 +91,18 @@ try {
     console.log(
       JSON.stringify({
         ok: true,
-        id: "compra" in result ? result.compra.id : null,
-        revision: "compra" in result ? result.compra.revision : null,
+        id:
+          "compra" in result
+            ? result.compra.id
+            : "venta" in result
+              ? result.venta.id
+              : null,
+        revision:
+          "compra" in result
+            ? result.compra.revision
+            : "venta" in result
+              ? result.venta.revision
+              : null,
       }),
     );
   } finally {

@@ -1,4 +1,5 @@
 import { movementSource, ledgerRows } from "./movement-ledger";
+import { investmentSource } from "./investment-ledger";
 import {
   revisionComidaRows,
   revisionComidaSource,
@@ -170,7 +171,11 @@ export function deriveCycles(
   });
 }
 function temporalSources(db: Database) {
-  return financialReference([movementSource(db), revisionComidaSource(db)]);
+  return financialReference([
+    movementSource(db),
+    revisionComidaSource(db),
+    investmentSource(db),
+  ]);
 }
 export function cycleContext(db: Database) {
   // No date from wall clock, cycle creation or non-delivered sources enters this reference.

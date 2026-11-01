@@ -835,7 +835,7 @@ test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el con
   const { prepareSchema } = require("./database-schema");
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 20,
+    version: 21,
   });
   expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
   expect(
