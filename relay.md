@@ -4,35 +4,38 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 52
-message_id: f9ced0bb-2c7f-4229-95f0-8a833d9de9fb
+sequence: 53
+message_id: 53a8ccf2-e166-48ab-9181-c7dc3b298ebb
 from: Alex
 to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-01T08:07:28.479Z
+created_at: 2026-11-01T08:51:09.525Z
 
 ## Message
 
-# PR #150 — segunda auditoría tras correcciones 0051 (tres hallazgos funcionales)
+# PR #150 — auditoría de seguimiento: agregación E4.1 sin overflow
 
-**De:** Alex (auditor) **Para:** OpenCode (coordinador)
+**Para:** OpenCode, coordinador
+**De:** Álex, auditor
 **PR:** https://github.com/jmartinlabs/myfinanzas-app/pull/150
-**HEAD auditado:** `0d720469830a2d3281057057f3e523c26fa5a523` (base `7dea0fdad7b9093dccfd950d041dcdcd3bf3d905`). PR OPEN, mergeable clean. `required` Linux PASS en ese HEAD, run `41286137608`. Se reconocen las correcciones previas: fecha Fin, ausencia de ID de efectivo fijo, huella del Plan, cobertura parcial y bloqueo cuando E4.1 falta. **Dictamen: no recomendar merge aún; quedan tres defectos económicos.**
+**HEAD revisado:** `8c5495f7c130c82888caa3f609f9bdd1b14dd6ac` (OPEN, mergeable clean, sin merge). CI `required` PASS en dicho HEAD: https://github.com/jmartinlabs/myfinanzas-app/actions/runs/41288150318
+**Relación:** complementa las auditorías relay 0051 y 0052; las tres observaciones de 0052 están corregidas en código. No se solicitan nuevas mejoras visuales.
 
-## Correcciones focalizadas solicitadas, dentro de E4.8 DEV autorizado
+## Una corrección técnica focalizada
 
-1. **Cantidad escalada E4.1 mal presentada.** `apps/api/src/precierre.ts`, consulta de `investmentSource()` (`SUM(o.cantidad)`) devuelve enteros SQLite *escalados por 10^8*. La función retorna `row.cantidad` y `quantity.toString()` sin pasar por `quantityText`/`scaledText(...,QUANTITY_SCALE)` del motor E4.1. P.ej. `100000000` equivale a **1 unidad**, no 100 millones. El fixture AC-05 usa `100` y espera literalmente `"100"`, enmascarando el defecto. **Reutilizar formateador E4.1**, preservar BigInt exacto y modificar fixtures/assertions usando cantidades correctamente escaladas (una y varias posiciones, fracciones y el corte temporal).
+En `apps/api/src/precierre.ts`, `investmentSource()`, consulta `CAST(SUM(o.cantidad) AS TEXT)` agrupada por `saldo_inversion + instrumento`. La suma `SUM` de enteros SQLite puede provocar `integer overflow` al superar el límite signed 64-bit; `CAST` posterior no evita el desbordamiento. El motor E4.1 ya dispone de `BigInt` y `quantityText()` exactos.
 
-2. **Posición agregada con clave errónea.** La nueva consulta agrupa por `o.instrumento,i.nombre`, pero SPEC19 §4.4 define la identidad de posición como **`saldo_inversion + instrumento`**. Un instrumento en dos Saldos se funde artificialmente. Devolver cada posición con ambos IDs, cantidad exacta y, si procede, nombre del saldo; mantener conteo de instrumentos distinto del número de posiciones. **No sumar cantidades de instrumentos distintos** en una sola cifra global carente de sentido económico. Probar mismo instrumento en dos Saldos con cantidades distintas, dos instrumentos diferentes y operaciones posteriores a Fin. No crear nuevo maestro ni persistir posición.
+**Encargo:** cambiar únicamente la agregación de cantidades para sumar *hechos vigentes hasta Fin* usando aritmética `BigInt` exacta, conservando clave de agrupación `Saldo de inversión + Instrumento`, identidad y presentación escalada por 10^8; preferir reutilizar motor/helpers ya existentes y evitar segundo motor o cambio de esquema. Mantener cuentas múltiples, históricos inactivos, corte Fin, ausencia acreditada y no sumar unidades de instrumentos distintos.
 
-3. **Inactivación histórica ≠ inconsistencia.** `movementSource()` bloquea cualquier Movimiento vigente cuya Referencia o Partida esté **actualmente** `Inactiva`; en `precierre.ts` se añadió la condición `p.estado<>'Activa'`. Sin embargo, E1.2/spec02 conserva vínculos e IDs históricos y la creación/rectificación impide **nueva** selección de inactivos, pero puede conservar relaciones antiguas válidas. Comprobar también el caso equivalente de Referencia inactiva. **No bloquear un precierre antiguo únicamente por el estado actual**. Detectar solo incoherencia estructural/económica acreditada: ausencia de clave obligatoria, FKs/tipo incompatibles, violación real de clasificación según el contrato vigente; no inferir fecha de desactivación sin evidencia histórica. Prueba: registrar Gasto con Partida activa, desactivarla posteriormente (sin cambiar el hecho) y verificar que el precierre del ciclo no recibe bloqueo falso; mantener test negativo para incoherencia real.
+**Pruebas:** (1) dos compras sobre misma posición con escala/fracciones; (2) mismo instrumento en dos Saldos, independientes; (3) compra posterior a Fin excluida; (4) suma acumulada > 9223372036854775807 en enteros escalados, construida con operaciones individualmente válidas dentro del límite por operación, sin `integer overflow` ni pérdida de precisión. Si no es viable obtener caso extremo válido según restricciones del modelo, registrar el límite exacto en lugar de afirmar cobertura.
 
-## Alcance, QA y retorno
+**QA:** pruebas focales y regresión de precierre, typecheck, build y CI sobre nuevo HEAD. Mantener AC-04 **parcial** según evidencia; AC-16 sigue seam hasta SPEC27; no afirmar integración real de FIN_NETA/DT6/E4.9. Si el hallazgo requiere decisiones financieras o cambios en motor compartido fuera de E4.8, detener ese alcance y proponer cambio preciso para autorización separada.
 
-- Corregir sólo los puntos anteriores en el **DEV E4.8 de solo lectura**, añadir pruebas de regresión deterministas y revisar el testplan AC-04/05/06; no convertir un AC parcial en PASS sin cobertura.
-- Ejecutar tests focales, typecheck, build, E2E funcional 390/1440 y CI en HEAD; devolver tabla concisa hallazgo → corrección → prueba → estado, SHA y riesgos.
-- **Decisión del usuario sobre UI:** la **revisión/aprobación visual W1–W6 queda aplazada al final del proyecto**. No invertir ahora en perfeccionamiento visual ni utilizar la aprobación estética como gate de merge; la UI sigue provisional, *no aprobada*. Conservar requisitos funcionales mínimos, navegación, accesibilidad y no overflow grave.
-- No se autoriza merge, E4.9, despliegue, migración, uso de datos reales ni ejecución de backup/restore; DT6 aparcado, FIN_NETA no disponible. Si una corrección exige una decisión semántica financiera nueva, proponerla sin asumir aprobación.
+## Decisiones del usuario y límites
 
-**Relación con relay:** es una segunda revisión de PR #150 posterior al mensaje 0051. El último mensaje 0051 aún constaba sin `read_by`; se complementa su contenido, no se asume lectura ni aceptación por OpenCode.
+- La revisión/aprobación visual W1–W6 queda **aplazada hasta el final del proyecto**; interfaz funcional provisional, no aprobada visualmente. No bloquear merge exclusivamente por estética; conservar mínima operabilidad, accesibilidad y ausencia de errores graves.
+- **Autorizado solo el arreglo DEV E4.8 y su QA en PR #150.** No merge automático, despliegue, datos reales, cierre E4.9, backup/restauración ni migraciones.
+- Retorno: ID/estado, SHA, archivos cambiados, solución exacta, resultados de pruebas y CI para ese SHA, riesgo residual y dictamen **apta/no apta para solicitar autorización de merge**.
+
+**Nota de transporte:** el mensaje 0052 seguía marcado `read_by: none` en la cabecera más reciente. Este mensaje no presume que OpenCode lo haya reconocido; consolida el estado de la revisión.
