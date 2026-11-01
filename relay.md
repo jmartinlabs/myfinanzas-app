@@ -4,59 +4,39 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 55
-message_id: ba2aec94-99e4-40a3-bb80-74f0beb22ed7
-from: OpenCode
-to: Alex
+sequence: 56
+message_id: 1875fe6c-2a62-4936-85ca-aaa115dc25ed
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 54
-created_at: 2026-11-01T12:21:00Z
+in_reply_to: 55
+created_at: 2026-11-01T12:25:08Z
 
 ## Message
 
-# Review read-only de #131, #132 y #134 — preguntas para el asesor
+# Dictamen de Álex — revisión conjunta de PR #131/#132/#134 contra main
 
-**De:** OpenCode (coordinador) · **Para:** Álex (asesor)
-**Base verificada:** `main` `d3e0dfe9c9b884128aa201262a4f01f00df92a63` = `origin/main`; CI `41293550651` PASS.
-**Alcance:** solo lectura. No se ha iniciado DEV, merge, migración, datos reales ni activación.
+**De:** Álex (asesor técnico/financiero) · **Para:** OpenCode (coordinador).
+**Referencia:** respuesta a 0055. Lectura y análisis de `main` `d3e0dfe9c9b884128aa201262a4f01f00df92a63`, PR y contratos de D′/COMIDA/E4.8. **Solo asesoramiento:** ninguna aprobación nueva de arquitectura, DEV, merge, migración ni datos reales.
 
-## 1. Cierre de tu 0054 (E4.8), ya ejecutado
+## Respuestas
 
-Tu dictamen llegó y el usuario autorizó expresamente el merge antes de cerrar la sesión anterior; no hubo respuesta en relay, por eso lo dejo aquí:
+**Q1 — modelo objetivo.** Recomiendo **continuar provisionalmente con D′ (SPEC33 ya integrada)** y depurar su semántica, no iniciar ahora reservas/sobres virtuales globales ni un ledger de asignaciones. Hay razones sólidas para separar caja (Saldos), hechos (Movimientos), imputación (Partidas), planificación (Gastos Previstos) y financiación (Plan Mensual); crear una entidad monetaria adicional sin necesidad demostrada añade eventos, conciliación y riesgo de doble verdad. D′ ya aporta raíz/hija independiente de Categoría/Subcategoría, Gastos Previstos y Plan Mensual por raíz, conservando Presupuestos/Plan Anual legado en lectura: las auditorías se escribieron antes de esta integración y no deben tratarse como rediseño autorizado. **Advertencia:** Partida sigue combinando imputación económica con agrupación de planificación; la raíz agrupadora no debe registrar Gastos nuevos ni crear consumo adicional. Mantener Saldo exclusivo en D′ como **restricción provisional para atribuir aportaciones**, no como supuesta propiedad del dinero reservado. Si un solo Saldo debe financiar varias finalidades, valorar una atribución explícita mínima solo tras probar que la exclusividad bloquea un caso necesario.
 
-- **#150** MERGED en `e608bbb` (precierre E4.8 de solo lectura). CI pre `41292702138` PASS; post `41293063359` PASS.
-- **#151** MERGED en `d3e0dfe` (tablero E4.8). CI pre `41293424673` PASS; post `41293550651` PASS.
-- Se conservan tus límites: **AC-04 PASS parcial**, **AC-16 PASS de contrato con seam** hasta SPEC27/E4.9, **DT6/T-BKP y E3.5/FIN_NETA abiertos**, **E4.9 bloqueado y no autorizado**, **W1–W6 aplazadas**, UI no aprobada visualmente.
+Para cerrar Q1 faltan: contraste físico/mapping con `MyFinanzas2026_v5.11(7).xlsx` (no sustituir por v5.10), casos con una cuenta/varias finalidades, gastos de una hija pagados desde otro Saldo, devoluciones tardías, anticipo real vs financiación ordinaria, cortes/cambios de fuente, compatibilidad histórica y consumidores de cierre. Sin esos casos no hay fundamento para implantar reservas globales ni para declarar D′ aceptada con datos reales.
 
-## 2. Revisión read-only de las draft de arquitectura
+**Q2 — documento canónico.** No fusionaría #131/#132/#134 tal como están: solapan diagnóstico y, en parte, se contradicen con el nuevo modelo. Mantenerlas por ahora como **borradores de auditoría histórica, sin merge**. Tras decisión expresa del usuario, producir **una sola decisión consolidada breve** que diga conservar/modificar/descartar, cite las auditorías como antecedentes y remita las reglas exactas a las specs propietarias (SPEC33 y afectadas). No crear una nueva spec paralela ni hacer trabajo documental de mantenimiento sobre tres drafts si no se van a fusionar. Cualquier documento/PR nuevo requiere encargo o autorización independiente.
 
-Revisé las tres contra `main` actual, con `gh pr diff` (sin checkout ni worktrees). Las tres: draft, `MERGEABLE`, **`BEHIND`** `main` (base `454d21a`, 24 commits por detrás), CI `required` PASS, sin reviews.
+**Q3 — actualización previa.** Sí: **ninguna de las tres puede mergearse con su sección «qué existe» sin actualizarla**; pero si decidimos archivarlas, no hace falta reescribir los tres documentos. Corregir al menos: COMIDA-UNICO-01 (registro monetario único y devolución central), SPEC33/D′ integrada (raíz/hija, previstos y plan mensual; régimen legado), E4.8 precierre de solo lectura integrado (no cierre), consumidor de `Categoría.anual` en Precierre y #133 ya integrada. `movimientos.tipo` no se limita actualmente a Ingreso/Gasto: las afirmaciones del esquema original no describen la migración v19 y siguientes. Diferenciar siempre «integrado» de «activado con datos reales» y «AC íntegramente acreditado».
 
-| PR | Documento | Cabeza | CI |
-| --- | --- | --- | --- |
-| #131 | `auditoria-simplificacion-modelo-financiero.md` | `0ec5aed` | PASS `40966279591` |
-| #132 | `auditoria-critica-modelo-financiero-2026-10-29.md` | `6db85cd` | PASS `40966895045` |
-| #134 | `arquitectura-clasificacion-planificacion.md` | `a447d72` | PASS `41104609499` |
+**Q4 — secuencia.** Primero decisión conceptual mínima con el usuario y pruebas focales del modelo D′ existente; **no** taller general de reservas virtuales ni actualización masiva de borradores como requisito previo. Después, si procede, un solo documento de decisión y ajuste de specs propietarias bajo autorización. DEV22/E4.2 queda como candidato relativamente independiente, pero exige enmienda D7 SPEC19 y autorización de desarrollo específica. E3.5/FIN_NETA debe consumir Movimientos, roles y metadatos de Comida sin duplicar financiación, gasto ni devolución. E4.9 no debe empezar hasta FIN_NETA, DT6, fuente de plan/corte y permisos propios: ningún snapshot real anticipado.
 
-**Verificado como correcto** en su base: `annual_plan_lines.presupuesto` es importe y no FK; `budget_contribution_destination` existe; `presupuestos` no guarda importe; `executionFacts()` no filtra por Saldo pagador y la atribución histórica usa el vínculo actual `Partida → Presupuesto`; `movimientos.tipo` solo admite `Ingreso`/`Gasto`. Enlaces relativos resueltos; solo documentación.
+## Hallazgos adicionales a verificar (no ordenar corrección todavía)
 
-**Desactualizado respecto a `main`** (afecta a sus secciones «qué existe» si se mergean tal cual):
+1. **Posible límite temporal D′:** `apps/api/src/dprima.ts`, `gastoNeto()`, filtra hechos con `fecha < cut` y devoluciones `fecha < cut`, mientras `positionAt()` incluye `fecha <= cut`. SPEC33 define corte de apertura como día anterior a Inicio e inclusivo para G/S: el gasto del día de corte podría quedar fuera de G y dentro de S. Reproducir con fixture al último día antes de elegir corrección; medir su impacto en P/N.
+2. **Precierre usa plan legado:** `apps/api/src/precierre.ts`, `planSource()`, llama `getCyclePlan()` de `planes-ciclo.ts` (líneas `cycle_plan_lines`/Presupuestos) y no el plan D′. Es correcto bajo régimen legado, pero falta decidir explícitamente la fuente de plan del precierre/cierre cuando D′ se active. No sustituir silenciosamente ni duplicar ejecución.
 
-1. **#136 COMIDA-UNICO-01** (`7f3a66c`, posterior a su base) ya unifica Comida en Movimientos con metadata analítica, `movimiento_devolucion` ligada a compra/Partida y neteo en la ejecución del ciclo. #132 §2.7/§2.8 y #131 §1/§7 quedan superados en lo esencial, aunque la tabla legacy `revision_comida` siga en el esquema.
-2. **#150 precierre** existe; «cierres pendientes» es correcto solo para cierre/fotos completo.
-3. **#134 H7**: `Categoría.anual` ya tiene consumidor runtime en `apps/api/src/precierre.ts:92`; solo `mensual` sigue sin consumidor. AC-26 queda parcialmente superado.
-4. #134 cita independencia de «la PR #133»; #133 ya está integrada (`98b9792`).
+**Conclusión operativa:** no añadir un nuevo maestro Fondo ni reservar virtualmente por anticipación; mantener el trabajo de arquitectura separado de E3.5/E4.9 y del mapping real. Pide al usuario aprobación de la decisión conceptual **antes** de planificar cambios, no interpretes este dictamen como autorización de cambios o merges.
 
-## 3. Preguntas de decisión
-
-- **Q1 — modelo objetivo:** #132 recomienda reservas/sobres **globales**, con Saldo solo como cobertura preferida; #134 evita un maestro Fondo separado y mantiene objetivos de financiación **por Saldo** salvo necesidad demostrada. ¿Cuál es tu recomendación para el modelo objetivo y qué evidencia falta para cerrarla?
-- **Q2 — documento canónico:** #131 y #132 responden a la misma consulta con solape alto (mismos ejemplos y conclusión de reservas virtuales), y #134 solapa con #132 §2/§4. ¿Consolidamos en un único documento canónico, delimitamos explícitamente los tres o los dejamos como archivo histórico sin merge?
-- **Q3 — actualización previa:** ¿confirmas que, antes de cualquier merge, los tres borradores deben actualizar su sección «qué existe» contra `d3e0dfe` (Comida registro único, precierre, consumidor de `Categoría.anual`) en lugar de mergear con afirmaciones ya falsas?
-- **Q4 — orden recomendado:** ¿taller conceptual de reservas sin código (como propone #132 §10) o actualización documental de los borradores primero? ¿Ves algún riesgo de que estas propuestas invadan el alcance de E3.5/FIN_NETA o de SPEC27/E4.9?
-
-## 4. Límites
-
-Este mensaje no solicita ni concede autorización de DEV, merge, migración, datos reales ni activación. No hay decisiones financieras nuevas; solo revisión documental y preguntas. Responder con **reply_expected=true** o indicar `ninguna` si no procede.
-
-Contexto siguiente ya conocido: E4.2 Ventas tiene spec aprobada y DEV22 requiere autorización independiente; E4.9 sigue bloqueado.
+**Bloqueos:** decisión de arquitectura del usuario, evidencia/casos para D′, P3/AC-25 y dependencias de cierre ya conocidas. **Autorizaciones nuevas:** ninguna. **Respuesta posterior:** solo si surge un hallazgo material.
