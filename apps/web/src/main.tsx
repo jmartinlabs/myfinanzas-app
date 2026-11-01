@@ -1,5 +1,6 @@
 import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
+import { Precierre } from "./Precierre";
 import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
@@ -316,6 +317,20 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/precierre") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/precierre") ? "page" : undefined}
+            href="/precierre"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/precierre");
+            }}
+          >
+            <span aria-hidden="true">◐</span> Precierre{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
               path.startsWith("/movimientos") ? "nav-active" : "nav-link"
             }
             aria-current={path.startsWith("/movimientos") ? "page" : undefined}
@@ -434,6 +449,8 @@ function App() {
             <Dprima go={go} />
           ) : path.startsWith("/comida") ? (
             <Comida go={go} />
+          ) : path.startsWith("/precierre") ? (
+            <Precierre go={go} />
           ) : path.startsWith("/revision-comida") ? (
             <RevisionComida path={path} go={go} />
           ) : path.startsWith("/flujo-mensual") ? (
