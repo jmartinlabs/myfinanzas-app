@@ -2,10 +2,13 @@
 
 Fecha: 2026-11-01. Autor del registro: subagente ejecutor de OpenCode, por encargo del
 coordinador. Base: `main` `4eb7264`.
-Estado: **PROPUESTA DOCUMENTAL — no aprobada**. **DEV sigue en STOP.** Este documento no
-crea ni enmienda una spec propietaria, no implementa código, no toca `apps/`, esquema,
-migraciones, tablero ni datos reales, y no autoriza migración, activación, cierre ni merge.
-Todos los AC y filas de testplan están **UNRUN**; no se afirma ejecución ni PASS.
+Estado: **Aprobación conceptual del usuario el 2026-11-01 de las opciones A de D-01 a
+D-11**, con las precisiones obligatorias D-04, D-07, D-09 y D-10. La **enmienda normativa
+propuesta** y el **testplan definitivo propuesto** están en
+[SPEC16](../16-revision-comida-specification.md) y su testplan; quedan **pendientes de
+aprobación independiente**. **DEV sigue en STOP.** No se implementa, no se migra, no se
+activa y no se autoriza merge. AC y filas de testplan **UNRUN**; no se afirma ejecución ni
+PASS.
 
 Contexto: [análisis de adaptación](e35-fin-neta-adaptation-2026-10-31.md),
 [SPEC16](../16-revision-comida-specification.md),
@@ -14,6 +17,24 @@ Contexto: [análisis de adaptación](e35-fin-neta-adaptation-2026-10-31.md),
 [SPEC12](../12-flujo-mensual-specification.md),
 [roadmap E3.5](../roadmap.md#e35--comida-por-ciclo-y-compensaciones) y
 [referencia funcional](../functional-reference-v5.11.md).
+
+## 0.1 Aprobación conceptual y precisiones (2026-11-01)
+
+El usuario aprobó conceptualmente la **opción A de D-01 a D-11** con cuatro precisiones
+obligatorias, ya incorporadas a la enmienda de SPEC16:
+
+- **D-04:** solo el contrato necesario en SPEC16, sin duplicar P6/P7 ni crear una
+  especificación paralela.
+- **D-07:** distinguir devolución **sin vínculo** (no hay FK) de devolución **sin
+  acreditación** (falta evidencia); la evidencia externa suficiente permite el neteo sin
+  FK.
+- **D-09:** reconciliar nombres y expresiones de SPEC21 §4.3 con P7 (`Base analítica`,
+  `Cierre analítico`, `R_obl`, dos diferencias) sin descontar dos veces el compensable.
+- **D-10:** definir `Completada`, `Parcial`, `No disponible` y `Sin obligación acreditada`;
+  la ausencia de obligación o de reposición no acredita cumplimiento.
+
+La aprobación es **conceptual**: no aprueba todavía el texto normativo ni autoriza DEV,
+migración, activación ni merge.
 
 ## 0. Resumen ejecutivo
 
@@ -385,14 +406,14 @@ SPEC16/21/27/12 no afirman que sus AC estén ejecutados.
 
 ## 8. Siguiente paso seguro
 
-1. El usuario revisa D-01..D-11 y aprueba, rechaza o reformula cada una. Sin esa
-   aprobación no hay enmienda normativa ni DEV.
-2. Con D-04 resuelta, la spec propietaria incorpora el delta como enmienda (opción A
-   recomendada) o se formaliza la vía aprobada, resolviendo H-1..H-3 sin cambiar fórmulas.
+1. Revisión y **aprobación independiente** de la enmienda normativa propuesta en SPEC16 y
+   del testplan definitivo propuesto; D-04/D-07/D-09/D-10 ya están incorporadas.
+2. Resolver cualquier observación de esa revisión en la spec propietaria, sin duplicar
+   P6/P7 ni crear una especificación paralela.
 3. Solo después, una autorización **separada** de DEV habilita fixtures, implementación y
    QA; el riesgo R-01 se corrige en esa fase, no aquí.
 4. E3.6 y E4.9 siguen bloqueados hasta que E3.5/FIN_NETA sea verificable; este documento
    no desbloquea E4.9, no cierra DT6/T-BKP y no autoriza cierre ni foto.
 
-Este delta **no** cierra E3.5, **no** aprueba ninguna decisión abierta, **no** sustituye la
+Este delta **no** cierra E3.5, **no** aprueba el texto normativo, **no** sustituye la
 evidencia DT6 y **no** autoriza push, PR ni merge por sí mismo.
