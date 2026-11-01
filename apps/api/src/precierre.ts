@@ -4,6 +4,7 @@ import { getCyclePlan } from "./planes-ciclo";
 import {
   cashAt,
   investmentInstalled,
+  quantityText,
 } from "./investment-engine";
 import { decimal } from "./saldos";
 import { fingerprint, financeRevision, ledgerRows, type LedgerRow } from "./movement-ledger";
@@ -82,21 +83,20 @@ function movementSource(
   try {
     inconsistent = db
       .query(
-        `SELECT m.id, 'referencia inactiva' motivo
-           FROM movimientos m JOIN referencias r ON r.id=m.referencia
-          WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ? AND r.estado<>'Activa'
-         UNION ALL
-         SELECT m.id, 'partida inactiva' motivo
-           FROM movimientos m JOIN partidas p ON p.id=m.partida
+        `SELECT m.id, 'clasificación incompatible' motivo
+           FROM movimientos m
+           JOIN partidas p ON p.id=m.partida
+           JOIN subcategorias s ON s.id=p.padre
+           JOIN categorias c ON c.id=s.padre
           WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ?
-            AND m.tipo IN ('Gasto','Amortización deuda') AND p.estado<>'Activa'
+            AND m.tipo='Gasto' AND c.anual<>'Gasto'
          UNION ALL
          SELECT m.id, 'partida obligatoria ausente' motivo
            FROM movimientos m
           WHERE m.anulado=0 AND m.fecha BETWEEN ? AND ?
             AND m.tipo IN ('Gasto','Amortización deuda') AND m.partida IS NULL`,
       )
-      .all(start, end, start, end, start, end) as {
+      .all(start, end, start, end) as {
       id: string;
       motivo: string;
     }[];
@@ -246,14 +246,22 @@ function investmentSource(
   source: PrecierreSource;
   efectivo: string | null;
   instrumentos: number;
-  cantidad: string | null;
-  posiciones: { instrumento: string; nombre: string; cantidad: string }[];
+  posiciones: {
+    instrumento: string;
+    nombre: string;
+    saldoInversion: { id: string; nombre: string };
+    cantidad: string;
+  }[];
 } {
   const noDisponible = (motivo: string) => ({
     instrumentos: 0,
     efectivo: null,
-    cantidad: null,
-    posiciones: [],
+    posiciones: [] as {
+      instrumento: string;
+      nombre: string;
+      saldoInversion: { id: string; nombre: string };
+      cantidad: string;
+    }[],
     source: {
       key: "inversion",
       label: "E4.1 Inversión",
@@ -287,31 +295,45 @@ function investmentSource(
     const rows = db
       .query(
         `SELECT o.instrumento instrumento,i.nombre nombre,
+                o.saldo_inversion saldoInversion,s.nombre saldoNombre,
                 CAST(SUM(o.cantidad) AS TEXT) cantidad
-         FROM operaciones_inversion o JOIN instrumentos i ON i.id=o.instrumento
+         FROM operaciones_inversion o
+         JOIN instrumentos i ON i.id=o.instrumento
+         JOIN saldos s ON s.id=o.saldo_inversion
          WHERE o.estado='Vigente' AND o.fecha<=?
-         GROUP BY o.instrumento,i.nombre ORDER BY o.instrumento`,
+         GROUP BY o.saldo_inversion,o.instrumento,i.nombre,s.nombre
+         ORDER BY o.saldo_inversion,o.instrumento`,
       )
-      .all(end) as { instrumento: string; nombre: string; cantidad: string }[];
-    let quantity = 0n;
-    for (const row of rows) quantity += BigInt(row.cantidad);
+      .all(end) as {
+      instrumento: string;
+      nombre: string;
+      saldoInversion: string;
+      saldoNombre: string;
+      cantidad: string;
+    }[];
+    const posiciones = rows.map((row) => ({
+      instrumento: row.instrumento,
+      nombre: row.nombre,
+      saldoInversion: { id: row.saldoInversion, nombre: row.saldoNombre },
+      cantidad: quantityText(BigInt(row.cantidad)),
+    }));
+    const instruments = new Set(rows.map((row) => row.instrumento));
     const value = decimal(cashTotal) ?? "0.00";
     const empty = rows.length === 0 && cashTotal === 0n;
     return {
       efectivo: value,
-      instrumentos: rows.length,
-      cantidad: quantity.toString(),
-      posiciones: rows,
+      instrumentos: instruments.size,
+      posiciones,
       source: {
         key: "inversion",
         label: "E4.1 Inversión",
         cobertura: empty
           ? "Vacío"
-          : `${rows.length} instrumentos · cantidad ${quantity} · efectivo ${value}`,
+          : `${instruments.size} instrumentos · ${posiciones.length} posiciones · efectivo ${value}`,
         estado: empty ? "Vacío" : "Integrado",
         motivo: empty
           ? "Sin posiciones ni efectivo de inversión a Fin."
-          : "Efectivo y cantidades a Fin; operaciones posteriores excluidas.",
+          : "Efectivo y posiciones Saldo+Instrumento a Fin; posteriores excluidas.",
         enlace: "/inversiones",
         aplicable: true,
       },
@@ -320,7 +342,6 @@ function investmentSource(
     return {
       instrumentos: 0,
       efectivo: null,
-      cantidad: null,
       posiciones: [],
       source: {
         key: "inversion",
@@ -521,7 +542,6 @@ export function getPrecierre(
     },
     inversion: {
       efectivo: investment.efectivo,
-      cantidad: investment.cantidad,
       instrumentos: investment.instrumentos,
       posiciones: investment.posiciones,
       valoracion: "No disponible",

@@ -47,7 +47,7 @@ function fixture(options: { plan?: boolean; reference?: boolean; investment?: bo
       "INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en) VALUES('I0001','Instrumento fixture','Activa',1,'f','f')",
     );
     db.run(
-      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('1','Compra','2025-12-15','I0001','S003','S004',100,1000,'EUR',NULL,1000,NULL,'Compra fixture',NULL,'Vigente',1,'f','f')",
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('1','Compra','2025-12-15','I0001','S003','S004',100000000,1000,'EUR',NULL,1000,NULL,'Compra fixture',NULL,'Vigente',1,'f','f')",
     );
   }
   return db;
@@ -97,22 +97,33 @@ test("AC-03: S0 ausente bloquea y no se crea", () => {
   }
 });
 
-test("AC-04: referencia o partida inactiva bloquea el núcleo", () => {
+test("AC-04: vínculos históricos inactivos no bloquean; clasificación incompatible sí", () => {
   const db = fixture({ reference: true, plan: true });
   try {
+    db.run("UPDATE partidas SET estado='Inactiva' WHERE id='PAR001'");
     const result = getPrecierre(db, "1", now, { backup });
-    expect(result.estado).toBe("Bloqueado");
-    expect(result.bloqueos.map((b) => b.code)).toContain("INCONSISTENCIA_NUCLEO");
+    expect(result.bloqueos.map((b) => b.code)).not.toContain(
+      "INCONSISTENCIA_NUCLEO",
+    );
   } finally {
     close(db);
   }
-  const classification = fixture({ plan: true });
+  const incompatible = fixture({ plan: true });
   try {
-    classification.run("UPDATE partidas SET estado='Inactiva' WHERE id='PAR001'");
-    const result = getPrecierre(classification, "1", now, { backup });
+    incompatible.exec(`
+      INSERT INTO categorias(id,nombre,grupo,anual,mensual,referencia,estado,revision,creado,actualizado)
+      VALUES('CAT002','Ingreso fixture','Ingreso','Ingreso','Ingreso',0,'Activa',1,'f','f');
+      INSERT INTO subcategorias(id,nombre,padre,estado,revision,creado,actualizado)
+      VALUES('SUB002','Sub ingreso','CAT002','Activa',1,'f','f');
+      INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda,presupuesto)
+      VALUES('PAR002','Partida incompatible','SUB002','Activa',1,'f','f',NULL,NULL);
+      INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,partida,referencia,concepto,nota,anulado,revision,creado,actualizado,capital,intereses)
+      VALUES('103','2026-01-12','Gasto',100,'S001','S000',NULL,'PAR002',NULL,'Gasto incompatible','',0,1,'f','f',NULL,NULL);
+    `);
+    const result = getPrecierre(incompatible, "1", now, { backup });
     expect(result.bloqueos.map((b) => b.code)).toContain("INCONSISTENCIA_NUCLEO");
   } finally {
-    close(classification);
+    close(incompatible);
   }
 });
 
@@ -120,13 +131,13 @@ test("AC-05: E4.1 muestra efectivo/posiciones a Fin y excluye el futuro", () => 
   const db = fixture({ investment: true, plan: true });
   try {
     db.run(
-      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Compra','2026-02-05','I0001','S003','S004',50,1000,'EUR',NULL,500,NULL,'Compra futura',NULL,'Vigente',1,'f','f')",
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Compra','2026-02-05','I0001','S003','S004',50000000,1000,'EUR',NULL,500,NULL,'Compra futura',NULL,'Vigente',1,'f','f')",
     );
     const result = getPrecierre(db, "1", now, { backup });
     const source = result.fuentes.find((f) => f.key === "inversion")!;
     expect(source.estado).toBe("Integrado");
     expect(source.cobertura).toContain("1 instrumentos");
-    expect(result.inversion.cantidad).toBe("100");
+    expect(result.inversion.posiciones[0].cantidad).toBe("1");
     expect(result.inversion.posiciones).toHaveLength(1);
     expect(result.inversion.valoracion).toBe("No disponible");
   } finally {
@@ -145,6 +156,30 @@ test("AC-05: múltiples cuentas de efectivo, incluida inactiva histórica", () =
     expect(result.fuentes.find((f) => f.key === "inversion")!.estado).toBe(
       "Integrado",
     );
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: misma posición se separa por Saldo+Instrumento", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run(
+      "INSERT INTO saldos(id,nombre,tipo,control,estado,finalidad,liquidez,bolsa,exterior,apertura,fecha_apertura,objetivo,manual,revision,creado,actualizado) VALUES('S006','Cartera 2','Inversión','Inversiones','Activa',NULL,0,0,0,0,NULL,NULL,NULL,1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('3','Compra','2025-12-20','I0001','S003','S006',200000000,1000,'EUR',NULL,2000,NULL,'Compra cartera 2',NULL,'Vigente',1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.instrumentos).toBe(1);
+    expect(result.inversion.posiciones).toHaveLength(2);
+    expect(result.inversion.posiciones.map((p) => p.cantidad).sort()).toEqual([
+      "1",
+      "2",
+    ]);
+    expect(
+      result.inversion.posiciones.map((p) => p.saldoInversion.id).sort(),
+    ).toEqual(["S004", "S006"]);
   } finally {
     close(db);
   }
