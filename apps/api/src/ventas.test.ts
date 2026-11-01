@@ -43,7 +43,7 @@ import {
 import { createClassification } from "./clasificacion";
 import { previewMovement, writeMovement } from "./movimientos";
 import { financeRevision } from "./movement-ledger";
-import { financialReference } from "./ciclos";
+import { financialReference, cycleContext } from "./ciclos";
 import { investmentSource } from "./investment-ledger";
 import { Problem } from "./problem";
 import { manifest, verifyContract } from "./schema-contract";
@@ -1795,6 +1795,14 @@ test("E4.2-AC-20/21/22/23/38: fuente de inversión y referencia compartida", () 
       state: "disponible",
       maxDate: "2026-04-10",
     });
+    // Integración real: la fuente conectada alimenta la referencia de Ciclos.
+    const ctx = cycleContext(db);
+    expect(ctx.referencia.fecha).toBe("2026-04-10");
+    expect(
+      ctx.referencia.coverage.find(
+        (s) => s.source === "Operaciones de inversión",
+      ),
+    ).toMatchObject({ state: "disponible" });
     const sale = sell(db, instrumento.id, {
       fecha: "2026-04-20",
       saldoInversion: "S006",

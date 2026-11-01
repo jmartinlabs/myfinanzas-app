@@ -128,7 +128,7 @@ test("03 AC-10 / H-SPEC03-03: fallo instalado de Movimientos produce error de re
     expect(cycleContext(db).referencia.coverage.map((s) => s.state)).toEqual([
       "disponible",
       "disponible",
-      "pendiente",
+      "disponible",
     ]);
     db.exec("ALTER TABLE movimientos RENAME COLUMN fecha TO fecha_rota");
     expect(movementSource(db)).toEqual({
@@ -158,7 +158,7 @@ test("03 AC01/02/05/09/12–15: alta explícita, mes único y orden, sin reloj n
     expect(first.contexto.referencia.coverage.map((s) => s.state)).toEqual([
       "disponible",
       "disponible",
-      "pendiente",
+      "disponible",
     ]);
     expect(() => add(db, "2026-10-25")).toThrow("Ciclo duplicado");
     expect(() => add(db, "2026-10-01")).toThrow("Ciclo duplicado");

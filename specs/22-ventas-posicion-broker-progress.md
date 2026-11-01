@@ -1,9 +1,9 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
 Status: **DEV22 implementado en la rama `dev22-ventas` (2026-11-01): venta, efectivo, posición,
-API, UI y esquema v21. 41 AC con evidencia local; la fuente de inversión de la referencia
-temporal queda implementada y probada, pero su conexión en `ciclos.ts` está bloqueada por
-ownership. Backup/restore y E2E no verificados en macOS. Sin push, PR ni merge.**
+API, UI y esquema v21. 42 AC con evidencia local; la fuente de inversión está conectada en
+`temporalSources`. Backup/restore y E2E no verificados en macOS (pendientes de CI Linux). Sin
+push, PR ni merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -40,12 +40,11 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   protegido (`409 HISTORY_LOCKED`) sin reescribir esos módulos.
 - **Referencia temporal:** `investmentSource` (`apps/api/src/investment-ledger.ts`) implementa
   la fuente de cuatro estados (pendiente / disponible / sin_referencia / error) con solo
-  fechas vigentes y sin reloj. **No se conecta en `temporalSources` (`apps/api/src/ciclos.ts`)**
-  porque ese archivo está fuera del ownership exclusivo del paquete y en su lista de
-  prohibidos. Parche mínimo pendiente de autorización:
-  `return financialReference([movementSource(db), revisionComidaSource(db), investmentSource(db)]);`
-  (más el `import`). Mientras no se aplique, AC-20, AC-21 (integración), AC-22, AC-23 y AC-38
-  quedan UNRUN en su parte de conexión; la fuente y el contrato puro sí están probados.
+  fechas vigentes y sin reloj. El coordinador conectó la fuente en `temporalSources`
+  (`apps/api/src/ciclos.ts`) con el parche mínimo previsto (import + tercera fuente) y ajustó
+  las expectativas de cobertura de `ciclos.test.ts`/`movimientos.test.ts` y la prueba
+  AC-24/E4.2-AC3 de `inversiones-ac.test.ts`; `ventas.test.ts` verifica además la integración
+  real con `cycleContext`. Permanece UNRUN la parte de endpoints/flujo y la UI de AC-23.
 - **Cambios mecánicos fuera del ownership nominal:** el ascenso de versión obliga a actualizar
   expectativas de versión/etiqueta de backup en pruebas de otros dominios (`ciclos.test.ts`,
   `comida.test.ts`, `compartidos.test.ts`, `cycle-operations.test.ts`, `d5-aportaciones.test.ts`,
@@ -56,6 +55,11 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   (`schema-contract-v18.test.ts`). Solo cambian números de versión y etiquetas `e2.7-v20` →
   `e4.2-v21`; no se altera lógica de esos dominios. Requiere revisión del coordinador por
   ownership.
+- **Conexión de referencia temporal (coordinador):** `apps/api/src/ciclos.ts` se modificó
+  únicamente para importar `investmentSource` y añadirlo a `financialReference`. Se ajustaron
+  las expectativas de cobertura de `ciclos.test.ts`/`movimientos.test.ts` y la prueba
+  AC-24/E4.2-AC3 de `inversiones-ac.test.ts`. Es un cambio de integración de E4.2, no una
+  regla nueva.
 - **Pruebas focales:** `apps/api/src/ventas.test.ts` (21 pruebas, 148+ aserciones) cubre
   AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
   AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
@@ -92,10 +96,10 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
 | E4.2-AC-18 | PASS | Ficha con conteos 1/1→1/2 y S006 1/0; fechas correctas |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
-| E4.2-AC-20 | UNRUN | Fuente y contrato probados; conexión en `ciclos.ts` bloqueada por ownership |
-| E4.2-AC-21 | UNRUN (integración) | Máximos del contrato puro PASS; agregación de tres fuentes no conectada |
-| E4.2-AC-22 | UNRUN | Fuente retrocede al anular y avanza al rectificar (PASS); referencia global sin conectar |
-| E4.2-AC-23 | UNRUN | Estados pendiente/error/sin_referencia de la fuente PASS; UI y consumidores sin conectar |
+| E4.2-AC-20 | PASS (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos` y flujo mensual no recorridos |
+| E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
+| E4.2-AC-22 | PASS (dominio) | La fuente retrocede al anular y avanza al rectificar; referencia conectada |
+| E4.2-AC-23 | PASS (dominio) / UNRUN (UI) | Estados pendiente/error/sin_referencia y causa en cobertura; UI no recorrida |
 | E4.2-AC-24 | PASS | Futuro/inválida 422; bisiesto y `spanishToday` 23:30Z/00:30Z |
 | E4.2-AC-25 | PASS | Escalas 8/6/6, límite 2⁵³−1 exacto, exceso 422, producto interno BigInt |
 | E4.2-AC-26 | PASS | EUR null/1 válidos; 1,1 y USD inválidas; US/USDD/usd 422 |
@@ -110,7 +114,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21, migración preserva filas/auditoría/contadores/identidad |
 | E4.2-AC-37 | FAIL (entorno) / no verificado | Prueba ampliada con Venta; falla en macOS por ancestros privados, igual que la línea base |
-| E4.2-AC-38 | UNRUN | Fecha común del contrato puro PASS; integración de fuentes sin conectar |
+| E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
 | E4.2-AC-40 | PASS | Venta entre preview y confirmación → 409 `IMPACT_CHANGED` |
 | E4.2-AC-41 | UNRUN | No ejecutado de extremo a extremo; ruta `getSaldo`→motor único ya probada |

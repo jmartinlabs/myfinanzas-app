@@ -362,7 +362,7 @@ test("04 AC13–16: Madrid, ciclos inclusivos y máximos de hechos vigentes, sin
     expect(cycleContext(db).referencia.coverage.map((s) => s.state)).toEqual([
       "disponible",
       "disponible",
-      "pendiente",
+      "disponible",
     ]);
     expect(
       save(db, income(saldo.id, { fecha: "2026-01-01" })).ciclo,
