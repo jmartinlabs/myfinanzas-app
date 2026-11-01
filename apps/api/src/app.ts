@@ -125,6 +125,17 @@ import {
   purchaseAudit,
   rectifyPurchase,
 } from "./compras";
+import {
+  annulSale,
+  createSale,
+  getSale,
+  listSales,
+  previewSale,
+  previewSaleAnnulment,
+  previewSaleRectification,
+  rectifySale,
+  saleAudit,
+} from "./ventas";
 import { cashDto, civil } from "./investment-engine";
 import {
   nonVehicleFicha,
@@ -1089,6 +1100,40 @@ export function createApp(db: Database, options: AppOptions) {
             now(),
           ),
         });
+      if (path === "/api/ventas/impacto" && req.method === "POST")
+        return reply(previewSale(db, await jsonBody(req), now()));
+      if (path === "/api/ventas" && req.method === "GET")
+        return reply(listSales(db, new URL(req.url).searchParams));
+      if (path === "/api/ventas" && req.method === "POST") {
+        const result = createSale(
+          db,
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          now(),
+        );
+        headers.set("location", `/api/ventas/${result.venta.id}`);
+        return reply(result, 201);
+      }
+      const saleAuditPath = path.match(/^\/api\/ventas\/(\d+)\/auditoria$/);
+      if (saleAuditPath && req.method === "GET")
+        return reply(saleAudit(db, saleAuditPath[1]));
+      const saleAction = path.match(
+        /^\/api\/ventas\/(\d+)\/(impacto|impacto-anulacion|rectificar|anular)$/,
+      );
+      if (saleAction && req.method === "POST") {
+        const [, id, action] = saleAction,
+          body = await jsonBody(req);
+        if (action === "impacto")
+          return reply(previewSaleRectification(db, id, body, now()));
+        if (action === "impacto-anulacion")
+          return reply(previewSaleAnnulment(db, id, body));
+        if (action === "rectificar")
+          return reply(rectifySale(db, id, body, now()));
+        return reply(annulSale(db, id, body, now()));
+      }
+      const sale = path.match(/^\/api\/ventas\/(\d+)$/);
+      if (sale && req.method === "GET")
+        return reply(getSale(db, sale[1]));
       if (path === "/api/compras/impacto" && req.method === "POST")
         return reply(
           previewPurchase(db, await jsonBody(req), now()),

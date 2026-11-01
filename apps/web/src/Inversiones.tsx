@@ -1,12 +1,16 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
+import { SaleList, SaleForm, SaleDetail, AnnulSale } from "./Ventas";
 
 type Position = {
   saldoInversion: { id: string; nombre: string };
   cantidad: string;
   compras: number;
+  ventas: number;
   ultimaCompra: string | null;
+  ultimaVenta: string | null;
+  ultimaOperacion: string | null;
 };
 type Instrumento = {
   id: string;
@@ -51,6 +55,15 @@ type Compra = {
 };
 type Options = {
   instrumentos: Instrumento[];
+  instrumentosVenta: {
+    saldoInversion: { id: string; nombre: string; estado: string };
+    instrumentos: {
+      id: string;
+      nombre: string;
+      estado: string;
+      cantidad: string;
+    }[];
+  }[];
   divisas: string[];
   saldosEfectivo: {
     id: string;
@@ -59,10 +72,9 @@ type Options = {
     disponible: string;
   }[];
   saldosInversion: { id: string; nombre: string; estado: string }[];
-  ventas: string;
   cobertura: string;
 };
-type Impact = {
+export type Impact = {
   accion: string;
   impacto: {
     efectivo: {
@@ -95,11 +107,11 @@ type Form = {
   nota: string;
   motivo: string;
 };
-const BASE = "/inversiones";
-const date = (value: string | null) =>
+export const BASE = "/inversiones";
+export const date = (value: string | null) =>
   value ? value.split("-").reverse().join("/") : "No disponible";
 const text = (value: string | null | undefined) => value ?? "—";
-const num = (value: string | null | undefined) =>
+export const num = (value: string | null | undefined) =>
   value === null || value === undefined ? "—" : value.replace(".", ",");
 const blank: Form = {
   fecha: "",
@@ -167,9 +179,13 @@ function localDifference(form: Form) {
   return centsText(importe - BigInt(referenceValue.replace(".", "")));
 }
 function tab(path: string) {
-  return path.startsWith(BASE + "/compras") ? "compras" : "instrumentos";
+  return path.startsWith(BASE + "/ventas")
+    ? "ventas"
+    : path.startsWith(BASE + "/compras")
+      ? "compras"
+      : "instrumentos";
 }
-function Tabs({ active, go }: { active: string; go: (path: string) => void }) {
+export function Tabs({ active, go }: { active: string; go: (path: string) => void }) {
   return (
     <nav className="classification-tabs" aria-label="Secciones de Inversiones">
       <a
@@ -192,18 +208,28 @@ function Tabs({ active, go }: { active: string; go: (path: string) => void }) {
       >
         Compras
       </a>
+      <a
+        href={BASE + "/ventas"}
+        aria-current={active === "ventas" ? "page" : undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          go(BASE + "/ventas");
+        }}
+      >
+        Ventas
+      </a>
     </nav>
   );
 }
-function CoverageNote() {
+export function CoverageNote() {
   return (
     <p className="help">
-      Posición calculada solo con las compras registradas; no incluye histórico
-      anterior no importado. Ventas: no disponibles hasta E4.2.
+      Posición calculada solo con las operaciones registradas; no incluye
+      histórico anterior no importado. Sin valoración hasta E4.3.
     </p>
   );
 }
-function CashLines({
+export function CashLines({
   options,
   error,
 }: {
@@ -240,11 +266,12 @@ function CashLines({
           ))}
         </ul>
       )}
-      <p className="help">{options?.ventas ?? "Ventas: no disponibles hasta E4.2"}.</p>
       <p className="help">{options?.cobertura ?? ""}</p>
     </section>
   );
 }
+export { type Compra, type Options, type Instrumento, type Position };
+
 export function Inversiones({
   path,
   go,
@@ -272,6 +299,17 @@ export function Inversiones({
   const purchase = path.match(/^\/inversiones\/compras\/(\d+)$/);
   if (purchase)
     return <PurchaseDetail key={path} id={purchase[1]} go={go} />;
+  if (path === BASE + "/ventas")
+    return <SaleList go={go} />;
+  if (path === BASE + "/ventas/nueva") return <SaleForm go={go} />;
+  const saleRectify = path.match(/^\/inversiones\/ventas\/(\d+)\/rectificar$/);
+  if (saleRectify)
+    return <SaleForm key={path} id={saleRectify[1]} mode="rectificar" go={go} />;
+  const saleAnnul = path.match(/^\/inversiones\/ventas\/(\d+)\/anular$/);
+  if (saleAnnul)
+    return <AnnulSale key={path} id={saleAnnul[1]} go={go} />;
+  const sale = path.match(/^\/inversiones\/ventas\/(\d+)$/);
+  if (sale) return <SaleDetail key={path} id={sale[1]} go={go} />;
   return <Alert>Página no encontrada.</Alert>;
 }
 function InstrumentList({ go }: { go: (path: string) => void }) {
@@ -599,7 +637,10 @@ function InstrumentDetail({
           <span className="help">{data.cobertura}</span>
         </div>
         {data.posiciones.length === 0 ? (
-          <p>Sin posiciones registradas; cero verificado del registro de Compras.</p>
+          <p>
+            Sin posiciones registradas; cero verificado del registro de Compras y
+            Ventas.
+          </p>
         ) : (
           <div className="desktop-list inversiones-desktop">
             <table className="inversiones-table">
@@ -609,7 +650,10 @@ function InstrumentDetail({
                   <th scope="col">Saldo</th>
                   <th scope="col">Cantidad</th>
                   <th scope="col">Compras</th>
-                  <th scope="col">Última vigente</th>
+                  <th scope="col">Ventas</th>
+                  <th scope="col">Última compra</th>
+                  <th scope="col">Última venta</th>
+                  <th scope="col">Última operación</th>
                 </tr>
               </thead>
               <tbody>
@@ -620,7 +664,10 @@ function InstrumentDetail({
                     </td>
                     <td>{num(position.cantidad)}</td>
                     <td>{position.compras}</td>
+                    <td>{position.ventas}</td>
                     <td>{date(position.ultimaCompra)}</td>
+                    <td>{date(position.ultimaVenta)}</td>
+                    <td>{date(position.ultimaOperacion)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -641,7 +688,8 @@ function InstrumentDetail({
                   <span>{num(position.cantidad)}</span>
                 </div>
                 <p>
-                  {position.compras} compra(s) · última {date(position.ultimaCompra)}
+                  {position.compras} compra(s) · {position.ventas} venta(s) ·
+                  última operación {date(position.ultimaOperacion)}
                 </p>
               </li>
             ))}
@@ -741,6 +789,88 @@ function InstrumentDetail({
             ))}
           </ul>
         )}
+      </section>
+      <section className="panel" aria-labelledby="ventas-instrumento-title">
+        <div className="panel-head">
+          <h2 id="ventas-instrumento-title">
+            Ventas del Instrumento ({data.ventas.length})
+          </h2>
+          <button
+            className="primary"
+            onClick={() => go(`${BASE}/ventas/nueva?instrumento=${instrumento.id}`)}
+          >
+            Nueva venta
+          </button>
+        </div>
+        {data.ventas.length === 0 ? (
+          <p>Sin ventas registradas.</p>
+        ) : (
+          <>
+            <div className="desktop-list inversiones-desktop">
+              <table className="inversiones-table">
+                <caption className="sr-only">Ventas del Instrumento</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Fecha</th>
+                    <th scope="col">Efectivo</th>
+                    <th scope="col">Inversión</th>
+                    <th scope="col">Cantidad</th>
+                    <th scope="col">Precio</th>
+                    <th scope="col">Divisa</th>
+                    <th scope="col">Cambio</th>
+                    <th scope="col">EUR cobrado</th>
+                    <th scope="col">Comisión</th>
+                    <th scope="col">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.ventas.map((venta: Compra) => (
+                    <tr key={venta.id}>
+                      <td>{date(venta.fecha)}</td>
+                      <td>{venta.saldoEfectivo?.id}</td>
+                      <td>{venta.saldoInversion?.id}</td>
+                      <td>{num(venta.cantidad)}</td>
+                      <td>{num(venta.precio)}</td>
+                      <td>{venta.divisa}</td>
+                      <td>{num(venta.cambio)}</td>
+                      <td>{eur(venta.importeEur)}</td>
+                      <td>{venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}</td>
+                      <td>{venta.estado}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <ul
+              className="mobile-list inversiones-mobile"
+              aria-label="Ventas del Instrumento móvil"
+            >
+              {data.ventas.map((venta: Compra) => (
+                <li key={venta.id}>
+                  <div className="card-head">
+                    <strong>{date(venta.fecha)}</strong>
+                    <Tag inactive={venta.estado === "Anulada"}>
+                      {venta.estado}
+                    </Tag>
+                  </div>
+                  <p>
+                    {venta.saldoEfectivo?.id} → {venta.saldoInversion?.id} ·{" "}
+                    {num(venta.cantidad)} × {num(venta.precio)} {venta.divisa}
+                    {venta.cambio ? ` · ${num(venta.cambio)}` : ""}
+                  </p>
+                  <p>
+                    EUR cobrado {eur(venta.importeEur)} · comisión{" "}
+                    {venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <p className="help">
+          Cobertura parcial: solo operaciones registradas; el histórico anterior
+          no se importa.
+        </p>
       </section>
       <section className="panel" aria-labelledby="auditoria-instrumento-title">
         <h2 id="auditoria-instrumento-title">Auditoría del Instrumento</h2>
@@ -1422,7 +1552,7 @@ function PurchaseFields({
     </>
   );
 }
-function ImpactPanel({ impact }: { impact: Impact }) {
+export function ImpactPanel({ impact }: { impact: Impact }) {
   return (
     <section className="panel inversiones-impact" aria-label="Impacto de la operación">
       <h2>Impacto (no escribe hasta confirmar)</h2>

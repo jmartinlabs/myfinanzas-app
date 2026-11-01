@@ -175,7 +175,7 @@ test("E4.1-AC-01/02/03/04: identidad, ISIN normalizado, evidencia, unicidad y no
   expect(list.status).toBe(200);
   expect(list.data.total).toBe(3);
   expect(list.data.cobertura).toContain("histórico anterior no importado");
-  expect(list.data.ventas).toContain("E4.2");
+  expect(list.data.instrumentos[0].ventasVigentes).toBe(0);
 });
 
 test("E4.1-AC-05/06/07/36/43: edición auditada, ciclo de vida y conservación económica", async () => {

@@ -1,11 +1,148 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
-Status: **SPEC22 — specification completa y testplan APROBADOS el 2026-10-28; wireframes rev3
-aprobados visualmente. Queda la coordinación D7/SPEC19. DEV22 no iniciado.**
+Status: **DEV22 implementado en la rama `dev22-ventas` (2026-11-01): venta, efectivo, posición,
+API, UI y esquema v21. 41 AC con evidencia local; la fuente de inversión de la referencia
+temporal queda implementada y probada, pero su conexión en `ciclos.ts` está bloqueada por
+ownership. Backup/restore y E2E no verificados en macOS. Sin push, PR ni merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
-Fecha: 2026-10-28.
+Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
+
+## Checkpoint DEV22 — 2026-11-01
+
+- **Autorización:** el usuario autorizó expresamente iniciar DEV22 el 2026-11-01 (paquete de
+  trabajo DEV22/E4.2). Contrato: SPEC22 rev2 aprobada (D1–D7 = A), testplan aprobado y
+  enmienda D7 de SPEC19 integrada en `main` `e6475e6`.
+- **Base y aislamiento:** worktree exclusivo gestionado por OpenCode (`dev22-ventas`), rama
+  `dev22-ventas` desde `main` `4eb7264`. Sin push, PR, merge, despliegue ni datos reales.
+- **Gate de esquema (v20 → v21):** no había versión reservada por SPEC22 ni colisión; se adopta
+  la siguiente versión libre (21) con `ventaSchema` (`apps/api/src/venta-schema.ts`), que
+  reconstruye **solo** `operaciones_inversion` (CHECK `clase IN ('Compra','Venta')`) y su tabla
+  de auditoría hija, preservando filas, auditoría, intentos, contadores, identidad y el resto de
+  tablas. Se registra el contrato `C21-VENTAS-E42` (258 objetos, SHA-256
+  `f8d327b77e8fdc58a3337e5a497bd61d48aae1b3470f79d38462236cd2326e4a`) en
+  `schema-contracts.json`; C14–C20 permanecen congelados. `backup.ts` admite 21 con etiqueta
+  `e4.2-v21` y restore vacía los mismos intentos. El detalle de la migración (no se puede
+  desactivar `foreign_keys` dentro de la transacción de `prepareSchema`; el hijo FK se copia a
+  una tabla de paso antes de reconstruir el padre) está documentado en el propio módulo.
+- **Implementación:** `ventas.ts` (alta, impacto, rectificación con reemplazo completo,
+  anulación, listado, ficha, auditoría), D1 (`INSUFFICIENT_UNITS` con ventana posterior y
+  agregación de fin de día), D2 (`INSUFFICIENT_CASH` en correcciones/anulaciones), D3
+  (Instrumento inactivo con cantidad, Saldo inactivo bloqueado), D7 (guard de cantidad al
+  rectificar/anular Compras), motor único de efectivo con término `+ Ventas`, posición
+  `saldo_inversion + instrumento` con conteos y fechas vigentes, opciones `instrumentosVenta`
+  acotadas por Saldo, ficha con Compras y Ventas, y UI de Ventas (pestaña, listado, alta,
+  impacto, rectificación, anulación) reutilizando el shell y los componentes de Inversiones.
+- **Huella e impacto de Movimientos:** `financeRevision` ya incorporaba
+  `operaciones_inversion` y el guard de Saldo ya consideraba esa tabla, por lo que una Venta
+  invalida una previsualización de Movimiento (`409 IMPACT_CHANGED`) y un Saldo con Ventas queda
+  protegido (`409 HISTORY_LOCKED`) sin reescribir esos módulos.
+- **Referencia temporal:** `investmentSource` (`apps/api/src/investment-ledger.ts`) implementa
+  la fuente de cuatro estados (pendiente / disponible / sin_referencia / error) con solo
+  fechas vigentes y sin reloj. **No se conecta en `temporalSources` (`apps/api/src/ciclos.ts`)**
+  porque ese archivo está fuera del ownership exclusivo del paquete y en su lista de
+  prohibidos. Parche mínimo pendiente de autorización:
+  `return financialReference([movementSource(db), revisionComidaSource(db), investmentSource(db)]);`
+  (más el `import`). Mientras no se aplique, AC-20, AC-21 (integración), AC-22, AC-23 y AC-38
+  quedan UNRUN en su parte de conexión; la fuente y el contrato puro sí están probados.
+- **Cambios mecánicos fuera del ownership nominal:** el ascenso de versión obliga a actualizar
+  expectativas de versión/etiqueta de backup en pruebas de otros dominios (`ciclos.test.ts`,
+  `comida.test.ts`, `compartidos.test.ts`, `cycle-operations.test.ts`, `d5-aportaciones.test.ts`,
+  `d5-backup.test.ts`, `deudas.test.ts`, `movimientos.test.ts`, `nomina.test.ts`,
+  `plan-anual.test.ts`, `planes-ciclo.test.ts`, `production.test.ts`, `referencias.test.ts`,
+  `revision-comida-backup.test.ts`, `revision-comida.test.ts`, `vehiculos-backup.test.ts`,
+  `vehiculos.test.ts`, `sqlite-identity-concurrency.test.ts`, `presupuestos.test.ts`) y del gate
+  (`schema-contract-v18.test.ts`). Solo cambian números de versión y etiquetas `e2.7-v20` →
+  `e4.2-v21`; no se altera lógica de esos dominios. Requiere revisión del coordinador por
+  ownership.
+- **Pruebas focales:** `apps/api/src/ventas.test.ts` (21 pruebas, 148+ aserciones) cubre
+  AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
+  AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
+  `create-venta`/`rectify-venta`).
+- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **365 pass / 56 fail**; los
+  56 fallos son exactamente los mismos que la línea base `main` `4eb7264` (ancestros de
+  directorios temporales/`renameat2`/symlinks Linux-only), no regresiones. `bun run typecheck`
+  PASS y `bun run build` PASS.
+- **No verificado:** Playwright/E2E 390/1440 (AC-19 UI, AC-27 aviso, AC-32, AC-33, AC-44 UI) y
+  backup/restore real (AC-37: la prueba se amplió con una Venta y auditoría, pero en macOS falla
+  por el entorno de directorios privados, igual que en la línea base). AC-41 (`flujo-mensual`)
+  no se ejecutó de extremo a extremo; su ruta usa `getSaldo`→motor único ya probado en AC-16/17.
+
+### Estado por AC (DEV22, 2026-11-01)
+
+| AC | Estado | Evidencia |
+| --- | --- | --- |
+| E4.2-AC-01 | PASS | `ventas.test.ts` · Venta EUR, efectivo 1.810,40→2.360,40, 12,5→7,5, sin Movimiento |
+| E4.2-AC-02 | PASS | Venta USD conserva cambio/importe; una operación posterior no recalcula |
+| E4.2-AC-03 | PASS | Venta parcial: posición 7,5, compras=1, ventas=1, efectivo una vez |
+| E4.2-AC-04 | PASS | Venta total: 0, compras=1/ventas=2, fechas, sin «Cerrada» ni valoración |
+| E4.2-AC-05 (D1) | PASS | Casos (a)(b)(c)(d) con `disponible`/`necesario`/`minimo`/`fecha` exactos y sin escritura, ambos órdenes |
+| E4.2-AC-06 | PASS | S004 y S006 independientes |
+| E4.2-AC-07 | PASS | Comisión incluida; 506,00 exactos; comisión = importe aceptada |
+| E4.2-AC-08 | PASS | Comisión > importe, negativa y 3 decimales → 422 |
+| E4.2-AC-09 | PASS | Idempotencia, 409 de conflicto, dos Ventas del mismo día |
+| E4.2-AC-10 | PASS | Impacto 2.316,40→2.113,40 y 7,5→9,5; referencia 303,60/−0,60; auditoría |
+| E4.2-AC-11 | PASS | Revisión obsoleta 409; omisión/null/identidad 422 sin escritura |
+| E4.2-AC-12 | PASS | Anulación conserva registro; efectivo 1.810,40; cantidad 12,5 |
+| E4.2-AC-13 | PASS | Segunda anulación 422; revisión obsoleta 409; rectificar anulada 422 |
+| E4.2-AC-14 | PASS | Identidad no rectificable; anular + nueva Venta sin vínculo persistido |
+| E4.2-AC-15 | PASS | Sin Movimientos, Presupuesto, Partida, Referencia ni Deuda |
+| E4.2-AC-16 | PASS | `/api/saldos/S003` y `/api/inversiones/efectivo` idénticos al céntimo; corte etiquetado |
+| E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
+| E4.2-AC-18 | PASS | Ficha con conteos 1/1→1/2 y S006 1/0; fechas correctas |
+| E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
+| E4.2-AC-20 | UNRUN | Fuente y contrato probados; conexión en `ciclos.ts` bloqueada por ownership |
+| E4.2-AC-21 | UNRUN (integración) | Máximos del contrato puro PASS; agregación de tres fuentes no conectada |
+| E4.2-AC-22 | UNRUN | Fuente retrocede al anular y avanza al rectificar (PASS); referencia global sin conectar |
+| E4.2-AC-23 | UNRUN | Estados pendiente/error/sin_referencia de la fuente PASS; UI y consumidores sin conectar |
+| E4.2-AC-24 | PASS | Futuro/inválida 422; bisiesto y `spanishToday` 23:30Z/00:30Z |
+| E4.2-AC-25 | PASS | Escalas 8/6/6, límite 2⁵³−1 exacto, exceso 422, producto interno BigInt |
+| E4.2-AC-26 | PASS | EUR null/1 válidos; 1,1 y USD inválidas; US/USDD/usd 422 |
+| E4.2-AC-27 (D3) | PASS (API) / UNRUN (aviso UI) | Inactivo con cantidad aceptado; inactivo sin cantidad y Saldo inactivo rechazados; `instrumentosVenta` acotado |
+| E4.2-AC-28 | PASS | Fallo inyectado: sin fila, contador ni auditoría |
+| E4.2-AC-29 | PASS | Dos Ventas concurrentes: una válida y otra 422; dos rectificaciones: 409 |
+| E4.2-AC-30 (D2) | PASS | 300,00/500,00/−200,00/11-04; baja −100,00; alza aceptada |
+| E4.2-AC-31 | PASS | 401 sin sesión, 403 sin CSRF, 404 en DELETE sin escritura |
+| E4.2-AC-32 | UNRUN | Sin Playwright/capturas de la implementación |
+| E4.2-AC-33 | UNRUN | Sin Playwright; estados de API cubiertos por pruebas de dominio |
+| E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
+| E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
+| E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21, migración preserva filas/auditoría/contadores/identidad |
+| E4.2-AC-37 | FAIL (entorno) / no verificado | Prueba ampliada con Venta; falla en macOS por ancestros privados, igual que la línea base |
+| E4.2-AC-38 | UNRUN | Fecha común del contrato puro PASS; integración de fuentes sin conectar |
+| E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
+| E4.2-AC-40 | PASS | Venta entre preview y confirmación → 409 `IMPACT_CHANGED` |
+| E4.2-AC-41 | UNRUN | No ejecutado de extremo a extremo; ruta `getSaldo`→motor único ya probada |
+| E4.2-AC-42 | PASS | Impactos y GET no escriben: tablas, contadores, revisiones y auditoría iguales |
+| E4.2-AC-43 | PASS | Cantidad/precio/importe inválidos, 2000/2001, clave inválida, diferencia informativa |
+| E4.2-AC-44 | PASS (API) / UNRUN (UI) | Filtros, paginación, estados, 404, opciones acotadas; incidencia «Revisar» no ejecutada |
+| E4.2-AC-45 (D7) | PASS | 7,5/12,5/−5/10-04; baja 422; P2 1/3/−2/12-04; sin Ventas no rechaza |
+
+### Comandos ejecutados
+
+| Comando | Resultado |
+| --- | --- |
+| `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
+| `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **21 pass / 0 fail** |
+| `bun run test` | **365 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| `bun run typecheck` | PASS |
+| `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
+| `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |
+
+### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
+
+`python3.12 scripts/verify --base 4eb7264 --head <cabeza de dev22-ventas>` clasificó `full` y
+ejecutó: `check-repository` PASS, `check-project` PASS, `validate-template` PASS, `test-checks`
+PASS, `test-validator` PASS, `test-agent-relay` PASS, `test-agent-usage` PASS,
+`test-auto-agent-usage` PASS, `test-verification` PASS, `test-evidence` PASS,
+`working-whitespace` PASS, `commit-whitespace` PASS, `typecheck` PASS, `build` PASS,
+**`api` FAIL** (365 pass / 56 fail) y `e2e` UNRUN.
+
+Los 56 fallos son idénticos, por nombre de prueba, a la línea base de `main` `4eb7264` en este
+equipo: `Ancestro no confiable` en directorios temporales, `renameat2`/`libc.so.6` y enlaces de
+`/var` propios de Linux. No se declaran PASS ni se ocultan; el candidato requiere el entorno
+canónico Linux para la fase de aplicación y para E2E.
 
 ## Aprobación visual rev3 — 2026-10-28
 

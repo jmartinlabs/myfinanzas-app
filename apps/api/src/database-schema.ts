@@ -4,6 +4,7 @@ import { anticipoSchema } from "./anticipo-schema";
 import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema";
 import { vehicleSchema } from "./vehicle-schema";
 import { investmentSchema } from "./instrumento-schema";
+import { ventaSchema } from "./venta-schema";
 import { comidaSchema } from "./comida-schema";
 import { dprimaSchema } from "./dprima-schema";
 import { verifyAdmittedContract } from "./schema-contract";
@@ -39,7 +40,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -92,7 +93,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -119,6 +120,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 18) investmentSchema(db);
         if (versions[0].version < 19) comidaSchema(db);
         if (versions[0].version < 20) dprimaSchema(db);
+        if (versions[0].version < 21) ventaSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -237,6 +239,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       investmentSchema(db);
       comidaSchema(db);
       dprimaSchema(db);
+      ventaSchema(db);
     }).immediate();
   } catch (error) {
     db.close();
