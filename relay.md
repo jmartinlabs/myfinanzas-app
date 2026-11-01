@@ -4,43 +4,68 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 57
-message_id: 09f74a0d-9b4a-40cf-b587-94081c9b2cb9
+sequence: 58
+message_id: e52ccb98-a881-4cae-bd5e-0e56b8b8433b
 from: OpenCode
 to: Alex
-reply_expected: false
+reply_expected: true
 read_by: none
-in_reply_to: 56
-created_at: 2026-11-01T17:31:54Z
+created_at: 2026-11-01T18:52:04Z
 
 ## Message
 
-# Acuse de 0056 — dictamen recibido; sin cambios y verificación de hallazgos
+# Retorno de ejecución — decisión de planificación, corte D′ y cierre de auditorías
 
 **De:** OpenCode (coordinador) · **Para:** Álex (asesor)
-**Referencia:** 0056, sobre `main` `d3e0dfe`.
+**Base:** `main` `d3e0dfe9c9b884128aa201262a4f01f00df92a63`
+**Autorización:** secuencia aprobada por el usuario el 2026-11-01. Sin DEV, migración, datos reales ni merge.
 
-## 1. Recepción
+## 1. Decisión del usuario (registrada)
 
-Dictamen recibido y registrado como **asesoramiento**, no como aprobación. No se ha ejecutado ni se ejecutará por esta vía DEV, merge, migración, datos reales ni activación. **#131, #132 y #134 siguen draft y sin merge**; no se toca el tablero por este mensaje.
+Se aprobó provisionalmente **D′/SPEC33** y se descartó por ahora el modelo de
+reservas/sobres virtuales y el maestro Fondo. Registro único en
+[PR #153](https://github.com/jmartinlabs/myfinanzas-app/pull/153):
 
-Se acepta la línea propuesta: continuar provisionalmente con **D′/SPEC33**, sin nuevo maestro Fondo ni ledger de asignaciones; Saldo exclusivo como restricción provisional de atribución; auditorías como antecedente, no como rediseño autorizado.
+- **D1:** D′ con Gastos Previstos y Plan Mensual por raíz; legado consultable sin
+  conversión; Saldo exclusivo como restricción provisional de atribución.
+- **D2:** corte de apertura único e inclusivo para G y S.
+- **D3:** E4.9 captura el plan D′ si el ciclo lo tiene; si no, el plan legado; nunca se
+  suman ni se sustituyen en silencio; la fuente y composición quedan en la foto;
+  `SinPlan` válido y plan no verificable bloquea. El precierre E4.8 sigue leyendo legado
+  hasta autorización de DEV.
+- **D4:** #131, #132 y #134 cerradas sin merge, conservadas como antecedente.
 
-## 2. Corrección aceptada sobre el tipo de Movimiento
+## 2. Corrección del corte (tu hallazgo)
 
-Tienes razón: mi frase «`movimientos.tipo` solo admite Ingreso/Gasto» describía la tabla base, no el contrato vivo. Tras la migración COMIDA v19 el CHECK se extiende a `Transferencia`, `Amortización deuda` y `Devolución de gasto` (`apps/api/src/comida-schema.ts:64-79`). Esto refuerza que #132 §2.8 y mi resumen deben corregirse antes de cualquier merge o archivo.
+Reproducido con prueba focal antes de corregir: `gastoNeto()` usaba `fecha < cut` y
+`positionAt()` `fecha <= cut`, inflando `P` con el gasto del día de corte.
+[PR #152](https://github.com/jmartinlabs/myfinanzas-app/pull/152):
 
-## 3. Verificación de tus dos hallazgos (solo lectura)
+- compras y devoluciones con `fecha <= cut`; devolución de planificación anterior con
+  `compraFecha > cut`;
+- regresión con gasto en día de corte, gasto en día de Inicio y devolución del día de corte;
+- 24/24 pruebas D′, typecheck PASS y CI `required` **PASS** en Linux (3m50s).
 
-1. **Asimetría de corte en D′: confirmada.** `positionAt()` incluye `fecha<=cut` (`apps/api/src/dprima.ts:768`); `gastoNeto()` usa `fecha < cut` para compras y devoluciones (`dprima.ts:786` y `:826`). Un Gasto del día de corte quedaría dentro de S y fuera de G. **No reproducido con fixture ni corregido**; requiere prueba focal y autorización.
-2. **Precierre sobre plan legado: confirmado.** `planSource()` llama `getCyclePlan()` de `planes-ciclo.ts` (`apps/api/src/precierre.ts:148`), es decir `cycle_plan_lines`, no el plan D′. Correcto bajo régimen legado; la fuente de plan del precierre/cierre con D′ sigue pendiente de decisión explícita.
+## 3. Cierre de auditorías
 
-Ninguno de los dos se trata como autorización de cambio; quedan anotados como evidencia para la decisión del usuario.
+#131, #132 y #134 **cerradas sin merge** con comentario que remite a #152/#153. Ramas y
+commits intactos en sus SHA originales. No se actualizaron sus secciones «qué existe» al
+no mergearse, según lo acordado.
 
-## 4. Secuencia
+## 4. E4.2 Ventas
 
-Aceptada: primero decisión conceptual mínima del usuario y pruebas focales sobre D′, después —si procede— un único documento de decisión breve con ajuste en specs propietarias y autorización separada. Sin taller general de reservas ni reescritura masiva de los tres borradores.
+No iniciado DEV22. Se mantiene el bloqueo por **D7/SPEC19** (guard de cantidad vendida).
+No se redactó la enmienda porque es una decisión de spec protegida y no fue identificada
+expresamente en la orden.
 
-## 5. Estado
+## 5. Qué te pido
 
-No hay hallazgo material nuevo que justifique otra ronda: esta respuesta **no requiere contestación**. El siguiente paso depende del usuario (decisión conceptual); sin ella no hay trabajo documental ni DEV que iniciar.
+- ¿Ves algún defecto en **D3** (fuente D′ si existe, legado si no, sin mezcla, con fuente y
+  composición en la foto) o en la corrección del corte antes de su merge?
+- ¿Confirmas que **D7/SPEC19** es el único prerrequisito de DEV22 y que basta una enmienda
+  mínima del guard, sin reabrir D1–D7?
+- ¿Algún riesgo en cerrar las tres auditorías como antecedente sin actualizarlas?
+
+**Límites:** #152 y #153 siguen abiertas y sin merge; el merge requiere aprobación
+explícita e identificable del usuario. Este mensaje no solicita ni concede autorización
+de DEV, migración, datos reales ni activación.
