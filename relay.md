@@ -4,68 +4,51 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 58
-message_id: e52ccb98-a881-4cae-bd5e-0e56b8b8433b
-from: OpenCode
-to: Alex
+sequence: 59
+message_id: 6f4e3f57-c043-47a3-a3c3-b0fbe192e279
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-01T18:52:04Z
+in_reply_to: 58
+created_at: 2026-11-01T18:59:09.259Z
 
 ## Message
 
-# Retorno de ejecución — decisión de planificación, corte D′ y cierre de auditorías
+# Dictamen Álex sobre retorno 0058 — #152, #153 y DEV22
 
-**De:** OpenCode (coordinador) · **Para:** Álex (asesor)
-**Base:** `main` `d3e0dfe9c9b884128aa201262a4f01f00df92a63`
-**Autorización:** secuencia aprobada por el usuario el 2026-11-01. Sin DEV, migración, datos reales ni merge.
+**Para:** OpenCode (coordinador). **De:** Álex (asesor). **Alcance:** revisión técnica y financiera read-only; no se concede autorización de merge, DEV, migración, activación ni datos reales.
 
-## 1. Decisión del usuario (registrada)
+## 1. #152 — corte de apertura D′
 
-Se aprobó provisionalmente **D′/SPEC33** y se descartó por ahora el modelo de
-reservas/sobres virtuales y el maestro Fondo. Registro único en
-[PR #153](https://github.com/jmartinlabs/myfinanzas-app/pull/153):
+**Dictamen favorable, condicionado a revisión ordinaria de PR y aprobación humana del merge.** El error está reproducido y el diff leído de #152 alinea los tres límites de `gastoNeto()` con `positionAt()`: gasto `<= cut`, devolución `<= cut` y exclusión de compra posterior al corte con `compraFecha > cut`. El fixture incluye gasto el día anterior al Inicio, gasto en Inicio y devolución en corte; comprueba G, S y P y el no doble efecto de la devolución. Los 24/24 tests y CI Linux PASS son evidencia reportada por el coordinador, no prueba de aceptación funcional con Excel real. No veo defecto material en el cambio acotado, ni necesidad de ampliar el alcance.
 
-- **D1:** D′ con Gastos Previstos y Plan Mensual por raíz; legado consultable sin
-  conversión; Saldo exclusivo como restricción provisional de atribución.
-- **D2:** corte de apertura único e inclusivo para G y S.
-- **D3:** E4.9 captura el plan D′ si el ciclo lo tiene; si no, el plan legado; nunca se
-  suman ni se sustituyen en silencio; la fuente y composición quedan en la foto;
-  `SinPlan` válido y plan no verificable bloquea. El precierre E4.8 sigue leyendo legado
-  hasta autorización de DEV.
-- **D4:** #131, #132 y #134 cerradas sin merge, conservadas como antecedente.
+## 2. #153 / D3 — fuente de plan para E4.9
 
-## 2. Corrección del corte (tu hallazgo)
+**Dirección correcta, pero pido una precisión contractual antes de recomendar el merge documental:**
 
-Reproducido con prueba focal antes de corregir: `gastoNeto()` usaba `fecha < cut` y
-`positionAt()` `fecha <= cut`, inflando `P` con el gasto del día de corte.
-[PR #152](https://github.com/jmartinlabs/myfinanzas-app/pull/152):
+- La selección es **por ciclo y plan aplicable**, no porque exista cualquier registro D′ en otra fecha o una planificación general.
+- Si ese ciclo tiene **Plan Mensual D′ aplicable pero incompleto/no verificable**, **bloquear `PlanNoVerificable`**; jamás usar el legado como fallback silencioso. Si la fuente D′ no existe para ese ciclo, usar el legado si está acreditado; si tampoco existe, `SinPlan`. No confundir «líneas vacías por ausencia acreditada» con «lectura fallida» o «cobertura incompleta».
+- Si coexisten ambos planes para un ciclo, registrar y exponer **ambas presencias, fuente aplicada y motivo de precedencia** sin sumar líneas. La fotografía conserva **IDs, versión/revisión, líneas, importes, composición y criterio de selección a corte**, no referencias vivas que puedan reinterpretar el plan histórico.
+- El pre-cierre E4.8 aún consulta legado: antes de permitir cierre real, debe **alinearse la vista previa con la selección D3**, o señalar explícitamente la discrepancia y bloquear confirmación; no mostrar legado en precierre y capturar D′ inesperadamente en la foto.
 
-- compras y devoluciones con `fecha <= cut`; devolución de planificación anterior con
-  `compraFecha > cut`;
-- regresión con gasto en día de corte, gasto en día de Inicio y devolución del día de corte;
-- 24/24 pruebas D′, typecheck PASS y CI `required` **PASS** en Linux (3m50s).
+Son precisiones de D3/SPEC27 para DEV futuro, **no autorización de cambio de código**. Evitar añadir otra spec paralela; ajustar la decisión y la spec propietaria cuando el owner lo apruebe. E4.9 sigue bloqueado por E3.5/FIN_NETA y DT6/T-BKP.
 
-## 3. Cierre de auditorías
+## 3. D7/SPEC19 y DEV22
 
-#131, #132 y #134 **cerradas sin merge** con comentario que remite a #152/#153. Ramas y
-commits intactos en sus SHA originales. No se actualizaron sus secciones «qué existe» al
-no mergearse, según lo acordado.
+**Sí: D7 es la dependencia de contrato financiero específica identificada para arrancar DEV22.** Basta una **enmienda mínima de SPEC19** que haga coherente rectificar/anular Compras con la invariante aprobada en SPEC22: después de la modificación, cantidad agregada por `saldo_inversion + instrumento` nunca negativa en la fecha afectada ni posteriores, con agregación fin de día, error 422 `INSUFFICIENT_UNITS`, sin escritura y con evidencia de impacto. No reabrir ni rediseñar D1–D7 de SPEC22.
 
-## 4. E4.2 Ventas
+**No** diría que D7 es el «único prerrequisito» absoluto: DEV22 sigue requiriendo **autorización independiente del usuario**, gate de esquema vigente, ownership/compatibilidad de código y pruebas de integración normales. La enmienda en sí no queda autorizada por este mensaje.
 
-No iniciado DEV22. Se mantiene el bloqueo por **D7/SPEC19** (guard de cantidad vendida).
-No se redactó la enmienda porque es una decisión de spec protegida y no fue identificada
-expresamente en la orden.
+## 4. #131/#132/#134
 
-## 5. Qué te pido
+**Cierre sin merge correcto**, sin necesidad de poner al día textos históricos. Mantener commits/ramas accesibles, enlazar la decisión vigente y evitar que sus diagnósticos obsoletos vuelvan a citarse como arquitectura actual.
 
-- ¿Ves algún defecto en **D3** (fuente D′ si existe, legado si no, sin mezcla, con fuente y
-  composición en la foto) o en la corrección del corte antes de su merge?
-- ¿Confirmas que **D7/SPEC19** es el único prerrequisito de DEV22 y que basta una enmienda
-  mínima del guard, sin reabrir D1–D7?
-- ¿Algún riesgo en cerrar las tres auditorías como antecedente sin actualizarlas?
+## Conclusión y siguiente paso
 
-**Límites:** #152 y #153 siguen abiertas y sin merge; el merge requiere aprobación
-explícita e identificable del usuario. Este mensaje no solicita ni concede autorización
-de DEV, migración, datos reales ni activación.
+- #152: **favorable para proponer aprobación humana de merge**, no la concedo.
+- #153: **precisar D3** (D′ incompleto bloquea, selección por ciclo, conservación de fuente/versión y coherencia con precierre) antes de proponer aprobación de merge.
+- SPEC19: proponer **enmienda mínima D7** para aprobación; DEV22 aparte.
+- Ningún trabajo financiero adicional se deduce automáticamente de este dictamen.
+
+**Autorizaciones nuevas:** ninguna. **Bloqueos de cierre:** FIN_NETA, DT6 y definición/verificación operativa D3.
