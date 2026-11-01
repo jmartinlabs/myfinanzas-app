@@ -1,9 +1,9 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
-Status: **DEV22 implementado en la rama `dev22-ventas` (2026-11-01): venta, efectivo, posición,
-API, UI y esquema v21. 42 AC con evidencia local; la fuente de inversión está conectada en
-`temporalSources`. Backup/restore y E2E no verificados en macOS (pendientes de CI Linux). Sin
-push, PR ni merge.**
+Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-01): venta, efectivo,
+posición, API, UI y esquema v21. QA independiente inicial NO APTO por H-1/H-3 (rutas de
+Compra sin filtro de clase) y CI rojo por restore v19/v20; ambos corregidos localmente y
+pendientes de nuevo CI y nueva QA. Backup/restore y E2E no verificados en macOS. Sin merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -15,7 +15,8 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   trabajo DEV22/E4.2). Contrato: SPEC22 rev2 aprobada (D1–D7 = A), testplan aprobado y
   enmienda D7 de SPEC19 integrada en `main` `e6475e6`.
 - **Base y aislamiento:** worktree exclusivo gestionado por OpenCode (`dev22-ventas`), rama
-  `dev22-ventas` desde `main` `4eb7264`. Sin push, PR, merge, despliegue ni datos reales.
+  `dev22-ventas` desde `main` `4eb7264`. PR #157 abierto en draft; sin merge, despliegue ni
+  datos reales.
 - **Gate de esquema (v20 → v21):** no había versión reservada por SPEC22 ni colisión; se adopta
   la siguiente versión libre (21) con `ventaSchema` (`apps/api/src/venta-schema.ts`), que
   reconstruye **solo** `operaciones_inversion` (CHECK `clase IN ('Compra','Venta')`) y su tabla
@@ -60,11 +61,11 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   las expectativas de cobertura de `ciclos.test.ts`/`movimientos.test.ts` y la prueba
   AC-24/E4.2-AC3 de `inversiones-ac.test.ts`. Es un cambio de integración de E4.2, no una
   regla nueva.
-- **Pruebas focales:** `apps/api/src/ventas.test.ts` (21 pruebas, 148+ aserciones) cubre
+- **Pruebas focales:** `apps/api/src/ventas.test.ts` (22 pruebas, 290+ aserciones) cubre
   AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
   AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
   `create-venta`/`rectify-venta`).
-- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **365 pass / 56 fail**; los
+- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **366 pass / 56 fail**; los
   56 fallos son exactamente los mismos que la línea base `main` `4eb7264` (ancestros de
   directorios temporales/`renameat2`/symlinks Linux-only), no regresiones. `bun run typecheck`
   PASS y `bun run build` PASS.
@@ -72,6 +73,27 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   backup/restore real (AC-37: la prueba se amplió con una Venta y auditoría, pero en macOS falla
   por el entorno de directorios privados, igual que en la línea base). AC-41 (`flujo-mensual`)
   no se ejecutó de extremo a extremo; su ruta usa `getSaldo`→motor único ya probado en AC-16/17.
+
+### Correcciones tras QA independiente (2026-11-01)
+
+La QA independiente dictaminó **NO APTO** sobre `412ebaa`. Correcciones aplicadas en la rama:
+
+- **H-1 (crítica):** `find`, `listPurchases` y `purchasesForInstrumento` filtran
+  `clase='Compra'`; una Venta ya no se lee, lista ni rectifica/anula por rutas de Compra
+  (404 coherente). Regresión añadida: la Venta no se expone ni se muta y la posición no
+  cambia.
+- **H-2 (CI):** `restore-v19-v20.test.ts` reconstruye el fixture v20 con
+  `materializeContract("C20-DPRIMA-SIMPLIFICADA")` en lugar de `openDatabase` (que ya migra a
+  v21) y actualiza la expectativa de las copias restauradas a v21, sin perder la cobertura
+  del manifiesto v20.
+- **H-3:** la ficha del Instrumento deja de mezclar Ventas en `compras` por el mismo filtro;
+  AC-18 pasa a PASS con la regresión de aislamiento.
+- **H-4:** `temporalAfter` de la previsualización de Movimientos incluye
+  `investmentSource`, alineado con `cycleContext`.
+- **H-5:** eliminada la aserción tautológica del contrato C21 y sustituida por
+  `verifyContract(db,21)`; la debilidad del segundo orden de AC-05 se mantiene anotada.
+
+Sin cambios en las fórmulas financieras ni en el esquema.
 
 ### Estado por AC (DEV22, 2026-11-01)
 
@@ -94,7 +116,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
 | E4.2-AC-15 | PASS | Sin Movimientos, Presupuesto, Partida, Referencia ni Deuda |
 | E4.2-AC-16 | PASS | `/api/saldos/S003` y `/api/inversiones/efectivo` idénticos al céntimo; corte etiquetado |
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
-| E4.2-AC-18 | PASS | Ficha con conteos 1/1→1/2 y S006 1/0; fechas correctas |
+| E4.2-AC-18 | PASS | Ficha con conteos 1/1→1/2 y S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
 | E4.2-AC-20 | PASS (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos` y flujo mensual no recorridos |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
@@ -113,7 +135,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
 | E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21, migración preserva filas/auditoría/contadores/identidad |
-| E4.2-AC-37 | FAIL (entorno) / no verificado | Prueba ampliada con Venta; falla en macOS por ancestros privados, igual que la línea base |
+| E4.2-AC-37 | PARCIAL (entorno) | Backup/restore con Venta pasa en Linux; restore v19/v20 corregido (fixture v20 real y expectativa v21), pendiente de CI Linux |
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
 | E4.2-AC-40 | PASS | Venta entre preview y confirmación → 409 `IMPACT_CHANGED` |
@@ -128,11 +150,17 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
 | Comando | Resultado |
 | --- | --- |
 | `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
-| `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **21 pass / 0 fail** |
-| `bun run test` | **365 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **22 pass / 0 fail** (incluye aislamiento Compra/Venta) |
+| `bun run test` | **366 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |
+
+**CI de PR #157 (run `41347537430`):** `required` **FAILURE**, 419 pass / 2 fail por
+`restore-v19-v20.test.ts` (expectativa v20 y fixture creado ya en v21). Corregido en la rama;
+pendiente de re-ejecución.
+**QA independiente sobre `412ebaa`:** **NO APTO** por H-1/H-3 (rutas de Compra sin filtro de
+clase) y H-2 (CI). Corregidos H-1..H-5; pendiente nueva QA.
 
 ### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
 
@@ -141,7 +169,7 @@ ejecutó: `check-repository` PASS, `check-project` PASS, `validate-template` PAS
 PASS, `test-validator` PASS, `test-agent-relay` PASS, `test-agent-usage` PASS,
 `test-auto-agent-usage` PASS, `test-verification` PASS, `test-evidence` PASS,
 `working-whitespace` PASS, `commit-whitespace` PASS, `typecheck` PASS, `build` PASS,
-**`api` FAIL** (365 pass / 56 fail) y `e2e` UNRUN.
+**`api` FAIL** (366 pass / 56 fail) y `e2e` UNRUN.
 
 Los 56 fallos son idénticos, por nombre de prueba, a la línea base de `main` `4eb7264` en este
 equipo: `Ancestro no confiable` en directorios temporales, `renameat2`/`libc.so.6` y enlaces de

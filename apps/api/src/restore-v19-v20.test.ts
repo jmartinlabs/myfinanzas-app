@@ -16,6 +16,7 @@ import { backup, restore } from "./backup";
 import { openDatabase } from "./database";
 import { comidaSchema } from "./comida-schema";
 import { openDatabaseV18 } from "../test-support/database-v18";
+import { materializeContract } from "../test-support/inversiones-schema";
 import { revisionComidaFixture } from "../test-support/revision-comida-fixture";
 
 const now = Date.parse("2026-10-31T12:00:00Z");
@@ -95,8 +96,7 @@ function seedV19(path: string) {
 
 function seedV20(path: string) {
   process.env.NODE_ENV = "test";
-  const db = openDatabase(path);
-  try {
+  materializeContract(path, "C20-DPRIMA-SIMPLIFICADA", (db) => {
     revisionComidaFixture(db);
     db.run(`
       INSERT INTO presupuestos(id,nombre,fuente,destino,estado,revision,creado,actualizado)
@@ -112,9 +112,7 @@ function seedV20(path: string) {
     db.run(
       "INSERT INTO movement_attempts(key,hash,response,expires) VALUES('move-attempt-2','hash','{}',9999999999)",
     );
-  } finally {
-    db.close();
-  }
+  });
 }
 
 test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v20", () => {
@@ -177,7 +175,7 @@ test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v20", () => {
     const migrated = openDatabase(restored.database);
     try {
       expect(migrated.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 20,
+        version: 21,
       });
       expect(
         migrated.query("SELECT COUNT(*) n FROM movimientos WHERE id IN ('301','302')").get(),
@@ -227,7 +225,7 @@ test("RESTORE-19/20: v20 cifrado conserva D′ y revoca accesos", () => {
     });
 
     const restored = restore(bundle, join(dir, "restored"), identity, { now });
-    expect(version(restored.database)).toBe(20);
+    expect(version(restored.database)).toBe(21);
 
     const copy = new Database(restored.database, {
       readonly: true,

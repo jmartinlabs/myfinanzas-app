@@ -19,6 +19,8 @@ import {
   annulPurchase,
   createPurchase,
   getPurchase,
+  listPurchases,
+  purchasesForInstrumento,
   rectifyPurchase,
   validateEconomic,
 } from "./compras";
@@ -46,7 +48,7 @@ import { financeRevision } from "./movement-ledger";
 import { financialReference, cycleContext } from "./ciclos";
 import { investmentSource } from "./investment-ledger";
 import { Problem } from "./problem";
-import { manifest, verifyContract } from "./schema-contract";
+import { verifyContract } from "./schema-contract";
 import { materializeContract } from "../test-support/inversiones-schema";
 
 const now = Date.parse("2026-10-26T12:00:00Z");
@@ -1752,9 +1754,7 @@ test("E4.2-AC-36/AC-37: esquema v21 con una sola tabla y migración que conserva
         importeEur: "110.00",
       });
       expect(sale.venta.id).toBe("5002");
-      expect(manifest(db)).toEqual(
-        (verifyContract(db, 21), manifest(db)),
-      );
+      expect(verifyContract(db, 21)).toBe("C21-VENTAS-E42");
     } finally {
       db.close();
     }
@@ -1895,6 +1895,38 @@ test("E4.2-AC-20/21/22/23/38: fuente de inversión y referencia compartida", () 
         },
       ]).fecha,
     ).toBe("2026-04-10");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2 aislamiento: una Venta no se expone ni se muta por rutas de Compra", () => {
+  const { db, instrumento } = base();
+  try {
+    buy(db, instrumento.id);
+    const v = sell(db, instrumento.id);
+    const id = v.venta.id;
+    expect(failure(() => getPurchase(db, id)).status).toBe(404);
+    expect(listPurchases(db).compras.some((c) => c.id === id)).toBe(false);
+    expect(
+      purchasesForInstrumento(db, instrumento.id).some((c) => c.id === id),
+    ).toBe(false);
+    const before = positionQuantity(db, "S004", instrumento.id).quantity;
+    expect(failure(() => rectifyPurchase(db, id, rectification(), now)).status).toBe(
+      404,
+    );
+    expect(
+      failure(() =>
+        annulPurchase(
+          db,
+          id,
+          { revision: 1, motivo: "Intento sobre Venta" },
+          now,
+        ),
+      ).status,
+    ).toBe(404);
+    expect(positionQuantity(db, "S004", instrumento.id).quantity).toBe(before);
+    expect(getSale(db, id).venta.estado).toBe("Vigente");
   } finally {
     db.close();
   }

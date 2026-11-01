@@ -93,7 +93,9 @@ const select = `SELECT id,fecha,clase,instrumento,saldo_efectivo,saldo_inversion
   FROM operaciones_inversion`;
 
 function find(db: Database, id: string) {
-  const row = db.query(select + " WHERE id=?").get(id) as OperationRow | null;
+  const row = db
+    .query(select + " WHERE id=? AND clase='Compra'")
+    .get(id) as OperationRow | null;
   if (!row) throw new Problem(404, "NOT_FOUND", "Compra no encontrada.");
   return row;
 }
@@ -837,7 +839,7 @@ export function purchaseAudit(db: Database, id: string) {
 export function purchasesForInstrumento(db: Database, instrumento: string) {
   return (
     db
-      .query(select + " WHERE instrumento=? ORDER BY fecha DESC,length(id) DESC,id DESC")
+      .query(select + " WHERE instrumento=? AND clase='Compra' ORDER BY fecha DESC,length(id) DESC,id DESC")
       .all(instrumento) as OperationRow[]
   ).map((row) => purchaseDto(db, row));
 }
@@ -866,7 +868,7 @@ export function listPurchases(
     saldoInversion: params.get("saldoInversion"),
   };
   return db.transaction(() => {
-    const all = (db.query(select + " ORDER BY fecha DESC,length(id) DESC,id DESC").all() as OperationRow[])
+    const all = (db.query(select + " WHERE clase='Compra' ORDER BY fecha DESC,length(id) DESC,id DESC").all() as OperationRow[])
       .filter(
         (row) =>
           (!estado || row.estado === estado) &&
