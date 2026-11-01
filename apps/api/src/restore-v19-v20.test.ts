@@ -120,7 +120,7 @@ function seedV20(path: string) {
   }
 }
 
-test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v20", () => {
+test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v21", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "restore-v19-"));
   try {

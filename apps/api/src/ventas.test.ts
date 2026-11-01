@@ -1391,6 +1391,34 @@ test("E4.2-AC-45 (D7=A): Compra rectificada o anulada por debajo de la cantidad 
   }
 });
 
+test("E4.2-H4: referenciaDespues de Movimiento incluye Ventas vigentes", () => {
+  const { db, instrumento } = base();
+  try {
+    buy(db, instrumento.id);
+    sell(db, instrumento.id);
+    const master = classification(db);
+    const preview = previewMovement(
+      db,
+      {
+        fecha: "2026-04-05",
+        tipo: "Gasto",
+        importe: "10.00",
+        saldo: "S003",
+        partida: master.partida,
+        concepto: "Gasto previo a la Venta",
+        nota: "",
+      },
+      null,
+      false,
+      now,
+    );
+    expect(preview.impacto.referenciaDespues).toBe("2026-04-10");
+    expect(cycleContext(db).referencia.fecha).toBe("2026-04-10");
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.2-AC-39/40: guard de Saldo y huella de Movimiento con Ventas", () => {
   const { db, instrumento } = base();
   try {

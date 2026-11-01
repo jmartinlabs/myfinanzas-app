@@ -82,14 +82,15 @@ La QA independiente dictaminó **NO APTO** sobre `412ebaa`. Correcciones aplicad
   `clase='Compra'`; una Venta ya no se lee, lista ni rectifica/anula por rutas de Compra
   (404 coherente). Regresión añadida: la Venta no se expone ni se muta y la posición no
   cambia.
-- **H-2 (CI):** `restore-v19-v20.test.ts` reconstruye el fixture v20 con
-  `materializeContract("C20-DPRIMA-SIMPLIFICADA")` en lugar de `openDatabase` (que ya migra a
-  v21) y actualiza la expectativa de las copias restauradas a v21, sin perder la cobertura
-  del manifiesto v20.
+- **H-2 (CI):** `restore-v19-v20.test.ts` reconstruye el fixture v20 con la cadena de
+  migración real (`openDatabaseV18` + `comidaSchema` + `dprimaSchema`), no con
+  `openDatabase` (que ya migra a v21). El v19 restaurado migra a 21 y el v20 restaurado
+  conserva 20; se mantiene la cobertura del manifiesto `e2.7-v20`.
 - **H-3:** la ficha del Instrumento deja de mezclar Ventas en `compras` por el mismo filtro;
   AC-18 pasa a PASS con la regresión de aislamiento.
 - **H-4:** `temporalAfter` de la previsualización de Movimientos incluye
-  `investmentSource`, alineado con `cycleContext`.
+  `investmentSource`, alineado con `cycleContext`, con prueba de regresión
+  `E4.2-H4` (verificada por mutación: sin la fuente, la prueba falla).
 - **H-5:** eliminada la aserción tautológica del contrato C21 y sustituida por
   `verifyContract(db,21)`; la debilidad del segundo orden de AC-05 se mantiene anotada.
 
@@ -116,7 +117,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-15 | PASS | Sin Movimientos, Presupuesto, Partida, Referencia ni Deuda |
 | E4.2-AC-16 | PASS | `/api/saldos/S003` y `/api/inversiones/efectivo` idénticos al céntimo; corte etiquetado |
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
-| E4.2-AC-18 | PASS | Ficha con conteos 1/1→1/2 y S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
+| E4.2-AC-18 | PASS | Ficha: tras V2 1/2 y tras P3 2/2; S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
 | E4.2-AC-20 | PASS (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos` y flujo mensual no recorridos |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
@@ -135,7 +136,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21, migración preserva filas/auditoría/contadores/identidad |
-| E4.2-AC-37 | PARCIAL (entorno) | Backup/restore con Venta pasa en Linux; restore v19/v20 corregido (fixture v20 real y expectativa v21), pendiente de CI Linux |
+| E4.2-AC-37 | PASS (CI Linux) | Backup/restore con Venta y auditoría PASS; restore v19/v20 corregido: v20 real, v20 restaurado conserva 20 y v19 migra a 21 |
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
 | E4.2-AC-40 | PASS | Venta entre preview y confirmación → 409 `IMPACT_CHANGED` |
@@ -156,11 +157,11 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |
 
-**CI de PR #157 (run `41347537430`):** `required` **FAILURE**, 419 pass / 2 fail por
-`restore-v19-v20.test.ts` (expectativa v20 y fixture creado ya en v21). Corregido en la rama;
-pendiente de re-ejecución.
-**QA independiente sobre `412ebaa`:** **NO APTO** por H-1/H-3 (rutas de Compra sin filtro de
-clase) y H-2 (CI). Corregidos H-1..H-5; pendiente nueva QA.
+**CI de PR #157:** `required` **PASS** en `4c6b537` (run `41350023263`), 422 pass / 0 fail,
+incluidos restore v19/v20, C18/C21 y aislamiento Compra/Venta. Pendiente una última ejecución
+tras la prueba de regresión H-4 y los ajustes documentales.
+**QA independiente final sobre `4c6b537`:** **APTO CON RESERVAS**; H-1..H-5 resueltos, con
+reserva de prueba de regresión H-4 (añadida) y ajustes de evidencia (aplicados).
 
 ### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
 
