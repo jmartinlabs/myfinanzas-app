@@ -264,6 +264,34 @@ En todos los casos, la capa auxiliar no crea Gasto central, no modifica Movimien
 no se suma a Saldos. La ausencia de E3.5 no se compensa con el candidato local, con
 entradas brutas ni con cero.
 
+#### 4.3.2 Reconciliación propuesta con SPEC16 P6/P7 (2026-11-01)
+
+**Propuesta de reconciliación, no aprobada.** El bloque de §4.3 sigue marcado `[P][F]` y
+requiere aprobación de su propietario. Esta reconciliación **no cambia fórmulas P6/P7**:
+alinea nombres y expresiones para que un consumidor no confunda magnitudes ni descuente
+dos veces el compensable. Ante conflicto, prevalecen SPEC16 P6/P7/P7a.
+
+| Expresión actual de §4.3 | Reconciliación propuesta | Motivo |
+| --- | --- | --- |
+| `CIERRE = RECURSOS − GC − CO` | `Base analítica = Recursos − J_n` (con `J_n = GC`) | El valor 585 del ejemplo P7 es la Base, no el Cierre analítico (580) |
+| `REP` en `RECURSOS` y `FALTA` | `R_caja` para Recursos; `R_obl` para Falta | `REP` mezcla cobro y asignación; Falta debe usar la obligación acreditada |
+| `RECURSOS = S0 + FIN_NETA + REP` | `Recursos = S0 + FIN_NETA + R_caja − C_n` | `C_n` es compensable **neto**; se descuenta una vez, no se vuelve a restar `CO` |
+| `CIERRE` como magnitud única | `Base analítica`, `Otros efectos bancarios`, `Cierre analítico` | El puente `D − (F + R_caja − C_n − J_n)` debe ser visible; no se oculta en un total |
+| `DIF = S0_siguiente − CIERRE` | `DIF_S0_SIGUIENTE = S0_siguiente − Cierre analítico`; `DIF_BANCO = S0 − B_A` | Son dos diferencias con ventanas distintas; no se fusionan |
+| `D` implícito en el cierre | `Cierre analítico = S0 + D` con `D` solo de Movimientos vigentes | Mantiene P7 y evita sumar agregado legado y detalle |
+
+Reglas de no duplicación:
+
+- `C_n` y `J_n` ya son netos. `Recursos` descuenta `C_n` una sola vez; `Base` descuenta
+  `J_n` una sola vez; `Cierre` añade `Otros efectos` y no vuelve a restar el compensable.
+- `R_caja` y `R_obl` no se suman entre sí ni se cuentan dos veces.
+- Una devolución **sin vínculo** no es inelegible por sí sola: la evidencia externa
+  suficiente puede acreditar el neteo sin FK. Una devolución **sin acreditación** no
+  netea. `Revisar` no acredita. La devolución de otro ciclo entra en `D` y en el neto
+  observado, sin reducir la obligación actual.
+- `CIERRE`/`DIF` analíticos no son saldo bancario ni cierre financiero; si falta
+  cobertura, son `Parcial`/`No disponible`, nunca 0.
+
 ### 4.4 Plan del ciclo
 
 - `A transferir = Del mes` por Presupuesto, sin cambios.

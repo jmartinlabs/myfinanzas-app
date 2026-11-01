@@ -260,3 +260,30 @@ scroll interno y ausencia de overflow de página.
 `tabIndex=0` y `overflow-x:auto`. A 390 la página mide 390 y la tabla conserva
 el contenido en su región; a 1440 no hay scroll interno. E2E actualizado sin
 anotaciones `known-issue`.
+
+## E3.5/FIN_NETA — testplan definitivo propuesto (2026-11-01)
+
+**Estado: PROPUESTO — todas las filas UNRUN.** Depende de la enmienda normativa propuesta
+en SPEC16 y de autorización de DEV separada. **DEV18/E3.5 sigue en STOP**; no se declara
+cobertura, PASS ni QA. Las pruebas se ejecutarán con fixtures ficticias, sin datos reales.
+
+| ID | AC | Escenario P / N / L | Resultado observable exigido | Método | Dependencia | Estado |
+| --- | --- | --- | --- | --- | --- | --- |
+| E3.5-FIN-TP-01 | AC-01 | P: compra y detalle E3.4. N: crear segundo Gasto desde E3.5. L: compra sin vínculo | Un hecho/ID; sin Gasto ni saldo paralelo; sin vínculo no se inventa | Bun/API/SQLite | DEV E3.5 autorizado; E3.4 integrada | UNRUN |
+| E3.5-FIN-TP-02 | AC-02 | P: roles completos. N: inferir rol por nombre/importe. L: una transferencia sin rol | F correcta y una vez; sin rol → Parcial/ND con motivo; sin inferencia | Bun/API | DEV; fixtures sintéticas | UNRUN |
+| E3.5-FIN-TP-03 | AC-03 | P: doble vínculo coherente. N: restar dos veces. L: devolución igual a la financiación | Una deducción; importe informativo sin segundo descuento; cero conservado | Bun/API/SQLite | DEV; D-02 | UNRUN |
+| E3.5-FIN-TP-04 | AC-04 | P: vínculos coherentes. N: elegir uno en silencio. L: Referencia/par parcial | Conflicto → Parcial/ND con motivo; hecho conservado; sin doble deducción | Bun/API | DEV; D-02 | UNRUN |
+| E3.5-FIN-TP-05 | AC-05 | P: todas con rol. N: excepción sobre transferencia sin rol. L: solo una sin rol entre muchas | Sin excepción; Parcial/ND; IDs visibles; D/banco íntegros | Bun/API | DEV; R-01 | UNRUN |
+| E3.5-FIN-TP-06 | AC-06 | P: reposición del ciclo. N: sumar R_caja + R_obl. L: reposición de obligación antigua | R_caja a Recursos; R_obl solo a Falta; no se suman; antigua no reduce Falta actual | Bun/API | DEV; D-06 | UNRUN |
+| E3.5-FIN-TP-07 | AC-07 | P: reposición total. N: declarar Completada por ausencia. L: parcial y tardía | Completada solo con acreditación; tardía en su ciclo; sin atribución persistida | Bun/API + Playwright | DEV; D-06/D-10 | UNRUN |
+| E3.5-FIN-TP-08 | AC-08 | P: grupos completos. N: meter Fuera presupuesto en C_n. L: solo Fuera presupuesto | C_n/J_n correctos; Fuera presupuesto en D/banco y fuera del análisis | Bun/API + Playwright | DEV; SPEC16 P6 | UNRUN |
+| E3.5-FIN-TP-09 | AC-09 | P: Pendiente revisar. N: confundirla con estado de atribución. L: devolución con Partida NULL | Suma una vez en J_n; conceptos separados; sin asignación automática | Bun/API + Playwright | DEV | UNRUN |
+| E3.5-FIN-TP-10 | AC-10 | P: devolución sin vínculo con evidencia externa. N: exigir FK siempre. L: sin acreditación y de otro ciclo | Acreditada netea sin FK; no acreditada no; antigua en D/neto observado sin reducir obligación actual | Bun/API | DEV; D-07 | UNRUN |
+| E3.5-FIN-TP-11 | AC-11 | P: detalle nuevo. N: sumar agregado + detalle. L: solo agregado | D solo desde Movimientos; sin doble gasto; legado etiquetado; sin reconstruir FIN_NETA | Bun/API/SQLite | DEV; D-08 | UNRUN |
+| E3.5-FIN-TP-12 | AC-12 | P: S0 y B_A acreditados. N: S0 ausente → 0. L: solo uno de los dos | Ausente → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados | Bun/API + Playwright | DEV; P3 sin decidir | UNRUN |
+| E3.5-FIN-TP-13 | AC-13 | P: vacío acreditado. N: fallo de fuente → 0. L: métricas con coberturas mixtas | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total | Bun/API + Playwright | DEV; SPEC12 | UNRUN |
+| E3.5-FIN-TP-14 | AC-14 | P: ejemplo P7 S0=100, F=700, R=20, C_n=35, J_n=200, D=480. N: presentar Cierre 580 como banco. L: devolución antigua 40 y B_A=250 | Recursos 785; Falta 15; Base 585; Otros efectos −5; Cierre 580. L: Cierre 620; banco 770; DIF_BANCO −150; sin ajustes | Bun/API + Playwright | DEV; SPEC16 P7 | UNRUN |
+| E3.5-FIN-TP-15 | AC-15 | P: E3.5/FIN_NETA verificables. N: E4.9 cierra sin E3.5. L: E3.6 sin proveedor | Agregados o ND con motivo; E4.9 bloquea sin foto; sin 0 ni conciliación simulada | Bun/API + Playwright | DEV; SPEC21/SPEC27 | UNRUN |
+| E3.5-FIN-TP-16 | AC-16 | P: lectura de métricas. N: POST/PATCH de totales. L: inspección de esquema | Sin tabla de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada | Bun/API/SQLite | DEV; D-04 | UNRUN |
+| E3.5-FIN-TP-17 | AC-17 | P: corte dentro del horizonte. N: extrapolar al vencer. L: siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio | Bun/API + Playwright | DEV; SPEC16 P7a | UNRUN |
+| E3.5-FIN-TP-18 | AC-18 | P: revisión de SPEC21 §4.3 contra P6/P7. N: declarar aprobado lo pendiente. L: H-1..H-3 sin resolver | Nombres y magnitudes alineados; fórmulas intactas; estado honesto | Revisión documental | Aprobación de la enmienda | UNRUN |
