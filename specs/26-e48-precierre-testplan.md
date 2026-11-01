@@ -4,8 +4,9 @@ Specification: [26-e48-precierre-specification.md](26-e48-precierre-specificatio
 
 Status: **APPROVED — diseño documental; DEV funcional implementado el 2026-11-01.**
 La matriz original conserva sus estados de diseño; la evidencia funcional se registra
-en «Evidencia funcional E4.8 — 2026-11-01». La aprobación visual de W1–W6 sigue
-pendiente y no se declara por las capturas de la UI provisional.
+en «Evidencia funcional E4.8 — 2026-11-01». La revisión visual de W1–W6 queda
+**aplazada al final del proyecto** por decisión del usuario y no bloquea el merge
+funcional; la UI no se declara visualmente aprobada.
 
 Revisión documental 2026-10-31, actualizada 2026-11-01 sobre `main` `46c7dd1`: se precisan
 permisos, idempotencia de lectura, resultados vacíos/errores y referencias a los
@@ -70,8 +71,8 @@ Comandos ejecutados:
 por defecto no hay evidencia DT6 y el precierre queda bloqueado. Las fuentes auxiliares
 son conteos informativos con cobertura parcial/no acreditada; no se presentan como
 conciliadas. E4.1 exige cuentas aplicables y bloquea si no están disponibles. No se ha
-ejecutado restore real, cierre, foto ni backup. La aprobación visual de W1–W6 sigue
-pendiente.
+ejecutado restore real, cierre, foto ni backup. La revisión visual W1–W6 queda aplazada
+al final del proyecto; la UI es provisional y no se declara visualmente aprobada.
 
 ### Casos de contrato conceptuales (diseño, UNRUN)
 
@@ -109,9 +110,10 @@ real, pero no modela toda inconsistencia.
 ## Browser verification
 
 **PASS funcional provisional**: E2E 1440/390 en `tests/e2e/precierre.spec.ts`, con
-estados, fuentes, backup y control de cierre deshabilitado. La UI es provisional.
-La revisión visual de W1–W6 sigue pendiente y no se declara aprobada; las capturas
-E2E no sustituyen esa aprobación ni una auditoría de accesibilidad.
+estados, fuentes, backup y control de cierre deshabilitado. La UI es provisional. La
+revisión visual de W1–W6 queda aplazada al final del proyecto por decisión del usuario;
+no bloquea el merge funcional, pero la UI no se declara visualmente aprobada. Las
+capturas E2E no sustituyen esa revisión ni una auditoría de accesibilidad.
 
 ## Limitations and next action
 

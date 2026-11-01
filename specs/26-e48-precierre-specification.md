@@ -1,8 +1,9 @@
 # 26 — E4.8 Precierre y controles de consistencia: Specification
 
 Status: **APPROVED — SPEC26/E4.8 aprobada documentalmente el 2026-10-28.** DEV funcional
-de solo lectura implementado el 2026-11-01; la UI es provisional y la aprobación visual
-de W1–W6 sigue pendiente. Evidencia AC en el
+de solo lectura implementado el 2026-11-01; la UI es provisional. La revisión visual de
+W1–W6 queda **aplazada al final del proyecto** por decisión del usuario y no bloquea el
+merge funcional. Evidencia AC en el
 [testplan](26-e48-precierre-testplan.md#evidencia-funcional-e48--2026-11-01). No autoriza
 cierre, escritura, datos reales ni despliegue.
 Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
