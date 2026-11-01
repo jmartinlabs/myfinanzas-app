@@ -230,7 +230,7 @@ test("RESTORE-19/20: v20 cifrado conserva D′ y revoca accesos", () => {
     });
 
     const restored = restore(bundle, join(dir, "restored"), identity, { now });
-    expect(version(restored.database)).toBe(21);
+    expect(version(restored.database)).toBe(20);
 
     const copy = new Database(restored.database, {
       readonly: true,
