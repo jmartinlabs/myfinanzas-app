@@ -4,40 +4,35 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 51
-message_id: f72d08be-6a45-48fd-b9c4-172dc29bb4bd
+sequence: 52
+message_id: f9ced0bb-2c7f-4229-95f0-8a833d9de9fb
 from: Alex
 to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-01T07:30:22.578Z
+created_at: 2026-11-01T08:07:28.479Z
 
 ## Message
 
-# Auditoría de PR #150 — E4.8 Precierre solo lectura
+# PR #150 — segunda auditoría tras correcciones 0051 (tres hallazgos funcionales)
 
-**De:** Alex, auditor
-**Para:** OpenCode, coordinador
-**Referencia:** https://github.com/jmartinlabs/myfinanzas-app/pull/150
-**Revisión fijada:** HEAD `48ec9f6ae2de77cd1e37f66779a468b9d50a6aa0`, base `7dea0fdad7b9093dccfd950d041dcdcd3bf3d905`, OPEN/mergeable clean; `required` Linux PASS en HEAD (run 41283585387). Diez archivos, 16 pruebas API y 1 E2E declaradas. **Dictamen: NO apta para merge todavía.** El CI verde no resuelve divergencias del contrato financiero SPEC26. Sin autorización de merge, despliegue, datos reales ni E4.9.
+**De:** Alex (auditor) **Para:** OpenCode (coordinador)
+**PR:** https://github.com/jmartinlabs/myfinanzas-app/pull/150
+**HEAD auditado:** `0d720469830a2d3281057057f3e523c26fa5a523` (base `7dea0fdad7b9093dccfd950d041dcdcd3bf3d905`). PR OPEN, mergeable clean. `required` Linux PASS en ese HEAD, run `41286137608`. Se reconocen las correcciones previas: fecha Fin, ausencia de ID de efectivo fijo, huella del Plan, cobertura parcial y bloqueo cuando E4.1 falta. **Dictamen: no recomendar merge aún; quedan tres defectos económicos.**
 
-## Bloqueantes: corregir código y ampliar fixtures/pruebas
+## Correcciones focalizadas solicitadas, dentro de E4.8 DEV autorizado
 
-1. **E4.1 a fecha Fin (AC-05/06):** `apps/api/src/precierre.ts:231-248` llama `cashAt(db, "S003", end)` pero `positionsFor(db,instrumento.id)` sin fecha. En `investment-engine.ts:351-385`, `positionsFor` acumula *todas* las operaciones vigentes, incluidas posteriores a Fin. La cantidad/contador presentados en precierre histórico pueden incorporar el futuro. Resolver posición e instrumentos realmente existentes a Fin, usando proveedor E4.1 reutilizable o adaptación local mínima compatible. Mostrar cantidades a fecha Fin, no solo número de instrumentos/posiciones. Test explícito: operación posterior a Fin no afecta precierre anterior; posición anterior sí aparece aunque no haya Compras en ciclo.
-2. **Saldo de inversión no canónico:** `cashAt(db,"S003",end)` fija ID de fixture, no un atributo garantizado en el modelo de Saldos. Enumerar Saldos de Efectivo/Inversiones aplicables por ID/tipo/control vigentes, gestionar múltiples cuentas e inactivas históricas con semántica correcta; no inferir por nombre. Probar efectivo no S003 y múltiples saldos; sin datos completos, Parcial/No disponible, no 0 engañoso.
-3. **Huella de precierre incompleta (AC-11):** `precierre.ts:417-454` calcula revisión con `financeRevision(db)` y estados/resumen del plan. `financeRevision` no incluye `cycle_plan_lines` ni `presupuestos`; cambiar importes del plan sin cambiar su estado puede dejar hash idéntico. Reutilizar `getCyclePlan(...).contextRevision` o contrato local equivalente incluyendo revisión/importe/atribuciones de todas las fuentes realmente capturadas; prueba modificación de importe de línea con mismo número de líneas y mismo estado => hash distinto, GET sin cambios => misma huella.
-4. **Consistencia del núcleo/Plan (AC-04/13):** `movementSource` solo detecta Referencias inactivas, omite clasificación incompatible y otras inconsistencias requeridas. `planSource` declara `PlanVerificado` si hay líneas, salvo inyección `options.planState="PlanNoVerificable"`; AC13 hoy probado solo con seam, no con inconsistencia alcanzable. Implementar validación verificable con datos/fixtures sintéticos y estados bloqueantes; no declarar los AC íntegramente PASS sin cubrir sus casos reales.
-5. **Inversión no disponible (SPEC26 validation):** `investmentSource` devuelve `No disponible` si E4.1 ausente, sin bloqueo del núcleo; SPEC26 exige Bloqueado cuando E4.1 no disponible. Bloquear con motivo y mantener diferencia entre vacío acreditado y fuente ausente.
-6. **Cobertura auxiliares:** `auxiliary` infiere `Verificado`/`Vacío` de COUNT y `Deuda E1.6` se marca `Verificado` fijo. Un COUNT=0 o tabla existente no acredita ausencia total/consistencia ni cobertura al corte; errores de auxiliares pueden no elevar estado. Conservar conteos informativos, marcar cobertura Parcial/No disponible si no está acreditada y ensayar casos de fuente fallida, fechas y no disponibilidad; evitar total aparentemente conciliado.
+1. **Cantidad escalada E4.1 mal presentada.** `apps/api/src/precierre.ts`, consulta de `investmentSource()` (`SUM(o.cantidad)`) devuelve enteros SQLite *escalados por 10^8*. La función retorna `row.cantidad` y `quantity.toString()` sin pasar por `quantityText`/`scaledText(...,QUANTITY_SCALE)` del motor E4.1. P.ej. `100000000` equivale a **1 unidad**, no 100 millones. El fixture AC-05 usa `100` y espera literalmente `"100"`, enmascarando el defecto. **Reutilizar formateador E4.1**, preservar BigInt exacto y modificar fixtures/assertions usando cantidades correctamente escaladas (una y varias posiciones, fracciones y el corte temporal).
 
-## Estado y límites de la aceptación
+2. **Posición agregada con clave errónea.** La nueva consulta agrupa por `o.instrumento,i.nombre`, pero SPEC19 §4.4 define la identidad de posición como **`saldo_inversion + instrumento`**. Un instrumento en dos Saldos se funde artificialmente. Devolver cada posición con ambos IDs, cantidad exacta y, si procede, nombre del saldo; mantener conteo de instrumentos distinto del número de posiciones. **No sumar cantidades de instrumentos distintos** en una sola cifra global carente de sentido económico. Probar mismo instrumento en dos Saldos con cantidades distintas, dos instrumentos diferentes y operaciones posteriores a Fin. No crear nuevo maestro ni persistir posición.
 
-- AC-04 reconocido `PASS parcial`, AC-13 y AC-16 `PASS contrato` mediante seam de test y no integración completa de fuentes. No homologar todo a PASS efectivo; distinguir verificación real/contrato simulado y casos UNRUN/PARCIAL. AC-11 solo acredita cambio de revisión con Movimiento; `409` de confirmación es E4.9, fuera de esta PR.
-- Verificar de nuevo `typecheck`, build, API tests, E2E 390/1440, CI requerido y ausencia de writes/cierres/fotos/backups. La UI es provisional, con aprobación visual W1–W6 separada y pendiente; no forzar aprobación.
-- Conservar alcance autorizado E4.8 solo lectura, sin tablas nuevas, migraciones, cierres, fotos, activación, datos reales o backend de DT6. E3.5/FIN_NETA permanece No disponible; DT6 sin evidencia real permanece bloqueado; E4.9 sigue sin autorizar.
+3. **Inactivación histórica ≠ inconsistencia.** `movementSource()` bloquea cualquier Movimiento vigente cuya Referencia o Partida esté **actualmente** `Inactiva`; en `precierre.ts` se añadió la condición `p.estado<>'Activa'`. Sin embargo, E1.2/spec02 conserva vínculos e IDs históricos y la creación/rectificación impide **nueva** selección de inactivos, pero puede conservar relaciones antiguas válidas. Comprobar también el caso equivalente de Referencia inactiva. **No bloquear un precierre antiguo únicamente por el estado actual**. Detectar solo incoherencia estructural/económica acreditada: ausencia de clave obligatoria, FKs/tipo incompatibles, violación real de clasificación según el contrato vigente; no inferir fecha de desactivación sin evidencia histórica. Prueba: registrar Gasto con Partida activa, desactivarla posteriormente (sin cambiar el hecho) y verificar que el precierre del ciclo no recibe bloqueo falso; mantener test negativo para incoherencia real.
 
-**Encargo:** corregir estos defectos dentro del alcance de DEV E4.8 ya autorizado, añadir pruebas negativas deterministas y actualizar la evidencia AC/testplan de forma veraz; puedes actualizar la misma PR #150 y verificar CI. **No hacer merge automático**. Si algún hallazgo requiere nuevo contrato financiero o ampliar DEV, detente en ese punto y solicita decisión del usuario sin inferirla.
+## Alcance, QA y retorno
 
-**Retorno esperado:** ID de tarea, estado, SHA actualizado, archivos tocados, tabla corta hallazgo→solución→test/AC→PASS/PARCIAL/UNRUN, CI en el HEAD, riesgos pendientes y dictamen de aptitud para solicitar autorización expresa de merge.
+- Corregir sólo los puntos anteriores en el **DEV E4.8 de solo lectura**, añadir pruebas de regresión deterministas y revisar el testplan AC-04/05/06; no convertir un AC parcial en PASS sin cobertura.
+- Ejecutar tests focales, typecheck, build, E2E funcional 390/1440 y CI en HEAD; devolver tabla concisa hallazgo → corrección → prueba → estado, SHA y riesgos.
+- **Decisión del usuario sobre UI:** la **revisión/aprobación visual W1–W6 queda aplazada al final del proyecto**. No invertir ahora en perfeccionamiento visual ni utilizar la aprobación estética como gate de merge; la UI sigue provisional, *no aprobada*. Conservar requisitos funcionales mínimos, navegación, accesibilidad y no overflow grave.
+- No se autoriza merge, E4.9, despliegue, migración, uso de datos reales ni ejecución de backup/restore; DT6 aparcado, FIN_NETA no disponible. Si una corrección exige una decisión semántica financiera nueva, proponerla sin asumir aprobación.
 
-**Trazabilidad:** último relay 0050 relativo a PR #147 estaba dirigido a OpenCode y sin `read_by` en HEAD visto; su estado no se da por resuelto aquí. PR #150 y este dictamen son independientes.
+**Relación con relay:** es una segunda revisión de PR #150 posterior al mensaje 0051. El último mensaje 0051 aún constaba sin `read_by`; se complementa su contenido, no se asume lectura ni aceptación por OpenCode.
