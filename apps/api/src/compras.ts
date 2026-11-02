@@ -555,20 +555,35 @@ export function createPurchase(
               : null;
           const compra =
             response && typeof response === "object" && "compra" in response
-              ? (response as { compra?: Record<string, unknown> }).compra
+              ? (response as { compra?: unknown }).compra
               : undefined;
           const required = [
             "id",
             "clase",
             "fecha",
             "cantidad",
+            "precio",
+            "divisa",
+            "cambio",
             "importeEur",
+            "comisionEur",
+            "concepto",
+            "nota",
             "estado",
+            "revision",
+            "creadoEn",
+            "actualizadoEn",
+            "instrumento",
+            "saldoEfectivo",
+            "saldoInversion",
+            "referencia",
           ];
           if (
             !compra ||
+            typeof compra !== "object" ||
+            Array.isArray(compra) ||
             required.some((key) => !(key in compra)) ||
-            compra.clase !== "Compra"
+            (compra as { clase?: unknown }).clase !== "Compra"
           )
             throw new Problem(
               409,

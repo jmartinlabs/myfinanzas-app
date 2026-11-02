@@ -130,10 +130,10 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
 | E4.2-AC-18 | PASS | Ficha: tras V2 1/2 y tras P3 2/2; S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
-| E4.2-AC-20 | PASS (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos` y flujo mensual no recorridos |
+| E4.2-AC-20 | PARCIAL (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos`, ciclo actual/corte y flujo mensual no recorridos |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
 | E4.2-AC-22 | PASS (dominio) | La fuente retrocede al anular y avanza al rectificar; referencia conectada |
-| E4.2-AC-23 | PASS (dominio) / UNRUN (UI) | Estados pendiente/error/sin_referencia y causa en cobertura; UI no recorrida |
+| E4.2-AC-23 | PARCIAL (fuente) / UNRUN (UI) | Estados pendiente/error y causa en cobertura; `sin_referencia` solo agregado y UI no recorrida |
 | E4.2-AC-24 | PASS | Futuro/inválida 422; bisiesto y `spanishToday` 23:30Z/00:30Z |
 | E4.2-AC-25 | PASS | Escalas 8/6/6, límite 2⁵³−1 exacto, exceso 422, producto interno BigInt |
 | E4.2-AC-26 | PASS | EUR null/1 válidos; 1,1 y USD inválidas; US/USDD/usd 422 |
@@ -149,12 +149,12 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21 regenerado (`01cb4c49…`), migración preserva filas/auditoría/contadores/identidad; `clase` inmutable |
 | E4.2-AC-37 | PASS (CI Linux) | Backup/restore con Venta y auditoría PASS; restore v19/v20 corregido: v20 real, v20 restaurado conserva 20 y v19 migra a 21 |
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
-| E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
-| E4.2-AC-40 | PASS | Venta entre preview y confirmación → 409 `IMPACT_CHANGED` |
+| E4.2-AC-39 | PARCIAL | Cinco cambios 409 `HISTORY_LOCKED`; falta Saldo que intervenga solo en una Venta |
+| E4.2-AC-40 | PARCIAL | Venta entre preview y confirmación → 409 `IMPACT_CHANGED`; falta huella ajena S001/Venta |
 | E4.2-AC-41 | UNRUN | No ejecutado de extremo a extremo; ruta `getSaldo`→motor único ya probada |
 | E4.2-AC-42 | PASS | Impactos y GET no escriben: tablas, contadores, revisiones y auditoría iguales |
 | E4.2-AC-43 | PASS | Cantidad/precio/importe inválidos, 2000/2001, clave inválida, diferencia informativa |
-| E4.2-AC-44 | PASS (API) / UNRUN (UI) | Filtros, paginación, estados, 404, opciones acotadas; incidencia «Revisar» no ejecutada |
+| E4.2-AC-44 | PARCIAL (API) / UNRUN (UI) | Filtros, paginación, estados, 404, opciones acotadas; incidencia «Revisar» y UI no ejecutadas |
 | E4.2-AC-45 (D7) | PASS | 7,5/12,5/−5/10-04; baja 422; P2 1/3/−2/12-04; sin Ventas no rechaza |
 
 ### Comandos ejecutados
