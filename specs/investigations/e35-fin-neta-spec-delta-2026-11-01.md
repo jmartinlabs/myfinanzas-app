@@ -155,11 +155,12 @@ spec propietaria y requiere aprobación.
 Estos hallazgos son **documentales**, no bugs reproducidos ni decisiones financieras.
 D-09 propone cómo cerrarlos; la aprobación queda pendiente.
 
-## 3. Decisiones abiertas
+## 3. Decisiones y aprobación conceptual
 
-Ninguna opción está aprobada. La recomendación es técnica-documental y no sustituye la
-decisión del usuario ni la autoridad de la spec propietaria. Mientras no se aprueben, DEV
-no puede empezar y los AC dependientes quedan UNRUN.
+El usuario aprobó **conceptualmente la opción A de D-01 a D-11** el 2026-11-01, con las
+precisiones D-04/D-07/D-09/D-10. Las opciones A son la base de la enmienda normativa
+propuesta en SPEC16; **el texto final sigue pendiente de aprobación independiente**. DEV no
+puede empezar y los AC/TP dependientes quedan UNRUN.
 
 ### D-01 — Fuente de FIN_NETA
 

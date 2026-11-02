@@ -227,6 +227,10 @@ CIERRE = RECURSOS − GC − CO
 DIF = S0_siguiente − CIERRE
 ```
 
+**Superado para el régimen individual por §4.3.2.** Este bloque se conserva como
+**propuesta histórica y procedencia**; no debe usarse como segunda regla operativa. Las
+expresiones vigentes para el régimen individual son las de §4.3.2 y SPEC16 P7.
+
 Este bloque reproduce la **propuesta E3.5/spec18, no aprobada**, marcada `[P][F]`. Los
 nombres de campos son lógicos (`fuera_presupuesto_historico` en spec18 frente a
 `fueraPresupuesto` en spec16); su materialización se decide en E3.5/DT2 y no se declara

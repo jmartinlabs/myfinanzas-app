@@ -1523,17 +1523,32 @@ flujo mensual ni cierre financiero.
   `C_n` y `J_n` ya son netos: se descuentan una sola vez y no se vuelve a restar el
   compensable en Base o Cierre.
 
-### E3.5.3 Estados de obligación (D-10)
+### E3.5.3 Estados de obligación y cobertura (D-10)
+
+Son **dos dimensiones independientes**. No se combinan en un único `Parcial`:
+
+**Estado de obligación**
 
 | Estado | Condición exigida | No es |
 | --- | --- | --- |
-| `Completada` | `C_n > 0`, `R_obl ≥ C_n`, cobertura completa y evidencia acreditada, sin atribución pendiente | No se emite por ausencia de obligación, de reposición ni por `Falta = 0` sin acreditación |
-| `Parcial` | `C_n > 0` y `R_obl < C_n`, o cobertura/atribución incompleta; se muestra Falta si es verificable | No es un total completo ni un cierre |
-| `No disponible` | Falta fuente, cobertura o acreditación; se conserva el motivo | No es 0 ni cumplimiento |
-| `Sin obligación acreditada` | `C_n = 0` con cobertura completa | No es `Completada`; no acredita cumplimiento |
+| `Completada` | `C_n > 0`, `R_obl ≥ C_n`, cobertura `Verificada` y asignaciones acreditadas, sin atribución pendiente | No se emite por ausencia de obligación, de reposición ni por `Falta = 0` sin acreditación |
+| `Parcial` | `C_n > 0` y `R_obl < C_n`, con independencia de que la cobertura sea verificada o parcial; se muestra Falta si es verificable | No es un total completo ni un cierre; no bloquea E4.9 por sí solo |
+| `Sin obligación acreditada` | `C_n = 0` **verificado** con cobertura `Verificada` | No es `Completada`; con cobertura incompleta no se deduce ausencia |
 
-La ausencia de reposiciones con `C_n > 0` produce `Parcial` y `Falta = C_n`, nunca
-`Completada`. La ausencia de obligación no se interpreta como obligación cumplida.
+**Estado de cobertura**
+
+| Estado | Condición | Efecto |
+| --- | --- | --- |
+| `Verificada` | Fuentes, atribución y ventana completas y acreditadas | Permite calcular y mostrar el resultado |
+| `Parcial` | Falta atribución, evidencia o una parte de la ventana; se conserva el motivo | Subtotal parcial, nunca total |
+| `No disponible` | Falta la fuente o no es legible; se conserva el motivo | No es 0 ni cumplimiento |
+
+Se conserva el nombre `Parcial` para el **estado de obligación** existente; cuando se muestre
+la cobertura se etiqueta como `Cobertura parcial`, sin renombrar silenciosamente el estado.
+`R_obl < C_n` con cobertura `Verificada` significa obligación pendiente, no fallo de
+cobertura; E4.9 bloquea cuando FIN_NETA/E3.5 requerido no es verificable, no por esta
+deuda. La ausencia de reposiciones con `C_n > 0` produce obligación `Parcial` y
+`Falta = C_n`, nunca `Completada`. La ausencia de obligación no acredita cumplimiento.
 
 ### E3.5.4 Criterios de aceptación propuestos
 
