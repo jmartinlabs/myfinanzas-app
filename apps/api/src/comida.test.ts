@@ -431,7 +431,7 @@ test("P6: Compensable neto y Falta por reponer con reposición real asignada", (
 
 test("P7: Recursos, cierre analítico, puente y posición con régimen activo", () => {
   const { db, account, ing, food, leisure, cycle1 } = setup();
-  const finance = transfer(db, account, ing);
+  const finance = transfer(db, account, ing, "800", "2026-06-19");
   writeComidaRol(
     db,
     finance.movimiento.id,
@@ -520,7 +520,20 @@ test("H-SPEC16-02: una Transferencia sin rol deja cobertura Parcial y financiaci
     now,
   );
   // La activación exige roles; una Transferencia posterior sin rol no puede romper la lectura.
-  const orphan = transfer(db, account, ing);
+  // Caso mixto AC-05: una clasificada y otra sin rol en el mismo ciclo.
+  const finance = transfer(db, account, ing);
+  writeComidaRol(
+    db,
+    finance.movimiento.id,
+    {
+      revision: 1,
+      rol: "Financiación",
+      evidencia: "Transferencia clasificada ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  const orphan = transfer(db, account, ing, "900", "2026-06-21");
   const metrics = comidaMetrics(db, cycle1.id, now);
   const notice = `Transferencias sin función declarada: ${orphan.movimiento.id}.`;
   expect(metrics.cobertura.estado).toBe("Parcial");
@@ -540,7 +553,7 @@ test("H-SPEC16-02: una Transferencia sin rol deja cobertura Parcial y financiaci
   });
   expect(metrics.cierreAnalitico.estado).toBe("No disponible");
   // El hecho bancario y la compra se conservan aunque la financiación no sea verificable.
-  expect(getMovement(db, orphan.movimiento.id).movimiento.importe).toBe("800.00");
+  expect(getMovement(db, orphan.movimiento.id).movimiento.importe).toBe("900.00");
   expect(metrics.compras.neto).toMatchObject({ valor: "50.00", estado: "Verificado" });
   expect(metrics.netoObservado.valor).toBe("50.00");
   expect(metrics.posicionBancaria).toMatchObject({ apertura: "100.00", alInicio: "100.00" });
