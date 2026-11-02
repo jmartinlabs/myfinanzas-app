@@ -170,6 +170,19 @@ def validate(root):
  }.items():
   for token in tokens:
    if token not in read(name): fail('resource-policy',f'{name}: missing {token}')
+ # Execution mode is adaptive; background needs verified support and never claims persistence.
+ for name,tokens in {
+  'specs/methodology/dynamic-agents.md':('## Execution mode: direct, foreground, background',
+   '**Direct (coordinator).**','**Foreground subagent.**','**Background subagent.**',
+   'verified support in the active client',"coordinator's turn does not finish",
+   'Promise no persistence','Never claim a subagent','No universal agent count'),
+  '.agents/skills/orchestrate/SKILL.md':('execution mode adaptively','coordinator availability','background persistence'),
+  'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución',
+   'dynamic-agents.md#execution-mode-direct-foreground-background','merge exige aprobación',
+   'ownership disjunto','Agent Relay v1'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('execution-mode',f'{name}: missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')
