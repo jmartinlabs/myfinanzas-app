@@ -2037,7 +2037,7 @@ test("E4.2-AC-20/41: referencia de Ciclos y Liquidez con Venta", () => {
     const comida = before.referencia.coverage.find(
       (s) => s.source === "Revisión Comida",
     );
-    expect(["pendiente", "disponible"]).toContain(comida?.state);
+    expect(["pendiente", "disponible"]).toContain(comida?.state ?? "");
     if (comida?.state === "disponible")
       expect(comida.maxDate).toBeNull();
     expect(monthlyFlow(db, april.id, now).metrics.liquidez.valor).toBe(
