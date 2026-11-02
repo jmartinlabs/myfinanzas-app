@@ -1526,6 +1526,190 @@ test("E4.2-AC-39/40: guard de Saldo y huella de Movimiento con Ventas", () => {
   }
 });
 
+test("E4.2-AC-39: Saldo solo con Venta y Saldo con Compra y Venta anulada", () => {
+  const { db, instrumento } = base();
+  try {
+    buy(db, instrumento.id);
+    p2(db, instrumento.id);
+    const sale = sell(db, instrumento.id);
+    annulSale(
+      db,
+      sale.venta.id,
+      { revision: 1, motivo: "Anulación para el guard de Saldo" },
+      now,
+    );
+    // S003 (cash) and S004 (inversion) keep a Compra and an Anulada; S003 is the
+    // cash Saldo whose protected history must stay locked after the annulment.
+    for (const change of [
+      { tipo: "Inversión" },
+      { control: "Movimientos" },
+      { saldoApertura: "999.00" },
+      { fechaApertura: "2026-01-02" },
+      { permiteSalidaExterior: false },
+    ])
+      expect(
+        failure(() =>
+          updateSaldo(db, "S003", {
+            revision: getSaldo(db, "S003").revision,
+            ...change,
+          }),
+        ).code,
+      ).toBe("HISTORY_LOCKED");
+    // A cash Saldo that intervenes only in one Venta.
+    const onlySale = createSaldo(
+      db,
+      {
+        nombre: "Efectivo solo venta demo",
+        tipo: "Efectivo",
+        control: "Inversiones",
+        saldoApertura: "0.00",
+        fechaApertura: "2026-01-01",
+        permiteSalidaExterior: true,
+      },
+      randomUUID(),
+      now,
+    );
+    const solitary = sell(db, instrumento.id, {
+      fecha: "2026-04-20",
+      saldoEfectivo: onlySale.id,
+      cantidad: "1",
+      precio: "105.00",
+      divisa: "EUR",
+      cambio: null,
+      importeEur: "105.00",
+      comisionEur: null,
+      concepto: "Venta del Saldo solo-venta",
+    });
+    const operationsBefore = count(db, "operaciones_inversion");
+    for (const change of [
+      { tipo: "Inversión" },
+      { control: "Movimientos" },
+      { saldoApertura: "999.00" },
+      { fechaApertura: "2026-01-02" },
+      { permiteSalidaExterior: false },
+    ])
+      expect(
+        failure(() =>
+          updateSaldo(db, onlySale.id, {
+            revision: getSaldo(db, onlySale.id).revision,
+            ...change,
+          }),
+        ).code,
+      ).toBe("HISTORY_LOCKED");
+    // Deactivate/reactivate keep both operations; only the name is free.
+    updateSaldo(db, onlySale.id, {
+      revision: getSaldo(db, onlySale.id).revision,
+      estado: "Inactiva",
+    });
+    updateSaldo(db, onlySale.id, {
+      revision: getSaldo(db, onlySale.id).revision,
+      estado: "Activa",
+    });
+    updateSaldo(db, onlySale.id, {
+      revision: getSaldo(db, onlySale.id).revision,
+      nombre: "Efectivo solo venta renombrado",
+    });
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      estado: "Inactiva",
+    });
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      estado: "Activa",
+    });
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      nombre: "Efectivo de inversión renombrado tras anulada",
+    });
+    expect(count(db, "operaciones_inversion")).toBe(operationsBefore);
+    expect(getSale(db, solitary.venta.id).venta.estado).toBe("Vigente");
+    expect(getSale(db, sale.venta.id).venta.estado).toBe("Anulada");
+    const audit = (entity: string) =>
+      (db
+        .query(
+          "SELECT campos FROM audit WHERE entidad=? AND accion='edición' ORDER BY revision",
+        )
+        .all(entity) as { campos: string }[])
+        .slice(-3)
+        .map((row) => JSON.parse(row.campos));
+    expect(audit(onlySale.id)).toEqual([
+      ["estado"],
+      ["estado"],
+      ["nombre"],
+    ]);
+    expect(audit("S003")).toEqual([
+      ["estado"],
+      ["estado"],
+      ["nombre"],
+    ]);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2-AC-40: huella global de un Movimiento ajeno y Venta en S003", () => {
+  const { db, instrumento } = base();
+  try {
+    updateSaldo(db, "S001", {
+      revision: getSaldo(db, "S001").revision,
+      saldoApertura: "5000.00",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    });
+    buy(db, instrumento.id);
+    const master = classification(db);
+    const gasto = {
+      fecha: "2026-04-20",
+      tipo: "Gasto" as const,
+      importe: "10.00",
+      saldo: "S001",
+      partida: master.partida,
+      concepto: "Gasto ajeno a la Venta",
+      nota: "",
+    };
+    const preview = previewMovement(db, gasto, null, false, now);
+    const cashBefore = cashAt(db, "S003").disponible;
+    sell(db, instrumento.id);
+    expect(cashAt(db, "S003").disponible).toBe(cashBefore + 50600n);
+    const stale = failure(() =>
+      writeMovement(
+        db,
+        {
+          ...gasto,
+          fingerprint: preview.fingerprint,
+          contextRevision: preview.contextRevision,
+        },
+        randomUUID(),
+        null,
+        false,
+        now,
+      ),
+    );
+    expect(stale).toMatchObject({ status: 409, code: "IMPACT_CHANGED" });
+    expect(count(db, "movimientos")).toBe(0);
+    // The sale is the only effect on S003; the rejected Movement wrote nothing.
+    expect(cashAt(db, "S003").disponible).toBe(258100n);
+    const fresh = previewMovement(db, gasto, null, false, now);
+    writeMovement(
+      db,
+      {
+        ...gasto,
+        fingerprint: fresh.fingerprint,
+        contextRevision: fresh.contextRevision,
+      },
+      randomUUID(),
+      null,
+      false,
+      now,
+    );
+    expect(count(db, "movimientos")).toBe(1);
+    expect(cashAt(db, "S001").disponible).toBe(499000n);
+    expect(cashAt(db, "S003").disponible).toBe(258100n);
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.2-AC-29: dos Ventas concurrentes y dos rectificaciones con revisión desactualizada", async () => {
   const dir = mkdtempSync(join(tmpdir(), "e42-race-"));
   try {
@@ -1843,6 +2027,56 @@ test("E4.2-AC-20/21/22/23/38: fuente de inversión y referencia compartida", () 
     } finally {
       empty.close();
     }
+    // Installed but empty table => disponible with maxDate=null; the aggregate
+    // reports sin_referencia and the cycle context declares that motive.
+    const installedEmpty = openDatabase(":memory:");
+    try {
+      expect(investmentSource(installedEmpty)).toEqual({
+        source: "Operaciones de inversión",
+        state: "disponible",
+        maxDate: null,
+      });
+      expect(
+        financialReference([investmentSource(installedEmpty)]),
+      ).toMatchObject({ fecha: null, estado: "sin_referencia" });
+      expect(
+        financialReference([
+          {
+            source: "Movimientos",
+            state: "disponible",
+            maxDate: "2026-01-10",
+          },
+          investmentSource(installedEmpty),
+        ]),
+      ).toMatchObject({
+        fecha: "2026-01-10",
+        estado: "disponible",
+      });
+      createCycle(
+        installedEmpty,
+        {
+          inicio: "2026-03-01",
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(installedEmpty).revision,
+        },
+        randomUUID(),
+        now,
+      );
+      const emptyContext = cycleContext(installedEmpty);
+      expect(emptyContext.motivo).toBe("sin_referencia");
+      expect(emptyContext.actual).toBeNull();
+      expect(
+        emptyContext.referencia.coverage.find(
+          (source) => source.source === "Operaciones de inversión",
+        ),
+      ).toEqual({
+        source: "Operaciones de inversión",
+        state: "disponible",
+        maxDate: null,
+      });
+    } finally {
+      installedEmpty.close();
+    }
     buy(db, instrumento.id);
     p2(db, instrumento.id);
     expect(investmentSource(db)).toMatchObject({
@@ -1905,6 +2139,39 @@ test("E4.2-AC-20/21/22/23/38: fuente de inversión y referencia compartida", () 
       });
     } finally {
       broken.close();
+    }
+    // The monthly flow under a source error declares the cause and never
+    // substitutes the wall clock or an invented cutoff.
+    const flowDb = openDatabase(":memory:");
+    try {
+      const march = createCycle(
+        flowDb,
+        {
+          inicio: "2026-03-01",
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(flowDb).revision,
+        },
+        randomUUID(),
+        now,
+      ).ciclo;
+      flowDb.exec(
+        "ALTER TABLE operaciones_inversion RENAME TO operaciones_inversion_fault; CREATE TABLE operaciones_inversion(id TEXT);",
+      );
+      const flow = monthlyFlow(flowDb, march.id, now);
+      expect(flow.contexto.referencia.estado).toBe("error");
+      expect(flow.contexto.referencia.fecha).toBeNull();
+      expect(
+        flow.contexto.referencia.coverage.find(
+          (source) => source.source === "Operaciones de inversión",
+        ),
+      ).toEqual({
+        source: "Operaciones de inversión",
+        state: "error",
+      });
+      expect(flow.corteEfectivo).toBeNull();
+      expect(flow.erroresFuente).toContain("Saldos");
+    } finally {
+      flowDb.close();
     }
 
     // Pure contract: the three sources aggregate the maximum once, no sum.
@@ -2102,11 +2369,193 @@ test("E4.2-AC-41: Liquidez con Venta y antes/después", () => {
   }
 });
 
-test("E4.2-AC-44: listado con filtros, paginación y estados", () => {
+test("E4.2-AC-20/41: referencia, GET /api/ciclos y flujo mensual por HTTP", async () => {
+  const db = openDatabase(":memory:");
+  const key = randomBytes(32),
+    password = "Ficticia " + randomUUID(),
+    handler = HttpApp.toWebHandler(createApp(db, { key, now: () => now })),
+    origin = "http://127.0.0.1:5173";
+  let cookie = "",
+    csrf = "";
+  async function request(
+    path: string,
+    method = "GET",
+    body?: unknown,
+  ) {
+    const response = await handler(
+      new Request(origin + path, {
+        method,
+        headers: {
+          origin,
+          "content-type": "application/json",
+          cookie,
+          "x-csrf-token": csrf,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+    for (const set of response.headers.getSetCookie()) {
+      const pair = set.split(";")[0],
+        name = pair.split("=")[0];
+      cookie = cookie
+        .split("; ")
+        .filter((value) => value && !value.startsWith(name + "="))
+        .concat(pair)
+        .join("; ");
+    }
+    const data = await response.json();
+    if (data.csrf) csrf = data.csrf;
+    return { status: response.status, data };
+  }
+  try {
+    const bootstrap = provision(db, now);
+    const enrolled = await request("/api/auth/enroll", "POST", {
+      token: bootstrap,
+      password,
+    });
+    await request("/api/auth/mfa", "POST", {
+      code: totp(enrolled.data.secret).generate({ timestamp: now }),
+    });
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      saldoApertura: "3200.00",
+      fechaApertura: "2026-01-01",
+      liquidez: true,
+    });
+    updateSaldo(db, "S001", {
+      revision: getSaldo(db, "S001").revision,
+      saldoApertura: "5000.00",
+      fechaApertura: "2026-01-01",
+      liquidez: true,
+    });
+    createSaldo(
+      db,
+      { nombre: "Cartera secundaria demo", tipo: "Inversión", control: "Inversiones" },
+      randomUUID(),
+      now,
+    );
+    const instrumento = createInstrumento(
+      db,
+      { nombre: "Fondo HTTP referencia demo" },
+      randomUUID(),
+      now,
+    ).instrumento;
+    const cycle = (inicio: string) =>
+      createCycle(
+        db,
+        {
+          inicio,
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(db).revision,
+        },
+        randomUUID(),
+        now,
+      ).ciclo;
+    cycle("2026-03-01");
+    const april = cycle("2026-04-01");
+    buy(db, instrumento.id);
+    p2(db, instrumento.id);
+
+    const before = await request("/api/ciclos/contexto");
+    expect(before.status).toBe(200);
+    expect(before.data.referencia.fecha).toBe("2026-03-03");
+    expect(before.data.actual.inicio).toBe("2026-03-01");
+    expect(before.data.motivo).toBe("actual");
+    expect(
+      before.data.referencia.coverage.find(
+        (source: any) => source.source === "Operaciones de inversión",
+      ),
+    ).toEqual({
+      source: "Operaciones de inversión",
+      state: "disponible",
+      maxDate: "2026-03-03",
+    });
+    const comidaBefore = before.data.referencia.coverage.find(
+      (source: any) => source.source === "Revisión Comida",
+    );
+    expect(["pendiente", "disponible"]).toContain(comidaBefore.state);
+
+    const flowBefore = await request(`/api/flujo-mensual/${april.id}`);
+    expect(flowBefore.status).toBe(200);
+    expect(flowBefore.data.metrics.liquidez.valor).toBe("6810.40");
+    expect(flowBefore.data.metrics.liquidez.estado).toBe("Verificado");
+    expect(flowBefore.data.metrics.liquidez.subtotal).toBeNull();
+    expect(flowBefore.data.liquidez.incluidos.map((s: any) => s.id)).toContain(
+      "S003",
+    );
+    expect(flowBefore.data.liquidez.excluidos.map((s: any) => s.id)).not.toContain(
+      "S003",
+    );
+    expect(flowBefore.data.metrics.liquidez.motivo).toContain(
+      "Cobertura histórica no importada",
+    );
+
+    sell(db, instrumento.id);
+    const after = await request("/api/ciclos/contexto");
+    expect(after.status).toBe(200);
+    expect(after.data.referencia.fecha).toBe("2026-04-10");
+    expect(after.data.actual.inicio).toBe("2026-04-01");
+    expect(after.data.actual.corte).toBe("2026-04-10");
+    expect(after.data.actual.fin).toBeNull();
+    expect(
+      after.data.referencia.coverage.find(
+        (source: any) => source.source === "Operaciones de inversión",
+      ),
+    ).toEqual({
+      source: "Operaciones de inversión",
+      state: "disponible",
+      maxDate: "2026-04-10",
+    });
+    const listed = await request("/api/ciclos");
+    expect(listed.status).toBe(200);
+    expect(listed.data.total).toBe(2);
+    expect(listed.data.contexto.referencia.fecha).toBe("2026-04-10");
+    expect(listed.data.contexto.actual.inicio).toBe("2026-04-01");
+
+    const flowAfter = await request(`/api/flujo-mensual/${april.id}`);
+    expect(flowAfter.status).toBe(200);
+    expect(flowAfter.data.metrics.liquidez.valor).toBe("7316.40");
+    expect(flowAfter.data.metrics.liquidez.estado).toBe("Verificado");
+    expect(flowAfter.data.metrics.liquidez.subtotal).toBeNull();
+    expect(flowAfter.data.liquidez.incluidos.map((s: any) => s.id)).toContain(
+      "S003",
+    );
+    expect(flowAfter.data.liquidez.excluidos.map((s: any) => s.id)).not.toContain(
+      "S003",
+    );
+
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      liquidez: false,
+    });
+    const zero = await request(`/api/flujo-mensual/${april.id}`);
+    expect(zero.data.metrics.liquidez.valor).toBe("5000.00");
+    expect(zero.data.liquidez.incluidos.map((s: any) => s.id)).not.toContain(
+      "S003",
+    );
+    db.run("UPDATE saldos SET liquidez=NULL WHERE id='S003'");
+    const unknown = await request(`/api/flujo-mensual/${april.id}`);
+    expect(unknown.data.metrics.liquidez.estado).toBe("Parcial");
+    expect(unknown.data.metrics.liquidez.subtotal).toBe("5000.00");
+    expect(unknown.data.liquidez.excluidos).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "S003",
+          motivo: "Liquidez sin informar",
+        }),
+      ]),
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2-AC-44: listado con filtros, paginación, estados y referencias ausentes", () => {
   const { db, instrumento } = base();
   try {
     buy(db, instrumento.id);
-    sell(db, instrumento.id);
+    p2(db, instrumento.id);
+    const sale = sell(db, instrumento.id);
     const annulled = sell(db, instrumento.id, {
       fecha: "2026-04-12",
       cantidad: "1",
@@ -2145,6 +2594,40 @@ test("E4.2-AC-44: listado con filtros, paginación y estados", () => {
     expect(
       failure(() => listSales(db, new URLSearchParams("page=999999999"))).code,
     ).toBe("VALIDATION");
+
+    // The audit is ordered by revision for every read model.
+    rectifySale(db, sale.venta.id, rectification(), now);
+    const audit = saleAudit(db, sale.venta.id).items;
+    expect(audit.map((row) => row.revision)).toEqual([1, 2]);
+    expect(audit.map((row) => row.accion)).toEqual(["alta", "rectificación"]);
+
+    // Read-integrity fault injection: a Venta whose Saldo de inversión has
+    // disappeared is returned as a «Revisar» incident, not repaired or removed.
+    const orphan = sell(db, instrumento.id, {
+      fecha: "2026-04-14",
+      saldoInversion: "S006",
+      cantidad: "1",
+      importeEur: "110.00",
+      concepto: "Venta con referencia ausente",
+    });
+    db.exec("PRAGMA foreign_keys=OFF; DROP TRIGGER saldo_no_delete;");
+    db.run("DELETE FROM saldos WHERE id='S006'");
+    const withOrphan = listSales(db, new URLSearchParams("estado="));
+    const affected = withOrphan.ventas.find(
+      (row) => row.id === orphan.venta.id,
+    )!;
+    expect(affected.saldoInversion).toBeNull();
+    expect(affected.saldoEfectivo).toMatchObject({
+      id: "S003",
+      nombre: "Efectivo de inversión demo",
+      estado: "Activa",
+    });
+    const orphanDetail = getSale(db, orphan.venta.id);
+    expect(orphanDetail.venta.saldoInversion).toBeNull();
+    expect(orphanDetail.auditoria.map((row) => row.accion)).toEqual(["alta"]);
+    expect(
+      getSale(db, sale.venta.id).venta.instrumento,
+    ).not.toBeNull();
   } finally {
     db.close();
   }
