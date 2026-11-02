@@ -1,5 +1,7 @@
 # 05 — E1.5 Transferencias y Referencias: Specification
 
+**Nota de vigencia 2026-11-02:** D5 está aprobada e integrada; las menciones históricas a «D5 no aprobada» se conservan como procedencia y no como estado vigente.
+
 **Aprobación funcional D5 — 2026-10-27:** usuario «Apruebo», en respuesta
 inmediata a la solicitud única de aprobación de spec14 §15, wireframes §15.15 y
 spec05 §D5 del candidato `3b737aa2548baa705429fc98c319e6b2b111dbe4`, incluidos

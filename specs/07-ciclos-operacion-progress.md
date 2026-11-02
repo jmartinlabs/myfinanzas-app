@@ -1,5 +1,7 @@
 # 07 — E2.1 Operación de Ciclos: Progress
 
+**Nota de vigencia 2026-11-02:** la opción B se integró en #128 `2c97a66`; las referencias a PR #49 «pendiente/sin merge» son históricas.
+
 ## Verificación actual — 2026-10-23
 
 Candidato funcional `a2722f4`, PR #49 pendiente de revisión/merge; main `8fae7a44`

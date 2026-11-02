@@ -1,5 +1,7 @@
 # 06 — E1.6 Cuota y amortización de Deuda: Progress
 
+**Nota de vigencia 2026-11-02:** el estado «IN PROGRESS» y las menciones de merge son históricas; la implementación está integrada y el cierre documental propuesto queda pendiente de ratificación.
+
 Specification: [spec06 aprobada](06-deuda-specification.md).
 Current state: IN PROGRESS — desarrollo autorizado expresamente por usuario el 2026-10-22 mediante `$orchestrate`; sin merge ni despliegue. Esta autorización posterior sustituye las prohibiciones históricas de iniciar dev06 durante la adopción.
 

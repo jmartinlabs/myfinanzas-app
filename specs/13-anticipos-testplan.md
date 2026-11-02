@@ -1,4 +1,6 @@
 # 13 — Anticipos y pendiente por caso: Test plan
+
+**Nota de vigencia 2026-11-02:** las referencias a PR71 en estado draft son históricas; el contrato y sus pruebas se conservan, con AC36 parcial aceptado.
 Specification: [contrato rev3 + Q9 aprobados](13-anticipos-specification.md)
 
 Matriz previa a código, 2026-10-25. Responsable de diseño y ejecución de autor: dev13. QA independiente pendiente del coordinador; no asignada. Todos los 44 AC son actuales; positivos con acreditación explícita Q9. Resultados actuales al final; la matriz inicial conserva el diseño anterior a código.

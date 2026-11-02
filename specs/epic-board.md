@@ -1,3 +1,10 @@
+## Auditoría de especificaciones — reanudada 2026-11-02
+
+Diagnóstico en [audit-spec-resume-2026-11-02](investigations/audit-spec-resume-2026-11-02.md),
+base `main` `8e4ef21`. Balance conservado: 3 cerradas / 22 abiertas; 14 cerrables sin
+código adicional y 16 con decisiones 09/17. **No se declara ninguna SPEC cerrada**, no se
+convierten PARCIAL/UNRUN en PASS y no se autoriza DEV, merge, migración ni datos reales.
+
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
 
 Entrada vigente de seguimiento. **No reabre** PR #136/#137 ni sus QA: ambas
