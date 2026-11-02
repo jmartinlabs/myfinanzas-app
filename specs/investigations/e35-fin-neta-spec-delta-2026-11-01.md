@@ -92,7 +92,8 @@ de este delta y requiere enmienda aprobada en su spec propietaria.
 
 ### 1.3 Fuera de alcance
 
-- Crear `specs/18-*` o cualquier spec nueva; editar SPEC16/21/27/12.
+- Crear `specs/18-*` o cualquier spec nueva; editar specs propietarias fuera de la
+  enmienda propuesta en SPEC16 y la reconciliación propuesta en SPEC21.
 - Código, endpoints, DTO implementados, SQL, migraciones o cambios de esquema.
 - Datos reales, Excel, activación del régimen, cierre, foto o despliegue.
 - Tablero, roadmap, metodología, `AGENTS.md` o worktrees ajenos.
@@ -205,8 +206,8 @@ banco sea verificable; el documento no fija fecha ni importe de C/B.
 | C | Repartir: contrato analítico en SPEC16 y contrato de consumo en SPEC21 | Dos propietarios para la misma regla; riesgo de deriva (ver H-1..H-3) |
 
 Recomendación: **A**, con enlaces cruzados explícitos y sin reescribir P6/P7. **No se crea
-ninguna spec nueva ni se edita la propietaria en este delta.** La aprobación de la
-ubicación queda pendiente y es condición previa a cualquier DEV.
+ninguna spec nueva**; la enmienda se propone en SPEC16 y la reconciliación en SPEC21,
+ambas pendientes de aprobación y condición previa a cualquier DEV.
 
 ### D-05 — Transferencia de ING Comida sin rol
 
@@ -283,6 +284,10 @@ del contrato, que debe aprobarse en la spec propietaria.
 
 ## 4. AC propuestos
 
+> **Antecedente histórico.** La matriz normativa vigente es `E3.5-FIN-AC-01..18` en
+> SPEC16. Esta tabla se conserva para trazabilidad y no debe usarse como segundo contrato
+> de aceptación.
+
 **Todos UNRUN.** Identificadores provisionales `E3.5-DELTA-AC-nn` para no colisionar con
 `E3.5-AC-nn` de la candidata local (referenciados como 12/13/17/39 en SPEC21) ni con
 `E3.5-AC1..3` del roadmap. La numeración definitiva la asigna la spec propietaria si
@@ -323,6 +328,10 @@ aprueba el delta. Ningún AC declara aprobación, implementación ni PASS.
 | Riesgo estático `comida.ts` | AC-05 |
 
 ## 5. Testplan propuesto
+
+> **Antecedente histórico.** El testplan normativo vigente es `E3.5-FIN-TP-01..18` en el
+> testplan de SPEC16. Esta tabla se conserva para trazabilidad y no debe usarse como
+> segunda matriz viva.
 
 **Diseño de pruebas, ninguna ejecutada.** Todas las filas quedan **UNRUN**. La columna
 «Dependencia» indica qué falta para poder ejecutarlas; la mayoría requiere autorización

@@ -201,7 +201,7 @@ Neto(P) = Σ Neto(g) de la Partida
 
 ### 4.3 Comida
 
-Contrato de E3.5, condicionado a su integración:
+Contrato histórico de E3.5, condicionado a su integración y superado por §4.3.2 para el régimen individual:
 
 ```text
 GC_B = Σ salidas Detalle vigentes con clasificación ∈ {Comida, Pendiente revisar}
@@ -262,7 +262,7 @@ equivalencia.
 | --- | --- | --- |
 | E3.4 integrada, E3.5 no integrada | Operaciones individuales de Revisión Comida, fecha, concepto, importe/dirección, clasificación, evidencia, vínculo verificado, reposiciones y referencia temporal de la fuente. Enlace a Revisión Comida. | `Gasto comida`, `Compensable`, `Falta por reponer`, `Recursos`, `CIERRE`, `DIF` y estados `Parcial/Completada` agregados. |
 | E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; E3.5-AC-12/13/17/39 siguen bloqueados. |
-| E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según spec18, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
+| E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según E3.5/FIN_NETA, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
 
 En todos los casos, la capa auxiliar no crea Gasto central, no modifica Movimientos y
 no se suma a Saldos. La ausencia de E3.5 no se compensa con el candidato local, con
@@ -277,7 +277,7 @@ dos veces el compensable. Ante conflicto, prevalecen SPEC16 P6/P7/P7a.
 
 | Expresión actual de §4.3 | Reconciliación propuesta | Motivo |
 | --- | --- | --- |
-| `CIERRE = RECURSOS − GC − CO` | `Base analítica = Recursos − J_n` (con `J_n = GC`) | El valor 585 del ejemplo P7 es la Base, no el Cierre analítico (580) |
+| `CIERRE = RECURSOS − GC − CO` | `Base analítica = Recursos − J_n` (con `J_n = GC` cuando la elegibilidad y cobertura son completas) | El valor 585 del ejemplo P7 es la Base, no el Cierre analítico (580) |
 | `REP` en `RECURSOS` y `FALTA` | `R_caja` para Recursos; `R_obl` para Falta | `REP` mezcla cobro y asignación; Falta debe usar la obligación acreditada |
 | `RECURSOS = S0 + FIN_NETA + REP` | `Recursos = S0 + FIN_NETA + R_caja − C_n` | `C_n` es compensable **neto**; se descuenta una vez, no se vuelve a restar `CO` |
 | `CIERRE` como magnitud única | `Base analítica`, `Otros efectos bancarios`, `Cierre analítico` | El puente `D − (F + R_caja − C_n − J_n)` debe ser visible; no se oculta en un total |
