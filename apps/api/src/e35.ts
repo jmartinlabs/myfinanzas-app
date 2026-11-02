@@ -419,6 +419,24 @@ export function e35Metrics(
       };
     })();
 
+    const obligacionEstado = (() => {
+      if (!financing.available)
+        return {
+          estado: "No disponible" as const,
+          motivo: financing.reason ?? "Cobertura no disponible.",
+        };
+      if (coverageFood !== null)
+        return { estado: "No disponible" as const, motivo: coverageFood };
+      if (netComp === 0n)
+        return { estado: "Sin obligación acreditada" as const, motivo: "" };
+      return rObl.total >= netComp
+        ? { estado: "Completada" as const, motivo: "" }
+        : {
+            estado: "Parcial" as const,
+            motivo: "R_obl menor que C_n; obligación pendiente.",
+          };
+    })();
+
     const s0 = cents(ciclo.saldoInicialComida);
     const resources =
       financing.available && coverageFood === null
@@ -624,6 +642,13 @@ export function e35Metrics(
             d: null,
             ids: [],
           },
+      obligacion: {
+        ...obligacionEstado,
+        cn: decimal(netComp),
+        robl: decimal(rObl.total),
+        falta: falta === null ? null : decimal(falta),
+        ids: rObl.ids,
+      },
       recursos: metric(resources, financing.available ? coverageFood : financing.reason),
       cierreAnalitico: metric(
         analyticsClose,

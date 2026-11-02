@@ -845,10 +845,24 @@ export function writeComidaRol(
           typeof body.obligacionCiclo === "string" && body.obligacionCiclo
             ? body.obligacionCiclo
             : null;
-        if (rol === "Reposición" && !obligacion)
-          throw new Problem(422, "VALIDATION", "Reposición exige obligación.", {
-            obligacionCiclo: "Selecciona el ciclo de la obligación.",
-          });
+        if (rol === "Reposición" && !obligacion) {
+          const collected = db
+            .query(
+              `SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
+               WHERE m.id=? AND m.anulado=0 AND m.tipo='Transferencia'`,
+            )
+            .get(id);
+          if (!collected)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Reposición exige obligación o cobro acreditado en ING Comida.",
+              {
+                obligacionCiclo:
+                  "Selecciona la obligación o acredita el cobro real en ING Comida.",
+              },
+            );
+        }
         if (rol !== "Reposición" && obligacion)
           throw new Problem(422, "VALIDATION", "Obligación no aplicable.", {
             obligacionCiclo: "Solo Reposición admite obligación.",

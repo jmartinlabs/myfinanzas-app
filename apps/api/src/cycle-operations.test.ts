@@ -966,7 +966,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 21 }, { version: 21 }]);
+    expect(upgraded).toEqual([{ version: 22 }, { version: 22 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

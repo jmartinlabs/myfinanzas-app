@@ -952,6 +952,64 @@ test("AC-04: Devolución de Anticipo sin atribución canónica no deduce y deja 
   db.close();
 });
 
+test("I3/D3-O1: reposición sin obligación con cobro acreditado cuenta en R_caja y no en R_obl", () => {
+  const { db, account, ing, leisure, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const repo = transfer(db, account, ing, "50", "2026-06-25");
+  writeComidaRol(
+    db,
+    repo.movimiento.id,
+    { revision: 1, rol: "Reposición", evidencia: "Cobro ficticio acreditado" },
+    randomUUID(),
+    now,
+  );
+  purchase(db, ing, leisure.id, { importe: "20", comida: { etiqueta: "Ocio" } });
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.financiacion.reposicionesCaja).toBe("50.00");
+  expect(metrics.obligacion.robl).toBe("0.00");
+  expect(metrics.obligacion.estado).toBe("Parcial");
+  expect(metrics.obligacion.falta).toBe("20.00");
+  expect(metrics.recursos.valor).toBe("130.00");
+  db.close();
+});
+
+test("I3/D3-O1: reposición sin obligación sin régimen acreditado se rechaza", () => {
+  const { db, account, ing } = setup();
+  const repo = transfer(db, account, ing, "50", "2026-06-25");
+  expect(() =>
+    writeComidaRol(
+      db,
+      repo.movimiento.id,
+      { revision: 1, rol: "Reposición", evidencia: "Texto sin cobro verificable" },
+      randomUUID(),
+      now,
+    ),
+  ).toThrow();
+  db.close();
+});
+
 test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el contrato", () => {
   const { prepareV18 } = require("../test-support/database-v18");
   const db = new Database(":memory:");
@@ -963,7 +1021,7 @@ test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el con
   const { prepareSchema } = require("./database-schema");
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 21,
+    version: 22,
   });
   expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
   expect(

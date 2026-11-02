@@ -492,7 +492,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           ).csrf,
         ).toBe(verified.csrf);
         expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 21,
+          version: 22,
         });
         const { d, p, s } = setup(db);
         save(db, quota(s.id, p.id));

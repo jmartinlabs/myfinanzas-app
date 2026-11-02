@@ -324,7 +324,7 @@ test("P6 genuine v9 upgrade and transactional DDL rollback preserves v9 identity
     });
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 21,
+      version: 22,
     });
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally {
