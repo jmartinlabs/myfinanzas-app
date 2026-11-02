@@ -1,7 +1,7 @@
 # Actas individuales de cierre de auditoría — 13 SPEC candidatas
 
-Fecha: 2026-11-02. Base: `main` `d7b9077`. Estado: **preparadas para ratificación
-individual; ninguna SPEC se declara cerrada**. Cada acta acredita **cierre documental de
+Fecha: 2026-11-02. Base: `main` `d7b9077`. Estado: **preparadas para ratificación individual; 11 ratificables y 2 diferidas
+(SPEC06, SPEC32); ninguna SPEC se declara cerrada**. Cada acta acredita **cierre documental de
 auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y dependencias.
 
 ## SPEC05 — Transferencias y Referencias

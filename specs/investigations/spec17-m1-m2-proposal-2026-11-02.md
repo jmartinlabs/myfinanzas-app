@@ -51,7 +51,7 @@ regresión del lector E1.6 si se toca `getDebt`/`debtPeriod`.
 | m5 `motivo` PATCH | Declarar `motivo` obligatorio al corregir tipo/condiciones en `PATCH /api/deudas/:id`. |
 | m6 base | Marcar v16 como base de preparación; v21 es `main` actual al iniciar DEV. |
 | m7 etiquetas | «Deuda viva = capital pendiente E1.6» explícito; una sola etiqueta visible. |
-| m8 intereses | Aclarar que la exigencia de intereses es integridad del desglose, no operando de la fórmula; decidir si bloquea la fila o toda la deuda viva. |
+| m8 intereses | Aclarar que la exigencia de intereses es integridad del desglose, no operando de la fórmula. **Recomendación asesora pendiente de confirmación humana:** si una cuota/hecho aplicable tiene desglose inválido, marcar No calculable la deuda viva completa de esa deuda en el corte; no bloquear otras deudas ni cortes anteriores. |
 | m9 historia vinculada | Definir Gastos vinculados sin capital/intereses: visibles como «desglose incompleto», no sumados. |
 | m10 ficha 390 | Concretar qué se apila/colapsa y cómo se accede a apertura, capital de control, comprobación y totales; reutilizar desactivar/reactivar de E1.6. |
 | m11 tablero | Corregir la fila que declara SPEC17 aprobada; mantener «en revisión, no aprobada». |

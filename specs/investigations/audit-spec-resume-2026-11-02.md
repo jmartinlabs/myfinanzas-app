@@ -45,8 +45,9 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta con gate operativo |
 | 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 PASS parcial en `87f9c5b`/run `40898403837` (API/build/rootless; E2E final UNRUN) | Completar E2E/rootless y acta; no reutilizar `766ea6b` |
 
-**Recuento:** A 12 · B 4 · C 2 · D 4. **Cerrables sin código adicional:** 14 (12 A + 04 +
-32); 16 si se resuelven las decisiones de 09 y 17.
+**Recuento:** A 11 · B 5 · C 2 · D 4. **Cerrables sin código adicional:** 13 (11 A + 04 +
+32, con la evidencia propia pendiente); 15 si se resuelven las decisiones de 09 y 17.
+**Actas:** 13 preparadas, 11 ratificables y 2 diferidas (SPEC06, SPEC32); 0 cerradas.
 
 ## 3. Validación sin código (Lote 2)
 
@@ -146,5 +147,6 @@ Base de ejecución: `main` `8e4ef21`, macOS arm64, Bun 1.4.3, Playwright 1.64.1.
 | SPEC32 AC-22: typecheck/build | **PASS** | Estática/tipos/build |
 | SPEC32 AC-22: E2E final | **UNRUN en candidato propio**; `766ea6b` pertenece a E4.2 y no se reutiliza | `87f9c5b`: AC-22 parcial (API/build/rootless); E2E final pendiente |
 
-SPEC04 E2E y la parte E2E de AC-22 quedan acreditadas en full Linux `766ea6b`. La ejecución
-rootless real de SPEC32 y Debian13 local no se declaran PASS; se registran como límites.
+El E2E de Movimientos se ejecutó en la suite full Linux de E4.2 (`766ea6b`), pero no es
+candidato propio de SPEC04. AC-22 de SPEC32 sigue parcial (API/build/rootless) con E2E final
+**UNRUN** en `87f9c5b`/`40898403837`. Rootless real y Debian13 local no se declaran PASS.
