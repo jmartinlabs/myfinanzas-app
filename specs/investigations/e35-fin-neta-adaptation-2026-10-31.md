@@ -188,8 +188,10 @@ Este análisis no cierra E3.5, no desbloquea E4.9 y no sustituye la evidencia DT
 # Plan técnico pre-DEV — E3.5/FIN_NETA sobre registro único (2026-11-02)
 
 Base verificada: `main` `c827d4c`. Este plan **no aprueba DEV**, no fija fórmulas nuevas y
-no modifica la enmienda ratificada de SPEC16 (`16-revision-comida-specification.md:1442-1587`)
-ni su testplan (`16-revision-comida-testplan.md:264-288`). Las referencias `AC-nn`
+no altera las decisiones de la enmienda ratificada de SPEC16
+(`16-revision-comida-specification.md:1442-1587`) ni de su testplan
+(`16-revision-comida-testplan.md:264-288`); solo corrige el estado de integración de esas
+secciones. Las referencias `AC-nn`
 corresponden al testplan E3.5 ratificado (AC-01…AC-18); la numeración antigua se trata en
 §15.5.
 
@@ -235,7 +237,7 @@ vínculo de Anticipo, el proveedor FIN-12 y los consumidores.
 | AC-08 | Grupos correctos; `Fuera presupuesto` fuera del análisis | Implementado | Falta prueba propia E3.5 |
 | AC-09 | `Pendiente revisar` suma una vez en `J_n`; conceptos separados | Implementado (CU-19) | Falta prueba E3.5 |
 | AC-10 | Devolución acreditada netea sin FK; no acreditada/`Revisar` no; antigua no reduce obligación actual | Implementado parcialmente | `pendingDev` agrupa causas (`comida.ts:1335-1352`); faltan motivos separados |
-| AC-11 | `D` solo desde Movimientos; sin doble gasto; legado etiquetado | Implementado (D1) | Falta prueba E3.5 |
+| AC-11 | `D` solo desde Movimientos; sin doble gasto; legado etiquetado | Implementado (test «D1: histórico auxiliar legado», `comida.test.ts:666`) | Falta prueba E3.5 propia |
 | AC-12 | S0 ausente → ND; `B_A` no se copia a S0; banco parcial/ND | `S0` siempre numérico (`cycle-schema.ts:9`) | **No representable** sin contrato de fuente; ver D2 |
 | AC-13 | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial ≠ total | `metric()` acepta `partial/subtotal` (`comida.ts:1185-1215`), pero **ninguna llamada los usa** (`1627-1631`) | Parciales caen a `No disponible`; falta estado de fallo de fuente |
 | AC-14 | Ejemplo numérico (Recursos 785, Falta 15, Base 585, Otros −5, Cierre 580) y subcaso `DIF_S0_SIGUIENTE`/`DIF_BANCO` | Aritmética correcta; `DIF_S0_SIGUIENTE` no existe | Ver §15.4 y §14 (D4) |
@@ -283,7 +285,7 @@ verifica el ejemplo normativo; I6 cierra fronteras. Un incremento no empieza sin
 en PASS.
 
 **Dependencia de decisión:** AC-16 (I1) depende de D1; AC-12 (I4) de D2; AC-06 (I3) de D3;
-AC-18 (I6) de §15.5. Mientras la decisión correspondiente no esté **ratificada**, el AC afectado
+AC-18 (I6) de **D1 y §15.5**. Mientras la decisión correspondiente no esté **ratificada**, el AC afectado
 no puede declararse PASS: queda UNRUN o PARCIAL con motivo, nunca PASS por omisión.
 
 ## 14. Contratos de integración (sin modificar lógica ajena)
@@ -342,7 +344,9 @@ impacto. **No reabren D-01…D-11.**
 - **O1 (recomendada):** mantener `saldo_comida` `NOT NULL` y añadir un **indicador de
   acreditación** del S0 (p. ej. `saldo_comida_acreditado`) con backfill `true` en las filas
   existentes. Distingue *S0 no informado*, *S0 = 0 verificado* y *B/B_A no acreditados* sin
-  ambigüedad aritmética. Coste: una migración y backfill; no cambia la fórmula.
+  ambigüedad aritmética. Coste: una migración y backfill; no cambia la fórmula. El alta exige
+  saldo explícito y admite `0` (`ciclos.ts:278-286,350-352`), por lo que el backfill `true` no
+  inventa datos en ciclos ya creados.
 - **O2:** `saldo_comida` nullable (`NULL` = no informado). Conceptualmente simple, pero obliga
   a tratar `NULL` en todas las consultas y elimina el `NOT NULL`.
 - **O3:** sin migración: AC-12 se declara **no representable** con el modelo actual; queda
@@ -353,7 +357,7 @@ impacto. **No reabren D-01…D-11.**
 ### D3 — Reposición sin obligación frente a D-06-A
 
 - **Enunciado:** el `CHECK` impide `rol='Reposición'` sin `obligacion_ciclo`
-  (`comida-schema.ts:229`). Pero **D-06-A ratificada** admite que una reposición cobrada sin
+  (`comida-schema.ts:229`). Pero **D-06-A ratificada** (`e35-fin-neta-spec-delta-2026-11-01.md:220-228`; ratificación `16-...:1444-1446`) admite que una reposición cobrada sin
   obligación asignada cuente en `R_caja` y **nunca** en `R_obl`, y que la tardía cuente en el
   ciclo de su fecha. Con el `CHECK` vigente ese estado es inalcanzable, así que no puede
   resolverse reformulando AC-06 a «rechazo». D-06-A **no se reabre**; se resuelve su
