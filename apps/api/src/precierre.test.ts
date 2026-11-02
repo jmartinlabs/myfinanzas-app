@@ -128,6 +128,23 @@ test("AC-04: vínculos históricos inactivos no bloquean; clasificación incompa
   }
 });
 
+test("AC-05: una Venta resta cantidad en la posición del precierre", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Venta','2026-01-15','I0001','S003','S004',50000000,1000,'EUR',NULL,500,NULL,'Venta fixture',NULL,'Vigente',1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.posiciones).toHaveLength(1);
+    expect(result.inversion.posiciones[0].cantidad).toBe("0.5");
+    expect(
+      result.fuentes.find((f) => f.key === "e42")?.estado,
+    ).toBe("Integrado");
+  } finally {
+    close(db);
+  }
+});
+
 test("AC-05: E4.1 muestra efectivo/posiciones a Fin y excluye el futuro", () => {
   const db = fixture({ investment: true, plan: true });
   try {
@@ -256,11 +273,12 @@ test("AC-07: fuentes no disponibles son aviso, no cero ni bloqueo", () => {
   const db = fixture({ plan: true });
   try {
     const result = getPrecierre(db, "1", now, { backup });
-    for (const key of ["e43", "e42", "e44"]) {
+    for (const key of ["e43", "e44"]) {
       const source = result.fuentes.find((f) => f.key === key)!;
       expect(source.estado).toBe("No disponible");
       expect(source.cobertura).toBe("No disponible");
     }
+    expect(result.fuentes.find((f) => f.key === "e42")?.estado).toBe("Integrado");
     const auxiliary = result.fuentes.find((f) => f.key === "anticipos")!;
     expect(auxiliary.estado).toBe("Parcial");
     expect(auxiliary.motivo).toContain("no acreditada");

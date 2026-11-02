@@ -142,21 +142,26 @@ type Cash = {
   entradas: bigint;
   salidas: bigint;
   compras: bigint;
+  ventas: bigint;
   comisionIncluida: bigint;
   disponible: bigint;
 };
 
-function purchaseRows(db: Database, saldoId: string, cutoff?: string) {
+function operationCashRows(
+  db: Database,
+  saldoId: string,
+  cutoff?: string,
+) {
   return db
     .query(
-      `SELECT id,fecha,CAST(importe_eur AS TEXT) importe,
+      `SELECT id,clase,CAST(importe_eur AS TEXT) importe,
         CAST(COALESCE(comision_eur,0) AS TEXT) comision
        FROM operaciones_inversion
        WHERE estado='Vigente' AND saldo_efectivo=?${cutoff ? " AND fecha<=?" : ""}`,
     )
     .all(...(cutoff ? [saldoId, cutoff] : [saldoId])) as {
     id: string;
-    fecha: string;
+    clase: string;
     importe: string;
     comision: string;
   }[];
@@ -166,7 +171,7 @@ export function cashAt(
   db: Database,
   saldoId: string,
   cutoff?: string,
-  excludePurchase?: string,
+  excludeOperation?: string,
 ): Cash {
   const saldo = db
     .query(
@@ -184,6 +189,7 @@ export function cashAt(
   let entradas = 0n,
     salidas = 0n,
     compras = 0n,
+    ventas = 0n,
     comisionIncluida = 0n;
   const movements = db
     .query(
@@ -201,18 +207,20 @@ export function cashAt(
     if (row.origen === saldoId) salidas += amount;
   }
   if (investmentInstalled(db))
-    for (const row of purchaseRows(db, saldoId, cutoff)) {
-      if (row.id === excludePurchase) continue;
-      compras += BigInt(row.importe);
+    for (const row of operationCashRows(db, saldoId, cutoff)) {
+      if (row.id === excludeOperation) continue;
+      if (row.clase === "Venta") ventas += BigInt(row.importe);
+      else compras += BigInt(row.importe);
       comisionIncluida += BigInt(row.comision);
     }
   const apertura = BigInt(saldo.apertura ?? "0"),
-    disponible = apertura + entradas - salidas - compras;
+    disponible = apertura + entradas - salidas - compras + ventas;
   return {
     saldo: { ...saldo, apertura },
     entradas,
     salidas,
     compras,
+    ventas,
     comisionIncluida,
     disponible,
   };
@@ -241,10 +249,9 @@ export function cashDto(db: Database, saldoId: string, fecha: string | null) {
       entradas: cents(cash.entradas),
       salidas: cents(cash.salidas),
       compras: cents(cash.compras),
-      ventas: "0.00",
+      ventas: cents(cash.ventas),
       comisionIncluida: cents(cash.comisionIncluida),
-      terminoVentas:
-        "Sin registro de Ventas hasta E4.2; cero estructural",
+      terminoVentas: "Ventas vigentes del bróker; término + del motor único.",
       disponible: cents(cash.disponible),
       condicion: "calculado",
       ...(fecha
@@ -257,18 +264,25 @@ export function cashDto(db: Database, saldoId: string, fecha: string | null) {
   };
 }
 
-type PurchaseFact = {
+type InvestmentFact = {
   id?: string;
+  clase?: "Compra" | "Venta";
   fecha: string;
   saldoEfectivo: string;
   importe: bigint;
 };
 
+/** Signed cash effect of an investment operation: Compras subtract, Ventas add. */
+export function cashSign(clase: string | undefined) {
+  return clase === "Venta" ? 1n : -1n;
+}
+
 /** End-of-day sufficiency from the anchor date onwards. Throws 422 without writing. */
 export function assertSufficient(
   db: Database,
-  fact: PurchaseFact,
-  previous?: PurchaseFact,
+  fact: InvestmentFact,
+  previous?: InvestmentFact,
+  options: { includePreviousInAvailable?: boolean } = {},
 ) {
   const anchor =
     previous && previous.fecha < fact.fecha ? previous.fecha : fact.fecha;
@@ -296,11 +310,25 @@ export function assertSufficient(
       date,
       previous?.id,
     ).disponible;
-    const candidate = date >= fact.fecha ? base - fact.importe : base;
+    const candidate =
+      date >= fact.fecha
+        ? base + cashSign(fact.clase) * fact.importe
+        : base;
     if (!minimum || candidate < minimum.minimo)
-      minimum = { fecha: date, disponible: base, minimo: candidate };
+      minimum = {
+        fecha: date,
+        disponible:
+          options.includePreviousInAvailable &&
+          previous &&
+          previous.fecha <= date
+            ? base + cashSign(previous.clase) * previous.importe
+            : base,
+        minimo: candidate,
+      };
   }
-  if (minimum && minimum.minimo < 0n)
+  if (minimum && minimum.minimo < 0n) {
+    const necesario =
+      fact.importe > 0n ? fact.importe : (previous?.importe ?? 0n);
     throw new Problem(
       422,
       "INSUFFICIENT_CASH",
@@ -310,15 +338,135 @@ export function assertSufficient(
       },
       {
         disponible: cents(minimum.disponible),
-        necesario: cents(fact.importe),
+        necesario: cents(necesario),
         minimo: cents(minimum.minimo),
         fecha: minimum.fecha,
       },
     );
+  }
   return minimum;
 }
 
-/** Current effective quantity for Saldo inversión + Instrumento. */
+type UnitsFact = {
+  id?: string;
+  clase?: "Compra" | "Venta";
+  fecha: string;
+  cantidad: bigint;
+  saldoInversion: string;
+  instrumento: string;
+};
+
+/** Signed quantity effect: Compras add, Ventas subtract. */
+function quantitySign(clase: string | undefined) {
+  return clase === "Venta" ? -1n : 1n;
+}
+
+function quantityAt(
+  db: Database,
+  saldoInversion: string,
+  instrumento: string,
+  date: string,
+  exclude?: string,
+) {
+  const rows = db
+    .query(
+      `SELECT id,clase,CAST(cantidad AS TEXT) cantidad FROM operaciones_inversion
+       WHERE estado='Vigente' AND saldo_inversion=? AND instrumento=? AND fecha<=?`,
+    )
+    .all(saldoInversion, instrumento, date) as {
+    id: string;
+    clase: string;
+    cantidad: string;
+  }[];
+  return rows.reduce(
+    (total, row) =>
+      row.id === exclude
+        ? total
+        : total + quantitySign(row.clase) * BigInt(row.cantidad),
+    0n,
+  );
+}
+
+/** Effective quantity of the pair at the end of `date` (DT2 aggregation). */
+export function positionAtDate(
+  db: Database,
+  saldoInversion: string,
+  instrumento: string,
+  date: string,
+) {
+  return quantityAt(db, saldoInversion, instrumento, date);
+}
+
+/**
+ * End-of-day non-negative quantity for `saldo_inversion + instrumento`
+ * (SPEC22 D1/D7). Evaluates `candidato(t)` from the anchor date onwards so a
+ * retroactive operation cannot leave a later negative quantity. Throws 422
+ * `INSUFFICIENT_UNITS` without writing; never uses floating point.
+ */
+export function assertUnitsAvailable(
+  db: Database,
+  fact: UnitsFact,
+  previous?: UnitsFact,
+) {
+  const anchor =
+    previous && previous.fecha < fact.fecha ? previous.fecha : fact.fecha;
+  const dates = new Set<string>([anchor, fact.fecha]);
+  for (const row of db
+    .query(
+      `SELECT fecha FROM operaciones_inversion
+       WHERE estado='Vigente' AND saldo_inversion=? AND instrumento=? AND fecha>=?`,
+    )
+    .all(fact.saldoInversion, fact.instrumento, anchor) as { fecha: string }[])
+    dates.add(row.fecha);
+  let minimum: { fecha: string; disponible: bigint; minimo: bigint } | null =
+    null;
+  for (const date of [...dates].sort()) {
+    const base = quantityAt(
+        db,
+        fact.saldoInversion,
+        fact.instrumento,
+        date,
+        previous?.id,
+      ),
+      candidate =
+        date >= fact.fecha
+          ? base + quantitySign(fact.clase) * fact.cantidad
+          : base,
+      disponible = quantityAt(
+        db,
+        fact.saldoInversion,
+        fact.instrumento,
+        date,
+      );
+    if (!minimum || candidate < minimum.minimo)
+      minimum = { fecha: date, disponible, minimo: candidate };
+  }
+  if (minimum && minimum.minimo < 0n) {
+    const necesario =
+      previous && previous.cantidad > fact.cantidad
+        ? previous.cantidad
+        : fact.cantidad;
+    throw new Problem(
+      422,
+      "INSUFFICIENT_UNITS",
+      `Cantidad insuficiente: el mínimo resultante es ${quantityText(minimum.minimo)} el ${minimum.fecha}.`,
+      {
+        cantidad: "Cantidad no disponible a la fecha o en una fecha posterior.",
+      },
+      {
+        disponible: quantityText(minimum.disponible),
+        necesario: quantityText(necesario),
+        minimo: quantityText(minimum.minimo),
+        fecha: minimum.fecha,
+        saldoInversion: fact.saldoInversion,
+        instrumento: fact.instrumento,
+      },
+    );
+  }
+  return minimum;
+}
+
+/** Current effective quantity for Saldo inversión + Instrumento (Compras − Ventas). */
 export function positionQuantity(
   db: Database,
   saldoInversion: string,
@@ -327,59 +475,84 @@ export function positionQuantity(
 ) {
   const rows = db
     .query(
-      `SELECT id,CAST(cantidad AS TEXT) cantidad FROM operaciones_inversion
+      `SELECT id,clase,CAST(cantidad AS TEXT) cantidad FROM operaciones_inversion
        WHERE estado='Vigente' AND saldo_inversion=? AND instrumento=?`,
     )
-    .all(saldoInversion, instrumento) as { id: string; cantidad: string }[];
-  return {
-    quantity: rows.reduce(
-      (total, row) =>
-        row.id === excludeOperation ? total : total + BigInt(row.cantidad),
-      0n,
-    ),
-    compras: rows.filter((row) => row.id !== excludeOperation).length,
-  };
+    .all(saldoInversion, instrumento) as {
+    id: string;
+    clase: string;
+    cantidad: string;
+  }[];
+  let quantity = 0n,
+    compras = 0,
+    ventas = 0;
+  for (const row of rows) {
+    if (row.id === excludeOperation) continue;
+    quantity += quantitySign(row.clase) * BigInt(row.cantidad);
+    if (row.clase === "Venta") ventas++;
+    else compras++;
+  }
+  return { quantity, compras, ventas };
 }
 
 export type PositionRow = {
   saldoInversion: { id: string; nombre: string };
   cantidad: bigint;
   compras: number;
+  ventas: number;
   ultimaCompra: string | null;
+  ultimaVenta: string | null;
+  ultimaOperacion: string | null;
 };
 
+/**
+ * One row per Saldo de inversión where the Instrumento has any operation
+ * registered, including annulled ones (SPEC22 §4.3, D5). Quantity, counts and
+ * dates come from vigente operations only.
+ */
 export function positionsFor(
   db: Database,
   instrumento: string,
 ): PositionRow[] {
   const rows = db
     .query(
-      `SELECT o.saldo_inversion id,s.nombre,o.fecha,CAST(o.cantidad AS TEXT) cantidad
+      `SELECT o.saldo_inversion id,s.nombre,o.fecha,o.clase,o.estado,
+        CAST(o.cantidad AS TEXT) cantidad
        FROM operaciones_inversion o JOIN saldos s ON s.id=o.saldo_inversion
-       WHERE o.estado='Vigente' AND o.instrumento=?
+       WHERE o.instrumento=?
        ORDER BY o.saldo_inversion,o.fecha,o.id`,
     )
     .all(instrumento) as {
     id: string;
     nombre: string;
     fecha: string;
+    clase: string;
+    estado: string;
     cantidad: string;
   }[];
-  const groups = new Map<
-    string,
-    { saldoInversion: { id: string; nombre: string }; cantidad: bigint; compras: number; ultimaCompra: string | null }
-  >();
+  const groups = new Map<string, PositionRow>();
   for (const row of rows) {
     const group = groups.get(row.id) ?? {
       saldoInversion: { id: row.id, nombre: row.nombre },
       cantidad: 0n,
       compras: 0,
+      ventas: 0,
       ultimaCompra: null,
+      ultimaVenta: null,
+      ultimaOperacion: null,
     };
-    group.cantidad += BigInt(row.cantidad);
-    group.compras++;
-    if (!group.ultimaCompra || row.fecha > group.ultimaCompra)
-      group.ultimaCompra = row.fecha;
+    if (row.estado === "Vigente") {
+      group.cantidad += quantitySign(row.clase) * BigInt(row.cantidad);
+      if (row.clase === "Venta") group.ventas++;
+      else group.compras++;
+      if (row.clase === "Venta") {
+        if (!group.ultimaVenta || row.fecha > group.ultimaVenta)
+          group.ultimaVenta = row.fecha;
+      } else if (!group.ultimaCompra || row.fecha > group.ultimaCompra)
+        group.ultimaCompra = row.fecha;
+      if (!group.ultimaOperacion || row.fecha > group.ultimaOperacion)
+        group.ultimaOperacion = row.fecha;
+    }
     groups.set(row.id, group);
   }
   return [...groups.values()];

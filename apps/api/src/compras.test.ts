@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -11,6 +11,9 @@ import { openDatabase } from "./database";
 import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV17 } from "../test-support/database-v17";
 import { openDatabaseV15 } from "../test-support/database-v15";
+import { openDatabaseV18 } from "../test-support/database-v18";
+import { comidaSchema } from "./comida-schema";
+import { dprimaSchema } from "./dprima-schema";
 import { materializeContract } from "../test-support/inversiones-schema";
 import { createInstrumento } from "./instrumentos";
 import {
@@ -24,6 +27,7 @@ import {
   purchaseAudit,
   rectifyPurchase,
 } from "./compras";
+import { createSale } from "./ventas";
 import { cashAt, cashDto, cents, spanishToday } from "./investment-engine";
 import { getSaldo, updateSaldo, createSaldo, money } from "./saldos";
 import { createClassification } from "./clasificacion";
@@ -389,6 +393,185 @@ function classification(db: Database) {
   );
   return { category, sub, partida: partida.id };
 }
+
+test("E4.2-V2: un intento legacy de Compra sobrevive al upgrade v20→v21", () => {
+  const dir = mkdtempSync(join(tmpdir(), "v20-attempt-"));
+  try {
+    const path = join(dir, "db.sqlite");
+    const v20 = openDatabaseV18(path);
+    v20.transaction(() => comidaSchema(v20)).immediate();
+    v20.transaction(() => dprimaSchema(v20)).immediate();
+    updateSaldo(v20, "S003", {
+      revision: getSaldo(v20, "S003").revision,
+      saldoApertura: "5000.00",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    });
+    const instrumento = createInstrumento(
+      v20,
+      {
+        nombre: "Fondo legacy",
+        isin: "ES0000000009",
+        isinEvidencia: "Extracto ficticio legacy",
+        divisaReferencia: "EUR",
+      },
+      randomUUID(),
+      now,
+    ).instrumento;
+    const body = defaultPurchase(instrumento.id);
+    const key = "legacy-attempt-key-0001";
+    const first = createPurchase(v20, body, key, now);
+    const legacy = createHash("sha256")
+      .update(
+        JSON.stringify(
+          Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest("hex");
+    v20.run("UPDATE operacion_attempts SET hash=? WHERE key=?", [legacy, key]);
+    v20.close();
+
+    const db = openDatabase(path);
+    try {
+      const replay = createPurchase(db, body, key, now);
+      expect(replay.compra.id).toBe(first.compra.id);
+      const stored = db
+        .query("SELECT hash FROM operacion_attempts WHERE key=?")
+        .get(key) as { hash: string };
+      expect(stored.hash).not.toBe(legacy);
+      expect(createPurchase(db, body, key, now).compra.id).toBe(first.compra.id);
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("E4.2-V2 negativo: intento legacy corrupto, de Venta o con otro payload se rechaza", () => {
+  const { db, instrumento } = base();
+  try {
+    const body = defaultPurchase(instrumento.id);
+    const key = "legacy-negative-key-0001";
+    const first = createPurchase(db, body, key + "-seed", now);
+    const sale = createSale(
+      db,
+      {
+        fecha: "2026-04-10",
+        instrumento: instrumento.id,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "1",
+        precio: "100.00",
+        divisa: "EUR",
+        cambio: null,
+        importeEur: "100.00",
+        comisionEur: null,
+        concepto: "Venta legacy negativa",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    ).venta;
+    const before = {
+      ops: count(db, "operaciones_inversion"),
+      audit: count(db, "operacion_inversion_audit"),
+      counter: db
+        .query("SELECT next FROM counters WHERE name='operaciones_inversion'")
+        .get(),
+    };
+    const legacy = createHash("sha256")
+      .update(
+        JSON.stringify(
+          Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest("hex");
+    const attempt = (response: string, hash = legacy) =>
+      db.run("INSERT INTO operacion_attempts VALUES(?,?,?,?)", [
+        key,
+        hash,
+        response,
+        now + 86400000,
+      ]);
+    attempt("{");
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ venta: { id: first.compra.id } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: { id: "999999" } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // Respuesta truncada: no se devuelve como idempotente.
+    attempt(JSON.stringify({ compra: { id: first.compra.id } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // Respuesta con compra no-objeto: 409, no 500.
+    attempt(JSON.stringify({ compra: 5 }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: [] }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // Seis claves no bastan: el DTO completo es obligatorio.
+    attempt(
+      JSON.stringify({
+        compra: {
+          id: first.compra.id,
+          clase: "Compra",
+          fecha: "2026-02-10",
+          cantidad: "12.5",
+          importeEur: "1125.00",
+          estado: "Vigente",
+        },
+      }),
+    );
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // ID real cuya clase es Venta: el hash legacy no puede devolverlo.
+    const full = getPurchase(db, first.compra.id);
+    attempt(
+      JSON.stringify({ compra: { ...full.compra, id: sale.id } }),
+    );
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: { id: first.compra.id } }));
+    expect(
+      failure(() =>
+        createPurchase(db, { ...body, importeEur: "1.00" }, key, now),
+      ),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    expect(
+      db.query("SELECT hash FROM operacion_attempts WHERE key=?").get(key),
+    ).toEqual({ hash: legacy });
+    expect({
+      ops: count(db, "operaciones_inversion"),
+      audit: count(db, "operacion_inversion_audit"),
+      counter: db
+        .query("SELECT next FROM counters WHERE name='operaciones_inversion'")
+        .get(),
+    }).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
 
 test("E4.1-AC-18/19/20/25/26/45/47: idempotencia, rollback, rectificación y anulación", () => {
   const { db, instrumento } = base();
@@ -770,7 +953,7 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
     old.run("INSERT INTO referencias VALUES('REF500','Histórica','Viaje','Activa',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     old.close();
     let db = openDatabase(v13);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
     expect(db.query("SELECT id FROM referencias WHERE id='REF500'").get()).toEqual({ id: "REF500" });
     expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
     for (const table of [
@@ -788,7 +971,7 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
       fixture.run("INSERT INTO fichas_vehiculo VALUES('REF900','1234ABC','2026-07-01','2026-06-01',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     });
     db = openDatabase(v14);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
     expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF900'").get()).toEqual({ matricula: "1234ABC" });
     expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='fichas_compartidos'").get()).toEqual({ n: 1 });
     expect(db.query("SELECT COUNT(*) n FROM fichas_compartidos").get()).toEqual({ n: 0 });
@@ -802,7 +985,7 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
       fixture.run("INSERT INTO fichas_vehiculo VALUES('REF9002','1234ABC','2026-07-01','2026-06-01',1,'2026-01-01T00:00:00Z','2026-01-01T00:00:00Z')");
     });
     db = openDatabase(v15);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
     expect(db.query("SELECT revision FROM fichas_compartidos WHERE referencia='REF9001'").get()).toEqual({ revision: 1 });
     expect(db.query("SELECT COUNT(*) n FROM participantes_compartido").get()).toEqual({ n: 1 });
     expect(db.query("SELECT matricula FROM fichas_vehiculo WHERE referencia='REF9002'").get()).toEqual({ matricula: "1234ABC" });
@@ -811,7 +994,7 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
 
     const v16 = materializeContract(join(dir, "v16.sqlite"), "C16-REVISION-COMIDA-26B6F0C");
     db = openDatabase(v16);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
     expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='revision_comida'").get()).toEqual({ n: 1 });
     expect(db.query("SELECT COUNT(*) n FROM revision_comida").get()).toEqual({ n: 0 });
     expect(db.query("SELECT COUNT(*) n FROM instrumentos").get()).toEqual({ n: 0 });
@@ -819,7 +1002,7 @@ test("E4.1-AC-33: rutas 13→18, 14→18, 15→18, manifiestos y rechazos antes 
 
     const v17 = materializeContract(join(dir, "v17.sqlite"), "C17-D5-CF6954A");
     db = openDatabase(v17);
-    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+    expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
     expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='movimiento_compartido'").get()).toEqual({ n: 1 });
     expect(db.query("SELECT COUNT(*) n FROM movimiento_compartido").get()).toEqual({ n: 0 });
     expect(
@@ -895,7 +1078,7 @@ test("E4.1-AC-33(f): v17 real con filas D5 preserva movimiento_compartido al sub
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 20,
+        version: 21,
       });
       expect(
         db.query("SELECT * FROM movimiento_compartido").all(),
@@ -964,7 +1147,7 @@ test("E4.1-AC-33(d): v15 real de main preserva Compartidos y Vehículos al subir
 
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 20 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
       for (const [table, id, expected] of [
         ["fichas_compartidos", "REF9100", 1],
         ["participantes_compartido", "CP9100", 1],

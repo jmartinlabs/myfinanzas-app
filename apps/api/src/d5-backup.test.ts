@@ -145,7 +145,7 @@ test("D5 AC-01: encrypted v18 restore preserves accreditation, evidence and revo
     const copy = new Database(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 20,
+        version: 21,
       });
       const after = getCompartido(copy, ref);
       expect(after.aportaciones).toHaveLength(1);
