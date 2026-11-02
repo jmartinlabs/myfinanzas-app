@@ -156,6 +156,23 @@ def validate(root):
  }.items():
   for token in tokens:
    if token not in read(name): fail('coordination',f'{name}: missing {token}')
+ # Post-merge cleanup and checkpoint retirement stay canonical in approvals/handoff.
+ for name,tokens in {
+  'specs/methodology/approvals.md':('## Limpieza local posterior al merge','cierre ordinario',
+   'la PR está `MERGED`','git worktree remove <worktree-de-la-tarea>',
+   'git branch -d <rama-de-la-tarea>','sin `--force`','sin `-D`',
+   'No exigir que cada commit','preservar la rama','git reset --hard','git clean -fd',
+   'ramas remotas','otra tarea'),
+  '.agents/skills/handoff/SKILL.md':('## Next session and checkpoint retirement',
+   'successful restoration','tracked by Git','standalone PR','preserve',
+   'never remove permanent'),
+  'specs/README.md':('se retira tras restaurar y consolidar','mismo cambio de la tarea',
+   'nunca en una PR creada solo para borrarlo'),
+  '.agents/skills/orchestrate/SKILL.md':('limpieza-local-posterior-al-merge',
+   'next-session-and-checkpoint-retirement','Preserve dirty, unknown or other-task resources.'),
+ }.items():
+  for token in tokens:
+   if token not in read(name): fail('lifecycle',f'{name}: missing {token}')
  # Continuity/check-correction rules stay canonical in orchestrate; communication only references them.
  coordinator=read('specs/methodology/coordinator-communication.md')
  for token in ('An intermediate report never closes the turn','a correctable failed check is not a blocker'):

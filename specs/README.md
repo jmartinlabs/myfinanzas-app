@@ -72,6 +72,7 @@ in [brainstorming](01-saldos-control-brainstorming.md); no decisions reopened.
 | `NN-slug-specification.md` | Approved behavior, contracts and acceptance checks | spec |
 | `NN-slug-progress.md` | Implementation tasks, evidence and next action | dev |
 | `NN-slug-testplan.md` | Acceptance-to-verification mapping and current results | dev |
+| `session-handoff.md` | Checkpoint temporal de apagado solo cuando ningún progreso/tablero existente encaja; se retira tras restaurar y consolidar el estado; si está rastreado, se elimina en el mismo cambio de la tarea, nunca en una PR creada solo para borrarlo; sin autoridad de reanudación automática | handoff |
 
 Use two-digit identifiers (01–99) and lowercase hyphenated slugs. Allocate the next
 unused number; never overwrite a document belonging to another feature. Beyond 99,
