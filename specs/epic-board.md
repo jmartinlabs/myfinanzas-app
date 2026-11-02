@@ -322,7 +322,7 @@ no autoriza DEV, no autoriza el merge de otras PR y no autoriza despliegue.
 | Template #31 | MERGED `feadd6d`; default de Markdown documental con exclusiones protegidas |
 | Cuenta GitHub | `jmartinlabs`; remotos de MyFinanzas y template actualizados |
 | SPEC20 / E4.5 | APPROVED e integrada (`3d70fd6` / `f077b7e`); 59 AC documentales UNRUN |
-| SPEC22 / E4.2 | APPROVED; DEV no iniciado; D7/SPEC19 pendiente |
+| SPEC22 / E4.2 | APPROVED; DEV22 implementado en PR #157 (full Linux 17/17); D7 integrada; merge pendiente |
 | SPEC21 / E3.6 | documentación APPROVED; DEV no autorizado; E3.5/DEV18 STOP |
 | E4.1 | integrada `156a50d`, v18; 6 AC PARCIAL (AC-03/24/27/30/33/34) |
 | E4.8/E4.9 | specs y testplans aprobados; 33 AC UNRUN; DEV no autorizado |
@@ -433,7 +433,7 @@ No se convierten a PASS sin DEV y QA. No se cuelan como trabajo implícito de E3
 
 ## Frentes detenidos
 
-DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20/DEV22 sin DEV;
+DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20 sin DEV; DEV22 en QA/merge pendiente;
 PR50/PR51 sin tocar. Sin cambios por esta entrada.
 
 ## Governance y próxima acción
@@ -553,7 +553,7 @@ RETORNO y no acredita ejecución.
 | --- | --- | --- |
 | DEV19 / E4.1 | Continuidad autorizada (prospectiva); PR #95 Draft, gates completos pendientes | Entregar autorización al ejecutor, confirmar ownership y recibir evidencia; sin merge |
 | SPEC21 / E3.6 | Documentación aprobada e integrada (`2364d9c`); E3.6 **sin iniciar**; Q-S21-01–04 aprobadas, no se reabren | Prioridad posterior a DEV19; DEV E3.6 exige autorización separada |
-| SPEC22 / E4.2 | Retorno recibido: rev2 propuesta, D1–D7 = A, Q0 resuelta; wireframes pendientes de aprobación visual; DEV22 no iniciado | Rev3 **solo wireframes** autorizada; aprobación visual del usuario; publicar exige reconciliar enlaces a `specs/19-*` (ausente en main hasta integrar PR95) |
+| SPEC22 / E4.2 | DEV22 implementado en PR #157: full Linux 17/17, API 432/0, restore v19/v20; AC-40 UI y estados `pendiente` cerrados | Merge pendiente de aprobación explícita; sin DEV18/E3.5 |
 | SPEC20 / E4.5 | Aprobada documentalmente; PR87 Draft `fc48f19`, último CI conocido FAIL; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
 | INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
 | DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
@@ -733,7 +733,7 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC19 | E4.1 | Instrumentos y Compras | Rev10 y testplan aprobados expresamente | Código histórico congelado064df64; nuevo supervisor conciliando gates, sin DEV activo confirmado |
 | SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 Draft, FAIL conocido sin nueva evidencia propia; DT7 pendiente |
 | SPEC21 | E3.6 | Conciliación transversal | Número asignado; no iniciada | No iniciado |
-| SPEC22 | E4.2 | Ventas y efectivo de bróker | Número asignado; no iniciada | No iniciado |
+| SPEC22 | E4.2 | Ventas y efectivo de bróker | Implementado en PR #157; full Linux 17/17 | Merge pendiente |
 | SPEC23 | E4.3 | Valoración y resultados | Número asignado; no iniciada | No iniciado |
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
