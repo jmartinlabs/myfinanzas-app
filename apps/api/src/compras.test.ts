@@ -521,6 +521,28 @@ test("E4.2-V2 negativo: intento legacy corrupto, de Venta o con otro payload se 
       failure(() => createPurchase(db, body, key, now)),
     ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
     db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: [] }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // Seis claves no bastan: el DTO completo es obligatorio.
+    attempt(
+      JSON.stringify({
+        compra: {
+          id: first.compra.id,
+          clase: "Compra",
+          fecha: "2026-02-10",
+          cantidad: "12.5",
+          importeEur: "1125.00",
+          estado: "Vigente",
+        },
+      }),
+    );
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
     // ID real cuya clase es Venta: el hash legacy no puede devolverlo.
     const full = getPurchase(db, first.compra.id);
     attempt(

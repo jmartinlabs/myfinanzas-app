@@ -1,8 +1,9 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
 Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-01): venta, efectivo,
-posición, API, UI y esquema v21. QA independiente final APTO CON RESERVAS; H-1..H-5 y
-V1–V3 corregidos. CI pendiente del HEAD final. AC de UI/E2E siguen UNRUN. Sin merge.**
+posición, API, UI y esquema v21. Re-QA final: código APTO; H-1..H-5, V1–V3, pre-cierre y V2
+residual corregidos. Merge bloqueado por AC-20/32/33/41 UNRUN y ausencia de E2E/QA canónica.
+CI PASS en `fbab61c` (427/0). Sin merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -64,7 +65,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
   AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
   `create-venta`/`rectify-venta`).
-- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **369 pass / 56 fail**; los
+- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **371 pass / 56 fail**; los
   56 fallos son exactamente los mismos que la línea base `main` `4eb7264` (ancestros de
   directorios temporales/`renameat2`/symlinks Linux-only), no regresiones. `bun run typecheck`
   PASS y `bun run build` PASS.
@@ -106,6 +107,15 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 - **V3:** el trigger de identidad incluye `clase`; contrato `C21-VENTAS-E42` regenerado
   (`01cb4c49…`). Regresión SQLite: un `UPDATE` directo de `clase` se rechaza sin cambiar la
   operación.
+
+### Correcciones tras la re-QA final
+
+- **Pre-cierre:** la posición suma Compras y resta Ventas por `clase`; prueba E4.8 con
+  Compra 1 + Venta 0,5 → 0,5; la fuente E4.2 deja de declararse «Sin DEV».
+- **V2 residual:** se exige `compra` objeto y DTO completo (19 campos); `5`, array, seis
+  claves, JSON corrupto y Venta real → 409, sin cambios de hash/ops/contador/auditoría.
+- **Matriz AC:** AC-20/23/44 pasan a PARCIAL/UNRUN y AC-39/40 a PARCIAL; AC-32/33/41 siguen
+  UNRUN. No se declara PASS de UI/E2E.
 
 ### Estado por AC (DEV22, 2026-11-01)
 
@@ -163,14 +173,14 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | --- | --- |
 | `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
 | `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **24 pass / 0 fail** (incluye aislamiento Compra/Venta y clase inmutable) |
-| `bun run test` | **369 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| `bun run test` | **371 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |
 
-**CI de PR #157:** `required` **PASS** en `4c6b537` (run `41350023263`), 422 pass / 0 fail;
-pendiente re-ejecución sobre el HEAD con V1–V3. **QA final:** APTO CON RESERVAS en
-`4c6b537`; reservas H-4/documentación cerradas y V1–V3 corregidas.
+**CI de PR #157:** `required` **PASS** en `fbab61c` (run `41414648777`), 427 pass / 0 fail.
+**Re-QA final:** código APTO; merge bloqueado por AC-20/32/33/41 UNRUN y ausencia de
+E2E/QA canónica. Sin PASS de UI/E2E.
 
 ### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
 
@@ -179,7 +189,7 @@ ejecutó: `check-repository` PASS, `check-project` PASS, `validate-template` PAS
 PASS, `test-validator` PASS, `test-agent-relay` PASS, `test-agent-usage` PASS,
 `test-auto-agent-usage` PASS, `test-verification` PASS, `test-evidence` PASS,
 `working-whitespace` PASS, `commit-whitespace` PASS, `typecheck` PASS, `build` PASS,
-**`api` FAIL** (369 pass / 56 fail) y `e2e` UNRUN.
+**`api` FAIL** (371 pass / 56 fail) y `e2e` UNRUN.
 
 Los 56 fallos son idénticos, por nombre de prueba, a la línea base de `main` `4eb7264` en este
 equipo: `Ancestro no confiable` en directorios temporales, `renameat2`/`libc.so.6` y enlaces de
