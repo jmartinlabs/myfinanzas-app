@@ -108,9 +108,11 @@ Estas 12 actas se presentan para **ratificación**; no se declaran cerradas.
 
 - **SPEC09:** mantener la semántica actual; no se cambia el cero con Fin temporal hasta
   resolver la ambigüedad. Se registra en el acta como limitación.
-- **SPEC17:** propuesta definitiva: **aprobar la specification y wireframes vigentes sin
-  cambios financieros**, o corregir el tablero que hoy los presenta como aprobados. Requiere
-  revisión independiente y decisión del usuario; no se modifica la spec aquí.
+- **SPEC17 — propuesta definitiva:** mantener el texto actual y sus D1–D7, **no introducir
+  cambios financieros** y someter a aprobación independiente la specification y wireframes
+  vigentes. Corregir simultáneamente el tablero para que no los presente como aprobados
+  mientras no exista ratificación. No se modifica la spec en este lote; si se aprueba, el
+  siguiente paso es su acta y, solo con autorización separada, DEV.
 - **SPEC20/21/22/27 y datos reales de SPEC16:** fuera de esta autorización; conservan sus
   gates.
 
