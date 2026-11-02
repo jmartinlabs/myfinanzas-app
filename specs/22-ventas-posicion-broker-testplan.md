@@ -2,10 +2,9 @@
 
 Specification: [22-ventas-posicion-broker-specification.md](22-ventas-posicion-broker-specification.md)
 Brainstorming: [22-ventas-posicion-broker-brainstorming.md](22-ventas-posicion-broker-brainstorming.md)
-Status: **APPROVED rev2 — matriz de diseño aprobada. DEV22 ejecutado parcialmente el
-2026-11-02: AC-19/20/23/27/32/33/39/40/41/44 tienen evidencia local macOS; la fase canónica
-Linux sigue BLOCKED por entorno (sin Docker/podman y con `libc.so.6`/`renameat2`/«Ancestro no
-confiable»). No se declara PASS canónico sin comando y candidato.**
+Status: **APPROVED rev2 — DEV22 implementado y verificado en full Linux `766ea6b`
+(API 432/0, E2E 17/17, restore v19/v20, Chromium PASS). AC-19/20/23/27/32/33/39/40/41/44
+PASS; QA final APTO CON RESERVAS; merge pendiente de aprobación.**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
 aprobados visualmente el 2026-10-28; specification completa aprobada por el usuario el
@@ -17,7 +16,7 @@ Historial: rev1 (2026-10-27) matriz inicial de 45 AC; rev2 (2026-10-27) registra
 D1–D7 confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual rev3; la specification
 completa y este testplan se aprobaron el 2026-10-28. rev3 (2026-11-02) añade la ejecución E2E
 1440/390 de DEV22 y el cierre de los pendientes AC-19/20/23/27/32/33/39/40/41/44 en macOS,
-con la fase canónica Linux BLOCKED y sin declarar PASS de CI.
+con full Linux `766ea6b` PASS (API 432/0, E2E 17/17, restore v19/v20).
 
 ## 1. Alcance, entorno y lectura de la matriz
 
@@ -27,10 +26,9 @@ con la fase canónica Linux BLOCKED y sin declarar PASS de CI.
 - **Estado:** los AC de diseño se ejecutaron en DEV22 el 2026-11-02 en macOS arm64 (Bun
   1.4.3, Playwright 1.64.1, Chromium 1248). AC-32/33 y las comprobaciones de UI de
   AC-19/23/27/44 tienen evidencia Playwright local; AC-20/23/39/40/41 tienen cobertura API
-  con SQLite real y HTTP. La fase canónica Linux sigue **BLOCKED**: no hay Docker/podman en
-  el equipo y las pruebas de backup/directorios fallan por `libc.so.6`, `renameat2` y
-  «Ancestro no confiable». Los estados `PASS` de esta matriz son locales y llevan comando,
-  resultado y candidato; no acreditan CI remoto ni el entorno canónico.
+  con SQLite real y HTTP. La verificación **full Linux** en `766ea6b` da API 432/0, E2E
+  17/17, restore v19/v20 y Chromium PASS. Debian13 local no se ejecutó; los fallos macOS
+  (`libc.so.6`, `renameat2`, «Ancestro no confiable») no se convierten en PASS.
 - **Dependencias:** E4.1 está integrada en `main` `156a50d` (v18), con C16/C17 congelados; los
   casos que dependen de su tabla, motor o backup ya no están bloqueados por esa integración.
   Siguen UNRUN por ausencia de implementación E4.2 y de candidato autorizado. D7 requiere una
@@ -123,12 +121,12 @@ explícito.
 | E4.2-AC-29 | Negativo/concurrencia | Dos Ventas compitiendo por cantidad; dos rectificaciones con revisión desactualizada; dos altas con misma clave | Una Venta válida y otra 422 `INSUFFICIENT_UNITS`; una rectificación y otra 409 `REVISION_CONFLICT`; un solo hecho idempotente; sin 409 genérico | Dos conexiones/procesos reales | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
 | E4.2-AC-30 | Negativo (D2=A) | F-H: apertura 2.000,00; Venta 500,00 el 10/04; Gasto 2.200,00 el 11/04 (efectivo 300,00); anular; rectificar a 100,00; rectificar al alza | Anulación 422 `INSUFFICIENT_CASH` con 300,00/500,00/−200,00/11-04; rectificación a 100,00 con mínimo −100,00; alza aceptada; sin escritura ni efecto parcial; alternativa B descartada | API/SQLite + motor de efectivo | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
 | E4.2-AC-31 | Negativo/seguridad | Sin sesión, sin CSRF/Origin, error interno; `DELETE /api/ventas/{id}` | 401/403; sin escritura; errores sin SQL/importes/tokens; DELETE 404 sin escritura; sin fixtures | HTTP real MFA/Origin/CSRF | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
-| E4.2-AC-32 | UI | Recorrer listado, alta, impacto, rectificación, anulación (incluido su impacto) y ficha a 390/1440 con teclado | Foco visible/devuelto, etiquetas, sin overflow, tema claro, borrador conservado, confirmación deshabilitada sin motivo, avisos de cantidad/efectivo, impacto de anulación y D2; capturas ficticias | Playwright + capturas 390×844 y 1440×1000 | **PASS local (Playwright macOS)** — `tests/e2e/ventas.spec.ts`: 1440/390, foco devuelto a `.focus-alert` y al impacto, etiquetas, sin overflow, tema claro, borrador conservado, 409/INSUFFICIENT_UNITS/INSUFFICIENT_CASH, impacto de anulación; 22 capturas en `artifacts/e4-2/`. **Canónico Linux BLOCKED** |
-| E4.2-AC-33 | UI/negativo | Vacío, carga, error de fuente, 409, cantidad/efectivo insuficiente, sesión expirada | Estados distintos/accionables; «No disponible» con motivo; sin 0 ficticio; borrador conservado; referencia pendiente/error declarada | Playwright con API real e intercepción de estados | **PASS local (Playwright macOS)** — vacío, carga, 500 de fuente, 500 de opciones con «No disponible» y sin 0, 409, cantidad/efectivo, sesión 401 con borrador y referencias `error`/`pendiente` declaradas en cabecera/Ciclos. **Canónico Linux BLOCKED** |
+| E4.2-AC-32 | UI | Recorrer listado, alta, impacto, rectificación, anulación (incluido su impacto) y ficha a 390/1440 con teclado | Foco visible/devuelto, etiquetas, sin overflow, tema claro, borrador conservado, confirmación deshabilitada sin motivo, avisos de cantidad/efectivo, impacto de anulación y D2; capturas ficticias | Playwright + capturas 390×844 y 1440×1000 | **PASS local (Playwright macOS)** — `tests/e2e/ventas.spec.ts`: 1440/390, foco devuelto a `.focus-alert` y al impacto, etiquetas, sin overflow, tema claro, borrador conservado, 409/INSUFFICIENT_UNITS/INSUFFICIENT_CASH, impacto de anulación; 22 capturas en `artifacts/e4-2/`. **Full Linux 17/17 PASS en `766ea6b`** |
+| E4.2-AC-33 | UI/negativo | Vacío, carga, error de fuente, 409, cantidad/efectivo insuficiente, sesión expirada | Estados distintos/accionables; «No disponible» con motivo; sin 0 ficticio; borrador conservado; referencia pendiente/error declarada | Playwright con API real e intercepción de estados | **PASS local (Playwright macOS)** — vacío, carga, 500 de fuente, 500 de opciones con «No disponible» y sin 0, 409, cantidad/efectivo, sesión 401 con borrador y referencias `error`/`pendiente` declaradas en cabecera/Ciclos. **Full Linux 17/17 PASS en `766ea6b`** |
 | E4.2-AC-34 | Integración | Inspeccionar IDs y auditoría tras alta/rectificación/anulación; intentar UPDATE/DELETE sobre auditoría | IDs únicos/inmutables; fila por revisión con clase, actor, UTC, motivo y JSON; triggers abortan; `audit`/`instrumento_audit` sin cambios | SQLite/API + triggers | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
 | E4.2-AC-35 | Integración/límite | F-C: P1 12,5; V1 5; V2 7,5; P3 2 el 02/05; consultar posición/efectivo | 12,5→7,5→0→2; reapertura sin «Cerrada»; S004 1 compra/2 ventas antes de P3 y 2/2 después; S006 1/0; efectivo una sola vez | API/SQLite + ficha | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
 | E4.2-AC-36 | Integración/esquema | Inspeccionar tablas, clase, auditoría, intentos, contadores; comprobar ausencia de tabla `ventas`; revisar versión/gate | Una tabla `operaciones_inversion` con Compra/Venta; sin tabla `ventas`; misma auditoría/intentos/contador; ninguna versión reservada por SPEC22; migración preserva filas/identidad/datos ajenos; gate de E4.1 | Inspección de esquema + gate documental | **PASS local (API)** — v21, una sola tabla, contrato `C21-VENTAS-E42`, migración que preserva filas/auditoría/contadores/identidad y `clase` inmutable; ver `ventas.test.ts` |
-| E4.2-AC-37 | Integración/backup | Crear Compras/Ventas, backup, restore en directorio nuevo; consultar posición/efectivo/auditoría | Ventas y auditoría conservadas en `operaciones_inversion`; restore sin mezclar versiones, verifica manifiesto, vacía intentos; sin tabla/mecanismo nuevos | Backup/restore real con fixture aislado | **PASS previo (CI Linux `fbab61c`)** — backup/restore con Venta y auditoría; no reejecutado en macOS por `libc.so.6`/directorios privados; canónico BLOCKED |
+| E4.2-AC-37 | Integración/backup | Crear Compras/Ventas, backup, restore en directorio nuevo; consultar posición/efectivo/auditoría | Ventas y auditoría conservadas en `operaciones_inversion`; restore sin mezclar versiones, verifica manifiesto, vacía intentos; sin tabla/mecanismo nuevos | Backup/restore real con fixture aislado | **PASS full Linux `766ea6b`** — restore v19/v20 y backup con Venta/auditoría PASS; macOS no ejecutable por `libc.so.6` |
 | E4.2-AC-38 | Integración/límite | Referencia con Movimientos e Inversión en la misma fecha máxima; después una pendiente y otra con error | Fecha común una sola vez; cobertura de ambas; pendiente no se omite; error `fecha=null`; sin duplicar/inventar máximo | Dominio + API | **PASS local (API/SQLite)** — `ventas.test.ts` (29/29) y progress §Estado por AC; límites macOS documentados en §5.1 |
 | E4.2-AC-39 | Integración | Saldo solo con Venta y Saldo con Compra y Venta (incluida anulada); cambiar tipo/control/apertura/fechaApertura/permiteSalidaExterior; desactivar/reactivar; cambiar nombre | Cinco cambios 409 `HISTORY_LOCKED` sin escritura en ambos; desactivar/reactivar conservan operaciones; nombre permitido; auditoría del Saldo coherente | API/SQLite real | **PASS local (API)** — `ventas.test.ts` AC-39: S003 con Compra+Venta anulada y Saldo solo-venta; cinco cambios 409, desactivar/reactivar/nombre y auditoría `["estado"]`/`["nombre"]` |
 | E4.2-AC-40 | Integración | Previsualizar Gasto sobre S003; registrar Venta; confirmar con huella; repetir con S001 y Venta en S003 | 409 `IMPACT_CHANGED` sin escribir; efectivo solo con la Venta; borrador conservado; recálculo válido; caso ajeno por huella global | API + dos conexiones + UI | **PASS local (API+UI)** — `ventas.test.ts` AC-40 y AC-39/40: huella de S003 invalidada por Venta; huella ajena de S001 invalidada por Venta en S003; sin escritura y recálculo válido. Playwright: Transferencia previsualizada, Venta intercalada, 409 `IMPACT_CHANGED` y borrador conservado |
@@ -178,14 +176,13 @@ Playwright 1.64.1, Chromium 1248, macOS arm64. Datos exclusivamente ficticios.
 | Pruebas focales E4.2 | `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **PASS** — 29 pass / 0 fail, 381 `expect()`; incluye AC-20/23/41 HTTP, AC-39, AC-40 y AC-44 |
 | Suite API completa | `bun run test` | **376 pass / 56 fail** — los 56 son los mismos fallos de entorno macOS ya documentados (`Ancestro no confiable`, `libc.so.6`, `renameat2`); no hay regresiones DEV22 |
 | Playwright focal | `bun run test:e2e -- ventas.spec.ts inversiones.spec.ts` | **PASS** — 2/2 (Ventas E4.2 y regresión E4.1) |
-| Playwright completo | `bun run test:e2e` | **15 passed / 2 failed** — `catalog.spec.ts` (tecla Space sobre `role=switch`, ajeno a Ventas) y `movimientos.spec.ts` (segundo servidor de restore no arranca por `libc.so.6`); no se declara PASS de la suite completa |
-| Verificación canónica | `python3.12 scripts/verify --base 028d09b --head 67628ff` | **FAIL de aplicación** — baseline/gates/typecheck/build PASS; `api` FAIL por los 56 fallos de entorno; `e2e` UNRUN. **Canónico Linux BLOCKED**: no hay Docker/podman en el equipo |
+| Playwright completo | `bun run test:e2e` | macOS: 15/17 por `restore-server`/`libc.so.6`; **full Linux `766ea6b`: 17/17 PASS** |
+| Verificación canónica | `workflow_dispatch` full en `766ea6b` | **PASS** — API 432/0, E2E 17/17, restore v19/v20, `CI_BROWSER=success`; macOS local sigue fallando por entorno |
 | Capturas ficticias | Playwright, 1440×1000 y 390×844 | **GENERADAS E INSPECCIONADAS** — 22 PNG en `artifacts/e4-2/` (ignorado por Git): listado, alta, impacto, ficha, rectificación/409, anulación, D2, cantidad, vacío/error, «Revisar», sesión y fichas a 0 |
 
-La suite E2E no se declara PASS completo: los dos fallos son de infraestructura/ajenos a Ventas
-y a los archivos modificados (`restore`/backup con syscalls Linux y una interacción de teclado
-de Saldos); no se ejecutó la línea base E2E. Se registran como **FAIL/BLOCKED** sin ocultarlos.
-El entorno canónico Linux y un CI del nuevo SHA siguen sin ejecutarse.
+La suite E2E completa se declara **PASS en full Linux `766ea6b` (17/17)**. En macOS local
+persisten dos fallos de `restore-server`/`libc.so.6`, ajenos a Ventas; no se convierten en PASS
+local. Debian13 local no se ejecutó.
 
 ## 6. Dependencias E4.3 y limitaciones
 
@@ -207,7 +204,7 @@ El entorno canónico Linux y un CI del nuevo SHA siguen sin ejecutarse.
 
 La specification completa y este testplan están aprobados desde el 2026-10-28; los wireframes
 rev3 también. DEV22 está implementado y la evidencia E2E/API local de AC-19/20/23/27/32/33/39/
-40/41/44 está registrada en §3 y §5.1 sobre `67628ff`. Queda **BLOCKED** el entorno canónico
+40/41/44 está registrada en §3 y §5.1 sobre `67628ff`. Queda **PASS** el full Linux `766ea6b`; Debian13 local no ejecutado
 Linux (sin Docker/podman; fallos `libc.so.6`/`renameat2`/«Ancestro no confiable») y no hay CI
 del nuevo SHA porque esta ronda no publica rama ni PR. Antes del merge se requiere: ejecutar
 `python3 scripts/verify --full` en Linux canónico y Playwright completo verde, resolver o

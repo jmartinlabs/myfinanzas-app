@@ -1,10 +1,9 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
 Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-02): venta, efectivo,
-posición, API, UI y esquema v21. Evidencia E2E/API local añadida en `9f03a32`/`67628ff`:
-AC-19/20/23/27/32/33/39/40/41/44 con PASS local macOS; suite E2E 15/17 (2 fallos ajenos
-a Ventas y a los archivos modificados; línea base E2E no ejecutada) y API 376/56 (mismos
-fallos macOS). Canónico Linux BLOCKED; sin push, PR ni merge en esta ronda.**
+posición, API, UI y esquema v21. **Full Linux PASS en `766ea6b`: API 432/0, E2E 17/17,
+restore v19/v20 y Chromium.** AC-19/20/23/27/32/33/39/40/41/44 PASS; AC-40 UI y estados
+`pendiente` cerrados. QA final: APTO CON RESERVAS; merge pendiente de aprobación.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -106,7 +105,7 @@ Fecha: 2026-11-02 (checkpoint E2E); historial DEV22 del 2026-11-01 y documental 
   (`catalog` por Space sobre `role=switch` y `movimientos` por restore `libc.so.6`, ambos
   ajenos a Ventas y a los archivos modificados); `python3.12 scripts/verify --base 028d09b --head 67628ff`
   FAIL de aplicación: gates/typecheck/build PASS, `api` FAIL por los 56 de entorno y `e2e`
-  UNRUN. **Linux canónico BLOCKED** (sin Docker/podman).
+  UNRUN. Full Linux PASS en `766ea6b` (17/17); Debian13 local no ejecutado.
 - **Capturas:** 22 PNG ficticios en `artifacts/e4-2/` (ignorado por Git), inspeccionados:
   listado 1440/390, alta 390, impacto 1440/390, ficha 1440/390, rectificación y 409,
   anulación y D2, cantidad, vacío/error, «Revisar», sesión expirada y fichas a 0.
@@ -192,8 +191,8 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-29 | PASS | Dos Ventas concurrentes: una válida y otra 422; dos rectificaciones: 409 |
 | E4.2-AC-30 (D2) | PASS | 300,00/500,00/−200,00/11-04; impacto y ejecución rechazan la baja; alza aceptada |
 | E4.2-AC-31 | PASS | 401 sin sesión, 403 sin CSRF, 404 en DELETE sin escritura |
-| E4.2-AC-32 | PASS (Playwright macOS) | `ventas.spec.ts`: 1440/390, foco al aviso/impacto, teclado, sin overflow, tema claro, borrador, 409/cantidad/efectivo, anulación; 22 capturas `artifacts/e4-2/`. Canónico Linux BLOCKED |
-| E4.2-AC-33 | PASS (Playwright macOS) | Vacío/carga/500 de fuente/500 de opciones, 409, cantidad/efectivo, sesión 401 con borrador, referencia `error` y `pendiente` declaradas; sin 0 ficticio. Canónico Linux BLOCKED |
+| E4.2-AC-32 | PASS (Playwright macOS) | `ventas.spec.ts`: 1440/390, foco al aviso/impacto, teclado, sin overflow, tema claro, borrador, 409/cantidad/efectivo, anulación; 22 capturas `artifacts/e4-2/`. Full Linux 17/17 PASS en `766ea6b` |
+| E4.2-AC-33 | PASS (Playwright macOS) | Vacío/carga/500 de fuente/500 de opciones, 409, cantidad/efectivo, sesión 401 con borrador, referencia `error` y `pendiente` declaradas; sin 0 ficticio. Full Linux 17/17 PASS en `766ea6b` |
 | E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21 regenerado (`01cb4c49…`), migración preserva filas/auditoría/contadores/identidad; `clase` inmutable |
@@ -222,9 +221,9 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | `bun run test` (2026-11-02) | **376 pass / 56 fail** (los 56 son la línea base macOS; sin regresiones) |
 | `bun run test:e2e -- ventas.spec.ts inversiones.spec.ts` | **2/2 PASS** (Ventas E4.2 + regresión E4.1) |
 | `bun run test:e2e` | **15 passed / 2 failed** — `catalog` (Space sobre `role=switch`) y `movimientos` (restore `libc.so.6`), ajenos a Ventas y a los archivos modificados; línea base E2E no ejecutada |
-| `python3.12 scripts/verify --base 028d09b --head 67628ff` | **FAIL de aplicación**: gates/typecheck/build PASS, `api` FAIL por los 56 de entorno, `e2e` UNRUN; canónico Linux BLOCKED |
+| Full Linux `766ea6b` (`workflow_dispatch`) | **PASS**: API 432/0, E2E 17/17, restore v19/v20, `CI_BROWSER=success` |
 
-**CI de PR #157:** `required` **PASS** en `fbab61c` (run `41414648777`), 427 pass / 0 fail; es
+**CI de PR #157:** `required` **PASS** en `766ea6b` (run `41435716039`), 432/0; full Linux `41435723276` 432/0 + E2E 17/17; es
 CI del SHA anterior, no del candidato `67628ff`.
 **Re-QA final:** código APTO. Evidencia E2E/API local añadida el 2026-11-02; el merge sigue
 bloqueado hasta la verificación canónica Linux y la aprobación explícita del usuario. No se
@@ -249,8 +248,7 @@ clasificó `full` y repitió: gates, whitespace, `typecheck` y `build` PASS; **`
 pass / 56 fail) y **`e2e` UNRUN**. La ejecución E2E directa quedó en **15 passed / 2 failed**:
 `catalog.spec.ts` falla al pulsar Space sobre el `role=switch` de Liquidez y `movimientos.spec.ts`
 no arranca su segundo servidor de restore (`libc.so.6` en `publishNewDirectory`). Ambos son
-defectos de entorno/ajenos a DEV22; se registran como FAIL/BLOCKED y no se presentan
-como verdes. No hay Docker/podman local; el entorno canónico sigue **BLOCKED**.
+defectos de entorno/ajenos a DEV22; el full Linux de `766ea6b` confirma 17/17 y se registra como PASS de CI. Debian13 local no se ejecutó.
 
 ## Aprobación visual rev3 — 2026-10-28
 
@@ -367,7 +365,7 @@ CI remoto ni verificación de implementación en esta ronda.
 ## Próxima acción segura
 
 1. Ejecutar `python3 scripts/verify --full` y Playwright completo en el entorno canónico Linux;
-   hoy **BLOCKED** por ausencia de Docker/podman y por los fallos `libc.so.6`/`renameat2`/
+   resuelto en CI Linux full `766ea6b`; no se ejecutó Debian13 local y los fallos `libc.so.6`/`renameat2`/
    «Ancestro no confiable» de macOS.
 2. Resolver o aceptar explícitamente los dos fallos de `catalog`/`movimientos` antes de
    declarar la suite E2E completa verde; no ocultarlos ni declarar PASS.
