@@ -1,6 +1,6 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Brainstorming
 
-Status: **DRAFT — 14 decisiones confirmadas por el usuario el 2026-11-02; specification y
+Status: **DRAFT — 16 decisiones confirmadas por el usuario el 2026-11-02; specification y
 testplan no autorizados.** Brainstorming realizado para concretar D-01…D-14. No implementa
 código, no modifica esquema y no autoriza DEV. Base: `main` `c827d4c` (esquema v21).
 
@@ -10,8 +10,8 @@ Roadmap/context: [E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [SPEC22/E4.2](22-ventas-posicion-broker-specification.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md).
 
-Next action: presentar las decisiones confirmadas y solicitar autorización separada para
-redactar specification y testplan. No redactarlos todavía.
+Next action: solicitar autorización separada para redactar specification y testplan con las
+16 decisiones y las precisiones de la ronda 2. No redactarlos todavía.
 
 ## Hallazgo de partida
 
@@ -214,6 +214,59 @@ Recommendation (proposal only): (a) como partida, sujeta a contraste con DT2.
 
 Confirmed answer: **(a)** EUR final con dos decimales; precio unitario y cambio con precisión suficiente y **sin redondeos intermedios**; cero explícito permitido; negativos rechazados; límites máximos pendientes de DT2. source/date: usuario, sesión de brainstorming 2026-11-02
 
+## Round 2 — 2026-11-02 — Antigüedad y aptitud para cierre
+
+Estas dos decisiones resuelven los residuales señalados en el dictamen técnico antes de
+redactar la specification.
+
+### D-15 — Tratamiento de la antigüedad de una valoración anterior
+
+Question: confirmada el 2026-11-02 (ver «Confirmed answer»).
+
+- [x] **(a) Mostrar siempre la fecha y los días transcurridos**, sin umbral de caducidad
+  inventado.
+- [ ] (b) Aviso destacado desde 30 días.
+- [ ] (c) Aviso destacado desde 90 días.
+- [ ] (d) Diferir el umbral a E4.9.
+
+Confirmed answer: **(a)** se muestra siempre la fecha de valoración y los días transcurridos;
+no se fija un umbral de caducidad. La antigüedad no altera por sí sola la cobertura.
+source/date: usuario, sesión de brainstorming 2026-11-02
+
+### D-16 — Aptitud de una valoración para Precierre/cierre (E4.9)
+
+Question: confirmada el 2026-11-02 (ver «Confirmed answer»).
+
+- [ ] (a) Solo una valoración fechada exactamente en el corte es elegible.
+- [x] **(b) E4.3 marca toda valoración anterior como no certificable y E4.9 define su ventana
+  al desarrollar el cierre.**
+- [ ] (c) Cualquier valoración anterior con aviso certifica.
+
+Confirmed answer: **(b)** E4.3 distingue visualización informativa, cobertura del agregado y
+elegibilidad para cierre. Ninguna valoración anterior al corte se presenta como certificada;
+la ventana o criterio de suficiencia se decide en el DEV de E4.9, sin inventar umbrales.
+source/date: usuario, sesión de brainstorming 2026-11-02
+
+## Precisiones para la futura specification
+
+Requisitos derivados de D-08/D-09/D-15/D-16 y del dictamen técnico, que la specification
+deberá recoger sin reabrir las decisiones:
+
+1. Valoraciones con **fecha de vigencia, origen y corrección auditada**; se conserva el
+   histórico sin mutar compras/ventas y sin asociar artificialmente cada registro a un ciclo.
+2. Para un corte `T` solo se usa una valoración con fecha **≤ T**; nunca posterior. La última
+   anterior es un **valor conocido a fecha T**, con su fecha y antigüedad, no un precio
+   verificado exactamente el día `T`.
+3. Se distinguen tres planos: **visualización informativa**, **cobertura del agregado**
+   (`Parcial n/m`, sin total completo si falta información) y **elegibilidad para
+   Precierre/cierre**. Una valoración antigua visible no queda certificada.
+4. La foto de E4.9, cuando se autorice su desarrollo, reflejará valor, fecha/origen y
+   cobertura usados en aquel corte de forma inmutable; una corrección posterior no recalcula
+   la foto cerrada. E4.3 solo publica el contrato; E4.9 es dueño del gate y de la foto.
+5. Se respeta el resto de D-01…D-14: sin porcentaje de rentabilidad; resultado neto; sin
+   doble comisión; efectivo de bróker fuera del agregado; posiciones inactivas/heredadas con
+   cobertura; EUR final a céntimos y precio/cambio sin redondeos intermedios.
+
 ## Coverage
 
 - **Funcional:** posiciones, estado, valoración, resultado, agregado, cobertura.
@@ -232,7 +285,8 @@ si se autoriza, se diseñará en la specification con estados vacío/carga/error
 
 ## Append-only clarifications
 
-**Sesión de brainstorming — 2026-11-02:** el usuario confirmó D-01…D-14 mediante preguntas
-sucesivas (herramienta `question`), priorizando las decisiones económicas y de modelo de datos.
+**Sesión de brainstorming — 2026-11-02:** el usuario confirmó D-01…D-16 mediante preguntas
+sucesivas (herramienta `question`): D-01…D-14 en la ronda 1 (economía y modelo de datos) y
+D-15/D-16 en la ronda 2 (antigüedad y aptitud para cierre).
 Las respuestas quedan registradas en cada decisión con su fuente y fecha; las preguntas no se
 reescriben. Este documento no redacta specification/testplan, no declara AC, PASS ni DEV.
