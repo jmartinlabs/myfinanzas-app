@@ -2,7 +2,7 @@
 
 Fecha: 2026-11-02. Autor: orquestador OpenCode. Estado: **diagnóstico y preparación; no
 cierra ninguna SPEC ni autoriza DEV, merge, migración o datos reales**.
-Base: `main` `8e4ef213dcca82eb83c7a949cdf1c1dea853b09d`.
+Base auditada: `8e4ef21`; `main` actual tras #157: `fd2e21c`.
 Tracker histórico: [spec-audit-tracker.md](spec-audit-tracker.md).
 
 ## 1. Checkpoint actualizado
@@ -39,7 +39,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 19 Instrumentos | A | 6 AC PARCIAL aceptados; D7 #154/#155 | Acta; no promover parciales |
 | 20 Histórico precontrol | D | Documental; 59 AC UNRUN; DT7 | DEV futuro |
 | 21 Pendientes/conciliación | D | Aprobada; AC UNRUN; E3.5 STOP | DEV futuro |
-| 22 Ventas/bróker | D | Aprobada; D7 resuelta; PR #157 en QA E2E | Cauce DEV22 |
+| 22 Ventas/bróker | D | Aprobada; D7 resuelta; **#157 MERGED `fd2e21c`** con full Linux 17/17 y QA APTO | No reabrir; DEV22 cerrado |
 | 26 Precierre | C | E4.8 #150; H-SPEC26-02 | Refactor posiciones + regresión |
 | 27 Cierre financiero | D | Aprobada; AC UNRUN; E3.5/DT6 | Gates antes de DEV |
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta con gate operativo |
@@ -104,6 +104,25 @@ convierten PARCIAL/UNRUN en PASS.
 | 31 | Contrato v18; restore v19/v20 | Riesgos fsync/VPS/DT6 |
 
 Estas 12 actas se presentan para **ratificación**; no se declaran cerradas.
+
+### 5.1 Actas individuales (borrador para ratificación)
+
+Cada acta acredita **auditoría documental**; no sustituye aceptación funcional ni convierte
+PARCIAL/UNRUN en PASS.
+
+- **SPEC05:** D5 aprobada e integrada; revisión de referencias y exterior cerrada. Límite: nota histórica §D5.
+- **SPEC06:** motor de Deuda y pruebas; cabecera corregida. Límite: progress histórico.
+- **SPEC07:** opción B integrada #128; C07-F1/F2. Límite: AC28/E3.5 fuera; notas de PR #49 históricas.
+- **SPEC08:** maestro y pruebas B1–B9; nota #129. Límite: aceptación formal.
+- **SPEC10:** motor anual y pruebas. Límite: aceptación formal.
+- **SPEC11:** N11-F1/F2/F3 y H-SPEC11-01 aclarado. Límite: sin reejecución.
+- **SPEC12:** sin hallazgo; límites de `ledgerRows()` delimitados. Límite: AC parciales futuros.
+- **SPEC13:** Anticipos rol/par y AC36 parcial aceptado. Límite: nota de testplan.
+- **SPEC14:** D5 y B-T11 futuro delimitado. Límite: aceptación formal.
+- **SPEC15:** motor y pruebas; proveedor histórico no conectado. Límite: cobertura declarada.
+- **SPEC19:** 6 AC PARCIAL aceptados; D7 integrada #154/#155; AC-55 depende de DEV22. Límite: no promover parciales.
+- **SPEC31:** contrato v18 y restore v19/v20. Límite: fsync/VPS/DT6 son gate operativo.
+- **SPEC32:** #30 integrado; AC-22 typecheck/build/E2E PASS en full Linux. **Límite expreso: ejecución rootless real/AC-22 final no acreditada.**
 
 ## 6. Decisiones humanas
 
