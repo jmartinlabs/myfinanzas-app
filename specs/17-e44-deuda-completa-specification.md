@@ -76,7 +76,10 @@ cero: se reutilizará la validación de `debtPeriod` en el read model propio, **
 (capital, intereses y su suma frente al importe), no solo la ausencia de capital; si se toca
 el lector existente, se hará en un cambio específico con prueba de regresión, sin cambiar la
 fórmula Q1 ni reescribir la historia. La corrección de presentación es adicional,
-no suficiente. **m8:** un desglose inválido de un movimiento aplicable impide calcular la
+no suficiente. El **listado y la ficha** de E4.4 consumen ese read model con validación del
+desglose completo y **no dependen de `getDebt` de E1.6** para presentar una deuda viva que
+sería incorrecta; el lector E1.6 conserva su comportamiento actual y su riesgo residual queda
+registrado (prueba T-02). **m8:** un desglose inválido de un movimiento aplicable impide calcular la
 deuda viva **completa de esa deuda en el corte consultado**; no afecta a otras deudas ni a
 cortes anteriores al hecho inválido. Los intereses son validación/integridad del desglose,
 no un operando que descuente deuda viva.
