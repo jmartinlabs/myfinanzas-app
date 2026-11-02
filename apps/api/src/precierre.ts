@@ -4,6 +4,7 @@ import { getCyclePlan } from "./planes-ciclo";
 import {
   cashAt,
   investmentInstalled,
+  positionsAtDate,
   quantityText,
 } from "./investment-engine";
 import { decimal } from "./saldos";
@@ -292,73 +293,28 @@ function investmentSource(
     let cashTotal = 0n;
     for (const account of cashAccounts)
       cashTotal += cashAt(db, account.id, end).disponible;
-    const rows = db
-      .query(
-        `SELECT o.instrumento instrumento,i.nombre nombre,
-                o.clase clase,
-                o.saldo_inversion saldoInversion,s.nombre saldoNombre,
-                CAST(o.cantidad AS TEXT) cantidad
-         FROM operaciones_inversion o
-         JOIN instrumentos i ON i.id=o.instrumento
-         JOIN saldos s ON s.id=o.saldo_inversion
-         WHERE o.estado='Vigente' AND o.fecha<=?
-         ORDER BY o.saldo_inversion,o.instrumento,o.fecha,o.id`,
-      )
-      .all(end) as {
-      instrumento: string;
-      nombre: string;
-      clase: string;
-      saldoInversion: string;
-      saldoNombre: string;
-      cantidad: string;
-    }[];
-    const grouped = new Map<
-      string,
-      {
-        instrumento: string;
-        nombre: string;
-        saldoInversion: { id: string; nombre: string };
-        cantidad: bigint;
-      }
-    >();
-    for (const row of rows) {
-      const delta =
-        row.clase === "Venta"
-          ? -BigInt(row.cantidad)
-          : BigInt(row.cantidad);
-      const key = row.saldoInversion + "\u0000" + row.instrumento;
-      const current = grouped.get(key);
-      if (current) current.cantidad += delta;
-      else
-        grouped.set(key, {
-          instrumento: row.instrumento,
-          nombre: row.nombre,
-          saldoInversion: {
-            id: row.saldoInversion,
-            nombre: row.saldoNombre,
-          },
-          cantidad: delta,
-        });
-    }
-    const posiciones = [...grouped.values()].map((position) => ({
-      instrumento: position.instrumento,
-      nombre: position.nombre,
+    const positions = positionsAtDate(db, end);
+    const posiciones = positions.map((position) => ({
+      instrumento: position.instrumento.id,
+      nombre: position.instrumento.nombre,
       saldoInversion: position.saldoInversion,
       cantidad: quantityText(position.cantidad),
     }));
-    const instruments = new Set(rows.map((row) => row.instrumento));
+    const instrumentos = new Set(
+      positions.map((position) => position.instrumento.id),
+    );
     const value = decimal(cashTotal) ?? "0.00";
-    const empty = rows.length === 0 && cashTotal === 0n;
+    const empty = posiciones.length === 0 && cashTotal === 0n;
     return {
       efectivo: value,
-      instrumentos: instruments.size,
+      instrumentos: instrumentos.size,
       posiciones,
       source: {
         key: "inversion",
         label: "E4.1 Inversión",
         cobertura: empty
           ? "Vacío"
-          : `${instruments.size} instrumentos · ${posiciones.length} posiciones · efectivo ${value}`,
+          : `${instrumentos.size} instrumentos · ${posiciones.length} posiciones · efectivo ${value}`,
         estado: empty ? "Vacío" : "Integrado",
         motivo: empty
           ? "Sin posiciones ni efectivo de inversión a Fin."
