@@ -20,7 +20,9 @@ Responde al dictamen independiente de 0074.
 devuelve `capital: null` si falta el desglose. La UI ya muestra «No calculable».
 
 **AC/negativos:** reforzar AC-13 con un hecho aplicable de capital nulo: el agregado debe
-ser No disponible/parcial, nunca cero; no se altera la fórmula ni se reinterpreta historia.
+ser **No calculable con motivo**, sin mostrar importe agregado (no «No disponible/parcial»,
+vocabulario de E4.8/E4.9); no se altera la fórmula ni se reinterpreta historia. Añadir
+regresión del lector E1.6 si se toca `getDebt`/`debtPeriod`.
 
 ## M2 — escritura R5 sin asignación circular (opción c)
 
