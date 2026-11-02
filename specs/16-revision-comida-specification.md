@@ -699,7 +699,7 @@ PASS ni se simulan. AC-04 queda dentro de E3.4 como vínculo agregado de Termina
 deja de estar bloqueado por PD-01.
 
 | ID | Acción / precondiciones | Resultado observable esperado | Verificación prevista | Estado |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | AC-01 | Guardar una operación bancaria de detalle con ID, fecha, concepto, importe, dirección, clasificación, `esDevolucion` y evidencia bancaria | Se crea un ID estable; no se crea ni modifica ningún Movimiento; no aparece saldo paralelo | Bun/API/SQLite | Previsto |
 | AC-02 | Guardar una operación sin Movimiento | Es válida, queda `Sin vínculo`; no suma a Movimientos/Saldos ni crea Gasto; sí forma parte de la cobertura de Revisión Comida y de la lectura de E3.5; no se inventa vínculo | Bun/API/UI | Previsto |
 | AC-03 | Vincular una operación a un Movimiento con `evidenciaVinculo`, incluyendo varias operaciones al mismo Movimiento | Se guarda el vínculo como trazabilidad; no copia fecha/importe ni altera el Movimiento; una operación no apunta a varios Movimientos; no se infiere por fecha/importe/concepto | Bun/API/UI | Previsto |
@@ -1436,3 +1436,150 @@ implementación condicionada no permite omitir integración documental ni depend
 SPEC33 integrada por PR135 no se incorpora a esta entrega: el neto mensual P5 y el
 neto acumulado de financiación D′ conservan sus ámbitos propietarios. El histórico
 de Presupuestos/Anual se preserva; su sustitución futura corresponde a SPEC33.
+
+## E3.5/FIN_NETA — enmienda normativa propuesta (2026-11-01)
+
+**Estado: RATIFICADA por el usuario el 2026-11-02; pendiente de autorización de merge.** El usuario aprobó conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones obligatorias D-04, D-07, D-09 y D-10, y ratificó este texto el 2026-11-02, condicionado a correcciones editoriales que no alteran decisiones financieras. Fuente literal: mensaje directo del usuario de
+2026-11-01, «Apruebo conceptualmente las opciones A de D-01 a D-11 para E3.5/FIN_NETA, con
+estas precisiones obligatorias» (D-04, D-07, D-09 y D-10). Este apartado convierte esa
+aprobación conceptual en contrato normativo revisable. **DEV18/E3.5 sigue en STOP**; no se
+implementa, no se migra, no se activa y no se autoriza merge.
+
+Esta enmienda **no crea una especificación paralela** ni duplica P6/P7/P7a: consume sus
+fórmulas y significados ya aprobados y añade únicamente el contrato de fuente, cobertura,
+frontera y estados que E3.5 necesita. Cualquier conflicto entre este texto y P6/P7/P7a se
+resuelve a favor de P6/P7/P7a.
+
+### E3.5.1 Alcance y frontera
+
+E3.5 es la capa de **agregación, atribución por ciclo y cobertura** sobre el registro único
+de Comida en Movimientos y los metadatos de E3.4. No es un segundo ledger, no crea hechos,
+no persiste totales como verdad paralela y no modifica Movimientos, Saldos, Presupuestos,
+flujo mensual ni cierre financiero.
+
+| Capa | Dueño | Aporta | No hace |
+| --- | --- | --- | --- |
+| Movimientos | E1.4/E1.5 | Hecho económico único y efecto bancario | No conoce ciclos analíticos de Comida |
+| Revisión Comida | SPEC16/E3.4 | Etiqueta, evidencia, vínculo opcional, reposiciones y devoluciones | No calcula Recursos, Compensable neto, Falta ni estados E3.5 |
+| E3.5 | Esta enmienda | F, R_caja, R_obl, C_n, J_n, D, Recursos, Base, Otros efectos, Cierre analítico, Falta y cobertura | No crea Gasto, no reescribe hechos ni persiste totales |
+| E3.6 | SPEC21 | Vista transversal y conciliación de pendientes | No reimplementa Comida ni emite agregados sin E3.5 |
+| E4.9 | SPEC27 | Cierre y foto inmutable | No implementa Comida; consume el proveedor de E3.5 o bloquea |
+
+### E3.5.2 Contrato de fuente y cobertura (FIN-01…FIN-13)
+
+- **FIN-01 — Fuente de FIN_NETA.** `FIN_NETA = F` según P7: rol explícito `Financiación`
+  menos `Devolución Anticipo` real elegible en `[A,T]`. No se reconstruye por nombre,
+  importe, fecha ni contraparte, y cada hecho tiene como máximo una función de
+  financiación.
+- **FIN-02 — Anticipo.** Para el mismo ID, `movimiento_anticipo` aporta la atribución
+  canónica y `movimiento_rol_financiacion` la función analítica. Se exige coherencia
+  semántica y **una sola deducción**; el importe informativo de la devolución no se resta
+  otra vez. Si la orientación, Referencia o par son incompatibles, la métrica afectada es
+  `Parcial`/`No disponible` con motivo y el hecho se conserva.
+- **FIN-03 — Transferencia sin rol.** Toda Transferencia de ING Comida sin rol declarado
+  produce cobertura `Parcial`/`No disponible` con motivo e IDs; nunca se asigna por
+  inferencia, no se ignora y no se convierte en excepción de runtime. `D` y banco
+  conservan el dinero.
+- **FIN-04 — R_caja y R_obl.** `R_caja` es la reposición real **acreditada y cobrada una
+  vez por Movimiento** en `[A,T]`; `R_obl` es la asignada a la obligación compensable del
+  ciclo. Son magnitudes distintas: `R_caja` suma a Recursos y `R_obl` reduce Falta;
+  **nunca se suman entre sí** ni se duplica una reposición.
+- **FIN-05 — Reposiciones parciales y tardías.** Una reposición parcial no es
+  `Completada`. Una tardía cuenta en el ciclo de su fecha real; no se atribuye al ciclo
+  anterior ni se persiste una atribución no acreditada.
+- **FIN-06 — Grupos.** `C_n` agrupa Ocio+Niños+Otros neto elegible; `J_n` agrupa
+  Comida+Pendiente revisar neto elegible. `Fuera presupuesto` queda fuera de `C_n`, `J_n`
+  y Falta, pero permanece en `D`, banco y efectos observados. `Pendiente revisar` es
+  clasificación, no estado de atribución.
+- **FIN-07 — Devoluciones.** Se distinguen dos situaciones: **sin vínculo** (no existe FK
+  a una compra; no es inelegible por sí sola) y **sin acreditación** (falta evidencia
+  suficiente de clasificación, origen temporal o correspondencia). La evidencia externa
+  suficiente puede acreditar el neteo **sin FK**, conservando ID, importe, fecha y
+  cobertura, sin inventar vínculo ni reparto. Un vínculo `Revisar` no acredita
+  elegibilidad. Una devolución de compra de otro ciclo entra en `D` y en el neto
+  observado, pero no reduce `J_n`, `C_n` ni Falta del ciclo receptor ni reescribe el de
+  origen.
+- **FIN-08 — D y legado.** `D` se compone solo de Movimientos vigentes del intervalo. El
+  agregado legado se conserva como fuente separada, con su procedencia, y **nunca se suma
+  al detalle**. Sin detalle no se reconstruye FIN_NETA por inferencia.
+- **FIN-09 — S0, B_A y P3.** `S0` es manual; ausente no equivale a 0. `B_A` solo se deriva
+  con apertura y cobertura acreditadas, `A >= C`, y no se copia a `S0`. `C` y `B` siguen
+  siendo la decisión P3 y no se inventan.
+- **FIN-10 — Envoltorio de cobertura.** Cada salida de E3.5 declara valor, unidad, estado
+  de cobertura, motivo, intervalo/corte, régimen y fuente. Un subtotal parcial no es total;
+  vacío acreditado, cero verificado y fallo de fuente son estados distintos. Nunca se
+  devuelve 0 por ausencia.
+- **FIN-11 — Solo lectura.** E3.5 no crea tablas de hechos, no persiste Recursos, Base,
+  Cierre, Falta ni totales como verdad paralela y no escribe Movimientos, Saldos ni
+  Presupuestos. Los intentos de escritura desde la capa analítica se rechazan.
+- **FIN-12 — Proveedor a E3.6/E4.9.** E3.5 expone un read model verificable con cobertura,
+  ventana, fuente y huella. E3.6 muestra agregados o `No disponible` con motivo; E4.9
+  captura el resultado o **bloquea**, nunca una foto parcial ni Comida como 0.
+- **FIN-13 — Nombres y magnitudes.** Se alinean con P7: `Base analítica` = Recursos − J_n;
+  `Otros efectos bancarios` = D − (F + R_caja − C_n − J_n); `Cierre analítico` = Base +
+  Otros efectos = S0 + D. `Falta` usa `R_obl`, no el total de reposiciones. Las dos
+  diferencias se conservan separadas: `DIF_BANCO = S0 − B_A` con igual intervalo y
+  cobertura, y `DIF_S0_SIGUIENTE = S0_siguiente − Cierre analítico` con siguiente Inicio.
+  `C_n` y `J_n` ya son netos: se descuentan una sola vez y no se vuelve a restar el
+  compensable en Base o Cierre.
+
+### E3.5.3 Estados de obligación y cobertura (D-10)
+
+Son **dos dimensiones independientes**. No se combinan en un único `Parcial`:
+
+**Estado de obligación**
+
+| Estado | Condición exigida | No es |
+| --- | --- | --- |
+| `Completada` | `C_n > 0`, `R_obl ≥ C_n`, cobertura `Verificada` y asignaciones acreditadas, sin atribución pendiente | No se emite por ausencia de obligación, de reposición ni por `Falta = 0` sin acreditación |
+| `Parcial` | `C_n > 0` y `R_obl < C_n`, con independencia de que la cobertura sea verificada o parcial; se muestra Falta si es verificable | No es un total completo ni un cierre; no bloquea E4.9 por sí solo |
+| `Sin obligación acreditada` | `C_n = 0` **verificado** con cobertura `Verificada` | No es `Completada`; con cobertura incompleta no se deduce ausencia |
+
+**Estado de cobertura**
+
+| Estado | Condición | Efecto |
+| --- | --- | --- |
+| `Verificada` | Fuentes, atribución y ventana completas y acreditadas | Permite calcular y mostrar el resultado |
+| `Parcial` | Falta atribución, evidencia o una parte de la ventana; se conserva el motivo | Subtotal parcial, nunca total |
+| `No disponible` | Falta la fuente o no es legible; se conserva el motivo | No es 0 ni cumplimiento |
+
+Se conserva el nombre `Parcial` para el **estado de obligación** existente; cuando se muestre
+la cobertura se etiqueta como `Cobertura parcial`, sin renombrar silenciosamente el estado.
+`R_obl < C_n` con cobertura `Verificada` significa obligación pendiente, no fallo de
+cobertura; E4.9 bloquea cuando FIN_NETA/E3.5 requerido no es verificable, no por esta
+deuda. La ausencia de reposiciones con `C_n > 0` produce obligación `Parcial` y
+`Falta = C_n`, nunca `Completada`. Si `C_n` es desconocido, no se emite estado de obligación; la cobertura es
+`No disponible` y no se deduce `Sin obligación acreditada`. La ausencia de obligación no acredita cumplimiento.
+
+### E3.5.4 Criterios de aceptación propuestos
+
+Todos **UNRUN**. La numeración `E3.5-FIN-AC-nn` es propia de esta enmienda y no reutiliza
+`E3.5-AC-nn` de la candidata local ni `E3.5-AC1..3` del roadmap.
+
+| ID | Acción / precondiciones | Resultado exigido | Estado |
+| --- | --- | --- | --- |
+| E3.5-FIN-AC-01 | Compra de Comida en Movimientos con detalle E3.4 asociado | Un solo hecho/ID; E3.5 agrega sin crear Gasto, saldo paralelo ni segundo ledger | UNRUN |
+| E3.5-FIN-AC-02 | Roles completos; después Transferencia sin rol | FIN_NETA/F sale del rol explícito y se usa una vez; sin rol, `Parcial`/`No disponible` con motivo; sin inferencia | UNRUN |
+| E3.5-FIN-AC-03 | Devolución de Anticipo con atribución canónica y rol analítico coherentes | Una sola deducción; el importe informativo no se resta otra vez | UNRUN |
+| E3.5-FIN-AC-04 | Atribución de Anticipo y rol incompatibles | `Parcial`/`No disponible` con motivo; sin doble deducción ni elección silenciosa | UNRUN |
+| E3.5-FIN-AC-05 | Transferencia de ING Comida sin rol entre otras clasificadas | Sin excepción; cobertura parcial/ND con IDs; D y banco íntegros | UNRUN |
+| E3.5-FIN-AC-06 | Reposición del ciclo, de obligación antigua y sin `obligacion_ciclo` | R_caja suma a Recursos; R_obl solo reduce Falta; sin asignación no hay R_obl; nunca se suman | UNRUN |
+| E3.5-FIN-AC-07 | Reposición parcial, completa y tardía; `Completada` con cobertura `Parcial` | Parcial no es `Completada`; la tardía cuenta en su ciclo; Falta refleja solo R_obl acreditada; con cobertura parcial no se emite `Completada` | UNRUN |
+| E3.5-FIN-AC-08 | Ocio/Niños/Otros, Comida/Pendiente revisar y Fuera presupuesto en el mismo ciclo | C_n y J_n correctos; Fuera presupuesto en D/banco y fuera del análisis, sin doble exclusión | UNRUN |
+| E3.5-FIN-AC-09 | `Pendiente revisar` junto a devolución con Partida NULL y atribución pendiente | La etiqueta cuenta como Comida en J_n; el estado de atribución no asigna grupo ni ciclo | UNRUN |
+| E3.5-FIN-AC-10 | Devolución sin vínculo acreditada por evidencia externa; devolución sin acreditación; vínculo `Revisar`; devolución de otro ciclo | La acreditada netea sin FK; la no acreditada y `Revisar` no; la antigua entra en D/neto observado sin reducir J_n/C_n/Falta actuales | UNRUN |
+| E3.5-FIN-AC-11 | Detalle nuevo y agregado legado coexistentes; después solo agregado | D solo desde Movimientos; sin suma al detalle; legado etiquetado; sin reconstruir FIN_NETA | UNRUN |
+| E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, C_n=0 verificado vs cobertura parcial, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados; `Sin obligación acreditada` solo con C_n=0 verificado | UNRUN |
+| E3.5-FIN-AC-13 | Fuente vacía con cobertura, periodo sin hechos y lector fallido | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total | UNRUN |
+| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; subcaso S0≠B_A | P: S0=100, F=700, R=20, C_n=35, J_n=200, D=480 → Recursos 785, Base 585, Otros −5, Cierre 580. Subcaso: S0=100, D=90, B_A=250, S0_siguiente=295 → Cierre 190, DIF_S0_SIGUIENTE 105, DIF_BANCO −150; definiciones distintas que no se fusionan; sin ajustes | UNRUN |
+| E3.5-FIN-AC-15 | E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable | E3.6 muestra agregados o ND con motivo; E4.9 bloquea sin foto parcial ni 0 | UNRUN |
+| E3.5-FIN-AC-16 | Inspeccionar tablas/endpoints e intentar escribir un total | Sin tablas de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada | UNRUN |
+| E3.5-FIN-AC-17 | Ciclo abierto con duración provisional; corte dentro y tras el horizonte; siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio; Fin abierto vacío | UNRUN |
+| E3.5-FIN-AC-18 | Revisar nombres y expresiones de SPEC21 §4.3 contra P6/P7; ventana [A,T] y recálculo tras reclasificación | `Base analítica` ≠ `Cierre analítico`; `Falta` con R_obl; R_caja/R_obl separados; dos diferencias distintas; sin doble descuento; ventana y recálculo conservados | UNRUN |
+
+### E3.5.5 Consumidores y límites
+
+- E3.6 y E4.9 consumen el proveedor de E3.5; sin él, `No disponible` o bloqueo, nunca 0,
+  conciliación simulada ni foto parcial.
+- Esta enmienda no resuelve P3, activación, migración, datos reales ni E4.9; no reanuda
+  DEV18. La aprobación de este texto y la autorización de DEV son gates separados.

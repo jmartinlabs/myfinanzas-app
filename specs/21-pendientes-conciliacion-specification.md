@@ -113,8 +113,8 @@ BLOCKED por Cierres E4.8/E4.9, no por una decisión abierta.
 | Pendiente/Exceso por participante | Motor central Compartidos | Participante ID | Derivada | No se fuerza | No se fuerza | Según Gastos e inputs | Verificada/Parcial/ND | Pendiente y ficha | Sin compensación cruzada | [A][I] |
 | Estado de reparto | Motor central Compartidos | REFxxx | Derivada | No se fuerza | No se fuerza | Según cobertura | Verificada/Parcial/ND | Pendiente y ficha | No es campo manual | [A][I] |
 | Gasto comida / Compensable / Reposiciones / Falta | E3.5 (candidato) sobre Revisión Comida + Ciclos | IDs de operación de Revisión Comida | Fecha de operación | Ciclo por intervalo | Año de la fecha | Inicio ≤ fecha ≤ corte analítico | Tres ejes: lectura, evidencia, histórico | Bloque Comida | Segundo Gasto; suma a Saldos | [P][F] |
-| Recursos Comida | E3.5: S0 + FIN_NETA + REP | Ciclo ID | No propia | Ciclo | Año del Inicio | Según corte | Según E3.5 | Bloque Comida | FIN_NETA no se reconstruye; DEV_ANT no se resta otra vez | [P][F] |
-| Cierre analítico Comida / Diferencia | E3.5 | Ciclo ID | No propia | Ciclo | Año del Inicio | Corte analítico | Solo con lectura completa y cobertura | Alerta de conciliación | No es cierre financiero ni foto E4 | [P][F] |
+| Recursos Comida | E3.5: S0 + FIN_NETA + R_caja − C_n | Ciclo ID | No propia | Ciclo | Año del Inicio | Según corte | Según E3.5 | Bloque Comida | FIN_NETA no se reconstruye; DEV_ANT no se resta otra vez | [P][F] |
+| Base analítica / Cierre analítico / Diferencia | E3.5 | Ciclo ID | No propia | Ciclo | Año del Inicio | Corte analítico | Solo con lectura completa y cobertura | Alerta de conciliación | No es cierre financiero ni foto E4 | [P][F] |
 | Ejecutado del Plan | Motor Plan R3 | Presupuesto ID + Ciclo ID | Fecha real del hecho | Ciclo | No se usa el año para R3 | Inicio ≤ fecha ≤ Fin/corte | Según periodo y hechos | Plan y flujo | No se netea por recuperaciones | [A][I] |
 | A transferir / Pendiente / Estado del Plan | Motor Plan | Presupuesto ID + Ciclo ID | No propia | Ciclo | No se usa | Ciclo | Según Del mes y ejecución | Plan | No es estado de caso | [A][I] |
 | Gasto bruto registrado | Movimientos | ID Movimiento | Fecha del Gasto | Ciclo | Año de la fecha | Inicio ≤ fecha ≤ corte | Según intervalo | Flujo base | No es H física; no se suma dos veces | [A][I] |
@@ -201,7 +201,7 @@ Neto(P) = Σ Neto(g) de la Partida
 
 ### 4.3 Comida
 
-Contrato de E3.5, condicionado a su integración:
+Contrato histórico de E3.5, condicionado a su integración y superado por §4.3.2 para el régimen individual:
 
 ```text
 GC_B = Σ salidas Detalle vigentes con clasificación ∈ {Comida, Pendiente revisar}
@@ -226,6 +226,10 @@ RECURSOS = S0 + FIN_NETA + REP
 CIERRE = RECURSOS − GC − CO
 DIF = S0_siguiente − CIERRE
 ```
+
+**Superado para el régimen individual por §4.3.2.** Este bloque se conserva como
+**propuesta histórica y procedencia**; no debe usarse como segunda regla operativa. Las
+expresiones vigentes para el régimen individual son las de §4.3.2 y SPEC16 P7.
 
 Este bloque reproduce la **propuesta E3.5/spec18, no aprobada**, marcada `[P][F]`. Los
 nombres de campos son lógicos (`fuera_presupuesto_historico` en spec18 frente a
@@ -258,11 +262,39 @@ equivalencia.
 | --- | --- | --- |
 | E3.4 integrada, E3.5 no integrada | Operaciones individuales de Revisión Comida, fecha, concepto, importe/dirección, clasificación, evidencia, vínculo verificado, reposiciones y referencia temporal de la fuente. Enlace a Revisión Comida. | `Gasto comida`, `Compensable`, `Falta por reponer`, `Recursos`, `CIERRE`, `DIF` y estados `Parcial/Completada` agregados. |
 | E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; E3.5-AC-12/13/17/39 siguen bloqueados. |
-| E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según spec18, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
+| E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según E3.5/FIN_NETA, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
 
 En todos los casos, la capa auxiliar no crea Gasto central, no modifica Movimientos y
 no se suma a Saldos. La ausencia de E3.5 no se compensa con el candidato local, con
 entradas brutas ni con cero.
+
+#### 4.3.2 Reconciliación propuesta con SPEC16 P6/P7 (2026-11-01)
+
+**Propuesta de reconciliación, no aprobada.** El bloque de §4.3 sigue marcado `[P][F]` y
+requiere aprobación de su propietario. Esta reconciliación **no cambia fórmulas P6/P7**:
+alinea nombres y expresiones para que un consumidor no confunda magnitudes ni descuente
+dos veces el compensable. Ante conflicto, prevalecen SPEC16 P6/P7/P7a.
+
+| Expresión actual de §4.3 | Reconciliación propuesta | Motivo |
+| --- | --- | --- |
+| `CIERRE = RECURSOS − GC − CO` | `Base analítica = Recursos − J_n` (con `J_n = GC` cuando la elegibilidad y cobertura son completas) | El valor 585 del ejemplo P7 es la Base, no el Cierre analítico (580) |
+| `REP` en `RECURSOS` y `FALTA` | `R_caja` para Recursos; `R_obl` para Falta | `REP` mezcla cobro y asignación; Falta debe usar la obligación acreditada |
+| `RECURSOS = S0 + FIN_NETA + REP` | `Recursos = S0 + FIN_NETA + R_caja − C_n` | `C_n` es compensable **neto**; se descuenta una vez, no se vuelve a restar `CO` |
+| `CIERRE` como magnitud única | `Base analítica`, `Otros efectos bancarios`, `Cierre analítico` | El puente `D − (F + R_caja − C_n − J_n)` debe ser visible; no se oculta en un total |
+| `DIF = S0_siguiente − CIERRE` | `DIF_S0_SIGUIENTE = S0_siguiente − Cierre analítico`; `DIF_BANCO = S0 − B_A` | Son dos diferencias con ventanas distintas; no se fusionan |
+| `D` implícito en el cierre | `Cierre analítico = S0 + D` con `D` solo de Movimientos vigentes | Mantiene P7 y evita sumar agregado legado y detalle |
+
+Reglas de no duplicación:
+
+- `C_n` y `J_n` ya son netos. `Recursos` descuenta `C_n` una sola vez; `Base` descuenta
+  `J_n` una sola vez; `Cierre` añade `Otros efectos` y no vuelve a restar el compensable.
+- `R_caja` y `R_obl` no se suman entre sí ni se cuentan dos veces.
+- Una devolución **sin vínculo** no es inelegible por sí sola: la evidencia externa
+  suficiente puede acreditar el neteo sin FK. Una devolución **sin acreditación** no
+  netea. `Revisar` no acredita. La devolución de otro ciclo entra en `D` y en el neto
+  observado, sin reducir la obligación actual.
+- `CIERRE`/`DIF` analíticos no son saldo bancario ni cierre financiero; si falta
+  cobertura, son `Parcial`/`No disponible`, nunca 0.
 
 ### 4.4 Plan del ciclo
 
@@ -606,7 +638,7 @@ cobertura histórica, no un motor ausente; W5 muestra el estado sin E3.5.
 │             [Revisar · Parcial]  Recuperado sin cuota      [Ver motivo]           │
 │ Comida      Ciclo 01/10–31/10     01/10–31/10  2026       Falta reponer 25,00 €   │
 │             [Pendiente · Parcial]  [Abrir Comida]                                  │
-│ Conciliación Apertura 01/11        —            2026       Diferencia    90,00 €   │
+│ Conciliación Apertura 01/11        —            2026       Diferencia   105,00 €   │
 │             [Alerta · Verificada]  [Abrir detalle]                                 │
 │ Comida      Ciclo 01/12–31/12     01/12–31/12  —          —              —         │
 │             [No disponible]  Sin cobertura histórica anterior al primer registro   │
@@ -651,7 +683,7 @@ muestra 0,00 €.
 │ [Abrir Comida]                         │
 ├────────────────────────────────────────┤
 │ Conciliación · Apertura 01/11          │
-│ Diferencia           90,00 €           │
+│ Diferencia          105,00 €           │
 │ Alerta de conciliación · Verificada    │
 │ [Abrir detalle]                        │
 ├────────────────────────────────────────┤
@@ -673,8 +705,9 @@ W5; no se dibujan cifras ni filas ficticias.
 ┌ Detalle · Conciliación de apertura 01/11/2026 ────────────────────────────────────┐
 │ Ciclo anterior 01/10/2026 → 31/10/2026 · Siguiente Inicio 01/11/2026             │
 │ Saldo inicial siguiente (manual)        295,00 €   Ciclos · manual                 │
-│ Cierre analítico Comida                 205,00 €   E3.5 · lectura completa         │
-│ Diferencia                               90,00 €   Solo aviso                      │
+│ Base analítica Comida                   205,00 €   E3.5 · lectura completa         │
+│ Cierre analítico Comida                 190,00 €   E3.5 · lectura completa         │
+│ Diferencia S0 siguiente                 105,00 €   Solo aviso                      │
 │ Cobertura: lectura completa · evidencia verificada · rango cubre la ventana       │
 │ Esto no es un cierre financiero ni modifica el saldo inicial.                     │
 │ [Abrir Comida del ciclo] [Abrir Ciclo] [Volver a pendientes]                       │
@@ -889,7 +922,7 @@ decisión abierta. AC-31 (foto/cierre) permanece BLOCKED por E4.8/E4.9.
 | **E3.6-AC-10** | Anticipo adelantado en C1 y devolución en C2; foto de C2 confirmada con evidencia (si no existe, el resultado es No disponible). | Pendiente actual correcto; foto de C2 intacta; Plan no ejecutado dos veces; flujo sin Ingreso/Gasto por la devolución. | E3.6-AC1 |
 | **E3.6-AC-11** | Comida con Comida 40, Pendiente revisar 30, Ocio 25, Niños 10, Otros 10, Fuera presupuesto 15, reposición 20. | Gasto comida 70; Compensable 45; Falta 25; Fuera presupuesto excluido del análisis y conservado en banco. | E3.6-AC1 |
 | **E3.6-AC-12** | Reposición parcial y reposición tardía en el ciclo siguiente. | Estado `Parcial`/`Sin reposición`, nunca `Completada` por ausencia; la tardía cuenta en su ciclo, no en el anterior; no se persiste atribución. La definición exacta de `Completada` queda condicionada a E3.5/spec18, que no está en main. | E3.6-AC1 |
-| **E3.6-AC-13** | S0 siguiente 295 y cierre analítico 205, con cobertura verificable. | Diferencia 90 como alerta; no se modifica S0; no se crea asiento; sin cobertura → No disponible. | E3.6-AC3 |
+| **E3.6-AC-13** | S0 siguiente 295, Base 205 y Cierre analítico 190, con cobertura verificable. | `DIF_S0_SIGUIENTE` 105 como alerta; `DIF_BANCO` separado; no se modifica S0; no se crea asiento; sin cobertura → No disponible. | E3.6-AC3 |
 | **E3.6-AC-14** | Con E3.4 integrada y E3.5 no integrada; después sin FIN_NETA, sin proveedor de Cierres o sin cobertura. | El detalle auxiliar de E3.4 se puede consultar; los agregados Comida/conciliación muestran No disponible con motivo; no 0; no «Coincide»; no reconciliación simulada. | E3.6-AC3 |
 | **E3.6-AC-15** | Periodo verificable sin hechos (p. ej. `R_adj` sin Gastos compartidos) frente a fuente ausente. | Sin hechos → 0 verificado en la métrica aplicable; fuente ausente → No disponible. No se usa este AC para declarar 0 en Comida sin E3.5. | E3.6-AC1 |
 | **E3.6-AC-16** | Precondición: los servicios fuente rechazan Transferencia de Anticipo sin rol/par, acreditación de una Transferencia interna como aportación, participante de otra ficha o importe/fecha inválidos. | La API fuente devuelve 422 de validación o 409 de revisión/conflicto; sin escritura parcial; E3.6 no lo presenta como alerta de conciliación. | E3.6-AC3 |
@@ -970,26 +1003,34 @@ Ciclo 01/10–31/10; S0 300,00; S0 siguiente 295,00; FIN_NETA 50,00; DEV_ANT 50,
 | Detalle salida | 31/10 | Comida | 60,00 | GC_B, límite incluido |
 
 ```text
-GC_B = 130,00; GC_D = 10,00; GC = 120,00
-CO_B = 45,00; CO = 45,00; REP = 20,00; FALTA = 25,00
-RECURSOS = 300 + 50 + 20 = 370,00
-CIERRE = 370 − 120 − 45 = 205,00
-DIF = 295 − 205 = 90,00 (solo aviso)
+GC_B = 130,00; GC_D = 10,00; GC = 120,00; J_n = 120,00
+CO_B = 45,00; CO = 45,00; C_n = 45,00; R_caja = 20,00; R_obl = 20,00; FALTA = 25,00
+F = FIN_NETA = 50,00
+D = 50 + 20 + 10 − (40 + 30 + 25 + 10 + 10 + 15 + 60) = −110,00
+RECURSOS = 300 + 50 + 20 − 45 = 325,00
+BASE = 325 − 120 = 205,00
+OTROS EFECTOS = −110 − (50 + 20 − 45 − 120) = −15,00
+CIERRE = 205 − 15 = 190,00 = S0 + D
+DIF_S0_SIGUIENTE = 295 − 190 = 105,00 (solo aviso)
+DIF_BANCO = S0 − B_A (no calculable sin B_A)
 FP = 15,00 (excluido del análisis, conservado en banco)
 ```
 
-`DEV_ANT` se muestra una vez y no se resta otra vez. `Pendiente revisar` no se suma dos
-veces. Si `FIN_NETA` no existe, Recursos/CIERRE/DIF son No disponible.
+`205,00` es la **Base analítica**, no el Cierre. `DEV_ANT` se muestra una vez y no se
+resta otra vez. `Pendiente revisar` no se suma dos veces. Si `FIN_NETA` no existe,
+Recursos/Base/Cierre son No disponible; sin `D`/cobertura, Cierre y diferencias no se
+calculan.
 
 ### 15.5 Discrepancia entre saldo inicial manual y cierre anterior
 
-- Cierre analítico del ciclo anterior: 205,00.
+- Base analítica del ciclo anterior: 205,00; Cierre analítico: 190,00.
 - S0 del ciclo siguiente introducido manualmente: 295,00.
-- Diferencia: 90,00, con signo positivo (apertura mayor).
+- `DIF_S0_SIGUIENTE = 295 − 190 = 105,00` (apertura mayor); no es `DIF_BANCO`.
 - Se muestra «Alerta de conciliación»; no se corrige 295,00, no se crea Movimiento y no
   se declara cierre.
 - Sin cobertura completa o sin proveedor E3.5/Cierres: «Conciliación no disponible»; no
-  se muestra 90,00 como definitivo.
+  se muestra 105,00 como definitivo. `DIF_BANCO = S0 − B_A` se informa aparte si B_A está
+  acreditado.
 
 ### 15.6 Cruces de ciclo, año natural y ambos
 
