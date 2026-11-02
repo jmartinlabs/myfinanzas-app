@@ -325,7 +325,7 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         )
       )
         metrics.liquidez.motivo +=
-          " Cobertura histórica no importada: la posición de inversión solo incluye Compras registradas en la aplicación.";
+          " Cobertura histórica no importada: la posición de inversión solo incluye Compras y Ventas registradas en la aplicación.";
       metrics.liquidezHistorica = absent(
         "Sin reconstrucción/fotografía verificable compatible con el corte financiado",
       );

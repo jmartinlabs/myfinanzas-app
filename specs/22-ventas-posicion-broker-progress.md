@@ -3,7 +3,7 @@
 Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-01): venta, efectivo,
 posición, API, UI y esquema v21. Re-QA final: código APTO; H-1..H-5, V1–V3, pre-cierre y V2
 residual corregidos. Merge bloqueado por AC-20/32/33/41 UNRUN y ausencia de E2E/QA canónica.
-CI PASS en `fbab61c` (427/0). Sin merge.**
+CI PASS en el HEAD con AC-20/41 (429/0). Sin merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -65,7 +65,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
   AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
   `create-venta`/`rectify-venta`).
-- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **371 pass / 56 fail**; los
+- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **373 pass / 56 fail**; los
   56 fallos son exactamente los mismos que la línea base `main` `4eb7264` (ancestros de
   directorios temporales/`renameat2`/symlinks Linux-only), no regresiones. `bun run typecheck`
   PASS y `bun run build` PASS.
@@ -140,7 +140,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
 | E4.2-AC-18 | PASS | Ficha: tras V2 1/2 y tras P3 2/2; S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
-| E4.2-AC-20 | PARCIAL (dominio) / UNRUN (GET endpoint) | `cycleContext` con ciclos 01/03 y 01/04, referencia 03-03→04-10, ciclo actual y corte; `GET /api/ciclos` no recorrido |
+| E4.2-AC-20 | PASS (dominio) / UNRUN (GET endpoint) | `cycleContext` con ciclos 01/03 y 01/04, referencia 03-03→04-10, ciclo actual y corte 04-10; `GET /api/ciclos` no recorrido |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
 | E4.2-AC-22 | PASS (dominio) | La fuente retrocede al anular y avanza al rectificar; referencia conectada |
 | E4.2-AC-23 | PARCIAL (fuente) / UNRUN (UI) | Estados pendiente/error y causa en cobertura; `sin_referencia` solo agregado y UI no recorrida |
@@ -173,7 +173,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | --- | --- |
 | `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
 | `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **24 pass / 0 fail** (incluye aislamiento Compra/Venta y clase inmutable) |
-| `bun run test` | **371 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| `bun run test` | **373 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |

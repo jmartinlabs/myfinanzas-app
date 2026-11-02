@@ -2006,7 +2006,40 @@ test("E4.2 aislamiento: una Venta no se expone ni se muta por rutas de Compra", 
   }
 });
 
-test("E4.2-AC-20/41: referencia de Ciclos y Liquidez con Venta", () => {
+test("E4.2-AC-20: referencia, ciclo actual y corte con Venta", () => {
+  const { db, instrumento } = base();
+  try {
+    const cycle = (inicio: string) =>
+      createCycle(
+        db,
+        {
+          inicio,
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(db).revision,
+        },
+        randomUUID(),
+        now,
+      ).ciclo;
+    cycle("2026-03-01");
+    cycle("2026-04-01");
+    buy(db, instrumento.id);
+    p2(db, instrumento.id);
+    const before = cycleContext(db);
+    expect(before.referencia.fecha).toBe("2026-03-03");
+    expect(before.actual?.inicio).toBe("2026-03-01");
+
+    sell(db, instrumento.id);
+    const after = cycleContext(db);
+    expect(after.referencia.fecha).toBe("2026-04-10");
+    expect(after.actual?.inicio).toBe("2026-04-01");
+    expect(after.actual?.corte).toBe("2026-04-10");
+    expect(after.actual?.fin).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2-AC-41: Liquidez con Venta y antes/después", () => {
   const { db, instrumento } = base();
   try {
     updateSaldo(db, "S001", {

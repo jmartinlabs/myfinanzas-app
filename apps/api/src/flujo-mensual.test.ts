@@ -129,7 +129,7 @@ test("F5 AC27–32/42–44: unique current position, partial membership, no hist
     ),
   );
   expect(r.metrics.liquidez.motivo).toContain(
-    "Cobertura histórica no importada: la posición de inversión solo incluye Compras registradas en la aplicación",
+    "Cobertura histórica no importada: la posición de inversión solo incluye Compras y Ventas registradas en la aplicación",
   );
   expect(r.metrics.liquidezHistorica.valor).toBeNull();
   expect(r.metrics.variacionAhorro.valor).toBeNull();
