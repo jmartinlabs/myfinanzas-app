@@ -6,7 +6,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { getPrecierre, getPrecierreEstado } from "./precierre";
-import { quantityText } from "./investment-engine";
+import { positionsAtDate, quantityText } from "./investment-engine";
 
 process.env.NODE_ENV = "test";
 const now = Date.parse("2026-01-20T12:00:00Z");
@@ -212,6 +212,86 @@ test("AC-05: dos compras de la misma posición suman en BigInt exacto", () => {
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.inversion.posiciones).toHaveLength(1);
     expect(result.inversion.posiciones[0].cantidad).toBe("2.5");
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: Compra/Venta futuras y anuladas no alteran posición ni cobertura a Fin", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run("UPDATE saldos SET apertura=2000 WHERE id='S003'");
+    db.run(
+      "INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en) VALUES('I0002','Fondo futuro','Activa',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Venta','2026-02-01','I0001','S003','S004',50000000,1000,'EUR',NULL,500,NULL,'Venta futura',NULL,'Vigente',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('3','Compra','2026-02-02','I0001','S003','S004',200000000,1000,'EUR',NULL,2000,NULL,'Compra futura',NULL,'Vigente',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('4','Compra','2025-12-01','I0001','S003','S004',900000000,1000,'EUR',NULL,9000,NULL,'Compra anulada',NULL,'Anulada',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('5','Compra','2026-02-03','I0002','S003','S004',300000000,1000,'EUR',NULL,3000,NULL,'Compra futura otro instrumento',NULL,'Vigente',1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.inversion.efectivo).toBe("10.00");
+    expect(result.inversion.instrumentos).toBe(1);
+    expect(result.inversion.posiciones).toEqual([
+      {
+        instrumento: "I0001",
+        nombre: "Instrumento fixture",
+        saldoInversion: {
+          id: "S004",
+          nombre: "Cartera de inversión demo",
+        },
+        cantidad: "1",
+      },
+    ]);
+    expect(result.fuentes.find((f) => f.key === "inversion")!.estado).toBe(
+      "Integrado",
+    );
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-05: el día de Fin es inclusivo para Compra y Venta al corte", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run("UPDATE saldos SET apertura=5000 WHERE id='S003'");
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Compra','2026-01-15','I0001','S003','S004',100000000,1000,'EUR',NULL,1000,NULL,'Compra en el corte',NULL,'Vigente',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('3','Venta','2026-01-16','I0001','S003','S004',50000000,1000,'EUR',NULL,500,NULL,'Venta posterior',NULL,'Vigente',1,'f','f')",
+    );
+    const before = getPrecierre(db, "1", now, { backup, fin: "2026-01-14" });
+    expect(before.inversion.posiciones[0].cantidad).toBe("1");
+    expect(before.inversion.efectivo).toBe("40.00");
+    const onPurchase = getPrecierre(db, "1", now, { backup, fin: "2026-01-15" });
+    expect(onPurchase.inversion.posiciones[0].cantidad).toBe("2");
+    expect(onPurchase.inversion.efectivo).toBe("30.00");
+    const onSale = getPrecierre(db, "1", now, { backup, fin: "2026-01-16" });
+    expect(onSale.inversion.posiciones.map((p) => p.cantidad)).toEqual(["1.5"]);
+    expect(onSale.inversion.efectivo).toBe("35.00");
+    expect(
+      onSale.inversion.posiciones.map((p) => ({
+        instrumento: p.instrumento,
+        nombre: p.nombre,
+        saldoInversion: p.saldoInversion,
+        cantidad: p.cantidad,
+      })),
+    ).toEqual(
+      positionsAtDate(db, "2026-01-16").map((position) => ({
+        instrumento: position.instrumento.id,
+        nombre: position.instrumento.nombre,
+        saldoInversion: position.saldoInversion,
+        cantidad: quantityText(position.cantidad),
+      })),
+    );
   } finally {
     close(db);
   }
