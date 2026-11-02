@@ -22,9 +22,9 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 
 | SPEC | Estado | Evidencia principal | Acción |
 | --- | --- | --- | --- |
-| 04 Movimientos | A | H-SPEC04-02/03/04 integrados #125; E2E de Movimientos PASS en full Linux `766ea6b` | Acta; no reabrir |
+| 04 Movimientos | B | H-SPEC04-02/03/04 integrados #125; E2E de Movimientos PASS en suite full Linux `766ea6b` (candidato E4.2, no SPEC04) | Ejecutar/aceptar E2E sobre candidato propio y acta |
 | 05 Transferencias | A | #84/#90 integradas; nota de vigencia pendiente en §D5 | Nota + acta |
-| 06 Deuda | A | Cabecera corregida; motor y pruebas sin defecto | Nota progress + acta |
+| 06 Deuda | B | Cabecera corregida; **auditoría técnica abierta** (`06-...:8-9`); M1 en `deudas.ts` | Cierre diferido; no cerrar E1.6 por este acta |
 | 07 Ciclos | A | Opción B #128; progress/testplan con PR #49 histórico | Nota + acta |
 | 08 Presupuestos | A | Nota #129; pruebas B1–B9 | Acta |
 | 09 Plan del ciclo | B | Ambigüedad de cero con Fin temporal; decisión humana | Mantener semántica actual; acta con nota |
@@ -43,10 +43,11 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 26 Precierre | C | E4.8 #150; H-SPEC26-02 | Refactor posiciones + regresión |
 | 27 Cierre financiero | D | Aprobada; AC UNRUN; E3.5/DT6 | Gates antes de DEV |
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta con gate operativo |
-| 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 typecheck/build/E2E PASS en full Linux `766ea6b`; ejecución rootless real pendiente | Acta con límite rootless |
+| 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 PASS parcial en `87f9c5b`/run `40898403837` (API/build/rootless; E2E final UNRUN) | Completar E2E/rootless y acta; no reutilizar `766ea6b` |
 
-**Recuento:** A 12 · B 4 · C 2 · D 4. **Cerrables sin código adicional:** 14 (12 A + 04 +
-32); 16 si se resuelven las decisiones de 09 y 17.
+**Recuento:** A 11 · B 5 · C 2 · D 4. **Cerrables sin código adicional:** 13 (11 A + 04 +
+32, con la evidencia propia pendiente); 15 si se resuelven las decisiones de 09 y 17.
+**Actas:** 13 preparadas, 11 ratificadas individualmente el 2026-11-02 y 2 diferidas (SPEC06, SPEC32); 0 cerradas de estas 13 (el balance global 3/22 no cambia).
 
 ## 3. Validación sin código (Lote 2)
 
@@ -91,7 +92,7 @@ convierten PARCIAL/UNRUN en PASS.
 | SPEC | Evidencia para el acta | Pendiente/limitación |
 | --- | --- | --- |
 | 05 | #84/#90 integradas; contrato de referencias | Nota de vigencia §D5 |
-| 06 | Motor de Deuda y pruebas; cabecera corregida | Progress histórico |
+| 06 | Motor de Deuda y pruebas; cabecera corregida | **Auditoría técnica abierta; M1; cierre diferido** |
 | 07 | Opción B #128; C07-F1/F2 | AC28/E3.5 fuera; notas históricas |
 | 08 | B1–B9; nota #129 | Aceptación formal |
 | 10 | Motor anual y pruebas | Aceptación formal |
@@ -103,7 +104,7 @@ convierten PARCIAL/UNRUN en PASS.
 | 19 | 6 AC PARCIAL aceptados; D7 aprobada | AC-55 depende de DEV22 |
 | 31 | Contrato v18; restore v19/v20 | Riesgos fsync/VPS/DT6 |
 
-Estas 12 actas se presentan para **ratificación**; no se declaran cerradas.
+Estas actas se presentan para **ratificación individual**; SPEC06 y SPEC32 quedan diferidas y no se declaran cerradas.
 
 ### 5.1 Actas individuales (borrador para ratificación)
 
@@ -111,7 +112,7 @@ Cada acta acredita **auditoría documental**; no sustituye aceptación funcional
 PARCIAL/UNRUN en PASS.
 
 - **SPEC05:** D5 aprobada e integrada; revisión de referencias y exterior cerrada. Límite: nota histórica §D5.
-- **SPEC06:** motor de Deuda y pruebas; cabecera corregida. Límite: progress histórico.
+- **SPEC06:** motor de Deuda y pruebas; cabecera corregida. **Límite: auditoría técnica abierta y M1; cierre diferido.**
 - **SPEC07:** opción B integrada #128; C07-F1/F2. Límite: AC28/E3.5 fuera; notas de PR #49 históricas.
 - **SPEC08:** maestro y pruebas B1–B9; nota #129. Límite: aceptación formal.
 - **SPEC10:** motor anual y pruebas. Límite: aceptación formal.
@@ -122,7 +123,7 @@ PARCIAL/UNRUN en PASS.
 - **SPEC15:** motor y pruebas; proveedor histórico no conectado. Límite: cobertura declarada.
 - **SPEC19:** 6 AC PARCIAL aceptados; D7 integrada #154/#155; AC-55 depende de DEV22. Límite: no promover parciales.
 - **SPEC31:** contrato v18 y restore v19/v20. Límite: fsync/VPS/DT6 son gate operativo.
-- **SPEC32:** #30 integrado; AC-22 typecheck/build/E2E PASS en full Linux. **Límite expreso: ejecución rootless real/AC-22 final no acreditada.**
+- **SPEC32:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PASS parcial** (API/build/rootless; E2E final **UNRUN**) en `87f9c5b`/run `40898403837`. **Límite: cierre diferido hasta completar E2E/rootless real.**
 
 ## 6. Decisiones humanas
 
@@ -141,10 +142,11 @@ Base de ejecución: `main` `8e4ef21`, macOS arm64, Bun 1.4.3, Playwright 1.64.1.
 
 | Comprobación | Resultado | Límite |
 | --- | --- | --- |
-| SPEC04 E2E (`tests/e2e/movimientos.spec.ts`) | **PASS en full Linux `766ea6b`** (17/17 E2E, incluye Movimientos) | En macOS local el restore-server falla por `libc.so.6`; no se usa como PASS local |
+| SPEC04 E2E (`tests/e2e/movimientos.spec.ts`) | **PASS en suite full Linux `766ea6b`** (E4.2; incluye Movimientos) | No es candidato propio de SPEC04; no se reutiliza como PASS de cierre |
 | `scripts/verify --full` | **PASS en full Linux `766ea6b`**: API 432/0, E2E 17/17, restore v19/v20 | Debian13 local no ejecutado; Ubuntu 24.04 CI |
 | SPEC32 AC-22: typecheck/build | **PASS** | Estática/tipos/build |
-| SPEC32 AC-22: E2E final | **PASS en full Linux `766ea6b`** | La ejecución rootless real sigue pendiente y se registra aparte |
+| SPEC32 AC-22: E2E final | **UNRUN en candidato propio**; `766ea6b` pertenece a E4.2 y no se reutiliza | `87f9c5b`: AC-22 parcial (API/build/rootless); E2E final pendiente |
 
-SPEC04 E2E y la parte E2E de AC-22 quedan acreditadas en full Linux `766ea6b`. La ejecución
-rootless real de SPEC32 y Debian13 local no se declaran PASS; se registran como límites.
+El E2E de Movimientos se ejecutó en la suite full Linux de E4.2 (`766ea6b`), pero no es
+candidato propio de SPEC04. AC-22 de SPEC32 sigue parcial (API/build/rootless) con E2E final
+**UNRUN** en `87f9c5b`/`40898403837`. Rootless real y Debian13 local no se declaran PASS.
