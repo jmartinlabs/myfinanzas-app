@@ -88,6 +88,10 @@ Inventario y mapping read-only en la
 Análisis de adaptación en
 [E3.5/FIN_NETA](investigations/e35-fin-neta-adaptation-2026-10-31.md).
 
+- **Enmienda normativa (2026-11-02):** texto y testplan de FIN_NETA ratificados por el
+  usuario, condicionados a correcciones editoriales que no alteren decisiones financieras;
+  candidata en PR #156. **DEV18/E3.5 sigue en STOP**; merge pendiente de autorización.
+
 - Mantener **DEV18 antiguo detenido**; no reanudarlo.
 - Preparar posteriormente su adaptación al modelo integrado de **registro único
   de Comida en Movimientos**.
