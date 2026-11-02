@@ -570,6 +570,46 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await page.unroute("**/api/ventas?*");
     await page.unroute(/\/api\/ventas\/\d+$/);
 
+    // ---- AC-23/33 UI: fuente pendiente declarada, sin fecha inventada ----
+    const pendingContext = {
+      referencia: {
+        fecha: "2026-04-10",
+        estado: "parcial",
+        coverage: [
+          { source: "Movimientos", state: "disponible", maxDate: "2026-04-10" },
+          { source: "Revisión Comida", state: "pendiente" },
+          { source: "Operaciones de inversión", state: "pendiente" },
+        ],
+      },
+      actual: null,
+      motivo: "sin_referencia",
+      ultimoInicio: null,
+      revision: "demo",
+    };
+    await page.route("**/api/ciclos/contexto*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(pendingContext),
+      }),
+    );
+    await page.route("**/api/ciclos?*", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({
+          ciclos: [],
+          total: 0,
+          page: 1,
+          contexto: pendingContext,
+        }),
+      }),
+    );
+    await page.goto("/ciclos");
+    await expect(page.getByText(/pendientes/).first()).toBeVisible();
+    await page.unroute("**/api/ciclos/contexto*");
+    await page.unroute("**/api/ciclos?*");
+
     // ---- AC-23 UI: an error reference is declared, never replaced by a clock ----
     const errorContext = {
       referencia: {
@@ -703,6 +743,59 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await noOverflow();
     await page.screenshot({
       path: "artifacts/e4-2/instrumento-ficha-cero-390.png",
+      fullPage: true,
+    });
+
+    // ---- AC-40 UI: Transferencia previsualizada e invalidada por una Venta ----
+    await page.goto("/movimientos/nuevo");
+    await page.getByLabel("Tipo *", { exact: true }).selectOption("Transferencia");
+    await page.getByLabel("Fecha económica *", { exact: true }).fill("2026-04-05");
+    await page.getByLabel("Importe (€) *", { exact: true }).fill("10");
+    await page.getByLabel("Saldo origen *", { exact: true }).selectOption("S001");
+    await page.getByLabel("Saldo destino *", { exact: true }).selectOption("S002");
+    await page.getByLabel("Concepto", { exact: true }).fill("Transferencia AC-40");
+    await page
+      .getByRole("button", { name: "Revisar transferencia", exact: true })
+      .click();
+    await expect(page.getByLabel("Vista previa de impacto")).toBeVisible();
+    const session = await page.evaluate(async () =>
+      (await fetch("/api/auth/session")).json(),
+    );
+    const sale = await page.request.post(
+      "http://127.0.0.1:3011/api/ventas",
+      {
+        headers: {
+          origin: "http://127.0.0.1:5173",
+          "x-csrf-token": session.csrf,
+          "idempotency-key": randomUUID(),
+        },
+        data: {
+          fecha: "2026-04-10",
+          instrumento: "I1001",
+          saldoEfectivo: "S003",
+          saldoInversion: "S004",
+          cantidad: "1",
+          precio: "100.00",
+          divisa: "EUR",
+          cambio: null,
+          importeEur: "100.00",
+          comisionEur: null,
+          concepto: "Venta AC-40",
+          nota: null,
+        },
+      },
+    );
+    expect(sale.status()).toBe(201);
+    await page
+      .getByRole("button", { name: "Confirmar transferencia", exact: true })
+      .click();
+    await expect(page.getByText(/Tus campos se conservan/)).toBeVisible();
+    await expect(
+      page.getByLabel("Concepto", { exact: true }),
+    ).toHaveValue("Transferencia AC-40");
+    expect(errors).toEqual([]);
+    await page.screenshot({
+      path: "artifacts/e4-2/movimiento-impacto-invalidado-390.png",
       fullPage: true,
     });
 

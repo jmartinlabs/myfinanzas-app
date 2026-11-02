@@ -183,7 +183,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-20 | PASS (dominio+HTTP local) | `cycleContext`, `GET /api/ciclos/contexto` y `/api/ciclos`: 03-03→04-10, ciclo 01-04, corte 04-10, Comida declarada sin fecha (pendiente o disponible/maxDate=null según instalación) |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
 | E4.2-AC-22 | PASS (dominio) | La fuente retrocede al anular y avanza al rectificar; referencia conectada |
-| E4.2-AC-23 | PASS (API+UI local) | Tabla ausente `pendiente`; tabla vacía `sin_referencia`/`maxDate=null`; con otras fuentes usa disponibles; `monthlyFlow` con error `fecha=null`/`corte=null`; UI «Error de referencia» y motivo en Ciclos |
+| E4.2-AC-23 | PASS (API+UI local) | Tabla ausente `pendiente`; tabla vacía `sin_referencia`/`maxDate=null`; con otras fuentes usa disponibles; `monthlyFlow` con error `fecha=null`/`corte=null`; UI «Error de referencia», estado `pendiente` y motivo en Ciclos |
 | E4.2-AC-24 | PASS | Futuro/inválida 422; bisiesto y `spanishToday` 23:30Z/00:30Z |
 | E4.2-AC-25 | PASS | Escalas 8/6/6, límite 2⁵³−1 exacto, exceso 422, producto interno BigInt |
 | E4.2-AC-26 | PASS | EUR null/1 válidos; 1,1 y USD inválidas; US/USDD/usd 422 |
@@ -193,14 +193,14 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-30 (D2) | PASS | 300,00/500,00/−200,00/11-04; impacto y ejecución rechazan la baja; alza aceptada |
 | E4.2-AC-31 | PASS | 401 sin sesión, 403 sin CSRF, 404 en DELETE sin escritura |
 | E4.2-AC-32 | PASS (Playwright macOS) | `ventas.spec.ts`: 1440/390, foco al aviso/impacto, teclado, sin overflow, tema claro, borrador, 409/cantidad/efectivo, anulación; 22 capturas `artifacts/e4-2/`. Canónico Linux BLOCKED |
-| E4.2-AC-33 | PASS (Playwright macOS) | Vacío/carga/500 de fuente/500 de opciones, 409, cantidad/efectivo, sesión 401 con borrador, referencia `error` declarada; sin 0 ficticio. Canónico Linux BLOCKED |
+| E4.2-AC-33 | PASS (Playwright macOS) | Vacío/carga/500 de fuente/500 de opciones, 409, cantidad/efectivo, sesión 401 con borrador, referencia `error` y `pendiente` declaradas; sin 0 ficticio. Canónico Linux BLOCKED |
 | E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
 | E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21 regenerado (`01cb4c49…`), migración preserva filas/auditoría/contadores/identidad; `clase` inmutable |
 | E4.2-AC-37 | PASS (CI Linux) | Backup/restore con Venta y auditoría PASS; restore v19/v20 corregido: v20 real, v20 restaurado conserva 20 y v19 migra a 21 |
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PASS (API) | S003 con Compra+Venta anulada y Saldo solo-venta: cinco cambios 409 sin escritura; desactivar/reactivar/nombre y auditoría |
-| E4.2-AC-40 | PASS (API local) | Huella de S003 y huella ajena de S001 invalidadas por Venta en S003 con 409 `IMPACT_CHANGED`; sin escritura y recálculo válido; borrador de Movimiento no reejecutado en Playwright |
+| E4.2-AC-40 | PASS (API+UI local) | Huella de S003 y huella ajena de S001 invalidadas por Venta en S003 con 409 `IMPACT_CHANGED`; sin escritura y recálculo válido; UI: Transferencia previsualizada, Venta intercalada, 409 y borrador conservado |
 | E4.2-AC-41 | PASS (API+HTTP local) | `monthlyFlow` y `GET /api/flujo-mensual`: 6.810,40 antes, 7.316,40 tras Venta, incluidos/excluidos, `Verificado`/`subtotal=null`; =0 → 5.000,00; NULL → Parcial/subtotal 5.000,00; motivo de cobertura |
 | E4.2-AC-42 | PASS | Impactos y GET no escriben: tablas, contadores, revisiones y auditoría iguales |
 | E4.2-AC-43 | PASS | Cantidad/precio/importe inválidos, 2000/2001, clave inválida, diferencia informativa |
