@@ -14,7 +14,7 @@
   (#150/#151), D7 (#154/#155), FIN_NETA documental (#156) y DEV22 (#157).
 - **Informe y resumen de cierre:** [audit-spec-resume-2026-11-02.md](audit-spec-resume-2026-11-02.md).
 - **Límite:** este checkpoint no cierra SPEC, no convierte UNRUN/PARCIAL en PASS y no
-  autoriza DEV, merge, migración ni datos reales.
+  autoriza DEV, migración ni datos reales; el merge documental se autorizó por separado.
 
 ## Checkpoint histórico — 2026-10-29
 
