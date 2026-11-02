@@ -431,7 +431,7 @@ test("P6: Compensable neto y Falta por reponer con reposición real asignada", (
 
 test("P7: Recursos, cierre analítico, puente y posición con régimen activo", () => {
   const { db, account, ing, food, leisure, cycle1 } = setup();
-  const finance = transfer(db, account, ing, "800", "2026-06-19");
+  const finance = transfer(db, account, ing);
   writeComidaRol(
     db,
     finance.movimiento.id,
@@ -521,7 +521,7 @@ test("H-SPEC16-02: una Transferencia sin rol deja cobertura Parcial y financiaci
   );
   // La activación exige roles; una Transferencia posterior sin rol no puede romper la lectura.
   // Caso mixto AC-05: una clasificada y otra sin rol en el mismo ciclo.
-  const finance = transfer(db, account, ing);
+  const finance = transfer(db, account, ing, "800", "2026-06-19");
   writeComidaRol(
     db,
     finance.movimiento.id,
