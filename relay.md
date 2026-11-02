@@ -4,80 +4,45 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 87
-message_id: ddd2268a-980b-4c5c-99b7-a801925a51ac
-from: OpenCode
-to: Alex
+sequence: 88
+message_id: 516f83ac-728c-4f9a-9d6b-5a8ad29cd55f
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 86
-created_at: 2026-11-02T22:21:55Z
+in_reply_to: 87
+created_at: 2026-11-02T22:39:33.325Z
 
 ## Message
 
-# Retorno 0087 — #165/#166 integrados, #167 con reservas cerradas y E3.5 en desarrollo (I1–I2)
+# Dictamen técnico Álex a 0087 — I3/D3-O1: corregir migración y acreditación
 
-**De:** OpenCode · **Para:** Álex
-**Base:** `main` `c5a0ccc` (esquema v21). Sin datos reales, sin despliegue y **sin merge de PR
-funcional**.
+**Decisión:** El usuario ya autorizó el **nuevo DEV E3.5 y la migración D3-O1 en su alcance**, con fixtures sintéticas, QA y sin merges funcionales ni operaciones con datos reales. **No hay que volver a pedir aprobación del diseño** ni paralizar el conjunto E3.5. I1 e I2 conservan su avance; resolver las reservas técnicas siguientes en I3 y continuar I4–I6 según los gates y pruebas pactados.
 
-## 1. Integraciones documentales
+## R1 — Rebuild SQLite v21→v22 y claves foráneas
 
-- **#165 MERGED `c5a0ccc`** — plan pre-DEV E3.5 con D1=A′, D2=O0, D3=O1 y D4 gate de E4.9.
-  Post-merge CI `41533416756` **success**.
-- **#166 MERGED `c8df42f`** — dictamen SPEC17 aplicado (M1 solo read model, desglose completo,
-  `motivo`/422, v21, T-01…T-06, 390 como requisito). Post-merge CI `41531631773` **success**.
-  No aprueba spec/wireframes ni autoriza DEV17.
+El plan describe `PRAGMA foreign_keys=OFF` **dentro** de la migración. Ojo: SQLite no cambia el estado de `foreign_keys` dentro de una transacción activa; el inicializador actual (`apps/api/src/database-schema.ts`) abre con `foreign_keys=ON` y ejecuta migraciones dentro de `db.transaction(...)`. Ese `PRAGMA` interior no protegería correctamente el rebuild.
 
-## 2. #167 — SPEC23: QA APTO CON RESERVAS y reserva cerrada
+**Encargo:** adaptar la estrategia a esa arquitectura, sin relajar controles silenciosamente. Si necesitas una ventana con `foreign_keys=OFF`, debe configurarse **fuera de la transacción** en la misma conexión, con transacción controlada de forma segura, y restaurarse al concluir tanto en éxito como en error. Alternativamente, proponer y probar una secuencia compatible con FK activas. No introducir una migración que solo pase porque `PRAGMA` no tuvo efecto.
 
-PR #167, HEAD **`07d95dd`**, draft.
+- Proteger el vínculo `movimiento_rol_financiacion_audit.movimiento → movimiento_rol_financiacion.movimiento`; no recrear ni alterar por accidente el historial append-only, revisiones, triggers `no_delete` / `shape`, índices, IDs o referencias.
+- Comprobar `PRAGMA foreign_key_check` **antes de dar por válida** la operación, con restauración de `foreign_keys=ON`, y verificar la definición efectiva del FK de auditoría y la semántica de restricciones/triggers.
+- Pruebas deterministas con **filas de rol y auditoría preexistentes**: migración v21→v22, rollback/error intermedio, idempotencia/segundo arranque, restauración de versiones anteriores soportadas (incluido v19/v20), invariantes de integridad, sin modificar bases reales.
+- Actualizar `schemaVersion`, creador de instalaciones nuevas, ruta de upgrade y **los contratos/manifiestos afectados por la forma física**, incluidos `schema-contracts.json` si está sujeto a ese esquema. No cambiar manifiestos innecesarios ni mantener desalineado el contrato.
 
-- QA independiente **APTO CON RESERVAS**. La material (R-1): la spec admitía `precio_unitario
-  = 0` en Automática, contra E4.1 («cantidad y precio estrictamente positivos»). **Corregido**:
-  precio `> 0` en Automática; el cero solo es válido como **valor manual 0,00**.
-- Aplicados además: certificabilidad agregada explícita; `certificabilidad` como campo
-  derivado y no columna; ejemplo JSON marcado como extracto; días transcurridos definidos
-  (`T − fecha`, civiles); TP-08 409 condicional a DT2; casos de producto no exacto y de
-  `importe_eur` distinto de cantidad×precio×cambio; cabecera del brainstorming a `c5a0ccc`
-  y 16 decisiones.
-- La specification/testplan siguen **candidatos no aprobados**; no hay DDL ni DEV E4.3.
+## R2 — "Evidencia no vacía" no prueba cobro acreditado
 
-## 3. E3.5 — desarrollo autorizado, incrementos I1–I2
+En el esquema actual, `evidencia TEXT NOT NULL CHECK(length(trim(evidencia)) BETWEEN 1 AND 500)` **ya exige texto no vacío para todos los roles**. Añadir `OR evidencia no vacía` al nuevo CHECK no constituye una acreditación adicional; de hecho equivaldría a permitir cualquier Reposición sin obligación por el solo hecho de tener texto.
 
-Rama **`feat/e35-fin-neta`** desde `c5a0ccc`; DEV18 antiguo intacto. Commits `90f8bf2`,
-`8f8e9d1`. 33/33 tests y `tsc --noEmit` limpio.
+**Encargo:** distinguir el campo explicativo de **evidencia de cobro real**. Para una reposición sin `obligacion_ciclo`, validar mediante datos y relaciones comprobables el Movimiento vigente/ejecutado subyacente, elegibilidad y dirección real aplicables y la evidencia pertinente; sin deducir cobro por nombre, texto o clasificación ni fabricar una obligación. Aplicar salvaguardas tanto en validación de escritura como en lectura/cobertura; diseñar protección para vías de escritura directas o migración si corresponden. Documentar el criterio mínimo verificable y los casos en los que el cobro **no es acreditable**, manteniendo `R_caja` sin duplicar `R_obl` y D-06-A intacta.
 
-**I1 — propiedad D1-A′:** nuevo `apps/api/src/e35.ts` que contiene el read model y publica
-`proveedor` (versión, ventana `[A,T]`, fuente, huella `financeRevision`, solo lectura).
-`app.ts` sirve `/api/comida/metricas/:ciclo` desde E3.5; `comida.ts` conserva un alias para
-importadores existentes. Sin cambio de aritmética.
+- Casos de prueba: cobro acreditado sin obligación (aceptado, solo `R_caja`), texto no vacío sin cobro verificable (rechazo/ND según capa), reposición asociada a obligación antigua, anulado o reversado, corrección posterior del Movimiento, concurrencia/revisiones, ausencia de duplicados.
+- No introducir columna de "acreditado" redundante sin demostrar que el modelo vigente carece de evidencia verificable, ni aceptar que el CHECK por sí solo acredita un cobro externo.
 
-**I2 — FIN-02/AC-03/AC-04:** la `Devolución Anticipo` solo se resta si existe
-`movimiento_anticipo` coherente (rol `Devolución`, Referencia, par origen/destino y evidencia).
-Si falta o es incompatible, `F` queda **No disponible con motivo** y no se deduce; el hecho se
-conserva. Test AC-04 añadido; CU-09 actualizado con atribución canónica.
+## Gate y retorno
 
-## 4. Lo que te pido: dictamen del plan de migración I3 (D3-O1)
+El diseño D1=A′, D2=O0, D3=O1 y su **autorización de DEV/migración de alcance** siguen vigentes. Esto es **supervisión técnica de la ejecución, no una nueva decisión de negocio**.
 
-Antes de ejecutarlo, el plan es:
+Prosigue con I3 una vez ajustada y probada la estrategia; los AC se declaran PASS únicamente con evidencias funcionales propias, QA independiente y CI. Mantén I4–I6 en la secuencia aprobada. Sin merge funcional, despliegue ni datos reales sin autorización ulterior.
 
-1. **Esquema v22**: rebuild de `movimiento_rol_financiacion` en SQLite (no se puede relajar un
-   CHECK con `ALTER`), con `PRAGMA foreign_keys=OFF` dentro de la migración, copia de filas,
-   drop/rename, recreación de índice y triggers (`shape`, `no_delete`), y verificación de la
-   tabla de auditoría existente (su FK apunta por nombre).
-2. **Nuevo CHECK**: `rol<>'Reposición' OR obligacion_ciclo IS NOT NULL OR
-   (evidencia acreditada no vacía)`; validación TS equivalente en `writeComidaRol`; el alta sin
-   obligación exige evidencia.
-3. **Actualizar** `comidaSchema` para instalaciones nuevas, `database-schema.ts`
-   (`< 22`), `schemaVersion = 22` y el manifiesto `schema-contracts.json` si el contrato lo
-   exige; pruebas de migración v21→v22, rollback, restore v19/v20 y contratos.
-4. **Estados**: `R_caja` ya cuenta la reposición cobrada; `R_obl` solo las asignadas; exponer
-   `estadoObligacion` (`Completada`/`Parcial`/`Sin obligación acreditada`) y `Falta` con `R_obl`.
-
-**Preguntas concretas:** ¿el rebuild con FK off es aceptable con la auditoría existente y los
-tests de restore, o prefieres otra estrategia? ¿Conviene versionar el manifiesto de contrato o
-solo el esquema? ¿Ves algún riesgo en que la evidencia sea el criterio de admisión sin
-obligación?
-
-No autoriza merge, datos reales ni despliegue.
+**Próximo retorno por Relay:** estrategia exacta de FK/transacción, garantías sobre auditoría y manifiesto, criterio comprobable de cobro, tests ejecutados con resultados, commit/PR si existe, bloqueos y avance por I1–I6. Evitar solicitar al usuario aprobaciones técnicas ya incluidas en su autorización salvo que aparezca un cambio material de alcance.
