@@ -352,11 +352,40 @@ export function e35Metrics(
         const role = roles.get(r.id);
         return role ? [{ r, role }] : [];
       });
+      const anticipo = new Map(
+        (db.query("SELECT name FROM sqlite_master WHERE type='table' AND name='movimiento_anticipo'").get()
+          ? (db
+              .query(
+                "SELECT movimiento,referencia,rol,origen,destino,evidencia FROM movimiento_anticipo",
+              )
+              .all() as {
+              movimiento: string;
+              referencia: string;
+              rol: "Adelanto" | "Devolución";
+              origen: string;
+              destino: string;
+              evidencia: string;
+            }[])
+          : []
+        ).map((a) => [a.movimiento, a]),
+      );
+      const incoherentAnticipo: string[] = [];
       const fRows = withRole.filter(
         ({ r, role }) =>
           (role.rol === "Financiación" && r.destino === saldo) ||
           (role.rol === "Devolución Anticipo" && r.origen === saldo),
-      );
+      ).filter(({ r, role }) => {
+        if (role.rol !== "Devolución Anticipo") return true;
+        const a = anticipo.get(r.id);
+        const ok =
+          !!a &&
+          a.rol === "Devolución" &&
+          a.referencia.length > 0 &&
+          a.origen === r.origen &&
+          a.destino === r.destino;
+        if (!ok) incoherentAnticipo.push(r.id);
+        return ok;
+      });
       const f = sum(
         fRows.map(({ r, role }) =>
           (role.rol === "Devolución Anticipo" ? -1n : 1n) * BigInt(r.importe),
@@ -371,11 +400,17 @@ export function e35Metrics(
           (r.destino === saldo ? 1n : -1n) * BigInt(r.importe),
         ),
       );
-      return {
-        available: missing.length === 0,
-        reason: missing.length
+      const problems = [
+        missing.length
           ? `Transferencias sin función declarada: ${missing.map((r) => r.id).join(", ")}.`
           : null,
+        incoherentAnticipo.length
+          ? `Devolución de Anticipo sin atribución canónica coherente: ${incoherentAnticipo.join(", ")}.`
+          : null,
+      ].filter((v): v is string => !!v);
+      return {
+        available: problems.length === 0,
+        reason: problems.length ? problems.join(" ") : null,
         f,
         rCaja,
         rCajaIds: rCajaRows.map(({ r }) => r.id),

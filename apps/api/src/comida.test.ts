@@ -856,6 +856,18 @@ test("CU-09/P7: la devolución de Anticipo saliente se resta de F una sola vez",
     randomUUID(),
     now,
   );
+  db.run(
+    "INSERT INTO referencias VALUES('REF900001','Anticipo ficticio','Viaje','Activa',1,'t','t')",
+  );
+  db.run(
+    "INSERT INTO fichas_anticipos VALUES('REF900001',NULL,NULL,'t','t')",
+  );
+  db.run(
+    `INSERT INTO movimiento_anticipo(movimiento,referencia,rol,origen,destino,
+     revision_movimiento,evidencia,procedencia,revision,actualizado)
+     VALUES(?,?,'Devolución',?,?,1,'Evidencia ficticia','Fixture ficticia',1,'t')`,
+    [back.movimiento.id, "REF900001", ing.id, account.id],
+  );
   purchase(db, ing, food.id, {
     importe: "20",
     comida: { etiqueta: "Comida" },
@@ -888,6 +900,55 @@ test("CU-09/P7: la devolución de Anticipo saliente se resta de F una sola vez",
   expect(metrics.financiacion.f).toBe("700.00");
   expect(metrics.recursos.valor).toBe("800.00"); // 100 + 700 + 0 − Compensable 0
   expect(metrics.cierreAnalitico.valor).toBe("780.00");
+  db.close();
+});
+
+test("AC-04: Devolución de Anticipo sin atribución canónica no deduce y deja F No disponible", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const finance = transfer(db, account, ing, "800");
+  writeComidaRol(
+    db,
+    finance.movimiento.id,
+    { revision: 1, rol: "Financiación", evidencia: "Evidencia ficticia" },
+    randomUUID(),
+    now,
+  );
+  const back = transfer(db, ing, account, "100", "2026-07-01");
+  writeComidaRol(
+    db,
+    back.movimiento.id,
+    { revision: 1, rol: "Devolución Anticipo", evidencia: "Evidencia ficticia" },
+    randomUUID(),
+    now,
+  );
+  purchase(db, ing, food.id, { importe: "20", comida: { etiqueta: "Comida" } });
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.financiacion.estado).toBe("No disponible");
+  expect(metrics.financiacion.motivo).toContain("atribución canónica");
+  expect(metrics.recursos.valor).toBeNull();
   db.close();
 });
 
