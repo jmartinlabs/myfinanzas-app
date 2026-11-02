@@ -251,18 +251,18 @@ como PASS de E3.5**: el testplan ratificado exige filas `E3.5-FIN-TP-*` propias,
 
 | Tipo | Elemento | Gate / efecto | Dueño |
 | --- | --- | --- | --- |
-| Decisión | D1 propiedad de `/api/comida/metricas` | Bloquea AC-16/AC-18 y la UI; sin ella no se sabe si se migra, degrada o duplica la ruta | Usuario |
-| Decisión | D2 `S0` ausente ≠ 0 con `saldo_comida NOT NULL` | Bloquea AC-12; opción B implicaría migración de esquema | Usuario |
-| Decisión | D3 reposición sin `obligacion_ciclo` vs `CHECK` | Afecta al escenario adicional de AC-06 (no al caso L); opción B implicaría cambio de constraint | Usuario |
+| Decisión | D1 propiedad del read model y de `/api/comida/metricas` | Bloquea AC-16/AC-18 y la UI; A′ conserva la ruta estable con propiedad E3.5 | Usuario |
+| Decisión | D2 `S0` ausente ≠ 0 con `saldo_comida NOT NULL` | Bloquea AC-12; O1/O2 implican migración; O3 deja el AC parcial | Usuario |
+| Decisión | D3 reposición sin obligación vs D-06-A y `CHECK` | Afecta a AC-06 (no al caso L); O1 requiere cambio de constraint; O2 deja el AC parcial | Usuario |
 | Desarrollo | Estados de obligación/cobertura, `R_obl` como métrica, guarda de Anticipo, proveedor FIN-12 | Requiere autorización de DEV separada | Ejecutor autorizado |
 | Desarrollo | Consumidor E3.6 (no existe) y contrato E4.9 | E3.6 no tiene código; E4.9 usa placeholder | Ejecutor autorizado |
 | P3 / datos reales | Activación del régimen y equivalencia con v5.11(7) (AC-25/P3, numeración histórica de SPEC16) | Sin datos reales autorizados no se acredita; `regimenGates` ya bloquea Terminal/roles incompletos (`comida.ts:943-970`) | Usuario + ejecutor |
 | Despliegue | DT6/T-BKP, Debian13/VPS | Gate de despliegue, **no** de DEV de E3.5 | Operación |
 | Documental | Numeración antigua `E3.5-AC-12/13/17/39` en SPEC21 | Impacta en AC-18; ver §15.5 | Coordinador |
 
-Ningún bloqueo de **datos o esquema** impide construir el read model: no hay tablas de totales
-que migrar (FIN-11) y la huella ya existe. Los bloqueos reales son D1–D3 y la autorización de
-DEV.
+El read model puede construirse **sin tablas de totales** (FIN-11) y la huella ya existe. Si se
+eligen D2-O1/O2 o D3-O1, esas opciones añaden **migración autorizada**; D3-O2 y D2-O3 dejan el
+AC correspondiente parcial. Los bloqueos reales son D1–D3 y la autorización de DEV.
 
 ## 13. Secuencia mínima de implementación
 
@@ -271,16 +271,20 @@ Ningún AC se declara PASS por herencia de los tests P6/P7 existentes.
 
 | Inc | Alcance | AC | Pruebas mínimas | Criterio de salida |
 | --- | --- | --- | --- | --- |
-| I1 | Read model de solo lectura + envoltorio de cobertura (`Verificada/Parcial/No disponible` con motivo, IDs y subtotal) + ventana `[A,T]` + decisión D1 aplicada | AC-01, AC-13, AC-16 | API focal: parcial con subtotal; fallo de fuente → ND; intento de escritura rechazado; esquema sin tablas nuevas | Cobertura por métrica y no-escritura demostradas |
+| I1 | Read model de solo lectura + envoltorio de cobertura (`Verificada/Parcial/No disponible` con motivo, IDs y subtotal) + ventana `[A,T]` + **D1 A′**: ruta estable delegada y E3.4 sin cálculo | AC-01, AC-13, AC-16 | API focal: parcial con subtotal; fallo de fuente → ND; intento de escritura rechazado; esquema sin tablas nuevas | Cobertura por métrica y no-escritura demostradas |
 | I2 | Roles, `F` y guarda del doble vínculo de Anticipo (Referencia/par/evidencia compatible; una sola deducción; conflicto → Parcial/ND) | AC-02, AC-03, AC-04, AC-05 | API focal: roles completos; transferencia sin rol; doble vínculo coherente/parcial/incompatible | `F` correcta y única; sin excepción |
-| I3 | `R_caja`/`R_obl` con cobertura, estados de obligación y `Falta` | AC-06, AC-07 | API + Playwright: reposición total/parcial/tardía; obligación antigua; `C_n>0` sin reposiciones | `Completada` solo con las cuatro condiciones |
-| I4 | Grupos, neteo, devoluciones por causa, `S0`/`B_A` | AC-08, AC-09, AC-10, AC-11, AC-12 | API + Playwright: causas de no elegibilidad; agregado vs detalle; S0/B_A | Cifras P7 y estados correctos |
+| I3 | `R_caja`/`R_obl` con cobertura, estados de obligación y `Falta`; **sujeto a D3** (O1 requiere cambio estructural; O2 deja AC-06 parcial) | AC-06, AC-07 | API + Playwright: reposición total/parcial/tardía; obligación antigua; `C_n>0` sin reposiciones | `Completada` solo con las cuatro condiciones |
+| I4 | Grupos, neteo, devoluciones por causa, `S0`/`B_A`; **sujeto a D2** (O3 deja AC-12 parcial; O1/O2 requieren migración) | AC-08, AC-09, AC-10, AC-11, AC-12 | API + Playwright: causas de no elegibilidad; agregado vs detalle; S0/B_A | Cifras P7 y estados correctos |
 | I5 | Duración, cierre, puente y `DIF_S0_SIGUIENTE` | AC-14, AC-17 | API + Playwright: ejemplo AC-14 y subcaso (Cierre 190, `DIF_S0_SIGUIENTE` 105, `DIF_BANCO` −150); ciclo abierto/vencido | Ejemplo ratificado reproducido |
-| I6 | Proveedor FIN-12 + contratos E3.6/E4.9 + E2E | AC-15, AC-18 | Contrato del proveedor (ventana/fuente/huella/cobertura); AC-15 se acota al contrato `e4_9Bloqueado`/`No disponible`; AC-18 es revisión documental | Consumidores sin duplicar lógica y AC-15 sin depender del DEV de E4.9 |
+| I6 | Proveedor FIN-12 + contratos E3.6/E4.9 + E2E | AC-15, AC-18 | Contrato del proveedor (ventana/fuente/huella/cobertura); AC-15 se acota al contrato `e4_9Bloqueado`/`No disponible`; AC-18 es revisión documental y depende de la tabla de §15.5 | Consumidores sin duplicar lógica y AC-15 sin depender del DEV de E4.9 |
 
 Orden justificado: I1 fija el contrato que el resto consume; I2–I4 completan magnitudes; I5
 verifica el ejemplo normativo; I6 cierra fronteras. Un incremento no empieza sin el anterior
 en PASS.
+
+**Dependencia de decisión:** AC-16 (I1) depende de D1; AC-12 (I4) de D2; AC-06 (I3) de D3;
+AC-18 (I6) de §15.5. Mientras la decisión correspondiente no esté **ratificada**, el AC afectado
+no puede declararse PASS: queda UNRUN o PARCIAL con motivo, nunca PASS por omisión.
 
 ## 14. Contratos de integración (sin modificar lógica ajena)
 
@@ -311,40 +315,62 @@ D′ (`33-dprima-simplificada-specification.md:233`). Sus fórmulas y ámbitos n
 Ninguna está aprobada. Se presentan con enunciado exacto, alternativas, recomendación e
 impacto. **No reabren D-01…D-11.**
 
-### D1 — Propiedad de `GET /api/comida/metricas/:ciclo`
+### D1 — Propiedad del read model y de la ruta HTTP
 
-- **Enunciado:** hoy esa ruta E3.4 emite agregados E3.5 (`app.ts:429-433`; consumo en
-  `Comida.tsx:169`), lo que contradice SPEC21 §4.3.1 (`21-...:262-265`) y SPEC16:877. ¿Quién
-  es dueño del read model y qué pasa con la ruta?
-- **A (recomendada):** E3.5 es dueño; la ruta se traslada/renombra y la UI consume E3.5;
-  E3.4 deja de emitir agregados.
-- **B:** se conserva la ruta y se declara «E3.5 provisional» con el contrato de estados, sin
-  renombrar ni mover.
+- **Enunciado:** hoy la ruta E3.4 `GET /api/comida/metricas/:ciclo` calcula y emite agregados
+  E3.5 (`app.ts:429-433`; consumo en `Comida.tsx:169`), lo que contradice SPEC21 §4.3.1
+  (`21-...:262-265`) y SPEC16:877. ¿Quién posee el read model y qué ocurre con la URL?
+- **A′ (recomendada):** **E3.5 es propietario único del read model y de las magnitudes**; la
+  ruta se conserva como **interfaz HTTP estable** y su handler delega en el proveedor E3.5;
+  E3.4 deja de calcular y emitir agregados. El contrato crece de forma **aditiva** (estado de
+  obligación, cobertura, subtotal) sin cambiar la forma base.
+- **B′:** mover la ruta a `/api/e35/...` y adaptar la UI; coste de cambio sin beneficio
+  funcional.
 - **C:** duplicar la ruta — **rechazada** (duplica fuente de verdad).
-- **Impacto:** AC-16/AC-18, contrato de E3.4 y UI. Afecta a I1.
+- **Compatibilidad a verificar:** `Comida.tsx:169`, E2E `comida-dprima`, y `precierre` (no
+  consume la ruta). A′ no cambia URL ni forma base.
+- **Impacto:** AC-16/AC-18, contrato E3.4/UI e I1. La propiedad económica pasa a E3.5 sin
+  romper el consumidor.
 
-### D2 — `S0` ausente ≠ 0
+### D2 — `S0` ausente ≠ 0 (sin confundirlo con B/B_A)
 
 - **Enunciado:** AC-12 exige «S0 ausente → No disponible», pero `ciclos.saldo_comida` es
-  `INTEGER NOT NULL` (`cycle-schema.ts:9`); hoy el «ausente» solo existe en el seam de test de
-  `precierre.ts:39,351,360`.
-- **A (recomendada):** contrato de fuente: `regimen_comida.apertura` es la referencia y «S0
-  no acreditado» se representa como régimen no activo o cobertura parcial; **sin migración**.
-- **B:** permitir nulo en DEV (migración de esquema), con backfill controlado y AC-12 real.
-- **C:** mantener solo el seam de test — **rechazada** (no acredita el caso real).
-- **Impacto:** AC-12, I4 y, en B, migración.
+  `INTEGER NOT NULL` (`cycle-schema.ts:9`), por lo que la ausencia genuina no es representable.
+  **`S0` es el saldo inicial manual del ciclo**; `regimen_comida.apertura` es la **apertura
+  bancaria B** de la que se deriva `B_A` (SPEC16 P7/FIN-09). Son magnitudes distintas y **no
+  se sustituyen**: la falta de régimen no demuestra que S0 falte.
+- **O1 (recomendada):** mantener `saldo_comida` `NOT NULL` y añadir un **indicador de
+  acreditación** del S0 (p. ej. `saldo_comida_acreditado`) con backfill `true` en las filas
+  existentes. Distingue *S0 no informado*, *S0 = 0 verificado* y *B/B_A no acreditados* sin
+  ambigüedad aritmética. Coste: una migración y backfill; no cambia la fórmula.
+- **O2:** `saldo_comida` nullable (`NULL` = no informado). Conceptualmente simple, pero obliga
+  a tratar `NULL` en todas las consultas y elimina el `NOT NULL`.
+- **O3:** sin migración: AC-12 se declara **no representable** con el modelo actual; queda
+  PARCIAL/UNRUN y E3.5 no puede acreditarlo. Coste cero, incumple el AC.
+- **Impacto:** AC-12 e I4. O1/O2 requieren migración autorizada; en ninguna opción se usa
+  `regimen_comida.apertura` como S0.
 
-### D3 — Reposición sin `obligacion_ciclo` frente al `CHECK`
+### D3 — Reposición sin obligación frente a D-06-A
 
 - **Enunciado:** el `CHECK` impide `rol='Reposición'` sin `obligacion_ciclo`
-  (`comida-schema.ts:229`), por lo que el escenario adicional de AC-06 «reposición sin
-  obligación acreditada» no puede existir tal como está redactado. El caso L del testplan
-  (obligación **antigua**) sí es representable y no se ve afectado.
-- **A (recomendada):** conservar el `CHECK`; reformular ese escenario adicional como «rol
-  Reposición sin obligación → rechazo en E3.4; E3.5 nunca la recibe» y probar el rechazo.
-- **B:** relajar el `CHECK` en DEV para admitirla y tratarla como cobertura parcial.
-- **Impacto:** redacción de AC-06 y prueba asociada; en B, cambio de constraint.
-- **Precisión:** D-06-A ratificada admite «reposición sin obligación acreditada → cuenta en `R_caja`, no en `R_obl`». D3-A **no cambia D-06**; solo constata que el `CHECK` actual hace ese estado inalcanzable en E3.4. Si se prefiere representarlo, la opción es B, que sí requiere cambio de constraint y confirmación humana.
+  (`comida-schema.ts:229`). Pero **D-06-A ratificada** admite que una reposición cobrada sin
+  obligación asignada cuente en `R_caja` y **nunca** en `R_obl`, y que la tardía cuente en el
+  ciclo de su fecha. Con el `CHECK` vigente ese estado es inalcanzable, así que no puede
+  resolverse reformulando AC-06 a «rechazo». D-06-A **no se reabre**; se resuelve su
+  representabilidad. El caso L del testplan (obligación **antigua**) es representable y se
+  mantiene como prueba separada.
+- **O1 (recomendada si se autoriza cambio estructural):** relajar el `CHECK` de forma mínima
+  para admitir `Reposición` sin `obligacion_ciclo` **solo con evidencia de cobro acreditada**;
+  E3.5 cuenta esa fila en `R_caja` y nunca en `R_obl`. Requiere migración/constraint,
+  validación, auditoría, compatibilidad y prueba. Coste: cambio de esquema autorizado.
+- **O2:** mantener el `CHECK` y declarar el escenario **no representable**; AC-06 queda
+  PARCIAL/UNRUN. Sin migración, con hueco documentado y sin contradecir D-06 en la práctica
+  (el caso no puede registrarse).
+- **O3:** mantener el `CHECK` y exigir que ese cobro se registre como Transferencia/Ingreso
+  sin rol `Reposición`; E3.5 tendría que detectarlo por evidencia, lo que **introduce
+  inferencia** y contradice AC-02/AC-05. No recomendada.
+- **Impacto:** AC-06 e I3. O1 requiere autorización estructural; O2 deja el AC parcial; O3 se
+  descarta por inferencia.
 
 ### D4 — Contrato de bloqueo de E4.9 (gate de su DEV)
 
@@ -366,20 +392,28 @@ impacto. **No reabren D-01…D-11.**
 
 ### 15.5 Hallazgo documental: numeración E3.5
 
-| Documento | Referencia | Problema |
+| Documento | Referencia | Autoridad / estado |
 | --- | --- | --- |
-| `roadmap.md:280-282` | `E3.5-AC1`, `E3.5-AC2`, `E3.5-AC3` | Numeración antigua de aceptación del epic |
-| SPEC16 (enmienda) | `E3.5-FIN-AC-01…18` | Numeración vigente |
-| Testplan E3.5 | `E3.5-FIN-TP-01…18` | Mapea 1:1 con AC-01…18 |
-| SPEC21 | `E3.5-AC-12/13/17/39` «BLOCKED» | Numeración de la candidata local, **no reutilizable** (`16-...:1558-1559`); SPEC27 no cita `E3.5-AC` |
+| `roadmap.md:280-282` | `E3.5-AC1`, `E3.5-AC2`, `E3.5-AC3` | Numeración antigua de aceptación del epic; **histórica** |
+| SPEC16 (enmienda) | `E3.5-FIN-AC-01…18` | **Vigente** (`16-...:1563-1580`) |
+| Testplan E3.5 | `E3.5-FIN-TP-01…18` | **Vigente**; 1:1 con `FIN-AC-01…18` |
+| SPEC21 | `E3.5-AC-12/13/17/39` «BLOCKED» (`21-...:92,264` y progress) | Numeración de la candidata local; **histórica, sin equivalencia automática** (`16-...:1558-1559`) |
+| SPEC27 | — | No cita `E3.5-AC` |
 
-**Impacto:** AC-18 exige nombres y magnitudes alineados; hoy SPEC21 cita AC que no existen
-en la numeración ratificada (no hay AC-39). Mientras no se resuelva, AC-18 no puede pasar y
-las citas de SPEC21 deben leerse como históricas.
+**Tabla de trazabilidad propuesta (sin inventar equivalencias):**
 
-**Propuesta (no ejecutada):** tabla de correspondencia en este plan y, con autorización
-específica, una nota de vigencia de una línea en SPEC21 que remita a `E3.5-FIN-AC-nn`. No
-se reescriben esas specs ni se declaran AC cumplidos.
+| Referencia histórica | Documento | Tratamiento |
+| --- | --- | --- |
+| `E3.5-AC1`, `E3.5-AC2`, `E3.5-AC3` (roadmap) | roadmap | Se leen como criterios de epic; no se renumeran |
+| `E3.5-AC-12/13/17/39` (SPEC21) | SPEC21 | Estado «histórico»; la autoridad pasa a `E3.5-FIN-AC-nn` |
+| `E3.5-AC-39` | SPEC21 | **No existe** en la numeración ratificada (solo AC-01…18) |
+
+**Impacto:** AC-18 exige nombres y magnitudes alineados; mientras SPEC21 cite AC inexistentes,
+AC-18 no puede pasar y esas citas deben leerse como históricas. **AC-18 sigue UNRUN.**
+
+**Propuesta (no ejecutada):** esta tabla queda en el plan y, con **autorización documental
+separada**, una nota de vigencia de una línea en SPEC21 que remita a `E3.5-FIN-AC-nn`. No se
+renumeran AC ratificados, no se reescribe historia y no se declara ningún AC cumplido.
 
 ## 16. Definición de terminado y gates
 
