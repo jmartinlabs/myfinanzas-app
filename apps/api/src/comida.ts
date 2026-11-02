@@ -1389,23 +1389,24 @@ export function comidaMetrics(
       );
       const transfers = afectan.filter((r) => r.tipo === "Transferencia");
       const missing = transfers.filter((r) => !roles.has(r.id));
-      const fRows = transfers
-        .map((r) => ({ r, role: roles.get(r.id)! }))
-        .filter(
-          ({ r, role }) =>
-            (role.rol === "Financiación" && r.destino === saldo) ||
-            (role.rol === "Devolución Anticipo" && r.origen === saldo),
-        );
+      // An undeclared role is a coverage gap: it is never inferred or dereferenced.
+      const withRole = transfers.flatMap((r) => {
+        const role = roles.get(r.id);
+        return role ? [{ r, role }] : [];
+      });
+      const fRows = withRole.filter(
+        ({ r, role }) =>
+          (role.rol === "Financiación" && r.destino === saldo) ||
+          (role.rol === "Devolución Anticipo" && r.origen === saldo),
+      );
       const f = sum(
         fRows.map(({ r, role }) =>
           (role.rol === "Devolución Anticipo" ? -1n : 1n) * BigInt(r.importe),
         ),
       );
-      const rCajaRows = transfers
-        .map((r) => ({ r, role: roles.get(r.id)! }))
-        .filter(
-          ({ r, role }) => role.rol === "Reposición" && r.destino === saldo,
-        );
+      const rCajaRows = withRole.filter(
+        ({ r, role }) => role.rol === "Reposición" && r.destino === saldo,
+      );
       const rCaja = sum(rCajaRows.map(({ r }) => BigInt(r.importe)));
       const d = sum(
         afectan.map((r) =>

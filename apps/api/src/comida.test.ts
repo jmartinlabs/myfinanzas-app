@@ -493,6 +493,73 @@ test("P7: Recursos, cierre analítico, puente y posición con régimen activo", 
   db.close();
 });
 
+test("H-SPEC16-02: una Transferencia sin rol deja cobertura Parcial y financiación No disponible sin excepción", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  purchase(db, ing, food.id, { importe: "50", comida: { etiqueta: "Comida" } });
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto bancario ficticio de apertura",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia de régimen",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia en pruebas",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  // La activación exige roles; una Transferencia posterior sin rol no puede romper la lectura.
+  // Caso mixto AC-05: una clasificada y otra sin rol en el mismo ciclo.
+  const finance = transfer(db, account, ing, "800", "2026-06-19");
+  writeComidaRol(
+    db,
+    finance.movimiento.id,
+    {
+      revision: 1,
+      rol: "Financiación",
+      evidencia: "Transferencia clasificada ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  const orphan = transfer(db, account, ing, "900", "2026-06-21");
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  const notice = `Transferencias sin función declarada: ${orphan.movimiento.id}.`;
+  expect(metrics.cobertura.estado).toBe("Parcial");
+  expect(metrics.cobertura.motivos).toContain(notice);
+  expect(metrics.financiacion).toMatchObject({
+    estado: "No disponible",
+    motivo: notice,
+    f: null,
+    reposicionesCaja: null,
+    d: null,
+    ids: [],
+  });
+  expect(metrics.recursos).toMatchObject({
+    valor: null,
+    estado: "No disponible",
+    motivo: notice,
+  });
+  expect(metrics.cierreAnalitico.estado).toBe("No disponible");
+  // El hecho bancario y la compra se conservan aunque la financiación no sea verificable.
+  expect(getMovement(db, orphan.movimiento.id).movimiento.importe).toBe("900.00");
+  expect(metrics.compras.neto).toMatchObject({ valor: "50.00", estado: "Verificado" });
+  expect(metrics.netoObservado.valor).toBe("50.00");
+  expect(metrics.posicionBancaria).toMatchObject({ apertura: "100.00", alInicio: "100.00" });
+  db.close();
+});
+
 test("AC: sin régimen activo, las métricas que dependen de ING quedan No disponibles y no en cero", () => {
   const { db, ing, food, cycle1 } = setup();
   purchase(db, ing, food.id, {
