@@ -1441,9 +1441,11 @@ de Presupuestos/Anual se preserva; su sustitución futura corresponde a SPEC33.
 
 **Estado: PROPUESTA PARA APROBACIÓN INDEPENDIENTE — no aprobada.** El usuario aprobó
 conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones
-obligatorias D-04, D-07, D-09 y D-10. Este apartado convierte esa aprobación conceptual en
-contrato normativo revisable. **DEV18/E3.5 sigue en STOP**; no se implementa, no se migra,
-no se activa y no se autoriza merge.
+obligatorias D-04, D-07, D-09 y D-10. Fuente literal: mensaje directo del usuario de
+2026-11-01, «Apruebo conceptualmente las opciones A de D-01 a D-11 para E3.5/FIN_NETA, con
+estas precisiones obligatorias» (D-04, D-07, D-09 y D-10). Este apartado convierte esa
+aprobación conceptual en contrato normativo revisable. **DEV18/E3.5 sigue en STOP**; no se
+implementa, no se migra, no se activa y no se autoriza merge.
 
 Esta enmienda **no crea una especificación paralela** ni duplica P6/P7/P7a: consume sus
 fórmulas y significados ya aprobados y añade únicamente el contrato de fuente, cobertura,
@@ -1480,10 +1482,10 @@ flujo mensual ni cierre financiero.
   produce cobertura `Parcial`/`No disponible` con motivo e IDs; nunca se asigna por
   inferencia, no se ignora y no se convierte en excepción de runtime. `D` y banco
   conservan el dinero.
-- **FIN-04 — R_caja y R_obl.** `R_caja` es la reposición real cobrada en `[A,T]`;
-  `R_obl` es la asignada a la obligación compensable del ciclo. Son magnitudes distintas:
-  `R_caja` suma a Recursos y `R_obl` reduce Falta; **nunca se suman entre sí** ni se
-  duplica una reposición.
+- **FIN-04 — R_caja y R_obl.** `R_caja` es la reposición real **acreditada y cobrada una
+  vez por Movimiento** en `[A,T]`; `R_obl` es la asignada a la obligación compensable del
+  ciclo. Son magnitudes distintas: `R_caja` suma a Recursos y `R_obl` reduce Falta;
+  **nunca se suman entre sí** ni se duplica una reposición.
 - **FIN-05 — Reposiciones parciales y tardías.** Una reposición parcial no es
   `Completada`. Una tardía cuenta en el ciclo de su fecha real; no se atribuye al ciclo
   anterior ni se persiste una atribución no acreditada.
@@ -1503,8 +1505,8 @@ flujo mensual ni cierre financiero.
   agregado legado se conserva como fuente separada, con su procedencia, y **nunca se suma
   al detalle**. Sin detalle no se reconstruye FIN_NETA por inferencia.
 - **FIN-09 — S0, B_A y P3.** `S0` es manual; ausente no equivale a 0. `B_A` solo se deriva
-  con apertura y cobertura acreditadas y no se copia a `S0`. `C` y `B` siguen siendo la
-  decisión P3 y no se inventan.
+  con apertura y cobertura acreditadas, `A >= C`, y no se copia a `S0`. `C` y `B` siguen
+  siendo la decisión P3 y no se inventan.
 - **FIN-10 — Envoltorio de cobertura.** Cada salida de E3.5 declara valor, unidad, estado
   de cobertura, motivo, intervalo/corte, régimen y fuente. Un subtotal parcial no es total;
   vacío acreditado, cero verificado y fallo de fuente son estados distintos. Nunca se
@@ -1563,18 +1565,18 @@ Todos **UNRUN**. La numeración `E3.5-FIN-AC-nn` es propia de esta enmienda y no
 | E3.5-FIN-AC-04 | Atribución de Anticipo y rol incompatibles | `Parcial`/`No disponible` con motivo; sin doble deducción ni elección silenciosa |
 | E3.5-FIN-AC-05 | Transferencia de ING Comida sin rol entre otras clasificadas | Sin excepción; cobertura parcial/ND con IDs; D y banco íntegros |
 | E3.5-FIN-AC-06 | Reposición del ciclo, de obligación antigua y sin `obligacion_ciclo` | R_caja suma a Recursos; R_obl solo reduce Falta; sin asignación no hay R_obl; nunca se suman |
-| E3.5-FIN-AC-07 | Reposición parcial, completa y tardía | Parcial no es `Completada`; la tardía cuenta en su ciclo; Falta refleja solo R_obl acreditada |
+| E3.5-FIN-AC-07 | Reposición parcial, completa y tardía; `Completada` con cobertura `Parcial` | Parcial no es `Completada`; la tardía cuenta en su ciclo; Falta refleja solo R_obl acreditada; con cobertura parcial no se emite `Completada` |
 | E3.5-FIN-AC-08 | Ocio/Niños/Otros, Comida/Pendiente revisar y Fuera presupuesto en el mismo ciclo | C_n y J_n correctos; Fuera presupuesto en D/banco y fuera del análisis, sin doble exclusión |
 | E3.5-FIN-AC-09 | `Pendiente revisar` junto a devolución con Partida NULL y atribución pendiente | La etiqueta cuenta como Comida en J_n; el estado de atribución no asigna grupo ni ciclo |
-| E3.5-FIN-AC-10 | Devolución sin vínculo acreditada por evidencia externa; devolución sin acreditación; devolución de otro ciclo | La acreditada netea sin FK; la no acreditada no; la antigua entra en D/neto observado sin reducir J_n/C_n/Falta actuales |
+| E3.5-FIN-AC-10 | Devolución sin vínculo acreditada por evidencia externa; devolución sin acreditación; vínculo `Revisar`; devolución de otro ciclo | La acreditada netea sin FK; la no acreditada y `Revisar` no; la antigua entra en D/neto observado sin reducir J_n/C_n/Falta actuales |
 | E3.5-FIN-AC-11 | Detalle nuevo y agregado legado coexistentes; después solo agregado | D solo desde Movimientos; sin suma al detalle; legado etiquetado; sin reconstruir FIN_NETA |
-| E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados |
+| E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, C_n=0 verificado vs cobertura parcial, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados; `Sin obligación acreditada` solo con C_n=0 verificado |
 | E3.5-FIN-AC-13 | Fuente vacía con cobertura, periodo sin hechos y lector fallido | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total |
-| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora | Base 585, Otros efectos −5, Cierre 580; con devolución antigua 40 y B_A 250: Cierre 620, banco 770, DIF_BANCO −150; sin ajustes |
+| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; S0≠B_A | Base 585, Otros efectos −5, Cierre 580; con devolución antigua 40 y B_A 250: Cierre 620, banco 770, DIF_BANCO −150; DIF_S0_SIGUIENTE se informa aparte; sin ajustes |
 | E3.5-FIN-AC-15 | E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable | E3.6 muestra agregados o ND con motivo; E4.9 bloquea sin foto parcial ni 0 |
 | E3.5-FIN-AC-16 | Inspeccionar tablas/endpoints e intentar escribir un total | Sin tablas de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada |
 | E3.5-FIN-AC-17 | Ciclo abierto con duración provisional; corte dentro y tras el horizonte; siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio; Fin abierto vacío |
-| E3.5-FIN-AC-18 | Revisar nombres y expresiones de SPEC21 §4.3 contra P6/P7 | `Base analítica` ≠ `Cierre analítico`; `Falta` con R_obl; R_caja/R_obl separados; dos diferencias distintas; sin doble descuento |
+| E3.5-FIN-AC-18 | Revisar nombres y expresiones de SPEC21 §4.3 contra P6/P7; ventana [A,T] y recálculo tras reclasificación | `Base analítica` ≠ `Cierre analítico`; `Falta` con R_obl; R_caja/R_obl separados; dos diferencias distintas; sin doble descuento; ventana y recálculo conservados |
 
 ### E3.5.5 Consumidores y límites
 

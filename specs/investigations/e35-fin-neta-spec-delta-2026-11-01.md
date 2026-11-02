@@ -143,8 +143,9 @@ reglas financieras nuevas: describen fuente, cobertura y frontera de datos.
 
 El bloque de Comida de SPEC21 §4.3 está marcado por su propio texto como **propuesta
 E3.5/spec18 no aprobada** (`[P][F]`). Al contrastarlo con P6/P7 aprobadas aparecen tres
-desajustes de nombre o de magnitud. **No se edita SPEC21**: la corrección pertenece a su
-spec propietaria y requiere aprobación.
+desajustes de nombre o de magnitud. **La corrección se incorpora como reconciliación
+propuesta en SPEC21 §4.3.2**, no como cambio silencioso de fórmulas; la aprobación de esa
+reconciliación sigue siendo del propietario.
 
 | ID | Hallazgo | Comparación | Riesgo si no se resuelve | Recomendación |
 | --- | --- | --- | --- | --- |
