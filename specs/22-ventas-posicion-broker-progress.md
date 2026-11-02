@@ -140,7 +140,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-17 | PASS | S001 y número de Movimientos sin cambios |
 | E4.2-AC-18 | PASS | Ficha: tras V2 1/2 y tras P3 2/2; S006 1/0; fechas correctas; `compras` y `ventas` separadas (H-3 corregido) |
 | E4.2-AC-19 | PASS (API) / UNRUN (UI) | Cobertura, «No disponible hasta E4.3» y ausencia de «Cerrada»; sin Playwright |
-| E4.2-AC-20 | PARCIAL (dominio) / UNRUN (endpoints y flujo) | `cycleContext` usa la fecha de inversión; `GET /api/ciclos`, ciclo actual/corte y flujo mensual no recorridos |
+| E4.2-AC-20 | PARCIAL (dominio) / UNRUN (GET endpoint) | `cycleContext` con ciclos 01/03 y 01/04, referencia 03-03→04-10, ciclo actual y corte; `GET /api/ciclos` no recorrido |
 | E4.2-AC-21 | PASS (dominio) | Máximos de tres fuentes y estados agregados una sola vez, sin suma |
 | E4.2-AC-22 | PASS (dominio) | La fuente retrocede al anular y avanza al rectificar; referencia conectada |
 | E4.2-AC-23 | PARCIAL (fuente) / UNRUN (UI) | Estados pendiente/error y causa en cobertura; `sin_referencia` solo agregado y UI no recorrida |
@@ -161,7 +161,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PARCIAL | Cinco cambios 409 `HISTORY_LOCKED`; falta Saldo que intervenga solo en una Venta |
 | E4.2-AC-40 | PARCIAL | Venta entre preview y confirmación → 409 `IMPACT_CHANGED`; falta huella ajena S001/Venta |
-| E4.2-AC-41 | UNRUN | No ejecutado de extremo a extremo; ruta `getSaldo`→motor único ya probada |
+| E4.2-AC-41 | PASS | `monthlyFlow`: 6.810,40 antes y 7.316,40 tras Venta; liquidez=0 → 5.000,00; NULL → Parcial/subtotal 5.000,00 |
 | E4.2-AC-42 | PASS | Impactos y GET no escriben: tablas, contadores, revisiones y auditoría iguales |
 | E4.2-AC-43 | PASS | Cantidad/precio/importe inválidos, 2000/2001, clave inválida, diferencia informativa |
 | E4.2-AC-44 | PARCIAL (API) / UNRUN (UI) | Filtros, paginación, estados, 404, opciones acotadas; incidencia «Revisar» y UI no ejecutadas |

@@ -45,7 +45,8 @@ import {
 import { createClassification } from "./clasificacion";
 import { previewMovement, writeMovement } from "./movimientos";
 import { financeRevision } from "./movement-ledger";
-import { financialReference, cycleContext } from "./ciclos";
+import { financialReference, cycleContext, createCycle } from "./ciclos";
+import { monthlyFlow } from "./flujo-mensual";
 import { investmentSource } from "./investment-ledger";
 import { Problem } from "./problem";
 import { verifyContract } from "./schema-contract";
@@ -2000,6 +2001,69 @@ test("E4.2 aislamiento: una Venta no se expone ni se muta por rutas de Compra", 
     ).toBe(404);
     expect(positionQuantity(db, "S004", instrumento.id).quantity).toBe(before);
     expect(getSale(db, id).venta.estado).toBe("Vigente");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2-AC-20/41: referencia de Ciclos y Liquidez con Venta", () => {
+  const { db, instrumento } = base();
+  try {
+    updateSaldo(db, "S001", {
+      revision: getSaldo(db, "S001").revision,
+      saldoApertura: "5000.00",
+      fechaApertura: "2026-01-01",
+    });
+    db.run("UPDATE saldos SET liquidez=1 WHERE id IN ('S001','S003')");
+    const cycle = (inicio: string) =>
+      createCycle(
+        db,
+        {
+          inicio,
+          saldoInicialComida: "0",
+          contextRevision: cycleContext(db).revision,
+        },
+        randomUUID(),
+        now,
+      ).ciclo;
+    cycle("2026-03-01");
+    const april = cycle("2026-04-01");
+    cycle("2026-05-01");
+    buy(db, instrumento.id);
+    p2(db, instrumento.id);
+    const before = cycleContext(db);
+    expect(before.referencia.fecha).toBe("2026-03-03");
+    expect(before.actual?.inicio).toBe("2026-03-01");
+    const comida = before.referencia.coverage.find(
+      (s) => s.source === "Revisión Comida",
+    );
+    expect(["pendiente", "disponible"]).toContain(comida?.state);
+    if (comida?.state === "disponible")
+      expect(comida.maxDate).toBeNull();
+    expect(monthlyFlow(db, april.id, now).metrics.liquidez.valor).toBe(
+      "6810.40",
+    );
+
+    sell(db, instrumento.id);
+    const after = cycleContext(db);
+    expect(after.referencia.fecha).toBe("2026-04-10");
+    expect(after.actual?.inicio).toBe("2026-04-01");
+    const flow = monthlyFlow(db, april.id, now);
+    expect(flow.metrics.liquidez.valor).toBe("7316.40");
+    expect(flow.metrics.liquidez.subtotal).toBeNull();
+    expect(flow.metrics.liquidez.estado).toBe("Verificado");
+    expect(flow.liquidez.incluidos.map((s) => s.id)).toContain("S003");
+    expect(flow.liquidez.excluidos.map((s) => s.id)).not.toContain("S003");
+
+    db.run("UPDATE saldos SET liquidez=0 WHERE id='S003'");
+    expect(monthlyFlow(db, april.id, now).metrics.liquidez.valor).toBe(
+      "5000.00",
+    );
+    db.run("UPDATE saldos SET liquidez=NULL WHERE id='S003'");
+    const partial = monthlyFlow(db, april.id, now);
+    expect(partial.metrics.liquidez.estado).toBe("Parcial");
+    expect(partial.metrics.liquidez.subtotal).toBe("5000.00");
+    expect(partial.liquidez.excluidos.map((s) => s.id)).toContain("S003");
   } finally {
     db.close();
   }
