@@ -387,8 +387,9 @@ se reescriben esas specs ni se declaran AC cumplidos.
 1. Los 18 AC con fila `E3.5-FIN-TP-*` propia en PASS sobre fixtures sintéticas.
 2. Cobertura por métrica, subtotales parciales y `No disponible` con motivo verificados.
 3. Sin tablas de hechos, sin totales persistidos y sin escritura desde la capa analítica.
-4. Proveedor FIN-12 con ventana, fuente, huella/revisión y cobertura; E3.6/E4.9 consumiéndolo sin
-   duplicar lógica.
+4. Proveedor FIN-12 con ventana, fuente, huella/revisión y cobertura, y contrato publicado para
+   E3.6/E4.9. El **consumo efectivo** por E3.6/E4.9 se valida en su propio DEV (D4), no en el
+   DoD de E3.5.
 5. QA independiente y CI `required`; sin datos reales.
 
 **Gates antes de autorizar DEV:**
