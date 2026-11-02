@@ -214,6 +214,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
 | `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **24 pass / 0 fail** (incluye aislamiento Compra/Venta y clase inmutable) |
 | `bun run test` | **373 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| Full Linux (`workflow_dispatch`) | **PASS** en `494f59f`: API 432/0, E2E **17/17**, restore v19/v20, `CI_BROWSER=success`, `CI_PROFILE=full` |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |

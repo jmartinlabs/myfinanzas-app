@@ -213,3 +213,5 @@ del nuevo SHA porque esta ronda no publica rama ni PR. Antes del merge se requie
 `python3 scripts/verify --full` en Linux canónico y Playwright completo verde, resolver o
 aceptar explícitamente los fallos de `catalog`/`movimientos`, y la aprobación
 explícita e identificable del usuario. No se auto-fusiona ni se declara PASS canónico.
+
+**Full Linux 2026-11-02:** `workflow_dispatch` run `41434662965` sobre `494f59f`, perfil `full`: API 432/0, E2E **17/17**, restore v19/v20 y Chromium PASS.
