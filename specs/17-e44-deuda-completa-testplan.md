@@ -119,7 +119,7 @@ y la conciliación recalcula; H3 sigue consultable como anulada.
 | --- | --- | --- | --- | --- | --- |
 | T-01 | AC-13 | D001 (oráculo 920) + D002 válida; H4 inválido en D001 el 10/10 (fixture SQL); corte 05/10, 10/10 y sin corte | Corte 05/10: D001 920 y D002 calculable. Corte 10/10 y sin corte: **D001 No calculable con ID**, D002 intacta; conciliación D001 en 10/10 `No comparable`; precontrol inválido 20/09 no bloquea; inválido posterior al corte no bloquea ese corte | Bun/API + fixture SQL | UNRUN |
 | T-02 | AC-13 | Gasto heredado con `capital`/`intereses` `NULL` enlazado a Deuda; listado y ficha | `capitalPendiente === null` (no 0); «No calculable» en ambos; sin guarda en `getDebt` (D1: solo read model) | Bun/API | UNRUN |
-| T-03 | AC-05 | Pago +10,00 y −10,00 sobre apertura 200 | Amortizado 210 y 190 respectivamente; diferencia con signo exacto, sin clamp | Bun/API | UNRUN |
+| T-03 | AC-14 (y AC-06) | Pago +10,00 y −10,00 sobre apertura 200 | Amortizado 210 y 190 respectivamente; diferencia con signo exacto, sin clamp | Bun/API | UNRUN |
 | T-04 | AC-20 | PATCH de tipo/condición ya informados con y sin `motivo`; primera cumplimentación sin motivo | 422 sin motivo al corregir; 200 opcional en primera cumplimentación; auditoría anterior/posterior/motivo | Bun/API | UNRUN |
 | T-05 | AC-21 | Conciliaciones en 10/10 (920) y 20/10 (720) | Cada diferencia en su propia `fechaCorte`; listado con la de mayor fecha y `Varias` | Bun/API | UNRUN |
 | T-06 | AC-23 | Migración desde la versión vigente (v21), no solo v16 | Datos/IDs/auditoría/MFA preservados; rollback; versión desconocida intacta | Bun integración | UNRUN |
@@ -159,7 +159,7 @@ sin bloqueantes. Esta lista no autoriza ese dev ni declara PASS ahora.
 | QA final | `e918ca5` | **PASS documental** | N-01 cerrado; sin hallazgos nuevos; no es PASS funcional |
 | Delta supervisor | `cb74b28` | FAIL documental | Atribución residual de confirmación al usuario; corregida |
 | Delta supervisor | `09b416b` | **PASS documental** | Procedencia mediada por `question` y contraste humano pendiente; histórico solo lectura; sin hallazgos nuevos |
-| Dictamen 2026-11-02 | `8b551c5` | **PASS documental con reservas** | SPEC17-AUD: M1/M2/m8 verificados; M2 residual en brainstorming y base v16→v21 corregidos; wireframes 390 incompletos (requisito registrado); 4 decisiones del usuario registradas |
+| Dictamen 2026-11-02 | `8b551c5` | **PASS documental con reservas** | SPEC17-AUD: M1/M2/m8 verificados; M2 residual corregido; base actualizada a v21 en spec/testplan y referencias históricas del brainstorming marcadas; wireframes 390 incompletos (requisito registrado); 4 decisiones del usuario registradas |
 
 El dictamen es **documental**, no funcional: no hay candidato E4.4, no se ejecutaron E2E ni
 la suite financiera y el revisor no aprobó la especificación, los wireframes, el desarrollo

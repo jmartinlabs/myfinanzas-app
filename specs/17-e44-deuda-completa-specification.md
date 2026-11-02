@@ -69,7 +69,7 @@ no sustituye la fuente de verdad vigente.
 La lectura E4.4 **no convierte un desglose ausente en cero**: si un hecho aplicable no tiene
 capital/intereses válidos, la deuda viva es no calculable y se indica el hecho afectado.
 E4.4 no reabre la fórmula Q1 ni los contratos de escritura de E1.6, pero sí define un **read
-model propio** (o un ajuste de lectura mínimo y documentado) que aplica la misma fórmula con
+model propio**, sin tocar `getDebt`, que aplica la misma fórmula con
 validación de desglose completo. El read model deberá tratar `capital` nulo como **no verificable en el agregado** y no como
 cero: se reutilizará la validación de `debtPeriod` en el read model propio, **sin alterar
 `getDebt` ni los contratos de escritura de E1.6**. La validación cubre el **desglose completo**
@@ -85,7 +85,8 @@ no un operando que descuente deuda viva.
 
 - **DT2 (precisión/IDs/constraints):** esta spec propone EUR exacto, tasas decimales sin
   `float`, fechas civiles y transacciones atómicas; no fija SQL, nombres físicos ni número de
-  migración. La propuesta se contrastará con `main` y con la fuente antes de dev.
+  migración. Los **límites de TIN/TAE y las longitudes** son punto de partida y quedan
+  **pendientes de contraste con DT2** antes del desarrollo. La propuesta se contrastará con `main` y con la fuente antes de dev.
 - **DT7 (mapping/aperturas/precontrol/conciliación):** se conservan los conceptos R5, pero
   no se aprueba el mapping real, el corte de 2026 ni una importación. E4.4 no incorpora el
   Excel ni datos personales; el mapping y la equivalencia siguen siendo gates de E4.5/E4.12.
@@ -625,7 +626,7 @@ CSRF/Origin, límite JSON, errores `Problem` y transacciones existentes.
 | `GET /api/deudas/:id` | Ficha con control, condiciones, histórico/precontrol (solo lectura), historia ejecutada y conciliaciones |
 | `GET /api/deudas/:id?corte=YYYY-MM-DD` | Misma ficha calculada al corte inclusivo; valida fecha y cobertura |
 | `POST /api/deudas` | Alta con campos E1.6 + tipo/condiciones; histórico/precontrol no aceptado; `idempotency-key`; revisión inicial y auditoría |
-| `PATCH /api/deudas/:id` | Edición con `revision`; nombre/estado/condiciones/tipo; histórico/precontrol no editable; apertura/Inicio protegidos por E1.6; auditoría |
+| `PATCH /api/deudas/:id` | Edición con `revision`; nombre/estado/condiciones/tipo; **`motivo` obligatorio al corregir tipo/condición ya informados (422 si falta)**, opcional en primera cumplimentación; histórico/precontrol no editable; apertura/Inicio protegidos por E1.6; auditoría |
 | `POST/PATCH con histórico/precontrol` | 422: campo de solo lectura; no se crea ni corrige por esta API |
 | `POST /api/deudas/:id/conciliaciones` | Alta de saldo declarado con fecha, importe, fuente/nota; idempotencia; una vigente por fecha |
 | `PATCH /api/deudas/:id/conciliaciones/:cid` | Corrección/anulación con `revision` y motivo; auditoría; sin DELETE |
@@ -757,7 +758,7 @@ con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
 | AC-17 | Conciliación antes del control o sin base calculable | Estado No comparable con motivo; no se inventa diferencia | I | E4.4-AC2 |
 | AC-18 | Dos altas de conciliación vigentes misma Deuda/fecha | 409 en la segunda; la corrección se hace sobre la existente; fechas distintas permitidas y el listado las marca `Varias` | I | E4.4-AC2 |
 | AC-19 | Concurrencia/reintento en alta/edición/conciliación | Revisión obsoleta 409; idempotencia devuelve una sola entidad; sin escritura parcial | I | E4.4-AC2 |
-| AC-20 | Corregir tipo/condiciones con revisión | Auditoría antes/después/motivo; sin efecto económico; histórico/precontrol no editable; apertura/Inicio usados siguen protegidos | I | E4.4-AC1 |
+| AC-20 | Corregir tipo/condiciones con revisión; `motivo` ausente al corregir un valor ya informado | Con `motivo`: auditoría antes/después/motivo; sin efecto económico; histórico/precontrol no editable; apertura/Inicio protegidos. Sin `motivo` al corregir tipo/condición ya informados: **422** (opcional en la primera cumplimentación) | I | E4.4-AC1 |
 | AC-21 | Rectificar/anular un pago y consultar corte/conciliación | Deuda viva y diferencia se recalculan; ambas Deudas si cambia; no doble resta; historia conservada | I | E4.4-AC2 |
 | AC-22 | Inspeccionar persistencia y endpoints | No se persiste capital/deuda viva/historia; no hay ajuste ni segundo ledger; derivados rechazados | I | E4.4-AC2 |
 | AC-23 | Migrar desde la versión vigente de main (v21 a 2026-11-02) | Campos nuevos null/Sin informar; IDs/auditoría/MFA/relaciones preservados; rollback/versión desconocida | I | E4.4-AC1 |
