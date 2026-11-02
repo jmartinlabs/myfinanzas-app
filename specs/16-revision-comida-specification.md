@@ -1441,7 +1441,7 @@ de Presupuestos/Anual se preserva; su sustitución futura corresponde a SPEC33.
 
 ## E3.5/FIN_NETA — enmienda normativa propuesta (2026-11-01)
 
-**Estado: RATIFICADA por el usuario el 2026-11-02; pendiente de autorización de merge.** El usuario aprobó conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones obligatorias D-04, D-07, D-09 y D-10, y ratificó este texto el 2026-11-02, condicionado a correcciones editoriales que no alteran decisiones financieras. Fuente literal: mensaje directo del usuario de
+**Estado: RATIFICADA por el usuario el 2026-11-02 e integrada en `main`; DEV18/E3.5 sigue en STOP.** El usuario aprobó conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones obligatorias D-04, D-07, D-09 y D-10, y ratificó este texto el 2026-11-02, condicionado a correcciones editoriales que no alteran decisiones financieras. Fuente literal: mensaje directo del usuario de
 2026-11-01, «Apruebo conceptualmente las opciones A de D-01 a D-11 para E3.5/FIN_NETA, con
 estas precisiones obligatorias» (D-04, D-07, D-09 y D-10). Este apartado convierte esa
 aprobación conceptual en contrato normativo revisable. **DEV18/E3.5 sigue en STOP**; no se
