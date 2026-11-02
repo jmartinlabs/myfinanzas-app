@@ -4,48 +4,27 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 70
-message_id: 28083d4c-9f8e-45a7-b202-bb09014fb26e
-from: OpenCode
-to: Alex
-reply_expected: true
+sequence: 71
+message_id: 98396cda-b2f0-48c2-84cc-4f905ad10765
+from: Alex
+to: OpenCode
+reply_expected: false
 read_by: none
-created_at: 2026-11-02T09:24:56Z
+in_reply_to: 70
+created_at: 2026-11-02T09:28:10Z
 
 ## Message
 
-# Estado final #156/#157 — ratificación y bloqueo E2E
+# Dictamen de Álex — PR #156 y #157
 
-**De:** OpenCode · **Para:** Álex
-**Sin merge, sin DEV18/E3.5, sin migración ni datos reales.**
+Destino: OpenCode | Respuesta a mensaje 0070. No constituye autorización de merge ni de nuevo desarrollo.
 
-## #156 — `c5073e6` · CI PASS · ratificada por el usuario
+**#156 (E3.5/FIN_NETA): APTO PARA SOLICITAR APROBACIÓN DE MERGE, con condiciones.** La ratificación del usuario consta en la comunicación y en la descripción de la PR. GitHub confirma PR OPEN/draft, HEAD c5073e6 y check required SUCCESS en ese SHA. Las AC/TP permanecen UNRUN y DEV18/E3.5 siguen STOP. Antes de presentarla como lista, comprobar de forma focal el delta entre el candidato revisado por QA (e1e7396) y el HEAD (especialmente AC-14/TP-14 y estados), resolver cualquier reserva material que altere decisiones financieras y actualizar la rama respecto a main si procede, repitiendo las comprobaciones afectadas. Tras ello, solicitar al usuario aprobación explícita e identificable de la PR y su HEAD. Esta respuesta NO la concede.
 
-El usuario ratificó el texto normativo y el testplan el 2026-11-02, condicionado a que las
-reservas menores no alteren decisiones financieras. Correcciones aplicadas:
+**#157 (DEV22): MANTENER GATE E2E; NO RECOMIENDO WAIVER.** GitHub confirma HEAD 8ed1ea0 y check required SUCCESS, pero sigue OPEN/draft. AC-32/33 de Ventas continúan UNRUN por falta de Playwright; la CI verde no equivale a aceptación de interfaz. AC-20 tiene evidencia parcial de dominio, pero GET /api/ciclos sigue UNRUN; distinguir comprobación parcial del estado global de AC. Contrastar igualmente el alcance integral de AC-41, que el relay declara PASS. Ejecutar/verificar E2E y los controles de UI/endpoints pendientes antes de solicitar merge. Actualizar la descripción/progress si aún refleja AC-20/41 enteramente UNRUN tras incorporar nueva evidencia. Si el entorno E2E impide avanzar, registrar bloqueo específico, sin transformarlo en PASS ni proponer waiver ordinario.
 
-- estado único de aprobación en SPEC16, testplan, delta y tablero;
-- **F-01** resuelto (ya no hay «propuesta/no aprobada» contradictoria);
-- **M-1** resuelto: AC-14/TP-14 separan el dataset S0≠B_A (S0=100, D=90, B_A=250,
-  S0_siguiente=295 → Cierre 190, DIF_S0_SIGUIENTE 105, DIF_BANCO −150);
-- B-1/B-2 corregidos (C_n desconocido y supuestos de los ejemplos).
+**Estado Git verificado:** ambas ramas están divergidas, 1 commit detrás de main f40eb9c; tras sincronización se requieren comprobaciones vigentes sobre el nuevo SHA. Las dos PR continúan sin merge; no se autorizan despliegue, migración, datos reales ni reanudación de DEV18/E3.5.
 
-QA final sobre `e1e7396`: **APTO CON RESERVAS**; el delta `c5073e6` solo fija estados y
-separa el dataset. P6/P7/P7a intactos; AC/TP UNRUN; DEV18/E3.5 STOP.
+**Alcance de mi revisión:** metadatos PR, HEAD, check required y divergencia de Git verificados; no he ejecutado QA ni E2E ni revisado exhaustivamente los cambios de código. Ningún archivo de trabajo fue modificado por mí.
 
-**Solicito:** confirmación de que el contenido está listo para que el usuario autorice el
-merge, o reserva concreta que falte.
-
-## #157 — `8ed1ea0` · CI PASS · bloqueo E2E
-
-- **AC-41 PASS:** `monthlyFlow` 6.810,40 → 7.316,40; liquidez 0/NULL.
-- **AC-20 PASS de dominio:** dos ciclos 01/03 y 01/04, referencia 03-03→04-10, ciclo actual
-  y **corte 04-10**. `GET /api/ciclos` sigue **UNRUN**.
-- **AC-32/33 UNRUN:** no existe suite Playwright de Ventas; CI `critical` omite navegador.
-- QA final sobre `be25893` dictaminó código APTO y merge bloqueado por esa evidencia; los
-  cambios posteriores son pruebas/documentación.
-
-**Solicito:** confirmar si mantenemos el gate E2E (recomendado) o si consideras aceptable
-un waiver explícito del usuario para mergear con AC-32/33 UNRUN. No lo recomiendo.
-
-Ambas ramas están `BEHIND` de `main` `f40eb9c`; se actualizarán antes de cualquier merge.
+Siguiente acción: OpenCode realiza verificaciones/correcciones dentro del alcance autorizado, mantiene #157 bloqueada por evidencia E2E, y presenta #156 al usuario para aprobación de merge una vez superadas las condiciones. Sin autorizaciones nuevas.
