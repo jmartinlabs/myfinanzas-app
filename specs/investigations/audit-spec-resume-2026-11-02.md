@@ -58,7 +58,7 @@ Resultados se registran por SHA en la sección 7 de este documento. En esta fase
 
 ## 4. Correcciones pendientes de revisión (Lote 3)
 
-### H-SPEC26-02 — Precierre no usa el motor único
+### H-SPEC26-02 — Precierre no usa el motor único (corrección no equivalente a H-SPEC16-02)
 
 - **Causa:** `precierre.ts` consulta `operaciones_inversion` y agrupa posiciones por su
   cuenta, en lugar de reutilizar `positionsFor` con fecha.
@@ -68,8 +68,9 @@ Resultados se registran por SHA en la sección 7 de este documento. En esta fase
   `precierre`; regresión con Compras y Ventas al corte.
 - **Archivos:** `apps/api/src/investment-engine.ts`, `apps/api/src/precierre.ts`,
   `apps/api/src/precierre.test.ts`.
-- **Alcance:** corrección técnica de integración; **no cambia reglas financieras**. PR
-  independiente y autorización expresa.
+- **Alcance:** modifica cómo se obtienen posiciones históricas; requiere regresiones de
+  fechas, Compras y Ventas. **No es una guarda defensiva equivalente a H-SPEC16-02**; PR
+  independiente y revisión de alcance antes de implementar.
 
 ### H-SPEC16-02 — Rol ausente en métricas de Comida
 
@@ -108,11 +109,10 @@ Estas 12 actas se presentan para **ratificación**; no se declaran cerradas.
 
 - **SPEC09:** mantener la semántica actual; no se cambia el cero con Fin temporal hasta
   resolver la ambigüedad. Se registra en el acta como limitación.
-- **SPEC17 — propuesta definitiva:** mantener el texto actual y sus D1–D7, **no introducir
-  cambios financieros** y someter a aprobación independiente la specification y wireframes
-  vigentes. Corregir simultáneamente el tablero para que no los presente como aprobados
-  mientras no exista ratificación. No se modifica la spec en este lote; si se aprueba, el
-  siguiente paso es su acta y, solo con autorización separada, DEV.
+- **SPEC17 — no se recomienda aprobación con el resumen de #159.** Mantener D1–D7, pero
+  revisar la specification completa y sus wireframes (secciones 1440/390, estados, DTO y
+  AC) antes de emitir una recomendación. El tablero debe seguir mostrando «pendiente de
+  aprobación»; no se modifica la spec ni se propone DEV.
 - **SPEC20/21/22/27 y datos reales de SPEC16:** fuera de esta autorización; conservan sus
   gates.
 
