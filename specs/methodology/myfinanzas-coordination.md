@@ -111,6 +111,23 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
   Si no queda trabajo autorizado, guardar estado y detenerse; no abrir infraestructura
   para mantener ocupado el pool.
 
+### Modo de ejecución
+
+La elección directo/foreground/background y sus condiciones de soporte, aislamiento y aviso
+inicial se rigen por la política canónica de
+[agentes dinámicos](dynamic-agents.md#execution-mode-direct-foreground-background). Aquí solo
+constan las particularidades locales:
+
+- El modo no altera los gates: especificación y desarrollo se aprueban por separado, las
+  decisiones financieras siguen protegidas, la QA es independiente y el merge exige aprobación
+  explícita e identificable.
+- Los escritores concurrentes requieren ownership disjunto y worktrees aislados; sin aislamiento
+  seguro se serializa. El techo de modelo y el gate de cuota siguen aplicando a toda tarea Codex,
+  incluida QA.
+- Agent Relay v1 continúa siendo solo transporte, sin cambios de protocolo.
+- Antecedente local: E3.5 y DEV22 en OpenCode (2026-11-01) acreditaron viabilidad técnica del
+  background, no ahorro de tokens ni paralelismo general.
+
 ## Parada y transferencia de sesión
 `$handoff` (Claude `/handoff`) congela nuevo trabajo, solicita detener solo agentes
 realmente controlables y deja checkpoint mínimo en progress/board o

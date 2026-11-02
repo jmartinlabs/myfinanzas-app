@@ -146,6 +146,35 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('resource-policy')
     finally:
      p.write_text(original)
+ def test_execution_mode_policy(self):
+  cases = (
+   ('specs/methodology/dynamic-agents.md', '## Execution mode: direct, foreground, background'),
+   ('specs/methodology/dynamic-agents.md', '**Direct (coordinator).**'),
+   ('specs/methodology/dynamic-agents.md', '**Foreground subagent.**'),
+   ('specs/methodology/dynamic-agents.md', '**Background subagent.**'),
+   ('specs/methodology/dynamic-agents.md', 'verified support in the active client'),
+   ('specs/methodology/dynamic-agents.md', "coordinator's turn does not finish"),
+   ('specs/methodology/dynamic-agents.md', 'Promise no persistence'),
+   ('specs/methodology/dynamic-agents.md', 'Never claim a subagent'),
+   ('specs/methodology/dynamic-agents.md', 'No universal agent count'),
+   ('.agents/skills/orchestrate/SKILL.md', 'execution mode adaptively'),
+   ('.agents/skills/orchestrate/SKILL.md', 'coordinator availability'),
+   ('.agents/skills/orchestrate/SKILL.md', 'background persistence'),
+   ('specs/methodology/myfinanzas-coordination.md', '### Modo de ejecución'),
+   ('specs/methodology/myfinanzas-coordination.md', 'dynamic-agents.md#execution-mode-direct-foreground-background'),
+   ('specs/methodology/myfinanzas-coordination.md', 'merge exige aprobación'),
+   ('specs/methodology/myfinanzas-coordination.md', 'ownership disjunto'),
+   ('specs/methodology/myfinanzas-coordination.md', 'Agent Relay v1'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('execution-mode')
+    finally:
+     p.write_text(original)
  def test_coordination_does_not_duplicate_continuity(self):
   p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
   for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
