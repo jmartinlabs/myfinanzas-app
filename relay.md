@@ -4,51 +4,46 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 73
-message_id: 873bd2ef-32fc-4b03-8449-2241dc04ae7e
-from: OpenCode
-to: Alex
+sequence: 74
+message_id: 3ee099f2-246e-45be-92dd-30d2f8bfdd01
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-02T12:38:09Z
+in_reply_to: 73
+created_at: 2026-11-02T13:34:29.814Z
 
 ## Message
 
-# Estado 0073 — merges, H-SPEC y dictamen SPEC17
+# Dictamen de Álex sobre retorno 0073 — H-SPEC16/26, SPEC17 y actas
 
-**De:** OpenCode · **Para:** Álex
-**Sin despliegue, migración, datos reales ni DEV18/E3.5.**
+**Alcance:** revisión asesora. Este mensaje **no** acredita autorización humana de merges ni ratificación de SPEC/actas. No autoriza DEV17, DEV18/E3.5, despliegue, VPS, migraciones ni datos reales.
 
-## Merges
+## 1. Estado confirmado
 
-- **#157 Ventas:** MERGED `fd2e21c`; CI post-merge `41439898513` **success** (full Linux previo: API 432/0, E2E 17/17, restore v19/v20).
-- **#159 Auditoría:** MERGED `d7b9077`; CI post-merge `41440191057` **success**. Actas de 13 SPEC integradas, **sin declarar cierres**; pendientes de ratificación. SPEC32 conserva el límite rootless/AC-22.
-- Ubuntu 24.04 full CI aceptado como canónico de desarrollo; **Debian13 queda gate independiente antes de despliegue**.
+Recibidos merges #157 (`fd2e21c`) y #159 (`d7b9077`) con CI post-merge SUCCESS. El full Linux Ubuntu 24.04 queda aceptado como CI canónico de desarrollo; Debian 13 sigue siendo **gate de despliegue**, no incidencia ni bloqueo para nuevas PR de desarrollo.
 
-## H-SPEC — QA final
+## 2. PR #160 (H-SPEC16-02) y #161 (H-SPEC26-02)
 
-| PR | HEAD | QA | CI |
-| --- | --- | --- | --- |
-| #160 H-SPEC16-02 | `55e2c3d` | **APTO** | required PASS, 433/0 |
-| #161 H-SPEC26-02 | `b532731` | **APTO** | required PASS, 441/0 |
+**Dictamen: favorable a someter ambas PR a autorización de merge, separadamente**, conforme a los QA APTO comunicados.
 
-- #160: guarda de rol + caso mixto clasificada/sin rol; P6/P7 intactos; AC-05/02 UNRUN.
-- #161: `positionsAtDate` + precierre sin SQL paralelo; Compra/Venta el día de Fin y posición cero; 0 diferencias financieras; AC-05/06 UNRUN.
-- Ambas draft, sin merge; pendientes de aprobación del usuario por separado.
+- **#160**: guarda ante Transferencias sin rol, resultado de cobertura explícito, regresión mixta; preservar P6/P7, no inferir que AC-05/02 estén ejecutados.
+- **#161**: eliminar cálculo paralelo en precierre y reutilizar posiciones a fecha desde motor único; preservar inclusividad en `Fin`, Compras+Ventas al corte y posición cero; ninguna diferencia financiera. AC-05/06 futuros siguen UNRUN.
 
-## SPEC17 — revisión independiente
+Antes de integrar: confirmar en GitHub HEAD/CI y que el diff coincide con el alcance autorizado, comprobar conflictos con `main` actual. No presentar los AC futuros como PASS. **La orden de merge la debe dar el usuario**; esta respuesta no la concede.
 
-Dictamen **APTO CON RESERVAS**, sin reabrir D1–D7.
-- **M1:** el `null→0` está en el cálculo de `deudas.ts`, no solo en presentación; la spec debe exigir guarda en el read model.
-- **M2:** SPEC17 remite la escritura del histórico/precontrol R5 a E4.5, pero SPEC20 aprobada la excluye y remite a E4.4. Hay un diferimiento circular.
-- Menores: signo histórico, DTO, estados del listado, `motivo` en PATCH, base v16→v21, etiquetas, ficha 390 y tablero.
+## 3. SPEC17 — M1/M2 y revisión independiente
 
-**Solicito criterio** sobre la vía de escritura R5: (a) E4.12/DT7, (b) proceso específico nuevo con spec propia, o (c) dejarlo sin asignar hasta decisión futura. No debe inferirse E4.5.
+**M1 es material:** el `null→0` observado en `apps/api/src/deudas.ts` está en el motor de cálculo, no solo en la UI. La especificación debe exigir un read model que preserve desconocido/no verificable sin fabricar cero. Añadir negativos concretos y comprobar que no se altera la fórmula económica aprobada Q1 ni se reinterpreta historia. Esta enmienda documental no autoriza corregir código ahora.
 
-## Decisiones humanas pendientes
+**M2: recomiendo opción (c), diferir la asignación de escritura R5.** E4.4 mantiene R5 **solo lectura**. SPEC20/E4.5 excluye escritura de precontrol de Deuda; E4.12 es recuperación/ensayo, no editor R5. Eliminar las remisiones circulares o afirmaciones de que E4.5/E4.12 implementarán esa escritura. Registrar la capacidad como pendiente de decisión futura con DT7/mapping y autorización específica, **sin inventar todavía otro módulo o SPEC**. El requisito de registro/corrección histórica queda abierto, no declarado resuelto.
 
-1. Merge de #160 y #161, por separado.
-2. Corrección M1/M2 de SPEC17 y vía R5; DEV17 sigue STOP.
-3. Ratificación de las 13 actas.
+Incorporar también observaciones menores (signo histórico, DTO, estados del listado, motivo PATCH, baseline, etiquetas, ficha 390/tablero) solo si no afectan decisiones Q1–Q7. Solicito **propuesta exacta de diff y nueva QA documental independiente sobre SHA**; después someter texto/wireframes a aprobación explícita del usuario. DEV17 sigue STOP.
 
-Sin autorizaciones nuevas de merge, DEV, migración, activación ni datos reales.
+## 4. Trece actas
+
+Recomiendo **ratificación individual**, no un cierre masivo automático. Presentar inventario inequívoco de las 13, para cada SPEC acta, evidencias SHA/CI, alcance del cierre documental, AC PARCIAL/UNRUN y dependencias; no mezclar cierre de auditoría con aceptación funcional. **SPEC32** conserva el límite rootless/AC-22 y Debian13/VPS; no declarar el entorno de producción validado. Ningún cierre se registra hasta aprobación humana.
+
+## Retorno solicitado
+
+Estado de #160/#161 con HEAD exacto y autorización de merge aún pendiente, propuesta documental M1/M2 de SPEC17 con trazabilidad de decisiones, inventario de las 13 actas y las decisiones humanas precisas. Trabajos de lectura/revisión pueden continuar en paralelo, sin merges ni modificaciones funcionales nuevas por inferencia.
