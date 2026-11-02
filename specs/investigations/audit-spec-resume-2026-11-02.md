@@ -1,4 +1,4 @@
-# Auditoría de especificaciones — reanudación y propuesta de cierre
+# Auditoría de especificaciones — reanudación y cierre de auditoría
 
 Fecha: 2026-11-02. Autor: orquestador OpenCode. Estado: **cierre global ratificado por el
 usuario el 2026-11-02; 20 actas ratificadas y 2 diferidas; no cierra ninguna SPEC
@@ -16,8 +16,8 @@ Tracker histórico: [spec-audit-tracker.md](spec-audit-tracker.md). Acta global 
   (#150/#151), D7 (#154/#155), FIN_NETA documental (#156) y DEV22 (#157).
 - Se mantiene el balance **3 cerradas / 22 abiertas**; varias filas del tracker y del
   tablero estaban desactualizadas (SPEC16/17/22/26/32, D7, E4.8).
-- Estado de auditoría: **23/25 cerradas en propuesta** (3 previas + 11 ratificadas + 9
-  propuestas) y **2 diferidas** (SPEC06, SPEC32). **0 nuevos cierres funcionales.**
+- Estado de auditoría: **23/25 cerradas** (3 previas + 11 ratificadas + 9 ratificadas el
+  2026-11-02) y **2 diferidas** (SPEC06, SPEC32). **0 nuevos cierres funcionales.**
 - Este documento no reclasifica AC ni convierte UNRUN/PARCIAL en PASS.
 
 ## 2. Estado de las 22 SPEC (cierre de auditoría ratificado 2026-11-02)
@@ -27,31 +27,31 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 
 | SPEC | Estado | Evidencia principal | Acción |
 | --- | --- | --- | --- |
-| 04 Movimientos | B | 29 AC PASS en `b51b89b`; fixes #125 `e3ebd76`; E2E de Movimientos PASS en full Linux `766ea6b` (código idéntico, no candidato propio) | E2E/full sobre candidato propio; acta propuesta |
+| 04 Movimientos | B | 29 AC PASS en `b51b89b`; fixes #125 `e3ebd76`; E2E de Movimientos PASS en full Linux `766ea6b` (código idéntico, no candidato propio) | E2E/full sobre candidato propio; acta ratificada |
 | 05 Transferencias | A | #84/#90 integradas; nota de vigencia §D5 | Acta ratificada |
 | 06 Deuda | B | Cabecera corregida; **auditoría técnica abierta** (`06-...:8-9`); M1/E4.4 como reserva | Cierre diferido; no cerrar E1.6 |
 | 07 Ciclos | A | Opción B #128; progress/testplan con PR #49 histórico | Acta ratificada |
 | 08 Presupuestos | A | Nota #129; pruebas B1–B9 | Acta ratificada |
-| 09 Plan del ciclo | B | PR #57 `7422d23`; ambigüedad del cero con Fin temporal documentada | Mantener semántica; acta propuesta |
+| 09 Plan del ciclo | B | PR #57 `7422d23`; ambigüedad del cero con Fin temporal documentada | Mantener semántica; acta ratificada |
 | 10 Plan anual | A | Nota #129; motor/pruebas | Acta ratificada |
 | 11 Nómina | A | H-SPEC11-01 ambigüedad documentada; no bug | Acta ratificada |
 | 12 Flujo mensual | A | Sin hallazgo; límites de `ledgerRows()` delimitados | Acta ratificada |
 | 13 Anticipos | A | Nota #129; AC36 parcial aceptado | Acta ratificada |
 | 14 Compartidos | A | Nota #129; D5 probado; B-T11 futuro | Acta ratificada |
 | 15 Vehículos | A | Nota #129; proveedor histórico no conectado = límite | Acta ratificada |
-| 16 Revisión Comida | B | #82/#136/#160; H-SPEC16-02 integrado (run `41455159383`); AC-25/P3 abiertos | Acta propuesta; datos reales aparte |
-| 17 Deuda completa | B | M1/M2/m8 aplicados #163; spec/wireframes NO aprobados; ningún AC ejecutado | Acta propuesta; no aprobar spec |
+| 16 Revisión Comida | B | #82/#136/#160; H-SPEC16-02 integrado (run `41455159383`); AC-25/P3 abiertos | Acta ratificada; datos reales aparte |
+| 17 Deuda completa | B | M1/M2/m8 aplicados #163; spec/wireframes NO aprobados; ningún AC ejecutado | Acta ratificada; no aprobar spec |
 | 19 Instrumentos | A | 6 AC PARCIAL aceptados; D7 #154/#155 | Acta ratificada; no promover parciales |
-| 20 Histórico precontrol | D | PR87 `3d70fd6`; 59 AC UNRUN; DT7 | DEV futuro; acta propuesta |
-| 21 Pendientes/conciliación | D | PR97 `2364d9c`; 31 AC UNRUN; E3.5 STOP | DEV futuro; acta propuesta |
-| 22 Ventas/bróker | A | #157 MERGED `fd2e21c`; 45 AC PASS; full `766ea6b` (`41435723276`) y `494f59f` (`41434662965`) | Acta propuesta; sin cierre funcional |
-| 26 Precierre | A | E4.8 #150 + #161; run `41456569310`; 13 AC PASS, AC-04 parcial | Acta propuesta; AC-11 en revisión |
-| 27 Cierre financiero | D | Aprobada; AC UNRUN; #161 provee `positionsAtDate` | Gates E3.5/DT6; acta propuesta |
+| 20 Histórico precontrol | D | PR87 `3d70fd6`; 59 AC UNRUN; DT7 | DEV futuro; acta ratificada |
+| 21 Pendientes/conciliación | D | PR97 `2364d9c`; 31 AC UNRUN; E3.5 STOP | DEV futuro; acta ratificada |
+| 22 Ventas/bróker | A | #157 MERGED `fd2e21c`; 45 AC PASS; full `766ea6b` (`41435723276`) y `494f59f` (`41434662965`) | Acta ratificada; sin cierre funcional |
+| 26 Precierre | A | E4.8 #150 + #161; run `41456569310`; 13 AC PASS, AC-04 parcial | Acta ratificada; AC-11 en revisión |
+| 27 Cierre financiero | D | Aprobada; AC UNRUN; #161 provee `positionsAtDate` | Gates E3.5/DT6; acta ratificada |
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta ratificada; gate operativo |
 | 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 PARCIAL en `87f9c5b`/`40898403837`; E2E final UNRUN | Cierre diferido; no reutilizar `766ea6b` |
 
 **Recuento de la clasificación:** **A 13 · B 6 · C 0 · D 3** (22 filas). El recuento cuadra
-con la tabla y **no altera** el estado de auditoría ya fijado (23/25 cerradas propuestas y
+con la tabla y **no altera** el estado de auditoría ya fijado (23/25 cerradas y
 2 diferidas) ni el balance funcional (3 cerradas / 22 abiertas). Ninguna fila declara una
 SPEC funcionalmente cerrada.
 

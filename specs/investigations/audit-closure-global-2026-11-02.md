@@ -24,9 +24,9 @@ funcionalmente cerrada.
 | **Auditoría documental** | **23/25 cerradas** (3 previas + 11 ratificadas + 9 ratificadas el 2026-11-02) y **2 diferidas**; cierre global **ratificado** | 3 previas (SPEC01–03) + 11 ratificadas (05, 07, 08, 10, 11, 12, 13, 14, 15, 19, 31) + 9 ratificadas el 2026-11-02 (04, 09, 16, 17, 20, 21, 22, 26, 27). Diferidas: SPEC06 y SPEC32. |
 | **Estado funcional** | **3 cerradas / 22 abiertas** | No cambia por este lote. **0 nuevas SPEC funcionalmente cerradas.** |
 
-«Auditoría finalizada» **no** equivale a «SPEC funcionalmente cerrada». Las 9 actas
-propuestas siguen pendientes de ratificación individual; ninguna convierte AC PARCIAL o
-UNRUN en PASS ni altera la aceptación funcional.
+«Auditoría finalizada» **no** equivale a «SPEC funcionalmente cerrada». Las 20 actas
+ratificadas son cierre documental de auditoría; ninguna convierte AC PARCIAL o UNRUN en PASS
+ni altera la aceptación funcional.
 
 ## 3. Evidencia por SPEC y runs citados
 
@@ -111,7 +111,8 @@ ninguna SPEC pase a «funcionalmente cerrada».
 
 ## 8. Declaraciones
 
-- Este acta **no autoriza DEV**, datos reales, migración, despliegue ni merge.
+- Este acta **no autoriza DEV**, datos reales, migración, despliegue ni merge. El merge de la
+  PR documental fue autorizado por el usuario por separado; esta acta no lo sustituye.
 - **«Auditoría finalizada» ≠ «SPEC funcionalmente cerrada».**
 - El balance funcional se conserva en **3 cerradas / 22 abiertas**.
 - Las 20 actas ratificadas conservan su alcance y sus AC PARCIAL/UNRUN.

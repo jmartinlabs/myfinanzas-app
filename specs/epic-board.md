@@ -6,7 +6,8 @@ abiertas**. Acta global:
 [audit-closure-global-2026-11-02](investigations/audit-closure-global-2026-11-02.md);
 diagnóstico: [audit-spec-resume-2026-11-02](investigations/audit-spec-resume-2026-11-02.md).
 **Ninguna SPEC queda funcionalmente cerrada por este lote**; no se convierten PARCIAL/UNRUN
-en PASS y no se autoriza DEV, merge, migración ni datos reales.
+en PASS y no se autoriza DEV, migración ni datos reales; el merge documental se autorizó por
+separado.
 
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
 
@@ -209,7 +210,7 @@ consultables sin conversión.
 ## Current checkpoint — Lote 1 documental y estado 2026-10-29 (histórico)
 
 > **Nota de vigencia 2026-11-02:** entrada histórica. El resumen vigente es «Auditoría de
-> especificaciones — cierre global propuesto 2026-11-02».
+> especificaciones — cierre global ratificado 2026-11-02».
 
 Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como
 historia. Responsable único: coordinador (OpenCode). Esta entrada es documental: no
@@ -745,7 +746,7 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC18 | E3.5 | Comida y compensaciones | Rev7 aprobada según checkpoint | CIERRE TÉCNICO LOCAL, QA18 PASS CON SALVEDADES; no publicado/integrado/aceptado funcionalmente |
 | SPEC19 | E4.1 | Instrumentos y Compras | Rev10 y testplan aprobados expresamente | Código histórico congelado064df64; nuevo supervisor conciliando gates, sin DEV activo confirmado |
 | SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 MERGED `3d70fd6`; 59 AC UNRUN; DT7 pendiente |
-| SPEC21 | E3.6 | Conciliación transversal | Número asignado; no iniciada | No iniciado |
+| SPEC21 | E3.6 | Conciliación transversal | Aprobada documentalmente; PR #97 MERGED `2364d9c` | DEV21/E3.6 no iniciados; 31 AC UNRUN |
 | SPEC22 | E4.2 | Ventas y efectivo de bróker | MERGED `fd2e21c`; full Linux 17/17 | Integrado; sin DEV18/E3.5 |
 | SPEC23 | E4.3 | Valoración y resultados | Número asignado; no iniciada | No iniciado |
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
