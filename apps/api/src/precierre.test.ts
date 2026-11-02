@@ -163,6 +163,36 @@ test("AC-05: E4.1 muestra efectivo/posiciones a Fin y excluye el futuro", () => 
   }
 });
 
+test("AC-05: Compra y Venta el día de Fin se agregan al mismo corte", () => {
+  const db = fixture({ investment: true, plan: true });
+  try {
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('2','Venta','2026-01-31','I0001','S003','S004',50000000,1000,'EUR',NULL,500,NULL,'Venta en Fin',NULL,'Vigente',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en) VALUES('I0002','Instrumento cero','Activa',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('3','Compra','2026-01-31','I0002','S003','S004',100000000,1000,'EUR',NULL,1000,NULL,'Compra cero',NULL,'Vigente',1,'f','f')",
+    );
+    db.run(
+      "INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado) VALUES('4','Venta','2026-01-31','I0002','S003','S004',100000000,1000,'EUR',NULL,1000,NULL,'Venta cero',NULL,'Vigente',1,'f','f')",
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(
+      result.inversion.posiciones.find((p) => p.instrumento === "I0001")
+        ?.cantidad,
+    ).toBe("0.5");
+    expect(
+      result.inversion.posiciones.find((p) => p.instrumento === "I0002")
+        ?.cantidad,
+    ).toBe("0");
+    expect(result.inversion.posiciones).toHaveLength(2);
+  } finally {
+    close(db);
+  }
+});
+
 test("AC-05: múltiples cuentas de efectivo, incluida inactiva histórica", () => {
   const db = fixture({ investment: true, plan: true });
   try {
