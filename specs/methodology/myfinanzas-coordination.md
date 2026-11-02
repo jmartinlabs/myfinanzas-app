@@ -111,29 +111,22 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
   Si no queda trabajo autorizado, guardar estado y detenerse; no abrir infraestructura
   para mantener ocupado el pool.
 
-### Modo de ejecución: directo, foreground o background
+### Modo de ejecución
 
-El coordinador elige el modo por tarea con el coste mínimo que entregue el resultado, según
-[agentes dinámicos](dynamic-agents.md#execution-mode-direct-foreground-background). Directo para
-correcciones pequeñas, operaciones de bajo coste, decisiones funcionales que exigen interacción
-inmediata, consolidación, supervisión y comprobaciones breves. Foreground cuando necesita el
-resultado para continuar, la tarea es breve o una dependencia impide avanzar. Background para
-especificaciones sustanciales, DEV autónomo ya autorizado, investigaciones y auditorías acotadas,
-QA independiente con candidato verificable y trabajo delimitado sin supervisión continua.
+La elección directo/foreground/background y sus condiciones de soporte, aislamiento y aviso
+inicial se rigen por la política canónica de
+[agentes dinámicos](dynamic-agents.md#execution-mode-direct-foreground-background). Aquí solo
+constan las particularidades locales:
 
-Background exige soporte real verificado en el cliente activo y beneficio que justifique su coste;
-si no existe, se usa directo o foreground y se declara. Liberar el turno del coordinador no
-termina el runtime del subagente: la tarea sigue hasta que reporta o falla, y cerrar el cliente o
-el runtime puede detenerla; no se promete persistencia posterior sin verificación de ese cliente.
-En OpenCode se observó el 2026-11-01 (E3.5 y DEV22, `background: true`, worktrees y ramas
-independientes, solapamiento de 4 min 35 s y QA posterior) viabilidad técnica, no ahorro de
-tokens ni paralelismo general. El paralelismo sigue limitado a tareas autorizadas, independientes
-y con ownership e aislamiento válidos; no hay número fijo de agentes. Agent Relay v1 continúa
-siendo solo transporte, sin cambios de protocolo.
-
-Al iniciar trabajo sustancial se indica brevemente tarea e identificador, quién ejecuta, modo,
-aislamiento y si el coordinador queda disponible. Sin informes adicionales ni mensajes
-repetitivos, y sin afirmar un subagente, modo o aislamiento no verificados.
+- El modo no altera los gates: especificación y desarrollo se aprueban por separado, las
+  decisiones financieras siguen protegidas, la QA es independiente y el merge exige aprobación
+  explícita e identificable.
+- Los escritores concurrentes requieren ownership disjunto y worktrees aislados; sin aislamiento
+  seguro se serializa. El techo de modelo y el gate de cuota siguen aplicando a toda tarea Codex,
+  incluida QA.
+- Agent Relay v1 continúa siendo solo transporte, sin cambios de protocolo.
+- Antecedente local: E3.5 y DEV22 en OpenCode (2026-11-01) acreditaron viabilidad técnica del
+  background, no ahorro de tokens ni paralelismo general.
 
 ## Parada y transferencia de sesión
 `$handoff` (Claude `/handoff`) congela nuevo trabajo, solicita detener solo agentes

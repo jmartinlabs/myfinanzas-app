@@ -157,13 +157,14 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', 'Promise no persistence'),
    ('specs/methodology/dynamic-agents.md', 'Never claim a subagent'),
    ('specs/methodology/dynamic-agents.md', 'No universal agent count'),
-   ('specs/methodology/dynamic-agents.md', 'E3.5 and DEV22'),
    ('.agents/skills/orchestrate/SKILL.md', 'execution mode adaptively'),
    ('.agents/skills/orchestrate/SKILL.md', 'coordinator availability'),
    ('.agents/skills/orchestrate/SKILL.md', 'background persistence'),
-   ('specs/methodology/myfinanzas-coordination.md', 'Modo de ejecución: directo, foreground o background'),
+   ('specs/methodology/myfinanzas-coordination.md', '### Modo de ejecución'),
    ('specs/methodology/myfinanzas-coordination.md', 'dynamic-agents.md#execution-mode-direct-foreground-background'),
-   ('specs/methodology/myfinanzas-coordination.md', 'viabilidad técnica, no ahorro de'),
+   ('specs/methodology/myfinanzas-coordination.md', 'merge exige aprobación'),
+   ('specs/methodology/myfinanzas-coordination.md', 'ownership disjunto'),
+   ('specs/methodology/myfinanzas-coordination.md', 'Agent Relay v1'),
   )
   for name,token in cases:
    with self.subTest(name=name,token=token):

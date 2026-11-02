@@ -175,10 +175,11 @@ def validate(root):
   'specs/methodology/dynamic-agents.md':('## Execution mode: direct, foreground, background',
    '**Direct (coordinator).**','**Foreground subagent.**','**Background subagent.**',
    'verified support in the active client',"coordinator's turn does not finish",
-   'Promise no persistence','Never claim a subagent','No universal agent count','E3.5 and DEV22'),
+   'Promise no persistence','Never claim a subagent','No universal agent count'),
   '.agents/skills/orchestrate/SKILL.md':('execution mode adaptively','coordinator availability','background persistence'),
-  'specs/methodology/myfinanzas-coordination.md':('Modo de ejecución: directo, foreground o background',
-   'dynamic-agents.md#execution-mode-direct-foreground-background','viabilidad técnica, no ahorro de'),
+  'specs/methodology/myfinanzas-coordination.md':('### Modo de ejecución',
+   'dynamic-agents.md#execution-mode-direct-foreground-background','merge exige aprobación',
+   'ownership disjunto','Agent Relay v1'),
  }.items():
   for token in tokens:
    if token not in read(name): fail('execution-mode',f'{name}: missing {token}')
