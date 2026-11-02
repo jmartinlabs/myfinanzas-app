@@ -699,7 +699,7 @@ PASS ni se simulan. AC-04 queda dentro de E3.4 como vínculo agregado de Termina
 deja de estar bloqueado por PD-01.
 
 | ID | Acción / precondiciones | Resultado observable esperado | Verificación prevista | Estado |
-| --- | --- | --- | --- | --- |
+| --- | --- | --- | --- | --- | --- |
 | AC-01 | Guardar una operación bancaria de detalle con ID, fecha, concepto, importe, dirección, clasificación, `esDevolucion` y evidencia bancaria | Se crea un ID estable; no se crea ni modifica ningún Movimiento; no aparece saldo paralelo | Bun/API/SQLite | Previsto |
 | AC-02 | Guardar una operación sin Movimiento | Es válida, queda `Sin vínculo`; no suma a Movimientos/Saldos ni crea Gasto; sí forma parte de la cobertura de Revisión Comida y de la lectura de E3.5; no se inventa vínculo | Bun/API/UI | Previsto |
 | AC-03 | Vincular una operación a un Movimiento con `evidenciaVinculo`, incluyendo varias operaciones al mismo Movimiento | Se guarda el vínculo como trazabilidad; no copia fecha/importe ni altera el Movimiento; una operación no apunta a varios Movimientos; no se infiere por fecha/importe/concepto | Bun/API/UI | Previsto |
@@ -1558,26 +1558,26 @@ no `Sin obligación acreditada`. La ausencia de obligación no acredita cumplimi
 Todos **UNRUN**. La numeración `E3.5-FIN-AC-nn` es propia de esta enmienda y no reutiliza
 `E3.5-AC-nn` de la candidata local ni `E3.5-AC1..3` del roadmap.
 
-| ID | Acción / precondiciones | Resultado exigido |
-| --- | --- | --- |
-| E3.5-FIN-AC-01 | Compra de Comida en Movimientos con detalle E3.4 asociado | Un solo hecho/ID; E3.5 agrega sin crear Gasto, saldo paralelo ni segundo ledger |
-| E3.5-FIN-AC-02 | Roles completos; después Transferencia sin rol | FIN_NETA/F sale del rol explícito y se usa una vez; sin rol, `Parcial`/`No disponible` con motivo; sin inferencia |
-| E3.5-FIN-AC-03 | Devolución de Anticipo con atribución canónica y rol analítico coherentes | Una sola deducción; el importe informativo no se resta otra vez |
-| E3.5-FIN-AC-04 | Atribución de Anticipo y rol incompatibles | `Parcial`/`No disponible` con motivo; sin doble deducción ni elección silenciosa |
-| E3.5-FIN-AC-05 | Transferencia de ING Comida sin rol entre otras clasificadas | Sin excepción; cobertura parcial/ND con IDs; D y banco íntegros |
-| E3.5-FIN-AC-06 | Reposición del ciclo, de obligación antigua y sin `obligacion_ciclo` | R_caja suma a Recursos; R_obl solo reduce Falta; sin asignación no hay R_obl; nunca se suman |
-| E3.5-FIN-AC-07 | Reposición parcial, completa y tardía; `Completada` con cobertura `Parcial` | Parcial no es `Completada`; la tardía cuenta en su ciclo; Falta refleja solo R_obl acreditada; con cobertura parcial no se emite `Completada` |
-| E3.5-FIN-AC-08 | Ocio/Niños/Otros, Comida/Pendiente revisar y Fuera presupuesto en el mismo ciclo | C_n y J_n correctos; Fuera presupuesto en D/banco y fuera del análisis, sin doble exclusión |
-| E3.5-FIN-AC-09 | `Pendiente revisar` junto a devolución con Partida NULL y atribución pendiente | La etiqueta cuenta como Comida en J_n; el estado de atribución no asigna grupo ni ciclo |
-| E3.5-FIN-AC-10 | Devolución sin vínculo acreditada por evidencia externa; devolución sin acreditación; vínculo `Revisar`; devolución de otro ciclo | La acreditada netea sin FK; la no acreditada y `Revisar` no; la antigua entra en D/neto observado sin reducir J_n/C_n/Falta actuales |
-| E3.5-FIN-AC-11 | Detalle nuevo y agregado legado coexistentes; después solo agregado | D solo desde Movimientos; sin suma al detalle; legado etiquetado; sin reconstruir FIN_NETA |
-| E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, C_n=0 verificado vs cobertura parcial, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados; `Sin obligación acreditada` solo con C_n=0 verificado |
-| E3.5-FIN-AC-13 | Fuente vacía con cobertura, periodo sin hechos y lector fallido | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total |
-| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; S0≠B_A | Base 585, Otros efectos −5, Cierre 580; con devolución antigua 40 y B_A 250: Cierre 620, banco 770, DIF_BANCO −150; con Cierre 190, S0_siguiente 295 y B_A 250: DIF_S0_SIGUIENTE 105 y DIF_BANCO −150, independientes; sin ajustes |
-| E3.5-FIN-AC-15 | E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable | E3.6 muestra agregados o ND con motivo; E4.9 bloquea sin foto parcial ni 0 |
-| E3.5-FIN-AC-16 | Inspeccionar tablas/endpoints e intentar escribir un total | Sin tablas de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada |
-| E3.5-FIN-AC-17 | Ciclo abierto con duración provisional; corte dentro y tras el horizonte; siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio; Fin abierto vacío |
-| E3.5-FIN-AC-18 | Revisar nombres y expresiones de SPEC21 §4.3 contra P6/P7; ventana [A,T] y recálculo tras reclasificación | `Base analítica` ≠ `Cierre analítico`; `Falta` con R_obl; R_caja/R_obl separados; dos diferencias distintas; sin doble descuento; ventana y recálculo conservados |
+| ID | Acción / precondiciones | Resultado exigido | Estado |
+| --- | --- | --- | --- |
+| E3.5-FIN-AC-01 | Compra de Comida en Movimientos con detalle E3.4 asociado | Un solo hecho/ID; E3.5 agrega sin crear Gasto, saldo paralelo ni segundo ledger | UNRUN |
+| E3.5-FIN-AC-02 | Roles completos; después Transferencia sin rol | FIN_NETA/F sale del rol explícito y se usa una vez; sin rol, `Parcial`/`No disponible` con motivo; sin inferencia | UNRUN |
+| E3.5-FIN-AC-03 | Devolución de Anticipo con atribución canónica y rol analítico coherentes | Una sola deducción; el importe informativo no se resta otra vez | UNRUN |
+| E3.5-FIN-AC-04 | Atribución de Anticipo y rol incompatibles | `Parcial`/`No disponible` con motivo; sin doble deducción ni elección silenciosa | UNRUN |
+| E3.5-FIN-AC-05 | Transferencia de ING Comida sin rol entre otras clasificadas | Sin excepción; cobertura parcial/ND con IDs; D y banco íntegros | UNRUN |
+| E3.5-FIN-AC-06 | Reposición del ciclo, de obligación antigua y sin `obligacion_ciclo` | R_caja suma a Recursos; R_obl solo reduce Falta; sin asignación no hay R_obl; nunca se suman | UNRUN |
+| E3.5-FIN-AC-07 | Reposición parcial, completa y tardía; `Completada` con cobertura `Parcial` | Parcial no es `Completada`; la tardía cuenta en su ciclo; Falta refleja solo R_obl acreditada; con cobertura parcial no se emite `Completada` | UNRUN |
+| E3.5-FIN-AC-08 | Ocio/Niños/Otros, Comida/Pendiente revisar y Fuera presupuesto en el mismo ciclo | C_n y J_n correctos; Fuera presupuesto en D/banco y fuera del análisis, sin doble exclusión | UNRUN |
+| E3.5-FIN-AC-09 | `Pendiente revisar` junto a devolución con Partida NULL y atribución pendiente | La etiqueta cuenta como Comida en J_n; el estado de atribución no asigna grupo ni ciclo | UNRUN |
+| E3.5-FIN-AC-10 | Devolución sin vínculo acreditada por evidencia externa; devolución sin acreditación; vínculo `Revisar`; devolución de otro ciclo | La acreditada netea sin FK; la no acreditada y `Revisar` no; la antigua entra en D/neto observado sin reducir J_n/C_n/Falta actuales | UNRUN |
+| E3.5-FIN-AC-11 | Detalle nuevo y agregado legado coexistentes; después solo agregado | D solo desde Movimientos; sin suma al detalle; legado etiquetado; sin reconstruir FIN_NETA | UNRUN |
+| E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, C_n=0 verificado vs cobertura parcial, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados; `Sin obligación acreditada` solo con C_n=0 verificado | UNRUN |
+| E3.5-FIN-AC-13 | Fuente vacía con cobertura, periodo sin hechos y lector fallido | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total | UNRUN |
+| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; S0≠B_A | Base 585, Otros efectos −5, Cierre 580; con devolución antigua 40 y B_A 250: Cierre 620, banco 770, DIF_BANCO −150; con Cierre 190, S0_siguiente 295 y B_A 250: DIF_S0_SIGUIENTE 105 y DIF_BANCO −150, independientes; sin ajustes | UNRUN |
+| E3.5-FIN-AC-15 | E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable | E3.6 muestra agregados o ND con motivo; E4.9 bloquea sin foto parcial ni 0 | UNRUN |
+| E3.5-FIN-AC-16 | Inspeccionar tablas/endpoints e intentar escribir un total | Sin tablas de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada | UNRUN |
+| E3.5-FIN-AC-17 | Ciclo abierto con duración provisional; corte dentro y tras el horizonte; siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio; Fin abierto vacío | UNRUN |
+| E3.5-FIN-AC-18 | Revisar nombres y expresiones de SPEC21 §4.3 contra P6/P7; ventana [A,T] y recálculo tras reclasificación | `Base analítica` ≠ `Cierre analítico`; `Falta` con R_obl; R_caja/R_obl separados; dos diferencias distintas; sin doble descuento; ventana y recálculo conservados | UNRUN |
 
 ### E3.5.5 Consumidores y límites
 
