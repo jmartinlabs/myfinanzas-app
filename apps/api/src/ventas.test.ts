@@ -984,6 +984,36 @@ test("E4.2-AC-30 (D2=A): la anulación y la rectificación a la baja que dejan e
     });
     expect(getSale(db, sale.venta.id).venta.estado).toBe("Vigente");
     expect(cashAt(db, "S003").disponible).toBe(30000n);
+    const previewLower = failure(() =>
+      previewSaleRectification(
+        db,
+        sale.venta.id,
+        {
+          revision: 1,
+          motivo: "Baja F-H",
+          fecha: "2026-04-10",
+          cantidad: "1",
+          precio: "500.00",
+          divisa: "EUR",
+          cambio: null,
+          importeEur: "100.00",
+          comisionEur: null,
+          concepto: "Venta F-H",
+          nota: null,
+        },
+        now,
+      ),
+    );
+    expect(previewLower).toMatchObject({
+      status: 422,
+      code: "INSUFFICIENT_CASH",
+      details: {
+        disponible: "300.00",
+        necesario: "100.00",
+        minimo: "-100.00",
+        fecha: "2026-04-11",
+      },
+    });
     const lowered = failure(() =>
       rectifySale(
         db,
@@ -1923,6 +1953,21 @@ test("E4.2-AC-20/21/22/23/38: fuente de inversión y referencia compartida", () 
         },
       ]).fecha,
     ).toBe("2026-04-10");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.2-V3: la clase de una operación es inmutable en persistencia", () => {
+  const { db, instrumento } = base();
+  try {
+    const purchase = buy(db, instrumento.id);
+    expect(() =>
+      db.run("UPDATE operaciones_inversion SET clase='Venta' WHERE id=?", [
+        purchase.compra.id,
+      ]),
+    ).toThrow(/immutable operation identity/);
+    expect(getPurchase(db, purchase.compra.id).compra.clase).toBe("Compra");
   } finally {
     db.close();
   }

@@ -353,6 +353,25 @@ export function previewSaleRectification(
         instrumento: old.instrumento,
       },
     );
+    // D2: el impacto debe rechazar la misma corrección que la ejecución.
+    assertSufficient(
+      db,
+      {
+        id,
+        clase: "Venta",
+        fecha: value.fecha,
+        saldoEfectivo: old.saldo_efectivo,
+        importe: value.importeEur,
+      },
+      {
+        id,
+        clase: "Venta",
+        fecha: old.fecha,
+        saldoEfectivo: old.saldo_efectivo,
+        importe: BigInt(old.importe_eur),
+      },
+      { includePreviousInAvailable: true },
+    );
     return {
       ...saleImpact(db, "rectificación", old, value),
       cobertura: COBERTURA,

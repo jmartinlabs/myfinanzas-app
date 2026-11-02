@@ -526,17 +526,58 @@ export function createPurchase(
           ]),
         )
         .digest("hex");
+      const legacyHash = createHash("sha256")
+        .update(
+          JSON.stringify(
+            Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+          ),
+        )
+        .digest("hex");
       const retry = db
         .query("SELECT hash,response FROM operacion_attempts WHERE key=?")
         .get(key) as { hash: string; response: string } | null;
       if (retry) {
-        if (retry.hash !== hash)
-          throw new Problem(
-            409,
-            "IDEMPOTENCY_CONFLICT",
-            "El intento ya corresponde a otros datos.",
+        if (retry.hash === hash)
+          return JSON.parse(retry.response) as ReturnType<typeof getPurchase>;
+        if (retry.hash === legacyHash) {
+          // Compatibilidad v20→v21: un intento de Compra anterior al prefijo
+          // `clase` se acepta solo si la respuesta persistida identifica una
+          // Compra vigente; después se normaliza el hash sin borrar el intento.
+          let response: unknown;
+          try {
+            response = JSON.parse(retry.response);
+          } catch {
+            response = null;
+          }
+          const id =
+            response && typeof response === "object" && "compra" in response
+              ? (response as { compra?: { id?: unknown } }).compra?.id
+              : null;
+          const row =
+            typeof id === "string"
+              ? (db
+                  .query(
+                    "SELECT clase FROM operaciones_inversion WHERE id=?",
+                  )
+                  .get(id) as { clase: string } | null)
+              : null;
+          if (!row || row.clase !== "Compra")
+            throw new Problem(
+              409,
+              "IDEMPOTENCY_CONFLICT",
+              "El intento ya corresponde a otros datos.",
+            );
+          db.run(
+            "UPDATE operacion_attempts SET hash=? WHERE key=? AND hash=?",
+            [hash, key, legacyHash],
           );
-        return JSON.parse(retry.response) as ReturnType<typeof getPurchase>;
+          return response as ReturnType<typeof getPurchase>;
+        }
+        throw new Problem(
+          409,
+          "IDEMPOTENCY_CONFLICT",
+          "El intento ya corresponde a otros datos.",
+        );
       }
       const value = validateEconomic(db, body, { full: false, now }),
         refs = validReferences(db, body);

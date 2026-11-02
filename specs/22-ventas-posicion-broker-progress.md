@@ -1,9 +1,8 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
 Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-01): venta, efectivo,
-posición, API, UI y esquema v21. QA independiente inicial NO APTO por H-1/H-3 (rutas de
-Compra sin filtro de clase) y CI rojo por restore v19/v20; ambos corregidos localmente y
-pendientes de nuevo CI y nueva QA. Backup/restore y E2E no verificados en macOS. Sin merge.**
+posición, API, UI y esquema v21. QA independiente final APTO CON RESERVAS; H-1..H-5 y
+V1–V3 corregidos. CI pendiente del HEAD final. AC de UI/E2E siguen UNRUN. Sin merge.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -65,7 +64,7 @@ Fecha: 2026-11-01 (checkpoint DEV22); historial documental del 2026-10-28.
   AC-01–AC-19, AC-24–AC-31, AC-34–AC-36, AC-39–AC-40, AC-42–AC-45 y la parte de fuente de
   AC-20–AC-23/38. Carrera real con dos procesos (`inversion-race-worker.ts`, acciones
   `create-venta`/`rectify-venta`).
-- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **366 pass / 56 fail**; los
+- **Verificación local (macOS arm64, Bun 1.4.3):** `bun run test` → **369 pass / 56 fail**; los
   56 fallos son exactamente los mismos que la línea base `main` `4eb7264` (ancestros de
   directorios temporales/`renameat2`/symlinks Linux-only), no regresiones. `bun run typecheck`
   PASS y `bun run build` PASS.
@@ -96,6 +95,18 @@ La QA independiente dictaminó **NO APTO** sobre `412ebaa`. Correcciones aplicad
 
 Sin cambios en las fórmulas financieras ni en el esquema.
 
+### Correcciones tras revisión de Álex (V1–V3)
+
+- **V1:** `previewSaleRectification` aplica ahora la misma comprobación D2 de efectivo que
+  `rectifySale`; la prueba AC-30 exige 422 `INSUFFICIENT_CASH` en el impacto, no solo en la
+  ejecución.
+- **V2:** `createPurchase` acepta el hash legacy solo si la respuesta persistida identifica
+  una Compra vigente; normaliza el hash tras validar, sin borrar el intento ni crear hechos.
+  Regresión con fixture v20 genuino y `operacion_attempts` vigente.
+- **V3:** el trigger de identidad incluye `clase`; contrato `C21-VENTAS-E42` regenerado
+  (`01cb4c49…`). Regresión SQLite: un `UPDATE` directo de `clase` se rechaza sin cambiar la
+  operación.
+
 ### Estado por AC (DEV22, 2026-11-01)
 
 | AC | Estado | Evidencia |
@@ -108,7 +119,7 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-06 | PASS | S004 y S006 independientes |
 | E4.2-AC-07 | PASS | Comisión incluida; 506,00 exactos; comisión = importe aceptada |
 | E4.2-AC-08 | PASS | Comisión > importe, negativa y 3 decimales → 422 |
-| E4.2-AC-09 | PASS | Idempotencia, 409 de conflicto, dos Ventas del mismo día |
+| E4.2-AC-09 | PASS | Idempotencia, 409 de conflicto, dos Ventas del mismo día; intento legacy de Compra compatible v20→v21 |
 | E4.2-AC-10 | PASS | Impacto 2.316,40→2.113,40 y 7,5→9,5; referencia 303,60/−0,60; auditoría |
 | E4.2-AC-11 | PASS | Revisión obsoleta 409; omisión/null/identidad 422 sin escritura |
 | E4.2-AC-12 | PASS | Anulación conserva registro; efectivo 1.810,40; cantidad 12,5 |
@@ -129,13 +140,13 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | E4.2-AC-27 (D3) | PASS (API) / UNRUN (aviso UI) | Inactivo con cantidad aceptado; inactivo sin cantidad y Saldo inactivo rechazados; `instrumentosVenta` acotado |
 | E4.2-AC-28 | PASS | Fallo inyectado: sin fila, contador ni auditoría |
 | E4.2-AC-29 | PASS | Dos Ventas concurrentes: una válida y otra 422; dos rectificaciones: 409 |
-| E4.2-AC-30 (D2) | PASS | 300,00/500,00/−200,00/11-04; baja −100,00; alza aceptada |
+| E4.2-AC-30 (D2) | PASS | 300,00/500,00/−200,00/11-04; impacto y ejecución rechazan la baja; alza aceptada |
 | E4.2-AC-31 | PASS | 401 sin sesión, 403 sin CSRF, 404 en DELETE sin escritura |
 | E4.2-AC-32 | UNRUN | Sin Playwright/capturas de la implementación |
 | E4.2-AC-33 | UNRUN | Sin Playwright; estados de API cubiertos por pruebas de dominio |
 | E4.2-AC-34 | PASS | Auditoría por revisión, `clase`, actor, UTC, triggers que abortan UPDATE/DELETE |
 | E4.2-AC-35 | PASS | 12,5→7,5→0→2, conteos 2/2, sin «Cerrada», efectivo una vez |
-| E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21, migración preserva filas/auditoría/contadores/identidad |
+| E4.2-AC-36 | PASS | v21, una sola tabla, sin `ventas`, contrato C21 regenerado (`01cb4c49…`), migración preserva filas/auditoría/contadores/identidad; `clase` inmutable |
 | E4.2-AC-37 | PASS (CI Linux) | Backup/restore con Venta y auditoría PASS; restore v19/v20 corregido: v20 real, v20 restaurado conserva 20 y v19 migra a 21 |
 | E4.2-AC-38 | PASS (dominio) | Fecha común una sola vez; fuente pendiente/error tratadas sin inventar máximo |
 | E4.2-AC-39 | PASS | Cinco cambios 409 `HISTORY_LOCKED`; nombre permitido |
@@ -151,17 +162,15 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | Comando | Resultado |
 | --- | --- |
 | `bun install --frozen-lockfile` | OK (dependencias instaladas en el worktree) |
-| `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **22 pass / 0 fail** (incluye aislamiento Compra/Venta) |
-| `bun run test` | **366 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
+| `NODE_ENV=test bun test apps/api/src/ventas.test.ts` | **24 pass / 0 fail** (incluye aislamiento Compra/Venta y clase inmutable) |
+| `bun run test` | **369 pass / 56 fail** (los 56 son la línea base de macOS; sin regresiones) |
 | `bun run typecheck` | PASS |
 | `bun run build` | PASS (aviso de tamaño de chunk preexistente) |
 | `python3.12 scripts/verify --base 4eb7264 --head <SHA>` | **FAIL** de la fase de aplicación por los 56 fallos de entorno macOS; baseline/gate PASS. Detalle abajo |
 
-**CI de PR #157:** `required` **PASS** en `4c6b537` (run `41350023263`), 422 pass / 0 fail,
-incluidos restore v19/v20, C18/C21 y aislamiento Compra/Venta. Pendiente una última ejecución
-tras la prueba de regresión H-4 y los ajustes documentales.
-**QA independiente final sobre `4c6b537`:** **APTO CON RESERVAS**; H-1..H-5 resueltos, con
-reserva de prueba de regresión H-4 (añadida) y ajustes de evidencia (aplicados).
+**CI de PR #157:** `required` **PASS** en `4c6b537` (run `41350023263`), 422 pass / 0 fail;
+pendiente re-ejecución sobre el HEAD con V1–V3. **QA final:** APTO CON RESERVAS en
+`4c6b537`; reservas H-4/documentación cerradas y V1–V3 corregidas.
 
 ### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
 
@@ -170,7 +179,7 @@ ejecutó: `check-repository` PASS, `check-project` PASS, `validate-template` PAS
 PASS, `test-validator` PASS, `test-agent-relay` PASS, `test-agent-usage` PASS,
 `test-auto-agent-usage` PASS, `test-verification` PASS, `test-evidence` PASS,
 `working-whitespace` PASS, `commit-whitespace` PASS, `typecheck` PASS, `build` PASS,
-**`api` FAIL** (366 pass / 56 fail) y `e2e` UNRUN.
+**`api` FAIL** (369 pass / 56 fail) y `e2e` UNRUN.
 
 Los 56 fallos son idénticos, por nombre de prueba, a la línea base de `main` `4eb7264` en este
 equipo: `Ancestro no confiable` en directorios temporales, `renameat2`/`libc.so.6` y enlaces de

@@ -7637,7 +7637,7 @@
   },
   {
     "id": "C21-VENTAS-E42",
-    "sourceCommit": "4eb7264",
+    "sourceCommit": "b1bd11f",
     "schemaVersion": 21,
     "objects": [
       {
@@ -8952,7 +8952,7 @@
         "type": "trigger",
         "name": "operacion_inversion_identity_immutable",
         "tbl_name": "operaciones_inversion",
-        "sql": "CREATE TRIGGER operacion_inversion_identity_immutable BEFORE UPDATE OF instrumento,saldo_efectivo,saldo_inversion ON operaciones_inversion\n    WHEN NEW.instrumento!=OLD.instrumento OR NEW.saldo_efectivo!=OLD.saldo_efectivo OR NEW.saldo_inversion!=OLD.saldo_inversion\n    BEGIN SELECT RAISE(ABORT,'immutable operation identity'); END"
+        "sql": "CREATE TRIGGER operacion_inversion_identity_immutable BEFORE UPDATE OF instrumento,saldo_efectivo,saldo_inversion,clase ON operaciones_inversion\n    WHEN NEW.instrumento!=OLD.instrumento OR NEW.saldo_efectivo!=OLD.saldo_efectivo OR NEW.saldo_inversion!=OLD.saldo_inversion OR NEW.clase!=OLD.clase\n    BEGIN SELECT RAISE(ABORT,'immutable operation identity'); END"
       },
       {
         "type": "trigger",
@@ -9189,6 +9189,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "f8d327b77e8fdc58a3337e5a497bd61d48aae1b3470f79d38462236cd2326e4a"
+    "sha256": "01cb4c495b86bc649854bd28299fba2ba6207c2fb71f66967bd1495a397de9ca"
   }
 ]

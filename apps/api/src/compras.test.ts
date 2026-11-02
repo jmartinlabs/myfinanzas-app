@@ -1,6 +1,6 @@
 import { test, expect } from "bun:test";
 import { Database } from "bun:sqlite";
-import { randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID, createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -11,6 +11,9 @@ import { openDatabase } from "./database";
 import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV17 } from "../test-support/database-v17";
 import { openDatabaseV15 } from "../test-support/database-v15";
+import { openDatabaseV18 } from "../test-support/database-v18";
+import { comidaSchema } from "./comida-schema";
+import { dprimaSchema } from "./dprima-schema";
 import { materializeContract } from "../test-support/inversiones-schema";
 import { createInstrumento } from "./instrumentos";
 import {
@@ -389,6 +392,60 @@ function classification(db: Database) {
   );
   return { category, sub, partida: partida.id };
 }
+
+test("E4.2-V2: un intento legacy de Compra sobrevive al upgrade v20→v21", () => {
+  const dir = mkdtempSync(join(tmpdir(), "v20-attempt-"));
+  try {
+    const path = join(dir, "db.sqlite");
+    const v20 = openDatabaseV18(path);
+    v20.transaction(() => comidaSchema(v20)).immediate();
+    v20.transaction(() => dprimaSchema(v20)).immediate();
+    updateSaldo(v20, "S003", {
+      revision: getSaldo(v20, "S003").revision,
+      saldoApertura: "5000.00",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    });
+    const instrumento = createInstrumento(
+      v20,
+      {
+        nombre: "Fondo legacy",
+        isin: "ES0000000009",
+        isinEvidencia: "Extracto ficticio legacy",
+        divisaReferencia: "EUR",
+      },
+      randomUUID(),
+      now,
+    ).instrumento;
+    const body = defaultPurchase(instrumento.id);
+    const key = "legacy-attempt-key-0001";
+    const first = createPurchase(v20, body, key, now);
+    const legacy = createHash("sha256")
+      .update(
+        JSON.stringify(
+          Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest("hex");
+    v20.run("UPDATE operacion_attempts SET hash=? WHERE key=?", [legacy, key]);
+    v20.close();
+
+    const db = openDatabase(path);
+    try {
+      const replay = createPurchase(db, body, key, now);
+      expect(replay.compra.id).toBe(first.compra.id);
+      const stored = db
+        .query("SELECT hash FROM operacion_attempts WHERE key=?")
+        .get(key) as { hash: string };
+      expect(stored.hash).not.toBe(legacy);
+      expect(createPurchase(db, body, key, now).compra.id).toBe(first.compra.id);
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
 
 test("E4.1-AC-18/19/20/25/26/45/47: idempotencia, rollback, rectificación y anulación", () => {
   const { db, instrumento } = base();
