@@ -1,12 +1,10 @@
-# E3.5 / FIN_NETA — delta de especificación y testplan (propuesta)
+# E3.5 / FIN_NETA — delta de especificación y testplan (antecedente ratificado)
 
 Fecha: 2026-11-01. Autor del registro: subagente ejecutor de OpenCode, por encargo del
 coordinador. Base: `main` `4eb7264`.
 Estado: **Aprobación conceptual del usuario el 2026-11-01 de las opciones A de D-01 a
-D-11**, con las precisiones obligatorias D-04, D-07, D-09 y D-10. La **enmienda normativa
-propuesta** y el **testplan definitivo propuesto** están en
-[SPEC16](../16-revision-comida-specification.md) y su testplan; quedan **pendientes de
-aprobación independiente**. **DEV sigue en STOP.** No se implementa, no se migra, no se
+D-11**, con las precisiones obligatorias D-04, D-07, D-09 y D-10. La **enmienda normativa** y el **testplan definitivo** están en
+[SPEC16](../16-revision-comida-specification.md) y su testplan; quedan **ratificados por el usuario el 2026-11-02** y pendientes de autorización de merge. **DEV sigue en STOP.** No se implementa, no se migra, no se
 activa y no se autoriza merge. AC y filas de testplan **UNRUN**; no se afirma ejecución ni
 PASS.
 

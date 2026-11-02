@@ -1439,9 +1439,7 @@ de Presupuestos/Anual se preserva; su sustitución futura corresponde a SPEC33.
 
 ## E3.5/FIN_NETA — enmienda normativa propuesta (2026-11-01)
 
-**Estado: PROPUESTA PARA APROBACIÓN INDEPENDIENTE — no aprobada.** El usuario aprobó
-conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones
-obligatorias D-04, D-07, D-09 y D-10. Fuente literal: mensaje directo del usuario de
+**Estado: RATIFICADA por el usuario el 2026-11-02; pendiente de autorización de merge.** El usuario aprobó conceptualmente las opciones **A de D-01 a D-11** el 2026-11-01, con las precisiones obligatorias D-04, D-07, D-09 y D-10, y ratificó este texto el 2026-11-02, condicionado a correcciones editoriales que no alteran decisiones financieras. Fuente literal: mensaje directo del usuario de
 2026-11-01, «Apruebo conceptualmente las opciones A de D-01 a D-11 para E3.5/FIN_NETA, con
 estas precisiones obligatorias» (D-04, D-07, D-09 y D-10). Este apartado convierte esa
 aprobación conceptual en contrato normativo revisable. **DEV18/E3.5 sigue en STOP**; no se
@@ -1550,8 +1548,8 @@ la cobertura se etiqueta como `Cobertura parcial`, sin renombrar silenciosamente
 `R_obl < C_n` con cobertura `Verificada` significa obligación pendiente, no fallo de
 cobertura; E4.9 bloquea cuando FIN_NETA/E3.5 requerido no es verificable, no por esta
 deuda. La ausencia de reposiciones con `C_n > 0` produce obligación `Parcial` y
-`Falta = C_n`, nunca `Completada`. Si `C_n` es desconocido, el estado es `No disponible`,
-no `Sin obligación acreditada`. La ausencia de obligación no acredita cumplimiento.
+`Falta = C_n`, nunca `Completada`. Si `C_n` es desconocido, no se emite estado de obligación; la cobertura es
+`No disponible` y no se deduce `Sin obligación acreditada`. La ausencia de obligación no acredita cumplimiento.
 
 ### E3.5.4 Criterios de aceptación propuestos
 
@@ -1573,7 +1571,7 @@ Todos **UNRUN**. La numeración `E3.5-FIN-AC-nn` es propia de esta enmienda y no
 | E3.5-FIN-AC-11 | Detalle nuevo y agregado legado coexistentes; después solo agregado | D solo desde Movimientos; sin suma al detalle; legado etiquetado; sin reconstruir FIN_NETA | UNRUN |
 | E3.5-FIN-AC-12 | S0 informado/ausente, B_A acreditado/no, C_n=0 verificado vs cobertura parcial, P3 sin decidir | S0 ausente ≠ 0 → ND; B_A no se copia a S0; banco parcial/ND; C/B no inventados; `Sin obligación acreditada` solo con C_n=0 verificado | UNRUN |
 | E3.5-FIN-AC-13 | Fuente vacía con cobertura, periodo sin hechos y lector fallido | Vacío ≠ cero ≠ fallo; cobertura por métrica; subtotal parcial no es total | UNRUN |
-| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; S0≠B_A | Base 585, Otros efectos −5, Cierre 580; con devolución antigua 40 y B_A 250: Cierre 620, banco 770, DIF_BANCO −150; con Cierre 190, S0_siguiente 295 y B_A 250: DIF_S0_SIGUIENTE 105 y DIF_BANCO −150, independientes; sin ajustes | UNRUN |
+| E3.5-FIN-AC-14 | Ejemplo P7 con Fuera presupuesto, devolución antigua y transferencia no financiadora; subcaso S0≠B_A | P: S0=100, F=700, R=20, C_n=35, J_n=200, D=480 → Recursos 785, Base 585, Otros −5, Cierre 580. Subcaso: S0=100, D=90, B_A=250, S0_siguiente=295 → Cierre 190, DIF_S0_SIGUIENTE 105, DIF_BANCO −150; definiciones distintas que no se fusionan; sin ajustes | UNRUN |
 | E3.5-FIN-AC-15 | E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable | E3.6 muestra agregados o ND con motivo; E4.9 bloquea sin foto parcial ni 0 | UNRUN |
 | E3.5-FIN-AC-16 | Inspeccionar tablas/endpoints e intentar escribir un total | Sin tablas de hechos ni totales persistidos; sin escritura desde E3.5; seguridad conservada | UNRUN |
 | E3.5-FIN-AC-17 | Ciclo abierto con duración provisional; corte dentro y tras el horizonte; siguiente Inicio real | Provisional correcto; vencido ND con motivo; duración real al existir siguiente Inicio; Fin abierto vacío | UNRUN |
