@@ -254,7 +254,7 @@ como PASS de E3.5**: el testplan ratificado exige filas `E3.5-FIN-TP-*` propias,
 | Tipo | Elemento | Gate / efecto | Dueño |
 | --- | --- | --- | --- |
 | Resuelto (diseño) | D1 = **A′**: E3.5 propietario, ruta estable delegada | Ejecución en I1; sin migración | Usuario (2026-11-02) |
-| Resuelto (diseño) | D2 = **O2**: `saldo_comida` nullable | Requiere migración autorizada y revisión previa de apertura de Ciclos y consumidores (NULL ≠ 0) | Usuario (2026-11-02) |
+| Resuelto (diseño) | D2 = **O0**: contrato actual, S0 manual obligatorio | Sin migración; el read model debe distinguir fuente no disponible y nunca emitir 0; AC-12 UNRUN | Usuario (2026-11-02) |
 | Resuelto (diseño) | D3 = **O1**: reposición sin obligación con cobro/evidencia acreditados | Requiere migración de constraint, validación y auditoría; `R_caja`, nunca `R_obl` | Usuario (2026-11-02) |
 | Desarrollo | Estados de obligación/cobertura, `R_obl` como métrica, guarda de Anticipo, proveedor FIN-12 | Requiere autorización de DEV separada | Ejecutor autorizado |
 | Desarrollo | Consumidor E3.6 (no existe) y contrato E4.9 | E3.6 no tiene código; E4.9 usa placeholder | Ejecutor autorizado |
@@ -263,8 +263,8 @@ como PASS de E3.5**: el testplan ratificado exige filas `E3.5-FIN-TP-*` propias,
 | Documental | Numeración antigua `E3.5-AC-12/13/17/39` en SPEC21 | Impacta en AC-18; ver §15.5 | Coordinador |
 
 El read model puede construirse **sin tablas de totales** (FIN-11) y la huella ya existe.
-D2-O2 y D3-O1, ya decididas en diseño, **añaden migración autorizada**; el bloqueo restante es
-esa autorización, la revisión de apertura/consumidores de Ciclos (D2) y la autorización de DEV.
+D2-O0 no añade migración; D3-O1, ya decidida en diseño, **añade migración autorizada**. El
+bloqueo restante es esa autorización y la autorización de DEV.
 
 ## 13. Secuencia mínima de implementación
 
@@ -276,7 +276,7 @@ Ningún AC se declara PASS por herencia de los tests P6/P7 existentes.
 | I1 | Read model de solo lectura + envoltorio de cobertura (`Verificada/Parcial/No disponible` con motivo, IDs y subtotal) + ventana `[A,T]` + **D1 = A′** (decidida): ruta estable delegada y E3.4 sin cálculo | AC-01, AC-13, AC-16 | API focal: parcial con subtotal; fallo de fuente → ND; intento de escritura rechazado; esquema sin tablas nuevas | Cobertura por métrica y no-escritura demostradas |
 | I2 | Roles, `F` y guarda del doble vínculo de Anticipo (Referencia/par/evidencia compatible; una sola deducción; conflicto → Parcial/ND) | AC-02, AC-03, AC-04, AC-05 | API focal: roles completos; transferencia sin rol; doble vínculo coherente/parcial/incompatible | `F` correcta y única; sin excepción |
 | I3 | `R_caja`/`R_obl` con cobertura, estados de obligación y `Falta`; **D3 = O1** (decidida): migración de constraint con cobro/evidencia acreditados; `R_caja`, nunca `R_obl` | AC-06, AC-07 | API + Playwright: reposición total/parcial/tardía; obligación antigua; `C_n>0` sin reposiciones | `Completada` solo con las cuatro condiciones |
-| I4 | Grupos, neteo, devoluciones por causa, `S0`/`B_A`; **D2 = O2** (decidida): nullable + revisión previa de apertura/consumidores (NULL ≠ 0) | AC-08, AC-09, AC-10, AC-11, AC-12 | API + Playwright: causas de no elegibilidad; agregado vs detalle; S0/B_A | Cifras P7 y estados correctos |
+| I4 | Grupos, neteo, devoluciones por causa, `S0`/`B_A`; **D2 = O0** (decidida): sin migración; fuente no disponible ≠ 0 | AC-08, AC-09, AC-10, AC-11, AC-12 | API + Playwright: causas de no elegibilidad; agregado vs detalle; S0/B_A | Cifras P7 y estados correctos |
 | I5 | Duración, cierre, puente y `DIF_S0_SIGUIENTE` | AC-14, AC-17 | API + Playwright: ejemplo AC-14 y subcaso (Cierre 190, `DIF_S0_SIGUIENTE` 105, `DIF_BANCO` −150); ciclo abierto/vencido | Ejemplo ratificado reproducido |
 | I6 | Proveedor FIN-12 + contratos E3.6/E4.9 + E2E | AC-15, AC-18 | Contrato del proveedor (ventana/fuente/huella/cobertura); AC-15 se acota al contrato `e4_9Bloqueado`/`No disponible`; AC-18 es revisión documental y depende de la tabla de §15.5 | Consumidores sin duplicar lógica y AC-15 sin depender del DEV de E4.9 |
 
@@ -285,8 +285,8 @@ verifica el ejemplo normativo; I6 cierra fronteras. Un incremento no empieza sin
 en PASS.
 
 **Precondiciones de ejecución:** I1 aplica D1-A′; I3 aplica D3-O1 con migración de constraint;
-I4 aplica D2-O2 con migración de nulabilidad y la revisión previa de `apertura` de Ciclos y sus
-consumidores. Ninguna migración se ejecuta sin autorización específica. Mientras una
+I4 aplica D2-O0 sin migración y debe probar que una fuente no disponible no se serializa como
+0. Ninguna migración se ejecuta sin autorización específica. Mientras una
 precondición no esté cumplida, el AC afectado **no puede declararse PASS**: queda UNRUN o
 PARCIAL con motivo. AC-18 (I6) depende de D1 y de §15.5.
 
@@ -316,7 +316,7 @@ D′ (`33-dprima-simplificada-specification.md:233`). Sus fórmulas y ámbitos n
 
 ## 15. Decisiones materiales
 
-**Decisión del usuario — 2026-11-02:** D1 = **A′**, D2 = **O2**, D3 = **O1**; D4 se conserva
+**Decisión del usuario — 2026-11-02:** D1 = **A′**, D2 = **O0**, D3 = **O1**; D4 se conserva
 como gate del DEV de E4.9. **Estas decisiones aprueban el diseño, no su ejecución**: no
 autorizan DEV, migraciones, datos reales, despliegue ni merge. No reabren D-01…D-11.
 
@@ -346,20 +346,18 @@ Las alternativas no elegidas se conservan como historia de la decisión.
   **`S0` es el saldo inicial manual del ciclo**; `regimen_comida.apertura` es la **apertura
   bancaria B** de la que se deriva `B_A` (SPEC16 P7/FIN-09). Son magnitudes distintas y **no
   se sustituyen**: la falta de régimen no demuestra que S0 falte.
-- **O1 — no elegida:** mantener `saldo_comida` `NOT NULL` y añadir un **indicador de
-  acreditación** del S0 (p. ej. `saldo_comida_acreditado`) con backfill `true` en las filas
-  existentes. Distingue *S0 no informado*, *S0 = 0 verificado* y *B/B_A no acreditados* sin
-  ambigüedad aritmética. Coste: una migración y backfill; no cambia la fórmula. El alta exige
-  saldo explícito y admite `0` (`ciclos.ts:278-286,350-352`), por lo que el backfill `true` no
-  inventa datos en ciclos ya creados.
-- **O2 — DECIDIDA (2026-11-02):** `saldo_comida` nullable (`NULL` = S0 no informado).
-  **Condición de diseño:** antes de desarrollar se revisará la apertura de Ciclos y **todos**
-  sus consumidores (API, UI, informes, conciliación) para garantizar que `NULL` no se convierta
-  silenciosamente en cero. Obliga a tratar `NULL` en todas las consultas y elimina el
-  `NOT NULL`; requiere migración autorizada.
-- **O3 — no elegida:** sin migración; AC-12 no representable → PARCIAL/UNRUN.
-- **Impacto:** AC-12 e I4. O1/O2 requieren migración autorizada; en ninguna opción se usa
-  `regimen_comida.apertura` como S0.
+- **O0 — DECIDIDA (2026-11-02):** conservar el **contrato actual**: `saldo_comida NOT NULL` y
+  obligación de confirmar el S0 manualmente al abrir cada ciclo. **Sin indicadores adicionales
+  y sin permitir `NULL`** mientras no exista un caso funcional real que lo justifique. En
+  AC-12 se distingue **ciclo válido con S0 confirmado** de **fuente no disponible**; el fallo
+  de fuente **nunca** produce un cero ficticio. AC-12 sigue **UNRUN** hasta demostrarlo con
+  pruebas propias. Sin migración.
+- **O1 — no elegida:** indicador de acreditación con backfill.
+- **O2 — no elegida (preferencia provisional retirada):** `saldo_comida` nullable.
+- **O3 — no elegida:** declarar AC-12 no representable sin distinguir fuente no disponible.
+- **Impacto:** AC-12 e I4; **sin migración**. La evidencia de la decisión: la referencia exige
+  saldo inicial informado y el alta lo valida (`functional-reference-v5.11.md:264-268`;
+  `ciclos.ts:279-288,406-415`), y no existe importador de ciclos.
 
 ### D3 — Reposición sin obligación frente a D-06-A
 
@@ -437,9 +435,8 @@ automática. No se reescribe historia y no se declara ningún AC cumplido.
 
 **Gates antes de autorizar DEV:**
 1. **D1–D3 ya decididas en diseño** (2026-11-02); D4 queda como gate del DEV de E4.9.
-2. **Autorizar las migraciones** de D2-O2 (nulabilidad de `saldo_comida`) y D3-O1 (constraint de
-   reposición), y completar la **revisión de apertura de Ciclos y consumidores** para que `NULL`
-   no se convierta en cero.
+2. **Autorizar la migración** de D3-O1 (constraint de reposición) y verificar en el read model
+   que una fuente no disponible nunca se convierte en 0 (D2-O0, sin migración).
 3. Trazabilidad de §15.5 aplicada en SPEC21 (nota de vigencia); AC-18 sigue UNRUN hasta que sus
    pruebas propias se ejecuten.
 4. Autorización explícita de DEV, separada de esta preparación.
