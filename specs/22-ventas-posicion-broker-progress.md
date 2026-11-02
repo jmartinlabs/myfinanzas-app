@@ -98,19 +98,18 @@ Fecha: 2026-11-02 (checkpoint E2E); historial DEV22 del 2026-11-01 y documental 
   instalada vacía (`sin_referencia`, `maxDate=null`) y flujo con fuente en error; AC-39 con
   Saldo solo-venta y Saldo con Compra+Venta anulada; AC-40 con huella global de S001 y Venta en
   S003; AC-44 con auditoría ordenada y referencia ausente por inyección de lectura.
-- **Comandos y resultados:** `bun run typecheck` PASS; `bun run build` PASS;
+- **Comandos y resultados (histórico macOS, superado por full Linux `766ea6b`):** `bun run typecheck` PASS; `bun run build` PASS;
   `NODE_ENV=test bun test apps/api/src/ventas.test.ts` **29 pass / 0 fail** (381 `expect`);
   `bun run test` **376 pass / 56 fail** (los 56 son la línea base macOS); `bun run test:e2e --
   ventas.spec.ts inversiones.spec.ts` **2/2 PASS**; `bun run test:e2e` **15 passed / 2 failed**
-  (`catalog` por Space sobre `role=switch` y `movimientos` por restore `libc.so.6`, ambos
-  ajenos a Ventas y a los archivos modificados); `python3.12 scripts/verify --base 028d09b --head 67628ff`
+  (ambos por `restore-server`/`libc.so.6`, ajenos a Ventas); `python3.12 scripts/verify --base 028d09b --head 67628ff`
   FAIL de aplicación: gates/typecheck/build PASS, `api` FAIL por los 56 de entorno y `e2e`
   UNRUN. Full Linux PASS en `766ea6b` (17/17); Debian13 local no ejecutado.
-- **Capturas:** 22 PNG ficticios en `artifacts/e4-2/` (ignorado por Git), inspeccionados:
+- **Capturas:** 23 PNG ficticios en `artifacts/e4-2/` (ignorado por Git), inspeccionados:
   listado 1440/390, alta 390, impacto 1440/390, ficha 1440/390, rectificación y 409,
   anulación y D2, cantidad, vacío/error, «Revisar», sesión expirada y fichas a 0.
-- **Sin declarar PASS canónico:** la suite completa no está verde y no hay CI del nuevo SHA.
-  El merge sigue bloqueado hasta la verificación Linux y la aprobación explícita.
+- **Estado canónico:** full Linux `766ea6b` PASS (API 432/0, E2E 17/17, restore v19/v20).
+  El único paso pendiente es la aprobación explícita del merge; Debian13 local no se ejecutó.
 
 ### Correcciones tras QA independiente (2026-11-01)
 
@@ -220,14 +219,13 @@ Sin cambios en las fórmulas financieras ni en el esquema.
 | `NODE_ENV=test bun test apps/api/src/ventas.test.ts` (2026-11-02) | **29 pass / 0 fail**, 381 `expect()`; incluye AC-20/23/41 HTTP, AC-39, AC-40 y AC-44 |
 | `bun run test` (2026-11-02) | **376 pass / 56 fail** (los 56 son la línea base macOS; sin regresiones) |
 | `bun run test:e2e -- ventas.spec.ts inversiones.spec.ts` | **2/2 PASS** (Ventas E4.2 + regresión E4.1) |
-| `bun run test:e2e` | **15 passed / 2 failed** — `catalog` (Space sobre `role=switch`) y `movimientos` (restore `libc.so.6`), ajenos a Ventas y a los archivos modificados; línea base E2E no ejecutada |
+| `bun run test:e2e` (macOS histórico) | **15/17** — ambos fallos por `restore-server`/`libc.so.6`, ajenos a Ventas; **full Linux `766ea6b`: 17/17** |
 | Full Linux `766ea6b` (`workflow_dispatch`) | **PASS**: API 432/0, E2E 17/17, restore v19/v20, `CI_BROWSER=success` |
 
-**CI de PR #157:** `required` **PASS** en `766ea6b` (run `41435716039`), 432/0; full Linux `41435723276` 432/0 + E2E 17/17; es
-CI del SHA anterior, no del candidato `67628ff`.
-**Re-QA final:** código APTO. Evidencia E2E/API local añadida el 2026-11-02; el merge sigue
-bloqueado hasta la verificación canónica Linux y la aprobación explícita del usuario. No se
-declara PASS canónico ni de la suite E2E completa.
+**CI de PR #157:** `required` **PASS** en `766ea6b`, `80cf154` y `5e010c1`; full Linux
+`41435723276` sobre `766ea6b`: API 432/0, E2E 17/17, restore v19/v20.
+**QA final:** APTO CON RESERVAS; código y AC aptos. Solo falta la aprobación explícita del
+merge y la decisión Debian13 vs full CI Ubuntu.
 
 ### Verificación canónica (`scripts/verify`, macOS arm64, Python 3.12.16)
 
@@ -243,12 +241,9 @@ equipo: `Ancestro no confiable` en directorios temporales, `renameat2`/`libc.so.
 `/var` propios de Linux. No se declaran PASS ni se ocultan; el candidato requiere el entorno
 canónico Linux para la fase de aplicación y para E2E.
 
-En la ronda E2E del 2026-11-02, `python3.12 scripts/verify --base 028d09b --head 67628ff`
-clasificó `full` y repitió: gates, whitespace, `typecheck` y `build` PASS; **`api` FAIL** (376
-pass / 56 fail) y **`e2e` UNRUN**. La ejecución E2E directa quedó en **15 passed / 2 failed**:
-`catalog.spec.ts` falla al pulsar Space sobre el `role=switch` de Liquidez y `movimientos.spec.ts`
-no arranca su segundo servidor de restore (`libc.so.6` en `publishNewDirectory`). Ambos son
-defectos de entorno/ajenos a DEV22; el full Linux de `766ea6b` confirma 17/17 y se registra como PASS de CI. Debian13 local no se ejecutó.
+**Histórico macOS (superado):** la ronda del 2026-11-02 con `verify` y E2E en macOS dio 15/17;
+ambos fallos eran `restore-server`/`libc.so.6`, ajenos a DEV22. El full Linux `766ea6b`
+confirma 17/17 y se registra como PASS de CI. Debian13 local no se ejecutó.
 
 ## Aprobación visual rev3 — 2026-10-28
 
@@ -364,11 +359,9 @@ CI remoto ni verificación de implementación en esta ronda.
 
 ## Próxima acción segura
 
-1. Ejecutar `python3 scripts/verify --full` y Playwright completo en el entorno canónico Linux;
-   resuelto en CI Linux full `766ea6b`; no se ejecutó Debian13 local y los fallos `libc.so.6`/`renameat2`/
-   «Ancestro no confiable» de macOS.
-2. Resolver o aceptar explícitamente los dos fallos de `catalog`/`movimientos` antes de
-   declarar la suite E2E completa verde; no ocultarlos ni declarar PASS.
-3. Publicar la rama/PR solo si se autoriza; el merge exige aprobación explícita e identificable
+1. Full Linux y Playwright 17/17: **resuelto** en `766ea6b`; Debian13 local no ejecutado.
+2. Fallos macOS de `catalog`/`movimientos`: identificados como `restore-server`/`libc.so.6`,
+   resueltos en Linux; no se convierten en PASS local.
+3. Rama/PR publicadas; el merge exige aprobación explícita e identificable
    del head vigente. No se auto-fusiona.
 4. No iniciar E4.3, DEV18/E3.5 ni datos reales sin autorización separada.

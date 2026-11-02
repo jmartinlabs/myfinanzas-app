@@ -338,8 +338,8 @@ no autoriza DEV, no autoriza el merge de otras PR y no autoriza despliegue.
   bloqueado hasta integrar E3.5/FIN_NETA. No se admite cierre parcial anticipado.
 - **E3.6:** documentación aprobada; requiere decisión técnica de rutas y autorización DEV
   separada. E3.5 sigue STOP; agregados de Comida `No disponible`.
-- **E4.2:** especificación aprobada; no iniciar DEV hasta resolver D7/SPEC19 y el gate de
-  esquema.
+- **E4.2:** DEV22 implementado en PR #157; full Linux 17/17 y API 432/0. D7 integrada;
+  merge pendiente de aprobación explícita.
 - **E4.4:** SPEC17 en revisión; no se reabre por inferencia.
 - **Detenidos:** DEV18/E3.5, DEV17/E4.4, B3/DEV32, PR50/PR51; sin cambios.
 - **CI:** la PR #107 midió `docs` en 1m33s frente a 3m43s de referencia; PR #108 no cambió
@@ -624,9 +624,8 @@ No asumir mensajería, supervisión o control directo de otras sesiones.
   migración/DEV funcional v18, publicación/CI remoto/merge/deploy. Parche rev10 y
   testplan aprobados; conservar documentos locales modificados. Revisión independiente
   del candidato de manifiestos antes de otra fase. No afirmar ejecución completada.
-- **SPEC22/E4.2:** paquete preparado para Ventas/posición/efectivo de bróker;
-  **PENDIENTE DE ENVIAR**, no hay confirmación explícita. Solo documentos22, lectura
-  SPEC19 aprobada, sin reserva esquema, código/CI/publicación. Confirmar antes de asignar.
+- **SPEC22/E4.2 (histórico):** paquete documental previo, superado por DEV22 implementado
+  en PR #157. Full Linux 17/17; merge pendiente de aprobación explícita.
 
 Paquetes exactos en conversación de origen y sesiones de destino; no ampliar por
 este resumen. Enviados significa ESPERANDO RETORNO, no demuestra proceso activo.

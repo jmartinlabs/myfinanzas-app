@@ -11,7 +11,7 @@ aprobados visualmente el 2026-10-28; specification completa aprobada por el usua
 2026-10-28; testplan aprobado por el usuario el 2026-10-28 con el mensaje «SPEC22 testplan
 apruebo».
 Base documental: `main` `4edcfeb`, 2026-10-28. Evidencia DEV22: `028d09b` + `9f03a32` +
-`67628ff`, 2026-11-02.
+`5e010c1`, 2026-11-02.
 Historial: rev1 (2026-10-27) matriz inicial de 45 AC; rev2 (2026-10-27) registra Q0 resuelta y
 D1–D7 confirmadas A; rev2.1 (2026-10-28) registra la aprobación visual rev3; la specification
 completa y este testplan se aprobaron el 2026-10-28. rev3 (2026-11-02) añade la ejecución E2E
@@ -167,7 +167,7 @@ implementación en esta ronda.
 
 ### 5.1 Evidencia de ejecución DEV22 — 2026-11-02 (macOS arm64)
 
-Candidato: `dev22-ventas` sobre `028d09b` + `9f03a32` (UI) + `67628ff` (pruebas). Bun 1.4.3,
+Candidato: `dev22-ventas` sobre `028d09b` + `9f03a32` (UI) + `5e010c1` (pruebas). Bun 1.4.3,
 Playwright 1.64.1, Chromium 1248, macOS arm64. Datos exclusivamente ficticios.
 
 | Comprobación | Comando | Resultado |
@@ -178,7 +178,7 @@ Playwright 1.64.1, Chromium 1248, macOS arm64. Datos exclusivamente ficticios.
 | Playwright focal | `bun run test:e2e -- ventas.spec.ts inversiones.spec.ts` | **PASS** — 2/2 (Ventas E4.2 y regresión E4.1) |
 | Playwright completo | `bun run test:e2e` | macOS: 15/17 por `restore-server`/`libc.so.6`; **full Linux `766ea6b`: 17/17 PASS** |
 | Verificación canónica | `workflow_dispatch` full en `766ea6b` | **PASS** — API 432/0, E2E 17/17, restore v19/v20, `CI_BROWSER=success`; macOS local sigue fallando por entorno |
-| Capturas ficticias | Playwright, 1440×1000 y 390×844 | **GENERADAS E INSPECCIONADAS** — 22 PNG en `artifacts/e4-2/` (ignorado por Git): listado, alta, impacto, ficha, rectificación/409, anulación, D2, cantidad, vacío/error, «Revisar», sesión y fichas a 0 |
+| Capturas ficticias | Playwright, 1440×1000 y 390×844 | **GENERADAS E INSPECCIONADAS** — 23 PNG en `artifacts/e4-2/` (ignorado por Git): listado, alta, impacto, ficha, rectificación/409, anulación, D2, cantidad, vacío/error, «Revisar», sesión y fichas a 0 |
 
 La suite E2E completa se declara **PASS en full Linux `766ea6b` (17/17)**. En macOS local
 persisten dos fallos de `restore-server`/`libc.so.6`, ajenos a Ventas; no se convierten en PASS
@@ -202,13 +202,11 @@ local. Debian13 local no se ejecutó.
 
 ## 7. Siguiente acción
 
-La specification completa y este testplan están aprobados desde el 2026-10-28; los wireframes
-rev3 también. DEV22 está implementado y la evidencia E2E/API local de AC-19/20/23/27/32/33/39/
-40/41/44 está registrada en §3 y §5.1 sobre `67628ff`. Queda **PASS** el full Linux `766ea6b`; Debian13 local no ejecutado
-Linux (sin Docker/podman; fallos `libc.so.6`/`renameat2`/«Ancestro no confiable») y no hay CI
-del nuevo SHA porque esta ronda no publica rama ni PR. Antes del merge se requiere: ejecutar
-`python3 scripts/verify --full` en Linux canónico y Playwright completo verde, resolver o
-aceptar explícitamente los fallos de `catalog`/`movimientos`, y la aprobación
-explícita e identificable del usuario. No se auto-fusiona ni se declara PASS canónico.
+La specification y este testplan están aprobados desde el 2026-10-28; los wireframes rev3
+también. DEV22 está implementado y la evidencia AC-19/20/23/27/32/33/39/40/41/44 está en §3
+y §5.1 sobre `5e010c1`; el full Linux `766ea6b` da API 432/0, E2E 17/17 y restore v19/v20.
+Debian13 local no se ejecutó; los fallos macOS de `restore-server`/`libc.so.6` no se
+convierten en PASS local. Antes del merge solo falta la aprobación explícita e identificable
+del usuario y la decisión Debian13 vs full CI Ubuntu. No se auto-fusiona.
 
 **Full Linux 2026-11-02:** `workflow_dispatch` run `41434662965` sobre `494f59f`, perfil `full`: API 432/0, E2E **17/17**, restore v19/v20 y Chromium PASS.
