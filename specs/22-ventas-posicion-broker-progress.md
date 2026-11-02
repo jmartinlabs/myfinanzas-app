@@ -15,8 +15,8 @@ Fecha: 2026-11-02 (checkpoint E2E); historial DEV22 del 2026-11-01 y documental 
   trabajo DEV22/E4.2). Contrato: SPEC22 rev2 aprobada (D1–D7 = A), testplan aprobado y
   enmienda D7 de SPEC19 integrada en `main` `e6475e6`.
 - **Base y aislamiento:** worktree exclusivo gestionado por OpenCode (`dev22-ventas`), rama
-  `dev22-ventas` desde `main` `4eb7264`. PR #157 abierto en draft; sin merge, despliegue ni
-  datos reales.
+  `dev22-ventas` desde `main` `4eb7264`. PR #157 abierto en draft en ese momento; integrado en `fd2e21c`; sin
+  despliegue ni datos reales.
 - **Gate de esquema (v20 → v21):** no había versión reservada por SPEC22 ni colisión; se adopta
   la siguiente versión libre (21) con `ventaSchema` (`apps/api/src/venta-schema.ts`), que
   reconstruye **solo** `operaciones_inversion` (CHECK `clase IN ('Compra','Venta')`) y su tabla

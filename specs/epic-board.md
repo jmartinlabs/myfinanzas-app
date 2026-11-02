@@ -446,7 +446,7 @@ No se convierten a PASS sin DEV y QA. No se cuelan como trabajo implícito de E3
 
 ## Frentes detenidos
 
-DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20 sin DEV; DEV22 en QA/merge pendiente;
+DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20 sin DEV; DEV22 integrado #157;
 PR50/PR51 sin tocar. Sin cambios por esta entrada.
 
 ## Governance y próxima acción
@@ -638,7 +638,7 @@ No asumir mensajería, supervisión o control directo de otras sesiones.
   testplan aprobados; conservar documentos locales modificados. Revisión independiente
   del candidato de manifiestos antes de otra fase. No afirmar ejecución completada.
 - **SPEC22/E4.2 (histórico):** paquete documental previo, superado por DEV22 implementado
-  en PR #157. Full Linux 17/17; merge pendiente de aprobación explícita.
+  en PR #157 y MERGED `fd2e21c`. Full Linux 17/17; sin pendiente de merge.
 
 Paquetes exactos en conversación de origen y sesiones de destino; no ampliar por
 este resumen. Enviados significa ESPERANDO RETORNO, no demuestra proceso activo.
@@ -681,13 +681,14 @@ por ejecutor E4.1 no acreditada; contrastar antes de duplicar mensajes.
   `71e4d951974c1fe468991771bbc8161ee44f0faf30470634d0f7e351ae8a4bb1`, QA independiente
   PASS con6hallazgos CLOSED. G3PASS/G4condicional; C16/C17 físicos/canónicos y
   ownership requieren cierre según paquete limitado, sin reabrir decisiones.
-- SPEC20 aprobado íntegro27Oct,47AC/QA docsPASS; PR87 Draftfc48f19, último CI propio
-  conocido40509128613 FAIL; DT7 pendiente, DEV no autorizado.
+- SPEC20 aprobado íntegro27Oct,47AC/QA docsPASS; PR87 **MERGED `3d70fd6`** (el
+  Draft/FAIL `fc48f19` es histórico); DT7 pendiente, DEV no autorizado.
 - DEV17 b62ca8c sin código; spec/wireframes y autorización histórica conservados,
   STOP NO AUTO-RESUME. Secuencia D5→E4.1→DEV17; integración aprobada E4.1, cesión,
   gate main/dependencias/escritores/versión y nueva autorización expresa de inicio.
-- B3 abierto, investigación inconclusa por montaje, NO AUTO-RESUME; DEV32 PR30 Draft,
-  AC18/22 y compatibilidad pendientes. Sin infraestructura/VPS/deploy/datos reales.
+- B3 abierto, investigación inconclusa por montaje, NO AUTO-RESUME; DEV32 #30 integrado
+  `306bbc5`, AC-18 PASS y AC-22 PASS parcial (E2E final UNRUN). Sin infraestructura/VPS/
+  deploy/datos reales.
 - SPEC21–30 numeración asignada a las entregas del registro inferior. No números
   nuevos por analogía ni reglas financieras inventadas.
 
@@ -756,8 +757,9 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
 
 Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
-presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless**, PR30
-Draft, candidato24ca206, AC18/AC22 y compatibilidad con main actual pendientes.
+presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless** #30
+integrado `306bbc5`, AC-18 PASS y AC-22 PASS parcial (E2E final UNRUN); rootless real y
+Debian13 pendientes.
 B3 sigue ABIERTO, investigación cerrada inconclusa por montaje; último checkpoint
 comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por inferencia.
 
@@ -811,9 +813,8 @@ comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por infere
   sin reservar esquema ni reabrirQ1–Q7. Mensaje de lectura al supervisor preparado;
   envío no confirmado, sin reanudación del ejecutor.
 - **E4.5/SPEC20:** aprobación íntegra spec/wireframes27Oct según usuario, Q1–Q10
-  confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 Draft
-  fc48f1984130b99993dce60e12a555752fa8396d; último CI conocido40509128613 FAIL
-  por contexto base/merge ref. No sustituirlo con PASS PR92. DT7 pendiente: solo
+  confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 **MERGED
+  `3d70fd6`**; el Draft/FAIL `fc48f19` y el CI `40509128613` son históricos. DT7 pendiente: solo
   preparación documental/ficticia; sin Excel, datos reales ni conciliación operativa.
   Sin autorización DEV/merge. No reapertura funcional salvo contradicción material.
 

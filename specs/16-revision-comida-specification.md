@@ -19,8 +19,9 @@ El texto consolidado en main `aad33e9` tiene SHA-256
 (specification) y
 `804e17774d152506115404ef609f7fb8d6e3ce5f36e5990466a27f98f6df7bdf`
 (brainstorming). Los hashes citados identifican la propuesta original, no este texto
-consolidado; el delta actual tiene QA independiente PASS (2026-10-26) y su aprobación integral
-consta en §Registro (2026-10-31).
+consolidado; el delta actual tiene QA independiente PASS (2026-10-26). La aprobación integral
+registrada el 2026-10-31 (§Registro) cubre la specification y los wireframes rev3, **no este
+delta E3.4**, que sigue pendiente de aprobación final.
 Sin autorización de desarrollo, SQL, migración, despliegue ni merge.
 Context and brainstorming: [16-revision-comida-brainstorming.md](16-revision-comida-brainstorming.md)
 (propuestas rev1 derogadas conservadas en §2 y §9.4), [E3.4/E3.5](roadmap.md),
