@@ -107,6 +107,13 @@ auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y dependenci
 - **Pendiente:** Debian13/VPS son gate de despliegue; no acreditan el entorno productivo.
 - **Dependencias:** entorno productivo y DT6 no validados.
 
+## Ratificación del usuario — 2026-11-02
+
+El usuario ratificó **individualmente** el cierre documental de auditoría de **SPEC05, 07,
+08, 10, 11, 12, 13, 14, 15, 19 y 31**, conservando AC PARCIAL/UNRUN y dependencias.
+**SPEC06 y SPEC32 permanecen diferidas.** Ningún AC se convierte en PASS y este acto no
+autoriza DEV, migración, datos reales ni merge.
+
 ## Reglas de ratificación
 
 - Ratificación **individual** por SPEC; no cierre masivo automático.
