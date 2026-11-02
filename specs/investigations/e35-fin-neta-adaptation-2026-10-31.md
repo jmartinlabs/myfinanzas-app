@@ -407,7 +407,7 @@ Las alternativas no elegidas se conservan como historia de la decisión.
 | SPEC21 | `E3.5-AC-12/13/17/39` «BLOCKED» (`21-...:92,264` y progress) | Numeración de la candidata local; **histórica, sin equivalencia automática** (`16-...:1558-1559`) |
 | SPEC27 | — | No cita `E3.5-AC` |
 
-**Tabla de trazabilidad propuesta (sin inventar equivalencias):**
+**Tabla de trazabilidad aplicada (sin equivalencias inventadas):**
 
 | Referencia histórica | Documento | Tratamiento |
 | --- | --- | --- |

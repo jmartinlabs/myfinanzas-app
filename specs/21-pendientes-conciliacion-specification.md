@@ -261,7 +261,7 @@ equivalencia.
 | Disponibilidad | Se puede mostrar | No se puede mostrar / queda No disponible |
 | --- | --- | --- |
 | E3.4 integrada, E3.5 no integrada | Operaciones individuales de Revisión Comida, fecha, concepto, importe/dirección, clasificación, evidencia, vínculo verificado, reposiciones y referencia temporal de la fuente. Enlace a Revisión Comida. | `Gasto comida`, `Compensable`, `Falta por reponer`, `Recursos`, `CIERRE`, `DIF` y estados `Parcial/Completada` agregados. |
-| E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; E3.5-AC-12/13/17/39 siguen bloqueados. |
+| E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; `E3.5-AC-12/13/17/39` (histórica) siguen bloqueados. |
 | E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según E3.5/FIN_NETA, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
 
 > **Nota de vigencia — 2026-11-02.** Las referencias `E3.5-AC-12/13/17/39` de esta sección

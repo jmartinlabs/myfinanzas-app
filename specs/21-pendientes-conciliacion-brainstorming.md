@@ -66,7 +66,7 @@ y del encargo SPEC21.
 | E3.1/DEV13 | PR71 integrada. H1 conserva Gastos/Ingresos relacionados fuera del motor; solo Transferencias acreditadas generan Adelantado/Recuperado. E3.1-AC36 PARCIAL por proveedor de Cierres ausente. | Se consume el DTO de Anticipos; no se declara E3.1-AC36 completo ni se simula cierre. |
 | E3.2 | Base B PR75, D5/Exterior PR90 y overflow PR93 integrados. B-T11 (consumo por informes/E3.6) sigue pendiente. | SPEC21 es el consumidor que activa B-T11, pero B-T11 no se declara PASS por diseñar esta spec. |
 | E3.4/DEV16 | PR82 integrada. E3.4-AC25 pendiente; E3.4-AC12/31 históricos condicionados; E3.4-AC27/34/36 consumidores futuros E3.5. | Se consume el contrato de lectura de Revisión Comida; no se cierra E3.4-AC25 ni se declara equivalencia física. |
-| E3.5/DEV18 | Candidato local `codex/dev18-e35-comida-ciclo`, no integrado ni aceptado funcionalmente. `FIN_NETA` runtime ausente; E3.5-AC-12/13/17/39 BLOCKED según el último estado recibido. | Comida se especifica como contrato condicionado; en ausencia del motor se muestra No disponible, nunca cero. |
+| E3.5/DEV18 | Candidato local `codex/dev18-e35-comida-ciclo`, no integrado ni aceptado funcionalmente. `FIN_NETA` runtime ausente; `E3.5-AC-12/13/17/39` BLOCKED (numeración histórica; ver SPEC21 §4.3.1) según el último estado recibido. | Comida se especifica como contrato condicionado; en ausencia del motor se muestra No disponible, nunca cero. |
 | E2.6/DEV12 | PR67 integrada; documentación reconciliada PR94; 56 AC y UNRUN de fuentes no disponibles conservados. | Se reutiliza su semántica y se añade una vista ajustada explícita, sin declarar PASS los AC de integración. |
 
 ## 2. Propuestas de SPEC21 (no aprobadas)
