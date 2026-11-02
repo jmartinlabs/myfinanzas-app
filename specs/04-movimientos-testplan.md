@@ -1,6 +1,9 @@
 # 04 — Movimientos: Test plan
 Specification: [aprobada](04-movimientos-specification.md).
 Status: COMPLETED AND INTEGRATED — 29 criterios actuales PASS; AC-30–33 contratos futuros.
+
+> **Nota de vigencia (2026-11-02):** «completado e integrado» describe la entrega E1.4; SPEC04 permanece formalmente abierta y su E2E propio sigue UNRUN.
+
 PR #15 aprobada sobre 423c8ee; squash main b51b89bd111eab310581d9d401102ca0f95d7a42.
 Fecha: 2026-10-21. Rama feat/e1-4-movimientos, base main 5fa4ace.
 

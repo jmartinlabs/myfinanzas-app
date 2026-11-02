@@ -2,7 +2,7 @@
 
 Status: **APPROVED rev2 — D1–D7 confirmadas A (2026-10-27); wireframes rev3 aprobadas visualmente
 (2026-10-28); specification completa APROBADA por el usuario el 2026-10-28; testplan APROBADO
-por el usuario el 2026-10-28. DEV22 no autorizado.**
+por el usuario el 2026-10-28. DEV22 integrado en #157 MERGED `fd2e21c` (2026-11-02).**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
 aprobados visualmente por el usuario el 2026-10-28 con el mensaje «Apruebo la revisión visual

@@ -4,7 +4,7 @@ Specification: [22-ventas-posicion-broker-specification.md](22-ventas-posicion-b
 Brainstorming: [22-ventas-posicion-broker-brainstorming.md](22-ventas-posicion-broker-brainstorming.md)
 Status: **APPROVED rev2 — DEV22 implementado y verificado en full Linux `766ea6b`
 (API 432/0, E2E 17/17, restore v19/v20, Chromium PASS). AC-19/20/23/27/32/33/39/40/41/44
-PASS; QA final APTO CON RESERVAS; merge pendiente de aprobación.**
+PASS; QA final APTO CON RESERVAS; merge aprobado e integrado en #157 `fd2e21c`.**
 Approval source/date: D1–D7 aprobadas por el usuario el 2026-10-27; SPEC19 rev10 aprobada el
 2026-10-27 (registro original `3c271d3`, integrada en `main` `156a50d`); wireframes rev3
 aprobados visualmente el 2026-10-28; specification completa aprobada por el usuario el
