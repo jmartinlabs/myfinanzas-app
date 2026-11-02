@@ -18,9 +18,47 @@ The coordinator is the only scheduler and shared board writer. Subagents must no
 2. **Check necessity**: Default to one executor for an authorized outcome. Delegate complete deliverables, not microsteps; bring in independent QA at the candidate gate.
 3. **Size the pool**: Prefer one executor, scaling only for independent ready tasks that justify context and coordination overhead. Respect actual runtime quotas and isolated ownership. This is not a fixed Codex limit or authorization for new financial scope.
 4. **Pick a role dynamically** from reusable profiles or a temporary narrowly bounded specialization. Same profile can be used more than once for independent tasks. For each delegate, issue a [work-packet contract](../../templates/agent-work-packet.md): unique ID, source/approval evidence, objective, file ownership, read/write permissions, isolation, dependencies, deliverable, checks, prohibitions and return schema.
-5. **Start only if supported**: Check actual available subagent tools/capabilities in this Codex session before claiming a worker exists. If unavailable, use sequential execution following the same ready queue; never pretend the delegate ran. External chats opened manually are **not** attached workers. They can only contribute via recorded checkpoints/branches/PRs.
+5. **Start only if supported**: Check actual available subagent tools/capabilities in the active client session before claiming a worker exists. If unavailable, use sequential execution following the same ready queue; never pretend the delegate ran. External chats opened manually are **not** attached workers. They can only contribute via recorded checkpoints/branches/PRs.
 6. **Supervise by milestone and exception**: Inspect actual candidate diff and test evidence at agreed handoffs, not each intermediate message. Prevent duplicate work; parallel code writers need disjoint ownership and safe isolated checkouts, otherwise serialize.
 7. **Close or reassign** when deliverables are complete, blocked, duplicated or no longer useful. A completed agent's task is done; launch a **new bounded work packet** for another need rather than treating a role as a permanent always-on worker. Do not claim terminated sessions kept working or that agent cleanup was executed unless the runtime confirms it.
+
+## Execution mode: direct, foreground, background
+
+Choose the mode per task before dispatch, with the lowest cost that still delivers the required
+outcome. Do not create a delegate for a trivial task, and do not defer in background work whose
+result is needed to continue. The mode changes neither the project gates nor the evidence required.
+
+- **Direct (coordinator).** Small corrections, low-cost operations, financial or functional
+  decisions that need immediate interaction with the user, consolidation, supervision and brief
+  verifications.
+- **Foreground subagent.** The coordinator needs the result immediately, the task is short enough
+  for reasonable synchronous delegation, or dependencies prevent useful work until it returns.
+- **Background subagent.** Substantial approved specification creation or review, autonomous
+  authorized DEV implementation, bounded investigations and audits, independent QA once a
+  verifiable candidate exists, and other delimited work that needs no continuous supervision.
+
+Background requires verified support in the active client (for example a `background` option or an
+equivalent asynchronous task API) and a benefit that justifies its cost. Without that support, use
+direct or foreground execution and say so; never simulate or assume background work. Releasing the
+coordinator's turn does not finish or end the subagent runtime: the task runs until it reports or
+fails, and closing the client or the runtime may stop it. Promise no persistence after that close
+unless the specific client verifies it. Local observed evidence: on 2026-11-01, two general
+subagents (task IDs E3.5 and DEV22) were launched with `background: true` in OpenCode, in
+independent worktrees and branches; their sessions started 4 ms apart and their activity overlapped
+4 min 35 s while the coordinator stayed available, with independent QA afterwards. The requested
+model was DeepSeek V4.1 Flash; this record does not re-verify that identity. It proves technical
+viability only: no token saving, quality gain or blanket parallelization is claimed.
+
+Parallelism: keep one executor by default and add delegates only for authorized, independent tasks
+with disjoint ownership and real isolation. No universal agent count applies; respect the verified
+client limit, the quota gate and these local gates (separate specification and development
+approval, financial decisions, independent QA, Agent Relay v1 without protocol changes).
+
+At the start of each substantial task, state briefly: task and identifier; who executes
+(coordinator or subagent profile); mode (direct, foreground or background); isolation (checkout or
+worktree when applicable); and whether the coordinator stays available. Add no extra report and no
+repeated status messages. Never claim a subagent, a background mode or isolation that was not
+verified.
 
 ## Quota and dispatch gate
 For Codex, query remaining subscription quota when a supported client tool exists:
@@ -159,7 +197,7 @@ savings still need measurement across comparable work, with scope and compaction
 
 ## Capability boundaries
 
-This repository contains **instructions and templates**, not executable subagent registration, an always-on scheduler or a CI-managed job queue. In Codex Desktop/Web, confirm the client actually offers delegation and isolation before using it. The [OpenAI Agents API multi-agent guide](https://developers.openai.com/api/docs/guides/agents-api/multi-agent) documents a separately configured API runtime; its default concurrency or tools **must not be assumed for a Codex UI session**. No background operation is promised after the active execution ends.
+This repository contains **instructions and templates**, not executable subagent registration, an always-on scheduler or a CI-managed job queue. In each active client (Codex Desktop/Web, Claude Code, OpenCode or another), confirm that it actually offers delegation, non-blocking execution and isolation before using them; names prove none. The [OpenAI Agents API multi-agent guide](https://developers.openai.com/api/docs/guides/agents-api/multi-agent) documents a separately configured API runtime; its default concurrency or tools **must not be assumed for an interactive session in any client**. Releasing a coordinator turn does not end a running subagent's runtime, but no background operation is promised after the active execution, client or runtime ends.
 
 ## Result contract for each work packet
 
