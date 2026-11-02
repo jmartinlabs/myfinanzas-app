@@ -27,6 +27,7 @@ import {
   purchaseAudit,
   rectifyPurchase,
 } from "./compras";
+import { createSale } from "./ventas";
 import { cashAt, cashDto, cents, spanishToday } from "./investment-engine";
 import { getSaldo, updateSaldo, createSaldo, money } from "./saldos";
 import { createClassification } from "./clasificacion";
@@ -453,6 +454,25 @@ test("E4.2-V2 negativo: intento legacy corrupto, de Venta o con otro payload se 
     const body = defaultPurchase(instrumento.id);
     const key = "legacy-negative-key-0001";
     const first = createPurchase(db, body, key + "-seed", now);
+    const sale = createSale(
+      db,
+      {
+        fecha: "2026-04-10",
+        instrumento: instrumento.id,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "1",
+        precio: "100.00",
+        divisa: "EUR",
+        cambio: null,
+        importeEur: "100.00",
+        comisionEur: null,
+        concepto: "Venta legacy negativa",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    ).venta;
     const before = {
       ops: count(db, "operaciones_inversion"),
       audit: count(db, "operacion_inversion_audit"),
@@ -485,6 +505,29 @@ test("E4.2-V2 negativo: intento legacy corrupto, de Venta o con otro payload se 
     ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
     db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
     attempt(JSON.stringify({ compra: { id: "999999" } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // Respuesta truncada: no se devuelve como idempotente.
+    attempt(JSON.stringify({ compra: { id: first.compra.id } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    // ID real cuya clase es Venta: el hash legacy no puede devolverlo.
+    attempt(
+      JSON.stringify({
+        compra: {
+          id: sale.id,
+          clase: "Compra",
+          fecha: "2026-04-10",
+          cantidad: "1",
+          importeEur: "100.00",
+          estado: "Vigente",
+        },
+      }),
+    );
     expect(
       failure(() => createPurchase(db, body, key, now)),
     ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });

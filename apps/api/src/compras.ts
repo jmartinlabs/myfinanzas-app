@@ -553,6 +553,28 @@ export function createPurchase(
             response && typeof response === "object" && "compra" in response
               ? (response as { compra?: { id?: unknown } }).compra?.id
               : null;
+          const compra =
+            response && typeof response === "object" && "compra" in response
+              ? (response as { compra?: Record<string, unknown> }).compra
+              : undefined;
+          const required = [
+            "id",
+            "clase",
+            "fecha",
+            "cantidad",
+            "importeEur",
+            "estado",
+          ];
+          if (
+            !compra ||
+            required.some((key) => !(key in compra)) ||
+            compra.clase !== "Compra"
+          )
+            throw new Problem(
+              409,
+              "IDEMPOTENCY_CONFLICT",
+              "El intento ya corresponde a otros datos.",
+            );
           const row =
             typeof id === "string"
               ? (db
