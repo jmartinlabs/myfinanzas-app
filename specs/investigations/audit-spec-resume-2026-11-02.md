@@ -1,11 +1,11 @@
 # Auditoría de especificaciones — reanudación y propuesta de cierre
 
-Fecha: 2026-11-02. Autor: orquestador OpenCode. Estado: **cierre global propuesto; 11 actas
-ratificadas, 9 propuestas y 2 diferidas; no cierra ninguna SPEC funcionalmente ni autoriza
-DEV, merge, migración o datos reales**.
+Fecha: 2026-11-02. Autor: orquestador OpenCode. Estado: **cierre global ratificado por el
+usuario el 2026-11-02; 20 actas ratificadas y 2 diferidas; no cierra ninguna SPEC
+funcionalmente ni autoriza DEV, migración o datos reales**.
 Base auditada: `main` `8b551c5`. Merges considerados: #160 `30a832c`, #161 `0c8d2fc`,
 #162 `5a2a32b` y #163 `8b551c5` (además de #157 `fd2e21c` y #159 `d7b9077`).
-Tracker histórico: [spec-audit-tracker.md](spec-audit-tracker.md). Acta global propuesta:
+Tracker histórico: [spec-audit-tracker.md](spec-audit-tracker.md). Acta global ratificada:
 [audit-closure-global-2026-11-02.md](audit-closure-global-2026-11-02.md).
 
 ## 1. Checkpoint actualizado
@@ -20,7 +20,7 @@ Tracker histórico: [spec-audit-tracker.md](spec-audit-tracker.md). Acta global 
   propuestas) y **2 diferidas** (SPEC06, SPEC32). **0 nuevos cierres funcionales.**
 - Este documento no reclasifica AC ni convierte UNRUN/PARCIAL en PASS.
 
-## 2. Estado propuesto de las 22 SPEC (propuesta sujeta a ratificación)
+## 2. Estado de las 22 SPEC (cierre de auditoría ratificado 2026-11-02)
 
 Leyenda: **A** cierre formal justificable sin código · **B** validación/aceptación
 pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro.
@@ -50,7 +50,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta ratificada; gate operativo |
 | 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 PARCIAL en `87f9c5b`/`40898403837`; E2E final UNRUN | Cierre diferido; no reutilizar `766ea6b` |
 
-**Recuento de esta propuesta:** **A 13 · B 6 · C 0 · D 3** (22 filas). El recuento cuadra
+**Recuento de la clasificación:** **A 13 · B 6 · C 0 · D 3** (22 filas). El recuento cuadra
 con la tabla y **no altera** el estado de auditoría ya fijado (23/25 cerradas propuestas y
 2 diferidas) ni el balance funcional (3 cerradas / 22 abiertas). Ninguna fila declara una
 SPEC funcionalmente cerrada.
@@ -88,8 +88,7 @@ SPEC funcionalmente cerrada.
 ## 5. Actas de cierre (Lote 4)
 
 Cada acta distingue **cierre documental de auditoría** de **aceptación funcional**. No
-convierten PARCIAL/UNRUN en PASS. Hay **22 actas**: 11 ratificadas, 9 propuestas y 2
-diferidas.
+convierten PARCIAL/UNRUN en PASS. Hay **22 actas**: 20 ratificadas y 2 diferidas.
 
 | SPEC | Evidencia para el acta | Pendiente/limitación |
 | --- | --- | --- |
@@ -116,34 +115,34 @@ diferidas.
 | 31 | Contrato v18; restore v19/v20 | Riesgos fsync/VPS/DT6 |
 | 32 | #30; AC-22 PARCIAL `87f9c5b`/`40898403837` | **E2E final UNRUN; rootless real pendiente** |
 
-Estas actas se presentan para **ratificación individual**; SPEC06 y SPEC32 quedan diferidas
-y no se declaran cerradas.
+Estas actas quedaron **ratificadas individualmente el 2026-11-02**; SPEC06 y SPEC32 quedan
+diferidas y no se declaran cerradas.
 
 ### 5.1 Actas individuales
 
 Cada acta acredita **auditoría documental**; no sustituye aceptación funcional ni convierte
 PARCIAL/UNRUN en PASS. Acta global: [audit-closure-global-2026-11-02](audit-closure-global-2026-11-02.md).
 
-- **SPEC04:** 29 AC PASS `b51b89b`; fixes #125. Límite: E2E propio UNRUN; `766ea6b` no es candidato propio. **Cierre documental: propuesto.**
+- **SPEC04:** 29 AC PASS `b51b89b`; fixes #125. Límite: E2E propio UNRUN; `766ea6b` no es candidato propio. **Cierre documental: ratificado 2026-11-02.**
 - **SPEC05:** D5 aprobada e integrada; revisión de referencias y exterior cerrada. Límite: nota histórica §D5. **Ratificada.**
 - **SPEC06:** motor de Deuda y pruebas; cabecera corregida. **Límite: auditoría técnica abierta y M1; cierre diferido.**
 - **SPEC07:** opción B integrada #128; C07-F1/F2. Límite: AC28/E3.5 fuera; notas de PR #49 históricas. **Ratificada.**
 - **SPEC08:** maestro y pruebas B1–B9; nota #129. Límite: aceptación formal. **Ratificada.**
-- **SPEC09:** PR #57 `7422d23`; ambigüedad del cero documentada. Límite: decisión humana solo si se cambia la semántica. **Cierre documental: propuesto.**
+- **SPEC09:** PR #57 `7422d23`; ambigüedad del cero documentada. Límite: decisión humana solo si se cambia la semántica. **Cierre documental: ratificado 2026-11-02.**
 - **SPEC10:** motor anual y pruebas. Límite: aceptación formal. **Ratificada.**
 - **SPEC11:** N11-F1/F2/F3 y H-SPEC11-01 aclarado. Límite: sin reejecución. **Ratificada.**
 - **SPEC12:** sin hallazgo; límites de `ledgerRows()` delimitados. Límite: AC parciales futuros. **Ratificada.**
 - **SPEC13:** Anticipos rol/par y AC36 parcial aceptado. Límite: nota de testplan. **Ratificada.**
 - **SPEC14:** D5 y B-T11 futuro delimitado. Límite: aceptación formal. **Ratificada.**
 - **SPEC15:** motor y pruebas; proveedor histórico no conectado. Límite: cobertura declarada. **Ratificada.**
-- **SPEC16:** #82/#136/#160; H-SPEC16-02 integrado. Límite: AC-25/P3 dependen de fuente real; datos reales no autorizados. **Cierre documental: propuesto.**
-- **SPEC17:** M1/M2/m8 aplicados #163. Límite: spec/wireframes NO aprobados; 0 AC ejecutados; DEV17 no autorizado. **Cierre documental: propuesto.**
+- **SPEC16:** #82/#136/#160; H-SPEC16-02 integrado. Límite: AC-25/P3 dependen de fuente real; datos reales no autorizados. **Cierre documental: ratificado 2026-11-02.**
+- **SPEC17:** M1/M2/m8 aplicados #163. Límite: spec/wireframes NO aprobados; 0 AC ejecutados; DEV17 no autorizado. **Cierre documental: ratificado 2026-11-02.**
 - **SPEC19:** 6 AC PARCIAL aceptados; D7 integrada #154/#155; AC-55 conserva estado. Límite: no promover parciales. **Ratificada.**
-- **SPEC20:** PR87 MERGED `3d70fd6`; 59 AC UNRUN. Límite: DEV20 no autorizado; DT7. **Cierre documental: propuesto.**
-- **SPEC21:** PR97 MERGED `2364d9c`; 31 AC UNRUN. Límite: DEV21 no autorizado; E3.5. **Cierre documental: propuesto.**
-- **SPEC22:** #157 MERGED `fd2e21c`; 45 AC PASS; full `766ea6b` (`41435723276`) y `494f59f` (`41434662965`). Límite: el acta no declara cierre funcional ni promueve AC adicionales. **Cierre documental: propuesto.**
-- **SPEC26:** #150 `e608bbb` + #161 `0c8d2fc`; run `41456569310`; 13 AC PASS. Límite: AC-04 parcial; AC-11 en revisión; AC-16 contrato. **Cierre documental: propuesto.**
-- **SPEC27:** spec/testplan aprobados; #161 provee `positionsAtDate`; todos los AC UNRUN. Límite: DEV27 no autorizado; E3.5/DT6. **Cierre documental: propuesto.**
+- **SPEC20:** PR87 MERGED `3d70fd6`; 59 AC UNRUN. Límite: DEV20 no autorizado; DT7. **Cierre documental: ratificado 2026-11-02.**
+- **SPEC21:** PR97 MERGED `2364d9c`; 31 AC UNRUN. Límite: DEV21 no autorizado; E3.5. **Cierre documental: ratificado 2026-11-02.**
+- **SPEC22:** #157 MERGED `fd2e21c`; 45 AC PASS; full `766ea6b` (`41435723276`) y `494f59f` (`41434662965`). Límite: el acta no declara cierre funcional ni promueve AC adicionales. **Cierre documental: ratificado 2026-11-02.**
+- **SPEC26:** #150 `e608bbb` + #161 `0c8d2fc`; run `41456569310`; 13 AC PASS. Límite: AC-04 parcial; AC-11 en revisión; AC-16 contrato. **Cierre documental: ratificado 2026-11-02.**
+- **SPEC27:** spec/testplan aprobados; #161 provee `positionsAtDate`; todos los AC UNRUN. Límite: DEV27 no autorizado; E3.5/DT6. **Cierre documental: ratificado 2026-11-02.**
 - **SPEC31:** contrato v18 y restore v19/v20. Límite: fsync/VPS/DT6 son gate operativo. **Ratificada.**
 - **SPEC32:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PARCIAL** (API/build/rootless; E2E final **UNRUN**) en `87f9c5b`/run `40898403837`. **Límite: cierre diferido hasta completar E2E/rootless real.**
 

@@ -1,7 +1,7 @@
 # Acta global de cierre de auditoría de especificaciones — 2026-11-02
 
-Status: **cierre global propuesto; no ratificado y sin merge autorizado.** Base: `main`
-`8b551c5`. Documentos: [tracker](spec-audit-tracker.md),
+Status: **acta global ratificada por el usuario el 2026-11-02; merge de la PR documental
+autorizado por separado.** Base: `main` `8b551c5`. Documentos: [tracker](spec-audit-tracker.md),
 [resumen](audit-spec-resume-2026-11-02.md) y [actas](audit-closure-actas-2026-11-02.md).
 Alcance: las **25 SPEC** del inventario vigente (01–17, 19–22, 26, 27, 31, 32);
 SPEC18 no existe en `main` y no forma parte del alcance. Este acta no declara ninguna SPEC
@@ -21,7 +21,7 @@ funcionalmente cerrada.
 
 | Plano | Resultado | Significado |
 | --- | --- | --- |
-| **Auditoría documental** | **23/25 cerradas** (3 previas + 11 ratificadas + 9 propuestas) y **2 diferidas**; cierre global **propuesto** | 3 previas (SPEC01–03) + 11 ratificadas (05, 07, 08, 10, 11, 12, 13, 14, 15, 19, 31) + 9 propuestas (04, 09, 16, 17, 20, 21, 22, 26, 27). Diferidas: SPEC06 y SPEC32. |
+| **Auditoría documental** | **23/25 cerradas** (3 previas + 11 ratificadas + 9 ratificadas el 2026-11-02) y **2 diferidas**; cierre global **ratificado** | 3 previas (SPEC01–03) + 11 ratificadas (05, 07, 08, 10, 11, 12, 13, 14, 15, 19, 31) + 9 ratificadas el 2026-11-02 (04, 09, 16, 17, 20, 21, 22, 26, 27). Diferidas: SPEC06 y SPEC32. |
 | **Estado funcional** | **3 cerradas / 22 abiertas** | No cambia por este lote. **0 nuevas SPEC funcionalmente cerradas.** |
 
 «Auditoría finalizada» **no** equivale a «SPEC funcionalmente cerrada». Las 9 actas
@@ -85,7 +85,7 @@ UNRUN en PASS ni altera la aceptación funcional.
 
 | ID | Pendiente | Propietario | Gate | Autorización |
 | --- | --- | --- | --- | --- |
-| AUD-01 | Ratificar individualmente las 9 actas propuestas (04, 09, 16, 17, 20, 21, 22, 26, 27) | Usuario | Decisión identificable | Ratificación explícita |
+| AUD-01 | ~~Ratificar individualmente las 9 actas propuestas~~ **Cumplido 2026-11-02** | Usuario | Decisión identificable | Ratificación registrada |
 | AUD-02 | Decidir el cierre o la continuación de SPEC06 | Usuario, con asesoría de Álex | Auditoría técnica y reserva M1/E4.4 | Decisión explícita |
 | AUD-03 | Decidir el cierre o la continuación de SPEC32 | Usuario, con asesoría de Álex | AC-22/E2E final y rootless real | Decisión explícita |
 | AUD-04 | Alinear tracker, tablero, resume y notas de vigencia | Coordinador OpenCode | Esta PR documental | Publicación de rama/PR |
@@ -99,13 +99,12 @@ funcional nueva para sostener el cierre de auditoría.
 
 ## 7. Qué falta para declarar la auditoría formalmente terminada
 
-1. **Ratificar las 9 actas propuestas** (AUD-01) sin convertirlas en aceptación funcional.
-2. **Decidir SPEC06 y SPEC32** (AUD-02/AUD-03): cerrar su auditoría o mantener el diferimiento
+1. **Decidir SPEC06 y SPEC32** (AUD-02/AUD-03): cerrar su auditoría o mantener el diferimiento
    con el gate vigente.
-3. **Alinear la documentación** (AUD-04): tracker, tablero, resume y notas de vigencia deben
+2. **Alinear la documentación** (AUD-04): tracker, tablero, resume y notas de vigencia deben
    mostrar el mismo estado dual y las mismas evidencias.
-4. **Publicar la PR documental** y verificar sus validaciones; el merge exige aprobación
-   explícita e identificable.
+3. **Publicar la PR documental** y verificar sus validaciones; el merge ya está autorizado por
+   el usuario y se ejecuta tras QA y CI `required`.
 
 No se exige DEV futuro para completar estos pasos. La auditoría puede terminar sin que
 ninguna SPEC pase a «funcionalmente cerrada».
@@ -115,7 +114,6 @@ ninguna SPEC pase a «funcionalmente cerrada».
 - Este acta **no autoriza DEV**, datos reales, migración, despliegue ni merge.
 - **«Auditoría finalizada» ≠ «SPEC funcionalmente cerrada».**
 - El balance funcional se conserva en **3 cerradas / 22 abiertas**.
-- Las 9 actas propuestas no están ratificadas; las 11 ratificadas conservan su alcance y sus
-  AC PARCIAL/UNRUN.
+- Las 20 actas ratificadas conservan su alcance y sus AC PARCIAL/UNRUN.
 - No se reclasifican de nuevo los hallazgos ya resueltos ni se exigen pruebas funcionales
   nuevas.

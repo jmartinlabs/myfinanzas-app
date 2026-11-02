@@ -1,6 +1,6 @@
-## Auditoría de especificaciones — cierre global propuesto 2026-11-02
+## Auditoría de especificaciones — cierre global ratificado 2026-11-02
 
-Base `main` `8b551c5` (squash #163). **11 actas ratificadas + 9 propuestas**; SPEC06 y
+Base `main` `8b551c5` (squash #163). **20 actas ratificadas** (11 + 9 el 2026-11-02) y el acta global; SPEC06 y
 SPEC32 diferidas. Estado de auditoría **23/25** y estado funcional **3 cerradas / 22
 abiertas**. Acta global:
 [audit-closure-global-2026-11-02](investigations/audit-closure-global-2026-11-02.md);
