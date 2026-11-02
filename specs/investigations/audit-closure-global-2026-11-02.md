@@ -1,7 +1,9 @@
 # Acta global de cierre de auditoría de especificaciones — 2026-11-02
 
 Status: **cierre global propuesto; no ratificado y sin merge autorizado.** Base: `main`
-`8b551c5`. Alcance: las **25 SPEC** del inventario vigente (01–17, 19–22, 26, 27, 31, 32);
+`8b551c5`. Documentos: [tracker](spec-audit-tracker.md),
+[resumen](audit-spec-resume-2026-11-02.md) y [actas](audit-closure-actas-2026-11-02.md).
+Alcance: las **25 SPEC** del inventario vigente (01–17, 19–22, 26, 27, 31, 32);
 SPEC18 no existe en `main` y no forma parte del alcance. Este acta no declara ninguna SPEC
 funcionalmente cerrada.
 
@@ -52,7 +54,7 @@ UNRUN en PASS ni altera la aceptación funcional.
 | 26 | #150 `e608bbb` + #161 `0c8d2fc`; run `41456569310`; 13 AC PASS | AC-04 parcial, AC-11 en revisión, AC-16 contrato |
 | 27 | Sin implementación | Todos los AC UNRUN; #161 ya provee `positionsAtDate` |
 | 31 | Contrato v18 #130; restore v19/v20 #148 | DT6/T-BKP y operación fuera del cierre |
-| 32 | #30 `306bbc5`; AC-18 PASS; AC-22 parcial en `87f9c5b`/run `40898403837` | **E2E final UNRUN; rootless real/Debian13 pendiente** |
+| 32 | #30 `306bbc5`; AC-18 PASS; AC-22 PARCIAL en `87f9c5b`/run `40898403837` | **E2E final UNRUN; rootless real/Debian13 pendiente** |
 
 `766ea6b` **no** se cita como evidencia de AC-22 ni como PASS propio de SPEC04.
 
@@ -71,7 +73,7 @@ UNRUN en PASS ni altera la aceptación funcional.
 
 - **SPEC06:** auditoría técnica abierta; `capital` nulo en `deudas.ts` queda como reserva
   M1/E4.4. No se cierra E1.6.
-- **SPEC32:** AC-22 parcial; E2E final UNRUN; rootless real y Debian13 no acreditados.
+- **SPEC32:** AC-22 PARCIAL; E2E final UNRUN; rootless real y Debian13 no acreditados.
 - **SPEC16:** AC-25 y P3 exigen fuente/datos reales; sin autorización específica no se
   ejecutan.
 - **SPEC04:** el E2E propio sigue UNRUN; `766ea6b` pertenece a E4.2 y no se reutiliza.

@@ -201,11 +201,11 @@ a estas 22 actas de auditoría; no altera el balance funcional global del tracke
 
 ## SPEC32 — Ejecución rootless
 
-- **Evidencia:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PASS parcial**
+- **Evidencia:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PARCIAL**
   (API/build/rootless; E2E final UNRUN) en `87f9c5b`/run `40898403837`.
 - **Cierre documental:** **diferido** hasta completar AC-22/E2E final y ejecución rootless
   real.
-- **AC PARCIAL/UNRUN:** AC-22 PASS parcial (acotado); E2E final y rootless real UNRUN.
+- **AC PARCIAL/UNRUN:** AC-22 PARCIAL; E2E final y rootless real UNRUN.
 - **Pendiente:** Debian13/VPS son gate de despliegue; no acreditan el entorno productivo.
 - **Dependencias:** entorno productivo y DT6 no validados.
 

@@ -48,7 +48,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 26 Precierre | A | E4.8 #150 + #161; run `41456569310`; 13 AC PASS, AC-04 parcial | Acta propuesta; AC-11 en revisión |
 | 27 Cierre financiero | D | Aprobada; AC UNRUN; #161 provee `positionsAtDate` | Gates E3.5/DT6; acta propuesta |
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta ratificada; gate operativo |
-| 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 parcial en `87f9c5b`/`40898403837`; E2E final UNRUN | Cierre diferido; no reutilizar `766ea6b` |
+| 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 PARCIAL en `87f9c5b`/`40898403837`; E2E final UNRUN | Cierre diferido; no reutilizar `766ea6b` |
 
 **Recuento de esta propuesta:** **A 13 · B 6 · C 0 · D 3** (22 filas). El recuento cuadra
 con la tabla y **no altera** el estado de auditoría ya fijado (23/25 cerradas propuestas y
@@ -114,7 +114,7 @@ diferidas.
 | 26 | E4.8 #150/#161; 13 AC PASS | AC-04 parcial; AC-11 revisión |
 | 27 | Spec/testplan; `positionsAtDate` #161 | Todos los AC UNRUN |
 | 31 | Contrato v18; restore v19/v20 | Riesgos fsync/VPS/DT6 |
-| 32 | #30; AC-22 parcial `87f9c5b`/`40898403837` | **E2E final UNRUN; rootless real pendiente** |
+| 32 | #30; AC-22 PARCIAL `87f9c5b`/`40898403837` | **E2E final UNRUN; rootless real pendiente** |
 
 Estas actas se presentan para **ratificación individual**; SPEC06 y SPEC32 quedan diferidas
 y no se declaran cerradas.
@@ -145,7 +145,7 @@ PARCIAL/UNRUN en PASS. Acta global: [audit-closure-global-2026-11-02](audit-clos
 - **SPEC26:** #150 `e608bbb` + #161 `0c8d2fc`; run `41456569310`; 13 AC PASS. Límite: AC-04 parcial; AC-11 en revisión; AC-16 contrato. **Cierre documental: propuesto.**
 - **SPEC27:** spec/testplan aprobados; #161 provee `positionsAtDate`; todos los AC UNRUN. Límite: DEV27 no autorizado; E3.5/DT6. **Cierre documental: propuesto.**
 - **SPEC31:** contrato v18 y restore v19/v20. Límite: fsync/VPS/DT6 son gate operativo. **Ratificada.**
-- **SPEC32:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PASS parcial** (API/build/rootless; E2E final **UNRUN**) en `87f9c5b`/run `40898403837`. **Límite: cierre diferido hasta completar E2E/rootless real.**
+- **SPEC32:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PARCIAL** (API/build/rootless; E2E final **UNRUN**) en `87f9c5b`/run `40898403837`. **Límite: cierre diferido hasta completar E2E/rootless real.**
 
 ## 6. Decisiones humanas
 
@@ -171,7 +171,7 @@ Base de ejecución: `main` `8b551c5`, macOS arm64, Bun 1.4.3, Playwright 1.64.1.
 | SPEC16 #160 | **API PASS**, run `41455159383` | AC-25/P3 dependen de fuente real |
 | `scripts/verify --full` | **PASS en `766ea6b`**: API 432/0, E2E 17/17, restore v19/v20 | Debian13 local no ejecutado; no es candidato propio de SPEC04 |
 | SPEC32 AC-22: typecheck/build | **PASS** | Estática/tipos/build |
-| SPEC32 AC-22: E2E final | **UNRUN en candidato propio**; `766ea6b` pertenece a E4.2 y no se reutiliza | `87f9c5b`: AC-22 parcial (API/build/rootless); E2E final pendiente |
+| SPEC32 AC-22: E2E final | **UNRUN en candidato propio**; `766ea6b` pertenece a E4.2 y no se reutiliza | `87f9c5b`: AC-22 PARCIAL (API/build/rootless); E2E final pendiente |
 
 El E2E de Movimientos se ejecutó en la suite full Linux de E4.2 (`766ea6b`), pero no es
 candidato propio de SPEC04. AC-22 de SPEC32 sigue parcial (API/build/rootless) con E2E final

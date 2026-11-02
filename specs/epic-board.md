@@ -571,7 +571,7 @@ RETORNO y no acredita ejecución.
 | INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
 | DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
 | DEV17 / E4.4 | STOP en `b62ca8c`, sin código | Secuencia D5→E4.1→DEV17; sin reanudación |
-| B3 / DEV32 | Abiertos y separados; PR30 Draft `24ca206` | No reanudar por inferencia |
+| B3 / DEV32 | Abiertos y separados; #30 integrado `306bbc5`; rootless real pendiente | No reanudar por inferencia |
 | PR50 / PR51 | Abiertas antiguas, no Draft | Sin autorización; no tocar |
 
 Cerrados y no reabiertos por esta entrada: DEV12/PR67, PR94, D5/PR90, PR93, PR92/CI, DEV13/H1
