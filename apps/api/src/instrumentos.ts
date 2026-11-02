@@ -3,9 +3,10 @@ import { createHash } from "node:crypto";
 import { Problem } from "./problem";
 import { cashAt, cents, investmentInstalled, positionsFor, scaledText } from "./investment-engine";
 import { purchaseDto, purchasesForInstrumento } from "./compras";
+import { salesForInstrumento } from "./ventas";
 
 export const COBERTURA =
-  "Posición calculada solo con las compras registradas; no incluye histórico anterior no importado";
+  "Posición calculada solo con las operaciones registradas; no incluye histórico anterior no importado";
 const INSTRUMENT_FIELDS = [
   "nombre",
   "isin",
@@ -228,7 +229,10 @@ function positions(instrumento: string, db: Database) {
     saldoInversion: position.saldoInversion,
     cantidad: scaledText(position.cantidad, 8),
     compras: position.compras,
+    ventas: position.ventas,
     ultimaCompra: position.ultimaCompra,
+    ultimaVenta: position.ultimaVenta,
+    ultimaOperacion: position.ultimaOperacion,
   }));
 }
 function summary(db: Database, row: Row) {
@@ -237,6 +241,7 @@ function summary(db: Database, row: Row) {
     ...dto(row),
     posiciones,
     comprasVigentes: posiciones.reduce((total, p) => total + p.compras, 0),
+    ventasVigentes: posiciones.reduce((total, p) => total + p.ventas, 0),
   };
 }
 function normalize(value: string) {
@@ -431,6 +436,7 @@ export function getInstrumento(db: Database, id: string) {
         motivo: "Valoración E4.3 no entregada",
       },
       compras: purchasesForInstrumento(db, id),
+      ventas: salesForInstrumento(db, id),
       auditoriaResumen: {
         revisiones: items.length,
         ultima: items.at(-1)?.instante ?? null,
@@ -478,7 +484,6 @@ export function listInstrumentos(
       total: rows.length,
       page,
       cobertura: COBERTURA,
-      ventas: "Ventas: no disponibles hasta E4.2",
     };
   })();
 }
@@ -510,6 +515,30 @@ export function instrumentOptions(db: Database) {
         "SELECT id,nombre,estado FROM saldos WHERE tipo='Inversión' AND control='Inversiones' AND estado='Activa' ORDER BY id",
       )
       .all() as { id: string; nombre: string; estado: string }[];
+    // D3: an inactive Instrument is offered only where the Saldo still has
+    // available quantity; active Instruments are always offered, marked by Estado.
+    const allInstrumentRows = db
+      .query(select + " ORDER BY length(id),id")
+      .all() as Row[];
+    const instrumentosVenta = saldosInversion.map((saldo) => ({
+      saldoInversion: saldo,
+      instrumentos: allInstrumentRows
+        .map((row) => {
+          const available =
+            positionsFor(db, row.id).find(
+              (position) => position.saldoInversion.id === saldo.id,
+            )?.cantidad ?? 0n;
+          return {
+            id: row.id,
+            nombre: row.nombre,
+            estado: row.estado,
+            cantidad: scaledText(available, 8),
+            _available: available,
+          };
+        })
+        .filter((row) => row.estado === "Activa" || row._available > 0n)
+        .map(({ _available, ...row }) => row),
+    }));
     const divisas = new Set<string>(["EUR", "USD", "GBP", "CHF", "JPY"]);
     if (investmentInstalled(db))
       for (const row of db
@@ -521,7 +550,7 @@ export function instrumentOptions(db: Database) {
       divisas: [...divisas].sort(),
       saldosEfectivo,
       saldosInversion,
-      ventas: "Ventas: no disponibles hasta E4.2",
+      instrumentosVenta,
       cobertura: COBERTURA,
     };
   })();

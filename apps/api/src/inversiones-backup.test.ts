@@ -9,6 +9,7 @@ import { openDatabase } from "./database";
 import { loadKey } from "./auth";
 import { createInstrumento } from "./instrumentos";
 import { createPurchase } from "./compras";
+import { createSale } from "./ventas";
 import { getSaldo, updateSaldo } from "./saldos";
 import { openDatabaseV13 } from "../test-support/database-v13";
 import { openDatabaseV16 } from "../test-support/database-v16";
@@ -90,7 +91,11 @@ function run(
         });
         expect(
           copy.query("SELECT COUNT(*) n FROM operaciones_inversion").get(),
-        ).toEqual({ n: 1 });
+        ).toEqual({ n: schema >= 21 ? 2 : 1 });
+        if (schema >= 21)
+          expect(
+            copy.query("SELECT COUNT(*) n FROM operacion_inversion_audit").get(),
+          ).toEqual({ n: 2 });
         expect(
           copy.query("SELECT COUNT(*) n FROM instrumento_attempts").get(),
         ).toEqual({ n: 0 });
@@ -145,7 +150,7 @@ test("E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo"
 
   run("demo", 17, "e3.2-d5-v17", (path) => openDatabaseV17(path));
 
-  run("demo", 20, "e2.7-v20", (path) => openDatabase(path), (db) => {
+  run("demo", 21, "e4.2-v21", (path) => openDatabase(path), (db) => {
     updateSaldo(db, "S003", {
       revision: getSaldo(db, "S003").revision,
       saldoApertura: "100.00",
@@ -171,6 +176,25 @@ test("E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo"
         importeEur: "10.00",
         comisionEur: null,
         concepto: "Restore v16",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    );
+    createSale(
+      db,
+      {
+        fecha: "2026-04-10",
+        instrumento: instrumento.id,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "1",
+        precio: "10.00",
+        divisa: "EUR",
+        cambio: null,
+        importeEur: "10.00",
+        comisionEur: null,
+        concepto: "Venta ficticia de copia",
         nota: null,
       },
       randomUUID(),

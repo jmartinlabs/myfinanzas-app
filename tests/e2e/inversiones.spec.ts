@@ -74,7 +74,7 @@ test("E4.1 inversiones: listado, ficha, alta, compras, impacto, rectificación y
     await expect(cash).toContainText("S003 · Efectivo de inversión demo");
     await expect(cash).toContainText("1.810,40 €");
     await expect(cash).toContainText("sin total agregado");
-    await expect(cash).toContainText("Ventas: no disponibles hasta E4.2");
+    await expect(cash).not.toContainText("Ventas: no disponibles hasta E4.2");
     await expect(
       page.getByText(/histórico anterior no importado/).first(),
     ).toBeVisible();

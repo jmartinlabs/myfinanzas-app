@@ -295,6 +295,7 @@ function investmentSource(
     const rows = db
       .query(
         `SELECT o.instrumento instrumento,i.nombre nombre,
+                o.clase clase,
                 o.saldo_inversion saldoInversion,s.nombre saldoNombre,
                 CAST(o.cantidad AS TEXT) cantidad
          FROM operaciones_inversion o
@@ -306,6 +307,7 @@ function investmentSource(
       .all(end) as {
       instrumento: string;
       nombre: string;
+      clase: string;
       saldoInversion: string;
       saldoNombre: string;
       cantidad: string;
@@ -320,9 +322,13 @@ function investmentSource(
       }
     >();
     for (const row of rows) {
+      const delta =
+        row.clase === "Venta"
+          ? -BigInt(row.cantidad)
+          : BigInt(row.cantidad);
       const key = row.saldoInversion + "\u0000" + row.instrumento;
       const current = grouped.get(key);
-      if (current) current.cantidad += BigInt(row.cantidad);
+      if (current) current.cantidad += delta;
       else
         grouped.set(key, {
           instrumento: row.instrumento,
@@ -331,7 +337,7 @@ function investmentSource(
             id: row.saldoInversion,
             nombre: row.saldoNombre,
           },
-          cantidad: BigInt(row.cantidad),
+          cantidad: delta,
         });
     }
     const posiciones = [...grouped.values()].map((position) => ({
@@ -513,7 +519,16 @@ export function getPrecierre(
       "E3.5 Comida / FIN_NETA",
       "Motor E3.5/FIN_NETA no integrado; P7 parcial. E4.9 queda bloqueado.",
     ),
-    unavailable("e42", "E4.2 Ventas", "Sin DEV."),
+    {
+      key: "e42",
+      label: "E4.2 Ventas",
+      cobertura: "Operaciones de inversión",
+      estado: "Integrado",
+      motivo:
+        "Compra/Venta restan/suman en efectivo y posición; UI/E2E pendientes.",
+      enlace: "/inversiones",
+      aplicable: true,
+    },
     unavailable("e44", "E4.4 Deuda completa", "Documental sin código."),
     unavailable("e45", "E4.5 Histórico / precontrol", "Documental sin código."),
     unavailable("e36", "E3.6 Pendientes / conciliación", "Documental sin código."),

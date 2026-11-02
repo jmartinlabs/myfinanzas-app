@@ -32,6 +32,7 @@ import {
   type Cycle,
 } from "./ciclos";
 import { revisionComidaSource } from "./revision-comida-ledger";
+import { investmentSource } from "./investment-ledger";
 import {
   ledgerRows,
   financeRevision,
@@ -892,6 +893,7 @@ function plan(
       maxDate: dates.sort().at(-1) ?? null,
     },
     comidaSource,
+    investmentSource(db),
   ]);
   return {
     contextRevision: financeRevision(db),

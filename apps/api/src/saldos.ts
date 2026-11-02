@@ -161,7 +161,7 @@ function dto(db: Database, r: Row): Saldo {
               importe: cents(cashAt(db, r.id).disponible),
               condicion: "calculado",
               motivo:
-                "Apertura + entradas − salidas − compras vigentes + ventas (cero estructural). Sin filtro por Fecha apertura.",
+                "Apertura + entradas − salidas − compras vigentes + ventas vigentes. Sin filtro por Fecha apertura.",
             }
           : position(r.control, decimal(r.manual)),
   };
