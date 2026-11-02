@@ -1,8 +1,8 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. **Corrección M1/M2/m8 propuesta el 2026-11-02 para revisión; no aprobada.** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex; la especificación y los wireframes **NO están aprobados**. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
+Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. **M1/M2/m8 aprobados por el usuario el 2026-11-02 y aplicados; la specification/wireframes de E4.4 siguen en revisión y no aprobados.** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
 
-Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7; no autoriza specification, wireframes, merge ni desarrollo. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
+Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7. La decisión del usuario del 2026-11-02 aprueba **solo** las correcciones M1/M2/m8 (lectura `null ≠ 0` con regresión, R5 en solo lectura sin asignar escritura, y bloqueo de la deuda viva completa de la deuda afectada en el corte); no autoriza la specification, los wireframes, DEV17, migración, merge ni datos reales. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
 
 Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md),
 [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
