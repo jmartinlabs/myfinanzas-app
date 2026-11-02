@@ -1,4 +1,6 @@
 # 32 — Ejecución segura con Podman rootless: Specification
+
+**Nota de vigencia 2026-11-02:** PR #30 se integró en `306bbc5`; «implementación pendiente» es histórico. AC-18 PASS y AC-22 parcial/E2E final UNRUN.
 Status: APPROVED — D1–D3 y AC-01–AC-24 aprobados; implementación pendiente
 Approval source/date: aprobación expresa íntegra del usuario en este chat, 2026-10-22 (Europe/Madrid), tras revisión con Álex de PR #29: D1–D3 y AC-01–AC-24, con precisiones UID/keep-id y rollback incorporadas. Autoriza dev 32 tras cerrar spec; no merge, VPS ni despliegue.
 Context and brainstorming: [ronda 1](32-ejecucion-rootless-brainstorming.md),

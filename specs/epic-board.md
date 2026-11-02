@@ -1,3 +1,11 @@
+## Auditoría de especificaciones — reanudada 2026-11-02
+
+Diagnóstico en [audit-spec-resume-2026-11-02](investigations/audit-spec-resume-2026-11-02.md),
+base auditada `8e4ef21`, `main` actual `fd2e21c` tras #157. Balance 3 cerradas / 22 abiertas;
+**13 A / 3 B / 2 C / 4 D**, 15 cerrables sin código y 17 con decisiones 09/17. **No se declara
+ninguna SPEC cerrada**, no se convierten PARCIAL/UNRUN en PASS y no se autoriza DEV, merge,
+migración ni datos reales.
+
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
 
 Entrada vigente de seguimiento. **No reabre** PR #136/#137 ni sus QA: ambas
@@ -322,7 +330,7 @@ no autoriza DEV, no autoriza el merge de otras PR y no autoriza despliegue.
 | Template #31 | MERGED `feadd6d`; default de Markdown documental con exclusiones protegidas |
 | Cuenta GitHub | `jmartinlabs`; remotos de MyFinanzas y template actualizados |
 | SPEC20 / E4.5 | APPROVED e integrada (`3d70fd6` / `f077b7e`); 59 AC documentales UNRUN |
-| SPEC22 / E4.2 | APPROVED; DEV22 implementado en PR #157 (full Linux 17/17); D7 integrada; merge pendiente |
+| SPEC22 / E4.2 | APPROVED; **#157 MERGED `fd2e21c`**; full Linux 17/17, API 432/0 y QA APTO; D7 integrada | No reabrir; DEV22 cerrado |
 | SPEC21 / E3.6 | documentación APPROVED; DEV no autorizado; E3.5/DEV18 STOP |
 | E4.1 | integrada `156a50d`, v18; 6 AC PARCIAL (AC-03/24/27/30/33/34) |
 | E4.8/E4.9 | specs y testplans aprobados; 33 AC UNRUN; DEV no autorizado |
@@ -553,7 +561,7 @@ RETORNO y no acredita ejecución.
 | --- | --- | --- |
 | DEV19 / E4.1 | Continuidad autorizada (prospectiva); PR #95 Draft, gates completos pendientes | Entregar autorización al ejecutor, confirmar ownership y recibir evidencia; sin merge |
 | SPEC21 / E3.6 | Documentación aprobada e integrada (`2364d9c`); E3.6 **sin iniciar**; Q-S21-01–04 aprobadas, no se reabren | Prioridad posterior a DEV19; DEV E3.6 exige autorización separada |
-| SPEC22 / E4.2 | DEV22 implementado en PR #157: full Linux 17/17, API 432/0, restore v19/v20; AC-40 UI y estados `pendiente` cerrados | Merge pendiente de aprobación explícita; sin DEV18/E3.5 |
+| SPEC22 / E4.2 | **MERGED `fd2e21c`**: full Linux 17/17, API 432/0, restore v19/v20; AC-40 UI y `pendiente` cerrados | Sin DEV18/E3.5 |
 | SPEC20 / E4.5 | Aprobada documentalmente; PR87 Draft `fc48f19`, último CI conocido FAIL; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
 | INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
 | DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |

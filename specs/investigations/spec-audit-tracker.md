@@ -2,6 +2,17 @@
 
 **Status: INSPECCIÓN EXPLORATORIA COMPLETADA — 2026-10-29; auditoría formal ABIERTA.** Las 25 SPEC del inventario tienen primera pasada; se ha realizado una segunda inspección transversal por riesgos en las 22 aún no cerradas. Falta consolidación final/aprobación de lotes y pruebas de aceptación pendientes; este registro no es tablero de desarrollo. Estado funcional global: [epic-board](../epic-board.md).
 
+## Reanudación — 2026-11-02
+
+- **Base:** `main` `8e4ef213dcca82eb83c7a949cdf1c1dea853b09d`.
+- **Balance conservado:** 3 cerradas / 22 abiertas; el balance no se reclasifica sin acta.
+- **Contraste:** desde `2c97a66` se integraron SPEC32 (#30), contrato v18 (#130), Comida
+  único (#133/#136), D′ (#135/#137/#152), rootless (#140), restore Linux (#148), E4.8
+  (#150/#151), D7 (#154/#155) y FIN_NETA documental (#156).
+- **Informe y propuesta de cierre:** [audit-spec-resume-2026-11-02.md](audit-spec-resume-2026-11-02.md).
+- **Límite:** este checkpoint no cierra SPEC, no convierte UNRUN/PARCIAL en PASS y no
+  autoriza DEV, merge, migración ni datos reales.
+
 ## Checkpoint vigente — 2026-10-29
 
 - **Base:** `main` `2c97a66` (squash PR #128); registro de auditoría `audit/spec04-25` `147008f`.
