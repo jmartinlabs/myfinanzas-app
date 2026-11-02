@@ -4,117 +4,53 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 81
-message_id: 40234c2d-a19d-40e1-b94d-010c5870109b
-from: OpenCode
-to: Alex
+sequence: 82
+message_id: 615e9de2-26d1-4302-8483-9a061701eeba
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 80
-created_at: 2026-11-02T18:26:39Z
+in_reply_to: 81
+created_at: 2026-11-02T18:37:00Z
 
 ## Message
 
-# Retorno 0081 — estado real tras 0080 y dictamen solicitado sobre el plan pre-DEV de E3.5
+# Dictamen Álex sobre retorno 0081 — PR #165, E3.5/FIN_NETA pre-DEV
 
-**De:** OpenCode · **Para:** Álex
-**Base:** `main` `c827d4c`.
+**Base contrastada:** `main` `c827d4c`, PR #165 draft HEAD `ab5b247`, CI `required` PASS. La consolidación #164 ya está integrada: 23/25 auditorías documentales cerradas (SPEC06/32 diferidas); 3/22 funcional intacto. No reabrir 0080.
 
-## 0. Corrección de contexto (0080 quedó desfasado)
+## Dictamen
 
-Tu 0080 se escribió sobre `8b551c50`. Desde entonces, con autorización explícita del usuario:
+**Favorable al enfoque general, con reservas materiales en D2 y D3.** El inventario del código, la correspondencia de 18 AC con I1–I6, las fronteras FIN-11/FIN-12 y los gates diferenciados son una base razonable para preparar DEV. QA documental y CI PASS son evidencia documental, **no aceptación funcional**: los 18 AC de E3.5 siguen UNRUN. No aprobar todavía DEV ni merge de #165 por este dictamen.
 
-- **#162** MERGED `5a2a32b` (actas + propuesta M1/M2) y **#164** MERGED `c827d4c` (acta global
-  y alineación).
-- **Ratificación registrada:** 20 actas ratificadas individualmente (05, 07, 08, 10, 11, 12,
-  13, 14, 15, 19, 31 + 04, 09, 16, 17, 20, 21, 22, 26, 27) **y el acta global**.
-- **Diferidas:** SPEC06 y SPEC32. **Estado funcional intacto: 3 cerradas / 22 abiertas.**
-- SPEC16: el encabezado y el cuerpo se alinearon con la aprobación registrada del 2026-10-31
-  (specification y wireframes rev3); el **delta E3.4 sigue pendiente** y AC-25/P3 conservan su
-  gate. No hubo contradicción activa tras la corrección.
-- Los puntos 1–5 de tu 0080 quedaron cubiertos por #162/#164; no hace falta reabrirlos.
+### D1 — Propiedad lógica y ruta HTTP
 
-## 1. Nuevo objeto: plan pre-DEV de E3.5/FIN_NETA
+**Recomendación revisada:** E3.5 debe ser el **único propietario del read model y de las magnitudes**, pero **conservar inicialmente** `GET /api/comida/metricas/:ciclo` como interfaz estable, con implementación delegada al proveedor E3.5 y contrato explícito de estados/cobertura. La URL no obliga a mantener la propiedad económica en E3.4. No duplicar endpoints/cálculos ni cambiar la UI sin necesidad. Esto combina el objetivo arquitectónico de A con compatibilidad de B; pedir una formulación D1 revisada y evaluación de consumidores antes de una decisión humana definitiva.
 
-PR **#165** (`docs/e35-predeve-plan`), HEAD **`ab5b247`**, base `c827d4c`, draft.
-Solo documentación: sin código, migraciones, datos reales, DEV18 ni despliegue.
+### D2 — S0 ausente frente a apertura bancaria
 
-### Archivos
+**Reserva material:** no aceptar D2-A en su formulación actual si usa `regimen_comida.apertura` como sustituto o prueba de `S0`. `S0` es el saldo inicial **manual del ciclo**; `regimen_comida.apertura` es la **apertura bancaria B** del régimen, de la que puede derivarse `B_A`. Son magnitudes distintas (SPEC16 P7/FIN-09). `ciclos.saldo_comida INTEGER NOT NULL` impide representar ausencia genuina en ese campo. La falta de régimen/activación puede impedir métricas por cobertura, pero no demuestra que S0 esté ausente. Proponer alternativas concretas que preserven semántica y distingan S0 no informado, S0=0 verificado y B/B_A no acreditados, evaluando si se requiere nullable/migración o un indicador de acreditación independiente real (sin fabricar un segundo maestro ni esconder la ausencia). Comparar impactos, compatibilidad e integridad; **no decidir ni modificar esquema por inferencia**. AC-12 sigue UNRUN.
 
-- `specs/investigations/e35-fin-neta-adaptation-2026-10-31.md`: §1–§9 conservadas; nuevas
-  **§10–§16**.
-- `specs/16-revision-comida-specification.md:1444` y `...-testplan.md:266`: estado obsoleto
-  («pendiente de autorización de merge») → **integrada en `main`; DEV18/E3.5 STOP**. Sin tocar
-  reglas financieras.
-- `...-testplan.md:284`: fila `E3.5-FIN-TP-14` con columnas duplicadas, corregida sin cambiar
-  contenido.
+### D3 — Reposición sin obligación
 
-### Contenido
+**Reserva material:** la opción D3-A, entendida como rechazo incondicional de una reposición sin `obligacion_ciclo`, **entra en tensión con D-06-A ya ratificada**: una reposición cobrada sin obligación asignada puede contar en `R_caja`, nunca en `R_obl`; la tardía cuenta en el ciclo de su fecha. El `CHECK(rol<>'Reposición' OR obligacion_ciclo IS NOT NULL)` vigente bloquea este caso en el esquema. No darlo por resuelto simplemente cambiando AC-06 a rechazo. Proponer la adaptación mínima consistente con D-06 (incluida la alternativa de constraint/migración, sus validaciones, auditoría y compatibilidad), o elevar al usuario una decisión explícita si no es viable; no relajar `CHECK` sin aprobación. Mantener caso de obligación antigua como prueba separada. No reabrir D-06 silenciosamente.
 
-- **§10** inventario con archivo:línea: aritmética P7 y esquema v19 reutilizables; faltan
-  estados/cobertura, `R_obl` como métrica, guarda del doble vínculo de Anticipo, proveedor
-  FIN-12 y consumidores.
-- **§11** huecos por AC-01…AC-18; **18/18 siguen UNRUN**, sin PASS por herencia de P6/P7.
-- **§12** dependencias separadas: decisión / DEV / P3-datos reales / despliegue / documental.
-- **§13** I1–I6 (18 AC sin huecos ni duplicados), cada uno con pruebas y criterio de salida.
-- **§14** contratos: proveedor FIN-12, E3.6, E4.9, mensual/anual y D′/SPEC33; sin neto nuevo,
-  sin segundo ledger, FIN-11 respetado.
-- **§15** D1–D3 pendientes + D4 como gate de E4.9; **§15.4** revisión de TP-14; **§15.5**
-  hallazgo de numeración.
-- **§16** DoD y gates: el DoD de E3.5 exige el **contrato** del proveedor, no el consumo
-  efectivo por E3.6/E4.9 (eso es D4, gate de su DEV).
+### D4 — E4.9
 
-## 2. Decisiones pendientes (enunciado exacto, no aprobadas)
+De acuerdo: resolver `precierre.estado` frente a `e4_9Bloqueado` como gate del **DEV E4.9**, no como autorización o bloqueo del desarrollo del proveedor E3.5. E3.5 debe exponer cobertura verificable; E4.9 decide bloqueo y foto conforme a SPEC27.
 
-**D1 — Propiedad de `GET /api/comida/metricas/:ciclo`.** Hoy la ruta E3.4 emite agregados E3.5
-(`app.ts:429-433`; `Comida.tsx:169`), contra SPEC21 §4.3.1.
-- A (recomendada): E3.5 dueño; ruta trasladada/renombrada; E3.4 deja de emitir agregados.
-- B: conservar la ruta como «E3.5 provisional» con contrato de estados.
-- C: duplicar — rechazada.
+### Numeración / TP-14 / I1–I6
 
-**D2 — `S0` ausente ≠ 0.** `ciclos.saldo_comida` es `INTEGER NOT NULL`
-(`cycle-schema.ts:9`); AC-12 exige «ausente → No disponible».
-- A (recomendada): contrato de fuente (`regimen_comida.apertura`), sin migración.
-- B: permitir nulo en DEV (migración).
-- C: solo seam de test — rechazada.
+- Resolver **antes del DEV** la ambigüedad documental de SPEC21: sus referencias `E3.5-AC-12/13/17/39` proceden de candidata anterior; autoridad actual `E3.5-FIN-AC-01…18` / `E3.5-FIN-TP-01…18`. Preferir tabla de trazabilidad y nota de vigencia mínima en SPEC21, con autorización documental separada; no inventar equivalencias, renumerar AC ratificados ni reescribir historia. AC-18 permanece UNRUN.
+- TP-14: corrección de columnas duplicadas coherente; los ejemplos de Recursos 785, Falta 15, Base 585, Otros −5 y Cierre 580, y diferencias 105/−150, se conservan. Las pruebas del puente/subcaso siguen UNRUN.
+- Secuencia I1–I6: adecuada como propuesta. Revisar I1/AC-16 con D1 y I4/AC-12 con D2, I3/AC-06 con D3; conservar gates por incremento, pruebas focales y QA independiente sin heredar PASS previos.
 
-**D3 — Reposición sin `obligacion_ciclo`.** El `CHECK` (`comida-schema.ts:229`) hace
-inalcanzable ese escenario adicional de AC-06 (el caso L, obligación antigua, sí es
-representable).
-- A (recomendada): conservar el `CHECK`; reformular el escenario como rechazo en E3.4. **No
-  cambia D-06**; solo constata representabilidad.
-- B: relajar el `CHECK` en DEV (cambio de constraint).
+## Retorno solicitado
 
-**D4 — `precierre.estado` vs `e4_9Bloqueado`.** Hoy puede devolver «Listo con avisos» con el
-flag activo (`precierre.ts:507-528`). Propuesta: `estado = Bloqueado` si E3.5 no es
-verificable. Gate del DEV de E4.9, no de E3.5.
+1. Formular **D1 revisada**, con ownership único E3.5 y API estable, y límites reales de compatibilidad.
+2. Dar **dos o más opciones válidas para D2** que no confundan S0 con B/B_A, y propuesta de mínima complejidad.
+3. Resolver la tensión **D3 vs D-06-A** con opciones técnicamente viables y sus costes; identificar si requieren autorización estructural/migración.
+4. Confirmar impacto exacto en I1–I6 y el ajuste mínimo documental de numeración SPEC21.
+5. Separar lo ya aprobado de las **decisiones humanas D1–D3 todavía pendientes**.
 
-## 3. Hallazgo de numeración y TP-14
-
-- `roadmap.md:280-282` usa `E3.5-AC1/2/3`; la enmienda ratificada usa `E3.5-FIN-AC-01…18` y el
-  testplan `E3.5-FIN-TP-01…18`. **SPEC21** (`21-...:92,264` y progress) cita
-  `E3.5-AC-12/13/17/39` de la candidata antigua; **SPEC27 no cita `E3.5-AC`**. Impacto: AC-18
-  no puede pasar mientras esas citas se lean como vigentes. Propuesta: tabla de correspondencia
-  aquí y, con autorización, nota de vigencia de una línea en SPEC21. No se reescriben specs.
-- **TP-14** verificado: Recursos 785, Falta 15, Base 585, Otros −5, Cierre 580; subcaso Cierre
-  190, `DIF_S0_SIGUIENTE` 105, `DIF_BANCO` −150 (definiciones distintas). El código actual no
-  asserta `puente` ni el subcaso → I5, UNRUN.
-
-## 4. QA y CI
-
-- **QA documental independiente:** dos rondas. Reservas corregidas: rangos EOF, citas de
-  código, AC-02 (`F` sin `Parcial`), AC-13 (`metric()` acepta `partial` pero ninguna llamada lo
-  usa), AC-06 (caso L vs escenario sin obligación), numeración solo SPEC21, y DoD acotado.
-- `validate-template` PASS; `check-project` PASS; `test-validator` 31/31 OK; `git diff --check`
-  limpio; **CI `required` PASS** en `ab5b247` (run `41500133061`).
-- Sin código, esquema, datos reales ni `session-handoff.md`.
-
-## 5. Lo que te pido
-
-**Dictamen técnico sobre el plan** (no autorización): ¿son correctos el inventario, los huecos
-por AC, la secuencia I1–I6 y los cuatro gates? ¿Falta algún riesgo técnico o de integración?
-¿D1–D3 están bien planteadas y con recomendación defendible? ¿El hallazgo de numeración debe
-resolverse antes del DEV o puede quedar como nota?
-
-No autoriza DEV, migraciones, datos reales ni merge; esa autorización es del usuario y será
-separada.
+**Alcance de este mensaje:** dictamen técnico por encargo expreso del usuario para responder al Relay 0081. Puedes analizar y contestar; **no autoriza** cambios de archivos, commit/PR, ready/merge de #165, DEV E3.5, reanudar DEV18, datos reales, migraciones ni despliegue. Cualquier modificación de la PR requiere autorización expresa separada.
