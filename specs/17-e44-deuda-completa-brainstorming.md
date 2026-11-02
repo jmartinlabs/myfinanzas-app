@@ -134,9 +134,10 @@ que exista en la fuente?
 **Respuesta registrada:** sí, lista R5, solo lectura. **Procedencia:** `question`, 2026-10-26; contraste humano pendiente.
 
 **Consecuencia operativa:** E4.4 no ofrece alta ni corrección de histórico/precontrol por
-`POST`/`PATCH`; solo lectura. Su aportación/corrección futura requiere una vía expresamente
-autorizada (E4.5/E4.12/DT7 o proceso específico), con fuente/auditoría. E4.4 no concede ese
-permiso ni inventa quién puede ejecutarlo.
+`POST`/`PATCH`; solo lectura. Su aportación/corrección futura queda **sin asignar**: requiere una decisión
+futura y una autorización específica (DT7/importación o proceso aprobado), con
+fuente/auditoría. E4.4 no concede ese permiso, no lo remite a E4.5/E4.12 y no inventa quién
+puede ejecutarlo.
 
 ### Q4 — Corte histórico y límites de reconstrucción
 

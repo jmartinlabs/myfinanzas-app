@@ -5,8 +5,7 @@ candidato funcional de E4.4, no hay SQL ni migración y **ningún resultado es P
 prueba diseñada no acredita la funcionalidad. Los AC se ejecutarán solo tras autorización
 expresa y separada de desarrollo.
 
-Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`
-(esquema v16). Referencia: [specification](17-e44-deuda-completa-specification.md) y
+Base de preparación: `main` = `c827d4c` (2026-11-02), esquema **v21**. Referencia: [specification](17-e44-deuda-completa-specification.md) y
 [brainstorming](17-e44-deuda-completa-brainstorming.md).
 
 ## Estrategia
@@ -18,7 +17,7 @@ Base de preparación: `origin/main` = `26b6f0c8838e1d4dfe2a7bb38949f4fa240b7d5f`
 - **UI:** extender el recorrido real de Deudas (`tests/e2e/deudas.ts` o un
   `deudas-completa.ts` nuevo, a decidir en dev) con MFA real, 390/1440, capturas ficticias,
   teclado, foco, contraste y estados vacío/parcial/error.
-- **Migración/backup:** v16 genuina (o versión vigente al iniciar dev) → esquema ampliado;
+- **Migración/backup:** versión vigente al iniciar dev (v21 a 2026-11-02) → esquema ampliado;
   rollback, versión desconocida, dos arranques, snapshot/manifiesto/restore aislado y MFA.
 - **Verificación canónica:** `python3 scripts/verify --base <main> --head <SHA>` en el
   candidato funcional; para esta rama documental, la verificación se limita a baseline/clasificación
@@ -67,7 +66,7 @@ concurrencia/idempotencia; **R9** seguridad/fuga; **R10** migración/compatibili
 | AC-20 | R3/R4 | Corregir tipo/condiciones | PATCH sin revisión/motivo; cambiar apertura/Inicio usados; intentar histórico | Auditoría; sin efecto económico; histórico no editable; E1.6 bloquea | API/SQL | UNRUN |
 | AC-21 | R1/R3 | Rectificar/anular cuota; cambiar su fecha respecto al corte | Doble resta; historia borrada; corte no cambia | Recalcula deuda/diferencia; ambas Deudas; historia conservada; corte inclusive | API/E2E | UNRUN |
 | AC-22 | R1/R5 | Inspeccionar tablas/endpoints | Intento de escribir derivados o ajuste | Sin capital/historia persistidos; sin segundo ledger; 422 | API/SQL | UNRUN |
-| AC-23 | R10 | v16 genuina con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
+| AC-23 | R10 | Versión vigente (v21 a 2026-11-02) con historia/MFA → esquema ampliado | Fallo DDL; versión desconocida; dos arranques | Datos/IDs/auditoría/MFA preservados; rollback; rechazo intacto | Bun integración/procesos | UNRUN |
 | AC-24 | R10 | Snapshot/manifiesto/restore aislado | Copia corrupta/versión incorrecta | Campos/conciliaciones/MFA recuperables; sin datos reales | Bun + E2E restore | UNRUN |
 | AC-25 | R5 | Consumidor E4.6/E4.7 recibe capital/tipo | Suma Deuda a Saldos o duplica Gasto/capital | DTO separado; sin Saldo; sin doble cómputo | Contrato/API; futuro | UNRUN |
 | AC-26 | R9 | MFA/CSRF/Origin válidos; payload limpio | Sin MFA/CSRF/Origin; derivados; DELETE; error forzado | 401/403/422; sin fuga; sin DELETE; límite JSON | API seguridad; Bun Effect | UNRUN |
@@ -114,6 +113,17 @@ capital 720.00 intacto. Los históricos no se suman ni restan al capital.
 enumera el ID; no se interpreta como 0. **Anulación:** anular H3 devuelve deuda viva a 920.00
 y la conciliación recalcula; H3 sigue consultable como anulada.
 
+### Pruebas adicionales del dictamen 2026-11-02
+
+| ID | AC | Escenario | Resultado esperado | Método | Estado |
+| --- | --- | --- | --- | --- | --- |
+| T-01 | AC-13 | D001 (oráculo 920) + D002 válida; H4 inválido en D001 el 10/10 (fixture SQL); corte 05/10, 10/10 y sin corte | Corte 05/10: D001 920 y D002 calculable. Corte 10/10 y sin corte: **D001 No calculable con ID**, D002 intacta; conciliación D001 en 10/10 `No comparable`; precontrol inválido 20/09 no bloquea; inválido posterior al corte no bloquea ese corte | Bun/API + fixture SQL | UNRUN |
+| T-02 | AC-13 | Gasto heredado con `capital`/`intereses` `NULL` enlazado a Deuda; listado y ficha | `capitalPendiente === null` (no 0); «No calculable» en ambos; sin guarda en `getDebt` (D1: solo read model) | Bun/API | UNRUN |
+| T-03 | AC-05 | Pago +10,00 y −10,00 sobre apertura 200 | Amortizado 210 y 190 respectivamente; diferencia con signo exacto, sin clamp | Bun/API | UNRUN |
+| T-04 | AC-20 | PATCH de tipo/condición ya informados con y sin `motivo`; primera cumplimentación sin motivo | 422 sin motivo al corregir; 200 opcional en primera cumplimentación; auditoría anterior/posterior/motivo | Bun/API | UNRUN |
+| T-05 | AC-21 | Conciliaciones en 10/10 (920) y 20/10 (720) | Cada diferencia en su propia `fechaCorte`; listado con la de mayor fecha y `Varias` | Bun/API | UNRUN |
+| T-06 | AC-23 | Migración desde la versión vigente (v21), no solo v16 | Datos/IDs/auditoría/MFA preservados; rollback; versión desconocida intacta | Bun integración | UNRUN |
+
 ## Riesgos residuales y criterios de salida
 
 | Riesgo | Señal de fallo | Criterio de salida |
@@ -127,7 +137,7 @@ y la conciliación recalcula; H3 sigue consultable como anulada.
 | R7 precisión | Float, redondeo, tercer decimal aceptado | Bigint/decimal exacto; 422 |
 | R8 concurrencia | Dos vigentes, pérdida de revisión, duplicado | 409/idempotencia/transacción |
 | R9 seguridad | Fuga de importes/notas/SQL; bypass MFA | 401/403/422; errores genéricos |
-| R10 migración | Backfill, pérdida de IDs/MFA, versión desconocida mutada | v16→nuevo rollback/restore PASS |
+| R10 migración | Backfill, pérdida de IDs/MFA, versión desconocida mutada | versión vigente→nuevo rollback/restore PASS |
 | R11 UI | Overflow, foco perdido, información oculta | 390/1440 + teclado/contraste |
 | R12 alcance | Cuadro, simulación, comisión, activo, cierre | Exclusión verificable; sin hechos |
 
@@ -149,6 +159,7 @@ sin bloqueantes. Esta lista no autoriza ese dev ni declara PASS ahora.
 | QA final | `e918ca5` | **PASS documental** | N-01 cerrado; sin hallazgos nuevos; no es PASS funcional |
 | Delta supervisor | `cb74b28` | FAIL documental | Atribución residual de confirmación al usuario; corregida |
 | Delta supervisor | `09b416b` | **PASS documental** | Procedencia mediada por `question` y contraste humano pendiente; histórico solo lectura; sin hallazgos nuevos |
+| Dictamen 2026-11-02 | `8b551c5` | **PASS documental con reservas** | SPEC17-AUD: M1/M2/m8 verificados; M2 residual en brainstorming y base v16→v21 corregidos; wireframes 390 incompletos (requisito registrado); 4 decisiones del usuario registradas |
 
 El dictamen es **documental**, no funcional: no hay candidato E4.4, no se ejecutaron E2E ni
 la suite financiera y el revisor no aprobó la especificación, los wireframes, el desarrollo
@@ -167,3 +178,4 @@ ni el merge.
 | 2026-10-27 | `e918ca5` | `python3 scripts/verify` (este entorno, Python 3.9.6) | BLOCKED | Prerrequisito Python 3.10+ |
 | 2026-10-27 | `cb74b28` | QA delta supervisor | FAIL documental | Atribución residual de Q1–Q7; corregida |
 | 2026-10-27 | `09b416b` | QA delta supervisor | PASS documental | Procedencia y solo lectura cerradas; no funcional |
+| 2026-11-02 | `8b551c5` | Dictamen documental SPEC17-AUD | PASS con reservas | M1/M2/m8 verificados; correcciones y decisiones registradas; no funcional |
