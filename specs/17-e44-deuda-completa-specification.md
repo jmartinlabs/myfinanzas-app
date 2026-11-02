@@ -1,8 +1,8 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex; la especificación y los wireframes **NO están aprobados**. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
+Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. **M1/M2/m8 aprobados por el usuario el 2026-11-02 y aplicados; la specification/wireframes de E4.4 siguen en revisión y no aprobados.** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
 
-Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7; no autoriza specification, wireframes, merge ni desarrollo. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
+Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7. La decisión del usuario del 2026-11-02 aprueba **solo** las correcciones M1/M2/m8 (lectura `null ≠ 0` con regresión, R5 en solo lectura sin asignar escritura, y bloqueo de la deuda viva completa de la deuda afectada en el corte); no autoriza la specification, los wireframes, DEV17, migración, merge ni datos reales. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
 
 Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda-completa-brainstorming.md),
 [E4.4](roadmap.md#e44--deuda-completa-y-conciliación-desde-apertura),
@@ -58,9 +58,14 @@ La lectura E4.4 **no convierte un desglose ausente en cero**: si un hecho aplica
 capital/intereses válidos, la deuda viva es no calculable y se indica el hecho afectado.
 E4.4 no reabre la fórmula Q1 ni los contratos de escritura de E1.6, pero sí define un **read
 model propio** (o un ajuste de lectura mínimo y documentado) que aplica la misma fórmula con
-validación de desglose completo. Si se reutiliza el lector E1.6, se corregirá únicamente su
-presentación `null → 0`, con prueba de regresión; no se cambia el cálculo ni se reescribe la
-historia.
+validación de desglose completo. Si se reutiliza el lector E1.6, el read model deberá tratar
+`capital` nulo como **no verificable en el agregado** y no como cero: se reutilizará la
+validación de `debtPeriod` o se añadirá la misma guarda a `getDebt`, con regresión, sin
+cambiar la fórmula Q1 ni reescribir la historia. La corrección de presentación es adicional,
+no suficiente. **m8:** un desglose inválido de un movimiento aplicable impide calcular la
+deuda viva **completa de esa deuda en el corte consultado**; no afecta a otras deudas ni a
+cortes anteriores al hecho inválido. Los intereses son validación/integridad del desglose,
+no un operando que descuente deuda viva.
 
 ### Dependencias DT2/DT7/DT8
 
@@ -190,7 +195,7 @@ apertura/Inicio/enlaces usados de E1.6 se conservan.
 | Nombre/estado de Deuda | PATCH con revisión; E1.6 | Ninguno | Se conserva; no crea hechos | Sí, actor/UTC/anterior/posterior |
 | Tipo/condiciones | PATCH con revisión; motivo si se corrige un valor existente | Ninguno | Se muestra el nuevo dato; no recalcula capital | Sí, con motivo |
 | Histórico/precontrol R5 | **Solo lectura en E4.4**; no POST/PATCH; origen futuro en importación/migración o corrección autorizada fuera de E4.4 | Ninguno | Se muestra el dato existente; no se corrige ni reconstruye desde E4.4 | No hay escritura E4.4; la vía futura deberá auditar |
-| Aportar/corregir histórico | **No autorizado en E4.4**; requiere proceso futuro aprobado (E4.5/E4.12/DT7) | Ninguno | Solo cambia el dato histórico si se autoriza esa vía | La vía futura deberá registrar actor/motivo/fuente |
+| Aportar/corregir histórico | **No autorizado en E4.4**; escritura futura sin asignar (DT7/importación o proceso específico aprobado; no E4.5/E4.12) | Ninguno | Solo cambia el dato histórico si se autoriza esa vía | La vía futura deberá registrar actor/motivo/fuente |
 | Apertura/Inicio usados | Bloqueo E1.6 | No se editan | Se conserva la historia | Intento rechazado, sin escritura |
 | Alta/corrección/anulación de conciliación | POST/PATCH con idempotencia y revisión | Ninguno | Diferencia recalculada; anulada conservada | Sí, con motivo al corregir/anular |
 | Rectificar pago | Pipeline E1.6 con revisión/contexto | Recalcula; sustituye el efecto anterior | Historia y diferencia recalculadas; ambas Deudas | Auditoría E1.6 |
@@ -246,12 +251,12 @@ inferencia; los campos separados solo se usan cuando la fuente los aporta.
 
 **Solo lectura en E4.4.** Los campos históricos/precontrol **no se aceptan** en `POST` ni
 `PATCH` de esta entrega. El usuario único puede consultarlos, pero E4.4 no le concede una
-acción de alta/corrección. Su aportación o corrección corresponde, fuera de E4.4 y bajo
-autorización expresa del usuario único/propietario, a una **importación/migración o
-corrección histórica futura** (E4.5/E4.12/DT7 o un proceso específico aprobado), con fuente,
-motivo, actor y auditoría. E4.4 no autoriza esa vía ni inventa quién puede ejecutarla. Hasta
-entonces, una ausencia se muestra como `Sin informar` y una inconsistencia como discrepancia;
-no se rellena ni se reconstruye.
+acción de alta/corrección ni asigna esa escritura a E4.5 o E4.12: SPEC20/E4.5 excluye el
+precontrol de Deuda y E4.12 es recuperación/ensayo, no editor R5. La aportación/corrección
+queda **pendiente de decisión futura**, ligada a DT7/mapping y a una autorización específica;
+no se crea otro módulo ni SPEC por inferencia. La responsabilidad de E4.4 es **consulta y
+lectura**, no escritura. Hasta esa decisión, una ausencia se muestra como `Sin informar` y
+una inconsistencia como discrepancia; no se rellena ni se reconstruye.
 
 ### Relaciones históricas de la fuente
 
@@ -651,8 +656,9 @@ Reglas de API:
 - **Condiciones:** TIN/TAE/cuota/condiciones informativas; no calculan; desconocido no es
   cero; valores no exactos/fuera de límite -> 422; no se infiere por nombre ni histórico.
 - **Histórico/precontrol:** solo lectura en E4.4; `POST`/`PATCH` con esos campos -> 422;
-  ausencia = `Sin informar`; no backfill/reconstrucción; corrección solo por una vía futura
-  autorizada (E4.5/E4.12/DT7), no por esta entrega.
+  ausencia = `Sin informar`; no backfill/reconstrucción; la escritura futura no se asigna a
+  E4.5/E4.12 y queda pendiente de DT7/mapping y autorización específica, fuera de esta
+  entrega.
 - **Tipo:** enum cerrado `Hipotecaria`/`No hipotecaria` o `null` (= Sin informar); no se
   persiste el literal `Sin informar`; no se infiere; no se suma a Saldos; no se crea activo
   inmobiliario.
@@ -725,7 +731,7 @@ con `E1.6-`. Los criterios del roadmap se citan sin guion como `E4.4-AC1/2/3`.
 | AC-10 | Corte inclusivo con hechos antes/el día/después | Solo `fecha <= corte`; el día incluido; posteriores excluidos; otra Deuda excluida; varias Partidas suman | I | E4.4-AC2 |
 | AC-11 | Corte antes de Inicio control, sin Inicio o sin apertura | Deuda viva no calculable con motivo; cobertura precontrol; sin 0 inventado | I | E4.4-AC2 |
 | AC-12 | Apertura ausente vs. cero explícito | Ausente = no calculable; cero explícito = cero; no se normaliza | I | E4.4-AC2 |
-| AC-13 | Hecho aplicable con capital/intereses ausentes o inválidos | Deuda viva no calculable; se listan IDs afectados; no se trata null como 0 | I | E4.4-AC2 |
+| AC-13 | Hecho aplicable con capital/intereses ausentes o inválidos; otra deuda y otro corte | Deuda viva **completa de esa deuda en ese corte** no calculable, con IDs y motivo; otras deudas y cortes anteriores al hecho no se bloquean; null ≠ 0; regresión del lector | I | E4.4-AC2 |
 | AC-14 | Capital resultante negativo o exceso heredado | Se muestra negativo/diferencia; sin clamp; E1.6 sigue bloqueando nuevos estados verificables negativos | I | E4.4-AC2 |
 | AC-15 | Alta de saldo declarado y comparación; fecha no futura | Diferencia = declarado − derivado exacta; 0 = Conciliado; ≠0 = Diferencia; fecha futura 422; listado usa la última y marca `Varias`; sin cambio de capital | I | E4.4-AC2 |
 | AC-16 | Corregir/anular conciliación con motivo | Revisión/auditoría; anulada no vigente pero conservada; sin DELETE; capital intacto | I | E4.4-AC2 |
