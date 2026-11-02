@@ -1,8 +1,8 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Brainstorming
 
-Status: **DRAFT — 16 decisiones confirmadas por el usuario el 2026-11-02; specification y
-testplan no autorizados.** Brainstorming realizado para concretar D-01…D-14. No implementa
-código, no modifica esquema y no autoriza DEV. Base: `main` `c827d4c` (esquema v21).
+Status: **DRAFT — 16 decisiones confirmadas por el usuario el 2026-11-02.** Specification y
+testplan redactados como **candidatos** en este mismo PR; no aprobados. No implementa código,
+no modifica esquema y no autoriza DEV. Base: `main` `c5a0ccc` (esquema v21).
 
 Roadmap/context: [E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [referencia funcional R5](functional-reference-v5.11.md),
@@ -10,8 +10,8 @@ Roadmap/context: [E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [SPEC22/E4.2](22-ventas-posicion-broker-specification.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md).
 
-Next action: solicitar autorización separada para redactar specification y testplan con las
-16 decisiones y las precisiones de la ronda 2. No redactarlos todavía.
+Next action: revisar y ratificar la specification y el testplan candidatos; el DEV y el DDL
+del almacén requieren autorización separada.
 
 ## Hallazgo de partida
 

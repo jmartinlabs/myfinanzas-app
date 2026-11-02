@@ -202,6 +202,10 @@ efectivo se listan por separado; no se convierten en una posición ni en un tota
 - fecha = T → `Elegible por fecha (sujeto a E4.9)`;
 - sin valoración → no hay valor que certificar.
 
+El **agregado** solo es certificable si todas las valoraciones usadas son de fecha = T y la
+cobertura es `Verificada`; en cualquier otro caso es `No certificable` con motivo. No se emite
+un estado de certificación parcial como si fuera completo.
+
 E4.3 no emite una certificación de cierre, no define la ventana de suficiencia de E4.9 y no
 escribe la foto. La foto de E4.9, cuando se autorice, conserva de forma inmutable el valor, la
 fecha, el origen y la cobertura usados en su corte; una corrección posterior de E4.3 no la
@@ -236,7 +240,7 @@ modifican `operaciones_inversion` ni `instrumentos`.
 | `fecha_vigencia` | Fecha civil a la que se refiere el valor | No futura; ISO `YYYY-MM-DD`; no es la fecha de captura |
 | `tipo` | `Manual` o `Automática` | Enum cerrado; no se infiere |
 | `valor_eur` | Importe EUR de la valoración, en céntimos exactos | Manual: declarado; Automática: calculado una vez; `>= 0`; `0,00` explícito válido |
-| `precio_unitario` | Precio unitario declarado | Solo `Automática`; `>= 0`; `0,00` explícito válido; precisión suficiente, sin redondeo intermedio |
+| `precio_unitario` | Precio unitario declarado | Solo `Automática`; **> 0** (E4.1 exige precio positivo); precisión suficiente, sin redondeo intermedio |
 | `divisa` | Divisa del precio | ISO 4217; EUR o divisa con cambio |
 | `cambio` | Cambio a EUR | Obligatorio y positivo si no es EUR; exactamente 1 si es EUR |
 | `cantidad_base` | Cantidad exacta usada en el cálculo automático | Instantánea de la cantidad en `fecha_vigencia`; no se reescribe en silencio |
@@ -246,7 +250,7 @@ modifican `operaciones_inversion` ni `instrumentos`.
 | `creado_utc` / `actualizado_utc` | Instantes técnicos | UTC; no son la fecha financiera de vigencia |
 | `revision` | Revisión optimista | Entero positivo; una revisión obsoleta produce 409 |
 | `motivo_correccion` | Motivo de la corrección | Obligatorio al corregir; no se inventa en el alta |
-| `estado_certificabilidad` | `No certificable` o `Elegible por fecha (sujeto a E4.9)` | **Derivado al corte**, no se persiste como verdad fija |
+| `certificabilidad` (derivada) | `No certificable` o `Elegible por fecha (sujeto a E4.9)` | **No es columna**: se calcula al corte y no se persiste |
 
 La tabla de auditoría conceptual (`valoracion_inversion_audit`) conserva, por valoración y
 revisión, la acción (`alta`/`corrección`), el actor, el instante UTC, el motivo, el estado
@@ -306,6 +310,7 @@ en EUR; `null` significa no disponible y nunca se normaliza a `0.00`.
     "resultadoEur": null,
     "certificabilidad": "No certificable: hay valores anteriores al corte"
   },
+  // Extracto abreviado: se eliden posiciones; el agregado corresponde a 4 abiertas y 5 totales.
   "efectivo": [
     {
       "saldo": {"id": "S003", "nombre": "Efectivo de inversión demo"},
@@ -333,11 +338,11 @@ Campos de presentación obligatorios:
 | --- | --- |
 | EUR | Entero de céntimos, `BigInt`/decimal exacto de extremo a extremo; JSON como string decimal; nunca `number`/float para operar. Presentación final con 2 decimales. |
 | Valor manual | `>= 0`; `0,00` explícito válido; negativo rechazado con 422. |
-| Precio unitario | `>= 0`; `0,00` explícito válido; precisión suficiente (se reutiliza la escala de E4.1/E4.2); sin redondeo intermedio; máximo pendiente de DT2. |
-| Cambio | Positivo (> 0); EUR = 1; no EUR obligatorio; escala de E4.1/E4.2; sin redondeo intermedio; máximo pendiente de DT2. Un cambio 0 no es una conversión válida; el valor 0 se expresa con precio 0 o valor manual 0. |
+| Precio unitario | **> 0** en Automática (E4.1 no admite precio cero); precisión suficiente (escala de E4.1/E4.2); sin redondeo intermedio; máximo pendiente de DT2. |
+| Cambio | Positivo (> 0); EUR = 1; no EUR obligatorio; escala de E4.1/E4.2; sin redondeo intermedio; máximo pendiente de DT2. Un cambio 0 no es una conversión válida; el valor 0 solo se expresa con **valor manual 0,00** o con precio/cantidad positivos que produzcan cero, nunca con precio 0. |
 | Cantidad | Escala exacta de E4.1/E4.2 (hasta 8 decimales); no se redondea al valorar. |
 | Resultado | Céntimos firmados; puede ser negativo; no se recorta a cero. |
-| Fechas | Civiles `YYYY-MM-DD`; la fecha de vigencia no puede ser futura; UTC solo para auditoría. |
+| Fechas | Civiles `YYYY-MM-DD`; la fecha de vigencia no puede ser futura; UTC solo para auditoría. **Días transcurridos** = `fecha_corte − fecha_vigencia` en días civiles (0 el mismo día). |
 | Exponentes | No se admiten notaciones exponenciales en importes, precios ni cambios. |
 | Límites máximos | **Pendientes de DT2**; esta spec no fija un máximo nuevo ni reinterpreta el de E4.1/E4.2. |
 | Agregados | Se calculan exactos y no se persisten; solo se presentan si su cobertura es completa. |
@@ -486,14 +491,14 @@ persistencia, UI); clase **C** = comprobación cruzada de contrato con E4.1/E4.2
 | E4.3-AC-04 | Consultar al corte antes/después de una Venta total; añadir una Compra posterior y consultar de nuevo | Estado `Abierta`/`Cerrada` derivado al corte; la Venta posterior no cierra el corte anterior; la nueva Compra reabre; sin Estado manual | I | D-04 |
 | E4.3-AC-05 | Consultar el resultado de una posición abierta y de una cerrada; buscar etiquetas realizado/no realizado o FIFO | Una sola cifra de resultado por posición; abierta = valor + ventas − compras; cerrada = ventas − compras; sin etiqueta realizado/no realizado ni lote | I | D-05 |
 | E4.3-AC-06 | Consultar una posición con resultado disponible; intentar obtener un porcentaje, ratio, TWR o TIR | Solo importe EUR; ningún porcentaje, ratio ni denominador; `No disponible` sin cifra inventada | I | D-06 |
-| E4.3-AC-07 | Compra con comisión 5,00 y Venta con comisión 2,00; comparar resultado con `importe_eur`; intentar restar la comisión otra vez | Resultado 236,00 € con `importe_eur` una sola vez; no 229,00 por doble resta ni 243,00 por suma; comisión nula no crea gasto | I | D-07 |
+| E4.3-AC-07 | Compra con comisión 5,00 y Venta con comisión 2,00; comparar resultado con `importe_eur`; añadir un caso con `importe_eur` distinto de cantidad×precio×cambio; intentar restar la comisión otra vez | Resultado 236,00 € con `importe_eur` una sola vez; no 229,00 por doble resta ni 243,00 por suma; con `importe_eur` distinto, resultado = valor + ventas − compras usando el importe cargado/cobrado; comisión nula no crea gasto | I | D-07 |
 | E4.3-AC-08 | Registrar dos valoraciones en fechas distintas; corregir una con revisión y motivo; repetir con revisión obsoleta; intentar DELETE; inspeccionar `ciclo_id` | Serie conservada; corrección auditada con anterior/posterior y motivo; 409 en revisión obsoleta; sin DELETE; sin asociación a Ciclo; Compras/Ventas intactas | I | D-08 |
 | E4.3-AC-09 | Consultar T con valoraciones anterior, del mismo día y posterior; consultar un T sin valoración ≤ T | Solo se usa fecha ≤ T; la del mismo día es exacta; la última anterior se muestra con fecha; la posterior se ignora; sin valor ≤ T → `No disponible`, nunca look-ahead | C | D-09 |
 | E4.3-AC-10 | Consultar agregado con todas las posiciones abiertas valoradas; repetir faltando una; repetir con valor 0,00 y sin posiciones abiertas | Completo: `Verificada` y total; falta: `Parcial n/m` sin total; 0,00 cuenta como valor; sin abiertas: `No aplica`; nunca se presenta la suma parcial como total | I | D-10 |
 | E4.3-AC-11 | Consultar agregado con posiciones y dos Saldos de efectivo; comparar con `cashAt`; intentar sumar el efectivo al agregado | Agregado solo de posiciones `Inversión`/`Inversiones`; cada efectivo `Efectivo`/`Inversiones` se muestra aparte con su fecha y `cashAt`; el efectivo no suma ni se convierte en posición | C | D-11 |
 | E4.3-AC-12 | Consumir `GET /api/e43/corte`; comparar antes/después la fila `e43`, `inversion.valoracion` y la foto de SPEC27; intentar escribir totales | Contrato de lectura disponible; `e43`/`valoracion`/foto sin cambio; ninguna escritura de totales; integración y foto sujetas a autorización separada | C | D-12 |
 | E4.3-AC-13 | Consultar posición de Instrumento inactivo con cantidad, posición heredada y grupo solo anulado; intentar obtener un valor para la que no tiene valoración | Inactiva/heredada incluidas con cobertura declarada; sin valor inventado; solo anulado excluido; `No disponible` no se sustituye por 0 | C | D-13 |
-| E4.3-AC-14 | Introducir EUR con 2 decimales, precio/cambio de 6 decimales, valor 0,00, negativo, fecha futura y exponente; comprobar el redondeo final | EUR final a céntimos; precisión exacta sin redondeo intermedio; 0,00 válido; negativo/futuro/exponente/precisión excesiva → 422 sin escritura; máximo pendiente de DT2 | I | D-14 |
+| E4.3-AC-14 | Introducir EUR con 2 decimales, precio/cambio de 6 decimales, valor manual 0,00, precio 0 en Automática, negativo, fecha futura y exponente; comprobar el redondeo final con producto no exacto | EUR final a céntimos; precisión exacta sin redondeo intermedio; valor manual 0,00 válido; precio 0 en Automática, negativo, futuro, exponente o precisión excesiva → 422 sin escritura; máximo pendiente de DT2 | I | D-14 |
 | E4.3-AC-15 | Consultar valoración del mismo día, anterior de 61 días y muy antigua; buscar umbral de caducidad | Fecha y días transcurridos siempre visibles; 0 días el mismo día; 61 días en la anterior; sin umbral de caducidad ni cambio automático de cobertura | I | D-15 |
 | E4.3-AC-16 | Consultar valoración exacta al corte y anterior; corregir después; comprobar `e43` y la foto de E4.9 | Exacta: `Elegible por fecha (sujeto a E4.9)`, no «certificada»; anterior: `No certificable`; E4.3 no escribe la foto; una corrección posterior no recalcula una foto cerrada; E4.9 define su ventana | C | D-16 |
 
