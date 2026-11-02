@@ -57,7 +57,7 @@ No se editó ningún otro archivo.
 ## 4. Dependencias locales y futuras
 
 - **E3.5/DEV18:** candidato local, no integrado ni aceptado funcionalmente.
-  `FIN_NETA` runtime ausente; E3.5-AC-12/13/17/39 BLOCKED según el último estado recibido
+  `FIN_NETA` runtime ausente; `E3.5-AC-12/13/17/39` BLOCKED según el último estado recibido (numeración histórica; ver SPEC21 §4.3.1)
   (handoff QA18 local). No se promociona a integrado.
 - **Cierres E4.8–E4.11:** no existen; la matriz DT5 es preparatoria.
 - **B-T11/E3.2:** pendiente; SPEC21 define el consumidor, pero no declara PASS.
@@ -182,7 +182,7 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 
 ### 9.4 Bloqueos y reservas restantes
 
-- E3.5/DEV18 no integrada ni aceptada; `FIN_NETA` runtime ausente; E3.5-AC-12/13/17/39
+- E3.5/DEV18 no integrada ni aceptada; `FIN_NETA` runtime ausente; `E3.5-AC-12/13/17/39` (histórica)
   BLOCKED. Las pruebas Comida/E3.5 no pueden ejecutarse todavía.
 - Cierres E4.8–E4.11 y proveedor de conciliación ausentes; DT5 es preparatoria.
 - E3.2 B-T11 pendiente; E3.1-AC36 parcial; E3.4-AC25 abierto.
