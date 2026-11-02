@@ -1,8 +1,9 @@
 # 16 — E3.4 Revisión bancaria de Comida: Specification
 
 Status: Aprobación documental del candidato y wireframes registrada el 2026-10-26;
-delta de cierre E3.4 propuesto el 2026-10-26, con QA independiente PASS (2026-10-26) y pendiente de
-aprobación final. El delta admite devoluciones como `Detalle`+`Entrada` identificadas
+delta de cierre E3.4 propuesto el 2026-10-26, con QA independiente PASS (2026-10-26).
+La aprobación integral de specification y wireframes rev3 está registrada el 2026-10-31
+(§Registro de aprobación integral y coordinación); no se reabre. El delta admite devoluciones como `Detalle`+`Entrada` identificadas
 expresamente, conserva el enum de clasificación y su exclusividad, separa los tres
 conceptos de evidencia, difiere `detalleOrigenId`, habilita trazabilidad a `Gasto`
 agregado de Terminal sin conciliación y mantiene el contrato de lectura de E3.5.
@@ -18,8 +19,9 @@ El texto consolidado en main `aad33e9` tiene SHA-256
 (specification) y
 `804e17774d152506115404ef609f7fb8d6e3ce5f36e5990466a27f98f6df7bdf`
 (brainstorming). Los hashes citados identifican la propuesta original, no este texto
-consolidado; el delta actual tiene QA independiente PASS (2026-10-26) y queda pendiente de aprobación
-final.
+consolidado; el delta actual tiene QA independiente PASS (2026-10-26). La aprobación integral
+registrada el 2026-10-31 (§Registro) cubre la specification y los wireframes rev3, **no este
+delta E3.4**, que sigue pendiente de aprobación final.
 Sin autorización de desarrollo, SQL, migración, despliegue ni merge.
 Context and brainstorming: [16-revision-comida-brainstorming.md](16-revision-comida-brainstorming.md)
 (propuestas rev1 derogadas conservadas en §2 y §9.4), [E3.4/E3.5](roadmap.md),
@@ -27,8 +29,8 @@ Context and brainstorming: [16-revision-comida-brainstorming.md](16-revision-com
 [spec04](04-movimientos-specification.md), [spec05](05-transferencias-referencias-specification.md),
 [spec07](07-ciclos-operacion-specification.md), [spec12](12-flujo-mensual-specification.md).
 
-Next action: aprobación final del delta; después, si se aprueba, publicación documental.
-AC-25 sigue abierto. DEV16 no está autorizado.
+Next action: P3 (fecha/saldo/cobertura reales) y AC-25 conservan su gate operativo separado;
+no se abre una nueva ronda documental. DEV16 no está autorizado.
 No se abre una nueva ronda sobre la estructura física de v5.11(7).
 
 ### Dependencias DT2/DT7

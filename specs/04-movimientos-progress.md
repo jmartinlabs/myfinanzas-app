@@ -1,6 +1,9 @@
 # 04 — Movimientos: Progress
 Specification: [aprobada](04-movimientos-specification.md).
 Current state: COMPLETED AND INTEGRATED — PR #15 aprobada por usuario tras auditoría favorable de Álex sobre 423c8ee.
+
+> **Nota de vigencia (2026-11-02):** «completado e integrado» describe la entrega E1.4; SPEC04 permanece formalmente abierta, su E2E propio sigue UNRUN y `766ea6b` no es candidato propio.
+
 Squash integrado en main: b51b89bd111eab310581d9d401102ca0f95d7a42 (2026-10-21).
 Base: main 5fa4ace; rama feat/e1-4-movimientos. Fecha: 2026-10-21.
 Solo local/ficticio; Excel v5.11 maestro, intacto y fuera del repositorio.

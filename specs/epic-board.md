@@ -1,10 +1,13 @@
-## Auditoría de especificaciones — reanudada 2026-11-02
+## Auditoría de especificaciones — cierre global ratificado 2026-11-02
 
-Diagnóstico en [audit-spec-resume-2026-11-02](investigations/audit-spec-resume-2026-11-02.md),
-base auditada `8e4ef21`, `main` actual `fd2e21c` tras #157. Balance 3 cerradas / 22 abiertas;
-**13 A / 3 B / 2 C / 4 D**, 15 cerrables sin código y 17 con decisiones 09/17. **No se declara
-ninguna SPEC cerrada**, no se convierten PARCIAL/UNRUN en PASS y no se autoriza DEV, merge,
-migración ni datos reales.
+Base `main` `8b551c5` (squash #163). **20 actas ratificadas** (11 + 9 el 2026-11-02) y el acta global; SPEC06 y
+SPEC32 diferidas. Estado de auditoría **23/25** y estado funcional **3 cerradas / 22
+abiertas**. Acta global:
+[audit-closure-global-2026-11-02](investigations/audit-closure-global-2026-11-02.md);
+diagnóstico: [audit-spec-resume-2026-11-02](investigations/audit-spec-resume-2026-11-02.md).
+**Ninguna SPEC queda funcionalmente cerrada por este lote**; no se convierten PARCIAL/UNRUN
+en PASS y no se autoriza DEV, migración ni datos reales; el merge documental se autorizó por
+separado.
 
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
 
@@ -204,7 +207,10 @@ Límites: migración real, activación, cierre/fotos, mapping físico, restore v
 E2E y CI Linux pendientes. QA final **PASS** en `89b8375`. E2E 1440/390 PASS; ficha responsive en región accesible. Presupuestos/Plan Anual permanecen
 consultables sin conversión.
 
-## Current checkpoint — Lote 1 documental y estado 2026-10-29
+## Current checkpoint — Lote 1 documental y estado 2026-10-29 (histórico)
+
+> **Nota de vigencia 2026-11-02:** entrada histórica. El resumen vigente es «Auditoría de
+> especificaciones — cierre global ratificado 2026-11-02».
 
 Sustituye como resumen vigente al checkpoint del 2026-10-28, que se conserva como
 historia. Responsable único: coordinador (OpenCode). Esta entrada es documental: no
@@ -219,7 +225,7 @@ autoriza DEV, merge ni despliegue.
 | SPEC01–03 | cerradas |
 | SPEC04 | fixes #125 `e3ebd76` integrados; SPEC abierta; E2E/full UNRUN |
 | SPEC07 | opción B #128 `2c97a66` integrada; AC28/E3.5/inversión/conciliación/cierre PENDING; E2E global UNRUN |
-| Resto | 13 SPEC documental/aceptación; 6 DEV futuro/decisión; SPEC32 bloqueo de integración |
+| Resto (histórico) | 13 SPEC documental/aceptación; 6 DEV futuro/decisión; SPEC32 bloqueo de integración |
 | PR abiertas | #51/#50 antiguas y sin autorización; #30 draft, esquema 16 frente a `main` v18 |
 | Gates | SPEC16 AC25 físico; E3.5/FIN_NETA STOP; DT6/T-BKP; D7/SPEC19; posición a Fin SPEC26/27 |
 
@@ -441,7 +447,7 @@ No se convierten a PASS sin DEV y QA. No se cuelan como trabajo implícito de E3
 
 ## Frentes detenidos
 
-DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20 sin DEV; DEV22 en QA/merge pendiente;
+DEV18/E3.5 STOP (no reanudar); DEV17/E4.4 STOP; B3/DEV32 separados; SPEC20 sin DEV; DEV22 integrado #157;
 PR50/PR51 sin tocar. Sin cambios por esta entrada.
 
 ## Governance y próxima acción
@@ -562,11 +568,11 @@ RETORNO y no acredita ejecución.
 | DEV19 / E4.1 | Continuidad autorizada (prospectiva); PR #95 Draft, gates completos pendientes | Entregar autorización al ejecutor, confirmar ownership y recibir evidencia; sin merge |
 | SPEC21 / E3.6 | Documentación aprobada e integrada (`2364d9c`); E3.6 **sin iniciar**; Q-S21-01–04 aprobadas, no se reabren | Prioridad posterior a DEV19; DEV E3.6 exige autorización separada |
 | SPEC22 / E4.2 | **MERGED `fd2e21c`**: full Linux 17/17, API 432/0, restore v19/v20; AC-40 UI y `pendiente` cerrados | Sin DEV18/E3.5 |
-| SPEC20 / E4.5 | Aprobada documentalmente; PR87 Draft `fc48f19`, último CI conocido FAIL; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
+| SPEC20 / E4.5 | Aprobada documentalmente; PR87 MERGED `3d70fd6`; 59 AC UNRUN; QA AC48–59 opcional no ejecutado; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
 | INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
 | DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
 | DEV17 / E4.4 | STOP en `b62ca8c`, sin código | Secuencia D5→E4.1→DEV17; sin reanudación |
-| B3 / DEV32 | Abiertos y separados; PR30 Draft `24ca206` | No reanudar por inferencia |
+| B3 / DEV32 | Abiertos y separados; #30 integrado `306bbc5`; rootless real pendiente | No reanudar por inferencia |
 | PR50 / PR51 | Abiertas antiguas, no Draft | Sin autorización; no tocar |
 
 Cerrados y no reabiertos por esta entrada: DEV12/PR67, PR94, D5/PR90, PR93, PR92/CI, DEV13/H1
@@ -633,7 +639,7 @@ No asumir mensajería, supervisión o control directo de otras sesiones.
   testplan aprobados; conservar documentos locales modificados. Revisión independiente
   del candidato de manifiestos antes de otra fase. No afirmar ejecución completada.
 - **SPEC22/E4.2 (histórico):** paquete documental previo, superado por DEV22 implementado
-  en PR #157. Full Linux 17/17; merge pendiente de aprobación explícita.
+  en PR #157 y MERGED `fd2e21c`. Full Linux 17/17; sin pendiente de merge.
 
 Paquetes exactos en conversación de origen y sesiones de destino; no ampliar por
 este resumen. Enviados significa ESPERANDO RETORNO, no demuestra proceso activo.
@@ -676,13 +682,14 @@ por ejecutor E4.1 no acreditada; contrastar antes de duplicar mensajes.
   `71e4d951974c1fe468991771bbc8161ee44f0faf30470634d0f7e351ae8a4bb1`, QA independiente
   PASS con6hallazgos CLOSED. G3PASS/G4condicional; C16/C17 físicos/canónicos y
   ownership requieren cierre según paquete limitado, sin reabrir decisiones.
-- SPEC20 aprobado íntegro27Oct,47AC/QA docsPASS; PR87 Draftfc48f19, último CI propio
-  conocido40509128613 FAIL; DT7 pendiente, DEV no autorizado.
+- SPEC20 aprobado íntegro27Oct,47AC/QA docsPASS; PR87 **MERGED `3d70fd6`** (el
+  Draft/FAIL `fc48f19` es histórico); DT7 pendiente, DEV no autorizado.
 - DEV17 b62ca8c sin código; spec/wireframes y autorización histórica conservados,
   STOP NO AUTO-RESUME. Secuencia D5→E4.1→DEV17; integración aprobada E4.1, cesión,
   gate main/dependencias/escritores/versión y nueva autorización expresa de inicio.
-- B3 abierto, investigación inconclusa por montaje, NO AUTO-RESUME; DEV32 PR30 Draft,
-  AC18/22 y compatibilidad pendientes. Sin infraestructura/VPS/deploy/datos reales.
+- B3 abierto, investigación inconclusa por montaje, NO AUTO-RESUME; DEV32 #30 integrado
+  `306bbc5`, AC-18 PASS y AC-22 PASS parcial (E2E final UNRUN). Sin infraestructura/VPS/
+  deploy/datos reales.
 - SPEC21–30 numeración asignada a las entregas del registro inferior. No números
   nuevos por analogía ni reglas financieras inventadas.
 
@@ -735,24 +742,25 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC14 | E3.2 | Compartidos | Aprobada; D5 integrado | D5 PR90 cf6954a y overflow PR93 f702e9b integrados; D5-AC13 parcial/B-T11 UNRUN conservados |
 | SPEC15 | E3.3 | Vehículos e ITV | Integrada según historial | Integrado según historial; retorno final administrativo por consolidar |
 | SPEC16 | E3.4 | Revisión bancaria de Comida | Aprobada/integrada | CERRADO/INTEGRADO PR82 26b6f0c; AC25 futuro y contratos E3.5 separados |
-| SPEC17 | E4.4 | Deuda completa | Spec/wireframes aprobados | Sin código; autorización histórica conservada, STOP/NO AUTO-RESUME; depende de E4.1 |
+| SPEC17 | E4.4 | Deuda completa | Spec/wireframes en revisión; M1/M2/m8 aplicados #163 | Sin código; DEV17 no autorizado; depende de E4.1 |
 | SPEC18 | E3.5 | Comida y compensaciones | Rev7 aprobada según checkpoint | CIERRE TÉCNICO LOCAL, QA18 PASS CON SALVEDADES; no publicado/integrado/aceptado funcionalmente |
 | SPEC19 | E4.1 | Instrumentos y Compras | Rev10 y testplan aprobados expresamente | Código histórico congelado064df64; nuevo supervisor conciliando gates, sin DEV activo confirmado |
-| SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 Draft, FAIL conocido sin nueva evidencia propia; DT7 pendiente |
-| SPEC21 | E3.6 | Conciliación transversal | Número asignado; no iniciada | No iniciado |
-| SPEC22 | E4.2 | Ventas y efectivo de bróker | Implementado en PR #157; full Linux 17/17 | Merge pendiente |
+| SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 MERGED `3d70fd6`; 59 AC UNRUN; DT7 pendiente |
+| SPEC21 | E3.6 | Conciliación transversal | Aprobada documentalmente; PR #97 MERGED `2364d9c` | DEV21/E3.6 no iniciados; 31 AC UNRUN |
+| SPEC22 | E4.2 | Ventas y efectivo de bróker | MERGED `fd2e21c`; full Linux 17/17 | Integrado; sin DEV18/E3.5 |
 | SPEC23 | E4.3 | Valoración y resultados | Número asignado; no iniciada | No iniciado |
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
-| SPEC26 | E4.8 | Precierre | Número asignado; no iniciada | No iniciado |
-| SPEC27 | E4.9 | Cierre y primera fotografía | Número asignado; no iniciada | No iniciado |
+| SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
+| SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; DEV no autorizado | AC UNRUN; gates E3.5/DT6 |
 | SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
 | SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
 | SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
 
 Técnicas: **SPEC31 SQLite producción**, contrato aprobado e implementación/enmienda
-presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless**, PR30
-Draft, candidato24ca206, AC18/AC22 y compatibilidad con main actual pendientes.
+presentes en main, cierre administrativo por reconciliar; **SPEC32 rootless** #30
+integrado `306bbc5`, AC-18 PASS y AC-22 PASS parcial (E2E final UNRUN); rootless real y
+Debian13 pendientes.
 B3 sigue ABIERTO, investigación cerrada inconclusa por montaje; último checkpoint
 comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por inferencia.
 
@@ -806,9 +814,8 @@ comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por infere
   sin reservar esquema ni reabrirQ1–Q7. Mensaje de lectura al supervisor preparado;
   envío no confirmado, sin reanudación del ejecutor.
 - **E4.5/SPEC20:** aprobación íntegra spec/wireframes27Oct según usuario, Q1–Q10
-  confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 Draft
-  fc48f1984130b99993dce60e12a555752fa8396d; último CI conocido40509128613 FAIL
-  por contexto base/merge ref. No sustituirlo con PASS PR92. DT7 pendiente: solo
+  confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 **MERGED
+  `3d70fd6`**; el Draft/FAIL `fc48f19` y el CI `40509128613` son históricos. DT7 pendiente: solo
   preparación documental/ficticia; sin Excel, datos reales ni conciliación operativa.
   Sin autorización DEV/merge. No reapertura funcional salvo contradicción material.
 

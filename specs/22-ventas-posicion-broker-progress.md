@@ -1,9 +1,9 @@
 # 22 — E4.2 Ventas, posición y efectivo de bróker: Progress
 
-Status: **DEV22 en PR #157 (draft), rama `dev22-ventas` (2026-11-02): venta, efectivo,
-posición, API, UI y esquema v21. **Full Linux PASS en `766ea6b`: API 432/0, E2E 17/17,
-restore v19/v20 y Chromium.** AC-19/20/23/27/32/33/39/40/41/44 PASS; AC-40 UI y estados
-`pendiente` cerrados. QA final: APTO CON RESERVAS; merge pendiente de aprobación.**
+Status: **DEV22 integrado en #157 MERGED `fd2e21c` (2026-11-02), rama `dev22-ventas`: venta,
+efectivo, posición, API, UI y esquema v21. Full Linux PASS en `766ea6b`: API 432/0, E2E 17/17,
+restore v19/v20 y Chromium. AC-19/20/23/27/32/33/39/40/41/44 PASS; AC-40 UI y estados
+`pendiente` cerrados. QA final: APTO CON RESERVAS; merge aprobado e integrado.**
 Task ID: `SPEC22-E4.2` — Ventas, posición y efectivo de bróker.
 Session: `ses_e814117d4ffeq7ykfa65veXcxv` (OpenCode desktop, cliente externo iniciado/parado
 por el usuario; sin workers controlados).
@@ -15,8 +15,8 @@ Fecha: 2026-11-02 (checkpoint E2E); historial DEV22 del 2026-11-01 y documental 
   trabajo DEV22/E4.2). Contrato: SPEC22 rev2 aprobada (D1–D7 = A), testplan aprobado y
   enmienda D7 de SPEC19 integrada en `main` `e6475e6`.
 - **Base y aislamiento:** worktree exclusivo gestionado por OpenCode (`dev22-ventas`), rama
-  `dev22-ventas` desde `main` `4eb7264`. PR #157 abierto en draft; sin merge, despliegue ni
-  datos reales.
+  `dev22-ventas` desde `main` `4eb7264`. PR #157 abierto en draft en ese momento; integrado en `fd2e21c`; sin
+  despliegue ni datos reales.
 - **Gate de esquema (v20 → v21):** no había versión reservada por SPEC22 ni colisión; se adopta
   la siguiente versión libre (21) con `ventaSchema` (`apps/api/src/venta-schema.ts`), que
   reconstruye **solo** `operaciones_inversion` (CHECK `clase IN ('Compra','Venta')`) y su tabla

@@ -1,7 +1,7 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Progress
 
-Status: **APPROVED (documental) — 2026-10-27; PR #97 publicada; sin merge.** El
-desarrollo E3.6 no está autorizado; el merge requiere aprobación separada.
+Status: **APPROVED (documental) — 2026-10-27; PR #97 integrada en `2364d9c`; DEV21 no autorizado.** El
+desarrollo E3.6 no está autorizado; el merge ya está realizado y no autoriza DEV por sí mismo.
 
 Fecha: 2026-10-27. Sesión funcional `SPEC21-E3.6`. Cliente externo vía OpenCode;
 modelo/versión observados por el entorno, no verificados por el coordinador.

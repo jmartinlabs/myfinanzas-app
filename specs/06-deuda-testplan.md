@@ -2,6 +2,8 @@
 
 Estado 2026-10-22: **30 AC actuales con verificación local; QA del producto completada sin bloqueantes; PR #34 abierta, corrección de fixture tras fallo de CI pendiente de revisión/CI por SHA.** Especificación [aprobada](06-deuda-specification.md); desarrollo autorizado expresamente por usuario en esta ejecución. Ningún resultado local equivale a aprobación de merge. AC31–33 son contratos futuros NO implementados ni contados como PASS.
 
+> **Nota de vigencia (2026-11-02):** PR #34 está MERGED `cb9ba3b`; el estado de «abierta/pendiente» es histórico. SPEC06 conserva su auditoría técnica abierta y el cierre diferido.
+
 ## Matriz vigente de aceptación
 
 Esta matriz sustituye el estado inicial de planificación. D1–D10 están en `apps/api/src/deudas.test.ts`; navegador real E1.6 en `tests/e2e/deudas.ts`, integrado en el recorrido E1.4/E1.5 y su restore/MFA. Las suites heredadas conservan sus aserciones financieras; se actualizan únicamente versión actual, columnas null y nombres de copias creadas por el nuevo esquema.
