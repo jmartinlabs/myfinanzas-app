@@ -505,34 +505,57 @@ export type PositionRow = {
   ultimaOperacion: string | null;
 };
 
+/** Position of one Instrumento within one Saldo de inversión. */
+export type InstrumentPositionRow = PositionRow & {
+  instrumento: { id: string; nombre: string };
+};
+
 /**
- * One row per Saldo de inversión where the Instrumento has any operation
- * registered, including annulled ones (SPEC22 §4.3, D5). Quantity, counts and
- * dates come from vigente operations only.
+ * Single aggregation over `operaciones_inversion`: one group per
+ * Saldo+Instrumento, exactly in `saldo_inversion,instrumento` order. Rows are
+ * only excluded by the optional filters; an annulled operation keeps its group
+ * present but never contributes to quantity, counts or dates.
  */
-export function positionsFor(
+function positionGroups(
   db: Database,
-  instrumento: string,
-): PositionRow[] {
+  filters: { instrumento?: string; cutoff?: string } = {},
+): InstrumentPositionRow[] {
+  const params: string[] = [];
+  let where = "1=1";
+  if (filters.instrumento) {
+    where += " AND o.instrumento=?";
+    params.push(filters.instrumento);
+  }
+  if (filters.cutoff) {
+    where += " AND o.fecha<=?";
+    params.push(filters.cutoff);
+  }
   const rows = db
     .query(
-      `SELECT o.saldo_inversion id,s.nombre,o.fecha,o.clase,o.estado,
+      `SELECT o.saldo_inversion id,s.nombre,o.instrumento instrumento,
+        i.nombre instrumentoNombre,o.fecha,o.clase,o.estado,
         CAST(o.cantidad AS TEXT) cantidad
-       FROM operaciones_inversion o JOIN saldos s ON s.id=o.saldo_inversion
-       WHERE o.instrumento=?
-       ORDER BY o.saldo_inversion,o.fecha,o.id`,
+       FROM operaciones_inversion o
+       JOIN saldos s ON s.id=o.saldo_inversion
+       JOIN instrumentos i ON i.id=o.instrumento
+       WHERE ${where}
+       ORDER BY o.saldo_inversion,o.instrumento,o.fecha,o.id`,
     )
-    .all(instrumento) as {
+    .all(...params) as {
     id: string;
     nombre: string;
+    instrumento: string;
+    instrumentoNombre: string;
     fecha: string;
     clase: string;
     estado: string;
     cantidad: string;
   }[];
-  const groups = new Map<string, PositionRow>();
+  const groups = new Map<string, InstrumentPositionRow>();
   for (const row of rows) {
-    const group = groups.get(row.id) ?? {
+    const key = row.id + "\u0000" + row.instrumento;
+    const group = groups.get(key) ?? {
+      instrumento: { id: row.instrumento, nombre: row.instrumentoNombre },
       saldoInversion: { id: row.id, nombre: row.nombre },
       cantidad: 0n,
       compras: 0,
@@ -553,9 +576,47 @@ export function positionsFor(
       if (!group.ultimaOperacion || row.fecha > group.ultimaOperacion)
         group.ultimaOperacion = row.fecha;
     }
-    groups.set(row.id, group);
+    groups.set(key, group);
   }
   return [...groups.values()];
+}
+
+/**
+ * One row per Saldo de inversión where the Instrumento has any operation
+ * registered, including annulled ones (SPEC22 §4.3, D5). Quantity, counts and
+ * dates come from vigente operations only. With `cutoff`, operations after it
+ * are ignored and the aggregation is end-of-day inclusive, coherent with
+ * `cashAt(db, saldo, cutoff)` (SPEC26 "Inversión a fecha Fin").
+ */
+export function positionsFor(
+  db: Database,
+  instrumento: string,
+  cutoff?: string,
+): PositionRow[] {
+  return positionGroups(db, { instrumento, cutoff }).map((position) => ({
+    saldoInversion: position.saldoInversion,
+    cantidad: position.cantidad,
+    compras: position.compras,
+    ventas: position.ventas,
+    ultimaCompra: position.ultimaCompra,
+    ultimaVenta: position.ultimaVenta,
+    ultimaOperacion: position.ultimaOperacion,
+  }));
+}
+
+/**
+ * End-of-day positions for every Saldo+Instrumento with at least one vigente
+ * operation on or before `cutoff` (SPEC26 "Inversión a fecha Fin"). It is the
+ * same aggregation as `positionsFor`, across instruments, so the precierre
+ * does not keep a parallel SQL aggregate. Order follows Saldo, Instrumento.
+ */
+export function positionsAtDate(
+  db: Database,
+  cutoff: string,
+): InstrumentPositionRow[] {
+  return positionGroups(db, { cutoff }).filter(
+    (position) => position.compras + position.ventas > 0,
+  );
 }
 
 /** Informative cantidad × precio × cambio reference, exact internally. */
