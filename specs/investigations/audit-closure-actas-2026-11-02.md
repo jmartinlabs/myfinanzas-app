@@ -1,8 +1,10 @@
 # Actas individuales de cierre de auditoría — 13 SPEC candidatas
 
-Fecha: 2026-11-02. Base: `main` `d7b9077`. Estado: **preparadas para ratificación individual; 11 ratificables y 2 diferidas
-(SPEC06, SPEC32); ninguna SPEC se declara cerrada**. Cada acta acredita **cierre documental de
-auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y dependencias.
+Fecha: 2026-11-02. Base: `main` `d7b9077`. Estado: **11 ratificadas individualmente por el
+usuario el 2026-11-02, 2 diferidas (SPEC06, SPEC32), 0 cerradas**. Cada acta acredita
+**cierre documental de auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y
+dependencias. «0 cerradas» se refiere a estas 13 actas; no altera el balance global del
+tracker (3 cerradas / 22 abiertas) ni convierte AC en PASS.
 
 ## SPEC05 — Transferencias y Referencias
 
@@ -109,10 +111,12 @@ auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y dependenci
 
 ## Ratificación del usuario — 2026-11-02
 
-El usuario ratificó **individualmente** el cierre documental de auditoría de **SPEC05, 07,
-08, 10, 11, 12, 13, 14, 15, 19 y 31**, conservando AC PARCIAL/UNRUN y dependencias.
+El usuario ratificó **individualmente**, en decisión identificable del **2026-11-02**, el
+cierre documental de auditoría de **SPEC05, 07, 08, 10, 11, 12, 13, 14, 15, 19 y 31**,
+conservando AC PARCIAL/UNRUN y dependencias.
 **SPEC06 y SPEC32 permanecen diferidas.** Ningún AC se convierte en PASS y este acto no
-autoriza DEV, migración, datos reales ni merge.
+autoriza DEV, migración, datos reales ni merge. Es cierre documental de auditoría: no cambia
+el balance global (3 cerradas / 22 abiertas) ni el estado funcional del [tablero](../epic-board.md).
 
 ## Reglas de ratificación
 

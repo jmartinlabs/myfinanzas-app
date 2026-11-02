@@ -47,7 +47,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 
 **Recuento:** A 11 · B 5 · C 2 · D 4. **Cerrables sin código adicional:** 13 (11 A + 04 +
 32, con la evidencia propia pendiente); 15 si se resuelven las decisiones de 09 y 17.
-**Actas:** 13 preparadas, 11 ratificables y 2 diferidas (SPEC06, SPEC32); 0 cerradas.
+**Actas:** 13 preparadas, 11 ratificadas individualmente el 2026-11-02 y 2 diferidas (SPEC06, SPEC32); 0 cerradas de estas 13 (el balance global 3/22 no cambia).
 
 ## 3. Validación sin código (Lote 2)
 

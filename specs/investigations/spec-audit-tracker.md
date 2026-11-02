@@ -4,7 +4,7 @@
 
 ## Reanudación — 2026-11-02
 
-- **Ratificación 2026-11-02:** 11 actas ratificadas individualmente (05, 07, 08, 10, 11, 12, 13, 14, 15, 19, 31); SPEC06 y SPEC32 diferidas. Cierre documental de auditoría, no PASS funcional ni DEV.
+- **Ratificación 2026-11-02:** 11 actas ratificadas individualmente por el usuario (05, 07, 08, 10, 11, 12, 13, 14, 15, 19, 31); SPEC06 y SPEC32 diferidas. Cierre documental de auditoría, no PASS funcional ni DEV; el balance global 3/22 no cambia.
 
 - **Base:** `main` `8e4ef213dcca82eb83c7a949cdf1c1dea853b09d`.
 - **Balance conservado:** 3 cerradas / 22 abiertas; el balance no se reclasifica sin acta.
