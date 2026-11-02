@@ -89,7 +89,7 @@ BLOCKED por Cierres E4.8/E4.9, no por una decisión abierta.
 | E3.2 D5 | PR90 integrada; overflow PR93. Aportaciones de tercero son Transferencias S000→interno acreditadas. | Se consume el Recuperado; no se convierte en Ingreso. |
 | E3.2 B-T11 | Pendiente/UNRUN: consumo por informes/E3.6. | Esta spec define el consumo, pero B-T11 no se declara PASS. |
 | E3.4/DEV16 | PR82 integrada. E3.4-AC25 abierto; E3.4-AC12/31 condicionados; E3.4-AC27/34/36 futuros E3.5. | Se consume el contrato de lectura; no se cierra E3.4-AC25. |
-| E3.5/DEV18 | Candidato local, no integrado ni aceptado. `FIN_NETA` runtime ausente; E3.5-AC-12/13/17/39 BLOCKED. | Comida se especifica condicionalmente; sin motor, No disponible. |
+| E3.5/DEV18 | Candidato local, no integrado ni aceptado. `FIN_NETA` runtime ausente; `E3.5-AC-12/13/17/39` BLOCKED (**numeración histórica**, ver §4.3.1). | Comida se especifica condicionalmente; sin motor, No disponible. |
 | E2.3 Plan | Integrado; R3 en `planes-ciclo` | Se consume A transferir/Ejecutado sin reabrir. |
 | E3.3 Vehículo | No consumido por E3.6 | No se usa; no se crea ficha ni vínculo nuevo. |
 | E2.6/DEV12 | PR67 integrada; documentación PR94; 56 AC y UNRUN de fuentes no disponibles. | Se conserva su semántica; la integración E3.6 no se declara ejecutada. |
@@ -261,8 +261,14 @@ equivalencia.
 | Disponibilidad | Se puede mostrar | No se puede mostrar / queda No disponible |
 | --- | --- | --- |
 | E3.4 integrada, E3.5 no integrada | Operaciones individuales de Revisión Comida, fecha, concepto, importe/dirección, clasificación, evidencia, vínculo verificado, reposiciones y referencia temporal de la fuente. Enlace a Revisión Comida. | `Gasto comida`, `Compensable`, `Falta por reponer`, `Recursos`, `CIERRE`, `DIF` y estados `Parcial/Completada` agregados. |
-| E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; E3.5-AC-12/13/17/39 siguen bloqueados. |
+| E3.5 candidata integrada, `FIN_NETA` ausente | `GC`, `CO`, `REP` y `FALTA` si la lectura/evidencia lo permiten; avisos de cobertura. | `Recursos.total`, `CIERRE`, `DIF` y cualquier conciliación que dependa de `FIN_NETA`; `E3.5-AC-12/13/17/39` (histórica) siguen bloqueados. |
 | E3.5 integrada con `FIN_NETA` y cobertura | Bloque Comida completo según E3.5/FIN_NETA, con sus tres ejes de cobertura y la diferencia solo como aviso. | Cierre financiero, foto E4, conciliación certificada con el banco total. |
+
+> **Nota de vigencia — 2026-11-02.** Las referencias `E3.5-AC-12/13/17/39` de esta sección
+> proceden de la candidata anterior y se conservan como **históricas, sin equivalencia
+> automática**. La autoridad vigente es la numeración ratificada
+> `E3.5-FIN-AC-01…18` (SPEC16, enmienda E3.5) y sus pruebas `E3.5-FIN-TP-01…18`. No se
+> renumeran AC ratificados ni se declara ningún AC cumplido; E3.5 sigue sin DEV autorizado.
 
 En todos los casos, la capa auxiliar no crea Gasto central, no modifica Movimientos y
 no se suma a Saldos. La ausencia de E3.5 no se compensa con el candidato local, con

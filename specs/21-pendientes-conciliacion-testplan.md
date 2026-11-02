@@ -20,7 +20,7 @@ Dependencias generales:
 - **E3.6 no implementada.** No existen endpoints, DTO, pantallas ni pruebas de esta
   entrega.
 - **E3.5/DEV18 candidata local**, no integrada ni aceptada; `FIN_NETA` runtime ausente;
-  E3.5-AC-12/13/17/39 BLOCKED. Las pruebas de Comida que dependen de E3.5 quedan UNRUN y su
+  `E3.5-AC-12/13/17/39` BLOCKED (numeración histórica; ver SPEC21 §4.3.1). Las pruebas de Comida que dependen de E3.5 quedan UNRUN y su
   ejecución futura está bloqueada hasta integración/aceptación.
 - **E3.2 B-T11 pendiente.** El consumo por informes/E3.6 no se declara PASS.
 - **E3.1-AC36 PARCIAL** por proveedor de Cierres ausente.
