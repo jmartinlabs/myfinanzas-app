@@ -22,7 +22,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 
 | SPEC | Estado | Evidencia principal | Acción |
 | --- | --- | --- | --- |
-| 04 Movimientos | B | H-SPEC04-02/03/04 integrados #125; CI critical PASS; E2E/full UNRUN | Ejecutar E2E/full y acta |
+| 04 Movimientos | A | H-SPEC04-02/03/04 integrados #125; E2E de Movimientos PASS en full Linux `766ea6b` | Acta; no reabrir |
 | 05 Transferencias | A | #84/#90 integradas; nota de vigencia pendiente en §D5 | Nota + acta |
 | 06 Deuda | A | Cabecera corregida; motor y pruebas sin defecto | Nota progress + acta |
 | 07 Ciclos | A | Opción B #128; progress/testplan con PR #49 histórico | Nota + acta |
@@ -43,7 +43,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | 26 Precierre | C | E4.8 #150; H-SPEC26-02 | Refactor posiciones + regresión |
 | 27 Cierre financiero | D | Aprobada; AC UNRUN; E3.5/DT6 | Gates antes de DEV |
 | 31 SQLite producción | A | Contrato v18, restore v19/v20; riesgos operativos | Acta con gate operativo |
-| 32 Rootless | B | #30 integrado; AC-18 PASS, AC-22 parcial | E2E final AC-22 |
+| 32 Rootless | B | #30 integrado; AC-18 PASS; AC-22 typecheck/build/E2E PASS en full Linux `766ea6b`; ejecución rootless real pendiente | Acta con límite rootless |
 
 **Recuento:** A 12 · B 4 · C 2 · D 4. **Cerrables sin código adicional:** 14 (12 A + 04 +
 32); 16 si se resuelven las decisiones de 09 y 17.
@@ -122,10 +122,10 @@ Base de ejecución: `main` `8e4ef21`, macOS arm64, Bun 1.4.3, Playwright 1.64.1.
 
 | Comprobación | Resultado | Límite |
 | --- | --- | --- |
-| SPEC04 E2E (`tests/e2e/movimientos.spec.ts`) | **FAIL/BLOCKED** en el tramo final de restauración: el servidor de restore no responde en 3004 | El recorrido principal se ejecutó; el fallo es del entorno de restore, no se declara PASS |
-| `scripts/verify --full` | **FAIL** de aplicación: 344 pass / 56 fail de entorno macOS; `e2e` UNRUN | No sustituye Linux/glibc; no se declara PASS |
-| SPEC32 AC-22: typecheck/build | **PASS** | Solo estática/tipos/build |
-| SPEC32 AC-22: E2E final y rootless | **UNRUN/BLOCKED** | No hay Docker/podman ni entorno rootless Linux local |
+| SPEC04 E2E (`tests/e2e/movimientos.spec.ts`) | **PASS en full Linux `766ea6b`** (17/17 E2E, incluye Movimientos) | En macOS local el restore-server falla por `libc.so.6`; no se usa como PASS local |
+| `scripts/verify --full` | **PASS en full Linux `766ea6b`**: API 432/0, E2E 17/17, restore v19/v20 | Debian13 local no ejecutado; Ubuntu 24.04 CI |
+| SPEC32 AC-22: typecheck/build | **PASS** | Estática/tipos/build |
+| SPEC32 AC-22: E2E final | **PASS en full Linux `766ea6b`** | La ejecución rootless real sigue pendiente y se registra aparte |
 
-No se declara PASS de SPEC04 ni de AC-22; ambos quedan pendientes de entorno canónico o de
-una ejecución E2E completa en Linux.
+SPEC04 E2E y la parte E2E de AC-22 quedan acreditadas en full Linux `766ea6b`. La ejecución
+rootless real de SPEC32 y Debian13 local no se declaran PASS; se registran como límites.
