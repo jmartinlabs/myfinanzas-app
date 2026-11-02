@@ -447,6 +447,69 @@ test("E4.2-V2: un intento legacy de Compra sobrevive al upgrade v20→v21", () =
   }
 });
 
+test("E4.2-V2 negativo: intento legacy corrupto, de Venta o con otro payload se rechaza", () => {
+  const { db, instrumento } = base();
+  try {
+    const body = defaultPurchase(instrumento.id);
+    const key = "legacy-negative-key-0001";
+    const first = createPurchase(db, body, key + "-seed", now);
+    const before = {
+      ops: count(db, "operaciones_inversion"),
+      audit: count(db, "operacion_inversion_audit"),
+      counter: db
+        .query("SELECT next FROM counters WHERE name='operaciones_inversion'")
+        .get(),
+    };
+    const legacy = createHash("sha256")
+      .update(
+        JSON.stringify(
+          Object.entries(body).sort(([a], [b]) => a.localeCompare(b)),
+        ),
+      )
+      .digest("hex");
+    const attempt = (response: string, hash = legacy) =>
+      db.run("INSERT INTO operacion_attempts VALUES(?,?,?,?)", [
+        key,
+        hash,
+        response,
+        now + 86400000,
+      ]);
+    attempt("{");
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ venta: { id: first.compra.id } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: { id: "999999" } }));
+    expect(
+      failure(() => createPurchase(db, body, key, now)),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    db.run("DELETE FROM operacion_attempts WHERE key=?", [key]);
+    attempt(JSON.stringify({ compra: { id: first.compra.id } }));
+    expect(
+      failure(() =>
+        createPurchase(db, { ...body, importeEur: "1.00" }, key, now),
+      ),
+    ).toMatchObject({ status: 409, code: "IDEMPOTENCY_CONFLICT" });
+    expect(
+      db.query("SELECT hash FROM operacion_attempts WHERE key=?").get(key),
+    ).toEqual({ hash: legacy });
+    expect({
+      ops: count(db, "operaciones_inversion"),
+      audit: count(db, "operacion_inversion_audit"),
+      counter: db
+        .query("SELECT next FROM counters WHERE name='operaciones_inversion'")
+        .get(),
+    }).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.1-AC-18/19/20/25/26/45/47: idempotencia, rollback, rectificación y anulación", () => {
   const { db, instrumento } = base();
   try {
