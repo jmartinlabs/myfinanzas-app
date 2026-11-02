@@ -96,7 +96,7 @@ auditoría**, no aceptación funcional, y conserva AC PARCIAL/UNRUN y dependenci
 - **Evidencia:** contrato v18 #130; restore v19/v20 #148; AC técnicos acreditados.
 - **Cierre documental:** procedente.
 - **Pendiente:** fsync/WAL, VPS y custodia externa son gate operativo/DT6, no cierre funcional.
-- **AC PARCIAL/UNRUN:** AC técnicos acreditados; gates operativos fuera del cierre.
+- **AC PARCIAL/UNRUN:** sin AC parciales propios; gates DT6/operativos fuera del cierre.
 - **Dependencias:** DT6/T-BKP abierto.
 
 ## SPEC32 — Ejecución rootless

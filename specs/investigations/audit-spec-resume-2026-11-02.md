@@ -24,7 +24,7 @@ pendiente · **C** corrección técnica menor · **D** dependencia de DEV futuro
 | --- | --- | --- | --- |
 | 04 Movimientos | B | H-SPEC04-02/03/04 integrados #125; E2E de Movimientos PASS en suite full Linux `766ea6b` (candidato E4.2, no SPEC04) | Ejecutar/aceptar E2E sobre candidato propio y acta |
 | 05 Transferencias | A | #84/#90 integradas; nota de vigencia pendiente en §D5 | Nota + acta |
-| 06 Deuda | A | Cabecera corregida; motor y pruebas sin defecto | Nota progress + acta |
+| 06 Deuda | B | Cabecera corregida; **auditoría técnica abierta** (`06-...:8-9`); M1 en `deudas.ts` | Cierre diferido; no cerrar E1.6 por este acta |
 | 07 Ciclos | A | Opción B #128; progress/testplan con PR #49 histórico | Nota + acta |
 | 08 Presupuestos | A | Nota #129; pruebas B1–B9 | Acta |
 | 09 Plan del ciclo | B | Ambigüedad de cero con Fin temporal; decisión humana | Mantener semántica actual; acta con nota |
@@ -103,7 +103,7 @@ convierten PARCIAL/UNRUN en PASS.
 | 19 | 6 AC PARCIAL aceptados; D7 aprobada | AC-55 depende de DEV22 |
 | 31 | Contrato v18; restore v19/v20 | Riesgos fsync/VPS/DT6 |
 
-Estas 12 actas se presentan para **ratificación**; no se declaran cerradas.
+Estas actas se presentan para **ratificación individual**; SPEC06 y SPEC32 quedan diferidas y no se declaran cerradas.
 
 ### 5.1 Actas individuales (borrador para ratificación)
 
