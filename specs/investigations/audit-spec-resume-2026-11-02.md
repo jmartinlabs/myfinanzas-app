@@ -92,7 +92,7 @@ convierten PARCIAL/UNRUN en PASS.
 | SPEC | Evidencia para el acta | Pendiente/limitación |
 | --- | --- | --- |
 | 05 | #84/#90 integradas; contrato de referencias | Nota de vigencia §D5 |
-| 06 | Motor de Deuda y pruebas; cabecera corregida | Progress histórico |
+| 06 | Motor de Deuda y pruebas; cabecera corregida | **Auditoría técnica abierta; M1; cierre diferido** |
 | 07 | Opción B #128; C07-F1/F2 | AC28/E3.5 fuera; notas históricas |
 | 08 | B1–B9; nota #129 | Aceptación formal |
 | 10 | Motor anual y pruebas | Aceptación formal |
@@ -112,7 +112,7 @@ Cada acta acredita **auditoría documental**; no sustituye aceptación funcional
 PARCIAL/UNRUN en PASS.
 
 - **SPEC05:** D5 aprobada e integrada; revisión de referencias y exterior cerrada. Límite: nota histórica §D5.
-- **SPEC06:** motor de Deuda y pruebas; cabecera corregida. Límite: progress histórico.
+- **SPEC06:** motor de Deuda y pruebas; cabecera corregida. **Límite: auditoría técnica abierta y M1; cierre diferido.**
 - **SPEC07:** opción B integrada #128; C07-F1/F2. Límite: AC28/E3.5 fuera; notas de PR #49 históricas.
 - **SPEC08:** maestro y pruebas B1–B9; nota #129. Límite: aceptación formal.
 - **SPEC10:** motor anual y pruebas. Límite: aceptación formal.
@@ -123,7 +123,7 @@ PARCIAL/UNRUN en PASS.
 - **SPEC15:** motor y pruebas; proveedor histórico no conectado. Límite: cobertura declarada.
 - **SPEC19:** 6 AC PARCIAL aceptados; D7 integrada #154/#155; AC-55 depende de DEV22. Límite: no promover parciales.
 - **SPEC31:** contrato v18 y restore v19/v20. Límite: fsync/VPS/DT6 son gate operativo.
-- **SPEC32:** #30 integrado; AC-22 typecheck/build/E2E PASS en full Linux. **Límite expreso: ejecución rootless real/AC-22 final no acreditada.**
+- **SPEC32:** #30 integrado (`306bbc5`); AC-18 PASS; AC-22 **PASS parcial** (API/build/rootless; E2E final **UNRUN**) en `87f9c5b`/run `40898403837`. **Límite: cierre diferido hasta completar E2E/rootless real.**
 
 ## 6. Decisiones humanas
 
