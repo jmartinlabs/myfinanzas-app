@@ -696,8 +696,8 @@ function InstrumentDetail({
           </ul>
         )}
         <p className="help">
-          Valoración y resultado: {data.valoracion.estado} · {data.valoracion.motivo}.
-          No se muestra 0.
+          Valoración y resultado: {data.valoracion.estado} ·{" "}
+          {data.valoracion.motivo}. No disponible hasta E4.3. No se muestra 0.
         </p>
         <div className="form-grid">
           <label>
@@ -1555,7 +1555,7 @@ function PurchaseFields({
 export function ImpactPanel({ impact }: { impact: Impact }) {
   return (
     <section className="panel inversiones-impact" aria-label="Impacto de la operación">
-      <h2>Impacto (no escribe hasta confirmar)</h2>
+      <h2 tabIndex={-1}>Impacto (no escribe hasta confirmar)</h2>
       <dl className="detail-grid">
         <div>
           <dt>Efectivo {impact.impacto.efectivo.saldo.id}</dt>

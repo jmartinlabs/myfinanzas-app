@@ -96,6 +96,14 @@ function localDifference(form: SaleFormState) {
     importe = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
   return centsText(importe - BigInt(reference.replace(".", "")));
 }
+// SPEC22 §11: a Venta whose Instrumento or Saldo reference is missing is shown
+// as a "Revisar" incident; it is never repaired, deleted or counted as position.
+const refLabel = (value: { id: string; nombre: string } | null | undefined) =>
+  value ? `${value.id} · ${value.nombre}` : "Revisar";
+const refId = (value: { id: string } | null | undefined) =>
+  value?.id ?? "Revisar";
+const missingReference = (venta: Compra) =>
+  !venta.instrumento || !venta.saldoEfectivo || !venta.saldoInversion;
 
 export function SaleList({ go }: { go: (path: string) => void }) {
   const [options, setOptions] = useState<Options | null>(null),
@@ -113,12 +121,17 @@ export function SaleList({ go }: { go: (path: string) => void }) {
       cobertura: string;
     } | null>(null),
     [error, setError] = useState(""),
+    [optionsError, setOptionsError] = useState(false),
     [retry, setRetry] = useState(0),
     [page, setPage] = useState(1);
   useEffect(() => {
+    setOptionsError(false);
     api<Options>("/instrumentos/opciones")
       .then(setOptions)
-      .catch(() => setOptions(null));
+      .catch(() => {
+        setOptions(null);
+        setOptionsError(true);
+      });
   }, []);
   useEffect(() => {
     let live = true;
@@ -153,7 +166,7 @@ export function SaleList({ go }: { go: (path: string) => void }) {
         </button>
       </PageHead>
       <Tabs active="ventas" go={go} />
-      <CashLines options={options} />
+      <CashLines options={options} error={optionsError} />
       <section className="catalog-panel inversiones-list" aria-label="Listado de Ventas">
         <div className="filters inversiones-filters">
           <label>
@@ -255,6 +268,13 @@ export function SaleList({ go }: { go: (path: string) => void }) {
               Todas ({data.resumen.total}) · {data.resumen.vigentes} vigentes ·{" "}
               {data.resumen.anuladas} anulada(s). {data.cobertura}
             </p>
+            {data.ventas.some(missingReference) && (
+              <p className="help">
+                Incidencia «Revisar»: alguna Venta ha perdido su Instrumento o
+                un Saldo. Se muestra sin reparar ni borrar y no computa como
+                posición válida.
+              </p>
+            )}
             <div className="desktop-list inversiones-desktop">
               <table className="inversiones-table">
                 <caption className="sr-only">Ventas registradas</caption>
@@ -278,11 +298,9 @@ export function SaleList({ go }: { go: (path: string) => void }) {
                   {data.ventas.map((venta) => (
                     <tr key={venta.id}>
                       <td>{date(venta.fecha)}</td>
-                      <td>
-                        {venta.instrumento?.id} · {venta.instrumento?.nombre}
-                      </td>
-                      <td>{venta.saldoEfectivo?.id}</td>
-                      <td>{venta.saldoInversion?.id}</td>
+                      <td>{refLabel(venta.instrumento)}</td>
+                      <td>{refId(venta.saldoEfectivo)}</td>
+                      <td>{refId(venta.saldoInversion)}</td>
                       <td>{num(venta.cantidad)}</td>
                       <td>{num(venta.precio)}</td>
                       <td>{venta.divisa}</td>
@@ -337,13 +355,19 @@ export function SaleList({ go }: { go: (path: string) => void }) {
                 <li key={venta.id}>
                   <div className="card-head">
                     <strong>
-                      {date(venta.fecha)} · {venta.instrumento?.id} ·{" "}
-                      {venta.saldoInversion?.id}
+                      {date(venta.fecha)} · {refId(venta.instrumento)} ·{" "}
+                      {refId(venta.saldoInversion)}
                     </strong>
                     <Tag inactive={venta.estado === "Anulada"}>
                       {venta.estado}
                     </Tag>
                   </div>
+                  {missingReference(venta) && (
+                    <p className="help">
+                      Incidencia «Revisar»: falta el Instrumento o un Saldo; no
+                      se repara ni computa como posición válida.
+                    </p>
+                  )}
                   <p>
                     {num(venta.cantidad)} × {num(venta.precio)} {venta.divisa}
                     {venta.cambio ? ` · ${num(venta.cambio)}` : ""}
@@ -877,7 +901,9 @@ export function SaleForm({
             <button
               type="button"
               className="primary"
-              disabled={busy || (rectifying && !form.motivo.trim())}
+              disabled={
+                busy || stale || (rectifying && !form.motivo.trim())
+              }
               onClick={confirm}
             >
               {busy
@@ -932,7 +958,11 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
       <Tabs active="ventas" go={go} />
       <PageHead
         eyebrow={`${venta.id} · VENTA`}
-        title={`${venta.instrumento?.id} · ${venta.instrumento?.nombre}`}
+        title={
+          venta.instrumento
+            ? `${venta.instrumento.id} · ${venta.instrumento.nombre}`
+            : "Revisar · Venta sin Instrumento"
+        }
         description={`${date(venta.fecha)} · ${venta.estado}`}
       >
         {venta.estado === "Vigente" && (
@@ -952,6 +982,12 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
           </>
         )}
       </PageHead>
+      {missingReference(venta) && (
+        <Alert>
+          Incidencia «Revisar»: falta el Instrumento o algún Saldo de esta Venta.
+          El hecho no se repara ni se borra y no computa como posición válida.
+        </Alert>
+      )}
       {venta.estado === "Anulada" && (
         <Alert>
           La Venta está anulada: no computa en efectivo, cantidad ni referencia y
@@ -962,15 +998,11 @@ export function SaleDetail({ id, go }: { id: string; go: (path: string) => void 
         <dl className="detail-grid">
           <div>
             <dt>Saldo efectivo</dt>
-            <dd>
-              {venta.saldoEfectivo?.id} · {venta.saldoEfectivo?.nombre}
-            </dd>
+            <dd>{refLabel(venta.saldoEfectivo)}</dd>
           </div>
           <div>
             <dt>Saldo inversión</dt>
-            <dd>
-              {venta.saldoInversion?.id} · {venta.saldoInversion?.nombre}
-            </dd>
+            <dd>{refLabel(venta.saldoInversion)}</dd>
           </div>
           <div>
             <dt>Cantidad</dt>
