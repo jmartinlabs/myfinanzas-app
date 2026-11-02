@@ -28,7 +28,8 @@ E4.3 incluye: posiciones por `Saldo inversión + Instrumento` reutilizando el mo
 estado `Abierta`/`Cerrada`/vacío; tipo `Manual`/`Automática`; valor en EUR con fecha y
 procedencia; resultado según R5; agregado por `Tipo = Inversión`; contrato de lectura a corte.
 No incluye: cotizaciones externas, dividendos/impuestos/splits, FIFO o coste por lotes,
-patrimonio global, efectivo propio, fotos/cierre (E4.9), ni cambios a E4.1/E4.2/SPEC12/SPEC33.
+patrimonio global (E4.6/E4.7), efectivo fuera del bloque de inversión, fotos/cierre (E4.9), ni
+cambios a E4.1/E4.2/SPEC12/SPEC33.
 
 ### D-01 — Significado de «Automática» sin proveedor externo
 
@@ -55,6 +56,8 @@ Question: UNDECIDED
 - [ ] (c) Resultado sí, rentabilidad no.
 
 Recommendation (proposal only): (a), por fidelidad a R5; (b) exigiría cambiar la referencia.
+**Precedencia:** el valor manual solo aplica a posiciones **abiertas**; una posición cerrada se
+rige por D-03 (ventas − compras) aunque conserve una valoración histórica.
 
 Confirmed answer: PENDING; source/date: PENDING
 
@@ -160,7 +163,7 @@ Recommendation (proposal only): (a); nunca rellenar con 0.
 
 Confirmed answer: PENDING; source/date: PENDING
 
-### D-11 — Total de cartera con efectivo
+### D-11 — Total del bloque de inversión y efectivo mostrado aparte
 
 Question: UNDECIDED
 
