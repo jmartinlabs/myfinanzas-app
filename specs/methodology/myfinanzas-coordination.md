@@ -101,8 +101,8 @@ implementación, QA y infraestructura son perfiles; no procesos residentes.
   temporales y checkouts aislados, sin pedir una aprobación por cada operación ordinaria.
   Antes debe verificar soporte real, estado Git, cambios preexistentes y riesgos de colisión.
   Si no existe aislamiento seguro, serializar escrituras sin bloquear lecturas paralelas.
-  La limpieza se limita a recursos temporales propios y sin trabajo pendiente; jamás
-  descartar cambios ajenos o sin reconciliar.
+  La limpieza posterior al merge sigue la [política canónica](approvals.md#limpieza-local-posterior-al-merge);
+  jamás descartar cambios ajenos o sin reconciliar.
 - QA independiente del autor de implementación; tests reales solo cuando exista candidato.
   Diseño de pruebas no es PASS; revisión de un contrato futuro no lo implementa.
 - Sin herramientas multiagente: misma cola y gates en secuencia, sin delegación fingida.

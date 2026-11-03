@@ -175,6 +175,44 @@ class ValidationTests(unittest.TestCase):
      self.assertRule('execution-mode')
     finally:
      p.write_text(original)
+ def test_lifecycle_contract(self):
+  # Documentary token coverage. The merge/PR-state and handoff-retirement gates
+  # below have no executable gate in this project: removing the rule text must
+  # make structural validation fail, but that proves the contract is present, not
+  # that an agent obeyed it. Git-command invariants live in LifecycleBehaviorTests.
+  cases = (
+   ('specs/methodology/approvals.md', '## Limpieza local posterior al merge'),
+   ('specs/methodology/approvals.md', 'cierre ordinario'),
+   ('specs/methodology/approvals.md', 'la PR está `MERGED`'),
+   ('specs/methodology/approvals.md', 'git worktree remove <worktree-de-la-tarea>'),
+   ('specs/methodology/approvals.md', 'git branch -d <rama-de-la-tarea>'),
+   ('specs/methodology/approvals.md', 'sin `--force`'),
+   ('specs/methodology/approvals.md', 'sin `-D`'),
+   ('specs/methodology/approvals.md', 'No exigir que cada commit'),
+   ('specs/methodology/approvals.md', 'preservar la rama'),
+   ('specs/methodology/approvals.md', 'git reset --hard'),
+   ('specs/methodology/approvals.md', 'git clean -fd'),
+   ('specs/methodology/approvals.md', 'ramas remotas'),
+   ('specs/methodology/approvals.md', 'otra tarea'),
+   ('.agents/skills/handoff/SKILL.md', '## Next session and checkpoint retirement'),
+   ('.agents/skills/handoff/SKILL.md', 'successful restoration'),
+   ('.agents/skills/handoff/SKILL.md', 'tracked by Git'),
+   ('.agents/skills/handoff/SKILL.md', 'standalone PR'),
+   ('.agents/skills/handoff/SKILL.md', 'never remove permanent'),
+   ('specs/README.md', 'se retira tras restaurar y consolidar'),
+   ('specs/README.md', 'mismo cambio de la tarea'),
+   ('specs/README.md', 'nunca en una PR creada solo para borrarlo'),
+   ('.agents/skills/orchestrate/SKILL.md', 'limpieza-local-posterior-al-merge'),
+   ('.agents/skills/orchestrate/SKILL.md', 'next-session-and-checkpoint-retirement'),
+   ('.agents/skills/orchestrate/SKILL.md', 'Preserve dirty, unknown or other-task resources.'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED')); self.assertRule('lifecycle')
+    finally: p.write_text(original)
  def test_coordination_does_not_duplicate_continuity(self):
   p=self.root/'specs/methodology/coordinator-communication.md'; original=p.read_text()
   for variant in ('a correctable failed check is not a blocker','A correctable failed check is not a blocker'):
@@ -229,4 +267,105 @@ class ValidationTests(unittest.TestCase):
   self.assertEqual(subprocess.run(command,capture_output=True).returncode,1)
  def test_nonvisual(self):
   (self.root/'specs/guidelines/ui.md').write_text('# UI\nNot applicable: CLI project.\n'); self.assertEqual(validate(self.root),[])
+class LifecycleBehaviorTests(unittest.TestCase):
+ """Reference invariants for the documented post-merge cleanup sequence.
+
+  Every fixture is an isolated temporary repository or directory. These tests never
+  create, inspect or remove a real user worktree, branch or handoff. The Git cases
+  exercise the documented safe commands for real; the PR-state and restoration cases
+  encode the documented decision table because this project has no executable merge
+  or handoff gate, so they are documentary evidence, not enforcement.
+  """
+ def setUp(self):
+  temp=tempfile.TemporaryDirectory(); self.addCleanup(temp.cleanup)
+  self.tmp=Path(temp.name)
+ def git(self,root,*args,check=True):
+  return subprocess.run(['git','-c','user.name=Test','-c','user.email=test@example.invalid',
+    '-c','commit.gpgsign=false','-c','init.defaultBranch=main','-C',str(root),*args],
+    check=check,capture_output=True,text=True)
+ def repository(self):
+  root=self.tmp/'repo'; root.mkdir()
+  self.git(root,'init','-q'); (root/'README.md').write_text('# base\n')
+  self.git(root,'add','-A'); self.git(root,'commit','-qm','base')
+  self.default_branch=self.git(root,'symbolic-ref','--short','HEAD').stdout.strip()
+  return root
+ def add_worktree(self,root,branch,name):
+  path=self.tmp/name
+  self.git(root,'worktree','add','-q','-b',branch,str(path))
+  return path
+ def cleanup_verdict(self,pr='MERGED',confirmed=True,owned=True,clean=True,integrated=True):
+  # Documentary transcription of approvals.md; not wired to a real PR gate.
+  if pr!='MERGED' or not confirmed: return 'preserve'
+  return 'remove' if owned and clean and integrated else 'preserve'
+ def restoration_verdict(self,root,consolidated,discrepancy=False):
+  # Documentary transcription of the handoff retirement rules.
+  handoff=root/'specs/session-handoff.md'
+  durable=[p for p in (root/'specs').glob('*.md') if p.name!='session-handoff.md']
+  if not handoff.exists(): return 'normal'
+  return 'remove' if consolidated and durable and not discrepancy else 'preserve'
+ def test_clean_merged_worktree_and_branch_can_be_removed(self):
+  root=self.repository(); worktree=self.add_worktree(root,'feature-merged','wt-merged')
+  (worktree/'feature.txt').write_text('feature\n')
+  self.git(worktree,'add','-A'); self.git(worktree,'commit','-qm','feature')
+  self.git(root,'merge','--no-ff','feature-merged','-qm','merge feature')
+  self.assertEqual(self.git(root,'worktree','remove',str(worktree),check=False).returncode,0)
+  self.assertFalse(worktree.exists())
+  self.assertEqual(self.git(root,'branch','-d','feature-merged',check=False).returncode,0)
+  self.assertNotIn('feature-merged',self.git(root,'branch','--list').stdout)
+ def test_dirty_worktree_is_preserved(self):
+  root=self.repository(); worktree=self.add_worktree(root,'feature-dirty','wt-dirty')
+  (worktree/'pending.txt').write_text('pending\n')
+  self.assertNotEqual(self.git(root,'worktree','remove',str(worktree),check=False).returncode,0)
+  self.assertTrue(worktree.exists())
+  (worktree/'pending.txt').unlink()
+  (worktree/'README.md').write_text('# base\nstaged\n')
+  self.git(worktree,'add','-A')
+  self.assertNotEqual(self.git(root,'worktree','remove',str(worktree),check=False).returncode,0)
+  self.assertTrue(worktree.exists())
+ def test_unmerged_or_unknown_branch_is_preserved(self):
+  root=self.repository(); self.git(root,'branch','feature-unmerged')
+  self.git(root,'checkout','-q','feature-unmerged')
+  (root/'later.txt').write_text('later\n')
+  self.git(root,'add','-A'); self.git(root,'commit','-qm','unmerged')
+  self.git(root,'checkout','-q',self.default_branch)
+  self.assertNotEqual(self.git(root,'branch','-d','feature-unmerged',check=False).returncode,0)
+  self.assertIn('feature-unmerged',self.git(root,'branch','--list').stdout)
+ def test_other_task_resources_are_preserved(self):
+  root=self.repository(); first=self.add_worktree(root,'feature-one','wt-one')
+  second=self.add_worktree(root,'feature-two','wt-two')
+  self.assertEqual(self.git(root,'worktree','remove',str(first),check=False).returncode,0)
+  self.assertFalse(first.exists()); self.assertTrue(second.exists())
+  self.assertEqual(self.git(root,'branch','-d','feature-one',check=False).returncode,0)
+  self.assertIn('feature-two',self.git(root,'branch','--list').stdout)
+ def test_open_or_unconfirmed_pr_blocks_cleanup(self):
+  self.assertEqual(self.cleanup_verdict(),'remove')
+  for kwargs in ({'pr':'OPEN'},{'pr':'UNCONFIRMED'},{'confirmed':False},{'owned':False},
+                 {'clean':False},{'integrated':False}):
+   with self.subTest(condition=kwargs):
+    self.assertEqual(self.cleanup_verdict(**kwargs),'preserve')
+ def test_untracked_handoff_is_removable_after_consolidation(self):
+  root=self.repository(); (root/'specs').mkdir()
+  handoff=root/'specs/session-handoff.md'; handoff.write_text('STOP REQUESTED\n')
+  (root/'specs/progress.md').write_text('durable state\n')
+  self.assertEqual(self.restoration_verdict(root,consolidated=True),'remove')
+  handoff.unlink()
+  self.assertFalse(handoff.exists()); self.assertTrue((root/'specs/progress.md').exists())
+ def test_incomplete_restoration_or_discrepancy_preserves_handoff(self):
+  root=self.repository(); (root/'specs').mkdir()
+  handoff=root/'specs/session-handoff.md'; handoff.write_text('STOP REQUESTED\n')
+  self.assertEqual(self.restoration_verdict(root,consolidated=True),'preserve')
+  (root/'specs/progress.md').write_text('durable state\n')
+  self.assertEqual(self.restoration_verdict(root,consolidated=False),'preserve')
+  self.assertEqual(self.restoration_verdict(root,consolidated=True,discrepancy=True),'preserve')
+  self.assertTrue(handoff.exists())
+ def test_no_temporary_handoff_is_normal(self):
+  root=self.repository(); (root/'specs').mkdir()
+  (root/'specs/progress.md').write_text('durable state\n')
+  self.assertEqual(self.restoration_verdict(root,consolidated=True),'normal')
+ def test_tracked_handoff_removal_is_a_normal_task_change(self):
+  root=self.repository(); (root/'specs').mkdir()
+  handoff=root/'specs/session-handoff.md'; handoff.write_text('temporary\n')
+  self.git(root,'add','-A'); self.git(root,'commit','-qm','add handoff')
+  self.git(root,'rm','-q','specs/session-handoff.md')
+  self.assertIn('D  specs/session-handoff.md',self.git(root,'status','--short').stdout)
 if __name__=='__main__': unittest.main(verbosity=2)
