@@ -392,3 +392,11 @@ los 56 fallos de entorno preexistentes en `main`.
   pendiente:** añadir ambos casos con oráculo propio.
 - **AC-12 / AC-15** permanecen PARCIAL: S0 ausente es inalcanzable con D2-O0 y la integración
   E4.9 es D4, fuera de este DEV. No se declaran PASS.
+
+
+### Integración en main (2026-11-03)
+
+- **PR #171 MERGED** por squash en **`1560d04`**; CI post-merge `41614525036` **success**.
+- Migración **v22** y read model E3.5 integrados; sin datos reales ni despliegue.
+- **Reservas conservadas:** AC-12 PARCIAL (D2-O0), AC-15 PARCIAL (D4/E4.9), R2 (test negativo
+  de migración v22) y R3 (reposición de obligación antigua/tardía). No se declaran PASS.

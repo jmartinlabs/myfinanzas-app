@@ -95,27 +95,28 @@ Inventario y mapping read-only en la
 
 ### 4. E3.5 / FIN_NETA
 
-**Tipo:** dependencia + pendiente técnico · **requiere autorización**.
+**Tipo:** integrado con reservas y gates pendientes.
 Análisis de adaptación en
 [E3.5/FIN_NETA](investigations/e35-fin-neta-adaptation-2026-10-31.md).
 
 - **Enmienda normativa (2026-11-02):** texto y testplan de FIN_NETA ratificados por el
-  usuario, condicionados a correcciones editoriales que no alteren decisiones financieras;
-  candidata en PR #156. **DEV18/E3.5 sigue en STOP**; merge pendiente de autorización.
-
-- Mantener **DEV18 antiguo detenido**; no reanudarlo.
-- Preparar posteriormente su adaptación al modelo integrado de **registro único
-  de Comida en Movimientos**.
-- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no
-  reconstruir FIN_NETA por inferencia**. `comidaMetrics()` ya calcula P7 de forma
-  condicional; no es el motor E3.5 completo.
-- **Riesgo estático:** una Transferencia sin rol podría evaluar `role.rol` sobre
-  `undefined` en `comida.ts` (~1390–1409). No reproducido; requiere test/corrección
-  separada con autorización de DEV.
+  usuario. **E3.5 integrado en `main` `1560d04` (PR #171)** el 2026-11-03; CI post-merge
+  `41614525036` **success**. El **DEV18 histórico sigue detenido** y no se reanuda.
+- **Reservas conservadas:** AC-12 PARCIAL (S0 ausente inalcanzable con D2-O0) y AC-15
+  PARCIAL (integración E4.9 es D4, fuera de alcance). R2 (test negativo de migración v22) y
+  R3 (reposición de obligación antigua/tardía) quedan pendientes y documentadas en
+  [progress16](16-revision-comida-progress.md).
+- Migración **v22** aplicada solo en fixtures sintéticas; sin datos reales ni despliegue.
+- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no reconstruir FIN_NETA
+  por inferencia**. El read model vive en [`apps/api/src/e35.ts`](../apps/api/src/e35.ts)
+  (`e35Metrics`); `comidaMetrics` es un alias y la ruta HTTP consulta E3.5, no el cálculo
+  antiguo de E3.4.
+- **Riesgo estático de Transferencia sin rol:** resuelto e integrado en #160 y cubierto por
+  E3.5 con cobertura parcial/ND; no se reabre.
 - **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal; un solo ID
   se cuenta una vez y los conflictos se tratan como parcial/no disponible.
-- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
-  bloqueado mientras E3.5 no sea verificable.
+- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue **sin DEV
+  autorizado**; consumirá el proveedor E3.5 cuando se autorice (D4).
 
 ### 5. Dependencias de cierre y release
 
@@ -141,7 +142,7 @@ E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
 
 | Gate | Estado | Efecto |
 | --- | --- | --- |
-| E3.5 / FIN_NETA | No integrado; DEV18 STOP | Bloquea **AC-08**; adaptación pendiente al gasto único de Comida en Movimientos |
+| E3.5 / FIN_NETA | **MERGED `1560d04`**; DEV18 histórico STOP | Integrado sobre registro único; AC-12/15 PARCIAL y R2/R3 pendientes |
 | DT6 / T-BKP | Abierto y aparcado; sin datos físicos | Bloquea **AC-09**; los fixtures v19/v20 no acreditan custodia externa ni simulacro |
 | E4.8 precierre | [PR #150](https://github.com/jmartinlabs/myfinanzas-app/pull/150) **MERGED** en `e608bbb`; CI postmerge PASS; UI provisional; visual aplazada al final | Desarrollo integrado; puerta del flujo E4.9; falta el cierre E4.9 |
 | DEV E4.9 / SPEC27 | No autorizado; AC **UNRUN** | Faltan cierre, foto, impactos, idempotencia, concurrencia, seguridad y pruebas |
