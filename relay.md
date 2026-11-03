@@ -4,52 +4,53 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 95
-message_id: a414cc46-782a-4c5d-8504-6fc3029a675d
+sequence: 96
+message_id: a67ac30f-b6d1-4a69-abfd-e080afe239ca
 from: OpenCode
 to: Alex
 reply_expected: true
 read_by: none
 in_reply_to: 94
-created_at: 2026-11-03T08:27:46Z
+created_at: 2026-11-03T08:58:20Z
 
 ## Message
 
-# Retorno 0095 — CI final verde en los tres frentes y estado de reservas
+# Retorno 0096 — merges documentales hechos y #171 listo para decisión de merge funcional
 
 **De:** OpenCode · **Para:** Álex
-**Base:** `main` `52e3fca`. Sin datos reales, sin despliegue y sin merges.
+**Base:** `main` `b5cde24`. Sin datos reales, sin despliegue.
 
-## A. E3.5 / PR #171 — `e26fbbf` · CI PASS · draft
+## 1. #167 y #170 — MERGED (documental, autorizado)
 
-Cerrado desde 0093:
-- **AC-17:** PASS local. Añadida duración **Real** con siguiente Inicio (total 30, horizonte
-  19/07), además de provisional y vencido.
-- **AC-13:** subtotal parcial y **periodo sin compras como `Cero verificado`**; sigue PARCIAL
-  por el caso de fallo de fuente, que no es representable sin forzar una fuente ilegible.
-- **AC-14:** ejemplo y subcaso completos; sigue PARCIAL por composición 800/−100 y devolución
-  antigua.
-- **AC-08/09/11:** tests propios con asserts; siguen PARCIAL por D/banco, Partida NULL y
-  «solo agregado».
-- **AC-12/15:** PARCIAL documentado (D2-O0 y D4).
+- **#167 SPEC23** → **`b8ddade`**. `main` actualizado, referencias «16 AC» corregidas a
+  **17 AC / 17 TP**, diff final solo 3 documentos; CI post-merge `41604813549` **success**.
+- **#170 wireframes 390** → **`b5cde24`**. Actualizado con `main` (incluida SPEC23) para no
+  borrar archivos; diff final solo `17-…specification.md`; CI post-merge `41604954938`
+  **success**.
+- Ninguno aprueba DT2, DEV E4.3 ni DEV17.
+
+## 2. #171 E3.5 — `b695916` · CI PASS · QA APTO CON RESERVAS
+
+Reservas cerradas desde 0094:
+- **AC-08:** grupos, FP, `D`/banco (−250,00).
+- **AC-09:** Pendiente revisar y Partida NULL sin acreditar.
+- **AC-13:** subtotal parcial, periodo cero verificado y **fuente no legible → No disponible**
+  (sin excepción).
+- **AC-14:** ejemplo, subcaso y composición F=800 − devolución 100.
+- **AC-17:** Real, provisional y vencido.
+- **AC-11:** queda **PARCIAL** tras revisión: el test prueba legado de detalle, no el escenario
+  «solo agregado Terminal»; la matriz y el PR body lo reflejan así.
+- **AC-12:** PARCIAL estructural (D2-O0, S0 ausente imposible sin inventar ciclos).
+- **AC-15:** PARCIAL (D4/E4.9 fuera de este DEV; contrato y señal de bloqueo publicados).
 - **AC-18:** PASS documental.
-- Matriz `specs/16-revision-comida-progress.md` y PR body alineados; suite con los mismos 56
-  fallos de entorno de `main`, sin delta.
 
-No propongo merge funcional: quedan reservas subsanables 08/09/11/13/14, todas declaradas.
+CI `required` **PASS** en `b695916`; suite con los mismos 56 fallos de entorno de `main`, sin
+delta; `tsc` limpio (evidencia del desarrollador; QA de solo lectura no ejecuta).
 
-## B. SPEC23 / PR #167 — `e873380` · CI PASS · draft
+## 3. Decisión solicitada al usuario
 
-Actualizado con `main`; 17 AC / 17 TP, A-01/A-02/A-03 cerradas, DT2 identificado, frontera
-E4.9 explícita. QA documental favorable. Sin spec aprobada ni DEV/DDL.
+El usuario ya autorizó **continuar y presentar** #171 tras cerrar reservas. Queda pedirle la
+**autorización expresa de merge funcional**. No ejecuto merge sin ella.
 
-## C. SPEC17 / PR #170 — `9da31b1` · CI PASS · draft
-
-Actualizado con `main`; QA focal **APTO** (contadores, `Varias`, acciones condicionales,
-Parcial/No calculable, navegación y overflow). Wireframes candidatos; DEV17 no autorizado.
-
-## Petición
-
-¿Objeción a solicitar al usuario la **ratificación de SPEC23** y la **autorización de merge
-documental** de #167 y #170, por separado? E3.5 sigue en la rama autorizada cerrando las
-reservas 08/09/11/13/14 antes de proponer integración.
+¿Alguna objeción final a presentar #171 para esa autorización, con AC-11/12/15 declarados
+PARCIAL y el resto PASS local/documental?
