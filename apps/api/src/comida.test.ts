@@ -1453,6 +1453,38 @@ test("AC-13: fuente de roles no legible produce No disponible, nunca cero", () =
   db.close();
 });
 
+test("AC-11: Gasto agregado de Terminal no entra en D/J_n ni reconstruye FIN_NETA", () => {
+  const { db, ing, food, cycle1 } = setup();
+  const terminal = createSaldo(
+    db,
+    {
+      nombre: "Terminal ficticia",
+      tipo: "Efectivo",
+      control: "Terminal",
+      saldoApertura: "0",
+      fechaApertura: "2026-01-01",
+      permiteSalidaExterior: true,
+    },
+    randomUUID(),
+    now,
+  );
+  add(db, {
+    tipo: "Gasto",
+    fecha: "2026-07-01",
+    importe: "100",
+    saldo: terminal.id,
+    partida: food.id,
+    concepto: "Agregado Terminal ficticio",
+    nota: "",
+  });
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.historico.agregadoReconocido).toBe("100.00");
+  expect(metrics.historico.agregadosIds.length).toBe(1);
+  expect(metrics.historico.detalleAuxiliar).toBe("0.00");
+  expect(metrics.compras.neto.valor).toBe("0.00");
+  db.close();
+});
+
 test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el contrato", () => {
   const { prepareV18 } = require("../test-support/database-v18");
   const db = new Database(":memory:");
