@@ -1264,6 +1264,44 @@ test("AC-15: el proveedor publica cobertura, huella y señal de bloqueo", () => 
   db.close();
 });
 
+test("AC-14: subcaso S0=100, D=90, B_A=250, S0 siguiente=295", () => {
+  const db = openDatabase(":memory:");
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado)
+     VALUES('S901','ING ficticia','Efectivo','Movimientos','Activa',1,?,?),
+           ('S902','Origen ficticio','Efectivo','Movimientos','Activa',1,?,?)`,
+    [t, t, t, t],
+  );
+  db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
+     VALUES('1','2026-06-20',10000,?,1,?), ('3','2026-08-20',29500,?,1,?)`,
+    [t, t, t, t],
+  );
+  db.run(
+    `INSERT INTO regimen_comida(saldo,ciclo_corte,apertura,evidencia,cobertura,estado,revision,creado,actualizado)
+     VALUES('S901','1',25000,'Extracto ficticio','Verificable','Activo',1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,anulado,revision,creado,actualizado)
+     VALUES('1','2026-06-25','Transferencia',9000,'S902','S901','Financiación ficticia','',0,1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movimiento_rol_financiacion(movimiento,rol,obligacion_ciclo,evidencia,revision_movimiento,revision,creado,actualizado)
+     VALUES('1','Financiación',NULL,'Evidencia ficticia',1,1,?,?)`,
+    [t, t],
+  );
+  const metrics = comidaMetrics(db, "1", now);
+  expect(metrics.cierreAnalitico.valor).toBe("190.00");
+  expect(metrics.posicionBancaria.apertura).toBe("250.00");
+  expect(metrics.diferencias.banco).toBe("-150.00");
+  expect(metrics.diferencias.siguienteInicio).toBe("2026-08-20");
+  expect(metrics.diferencias.s0Siguiente).toBe("105.00");
+  db.close();
+});
+
 test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el contrato", () => {
   const { prepareV18 } = require("../test-support/database-v18");
   const db = new Database(":memory:");
