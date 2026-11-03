@@ -1114,7 +1114,8 @@ test("R3/AC-07: reposición tardía queda fuera del ciclo anterior y solo suma R
   });
   expect(before.obligacion.ids).toEqual([]);
 
-  // La reposición se cobra en el ciclo siguiente y se asigna a la obligación anterior.
+  // El cobro del 22 solo entra en R_caja del ciclo de su fecha; en el origen
+  // no suma R_caja ni reduce la obligación anterior.
   const late = transfer(db, account, ing, "20", "2026-07-22");
   writeComidaRol(
     db,
@@ -1136,6 +1137,8 @@ test("R3/AC-07: reposición tardía queda fuera del ciclo anterior y solo suma R
   });
   expect(origin.obligacion.ids).toEqual([]);
   expect(origin.reposiciones.ids).not.toContain(late.movimiento.id);
+  expect(origin.financiacion.reposicionesCaja).toBe("0.00");
+  expect(origin.recursos.valor).toBe("80.00"); // S0 100 − C_n 20, sin R_caja
 
   const current = comidaMetrics(db, cycle2.id, now);
   expect(current.financiacion.reposicionesCaja).toBe("20.00");

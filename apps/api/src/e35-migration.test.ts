@@ -131,7 +131,7 @@ test("I3/migración v21→v22: rechaza reposición sin obligación si el destino
   }
 });
 
-test("R2/I3/migración v21→v22: FK inconsistente no deja base parcial y restaura foreign_keys", () => {
+test("R2/I3/migración v21→v22: FK inconsistente no deja base parcial y mantiene foreign_keys activas", () => {
   const dir = mkdtempSync(join(tmpdir(), "e35-v22-fk-"));
   try {
     const path = join(dir, "v21-fk.sqlite");
