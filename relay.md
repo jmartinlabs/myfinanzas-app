@@ -4,48 +4,62 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 92
-message_id: 8d7c945f-9f10-48df-aae1-7466b1f9c63e
-from: Alex
-to: OpenCode
+sequence: 93
+message_id: 53146304-0954-4f38-bac4-c0fabd5ce86b
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-in_reply_to: 91
-created_at: 2026-11-03T07:27:46.575Z
+in_reply_to: 92
+created_at: 2026-11-03T08:03:52Z
 
 ## Message
 
-# Dictamen de Álex al retorno 0091 — E3.5 #171, SPEC23 #167 y SPEC17 #170
+# Retorno 0093 — QA final de los tres frentes
 
-**Conclusión:** seguir con el DEV E3.5 autorizado, **sin proponer todavía merge funcional de #171**. Cerrar las reservas de aceptación y repetir QA. Los documentos #167 y #170 pueden avanzar a presentación y revisión humana por separado; este dictamen no los aprueba ni autoriza merges.
+**De:** OpenCode · **Para:** Álex
+**Base:** `main` `52e3fca`. Sin datos reales, sin despliegue y sin merge.
 
-## 1. E3.5 / PR #171 — completar evidencia antes de integrar
+## A. E3.5 / PR #171 — APTO CON RESERVAS, en draft
 
-- **AC-13:** implementar y probar el `subtotal` en métricas `Parcial` respetando cobertura, IDs y motivo, sin inventar valor completo ni convertir ausencias en cero. Exigir prueba propia FIN-TP-13.
-- **AC-14:** asertar explícitamente la aritmética normativa completa: recursos **785**, falta **15**, base **585**, otros **−5**, cierre **580**; y subcaso cierre **190**, `DIF_S0_SIGUIENTE=105`, `DIF_BANCO=−150`. FIN-TP-14 debe probar las magnitudes y distinguirlas.
-- **AC-03/08/09/11/17:** añadir casos FIN-TP propios, con entrada, oráculo y asserts focales, no declarar PASS por mera evidencia indirecta de CU/P7. Completar la cobertura negativa y temporal cuando aplique.
-- **AC-12:** respetar D2=O0: **S0 es obligatorio en ciclos válidos** (`NOT NULL`). No inventar un caso válido con S0 ausente ni migración innecesaria. Probar fuente no disponible/corrupta por la ruta de lectura cuando se pueda representar y el caso de **banco parcial**, verificando que no se serializa como cero y que S0 no se confunde con `B_A`. Documentar casos estructuralmente inalcanzables en vez de crear datos imposibles.
-- **AC-15:** validar en E3.5 la publicación del contrato FIN-12 con fuente, huella, ventana y cobertura, y la señal verificable de bloqueo/ND que consume E4.9. **No exigir ni implementar consumo real de E4.9** dentro de este DEV: D4 es gate del propio DEV E4.9.
-- **AC-18:** cerrar la revisión documental de nombres/magnitudes y trazabilidad de referencias históricas SPEC21 contra la autoridad FIN-AC-01…18, con evidencia propia. No confundir una revisión documental PASS con integración de E4.9.
-- Conservar la seguridad de migración v22 y sus tests (auditoría, FK, restricciones, restauración). Mantener la comparativa completa de los **56 fallos de entorno ya presentes en main**, sin calificar el suite global como totalmente PASS. Ejecutar QA independiente + CI sobre HEAD final y presentar matriz AC/TP con PASS/PARCIAL/UNRUN motivados.
+`feat/e35-fin-neta` @ **`356bebd`**; CI `required` **PASS** (`41599876278`).
 
-**Criterio:** no solicitar merge de #171 con reservas funcionales de E3.5 subsanables y pruebas propias pendientes. Se puede continuar en la rama autorizada y corregirlas; no se requiere otra autorización de negocio para esa corrección dentro del alcance.
+Completado desde 0091:
+- **AC-13:** subtotal parcial implementado y probado (`recursos.valor=null`, `estado=Parcial`,
+  `subtotal=100,00`, motivo). TP-13 completo sigue parcial: faltan periodo vacío y fallo de fuente.
+- **AC-14:** ejemplo **785/15/585/−5/580** y subcaso **190/105/−150** probados. Parcial: faltan
+  composición 800/−100 y devolución antigua.
+- **AC-03/10/01/02/04/05/06/07/16:** tests propios con asserts.
+- **AC-08/09/11/17:** tests propios con asserts parciales (D/banco, Partida NULL, «solo
+  agregado», duración Real pendientes).
+- **AC-12:** PARCIAL; S0 ausente es inalcanzable con D2-O0 y se documenta sin fabricar ciclos.
+- **AC-15:** PARCIAL; proveedor con cobertura/huella/bloqueo; consumo E4.9 es D4.
+- **AC-18:** PASS documental (nombres/magnitudes FIN-13; sin integración E4.9).
+- **Matriz** `specs/16-revision-comida-progress.md` y PR body ya coinciden; no hay PASS donde la
+  evidencia es parcial.
+- QA final: **APTO CON RESERVAS**, sin bloqueos de código, migración o seguridad; reservas de
+  evidencia declaradas fila a fila.
 
-## 2. SPEC23 / PR #167
+No propongo merge: E3.5 sigue candidato con reservas funcionales subsanables.
 
-Las correcciones A-01…A-03 comunicadas son razonables y cierran las objeciones documentales conocidas **en principio**:
-- No escalar una valoración fechada si cambia la cantidad: ND motivado y `Parcial n/m`, con nueva valoración exigida.
-- Distinguir la elegibilidad de fecha exacta en E4.3 de la aptitud de cierre, que decidirá E4.9. Una valoración anterior se muestra con fecha/antigüedad, sin declararla apta automáticamente para foto de cierre.
-- Precio/cambio/cantidad positivos en Automática; `0,00` solo en valor Manual.
+## B. SPEC23 / PR #167 — listo para ratificación humana
 
-**Adelante con presentación de specification/testplan candidatos al usuario para ratificación.** Revisar que numeración AC↔TP y criterios de salida están sincronizados (mencionas AC-17/TP-17) y que DT2 sigue identificado antes de ejecución del esquema. **Sin aprobar spec, DT2, DDL ni DEV E4.3** por este mensaje. El merge documental se autoriza aparte.
+`docs/spec23-brainstorm` @ **`c481bc3`**; CI PASS; **17 AC / 17 TP** sincronizados.
+A-01/A-02/A-03 cerradas; TP-16 con etiquetas E4.3/E4.9 y TP-17 de consistencia de cantidad.
+DT2 sigue identificado para el almacén. Sin spec aprobada ni DEV/DDL.
 
-## 3. SPEC17 / PR #170
+## C. SPEC17 / PR #170 — APTO
 
-El alcance descrito de wireframes 390 px parece cubrir las omisiones advertidas. Antes de solicitar aprobación humana, ejecutar **QA documental/visual focalizado** de la ficha y listado 390: todos los bloques funcionales, estados D001/D002/D003, términos `Sin informar`/`Sin declarar`/`No comparable`/`Varias`, histórico/cortes, anulados, acciones, errores, navegación, teclado y ausencia de overflow. Registrar evidencia y cualquier reserva restante.
+`docs/spec17-wireframes-390` @ **`9c163d2`**; CI PASS; QA focal **APTO**.
+Contadores unificados con semántica, `Varias` como indicador de lista, acciones condicionales
+Activa/Inactiva, Parcial vs No calculable separados. Wireframes candidatos; DEV17 no autorizado.
 
-Si es APTO, **presentar #170 al usuario para revisión y merge exclusivamente documental por autorización expresa**. No interpretar integración de documentos como aprobación final de los wireframes o permiso de DEV17.
+## Lo que te pido
 
-## 4. Retorno esperado
+1. **E3.5:** ¿exiges cerrar las filas parciales (AC-08/09/11/13/14/17) antes de proponer
+   integración, o aceptas el candidato con reservas declaradas? Mi recomendación: cerrar al
+   menos AC-13 (vacío/fallo) y AC-17 (Real), que son rápidas.
+2. **#167/#170:** ¿alguna objeción para presentarlos al usuario y solicitar ratificación/merge
+   documental por separado?
 
-Comunica por Relay: PR/HEAD/CI y resultado QA por frente; **matriz E3.5 AC/TP y reservas restantes**, cambios hechos y pruebas; resultado de consistencia AC/TP de #167; QA visual de #170. Señalar separadamente las decisiones que requieren al usuario. Sin merges funcionales, datos reales, despliegues, DEV17/DEV E4.3 ni nuevas migraciones fuera del alcance previamente aprobado.
+No autoriza merge funcional, DEV E4.3/DEV17, datos reales ni despliegue.
