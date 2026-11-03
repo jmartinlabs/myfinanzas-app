@@ -4,29 +4,34 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 97
-message_id: 1498e9fd-fb88-4244-af69-eaca31342ab8
-from: OpenCode
-to: Alex
-reply_expected: false
+sequence: 98
+message_id: 54a79d0b-3b68-416d-bb41-12117edb6c26
+from: Alex
+to: OpenCode
+reply_expected: true
 read_by: none
-in_reply_to: 94
-created_at: 2026-11-03T09:56:50Z
+in_reply_to: 97
+created_at: 2026-11-03T10:04:16.169Z
 
 ## Message
 
-# Retorno 0097 — #171 MERGED y estado E3.5 actualizado
+# Dictamen y autorización — PR #172, cierre documental post-merge E3.5
 
-**De:** OpenCode · **Para:** Álex
+El usuario ha pedido transmitirte el dictamen previo: **AUTORIZADO el squash merge exclusivamente documental de #172**, condicionado a una corrección de vigencia y a la verificación final.
 
-- **#171 E3.5 MERGED** por squash en **`1560d04`**; CI post-merge `41614525036` **success**.
-- Reservas conservadas: **AC-12 PARCIAL** (D2-O0), **AC-15 PARCIAL** (D4/E4.9), **R2** (test
-  negativo de migración v22) y **R3** (reposición de obligación antigua/tardía). Ninguna se
-  declara PASS; R2/R3 documentadas como no bloqueantes con su tratamiento pendiente.
-- Migración **v22** y read model E3.5 integrados; sin datos reales ni despliegue.
-- **PR #172** (draft) actualiza tablero y progreso con el estado post-merge y las reservas; CI
-  `required` **PASS**. Pendiente de autorización de merge documental del usuario.
-- #167 y #170 siguen integrados (`b8ddade`, `b5cde24`) con CI post-merge verde.
+**Comprobado en GitHub:** #171 fue integrado mediante squash en `main` `1560d04`, con CI post-merge `41614525036` SUCCESS; #172 (HEAD examinado `c93b01d`) modifica solo `specs/16-revision-comida-progress.md` y `specs/epic-board.md`, con `required` PASS.
 
-Sin nuevas decisiones técnicas pendientes en E3.5; el siguiente trabajo sería cerrar R2/R3 en
-un incremento posterior, no en este alcance.
+### Corrección obligatoria antes del merge
+
+En `specs/epic-board.md` §4, después de registrar que E3.5 está integrado, continúa el texto histórico que dice: «`comidaMetrics()` ya calcula P7 de forma condicional; no es el motor E3.5 completo». **Es obsoleto y contradictorio con el estado integrado.** El código vigente exporta `comidaMetrics = e35Metrics` y la ruta HTTP consulta `e35Metrics`.
+
+Actualizar ese texto con una descripción **veraz y actual** de la fuente única del read model E3.5, sin suprimir el principio normativo de no reconstruir FIN_NETA por inferencia. Si hay otros estados análogos claramente obsoletos dentro del mismo cambio documental, identificarlos y corregirlos mínimamente, sin ampliar alcance.
+
+### Condiciones y ejecución autorizada
+
+1. Mantener explícitamente **AC-12 y AC-15 como PARCIAL**; **R2** test negativo de rollback/FK de migración v22 y **R3** casos obligación antigua/reposición tardía siguen **pendientes y sin PASS ficticio**. Conservar el tratamiento no bloqueante, su impacto y el trabajo futuro.
+2. Comprobar que el diff definitivo de #172 solo contiene documentación post-merge y la corrección de vigencia anterior; nada de código, esquema o hechos reales.
+3. Ejecutar CI fresca `required` en el HEAD final; si es PASS y el diff cumple, **puedes marcar ready y ejecutar squash merge de #172 sin solicitar otra autorización**.
+4. Verificar commit en `main`, CI post-merge y estado final; comunicar SHA, ejecución de CI y reservas conservadas. Si aparece contradicción material, CI rojo o cambio fuera de alcance, detener e informar.
+
+**Límites:** no autoriza nuevos DEV para R2/R3, migración sobre datos reales, despliegue ni integración E4.9. DEV18 histórico permanece detenido.
