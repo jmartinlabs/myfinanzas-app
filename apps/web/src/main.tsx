@@ -1,5 +1,6 @@
 import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
+import { Pendientes } from "./Pendientes";
 import { Precierre } from "./Precierre";
 import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
@@ -120,7 +121,7 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go(path.startsWith("/flujo-mensual") ? path : "/saldos");
+          go(path.startsWith("/flujo-mensual") || path.startsWith("/pendientes") ? path : "/saldos");
         }}
       />
     );
@@ -194,6 +195,21 @@ function App() {
             }}
           >
             Flujo mensual
+          </a>
+          <a
+            className={
+              path.startsWith("/pendientes") ? "nav-active" : "nav-link"
+            }
+            href="/pendientes"
+            aria-current={
+              path.startsWith("/pendientes") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/pendientes");
+            }}
+          >
+            Pendientes y conciliación
           </a>
           <a
             className={path.startsWith("/dprima") ? "nav-active" : "nav-link"}
@@ -455,6 +471,8 @@ function App() {
             <RevisionComida path={path} go={go} />
           ) : path.startsWith("/flujo-mensual") ? (
             <FlujoMensual path={path} go={go} />
+          ) : path.startsWith("/pendientes") ? (
+            <Pendientes path={path} go={go} />
           ) : path.startsWith("/compartidos") ? (
             <Compartidos path={path} go={go} />
           ) : path.startsWith("/anticipos") ? (

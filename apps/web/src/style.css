@@ -278,6 +278,8 @@ small {
   flex-direction: column;
   padding: 31px 20px 22px;
   z-index: 5;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 .brand {
   text-decoration: none;
@@ -2936,5 +2938,290 @@ textarea {
   }
   .e44-toggle .actions {
     width: 100%;
+  }
+}
+
+/* E3.6 — Pendientes y conciliación. Additive tokens over the approved shell. */
+.pendientes-page {
+  min-width: 0;
+}
+.pendientes-page .pendientes-filters {
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  align-items: end;
+}
+.pendientes-filters .search {
+  grid-column: span 2;
+}
+.pendientes-search-action {
+  display: flex;
+  align-items: end;
+}
+.pendientes-search-action .primary {
+  width: 100%;
+}
+.pendientes-table {
+  min-width: 1080px;
+}
+.pendientes-table th:nth-child(1) { width: 10%; }
+.pendientes-table th:nth-child(2) { width: 16%; }
+.pendientes-table th:nth-child(3) { width: 11%; }
+.pendientes-table th:nth-child(4) { width: 7%; }
+.pendientes-table th:nth-child(5) { width: 11%; }
+.pendientes-table th:nth-child(6) { width: 9%; }
+.pendientes-table th:nth-child(7) { width: 12%; }
+.pendientes-table th:nth-child(8) { width: 17%; }
+.pendientes-table th:nth-child(9) { width: 7%; }
+.pendientes-table td {
+  vertical-align: top;
+}
+.pendientes-table .money,
+.pendientes-table td:nth-child(4),
+.pendientes-table td:nth-child(3) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.pendientes-table td:nth-child(8) {
+  min-width: 0;
+}
+.pendiente-action a {
+  white-space: nowrap;
+}
+.pendiente-motive {
+  margin: 4px 0 0;
+  font-size: 11px;
+  color: #536147;
+  overflow-wrap: anywhere;
+}
+.pendiente-alerts {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.pendiente-alerts ul {
+  margin: 4px 0 0;
+  padding-left: 0;
+  list-style: none;
+  font-size: 11px;
+  color: #536147;
+}
+.pendiente-alerts li {
+  margin-bottom: 3px;
+}
+.pendiente-alerts li::before {
+  content: "! ";
+  font-weight: 700;
+}
+.pendiente-alerts .tag {
+  margin-bottom: 2px;
+}
+.pendientes-fallos {
+  margin: 20px;
+  border: 1px solid #b65f47;
+  border-left: 4px solid #9b422c;
+  background: #fff6f0;
+  border-radius: 7px;
+  padding: 14px 16px;
+}
+.pendientes-fallos h2 {
+  margin-bottom: 6px;
+}
+.pendientes-fallos ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.pendientes-skeleton ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.pendientes-skeleton li {
+  background: #f6fbef;
+  border: 1px dashed #cadbb5;
+  border-radius: 6px;
+  padding: 12px;
+  color: #536147;
+  font-size: 11px;
+}
+.pendientes-filters select,
+.pendientes-filters input {
+  max-width: 100%;
+}
+.pendiente-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px 20px;
+  margin: 0 0 12px;
+}
+.pendiente-detail-grid dt {
+  font-size: 11px;
+  color: #536147;
+  margin-bottom: 2px;
+}
+.pendiente-detail-grid dd {
+  margin: 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.pendiente-detail-grid dd small {
+  display: block;
+  font-weight: 400;
+  color: #536147;
+  margin-top: 2px;
+}
+.pendientes-contextos {
+  margin: 0 0 12px;
+  padding-left: 18px;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.pendiente-metrics {
+  min-width: 640px;
+  table-layout: fixed;
+}
+.pendiente-metrics th:nth-child(1) { width: 27%; }
+.pendiente-metrics th:nth-child(2) { width: 14%; }
+.pendiente-metrics th:nth-child(3) { width: 12%; }
+.pendiente-metrics th:nth-child(4) { width: 13%; }
+.pendiente-metrics th:nth-child(5) { width: 34%; }
+.pendiente-metrics td {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.pendientes-cards .pendiente-facts {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 8px 12px;
+  margin: 0 0 10px;
+}
+.pendientes-cards .pendiente-facts dt {
+  font-size: 10px;
+  color: #536147;
+}
+.pendientes-cards .pendiente-facts dd {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.pendientes-cards .pendiente-alerts ul {
+  font-size: 11px;
+}
+.flow-adjusted {
+  min-width: 0;
+}
+.flow-adjusted .notice {
+  margin-bottom: 14px;
+}
+@media (max-width: 1050px) {
+  .pendientes-table {
+    min-width: 960px;
+  }
+  .pendientes-filters .search {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 760px) {
+  .pendientes-page .pendientes-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .pendientes-filters .search,
+  .pendientes-search-action {
+    grid-column: 1 / -1;
+  }
+  .pendientes-cards .card-head {
+    flex-wrap: wrap;
+  }
+  .pendiente-detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .pendiente-metrics {
+    min-width: 0;
+    table-layout: auto;
+  }
+  .pendiente-metrics thead {
+    display: none;
+  }
+  .pendiente-metrics,
+  .pendiente-metrics tbody,
+  .pendiente-metrics tr,
+  .pendiente-metrics td {
+    display: block;
+    width: 100%;
+  }
+  .pendiente-metrics tr {
+    border-bottom: 1px solid #e2ead8;
+    padding: 8px 0;
+  }
+  .pendiente-metrics td {
+    padding: 3px 0;
+  }
+  .pendiente-metrics td::before {
+    content: attr(data-label);
+    display: block;
+    color: #536147;
+    font-size: 10px;
+  }
+  .pendientes-fallos {
+    margin: 16px;
+  }
+}
+
+/* E3.6 R3 — métricas por caso del ajuste, fuera del flujo total. */
+.flow-case-metrics {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.flow-case-metrics table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.flow-case-metrics th,
+.flow-case-metrics td {
+  padding: 7px 9px;
+  border-bottom: 1px solid #dcecb3;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.flow-case-metrics th {
+  background: var(--section);
+  color: #4a5c34;
+  font-size: 10px;
+}
+.flow-case-metrics td:nth-child(n + 3) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.flow-case-metrics .text-button {
+  min-height: 0;
+  padding: 0;
+}
+@media (max-width: 760px) {
+  .flow-case-metrics table,
+  .flow-case-metrics tbody,
+  .flow-case-metrics tr,
+  .flow-case-metrics td {
+    display: block;
+    width: 100%;
+  }
+  .flow-case-metrics thead {
+    display: none;
+  }
+  .flow-case-metrics tr {
+    padding: 8px 0;
+  }
+  .flow-case-metrics td {
+    padding: 2px 0;
+    white-space: normal !important;
+  }
+  .flow-case-metrics td::before {
+    content: attr(data-label);
+    display: block;
+    color: #536147;
+    font-size: 10px;
   }
 }
