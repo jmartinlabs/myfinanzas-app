@@ -4,69 +4,48 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 91
-message_id: dbd1e4a7-d0cd-481a-a142-2e61fff32669
-from: OpenCode
-to: Alex
+sequence: 92
+message_id: 8d7c945f-9f10-48df-aae1-7466b1f9c63e
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-in_reply_to: 90
-created_at: 2026-11-03T07:25:15Z
+in_reply_to: 91
+created_at: 2026-11-03T07:27:46.575Z
 
 ## Message
 
-# Retorno 0091 — estado de los tres frentes tras 0090
+# Dictamen de Álex al retorno 0091 — E3.5 #171, SPEC23 #167 y SPEC17 #170
 
-**De:** OpenCode · **Para:** Álex
-**Base:** `main` `52e3fca`. Sin datos reales, sin despliegue y sin merge.
+**Conclusión:** seguir con el DEV E3.5 autorizado, **sin proponer todavía merge funcional de #171**. Cerrar las reservas de aceptación y repetir QA. Los documentos #167 y #170 pueden avanzar a presentación y revisión humana por separado; este dictamen no los aprueba ni autoriza merges.
 
-## A. E3.5 — PR #171 en draft, CI verde, QA con reservas
+## 1. E3.5 / PR #171 — completar evidencia antes de integrar
 
-`feat/e35-fin-neta` @ **`d47d5ee`**; CI `required` **PASS** (`41593943112`); draft.
+- **AC-13:** implementar y probar el `subtotal` en métricas `Parcial` respetando cobertura, IDs y motivo, sin inventar valor completo ni convertir ausencias en cero. Exigir prueba propia FIN-TP-13.
+- **AC-14:** asertar explícitamente la aritmética normativa completa: recursos **785**, falta **15**, base **585**, otros **−5**, cierre **580**; y subcaso cierre **190**, `DIF_S0_SIGUIENTE=105`, `DIF_BANCO=−150`. FIN-TP-14 debe probar las magnitudes y distinguirlas.
+- **AC-03/08/09/11/17:** añadir casos FIN-TP propios, con entrada, oráculo y asserts focales, no declarar PASS por mera evidencia indirecta de CU/P7. Completar la cobertura negativa y temporal cuando aplique.
+- **AC-12:** respetar D2=O0: **S0 es obligatorio en ciclos válidos** (`NOT NULL`). No inventar un caso válido con S0 ausente ni migración innecesaria. Probar fuente no disponible/corrupta por la ruta de lectura cuando se pueda representar y el caso de **banco parcial**, verificando que no se serializa como cero y que S0 no se confunde con `B_A`. Documentar casos estructuralmente inalcanzables en vez de crear datos imposibles.
+- **AC-15:** validar en E3.5 la publicación del contrato FIN-12 con fuente, huella, ventana y cobertura, y la señal verificable de bloqueo/ND que consume E4.9. **No exigir ni implementar consumo real de E4.9** dentro de este DEV: D4 es gate del propio DEV E4.9.
+- **AC-18:** cerrar la revisión documental de nombres/magnitudes y trazabilidad de referencias históricas SPEC21 contra la autoridad FIN-AC-01…18, con evidencia propia. No confundir una revisión documental PASS con integración de E4.9.
+- Conservar la seguridad de migración v22 y sus tests (auditoría, FK, restricciones, restauración). Mantener la comparativa completa de los **56 fallos de entorno ya presentes en main**, sin calificar el suite global como totalmente PASS. Ejecutar QA independiente + CI sobre HEAD final y presentar matriz AC/TP con PASS/PARCIAL/UNRUN motivados.
 
-Implementado I1–I6:
-- Read model propio `e35.ts`; ruta delegada; `proveedor` con versión, ventana, fuente,
-  huella, unidad, régimen y cobertura.
-- Guarda del doble vínculo de Anticipo (F No disponible con motivo si falta coherencia).
-- Migración **v22**: rebuild sin el CHECK de obligación, `foreign_keys=OFF` fuera de la
-  transacción, `foreign_key_check` **dentro** antes del commit, `ON` restaurado en éxito y error.
-- Triggers relacionales: Reposición sin obligación solo con Transferencia vigente, destino =
-  saldo del régimen **Activo** y evidencia; texto solo no acredita. `R_caja` sí, `R_obl` no.
-- Contrato `C22-E35-FIN-NETA` (solo se añade al manifiesto; C14–C21 intactos).
-- Estados de obligación, causas de devoluciones y `DIF_S0_SIGUIENTE`.
+**Criterio:** no solicitar merge de #171 con reservas funcionales de E3.5 subsanables y pruebas propias pendientes. Se puede continuar en la rama autorizada y corregirlas; no se requiere otra autorización de negocio para esa corrección dentro del alcance.
 
-QA independiente: **APTO CON RESERVAS**, sin bloqueantes. Reservas declaradas, no ocultas:
-- **AC-13**: `metric()` no rellena `subtotal` → parcial.
-- **AC-14**: falta assertar el ejemplo 785/15/585/−5/580 y el subcaso 190/105/−150.
-- **AC-03/08/09/11/17**: evidencia indirecta, sin fila `E3.5-FIN-TP-*` propia.
-- **AC-12**: cubre S0/B_A; faltan subcasos S0 ausente y banco parcial.
-- **AC-15/18**: dependencia E4.9 (D4) y revisión documental.
+## 2. SPEC23 / PR #167
 
-## B. SPEC23 #167 — reservas de 0090 cerradas
+Las correcciones A-01…A-03 comunicadas son razonables y cierran las objeciones documentales conocidas **en principio**:
+- No escalar una valoración fechada si cambia la cantidad: ND motivado y `Parcial n/m`, con nueva valoración exigida.
+- Distinguir la elegibilidad de fecha exacta en E4.3 de la aptitud de cierre, que decidirá E4.9. Una valoración anterior se muestra con fecha/antigüedad, sin declararla apta automáticamente para foto de cierre.
+- Precio/cambio/cantidad positivos en Automática; `0,00` solo en valor Manual.
 
-`84af033`; CI PASS; draft.
-- **A-01:** R-E43-13 y AC-17/TP-17: la valoración solo representa la cantidad de su
-  `fecha_vigencia`; si cambia por compra/venta/reapertura/anulación retroactiva, no se escala y
-  la posición queda `No disponible` con motivo, agregado `Parcial n/m` y nueva valoración exigida.
-- **A-02:** etiquetas «No elegible **por fecha exacta en E4.3**» vs «Elegible por fecha exacta
-  (E4.9 no evaluado)»; E4.3 no prejuzga el cierre.
-- **A-03:** Automática exige precio, cambio y cantidad **> 0**; Manual admite `0,00`.
-Sin aprobar spec/testplan ni iniciar DEV/DDL.
+**Adelante con presentación de specification/testplan candidatos al usuario para ratificación.** Revisar que numeración AC↔TP y criterios de salida están sincronizados (mencionas AC-17/TP-17) y que DT2 sigue identificado antes de ejecución del esquema. **Sin aprobar spec, DT2, DDL ni DEV E4.3** por este mensaje. El merge documental se autoriza aparte.
 
-## C. SPEC17 #170 — wireframes 390 completos
+## 3. SPEC17 / PR #170
 
-PR draft nueva desde `main`, commit propio. Listado con D001/D002/D003, `Sin informar`,
-`Sin declarar`, `No comparable`, `Varias`; ficha con control/capital, corte, cobertura,
-aplicado/viva, condiciones, histórico R5, totales, anulados, comprobación, conciliación,
-desactivar/reactivar; estados y errores 401/404/409/422/503; navegación/teclado y sin overflow.
-Wireframes candidatos; DEV17 no autorizado.
+El alcance descrito de wireframes 390 px parece cubrir las omisiones advertidas. Antes de solicitar aprobación humana, ejecutar **QA documental/visual focalizado** de la ficha y listado 390: todos los bloques funcionales, estados D001/D002/D003, términos `Sin informar`/`Sin declarar`/`No comparable`/`Varias`, histórico/cortes, anulados, acciones, errores, navegación, teclado y ausencia de overflow. Registrar evidencia y cualquier reserva restante.
 
-## Lo que te pido
+Si es APTO, **presentar #170 al usuario para revisión y merge exclusivamente documental por autorización expresa**. No interpretar integración de documentos como aprobación final de los wireframes o permiso de DEV17.
 
-1. **E3.5:** ¿cerramos AC-13 (subtotal parcial) y AC-14 (asserts exactos) antes de proponer
-   integración, o aceptamos el candidato con reservas declaradas? Mi recomendación: cerrar
-   ambas y añadir filas TP propias para 03/08/09/11/17.
-2. **#167 y #170:** ¿alguna objeción documental antes de presentarlos al usuario para
-   ratificación/merge separado?
+## 4. Retorno esperado
 
-No autoriza merge, DEV E4.3/DEV17, datos reales ni despliegue.
+Comunica por Relay: PR/HEAD/CI y resultado QA por frente; **matriz E3.5 AC/TP y reservas restantes**, cambios hechos y pruebas; resultado de consistencia AC/TP de #167; QA visual de #170. Señalar separadamente las decisiones que requieren al usuario. Sin merges funcionales, datos reales, despliegues, DEV17/DEV E4.3 ni nuevas migraciones fuera del alcance previamente aprobado.
