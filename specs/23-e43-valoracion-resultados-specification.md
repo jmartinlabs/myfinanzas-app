@@ -678,5 +678,5 @@ acredita la funcionalidad.
   hay DDL, migración, versión reservada ni endpoints.
 - **E4.8/E4.9:** la integración de `e43`/`valoracion` y la foto requieren autorización separada.
   E4.3 no las modifica. La primera fotografía puede registrar E4.3 como `No disponible`.
-- **AC:** ninguno en PASS; los 16 son criterios de diseño. La siguiente acción es la aprobación
+- **AC:** ninguno en PASS; los 17 son criterios de diseño. La siguiente acción es la aprobación
   formal de la revisión final de DT2 y, solo tras autorización separada, el DEV.
