@@ -519,43 +519,108 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 
 ### 390 px — listado, ficha y conciliación
 
-**Requisito de aprobación (2026-11-02):** esta ficha debe ser **funcionalmente completa**. Se
-permite organizarla en secciones desplegables accesibles, pero no omitir control, histórico,
-totales, comprobación, `Varias` ni desactivar/reactivar.
+**Requisito de aprobación (2026-11-02, atendido 2026-11-03):** esta ficha es
+**funcionalmente completa**. Se organiza en secciones desplegables accesibles, sin omitir
+control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar/reactivar.
 
 ```text
 ┌ MyFinanzas                    [Menú] ┐
 │ Ciclo: [contexto del maestro]        │
-│ Deudas                     [+ Nueva] │
-│ Buscar [____________] [Filtros]      │
-│ Préstamo ficticio · D001             │
+│ Deudas                    [+ Nueva]  │
+│ Buscar [____________] [Filtros ▾]    │
+│ Tipo [Todas ▾] Estado [Activas ▾]    │
+├──────────────────────────────────────┤
+│ D001 · Préstamo ficticio             │
 │ No hipotecaria · Activa              │
-│ Inicio 01/10/2026                    │
+│ Inicio control 01/10/2026            │
 │ Apertura 1.000,00                    │
 │ Deuda viva 720,00                    │
 │ Conciliación +30,00 · Varias         │
-│ [Ficha]                              │
+│ [Ver ficha]                          │
 ├──────────────────────────────────────┤
-│ Ficha D001 · [Editar]                │
-│ Control y capital                    │
+│ D002 · Hipoteca ficticia             │
+│ Hipotecaria · Activa                 │
+│ Inicio [Sin informar]                │
+│ Apertura [—]                         │
+│ Deuda viva [—]                       │
+│ Conciliación Sin declarar            │
+│ [Ver ficha]                          │
+├──────────────────────────────────────┤
+│ D003 · Deuda sin tipo                │
+│ Tipo Sin informar · Activa           │
+│ Inicio 01/09/2026                    │
+│ Apertura [—]                         │
+│ Deuda viva No calculable             │
+│ Conciliación Sin declarar            │
+│ [Ver ficha]                          │
+└──────────────────────────────────────┘
+```
+
+```text
+┌ Ficha D001           [Volver] [⋯]   ┐
+│ Activa · No hipotecaria              │
+│ [Editar] [Desactivar]                │
+│ ▼ Control y capital                  │
 │ Corte [20/10/2026] [Aplicar]         │
-│ Cobertura: ...                       │
+│ Cobertura Verificable                │
+│ Desde control · 2 aplicables · 1 precontrol│
+│ Capital de control 1.000,00          │
+│ Apertura 1.000,00                    │
 │ Capital aplicado 280,00              │
 │ Deuda viva 720,00                    │
-│ [Condiciones] [Histórico]            │
-│ [Historia] [Conciliación]            │
-├──────────────────────────────────────┤
-│ Conciliación                         │
+│ No incluye intereses futuros,        │
+│ comisiones ni saldo bancario.        │
+│ ▶ Condiciones (3)                    │
+│ ▶ Histórico R5 (6) · Comprobación sin dif.│
+│ ▼ Historia (3)                       │
+│ Totales: capital 280,00 · intereses 20,00│
+│          gasto 100,00 · banco −300,00│
+│ Anulados: 0                          │
+│ ▶ Conciliación (2) · Varias          │
+└──────────────────────────────────────┘
+```
+
+```text
+┌ ▼ Conciliación D001                  ┐
 │ Corte 20/10/2026                     │
 │ Declarado 750,00                     │
 │ Derivado 720,00                      │
 │ Diferencia +30,00                    │
-│ Historial 10/10/2026 · +10,00        │
 │ Fuente [Banco ficticio]              │
-│ [Corregir] [Anular]                  │
-│ No crea Movimiento.                  │
+│ Nota [Extracto ficticio]             │
+│ Motivo rectificación [__________]    │
+│ [Corregir declarado] [Anular]        │
+│ Historial: 10/10 decl. 930,00 · der. 920,00│
+│            20/10 decl. 750,00 · der. 720,00│
+│ No crea Movimiento ni ajuste.        │
 └──────────────────────────────────────┘
 ```
+
+```text
+┌ Estados y errores (390)               ┐
+│ Vacío: "Sin deudas" [Alta]            │
+│ Parcial: subtotal + motivo + hechos    │
+│ excluidos por corte + precontrol       │
+│ No calculable: sin total, motivo e IDs │
+│ 401 sesión · 409 revisión · 422 campo  │
+│ 404 deuda inexistente · 503 lectura    │
+│ Cargando: skeleton sin importes         │
+│ Inactiva: ficha con [Reactivar] + motivo│
+│ Foco visible · Enter/Espacio expande   │
+│ Sin overflow horizontal                │
+└──────────────────────────────────────┘
+```
+
+**Comportamiento:** la lista muestra tarjetas apiladas; la ficha abre con «Control y capital»
+expandido y el resto plegado con etiqueta y contador. Los contadores indican el número de
+elementos de la sección: `Condiciones (3)` = TIN, TAE y cuota/texto; `Histórico R5 (6)` = seis
+campos R5 más el precontrol; `Historia (3)` = tres hechos vigentes; `Conciliación (2) · Varias`
+= dos conciliaciones vigentes, y `Varias` es un indicador de lista, no un estado de fila. Tocar o pulsar Enter/Espacio expande; el foco es visible y el
+orden de tabulación sigue el orden visual. «Editar» exige revisión vigente (409 si es obsoleta).
+«Desactivar» pide motivo y revisión y solo aparece si la deuda está Activa; en una deuda
+Inactiva la ficha muestra «Reactivar» con su motivo. La conciliación muestra la de mayor fecha y `Varias` si
+hay más; `Sin declarar` y `No comparable` son estados distintos. Ningún importe esencial se
+oculta tras un acordeón sin etiqueta, y no hay desplazamiento horizontal.
 
 Las secciones se apilan; no se oculta información financiera esencial en un acordeón sin
 etiqueta. Los importes usan cifras tabulares y fechas `dd/mm/aaaa`. Las acciones destructivas
