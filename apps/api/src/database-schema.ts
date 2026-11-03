@@ -5,7 +5,7 @@ import { assertV14VehicleContract, compartidoSchema } from "./compartido-schema"
 import { vehicleSchema } from "./vehicle-schema";
 import { investmentSchema } from "./instrumento-schema";
 import { ventaSchema } from "./venta-schema";
-import { comidaSchema } from "./comida-schema";
+import { comidaRolV22, comidaSchema } from "./comida-schema";
 import { dprimaSchema } from "./dprima-schema";
 import { verifyAdmittedContract } from "./schema-contract";
 import { payrollSchema } from "./payroll-schema";
@@ -28,6 +28,7 @@ import {
 
 // Internal schema builder: receives a connection, never opens a path or grants runtime access.
 export function prepareSchema(db: Database, identity: Identity) {
+  let upgradeFrom: number | null = null;
   if (
     db
       .query(
@@ -40,13 +41,14 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, schemaVersion].includes(
         versions[0].version,
       )
     ) {
       db.close();
       throw new Error("Esquema no compatible; no se modificará esta base.");
     }
+    upgradeFrom = versions[0].version;
     // Contract verification is the first operation on an existing 14-17 database,
     // before any persistent PRAGMA, identity transaction or DDL.
     verifyAdmittedContract(db);
@@ -72,6 +74,8 @@ export function prepareSchema(db: Database, identity: Identity) {
   db.exec(
     "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
   );
+  const rebuild = upgradeFrom !== null && upgradeFrom < 22;
+  if (rebuild) db.exec("PRAGMA foreign_keys=OFF");
   // Acquire the writer lock before schema reads; a deferred read-to-write upgrade can fail
   // immediately with SQLITE_BUSY even with busy_timeout configured.
   try {
@@ -93,7 +97,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -121,6 +125,12 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 19) comidaSchema(db);
         if (versions[0].version < 20) dprimaSchema(db);
         if (versions[0].version < 21) ventaSchema(db);
+        if (versions[0].version < 22) {
+          comidaRolV22(db);
+          const broken = db.query("PRAGMA foreign_key_check").all();
+          if (broken.length)
+            throw new Error("Migración v22 rechazada: claves foráneas inconsistentes.");
+        }
         return; // Existing data is never re-seeded.
       }
       if (
@@ -240,9 +250,13 @@ export function prepareSchema(db: Database, identity: Identity) {
       comidaSchema(db);
       dprimaSchema(db);
       ventaSchema(db);
+      if (schemaVersion >= 22) comidaRolV22(db);
+      db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
+    if (rebuild) db.exec("PRAGMA foreign_keys=ON");
     db.close();
     throw error;
   }
+  if (rebuild) db.exec("PRAGMA foreign_keys=ON");
 }

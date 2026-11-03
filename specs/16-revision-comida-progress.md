@@ -349,3 +349,46 @@ Comida no tiene E2E propio: UNRUN. Restore v19: UNRUN por plataforma.
   mapping y no creación de Movimientos al confirmar apertura.
 - Regresión E2E completa: 13 PASS y los 2 fallos de plataforma ya presentes en
   `main`; typecheck/build PASS; verify canónica con los 53 fallos de entorno.
+
+## E3.5/FIN_NETA — evidencia de DEV (2026-11-03)
+
+Rama `feat/e35-fin-neta`, PR #171 en draft. Migración v22 (D3-O1) y read model propio. Los
+fallos del suite completo (56) son los mismos que en `main` por entorno; no hay regresión nueva.
+
+| TP | AC | Estado | Evidencia |
+| --- | --- | --- | --- |
+| 01 | 01 | **PASS local** | Test «AC-01»: sin segundo ledger ni escritura |
+| 02 | 02 | **PASS local** | Guarda de roles + H-SPEC16-02 |
+| 03 | 03 | **PASS local** | Test «AC-03/CU-09»: una sola deducción |
+| 04 | 04 | **PASS local** | Test «AC-04»: atribución incoherente → No disponible |
+| 05 | 05 | **PASS local** | Test «AC-05»: sin rol → parcial con ID |
+| 06 | 06 | **PASS local** | Tests I3: R_caja vs R_obl |
+| 07 | 07 | **PASS local** | Test «AC-07»: C_n=0 y Completada solo con R_obl suficiente |
+| 08 | 08 | **PASS local** | Test «AC-08/AC-09»: grupos, FP y `D`/banco (−250,00) |
+| 09 | 09 | **PASS local** | Tests «AC-08/AC-09» y «AC-09»: Pendiente revisar y Partida NULL sin acreditar |
+| 10 | 10 | **PASS local** | Test «AC-10/CU-14»: otro ciclo no reduce |
+| 11 | 11 | **PASS local** | Tests «AC-11/D1» y agregado Terminal: `agregadoReconocido=100,00`, detalle separado, sin reconstruir FIN_NETA |
+| 12 | 12 | **PARCIAL** | S0/B_A y banco sin régimen probados; S0 ausente es estructuralmente inalcanzable con D2-O0 (`saldo_comida NOT NULL`), documentado en vez de fabricar un ciclo inválido |
+| 13 | 13 | **PASS local** | Tests «AC-13»: subtotal parcial, periodo cero verificado y fuente de roles no legible → ND |
+| 14 | 14 | **PASS local** | Ejemplo, subcaso y composición F=800 − devolución 100 probados |
+| 15 | 15 | **PARCIAL** | Proveedor con cobertura/huella/bloqueo; consumo E4.9 es D4, fuera de alcance |
+| 16 | 16 | **PASS local** | Test «AC-16»: sin tablas ni totales persistidos |
+| 17 | 17 | **PASS local** | Tests «AC-17/P7a»: provisional, vencido y duración Real con siguiente Inicio (total 30, horizonte 19/07) |
+| 18 | 18 | **PASS documental** | Nombres/magnitudes alineados con FIN-13; R_caja/R_obl y las dos diferencias separadas; referencias históricas de SPEC21 tratadas en el plan E3.5. No implica integración E4.9 |
+
+`bunx tsc --noEmit`: limpio. `bun test apps/api`: 47 pass en `comida.test.ts`; suite completa con
+los 56 fallos de entorno preexistentes en `main`.
+
+### Reservas no bloqueantes al integrar (2026-11-03)
+
+- **R2 — test negativo de migración v22.** No existe prueba que fuerce un fallo de
+  `foreign_key_check` y verifique rollback + `foreign_keys=ON`. **Impacto:** ninguno observado
+  en integridad, migración, datos ni seguridad; el camino de éxito está probado y el código
+  restaura FK en éxito y error. **Tratamiento pendiente:** añadir fixture que introduzca una
+  violación de FK y comprobar rollback y restauración.
+- **R3 — reposición de obligación antigua/tardía.** No hay test directo de TP-06/TP-07 para
+  esos dos subcasos; `R_obl` filtra por ciclo y la reposición tardía por fecha real.
+  **Impacto:** ninguno observado; comportamiento correcto por inspección. **Tratamiento
+  pendiente:** añadir ambos casos con oráculo propio.
+- **AC-12 / AC-15** permanecen PARCIAL: S0 ausente es inalcanzable con D2-O0 y la integración
+  E4.9 es D4, fuera de este DEV. No se declaran PASS.

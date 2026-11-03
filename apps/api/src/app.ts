@@ -29,7 +29,6 @@ import {
 } from "./dprima";
 import {
   activateRegimen,
-  comidaMetrics,
   comidaOptions,
   getComidaMovement,
   listComida,
@@ -39,6 +38,7 @@ import {
   writeComidaMetadata,
   writeComidaRol,
 } from "./comida";
+import { e35Metrics } from "./e35";
 import {
   getRevisionComida,
   listOperaciones,
@@ -430,7 +430,7 @@ export function createApp(db: Database, options: AppOptions) {
         /^\/api\/comida\/metricas\/(\d+)$/,
       );
       if (comidaMetricsPath && req.method === "GET")
-        return reply(comidaMetrics(db, comidaMetricsPath[1], now()));
+        return reply(e35Metrics(db, comidaMetricsPath[1], now()));
       if (path === "/api/comida" && req.method === "GET")
         return reply(listComida(db, new URL(req.url).searchParams));
       const comidaAction = path.match(

@@ -294,3 +294,63 @@ export function comidaSchema(db: Database) {
   if (db.query("PRAGMA foreign_key_check").all().length)
     throw new Error("COMIDA schema FK validation failed.");
 }
+
+
+/**
+ * v21 -> v22 (D3-O1): rebuild de movimiento_rol_financiacion sin el CHECK que exigía
+ * obligación a toda Reposición. La admisión de una Reposición sin obligación queda
+ * condicionada por triggers relacionales (cobro acreditado). No toca la auditoría.
+ * En una BD existente debe ejecutarse con foreign_keys=OFF fuera de la transacción (ver
+ * database-schema). En una instalación nueva la auditoría está vacía y se ejecuta con FK ON;
+ * el rebuild sigue siendo seguro.
+ */
+export function comidaRolV22(db: Database) {
+  db.exec(`
+    CREATE TABLE movimiento_rol_financiacion_v22(
+      movimiento TEXT PRIMARY KEY REFERENCES movimientos(id) ON DELETE RESTRICT,
+      rol TEXT NOT NULL CHECK(rol IN ('Financiación','Reposición','Devolución Anticipo')),
+      obligacion_ciclo TEXT REFERENCES ciclos(id) ON DELETE RESTRICT,
+      evidencia TEXT NOT NULL CHECK(length(trim(evidencia)) BETWEEN 1 AND 500),
+      revision_movimiento INTEGER NOT NULL CHECK(revision_movimiento>0),
+      revision INTEGER NOT NULL CHECK(revision>0),
+      creado TEXT NOT NULL,
+      actualizado TEXT NOT NULL
+    ) STRICT;
+    INSERT INTO movimiento_rol_financiacion_v22
+      SELECT movimiento,rol,obligacion_ciclo,evidencia,revision_movimiento,revision,creado,actualizado
+      FROM movimiento_rol_financiacion;
+    DROP TABLE movimiento_rol_financiacion;
+    ALTER TABLE movimiento_rol_financiacion_v22 RENAME TO movimiento_rol_financiacion;
+    CREATE INDEX movimiento_rol_financiacion_rol ON movimiento_rol_financiacion(rol,obligacion_ciclo);
+    CREATE TRIGGER movimiento_rol_financiacion_shape BEFORE INSERT ON movimiento_rol_financiacion
+      WHEN NOT EXISTS(
+        SELECT 1 FROM movimientos m WHERE m.id=NEW.movimiento AND m.anulado=0
+          AND m.tipo IN ('Transferencia','Amortización deuda')
+      ) BEGIN SELECT RAISE(ABORT,'invalid financing role'); END;
+    CREATE TRIGGER movimiento_rol_financiacion_no_delete BEFORE DELETE ON movimiento_rol_financiacion
+      BEGIN SELECT RAISE(ABORT,'no delete'); END;
+    CREATE TRIGGER movimiento_rol_financiacion_reposicion_insert
+      BEFORE INSERT ON movimiento_rol_financiacion
+      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL
+      BEGIN
+        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')
+        WHERE NOT EXISTS(
+          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
+          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'
+            AND r.estado='Activo'
+        );
+      END;
+    CREATE TRIGGER movimiento_rol_financiacion_reposicion_update
+      BEFORE UPDATE ON movimiento_rol_financiacion
+      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL
+      BEGIN
+        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')
+        WHERE NOT EXISTS(
+          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
+          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'
+            AND r.estado='Activo'
+        );
+      END;
+    UPDATE schema_version SET version=22;
+  `);
+}
