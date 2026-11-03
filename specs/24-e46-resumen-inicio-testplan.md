@@ -6,6 +6,11 @@ Specification: [24-e46-resumen-inicio-specification.md](24-e46-resumen-inicio-sp
 Brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md)
 Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
 
+**Nota de estado (2026-11-03):** Q4 es una propuesta técnica de Álex pendiente de confirmación
+del usuario al aprobar SPEC24. `V-EJERCICIO`, AC-28 y `ejercicioOrigen` se mantienen como
+diseño candidato condicionado a esa confirmación; no son una decisión cerrada. La regla de
+`mesesCubiertos` de Q3 procede de una instrucción expresa del usuario; Q3-B sigue pendiente.
+
 Antes de implementación, cada AC se mapea a entorno, caso positivo/negativo/límite y evidencia
 esperada. Un borrador admite diseño provisional, nunca implementación ni PASS. Las filas
 `BLOCKED` dependen de E4.3 o E3.6; la falta de configuración R6 solo afecta a

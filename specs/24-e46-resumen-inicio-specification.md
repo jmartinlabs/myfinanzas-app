@@ -14,10 +14,11 @@ Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resum
 Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
 Test design: [24-e46-resumen-inicio-testplan.md](24-e46-resumen-inicio-testplan.md).
 
-**Leyenda.** `CONFIRMADO` = regla de un documento aprobado o precisión del usuario.
+**Leyenda.** `CONFIRMADO` = regla de un documento aprobado o instrucción expresa del usuario.
 `PROPUESTA` = contrato candidato de esta spec. `PENDIENTE` = decisión del usuario o
-dependencia sin resolver. **Q4 y la regla de `mesesCubiertos` de Q3 están confirmadas el
-2026-11-03.** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales) y Q5–Q12 siguen pendientes;
+dependencia sin resolver. **La regla de `mesesCubiertos` de Q3 está precisada por instrucción
+del usuario; Q4 es una propuesta técnica de Álex pendiente de confirmación al aprobar
+SPEC24.** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales), Q4 y Q5–Q12 siguen pendientes;
 los puntos afectados se marcan aquí.
 
 ## Functionality
@@ -124,9 +125,11 @@ no está acreditada; E4.6 conserva esa marca.
 - Los bloques actuales (Liquidez, Saldos, Deuda, Efectivo) llevan su propio contexto; no se
   fechan con un corte histórico que no exista.
 
-**CONFIRMADO (Q4, 2026-11-03).** El ejercicio del coste esencial es el **año de
-`ciclo.mesFinanciado`**, incluso si el ciclo cruza ejercicio. No se usan el reloj, el corte ni
-el año del ingreso para sustituirlo. `annualEquivalent` se consume sin recalcular.
+**PROPUESTA (Q4) — PENDIENTE DE CONFIRMACIÓN.** Recomendación técnica de Álex: el ejercicio
+del coste esencial sería el **año de `ciclo.mesFinanciado`**, incluso si el ciclo cruza
+ejercicio. No se usarían el reloj, el corte ni el año del ingreso para sustituirlo.
+`annualEquivalent` se consumiría sin recalcular. **El usuario debe confirmar esta regla al
+aprobar SPEC24; no es una decisión cerrada.**
 
 ### Objetivo R6
 
@@ -619,8 +622,9 @@ indica después de la tabla.
 
 ## Approval and next action
 
-Esta specification es **candidata**. Requiere: (1) resolver Q1, Q2, Q3-B y Q5–Q12 del
+Esta specification es **candidata**. Requiere: (1) resolver Q1, Q2, Q3-B, Q4 y Q5–Q12 del
 brainstorming; (2) aprobar los wireframes 1440/390 y el formato de meses; (3) decidir la
 configuración de meses objetivo/umbrales, que solo afecta a `minimoObjetivo`; (4) confirmar que
-E4.3 y E3.6 estarán integrados antes de declarar completa la entrega. La aprobación documental
-no autoriza DEV ni migración.
+E4.3 y E3.6 estarán integrados antes de declarar completa la entrega. Q4 se mantiene como
+propuesta técnica de Álex hasta la aprobación del usuario. La aprobación documental no autoriza
+DEV ni migración.

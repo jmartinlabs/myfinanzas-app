@@ -1,7 +1,8 @@
 # 24 — E4.6 Resumen de inicio completo: Brainstorming
 
-Status: **DRAFT — Q4 confirmada y la regla de `mesesCubiertos` de Q3 precisada el
-2026-11-03; Q1, Q2, Q3-B y Q5–Q12 siguen pendientes.** Specification y testplan redactados
+Status: **DRAFT — Q4 es una propuesta pendiente de confirmación (recomendación técnica de
+Álex; el usuario debe confirmarla al aprobar SPEC24); la regla de `mesesCubiertos` de Q3 está
+precisada. Q1, Q2, Q3-B, Q4 y Q5–Q12 siguen pendientes.** Specification y testplan redactados
 como **candidatos** en la misma rama; no aprobados. Este documento no implementa código, no
 crea esquema, no modifica motores y **no autoriza DEV E4.6**.
 Roadmap/context: [E4.6](roadmap.md#e46--resumen-de-inicio-completo),
@@ -13,7 +14,7 @@ Roadmap/context: [E4.6](roadmap.md#e46--resumen-de-inicio-completo),
 [SPEC17/E4.4](17-e44-deuda-completa-specification.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md).
 Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
-Next action: el usuario debe resolver Q1, Q2, Q3-B y Q5–Q12; después se revisan
+Next action: el usuario debe resolver Q1, Q2, Q3-B, Q4 y Q5–Q12; después se revisan
 specification y testplan candidatos. El DEV queda bloqueado hasta aprobación, DT8 resuelto y
 dependencias integradas.
 
@@ -66,7 +67,7 @@ cubiertos no depende de esa configuración** y se calcula con liquidez y coste v
 | --- | --- | --- |
 | C-01 | `Liquidez actual = SUM(Saldo actual de Saldos activos con Liquidez = Sí)`; Finalidad, bolsa, Entidad y nombre no seleccionan la métrica | SPEC12 / R6 |
 | C-02 | Un atributo ausente no se normaliza a `false`; una posición no verificable se excluye con cobertura, no se suma como 0 | SPEC12 / SPEC01 |
-| C-03 | `mínimo objetivo = coste esencial mensual × meses objetivo`; `meses cubiertos = liquidez / coste esencial`. **`meses cubiertos` no depende de `meses objetivo`**: se muestra con liquidez y coste completos y coste > 0 | R6 / SPEC10; precisión usuario 2026-11-03 |
+| C-03 | `mínimo objetivo = coste esencial mensual × meses objetivo`; `meses cubiertos = liquidez / coste esencial`. **`meses cubiertos` no depende de `meses objetivo`**: se muestra con liquidez y coste completos y coste > 0 | R6 / SPEC10; instrucción de corrección del usuario 2026-11-03 |
 | C-04 | El coste esencial mensual global procede de la cadena E2.4 (plan anual → equivalente mensual → consumidores R6); un parcial no genera un objetivo definitivo | SPEC10 |
 | C-05 | Umbrales configurables y zona **informativa**; ninguna transferencia se automatiza | R6 |
 | C-06 | Inversión: la posición es `Saldo inversión + Instrumento`; el efectivo del bróker se calcula aparte y **no** se agrega con la posición | SPEC22 §4.2/§4.3 |
@@ -140,13 +141,15 @@ informativa?
 Recommendation (proposal only): (a) para Q3-B. Sin meses objetivo no se puede publicar un
 mínimo objetivo real; `0` o un valor fijo serían invención. `mesesCubiertos` no se ve afectado.
 
-Confirmed answer: **`mesesCubiertos` independiente de configuración, confirmada por el usuario
-el 2026-11-03; Q3-B (almacén de meses objetivo/umbrales): PENDING**; source/date:
-usuario, 2026-11-03 (precisión); PENDING (Q3-B).
+Confirmed answer (instrucción expresa del usuario, no aprobación de la spec):
+**`mesesCubiertos` independiente de configuración**; Q3-B (almacén de meses
+objetivo/umbrales): **PENDING**. source/date: instrucción de corrección del usuario,
+2026-11-03; PENDING (Q3-B).
 
 ### Q4 — Ejercicio del coste esencial
 
-Question: ¿qué plan anual alimenta el coste esencial mensual del inicio?
+Question: ¿qué plan anual alimenta el coste esencial mensual del inicio? **Propuesta técnica
+de Álex, pendiente de confirmación del usuario al aprobar SPEC24.**
 
 - [x] **(a) El año de `mesFinanciado` del ciclo actual, consumiendo `annualEquivalent` sin
   recalcular, incluso si el ciclo cruza ejercicio** (recomendada).
@@ -158,8 +161,10 @@ Recommendation (proposal only): (a). Es una fecha del maestro de Ciclos, no el r
 `mesFinanciado` identifica el mes que el ciclo financia. No se usan el corte ni el año del
 ingreso para sustituirlo.
 
-Confirmed answer: **(a) año de `mesFinanciado` del ciclo actual, incluso si cruza ejercicio;
-sin reloj, corte ni año del ingreso.** source/date: usuario, 2026-11-03.
+Proposal / pending confirmation: **(a) año de `mesFinanciado` del ciclo actual, incluso si
+cruza ejercicio; sin reloj, corte ni año del ingreso.** Recomendación técnica de Álex; el
+usuario debe confirmarla al aprobar SPEC24. source/date: recomendación de Álex, 2026-11-03;
+confirmación del usuario: **PENDING**.
 
 ### Q5 — Significado de «ahorro» en el inicio
 
@@ -296,14 +301,16 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 
 ## Append-only clarifications — 2026-11-03
 
-- **Q4 confirmada:** el coste esencial se consulta con el año de `mesFinanciado` del ciclo
-  actual, incluso si el ciclo cruza ejercicio; no se usan reloj, corte ni año del ingreso.
+- **Q4 propuesta, no confirmada:** el coste esencial se consultaría con el año de
+  `mesFinanciado` del ciclo actual, incluso si el ciclo cruza ejercicio; no se usarían reloj,
+  corte ni año del ingreso. Es una recomendación técnica de Álex; el usuario debe confirmarla
+  al aprobar SPEC24.
 - **Q3 precisada:** `mesesCubiertos` no depende de configuración; se muestra con liquidez y
   coste completos y coste > 0, aunque falte `mesesObjetivo`. Solo `minimoObjetivo` queda
   `No disponible` por falta de meses objetivo/umbrales. Si liquidez o coste no están
   verificados, o el coste = 0, `mesesCubiertos` es `No disponible` por su propio motivo. No se
   crea almacén, default, tabla ni motor duplicado.
-- **Pendiente:** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales) y Q5–Q12 conservan la
+- **Pendiente:** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales), Q4 y Q5–Q12 conservan la
   alternativa A recomendada, sin confirmación del usuario.
 
 ## Casos de uso previstos
@@ -351,7 +358,7 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 | E4.4 deuda completa | Integrado | Consumible; sin corte en listado |
 | E4.3 valoración/resultado | Aprobada, **sin DEV** | Inversión valorada `No disponible`; bloquea AC de valoración |
 | E3.6 pendientes | Aprobada, **sin DEV** | Pendientes `No disponible`; bloquea AC de pendientes |
-| E2.4 equivalente esencial | Implementado | Consumible; ejercicio confirmado por `mesFinanciado` (Q4) |
+| E2.4 equivalente esencial | Implementado | Consumible; ejercicio propuesto por `mesFinanciado` (Q4, pendiente de confirmación) |
 | Configuración meses/umbrales | **No existe** | Solo `minimoObjetivo` ND; `mesesCubiertos` no depende y queda bloqueado únicamente por liquidez/coste no verificados |
 | DT8 UX/métricas/denominadores | **Abierta** | Wireframes y formato de meses son propuesta |
 | E4.9 cierre/fotos | Aprobada, sin DEV | Fuera de alcance; E4.6 no lee ni crea fotos |
@@ -362,14 +369,15 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 1. Q1 composición (dashboard único + drill-down).
 2. Q2 contextos por bloque frente a corte único.
 3. Q3-B almacén de meses objetivo/umbrales (no afecta a `mesesCubiertos`).
-4. Q5 definición de «ahorro» y si se admite un total.
-5. Q6 corte de valoración y separación efectivo/posición.
-6. Q7 tratamiento de deudas `Sin informar`.
-7. Q8 representación de pendientes sin E3.6.
-8. Q9 vistas de Saldos/bolsas y prohibición de sumarlas.
-9. Q10 patrimonio total: incluido o excluido.
-10. Q11 coste esencial 0 con meses configurados y formato de meses.
-11. Q12 aislamiento de fallos y snapshot.
+4. Q4 ejercicio que alimenta el coste esencial (propuesta de Álex, pendiente de confirmación).
+5. Q5 definición de «ahorro» y si se admite un total.
+6. Q6 corte de valoración y separación efectivo/posición.
+7. Q7 tratamiento de deudas `Sin informar`.
+8. Q8 representación de pendientes sin E3.6.
+9. Q9 vistas de Saldos/bolsas y prohibición de sumarlas.
+10. Q10 patrimonio total: incluido o excluido.
+11. Q11 coste esencial 0 con meses configurados y formato de meses.
+12. Q12 aislamiento de fallos y snapshot.
 
 ## Coverage del template
 
