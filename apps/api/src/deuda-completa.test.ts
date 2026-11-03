@@ -940,6 +940,14 @@ test("E4.4 rutas GET: MFA/sesión, Problem, corte y lectura sin escrituras finan
     const listWithCut = await request("/deudas?corte=2026-10-01", cookie);
     expect(listWithCut.status).toBe(422);
 
+    const byType = await request("/deudas?tipoDeuda=Sin%20informar", cookie);
+    expect(byType.status).toBe(200);
+    expect((await byType.json()).total).toBe(1);
+    const page2 = await request("/deudas?page=2", cookie);
+    expect(page2.status).toBe(200);
+    expect((await page2.json()).items).toHaveLength(0);
+    expect((await request("/deudas/D999/conciliaciones", cookie)).status).toBe(404);
+
     const history = await request("/deudas/D001/conciliaciones", cookie);
     expect(history.status).toBe(200);
     expect((await history.json()).items).toHaveLength(1);

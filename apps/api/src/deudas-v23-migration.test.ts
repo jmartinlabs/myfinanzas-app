@@ -277,6 +277,37 @@ test("E4.4 AC-23: a failed v23 DDL rolls back to an intact v22 base", () => {
   }
 });
 
+test("E4.4 AC-23: a failure inside the v23 DDL rolls back the added columns", () => {
+  const dir = root();
+  try {
+    const path = join(dir, "v22-mid-ddl.sqlite");
+    v22(path);
+    const raw = new Database(path);
+    // Pre-existing object makes CREATE TABLE fail after several ALTERs.
+    raw.run("CREATE TABLE conciliaciones_deuda(id TEXT)");
+    raw.close();
+
+    expect(() => openDatabase(path)).toThrow();
+
+    const check = new Database(path);
+    try {
+      expect(check.query("SELECT version FROM schema_version").get()).toEqual({
+        version: 22,
+      });
+      expect(deudaColumns(check)).toHaveLength(8);
+      expect(
+        check
+          .query("SELECT COUNT(*) n FROM counters WHERE name='conciliaciones_deuda'")
+          .get(),
+      ).toEqual({ n: 0 });
+    } finally {
+      check.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test("E4.4 AC-23: unknown versions stay intact and two starts are idempotent", () => {
   const dir = root();
   try {

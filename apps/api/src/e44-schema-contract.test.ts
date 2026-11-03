@@ -70,7 +70,7 @@ test("E4.4 AC-24: C23 is exact, the v22→v23 upgrade matches it and C22 stays f
   expect(c23Contract.schemaVersion).toBe(23);
   expect(c23Contract.objects).toHaveLength(270);
   expect(c23Contract.sha256).toBe(
-    "11514c49646cc3a58eea93b92efc807f5a2878abe8544a36ebd308117513a507",
+    "96b2425152883435005095af0f010e8ff488558773cf5b6f4c2d500b77df9026",
   );
   expect(c23Contract.id).toBe("C23-E44-DEUDA-COMPLETA");
 

@@ -57,7 +57,8 @@ export function debtCompletaSchema(db: Database) {
     CREATE TABLE conciliaciones_deuda(
       id TEXT PRIMARY KEY CHECK(id GLOB 'C[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),
       deuda TEXT NOT NULL REFERENCES deudas(id) ON DELETE RESTRICT,
-      fecha_corte TEXT NOT NULL,
+      fecha_corte TEXT NOT NULL
+        CHECK(fecha_corte GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND fecha_corte=date(fecha_corte)),
       capital_declarado INTEGER NOT NULL,
       fuente TEXT CHECK(fuente IS NULL OR length(fuente)<=200),
       nota TEXT CHECK(nota IS NULL OR length(nota)<=1000),

@@ -11098,7 +11098,7 @@
         "type": "table",
         "name": "conciliaciones_deuda",
         "tbl_name": "conciliaciones_deuda",
-        "sql": "CREATE TABLE conciliaciones_deuda(\n      id TEXT PRIMARY KEY CHECK(id GLOB 'C[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),\n      deuda TEXT NOT NULL REFERENCES deudas(id) ON DELETE RESTRICT,\n      fecha_corte TEXT NOT NULL,\n      capital_declarado INTEGER NOT NULL,\n      fuente TEXT CHECK(fuente IS NULL OR length(fuente)<=200),\n      nota TEXT CHECK(nota IS NULL OR length(nota)<=1000),\n      estado TEXT NOT NULL CHECK(estado IN ('Vigente','Anulada')),\n      revision INTEGER NOT NULL CHECK(revision>0),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0),\n      creado TEXT NOT NULL,\n      actualizado TEXT NOT NULL\n    ) STRICT"
+        "sql": "CREATE TABLE conciliaciones_deuda(\n      id TEXT PRIMARY KEY CHECK(id GLOB 'C[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),\n      deuda TEXT NOT NULL REFERENCES deudas(id) ON DELETE RESTRICT,\n      fecha_corte TEXT NOT NULL\n        CHECK(fecha_corte GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]' AND fecha_corte=date(fecha_corte)),\n      capital_declarado INTEGER NOT NULL,\n      fuente TEXT CHECK(fuente IS NULL OR length(fuente)<=200),\n      nota TEXT CHECK(nota IS NULL OR length(nota)<=1000),\n      estado TEXT NOT NULL CHECK(estado IN ('Vigente','Anulada')),\n      revision INTEGER NOT NULL CHECK(revision>0),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0),\n      creado TEXT NOT NULL,\n      actualizado TEXT NOT NULL\n    ) STRICT"
       },
       {
         "type": "table",
@@ -12385,6 +12385,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "11514c49646cc3a58eea93b92efc807f5a2878abe8544a36ebd308117513a507"
+    "sha256": "96b2425152883435005095af0f010e8ff488558773cf5b6f4c2d500b77df9026"
   }
 ]

@@ -254,7 +254,7 @@ function invalidBreakdown(fact: FactRow): boolean {
     importe = BigInt(fact.importe);
   if (fact.tipo === "Amortización deuda")
     return capital !== importe || intereses !== 0n;
-  return capital < 0n || intereses < 0n || capital + intereses !== importe;
+  return capital <= 0n || intereses < 0n || capital + intereses !== importe;
 }
 
 function applicableFacts(
@@ -623,35 +623,39 @@ export function listDeudasCompletas(
       "El listado no admite corte.",
       { corte: "Consulta la ficha para aplicar un corte histórico." },
     );
-  const q = (params.get("q") ?? "").toLocaleLowerCase("es"),
-    rows = db
-      .query(ROW_SELECT + " ORDER BY length(id),id")
-      .all() as DebtRow[],
-    filtered = rows.filter(
-      (row) =>
-        (!state || row.estado === state) &&
-        (!tipo ||
-          (tipo === "Sin informar"
-            ? row.tipo_deuda === null
-            : row.tipo_deuda === tipo)) &&
-        `${row.id} ${row.nombre}`.toLocaleLowerCase("es").includes(q),
-    );
-  return {
-    items: filtered.slice((page - 1) * 100, page * 100).map((row) => {
-      const facts = factsFor(db, row.id);
-      return listado(
-        row,
-        facts,
-        conciliacionesAt(row, facts, conciliationRowsFor(db, row.id)),
+  return db.transaction(() => {
+    const q = (params.get("q") ?? "").toLocaleLowerCase("es"),
+      rows = db
+        .query(ROW_SELECT + " ORDER BY length(id),id")
+        .all() as DebtRow[],
+      filtered = rows.filter(
+        (row) =>
+          (!state || row.estado === state) &&
+          (!tipo ||
+            (tipo === "Sin informar"
+              ? row.tipo_deuda === null
+              : row.tipo_deuda === tipo)) &&
+          `${row.id} ${row.nombre}`.toLocaleLowerCase("es").includes(q),
       );
-    }),
-    total: filtered.length,
-    page,
-  };
+    return {
+      items: filtered.slice((page - 1) * 100, page * 100).map((row) => {
+        const facts = factsFor(db, row.id);
+        return listado(
+          row,
+          facts,
+          conciliacionesAt(row, facts, conciliationRowsFor(db, row.id)),
+        );
+      }),
+      total: filtered.length,
+      page,
+    };
+  })();
 }
 
 export function listConciliacionesDeuda(db: Database, id: string) {
-  const row = findRow(db, id),
-    facts = factsFor(db, id);
-  return conciliacionesAt(row, facts, conciliationRowsFor(db, id));
+  return db.transaction(() => {
+    const row = findRow(db, id),
+      facts = factsFor(db, id);
+    return conciliacionesAt(row, facts, conciliationRowsFor(db, id));
+  })();
 }
