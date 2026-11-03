@@ -559,16 +559,12 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
           .query("SELECT name FROM sqlite_master WHERE name='presupuestos'")
           .get(),
       ).toBeNull();
-      const { s, sub } = setup(db),
-        debt = createDebt(
-          db,
-          {
-            nombre: "Deuda conservada",
-            inicioControl: "2026-10-01",
-            capitalApertura: "100",
-          },
-          key(),
-        );
+      const { s, sub } = setup(db);
+      // Genuine v7 row: current createDebt writes v23 columns that v7 lacks.
+      db.run(
+        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D001','Deuda conservada','2026-10-01',10000,'Activa',1,'antes','antes')",
+      );
+      const debt = { id: "D001" };
       db.run(
         "INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda) VALUES('PAR900','Partida v7',?,'Activa',1,'antes','antes',?)",
         [sub.id, debt.id],
