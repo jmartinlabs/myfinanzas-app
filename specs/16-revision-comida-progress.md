@@ -367,7 +367,7 @@ fallos del suite completo (56) son los mismos que en `main` por entorno; no hay 
 | 08 | 08 | **PASS local** | Test «AC-08/AC-09»: grupos, FP y `D`/banco (−250,00) |
 | 09 | 09 | **PASS local** | Tests «AC-08/AC-09» y «AC-09»: Pendiente revisar y Partida NULL sin acreditar |
 | 10 | 10 | **PASS local** | Test «AC-10/CU-14»: otro ciclo no reduce |
-| 11 | 11 | **PASS local** | Tests «AC-11/D1» y «AC-11: solo agregado»: legado separado sin reconstruir FIN_NETA |
+| 11 | 11 | **PARCIAL** | Test «AC-11/D1»: legado de detalle separado; falta escenificar solo agregado Terminal (`agregadoReconocido`) |
 | 12 | 12 | **PARCIAL** | S0/B_A y banco sin régimen probados; S0 ausente es estructuralmente inalcanzable con D2-O0 (`saldo_comida NOT NULL`), documentado en vez de fabricar un ciclo inválido |
 | 13 | 13 | **PASS local** | Tests «AC-13»: subtotal parcial, periodo cero verificado y fuente de roles no legible → ND |
 | 14 | 14 | **PASS local** | Ejemplo, subcaso y composición F=800 − devolución 100 probados |
