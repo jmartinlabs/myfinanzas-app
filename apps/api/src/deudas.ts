@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { Problem, money, decimal } from "./saldos";
 import { civil } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
+import { getDeudaCompleta } from "./deuda-completa";
 export type Debt = {
   id: string;
   nombre: string;
@@ -78,23 +79,125 @@ export function listDebts(db: Database, p = new URLSearchParams()) {
     };
   })();
 }
-function fields(body: Record<string, unknown>, old?: Debt) {
+type DebtConditions = {
+  tipoDeuda: string | null;
+  tin: string | null;
+  tae: string | null;
+  cuotaContractual: string | null;
+  condiciones: string | null;
+};
+
+type ValidatedDebt = {
+  nombre: string;
+  inicioControl: string | null;
+  capitalApertura: string | null;
+  estado: string;
+  tipoDeuda: string | null;
+  tin: bigint | null;
+  tae: bigint | null;
+  cuotaContractual: bigint | null;
+  condiciones: string | null;
+  motivo: string | null;
+};
+
+const CONDITION_SELECT = `SELECT tipo_deuda AS tipoDeuda,CAST(tin AS TEXT) AS tin,
+  CAST(tae AS TEXT) AS tae,CAST(cuota_contractual AS TEXT) AS cuotaContractual,
+  condiciones FROM deudas WHERE id=?`;
+const RATE = /^(-?)(0|[1-9]\d*)(?:\.(\d{1,6}))?$/;
+const MAX_RATE = 9007199254740991n; // 2^53-1 over the scaled integer rate.
+const emptyConditions: DebtConditions = {
+  tipoDeuda: null,
+  tin: null,
+  tae: null,
+  cuotaContractual: null,
+  condiciones: null,
+};
+
+function conditionRow(db: Database, id: string): DebtConditions {
+  return (db.query(CONDITION_SELECT).get(id) as DebtConditions | null) ??
+    emptyConditions;
+}
+
+function rateValue(value: unknown, field: "tin" | "tae"): bigint | null {
+  if (value === null) return null;
+  const match = typeof value === "string" ? RATE.exec(value) : null;
+  if (!match)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      "Tasa decimal exacta; máximo seis decimales.",
+      { [field]: "Indica una tasa decimal exacta, sin exponentes." },
+    );
+  const [, sign, whole, fraction = ""] = match,
+    scaled = BigInt(whole) * 1000000n + BigInt(fraction.padEnd(6, "0")),
+    n = sign === "-" ? -scaled : scaled;
+  if (n > MAX_RATE || n < -MAX_RATE)
+    throw new Problem(422, "VALIDATION", "Tasa fuera del rango técnico.", {
+      [field]: "La tasa excede la cota técnica admitida.",
+    });
+  return n;
+}
+
+function tipoDeudaValue(value: unknown): string | null {
+  if (value === null) return null;
+  if (value === "Hipotecaria" || value === "No hipotecaria") return value;
+  throw new Problem(422, "VALIDATION", "Tipo de Deuda inválido.", {
+    tipoDeuda: "Hipotecaria, No hipotecaria o Sin informar.",
+  });
+}
+
+function boundedText(
+  value: unknown,
+  field: string,
+  max: number,
+): string | null {
+  if (value === null) return null;
+  if (typeof value !== "string" || [...value].length > max)
+    throw new Problem(
+      422,
+      "VALIDATION",
+      `Texto de ${max} caracteres como máximo.`,
+      { [field]: `Máximo ${max} caracteres.` },
+    );
+  return value;
+}
+
+function motivoValue(value: unknown): string | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "string" || !value.trim())
+    throw new Problem(422, "VALIDATION", "Motivo obligatorio.", {
+      motivo: "Indica el motivo del cambio.",
+    });
+  return value.trim();
+}
+
+function fields(
+  body: Record<string, unknown>,
+  old?: Debt,
+  stored?: DebtConditions,
+): ValidatedDebt {
+  const allowed = [
+    "nombre",
+    "inicioControl",
+    "capitalApertura",
+    "tipoDeuda",
+    "tin",
+    "tae",
+    "cuotaContractual",
+    "condiciones",
+    ...(old ? ["revision", "estado", "motivo"] : []),
+  ];
   for (const k of Object.keys(body))
-    if (
-      ![
-        "nombre",
-        "inicioControl",
-        "capitalApertura",
-        ...(old ? ["revision", "estado"] : []),
-      ].includes(k)
-    )
+    if (!allowed.includes(k))
       throw new Problem(422, "VALIDATION", "Campo no editable: " + k);
-  const v = { ...old, ...body };
+  const has = (key: string) => Object.prototype.hasOwnProperty.call(body, key),
+    v = { ...(old as unknown as Record<string, unknown>), ...body },
+    nombre = v.nombre;
   if (
-    typeof v.nombre !== "string" ||
-    !v.nombre.trim() ||
-    v.nombre.length > 120 ||
-    /[\u0000-\u001f\u007f]/.test(v.nombre)
+    typeof nombre !== "string" ||
+    !nombre.trim() ||
+    nombre.length > 120 ||
+    /[\u0000-\u001f\u007f]/.test(nombre)
   )
     throw new Problem(
       422,
@@ -103,19 +206,115 @@ function fields(body: Record<string, unknown>, old?: Debt) {
       { nombre: "Indica un nombre válido." },
     );
   // New calculable debts require explicit opening. Legacy absence remains absence when not edited.
-  if (!old || "inicioControl" in body) civil(v.inicioControl);
-  if (!old || "capitalApertura" in body) {
-    if (
-      typeof v.capitalApertura !== "string" ||
-      money(v.capitalApertura) === null
-    )
+  let inicioControl: string | null;
+  if (!old || has("inicioControl")) inicioControl = civil(v.inicioControl);
+  else inicioControl = old.inicioControl;
+  let capitalApertura: string | null;
+  if (!old || has("capitalApertura")) {
+    if (typeof v.capitalApertura !== "string" || money(v.capitalApertura) === null)
       throw new Problem(422, "VALIDATION", "Apertura EUR explícita y exacta.", {
         capitalApertura: "Indica la apertura, sin redondear.",
       });
-  }
-  if (old && !["Activa", "Inactiva"].includes(v.estado as string))
+    capitalApertura = v.capitalApertura;
+  } else capitalApertura = old.capitalApertura;
+  const estado = has("estado")
+    ? v.estado
+    : (old?.estado ?? "Activa");
+  if (old && !["Activa", "Inactiva"].includes(estado as string))
     throw new Problem(422, "VALIDATION", "Estado inválido.");
-  return v as Debt;
+
+  const previous = stored ?? emptyConditions,
+    tipoDeuda = has("tipoDeuda")
+      ? tipoDeudaValue(v.tipoDeuda)
+      : previous.tipoDeuda,
+    tin = has("tin")
+      ? rateValue(v.tin, "tin")
+      : previous.tin === null
+        ? null
+        : BigInt(previous.tin),
+    tae = has("tae")
+      ? rateValue(v.tae, "tae")
+      : previous.tae === null
+        ? null
+        : BigInt(previous.tae),
+    cuotaContractual = has("cuotaContractual")
+      ? (() => {
+          const cents = money(v.cuotaContractual);
+          if (cents === null)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Cuota contractual EUR explícita y exacta.",
+              { cuotaContractual: "Indica una cuota, sin redondear." },
+            );
+          if (cents < 0n)
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "La cuota contractual no puede ser negativa.",
+              { cuotaContractual: "Indica cero o un importe positivo." },
+            );
+          return cents;
+        })()
+      : previous.cuotaContractual === null
+        ? null
+        : BigInt(previous.cuotaContractual),
+    condiciones = has("condiciones")
+      ? boundedText(v.condiciones, "condiciones", 1000)
+      : previous.condiciones;
+
+  let motivo: string | null = null;
+  if (old) {
+    motivo = has("motivo") ? motivoValue(v.motivo) : null;
+    const correctedTipo =
+        has("tipoDeuda") &&
+        previous.tipoDeuda !== null &&
+        tipoDeuda !== previous.tipoDeuda,
+      correctedTin =
+        has("tin") &&
+        previous.tin !== null &&
+        (tin === null || BigInt(previous.tin) !== tin),
+      correctedTae =
+        has("tae") &&
+        previous.tae !== null &&
+        (tae === null || BigInt(previous.tae) !== tae),
+      correctedCuota =
+        has("cuotaContractual") &&
+        previous.cuotaContractual !== null &&
+        (cuotaContractual === null ||
+          BigInt(previous.cuotaContractual) !== cuotaContractual),
+      correctedText =
+        has("condiciones") &&
+        previous.condiciones !== null &&
+        previous.condiciones.trim() !== "" &&
+        condiciones !== previous.condiciones;
+    if (
+      (correctedTipo ||
+        correctedTin ||
+        correctedTae ||
+        correctedCuota ||
+        correctedText) &&
+      motivo === null
+    )
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "Indica el motivo al corregir un tipo o condición ya informados.",
+        { motivo: "El motivo es obligatorio para esta corrección." },
+      );
+  }
+  return {
+    nombre,
+    inicioControl,
+    capitalApertura,
+    estado: estado as string,
+    tipoDeuda,
+    tin,
+    tae,
+    cuotaContractual,
+    condiciones,
+    motivo,
+  };
 }
 export function createDebt(
   db: Database,
@@ -145,7 +344,7 @@ export function createDebt(
             "IDEMPOTENCY_CONFLICT",
             "El intento corresponde a otros datos.",
           );
-        return JSON.parse(retry.response) as Debt;
+        return JSON.parse(retry.response) as ReturnType<typeof getDeudaCompleta>;
       }
       const v = fields(body),
         n = db
@@ -158,7 +357,7 @@ export function createDebt(
       const id = "D" + n.n.padStart(3, "0"),
         time = new Date(now).toISOString();
       db.run(
-        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES(?,?,?,?,'Activa',1,?,?)",
+        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado,tipo_deuda,tin,tae,cuota_contractual,condiciones) VALUES(?,?,?,?,'Activa',1,?,?,?,?,?,?,?)",
         [
           id,
           v.nombre,
@@ -166,13 +365,18 @@ export function createDebt(
           money(v.capitalApertura),
           time,
           time,
+          v.tipoDeuda,
+          v.tin,
+          v.tae,
+          v.cuotaContractual,
+          v.condiciones,
         ],
       );
+      const r = getDeudaCompleta(db, id, null, now);
       db.run(
         "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,'alta',1,?,?,0,'usuario-unico',NULL)",
-        [id, JSON.stringify(Object.keys(body)), time],
+        [id, JSON.stringify({ anterior: null, posterior: r }), time],
       );
-      const r = getDebt(db, id);
       db.run("INSERT INTO debt_attempts VALUES(?,?,?,?)", [
         key,
         hash,
@@ -198,10 +402,10 @@ export function updateDebt(
           "REVISION_CONFLICT",
           "La Deuda ha cambiado. Revisa su ficha; tu borrador se conserva.",
         );
-      const v = fields(body, old);
+      const v = fields(body, old, conditionRow(db, id));
       if (
         (v.inicioControl !== old.inicioControl ||
-          v.capitalApertura !== old.capitalApertura) &&
+          money(v.capitalApertura) !== money(old.capitalApertura)) &&
         debtUsage(db, id).length
       )
         throw new Problem(
@@ -209,27 +413,34 @@ export function updateDebt(
           "HISTORY_LOCKED",
           "Apertura e Inicio control protegidos: Deuda utilizada.",
         );
+      const before = getDeudaCompleta(db, id, null, now),
+        time = new Date(now).toISOString();
       db.run(
-        "UPDATE deudas SET nombre=?,inicio=?,apertura=?,estado=?,revision=revision+1,actualizado=? WHERE id=?",
+        "UPDATE deudas SET nombre=?,inicio=?,apertura=?,estado=?,tipo_deuda=?,tin=?,tae=?,cuota_contractual=?,condiciones=?,revision=revision+1,actualizado=? WHERE id=?",
         [
           v.nombre,
           v.inicioControl,
           money(v.capitalApertura),
           v.estado,
-          new Date(now).toISOString(),
+          v.tipoDeuda,
+          v.tin,
+          v.tae,
+          v.cuotaContractual,
+          v.condiciones,
+          time,
           id,
         ],
       );
-      const next = getDebt(db, id);
+      const next = getDeudaCompleta(db, id, null, now);
       db.run(
         "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,'edición',?,?,?,?, 'usuario-unico',?)",
         [
           id,
           next.revision,
-          JSON.stringify({ anterior: old, posterior: next }),
-          new Date(now).toISOString(),
+          JSON.stringify({ anterior: before, posterior: next }),
+          time,
           old.revision,
-          "Identidad preservada",
+          v.motivo,
         ],
       );
       return next;

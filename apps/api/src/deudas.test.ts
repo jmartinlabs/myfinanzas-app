@@ -957,3 +957,388 @@ test("06 D10 AC03/11/18/22/23: inactivos, permiso negativo, REF requerida en ext
     db.close();
   }
 });
+
+test("17 E4.4 B AC-01/02/03/04/20/26/32/33: metadatos de Deuda y auditoría por HTTP real", async () => {
+  const db = openDatabase(":memory:"),
+    key = randomBytes(32);
+  try {
+    const auth = new Auth(db, key),
+      enrolled = await auth.enroll(
+        provision(db),
+        "Contraseña ficticia " + randomUUID(),
+      ),
+      verified = auth.verify(
+        new Request("http://127.0.0.1:5173", {
+          headers: { cookie: auth.challengeName + "=" + enrolled.challenge },
+        }),
+        totp(enrolled.secret!).generate(),
+      ),
+      handler = HttpApp.toWebHandler(createApp(db, { key, now: () => now })),
+      cookie = auth.cookieName + "=" + verified.session,
+      request = (
+        path: string,
+        method = "GET",
+        body?: unknown,
+        headers: Record<string, string> = {},
+      ) =>
+        handler(
+          new Request("http://127.0.0.1:3001/api" + path, {
+            method,
+            headers: { "content-type": "application/json", ...headers },
+            ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+          }),
+        ),
+      write = (extra: Record<string, string> = {}) => ({
+        cookie,
+        origin: "http://127.0.0.1:5173",
+        "x-csrf-token": verified.csrf,
+        "idempotency-key": randomUUID(),
+        ...extra,
+      }),
+      base = {
+        nombre: "Deuda metadatos ficticia",
+        inicioControl: "2026-10-01",
+        capitalApertura: "1000",
+      };
+
+    expect((await request("/deudas", "POST", base)).status).toBe(401);
+    expect(
+      (
+        await request("/deudas", "POST", base, {
+          cookie,
+          "x-csrf-token": verified.csrf,
+          "idempotency-key": randomUUID(),
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request("/deudas", "POST", base, {
+          cookie,
+          origin: "http://127.0.0.1:5173",
+          "idempotency-key": randomUUID(),
+        })
+      ).status,
+    ).toBe(403);
+    expect(
+      (
+        await request("/deudas", "POST", base, {
+          cookie,
+          origin: "http://127.0.0.1:5173",
+          "x-csrf-token": verified.csrf,
+        })
+      ).status,
+    ).toBe(422);
+
+    for (const invalid of [
+      { ...base, capitalInicial: "1" },
+      { ...base, precontrolCuotas: 1 },
+      { ...base, capitalPendiente: "0" },
+      { ...base, deudaViva: "0" },
+      { ...base, estadoConciliacion: "Conciliado" },
+      { ...base, tipoDeuda: "Sin informar" },
+      { ...base, tin: "1.1234567" },
+      { ...base, tin: "9007199254.740992" },
+      { ...base, cuotaContractual: "-1" },
+      { ...base, condiciones: "x".repeat(1001) },
+      { ...base, motivo: "No se admite en alta" },
+      { ...base, estado: "Inactiva" },
+    ])
+      expect((await request("/deudas", "POST", invalid, write())).status).toBe(
+        422,
+      );
+    expect(db.query("SELECT COUNT(*) n FROM deudas").get()).toEqual({ n: 0 });
+
+    const saldosBefore = (
+        db.query("SELECT COUNT(*) n FROM saldos").get() as { n: number }
+      ).n,
+      valid = {
+        ...base,
+        tipoDeuda: "No hipotecaria",
+        tin: "2.5",
+        tae: "2.800000",
+        cuotaContractual: "100",
+        condiciones: "Condiciones ficticias informativas",
+      },
+      key1 = randomUUID(),
+      createdResponse = await request("/deudas", "POST", valid, {
+        ...write(),
+        "idempotency-key": key1,
+      });
+    expect(createdResponse.status).toBe(201);
+    let item = (await createdResponse.json()).item;
+    expect(item).toMatchObject({
+      id: "D001",
+      tipoDeuda: "No hipotecaria",
+      estado: "Activa",
+      revision: 1,
+      capitalApertura: "1000.00",
+    });
+    expect(item.condiciones).toEqual({
+      tin: "2.500000",
+      tae: "2.800000",
+      cuotaContractual: "100.00",
+      texto: "Condiciones ficticias informativas",
+    });
+    expect(item.control).toEqual({
+      inicio: "2026-10-01",
+      capitalApertura: "1000.00",
+      capitalControl: "1000.00",
+    });
+    expect(item.historico.precontrol).toBeNull();
+    expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({ n: 0 });
+    expect(
+      (db.query("SELECT COUNT(*) n FROM saldos").get() as { n: number }).n,
+    ).toBe(saldosBefore);
+
+    const audit = () =>
+      db
+        .query(
+          "SELECT accion,revision,revision_previa,actor,motivo,campos,instante FROM audit WHERE entidad='D001' ORDER BY id",
+        )
+        .all() as {
+        accion: string;
+        revision: number;
+        revision_previa: number;
+        actor: string;
+        motivo: string | null;
+        campos: string;
+        instante: string;
+      }[];
+    expect(audit()).toHaveLength(1);
+    expect(audit()[0]).toMatchObject({
+      accion: "alta",
+      revision: 1,
+      revision_previa: 0,
+      actor: "usuario-unico",
+      motivo: null,
+      instante: new Date(now).toISOString(),
+    });
+    expect(JSON.parse(audit()[0].campos)).toMatchObject({
+      anterior: null,
+      posterior: {
+        tipoDeuda: "No hipotecaria",
+        condiciones: { tin: "2.500000" },
+      },
+    });
+
+    const retry = await request("/deudas", "POST", valid, {
+      ...write(),
+      "idempotency-key": key1,
+    });
+    expect(retry.status).toBe(201);
+    expect((await retry.json()).item.id).toBe("D001");
+    expect(db.query("SELECT COUNT(*) n FROM deudas").get()).toEqual({ n: 1 });
+    expect(
+      (
+        await request(
+          "/deudas",
+          "POST",
+          { ...valid, nombre: "Otro payload" },
+          { ...write(), "idempotency-key": key1 },
+        )
+      ).status,
+    ).toBe(409);
+
+    const renamed = await request(
+      "/deudas/D001",
+      "PATCH",
+      { revision: item.revision, nombre: "Deuda renombrada ficticia" },
+      write(),
+    );
+    expect(renamed.status).toBe(200);
+    item = (await renamed.json()).item;
+    expect(item).toMatchObject({
+      nombre: "Deuda renombrada ficticia",
+      revision: 2,
+      tipoDeuda: "No hipotecaria",
+    });
+    expect(audit()[1]).toMatchObject({
+      accion: "edición",
+      revision: 2,
+      revision_previa: 1,
+      motivo: null,
+    });
+    expect(JSON.parse(audit()[1].campos)).toMatchObject({
+      anterior: { nombre: "Deuda metadatos ficticia" },
+      posterior: { nombre: "Deuda renombrada ficticia" },
+    });
+
+    expect(
+      (
+        await request(
+          "/deudas/D001",
+          "PATCH",
+          { revision: 1, nombre: "Revisión obsoleta" },
+          write(),
+        )
+      ).status,
+    ).toBe(409);
+    expect(
+      (
+        await request(
+          "/deudas/D001",
+          "PATCH",
+          { revision: item.revision, tipoDeuda: "Hipotecaria" },
+          write(),
+        )
+      ).status,
+    ).toBe(422);
+    const corrected = await request(
+      "/deudas/D001",
+      "PATCH",
+      {
+        revision: item.revision,
+        tipoDeuda: "Hipotecaria",
+        motivo: "Clasificación corregida",
+      },
+      write(),
+    );
+    expect(corrected.status).toBe(200);
+    item = (await corrected.json()).item;
+    expect(item.tipoDeuda).toBe("Hipotecaria");
+    expect(audit()[2]).toMatchObject({
+      revision: 3,
+      revision_previa: 2,
+      motivo: "Clasificación corregida",
+    });
+    expect(JSON.parse(audit()[2].campos)).toMatchObject({
+      anterior: { tipoDeuda: "No hipotecaria" },
+      posterior: { tipoDeuda: "Hipotecaria" },
+    });
+
+    const second = await request(
+      "/deudas",
+      "POST",
+      {
+        nombre: "Deuda sin condiciones ficticia",
+        inicioControl: "2026-10-02",
+        capitalApertura: "0",
+      },
+      write(),
+    );
+    expect(second.status).toBe(201);
+    const secondItem = (await second.json()).item;
+    expect(secondItem.condiciones).toEqual({
+      tin: null,
+      tae: null,
+      cuotaContractual: null,
+      texto: null,
+    });
+    expect(secondItem.tipoDeuda).toBeNull();
+    const firstFulfilment = await request(
+      "/deudas/" + secondItem.id,
+      "PATCH",
+      { revision: secondItem.revision, tin: "3.25", cuotaContractual: "0" },
+      write(),
+    );
+    expect(firstFulfilment.status).toBe(200);
+    const fulfilled = (await firstFulfilment.json()).item;
+    expect(fulfilled.condiciones).toMatchObject({
+      tin: "3.250000",
+      tae: null,
+      cuotaContractual: "0.00",
+    });
+    const zeroRate = await request(
+      "/deudas/" + secondItem.id,
+      "PATCH",
+      { revision: fulfilled.revision, tin: "0", motivo: "Tasa cero explícita" },
+      write(),
+    );
+    expect(zeroRate.status).toBe(200);
+    const zeroItem = (await zeroRate.json()).item;
+    expect(zeroItem.condiciones.tin).toBe("0.000000");
+    const unknownRate = await request(
+      "/deudas/" + secondItem.id,
+      "PATCH",
+      { revision: zeroItem.revision, tin: null, motivo: "Volver a Sin informar" },
+      write(),
+    );
+    expect(unknownRate.status).toBe(200);
+    expect((await unknownRate.json()).item.condiciones.tin).toBeNull();
+
+    for (const extra of [
+      { tin: "1.1234567" },
+      { tae: "9007199254.740992" },
+      { cuotaContractual: "-0.01" },
+      { condiciones: "x".repeat(1001) },
+      { capitalInicial: "1" },
+      { precontrolCuotas: 1 },
+      { deudaViva: "0" },
+      { diferencia: "0" },
+    ])
+      expect(
+        (
+          await request(
+            "/deudas/D001",
+            "PATCH",
+            { revision: item.revision, ...extra },
+            write(),
+          )
+        ).status,
+      ).toBe(422);
+
+    const signed = await request(
+      "/deudas/D001",
+      "PATCH",
+      {
+        revision: item.revision,
+        tin: "123.456789",
+        tae: "-1.5",
+        motivo: "Rango técnico, no máximo de negocio",
+      },
+      write(),
+    );
+    expect(signed.status).toBe(200);
+    item = (await signed.json()).item;
+    expect(item.condiciones).toMatchObject({
+      tin: "123.456789",
+      tae: "-1.500000",
+    });
+    const boundary = await request(
+      "/deudas/D001",
+      "PATCH",
+      {
+        revision: item.revision,
+        tin: "9007199254.740991",
+        motivo: "Cota técnica exacta",
+      },
+      write(),
+    );
+    expect(boundary.status).toBe(200);
+    item = (await boundary.json()).item;
+    expect(item.condiciones.tin).toBe("9007199254.740991");
+
+    const beforeDeactivation = item.revision,
+      deactivated = await request(
+        "/deudas/D001/desactivar",
+        "POST",
+        { revision: beforeDeactivation, motivo: "Pausa ficticia" },
+        write(),
+      );
+    expect(deactivated.status).toBe(200);
+    item = (await deactivated.json()).item;
+    expect(item).toMatchObject({
+      estado: "Inactiva",
+      revision: beforeDeactivation + 1,
+    });
+    expect(getDebt(db, "D001").capitalPendiente).toBe("1000.00");
+    expect(audit().at(-1)).toMatchObject({ motivo: "Pausa ficticia" });
+    const reactivated = await request(
+      "/deudas/D001/reactivar",
+      "POST",
+      { revision: item.revision },
+      write(),
+    );
+    expect(reactivated.status).toBe(200);
+    item = (await reactivated.json()).item;
+    expect(item).toMatchObject({
+      estado: "Activa",
+      revision: beforeDeactivation + 2,
+    });
+    expect(getDebt(db, "D001").capitalPendiente).toBe("1000.00");
+    expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+  } finally {
+    db.close();
+  }
+});
