@@ -519,7 +519,7 @@ D001 · Préstamo ficticio · No hipotecaria · Activa                          
 
 ### 390 px — listado, ficha y conciliación
 
-**Requisito de aprobación (2026-11-02, completado 2026-11-03):** esta ficha es
+**Requisito de aprobación (2026-11-02, atendido 2026-11-03):** esta ficha es
 **funcionalmente completa**. Se organiza en secciones desplegables accesibles, sin omitir
 control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar/reactivar.
 
@@ -547,9 +547,11 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 │ [Ver ficha]                          │
 ├──────────────────────────────────────┤
 │ D003 · Deuda sin tipo                │
-│ Tipo Sin informar · ...              │
+│ Tipo Sin informar · Activa           │
+│ Inicio 01/09/2026                    │
+│ Apertura [—]                         │
 │ Deuda viva No calculable             │
-│ Conciliación No comparable           │
+│ Conciliación Sin declarar            │
 │ [Ver ficha]                          │
 └──────────────────────────────────────┘
 ```
@@ -557,21 +559,24 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 ```text
 ┌ Ficha D001           [Volver] [⋯]   ┐
 │ Activa · No hipotecaria              │
-│ [Editar] [Desactivar]                │
+│ [Editar] [Desactivar] [Reactivar]    │
 │ ▼ Control y capital                  │
 │ Corte [20/10/2026] [Aplicar]         │
 │ Cobertura Verificable                │
+│ Desde control · 2 aplicables · 1 precontrol│
 │ Capital de control 1.000,00          │
 │ Apertura 1.000,00                    │
 │ Capital aplicado 280,00              │
 │ Deuda viva 720,00                    │
-│ ▶ Condiciones (2)                    │
-│ ▶ Histórico R5 (4)                   │
+│ No incluye intereses futuros,        │
+│ comisiones ni saldo bancario.        │
+│ ▶ Condiciones (3)                    │
+│ ▶ Histórico R5 (6) · Comprobación sin dif.│
 │ ▼ Historia (4)                       │
 │ Totales: capital 280,00 · intereses 20,00│
 │          gasto 100,00 · banco −300,00│
-│ Anulados: 0 · Comprobación: sin dif. │
-│ ▶ Conciliación (1) · Varias          │
+│ Anulados: 0                          │
+│ ▶ Conciliación (2) · Varias          │
 └──────────────────────────────────────┘
 ```
 
@@ -585,8 +590,8 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 │ Nota [Extracto ficticio]             │
 │ Motivo rectificación [__________]    │
 │ [Corregir declarado] [Anular]        │
-│ Historial: 10/10 +10,00 · Vigente    │
-│            20/10 +30,00 · Vigente Varias│
+│ Historial: 10/10 decl. 930,00 · der. 920,00│
+│            20/10 decl. 750,00 · der. 720,00 · Varias│
 │ No crea Movimiento ni ajuste.        │
 └──────────────────────────────────────┘
 ```
@@ -594,9 +599,12 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 ```text
 ┌ Estados y errores (390)               ┐
 │ Vacío: "Sin deudas" [Alta]            │
-│ Parcial: "No calculable" + motivo      │
+│ Parcial: "No calculable" + motivo +    │
+│ hechos excluidos por corte + precontrol│
 │ 401 sesión · 409 revisión · 422 campo  │
 │ 404 deuda inexistente · 503 lectura    │
+│ Cargando: skeleton sin importes         │
+│ Inactiva: ficha con [Reactivar] + motivo│
 │ Foco visible · Enter/Espacio expande   │
 │ Sin overflow horizontal                │
 └──────────────────────────────────────┘
