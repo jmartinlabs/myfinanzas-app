@@ -11176,7 +11176,7 @@
         "type": "table",
         "name": "deudas",
         "tbl_name": "deudas",
-        "sql": "CREATE TABLE deudas(\n id TEXT PRIMARY KEY CHECK(id GLOB 'D[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),\n nombre TEXT NOT NULL CHECK(length(trim(nombre))>0), inicio TEXT, apertura INTEGER,\n estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')), revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n , tipo_deuda TEXT\n      CHECK(tipo_deuda IS NULL OR tipo_deuda IN ('Hipotecaria','No hipotecaria')), tin INTEGER\n      CHECK(tin IS NULL OR (tin BETWEEN -9007199254740991 AND 9007199254740991)), tae INTEGER\n      CHECK(tae IS NULL OR (tae BETWEEN -9007199254740991 AND 9007199254740991)), cuota_contractual INTEGER\n      CHECK(cuota_contractual IS NULL OR cuota_contractual>=0), condiciones TEXT\n      CHECK(condiciones IS NULL OR length(condiciones)<=1000), capital_inicial INTEGER, capital_amortizado_historico INTEGER, amortizacion_extra_historica INTEGER, capital_historico_cuotas INTEGER, intereses_historicos INTEGER, total_pagado_historico INTEGER, precontrol_cuotas INTEGER\n      CHECK(precontrol_cuotas IS NULL OR precontrol_cuotas BETWEEN 1 AND 9999), precontrol_capital INTEGER, precontrol_amortizacion_extra INTEGER, precontrol_ejercicio INTEGER\n      CHECK(precontrol_ejercicio IS NULL OR precontrol_ejercicio BETWEEN 1 AND 9999)) STRICT"
+        "sql": "CREATE TABLE deudas(\n id TEXT PRIMARY KEY CHECK(id GLOB 'D[0-9]*' AND substr(id,2) NOT GLOB '*[^0-9]*' AND length(id)>=4),\n nombre TEXT NOT NULL CHECK(length(trim(nombre))>0), inicio TEXT, apertura INTEGER,\n estado TEXT NOT NULL CHECK(estado IN ('Activa','Inactiva')), revision INTEGER NOT NULL CHECK(revision>0), creado TEXT NOT NULL, actualizado TEXT NOT NULL\n , tipo_deuda TEXT\n      CHECK(tipo_deuda IS NULL OR tipo_deuda IN ('Hipotecaria','No hipotecaria')), tin INTEGER\n      CHECK(tin IS NULL OR (tin BETWEEN -9007199254740991 AND 9007199254740991)), tae INTEGER\n      CHECK(tae IS NULL OR (tae BETWEEN -9007199254740991 AND 9007199254740991)), cuota_contractual INTEGER\n      CHECK(cuota_contractual IS NULL OR cuota_contractual>=0), condiciones TEXT\n      CHECK(condiciones IS NULL OR length(condiciones)<=1000), capital_inicial INTEGER, capital_amortizado_historico INTEGER, amortizacion_extra_historica INTEGER, capital_historico_cuotas INTEGER, intereses_historicos INTEGER, total_pagado_historico INTEGER, precontrol_cuotas INTEGER\n      CHECK(precontrol_cuotas IS NULL OR precontrol_cuotas>=0), precontrol_capital INTEGER, precontrol_amortizacion_extra INTEGER, precontrol_ejercicio INTEGER\n      CHECK(precontrol_ejercicio IS NULL OR precontrol_ejercicio BETWEEN 1 AND 9999)) STRICT"
       },
       {
         "type": "table",
@@ -12385,6 +12385,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "59fc768301529d0ac61a62d21da3b27121b47f49e35f3a95c34e3bb7782ba6a5"
+    "sha256": "11514c49646cc3a58eea93b92efc807f5a2878abe8544a36ebd308117513a507"
   }
 ]

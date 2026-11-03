@@ -444,8 +444,12 @@ test("E4.4 AC-32/AC-18: approved limits, null≠zero and one current reconciliat
     reject("UPDATE deudas SET tae=-9007199254740992 WHERE id='D003'");
     reject("UPDATE deudas SET cuota_contractual=-1 WHERE id='D003'");
     reject("UPDATE deudas SET condiciones=? WHERE id='D003'", ["x".repeat(1001)]);
-    reject("UPDATE deudas SET precontrol_cuotas=0 WHERE id='D003'");
-    reject("UPDATE deudas SET precontrol_cuotas=10000 WHERE id='D003'");
+    db.run("UPDATE deudas SET precontrol_cuotas=0 WHERE id='D003'");
+    expect(
+      db.query("SELECT precontrol_cuotas FROM deudas WHERE id='D003'").get(),
+    ).toEqual({ precontrol_cuotas: 0 });
+    db.run("UPDATE deudas SET precontrol_cuotas=NULL WHERE id='D003'");
+    reject("UPDATE deudas SET precontrol_cuotas=-1 WHERE id='D003'");
     reject("UPDATE deudas SET precontrol_ejercicio=0 WHERE id='D003'");
     reject("UPDATE deudas SET precontrol_ejercicio=10000 WHERE id='D003'");
     expect(

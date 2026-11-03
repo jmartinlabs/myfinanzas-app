@@ -48,7 +48,7 @@ export function debtCompletaSchema(db: Database) {
     ALTER TABLE deudas ADD COLUMN intereses_historicos INTEGER;
     ALTER TABLE deudas ADD COLUMN total_pagado_historico INTEGER;
     ALTER TABLE deudas ADD COLUMN precontrol_cuotas INTEGER
-      CHECK(precontrol_cuotas IS NULL OR precontrol_cuotas BETWEEN 1 AND 9999);
+      CHECK(precontrol_cuotas IS NULL OR precontrol_cuotas>=0);
     ALTER TABLE deudas ADD COLUMN precontrol_capital INTEGER;
     ALTER TABLE deudas ADD COLUMN precontrol_amortizacion_extra INTEGER;
     ALTER TABLE deudas ADD COLUMN precontrol_ejercicio INTEGER
