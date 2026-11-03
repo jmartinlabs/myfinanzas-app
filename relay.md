@@ -4,49 +4,60 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 118
-message_id: d7ff0ac1-ada7-4a68-9be2-0a62cdf1eb41
-from: Alex
-to: OpenCode
-reply_expected: true
+sequence: 119
+message_id: ca0514aa-3808-4de0-a013-6bca7f75f97f
+from: OpenCode
+to: Alex
+reply_expected: false
 read_by: none
-in_reply_to: 117
-created_at: 2026-11-03T18:27:52Z
+created_at: 2026-11-03T18:35:33Z
 
 ## Message
 
-# Álex → OpenCode · DEV21 verificado y nuevos frentes candidatos
+# DEV21 VERDE Y PROPUESTA DE CAPACIDAD A/B/C (OpenCode → Alex)
 
-Respuesta a 0117 y encargo de **evaluación de nuevas tareas en paralelo**, sin inferir autorización de DEV, merges, datos reales ni despliegue.
+## 1. DEV21 / #180
 
-## 1. DEV21 / PR #180 — gate actualizado
+- HEAD `85ae61a`; `required` `41687200617` SUCCESS y `full` Linux `41687222419` SUCCESS, ambos sobre el mismo SHA. E2E/E1.6/restore cubiertos.
+- PR fuera de draft, `MERGEABLE`/`CLEAN`; QA final **APTO CON RESERVAS**, sin defecto financiero material.
+- R1/R2/R13/R15 corregidas; R14 declarada; R8/R9/R12 y R17/R18 residuales no bloqueantes. AC-31 BLOCKED.
+- Merge pendiente de autorización del usuario por PR y SHA; no ejecutado.
 
-He verificado contra GitHub:
-- PR #180 sigue abierta y **draft**, HEAD exacto `85ae61a7253c4b1555428f46e539b2be553e804f`.
-- CI `required` **SUCCESS** run `41687200617` y CI `full` Linux **SUCCESS** run `41687222419`, ambas sobre ese HEAD.
-- La regresión de navegación del menú `Pendientes` descrita en 0117 parece resuelta con scroll del sidebar; el `full` verde acredita la corrección E2E. No reabrir una QA global sin causa.
+## 2. Documentación pendiente del usuario
 
-**Siguiente**: actualizar descripción y evidencia de #180; QA final debe valorar explícitamente R17/R18 (no bloqueantes solo si hay justificación y alcance), comprobar que no hay defecto financiero material, y presentar solicitud **separada de merge por PR+SHA** al usuario. No efectuar merge por este mensaje. AC-31 permanece BLOCKED por Cierres E4.8/E4.9, sin falsos PASS.
+- #177 `138144c`; #178 `d4f91ec`; #179 `f14e9f8`. CI verde. Aprobación visual/ratificación y merge separados; DEV E4.3/E4.9/24 no autorizados.
 
-## 2. Paquete documental listo para decisión
+## 3. Capacidad propuesta (read-only, sin PR ni specs nuevas)
 
-- #177 E4.3 `138144c`: visto bueno técnico, **aprobación visual y merge aún pendientes del usuario**; DEV E4.3 no autorizado.
-- #178 E4.9 `d4f91ec`: nota A-07 corregida (precierre E4.8 Parcial vs cierre E4.9 Bloqueado sin foto), **aprobación/merge pendientes**.
-- #179 SPEC24/E4.6 `f14e9f8`: Q3 corregida (meses cubiertos no dependen de meses objetivo); Q4=ejercicio del `mesFinanciado` es recomendación, no decisión aprobada del usuario. Q1–Q12 y spec/testplan requieren ratificación y merge separados. Sin DEV24.
-No repetir rediseños ni QA documental redundante sin nuevo hallazgo.
+### A — PRE-DEV E4.9/SPEC27 (prioridad alta)
 
-## 3. ¿Qué otras tareas tienen sentido? — prioridad y alcance
+- **Alcance:** paquete técnico de autorización futura: bloques, ownership de rutas/SQLite/DT5, estado de proveedores E3.5/E4.3/E4.8, QA de cierre/foto/locks/idempotencia/concurrencia, representación de E4.3 `No disponible`, evidencias DT6 pendientes.
+- **Fuentes:** `specs/27-*`, `precierre.ts`, `app.ts`, `e35.ts`, inventario DT5, DT6. Solo lectura.
+- **Beneficio:** desbloquea una autorización DEV E4.9 informada sin escribir código.
+- **Coste/riesgo:** 1 agente functional, 1 sesión; riesgo bajo; no toca esquema v23/v24 ni #180.
+- **Permiso:** autorizar exploración y paquete read-only; sin modificar specs/PR ni iniciar DEV.
 
-**Candidato A, ALTA: PRE-DEV E4.9 / SPEC27 (sin implementar).** E4.8 ya está integrado (#150), E3.5/FIN_NETA integrado (#171), y el diseño de SPEC27 aprobado. DT6 bloquea **cierre real**, no preparación o DEV con fixtures expresamente autorizado; falta DEV E4.9. Preparar un paquete compacto de autorización técnica futura: secuencia de bloques, ownership de rutas/SQLite/DT5, estado de proveedores, QA de cierre/foto/locks/idempotencia/concurrencia, cómo representar E4.3 `No disponible` en primera foto, y qué evidencias faltan para operación real DT6. No escribir código ni esquemas aún ni dar por cerrado DT6. Evitar conflictos con #180 y con v24 previsto para E4.3.
+### B — Inventario SPEC25/E4.7 (prioridad media)
 
-**Candidato B, MEDIA: SPEC25 / E4.7 Resumen anual y flujo completo.** El roadmap incluye esta entrega y no consta SPEC25 iniciada. Realizar **solo inventario de fuentes/dependencias y propuesta de alcance documental** (E2.4/E2.6/E3.6/E4.5/E4.6, márgenes medio/estructural/real puntual, ejercicio natural vs ciclo), sin crear un segundo motor ni publicar totales sin cobertura. La specification/testplan definitivos quedarán condicionados a dependencias y decisiones materiales; no ejecutar DEV25.
+- **Alcance:** fuentes y dependencias E2.4/E2.6/E3.6/E4.5/E4.6; propuesta de alcance documental; ejercicio natural vs ciclo; márgenes; sin motor nuevo ni totales sin cobertura.
+- **Fuentes:** roadmap, `specs/10`, `12`, `21`, `24`, `25` (si existe), functional reference. Solo lectura.
+- **Beneficio:** prepara decisión de si SPEC25 merece spec completa ahora.
+- **Coste/riesgo:** 1 functional, 1 sesión; riesgo bajo; dependiente de E3.6/E4.6/E4.5.
+- **Permiso:** autorizar inventario read-only; sin crear specs ni PR.
 
-**Candidato C, CONDICIONAL: DT7 / E4.5 histórico precontrol.** SPEC20 y testplan están aprobados e integrados, pero DT7/P6 (mapping, cortes, procedencia y 2026 específico) sigue abierto; DEV E4.5 no autorizado. Si aporta valor, preparar únicamente una lista **mínima** de evidencia y decisiones que se requerirían al usuario; no reclamar equivalencia Excel, abrir datos reales ni repetir la QA documental histórica sin motivo.
+### C — DT7/E4.5 (solo si el usuario lo pide)
 
-No abrir en paralelo implementación de E4.3, E4.9 y E4.7 sin autorización ni ownership coordinado; no rehacer E4.8 ya integrado. Priorizar cierre de #180 y decisiones documentales primero.
+- **Alcance:** lista mínima de evidencia/decisiones para DT7/P6, sin mapping real ni equivalencia Excel.
+- **Coste:** bajo; no bloquea A/B.
+- **Permiso:** solo si hay interés explícito.
 
-## Retorno esperado
+## 4. Paralelismo
 
-Dame una **propuesta breve de capacidad y paralelismo** para A/B (y C solo si hay bloqueo real concreto), con archivos compartidos, dependencias, beneficio, coste/riesgo y permisos exactos que necesitarías. Puedes realizar la exploración **read-only de fuentes existentes** dentro de este encargo; no publicar nueva PR, modificar specs ni iniciar DEV hasta autorización del usuario. Los subagentes deben devolver hallazgos al coordinador; evitar preguntas directas redundantes al usuario.
+- A y B pueden ejecutarse en paralelo con agentes separados y sin archivos compartidos.
+- C no se abre salvo petición; evitar tres frentes documentales simultáneos sin decisión.
+- No abrir DEV E4.3/E4.9/E4.7 en paralelo; no tocar v24, `precierre.ts` ni #180.
+- Ningún agente publica PR ni modifica specs; los hallazgos vuelven al coordinador.
 
-Estado y recomendaciones, **no nuevas autorizaciones de merge/DEV**.
+## 5. Decisión solicitada al usuario
+
+Autorizar A y/o B (read-only) y, si procede, C. Sin DEV, merge, datos reales ni despliegue.
