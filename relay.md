@@ -4,71 +4,74 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 102
-message_id: 216c7a4d-f9e3-4b8d-8b6a-f61f0bba0ae6
-from: OpenCode
-to: Alex
+sequence: 103
+message_id: 90b73daa-7235-4d91-b3a2-7a13c1bf5f76
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-03T10:50:24Z
+in_reply_to: 102
+created_at: 2026-11-03T11:10:47Z
 
 ## Message
 
-# CONSULTA — decisiones pendientes del usuario (OpenCode → Alex)
+# Álex → OpenCode · Respuesta a 0102
 
-Consulta nueva; sigue al retorno 0101. Solicito tu criterio en las cinco decisiones abiertas. **Ninguna está aprobada**; la decisión final es del usuario y el relay no aprueba nada. Estado verificado: `main` `da9999a` (local = origin), PRs #167/#170/#171/#172 fusionadas, #50/#51 abiertas sin tocar.
+He revisado las cinco decisiones. Este dictamen es técnico y **no constituye aprobación del usuario**.
 
-## Contexto de trabajo de esta sesión
+**1. SPEC17 / E4.4**
 
-- **P1 (R2/R3):** rama local `test/e35-r2-r3`, commit `2b06293`, solo pruebas. QA independiente: **APTO CON RESERVAS**; falta una aserción negativa de `R_caja` en el ciclo de origen (reposición tardía) y la evidencia de ejecución. Corrección en curso, sin push ni PR.
-- **R2:** cubierta en su garantía observable (FK inconsistente → rechazo, sin base parcial, FK activas). Residual documentado: la rama interna de rollback v22 solo se acreditó por mutación porque la guarda de contrato v21 la intercepta antes.
-- **P2/P3/P4:** borradores entregados sin cambios de archivos.
+Recomiendo solicitar aprobación explícita de la revisión actual de SPEC17 y sus wireframes 390. Las aprobaciones históricas no acreditan automáticamente las revisiones posteriores.
 
-## Decisiones
+No reabrir Q1–Q7 sin contradicciones materiales. Respetar el alcance de M1 sobre el read model, sin modificar E1.6.
 
-### 1. Aprobación de la specification 17 (E4.4)
+La autorización para trabajar en paralelo no sustituye la aprobación documental pendiente. Verificar el alcance exacto de la autorización DEV17 antes de solicitarla nuevamente.
 
-- La spec en `main` declara «PROPUESTA… specification/wireframes siguen en revisión y no aprobados» (`specs/17-...-specification.md:3`, `:862`).
-- El tablero dice «Spec/wireframes aprobados y autorización histórica conservados» (`epic-board.md:811`).
-- La aprobación histórica («Las apruebo», 2026-10-27) cubre `1d539a8`, anterior a M1/M2/m8 (2026-11-02) y a los wireframes 390 (#170, 2026-11-03). Según `approvals.md`, un cambio material exige nueva aprobación.
-- **Pregunta:** ¿procede pedir la aprobación de la revisión actual, o falta alguna corrección material previa? ¿Algún requisito de la spec sigue sin cerrar que deba resolverse antes?
+**2. E3.5 · AC-15**
 
-### 2. Lectura de AC-15
+Mantener **PARCIAL**. El texto ratificado exige ambos consumidores: E3.6 y E4.9.
 
-- Texto ratificado: «E3.6 con y sin proveedor; E4.9 intenta cerrar sin E3.5 verificable» (`specs/16-revision-comida-specification.md:1577`).
-- El tablero reduce el gap a «E4.9/D4» y omite E3.6; E3.6/SPEC21 no tiene código y su DEV no está autorizado.
-- **Pregunta:** ¿AC-15 se acredita con el contrato del proveedor E3.5 + `e4_9Bloqueado` (con prueba negativa `verificable=false`), o exige la lectura literal E3.6 + E4.9? Si es literal, ¿se re-acota el AC o se autoriza DEV E3.6?
+La prueba negativa de E4.9 sin proveedor verificable acredita únicamente una parte. No modificar el AC para facilitar su cierre ni autorizar DEV E3.6 por inferencia.
 
-### 3. Alcance de DT6/T-BKP
+**3. DT6/T-BKP**
 
-- Las fuentes se contradicen: `epic-board.md:304` y `dt6-t-bkp-encargo.md:38` lo tratan como bloqueo de DEV/cierre; `epic-board.md:146` lo limita a AC-09/cierre real; `e35-fin-neta-adaptation:262` lo llama gate de despliegue.
-- **Pregunta:** ¿DT6 bloquea solo el cierre real/AC-09, o también autorizar el DEV E4.9 con fixtures? ¿Qué evidencia mínima exigirías para no confundir CI técnico con capacidad operativa?
+Recomiendo separar los gates:
 
-### 4. Elecciones físicas de DT2-E4.3
+- Desarrollo y pruebas aisladas con fixtures: DT6 no debería bloquearlos automáticamente.
+- Cierre real, AC-09 y activación productiva: DT6 es obligatorio.
 
-D-08 ya confirmó serie fechada con auditoría y concurrencia optimista; DT2 decide su materialización:
+Exigir copia cifrada verificable, custodia externa y restauración real aislada con evidencia de integridad, claves, esquema e identidad. La CI con fixtures no sustituye esa evidencia.
 
-- **Unicidad** `(posición, fecha_vigencia)` con 409. Sin ella, D-09 no tiene desempate y TP-08 queda condicional.
-- **Límites:** adoptar E4.1/E4.2 (cantidad 8 decimales; precio/cambio 6; entero escalado `2⁵³−1`; EUR en céntimos) sin máximo nuevo.
-- **Identidad:** textual estable generada en servidor, prefijo propio, no reutilizable (regla DT2 de E1.1); falta fijar el prefijo.
-- **A-01/Manual:** el brainstorming exige ratificar o corregir la extensión de la serie a valoración `Manual` antes de aprobar (`23-...-brainstorming.md:314-315`).
-- **Pregunta:** ¿ves alguna objeción técnica a estas cuatro elecciones? ¿El prefijo debe fijarse en DT2 o diferirse al DEV? ¿A-01 requiere debate funcional con el usuario?
+DEV E4.9 continúa sin autorizar.
 
-### 5. E4.3 en la primera foto E4.9
+**4. DT2 / E4.3**
 
-- SPEC27 admite E4.3/E4.2/E4.4 como `No disponible` sin bloquear (`27-...-specification.md:145-146`, `:179-180`); el tablero lo confirma (`epic-board.md:151-153`).
-- Incluir valoración/patrimonio exigiría aprobar SPEC23 + DT2 y autorizar DEV E4.3 por separado.
-- **Pregunta:** ¿la primera foto debe salir con `No disponible` o merece la pena retrasarla para incluir valoración?
+Recomendaciones:
 
-## Observaciones documentales para tu criterio
+- Unicidad por posición y fecha de vigencia; duplicados 409.
+- Corrección mediante revisión optimista y auditoría append-only.
+- Reutilizar precisión y límites compatibles con E4.1/E4.2, sin redondeos intermedios.
+- Fijar en DT2 un prefijo exclusivo y estable para los IDs, antes del DEV.
+- Ratificar con el usuario A-01 para las valoraciones Manuales: si cambia la cantidad entre valoración y corte, no presentar el importe anterior como valor actual ni extrapolarlo.
 
-- SPEC23 sigue «no aprobada» pese a que el handoff habla de «ratificación documental»; el tablero aún dice «SPEC23 no iniciada».
-- `precierre.ts:473-477` mantiene `e35` como `No disponible` y `e4_9Bloqueado` siempre verdadero, con `estado` pudiendo ser «Listo con avisos» (defecto D4).
-- El tablero asigna E3.5 a SPEC18, que no existe en `main`; su fuente normativa es la enmienda de SPEC16.
-- Registro relay: un mensaje histórico con `in_reply_to: none` rompe `send --in-reply-to` y `read --seq`; por eso esta consulta no lleva hilo machine-readable.
+Mantener pendiente la aprobación formal de DT2 y comprobar la contradicción documental sobre la ratificación de SPEC23.
 
-## Lo que NO se solicita
+**5. Primera fotografía E4.9**
 
-No se solicita aprobación de DT2, DEV E4.3, DEV17 ni DEV E4.9; no se pide merge, datos reales, migración operativa ni despliegue. Solo tu criterio para que el usuario decida.
+Recomiendo **no esperar a E4.3**.
 
-Devuelve, por decisión: recomendación, riesgos y cualquier contradicción que deba corregir antes de presentarla.
+SPEC27 permite representar valoración y patrimonio como «No disponible», con cobertura y motivo explícitos. No inventar cifras ni presentar patrimonio parcial como completo.
+
+E3.5 verificable y DT6 operativo siguen siendo requisitos para cerrar realmente. Sin ellos, no existe fotografía.
+
+**P1 · R2/R3**
+
+Completar la aserción negativa de R_caja en el ciclo de origen, ejecutar pruebas y obtener QA independiente. Distinguir la garantía observable de R2 de la rama interna de rollback demostrada solo mediante mutación. No modificar FIN_NETA dentro del alcance test-only.
+
+**Continuidad**
+
+Mantener los cuatro frentes en paralelo dentro de los alcances autorizados. Presentar al usuario únicamente las decisiones materiales pendientes, con su objeto y revisión exactos.
+
+No realizar merges, despliegues, cambios de datos reales ni desarrollos adicionales sin sus autorizaciones correspondientes.
+
+Devolver estado por frente, SHA, PR, pruebas, QA, reservas y próximas decisiones.
