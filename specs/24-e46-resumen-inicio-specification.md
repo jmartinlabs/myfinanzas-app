@@ -14,9 +14,11 @@ Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resum
 Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
 Test design: [24-e46-resumen-inicio-testplan.md](24-e46-resumen-inicio-testplan.md).
 
-**Leyenda.** `CONFIRMADO` = regla de un documento aprobado. `PROPUESTA` = contrato candidato
-de esta spec. `PENDIENTE` = decisión del usuario o dependencia sin resolver. Las preguntas
-Q1–Q12 del brainstorming siguen sin respuesta; los puntos afectados se marcan aquí.
+**Leyenda.** `CONFIRMADO` = regla de un documento aprobado o precisión del usuario.
+`PROPUESTA` = contrato candidato de esta spec. `PENDIENTE` = decisión del usuario o
+dependencia sin resolver. **Q4 y la regla de `mesesCubiertos` de Q3 están confirmadas el
+2026-11-03.** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales) y Q5–Q12 siguen pendientes;
+los puntos afectados se marcan aquí.
 
 ## Functionality
 
@@ -29,7 +31,8 @@ Incluye:
 
 1. Contexto del ciclo actual y su corte, leído del maestro de Ciclos y de la referencia
    financiera central.
-2. Liquidez actual y, cuando exista una configuración aprobada, objetivo R6 y meses cubiertos.
+2. Liquidez actual y `mesesCubiertos` cuando liquidez y coste esencial sean completos; mínimo
+   objetivo R6 cuando exista configuración de meses objetivo.
 3. Resumen del ciclo actual: ejecución real y márgenes ya publicados por E2.6.
 4. Vistas independientes de Saldos: liquidez, ahorro y bolsas, sin sumarlas entre sí.
 5. Inversión: agregado de posiciones de E4.3 (si está integrado y su cobertura lo permite) y
@@ -56,7 +59,7 @@ escrituras de ningún tipo.
 | Pendientes y conciliación | E3.6 | Consume su read model; no crea un motor paralelo |
 | Patrimonio global y comparación anual | E4.7 (futuro) | Fuera de E4.6 |
 | Cierre, foto y reapertura | E4.8–E4.10 | Fuera de E4.6; no lee ni escribe fotos |
-| Configuración de meses objetivo y umbrales | **No existe en v23** | `No disponible` hasta decisión Q3 |
+| Configuración de meses objetivo y umbrales | **No existe en v23** | Solo `minimoObjetivo` queda `No disponible` (Q3-B); `mesesCubiertos` no depende de ella |
 
 **CONFIRMADO.** E4.6 no reabre E2.6, E3.6, E4.2, E4.3 ni E4.4. No introduce una fórmula
 económica nueva ni una tabla de resultados.
@@ -95,7 +98,7 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 | Contexto | `GET /api/ciclos/contexto`; `cycleContext`, `cycleMaster` | `actual`, `referencia`, `corte`, `estadoCorte`, cobertura de fuentes | No elige ciclo por reloj ni inventa corte |
 | Liquidez | `monthlyFlow().metrics.liquidez` y `.liquidez` | `valor`, `subtotal`, `estado`, `motivo`, `cobertura`, `incluidos`, `excluidos` | No re-suma Saldos ni reaplica el filtro Liquidez |
 | Ciclo | `monthlyFlow().metrics` | `ingresos`, `gasto`, `extraordinaria`, `operativo` (`observedOperating`), `margenReal`, `nomina`, `base`, `delMes` | No recompone Gasto ni márgenes |
-| Objetivo R6 | `annualEquivalent()` de E2.4 + configuración Q3 | `estado`, `total {numeradorCentimos, divisor}`, `parcial`, `importesSinInformar` | No divide por 12 por su cuenta |
+| Objetivo R6 | `annualEquivalent()` de E2.4 + configuración Q3-B | `estado`, `total {numeradorCentimos, divisor}`, `parcial`, `importesSinInformar` | No divide por 12 ni usa `mesesObjetivo` para `mesesCubiertos` |
 | Saldos/bolsas | `listSaldos` / `getSaldo` | `posicion.importe`, `posicion.motivo`, `liquidez`, `finalidad`, `mostrarComoBolsa`, `estado` | No crea una posición nueva ni suma vistas |
 | Ahorro | `metrics.ahorroCierre`, `variacionAhorro`, `ahorroResidual` de E2.6; Saldos con Finalidad `Ahorro` | Valores y cobertura publicados; lista de posiciones | No inventa «ahorro generado» ni total nuevo |
 | Inversión valorada | Contrato E4.3 `GET /api/e43/corte?fecha=` (conceptual) | `agregado.valorEur`, `coberturaValoracion`, `resultadoEur`, `coberturaResultado`, `posiciones[]` | No valora, no reescala, no calcula resultado |
@@ -121,9 +124,9 @@ no está acreditada; E4.6 conserva esa marca.
 - Los bloques actuales (Liquidez, Saldos, Deuda, Efectivo) llevan su propio contexto; no se
   fechan con un corte histórico que no exista.
 
-**[PROPUESTA Q4]** El ejercicio del coste esencial es el año de `ciclo.mesFinanciado`. Un ciclo
-que cruza año no se resuelve por inferencia: si el usuario no confirma Q4, el objetivo queda
-`No disponible` con motivo.
+**CONFIRMADO (Q4, 2026-11-03).** El ejercicio del coste esencial es el **año de
+`ciclo.mesFinanciado`**, incluso si el ciclo cruza ejercicio. No se usan el reloj, el corte ni
+el año del ingreso para sustituirlo. `annualEquivalent` se consume sin recalcular.
 
 ### Objetivo R6
 
@@ -138,22 +141,28 @@ zona                 = Informativa (siempre)
 Reglas:
 
 - `annualEquivalent.estado = Incompleto` o `Sin plan anual` → `costeEsencialMensual` no se
-  publica como completo; `minimoObjetivo` y `mesesCubiertos` quedan `No disponible`; el
-  subtotal conocido se muestra aparte.
+  publica como completo; `minimoObjetivo` y `mesesCubiertos` quedan `No disponible` por coste
+  no verificado; el subtotal conocido se muestra aparte.
 - `costeEsencialMensual = 0` verificado → `mesesCubiertos` `No disponible` por denominador no
-  aplicable; nunca `0`, infinito ni «cobertura total».
-- Sin `mesesObjetivo` configurados → `minimoObjetivo` `No disponible`; no se usan valores por
-  defecto.
-- Liquidez `Parcial` o `No disponible` → `mesesCubiertos` `No disponible`; no se divide un
-  subtotal como si fuera total.
+  aplicable; nunca `0`, infinito ni «cobertura total». El tratamiento del `minimoObjetivo` con
+  meses configurados en ese caso queda en Q11 y no se usa para declarar cobertura.
+- `mesesCubiertos` se muestra cuando la **liquidez está verificada** (incluido `Cero
+  verificado`) y el **coste está completo y es > 0**, aunque `mesesObjetivo` no exista. No
+  depende de la configuración. Liquidez cero verificada → `0,00` meses con `Cero verificado`,
+  no `No disponible`.
+- `minimoObjetivo` requiere coste completo y `mesesObjetivo` configurado; **no depende de la
+  liquidez**. Sin `mesesObjetivo` → `No disponible`; no se usan valores por defecto.
+- Liquidez `Parcial` o `No disponible` → `mesesCubiertos` `No disponible` por su propio motivo;
+  no se divide un subtotal como si fuera total.
 - Los umbrales solo etiquetan la zona. No hay transferencia, reserva, bloqueo ni sugerencia
   operativa.
 - El resultado se calcula sobre el racional exacto y se formatea una sola vez; el formato de
   meses (2 decimales propuesto) queda **PENDIENTE DT8** y no altera el valor.
 
-**PENDIENTE Q3.** No existe almacén de `mesesObjetivo` ni de umbrales. El contrato admite una
-configuración inyectada por un proveedor aprobado; en v23 el proveedor no existe y la métrica
-figura `No disponible`. E4.6 no crea esa configuración.
+**PENDIENTE Q3-B.** No existe almacén de `mesesObjetivo` ni de umbrales. El contrato admite una
+configuración inyectada por un proveedor aprobado; en v23 el proveedor no existe y **solo**
+`minimoObjetivo` figura `No disponible`. E4.6 no crea esa configuración, ni defaults, ni tabla,
+ni motor duplicado.
 
 ### Saldos y bolsas
 
@@ -272,10 +281,16 @@ independientes y un mismo Saldo puede pertenecer a varias.
         "valor": "1500.00",
         "estado": "Verificado",
         "ejercicio": 2026,
+        "ejercicioOrigen": "mesFinanciado",
         "estadoEquivalente": "Completo"
       },
       "mesesObjetivo": null,
-      "mesesCubiertos": null,
+      "mesesCubiertos": {
+        "valor": null,
+        "estado": "No disponible",
+        "unidad": "meses",
+        "motivo": "Liquidez parcial: no se divide el subtotal conocido"
+      },
       "zona": "Informativa"
     },
     "ciclo": {
@@ -353,7 +368,7 @@ independientes y un mismo Saldo puede pertenecer a varias.
   "pendientesDelModelo": [
     "E4.3 valoración/resultado",
     "E3.6 pendientes/conciliación",
-    "Configuración R6 de meses objetivo y umbrales"
+    "Configuración R6 de meses objetivo y umbrales (solo mínimo objetivo; meses cubiertos no depende)"
   ]
 }
 ```
@@ -388,7 +403,7 @@ componentes existentes; no introduce tema, librería ni tokens nuevos.
 │ Subtotal conocido 3.456,40 €        ! PARCIAL │ Coste esencial/mes 1.500,00 €      ✓ Completo│
 │ 3/4 posiciones · 1 sin informar               │ Meses objetivo: No configurados    — ND      │
 │ [Ver posiciones incluidas/excluidas]          │ Mínimo objetivo: No disponible              │
-│                                               │ Meses cubiertos: No disponible              │
+│                                               │ Meses cubiertos: ND · liquidez parcial      │
 │                                               │ Zona informativa · sin transferencia        │
 ├───────────────────────────────────────────────┴──────────────────────────────────────────────┤
 │ CICLO C007 · REAL vs PLAN                                                                    │
@@ -425,7 +440,7 @@ componentes existentes; no introduce tema, librería ni tokens nuevos.
 │ OBJETIVO R6       OBJETIVO  │
 │ Mínimo: No disponible  — ND │
 │ Meses cubiertos: ND         │
-│ Motivo: faltan meses        │
+│ Motivo: liquidez parcial    │
 │ [Ver coste esencial]        │
 ├─────────────────────────────┤
 │ CICLO C007    REAL / PLAN   │
@@ -575,10 +590,10 @@ indica después de la tabla.
 | AC-10 | Buscar un total patrimonial o una suma cruzada de bloques | No existe en la respuesta ni en la UI; cada bloque conserva su contexto |
 | AC-11 | Cambiar Finalidad, bolsa o nombre de un Saldo | La pertenencia a Liquidez no cambia; solo cambia cuando cambia `Liquidez` |
 | AC-12 | Coste esencial completo 1.500,00 € y 6 meses objetivo (proveedor aprobado) | Mínimo objetivo `9.000,00 €` exacto; sin redondeo intermedio |
-| AC-13 | Coste esencial 0 verificado; coste parcial; liquidez parcial | Meses cubiertos `No disponible` en los tres casos; nunca 0, infinito o total |
-| AC-14 | Plan anual `Incompleto` o `Sin plan anual` | Objetivo y meses cubiertos `No disponible`; subtotal conocido visible; sin objetivo definitivo |
-| AC-15 | Sin meses objetivo/umbrales configurados | `No disponible` con motivo; zona informativa; ningún botón, endpoint o efecto de transferencia |
-| AC-16 | Liquidez parcial con subtotal | Meses cubiertos `No disponible`; subtotal visible; no se divide el subtotal como total |
+| AC-13 | Liquidez completa 3.456,40 € y coste esencial completo 1.500,00 €, sin meses objetivo | `mesesCubiertos` 2,30 (racional exacto 345640/150000) visible; `minimoObjetivo` `No disponible`; nunca 0, infinito o total |
+| AC-14 | Plan anual `Incompleto` o `Sin plan anual` | Coste no verificado; `minimoObjetivo` y `mesesCubiertos` `No disponible`; subtotal conocido visible; sin objetivo definitivo |
+| AC-15 | Sin meses objetivo/umbrales configurados | `minimoObjetivo` `No disponible` con motivo; `mesesCubiertos` se rige por AC-13/16 y puede mostrarse; zona informativa; ningún botón, endpoint o efecto de transferencia |
+| AC-16 | Liquidez parcial, coste incompleto o coste 0 | `mesesCubiertos` `No disponible` por su propio motivo; subtotal visible cuando aplique; no se divide el subtotal; nunca 0/infinito |
 | AC-17 | Sin ciclo actual o sin corte | Métricas del ciclo y valoración `No disponible` con motivo; bloques actuales visibles y etiquetados; sin reloj |
 | AC-18 | Fixture con posición valorada 1.197,50 € y efectivo S003 1.456,40 € | El efectivo no está dentro del agregado ni se publica un «total inversión» |
 | AC-19 | Saldo marcado a la vez Liquidez, Ahorro y bolsa | Aparece en las tres vistas, pero no en una suma combinada; no hay total de saldos |
@@ -590,19 +605,22 @@ indica después de la tabla.
 | AC-25 | Agregado de inversión parcial y deuda con un no calculable | `Parcial n/m` sin total; deuda con subtotal conocido y motivo; sin ceros sustitutivos |
 | AC-26 | 1440 y 390 con teclado, foco y estados | Sin scroll horizontal; estado con icono+texto; foco visible; capturas 390/1440 inspeccionadas |
 | AC-27 | Acceso anónimo, sesión expirada y error de servidor | `401`/reautenticación sin datos; errores genéricos sin SQL ni importes; respuesta `no-store` |
+| AC-28 | Ciclo con `mesFinanciado` 2026-12 y corte 2027-01; planes anuales 2026 y 2027 | `costeEsencialMensual` se consulta en el plan de 2026; no se usan 2027, el reloj, el corte ni el año del ingreso |
+| AC-29 | Liquidez cero verificada y coste esencial completo > 0 | `mesesCubiertos` `0,00` con `Cero verificado`; no `No disponible` ni un 0 implícito |
 
 ### Trazabilidad al roadmap
 
 | Criterio roadmap | Checks |
 | --- | --- |
 | E4.6-AC1 — cada cifra procede de un motor central identificado | AC-01 a AC-10 |
-| E4.6-AC2 — Liquidez y objetivos usan R6, sin transferencia por zona informativa | AC-11 a AC-17 |
+| E4.6-AC2 — Liquidez y objetivos usan R6, sin transferencia por zona informativa | AC-11 a AC-17, AC-28 y AC-29 |
 | E4.6-AC3 — inversiones sin efectivo dos veces; cobertura de Presupuesto sin reserva exclusiva | AC-18 a AC-25 |
 | Transversal T-UX/T-SEG | AC-26 y AC-27 |
 
 ## Approval and next action
 
-Esta specification es **candidata**. Requiere: (1) resolver Q1–Q12 del brainstorming; (2)
-aprobar los wireframes 1440/390 y el formato de meses; (3) decidir la configuración de meses
-objetivo/umbrales; (4) confirmar que E4.3 y E3.6 estarán integrados antes de declarar completa
-la entrega. La aprobación documental no autoriza DEV ni migración.
+Esta specification es **candidata**. Requiere: (1) resolver Q1, Q2, Q3-B y Q5–Q12 del
+brainstorming; (2) aprobar los wireframes 1440/390 y el formato de meses; (3) decidir la
+configuración de meses objetivo/umbrales, que solo afecta a `minimoObjetivo`; (4) confirmar que
+E4.3 y E3.6 estarán integrados antes de declarar completa la entrega. La aprobación documental
+no autoriza DEV ni migración.

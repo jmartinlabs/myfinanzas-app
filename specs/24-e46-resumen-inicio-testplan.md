@@ -8,8 +8,8 @@ Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
 
 Antes de implementación, cada AC se mapea a entorno, caso positivo/negativo/límite y evidencia
 esperada. Un borrador admite diseño provisional, nunca implementación ni PASS. Las filas
-`BLOCKED` dependen de E4.3, E3.6 o de la configuración R6; no se convierten en PASS por
-inspección.
+`BLOCKED` dependen de E4.3 o E3.6; la falta de configuración R6 solo afecta a
+`minimoObjetivo`, no a `mesesCubiertos`. No se convierten en PASS por inspección.
 
 ## Estrategia
 
@@ -106,6 +106,15 @@ Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahor
 | 2026 variante B | Una línea Sí sin importe | — | subtotal conocido | `Incompleto` |
 | 2026 variante C | Sin líneas | — | — | `Sin plan anual` |
 
+### Variantes de liquidez y ejercicio
+
+| Variante | Cambio | Uso |
+| --- | --- | --- |
+| `V-LIQ-COMPLETA` | `S005.Liquidez = No` (o se excluye del universo activo) | Liquidez completa 3/3 `3456.40`; `mesesCubiertos = 345640/150000 = 2.304266…`, visible sin `mesesObjetivo` |
+| `V-LIQ-PARCIAL` | Fixture base con `S005.Liquidez` sin informar | `mesesCubiertos` `No disponible` por liquidez parcial |
+| `V-LIQ-CERO` | Todos los Saldos activos con `Liquidez = No`; sin posición elegible | Liquidez `Cero verificado`; `mesesCubiertos` `0,00`, no ND |
+| `V-EJERCICIO` | Ciclo `C008`: inicio `2026-12-20`, fin/corte `2027-01-19`, `mesFinanciado 2026-12`; planes 2026 y 2027 con esenciales distintos | `annualEquivalent` de 2026; no 2027, reloj, corte ni año del ingreso |
+
 ### Configuración R6 (proveedor de prueba)
 
 | Parámetro | Valor | Uso |
@@ -114,8 +123,9 @@ Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahor
 | Umbral zona | `3` / `6` meses | Solo etiqueta informativa |
 
 **Límite:** en v23 no existe almacén de configuración. El proveedor de prueba es un doble de
-contrato; no acredita que la app pueda configurarlo. Sin el proveedor, objetivo y meses
-cubiertos son `No disponible` (caso negativo obligatorio).
+contrato; no acredita que la app pueda configurarlo. Sin el proveedor, **solo `minimoObjetivo`**
+es `No disponible`; `mesesCubiertos` se publica si liquidez y coste son completos
+(`V-LIQ-COMPLETA`).
 
 ## Oráculo independiente
 
@@ -123,8 +133,11 @@ cubiertos son `No disponible` (caso negativo obligatorio).
 | --- | --- | --- |
 | Liquidez | `1200.00 + 800.00 + 1456.40` (solo activos con Liquidez Sí y posición verificable) | subtotal `3456.40`; `valor: null`, `Parcial` por `S005` sin informar |
 | Mínimo objetivo | `1500.00 × 6` | `9000.00` (solo con proveedor) |
-| Meses cubiertos | `3456.40 / 1500.00` | `No disponible` porque la liquidez es parcial; con liquidez completa sería `2,3029…` |
+| Meses cubiertos — liquidez parcial | `V-LIQ-PARCIAL` | `No disponible` por liquidez parcial; no se divide el subtotal |
+| Meses cubiertos — liquidez completa | `3456.40 / 1500.00` (`V-LIQ-COMPLETA`) | `345640/150000 = 2.304266…`; se muestra `2,30` (formato propuesto DT8) aunque `mesesObjetivo` sea `null`; `minimoObjetivo` ND |
+| Meses cubiertos — liquidez cero | `0 / 1500.00` (`V-LIQ-CERO`) | `0,00` con `Cero verificado`; no ND |
 | Coste 0 | `0` verificado | meses cubiertos `No disponible`, no 0/infinito |
+| Ejercicio esencial | `C008` con `mesFinanciado 2026-12` y corte `2027-01-19` | `annualEquivalent` de 2026; 2027 no se usa |
 | Agregado inversión | `877.50 + 320.00` | `1197.50`, cobertura completa |
 | Efectivo bróker | `S003 1456.40` y `S004 500.00` | dos registros, sin total |
 | Deuda no hipotecaria | `720.00 + 300.00` | subtotal `1020.00`; total `null` por `D005` |
@@ -158,10 +171,10 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-10 | Negativo | Buscar total patrimonial | No existe cifra ni suma cruzada | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-11 | Positivo | Cambiar Finalidad/bolsa/nombre | Liquidez no cambia; solo `Liquidez` decide | API | Local/CI · impl | Antes/después | UNRUN |
 | AC-12 | Positivo | Coste `1500.00`, meses `6` | Mínimo `9000.00` exacto | API contrato | Local/CI · impl | DTO | UNRUN |
-| AC-13 | Límite | Coste 0; coste parcial; liquidez parcial | Meses cubiertos `No disponible` en los tres | API | Local/CI · impl | DTO y motivos | UNRUN |
-| AC-14 | Negativo | Plan anual `Incompleto` y `Sin plan` | Objetivo/meses `No disponible`; subtotal visible | API | Local/CI · impl | DTO | UNRUN |
-| AC-15 | Negativo | Sin configuración R6 | `No disponible`; zona informativa; sin botón/endpoint de transferencia | API + UI | Local/CI · QA | DTO y captura | UNRUN |
-| AC-16 | Límite | Liquidez parcial con subtotal | Meses cubiertos `No disponible`; no se divide el subtotal | API | Local/CI · impl | DTO | UNRUN |
+| AC-13 | Positivo/Límite | `V-LIQ-COMPLETA`, sin meses objetivo | `mesesCubiertos` `2,30` (racional `345640/150000`) visible; `minimoObjetivo` `No disponible`; no 0/infinito | API | Local/CI · impl | DTO y motivos | UNRUN |
+| AC-14 | Negativo | Plan anual `Incompleto` y `Sin plan` | Coste no verificado; `minimoObjetivo` y `mesesCubiertos` `No disponible`; subtotal visible | API | Local/CI · impl | DTO | UNRUN |
+| AC-15 | Negativo | Sin configuración R6 | `minimoObjetivo` `No disponible`; `mesesCubiertos` se rige por AC-13/16; zona informativa; sin botón/endpoint de transferencia | API + UI | Local/CI · QA | DTO y captura | UNRUN |
+| AC-16 | Límite | `V-LIQ-PARCIAL`, coste incompleto y coste 0 | `mesesCubiertos` `No disponible` por su propio motivo; no se divide el subtotal; no 0/infinito | API | Local/CI · impl | DTO | UNRUN |
 | AC-17 | Negativo | Sin ciclo/corte | Ciclo y valoración `No disponible`; actuales visibles y etiquetados | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-18 | Negativo | Fixture de inversión | Efectivo fuera del agregado; sin total combinado | API | Local/CI · impl | DTO; ausencia de `3153.90` | UNRUN |
 | AC-19 | Negativo | Saldo en tres vistas | Aparece en las tres; sin suma combinada | API + UI | Local/CI · QA | DTO y captura | UNRUN |
@@ -173,6 +186,8 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
 | AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/*.png` | UNRUN |
 | AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP | Local/CI · QA | Respuestas y cabeceras | UNRUN |
+| AC-28 | Positivo/Límite | `V-EJERCICIO`: `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | DTO y `ejercicioOrigen` | UNRUN |
+| AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API | Local/CI · impl | DTO | UNRUN |
 
 ### Casos específicos de no duplicación
 
@@ -191,7 +206,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 
 - Importes como cadenas decimales exactas; sin `float`; suma exacta y formato final una vez.
 - `3456.40`, `1197.50`, `1020.00`, `350.00`, `100.00` al céntimo.
-- `meses cubiertos` con racional exacto; el formato de 2 decimales es propuesta DT8.
+- `meses cubiertos` con racional exacto y visible sin `mesesObjetivo`; el formato de 2 decimales es propuesta DT8. No se convierte un parcial/ND en 0.
 - `null` nunca se convierte en `0.00`; `0.00` verificado se conserva.
 - Fechas ISO civiles; corte no futuro; sin reloj.
 - `revision` cambia cuando cambia una fuente; no se mezclan lecturas.
@@ -242,20 +257,25 @@ la aprobación de wireframes.
 
 ## Criterios de salida
 
-- Todos los AC en PASS o `BLOCKED` con causa externa verificable (E4.3, E3.6 o configuración
-  R6); ningún `BLOCKED` se presenta como completado.
+- Todos los AC en PASS o `BLOCKED` con causa externa verificable (E4.3 o E3.6); la ausencia
+  de configuración R6 solo puede dejar `minimoObjetivo` en `No disponible`, nunca
+  `mesesCubiertos` si liquidez y coste son completos. Ningún `BLOCKED` se presenta como
+  completado.
 - Ningún AC en PASS por inspección, por arranque del proceso o por reutilizar evidencia de otra
   revisión.
 - Sin FAIL abiertos, sin regresiones en E2.4/E2.6/E4.2/E4.4 y sin cambios de datos.
 - `python3.12 scripts/verify --full` del candidato estable en PASS.
 - Capturas 390/1440 inspeccionadas; teclado, foco y estados comprobados.
 - Revisión independiente de QA y aprobación de merge separada.
-- La entrega no se declara completa si falta E4.3, E3.6 o la configuración R6.
+- La entrega no se declara completa si falta E4.3 o E3.6. La falta de configuración R6 deja
+  solo `minimoObjetivo` en `No disponible`; `mesesCubiertos` puede PASS con liquidez y coste
+  completos.
 
 ## Limitaciones y siguiente acción
 
 No hay implementación, endpoint, UI ni datos que probar. E4.3 y E3.6 están aprobadas
-documentalmente pero sin DEV; la configuración R6 no existe. Este testplan es diseño
-provisional: cualquier PASS requiere un candidato funcional autorizado, fixtures nuevas y
-evidencia propia. La siguiente acción es resolver Q1–Q12 del brainstorming y aprobar la
-specification; después, autorizar DEV y ejecutar esta matriz.
+documentalmente pero sin DEV. La configuración R6 no existe, pero solo condiciona
+`minimoObjetivo`; `mesesCubiertos` se prueba sin ella con liquidez y coste completos. Este
+testplan es diseño provisional: cualquier PASS requiere un candidato funcional autorizado,
+fixtures nuevas y evidencia propia. La siguiente acción es resolver Q1, Q2, Q3-B y Q5–Q12 del
+brainstorming y aprobar la specification; después, autorizar DEV y ejecutar esta matriz.
