@@ -605,6 +605,9 @@ export function e35Metrics(
         fuente: "movimientos+comida_metadata+comida_roles",
         huella: financeRevision(db),
         soloLectura: true,
+        cobertura:
+          financing.available && coverageFood === null ? "Verificada" : "Parcial",
+        motivo: financing.available ? coverageFood ?? null : financing.reason,
       },
       periodo: { inicio: start, corte },
       cobertura: {

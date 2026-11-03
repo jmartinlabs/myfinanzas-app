@@ -106,7 +106,7 @@ function setup() {
     randomUUID(),
     now,
   ).ciclo;
-  createCycle(
+  const cycle2 = createCycle(
     db,
     {
       inicio: "2026-07-20",
@@ -115,8 +115,8 @@ function setup() {
     },
     randomUUID(),
     now,
-  );
-  return { db, category, sub, budget, food, leisure, account, ing, cycle1 };
+  ).ciclo;
+  return { db, category, sub, budget, food, leisure, account, ing, cycle1, cycle2 };
 }
 
 function add(
@@ -1069,6 +1069,73 @@ test("I3/AC-07: R_obl suficiente con C_n>0 produce obligación Completada", () =
   expect(metrics.obligacion.robl).toBe("20.00");
   expect(metrics.obligacion.falta).toBe("0.00");
   expect(metrics.obligacion.estado).toBe("Completada");
+  db.close();
+});
+
+test("AC-01: E3.5 agrega sin crear un segundo ledger y sin escribir hechos", () => {
+  const { db, ing, food, cycle1 } = setup();
+  purchase(db, ing, food.id, { importe: "20", comida: { etiqueta: "Comida" } });
+  const before = db.query("SELECT COUNT(*) n FROM movimientos").get();
+  const tables = db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name LIKE 'e35%'").get();
+  comidaMetrics(db, cycle1.id, now);
+  expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
+  expect(db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name LIKE 'e35%'").get()).toEqual(tables);
+  db.close();
+});
+
+test("AC-05: una Transferencia sin rol deja cobertura parcial con su ID y D íntegro", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  purchase(db, ing, food.id, { importe: "20", comida: { etiqueta: "Comida" } });
+  const transfer_ = transfer(db, account, ing, "30", "2026-06-25");
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.financiacion.estado).toBe("No disponible");
+  expect(metrics.financiacion.motivo).toContain(transfer_.movimiento.id);
+  expect(metrics.recursos.valor).toBeNull();
+  db.close();
+});
+
+test("AC-12: C_n = 0 verificado produce Sin obligación acreditada, no Completada", () => {
+  const { db, ing, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.obligacion.estado).toBe("Sin obligación acreditada");
+  expect(metrics.recursos.valor).toBe("100.00");
+  db.close();
+});
+
+test("AC-16: no existen tablas E3.5 ni se persisten totales", () => {
+  const { db, cycle1 } = setup();
+  const tables = db
+    .query("SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE '%valoracion%' OR name LIKE 'e35%')")
+    .all();
+  expect(tables).toEqual([]);
+  comidaMetrics(db, cycle1.id, now);
+  expect(
+    db.query("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%valoracion%'").all(),
+  ).toEqual([]);
   db.close();
 });
 
