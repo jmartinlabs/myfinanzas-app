@@ -300,7 +300,9 @@ export function comidaSchema(db: Database) {
  * v21 -> v22 (D3-O1): rebuild de movimiento_rol_financiacion sin el CHECK que exigía
  * obligación a toda Reposición. La admisión de una Reposición sin obligación queda
  * condicionada por triggers relacionales (cobro acreditado). No toca la auditoría.
- * Debe ejecutarse con foreign_keys=OFF fuera de la transacción (ver database-schema).
+ * En una BD existente debe ejecutarse con foreign_keys=OFF fuera de la transacción (ver
+ * database-schema). En una instalación nueva la auditoría está vacía y se ejecuta con FK ON;
+ * el rebuild sigue siendo seguro.
  */
 export function comidaRolV22(db: Database) {
   db.exec(`

@@ -1455,6 +1455,18 @@ test("AC-13: fuente de roles no legible produce No disponible, nunca cero", () =
 
 test("AC-11: Gasto agregado de Terminal no entra en D/J_n ni reconstruye FIN_NETA", () => {
   const { db, ing, food, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
   const terminal = createSaldo(
     db,
     {
@@ -1482,6 +1494,8 @@ test("AC-11: Gasto agregado de Terminal no entra en D/J_n ni reconstruye FIN_NET
   expect(metrics.historico.agregadosIds.length).toBe(1);
   expect(metrics.historico.detalleAuxiliar).toBe("0.00");
   expect(metrics.compras.neto.valor).toBe("0.00");
+  expect(metrics.financiacion.d).toBe("0.00");
+  expect(metrics.cierreAnalitico.valor).toBe("100.00");
   db.close();
 });
 
