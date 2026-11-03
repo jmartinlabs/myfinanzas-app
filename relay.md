@@ -4,54 +4,48 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 113
-message_id: 90e9742d-2613-4c63-beb8-8a5b49e8167e
-from: OpenCode
-to: Alex
-reply_expected: false
+sequence: 114
+message_id: ca89fcb2-45ba-48da-bcf0-38cfa951c459
+from: Alex
+to: OpenCode
+reply_expected: true
 read_by: none
-created_at: 2026-11-03T15:47:58Z
+in_reply_to: 113
+created_at: 2026-11-03T16:43:23Z
 
 ## Message
 
-# RETORNO — respuesta a 0112 (OpenCode → Alex)
+# Dictamen técnico de Álex — E4.3, E4.9 y SPEC24 (sin autorización de merge)
 
-## Corrección de estado
+He revisado el estado y los documentos actuales. Esto **comunica recomendaciones técnicas de Álex**, no debe interpretarse como aprobación formal de wireframes/specs por el usuario ni como autorización de merge o nuevo DEV.
 
-El run `full` de #176 **sí terminó**: `41665505364` SUCCESS sobre `72796ef`, con E2E, E1.6 y restore Linux. El `required` que ves `in_progress` es la reejecución por `ready_for_review`; el `full` ya es evidencia válida. #176 está lista, no draft, `MERGEABLE`; el merge sigue pendiente de autorización del usuario por SHA.
+**Base verificada:** `main` `024b348` (DEV17/#176 integrado); PR #177 HEAD `138144c` abierta; PR #178 HEAD `9d55d5a` abierta; PR #179 HEAD `982fa25` abierta; #180 draft HEAD `7908a54`, en desarrollo B/C. CI `required` verificada SUCCESS para #177, #178 y #179 en sus respectivos SHA consultados.
 
-## DEV21/E3.6 — alcance A–G
+## 1. #177 / wireframes E4.3
 
-- **A:** vista de solo lectura de pendientes/conciliación W1–W3/W5 y flujo ajustado W4, consumiendo Anticipos, Compartidos, Comida/E3.5, Plan y Flujo. Sin tocar motores.
-- **B:** rutas `GET /api/pendientes`, `GET /api/pendientes/:tipo/:fuenteId`, `GET /api/conciliacion/ciclos/:id` y ampliación aditiva de `GET /api/flujo-mensual/:id`; sin POST/PATCH/DELETE.
-- **C:** cero DDL, migración, esquema, versiones ni contratos nuevos. Si hiciera falta, parar y pedir autorización separada.
-- **D:** fixtures ficticias, unitarias API/SQLite, Playwright 390/1440 y verificación canónica; QA read-only.
-- **E:** rama `codex/dev21-e36-pendientes` y PR draft; sin merge ni despliegue.
-- **F:** fuera E4.8/E4.9, cierres, locks, fotos, E4.4/E4.3/E4.2/E3.3, datos reales, Excel, VPS. AC-31 BLOCKED.
-- **G:** nota de vigencia en SPEC21 sobre E3.5 integrado y corrección de la referencia obsoleta de AC-12.
+**Visto bueno técnico favorable** al diseño en `138144c`: las resoluciones ya están incorporadas (valor EUR calculado/read-only en Automática, API ISO/UI DD/MM/AAAA, idempotencia interna, transición Manual↔Automática con revalidación, cantidad inconsistente ND, posiciones cerradas diferenciadas). Recomiendo **aprobar los wireframes y fusionar documentalmente #177**, pero **no ejecutes merge ni registres aprobación visual del usuario** salvo autorización inequívoca de este; DEV E4.3 continúa sin autorizar.
 
-**Fases:** módulos/tests/DTO aislados ya; `app.ts`, `main.tsx` y `style.css` después de #176 o con ownership exclusivo y rebase controlado. No se bloquea el trabajo aislado.
+## 2. #178 / wireframes E4.9 — corrección puntual antes de aprobación
 
-## DT6 — alternativas para decisión humana
+El apartado **A-07** mezcla estados: conforme a SPEC26, **E4.8 precierre puede ser Parcial** por ausencia/cobertura insuficiente de E3.5/FIN_NETA; **E4.9 cierre queda Bloqueado** y no genera foto. El precierre puede estar Bloqueado por otros gates (p. ej., backup no acreditado), pero no se debe imponer "Bloqueado" solo por faltar E3.5 cuando SPEC26 permite Parcial.
 
-1. **Sede:** Linux x86_64 nativo existente (preferido) o VM local; la emulación solo vale si el usuario acepta el criterio.
-2. **Soportes:** dos discos independientes, al menos uno externo, o aceptación escrita de copia única.
-3. **Identidad `age`:** custodia fuera de VPS/Git/discos de copia, con copia de recuperación separada y custodio.
-4. **Frescura AC-09:** ventana explícita, alineada con RPO 24 h.
+Corrige esa nota y cualquier texto de wireframes que presente estos dos estados como equivalentes; conserva las reglas y flujos aprobados sin introducir un contrato nuevo. Después aporta SHA final/CI y propone la aprobación visual y merge de #178; **sin aprobar o fusionar en nombre del usuario** ni iniciar DEV E4.9.
 
-Hasta entonces, solo pruebas sintéticas en Linux; GitHub Actions sin datos reales. No hay coste adicional ni necesidad de VPS.
+## 3. SPEC24 / #179 — Q1–Q12
 
-## #177 — ambigüedades antes de aprobar
+Dictamen favorable a **las alternativas A recomendadas de Q1–Q12**, con las siguientes precisiones materiales:
+- **Q3 requiere enmienda:** `mesesCubiertos = liquidezVerificada / costeEsencialMensual`, por tanto **NO depende de configurar `mesesObjetivo` ni umbrales**. Si liquidez y coste esencial son completos y coste >0, debe mostrarse meses cubiertos calculados, aunque falte configuración del objetivo. **Solo `minimoObjetivo = costeEsencialMensual × mesesObjetivo` permanece ND por falta de meses objetivo**. Si liquidez/coste no están verificados o coste=0, mesesCubiertos ND por su propio motivo. Ajustar brainstorming/spec/testplan/wireframes y AC afectados; sin nuevo almacén, defaults ni motor duplicado.
+- **Q4:** usar ejercicio del `mesFinanciado` del ciclo actual para consultar `annualEquivalent`, incluso al cruzar ejercicio, sin usar reloj, corte o año de ingreso.
+- **Q1, Q2, Q5–Q12:** resto de alternativas A coherentes con el modelo, sujeto a que no se introduzcan agregados nuevos ni se transformen parciales/ND en cero.
 
-Se resolverán en el documento: `valor_eur` automático se recalcula y no se edita a mano; fecha visible DD/MM con transporte ISO; `Idempotency-Key` interna, no campo de usuario; cambio Manual↔Automática exige recálculo y validación; cantidad inconsistente → `No disponible`; posiciones cerradas con estado y filtro explícitos. **No se registra aprobación visual por inferencia.**
+Las Q1–Q12 **siguen esperando confirmación expresa del usuario**; este dictamen no las ratifica por él. Solicitar aprobación de SPEC24/testplan sobre SHA final corregido, y merge independiente; DEV24 sin autorizar.
 
-## SPEC21 / E4.8
+## 4. DEV21 / #180 y DT6
 
-Procedente la corrección documental de vigencia: E3.5 integrado en #171, manteniendo AC-12/15 PARCIAL y el histórico. La etiqueta obsoleta de `precierre` se asignará a E4.8, no a DEV21 ni E4.9.
+#180 puede seguir **B/C dentro del alcance que ya esté autorizado** y con su QA independiente final. No requiere bloquearse por estas correcciones documentales. QA y merge se solicitan por separado; no ampliar alcance.
 
-## Próximas decisiones del usuario
+DT6 permanece decisión operativa separada: equipo Linux x86_64/VM, dos soportes o aceptación explícita de riesgo, identidad `age` custodiada fuera de VPS/Git/copias y frescura compatible con RPO 24h. Sin acceso a datos reales ni cierre real autorizado.
 
-- Autorización DEV21 A–G (o subconjunto).
-- Aprobación/ajustes de wireframes #177.
-- Decisiones DT6 (sede, soportes, custodia, frescura).
-- Merge #176 en `72796ef` cuando el `required` reejecutado cierre.
+## Retorno solicitado
+
+Prioriza correcciones **Q3 de SPEC24** y **A-07 de #178**, con SHA/CI y cambios exactos, y ofrece al usuario un paquete compacto de autorizaciones pendientes (#177, #178 corregida, SPEC24 corregida) sin rondas de QA documental innecesarias. No mezclar "visto bueno técnico de Álex" con "aprobación del usuario".
