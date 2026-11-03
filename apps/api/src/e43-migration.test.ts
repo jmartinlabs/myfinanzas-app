@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { openDatabase } from "./database";
 import { contract, manifest, verifyContract } from "./schema-contract";
 import { materializeContract } from "../test-support/inversiones-schema";
+import { valoracionSchema } from "./e43-schema";
 
 const t = "2026-01-01T00:00:00.000Z";
 const c23 = "C23-E44-DEUDA-COMPLETA";
@@ -383,38 +384,43 @@ test("E4.3 AC-24: a failure inside the v24 DDL rolls back the created tables", (
   try {
     const path = join(dir, "v23-mid-ddl.sqlite");
     v23(path);
-    const raw = new Database(path);
-    // Pre-existing object makes the first CREATE TABLE fail after the counter seed.
-    raw.run("CREATE TABLE valoracion_inversion(id TEXT)");
-    raw.close();
-
-    expect(() => openDatabase(path)).toThrow();
-
-    const check = new Database(path);
+    const db = new Database(path);
     try {
-      expect(check.query("SELECT version FROM schema_version").get()).toEqual({
+      // Force the first CREATE TABLE to fail after valoracionSchema has already
+      // inserted the counter. Calling the function inside its transaction is the
+      // only way to exercise the partial-DDL rollback: openDatabase rejects the
+      // dummy table in the contract preflight before reaching this point.
+      db.run("CREATE TABLE valoracion_inversion(id TEXT)");
+      expect(() =>
+        db.transaction(() => valoracionSchema(db)).immediate(),
+      ).toThrow();
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({
         version: 23,
       });
       expect(
-        check
+        db
           .query("SELECT COUNT(*) n FROM counters WHERE name='valoraciones_inversion'")
           .get(),
       ).toEqual({ n: 0 });
       expect(
-        check
+        db
           .query(
             "SELECT COUNT(*) n FROM sqlite_master WHERE name IN ('valoracion_inversion_audit','valoracion_attempts')",
           )
           .get(),
       ).toEqual({ n: 0 });
+      expect(
+        db
+          .query("SELECT COUNT(*) n FROM sqlite_master WHERE name='valoracion_inversion'")
+          .get(),
+      ).toEqual({ n: 1 });
     } finally {
-      check.close();
+      db.close();
     }
   } finally {
     rmSync(dir, { recursive: true, force: true });
   }
 });
-
 for (const unknown of [25, 999]) {
   test(`E4.3 AC-24: unknown schema version ${unknown} stays intact`, () => {
     const dir = root();
