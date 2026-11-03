@@ -1,18 +1,245 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 import { referenceReturn } from "./movement-draft";
+
+/*
+ * E4.4 — Deuda completa y conciliación desde apertura.
+ *
+ * The page consumes the E4.4 read model (`GET /api/deudas` and
+ * `GET /api/deudas/:id`) for listing, control and capital, informative
+ * conditions, read-only R5 history, executed history and reconciliations.
+ * Derived values are never calculated or persisted in the browser; the only
+ * local arithmetic is presentation of the exact declared/derived relation
+ * already returned by the server (declared - difference).
+ */
+
+type CapitalDeuda = {
+  aplicado: string | null;
+  deudaViva: string | null;
+  calculable: boolean;
+  motivoNoCalculable: string | null;
+  hechosInvalidos: string[];
+};
+
+type CoberturaDeuda = {
+  desdeControl: boolean;
+  hastaCorte: boolean;
+  incluyePrecontrol: boolean;
+  hechosAplicables: number;
+  hechosExcluidosPorCorte: number;
+  hechosAnulados: number;
+  desgloseVerificable: boolean;
+};
+
+type HistoriaDeuda = {
+  movimiento: string;
+  fecha: string;
+  tipo: string;
+  total: string;
+  capital: string | null;
+  intereses: string | null;
+  gasto: string;
+  efectoBanco: string;
+  aplicaAlCapital: boolean;
+  estado: "Vigente" | "Anulado";
+};
+
+type TotalesDeuda = {
+  capital: string | null;
+  intereses: string | null;
+  gasto: string;
+  banco: string;
+  anulados: number;
+};
+
+type Conciliacion = {
+  id: string;
+  deuda: string;
+  fechaCorte: string;
+  capitalDeclarado: string;
+  fuente: string | null;
+  nota: string | null;
+  estado: "Vigente" | "Anulada";
+  revision: number;
+  diferencia: string | null;
+  estadoConciliacion: "Conciliado" | "Diferencia" | "No comparable";
+  motivoNoComparable: string | null;
+};
+
+type ComprobacionRelacion = {
+  aplicable: boolean;
+  estado: "Consistente" | "Inconsistente" | "Sin datos" | "No calculable";
+  diferencia: string | null;
+  motivo: string | null;
+};
+
 export type Debt = {
   id: string;
   nombre: string;
+  estado: string;
+  revision: number;
+  tipoDeuda: string | null;
   inicioControl: string | null;
   capitalApertura: string | null;
   capitalPendiente: string | null;
-  estado: string;
-  revision: number;
+  capital: CapitalDeuda;
+  conciliacion: Conciliacion | null;
+  varias: boolean;
 };
-const base = "/deudas",
-  amount = (v: string | null) => (v === null ? "No calculable" : eur(v));
+
+type DeudaFicha = Debt & {
+  creado: string;
+  actualizado: string;
+  control: {
+    inicio: string | null;
+    capitalApertura: string | null;
+    capitalControl: string | null;
+  };
+  condiciones: {
+    tin: string | null;
+    tae: string | null;
+    cuotaContractual: string | null;
+    texto: string | null;
+  };
+  historico: {
+    capitalInicial: string | null;
+    capitalAmortizadoHistorico: string | null;
+    amortizacionExtraHistorica: string | null;
+    capitalHistoricoCuotas: string | null;
+    interesesHistoricos: string | null;
+    totalPagadoHistorico: string | null;
+    precontrol: {
+      ejercicio: number | null;
+      cuotas: number | null;
+      capital: string | null;
+      amortizacionExtra: string | null;
+    } | null;
+    comprobacion: {
+      capital: ComprobacionRelacion;
+      cuotas: ComprobacionRelacion;
+    };
+  };
+  corte: string | null;
+  cobertura: CoberturaDeuda;
+  historia: HistoriaDeuda[];
+  totales: TotalesDeuda;
+  conciliaciones: Conciliacion[];
+  conciliacionVigente: Conciliacion | null;
+};
+
+type DetailData = {
+  item: DeudaFicha;
+  usos: { id: string; anulado: number }[];
+  partidas: { id: string; nombre: string; estado: string }[];
+};
+
+const base = "/deudas";
+
+const fecha = (iso: string | null) =>
+  iso ? iso.split("-").reverse().join("/") : "Sin informar";
+
+const amount = (value: string | null, fallback = "Sin informar") =>
+  value === null ? fallback : eur(value);
+
+const signed = (value: string | null) => {
+  if (value === null) return "No calculable";
+  if (/^-?0(?:\.0+)?$/.test(value)) return eur("0.00");
+  return value.startsWith("-") ? eur(value) : "+" + eur(value);
+};
+
+const rate = (value: string | null) => {
+  if (value === null) return "Sin informar";
+  const [whole, fraction = ""] = value.split(".");
+  return `${whole},${fraction.replace(/0+$/, "").padEnd(2, "0")} %`;
+};
+
+const tipoDeuda = (value: string | null) => value ?? "Sin informar";
+
+const centsOf = (value: string) => {
+  const negative = value.startsWith("-"),
+    [whole, fraction = ""] = value.replace("-", "").split("."),
+    n =
+      BigInt(whole) * 100n +
+      BigInt((fraction + "00").slice(0, 2));
+  return negative ? -n : n;
+};
+
+const amountOfCents = (value: bigint) => {
+  const negative = value < 0n,
+    abs = negative ? -value : value;
+  return `${negative ? "-" : ""}${abs / 100n}.${String(abs % 100n).padStart(2, "0")}`;
+};
+
+const derivedAt = (conciliacion: Conciliacion) =>
+  conciliacion.diferencia === null
+    ? null
+    : amountOfCents(
+        centsOf(conciliacion.capitalDeclarado) -
+          centsOf(conciliacion.diferencia),
+      );
+
+const conciliacionLabel = (value: Conciliacion | null) => {
+  if (value === null) return "Sin declarar";
+  if (value.estadoConciliacion === "No comparable") return "No comparable";
+  return (
+    signed(value.diferencia) +
+    (value.estadoConciliacion === "Conciliado" ? " · Conciliado" : "")
+  );
+};
+
+const normalizeAmount = (value: string) =>
+  value.trim().replace(",", ".");
+
+function Section({
+  id,
+  title,
+  count,
+  hint,
+  open,
+  onToggle,
+  children,
+}: {
+  id: string;
+  title: string;
+  count?: number;
+  hint?: string;
+  open: boolean;
+  onToggle: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <section className="e44-section">
+      <h2 className="e44-section-title">
+        <button
+          type="button"
+          id={id + "-toggle"}
+          className="e44-toggle"
+          aria-expanded={open}
+          aria-controls={id + "-body"}
+          onClick={onToggle}
+        >
+          <span aria-hidden="true" className="e44-chevron">
+            {open ? "▾" : "▶"}
+          </span>
+          <span>{title}</span>
+          {count !== undefined && <span className="e44-count">({count})</span>}
+          {hint && <span className="e44-hint">{hint}</span>}
+        </button>
+      </h2>
+      <div
+        id={id + "-body"}
+        className="e44-section-body"
+        role="region"
+        aria-labelledby={id + "-toggle"}
+        hidden={!open}
+      >
+        {children}
+      </div>
+    </section>
+  );
+}
+
 export function Deudas({
   path,
   go,
@@ -31,8 +258,13 @@ export function Deudas({
     );
   return <Alert>Página no encontrada.</Alert>;
 }
+
 function List({ go }: { go: (p: string) => void }) {
-  const [filters, setFilters] = useState({ q: "", estado: "Activa" }),
+  const [filters, setFilters] = useState({
+      q: "",
+      estado: "Activa",
+      tipoDeuda: "",
+    }),
     [page, setPage] = useState(1),
     [retry, setRetry] = useState(0),
     [data, setData] = useState<{ items: Debt[]; total: number } | null>(null),
@@ -41,7 +273,11 @@ function List({ go }: { go: (p: string) => void }) {
     let live = true;
     setData(null);
     setError("");
-    api(base + "?" + new URLSearchParams({ ...filters, page: String(page) }))
+    api(
+      base +
+        "?" +
+        new URLSearchParams({ ...filters, page: String(page) }),
+    )
       .then((d) => {
         if (live) setData(d);
       })
@@ -68,15 +304,15 @@ function List({ go }: { go: (p: string) => void }) {
       <PageHead
         eyebrow="CAPITAL Y PAGOS"
         title="Deudas"
-        description="Apertura y capital pendiente desde Inicio control"
+        description="Apertura, deuda viva y conciliación desde Inicio control"
       >
         <button className="primary" onClick={() => go(base + "/nueva")}>
           Nueva deuda
         </button>
       </PageHead>
       <section className="panel catalog-panel">
-        <div className="filters">
-          <label>
+        <div className="filters debt-filters">
+          <label className="search">
             Buscar nombre o ID
             <input
               type="search"
@@ -98,7 +334,22 @@ function List({ go }: { go: (p: string) => void }) {
             >
               <option>Activa</option>
               <option>Inactiva</option>
+              <option value="">Todas</option>
+            </select>
+          </label>
+          <label>
+            Tipo de Deuda
+            <select
+              value={filters.tipoDeuda}
+              onChange={(e) => {
+                setFilters((v) => ({ ...v, tipoDeuda: e.target.value }));
+                setPage(1);
+              }}
+            >
               <option value="">Todos</option>
+              <option>Hipotecaria</option>
+              <option>No hipotecaria</option>
+              <option value="Sin informar">Sin informar</option>
             </select>
           </label>
         </div>
@@ -112,58 +363,97 @@ function List({ go }: { go: (p: string) => void }) {
             <p>
               Registra una deuda sin crear Saldos ni Movimientos de apertura.
             </p>
+            <button className="primary" onClick={() => go(base + "/nueva")}>
+              Registrar la primera deuda
+            </button>
           </div>
         ) : (
           <>
-            <p role="status">{data.total} deudas</p>
+            <p className="list-toolbar" role="status">
+              {data.total} {data.total === 1 ? "deuda" : "deudas"}
+            </p>
             <div className="desktop-list">
-              <table>
+              <table className="debt-list">
                 <caption className="sr-only">Deudas</caption>
                 <thead>
                   <tr>
-                    <th>Nombre / ID</th>
+                    <th>ID</th>
+                    <th>Nombre</th>
+                    <th>Tipo</th>
                     <th>Inicio control</th>
                     <th>Apertura</th>
-                    <th>Capital pendiente</th>
-                    <th>Estado</th>
+                    <th>Deuda viva</th>
+                    <th>Conciliación</th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((d) => (
                     <tr key={d.id}>
+                      <td className="debt-id">{d.id}</td>
                       <td>
                         {link(d)}
-                        <small className="table-id">{d.id}</small>
+                        <small className="table-id">
+                          <Tag inactive={d.estado === "Inactiva"}>
+                            {d.estado}
+                          </Tag>
+                        </small>
                       </td>
-                      <td>{d.inicioControl ?? "Sin informar"}</td>
+                      <td>{tipoDeuda(d.tipoDeuda)}</td>
+                      <td>{fecha(d.inicioControl)}</td>
                       <td>{amount(d.capitalApertura)}</td>
-                      <td>{amount(d.capitalPendiente)}</td>
                       <td>
-                        <Tag inactive={d.estado === "Inactiva"}>{d.estado}</Tag>
+                        {d.capital.calculable
+                          ? amount(d.capital.deudaViva)
+                          : "No calculable"}
+                      </td>
+                      <td>
+                        {conciliacionLabel(d.conciliacion)}
+                        {d.varias && (
+                          <span className="e44-varias"> · Varias</span>
+                        )}
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-            <ul className="mobile-list">
+            <ul className="mobile-list debt-cards">
               {data.items.map((d) => (
                 <li key={d.id}>
                   <div className="card-head">
-                    <span>{d.id}</span>
+                    <span className="id-label">
+                      {d.id} · {tipoDeuda(d.tipoDeuda)}
+                    </span>
                     <Tag inactive={d.estado === "Inactiva"}>{d.estado}</Tag>
                   </div>
                   <h2>{link(d)}</h2>
-                  <p>Inicio control: {d.inicioControl ?? "Sin informar"}</p>
+                  <p>Inicio control {fecha(d.inicioControl)}</p>
                   <p>Apertura {amount(d.capitalApertura)}</p>
-                  <p>Capital pendiente {amount(d.capitalPendiente)}</p>
+                  <p>
+                    Deuda viva{" "}
+                    {d.capital.calculable
+                      ? amount(d.capital.deudaViva)
+                      : "No calculable"}
+                  </p>
+                  <p>
+                    Conciliación {conciliacionLabel(d.conciliacion)}
+                    {d.varias && <span className="e44-varias"> · Varias</span>}
+                  </p>
+                  <button
+                    className="secondary"
+                    onClick={() => go(base + "/" + d.id)}
+                  >
+                    Ver ficha
+                  </button>
                 </li>
               ))}
             </ul>
           </>
         )}
         <div className="list-footer">
-          <span>Página {page}</span>
+          <span>
+            Página {page} · {data?.total ?? 0} registros
+          </span>
           <div className="actions">
             <button
               className="text-button"
@@ -185,21 +475,53 @@ function List({ go }: { go: (p: string) => void }) {
     </>
   );
 }
-type DetailData = {
-  item: Debt;
-  usos: { id: string; anulado: number }[];
-  partidas: { id: string; nombre: string; estado: string }[];
-};
+
 function Detail({ id, go }: { id: string; go: (p: string) => void }) {
   const [data, setData] = useState<DetailData | null>(null),
     [error, setError] = useState(""),
     [retry, setRetry] = useState(0),
-    [confirm, setConfirm] = useState(false),
-    [busy, setBusy] = useState(false);
+    [corte, setCorte] = useState(""),
+    [corteDraft, setCorteDraft] = useState(""),
+    [estadoForm, setEstadoForm] = useState(false),
+    [estadoMotivo, setEstadoMotivo] = useState(""),
+    [estadoField, setEstadoField] = useState(""),
+    [busy, setBusy] = useState(false),
+    [open, setOpen] = useState<Record<string, boolean>>(() => {
+      const narrow =
+        typeof window !== "undefined" &&
+        window.matchMedia("(max-width: 760px)").matches;
+      return {
+        control: true,
+        condiciones: !narrow,
+        historico: !narrow,
+        historia: !narrow,
+        conciliacion: !narrow,
+      };
+    }),
+    [concCreate, setConcCreate] = useState(false),
+    [concEdit, setConcEdit] = useState<string | null>(null),
+    [concAnnul, setConcAnnul] = useState<string | null>(null),
+    [concForm, setConcForm] = useState({
+      fechaCorte: "",
+      capitalDeclarado: "",
+      fuente: "",
+      nota: "",
+    }),
+    [concMotivo, setConcMotivo] = useState(""),
+    [concFields, setConcFields] = useState<Record<string, string>>({});
+  const alert = useRef<HTMLDivElement>(null),
+    attempt = useRef(crypto.randomUUID()),
+    estadoRef = useRef<HTMLInputElement>(null);
+
   useEffect(() => {
     let live = true;
     setError("");
-    api(base + "/" + id)
+    api(
+      base +
+        "/" +
+        id +
+        (corte ? "?corte=" + encodeURIComponent(corte) : ""),
+    )
       .then((d) => {
         if (live) setData(d);
       })
@@ -209,39 +531,207 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
     return () => {
       live = false;
     };
-  }, [id, retry]);
-  async function state() {
+  }, [id, retry, corte]);
+
+  const reload = () => setRetry((v) => v + 1);
+  const focusError = (fields: Record<string, string> = {}) => {
+    const first = Object.keys(fields)[0];
+    requestAnimationFrame(() => {
+      if (first) document.getElementById("debt-" + first)?.focus();
+      else alert.current?.focus();
+    });
+  };
+
+  async function changeState() {
+    if (!data) return;
+    if (!estadoMotivo.trim()) {
+      setEstadoField("Indica el motivo del cambio de Estado.");
+      requestAnimationFrame(() => estadoRef.current?.focus());
+      return;
+    }
     setBusy(true);
+    setError("");
     try {
       await api(
         base +
           "/" +
           id +
-          (data!.item.estado === "Activa" ? "/desactivar" : "/reactivar"),
+          (data.item.estado === "Activa" ? "/desactivar" : "/reactivar"),
         "POST",
-        { revision: data!.item.revision },
+        {
+          revision: data.item.revision,
+          motivo: estadoMotivo.trim(),
+        },
       );
-      setConfirm(false);
-      setRetry((v) => v + 1);
+      setEstadoForm(false);
+      setEstadoMotivo("");
+      setEstadoField("");
+      reload();
     } catch (e) {
       setError((e as Error).message);
+      requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
     }
   }
+
+  function openCreate() {
+    setConcCreate(true);
+    setConcEdit(null);
+    setConcAnnul(null);
+    setError("");
+    setConcForm({
+      fechaCorte: "",
+      capitalDeclarado: "",
+      fuente: "",
+      nota: "",
+    });
+    setConcMotivo("");
+    setConcFields({});
+    setOpen((v) => ({ ...v, conciliacion: true }));
+  }
+
+  function openEdit(c: Conciliacion) {
+    setConcCreate(false);
+    setConcAnnul(null);
+    setConcEdit(c.id);
+    setError("");
+    setConcForm({
+      fechaCorte: c.fechaCorte,
+      capitalDeclarado: c.capitalDeclarado,
+      fuente: c.fuente ?? "",
+      nota: c.nota ?? "",
+    });
+    setConcMotivo("");
+    setConcFields({});
+    setOpen((v) => ({ ...v, conciliacion: true }));
+  }
+
+  function openAnnul(c: Conciliacion) {
+    setConcCreate(false);
+    setConcEdit(null);
+    setConcAnnul(c.id);
+    setError("");
+    setConcMotivo("");
+    setConcFields({});
+    setOpen((v) => ({ ...v, conciliacion: true }));
+  }
+
+  const body = (withMotivo: boolean) => ({
+    fechaCorte: concForm.fechaCorte,
+    capitalDeclarado: normalizeAmount(concForm.capitalDeclarado),
+    fuente: concForm.fuente.trim() || null,
+    nota: concForm.nota.trim() || null,
+    ...(withMotivo ? { motivo: concMotivo } : {}),
+  });
+
+  async function createConciliacion() {
+    setBusy(true);
+    setError("");
+    setConcFields({});
+    try {
+      await api(
+        base + "/" + id + "/conciliaciones",
+        "POST",
+        body(false),
+        { "idempotency-key": attempt.current },
+      );
+      attempt.current = crypto.randomUUID();
+      setConcCreate(false);
+      setConcForm({
+        fechaCorte: "",
+        capitalDeclarado: "",
+        fuente: "",
+        nota: "",
+      });
+      reload();
+    } catch (e) {
+      const err = e as ApiError;
+      setError(err.message);
+      setConcFields(err.fields ?? {});
+      focusError(err.fields);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveConciliacion(c: Conciliacion) {
+    setBusy(true);
+    setError("");
+    setConcFields({});
+    try {
+      await api(
+        base + "/" + id + "/conciliaciones/" + c.id,
+        "PATCH",
+        { revision: c.revision, ...body(true) },
+      );
+      setConcEdit(null);
+      setConcMotivo("");
+      reload();
+    } catch (e) {
+      const err = e as ApiError;
+      setError(err.message);
+      setConcFields(err.fields ?? {});
+      focusError(err.fields);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function annulConciliacion(c: Conciliacion) {
+    setBusy(true);
+    setError("");
+    setConcFields({});
+    try {
+      await api(
+        base + "/" + id + "/conciliaciones/" + c.id,
+        "PATCH",
+        { revision: c.revision, motivo: concMotivo, estado: "Anulada" },
+      );
+      setConcAnnul(null);
+      setConcMotivo("");
+      reload();
+    } catch (e) {
+      const err = e as ApiError;
+      setError(err.message);
+      setConcFields(err.fields ?? {});
+      focusError(err.fields);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   const d = data?.item;
+  const vigentes =
+    d?.conciliaciones.filter((c) => c.estado === "Vigente") ?? [];
+  const r5Fields: [string, string | null][] = d
+    ? [
+        ["Capital inicial", d.historico.capitalInicial],
+        ["Amortizado histórico", d.historico.capitalAmortizadoHistorico],
+        ["Extra histórica", d.historico.amortizacionExtraHistorica],
+        ["Capital histórico en cuotas", d.historico.capitalHistoricoCuotas],
+        ["Intereses históricos", d.historico.interesesHistoricos],
+        ["Total pagado histórico", d.historico.totalPagadoHistorico],
+      ]
+    : [];
+  const r5Count = r5Fields.filter(([, value]) => value !== null).length;
+
   return (
     <div className="reference-detail debt-detail">
       <button className="text-button" onClick={() => go(base)}>
         Volver a Deudas
       </button>
-      {error && <Alert retry={() => setRetry((v) => v + 1)}>{error}</Alert>}
+      {error && (
+        <div tabIndex={-1} ref={alert} className="focus-alert">
+          <Alert retry={reload}>{error}</Alert>
+        </div>
+      )}
       {!data ? (
         !error && <p role="status">Cargando Deuda…</p>
       ) : (
         <>
           <PageHead
-            eyebrow={id}
+            eyebrow={`${id} · ${tipoDeuda(d!.tipoDeuda)} · ${d!.estado}`}
             title={d!.nombre}
             description="Capital pendiente · no es un Saldo bancario"
           >
@@ -252,43 +742,650 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
             >
               Editar deuda
             </button>
+            <button
+              className="secondary"
+              onClick={() => {
+                setEstadoForm((v) => !v);
+                setEstadoField("");
+              }}
+            >
+              {d!.estado === "Activa" ? "Desactivar deuda" : "Reactivar deuda"}
+            </button>
           </PageHead>
-          <section className="panel">
-            <h2>Control y capital</h2>
-            <dl className="debt-facts">
-              <div>
-                <dt>ID estable</dt>
-                <dd>{id}</dd>
+
+          <div className="actions e44-debt-actions">
+            <button
+              className="secondary"
+              onClick={() => go("/movimientos?deuda=" + id)}
+            >
+              Consultar movimientos de esta deuda
+            </button>
+          </div>
+
+          {estadoForm && (
+            <section className="panel e44-state-panel" aria-label="Cambio de Estado">
+              <h2>
+                {d!.estado === "Activa" ? "Desactivar" : "Reactivar"} {id}
+              </h2>
+              <p>
+                El cambio exige revisión vigente y motivo. No borra la historia
+                ni los hechos vinculados.
+              </p>
+              <label>
+                Motivo del cambio *
+                <input
+                  ref={estadoRef}
+                  id="debt-motivo-estado"
+                  value={estadoMotivo}
+                  maxLength={1000}
+                  aria-invalid={!!estadoField}
+                  aria-describedby={
+                    estadoField ? "debt-motivo-estado-error" : undefined
+                  }
+                  onChange={(e) => {
+                    setEstadoMotivo(e.target.value);
+                    setEstadoField("");
+                  }}
+                />
+                {estadoField && (
+                  <span id="debt-motivo-estado-error" className="field-error">
+                    {estadoField}
+                  </span>
+                )}
+              </label>
+              <div className="actions">
+                <button
+                  className="secondary"
+                  disabled={busy}
+                  onClick={() => setEstadoForm(false)}
+                >
+                  Cancelar cambio de Estado
+                </button>
+                <button
+                  className={d!.estado === "Activa" ? "secondary" : "primary"}
+                  disabled={busy}
+                  onClick={changeState}
+                >
+                  {busy
+                    ? "Guardando…"
+                    : `Confirmar ${d!.estado === "Activa" ? "desactivar" : "reactivar"}`}
+                </button>
               </div>
+            </section>
+          )}
+
+          <Section
+            id="control"
+            title="Control y capital"
+            open={open.control}
+            onToggle={() => setOpen((v) => ({ ...v, control: !v.control }))}
+          >
+            <form
+              className="e44-corte"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setCorte(corteDraft);
+                if (corteDraft === corte) reload();
+              }}
+            >
+              <label>
+                Corte histórico
+                <input
+                  type="date"
+                  id="debt-corte"
+                  value={corteDraft}
+                  onChange={(e) => setCorteDraft(e.target.value)}
+                />
+              </label>
+              <div className="actions">
+                <button className="secondary" type="submit">
+                  Aplicar corte
+                </button>
+                <button
+                  className="text-button"
+                  type="button"
+                  onClick={() => {
+                    setCorteDraft("");
+                    setCorte("");
+                    reload();
+                  }}
+                >
+                  Todos los hechos
+                </button>
+              </div>
+            </form>
+            <dl className="e44-facts">
               <div>
                 <dt>Inicio control</dt>
-                <dd>
-                  {d!.inicioControl?.split("-").reverse().join("/") ??
-                    "Sin informar"}
-                </dd>
+                <dd>{fecha(d!.control.inicio)}</dd>
               </div>
               <div>
                 <dt>Capital apertura</dt>
-                <dd>{amount(d!.capitalApertura)}</dd>
+                <dd>{amount(d!.control.capitalApertura)}</dd>
               </div>
               <div>
-                <dt>Capital pendiente</dt>
-                <dd>{amount(d!.capitalPendiente)}</dd>
+                <dt>Capital de control</dt>
+                <dd>{amount(d!.control.capitalControl)}</dd>
+              </div>
+              <div>
+                <dt>Corte aplicado</dt>
+                <dd>{d!.corte ? fecha(d!.corte) : "Todos los hechos"}</dd>
+              </div>
+              <div>
+                <dt>Cobertura</dt>
+                <dd>
+                  {d!.capital.calculable
+                    ? d!.cobertura.desgloseVerificable
+                      ? "Verificable"
+                      : "Parcial"
+                    : "No calculable"}
+                </dd>
+              </div>
+              <div>
+                <dt>Capital aplicado</dt>
+                <dd>
+                  {d!.capital.calculable
+                    ? amount(d!.capital.aplicado)
+                    : "No calculable"}
+                </dd>
+              </div>
+              <div>
+                <dt>Deuda viva</dt>
+                <dd className="e44-money">
+                  {d!.capital.calculable
+                    ? amount(d!.capital.deudaViva)
+                    : "No calculable"}
+                </dd>
+              </div>
+              <div>
+                <dt>Hechos aplicables</dt>
+                <dd>{d!.cobertura.hechosAplicables}</dd>
+              </div>
+              <div>
+                <dt>Excluidos por corte</dt>
+                <dd>{d!.cobertura.hechosExcluidosPorCorte}</dd>
+              </div>
+              <div>
+                <dt>Anulados</dt>
+                <dd>{d!.cobertura.hechosAnulados}</dd>
               </div>
             </dl>
-            <p className="help">
-              Apertura menos capital amortizado desde Inicio control, incluido
-              ese día. Los pagos anteriores conservan su efecto bancario sin
-              descontarse otra vez.
+            <p className="e44-coverage">
+              {d!.cobertura.desdeControl
+                ? "Desde control"
+                : "Antes del Inicio control"}{" "}
+              · {d!.cobertura.incluyePrecontrol
+                ? "incluye precontrol"
+                : "sin precontrol"}{" "}
+              · {d!.cobertura.hastaCorte ? "hasta el corte" : "sin corte"}
             </p>
-          </section>
-          <section className="panel">
+            {!d!.capital.calculable && (
+              <p className="e44-warning" role="status">
+                No calculable: {d!.capital.motivoNoCalculable}
+                {d!.capital.hechosInvalidos.length > 0 &&
+                  ` Movimientos: ${d!.capital.hechosInvalidos.join(", ")}.`}
+              </p>
+            )}
+            <p className="help">
+              No incluye intereses futuros, comisiones ni saldo bancario. El
+              corte es inclusivo y no crea una fotografía persistida.
+            </p>
+          </Section>
+
+          <Section
+            id="condiciones"
+            title="Condiciones informativas"
+            count={
+              [d!.condiciones.tin, d!.condiciones.tae, d!.condiciones.cuotaContractual].filter(
+                (v) => v !== null,
+              ).length
+            }
+            open={open.condiciones}
+            onToggle={() =>
+              setOpen((v) => ({ ...v, condiciones: !v.condiciones }))
+            }
+          >
+            <dl className="e44-facts">
+              <div>
+                <dt>TIN</dt>
+                <dd>{rate(d!.condiciones.tin)}</dd>
+              </div>
+              <div>
+                <dt>TAE</dt>
+                <dd>{rate(d!.condiciones.tae)}</dd>
+              </div>
+              <div>
+                <dt>Cuota contractual</dt>
+                <dd>{amount(d!.condiciones.cuotaContractual)}</dd>
+              </div>
+            </dl>
+            <p>
+              <strong>Condiciones:</strong>{" "}
+              {d!.condiciones.texto ?? "Sin informar"}
+            </p>
+            <p className="help">
+              Valores informativos: no calculan intereses, cuotas, fechas ni
+              cuadros de amortización. Una condición desconocida no es cero.
+            </p>
+          </Section>
+
+          <Section
+            id="historico"
+            title="Histórico R5"
+            count={r5Count}
+            hint="solo lectura"
+            open={open.historico}
+            onToggle={() => setOpen((v) => ({ ...v, historico: !v.historico }))}
+          >
+            <dl className="e44-facts">
+              {r5Fields.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{amount(value)}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="e44-precontrol">
+              {d!.historico.precontrol === null ? (
+                <p>Sin histórico precontrol aportado.</p>
+              ) : (
+                <p>
+                  <strong>
+                    Precontrol {d!.historico.precontrol.ejercicio ?? ""} (R5):
+                  </strong>{" "}
+                  cuotas {d!.historico.precontrol.cuotas ?? "Sin informar"} ·
+                  capital {amount(d!.historico.precontrol.capital)} ·
+                  amortización extra{" "}
+                  {amount(d!.historico.precontrol.amortizacionExtra)}
+                </p>
+              )}
+            </div>
+            <div className="e44-check">
+              <p>
+                <strong>Comprobación histórica:</strong>{" "}
+                {d!.historico.comprobacion.capital.estado}
+                {d!.historico.comprobacion.capital.aplicable &&
+                  d!.historico.comprobacion.capital.diferencia !== null && (
+                    <>
+                      {" · "}
+                      {centsOf(d!.historico.comprobacion.capital.diferencia) ===
+                      0n
+                        ? "sin diferencias"
+                        : "diferencia " +
+                          signed(d!.historico.comprobacion.capital.diferencia)}
+                    </>
+                  )}
+                {d!.historico.comprobacion.capital.motivo &&
+                  ` · ${d!.historico.comprobacion.capital.motivo}`}
+              </p>
+              <p className="help">
+                {d!.historico.comprobacion.cuotas.estado}:{" "}
+                {d!.historico.comprobacion.cuotas.motivo}
+              </p>
+            </div>
+            <p className="help">
+              El agregado R5 no reconstruye filas ni reduce el capital actual.
+            </p>
+          </Section>
+
+          <Section
+            id="historia"
+            title="Historia ejecutada"
+            count={d!.historia.filter((h) => h.estado === "Vigente").length}
+            open={open.historia}
+            onToggle={() => setOpen((v) => ({ ...v, historia: !v.historia }))}
+          >
+            {!d!.historia.length ? (
+              <p>Sin historia ejecutada registrada.</p>
+            ) : (
+              <>
+                <div className="e44-history-desktop">
+                  <table>
+                    <caption className="sr-only">
+                      Historia ejecutada de la Deuda
+                    </caption>
+                    <thead>
+                      <tr>
+                        <th>Fecha</th>
+                        <th>Tipo</th>
+                        <th>Total</th>
+                        <th>Capital</th>
+                        <th>Intereses</th>
+                        <th>Banco</th>
+                        <th>Aplica</th>
+                        <th>Movimiento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {d!.historia.map((h) => (
+                        <tr
+                          key={h.movimiento}
+                          className={h.estado === "Anulado" ? "annulled" : ""}
+                        >
+                          <td>{fecha(h.fecha)}</td>
+                          <td>
+                            {h.tipo}
+                            {h.estado === "Anulado" && " · Anulado"}
+                          </td>
+                          <td>{eur(h.total)}</td>
+                          <td>{amount(h.capital, "No verificable")}</td>
+                          <td>{amount(h.intereses, "No verificable")}</td>
+                          <td>{eur(h.efectoBanco)}</td>
+                          <td>{h.aplicaAlCapital ? "Sí" : "No"}</td>
+                          <td>
+                            <a
+                              href={"/movimientos/" + h.movimiento}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                go("/movimientos/" + h.movimiento);
+                              }}
+                            >
+                              {h.movimiento}
+                            </a>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                <ul className="e44-history-mobile">
+                  {d!.historia.map((h) => (
+                    <li
+                      key={h.movimiento}
+                      className={h.estado === "Anulado" ? "annulled" : ""}
+                    >
+                      <div className="card-head">
+                        <strong>{fecha(h.fecha)}</strong>
+                        <Tag inactive={h.estado === "Anulado"}>
+                          {h.estado}
+                        </Tag>
+                      </div>
+                      <p>
+                        {h.tipo} · total {eur(h.total)}
+                      </p>
+                      <dl className="e44-facts">
+                        <div>
+                          <dt>Capital</dt>
+                          <dd>{amount(h.capital, "No verificable")}</dd>
+                        </div>
+                        <div>
+                          <dt>Intereses</dt>
+                          <dd>{amount(h.intereses, "No verificable")}</dd>
+                        </div>
+                        <div>
+                          <dt>Banco</dt>
+                          <dd>{eur(h.efectoBanco)}</dd>
+                        </div>
+                        <div>
+                          <dt>Aplica</dt>
+                          <dd>{h.aplicaAlCapital ? "Sí" : "No"}</dd>
+                        </div>
+                      </dl>
+                      <button
+                        className="text-button"
+                        onClick={() => go("/movimientos/" + h.movimiento)}
+                      >
+                        Ver Movimiento {h.movimiento}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
+            <p className="e44-totals">
+              Totales desde control: capital{" "}
+              {amount(d!.totales.capital, "No calculable")} · intereses{" "}
+              {amount(d!.totales.intereses, "No calculable")} · gasto{" "}
+              {eur(d!.totales.gasto)} · banco {eur(d!.totales.banco)}
+            </p>
+            <p className="e44-annulled">Anulados: {d!.totales.anulados}</p>
+          </Section>
+
+          <Section
+            id="conciliacion"
+            title="Conciliación desde apertura"
+            count={vigentes.length}
+            hint={d!.varias ? "Varias" : undefined}
+            open={open.conciliacion}
+            onToggle={() =>
+              setOpen((v) => ({ ...v, conciliacion: !v.conciliacion }))
+            }
+          >
+            <div className="actions e44-conciliation-actions">
+              <button className="secondary" onClick={openCreate}>
+                Nueva conciliación
+              </button>
+            </div>
+            {!d!.conciliaciones.length ? (
+              <p>Sin declarado. Puedes registrar un saldo externo opcional.</p>
+            ) : (
+              <ul className="e44-conciliation-list">
+                {d!.conciliaciones.map((c) => {
+                  const derivado = derivedAt(c);
+                  return (
+                    <li
+                      key={c.id}
+                      className={
+                        "e44-conciliation " +
+                        (c.estado === "Anulada" ? "annulled" : "")
+                      }
+                    >
+                      <div className="card-head">
+                        <h3>
+                          {fecha(c.fechaCorte)} · {c.estado}
+                        </h3>
+                        <Tag inactive={c.estado === "Anulada"}>
+                          {c.estadoConciliacion}
+                        </Tag>
+                      </div>
+                      <dl className="e44-facts">
+                        <div>
+                          <dt>Declarado</dt>
+                          <dd>{eur(c.capitalDeclarado)}</dd>
+                        </div>
+                        <div>
+                          <dt>Derivado</dt>
+                          <dd>
+                            {derivado === null
+                              ? "No calculable"
+                              : eur(derivado)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Diferencia</dt>
+                          <dd className="e44-money">
+                            {c.diferencia === null
+                              ? "No comparable"
+                              : signed(c.diferencia)}
+                          </dd>
+                        </div>
+                        <div>
+                          <dt>Fuente</dt>
+                          <dd>{c.fuente ?? "Sin informar"}</dd>
+                        </div>
+                        <div>
+                          <dt>Nota</dt>
+                          <dd>{c.nota ?? "Sin informar"}</dd>
+                        </div>
+                        <div>
+                          <dt>Revisión</dt>
+                          <dd>{c.revision}</dd>
+                        </div>
+                      </dl>
+                      {c.motivoNoComparable && (
+                        <p className="e44-warning">
+                          No comparable: {c.motivoNoComparable}
+                        </p>
+                      )}
+                      <p className="help">
+                        No crea Movimiento ni ajuste de capital.
+                      </p>
+                      {c.estado === "Vigente" && (
+                        <div className="actions">
+                          <button
+                            className="secondary"
+                            onClick={() => openEdit(c)}
+                          >
+                            Corregir declarado
+                          </button>
+                          <button
+                            className="secondary"
+                            onClick={() => openAnnul(c)}
+                          >
+                            Anular
+                          </button>
+                        </div>
+                      )}
+                      {concEdit === c.id && (
+                        <div className="e44-inline-form" role="group" aria-label="Corregir conciliación">
+                          <ConciliationFields
+                            value={concForm}
+                            fields={concFields}
+                            onChange={(patch) =>
+                              setConcForm((v) => ({ ...v, ...patch }))
+                            }
+                          />
+                          <label>
+                            Motivo de la corrección *
+                            <textarea
+                              id="debt-motivo"
+                              value={concMotivo}
+                              maxLength={1000}
+                              aria-invalid={!!concFields.motivo}
+                              aria-describedby={
+                                concFields.motivo ? "debt-motivo-error" : undefined
+                              }
+                              onChange={(e) => {
+                                setConcMotivo(e.target.value);
+                                setConcFields((v) => ({ ...v, motivo: "" }));
+                              }}
+                            />
+                            {concFields.motivo && (
+                              <span id="debt-motivo-error" className="field-error">
+                                {concFields.motivo}
+                              </span>
+                            )}
+                          </label>
+                          <div className="actions">
+                            <button
+                              className="secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                setConcEdit(null);
+                                setConcMotivo("");
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              className="primary"
+                              disabled={busy}
+                              onClick={() => saveConciliacion(c)}
+                            >
+                              Guardar corrección
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {concAnnul === c.id && (
+                        <div className="e44-inline-form" role="group" aria-label="Anular conciliación">
+                          <p>
+                            Anular conserva el registro y lo excluye de la
+                            vista vigente. No hay borrado.
+                          </p>
+                          <label>
+                            Motivo de la anulación *
+                            <textarea
+                              id="debt-motivo"
+                              value={concMotivo}
+                              maxLength={1000}
+                              aria-invalid={!!concFields.motivo}
+                              aria-describedby={
+                                concFields.motivo
+                                  ? "debt-motivo-anulacion-error"
+                                  : undefined
+                              }
+                              onChange={(e) => {
+                                setConcMotivo(e.target.value);
+                                setConcFields((v) => ({ ...v, motivo: "" }));
+                              }}
+                            />
+                            {concFields.motivo && (
+                              <span
+                                id="debt-motivo-anulacion-error"
+                                className="field-error"
+                              >
+                                {concFields.motivo}
+                              </span>
+                            )}
+                          </label>
+                          <div className="actions">
+                            <button
+                              className="secondary"
+                              disabled={busy}
+                              onClick={() => {
+                                setConcAnnul(null);
+                                setConcMotivo("");
+                              }}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              className="secondary"
+                              disabled={busy}
+                              onClick={() => annulConciliacion(c)}
+                            >
+                              Confirmar anulación
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+            {concCreate && (
+              <div className="e44-inline-form" role="group" aria-label="Nueva conciliación">
+                <h3>Nueva conciliación</h3>
+                <ConciliationFields
+                  value={concForm}
+                  fields={concFields}
+                  onChange={(patch) =>
+                    setConcForm((v) => ({ ...v, ...patch }))
+                  }
+                />
+                <div className="actions">
+                  <button
+                    className="secondary"
+                    disabled={busy}
+                    onClick={() => setConcCreate(false)}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    className="primary"
+                    disabled={busy}
+                    onClick={createConciliacion}
+                  >
+                    {busy ? "Guardando…" : "Registrar declarado"}
+                  </button>
+                </div>
+              </div>
+            )}
+            <p className="help">
+              La diferencia es exacta y con signo: declarado − deuda viva en la
+              fecha de corte. No se compensa ni se crea un ajuste.
+            </p>
+          </Section>
+
+          <section className="panel e44-partidas">
             <h2>Partidas vinculadas</h2>
-            {!data.partidas.length ? (
+            {!data!.partidas.length ? (
               <p>Sin Partidas vinculadas.</p>
             ) : (
               <ul>
-                {data.partidas.map((p) => (
+                {data!.partidas.map((p) => (
                   <li key={p.id}>
                     <a
                       href={"/clasificacion/partidas/" + p.id}
@@ -311,57 +1408,108 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
               Configurar Partidas
             </button>
           </section>
-          <section className="panel">
-            <h2>Movimientos vinculados</h2>
-            <p>
-              {data.usos.length} hechos, incluidos anulados. La cuota es Gasto
-              íntegro; la amortización extraordinaria no es Gasto.
-            </p>
-            <button
-              className="secondary"
-              onClick={() => go("/movimientos?deuda=" + id)}
-            >
-              Consultar movimientos de esta deuda
-            </button>
-          </section>
-          <section className="panel">
-            <h2>Disponibilidad</h2>
-            <p>Desactivar conserva la historia e impide nuevas selecciones.</p>
-            {confirm ? (
-              <div role="group" aria-label="Confirmar Estado">
-                <p>¿Confirmar cambio de Estado de {id}?</p>
-                <div className="actions">
-                  <button
-                    className="secondary"
-                    disabled={busy}
-                    onClick={() => setConfirm(false)}
-                  >
-                    Cancelar cambio de Estado
-                  </button>
-                  <button className="primary" disabled={busy} onClick={state}>
-                    Confirmar cambio de Estado
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <button className="secondary" onClick={() => setConfirm(true)}>
-                {d!.estado === "Activa"
-                  ? "Desactivar deuda"
-                  : "Reactivar deuda"}
-              </button>
-            )}
-          </section>
         </>
       )}
     </div>
   );
 }
+
+function ConciliationFields({
+  value,
+  fields,
+  onChange,
+}: {
+  value: {
+    fechaCorte: string;
+    capitalDeclarado: string;
+    fuente: string;
+    nota: string;
+  };
+  fields: Record<string, string>;
+  onChange: (patch: Partial<typeof value>) => void;
+}) {
+  const error = (key: string) =>
+    fields[key] ? (
+      <span id={"debt-conc-" + key + "-error"} className="field-error">
+        {fields[key]}
+      </span>
+    ) : null;
+  return (
+    <div className="form-grid">
+      <label>
+        Fecha de corte *
+        <input
+          id="debt-fechaCorte"
+          type="date"
+          value={value.fechaCorte}
+          aria-invalid={!!fields.fechaCorte}
+          aria-describedby={
+            fields.fechaCorte ? "debt-conc-fechaCorte-error" : undefined
+          }
+          onChange={(e) => onChange({ fechaCorte: e.target.value })}
+        />
+        {error("fechaCorte")}
+      </label>
+      <label>
+        Capital declarado EUR *
+        <input
+          id="debt-capitalDeclarado"
+          inputMode="decimal"
+          value={value.capitalDeclarado}
+          aria-invalid={!!fields.capitalDeclarado}
+          aria-describedby={
+            fields.capitalDeclarado
+              ? "debt-conc-capitalDeclarado-error"
+              : undefined
+          }
+          onChange={(e) => onChange({ capitalDeclarado: e.target.value })}
+        />
+        {error("capitalDeclarado")}
+      </label>
+      <label>
+        Fuente
+        <input
+          id="debt-fuente"
+          value={value.fuente}
+          maxLength={200}
+          aria-invalid={!!fields.fuente}
+          aria-describedby={
+            fields.fuente ? "debt-conc-fuente-error" : undefined
+          }
+          onChange={(e) => onChange({ fuente: e.target.value })}
+        />
+        {error("fuente")}
+      </label>
+      <label className="full-width">
+        Nota
+        <textarea
+          id="debt-nota"
+          value={value.nota}
+          maxLength={1000}
+          aria-invalid={!!fields.nota}
+          aria-describedby={
+            fields.nota ? "debt-conc-nota-error" : undefined
+          }
+          onChange={(e) => onChange({ nota: e.target.value })}
+        />
+        {error("nota")}
+      </label>
+    </div>
+  );
+}
+
 function Form({ id, go }: { id?: string; go: (p: string) => void }) {
   const [data, setData] = useState<DetailData | null>(null),
     [form, setForm] = useState({
       nombre: "",
       inicioControl: "",
       capitalApertura: "",
+      tipoDeuda: "",
+      tin: "",
+      tae: "",
+      cuotaContractual: "",
+      condiciones: "",
+      motivo: "",
     }),
     [error, setError] = useState(""),
     [fields, setFields] = useState<Record<string, string>>({}),
@@ -383,6 +1531,12 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
             nombre: d.item.nombre,
             inicioControl: d.item.inicioControl ?? "",
             capitalApertura: d.item.capitalApertura ?? "",
+            tipoDeuda: d.item.tipoDeuda ?? "",
+            tin: d.item.condiciones.tin ?? "",
+            tae: d.item.condiciones.tae ?? "",
+            cuotaContractual: d.item.condiciones.cuotaContractual ?? "",
+            condiciones: d.item.condiciones.texto ?? "",
+            motivo: "",
           });
           initialized.current = true;
         }
@@ -408,14 +1562,43 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     setError("");
     setFields({});
     try {
-      const payload: Record<string, unknown> = {
-        nombre: form.nombre,
-        ...(id ? { revision: data!.item.revision } : {}),
-      };
-      for (const k of ["inicioControl", "capitalApertura"] as const)
-        if (!id || form[k] !== (data!.item[k] ?? ""))
-          payload[k] =
-            k === "capitalApertura" ? form[k].replace(",", ".") : form[k];
+      const normalizedTipo = form.tipoDeuda || null,
+        normalizedTin = form.tin.trim() || null,
+        normalizedTae = form.tae.trim() || null,
+        normalizedCuota = form.cuotaContractual.trim()
+          ? normalizeAmount(form.cuotaContractual)
+          : null,
+        normalizedTexto = form.condiciones.trim()
+          ? form.condiciones
+          : null,
+        payload: Record<string, unknown> = { nombre: form.nombre };
+      if (!id) {
+        payload.inicioControl = form.inicioControl;
+        payload.capitalApertura = normalizeAmount(form.capitalApertura);
+        if (normalizedTipo !== null) payload.tipoDeuda = normalizedTipo;
+        if (normalizedTin !== null) payload.tin = normalizedTin;
+        if (normalizedTae !== null) payload.tae = normalizedTae;
+        if (normalizedCuota !== null) payload.cuotaContractual = normalizedCuota;
+        if (normalizedTexto !== null) payload.condiciones = normalizedTexto;
+      } else {
+        const item = data!.item;
+        payload.revision = item.revision;
+        if (form.inicioControl !== (item.inicioControl ?? ""))
+          payload.inicioControl = form.inicioControl;
+        if (
+          normalizeAmount(form.capitalApertura) !==
+          (item.capitalApertura ?? "")
+        )
+          payload.capitalApertura = normalizeAmount(form.capitalApertura);
+        if (normalizedTipo !== item.tipoDeuda) payload.tipoDeuda = normalizedTipo;
+        if (normalizedTin !== item.condiciones.tin) payload.tin = normalizedTin;
+        if (normalizedTae !== item.condiciones.tae) payload.tae = normalizedTae;
+        if (normalizedCuota !== item.condiciones.cuotaContractual)
+          payload.cuotaContractual = normalizedCuota;
+        if (normalizedTexto !== item.condiciones.texto)
+          payload.condiciones = normalizedTexto;
+        if (form.motivo.trim()) payload.motivo = form.motivo.trim();
+      }
       const r = await api(
         base + (id ? "/" + id : ""),
         id ? "PATCH" : "POST",
@@ -430,7 +1613,11 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
       setError(err.message);
       setFields(err.fields ?? {});
       setConflict(err.status === 409);
-      requestAnimationFrame(() => alert.current?.focus());
+      const first = Object.keys(err.fields ?? {})[0];
+      requestAnimationFrame(() => {
+        if (first) document.getElementById("debt-" + first)?.focus();
+        else alert.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -443,7 +1630,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
         description="Sin hechos automáticos ni cuotas programadas"
       />
       {error && (
-        <div tabIndex={-1} ref={alert}>
+        <div tabIndex={-1} ref={alert} className="focus-alert">
           <Alert>
             {error}
             {conflict && (
@@ -484,6 +1671,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
                         ? "Inicio control *"
                         : "Capital apertura EUR *"}
                     <input
+                      id={"debt-" + k}
                       aria-label={
                         k === "nombre"
                           ? "Nombre de Deuda *"
@@ -522,6 +1710,153 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
               Apertura explícita, sin precargar cero. Inicio control y apertura
               quedan protegidos cuando la Deuda tiene movimientos, incluidos
               anulados. No se exige Fecha inicio deuda ni TIN/TAE.
+            </p>
+          </section>
+
+          <section className="panel">
+            <h2>Tipo y condiciones informativas</h2>
+            <div className="form-grid">
+              <label>
+                Tipo de Deuda
+                <select
+                  id="debt-tipoDeuda"
+                  value={form.tipoDeuda}
+                  aria-invalid={!!fields.tipoDeuda}
+                  aria-describedby={
+                    fields.tipoDeuda ? "debt-tipoDeuda-error" : undefined
+                  }
+                  onChange={(e) => {
+                    setForm((v) => ({ ...v, tipoDeuda: e.target.value }));
+                    setFields((v) => ({ ...v, tipoDeuda: "" }));
+                  }}
+                >
+                  <option value="">Sin informar</option>
+                  <option>Hipotecaria</option>
+                  <option>No hipotecaria</option>
+                </select>
+                {fields.tipoDeuda && (
+                  <span id="debt-tipoDeuda-error" className="field-error">
+                    {fields.tipoDeuda}
+                  </span>
+                )}
+              </label>
+              <label>
+                TIN %
+                <input
+                  id="debt-tin"
+                  inputMode="decimal"
+                  value={form.tin}
+                  aria-invalid={!!fields.tin}
+                  aria-describedby={fields.tin ? "debt-tin-error" : undefined}
+                  onChange={(e) => {
+                    setForm((v) => ({ ...v, tin: e.target.value }));
+                    setFields((v) => ({ ...v, tin: "" }));
+                  }}
+                />
+                {fields.tin && (
+                  <span id="debt-tin-error" className="field-error">
+                    {fields.tin}
+                  </span>
+                )}
+              </label>
+              <label>
+                TAE %
+                <input
+                  id="debt-tae"
+                  inputMode="decimal"
+                  value={form.tae}
+                  aria-invalid={!!fields.tae}
+                  aria-describedby={fields.tae ? "debt-tae-error" : undefined}
+                  onChange={(e) => {
+                    setForm((v) => ({ ...v, tae: e.target.value }));
+                    setFields((v) => ({ ...v, tae: "" }));
+                  }}
+                />
+                {fields.tae && (
+                  <span id="debt-tae-error" className="field-error">
+                    {fields.tae}
+                  </span>
+                )}
+              </label>
+              <label>
+                Cuota contractual EUR
+                <input
+                  id="debt-cuotaContractual"
+                  inputMode="decimal"
+                  value={form.cuotaContractual}
+                  aria-invalid={!!fields.cuotaContractual}
+                  aria-describedby={
+                    fields.cuotaContractual
+                      ? "debt-cuotaContractual-error"
+                      : undefined
+                  }
+                  onChange={(e) => {
+                    setForm((v) => ({
+                      ...v,
+                      cuotaContractual: e.target.value,
+                    }));
+                    setFields((v) => ({ ...v, cuotaContractual: "" }));
+                  }}
+                />
+                {fields.cuotaContractual && (
+                  <span
+                    id="debt-cuotaContractual-error"
+                    className="field-error"
+                  >
+                    {fields.cuotaContractual}
+                  </span>
+                )}
+              </label>
+              <label className="full-width">
+                Condiciones informativas
+                <textarea
+                  id="debt-condiciones"
+                  value={form.condiciones}
+                  maxLength={1000}
+                  aria-invalid={!!fields.condiciones}
+                  aria-describedby={
+                    fields.condiciones ? "debt-condiciones-error" : undefined
+                  }
+                  onChange={(e) => {
+                    setForm((v) => ({ ...v, condiciones: e.target.value }));
+                    setFields((v) => ({ ...v, condiciones: "" }));
+                  }}
+                />
+                {fields.condiciones && (
+                  <span id="debt-condiciones-error" className="field-error">
+                    {fields.condiciones}
+                  </span>
+                )}
+              </label>
+              {id && (
+                <label className="full-width">
+                  Motivo del cambio
+                  <textarea
+                    id="debt-motivo"
+                    value={form.motivo}
+                    maxLength={1000}
+                    aria-invalid={!!fields.motivo}
+                    aria-describedby={
+                      fields.motivo ? "debt-motivo-error" : undefined
+                    }
+                    onChange={(e) => {
+                      setForm((v) => ({ ...v, motivo: e.target.value }));
+                      setFields((v) => ({ ...v, motivo: "" }));
+                    }}
+                  />
+                  {fields.motivo && (
+                    <span id="debt-motivo-error" className="field-error">
+                      {fields.motivo}
+                    </span>
+                  )}
+                </label>
+              )}
+            </div>
+            <p className="help">
+              TIN, TAE, cuota y condiciones son informativos: no calculan
+              intereses, cuotas ni cuadros. El motivo es obligatorio al
+              corregir un tipo o condición ya informados. El histórico y el
+              precontrol R5 no se editan en esta pantalla.
             </p>
           </section>
           <div className="form-footer">

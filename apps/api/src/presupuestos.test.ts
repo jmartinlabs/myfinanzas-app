@@ -559,16 +559,12 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
           .query("SELECT name FROM sqlite_master WHERE name='presupuestos'")
           .get(),
       ).toBeNull();
-      const { s, sub } = setup(db),
-        debt = createDebt(
-          db,
-          {
-            nombre: "Deuda conservada",
-            inicioControl: "2026-10-01",
-            capitalApertura: "100",
-          },
-          key(),
-        );
+      const { s, sub } = setup(db);
+      // Genuine v7 row: current createDebt writes v23 columns that v7 lacks.
+      db.run(
+        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D001','Deuda conservada','2026-10-01',10000,'Activa',1,'antes','antes')",
+      );
+      const debt = { id: "D001" };
       db.run(
         "INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda) VALUES('PAR900','Partida v7',?,'Activa',1,'antes','antes',?)",
         [sub.id, debt.id],
@@ -634,7 +630,26 @@ test("08 B7 AC22: continuidad v7 genuina demo/producción, MFA e identidad sin r
                   revision: 1,
                   actualizado: null,
                 }))
-              : rows,
+              : table === "deudas"
+                ? (rows as any[]).map((r) => ({
+                    ...r,
+                tipo_deuda: null,
+                tin: null,
+                tae: null,
+                cuota_contractual: null,
+                condiciones: null,
+                capital_inicial: null,
+                capital_amortizado_historico: null,
+                amortizacion_extra_historica: null,
+                capital_historico_cuotas: null,
+                intereses_historicos: null,
+                total_pagado_historico: null,
+                precontrol_cuotas: null,
+                precontrol_capital: null,
+                precontrol_amortizacion_extra: null,
+                precontrol_ejercicio: null,
+                  }))
+                : rows,
         );
       }
       expect(
@@ -690,10 +705,10 @@ test("08 B8 AC22: copia/restore8 recupera maestro/enlaces y rechaza8 ajeno", () 
     db.exec("DROP TABLE budget_contract");
     expect(() =>
       backup(db, secret, join(dir, "foreign-backup"), recipient),
-    ).toThrow("Contrato de esquema v22 desconocido o incompleto; no se modificará esta base.");
+    ).toThrow("Contrato de esquema v23 desconocido o incompleto; no se modificará esta base.");
     db.close();
     const bytes = readFileSync(path);
-    expect(() => openDatabase(path)).toThrow("Contrato de esquema v22 desconocido o incompleto; no se modificará esta base.");
+    expect(() => openDatabase(path)).toThrow("Contrato de esquema v23 desconocido o incompleto; no se modificará esta base.");
     expect(readFileSync(path)).toEqual(bytes);
   } finally {
     try {

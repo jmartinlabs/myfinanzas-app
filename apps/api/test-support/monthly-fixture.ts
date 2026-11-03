@@ -5,7 +5,7 @@ export function monthlyFixture(db: Database) {
   db.exec(`INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('1','2026-06-20',0,'fixture'),('2','2026-07-20',0,'fixture'),('3','2026-08-20',0,'fixture');
  INSERT INTO categorias VALUES('CAT001','Gastos fixture','Gasto','Gasto','Gasto',0,'Activa',1,'f','f');
  INSERT INTO subcategorias VALUES('SUB001','Sub fixture','CAT001','Activa',1,'f','f');
- INSERT INTO deudas VALUES('D001','Deuda fixture','2026-01-01',1000000,'Inactiva',1,'f','f');
+ INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D001','Deuda fixture','2026-01-01',1000000,'Inactiva',1,'f','f');
  INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado,deuda) VALUES('PAR001','Gasto sin plan','SUB001','Activa',1,'f','f',NULL),('PAR002','Cuota fixture','SUB001','Inactiva',1,'f','f','D001');
  INSERT INTO presupuestos VALUES('PRE001','Plan fixture','No aplica',NULL,'Inactivo',1,'f','f');
  INSERT INTO cycle_plans VALUES('1',1);

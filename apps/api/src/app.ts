@@ -87,12 +87,19 @@ import {
   budgetUsage,
 } from "./presupuestos";
 import {
-  getDebt,
-  listDebts,
   createDebt,
   updateDebt,
   debtUsage,
 } from "./deudas";
+import {
+  getDeudaCompleta,
+  listConciliacionesDeuda,
+  listDeudasCompletas,
+} from "./deuda-completa";
+import {
+  createConciliacion,
+  updateConciliacion,
+} from "./conciliaciones";
 import {
   getReference,
   referenceUsage,
@@ -891,7 +898,9 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       if (path === "/api/deudas" && req.method === "GET")
-        return reply(listDebts(db, new URL(req.url).searchParams));
+        return reply(
+          listDeudasCompletas(db, new URL(req.url).searchParams),
+        );
       if (path === "/api/deudas" && req.method === "POST") {
         const item = createDebt(
           db,
@@ -902,6 +911,40 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", "/api/deudas/" + item.id);
         return reply({ item }, 201);
       }
+      const debtConciliaciones = path.match(
+        /^\/api\/deudas\/(D\d+)\/conciliaciones(?:\/(C\d+))?$/,
+      );
+      if (debtConciliaciones) {
+        const [, debtId, conciliacionId] = debtConciliaciones;
+        if (!conciliacionId && req.method === "GET")
+          return reply({
+            items: listConciliacionesDeuda(db, debtId),
+          });
+        if (!conciliacionId && req.method === "POST") {
+          const item = createConciliacion(
+            db,
+            debtId,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          );
+          headers.set(
+            "location",
+            `/api/deudas/${debtId}/conciliaciones/${item.id}`,
+          );
+          return reply({ item }, 201);
+        }
+        if (conciliacionId && req.method === "PATCH")
+          return reply({
+            item: updateConciliacion(
+              db,
+              debtId,
+              conciliacionId,
+              await jsonBody(req),
+              now(),
+            ),
+          });
+      }
       const debt = path.match(
         /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
       );
@@ -910,7 +953,12 @@ export function createApp(db: Database, options: AppOptions) {
         if (!action && req.method === "GET")
           return reply(
             db.transaction(() => ({
-              item: getDebt(db, id),
+              item: getDeudaCompleta(
+                db,
+                id,
+                new URL(req.url).searchParams.get("corte"),
+                now(),
+              ),
               usos: debtUsage(db, id),
               partidas: db
                 .query(
@@ -925,15 +973,22 @@ export function createApp(db: Database, options: AppOptions) {
         ) {
           let body = await jsonBody(req);
           if (action) {
-            if (Object.keys(body).some((k) => k !== "revision"))
+            if (
+              Object.keys(body).some(
+                (k) => !["revision", "motivo"].includes(k),
+              )
+            )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo revisión para Estado.",
+                "Solo revisión y motivo para Estado.",
               );
             body = {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
+              ...(body.motivo === undefined
+                ? {}
+                : { motivo: body.motivo }),
             };
           }
           return reply({ item: updateDebt(db, id, body, now()) });
