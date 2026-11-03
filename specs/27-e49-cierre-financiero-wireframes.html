@@ -188,7 +188,7 @@
 
   <!-- ============================== R1 ============================== -->
   <section class="wire-section" id="r1">
-    <div class="wire-label"><span class="tag">R1</span><span class="desc"><strong>Revisión previa al cierre</strong> · 1440 (W1) y 390 (W2). Ciclo, ventana, S0, plan <em>SinPlan</em> válido, cobertura, fuentes E3.5/FIN_NETA, E4.3 <em>No disponible</em>, backup preflight y gates. Estado de ejemplo: E3.5 no verificable y DT6/T-BKP no acreditado.</span></div>
+    <div class="wire-label"><span class="tag">R1</span><span class="desc"><strong>Revisión previa al cierre</strong> · 1440 (W1) y 390 (W2). Ciclo, ventana, S0, plan <em>SinPlan</em> válido, cobertura, fuentes E3.5/FIN_NETA, E4.3 <em>No disponible</em>, backup preflight y gates. Estado de ejemplo: precierre E4.8 <em>Parcial</em> por E3.5 (y globalmente bloqueado por backup); cierre E4.9 <em>Bloqueado</em> por E3.5 y backup, sin foto.</span></div>
 
     <figure class="wire-figure">
       <div class="frame-wrap">
@@ -222,10 +222,15 @@
                 <div class="info"><b>Cobertura</b>«n» de «m» fuentes<br>«k» bloqueos · «j» avisos<br><span class="muted small">Parcial no se presenta como completo</span></div>
               </div>
 
+              <div class="grid2">
+                <div class="info"><b>E4.8 · Precierre</b><span class="state partial">… Parcial</span> por E3.5/FIN_NETA no verificable. Conserva cobertura parcial y motivo. <span class="muted small">No se convierte en <em>Bloqueado</em> solo por E3.5; el estado global del precierre es <em>Bloqueado</em> por el backup no acreditado, no por E3.5.</span></div>
+                <div class="info"><b>E4.9 · Cierre</b><span class="state blocked">! Bloqueado</span> por E3.5 requerido no verificable y backup no acreditado. No genera foto ni cierre parcial. <span class="muted small">El precierre Parcial no autoriza este cierre.</span></div>
+              </div>
+
               <div class="block dangerbox">
                 <h4>Bloqueos que impiden cerrar</h4>
                 <ul class="plain">
-                  <li><strong>E3.5 / FIN_NETA no verificable</strong> — no hay proveedor verificable; no se captura Comida ni CIERRE y no se representa como 0. <span class="small muted">D4: el contrato de bloqueo se confirma en DEV E4.9.</span></li>
+                  <li><strong>E3.5 / FIN_NETA no verificable</strong> — no hay proveedor verificable; no se captura Comida ni CIERRE y no se representa como 0. En E4.8 el precierre queda <em>Parcial</em>; este bloqueo es del cierre E4.9. <span class="small muted">D4: el contrato de bloqueo de E4.9 se confirma en DEV.</span></li>
                   <li><strong>BACKUP_NO_VERIFICABLE</strong> — falta evidencia DT6/T-BKP (manifiesto, checksum, clave) y restauración probada.</li>
                 </ul>
               </div>
@@ -236,8 +241,8 @@
                   <table>
                     <thead><tr><th>Gate</th><th>Estado de ejemplo</th><th>Efecto</th></tr></thead>
                     <tbody>
-                      <tr><td>E4.8 precierre</td><td><span class="state ready">✓ Integrado</span></td><td>Puerta de solo lectura; no cierra</td></tr>
-                      <tr><td>E3.5 / FIN_NETA</td><td><span class="state blocked">! No verificable</span></td><td>Bloquea el cierre; no se admite parcial anticipado</td></tr>
+                      <tr><td>E4.8 precierre</td><td><span class="state ready">✓ Integrado</span> <span class="state partial">… Parcial por E3.5</span></td><td>Puerta de solo lectura; puede ser Parcial por E3.5; no se bloquea solo por eso y no cierra</td></tr>
+                      <tr><td>E3.5 / FIN_NETA</td><td><span class="state blocked">! No verificable</span></td><td>En E4.8: cobertura Parcial. En E4.9: bloquea el cierre y no hay foto; no se admite parcial anticipado</td></tr>
                       <tr><td>DT6 / T-BKP</td><td><span class="state blocked">! No acreditado</span></td><td>Bloquea AC-09 y el cierre real</td></tr>
                       <tr><td>E4.1 posiciones a Fin</td><td><span class="state ready">✓ Integrado</span></td><td>Incluye anteriores y excluye posteriores a Fin</td></tr>
                       <tr><td>E4.3 valoración / patrimonio</td><td><span class="state unavailable">× No disponible</span></td><td>No bloquea; la foto lo registra como ND</td></tr>
@@ -262,7 +267,7 @@
                       <tr><td class="sub">Nómina</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
                       <tr><td class="sub">Revisión Comida</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
                       <tr><td class="sub">Deuda E1.6</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
-                      <tr><td>E3.5 Comida / FIN_NETA</td><td>—</td><td><span class="state blocked">! No verificable</span></td><td>Bloquea el cierre; no se captura</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
+                      <tr><td>E3.5 Comida / FIN_NETA</td><td>—</td><td><span class="state blocked">! No verificable</span></td><td>En E4.8: Parcial. En E4.9: bloquea y no se captura</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
                       <tr><td>E4.3 valoración / patrimonio</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin motor E4.3</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
                       <tr><td>E4.2 Ventas</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin runtime</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
                       <tr><td>E4.4 Deuda completa</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin runtime</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
@@ -291,7 +296,7 @@
                 <button class="btn secondary" type="button">Actualizar revisión</button>
                 <button class="btn primary" type="button" disabled aria-describedby="w1-block-reason">Continuar a confirmación</button>
               </div>
-              <p id="w1-block-reason" class="small muted" style="text-align:right;margin:6px 0 0">Bloqueado: E3.5/FIN_NETA y backup no acreditados. No hay foto ni cierre.</p>
+              <p id="w1-block-reason" class="small muted" style="text-align:right;margin:6px 0 0">Cierre bloqueado por E3.5/FIN_NETA y backup. No hay foto ni cierre; el precierre E4.8 no se bloquea solo por E3.5.</p>
             </section>
           </div>
         </div>
@@ -313,15 +318,24 @@
             <div class="m-card"><b>S0</b><div class="meta">«importe» · acreditado<br>No se recalcula ni se sustituye por 0</div></div>
             <div class="m-card"><b>Cobertura</b><div class="meta">«n» de «m» fuentes · «k» bloqueos · «j» avisos<br>Parcial no se presenta como completo</div></div>
 
+            <div class="m-card" style="border-color:var(--warnline);background:#fffdf4">
+              <div class="row"><b>E4.8 · Precierre</b><span class="state partial">… Parcial</span></div>
+              <div class="meta">Por E3.5/FIN_NETA no verificable; conserva cobertura parcial y motivo. No se bloquea solo por E3.5; el estado global del precierre es Bloqueado por el backup.</div>
+            </div>
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa">
+              <div class="row"><b>E4.9 · Cierre</b><span class="state blocked">! Bloqueado</span></div>
+              <div class="meta">E3.5 requerido no verificable y backup no acreditado; sin foto ni cierre parcial. El precierre Parcial no autoriza este cierre.</div>
+            </div>
+
             <div class="m-card" style="border-color:var(--dangerline);background:#fffafa">
               <b>Bloqueos que impiden cerrar</b>
-              <div class="meta"><strong>E3.5 / FIN_NETA no verificable</strong><br>No se captura Comida ni CIERRE; prohibido representarla como 0.</div>
+              <div class="meta"><strong>E3.5 / FIN_NETA no verificable</strong><br>No se captura Comida ni CIERRE; prohibido representarla como 0. En E4.8 el precierre es Parcial; este bloqueo es de E4.9.</div>
               <div class="meta"><strong>BACKUP_NO_VERIFICABLE</strong><br>Falta evidencia DT6/T-BKP y restauración probada.</div>
             </div>
 
             <div class="m-group">Gates del cierre</div>
-            <div class="m-card"><div class="row"><b>E4.8 precierre</b><span class="state ready">✓ Integrado</span></div><div class="meta">Puerta de solo lectura; no cierra.</div></div>
-            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Bloquea; no se admite parcial anticipado.</div></div>
+            <div class="m-card"><div class="row"><b>E4.8 precierre</b><span class="state ready">✓ Integrado</span></div><div class="meta">Puede ser Parcial por E3.5; no se bloquea solo por eso y no cierra.</div></div>
+            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">En E4.8: Parcial. En E4.9: bloquea y no hay foto; sin parcial anticipado.</div></div>
             <div class="m-card"><div class="row"><b>DT6 / T-BKP</b><span class="state blocked">! No acreditado</span></div><div class="meta">Bloquea AC-09 y el cierre real.</div></div>
             <div class="m-card"><div class="row"><b>E4.1 posiciones a Fin</b><span class="state ready">✓ Integrado</span></div><div class="meta">Anteriores incluidas; posteriores excluidas.</div></div>
             <div class="m-card"><div class="row"><b>E4.3 valoración / patrimonio</b><span class="state unavailable">× No disponible</span></div><div class="meta">No bloquea; la foto lo registra ND.</div></div>
@@ -336,7 +350,7 @@
             <div class="m-card"><div class="row"><b>Nómina</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
             <div class="m-card"><div class="row"><b>Revisión Comida</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
             <div class="m-card"><div class="row"><b>Deuda E1.6</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
-            <div class="m-card"><div class="row"><b>E3.5 Comida / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Bloquea el cierre; no se captura · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>E3.5 Comida / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">En E4.8: Parcial. En E4.9: bloquea y no se captura · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
             <div class="m-card"><div class="row"><b>E4.3 valoración / patrimonio</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin motor E4.3 · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
             <div class="m-card"><div class="row"><b>E4.2 Ventas</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin runtime · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
             <div class="m-card"><div class="row"><b>E4.4 Deuda completa</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin runtime · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
@@ -348,7 +362,7 @@
               <button class="btn secondary" type="button">Actualizar revisión</button>
               <button class="btn primary" type="button" disabled>Continuar a confirmación</button>
             </div>
-            <p class="small muted" style="margin:6px 0 0">Bloqueado: E3.5/FIN_NETA y backup no acreditados. No hay foto ni cierre.</p>
+            <p class="small muted" style="margin:6px 0 0">Cierre bloqueado por E3.5/FIN_NETA y backup. No hay foto ni cierre; el precierre E4.8 no se bloquea solo por E3.5.</p>
           </div>
         </div>
       </div>
@@ -357,7 +371,7 @@
 
     <div class="annot-grid">
       <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Revisar cada fuente y actualizar la revisión.</li><li>No puede continuar mientras haya bloqueos; no se ofrece cierre parcial.</li></ul></div>
-      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>E3.5/FIN_NETA no verificable.</li><li>DT6/T-BKP sin evidencia ni restauración probada.</li><li>Ventana no finita, S0 no acreditado, PlanNoVerificable o incoherencia posterior.</li><li>Conflicto de concurrencia (409).</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>E3.5/FIN_NETA no verificable: bloquea E4.9; en E4.8 el precierre queda Parcial.</li><li>DT6/T-BKP sin evidencia ni restauración probada.</li><li>Ventana no finita, S0 no acreditado, PlanNoVerificable o incoherencia posterior.</li><li>Conflicto de concurrencia (409).</li></ul></div>
       <div class="annot-card"><h4>Queda fuera</h4><ul><li>Reapertura E4.10 y fotos E4.11.</li><li>Valoración, resultado y patrimonio E4.3.</li><li>Motor Comida E3.5/FIN_NETA: aquí solo se consume.</li><li>Corregir fuentes desde esta pantalla.</li></ul></div>
     </div>
   </section>
@@ -510,7 +524,7 @@
 
   <!-- ============================== R3 ============================== -->
   <section class="wire-section" id="r3">
-    <div class="wire-label"><span class="tag">R3</span><span class="desc"><strong>Cierre bloqueado</strong> · 1440 (W5) y 390 (W6). E3.5 no verificable, DT6/backup no acreditado, ventana/S0 inválidos, PlanNoVerificable, incoherencia posterior y concurrencia/409. Sin foto parcial ni <em>Comida = 0</em>.</span></div>
+    <div class="wire-label"><span class="tag">R3</span><span class="desc"><strong>Cierre E4.9 bloqueado</strong> · 1440 (W5) y 390 (W6). E3.5 no verificable, DT6/backup no acreditado, ventana/S0 inválidos, PlanNoVerificable, incoherencia posterior y concurrencia/409. Sin foto parcial ni <em>Comida = 0</em>. El precierre E4.8 puede seguir en <em>Parcial</em>; no es este estado de cierre.</span></div>
 
     <figure class="wire-figure">
       <div class="frame-wrap">
@@ -534,7 +548,7 @@
                 <span class="state blocked">! Bloqueado · sin foto</span>
               </div>
 
-              <div class="note dangernote"><strong>No hay cierre ni fotografía parcial.</strong> No se declara completo un total parcial y Comida no se muestra como 0: sin E3.5/FIN_NETA verificable no se captura ni se inventa.</div>
+              <div class="note dangernote"><strong>No hay cierre ni fotografía parcial.</strong> No se declara completo un total parcial y Comida no se muestra como 0: sin E3.5/FIN_NETA verificable no se captura ni se inventa. El precierre E4.8 puede figurar <em>Parcial</em> por esa falta; eso no lo convierte en <em>Bloqueado</em> ni autoriza este cierre.</div>
 
               <div class="block dangerbox">
                 <h4>Motivos de bloqueo</h4>
@@ -543,7 +557,7 @@
                     <thead><tr><th>Motivo</th><th>Tipo</th><th>Qué implica</th><th>Salida</th></tr></thead>
                     <tbody>
                       <tr class="group"><td colspan="4">Datos y gates</td></tr>
-                      <tr><td><strong>E3.5 / FIN_NETA no verificable</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Sin Comida ni CIERRE; no se admite cierre parcial anticipado</td><td>Resolver E3.5 fuera de E4.9</td></tr>
+                      <tr><td><strong>E3.5 / FIN_NETA no verificable</strong></td><td><span class="state blocked">! Bloqueo de E4.9</span></td><td>Sin Comida ni CIERRE; no se admite cierre parcial anticipado. En E4.8: <span class="state partial">… Parcial</span></td><td>Resolver E3.5 fuera de E4.9</td></tr>
                       <tr><td><strong>BACKUP_NO_VERIFICABLE</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Falta evidencia DT6/T-BKP o restauración probada; se bloquea antes de escribir</td><td>Acreditar backup y restauración</td></tr>
                       <tr><td><strong>SIN_SIGUIENTE_INICIO</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>No hay Fin acreditable; no se inventa una fecha</td><td>Que exista un ciclo posterior</td></tr>
                       <tr><td><strong>S0 no acreditado</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Sin S0 no hay cierre; no se sustituye por 0</td><td>Informar/acreditar el S0 del ciclo</td></tr>
@@ -601,7 +615,7 @@
             <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>No hay cierre ni foto parcial</b><div class="meta">No se declara completo un total parcial. Comida no se muestra como 0.</div></div>
 
             <div class="m-group">Motivos de bloqueo · datos y gates</div>
-            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Sin Comida ni CIERRE; no se admite parcial anticipado. Resolver fuera de E4.9.</div></div>
+            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Sin Comida ni CIERRE; no se admite parcial anticipado. En E4.8 el precierre es <span class="state partial">… Parcial</span>; este bloqueo es de E4.9. Resolver fuera de E4.9.</div></div>
             <div class="m-card"><div class="row"><b>Backup DT6/T-BKP</b><span class="state blocked">! BACKUP_NO_VERIFICABLE</span></div><div class="meta">Falta evidencia o restauración probada; bloqueo antes de escribir.</div></div>
             <div class="m-card"><div class="row"><b>Ventana</b><span class="state blocked">! SIN_SIGUIENTE_INICIO</span></div><div class="meta">No hay Fin acreditable; no se inventa una fecha.</div></div>
             <div class="m-card"><div class="row"><b>S0</b><span class="state blocked">! No acreditado</span></div><div class="meta">Sin S0 no hay cierre; no se sustituye por 0.</div></div>
@@ -847,7 +861,7 @@
                 <div class="state-card bad">
                   <h4>Bloqueo · <span class="state blocked">! Bloqueo</span></h4>
                   <p>Impide cerrar y no genera foto.</p>
-                  <div class="mini">E3.5 no verificable · backup no acreditado · ventana/S0 inválidos · PlanNoVerificable · incoherencia posterior · 409.</div>
+                  <div class="mini">E3.5 no verificable (solo E4.9) · backup no acreditado · ventana/S0 inválidos · PlanNoVerificable · incoherencia posterior · 409.</div>
                 </div>
                 <div class="state-card warncard">
                   <h4>Advertencia · <span class="state partial">… Aviso</span></h4>
@@ -862,7 +876,7 @@
                 <div class="state-card">
                   <h4>No disponible · <span class="state unavailable">× No disponible</span></h4>
                   <p>Sin motor o dato verificable; no es 0 ni vacío.</p>
-                  <div class="mini">E4.3 valoración/patrimonio · E4.2 · E4.4. No bloquea por sí solo. E3.5 es distinto: bloquea y no se captura como ND.</div>
+                  <div class="mini">E4.3 valoración/patrimonio · E4.2 · E4.4. No bloquea por sí solo. E3.5 es distinto: en E4.8 el precierre es Parcial; en E4.9 bloquea y no se captura como ND.</div>
                 </div>
                 <div class="state-card">
                   <h4>Vacío acreditado · <span class="state empty">○ Vacío</span></h4>
@@ -876,6 +890,8 @@
                 </div>
               </div>
 
+              <div class="note"><strong>E4.8 precierre ≠ E4.9 cierre.</strong> El precierre puede figurar <em>Parcial</em> por E3.5/FIN_NETA y, si además falla otro gate como el backup, globalmente <em>Bloqueado</em> por ese gate, no por E3.5. El cierre E4.9 queda <em>Bloqueado</em> cuando E3.5 requerido no es verificable y no genera foto. La parcialidad del precierre no autoriza cerrar.</div>
+
               <div class="block" style="margin-top:12px">
                 <h4>Comparación obligatoria</h4>
                 <div class="table-wrap">
@@ -885,7 +901,7 @@
                       <tr><td>Bloqueo</td><td>Motivo visible y salida</td><td><span class="state blocked">Sí</span></td><td>Cerrar igualmente, foto parcial</td></tr>
                       <tr><td>Advertencia</td><td>Aviso y requisito (motivo/auditoría)</td><td><span class="state partial">No por sí sola</span></td><td>Ocultar el aviso o saltar la coherencia</td></tr>
                       <tr><td>Parcial</td><td>«parcial n/m» y motivo</td><td><span class="state partial">No por sí solo</span></td><td>Presentarlo como total completo</td></tr>
-                      <tr><td>No disponible</td><td>«No disponible» y motivo</td><td><span class="state unavailable">No, salvo E3.5</span></td><td>Mostrar 0, vacío o cifra inventada</td></tr>
+                      <tr><td>No disponible</td><td>«No disponible» y motivo</td><td><span class="state unavailable">No (E3.5 no es ND)</span></td><td>Mostrar 0, vacío o cifra inventada</td></tr>
                       <tr><td>Vacío acreditado</td><td>«Vacío» explícito</td><td><span class="state unavailable">No por sí solo</span></td><td>Mostrar 0</td></tr>
                       <tr><td>Cero informado</td><td>0 con contexto de hecho</td><td><span class="state unavailable">No</span></td><td>Tratarlo como ausencia</td></tr>
                     </tbody>
@@ -894,7 +910,7 @@
               </div>
 
               <div class="note"><strong>Sin hechos</strong> solo se declara si hay ausencia acreditada de operaciones imputables al ciclo en todas las fuentes aplicables. El S0 (incluido 0) y las posiciones heredadas se capturan. No se deduce de la falta de Movimientos, del S0 ni de la ausencia de Compras nuevas.</div>
-              <div class="note dangernote"><strong>E3.5 no es «No disponible».</strong> Sin E3.5/FIN_NETA verificable el cierre se bloquea y no hay foto; no se admite cierre parcial anticipado ni re-cierre como sustituto. Comida nunca se muestra como 0.</div>
+              <div class="note dangernote"><strong>E3.5 no es «No disponible».</strong> Sin E3.5/FIN_NETA verificable el cierre E4.9 se bloquea y no hay foto; no se admite cierre parcial anticipado ni re-cierre como sustituto. En E4.8 el precierre puede mostrar <em>Parcial</em> por esa falta; no se convierte en <em>Bloqueado</em> solo por E3.5. Comida nunca se muestra como 0.</div>
             </section>
           </div>
         </div>
@@ -908,15 +924,16 @@
           <div class="topbar"><span>MyFinanzas · Estados</span><span class="ref">cierre · ficticio</span></div>
           <div class="content">
             <span class="state partial">… Estados mixtos</span>
-            <div class="m-card" style="margin-top:8px"><b>Bloqueo</b><div class="meta"><span class="state blocked">! Bloqueo</span> Impide cerrar y no genera foto: E3.5, backup, ventana/S0, PlanNoVerificable, incoherencia, 409.</div></div>
+            <div class="m-card" style="margin-top:8px"><b>Bloqueo</b><div class="meta"><span class="state blocked">! Bloqueo</span> Impide cerrar E4.9 y no genera foto: E3.5, backup, ventana/S0, PlanNoVerificable, incoherencia, 409.</div></div>
             <div class="m-card"><b>Advertencia</b><div class="meta"><span class="state partial">… Aviso</span> No impide por sí sola; exige decisión, motivo o auditoría. CIERRE_FUERA_DE_ORDEN exige motivo y coherencia al mismo corte.</div></div>
             <div class="m-card"><b>Parcial</b><div class="meta"><span class="state partial">… Parcial</span> «parcial n/m»; el total no se presenta como completo. En E4.1 la cobertura histórica parcial se declara sin presentar el total de Compras como histórico completo.</div></div>
-            <div class="m-card"><b>No disponible</b><div class="meta"><span class="state unavailable">× No disponible</span> Sin motor o dato verificable; no es 0 ni vacío. E4.3/E4.2/E4.4 no bloquean por sí solos. E3.5 sí bloquea y no se captura como ND.</div></div>
+            <div class="m-card"><b>No disponible</b><div class="meta"><span class="state unavailable">× No disponible</span> Sin motor o dato verificable; no es 0 ni vacío. E4.3/E4.2/E4.4 no bloquean por sí solos. E3.5 es distinto: en E4.8 el precierre es Parcial; en E4.9 bloquea y no se captura como ND.</div></div>
             <div class="m-card"><b>Vacío acreditado</b><div class="meta"><span class="state empty">○ Vacío</span> Ausencia acreditada en una fuente; se muestra vacío, nunca 0. No equivale a «Sin hechos» del ciclo.</div></div>
             <div class="m-card"><b>Cero informado</b><div class="meta"><span class="state ready">✓ 0 es un hecho</span> Un cero declarado se captura como 0; no es ausencia.</div></div>
 
+            <div class="m-card" style="border-color:var(--line);background:#f7fbf1"><b>E4.8 precierre ≠ E4.9 cierre</b><div class="meta">El precierre puede figurar Parcial por E3.5 y, si falla otro gate como el backup, globalmente Bloqueado por ese gate, no por E3.5. El cierre E4.9 queda Bloqueado cuando E3.5 requerido no es verificable y no genera foto. La parcialidad del precierre no autoriza cerrar.</div></div>
             <div class="m-card" style="border-color:var(--line);background:#f7fbf1"><b>Sin hechos</b><div class="meta">Solo con ausencia acreditada en todas las fuentes aplicables. S0 (incluido 0) y posiciones heredadas se capturan. No se deduce de la falta de Movimientos ni de Compras nuevas.</div></div>
-            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>E3.5 no es «No disponible»</b><div class="meta">Bloquea el cierre y no hay foto; no se admite parcial anticipado ni re-cierre como sustituto. Comida nunca se muestra como 0.</div></div>
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>E3.5 no es «No disponible»</b><div class="meta">Bloquea el cierre E4.9 y no hay foto; no se admite parcial anticipado ni re-cierre como sustituto. En E4.8 el precierre puede ser Parcial; no se bloquea solo por E3.5. Comida nunca se muestra como 0.</div></div>
           </div>
         </div>
       </div>
@@ -925,7 +942,7 @@
 
     <div class="annot-grid">
       <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Interpretar el estado y corregir la causa fuera de E4.9.</li><li>No decide convertir ND en 0 ni un parcial en total.</li></ul></div>
-      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>Solo los estados marcados como bloqueo.</li><li>E3.5 bloquea aunque se parezca a un ND; no se captura como tal.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>Solo los estados marcados como bloqueo de E4.9.</li><li>E3.5 bloquea el cierre aunque se parezca a un ND; no se captura como tal. En E4.8 el precierre queda Parcial, no Bloqueado solo por E3.5.</li></ul></div>
       <div class="annot-card"><h4>Queda fuera</h4><ul><li>Implementar E4.3, E4.2 o E4.4.</li><li>Reapertura y fotos E4.11.</li><li>Cambiar la semántica de vacío/cero/ND.</li></ul></div>
     </div>
   </section>
@@ -1208,7 +1225,7 @@
       <li><strong>A-04 · 409.</strong> SPEC27 nombra <span class="mono">IMPACT_CHANGED</span>, <span class="mono">REVISION_CONFLICT</span>, <span class="mono">IDEMPOTENCY_CONFLICT</span> y <span class="mono">HISTORY_LOCKED</span>, pero no fija qué código aparece en cada transición ni el texto exacto. El wireframe muestra ambos códigos de revisión sin elegir uno.</li>
       <li><strong>A-05 · Respuesta antigua.</strong> El descarte de una respuesta tardía por revisión o clave es una propuesta de UI; SPEC27 no regula este detalle. Debe confirmarse en DEV E4.9.</li>
       <li><strong>A-06 · «Revisión» y «fingerprint».</strong> SPEC27 distingue el fingerprint de cierre de la revisión/hash enviada, pero no fija la etiqueta ni la serialización visibles. El wireframe los muestra separados.</li>
-      <li><strong>A-07 · D4.</strong> El estado del precierre debe ser <em>Bloqueado</em> cuando E3.5 no sea verificable; la propia investigación D4 indica que se confirma en el DEV de E4.9. El wireframe lo muestra bloqueado, pero el contrato exacto sigue pendiente.</li>
+      <li><strong>A-07 · D4 y separación precierre/cierre.</strong> SPEC26 admite que el precierre E4.8 sea <em>Parcial</em> por E3.5/FIN_NETA y que solo lo bloqueen otros gates (por ejemplo, backup). SPEC27 exige que el cierre E4.9 quede <em>Bloqueado</em> y sin foto cuando E3.5 requerido no es verificable. D4 (contrato de bloqueo de E4.9) se confirma en DEV. El wireframe separa ambos estados y no impone <em>Bloqueado</em> al precierre solo por E3.5.</li>
       <li><strong>A-08 · Evidencia de backup.</strong> SPEC27 referencia manifiesto, checksum, clave y restauración DT6/T-BKP; DT6 es una propuesta abierta. Las etiquetas de la foto son ilustrativas y no cierran ese contrato.</li>
       <li><strong>A-09 · Sesión y permisos.</strong> SPEC27 exige conservar el contexto al expirar la sesión, pero no define el modelo de 401/403 ni la UI de reautenticación. El wireframe solo conserva ciclo, revisión y motivo.</li>
       <li><strong>A-10 · Formato de cobertura.</strong> SPEC27 define <em>completo/parcial/no_disponible</em> por total y motivo, pero no fija la etiqueta visual exacta. Se usa «parcial n/m» y texto, sin inventar un porcentaje.</li>
