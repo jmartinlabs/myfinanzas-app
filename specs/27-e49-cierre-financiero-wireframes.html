@@ -1,0 +1,1284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPEC27 · E4.9 — Wireframes del cierre y la fotografía (1440 y 390)</title>
+<style>
+  :root{
+    --green:#8DBB2E; --header:#CBEA7B; --section:#DCECB3; --bg:#EEF7E8; --ink:#2B2B2B;
+    --muted:#536147; --line:#cfdcc0; --white:#fff; --focus:#335B0D;
+    --ok:#3F5B12; --okbg:#EEF7E2; --okline:#B9D58B;
+    --warn:#6B5412; --warnbg:#FFF4D6; --warnline:#D9B44A;
+    --danger:#8A2F2F; --dangerbg:#FBECEC; --dangerline:#D8B4B4;
+    --nd:#4D5A44; --ndbg:#EEF2EA; --ndline:#C9D2C2;
+    --empty:#555; --emptybg:#F2F2F2; --emptline:#D5D5D5;
+    --error:#7B2A2A; --errorbg:#F4E4E4;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  .page{max-width:1520px;margin:0 auto;padding:28px 18px 64px}
+  .doc-head{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:22px 24px;margin-bottom:22px}
+  .eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  h1{font-size:26px;line-height:1.2;margin:6px 0 8px}
+  h2{font-size:20px;margin:0 0 8px}
+  h3{font-size:16px;margin:0 0 8px}
+  p{margin:0 0 10px}
+  a{color:var(--focus)}
+  .banner{background:var(--warnbg);border:1px solid var(--warnline);border-radius:10px;padding:10px 12px;margin:14px 0 0;font-size:13px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .pill{display:inline-block;border:1px solid var(--line);background:var(--section);border-radius:999px;padding:3px 9px;font-size:12px;font-weight:600}
+  .index{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px;margin-top:16px}
+  .index a{display:block;background:#F7FBF1;border:1px solid var(--line);border-radius:9px;padding:8px 10px;text-decoration:none;font-size:12.5px;font-weight:600}
+  .index a span{display:block;color:var(--muted);font-weight:400;font-size:11.5px;margin-top:2px}
+  .doc-section{margin:34px 0 0;background:var(--white);border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px}
+  .wire-section{margin:34px 0 0}
+  .wire-label{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px;flex-wrap:wrap}
+  .wire-label .tag{background:var(--ink);color:#fff;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;letter-spacing:.03em}
+  .wire-label .desc{color:var(--muted);font-size:13px;max-width:980px}
+  .wire-label .desc strong{color:var(--ink)}
+  .wire-figure{margin:0 0 16px}
+  .frame-wrap{overflow-x:auto;padding-bottom:2px}
+  .frame{background:var(--white);border:1px solid var(--line);border-radius:var(--radius);box-shadow:0 8px 24px rgba(43,43,43,.08);overflow:hidden}
+  .frame.desktop{width:1440px;max-width:none}
+  .frame.mobile{width:390px;max-width:none}
+  figcaption{color:var(--muted);font-size:12px;margin-top:6px}
+  .topbar{background:var(--header);padding:10px 16px;display:flex;justify-content:space-between;gap:10px;align-items:center;font-size:13px;font-weight:600}
+  .topbar .ref{background:rgba(255,255,255,.65);border-radius:6px;padding:2px 7px;font-weight:600}
+  .layout{display:grid;grid-template-columns:236px 1fr;min-height:720px}
+  .layout>*{min-width:0}
+  .sidebar{background:var(--section);padding:14px 10px;border-right:1px solid var(--line);font-size:13px}
+  .sidebar .item{padding:7px 9px;border-radius:7px;margin-bottom:3px;color:#33402a}
+  .sidebar .item.active{background:var(--header);color:#354d19;font-weight:700;box-shadow:inset 3px 0 0 var(--green)}
+  .content{padding:18px;min-width:0}
+  .content-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start;margin-bottom:12px;flex-wrap:wrap}
+  .content-head h3{margin:0;font-size:20px}
+  .controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .select{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 9px;font-size:13px;color:var(--ink);font:inherit}
+  .state{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:700;white-space:nowrap;border:1px solid transparent}
+  .ready{background:var(--okbg);color:var(--ok);border-color:var(--okline)}
+  .blocked{background:var(--dangerbg);color:var(--danger);border-color:var(--dangerline)}
+  .partial{background:var(--warnbg);color:var(--warn);border-color:var(--warnline)}
+  .unavailable{background:var(--ndbg);color:var(--nd);border-color:var(--ndline)}
+  .empty{background:var(--emptybg);color:var(--empty);border-color:var(--emptline)}
+  .error{background:var(--errorbg);color:var(--error);border-color:var(--dangerline)}
+  .neutral{background:#F7FBF1;color:var(--ink);border-color:var(--line)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .grid2>*,.grid3>*{min-width:0}
+  .info{background:#fbfdf8;border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13px}
+  .info b{display:block;font-size:11.5px;color:var(--muted);letter-spacing:.04em;text-transform:uppercase;margin-bottom:4px}
+  .block{border:1px solid var(--line);border-radius:10px;padding:12px;margin:0 0 12px;background:#fff}
+  .block h4{margin:0 0 8px;font-size:12.5px;letter-spacing:.04em;text-transform:uppercase;color:#46523d}
+  .block.warnbox{background:#fffdf4;border-color:var(--warnline)}
+  .block.dangerbox{background:#fffafa;border-color:var(--dangerline)}
+  .block.okbox{background:#fbfdf8;border-color:var(--okline)}
+  ul.plain{margin:0;padding-left:18px}
+  ul.plain li{margin:0 0 6px}
+  .table-wrap{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#f5f9ef;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:#4c5942}
+  tr.group td{background:#f7fbf1;font-weight:700;color:#3f5b12}
+  td.sub{padding-left:22px;color:#3d4635}
+  .link{color:var(--focus);text-decoration:underline;font-weight:600;white-space:nowrap}
+  .link.disabled{color:#6b6b6b;text-decoration:none;cursor:not-allowed}
+  .link.disabled::after{content:" (no disponible)";font-weight:400;font-size:11px}
+  .actions{margin-top:14px;display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;align-items:center}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;padding:8px 12px;font-size:13px;font-weight:700;border:1px solid transparent;font:inherit;cursor:pointer}
+  .btn.primary{background:var(--green);color:#24320E;border-color:#6F9622}
+  .btn.secondary{background:#fff;color:var(--ink);border-color:var(--line)}
+  .btn[disabled]{background:#E4EBDD;color:#4F5A45;border-color:#CBD6BF;cursor:not-allowed}
+  .note{background:#f7fbf1;border-left:4px solid var(--green);padding:10px 12px;border-radius:8px;margin:12px 0;font-size:13px}
+  .note.warnnote{background:var(--warnbg);border-left-color:var(--warnline)}
+  .note.dangernote{background:var(--dangerbg);border-left-color:var(--danger)}
+  .mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:#f5f9ef;border-radius:4px;padding:1px 4px;overflow-wrap:anywhere}
+  .readonly{display:flex;justify-content:space-between;gap:8px;align-items:center;background:#f5f9ef;border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin:4px 0 10px}
+  .field-label{display:block;font-size:12px;font-weight:700;color:#46523d;margin:0 0 4px}
+  .req{color:var(--danger);font-weight:700}
+  .input{width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;color:var(--ink);min-height:34px}
+  textarea.input{resize:vertical}
+  .immutable{display:flex;gap:10px;align-items:flex-start;background:#f7fbf1;border:1px solid var(--okline);border-radius:10px;padding:10px 12px;margin:0 0 12px}
+  .immutable .lock{font-size:18px;line-height:1;color:var(--ok)}
+  .state-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .state-card{border:1px solid var(--line);border-radius:10px;padding:12px;background:#fff}
+  .state-card h4{margin:0 0 5px;font-size:13px;text-transform:none;letter-spacing:0}
+  .state-card p{margin:0 0 6px;font-size:12px;color:var(--muted)}
+  .state-card .mini{border:1px dashed var(--line);border-radius:7px;padding:8px;font-size:12px;background:#fbfdf8}
+  .state-card.bad{border-color:var(--dangerline);background:#fffafa}
+  .state-card.warncard{border-color:var(--warnline);background:#fffdf4}
+  .state-card.ok{border-color:var(--okline);background:#fbfdf8}
+  .timeline{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:12px}
+  .step{border:1px solid var(--line);border-radius:10px;padding:11px;background:#fbfdf8}
+  .step .num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--section);color:#354d19;font-size:12px;font-weight:700;margin-bottom:6px}
+  .step h4{margin:0 0 4px;font-size:13px}
+  .step p{margin:0;font-size:12px;color:var(--muted)}
+  .annot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0 0}
+  .annot-card{background:var(--white);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+  .annot-card h4{margin:0 0 5px;font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:#46523d}
+  .annot-card ul{margin:0;padding-left:16px;font-size:12px}
+  .annot-card li{margin:0 0 4px}
+  .ambig{margin:0;padding-left:20px}
+  .ambig li{margin:0 0 8px}
+  .footer{margin-top:28px;color:var(--muted);font-size:12px;text-align:center}
+  a:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, [tabindex]:focus-visible{
+    outline:3px solid var(--focus); outline-offset:2px;
+  }
+  .focus-demo{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:7px 10px;background:#fff;font-weight:700;font-size:13px;outline:3px solid var(--focus);outline-offset:2px;margin-top:6px}
+
+  /* Móvil 390 */
+  .mobile .topbar{flex-direction:column;align-items:flex-start;gap:4px}
+  .mobile .content{padding:12px}
+  .mobile .content-head{flex-direction:column;align-items:flex-start}
+  .mobile .grid2,.mobile .grid3,.mobile .timeline,.mobile .state-grid{grid-template-columns:1fr}
+  .mobile .m-card{border:1px solid var(--line);border-radius:9px;padding:9px;margin-bottom:7px;background:#fff}
+  .mobile .m-card .row{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;flex-wrap:wrap}
+  .mobile .m-card .meta{font-size:12px;color:var(--muted);margin-top:3px;overflow-wrap:anywhere}
+  .mobile .m-group{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#3f5b12;font-weight:700;margin:10px 0 4px}
+  .mobile table{display:none}
+  .mobile .actions{flex-direction:column;align-items:stretch}
+  .mobile .actions .btn{width:100%}
+  .mobile .readonly{flex-direction:column;align-items:flex-start}
+  .mobile .state{white-space:normal}
+
+  @media (min-width:1440px){
+    .page{padding-left:0;padding-right:0}
+    .doc-head,.doc-section,.wire-label,.annot-grid,.footer,p.frame-caption{margin-left:18px;margin-right:18px}
+    .frame-wrap{display:flex;justify-content:center}
+  }
+  @media (max-width:760px){
+    .page{padding:16px 0 48px}
+    .doc-head,.doc-section,.wire-label,.annot-grid,.footer,p.frame-caption{margin-left:12px;margin-right:12px}
+    .doc-head{margin-top:0}
+    .annot-grid{grid-template-columns:1fr}
+    .index{grid-template-columns:1fr}
+    .frame-wrap{overflow-x:auto}
+  }
+  @media print{body{background:#fff}.page{max-width:none;padding:0}.doc-head,.frame{box-shadow:none}.frame-wrap{overflow:visible}}
+</style>
+</head>
+<body>
+<main class="page">
+
+  <header class="doc-head">
+    <div class="eyebrow">SPEC27 · E4.9 · Documento de revisión visual</div>
+    <h1>Cierre financiero y primera fotografía — wireframes 1440 y 390</h1>
+    <p class="muted">Propuesta documental del 2026-11-03 para revisión visual. No es una implementación, una captura de la aplicación ni una autorización de DEV. No hay código, API, SQLite, datos reales, escritura ni cierre efectivo.</p>
+    <p class="small"><strong>Documentos:</strong> <a href="27-e49-cierre-financiero-specification.md">SPEC27</a> · <a href="27-e49-cierre-financiero-testplan.md">Test plan</a> · <a href="26-e48-precierre-wireframes.html">SPEC26 precierre</a>. <strong>Estado:</strong> propuesto; los AC de SPEC27 siguen UNRUN.</p>
+    <div class="banner">Los importes, cantidades, fechas, IDs, revisiones, claves y hashes son marcadores «…» o ejemplos ficticios. No representan datos reales ni cálculos. Los enlaces y controles son simbólicos: no navegan ni escriben. Los escenarios con gates superados son hipotéticos y no acreditan E3.5, DT6/T-BKP ni ningún cierre.</div>
+    <div class="legend" aria-label="Leyenda de estados">
+      <span class="pill">✓ Listo</span><span class="pill">! Bloqueado</span><span class="pill">… Parcial</span>
+      <span class="pill">× No disponible</span><span class="pill">○ Vacío acreditado</span><span class="pill">↻ Error</span>
+    </div>
+    <nav class="index" aria-label="Índice de pantallas">
+      <a href="#r1">R1 · Revisión previa<span>1440 W1 · 390 W2</span></a>
+      <a href="#r2">R2 · Confirmación<span>1440 W3 · 390 W4</span></a>
+      <a href="#r3">R3 · Cierre bloqueado<span>1440 W5 · 390 W6</span></a>
+      <a href="#r4">R4 · Fotografía inmutable<span>1440 W7 · 390 W8</span></a>
+      <a href="#r5">R5 · Advertencias / parcial / ND<span>1440 W9 · 390 W10</span></a>
+      <a href="#r6">R6 · Concurrencia y reintentos<span>1440 W11 · 390 W12</span></a>
+      <a href="#r7">R7 · Errores y sesión<span>1440 W13 · 390 W14</span></a>
+      <a href="#accesibilidad">Accesibilidad<span>Contraste, foco y color</span></a>
+      <a href="#ambiguedades">Ambigüedades<span>Sin inventar reglas</span></a>
+    </nav>
+  </header>
+
+  <!-- ============================== R1 ============================== -->
+  <section class="wire-section" id="r1">
+    <div class="wire-label"><span class="tag">R1</span><span class="desc"><strong>Revisión previa al cierre</strong> · 1440 (W1) y 390 (W2). Ciclo, ventana, S0, plan <em>SinPlan</em> válido, cobertura, fuentes E3.5/FIN_NETA, E4.3 <em>No disponible</em>, backup preflight y gates. Estado de ejemplo: E3.5 no verificable y DT6/T-BKP no acreditado.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w1-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre financiero</span><span class="ref">Revisión «hash…» · ejemplo ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Revisión previa al cierre</h3>
+                  <div class="muted small">Ciclo «periodo» · «inicio» → «fin» · solo lectura · no escribe</div>
+                </div>
+                <div class="controls">
+                  <label class="small muted" for="w1-cycle">Ciclo</label>
+                  <select class="select" id="w1-cycle"><option>«periodo»</option></select>
+                  <span class="state blocked">! Bloqueado · 2 bloqueos</span>
+                </div>
+              </div>
+
+              <div class="grid3">
+                <div class="info"><b>Ventana</b>Inicio «inicio»<br>Fin «fin» derivado del siguiente Inicio<br><span class="muted small">Fina y congelada al cerrar; no se inventa</span></div>
+                <div class="info"><b>S0</b>«importe»<br>Acreditado en el ciclo<br><span class="muted small">No se recalcula ni se sustituye por 0</span></div>
+                <div class="info"><b>Cobertura</b>«n» de «m» fuentes<br>«k» bloqueos · «j» avisos<br><span class="muted small">Parcial no se presenta como completo</span></div>
+              </div>
+
+              <div class="block dangerbox">
+                <h4>Bloqueos que impiden cerrar</h4>
+                <ul class="plain">
+                  <li><strong>E3.5 / FIN_NETA no verificable</strong> — no hay proveedor verificable; no se captura Comida ni CIERRE y no se representa como 0. <span class="small muted">D4: el contrato de bloqueo se confirma en DEV E4.9.</span></li>
+                  <li><strong>BACKUP_NO_VERIFICABLE</strong> — falta evidencia DT6/T-BKP (manifiesto, checksum, clave) y restauración probada.</li>
+                </ul>
+              </div>
+
+              <div class="block">
+                <h4>Gates del cierre</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Gate</th><th>Estado de ejemplo</th><th>Efecto</th></tr></thead>
+                    <tbody>
+                      <tr><td>E4.8 precierre</td><td><span class="state ready">✓ Integrado</span></td><td>Puerta de solo lectura; no cierra</td></tr>
+                      <tr><td>E3.5 / FIN_NETA</td><td><span class="state blocked">! No verificable</span></td><td>Bloquea el cierre; no se admite parcial anticipado</td></tr>
+                      <tr><td>DT6 / T-BKP</td><td><span class="state blocked">! No acreditado</span></td><td>Bloquea AC-09 y el cierre real</td></tr>
+                      <tr><td>E4.1 posiciones a Fin</td><td><span class="state ready">✓ Integrado</span></td><td>Incluye anteriores y excluye posteriores a Fin</td></tr>
+                      <tr><td>E4.3 valoración / patrimonio</td><td><span class="state unavailable">× No disponible</span></td><td>No bloquea; la foto lo registra como ND</td></tr>
+                      <tr><td>E4.2 / E4.4</td><td><span class="state unavailable">× No disponible</span></td><td>No bloquean por sí solos; se registran como ND</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Fuentes y cobertura</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Fuente</th><th>Cobertura</th><th>Estado</th><th>Motivo</th><th>Enlace</th></tr></thead>
+                    <tbody>
+                      <tr><td>Movimientos · clasificación · Referencias</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Núcleo consistente</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td>Plan del ciclo</td><td>SinPlan</td><td><span class="state ready">✓ Válido</span></td><td>No bloquea; no inventa líneas</td><td><span class="link">Abrir plan</span></td></tr>
+                      <tr><td>E4.1 Inversión</td><td>Posiciones a Fin</td><td><span class="state ready">✓ Integrado</span></td><td>Efectivo y cantidades a Fin</td><td><span class="link">Abrir</span></td></tr>
+                      <tr class="group"><td colspan="5">Auxiliares (estado por fuente; si hay hechos)</td></tr>
+                      <tr><td class="sub">Anticipos</td><td>Sin hechos</td><td><span class="state empty">○ Vacío acreditado</span></td><td>No es 0</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td class="sub">Compartidos</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td class="sub">Nómina</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td class="sub">Revisión Comida</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td class="sub">Deuda E1.6</td><td>«n» hechos</td><td><span class="state ready">✓ Verificado</span></td><td>Con hechos</td><td><span class="link">Abrir</span></td></tr>
+                      <tr><td>E3.5 Comida / FIN_NETA</td><td>—</td><td><span class="state blocked">! No verificable</span></td><td>Bloquea el cierre; no se captura</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
+                      <tr><td>E4.3 valoración / patrimonio</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin motor E4.3</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
+                      <tr><td>E4.2 Ventas</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin runtime</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
+                      <tr><td>E4.4 Deuda completa</td><td>—</td><td><span class="state unavailable">× No disponible</span></td><td>Sin runtime</td><td><span class="link disabled" aria-disabled="true">Abrir</span></td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Backup preflight (DT6/T-BKP)</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Elemento</th><th>Estado</th><th>Motivo</th></tr></thead>
+                    <tbody>
+                      <tr><td>Manifiesto</td><td><span class="state blocked">! No acreditado</span></td><td>Sin evidencia DT6/T-BKP</td></tr>
+                      <tr><td>Checksum</td><td><span class="state blocked">! No acreditado</span></td><td>Sin evidencia DT6/T-BKP</td></tr>
+                      <tr><td>Clave</td><td><span class="state blocked">! No acreditado</span></td><td>Sin evidencia DT6/T-BKP</td></tr>
+                      <tr><td>Restauración</td><td><span class="state blocked">! No probada</span></td><td>Sin ensayo aislado acreditado</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="small muted" style="margin:8px 0 0">Sin evidencia recuperable el cierre queda bloqueado antes de escribir; no se sustituye por un checkbox.</p>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Actualizar revisión</button>
+                <button class="btn primary" type="button" disabled aria-describedby="w1-block-reason">Continuar a confirmación</button>
+              </div>
+              <p id="w1-block-reason" class="small muted" style="text-align:right;margin:6px 0 0">Bloqueado: E3.5/FIN_NETA y backup no acreditados. No hay foto ni cierre.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W1 · 1440 · Revisión previa bloqueada. El usuario puede revisar y actualizar; no puede continuar.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w2-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre</span><span class="ref">«hash…» · ficticio</span></div>
+          <div class="content">
+            <div class="controls" style="margin-bottom:10px">
+              <label class="small muted" for="w2-cycle">Ciclo</label>
+              <select class="select" id="w2-cycle"><option>«periodo»</option></select>
+              <span class="state blocked">! Bloqueado · 2 bloqueos</span>
+            </div>
+            <div class="m-card"><b>Ventana</b><div class="meta">«inicio» → «fin» derivado<br>Fina; no se inventa un Fin</div></div>
+            <div class="m-card"><b>S0</b><div class="meta">«importe» · acreditado<br>No se recalcula ni se sustituye por 0</div></div>
+            <div class="m-card"><b>Cobertura</b><div class="meta">«n» de «m» fuentes · «k» bloqueos · «j» avisos<br>Parcial no se presenta como completo</div></div>
+
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa">
+              <b>Bloqueos que impiden cerrar</b>
+              <div class="meta"><strong>E3.5 / FIN_NETA no verificable</strong><br>No se captura Comida ni CIERRE; prohibido representarla como 0.</div>
+              <div class="meta"><strong>BACKUP_NO_VERIFICABLE</strong><br>Falta evidencia DT6/T-BKP y restauración probada.</div>
+            </div>
+
+            <div class="m-group">Gates del cierre</div>
+            <div class="m-card"><div class="row"><b>E4.8 precierre</b><span class="state ready">✓ Integrado</span></div><div class="meta">Puerta de solo lectura; no cierra.</div></div>
+            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Bloquea; no se admite parcial anticipado.</div></div>
+            <div class="m-card"><div class="row"><b>DT6 / T-BKP</b><span class="state blocked">! No acreditado</span></div><div class="meta">Bloquea AC-09 y el cierre real.</div></div>
+            <div class="m-card"><div class="row"><b>E4.1 posiciones a Fin</b><span class="state ready">✓ Integrado</span></div><div class="meta">Anteriores incluidas; posteriores excluidas.</div></div>
+            <div class="m-card"><div class="row"><b>E4.3 valoración / patrimonio</b><span class="state unavailable">× No disponible</span></div><div class="meta">No bloquea; la foto lo registra ND.</div></div>
+            <div class="m-card"><div class="row"><b>E4.2 / E4.4</b><span class="state unavailable">× No disponible</span></div><div class="meta">No bloquean por sí solos; se registran ND.</div></div>
+
+            <div class="m-group">Fuentes y cobertura</div>
+            <div class="m-card"><div class="row"><b>Movimientos · clasificación · Referencias</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · núcleo consistente · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Plan del ciclo</b><span class="state ready">✓ Válido</span></div><div class="meta">SinPlan · no inventa líneas · <span class="link">Abrir plan</span></div></div>
+            <div class="m-card"><div class="row"><b>E4.1 Inversión</b><span class="state ready">✓ Integrado</span></div><div class="meta">Posiciones a Fin · efectivo y cantidades · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Anticipos</b><span class="state empty">○ Vacío acreditado</span></div><div class="meta">Sin hechos en la fuente · no es 0 · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Compartidos</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Nómina</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Revisión Comida</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>Deuda E1.6</b><span class="state ready">✓ Verificado</span></div><div class="meta">«n» hechos · <span class="link">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>E3.5 Comida / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Bloquea el cierre; no se captura · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>E4.3 valoración / patrimonio</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin motor E4.3 · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>E4.2 Ventas</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin runtime · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
+            <div class="m-card"><div class="row"><b>E4.4 Deuda completa</b><span class="state unavailable">× No disponible</span></div><div class="meta">Sin runtime · <span class="link disabled" aria-disabled="true">Abrir</span></div></div>
+
+            <div class="m-group">Backup preflight (DT6/T-BKP)</div>
+            <div class="m-card"><div class="meta">Manifiesto · <span class="state blocked">! No acreditado</span><br>Checksum · <span class="state blocked">! No acreditado</span><br>Clave · <span class="state blocked">! No acreditado</span><br>Restauración · <span class="state blocked">! No probada</span></div><div class="meta">No se sustituye por un checkbox.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Actualizar revisión</button>
+              <button class="btn primary" type="button" disabled>Continuar a confirmación</button>
+            </div>
+            <p class="small muted" style="margin:6px 0 0">Bloqueado: E3.5/FIN_NETA y backup no acreditados. No hay foto ni cierre.</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>W2 · 390 · La misma revisión en una columna, sin tablas ni scroll horizontal. Los estados conservan símbolo y texto.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Revisar cada fuente y actualizar la revisión.</li><li>No puede continuar mientras haya bloqueos; no se ofrece cierre parcial.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>E3.5/FIN_NETA no verificable.</li><li>DT6/T-BKP sin evidencia ni restauración probada.</li><li>Ventana no finita, S0 no acreditado, PlanNoVerificable o incoherencia posterior.</li><li>Conflicto de concurrencia (409).</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Reapertura E4.10 y fotos E4.11.</li><li>Valoración, resultado y patrimonio E4.3.</li><li>Motor Comida E3.5/FIN_NETA: aquí solo se consume.</li><li>Corregir fuentes desde esta pantalla.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R2 ============================== -->
+  <section class="wire-section" id="r2">
+    <div class="wire-label"><span class="tag">R2</span><span class="desc"><strong>Confirmación de cierre</strong> · 1440 (W3) y 390 (W4). Resumen de comprobaciones, motivo, revisión enviada, aviso de irreversibilidad y decisión. Escenario hipotético con gates superados: no acredita el cierre real.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w3-frame">
+          <div class="topbar"><span>MyFinanzas · Confirmar cierre</span><span class="ref">Revisión «hash…» · intento «clave…» · ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Confirmar cierre del ciclo</h3>
+                  <div class="muted small">Ciclo «periodo» · «inicio» → «fin» · foto v1 · sin ciclo siguiente</div>
+                </div>
+                <span class="state ready">✓ Comprobaciones superadas (hipotético)</span>
+              </div>
+
+              <div class="note warnnote"><strong>Escenario hipotético.</strong> Aquí E3.5 figura verificable y el backup acreditado solo para mostrar la pantalla de decisión. No es el estado actual de los gates: DT6/T-BKP sigue abierto y SPEC27 no autoriza DEV.</div>
+
+              <div class="grid2">
+                <div class="block">
+                  <h4>Resumen de comprobaciones</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Comprobación</th><th>Resultado</th><th>Detalle</th></tr></thead>
+                      <tbody>
+                        <tr><td>Ventana finita</td><td><span class="state ready">✓ «inicio» → «fin»</span></td><td>Fin derivado del siguiente Inicio</td></tr>
+                        <tr><td>S0 acreditado</td><td><span class="state ready">✓ «importe»</span></td><td>No se recalcula</td></tr>
+                        <tr><td>Núcleo consistente</td><td><span class="state ready">✓ Verificado</span></td><td>Movimientos, clasificación y Referencias</td></tr>
+                        <tr><td>Plan</td><td><span class="state ready">✓ SinPlan</span></td><td>Válido; no se inventan líneas</td></tr>
+                        <tr><td>E3.5 / FIN_NETA</td><td><span class="state ready">✓ Verificable</span></td><td>Hipotético; se consumirá, no se recalcula</td></tr>
+                        <tr><td>Backup DT6/T-BKP</td><td><span class="state ready">✓ Acreditado</span></td><td>Hipotético; evidencia y restauración probada</td></tr>
+                        <tr><td>Cierres posteriores</td><td><span class="state ready">✓ Sin contradicción</span></td><td>Comprobación al mismo corte</td></tr>
+                        <tr><td>Concurrencia</td><td><span class="state ready">✓ Revisión vigente</span></td><td>Si cambia antes de confirmar: 409</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="block">
+                    <h4>Qué quedará congelado</h4>
+                    <ul class="plain">
+                      <li>Ciclo, ventana y S0.</li>
+                      <li>Foto <strong>v1</strong> y fingerprint de cierre «hash…».</li>
+                      <li>Fecha UTC, actor, motivo, versión de aplicación y de esquema.</li>
+                      <li>Plan <em>SinPlan</em> o líneas capturadas; nunca líneas inventadas.</li>
+                      <li>Cobertura por métrica y <em>No disponible</em> con motivo.</li>
+                    </ul>
+                  </div>
+                  <div class="block">
+                    <h4>Revisión que se enviará</h4>
+                    <div class="readonly"><span class="mono">«hash de revisión…»</span><span class="state ready">✓ Vigente</span></div>
+                    <div class="readonly"><span class="mono">«clave de intento…»</span><span class="state neutral">Idempotencia</span></div>
+                    <p class="small muted" style="margin:0">Un reintento idéntico devuelve la misma foto; un payload distinto con la misma clave responde 409 <span class="mono">IDEMPOTENCY_CONFLICT</span>.</p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Motivo del cierre</h4>
+                <label class="field-label" for="w3-motivo">Motivo <span class="req">obligatorio</span></label>
+                <textarea class="input" id="w3-motivo" rows="2" placeholder="«motivo del cierre»"></textarea>
+                <p class="small muted" style="margin:6px 0 0">SPEC27 incluye el motivo en el cierre y exige motivo adicional para cierre fuera de orden; no fija catálogo ni longitud (ver A-01).</p>
+              </div>
+
+              <div class="block dangerbox">
+                <h4>Aviso de irreversibilidad</h4>
+                <p style="margin:0 0 6px">Al confirmar se escribe <strong>cierre + foto v1 + auditoría</strong> en una transacción única. T1 queda bloqueado; T2 se revalida con impacto, motivo y auditoría; T3 se permite. <strong>No se crea el ciclo siguiente ni se cambia su S0.</strong></p>
+                <p style="margin:0">E4.9 no reabre el cierre. La foto es inmutable y no se recalcula desde el estado vivo. Un fallo en la transacción deja rollback total: sin cierre y sin foto parcial.</p>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Cancelar</button>
+                <button class="btn primary" type="button">Confirmar cierre</button>
+              </div>
+              <p class="small muted" style="text-align:right;margin:6px 0 0">La decisión usa la revisión mostrada; si cambia, la confirmación no se aplica.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W3 · 1440 · Confirmación con comprobaciones, motivo, revisión, clave de intento y aviso de irreversibilidad.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w4-frame">
+          <div class="topbar"><span>MyFinanzas · Confirmar cierre</span><span class="ref">«hash…» · ficticio</span></div>
+          <div class="content">
+            <span class="state ready">✓ Comprobaciones superadas (hipotético)</span>
+            <div class="m-card" style="margin-top:8px"><b>Ciclo «periodo»</b><div class="meta">«inicio» → «fin» · foto v1 · sin ciclo siguiente</div></div>
+
+            <div class="m-card" style="border-color:var(--warnline);background:#fffdf4"><b>Escenario hipotético</b><div class="meta">E3.5 y backup figuran superados solo para mostrar la decisión. No acredita gates ni autoriza DEV.</div></div>
+
+            <div class="m-group">Resumen de comprobaciones</div>
+            <div class="m-card"><div class="row"><b>Ventana finita</b><span class="state ready">✓ «inicio» → «fin»</span></div><div class="meta">Fin derivado del siguiente Inicio.</div></div>
+            <div class="m-card"><div class="row"><b>S0 acreditado</b><span class="state ready">✓ «importe»</span></div><div class="meta">No se recalcula.</div></div>
+            <div class="m-card"><div class="row"><b>Núcleo</b><span class="state ready">✓ Verificado</span></div><div class="meta">Movimientos, clasificación y Referencias.</div></div>
+            <div class="m-card"><div class="row"><b>Plan</b><span class="state ready">✓ SinPlan</span></div><div class="meta">Válido; no se inventan líneas.</div></div>
+            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state ready">✓ Verificable</span></div><div class="meta">Hipotético; se consume, no se recalcula.</div></div>
+            <div class="m-card"><div class="row"><b>Backup DT6/T-BKP</b><span class="state ready">✓ Acreditado</span></div><div class="meta">Hipotético; evidencia y restauración probada.</div></div>
+            <div class="m-card"><div class="row"><b>Cierres posteriores</b><span class="state ready">✓ Sin contradicción</span></div><div class="meta">Comprobación al mismo corte.</div></div>
+            <div class="m-card"><div class="row"><b>Concurrencia</b><span class="state ready">✓ Revisión vigente</span></div><div class="meta">Si cambia antes de confirmar: 409.</div></div>
+
+            <div class="m-group">Qué quedará congelado</div>
+            <div class="m-card"><div class="meta">Ciclo, ventana y S0 · foto v1 · fingerprint «hash…»<br>Fecha UTC, actor, motivo, versión de app y esquema<br>Plan SinPlan o líneas capturadas · cobertura por métrica</div></div>
+
+            <div class="m-group">Revisión e idempotencia</div>
+            <div class="m-card"><div class="meta"><span class="mono">«hash de revisión…»</span> · <span class="state ready">✓ Vigente</span><br><span class="mono">«clave de intento…»</span> · <span class="state neutral">Idempotencia</span><br>Reintento idéntico: misma foto. Payload distinto: 409 IDEMPOTENCY_CONFLICT.</div></div>
+
+            <div class="m-group">Motivo del cierre</div>
+            <div class="m-card">
+              <label class="field-label" for="w4-motivo">Motivo <span class="req">obligatorio</span></label>
+              <textarea class="input" id="w4-motivo" rows="2" placeholder="«motivo del cierre»"></textarea>
+              <div class="meta">SPEC27 no fija catálogo ni longitud (A-01).</div>
+            </div>
+
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>Aviso de irreversibilidad</b><div class="meta">Se escriben cierre + foto v1 + auditoría en una transacción. T1 bloqueado; T2 revalidado; T3 permitido. No se crea el ciclo siguiente. Un fallo deja rollback total: sin foto parcial.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Cancelar</button>
+              <button class="btn primary" type="button">Confirmar cierre</button>
+            </div>
+            <p class="small muted" style="margin:6px 0 0">La decisión usa la revisión mostrada; si cambia, no se aplica.</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>W4 · 390 · Confirmación apilada con el mismo contenido y la decisión al final.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Escribir el motivo y confirmar el cierre, o cancelar.</li><li>La confirmación usa la revisión y la clave de intento mostradas.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>Cambio de revisión o impacto entre revisión y confirmación (409).</li><li>Fallo de validación o de transacción: rollback sin foto.</li><li>Reintento con payload distinto y la misma clave (409).</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Reapertura posterior (E4.10).</li><li>Fotos trimestrales/anuales (E4.11).</li><li>Crear el ciclo siguiente o alterar su S0.</li><li>Declarar superados E3.5 o DT6: el escenario es ficticio.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R3 ============================== -->
+  <section class="wire-section" id="r3">
+    <div class="wire-label"><span class="tag">R3</span><span class="desc"><strong>Cierre bloqueado</strong> · 1440 (W5) y 390 (W6). E3.5 no verificable, DT6/backup no acreditado, ventana/S0 inválidos, PlanNoVerificable, incoherencia posterior y concurrencia/409. Sin foto parcial ni <em>Comida = 0</em>.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w5-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre bloqueado</span><span class="ref">Sin escritura · sin foto · ejemplo ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Cierre bloqueado</h3>
+                  <div class="muted small">Ciclo «periodo» · «inicio» → «fin» · no se ha escrito nada</div>
+                </div>
+                <span class="state blocked">! Bloqueado · sin foto</span>
+              </div>
+
+              <div class="note dangernote"><strong>No hay cierre ni fotografía parcial.</strong> No se declara completo un total parcial y Comida no se muestra como 0: sin E3.5/FIN_NETA verificable no se captura ni se inventa.</div>
+
+              <div class="block dangerbox">
+                <h4>Motivos de bloqueo</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Motivo</th><th>Tipo</th><th>Qué implica</th><th>Salida</th></tr></thead>
+                    <tbody>
+                      <tr class="group"><td colspan="4">Datos y gates</td></tr>
+                      <tr><td><strong>E3.5 / FIN_NETA no verificable</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Sin Comida ni CIERRE; no se admite cierre parcial anticipado</td><td>Resolver E3.5 fuera de E4.9</td></tr>
+                      <tr><td><strong>BACKUP_NO_VERIFICABLE</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Falta evidencia DT6/T-BKP o restauración probada; se bloquea antes de escribir</td><td>Acreditar backup y restauración</td></tr>
+                      <tr><td><strong>SIN_SIGUIENTE_INICIO</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>No hay Fin acreditable; no se inventa una fecha</td><td>Que exista un ciclo posterior</td></tr>
+                      <tr><td><strong>S0 no acreditado</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Sin S0 no hay cierre; no se sustituye por 0</td><td>Informar/acreditar el S0 del ciclo</td></tr>
+                      <tr><td><strong>PlanNoVerificable</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Líneas inconsistentes; no se captura el plan ni se corrige aquí</td><td>Corregir el plan fuera de esta pantalla</td></tr>
+                      <tr><td><strong>INCOHERENCIA_CON_CIERRE_POSTERIOR</strong></td><td><span class="state blocked">! Bloqueo</span></td><td>Diferencia no explicable al mismo corte; el aviso no sustituye el bloqueo</td><td>Resolver por la vía de E4.10/DT9 (fuera de alcance)</td></tr>
+                      <tr class="group"><td colspan="4">Concurrencia</td></tr>
+                      <tr><td><strong>IMPACT_CHANGED / REVISION_CONFLICT</strong></td><td><span class="state blocked">! 409</span></td><td>La revisión mostrada ya no es válida; no hay foto parcial</td><td>Actualizar la revisión y reintentar</td></tr>
+                      <tr><td><strong>Doble cierre del mismo ciclo</strong></td><td><span class="state blocked">! Conflicto</span></td><td>No se crea una segunda foto ni una v2 por esta vía</td><td>Solo E4.10 reabre el último (fuera de alcance)</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="grid2">
+                <div class="block">
+                  <h4>Qué no existe en este estado</h4>
+                  <ul class="plain">
+                    <li><strong>Foto parcial</strong> ni valores provisionales.</li>
+                    <li><strong>Comida = 0</strong> ni Comida capturada sin E3.5.</li>
+                    <li><strong>Total parcial</strong> presentado como completo.</li>
+                    <li><strong>Cierre</strong> ni versión v2 por reintento.</li>
+                  </ul>
+                </div>
+                <div class="block okbox">
+                  <h4>Qué sí se conserva</h4>
+                  <ul class="plain">
+                    <li>Ciclo, ventana, S0 y revisión para reintentar.</li>
+                    <li>Estado y motivo por fuente.</li>
+                    <li>Enlaces de revisión al precierre y a la fuente.</li>
+                    <li>La base sin cambios: no se escribió nada.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Ver precierre</button>
+                <button class="btn secondary" type="button">Actualizar revisión</button>
+                <button class="btn secondary" type="button">Volver a ciclos</button>
+              </div>
+              <p class="small muted" style="text-align:right;margin:6px 0 0">No se ofrece «Cerrar igualmente»: el bloqueo no es una advertencia.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W5 · 1440 · Cierre bloqueado con motivos separados por datos/gates y concurrencia; sin foto parcial ni Comida = 0.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w6-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre bloqueado</span><span class="ref">sin foto · ficticio</span></div>
+          <div class="content">
+            <span class="state blocked">! Bloqueado · sin foto</span>
+            <div class="m-card" style="margin-top:8px"><b>Ciclo «periodo»</b><div class="meta">«inicio» → «fin» · no se ha escrito nada.</div></div>
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>No hay cierre ni foto parcial</b><div class="meta">No se declara completo un total parcial. Comida no se muestra como 0.</div></div>
+
+            <div class="m-group">Motivos de bloqueo · datos y gates</div>
+            <div class="m-card"><div class="row"><b>E3.5 / FIN_NETA</b><span class="state blocked">! No verificable</span></div><div class="meta">Sin Comida ni CIERRE; no se admite parcial anticipado. Resolver fuera de E4.9.</div></div>
+            <div class="m-card"><div class="row"><b>Backup DT6/T-BKP</b><span class="state blocked">! BACKUP_NO_VERIFICABLE</span></div><div class="meta">Falta evidencia o restauración probada; bloqueo antes de escribir.</div></div>
+            <div class="m-card"><div class="row"><b>Ventana</b><span class="state blocked">! SIN_SIGUIENTE_INICIO</span></div><div class="meta">No hay Fin acreditable; no se inventa una fecha.</div></div>
+            <div class="m-card"><div class="row"><b>S0</b><span class="state blocked">! No acreditado</span></div><div class="meta">Sin S0 no hay cierre; no se sustituye por 0.</div></div>
+            <div class="m-card"><div class="row"><b>Plan</b><span class="state blocked">! PlanNoVerificable</span></div><div class="meta">Líneas inconsistentes; no se captura ni se corrige aquí.</div></div>
+            <div class="m-card"><div class="row"><b>Cierres posteriores</b><span class="state blocked">! Incoherencia</span></div><div class="meta">Diferencia no explicable al mismo corte; el aviso no sustituye el bloqueo.</div></div>
+
+            <div class="m-group">Concurrencia</div>
+            <div class="m-card"><div class="row"><b>Revisión obsoleta</b><span class="state blocked">! 409</span></div><div class="meta">IMPACT_CHANGED / REVISION_CONFLICT; no hay foto parcial. Actualizar y reintentar.</div></div>
+            <div class="m-card"><div class="row"><b>Doble cierre</b><span class="state blocked">! Conflicto</span></div><div class="meta">No se crea segunda foto ni v2 por esta vía. Solo E4.10 reabre (fuera de alcance).</div></div>
+
+            <div class="m-card"><b>Qué no existe aquí</b><div class="meta">Foto parcial · Comida = 0 · total parcial como completo · cierre o v2 por reintento.</div></div>
+            <div class="m-card"><b>Qué se conserva</b><div class="meta">Ciclo, ventana, S0, revisión, estado por fuente y enlaces · la base no cambió.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Ver precierre</button>
+              <button class="btn secondary" type="button">Actualizar revisión</button>
+              <button class="btn secondary" type="button">Volver a ciclos</button>
+            </div>
+            <p class="small muted" style="margin:6px 0 0">No se ofrece «Cerrar igualmente»: el bloqueo no es una advertencia.</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>W6 · 390 · Bloqueos apilados por causa, con la misma prohibición de foto parcial y Comida = 0.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Corregir la causa fuera de E4.9 o actualizar la revisión y reintentar.</li><li>No decide convertir un bloqueo en advertencia ni cerrar igualmente.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>E3.5/FIN_NETA, backup, ventana, S0, PlanNoVerificable e incoherencia posterior.</li><li>409 por revisión obsoleta o doble cierre.</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Corregir las fuentes desde el cierre.</li><li>Reapertura E4.10 y resolución DT9.</li><li>Fotos E4.11 y patrimonio E4.3.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R4 ============================== -->
+  <section class="wire-section" id="r4">
+    <div class="wire-label"><span class="tag">R4</span><span class="desc"><strong>Fotografía inmutable</strong> · 1440 (W7) y 390 (W8). Valores persistidos, fecha/actor/versión, cobertura por métrica, E4.3 <em>No disponible</em>, evidencia de backup y marcas de inmutabilidad. Escenario hipotético con E3.5 verificable.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w7-frame">
+          <div class="topbar"><span>MyFinanzas · Fotografía de cierre</span><span class="ref">v1 · inmutable · ejemplo ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Fotografía inmutable · v1</h3>
+                  <div class="muted small">Ciclo «periodo» · «inicio» → «fin» · generada «fecha UTC» · ejemplo ficticio</div>
+                </div>
+                <span class="state ready">✓ Cerrado · v1</span>
+              </div>
+
+              <div class="immutable">
+                <span class="lock" aria-hidden="true">▣</span>
+                <div><strong>Registro inmutable.</strong> Fingerprint de cierre «hash…» · retención permanente · T2/T3 no la recalculan · la UI no edita ni borra. Las vistas vivas pueden cambiar y se muestran separadas.</div>
+              </div>
+
+              <div class="grid3">
+                <div class="info"><b>Identidad</b>Ciclo «periodo» · foto v1<br>«fecha UTC» · actor «actor»<br>Motivo «motivo»<br>App «v…» · esquema «v…»<br><span class="mono">fingerprint «hash…»</span></div>
+                <div class="info"><b>Ventana</b>Inicio «inicio» · Fin «fin»<br>S0 «importe»<br>Estado temporal «estado»<br><span class="muted small">Congelada; no se recalcula</span></div>
+                <div class="info"><b>Backup</b>Evidencia DT6/T-BKP «ref…»<br>Manifiesto/checksum/clave<br>Restauración acreditada<br><span class="muted small">Hipotético en este ejemplo</span></div>
+              </div>
+
+              <div class="grid2">
+                <div class="block">
+                  <h4>Hechos y plan</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Bloque</th><th>Contenido persistido</th><th>Cobertura</th></tr></thead>
+                      <tbody>
+                        <tr><td>Movimientos del ciclo</td><td>«n» movimientos · totales «importe»</td><td><span class="state ready">✓ Completo</span></td></tr>
+                        <tr><td>Plan</td><td><em>SinPlan</em>; sin líneas inventadas</td><td><span class="state ready">✓ Completo</span></td></tr>
+                        <tr><td>Clasificación / Referencias</td><td>IDs y versión del nombre</td><td><span class="state ready">✓ Completo</span></td></tr>
+                        <tr><td>Auxiliares con hechos</td><td>Anticipos, Compartidos, Nómina, Revisión Comida, Deuda E1.6</td><td><span class="state ready">✓ Completo</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div class="block">
+                  <h4>Inversión E4.1 a Fin</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Concepto</th><th>Valor persistido</th><th>Nota</th></tr></thead>
+                      <tbody>
+                        <tr><td>Instrumentos</td><td>«n»</td><td>Posiciones a Fin</td></tr>
+                        <tr><td>Compras registradas</td><td>«n»</td><td>Cobertura histórica parcial</td></tr>
+                        <tr><td>Efectivo a Fin</td><td>«importe»</td><td>Incluye anteriores; excluye posteriores</td></tr>
+                        <tr><td>Posiciones a Fin</td><td>«n» · «cantidad»</td><td>Sin doble cómputo</td></tr>
+                        <tr><td>Valoración</td><td><span class="state unavailable">× No disponible</span></td><td>Sin motor E4.3</td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Cobertura por métrica</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Métrica</th><th>Valor capturado</th><th>Cobertura</th><th>Motivo</th></tr></thead>
+                    <tbody>
+                      <tr><td>Gasto</td><td>«importe»</td><td><span class="state ready">✓ Completo</span></td><td>Movimientos completo</td></tr>
+                      <tr><td>Ingreso</td><td>«importe»</td><td><span class="state ready">✓ Completo</span></td><td>Movimientos completo</td></tr>
+                      <tr><td>Efectivo a Fin</td><td>«importe»</td><td><span class="state ready">✓ Completo (Compras)</span></td><td>Para Compras registradas; cobertura histórica parcial</td></tr>
+                      <tr><td>Posición de inversión a Fin</td><td>«n» instrumentos</td><td><span class="state ready">✓ Completo (Compras)</span></td><td>Anteriores incluidas; posteriores excluidas; cobertura histórica parcial</td></tr>
+                      <tr><td>Valoración</td><td><span class="state unavailable">× No disponible</span></td><td><span class="state unavailable">× No disponible</span></td><td>E4.3 no disponible</td></tr>
+                      <tr><td>Patrimonio</td><td><span class="state unavailable">× No disponible</span></td><td><span class="state unavailable">× No disponible</span></td><td>E4.3 no disponible</td></tr>
+                      <tr><td>Neto Anticipo</td><td>«importe»</td><td><span class="state ready">✓ Completo</span></td><td>Capturado</td></tr>
+                      <tr><td>Neto Compartido</td><td>«importe»</td><td><span class="state ready">✓ Completo</span></td><td>Capturado</td></tr>
+                      <tr><td>Neto Nómina</td><td>«importe»</td><td><span class="state ready">✓ Completo</span></td><td>Capturado</td></tr>
+                      <tr><td>Comida / CIERRE</td><td>«resultado E3.5»</td><td><span class="state neutral">Según E3.5</span></td><td>Cobertura reportada por el proveedor; no se recalcula</td></tr>
+                      <tr><td>Plan</td><td><em>SinPlan</em></td><td><span class="state ready">✓ Completo</span></td><td>SinPlan o líneas capturadas; no se inventan</td></tr>
+                      <tr><td>E4.2 Ventas / E4.4 Deuda completa</td><td><span class="state unavailable">× No disponible</span></td><td><span class="state unavailable">× No disponible</span></td><td>Sin runtime; no se declaran capturados</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="grid2">
+                <div class="block">
+                  <h4>Evidencia de backup</h4>
+                  <div class="table-wrap">
+                    <table>
+                      <thead><tr><th>Elemento</th><th>Referencia</th><th>Estado</th></tr></thead>
+                      <tbody>
+                        <tr><td>Manifiesto</td><td>«ref. no sensible…»</td><td><span class="state ready">✓ Acreditado</span></td></tr>
+                        <tr><td>Checksum</td><td>«sha256…»</td><td><span class="state ready">✓ Verificado</span></td></tr>
+                        <tr><td>Clave</td><td>«ref. de custodia…»</td><td><span class="state ready">✓ Acreditada</span></td></tr>
+                        <tr><td>Restauración</td><td>«prueba aislada…»</td><td><span class="state ready">✓ Probada</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <p class="small muted" style="margin:8px 0 0">Escenario hipotético: DT6/T-BKP sigue abierto. La foto solo referencia evidencia acreditada; no la sustituye.</p>
+                </div>
+
+                <div class="block">
+                  <h4>Marcas de inmutabilidad</h4>
+                  <ul class="plain">
+                    <li>Fingerprint propio del cierre; <span class="mono">financeRevision</span> no lo sustituye.</li>
+                    <li>v1 no se edita ni se poda; retención permanente.</li>
+                    <li>Un re-cierre futuro crearía v2 sin alterar v1 (fuera de esta pantalla).</li>
+                    <li>Consultar no recalcula: los valores se leen persistidos.</li>
+                    <li>T2/T3 no modifican la foto; las vistas vivas se muestran aparte.</li>
+                    <li>Fecha UTC, actor, motivo, app y esquema quedan congelados.</li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Ver vistas vivas</button>
+                <button class="btn secondary" type="button">Ver estado del cierre</button>
+                <button class="btn secondary" type="button">Volver a ciclos</button>
+              </div>
+              <p class="small muted" style="text-align:right;margin:6px 0 0">No hay acción de edición, borrado ni reapertura en E4.9.</p>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W7 · 1440 · Fotografía v1 con identidad, ventana, hechos, plan, inversión, cobertura por métrica, backup e inmutabilidad.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w8-frame">
+          <div class="topbar"><span>MyFinanzas · Fotografía</span><span class="ref">v1 · inmutable · ficticio</span></div>
+          <div class="content">
+            <span class="state ready">✓ Cerrado · v1</span>
+            <div class="m-card" style="margin-top:8px"><b>Ciclo «periodo»</b><div class="meta">«inicio» → «fin» · generada «fecha UTC»</div></div>
+            <div class="m-card" style="border-color:var(--okline);background:#fbfdf8"><b>▣ Registro inmutable</b><div class="meta">Fingerprint «hash…» · retención permanente · T2/T3 no la recalculan · sin edición ni borrado.</div></div>
+
+            <div class="m-group">Identidad</div>
+            <div class="m-card"><div class="meta">Ciclo «periodo» · foto v1<br>«fecha UTC» · actor «actor» · motivo «motivo»<br>App «v…» · esquema «v…»<br><span class="mono">fingerprint «hash…»</span></div></div>
+
+            <div class="m-group">Ventana y backup</div>
+            <div class="m-card"><div class="meta">Inicio «inicio» · Fin «fin» · S0 «importe» · estado temporal «estado»<br>Congelada; no se recalcula.</div></div>
+            <div class="m-card"><div class="meta">Evidencia DT6/T-BKP «ref…» · manifiesto/checksum/clave · restauración acreditada (hipotético).</div></div>
+
+            <div class="m-group">Hechos y plan</div>
+            <div class="m-card"><div class="meta">Movimientos «n» · totales «importe» · <span class="state ready">✓ Completo</span><br>Plan <em>SinPlan</em> · <span class="state ready">✓ Completo</span><br>Clasificación/Referencias: IDs + versión del nombre<br>Auxiliares con hechos capturados.</div></div>
+
+            <div class="m-group">Inversión E4.1 a Fin</div>
+            <div class="m-card"><div class="meta">Instrumentos «n» · compras «n»<br>Efectivo a Fin «importe» · posiciones «n»<br>Anteriores incluidas; posteriores excluidas.<br>Valoración <span class="state unavailable">× No disponible</span> (E4.3).</div></div>
+
+            <div class="m-group">Cobertura por métrica</div>
+            <div class="m-card"><div class="meta">Gasto · «importe» · <span class="state ready">✓ Completo</span><br>Ingreso · «importe» · <span class="state ready">✓ Completo</span><br>Efectivo a Fin · <span class="state ready">✓ Completo (Compras)</span> · cobertura histórica parcial<br>Posición a Fin · <span class="state ready">✓ Completo (Compras)</span> · cobertura histórica parcial<br>Valoración/Patrimonio · <span class="state unavailable">× No disponible</span><br>Neto Anticipo/Compartido/Nómina · <span class="state ready">✓ Completo</span><br>Comida / CIERRE · <span class="state neutral">Según E3.5</span> (no se recalcula)<br>Plan · <span class="state ready">✓ Completo</span><br>E4.2/E4.4 · <span class="state unavailable">× No disponible</span></div></div>
+
+            <div class="m-group">Inmutabilidad</div>
+            <div class="m-card"><div class="meta">Fingerprint propio; financeRevision no lo sustituye.<br>v1 no se edita ni se poda; un re-cierre futuro crearía v2 sin alterar v1 (fuera de esta pantalla).<br>Consultar no recalcula. Vistas vivas separadas.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Ver vistas vivas</button>
+              <button class="btn secondary" type="button">Ver estado del cierre</button>
+              <button class="btn secondary" type="button">Volver a ciclos</button>
+            </div>
+            <p class="small muted" style="margin:6px 0 0">No hay edición, borrado ni reapertura en E4.9.</p>
+          </div>
+        </div>
+      </div>
+      <figcaption>W8 · 390 · Fotografía apilada; conserva cobertura por métrica, ND y marcas de inmutabilidad.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Consultar la foto y las vistas vivas por separado.</li><li>No decide alterar valores: la foto no se edita ni se recalcula.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>Nada en esta pantalla: el cierre ya existe.</li><li>Un re-cierre o reapertura no se ofrece aquí.</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Reapertura E4.10 y v2.</li><li>Fotos E4.11.</li><li>Valoración/patrimonio E4.3.</li><li>Editar o borrar la foto.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R5 ============================== -->
+  <section class="wire-section" id="r5">
+    <div class="wire-label"><span class="tag">R5</span><span class="desc"><strong>Advertencias, parciales y No disponible</strong> · 1440 (W9) y 390 (W10). Estados sin inventar cifras; distinción explícita entre bloqueo y advertencia, y entre vacío, cero informado y ND.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w9-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre · Estados</span><span class="ref">Guía de presentación · ejemplo ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Advertencias, parciales y No disponible</h3>
+                  <div class="muted small">Mismos estados en revisión, confirmación y foto · sin cifras inventadas</div>
+                </div>
+                <span class="state partial">… Estados mixtos</span>
+              </div>
+
+              <div class="state-grid">
+                <div class="state-card bad">
+                  <h4>Bloqueo · <span class="state blocked">! Bloqueo</span></h4>
+                  <p>Impide cerrar y no genera foto.</p>
+                  <div class="mini">E3.5 no verificable · backup no acreditado · ventana/S0 inválidos · PlanNoVerificable · incoherencia posterior · 409.</div>
+                </div>
+                <div class="state-card warncard">
+                  <h4>Advertencia · <span class="state partial">… Aviso</span></h4>
+                  <p>No impide por sí sola; exige decisión, motivo o auditoría.</p>
+                  <div class="mini">CIERRE_FUERA_DE_ORDEN exige motivo y coherencia al mismo corte. Un impacto T2 se audita. E4.1 sin Compras nuevas muestra posiciones anteriores.</div>
+                </div>
+                <div class="state-card">
+                  <h4>Parcial · <span class="state partial">… Parcial</span></h4>
+                  <p>Cobertura incompleta; el total no se presenta como completo.</p>
+                  <div class="mini">«parcial n/m» en métricas con cobertura incompleta. En E4.1 la cobertura histórica parcial se declara junto al total de Compras registradas, sin presentarlo como histórico completo.</div>
+                </div>
+                <div class="state-card">
+                  <h4>No disponible · <span class="state unavailable">× No disponible</span></h4>
+                  <p>Sin motor o dato verificable; no es 0 ni vacío.</p>
+                  <div class="mini">E4.3 valoración/patrimonio · E4.2 · E4.4. No bloquea por sí solo. E3.5 es distinto: bloquea y no se captura como ND.</div>
+                </div>
+                <div class="state-card">
+                  <h4>Vacío acreditado · <span class="state empty">○ Vacío</span></h4>
+                  <p>Ausencia acreditada de operaciones en una fuente.</p>
+                  <div class="mini">Se muestra vacío explícito, nunca 0. No equivale a «Sin hechos» del ciclo.</div>
+                </div>
+                <div class="state-card ok">
+                  <h4>Cero informado · <span class="state ready">✓ 0 es un hecho</span></h4>
+                  <p>Un cero declarado es un dato y se captura como 0.</p>
+                  <div class="mini">No es ausencia ni vacío. No se confunde con una fuente no disponible.</div>
+                </div>
+              </div>
+
+              <div class="block" style="margin-top:12px">
+                <h4>Comparación obligatoria</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Estado</th><th>Se muestra</th><th>¿Bloquea el cierre?</th><th>Prohibido</th></tr></thead>
+                    <tbody>
+                      <tr><td>Bloqueo</td><td>Motivo visible y salida</td><td><span class="state blocked">Sí</span></td><td>Cerrar igualmente, foto parcial</td></tr>
+                      <tr><td>Advertencia</td><td>Aviso y requisito (motivo/auditoría)</td><td><span class="state partial">No por sí sola</span></td><td>Ocultar el aviso o saltar la coherencia</td></tr>
+                      <tr><td>Parcial</td><td>«parcial n/m» y motivo</td><td><span class="state partial">No por sí solo</span></td><td>Presentarlo como total completo</td></tr>
+                      <tr><td>No disponible</td><td>«No disponible» y motivo</td><td><span class="state unavailable">No, salvo E3.5</span></td><td>Mostrar 0, vacío o cifra inventada</td></tr>
+                      <tr><td>Vacío acreditado</td><td>«Vacío» explícito</td><td><span class="state unavailable">No por sí solo</span></td><td>Mostrar 0</td></tr>
+                      <tr><td>Cero informado</td><td>0 con contexto de hecho</td><td><span class="state unavailable">No</span></td><td>Tratarlo como ausencia</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="note"><strong>Sin hechos</strong> solo se declara si hay ausencia acreditada de operaciones imputables al ciclo en todas las fuentes aplicables. El S0 (incluido 0) y las posiciones heredadas se capturan. No se deduce de la falta de Movimientos, del S0 ni de la ausencia de Compras nuevas.</div>
+              <div class="note dangernote"><strong>E3.5 no es «No disponible».</strong> Sin E3.5/FIN_NETA verificable el cierre se bloquea y no hay foto; no se admite cierre parcial anticipado ni re-cierre como sustituto. Comida nunca se muestra como 0.</div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W9 · 1440 · Tablero de estados: bloqueo, advertencia, parcial, ND, vacío y cero informado.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w10-frame">
+          <div class="topbar"><span>MyFinanzas · Estados</span><span class="ref">cierre · ficticio</span></div>
+          <div class="content">
+            <span class="state partial">… Estados mixtos</span>
+            <div class="m-card" style="margin-top:8px"><b>Bloqueo</b><div class="meta"><span class="state blocked">! Bloqueo</span> Impide cerrar y no genera foto: E3.5, backup, ventana/S0, PlanNoVerificable, incoherencia, 409.</div></div>
+            <div class="m-card"><b>Advertencia</b><div class="meta"><span class="state partial">… Aviso</span> No impide por sí sola; exige decisión, motivo o auditoría. CIERRE_FUERA_DE_ORDEN exige motivo y coherencia al mismo corte.</div></div>
+            <div class="m-card"><b>Parcial</b><div class="meta"><span class="state partial">… Parcial</span> «parcial n/m»; el total no se presenta como completo. En E4.1 la cobertura histórica parcial se declara sin presentar el total de Compras como histórico completo.</div></div>
+            <div class="m-card"><b>No disponible</b><div class="meta"><span class="state unavailable">× No disponible</span> Sin motor o dato verificable; no es 0 ni vacío. E4.3/E4.2/E4.4 no bloquean por sí solos. E3.5 sí bloquea y no se captura como ND.</div></div>
+            <div class="m-card"><b>Vacío acreditado</b><div class="meta"><span class="state empty">○ Vacío</span> Ausencia acreditada en una fuente; se muestra vacío, nunca 0. No equivale a «Sin hechos» del ciclo.</div></div>
+            <div class="m-card"><b>Cero informado</b><div class="meta"><span class="state ready">✓ 0 es un hecho</span> Un cero declarado se captura como 0; no es ausencia.</div></div>
+
+            <div class="m-card" style="border-color:var(--line);background:#f7fbf1"><b>Sin hechos</b><div class="meta">Solo con ausencia acreditada en todas las fuentes aplicables. S0 (incluido 0) y posiciones heredadas se capturan. No se deduce de la falta de Movimientos ni de Compras nuevas.</div></div>
+            <div class="m-card" style="border-color:var(--dangerline);background:#fffafa"><b>E3.5 no es «No disponible»</b><div class="meta">Bloquea el cierre y no hay foto; no se admite parcial anticipado ni re-cierre como sustituto. Comida nunca se muestra como 0.</div></div>
+          </div>
+        </div>
+      </div>
+      <figcaption>W10 · 390 · Los mismos estados en tarjetas, sin tabla ni scroll horizontal.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Interpretar el estado y corregir la causa fuera de E4.9.</li><li>No decide convertir ND en 0 ni un parcial en total.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>Solo los estados marcados como bloqueo.</li><li>E3.5 bloquea aunque se parezca a un ND; no se captura como tal.</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Implementar E4.3, E4.2 o E4.4.</li><li>Reapertura y fotos E4.11.</li><li>Cambiar la semántica de vacío/cero/ND.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R6 ============================== -->
+  <section class="wire-section" id="r6">
+    <div class="wire-label"><span class="tag">R6</span><span class="desc"><strong>Concurrencia, reintentos e inconsistencias</strong> · 1440 (W11) y 390 (W12). Revisión obsoleta, reintento idempotente, respuesta antigua, conflicto y recuperación; sin doble cierre ni foto parcial.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w11-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre · Concurrencia</span><span class="ref">Secuencia de ejemplo · ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Concurrencia, reintentos e inconsistencias</h3>
+                  <div class="muted small">Ciclo «periodo» · una sola foto por cierre · sin escritura parcial</div>
+                </div>
+                <span class="state partial">… Recuperación</span>
+              </div>
+
+              <div class="timeline">
+                <div class="step"><span class="num">1</span><h4>Revisión A vigente</h4><p>La UI carga la revisión «hash A» y el usuario decide confirmar con ella.</p></div>
+                <div class="step"><span class="num">2</span><h4>Cambio concurrente</h4><p>Un T2 genera la revisión «hash B». El envío con A responde <strong>409 IMPACT_CHANGED / REVISION_CONFLICT</strong>.</p></div>
+                <div class="step"><span class="num">3</span><h4>Recuperación</h4><p>Se recarga B, se revisa de nuevo y se confirma con una clave de intento nueva. Se crea la foto v1.</p></div>
+                <div class="step"><span class="num">4</span><h4>Reintento idéntico</h4><p>Misma clave y mismo payload devuelven la misma foto v1. No hay v2 ni doble cierre.</p></div>
+              </div>
+
+              <div class="grid2">
+                <div class="block warnbox">
+                  <h4>Revisión obsoleta</h4>
+                  <p style="margin:0 0 6px">Si la revisión cambia entre la revisión y la confirmación, la operación no se aplica. <strong>No se escribe y no hay foto parcial.</strong></p>
+                  <p class="small muted" style="margin:0">Salida: actualizar la revisión, revisar de nuevo y reintentar. La UI conserva el motivo ya escrito.</p>
+                </div>
+                <div class="block">
+                  <h4>Reintento idempotente</h4>
+                  <p style="margin:0 0 6px">Misma clave + mismo payload → misma foto. Misma clave + payload distinto → <strong>409 IDEMPOTENCY_CONFLICT</strong>.</p>
+                  <p class="small muted" style="margin:0">El reintento no crea una segunda foto ni una versión nueva.</p>
+                </div>
+                <div class="block">
+                  <h4>Respuesta antigua</h4>
+                  <p style="margin:0 0 6px">Si llega tarde la respuesta de un intento anterior, se descarta si su revisión o clave no coinciden con la vigente.</p>
+                  <p class="small muted" style="margin:0">Propuesta de UI: no cambia el estado ni crea foto. SPEC27 no regula este detalle (A-05).</p>
+                </div>
+                <div class="block dangerbox">
+                  <h4>Conflicto y doble cierre</h4>
+                  <p style="margin:0 0 6px">Un segundo cierre del mismo ciclo es un conflicto. No se emite otra foto ni una v2 por reintento.</p>
+                  <p class="small muted" style="margin:0">Solo E4.10 reabre el último cierre (fuera de alcance). El cierre ordinario no reabre.</p>
+                </div>
+              </div>
+
+              <div class="block">
+                <h4>Qué nunca ocurre</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Situación</th><th>Resultado prohibido</th><th>Resultado esperado</th></tr></thead>
+                    <tbody>
+                      <tr><td>409 por cambio concurrente</td><td>Foto parcial o cierre con mezcla de revisiones</td><td>Sin escritura; recargar revisión</td></tr>
+                      <tr><td>Reintento idéntico</td><td>Segunda foto, v2 o doble cierre</td><td>Misma foto v1</td></tr>
+                      <tr><td>Misma clave, payload distinto</td><td>Reutilizar la clave en silencio</td><td>409 IDEMPOTENCY_CONFLICT</td></tr>
+                      <tr><td>Respuesta antigua</td><td>Sobrescribir el estado vigente</td><td>Descartar por revisión/clave</td></tr>
+                      <tr><td>Fallo en la transacción</td><td>Cierre o foto a medias</td><td>Rollback total</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Actualizar revisión</button>
+                <button class="btn primary" type="button">Reintentar con la revisión vigente</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W11 · 1440 · Secuencia de revisión obsoleta, 409, recuperación con nueva clave, reintento idéntico y respuesta antigua descartada.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w12-frame">
+          <div class="topbar"><span>MyFinanzas · Concurrencia</span><span class="ref">secuencia · ficticio</span></div>
+          <div class="content">
+            <span class="state partial">… Recuperación</span>
+            <div class="m-card" style="margin-top:8px"><b>Ciclo «periodo»</b><div class="meta">Una sola foto por cierre · sin escritura parcial.</div></div>
+
+            <div class="m-group">Secuencia</div>
+            <div class="m-card"><b>1 · Revisión A vigente</b><div class="meta">La UI carga «hash A» y el usuario decide confirmar.</div></div>
+            <div class="m-card"><b>2 · Cambio concurrente</b><div class="meta">Un T2 genera «hash B». El envío con A responde <span class="state blocked">! 409 IMPACT_CHANGED / REVISION_CONFLICT</span></div></div>
+            <div class="m-card"><b>3 · Recuperación</b><div class="meta">Se recarga B, se revisa y se confirma con clave nueva. Se crea la foto v1.</div></div>
+            <div class="m-card"><b>4 · Reintento idéntico</b><div class="meta">Misma clave y payload → misma foto v1. Sin v2 ni doble cierre.</div></div>
+
+            <div class="m-group">Conflictos</div>
+            <div class="m-card"><div class="row"><b>Revisión obsoleta</b><span class="state blocked">! 409</span></div><div class="meta">No se aplica, no se escribe y no hay foto parcial. Actualizar, revisar y reintentar; el motivo se conserva.</div></div>
+            <div class="m-card"><div class="row"><b>Misma clave, payload distinto</b><span class="state blocked">! IDEMPOTENCY_CONFLICT</span></div><div class="meta">No se reutiliza la clave en silencio; no hay segunda foto.</div></div>
+            <div class="m-card"><div class="row"><b>Respuesta antigua</b><span class="state neutral">Descartar</span></div><div class="meta">Si su revisión o clave no coincide con la vigente, no cambia el estado. Propuesta de UI; SPEC27 no lo regula (A-05).</div></div>
+            <div class="m-card"><div class="row"><b>Doble cierre</b><span class="state blocked">! Conflicto</span></div><div class="meta">No se emite otra foto ni v2. Solo E4.10 reabre el último (fuera de alcance).</div></div>
+            <div class="m-card"><b>Fallo en la transacción</b><div class="meta">Rollback total: sin cierre ni foto a medias.</div></div>
+
+            <div class="m-card"><b>Qué nunca ocurre</b><div class="meta">Foto parcial · mezcla de revisiones · segunda foto por reintento · v2 por reintento · doble cierre.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Actualizar revisión</button>
+              <button class="btn primary" type="button">Reintentar con la revisión vigente</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption>W12 · 390 · Secuencia y conflictos apilados, con la misma prohibición de doble cierre y foto parcial.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Actualizar la revisión y reintentar, o abandonar.</li><li>No decide reutilizar una clave con otro payload ni forzar un doble cierre.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>409 por revisión obsoleta o impacto concurrente.</li><li>409 por idempotencia con payload distinto.</li><li>Doble cierre del mismo ciclo.</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Reapertura E4.10 y resolución DT9.</li><li>Fotos E4.11.</li><li>Definir el contrato exacto de respuesta antigua (A-05).</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== R7 ============================== -->
+  <section class="wire-section" id="r7">
+    <div class="wire-label"><span class="tag">R7</span><span class="desc"><strong>Errores y sesión expirada</strong> · 1440 (W13) y 390 (W14). 401, 403, 404, 409, 422, 503 y sesión expirada. Ningún error crea cierre ni foto parcial.</span></div>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame desktop" id="w13-frame">
+          <div class="topbar"><span>MyFinanzas · Cierre · Errores</span><span class="ref">Sin foto parcial · ejemplo ficticio</span></div>
+          <div class="layout">
+            <aside class="sidebar" aria-label="Navegación de ejemplo">
+              <div class="item">Ciclos</div>
+              <div class="item">Precierre E4.8</div>
+              <div class="item active">Cierre E4.9</div>
+              <div class="item">Movimientos</div>
+              <div class="item">Plan</div>
+              <div class="item">Inversión</div>
+            </aside>
+            <section class="content">
+              <div class="content-head">
+                <div>
+                  <h3>Errores y sesión expirada</h3>
+                  <div class="muted small">Ciclo «periodo» · se conserva el contexto cuando aplica · no se muestran cifras provisionales</div>
+                </div>
+                <span class="state error">↻ Estado de error</span>
+              </div>
+
+              <div class="note"><strong>Regla común:</strong> un error no crea cierre ni foto parcial. Si el contexto se conserva, se conserva también la revisión para reintentar; no se mezclan revisiones.</div>
+
+              <div class="block">
+                <h4>Respuestas HTTP</h4>
+                <div class="table-wrap">
+                  <table>
+                    <thead><tr><th>Código</th><th>Cuándo</th><th>Qué muestra la UI</th><th>Recuperación</th><th>¿Foto?</th></tr></thead>
+                    <tbody>
+                      <tr><td><strong>401</strong></td><td>No autenticado o sesión expirada</td><td>Se conserva ciclo y revisión; no se muestran cifras</td><td>Reautenticar</td><td>Ninguna</td></tr>
+                      <tr><td><strong>403</strong></td><td>El actor no puede cerrar</td><td>«No puedes cerrar este ciclo»</td><td>Volver; no reintentar en bucle</td><td>Ninguna</td></tr>
+                      <tr><td><strong>404</strong></td><td>Ciclo o foto inexistente o no visible</td><td>«No encontrado»</td><td>Volver a ciclos</td><td>Ninguna</td></tr>
+                      <tr><td><strong>409</strong></td><td>Conflicto de revisión, idempotencia, histórico o doble cierre</td><td>Revisión obsoleta / conflicto; sin cifras nuevas</td><td>Recargar revisión; reintento idempotente</td><td>Ninguna; nunca parcial</td></tr>
+                      <tr><td><strong>422</strong></td><td>Payload inválido (validación)</td><td>Campo o motivo a corregir; sin detalle inventado</td><td>Corregir y reenviar</td><td>Ninguna</td></tr>
+                      <tr><td><strong>503</strong></td><td>Servicio no disponible</td><td>«No se pudo completar»; contexto conservado</td><td>Reintentar</td><td>Ninguna</td></tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p class="small muted" style="margin:8px 0 0">SPEC27 no enumera códigos 422 ni 503 (no hay servicios externos); la UI muestra un mensaje genérico y no inventa causas ni validaciones (A-02, A-03).</p>
+              </div>
+
+              <div class="grid2">
+                <div class="block warnbox">
+                  <h4>Sesión expirada</h4>
+                  <p style="margin:0 0 6px">Se conserva el ciclo «periodo», la revisión «hash…» y el motivo escrito. <strong>No se muestran cifras ni se envía la clave de intento.</strong></p>
+                  <p class="small muted" style="margin:0">Tras reautenticar se recarga el estado; si la revisión cambió, se aplica el flujo de 409.</p>
+                  <div class="actions" style="justify-content:flex-start;margin-top:8px"><button class="btn primary" type="button">Reautenticar</button></div>
+                </div>
+                <div class="block">
+                  <h4>Error de lectura de una fuente</h4>
+                  <p style="margin:0 0 6px">No es ausencia ni dato faltante. Se conservan identidad y hechos conocidos; la cifra no verificable no se muestra.</p>
+                  <p class="small muted" style="margin:0">La fuente queda en <span class="state error">↻ Error</span> con motivo y acción de reintento. No se convierte en 0 ni en vacío.</p>
+                </div>
+              </div>
+
+              <div class="actions">
+                <button class="btn secondary" type="button">Reintentar</button>
+                <button class="btn secondary" type="button">Volver a ciclos</button>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+      <figcaption>W13 · 1440 · Tabla de 401/403/404/409/422/503, sesión expirada y error de lectura reintentable.</figcaption>
+    </figure>
+
+    <figure class="wire-figure">
+      <div class="frame-wrap">
+        <div class="frame mobile" id="w14-frame">
+          <div class="topbar"><span>MyFinanzas · Errores</span><span class="ref">sin foto parcial · ficticio</span></div>
+          <div class="content">
+            <span class="state error">↻ Estado de error</span>
+            <div class="m-card" style="margin-top:8px"><b>Ciclo «periodo»</b><div class="meta">Se conserva el contexto cuando aplica; no se muestran cifras provisionales.</div></div>
+            <div class="m-card"><b>Regla común</b><div class="meta">Ningún error crea cierre ni foto parcial. No se mezclan revisiones.</div></div>
+
+            <div class="m-group">Respuestas HTTP</div>
+            <div class="m-card"><div class="row"><b>401 · No autenticado</b><span class="state error">↻ Sesión</span></div><div class="meta">Se conserva ciclo y revisión; sin cifras. Reautenticar.</div></div>
+            <div class="m-card"><div class="row"><b>403 · Sin permiso</b><span class="state blocked">! Prohibido</span></div><div class="meta">«No puedes cerrar este ciclo». Volver; no reintentar en bucle.</div></div>
+            <div class="m-card"><div class="row"><b>404 · No encontrado</b><span class="state unavailable">× No existe</span></div><div class="meta">Ciclo o foto inexistente o no visible. Volver a ciclos.</div></div>
+            <div class="m-card"><div class="row"><b>409 · Conflicto</b><span class="state blocked">! Conflicto</span></div><div class="meta">Revisión obsoleta, idempotencia, histórico o doble cierre. Recargar revisión; reintento idempotente. Sin foto parcial.</div></div>
+            <div class="m-card"><div class="row"><b>422 · Validación</b><span class="state partial">… Corregir</span></div><div class="meta">Campo o motivo a corregir; sin detalle inventado. SPEC27 no enumera 422 (A-02).</div></div>
+            <div class="m-card"><div class="row"><b>503 · No disponible</b><span class="state error">↻ Reintentar</span></div><div class="meta">«No se pudo completar»; contexto conservado. SPEC27 no enumera 503 (A-03).</div></div>
+
+            <div class="m-group">Sesión y lectura</div>
+            <div class="m-card"><b>Sesión expirada</b><div class="meta">Se conserva ciclo, revisión y motivo escrito. No se muestran cifras ni se envía la clave de intento. Tras reautenticar se recarga; si la revisión cambió, aplica 409.</div><div class="actions" style="margin-top:8px"><button class="btn primary" type="button">Reautenticar</button></div></div>
+            <div class="m-card"><b>Error de lectura de una fuente</b><div class="meta">No es ausencia ni dato faltante. Se conserva identidad y hechos conocidos; la cifra no verificable no se muestra. <span class="state error">↻ Error</span> con reintento.</div></div>
+
+            <div class="actions">
+              <button class="btn secondary" type="button">Reintentar</button>
+              <button class="btn secondary" type="button">Volver a ciclos</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption>W14 · 390 · Errores y sesión expirada apilados, sin tabla ni scroll horizontal.</figcaption>
+    </figure>
+
+    <div class="annot-grid">
+      <div class="annot-card"><h4>Decide el usuario</h4><ul><li>Reautenticar, reintentar o volver según el error.</li><li>No decide ignorar un 409 ni convertir un error en una cifra.</li></ul></div>
+      <div class="annot-card"><h4>Bloquea el cierre</h4><ul><li>401/403 sin sesión o permiso.</li><li>409 de revisión, idempotencia o doble cierre.</li><li>422 de validación y 503 de servicio.</li></ul></div>
+      <div class="annot-card"><h4>Queda fuera</h4><ul><li>Definir códigos 422/503 no enumerados (A-02, A-03).</li><li>Reapertura E4.10.</li><li>Crear foto parcial como recuperación.</li></ul></div>
+    </div>
+  </section>
+
+  <!-- ============================== Accesibilidad ============================== -->
+  <section class="doc-section" id="accesibilidad">
+    <h2>Accesibilidad: contraste, foco y color</h2>
+    <p>Los pares de color usados en este documento mantienen texto legible sobre su superficie. Los ratios son cálculos sobre los valores CSS de esta página; no constituyen una auditoría WCAG completa ni una aprobación de implementación.</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Uso</th><th>Texto / fondo</th><th>Ratio calculado</th></tr></thead>
+        <tbody>
+          <tr><td>Texto principal</td><td><span class="mono">#2B2B2B</span> / <span class="mono">#FFFFFF</span></td><td>14.16:1</td></tr>
+          <tr><td>Texto principal sobre fondo</td><td><span class="mono">#2B2B2B</span> / <span class="mono">#EEF7E8</span></td><td>12.88:1</td></tr>
+          <tr><td>Texto auxiliar</td><td><span class="mono">#536147</span> / <span class="mono">#FFFFFF</span></td><td>6.63:1</td></tr>
+          <tr><td>Texto auxiliar sobre fondo</td><td><span class="mono">#536147</span> / <span class="mono">#EEF7E8</span></td><td>6.03:1</td></tr>
+          <tr><td>Acción principal</td><td><span class="mono">#24320E</span> / <span class="mono">#8DBB2E</span></td><td>6.04:1</td></tr>
+          <tr><td>Estado válido</td><td><span class="mono">#3F5B12</span> / <span class="mono">#EEF7E2</span></td><td>7.01:1</td></tr>
+          <tr><td>Estado bloqueado</td><td><span class="mono">#8A2F2F</span> / <span class="mono">#FBECEC</span></td><td>7.24:1</td></tr>
+          <tr><td>Estado ND</td><td><span class="mono">#4D5A44</span> / <span class="mono">#EEF2EA</span></td><td>6.47:1</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <ul class="plain" style="margin-top:10px">
+      <li><strong>Foco visible:</strong> anillo de 3 px en <span class="mono">#335B0D</span> con separación de 2 px sobre cualquier control o enlace. Se conserva el orden lógico de lectura y el foco no queda oculto por el scroll.</li>
+      <li><strong>El color no es el único indicador:</strong> cada estado lleva símbolo y texto («! Bloqueado», «× No disponible», «✓ Válido», «○ Vacío», «↻ Error»). El color es redundante.</li>
+      <li><strong>Controles deshabilitados:</strong> mantienen texto legible y explican el motivo; no dependen solo de la opacidad.</li>
+      <li><strong>390:</strong> una columna, tablas convertidas en tarjetas, cadenas largas con <span class="mono">overflow-wrap:anywhere</span> y sin scroll horizontal dentro del frame.</li>
+      <li><strong>Mensajes asíncronos:</strong> el error o el resumen de comprobaciones recibe foco al aparecer; no se anuncia un total provisional.</li>
+    </ul>
+    <p class="small muted" style="margin-top:8px">Ejemplo de foco visible (no interactivo): <span class="focus-demo">Confirmar cierre</span></p>
+  </section>
+
+  <!-- ============================== Validación ============================== -->
+  <section class="doc-section" id="validacion">
+    <h2>Validación de los frames</h2>
+    <p>Los 14 frames se revisaron en modo captura a <strong>1440×900</strong> (W1, W3, W5, W7, W9, W11, W13) y <strong>390×844</strong> (W2, W4, W6, W8, W10, W12, W14), con <span class="mono">documentElement.scrollWidth</span> igual al ancho del viewport y sin desbordamiento dentro del frame.</p>
+    <p class="small muted">Método: Playwright/Chromium sobre el archivo estático con <span class="mono">?capture=wN</span>; se comprobó el ancho del documento, el ancho del frame y los límites de sus elementos visibles. No se ejecutó la aplicación ni se usaron datos reales.</p>
+  </section>
+
+  <!-- ============================== Ambigüedades ============================== -->
+  <section class="doc-section" id="ambiguedades">
+    <h2>Ambigüedades registradas (sin inventar reglas)</h2>
+    <ol class="ambig">
+      <li><strong>A-01 · Motivo ordinario.</strong> SPEC27 incluye el motivo en el cierre y exige motivo adicional para el cierre fuera de orden, pero no fija si el motivo ordinario es obligatorio, su longitud ni un catálogo. El wireframe lo marca obligatorio y no añade validaciones.</li>
+      <li><strong>A-02 · 422.</strong> SPEC27 no enumera códigos 422 ni sus campos. La pantalla muestra un mensaje genérico de validación sin inventar causas.</li>
+      <li><strong>A-03 · 503.</strong> SPEC27 declara que no hay servicios externos y no enumera 503. La UI muestra un fallo genérico reintentable, sin afirmar la causa.</li>
+      <li><strong>A-04 · 409.</strong> SPEC27 nombra <span class="mono">IMPACT_CHANGED</span>, <span class="mono">REVISION_CONFLICT</span>, <span class="mono">IDEMPOTENCY_CONFLICT</span> y <span class="mono">HISTORY_LOCKED</span>, pero no fija qué código aparece en cada transición ni el texto exacto. El wireframe muestra ambos códigos de revisión sin elegir uno.</li>
+      <li><strong>A-05 · Respuesta antigua.</strong> El descarte de una respuesta tardía por revisión o clave es una propuesta de UI; SPEC27 no regula este detalle. Debe confirmarse en DEV E4.9.</li>
+      <li><strong>A-06 · «Revisión» y «fingerprint».</strong> SPEC27 distingue el fingerprint de cierre de la revisión/hash enviada, pero no fija la etiqueta ni la serialización visibles. El wireframe los muestra separados.</li>
+      <li><strong>A-07 · D4.</strong> El estado del precierre debe ser <em>Bloqueado</em> cuando E3.5 no sea verificable; la propia investigación D4 indica que se confirma en el DEV de E4.9. El wireframe lo muestra bloqueado, pero el contrato exacto sigue pendiente.</li>
+      <li><strong>A-08 · Evidencia de backup.</strong> SPEC27 referencia manifiesto, checksum, clave y restauración DT6/T-BKP; DT6 es una propuesta abierta. Las etiquetas de la foto son ilustrativas y no cierran ese contrato.</li>
+      <li><strong>A-09 · Sesión y permisos.</strong> SPEC27 exige conservar el contexto al expirar la sesión, pero no define el modelo de 401/403 ni la UI de reautenticación. El wireframe solo conserva ciclo, revisión y motivo.</li>
+      <li><strong>A-10 · Formato de cobertura.</strong> SPEC27 define <em>completo/parcial/no_disponible</em> por total y motivo, pero no fija la etiqueta visual exacta. Se usa «parcial n/m» y texto, sin inventar un porcentaje.</li>
+      <li><strong>A-11 · «Cerrado» y v1.</strong> SPEC27 usa estado <em>Cerrado</em> y versión de foto, pero no fija la combinación visual ni si el estado se muestra junto a la versión. El wireframe usa «✓ Cerrado · v1» como etiqueta de ejemplo.</li>
+      <li><strong>A-12 · v2 y re-cierre.</strong> DT4 dice que un re-cierre crea v2 sin alterar v1, pero el flujo de re-cierre no pertenece a E4.9. El wireframe solo lo menciona como fuera de alcance.</li>
+      <li><strong>A-13 · «Sin hechos».</strong> SPEC27 exige acreditación en todas las fuentes aplicables y captura de S0/posiciones, pero no fija si se presenta como insignia, texto o estado vacío. El wireframe usa texto explícito.</li>
+      <li><strong>A-14 · Confirmación de irreversibilidad.</strong> SPEC27 pide aviso de irreversibilidad, pero no exige un control adicional (por ejemplo, escribir el ciclo). El wireframe no inventa ese control: muestra el aviso y el botón de confirmación.</li>
+      <li><strong>A-15 · Navegación 390.</strong> SPEC27 no define el menú móvil ni el orden de las secciones. El wireframe usa una columna y tarjetas, sin afirmar comportamiento de menú.</li>
+    </ol>
+  </section>
+
+  <!-- ============================== Fuera de alcance ============================== -->
+  <section class="doc-section" id="fuera-de-alcance">
+    <h2>Fuera de alcance de estos wireframes</h2>
+    <div class="grid2">
+      <div>
+        <ul class="plain">
+          <li>Reapertura E4.10, resolución DT9 y «último cierre».</li>
+          <li>Fotos trimestrales/anuales E4.11 y sus agregados.</li>
+          <li>Valoración, resultado y patrimonio E4.3.</li>
+          <li>Motor Comida E3.5/FIN_NETA: solo se consume cuando sea verificable.</li>
+        </ul>
+      </div>
+      <div>
+        <ul class="plain">
+          <li>Ventas E4.2 y conciliaciones E4.4.</li>
+          <li>Crear el ciclo siguiente o alterar su S0.</li>
+          <li>Código, API, SQLite, migraciones, contratos o datos reales.</li>
+          <li>DEV E4.9, cierre real, despliegue y aprobación de spec.</li>
+        </ul>
+      </div>
+    </div>
+    <p class="note" style="margin-bottom:0">Estos wireframes son documentación para revisión visual. No autorizan DEV E4.9 ni sustituyen la aprobación de SPEC27, del testplan o de los gates E3.5 y DT6/T-BKP.</p>
+  </section>
+
+  <p class="footer">SPEC27 · E4.9 · Documento estático de revisión visual. Sin UI implementada, sin DEV, sin datos reales y sin cierre efectivo. La aprobación de estos wireframes es un gate separado.</p>
+</main>
+<script>
+  // Modo captura para validar/capturar un frame aislado: ?capture=w1 … w14.
+  (function () {
+    var cap = new URLSearchParams(window.location.search).get('capture');
+    if (!cap) return;
+    var frame = document.getElementById(cap + '-frame');
+    if (!frame) return;
+    var mobile = frame.classList.contains('mobile');
+    document.querySelectorAll('.doc-head, .wire-label, .annot-grid, figcaption, .footer, .doc-section').forEach(function (node) {
+      node.style.display = 'none';
+    });
+    document.querySelectorAll('.wire-section').forEach(function (section) {
+      if (!section.contains(frame)) section.style.display = 'none';
+    });
+    document.querySelectorAll('.wire-figure').forEach(function (fig) {
+      if (!fig.contains(frame)) fig.style.display = 'none';
+    });
+    var section = frame.closest('.wire-section');
+    if (section) { section.style.margin = '0'; }
+    var figure = frame.closest('figure');
+    if (figure) { figure.style.margin = '0'; }
+    var wrap = frame.closest('.frame-wrap');
+    if (wrap) { wrap.style.overflow = 'visible'; }
+    var page = document.querySelector('.page');
+    page.style.padding = '0';
+    page.style.margin = '0';
+    page.style.maxWidth = mobile ? '390px' : '1440px';
+    document.body.style.margin = '0';
+    document.body.style.width = mobile ? '390px' : '1440px';
+    frame.style.boxShadow = 'none';
+    frame.style.borderRadius = '0';
+    frame.style.border = '0';
+  })();
+</script>
+</body>
+</html>
