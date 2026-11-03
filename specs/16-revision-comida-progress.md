@@ -373,7 +373,7 @@ fallos del suite completo (56) son los mismos que en `main` por entorno; no hay 
 | 14 | 14 | **PARCIAL** | Ejemplo 785/15/585/−5/580 y subcaso 190/105/−150 probados; faltan composición 800/−100 y devolución antigua |
 | 15 | 15 | **PARCIAL** | Proveedor con cobertura/huella/bloqueo; consumo E4.9 es D4, fuera de alcance |
 | 16 | 16 | **PASS local** | Test «AC-16»: sin tablas ni totales persistidos |
-| 17 | 17 | **PARCIAL** | Tests «AC-17/P7a»: provisional y vencido; falta assertar duración Real con siguiente Inicio |
+| 17 | 17 | **PASS local** | Tests «AC-17/P7a»: provisional, vencido y duración Real con siguiente Inicio (total 30, horizonte 19/07) |
 | 18 | 18 | **PASS documental** | Nombres/magnitudes alineados con FIN-13; R_caja/R_obl y las dos diferencias separadas; referencias históricas de SPEC21 tratadas en el plan E3.5. No implica integración E4.9 |
 
 `bunx tsc --noEmit`: limpio. `bun test apps/api`: 47 pass en `comida.test.ts`; suite completa con

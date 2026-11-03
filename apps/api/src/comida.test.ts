@@ -1302,6 +1302,36 @@ test("AC-14: subcaso S0=100, D=90, B_A=250, S0 siguiente=295", () => {
   db.close();
 });
 
+test("AC-17/TP-17: con siguiente Inicio real la duración es Real", () => {
+  const { db, cycle1 } = setup();
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.ritmo.duracion.tipo).toBe("Real");
+  expect(metrics.ritmo.duracion.total).toBe(30);
+  expect(metrics.ritmo.duracion.horizon).toBe("2026-07-19");
+  db.close();
+});
+
+test("AC-13: periodo sin compras es cero verificado, no No disponible", () => {
+  const { db, ing, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.compras.neto.valor).toBe("0.00");
+  expect(metrics.compras.neto.estado).toBe("Cero verificado");
+  expect(metrics.compensable.neto.valor).toBe("0.00");
+  db.close();
+});
+
 test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el contrato", () => {
   const { prepareV18 } = require("../test-support/database-v18");
   const db = new Database(":memory:");
