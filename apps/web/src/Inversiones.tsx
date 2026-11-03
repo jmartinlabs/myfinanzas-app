@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
 import { Alert, PageHead, Tag } from "./ui";
 import { SaleList, SaleForm, SaleDetail, AnnulSale } from "./Ventas";
+import { Valoracion } from "./Valoracion";
 
 type Position = {
   saldoInversion: { id: string; nombre: string };
@@ -179,11 +180,13 @@ function localDifference(form: Form) {
   return centsText(importe - BigInt(referenceValue.replace(".", "")));
 }
 function tab(path: string) {
-  return path.startsWith(BASE + "/ventas")
-    ? "ventas"
-    : path.startsWith(BASE + "/compras")
-      ? "compras"
-      : "instrumentos";
+  return path.startsWith(BASE + "/valoracion")
+    ? "valoracion"
+    : path.startsWith(BASE + "/ventas")
+      ? "ventas"
+      : path.startsWith(BASE + "/compras")
+        ? "compras"
+        : "instrumentos";
 }
 export function Tabs({ active, go }: { active: string; go: (path: string) => void }) {
   return (
@@ -217,6 +220,16 @@ export function Tabs({ active, go }: { active: string; go: (path: string) => voi
         }}
       >
         Ventas
+      </a>
+      <a
+        href={BASE + "/valoracion"}
+        aria-current={active === "valoracion" ? "page" : undefined}
+        onClick={(event) => {
+          event.preventDefault();
+          go(BASE + "/valoracion");
+        }}
+      >
+        Valoración
       </a>
     </nav>
   );
@@ -310,6 +323,18 @@ export function Inversiones({
     return <AnnulSale key={path} id={saleAnnul[1]} go={go} />;
   const sale = path.match(/^\/inversiones\/ventas\/(\d+)$/);
   if (sale) return <SaleDetail key={path} id={sale[1]} go={go} />;
+  const valoracionPath = path.split("?")[0];
+  if (
+    valoracionPath === BASE + "/valoracion" ||
+    valoracionPath.startsWith(BASE + "/valoracion/")
+  )
+    return (
+      <Valoracion
+        path={path}
+        go={go}
+        tabs={<Tabs active="valoracion" go={go} />}
+      />
+    );
   return <Alert>Página no encontrada.</Alert>;
 }
 function InstrumentList({ go }: { go: (path: string) => void }) {
