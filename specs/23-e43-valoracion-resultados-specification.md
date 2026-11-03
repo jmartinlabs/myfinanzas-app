@@ -72,7 +72,7 @@ que deberá poder observarse cuando exista un DEV autorizado.
 | D-11 | Agregado solo de posiciones; efectivo del bróker leído de `cashAt` y mostrado aparte. | El efectivo no suma al agregado de posiciones ni se convierte en posición. |
 | D-12 | E4.3 publica el contrato de lectura; la integración `e43`/`valoracion` y la foto de SPEC27 requieren autorización separada. | La fila `e43` y `inversion.valoracion` siguen sin cambio; la foto no se toca. |
 | D-13 | Incluir posiciones con cantidad aunque el instrumento esté inactivo o la posición sea heredada; señalar cobertura insuficiente; no inventar valoración; los grupos solo anulados no son posición. | Posición inactiva/heredada visible; sin valor inventado; grupo solo anulado excluido. |
-| D-14 | EUR final 2 decimales; precio unitario y cambio con precisión suficiente y sin redondeos intermedios; cero explícito permitido; negativos rechazados; máximos adoptados de E4.1/E4.2 (DT2 aprobada). | Importe EUR a céntimos; cero válido **solo** como valor manual `0,00`; en Automática, precio, cambio y cantidad deben ser > 0 (A-03); entradas negativas rechazadas; sin límite máximo inventado. |
+| D-14 | EUR final 2 decimales; precio unitario y cambio con precisión suficiente y sin redondeos intermedios; cero explícito permitido; negativos rechazados; máximos pendientes de DT2. | Importe EUR a céntimos; cero válido **solo** como valor manual `0,00`; en Automática, precio, cambio y cantidad deben ser > 0 (A-03); entradas negativas rechazadas; sin límite máximo inventado. |
 | D-15 | Mostrar siempre la fecha de valoración y los días transcurridos; sin umbral de caducidad. | Fecha y antigüedad visibles incluso si la valoración es antigua; sin caducidad automática. |
 | D-16 | Toda valoración anterior al corte es NO certificable para Precierre/cierre; E4.9 define su ventana en su propio DEV. | Se distingue visualización, cobertura y elegibilidad **por fecha exacta en E4.3**; E4.3 no declara la valoración «no apta definitivamente para cierre», no prejuzga el gate de E4.9 y no escribe la foto (A-02). |
 
@@ -82,6 +82,10 @@ operativo de esta spec es «elegible / no elegible **por fecha exacta en E4.3**�
 acreditar por sí mismo una valoración anterior a T. E4.9 definirá después su ventana y su
 criterio de suficiencia, y podrá admitir valoraciones anteriores según su propio contrato. La
 foto de E4.9 y la fila `e43` siguen fuera del alcance de E4.3.
+
+**Resolución DT2 (2026-11-03).** Los máximos de D-14 quedan resueltos por los límites de
+E4.1/E4.2 (`1..2⁵³−1`) aprobados en DT2; la decisión no se reabre y el registro histórico del
+brainstorming se conserva.
 
 ### Invariantes de diseño
 
@@ -215,7 +219,7 @@ al corte** (R-E43-13); `m` el número de posiciones abiertas aplicables. Una val
 `0,00` —manual o redondeo de un automático con insumos positivos— cuenta como valoración
 presente. Una valoración excluida por cambio de cantidad no cuenta en `n`. El resultado agregado tiene su propia cobertura, independiente de la de valoración: `m_r` es el
 número de posiciones aplicables a T (abiertas y cerradas) y `n_r` el de aquellas con resultado
-calculable según R-E43-6. `Verificada` si `n_r = m_r`; `Parcial n_r/m_r` si `0 < n_r < m_r`, sin
+calculable según R-E43-6. `Verificada` si `m_r > 0` y `n_r = m_r`; `Parcial n_r/m_r` si `0 < n_r < m_r`, sin
 total; `No disponible` si `n_r = 0` y `m_r > 0`; `No aplica` si `m_r = 0`. Los grupos solo
 anulados no entran en `m_r`.
 
@@ -238,7 +242,7 @@ suficiencia de E4.9, no define su ventana y no anticipa su veredicto. Una valora
 puede seguir siendo informativa y contar en la cobertura de E4.3 (D-09/D-10) sin quedar
 acreditada por fecha exacta.
 
-El **agregado** solo se declara `Elegible por fecha exacta en E4.3` si todas las valoraciones
+El **agregado** solo se declara `Elegible por fecha exacta (E4.9 no evaluado)` si todas las valoraciones
 usadas son de fecha = T y la cobertura es `Verificada`; en cualquier otro caso se declara
 `No elegible por fecha exacta en E4.3` con motivo (valores anteriores, cobertura incompleta o
 cantidad inconsistente). No se emite una elegibilidad parcial como si fuera completa.
@@ -363,8 +367,9 @@ auditoría, deberá conservar estas garantías.
   en auditoría y no se borra. Un duplicado de la misma posición y fecha se rechaza con 409
   `VALUATION_EXISTS`; la corrección se hace sobre la existente.
 - **Campos rectificables:** se pueden corregir todos los campos de contenido (`fecha_vigencia`,
-  `tipo`, `valor_eur`, `precio_unitario`, `divisa`, `cambio`, `cantidad_base`,
-  `origen`/`procedencia`). `id`, la posición (`saldo_inversion`+`instrumento`) y `creado_utc`
+  `tipo`, `valor_eur`, `precio_unitario`, `divisa`, `cambio`,
+  `origen`/`procedencia`). `cantidad_base` no se acepta del cliente: se recalcula desde la
+  cantidad en la fecha resultante y un valor distinto → 422. `id`, la posición (`saldo_inversion`+`instrumento`) y `creado_utc`
   son inmutables. Cambiar `fecha_vigencia` exige controlar la unicidad en la fecha destino, que
   no sea futura, la revisión y cantidad de la posición en ambas fechas y el efecto en los cortes
   afectados. En `Automática`, se confirman precio, cambio y procedencia referidos a la nueva
@@ -424,7 +429,6 @@ en EUR; `null` significa no disponible y nunca se normaliza a `0.00`.
     "resultadoEur": null,
     "elegibilidadFechaExacta": "No elegible por fecha exacta en E4.3: hay valores anteriores al corte; el gate de E4.9 no se evalúa"
   },
-  // Extracto abreviado: se eliden posiciones; el agregado corresponde a 4 abiertas y 5 totales.
   "efectivo": [
     {
       "saldo": {"id": "S003", "nombre": "Efectivo de inversión demo"},
@@ -451,6 +455,8 @@ la valoración se registró con 10 unidades y al corte la posición tiene 6.
       "estado": "Abierta",
       "tipoValoracion": "Automática",
       "valoracion": {
+        "id": "VAL-000000000002",
+        "revision": 2,
         "estado": "No disponible",
         "motivo": "Cantidad modificada desde la valoración: 2026-03-31 Q=10 → 2026-06-30 Q=6",
         "fecha": "2026-03-31",
@@ -655,9 +661,9 @@ persistencia, UI); clase **C** = comprobación cruzada de contrato con E4.1/E4.2
 | E4.3-AC-05 | Consultar el resultado de una posición abierta y de una cerrada; buscar etiquetas realizado/no realizado o FIFO | Una sola cifra de resultado por posición; abierta = valor + ventas − compras; cerrada = ventas − compras; sin etiqueta realizado/no realizado ni lote | I | D-05 |
 | E4.3-AC-06 | Consultar una posición con resultado disponible; intentar obtener un porcentaje, ratio, TWR o TIR | Solo importe EUR; ningún porcentaje, ratio ni denominador; `No disponible` sin cifra inventada | I | D-06 |
 | E4.3-AC-07 | Compra con comisión 5,00 y Venta con comisión 2,00; comparar resultado con `importe_eur`; añadir un caso con `importe_eur` distinto de cantidad×precio×cambio; intentar restar la comisión otra vez | Resultado 236,00 € con `importe_eur` una sola vez; no 229,00 por doble resta ni 243,00 por suma; con `importe_eur` distinto, resultado = valor + ventas − compras usando el importe cargado/cobrado; comisión nula no crea gasto | I | D-07 |
-| E4.3-AC-08 | Registrar dos valoraciones en fechas distintas; corregir una con revisión y motivo; repetir con revisión obsoleta; intentar DELETE; inspeccionar `ciclo_id` | Serie conservada; corrección auditada con anterior/posterior y motivo; 409 en revisión obsoleta; sin DELETE; sin asociación a Ciclo; Compras/Ventas intactas | I | D-08 |
+| E4.3-AC-08 | Registrar dos valoraciones en fechas distintas; corregir una con revisión y motivo; corregir su `fecha_vigencia` a otra libre; repetir con revisión obsoleta; intentar DELETE; inspeccionar `ciclo_id` | Serie conservada; corrección auditada con anterior/posterior y motivo; unicidad y recálculo en la fecha destino; 409 si la fecha destino ya existe o la revisión es obsoleta; sin DELETE; sin asociación a Ciclo; Compras/Ventas intactas | I | D-08 |
 | E4.3-AC-09 | Consultar T con valoraciones anterior, del mismo día y posterior; consultar un T sin valoración ≤ T | Solo se usa fecha ≤ T; la del mismo día es exacta; la última anterior se muestra con fecha; la posterior se ignora; sin valor ≤ T → `No disponible`, nunca look-ahead | C | D-09 |
-| E4.3-AC-10 | Consultar agregado con todas las posiciones abiertas valoradas; repetir faltando una; repetir con valor 0,00 y sin posiciones abiertas | Completo: `Verificada` y total; falta: `Parcial n/m` sin total; 0,00 cuenta como valor; sin abiertas: `No aplica`; nunca se presenta la suma parcial como total | I | D-10 |
+| E4.3-AC-10 | Consultar agregado con todas las posiciones abiertas valoradas; repetir faltando una; repetir con valor 0,00 y sin posiciones abiertas; repetir con una posición cerrada | Completo: `Verificada` y total; falta: `Parcial n/m` sin total; 0,00 cuenta como valor; sin abiertas: `No aplica`; cobertura de resultado `n_r/m_r` con abiertas y cerradas; nunca se presenta la suma parcial como total | I | D-10 |
 | E4.3-AC-11 | Consultar agregado con posiciones y dos Saldos de efectivo; comparar con `cashAt`; intentar sumar el efectivo al agregado | Agregado solo de posiciones `Inversión`/`Inversiones`; cada efectivo `Efectivo`/`Inversiones` se muestra aparte con su fecha y `cashAt`; el efectivo no suma ni se convierte en posición | C | D-11 |
 | E4.3-AC-12 | Consumir `GET /api/e43/corte`; comparar antes/después la fila `e43`, `inversion.valoracion` y la foto de SPEC27; intentar escribir totales | Contrato de lectura disponible; `e43`/`valoracion`/foto sin cambio; ninguna escritura de totales; integración y foto sujetas a autorización separada | C | D-12 |
 | E4.3-AC-13 | Consultar posición de Instrumento inactivo con cantidad, posición heredada y grupo solo anulado; intentar obtener un valor para la que no tiene valoración | Inactiva/heredada incluidas con cobertura declarada; sin valor inventado; solo anulado excluido; `No disponible` no se sustituye por 0 | C | D-13 |
@@ -691,6 +697,9 @@ acredita la funcionalidad.
   brainstorming. No equivalen a aprobación de esta specification.
 - **DT2-E4.3:** **APROBADA por el usuario el 2026-11-03 sobre `24f3efb` (PR #174)**. No autoriza
   DEV E4.3, DDL, migración, endpoints ni UI.
+- **Puntos nuevos sujetos a confirmación:** A-02, A-03, la cobertura de resultado `m_r`/`n_r` y
+  el catálogo de campos rectificables. No están ratificados por D-01…D-16 ni por DT2; la
+  aprobación de esta revisión los ratifica expresamente.
 - **Specification/wireframes/testplan:** **NO aprobados**. Pendiente de revisión y aprobación
   explícita del usuario.
 - **DEV/esquema:** **NO autorizados**. El almacén de serie fechada es la revisión DT2-E4.3; no
