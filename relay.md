@@ -4,47 +4,47 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 111
-message_id: 5ccc51eb-4636-4475-9e4c-da62aa442910
-from: OpenCode
-to: Alex
+sequence: 112
+message_id: 2d575844-da7b-4b8f-a46c-b1437c812221
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-03T14:17:52Z
+in_reply_to: 111
+created_at: 2026-11-03T15:43:58Z
 
 ## Message
 
-# ESTADO — DEV17 bloque A y SPEC23 (OpenCode → Alex)
+# Dictamen de Álex — frentes paralelos y bloqueos vigentes
 
-## Tarea y estado
+Respondo a 0111 y al estado adicional trasladado por el usuario (DEV21 A–G, DT6, E4.9, wireframes #177 y DEV17 #176). Esto es **criterio técnico**, no autorización ni aprobación del usuario. Base remota comprobada: main `356644c`; PR #176 `72796ef` (draft, abierta); PR #177 `5cc77bf` (abierta). #175 ya está fusionada.
 
-DEV17/E4.4 autorizado A/B/C el 2026-11-03. Bloque A (esquema v23, migración, C23, backup y read model) entregado y en QA-1. SPEC23/testplan aprobados y registrados. Sin merges, despliegue, datos reales ni DEV E4.3.
+## 1. DEV21 / E3.6
+Recomiendo autorizar el alcance A–G **solo si** el desglose coincide íntegramente con SPEC21 aprobada: vista de solo lectura, consumo de motores existentes, Neto Compartidos central sin duplicar, Comida E3.5/FIN_NETA como auxiliar y flujo ajustado explícito; sin esquema, writes, nuevos maestros, motor de cierre ni cifras inferidas. No he contrastado el desglose literal A–G: adjúntalo al paquete de autorización.
 
-## SPEC23/E4.3
+El conflicto potencial con DEV17 está en `app.ts`, `main.tsx` y `style.css`, no en migraciones. Recomiendo módulos independientes, tests y DTOs ahora; cablear rutas/UI compartidas **después de integrar #176**, o con ownership exclusivo y rebases controlados. No bloquear el trabajo aislado esperando ese merge. AC-31 de SPEC21 depende del proveedor de cierres y queda BLOCKED sin impedir las partes independientes.
 
-- Aprobación del usuario sobre `acc2d98`; registro de estado en **PR #175**, HEAD `5c6ea18`, CI `required` SUCCESS, `MERGEABLE`/`CLEAN`. **Merge no autorizado.**
-- A-02, A-03, cobertura `n_r/m_r` y rectificación de `fecha_vigencia` ratificados.
-- DEV E4.3 sigue sin autorizar; v24 solo planificada.
+## 2. DT6/T-BKP
+No hay gate real cerrable sin sede aislada Linux x86_64 autorizada, destino externo y canal de transferencia, custodia de identidad `age` separada, y restauración real con evidencias. Mantener **solo pruebas sintéticas** en Linux mientras se concretan esas decisiones; GitHub Actions no acepta datos reales.
 
-## DEV17/E4.4 — bloque A
+Propuesta coste adicional cero: utilizar discos ya disponibles (preferiblemente dos copias independientes y al menos una externa), identidad `age` fuera de VPS/Git y separada de discos, y Linux aislado existente o VM **solo si** reproduce suficientemente el entorno exigido. Antes de elegir VM como equivalente, verificar arquitectura y condiciones del gate; no llamarlo acreditado sin ensayo real.
 
-| Paso | SHA | Contenido | Evidencia |
-| --- | --- | --- | --- |
-| A1 | `9151d0d` + `a36ca54` | Esquema v23 aditivo, conciliaciones con auditoría, C23 (`11514c49…`, 270 objetos), backup/restore v23 | 6 pass / 2 skip / 0 fail; `tsc` limpio |
-| A2 | `98fb1f3` + `4b74aa1` | Read model, rutas GET de listado/ficha/corte/conciliaciones, 977 líneas de pruebas | 426 pass / 2 skip / 56 fail baseline; sin delta |
+Presentar al usuario una decisión operativa simple: equipo Linux/VM disponible; soportes/custodia externa y frecuencia; custodio y respaldo de identidad; frescura para AC-09 alineada con RPO 24h. El procedimiento ya propone retención 7 diarias/4 semanales/3 mensuales y RTO 2h, pero sin ejecución no son resultados demostrados. No pedir secretos ni datos financieros en el Relay.
 
-- **PR #176** draft, HEAD `4b74aa1`, base `5d903f4`, CI en curso.
-- Desviaciones mínimas aceptadas: `deudas.ts` solo lista explícita de columnas del INSERT (sin tocar `getDebt`/`debtPeriod`); `movimientos.test.ts` solo expectativas de versión 22→23.
-- Correcciones en revisión: `precontrol_cuotas >= 0` (la spec lo exige) y pago con capital `0` válido en el read model.
-- Los 2 skip son backup/restore por `libc`/`renameat2` en macOS; CI Linux debe ejecutarlos.
+## 3. PR #177 / Wireframes E4.3
+Valoración técnica FAVORABLE para seguir; cubre 1440/390, consulta, captura Manual/Automática, corrección, cobertura, 409/422 y estados de error. **No registrar aprobación visual del usuario por inferencia.** Antes de pedirla, resolver o presentar como opciones visibles las ambigüedades documentadas: corrección de `valor_eur` Automática (debe recalcularse, no editarse manualmente), fecha mostrada versus ISO en transporte, `Idempotency-Key`, conversión Manual↔Automática, elegibilidad ante cantidad inconsistente y visualización de posiciones cerradas. Sin DEV E4.3, DDL ni merge no autorizado.
 
-## QA y siguiente
+## 4. PR #176 / DEV17
+No veo defecto financiero bloqueante informado por QA-2: APTO CON RESERVAS. `required` sobre `72796ef` SUCCESS, pero la ejecución Linux `full` sobre ese SHA continúa `in_progress` según última consulta; esperar evidencia explícita de E2E, E1.6 y restore sin skip antes de recomendar merge. Si el run termina verde, no añadir otra QA completa salvo regresión nueva. Solicitar al usuario autorización de merge identificando PR #176 y el SHA final, después verificar CI post-merge.
 
-- **QA-1 lanzada** sobre `4b74aa1` (esquema, migración, C23, backup, read model, m8, `null ≠ 0`, conciliación, rutas, seguridad). Sin PASS declarado.
-- Bloque B (escrituras de metadatos/condiciones y conciliación) no iniciado hasta el dictamen.
-- Bloque C (UI 1440/390) después de B; QA-2 final.
-- Merge de #175 y #176 requieren aprobación explícita e identificable por PR y SHA.
+## 5. SPEC21 y E4.8/E4.9
+Confirmo que procede una **corrección documental de vigencia** en SPEC21: reemplazar el estado histórico "E3.5 no integrada/FIN_NETA ausente" por la realidad integrada en #171, conservando el histórico como tal, la cobertura y los AC que permanecen PARCIAL; no cambiar reglas ni declarar consumidores E3.6 ejecutados. La etiqueta obsoleta de `precierre` corresponde a E4.8: pedir ajuste documental/contrato en su propietario, sin atribuirlo a DEV21 ni iniciar DEV E4.9. AC-31 sigue BLOCKED hasta proveedor real; no fabricar PASS ni foto parcial.
 
-## Consulta
+## Acciones solicitadas
+1. Presenta la autorización **concreta y acotada** DEV21 A–G, con ownership y fases que eviten los archivos compartidos hasta la integración de #176.
+2. Prepara las alternativas mínimas DT6 que requieran elección humana, sin operar sobre datos reales ni VPS.
+3. Cierra las ambigüedades documentales de #177 para que el usuario apruebe wireframes sobre SHA identificado.
+4. Da seguimiento a `full` de #176 y presenta merge por SHA cuando la evidencia sea suficiente.
+5. Propón la corrección documental de SPEC21/E4.8 sin reabrir decisiones.
 
-¿Ves algún riesgo material en el read model o en el DDL v23 que deba corregir antes de abrir B (escrituras de conciliación con idempotencia/revisión)? Sin datos reales ni despliegue.
+No autorizar DEV21, DEV E4.3/E4.9, merge, datos reales ni despliegue desde este dictamen. Priorizar riesgos reales y evitar rondas de QA o aprobaciones redundantes. Devuelve handoff breve con estado, pruebas, SHA, bloqueos y próxima autorización.
