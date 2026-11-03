@@ -364,8 +364,14 @@ auditoría, deberá conservar estas garantías.
   `VALUATION_EXISTS`; la corrección se hace sobre la existente.
 - **Campos rectificables:** se pueden corregir todos los campos de contenido (`fecha_vigencia`,
   `tipo`, `valor_eur`, `precio_unitario`, `divisa`, `cambio`, `cantidad_base`,
-  `origen`/`procedencia`), con revalidación de unicidad, recálculo cuando proceda y auditoría;
-  `id`, la posición (`saldo_inversion`+`instrumento`) y `creado_utc` son inmutables.
+  `origen`/`procedencia`). `id`, la posición (`saldo_inversion`+`instrumento`) y `creado_utc`
+  son inmutables. Cambiar `fecha_vigencia` exige controlar la unicidad en la fecha destino, que
+  no sea futura, la revisión y cantidad de la posición en ambas fechas y el efecto en los cortes
+  afectados. En `Automática`, se confirman precio, cambio y procedencia referidos a la nueva
+  fecha y se recalcula exacto con la cantidad correspondiente; no se desplaza la valoración como
+  si los insumos fueran atemporales. La corrección es un único commit transaccional con revisión
+  optimista, motivo y auditoría anterior/posterior; 409 para conflicto y 422 para entrada
+  inválida. Una corrección histórica no reescribe fotos cerradas.
 - No existe `ciclo_id` ni asociación artificial a un Ciclo. El corte es un parámetro de consulta.
 - No hay DELETE. Una valoración no se «anula» en esta propuesta; se corrige con revisión y
   auditoría, o se deja fuera de la serie si nunca se registró.
