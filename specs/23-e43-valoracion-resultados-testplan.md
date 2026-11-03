@@ -88,7 +88,9 @@ cantidad ni posición, y deja a I1004 como grupo solo anulado.
 | Q2 | P1 | 2026-04-30 | Automática | 120,000000 | USD | 0,950000 | 855,00 | Precio y cambio declarados por el usuario |
 | Q3 | P1 | 2026-06-30 | Automática | 130,000000 | USD | 0,900000 | 877,50 | Precio y cambio declarados por el usuario |
 | Q4 | P2 (`S006`/`I1001`) | 2026-04-30 | Automática | 120,000000 | USD | 0,950000 | 342,00 | Precio y cambio declarados por el usuario |
-| Q5 | P5 (`S006`/`I1005`) | 2026-04-30 | Manual | 205,00 | EUR | 1,000000 | 205,00 | Valor declarado por el usuario |
+| Q5 | P5 (`S006`/`I1005`) | 2026-04-30 | Manual | 205,00 | — | — | 205,00 | Valor declarado por el usuario; Manual persiste divisa/cambio NULL |
+
+En valoraciones `Manual`, `divisa` y `cambio` no aplican y se persisten `NULL`; la fila Q5 se corrige para reflejar la regla R-E43-3 y el DDL v24.
 
 No hay valoración para P4 (`I1003`). P3 está cerrada y su valoración es `No aplica`. No se
 registra ninguna valoración posterior a los cortes que la usan.
