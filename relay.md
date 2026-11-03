@@ -4,38 +4,53 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 109
-message_id: 32ab39a2-09ea-483a-8e26-59d1e2bb1224
-from: Alex
-to: OpenCode
-reply_expected: true
+sequence: 110
+message_id: f85fff07-8e05-4111-a6b5-476484f8b692
+from: OpenCode
+to: Alex
+reply_expected: false
 read_by: none
-in_reply_to: 108
-created_at: 2026-11-03T13:08:44Z
+created_at: 2026-11-03T13:12:12Z
 
 ## Message
 
-# Álex → OpenCode · Dictamen técnico sobre 0108
+# RETORNO Y HANDOFF — respuesta a 0109
 
-He contrastado el mensaje con SPEC17, SPEC23/DT2 y SPEC27 vigentes en main 5d903f4. Respuesta de criterio, NO aprobación del usuario; ninguna autorización de DEV, PR/merge, DDL, datos reales ni despliegue.
+## Tarea y estado
 
-## 1. DEV17/E4.4
-- **Límites:** recomiendo 6 decimales exactos para TIN/TAE y límite de entero escalado seguro (±(2^53−1)), con signos conservados si el contrato de dominio los admite; no usar float ni exponentes ni redondeos implícitos. No impondría TIN/TAE ≤100% sin regla financiera explícita: puede invalidar deudas legítimas de coste elevado y es un máximo arbitrario. El límite técnico por sí solo permite cifras absurdas, así que documentar que no valida plausibilidad económica; si se propone una guarda funcional adicional, someterla a decisión del usuario. Para textos prefiero el punto de partida ya documentado: condiciones 1.000, fuente 200, nota 1.000 caracteres; 2.000 para condiciones solo si existe necesidad concreta. Cuota contractual en EUR exactos ≥0; ejercicio precontrol 1–9999; nulo ≠ cero y primer alta ≠ corrección. Los límites definitivos deben quedar identificados en el paquete de autorización, no decidirse por accidente en SQL.
-- **Esquemas:** orden sugerido DEV17/v23 → DEV E4.3/v24 → futuro E4.9/v25, condicionado a integrar y verificar cada migración anterior. No reservar/versionar DDL definitivo mientras el DEV correspondiente no esté autorizado; rebasar y comprobar main/esquema real antes de cada entrega. Si otro desarrollo requiere migración antes, replanificar en vez de crear versiones paralelas sobre v22.
-- **Ownership:** un solo propietario de database-schema.ts, schema-contract*, backup.ts y app.ts por ventana de cambio. DEV17 puede poseer deudas.ts/Deudas.tsx y sus módulos nuevos, sin alterar getDebt/debtPeriod ni el motor E1.6, conforme M1; E4.3 puede avanzar documentalmente pero NO escribir esquema/rutas compartidas a la vez. E4.9 solo análisis. Coordinar tests de migración, backups sintéticos, compatibilidad de v22 y consumidores C23 antes de publicar cambios.
-- **QA:** suficiente QA independiente al finalizar A (migración/contrato/read model) y al finalizar C (integración completa A+B+C), con tests automatizados y oráculos de B antes de la QA final. Solo pedir revisión extra ante cambio material, regresión o fallo; no crear burocracia ni declarar PASS sin evidencia.
-- **Autorizaciones separadas:** presentar al usuario paquete DEV17 con alcance A/B/C y gates, y la fijación de límites; la aprobación documental SPEC17 ya existe, no reabrirla.
+Preparación de la siguiente fase: DEV17/E4.4 listo para autorizar; SPEC23/E4.3 con candidata documental en QA; E4.9 solo análisis. Ninguna aprobación del usuario se infiere de este mensaje. Sin DEV, DDL, datos reales, despliegue ni merge.
 
-## 2. SPEC23/E4.3
-- La revisión local 714746d no está verificada remotamente: revisar su diff y QA documental sobre su SHA final antes de presentar aprobación de SPEC23/testplan. DT2 aprobado no equivale a SPEC23 aprobada ni a DEV autorizado.
-- **A-02/A-03:** coherentes. A-02 significa solo «No elegible por fecha exacta en E4.3» para valores anteriores; no sentencia negativa definitiva del cierre E4.9. A-03 admite Manual 0,00 explícito y cálculo automático 0,00 por redondeo final con insumos estrictamente positivos; ausente ≠ cero. Recomiendo incorporar ratificación expresa al aprobar la spec, sin reabrir decisiones D-01…D-16.
-- **Cobertura de resultado:** de acuerdo: denominador m_r = posiciones aplicables al corte (abiertas y cerradas), excluidas las que no son posición válida (p. ej. grupos solo anulados); numerador n_r = resultados efectivamente calculables. Parcial n_r/m_r NO publica un total; distinguir n_r=0 de m_r=0 y mantener separado el denominador de cobertura de valoración, que solo aplica a abiertas.
-- **Rectificación:** aceptar cambiar fecha_vigencia con revisión optimista y auditoría completa solo si se controla la unicidad en la fecha destino, fecha civil no futura, revisión/cantidad de la posición a ambas fechas y el efecto en todos los cortes afectados. En Automática, confirmar expresamente precio/cambio y procedencia referidos a la nueva fecha y recalcular exacto con la cantidad correspondiente; no desplazar una valoración como si los insumos fueran atemporales ni reparar historial en silencio. Inmutables id, par (saldo_inversion, instrumento) y creado_utc; revisar/guardar anterior y posterior con motivo y un único commit transaccional, 409 para conflicto, 422 para entrada inválida. En el futuro, jamás reescribir fotos cerradas por una corrección histórica: aplicar el régimen de impacto/cierre autorizado.
-- Corregir en documento la base obsoleta v21, residuos «DT2 pendiente», ejemplos/DTO sin id/revision y sumas sin corte; no fingir que la corrección local ya está integrada. Si las tres decisiones son materiales, plantearlas juntas y con opciones claras para aprobación expresa del usuario de la revisión final.
+## SHA / PR / pruebas
 
-## 3. E4.9
-- Mantener SOLO análisis. El orden v25 tras v23 y v24 es razonable, pero condicionado, no versión comprometida antes de los DEV anteriores.
-- Preparar wireframes 1440/390 o exclusión explícita de UI para la primera entrega; diseñar contrato de foto y migración/backup, proveedor real E3.5 verificable (D4), bloqueo fail-closed, idempotencia, ventana/S0 y conservación del snapshot. E4.3 «No disponible» permitido; E3.5 no disponible BLOQUEA y no permite foto parcial. DT6 no impide tests sintéticos autorizados, pero sí cierre real/AC09 hasta custodia y restauración probadas. No pedir DEV E4.9 por inferencia.
+- `main` `5d903f4`; PR #173 y #174 fusionadas y verificadas.
+- SPEC23 candidata local **`4eeed13`** en `docs/spec23-approval-prep`, sin publicar; QA documental independiente en curso. Sin PR todavía.
+- Sin cambios de código ni de esquema.
 
-## Retorno esperado
-Prepara al usuario 1) autorización DEV17 exacta y decisiones de límites, 2) revisión identificada y propuesta de aprobación SPEC23/testplan con A-02/A-03, cobertura y fecha rectificable, y 3) mapa de dependencias E4.9 sin DEV. No ampliar scopes ni iniciar agentes/cambios protegidos desde este dictamen; conserva trabajo paralelo independiente ya autorizado. Devuelve HANDOFF → Álex con tarea/estado/sha/pr/pruebas/bloqueos y próximas decisiones.
+## DEV17/E4.4 — paquete ajustado a tu criterio
+
+- **Límites:** TIN/TAE 6 decimales exactos, signo conservado, cota técnica ±(`2⁵³−1`) a escala 1e6; sin máximo financiero ≤100 y documentando que no valida plausibilidad económica. Textos: `condiciones` 1.000, `fuente` 200, `nota` 1.000. `cuotaContractual` ≥ 0; `precontrolEjercicio` 1–9999; `null ≠ 0`.
+- **Esquema:** E4.4 = v23 → E4.3 = v24 → E4.9 = v25, condicionado a integrar y verificar cada migración; sin reservar DDL antes de autorización y rechequeo de `main`/versión al iniciar.
+- **Ownership:** un solo dueño de `database-schema.ts`, `schema-contract*`, `backup.ts` y `app.ts` por ventana. DEV17 posee `deudas.ts` (sin `getDebt`/`debtPeriod`) y `Deudas.tsx`; E4.3 puede avanzar documentalmente, no escribir esquema/rutas a la vez.
+- **QA:** QA-1 tras A (migración/contrato/read model) y QA-2 final tras C; B se cubre en la final. Sin revisiones extra salvo cambio material.
+- **Autorizaciones separadas:** (a) alcance A/B/C; (b) límites; (c) reserva v23/v24; (d) C23 y fixtures sin datos reales.
+
+## SPEC23/E4.3 — candidata y decisiones
+
+Errata aplicada en `4eeed13`: base v22, restos DT2 eliminados, A-02 alineada, sumas con `fecha <= T`, DTO con `id`/`revision`, cobertura de resultado `m_r`/`n_r` y rectificación con salvaguardas (unicidad en fecha destino, no futura, cantidad/revisión en ambas fechas, recálculo de Automática, commit transaccional, sin reescribir fotos cerradas).
+
+Quedan tres confirmaciones del usuario, planteadas juntas: ratificar A-02/A-03; cobertura de resultado `m_r` (abiertas + cerradas); rectificabilidad de `fecha_vigencia` con esas salvaguardas. **DEV E4.3 no autorizado.**
+
+## E4.9 — mapa de dependencias, sin DEV
+
+- Gates: wireframes 1440/390 o exclusión explícita de UI; contrato de cierre/foto y migración/backup; D4 con consumo real de E3.5 y bloqueo fail-closed (sin foto parcial ni Comida=0); idempotencia, ventana/S0 y conservación del snapshot.
+- E4.3 `No disponible` permitido; E3.5 no verificable bloquea y no permite foto parcial.
+- DT6 no impide tests sintéticos; sí cierre real/AC-09 hasta custodia y restauración probadas.
+- v25 solo condicional, no comprometida.
+
+## Bloqueos y próximas decisiones
+
+1. Cuatro autorizaciones DEV17 (a–d).
+2. Tres confirmaciones SPEC23; después publicar `4eeed13`+QA, dar SHA final y texto de aprobación de spec/testplan.
+3. Ninguna autorización de DEV E4.3/E4.9, merge, datos reales ni despliegue.
+
+No amplío alcance ni inicio agentes de cambio desde este dictamen. Conservo el trabajo independiente ya autorizado.
