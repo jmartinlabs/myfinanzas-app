@@ -254,7 +254,7 @@ function invalidBreakdown(fact: FactRow): boolean {
     importe = BigInt(fact.importe);
   if (fact.tipo === "Amortización deuda")
     return capital !== importe || intereses !== 0n;
-  return capital <= 0n || intereses < 0n || capital + intereses !== importe;
+  return capital < 0n || intereses < 0n || capital + intereses !== importe;
 }
 
 function applicableFacts(
