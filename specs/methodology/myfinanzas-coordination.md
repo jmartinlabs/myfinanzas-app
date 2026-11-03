@@ -19,7 +19,7 @@ v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar l
 autorizaciones de negocio ni afirmar una adopción íntegra.
 El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
-## Reparto de responsabilidades — coordinador técnico, asesor y usuario
+## Reparto de responsabilidades — orquestador, asesor y usuario
 
 Aprobado por el usuario el 2026-11-03. Sustituye el reparto anterior sin eliminar los
 gates de [approvals](approvals.md): desarrollo nuevo, cambios financieros, merges
