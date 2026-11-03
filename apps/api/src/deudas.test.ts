@@ -516,7 +516,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
         );
         expect(decrypted.exitCode).toBe(0);
         const bundle = JSON.parse(decrypted.stdout.toString());
-        expect(bundle.manifest.schema).toBe(21);
+        expect(bundle.manifest.schema).toBe(22);
         expect(bundle.manifest.app).toBe("e35-v22");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, origin + "-restored");

@@ -460,6 +460,11 @@ export function e35Metrics(
         return { estado: "No disponible" as const, motivo: coverageFood };
       if (netComp === 0n)
         return { estado: "Sin obligación acreditada" as const, motivo: "" };
+      if (netComp < 0n)
+        return {
+          estado: "Parcial" as const,
+          motivo: "C_n negativo: devoluciones elegibles superan el compensable bruto.",
+        };
       return rObl.total >= netComp
         ? { estado: "Completada" as const, motivo: "" }
         : {
@@ -603,6 +608,10 @@ export function e35Metrics(
         version: "e35-1",
         ventana: { inicio: start, corte },
         fuente: "movimientos+comida_metadata+comida_roles",
+        unidad: "EUR",
+        regimen: regime
+          ? { saldo: regime.saldo, cobertura: regime.cobertura, estado: regime.estado }
+          : null,
         huella: financeRevision(db),
         soloLectura: true,
         cobertura:

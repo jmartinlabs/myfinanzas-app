@@ -1106,7 +1106,7 @@ test("AC-05: una Transferencia sin rol deja cobertura parcial con su ID y D ínt
   db.close();
 });
 
-test("AC-12: C_n = 0 verificado produce Sin obligación acreditada, no Completada", () => {
+test("AC-07: C_n = 0 verificado produce Sin obligación acreditada, no Completada", () => {
   const { db, ing, cycle1 } = setup();
   const ready = prepareRegimen(
     db,
@@ -1136,6 +1136,27 @@ test("AC-16: no existen tablas E3.5 ni se persisten totales", () => {
   expect(
     db.query("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%valoracion%'").all(),
   ).toEqual([]);
+  db.close();
+});
+
+test("AC-12: S0 manual no se sustituye por la apertura B_A del régimen", () => {
+  const { db, ing, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "200", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.recursos.valor).toBe("100.00");
+  expect(metrics.posicionBancaria.apertura).toBe("200.00");
+  expect(metrics.posicionBancaria.alInicio).toBe("200.00");
   db.close();
 });
 

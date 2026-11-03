@@ -849,7 +849,7 @@ export function writeComidaRol(
           const collected = db
             .query(
               `SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
-               WHERE m.id=? AND m.anulado=0 AND m.tipo='Transferencia'`,
+               WHERE m.id=? AND m.anulado=0 AND m.tipo='Transferencia' AND r.estado='Activo'`,
             )
             .get(id);
           if (!collected)

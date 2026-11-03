@@ -335,6 +335,7 @@ export function comidaRolV22(db: Database) {
         WHERE NOT EXISTS(
           SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
           WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'
+            AND r.estado='Activo'
         );
       END;
     CREATE TRIGGER movimiento_rol_financiacion_reposicion_update
@@ -345,6 +346,7 @@ export function comidaRolV22(db: Database) {
         WHERE NOT EXISTS(
           SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino
           WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'
+            AND r.estado='Activo'
         );
       END;
     UPDATE schema_version SET version=22;
