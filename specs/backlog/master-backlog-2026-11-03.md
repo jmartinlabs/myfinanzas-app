@@ -1,7 +1,7 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `7bfb5a2`; esquema v23 en `main` y **v24 implementada en DEV E4.3-A**
-(PR #184 draft, sin merge); v24 sigue reservada a E4.3 y no se reserva v25.
+Base de referencia: `main` `3b9be46`; esquema **v24 integrado** con DEV E4.3-A+B; v25 no reservada.
+No se reserva v25 sin decisión.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
 
@@ -17,8 +17,8 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 | Tarea | Estado | Evidencia | Siguiente |
 | --- | --- | --- | --- |
-| DEV E4.3-A (v24, migración, C24, backup) | **Implementado, CI verde** `464341b` (PR #184 draft) | 644/644 CI Linux `41721208556`; QA-A APTO CON RESERVAS | Revisión/merge de #184 |
-| DEV E4.3-B (read model/API) | **Implementado, CI verde** `464341b` (PR #184 draft) | `e43-api` 14/14; QA-B APTO CON RESERVAS | Revisión/merge y después C |
+| DEV E4.3-A (v24, migración, C24, backup) | **MERGED** `3b9be46` | 644/644 en PR `7de64c1`; post-merge `41722741566` fast PASS; QA-A APTO CON RESERVAS | C pendiente |
+| DEV E4.3-B (read model/API) | **MERGED** `3b9be46` | `e43-api` 14/14; QA-B APTO CON RESERVAS | C pendiente |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
@@ -85,4 +85,4 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 ## Próximo hito
 
-Cerrar DEV E4.3-A con CI/QA, iniciar B, y registrar la evidencia post-merge de E4.4/E3.6.
+Preparar DEV E4.3-C (UI/E2E) solo con instrucción explícita y registrar la evidencia post-merge de E4.4/E3.6.

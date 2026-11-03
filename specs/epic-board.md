@@ -31,10 +31,10 @@ solas:
 Base `main` `7bfb5a2`, esquema v23 en `main`; **v24 implementada en E4.3-A (PR #184 draft) y
 reservada en exclusiva a DEV E4.3**.
 
-- **A+B listos para revisión/merge:** DEV43-A (esquema v24/C24/backup) y DEV43-B (read model/API)
-  con CI Linux verde `464341b` (run `41721208556`, 644/644); PR #184 draft, sin merge.
-  QA-A/QA-B APTO CON RESERVAS; reservas menores de cobertura y UI/C pendiente.
-- **Después:** DEV43-C (UI/E2E) con wireframes integrados, con QA independiente.
+- **A+B integrados:** DEV43-A (esquema v24/C24/backup) y DEV43-B (read model/API) MERGED
+  `3b9be46` (squash de #184); CI post-merge `41722741566` verde (perfil fast); PR `7de64c1` 644/644. QA-A/QA-B APTO
+  CON RESERVAS; reservas menores de cobertura y UI/C pendiente.
+- **Después:** DEV43-C (UI/E2E) con wireframes integrados, solo con instrucción explícita.
 - **Preparable sin DEV:** consumidores/fixtures E4.6; frontera E4.7; checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
 - **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
