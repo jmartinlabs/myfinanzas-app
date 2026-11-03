@@ -1,6 +1,7 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `06eeb0f`; esquema v23; **v24 reservada en exclusiva a DEV E4.3**.
+Base de referencia: `main` `7bfb5a2`; esquema v23 en `main` y **v24 implementada en DEV E4.3-A**
+(PR #184 draft, sin merge); v24 sigue reservada a E4.3 y no se reserva v25.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
 
@@ -16,8 +17,9 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 | Tarea | Estado | Evidencia | Siguiente |
 | --- | --- | --- | --- |
-| DEV E4.3-A (v24, migración, C24, backup) | PR #184 draft, `79b131a` | 59 pass propios; CI en curso | QA-A y CI Linux; después B |
-| #181 cola/tablero + reparto autónomo | PR abierto | CI pendiente | Merge documental tras CI |
+| DEV E4.3-A (v24, migración, C24, backup) | **Implementado, CI verde** `0427c59` (PR #184 draft) | 630/630 CI Linux `41713369261`; QA-A APTO CON RESERVAS | Revisión/merge de #184; después B |
+| DEV E4.3-B (read model/API) | **Preparado, no iniciado** | Paquete en `23-e43-valoracion-resultados-progress.md`; sin código | Instrucción explícita para iniciar B |
+| #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
 ## Integrado con evidencia pendiente

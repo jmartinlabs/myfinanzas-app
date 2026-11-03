@@ -1,10 +1,11 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Test plan
 
-Status: **APROBADO — DISEÑO DE PRUEBAS; NO EJECUTADO.** 2026-11-03, revisión `acc2d98`
-(PR #175) sobre `main` `5d903f4`. Ningún AC/TP en PASS; no hay candidato funcional de E4.3, ni
-implementación, endpoints, DDL ni datos reales. DEV E4.3 no autorizado.
+Status: **APROBADO — DISEÑO DE PRUEBAS.** 2026-11-03, revisión `acc2d98` (PR #175).
+DEV E4.3-A (esquema v24, migración, C24 y backup) implementado con CI Linux verde en
+`0427c59` (PR #184 draft, sin merge); DEV43-B/C pendientes. Ningún AC/TP en PASS.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
-Base: `main` `5d903f4` (2026-11-03), esquema SQLite **v22**.
+Progress: [23-e43-valoracion-resultados-progress.md](23-e43-valoracion-resultados-progress.md)
+Base: `main` `7bfb5a2` (2026-11-03), esquema SQLite **v24** tras A.
 
 Antes de implementación, cada AC debe mapearse a su entorno, caso positivo/negativo/límite y
 evidencia esperada. Los borradores admiten diseño provisional, nunca implementación ni PASS.
@@ -17,9 +18,8 @@ evidencia esperada. Los borradores admiten diseño provisional, nunca implementa
   del motor; no se compara el motor consigo mismo. Se reutilizan `positionsFor`/`positionsAtDate`
   y `cashAt` de [investment-engine.ts](../apps/api/src/investment-engine.ts) como fuentes de
   hechos, no como oráculo de valoración.
-- **API/SQLite futura.** Extender la suite `apps/api` con un `e43-valoracion.test.ts` cuando el
-  DEV esté autorizado; esta entrega no crea el archivo. Comprobar respuestas, códigos, DTO,
-  auditoría y no escritura.
+- **API/SQLite.** A implementó esquema, migración, contrato y backup; B implementará el
+  read model/API y su suite E4.3. A no expone endpoints; sus pruebas no convierten AC en PASS.
 - **Contrato de lectura.** Probar el DTO de corte, la serie, la cobertura y la elegibilidad por
   fecha exacta; comprobar antes/después que `e43`, `inversion.valoracion` y la foto de SPEC27 no cambian.
 - **UI futura.** Playwright real con MFA, 390/1440, capturas ficticias, teclado, foco y
@@ -173,60 +173,64 @@ ni declara PASS ahora.
 
 ## Regression checks
 
-Suites y comprobaciones previstas; **ninguna ejecutada** en esta entrega documental:
+Estado por candidato; A no acredita AC/TP funcionales:
 
 | Comprobación | Uso | Resultado actual |
 | --- | --- | --- |
-| `bun test apps/api` | API/SQLite, incluida la futura suite E4.3 | UNRUN |
-| `bun run typecheck` | Tipos del candidato | UNRUN |
-| `bun run build` | Build web | UNRUN |
-| `bun run test:e2e` | Playwright 390/1440 | UNRUN |
-| `python3.12 scripts/verify --base <main> --head <SHA>` | Verificación canónica del candidato | UNRUN |
+| `bun test apps/api` | API/SQLite, incluida la futura suite E4.3 | PASS en CI Linux `0427c59` (630/630); la suite completa macOS no acredita backup/restore Linux |
+| `bun run typecheck` | Tipos del candidato | PASS en `0427c59` |
+| `bun run build` | Build web | UNRUN (sin cambios web en A) |
+| `bun run test:e2e` | Playwright 390/1440 | UNRUN (UI pendiente, C) |
+| `python3.12 scripts/verify --base <main> --head <SHA>` | Verificación canónica del candidato | PASS en CI Linux (`41713369261`); macOS no sustituye el gate |
 | `python3.12 scripts/verify --full` | Perfil completo cuando aplique | UNRUN |
 
 No se reutiliza evidencia de otro candidato. Los conteos, el código de salida y los fallos se
-registrarán por separado cuando exista un candidato funcional.
+registran por candidato y entorno.
 
 ## Functional verification
 
-No hay candidato E4.3. No se ejecutaron endpoints, consultas, migraciones ni capturas. La
-verificación futura deberá registrar respuestas reales (corte, serie, cobertura, errores 401/404/
-409/422), comparación antes/después de `e43`/`valoracion`/foto y ausencia de escritura. El
-arranque del proceso no acredita funcionalidad.
+A no expone endpoints E4.3. Se verificaron esquema v24, migración, contrato C24, rollback
+parcial y backup/restore desde fixtures. La verificación funcional de `GET`/`POST` E4.3
+(corte, serie, cobertura, errores 401/404/409/422 y no escritura de `e43`/`valoracion`/foto)
+queda para B y deberá registrar respuestas reales; el arranque del proceso no acredita
+funcionalidad.
 
 ## Browser verification (web only)
 
-Pendiente. No hay wireframes aprobados ni UI E4.3. Cuando se autorice, Playwright deberá operar
-todos los flujos de aceptación y capturar 390 y 1440, con evidencia de teclado, foco, contraste,
-estados vacío/carga/error/parcial/manual/cerrada/valor anterior/no elegible por fecha exacta y borrador
-conservado ante 409/422. No se declara accesibilidad ni responsive sin esas capturas.
+Pendiente (C). Los wireframes están integrados (`bb076f1`), pero no hay UI E4.3. Cuando se
+implemente, Playwright deberá operar todos los flujos de aceptación y capturar 390 y 1440, con
+evidencia de teclado, foco, contraste, estados vacío/carga/error/parcial/manual/cerrada/valor
+anterior/no elegible por fecha exacta y borrador conservado ante 409/422. No se declara
+accesibilidad ni responsive sin esas capturas.
 
 ## Visual improvements (visual apps only)
 
-N/A: no hay UI implementada, wireframes aprobados ni una entrega visual que evaluar. No se
-proponen mejoras visuales sobre pantallas inexistentes.
+N/A: no hay UI implementada ni una entrega visual que evaluar. No se proponen mejoras visuales
+sobre pantallas inexistentes.
 
 ## QA independiente
 
-**Pendiente.** No hay revisor independiente, candidato ni evidencia funcional. La QA futura
-deberá ser distinta del autor, con contexto nuevo, sin editar reglas financieras, sin escribir
-`specs/epic-board.md`, sin merge y sin datos reales. Cualquier dictamen será documental o
-funcional según el candidato, y no convertirá un AC en PASS sin evidencia.
+**QA-A (2026-11-03): APTO CON RESERVAS** sobre A; F1–F3 cerrados y F4/F5 trasladados a B.
+La QA final de B/C sigue pendiente. Deberá ser distinta del autor, con contexto nuevo, sin
+editar reglas financieras, sin escribir `specs/epic-board.md`, sin merge y sin datos reales.
+Cualquier dictamen será documental o funcional según el candidato, y no convertirá un AC en
+PASS sin evidencia.
 
 ## Limitations and next action
 
-- **Sin aprobación:** specification, wireframes y testplan no están aprobados.
-- **Sin DEV:** no hay código, endpoints, DDL, migración, UI ni tests ejecutables de E4.3.
-- **DT2 aprobada (`24f3efb`):** unicidad, IDs con prefijo `VAL`, constraints, límites
-  E4.1/E4.2 y migración/backup quedan fijados por la revisión final de DT2; el DDL y la
-  migración siguen sin autorizar hasta la autorización de DEV E4.3.
+- **A implementado, no fusionado:** PR #184 sigue en draft; el merge funcional requiere
+  aprobación explícita e identificable.
+- **B/C pendientes:** no hay endpoints, read model ni UI E4.3. El paquete de B está preparado
+  en [progress](23-e43-valoracion-resultados-progress.md), sin iniciar.
+- **DT2 aprobada (`24f3efb`):** unicidad, IDs `VAL`, constraints, límites E4.1/E4.2 y
+  migración/backup quedan fijados; v24 sigue reservada a E4.3 y no se reserva v25.
+- **F4/F5:** obligaciones de B; confirmar su definición exacta antes de implementar.
 - **E4.9 pendiente:** la integración `e43`/`valoracion`, la ventana de certificación y la foto
   requieren autorización separada. Este testplan no las implementa.
-- **Wireframes pendientes:** 390/1440 y estados de UI no están diseñados ni aprobados.
 - **Datos:** solo fixtures ficticias; nunca Excel, bases reales, credenciales ni secretos.
-- **Next action:** revisión humana de specification/testplan; DT2 ya está aprobada; después, si
-  se autoriza, plan de DEV. Ningún AC se declara completo hasta que todas las comprobaciones
-  requeridas pasen con evidencia.
+- **Next action:** revisión y, con aprobación explícita, merge del PR documental; después,
+  instrucción explícita para iniciar B. Ningún AC se declara completo hasta que todas las
+  comprobaciones requeridas pasen con evidencia.
 
 ## Registro de ejecuciones
 
@@ -234,3 +238,7 @@ funcional según el candidato, y no convertirá un AC en PASS sin evidencia.
 | --- | --- | --- | --- | --- |
 | 2026-11-02 | — | — | UNRUN | Diseño documental; no hay implementación E4.3 |
 | 2026-11-02 | — | Validaciones de estructura del repositorio | Documental | No son PASS de AC ni sustituyen la verificación funcional |
+| 2026-11-03 | `0427c59` (A) | `bun test apps/api/src/e43-migration.test.ts apps/api/src/e43-schema-contract.test.ts` | 59 pass / 3 skip / 0 fail (macOS) | Esquema, migración y contrato; skips de backup/restore Linux |
+| 2026-11-03 | `0427c59` (A) | `bun run typecheck` | PASS (macOS) | Sin errores de tipos |
+| 2026-11-03 | `15d9675` (A) | CI Linux `required` `41711265814` | FAIL 629/630 | Expectativa de contador v24 ausente; corregido en `0427c59` |
+| 2026-11-03 | `0427c59` (A) | CI Linux `required` `41713369261` | PASS 630/630 | Gate canónico de A; no acredita AC/TP funcional |
