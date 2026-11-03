@@ -111,6 +111,46 @@ viene del alcance concedido por el usuario. Ninguno concede tareas nuevas, accio
 protegidas ni merges; la publicación solo es ordinaria dentro del alcance autorizado
 y conforme a la sección anterior.
 
+La retirada de un worktree y una rama locales tras un merge confirmado sigue la
+[limpieza local posterior al merge](#limpieza-local-posterior-al-merge).
+
 Garantías técnicas más fuertes (hooks, rulesets o branch protection) requieren
 configuración separada y una fuente de autorización que los agentes no puedan editar;
 no se configuran por inferencia.
+
+## Limpieza local posterior al merge
+
+Tras la aprobación explícita e identificable del merge **y** la confirmación de que esa PR
+está fusionada, eliminar el worktree local y la rama local de la tarea es cierre ordinario
+autorizado, no una nueva acción protegida. No autoriza borrar ramas remotas, ejecutar
+operaciones forzadas, descartar trabajo ni limpiar recursos de otra tarea.
+
+Antes de eliminar nada, comprobar todo lo siguiente:
+
+- el worktree y la rama pertenecen en exclusiva a esa tarea; quedan fuera el checkout
+  actual, `main`, las ramas de otras tareas y cualquier recurso desconocido;
+- ningún agente o sesión activa ni desconocida los posee; si la propiedad no se puede
+  establecer, preservar;
+- la PR está `MERGED` y se conoce su commit de merge; el HEAD de la rama local coincide con
+  el de la PR o no tiene commits más allá del candidato fusionado;
+- el worktree está limpio: sin archivos preparados, sin preparar ni sin seguimiento, y sin
+  archivos ignorados relevantes;
+- la rama local puede borrarse sin forzar.
+
+Secuencia segura única:
+
+```sh
+git worktree remove <worktree-de-la-tarea>
+git branch -d <rama-de-la-tarea>
+```
+
+`git worktree remove` se ejecuta sin `--force`. `git branch -d` se ejecuta sin `-D`.
+No exigir que cada commit aparezca literalmente en `main`: squash y rebase son válidos.
+Si `git branch -d` se niega porque Git no puede probar la integración, o si cualquier
+comprobación es incierta, preservar la rama y reportarlo; no recurrir al borrado forzado.
+
+Nunca usar `git reset --hard`, `git clean -fd`, eliminación forzada de worktrees, borrado de
+ramas remotas ni borrado de recursos desconocidos o sin propietario como parte de esta
+limpieza. Si una comprobación falla, conservar el recurso y reportar el bloqueo exacto; pedir
+autorización específica solo si de verdad hace falta una excepción. Reportar qué recursos se
+eliminaron y cuáles se preservaron.
