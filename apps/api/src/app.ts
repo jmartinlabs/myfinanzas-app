@@ -200,6 +200,12 @@ import {
   getPrecierreEstado,
   type PrecierreOptions,
 } from "./precierre";
+import {
+  listPendientes,
+  getPendiente,
+  type TipoItem,
+} from "./pendientes";
+import { conciliacionCiclo } from "./conciliacion-ciclos";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -325,6 +331,30 @@ export function createApp(db: Database, options: AppOptions) {
       const flow = path.match(/^\/api\/flujo-mensual\/([^/]+)$/);
       if (flow && req.method === "GET")
         return reply(monthlyFlow(db, flow[1], now()));
+      // E3.6 — solo lectura: sin POST/PATCH/DELETE, sin importes en la URL.
+      if (path === "/api/pendientes" && req.method === "GET")
+        return reply(listPendientes(db, new URL(req.url).searchParams, now()));
+      const pendiente = path.match(/^\/api\/pendientes\/([^/]+)\/([^/]+)$/);
+      if (pendiente && req.method === "GET") {
+        let tipo: string, fuenteId: string;
+        try {
+          tipo = decodeURIComponent(pendiente[1]);
+          fuenteId = decodeURIComponent(pendiente[2]);
+        } catch {
+          throw new Problem(422, "VALIDATION", "Identificador de pendiente inválido.");
+        }
+        return reply(getPendiente(db, tipo as TipoItem, fuenteId, now()));
+      }
+      const conciliacion = path.match(/^\/api\/conciliacion\/ciclos\/([^/]+)$/);
+      if (conciliacion && req.method === "GET") {
+        let cicloId: string;
+        try {
+          cicloId = decodeURIComponent(conciliacion[1]);
+        } catch {
+          throw new Problem(422, "VALIDATION", "ID de ciclo inválido.");
+        }
+        return reply(conciliacionCiclo(db, cicloId, now()));
+      }
       if (path === "/api/dprima/partidas" && req.method === "GET")
         return reply(listDprimaPartidas(db));
       if (

@@ -1,7 +1,8 @@
 import type { Database } from "bun:sqlite";
-import { getCycle, cycleMaster } from "./ciclos";
+import { getCycle, cycleMaster, type Cycle } from "./ciclos";
 import { ledgerRows, movementSource, fingerprint } from "./movement-ledger";
-import { getSaldo, decimal, Problem } from "./saldos";
+import { getSaldo, decimal, money, Problem } from "./saldos";
+import { getCompartido } from "./compartidos";
 import { planLines, getCyclePlan } from "./planes-ciclo";
 import {
   payrollMonthlyReference,
@@ -65,6 +66,380 @@ export function planningMargin(
     ? null
     : D(reference).sub(D(planned)).money();
 }
+
+/**
+ * E3.6 — vista ajustada por Recuperado. Aditiva: no sustituye ni reinterpreta
+ * las métricas E2.6. `G_n = G_b − R_adj`; `S_aj` se deriva de E2.6 y siempre es
+ * Parcial. Comida, devoluciones de Anticipo y reposiciones no se restan aquí.
+ */
+export type CoberturaAjuste = "Verificada" | "Parcial" | "No disponible";
+export type AjusteMetrica = {
+  clave: string;
+  importe: string | null;
+  cobertura: CoberturaAjuste;
+  motivo: string | null;
+};
+export type AjusteGastoCompartido = {
+  fuenteId: string;
+  casoId: string;
+  fecha: string;
+  bruto: string;
+  recuperado: string | null;
+  estadoRecuperado: string;
+};
+export type MemoriaCajaAportacion = {
+  movimiento: string;
+  fecha: string;
+  importe: string;
+  casoId: string;
+  participanteId: string;
+  participanteNombre: string;
+};
+export type AjusteCompartidos = {
+  cicloId: string;
+  corte: string | null;
+  base: AjusteMetrica;
+  recuperado: AjusteMetrica & { gastos: AjusteGastoCompartido[] };
+  gastoNeto: AjusteMetrica;
+  resultadoAjustado: AjusteMetrica & {
+    ingresos: string | null;
+    extraordinaria: string | null;
+  };
+  memoriaCaja: {
+    total: string | null;
+    cobertura: CoberturaAjuste;
+    motivo: string | null;
+    aportaciones: MemoriaCajaAportacion[];
+    noEsIngreso: true;
+  };
+  cobertura: CoberturaAjuste;
+  motivo: string | null;
+  formula: string;
+  calculoVivo: true;
+  sinFoto: true;
+  noEsCierreFinanciero: true;
+  soloLectura: true;
+  revisionAjuste: string;
+};
+export type FlujoAjustado = {
+  conservaE26: true;
+  base: {
+    gastoBruto: string | null;
+    sBruto: string | null;
+    cobertura: CoberturaAjuste;
+    motivo: string | null;
+  };
+  ajuste: {
+    rAdj: string | null;
+    gNeto: string | null;
+    sAjustado: string | null;
+    cobertura: CoberturaAjuste;
+    motivo: string | null;
+  };
+  memoriaCaja: {
+    total: string | null;
+    cobertura: CoberturaAjuste;
+    motivo: string | null;
+    aportaciones: MemoriaCajaAportacion[];
+    noEsIngreso: true;
+  };
+  parcial: true;
+  calculoVivo: true;
+  noEsAhorroReal: true;
+  advertencias: string[];
+};
+
+function ajusteCompartidos(
+  db: Database,
+  ciclo: Cycle,
+  corte: string | null,
+  gastoBruto: string | null,
+  ingresos: string | null,
+  extraordinaria: string | null,
+): { ajusteCompartidos: AjusteCompartidos; flujoAjustado: FlujoAjustado } {
+  // E2.6 puede exponer sumas registradas fuera del rango técnico de un importe
+  // individual; en ese caso la métrica derivada queda No disponible, sin lanzar.
+  const safeCents = (value: string | null): bigint | null => {
+    if (value === null) return null;
+    try {
+      return money(value);
+    } catch {
+      return null;
+    }
+  };
+  const periodoVerificable = corte !== null;
+  const gastos: AjusteGastoCompartido[] = [];
+  const aportaciones: MemoriaCajaAportacion[] = [];
+  let recuperadoCents = 0n;
+  let memoriaCents = 0n;
+  let recuperadoParcial = false;
+  let recuperadoNd = false;
+  let recuperadoMotivo: string | null = null;
+  let memoriaNd = false;
+  let memoriaMotivo: string | null = null;
+
+  if (!periodoVerificable) {
+    recuperadoNd = true;
+    recuperadoMotivo =
+      "Periodo/corte central no verificable; no se calcula R_adj ni se rellena con cero.";
+    memoriaNd = true;
+    memoriaMotivo = recuperadoMotivo;
+  } else {
+    let referencias: string[] = [];
+    try {
+      referencias = (
+        db
+          .query("SELECT referencia FROM fichas_compartidos ORDER BY referencia")
+          .all() as { referencia: string }[]
+      ).map((r) => r.referencia);
+    } catch {
+      recuperadoNd = true;
+      recuperadoMotivo =
+        "Fichas de Compartidos no legibles; el ajuste queda No disponible.";
+      memoriaNd = true;
+      memoriaMotivo = recuperadoMotivo;
+    }
+    for (const referencia of referencias) {
+      let dto: ReturnType<typeof getCompartido>;
+      try {
+        dto = getCompartido(db, referencia);
+      } catch (error) {
+        const detalle =
+          error instanceof Problem ? error.message : "lectura no verificable";
+        recuperadoNd = true;
+        recuperadoMotivo = `Error de fuente Compartidos para ${referencia}: ${detalle}.`;
+        memoriaNd = true;
+        memoriaMotivo = recuperadoMotivo;
+        continue;
+      }
+      for (const gasto of dto.gastos) {
+        if (!gasto.computaEnBruto) continue;
+        if (gasto.fecha < ciclo.inicio || gasto.fecha > corte!) continue;
+        const recuperadoCentsGasto = safeCents(gasto.recuperado.valor);
+        if (recuperadoCentsGasto === null) {
+          recuperadoNd = true;
+          recuperadoMotivo =
+            gasto.recuperado.motivo ||
+            `Recuperado no disponible en el Gasto ${gasto.id} de ${referencia}.`;
+        } else {
+          recuperadoCents += recuperadoCentsGasto;
+          if (gasto.recuperado.estado !== "Verificada")
+            recuperadoParcial = true;
+        }
+        gastos.push({
+          fuenteId: gasto.id,
+          casoId: referencia,
+          fecha: gasto.fecha,
+          bruto: gasto.importe,
+          recuperado: gasto.recuperado.valor,
+          estadoRecuperado: gasto.recuperado.estado,
+        });
+      }
+      for (const aportacion of dto.aportaciones) {
+        if (!aportacion.computa) continue;
+        if (aportacion.fecha < ciclo.inicio || aportacion.fecha > corte!)
+          continue;
+        const importe = safeCents(aportacion.importe);
+        if (importe === null) {
+          memoriaNd = true;
+          memoriaMotivo = `Aportación ${aportacion.movimiento} sin importe verificable.`;
+          continue;
+        }
+        memoriaCents += importe;
+        aportaciones.push({
+          movimiento: aportacion.movimiento,
+          fecha: aportacion.fecha,
+          importe: aportacion.importe,
+          casoId: referencia,
+          participanteId: aportacion.participante.id,
+          participanteNombre: aportacion.participante.nombre,
+        });
+      }
+    }
+  }
+
+  const rAdj: string | null = recuperadoNd
+    ? null
+    : decimal(recuperadoCents);
+  const recuperadoCobertura: CoberturaAjuste = recuperadoNd
+    ? "No disponible"
+    : recuperadoParcial
+      ? "Parcial"
+      : "Verificada";
+  const recuperadoMotivoFinal = recuperadoNd
+    ? recuperadoMotivo
+    : recuperadoParcial
+      ? `Recuperado atribuido parcial${
+          recuperadoMotivo ? `: ${recuperadoMotivo}` : "."
+        }`
+      : gastos.length
+        ? "Recuperado atribuido por Gasto con céntimos exactos; no es Ingreso ni un segundo Gasto."
+        : "Periodo verificable sin Gastos compartidos: R_adj = 0 verificado.";
+  const recuperadoMetrica: AjusteMetrica & {
+    gastos: AjusteGastoCompartido[];
+  } = {
+    clave: "R_adj",
+    importe: rAdj,
+    cobertura: recuperadoCobertura,
+    motivo: recuperadoMotivoFinal,
+    gastos,
+  };
+
+  const baseMetrica: AjusteMetrica = {
+    clave: "G_b",
+    importe: gastoBruto,
+    cobertura:
+      gastoBruto === null ? "No disponible" : "Parcial",
+    motivo:
+      gastoBruto === null
+        ? "Gasto bruto E2.6 no disponible con la cobertura actual."
+        : "Gasto bruto E2.6 conservado una vez; base de la sustitución G_b − R_adj.",
+  };
+
+  const gastoBrutoCents = safeCents(gastoBruto);
+  const rAdjCents = safeCents(rAdj);
+  const gastoNetoCents =
+    gastoBrutoCents === null || rAdjCents === null
+      ? null
+      : gastoBrutoCents - rAdjCents;
+  const gastoNeto: string | null =
+    gastoNetoCents === null ? null : decimal(gastoNetoCents);
+  const gastoNetoMetrica: AjusteMetrica = {
+    clave: "G_n",
+    importe: gastoNeto,
+    cobertura:
+      gastoNeto === null
+        ? "No disponible"
+        : "Parcial",
+    motivo:
+      gastoNeto === null
+        ? `G_n No disponible: ${
+            gastoBruto === null
+              ? "falta G_b E2.6."
+              : "R_adj no es verificable."
+          }`
+        : "G_n = G_b − R_adj; cálculo vivo sin foto/cierre. Nunca se muestra G_b + Neto.",
+  };
+
+  const ingresosCents = safeCents(ingresos);
+  const extraordinariaCents = safeCents(extraordinaria);
+  const sAjustadoCents =
+    ingresosCents === null ||
+    gastoNetoCents === null ||
+    extraordinariaCents === null
+      ? null
+      : ingresosCents - gastoNetoCents - extraordinariaCents;
+  const sAjustado: string | null =
+    sAjustadoCents === null ? null : decimal(sAjustadoCents);
+  const sAjustadoMotivo =
+    sAjustado === null
+      ? `S_aj No disponible: ${
+          ingresosCents === null
+            ? "faltan Ingresos E2.6."
+            : gastoNetoCents === null
+              ? "falta G_n."
+              : "falta la Amortización extraordinaria E2.6."
+        }`
+      : "Resultado ajustado por Recuperado; siempre Parcial. No es ahorro real, caja total ni flujo completo. Comida y devoluciones no se restan.";
+  const resultadoMetrica: AjusteMetrica & {
+    ingresos: string | null;
+    extraordinaria: string | null;
+  } = {
+    clave: "S_aj",
+    importe: sAjustado,
+    cobertura: sAjustado === null ? "No disponible" : "Parcial",
+    motivo: sAjustadoMotivo,
+    ingresos,
+    extraordinaria,
+  };
+
+  const memoriaTotal = memoriaNd ? null : decimal(memoriaCents);
+  const memoriaCobertura: CoberturaAjuste = memoriaNd
+    ? "No disponible"
+    : "Verificada";
+  const memoriaMotivoFinal = memoriaNd
+    ? memoriaMotivo
+    : aportaciones.length
+      ? "Aportaciones de Compartidos cobradas en el ciclo; no son Ingresos ni se suman al flujo."
+      : "Periodo verificable sin aportaciones de Compartidos: 0 verificado.";
+  const memoriaCaja = {
+    total: memoriaTotal,
+    cobertura: memoriaCobertura,
+    motivo: memoriaMotivoFinal,
+    aportaciones,
+    noEsIngreso: true as const,
+  };
+
+  const cobertura: CoberturaAjuste = recuperadoNd
+    ? "No disponible"
+    : "Parcial";
+  const motivo = recuperadoNd
+    ? recuperadoMotivoFinal
+    : "Vista ajustada viva: G_n sustituye a G_b; S_aj es Parcial. La base E2.6 se conserva intacta.";
+
+  const ajusteCompartidosDto: AjusteCompartidos = {
+    cicloId: ciclo.id,
+    corte,
+    base: baseMetrica,
+    recuperado: recuperadoMetrica,
+    gastoNeto: gastoNetoMetrica,
+    resultadoAjustado: resultadoMetrica,
+    memoriaCaja,
+    cobertura,
+    motivo,
+    formula:
+      "R_adj = Σ Recuperado atribuido a Gastos compartidos del ciclo; G_n = G_b − R_adj; S_aj = Ingresos − G_n − Extraordinaria (Parcial).",
+    calculoVivo: true,
+    sinFoto: true,
+    noEsCierreFinanciero: true,
+    soloLectura: true,
+    revisionAjuste: fingerprint([
+      ciclo.id,
+      corte,
+      gastoBruto,
+      rAdj,
+      gastoNeto,
+      sAjustado,
+      memoriaTotal,
+      gastos,
+      aportaciones,
+      recuperadoCobertura,
+      memoriaCobertura,
+    ]),
+  };
+
+  const flujoAjustadoDto: FlujoAjustado = {
+    conservaE26: true,
+    base: {
+      gastoBruto,
+      sBruto: observedOperating(ingresos, gastoBruto, extraordinaria),
+      cobertura: gastoBruto === null ? "No disponible" : "Parcial",
+      motivo: baseMetrica.motivo,
+    },
+    ajuste: {
+      rAdj,
+      gNeto: gastoNeto,
+      sAjustado,
+      cobertura,
+      motivo,
+    },
+    memoriaCaja,
+    parcial: true,
+    calculoVivo: true,
+    noEsAhorroReal: true,
+    advertencias: [
+      "S_aj es un resultado ajustado por Recuperado; no es ahorro real, caja total ni flujo completo.",
+      "Comida no se resta de G_n ni de S_aj: su bloque analítico es independiente.",
+      "Las aportaciones de la memoria de caja no son Ingresos.",
+    ],
+  };
+
+  return {
+    ajusteCompartidos: ajusteCompartidosDto,
+    flujoAjustado: flujoAjustadoDto,
+  };
+}
+
 export function monthlyFlow(db: Database, id: string, now = Date.now()) {
   if (!/^\d+$/.test(id))
     throw new Problem(422, "VALIDATION", "ID Ciclo inválido.");
@@ -347,6 +722,14 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
         "Variación patrimonial",
         "Flujo completo/márgenes netos/cierre definitivo",
       ];
+      const ajuste = ajusteCompartidos(
+        db,
+        ciclo,
+        cutoff,
+        metrics.gasto.valor ?? metrics.gasto.subtotal,
+        metrics.ingresos.valor ?? metrics.ingresos.subtotal,
+        metrics.extraordinaria.valor ?? metrics.extraordinaria.subtotal,
+      );
       return {
         ciclo,
         corteEfectivo: cutoff,
@@ -393,6 +776,8 @@ export function monthlyFlow(db: Database, id: string, now = Date.now()) {
           contextRevision: plan?.contextRevision ?? null,
         },
         pendientes,
+        ajusteCompartidos: ajuste.ajusteCompartidos,
+        flujoAjustado: ajuste.flujoAjustado,
         coberturaBancaria: {
           verificada: false,
           motivo:
