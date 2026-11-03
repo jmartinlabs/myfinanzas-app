@@ -17,8 +17,8 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 | Tarea | Estado | Evidencia | Siguiente |
 | --- | --- | --- | --- |
-| DEV E4.3-A (v24, migración, C24, backup) | **Implementado, CI verde** `0427c59` (PR #184 draft) | 630/630 CI Linux `41713369261`; QA-A APTO CON RESERVAS | Revisión/merge de #184; después B |
-| DEV E4.3-B (read model/API) | **Preparado, no iniciado** | Paquete en `23-e43-valoracion-resultados-progress.md`; sin código | Instrucción explícita para iniciar B |
+| DEV E4.3-A (v24, migración, C24, backup) | **Implementado, CI verde** `9f5e059` (PR #184 draft) | 639/639 CI Linux `41717745009`; QA-A APTO CON RESERVAS | Revisión/merge de #184 |
+| DEV E4.3-B (read model/API) | **Implementado, CI verde** `9f5e059` (PR #184 draft) | `e43-api` 9/9; F4/F5 cubiertos; QA-B pendiente | QA-B y después C |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 

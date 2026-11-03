@@ -1,7 +1,7 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **DEV E4.3-A implementado y CI Linux verde en `0427c59` (PR #184 draft, sin merge).
-DEV43-B preparado y no iniciado; DEV43-C sin empezar. Ningún AC/TP en PASS.**
+Status: **DEV E4.3-A y DEV43-B implementados, con CI Linux verde en `9f5e059` (PR #184
+draft, sin merge). DEV43-C sin empezar. Ningún AC/TP en PASS.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
@@ -49,31 +49,26 @@ wireframes (`bb076f1`, PR #177) y handoff de sesión de 2026-11-03 (no versionad
 macOS no acredita las guardas Linux (`renameat2`, `libc.so.6`) del backup/restore; el gate
 canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 
-## Paquete preparado DEV43-B — read model/API (NO INICIADO)
+## Checkpoint B — read model y API (candidato)
 
-- **Estado:** preparado; sin escrituras, commits ni PR propio. Requiere instrucción explícita
-  de inicio.
-- **Objetivo:** implementar el read model y la API de E4.3 sobre v24, sin UI.
-- **Entradas:** spec §API behavior; testplan TP-01…17; `e43-schema.ts`; motores E4.1/E4.2
-  (`investment-engine.ts`, `ventas.ts`, `cashAt`); contrato C24.
-- **Ownership propuesto:** `apps/api/src/e43.ts`, `apps/api/src/e43-api.test.ts` y el
-  registro de rutas E4.3 (archivo a confirmar), más fixtures de prueba E4.3. Sin DDL, sin
-  v25, sin web/UI y sin specs salvo progress/testplan.
-- **Alcance:** `GET /api/e43/corte`, detalle de posición, serie y ficha/auditoría;
+- **Estado:** implementado en `feat/e43-valoracion` (`9f5e059`), PR #184 draft; sin UI.
+- **Ownership:** `apps/api/src/e43.ts`, `apps/api/src/e43-api.test.ts` y las rutas E4.3 en
+  `apps/api/src/app.ts`. Sin DDL, sin v25, sin web/UI.
+- **Alcance entregado:** `GET /api/e43/corte`, detalle de posición, serie y ficha/auditoría;
   `POST` de alta y rectificación con idempotencia, revisión, procedencia y fecha no futura;
-  DTOs y errores 401/404/409/422; sin escritura de totales, `e43`, `valoracion` ni la foto
-  de SPEC27.
-- **F4/F5:** obligaciones heredadas de QA-A; confirmar su definición exacta antes de
-  implementar y detenerse si no queda resuelta por spec/testplan.
+  DTOs de cobertura, resultado, elegibilidad por fecha exacta, efectivo separado y errores
+  401/404/409/422; sin escritura de totales, `e43`, `valoracion` ni la foto de SPEC27.
+- **F4/F5:** fecha de vigencia no futura y consistencia cantidad base/cantidad al corte
+  implementadas y cubiertas por pruebas.
 - **Fuera de alcance:** UI/E2E (C), cambios de esquema v24, v25, E4.9/E4.6/E4.7/E4.5,
   datos reales, migración operativa, despliegue y merge.
-- **Pruebas:** dirigidas E4.3, `bun test apps/api`, `bun run typecheck`; gate final
-  `python3 scripts/verify --base 7bfb5a2 --head <SHA>` y CI Linux. macOS no sustituye el gate.
-- **Aceptación:** cada TP con comando, entorno, candidato y evidencia; sin PASS por
-  inspección; QA independiente tras el candidato.
+- **Pruebas:** `e43-api.test.ts` 9/9 en macOS; `bun run typecheck` limpio; CI Linux
+  `required` run `41717745009` **639/639**. Los fallos de backup/restore macOS son los mismos
+  de `main` y no acreditan el gate Linux.
+- **Límite:** QA-B independiente pendiente; ningún AC/TP funcional se declara PASS todavía.
 
 ## Próxima acción segura
 
-1. Revisión y, con aprobación explícita, merge del PR documental de este progreso.
-2. Instrucción explícita para iniciar B; después, implementar solo el ownership anterior.
-3. No merge de #184, ni inicio de C, ni v25, ni datos reales sin aprobación específica.
+1. QA-B independiente sobre el candidato `9f5e059` (API/read model, sin UI).
+2. Tras QA-B, preparar C (UI/E2E) con wireframes ya integrados; sin merge de #184.
+3. No merge funcional, ni C, ni v25, ni datos reales sin aprobación específica.
