@@ -1,8 +1,8 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Test plan
 
-Status: **DISEÑO DE PRUEBAS — NO EJECUTADO; PROPUESTA DOCUMENTAL EN REVISIÓN.** Ningún AC está
-en PASS. No existe candidato funcional de E4.3, no hay implementación, no hay endpoints, no hay
-DDL y no se usan datos reales. Una prueba diseñada no acredita la funcionalidad.
+Status: **APROBADO — DISEÑO DE PRUEBAS; NO EJECUTADO.** 2026-11-03, revisión `acc2d98`
+(PR #175) sobre `main` `5d903f4`. Ningún AC/TP en PASS; no hay candidato funcional de E4.3, ni
+implementación, endpoints, DDL ni datos reales. DEV E4.3 no autorizado.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
 Base: `main` `5d903f4` (2026-11-03), esquema SQLite **v22**.
 

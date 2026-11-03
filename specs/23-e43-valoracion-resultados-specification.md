@@ -1,13 +1,15 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN — no aprobada; DEV no autorizado; ningún AC en PASS.**
+Status: **APROBADA** — 2026-11-03, revisión `acc2d98` (PR #175) sobre `main` `5d903f4`.
+Wireframes 1440/390 NO aprobados; DEV E4.3 no autorizado; ningún AC en PASS.
 DT2-E4.3: **APROBADA por el usuario el 2026-11-03 sobre la revisión `24f3efb` (PR #174).**
 La aprobación de DT2 no aprueba esta specification, los wireframes ni el testplan, y no autoriza
 DEV E4.3, DDL, migración, integración con E4.8/E4.9, merge ni despliegue.
-Approval source/date: **PENDIENTE.** Las decisiones D-01…D-16 fueron confirmadas por el usuario
-el 2026-11-02 en el [brainstorming](23-e43-valoracion-resultados-brainstorming.md); esa
-confirmación no aprueba esta specification. No hay autorización de desarrollo, esquema,
-migración, integración con E4.8/E4.9, merge ni despliegue.
+Approval source/date: **Aprobación explícita del usuario, 2026-11-03:** «Apruebo la specification
+23 y su testplan en la revisión `acc2d98` de la PR #175», con ratificación expresa de A-02, A-03,
+la cobertura `n_r/m_r` y la rectificación de `fecha_vigencia` con salvaguardas. Las decisiones
+D-01…D-16 se confirmaron el 2026-11-02 y no se reabren. No hay autorización de desarrollo, DDL,
+migración, integración E4.8/E4.9, merge ni despliegue.
 Context and brainstorming: [23-e43-valoracion-resultados-brainstorming.md](23-e43-valoracion-resultados-brainstorming.md),
 [roadmap E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [referencia R5/R6](functional-reference-v5.11.md),
@@ -697,15 +699,13 @@ acredita la funcionalidad.
   brainstorming. No equivalen a aprobación de esta specification.
 - **DT2-E4.3:** **APROBADA por el usuario el 2026-11-03 sobre `24f3efb` (PR #174)**. No autoriza
   DEV E4.3, DDL, migración, endpoints ni UI.
-- **Puntos nuevos sujetos a confirmación:** A-02, A-03, la cobertura de resultado `m_r`/`n_r` y
-  el catálogo de campos rectificables. No están ratificados por D-01…D-16 ni por DT2; la
-  aprobación de esta revisión los ratifica expresamente.
-- **Specification/wireframes/testplan:** **NO aprobados**. Pendiente de revisión y aprobación
-  explícita del usuario.
+- **Specification/testplan:** **APROBADOS** el 2026-11-03 sobre `acc2d98` (PR #175). Los
+  wireframes 1440/390 siguen **NO aprobados**; UI diferida.
+- **Puntos nuevos ratificados:** A-02, A-03, la cobertura de resultado `m_r`/`n_r` y el catálogo
+  de campos rectificables quedaron ratificados al aprobar `acc2d98`.
 - **DEV/esquema:** **NO autorizados**. El almacén de serie fechada es la revisión DT2-E4.3; no
   hay DDL, migración, versión reservada ni endpoints.
 - **E4.8/E4.9:** la integración de `e43`/`valoracion` y la foto requieren autorización separada.
   E4.3 no las modifica. La primera fotografía puede registrar E4.3 como `No disponible`.
-- **AC:** ninguno en PASS; los 17 son criterios de diseño. DT2 ya está aprobada; la siguiente
-  acción es la revisión humana de specification/testplan y, solo tras autorización separada, el
-  DEV.
+- **AC:** ninguno en PASS; los 17 son criterios de diseño. La specification y el testplan están
+  aprobados; la siguiente acción es la autorización separada de DEV E4.3.

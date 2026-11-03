@@ -11,15 +11,22 @@ separado.
 
 ## Decisiones explícitas del usuario — 2026-11-03
 
-Aprobaciones explícitas del usuario, sobre `main` `da9999a`; no autorizan merge ni despliegue:
+Decisiones explícitas del usuario; base `main` `5d903f4`; no autorizan merge ni despliegue por sí
+solas:
 
-- **SPEC17/E4.4:** specification y wireframes 1440/390 **aprobados**; **DEV17 no autorizado**.
+- **SPEC17/E4.4:** specification y wireframes 1440/390 **aprobados**; **DEV17 autorizado A/B/C**
+  el 2026-11-03.
 - **AC-15 E3.5:** se mantiene **PARCIAL**; exige E3.6 y E4.9; no se re-acota.
 - **DT6/T-BKP:** DEV y pruebas con fixtures no bloqueados; cierre real, AC-09 y activación
   productiva sí quedan sujetos a DT6.
-- **DT2-E4.3:** **aprobada el 2026-11-03 sobre `24f3efb` (PR #174)** con unicidad, concurrencia
+- **DT2-E4.3:** **aprobada** el 2026-11-03 sobre `24f3efb` (PR #174) con unicidad, concurrencia
   optimista, auditoría append-only, límites E4.1/E4.2, prefijo `VAL` y A-01 para `Manual`;
   **DEV E4.3 no autorizado**.
+- **SPEC23/E4.3:** specification y testplan **aprobados** el 2026-11-03 sobre `acc2d98`
+  (PR #175), con A-02, A-03, cobertura `n_r/m_r` y rectificación con salvaguardas; wireframes
+  no aprobados; **DEV E4.3 no autorizado**.
+- **DEV17/E4.4:** **autorizado** el 2026-11-03 en bloques A/B/C; A1 (esquema v23, migración,
+  backup y C23) en curso; v23 reservada y v24 planificada para E4.3, condicionadas a `main`.
 - **Primera foto E4.9:** E4.3 puede figurar `No disponible`; el resto de gates de cierre sigue
   intacto.
 
@@ -589,7 +596,7 @@ RETORNO y no acredita ejecución.
 | SPEC20 / E4.5 | Aprobada documentalmente; PR87 MERGED `3d70fd6`; 59 AC UNRUN; QA AC48–59 opcional no ejecutado; DT7 con informe propio sin seguimiento en su worktree | DEV no autorizado; DT7 esperando retorno; no copiar/mover/commitear su informe |
 | INV-DT5 | Encargo enviado; worktree limpio en `9977210` y sin informe | Esperando retorno; no duplicar ejecutor |
 | DEV18 / E3.5 | STOP; ARM64 PASS con salvedad, x86_64 BLOCKED; candidato `568bf3e`, doc `94cb6a0`; handoff principal SHA-256 `38e721da…a090e8` | NO AUTO-RESUME; sin reintentos ni publicación |
-| DEV17 / E4.4 | STOP en `b62ca8c`, sin código; spec/wireframes aprobados 2026-11-03 (`da9999a`) | DEV17 sigue sin autorización; no reanudar por inferencia |
+| DEV17 / E4.4 | **Autorizado 2026-11-03 (A/B/C)**; A1 en curso en worktree aislado; base `5d903f4` | A1: esquema v23, migración, backup y C23; sin merge |
 | B3 / DEV32 | Abiertos y separados; #30 integrado `306bbc5`; rootless real pendiente | No reanudar por inferencia |
 | PR50 / PR51 | Abiertas antiguas, no Draft | Sin autorización; no tocar |
 
@@ -760,13 +767,13 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC14 | E3.2 | Compartidos | Aprobada; D5 integrado | D5 PR90 cf6954a y overflow PR93 f702e9b integrados; D5-AC13 parcial/B-T11 UNRUN conservados |
 | SPEC15 | E3.3 | Vehículos e ITV | Integrada según historial | Integrado según historial; retorno final administrativo por consolidar |
 | SPEC16 | E3.4 | Revisión bancaria de Comida | Aprobada/integrada | CERRADO/INTEGRADO PR82 26b6f0c; AC25 futuro y contratos E3.5 separados |
-| SPEC17 | E4.4 | Deuda completa | **Spec/wireframes APROBADOS 2026-11-03** (revisión `da9999a`, 1440/390); M1/M2/m8 aplicados #163 | Sin código; **DEV17 no autorizado**; depende de E4.1 |
+| SPEC17 | E4.4 | Deuda completa | **Spec/wireframes APROBADOS 2026-11-03** (revisión `da9999a`, 1440/390); M1/M2/m8 aplicados #163 | **DEV17 autorizado 2026-11-03 (A/B/C)**; A1 en curso |
 | SPEC18 | E3.5 | Comida y compensaciones | Rev7 aprobada según checkpoint | CIERRE TÉCNICO LOCAL, QA18 PASS CON SALVEDADES; no publicado/integrado/aceptado funcionalmente |
 | SPEC19 | E4.1 | Instrumentos y Compras | Rev10 y testplan aprobados expresamente | Código histórico congelado064df64; nuevo supervisor conciliando gates, sin DEV activo confirmado |
 | SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 MERGED `3d70fd6`; 59 AC UNRUN; DT7 pendiente |
 | SPEC21 | E3.6 | Conciliación transversal | Aprobada documentalmente; PR #97 MERGED `2364d9c` | DEV21/E3.6 no iniciados; 31 AC UNRUN |
 | SPEC22 | E4.2 | Ventas y efectivo de bróker | MERGED `fd2e21c`; full Linux 17/17 | Integrado; sin DEV18/E3.5 |
-| SPEC23 | E4.3 | Valoración y resultados | Documentación integrada (#167); spec no aprobada; **DT2 APROBADA 2026-11-03 (`24f3efb`)** | Sin DEV/DDL/migración; DEV E4.3 no autorizado |
+| SPEC23 | E4.3 | Valoración y resultados | **Spec/testplan APROBADOS 2026-11-03 (`acc2d98`)**; DT2 aprobada (`24f3efb`); wireframes no | Sin DEV/DDL/migración; DEV E4.3 no autorizado |
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
@@ -825,12 +832,9 @@ comunicado62d4bec, checkout observadoe6a4a0c. No reanudar B3 ni DEV32 por infere
   cesión D5 de alcance E4.1, checkpoint por owner y revalidación destino18 antes de
   adaptar. Cesión anterior para overflow NO es cesión general a E4.1. DEV detenido;
   no reserva definitiva ni autorización de implementación/publicación por aprobación.
-- **DEV17:** checkpointb62ca8c, sin código ni candidato funcional. Spec/wireframes aprobados
-  el 2026-11-03 sobre `da9999a`; la autorización histórica no se considera vigente para la
-  revisión actual. Secuencia D5→E4.1→DEV17; espera cesión explícita E4.1, nueva instrucción de
-  continuación y gate main/dependencias/ownership/versión. STOP NO AUTO-RESUME, sin reservar
-  esquema ni reabrirQ1–Q7. Mensaje de lectura al supervisor preparado;
-  envío no confirmado, sin reanudación del ejecutor.
+- **DEV17:** **autorizado A/B/C el 2026-11-03** sobre `5d903f4`; A1 (esquema v23,
+  migración/backup, C23) en curso en worktree aislado. El checkpoint histórico `b62ca8c` se
+  conserva y no se reanuda. Sin merge; Q1–Q7, M1/M2/m8 y wireframes no se reabren.
 - **E4.5/SPEC20:** aprobación íntegra spec/wireframes27Oct según usuario, Q1–Q10
   confirmadas,47AC, QA documental y verify docsfc48f19 PASS comunicados. PR87 **MERGED
   `3d70fd6`**; el Draft/FAIL `fc48f19` y el CI `40509128613` son históricos. DT7 pendiente: solo
