@@ -764,7 +764,7 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
           ).stdout.toString(),
         );
         expect(bundle.manifest.schema).toBe(21);
-        expect(bundle.manifest.app).toBe("e4.2-v21");
+        expect(bundle.manifest.app).toBe("e35-v22");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")

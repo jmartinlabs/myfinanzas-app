@@ -120,8 +120,8 @@ test("E3.3/E3.2/E3.4 v18 backup manifest and restore preserve vehicle fichas and
     expect(decrypted.exitCode).toBe(0);
     const bundle = JSON.parse(decrypted.stdout.toString());
     expect(bundle.manifest).toMatchObject({
-      app: "e4.2-v21",
-      schema: 21,
+      app: "e35-v22",
+      schema: 22,
       origin: "demo",
     });
     const snapshotPath = join(dir, "snapshot.sqlite");
