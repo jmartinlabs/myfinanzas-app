@@ -1,10 +1,16 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Progress
 
-Status: **APPROVED (documental) — 2026-10-27; PR #97 integrada en `2364d9c`; DEV21 no autorizado.** El
-desarrollo E3.6 no está autorizado; el merge ya está realizado y no autoriza DEV por sí mismo.
+Status: **DEV21 MERGED `a26fffb` (2026-11-03), CI post-merge `41696134039` SUCCESS;
+documentación APPROVED 2026-10-27; ningún AC en PASS.** El desarrollo E3.6 se integró vía
+PR #180; el merge no acredita PASS funcional ni QA final sin reservas.
 
-Fecha: 2026-10-27. Sesión funcional `SPEC21-E3.6`. Cliente externo vía OpenCode;
-modelo/versión observados por el entorno, no verificados por el coordinador.
+Fecha: 2026-10-27 (documentación); evidencia post-merge añadida el 2026-11-03. Sesión
+funcional `SPEC21-E3.6`. Cliente externo vía OpenCode; modelo/versión observados por el
+entorno, no verificados por el coordinador.
+
+**Nota de vigencia:** las secciones 1–11 conservan el estado y las decisiones del
+2026-10-27. El estado real tras el merge está en §12, que prevalece sobre las afirmaciones
+«DEV21 no autorizado» y «merge no realizado» de esas secciones.
 
 ## 1. Preflight
 
@@ -214,8 +220,10 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 - Bloqueo operativo registrado: `gh` no está instalado y la API de GitHub no ofrece
   credenciales válidas en este entorno; la PR se verificó por refs Git (`head`/`merge`),
   no por API. No se solicitaron ni expusieron credenciales.
-- Merge: **no realizado**; pendiente de aprobación explícita e independiente.
-- Desarrollo E3.6: no autorizado; debe solicitarse por separado.
+- Merge: **no realizado** a fecha 2026-10-27. **Actualización 2026-11-03:** completado en
+  `a26fffb` (PR #180); ver §12. Se conserva esta sección como historia.
+- Desarrollo E3.6: no autorizado a fecha 2026-10-27; se ejecutó después con autorización
+  propia y se integró en `a26fffb`. No se infiere autorización para nuevos cambios.
 
 ## 11. Comprobación de no alteración
 
@@ -226,3 +234,108 @@ R3/spec03/spec07 y prohibición de doble contabilización.
 - El diff es exclusivamente documental: cuatro archivos SPEC21, sin código, SQL,
   migraciones, tablero, roadmap ni otros specs.
 - Validación documental PASS; pruebas funcionales UNRUN; QA no realizada.
+
+## 12. Evidencia post-merge — 2026-11-03
+
+### 12.1 Integración y alcance
+
+- **Merge:** PR #180, squash `a26fffb` en `main` (2026-11-03 19:40 +0100), base
+  `024b348`. HEAD de la PR: `85ae61a`.
+- **Entregado (A+B+C):** read model de pendientes y conciliación; rutas GET de pendientes,
+  detalle y conciliación de ciclos; ampliación aditiva de `flujo-mensual`; UI de
+  Pendientes y Flujo ajustado 1440/390; E2E con MFA real. Solo lectura: sin esquema,
+  migración ni escrituras nuevas.
+- **Contexto actual:** E3.5/FIN_NETA está integrado (`1560d04`, v22) y el esquema vigente
+  es v24 por E4.3. E3.5-AC-12/15 siguen PARCIAL; esta evidencia no las convierte en PASS.
+
+### 12.2 Evidencia de ejecución registrada
+
+| Comprobación | Candidato / base | Entorno | Resultado |
+| --- | --- | --- | --- |
+| `required` PR #180 | `85ae61a` | Linux CI | **SUCCESS** (`41687200617`) |
+| Workflow `full` PR #180 | `85ae61a` | Linux CI | **SUCCESS** (`41687222419`): E2E, E1.6 y restore |
+| Suite API local | `85ae61a` | macOS | 510 pass / 2 skip / 56 fallos de entorno sin delta; `tsc` y build limpios |
+| CI post-merge | `a26fffb` | Linux CI | **SUCCESS** (`41696134039`) |
+| CI de `main` actual | `7306494` | Linux CI | **SUCCESS** (`41731496251`) |
+| QA final | `85ae61a` | Independiente | **APTO CON RESERVAS**; sin defecto financiero material |
+
+PASS/SUCCESS acredita la ejecución de la suite y del workflow, **no** un PASS de los 31 AC.
+Las reservas declaradas (R8 S bruto derivado, R9 aviso stale, R12 `listConciliaciones` sin
+ruta, R14 extensión de `ContextoHecho`, R17/R18 elegibilidad) se conservan; AC-31 sigue
+BLOCKED por E4.8/E4.9.
+
+### 12.3 Archivos de prueba existentes en `main`
+
+| Archivo | Pruebas | Cobertura principal |
+| --- | --- | --- |
+| `apps/api/src/pendientes.test.ts` | 18 tests | Neto, exceso, céntimos, Anticipo/Comida, foto, cobertura, filtros, ciclo/ejercicio, contextos y elegibilidad |
+| `apps/api/src/pendientes-api.test.ts` | 40 tests | 401/403/404, solo lectura, filtros 422, paginación, detalle, conciliación de ciclos y sin escrituras |
+| `apps/api/src/conciliacion-ciclos.test.ts` | 4 tests | `DIF_S0_SIGUIENTE`, `DIF_BANCO`, cero/signo, No disponible y no mutación de S0 |
+| `apps/api/src/flujo-ajustado.test.ts` | 18 tests | E2.6 intacto, `R_adj/G_n/S_aj`, memoria de caja, parcial/ND, céntimos y cálculo vivo |
+| `tests/e2e/pendientes.spec.ts` | 4 tests | W1/W2/W3/W5, W4, 1440/390, filtros, detalle, estados, alertas y sesión |
+
+### 12.4 Mapa AC ↔ prueba
+
+Leyenda: **CUBIERTO** = prueba directa y suite ejecutada en CI, sin PASS del AC;
+**PARCIAL** = cubre parte; **UNRUN** = sin prueba específica; **BLOCKED** = dependencia.
+
+| AC | Comprobación esperada | Prueba existente | Estado |
+| --- | --- | --- | --- |
+| E3.6-AC-01 | Neto central B−R; coste propio/pendiente/exceso aparte; sin segundo gasto | `pendientes.test.ts` AC-01/08; `flujo-ajustado` F2/F4 | CUBIERTO |
+| E3.6-AC-02 | S bruto E2.6 intacto; S ajustado separado y PARCIAL | `flujo-ajustado` F1–F4 | CUBIERTO |
+| E3.6-AC-03 | Anticipo/devolución no ejecutan Plan ni crean Ingreso/Gasto | `pendientes.test.ts` AC-03 | CUBIERTO |
+| E3.6-AC-04 | Comida no resta al flujo; `FIN_NETA` una vez | `pendientes.test.ts` AC-04 | CUBIERTO |
+| E3.6-AC-05 | Gasto con REF conserva tipo/Partida/fecha/límite; REF no lo hace Transferencia | `pendientes.test.ts` R4 (contextos) | PARCIAL: falta ejecución de Plan por Partida en el caso AC-05 |
+| E3.6-AC-06 | Céntimos exactos multi-Gasto/multi-Partida; una fila por caso | `pendientes.test.ts` AC-06 | CUBIERTO |
+| E3.6-AC-07 | Estados parcial/completo/exceso/Cerrado con coste propio | `pendientes.test.ts` AC-01/08 | CUBIERTO |
+| E3.6-AC-08 | Pendiente y exceso separados, sin compensación; una fila | `pendientes.test.ts` AC-01/08 | CUBIERTO |
+| E3.6-AC-09 | Foto de apertura vs pendiente actual; cero solo con evidencia | `pendientes.test.ts` AC-09 | CUBIERTO |
+| E3.6-AC-10 | Foto de C2 intacta; Plan sin doble ejecución; sin Ingreso/Gasto | `pendientes.test.ts` AC-03/09 | PARCIAL |
+| E3.6-AC-11 | Gasto/Compensable/Falta exactos; FP excluido | `pendientes.test.ts` AC-11/12 | CUBIERTO |
+| E3.6-AC-12 | Reposición parcial/tardía; nunca Completada por ausencia | `pendientes.test.ts` AC-11/12 | CUBIERTO |
+| E3.6-AC-13 | `DIF_S0_SIGUIENTE` y `DIF_BANCO` separados; S0 intacto | `conciliacion-ciclos.test.ts` (4 tests) | CUBIERTO |
+| E3.6-AC-14 | Detalle E3.4 visible; agregados Comida/conciliación ND con motivo | `conciliacion-ciclos.test.ts` AC-13/14; `pendientes.test.ts` R7 | PARCIAL: ND cubierto; detalle E3.4 no directo |
+| E3.6-AC-15 | 0 verificado vs fuente ausente | `pendientes.test.ts` AC-15; `flujo-ajustado` F9/F10 | CUBIERTO |
+| E3.6-AC-16 | Rechazo estructural 422/409, atómico, no alerta | Suites fuente Anticipos/Compartidos; sin prueba E3.6 dedicada | PARCIAL |
+| E3.6-AC-17 | Histórico sin acreditación: Revisar con motivo, no computa | `pendientes.test.ts` R2/R4/R5 (contextos/histórico); no cubre «Revisar» completo | PARCIAL |
+| E3.6-AC-18 | Filtros por defecto, tipos, estado, ciclo, ejercicio, cobertura y alcance | `pendientes.test.ts` AC-18/20; `pendientes-api.test.ts` | CUBIERTO |
+| E3.6-AC-19 | Navegación a ficha/caso/Comida/Flujo/Plan; sin escritura; filtros conservados | `tests/e2e/pendientes.spec.ts`; `pendientes-api.test.ts` detalle | CUBIERTO |
+| E3.6-AC-20 | Sin tabla/maestro nuevo; claves efímeras; un caso no duplicado | `pendientes.test.ts` AC-18/20; inspección de tablas | CUBIERTO |
+| E3.6-AC-21 | Cobertura por métrica; parcial no es total | `pendientes.test.ts` AC-21 y fallo de fuente | CUBIERTO |
+| E3.6-AC-22 | Signo/cero exactos; céntimos; sin float | `pendientes.test.ts` AC-06; `flujo-ajustado` F12 | CUBIERTO |
+| E3.6-AC-23 | Ciclo y ejercicio natural por separado en los tres cruces | `pendientes.test.ts` AC-23 | CUBIERTO |
+| E3.6-AC-24 | Terminal/cuota/extraordinaria/devolución/reposición sin doble cómputo | Suites E1.4/E1.6/E2; sin prueba E3.6 dedicada | PARCIAL |
+| E3.6-AC-25 | Flujo real, Plan, patrimonio, provisión y pronóstico separados | `flujo-ajustado` F1/F3/F5 | PARCIAL |
+| E3.6-AC-26 | Sin mezcla de revisiones; respuesta antigua no sustituye | Sin prueba de concurrencia E3.6 | UNRUN |
+| E3.6-AC-27 | 1440/390, teclado, foco, estados, sin overflow | `tests/e2e/pendientes.spec.ts` | CUBIERTO |
+| E3.6-AC-28 | 401/403/4xx seguro; sin escritura; sin datos en URL/logs | `pendientes-api.test.ts` | CUBIERTO |
+| E3.6-AC-29 | Matriz DT5 de 15 filas; Cierres fuera de alcance | Revisión documental; sin prueba ejecutable | UNRUN |
+| E3.6-AC-30 | Trazabilidad E3.6-AC1/2/3 con AC y prueba | Este progress y [testplan](21-pendientes-conciliacion-testplan.md) | UNRUN (documental) |
+| E3.6-AC-31 | Cálculo vivo sin foto; con foto no se reescribe | Dependencia E4.8/E4.9 | **BLOCKED** |
+
+**Resumen:** 20 CUBIERTO, 7 PARCIAL, 3 UNRUN y 1 BLOCKED; 0 PASS de AC.
+
+### 12.5 Límites y reservas
+
+- **Sin PASS funcional:** QA final APTO CON RESERVAS; no hay veredicto AC por AC ni QA
+  post-merge. AC-31 sigue BLOCKED.
+- **Cobertura incompleta:** concurrencia de consultas (AC-26), matriz DT5 (AC-29),
+  trazabilidad (AC-30), rechazo estructural (AC-16), histórico Revisar (AC-17), terminal/
+  cuota (AC-24) y separación de planos (AC-25).
+- **E3.5:** integrada en `1560d04`; E3.5-AC-12/15 PARCIAL. Las ramas «sin E3.5» de las
+  pruebas son defensivas con fixtures, no un estado operativo.
+- **Reserva de entorno:** los 56 fallos de la suite API en macOS son de entorno; el gate es
+  CI Linux.
+- **Artefactos:** las capturas E2E viven en `artifacts/e3-6/` (ignoradas); no se publican
+  datos reales.
+- **R14:** la extensión `Ingreso/Transferencia/Amortizacion` de `ContextoHecho` se conserva
+  declarada desde `c206d3d`; este cambio solo añadió elegibilidad.
+
+## 13. Próxima acción segura
+
+1. Actualizar el [testplan 21](21-pendientes-conciliacion-testplan.md) con esta evidencia,
+   sin convertir UNRUN/PARCIAL en PASS.
+2. Decidir con el usuario el cierre de reservas y la aceptación visual; no abrir E4.8/E4.9
+   por este documento.
+3. Mantener DEV18/E3.5, DEV17/E4.4, B3/DEV32 y demás frentes en su estado; este merge no
+   autoriza nuevos desarrollos.
