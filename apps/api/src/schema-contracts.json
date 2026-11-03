@@ -10478,13 +10478,13 @@
         "type": "trigger",
         "name": "movimiento_rol_financiacion_reposicion_insert",
         "tbl_name": "movimiento_rol_financiacion",
-        "sql": "CREATE TRIGGER movimiento_rol_financiacion_reposicion_insert\n      BEFORE INSERT ON movimiento_rol_financiacion\n      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL\n      BEGIN\n        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')\n        WHERE NOT EXISTS(\n          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino\n          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'\n        );\n      END"
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_reposicion_insert\n      BEFORE INSERT ON movimiento_rol_financiacion\n      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL\n      BEGIN\n        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')\n        WHERE NOT EXISTS(\n          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino\n          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'\n            AND r.estado='Activo'\n        );\n      END"
       },
       {
         "type": "trigger",
         "name": "movimiento_rol_financiacion_reposicion_update",
         "tbl_name": "movimiento_rol_financiacion",
-        "sql": "CREATE TRIGGER movimiento_rol_financiacion_reposicion_update\n      BEFORE UPDATE ON movimiento_rol_financiacion\n      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL\n      BEGIN\n        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')\n        WHERE NOT EXISTS(\n          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino\n          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'\n        );\n      END"
+        "sql": "CREATE TRIGGER movimiento_rol_financiacion_reposicion_update\n      BEFORE UPDATE ON movimiento_rol_financiacion\n      WHEN NEW.rol='Reposición' AND NEW.obligacion_ciclo IS NULL\n      BEGIN\n        SELECT RAISE(ABORT,'reposición sin obligación requiere cobro acreditado')\n        WHERE NOT EXISTS(\n          SELECT 1 FROM movimientos m JOIN regimen_comida r ON r.saldo=m.destino\n          WHERE m.id=NEW.movimiento AND m.anulado=0 AND m.tipo='Transferencia'\n            AND r.estado='Activo'\n        );\n      END"
       },
       {
         "type": "trigger",
@@ -10757,6 +10757,6 @@
         "sql": "CREATE TRIGGER subcategorias_no_delete BEFORE DELETE ON subcategorias\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
       }
     ],
-    "sha256": "47abcad0c1bdcf8836fab9a3bfb8ace6fdf13e2560c9cc210b311f72e2687b20"
+    "sha256": "3a951d9fec22ae4d9f25b9a00f8536b84b4bcd7b0fc24cffcb02bb4174bb5f1f"
   }
 ]
