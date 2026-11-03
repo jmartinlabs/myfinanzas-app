@@ -53,9 +53,10 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await page
       .getByLabel("Token de configuración local")
       .fill(readFileSync(".local/e2e-valoracion/bootstrap.txt", "utf8"));
+    const password = "Clave ficticia valoración " + randomUUID();
     await page
       .getByLabel("Contraseña", { exact: true })
-      .fill("Clave ficticia valoración " + randomUUID());
+      .fill(password);
     await page.getByRole("button", { name: "Continuar", exact: true }).click();
     await expect(page.locator(".secret")).toBeVisible();
     const secret = (await page.locator(".secret").textContent())!;
@@ -94,6 +95,23 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       page.locator(".valoracion-table tbody tr", { hasText: text });
     const summary = page.getByLabel("Agregado a corte");
     const mobileCards = page.locator(".valoracion-mobile li");
+    const listState = page.locator(".valoracion-list-state");
+    const apiPost = async (path: string, body: unknown) => {
+      const session = await page.evaluate(async () =>
+        (await fetch("/api/auth/session")).json(),
+      );
+      return page.request.post(
+        `http://127.0.0.1:${API_PORT}/api${path}`,
+        {
+          headers: {
+            origin: "http://127.0.0.1:5173",
+            "x-csrf-token": session.csrf,
+            "idempotency-key": randomUUID(),
+          },
+          data: body,
+        },
+      );
+    };
 
     // S2 · loading keeps the cutoff and never shows a provisional total.
     await page.route(
@@ -128,6 +146,8 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(
       page.getByText(/Estado del listado: 4 abiertas · 1 cerrada/),
     ).toBeVisible();
+    await expect(listState).toContainText("1 cerrada incluida");
+    await expect(listState).not.toContainText("cerrada(s)");
     const p1 = row("S004 · I1001");
     await expect(p1).toContainText("877,50 €");
     await expect(p1).toContainText("258,50 €");
@@ -158,6 +178,42 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       path: "artifacts/e4-3/valoracion-list-1440.png",
       fullPage: true,
     });
+
+    // Serie vacía · 06-30 base, antes de mutar: P4 no tiene valoración.
+    await page.goto(`${LIST}/S006/I1003?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", {
+        name: "S006 · I1003 · Fondo heredado demo",
+      }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel("Serie histórica", { exact: true }),
+    ).toContainText("Serie vacía");
+    await expect(page.getByText("0,00 €")).toHaveCount(0);
+    await page.screenshot({
+      path: "artifacts/e4-3/valoracion-serie-vacia-1440.png",
+      fullPage: true,
+    });
+
+    // W2 · 390 parcial al 06-30 base, antes de mutar.
+    await page.goto(`${LIST}?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(page.locator(".valoracion-desktop").first()).toBeHidden();
+    await expect(page.locator(".valoracion-mobile").first()).toBeVisible();
+    await expect(mobileCards).toHaveCount(5);
+    await expect(summary).toContainText("Parcial 3/4");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/e4-3/valoracion-list-390.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1440, height: 1000 });
 
     // Closed position detail must say No aplica, never "No disponible"/null.
     await row("S004 · I1002")
@@ -263,6 +319,8 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
 
     // 2026-04-30 partial aggregate and exact expected values.
     await consultar("2026-04-30", 4);
+    await expect(listState).toContainText(/Estado del listado: 4 abiertas\./);
+    await expect(listState).not.toContainText("cerrada");
     await expect(summary).toContainText("Parcial 3/4");
     await expect(summary).toContainText("Parcial 2/4");
     await expect(row("S004 · I1001")).toContainText("855,00 €");
@@ -326,6 +384,131 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(summary).toContainText(
       "Elegible por fecha exacta (E4.9 no evaluado)",
     );
+
+    // W2 · 390 verificado al 06-30, antes de la venta A-01.
+    await consultar("2026-06-30", 5);
+    await expect(summary).toContainText("Verificada");
+    await expect(summary).toContainText("1.674,50 €");
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expect(mobileCards).toHaveCount(5);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/e4-3/valoracion-list-390-verificada.png",
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+
+    // A-01 / R-E43-13 · venta real posterior a la valoración de P4.
+    const sale = await apiPost("/ventas", {
+      fecha: "2026-05-10",
+      instrumento: "I1003",
+      saldoEfectivo: "S003",
+      saldoInversion: "S006",
+      cantidad: "2",
+      precio: "20.00",
+      divisa: "EUR",
+      cambio: null,
+      importeEur: "40.00",
+      comisionEur: null,
+      concepto: "Venta A-01 ficticia de P4",
+      nota: null,
+    });
+    expect(sale.status()).toBe(201);
+    await page.goto(`${LIST}?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    await expect(summary).toContainText("Parcial 3/4");
+    await expect(cash).toContainText("1.496,40 €");
+    await row("S006 · I1003")
+      .getByRole("link", { name: "Ver detalle de S006 · I1003" })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "S006 · I1003 · Fondo heredado demo",
+      }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Resumen de la posición")).toContainText(
+      "No disponible",
+    );
+    const p4Detail = page.getByLabel("Última valoración ≤ T");
+    await expect(p4Detail).toContainText(
+      "Cantidad modificada desde la valoración",
+    );
+    await expect(
+      p4Detail.locator(".valoracion-lines > div", { hasText: "Cantidad base" }),
+    ).toContainText("10");
+    await expect(
+      p4Detail.locator(".valoracion-lines > div", {
+        hasText: "Cantidad al corte",
+      }),
+    ).toContainText("8");
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
+    ).toBe(true);
+    await page.screenshot({
+      path: "artifacts/e4-3/a01-detail-1440.png",
+      fullPage: true,
+    });
+
+    // Manual 0,00 · valor explícito que cuenta en cobertura, no ausencia.
+    const zero = await apiPost("/e43/posiciones/S006/I1005/valoraciones", {
+      fecha: "2026-05-31",
+      tipo: "Manual",
+      valorEur: "0.00",
+      procedencia: "Valor cero ficticio declarado por el usuario",
+    });
+    expect(zero.status()).toBe(201);
+    await page.goto(`${LIST}?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    const p5Value = row("S006 · I1005").locator("td").nth(3);
+    await expect(p5Value).toContainText("0,00 €");
+    await expect(p5Value).not.toContainText("No disponible");
+    await expect(p5Value).toContainText("Manual");
+    await expect(p5Value).toContainText("31/05/2026");
+    await expect(summary).toContainText("Parcial 3/4");
+
+    // Resultado negativo · P1 al 05-31 con precio 70 USD y cambio 0,95.
+    const negative = await apiPost("/e43/posiciones/S004/I1001/valoraciones", {
+      fecha: "2026-05-31",
+      tipo: "Automática",
+      precio: "70.000000",
+      divisa: "USD",
+      cambio: "0.950000",
+      procedencia: "Precio y cambio ficticios declarados por el usuario",
+    });
+    expect(negative.status()).toBe(201);
+    await page.goto(`${LIST}?fecha=2026-05-31`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    await expect(row("S004 · I1001")).toContainText("498,75 €");
+    await expect(row("S004 · I1001")).toContainText("-120,25 €");
+    await row("S004 · I1001")
+      .getByRole("link", { name: "Ver detalle de S004 · I1001" })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "S004 · I1001 · Fondo índice demo",
+      }),
+    ).toBeVisible();
+    await expect(page.getByLabel("Resumen de la posición")).toContainText(
+      "-120,25 €",
+    );
+    await expect(page.getByLabel("Resultado de la posición")).toContainText(
+      "-120,25 €",
+    );
+    await page.goto(`${LIST}?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
 
     // W5/W6 · Manual alta and 409/422 draft preservation.
     await consultar("2026-06-30", 5);
@@ -530,10 +713,6 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
     ).toBe(true);
-    await page.screenshot({
-      path: "artifacts/e4-3/valoracion-list-390.png",
-      fullPage: true,
-    });
     await page
       .getByRole("link", { name: "Abrir detalle de S004 · I1001" })
       .click();
@@ -566,6 +745,49 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       path: "artifacts/e4-3/valoracion-alta-390.png",
       fullPage: true,
     });
+
+    // R5 · sesión expirada: se conserva el corte y el contexto de /inversiones.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto(`${LIST}?fecha=2026-06-30`);
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/Fecha de corte/)).toHaveValue("2026-06-30");
+    await page.route(
+      "**/api/e43/corte?*",
+      (route) =>
+        route.fulfill({
+          status: 401,
+          contentType: "application/json",
+          body: JSON.stringify({ error: "Sesión expirada ficticia" }),
+        }),
+      { times: 1 },
+    );
+    await page.getByRole("button", { name: "Consultar" }).click();
+    await expect(
+      page.getByText(/La sesión ha caducado\. Copia cualquier borrador/),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Volver a iniciar sesión", exact: true })
+      .click();
+    await page.getByLabel("Contraseña", { exact: true }).fill(password);
+    await page.getByRole("button", { name: "Continuar", exact: true }).click();
+    await page
+      .getByLabel("Código de la aplicación autenticadora")
+      .fill(
+        totp(secret).generate({
+          timestamp: Date.parse("2026-10-26T12:00:30Z"),
+        }),
+      );
+    await page
+      .getByRole("button", { name: "Verificar código", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Valoración y resultados" }),
+    ).toBeVisible();
+    await expect(page.getByLabel(/Fecha de corte/)).toHaveValue("2026-06-30");
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    await expect(page.getByText(/La sesión ha caducado/)).toHaveCount(0);
 
     expect(errors).toEqual([]);
   } finally {

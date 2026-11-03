@@ -692,15 +692,22 @@ function ListState({ data }: { data: Corte }) {
     cerradas = data.posiciones.filter(
       (position) => position.estado === "Cerrada",
     ).length;
+  const abiertasTexto = `${abiertas} ${abiertas === 1 ? "abierta" : "abiertas"}`,
+    cerradasTexto = `${cerradas} ${cerradas === 1 ? "cerrada incluida" : "cerradas incluidas"}`;
   return (
     <div className="valoracion-list-state">
       <p>
         <b>
-          Estado del listado: {abiertas} abiertas · {cerradas} cerrada(s)
-          incluida(s).
+          Estado del listado: {abiertasTexto}
+          {cerradas > 0 ? ` · ${cerradasTexto}.` : "."}
         </b>{" "}
-        La cerrada muestra resultado Ventas − Compras y valoración{" "}
-        <b>No aplica</b>; no exige valoración.
+        {cerradas > 0 && (
+          <>
+            {cerradas === 1 ? "La cerrada muestra" : "Las cerradas muestran"}{" "}
+            resultado Ventas − Compras y valoración <b>No aplica</b>;{" "}
+            {cerradas === 1 ? "no exige" : "no exigen"} valoración.
+          </>
+        )}
       </p>
       <p className="help">
         Cobertura histórica: {data.coberturaHistorica}

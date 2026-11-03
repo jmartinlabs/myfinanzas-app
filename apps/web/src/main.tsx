@@ -121,7 +121,13 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go(path.startsWith("/flujo-mensual") || path.startsWith("/pendientes") ? path : "/saldos");
+          go(
+            path.startsWith("/flujo-mensual") ||
+              path.startsWith("/pendientes") ||
+              path.startsWith("/inversiones")
+              ? path
+              : "/saldos",
+          );
         }}
       />
     );
