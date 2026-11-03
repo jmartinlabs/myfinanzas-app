@@ -15,6 +15,7 @@ import { cycleOperationSchema } from "./cycle-operation-schema";
 import { budgetSchema, assertBudgetContract } from "./budget-schema";
 import { debtSchema } from "./debt-schema";
 import { debtCompletaSchema } from "./debt-completa-schema";
+import { valoracionSchema } from "./e43-schema";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -42,7 +43,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -98,7 +99,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -133,6 +134,7 @@ export function prepareSchema(db: Database, identity: Identity) {
             throw new Error("Migración v22 rechazada: claves foráneas inconsistentes.");
         }
         if (versions[0].version < 23) debtCompletaSchema(db);
+        if (versions[0].version < 24) valoracionSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -254,6 +256,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       ventaSchema(db);
       if (schemaVersion >= 22) comidaRolV22(db);
       if (schemaVersion >= 23) debtCompletaSchema(db);
+      if (schemaVersion >= 24) valoracionSchema(db);
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {

@@ -145,6 +145,14 @@ import {
 } from "./ventas";
 import { cashDto, civil } from "./investment-engine";
 import {
+  createValuation,
+  e43Corte,
+  e43Position,
+  e43Series,
+  e43Valuation,
+  rectifyValuation,
+} from "./e43";
+import {
   nonVehicleFicha,
   vehicleFicha,
 } from "./vehicle-rules";
@@ -1138,6 +1146,70 @@ export function createApp(db: Database, options: AppOptions) {
           });
         return reply(cashDto(db, saldo, fecha ? civil(fecha) : null));
       }
+      if (path === "/api/e43/corte" && req.method === "GET")
+        return reply(
+          e43Corte(db, new URL(req.url).searchParams.get("fecha") ?? ""),
+        );
+      const e43SeriesPath = path.match(
+        /^\/api\/e43\/posiciones\/(S\d+)\/(I\d+)\/valoraciones$/,
+      );
+      if (e43SeriesPath) {
+        const params = new URL(req.url).searchParams;
+        if (req.method === "GET")
+          return reply(
+            e43Series(
+              db,
+              e43SeriesPath[1],
+              e43SeriesPath[2],
+              params.get("desde"),
+              params.get("hasta"),
+            ),
+          );
+        if (req.method === "POST") {
+          const result = createValuation(
+            db,
+            e43SeriesPath[1],
+            e43SeriesPath[2],
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            now(),
+          );
+          headers.set(
+            "location",
+            `/api/e43/valoraciones/${result.valoracion.id}`,
+          );
+          return reply(result, 201);
+        }
+      }
+      const e43PositionPath = path.match(
+        /^\/api\/e43\/posiciones\/(S\d+)\/(I\d+)$/,
+      );
+      if (e43PositionPath && req.method === "GET")
+        return reply(
+          e43Position(
+            db,
+            e43PositionPath[1],
+            e43PositionPath[2],
+            new URL(req.url).searchParams.get("fecha") ?? "",
+          ),
+        );
+      const e43ValuationPath = path.match(
+        /^\/api\/e43\/valoraciones\/(VAL-\d{12})$/,
+      );
+      if (e43ValuationPath && req.method === "GET")
+        return reply(e43Valuation(db, e43ValuationPath[1]));
+      const e43RectifyPath = path.match(
+        /^\/api\/e43\/valoraciones\/(VAL-\d{12})\/rectificar$/,
+      );
+      if (e43RectifyPath && req.method === "POST")
+        return reply(
+          rectifyValuation(
+            db,
+            e43RectifyPath[1],
+            await jsonBody(req),
+            now(),
+          ),
+        );
       if (path === "/api/instrumentos/opciones" && req.method === "GET")
         return reply(instrumentOptions(db));
       if (path === "/api/instrumentos" && req.method === "GET")

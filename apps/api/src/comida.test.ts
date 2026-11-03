@@ -1269,12 +1269,12 @@ test("AC-07: C_n = 0 verificado produce Sin obligación acreditada, no Completad
 test("AC-16: no existen tablas E3.5 ni se persisten totales", () => {
   const { db, cycle1 } = setup();
   const tables = db
-    .query("SELECT name FROM sqlite_master WHERE type='table' AND (name LIKE '%valoracion%' OR name LIKE 'e35%')")
+    .query("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'e35%'")
     .all();
   expect(tables).toEqual([]);
   comidaMetrics(db, cycle1.id, now);
   expect(
-    db.query("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%valoracion%'").all(),
+    db.query("SELECT name FROM sqlite_master WHERE type='table' AND name LIKE 'e35%'").all(),
   ).toEqual([]);
   db.close();
 });
@@ -1650,7 +1650,7 @@ test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el con
   const { prepareSchema } = require("./database-schema");
   prepareSchema(db, { origin: "demo", key_hash: null });
   expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-    version: 23,
+    version: 24,
   });
   expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual(before);
   expect(
