@@ -547,10 +547,41 @@ test("alcance=historico incluye Resuelto sin mezclarlo con abiertos", async () =
     await app.enroll();
     const h = await get(app, "/api/pendientes?alcance=historico");
     expect(h.data.filas.some((f: { fuente: { id: string }; estado: string }) => f.fuente.id === app.resolved && f.estado === "Resuelto")).toBe(true);
+    expect(
+      h.data.filas.every((f: { estado: string }) => f.estado === "Resuelto"),
+    ).toBe(true);
+    expect(
+      h.data.filas.some((f: { fuente: { id: string } }) => f.fuente.id === app.open),
+    ).toBe(false);
     const a = await get(app, "/api/pendientes?alcance=abiertos");
     expect(a.data.filas.some((f: { estado: string }) => f.estado === "Resuelto")).toBe(
       false,
     );
+  } finally {
+    app.db.close();
+  }
+});
+
+test("ficha Compartido Sin repartir sin hechos no aparece en abiertos", async () => {
+  const app = authedFixture();
+  try {
+    await app.enroll();
+    const empty = createCompartido(
+      app.db,
+      { nombre: "Ficha vacía API ficticia" },
+      randomUUID(),
+      now,
+    ).referencia.id;
+    const a = await get(app, "/api/pendientes?tipo=Compartido");
+    expect(
+      a.data.filas.some(
+        (f: { fuente: { id: string }; estado: string }) =>
+          f.fuente.id === empty && f.estado === "No disponible",
+      ),
+    ).toBe(false);
+    expect(
+      a.data.filas.some((f: { fuente: { id: string } }) => f.fuente.id === app.open),
+    ).toBe(true);
   } finally {
     app.db.close();
   }

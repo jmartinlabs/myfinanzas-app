@@ -85,21 +85,127 @@ async function login(
   ).toBeVisible();
 }
 
-/** Real authorized write through the source module API, never through E3.6. */
-async function createCompartido(page: any, nombre: string) {
-  const result = await page.evaluate(async (nombre: string) => {
+type SeedOptions = { saldo: string; partida: string };
+
+/** Real authorized reads through the source module API. */
+async function movementOptions(page: any): Promise<SeedOptions> {
+  const options = await page.evaluate(async () => {
+    const data = await (await fetch("/api/movimientos/opciones")).json();
+    const saldo =
+      data.saldos.find((s: { nombre: string }) =>
+        s.nombre.includes("Banco compartido"),
+      )?.id ?? data.saldos[0]?.id;
+    const partida =
+      data.partidas.find((p: { nombre: string }) =>
+        p.nombre.includes("Piso ficticio"),
+      )?.id ?? data.partidas[0]?.id;
+    return { saldo, partida };
+  });
+  expect(options.saldo).toBeTruthy();
+  expect(options.partida).toBeTruthy();
+  return options;
+}
+
+/** Real authorized write through Ciclos; the cycle makes W4 available. */
+async function createCycleForFlow(page: any): Promise<string> {
+  const result = await page.evaluate(async () => {
     const session = await (await fetch("/api/auth/session")).json();
-    const response = await fetch("/api/compartidos/fichas", {
+    const context = await (await fetch("/api/ciclos/contexto")).json();
+    const response = await fetch("/api/ciclos", {
       method: "POST",
       headers: {
         "content-type": "application/json",
         "x-csrf-token": session.csrf,
         "idempotency-key": crypto.randomUUID(),
       },
-      body: JSON.stringify({ nombre }),
+      body: JSON.stringify({
+        inicio: "2026-10-01",
+        saldoInicialComida: "0",
+        contextRevision: context.revision,
+      }),
     });
-    return { status: response.status };
-  }, nombre);
+    const body = await response.json();
+    return { status: response.status, id: body.ciclo?.id, error: body.error };
+  });
+  expect(result.error).toBeUndefined();
+  expect(result.status).toBe(201);
+  return result.id as string;
+}
+
+/** Real authorized writes through Compartidos/Movimientos, never through E3.6. */
+async function createCompartido(
+  page: any,
+  nombre: string,
+  options: SeedOptions,
+  index: number,
+) {
+  const result = await page.evaluate(
+    async ({
+      nombre,
+      options,
+      index,
+    }: {
+      nombre: string;
+      options: SeedOptions;
+      index: number;
+    }) => {
+      const session = await (await fetch("/api/auth/session")).json();
+      const base = {
+        "content-type": "application/json",
+        "x-csrf-token": session.csrf,
+      };
+      const ficha = await fetch("/api/compartidos/fichas", {
+        method: "POST",
+        headers: { ...base, "idempotency-key": crypto.randomUUID() },
+        body: JSON.stringify({ nombre }),
+      });
+      if (ficha.status !== 201) return { error: ficha.status };
+      const ref = (await ficha.json()).referencia.id as string;
+      for (const participante of [
+        { nombre: "Yo", rol: "Titular", partes: 1 },
+        { nombre: "Tercero " + index, rol: "Tercero", partes: 1 },
+      ]) {
+        const response = await fetch(
+          `/api/compartidos/fichas/${ref}/participantes`,
+          {
+            method: "POST",
+            headers: { ...base, "idempotency-key": crypto.randomUUID() },
+            body: JSON.stringify(participante),
+          },
+        );
+        if (!response.ok) return { error: response.status, ref };
+      }
+      const body = {
+        tipo: "Gasto",
+        fecha: `2026-10-${String(4 + index).padStart(2, "0")}`,
+        importe: "10.00",
+        saldo: options.saldo,
+        partida: options.partida,
+        referencia: ref,
+        concepto: "Gasto paginación ficticio",
+        nota: "",
+      };
+      const preview = await fetch("/api/movimientos/impacto", {
+        method: "POST",
+        headers: base,
+        body: JSON.stringify(body),
+      });
+      if (!preview.ok) return { error: preview.status, ref };
+      const plan = await preview.json();
+      const movement = await fetch("/api/movimientos", {
+        method: "POST",
+        headers: { ...base, "idempotency-key": crypto.randomUUID() },
+        body: JSON.stringify({
+          ...body,
+          fingerprint: plan.fingerprint,
+          aceptarCoincidencia: true,
+        }),
+      });
+      return { status: movement.status, ref };
+    },
+    { nombre, options, index },
+  );
+  expect(result.error).toBeUndefined();
   expect(result.status).toBe(201);
 }
 
@@ -290,6 +396,9 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     await expect(
       page.locator(".desktop-list").getByText("Resuelto", { exact: true }),
     ).toBeVisible();
+    await expect(
+      page.locator(".desktop-list").getByText("Piso 2026", { exact: true }),
+    ).toHaveCount(0);
 
     // 404 seguro en detalle.
     await page.goto("/pendientes/Compartido/REF999");
@@ -300,16 +409,48 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
       page.getByRole("link", { name: /Volver a pendientes/ }),
     ).toBeVisible();
 
-    // Paginación real: casos creados por el módulo propietario (no por E3.6).
+    // Paginación real: casos con Gastos creados por sus módulos (no por E3.6).
+    const seed = await movementOptions(page);
     for (let index = 1; index <= 12; index++)
-      await createCompartido(page, "Caso paginación ficticio " + index);
+      await createCompartido(
+        page,
+        "Caso paginación ficticio " + index,
+        seed,
+        index,
+      );
     await page.goto("/pendientes");
     await expect(page.getByText(/página 1 de 2/)).toBeVisible();
     await page.getByRole("button", { name: "Siguiente", exact: true }).click();
     await expect(page.getByText(/página 2 de 2/)).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Caso paginación ficticio 12", exact: true }),
+      page.getByRole("link", { name: "Caso paginación ficticio 1", exact: true }),
     ).toBeVisible();
+
+    // R3 — W4 muestra las métricas por caso sin sumarlas al flujo.
+    const cycleId = await createCycleForFlow(page);
+    await page.goto(`/flujo-mensual?ciclo=${cycleId}`);
+    await expect(
+      page.getByRole("heading", {
+        name: "Flujo ajustado por Recuperado (E3.6)",
+        exact: true,
+      }),
+    ).toBeVisible();
+    await page
+      .getByText(/Ver Neto, coste propio, pendiente y exceso por caso/)
+      .click();
+    const casos = page.locator(".flow-case-metrics");
+    await expect(casos).toBeVisible();
+    await expect(casos).toContainText("REF001");
+    await expect(casos).toContainText("450,00 €");
+    await expect(casos).toContainText("150,00 €");
+    await expect(casos).toContainText("300,00 €");
+    await expect(
+      page.getByText(/No se suman a G_b, R_adj, G_n ni S_aj/),
+    ).toBeVisible();
+    await page.screenshot({
+      path: ARTIFACTS + "/w4-casos-ajuste-1440.png",
+      fullPage: true,
+    });
 
     // La vista E3.6 no escribe: solo GET tras la preparación autorizada.
     const writes: string[] = [];
@@ -358,7 +499,7 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
         exact: true,
       }),
     ).toBeVisible();
-    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(page.getByText(/^4 filas/).first()).toBeVisible();
     // Error de una fuente aislado; el resto de la lista se conserva.
     await expect(
       page.getByText(/No se pudo leer Comida E3\.5 \(2\)/),
@@ -380,24 +521,29 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
         .first(),
     ).toBeVisible();
 
-    // Filtro de ciclo: contexto de la apertura, no importe congelado.
+    // R1: los ciclos inactivos conservan su conciliación y Comida ND.
     await page.getByLabel("Ciclo", { exact: true }).selectOption("2");
-    await expect(page.getByText(/^1 fila/).first()).toBeVisible();
+    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
     await page.getByLabel("Ciclo", { exact: true }).selectOption("1");
+    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await page
+      .getByLabel("Buscar por REF/ID/nombre", { exact: true })
+      .fill("sin-coincidencia");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
     await expect(
       page.getByText("No hay pendientes abiertos para este filtro."),
     ).toBeVisible();
     await page.getByRole("button", { name: "Limpiar filtros" }).click();
-    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(page.getByText(/^4 filas/).first()).toBeVisible();
 
     await page.getByLabel("Estado", { exact: true }).selectOption("No disponible");
-    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(page.getByText(/^4 filas/).first()).toBeVisible();
     await page
       .getByLabel("Cobertura", { exact: true })
       .selectOption("No disponible");
-    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(page.getByText(/^4 filas/).first()).toBeVisible();
     await page.getByLabel("Ejercicio", { exact: true }).selectOption("2026");
-    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(page.getByText(/^4 filas/).first()).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/pendientes");
@@ -438,6 +584,73 @@ test("E3.6 W5: Comida/anticipo No disponible, alertas separadas, filtros y 390",
       page.getByRole("button", { name: "Abrir Anticipo", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("0,00 €")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  } finally {
+    child.kill();
+  }
+});
+
+test("E3.6 R1: conciliación de ciclo sin movimientos aparece como Alerta", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  mkdirSync(ARTIFACTS, { recursive: true });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  const child = start("apps/api/test-support/pendientes-server.ts");
+  try {
+    await login(
+      page,
+      request,
+      "http://127.0.0.1:3010",
+      ".local/e2e-pendientes/bootstrap.txt",
+      "/pendientes",
+    );
+
+    const apertura = page
+      .getByRole("link", { name: "Apertura 2026-11-01", exact: true })
+      .first();
+    await expect(apertura).toBeVisible();
+    await expect(page.getByText(/^2 filas/).first()).toBeVisible();
+    await expect(
+      page.locator(".desktop-list").getByText("Alerta", { exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("100,00 €").first()).toBeVisible();
+    await expect(
+      page.locator(".desktop-list").getByText(/Cobertura: Verificada/).first(),
+    ).toBeVisible();
+
+    // Histórico: solo Resuelto; la alerta del ciclo inactivo no se mezcla.
+    await page.getByLabel("Alcance", { exact: true }).selectOption("historico");
+    await expect(
+      page
+        .locator(".desktop-list")
+        .getByRole("link", { name: "Apertura 2026-12-01", exact: true })
+        .first(),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(".desktop-list")
+        .getByRole("link", { name: "Apertura 2026-11-01", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.locator(".desktop-list").getByText("Alerta", { exact: true }),
+    ).toHaveCount(0);
+
+    await page.getByLabel("Alcance", { exact: true }).selectOption("abiertos");
+    await page
+      .getByRole("link", { name: "Apertura 2026-11-01", exact: true })
+      .first()
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: /Detalle · Apertura 2026-11-01/,
+      }),
+    ).toBeVisible();
+    await expect(page.getByText("DIF_S0_SIGUIENTE").first()).toBeVisible();
+    await expect(page.getByText("100,00 €").first()).toBeVisible();
+    await expect(page.getByText(/Alerta de conciliación/).first()).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     child.kill();

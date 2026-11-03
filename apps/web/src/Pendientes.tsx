@@ -30,7 +30,16 @@ type MetricaItem = {
   motivo: string | null;
 };
 type ContextoHecho = {
-  tipo: "Gasto" | "Aportacion" | "Adelanto" | "Devolucion" | "Comida" | "Cierre";
+  tipo:
+    | "Gasto"
+    | "Ingreso"
+    | "Transferencia"
+    | "Amortizacion"
+    | "Aportacion"
+    | "Adelanto"
+    | "Devolucion"
+    | "Comida"
+    | "Cierre";
   fuenteId: string;
   fecha: string | null;
   cicloId: string | null;

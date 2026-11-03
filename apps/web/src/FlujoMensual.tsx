@@ -20,6 +20,15 @@ type AjusteGastoCompartido = {
   recuperado: string | null;
   estadoRecuperado: string;
 };
+type AjusteCasoCompartido = {
+  casoId: string;
+  estado: string;
+  cobertura: string;
+  neto: string | null;
+  costePropio: string | null;
+  pendienteTerceros: string | null;
+  exceso: string | null;
+};
 type MemoriaCajaAportacion = {
   movimiento: string;
   fecha: string;
@@ -45,6 +54,7 @@ type AjusteCompartidos = {
     aportaciones: MemoriaCajaAportacion[];
     noEsIngreso: true;
   };
+  casos: AjusteCasoCompartido[];
   cobertura: string;
   motivo: string | null;
   formula: string;
@@ -303,6 +313,64 @@ function AjusteCompartidosPanel({
               </li>
             ))}
           </ul>
+        </details>
+      )}
+      {ajuste.casos.length > 0 && (
+        <details>
+          <summary>
+            Ver Neto, coste propio, pendiente y exceso por caso ({ajuste.casos.length})
+          </summary>
+          <p className="muted">
+            Valores actuales del caso, separados del flujo. No se suman a G_b,
+            R_adj, G_n ni S_aj.
+          </p>
+          <div className="flow-case-metrics">
+            <table>
+              <thead>
+                <tr>
+                  <th scope="col">Caso</th>
+                  <th scope="col">Estado</th>
+                  <th scope="col">Neto (B − R)</th>
+                  <th scope="col">Coste propio</th>
+                  <th scope="col">Pendiente terceros</th>
+                  <th scope="col">Exceso</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ajuste.casos.map((caso) => (
+                  <tr key={caso.casoId}>
+                    <td data-label="Caso">
+                      <button
+                        className="text-button"
+                        type="button"
+                        onClick={() => go(`/compartidos/${caso.casoId}`)}
+                      >
+                        {caso.casoId}
+                      </button>
+                      <small> · {caso.cobertura}</small>
+                    </td>
+                    <td data-label="Estado">{caso.estado}</td>
+                    <td data-label="Neto (B − R)">
+                      {caso.neto === null ? "No disponible" : euro(caso.neto)}
+                    </td>
+                    <td data-label="Coste propio">
+                      {caso.costePropio === null
+                        ? "No disponible"
+                        : euro(caso.costePropio)}
+                    </td>
+                    <td data-label="Pendiente terceros">
+                      {caso.pendienteTerceros === null
+                        ? "No disponible"
+                        : euro(caso.pendienteTerceros)}
+                    </td>
+                    <td data-label="Exceso">
+                      {caso.exceso === null ? "No disponible" : euro(caso.exceso)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </details>
       )}
       {flujo && (

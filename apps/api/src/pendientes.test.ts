@@ -951,3 +951,188 @@ test("fallo de fuente por fila: No disponible con motivo y el resto sigue visibl
     db.close();
   }
 });
+
+test("R1/R7: conciliación de ciclo inactivo aparece y DIF nulo declara No disponible", () => {
+  const db = setup();
+  try {
+    const account = saldo(db, "ING Comida R1");
+    const c1 = cycle(db, "2026-10-01", "100");
+    const c2 = cycle(db, "2026-11-01", "200");
+    cycle(db, "2026-12-01", "200");
+    const ready = prepareRegimen(
+      db,
+      {
+        saldo: account,
+        cicloCorte: c1.id,
+        apertura: "100",
+        evidencia: "Extracto ficticio R1",
+        cobertura: "Verificable",
+        motivo: "Preparación ficticia R1",
+      },
+      randomUUID(),
+      now,
+    );
+    activateRegimen(
+      db,
+      {
+        revision: ready.regimen.regimen!.revision,
+        motivo: "Activación ficticia R1",
+        confirmar: true,
+      },
+      randomUUID(),
+      now,
+    );
+    const result = listPendientes(db, new URLSearchParams(), now);
+    const row = fila(result, "Conciliacion", c1.id);
+    expect(row).toBeDefined();
+    expect(row!.estado).toBe("Alerta");
+    expect(row!.importe).toBe("100.00");
+    expect(row!.cobertura).toBe("Verificada");
+    const dif = row!.metricas.find((m) => m.clave === "diferenciaS0Siguiente")!;
+    expect(dif.importe).toBe("100.00");
+    expect(dif.cobertura).toBe("Verificada");
+    // El siguiente ciclo coincide con su propio cierre: Resuelto, no abierto.
+    const siguiente = fila(result, "Conciliacion", c2.id);
+    expect(siguiente).toBeUndefined();
+    const historico = listPendientes(
+      db,
+      new URLSearchParams({ alcance: "historico" }),
+      now,
+    );
+    expect(fila(historico, "Conciliacion", c2.id)?.estado).toBe("Resuelto");
+  } finally {
+    db.close();
+  }
+});
+
+test("R7: conciliación sin cobertura conserva la fila y DIF_S0_SIGUIENTE No disponible", () => {
+  const db = setup();
+  try {
+    const c1 = cycle(db, "2026-10-01", "100");
+    const c2 = cycle(db, "2026-11-01", "200");
+    const result = listPendientes(db, new URLSearchParams(), now);
+    const row = fila(result, "Conciliacion", c1.id);
+    expect(row).toBeDefined();
+    expect(row!.estado).toBe("No disponible");
+    const dif = row!.metricas.find((m) => m.clave === "diferenciaS0Siguiente")!;
+    expect(dif.importe).toBeNull();
+    expect(dif.cobertura).toBe("No disponible");
+    // Comida ND de un ciclo inactivo no se oculta sin justificación.
+    expect(fila(result, "Comida", c1.id)?.estado).toBe("No disponible");
+    expect(fila(result, "Comida", c2.id)?.estado).toBe("No disponible");
+  } finally {
+    db.close();
+  }
+});
+
+test("R2: alcance=historico devuelve solo Resuelto y nunca abiertos", () => {
+  const db = setup();
+  try {
+    categories(db);
+    const p13 = partida(db, "CAT013");
+    const payer = saldo(db, "Banco R2");
+    const destination = saldo(db, "Destino R2");
+    const open = sharedCase(db, [
+      { nombre: "Yo", rol: "Titular", partes: 1 },
+      { nombre: "Bea", rol: "Tercero", partes: 1 },
+    ]);
+    sharedExpense(db, open, payer, p13, "100.00");
+    const closed = sharedCase(db, [
+      { nombre: "Yo", rol: "Titular", partes: 1 },
+      { nombre: "Bea", rol: "Tercero", partes: 1 },
+    ]);
+    sharedExpense(db, closed, payer, p13, "100.00");
+    sharedContribution(
+      db,
+      closed,
+      destination,
+      participant(db, closed, "Bea").id,
+      "50.00",
+    );
+    const abiertos = listPendientes(db, new URLSearchParams(), now);
+    expect(fila(abiertos, "Compartido", open)).toBeDefined();
+    expect(fila(abiertos, "Compartido", closed)).toBeUndefined();
+    const historico = listPendientes(
+      db,
+      new URLSearchParams({ alcance: "historico" }),
+      now,
+    );
+    expect(historico.filas.length).toBeGreaterThan(0);
+    expect(historico.filas.every((f) => f.estado === "Resuelto")).toBe(true);
+    expect(fila(historico, "Compartido", open)).toBeUndefined();
+    expect(fila(historico, "Compartido", closed)?.estado).toBe("Resuelto");
+  } finally {
+    db.close();
+  }
+});
+
+test("R5: ficha Compartido Sin repartir sin hechos no es un pendiente abierto", () => {
+  const db = setup();
+  try {
+    categories(db);
+    const p13 = partida(db, "CAT013");
+    const payer = saldo(db, "Banco R5");
+    const vacia = createCompartido(
+      db,
+      { nombre: "Ficha vacía ficticia" },
+      randomUUID(),
+      now,
+    ).referencia.id;
+    const conHecho = sharedCase(db, [
+      { nombre: "Yo", rol: "Titular", partes: 1 },
+      { nombre: "Bea", rol: "Tercero", partes: 1 },
+    ]);
+    sharedExpense(db, conHecho, payer, p13, "100.00");
+    const abiertos = listPendientes(db, new URLSearchParams(), now);
+    expect(fila(abiertos, "Compartido", vacia)).toBeUndefined();
+    expect(fila(abiertos, "Compartido", conHecho)?.estado).toBe("Pendiente");
+    const historico = listPendientes(
+      db,
+      new URLSearchParams({ alcance: "historico" }),
+      now,
+    );
+    expect(fila(historico, "Compartido", vacia)).toBeUndefined();
+  } finally {
+    db.close();
+  }
+});
+
+test("R4: contextos conservan relacionados/históricos y no etiquetan Transferencia como Adelanto", () => {
+  const db = setup();
+  try {
+    categories(db);
+    const food = partida(db, "CAT001");
+    const payer = saldo(db, "Banco R4");
+    const destination = saldo(db, "Destino R4");
+    const ref = anticipo(db, "Anticipo R4");
+    // Hecho legado sin atribución: se conserva en contextos sin llamarlo Adelanto.
+    db.run(
+      "INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,referencia,concepto,nota,revision,creado,actualizado) VALUES('9001','2026-10-02','Transferencia',5000,?,?,?,'Transferencia sin atribución R4','',1,'f','f')",
+      [payer, destination, ref],
+    );
+    const related = add(db, {
+      tipo: "Gasto",
+      fecha: "2026-10-03",
+      importe: "10.00",
+      saldo: payer,
+      partida: food,
+      referencia: ref,
+      concepto: "Gasto relacionado R4",
+      nota: "",
+    });
+    const row = fila(
+      listPendientes(db, new URLSearchParams(), now),
+      "Anticipo",
+      ref,
+    )!;
+    expect(
+      row.contextos.find((c) => c.fuenteId === "9001")?.tipo,
+    ).toBe("Transferencia");
+    expect(row.contextos.find((c) => c.fuenteId === related.id)?.tipo).toBe(
+      "Gasto",
+    );
+    expect(row.contextos.some((c) => c.tipo === "Adelanto")).toBe(false);
+  } finally {
+    db.close();
+  }
+});

@@ -346,6 +346,28 @@ test("F4: sustitución, no G_b + Neto ni doble resta", () => {
   }
 });
 
+test("F4b: métricas por caso del ajuste, separadas del flujo total", () => {
+  const f = fixture();
+  try {
+    const r = monthlyFlow(f.db, f.c1.id, now);
+    expect(r.ajusteCompartidos.casos).toHaveLength(1);
+    expect(r.ajusteCompartidos.casos[0]).toEqual({
+      casoId: f.ref!,
+      estado: "Reparto parcial",
+      cobertura: "Parcial",
+      neto: "150.00",
+      costePropio: "150.00",
+      pendienteTerceros: "150.00",
+      exceso: "150.00",
+    });
+    // No se suman al flujo: R_adj y G_n conservan sus importes.
+    expect(r.ajusteCompartidos.recuperado.importe).toBe("300.00");
+    expect(r.ajusteCompartidos.gastoNeto.importe).toBe("200.00");
+  } finally {
+    f.db.close();
+  }
+});
+
 test("F5: cálculo vivo, sin foto, no cierre ni ahorro real", () => {
   const f = fixture();
   try {

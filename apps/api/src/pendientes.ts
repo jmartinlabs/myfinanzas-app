@@ -50,7 +50,16 @@ export type MetricaItem = {
   motivo: string | null;
 };
 export type ContextoHecho = {
-  tipo: "Gasto" | "Aportacion" | "Adelanto" | "Devolucion" | "Comida" | "Cierre";
+  tipo:
+    | "Gasto"
+    | "Ingreso"
+    | "Transferencia"
+    | "Amortizacion"
+    | "Aportacion"
+    | "Adelanto"
+    | "Devolucion"
+    | "Comida"
+    | "Cierre";
   fuenteId: string;
   fecha: string | null;
   cicloId: string | null;
@@ -222,6 +231,15 @@ function cicloDto(ciclo: Cycle | null): TransversalItem["ciclo"] {
     : null;
 }
 
+function contextoTipo(tipo: string): ContextoHecho["tipo"] {
+  if (tipo === "Gasto") return "Gasto";
+  if (tipo === "Ingreso") return "Ingreso";
+  if (tipo === "Transferencia") return "Transferencia";
+  if (tipo === "Devolución de gasto") return "Devolucion";
+  if (tipo === "Amortización deuda") return "Amortizacion";
+  return "Gasto";
+}
+
 function contexto(
   tipo: ContextoHecho["tipo"],
   fuenteId: string,
@@ -318,16 +336,27 @@ function filaAnticipo(
 ): TransversalItem {
   const ref = dto.referencia,
     id = ref.id,
-    contextos = dto.operaciones
-      .filter((o) => o.tipo === "Transferencia")
-      .map((o) =>
-        contexto(
-          o.atribucion?.rol === "Devolución" ? "Devolucion" : "Adelanto",
-          o.id,
-          o.fecha,
-          cycles,
+    contextos = [
+      ...dto.operaciones
+        .filter((o) => o.tipo === "Transferencia")
+        .map((o) =>
+          contexto(
+            !o.elegible
+              ? "Transferencia"
+              : o.atribucion?.rol === "Devolución"
+                ? "Devolucion"
+                : o.atribucion?.rol === "Adelanto"
+                  ? "Adelanto"
+                  : "Transferencia",
+            o.id,
+            o.fecha,
+            cycles,
+          ),
         ),
+      ...dto.relacionados.map((r) =>
+        contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles),
       ),
+    ],
     fechaHecho = dto.ultimaActividad ?? ultimaFecha(contextos),
     ciclo = fechaHecho === null ? null : cycleAt(cycles, fechaHecho);
   const foto = ciclo ? dto.fotos.find((f) => f.ciclo === ciclo.id) : null;
@@ -513,6 +542,12 @@ function filaCompartido(
     ...dto.gastos.map((g) => contexto("Gasto", g.id, g.fecha, cycles)),
     ...dto.aportaciones.map((a) =>
       contexto("Aportacion", a.movimiento, a.fecha, cycles),
+    ),
+    ...dto.historicos.map((h) =>
+      contexto("Transferencia", h.movimiento, h.fecha, cycles),
+    ),
+    ...dto.relacionados.map((r) =>
+      contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles),
     ),
   ];
   const fechaHecho = ultimaFecha(contextos),
@@ -902,7 +937,10 @@ function filaConciliacion(
           : estado === "Alerta"
             ? "Alerta"
             : null,
-      cobertura: conciliacion.cobertura,
+      cobertura:
+        conciliacion.difS0Siguiente === null
+          ? "No disponible"
+          : conciliacion.cobertura,
       motivo: conciliacion.motivo,
     },
     {
@@ -1072,15 +1110,22 @@ function componer(db: Database, now: number) {
       });
       continue;
     }
-    if (!actividad.has(ciclo.id)) continue;
-    filas.push(filaComida(db, ciclo, lectura, cycles));
+    const fila = filaComida(db, ciclo, lectura, cycles);
+    // Un ciclo sin movimientos solo se omite cuando no hay nada que revisar:
+    // Resuelto con cobertura verificada. Un ND o Revisar se conserva.
+    if (
+      !actividad.has(ciclo.id) &&
+      fila.estado === "Resuelto" &&
+      fila.cobertura === "Verificada"
+    )
+      continue;
+    filas.push(fila);
   }
 
   for (const ciclo of cycles) {
     const siguiente = cicloSiguiente(cycles, ciclo);
     if (!siguiente) continue;
     const lectura = leer(ciclo.id);
-    if (lectura.error === null && !actividad.has(ciclo.id)) continue;
     if (lectura.error !== null)
       fuenteFallos.push({
         motor: "Comida E3.5",
@@ -1196,6 +1241,16 @@ export function parseFiltros(params: URLSearchParams): FiltrosPendientes {
   };
 }
 
+/** Ficha Compartido creada sin hechos ni reparto: no es un pendiente abierto. */
+function fichaSinHechosSinRepartir(fila: TransversalItem) {
+  return (
+    fila.tipo === "Compartido" &&
+    fila.estado === "No disponible" &&
+    fila.magnitud === "Estado del reparto" &&
+    fila.contextos.length === 0
+  );
+}
+
 function enPeriodo(
   fila: TransversalItem,
   ciclo: Cycle,
@@ -1225,13 +1280,16 @@ export function listPendientes(
     finPeriodo = seleccion.fin ?? seleccion.corte ?? "9999-12-31";
   }
   const text = filtros.texto?.toLocaleLowerCase("es") ?? null;
+  const historico = filtros.alcance === "historico";
   const filtered = filas.filter(
     (f) =>
       (filtros.tipo === null || f.tipo === filtros.tipo) &&
       (filtros.estado === null || f.estado === filtros.estado) &&
       (filtros.cobertura === null || f.cobertura === filtros.cobertura) &&
       (filtros.ejercicio === null || f.ejercicio === filtros.ejercicio) &&
-      (filtros.alcance === "historico" || f.estado !== "Resuelto") &&
+      (historico
+        ? f.estado === "Resuelto"
+        : f.estado !== "Resuelto" && !fichaSinHechosSinRepartir(f)) &&
       (seleccion === null ||
         enPeriodo(f, seleccion, seleccion.inicio, finPeriodo)) &&
       (text === null ||

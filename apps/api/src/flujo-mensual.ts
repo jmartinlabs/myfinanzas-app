@@ -87,6 +87,15 @@ export type AjusteGastoCompartido = {
   recuperado: string | null;
   estadoRecuperado: string;
 };
+export type AjusteCasoCompartido = {
+  casoId: string;
+  estado: string;
+  cobertura: string;
+  neto: string | null;
+  costePropio: string | null;
+  pendienteTerceros: string | null;
+  exceso: string | null;
+};
 export type MemoriaCajaAportacion = {
   movimiento: string;
   fecha: string;
@@ -112,6 +121,8 @@ export type AjusteCompartidos = {
     aportaciones: MemoriaCajaAportacion[];
     noEsIngreso: true;
   };
+  /** Métricas actuales por caso; contexto del ajuste, nunca sumadas al flujo. */
+  casos: AjusteCasoCompartido[];
   cobertura: CoberturaAjuste;
   motivo: string | null;
   formula: string;
@@ -170,6 +181,7 @@ function ajusteCompartidos(
   const periodoVerificable = corte !== null;
   const gastos: AjusteGastoCompartido[] = [];
   const aportaciones: MemoriaCajaAportacion[] = [];
+  const casos: AjusteCasoCompartido[] = [];
   let recuperadoCents = 0n;
   let memoriaCents = 0n;
   let recuperadoParcial = false;
@@ -212,9 +224,11 @@ function ajusteCompartidos(
         memoriaMotivo = recuperadoMotivo;
         continue;
       }
+      let gastoEnCiclo = false;
       for (const gasto of dto.gastos) {
         if (!gasto.computaEnBruto) continue;
         if (gasto.fecha < ciclo.inicio || gasto.fecha > corte!) continue;
+        gastoEnCiclo = true;
         const recuperadoCentsGasto = safeCents(gasto.recuperado.valor);
         if (recuperadoCentsGasto === null) {
           recuperadoNd = true;
@@ -235,6 +249,16 @@ function ajusteCompartidos(
           estadoRecuperado: gasto.recuperado.estado,
         });
       }
+      if (gastoEnCiclo)
+        casos.push({
+          casoId: referencia,
+          estado: dto.resumen.estado,
+          cobertura: dto.resumen.cobertura.estado,
+          neto: dto.resumen.neto.valor,
+          costePropio: dto.resumen.costePropio.valor,
+          pendienteTerceros: dto.resumen.pendienteTerceros.valor,
+          exceso: dto.resumen.exceso.valor,
+        });
       for (const aportacion of dto.aportaciones) {
         if (!aportacion.computa) continue;
         if (aportacion.fecha < ciclo.inicio || aportacion.fecha > corte!)
@@ -385,6 +409,7 @@ function ajusteCompartidos(
     gastoNeto: gastoNetoMetrica,
     resultadoAjustado: resultadoMetrica,
     memoriaCaja,
+    casos,
     cobertura,
     motivo,
     formula:
@@ -403,6 +428,7 @@ function ajusteCompartidos(
       memoriaTotal,
       gastos,
       aportaciones,
+      casos,
       recuperadoCobertura,
       memoriaCobertura,
     ]),

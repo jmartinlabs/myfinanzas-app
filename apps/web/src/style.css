@@ -3168,3 +3168,60 @@ textarea {
     margin: 16px;
   }
 }
+
+/* E3.6 R3 — métricas por caso del ajuste, fuera del flujo total. */
+.flow-case-metrics {
+  max-width: 100%;
+  overflow-x: auto;
+}
+.flow-case-metrics table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.flow-case-metrics th,
+.flow-case-metrics td {
+  padding: 7px 9px;
+  border-bottom: 1px solid #dcecb3;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.flow-case-metrics th {
+  background: var(--section);
+  color: #4a5c34;
+  font-size: 10px;
+}
+.flow-case-metrics td:nth-child(n + 3) {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.flow-case-metrics .text-button {
+  min-height: 0;
+  padding: 0;
+}
+@media (max-width: 760px) {
+  .flow-case-metrics table,
+  .flow-case-metrics tbody,
+  .flow-case-metrics tr,
+  .flow-case-metrics td {
+    display: block;
+    width: 100%;
+  }
+  .flow-case-metrics thead {
+    display: none;
+  }
+  .flow-case-metrics tr {
+    padding: 8px 0;
+  }
+  .flow-case-metrics td {
+    padding: 2px 0;
+    white-space: normal !important;
+  }
+  .flow-case-metrics td::before {
+    content: attr(data-label);
+    display: block;
+    color: #536147;
+    font-size: 10px;
+  }
+}
