@@ -1,0 +1,1684 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SPEC23 · E4.3 — Wireframes de valoración y resultados (propuesta)</title>
+<style>
+  :root{
+    --green:#8DBB2E;
+    --green-strong:#3F5B12;
+    --header:#CBEA7B;
+    --section:#DCECB3;
+    --bg:#EEF7E8;
+    --ink:#24320E;
+    --muted:#4E5A45;
+    --line:#C6D4B6;
+    --white:#fff;
+    --warn:#FFF4D6;
+    --warnline:#B58A1F;
+    --danger:#7B2A2A;
+    --dangerbg:#FBECEC;
+    --okbg:#EEF7E2;
+    --info:#F7FBF1;
+    --focus:#234D00;
+    --radius:12px;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font:14px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .page{
+    max-width:1472px;
+    margin:0 auto;
+    padding:24px 0 64px;
+    overflow-wrap:break-word;
+  }
+  a{color:var(--green-strong);text-underline-offset:3px}
+  a:focus-visible,
+  button:focus-visible,
+  [tabindex]:focus-visible{
+    outline:3px solid var(--focus);
+    outline-offset:3px;
+  }
+  .doc-head{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:24px;
+    margin:0 16px 22px;
+  }
+  .eyebrow{
+    font-size:12px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--muted);
+    font-weight:700;
+  }
+  h1{font-size:27px;line-height:1.2;margin:6px 0 8px}
+  h2{font-size:19px;line-height:1.3;margin:0 0 6px}
+  h3{font-size:15px;line-height:1.3;margin:0 0 8px}
+  h4{font-size:13px;line-height:1.3;margin:0 0 6px}
+  p{margin:0 0 10px}
+  ul,ol{margin:0 0 10px;padding-left:20px}
+  li{margin:0 0 5px}
+  .muted{color:var(--muted)}
+  .small{font-size:12px}
+  .tiny{font-size:11.5px}
+  .banner{
+    background:var(--warn);
+    border:1px solid var(--warnline);
+    border-radius:10px;
+    padding:11px 13px;
+    margin:14px 0 0;
+    font-size:13px;
+  }
+  .status-line{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    margin:8px 0 10px;
+    font-size:13px;
+    font-weight:600;
+  }
+  .list-state{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+    background:var(--info);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:8px 10px;
+    margin:0 0 10px;
+    font-size:12px;
+  }
+  .note{
+    background:var(--info);
+    border-left:4px solid var(--green);
+    padding:10px 12px;
+    border-radius:8px;
+    margin:12px 0;
+  }
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+  .pill{
+    display:inline-block;
+    border:1px solid var(--line);
+    background:var(--section);
+    border-radius:999px;
+    padding:3px 9px;
+    font-size:12px;
+    font-weight:600;
+  }
+  .meta-grid,
+  .scope-grid,
+  .state-grid,
+  .kpi-grid,
+  .summary-grid,
+  .decision-grid{
+    display:grid;
+    gap:10px;
+  }
+  .meta-grid{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-top:14px}
+  .scope-grid{grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-top:14px}
+  .state-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:12px}
+  .kpi-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin:12px 0}
+  .summary-grid{grid-template-columns:repeat(4,minmax(0,1fr));margin:12px 0}
+  .decision-grid{grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:12px}
+  .mini-card,
+  .state-card,
+  .kpi,
+  .summary-card,
+  .decision{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:11px 12px;
+    min-width:0;
+  }
+  .mini-card b,
+  .kpi b,
+  .summary-card b,
+  .decision b{
+    display:block;
+    font-size:12px;
+    color:var(--green-strong);
+    margin-bottom:3px;
+  }
+  .kpi .value{font-size:18px;font-weight:700;line-height:1.2;display:block;margin:3px 0}
+  .summary-card{background:#FCFDF9}
+  .state-card{min-height:150px}
+  .state-card h4{margin:0 0 4px;font-size:13px}
+  .state-card p{margin:0 0 8px;font-size:12px;color:var(--muted)}
+  .state-card .mini{
+    border:1px dashed var(--line);
+    border-radius:7px;
+    padding:8px;
+    font-size:12px;
+    background:#FBFDF8;
+    overflow-wrap:anywhere;
+  }
+  .state-card.error{border-color:#D8B4B4;background:#FFFAFA}
+  .state-card.warncard{border-color:var(--warnline);background:#FFFDF4}
+  .state-card.okcard{border-color:#B9D58B;background:#FBFDF8}
+  .state-card.loading .mini{
+    background:linear-gradient(90deg,#F1F6EA 25%,#E7F0DC 37%,#F1F6EA 63%);
+    background-size:400% 100%;
+  }
+  .wire-section{margin:34px 0 0}
+  .wire-label{display:flex;align-items:flex-start;gap:10px;margin:0 0 10px;flex-wrap:wrap;padding:0 16px}
+  .wire-section > .frame:not(.mobile){margin:0 16px}
+  .wire-section > .frame-scroll{padding:0}
+  .wire-label .tag{
+    background:var(--ink);
+    color:#fff;
+    border-radius:6px;
+    padding:3px 8px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.03em;
+  }
+  .wire-label .desc{color:var(--muted);font-size:13px;max-width:960px}
+  .frame-scroll{max-width:100%;overflow-x:auto;padding-bottom:3px}
+  .frame{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    box-shadow:0 8px 24px rgba(43,43,43,.08);
+    overflow:hidden;
+  }
+  .frame.desktop{width:1440px;max-width:none}
+  .frame.mobile{width:390px;max-width:100%}
+  .topbar{
+    background:var(--header);
+    padding:10px 16px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    gap:10px;
+    flex-wrap:wrap;
+    font-size:13px;
+    font-weight:600;
+  }
+  .topbar .ref{
+    background:rgba(255,255,255,.65);
+    border-radius:6px;
+    padding:2px 7px;
+    font-weight:600;
+  }
+  .layout{display:grid;grid-template-columns:196px minmax(0,1fr);min-height:640px}
+  .sidebar{
+    background:var(--section);
+    padding:14px 10px;
+    border-right:1px solid var(--line);
+    font-size:13px;
+  }
+  .sidebar .item{padding:7px 9px;border-radius:7px;margin-bottom:3px;color:#33402A}
+  .sidebar .item.active{
+    background:var(--header);
+    color:#354D19;
+    font-weight:700;
+    box-shadow:inset 3px 0 0 var(--green);
+  }
+  .content{padding:18px;min-width:0}
+  .content-head{
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:flex-start;
+    margin-bottom:12px;
+    flex-wrap:wrap;
+  }
+  .content-head h2,
+  .content-head h3{margin:0 0 3px}
+  .controls{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+  .field-group{display:flex;flex-direction:column;gap:3px;font-size:11.5px;color:var(--muted);font-weight:700}
+  .field,
+  .select,
+  .input{
+    display:block;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:7px;
+    padding:6px 9px;
+    font:inherit;
+    font-size:12.5px;
+    color:var(--ink);
+    min-height:32px;
+  }
+  .input[readonly],
+  .field.disabled,
+  .input.disabled{
+    background:#F1F4ED;
+    color:#55614D;
+    border-style:dashed;
+  }
+  .field-label{font-size:11.5px;color:var(--muted);font-weight:700}
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    background:var(--green-strong);
+    color:#fff;
+    border:2px solid transparent;
+    border-radius:8px;
+    padding:8px 12px;
+    font:inherit;
+    font-size:13px;
+    font-weight:700;
+    line-height:1.2;
+    cursor:pointer;
+    text-align:center;
+    max-width:100%;
+  }
+  .btn.secondary{background:#fff;color:var(--ink);border:1px solid var(--line)}
+  .btn.danger{background:#7B2A2A;color:#fff}
+  .btn[disabled],
+  .btn.disabled{
+    background:#D8E3CA;
+    color:#55614D;
+    border:1px solid #C6D4B6;
+    cursor:not-allowed;
+  }
+  .btn.secondary[disabled],
+  .btn.secondary.disabled{background:#F1F4ED;color:#6D7766;border-color:#D5DDCB}
+  .btn.focus-demo{outline:3px solid var(--focus);outline-offset:3px;box-shadow:0 0 0 6px #fff}
+  .focus-caption{display:block;font-size:11px;color:var(--green-strong);margin-top:4px;font-weight:700}
+  .note-inline{font-size:11.5px;color:var(--muted)}
+  .table-wrap{width:100%;overflow-x:auto;border:1px solid var(--line);border-radius:9px}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:#F5F9EF;font-size:11.5px;text-transform:uppercase;letter-spacing:.03em;color:#44513B;white-space:nowrap}
+  tbody tr:last-child td{border-bottom:0}
+  .num{text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .positions-table{min-width:1120px}
+  .positions-table th{white-space:normal}
+  .positions-table td{overflow-wrap:anywhere}
+  .series-table{min-width:680px}
+  .state{
+    display:inline-flex;
+    align-items:center;
+    gap:5px;
+    border:1px solid transparent;
+    border-radius:999px;
+    padding:2px 8px;
+    font-size:11.5px;
+    font-weight:700;
+    white-space:nowrap;
+    line-height:1.35;
+  }
+  .state.wrap{white-space:normal;text-align:left;align-items:flex-start}
+  .state.open{background:#E8F3D5;color:#2F4A08;border-color:#B9D58B}
+  .state.closed{background:#E7EDF5;color:#1F3A5F;border-color:#B8C7DA}
+  .state.na{background:#EEF2EA;color:#3C4735;border-color:#D5DDCB}
+  .state.partial{background:var(--warn);color:#6B4E00;border-color:#D9B44A}
+  .state.unavailable{background:#F2F2F2;color:#444;border-color:#D6D6D6}
+  .state.eligible{background:var(--okbg);color:#2F4A08;border-color:#B9D58B}
+  .state.noteligible{background:var(--warn);color:#6B4E00;border-color:#D9B44A}
+  .state.error{background:var(--dangerbg);color:var(--danger);border-color:#D8B4B4}
+  .state.info{background:#EAF2FA;color:#1F3A5F;border-color:#B8C7DA}
+  .symbol{font-size:12px;line-height:1}
+  .value-strong{font-weight:700;font-variant-numeric:tabular-nums}
+  .negative{color:var(--danger);font-weight:700;font-variant-numeric:tabular-nums}
+  .positive{color:var(--green-strong);font-weight:700;font-variant-numeric:tabular-nums}
+  .zero{font-variant-numeric:tabular-nums}
+  .block{
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:12px;
+    background:#fff;
+    margin:0 0 12px;
+    min-width:0;
+  }
+  .block:last-child{margin-bottom:0}
+  .block.warnbox{background:#FFFDF4;border-color:var(--warnline)}
+  .block.dangerbox{background:#FFFAFA;border-color:#D8B4B4}
+  .block.okbox{background:#FBFDF8;border-color:#B9D58B}
+  .block h3,
+  .block h4{margin-top:0}
+  .two-col{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.9fr);gap:14px}
+  .two-col > *{min-width:0}
+  .form-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:14px}
+  .form-grid > *{min-width:0}
+  .form-row{
+    display:grid;
+    grid-template-columns:minmax(130px,.8fr) minmax(0,1.3fr);
+    gap:8px;
+    align-items:center;
+    margin-bottom:8px;
+  }
+  .form-row label{font-size:12px;color:#3E4A36;font-weight:700}
+  .form-row .help{grid-column:2;font-size:11px;color:var(--muted);margin-top:-4px}
+  .form-row .input{width:100%}
+  .line{
+    display:flex;
+    justify-content:space-between;
+    gap:10px;
+    padding:5px 0;
+    border-bottom:1px dashed var(--line);
+    font-size:12.5px;
+  }
+  .line:last-child{border-bottom:0}
+  .line .after{font-weight:700;color:var(--green-strong)}
+  .formula{
+    display:block;
+    background:#F4F8EE;
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px 10px;
+    font:12.5px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    overflow-wrap:anywhere;
+    margin:8px 0;
+  }
+  .error-box{
+    background:var(--dangerbg);
+    border:1px solid #D8B4B4;
+    color:var(--danger);
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:12px;
+    margin-top:8px;
+    overflow-wrap:anywhere;
+  }
+  .ok-box{
+    background:var(--okbg);
+    border:1px solid #B9D58B;
+    color:#2F4A08;
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:12px;
+    margin-top:8px;
+    overflow-wrap:anywhere;
+  }
+  .warn-box{
+    background:var(--warn);
+    border:1px solid var(--warnline);
+    color:#5D4500;
+    border-radius:8px;
+    padding:9px 10px;
+    font-size:12px;
+    margin-top:8px;
+    overflow-wrap:anywhere;
+  }
+  .draft{
+    background:#F4F8EE;
+    border:1px dashed #B9D58B;
+    border-radius:8px;
+    padding:8px 9px;
+    font-size:12px;
+    margin-top:8px;
+    color:#2F4A08;
+  }
+  .actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .actions .btn{flex:0 1 auto}
+  .badge-row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+  .kpi .value .state{font-size:12px}
+  .compare{
+    display:grid;
+    grid-template-columns:1fr auto 1fr;
+    gap:8px;
+    align-items:stretch;
+    margin:8px 0;
+  }
+  .compare .side{
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:9px;
+    background:#FCFDF9;
+  }
+  .compare .side b{display:block;font-size:11.5px;color:var(--muted);margin-bottom:3px}
+  .compare .side .big{font-size:19px;font-weight:700}
+  .compare .arrow{display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--green-strong)}
+  .mobile .topbar{flex-direction:column;align-items:flex-start;gap:4px}
+  .mobile .content{padding:12px}
+  .mobile .content-head{flex-direction:column;align-items:stretch}
+  .mobile .controls{flex-direction:column;align-items:stretch}
+  .mobile .field-group{width:100%}
+  .mobile .kpi-grid,
+  .mobile .summary-grid,
+  .mobile .two-col,
+  .mobile .form-grid,
+  .mobile .compare{grid-template-columns:1fr}
+  .mobile .compare .arrow{transform:rotate(90deg);padding:2px 0}
+  .mobile .form-row{grid-template-columns:1fr;gap:3px}
+  .mobile .form-row .help{grid-column:1}
+  .mobile .btn{white-space:normal;width:100%}
+  .mobile .actions{flex-direction:column}
+  .mobile .actions .btn{width:100%}
+  .mobile .positions-table,
+  .mobile .series-table{display:none}
+  .mobile .card-list{display:grid;gap:9px}
+  .pos-card{
+    border:1px solid var(--line);
+    border-radius:9px;
+    padding:10px;
+    background:#fff;
+    overflow-wrap:anywhere;
+  }
+  .pos-card .pos-head{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;margin-bottom:6px}
+  .pos-card .pos-head b{min-width:0}
+  .pos-card .pos-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px 10px;font-size:12px}
+  .pos-card .pos-grid span{color:var(--muted)}
+  .pos-card .pos-grid b{font-weight:700;color:var(--ink)}
+  .pos-card .pos-foot{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+  .mobile .badge-row .state{white-space:normal}
+  .mobile .card-list .state.wrap{width:100%}
+  .mobile .series-card .pos-head{flex-direction:column;align-items:flex-start;gap:4px}
+  .mobile .series-card .pos-head > b{white-space:nowrap}
+  .mobile .list-state{flex-direction:column;align-items:flex-start}
+  .annotations-table{min-width:980px}
+  .resolutions-table{min-width:720px}
+  @media (max-width:700px){
+    .annotations-wrap{border:0;overflow:visible}
+    .annotations-table{min-width:0;display:block}
+    .annotations-table thead{display:none}
+    .annotations-table tbody,
+    .annotations-table tr,
+    .annotations-table td{display:block;width:100%}
+    .annotations-table tr{
+      border:1px solid var(--line);
+      border-radius:9px;
+      margin-bottom:9px;
+      padding:8px;
+      background:#fff;
+    }
+    .annotations-table td{border:0;padding:3px 0}
+    .annotations-table td::before{
+      content:attr(data-label);
+      display:block;
+      font-size:10.5px;
+      text-transform:uppercase;
+      letter-spacing:.03em;
+      color:var(--muted);
+      font-weight:700;
+    }
+  }
+  .checklist{columns:2;column-gap:28px;margin:8px 0 0;padding-left:18px}
+  .checklist li{margin:0 0 6px}
+  .footer{margin-top:30px;color:var(--muted);font-size:12px;text-align:center;padding:0 16px}
+  .sr-only{
+    position:absolute;
+    width:1px;height:1px;
+    padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0,0,0,0);
+    white-space:nowrap;border:0;
+  }
+  @media (max-width:900px){
+    .kpi-grid,.summary-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .checklist{columns:1}
+    .two-col,.form-grid{grid-template-columns:1fr}
+  }
+  @media (max-width:430px){
+    .page{padding:12px 0 40px}
+    .doc-head{padding:16px;margin:0 10px 18px}
+    .wire-label{padding:0 10px}
+    .wire-section > .frame:not(.mobile){margin:0 10px}
+    .footer{padding:0 10px}
+    h1{font-size:23px}
+    .kpi-grid,.summary-grid{grid-template-columns:1fr}
+    .compare{grid-template-columns:1fr}
+    .topbar{flex-direction:column;align-items:flex-start}
+  }
+  @media print{
+    body{background:#fff}
+    .page{max-width:none;padding:0}
+    .doc-head,.frame{box-shadow:none}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-head" id="portada">
+    <div class="eyebrow">SPEC23 · E4.3 · Documento de revisión visual · PROPUESTA</div>
+    <h1>Valoración y resultados de posiciones — wireframes 1440 / 390 (propuesta)</h1>
+    <div class="status-line"><span class="state info">Estado: propuesto</span><span>Pendiente de aprobación del usuario; DEV E4.3 no autorizado.</span></div>
+    <p class="muted">Propuesta documental para revisar pantallas y estados de E4.3. No es una implementación, no es una captura de la aplicación y no contiene datos reales. Todos los IDs, nombres, fechas e importes son ficticios y provienen del oráculo del testplan de SPEC23.</p>
+    <div class="banner">
+      <b>Wireframes propuestos; no aprobados; DEV E4.3 no autorizado.</b>
+      No hay endpoints, DDL, migración, UI ni tests ejecutables de E4.3. La specification está aprobada en la revisión <code>acc2d98</code> y DT2 en <code>24f3efb</code>, pero eso no autoriza desarrollo, captura, DDL, despliegue, merge ni escritura en la foto de E4.9.
+    </div>
+
+    <div class="scope-grid">
+      <div class="mini-card">
+        <b>Alcance de esta entrega</b>
+        <p class="small">Mostrar cómo se leerían posiciones, valoración manual/automática, resultado, cobertura, elegibilidad por fecha exacta, efectivo separado, detalle, captura y corrección auditada a 1440 y 390.</p>
+      </div>
+      <div class="mini-card">
+        <b>Fuera de esta entrega</b>
+        <p class="small">DEV E4.3, API, SQLite, DDL, migración, cálculos reales, cotizaciones externas, patrimonio global, foto/cierre y cualquier cambio a E4.1/E4.2/SPEC27.</p>
+      </div>
+      <div class="mini-card">
+        <b>Autoridad</b>
+        <p class="small">La <a href="23-e43-valoracion-resultados-specification.md">specification 23</a> manda sobre campos, reglas y estados. El <a href="23-e43-valoracion-resultados-testplan.md">testplan 23</a> aporta el oráculo ficticio. E4.9 decide después su ventana y su foto.</p>
+      </div>
+    </div>
+
+    <div class="legend" aria-label="Leyenda de pantallas">
+      <span class="pill">E4.3-W1/W2 · posiciones y agregado</span>
+      <span class="pill">E4.3-W3/W4 · detalle de posición</span>
+      <span class="pill">E4.3-W5/W6 · valoración manual</span>
+      <span class="pill">E4.3-W7/W8 · valoración automática</span>
+      <span class="pill">E4.3-W9/W10 · corrección auditada</span>
+      <span class="pill">Estados S1–S13</span>
+      <span class="pill">Resoluciones de ambigüedad</span>
+      <span class="pill">1440 escritorio / 390 móvil</span>
+      <span class="pill">Tema claro · datos ficticios</span>
+    </div>
+
+    <div class="note">
+      <b>Cómo leerlo.</b> Cada bloque lleva una etiqueta de viewport objetivo. Los frames de 1440 se muestran completos en pantalla ancha y, en una ventana estrecha, se consultan con desplazamiento interno del marco; los frames de 390 apilan el contenido y no deben provocar desplazamiento horizontal de la página. Los estados se muestran como texto y símbolo, no solo por color. El foco visible se describe y se ilustra en el botón «Consultar» de W1. Las decisiones sobre las ambigüedades de la revisión anterior están en <a href="#resolutions">Resoluciones de ambigüedad</a>.
+    </div>
+  </header>
+
+  <!-- W1 · 1440 · Listado y agregado -->
+  <section class="wire-section" id="w1">
+    <div class="wire-label">
+      <span class="tag">E4.3-W1 · 1440</span>
+      <span class="desc">Posiciones y agregado a corte — escritorio. Selector de fecha/corte, cobertura explícita, agregado solo si es completo, posiciones con valor/resultado/rentabilidad, elegibilidad por fecha exacta y efectivo separado.</span>
+    </div>
+    <div class="frame-scroll">
+      <div class="frame desktop">
+        <div class="topbar"><span>MyFinanzas · Inversiones · Valoración</span><span class="ref">Corte 30/06/2026 · solo lectura</span></div>
+        <div class="layout">
+          <nav class="sidebar" aria-label="Navegación de Inversiones">
+            <div class="item">Instrumentos</div>
+            <div class="item">Compras</div>
+            <div class="item">Ventas</div>
+            <div class="item active">Valoración</div>
+            <div class="item">Efectivo del bróker</div>
+          </nav>
+          <main class="content">
+            <div class="content-head">
+              <div>
+                <h2>Valoración y resultados</h2>
+                <div class="muted small">Posiciones a fecha de corte · esquema v22 · contrato de lectura, sin escritura</div>
+              </div>
+              <div class="controls">
+                <div class="field-group">
+                  <label for="w1-corte">Fecha de corte</label>
+                  <input class="input" id="w1-corte" type="text" value="30/06/2026" readonly>
+                  <span class="note-inline">ISO 2026-06-30</span>
+                </div>
+                <div>
+                  <button class="btn focus-demo" type="button">Consultar</button>
+                  <span class="focus-caption">Foco visible: anillo 3 px</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="summary-grid" aria-label="Agregado a corte">
+              <div class="summary-card">
+                <b>Cobertura de valoración</b>
+                <span class="state partial"><span class="symbol" aria-hidden="true">!</span> Parcial 3/4</span>
+                <div class="small muted" style="margin-top:6px">n = 3 posiciones abiertas con valoración válida y consistente; m = 4 aplicables.</div>
+              </div>
+              <div class="summary-card">
+                <b>Valor agregado</b>
+                <span class="value-strong">No se muestra</span>
+                <div class="small muted" style="margin-top:6px">Se publica solo con cobertura <b>Verificada</b> y no se presenta la suma de lo valorado como total.</div>
+              </div>
+              <div class="summary-card">
+                <b>Cobertura de resultado</b>
+                <span class="state partial"><span class="symbol" aria-hidden="true">!</span> Parcial 3/5</span>
+                <div class="small muted" style="margin-top:6px">Resultado agregado oculto: faltan posiciones aplicables con resultado calculable.</div>
+              </div>
+              <div class="summary-card">
+                <b>Elegibilidad por fecha exacta</b>
+                <span class="state noteligible wrap"><span class="symbol" aria-hidden="true">!</span> No elegible por fecha exacta en E4.3</span>
+                <div class="small muted" style="margin-top:6px">Motivo: hay valores anteriores al corte y cobertura incompleta. <b>E4.9 no evaluado.</b> No es una negativa definitiva de cierre.</div>
+              </div>
+            </div>
+
+            <div class="list-state">
+              <span class="state closed"><span class="symbol" aria-hidden="true">■</span> 1 cerrada incluida</span>
+              <span><b>Estado del listado: 4 abiertas · 1 cerrada.</b> La cerrada muestra resultado Ventas − Compras y valoración <b>No aplica</b>; no exige valoración.</span>
+              <span class="note-inline">Único filtro exigido por SPEC23: fecha de corte (UI DD/MM/AAAA · API ISO). No se añaden filtros de Estado, Tipo o cobertura.</span>
+            </div>
+
+            <div class="table-wrap">
+              <table class="positions-table">
+                <caption class="sr-only">Posiciones y resultados al corte 30/06/2026. Datos ficticios.</caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Posición</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" class="num">Cantidad</th>
+                    <th scope="col">Valoración</th>
+                    <th scope="col" class="num">Resultado</th>
+                    <th scope="col">Rentabilidad</th>
+                    <th scope="col">Cobertura / elegibilidad</th>
+                    <th scope="col">Acción</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><b>S004 · I1001</b><br><span class="small">Fondo índice demo</span></td>
+                    <td><span class="state open"><span class="symbol" aria-hidden="true">●</span> Abierta</span></td>
+                    <td class="num">7,5</td>
+                    <td><b class="positive">877,50 €</b><br><span class="small muted">Automática · 30/06/2026 · 0 días</span><br><span class="state eligible wrap"><span class="symbol" aria-hidden="true">✓</span> Elegible por fecha exacta (E4.9 no evaluado)</span></td>
+                    <td class="num positive">258,50 €</td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Fórmula no aprobada</span></td>
+                    <td><span class="state eligible">Completa</span><br><span class="state eligible wrap">✓ Elegible por fecha exacta (E4.9 no evaluado)</span><br><span class="tiny muted">Mismo día del corte; E4.9 decide su ventana.</span></td>
+                    <td><button class="btn secondary" type="button" aria-label="Ver detalle de S004 · I1001">Ver</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>S006 · I1001</b><br><span class="small">Fondo índice demo</span></td>
+                    <td><span class="state open"><span class="symbol" aria-hidden="true">●</span> Abierta</span></td>
+                    <td class="num">3</td>
+                    <td><b class="positive">342,00 €</b><br><span class="small muted">Automática · 30/04/2026 · 61 días</span><br><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span></td>
+                    <td class="num positive">77,40 €</td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Fórmula no aprobada</span></td>
+                    <td><span class="state eligible">Completa</span><br><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span><br><span class="tiny muted">Valor anterior, mostrado con fecha y antigüedad.</span></td>
+                    <td><button class="btn secondary" type="button" aria-label="Ver detalle de S006 · I1001">Ver</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>S004 · I1002</b><br><span class="small">Acción demo</span></td>
+                    <td><span class="state closed"><span class="symbol" aria-hidden="true">■</span> Cerrada</span></td>
+                    <td class="num">0</td>
+                    <td><span class="state na">No aplica</span><br><span class="tiny muted">Posición cerrada: sin valoración</span></td>
+                    <td class="num positive">40,00 €</td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Fórmula no aprobada</span></td>
+                    <td><span class="state na">No aplica</span><br><span class="tiny muted">m_r = 5 incluye la cerrada; n_r = 3.</span></td>
+                    <td><button class="btn secondary" type="button" aria-label="Ver detalle de S004 · I1002">Ver</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>S006 · I1003</b><br><span class="small">Fondo heredado demo</span><br><span class="state info">Inactiva · heredada</span></td>
+                    <td><span class="state open"><span class="symbol" aria-hidden="true">●</span> Abierta</span></td>
+                    <td class="num">10</td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Sin valoración ≤ T; no se inventa valor.</span></td>
+                    <td class="num"><span class="state unavailable">No disponible</span><br><span class="tiny muted">Sin valoración consistente.</span></td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Fórmula no aprobada</span></td>
+                    <td><span class="state unavailable">Sin valoración</span><br><span class="tiny muted">No entra en n; no se convierte en 0.</span></td>
+                    <td><button class="btn secondary" type="button" aria-label="Ver detalle de S006 · I1003">Ver</button></td>
+                  </tr>
+                  <tr>
+                    <td><b>S006 · I1005</b><br><span class="small">Fondo manual demo</span></td>
+                    <td><span class="state open"><span class="symbol" aria-hidden="true">●</span> Abierta</span></td>
+                    <td class="num">2</td>
+                    <td><b class="positive">205,00 €</b><br><span class="small muted">Manual · 30/04/2026 · 61 días</span><br><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span></td>
+                    <td class="num"><span class="state unavailable">No disponible</span><br><span class="tiny muted">Manual en posición abierta: no se calcula resultado.</span></td>
+                    <td><span class="state unavailable">No disponible</span><br><span class="tiny muted">Fórmula no aprobada</span></td>
+                    <td><span class="state eligible">Completa</span><br><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span><br><span class="tiny muted">Valor manual de su fecha, no del corte.</span></td>
+                    <td><button class="btn secondary" type="button" aria-label="Ver detalle de S006 · I1005">Ver</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div class="two-col" style="margin-top:12px">
+              <div class="block" style="margin-bottom:0">
+                <h3>Efectivo del bróker · separado</h3>
+                <div class="line"><span>S003 · Efectivo de inversión demo · 30/06/2026</span><b>1.456,40 €</b></div>
+                <div class="line"><span>S007 · Efectivo secundario demo · 30/06/2026</span><b>500,00 €</b></div>
+                <div class="warn-box"><b>No suma al agregado de posiciones.</b> Se lee de <code>cashAt</code>, un registro por Saldo de efectivo. No es una posición ni un patrimonio global.</div>
+              </div>
+              <div class="block" style="margin-bottom:0">
+                <h3>Cómo se lee el agregado</h3>
+                <div class="line"><span>Valoración</span><span><b>Parcial 3/4</b> · sin total</span></div>
+                <div class="line"><span>Resultado</span><span><b>Parcial 3/5</b> · sin total</span></div>
+                <div class="line"><span>Elegibilidad</span><span><b>No elegible</b> · E4.9 no evaluado</span></div>
+                <div class="small muted" style="margin-top:6px">«Parcial n/m» y «No elegible» son etiquetas de E4.3; no certifican el cierre ni anticipan el veredicto de E4.9.</div>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W2 · 390 · Listado y agregado -->
+  <section class="wire-section" id="w2">
+    <div class="wire-label">
+      <span class="tag">E4.3-W2 · 390</span>
+      <span class="desc">Posiciones y agregado a corte — móvil. Tarjetas apiladas, mismos datos y estados que W1, sin tabla horizontal.</span>
+    </div>
+    <div class="frame mobile">
+      <div class="topbar"><span>MyFinanzas · Valoración</span><span class="ref">Corte 30/06/2026</span></div>
+      <div class="content">
+        <div class="content-head">
+          <div>
+            <h2>Valoración y resultados</h2>
+            <div class="muted small">Solo lectura · datos ficticios</div>
+          </div>
+          <div class="controls">
+            <div class="field-group">
+              <label for="w2-corte">Fecha de corte</label>
+              <input class="input" id="w2-corte" type="text" value="30/06/2026" readonly>
+            </div>
+            <button class="btn" type="button">Consultar</button>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-card">
+            <b>Cobertura de valoración</b>
+            <span class="state partial">! Parcial 3/4</span>
+            <div class="small muted" style="margin-top:5px">Total de valoración oculto.</div>
+          </div>
+          <div class="summary-card">
+            <b>Valor agregado</b>
+            <span class="value-strong">No se muestra</span>
+            <div class="small muted" style="margin-top:5px">Solo con cobertura Verificada.</div>
+          </div>
+          <div class="summary-card">
+            <b>Cobertura de resultado</b>
+            <span class="state partial">! Parcial 3/5</span>
+            <div class="small muted" style="margin-top:5px">Resultado agregado oculto.</div>
+          </div>
+          <div class="summary-card">
+            <b>Elegibilidad por fecha exacta</b>
+            <span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span>
+            <div class="small muted" style="margin-top:5px">E4.9 no evaluado; no es negativa definitiva.</div>
+          </div>
+        </div>
+
+        <div class="list-state">
+          <span class="state closed"><span class="symbol" aria-hidden="true">■</span> 1 cerrada incluida</span>
+          <span><b>Estado del listado: 4 abiertas · 1 cerrada.</b> Resultado cerrado y valoración <b>No aplica</b>; no exige valoración.</span>
+          <span class="note-inline">Solo fecha de corte: UI DD/MM/AAAA · API ISO. Sin filtros adicionales.</span>
+        </div>
+
+        <div class="card-list" aria-label="Posiciones al corte">
+          <article class="pos-card">
+            <div class="pos-head"><b>S004 · I1001<br><span class="small muted">Fondo índice demo</span></b><span class="state open">● Abierta</span></div>
+            <div class="pos-grid">
+              <span>Cantidad</span><b>7,5</b>
+              <span>Valoración</span><b class="positive">877,50 €</b>
+              <span>Tipo · fecha</span><b>Automática · 30/06/2026</b>
+              <span>Días</span><b>0</b>
+              <span>Resultado</span><b class="positive">258,50 €</b>
+              <span>Rentabilidad</span><b>No disponible</b>
+            </div>
+            <div class="badge-row" style="margin-top:7px">
+              <span class="state eligible wrap">✓ Elegible por fecha exacta (E4.9 no evaluado)</span>
+              <span class="state eligible">Cobertura completa</span>
+            </div>
+            <div class="pos-foot"><span class="tiny muted">Sin porcentaje ni denominador.</span><button class="btn secondary" type="button" aria-label="Abrir detalle de S004 · I1001">Detalle</button></div>
+          </article>
+
+          <article class="pos-card">
+            <div class="pos-head"><b>S006 · I1001<br><span class="small muted">Fondo índice demo</span></b><span class="state open">● Abierta</span></div>
+            <div class="pos-grid">
+              <span>Cantidad</span><b>3</b>
+              <span>Valoración</span><b class="positive">342,00 €</b>
+              <span>Tipo · fecha</span><b>Automática · 30/04/2026</b>
+              <span>Días</span><b>61</b>
+              <span>Resultado</span><b class="positive">77,40 €</b>
+              <span>Rentabilidad</span><b>No disponible</b>
+            </div>
+            <div class="badge-row" style="margin-top:7px">
+              <span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span>
+              <span class="state eligible">Cobertura completa</span>
+            </div>
+            <div class="pos-foot"><span class="tiny muted">Valor anterior a T, con fecha y antigüedad.</span><button class="btn secondary" type="button" aria-label="Abrir detalle de S006 · I1001">Detalle</button></div>
+          </article>
+
+          <article class="pos-card">
+            <div class="pos-head"><b>S004 · I1002<br><span class="small muted">Acción demo</span></b><span class="state closed">■ Cerrada</span></div>
+            <div class="pos-grid">
+              <span>Cantidad</span><b>0</b>
+              <span>Valoración</span><b>No aplica</b>
+              <span>Resultado</span><b class="positive">40,00 €</b>
+              <span>Rentabilidad</span><b>No disponible</b>
+            </div>
+            <div class="badge-row" style="margin-top:7px"><span class="state na">Valoración no aplica</span><span class="state na">Ventas − Compras</span></div>
+            <div class="pos-foot"><span class="tiny muted">Cerrada con Venta vigente; sin porcentaje.</span><button class="btn secondary" type="button" aria-label="Abrir detalle de S004 · I1002">Detalle</button></div>
+          </article>
+
+          <article class="pos-card">
+            <div class="pos-head"><b>S006 · I1003<br><span class="small muted">Fondo heredado demo</span></b><span class="state open">● Abierta</span></div>
+            <div class="pos-grid">
+              <span>Cantidad</span><b>10</b>
+              <span>Valoración</span><b>No disponible</b>
+              <span>Motivo</span><b>Sin valoración ≤ T</b>
+              <span>Resultado</span><b>No disponible</b>
+              <span>Rentabilidad</span><b>No disponible</b>
+              <span>Instrumento</span><b>Inactivo · heredado</b>
+            </div>
+            <div class="badge-row" style="margin-top:7px"><span class="state unavailable">Sin valoración</span><span class="state info">Incluida con cobertura declarada</span></div>
+            <div class="pos-foot"><span class="tiny muted">No se inventa valor ni se convierte la ausencia en 0.</span><button class="btn secondary" type="button" aria-label="Abrir detalle de S006 · I1003">Detalle</button></div>
+          </article>
+
+          <article class="pos-card">
+            <div class="pos-head"><b>S006 · I1005<br><span class="small muted">Fondo manual demo</span></b><span class="state open">● Abierta</span></div>
+            <div class="pos-grid">
+              <span>Cantidad</span><b>2</b>
+              <span>Valoración</span><b class="positive">205,00 €</b>
+              <span>Tipo · fecha</span><b>Manual · 30/04/2026</b>
+              <span>Días</span><b>61</b>
+              <span>Resultado</span><b>No disponible</b>
+              <span>Rentabilidad</span><b>No disponible</b>
+            </div>
+            <div class="badge-row" style="margin-top:7px">
+              <span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span>
+              <span class="state eligible">Cobertura completa</span>
+            </div>
+            <div class="pos-foot"><span class="tiny muted">Manual en abierta: valor visible; resultado y rentabilidad no disponibles.</span><button class="btn secondary" type="button" aria-label="Abrir detalle de S006 · I1005">Detalle</button></div>
+          </article>
+        </div>
+
+        <div class="block" style="margin-top:12px;margin-bottom:0">
+          <h3>Efectivo del bróker · separado</h3>
+          <div class="line"><span>S003 · Efectivo de inversión demo</span><b>1.456,40 €</b></div>
+          <div class="line"><span>S007 · Efectivo secundario demo</span><b>500,00 €</b></div>
+          <div class="warn-box">No se suma al agregado de posiciones ni se convierte en posición.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W3 · 1440 · Detalle -->
+  <section class="wire-section" id="w3">
+    <div class="wire-label">
+      <span class="tag">E4.3-W3 · 1440</span>
+      <span class="desc">Detalle de posición — escritorio. Última valoración ≤ T, fecha y días, cantidad base frente a cantidad al corte, valor no escalado, resultado, cobertura y elegibilidad.</span>
+    </div>
+    <div class="frame-scroll">
+      <div class="frame desktop">
+        <div class="topbar"><span>MyFinanzas · Inversiones · Valoración · S004 / I1001</span><span class="ref">Corte 30/06/2026</span></div>
+        <div class="content">
+          <div class="content-head">
+            <div>
+              <h2>S004 · I1001 · Fondo índice demo</h2>
+              <div class="muted small">Cartera de inversión demo · Instrumento activo · posición derivada, no editable</div>
+            </div>
+            <div class="badge-row">
+              <span class="state open">● Abierta</span>
+              <span class="state eligible">Cobertura completa</span>
+              <span class="state eligible wrap">✓ Elegible por fecha exacta (E4.9 no evaluado)</span>
+            </div>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi"><b>Cantidad al corte</b><span class="value">7,5</span><span class="small muted">Σ Compras − Σ Ventas vigentes ≤ T</span></div>
+            <div class="kpi"><b>Valoración usada</b><span class="value positive">877,50 €</span><span class="small muted">Automática · 30/06/2026 · 0 días</span></div>
+            <div class="kpi"><b>Resultado</b><span class="value positive">258,50 €</span><span class="small muted">Valor + Ventas − Compras</span></div>
+            <div class="kpi"><b>Rentabilidad</b><span class="value"><span class="state unavailable">No disponible</span></span><span class="small muted">Fórmula no aprobada</span></div>
+          </div>
+
+          <div class="two-col">
+            <div>
+              <div class="block">
+                <h3>Última valoración ≤ T</h3>
+                <div class="line"><span>ID / revisión</span><b>VAL-000000000001 · revisión 1</b></div>
+                <div class="line"><span>Tipo</span><b>Automática</b></div>
+                <div class="line"><span>Fecha de vigencia</span><b>30/06/2026 · 0 días</b></div>
+                <div class="line"><span>Precio · divisa · cambio</span><b>130,000000 USD · 0,900000</b></div>
+                <div class="line"><span>Cantidad base</span><b>7,5</b></div>
+                <div class="line"><span>Cantidad al corte</span><b>7,5</b></div>
+                <div class="line"><span>Valor EUR</span><b class="positive">877,50 €</b></div>
+                <div class="line"><span>Procedencia</span><b>Precio y cambio declarados por el usuario</b></div>
+                <div class="line"><span>Cobertura</span><b>Completa · toda la cantidad</b></div>
+                <div class="line"><span>Elegibilidad por fecha exacta</span><b>Elegible por fecha exacta (E4.9 no evaluado)</b></div>
+                <div class="ok-box"><b>Cantidad base = cantidad al corte.</b> La valoración representa la cantidad de su fecha de vigencia. No se escala, no se prorratea y no se presenta como precio verificado del día T.</div>
+              </div>
+
+              <div class="block">
+                <h3>Serie histórica</h3>
+                <div class="table-wrap">
+                  <table class="series-table">
+                    <caption class="sr-only">Serie ficticia de valoraciones de S004/I1001 al corte 30/06/2026.</caption>
+                    <thead>
+                      <tr><th scope="col">Fecha</th><th scope="col" class="num">Días</th><th scope="col">Tipo</th><th scope="col" class="num">Cantidad base</th><th scope="col" class="num">Valor</th><th scope="col">Elegibilidad</th><th scope="col">Revisión</th></tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td>15/03/2026</td>
+                        <td class="num">107</td>
+                        <td>Automática</td>
+                        <td class="num">12,5</td>
+                        <td class="num">1.181,25 €</td>
+                        <td><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span></td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td>30/04/2026</td>
+                        <td class="num">61</td>
+                        <td>Automática</td>
+                        <td class="num">7,5</td>
+                        <td class="num">855,00 €</td>
+                        <td><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span></td>
+                        <td>1</td>
+                      </tr>
+                      <tr>
+                        <td><b>30/06/2026</b></td>
+                        <td class="num"><b>0</b></td>
+                        <td>Automática</td>
+                        <td class="num">7,5</td>
+                        <td class="num"><b>877,50 €</b></td>
+                        <td><span class="state eligible wrap">✓ Elegible por fecha exacta (E4.9 no evaluado)</span></td>
+                        <td>1</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="small muted" style="margin-top:6px">Cada fila conserva su propia fecha y su cantidad base. Una valoración posterior al corte nunca se usa. La serie no se asocia a un Ciclo.</div>
+              </div>
+            </div>
+
+            <aside>
+              <div class="block">
+                <h3>Resultado de la posición</h3>
+                <span class="formula">877,50 € + 506,00 € − 1.125,00 € = 258,50 €</span>
+                <div class="line"><span>Valor de la valoración usada</span><b>877,50 €</b></div>
+                <div class="line"><span>Σ Ventas vigentes ≤ T (importe_eur)</span><b>506,00 €</b></div>
+                <div class="line"><span>Σ Compras vigentes ≤ T (importe_eur)</span><b>1.125,00 €</b></div>
+                <div class="line"><span>Resultado agregado</span><b class="positive">258,50 €</b></div>
+                <div class="small muted" style="margin-top:6px">Una sola cifra por posición. Sin etiqueta realizado/no realizado, sin FIFO, sin lotes. <code>importe_eur</code> incluye la comisión; no se resta otra vez.</div>
+              </div>
+
+              <div class="block">
+                <h3>Rentabilidad</h3>
+                <span class="state unavailable">No disponible</span>
+                <p class="small muted" style="margin-top:6px">No se publica porcentaje, ratio, TWR, TIR ni denominador mientras no exista una fórmula aprobada. No se inventa una cifra parcial.</p>
+              </div>
+
+              <div class="block">
+                <h3>Cobertura y elegibilidad</h3>
+                <div class="line"><span>Cobertura de la valoración</span><b>Completa</b></div>
+                <div class="line"><span>Cobertura del agregado</span><b>Parcial 3/4</b></div>
+                <div class="line"><span>Elegibilidad por fecha exacta</span><b>Elegible (E4.9 no evaluado)</b></div>
+                <div class="warn-box"><b>Esta etiqueta no certifica el cierre.</b> E4.3 solo acredita que la valoración es del mismo día T. E4.9 define su ventana de suficiencia y su foto; E4.3 no escribe <code>e43</code> ni <code>valoracion</code>.</div>
+              </div>
+
+              <div class="block">
+                <h3>Auditoría de la valoración</h3>
+                <div class="line"><span>Actor</span><b>Usuario único del sistema</b></div>
+                <div class="line"><span>Alta UTC</span><b>2026-06-30T09:12:00Z</b></div>
+                <div class="line"><span>Motivo de corrección</span><b>—</b></div>
+                <div class="small muted" style="margin-top:6px">Alta y corrección append-only. No existe DELETE. Una corrección posterior no reescribe una foto cerrada de E4.9.</div>
+              </div>
+            </aside>
+          </div>
+
+          <div class="block warnbox" style="margin-top:14px">
+            <h3>Variante A-01/R-E43-13 · cantidad modificada desde la valoración</h3>
+            <p class="small">Ejemplo ficticio de la specification: la valoración se registró con 10 unidades y al corte la posición tiene 6. No se escala ni se prorratea; no se muestra un importe como valor actual.</p>
+            <div class="two-col">
+              <div>
+                <div class="compare">
+                  <div class="side"><b>Cantidad valorada · 31/03/2026</b><span class="big">10</span></div>
+                  <div class="arrow" aria-hidden="true">→</div>
+                  <div class="side"><b>Cantidad al corte · 30/06/2026</b><span class="big">6</span></div>
+                </div>
+                <div class="error-box"><b>No disponible.</b> Motivo: «Cantidad modificada desde la valoración: 2026-03-31 Q=10 → 2026-06-30 Q=6». Valor EUR: no se muestra; resultado: no disponible.</div>
+              </div>
+              <div>
+                <div class="line"><span>Valoración</span><b>VAL-000000000002 · revisión 2</b></div>
+                <div class="line"><span>Fecha · días</span><b>31/03/2026 · 91 días</b></div>
+                <div class="line"><span>Cobertura</span><b>Completa (de su fecha)</b></div>
+                <div class="line"><span>Elegibilidad por fecha exacta</span><b>Sin valor que declarar: no cubre la cantidad actual</b></div>
+                <div class="line"><span>Acción propuesta</span><b>Registrar nueva valoración para la cantidad vigente</b></div>
+                <div class="small muted" style="margin-top:6px">La valoración anterior permanece en la serie como valor de su fecha. No se borra, no se muta y no se convierte en precio de la cantidad actual.</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="block" style="margin-top:12px">
+            <h3>Variantes de límite</h3>
+            <div class="line"><span>Resultado negativo</span><span>Valor 498,75 € → <b class="negative">−120,25 €</b> · se muestra con signo, no se recorta a cero.</span></div>
+            <div class="line"><span>Resultado cero</span><span>Compra 100,00 € y Venta 100,00 € → <b>0,00 €</b> · es un resultado válido, no una ausencia.</span></div>
+            <div class="line"><span>Valoración 0,00 manual</span><span><b>0,00 €</b> · valoración explícita, cuenta en la cobertura; no es ausencia.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W4 · 390 · Detalle -->
+  <section class="wire-section" id="w4">
+    <div class="wire-label">
+      <span class="tag">E4.3-W4 · 390</span>
+      <span class="desc">Detalle de posición — móvil. La misma información de W3 en tarjetas apiladas y serie histórica sin tabla horizontal.</span>
+    </div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Valoración · S004 / I1001</span><span class="ref">Corte 30/06/2026</span></div>
+      <div class="content">
+        <div class="content-head">
+          <div>
+            <h2>S004 · I1001</h2>
+            <div class="muted small">Fondo índice demo · Cartera demo</div>
+          </div>
+          <div class="badge-row">
+            <span class="state open">● Abierta</span>
+            <span class="state eligible">Cobertura completa</span>
+            <span class="state eligible wrap">✓ Elegible por fecha exacta (E4.9 no evaluado)</span>
+          </div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi"><b>Cantidad al corte</b><span class="value">7,5</span></div>
+          <div class="kpi"><b>Valoración usada</b><span class="value positive">877,50 €</span><span class="small muted">Automática · 30/06/2026 · 0 días</span></div>
+          <div class="kpi"><b>Resultado</b><span class="value positive">258,50 €</span></div>
+          <div class="kpi"><b>Rentabilidad</b><span class="value"><span class="state unavailable">No disponible</span></span></div>
+        </div>
+
+        <div class="block">
+          <h3>Última valoración ≤ T</h3>
+          <div class="line"><span>ID / revisión</span><b>VAL-000000000001 · rev. 1</b></div>
+          <div class="line"><span>Tipo</span><b>Automática</b></div>
+          <div class="line"><span>Fecha · días</span><b>30/06/2026 · 0</b></div>
+          <div class="line"><span>Precio · divisa · cambio</span><b>130,000000 USD · 0,900000</b></div>
+          <div class="line"><span>Cantidad base</span><b>7,5</b></div>
+          <div class="line"><span>Cantidad al corte</span><b>7,5</b></div>
+          <div class="line"><span>Valor EUR</span><b class="positive">877,50 €</b></div>
+          <div class="line"><span>Procedencia</span><b>Precio y cambio declarados por el usuario</b></div>
+          <div class="line"><span>Cobertura</span><b>Completa</b></div>
+          <div class="line"><span>Elegibilidad</span><b>Elegible por fecha exacta (E4.9 no evaluado)</b></div>
+          <div class="ok-box">Cantidad base = cantidad al corte. El valor no se escala ni se prorratea.</div>
+        </div>
+
+        <div class="block">
+          <h3>Resultado</h3>
+          <span class="formula">877,50 + 506,00 − 1.125,00 = 258,50 €</span>
+          <div class="line"><span>Ventas ≤ T</span><b>506,00 €</b></div>
+          <div class="line"><span>Compras ≤ T</span><b>1.125,00 €</b></div>
+          <div class="line"><span>Resultado</span><b class="positive">258,50 €</b></div>
+          <div class="small muted" style="margin-top:5px">Sin realizado/no realizado, sin FIFO ni lotes. Comisión incluida una sola vez.</div>
+        </div>
+
+        <div class="block">
+          <h3>Serie histórica</h3>
+          <div class="card-list">
+            <div class="pos-card series-card">
+              <div class="pos-head"><b>15/03/2026</b><span class="state noteligible wrap">! No elegible</span></div>
+              <div class="pos-grid"><span>Tipo</span><b>Automática</b><span>Días</span><b>107</b><span>Cantidad base</span><b>12,5</b><span>Valor</span><b>1.181,25 €</b></div>
+            </div>
+            <div class="pos-card series-card">
+              <div class="pos-head"><b>30/04/2026</b><span class="state noteligible wrap">! No elegible</span></div>
+              <div class="pos-grid"><span>Tipo</span><b>Automática</b><span>Días</span><b>61</b><span>Cantidad base</span><b>7,5</b><span>Valor</span><b>855,00 €</b></div>
+            </div>
+            <div class="pos-card series-card">
+              <div class="pos-head"><b>30/06/2026</b><span class="state eligible wrap">✓ Elegible (E4.9 no evaluado)</span></div>
+              <div class="pos-grid"><span>Tipo</span><b>Automática</b><span>Días</span><b>0</b><span>Cantidad base</span><b>7,5</b><span>Valor</span><b>877,50 €</b></div>
+            </div>
+          </div>
+          <div class="small muted" style="margin-top:6px">Cada valor conserva su fecha y su cantidad base. No hay look-ahead.</div>
+        </div>
+
+        <div class="block warnbox">
+          <h3>Variante A-01 · cantidad modificada</h3>
+          <div class="compare">
+            <div class="side"><b>Valorada · 31/03/2026</b><span class="big">10</span></div>
+            <div class="arrow" aria-hidden="true">→</div>
+            <div class="side"><b>Al corte · 30/06/2026</b><span class="big">6</span></div>
+          </div>
+          <div class="error-box"><b>No disponible.</b> «Cantidad modificada desde la valoración: 2026-03-31 Q=10 → 2026-06-30 Q=6». No se extrapola ni se muestra importe; se exige nueva valoración.</div>
+          <div class="small muted" style="margin-top:5px">La valoración anterior permanece en la serie como valor de su fecha.</div>
+        </div>
+
+        <div class="block" style="margin-bottom:0">
+          <h3>Cobertura y elegibilidad</h3>
+          <div class="line"><span>Cobertura de la valoración</span><b>Completa</b></div>
+          <div class="line"><span>Cobertura del agregado</span><b>Parcial 3/4</b></div>
+          <div class="line"><span>Elegibilidad por fecha exacta</span><b>Elegible (E4.9 no evaluado)</b></div>
+          <div class="warn-box">E4.3 no certifica el cierre, no define la ventana de E4.9 y no escribe la foto.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W5 · 1440 · Manual -->
+  <section class="wire-section" id="w5">
+    <div class="wire-label">
+      <span class="tag">E4.3-W5 · 1440</span>
+      <span class="desc">Captura de valoración Manual — escritorio. Fecha de vigencia, importe EUR, procedencia, cobertura y validaciones; el importe 0,00 es válido y no es ausencia.</span>
+    </div>
+    <div class="frame-scroll">
+      <div class="frame desktop">
+        <div class="topbar"><span>Inversiones · Valoración · Nueva valoración Manual</span><span class="ref">S006 / I1005 · corte 30/06/2026</span></div>
+        <div class="content">
+          <div class="content-head">
+            <div>
+              <h2>Registrar valoración Manual</h2>
+              <div class="muted small">Alta propuesta; solo con DEV autorizado. No escribe Compras, Ventas ni efectivo.</div>
+            </div>
+            <span class="state info">Tipo Manual</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-block block">
+              <h3>Datos de la valoración</h3>
+              <div class="form-row"><label>Posición</label><div class="input" id="w5-pos">S006 · I1005 · Fondo manual demo</div><span class="help">Posición derivada de Saldo de inversión + Instrumento; no editable.</span></div>
+              <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w5-fecha">30/06/2026</div><span class="help">UI DD/MM/AAAA · API ISO 2026-06-30 · no puede ser futura.</span></div>
+              <div class="form-row"><label>Importe EUR *</label><div class="input" id="w5-importe">205,00</div><span class="help">Valor declarado por el usuario; hasta céntimos.</span></div>
+              <div class="form-row"><label>Procedencia *</label><div class="input" id="w5-proc">Valor declarado por el usuario</div><span class="help">Obligatoria; no se valida contra un proveedor externo.</span></div>
+              <div class="form-row"><label>Cobertura (derivada)</label><div class="input disabled" id="w5-cob">Completa · toda la cantidad</div><span class="help">Derivada y no editable. Solo Completa; sin lotes ni tramos.</span></div>
+              <div class="form-row"><label>Cantidad en la fecha</label><div class="input disabled" id="w5-cant">2 · recalculada en servidor</div><span class="help">No se acepta <code>cantidad_base</code> del cliente.</span></div>
+              <div class="warn-box"><b>A-01 / R-E43-13.</b> El importe se refiere a la cantidad de su fecha de vigencia. Si al corte la cantidad cambia, no se extrapola ni se escala; la posición quedará <b>No disponible</b> y exigirá una nueva valoración.</div>
+              <div class="actions">
+                <button class="btn" type="button">Guardar valoración</button>
+                <button class="btn secondary" type="button">Cancelar</button>
+              </div>
+              <div class="small muted" style="margin-top:8px">Alta no disponible hoy: requiere autorización de DEV E4.3. No hay DELETE ni anulación en esta propuesta.</div>
+              <div class="small muted">Idempotencia: clave generada internamente en el alta; no es un campo de usuario. Si falta o es inválida, 422 IDEMPOTENCY_REQUIRED.</div>
+            </div>
+
+            <aside class="block">
+              <h3>Vista previa · no persiste</h3>
+              <div class="line"><span>Importe que se registrará</span><b class="positive">205,00 €</b></div>
+              <div class="line"><span>Fecha de vigencia</span><b>30/06/2026</b></div>
+              <div class="line"><span>Cantidad base</span><b>2</b></div>
+              <div class="line"><span>Resultado de la posición</span><b>No disponible</b></div>
+              <div class="line"><span>Rentabilidad</span><b>No disponible</b></div>
+              <div class="warn-box"><b>Manual en posición abierta.</b> El valor se muestra, pero Resultado y Rentabilidad quedan «No disponible» con motivo; no se calcula un resultado alternativo (D-02).</div>
+
+              <h3 style="margin-top:14px">Validaciones</h3>
+              <div class="ok-box"><b>0,00 es válido.</b> Un importe manual 0,00 es una valoración explícita, cuenta en la cobertura y no se sustituye por «sin valoración».</div>
+              <div class="error-box"><b>422 VALIDATION.</b> Importe negativo; fecha futura; procedencia ausente; precisión excesiva o exponente. Se conserva el borrador y la selección.</div>
+              <div class="small muted">No se convierte una ausencia en 0,00. <code>null</code> significa No disponible; <code>0,00</code> solo es válido como valor manual explícito.</div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W6 · 390 · Manual -->
+  <section class="wire-section" id="w6">
+    <div class="wire-label">
+      <span class="tag">E4.3-W6 · 390</span>
+      <span class="desc">Captura de valoración Manual — móvil. Formulario, vista previa y validaciones apilados.</span>
+    </div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Nueva valoración Manual</span><span class="ref">S006 / I1005</span></div>
+      <div class="content">
+        <div class="content-head"><div><h2>Valoración Manual</h2><div class="muted small">S006 · I1005 · datos ficticios</div></div></div>
+        <div class="form-block block">
+          <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w6-fecha">30/06/2026</div><span class="help">UI DD/MM/AAAA · API ISO · no futura.</span></div>
+          <div class="form-row"><label>Importe EUR *</label><div class="input" id="w6-importe">205,00</div></div>
+          <div class="form-row"><label>Procedencia *</label><div class="input" id="w6-proc">Valor declarado por el usuario</div></div>
+          <div class="form-row"><label>Cobertura (derivada)</label><div class="input disabled" id="w6-cob">Completa</div><span class="help">Derivada y no editable; sin lotes.</span></div>
+          <div class="form-row"><label>Cantidad en la fecha</label><div class="input disabled" id="w6-cant">2 · recalculada</div></div>
+          <div class="actions">
+            <button class="btn" type="button">Guardar valoración</button>
+            <button class="btn secondary" type="button">Cancelar</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">Idempotencia interna; no es un campo de usuario.</div>
+        </div>
+        <div class="block">
+          <h3>Vista previa</h3>
+          <div class="line"><span>Importe</span><b class="positive">205,00 €</b></div>
+          <div class="line"><span>Cantidad base</span><b>2</b></div>
+          <div class="line"><span>Resultado</span><b>No disponible</b></div>
+          <div class="line"><span>Rentabilidad</span><b>No disponible</b></div>
+          <div class="ok-box">0,00 es un valor manual válido y explícito; no es ausencia.</div>
+          <div class="error-box">422: negativo, fecha futura, procedencia ausente o precisión inválida. Borrador conservado.</div>
+        </div>
+        <div class="warn-box">A-01: el importe corresponde a la cantidad de la fecha de vigencia; no se extrapola a la cantidad del corte.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W7 · 1440 · Automática -->
+  <section class="wire-section" id="w7">
+    <div class="wire-label">
+      <span class="tag">E4.3-W7 · 1440</span>
+      <span class="desc">Captura de valoración Automática — escritorio. Cantidad, precio, divisa, cambio y procedencia; recálculo exacto, precio/cambio positivos y nota de redondeo final.</span>
+    </div>
+    <div class="frame-scroll">
+      <div class="frame desktop">
+        <div class="topbar"><span>Inversiones · Valoración · Nueva valoración Automática</span><span class="ref">S004 / I1001 · corte 30/04/2026</span></div>
+        <div class="content">
+          <div class="content-head">
+            <div>
+              <h2>Registrar valoración Automática</h2>
+              <div class="muted small">La app calcula cantidad × precio × cambio. No se usa el precio de la última operación como valor actual.</div>
+            </div>
+            <span class="state info">Tipo Automática</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-block block">
+              <h3>Insumos declarados</h3>
+              <div class="form-row"><label>Posición</label><div class="input" id="w7-pos">S004 · I1001 · Fondo índice demo</div><span class="help">Posición derivada; no editable.</span></div>
+              <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w7-fecha">30/04/2026</div><span class="help">UI DD/MM/AAAA · API ISO 2026-04-30 · no futura.</span></div>
+              <div class="form-row"><label>Cantidad base *</label><div class="input disabled" id="w7-cant">7,5 · recalculada en la fecha</div><span class="help">Debe ser &gt; 0. No se acepta del cliente.</span></div>
+              <div class="form-row"><label>Precio unitario *</label><div class="input" id="w7-precio">120,000000</div><span class="help">Debe ser &gt; 0; sin redondeo intermedio.</span></div>
+              <div class="form-row"><label>Divisa *</label><div class="input" id="w7-divisa">USD</div><span class="help">ISO 4217.</span></div>
+              <div class="form-row"><label>Cambio a EUR *</label><div class="input" id="w7-cambio">0,950000</div><span class="help">Debe ser &gt; 0; si la divisa es EUR, exactamente 1.</span></div>
+              <div class="form-row"><label>Procedencia *</label><div class="input" id="w7-proc">Precio y cambio declarados por el usuario</div><span class="help">Obligatoria; no sustituye al actor.</span></div>
+              <div class="form-row"><label>Cobertura (derivada)</label><div class="input disabled" id="w7-cob">Completa · toda la cantidad</div><span class="help">Derivada y no editable. Solo Completa; sin lotes ni tramos.</span></div>
+              <div class="actions">
+                <button class="btn" type="button">Guardar valoración</button>
+                <button class="btn secondary" type="button">Cancelar</button>
+              </div>
+              <div class="small muted" style="margin-top:8px">Alta no disponible hoy: requiere autorización de DEV E4.3.</div>
+              <div class="small muted">Idempotencia: clave generada internamente en el alta; no es un campo de usuario. Si falta o es inválida, 422 IDEMPOTENCY_REQUIRED.</div>
+            </div>
+
+            <aside class="block">
+              <h3>Recálculo exacto</h3>
+              <span class="formula">valor_eur = round_half_up(7,5 × 120,000000 × 0,950000)</span>
+              <div class="line"><span>Cantidad base</span><b>7,5</b></div>
+              <div class="line"><span>Precio unitario</span><b>120,000000 USD</b></div>
+              <div class="line"><span>Cambio</span><b>0,950000</b></div>
+              <div class="line"><span>Valor calculado</span><b class="positive">855,00 €</b></div>
+              <div class="line"><span>Resultado de la posición</span><b class="positive">236,00 €</b></div>
+              <div class="ok-box"><b>Redondeo final.</b> El producto se calcula con precisión exacta; solo el resultado final se redondea a céntimos, una vez. No hay redondeos intermedios.</div>
+              <div class="warn-box"><b>Precio, cambio y cantidad &gt; 0.</b> Precio 0,00, cambio 0 o cantidad 0 se rechazan con 422. Un valor calculado que redondea a 0,00 con insumos positivos sí cuenta como valoración presente.</div>
+              <div class="small muted">La comisión ya está incluida en <code>importe_eur</code> de Compras y Ventas; no se resta otra vez. El resultado mostrado es una vista previa derivada, no un dato que la captura persista.</div>
+            </aside>
+          </div>
+
+          <div class="block warnbox" style="margin-top:14px">
+            <h3>Validaciones de la captura Automática</h3>
+            <div class="line"><span>Precio 0,000000</span><span><b class="negative">422 VALIDATION</b> · E4.1 exige precio positivo.</span></div>
+            <div class="line"><span>Cambio 0,000000</span><span><b class="negative">422 VALIDATION</b> · un cambio 0 no es una conversión válida.</span></div>
+            <div class="line"><span>Cantidad 0</span><span><b class="negative">422 VALIDATION</b> · la cantidad valorada debe ser &gt; 0.</span></div>
+            <div class="line"><span>Divisa EUR</span><span>Cambio exactamente 1; sin cotización externa.</span></div>
+            <div class="line"><span>Negativo, exponente o precisión excesiva</span><span><b class="negative">422 VALIDATION</b> · se conserva el borrador.</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W8 · 390 · Automática -->
+  <section class="wire-section" id="w8">
+    <div class="wire-label">
+      <span class="tag">E4.3-W8 · 390</span>
+      <span class="desc">Captura de valoración Automática — móvil. Insumos, recálculo y validaciones apilados.</span>
+    </div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Nueva valoración Automática</span><span class="ref">S004 / I1001</span></div>
+      <div class="content">
+        <div class="content-head"><div><h2>Valoración Automática</h2><div class="muted small">S004 · I1001 · datos ficticios</div></div></div>
+        <div class="form-block block">
+          <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w8-fecha">30/04/2026</div><span class="help">UI DD/MM/AAAA · API ISO · no futura.</span></div>
+          <div class="form-row"><label>Cantidad base *</label><div class="input disabled" id="w8-cant">7,5 · recalculada</div></div>
+          <div class="form-row"><label>Precio *</label><div class="input" id="w8-precio">120,000000</div></div>
+          <div class="form-row"><label>Divisa *</label><div class="input" id="w8-divisa">USD</div></div>
+          <div class="form-row"><label>Cambio *</label><div class="input" id="w8-cambio">0,950000</div></div>
+          <div class="form-row"><label>Procedencia *</label><div class="input" id="w8-proc">Precio y cambio declarados por el usuario</div></div>
+          <div class="form-row"><label>Cobertura (derivada)</label><div class="input disabled" id="w8-cob">Completa</div><span class="help">Derivada; no editable. Sin lotes.</span></div>
+          <div class="actions">
+            <button class="btn" type="button">Guardar valoración</button>
+            <button class="btn secondary" type="button">Cancelar</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">Idempotencia interna; no es un campo de usuario.</div>
+        </div>
+        <div class="block">
+          <h3>Recálculo exacto</h3>
+          <span class="formula">7,5 × 120,000000 × 0,950000 = 855,00 €</span>
+          <div class="line"><span>Valor calculado</span><b class="positive">855,00 €</b></div>
+          <div class="line"><span>Resultado derivado</span><b class="positive">236,00 €</b></div>
+          <div class="ok-box">Solo se redondea el resultado final, una vez. Sin redondeos intermedios.</div>
+          <div class="warn-box">Precio, cambio y cantidad deben ser &gt; 0. Precio 0,00, cambio 0 o cantidad 0 → 422. Un 0,00 calculado con insumos positivos sí cuenta como valoración presente.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W9 · 1440 · Corrección -->
+  <section class="wire-section" id="w9">
+    <div class="wire-label">
+      <span class="tag">E4.3-W9 · 1440</span>
+      <span class="desc">Corrección auditada — escritorio. Revisión, motivo, campos rectificables, 409 de revisión y duplicado, 422, sin DELETE y foto cerrada de E4.9 intacta.</span>
+    </div>
+    <div class="frame-scroll">
+      <div class="frame desktop">
+        <div class="topbar"><span>P1 · S004 / I1001 · valoración 30/04/2026</span><span class="ref">Revisión vigente 1 · VAL-000000000003</span></div>
+        <div class="content">
+          <div class="content-head">
+            <div>
+              <h2>Corrección auditada de valoración</h2>
+              <div class="muted small">Reemplazo completo con revisión optimista y motivo. No hay DELETE.</div>
+            </div>
+            <span class="state info">Automática · revisión 1</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-block block">
+              <h3>Datos corregibles</h3>
+              <div class="form-row"><label>ID inmutable</label><div class="input disabled">VAL-000000000003</div></div>
+              <div class="form-row"><label>Posición inmutable</label><div class="input disabled">S004 · I1001 · Fondo índice demo</div></div>
+              <div class="form-row"><label>Revisión vigente *</label><div class="input disabled">1 · se envía al servidor</div><span class="help">Una revisión obsoleta produce 409 REVISION_CONFLICT.</span></div>
+              <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w9-fecha">30/04/2026</div><span class="help">Rectificable; UI DD/MM/AAAA · API ISO. Controla unicidad en la fecha destino y cantidad en ambas fechas.</span></div>
+              <div class="form-row"><label>Tipo *</label><div class="input" id="w9-tipo">Automática</div><span class="help">Rectificable; el cambio de tipo exige revisión, motivo, revalidación y recálculo.</span></div>
+              <div class="warn-box"><b>Cambio Manual ↔ Automática.</b> Exige revisión vigente, motivo, revalidación de los campos del tipo destino y recálculo. Un 409 conserva el borrador; un 422 no escribe.</div>
+              <div class="form-row"><label>Precio unitario *</label><div class="input" id="w9-precio">125,000000</div></div>
+              <div class="form-row"><label>Divisa *</label><div class="input" id="w9-divisa">USD</div></div>
+              <div class="form-row"><label>Cambio *</label><div class="input" id="w9-cambio">0,950000</div></div>
+              <div class="form-row"><label>Valor EUR</label><div class="input disabled" id="w9-valor">890,63 € · recalculado en Automática</div><span class="help">En Manual es editable; en Automática se recalcula y no se edita a mano.</span></div>
+              <div class="form-row"><label>Cantidad base</label><div class="input disabled" id="w9-cant">7,5 · recalculada; no se acepta del cliente</div><span class="help">Si el cliente envía una cantidad distinta → 422.</span></div>
+              <div class="form-row"><label>Procedencia *</label><div class="input" id="w9-proc">Precio y cambio declarados por el usuario</div></div>
+              <div class="form-row"><label>Motivo de corrección *</label><div class="input" id="w9-motivo">Corrección de precio declarado (ficticio)</div><span class="help">Obligatorio; se conserva en auditoría.</span></div>
+              <div class="actions">
+                <button class="btn" type="button">Guardar corrección</button>
+                <button class="btn secondary" type="button">Cancelar</button>
+              </div>
+              <div class="small muted" style="margin-top:8px">No hay botón de borrado. Una valoración no se anula: se corrige con revisión y motivo, o se deja fuera si nunca se registró.</div>
+            </div>
+
+            <aside>
+              <div class="block">
+                <h3>Antes / después</h3>
+                <div class="line"><span>Precio</span><span>120,000000 → <span class="after">125,000000</span></span></div>
+                <div class="line"><span>Cambio</span><span>0,950000 → <span class="after">0,950000</span></span></div>
+                <div class="line"><span>Valor EUR</span><span>855,00 € → <span class="after">890,63 €</span></span></div>
+                <div class="line"><span>Resultado</span><span>236,00 € → <span class="after">271,63 €</span></span></div>
+                <div class="line"><span>Revisión</span><span>1 → <span class="after">2</span></span></div>
+                <div class="formula">7,5 × 125,000000 × 0,950000 = 890,625 → 890,63 €</div>
+                <div class="small muted">Redondeo final una vez. El resultado es una lectura derivada; la corrección persiste la valoración, no un resultado.</div>
+              </div>
+
+              <div class="block">
+                <h3>Campos rectificables</h3>
+                <p class="small">Fecha de vigencia, tipo, precio unitario, divisa, cambio y procedencia son rectificables según el tipo. El valor EUR es editable solo en Manual; en Automática se recalcula y se muestra como lectura. La cobertura es derivada y no se edita. Son inmutables el ID, la posición y <code>creado_utc</code>.</p>
+                <div class="warn-box"><b>Foto de E4.9 cerrada: intacta.</b> Una corrección posterior de E4.3 no recalcula la foto. E4.3 no escribe <code>e43</code>, <code>valoracion</code> ni la foto de SPEC27.</div>
+                <div class="ok-box"><b>Auditoría append-only.</b> Se conserva, por valoración y revisión, la acción, el actor, el instante UTC, el motivo y el estado anterior/posterior.</div>
+              </div>
+
+              <div class="block">
+                <h3>Conflictos y validación</h3>
+                <div class="error-box"><b>409 REVISION_CONFLICT.</b> Tu revisión 1 no es la vigente 2. No se escribió nada; borrador conservado. Recarga y revisa antes de confirmar.</div>
+                <div class="error-box"><b>409 VALUATION_EXISTS.</b> Ya existe una valoración para P1 en la fecha destino 30/06/2026 (VAL-000000000001). No se crea una segunda; corrige la existente.</div>
+                <div class="error-box"><b>422 VALIDATION.</b> Precio 0,000000 o negativo; cambio 0; fecha futura; procedencia ausente; <code>cantidad_base</code> distinta de la recalculada. Sin escritura parcial.</div>
+                <div class="warn-box"><b>Cambio Manual ↔ Automática.</b> Se revalidan los campos del tipo destino y se recalcula; un 409 conserva el borrador y un 422 no escribe.</div>
+              </div>
+            </aside>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- W10 · 390 · Corrección -->
+  <section class="wire-section" id="w10">
+    <div class="wire-label">
+      <span class="tag">E4.3-W10 · 390</span>
+      <span class="desc">Corrección auditada — móvil. Formulario, antes/después, conflictos y aviso de foto cerrada apilados.</span>
+    </div>
+    <div class="frame mobile">
+      <div class="topbar"><span>Corrección · S004 / I1001</span><span class="ref">Rev. 1 · VAL-…003</span></div>
+      <div class="content">
+        <div class="content-head"><div><h2>Corrección auditada</h2><div class="muted small">Automática · 30/04/2026</div></div></div>
+        <div class="form-block block">
+          <div class="form-row"><label>Revisión vigente *</label><div class="input disabled">1</div></div>
+          <div class="form-row"><label>Fecha de vigencia *</label><div class="input" id="w10-fecha">30/04/2026</div><span class="help">UI DD/MM/AAAA · API ISO.</span></div>
+          <div class="form-row"><label>Tipo *</label><div class="input" id="w10-tipo">Automática</div><span class="help">Cambiar tipo exige revisión, motivo, revalidación y recálculo.</span></div>
+          <div class="form-row"><label>Precio *</label><div class="input" id="w10-precio">125,000000</div></div>
+          <div class="form-row"><label>Divisa *</label><div class="input" id="w10-divisa">USD</div></div>
+          <div class="form-row"><label>Cambio *</label><div class="input" id="w10-cambio">0,950000</div></div>
+          <div class="form-row"><label>Valor EUR</label><div class="input disabled" id="w10-valor">890,63 € · recalculado</div><span class="help">En Manual sería editable; en Automática no.</span></div>
+          <div class="form-row"><label>Cantidad base</label><div class="input disabled" id="w10-cant">7,5 · recalculada</div></div>
+          <div class="form-row"><label>Procedencia *</label><div class="input" id="w10-proc">Precio y cambio declarados por el usuario</div></div>
+          <div class="form-row"><label>Motivo *</label><div class="input" id="w10-motivo">Corrección de precio declarado (ficticio)</div></div>
+          <div class="actions">
+            <button class="btn" type="button">Guardar corrección</button>
+            <button class="btn secondary" type="button">Cancelar</button>
+          </div>
+          <div class="small muted" style="margin-top:8px">Sin DELETE. No se anula; se corrige con revisión y motivo.</div>
+          <div class="warn-box"><b>Cambio Manual ↔ Automática.</b> Exige revisión, motivo, revalidación de campos y recálculo; 409 conserva el borrador y 422 no escribe.</div>
+        </div>
+        <div class="block">
+          <h3>Antes / después</h3>
+          <div class="line"><span>Valor EUR</span><span>855,00 → <span class="after">890,63 €</span></span></div>
+          <div class="line"><span>Resultado</span><span>236,00 → <span class="after">271,63 €</span></span></div>
+          <div class="line"><span>Revisión</span><span>1 → <span class="after">2</span></span></div>
+          <div class="formula">7,5 × 125 × 0,950000 = 890,625 → 890,63 €</div>
+        </div>
+        <div class="error-box"><b>409 REVISION_CONFLICT.</b> Revisión obsoleta: no se escribe; borrador conservado.</div>
+        <div class="error-box"><b>409 VALUATION_EXISTS.</b> Ya hay valoración en la fecha destino; corrige la existente.</div>
+        <div class="error-box"><b>422 VALIDATION.</b> Precio ≤ 0, cambio 0, fecha futura, procedencia ausente o cantidad base distinta. Sin escritura parcial.</div>
+        <div class="warn-box"><b>Foto de E4.9 cerrada: intacta.</b> E4.3 no la recalcula, no la escribe y no modifica <code>e43</code> ni <code>valoracion</code>.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Estados -->
+  <section class="wire-section" id="states">
+    <div class="wire-label">
+      <span class="tag">Estados S1–S13</span>
+      <span class="desc">Vacío, carga, error, No disponible, parcial n/m, No aplica, no elegible por fecha exacta, sin valoración, cantidad modificada, 409, 422, 404 y sesión expirada.</span>
+    </div>
+    <div class="frame" style="padding:14px">
+      <div class="state-grid">
+        <div class="state-card okcard">
+          <h4>S1 · Vacío real</h4>
+          <p>La fuente de hechos está completa y no hay posiciones con cantidad al corte.</p>
+          <div class="mini"><b>Sin posiciones</b><br><span class="small muted">No se muestra una valoración 0,00 ni una fila inventada.</span></div>
+        </div>
+        <div class="state-card loading">
+          <h4>S2 · Carga</h4>
+          <p>Se conservan el corte y los filtros; no hay totales provisionales.</p>
+          <div class="mini">Cargando posiciones…<br><span class="small muted">Corte 30/06/2026 conservado · sin suma parcial como total.</span></div>
+        </div>
+        <div class="state-card error">
+          <h4>S3 · Error / fuente ilegible</h4>
+          <p>Es un error explícito, no un vacío ni «sin posiciones».</p>
+          <div class="mini">No se pudo leer la fuente.<br><span class="small">No se muestran cifras no verificables.</span><br><button class="btn secondary" type="button" style="margin-top:7px">Reintentar</button></div>
+        </div>
+        <div class="state-card">
+          <h4>S4 · No disponible</h4>
+          <p>Ausencia de valoración o resultado; nunca se sustituye por 0.</p>
+          <div class="mini"><b>Valoración: No disponible</b><br><span class="small muted">Motivo: sin valoración ≤ T. Cantidad y Estado siguen visibles.</span></div>
+        </div>
+        <div class="state-card warncard">
+          <h4>S5 · Parcial n/m</h4>
+          <p>Hay posiciones aplicables sin valoración o sin resultado calculable.</p>
+          <div class="mini"><span class="state partial">! Parcial 3/4</span><br><span class="small muted">Total de valoración oculto. Resultado: <b>Parcial 3/5</b>, sin total.</span></div>
+        </div>
+        <div class="state-card">
+          <h4>S6 · No aplica</h4>
+          <p>Posición cerrada: la valoración no aplica; el resultado cerrado puede mostrarse.</p>
+          <div class="mini"><b>Valoración: No aplica</b><br><span class="small muted">Resultado Ventas − Compras: 40,00 €. Sin porcentaje.</span></div>
+        </div>
+        <div class="state-card warncard">
+          <h4>S7 · No elegible por fecha exacta</h4>
+          <p>Etiqueta separada de la cobertura; no es una negativa definitiva de cierre.</p>
+          <div class="mini"><span class="state noteligible wrap">! No elegible por fecha exacta en E4.3</span><br><span class="small muted">Valor anterior mostrado con fecha y días. E4.9 decide su ventana.</span></div>
+        </div>
+        <div class="state-card">
+          <h4>S8 · Sin valoración / cantidad inconsistente</h4>
+          <p>No se usa una valoración posterior ni se extrapola un valor de otra cantidad.</p>
+          <div class="mini"><b>No disponible.</b><br><span class="small muted">Sin valoración ≤ T: no hay valor que declarar. Si la cantidad cambió (10 → 6): motivo explícito, valor no escalado y nueva valoración exigida.</span></div>
+        </div>
+        <div class="state-card warncard">
+          <h4>S9 · Cantidad modificada</h4>
+          <p>La valoración no representa la cantidad al corte; no se escala.</p>
+          <div class="mini"><b>No disponible.</b><br><span class="small">Cantidad valorada 10 → cantidad al corte 6. Nueva valoración exigida; la anterior se conserva.</span></div>
+        </div>
+        <div class="state-card error">
+          <h4>S10 · 409</h4>
+          <p>Conflicto de revisión o duplicado de posición/fecha.</p>
+          <div class="mini"><b>409 REVISION_CONFLICT</b> o <b>409 VALUATION_EXISTS</b><br><span class="small">Borrador conservado; sin escritura parcial; no hay DELETE.</span></div>
+        </div>
+        <div class="state-card error">
+          <h4>S11 · 422</h4>
+          <p>Entrada inválida; el formulario conserva el borrador y la selección.</p>
+          <div class="mini"><b>422 VALIDATION</b><br><span class="small">Campo y motivo: precio ≤ 0, cambio 0, fecha futura, negativo, exponente, precisión excesiva o procedencia ausente.</span></div>
+        </div>
+        <div class="state-card error">
+          <h4>S12 · 404</h4>
+          <p>Posición o valoración inexistente al corte; no se convierte en una posición 0.</p>
+          <div class="mini"><b>404 NOT_FOUND</b><br><span class="small">Recurso y motivo genérico. Sin datos financieros de otras posiciones.</span></div>
+        </div>
+        <div class="state-card warncard">
+          <h4>S13 · Sesión expirada</h4>
+          <p>Se conserva el corte y el borrador; se exige reautenticación.</p>
+          <div class="mini"><b>401 UNAUTHENTICATED</b><br><span class="small">No se pierde el corte 30/06/2026. Sin cifras ni secretos.</span><br><button class="btn secondary" type="button" style="margin-top:7px">Reautenticar</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Resoluciones de ambigüedad -->
+  <section class="wire-section" id="resolutions">
+    <div class="wire-label">
+      <span class="tag">Resoluciones</span>
+      <span class="desc">Ambigüedad → decisión → fuente. Las decisiones quedan aplicadas en los wireframes; estos siguen propuestos hasta la aprobación del usuario.</span>
+    </div>
+    <div class="frame" style="padding:14px">
+      <div class="note">
+        <b>Estado:</b> propuesto; pendiente de aprobación del usuario. Las decisiones siguientes se derivan de SPEC23/DT2 y de las resoluciones del paquete; no autorizan DEV ni cambian reglas financieras.
+      </div>
+      <div class="table-wrap annotations-wrap">
+        <table class="annotations-table resolutions-table">
+          <caption class="sr-only">Mapa de ambigüedad, decisión y fuente para los wireframes de E4.3.</caption>
+          <thead>
+            <tr><th scope="col">Ambigüedad</th><th scope="col">Decisión</th><th scope="col">Fuente</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Ambigüedad"><b><code>valor_eur</code> en Automática</b></td>
+              <td data-label="Decisión">Calculado desde cantidad × precio × cambio y mostrado como lectura en W9/W10. La edición manual del importe solo aplica a Manual; en Automática no se envía a mano. <b>Precisión:</b> SPEC23 lo enumera entre los campos rectificables; esta propuesta no cambia el contrato de transporte, solo la presentación en Automática.</td>
+              <td data-label="Fuente">SPEC23 R-E43-4/D-01/D-14; resolución del paquete.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Fecha visible</b></td>
+              <td data-label="Decisión">DD/MM/AAAA en la UI; ISO <code>YYYY-MM-DD</code> en API/transporte. Donde aporta claridad se muestran ambos.</td>
+              <td data-label="Fuente">SPEC23 «Fechas» y contrato de lectura; resolución del paquete.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b><code>Idempotency-Key</code></b></td>
+              <td data-label="Decisión">No es un campo de usuario. Se genera internamente en el alta; si falta o es inválida, 422 <code>IDEMPOTENCY_REQUIRED</code>. No se representa en el formulario.</td>
+              <td data-label="Fuente">SPEC23 API de alta; resolución del paquete.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Manual ↔ Automática</b></td>
+              <td data-label="Decisión">Cambiar <code>tipo</code> exige revisión vigente, motivo, revalidación de los campos del tipo destino y recálculo. 409 conserva el borrador; 422 no escribe.</td>
+              <td data-label="Fuente">SPEC23 «Serie, corrección y concurrencia»; resolución del paquete.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Cantidad inconsistente</b></td>
+              <td data-label="Decisión">La posición queda <b>No disponible</b> con motivo; no se extrapola ni escala el valor; se exige nueva valoración y la anterior se conserva como valor de su fecha. Reflejado en W3/W4 y S8/S9.</td>
+              <td data-label="Fuente">SPEC23 R-E43-13/A-01.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Posiciones cerradas</b></td>
+              <td data-label="Decisión">Se muestran con Estado <b>Cerrada</b>, resultado Ventas − Compras y valoración <b>No aplica</b>; no exigen valoración. W1/W2 incluyen un resumen explícito y no añaden filtro de Estado.</td>
+              <td data-label="Fuente">SPEC23 R-E43-2/D-03/R-E43-10.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Cobertura</b></td>
+              <td data-label="Decisión">Campo derivado y no editable; texto por métrica (valoración/resultado); solo <b>Completa</b>; sin lotes ni tramos.</td>
+              <td data-label="Fuente">SPEC23 R-E43-10; DT2.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Filtros adicionales</b></td>
+              <td data-label="Decisión">Solo fecha de corte. No se añaden filtros de Estado, Tipo o cobertura; el estado se muestra en cada fila y en el resumen de W1/W2.</td>
+              <td data-label="Fuente">SPEC23 Screens/API; resolución del paquete.</td>
+            </tr>
+            <tr>
+              <td data-label="Ambigüedad"><b>Elegibilidad de valoración inconsistente</b></td>
+              <td data-label="Decisión">No se emite etiqueta de elegibilidad: no hay valor que declarar y la posición queda <b>No disponible</b> con motivo. La etiqueta por fecha exacta solo se aplica a la valoración usada.</td>
+              <td data-label="Fuente">SPEC23 R-E43-12/R-E43-13; interpretación de UI.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="warn-box" style="margin-top:12px"><b>Compatibilidad con SPEC23.</b> No se detecta una contradicción de regla financiera. La única precisión es la presentación de <code>valor_eur</code> en Automática: SPEC23 lo enumera entre los campos rectificables y D-01 exige que la app calcule el valor; la UI lo muestra calculado/read-only y reserva la edición manual para Manual. El contrato de transporte no se modifica.</div>
+    </div>
+  </section>
+
+  <!-- Anotaciones -->
+  <section class="wire-section" id="annotations">
+    <div class="wire-label">
+      <span class="tag">Anotaciones</span>
+      <span class="desc">Qué muestra cada pantalla, qué no calcula, qué queda fuera de E4.3, qué decide E4.9 y qué AC/TP cubre visualmente.</span>
+    </div>
+    <div class="frame" style="padding:14px">
+      <div class="table-wrap annotations-wrap">
+        <table class="annotations-table">
+          <caption class="sr-only">Cobertura documental de pantallas, límites y AC/TP.</caption>
+          <thead>
+            <tr><th scope="col">Pantalla</th><th scope="col">Qué muestra</th><th scope="col">Qué no calcula</th><th scope="col">Fuera de E4.3</th><th scope="col">Decide E4.9</th><th scope="col">AC / TP cubiertos</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Pantalla"><b>W1/W2</b><br>Listado y agregado</td>
+              <td data-label="Qué muestra">Corte, cobertura de valoración y resultado, agregado solo si es Verificada, posiciones, valor, resultado, rentabilidad No disponible, elegibilidad por fecha exacta, efectivo separado. Incluye posiciones cerradas con resultado cerrado y solo el filtro de corte.</td>
+              <td data-label="Qué no calcula">No calcula patrimonio global, porcentaje de rentabilidad, resultado realizado/no realizado, FIFO, lotes ni valor de posiciones sin valoración.</td>
+              <td data-label="Fuera de E4.3">Cotizaciones externas, dividendos, impuestos, splits, patrimonio/liquidez, cierre y foto.</td>
+              <td data-label="Decide E4.9">Ventana de suficiencia, certificación y foto. E4.3 solo emite la señal por fecha exacta.</td>
+              <td data-label="AC / TP">AC-02, 03, 06, 09, 10, 11, 13, 15, 16, 17 · TP-02, 03, 06, 09, 10, 11, 13, 15, 16, 17</td>
+            </tr>
+            <tr>
+              <td data-label="Pantalla"><b>W3/W4</b><br>Detalle</td>
+              <td data-label="Qué muestra">Serie, última valoración ≤ T, fecha/días, cantidad base vs al corte, valor no escalado, resultado, cobertura, elegibilidad y auditoría.</td>
+              <td data-label="Qué no calcula">No recalcula la valoración al leer, no escala ni prorratea, no crea precio implícito y no calcula rentabilidad.</td>
+              <td data-label="Fuera de E4.3">Valoración por lotes, precio de mercado automático, foto/cierre y escritura de hechos.</td>
+              <td data-label="Decide E4.9">Admisión de valores anteriores, ventana y foto. E4.3 no las prejuzga.</td>
+              <td data-label="AC / TP">AC-01, 02, 03, 05, 07, 08, 09, 15, 16, 17 · TP-01, 02, 03, 05, 07, 08, 09, 15, 16, 17</td>
+            </tr>
+            <tr>
+              <td data-label="Pantalla"><b>W5/W6</b><br>Manual</td>
+              <td data-label="Qué muestra">Fecha de vigencia, importe, procedencia, cobertura derivada, cantidad recalculada, vista previa y validaciones; 0,00 válido. Idempotencia interna no visible.</td>
+              <td data-label="Qué no calcula">No calcula resultado cuando la posición está abierta con valor manual; no extrapola a otra cantidad.</td>
+              <td data-label="Fuera de E4.3">Escritura real, endpoints, DDL y foto. El alta solo existe con DEV autorizado.</td>
+              <td data-label="Decide E4.9">Uso de la valoración manual en la ventana de cierre; E4.3 no lo decide.</td>
+              <td data-label="AC / TP">AC-02, 06, 14 · TP-02, 06, 14</td>
+            </tr>
+            <tr>
+              <td data-label="Pantalla"><b>W7/W8</b><br>Automática</td>
+              <td data-label="Qué muestra">Cantidad, precio, divisa, cambio, procedencia, cobertura derivada, recálculo exacto, precio/cambio &gt; 0, redondeo final y vista previa del resultado. Idempotencia interna no visible.</td>
+              <td data-label="Qué no calcula">No usa el precio de la última operación, no hace redondeos intermedios y no obtiene cotizaciones externas.</td>
+              <td data-label="Fuera de E4.3">Proveedor de FX, precios de mercado, escritura de hechos y foto.</td>
+              <td data-label="Decide E4.9">Nada del cálculo de E4.3; E4.9 solo decide la suficiencia de la valoración resultante.</td>
+              <td data-label="AC / TP">AC-01, 05, 07, 14, 17 · TP-01, 05, 07, 14, 17</td>
+            </tr>
+            <tr>
+              <td data-label="Pantalla"><b>W9/W10</b><br>Corrección</td>
+              <td data-label="Qué muestra">Revisión, motivo, campos rectificables, antes/después, auditoría append-only, 409 de revisión y duplicado, 422, sin DELETE. En Automática el valor EUR es calculado/read-only; cambiar tipo exige revalidación y recálculo.</td>
+              <td data-label="Qué no calcula">No reescribe valores en silencio, no borra, no crea una segunda valoración en la misma fecha y no recalcula fotos.</td>
+              <td data-label="Fuera de E4.3">DELETE, anulación, migración/DDL y escritura de la foto de E4.9.</td>
+              <td data-label="Decide E4.9">La foto cerrada permanece inmutable; E4.3 no la modifica.</td>
+              <td data-label="AC / TP">AC-08, 14, 16, 17 · TP-08, 14, 16, 17</td>
+            </tr>
+            <tr>
+              <td data-label="Pantalla"><b>S1–S13</b><br>Estados</td>
+              <td data-label="Qué muestra">Vacío, carga, error, No disponible, parcial, No aplica, no elegible, sin valoración/cantidad inconsistente, 409, 422, 404 y sesión expirada.</td>
+              <td data-label="Qué no calcula">No convierte ausencia en 0, no presenta un parcial como total y no usa color como único indicador.</td>
+              <td data-label="Fuera de E4.3">Comportamiento real de red, autenticación y persistencia; aquí solo se representa.</td>
+              <td data-label="Decide E4.9">No decide estados de E4.3; la etiqueta de E4.9 sigue separada.</td>
+              <td data-label="AC / TP">AC-09, 10, 11, 13, 15, 16 · TP-09, 10, 11, 13, 15, 16; errores 401/404/409/422 de la spec</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="decision-grid" style="margin-top:14px">
+        <div class="decision"><b>E4.3 sí decide</b>Posición, Estado, cantidad, valoración Manual/Automática, valor, resultado, cobertura, elegibilidad por fecha exacta, efectivo separado y corrección auditada.</div>
+        <div class="decision"><b>E4.3 no calcula</b>Rentabilidad, patrimonio global, liquidez, resultado realizado/no realizado, FIFO/lotes, impuestos, dividendos ni cotizaciones.</div>
+        <div class="decision"><b>E4.9 decide después</b>Su ventana de suficiencia, si admite valores anteriores, la certificación y la foto inmutable. E4.3 solo publica el contrato de lectura y la señal por fecha exacta.</div>
+        <div class="decision"><b>Fuera de la entrega</b>DEV, API, SQLite, DDL, migración, endpoints, UI real, tests ejecutables, datos reales, Excel, despliegue y merge.</div>
+      </div>
+
+      <div class="block okbox" style="margin-top:14px">
+        <h3>Ambigüedades registradas</h3>
+        <p class="small" style="margin-bottom:0">Las ambigüedades de la revisión anterior quedan resueltas en <a href="#resolutions">Resoluciones de ambigüedad</a>. No se detecta una contradicción de regla financiera. La única precisión es que SPEC23 enumera <code>valor_eur</code> entre los campos rectificables y esta propuesta lo muestra calculado/read-only en Automática, sin cambiar el contrato de transporte. Cualquier cambio de alcance sigue requiriendo aprobación del usuario.</p>
+      </div>
+
+      <div class="block okbox" style="margin-top:14px">
+        <h3>Accesibilidad y revisión de esta propuesta</h3>
+        <ul class="checklist small">
+          <li>Los frames 390 apilan contenido y no usan tablas; el marco de 1440 se consulta con desplazamiento interno en ventanas estrechas.</li>
+          <li>Los estados combinan texto y símbolo; ningún estado depende solo del color.</li>
+          <li>El foco visible se describe como anillo de 3 px con desplazamiento; se ilustra en W1 y los controles usan <code>:focus-visible</code>.</li>
+          <li>Contraste: texto oscuro sobre fondos claros y botones con verde oscuro y texto blanco; pares calculados: texto principal/fondo 12,43:1, texto auxiliar/blanco 7,31:1, blanco/botón 7,73:1 y foco/blanco 9,85:1. No se declara una auditoría WCAG completa.</li>
+          <li>Datos ficticios del oráculo del testplan; no hay datos reales, personales, Excel, bases reales ni secretos.</li>
+          <li>La revisión visual real, las capturas y la aprobación siguen pendientes; este documento no convierte ningún AC/TP en PASS.</li>
+        </ul>
+      </div>
+
+      <div class="note" style="margin-top:14px">
+        <b>Constancia de revisión local.</b> Esta propuesta se abrió localmente con Chromium (Playwright) a 1440 y 390. A 1440, la página mide 1440 px y los cinco frames de escritorio miden 1440 px, sin desbordamiento horizontal de página. A 390, la página mide 390 px, los cinco frames móviles miden 390 px y su <code>scrollWidth</code> (388) no supera el ancho de cliente; ningún elemento queda fuera del viewport. No se adjuntan capturas ni se declara una prueba funcional o de accesibilidad completa.
+      </div>
+    </div>
+  </section>
+
+  <div class="footer">
+    SPEC23 · E4.3 · Propuesta documental de wireframes 1440/390 · Datos ficticios · No implementación · Wireframes propuestos; pendientes de aprobación del usuario · No autoriza DEV E4.3, DDL, migración, endpoints, capturas, merge ni despliegue.
+  </div>
+</div>
+</body>
+</html>
