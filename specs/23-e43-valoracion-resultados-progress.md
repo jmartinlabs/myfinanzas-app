@@ -1,7 +1,8 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **DEV E4.3-A y DEV43-B integrados en `main` `3b9be46` (squash de #184), con CI post-merge `41722741566` verde (perfil fast). QA-A/QA-B APTO CON RESERVAS, R1/R2 corregidos. DEV43-C sin
-empezar. Ningún AC/TP en PASS.**
+Status: **DEV E4.3-A, DEV43-B y DEV43-C integrados en `main` `8552d4a` (squash de #184 y
+#187), con CI post-merge `41730772524` verde. QA-A/QA-B/QA-C APTO CON RESERVAS. Ningún AC/TP
+en PASS; aceptación visual final pendiente.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
@@ -71,8 +72,28 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
   Quedan como reservas menores AC-07/AC-17 y concurrencia real, y la UI (C).
 - **Límite:** ningún AC/TP funcional se declara PASS todavía; C/UI pendiente.
 
+## Checkpoint C — UI/E2E
+
+- **Estado:** integrado en `main` `8552d4a` (squash de #187), base `349370a`; sin cambios de
+  backend de producción.
+- **Entregado:** pestaña Valoración en Inversiones; listado de corte con agregado/cobertura,
+  elegibilidad, tabla 1440 y tarjetas 390, efectivo separado; detalle con serie y valoración
+  usada; alta Manual/Automática con idempotencia y previsualización; rectificación auditada;
+  ficha/auditoría. Rutas bajo `/inversiones/valoracion`.
+- **Evidencia:** `bun run typecheck` y `bun run build` PASS; `tests/e2e/valoracion.spec.ts`
+  1/1 y `tests/e2e/inversiones.spec.ts` 1/1 en macOS; CI de PR `41728978112` 644/644
+  (perfil critical, sin Playwright) y CI post-merge `41730772524` verde. Fixture E2E aislado
+  en `apps/api/test-support/valoracion-server.ts`; capturas en `artifacts/e4-3/` (ignoradas).
+- **QA-C (independiente):** **APTO CON RESERVAS**, sin bloqueantes. R1 (detalle de posición
+  cerrada mostraba `null`/`No disponible` en vez de `No aplica`) y R3 (409 de revisión
+  simulado) corregidos en `c022f88`; O1/O2 corregidos. Re-QA confirmó R1/R3 cerrados.
+- **Reservas:** cobertura E2E pendiente de cantidad modificada/A-01, Manual 0,00, resultado
+  negativo, serie vacía, sin efectivo, 403 CSRF e idempotencia en reintento; la sesión
+  expirada global no conserva el corte; aceptación visual final de wireframes pendiente.
+- **Límite:** ningún AC/TP se declara PASS; la aceptación visual corresponde al usuario.
+
 ## Próxima acción segura
 
-1. A+B integrados en `main` `3b9be46`; post-merge CI `41722741566` verde.
-2. Preparar C (UI/E2E) con wireframes ya integrados, solo con instrucción explícita.
-3. No iniciar C, v25, datos reales ni despliegue sin aprobación específica.
+1. A+B+C integrados en `main` `8552d4a`; post-merge CI `41730772524` verde.
+2. Aceptación visual final de W1–W10/S1–S13 y decisión sobre las reservas de cobertura.
+3. No abrir E4.9/E4.6/E4.5, v25, datos reales ni despliegue sin aprobación específica.

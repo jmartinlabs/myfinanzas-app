@@ -17,8 +17,9 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 | Tarea | Estado | Evidencia | Siguiente |
 | --- | --- | --- | --- |
-| DEV E4.3-A (v24, migración, C24, backup) | **MERGED** `3b9be46` | 644/644 en PR `7de64c1`; post-merge `41722741566` fast PASS; QA-A APTO CON RESERVAS | C pendiente |
-| DEV E4.3-B (read model/API) | **MERGED** `3b9be46` | `e43-api` 14/14; QA-B APTO CON RESERVAS | C pendiente |
+| DEV E4.3-A (v24, migración, C24, backup) | **MERGED** `3b9be46` | 644/644 en PR `7de64c1`; post-merge `41722741566` fast PASS; QA-A APTO CON RESERVAS | — |
+| DEV E4.3-B (read model/API) | **MERGED** `3b9be46` | `e43-api` 14/14; QA-B APTO CON RESERVAS | — |
+| DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | Aceptación visual y reservas |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
@@ -85,4 +86,4 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 ## Próximo hito
 
-Preparar DEV E4.3-C (UI/E2E) solo con instrucción explícita y registrar la evidencia post-merge de E4.4/E3.6.
+Aceptación visual de E4.3, decidir reservas de cobertura y registrar la evidencia post-merge de E4.4/E3.6.
