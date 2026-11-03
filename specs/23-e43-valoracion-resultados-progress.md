@@ -6,7 +6,7 @@ Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
 [testplan](23-e43-valoracion-resultados-testplan.md), DT2 (`24f3efb`, PR #174),
-wireframes (`bb076f1`, PR #177) y [handoff](session-handoff.md).
+wireframes (`bb076f1`, PR #177) y handoff de sesión de 2026-11-03 (no versionado).
 
 ## Checkpoint A — esquema v24, migración, C24 y backup
 
