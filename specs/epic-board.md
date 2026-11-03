@@ -95,7 +95,7 @@ Inventario y mapping read-only en la
 
 ### 4. E3.5 / FIN_NETA
 
-**Tipo:** dependencia + pendiente técnico · **requiere autorización**.
+**Tipo:** integrado con reservas y gates pendientes.
 Análisis de adaptación en
 [E3.5/FIN_NETA](investigations/e35-fin-neta-adaptation-2026-10-31.md).
 
@@ -107,16 +107,16 @@ Análisis de adaptación en
   R3 (reposición de obligación antigua/tardía) quedan pendientes y documentadas en
   [progress16](16-revision-comida-progress.md).
 - Migración **v22** aplicada solo en fixtures sintéticas; sin datos reales ni despliegue.
-- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no
-  reconstruir FIN_NETA por inferencia**. `comidaMetrics()` ya calcula P7 de forma
-  condicional; no es el motor E3.5 completo.
-- **Riesgo estático:** una Transferencia sin rol podría evaluar `role.rol` sobre
-  `undefined` en `comida.ts` (~1390–1409). No reproducido; requiere test/corrección
-  separada con autorización de DEV.
+- Revisar fuentes y fórmulas de **Recursos** y cierre analítico; **no reconstruir FIN_NETA
+  por inferencia**. El read model vive en [`apps/api/src/e35.ts`](../apps/api/src/e35.ts)
+  (`e35Metrics`); `comidaMetrics` es un alias y la ruta HTTP consulta E3.5, no el cálculo
+  antiguo de E3.4.
+- **Riesgo estático de Transferencia sin rol:** resuelto e integrado en #160 y cubierto por
+  E3.5 con cobertura parcial/ND; no se reabre.
 - **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal; un solo ID
   se cuenta una vez y los conflictos se tratan como parcial/no disponible.
-- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue
-  bloqueado mientras E3.5 no sea verificable.
+- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue **sin DEV
+  autorizado**; consumirá el proveedor E3.5 cuando se autorice (D4).
 
 ### 5. Dependencias de cierre y release
 
