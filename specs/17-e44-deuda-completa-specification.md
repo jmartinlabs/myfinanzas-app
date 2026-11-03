@@ -559,7 +559,7 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 ```text
 ┌ Ficha D001           [Volver] [⋯]   ┐
 │ Activa · No hipotecaria              │
-│ [Editar] [Desactivar] [Reactivar]    │
+│ [Editar] [Desactivar]                │
 │ ▼ Control y capital                  │
 │ Corte [20/10/2026] [Aplicar]         │
 │ Cobertura Verificable                │
@@ -572,7 +572,7 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 │ comisiones ni saldo bancario.        │
 │ ▶ Condiciones (3)                    │
 │ ▶ Histórico R5 (6) · Comprobación sin dif.│
-│ ▼ Historia (4)                       │
+│ ▼ Historia (3)                       │
 │ Totales: capital 280,00 · intereses 20,00│
 │          gasto 100,00 · banco −300,00│
 │ Anulados: 0                          │
@@ -591,7 +591,7 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 │ Motivo rectificación [__________]    │
 │ [Corregir declarado] [Anular]        │
 │ Historial: 10/10 decl. 930,00 · der. 920,00│
-│            20/10 decl. 750,00 · der. 720,00 · Varias│
+│            20/10 decl. 750,00 · der. 720,00│
 │ No crea Movimiento ni ajuste.        │
 └──────────────────────────────────────┘
 ```
@@ -599,8 +599,9 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 ```text
 ┌ Estados y errores (390)               ┐
 │ Vacío: "Sin deudas" [Alta]            │
-│ Parcial: "No calculable" + motivo +    │
-│ hechos excluidos por corte + precontrol│
+│ Parcial: subtotal + motivo + hechos    │
+│ excluidos por corte + precontrol       │
+│ No calculable: sin total, motivo e IDs │
 │ 401 sesión · 409 revisión · 422 campo  │
 │ 404 deuda inexistente · 503 lectura    │
 │ Cargando: skeleton sin importes         │
@@ -611,10 +612,13 @@ control, condiciones, histórico, totales, comprobación, `Varias` ni desactivar
 ```
 
 **Comportamiento:** la lista muestra tarjetas apiladas; la ficha abre con «Control y capital»
-expandido y el resto plegado con etiqueta y contador (`Condiciones (2)`, `Histórico R5 (4)`,
-`Conciliación (1) · Varias`). Tocar o pulsar Enter/Espacio expande; el foco es visible y el
-orden de tabulación sigue el orden visual. «Desactivar» pide motivo y revisión; «Editar» exige
-revisión vigente (409 si es obsoleta). La conciliación muestra la de mayor fecha y `Varias` si
+expandido y el resto plegado con etiqueta y contador. Los contadores indican el número de
+elementos de la sección: `Condiciones (3)` = TIN, TAE y cuota/texto; `Histórico R5 (6)` = seis
+campos R5 más el precontrol; `Historia (3)` = tres hechos vigentes; `Conciliación (2) · Varias`
+= dos conciliaciones vigentes, y `Varias` es un indicador de lista, no un estado de fila. Tocar o pulsar Enter/Espacio expande; el foco es visible y el
+orden de tabulación sigue el orden visual. «Editar» exige revisión vigente (409 si es obsoleta).
+«Desactivar» pide motivo y revisión y solo aparece si la deuda está Activa; en una deuda
+Inactiva la ficha muestra «Reactivar» con su motivo. La conciliación muestra la de mayor fecha y `Varias` si
 hay más; `Sin declarar` y `No comparable` son estados distintos. Ningún importe esencial se
 oculta tras un acordeón sin etiqueta, y no hay desplazamiento horizontal.
 
