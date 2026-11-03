@@ -314,6 +314,10 @@ choca con D-09. La regla adoptada se deriva de I-2, R-E43-4 y D-13 (no inventar 
 cambia ninguna decisión confirmada. Si el usuario considera que la extensión a `Manual` excede
 D-02/D-14, debe ratificarlo o corregirlo antes de aprobar la specification.
 
+**Ratificación 2026-11-03:** el usuario ratificó A-01 también para valoración `Manual`: el
+importe corresponde a la cantidad de su `fecha_vigencia` y no puede extrapolarse a otra
+cantidad; si la cantidad difiere al corte, la posición queda `No disponible` con motivo.
+
 **Aclaración 2026-11-03 (A-02) — alcance de la etiqueta de D-16.** D-16 no cambia: E4.3 no
 certifica una valoración anterior al corte y E4.9 define su ventana en su propio DEV. La
 precisión es de vocabulario y de contrato: E4.3 emite «No elegible por fecha exacta en E4.3»,
