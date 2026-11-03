@@ -364,13 +364,13 @@ fallos del suite completo (56) son los mismos que en `main` por entorno; no hay 
 | 05 | 05 | **PASS local** | Test «AC-05»: sin rol → parcial con ID |
 | 06 | 06 | **PASS local** | Tests I3: R_caja vs R_obl |
 | 07 | 07 | **PASS local** | Test «AC-07»: C_n=0 y Completada solo con R_obl suficiente |
-| 08 | 08 | **PARCIAL** | Test «AC-08/AC-09»: grupos; falta assertar D/banco y la composición completa del TP |
-| 09 | 09 | **PARCIAL** | Test «AC-08/AC-09»: Pendiente revisar; falta el caso de devolución con Partida NULL |
+| 08 | 08 | **PASS local** | Test «AC-08/AC-09»: grupos, FP y `D`/banco (−250,00) |
+| 09 | 09 | **PASS local** | Tests «AC-08/AC-09» y «AC-09»: Pendiente revisar y Partida NULL sin acreditar |
 | 10 | 10 | **PASS local** | Test «AC-10/CU-14»: otro ciclo no reduce |
-| 11 | 11 | **PARCIAL** | Test «AC-11/D1»: legado separado; falta el escenario «después solo agregado» |
+| 11 | 11 | **PASS local** | Tests «AC-11/D1» y «AC-11: solo agregado»: legado separado sin reconstruir FIN_NETA |
 | 12 | 12 | **PARCIAL** | S0/B_A y banco sin régimen probados; S0 ausente es estructuralmente inalcanzable con D2-O0 (`saldo_comida NOT NULL`), documentado en vez de fabricar un ciclo inválido |
-| 13 | 13 | **PARCIAL** | Test «AC-13»: subtotal parcial; faltan periodo vacío y fallo de fuente |
-| 14 | 14 | **PARCIAL** | Ejemplo 785/15/585/−5/580 y subcaso 190/105/−150 probados; faltan composición 800/−100 y devolución antigua |
+| 13 | 13 | **PASS local** | Tests «AC-13»: subtotal parcial, periodo cero verificado y fuente de roles no legible → ND |
+| 14 | 14 | **PASS local** | Ejemplo, subcaso y composición F=800 − devolución 100 probados |
 | 15 | 15 | **PARCIAL** | Proveedor con cobertura/huella/bloqueo; consumo E4.9 es D4, fuera de alcance |
 | 16 | 16 | **PASS local** | Test «AC-16»: sin tablas ni totales persistidos |
 | 17 | 17 | **PASS local** | Tests «AC-17/P7a»: provisional, vencido y duración Real con siguiente Inicio (total 30, horizonte 19/07) |

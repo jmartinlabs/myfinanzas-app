@@ -193,20 +193,25 @@ export function e35Metrics(
     const rows = ledgerRows(db).filter(
       (r) => !r.anulado && r.fecha >= start && r.fecha <= corte,
     );
+    const hasTable = (table: string) =>
+      !!db
+        .query("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?")
+        .get(table);
+    const metaOk = hasTable("movimiento_revision_comida");
+    const devOk = hasTable("movimiento_devolucion");
+    const rolesOk = hasTable("movimiento_rol_financiacion");
     const metadata = new Map(
-      (db.query(metadataSelect).all() as ComidaMetadata[]).map((r) => [
-        r.movimiento,
-        r,
-      ]),
+      (metaOk ? (db.query(metadataSelect).all() as ComidaMetadata[]) : []).map(
+        (r) => [r.movimiento, r],
+      ),
     );
     const devolutions = new Map(
-      (db.query(devolucionSelect).all() as ComidaDevolucion[]).map((r) => [
-        r.movimiento,
-        r,
-      ]),
+      (devOk ? (db.query(devolucionSelect).all() as ComidaDevolucion[]) : []).map(
+        (r) => [r.movimiento, r],
+      ),
     );
     const roles = new Map(
-      (db.query(rolSelect).all() as ComidaRolRow[]).map((r) => [
+      (rolesOk ? (db.query(rolSelect).all() as ComidaRolRow[]) : []).map((r) => [
         r.movimiento,
         r,
       ]),
@@ -321,7 +326,9 @@ export function e35Metrics(
     const netComp = compBruto - compDev;
     const pending = unclassified.map((p) => p.row.id);
     const coverageFood =
-      pending.length === 0 && pendingDev.length === 0
+      !metaOk || !devOk
+        ? "Fuente de Comida no legible; cobertura no disponible."
+        : pending.length === 0 && pendingDev.length === 0
         ? null
         : [
             pending.length
@@ -364,6 +371,11 @@ export function e35Metrics(
         : null;
 
     const financing = (() => {
+      if (!rolesOk)
+        return {
+          available: false as const,
+          reason: "Fuente de roles de financiación no legible.",
+        };
       if (!active || !saldo)
         return {
           available: false as const,
@@ -613,7 +625,8 @@ export function e35Metrics(
         regimen: regime
           ? { saldo: regime.saldo, cobertura: regime.cobertura, estado: regime.estado }
           : null,
-        huella: financeRevision(db),
+        huella:
+          metaOk && devOk && rolesOk ? financeRevision(db) : null,
         soloLectura: true,
         cobertura:
           financing.available && coverageFood === null ? "Verificada" : "Parcial",

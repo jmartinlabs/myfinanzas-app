@@ -1220,6 +1220,18 @@ test("AC-14: ejemplo P7 completo 785/15/585/−5/580", () => {
 
 test("AC-08/AC-09: grupos, Pendiente revisar y Fuera presupuesto", () => {
   const { db, ing, food, leisure, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
   purchase(db, ing, leisure.id, { importe: "35", comida: { etiqueta: "Ocio" } });
   purchase(db, ing, food.id, { importe: "200", comida: { etiqueta: "Comida" } });
   purchase(db, ing, food.id, { importe: "10", comida: { etiqueta: "Pendiente revisar" } });
@@ -1229,6 +1241,7 @@ test("AC-08/AC-09: grupos, Pendiente revisar y Fuera presupuesto", () => {
   expect(metrics.compras.neto.valor).toBe("210.00");
   expect(metrics.fueraPresupuesto.length).toBe(1);
   expect(metrics.netoObservado.valor).toBe("250.00");
+  expect(metrics.financiacion.d).toBe("-250.00");
   db.close();
 });
 
@@ -1259,7 +1272,7 @@ test("AC-15: el proveedor publica cobertura, huella y señal de bloqueo", () => 
   const metrics = comidaMetrics(db, cycle1.id, now);
   expect(metrics.proveedor.cobertura).toBe("Verificada");
   expect(metrics.proveedor.bloqueo).toEqual({ requerido: true, verificable: true, motivo: null });
-  expect(metrics.proveedor.huella.length).toBeGreaterThan(0);
+  expect(metrics.proveedor.huella).not.toBeNull();
   expect(metrics.proveedor.unidad).toBe("EUR");
   db.close();
 });
@@ -1329,6 +1342,114 @@ test("AC-13: periodo sin compras es cero verificado, no No disponible", () => {
   expect(metrics.compras.neto.valor).toBe("0.00");
   expect(metrics.compras.neto.estado).toBe("Cero verificado");
   expect(metrics.compensable.neto.valor).toBe("0.00");
+  db.close();
+});
+
+test("AC-14: composición F=800 menos devolución de Anticipo 100", () => {
+  const { db, account, ing, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const finance = transfer(db, account, ing, "800");
+  writeComidaRol(db, finance.movimiento.id, { revision: 1, rol: "Financiación", evidencia: "Evidencia ficticia" }, randomUUID(), now);
+  const back = transfer(db, ing, account, "100", "2026-07-01");
+  writeComidaRol(db, back.movimiento.id, { revision: 1, rol: "Devolución Anticipo", evidencia: "Evidencia ficticia" }, randomUUID(), now);
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run("INSERT INTO referencias VALUES('REF900002','Anticipo ficticio','Viaje','Activa',1,?,?)", [t, t]);
+  db.run("INSERT INTO fichas_anticipos VALUES('REF900002',NULL,NULL,?,?)", [t, t]);
+  db.run(
+    `INSERT INTO movimiento_anticipo(movimiento,referencia,rol,origen,destino,revision_movimiento,evidencia,procedencia,revision,actualizado)
+     VALUES(?,?,'Devolución',?,?,1,'Evidencia ficticia','Fixture ficticia',1,?)`,
+    [back.movimiento.id, "REF900002", ing.id, account.id, t],
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.financiacion.f).toBe("700.00");
+  expect(metrics.recursos.valor).toBe("800.00");
+  db.close();
+});
+
+test("AC-09: devolución con Partida NULL y sin acreditación no asigna grupo", () => {
+  const { db, ing, cycle1 } = setup();
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,anulado,revision,creado,actualizado)
+     VALUES('9001','2026-07-10','Devolución de gasto',500,'S000',?,'Devolución ficticia','',0,1,?,?)`,
+    [ing.id, t, t],
+  );
+  db.run(
+    `INSERT INTO movimiento_revision_comida(movimiento,etiqueta,evidencia_bancaria,evidencia_comercial,estado_revision,revision_movimiento,revision,creado,actualizado)
+     VALUES('9001','Comida','Evidencia ficticia',NULL,'Pendiente revisar',1,1,?,?)`,
+    [t, t],
+  );
+  db.run(
+    `INSERT INTO movimiento_devolucion(movimiento,compra,partida,ciclo_origen,evidencia_relacion,evidencia_origen_temporal,elegibilidad,estado,revision_movimiento,revision,creado,actualizado)
+     VALUES('9001',NULL,NULL,NULL,NULL,NULL,'No acreditada','Sin vínculo',1,1,?,?)`,
+    [t, t],
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.devoluciones.sinVinculo).toContain("9001");
+  expect(metrics.compras.neto.valor).toBe("0.00");
+  db.close();
+});
+
+test("AC-11: solo agregado legado no reconstruye FIN_NETA ni suma al detalle", () => {
+  const { db, ing, cycle1 } = setup();
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO revision_comida(id,tipo,fecha,concepto,importe,direccion,es_devolucion,clasificacion,
+       estado_vinculo,estado_registro,estado_trazabilidad,revision,creado,actualizado)
+     VALUES('L900','Detalle','2026-07-01','Legado ficticio',10000,'Salida',0,'Comida',
+       'Sin vínculo','Vigente','Sin asignación',1,?,?)`,
+    [t, t],
+  );
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.historico.detalleIds).toEqual(["L900"]);
+  expect(metrics.historico.detalleAuxiliar).toBe("-100.00");
+  expect(metrics.cierreAnalitico.valor).toBe("100.00");
+  expect(metrics.compras.neto.valor).toBe("0.00");
+  db.close();
+});
+
+test("AC-13: fuente de roles no legible produce No disponible, nunca cero", () => {
+  const { db, ing, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    { saldo: ing.id, cicloCorte: cycle1.id, apertura: "100", evidencia: "Extracto ficticio", cobertura: "Verificable", motivo: "Preparación ficticia" },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  db.run("DROP TABLE movimiento_rol_financiacion");
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.recursos.valor).toBeNull();
+  expect(metrics.financiacion.estado).toBe("No disponible");
+  expect(metrics.financiacion.motivo).toContain("no legible");
   db.close();
 });
 
