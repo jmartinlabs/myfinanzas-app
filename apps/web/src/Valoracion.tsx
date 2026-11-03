@@ -440,7 +440,12 @@ function CorteList({
             </div>
           ) : (
             <>
-              <div className="desktop-list valoracion-desktop">
+              <div
+                className="desktop-list valoracion-desktop"
+                role="region"
+                aria-label="Posiciones al corte"
+                tabIndex={0}
+              >
                 <table className="valoracion-table">
                   <caption className="sr-only">
                     Posiciones y resultados al corte {dateText(data.corte)}.
@@ -849,12 +854,16 @@ function PositionDetail({
           <span className="valoracion-value">
             {valoracion?.estado === "Disponible"
               ? eur(valoracion.valorEur)
-              : "No disponible"}
+              : valoracion?.estado === "No aplica"
+                ? "No aplica"
+                : "No disponible"}
           </span>
           <small className="help">
-            {valoracion
-              ? `${valoracion.tipo} · ${dateText(valoracion.fecha)} · ${valoracion.diasTranscurridos ?? "—"} días`
-              : "Sin valoración ≤ T; no se inventa valor."}
+            {valoracion?.estado === "No aplica"
+              ? "Posición cerrada: sin valoración."
+              : valoracion?.tipo && valoracion.fecha
+                ? `${valoracion.tipo} · ${dateText(valoracion.fecha)} · ${valoracion.diasTranscurridos ?? "—"} días`
+                : "Sin valoración ≤ T; no se inventa valor."}
           </small>
         </article>
         <article className="valoracion-kpi">
@@ -1104,7 +1113,12 @@ function Serie({
         </p>
       ) : (
         <>
-          <div className="desktop-list valoracion-desktop">
+          <div
+            className="desktop-list valoracion-desktop"
+            role="region"
+            aria-label="Serie histórica de la tabla"
+            tabIndex={0}
+          >
             <table className="valoracion-table valoracion-series-table">
               <caption className="sr-only">
                 Serie ficticia de valoraciones al corte {dateText(corte)}.
@@ -1176,8 +1190,8 @@ function Serie({
                   <State
                     text={
                       row.fecha === corte
-                        ? "Elegible (E4.9 no evaluado)"
-                        : "No elegible"
+                        ? "Elegible por fecha exacta (E4.9 no evaluado)"
+                        : "No elegible por fecha exacta en E4.3"
                     }
                   />
                 </div>

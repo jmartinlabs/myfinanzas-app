@@ -159,6 +159,22 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       fullPage: true,
     });
 
+    // Closed position detail must say No aplica, never "No disponible"/null.
+    await row("S004 · I1002")
+      .getByRole("link", { name: "Ver detalle de S004 · I1002" })
+      .click();
+    await expect(
+      page.getByRole("heading", {
+        name: "S004 · I1002 · Acción demo",
+      }),
+    ).toBeVisible();
+    const closedSummary = page.getByLabel("Resumen de la posición");
+    await expect(closedSummary).toContainText("No aplica");
+    await expect(closedSummary).toContainText("40,00 €");
+    await expect(page.getByText("null", { exact: true })).toHaveCount(0);
+    await page.getByRole("link", { name: "Valoración", exact: true }).click();
+    await consultar("2026-06-30", 5);
+
     // W3 · detail: used valuation, dates, quantities, result, series and links.
     await p1
       .getByRole("link", { name: "Ver detalle de S004 · I1001" })
@@ -393,19 +409,32 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(page.getByText(/Debe ser mayor que cero/)).toBeVisible();
     await expect(page.getByLabel(/Precio unitario/)).toHaveValue("0");
     await page.getByLabel(/Precio unitario/).fill("125.000000");
-    await page.route(
-      /\/api\/e43\/valoraciones\/VAL-\d{12}\/rectificar$/,
-      (route) =>
-        route.fulfill({
-          status: 409,
-          contentType: "application/json",
-          body: JSON.stringify({
-            code: "REVISION_CONFLICT",
-            error: "La valoración ha cambiado. Revisa la versión actual.",
-          }),
+    const concurrent = await page.evaluate(async () => {
+      const id = location.pathname.match(/VAL-\d{12}/)![0];
+      const session = await fetch("/api/auth/session").then((response) =>
+        response.json(),
+      );
+      const response = await fetch(`/api/e43/valoraciones/${id}/rectificar`, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "x-csrf-token": session.csrf,
+        },
+        body: JSON.stringify({
+          revision: 1,
+          motivo: "Cambio concurrente ficticio",
+          fecha: "2026-04-30",
+          tipo: "Automática",
+          precio: "124.000000",
+          divisa: "USD",
+          cambio: "0.950000",
+          procedencia: "Corrección concurrente ficticia",
         }),
-      { times: 1 },
-    );
+      });
+      return { status: response.status, body: await response.json() };
+    });
+    expect(concurrent.status).toBe(200);
+    expect(concurrent.body.valoracion.revision).toBe(2);
     await page.getByRole("button", { name: "Guardar corrección" }).click();
     await expect(
       page.getByText("La valoración ha cambiado. Revisa la versión actual."),
@@ -435,12 +464,15 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(page.getByLabel("Datos de la valoración")).toContainText(
       "890,63 €",
     );
-    await expect(page.getByText(/revisión 2/).first()).toBeVisible();
+    await expect(page.getByText(/revisión 3/).first()).toBeVisible();
     await expect(page.getByLabel("Auditoría de la valoración")).toContainText(
       "corrección",
     );
     await expect(page.getByLabel("Auditoría de la valoración")).toContainText(
       "Corrección ficticia de precio",
+    );
+    await expect(page.getByLabel("Auditoría de la valoración")).toContainText(
+      "Cambio concurrente ficticio",
     );
     expect(
       await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
