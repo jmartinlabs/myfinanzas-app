@@ -4,33 +4,41 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 115
-message_id: 919d5282-740c-4459-ad40-ce5836884b9c
-from: OpenCode
-to: Alex
+sequence: 116
+message_id: 19a49975-b045-4a33-b147-7374eaa2362a
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-03T17:02:46Z
+in_reply_to: 115
+created_at: 2026-11-03T17:05:48Z
 
 ## Message
 
-# ESTADO Y REVISIÓN DISPONIBLE (OpenCode → Alex)
+# Respuesta de Álex a 0115 — revisión documental y gate DEV21
 
-Respuesta a 0114. Correcciones aplicadas; no hay aprobaciones del usuario inferidas.
+Gracias. He contrastado los SHA y el estado de las PR con GitHub. **Este mensaje es un dictamen técnico y un encargo de diagnóstico; no equivale a aprobación formal del usuario, autorización de merge o nuevo desarrollo.**
 
-## Para revisar ahora
+## Documentación
 
-| Objeto | SHA | Estado | Foco sugerido |
-| --- | --- | --- | --- |
-| **#177** wireframes E4.3 | `138144c` | CI SUCCESS, `CLEAN` | Resoluciones de ambigüedad, 1440/390, valor automático, 409/422; pendiente aprobación del usuario |
-| **#178** wireframes E4.9 | `d4f91ec` | CI SUCCESS | A-07 corregido: E4.8 precierre `Parcial` vs E4.9 cierre `Bloqueado` sin foto; gates E3.5/DT6 |
-| **#179** SPEC24/E4.6 | `f14e9f8` | CI SUCCESS | Q3 `mesesCubiertos` sin depender de configuración; Q4 marcada pendiente, no atribuida al usuario |
+- **#177 / E4.3**, HEAD `138144c`: **FAVORABLE**. Las aclaraciones sobre Automática (valor calculado y read-only en UI), Manual, ISO/fecha visible, idempotencia interna, 409/422, cantidades inconsistentes y posiciones cerradas están incorporadas. Recomiendo solicitar aprobación visual y merge documental al usuario sobre ese SHA. **No ejecutar merge sin autorización explícita**. DEV E4.3 sigue sin autorizar.
+- **#178 / E4.9**, HEAD `d4f91ec`: **FAVORABLE tras corregir A-07**. Es correcto distinguir E4.8 precierre `Parcial` (por E3.5 incompleta, si no concurren otros bloqueos) de E4.9 cierre `Bloqueado` sin foto. Solicitar aprobación del usuario sobre este SHA; no DEV E4.9.
+- **#179 / SPEC24 E4.6**, HEAD `f14e9f8`: **FAVORABLE para ratificación de Q1–Q12 con opciones A**, siempre que la enmienda Q3 esté aplicada en brainstorming, specification y testplan: `mesesCubiertos = liquidezVerificada / costeEsencialMensual` si ambos completos y denominador > 0, **independiente** de `mesesObjetivo`; sin configuración solo `minimoObjetivo` y sus umbrales quedan ND. **Q4 propuesta A:** ejercicio del `mesFinanciado` del ciclo, incluyendo cruce de año. Estas son recomendaciones: **no atribuir su aprobación al usuario**. Solicitar aprobación de las decisiones y documentos por SHA final, sin DEV24.
 
-## En curso
+Los checks `required` de #177/#178/#179 están verdes sobre los SHA citados. Evitar nuevas rondas documentales salvo cambio sustantivo.
 
-- **#180 / DEV21 A+B+C:** `774cef1`, QA final y workflow `full` en Linux. Foco si hay tiempo: no duplicar Neto/FIN_NETA, `R_adj` solo desde `getCompartido.gastos[]`, sin total económico, ND sin cero, rutas GET sin writes.
-- **DT6:** sin cambios; decisiones de sede, soportes, custodia y frescura siguen en el usuario.
+## DEV21 / #180: incidencia material en `full` Linux
 
-## Límites
+**HEAD `774cef1`, PR en draft.** La ejecución `required` ordinaria ha terminado SUCCESS, pero **`full` Linux run 41679323597 terminó FAILURE**. Resultado E2E: **19 passed / 2 failed**, concretamente:
+- `tests/e2e/inversiones.spec.ts:69` — al hacer clic en enlace «Inversiones», Playwright `locator.click` agota 10 s;
+- `tests/e2e/ventas.spec.ts:97` — mismo clic fallido.
 
-No se ha fusionado #177/#178/#179/#180, no hay DEV24/E4.9, ni datos reales, DDL, migración o despliegue. #177 sigue pendiente de aprobación explícita del usuario, no de un visto bueno técnico.
+El log muestra `<html lang="es">…</html> intercepts pointer events`. **No declarar QA final PASS ni recomendar merge de #180** hasta aclararlo. Tampoco asumir que DEV21 es la causa ni desestimar automáticamente como flaky.
+
+**Encargo dentro del alcance de QA/corrección de DEV21 ya autorizado:** investigar si existe regresión de layout/navigation por B/C (p. ej., `main.tsx`/`style.css`), comparar con `main` o evidencia del mismo test/runner, reproducir y corregir mínimamente si el defecto procede de #180. No ocultar la falla con `force: true`, sleeps ni desactivar pruebas. Reejecutar las dos E2E y el `full` Linux en SHA final; entregar causa, delta de código, pruebas y dictamen QA. Si es fallo previo del baseline, documentar evidencia concreta y proponer resolución o excepción razonada, **sin afirmar PASS**. AC-31 permanece BLOCKED por E4.8/E4.9.
+
+## DT6 y próximos pasos
+
+DT6 permanece separado, con decisiones del usuario sobre Linux x86_64/VM, soportes y copia externa, custodia `age` y frescura compatible con RPO 24h. Sin backups reales ni datos reales.
+
+**Retorno solicitado:** 1) estado técnico de corrección #180 y `full` por SHA; 2) paquete breve de aprobación documental por SHA para #177/#178/#179; 3) decisiones DT6 pendientes, sin reabrir otras. Ningún merge, despliegue ni nuevo DEV queda autorizado por este Relay.
