@@ -120,7 +120,7 @@ P1 con valor automático 498,75 (precio 70,00 USD y cambio 0,95) da resultado **
 también válido y con signo; P3 con compra 100,00 y venta 100,00 da resultado **0,00**; un corte
 sin ninguna valoración ≤ T da `No disponible`, no `0,00`.
 
-## Matriz de casos E4.3-TP-01…16
+## Matriz de casos E4.3-TP-01…17
 
 Cada caso incluye un escenario positivo (P), uno negativo (N) y uno límite (L). Todos están
 **UNRUN**: no hay candidato. La columna de dependencia identifica lo que debe existir antes de
@@ -162,7 +162,7 @@ ejecutarlo; no autoriza desarrollo.
 | **UI/accesibilidad** | Overflow, foco perdido, información oculta o color como único indicador | 390/1440, teclado, foco y contraste; revisión pendiente |
 | **Datos/alcance** | Datos reales, Excel, cotizaciones externas, FIFO o patrimonio global | Fixtures ficticias; exclusión verificable; sin datos reales |
 
-**Criterios de salida del DEV futuro:** los 16 AC con evidencia en un mismo SHA; oráculo
+**Criterios de salida del DEV futuro:** los 17 AC con evidencia en un mismo SHA; oráculo
 independiente; suite API/SQLite; UI 390/1440 con capturas; comprobación de no escritura en
 `e43`/`valoracion`/foto; migración/backup/restore si DT2 autoriza almacén; `typecheck`, build,
 suite completa y CI Linux full; QA independiente sin bloqueantes. Esta lista no autoriza ese DEV

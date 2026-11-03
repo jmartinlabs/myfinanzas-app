@@ -1,8 +1,9 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Brainstorming
 
-Status: **DRAFT — 16 decisiones confirmadas por el usuario el 2026-11-02.** Specification y
-testplan redactados como **candidatos** en este mismo PR; no aprobados. No implementa código,
-no modifica esquema y no autoriza DEV. Base: `main` `c5a0ccc` (esquema v21).
+Status: **DRAFT — 16 decisiones confirmadas por el usuario el 2026-11-02 y tres aclaraciones
+de consistencia registradas el 2026-11-03 (no reabren D-01…D-16).** Specification y testplan
+redactados como **candidatos** en este mismo PR; no aprobados. No implementa código, no modifica
+esquema y no autoriza DEV. Base: `main` `c5a0ccc` (esquema v21).
 
 Roadmap/context: [E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [referencia funcional R5](functional-reference-v5.11.md),
@@ -290,3 +291,40 @@ sucesivas (herramienta `question`): D-01…D-14 en la ronda 1 (economía y model
 D-15/D-16 en la ronda 2 (antigüedad y aptitud para cierre).
 Las respuestas quedan registradas en cada decisión con su fuente y fecha; las preguntas no se
 reescriben. Este documento no redacta specification/testplan, no declara AC, PASS ni DEV.
+
+**Aclaración 2026-11-03 (A-01) — consistencia entre la cantidad valorada y la cantidad al
+corte.** No reabre D-09: sigue vigente que, para un corte T, se usa la valoración con
+`fecha_vigencia <= T` más reciente, mostrada con su fecha y antigüedad. La precisión delimita
+qué significa «valor de la posición»: una valoración solo representa la cantidad existente en su
+`fecha_vigencia`; si entre esa fecha y T hay hechos vigentes que cambian la cantidad neta
+(compra, venta, reapertura, corrección o anulación retroactiva), el importe registrado **no** se
+presenta como valor de la cantidad actual, no se escala, no se deriva un precio nuevo y no se
+prorratea. La posición y el corte quedan `No disponible` con motivo; en el agregado,
+`Parcial n/m` o `No disponible`. Se exige una nueva valoración a la fecha adecuada; la anterior
+permanece en la serie como valor de su propia fecha y no se reescribe. Se aplica a `Automática` y
+a `Manual` (el importe manual se refiere a la cantidad de su fecha). Si la cantidad neta vuelve a
+coincidir con la de la valoración, el valor sigue siendo un «valor conocido» de esa cantidad con
+su aviso de antigüedad, sin convertirse en precio del día.
+Alternativas consideradas y no adoptadas: (i) escalar el valor por la nueva cantidad — inventa un
+precio implícito y supone linealidad no aprobada; (ii) prorratear el importe — mismo problema,
+agravado con valor manual; (iii) mostrar el valor anterior con etiqueta de «cantidad distinta» —
+se confunde con el valor actual y contradice D-09/R5; (iv) invalidar cualquier valoración si
+hubo algún hecho intermedio aunque la cantidad neta no cambie — más estricto que lo necesario y
+choca con D-09. La regla adoptada se deriva de I-2, R-E43-4 y D-13 (no inventar valoración) y no
+cambia ninguna decisión confirmada. Si el usuario considera que la extensión a `Manual` excede
+D-02/D-14, debe ratificarlo o corregirlo antes de aprobar la specification.
+
+**Aclaración 2026-11-03 (A-02) — alcance de la etiqueta de D-16.** D-16 no cambia: E4.3 no
+certifica una valoración anterior al corte y E4.9 define su ventana en su propio DEV. La
+precisión es de vocabulario y de contrato: E4.3 emite «No elegible por fecha exacta en E4.3»,
+no «No apta definitivamente para cierre». E4.3 no prejuzga el gate de E4.9 ni escribe la foto;
+E4.9 podrá admitir valoraciones anteriores según su contrato de suficiencia. El historial de
+D-16 se conserva tal cual.
+
+**Aclaración 2026-11-03 (A-03) — alcance del «cero explícito permitido» de D-14.** D-14
+conserva sus términos. Se precisa su lectura para eliminar una contradicción interna: el cero
+explícito permitido es el **valor manual `0,00`**. Una valoración `Automática` exige precio
+unitario > 0, cambio > 0 y cantidad valorada > 0; un precio `0,00`, un cambio `0` o una cantidad
+`0` no se admiten como valoración automática (422). Un valor calculado que redondea a `0,00` con
+insumos positivos sigue siendo una valoración presente y cuenta en la cobertura; no se sustituye
+la ausencia por cero.

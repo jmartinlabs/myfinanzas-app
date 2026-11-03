@@ -16,7 +16,11 @@ futura de esquema, no ejecuta DDL y no modifica `operaciones_inversion`, `instru
 `precierre` ni ningún contrato ajeno.
 
 Historial: propuesta inicial 2026-11-02, redactada a partir de D-01…D-16 y del dictamen técnico
-registrado en el brainstorming. Sin aprobación ni implementación.
+registrado en el brainstorming. **Precisión 2026-11-03:** se incorporan las aclaraciones A-01
+(consistencia entre cantidad valorada y cantidad al corte), A-02 (alcance de la etiqueta de
+D-16: «no elegible por fecha exacta en E4.3», sin negativa definitiva para cierre) y A-03
+(alcance del cero explícito de D-14: Manual `0,00`; Automática exige precio, cambio y cantidad
+positivos). Ninguna reabre D-01…D-16. Sin aprobación ni implementación.
 
 ## Functionality
 
@@ -38,7 +42,7 @@ fechada queda como decisión **DT2-E4.3** sujeta a autorización separada.
 | Ventas, posición y efectivo | E4.2/SPEC22, integrado | Consume Ventas vigentes, cantidad y efectivo; no las reescribe |
 | Estado de posición, valoración, resultado, cobertura y agregado de posiciones | **E4.3** | Delta propio de esta spec |
 | Patrimonio global, Liquidez, resumen y objetivos | E4.6/E4.7 | E4.3 publica un contrato de lectura; no calcula patrimonio global |
-| Precierre, cierre, foto inmutable y ventana de certificación | E4.8/E4.9/SPEC27 | E4.3 solo publica el contrato y la señal de certificabilidad; no escribe `e43`, `valoracion` ni la foto |
+| Precierre, cierre, foto inmutable y ventana de suficiencia | E4.8/E4.9/SPEC27 | E4.3 solo publica el contrato y la señal de elegibilidad por fecha exacta; no prejuzga el gate de E4.9 y no escribe `e43`, `valoracion` ni la foto |
 | Referencia temporal, ciclos, presupuestos, deuda y clasificación | E1–E3, SPEC12/SPEC27/SPEC33 | Sin cambios; E4.3 no reabre ni modifica esos contratos |
 
 E4.3 **excluye** cotizaciones externas, dividendos, impuestos, splits, FIFO/lotes, coste medio
@@ -65,19 +69,27 @@ que deberá poder observarse cuando exista un DEV autorizado.
 | D-11 | Agregado solo de posiciones; efectivo del bróker leído de `cashAt` y mostrado aparte. | El efectivo no suma al agregado de posiciones ni se convierte en posición. |
 | D-12 | E4.3 publica el contrato de lectura; la integración `e43`/`valoracion` y la foto de SPEC27 requieren autorización separada. | La fila `e43` y `inversion.valoracion` siguen sin cambio; la foto no se toca. |
 | D-13 | Incluir posiciones con cantidad aunque el instrumento esté inactivo o la posición sea heredada; señalar cobertura insuficiente; no inventar valoración; los grupos solo anulados no son posición. | Posición inactiva/heredada visible; sin valor inventado; grupo solo anulado excluido. |
-| D-14 | EUR final 2 decimales; precio unitario y cambio con precisión suficiente y sin redondeos intermedios; cero explícito permitido; negativos rechazados; máximos pendientes de DT2. | Importe EUR a céntimos; cero válido; entradas negativas rechazadas; sin límite máximo inventado. |
+| D-14 | EUR final 2 decimales; precio unitario y cambio con precisión suficiente y sin redondeos intermedios; cero explícito permitido; negativos rechazados; máximos pendientes de DT2. | Importe EUR a céntimos; cero válido **solo** como valor manual `0,00`; en Automática, precio, cambio y cantidad deben ser > 0 (A-03); entradas negativas rechazadas; sin límite máximo inventado. |
 | D-15 | Mostrar siempre la fecha de valoración y los días transcurridos; sin umbral de caducidad. | Fecha y antigüedad visibles incluso si la valoración es antigua; sin caducidad automática. |
-| D-16 | Toda valoración anterior al corte es NO certificable para Precierre/cierre; E4.9 define su ventana en su propio DEV. | Se distingue visualización, cobertura y elegibilidad; E4.3 no certifica ni escribe la foto. |
+| D-16 | Toda valoración anterior al corte es NO certificable para Precierre/cierre; E4.9 define su ventana en su propio DEV. | Se distingue visualización, cobertura y elegibilidad **por fecha exacta en E4.3**; E4.3 no declara la valoración «no apta definitivamente para cierre», no prejuzga el gate de E4.9 y no escribe la foto (A-02). |
+
+**Precisión 2026-11-03 sobre D-16 (A-02).** La decisión confirmada no cambia. El vocabulario
+operativo de esta spec es «elegible / no elegible **por fecha exacta en E4.3**», no «certificable
+/ no certificable». E4.3 no emite una negativa definitiva de cierre: solo declara que no puede
+acreditar por sí mismo una valoración anterior a T. E4.9 definirá después su ventana y su
+criterio de suficiencia, y podrá admitir valoraciones anteriores según su propio contrato. La
+foto de E4.9 y la fila `e43` siguen fuera del alcance de E4.3.
 
 ### Invariantes de diseño
 
 | # | Invariante | Dónde se aplica |
 | --- | --- | --- |
 | I-1 | Toda valoración tiene fecha, origen/procedencia y corrección auditada; el histórico no muta Compras, Ventas ni efectivo. | R-E43-4, R-E43-8, R-E43-9; D-08 |
-| I-2 | Para el corte T solo se usa una valoración con fecha ≤ T; «valor conocido» no es «precio verificado del día». | R-E43-9, R-E43-12; D-09, D-16 |
-| I-3 | Se separan visualización informativa, cobertura del agregado y elegibilidad para cierre. | R-E43-10, R-E43-12; D-10, D-16 |
+| I-2 | Para el corte T solo se usa una valoración con fecha ≤ T; «valor conocido» no es «precio verificado del día». | R-E43-9, R-E43-12, R-E43-13; D-09, D-16 |
+| I-3 | Se separan visualización informativa, cobertura del agregado y elegibilidad por fecha exacta en E4.3; esta última no prejuzga el gate de E4.9. | R-E43-10, R-E43-12; D-10, D-16 |
 | I-4 | La foto de E4.9 es inmutable y no se recalcula por correcciones posteriores. | R-E43-12; D-12, D-16 |
-| I-5 | Se respetan D-01…D-14 sin añadir reglas financieras ni métricas no aprobadas. | Toda la spec; AC-01…AC-16 |
+| I-5 | Se respetan D-01…D-14 sin añadir reglas financieras ni métricas no aprobadas. | Toda la spec; AC-01…AC-17 |
+| I-6 | Una valoración solo representa la cantidad de su `fecha_vigencia`; si la cantidad cambia, no se escala, no se prorratea y no se presenta como valor de la cantidad actual. | R-E43-13; A-01 |
 
 ### Definiciones verificables
 
@@ -88,12 +100,13 @@ que deberá poder observarse cuando exista un DEV autorizado.
 | Cantidad | Σ cantidades de Compras vigentes − Σ cantidades de Ventas vigentes, con fecha ≤ T y agregación de fin de día. | Un valor, un precio ni un resultado |
 | Estado | `Abierta` si cantidad > 0; `Cerrada` si cantidad = 0 y existe al menos una Venta vigente al corte; en otro caso, vacío/`No aplica`. | El Tipo de valoración |
 | Tipo de valoración | `Manual` o `Automática`, propio de una valoración registrada. | El Estado de la posición ni una etiqueta inferida de la última operación |
-| Valoración válida a T | Registro de la serie con fecha de vigencia ≤ T; si hay varias, la de fecha más reciente. | Una cotización verificada exactamente el día T |
-| Valor conocido | Valoración anterior a T que se muestra con su fecha y antigüedad. | Un precio certificado del día T |
+| Valoración válida a T | Registro de la serie con fecha de vigencia ≤ T, elegido por R-E43-9 y consistente con la cantidad al corte según R-E43-13. | Una cotización verificada exactamente el día T ni un valor escalado a la cantidad actual |
+| Cantidad de la valoración | Cantidad de la posición en la `fecha_vigencia` de la valoración: `cantidad_base` declarada en Automática o cantidad recalculada al leer en Manual. | La cantidad al corte T ni la cantidad de la última operación |
+| Valor conocido | Valoración anterior a T que se muestra con su fecha y antigüedad, y solo si la cantidad al corte coincide con la de su fecha de vigencia. | Un precio certificado del día T ni el valor de una cantidad distinta |
 | Resultado abierto | `Valor + Ventas − Compras`, con `importe_eur` neto de comisión. | Un resultado realizado/no realizado separado |
 | Resultado cerrado | `Ventas − Compras`, sin valoración. | Una plusvalía fiscal ni un resultado por lote |
 | Cobertura del agregado | `Verificada`, `Parcial n/m`, `No disponible` o `No aplica`. | Un total parcial presentado como completo |
-| Certificabilidad | Marca derivada al corte: `No certificable` si la valoración es anterior a T; `Elegible por fecha (sujeto a E4.9)` si es del mismo día. | Una certificación de cierre emitida por E4.3 |
+| Elegibilidad por fecha exacta (E4.3) | Marca derivada al corte: `No elegible por fecha exacta en E4.3` si la valoración es anterior a T; `Elegible por fecha exacta (E4.9 no evaluado)` si es del mismo día. | Una denegación definitiva de cierre, el gate de suficiencia de E4.9 ni una certificación emitida por E4.3 |
 | Efectivo del bróker | Saldo `Efectivo`/`Inversiones` calculado con `cashAt`. | Una posición, un valor de inversión ni un componente del agregado de posiciones |
 
 ### Reglas funcionales
@@ -127,13 +140,17 @@ el valor de la última Compra/Venta, del maestro del Instrumento o de una cotiza
 valor_eur = round_half_up(cantidad_base × precio_unitario × cambio)
 ```
 
-`cantidad_base` es la cantidad exacta de la posición en `fecha_vigencia`. El producto se calcula
-con precisión exacta (enteros escalados/BigInt); **solo el resultado final** se redondea a
-céntimos, una vez, sin redondeos intermedios. Si la divisa es EUR, el cambio es exactamente 1.
-La valoración conserva precio, divisa, cambio, cantidad base, procedencia y fecha. No se usa el
-precio de la última operación como valor actual. Si una rectificación retroactiva cambia la
-cantidad base de una valoración ya registrada, la lectura lo señala como incidencia de revisión
-y no reescribe el valor en silencio; la corrección se hace por la vía auditada.
+`cantidad_base` es la cantidad exacta de la posición en `fecha_vigencia` y debe ser **> 0**;
+`precio_unitario` y `cambio` deben ser **> 0**. El producto se calcula con precisión exacta
+(enteros escalados/BigInt); **solo el resultado final** se redondea a céntimos, una vez, sin
+redondeos intermedios. Si la divisa es EUR, el cambio es exactamente 1. La valoración conserva
+precio, divisa, cambio, cantidad base, procedencia y fecha. No se usa el precio de la última
+operación como valor actual. Si una rectificación retroactiva cambia la cantidad base de una
+valoración ya registrada, la lectura lo señala como incidencia de revisión y no reescribe el
+valor en silencio; la corrección se hace por la vía auditada. La consistencia entre
+`cantidad_base` y la cantidad al corte se rige por R-E43-13. Un valor calculado que redondea a
+`0,00` con insumos positivos cuenta como valoración presente; lo que no se admite es introducir
+precio, cambio o cantidad cero en Automática.
 
 **R-E43-5 — El valor manual manda.** En una posición **abierta** con valoración `Manual`, se
 muestra el valor declarado y **Resultado y Rentabilidad quedan «No disponible»**. No se calcula
@@ -144,10 +161,11 @@ resultado cerrado. El valor manual no modifica Compras, Ventas, cantidad ni efec
 **R-E43-6 — Resultado.** Solo se publica un resultado agregado por posición, sin separar
 realizado/no realizado:
 
-- posición abierta con valoración válida y no manual:
-  `resultado = valor_eur + Σ ventas.importe_eur − Σ compras.importe_eur`;
+- posición abierta con valoración válida a T, no manual y consistente con la cantidad
+  (R-E43-13): `resultado = valor_eur + Σ ventas.importe_eur − Σ compras.importe_eur`;
 - posición cerrada: `resultado = Σ ventas.importe_eur − Σ compras.importe_eur`, sin valoración;
-- posición abierta sin valoración o con valor manual: resultado `No disponible`;
+- posición abierta sin valoración, con valor manual o cuya valoración no representa la cantidad
+  al corte: resultado `No disponible`;
 - posición con cantidad negativa o incidencia: resultado `No disponible`.
 
 El resultado puede ser negativo y se muestra con signo; no se recorta a cero. No se muestra
@@ -171,9 +189,13 @@ de vigencia civil. No se asocian a un Ciclo ni a una foto. Para el corte T:
 2. se usa la de fecha más reciente; si no hay ninguna, la posición queda sin valoración;
 3. una valoración posterior a T está prohibida y nunca se usa, aunque sea la única;
 4. la valoración anterior se muestra con su fecha y los días transcurridos;
-5. la valoración no se recalcula al leer; una corrección se registra con revisión y motivo.
+5. la valoración no se recalcula al leer; una corrección se registra con revisión y motivo;
+6. la valoración debe representar la cantidad al corte; si no, se aplica R-E43-13 y la posición
+   queda `No disponible` con motivo.
 
-El valor anterior es un **valor conocido a T**, no un precio verificado del día T.
+El valor anterior es un **valor conocido a T**, no un precio verificado del día T. «Anterior y
+consistente» no es «precio del día»: D-09 se mantiene y la antigüedad no se convierte en un
+precio nuevo.
 
 **R-E43-10 — Cobertura del agregado.** Para las posiciones abiertas aplicables a T:
 
@@ -184,11 +206,13 @@ El valor anterior es un **valor conocido a T**, no un precio verificado del día
 | `No disponible` | n = 0 y m > 0 | Sin cifra; no se sustituye por 0 |
 | `No aplica` | m = 0 (sin posiciones abiertas) o solo posiciones cerradas | La valoración no aplica; el resultado cerrado puede mostrarse |
 
-`n` es el número de posiciones abiertas con valoración válida a T; `m` el número de posiciones
-abiertas aplicables. Una valoración de importe `0,00` cuenta como valoración presente. El
-resultado agregado tiene su propia cobertura: si alguna posición aplicable no tiene resultado
-calculable (sin valoración o manual), se declara `Parcial n/m` y no se muestra un total de
-resultado. Los grupos solo anulados no entran en `m`.
+`n` es el número de posiciones abiertas con valoración válida a T **y consistente con la cantidad
+al corte** (R-E43-13); `m` el número de posiciones abiertas aplicables. Una valoración de importe
+`0,00` —manual o redondeo de un automático con insumos positivos— cuenta como valoración
+presente. Una valoración excluida por cambio de cantidad no cuenta en `n`. El resultado agregado
+tiene su propia cobertura: si alguna posición aplicable no tiene resultado calculable (sin
+valoración, manual o cantidad inconsistente), se declara `Parcial n/m` y no se muestra un total
+de resultado. Los grupos solo anulados no entran en `m`.
 
 **R-E43-11 — Agregado solo de posiciones y efectivo aparte.** El agregado suma posiciones cuyo
 Saldo de inversión es `Inversión`/`Inversiones`, por `Tipo saldo = Inversión`, y **nunca** suma
@@ -196,20 +220,61 @@ Saldos `Efectivo`/`Inversiones`. El efectivo del bróker se lee de `cashAt` y se
 un registro por Saldo de efectivo, con su fecha/corte y su condición de cálculo. Varios Saldos de
 efectivo se listan por separado; no se convierten en una posición ni en un total patrimonial.
 
-**R-E43-12 — Certificabilidad y frontera de cierre.** Para cada valoración usada en T:
+**R-E43-12 — Elegibilidad por fecha exacta y frontera de cierre.** Para cada valoración usada
+en T:
 
-- fecha < T → `No certificable`;
-- fecha = T → `Elegible por fecha (sujeto a E4.9)`;
-- sin valoración → no hay valor que certificar.
+- `fecha_vigencia < T` → `No elegible por fecha exacta en E4.3`;
+- `fecha_vigencia = T` → `Elegible por fecha exacta (E4.9 no evaluado)`;
+- sin valoración → no hay valor que declarar.
 
-El **agregado** solo es certificable si todas las valoraciones usadas son de fecha = T y la
-cobertura es `Verificada`; en cualquier otro caso es `No certificable` con motivo. No se emite
-un estado de certificación parcial como si fuera completo.
+Estas etiquetas describen **solo** lo que E4.3 puede acreditar por sí mismo. `No elegible por
+fecha exacta en E4.3` **no** significa «no apta definitivamente para cierre»: E4.3 no evalúa la
+suficiencia de E4.9, no define su ventana y no anticipa su veredicto. Una valoración anterior
+puede seguir siendo informativa y contar en la cobertura de E4.3 (D-09/D-10) sin quedar
+acreditada por fecha exacta.
+
+El **agregado** solo se declara `Elegible por fecha exacta en E4.3` si todas las valoraciones
+usadas son de fecha = T y la cobertura es `Verificada`; en cualquier otro caso se declara
+`No elegible por fecha exacta en E4.3` con motivo (valores anteriores, cobertura incompleta o
+cantidad inconsistente). No se emite una elegibilidad parcial como si fuera completa.
 
 E4.3 no emite una certificación de cierre, no define la ventana de suficiencia de E4.9 y no
 escribe la foto. La foto de E4.9, cuando se autorice, conserva de forma inmutable el valor, la
 fecha, el origen y la cobertura usados en su corte; una corrección posterior de E4.3 no la
-recalcula. E4.3 solo publica el contrato de lectura y la señal de certificabilidad.
+recalcula. E4.3 solo publica el contrato de lectura y la señal de elegibilidad por fecha exacta.
+
+**R-E43-13 — Consistencia entre la cantidad valorada y la cantidad al corte (A-01).** Una
+valoración representa únicamente la cantidad existente en su `fecha_vigencia`; no es un valor
+escalable ni una cotización del día del corte. Para una valoración candidata en T, con
+`F = fecha_vigencia <= T`:
+
+1. se recalcula la cantidad de la posición en `F` y en `T` con el mismo motor y la misma
+   convención de fin de día de E4.1/E4.2;
+2. si la valoración es `Automática` y `cantidad_base` no coincide con la cantidad recalculada en
+   `F`, es una **incidencia de revisión**: el valor no se usa y no se reescribe en silencio
+   (R-E43-4); la corrección se hace por la vía auditada;
+3. si la cantidad en `T` difiere de la cantidad en `F` —por compra, venta, reapertura o
+   corrección/anulación retroactiva de un hecho con fecha ≤ T—, el importe **no se presenta como
+   valor de la cantidad actual**, no se escala, no se prorratea y no se deriva un precio
+   implícito. La posición en T queda `No disponible` con motivo explícito
+   (`Cantidad modificada desde la valoración: F=… Q_F=… → T Q_T=…`), y no entra en `n` de
+   R-E43-10;
+4. como consecuencia, el resultado de la posición abierta queda `No disponible` (R-E43-6) y el
+   agregado se presenta como `Parcial n/m` o `No disponible`, nunca con el total de lo valorado
+   como completo;
+5. se exige una **nueva valoración** con `fecha_vigencia` adecuada (la fecha del último cambio de
+   cantidad o el propio corte) que cubra la cantidad vigente; la valoración anterior permanece
+   en la serie como valor de su fecha y no se borra ni se muta;
+6. si la cantidad neta al corte vuelve a coincidir con la de `F`, la valoración sigue siendo un
+   «valor conocido» de esa cantidad, con su fecha y antigüedad, y no se invalida por el mero
+   tránsito intermedio.
+
+Esta regla se aplica **también al valor `Manual`**: el importe declarado se refiere a la cantidad
+de su `fecha_vigencia`, por lo que no se presenta como valor de una cantidad distinta. Un valor
+manual no autoriza a inventar ni a extrapolar un valor actual. La regla no crea un precio nuevo,
+no reabre D-09 y no cambia D-02: en una posición abierta con valor manual, Resultado y
+Rentabilidad siguen `No disponible`; si además la cantidad cambió, el valor tampoco se muestra
+como actual. En una posición cerrada a T prevalece D-03 y la valoración histórica no se usa.
 
 ## Data model and contracts
 
@@ -239,18 +304,19 @@ modifican `operaciones_inversion` ni `instrumentos`.
 | `saldo_inversion` + `instrumento` | Posición valorada | Debe ser un Saldo `Inversión`/`Inversiones`; la posición se deriva, no se copia como fila editable |
 | `fecha_vigencia` | Fecha civil a la que se refiere el valor | No futura; ISO `YYYY-MM-DD`; no es la fecha de captura |
 | `tipo` | `Manual` o `Automática` | Enum cerrado; no se infiere |
-| `valor_eur` | Importe EUR de la valoración, en céntimos exactos | Manual: declarado; Automática: calculado una vez; `>= 0`; `0,00` explícito válido |
+| `valor_eur` | Importe EUR de la valoración, en céntimos exactos | Manual: declarado, `>= 0`, `0,00` válido; Automática: calculado una vez con insumos positivos, `>= 0` (A-03) |
 | `precio_unitario` | Precio unitario declarado | Solo `Automática`; **> 0** (E4.1 exige precio positivo); precisión suficiente, sin redondeo intermedio |
 | `divisa` | Divisa del precio | ISO 4217; EUR o divisa con cambio |
-| `cambio` | Cambio a EUR | Obligatorio y positivo si no es EUR; exactamente 1 si es EUR |
-| `cantidad_base` | Cantidad exacta usada en el cálculo automático | Instantánea de la cantidad en `fecha_vigencia`; no se reescribe en silencio |
+| `cambio` | Cambio a EUR | Obligatorio y **> 0** si no es EUR; exactamente 1 si es EUR; `0` no es conversión válida |
+| `cantidad_base` | Cantidad exacta usada en el cálculo automático | Solo `Automática`; **> 0**; instantánea de la cantidad en `fecha_vigencia`; se contrasta al leer con R-E43-13 y no se reescribe en silencio |
 | `origen` / `procedencia` | Fuente declarada del valor, precio o cambio | Obligatoria; no se valida contra un proveedor externo; no sustituye al actor |
 | `cobertura` | Cobertura de la valoración | `Completa` = toda la cantidad de la posición; no se admiten valoraciones por lotes/tramos en E4.3 |
 | `actor` | Usuario que registra o corrige | Usuario único del sistema; se conserva en auditoría |
 | `creado_utc` / `actualizado_utc` | Instantes técnicos | UTC; no son la fecha financiera de vigencia |
 | `revision` | Revisión optimista | Entero positivo; una revisión obsoleta produce 409 |
 | `motivo_correccion` | Motivo de la corrección | Obligatorio al corregir; no se inventa en el alta |
-| `certificabilidad` (derivada) | `No certificable` o `Elegible por fecha (sujeto a E4.9)` | **No es columna**: se calcula al corte y no se persiste |
+| `elegibilidadFechaExacta` (derivada) | `No elegible por fecha exacta en E4.3` o `Elegible por fecha exacta (E4.9 no evaluado)` | **No es columna**: se calcula al corte y no se persiste; no es una negativa definitiva de cierre |
+| `cantidadBase` / `cantidadAlCorte` (derivadas) | Cantidad de la valoración y cantidad al corte | **No son columnas nuevas**: se recalculan al leer para aplicar R-E43-13; su diferencia explica el `No disponible` |
 
 La tabla de auditoría conceptual (`valoracion_inversion_audit`) conserva, por valoración y
 revisión, la acción (`alta`/`corrección`), el actor, el instante UTC, el motivo, el estado
@@ -270,6 +336,9 @@ auditoría, deberá conservar estas garantías.
   auditoría, o se deja fuera de la serie si nunca se registró.
 - La lectura no repara, no recalcula ni crea valoraciones. Una valoración posterior al corte no
   se devuelve como valor del corte.
+- Si la cantidad al corte difiere de la cantidad de `fecha_vigencia`, la lectura no ajusta el
+  importe: devuelve la posición `No disponible` con motivo y exige una nueva valoración
+  (R-E43-13). La serie conserva el registro anterior como valor de su propia fecha.
 
 ### Contrato de lectura propuesto
 
@@ -295,9 +364,11 @@ en EUR; `null` significa no disponible y nunca se normaliza a `0.00`.
         "precio": "130.000000",
         "divisa": "USD",
         "cambio": "0.900000",
+        "cantidadBase": "7.5",
+        "cantidadAlCorte": "7.5",
         "procedencia": "Precio y cambio declarados por el usuario",
         "cobertura": "Completa",
-        "certificabilidad": "Elegible por fecha (sujeto a E4.9)"
+        "elegibilidadFechaExacta": "Elegible por fecha exacta (E4.9 no evaluado)"
       },
       "resultado": {"estado": "Disponible", "importeEur": "258.50"},
       "rentabilidad": {"estado": "No disponible", "motivo": "Fórmula no aprobada"}
@@ -308,7 +379,7 @@ en EUR; `null` significa no disponible y nunca se normaliza a `0.00`.
     "valorEur": null,
     "coberturaResultado": "Parcial 3/5",
     "resultadoEur": null,
-    "certificabilidad": "No certificable: hay valores anteriores al corte"
+    "elegibilidadFechaExacta": "No elegible por fecha exacta en E4.3: hay valores anteriores al corte; el gate de E4.9 no se evalúa"
   },
   // Extracto abreviado: se eliden posiciones; el agregado corresponde a 4 abiertas y 5 totales.
   "efectivo": [
@@ -324,11 +395,52 @@ en EUR; `null` significa no disponible y nunca se normaliza a `0.00`.
 }
 ```
 
+Ejemplo abreviado de una valoración que **no** representa la cantidad al corte (A-01/R-E43-13):
+la valoración se registró con 10 unidades y al corte la posición tiene 6.
+
+```json
+{
+  "corte": "2026-06-30",
+  "posiciones": [
+    {
+      "instrumento": {"id": "I1006", "nombre": "Fondo cantidad demo"},
+      "cantidad": "6",
+      "estado": "Abierta",
+      "tipoValoracion": "Automática",
+      "valoracion": {
+        "estado": "No disponible",
+        "motivo": "Cantidad modificada desde la valoración: 2026-03-31 Q=10 → 2026-06-30 Q=6",
+        "fecha": "2026-03-31",
+        "diasTranscurridos": 91,
+        "tipo": "Automática",
+        "cantidadBase": "10",
+        "cantidadAlCorte": "6",
+        "valorEur": null,
+        "cobertura": "Completa"
+      },
+      "resultado": {"estado": "No disponible", "motivo": "La valoración no representa la cantidad al corte"},
+      "rentabilidad": {"estado": "No disponible", "motivo": "Fórmula no aprobada"}
+    }
+  ],
+  "agregado": {
+    "coberturaValoracion": "No disponible 0/1",
+    "valorEur": null,
+    "coberturaResultado": "No disponible 0/1",
+    "resultadoEur": null,
+    "elegibilidadFechaExacta": "No elegible por fecha exacta en E4.3: hay valores anteriores al corte; el gate de E4.9 no se evalúa"
+  }
+}
+```
+
 Campos de presentación obligatorios:
 
 - `fecha` y `diasTranscurridos` de la valoración usada, siempre que exista;
-- `certificabilidad` separada de `coberturaValoracion` y del valor;
-- `valorEur: null` y `resultadoEur: null` cuando la cobertura no sea completa;
+- `elegibilidadFechaExacta` separada de `coberturaValoracion` y del valor; expresa solo la
+  posición de E4.3 y no anticipa el gate de E4.9;
+- `cantidadBase` y `cantidadAlCorte` cuando exista valoración, para explicar el `No disponible`
+  por cambio de cantidad;
+- `valorEur: null` y `resultadoEur: null` cuando la cobertura no sea completa o la valoración no
+  represente la cantidad al corte;
 - `rentabilidad` sin cifra y con motivo;
 - `efectivo` como lista separada, nunca dentro de `agregado` ni sumado a `posiciones`.
 
@@ -337,10 +449,13 @@ Campos de presentación obligatorios:
 | Concepto | Contrato |
 | --- | --- |
 | EUR | Entero de céntimos, `BigInt`/decimal exacto de extremo a extremo; JSON como string decimal; nunca `number`/float para operar. Presentación final con 2 decimales. |
-| Valor manual | `>= 0`; `0,00` explícito válido; negativo rechazado con 422. |
+| Valor manual | `>= 0`; `0,00` explícito válido; negativo rechazado con 422. Se refiere a la cantidad en su `fecha_vigencia` (R-E43-13). |
+| Valor automático | Calculado una vez desde cantidad, precio y cambio; no se introduce a mano; exige cantidad valorada > 0, precio > 0 y cambio > 0 (A-03). |
 | Precio unitario | **> 0** en Automática (E4.1 no admite precio cero); precisión suficiente (escala de E4.1/E4.2); sin redondeo intermedio; máximo pendiente de DT2. |
-| Cambio | Positivo (> 0); EUR = 1; no EUR obligatorio; escala de E4.1/E4.2; sin redondeo intermedio; máximo pendiente de DT2. Un cambio 0 no es una conversión válida; el valor 0 solo se expresa con **valor manual 0,00** o con precio/cantidad positivos que produzcan cero, nunca con precio 0. |
+| Cambio | Positivo (> 0); EUR = 1; no EUR obligatorio; escala de E4.1/E4.2; sin redondeo intermedio; máximo pendiente de DT2. Un cambio 0 no es una conversión válida. |
 | Cantidad | Escala exacta de E4.1/E4.2 (hasta 8 decimales); no se redondea al valorar. |
+| Cantidad valorada | > 0 en Automática; si al corte la cantidad difiere de la valorada, se aplica R-E43-13 y no se escala el valor. |
+| Cero | `0,00` se admite como **valor manual** o como redondeo final de un automático con insumos positivos; nunca con precio, cambio o cantidad `0` en Automática. Un valor `0,00` presente cuenta en la cobertura. |
 | Resultado | Céntimos firmados; puede ser negativo; no se recorta a cero. |
 | Fechas | Civiles `YYYY-MM-DD`; la fecha de vigencia no puede ser futura; UTC solo para auditoría. **Días transcurridos** = `fecha_corte − fecha_vigencia` en días civiles (0 el mismo día). |
 | Exponentes | No se admiten notaciones exponenciales en importes, precios ni cambios. |
@@ -356,14 +471,16 @@ Pantallas previstas:
 
 | Pantalla | Contenido | Estados que debe cubrir |
 | --- | --- | --- |
-| Inversiones → Valoración | Selector de corte, lista de posiciones, agregado y panel de efectivo separado | Vacío, carga, error, sin valoración, parcial, verificada, no aplica, instrumento inactivo, posición heredada, valor anterior, no certificable |
-| Detalle de posición | Hechos, cantidad, Estado, Tipo, valoración usada, fecha/antigüedad, resultado, serie histórica | Abierta/cerrada, manual, sin valoración, valor 0, resultado negativo, serie vacía, corrección auditada |
+| Inversiones → Valoración | Selector de corte, lista de posiciones, agregado y panel de efectivo separado | Vacío, carga, error, sin valoración, parcial, verificada, no aplica, instrumento inactivo, posición heredada, valor anterior, cantidad cambiada, no elegible por fecha exacta |
+| Detalle de posición | Hechos, cantidad, Estado, Tipo, valoración usada, fecha/antigüedad, resultado, serie histórica | Abierta/cerrada, manual, sin valoración, valor 0, resultado negativo, serie vacía, corrección auditada, valoración que no cubre la cantidad actual |
 | Captura/corrección de valoración (solo si se autoriza) | Formulario Manual o Automática, procedencia, fecha de vigencia, previsualización del valor calculado | Vacío, cálculo, error de precisión, fecha futura, negativo, 409 por revisión/duplicado, 422, borrador conservado |
 | Panel de efectivo | Un registro por Saldo `Efectivo`/`Inversiones`, con corte y `cashAt` | Sin Saldos, varios Saldos, error de fuente, no sumado al agregado |
 
 La UI no presenta `0` por ausencia, no declara completo un total parcial y no etiqueta una
-valoración anterior como precio verificado del corte. Debe ser operable con teclado, foco visible
-y contraste suficiente en 390 y 1440.
+valoración anterior como precio verificado del corte. La serie histórica muestra cada valor con
+su propia fecha y su cantidad; una valoración que no cubre la cantidad actual no se presenta
+como valor de la posición. Debe ser operable con teclado, foco visible y contraste suficiente en
+390 y 1440.
 
 ## Empty, loading and error states
 
@@ -377,7 +494,8 @@ y contraste suficiente en 390 y 1440.
 | Cerrada | Valoración `No aplica`; resultado `Ventas − Compras` visible; sin porcentaje. |
 | Fuente ilegible | Error explícito con motivo; **no** se presenta como «sin posiciones» ni como vacío. |
 | Valor anterior | Fecha y días transcurridos visibles; aviso de valor conocido; sin caducidad automática. |
-| No certificable | Etiqueta separada de la cobertura; no se muestra como valor certificado del corte. |
+| Cantidad cambiada | `No disponible` con motivo que muestra la cantidad valorada y la cantidad al corte; no se escala ni se muestra el importe como actual; se ofrece registrar una nueva valoración. |
+| No elegible por fecha exacta | Etiqueta separada de la cobertura; no se muestra como valor exacto del corte y no se presenta como negativa definitiva de cierre (E4.9 decide). |
 | 401 / 404 / 409 / 422 | Mensaje accionable, sin SQL, importes ajenos ni secretos; en 409/422 se conserva el borrador y la selección. |
 | Sesión expirada | Se conserva el contexto y se exige reautenticación; no se pierde el corte. |
 
@@ -396,7 +514,7 @@ cotizaciones, bancos ni proveedores de FX. El cambio es un dato declarado por el
 | `POST /api/e43/valoraciones/{id}/rectificar` | Corrección auditada | **Solo si se autoriza**; `revision` y `motivo`; 409 si la revisión es obsoleta; conserva la anterior en auditoría |
 | `GET /api/inversiones/efectivo?saldo={Sxxx}&fecha=YYYY-MM-DD` | Efectivo del bróker | Se reutiliza el contrato E4.2/`cashAt`; E4.3 no crea un endpoint de efectivo paralelo |
 
-No existe escritura de totales, resultados, coberturas ni certificabilidad. E4.3 no actualiza la
+No existe escritura de totales, resultados, coberturas ni elegibilidad por fecha exacta. E4.3 no actualiza la
 fila `e43` de `precierre`, no cambia `inversion.valoracion` y no escribe en la foto de SPEC27.
 
 Códigos de error propuestos:
@@ -417,9 +535,10 @@ nunca una posición con valor `0`. La ausencia de valoración no es un error 5xx
 
 ## Validation and edge cases
 
-- **Valor 0 frente a ausencia.** `valor_eur = 0,00` o un precio `0,00` con cambio positivo son
-  valoraciones explícitas y cuentan en la cobertura; `null`/sin registro es `No disponible` y no
-  se transforma en cero. Un cambio 0 no se admite como conversión.
+- **Valor 0 frente a ausencia.** `valor_eur = 0,00` **manual** es una valoración explícita y
+  cuenta en la cobertura; en `Automática`, precio, cambio y cantidad deben ser **> 0**. `null`/sin
+  registro es `No disponible` y no se transforma en cero. Un cambio 0 no se admite como
+  conversión.
 - **Negativos.** Se rechazan valores, precios y cambios negativos con 422. Un **resultado**
   negativo es válido y se muestra con signo.
 - **Comisión.** El resultado usa `importe_eur` una sola vez. No se resta `comision_eur` otra vez,
@@ -479,7 +598,7 @@ nunca una posición con valor `0`. La ausencia de valoración no es un error 5xx
 
 ## Acceptance checks
 
-Los 16 AC siguientes se derivan uno a uno de D-01…D-16. **Ninguno está en PASS**: son criterios
+Los 17 AC siguientes se derivan de D-01…D-16 y de la precisión A-01. **Ninguno está en PASS**: son criterios
 de diseño, no resultados ejecutados. Clase **I** = comprobación interna de E4.3 (motor, DTO,
 persistencia, UI); clase **C** = comprobación cruzada de contrato con E4.1/E4.2/E4.6/E4.7/E4.9.
 
@@ -500,24 +619,25 @@ persistencia, UI); clase **C** = comprobación cruzada de contrato con E4.1/E4.2
 | E4.3-AC-13 | Consultar posición de Instrumento inactivo con cantidad, posición heredada y grupo solo anulado; intentar obtener un valor para la que no tiene valoración | Inactiva/heredada incluidas con cobertura declarada; sin valor inventado; solo anulado excluido; `No disponible` no se sustituye por 0 | C | D-13 |
 | E4.3-AC-14 | Introducir EUR con 2 decimales, precio/cambio de 6 decimales, valor manual 0,00, precio 0 en Automática, negativo, fecha futura y exponente; comprobar el redondeo final con producto no exacto | EUR final a céntimos; precisión exacta sin redondeo intermedio; valor manual 0,00 válido; precio 0 en Automática, negativo, futuro, exponente o precisión excesiva → 422 sin escritura; máximo pendiente de DT2 | I | D-14 |
 | E4.3-AC-15 | Consultar valoración del mismo día, anterior de 61 días y muy antigua; buscar umbral de caducidad | Fecha y días transcurridos siempre visibles; 0 días el mismo día; 61 días en la anterior; sin umbral de caducidad ni cambio automático de cobertura | I | D-15 |
-| E4.3-AC-16 | Consultar valoración exacta al corte y anterior; corregir después; comprobar `e43` y la foto de E4.9 | Exacta: `Elegible por fecha (sujeto a E4.9)`, no «certificada»; anterior: `No certificable`; E4.3 no escribe la foto; una corrección posterior no recalcula una foto cerrada; E4.9 define su ventana | C | D-16 |
+| E4.3-AC-16 | Consultar valoración exacta al corte y anterior; corregir después; comprobar `e43` y la foto de E4.9 | Exacta: `Elegible por fecha exacta (E4.9 no evaluado)`; anterior: `No elegible por fecha exacta en E4.3`, **sin negativa definitiva para cierre**; E4.3 no escribe la foto; una corrección posterior no recalcula una foto cerrada; E4.9 define su ventana | C | D-16 |
+| E4.3-AC-17 | Compra o venta vigente posterior a `fecha_vigencia` y anterior/al corte T; reapertura; anulación o corrección retroactiva; valoración automática con `cantidad_base` distinta de la recalculada | La valoración no se escala ni se presenta como valor de la cantidad actual; posición `No disponible` con motivo y sin entrar en `n`; resultado `No disponible`; agregado `Parcial n/m`; se exige nueva valoración; la anterior permanece en la serie; si la cantidad vuelve a coincidir, sigue como valor conocido | I | A-01 / R-E43-13 |
 
 ### Cobertura de la traza roadmap
 
 Los criterios del roadmap se citan sin guion (`E4.3-AC1/2/3`); los de esta spec llevan
-`E4.3-AC-01…16`.
+`E4.3-AC-01…17`.
 
 | Roadmap | AC de esta spec |
 | --- | --- |
 | E4.3-AC1: Estado Abierta/Cerrada separado de Manual/Automática | E4.3-AC-01, E4.3-AC-02, E4.3-AC-03, E4.3-AC-04, E4.3-AC-13, E4.3-AC-15 |
 | E4.3-AC2: valor manual prevalece y Resultado/Rentabilidad sin cálculo automático | E4.3-AC-02, E4.3-AC-06 |
 | E4.3-AC3: agregados por Tipo saldo=Inversión excluyen efectivo; resultado según R5 | E4.3-AC-05, E4.3-AC-07, E4.3-AC-10, E4.3-AC-11, E4.3-AC-13 |
-| Pruebas del roadmap: abierto/cerrado/manual, estado no aplicable, cambio actual no modifica hechos, efectivo no sumado, sin valoración ficticia | E4.3-AC-01…16, con énfasis en 02, 04, 09, 11 y 13 |
+| Pruebas del roadmap: abierto/cerrado/manual, estado no aplicable, cambio actual no modifica hechos, efectivo no sumado, sin valoración ficticia | E4.3-AC-01…17, con énfasis en 02, 04, 09, 11, 13 y 17 |
 
 ## Test plan
 
 El [testplan E4.3](23-e43-valoracion-resultados-testplan.md) contiene la matriz
-`E4.3-TP-01…16`, el oráculo ficticio, los riesgos residuales y los criterios de salida. Todos
+`E4.3-TP-01…17`, el oráculo ficticio, los riesgos residuales y los criterios de salida. Todos
 los resultados están **UNRUN**; no hay implementación ni PASS funcional. Una prueba diseñada no
 acredita la funcionalidad.
 
