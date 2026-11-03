@@ -24,8 +24,17 @@ A small durable checkpoint in an existing feature progress file, setup-progress 
 6. **Verify persistence and continuation.** Reread the written checkpoint and verify its path, HEAD, pending changes and evidence links against the inventory. Mark failures unverified; a write attempt alone does not prove durability. Provide a complete copyable next-chat instruction with repository/path, checkpoint location, candidate branch/SHA/PR, authorized scope and decisions, valid versus pending approvals, evidence, risks/blockers, pending work and one next safe action. Ask the next coordinator to inspect Git drift and approvals before proposing continuation; the checkpoint grants no authorization. The user opens the new chat manually.
 7. **Conclude and stop.** Recheck that no new execution was intentionally started and that the checkpoint is accessible. Report `stopped` only where runtime confirmation exists, otherwise `unconfirmed`; distinguish local commits, remote commits, and missing persistence. The last message must not trigger further tasks or agents. Do not claim to control other sessions or background jobs.
 
-## Next session
+## Next session and checkpoint retirement
 A separate user request such as `$orchestrate — inspect the latest handoff, verify its Git SHA and approvals, report state before proposing continuation` may re-open planning. The saved checkpoint grants **no** permission to resume work automatically; wait for the user's new instruction and any protected approvals.
+
+After a new session reads the handoff, verify branch, SHA, PR, Git state, decisions, approvals and pending tasks; resolve discrepancies and consolidate durable information into the existing progress, decision, specification or evidence documents. Only after a successful restoration:
+
+- remove `specs/session-handoff.md` when it was a temporary checkpoint and its durable content is now represented elsewhere;
+- if the handoff is tracked by Git, remove it in the same task branch/change that consolidates the restoration, never in a standalone PR created only to delete a temporary file; leave no unrelated pending change;
+- if restoration is incomplete, discrepancies remain or ownership is unclear, **preserve** the handoff and report what is missing;
+- never remove permanent progress, decision, specification or evidence documents.
+
+Report the restoration and whether the handoff was removed or preserved. This cleanup does not authorize resuming development; that begins only from a new explicit user request.
 
 ## Quota exhaustion
 If quota ends before this Skill can run, no shutdown or checkpoint is guaranteed. When quota returns, run `$handoff` **before** asking to continue; reconstruct what can be verified from Git/current worker state, and mark inaccessible context `unknown`. If a task is visibly still running, interrupt it using the client's stop control first, when available.
