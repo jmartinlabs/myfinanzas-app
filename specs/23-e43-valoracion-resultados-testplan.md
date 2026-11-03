@@ -1,9 +1,9 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Test plan
 
 Status: **APROBADO — DISEÑO DE PRUEBAS.** 2026-11-03, revisión `acc2d98` (PR #175).
-DEV E4.3-A (esquema v24, migración, C24 y backup) y DEV43-B (read model/API) integrados en
-`main` `3b9be46` (squash de #184), con CI post-merge verde; QA-A/QA-B APTO CON RESERVAS;
-DEV43-C pendiente. Ningún AC/TP en PASS.
+DEV E4.3-A (esquema v24, migración, C24 y backup), DEV43-B (read model/API) y DEV43-C
+(UI/E2E) integrados en `main` `8552d4a` (squash de #184 y #187), con CI post-merge verde;
+QA-A/QA-B/QA-C APTO CON RESERVAS; aceptación visual final pendiente. Ningún AC/TP en PASS.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
 Progress: [23-e43-valoracion-resultados-progress.md](23-e43-valoracion-resultados-progress.md)
 Base: `main` `7bfb5a2` (2026-11-03), esquema SQLite **v24** tras A.
@@ -199,16 +199,16 @@ pendiente, por lo que ningún AC/TP se declara PASS.
 
 ## Browser verification (web only)
 
-Pendiente (C). Los wireframes están integrados (`bb076f1`), pero no hay UI E4.3. Cuando se
-implemente, Playwright deberá operar todos los flujos de aceptación y capturar 390 y 1440, con
-evidencia de teclado, foco, contraste, estados vacío/carga/error/parcial/manual/cerrada/valor
-anterior/no elegible por fecha exacta y borrador conservado ante 409/422. No se declara
-accesibilidad ni responsive sin esas capturas.
+**Ejecutada en C** (`c022f88`, integrada en `8552d4a`): Playwright real con MFA, 390×844 y
+1440, teclado/foco, `scrollWidth`, estados vacío/carga/error/parcial/verificada/no
+disponible/no aplica/cerrada/manual/valor anterior/no elegible, 409 duplicado y revisión,
+422 y 404. Capturas en `artifacts/e4-3/` (ignoradas por Git). La aceptación visual final de
+los wireframes corresponde al usuario; no se declara PASS de AC.
 
 ## Visual improvements (visual apps only)
 
-N/A: no hay UI implementada ni una entrega visual que evaluar. No se proponen mejoras visuales
-sobre pantallas inexistentes.
+Sin propuestas nuevas: la UI sigue el tema y los componentes existentes. La revisión visual
+final de W1–W10/S1–S13 queda pendiente de aceptación.
 
 ## QA independiente
 
@@ -216,26 +216,30 @@ sobre pantallas inexistentes.
 **QA-B (2026-11-03): APTO CON RESERVAS** sobre `464341b`, sin bloqueantes. R1 (Manual por
 encima de 2⁵³−1 devolvía 500 en vez de 422) y R2 (`cantidadBase` declarada en Automática)
 corregidos; R3 reforzado con instantánea de todas las tablas antes/después de las lecturas.
-Quedan reservas menores de cobertura (AC-07/AC-17 y concurrencia real) y la UI (C). La QA
-futura deberá ser distinta del autor, con contexto nuevo, sin editar reglas financieras, sin
-escribir `specs/epic-board.md`, sin merge y sin datos reales. Cualquier dictamen no convertirá
-un AC en PASS sin evidencia.
+Quedan reservas menores de cobertura (AC-07/AC-17 y concurrencia real).
+**QA-C (2026-11-03): APTO CON RESERVAS** sobre `c022f88`, sin bloqueantes. R1 (detalle de
+posición cerrada mostraba `null`/`No disponible` en vez de `No aplica`) y R3 (409 de revisión
+simulado) corregidos; O1/O2 corregidos y re-QA confirmó R1/R3 cerrados. Reservas: cobertura
+E2E de cantidad modificada/A-01, Manual 0,00, resultado negativo, serie vacía, sin efectivo,
+403 CSRF e idempotencia en reintento; sesión expirada global no conserva el corte; aceptación
+visual final. La QA futura deberá ser distinta del autor, con contexto nuevo, sin editar
+reglas financieras, sin escribir `specs/epic-board.md`, sin merge y sin datos reales.
+Cualquier dictamen no convertirá un AC en PASS sin evidencia.
 
 ## Limitations and next action
 
-- **A y B integrados:** `main` `3b9be46` (squash de #184); post-merge CI verde. C sigue
+- **A, B y C integrados:** `main` `8552d4a` (squash de #184 y #187); post-merge CI verde.
+- **C integrada:** UI/E2E sobre las rutas `/inversiones/valoracion`; aceptación visual final
   pendiente.
-- **C pendiente:** no hay UI E4.3. Los wireframes están integrados (`bb076f1`); Playwright
-  390/1440 queda para C.
-- **QA-B:** APTO CON RESERVAS sobre `464341b`; R1/R2 corregidos. Reservas menores: AC-07,
-  AC-17 y concurrencia real.
+- **QA-C:** APTO CON RESERVAS sobre `c022f88`; R1/R3 y O1/O2 corregidos. Reservas de
+  cobertura E2E y sesión expirada.
 - **DT2 aprobada (`24f3efb`):** unicidad, IDs `VAL`, constraints, límites E4.1/E4.2 y
   migración/backup quedan fijados; v24 sigue reservada a E4.3 y no se reserva v25.
 - **F4/F5:** fecha no futura y consistencia cantidad base/cantidad al corte implementadas en B.
 - **E4.9 pendiente:** la integración `e43`/`valoracion`, la ventana de certificación y la foto
   requieren autorización separada. Este testplan no las implementa.
 - **Datos:** solo fixtures ficticias; nunca Excel, bases reales, credenciales ni secretos.
-- **Next action:** A+B integrados; preparar C con instrucción explícita. Ningún AC se declara
+- **Next action:** aceptación visual final y decisión sobre reservas. Ningún AC se declara
   completo hasta que todas las comprobaciones requeridas pasen con evidencia.
 
 ## Registro de ejecuciones
@@ -253,3 +257,9 @@ un AC en PASS sin evidencia.
 | 2026-11-03 | `464341b` (B) | CI Linux `required` `41721208556` | PASS 644/644 | Gate canónico de A+B |
 | 2026-11-03 | `464341b` (B) | QA-B independiente | APTO CON RESERVAS | R1/R2 corregidos; R3 reforzado; reservas AC-07/AC-17/concurrencia y UI/C |
 | 2026-11-03 | `3b9be46` (A+B) | CI Linux post-merge `41722741566` | PASS (perfil fast) | Integrado en `main`; squash de #184; el gate completo 644/644 fue `7de64c1` |
+| 2026-11-03 | `c022f88` (C) | `bun run typecheck` + `bun run build` | PASS (macOS) | UI/E2E; warning preexistente de chunk |
+| 2026-11-03 | `c022f88` (C) | `bunx playwright test tests/e2e/valoracion.spec.ts` | PASS 1/1 (7,3 s) | MFA real, 390/1440, teclado/foco/overflow y 409 real |
+| 2026-11-03 | `c022f88` (C) | `bunx playwright test tests/e2e/inversiones.spec.ts` | PASS 1/1 | Regresión de pestaña/rutas |
+| 2026-11-03 | `c022f88` (C) | CI Linux `required` `41728978112` | PASS 644/644 | Perfil critical; no ejecuta Playwright |
+| 2026-11-03 | `c022f88` (C) | QA-C independiente + re-QA | APTO CON RESERVAS | R1/R3 y O1/O2 corregidos; reservas de cobertura y sesión |
+| 2026-11-03 | `8552d4a` (A+B+C) | CI Linux post-merge `41730772524` | PASS (perfil fast) | Integrado en `main`; squash de #187 |
