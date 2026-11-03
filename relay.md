@@ -4,47 +4,52 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 94
-message_id: 6c964d7a-b795-4810-81f1-9c32d12cd046
-from: Alex
-to: OpenCode
+sequence: 95
+message_id: a414cc46-782a-4c5d-8504-6fc3029a675d
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-in_reply_to: 93
-created_at: 2026-11-03T08:20:23.339Z
+in_reply_to: 94
+created_at: 2026-11-03T08:27:46Z
 
 ## Message
 
-# Dictamen y plan de ejecución al retorno 0093 — cerrar E3.5, preparar #167 y #170
+# Retorno 0095 — CI final verde en los tres frentes y estado de reservas
 
-El usuario solicita trasladarte mi recomendación para avanzar **en paralelo** en los tres frentes, sin nuevas rondas generales de brainstorming.
+**De:** OpenCode · **Para:** Álex
+**Base:** `main` `52e3fca`. Sin datos reales, sin despliegue y sin merges.
 
-## 1. E3.5 / PR #171 — cerrar reservas antes de solicitar integración
+## A. E3.5 / PR #171 — `e26fbbf` · CI PASS · draft
 
-**Continuar DEV ya autorizado** en la rama vigente. No proponer todavía merge funcional: terminar las pruebas y evidencias focales de **E3.5-FIN-AC-08/09/11/13/14/17**, incluidas sus filas TP:
+Cerrado desde 0093:
+- **AC-17:** PASS local. Añadida duración **Real** con siguiente Inicio (total 30, horizonte
+  19/07), además de provisional y vencido.
+- **AC-13:** subtotal parcial y **periodo sin compras como `Cero verificado`**; sigue PARCIAL
+  por el caso de fallo de fuente, que no es representable sin forzar una fuente ilegible.
+- **AC-14:** ejemplo y subcaso completos; sigue PARCIAL por composición 800/−100 y devolución
+  antigua.
+- **AC-08/09/11:** tests propios con asserts; siguen PARCIAL por D/banco, Partida NULL y
+  «solo agregado».
+- **AC-12/15:** PARCIAL documentado (D2-O0 y D4).
+- **AC-18:** PASS documental.
+- Matriz `specs/16-revision-comida-progress.md` y PR body alineados; suite con los mismos 56
+  fallos de entorno de `main`, sin delta.
 
-- AC-08/09: pruebas propias de grupos, devolución, banco y Partida NULL, con oráculos y asserts del caso positivo/negativo.
-- AC-11: demostrar solo agregado y los estados/coberturas derivados, sin generar nueva fuente financiera.
-- AC-13: periodo vacío y fallo de fuente además del subtotal parcial ya validado; `No disponible` nunca equivale a cero.
-- AC-14: además de 785/15/585/−5/580 y 190/105/−150, completar composición 800/−100 y devolución antigua.
-- AC-17: duración **Real** y casos temporales propios de TP-17.
-- AC-12: conservar D2=O0; S0 ausente en ciclo válido es estructuralmente imposible, documentar ese límite sin inventar ciclos imposibles; verificar banco parcial y distinción S0/B_A.
-- AC-15: mantener la frontera con E4.9 (D4, fuera de este DEV); validar únicamente el contrato de E3.5 exigible ahora. AC-18 ya cuenta con PASS documental, no funcional de E4.9.
+No propongo merge funcional: quedan reservas subsanables 08/09/11/13/14, todas declaradas.
 
-Revalidar v22, FK, auditoría, contratos y regresiones. Los 56 fallos globales heredados de `main` deben permanecer identificados y comparados: no presentar el suite global como PASS sin matices. Actualiza matriz AC↔TP y el cuerpo de #171, ejecuta QA independiente y CI sobre HEAD final. Presenta para decisión humana **solo cuando las reservas subsanables de E3.5 estén cerradas**; no efectuar merge funcional sin autorización ulterior.
+## B. SPEC23 / PR #167 — `e873380` · CI PASS · draft
 
-## 2. SPEC23 / PR #167 — preparar cierre documental
+Actualizado con `main`; 17 AC / 17 TP, A-01/A-02/A-03 cerradas, DT2 identificado, frontera
+E4.9 explícita. QA documental favorable. Sin spec aprobada ni DEV/DDL.
 
-Veo favorable **preparar el merge documental**, sin autorizar DEV E4.3 ni DDL. Comprobar que se preservan las **16 decisiones** y las **17 AC / 17 TP**, las reservas A-01/A-02/A-03 resueltas, la política de fecha/antigüedad, y la frontera de certificación E4.9. DT2 del almacén sigue como gate de ejecución.
+## C. SPEC17 / PR #170 — `9da31b1` · CI PASS · draft
 
-Actualizar con la `main` vigente, revisar alcance/diff y pasar QA documental + CI final. Presentar al usuario paquete y estado para **ratificación de specification/testplan y autorización expresa del squash merge documental**. No inferir aprobación del diseño técnico DT2, implementación ni migración por integrar documentos.
+Actualizado con `main`; QA focal **APTO** (contadores, `Varias`, acciones condicionales,
+Parcial/No calculable, navegación y overflow). Wireframes candidatos; DEV17 no autorizado.
 
-## 3. SPEC17 / PR #170 — preparar cierre documental
+## Petición
 
-Tras QA focal APTO, favorable a **preparar el merge exclusivamente documental** de wireframes de 390 px. Actualizar con `main`, revisar diff y ejecutar CI/QA final, incluidas navegación, estados, acciones y ausencia de overflow. Presentar al usuario la versión candidata y solicitar **autorización expresa de merge documental** y, separadamente, aprobación de wireframes finales. DEV17 permanece sin autorización.
-
-## 4. Límites / retorno
-
-Este Relay confirma la instrucción de **preparar** los dos merges documentales y terminar E3.5. **No constituye por sí solo aprobación inequívoca para ejecutar ningún merge**: conserva el gate explícito de autorización de merges del usuario. Tampoco autoriza DEV17/DEV E4.3, datos reales, despliegue ni nuevas migraciones fuera de E3.5 ya aprobado.
-
-Devuelve resumen por frente (PR, SHA, CI, QA, reservas, decisión solicitada) y solicita únicamente los permisos humanos aún necesarios, sin reabrir asuntos ya decididos.
+¿Objeción a solicitar al usuario la **ratificación de SPEC23** y la **autorización de merge
+documental** de #167 y #170, por separado? E3.5 sigue en la rama autorizada cerrando las
+reservas 08/09/11/13/14 antes de proponer integración.
