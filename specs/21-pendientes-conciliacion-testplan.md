@@ -1,35 +1,40 @@
 # 21 — E3.6 Pendientes y conciliación transversal: Testplan
 
-Status: **DISEÑO DE PRUEBAS — Q-S21-01–04 aprobadas en opción A; ninguna prueba
-ejecutada.** Todas las pruebas nuevas quedan **UNRUN**. No se declara PASS funcional,
-QA independiente ni autorización de desarrollo.
+Status: **DISEÑO DE PRUEBAS + EVIDENCIA POST-MERGE — DEV21 MERGED `a26fffb`; 31 AC sin
+PASS.** Las pruebas se diseñaron el 2026-10-27; la suite existe y pasó en CI, pero no hay
+veredicto AC por AC ni QA final sin reservas. AC-31 sigue **BLOCKED** por E4.8/E4.9.
 
 Approval source/date: usuario, 2026-10-27, Q-S21-01–04 opción A y cierre documental.
-Este testplan no autoriza desarrollo.
+Este testplan no autoriza desarrollo ni convierte la evidencia en PASS.
 
 Context: [specification 21](21-pendientes-conciliacion-specification.md),
 [brainstorming 21](21-pendientes-conciliacion-brainstorming.md),
+[progress 21](21-pendientes-conciliacion-progress.md),
 [roadmap E3.6](roadmap.md#e36--pendientes-y-conciliación-transversal-de-casos).
 
 Métodos previstos: `Bun/API/SQLite` para motores y DTO; `Playwright` para UI 390/1440;
-`revisión documental` para matrices y trazabilidad. Ningún método se ejecutó en esta
-preparación.
+`revisión documental` para matrices y trazabilidad.
 
-Dependencias generales:
+**Nota de vigencia:** la matriz de §1 y el estado global de §4 conservan el diseño del
+2026-10-27. La evidencia ejecutada después del merge está en §5 y prevalece sobre las
+afirmaciones «ninguna prueba ejecutada»/«UNRUN» de esas secciones, sin convertirlas en
+PASS.
 
-- **E3.6 no implementada.** No existen endpoints, DTO, pantallas ni pruebas de esta
-  entrega.
-- **E3.5/DEV18 candidata local**, no integrada ni aceptada; `FIN_NETA` runtime ausente;
-  `E3.5-AC-12/13/17/39` BLOCKED (numeración histórica; ver SPEC21 §4.3.1). Las pruebas de Comida que dependen de E3.5 quedan UNRUN y su
-  ejecución futura está bloqueada hasta integración/aceptación.
+Dependencias generales (estado vigente 2026-11-03; el diseño original se conserva abajo):
+
+- **E3.6 implementada e integrada** en `a26fffb` (PR #180); existen read model, rutas GET,
+  UI, E2E y pruebas. Sin PASS de AC.
+- **E3.5/DEV18 integrada** en `1560d04`; `FIN_NETA` operativo; `E3.5-AC-12/15` siguen
+  PARCIAL. Las ramas «sin E3.5» de las pruebas son defensivas con fixtures.
 - **E3.2 B-T11 pendiente.** El consumo por informes/E3.6 no se declara PASS.
 - **E3.1-AC36 PARCIAL** por proveedor de Cierres ausente.
 - **Cierres E4.8–E4.11 futuros.** No hay proveedor, locks, snapshots ni re-cierres.
 
 ## 1. Matriz AC → escenario → resultado → método → dependencia → estado
 
-Leyenda de escenarios: **P** positivo, **N** negativo, **L** límite. Todos los estados
-son **UNRUN**.
+Leyenda de escenarios: **P** positivo, **N** negativo, **L** límite. Los estados
+**UNRUN** de esta matriz son el registro del diseño del 2026-10-27; el estado de
+evidencia post-merge está en §5.
 
 | AC | Escenario P / N / L | Resultado observable esperado | Método previsto | Dependencia | Estado |
 | --- | --- | --- | --- | --- | --- |
@@ -92,11 +97,75 @@ son **UNRUN**.
 
 ## 4. Estado global
 
+Diseño original (2026-10-27) y estado vigente separados para no reescribir la historia:
+
 | Bloque | Estado |
 | --- | --- |
-| Pruebas nuevas | **31 AC UNRUN (AC-31 BLOCKED por Cierres); no se declara PASS ni FAIL** |
-| Pruebas funcionales E3.6 | No ejecutadas; no existe implementación |
-| Pruebas Comida/E3.5 | UNRUN; ejecución futura bloqueada hasta integración/aceptación |
+| Diseño de pruebas (2026-10-27) | **31 AC UNRUN (AC-31 BLOCKED por Cierres); no se declara PASS ni FAIL** |
+| Evidencia post-merge (2026-11-03) | **20 con prueba específica, 7 PARCIAL, 3 UNRUN, 1 BLOCKED; 0 PASS de AC** (ver §5) |
+| Pruebas funcionales E3.6 | Suite existente y ejecutada en CI del candidato; sin veredicto AC por AC |
+| Pruebas Comida/E3.5 | E3.5 integrada en `1560d04`; E3.5-AC-12/15 PARCIAL; no se declaran PASS |
 | Pruebas de Cierres | No diseñadas como operativas; solo revisión documental DT5 |
-| QA independiente | No realizada |
-| Aprobación de spec | **Aprobada por el usuario el 2026-10-27** (Q-S21-01–04 opción A y cierre documental); no autoriza DEV |
+| QA independiente | QA final **APTO CON RESERVAS** (PR #180); sin QA post-merge |
+| Aprobación de spec | **Aprobada por el usuario el 2026-10-27** (Q-S21-01–04 opción A y cierre documental); no autoriza nuevos DEV |
+
+## 5. Evidencia post-merge — 2026-11-03
+
+### 5.1 Integración y ejecución
+
+- **Merge:** PR #180, squash `a26fffb` en `main`, base `024b348`; HEAD de la PR `85ae61a`.
+- **Entorno:** macOS local para iteración; CI Linux como gate canónico.
+- **Ejecución registrada:**
+
+| Comprobación | Candidato | Entorno | Resultado |
+| --- | --- | --- | --- |
+| `required` PR #180 | `85ae61a` | Linux CI | **SUCCESS** (`41687200617`) |
+| Workflow `full` PR #180 | `85ae61a` | Linux CI | **SUCCESS** (`41687222419`): E2E, E1.6 y restore |
+| Suite API local | `85ae61a` | macOS | 510 pass / 2 skip / 56 fallos de entorno sin delta; `tsc` y build limpios |
+| CI post-merge | `a26fffb` | Linux CI | **SUCCESS** (`41696134039`) |
+| CI de `main` actual | `7306494` | Linux CI | **SUCCESS** (`41731496251`) |
+| QA final | `85ae61a` | Independiente | **APTO CON RESERVAS**; sin defecto financiero material |
+
+PASS/SUCCESS acredita la ejecución de la suite y del workflow, **no** un PASS de los 31 AC.
+El mapa AC↔prueba completo está en
+[progress 21 §12.4](21-pendientes-conciliacion-progress.md#124-mapa-ac--prueba).
+
+### 5.2 Pruebas existentes
+
+| Archivo | Pruebas | Cobertura principal |
+| --- | --- | --- |
+| `apps/api/src/pendientes.test.ts` | 18 tests | Neto, exceso, céntimos, Anticipo/Comida, foto, cobertura, filtros, ciclo/ejercicio, contextos y elegibilidad |
+| `apps/api/src/pendientes-api.test.ts` | 40 tests | 401/403/404, solo lectura, filtros 422, paginación, detalle, conciliación de ciclos y sin escrituras |
+| `apps/api/src/conciliacion-ciclos.test.ts` | 4 tests | `DIF_S0_SIGUIENTE`, `DIF_BANCO`, cero/signo, No disponible y no mutación de S0 |
+| `apps/api/src/flujo-ajustado.test.ts` | 18 tests | E2.6 intacto, `R_adj/G_n/S_aj`, memoria de caja, parcial/ND, céntimos y cálculo vivo |
+| `tests/e2e/pendientes.spec.ts` | 4 tests | W1/W2/W3/W5, W4, 1440/390, filtros, detalle, estados, alertas y sesión |
+
+### 5.3 Cobertura por AC
+
+| Estado | AC | Lectura |
+| --- | --- | --- |
+| CUBIERTO (20) | 01, 02, 03, 04, 06, 07, 08, 09, 11, 12, 13, 15, 18, 19, 20, 21, 22, 23, 27, 28 | Existe prueba directa y la suite pasó en CI; no es PASS del AC |
+| PARCIAL (7) | 05, 10, 14, 16, 17, 24, 25 | Cubre parte del escenario; faltan casos del AC |
+| UNRUN (3) | 26, 29, 30 | Sin prueba ejecutable específica |
+| BLOCKED (1) | 31 | Dependencia E4.8/E4.9 |
+
+### 5.4 Huecos y reservas
+
+- **AC-26:** no hay prueba de concurrencia de consultas ni de respuesta antigua.
+- **AC-29/AC-30:** son revisión documental (matriz DT5 y trazabilidad); no tienen prueba
+  ejecutable.
+- **AC-05/10/14/16/17/24/25:** la cobertura existente es parcial o depende de suites fuente.
+- **AC-31:** BLOCKED hasta E4.8/E4.9; no se simula un cierre.
+- **Reservas QA:** R8 (S bruto derivado), R9 (aviso stale), R12 (`listConciliaciones` sin
+  ruta), R14 (extensión declarada de `ContextoHecho`), R17/R18 (elegibilidad). No hay QA
+  post-merge.
+- **E3.5:** integrada en `1560d04`; E3.5-AC-12/15 siguen PARCIAL.
+- **Entorno:** los 56 fallos de macOS son de entorno; no acreditan el gate Linux.
+
+### 5.5 Próxima acción
+
+1. Revisar AC por AC las reservas y decidir su cierre; no convertir CUBIERTO/PARCIAL en
+   PASS sin ejecución y veredicto.
+2. Mantener AC-31 BLOCKED hasta E4.8/E4.9.
+3. No abrir nuevos desarrollos por este testplan; cualquier cambio requiere autorización
+   separada.
