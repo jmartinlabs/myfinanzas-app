@@ -19,31 +19,39 @@ v2.14.0; sus reglas operativas se aplican a entregas futuras sin reinterpretar l
 autorizaciones de negocio ni afirmar una adopción íntegra.
 El coordinador conserva su modelo. Los subagentes Codex deben respetar el techo absoluto y la verificación de selección de [model-selection](model-selection.md); el [gate de cuota](dynamic-agents.md#quota-and-dispatch-gate) exige autorización por tarea cuando corresponde, incluida QA. OpenCode se habilita por ejecución; Agent Relay v1 transporta el paquete existente sin implicar control directo.
 
-## Reparto de responsabilidades — orquestador, asesor y usuario
+## Reparto de responsabilidades — coordinador técnico, asesor y usuario
 
-Aprobado por el usuario el 2026-10-27. No cambia los gates de [approvals](approvals.md):
-especificación, desarrollo, cambio de alcance, merge y despliegue siguen necesitando
-aprobación expresa.
+Aprobado por el usuario el 2026-11-03. Sustituye el reparto anterior sin eliminar los
+gates de [approvals](approvals.md): desarrollo nuevo, cambios financieros, merges
+funcionales y operaciones reales conservan autorización expresa.
 
-- **Orquestador técnico (OpenCode).** Único responsable de la ejecución: consolida los
-  handoffs, coordina desarrollo, documentación, pruebas, QA, CI y PR, resuelve incidencias
-  dentro del alcance autorizado y gestiona dependencias, ownership, bloqueos y seguimiento
-  global. No traslada al usuario información técnica rutinaria que pueda resolver.
-- **Asesor (Álex, ChatGPT).** Aporta criterio en decisiones financieras, funcionales y de
-  arquitectura; no ejecuta, no asigna trabajo y no aprueba. Su recomendación no autoriza
-  nada por sí sola.
-- **Usuario.** Autoridad final y única fuente de aprobación protegida.
+- **Coordinador técnico y ejecutor principal (OpenCode).** Asume de forma autónoma la
+  planificación y el backlog, la coordinación de agentes, el desarrollo, la arquitectura,
+  la implementación, las pruebas, la QA independiente, la documentación, las ramas,
+  worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos sin
+  esperar instrucciones innecesarias y consolida resultados y decisiones pendientes.
+  Puede fusionar PR **documentales no normativos** dentro de specs aprobadas tras CI,
+  siempre que no cambien reglas financieras, alcance, estado de aprobación, roadmap,
+  seguridad ni contratos generados. No fusiona PR funcionales.
+- **Asesor financiero y revisor funcional final (Álex).** Interviene solo ante: duda
+  financiera o funcional material no resuelta por reglas aprobadas; propuesta de cambio
+  de criterio, regla o comportamiento aprobado; contradicción entre especificaciones que
+  requiera decisión de negocio; desarrollo funcional que haya superado QA y esté listo
+  para revisión final; o decisión estratégica de alcance/prioridad. No recibe consultas
+  técnicas, de implementación, refactorización, pruebas o decisiones menores.
+- **Usuario.** Autoridad final: aprueba nuevos DEV, cambios financieros materiales,
+  merges funcionales, operaciones reales, datos reales, despliegues y cambios de alcance
+  o visibilidad.
 
 ### Materias que exigen consulta
 
-Reglas financieras, cálculos o interpretación de importes; comportamiento funcional de
-cualquier dominio financiero (Ciclos, Cierres, Movimientos, Saldos, Anticipos, Compartidos,
-Presupuestos, Inversiones y los demás); cambios estructurales que afecten al modelo
-financiero, la integridad histórica o la fuente única de verdad; y contradicciones entre
-especificaciones, criterios aprobados o decisiones anteriores.
+Solo las cinco anteriores. Las dudas técnicas, de implementación, refactorización,
+pruebas, documentación no normativa o decisiones menores las resuelve el coordinador sin
+consultar al asesor.
 
-La consulta se redacta con contexto imprescindible, alternativas, recomendación motivada y
-consecuencias, y no se presenta como decisión tomada.
+La consulta se agrupa en un único mensaje con contexto, alternativas, recomendación
+motivada y consecuencias, y no se presenta como decisión tomada. El silencio de Álex no
+es aprobación.
 
 ### Circuito de decisión
 
