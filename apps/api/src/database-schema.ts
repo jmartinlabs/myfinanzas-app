@@ -125,7 +125,12 @@ export function prepareSchema(db: Database, identity: Identity) {
         if (versions[0].version < 19) comidaSchema(db);
         if (versions[0].version < 20) dprimaSchema(db);
         if (versions[0].version < 21) ventaSchema(db);
-        if (versions[0].version < 22) comidaRolV22(db);
+        if (versions[0].version < 22) {
+          comidaRolV22(db);
+          const broken = db.query("PRAGMA foreign_key_check").all();
+          if (broken.length)
+            throw new Error("Migración v22 rechazada: claves foráneas inconsistentes.");
+        }
         return; // Existing data is never re-seeded.
       }
       if (
@@ -249,13 +254,9 @@ export function prepareSchema(db: Database, identity: Identity) {
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
+    if (rebuild) db.exec("PRAGMA foreign_keys=ON");
     db.close();
     throw error;
   }
-  if (rebuild) {
-    const broken = db.query("PRAGMA foreign_key_check").all();
-    db.exec("PRAGMA foreign_keys=ON");
-    if (broken.length)
-      throw new Error("Migración v22 rechazada: claves foráneas inconsistentes.");
-  }
+  if (rebuild) db.exec("PRAGMA foreign_keys=ON");
 }

@@ -1010,6 +1010,68 @@ test("I3/D3-O1: reposición sin obligación sin régimen acreditado se rechaza",
   db.close();
 });
 
+test("I5/AC-14: DIF_S0_SIGUIENTE usa el siguiente Inicio y no se fusiona con DIF_BANCO", () => {
+  const { db, account, ing, food, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const finance = transfer(db, account, ing, "700");
+  writeComidaRol(db, finance.movimiento.id, { revision: 1, rol: "Financiación", evidencia: "Evidencia ficticia" }, randomUUID(), now);
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.proveedor.version).toBe("e35-1");
+  expect(metrics.proveedor.soloLectura).toBe(true);
+  expect(metrics.diferencias.siguienteInicio).toBe("2026-07-20");
+  expect(metrics.diferencias.s0Siguiente).not.toBeNull();
+  db.close();
+});
+
+test("I3/AC-07: R_obl suficiente con C_n>0 produce obligación Completada", () => {
+  const { db, account, ing, leisure, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    { revision: ready.regimen.regimen!.revision, motivo: "Activación ficticia", confirmar: true },
+    randomUUID(),
+    now,
+  );
+  const repo = transfer(db, account, ing, "20", "2026-06-25");
+  writeComidaRol(db, repo.movimiento.id, { revision: 1, rol: "Reposición", obligacionCiclo: cycle1.id, evidencia: "Cobro ficticio" }, randomUUID(), now);
+  purchase(db, ing, leisure.id, { importe: "20", comida: { etiqueta: "Ocio" } });
+  const metrics = comidaMetrics(db, cycle1.id, now);
+  expect(metrics.obligacion.robl).toBe("20.00");
+  expect(metrics.obligacion.falta).toBe("0.00");
+  expect(metrics.obligacion.estado).toBe("Completada");
+  db.close();
+});
+
 test("CU-11: un v18 genuino con hechos asciende a v19 preservando filas y el contrato", () => {
   const { prepareV18 } = require("../test-support/database-v18");
   const db = new Database(":memory:");

@@ -290,13 +290,29 @@ export function e35Metrics(
         (a): a is NonNullable<ReturnType<typeof attributed>> =>
           !!a && a.eligible && isCompensable(a.label),
       );
-    const pendingDev = devoluciones.filter((r) => {
-      const a = attributed(r);
-
-      // A refund accredited to another cycle is observed, not pending, and must
-      // not block the receiver cycle resources (P5/CU-22).
-      return !a || !a.accredited || !a.grouped;
-    });
+    const devolucionesPorCausa = (() => {
+      const sinVinculo: string[] = [];
+      const sinAcreditacion: string[] = [];
+      const revisar: string[] = [];
+      const otroCiclo: string[] = [];
+      for (const r of devoluciones) {
+        const a = attributed(r);
+        if (a && a.accredited && a.grouped) {
+          if (!a.eligible) otroCiclo.push(r.id);
+          continue;
+        }
+        if (a?.d.estado === "Revisar" && a.d.compra) revisar.push(r.id);
+        else if (!a?.d.compra && !a?.accredited) sinVinculo.push(r.id);
+        else sinAcreditacion.push(r.id);
+      }
+      return { sinVinculo, sinAcreditacion, revisar, otroCiclo };
+    })();
+    const pendingDevIds = [
+      ...devolucionesPorCausa.sinVinculo,
+      ...devolucionesPorCausa.sinAcreditacion,
+      ...devolucionesPorCausa.revisar,
+    ];
+    const pendingDev = pendingDevIds.map((id) => ({ id }));
     const foodBruto = sum(food.map((p) => BigInt(p.row.importe)));
     const foodDev = sum(eligibleFood.map((a) => BigInt(a.importe)));
     const compBruto = sum(comp.map((p) => BigInt(p.row.importe)));
@@ -307,7 +323,22 @@ export function e35Metrics(
     const coverageFood =
       pending.length === 0 && pendingDev.length === 0
         ? null
-        : "Clasificación u origen pendientes; el neto afectado es parcial.";
+        : [
+            pending.length
+              ? `Compras sin clasificar: ${pending.join(", ")}.`
+              : null,
+            devolucionesPorCausa.sinVinculo.length
+              ? `Devoluciones sin vínculo acreditado: ${devolucionesPorCausa.sinVinculo.join(", ")}.`
+              : null,
+            devolucionesPorCausa.sinAcreditacion.length
+              ? `Devoluciones sin acreditación suficiente: ${devolucionesPorCausa.sinAcreditacion.join(", ")}.`
+              : null,
+            devolucionesPorCausa.revisar.length
+              ? `Devoluciones en Revisar: ${devolucionesPorCausa.revisar.join(", ")}.`
+              : null,
+          ]
+            .filter((v): v is string => !!v)
+            .join(" ");
 
     const obligation = (cycleId: string, destination: string | null) => {
       const movements = rows.filter((r) => {
@@ -497,6 +528,19 @@ export function e35Metrics(
       };
     })();
 
+    const nextCycle =
+      cycleMaster(db)
+        .filter((c) => c.inicio > ciclo.inicio)
+        .sort((a, b) => a.inicio.localeCompare(b.inicio))[0] ?? null;
+    const diferencias = {
+      banco: position?.difference ?? null,
+      siguienteInicio: nextCycle?.inicio ?? null,
+      s0Siguiente:
+        nextCycle && analyticsClose !== null
+          ? decimal(cents(nextCycle.saldoInicialComida) - analyticsClose)
+          : null,
+    };
+
     const bridge =
       resources !== null && financing.available && analyticsClose !== null
         ? {
@@ -662,6 +706,8 @@ export function e35Metrics(
             diferenciaAnaliticoBanco: position.difference,
           }
         : { estado: "No disponible", motivo: "Requiere régimen individual activo con cobertura." },
+      diferencias,
+      devoluciones: devolucionesPorCausa,
       puente: bridge
         ? {
             baseAnalitica: decimal(bridge.base),
