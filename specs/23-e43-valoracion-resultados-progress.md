@@ -1,7 +1,8 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **DEV E4.3-A y DEV43-B implementados, con CI Linux verde en `9f5e059` (PR #184
-draft, sin merge). DEV43-C sin empezar. Ningún AC/TP en PASS.**
+Status: **DEV E4.3-A y DEV43-B implementados, con CI Linux verde en `464341b` (PR #184
+draft, sin merge). QA-B APTO CON RESERVAS, con R1/R2 corregidos y R3 reforzado. DEV43-C sin
+empezar. Ningún AC/TP en PASS.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
@@ -62,13 +63,18 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
   implementadas y cubiertas por pruebas.
 - **Fuera de alcance:** UI/E2E (C), cambios de esquema v24, v25, E4.9/E4.6/E4.7/E4.5,
   datos reales, migración operativa, despliegue y merge.
-- **Pruebas:** `e43-api.test.ts` 9/9 en macOS; `bun run typecheck` limpio; CI Linux
-  `required` run `41717745009` **639/639**. Los fallos de backup/restore macOS son los mismos
+- **Pruebas:** `e43-api.test.ts` 14/14 en macOS; `bun run typecheck` limpio; CI Linux
+  `required` run `41721208556` **644/644**. Los fallos de backup/restore macOS son los mismos
   de `main` y no acreditan el gate Linux.
-- **Límite:** QA-B independiente pendiente; ningún AC/TP funcional se declara PASS todavía.
+- **QA-B (independiente):** **APTO CON RESERVAS**, sin bloqueantes. R1 (Manual >2⁵³−1
+  devolvía 500 en vez de 422) y R2 (`cantidadBase` declarada en Automática) corregidos en
+  `464341b`; R3 reforzado con instantánea de todas las tablas antes/después de las lecturas.
+  Quedan como reservas menores AC-07/AC-17 y concurrencia real, y la UI (C).
+- **Límite:** ningún AC/TP funcional se declara PASS todavía; C/UI pendiente.
 
 ## Próxima acción segura
 
-1. QA-B independiente sobre el candidato `9f5e059` (API/read model, sin UI).
-2. Tras QA-B, preparar C (UI/E2E) con wireframes ya integrados; sin merge de #184.
+1. QA-B completada; el candidato `464341b` queda listo para revisión de merge (pendiente de
+   aprobación explícita).
+2. Preparar C (UI/E2E) con wireframes ya integrados; sin merge de #184.
 3. No merge funcional, ni C, ni v25, ni datos reales sin aprobación específica.
