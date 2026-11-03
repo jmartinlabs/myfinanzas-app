@@ -1,10 +1,13 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Specification
 
 Status: **PROPUESTA DOCUMENTAL EN REVISIÓN — no aprobada; DEV no autorizado; ningún AC en PASS.**
+DT2-E4.3: **APROBADA por el usuario el 2026-11-03 sobre la revisión `24f3efb` (PR #174).**
+La aprobación de DT2 no aprueba esta specification, los wireframes ni el testplan, y no autoriza
+DEV E4.3, DDL, migración, integración con E4.8/E4.9, merge ni despliegue.
 Approval source/date: **PENDIENTE.** Las decisiones D-01…D-16 fueron confirmadas por el usuario
 el 2026-11-02 en el [brainstorming](23-e43-valoracion-resultados-brainstorming.md); esa
-confirmación no aprueba esta specification, los wireframes ni el testplan. No hay autorización
-de desarrollo, esquema, migración, integración con E4.8/E4.9, merge ni despliegue.
+confirmación no aprueba esta specification. No hay autorización de desarrollo, esquema,
+migración, integración con E4.8/E4.9, merge ni despliegue.
 Context and brainstorming: [23-e43-valoracion-resultados-brainstorming.md](23-e43-valoracion-resultados-brainstorming.md),
 [roadmap E4.3](roadmap.md#e43--valoración-y-resultados-de-posiciones),
 [referencia R5/R6](functional-reference-v5.11.md),
@@ -291,16 +294,41 @@ En el esquema v21 **no existe tabla ni columna de valoración**:
 Por tanto, esta specification no puede declarar disponible la captura ni la lectura de valores.
 La lectura actual de una posición sin valoración debe seguir siendo `No disponible`, nunca `0`.
 
-### Almacén propuesto — decisión DT2-E4.3 (no ejecutada)
+### Almacén DT2-E4.3 — revisión final aprobada 2026-11-03 (`24f3efb`)
 
-Se propone, **sujeto a autorización y a DT2**, una tabla aditiva de **serie fechada de
-valoraciones** (nombre provisional `valoracion_inversion`; el nombre físico y el número de
-esquema se decidirán en el DEV autorizado). No se ejecuta DDL, no se reserva versión y no se
-modifican `operaciones_inversion` ni `instrumentos`.
+Criterios ratificados y **aprobados formalmente por el usuario el 2026-11-03 sobre la revisión
+`24f3efb` (PR #174)**. Texto registrado: «Apruebo DT2-E4.3 en la revisión `24f3efb` de la PR
+#174, incluidos unicidad, auditoría, límites E4.1/E4.2, prefijo `VAL` y A-01 para Manual. No
+autorizo todavía DEV E4.3.» La aprobación fija el diseño del almacén, pero **no autoriza DEV
+E4.3**, DDL ni migración: no se ejecuta DDL, no se reserva versión de esquema y no se modifica
+`operaciones_inversion` ni `instrumentos`.
+
+1. **Persistencia:** tabla aditiva de serie fechada (D-08), sin `ciclo_id`, sin DELETE y sin
+   reutilizar tablas de hechos como almacén.
+2. **Unicidad:** una sola valoración por `(posición, fecha_vigencia)`. Un duplicado se rechaza
+   con 409 `VALUATION_EXISTS`; la corrección se hace sobre la existente.
+3. **Concurrencia:** revisión optimista por `revision`; una revisión obsoleta produce 409
+   `REVISION_CONFLICT` sin escritura parcial.
+4. **Auditoría:** append-only por alta y corrección, con actor, instante UTC, motivo y estado
+   anterior/posterior; no admite DELETE.
+5. **Identidad:** textual estable, generada en servidor, prefijo exclusivo `VAL`, no reutilizable
+   y sin reinicio anual; el resto del formato se fija en el DDL conforme a la regla DT2 de E1.1.
+6. **Límites:** los ya confirmados en E4.1/E4.2 —cantidad 8 decimales, precio y cambio 6,
+   entero escalado `1..2⁵³−1`, EUR en céntimos— sin máximo nuevo ni redondeo intermedio.
+7. **Migración:** aditiva desde **v22**, sin backfill (diseño); versión, DDL y ejecución no
+   autorizados.
+8. **A-01 ratificada también para `Manual`:** el importe corresponde a la cantidad de su
+   `fecha_vigencia`; no se extrapola a otra cantidad. Si la cantidad difiere al corte, la
+   posición queda `No disponible` con motivo y exige nueva valoración.
+
+Se propone, **sujeto a la aprobación formal de esta revisión y a la autorización del DEV**, una
+tabla aditiva de serie fechada (nombre provisional `valoracion_inversion`; nombre físico y
+número de esquema se decidirán en el DEV autorizado). No se ejecuta DDL, no se reserva versión y
+no se modifican `operaciones_inversion` ni `instrumentos`.
 
 | Campo conceptual | Contenido | Regla |
 | --- | --- | --- |
-| `id` | Identidad técnica inmutable de la valoración | Formato y contador pendientes de DT2; no reutilizable |
+| `id` | Identidad técnica inmutable de la valoración | Prefijo exclusivo `VAL`; texto estable generado en servidor, no reutilizable y sin reinicio anual (DT2 2026-11-03); el resto del formato se fija en el DDL |
 | `saldo_inversion` + `instrumento` | Posición valorada | Debe ser un Saldo `Inversión`/`Inversiones`; la posición se deriva, no se copia como fila editable |
 | `fecha_vigencia` | Fecha civil a la que se refiere el valor | No futura; ISO `YYYY-MM-DD`; no es la fecha de captura |
 | `tipo` | `Manual` o `Automática` | Enum cerrado; no se infiere |
@@ -327,10 +355,10 @@ auditoría, deberá conservar estas garantías.
 
 - Una posición puede tener varias valoraciones en fechas distintas; no hay una única «valoración
   actual» editable.
-- Para una misma posición y `fecha_vigencia` se propone una sola valoración vigente. Corregirla
-  exige `revision` vigente y `motivo`; la revisión anterior se conserva en auditoría y no se
-  borra. Un duplicado de la misma posición y fecha se rechaza con 409 si DT2 confirma la
-  unicidad; la corrección se hace sobre la existente.
+- Para una misma posición y `fecha_vigencia` hay una sola valoración vigente (unicidad DT2
+  confirmada). Corregirla exige `revision` vigente y `motivo`; la revisión anterior se conserva
+  en auditoría y no se borra. Un duplicado de la misma posición y fecha se rechaza con 409
+  `VALUATION_EXISTS`; la corrección se hace sobre la existente.
 - No existe `ciclo_id` ni asociación artificial a un Ciclo. El corte es un parámetro de consulta.
 - No hay DELETE. Una valoración no se «anula» en esta propuesta; se corrige con revisión y
   auditoría, o se deja fuera de la serie si nunca se registró.
@@ -510,7 +538,7 @@ cotizaciones, bancos ni proveedores de FX. El cambio es un dato declarado por el
 | `GET /api/e43/posiciones/{saldoInversion}/{instrumento}?fecha=YYYY-MM-DD` | Detalle de posición | 404 si la posición no existe al corte; incluye serie y resultado; no escribe |
 | `GET /api/e43/posiciones/{saldoInversion}/{instrumento}/valoraciones?desde=&hasta=` | Serie histórica | Orden por fecha/revisión; no escribe; no devuelve valores posteriores al corte consultado en el agregado |
 | `GET /api/e43/valoraciones/{id}` | Ficha/auditoría de una valoración | 404 si no existe; metadatos y auditoría; no escribe |
-| `POST /api/e43/posiciones/{saldoInversion}/{instrumento}/valoraciones` | Alta de valoración Manual/Automática | **Solo si D-08/DT2 se autorizan**; idempotencia, revisión, procedencia, fecha y cálculo; no toca Compras/Ventas |
+| `POST /api/e43/posiciones/{saldoInversion}/{instrumento}/valoraciones` | Alta de valoración Manual/Automática | **Solo con DEV autorizado**; DT2 ratificado con aprobación formal pendiente; idempotencia, revisión, procedencia, fecha y cálculo; no toca Compras/Ventas |
 | `POST /api/e43/valoraciones/{id}/rectificar` | Corrección auditada | **Solo si se autoriza**; `revision` y `motivo`; 409 si la revisión es obsoleta; conserva la anterior en auditoría |
 | `GET /api/inversiones/efectivo?saldo={Sxxx}&fecha=YYYY-MM-DD` | Efectivo del bróker | Se reutiliza el contrato E4.2/`cashAt`; E4.3 no crea un endpoint de efectivo paralelo |
 
@@ -524,7 +552,7 @@ Códigos de error propuestos:
 | Sesión ausente o inválida | 401 | `UNAUTHENTICATED` | Sin datos financieros |
 | Posición, valoración o ruta inexistente | 404 | `NOT_FOUND` | Recurso y motivo genérico |
 | Revisión obsoleta al corregir | 409 | `REVISION_CONFLICT` | Revisión vigente esperada |
-| Duplicado de posición y fecha, si DT2 confirma unicidad | 409 | `VALUATION_EXISTS` | Valoración vigente a corregir |
+| Duplicado de posición y fecha (unicidad DT2 confirmada) | 409 | `VALUATION_EXISTS` | Valoración vigente a corregir |
 | Misma clave de idempotencia con otro payload | 409 | `IDEMPOTENCY_CONFLICT` | Conflicto sin segunda valoración |
 | Campo inválido, negativo, fecha futura, precisión excesiva, exponente o procedencia ausente | 422 | `VALIDATION` | Campo y motivo |
 | Idempotency-key ausente o inválida en alta | 422 | `IDEMPOTENCY_REQUIRED` | Clave de intento inválida |
@@ -645,11 +673,14 @@ acredita la funcionalidad.
 
 - **Decisiones D-01…D-16:** confirmadas por el usuario el 2026-11-02; fuente registrada en el
   brainstorming. No equivalen a aprobación de esta specification.
+- **DT2-E4.3:** **APROBADA por el usuario el 2026-11-03 sobre `24f3efb` (PR #174)**. No autoriza
+  DEV E4.3, DDL, migración, endpoints ni UI.
 - **Specification/wireframes/testplan:** **NO aprobados**. Pendiente de revisión y aprobación
   explícita del usuario.
-- **DEV/esquema:** **NO autorizados**. El almacén de serie fechada es una propuesta DT2-E4.3; no
+- **DEV/esquema:** **NO autorizados**. El almacén de serie fechada es la revisión DT2-E4.3; no
   hay DDL, migración, versión reservada ni endpoints.
 - **E4.8/E4.9:** la integración de `e43`/`valoracion` y la foto requieren autorización separada.
-  E4.3 no las modifica.
-- **AC:** ninguno en PASS; los 16 son criterios de diseño. La siguiente acción es la revisión
-  humana y, solo tras autorización separada, el contraste DT2 y el DEV.
+  E4.3 no las modifica. La primera fotografía puede registrar E4.3 como `No disponible`.
+- **AC:** ninguno en PASS; los 17 son criterios de diseño. DT2 ya está aprobada; la siguiente
+  acción es la revisión humana de specification/testplan y, solo tras autorización separada, el
+  DEV.

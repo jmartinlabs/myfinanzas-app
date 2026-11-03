@@ -1,8 +1,8 @@
 # 17 — E4.4 Deuda completa y conciliación desde apertura: Specification
 
-Status: **PROPUESTA DOCUMENTAL EN REVISIÓN** — 2026-10-27. **M1/M2/m8 aprobados por el usuario el 2026-11-02 y aplicados; la specification/wireframes de E4.4 siguen en revisión y no aprobados.** Q1–Q7 confirmadas expresamente por el usuario en el chat supervisor Codex. Sin desarrollo, SQL operativo, migración, Excel, datos reales, merge ni despliegue.
+Status: **APROBADA** — 2026-11-03 sobre la revisión de `main` `da9999a`, con wireframes 1440/390. M1/M2/m8 siguen aplicados según la decisión del 2026-11-02. Esta aprobación **no autoriza DEV17**, migraciones, datos reales, despliegue ni merge.
 
-Approval source/date: **specification/wireframes PENDIENTES**. La confirmación humana del 2026-10-27 cierra únicamente D1–D7. La decisión del usuario del 2026-11-02 aprueba **solo** las correcciones M1/M2/m8 (lectura `null ≠ 0` con regresión, R5 en solo lectura sin asignar escritura, y bloqueo de la deuda viva completa de la deuda afectada en el corte); no autoriza la specification, los wireframes, DEV17, migración, merge ni datos reales. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
+Approval source/date: **Aprobación explícita del usuario, 2026-11-03:** «Apruebo la specification 17 en la revisión de `main` `da9999a`, incluidos los wireframes 1440/390 descritos. Esta aprobación no autoriza DEV17, migraciones ni despliegue.» La confirmación humana del 2026-10-27 (D1–D7) y la del 2026-11-02 (M1/M2/m8) se conservan como antecedente; la aprobación vigente es la del 2026-11-03. Texto original y alcance en [brainstorming](17-e44-deuda-completa-brainstorming.md#confirmación-humana-q1q7--2026-10-27).
 
 **Decisiones del usuario — 2026-11-02 (diseño, no ejecución):**
 1. **M1 se aplica solo en el read model E4.4**; `getDebt`/E1.6 no se altera y no se introduce
@@ -23,7 +23,8 @@ Context and brainstorming: [17-e44-deuda-completa-brainstorming.md](17-e44-deuda
 [spec04](04-movimientos-specification.md), [spec05](05-transferencias-referencias-specification.md),
 [spec07](07-ciclos-operacion-specification.md).
 
-Base de preparación: `main` = `c827d4c` (2026-11-02); esquema SQLite **v21**. Esta spec **no
+Base de preparación: `main` = `c827d4c` (2026-11-02); esquema SQLite **v21**. La aprobación se
+otorgó sobre `main` `da9999a` (esquema **v22**). Esta spec **no
 fija** una versión futura de esquema ni escribe SQL. El desarrollo deberá comprobar de nuevo
 `main`, la versión vigente y los contratos integrados antes de implementar.
 
@@ -859,8 +860,9 @@ funcionalidad.
 ## Approval and next action
 
 - **Decisiones financieras/materiales:** Q1–Q7 confirmadas expresamente por el usuario el 2026-10-27; evidencia directa y alcance en brainstorming. No supone aprobación de esta spec.
-- **Especificación/wireframes:** **NO aprobados**. Pendiente de revisión final de Codex y
-  aprobación explícita del usuario.
+- **Especificación/wireframes:** **APROBADOS** por el usuario el 2026-11-03 sobre `main`
+  `da9999a`, incluidos los wireframes 1440/390. La aprobación no autoriza DEV17, migración,
+  datos reales, despliegue ni merge.
 - **QA independiente:** se coordinó sobre SHAs concretos; el revisor no aprueba reglas
   financieras, no amplía alcance, no escribe epic-board y no hace merge. Dictamen documental
   final registrado en el testplan; no es PASS funcional.
