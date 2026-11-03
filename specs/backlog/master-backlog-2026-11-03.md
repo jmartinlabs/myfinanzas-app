@@ -46,7 +46,7 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 6. **E4.6:** contrato de consumidores/fixtures cuando E4.3 esté avanzado; no duplicar motores.
 7. **E4.7:** frontera/DT8; no abrir SPEC25 hasta decisiones.
 8. **E4.5/DT7:** checklist de mapping/cortes/2026 y QA documental, solo si se prioriza.
-9. **PR #50/#51:** cerrar como superseded con evidencia (Ciclos ya corregido en `main`), sin merge ni borrar ramas ajenas.
+9. **PR #50/#51:** cerradas como superadas (2026-11-03) con evidencia: #51 por el fix `#56` ya integrado (`useEffect([impact])`); #50 por documentación posterior (#128/#159 y tablero E4). Sin merge.
 10. **Documentación de vigencia:** tablero histórico, `spec-audit-tracker`, handoff local y SPEC33.
 
 ### P2 — Bloqueado por decisión
