@@ -1,8 +1,12 @@
 # 24 — E4.6 Resumen de inicio completo: Specification
 
-Status: **DRAFT — CANDIDATA, NO APROBADA.** Wireframes 1440/390 **propuestos**, no aprobados.
-Este documento no implementa código, API, SQLite, DDL ni migraciones. No autoriza DEV E4.6.
-Approval source/date: **PENDING**.
+Status: **APROBADA documentalmente por el usuario el 2026-11-03.** Q1–Q12 ratificadas en
+opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetivo/umbrales) y
+**Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente). DEV24
+**NO autorizado**; ningún AC en PASS. Wireframes 1440/390: contrato documental aprobado; la
+implementación visual no está autorizada.
+Este documento no implementa código, API, SQLite, DDL ni migraciones.
+Approval source/date: aprobación directa del usuario, 2026-11-03.
 Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md),
 [roadmap E4.6](roadmap.md#e46--resumen-de-inicio-completo),
 [referencia R6](functional-reference-v5.11.md),
@@ -11,15 +15,15 @@ Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resum
 [SPEC17](17-e44-deuda-completa-specification.md), [SPEC27](27-e49-cierre-financiero-specification.md),
 [guías UI](guidelines/ui.md), [arquitectura](guidelines/architecture.md),
 [calidad](guidelines/quality.md) y [seguridad](guidelines/security.md).
-Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
+contenido ni cambia el alcance.
 Test design: [24-e46-resumen-inicio-testplan.md](24-e46-resumen-inicio-testplan.md).
 
-**Leyenda.** `CONFIRMADO` = regla de un documento aprobado o instrucción expresa del usuario.
-`PROPUESTA` = contrato candidato de esta spec. `PENDIENTE` = decisión del usuario o
-dependencia sin resolver. **La regla de `mesesCubiertos` de Q3 está precisada por instrucción
-del usuario; Q4 es una propuesta técnica de Álex pendiente de confirmación al aprobar
-SPEC24.** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales), Q4 y Q5–Q12 siguen pendientes;
-los puntos afectados se marcan aquí.
+**Leyenda.** `CONFIRMADO` = regla de un documento aprobado o ratificación del usuario.
+`PROPUESTA` = detalle técnico candidato dentro del alcance aprobado. `PENDIENTE` = dependencia
+externa no resuelta. **Q1–Q12 están aprobadas en opción A el 2026-11-03, con Q3-B=A y Q4=A
+explícitas.**
 
 ## Functionality
 
@@ -39,7 +43,8 @@ Incluye:
 5. Inversión: agregado de posiciones de E4.3 (si está integrado y su cobertura lo permite) y
    efectivo del bróker por Saldo de E4.2, sin total combinado.
 6. Deuda no hipotecaria de E4.4, con deuda viva por deuda y total solo si es calculable.
-7. Pendientes de E3.6 cuando su motor exista; en v23, `No disponible` con motivo.
+7. Pendientes de E3.6; esta spec define el consumo, pero el DEV E4.6 no está autorizado, por lo
+   que el ejemplo de contrato figura `No disponible` con motivo.
 8. Drill-down desde cada cifra a su módulo o ficha de origen.
 
 No incluye: cálculo de motores, segunda contabilidad, patrimonio global, valoración fuera de
@@ -86,7 +91,7 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 | P-03 | Cada cifra declara `fuente.motor`, IDs y revisión; sin fuente identificada no hay cifra | E4.6-AC1 |
 | P-04 | `null` significa `No disponible` y nunca se normaliza a `0.00`; el cero explícito se conserva | SPEC12 / SPEC23 |
 | P-05 | Cobertura por métrica; un parcial no se presenta como total | SPEC12 |
-| P-06 | Contextos separados (`ciclo`, `actual`, `corte`); no se suman bloques de contextos distintos | PROPUESTA Q2 |
+| P-06 | Contextos separados (`ciclo`, `actual`, `corte`); no se suman bloques de contextos distintos | Q2=A |
 | P-07 | No se inventa un agregado donde el motor propietario no lo publica; si E4.6 suma (p. ej. deuda no hipotecaria Q7), la regla es explícita, trazable y conserva la cobertura | SPEC21 / SPEC22 |
 | P-08 | Una lectura = un snapshot SQLite coherente con una `revision`; sin caché persistida | SPEC12 |
 | P-09 | Los enlaces solo llevan IDs y rutas; nunca importes ni datos financieros | Security guidelines |
@@ -125,11 +130,10 @@ no está acreditada; E4.6 conserva esa marca.
 - Los bloques actuales (Liquidez, Saldos, Deuda, Efectivo) llevan su propio contexto; no se
   fechan con un corte histórico que no exista.
 
-**PROPUESTA (Q4) — PENDIENTE DE CONFIRMACIÓN.** Recomendación técnica de Álex: el ejercicio
-del coste esencial sería el **año de `ciclo.mesFinanciado`**, incluso si el ciclo cruza
-ejercicio. No se usarían el reloj, el corte ni el año del ingreso para sustituirlo.
-`annualEquivalent` se consumiría sin recalcular. **El usuario debe confirmar esta regla al
-aprobar SPEC24; no es una decisión cerrada.**
+**APROBADA (Q4=A, 2026-11-03).** El ejercicio del coste esencial es el **año de
+`ciclo.mesFinanciado`**, incluso si el corte cae en el ejercicio siguiente. No se usan el
+reloj, el corte ni el año del ingreso para sustituirlo. `annualEquivalent` se consume sin
+recalcular. Fuente: aprobación directa del usuario, 2026-11-03.
 
 ### Objetivo R6
 
@@ -183,7 +187,7 @@ independientes y un mismo Saldo puede pertenecer a varias.
   agregado de posiciones (SPEC23 D-11).
 - Un mismo Saldo puede aparecer en Liquidez y en Efectivo del bróker. Son dos vistas del mismo
   activo, no dos importes que se sumen.
-- **Deuda no hipotecaria [PROPUESTA Q7]:** se suman solo deudas `Activa` con
+- **Deuda no hipotecaria [Q7=A]:** se suman solo deudas `Activa` con
   `tipoDeuda = No hipotecaria` y `capital.calculable = true`. Si alguna no es calculable, el
   total es `null` con subtotal conocido y cobertura `n/m`. `Hipotecaria` y `Sin informar` se
   muestran aparte y **no** entran en el total.
@@ -363,14 +367,14 @@ independientes y un mismo Saldo puede pertenecer a varias.
     },
     "pendientes": {
       "contexto": { "tipo": "actual" },
-      "metrica": { "clave": "pendientes", "etiqueta": "Pendientes", "clase": "informativo", "valor": null, "estado": "No disponible", "unidad": "EUR", "motivo": "Motor E3.6 no integrado", "cobertura": { "estado": "No disponible", "incluidos": 0, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E3.6", "ids": [], "revisiones": [] }, "contexto": { "tipo": "actual" }, "enlace": null },
+      "metrica": { "clave": "pendientes", "etiqueta": "Pendientes", "clase": "informativo", "valor": null, "estado": "No disponible", "unidad": "EUR", "motivo": "Consumo E4.6 no implementado; E3.6 disponible en la base", "cobertura": { "estado": "No disponible", "incluidos": 0, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E3.6", "ids": [], "revisiones": [] }, "contexto": { "tipo": "actual" }, "enlace": null },
       "items": [],
       "conteo": null
     }
   },
   "pendientesDelModelo": [
     "E4.3 valoración/resultado",
-    "E3.6 pendientes/conciliación",
+    "E3.6 pendientes/conciliación (integración E4.6 pendiente)",
     "Configuración R6 de meses objetivo y umbrales (solo mínimo objetivo; meses cubiertos no depende)"
   ]
 }
@@ -391,8 +395,8 @@ Campos derivados que el cliente **no** puede escribir: todos. El endpoint es sol
 
 ## Screens and interfaces
 
-**PROPUESTA UX — pendiente de aprobación DT8/STEP 5.** Reutiliza shell, tipografía, tokens y
-componentes existentes; no introduce tema, librería ni tokens nuevos.
+**UX APROBADA documentalmente; la revisión visual de implementación conserva su gate.** Reutiliza
+shell, tipografía, tokens y componentes existentes; no introduce tema, librería ni tokens nuevos.
 
 ### 1440 px — dashboard
 
@@ -421,7 +425,7 @@ componentes existentes; no introduce tema, librería ni tokens nuevos.
 │ Bolsas 1         │ Variación ND     │ 1.456,40 €       │ Sin informar: aparte                │
 │ [Ver Saldos]     │ [Ver Saldos]     │ [Ver Inversión]  │ [Ver Deudas]                        │
 ├──────────────────┴──────────────────┴──────────────────┴─────────────────────────────────────┤
-│ PENDIENTES (E3.6) — No disponible: motor no integrado. Sin conteo 0. [Ver cobertura]          │
+│ PENDIENTES (E3.6) — No disponible: consumo E4.6 no implementado. Sin conteo 0. [Ver cobertura] │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -479,7 +483,7 @@ componentes existentes; no introduce tema, librería ni tokens nuevos.
   en la propia página, sin crear filtros nuevos en otros módulos.
 - Mapa de drill-down: liquidez/Saldos/Ahorro → `/saldos` y `/saldos/{id}`; ciclo →
   `/flujo-mensual?ciclo={id}`; inversión → `/inversiones` y ficha de Saldo; deuda →
-  `/deudas` y `/deudas/{id}`; pendientes → vista E3.6 cuando exista.
+  `/deudas` y `/deudas/{id}`; pendientes → `/pendientes` (vista E3.6).
 - Volver conserva el ciclo y el contexto; no se usa `localStorage` para datos financieros.
 
 ### Diferenciación semántica visible
@@ -528,8 +532,9 @@ signo `−` para negativos; los meses, con 2 decimales propuestos y marca `meses
 
 ## API behavior and external dependencies
 
-**PROPUESTA.** `GET /api/resumen-inicio` — solo lectura, autenticada con la sesión MFA
-existente y el mismo guard que las rutas financieras.
+**Contrato de lectura aprobado documentalmente; sin implementación.** `GET /api/resumen-inicio`
+— solo lectura, autenticada con la sesión MFA existente y el mismo guard que las rutas
+financieras.
 
 | Aspecto | Contrato |
 | --- | --- |
@@ -557,7 +562,7 @@ Dependencias externas: **ninguna**. No hay cotizaciones, bancos, FX ni servicios
 - Un Saldo puede pertenecer a varias vistas; no se suma entre vistas.
 - Un agregado de inversión parcial no publica total; el efectivo nunca entra en el agregado.
 - Una deuda no calculable no se sustituye por 0; el total queda parcial o no disponible.
-- Pendientes sin E3.6 no producen conteo 0 ni enlace inventado.
+- Si el consumo E3.6 no está disponible, no se produce conteo 0 ni enlace inventado.
 - Un cambio de fuente entre la carga y el reintento no mezcla revisiones; se vuelve a leer.
 - La respuesta no se pagina ni trunca listas que afecten a un total; si una lista es larga,
   se muestran los IDs y un enlace, sin truncar el agregado.
@@ -576,8 +581,8 @@ Dependencias externas: **ninguna**. No hay cotizaciones, bancos, FX ni servicios
 
 ## Acceptance checks
 
-Diseñados como **candidatos**, NO ejecutados. La numeración es estable; el mapeo al roadmap se
-indica después de la tabla.
+Diseñados y **aprobados documentalmente**, NO ejecutados. La numeración es estable; el mapeo al
+roadmap se indica después de la tabla.
 
 | ID | Acción / precondiciones | Resultado observable esperado |
 | --- | --- | --- |
@@ -622,9 +627,9 @@ indica después de la tabla.
 
 ## Approval and next action
 
-Esta specification es **candidata**. Requiere: (1) resolver Q1, Q2, Q3-B, Q4 y Q5–Q12 del
-brainstorming; (2) aprobar los wireframes 1440/390 y el formato de meses; (3) decidir la
-configuración de meses objetivo/umbrales, que solo afecta a `minimoObjetivo`; (4) confirmar que
-E4.3 y E3.6 estarán integrados antes de declarar completa la entrega. Q4 se mantiene como
-propuesta técnica de Álex hasta la aprobación del usuario. La aprobación documental no autoriza
-DEV ni migración.
+**APROBADA documentalmente por el usuario el 2026-11-03** (Q1–Q12, opción A; Q3-B=A; Q4=A).
+La aprobación no autoriza DEV24, DDL, migración, merge ni despliegue, y **ningún AC está en
+PASS**. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. Para declarar completa la
+entrega siguen aplicando las dependencias del roadmap: E4.3 no tiene DEV; E3.6/DEV21 está
+integrado en `a26fffb`, sin reauditoría de su consumo en esta actualización. El siguiente gate
+es la autorización separada de DEV por el coordinador.

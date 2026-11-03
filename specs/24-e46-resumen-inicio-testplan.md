@@ -1,20 +1,23 @@
 # 24 — E4.6 Resumen de inicio completo: Test plan
 
-Status: **DRAFT — DISEÑO DE PRUEBAS; NO EJECUTADO.** Ningún AC está en PASS. No existe
-candidato funcional de E4.6, endpoint, UI, DDL ni migración. DEV E4.6 no autorizado.
+Status: **APROBADA documentalmente por el usuario el 2026-11-03 — DISEÑO DE PRUEBAS; NO
+EJECUTADO.** Ningún AC está en PASS. No existe candidato funcional de E4.6, endpoint, UI, DDL
+ni migración. **DEV E4.6 no autorizado.**
 Specification: [24-e46-resumen-inicio-specification.md](24-e46-resumen-inicio-specification.md)
 Brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md)
-Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
+contenido ni cambia el alcance.
 
-**Nota de estado (2026-11-03):** Q4 es una propuesta técnica de Álex pendiente de confirmación
-del usuario al aprobar SPEC24. `V-EJERCICIO`, AC-28 y `ejercicioOrigen` se mantienen como
-diseño candidato condicionado a esa confirmación; no son una decisión cerrada. La regla de
-`mesesCubiertos` de Q3 procede de una instrucción expresa del usuario; Q3-B sigue pendiente.
+**Nota de estado (2026-11-03):** Q1–Q12 están aprobadas en opción A. **Q3-B=A** mantiene E4.6
+como solo lectura, sin almacén de meses objetivo/umbrales. **Q4=A** fija el ejercicio del coste
+esencial en el año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente.
+`V-EJERCICIO`, AC-28 y `ejercicioOrigen` quedan aprobados documentalmente y siguen sin ejecutar.
 
 Antes de implementación, cada AC se mapea a entorno, caso positivo/negativo/límite y evidencia
-esperada. Un borrador admite diseño provisional, nunca implementación ni PASS. Las filas
-`BLOCKED` dependen de E4.3 o E3.6; la falta de configuración R6 solo afecta a
-`minimoObjetivo`, no a `mesesCubiertos`. No se convierten en PASS por inspección.
+esperada. El diseño aprobado documentalmente no se ejecuta ni declara PASS por inspección. Las
+filas `BLOCKED` dependen de E4.3 o del consumo E3.6; la falta de configuración R6 solo afecta a
+`minimoObjetivo`, no a `mesesCubiertos`.
 
 ## Estrategia
 
@@ -29,7 +32,7 @@ esperada. Un borrador admite diseño provisional, nunca implementación ni PASS.
 - **Contrato de lectura.** Probar la composición, la degradación por fuente, la coherencia de
   revisiones y la ausencia de cálculos en el cliente.
 - **UI.** Playwright real con MFA, 390/1440, capturas ficticias, teclado, foco y contraste.
-  Los wireframes siguen pendientes de aprobación.
+  La revisión visual de implementación sigue pendiente.
 - **Verificación canónica.** En el futuro candidato funcional:
   `python3.12 scripts/verify --base 024b348 --head <SHA>` y, cuando corresponda,
   `python3.12 scripts/verify --full`. En esta rama documental solo se ejecutan validaciones
@@ -186,7 +189,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-20 | Negativo | Cambiar cobertura de Presupuesto | Liquidez/ahorro no cambian; no se resta lo presupuestado | API | Local/CI · impl | Antes/después | UNRUN |
 | AC-21 | Negativo | Añadir deuda | Liquidez, gasto y operativo no cambian | API | Local/CI · impl | Antes/después | UNRUN |
 | AC-22 | Límite | Cuota `300` + extraordinaria `100` | Operativo `350`, no `−50` ni `1400` | API | Local/CI · impl | DTO | UNRUN |
-| AC-23 | Positivo/BLOCKED | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | DTO | BLOCKED (E3.6) |
+| AC-23 | Positivo | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | DTO | UNRUN (E3.6 disponible; E4.6 sin DEV) |
 | AC-24 | Positivo | `I1002` manual | Valor `320.00`; resultado/rentabilidad `No disponible` | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
 | AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/*.png` | UNRUN |
@@ -249,7 +252,7 @@ verificación de no escritura compara las tablas y `schema_version` antes/despu�
   los importes no aparecen en URLs ni en logs de red.
 - Revisión de accesibilidad básica; no se declara auditoría WCAG completa.
 
-## Visual improvements (propuesta, no aprobada)
+## Visual improvements (propuesta para implementación, no aprobada visualmente)
 
 1. Reducir a dos tarjetas la primera fila (Liquidez/Objetivo) para una lectura inmediata.
 2. Hacer visible el contexto y la cobertura en la cabecera, no en un tooltip.
@@ -262,8 +265,8 @@ la aprobación de wireframes.
 
 ## Criterios de salida
 
-- Todos los AC en PASS o `BLOCKED` con causa externa verificable (E4.3 o E3.6); la ausencia
-  de configuración R6 solo puede dejar `minimoObjetivo` en `No disponible`, nunca
+- Todos los AC en PASS o `BLOCKED` con causa externa verificable (E4.3 o consumo E3.6); la
+  ausencia de configuración R6 solo puede dejar `minimoObjetivo` en `No disponible`, nunca
   `mesesCubiertos` si liquidez y coste son completos. Ningún `BLOCKED` se presenta como
   completado.
 - Ningún AC en PASS por inspección, por arranque del proceso o por reutilizar evidencia de otra
@@ -272,15 +275,16 @@ la aprobación de wireframes.
 - `python3.12 scripts/verify --full` del candidato estable en PASS.
 - Capturas 390/1440 inspeccionadas; teclado, foco y estados comprobados.
 - Revisión independiente de QA y aprobación de merge separada.
-- La entrega no se declara completa si falta E4.3 o E3.6. La falta de configuración R6 deja
-  solo `minimoObjetivo` en `No disponible`; `mesesCubiertos` puede PASS con liquidez y coste
-  completos.
+- La entrega no se declara completa si falta E4.3 o el consumo verificado de E3.6. La falta de
+  configuración R6 deja solo `minimoObjetivo` en `No disponible`; `mesesCubiertos` puede PASS
+  con liquidez y coste completos.
 
 ## Limitaciones y siguiente acción
 
-No hay implementación, endpoint, UI ni datos que probar. E4.3 y E3.6 están aprobadas
-documentalmente pero sin DEV. La configuración R6 no existe, pero solo condiciona
-`minimoObjetivo`; `mesesCubiertos` se prueba sin ella con liquidez y coste completos. Este
-testplan es diseño provisional: cualquier PASS requiere un candidato funcional autorizado,
-fixtures nuevas y evidencia propia. La siguiente acción es resolver Q1, Q2, Q3-B y Q5–Q12 del
-brainstorming y aprobar la specification; después, autorizar DEV y ejecutar esta matriz.
+No hay implementación, endpoint, UI ni datos que probar. E4.3 no tiene DEV; E3.6/DEV21 está
+integrado en `a26fffb`, sin reauditoría de su consumo en esta actualización. La configuración
+R6 no existe; Q3-B=A mantiene E4.6 sin almacén y solo condiciona `minimoObjetivo`;
+`mesesCubiertos` se prueba sin ella con liquidez y coste completos. Este testplan es diseño
+aprobado documentalmente y no ejecutado: cualquier PASS requiere un candidato funcional
+autorizado, fixtures nuevas y evidencia propia. La siguiente acción es la autorización separada
+de DEV por el coordinador; después, ejecutar esta matriz.

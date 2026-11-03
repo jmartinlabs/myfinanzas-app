@@ -1,10 +1,11 @@
 # 24 — E4.6 Resumen de inicio completo: Brainstorming
 
-Status: **DRAFT — Q4 es una propuesta pendiente de confirmación (recomendación técnica de
-Álex; el usuario debe confirmarla al aprobar SPEC24); la regla de `mesesCubiertos` de Q3 está
-precisada. Q1, Q2, Q3-B, Q4 y Q5–Q12 siguen pendientes.** Specification y testplan redactados
-como **candidatos** en la misma rama; no aprobados. Este documento no implementa código, no
-crea esquema, no modifica motores y **no autoriza DEV E4.6**.
+Status: **APROBADA documentalmente por el usuario el 2026-11-03.** Q1–Q12 ratificadas en
+opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetivo/umbrales) y
+**Q4=A** (año de `mesFinanciado` del ciclo actual, incluso si el corte cae en el ejercicio
+siguiente). DEV24 **NO autorizado**; ningún AC en PASS. Este documento no implementa código,
+no crea esquema y no modifica motores.
+Approval source/date: aprobación directa del usuario, 2026-11-03.
 Roadmap/context: [E4.6](roadmap.md#e46--resumen-de-inicio-completo),
 [referencia R6](functional-reference-v5.11.md),
 [SPEC12/E2.6](12-flujo-mensual-specification.md),
@@ -13,14 +14,16 @@ Roadmap/context: [E4.6](roadmap.md#e46--resumen-de-inicio-completo),
 [SPEC23/E4.3](23-e43-valoracion-resultados-specification.md),
 [SPEC17/E4.4](17-e44-deuda-completa-specification.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md).
-Base: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
-Next action: el usuario debe resolver Q1, Q2, Q3-B, Q4 y Q5–Q12; después se revisan
-specification y testplan candidatos. El DEV queda bloqueado hasta aprobación, DT8 resuelto y
-dependencias integradas.
+Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
+contenido ni cambia el alcance.
+Next action: aprobación documental registrada el 2026-11-03; **DEV24 no autorizado**. No quedan
+preguntas Q1–Q12 abiertas. La autorización de desarrollo y el cierre de dependencias aplicables
+corresponden al coordinador en un gate separado.
 
-**Leyenda de autoridad.** `CONFIRMADO` = regla ya aprobada en su documento propietario, no se
-reabre. `PROPUESTA` = diseño del agente, sujeto a revisión. `PENDIENTE` = decisión del usuario
-o dependencia no resuelta.
+**Leyenda de autoridad.** `CONFIRMADO` = regla ya aprobada en su documento propietario o
+ratificación del usuario, no se reabre. `PROPUESTA` = detalle técnico candidato dentro del
+alcance aprobado. `PENDIENTE` = dependencia externa no resuelta.
 
 ## Hallazgo de partida (verificado en `024b348`)
 
@@ -35,8 +38,9 @@ o dependencia no resuelta.
   `capitalPendiente` por deuda ([deuda-completa.ts](../apps/api/src/deuda-completa.ts)).
 - E4.3 está **aprobada documentalmente pero sin DEV**: no hay endpoint ni almacén de
   valoración. Su contrato de lectura es conceptual.
-- E3.6 está **aprobada documentalmente pero sin DEV**: no existe vista ni endpoint de
-  pendientes.
+- E3.6/DEV21 está **integrado en `main` `a26fffb`**: existen `/api/pendientes`,
+  `/api/conciliacion/ciclos/:id` y `Pendientes.tsx`. El consumo por E4.6 no está implementado
+  todavía.
 - No existe almacén de configuración de usuario (meses objetivo, umbrales de zona). El
   objetivo persistido por Saldo es `Saldos.objetivo`, que no es el mínimo objetivo de R6.
 - `annualEquivalent` de E2.4 ya publica el equivalente esencial mensual como racional exacto
@@ -44,9 +48,10 @@ o dependencia no resuelta.
   ([plan-anual.ts](../apps/api/src/plan-anual.ts)).
 
 Consecuencia: E4.6 puede prepararse documentalmente, pero su DEV **no puede declarar completa**
-la capacidad mientras E4.3 y E3.6 no estén integrados. El **mínimo objetivo** R6 no puede
-configurarse sin una decisión de persistencia que este paquete prohíbe crear; **meses
-cubiertos no depende de esa configuración** y se calcula con liquidez y coste verificados.
+la capacidad mientras E4.3 no esté integrado y el consumo de E3.6 no esté implementado. El
+**mínimo objetivo** R6 no puede configurarse sin una decisión de persistencia que este paquete
+prohíbe crear; **meses cubiertos no depende de esa configuración** y se calcula con liquidez y
+coste verificados.
 
 ## Alcance confirmado del roadmap
 
@@ -94,11 +99,11 @@ Question: ¿cómo se compone el resumen de inicio?
 - [ ] (c) Resumen y páginas de detalle propias de E4.6 que recompongan los motores.
 - [ ] (d) Ampliar `/saldos` como inicio, sin ruta nueva.
 
-Recommendation (proposal only): (a). Satisface R6 «Inicio objetivo» sin duplicar motores ni
+Recommendation (option A, approved): (a). Satisface R6 «Inicio objetivo» sin duplicar motores ni
 crear una segunda UI de detalle; (c) reabriría cálculos y (d) mezclaría el listado de Saldos
 con un resumen de varias fuentes.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q2 — Contexto temporal de cada bloque
 
@@ -110,15 +115,15 @@ Question: ¿el resumen usa un único corte para todo o contextos separados por b
 - [ ] (c) Solo posición actual, sin corte de ciclo.
 - [ ] (d) Selector libre de corte en el inicio.
 
-Recommendation (proposal only): (a). E2.6 ya separa «liquidez actual» del corte del ciclo;
+Recommendation (option A, approved): (a). E2.6 ya separa «liquidez actual» del corte del ciclo;
 E4.4 lista sin corte y E4.3 exige un corte explícito. (b) obligaría a inventar una foto
 histórica de Deuda/Saldos que no existe y (d) anticiparía E4.11.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q3 — Objetivo R6: meses cubiertos, meses objetivo y umbrales
 
-**Precisión confirmada el 2026-11-03.** `mesesCubiertos` **no depende de configuración**:
+**Precisión aprobada (Q3) el 2026-11-03.** `mesesCubiertos` **no depende de configuración**:
 se calcula como `liquidezVerificada / costeEsencialMensual` siempre que liquidez y coste sean
 completos y el coste sea > 0. Se muestra aunque no exista `mesesObjetivo`. Solo
 `minimoObjetivo = costeEsencialMensual × mesesObjetivo` queda `No disponible` por falta de
@@ -126,7 +131,7 @@ configuración de meses objetivo/umbrales. Si la liquidez o el coste no están v
 coste = 0, `mesesCubiertos` es `No disponible` por su propio motivo. Sin nuevo almacén,
 defaults, tabla ni motor duplicado.
 
-Question (Q3-B, pendiente): ¿dónde se guardan «meses objetivo» y los umbrales de la zona
+Question (Q3-B): ¿dónde se guardan «meses objetivo» y los umbrales de la zona
 informativa?
 
 - [x] **(a) E4.6 es solo lectura: consume una configuración ya aprobada; sin ella, solo
@@ -138,18 +143,17 @@ informativa?
   atributos por Saldo con un objetivo global).
 - [ ] (d) Fijar valores por defecto en código (sería una regla financiera no aprobada).
 
-Recommendation (proposal only): (a) para Q3-B. Sin meses objetivo no se puede publicar un
+Recommendation (option A, approved): (a) para Q3-B. Sin meses objetivo no se puede publicar un
 mínimo objetivo real; `0` o un valor fijo serían invención. `mesesCubiertos` no se ve afectado.
 
-Confirmed answer (instrucción expresa del usuario, no aprobación de la spec):
-**`mesesCubiertos` independiente de configuración**; Q3-B (almacén de meses
-objetivo/umbrales): **PENDING**. source/date: instrucción de corrección del usuario,
-2026-11-03; PENDING (Q3-B).
+Confirmed answer: **APROBADA (opción A)** — **Q3-B=A**: E4.6 solo lectura, sin almacén de
+meses objetivo/umbrales; `mesesCubiertos` independiente de configuración según la regla
+precisada. source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q4 — Ejercicio del coste esencial
 
-Question: ¿qué plan anual alimenta el coste esencial mensual del inicio? **Propuesta técnica
-de Álex, pendiente de confirmación del usuario al aprobar SPEC24.**
+Question: ¿qué plan anual alimenta el coste esencial mensual del inicio? **Aprobada (Q4=A)
+el 2026-11-03.**
 
 - [x] **(a) El año de `mesFinanciado` del ciclo actual, consumiendo `annualEquivalent` sin
   recalcular, incluso si el ciclo cruza ejercicio** (recomendada).
@@ -157,14 +161,13 @@ de Álex, pendiente de confirmación del usuario al aprobar SPEC24.**
 - [ ] (c) El año natural de la fecha de consulta (reloj).
 - [ ] (d) El último ejercicio con plan anual, aunque no corresponda al ciclo.
 
-Recommendation (proposal only): (a). Es una fecha del maestro de Ciclos, no el reloj, y
+Recommendation (option A, approved): (a). Es una fecha del maestro de Ciclos, no el reloj, y
 `mesFinanciado` identifica el mes que el ciclo financia. No se usan el corte ni el año del
 ingreso para sustituirlo.
 
-Proposal / pending confirmation: **(a) año de `mesFinanciado` del ciclo actual, incluso si
-cruza ejercicio; sin reloj, corte ni año del ingreso.** Recomendación técnica de Álex; el
-usuario debe confirmarla al aprobar SPEC24. source/date: recomendación de Álex, 2026-11-03;
-confirmación del usuario: **PENDING**.
+Confirmed answer: **APROBADA (opción A, Q4=A)** — año de `mesFinanciado` del ciclo actual,
+incluso si el corte cae en el ejercicio siguiente; sin reloj, corte ni año del ingreso.
+source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q5 — Significado de «ahorro» en el inicio
 
@@ -177,10 +180,10 @@ Question: ¿qué cifra de ahorro debe verse?
 - [ ] (c) Solo «Ejecución del Presupuesto de Ahorro» (requiere identidad R3 verificable).
 - [ ] (d) Sumar todas las posiciones con Finalidad Ahorro en un total nuevo.
 
-Recommendation (proposal only): (a). Permite «ver ahorro» sin inventar un total ni confundir
+Recommendation (option A, approved): (a). Permite «ver ahorro» sin inventar un total ni confundir
 posición, variación y ejecución de presupuesto. (d) es un agregado nuevo no aprobado.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q6 — Inversión y efectivo del bróker
 
@@ -194,10 +197,10 @@ Question: ¿qué se muestra de inversión y con qué corte?
 - [ ] (c) Sumar efectivo y posición en una «inversión total».
 - [ ] (d) Usar la fecha de consulta como corte de valoración.
 
-Recommendation (proposal only): (a). (c) duplica efectivo y posición; (d) usa el reloj como
+Recommendation (option A, approved): (a). (c) duplica efectivo y posición; (d) usa el reloj como
 fuente financiera.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q7 — Deuda no hipotecaria y deudas «Sin informar»
 
@@ -210,15 +213,16 @@ Question: ¿qué deudas entran en la cifra de deuda no hipotecaria?
 - [ ] (c) No publicar total; solo lista por deuda.
 - [ ] (d) Incluir también hipotecaria con subtotal separado en el mismo bloque.
 
-Recommendation (proposal only): (a). R6 pide «deuda no hipotecaria»; `Sin informar` no es
+Recommendation (option A, approved): (a). R6 pide «deuda no hipotecaria»; `Sin informar` no es
 equivalente a no hipotecaria y sumarlo podría sobrestimar. La exclusión debe ser visible, no
 silenciosa.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q8 — Pendientes E3.6
 
-Question: ¿cómo se representa el bloque de pendientes cuando E3.6 no está integrado?
+Question: ¿cómo se representa el bloque de pendientes cuando el consumo de E3.6 no está
+implementado?
 
 - [x] **(a) `No disponible` con motivo y enlace al módulo cuando exista; nunca conteo 0 ni
   total monetario entre tipos** (recomendada).
@@ -226,10 +230,11 @@ Question: ¿cómo se representa el bloque de pendientes cuando E3.6 no está int
 - [ ] (c) Implementar un contador propio en E4.6 (duplicaría E3.6).
 - [ ] (d) Sumar los importes pendientes en una cifra única.
 
-Recommendation (proposal only): (a). E3.6 prohíbe el total entre tipos y aún no tiene código.
-Ocultarlo incumpliría la capacidad declarada; (c)/(d) reabren su contrato.
+Recommendation (option A, approved): (a). E3.6 ya está integrado en la base; su consumo por
+E4.6 no está implementado. E3.6 prohíbe el total entre tipos. Ocultarlo incumpliría la
+capacidad declarada; (c)/(d) reabren su contrato.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q9 — Saldos y bolsas
 
@@ -243,11 +248,11 @@ Question: ¿cómo se muestran Saldos/bolsas?
 - [ ] (c) Sumar las tres vistas en un «total de saldos».
 - [ ] (d) Mostrar solo las bolsas y omitir Liquidez/Ahorro.
 
-Recommendation (proposal only): (a). Los atributos son independientes (SPEC01) y sumar vistas
+Recommendation (option A, approved): (a). Los atributos son independientes (SPEC01) y sumar vistas
 solapadas duplicaría posiciones. (b) es una alternativa UX razonable si el usuario prefiere
 menos bloques.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q10 — ¿Patrimonio total en el inicio?
 
@@ -258,11 +263,11 @@ Question: ¿E4.6 publica una cifra de patrimonio global?
 - [ ] (b) Sí, sumando posición valorada + efectivo + liquidez + ahorro − deuda.
 - [ ] (c) Sí, pero solo cuando todas las fuentes tengan cobertura completa.
 
-Recommendation (proposal only): (a). R6 no define esa suma, E4.3 advierte del riesgo de doble
+Recommendation (option A, approved): (a). R6 no define esa suma, E4.3 advierte del riesgo de doble
 cuenta y E4.7 posee la comparación y los márgenes. Un patrimonio exigiría una decisión
 financiera propia.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q11 — División por coste esencial nulo y formato de meses
 
@@ -276,12 +281,12 @@ Question: ¿qué se muestra si el coste esencial es 0 o parcial?
 - [ ] (c) Coste 0 → tratar como cobertura completa.
 - [ ] (d) Coste parcial → calcular igualmente el objetivo con el subtotal conocido.
 
-Recommendation (proposal only): (a). SPEC10 ya prohíbe que un parcial genere un objetivo
+Recommendation (option A, approved): (a). SPEC10 ya prohíbe que un parcial genere un objetivo
 definitivo; dividir por 0 no tiene resultado financiero. La regla de `mesesCubiertos` ya está
 precisada en Q3; esta pregunta conserva el formato de meses y el tratamiento del coste 0 con
 meses objetivo configurados. El formato exacto queda para DT8.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
 ### Q12 — Fallo de una fuente y coherencia de la lectura
 
@@ -294,24 +299,24 @@ Question: ¿qué ocurre si un motor falla o cambia durante la consulta?
 - [ ] (c) Reutilizar la última respuesta buena sin marcarla desactualizada.
 - [ ] (d) Componer con varias lecturas sin snapshot y aceptar mezcla de revisiones.
 
-Recommendation (proposal only): (a). Coherente con SPEC12 y con el principio de cobertura por
+Recommendation (option A, approved): (a). Coherente con SPEC12 y con el principio de cobertura por
 métrica; (d) podría mezclar contextos incompatibles.
 
-Confirmed answer: **PENDING**; source/date: PENDING.
+Confirmed answer: **APROBADA (opción A)**; source/date: aprobación directa del usuario, 2026-11-03.
 
-## Append-only clarifications — 2026-11-03
+## Ratificación — 2026-11-03
 
-- **Q4 propuesta, no confirmada:** el coste esencial se consultaría con el año de
-  `mesFinanciado` del ciclo actual, incluso si el ciclo cruza ejercicio; no se usarían reloj,
-  corte ni año del ingreso. Es una recomendación técnica de Álex; el usuario debe confirmarla
-  al aprobar SPEC24.
+- **Ratificación expresa del usuario:** Q1–Q12 aprobadas en opción A; **Q3-B=A** (E4.6 solo
+  lectura, sin almacén de meses objetivo/umbrales) y **Q4=A** (año de `mesFinanciado` del ciclo
+  actual, incluso si el corte cae en el ejercicio siguiente). Fuente: aprobación directa del
+  usuario, 2026-11-03.
 - **Q3 precisada:** `mesesCubiertos` no depende de configuración; se muestra con liquidez y
   coste completos y coste > 0, aunque falte `mesesObjetivo`. Solo `minimoObjetivo` queda
   `No disponible` por falta de meses objetivo/umbrales. Si liquidez o coste no están
   verificados, o el coste = 0, `mesesCubiertos` es `No disponible` por su propio motivo. No se
   crea almacén, default, tabla ni motor duplicado.
-- **Pendiente:** Q1, Q2, Q3-B (almacén de meses objetivo/umbrales), Q4 y Q5–Q12 conservan la
-  alternativa A recomendada, sin confirmación del usuario.
+- **Historial:** antes de la ratificación, Q4 era una propuesta técnica de Álex y Q1, Q2,
+  Q3-B, Q4 y Q5–Q12 figuraban pendientes. Quedan aprobadas en opción A desde el 2026-11-03.
 
 ## Casos de uso previstos
 
@@ -321,7 +326,7 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 | U-02 | Comprobar si la liquidez cubre el objetivo | Liquidez, coste esencial, mínimo (si hay configuración) y meses cubiertos (si liquidez y coste son completos), o motivo de indisponibilidad |
 | U-03 | Revisar inversión sin duplicar efectivo | Agregado de posiciones separado del efectivo por Saldo |
 | U-04 | Revisar deuda no hipotecaria | Deuda viva por deuda y total solo si es calculable; hipotecaria y sin informar aparte |
-| U-05 | Ver pendientes de casos | Lista y enlaces E3.6; `No disponible` si el motor no existe |
+| U-05 | Ver pendientes de casos | Lista y enlaces E3.6; `No disponible` si el consumo E4.6 no está implementado |
 | U-06 | Ir de una cifra a su origen | Enlace al módulo/ficha con el ID y contexto conservados |
 | U-07 | Consultar en móvil | Bloques apilados, estado+importe+origen legibles sin scroll horizontal |
 | U-08 | Operar con teclado o lector de pantalla | Orden de foco, encabezados, estado con texto y no solo color |
@@ -342,7 +347,7 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 | Sumar bloques solapados | Duplicar liquidez/ahorro/bolsas/efectivo | Vistas independientes; prohibido el total cruzado |
 | Presentar parcial como completo | Decisión financiera errónea | Estado+cobertura por métrica; sin cifra si falta |
 | `null` convertido a 0 | Ocultar ausencia de fuente | DTO con `null` explícito; pruebas de no normalización |
-| Motores ausentes (E4.3/E3.6) | Inicio incompleto presentado como completo | `No disponible` con motivo; AC bloqueados |
+| Motores ausentes o consumo no implementado (E4.3/E3.6) | Inicio incompleto presentado como completo | `No disponible` con motivo; AC bloqueados solo si la causa externa sigue vigente |
 | Objetivo R6 sin configuración | El mínimo objetivo no es publicable | Solo `minimoObjetivo` queda ND; `mesesCubiertos` se calcula con liquidez y coste verificados; no inventar meses ni umbrales |
 | Mezcla de revisiones | Cifras incoherentes | Snapshot transaccional + revisión |
 | Densidad en móvil | Pérdida de accesibilidad | Tarjetas, jerarquía, foco, 44 px, sin tablas compressas |
@@ -357,33 +362,35 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 | E4.2 posiciones/efectivo | Integrado | Consumible |
 | E4.4 deuda completa | Integrado | Consumible; sin corte en listado |
 | E4.3 valoración/resultado | Aprobada, **sin DEV** | Inversión valorada `No disponible`; bloquea AC de valoración |
-| E3.6 pendientes | Aprobada, **sin DEV** | Pendientes `No disponible`; bloquea AC de pendientes |
-| E2.4 equivalente esencial | Implementado | Consumible; ejercicio propuesto por `mesFinanciado` (Q4, pendiente de confirmación) |
+| E3.6 pendientes | Integrada en `main` `a26fffb` (DEV21) | Consumible; el consumo E4.6 aún no está implementado |
+| E2.4 equivalente esencial | Implementado | Consumible; ejercicio aprobado por `mesFinanciado` (Q4=A) |
 | Configuración meses/umbrales | **No existe** | Solo `minimoObjetivo` ND; `mesesCubiertos` no depende y queda bloqueado únicamente por liquidez/coste no verificados |
-| DT8 UX/métricas/denominadores | **Abierta** | Wireframes y formato de meses son propuesta |
+| DT8 UX/métricas/denominadores | Gate de implementación visual | Wireframes forman parte del contrato documental aprobado; formato de meses pendiente de revisión visual |
 | E4.9 cierre/fotos | Aprobada, sin DEV | Fuera de alcance; E4.6 no lee ni crea fotos |
 | E4.7 resumen anual | Futura | Frontera: sin comparación anual ni archivo |
 
-## Preguntas que requieren decisión del usuario
+## Decisiones aprobadas (Q1–Q12)
 
-1. Q1 composición (dashboard único + drill-down).
-2. Q2 contextos por bloque frente a corte único.
-3. Q3-B almacén de meses objetivo/umbrales (no afecta a `mesesCubiertos`).
-4. Q4 ejercicio que alimenta el coste esencial (propuesta de Álex, pendiente de confirmación).
-5. Q5 definición de «ahorro» y si se admite un total.
-6. Q6 corte de valoración y separación efectivo/posición.
-7. Q7 tratamiento de deudas `Sin informar`.
-8. Q8 representación de pendientes sin E3.6.
-9. Q9 vistas de Saldos/bolsas y prohibición de sumarlas.
-10. Q10 patrimonio total: incluido o excluido.
-11. Q11 coste esencial 0 con meses configurados y formato de meses.
-12. Q12 aislamiento de fallos y snapshot.
+Todas aprobadas en **opción A** por aprobación directa del usuario el **2026-11-03**.
+
+1. Q1 composición: dashboard único de solo lectura + drill-down.
+2. Q2 contextos por bloque, sin sumar contextos distintos.
+3. Q3-B=A: E4.6 solo lectura, sin almacén de meses objetivo/umbrales.
+4. Q4=A: ejercicio de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente.
+5. Q5 «ahorro»: posiciones de Saldos con Finalidad Ahorro, sin total nuevo.
+6. Q6 inversión: agregado E4.3 y efectivo por Saldo separado.
+7. Q7 deuda no hipotecaria: solo `No hipotecaria` calculable; el resto aparte.
+8. Q8 pendientes: lista E3.6; sin total monetario ni conteo propio.
+9. Q9 Saldos/bolsas: vistas independientes, sin sumarlas.
+10. Q10 sin patrimonio total ni suma cruzada.
+11. Q11 coste 0/parcial y formato de meses según lo precisado.
+12. Q12 snapshot transaccional y degradación por sección.
 
 ## Coverage del template
 
 - **Requisitos funcionales:** secciones de R6 y AC E4.6-AC1/2/3.
 - **Interfaces/pantallas/interacciones:** dashboard 1440/390, navegación y drill-down en la
-  specification candidata; pendiente de aprobación visual.
+  specification aprobada documentalmente; la revisión visual de implementación conserva su gate.
 - **Datos leídos/escritos:** solo lectura de E2.4/E2.6/E3.6/E4.2/E4.3/E4.4; sin escrituras.
 - **APIs/dependencias externas:** contrato de lectura propuesto; sin servicios externos.
 - **Validación:** estados, cobertura, `null`≠0, precisión, cero y denominadores.
@@ -392,5 +399,6 @@ Confirmed answer: **PENDING**; source/date: PENDING.
 
 ## Wireframes
 
-No se aprueban aquí. La specification candidata incluye bocetos ASCII 1440/390 como
-**propuesta**; su revisión y aprobación corresponden a DT8/STEP 5 de UI antes de cualquier DEV.
+Los bocetos ASCII forman parte del contrato documental aprobado. La revisión visual de
+implementación y el formato de meses conservan su gate DT8/STEP 5; no se declara UI
+implementada.
