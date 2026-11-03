@@ -1,7 +1,6 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **DEV E4.3-A y DEV43-B implementados, con CI Linux verde en `464341b` (PR #184
-draft, sin merge). QA-B APTO CON RESERVAS, con R1/R2 corregidos y R3 reforzado. DEV43-C sin
+Status: **DEV E4.3-A y DEV43-B integrados en `main` `3b9be46` (squash de #184), con CI post-merge `41722741566` verde (perfil fast). QA-A/QA-B APTO CON RESERVAS, R1/R2 corregidos. DEV43-C sin
 empezar. Ningún AC/TP en PASS.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
@@ -52,9 +51,9 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 
 ## Checkpoint B — read model y API (candidato)
 
-- **Estado:** implementado en `feat/e43-valoracion` (`9f5e059`), PR #184 draft; sin UI.
+- **Estado:** integrado en `main` `3b9be46` (squash de #184); sin UI.
 - **Ownership:** `apps/api/src/e43.ts`, `apps/api/src/e43-api.test.ts` y las rutas E4.3 en
-  `apps/api/src/app.ts`. Sin DDL, sin v25, sin web/UI.
+  `apps/api/src/app.ts`. Sin DDL adicional, sin v25, sin web/UI.
 - **Alcance entregado:** `GET /api/e43/corte`, detalle de posición, serie y ficha/auditoría;
   `POST` de alta y rectificación con idempotencia, revisión, procedencia y fecha no futura;
   DTOs de cobertura, resultado, elegibilidad por fecha exacta, efectivo separado y errores
@@ -64,8 +63,8 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 - **Fuera de alcance:** UI/E2E (C), cambios de esquema v24, v25, E4.9/E4.6/E4.7/E4.5,
   datos reales, migración operativa, despliegue y merge.
 - **Pruebas:** `e43-api.test.ts` 14/14 en macOS; `bun run typecheck` limpio; CI Linux
-  `required` run `41721208556` **644/644**. Los fallos de backup/restore macOS son los mismos
-  de `main` y no acreditan el gate Linux.
+  `required` run `41721208556` **644/644** y post-merge `41722741566` verde. Los fallos de
+  backup/restore macOS son los mismos de `main` y no acreditan el gate Linux.
 - **QA-B (independiente):** **APTO CON RESERVAS**, sin bloqueantes. R1 (Manual >2⁵³−1
   devolvía 500 en vez de 422) y R2 (`cantidadBase` declarada en Automática) corregidos en
   `464341b`; R3 reforzado con instantánea de todas las tablas antes/después de las lecturas.
@@ -74,7 +73,6 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 
 ## Próxima acción segura
 
-1. QA-B completada; el candidato `464341b` queda listo para revisión de merge (pendiente de
-   aprobación explícita).
-2. Preparar C (UI/E2E) con wireframes ya integrados; sin merge de #184.
-3. No merge funcional, ni C, ni v25, ni datos reales sin aprobación específica.
+1. A+B integrados en `main` `3b9be46`; post-merge CI `41722741566` verde.
+2. Preparar C (UI/E2E) con wireframes ya integrados, solo con instrucción explícita.
+3. No iniciar C, v25, datos reales ni despliegue sin aprobación específica.

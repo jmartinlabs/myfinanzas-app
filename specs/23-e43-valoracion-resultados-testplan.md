@@ -1,8 +1,8 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Test plan
 
 Status: **APROBADO — DISEÑO DE PRUEBAS.** 2026-11-03, revisión `acc2d98` (PR #175).
-DEV E4.3-A (esquema v24, migración, C24 y backup) y DEV43-B (read model/API) implementados
-con CI Linux verde en `464341b` (PR #184 draft, sin merge); QA-B APTO CON RESERVAS;
+DEV E4.3-A (esquema v24, migración, C24 y backup) y DEV43-B (read model/API) integrados en
+`main` `3b9be46` (squash de #184), con CI post-merge verde; QA-A/QA-B APTO CON RESERVAS;
 DEV43-C pendiente. Ningún AC/TP en PASS.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
 Progress: [23-e43-valoracion-resultados-progress.md](23-e43-valoracion-resultados-progress.md)
@@ -223,8 +223,8 @@ un AC en PASS sin evidencia.
 
 ## Limitations and next action
 
-- **A y B implementados, no fusionados:** PR #184 sigue en draft; el merge funcional requiere
-  aprobación explícita e identificable.
+- **A y B integrados:** `main` `3b9be46` (squash de #184); post-merge CI verde. C sigue
+  pendiente.
 - **C pendiente:** no hay UI E4.3. Los wireframes están integrados (`bb076f1`); Playwright
   390/1440 queda para C.
 - **QA-B:** APTO CON RESERVAS sobre `464341b`; R1/R2 corregidos. Reservas menores: AC-07,
@@ -235,9 +235,8 @@ un AC en PASS sin evidencia.
 - **E4.9 pendiente:** la integración `e43`/`valoracion`, la ventana de certificación y la foto
   requieren autorización separada. Este testplan no las implementa.
 - **Datos:** solo fixtures ficticias; nunca Excel, bases reales, credenciales ni secretos.
-- **Next action:** revisión de merge de `464341b` con aprobación explícita; después preparar C.
-  Ningún AC se declara completo hasta que todas las comprobaciones requeridas pasen con
-  evidencia.
+- **Next action:** A+B integrados; preparar C con instrucción explícita. Ningún AC se declara
+  completo hasta que todas las comprobaciones requeridas pasen con evidencia.
 
 ## Registro de ejecuciones
 
@@ -253,3 +252,4 @@ un AC en PASS sin evidencia.
 | 2026-11-03 | `464341b` (B) | `bun run typecheck` | PASS (macOS) | Sin errores de tipos |
 | 2026-11-03 | `464341b` (B) | CI Linux `required` `41721208556` | PASS 644/644 | Gate canónico de A+B |
 | 2026-11-03 | `464341b` (B) | QA-B independiente | APTO CON RESERVAS | R1/R2 corregidos; R3 reforzado; reservas AC-07/AC-17/concurrencia y UI/C |
+| 2026-11-03 | `3b9be46` (A+B) | CI Linux post-merge `41722741566` | PASS (perfil fast) | Integrado en `main`; squash de #184; el gate completo 644/644 fue `7de64c1` |
