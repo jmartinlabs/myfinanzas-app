@@ -378,3 +378,17 @@ fallos del suite completo (56) son los mismos que en `main` por entorno; no hay 
 
 `bunx tsc --noEmit`: limpio. `bun test apps/api`: 47 pass en `comida.test.ts`; suite completa con
 los 56 fallos de entorno preexistentes en `main`.
+
+### Reservas no bloqueantes al integrar (2026-11-03)
+
+- **R2 — test negativo de migración v22.** No existe prueba que fuerce un fallo de
+  `foreign_key_check` y verifique rollback + `foreign_keys=ON`. **Impacto:** ninguno observado
+  en integridad, migración, datos ni seguridad; el camino de éxito está probado y el código
+  restaura FK en éxito y error. **Tratamiento pendiente:** añadir fixture que introduzca una
+  violación de FK y comprobar rollback y restauración.
+- **R3 — reposición de obligación antigua/tardía.** No hay test directo de TP-06/TP-07 para
+  esos dos subcasos; `R_obl` filtra por ciclo y la reposición tardía por fecha real.
+  **Impacto:** ninguno observado; comportamiento correcto por inspección. **Tratamiento
+  pendiente:** añadir ambos casos con oráculo propio.
+- **AC-12 / AC-15** permanecen PARCIAL: S0 ausente es inalcanzable con D2-O0 y la integración
+  E4.9 es D4, fuera de este DEV. No se declaran PASS.
