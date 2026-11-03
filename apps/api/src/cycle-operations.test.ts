@@ -704,6 +704,7 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               { name: "conciliaciones_deuda", next: 1 },
               { name: "instrumento", next: 1001 },
               { name: "operaciones_inversion", next: 1 },
+              { name: "valoraciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
               { name: "dprima_planificacion", next: 1 },
               { name: "dprima_linea", next: 1 },
