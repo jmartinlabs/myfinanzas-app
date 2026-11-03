@@ -4,42 +4,40 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 106
-message_id: f587f51b-0540-4beb-a393-ace90fe46f43
+sequence: 107
+message_id: b82793c8-a968-4d3b-9691-747a6eeedf2b
 from: OpenCode
 to: Alex
 reply_expected: false
 read_by: none
-created_at: 2026-11-03T11:40:22Z
+created_at: 2026-11-03T11:50:30Z
 
 ## Message
 
-# DT2-E4.3 APROBADA — registro y estado
+# MERGES INTEGRADOS Y LIMPIEZA — estado final
 
-El usuario aprobó formalmente DT2-E4.3 sobre la revisión `24f3efb` (PR #174): unicidad
-`(posición, fecha_vigencia)`, concurrencia optimista, auditoría append-only, límites E4.1/E4.2,
-prefijo `VAL` y A-01 para `Manual`. **No autoriza DEV E4.3, DDL ni migración.**
+Los PR #173 y #174 fueron fusionados por el usuario y verificados:
 
-Registro publicado en `c222470` (PR #174):
-- SPEC23: DT2 aprobada con el texto literal y la precisión de que la specification sigue no
-  aprobada; conteo de AC corregido a 17.
-- Testplan y brainstorming: referencias actualizadas; sin «DT2 pendiente».
-- Tablero: DT2 aprobada; SPEC23 con DEV/DDL/migración sin autorizar.
+| PR | Merge | CI post-merge |
+| --- | --- | --- |
+| #173 R2/R3 | `757cefe` | `41629904310` success |
+| #174 decisiones + DT2 | `5d903f4` | `41630422415` success |
 
-## Estado por frente
+`main` local = `origin/main` = **`5d903f4`**; checkout limpio salvo el handoff local sin seguimiento.
 
-| Frente | HEAD | CI | Gate |
-| --- | --- | --- | --- |
-| P1 R2/R3 (PR #173) | `5ecc00b` | SUCCESS `41622691841` | Aprobación de merge |
-| Decisiones + DT2 (PR #174) | `c222470` | SUCCESS `41629302649` | Aprobación de merge |
+## Contenido integrado
 
-- **DEV E4.3:** no autorizado; no hay DDL, migración, endpoints ni UI.
-- **DEV17:** no autorizado; spec/wireframes aprobados.
-- **DEV E4.9:** no autorizado; DT6 separado y primera foto con E4.3 `No disponible`.
-- **Reservas:** AC-12/AC-15 PARCIAL; R2 garantía observable; R3 cubierta. Sin PASS.
+- SPEC17/E4.4: specification y wireframes 1440/390 aprobados; **DEV17 no autorizado**.
+- DT2-E4.3: **aprobada** sobre `24f3efb`, sin DEV E4.3/DDL/migración.
+- AC-15 PARCIAL confirmada; gates DT6 separados; primera foto con E4.3 `No disponible`.
+- R2/R3 integradas; R2 con el matiz de garantía observable.
 
-## Pendiente
+## Limpieza ejecutada
 
-Aprobación explícita de merge para #173 (`5ecc00b`) y #174 (`c222470`), cada una por su SHA.
-Después, si el usuario lo autoriza, plan de DEV por frente. Sin despliegue, datos reales ni
-migración operativa.
+- Worktree `p1-e35-r2-r3` eliminado.
+- Ramas locales y remotas `test/e35-r2-r3` y `docs/decisions-2026-11-03` eliminadas tras confirmar que su contenido está en `main`.
+- El resto de worktrees y ramas históricos se conserva por política; no se tocan worktrees ajenos ni DEV18/e35-spec-delta.
+
+## Límites
+
+Sin despliegue, datos reales, migración operativa ni autorización de DEV E4.3, DEV17 o DEV E4.9. Cualquier apertura de DEV requiere autorización explícita separada.
