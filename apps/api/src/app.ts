@@ -87,12 +87,15 @@ import {
   budgetUsage,
 } from "./presupuestos";
 import {
-  getDebt,
-  listDebts,
   createDebt,
   updateDebt,
   debtUsage,
 } from "./deudas";
+import {
+  getDeudaCompleta,
+  listConciliacionesDeuda,
+  listDeudasCompletas,
+} from "./deuda-completa";
 import {
   getReference,
   referenceUsage,
@@ -891,7 +894,9 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       if (path === "/api/deudas" && req.method === "GET")
-        return reply(listDebts(db, new URL(req.url).searchParams));
+        return reply(
+          listDeudasCompletas(db, new URL(req.url).searchParams),
+        );
       if (path === "/api/deudas" && req.method === "POST") {
         const item = createDebt(
           db,
@@ -902,6 +907,13 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set("location", "/api/deudas/" + item.id);
         return reply({ item }, 201);
       }
+      const debtConciliaciones = path.match(
+        /^\/api\/deudas\/(D\d+)\/conciliaciones$/,
+      );
+      if (debtConciliaciones && req.method === "GET")
+        return reply({
+          items: listConciliacionesDeuda(db, debtConciliaciones[1]),
+        });
       const debt = path.match(
         /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
       );
@@ -910,7 +922,12 @@ export function createApp(db: Database, options: AppOptions) {
         if (!action && req.method === "GET")
           return reply(
             db.transaction(() => ({
-              item: getDebt(db, id),
+              item: getDeudaCompleta(
+                db,
+                id,
+                new URL(req.url).searchParams.get("corte"),
+                now(),
+              ),
               usos: debtUsage(db, id),
               partidas: db
                 .query(
