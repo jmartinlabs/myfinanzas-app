@@ -157,14 +157,17 @@ export function createDebt(
         throw new Problem(503, "ID_SPACE", "No se pudo reservar identidad.");
       const id = "D" + n.n.padStart(3, "0"),
         time = new Date(now).toISOString();
-      db.run("INSERT INTO deudas VALUES(?,?,?,?,'Activa',1,?,?)", [
-        id,
-        v.nombre,
-        v.inicioControl,
-        money(v.capitalApertura),
-        time,
-        time,
-      ]);
+      db.run(
+        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES(?,?,?,?,'Activa',1,?,?)",
+        [
+          id,
+          v.nombre,
+          v.inicioControl,
+          money(v.capitalApertura),
+          time,
+          time,
+        ],
+      );
       db.run(
         "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,'alta',1,?,?,0,'usuario-unico',NULL)",
         [id, JSON.stringify(Object.keys(body)), time],

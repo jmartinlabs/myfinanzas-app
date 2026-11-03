@@ -417,7 +417,7 @@ test("H-SPEC02-01: presupuesto bloqueado y protección Partida→Deuda", () => {
     expect(withCycle.checked).toContain("Presupuesto/R3");
 
     db.run(
-      "INSERT INTO deudas VALUES('D001','Deuda ficticia','2026-01-01',NULL,'Activa',1,?,?)",
+      "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D001','Deuda ficticia','2026-01-01',NULL,'Activa',1,?,?)",
       [time, time],
     );
     db.run("UPDATE partidas SET deuda='D001' WHERE id=?", [p.id]);

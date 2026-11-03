@@ -631,7 +631,7 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
       );
       db.run("UPDATE counters SET next=2 WHERE name='ciclos'");
       db.run(
-        "INSERT INTO deudas VALUES('D001','Deuda histórica ficticia','2026-01-01',100000,'Activa',1,?,?)",
+        "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D001','Deuda histórica ficticia','2026-01-01',100000,'Activa',1,?,?)",
         [stamp, stamp],
       );
       const category = createClassification(
@@ -763,8 +763,8 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
             { stdout: "pipe", stderr: "pipe" },
           ).stdout.toString(),
         );
-        expect(bundle.manifest.schema).toBe(22);
-        expect(bundle.manifest.app).toBe("e35-v22");
+        expect(bundle.manifest.schema).toBe(23);
+        expect(bundle.manifest.app).toBe("e4.4-v23");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, fixtureName + "-restore");
         if (origin === "production")
@@ -966,7 +966,7 @@ test(`07 O7 AC17/18/19/23: dos procesos migran v${previousVersion} y confirman u
         return JSON.parse(output);
       }),
     );
-    expect(upgraded).toEqual([{ version: 22 }, { version: 22 }]);
+    expect(upgraded).toEqual([{ version: 23 }, { version: 23 }]);
     const children = [1, 2].map((n) => {
       const ready = join(dir, "ready-" + n),
         body = {

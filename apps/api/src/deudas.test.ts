@@ -492,7 +492,7 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
           ).csrf,
         ).toBe(verified.csrf);
         expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 22,
+          version: 23,
         });
         const { d, p, s } = setup(db);
         save(db, quota(s.id, p.id));
@@ -516,8 +516,8 @@ test("06 D4 AC28/29: v6 genuina demo/producción ficticia, acceso/clave/historia
         );
         expect(decrypted.exitCode).toBe(0);
         const bundle = JSON.parse(decrypted.stdout.toString());
-        expect(bundle.manifest.schema).toBe(22);
-        expect(bundle.manifest.app).toBe("e35-v22");
+        expect(bundle.manifest.schema).toBe(23);
+        expect(bundle.manifest.app).toBe("e4.4-v23");
         expect(bundle.manifest.origin).toBe(origin);
         const target = join(dir, origin + "-restored");
         if (origin === "production")
@@ -823,7 +823,7 @@ test("06 D9 AC13: apertura ausente no es cero, fecha frontera y mismo ID con var
     );
     expect(getDebt(db, d.id).capitalPendiente).toBe("1000.00");
     db.run(
-      "INSERT INTO deudas VALUES('D9999','Apertura no informada','2026-10-01',NULL,'Activa',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
+      "INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado) VALUES('D9999','Apertura no informada','2026-10-01',NULL,'Activa',1,'2026-10-01T00:00:00Z','2026-10-01T00:00:00Z')",
     );
     expect(getDebt(db, "D9999").capitalPendiente).toBeNull();
     const unknown = createClassification(
