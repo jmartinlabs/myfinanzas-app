@@ -4,54 +4,69 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 90
-message_id: 7e7fe29c-7630-4ea0-a9cc-af2f876cdaf8
-from: Alex
-to: OpenCode
+sequence: 91
+message_id: dbd1e4a7-d0cd-481a-a142-2e61fff32669
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-in_reply_to: 89
-created_at: 2026-11-02T23:41:49.448Z
+in_reply_to: 90
+created_at: 2026-11-03T07:25:15Z
 
 ## Message
 
-# Instrucción de coordinación paralela — E3.5 / SPEC23 #167 / SPEC17 E4.4
+# Retorno 0091 — estado de los tres frentes tras 0090
 
-**Autorización del usuario:** organizar y ejecutar **en paralelo** estos tres frentes, en sus alcances respectivos. El único DEV funcional autorizado es **E3.5**. SPEC23 y SPEC17 son **trabajo documental preparatorio**: no se autorizan DEV E4.3/DEV17, nuevos DDL en esos frentes, PR merges ni despliegues ni datos reales.
+**De:** OpenCode · **Para:** Álex
+**Base:** `main` `52e3fca`. Sin datos reales, sin despliegue y sin merge.
 
-## Frente A — E3.5/FIN_NETA (owner de implementación; continuidad)
+## A. E3.5 — PR #171 en draft, CI verde, QA con reservas
 
-- **Continúa I3 → I4 → I5 → I6 → 18 AC → QA/CI → PR funcional en draft**, con fixtures sintéticas y sin reanudar el DEV18 histórico. Mantener la versión actual de `main` como base controlada y revalidar la integración al final.
-- **Leído y recibido tu Relay 0089.** La estrategia de FK fuera de transacción y la acreditación relacional del cobro van en buena dirección; puedes proseguir técnicamente sin nueva aprobación del usuario, que ya autorizó DEV y D3-O1.
-- **Precisión crítica R1:** ejecutar `PRAGMA foreign_key_check` **antes de COMMIT**, dentro de la unidad transaccional reconstruida, para que cualquier error provoque rollback y no deje una migración ya confirmada con FKs rotas. Restaurar `foreign_keys=ON` fuera de la transacción en `finally`; verificar activación efectiva. Revalidar la versión **tras adquirir bloqueo de escritor** para evitar carreras entre lectura inicial y upgrade. Probar fallo intermedio/rollback, doble arranque, restores v19/v20 y auditoría/índices/triggers con datos sintéticos.
-- **Precisión R2:** un texto de evidencia no acredita cobro. Para Reposición sin obligación, comprobar Movimiento vigente ejecutado, dirección/destino al saldo de régimen y consistencia de sus hechos. Protección en alta y rectificación por triggers/TS; al leer, cualquier modificación posterior del Movimiento que invalide el cobro genera cobertura `Parcial/No disponible` motivada, no entrada ficticia en `R_caja`. `R_obl` solo con obligación. Pruebas positivas/negativas y sin duplicados.
-- Si surge un conflicto material de esquema compartido o reglas económicas, detener solo la parte afectada y escalar; no detener sin causa los otros frentes.
+`feat/e35-fin-neta` @ **`d47d5ee`**; CI `required` **PASS** (`41593943112`); draft.
 
-## Frente B — SPEC23 / E4.3, PR #167 (owner documental independiente)
+Implementado I1–I6:
+- Read model propio `e35.ts`; ruta delegada; `proveedor` con versión, ventana, fuente,
+  huella, unidad, régimen y cobertura.
+- Guarda del doble vínculo de Anticipo (F No disponible con motivo si falta coherencia).
+- Migración **v22**: rebuild sin el CHECK de obligación, `foreign_keys=OFF` fuera de la
+  transacción, `foreign_key_check` **dentro** antes del commit, `ON` restaurado en éxito y error.
+- Triggers relacionales: Reposición sin obligación solo con Transferencia vigente, destino =
+  saldo del régimen **Activo** y evidencia; texto solo no acredita. `R_caja` sí, `R_obl` no.
+- Contrato `C22-E35-FIN-NETA` (solo se añade al manifiesto; C14–C21 intactos).
+- Estados de obligación, causas de devoluciones y `DIF_S0_SIGUIENTE`.
 
-**Ámbito autorizado:** corregir y mejorar *en su rama/PR documental* specification y testplan candidatos; actualizar el brainstorming únicamente con aclaraciones trazables, sin alterar ni dar por reabiertas D-01…D-16. No ratificarlos en nombre del usuario ni iniciar DEV/DDL.
+QA independiente: **APTO CON RESERVAS**, sin bloqueantes. Reservas declaradas, no ocultas:
+- **AC-13**: `metric()` no rellena `subtotal` → parcial.
+- **AC-14**: falta assertar el ejemplo 785/15/585/−5/580 y el subcaso 190/105/−150.
+- **AC-03/08/09/11/17**: evidencia indirecta, sin fila `E3.5-FIN-TP-*` propia.
+- **AC-12**: cubre S0/B_A; faltan subcasos S0 ausente y banco parcial.
+- **AC-15/18**: dependencia E4.9 (D4) y revisión documental.
 
-Dictamen de mi revisión de HEAD `07d95dd`: **favorable con tres reservas a cerrar**:
+## B. SPEC23 #167 — reservas de 0090 cerradas
 
-1. **Cambio de cantidad después de una valoración anterior.** La serie reutiliza el valor fechado pero no contempla suficientemente Compras/Ventas vigentes posteriores a `fecha_vigencia` y anteriores/al corte T. No presentar como valor de la cantidad actual un valor que corresponde a otra cantidad; tampoco escalar automáticamente por unidades ni inventar precios o valores. Elaborar una regla determinista de validez/cobertura a corte, preferiblemente conservar valoración como histórica y requerir nueva valoración (con `No disponible` motivado para el corte cuando exista hecho posterior incompatible). Añadir escenarios con compra, venta, reapertura y corrección/anulación retroactiva; comprobar valor, resultado y `Parcial n/m`. Si la regla supone una decisión financiera material no confirmada, documentar alternativas y elevarla a ratificación, no imponerla silenciosamente.
-2. **D-16 y E4.9.** Diferenciar expresamente `No elegible por fecha exacta en E4.3` de `No apta definitivamente para cierre`. E4.9 determinará posteriormente su ventana/suficiencia y podrá admitir valoraciones anteriores según su contrato aprobado; E4.3 no debe prejuzgar ese gate ni modificar la foto. Ajustar etiquetas, definiciones, DTO, AC-16 y TP-16 para no transmitir una negativa irreversible; conservar historial de D-16 y explicación de la decisión.
-3. **Precio 0 contradictorio.** La especificación aún afirma en `Validation and edge cases` que `precio 0,00` automático es válido, mientras R-E43-4, DT2, TP-14 y E4.1 exigen precio **>0**. Unificar todas las menciones: `Automática` precio/cambio positivos; `Manual` valor 0,00 válido. Añadir regresión/documental que detecte la contradicción.
+`84af033`; CI PASS; draft.
+- **A-01:** R-E43-13 y AC-17/TP-17: la valoración solo representa la cantidad de su
+  `fecha_vigencia`; si cambia por compra/venta/reapertura/anulación retroactiva, no se escala y
+  la posición queda `No disponible` con motivo, agregado `Parcial n/m` y nueva valoración exigida.
+- **A-02:** etiquetas «No elegible **por fecha exacta en E4.3**» vs «Elegible por fecha exacta
+  (E4.9 no evaluado)»; E4.3 no prejuzga el cierre.
+- **A-03:** Automática exige precio, cambio y cantidad **> 0**; Manual admite `0,00`.
+Sin aprobar spec/testplan ni iniciar DEV/DDL.
 
-Ejecutar QA documental independiente, verificar trazabilidad y alcance, CI `required` sobre el HEAD final. Entregar dictamen de reservas y PR #167 **en draft**, lista para decisión explícita del usuario sobre specification/testplan y merge documental. **Ni aprobación de wireframes E4.3 ni DEV/DDL/migración de E4.3**. Evitar edición de archivos E3.5 o de código ajeno.
+## C. SPEC17 #170 — wireframes 390 completos
 
-## Frente C — SPEC17 / E4.4 (owner de wireframes independiente)
+PR draft nueva desde `main`, commit propio. Listado con D001/D002/D003, `Sin informar`,
+`Sin declarar`, `No comparable`, `Varias`; ficha con control/capital, corte, cobertura,
+aplicado/viva, condiciones, histórico R5, totales, anulados, comprobación, conciliación,
+desactivar/reactivar; estados y errores 401/404/409/422/503; navegación/teclado y sin overflow.
+Wireframes candidatos; DEV17 no autorizado.
 
-**Ámbito autorizado:** preparación y **completitud de wireframes de 390 px** para Deuda completa E4.4, partiendo de la documentation SPEC17 ya integrada en `main`. No reinterpretar reglas de deuda ni iniciar DEV17.
+## Lo que te pido
 
-- Inventariar todos los controles, campos, estados y operaciones que exige la specification en listado y ficha; diseñar o completar realmente la presentación 390, sin aceptar como sustituto la frase «funcionalmente completa». Cubrir desgloses sin datos, `Sin declarar`, lecturas nulas, conciliaciones/cortes, motivo de rectificación, 422, estado y navegación, evitando desbordamientos o controles ocultos. Mantener coherencia con 1440 y el contrato read model E4.4; la ficha no debe depender de `getDebt` defectuoso.
-- Trabajar en **nueva rama/PR documental separada** desde `main` vigente (no reescribir commits de #166 ya mergeada). QA independiente de completitud funcional, contraste 390/1440 y CI. Dejar wireframes como **candidatos para revisión/aprobación humana**.
-- No autoriza DEV17, migraciones ni cambios del esquema de deuda.
+1. **E3.5:** ¿cerramos AC-13 (subtotal parcial) y AC-14 (asserts exactos) antes de proponer
+   integración, o aceptamos el candidato con reservas declaradas? Mi recomendación: cerrar
+   ambas y añadir filas TP propias para 03/08/09/11/17.
+2. **#167 y #170:** ¿alguna objeción documental antes de presentarlos al usuario para
+   ratificación/merge separado?
 
-## Orquestación y retornos
-
-- Tres owners/agentes aislados, con **ramas/worktrees y ficheros claramente segregados**; no compartir escrituras, no sobreescribir trabajo de otro, no acumular handoffs en ramas funcionales. El coordinador OpenCode integra retornos y gestiona las preguntas técnicas de subagentes; no enviar consultas directamente al usuario salvo decisiones materiales nuevas, riesgos o autorizaciones.
-- Priorización: **E3.5 es la vía crítica de implementación**; SPEC23 y SPEC17 son preparación paralela. No bloquear A por #167 o por wireframes. Ningún subagente puede hacer merge sin autorización.
-- Para cada frente, devolver: ID, estado, rama/PR/SHA, cambios exactos, AC/TP y pruebas con PASS/UNRUN, QA, reservas y próximo gate. Resumir estado agregado de los tres frentes en cada retorno importante.
-- Fecha de nuevos registros documentales: **2026-11-03**; preservar fechas históricas. Al terminar y aprobar un merge, limpieza de worktree/rama local solo tras consentimiento y verificación de que no queda trabajo útil; no suprimir handoff antes de asegurar la restauración.
-
-**No autorizados en este mensaje:** merge de #167 o nueva PR de wireframes, aprobación humana de SPEC23/SPEC17, DEV E4.3/DEV17, despliegue, datos reales, migraciones fuera de D3-O1 y E3.5.
+No autoriza merge, DEV E4.3/DEV17, datos reales ni despliegue.
