@@ -187,7 +187,10 @@ function valuationDto(
         : priceText(BigInt(row.precio_unitario)),
     divisa: row.divisa,
     cambio: row.cambio === null ? null : changeText(BigInt(row.cambio)),
-    cantidadBase: quantityText(quantityAtValuation),
+    cantidadBase:
+      row.tipo === "Automática" && base !== null
+        ? quantityText(base)
+        : quantityText(quantityAtValuation),
     ...(cutoff ? { cantidadAlCorte: quantityText(quantityAtCutoff!) } : {}),
     procedencia: row.procedencia,
     cobertura: row.cobertura,
@@ -563,9 +566,10 @@ function parseContent(
   const procedencia = requiredText(body.procedencia, "procedencia", 200);
   if (tipo === "Manual") {
     const valor = money(body.valorEur, "valorEur");
-    if (valor === null || valor < 0n)
+    if (valor === null || valor < 0n || valor > MAX_INPUT)
       throw new Problem(422, "VALIDATION", "Revisa los campos indicados.", {
-        valorEur: "Importe EUR manual mayor o igual que cero.",
+        valorEur:
+          "Importe EUR manual entre 0 y el límite exacto admitido (2^53-1).",
       });
     return {
       fecha,

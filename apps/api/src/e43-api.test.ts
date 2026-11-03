@@ -266,6 +266,20 @@ function positionOf(corte: ReturnType<typeof e43Corte>, saldo: string, instrumen
   return position;
 }
 
+function dumpTables(db: Database) {
+  const tables = db
+    .query(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+    )
+    .all() as { name: string }[];
+  return JSON.stringify(
+    tables.map(({ name }) => [
+      name,
+      db.query(`SELECT * FROM "${name}" ORDER BY rowid`).all(),
+    ]),
+  );
+}
+
 function http(db: Database) {
   const key = randomBytes(32),
     password = "Ficticia " + randomUUID(),
@@ -869,7 +883,8 @@ test("E4.3-TP-08: base automática inconsistente no se usa al leer", () => {
     expect(p1.valoracion).toMatchObject({
       estado: "No disponible",
       valorEur: null,
-      cantidadBase: "7.5",
+      cantidadBase: "10",
+      cantidadAlCorte: "7.5",
     });
     expect(p1.valoracion?.motivo).toContain("cantidad base no coincide");
     expect(p1.resultado.estado).toBe("No disponible");
@@ -882,12 +897,7 @@ test("E4.3-TP-08: base automática inconsistente no se usa al leer", () => {
 test("E4.3-TP-12/16: detalle, serie y ficha sin escribir", () => {
   const { db, i1, q2 } = fixture();
   try {
-    const before = JSON.stringify([
-      db.query("SELECT * FROM saldos ORDER BY 1").all(),
-      db.query("SELECT * FROM counters ORDER BY 1").all(),
-      db.query("SELECT * FROM operaciones_inversion ORDER BY 1").all(),
-      db.query("SELECT * FROM schema_version").all(),
-    ]);
+    const before = dumpTables(db);
     const detail = e43Position(db, "S004", i1, "2026-04-30");
     expect(detail.serie.map((row) => row.fecha)).toEqual([
       "2026-03-15",
@@ -913,13 +923,266 @@ test("E4.3-TP-12/16: detalle, serie y ficha sin escribir", () => {
     const single = e43Valuation(db, q2);
     expect(single.posicion.saldo.id).toBe("S004");
     expect(single.auditoria).toHaveLength(1);
-    const after = JSON.stringify([
-      db.query("SELECT * FROM saldos ORDER BY 1").all(),
-      db.query("SELECT * FROM counters ORDER BY 1").all(),
-      db.query("SELECT * FROM operaciones_inversion ORDER BY 1").all(),
-      db.query("SELECT * FROM schema_version").all(),
-    ]);
+    const after = dumpTables(db);
     expect(after).toBe(before);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.3-TP-01 L: redondeo único del producto no exacto", () => {
+  const db = openDatabase(":memory:");
+  try {
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      saldoApertura: "1000.00",
+      fechaApertura: "2026-01-01",
+    });
+    const i1 = createInstrumento(
+      db,
+      {
+        nombre: "Fondo redondeo demo",
+        isin: "ES0000000011",
+        isinEvidencia: "Extracto ficticio E4.3 · 2026-01-10",
+        divisaReferencia: "EUR",
+      },
+      randomUUID(),
+      now,
+    ).instrumento.id;
+    createPurchase(
+      db,
+      {
+        fecha: "2026-02-10",
+        instrumento: i1,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "7.5",
+        precio: "33.333333",
+        divisa: "USD",
+        cambio: "0.900000",
+        importeEur: "225.00",
+        comisionEur: "0.00",
+        concepto: "Compra ficticia de redondeo",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    );
+    const created = createValuation(
+      db,
+      "S004",
+      i1,
+      {
+        fecha: "2026-04-30",
+        tipo: "Automática",
+        precio: "33.333333",
+        divisa: "USD",
+        cambio: "0.900000",
+        procedencia: "Precio y cambio declarados por el usuario",
+      },
+      randomUUID(),
+      now,
+    );
+    expect(created.valoracion.valorEur).toBe("225.00");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.3-TP-05 L: resultado negativo visible con signo", () => {
+  const { db, i1 } = fixture();
+  try {
+    createValuation(
+      db,
+      "S004",
+      i1,
+      {
+        fecha: "2026-05-31",
+        tipo: "Automática",
+        precio: "70.000000",
+        divisa: "USD",
+        cambio: "0.950000",
+        procedencia: "Precio y cambio declarados por el usuario",
+      },
+      randomUUID(),
+      now,
+    );
+    const position = positionOf(e43Corte(db, "2026-05-31"), "S004", i1);
+    expect(position.resultado).toEqual({
+      estado: "Disponible",
+      importeEur: "-120.25",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.3-TP-02 N: cerrada con valoración Manual histórica prevalece D-03", () => {
+  const { db, i2 } = fixture();
+  try {
+    createValuation(
+      db,
+      "S004",
+      i2,
+      {
+        fecha: "2026-05-10",
+        tipo: "Manual",
+        valorEur: "999.00",
+        procedencia: "Valor manual histórico ficticio",
+      },
+      randomUUID(),
+      now,
+    );
+    const closed = positionOf(e43Corte(db, "2026-06-30"), "S004", i2);
+    expect(closed.estado).toBe("Cerrada");
+    expect(closed.valoracion).toMatchObject({
+      estado: "No aplica",
+      valorEur: null,
+    });
+    expect(closed.resultado).toEqual({
+      estado: "Disponible",
+      importeEur: "40.00",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.3-TP-10 L: sin posiciones abiertas la valoración es No aplica", () => {
+  const db = openDatabase(":memory:");
+  try {
+    updateSaldo(db, "S003", {
+      revision: getSaldo(db, "S003").revision,
+      saldoApertura: "1000.00",
+      fechaApertura: "2026-01-01",
+    });
+    const i2 = createInstrumento(
+      db,
+      {
+        nombre: "Acción cerrada demo",
+        isin: "ES0000000012",
+        isinEvidencia: "Extracto ficticio E4.3 · 2026-01-10",
+        divisaReferencia: "EUR",
+      },
+      randomUUID(),
+      now,
+    ).instrumento.id;
+    createPurchase(
+      db,
+      {
+        fecha: "2026-05-02",
+        instrumento: i2,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "4",
+        precio: "50.00",
+        divisa: "EUR",
+        cambio: null,
+        importeEur: "200.00",
+        comisionEur: "0.00",
+        concepto: "Compra ficticia cerrada",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    );
+    createSale(
+      db,
+      {
+        fecha: "2026-05-20",
+        instrumento: i2,
+        saldoEfectivo: "S003",
+        saldoInversion: "S004",
+        cantidad: "4",
+        precio: "60.00",
+        divisa: "EUR",
+        cambio: null,
+        importeEur: "240.00",
+        comisionEur: "0.00",
+        concepto: "Venta ficticia cerrada",
+        nota: null,
+      },
+      randomUUID(),
+      now,
+    );
+    const corte = e43Corte(db, "2026-06-30");
+    expect(corte.posiciones).toHaveLength(1);
+    expect(corte.agregado).toMatchObject({
+      coberturaValoracion: "No aplica",
+      valorEur: null,
+      coberturaResultado: "Verificada",
+      resultadoEur: "40.00",
+      elegibilidadFechaExacta: "No aplica",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.3-TP-14: límite 2^53-1 y rechazo de exponentes, negativos y cambio 0", () => {
+  const { db, i1 } = fixture(false);
+  try {
+    const max = createValuation(
+      db,
+      "S004",
+      i1,
+      {
+        fecha: "2026-05-31",
+        tipo: "Manual",
+        valorEur: "90071992547409.91",
+        procedencia: "Valor máximo ficticio",
+      },
+      randomUUID(),
+      now,
+    );
+    expect(max.valoracion.valorEur).toBe("90071992547409.91");
+    const invalid = (
+      fecha: string,
+      body: Record<string, unknown>,
+    ) =>
+      failure(() =>
+        createValuation(
+          db,
+          "S004",
+          i1,
+          { fecha, procedencia: "Valor ficticio", ...body },
+          randomUUID(),
+          now,
+        ),
+      );
+    expect(
+      invalid("2026-06-01", { tipo: "Manual", valorEur: "90071992547409.92" }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
+    expect(
+      invalid("2026-06-02", { tipo: "Manual", valorEur: "1e3" }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
+    expect(
+      invalid("2026-06-03", { tipo: "Manual", valorEur: "-1.00" }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
+    expect(
+      invalid("2026-06-04", {
+        tipo: "Automática",
+        precio: "1e3",
+        divisa: "USD",
+        cambio: "0.900000",
+      }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
+    expect(
+      invalid("2026-06-05", {
+        tipo: "Automática",
+        precio: "10.000000",
+        divisa: "USD",
+        cambio: "0.000000",
+      }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
+    expect(
+      invalid("2026-06-06", {
+        tipo: "Automática",
+        precio: "10.0000001",
+        divisa: "USD",
+        cambio: "0.900000",
+      }),
+    ).toMatchObject({ status: 422, code: "VALIDATION" });
   } finally {
     db.close();
   }
