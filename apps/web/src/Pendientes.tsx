@@ -44,6 +44,7 @@ type ContextoHecho = {
   fecha: string | null;
   cicloId: string | null;
   ejercicio: number | null;
+  elegible: boolean;
 };
 type TransversalItem = {
   claveEfimera: string;
@@ -810,7 +811,10 @@ export function Pendientes({
                 <li key={contexto.tipo + ":" + contexto.fuenteId}>
                   {contexto.tipo} · {contexto.fuenteId} ·{" "}
                   {fecha(contexto.fecha)} · ciclo {contexto.cicloId ?? "—"} ·
-                  ejercicio {contexto.ejercicio ?? "—"}
+                  ejercicio {contexto.ejercicio ?? "—"} ·{" "}
+                  <span className="muted">
+                    {contexto.elegible ? "elegible" : "solo detalle"}
+                  </span>
                 </li>
               ))}
             </ul>

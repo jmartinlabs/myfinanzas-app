@@ -64,6 +64,8 @@ export type ContextoHecho = {
   fecha: string | null;
   cicloId: string | null;
   ejercicio: number | null;
+  /** true solo si el hecho cuenta para ventana/ciclo; false = solo detalle. */
+  elegible: boolean;
 };
 export type TransversalItem = {
   claveEfimera: string;
@@ -245,6 +247,7 @@ function contexto(
   fuenteId: string,
   fecha: string | null,
   cycles: readonly Cycle[],
+  elegible = true,
 ): ContextoHecho {
   return {
     tipo,
@@ -252,12 +255,14 @@ function contexto(
     fecha,
     cicloId: fecha === null ? null : (cycleAt(cycles, fecha)?.id ?? null),
     ejercicio: yearOf(fecha),
+    elegible,
   };
 }
 
 function ultimaFecha(contextos: ContextoHecho[]) {
   return (
     contextos
+      .filter((c) => c.elegible)
       .map((c) => c.fecha)
       .filter((f): f is string => f !== null)
       .sort()
@@ -351,10 +356,11 @@ function filaAnticipo(
             o.id,
             o.fecha,
             cycles,
+            o.elegible,
           ),
         ),
       ...dto.relacionados.map((r) =>
-        contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles),
+        contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles, false),
       ),
     ],
     fechaHecho = dto.ultimaActividad ?? ultimaFecha(contextos),
@@ -539,15 +545,17 @@ function filaCompartido(
     id = ref.id,
     resumen = dto.resumen;
   const contextos = [
-    ...dto.gastos.map((g) => contexto("Gasto", g.id, g.fecha, cycles)),
+    ...dto.gastos.map((g) =>
+      contexto("Gasto", g.id, g.fecha, cycles, g.computaEnBruto),
+    ),
     ...dto.aportaciones.map((a) =>
-      contexto("Aportacion", a.movimiento, a.fecha, cycles),
+      contexto("Aportacion", a.movimiento, a.fecha, cycles, a.computa),
     ),
     ...dto.historicos.map((h) =>
-      contexto("Transferencia", h.movimiento, h.fecha, cycles),
+      contexto("Transferencia", h.movimiento, h.fecha, cycles, false),
     ),
     ...dto.relacionados.map((r) =>
-      contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles),
+      contexto(contextoTipo(r.tipo), r.id, r.fecha, cycles, false),
     ),
   ];
   const fechaHecho = ultimaFecha(contextos),
@@ -1259,7 +1267,8 @@ function enPeriodo(
 ) {
   if (fila.ciclo?.id === ciclo.id) return true;
   return fila.contextos.some(
-    (c) => c.fecha !== null && c.fecha >= inicio && c.fecha <= fin,
+    (c) =>
+      c.elegible && c.fecha !== null && c.fecha >= inicio && c.fecha <= fin,
   );
 }
 

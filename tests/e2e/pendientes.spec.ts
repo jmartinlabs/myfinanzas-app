@@ -354,6 +354,7 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
     await expect(
       page.getByRole("button", { name: "Abrir Compartido", exact: true }),
     ).toBeVisible();
+    await expect(page.getByText("solo detalle").first()).toBeVisible();
     await expect(
       page.getByRole("link", { name: /Volver a pendientes/ }),
     ).toBeVisible();
@@ -460,7 +461,10 @@ test("E3.6 W1/W2/W3: MFA real, listado, filtros, detalle, paginación y 1440/390
         writes.push(route.method() + " " + target.pathname);
     });
     await page.goto("/pendientes");
-    await page.getByLabel("Tipo", { exact: true }).selectOption("Compartido");
+    await page
+      .getByLabel("Buscar por REF/ID/nombre", { exact: true })
+      .fill("REF001");
+    await page.getByRole("button", { name: "Buscar", exact: true }).click();
     await page
       .getByRole("link", { name: "Piso 2026", exact: true })
       .first()

@@ -1136,3 +1136,89 @@ test("R4: contextos conservan relacionados/históricos y no etiquetan Transferen
     db.close();
   }
 });
+
+test("R13: Compartido con relacionado posterior permanece en el ciclo elegible", () => {
+  const db = setup();
+  try {
+    categories(db);
+    const p13 = partida(db, "CAT013");
+    const payer = saldo(db, "Banco R13 compartido");
+    const destination = saldo(db, "Destino R13 compartido");
+    const a = cycle(db, "2026-10-01");
+    const b = cycle(db, "2026-11-01");
+    const ref = sharedCase(db, [
+      { nombre: "Yo", rol: "Titular", partes: 1 },
+      { nombre: "Bea", rol: "Tercero", partes: 1 },
+    ]);
+    sharedExpense(db, ref, payer, p13, "100.00", "2026-10-05");
+    const related = add(db, {
+      tipo: "Transferencia",
+      fecha: "2026-11-05",
+      importe: "30.00",
+      origen: payer,
+      destino: destination,
+      referencia: ref,
+      concepto: "Movimiento interno posterior R13",
+      nota: "",
+    });
+    const result = listPendientes(db, new URLSearchParams(), now);
+    const row = fila(result, "Compartido", ref)!;
+    expect(row.ciclo?.id).toBe(a.id);
+    expect(row.fechaHecho).toBe("2026-10-05");
+    expect(row.ejercicio).toBe(2026);
+    const contextoRelacionado = row.contextos.find(
+      (c) => c.fuenteId === related.id,
+    )!;
+    expect(contextoRelacionado.elegible).toBe(false);
+    expect(
+      row.contextos.find((c) => c.elegible)?.fuenteId,
+    ).toBeDefined();
+    const enB = listPendientes(
+      db,
+      new URLSearchParams({ ciclo: b.id }),
+      now,
+    );
+    expect(fila(enB, "Compartido", ref)).toBeUndefined();
+  } finally {
+    db.close();
+  }
+});
+
+test("R13: Anticipo con relacionado posterior no entra por el ciclo del relacionado", () => {
+  const db = setup();
+  try {
+    categories(db);
+    const food = partida(db, "CAT001");
+    const from = saldo(db, "Origen R13 anticipo");
+    const to = saldo(db, "Destino R13 anticipo");
+    const a = cycle(db, "2026-10-01");
+    const b = cycle(db, "2026-11-01");
+    const ref = anticipo(db, "Anticipo R13");
+    anticipoTransfer(db, ref, "Adelanto", "100.00", "2026-10-02", from, to);
+    const related = add(db, {
+      tipo: "Gasto",
+      fecha: "2026-11-02",
+      importe: "10.00",
+      saldo: from,
+      partida: food,
+      referencia: ref,
+      concepto: "Gasto relacionado posterior R13",
+      nota: "",
+    });
+    const result = listPendientes(db, new URLSearchParams(), now);
+    const row = fila(result, "Anticipo", ref)!;
+    expect(row.ciclo?.id).toBe(a.id);
+    expect(row.fechaHecho).toBe("2026-10-02");
+    expect(row.contextos.find((c) => c.fuenteId === related.id)?.elegible).toBe(
+      false,
+    );
+    const enB = listPendientes(
+      db,
+      new URLSearchParams({ ciclo: b.id }),
+      now,
+    );
+    expect(fila(enB, "Anticipo", ref)).toBeUndefined();
+  } finally {
+    db.close();
+  }
+});
