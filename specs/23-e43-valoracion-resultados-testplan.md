@@ -4,7 +4,7 @@ Status: **DISEÑO DE PRUEBAS — NO EJECUTADO; PROPUESTA DOCUMENTAL EN REVISIÓN
 en PASS. No existe candidato funcional de E4.3, no hay implementación, no hay endpoints, no hay
 DDL y no se usan datos reales. Una prueba diseñada no acredita la funcionalidad.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
-Base: `main` `c5a0ccc` (2026-11-02), esquema SQLite **v21**.
+Base: `main` `5d903f4` (2026-11-03), esquema SQLite **v22**.
 
 Antes de implementación, cada AC debe mapearse a su entorno, caso positivo/negativo/límite y
 evidencia esperada. Los borradores admiten diseño provisional, nunca implementación ni PASS.
@@ -133,7 +133,7 @@ ejecutarlo; no autoriza desarrollo.
 | E4.3-TP-03 | AC-03 / D-03 | P3 cerrada: 240,00 − 200,00 = 40,00; valoración `No aplica` | Grupo solo anulado I1004; posición con cantidad 0 sin Venta vigente | Compra 100,00 / venta 100,00 → resultado 0,00; cerrada | Resultado cerrado sin valoración; sin etiqueta realizado/no realizado; solo anulado no es posición | Bun API + oráculo | E4.2 | UNRUN |
 | E4.3-TP-04 | AC-04 / D-04 | A 04-30 P1/P2/P4/P5 abiertas; a 06-30 P3 cerrada; P1/P2/P4/P5 abiertas | Venta posterior a T no cierra T; grupo solo anulado no es posición | Cantidad 0 con Venta vigente → `Cerrada`; nueva Compra reabre | Estado derivado al corte; sin Estado manual; reapertura correcta | Bun API/tabla | E4.2; DT2 fin de día | UNRUN |
 | E4.3-TP-05 | AC-05 / D-05 | P1 abierta = 236,00; P3 cerrada = 40,00; una cifra por posición | Separar realizado/no realizado, FIFO o coste por lotes | P1 con valor 498,75 → resultado −120,25 visible con signo | Solo resultado agregado; sin desglose realizado/no realizado; sin clamp | Bun API + oráculo | R5; E4.2 | UNRUN |
-| E4.3-TP-06 | AC-06 / D-06 | Resultado disponible en P1; DTO sin porcentaje | Intentar `resultado/compras`, TWR, TIR o ratio | P3 cerrada y P5 manual: tampoco porcentaje | Solo importe EUR; `Rentabilidad: No disponible`; sin denominador inventado | API/DTO + UI | DT8/fórmula futura | UNRUN |
+| E4.3-TP-06 | AC-06 / D-06 | Resultado disponible en P1; DTO sin porcentaje | Intentar `resultado/compras`, TWR, TIR o ratio | P3 cerrada y P5 manual: tampoco porcentaje | Solo importe EUR; `Rentabilidad: No disponible`; sin denominador inventado | API/DTO + UI | D-06; no requiere DT8 | UNRUN |
 | E4.3-TP-07 | AC-07 / D-07 | C1 comisión 5,00 y V1 comisión 2,00 → resultado 236,00 usando `importe_eur`; variante con `importe_eur` distinto de cantidad×precio×cambio | Restar 7,00 otra vez (229,00) o sumar comisión (243,00) | Comisión 0,00 y comisión igual al importe: no duplicar | Resultado neto 236,00; con `importe_eur` distinto se usa el importe cargado/cobrado, no el producto; comisión una sola vez | API + oráculo | E4.1/E4.2 | UNRUN |
 | E4.3-TP-08 | AC-08 / D-08 | Serie Q1/Q2/Q3; corregir Q2 con revisión y motivo; auditoría anterior/posterior | Duplicar P1/04-30 (409; unicidad DT2 confirmada); revisión obsoleta 409; DELETE; `ciclo_id` | Corregir al mismo valor; dos procesos concurrentes → una revisión gana | Serie y auditoría conservadas; 409 sin escritura parcial; sin Ciclo; Compras/Ventas intactas | API/SQL + concurrencia | DT2-E4.3 almacén; autorización | UNRUN |
 | E4.3-TP-09 | AC-09 / D-09 | Corte 03-31 usa Q1 (16 días); corte 04-30 usa Q2 exacta | Usar Q2 en 03-31 (look-ahead); única valoración posterior → no usarla | Fecha = corte → 0 días; anterior 61 días | Solo fecha ≤ T; última anterior con fecha/antigüedad; sin posterior; sin valor → `No disponible` | API + oráculo | Serie D-08 | UNRUN |
@@ -153,7 +153,7 @@ ejecutarlo; no autoriza desarrollo.
 | **Look-ahead** | El corte usa una valoración posterior o el precio de la última operación | Solo `fecha_vigencia <= T`; prueba con Q2 posterior a 03-31 y Q1 anterior |
 | **Doble comisión** | Resultado 229,00 en vez de 236,00; comisión sumada aparte | `importe_eur` una sola vez; oráculo con comisiones 5,00 y 2,00 |
 | **Total parcial como completo** | Se muestra 1.197,00/1.592,00 con `Parcial 3/4` | `valorEur: null` y `resultadoEur: null` si falta una posición aplicable |
-| **Antigüedad no certificable** | Una valoración de 61 días se presenta como certificada | `No certificable` separado de `cobertura`; E4.9 define la ventana |
+| **Antigüedad no elegible** | Una valoración de 61 días se presenta como elegible | `No elegible por fecha exacta en E4.3` separado de `cobertura`; E4.9 define la ventana |
 | **FX** | Se ignora el cambio, se usa el de la última operación o se redondea antes de multiplicar | Producto exacto; Q2 = 855,00, no 900,00 ni 810,00; sin redondeo intermedio |
 | **Serie/auditoría** | Se sobrescribe una valoración, se borra o no hay revisión/motivo | Serie, revisión, auditoría anterior/posterior y 409; sin DELETE |
 | **Manual** | Se calcula resultado desde el valor manual | Abierta manual: Resultado/Rentabilidad `No disponible`; cerrada: D-03 |
@@ -196,7 +196,7 @@ arranque del proceso no acredita funcionalidad.
 
 Pendiente. No hay wireframes aprobados ni UI E4.3. Cuando se autorice, Playwright deberá operar
 todos los flujos de aceptación y capturar 390 y 1440, con evidencia de teclado, foco, contraste,
-estados vacío/carga/error/parcial/manual/cerrada/valor anterior/no certificable y borrador
+estados vacío/carga/error/parcial/manual/cerrada/valor anterior/no elegible por fecha exacta y borrador
 conservado ante 409/422. No se declara accesibilidad ni responsive sin esas capturas.
 
 ## Visual improvements (visual apps only)
