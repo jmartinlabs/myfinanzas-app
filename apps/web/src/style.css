@@ -2628,3 +2628,313 @@ textarea {
   overflow-x: auto;
   overscroll-behavior-x: contain;
 }
+
+/* E4.4 — Deuda completa y conciliación. Additive tokens over the approved shell. */
+.debt-list th:nth-child(1) {
+  width: 8%;
+}
+.debt-list th:nth-child(2) {
+  width: 21%;
+}
+.debt-list th:nth-child(3) {
+  width: 14%;
+}
+.debt-list th:nth-child(4) {
+  width: 13%;
+}
+.debt-list th:nth-child(5) {
+  width: 12%;
+}
+.debt-list th:nth-child(6) {
+  width: 12%;
+}
+.debt-list th:nth-child(7) {
+  width: 20%;
+}
+.debt-list .debt-id {
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+.debt-list .table-id {
+  margin-top: 6px;
+}
+.e44-varias {
+  font-weight: 650;
+  color: #3f5a22;
+}
+.debt-cards .secondary {
+  margin-top: 4px;
+}
+
+.e44-section {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-top: 20px;
+  max-width: 100%;
+  min-width: 0;
+}
+.e44-section-title {
+  margin: 0;
+  font-size: inherit;
+}
+.e44-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 50px;
+  padding: 14px 20px;
+  border: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  background: #f7fbf3;
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.e44-toggle:hover {
+  background: #f0f7e7;
+}
+.e44-chevron {
+  width: 1em;
+  color: #45651e;
+}
+.e44-count {
+  font-weight: 650;
+  color: #45651e;
+  font-variant-numeric: tabular-nums;
+}
+.e44-hint {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 650;
+  color: #3f5a22;
+  background: #e8f2d8;
+  border: 1px solid #c8dcaa;
+  border-radius: 5px;
+  padding: 2px 8px;
+}
+.e44-section-body {
+  padding: 18px 20px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.e44-facts {
+  margin: 0 0 14px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 24px;
+}
+.e44-facts > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid #e7ecdf;
+  font-size: 12px;
+  min-width: 0;
+}
+.e44-facts dt {
+  color: #536147;
+  min-width: 0;
+}
+.e44-facts dd {
+  margin: 0;
+  text-align: right;
+  font-weight: 600;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.e44-money {
+  font-variant-numeric: tabular-nums;
+}
+.e44-corte {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #e7ecdf;
+  margin-bottom: 14px;
+}
+.e44-corte label {
+  max-width: 230px;
+}
+.e44-coverage,
+.e44-totals,
+.e44-annulled {
+  font-size: 12px;
+  color: #41532a;
+  margin: 0 0 10px;
+}
+.e44-warning {
+  border: 1px solid #d9b58a;
+  border-left: 4px solid #a86a26;
+  background: #fff9ef;
+  color: #6a4414;
+  padding: 10px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin: 0 0 12px;
+  overflow-wrap: anywhere;
+}
+.e44-precontrol,
+.e44-check {
+  border-top: 1px solid #e7ecdf;
+  padding-top: 10px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+.e44-precontrol p,
+.e44-check p {
+  margin-bottom: 8px;
+}
+.e44-history-desktop {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.e44-history-desktop table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 12px;
+}
+.e44-history-desktop th {
+  background: var(--section);
+  padding: 9px 10px;
+  font-size: 10px;
+  color: #4a5c34;
+}
+.e44-history-desktop td {
+  padding: 10px;
+  border-top: 1px solid #e7ecdf;
+  font-variant-numeric: tabular-nums;
+}
+.e44-history-desktop tr.annulled td {
+  color: #6a7062;
+}
+.e44-history-mobile {
+  display: none;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.e44-history-mobile > li {
+  border-bottom: 1px solid #e7ecdf;
+  padding: 12px 0;
+}
+.e44-history-mobile > li:last-child {
+  border-bottom: 0;
+}
+.e44-history-mobile .card-head {
+  margin-bottom: 6px;
+}
+.e44-history-mobile p {
+  margin: 0 0 8px;
+  font-size: 12px;
+}
+.e44-history-actions {
+  margin-top: 14px;
+}
+.e44-conciliation-actions {
+  margin-bottom: 14px;
+}
+.e44-conciliation-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 12px;
+}
+.e44-conciliation {
+  border: 1px solid #e3e9da;
+  border-radius: 7px;
+  padding: 14px;
+  background: #fcfef9;
+}
+.e44-conciliation h3 {
+  font-size: 13px;
+  margin: 0;
+}
+.e44-conciliation .card-head {
+  margin-bottom: 8px;
+}
+.e44-conciliation .e44-facts {
+  margin-bottom: 8px;
+}
+.e44-inline-form {
+  border-top: 1px solid #dfe7d5;
+  margin-top: 14px;
+  padding-top: 14px;
+}
+.e44-inline-form h3 {
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+.e44-inline-form .actions {
+  margin-top: 12px;
+}
+.e44-state-panel {
+  margin-bottom: 20px;
+}
+.e44-state-panel label {
+  margin: 12px 0;
+}
+.e44-debt-actions {
+  margin-bottom: 16px;
+}
+.e44-partidas {
+  margin-top: 20px;
+}
+.saldo-form textarea,
+.e44-inline-form textarea {
+  width: 100%;
+  min-height: 88px;
+  padding: 9px 11px;
+  border: 1px solid #9eab92;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--text);
+  line-height: 1.45;
+  resize: vertical;
+}
+@media (max-width: 760px) {
+  .debt-filters label:last-child {
+    grid-column: auto;
+  }
+  .e44-toggle {
+    padding: 13px 16px;
+    font-size: 14px;
+  }
+  .e44-section-body {
+    padding: 14px 16px;
+  }
+  .e44-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .e44-facts > div {
+    gap: 10px;
+  }
+  .e44-corte {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .e44-corte label {
+    max-width: none;
+  }
+  .e44-history-desktop {
+    display: none;
+  }
+  .e44-history-mobile {
+    display: block;
+  }
+  .e44-hint {
+    margin-left: 0;
+  }
+  .e44-toggle .actions {
+    width: 100%;
+  }
+}
