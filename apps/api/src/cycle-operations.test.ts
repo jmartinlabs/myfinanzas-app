@@ -701,6 +701,7 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
               ...values,
               ...(previousVersion === 7 ? [{ name: "presupuestos", next: 1 }] : []),
               { name: "participantes_compartido", next: 1 },
+              { name: "conciliaciones_deuda", next: 1 },
               { name: "instrumento", next: 1001 },
               { name: "operaciones_inversion", next: 1 },
               { name: "revision_comida", next: 1 },
@@ -727,7 +728,26 @@ test("07 O4 AC23/24: continuidad v7/v8 genuina demo/production, presupuestos/deu
                     fuente: null,
                     padre_partida: null,
                   }))
-                : values,
+                : table === "deudas"
+                  ? values.map((r: any) => ({
+                      ...r,
+                      tipo_deuda: null,
+                      tin: null,
+                      tae: null,
+                      cuota_contractual: null,
+                      condiciones: null,
+                      capital_inicial: null,
+                      capital_amortizado_historico: null,
+                      amortizacion_extra_historica: null,
+                      capital_historico_cuotas: null,
+                      intereses_historicos: null,
+                      total_pagado_historico: null,
+                      precontrol_cuotas: null,
+                      precontrol_capital: null,
+                      precontrol_amortizacion_extra: null,
+                      precontrol_ejercicio: null,
+                    }))
+                  : values,
           );
         }
         expect(inspectIdentity(db)).toEqual(identity);
