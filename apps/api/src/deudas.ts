@@ -238,7 +238,9 @@ function fields(
         ? null
         : BigInt(previous.tae),
     cuotaContractual = has("cuotaContractual")
-      ? (() => {
+      ? v.cuotaContractual === null
+        ? null
+        : (() => {
           const cents = money(v.cuotaContractual);
           if (cents === null)
             throw new Problem(

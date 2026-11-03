@@ -1337,6 +1337,19 @@ test("17 E4.4 B AC-01/02/03/04/20/26/32/33: metadatos de Deuda y auditoría por 
       revision: beforeDeactivation + 2,
     });
     expect(getDebt(db, "D001").capitalPendiente).toBe("1000.00");
+    const withoutCuota = await request(
+      "/deudas/D001",
+      "PATCH",
+      {
+        revision: item.revision,
+        cuotaContractual: null,
+        motivo: "Cuota ficticia sin informar",
+      },
+      write(),
+    );
+    expect(withoutCuota.status).toBe(200);
+    item = (await withoutCuota.json()).item;
+    expect(item.condiciones.cuotaContractual).toBeNull();
     expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
   } finally {
     db.close();
