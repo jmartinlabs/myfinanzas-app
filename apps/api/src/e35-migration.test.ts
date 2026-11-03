@@ -45,6 +45,27 @@ function v21(path: string) {
   db.close();
 }
 
+function v21ConFkInconsistente(path: string) {
+  v21(path);
+  const db = new Database(path);
+  try {
+    db.exec("PRAGMA foreign_keys=OFF");
+    db.run(
+      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,concepto,nota,anulado,revision,creado,actualizado)
+       VALUES('9','2026-06-26','Transferencia',5,'S002','S001','Rol con obligación inexistente','',0,1,?,?)`,
+      [t, t],
+    );
+    db.run(
+      `INSERT INTO movimiento_rol_financiacion(movimiento,rol,obligacion_ciclo,evidencia,revision_movimiento,revision,creado,actualizado)
+       VALUES('9','Financiación','999','Evidencia ficticia',1,1,?,?)`,
+      [t, t],
+    );
+    expect(db.query("PRAGMA foreign_key_check").all()).toHaveLength(1);
+  } finally {
+    db.close();
+  }
+}
+
 test("I3/migración v21→v22: preserva roles y auditoría, FK íntegras y admite cobro acreditado", () => {
   const dir = mkdtempSync(join(tmpdir(), "e35-v22-"));
   try {
@@ -102,6 +123,64 @@ test("I3/migración v21→v22: rechaza reposición sin obligación si el destino
           [t, t],
         ),
       ).toThrow();
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("R2/I3/migración v21→v22: FK inconsistente no deja base parcial y restaura foreign_keys", () => {
+  const dir = mkdtempSync(join(tmpdir(), "e35-v22-fk-"));
+  try {
+    const path = join(dir, "v21-fk.sqlite");
+    v21ConFkInconsistente(path);
+
+    // La verificación del contrato v21 comprueba foreign_key_check antes de mutar.
+    // Una FK inconsistente se rechaza aquí, sin rebuild v22 ni base parcial.
+    expect(() => openDatabase(path)).toThrow(
+      "Contrato de esquema v21 desconocido o incompleto; no se modificará esta base.",
+    );
+
+    const check = new Database(path);
+    try {
+      expect(check.query("SELECT version FROM schema_version").get()).toEqual({ version: 21 });
+      expect(check.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({ n: 2 });
+      expect(check.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion").get()).toEqual({ n: 2 });
+      expect(
+        check.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion_audit").get(),
+      ).toEqual({ n: 1 });
+      expect(
+        check.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='movimiento_rol_financiacion_v22'").get(),
+      ).toEqual({ n: 0 });
+      expect(
+        check.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='movimiento_rol_financiacion_reposicion_insert'").get(),
+      ).toEqual({ n: 0 });
+      expect(check.query("PRAGMA foreign_key_check").all()).toHaveLength(1);
+      // Repara solo el dato inconsistente: la obligación existe en el estado v21.
+      check.run(
+        "UPDATE movimiento_rol_financiacion SET obligacion_ciclo='1' WHERE movimiento='9'",
+      );
+    } finally {
+      check.close();
+    }
+
+    const db = openDatabase(path);
+    try {
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 22 });
+      expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(db.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion").get()).toEqual({ n: 2 });
+      expect(
+        db.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion_audit").get(),
+      ).toEqual({ n: 1 });
+      expect(
+        db.query("SELECT obligacion_ciclo FROM movimiento_rol_financiacion WHERE movimiento='1'").get(),
+      ).toEqual({ obligacion_ciclo: "1" });
+      expect(
+        db.query("SELECT COUNT(*) n FROM sqlite_master WHERE name='movimiento_rol_financiacion_reposicion_insert'").get(),
+      ).toEqual({ n: 1 });
     } finally {
       db.close();
     }

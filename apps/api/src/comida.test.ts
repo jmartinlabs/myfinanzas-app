@@ -1010,6 +1010,143 @@ test("I3/D3-O1: reposición sin obligación sin régimen acreditado se rechaza",
   db.close();
 });
 
+test("R3/AC-06: reposición de obligación antigua suma R_caja actual sin R_obl ni Falta actual", () => {
+  const { db, account, ing, leisure, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const cycle2 = db
+    .query("SELECT id FROM ciclos ORDER BY inicio LIMIT 1 OFFSET 1")
+    .get() as { id: string };
+  purchase(db, ing, leisure.id, {
+    fecha: "2026-07-22",
+    importe: "20",
+    comida: { etiqueta: "Ocio" },
+  });
+  const repo = transfer(db, account, ing, "20", "2026-07-22");
+  writeComidaRol(
+    db,
+    repo.movimiento.id,
+    {
+      revision: 1,
+      rol: "Reposición",
+      obligacionCiclo: cycle1.id,
+      evidencia: "Cobro ficticio asignado a obligación antigua",
+    },
+    randomUUID(),
+    now,
+  );
+  const metrics = comidaMetrics(db, cycle2.id, now);
+  // R_caja responde a cuándo entró el dinero; R_obl, a qué obligación se acredita.
+  expect(metrics.financiacion.reposicionesCaja).toBe("20.00");
+  expect(metrics.financiacion.reposicionesCajaIds).toEqual([repo.movimiento.id]);
+  expect(metrics.obligacion.robl).toBe("0.00");
+  expect(metrics.obligacion.cn).toBe("20.00");
+  expect(metrics.obligacion.falta).toBe("20.00");
+  expect(metrics.obligacion.estado).toBe("Parcial");
+  expect(metrics.recursos.valor).toBe("100.00"); // 100 + R_caja 20 − C_n 20
+  db.close();
+});
+
+test("R3/AC-07: reposición tardía queda fuera del ciclo anterior y solo suma R_caja en el de su fecha", () => {
+  const { db, account, ing, leisure, cycle1 } = setup();
+  const ready = prepareRegimen(
+    db,
+    {
+      saldo: ing.id,
+      cicloCorte: cycle1.id,
+      apertura: "100",
+      evidencia: "Extracto ficticio",
+      cobertura: "Verificable",
+      motivo: "Preparación ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  activateRegimen(
+    db,
+    {
+      revision: ready.regimen.regimen!.revision,
+      motivo: "Activación ficticia",
+      confirmar: true,
+    },
+    randomUUID(),
+    now,
+  );
+  const cycle2 = db
+    .query("SELECT id FROM ciclos ORDER BY inicio LIMIT 1 OFFSET 1")
+    .get() as { id: string };
+  purchase(db, ing, leisure.id, {
+    fecha: "2026-06-25",
+    importe: "20",
+    comida: { etiqueta: "Ocio" },
+  });
+  purchase(db, ing, leisure.id, {
+    fecha: "2026-07-22",
+    importe: "20",
+    comida: { etiqueta: "Ocio" },
+  });
+  const before = comidaMetrics(db, cycle1.id, now);
+  expect(before.obligacion).toMatchObject({
+    robl: "0.00",
+    falta: "20.00",
+    estado: "Parcial",
+  });
+  expect(before.obligacion.ids).toEqual([]);
+
+  // La reposición se cobra en el ciclo siguiente y se asigna a la obligación anterior.
+  const late = transfer(db, account, ing, "20", "2026-07-22");
+  writeComidaRol(
+    db,
+    late.movimiento.id,
+    {
+      revision: 1,
+      rol: "Reposición",
+      obligacionCiclo: cycle1.id,
+      evidencia: "Reposición tardía ficticia",
+    },
+    randomUUID(),
+    now,
+  );
+  const origin = comidaMetrics(db, cycle1.id, now);
+  expect(origin.obligacion).toMatchObject({
+    robl: "0.00",
+    falta: "20.00",
+    estado: "Parcial",
+  });
+  expect(origin.obligacion.ids).toEqual([]);
+  expect(origin.reposiciones.ids).not.toContain(late.movimiento.id);
+
+  const current = comidaMetrics(db, cycle2.id, now);
+  expect(current.financiacion.reposicionesCaja).toBe("20.00");
+  expect(current.financiacion.reposicionesCajaIds).toEqual([late.movimiento.id]);
+  expect(current.obligacion.robl).toBe("0.00");
+  expect(current.obligacion.falta).toBe("20.00");
+  expect(current.obligacion.estado).toBe("Parcial");
+  expect(current.recursos.valor).toBe("100.00"); // 100 + R_caja 20 − C_n 20
+  db.close();
+});
+
 test("I5/AC-14: DIF_S0_SIGUIENTE usa el siguiente Inicio y no se fusiona con DIF_BANCO", () => {
   const { db, account, ing, food, cycle1 } = setup();
   const ready = prepareRegimen(
