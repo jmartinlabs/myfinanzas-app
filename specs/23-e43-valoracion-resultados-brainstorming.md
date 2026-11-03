@@ -316,7 +316,8 @@ D-02/D-14, debe ratificarlo o corregirlo antes de aprobar la specification.
 
 **Ratificación 2026-11-03:** el usuario ratificó A-01 también para valoración `Manual`: el
 importe corresponde a la cantidad de su `fecha_vigencia` y no puede extrapolarse a otra
-cantidad; si la cantidad difiere al corte, la posición queda `No disponible` con motivo.
+cantidad; si la cantidad difiere al corte, la posición queda `No disponible` con motivo. La
+revisión final de DT2-E4.3 fue aprobada formalmente el 2026-11-03 sobre `24f3efb` (PR #174).
 
 **Aclaración 2026-11-03 (A-02) — alcance de la etiqueta de D-16.** D-16 no cambia: E4.3 no
 certifica una valoración anterior al corte y E4.9 define su ventana en su propio DEV. La

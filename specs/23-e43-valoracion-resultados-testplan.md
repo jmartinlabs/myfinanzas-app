@@ -215,16 +215,16 @@ funcional según el candidato, y no convertirá un AC en PASS sin evidencia.
 
 - **Sin aprobación:** specification, wireframes y testplan no están aprobados.
 - **Sin DEV:** no hay código, endpoints, DDL, migración, UI ni tests ejecutables de E4.3.
-- **DT2 con criterios ratificados, aprobación formal pendiente:** unicidad, IDs con prefijo
-  `VAL`, constraints, límites E4.1/E4.2 y migración/backup quedan fijados por la revisión final
-  de DT2; el DDL y la migración siguen sin autorizar.
+- **DT2 aprobada (`24f3efb`):** unicidad, IDs con prefijo `VAL`, constraints, límites
+  E4.1/E4.2 y migración/backup quedan fijados por la revisión final de DT2; el DDL y la
+  migración siguen sin autorizar hasta la autorización de DEV E4.3.
 - **E4.9 pendiente:** la integración `e43`/`valoracion`, la ventana de certificación y la foto
   requieren autorización separada. Este testplan no las implementa.
 - **Wireframes pendientes:** 390/1440 y estados de UI no están diseñados ni aprobados.
 - **Datos:** solo fixtures ficticias; nunca Excel, bases reales, credenciales ni secretos.
-- **Next action:** aprobación formal de la revisión final de DT2 y revisión humana de
-  specification/testplan; después, si se autoriza, plan de DEV. Ningún AC se declara completo
-  hasta que todas las comprobaciones requeridas pasen con evidencia.
+- **Next action:** revisión humana de specification/testplan; DT2 ya está aprobada; después, si
+  se autoriza, plan de DEV. Ningún AC se declara completo hasta que todas las comprobaciones
+  requeridas pasen con evidencia.
 
 ## Registro de ejecuciones
 

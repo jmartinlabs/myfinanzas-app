@@ -17,9 +17,9 @@ Aprobaciones explícitas del usuario, sobre `main` `da9999a`; no autorizan merge
 - **AC-15 E3.5:** se mantiene **PARCIAL**; exige E3.6 y E4.9; no se re-acota.
 - **DT6/T-BKP:** DEV y pruebas con fixtures no bloqueados; cierre real, AC-09 y activación
   productiva sí quedan sujetos a DT6.
-- **DT2-E4.3:** ratificados unicidad `(posición, fecha)`, concurrencia optimista, auditoría
-  append-only, límites E4.1/E4.2, prefijo `VAL` y A-01 para `Manual`; **revisión final
-  pendiente de aprobación formal**; DEV E4.3 no autorizado.
+- **DT2-E4.3:** **aprobada el 2026-11-03 sobre `24f3efb` (PR #174)** con unicidad, concurrencia
+  optimista, auditoría append-only, límites E4.1/E4.2, prefijo `VAL` y A-01 para `Manual`;
+  **DEV E4.3 no autorizado**.
 - **Primera foto E4.9:** E4.3 puede figurar `No disponible`; el resto de gates de cierre sigue
   intacto.
 
@@ -766,7 +766,7 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC20 | E4.5 | Histórico precontrol | CERRADA DOCUMENTALMENTE/APROBADA | DEV no autorizado; PR87 MERGED `3d70fd6`; 59 AC UNRUN; DT7 pendiente |
 | SPEC21 | E3.6 | Conciliación transversal | Aprobada documentalmente; PR #97 MERGED `2364d9c` | DEV21/E3.6 no iniciados; 31 AC UNRUN |
 | SPEC22 | E4.2 | Ventas y efectivo de bróker | MERGED `fd2e21c`; full Linux 17/17 | Integrado; sin DEV18/E3.5 |
-| SPEC23 | E4.3 | Valoración y resultados | Documentación integrada (#167); spec no aprobada; **DT2 criterios ratificados 2026-11-03**, revisión final pendiente de aprobación formal | Sin DEV/DDL/migración; DEV E4.3 no autorizado |
+| SPEC23 | E4.3 | Valoración y resultados | Documentación integrada (#167); spec no aprobada; **DT2 APROBADA 2026-11-03 (`24f3efb`)** | Sin DEV/DDL/migración; DEV E4.3 no autorizado |
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |

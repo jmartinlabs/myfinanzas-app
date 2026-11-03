@@ -1,9 +1,9 @@
 # 23 — E4.3 Valoración y resultados de posiciones: Specification
 
 Status: **PROPUESTA DOCUMENTAL EN REVISIÓN — no aprobada; DEV no autorizado; ningún AC en PASS.**
-DT2-E4.3: **criterios ratificados por el usuario el 2026-11-03; revisión final pendiente de
-aprobación formal.** Esa ratificación no aprueba esta specification, los wireframes ni el
-testplan, y no autoriza DEV, DDL, migración, integración con E4.8/E4.9, merge ni despliegue.
+DT2-E4.3: **APROBADA por el usuario el 2026-11-03 sobre la revisión `24f3efb` (PR #174).**
+La aprobación de DT2 no aprueba esta specification, los wireframes ni el testplan, y no autoriza
+DEV E4.3, DDL, migración, integración con E4.8/E4.9, merge ni despliegue.
 Approval source/date: **PENDIENTE.** Las decisiones D-01…D-16 fueron confirmadas por el usuario
 el 2026-11-02 en el [brainstorming](23-e43-valoracion-resultados-brainstorming.md); esa
 confirmación no aprueba esta specification. No hay autorización de desarrollo, esquema,
@@ -294,11 +294,14 @@ En el esquema v21 **no existe tabla ni columna de valoración**:
 Por tanto, esta specification no puede declarar disponible la captura ni la lectura de valores.
 La lectura actual de una posición sin valoración debe seguir siendo `No disponible`, nunca `0`.
 
-### Almacén DT2-E4.3 — revisión final (criterios ratificados 2026-11-03; aprobación formal pendiente)
+### Almacén DT2-E4.3 — revisión final aprobada 2026-11-03 (`24f3efb`)
 
-Criterios ratificados por el usuario el 2026-11-03. La **revisión final identificada** de DT2
-queda sujeta a aprobación documental formal; hasta entonces no se ejecuta DDL, no se reserva
-versión de esquema y no se modifica `operaciones_inversion` ni `instrumentos`.
+Criterios ratificados y **aprobados formalmente por el usuario el 2026-11-03 sobre la revisión
+`24f3efb` (PR #174)**. Texto registrado: «Apruebo DT2-E4.3 en la revisión `24f3efb` de la PR
+#174, incluidos unicidad, auditoría, límites E4.1/E4.2, prefijo `VAL` y A-01 para Manual. No
+autorizo todavía DEV E4.3.» La aprobación fija el diseño del almacén, pero **no autoriza DEV
+E4.3**, DDL ni migración: no se ejecuta DDL, no se reserva versión de esquema y no se modifica
+`operaciones_inversion` ni `instrumentos`.
 
 1. **Persistencia:** tabla aditiva de serie fechada (D-08), sin `ciclo_id`, sin DELETE y sin
    reutilizar tablas de hechos como almacén.
@@ -670,13 +673,14 @@ acredita la funcionalidad.
 
 - **Decisiones D-01…D-16:** confirmadas por el usuario el 2026-11-02; fuente registrada en el
   brainstorming. No equivalen a aprobación de esta specification.
-- **DT2-E4.3:** criterios ratificados por el usuario el 2026-11-03; **revisión final pendiente
-  de aprobación documental formal**. No autoriza DDL, migración ni DEV.
+- **DT2-E4.3:** **APROBADA por el usuario el 2026-11-03 sobre `24f3efb` (PR #174)**. No autoriza
+  DEV E4.3, DDL, migración, endpoints ni UI.
 - **Specification/wireframes/testplan:** **NO aprobados**. Pendiente de revisión y aprobación
   explícita del usuario.
 - **DEV/esquema:** **NO autorizados**. El almacén de serie fechada es la revisión DT2-E4.3; no
   hay DDL, migración, versión reservada ni endpoints.
 - **E4.8/E4.9:** la integración de `e43`/`valoracion` y la foto requieren autorización separada.
   E4.3 no las modifica. La primera fotografía puede registrar E4.3 como `No disponible`.
-- **AC:** ninguno en PASS; los 17 son criterios de diseño. La siguiente acción es la aprobación
-  formal de la revisión final de DT2 y, solo tras autorización separada, el DEV.
+- **AC:** ninguno en PASS; los 17 son criterios de diseño. DT2 ya está aprobada; la siguiente
+  acción es la revisión humana de specification/testplan y, solo tras autorización separada, el
+  DEV.
