@@ -14,21 +14,27 @@ separado.
 Decisiones explícitas del usuario; base `main` `5d903f4`; no autorizan merge ni despliegue por sí
 solas:
 
-- **SPEC17/E4.4:** specification y wireframes 1440/390 **aprobados**; **DEV17 autorizado A/B/C**
-  el 2026-11-03.
+- **SPEC17/E4.4:** specification y wireframes 1440/390 **aprobados**; **DEV17 MERGED `024b348`**.
+- **SPEC21/E3.6:** DEV21 **MERGED `a26fffb`**; solo lectura, sin esquema.
 - **AC-15 E3.5:** se mantiene **PARCIAL**; exige E3.6 y E4.9; no se re-acota.
 - **DT6/T-BKP:** DEV y pruebas con fixtures no bloqueados; cierre real, AC-09 y activación
   productiva sí quedan sujetos a DT6.
-- **DT2-E4.3:** **aprobada** el 2026-11-03 sobre `24f3efb` (PR #174) con unicidad, concurrencia
-  optimista, auditoría append-only, límites E4.1/E4.2, prefijo `VAL` y A-01 para `Manual`;
-  **DEV E4.3 no autorizado**.
-- **SPEC23/E4.3:** specification y testplan **aprobados** el 2026-11-03 sobre `acc2d98`
-  (PR #175), con A-02, A-03, cobertura `n_r/m_r` y rectificación con salvaguardas; wireframes
-  no aprobados; **DEV E4.3 no autorizado**.
-- **DEV17/E4.4:** **autorizado** el 2026-11-03 en bloques A/B/C; A1 (esquema v23, migración,
-  backup y C23) en curso; v23 reservada y v24 planificada para E4.3, condicionadas a `main`.
+- **DT2-E4.3:** **aprobada** el 2026-11-03 sobre `24f3efb` (PR #174).
+- **SPEC23/E4.3:** specification, testplan y wireframes **integrados**; **DEV E4.3 A/B/C autorizado** el 2026-11-03 con **v24 reservada**, fixtures y QA; sin merge ni despliegue.
+- **SPEC24/E4.6:** Q1–Q12 ratificadas (A), spec/testplan **MERGED `5dc1dd3`**; **DEV24 no autorizado**.
+- **Wireframes E4.9:** **MERGED `8b5cf5c`**; **DEV E4.9 no autorizado**.
 - **Primera foto E4.9:** E4.3 puede figurar `No disponible`; el resto de gates de cierre sigue
   intacto.
+
+## Cola operativa — 2026-11-03
+
+Base `main` `8b5cf5c`, esquema v23; **v24 reservada en exclusiva a DEV E4.3**.
+
+- **En ejecución:** DEV43-A (esquema v24/C24/backup); paquete de decisión E4.9 y inventario E4.7 en documentación paralela.
+- **Listo después de A:** DEV43-B (read model/API) y DEV43-C (UI/E2E), con QA independiente.
+- **Preparable sin DEV:** consumidores/fixtures E4.6; frontera E4.7; checklist DT7/E4.5 solo si se pide.
+- **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
+- **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
 
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
 

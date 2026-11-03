@@ -89,11 +89,16 @@ BLOCKED por Cierres E4.8/E4.9, no por una decisión abierta.
 | E3.2 D5 | PR90 integrada; overflow PR93. Aportaciones de tercero son Transferencias S000→interno acreditadas. | Se consume el Recuperado; no se convierte en Ingreso. |
 | E3.2 B-T11 | Pendiente/UNRUN: consumo por informes/E3.6. | Esta spec define el consumo, pero B-T11 no se declara PASS. |
 | E3.4/DEV16 | PR82 integrada. E3.4-AC25 abierto; E3.4-AC12/31 condicionados; E3.4-AC27/34/36 futuros E3.5. | Se consume el contrato de lectura; no se cierra E3.4-AC25. |
-| E3.5/DEV18 | Candidato local, no integrado ni aceptado. `FIN_NETA` runtime ausente; `E3.5-AC-12/13/17/39` BLOCKED (**numeración histórica**, ver §4.3.1). | Comida se especifica condicionalmente; sin motor, No disponible. |
+| E3.5/DEV18 | **Integrado en `main` `1560d04` (PR #171), esquema v22**; `e35Metrics` operativo. AC-12/AC-15 siguen PARCIAL. La rama «sin E3.5» se conserva solo como comportamiento defensivo con fixtures. | Comida se consume del proveedor; ND/parcial con motivo, nunca 0. |
 | E2.3 Plan | Integrado; R3 en `planes-ciclo` | Se consume A transferir/Ejecutado sin reabrir. |
 | E3.3 Vehículo | No consumido por E3.6 | No se usa; no se crea ficha ni vínculo nuevo. |
 | E2.6/DEV12 | PR67 integrada; documentación PR94; 56 AC y UNRUN de fuentes no disponibles. | Se conserva su semántica; la integración E3.6 no se declara ejecutada. |
 | Cierres E4.8–E4.11 | Futuros; no existe proveedor. | Solo matriz DT5; no endpoints, locks ni snapshots. |
+
+**Nota de vigencia — 2026-11-03.** E3.5/FIN_NETA está integrado en `main` `1560d04`
+(PR #171, esquema v22) y E3.6 en `a26fffb` (PR #180). Se conservan AC-12/AC-15 PARCIAL y la
+rama «sin E3.5» solo como defensa con fixtures. Esta nota no reabre Q-S21-04 ni convierte
+ningún AC en PASS.
 
 ## 3. Magnitudes, propietarios y fronteras
 
@@ -927,7 +932,7 @@ decisión abierta. AC-31 (foto/cierre) permanece BLOCKED por E4.8/E4.9.
 | **E3.6-AC-09** | Anticipo con foto de Neto apertura 1.000 y pendiente actual 600; después foto cero con evidencia. | La foto muestra 1.000; el pendiente actual 600; no se sustituyen; sin foto → No disponible; cero solo con evidencia. | E3.6-AC1 |
 | **E3.6-AC-10** | Anticipo adelantado en C1 y devolución en C2; foto de C2 confirmada con evidencia (si no existe, el resultado es No disponible). | Pendiente actual correcto; foto de C2 intacta; Plan no ejecutado dos veces; flujo sin Ingreso/Gasto por la devolución. | E3.6-AC1 |
 | **E3.6-AC-11** | Comida con Comida 40, Pendiente revisar 30, Ocio 25, Niños 10, Otros 10, Fuera presupuesto 15, reposición 20. | Gasto comida 70; Compensable 45; Falta 25; Fuera presupuesto excluido del análisis y conservado en banco. | E3.6-AC1 |
-| **E3.6-AC-12** | Reposición parcial y reposición tardía en el ciclo siguiente. | Estado `Parcial`/`Sin reposición`, nunca `Completada` por ausencia; la tardía cuenta en su ciclo, no en el anterior; no se persiste atribución. La definición exacta de `Completada` queda condicionada a E3.5/spec18, que no está en main. | E3.6-AC1 |
+| **E3.6-AC-12** | Reposición parcial y reposición tardía en el ciclo siguiente. | Estado `Parcial`/`Sin reposición`, nunca `Completada` por ausencia; la tardía cuenta en su ciclo, no en el anterior; no se persiste atribución. `Completada`/`Parcial`/`Sin obligación acreditada` se define en SPEC16 FIN-13; E3.5 está integrado y AC-12 sigue PARCIAL. | E3.6-AC1 |
 | **E3.6-AC-13** | S0 siguiente 295, Base 205 y Cierre analítico 190, con cobertura verificable. | `DIF_S0_SIGUIENTE` 105 como alerta; `DIF_BANCO` separado; no se modifica S0; no se crea asiento; sin cobertura → No disponible. | E3.6-AC3 |
 | **E3.6-AC-14** | Con E3.4 integrada y E3.5 no integrada; después sin FIN_NETA, sin proveedor de Cierres o sin cobertura. | El detalle auxiliar de E3.4 se puede consultar; los agregados Comida/conciliación muestran No disponible con motivo; no 0; no «Coincide»; no reconciliación simulada. | E3.6-AC3 |
 | **E3.6-AC-15** | Periodo verificable sin hechos (p. ej. `R_adj` sin Gastos compartidos) frente a fuente ausente. | Sin hechos → 0 verificado en la métrica aplicable; fuente ausente → No disponible. No se usa este AC para declarar 0 en Comida sin E3.5. | E3.6-AC1 |

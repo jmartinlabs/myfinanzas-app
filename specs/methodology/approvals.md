@@ -11,8 +11,11 @@ sustituye aprobaciones.
 
 ## Qué requiere aprobación individual
 
-- **Merge de cada PR**: aprobación expresa de esa PR concreta; no bastan desarrollo
-  aprobado, CI verde, QA terminada ni «prepara una PR».
+- **Merge funcional de cada PR**: aprobación expresa de esa PR concreta; no bastan
+  desarrollo aprobado, CI verde, QA terminada ni «prepara una PR».
+- **Merge documental no normativo**: excepción acotada descrita más abajo; no requiere
+  aprobación individual si no cambia reglas, alcance, aprobaciones, roadmap, seguridad ni
+  contratos generados.
 - **Especificación y wireframes**: prepararlos o revisarlos no es aprobarlos; aprobar
   una spec tampoco autoriza `$dev`.
 - **Desarrollo de cada entrega**: autorización de desarrollo separada (gate MyFinanzas).
@@ -49,9 +52,18 @@ publicación.
 - Actualizar el PR existente de la tarea en lugar de abrir otro duplicado.
 - Crear o integrar un PR de especificación no aprueba su contenido ni autoriza el
   desarrollo cuando esos son gates separados.
-- El merge de un PR siempre requiere aprobación explícita e identificable de ese PR y del
-  candidato aprobado. Nunca activar auto-merge como atajo. Tampoco se hace merge por
-  inferencia de esta autorización de publicación.
+- El merge **funcional** de un PR siempre requiere aprobación explícita e identificable de
+  ese PR y del candidato aprobado. Nunca activar auto-merge como atajo. Tampoco se hace
+  merge funcional por inferencia de esta autorización de publicación.
+
+### Merge documental no normativo
+
+Dentro de specs aprobadas, el coordinador puede fusionar PR **exclusivamente documentales**
+tras CI verde cuando el diff no cambie reglas financieras, comportamiento funcional,
+alcance, estado de aprobación de una spec, roadmap, seguridad ni contratos generados. No
+cubre código, DDL, migraciones, fixtures de producción, datos reales, despliegues ni
+documentos que ratifiquen decisiones aún pendientes. Si hay duda, el merge vuelve al
+usuario. El PR debe declarar que es documental y qué verificación documental se ejecutó.
 
 Esta política no cubre crear repositorios, cambiar visibilidad, pushes directos a ramas
 protegidas, force pushes, releases, paquetes ni despliegues. Siguen protegidos o prohibidos
