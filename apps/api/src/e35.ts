@@ -474,10 +474,11 @@ export function e35Metrics(
     })();
 
     const s0 = cents(ciclo.saldoInicialComida);
+    const resourcesSubtotal = financing.available
+      ? s0 + financing.f + financing.rCaja - netComp
+      : null;
     const resources =
-      financing.available && coverageFood === null
-        ? s0 + financing.f + financing.rCaja - netComp
-        : null;
+      financing.available && coverageFood === null ? resourcesSubtotal : null;
     const analyticsClose = financing.available ? s0 + financing.d : null;
 
     const duration = (() => {
@@ -617,6 +618,11 @@ export function e35Metrics(
         cobertura:
           financing.available && coverageFood === null ? "Verificada" : "Parcial",
         motivo: financing.available ? coverageFood ?? null : financing.reason,
+        bloqueo: {
+          requerido: true,
+          verificable: financing.available && coverageFood === null,
+          motivo: financing.available ? coverageFood ?? null : financing.reason,
+        },
       },
       periodo: { inicio: start, corte },
       cobertura: {
@@ -705,7 +711,13 @@ export function e35Metrics(
         falta: falta === null ? null : decimal(falta),
         ids: rObl.ids,
       },
-      recursos: metric(resources, financing.available ? coverageFood : financing.reason),
+      recursos: metric(
+        resources,
+        financing.available ? coverageFood : financing.reason,
+        [...pending, ...pendingDevIds],
+        coverageFood !== null && resourcesSubtotal !== null,
+        resourcesSubtotal,
+      ),
       cierreAnalitico: metric(
         analyticsClose,
         financing.available ? null : financing.reason,
