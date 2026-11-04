@@ -3,7 +3,8 @@
 Status: **APROBADO — DISEÑO DE PRUEBAS.** 2026-11-03, revisión `acc2d98` (PR #175).
 DEV E4.3-A (esquema v24, migración, C24 y backup), DEV43-B (read model/API) y DEV43-C
 (UI/E2E) integrados en `main` `8552d4a` (squash de #184 y #187), con CI post-merge verde;
-QA-A/QA-B/QA-C APTO CON RESERVAS; aceptación visual final pendiente. Ningún AC/TP en PASS.
+QA-A/QA-B/QA-C APTO CON RESERVAS. **QA final en PR #189 (`85f5b9a`): 15 AC PASS de cobertura, 2 PARCIAL, 0 UNRUN, 0 BLOCKED; reservas menores documentadas; aceptación funcional y merge pendientes.** Aceptación visual final
+pendiente.
 Specification: [23-e43-valoracion-resultados-specification.md](23-e43-valoracion-resultados-specification.md)
 Progress: [23-e43-valoracion-resultados-progress.md](23-e43-valoracion-resultados-progress.md)
 Base: `main` `7bfb5a2` (2026-11-03), esquema SQLite **v24** tras A.
@@ -263,3 +264,7 @@ Cualquier dictamen no convertirá un AC en PASS sin evidencia.
 | 2026-11-03 | `c022f88` (C) | CI Linux `required` `41728978112` | PASS 644/644 | Perfil critical; no ejecuta Playwright |
 | 2026-11-03 | `c022f88` (C) | QA-C independiente + re-QA | APTO CON RESERVAS | R1/R3 y O1/O2 corregidos; reservas de cobertura y sesión |
 | 2026-11-03 | `8552d4a` (A+B+C) | CI Linux post-merge `41730772524` | PASS (perfil fast) | Integrado en `main`; squash de #187 |
+| 2026-11-04 | `85f5b9a` (QA final) | `bun run typecheck` + `bun run build` | PASS | Cambios R5/O3 y E2E ampliado |
+| 2026-11-04 | `85f5b9a` (QA final) | Playwright Valoración + Inversiones | PASS 1/1 + 1/1 | A-01, Manual 0,00, negativo, serie vacía, sesión expirada y 390 parcial |
+| 2026-11-04 | `85f5b9a` (QA final) | CI Linux `required` `41735151093` | PASS 644/644 | Perfil critical; sin Playwright |
+| 2026-11-04 | `85f5b9a` (QA final) | Informe y capturas | 15 CUBIERTO / 2 PARCIAL / 0 PASS | `23-e43-qa-final.md` y `23-e43-captures/` |

@@ -1,8 +1,7 @@
 # 23 — E4.3 QA final (A+B+C)
 
 Status: **QA VISUAL Y FUNCIONAL COMPLETADA — APTO CON RESERVAS MENORES.** Candidato de esta
-rama sobre `main` `7306494`; sin merge. No se declara PASS de AC/TP; la aceptación visual final
-corresponde al usuario y la revisión funcional final a Álex.
+rama sobre `main` `7306494`; sin merge. Los estados de AC reflejan la evidencia ejecutada; la aceptación visual final corresponde al usuario y la revisión funcional final a Álex.
 
 ## 1. Alcance y evidencia
 
@@ -43,26 +42,25 @@ Observaciones menores, no bloqueantes:
 
 | AC | Evidencia API/UI | Estado |
 | --- | --- | --- |
-| 01 | 855,00 €; redondeo único 225,00 € | CUBIERTO |
-| 02 | Manual manda; Manual 0,00; cerrada prevalece D-03 | CUBIERTO |
-| 03 | Cerrada 40,00 €; grupo anulado excluido | CUBIERTO |
+| 01 | 855,00 €; redondeo único 225,00 € | PASS |
+| 02 | Manual manda; Manual 0,00; cerrada prevalece D-03 | PASS |
+| 03 | Cerrada 40,00 €; grupo anulado excluido | PASS |
 | 04 | Estado al corte; P1 abierta a 03-31 y P3 cerrada a 06-30 | PARCIAL (reapertura explícita no E2E) |
-| 05 | Resultado negativo −120,25 € | CUBIERTO |
-| 06 | Rentabilidad `No disponible` sin porcentaje | CUBIERTO |
-| 07 | `importe_eur` una sola vez (API) | CUBIERTO |
+| 05 | Resultado negativo −120,25 € | PASS |
+| 06 | Rentabilidad `No disponible` sin porcentaje | PASS |
+| 07 | `importe_eur` una sola vez (API) | PASS |
 | 08 | Serie, rectificación, auditoría, 409 duplicado/revisión | PARCIAL (concurrencia real no ejecutada) |
-| 09 | Sin look-ahead; 16/61 días | CUBIERTO |
-| 10 | Parcial/Verificada, total solo completo, 0,00 cuenta | CUBIERTO |
-| 11 | Efectivo S003/S007 separado; no suma | CUBIERTO |
-| 12 | Sin escritura en totales/`e43`/`valoracion`/foto; snapshot de tablas | CUBIERTO |
-| 13 | Inactiva/heredada incluida; solo anulado excluido | CUBIERTO |
-| 14 | 2⁵³−1, exponentes, negativos, cambio 0, 422 sin escritura | CUBIERTO |
-| 15 | Fecha y días visibles; sin umbral | CUBIERTO |
-| 16 | Elegibilidad exacta/anterior separada de cobertura | CUBIERTO |
-| 17 | A-01 cantidad modificada y nueva valoración exigida | CUBIERTO |
+| 09 | Sin look-ahead; 16/61 días | PASS |
+| 10 | Parcial/Verificada, total solo completo, 0,00 cuenta | PASS |
+| 11 | Efectivo S003/S007 separado; no suma | PASS |
+| 12 | Sin escritura en totales/`e43`/`valoracion`/foto; snapshot de tablas | PASS |
+| 13 | Inactiva/heredada incluida; solo anulado excluido | PASS |
+| 14 | 2⁵³−1, exponentes, negativos, cambio 0, 422 sin escritura | PASS |
+| 15 | Fecha y días visibles; sin umbral | PASS |
+| 16 | Elegibilidad exacta/anterior separada de cobertura | PASS |
+| 17 | A-01 cantidad modificada y nueva valoración exigida | PASS |
 
-Resultado: **15 CUBIERTO, 2 PARCIAL, 0 PASS declarado**. Los PARCIAL son huecos de
-evidencia, no defectos observados.
+Resultado: **15 PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN, 0 BLOCKED**. Los PARCIAL son huecos de evidencia, no defectos observados. `PASS` acredita la comprobación ejecutada; la aceptación funcional final de Álex sigue pendiente y no se infiere del PASS de cobertura.
 
 ## 4. Clasificación de reservas
 

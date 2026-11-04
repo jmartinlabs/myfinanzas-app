@@ -1,8 +1,8 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **DEV E4.3-A, DEV43-B y DEV43-C integrados en `main` `8552d4a` (squash de #184 y
-#187), con CI post-merge `41730772524` verde. QA-A/QA-B/QA-C APTO CON RESERVAS. Ningún AC/TP
-en PASS; aceptación visual final pendiente.**
+Status: **E4.3 A+B+C integrado en `main`; QA final completada en PR #189 (candidato
+`85f5b9a`, CI 644/644 y Playwright 1/1). QA-A/B/C APTO CON RESERVAS; reservas menores
+documentadas. Sin merge de QA final y sin PASS de AC/TP.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
@@ -92,8 +92,22 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
   expirada global no conserva el corte; aceptación visual final de wireframes pendiente.
 - **Límite:** ningún AC/TP se declara PASS; la aceptación visual corresponde al usuario.
 
+## QA final — 2026-11-04
+
+- **Candidato:** PR #189, rama `fix/e43-qa-final`, HEAD `85f5b9a`; CI Linux `required`
+  644/644; `typecheck`, `build`, Playwright Valoración 1/1 y regresión Inversiones 1/1.
+- **Corregido:** R5 (contexto `/inversiones` al reautenticar), O3 (singular/plural) y
+  recaptura del 390 parcial antes de mutar.
+- **Evidencia añadida:** A-01 (base 10 → corte 8), Manual 0,00, resultado negativo −120,25 €,
+  serie vacía y sesión expirada con retorno al corte.
+- **Clasificación:** 15 AC PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN/BLOCKED. Reservas menores: 403
+  CSRF/idempotencia solo API, sin efectivo en fixture, concurrencia real, reapertura
+  explícita, formato nativo de fecha y detalle sin sumandos. Detalle en
+  [QA final](23-e43-qa-final.md) y capturas en [`23-e43-captures/`](23-e43-captures/).
+- **Límite:** sin merge; revisión funcional final de Álex y aprobación pendientes.
+
 ## Próxima acción segura
 
-1. A+B+C integrados en `main` `8552d4a`; post-merge CI `41730772524` verde.
-2. Aceptación visual final de W1–W10/S1–S13 y decisión sobre las reservas de cobertura.
+1. Presentar a Álex la revisión funcional final con las capturas y el informe QA.
+2. Agrupar la aprobación del merge de #189 con las decisiones materiales pendientes.
 3. No abrir E4.9/E4.6/E4.5, v25, datos reales ni despliegue sin aprobación específica.
