@@ -599,11 +599,13 @@ export function Cierre({ go }: { go: (path: string) => void }) {
               Actualizar revisión y reintentar
             </button>
           )}
-          {errorSource === "confirm" && !conflict && (
-            <button className="secondary" type="button" onClick={confirm}>
-              Reintentar cierre (misma clave)
-            </button>
-          )}
+          {errorSource === "confirm" &&
+            !conflict &&
+            errorCode !== "MOTIVO_REQUERIDO" && (
+              <button className="secondary" type="button" onClick={confirm}>
+                Reintentar cierre (misma clave)
+              </button>
+            )}
         </Alert>
       )}
 

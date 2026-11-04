@@ -68,7 +68,13 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     ).toBeVisible();
     await expect(page.getByText("Wireframes W1–W6 pendientes de aprobación visual")).toBeVisible();
     await page.getByLabel("Ciclo").selectOption("1");
-    await expect(page.getByText("Listo con avisos", { exact: true })).toBeVisible();
+    await expect(page.getByText("Bloqueado", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("E35_NO_VERIFICABLE", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Régimen individual no activado para ING Comida/).first(),
+    ).toBeVisible();
     await expect(page.getByText("Cobertura: Parcial", { exact: true })).toBeVisible();
     await expect(page.getByText("1.000,00 €", { exact: true })).toBeVisible();
     await expect(page.getByText("Verificado", { exact: true }).first()).toBeVisible();
@@ -87,7 +93,10 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await page.getByLabel("Ciclo").selectOption("1");
-    await expect(page.getByText("Listo con avisos", { exact: true })).toBeVisible();
+    await expect(page.getByText("Bloqueado", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("E35_NO_VERIFICABLE", { exact: true }),
+    ).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
     await page.screenshot({
       path: "artifacts/e2e-precierre/precierre-390.png",

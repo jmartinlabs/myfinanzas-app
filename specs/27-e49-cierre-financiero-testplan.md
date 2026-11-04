@@ -117,10 +117,11 @@ la UI/E2E con fixtures, **no** un cierre real ni el cierre de DT6.
 | Bloqueo E3.5 + backup (AC-08/AC-09 parcial) | Evidencia E3.5 no verificable y backup no acreditado | Códigos `E35_NO_VERIFICABLE` y `BACKUP_NO_VERIFICABLE`, botón deshabilitado, sin foto (404), sin cierre parcial | Igual |
 | Ventana no finita (AC-02 parcial) | Un solo ciclo, sin siguiente Inicio | `SIN_SIGUIENTE_INICIO`, Fin no derivable, cierre deshabilitado | Igual |
 | `Sin hechos` no acreditado (AC-21 parcial) | Fuente auxiliar ilegible en el fixture | `FUENTE_NO_LEGIBLE`, estado «Con hechos» (no se declara `Sin hechos`), cierre deshabilitado | Igual |
-| Cierre fuera de orden (AC-20 parcial) | Cierre posterior ficticio y coherencia verificada | Aviso `CIERRE_FUERA_DE_ORDEN`, motivo obligatorio; sin motivo 422 `MOTIVO_REQUERIDO`; con motivo cierra v1 | Igual |
+| Cierre fuera de orden (AC-20 parcial) | Cierre posterior ficticio y coherencia verificada | Aviso `CIERRE_FUERA_DE_ORDEN`, motivo obligatorio; sin motivo 422 `MOTIVO_REQUERIDO` sin reintento con la misma clave; con motivo cierra v1 | Igual |
 | Incoherencia posterior (AC-20 parcial) | Hecho ficticio dentro de la ventana de la foto posterior | `INCOHERENCIA_CON_CIERRE_POSTERIOR`, cierre deshabilitado, sin foto | Igual |
 | Vacío de ciclos | Base sin ciclos | «Sin ciclos para cerrar», sin acción de cierre | Igual |
-| Responsive y temas | 1440×1000 y 390×844; `light-s`, `dark-s`, `hybrid-s` | Sin scroll horizontal; capturas en `artifacts/e4-9/` | Igual |
+| Responsive y temas | 1440×1000 y 390×844; `light-s`, `dark-s`, `hybrid-s` | Sin scroll horizontal; foco programático en el encabezado de la fotografía; capturas en `artifacts/e4-9/` | Igual |
+| Precierre E4.8 (regresión) | Fixture E4.8 con E3.5 no verificable | `Bloqueado`, `E35_NO_VERIFICABLE` y cierre deshabilitado; 1440/390 y cobertura conservadas | `tests/e2e/precierre.spec.ts` |
 
 Comandos y resultado DEV-07 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
@@ -129,10 +130,13 @@ Comandos y resultado DEV-07 (worktree `dev-e49`, rama `feat/e49-cierre`):
 - `bunx playwright test tests/e2e/cierre.spec.ts` — **11/11 PASS** (incluye R1 de motivo
   conservado y R3 sin referencia de backup).
 - `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` — **7/7 PASS**.
-- `bunx playwright test tests/e2e/precierre.spec.ts` — **1 FAIL preexistente** en HEAD
-  `3cce51e`, reproducido con `git stash -u`: el fixture E4.8 devuelve `Bloqueado`
-  (E3.5/`e4_9Bloqueado`) donde el test espera `Listo con avisos`. No lo introduce
-  DEV-07 y no se corrige en este bloque.
+- `bunx playwright test tests/e2e/precierre.spec.ts` — **1/1 PASS**. El test esperaba
+  `Listo con avisos`, obsoleto frente a SPEC27 D4, que bloquea si E3.5 no es
+  verificable. Se ajustó la prueba (no la app) a `Bloqueado`, bloqueo
+  `E35_NO_VERIFICABLE` y cierre deshabilitado, manteniendo 1440/390 y cobertura.
+- `bunx playwright test tests/e2e/cierre.spec.ts tests/e2e/precierre.spec.ts
+  tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` — **19/19 PASS** (log en
+  `artifacts/e4-9/dev-07-e2e.log`).
 
 Capturas: `artifacts/e4-9/preflight-{light-s,dark-s,hybrid-s}-{1440,390}.png`,
 `foto-{light-s,dark-s,hybrid-s}-{1440,390}.png`, `bloqueado-390.png`,
@@ -152,7 +156,8 @@ v1 porque el re-cierre E4.10 queda fuera, así que el selector de versión (>1) 
 ejercita; no hay E2E de `PLAN_NO_VERIFICABLE` ni de `S0_FUERA_DE_RANGO` en UI; no se
 prueban 403/404/503 desde la pantalla. El caso «SIN_PLAN» del encargo no es un bloqueo
 según SPEC27: `SinPlan` es válido y se cubre como cierre correcto; el bloqueo de plan
-se corresponde con `PLAN_NO_VERIFICABLE`.
+se corresponde con `PLAN_NO_VERIFICABLE`. La corrección de `precierre.spec.ts` es solo
+de prueba y no cambia ningún estado de AC de SPEC27.
 
 ## Regression checks
 
@@ -207,13 +212,13 @@ AC-20 se acredita como coherencia de fixtures, no como cierre real.
 
 Ejecutado el 2026-11-04 por DEV-07 sobre `feat/e49-cierre`: `tests/e2e/cierre.spec.ts`
 (11/11) recorre 1440×1000 y 390×844 con `light-s`, `dark-s` y `hybrid-s`, comprueba
-`scrollWidth <= innerWidth`, foco visible en la fotografía y capturas en
-`artifacts/e4-9/`. Entorno: macOS 15.5 arm64, Bun 1.4.3, Playwright 1.64.1 y Chromium
-156.0.8078.4. El servidor de test es aislado y la evidencia E3.5/DT6 está inyectada:
-las capturas no acreditan un cierre real ni la restauración T-BKP. La regresión
-`inicio.spec.ts`/`theme.spec.ts` pasa 7/7. `precierre.spec.ts` mantiene un fallo
-preexistente ajeno a este bloque (fixture `Bloqueado` frente a `Listo con avisos`; no
-se corrige aquí). La CI `critical` no ejecuta E2E (perfil sin check `e2e` y sin
+`scrollWidth <= innerWidth`, el foco en el encabezado de la fotografía (`toBeFocused`)
+y capturas en `artifacts/e4-9/`. Entorno: macOS 15.5 arm64, Bun 1.4.3, Playwright
+1.64.1 y Chromium 156.0.8078.4. El servidor de test es aislado y la evidencia
+E3.5/DT6 está inyectada: las capturas no acreditan un cierre real ni la restauración
+T-BKP. La regresión `inicio.spec.ts`/`theme.spec.ts` pasa 7/7 y `precierre.spec.ts`
+pasa 1/1 tras corregir la expectativa obsoleta (`Bloqueado`/`E35_NO_VERIFICABLE`) sin
+tocar la aplicación. La CI `critical` no ejecuta E2E (perfil sin check `e2e` y sin
 instalación de Chromium).
 
 ## Limitations and next action

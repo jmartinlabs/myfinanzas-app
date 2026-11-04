@@ -208,6 +208,9 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     await expect(
       page.getByRole("heading", { name: "Fotografía v1", exact: true }),
     ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Fotografía v1", exact: true }),
+    ).toBeFocused();
     await expect(page.getByText("Cerrado · v1", { exact: true })).toBeVisible();
     await expect(page.getByText(/Ciclo 1 · v1/)).toBeVisible();
     await expect(page.getByText("Cierre ficticio E2E", { exact: true })).toBeVisible();
@@ -621,6 +624,10 @@ test("E4.9 UI: cierre fuera de orden exige motivo y audita", async ({
         exact: true,
       }),
     ).toBeVisible();
+    // Un 422 de motivo no es reintentable con la misma clave: se corrige el motivo.
+    await expect(
+      page.getByRole("button", { name: "Reintentar cierre (misma clave)" }),
+    ).toHaveCount(0);
     await expect(
       page.getByRole("region", { name: "Fotografía de cierre" }),
     ).toHaveCount(0);
