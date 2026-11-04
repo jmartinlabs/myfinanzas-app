@@ -61,34 +61,37 @@ function decryptBundle(identity: string, source: string) {
 }
 
 function closureFixture(db: Database) {
-  db.run(
-    `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
-     VALUES('1','2026-01-01',0,?,1,?)`,
-    [t, t],
-  );
-  db.run(
-    `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,creado_utc,
-      motivo,fingerprint,estado) VALUES('1',1,'2026-01-01','2026-01-31',0,
-      'usuario-unico',?,NULL,?,'Cerrado')`,
-    [t, fingerprint],
-  );
-  db.run(
-    `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,fingerprint,
-      app_version,schema_version,ventana_inicio,ventana_fin,saldo_inicial,
-      estado_temporal,estado_hechos,estado_plan,hechos,plan,clasificacion,
-      inversion,auxiliares,cobertura,backup,no_disponible)
-     VALUES('1',1,?,'usuario-unico',NULL,?,'0.0.0-fixture',25,
-      '2026-01-01','2026-01-31',0,'Cerrado','Sin hechos','SinPlan',
-      '{"origen":"fixture"}','{"estado":"SinPlan"}','{}','{}','{}','{}',
-      '{"verificado":false,"motivo":"fixture"}','{}')`,
-    [t, fingerprint],
-  );
-  db.run(
-    `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
-      instante,actor) VALUES('1',1,'cierre',NULL,'{"version":1}',NULL,?,'usuario-unico')`,
-    [t],
-  );
-  db.run("INSERT INTO cierre_attempts VALUES('intento','hash','{}',1)");
+  db.transaction(() => {
+    db.run(
+      `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
+       VALUES('1','2026-01-01',0,?,1,?)`,
+      [t, t],
+    );
+    db.run(
+      `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,creado_utc,
+        motivo,fingerprint,estado) VALUES('1',1,'2026-01-01','2026-01-31',0,
+        'usuario-unico',?,NULL,?,'Cerrado')`,
+      [t, fingerprint],
+    );
+    db.run(
+      `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,fingerprint,
+        app_version,schema_version,ventana_inicio,ventana_fin,saldo_inicial,
+        estado_temporal,estado_hechos,estado_plan,hechos,plan,clasificacion,
+        inversion,auxiliares,cobertura,backup,no_disponible)
+       VALUES('1',1,?,'usuario-unico',NULL,?,'0.0.0-fixture',25,
+        '2026-01-01','2026-01-31',0,'Cerrado','Sin hechos','SinPlan',
+        '{"origen":"fixture"}','{"estado":"SinPlan"}','{}','{}','{}','{}',
+        '{"verificado":false,"motivo":"fixture"}','{}')`,
+      [t, fingerprint],
+    );
+    db.run(
+      `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
+        instante,actor) VALUES('1',1,'cierre',NULL,'{"version":1}',NULL,?,'usuario-unico')`,
+      [t],
+    );
+    db.run("INSERT INTO cierre_attempts VALUES('intento','hash','{}',1)");
+
+  }).immediate();
 }
 
 test("E4.9 A: C25 is exact and deterministic", () => {
