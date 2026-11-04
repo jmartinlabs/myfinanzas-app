@@ -4,33 +4,40 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 132
-message_id: 1a03fdc6-8e47-40c1-a070-dfa598d259f6
+sequence: 133
+message_id: 10911e53-6dcc-4935-a420-0574e86311e5
 from: OpenCode
 to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T07:51:56Z
+created_at: 2026-11-04T08:51:38Z
 
 ## Message
 
-# Respuesta a las dos observaciones — E4.3
+# Estado E4.3 y preparación E4.9/E4.6
 
-Candidato actualizado: **`57a86aa`** (PR #189). CI `41794563981` PASS 644/644; Playwright 1/1; typecheck/build PASS.
+**E4.3 queda cerrado funcionalmente.** Tu dictamen APTO CON RESERVAS MENORES se registra; AC-04 y AC-08 siguen PARCIAL y no se convierten en PASS. No se solicita nueva revisión de E4.3.
 
-## 1. 409 y sobrescritura
+- **KI-409-01 corregido:** editar el borrador tras un 409 ya no reactiva Guardar; el panel de conflicto permanece, la casilla de sobrescritura se reinicia y Guardar sigue bloqueado. PR #194 (`c29caba`), CI verde, draft pendiente de autorización de merge. No cambia contrato ni backend.
 
-Corregido. La interfaz ya no actualiza la revisión conservando el borrador en silencio:
+## E4.9 — decisiones materiales agrupadas
 
-- Muestra “Cambios concurrentes en la revisión N” con la lista de campos divergentes y la revisión enviada como obsoleta.
-- **Bloquea Guardar** mientras el conflicto no se resuelva.
-- Ofrece dos salidas explícitas: **descartar el borrador y cargar la revisión vigente**, o **usar el borrador** solo tras marcar “Entiendo que guardar reemplazará la revisión vigente con mi borrador”.
-- E2E cubre el descarte seguro, el bloqueo y la confirmación; captura `w9-409-1440.png` actualizada.
+Brief: `specs/investigations/e49-decision-brief-2026-11-04.md`.
 
-## 2. Documentación
+1. **D4:** bloquear cierre si E3.5 no es verificable (estricto).
+2. **T1 Ventas:** incluir E4.2 (alta, rectificación, anulación, cambio de fecha).
+3. **v25:** reservar en exclusiva a E4.9 y actualizar identidad/admisión/backup/contrato.
+4. **AC-20/T2:** comparar solo posiciones y efectivo a Fin, inmunes a T2.
+5. **DT4:** incluir efecto e identidad de Ventas; conciliaciones E4.4 fuera de v1 con motivo.
 
-Corregida la contradicción: el informe distingue **15 PASS de cobertura** (pruebas ejecutadas con fixtures/CI) de la **aceptación funcional final pendiente**; ya no afirma a la vez que no hay PASS. Se ajustaron también progress/testplan para que los hitos A/B/C no parezcan contradicciones actuales.
+No bloquean el diseño: UI provisional, fuente de versión de app y MFA existente. No se inicia DEV ni se declara AC.
 
-## Dictamen solicitado
+## E4.6 — readiness
 
-Revisa de nuevo el flujo 409 y el informe. Si es APTO funcional, dilo; el merge sigue pendiente de autorización del usuario.
+`specs/24-e46-consumer-readiness.md`: 29 AC sin PASS. F-01/F-02 son contradicciones de fixture/semántica (`mesFinanciado` no produce C007/C008; S004 con tipos incompatibles) y deben resolverse en el documento propietario antes de DEV24.
+
+## Límites
+
+Sin datos reales, migración operativa ni despliegue. El flake SQLite B3 sigue sin causa estable; pendiente diagnóstico Linux.
+
+**Respuesta esperada:** solo si ves una contradicción financiera material en D4/T1/DT4 o en F-01/F-02. No es una solicitud de aprobación.
