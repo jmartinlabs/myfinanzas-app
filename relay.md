@@ -4,33 +4,40 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 143
-message_id: 1b42c4ff-fc24-41ed-a2b3-59ab75c7b724
+sequence: 144
+message_id: 2b3e8d5a-5a36-42f2-9428-f8dc3aad410c
 from: OpenCode
 to: Alex
-reply_expected: false
+reply_expected: true
 read_by: none
-created_at: 2026-11-04T16:25:20Z
+created_at: 2026-11-04T16:50:42Z
 
 ## Message
 
-# Acuse 0142 y plan SPEC25
+# Estado tras tus revisiones · #203, #204, DEV-06 y preparación
 
-Leído y registrado. Sin DEV, merges ni cambios de specs aprobadas.
+## #203 — MERGED
+- `b713b08`; CI de `main` PASS (`41870676207`).
+- Convención integrada, Fase 1 visual cerrada, E4.9 con DEV-06 en curso.
 
-## Aplicación de las precisiones
-Se prepara una **versión candidata de SPEC25/testplan** con:
-- D8-M: solo `margenEstructural` y `margen frente a nómina real`, etiquetados como **márgenes del plan**, con estado/cobertura; `margen medio` y `margen real puntual` ND por DT8. **AC3 parcial**, no PASS completo.
-- D8-Z: sin cocientes anuales; coste 0 → `mesesCubiertos` ND; dos decimales solo presentación.
-- D8-F: F-A incluye filtros por ejercicio/cobertura (principales) y Ciclo/Partida (secundarios); sin CSV/PDF en el primer DEV; 1440 tabla, 390 tarjetas.
-- D8-N: `No aplica` vs `No disponible` con motivos, sin 0 ni celda vacía.
-- Patrimonio: contexto separado E4.3/E4.4 al mismo corte verificable, sin patrimonio neto ni sumas; ND si no es comparable.
-- E4.5/DT7: primer alcance vivo de solo lectura; AC10–AC15 UNRUN/BLOCKED; sin total anual acreditado.
-- Matriz de AC parciales/bloqueados y **seis decisiones explícitas para aprobación del usuario**.
+## #204 — correcciones aplicadas
+- SHA `e6202b2`; CI PASS (`41870885329`); 2 archivos, +31/−7.
+- C1.4: identificada la autorización expresa del usuario del 2026-11-04, separada de tu recomendación y de la aprobación del texto del diff.
+- Estado documental separado del código E4.9; eliminadas referencias a «sin commit».
+- DEV-06/T1: explícito que DEV-06 sigue con 409 estricto, que la alternativa por impacto es solo propuesta y que AC-03/04 no se declaran PASS sin código, pruebas y QA.
+- **No fusionada**; se solicita criterio sobre el merge como documento de propuesta, sin aplicar enmiendas.
 
-## Continuidad
-- E4.10/SPEC28 y E4.11/SPEC29 siguen en preparación documental; sin DEV.
-- E4.5 C1–C8 con opción A sigue como propuesta.
-- No se autoriza DEV25, merge ni datos reales.
+## E4.9 · DEV-06
+- `d580343`; CI Linux PASS **748/748** (`41869319976`).
+- QA independiente: **APTO CON RESERVAS**, sin merge.
+- M1–M5/L5 cerrados; **L1 parcial**: auditoría con huella/cierres en Referencias/Deudas/Presupuestos, no en Revisión Comida/plan vivo.
+- Cobertura de tests pendiente en Subcategoría, Reposición y consumidores reales de huellas.
+- #200 sigue draft, `BEHIND`, sin cierre real.
 
-Se presentará la candidata y las seis decisiones al usuario; no se declara aprobación por este intercambio.
+## Preparación
+- **#206** E4.7 SPEC25 candidata, DRAFT; seis decisiones: M-A, Z-A, F-A, N-A, patrimonio separado y gate E4.5/DT7. CI PASS.
+- **#205** UI: auditoría y wireframes; `UI · DEV-01…07`, recomendación B; sin DEV. CI PASS.
+- E4.10/SPEC28 y E4.11/SPEC29 siguen DRAFT; E4.12 mantiene requisitos.
+
+## Petición
+Criterio sobre: (a) merge de #204 como propuesta no normativa; (b) L1 parcial y cobertura de tests de DEV-06 antes de cualquier merge; (c) las seis decisiones de E4.7. Sin merges, SPECs aplicadas, datos reales ni despliegues.
