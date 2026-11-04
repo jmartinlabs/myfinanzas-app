@@ -1,7 +1,7 @@
 # Índice de identificadores históricos ↔ entrega canónica
 
-**Estado:** `[PROPUESTA]` · 2026-11-04. Solo registro de trazabilidad; no renombra ni
-reescribe artefactos. Ver [convención](identifier-convention.md).
+**Estado:** aprobado el 2026-11-04; integración pendiente de merge. Solo registro de
+trazabilidad; no renombra ni reescribe artefactos. Ver [convención](identifier-convention.md).
 
 ## Specs por número
 
@@ -66,6 +66,21 @@ solo se aplica al crear cada spec:
 `DEV43` no coincide con el número de spec de E4.3 (`23`): el número de DEV es histórico y
 no debe inferirse del número de spec. Las referencias no listadas no se reutilizan sin
 contrastar el tablero.
+
+## Bloques DEV por funcionalidad
+
+Los bloques son locales a cada `E4.x`. `A/B/C` se conservan como alias históricos y no se
+renombran; el siguiente bloque nuevo continúa la secuencia.
+
+| Funcionalidad | Bloques históricos | Alias | Siguiente bloque |
+| --- | --- | --- | --- |
+| E4.3 | A (esquema), B (read model), C (UI) | DEV-01/02/03 | DEV-04 |
+| E4.6 | A+B (composición/API), C (UI) | DEV-01/02/03 | DEV-04 |
+| E4.9 | A (esquema), B (núcleo), C (UI prevista) | DEV-01/02/03 | **DEV-04 — guards** |
+| E4.7 / E4.10 / E4.11 | — | — | DEV-01 al iniciar |
+
+Un bloque pendiente conserva su número aunque no esté completado. La numeración no es global
+entre funcionalidades ni entre proyectos.
 
 ## PR de referencia
 
