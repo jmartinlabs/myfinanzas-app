@@ -1,13 +1,13 @@
 # 25 — E4.7 Resumen anual y flujo completo trazable: Test plan
 
-Status: **DRAFT — no aprobada; no autoriza DEV25, merges, datos reales ni migración.**
+Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04.**
 Diseño de pruebas, **NO EJECUTADO**. Ningún AC está en PASS; E4.7-AC3 queda en cumplimiento
 parcial. No existe candidato funcional de E4.7, endpoint, UI, DDL ni migración. **DEV25 no
 autorizado.** Este documento no autoriza datos reales, migración, snapshots ni merge.
 
 Specification: [25-e47-resumen-anual-specification.md](25-e47-resumen-anual-specification.md)
-Dictamen funcional de Álex: relay 0142 (2026-11-04, commit `6af0df5`), recibido como
-**recomendación** favorable a M-A / Z-A / F-A / N-A con precisiones; no es aprobación de DT8 ni
+Dictamen funcional de Álex: relay 0142 (2026-11-04), favorable a M-A / Z-A / F-A / N-A;
+la aprobación formal de la SPEC y de las seis decisiones es del usuario (2026-11-04). No autoriza
 de la spec.
 Fuentes: [inventario anual E4.7](investigations/e47-annual-inventory-2026-11-03.md),
 [roadmap E4.7](roadmap.md),

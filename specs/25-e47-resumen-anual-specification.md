@@ -1,15 +1,13 @@
 # 25 — E4.7 Resumen anual y flujo completo trazable: Specification
 
-Status: **DRAFT — no aprobada; no autoriza DEV25, merges, datos reales ni migración.**
-No hay aprobación formal del usuario ni del coordinador. Ningún AC está en PASS; E4.7-AC3
-solo alcanza cumplimiento parcial. Este documento no implementa código, API, SQLite, DDL,
-migración, snapshots ni tablas nuevas.
+Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04; D8-M/Z/F/N
+y las seis decisiones aprobadas.** No autoriza DEV25, merges, datos reales ni migración.
+Ningún AC está en PASS; E4.7-AC3 queda en cumplimiento parcial. Este documento no implementa
+código, API, SQLite, DDL, migración, snapshots ni tablas nuevas.
 
-Approval source/date: **ninguna aprobación formal**. El dictamen funcional de Álex
-(relay 0142, 2026-11-04) es favorable a M-A / Z-A / F-A / N-A con precisiones, pero es una
-**recomendación funcional**: no equivale a aprobación de DT8 ni de esta spec, y no autoriza
-DEV25, merge ni datos reales. El paquete `E4.7 · SPEC` solo autoriza redactar esta
-especificación y su testplan.
+Approval source/date: usuario, 2026-11-04 («Apruebo 206»). El dictamen funcional de Álex
+(relay 0142) fue favorable a M-A / Z-A / F-A / N-A con precisiones; la aprobación formal es
+del usuario. La aprobación de SPEC no autoriza DEV25 ni merge.
 Context and sources:
 [inventario anual E4.7 2026-11-03/2026-11-04](investigations/e47-annual-inventory-2026-11-03.md),
 [roadmap E4.7](roadmap.md),
@@ -946,10 +944,10 @@ se declara PASS.
 | Dependencia | Estado 2026-11-04 | Efecto en E4.7 |
 | --- | --- | --- |
 | E4.5 / DT7 | SPEC20 aprobada; **sin DEV**; DT7 abierto | Sin archivo anual verificado no hay total anual; AC10–AC15 quedan `UNRUN`/`BLOCKED`. El primer alcance vivo de E4.7 puede prepararse desacoplado de E4.9 |
-| D8-M | `[PENDIENTE]`; dictamen de Álex favorable a M-A | E4.7-AC3 queda **PARCIAL**: los dos márgenes ND dependen de una definición futura; no hay PASS completo |
-| D8-Z | `[PENDIENTE]`; dictamen de Álex favorable a Z-A | Sin aprobación no se publica ratio anual nuevo; coste 0 sigue la regla confirmada; 2 decimales solo presentación |
-| D8-F | `[PENDIENTE]`; dictamen de Álex favorable a F-A con filtros funcionales | Sin aprobación no hay CSV/PDF; 1440 tabla y 390 tarjetas; QA visual separada |
-| D8-N | `[PENDIENTE]`; dictamen de Álex favorable a N-A | Sin aprobación, el tratamiento `No aplica`/`No disponible` con motivo visible no se considera aprobado |
+| D8-M | `[APROBADA 2026-11-04]`; M-A | E4.7-AC3 queda **PARCIAL**: los dos márgenes ND dependen de una definición futura; no hay PASS completo |
+| D8-Z | `[APROBADA 2026-11-04]`; Z-A | No se publica ratio anual nuevo; coste 0 sigue la regla confirmada; 2 decimales solo presentación |
+| D8-F | `[APROBADA 2026-11-04]`; F-A con filtros funcionales | Sin CSV/PDF en el primer DEV; 1440 tabla y 390 tarjetas; QA visual separada |
+| D8-N | `[APROBADA 2026-11-04]`; N-A | `No aplica` vs `No disponible` con motivo visible; sin 0 ni celda vacía |
 | E4.3 | Integrado v24; QA 15 PASS / 2 PARCIAL; sin PASS de aceptación | Solo contexto patrimonial al mismo corte verificable; no calcula patrimonio global |
 | E4.4 | Integrado DEV17 / `024b348` | Solo contexto patrimonial separado y al mismo corte; no se resta del flujo |
 | E3.6 | MERGED `a26fffb` | Disponible para `G_n`/`S_aj`; no hay total económico |
@@ -960,7 +958,7 @@ se declara PASS.
 
 ## Seis decisiones para aprobación del usuario
 
-`[PENDIENTE]` Ninguna decisión está tomada por esta spec ni por el dictamen de Álex. El
+`[CONFIRMADO]` Las seis decisiones fueron aprobadas por el usuario el 2026-11-04. El
 dictamen funcional de Álex (relay 0142) **recomienda** las opciones indicadas, pero no sustituye
 la aprobación del usuario ni autoriza DEV25, merge, datos reales ni migración. Aprobar esta spec
 tampoco autoriza DEV25: el desarrollo requiere una autorización separada.
