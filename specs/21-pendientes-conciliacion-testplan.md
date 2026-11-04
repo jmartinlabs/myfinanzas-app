@@ -157,8 +157,8 @@ El mapa AC↔prueba completo está en
 - **AC-05/10/14/16/17/24/25:** la cobertura existente es parcial o depende de suites fuente.
 - **AC-31:** BLOCKED hasta E4.8/E4.9; no se simula un cierre.
 - **Reservas QA:** R8 (S bruto derivado), R9 (aviso stale), R12 (`listConciliaciones` sin
-  ruta), R14 (extensión declarada de `ContextoHecho`), R17/R18 (elegibilidad). No hay QA
-  post-merge.
+  ruta), R14 (extensión declarada de `ContextoHecho`), R17/R18 (elegibilidad; revisadas el
+  2026-11-04 como deuda de trazabilidad sin defecto reproducible). No hay QA post-merge.
 - **E3.5:** integrada en `1560d04`; E3.5-AC-12/15 siguen PARCIAL.
 - **Entorno:** los 56 fallos de macOS son de entorno; no acreditan el gate Linux.
 
