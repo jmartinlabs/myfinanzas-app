@@ -1,6 +1,6 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `9b76569`; esquema **v24 integrado** con DEV E4.3-A+B+C; v25 no reservada.
+Base de referencia: `main` `dd56553`; esquema **v24 integrado** con DEV E4.3-A+B+C+QA; v25 no reservada.
 No se reserva v25 sin decisión.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
@@ -20,7 +20,7 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 | DEV E4.3-A (v24, migración, C24, backup) | **MERGED** `3b9be46` | 644/644 en PR `7de64c1`; post-merge `41722741566` fast PASS; QA-A APTO CON RESERVAS | — |
 | DEV E4.3-B (read model/API) | **MERGED** `3b9be46` | `e43-api` 14/14; QA-B APTO CON RESERVAS | — |
 | DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | — |
-| QA final E4.3 | **PR #189 draft** `66d58d3` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; reservas menores | Revisión Álex y aprobación de merge |
+| QA final E4.3 | **MERGED** `dd56553` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; 409 seguro; post-merge `41796526278` | Aceptación funcional final de Álex |
 | E4.4/E3.6 evidencia | **MERGED** #190/#191 | Progress 17, evidencia 21 y R17/R18 clasificadas | — |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
@@ -43,7 +43,7 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 1. **DEV E4.3:** A+B+C integrados; QA final en PR #189 pendiente de revisión funcional de Álex y aprobación de merge.
 2. **Evidencia post-merge E4.4/E3.6:** completada (#190/#191), sin PASS indebido.
 3. **#181:** MERGED `7bfb5a2`; verificado.
-4. **Estabilizar CI:** flake `sqlite-opening.test.ts:288` en investigación; no enmascarar.
+4. **Estabilizar CI:** flake B3 `sqlite-opening.test.ts:288` investigado sin reproducción macOS; **UNRUN Linux**; candidato B4-style no aplicado. Ver `sqlite-b3-short-read-2026-11-04.md`.
 
 ### P1 — Preparación sin DEV nuevo
 

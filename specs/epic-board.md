@@ -28,19 +28,19 @@ solas:
 
 ## Cola operativa — 2026-11-03
 
-Base `main` `9b76569`; **v24 integrada** con DEV E4.3 A+B+C; v25 no reservada.
+Base `main` `dd56553`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada.
 
 - **A+B+C integrados:** DEV43-A (v24/C24/backup) y DEV43-B (read model/API) MERGED `3b9be46`;
   DEV43-C (UI/E2E) MERGED `8552d4a` (squash de #187). CI de PR 644/644 y post-merge
   `41730772524` verde. QA-A/QA-B/QA-C APTO CON RESERVAS.
-- **QA final E4.3:** PR #189 draft, candidato `66d58d3`, CI 644/644 y Playwright 1/1;
-  15 AC PASS de cobertura, 2 PARCIAL, reservas menores documentadas. QA independiente
-  incremental APTO CON RESERVAS; P2 de reautenticación corregido. Revisión funcional de
-  Álex enviada (relay 0130/0131); merge pendiente de aprobación.
+- **QA final E4.3:** MERGED `dd56553` (squash de #189); CI post-merge `41796526278` verde.
+  15 AC PASS de cobertura, 2 PARCIAL, reservas menores; 409 con descarte seguro o
+  sobrescritura explícita. Aceptación funcional final de Álex pendiente; sin PASS de
+  aceptación.
 - **Evidencia E4.4/E3.6:** post-merge registrada (#190); R17/R18 clasificadas como deuda de
   trazabilidad documental (#191).
-- **En paralelo:** flake SQLite en investigación; paquete E4.9 actualizado; E4.6/E4.7
-  preparables sin DEV.
+- **En paralelo:** flake SQLite B3 investigado sin reproducción macOS; pendiente una
+  ejecución diagnóstica Linux; paquete E4.9 actualizado; E4.6/E4.7 preparables sin DEV.
 - **Preparable sin DEV:** consumidores/fixtures E4.6; frontera E4.7; checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
 - **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
