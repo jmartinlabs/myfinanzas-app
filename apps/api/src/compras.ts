@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Problem } from "./problem";
+import { assertDatesWritable } from "./e49-guards";
 import {
   CHANGE_SCALE,
   PRICE_SCALE,
@@ -618,6 +619,7 @@ export function createPurchase(
       }
       const value = validateEconomic(db, body, { full: false, now }),
         refs = validReferences(db, body);
+      assertDatesWritable(db, [value.fecha], "registrar la Compra");
       assertSufficient(db, {
         fecha: value.fecha,
         saldoEfectivo: refs.saldoEfectivo,
@@ -748,6 +750,11 @@ export function rectifyPurchase(
           });
       const motivo = motive(body.motivo),
         value = validateEconomic(db, body, { full: true, now });
+      assertDatesWritable(
+        db,
+        [old.fecha, value.fecha],
+        "rectificar la Compra",
+      );
       assertUnitsAvailable(
         db,
         {
@@ -862,6 +869,7 @@ export function annulPurchase(
       if (body.revision !== old.revision) throw revisionConflict();
       assertEditable(old);
       const motivo = motive(body.motivo);
+      assertDatesWritable(db, [old.fecha], "anular la Compra");
       assertUnitsAvailable(
         db,
         {

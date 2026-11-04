@@ -9,6 +9,11 @@ import { createHash } from "node:crypto";
 import { cashAt, cents, investmentInstalled } from "./investment-engine";
 
 import { Problem } from "./problem";
+import {
+  assertSaldoCreationWritable,
+  saldoClosureConflict,
+  type SaldoGuardValue,
+} from "./e49-guards";
 export { Problem } from "./problem";
 export const pairs: Record<string, string[]> = {
   Efectivo: ["Movimientos", "Terminal", "No controlado", "Inversiones"],
@@ -290,7 +295,11 @@ function args(v: SaldoInput) {
     money(v.objetivo),
   ];
 }
-export type ImpactGuard = (id: string, fields: string[]) => boolean;
+export type ImpactGuard = (
+  id: string,
+  fields: string[],
+  next?: SaldoGuardValue,
+) => boolean;
 function audit(
   db: Database,
   id: string,
@@ -348,6 +357,7 @@ export function createSaldo(
           );
         return getSaldo(db, prev.saldo);
       }
+      assertSaldoCreationWritable(db, v);
       const row = db
         .query(
           "UPDATE counters SET next=next+1 WHERE name='saldo' AND next<9223372036854775807 RETURNING CAST(next-1 AS TEXT) value",
@@ -411,7 +421,25 @@ export function updateSaldo(
           JSON.stringify(v[f as keyof SaldoInput]) !==
           JSON.stringify(old[f as keyof SaldoInput]),
       );
-      if (saldoHasEconomicUse(db, id, changed) || guard(id, changed))
+      const closureConflict = saldoClosureConflict(db, id, changed, v);
+      if (closureConflict.length)
+        throw new Problem(
+          409,
+          "HISTORY_LOCKED",
+          "La modificación afecta a tipo, control o apertura de un Saldo capturado por un cierre; revisa la foto y la ventana antes de cambiarlo.",
+          { saldo: "Atributo capturado por un cierre." },
+          {
+            cierres: closureConflict.map(
+              ({ ciclo, version, inicio, fin }) => ({
+                ciclo,
+                version,
+                inicio,
+                fin,
+              }),
+            ),
+          },
+        );
+      if (saldoHasEconomicUse(db, id, changed) || guard(id, changed, v))
         throw new Problem(
           409,
           "HISTORY_LOCKED",

@@ -40,6 +40,7 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
+import { assertDatesWritable } from "./e49-guards";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
   applyComidaDevolucion,
@@ -652,11 +653,21 @@ function payload(body: Record<string, unknown>) {
   );
 }
 function protect(
+  db: Database,
   guard: MovementProtection | undefined,
   action: string,
   old: LedgerRow | null,
   next: unknown,
 ) {
+  const nextDate =
+    next && typeof next === "object"
+      ? (next as { fecha?: unknown }).fecha
+      : undefined;
+  assertDatesWritable(
+    db,
+    [old?.fecha, typeof nextDate === "string" ? nextDate : null],
+    "registrar el Movimiento",
+  );
   const protection = guard?.(action, old, next);
   if (protection?.blocked)
     throw new Problem(
@@ -759,7 +770,7 @@ function plan(
       "El alta no admite revisión o motivo de rectificación.",
     );
   const action = annul ? "anulación" : old ? "rectificación" : "alta";
-  protect(guard, action, old, next);
+  protect(db, guard, action, old, next);
   const all = ledgerRows(db),
     cycles = cycleMaster(db),
     duplicates = next

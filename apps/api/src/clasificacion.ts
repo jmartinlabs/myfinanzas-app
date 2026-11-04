@@ -8,6 +8,7 @@ import { Schema } from "effect";
 import { createHash } from "node:crypto";
 import { entities, type Entity } from "./classification-schema";
 import { Problem } from "./saldos";
+import { classificationClosureImpact } from "./e49-guards";
 
 export const annualMethods = ["Ingreso", "Gasto", "No aplica"];
 export const monthlyMethods = [
@@ -529,7 +530,8 @@ function impact(
     used:
       annualPlans.length > 0 ||
       financial?.used === true ||
-      protection?.used === true,
+      protection?.used === true ||
+      classificationClosureImpact(db, economic),
     financial,
     fingerprint: hash([
       kind,

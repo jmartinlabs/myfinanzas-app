@@ -799,15 +799,19 @@ function compareStoredSnapshot(
     problems.push(
       `Efectivo total almacenado ${value.efectivo} frente a ${live.efectivo ?? "No disponible"}.`,
     );
-  const cashKey = (row: ComparedCash) =>
-    `${row.saldo}|${row.disponible}`;
-  const storedCash = new Set(storedCashRows.map(cashKey));
-  const liveCashSet = new Set(liveCash.map(cashKey));
-  if (
-    storedCash.size !== liveCashSet.size ||
-    [...storedCash].some((entry) => !liveCashSet.has(entry))
-  )
-    problems.push("El desglose de efectivo a Fin ha cambiado.");
+  // T1 locks every operation dated inside a closed window and the T2 Saldo
+  // guard locks `tipo`/`control`/`apertura` of accounts captured by a photo
+  // (and creation of new investment cash accounts), so a stored account
+  // cannot change its live cash. Accounts that appear only live were created
+  // after the cut and cannot alter the stored account breakdown; the total
+  // cash is still compared above, so an account with a non-zero opening
+  // balance is still a real contradiction. Comparing the stored account ids
+  // avoids a false contradiction from a later zero-balance account.
+  const liveCashById = new Map(liveCash.map((row) => [row.saldo, row.disponible]));
+  const cashChanged = storedCashRows.some(
+    (row) => liveCashById.get(row.saldo) !== row.disponible,
+  );
+  if (cashChanged) problems.push("El desglose de efectivo a Fin ha cambiado.");
   const positionKey = (row: ComparedPosition) =>
     `${row.instrumento}|${row.saldoInversion}|${row.cantidad}`;
   const storedPositionKeys = new Set(storedPositions.map(positionKey));
