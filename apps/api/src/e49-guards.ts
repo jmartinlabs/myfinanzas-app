@@ -4,14 +4,18 @@ import { Problem } from "./problem";
 /**
  * E4.9 closure guards shared by the real write paths.
  *
- * T1 — facts and windows: a date inside a closed `[inicio, fin]` cannot be
- * created, moved into/out of or annulled; a closed cycle cannot change its
- * `inicio`, derived `fin` or S0.
- * T2 — attributes that change the numbers already captured by a photo:
- * `tipo`/`control` decide whether a Saldo is part of the investment snapshot
- * and `apertura` changes its cash; economic classification changes require the
- * existing impact/motive/audit review flow (they are not hard-blocked).
- * T3 — names/labels keep working; the photo stores ID + revision.
+ * T1 — facts and windows: a fact is locked only when its previous or next
+ * state changes the cash/positions a stored photo captured at its `fin`.
+ * Changing a note, a concept or an amount on an account/instrument that no
+ * photo captured does not alter a closure and stays writable. Cycle
+ * `inicio`/derived `fin`/S0 remain hard-locked.
+ * T2 — attributes that change captured numbers: photo-material Saldo changes
+ * stay blocked; changes that only affect a live economic state go through the
+ * impact preview + motive + fingerprint + audit flow. Economic classification
+ * keeps its existing review flow.
+ * T3 — names/labels keep working; catalogs that a photo captured only accept
+ * their informative fields after a close (e.g. Instrumento nombre) while
+ * identity fields are rejected field by field, not by date.
  *
  * Every helper tolerates databases created before v25 (some focused tests and
  * migration fixtures open older schemas), where `cierres` does not exist yet.
@@ -36,6 +40,24 @@ export type SaldoGuardValue = {
   tipo: string;
   control: string;
   saldoApertura: string | null;
+};
+
+type PhotoCash = { saldo: string; disponible: string };
+type PhotoPosition = {
+  instrumento: string;
+  saldoInversion: string;
+  cantidad: string;
+};
+
+type PhotoSnapshot = ClosedWindow & {
+  cuentas: PhotoCash[];
+  posiciones: PhotoPosition[];
+  /**
+   * A stored photo whose `inversion` payload cannot be read cannot prove the
+   * absence of impact; any economic fact dated at or before its `fin` is
+   * treated as impacting it.
+   */
+  unverifiable: boolean;
 };
 
 function hasTable(db: Database, name: string) {
@@ -79,27 +101,117 @@ export function closedWindowsForDates(
 }
 
 /**
- * T1 date lock. Throws 409 `HISTORY_LOCKED` when any date belongs to a closed
- * window. The response exposes only the closure identity (cycle/version and
- * window), never financial values.
+ * Every stored photo is permanent (DT4). The impact computation reads all of
+ * them, not only the latest closure version, because an older version may
+ * still be consulted and must not silently diverge from live data.
  */
-export function assertDatesWritable(
-  db: Database,
-  dates: readonly (string | null | undefined)[],
+function photoSnapshots(db: Database): PhotoSnapshot[] {
+  if (!hasTable(db, "cierres") || !hasTable(db, "fotos_cierre")) return [];
+  const rows = db
+    .query(
+      `SELECT c.ciclo,c.version,c.inicio,c.fin,f.inversion
+       FROM cierres c JOIN fotos_cierre f
+         ON f.ciclo=c.ciclo AND f.version=c.version
+       ORDER BY c.fin,c.ciclo,c.version`,
+    )
+    .all() as {
+    ciclo: string;
+    version: number;
+    inicio: string;
+    fin: string;
+    inversion: string;
+  }[];
+  return rows.map((row) => {
+    try {
+      const value = JSON.parse(row.inversion) as {
+        cuentas?: unknown;
+        posiciones?: unknown;
+      };
+      const cuentas = Array.isArray(value?.cuentas)
+        ? value.cuentas
+            .filter(
+              (item): item is PhotoCash =>
+                !!item &&
+                typeof item === "object" &&
+                typeof (item as { saldo?: unknown }).saldo === "string" &&
+                typeof (item as { disponible?: unknown }).disponible ===
+                  "string",
+            )
+            .map((item) => ({
+              saldo: item.saldo,
+              disponible: item.disponible,
+            }))
+        : [];
+      const posiciones = Array.isArray(value?.posiciones)
+        ? value.posiciones
+            .filter(
+              (item): item is PhotoPosition =>
+                !!item &&
+                typeof item === "object" &&
+                typeof (item as { instrumento?: unknown }).instrumento ===
+                  "string" &&
+                typeof (item as { saldoInversion?: unknown }).saldoInversion ===
+                  "string" &&
+                typeof (item as { cantidad?: unknown }).cantidad === "string",
+            )
+            .map((item) => ({
+              instrumento: item.instrumento,
+              saldoInversion: item.saldoInversion,
+              cantidad: item.cantidad,
+            }))
+        : [];
+      const unverifiable =
+        !value ||
+        typeof value !== "object" ||
+        !Array.isArray(value.cuentas) ||
+        !Array.isArray(value.posiciones);
+      return {
+        ciclo: row.ciclo,
+        version: row.version,
+        inicio: row.inicio,
+        fin: row.fin,
+        cuentas,
+        posiciones,
+        unverifiable,
+      };
+    } catch {
+      return {
+        ciclo: row.ciclo,
+        version: row.version,
+        inicio: row.inicio,
+        fin: row.fin,
+        cuentas: [],
+        posiciones: [],
+        unverifiable: true,
+      };
+    }
+  });
+}
+
+function windowOf(photo: PhotoSnapshot): ClosedWindow {
+  return {
+    ciclo: photo.ciclo,
+    version: photo.version,
+    inicio: photo.inicio,
+    fin: photo.fin,
+  };
+}
+
+function closureProblem(
+  windows: ClosedWindow[],
   action: string,
-) {
-  const hits = closedWindowsForDates(db, dates);
-  if (!hits.length) return;
-  const list = hits
+  detail: string,
+): never {
+  const list = windows
     .map((window) => `${window.ciclo} (v${window.version})`)
     .join(", ");
   throw new Problem(
     409,
     "HISTORY_LOCKED",
-    `No se puede ${action}: la fecha pertenece a una ventana cerrada (${list}).`,
-    { fecha: "La fecha afecta a un ciclo cerrado." },
+    `No se puede ${action}: ${detail} (${list}).`,
+    { fecha: "La operación altera el estado económico de un cierre." },
     {
-      cierres: hits.map(({ ciclo, version, inicio, fin }) => ({
+      cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
         ciclo,
         version,
         inicio,
@@ -151,24 +263,175 @@ export function assertClosedCyclesUnchanged(
   }
 }
 
-function capturedCashAccount(db: Database, saldo: string) {
-  if (!hasTable(db, "fotos_cierre")) return false;
-  const rows = db
-    .query("SELECT inversion FROM fotos_cierre")
-    .all() as { inversion: string }[];
-  return rows.some((row) => {
-    try {
-      const photo = JSON.parse(row.inversion) as {
-        cuentas?: { saldo?: unknown }[];
-      };
-      return (
-        Array.isArray(photo?.cuentas) &&
-        photo.cuentas.some((account) => account?.saldo === saldo)
-      );
-    } catch {
-      return false;
+export type MovementEffectRow = {
+  fecha: string;
+  importe: string;
+  origen: string;
+  destino: string;
+  anulado?: number;
+};
+
+function movementDeltas(
+  row: MovementEffectRow | null | undefined,
+  fin: string,
+): Map<string, bigint> {
+  const deltas = new Map<string, bigint>();
+  if (!row || row.anulado === 1 || row.fecha > fin) return deltas;
+  const amount = BigInt(row.importe);
+  deltas.set(row.origen, (deltas.get(row.origen) ?? 0n) - amount);
+  deltas.set(row.destino, (deltas.get(row.destino) ?? 0n) + amount);
+  return deltas;
+}
+
+/** Photos whose captured cash at `fin` changes with this Movement. */
+export function movementClosureImpact(
+  db: Database,
+  before: MovementEffectRow | null | undefined,
+  after: MovementEffectRow | null | undefined,
+): ClosedWindow[] {
+  const hits = new Map<string, ClosedWindow>();
+  for (const photo of photoSnapshots(db)) {
+    const touched =
+      (before && before.fecha <= photo.fin) ||
+      (after && after.fecha <= photo.fin);
+    if (!touched) continue;
+    if (photo.unverifiable) {
+      hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
+      continue;
     }
-  });
+    const previous = movementDeltas(before, photo.fin);
+    const next = movementDeltas(after, photo.fin);
+    if (
+      photo.cuentas.some(
+        (account) =>
+          (previous.get(account.saldo) ?? 0n) !==
+          (next.get(account.saldo) ?? 0n),
+      )
+    )
+      hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
+  }
+  return [...hits.values()];
+}
+
+/** T1 Movement lock: only a demonstrable change to captured cash blocks. */
+export function assertMovementClosureImpact(
+  db: Database,
+  before: MovementEffectRow | null | undefined,
+  after: MovementEffectRow | null | undefined,
+  action: string,
+) {
+  const windows = movementClosureImpact(db, before, after);
+  if (windows.length)
+    closureProblem(
+      windows,
+      action,
+      "el movimiento anterior o el nuevo altera el efectivo capturado por una foto",
+    );
+}
+
+export type OperationEffectRow = {
+  clase: string;
+  fecha: string;
+  estado: string;
+  cantidad: string;
+  importe: string;
+  instrumento: string;
+  saldoEfectivo: string;
+  saldoInversion: string;
+};
+
+type OperationEffect = {
+  saldoEfectivo: string;
+  cash: bigint;
+  instrumento: string;
+  saldoInversion: string;
+  quantity: bigint;
+};
+
+function operationEffect(
+  row: OperationEffectRow | null | undefined,
+  fin: string,
+): OperationEffect | null {
+  if (!row || row.estado !== "Vigente" || row.fecha > fin) return null;
+  const amount = BigInt(row.importe);
+  const quantity = BigInt(row.cantidad);
+  return {
+    saldoEfectivo: row.saldoEfectivo,
+    cash: row.clase === "Compra" ? -amount : amount,
+    instrumento: row.instrumento,
+    saldoInversion: row.saldoInversion,
+    quantity: row.clase === "Compra" ? quantity : -quantity,
+  };
+}
+
+/**
+ * T1 E4.1 operation lock. A Compra/Venta affects a photo when its fecha is at
+ * or before the captured `fin` in either the previous or the next state and
+ * the captured cash or positions would differ. Notes, concepts or reference
+ * prices that leave both values intact do not block.
+ */
+export function operationClosureImpact(
+  db: Database,
+  before: OperationEffectRow | null | undefined,
+  after: OperationEffectRow | null | undefined,
+): ClosedWindow[] {
+  const hits = new Map<string, ClosedWindow>();
+  for (const photo of photoSnapshots(db)) {
+    const touched =
+      (before && before.fecha <= photo.fin) ||
+      (after && after.fecha <= photo.fin);
+    if (!touched) continue;
+    if (photo.unverifiable) {
+      hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
+      continue;
+    }
+    const previous = operationEffect(before, photo.fin);
+    const next = operationEffect(after, photo.fin);
+    const cashAccounts = new Set(
+      [previous?.saldoEfectivo, next?.saldoEfectivo].filter(
+        (value): value is string => !!value,
+      ),
+    );
+    const cashChanged = [...cashAccounts].some((account) => {
+      if (!photo.cuentas.some((captured) => captured.saldo === account))
+        return false;
+      const previousCash =
+        previous?.saldoEfectivo === account ? previous.cash : 0n;
+      const nextCash = next?.saldoEfectivo === account ? next.cash : 0n;
+      return previousCash !== nextCash;
+    });
+    const previousKey = previous
+      ? `${previous.instrumento}|${previous.saldoInversion}|${previous.quantity}`
+      : "";
+    const nextKey = next
+      ? `${next.instrumento}|${next.saldoInversion}|${next.quantity}`
+      : "";
+    if (cashChanged || previousKey !== nextKey)
+      hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
+  }
+  return [...hits.values()];
+}
+
+/** T1 E4.1 lock: only a demonstrable cash/position change blocks. */
+export function assertOperationClosureImpact(
+  db: Database,
+  before: OperationEffectRow | null | undefined,
+  after: OperationEffectRow | null | undefined,
+  action: string,
+) {
+  const windows = operationClosureImpact(db, before, after);
+  if (windows.length)
+    closureProblem(
+      windows,
+      action,
+      "la operación anterior o la nueva altera el efectivo o las posiciones de una foto",
+    );
+}
+
+function capturedCashAccount(db: Database, saldo: string) {
+  return photoSnapshots(db).some((photo) =>
+    photo.cuentas.some((account) => account.saldo === saldo),
+  );
 }
 
 const saldoClosureFields = ["tipo", "control", "saldoApertura"];
@@ -214,6 +477,130 @@ export function saldoClosureConflict(
   if (changed.includes("saldoApertura") && capturedCashAccount(db, id))
     return closedWindows(db);
   return [];
+}
+
+/**
+ * T2 Saldo review. An economic change that no photo captured still needs an
+ * explicit motive, fingerprint and audit because it rewrites a live position
+ * history. Photo-material changes stay hard-blocked (`saldoClosureConflict`).
+ */
+export function saldoEconomicReview(
+  db: Database,
+  changed: readonly string[],
+): ClosedWindow[] {
+  if (!hasClosures(db)) return [];
+  const economic = changed.filter((field) => !["nombre"].includes(field));
+  return economic.length ? closedWindows(db) : [];
+}
+
+/**
+ * T3 catalog whitelist. Field-by-field, never date-based: only the listed
+ * informative attributes may change once a closure exists; identity or
+ * economic fields are rejected instead of trusting a justification.
+ */
+export const informativeFields: Record<string, readonly string[]> = {
+  movimiento: ["concepto", "nota"],
+  compra: ["concepto", "nota"],
+  venta: ["concepto", "nota"],
+  saldo: ["nombre"],
+  referencia: ["nombre"],
+  instrumento: ["nombre"],
+  deuda: ["nombre"],
+  presupuesto: ["nombre"],
+  participante: ["nombre"],
+  revisionComida: ["concepto"],
+};
+
+export type ClosedFieldDecision = {
+  windows: ClosedWindow[];
+  informative: string[];
+  economic: string[];
+};
+
+/** Classify a field change against the T3 whitelist and the closures. */
+export function closedFieldDecision(
+  db: Database,
+  entity: string,
+  changed: readonly string[],
+): ClosedFieldDecision {
+  const windows = closedWindows(db);
+  if (!windows.length)
+    return { windows: [], informative: [...changed], economic: [] };
+  const allowed = informativeFields[entity] ?? [];
+  return {
+    windows,
+    informative: changed.filter((field) => allowed.includes(field)),
+    economic: changed.filter((field) => !allowed.includes(field)),
+  };
+}
+
+/** Hard T3 block: a field outside the informative whitelist cannot be written. */
+export function assertClosedInformativeFields(
+  db: Database,
+  entity: string,
+  changed: readonly string[],
+  action: string,
+) {
+  const decision = closedFieldDecision(db, entity, changed);
+  if (!decision.economic.length) return;
+  throw new Problem(
+    409,
+    "HISTORY_LOCKED",
+    `No se puede ${action}: con cierres existentes solo se admiten campos informativos (${decision.informative.join(", ") || "ninguno"}); bloqueados: ${decision.economic.join(", ")}.`,
+    Object.fromEntries(
+      decision.economic.map((field) => [
+        field,
+        "Campo económico o de identidad bloqueado por cierre.",
+      ]),
+    ),
+    {
+      cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+      campos: decision.economic,
+    },
+  );
+}
+
+/**
+ * T2 motive gate for entities whose review flow is motive + audit (no
+ * fingerprint). Returns the affected windows so callers can record them; it
+ * throws 422 when an economic field changes without an explicit motive.
+ */
+export function assertClosedEconomicMotive(
+  db: Database,
+  entity: string,
+  changed: readonly string[],
+  motive: unknown,
+  action: string,
+): ClosedWindow[] {
+  const decision = closedFieldDecision(db, entity, changed);
+  if (!decision.economic.length) return [];
+  if (
+    typeof motive !== "string" ||
+    !motive.trim() ||
+    motive.length > 2000 ||
+    /[\u0000-\u001f\u007f]/.test(motive)
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      `Indica el motivo de ${action}; el cambio es económico y existe un cierre.`,
+      { motivo: "Motivo obligatorio para el cambio económico." },
+      {
+        cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+        campos: decision.economic,
+      },
+    );
+  return decision.windows;
 }
 
 /**

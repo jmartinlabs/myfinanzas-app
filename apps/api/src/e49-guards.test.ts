@@ -91,13 +91,14 @@ function seedMovement(
     destino?: string;
     subtipo?: string | null;
     partida?: string | null;
+    referencia?: string | null;
   },
 ) {
   db.run(
     `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
        partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
        capital,intereses)
-     VALUES(?,?,?,?,?,?,?,?,NULL,?, '',0,1,?,?,NULL,NULL)`,
+     VALUES(?,?,?,?,?,?,?,?,?,?, '',0,1,?,?,NULL,NULL)`,
     [
       input.id,
       input.fecha,
@@ -107,6 +108,7 @@ function seedMovement(
       input.destino ?? "S002",
       input.subtipo ?? null,
       input.partida ?? null,
+      input.referencia ?? null,
       "Movimiento ficticio guard " + input.id,
       stamp,
       stamp,
@@ -181,7 +183,11 @@ function seedFacts(
 }
 
 function fixture(
-  options: { facts?: boolean; classification?: boolean } = {},
+  options: {
+    facts?: boolean;
+    classification?: boolean;
+    capturedMovement?: boolean;
+  } = {},
 ) {
   const db = openDatabase(":memory:");
   seedCycles(db);
@@ -199,6 +205,14 @@ function fixture(
   ).instrumento.id;
   if (options.classification) seedClassification(db);
   if (options.facts ?? true) seedFacts(db, instrumento, options);
+  if (options.capturedMovement)
+    seedMovement(db, {
+      id: "8003",
+      fecha: "2026-01-18",
+      importe: 500,
+      origen: "S003",
+      destino: "S001",
+    });
   const handler = HttpApp.toWebHandler(
     createApp(db, { key, now: () => now, cierre: validOptions() }),
   );
@@ -362,91 +376,169 @@ function movementRectification(over: Record<string, unknown> = {}) {
   };
 }
 
+/** Full legal payload for the captured-account movement seeded as 8003. */
+function capturedMovement(over: Record<string, unknown> = {}) {
+  return {
+    revision: 1,
+    motivo: "Rectificación ficticia",
+    fecha: "2026-01-18",
+    tipo: "Transferencia",
+    importe: "5.00",
+    origen: "S003",
+    destino: "S001",
+    subtipo: null,
+    partida: null,
+    referencia: null,
+    concepto: "Movimiento capturado",
+    nota: null,
+    capital: null,
+    intereses: null,
+    ...over,
+  };
+}
+
 function rowCount(db: Database, table: string) {
   return (db.query(`SELECT COUNT(*) n FROM ${table}`).get() as { n: number }).n;
 }
 
-test("E4.9 T1 guards: Movimientos bloquean alta, cambio de fecha y anulación en ventana cerrada", async () => {
-  const f = fixture();
-  await f.enroll();
-  expect((await f.close("1")).result.status).toBe(201);
-  const before = rowCount(f.db, "movimientos");
-
-  const createClosed = await f.request(
-    "/api/movimientos",
-    "POST",
-    movementBody(),
-    { "idempotency-key": randomUUID() },
-  );
-  expect(createClosed.status).toBe(409);
-  expect(createClosed.data.code).toBe("HISTORY_LOCKED");
-  expect(createClosed.data.cierres?.[0]).toMatchObject({
-    ciclo: "1",
-    version: 1,
-  });
-  expect(rowCount(f.db, "movimientos")).toBe(before);
-
-  const open = movementBody({
-    fecha: "2026-02-20",
-    concepto: "Movimiento abierto real",
-  });
-  const impact = await f.request("/api/movimientos/impacto", "POST", open);
+async function createMovement(
+  f: ReturnType<typeof fixture>,
+  body: Record<string, unknown>,
+) {
+  const impact = await f.request("/api/movimientos/impacto", "POST", body);
   expect(impact.status).toBe(200);
   const created = await f.request(
     "/api/movimientos",
     "POST",
     {
-      ...open,
+      ...body,
       contextRevision: impact.data.contextRevision,
       fingerprint: impact.data.fingerprint,
     },
     { "idempotency-key": randomUUID() },
   );
-  expect(created.status).toBe(201);
-  const openId = created.data.movimiento.id as string;
+  return { impact, created };
+}
 
-  const moveOut = await f.request(
-    "/api/movimientos/8001/rectificar",
+test("E4.9 T1 Movimientos: bloquea solo el cambio con impacto en una foto y permite el hecho sin impacto", async () => {
+  const f = fixture({ capturedMovement: true });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  const before = rowCount(f.db, "movimientos");
+
+  const impactedCreate = await f.request(
+    "/api/movimientos",
     "POST",
-    movementRectification({ fecha: "2026-02-10" }),
+    movementBody({ origen: "S003", destino: "S001" }),
     { "idempotency-key": randomUUID() },
   );
+  expect(impactedCreate.status).toBe(409);
+  expect(impactedCreate.data.code).toBe("HISTORY_LOCKED");
+  expect(impactedCreate.data.cierres?.[0]).toMatchObject({
+    ciclo: "1",
+    version: 1,
+  });
+
+  const allowed = await createMovement(
+    f,
+    movementBody({ importe: "12.35", concepto: "Hecho de enero sin efectivo capturado" }),
+  );
+  expect(allowed.created.status).toBe(201);
+  expect(allowed.created.data.movimiento.fecha).toBe("2026-01-15");
+  expect(rowCount(f.db, "movimientos")).toBe(before + 1);
+
+  const notePlan = await f.request(
+    "/api/movimientos/8003/impacto",
+    "POST",
+    capturedMovement({
+      concepto: "Concepto corregido sin cambiar el importe",
+      nota: "Nota informativa en ventana cerrada",
+    }),
+  );
+  expect(notePlan.status).toBe(200);
+  const noteOnly = await f.request(
+    "/api/movimientos/8003/rectificar",
+    "POST",
+    {
+      ...capturedMovement({
+        concepto: "Concepto corregido sin cambiar el importe",
+        nota: "Nota informativa en ventana cerrada",
+      }),
+      contextRevision: notePlan.data.contextRevision,
+      fingerprint: notePlan.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(noteOnly.status).toBe(200);
+  expect(noteOnly.data.movimiento.concepto).toBe(
+    "Concepto corregido sin cambiar el importe",
+  );
+  expect(noteOnly.data.movimiento.importe).toBe("5.00");
+
+  const amountChange = await f.request("/api/movimientos/8003/rectificar", "POST", {
+    ...capturedMovement({ revision: 2, importe: "6.00" }),
+  }, { "idempotency-key": randomUUID() });
+  expect(amountChange.status).toBe(409);
+  expect(amountChange.data.code).toBe("HISTORY_LOCKED");
+
+  const moveOut = await f.request("/api/movimientos/8003/rectificar", "POST", {
+    ...capturedMovement({ revision: 2, fecha: "2026-02-10" }),
+  }, { "idempotency-key": randomUUID() });
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
+  const open = await createMovement(
+    f,
+    movementBody({
+      fecha: "2026-02-10",
+      origen: "S003",
+      destino: "S001",
+      importe: "5.00",
+      concepto: "Movimiento abierto capturado",
+    }),
+  );
+  expect(open.created.status).toBe(201);
+  const openId = open.created.data.movimiento.id as string;
   const moveIn = await f.request(
     `/api/movimientos/${openId}/rectificar`,
     "POST",
-    movementRectification({ revision: 1, fecha: "2026-01-20" }),
+    capturedMovement({ revision: 1, fecha: "2026-01-18" }),
     { "idempotency-key": randomUUID() },
   );
   expect(moveIn.status).toBe(409);
   expect(moveIn.data.code).toBe("HISTORY_LOCKED");
-  expect(
-    f.db.query("SELECT revision FROM movimientos WHERE id=?").get(openId),
-  ).toEqual({ revision: 1 });
-  expect(
-    f.db.query("SELECT revision FROM movimientos WHERE id='8001'").get(),
-  ).toEqual({ revision: 1 });
 
-  const annul = await f.request(
+  const annul = await f.request("/api/movimientos/8003/anular", "POST", {
+    revision: 2,
+    motivo: "Anulación ficticia",
+  }, { "idempotency-key": randomUUID() });
+  expect(annul.status).toBe(409);
+  expect(annul.data.code).toBe("HISTORY_LOCKED");
+
+  const freePlan = await f.request(
+    "/api/movimientos/8001/impacto-anulacion",
+    "POST",
+    { revision: 1, motivo: "Anulación sin impacto capturado" },
+  );
+  expect(freePlan.status).toBe(200);
+  const freeAnnul = await f.request(
     "/api/movimientos/8001/anular",
     "POST",
     {
       revision: 1,
-      motivo: "Anulación ficticia",
+      motivo: "Anulación sin impacto capturado",
+      contextRevision: freePlan.data.contextRevision,
+      fingerprint: freePlan.data.fingerprint,
     },
     { "idempotency-key": randomUUID() },
   );
-  expect(annul.status).toBe(409);
-  expect(annul.data.code).toBe("HISTORY_LOCKED");
+  expect(freeAnnul.status).toBe(200);
   expect(
-    f.db.query("SELECT anulado,revision FROM movimientos WHERE id='8001'").get(),
-  ).toEqual({ anulado: 0, revision: 1 });
-  expect(rowCount(f.db, "movimientos")).toBe(before + 1);
+    f.db.query("SELECT anulado FROM movimientos WHERE id='8001'").get(),
+  ).toEqual({ anulado: 1 });
 });
 
-test("E4.9 T1 guards: Compras bloquean alta, fechas y anulación en ventana cerrada", async () => {
+test("E4.9 T1 Compras: bloquea impacto y permite la rectificación informativa", async () => {
   const f = fixture();
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
@@ -462,54 +554,64 @@ test("E4.9 T1 guards: Compras bloquean alta, fechas y anulación en ventana cerr
   expect(createClosed.data.code).toBe("HISTORY_LOCKED");
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before);
 
-  const created = await f.request(
-    "/api/compras",
-    "POST",
-    purchaseBody(f.instrumento, { concepto: "Compra abierta real" }),
-    { "idempotency-key": randomUUID() },
+  const noteOnly = await f.request("/api/compras/7001/rectificar", "POST", {
+    ...purchaseRectification({
+      concepto: "Compra enero con concepto corregido",
+      nota: "Nota informativa",
+    }),
+  });
+  expect(noteOnly.status).toBe(200);
+  expect(noteOnly.data.compra.concepto).toBe(
+    "Compra enero con concepto corregido",
   );
-  expect(created.status).toBe(201);
-  const openId = created.data.compra.id as string;
+  expect(noteOnly.data.compra.importeEur).toBe("1000.00");
+
+  const amountChange = await f.request("/api/compras/7001/rectificar", "POST", {
+    ...purchaseRectification({ revision: 2, importeEur: "1001.00" }),
+  });
+  expect(amountChange.status).toBe(409);
+  expect(amountChange.data.code).toBe("HISTORY_LOCKED");
 
   const moveOut = await f.request("/api/compras/7001/rectificar", "POST", {
-    ...purchaseRectification({ fecha: "2026-02-10" }),
+    ...purchaseRectification({ revision: 2, fecha: "2026-02-10" }),
   });
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
-  const moveIn = await f.request(
-    `/api/compras/${openId}/rectificar`,
-    "POST",
-    purchaseRectification({ revision: 1, fecha: "2026-01-12" }),
-  );
-  expect(moveIn.status).toBe(409);
-  expect(moveIn.data.code).toBe("HISTORY_LOCKED");
-  expect(
-    f.db
-      .query("SELECT revision FROM operaciones_inversion WHERE id=?")
-      .get(openId),
-  ).toEqual({ revision: 1 });
-  expect(
-    f.db
-      .query("SELECT revision FROM operaciones_inversion WHERE id='7001'")
-      .get(),
-  ).toEqual({ revision: 1 });
-
   const annul = await f.request("/api/compras/7001/anular", "POST", {
-    revision: 1,
+    revision: 2,
     motivo: "Anulación ficticia",
   });
   expect(annul.status).toBe(409);
   expect(annul.data.code).toBe("HISTORY_LOCKED");
+
+  const open = await f.request(
+    "/api/compras",
+    "POST",
+    purchaseBody(f.instrumento, { concepto: "Compra abierta capturada" }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(open.status).toBe(201);
+  const openId = open.data.compra.id as string;
+  const moveIn = await f.request(`/api/compras/${openId}/rectificar`, "POST", {
+    ...purchaseRectification({
+      cantidad: "1",
+      importeEur: "100.00",
+      fecha: "2026-01-12",
+    }),
+  });
+  expect(moveIn.status).toBe(409);
+  expect(moveIn.data.code).toBe("HISTORY_LOCKED");
+
   expect(
     f.db
-      .query("SELECT estado,revision FROM operaciones_inversion WHERE id='7001'")
+      .query("SELECT revision FROM operaciones_inversion WHERE id='7001'")
       .get(),
-  ).toEqual({ estado: "Vigente", revision: 1 });
+  ).toEqual({ revision: 2 });
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before + 1);
 });
 
-test("E4.9 T1 guards: Ventas bloquean alta, fechas y anulación en ventana cerrada", async () => {
+test("E4.9 T1 Ventas: bloquea impacto y permite la rectificación informativa", async () => {
   const f = fixture();
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
@@ -525,51 +627,53 @@ test("E4.9 T1 guards: Ventas bloquean alta, fechas y anulación en ventana cerra
   expect(createClosed.data.code).toBe("HISTORY_LOCKED");
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before);
 
-  const created = await f.request(
-    "/api/ventas",
-    "POST",
-    saleBody(f.instrumento, { concepto: "Venta abierta real" }),
-    { "idempotency-key": randomUUID() },
+  const noteOnly = await f.request("/api/ventas/7002/rectificar", "POST", {
+    ...saleRectification({
+      concepto: "Venta enero con concepto corregido",
+      nota: "Nota informativa",
+    }),
+  });
+  expect(noteOnly.status).toBe(200);
+  expect(noteOnly.data.venta.concepto).toBe(
+    "Venta enero con concepto corregido",
   );
-  expect(created.status).toBe(201);
-  const openId = created.data.venta.id as string;
+
+  const amountChange = await f.request("/api/ventas/7002/rectificar", "POST", {
+    ...saleRectification({ revision: 2, importeEur: "501.00" }),
+  });
+  expect(amountChange.status).toBe(409);
+  expect(amountChange.data.code).toBe("HISTORY_LOCKED");
 
   const moveOut = await f.request("/api/ventas/7002/rectificar", "POST", {
-    ...saleRectification({ fecha: "2026-02-15" }),
+    ...saleRectification({ revision: 2, fecha: "2026-02-15" }),
   });
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
-  const moveIn = await f.request(
-    `/api/ventas/${openId}/rectificar`,
-    "POST",
-    saleRectification({ revision: 1, fecha: "2026-01-21" }),
-  );
-  expect(moveIn.status).toBe(409);
-  expect(moveIn.data.code).toBe("HISTORY_LOCKED");
-  expect(
-    f.db
-      .query("SELECT revision FROM operaciones_inversion WHERE id=?")
-      .get(openId),
-  ).toEqual({ revision: 1 });
-  expect(
-    f.db
-      .query("SELECT revision FROM operaciones_inversion WHERE id='7002'")
-      .get(),
-  ).toEqual({ revision: 1 });
-
   const annul = await f.request("/api/ventas/7002/anular", "POST", {
-    revision: 1,
+    revision: 2,
     motivo: "Anulación ficticia",
   });
   expect(annul.status).toBe(409);
   expect(annul.data.code).toBe("HISTORY_LOCKED");
-  expect(
-    f.db
-      .query("SELECT estado,revision FROM operaciones_inversion WHERE id='7002'")
-      .get(),
-  ).toEqual({ estado: "Vigente", revision: 1 });
-  expect(rowCount(f.db, "operaciones_inversion")).toBe(before + 1);
+
+  const open = await f.request(
+    "/api/ventas",
+    "POST",
+    saleBody(f.instrumento, { concepto: "Venta abierta capturada" }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(open.status).toBe(201);
+  const openId = open.data.venta.id as string;
+  const moveIn = await f.request(`/api/ventas/${openId}/rectificar`, "POST", {
+    ...saleRectification({
+      cantidad: "1",
+      importeEur: "100.00",
+      fecha: "2026-01-21",
+    }),
+  });
+  expect(moveIn.status).toBe(409);
+  expect(moveIn.data.code).toBe("HISTORY_LOCKED");
 });
 
 test("E4.9 T1 guards: un ciclo cerrado no cambia Inicio ni S0", async () => {
@@ -611,16 +715,17 @@ test("E4.9 T1 guards: un ciclo cerrado no cambia Inicio ni S0", async () => {
   expect(f.db.query("SELECT * FROM ciclos WHERE id='1'").get()).toEqual(before);
 });
 
-test("E4.9 T2 guards: Saldo bloquea apertura/tipo/control capturados y permite nombres y campos no económicos", async () => {
-  const f = fixture({ facts: false });
+test("E4.9 T2 Saldos: bloquea lo material y revisa con motivo/fingerprint lo no fotografiado", async () => {
+  const f = fixture();
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
-  const saldo = getSaldo(f.db, "S003");
+  const photo = await f.request("/api/cierres/1/foto");
+  const captured = getSaldo(f.db, "S003");
   const before = f.db.query("SELECT * FROM saldos WHERE id='S003'").get();
   const saldosBefore = rowCount(f.db, "saldos");
 
   const aperture = await f.request("/api/saldos/S003", "PATCH", {
-    revision: saldo.revision,
+    revision: captured.revision,
     saldoApertura: "10.00",
   });
   expect(aperture.status).toBe(409);
@@ -628,7 +733,7 @@ test("E4.9 T2 guards: Saldo bloquea apertura/tipo/control capturados y permite n
   expect(aperture.data.cierres?.[0]).toMatchObject({ ciclo: "1", version: 1 });
 
   const type = await f.request("/api/saldos/S003", "PATCH", {
-    revision: saldo.revision,
+    revision: captured.revision,
     control: "Movimientos",
   });
   expect(type.status).toBe(409);
@@ -654,7 +759,6 @@ test("E4.9 T2 guards: Saldo bloquea apertura/tipo/control capturados y permite n
   );
   expect(creation.status).toBe(409);
   expect(creation.data.code).toBe("HISTORY_LOCKED");
-  expect(creation.data.cierres?.[0]).toMatchObject({ ciclo: "1", version: 1 });
 
   expect(f.db.query("SELECT * FROM saldos WHERE id='S003'").get()).toEqual(
     before,
@@ -662,7 +766,7 @@ test("E4.9 T2 guards: Saldo bloquea apertura/tipo/control capturados y permite n
   expect(rowCount(f.db, "saldos")).toBe(saldosBefore);
 
   const rename = await f.request("/api/saldos/S003", "PATCH", {
-    revision: saldo.revision,
+    revision: captured.revision,
     nombre: "Efectivo de inversión renombrado",
   });
   expect(rename.status).toBe(200);
@@ -673,6 +777,218 @@ test("E4.9 T2 guards: Saldo bloquea apertura/tipo/control capturados y permite n
     saldoApertura: "5.00",
   });
   expect(nonEconomic.status).toBe(200);
+
+  const reviewRequired = await f.request("/api/saldos/S001", "PATCH", {
+    revision: getSaldo(f.db, "S001").revision,
+    saldoApertura: "5.00",
+  });
+  expect(reviewRequired.status).toBe(409);
+  expect(reviewRequired.data.code).toBe("RECTIFICATION_REQUIRED");
+
+  const impact = await f.request("/api/saldos/S001/impacto", "POST", {
+    revision: getSaldo(f.db, "S001").revision,
+    saldoApertura: "5.00",
+  });
+  expect(impact.status).toBe(200);
+  expect(impact.data.bloqueado).toBe(false);
+  expect(impact.data.requiereRevision).toBe(true);
+  expect(impact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const withoutMotive = await f.request("/api/saldos/S001/rectificar", "POST", {
+    cambios: { revision: getSaldo(f.db, "S001").revision, saldoApertura: "5.00" },
+    fingerprint: impact.data.fingerprint,
+  });
+  expect(withoutMotive.status).toBe(422);
+
+  const wrongImpact = await f.request("/api/saldos/S001/rectificar", "POST", {
+    cambios: { revision: getSaldo(f.db, "S001").revision, saldoApertura: "5.00" },
+    motivo: "Revisión T2",
+    fingerprint: "a".repeat(64),
+  });
+  expect(wrongImpact.status).toBe(409);
+  expect(wrongImpact.data.code).toBe("IMPACT_CHANGED");
+
+  const reviewed = await f.request("/api/saldos/S001/rectificar", "POST", {
+    cambios: { revision: getSaldo(f.db, "S001").revision, saldoApertura: "5.00" },
+    motivo: "Revisión T2 del saldo sin foto",
+    fingerprint: impact.data.fingerprint,
+  });
+  expect(reviewed.status).toBe(200);
+  expect(reviewed.data.saldo.saldoApertura).toBe("5.00");
+  expect(
+    f.db
+      .query(
+        "SELECT accion,motivo FROM audit WHERE entidad='S001' ORDER BY id DESC LIMIT 1",
+      )
+      .get(),
+  ).toMatchObject({
+    accion: "edición",
+    motivo: "Revisión T2 del saldo sin foto",
+  });
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 T2/T3: catálogos distinguen informativo de económico y exigen motivo/auditoría", async () => {
+  const f = fixture({ facts: true, classification: true });
+  await f.enroll();
+  const reference = await f.request(
+    "/api/referencias",
+    "POST",
+    { nombre: "Referencia guards", tipo: "Viaje" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(reference.status).toBe(201);
+  const referenceId = reference.data.item.id as string;
+  const debt = await f.request(
+    "/api/deudas",
+    "POST",
+    {
+      nombre: "Deuda ficticia guards",
+      inicioControl: "2026-01-01",
+      capitalApertura: "100.00",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(debt.status).toBe(201);
+  const debtId = debt.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const referenceRename = await f.request(
+    `/api/referencias/${referenceId}`,
+    "PATCH",
+    { revision: 1, nombre: "Referencia renombrada" },
+  );
+  expect(referenceRename.status).toBe(200);
+  expect(referenceRename.data.item.nombre).toBe("Referencia renombrada");
+
+  const referenceNoMotive = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    { revision: 2 },
+  );
+  expect(referenceNoMotive.status).toBe(422);
+  expect(referenceNoMotive.data.code).toBe("VALIDATION");
+
+  const referenceReviewed = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    {
+      revision: 2,
+      motivo: "Baja revisada de catálogo tras el cierre",
+    },
+  );
+  expect(referenceReviewed.status).toBe(200);
+  expect(referenceReviewed.data.item.estado).toBe("Inactiva");
+  expect(
+    f.db
+      .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+      .get(referenceId),
+  ).toMatchObject({ motivo: "Baja revisada de catálogo tras el cierre" });
+
+  const debtRename = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 1,
+    nombre: "Deuda renombrada guards",
+  });
+  expect(debtRename.status).toBe(200);
+  expect(debtRename.data.item.nombre).toBe("Deuda renombrada guards");
+
+  const debtNoMotive = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 2,
+    estado: "Inactiva",
+  });
+  expect(debtNoMotive.status).toBe(422);
+
+  const debtReviewed = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 2,
+    estado: "Inactiva",
+    motivo: "Baja revisada de Deuda tras el cierre",
+  });
+  expect(debtReviewed.status).toBe(200);
+  expect(
+    f.db
+      .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+      .get(debtId),
+  ).toMatchObject({ motivo: "Baja revisada de Deuda tras el cierre" });
+
+  const instrumentRename = await f.request(
+    `/api/instrumentos/${f.instrumento}`,
+    "PATCH",
+    { revision: 1, nombre: "Instrumento renombrado", motivo: "Renombrado T3" },
+  );
+  expect(instrumentRename.status).toBe(200);
+
+  const identity = await f.request(
+    `/api/instrumentos/${f.instrumento}`,
+    "PATCH",
+    {
+      revision: 2,
+      isin: "ES0000000999",
+      motivo: "Intento de cambio de identidad",
+    },
+  );
+  expect(identity.status).toBe(409);
+  expect(identity.data.code).toBe("HISTORY_LOCKED");
+  expect(identity.data.campos).toEqual(["isin"]);
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 T2 Gastos compartidos: el alta de participante con hechos cerrados exige motivo y audita", async () => {
+  const f = fixture({ facts: true });
+  await f.enroll();
+  const shared = await f.request(
+    "/api/compartidos/fichas",
+    "POST",
+    { nombre: "Compartido ficticio guards" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(shared.status).toBe(201);
+  const sharedId = shared.data.referencia.id as string;
+  seedMovement(f.db, {
+    id: "8010",
+    fecha: "2026-01-16",
+    importe: 1000,
+    tipo: "Transferencia",
+    referencia: sharedId,
+  });
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const withoutMotive = await f.request(
+    `/api/compartidos/fichas/${sharedId}/participantes`,
+    "POST",
+    { nombre: "Ana", rol: "Tercero", partes: 1 },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(withoutMotive.status).toBe(422);
+  expect(withoutMotive.data.fields.motivo).toBeDefined();
+
+  const reviewed = await f.request(
+    `/api/compartidos/fichas/${sharedId}/participantes`,
+    "POST",
+    {
+      nombre: "Ana",
+      rol: "Tercero",
+      partes: 1,
+      motivo: "Alta revisada de participante tras el cierre",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(reviewed.status).toBe(201);
+  expect(
+    f.db
+      .query(
+        "SELECT motivo FROM compartido_audit WHERE referencia=? ORDER BY rowid DESC LIMIT 1",
+      )
+      .get(sharedId),
+  ).toMatchObject({ motivo: "Alta revisada de participante tras el cierre" });
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
 });
 
 test("E4.9 T2/T3: reclasificación económica exige revisión; renombrados no económicos se permiten", async () => {

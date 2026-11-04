@@ -1,7 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Problem } from "./problem";
-import { assertDatesWritable } from "./e49-guards";
+import { assertOperationClosureImpact, type OperationEffectRow } from "./e49-guards";
 import {
   CHANGE_SCALE,
   PRICE_SCALE,
@@ -87,6 +87,23 @@ export type Economic = {
   concepto: string | null;
   nota: string | null;
 };
+/** T1 effect row: camelCase view of a stored operation for the closure guard. */
+export function operationEffectRow(
+  row: OperationRow,
+  overrides: Partial<OperationEffectRow> = {},
+): OperationEffectRow {
+  return {
+    clase: row.clase,
+    fecha: row.fecha,
+    estado: row.estado,
+    cantidad: row.cantidad,
+    importe: row.importe_eur,
+    instrumento: row.instrumento,
+    saldoEfectivo: row.saldo_efectivo,
+    saldoInversion: row.saldo_inversion,
+    ...overrides,
+  };
+}
 const select = `SELECT id,fecha,clase,instrumento,saldo_efectivo,saldo_inversion,
   CAST(cantidad AS TEXT) cantidad,CAST(precio_divisa AS TEXT) precio_divisa,divisa,
   CAST(cambio AS TEXT) cambio,CAST(importe_eur AS TEXT) importe_eur,
@@ -168,8 +185,7 @@ export function purchaseDto(db: Database, row: OperationRow) {
     referencia: operationReference(economicValue),
   };
 }
-export function auditValue(row: OperationRow) {
-  const value = economic(row);
+export function auditValue(row: OperationRow) {  const value = economic(row);
   return {
     id: row.id,
     clase: row.clase,
@@ -619,7 +635,21 @@ export function createPurchase(
       }
       const value = validateEconomic(db, body, { full: false, now }),
         refs = validReferences(db, body);
-      assertDatesWritable(db, [value.fecha], "registrar la Compra");
+      assertOperationClosureImpact(
+        db,
+        null,
+        {
+          clase: "Compra",
+          fecha: value.fecha,
+          estado: "Vigente",
+          cantidad: value.cantidad.toString(),
+          importe: value.importeEur.toString(),
+          instrumento: refs.instrumento,
+          saldoEfectivo: refs.saldoEfectivo,
+          saldoInversion: refs.saldoInversion,
+        },
+        "registrar la Compra",
+      );
       assertSufficient(db, {
         fecha: value.fecha,
         saldoEfectivo: refs.saldoEfectivo,
@@ -750,9 +780,14 @@ export function rectifyPurchase(
           });
       const motivo = motive(body.motivo),
         value = validateEconomic(db, body, { full: true, now });
-      assertDatesWritable(
+      assertOperationClosureImpact(
         db,
-        [old.fecha, value.fecha],
+        operationEffectRow(old),
+        operationEffectRow(old, {
+          fecha: value.fecha,
+          cantidad: value.cantidad.toString(),
+          importe: value.importeEur.toString(),
+        }),
         "rectificar la Compra",
       );
       assertUnitsAvailable(
@@ -869,7 +904,12 @@ export function annulPurchase(
       if (body.revision !== old.revision) throw revisionConflict();
       assertEditable(old);
       const motivo = motive(body.motivo);
-      assertDatesWritable(db, [old.fecha], "anular la Compra");
+      assertOperationClosureImpact(
+        db,
+        operationEffectRow(old),
+        null,
+        "anular la Compra",
+      );
       assertUnitsAvailable(
         db,
         {

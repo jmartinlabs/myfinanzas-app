@@ -2,6 +2,7 @@ import {
   ledgerInstalled,
   positionCents,
   saldoHasEconomicUse,
+  fingerprint,
 } from "./movement-ledger";
 import { Schema } from "effect";
 import type { Database } from "bun:sqlite";
@@ -12,6 +13,7 @@ import { Problem } from "./problem";
 import {
   assertSaldoCreationWritable,
   saldoClosureConflict,
+  saldoEconomicReview,
   type SaldoGuardValue,
 } from "./e49-guards";
 export { Problem } from "./problem";
@@ -307,6 +309,7 @@ function audit(
   revision: number,
   fields: string[],
   now: number,
+  motive?: string | null,
 ) {
   db.run(
     "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,?,?)",
@@ -318,11 +321,13 @@ function audit(
       new Date(now).toISOString(),
       revision - 1,
       "usuario-unico",
-      fields.some((f) =>
-        ["tipo", "control", "fechaApertura", "saldoApertura"].includes(f),
-      )
-        ? "Configuración sin operaciones históricas afectadas"
-        : null,
+      motive !== undefined
+        ? motive
+        : fields.some((f) =>
+            ["tipo", "control", "fechaApertura", "saldoApertura"].includes(f),
+          )
+          ? "Configuración sin operaciones históricas afectadas"
+          : null,
     ],
   );
 }
@@ -390,67 +395,190 @@ export function createSaldo(
     })
     .immediate();
 }
+function planSaldo(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+  guard: ImpactGuard,
+) {
+  const old = getSaldo(db, id);
+  if (id === "S000")
+    throw new Problem(
+      409,
+      "SYSTEM_SALDO",
+      "S000 es una contraparte técnica protegida.",
+    );
+  if (!Number.isSafeInteger(body.revision) || body.revision !== old.revision)
+    throw new Problem(
+      409,
+      "REVISION_CONFLICT",
+      "El Saldo ha cambiado. Revisa la versión actual.",
+    );
+  const value = validated(body, old);
+  const changed = allowed.filter(
+    (f) =>
+      JSON.stringify(value[f as keyof SaldoInput]) !==
+      JSON.stringify(old[f as keyof SaldoInput]),
+  );
+  const material = saldoClosureConflict(db, id, changed, value);
+  const economicUse =
+    saldoHasEconomicUse(db, id, changed) || guard(id, changed, value);
+  const review = material.length ? [] : saldoEconomicReview(db, changed);
+  const bloqueado = material.length > 0;
+  const requiereRevision =
+    !bloqueado && economicUse && review.length > 0;
+  return {
+    old,
+    value,
+    changed,
+    material,
+    economicUse,
+    review,
+    bloqueado,
+    requiereRevision,
+    cobertura: bloqueado
+      ? "Atributo capturado por una foto: no se puede acreditar ausencia de impacto material."
+      : requiereRevision
+        ? "Cambio económico sin impacto fotográfico demostrado: exige motivo, huella y auditoría."
+        : "Sin impacto material sobre una foto.",
+    fingerprint: fingerprint([
+      id,
+      old.revision,
+      changed,
+      value,
+      material,
+      economicUse,
+      review,
+    ]),
+  };
+}
+
+/**
+ * T2 Saldo impact preview. Material changes to a stored photo are reported as
+ * blocked; live economic changes that no photo captured require the explicit
+ * motive/fingerprint confirmation in `rectificar`.
+ */
+export function previewSaldoChange(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+  guard: ImpactGuard = () => false,
+) {
+  return db.transaction(() => {
+    const p = planSaldo(db, id, body, guard);
+    return {
+      saldo: id,
+      revision: p.old.revision,
+      cambios: p.changed,
+      antes: p.old,
+      despues: p.value,
+      bloqueado: p.bloqueado,
+      requiereRevision: p.requiereRevision,
+      cobertura: p.cobertura,
+      cierres: (p.bloqueado ? p.material : p.review).map(
+        ({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        }),
+      ),
+      fingerprint: p.fingerprint,
+    };
+  })();
+}
+
 export function updateSaldo(
   db: Database,
   id: string,
   body: Record<string, unknown>,
   guard: ImpactGuard = () => false,
   now = Date.now(),
+  confirmation?: { fingerprint?: unknown; motivo?: unknown },
 ) {
   return db
     .transaction(() => {
-      const old = getSaldo(db, id);
-      if (id === "S000")
-        throw new Problem(
-          409,
-          "SYSTEM_SALDO",
-          "S000 es una contraparte técnica protegida.",
-        );
-      if (
-        !Number.isSafeInteger(body.revision) ||
-        body.revision !== old.revision
-      )
-        throw new Problem(
-          409,
-          "REVISION_CONFLICT",
-          "El Saldo ha cambiado. Revisa la versión actual.",
-        );
-      const v = validated(body, old);
-      const changed = allowed.filter(
-        (f) =>
-          JSON.stringify(v[f as keyof SaldoInput]) !==
-          JSON.stringify(old[f as keyof SaldoInput]),
-      );
-      const closureConflict = saldoClosureConflict(db, id, changed, v);
-      if (closureConflict.length)
+      const p = planSaldo(db, id, body, guard);
+      if (p.bloqueado)
         throw new Problem(
           409,
           "HISTORY_LOCKED",
           "La modificación afecta a tipo, control o apertura de un Saldo capturado por un cierre; revisa la foto y la ventana antes de cambiarlo.",
           { saldo: "Atributo capturado por un cierre." },
           {
-            cierres: closureConflict.map(
-              ({ ciclo, version, inicio, fin }) => ({
-                ciclo,
-                version,
-                inicio,
-                fin,
-              }),
-            ),
+            cierres: p.material.map(({ ciclo, version, inicio, fin }) => ({
+              ciclo,
+              version,
+              inicio,
+              fin,
+            })),
           },
         );
-      if (saldoHasEconomicUse(db, id, changed) || guard(id, changed, v))
+      if (p.requiereRevision) {
+        if (!confirmation)
+          throw new Problem(
+            409,
+            "RECTIFICATION_REQUIRED",
+            "El cambio es económico y existe un cierre. Revisa su impacto y confirma con motivo.",
+            { saldo: "Revisa el impacto antes de guardar." },
+            {
+              fingerprint: p.fingerprint,
+              cierres: p.review.map(
+                ({ ciclo, version, inicio, fin }) => ({
+                  ciclo,
+                  version,
+                  inicio,
+                  fin,
+                }),
+              ),
+            },
+          );
+        if (confirmation.fingerprint !== p.fingerprint)
+          throw new Problem(
+            409,
+            "IMPACT_CHANGED",
+            "El impacto ha cambiado; genera otra revisión.",
+          );
+        if (
+          typeof confirmation.motivo !== "string" ||
+          !confirmation.motivo.trim() ||
+          confirmation.motivo.length > 2000 ||
+          /[\u0000-\u001f\u007f]/.test(confirmation.motivo)
+        )
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "Indica el motivo del cambio económico del Saldo.",
+            { motivo: "Motivo obligatorio, máximo 2000 caracteres." },
+          );
+      } else if (p.economicUse)
         throw new Problem(
           409,
           "HISTORY_LOCKED",
           "La modificación requiere rectificación explícita de su impacto histórico.",
         );
-      const revision = old.revision + 1;
+      const revision = p.old.revision + 1;
       db.run(
         "UPDATE saldos SET nombre=?,tipo=?,control=?,estado=?,finalidad=?,liquidez=?,bolsa=?,exterior=?,apertura=?,fecha_apertura=?,objetivo=?,revision=?,actualizado=? WHERE id=? AND revision=?",
-        [...args(v), revision, new Date(now).toISOString(), id, old.revision],
+        [
+          ...args(p.value),
+          revision,
+          new Date(now).toISOString(),
+          id,
+          p.old.revision,
+        ],
       );
-      audit(db, id, "edición", revision, changed, now);
+      audit(
+        db,
+        id,
+        "edición",
+        revision,
+        p.changed,
+        now,
+        typeof confirmation?.motivo === "string"
+          ? confirmation.motivo.trim()
+          : undefined,
+      );
       return getSaldo(db, id);
     })
     .immediate();

@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
+import { assertClosedEconomicMotive } from "./e49-guards";
 import {
   getReference,
   operationalReferenceTypes,
@@ -75,6 +76,7 @@ function fields(body: Record<string, unknown>, creating: boolean) {
         "tipo",
         "estado",
         "revision",
+        "motivo",
         "vehiculo",
         "fichaRevision",
         ...confirmationKeys,
@@ -333,6 +335,29 @@ export function updateReference(
           "REVISION_CONFLICT",
           "La Referencia ha cambiado. Actualiza su ficha; tu borrador se conserva.",
         );
+      if (
+        "motivo" in body &&
+        (typeof body.motivo !== "string" ||
+          !body.motivo.trim() ||
+          body.motivo.length > 2000 ||
+          /[\u0000-\u001f\u007f]/.test(body.motivo))
+      )
+        throw new Problem(422, "VALIDATION", "Indica un motivo válido.", {
+          motivo: "Motivo de hasta 2000 caracteres.",
+        });
+      const motive =
+        typeof body.motivo === "string" && body.motivo.trim()
+          ? body.motivo.trim()
+          : null;
+      assertClosedEconomicMotive(
+        db,
+        "referencia",
+        ["nombre", "tipo", "estado", "vehiculo", "fichaRevision"].filter(
+          (field) => field in body,
+        ),
+        motive,
+        "actualizar la Referencia",
+      );
       if ("vehiculo" in body && nextTipo !== "Vehículo")
         throw new Problem(
           422,
@@ -529,9 +554,10 @@ export function updateReference(
           JSON.stringify({ anterior: old, posterior: getReference(db, id) }),
           time,
           old.revision,
-          conversion
-            ? "Conversión explícita a Vehículo; identidad preservada"
-            : "Cambios de catálogo; identidad preservada",
+          motive ??
+            (conversion
+              ? "Conversión explícita a Vehículo; identidad preservada"
+              : "Cambios de catálogo; identidad preservada"),
         ],
       );
       if (confirmation && nextVehicle)

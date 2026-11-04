@@ -2,6 +2,7 @@ import type { Database } from "bun:sqlite";
 import { Problem, money, decimal } from "./saldos";
 import { civil } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
+import { assertClosedEconomicMotive } from "./e49-guards";
 import { getDeudaCompleta } from "./deuda-completa";
 export type Debt = {
   id: string;
@@ -405,6 +406,16 @@ export function updateDebt(
           "La Deuda ha cambiado. Revisa su ficha; tu borrador se conserva.",
         );
       const v = fields(body, old, conditionRow(db, id));
+      const changed = Object.keys(body).filter(
+        (field) => !["revision", "motivo"].includes(field),
+      );
+      assertClosedEconomicMotive(
+        db,
+        "deuda",
+        changed,
+        v.motivo,
+        "actualizar la Deuda",
+      );
       if (
         (v.inicioControl !== old.inicioControl ||
           money(v.capitalApertura) !== money(old.capitalApertura)) &&

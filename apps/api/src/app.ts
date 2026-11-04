@@ -177,6 +177,7 @@ import {
   createSaldo,
   getSaldo,
   listSaldos,
+  previewSaldoChange,
   updateSaldo,
   Problem,
   type ImpactGuard,
@@ -1178,15 +1179,20 @@ export function createApp(db: Database, options: AppOptions) {
         ) {
           let body = await jsonBody(req);
           if (action) {
-            if (Object.keys(body).some((k) => k !== "revision"))
+            if (
+              Object.keys(body).some(
+                (k) => !["revision", "motivo"].includes(k),
+              )
+            )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo se admite revisión para Estado.",
+                "Solo se admite revisión y motivo para Estado.",
               );
             body = {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
+              ...(body.motivo === undefined ? {} : { motivo: body.motivo }),
             };
           } else if ("estado" in body)
             throw new Problem(
@@ -1583,12 +1589,60 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       const match = path.match(
-        /^\/api\/saldos\/(S\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/saldos\/(S\d+)(?:\/(desactivar|reactivar|impacto|rectificar))?$/,
       );
       if (match) {
         const [, id, action] = match;
         if (!action && req.method === "GET")
           return reply({ saldo: getSaldo(db, id) });
+        if (action === "impacto" && req.method === "POST")
+          return reply(
+            previewSaldoChange(
+              db,
+              id,
+              await jsonBody(req),
+              options.impactGuard,
+            ),
+          );
+        if (action === "rectificar" && req.method === "POST") {
+          const body = await jsonBody(req);
+          const cambios = body.cambios;
+          if (
+            !cambios ||
+            typeof cambios !== "object" ||
+            Array.isArray(cambios)
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Envía los cambios del Saldo en cambios.",
+              { cambios: "Objeto de cambios." },
+            );
+          if (
+            Object.keys(body).some(
+              (key) =>
+                !["cambios", "motivo", "fingerprint"].includes(key),
+            )
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Campo no editable en la rectificación del Saldo.",
+            );
+          return reply({
+            saldo: updateSaldo(
+              db,
+              id,
+              cambios as Record<string, unknown>,
+              options.impactGuard,
+              now(),
+              {
+                fingerprint: body.fingerprint,
+                motivo: body.motivo,
+              },
+            ),
+          });
+        }
         if (
           (!action && req.method === "PATCH") ||
           (action && req.method === "POST")

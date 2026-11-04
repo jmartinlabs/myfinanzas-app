@@ -40,7 +40,10 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
-import { assertDatesWritable } from "./e49-guards";
+import {
+  assertMovementClosureImpact,
+  type MovementEffectRow,
+} from "./e49-guards";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
   applyComidaDevolucion,
@@ -659,13 +662,17 @@ function protect(
   old: LedgerRow | null,
   next: unknown,
 ) {
-  const nextDate =
-    next && typeof next === "object"
-      ? (next as { fecha?: unknown }).fecha
-      : undefined;
-  assertDatesWritable(
+  assertMovementClosureImpact(
     db,
-    [old?.fecha, typeof nextDate === "string" ? nextDate : null],
+    old,
+    next && typeof next === "object"
+      ? {
+          ...(next as MovementEffectRow),
+          importe: String(
+            money((next as { importe: string }).importe) ?? 0n,
+          ),
+        }
+      : null,
     "registrar el Movimiento",
   );
   const protection = guard?.(action, old, next);
