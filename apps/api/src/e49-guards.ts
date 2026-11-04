@@ -4,10 +4,12 @@ import { Problem } from "./problem";
 /**
  * E4.9 closure guards shared by the real write paths.
  *
- * T1 — facts and windows: a fact is locked only when its previous or next
- * state changes the cash/positions a stored photo captured at its `fin`.
- * Changing a note, a concept or an amount on an account/instrument that no
- * photo captured does not alter a closure and stays writable. Cycle
+ * T1 — facts and windows: any fact whose previous or next date falls inside a
+ * closed window is rejected with 409 `HISTORY_LOCKED` (SPEC27 AC-03/AC-04),
+ * even when a note-only edit would leave the numbers intact. A fact dated
+ * before a closed window is rejected when it could alter cash, positions,
+ * income, expenses, net, S0, windows or auxiliaries captured by a later
+ * photo; when that impact cannot be verified it is also rejected. Cycle
  * `inicio`/derived `fin`/S0 remain hard-locked.
  * T2 — attributes that change captured numbers: photo-material Saldo changes
  * stay blocked; changes that only affect a live economic state go through the
@@ -98,6 +100,38 @@ export function closedWindowsForDates(
         hits.set(`${window.ciclo}|${window.version}`, window);
   }
   return [...hits.values()];
+}
+
+/**
+ * Strict SPEC27 AC-03/AC-04 date lock: the previous and the next date are
+ * both checked. A date inside a closed window is rejected even when the
+ * operation would not change a captured number; the approved T1 rule is
+ * date-based and has no "no impact" exception.
+ */
+export function assertDatesWritable(
+  db: Database,
+  dates: readonly (string | null | undefined)[],
+  action: string,
+) {
+  const hits = closedWindowsForDates(db, dates);
+  if (!hits.length) return;
+  const list = hits
+    .map((window) => `${window.ciclo} (v${window.version})`)
+    .join(", ");
+  throw new Problem(
+    409,
+    "HISTORY_LOCKED",
+    `No se puede ${action}: la fecha pertenece a una ventana cerrada (${list}).`,
+    { fecha: "La fecha afecta a un ciclo cerrado." },
+    {
+      cierres: hits.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+    },
+  );
 }
 
 /**
@@ -283,14 +317,24 @@ function movementDeltas(
   return deltas;
 }
 
-/** Photos whose captured cash at `fin` changes with this Movement. */
+/**
+ * T1 fact lock for a date before the closed windows. A fact that could alter
+ * cash, positions, income, expenses, net, S0, windows or auxiliaries captured
+ * by a later photo is blocked; when the photo cannot prove the absence of
+ * impact (unreadable inversion payload or a closure without its photo) it is
+ * also blocked. Dates inside a closed window never reach this check: they are
+ * rejected earlier by `assertDatesWritable`.
+ */
 export function movementClosureImpact(
   db: Database,
   before: MovementEffectRow | null | undefined,
   after: MovementEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
-  for (const photo of photoSnapshots(db)) {
+  const photos = photoSnapshots(db);
+  const photographed = new Set<string>();
+  for (const photo of photos) {
+    photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
       (before && before.fecha <= photo.fin) ||
       (after && after.fecha <= photo.fin);
@@ -310,22 +354,31 @@ export function movementClosureImpact(
     )
       hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
   }
+  for (const window of closedWindows(db)) {
+    if (photographed.has(`${window.ciclo}|${window.version}`)) continue;
+    if (
+      (before && before.fecha <= window.fin) ||
+      (after && after.fecha <= window.fin)
+    )
+      hits.set(`${window.ciclo}|${window.version}`, window);
+  }
   return [...hits.values()];
 }
 
-/** T1 Movement lock: only a demonstrable change to captured cash blocks. */
+/** T1 Movement lock: closed-window dates plus demonstrable/unverifiable impact. */
 export function assertMovementClosureImpact(
   db: Database,
   before: MovementEffectRow | null | undefined,
   after: MovementEffectRow | null | undefined,
   action: string,
 ) {
+  assertDatesWritable(db, [before?.fecha, after?.fecha], action);
   const windows = movementClosureImpact(db, before, after);
   if (windows.length)
     closureProblem(
       windows,
       action,
-      "el movimiento anterior o el nuevo altera el efectivo capturado por una foto",
+      "el hecho anterior o el nuevo puede alterar valores capturados por una foto posterior",
     );
 }
 
@@ -365,10 +418,10 @@ function operationEffect(
 }
 
 /**
- * T1 E4.1 operation lock. A Compra/Venta affects a photo when its fecha is at
- * or before the captured `fin` in either the previous or the next state and
- * the captured cash or positions would differ. Notes, concepts or reference
- * prices that leave both values intact do not block.
+ * T1 E4.1 operation lock. A Compra/Venta is blocked when its previous or next
+ * date falls in a closed window, and also when an earlier date could change
+ * the cash or positions captured at a later `fin`. An unreadable photo or a
+ * closure without its photo is treated as unverifiable impact and blocks.
  */
 export function operationClosureImpact(
   db: Database,
@@ -376,7 +429,10 @@ export function operationClosureImpact(
   after: OperationEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
-  for (const photo of photoSnapshots(db)) {
+  const photos = photoSnapshots(db);
+  const photographed = new Set<string>();
+  for (const photo of photos) {
+    photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
       (before && before.fecha <= photo.fin) ||
       (after && after.fecha <= photo.fin);
@@ -409,22 +465,31 @@ export function operationClosureImpact(
     if (cashChanged || previousKey !== nextKey)
       hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
   }
+  for (const window of closedWindows(db)) {
+    if (photographed.has(`${window.ciclo}|${window.version}`)) continue;
+    if (
+      (before && before.fecha <= window.fin) ||
+      (after && after.fecha <= window.fin)
+    )
+      hits.set(`${window.ciclo}|${window.version}`, window);
+  }
   return [...hits.values()];
 }
 
-/** T1 E4.1 lock: only a demonstrable cash/position change blocks. */
+/** T1 E4.1 lock: closed-window dates plus impact on a later captured `fin`. */
 export function assertOperationClosureImpact(
   db: Database,
   before: OperationEffectRow | null | undefined,
   after: OperationEffectRow | null | undefined,
   action: string,
 ) {
+  assertDatesWritable(db, [before?.fecha, after?.fecha], action);
   const windows = operationClosureImpact(db, before, after);
   if (windows.length)
     closureProblem(
       windows,
       action,
-      "la operación anterior o la nueva altera el efectivo o las posiciones de una foto",
+      "la operación anterior o la nueva puede alterar valores capturados por una foto posterior",
     );
 }
 

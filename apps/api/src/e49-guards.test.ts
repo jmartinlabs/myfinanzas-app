@@ -420,70 +420,67 @@ async function createMovement(
   return { impact, created };
 }
 
-test("E4.9 T1 Movimientos: bloquea solo el cambio con impacto en una foto y permite el hecho sin impacto", async () => {
+test("E4.9 T1 Movimientos: 409 por fecha en ventana cerrada y por impacto de un hecho anterior", async () => {
   const f = fixture({ capturedMovement: true });
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
   const before = rowCount(f.db, "movimientos");
 
-  const impactedCreate = await f.request(
-    "/api/movimientos",
-    "POST",
+  for (const body of [
     movementBody({ origen: "S003", destino: "S001" }),
-    { "idempotency-key": randomUUID() },
-  );
-  expect(impactedCreate.status).toBe(409);
-  expect(impactedCreate.data.code).toBe("HISTORY_LOCKED");
-  expect(impactedCreate.data.cierres?.[0]).toMatchObject({
-    ciclo: "1",
-    version: 1,
-  });
+    movementBody({
+      importe: "12.35",
+      concepto: "Hecho de enero sin efectivo capturado",
+    }),
+  ]) {
+    const rejected = await f.request("/api/movimientos", "POST", body, {
+      "idempotency-key": randomUUID(),
+    });
+    expect(rejected.status).toBe(409);
+    expect(rejected.data.code).toBe("HISTORY_LOCKED");
+    expect(rejected.data.cierres?.[0]).toMatchObject({
+      ciclo: "1",
+      version: 1,
+    });
+  }
+  expect(rowCount(f.db, "movimientos")).toBe(before);
 
-  const allowed = await createMovement(
-    f,
-    movementBody({ importe: "12.35", concepto: "Hecho de enero sin efectivo capturado" }),
-  );
-  expect(allowed.created.status).toBe(201);
-  expect(allowed.created.data.movimiento.fecha).toBe("2026-01-15");
-  expect(rowCount(f.db, "movimientos")).toBe(before + 1);
-
+  const informational = {
+    concepto: "Concepto corregido sin cambiar el importe",
+    nota: "Nota informativa en ventana cerrada",
+  };
   const notePlan = await f.request(
     "/api/movimientos/8003/impacto",
     "POST",
-    capturedMovement({
-      concepto: "Concepto corregido sin cambiar el importe",
-      nota: "Nota informativa en ventana cerrada",
-    }),
+    capturedMovement(informational),
   );
-  expect(notePlan.status).toBe(200);
+  expect(notePlan.status).toBe(409);
+  expect(notePlan.data.code).toBe("HISTORY_LOCKED");
+
   const noteOnly = await f.request(
     "/api/movimientos/8003/rectificar",
     "POST",
-    {
-      ...capturedMovement({
-        concepto: "Concepto corregido sin cambiar el importe",
-        nota: "Nota informativa en ventana cerrada",
-      }),
-      contextRevision: notePlan.data.contextRevision,
-      fingerprint: notePlan.data.fingerprint,
-    },
+    capturedMovement(informational),
     { "idempotency-key": randomUUID() },
   );
-  expect(noteOnly.status).toBe(200);
-  expect(noteOnly.data.movimiento.concepto).toBe(
-    "Concepto corregido sin cambiar el importe",
-  );
-  expect(noteOnly.data.movimiento.importe).toBe("5.00");
+  expect(noteOnly.status).toBe(409);
+  expect(noteOnly.data.code).toBe("HISTORY_LOCKED");
 
-  const amountChange = await f.request("/api/movimientos/8003/rectificar", "POST", {
-    ...capturedMovement({ revision: 2, importe: "6.00" }),
-  }, { "idempotency-key": randomUUID() });
+  const amountChange = await f.request(
+    "/api/movimientos/8003/rectificar",
+    "POST",
+    capturedMovement({ importe: "6.00" }),
+    { "idempotency-key": randomUUID() },
+  );
   expect(amountChange.status).toBe(409);
   expect(amountChange.data.code).toBe("HISTORY_LOCKED");
 
-  const moveOut = await f.request("/api/movimientos/8003/rectificar", "POST", {
-    ...capturedMovement({ revision: 2, fecha: "2026-02-10" }),
-  }, { "idempotency-key": randomUUID() });
+  const moveOut = await f.request(
+    "/api/movimientos/8003/rectificar",
+    "POST",
+    capturedMovement({ fecha: "2026-02-10" }),
+    { "idempotency-key": randomUUID() },
+  );
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
@@ -508,37 +505,80 @@ test("E4.9 T1 Movimientos: bloquea solo el cambio con impacto en una foto y perm
   expect(moveIn.status).toBe(409);
   expect(moveIn.data.code).toBe("HISTORY_LOCKED");
 
-  const annul = await f.request("/api/movimientos/8003/anular", "POST", {
-    revision: 2,
-    motivo: "Anulación ficticia",
-  }, { "idempotency-key": randomUUID() });
+  const annul = await f.request(
+    "/api/movimientos/8003/anular",
+    "POST",
+    { revision: 1, motivo: "Anulación ficticia" },
+    { "idempotency-key": randomUUID() },
+  );
   expect(annul.status).toBe(409);
   expect(annul.data.code).toBe("HISTORY_LOCKED");
 
-  const freePlan = await f.request(
-    "/api/movimientos/8001/impacto-anulacion",
-    "POST",
-    { revision: 1, motivo: "Anulación sin impacto capturado" },
-  );
-  expect(freePlan.status).toBe(200);
   const freeAnnul = await f.request(
     "/api/movimientos/8001/anular",
     "POST",
-    {
-      revision: 1,
-      motivo: "Anulación sin impacto capturado",
-      contextRevision: freePlan.data.contextRevision,
-      fingerprint: freePlan.data.fingerprint,
-    },
+    { revision: 1, motivo: "Anulación en ventana cerrada" },
     { "idempotency-key": randomUUID() },
   );
-  expect(freeAnnul.status).toBe(200);
+  expect(freeAnnul.status).toBe(409);
+  expect(freeAnnul.data.code).toBe("HISTORY_LOCKED");
   expect(
     f.db.query("SELECT anulado FROM movimientos WHERE id='8001'").get(),
-  ).toEqual({ anulado: 1 });
+  ).toEqual({ anulado: 0 });
+
+  const preWindowImpacted = await f.request(
+    "/api/movimientos",
+    "POST",
+    movementBody({
+      fecha: "2025-12-20",
+      origen: "S003",
+      destino: "S001",
+      concepto: "Hecho anterior con efectivo capturado",
+    }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(preWindowImpacted.status).toBe(409);
+  expect(preWindowImpacted.data.code).toBe("HISTORY_LOCKED");
+
+  const preWindowFree = await createMovement(
+    f,
+    movementBody({
+      fecha: "2025-12-20",
+      importe: "3.33",
+      concepto: "Hecho anterior sin efecto capturado",
+    }),
+  );
+  expect(preWindowFree.created.status).toBe(201);
+  expect(preWindowFree.created.data.movimiento.fecha).toBe("2025-12-20");
 });
 
-test("E4.9 T1 Compras: bloquea impacto y permite la rectificación informativa", async () => {
+test("E4.9 T1: un impacto no verificable bloquea un hecho anterior a la ventana", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  // Simula una foto cuyo bloque de inversión no permite acreditar el impacto.
+  f.db.run("DROP TRIGGER foto_cierre_no_update");
+  f.db.run(
+    "UPDATE fotos_cierre SET inversion=? WHERE ciclo='1' AND version=1",
+    ['{"cuentas":null,"posiciones":null}'],
+  );
+  const before = rowCount(f.db, "movimientos");
+  const rejected = await f.request(
+    "/api/movimientos",
+    "POST",
+    movementBody({
+      fecha: "2025-12-20",
+      importe: "3.33",
+      concepto: "Hecho anterior no verificable",
+    }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(rejected.status).toBe(409);
+  expect(rejected.data.code).toBe("HISTORY_LOCKED");
+  expect(rowCount(f.db, "movimientos")).toBe(before);
+});
+
+test("E4.9 T1 Compras: 409 por fecha en ventana cerrada y por impacto de una operación anterior", async () => {
   const f = fixture();
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
@@ -554,36 +594,52 @@ test("E4.9 T1 Compras: bloquea impacto y permite la rectificación informativa",
   expect(createClosed.data.code).toBe("HISTORY_LOCKED");
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before);
 
-  const noteOnly = await f.request("/api/compras/7001/rectificar", "POST", {
-    ...purchaseRectification({
-      concepto: "Compra enero con concepto corregido",
-      nota: "Nota informativa",
-    }),
-  });
-  expect(noteOnly.status).toBe(200);
-  expect(noteOnly.data.compra.concepto).toBe(
-    "Compra enero con concepto corregido",
+  const informative = {
+    concepto: "Compra enero con concepto corregido",
+    nota: "Nota informativa",
+  };
+  const noteOnly = await f.request(
+    "/api/compras/7001/rectificar",
+    "POST",
+    purchaseRectification(informative),
   );
-  expect(noteOnly.data.compra.importeEur).toBe("1000.00");
+  expect(noteOnly.status).toBe(409);
+  expect(noteOnly.data.code).toBe("HISTORY_LOCKED");
 
-  const amountChange = await f.request("/api/compras/7001/rectificar", "POST", {
-    ...purchaseRectification({ revision: 2, importeEur: "1001.00" }),
-  });
+  const amountChange = await f.request(
+    "/api/compras/7001/rectificar",
+    "POST",
+    purchaseRectification({ importeEur: "1001.00" }),
+  );
   expect(amountChange.status).toBe(409);
   expect(amountChange.data.code).toBe("HISTORY_LOCKED");
 
-  const moveOut = await f.request("/api/compras/7001/rectificar", "POST", {
-    ...purchaseRectification({ revision: 2, fecha: "2026-02-10" }),
-  });
+  const moveOut = await f.request(
+    "/api/compras/7001/rectificar",
+    "POST",
+    purchaseRectification({ fecha: "2026-02-10" }),
+  );
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
   const annul = await f.request("/api/compras/7001/anular", "POST", {
-    revision: 2,
+    revision: 1,
     motivo: "Anulación ficticia",
   });
   expect(annul.status).toBe(409);
   expect(annul.data.code).toBe("HISTORY_LOCKED");
+
+  const preWindow = await f.request(
+    "/api/compras",
+    "POST",
+    purchaseBody(f.instrumento, {
+      fecha: "2025-12-20",
+      concepto: "Compra anterior con efectivo y posición capturados",
+    }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(preWindow.status).toBe(409);
+  expect(preWindow.data.code).toBe("HISTORY_LOCKED");
 
   const open = await f.request(
     "/api/compras",
@@ -607,11 +663,11 @@ test("E4.9 T1 Compras: bloquea impacto y permite la rectificación informativa",
     f.db
       .query("SELECT revision FROM operaciones_inversion WHERE id='7001'")
       .get(),
-  ).toEqual({ revision: 2 });
+  ).toEqual({ revision: 1 });
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before + 1);
 });
 
-test("E4.9 T1 Ventas: bloquea impacto y permite la rectificación informativa", async () => {
+test("E4.9 T1 Ventas: 409 por fecha en ventana cerrada y por impacto de una operación anterior", async () => {
   const f = fixture();
   await f.enroll();
   expect((await f.close("1")).result.status).toBe(201);
@@ -627,35 +683,52 @@ test("E4.9 T1 Ventas: bloquea impacto y permite la rectificación informativa", 
   expect(createClosed.data.code).toBe("HISTORY_LOCKED");
   expect(rowCount(f.db, "operaciones_inversion")).toBe(before);
 
-  const noteOnly = await f.request("/api/ventas/7002/rectificar", "POST", {
-    ...saleRectification({
-      concepto: "Venta enero con concepto corregido",
-      nota: "Nota informativa",
-    }),
-  });
-  expect(noteOnly.status).toBe(200);
-  expect(noteOnly.data.venta.concepto).toBe(
-    "Venta enero con concepto corregido",
+  const informative = {
+    concepto: "Venta enero con concepto corregido",
+    nota: "Nota informativa",
+  };
+  const noteOnly = await f.request(
+    "/api/ventas/7002/rectificar",
+    "POST",
+    saleRectification(informative),
   );
+  expect(noteOnly.status).toBe(409);
+  expect(noteOnly.data.code).toBe("HISTORY_LOCKED");
 
-  const amountChange = await f.request("/api/ventas/7002/rectificar", "POST", {
-    ...saleRectification({ revision: 2, importeEur: "501.00" }),
-  });
+  const amountChange = await f.request(
+    "/api/ventas/7002/rectificar",
+    "POST",
+    saleRectification({ importeEur: "501.00" }),
+  );
   expect(amountChange.status).toBe(409);
   expect(amountChange.data.code).toBe("HISTORY_LOCKED");
 
-  const moveOut = await f.request("/api/ventas/7002/rectificar", "POST", {
-    ...saleRectification({ revision: 2, fecha: "2026-02-15" }),
-  });
+  const moveOut = await f.request(
+    "/api/ventas/7002/rectificar",
+    "POST",
+    saleRectification({ fecha: "2026-02-15" }),
+  );
   expect(moveOut.status).toBe(409);
   expect(moveOut.data.code).toBe("HISTORY_LOCKED");
 
   const annul = await f.request("/api/ventas/7002/anular", "POST", {
-    revision: 2,
+    revision: 1,
     motivo: "Anulación ficticia",
   });
   expect(annul.status).toBe(409);
   expect(annul.data.code).toBe("HISTORY_LOCKED");
+
+  const preWindow = await f.request(
+    "/api/ventas",
+    "POST",
+    saleBody(f.instrumento, {
+      fecha: "2025-12-20",
+      concepto: "Venta anterior con efectivo y posición capturados",
+    }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(preWindow.status).toBe(409);
+  expect(preWindow.data.code).toBe("HISTORY_LOCKED");
 
   const open = await f.request(
     "/api/ventas",
@@ -674,6 +747,12 @@ test("E4.9 T1 Ventas: bloquea impacto y permite la rectificación informativa", 
   });
   expect(moveIn.status).toBe(409);
   expect(moveIn.data.code).toBe("HISTORY_LOCKED");
+
+  expect(
+    f.db
+      .query("SELECT revision FROM operaciones_inversion WHERE id='7002'")
+      .get(),
+  ).toEqual({ revision: 1 });
 });
 
 test("E4.9 T1 guards: un ciclo cerrado no cambia Inicio ni S0", async () => {

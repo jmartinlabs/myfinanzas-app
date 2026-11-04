@@ -2,13 +2,21 @@
 
 Specification: [27-e49-cierre-financiero-specification.md](27-e49-cierre-financiero-specification.md)
 
-Status: **APPROVED — diseño documental.** DEV-05 corrige la lectura de T1/T2/T3
-(2026-11-04): T1 no bloquea por fecha sin impacto; T2 usa impacto/motivo/auditoría
-cuando es seguro y mantiene 409 en cambios materiales; T3 valida por campo con lista
-blanca informativa. AC-03/AC-04/AC-05/AC-06/AC-14 tienen prueba de fixtures en
+Status: **APPROVED — diseño documental.** DEV-05 mantiene la corrección de T2/T3
+(2026-11-04): T2 usa impacto/motivo/auditoría cuando es seguro y mantiene 409 en cambios
+materiales; T3 valida por campo con lista blanca informativa. T1 se restituye al texto
+aprobado de SPEC27: 409 `HISTORY_LOCKED` por fecha en ventana cerrada (AC-03/AC-04) y
+bloqueo de hechos anteriores cuando pueden alterar lo capturado o el impacto no es
+verificable. AC-03/AC-04/AC-05/AC-06/AC-14 tienen prueba de fixtures en
 `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no cierre real). El resto de AC
 sigue UNRUN. No hay CI, migración nueva ni datos reales. Aprobado con SPEC27 el
 2026-10-28; DT3/DT4 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto.
+
+> **Nota T1 (2026-11-04).** La lectura por impacto que permitía escrituras sin efecto
+> económico dentro de una ventana cerrada fue una **propuesta** de DEV-05, no una
+> enmienda aprobada. Prevalece SPEC27 aprobada: la fecha manda y AC-03/AC-04 exigen 409
+> sin excepción por «sin impacto». La propuesta por impacto queda pendiente de enmienda
+> formal y no se usa como criterio de PASS.
 
 Base: `main` `f077b7e`, esquema 18.
 
@@ -16,8 +24,8 @@ Base: `main` `f077b7e`, esquema 18.
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; metadatos con versión de app y esquema; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | UNRUN — diseño | — |
 | AC-02 | Ciclo sin siguiente Inicio | Bloqueo por `SIN_SIGUIENTE_INICIO`; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | UNRUN — diseño | — |
-| AC-03 | Hecho en ventana cerrada | 409 solo si el hecho anterior o el nuevo cambia efectivo/posiciones capturados por una foto; un hecho sin impacto se permite | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: Movimientos en cuenta no capturada se crean; alta sobre efectivo capturado, y altas de Compras/Ventas en ventana cerrada, dan 409 y no escriben. No cubre UI ni cierre real. | 2026-11-04 |
-| AC-04 | Mover Movimiento/Compra/Venta desde/hacia ventana cerrada | 409 solo si cambia el efecto capturado; se comprueban fecha antigua y nueva | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: salida/entrada con cuenta o instrumento capturado dan 409; la rectificación de concepto/nota sin cambio económico se permite. | 2026-11-04 |
+| AC-03 | Alta/rectificación/anulación de Movimiento con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: altas, rectificaciones (incluida solo concepto/nota), anulaciones y cambios de fecha en enero cerrado devuelven 409 y no escriben; un hecho anterior a la ventana que altera efectivo capturado o cuyo impacto no es verificable también devuelve 409. No cubre UI ni cierre real. | 2026-11-04 |
+| AC-04 | Mover un Movimiento desde/hacia una ventana cerrada | 409; fecha antigua y nueva comprobadas; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: rectificaciones desde/hacia enero cerrado y hacia una ventana cerrada desde un hecho abierto devuelven 409 en Movimientos, Compras y Ventas, con fecha antigua y nueva comprobadas y sin escritura. | 2026-11-04 |
 | AC-05 | Reclasificación T2 en ciclo cerrado | Impacto/motivo/auditoría; foto intacta. Saldos: preview/fingerprint/motivo/auditoría para cambios no fotografiados y 409 para los materiales | Bun Test + UI | Documental; API/UI futura | Auditoría y foto | **PASS (fixtures API)** — `e49-guards.test.ts`: clasificación exige `RECTIFICATION_REQUIRED`, la vista previa marca `used` y la rectificación deja auditoría; Saldo no capturado usa `/impacto` + `/rectificar` con motivo; apertura/tipo/control capturados siguen en 409. Foto idéntica. Sin UI. | 2026-11-04 |
 | AC-06 | Renombrar Partida/Instrumento/Referencia/Saldo T3 | Permitido en campos informativos; foto conserva ID + versión; identidad/económico bloqueado por campo | Bun Test | Documental; API futura | Foto y nombre vigente | **PASS (fixtures API)** — `e49-guards.test.ts`: renombrar Partida, Instrumento, Referencia y Saldo devuelve 200; cambiar el ISIN del Instrumento tras el cierre devuelve 409 `HISTORY_LOCKED` con `campos`. Foto idéntica. | 2026-11-04 |
 | AC-07 | Cerrar con posiciones E4.1 anteriores y sin Compras nuevas | Foto con efectivo/posiciones a Fin, anteriores incluidas y posteriores excluidas; valoración/patrimonio `No disponible` | Bun Test de contrato | Documental; API futura | Foto con cobertura | UNRUN — diseño | — |
@@ -37,16 +45,19 @@ Base: `main` `f077b7e`, esquema 18.
 
 ## DEV-05 matrix T1/T2/T3
 
-Lectura aplicada tras la corrección autorizada del 2026-11-04: T1 no bloquea por
-fecha sin impacto; T2 revisa con impacto/motivo/auditoría solo cuando la ausencia de
-impacto material es demostrable; T3 valida por campo, no por fecha. La foto nunca se
+Lectura aplicada tras restaurar SPEC27 el 2026-11-04: T1 bloquea por fecha en ventana
+cerrada (fecha antigua y nueva) y, fuera de ella, por el impacto de un hecho anterior
+sobre lo capturado por una foto posterior; el impacto no verificable también bloquea.
+La propuesta de permitir hechos «sin impacto» dentro de la ventana queda pendiente de
+enmienda y no se aplica. T2 revisa con impacto/motivo/auditoría solo cuando la ausencia
+de impacto material es demostrable; T3 valida por campo, no por fecha. La foto nunca se
 recalcula.
 
 | Nivel | Entidad/ruta | Informativo (T3) | Económico/foto | Proveedor y prueba |
 | --- | --- | --- | --- | --- |
-| T1 | Movimientos (`movimientos.ts`) | `concepto`, `nota` | Efectivo de cuentas capturadas por la foto; alta/rectificación/cambio de fecha/anulación. Sin impacto se permite | `assertMovementClosureImpact`; test “Movimientos: bloquea solo el cambio con impacto…” |
-| T1 | Compras (`compras.ts`) | `concepto`, `nota` | Efectivo y posición (instrumento + saldo inversión) a Fin; alta/rectificación/fecha/anulación | `assertOperationClosureImpact`; test “Compras: bloquea impacto…” |
-| T1 | Ventas (`ventas.ts`) | `concepto`, `nota` | Igual que Compras con signo de Venta | `assertOperationClosureImpact`; test “Ventas: bloquea impacto…” |
+| T1 | Movimientos (`movimientos.ts`) | — (la fecha manda; no hay excepción informativa dentro de la ventana) | Fecha antigua/nueva en ventana cerrada: 409 duro. Hecho anterior que altera efectivo capturado o impacto no verificable: 409 | `assertDatesWritable` + `assertMovementClosureImpact`; test “Movimientos: 409 por fecha…” |
+| T1 | Compras (`compras.ts`) | — (la fecha manda) | Fecha en ventana cerrada: 409 duro. Operación anterior que altera efectivo/posiciones capturados o impacto no verificable: 409 | `assertDatesWritable` + `assertOperationClosureImpact`; test “Compras: 409 por fecha…” |
+| T1 | Ventas (`ventas.ts`) | — (la fecha manda) | Igual que Compras con signo de Venta | `assertDatesWritable` + `assertOperationClosureImpact`; test “Ventas: 409 por fecha…” |
 | T1 | Ciclos | — | `Inicio`, `Fin` derivado y S0 de ciclo cerrado: 409 duro | `assertClosedCyclesUnchanged`; test “un ciclo cerrado no cambia Inicio ni S0” |
 | T2 | Saldos (`saldos.ts`) | `nombre` | `tipo`/`control`/`apertura` capturados: 409 duro. Cambio económico con uso histórico no fotografiado: `/impacto` + `/rectificar` con fingerprint, motivo y auditoría | `saldoClosureConflict`, `previewSaldoChange`, `updateSaldo`; test “Saldos: bloquea lo material y revisa…” |
 | T2 | Clasificación (`clasificacion.ts`) | `nombre` | Jerarquía/atribución económica: `RECTIFICATION_REQUIRED` y flujo de impacto existente | `classificationClosureImpact`; test “reclasificación económica exige revisión…” |
@@ -69,17 +80,19 @@ No se inventan guards para rutas sin escritura o sin efecto económico.
 Ejecutado el 2026-11-04 sobre el bloque DEV-05 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
 - `bun run typecheck` — OK.
-- `bun test apps/api/src/e49-guards.test.ts` — 9/9 PASS.
-- `bun test apps/api/src/movimientos.test.ts apps/api/src/compras.test.ts apps/api/src/ventas.test.ts apps/api/src/ciclos.test.ts apps/api/src/clasificacion.test.ts apps/api/src/e49-api.test.ts apps/api/src/e49-guards.test.ts apps/api/src/precierre.test.ts` — 136 PASS, 3 FAIL de entorno macOS (`Ancestro no confiable` en backup/private-state), no de los guards.
+- `bun test apps/api/src/e49-guards.test.ts` — 10/10 PASS.
+- `bun test apps/api/src/movimientos.test.ts apps/api/src/compras.test.ts apps/api/src/ventas.test.ts apps/api/src/ciclos.test.ts apps/api/src/clasificacion.test.ts apps/api/src/e49-api.test.ts apps/api/src/e49-guards.test.ts apps/api/src/precierre.test.ts` — 137 PASS, 3 FAIL de entorno macOS (`Ancestro no confiable` en backup/private-state), no de los guards.
 - `bun test apps/api/src/app.test.ts apps/api/src/referencias.test.ts apps/api/src/instrumentos.test.ts apps/api/src/presupuestos.test.ts apps/api/src/planes-ciclo.test.ts apps/api/src/compartidos.test.ts apps/api/src/revision-comida.test.ts apps/api/src/comida.test.ts apps/api/src/anticipos.test.ts apps/api/src/e49-api.test.ts` — 171 PASS, 8 FAIL de entorno macOS de backup/estado privado, no de los módulos tocados.
-- `bun test apps/api` — 652 PASS, 8 SKIP, 56 FAIL, todos ellos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
+- `bun test apps/api` — 653 PASS, 8 SKIP, 56 FAIL, todos ellos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
 
-Cobertura de guards: T1 Movimientos/Compras/Ventas (alta, rectificación con fecha
-antigua/nueva, anulación, sin impacto permitido), T1 ciclo (Inicio/S0/Fin derivado),
-T2 Saldo (material 409; no fotografiado con preview/fingerprint/motivo/auditoría),
-T2 catálogos (Referencias/Deudas con motivo+auditoría; Gastos compartidos con alta
-motivada), T2 clasificación (revisión obligatoria) y T3 (renombrados permitidos;
-identidad de Instrumento bloqueada; notas/concepto permitidos). AC-20/T2: la
+Cobertura de guards: T1 Movimientos/Compras/Ventas (fecha antigua y nueva en ventana
+cerrada, alta/rectificación solo concepto-nota/anulación/cambio de fecha, hecho anterior
+con impacto capturado, hecho anterior sin efecto capturado y hecho anterior con impacto
+no verificable), T1 ciclo (Inicio/S0/Fin derivado), T2 Saldo (material 409; no
+fotografiado con preview/fingerprint/motivo/auditoría), T2 catálogos
+(Referencias/Deudas con motivo+auditoría; Gastos compartidos con alta motivada), T2
+clasificación (revisión obligatoria) y T3 (renombrados permitidos; identidad de
+Instrumento bloqueada; notas/concepto permitidos en catálogos no fechados). AC-20/T2: la
 comparación conserva el total de efectivo y compara por cuenta solo las cuentas
 capturadas por la foto; las cuentas creadas después no producen una falsa contradicción
 y los cambios que sí afectarían al corte quedan bloqueados.
@@ -90,7 +103,8 @@ PASS (fixtures API) para AC-03/04/05/06 y PASS parcial de AC-14. Los guards se p
 sobre `openDatabase(":memory:")` con cierres creados por la API y opciones E3.5/backup
 ficticias. No se usan datos reales. El cierre real sigue bloqueado por DT6/T-BKP y la
 UI/E2E de cierre no forma parte de este bloque. La matriz DEV-05 no declara completo
-ningún AC que dependa de UI, cierre real o CI Linux.
+ningún AC que dependa de UI, cierre real o CI Linux. AC-03/AC-04 se acreditan solo como
+fixtures de API: no cubren la UI ni el cierre real y no se declaran PASS funcionales.
 
 ## Browser verification
 
@@ -110,5 +124,6 @@ resueltas. El bloque DEV-05 ejecuta pruebas de fixtures con autorización del
 separados. Quedan como huecos explícitos: prueba dedicada para cada flujo T2 preexistente
 (Anticipos, Presupuestos, Plan vivo, Revisión Comida) más allá de sus suites propias;
 ausencia de motivo en el alta de `revision_comida` (no altera foto/efectivo); y la
-validación funcional de la interpretación T1 por Álex si se desea convertirla en texto
-de spec.
+propuesta pendiente de enmienda para sustituir la regla T1 por fecha por una regla de
+impacto. Esa propuesta no es norma mientras SPEC27 no se enmiende; la implementación y
+las pruebas siguen el texto aprobado (409 por fecha).
