@@ -1,8 +1,10 @@
 # 24 — E4.6 Resumen de inicio completo: Test plan
 
-Status: **APROBADA documentalmente por el usuario el 2026-11-03 — DISEÑO DE PRUEBAS; NO
-EJECUTADO.** Ningún AC está en PASS. No existe candidato funcional de E4.6, endpoint, UI, DDL
-ni migración. **DEV E4.6 no autorizado.**
+Status: **APROBADA documentalmente por el usuario el 2026-11-03 — DISEÑO DE PRUEBAS.**
+Actualización 2026-11-04: la rama `feat/e46-inicio` contiene la composición de solo lectura
+(A+B, `GET /api/resumen-inicio`) y la UI `/inicio` (bloque C). Los AC-01, AC-05, AC-07, AC-09,
+AC-26 y AC-29 tienen evidencia local PASS en esta rama, y AC-27 en su alcance 401/no-store; el
+resto sigue UNRUN/BLOCKED y no se declara completo el DEV E4.6. Sin merge ni `--full`.
 Specification: [24-e46-resumen-inicio-specification.md](24-e46-resumen-inicio-specification.md)
 Brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md)
 Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
@@ -167,15 +169,15 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 
 | AC | Tipo | Precondición y acción | Resultado esperado | Método y comando | Plataforma / owner | Evidencia | Estado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AC-01 | Positivo | Abrir inicio con fixture | Toda cifra con `fuente.motor`, IDs y contexto; UI sin cálculos | API + Playwright | Local/CI · impl + QA | DTO y captura | UNRUN |
+| AC-01 | Positivo | Abrir inicio con fixture | Toda cifra con `fuente.motor`, IDs y contexto; UI sin cálculos | API + Playwright | Local/CI · impl + QA | `tests/e2e/inicio.spec.ts` + `artifacts/e4-6/*-1440.png` | PASS (2026-11-04, local) |
 | AC-02 | Positivo | Comparar DTO con motores | Igualdad exacta por campo, incluidos `null`: liquidez `3456.40`/`Parcial`; ingresos `2250.00`, gasto `1800.00`, extraordinaria `100.00` y nómina `2000.00` como `subtotal` con `valor:null`/`Parcial`; `operativo` y `margenReal` `No disponible`; deuda `1020.00`/`Parcial`; coste `1500.00`; agregado `1197.50` | `bun test apps/api/resumen-inicio.test.ts` | Local/CI · impl | Tabla de oráculo | UNRUN |
 | AC-03 | Negativo | Snapshot de tablas antes/después del GET | Sin cambios; solo GET; 405 en POST/PATCH/DELETE | API + SQLite | Local/CI · QA | Diff de tablas y códigos | UNRUN |
 | AC-04 | Límite | Modificar un Gasto y recargar | Cambia la sección y `revision`; las demás no | API | Local/CI · impl | Respuestas antes/después | UNRUN |
-| AC-05 | Positivo | `S005` sin Liquidez | `Parcial`, 3 incluidos, 1 excluido, subtotal `3456.40` | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
+| AC-05 | Positivo | `S005` sin Liquidez | `Parcial`, 3 incluidos, 1 excluido, subtotal `3456.40` | API + UI | Local/CI · impl + QA | `tests/e2e/inicio.spec.ts` (Liquidez `3/4`, `S005: Liquidez sin informar`) | PASS (2026-11-04, local) |
 | AC-06 | Negativo | Error forzado de E2.6/E4.4/E4.3 | `No disponible` con motivo y motor; no 0 | API | Local/CI · impl | Respuesta con error de fuente | UNRUN |
-| AC-07 | Límite | `null` de motor frente a `0.00` | `No disponible` vs `0,00 €`/`Cero verificado` | API + UI | Local/CI · QA | DTO y captura | UNRUN |
+| AC-07 | Límite | `null` de motor frente a `0.00` | `No disponible` vs `0,00 €`/`Cero verificado` | API + UI | Local/CI · QA | `tests/e2e/inicio.spec.ts` (base y escenario `zero`) + `artifacts/e4-6/inicio-cero-1440.png` | PASS (2026-11-04, local) |
 | AC-08 | Negativo | Cambiar reloj del sistema | Sin cambio de ciclo, corte ni cifras | API + Playwright | Local · QA | Capturas y DTO | UNRUN |
-| AC-09 | Positivo | Activar cada drill-down y volver | ID correcto, contexto conservado, URL sin importes | Playwright | Local/CI · QA | Capturas y URLs | UNRUN |
+| AC-09 | Positivo | Activar cada drill-down y volver | ID correcto, contexto conservado, URL sin importes | Playwright | Local/CI · QA | `tests/e2e/inicio.spec.ts` (hrefs + flujo/ciclo y vuelta a Inicio; sin importes en URL) | PASS (2026-11-04, local) |
 | AC-10 | Negativo | Buscar total patrimonial | No existe cifra ni suma cruzada | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-11 | Positivo | Cambiar Finalidad/bolsa/nombre | Liquidez no cambia; solo `Liquidez` decide | API | Local/CI · impl | Antes/después | UNRUN |
 | AC-12 | Positivo | Coste `1500.00`, meses `6` | Mínimo `9000.00` exacto | API contrato | Local/CI · impl | DTO | UNRUN |
@@ -192,10 +194,10 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-23 | Positivo | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | DTO | UNRUN (E3.6 disponible; E4.6 sin DEV) |
 | AC-24 | Positivo | `I1002` manual | Valor `320.00`; resultado/rentabilidad `No disponible` | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
-| AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/*.png` | UNRUN |
-| AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP | Local/CI · QA | Respuestas y cabeceras | UNRUN |
+| AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/inicio-{light,dark,hybrid}-{1440,390}.png`; contraste ≥ 4,5 en los tres temas | PASS (2026-11-04, local) |
+| AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP | Local/CI · QA | `tests/e2e/inicio.spec.ts`: anónimo `401` + `cache-control: no-store` | PASS (401/no-store, 2026-11-04, local) |
 | AC-28 | Positivo/Límite | `V-EJERCICIO` (ID `8`): `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | DTO y `ejercicioOrigen` | UNRUN |
-| AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API | Local/CI · impl | DTO | UNRUN |
+| AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API | Local/CI · impl | `tests/e2e/inicio.spec.ts` escenario `zero` (0,00 € y 0,00 meses) + `bun test apps/api/src/resumen-inicio.test.ts` | PASS (2026-11-04, local) |
 
 ### Casos específicos de no duplicación
 
@@ -281,10 +283,17 @@ la aprobación de wireframes.
 
 ## Limitaciones y siguiente acción
 
-No hay implementación, endpoint, UI ni datos que probar. E4.3 no tiene DEV; E3.6/DEV21 está
-integrado en `a26fffb`, sin reauditoría de su consumo en esta actualización. La configuración
-R6 no existe; Q3-B=A mantiene E4.6 sin almacén y solo condiciona `minimoObjetivo`;
-`mesesCubiertos` se prueba sin ella con liquidez y coste completos. Este testplan es diseño
-aprobado documentalmente y no ejecutado: cualquier PASS requiere un candidato funcional
-autorizado, fixtures nuevas y evidencia propia. La siguiente acción es la autorización separada
-de DEV por el coordinador; después, ejecutar esta matriz.
+La rama `feat/e46-inicio` implementa la composición API (A+B) y la UI `/inicio` (bloque C).
+Evidencia local de esta actualización (2026-11-04): `bun run typecheck`, `bun run build`,
+`bunx playwright test tests/e2e/inicio.spec.ts` (3/3) y
+`bun test apps/api/src/resumen-inicio.test.ts` (12/12). Los AC-01, AC-05, AC-07, AC-09, AC-26
+y AC-29 quedan en PASS local con fixtures ficticias, y AC-27 en 401/no-store; el resto continúa
+UNRUN/BLOCKED.
+No se declara PASS de la matriz completa ni se reutiliza esta evidencia para el gate canónico.
+
+Siguen pendientes: `python3 scripts/verify --full` del SHA candidato, la revisión independiente
+de QA y la aprobación de merge. E4.3 no tiene DEV; E3.6/DEV21 está integrado en `a26fffb`, sin
+reauditoría de su consumo en esta actualización. La configuración R6 no existe; Q3-B=A mantiene
+E4.6 sin almacén y solo condiciona `minimoObjetivo`; `mesesCubiertos` se prueba sin ella con
+liquidez y coste completos. La siguiente acción es la revisión de QA del bloque C y, si procede,
+completar la matriz y el `--full` antes de cualquier merge.
