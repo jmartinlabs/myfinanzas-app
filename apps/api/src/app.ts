@@ -49,6 +49,7 @@ import {
   anularRevisionComida,
   vincularRevisionComida,
   previewRevisionComidaImpact,
+  previewRevisionComidaCreationImpact,
 } from "./revision-comida";
 import {
   getAnticipo,
@@ -511,6 +512,15 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(getComidaMovement(db, comida[1]));
       if (path === "/api/revision-comida/opciones" && req.method === "GET")
         return reply(revisionComidaOptions(db, now()));
+      if (path === "/api/revision-comida/impacto" && req.method === "POST")
+        return reply(
+          previewRevisionComidaCreationImpact(
+            db,
+            await jsonBody(req),
+            "Detalle",
+            now(),
+          ),
+        );
       if (path === "/api/revision-comida" && req.method === "GET")
         return reply(listOperaciones(db, new URL(req.url).searchParams));
       if (path === "/api/revision-comida" && req.method === "POST") {
@@ -532,6 +542,18 @@ export function createApp(db: Database, options: AppOptions) {
         req.method === "GET"
       )
         return reply(listReposiciones(db, new URL(req.url).searchParams));
+      if (
+        path === "/api/revision-comida/reposiciones/impacto" &&
+        req.method === "POST"
+      )
+        return reply(
+          previewRevisionComidaCreationImpact(
+            db,
+            await jsonBody(req),
+            "Reposicion",
+            now(),
+          ),
+        );
       if (
         path === "/api/revision-comida/reposiciones" &&
         req.method === "POST"

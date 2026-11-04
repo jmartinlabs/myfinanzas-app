@@ -1436,6 +1436,13 @@ test("E4.9 DEV-06 T2: Referencias y Deudas exigen impacto, huella, motivo y audi
       .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
       .get(referenceId),
   ).toMatchObject({ motivo: "Baja revisada con impacto acreditado" });
+  const referenceAudit = f.db
+    .query("SELECT campos FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+    .get(referenceId) as { campos: string };
+  expect(JSON.parse(referenceAudit.campos).impacto).toMatchObject({
+    fingerprint: referenceImpact.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
 
   const debtImpact = await f.request(
     `/api/deudas/${debtId}/impacto`,
@@ -1456,6 +1463,13 @@ test("E4.9 DEV-06 T2: Referencias y Deudas exigen impacto, huella, motivo y audi
       .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
       .get(debtId),
   ).toMatchObject({ motivo: "Baja de Deuda con impacto acreditado" });
+  const debtAudit = f.db
+    .query("SELECT campos FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+    .get(debtId) as { campos: string };
+  expect(JSON.parse(debtAudit.campos).impacto).toMatchObject({
+    fingerprint: debtImpact.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
 
   const after = await f.request("/api/cierres/1/foto");
   expect(after.data).toEqual(photo.data);
@@ -1527,6 +1541,13 @@ test("E4.9 DEV-06 T2/T3: Presupuestos exige revisión de impacto tras cierre y p
       .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
       .get(budgetId),
   ).toMatchObject({ motivo: "Cambio de fuente revisado" });
+  const budgetAudit = f.db
+    .query("SELECT campos FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+    .get(budgetId) as { campos: string };
+  expect(JSON.parse(budgetAudit.campos).impacto).toMatchObject({
+    fingerprint: impact.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
 
   const after = await f.request("/api/cierres/1/foto");
   expect(after.data).toEqual(photo.data);
@@ -1764,4 +1785,167 @@ test("E4.9 DEV-06 T3: el conflicto T1 estricto se mantiene y las listas blancas 
   );
   expect(noteOnly.status).toBe(409);
   expect(noteOnly.data.code).toBe("HISTORY_LOCKED");
+});
+
+test("E4.9 QA M1: el fingerprint de /impacto de Revisión Comida coincide con la escritura", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const created = await f.request(
+    "/api/revision-comida",
+    "POST",
+    {
+      fecha: "2026-01-10",
+      concepto: "Comida original",
+      importe: "10.00",
+      direccion: "Salida",
+      esDevolucion: false,
+      clasificacion: "Comida",
+      evidenciaBancaria: null,
+      cuentaOrigen: null,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(created.status).toBe(201);
+  const id = created.data.operacion.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+
+  const body = {
+    revision: 1,
+    concepto: "Comida corregida",
+    importe: "12.00",
+  };
+  const preview = await f.request(
+    `/api/revision-comida/${id}/impacto`,
+    "POST",
+    body,
+  );
+  expect(preview.status).toBe(200);
+  expect(preview.data.cambiosEconomicos).toEqual(["importe"]);
+
+  const written = await f.request(
+    `/api/revision-comida/${id}/rectificar`,
+    "POST",
+    { ...body, motivo: "Cambio completo revisado", fingerprint: preview.data.fingerprint },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(written.status).toBe(200);
+  expect(written.data.operacion.concepto).toBe("Comida corregida");
+  expect(written.data.operacion.importe).toBe("12.00");
+});
+
+test("E4.9 QA M2: un cierre posterior sin foto bloquea AC-20", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("2")).result.status).toBe(201);
+  f.db.run("DROP TRIGGER foto_cierre_no_delete");
+  f.db.run("PRAGMA foreign_keys=OFF");
+  f.db.run("DELETE FROM fotos_cierre WHERE ciclo='2' AND version=1");
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(
+    pre.data.coherencia.contradicciones.join(" "),
+  ).toContain("no tiene foto");
+  const closed = await f.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: pre.data.fingerprint, motivo: "Intento con cierre huérfano" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(closed.status).toBe(409);
+  expect(closed.data.code).toBe("INCOHERENCIA_CON_CIERRE_POSTERIOR");
+});
+
+test("E4.9 QA M4: el alta de Revisión Comida en ventana cerrada exige huella de impacto", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  const body = {
+    fecha: "2026-01-11",
+    concepto: "Comida nueva",
+    importe: "8.00",
+    direccion: "Salida",
+    esDevolucion: false,
+    clasificacion: "Comida",
+    evidenciaBancaria: null,
+    cuentaOrigen: null,
+  };
+  const without = await f.request(
+    "/api/revision-comida",
+    "POST",
+    { ...body, motivo: "Alta sin huella" },
+    {
+      "idempotency-key": randomUUID(),
+    },
+  );
+  expect(without.status).toBe(409);
+  expect(without.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+
+  const preview = await f.request("/api/revision-comida/impacto", "POST", body);
+  expect(preview.status).toBe(200);
+  expect(preview.data.requiereMotivo).toBe(true);
+  const created = await f.request(
+    "/api/revision-comida",
+    "POST",
+    {
+      ...body,
+      motivo: "Alta revisada tras cierre",
+      fingerprint: preview.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(created.status).toBe(201);
+  expect(
+    f.db
+      .query(
+        "SELECT motivo FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+      )
+      .get(created.data.operacion.id),
+  ).toMatchObject({ motivo: "Alta revisada tras cierre" });
+});
+
+test("E4.9 QA M5: AC-20 compara también transferencias, amortizaciones y devoluciones", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("2")).result.status).toBe(201);
+  f.db.run("DROP TRIGGER foto_cierre_no_update");
+  f.db.run(
+    `UPDATE fotos_cierre
+        SET hechos=json_set(hechos,
+          '$.totales.transferencias','9.99',
+          '$.totales.amortizaciones','8.88',
+          '$.totales.devoluciones','7.77')
+      WHERE ciclo='2' AND version=1`,
+  );
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  const text = pre.data.coherencia.contradicciones.join(" ");
+  expect(text).toContain("Total de transferencias");
+  expect(text).toContain("Total de amortizaciones");
+  expect(text).toContain("Total de devoluciones");
+});
+
+test("E4.9 QA M3: Clasificación usa la lista blanca por campo y conserva T2", async () => {
+  const f = fixture({ facts: true, classification: true });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const informative = await f.request(
+    "/api/clasificacion/categorias/CAT900",
+    "PATCH",
+    { revision: 1, grupo: "Grupo informativo revisado" },
+  );
+  expect(informative.status).toBe(200);
+  expect(informative.data.item.grupo).toBe("Grupo informativo revisado");
+
+  const block = await f.request(
+    "/api/clasificacion/categorias/CAT900",
+    "PATCH",
+    { revision: 2, anual: "Ingreso" },
+  );
+  expect(block.status).toBe(409);
+  expect(block.data.code).toBe("RECTIFICATION_REQUIRED");
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
 });

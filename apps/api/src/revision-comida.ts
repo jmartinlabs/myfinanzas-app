@@ -460,7 +460,7 @@ export function createRevisionComida(
   now = Date.now(),
   tipo: Tipo = "Detalle",
 ) {
-  rejectUnknown(body, fieldsFor(tipo));
+  rejectUnknown(body, [...fieldsFor(tipo), "motivo", "fingerprint"]);
   if (
     body.tipo !== undefined &&
     (typeof body.tipo !== "string" || body.tipo !== tipo)
@@ -473,8 +473,67 @@ export function createRevisionComida(
   ]);
   return attempt(db, key, hash, now, () => {
     const candidate = validated(body, null, now, tipo),
+      motivo = motive(body, false),
       time = new Date(now).toISOString(),
       rows = revisionComidaRows(db);
+    const changed = Object.keys(body).filter(
+      (field) => !["motivo", "fingerprint", "tipo"].includes(field),
+    );
+    const informative = informativeFields.revisionComida ?? [];
+    const windows = closedWindowsForDates(db, [candidate.fecha]);
+    if (windows.length) {
+      assertRevisionComidaClosureImpact(
+        db,
+        [candidate.fecha],
+        true,
+        motivo,
+        "registrar la operación de Revisión Comida",
+      );
+      const expected = revisionCreationFingerprint(
+        tipo,
+        changed.filter((field) => !informative.includes(field)),
+        windows,
+      );
+      if (
+        typeof body.fingerprint !== "string" ||
+        !/^[a-f0-9]{64}$/.test(body.fingerprint)
+      )
+        throw new Problem(
+          409,
+          "IMPACTO_NO_VERIFICABLE",
+          "No se puede registrar la operación: falta la huella de impacto de Revisión Comida.",
+          {
+            fingerprint:
+              "Genera la vista de impacto de alta y envía su huella.",
+          },
+          {
+            cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+              ciclo,
+              version,
+              inicio,
+              fin,
+            })),
+          },
+        );
+      if (body.fingerprint !== expected)
+        throw new Problem(
+          409,
+          "IMPACT_CHANGED",
+          "No se puede registrar la operación: el impacto de Revisión Comida ha cambiado; vuelve a revisarlo.",
+          {
+            fingerprint:
+              "La huella de impacto no coincide con el estado actual.",
+          },
+          {
+            cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+              ciclo,
+              version,
+              inicio,
+              fin,
+            })),
+          },
+        );
+    }
     if (tipo === "Reposicion") {
       const duplicate = rows.find(
         (r) =>
@@ -530,7 +589,7 @@ export function createRevisionComida(
       ],
     );
     const after = find(db, id, tipo);
-    audit(db, id, 1, "alta", null, auditValue(after), null, time);
+    audit(db, id, 1, "alta", null, auditValue(after), motivo, time);
     return {
       ...getRevisionComida(db, id),
       coincidencias,
@@ -648,10 +707,15 @@ export function previewRevisionComidaImpact(
     );
     const nextDate = typeof body.fecha === "string" ? body.fecha : null;
     const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
+    const informative = informativeFields.revisionComida ?? [];
+    const fingerprintChanged = changed.filter(
+      (field) => !informative.includes(field),
+    );
     return {
       operacion: id,
       revision: old.revision,
       cambios: changed,
+      cambiosEconomicos: fingerprintChanged,
       cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
         ciclo,
         version,
@@ -659,7 +723,74 @@ export function previewRevisionComidaImpact(
         fin,
       })),
       requiereMotivo: windows.length > 0,
-      fingerprint: revisionImpactFingerprint(id, tipo, old, changed),
+      fingerprint: revisionImpactFingerprint(
+        id,
+        tipo,
+        old,
+        fingerprintChanged,
+      ),
+    };
+  })();
+}
+
+/**
+ * T2 certificate for creating a Revisión Comida row. The row feeds E3.5, whose
+ * result is captured by the photo, so an alta dated inside a closed window
+ * needs the same impact fingerprint, motive and audit as a modification (M4).
+ */
+function revisionCreationFingerprint(
+  tipo: Tipo,
+  changed: readonly string[],
+  windows: ClosedWindowLike[],
+) {
+  return consumerImpactFingerprint("revisionComidaAlta", tipo, changed, [
+    windows.map(({ ciclo, version, inicio, fin }) => ({
+      ciclo,
+      version,
+      inicio,
+      fin,
+    })),
+  ]);
+}
+
+type ClosedWindowLike = {
+  ciclo: string;
+  version: number;
+  inicio: string;
+  fin: string;
+};
+
+export function previewRevisionComidaCreationImpact(
+  db: Database,
+  body: Record<string, unknown>,
+  tipo: Tipo = "Detalle",
+  now = Date.now(),
+) {
+  return db.transaction(() => {
+    const candidate = validated(body, null, now, tipo);
+    const changed = Object.keys(body).filter(
+      (field) => !["motivo", "fingerprint", "tipo"].includes(field),
+    );
+    const informative = informativeFields.revisionComida ?? [];
+    const fingerprintChanged = changed.filter(
+      (field) => !informative.includes(field),
+    );
+    const windows = closedWindowsForDates(db, [candidate.fecha]);
+    return {
+      cambios: changed,
+      cambiosEconomicos: fingerprintChanged,
+      cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+      requiereMotivo: windows.length > 0,
+      fingerprint: revisionCreationFingerprint(
+        tipo,
+        fingerprintChanged,
+        windows,
+      ),
     };
   })();
 }

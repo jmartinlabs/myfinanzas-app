@@ -6,6 +6,7 @@ import {
   closedFieldDecision,
   consumerImpactFingerprint,
   hasClosures,
+  type ClosedWindow,
 } from "./e49-guards";
 import {
   getReference,
@@ -426,6 +427,12 @@ export function updateReference(
           ? body.motivo.trim()
           : null;
       const changed = editableReferenceFields.filter((field) => field in body);
+      let closureImpact:
+        | {
+            fingerprint: string | null;
+            cierres: ClosedWindow[];
+          }
+        | null = null;
       if (hasClosures(db)) {
         let expected: string;
         try {
@@ -437,7 +444,7 @@ export function updateReference(
             "No se pueden leer los consumidores de la Referencia; no se puede acreditar el impacto del cambio.",
           );
         }
-        assertClosedEconomicImpact(
+        const windows = assertClosedEconomicImpact(
           db,
           "referencia",
           changed,
@@ -446,6 +453,12 @@ export function updateReference(
           expected,
           "actualizar la Referencia",
         );
+        if (windows.length)
+          closureImpact = {
+            fingerprint:
+              typeof body.fingerprint === "string" ? body.fingerprint : null,
+            cierres: windows,
+          };
       }
       if ("vehiculo" in body && nextTipo !== "Vehículo")
         throw new Problem(
@@ -640,7 +653,25 @@ export function updateReference(
         [
           id,
           old.revision + 1,
-          JSON.stringify({ anterior: old, posterior: getReference(db, id) }),
+          JSON.stringify({
+            anterior: old,
+            posterior: getReference(db, id),
+            ...(closureImpact
+              ? {
+                  impacto: {
+                    fingerprint: closureImpact.fingerprint,
+                    cierres: closureImpact.cierres.map(
+                      ({ ciclo, version, inicio, fin }) => ({
+                        ciclo,
+                        version,
+                        inicio,
+                        fin,
+                      }),
+                    ),
+                  },
+                }
+              : {}),
+          }),
           time,
           old.revision,
           motive ??

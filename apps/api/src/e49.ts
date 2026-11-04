@@ -214,6 +214,9 @@ type ComparedFacts = {
   estado: "Comparado" | "No verificable";
   ingresos: ComparedTotal;
   gastos: ComparedTotal;
+  transferencias: ComparedTotal;
+  amortizaciones: ComparedTotal;
+  devoluciones: ComparedTotal;
   neto: ComparedTotal;
 };
 
@@ -778,6 +781,18 @@ function compareStoredSnapshot(
     estado,
     ingresos: { almacenado: null, vivo: liveFacts.totales.ingresos ?? null },
     gastos: { almacenado: null, vivo: liveFacts.totales.gastos ?? null },
+    transferencias: {
+      almacenado: null,
+      vivo: liveFacts.totales.transferencias ?? null,
+    },
+    amortizaciones: {
+      almacenado: null,
+      vivo: liveFacts.totales.amortizaciones ?? null,
+    },
+    devoluciones: {
+      almacenado: null,
+      vivo: liveFacts.totales.devoluciones ?? null,
+    },
     neto: { almacenado: null, vivo: liveFacts.totales.neto ?? null },
   });
   const invalid = (
@@ -883,7 +898,14 @@ function compareStoredSnapshot(
   return { problems, comparado };
 }
 
-const comparedFactKeys = ["ingresos", "gastos", "neto"] as const;
+const comparedFactKeys = [
+  "ingresos",
+  "gastos",
+  "transferencias",
+  "amortizaciones",
+  "devoluciones",
+  "neto",
+] as const;
 
 /**
  * Compares the `hechos.totales` a later photo captured with the same totals
@@ -908,6 +930,18 @@ function compareStoredFacts(
     estado: "Comparado",
     ingresos: { almacenado: null, vivo: liveFacts.totales.ingresos ?? null },
     gastos: { almacenado: null, vivo: liveFacts.totales.gastos ?? null },
+    transferencias: {
+      almacenado: null,
+      vivo: liveFacts.totales.transferencias ?? null,
+    },
+    amortizaciones: {
+      almacenado: null,
+      vivo: liveFacts.totales.amortizaciones ?? null,
+    },
+    devoluciones: {
+      almacenado: null,
+      vivo: liveFacts.totales.devoluciones ?? null,
+    },
     neto: { almacenado: null, vivo: liveFacts.totales.neto ?? null },
   };
   if (!storedTotals) {
@@ -953,7 +987,7 @@ function coherence(
   const rows = db
     .query(
       `SELECT c.ciclo,c.version,c.inicio,c.fin,f.inversion,f.hechos
-       FROM cierres c JOIN fotos_cierre f
+       FROM cierres c LEFT JOIN fotos_cierre f
          ON f.ciclo=c.ciclo AND f.version=c.version
        WHERE c.fin > ? ORDER BY c.fin,c.ciclo,c.version`,
     )
@@ -962,8 +996,8 @@ function coherence(
     version: number;
     inicio: string;
     fin: string;
-    inversion: string;
-    hechos: string;
+    inversion: string | null;
+    hechos: string | null;
   }[];
   const cierres = rows.map((row) => {
     let motivos: string[] = [];
@@ -975,44 +1009,54 @@ function coherence(
         estado: "No verificable",
         ingresos: { almacenado: null, vivo: null },
         gastos: { almacenado: null, vivo: null },
+        transferencias: { almacenado: null, vivo: null },
+        amortizaciones: { almacenado: null, vivo: null },
+        devoluciones: { almacenado: null, vivo: null },
         neto: { almacenado: null, vivo: null },
       },
     };
-    try {
-      const live = investmentSnapshot(db, row.fin);
-      const liveFacts = liveFactTotals(db, row.inicio, row.fin);
-      let storedInversion: unknown = undefined;
-      let storedHechos: unknown = undefined;
-      try {
-        storedInversion = JSON.parse(row.inversion);
-      } catch {
-        motivos.push("No se pudo leer la instantánea de inversión posterior.");
-      }
-      try {
-        storedHechos = JSON.parse(row.hechos);
-      } catch {
-        motivos.push("No se pudo leer la instantánea de hechos posterior.");
-      }
-      const compared = compareStoredSnapshot(
-        storedInversion,
-        storedHechos,
-        live,
-        liveFacts,
+    if (row.inversion === null || row.hechos === null) {
+      // A closure without its photo can never prove coherence. The LEFT JOIN
+      // keeps it visible instead of silently dropping it from AC-20 (M2).
+      motivos.push(
+        `El cierre posterior ${row.ciclo} v${row.version} no tiene foto; no se puede verificar su coherencia.`,
       );
-      if (!live.ok)
-        motivos.push(
-          live.motivo ?? "No se pudo recalcular la foto posterior.",
+    } else
+      try {
+        const live = investmentSnapshot(db, row.fin);
+        const liveFacts = liveFactTotals(db, row.inicio, row.fin);
+        let storedInversion: unknown = undefined;
+        let storedHechos: unknown = undefined;
+        try {
+          storedInversion = JSON.parse(row.inversion);
+        } catch {
+          motivos.push("No se pudo leer la instantánea de inversión posterior.");
+        }
+        try {
+          storedHechos = JSON.parse(row.hechos);
+        } catch {
+          motivos.push("No se pudo leer la instantánea de hechos posterior.");
+        }
+        const compared = compareStoredSnapshot(
+          storedInversion,
+          storedHechos,
+          live,
+          liveFacts,
         );
-      if (!liveFacts.ok)
-        motivos.push(
-          liveFacts.motivo ??
-            "No se pudieron recalcular los totales de hechos posteriores.",
-        );
-      motivos.push(...compared.problems);
-      comparado = compared.comparado;
-    } catch {
-      motivos.push("No se pudo leer la foto posterior.");
-    }
+        if (!live.ok)
+          motivos.push(
+            live.motivo ?? "No se pudo recalcular la foto posterior.",
+          );
+        if (!liveFacts.ok)
+          motivos.push(
+            liveFacts.motivo ??
+              "No se pudieron recalcular los totales de hechos posteriores.",
+          );
+        motivos.push(...compared.problems);
+        comparado = compared.comparado;
+      } catch {
+        motivos.push("No se pudo leer la foto posterior.");
+      }
     return {
       ciclo: row.ciclo,
       version: row.version,

@@ -580,7 +580,7 @@ export const informativeFields: Record<string, readonly string[]> = {
     "evidenciaRelacionCompra",
     "cuentaOrigen",
   ],
-  categoria: ["nombre"],
+  categoria: ["nombre", "grupo"],
   subcategoria: ["nombre"],
   partida: ["nombre"],
 };
@@ -691,7 +691,7 @@ export function consumerImpactFingerprint(
   return fingerprint([
     entity,
     id,
-    [...changed].sort((a, b) => a.localeCompare(b)),
+    [...changed].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0)),
     consumers,
   ]);
 }

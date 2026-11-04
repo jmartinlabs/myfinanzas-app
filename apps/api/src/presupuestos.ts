@@ -2,7 +2,7 @@ import { planConfigurationImpact } from "./planes-ciclo";
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
-import { hasClosures } from "./e49-guards";
+import { hasClosures, closedWindows } from "./e49-guards";
 
 export const budgetSources = [
   "Gasto real",
@@ -187,6 +187,7 @@ function audit(
   action: string,
   now: number,
   motivo: string | null = null,
+  impacto: unknown = null,
 ) {
   db.run(
     "INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,actor,motivo) VALUES(?,?,?,?,?,?,'usuario-unico',?)",
@@ -194,7 +195,11 @@ function audit(
       item.id,
       action,
       item.revision,
-      JSON.stringify({ anterior: old, posterior: item }),
+      JSON.stringify({
+        anterior: old,
+        posterior: item,
+        ...(impacto ? { impacto } : {}),
+      }),
       new Date(now).toISOString(),
       old?.revision ?? 0,
       motivo,
@@ -357,6 +362,23 @@ export function updateBudget(
         ],
       );
       const item = getBudget(db, id);
+      const closureImpact =
+        p.economic && hasClosures(db)
+          ? {
+              fingerprint:
+                typeof confirmation?.fingerprint === "string"
+                  ? confirmation.fingerprint
+                  : null,
+              cierres: closedWindows(db).map(
+                ({ ciclo, version, inicio, fin }) => ({
+                  ciclo,
+                  version,
+                  inicio,
+                  fin,
+                }),
+              ),
+            }
+          : null;
       audit(
         db,
         item,
@@ -364,6 +386,7 @@ export function updateBudget(
         confirmation ? "rectificación" : "edición",
         now,
         confirmation ? String(confirmation.motivo).trim() : null,
+        closureImpact,
       );
       return item;
     })

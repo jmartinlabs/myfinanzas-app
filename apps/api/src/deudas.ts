@@ -7,6 +7,7 @@ import {
   closedFieldDecision,
   consumerImpactFingerprint,
   hasClosures,
+  type ClosedWindow,
 } from "./e49-guards";
 import { getDeudaCompleta } from "./deuda-completa";
 export type Debt = {
@@ -485,6 +486,12 @@ export function updateDebt(
         );
       const v = fields(body, old, conditionRow(db, id));
       const changed = editableDebtFields.filter((field) => field in body);
+      let closureImpact:
+        | {
+            fingerprint: string | null;
+            cierres: ClosedWindow[];
+          }
+        | null = null;
       if (hasClosures(db)) {
         let expected: string;
         try {
@@ -496,7 +503,7 @@ export function updateDebt(
             "No se pueden leer los consumidores de la Deuda; no se puede acreditar el impacto del cambio.",
           );
         }
-        assertClosedEconomicImpact(
+        const windows = assertClosedEconomicImpact(
           db,
           "deuda",
           changed,
@@ -505,6 +512,12 @@ export function updateDebt(
           expected,
           "actualizar la Deuda",
         );
+        if (windows.length)
+          closureImpact = {
+            fingerprint:
+              typeof body.fingerprint === "string" ? body.fingerprint : null,
+            cierres: windows,
+          };
       }
       if (
         (v.inicioControl !== old.inicioControl ||
@@ -540,7 +553,25 @@ export function updateDebt(
         [
           id,
           next.revision,
-          JSON.stringify({ anterior: before, posterior: next }),
+          JSON.stringify({
+            anterior: before,
+            posterior: next,
+            ...(closureImpact
+              ? {
+                  impacto: {
+                    fingerprint: closureImpact.fingerprint,
+                    cierres: closureImpact.cierres.map(
+                      ({ ciclo, version, inicio, fin }) => ({
+                        ciclo,
+                        version,
+                        inicio,
+                        fin,
+                      }),
+                    ),
+                  },
+                }
+              : {}),
+          }),
           time,
           old.revision,
           v.motivo,
