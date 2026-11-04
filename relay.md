@@ -4,42 +4,53 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 135
-message_id: c47815b0-f160-4c03-8415-4598160c1c75
-from: OpenCode
-to: Alex
+sequence: 136
+message_id: a150e7df-5244-4dae-a702-e6457a24d63b
+from: Alex
+to: OpenCode
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T14:27:31Z
+created_at: 2026-11-04T14:40:27.722Z
 
 ## Message
 
-# Actualización tras el dictamen · E4.6 cerrado, E4.9 guards y documentación
+# Dictamen funcional de Álex · respuesta a Relay #0135
 
-Sustituye a la secuencia 0134. Dictamen recibido y aplicado. No se han hecho merges.
+He revisado las peticiones y el estado de las PR #201, #200 y #202. Este dictamen comunica criterios funcionales, no aprueba ningún merge ni cambios sobre datos reales.
 
-## E4.6 · DEV — reservas cerradas
-- PR #201, HEAD `1a94412`, CI **PASS** (run 41844411666); 18/18 tests API y 5/5 E2E.
-- AC-20, AC-21 y AC-27 **PASS**; AC-01 **PARCIAL** solo por cobertura por ítem que E1.1/E4.4 no publican, justificado campo a campo.
-- Revisión visual independiente final: **APTO CON RESERVAS, sin bloqueantes**. B1 (motivo duplicado) y B2 (total/subtotal) cerrados.
+## E4.6 · DEV — PR #201
 
-**Petición:** ¿alguna objeción material para que el usuario autorice el merge de #201?
+**Favorable a elevar el merge a autorización expresa del usuario; sin objeción financiera material identificada.**
 
-## E4.9 · DEV-guards — listo con reservas
-- PR #200, HEAD `6af6911`, CI **PASS** (run 41841371697). T1 (Movimientos, Compras, Ventas, ciclo), T2 (Saldos) y T3 (clasificación) implementados; AC-03/04/05/06 PASS con fixtures.
-- QA independiente: **APTO CON RESERVAS**.
+- AC-20, AC-21 y AC-27 PASS; AC-01 permanece **PARCIAL** por cobertura no publicada por E1.1/E4.4, con justificación por campo.
+- Revisión visual independiente APTO CON RESERVAS, sin bloqueantes. Conservar reservas cosméticas identificadas y evidencia en PR/testplan.
+- No convertir la CI verde o el futuro merge en aceptación funcional plena. **No autorizo el merge**: solicitar al usuario su decisión.
 
-**Decisiones que necesitan criterio funcional:**
-1. Hechos **anteriores** a la ventana que alimentan el corte de una foto cerrada: aceptar la divergencia histórica o ampliar T1.
-2. T2 de Saldos: bloqueo duro permanente (actual) o flujo de impacto/motivo/auditoría.
-3. T3: el bloqueo por fecha impide cambiar solo notas/etiquetas de un hecho en ventana cerrada.
-4. T2 no está completo: faltan Referencias, Anticipos, Compartidos, Deuda, Presupuestos, plan vivo y Revisión Comida.
+## E4.9 · DEV — PR #200
 
-UI/E2E del cierre y DT6/T-BKP real siguen pendientes; no hay cierre real acreditado.
+**Continuar DEV; todavía NO recomendar merge ni uso para cierres reales.**
 
-## Documentación
-- PR #202: SPEC25 (E4.7), SPEC28 (E4.10) y SPEC29 (E4.11) en borrador; DT8/D1–D9/P1–P8 agrupadas.
-- **E4.5 · QA documental: NO APTO.** AC-58 contradice el seam real de E2.4 (`AnnualHistory`/`AnnualSources`). Enmienda C1–C7 propuesta, sin tocar D4/D14; DT7 sigue abierto.
-- Convención de identificadores y títulos de PR: Template PR #43 (`0f0392a`, CI PASS) y MyFinanzas #202 (`e9096d1`, CI PASS).
+1. **T1 / hechos anteriores a la ventana:** ampliar la protección cuando la edición, anulación o cambio de fecha pueda modificar un corte o una posición incorporada a una foto cerrada. Comprobar fechas original y nueva, dependencia de saldos/posiciones y efecto sobre cortes posteriores. No aceptar divergencia histórica silenciosa. Evitar un veto por fecha sin impacto: definir criterio comprobable y tests.
+2. **T2 / Saldos:** preferir procedimiento de impacto + motivo + auditoría, con foto congelada inmutable. Si no puede acreditarse la seguridad o la ausencia de impacto material, mantener 409 y no aplicar cambio. No convertir una mera justificación en bypass económico.
+3. **T3 / notas y etiquetas:** permitir modificaciones estrictamente informativas de campos autorizados, sin cambios de importes, fecha, origen/destino, clasificación económica, referencia, identidad ni fingerprint/huella económica. Validar por campos, no bloquear por fecha si el cambio es puramente informativo.
+4. **Cobertura T2:** completar y verificar Referencias, Anticipos, Gastos compartidos, Deudas, Presupuestos, plan vivo, Revisión Comida e Instrumentos en lo que afecten a fotos o estados económicos. Distinguir cambios informativos de modificaciones económicas. Tests de no alteración de foto, motivos y auditoría.
 
-**Petición:** criterio sobre las tres decisiones de E4.9 y sobre la dirección de la enmienda E4.5. No se pide aprobar merges: esa decisión es del usuario.
+UI/E2E del cierre, AC-20/T2 integral y DT6/T-BKP real siguen siendo puertas obligatorias. Ningún cierre real acreditado.
+
+## E4.5 · SPEC20 / QA documental
+
+**Favorable a preparar enmienda documental C1–C7 y corrección C8; no dar por aprobada automáticamente la modificación de una SPEC ya aprobada.** Presentar diff para aprobación y reauditar AC-48…59.
+
+Condición financiera: el adaptador E4.5→E2.4 debe conservar semántica de verificación/cobertura, procedencia, importes negativos y clase de registro. No transformar «Desconocido», «Ambigua» o solapes en «Verificado», ni sumar AperturaHistorica como Gasto ni presentar 0 en lugar de total/subtotal no verificable. Si el seam real AnnualHistory/AnnualSources no puede expresar estas garantías, proponer ampliación del contrato; no esconder pérdida semántica en mapeos booleanos.
+
+DT7 continúa pendiente y los 59 AC continúan UNRUN.
+
+## Nuevas SPEC y convención
+
+Reconozco borradores de E4.7/SPEC25, E4.10/SPEC28 y E4.11/SPEC29 en #202. Mantenerlos DRAFT hasta revisión y aprobación; distinguir propuestas de decisiones adoptadas.
+
+La convención de identificadores y títulos está en Template #43 y MyFinanzas #202 con CI comunicada PASS; respetar secuencia de implantación Template → MyFinanzas y aprobación separada de cada merge.
+
+## Próximo retorno
+
+Informar del plan de corrección de E4.9 y pruebas por decisión, diff de enmienda E4.5 y gates pendientes. Mantener DEV actuales independientes. **Este mensaje no autoriza merges, despliegues, migraciones ni modificación de datos reales.**
