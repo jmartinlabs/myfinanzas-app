@@ -169,6 +169,15 @@ function januaryMovement(db: Database, id = "8001") {
   );
 }
 
+function seedDeuda(db: Database, id = "D0001") {
+  db.run(
+    `INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado)
+     VALUES(?,'Deuda ficticia E4.9','2025-01-01',10000,'Activa',1,
+       '2026-01-01T00:00:00.000Z','2026-01-01T00:00:00.000Z')`,
+    [id],
+  );
+}
+
 function performanceOperation(
   db: Database,
   instrumento: string,
@@ -308,10 +317,15 @@ test("E4.9 B: SinPlan closes v1 with app/schema metadata and no live writes", as
 
   const state = await f.request("/api/cierres/1/estado");
   expect(state.status).toBe(200);
-  expect(state.data.estado).toBe("Cerrado");
-  expect(state.data.version).toBe(1);
-  expect(state.data.fotoVersion).toBe(1);
-  expect(state.data.precierre.ciclo).toBe("1");
+  // E4.8 compatibility: top-level fields remain those of getPrecierreEstado.
+  expect(state.data.ciclo).toBe("1");
+  expect(state.data.revision).toMatch(/^[a-f0-9]{64}$/);
+  expect(state.data).toHaveProperty("e4_9Bloqueado");
+  expect(state.data).toHaveProperty("bloqueos");
+  // E4.9 closure state is additive under `cierre`.
+  expect(state.data.cierre.estado).toBe("Cerrado");
+  expect(state.data.cierre.version).toBe(1);
+  expect(state.data.cierre.fotoVersion).toBe(1);
   const alias = await f.request("/api/cierres/1/cierre");
   expect(alias.data.estado).toBe("Cerrado");
   expect(alias.data.version).toBe(1);
@@ -518,6 +532,10 @@ test("E4.9 B: out-of-order closure requires motive, audits and preserves later p
       resultado: string;
       comparado: {
         efectivo: { almacenado: string | null; vivo: string | null };
+        cuentas: {
+          almacenado: { saldo: string; disponible: string }[] | null;
+          vivo: { saldo: string; disponible: string }[];
+        };
         posiciones: {
           almacenado: { instrumento: string; cantidad: string }[] | null;
           vivo: { instrumento: string; cantidad: string }[];
@@ -531,6 +549,10 @@ test("E4.9 B: out-of-order closure requires motive, audits and preserves later p
     resultado: "Coherente",
     comparado: {
       efectivo: { almacenado: "0.00", vivo: "0.00" },
+      cuentas: {
+        almacenado: [{ saldo: "S003", disponible: "0.00" }],
+        vivo: [{ saldo: "S003", disponible: "0.00" }],
+      },
       posiciones: { almacenado: [], vivo: [] },
     },
   });
@@ -578,7 +600,7 @@ test("E4.9 B: AC-20 contradiction blocks an out-of-order closure", async () => {
   const close = await f.request(
     "/api/cierres/1/cerrar",
     "POST",
-    { fingerprint: pre.data.fingerprint, motivo: "Intento bloqueado E4.9" },
+    { fingerprint: pre.data.fingerprint },
     { "idempotency-key": randomUUID() },
   );
   expect(close.status).toBe(409);
@@ -744,6 +766,23 @@ test("E4.9 B: hechos con movimientos captures Con hechos", async () => {
   expect(result.data.foto.hechos.totales.ingresos).toBe("12.34");
 });
 
+test("E4.9 B: Deuda master alone does not create hechos in the cycle", async () => {
+  const f = fixture();
+  seedDeuda(f.db);
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.data.hechos.estado).toBe("Sin hechos");
+  expect(pre.data.hechos.fuentes).toContainEqual({
+    fuente: "Deuda",
+    hechos: 0,
+    acreditado: true,
+  });
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
+  expect(result.data.foto.auxiliares.deuda).toHaveLength(1);
+});
+
 test("E4.9 B: S0 cero is a fact and closes with saldoInicial 0.00", async () => {
   const f = fixture();
   f.db.run(
@@ -871,18 +910,13 @@ test("E4.9 B: app version is reproducible from package/env with documented fallb
     SOURCE_SHA: process.env.SOURCE_SHA,
   };
   try {
-    delete process.env.APP_VERSION;
-    delete process.env.GIT_SHA;
-    delete process.env.GITHUB_SHA;
-    delete process.env.COMMIT_SHA;
-    delete process.env.SOURCE_SHA;
-    process.env.APP_SHA = "ABCDEF1234567890";
-    expect(resolveAppVersion("1.2.3-fixture")).toBe(
-      "1.2.3-fixture+abcdef1234567890",
-    );
-    delete process.env.APP_SHA;
+    for (const name of Object.keys(previous)) delete process.env[name];
+    process.env.GITHUB_SHA = "ABCDEF1234567890";
+    // An explicit override is returned verbatim, without a SHA suffix.
     expect(resolveAppVersion("1.2.3-fixture")).toBe("1.2.3-fixture");
     process.env.APP_VERSION = "9.9.9-env";
+    expect(resolveAppVersion()).toBe("9.9.9-env+abcdef1234567890");
+    delete process.env.GITHUB_SHA;
     expect(resolveAppVersion()).toBe("9.9.9-env");
     delete process.env.APP_VERSION;
     expect(resolveAppVersion()).not.toBe("");

@@ -200,14 +200,17 @@ type ComparedPosition = {
   cantidad: string;
 };
 
+type ComparedCash = { saldo: string; disponible: string };
+
 /**
  * Values actually compared by the AC-20 coherence check. They are stored in
  * `cierre_audit.posterior`, not only the closure identity, so the audit keeps
- * the evidence behind the result. Per-account comparison remains a C/guard
- * open point; this keeps the aggregate cash/positions pair.
+ * the evidence behind the result. Cash is kept both as total and as its
+ * per-account breakdown so a per-account contradiction can be reproduced.
  */
 type ComparedValues = {
   efectivo: { almacenado: string | null; vivo: string | null };
+  cuentas: { almacenado: ComparedCash[] | null; vivo: ComparedCash[] };
   posiciones: {
     almacenado: ComparedPosition[] | null;
     vivo: ComparedPosition[];
@@ -656,7 +659,14 @@ function auxiliarySnapshot(
       hechos: revisionComida.rows.length,
       acreditado: !revisionComida.error,
     },
-    { fuente: "Deuda", hechos: deuda.rows.length, acreditado: !deuda.error },
+    {
+      fuente: "Deuda",
+      // El maestro E1.6 no aporta hechos propios al ciclo; solo acredita que
+      // su lectura funcionó. Contar el maestro completo convertiría cualquier
+      // base con deudas en "Con hechos" sin hechos del ciclo.
+      hechos: 0,
+      acreditado: !deuda.error,
+    },
   ];
   return {
     ok: errors.length === 0,
@@ -710,6 +720,10 @@ function compareStoredSnapshot(
     saldoInversion: row.saldoInversion,
     cantidad: row.cantidad,
   }));
+  const liveCash: ComparedCash[] = live.cuentas.map((row) => ({
+    saldo: row.saldo,
+    disponible: row.disponible,
+  }));
   const invalid = (
     problems: string[],
     almacenado: Partial<ComparedValues> = {},
@@ -719,6 +733,10 @@ function compareStoredSnapshot(
       efectivo: almacenado.efectivo ?? {
         almacenado: null,
         vivo: live.efectivo,
+      },
+      cuentas: almacenado.cuentas ?? {
+        almacenado: null,
+        vivo: liveCash,
       },
       posiciones: almacenado.posiciones ?? {
         almacenado: null,
@@ -758,12 +776,22 @@ function compareStoredSnapshot(
       saldoInversion: row.saldoInversion,
       cantidad: row.cantidad,
     }));
+  const storedCashRows: ComparedCash[] = value.cuentas
+    .filter(
+      (row): row is ComparedCash =>
+        !!row &&
+        typeof row === "object" &&
+        typeof (row as { saldo?: unknown }).saldo === "string" &&
+        typeof (row as { disponible?: unknown }).disponible === "string",
+    )
+    .map((row) => ({ saldo: row.saldo, disponible: row.disponible }));
   const comparado: ComparedValues = {
     efectivo: {
       almacenado:
         typeof value.efectivo === "string" ? value.efectivo : null,
       vivo: live.efectivo,
     },
+    cuentas: { almacenado: storedCashRows, vivo: liveCash },
     posiciones: { almacenado: storedPositions, vivo: livePositions },
   };
   const problems: string[] = [];
@@ -771,23 +799,13 @@ function compareStoredSnapshot(
     problems.push(
       `Efectivo total almacenado ${value.efectivo} frente a ${live.efectivo ?? "No disponible"}.`,
     );
-  const cashKey = (row: { saldo: string; disponible: string }) =>
+  const cashKey = (row: ComparedCash) =>
     `${row.saldo}|${row.disponible}`;
-  const storedCash = new Set(
-    value.cuentas
-      .filter(
-        (row): row is { saldo: string; disponible: string } =>
-          !!row &&
-          typeof row === "object" &&
-          typeof (row as { saldo?: unknown }).saldo === "string" &&
-          typeof (row as { disponible?: unknown }).disponible === "string",
-      )
-      .map(cashKey),
-  );
-  const liveCash = new Set(live.cuentas.map(cashKey));
+  const storedCash = new Set(storedCashRows.map(cashKey));
+  const liveCashSet = new Set(liveCash.map(cashKey));
   if (
-    storedCash.size !== liveCash.size ||
-    [...storedCash].some((entry) => !liveCash.has(entry))
+    storedCash.size !== liveCashSet.size ||
+    [...storedCash].some((entry) => !liveCashSet.has(entry))
   )
     problems.push("El desglose de efectivo a Fin ha cambiado.");
   const positionKey = (row: ComparedPosition) =>
@@ -823,6 +841,7 @@ function coherence(
     let motivos: string[] = [];
     let comparado: ComparedValues = {
       efectivo: { almacenado: null, vivo: null },
+      cuentas: { almacenado: null, vivo: [] },
       posiciones: { almacenado: null, vivo: [] },
     };
     try {
@@ -854,6 +873,28 @@ function coherence(
     cierres,
     contradicciones,
   };
+}
+
+export type CoherenciaCierrePosterior = {
+  ciclo: string;
+  version: number;
+  fin: string;
+  coherente: boolean;
+  motivos: string[];
+};
+
+/** Read-only coherence view for E4.8 precierre and other consumers. */
+export function coherenciaCierresPosteriores(
+  db: Database,
+  fin: string,
+): CoherenciaCierrePosterior[] {
+  return coherence(db, fin).cierres.map((entry) => ({
+    ciclo: entry.ciclo,
+    version: entry.version,
+    fin: entry.fin,
+    coherente: entry.coherente,
+    motivos: entry.motivos,
+  }));
 }
 
 function capture(
@@ -1374,6 +1415,14 @@ export function confirmCierre(
           {},
           { fingerprint: data.fingerprint, bloqueos: data.blockers },
         );
+      // A contradiction or any other blocker is reported first: 409 with the
+      // concrete code is more informative than 422 MOTIVO_REQUERIDO.
+      if (data.blockers.length) {
+        const first = data.blockers[0];
+        throw new Problem(409, first.code, first.message, {}, {
+          bloqueos: data.blockers,
+        });
+      }
       if (data.coherencia.requerida && motivo === null)
         throw new Problem(
           422,
@@ -1381,12 +1430,6 @@ export function confirmCierre(
           "Un cierre fuera de orden exige motivo para auditoría.",
           { motivo: "Indica el motivo del cierre fuera de orden." },
         );
-      if (data.blockers.length) {
-        const first = data.blockers[0];
-        throw new Problem(409, first.code, first.message, {}, {
-          bloqueos: data.blockers,
-        });
-      }
       const tiempo = new Date(now).toISOString();
       const payload = data.payload;
       const fin = data.ventana.fin;

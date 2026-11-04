@@ -805,15 +805,10 @@ export function createApp(db: Database, options: AppOptions) {
         }
         return reply(
           db.transaction(() => ({
-            ...getCierreEstado(db, cierreEstado[1]),
-            // SPEC27 `/estado` is the E4.9 closure state. The E4.8 precierre
-            // fields stay available under `precierre` for compatibility.
-            precierre: getPrecierreEstado(
-              db,
-              cierreEstado[1],
-              now(),
-              options.precierre,
-            ),
+            // E4.8 shape stays at the top level (SPEC26 AC-15); the E4.9
+            // closure state is additive under `cierre`.
+            ...getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
+            cierre: getCierreEstado(db, cierreEstado[1]),
           }))(),
         );
       }

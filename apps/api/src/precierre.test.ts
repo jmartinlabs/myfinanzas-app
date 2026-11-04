@@ -6,6 +6,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { getPrecierre, getPrecierreEstado } from "./precierre";
+import { confirmCierre, previewCierre } from "./e49";
 import { positionsAtDate, quantityText } from "./investment-engine";
 
 process.env.NODE_ENV = "test";
@@ -590,6 +591,73 @@ test("AC-15: estado comparte versión y estado con precierre", () => {
     expect(state.revision).toBe(full.revision);
     expect(state.estado).toBe(full.estado);
     expect(state.e4_9Bloqueado).toBe(full.e4_9Bloqueado);
+  } finally {
+    close(db);
+  }
+});
+
+test("B2: error de fuente núcleo marca e4_9Bloqueado aunque el estado sea Parcial", () => {
+  const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
+  try {
+    db.run("ALTER TABLE movimiento_anticipo RENAME TO movimiento_anticipo_off");
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.estado).toBe("Parcial");
+    expect(result.e4_9Bloqueado).toBe(true);
+    expect(
+      result.estado === "Listo con avisos" && result.e4_9Bloqueado,
+    ).toBe(false);
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-16: cierre posterior real detectado desde cierres/fotos sin inyección", () => {
+  const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
+  try {
+    db.run(
+      "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('3','2026-03-01',300000,'f')",
+    );
+    const options = {
+      appVersion: "0.0.0-precierre-fixture",
+      backup: {
+        verificado: true,
+        restauracionProbada: true,
+        referencia: "backup-ficticio-precierre",
+      },
+      e35: {
+        verificable: true,
+        motivo: null,
+        huella: "b".repeat(64),
+        cobertura: "Verificada",
+        datos: { fixture: "E3.5 precierre" },
+      },
+    };
+    const preview = previewCierre(db, "2", options, now);
+    confirmCierre(
+      db,
+      "2",
+      { fingerprint: preview.fingerprint },
+      randomUUID(),
+      options,
+      now,
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.cierres).toHaveLength(1);
+    expect(result.cierres[0]).toMatchObject({
+      id: "2",
+      fin: "2026-02-28",
+      coherent: true,
+    });
+    expect(result.avisos.map((a) => a.code)).toContain(
+      "CIERRE_FUERA_DE_ORDEN",
+    );
+    expect(result.bloqueos.map((b) => b.code)).not.toContain(
+      "INCOHERENCIA_CON_CIERRE_POSTERIOR",
+    );
   } finally {
     close(db);
   }

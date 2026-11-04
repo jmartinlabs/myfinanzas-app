@@ -13,8 +13,10 @@ import { join } from "node:path";
  *
  * When the build exposes a commit SHA in the environment (`APP_SHA`,
  * `GIT_SHA`, `GITHUB_SHA`, `COMMIT_SHA` or `SOURCE_SHA`), it is appended as
- * `+<sha>` so the photo stays traceable. No Git command runs at request time
- * and no network access is used.
+ * `+<sha>` to the environment/package/fallback version so the photo stays
+ * traceable. An explicit injected override is returned verbatim and never
+ * receives the suffix. No Git command runs at request time and no network
+ * access is used.
  *
  * The repository package has no `version` field today, so the deterministic
  * fallback is `BUILD_VERSION`. A release can set `APP_VERSION` or inject the
@@ -23,13 +25,21 @@ import { join } from "node:path";
 export const BUILD_VERSION = "0.0.0-e49";
 
 export function resolveAppVersion(override?: string | null): string {
-  const candidate = withBuildSha(
-    (typeof override === "string" && override.trim()) ||
+  // An explicit injected value is already the caller's reproducible version:
+  // return it verbatim, without appending the build SHA.
+  if (typeof override === "string" && override.trim())
+    return validated(override.trim());
+  return validated(
+    withBuildSha(
       (typeof process.env.APP_VERSION === "string" &&
         process.env.APP_VERSION.trim()) ||
-      packageVersion() ||
-      BUILD_VERSION,
+        packageVersion() ||
+        BUILD_VERSION,
+    ),
   );
+}
+
+function validated(candidate: string): string {
   if (candidate.length === 0 || candidate.length > 200)
     throw new Error("Versión de aplicación inválida.");
   return candidate;

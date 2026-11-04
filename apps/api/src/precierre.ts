@@ -12,6 +12,7 @@ import { fingerprint, financeRevision, ledgerRows, type LedgerRow } from "./move
 import { e35Metrics } from "./e35";
 import { listDeudasCompletas } from "./deuda-completa";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
+import { coherenciaCierresPosteriores } from "./e49";
 
 export type PrecierreEstado =
   | "Listo"
@@ -497,7 +498,15 @@ export function getPrecierre(
         backup?.reason ??
         "Falta evidencia DT6/T-BKP: manifiesto, checksum, clave y restauración.",
     });
-  const closures = options.closures ?? [];
+  const closures =
+    options.closures ??
+    (fin === null
+      ? []
+      : coherenciaCierresPosteriores(db, fin).map((entry) => ({
+          id: entry.ciclo,
+          fin: entry.fin,
+          coherent: entry.coherente,
+        })));
   if (closures.length)
     avisos.push({
       code: "CIERRE_FUERA_DE_ORDEN",
@@ -585,7 +594,7 @@ export function getPrecierre(
     e35.source,
     {
       key: "e42",
-      label: "E4.2 Ventas",
+      label: "E4.2 Ventas (inferido de E4.1)",
       cobertura:
         investment.efectivo === null
           ? "No disponible"
@@ -595,7 +604,7 @@ export function getPrecierre(
       motivo:
         investment.source.estado === "Error"
           ? investment.source.motivo
-          : "Compra/Venta restan/suman en efectivo y posición; motor E4.2 integrado.",
+          : "Reserva: E4.2 se infiere del motor E4.1; no hay proveedor E4.2 independiente.",
       enlace: "/inversiones",
       aplicable: true,
     },
@@ -642,7 +651,7 @@ export function getPrecierre(
       auxiliaryPartial
         ? "Parcial"
         : "Completa",
-    e4_9Bloqueado: bloqueos.length > 0,
+    e4_9Bloqueado: bloqueos.length > 0 || corePartial,
     bloqueos,
     avisos,
     fuentes,
