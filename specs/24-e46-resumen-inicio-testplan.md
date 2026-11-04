@@ -3,14 +3,16 @@
 Status: **APROBADA documentalmente por el usuario el 2026-11-03 — DISEÑO DE PRUEBAS.**
 Actualización 2026-11-04: la rama `feat/e46-inicio` contiene la composición de solo lectura
 (A+B, `GET /api/resumen-inicio`) y la UI `/inicio` (bloque C). La matriz deja en **PASS local**
-los AC con prueba concreta, incluidos AC-20, AC-21 y AC-27 (sesión expirada y error 500 con
-intercepción de rutas). **AC-01 queda PARCIAL** solo por la cobertura por ítem de
+los AC con prueba concreta, incluidos AC-20, AC-21 y AC-27 (401 real por logout, 500 genérico
+del handler con fallo interno real y UI de 500/401 interceptados con reautenticación TOTP
+real). **AC-01 queda PARCIAL** solo por la cobertura por ítem de
 Saldos/Ahorro/deuda aparte, que E1.1/E4.4 no publican; la justificación por campo está en la
 spec. No se declara completo el DEV E4.6: faltan `--full`, QA independiente y aprobación de
 merge.
 Specification: [24-e46-resumen-inicio-specification.md](24-e46-resumen-inicio-specification.md)
 Brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md)
-Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Base de contenido: `main` `024b348` (2026-11-03); esquema SQLite vigente **v24** (la base
+inicial de E4.6 era v23).
 Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
 contenido ni cambia el alcance.
 
@@ -136,7 +138,7 @@ Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahor
 | `mesesObjetivo` | `6` | Solo en pruebas de contrato |
 | Umbral zona | `3` / `6` meses | Solo etiqueta informativa |
 
-**Límite:** en v23 no existe almacén de configuración. El proveedor de prueba es un doble de
+**Límite:** en v24 no existe almacén de configuración. El proveedor de prueba es un doble de
 contrato; no acredita que la app pueda configurarlo. Sin el proveedor, **solo `minimoObjetivo`**
 es `No disponible`; `mesesCubiertos` se publica si liquidez y coste son completos
 (`V-LIQ-COMPLETA`).
@@ -193,13 +195,13 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-18 | Negativo | Fixture de inversión | Efectivo fuera del agregado; sin total combinado | API + UI | Local/CI · impl | `resumen-inicio.test.ts` + UI `Sin total combinado`; ausencia de `3153.90` | PASS (2026-11-04, local) |
 | AC-19 | Negativo | Saldo en varias vistas | Aparece en las vistas; sin suma combinada | API + UI | Local/CI · QA | `resumen-inicio.test.ts` (AC-09/10/19/23) + UI sin total de Saldos | PASS (2026-11-04, local) |
 | AC-20 | Negativo | Cambiar cobertura de Presupuesto o línea de plan | Liquidez/ahorro no cambian; no se resta lo presupuestado | API | Local/CI · impl | `resumen-inicio.test.ts` (AC-20): E2.3 eleva `Del mes` de una línea de 1.000,00 a 2.500,00; el plan cambia a 3.400,00 y liquidez (`3.456,40`, `Parcial`), la posición de ahorro (`800,00`; `ahorroCierre`/`variación` siguen `No disponible`), gasto (`1.800,00`) y operativo (`No disponible`) conservan valor/subtotal/estado/cobertura; no aparece `1.956,40` ni resta presupuestada. | PASS (2026-11-04, local) |
-| AC-21 | Negativo | Añadir deuda | Liquidez, gasto y operativo no cambian; solo cambia la deuda no hipotecaria | API | Local/CI · impl | `resumen-inicio.test.ts` (AC-21): alta E1.6/E4.4 de deuda no hipotecaria de 250,00; liquidez, gasto, operativo y ahorro conservan cifra/estado; el subtotal de deuda pasa de `1.020,00` a `1.270,00` con cobertura `3/4` y la nueva deuda calculable. | PASS (2026-11-04, local) |
+| AC-21 | Negativo | Añadir deuda | Liquidez, gasto y operativo no cambian; solo cambia la deuda no hipotecaria | API | Local/CI · impl | `resumen-inicio.test.ts` (AC-21): alta E1.6/E4.4 de deuda no hipotecaria de 250,00; liquidez, gasto, operativo, ahorro y `ahorroResidual` conservan cifra/estado; `inversion`, `saldos` y `aparte` quedan estructuralmente iguales; objetivo y `margenReal` conservan cifra/cobertura (sus revisiones de fuente pueden cambiar porque `financeRevision` incluye deudas). El subtotal de deuda pasa de `1.020,00` a `1.270,00` y su cobertura de `2/3` a `3/4` (incluidos 3, excluidos 1, motivo D005). | PASS (2026-11-04, local) |
 | AC-22 | Límite | Cuota `300` + extraordinaria `100` | Operativo `No disponible`: no aparece `350`, `−50` ni `1400`; no se resta la cuota ni la extraordinaria de ninguna métrica publicada | API + UI | Local/CI · impl | `resumen-inicio.test.ts` + E2E: operativo ND y ausencia de `350,00 €` | PASS (2026-11-04, local) |
 | AC-23 | Positivo | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | `resumen-inicio.test.ts` (AC-09/10/19/23) + UI sin total monetario | PASS (2026-11-04, local) |
 | AC-24 | Positivo | `I1002` manual | Valor `320.00`; resultado/rentabilidad `No disponible` | API + UI | Local/CI · QA | `resumen-inicio.test.ts` + UI resultado ND | PASS (2026-11-04, local) |
 | AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | `resumen-inicio.test.ts` + UI deuda `2/3` y `1.020,00 €` | PASS (2026-11-04, local) |
 | AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/inicio-{light,dark,hybrid}-{1440,390}.png`; contraste de texto/motivos/enlaces ≥ 4,5 en los tres temas | PASS (2026-11-04, local) |
-| AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP + Playwright | Local/CI · QA | `resumen-inicio.test.ts` y E2E: anónimo `401`, `405`/`403`, `no-store` y sin escrituras. Añadido E2E con intercepción: error 500 muestra alerta genérica con reintento, sin importes ni SQL; sesión expirada (401) muestra estado de caducidad, conserva la cabecera de contexto, no muestra cifras y reautentica volviendo a `/inicio`. | PASS (2026-11-04, local) |
+| AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP + Playwright | Local/CI · QA | `resumen-inicio.test.ts`: anónimo `401`, `405`/`403`, `no-store`, logout real seguido de `401` real, y fallo interno real tras autenticar que ejecuta el `500` genérico del handler (`INTERNAL`, `requestId`, sin SQL ni importes). E2E: 500 y 401 están **interceptados** para probar UI, alerta genérica, reintento, ausencia de cifras/fuga y reautenticación TOTP real volviendo a `/inicio`. No se fuerza un fallo de fuente porque el read model degrada a `200` por diseño. | PASS UI/reauth + server-side 401/500 (2026-11-04, local) |
 | AC-28 | Positivo/Límite | `V-EJERCICIO` (ID `8`): `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | `resumen-inicio.test.ts` (AC-28) | PASS (2026-11-04, local) |
 | AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API + UI | Local/CI · impl | `tests/e2e/inicio.spec.ts` escenario `zero` (0,00 € y 0,00 meses) + `bun test apps/api/src/resumen-inicio.test.ts` | PASS (2026-11-04, local) |
 
@@ -233,8 +235,8 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | `bun test apps/api/ventas.test.ts` / inversiones | E4.2 cantidades y efectivo | Candidato E4.6 | UNRUN |
 | `bun test apps/api/deuda-completa.test.ts` | E4.4 deuda viva y cobertura | Candidato E4.6 | UNRUN |
 | `bun test apps/api/plan-anual.test.ts` | E2.4 equivalente esencial | Candidato E4.6 | UNRUN |
-| `bun test apps/api/src/resumen-inicio.test.ts` | Composición API E4.6, AC-04 Gasto, AC-20 plan, AC-21 deuda y M-4 | Candidato | PASS 16/16 (2026-11-04, local) |
-| `bunx playwright test tests/e2e/inicio.spec.ts` | UI E2E E4.6, drills, M-4, AC-27 500/sesión expirada | Candidato | PASS 5/5 (2026-11-04, local) |
+| `bun test apps/api/src/resumen-inicio.test.ts` | Composición API E4.6, AC-04 Gasto, AC-20 plan, AC-21 deuda, AC-27 401/500 server-side y M-4 | Candidato | PASS 18/18 (2026-11-04, local) |
+| `bunx playwright test tests/e2e/inicio.spec.ts` | UI E2E E4.6, drills, M-4, AC-27 UI 500/401 con reautenticación | Candidato | PASS 5/5 (2026-11-04, local) |
 | `bun run typecheck` | Tipos del DTO y UI | Candidato | PASS (2026-11-04, local) |
 | `bun run build` | Cliente | Candidato | PASS (2026-11-04, local) |
 | `python3.12 scripts/verify --full` | Gate canónico | Candidato estable | UNRUN |
@@ -292,12 +294,13 @@ la aprobación de wireframes.
 La rama `feat/e46-inicio` implementa la composición API (A+B) y la UI `/inicio` (bloque C).
 Evidencia local de esta actualización (2026-11-04): `bun run typecheck`, `bun run build`,
 `bunx playwright test tests/e2e/inicio.spec.ts` (5/5, incluidos el escenario degradado M-4,
-todos los drill-down, contraste y AC-27 con 500 y sesión expirada) y
-`bun test apps/api/src/resumen-inicio.test.ts` (16/16, incluidos AC-04, AC-20, AC-21 y M-4 de
-E3.6 con fuentes fallidas). La matriz deja en PASS local los AC con prueba concreta. **AC-01
-sigue PARCIAL** solo por la cobertura estructurada por ítem de Saldos/Ahorro/deuda aparte, que
-E1.1/E4.4 no publican; la spec justifica campo por campo qué se muestra en su lugar. No se
-declara PASS de la matriz completa ni se reutiliza esta evidencia para el gate canónico.
+todos los drill-down, contraste y AC-27 UI con 500/401 interceptados y reautenticación TOTP
+real) y `bun test apps/api/src/resumen-inicio.test.ts` (18/18, incluidos AC-04, AC-20, AC-21,
+AC-27 con 401 real por logout y 500 genérico del handler, y M-4 de E3.6 con fuentes fallidas).
+La matriz deja en PASS local los AC con prueba concreta. **AC-01 sigue PARCIAL** solo por la
+cobertura estructurada por ítem de Saldos/Ahorro/deuda aparte, que E1.1/E4.4 no publican; la
+spec justifica campo por campo qué se muestra en su lugar. No se declara PASS de la matriz
+completa ni se reutiliza esta evidencia para el gate canónico.
 
 Siguen pendientes: `python3 scripts/verify --full` del SHA candidato, la revisión independiente
 de QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21 sigue en `a26fffb`

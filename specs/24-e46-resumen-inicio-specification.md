@@ -5,10 +5,10 @@ opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetiv
 **Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente).
 **DEV24 autorizado el 2026-11-04.** La rama `feat/e46-inicio` contiene la composición de solo
 lectura `GET /api/resumen-inicio` y la UI `/inicio`. Estado real: AC con evidencia local en el
-[testplan](24-e46-resumen-inicio-testplan.md); AC-01 queda **PARCIAL** por huecos de
-fuente/cobertura en el DTO, AC-27 es **PARCIAL** por sesión expirada/500 sin prueba y
-AC-20/AC-21 siguen UNRUN. Sin merge ni `--full`; la revisión visual de implementación conserva
-su gate.
+[testplan](24-e46-resumen-inicio-testplan.md); AC-20, AC-21 y AC-27 están en PASS local
+(AC-27 con UI/reauth y 401/500 server-side), y AC-01 queda **PARCIAL** solo por la cobertura
+estructurada por ítem que E1.1/E4.4 no publican. Sin merge ni `--full`; la revisión visual de
+implementación conserva su gate.
 Este documento no implementa código, API, SQLite, DDL ni migraciones.
 Approval source/date: aprobación directa del usuario, 2026-11-03.
 Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md),
@@ -19,7 +19,8 @@ Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resum
 [SPEC17](17-e44-deuda-completa-specification.md), [SPEC27](27-e49-cierre-financiero-specification.md),
 [guías UI](guidelines/ui.md), [arquitectura](guidelines/architecture.md),
 [calidad](guidelines/quality.md) y [seguridad](guidelines/security.md).
-Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Base de contenido: `main` `024b348` (2026-11-03); esquema SQLite vigente **v24** (la base
+inicial de E4.6 era v23).
 Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
 contenido ni cambia el alcance.
 Test design: [24-e46-resumen-inicio-testplan.md](24-e46-resumen-inicio-testplan.md).
@@ -69,7 +70,7 @@ escrituras de ningún tipo.
 | Pendientes y conciliación | E3.6 | Consume su read model; no crea un motor paralelo |
 | Patrimonio global y comparación anual | E4.7 (futuro) | Fuera de E4.6 |
 | Cierre, foto y reapertura | E4.8–E4.10 | Fuera de E4.6; no lee ni escribe fotos |
-| Configuración de meses objetivo y umbrales | **No existe en v23** | Solo `minimoObjetivo` queda `No disponible` (Q3-B); `mesesCubiertos` no depende de ella |
+| Configuración de meses objetivo y umbrales | **No existe en v24** | Solo `minimoObjetivo` queda `No disponible` (Q3-B); `mesesCubiertos` no depende de ella |
 
 **CONFIRMADO.** E4.6 no reabre E2.6, E3.6, E4.2, E4.3 ni E4.4. No introduce una fórmula
 económica nueva ni una tabla de resultados.
@@ -123,13 +124,14 @@ no está acreditada; E4.6 conserva esa marca.
 
 ### Fuente y cobertura por campo (AC-01)
 
-Actualización 2026-11-04. E4.6 solo transporta campos que el motor ya publica. No se crean
-coberturas, recuentos ni motivos nuevos.
+Actualización 2026-11-04. E4.6 solo transporta campos que el motor ya publica. No se inventan
+importes ni recuentos: los textos de `cobertura.motivos` se derivan de contadores publicados
+(`importesSinInformar`, `clasificacionesPendientes`, estado) y no añaden cifras nuevas.
 
 | Campo | Motor / contrato | Disponibilidad real | Decisión E4.6 |
 | --- | --- | --- | --- |
 | `ahorro.ahorroCierre` y `variacionAhorro`: `fuente`, `ids`, `cobertura` | E2.6 `Metric` | Sí: `fuente`, `ids` y `cobertura` (texto) | Se transportan literalmente y se muestran en Ahorro. `cobertura` conserva el texto del motor, no se convierte en un objeto inventado. |
-| `objetivo.costeEsencialMensual.cobertura` | E2.4 `annualEquivalent` | Parcial: `estado`, `importesSinInformar`, `clasificacionesPendientes`, `ejercicioSinPlan` y `fuentes.motivo` | Se publica `cobertura.estado` derivado del estado del equivalente y los contadores publicados. No se inventan `incluidos`/`excluidos` de líneas. |
+| `objetivo.costeEsencialMensual.cobertura` | E2.4 `annualEquivalent` | Parcial: `estado`, `importesSinInformar`, `clasificacionesPendientes`, `ejercicioSinPlan` y `fuentes.motivo` | `cobertura.estado` se deriva del estado del equivalente; `cobertura.motivos` es texto derivado de los contadores publicados, no un recuento nuevo. No se inventan `incluidos`/`excluidos` de líneas. |
 | Saldos por ítem | E1.1 `Saldo.posicion` | Parcial: `condicion` y `motivo`; no existe cobertura por Saldo | Se añade `condicion` y se conserva `motivo`; la cobertura y la fuente estructuradas siguen siendo de sección. |
 | Ahorro por ítem | E1.1 a través de E2.6 | Parcial: `condicion`, `motivo` y `revision`; no existe cobertura por ítem | Se añaden `condicion` y `revision`; la fuente/cobertura de la sección cubre la lista. |
 | Deuda aparte por ítem | E4.4 `listDeudasCompletas` | Parcial: `estado`, `tipoDeuda`, `revision`, `capital.calculable` y `motivoNoCalculable`; no existe cobertura por ítem | Se transportan `estado`, `tipoDeuda`, `revision`; `calculable`/`motivo` explican el capital. La cobertura solo existe para el total. |
@@ -191,7 +193,7 @@ Reglas:
   meses (2 decimales propuesto) queda **PENDIENTE DT8** y no altera el valor.
 
 **PENDIENTE Q3-B.** No existe almacén de `mesesObjetivo` ni de umbrales. El contrato admite una
-configuración inyectada por un proveedor aprobado; en v23 el proveedor no existe y **solo**
+configuración inyectada por un proveedor aprobado; en v24 el proveedor no existe y **solo**
 `minimoObjetivo` figura `No disponible`. E4.6 no crea esa configuración, ni defaults, ni tabla,
 ni motor duplicado.
 
@@ -663,9 +665,10 @@ roadmap se indica después de la tabla.
 **APROBADA documentalmente por el usuario el 2026-11-03** (Q1–Q12, opción A; Q3-B=A; Q4=A).
 **DEV24 se autorizó el 2026-11-04** con alcance A+B+C; la aprobación de la spec no autoriza por
 sí sola merge ni despliegue. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. La
-composición y la UI existen en `feat/e46-inicio`. Actualización local 2026-11-04: AC-20,
-AC-21 y AC-27 ya tienen prueba directa y están en PASS local; AC-01 sigue PARCIAL solo por la
-cobertura por ítem que E1.1/E4.4 no publican, con justificación por campo en esta spec. Faltan
+composición y la UI existen en `feat/e46-inicio`. Actualización local 2026-11-04: AC-20 y
+AC-21 tienen prueba directa; AC-27 cubre UI/reauth con 500/401 interceptados y 401/500
+server-side reales; AC-01 sigue PARCIAL solo por la cobertura por ítem que E1.1/E4.4 no
+publican, con justificación por campo en esta spec. Faltan
 el `--full`, la revisión QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21
 sigue en `a26fffb` sin reauditoría de su consumo. El siguiente gate es la revisión
 independiente y el merge aprobado, no otra autorización de DEV.

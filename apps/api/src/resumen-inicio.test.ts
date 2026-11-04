@@ -194,14 +194,14 @@ function saveCyclePlan(
 
 function metricaCifra(metrica: {
   valor: string | null;
-  subtotal: string | null;
+  subtotal?: string | null;
   estado: string;
   motivo: string;
   cobertura: unknown;
 }) {
   return {
     valor: metrica.valor,
-    subtotal: metrica.subtotal,
+    subtotal: metrica.subtotal ?? null,
     estado: metrica.estado,
     motivo: metrica.motivo,
     cobertura: metrica.cobertura,
@@ -1187,6 +1187,49 @@ test("AC-03/27: GET autenticado, no-store, 401, 405 y 403 sin escrituras", async
   }
 });
 
+test("AC-27: logout real invalida la sesión y el GET responde 401 no-store", async () => {
+  const { db } = baseFixture();
+  try {
+    const h = harness(db);
+    await h.enroll();
+    expect((await h.request("/api/resumen-inicio")).status).toBe(200);
+    expect((await h.request("/api/auth/logout", "POST", {})).status).toBe(200);
+    const expired = await h.request("/api/resumen-inicio");
+    expect(expired.status).toBe(401);
+    expect(expired.headers.get("cache-control")).toBe("no-store");
+    expect(JSON.stringify(expired.data)).not.toContain("3456.40");
+    expect(JSON.stringify(expired.data)).not.toContain("1020.00");
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-27: un fallo interno real ejecuta el 500 genérico sin fuga", async () => {
+  const { db } = baseFixture();
+  const h = harness(db);
+  await h.enroll();
+  // Fuerza un error de infraestructura real tras autenticar: la petición llega
+  // al handler de /api/resumen-inicio y este responde por su catch genérico.
+  db.close();
+  const response = await h.request("/api/resumen-inicio");
+  expect(response.status).toBe(500);
+  expect(response.headers.get("cache-control")).toBe("no-store");
+  expect(response.data).toMatchObject({
+    code: "INTERNAL",
+    error: "No se pudo completar la operación.",
+  });
+  expect(response.data.requestId).toMatch(/^[0-9a-f-]{36}$/);
+  const serialized = JSON.stringify(response.data);
+  for (const forbidden of [
+    "SQLITE",
+    "database is closed",
+    "SELECT",
+    "3456.40",
+    "1020.00",
+  ])
+    expect(serialized).not.toContain(forbidden);
+});
+
 test("AC-04/11: revisión determinista y pertenencia solo por Liquidez", async () => {
   const { db } = baseFixture();
   try {
@@ -1339,17 +1382,6 @@ test("AC-20: una línea de plan no altera liquidez ni ahorro ni resta lo presupu
     expect(after.secciones.ahorro.posiciones).toEqual(
       before.secciones.ahorro.posiciones,
     );
-    const ahorroCifra = ({
-      estado,
-      valor,
-      motivo,
-      cobertura,
-    }: {
-      estado: string;
-      valor: string | null;
-      motivo: string;
-      cobertura: string | null;
-    }) => ({ estado, valor, motivo, cobertura });
     expect(ahorroCifra(after.secciones.ahorro.ahorroCierre)).toEqual(
       ahorroCifra(before.secciones.ahorro.ahorroCierre),
     );
@@ -1409,11 +1441,52 @@ test("AC-21: añadir deuda solo cambia deudaNoHipotecaria", () => {
     expect(ahorroCifra(after.secciones.ahorro.variacionAhorro)).toEqual(
       ahorroCifra(before.secciones.ahorro.variacionAhorro),
     );
+    expect(ahorroCifra(after.secciones.ahorro.ahorroResidual)).toEqual(
+      ahorroCifra(before.secciones.ahorro.ahorroResidual),
+    );
+
+    // Secciones sin dependencia de deuda: igualdad estructural.
+    expect(after.secciones.inversion).toEqual(before.secciones.inversion);
+    expect(after.secciones.saldos).toEqual(before.secciones.saldos);
+    expect(after.secciones.deudaNoHipotecaria.aparte).toEqual(
+      before.secciones.deudaNoHipotecaria.aparte,
+    );
+    // Objetivo y margen conservan cifra, estado y cobertura. Sus revisiones de
+    // fuente pueden cambiar porque financeRevision incluye la tabla de deudas.
+    const objetivoCifra = (seccion: typeof before.secciones.objetivo) => ({
+      metrica: metricaCifra(seccion.metrica),
+      coste: {
+        valor: seccion.costeEsencialMensual.valor,
+        subtotal: seccion.costeEsencialMensual.subtotal,
+        estado: seccion.costeEsencialMensual.estado,
+        estadoEquivalente: seccion.costeEsencialMensual.estadoEquivalente,
+        motivo: seccion.costeEsencialMensual.motivo,
+        cobertura: seccion.costeEsencialMensual.cobertura,
+        racional: seccion.costeEsencialMensual.racional,
+      },
+      mesesObjetivo: seccion.mesesObjetivo,
+      mesesCubiertos: metricaCifra(seccion.mesesCubiertos),
+      zona: seccion.zona,
+    });
+    expect(objetivoCifra(after.secciones.objetivo)).toEqual(
+      objetivoCifra(before.secciones.objetivo),
+    );
+    expect(metricaCifra(after.secciones.ciclo.margenReal)).toEqual(
+      metricaCifra(before.secciones.ciclo.margenReal),
+    );
 
     // El único bloque que cambia es la deuda no hipotecaria.
     expect(before.secciones.deudaNoHipotecaria.total.subtotal).toBe("1020.00");
     expect(after.secciones.deudaNoHipotecaria.total.subtotal).toBe("1270.00");
     expect(after.secciones.deudaNoHipotecaria.total.estado).toBe("Parcial");
+    expect(after.secciones.deudaNoHipotecaria.total.cobertura).toMatchObject({
+      estado: "Parcial",
+      incluidos: 3,
+      excluidos: 1,
+    });
+    expect(
+      after.secciones.deudaNoHipotecaria.total.cobertura.motivos.join(" "),
+    ).toContain("D005");
     expect(after.secciones.deudaNoHipotecaria.items.map((item) => item.id)).toContain(
       created.id,
     );
