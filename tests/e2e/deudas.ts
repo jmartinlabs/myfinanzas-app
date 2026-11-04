@@ -243,8 +243,8 @@ export async function deudas(page: Page) {
       return { color: c.color, background: c.backgroundColor };
     });
   expect(contrast).toEqual({
-    color: "rgb(36, 50, 14)",
-    background: "rgb(141, 187, 46)",
+    color: "rgb(20, 20, 20)",
+    background: "rgb(228, 87, 46)",
   });
   await page.goto("/deudas");
   await shot("debt-list-desktop");

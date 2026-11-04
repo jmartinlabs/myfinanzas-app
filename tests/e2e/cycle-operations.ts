@@ -173,8 +173,8 @@ export async function cycleOperationsJourney(page: Page) {
     .focus();
   await page.keyboard.press("Tab");
   await expect(confirm).toBeFocused();
-  await expect(confirm).toHaveCSS("background-color", "rgb(141, 187, 46)");
-  await expect(confirm).toHaveCSS("color", "rgb(36, 50, 14)");
+  await expect(confirm).toHaveCSS("background-color", "rgb(228, 87, 46)");
+  await expect(confirm).toHaveCSS("color", "rgb(20, 20, 20)");
   const context = await get("/ciclos/contexto");
   expect(
     (

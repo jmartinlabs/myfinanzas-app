@@ -24,12 +24,19 @@ import { SaldoDetail, SaldoList } from "./Saldos";
 import { Alert } from "./ui";
 import { Clasificacion } from "./Clasificacion";
 import { Ciclos, CycleHeader } from "./Ciclos";
+import {
+  applyTheme,
+  currentTheme,
+  themeCatalog,
+  type ThemeId,
+} from "./themes";
 import "./style.css";
 function App() {
   const [auth, setAuth] = useState<"loading" | "ready" | "login" | "error">(
     "loading",
   );
-  const [path, setPath] = useState(location.pathname + location.search),
+  const [theme, setTheme] = useState<ThemeId>(() => currentTheme()),
+    [path, setPath] = useState(location.pathname + location.search),
     [menu, setMenu] = useState(false),
     [saldo, setSaldo] = useState<Saldo | null>(null),
     [error, setError] = useState(""),
@@ -43,6 +50,9 @@ function App() {
       .catch((e) => setAuth(e.status === 401 ? "login" : "error"));
   };
   useEffect(check, []);
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
   useEffect(() => {
     const expired = () => setExpired(true);
     addEventListener("session-expired", expired);
@@ -447,6 +457,20 @@ function App() {
         <header className="global-header">
           <CycleHeader path={path} />
           <div className="header-actions">
+            <label className="theme-picker">
+              Tema
+              <select
+                aria-label="Tema visual"
+                value={theme}
+                onChange={(event) => setTheme(event.target.value as ThemeId)}
+              >
+                {themeCatalog.map((entry) => (
+                  <option key={entry.id} value={entry.id}>
+                    {entry.label}
+                  </option>
+                ))}
+              </select>
+            </label>
             <span className="local-badge">Entorno local</span>
             <button className="text-button" onClick={logout}>
               Cerrar sesión

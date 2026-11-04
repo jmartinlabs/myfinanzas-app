@@ -67,8 +67,8 @@ test("E3.3 vehículos: listado, ficha, cobertura, alta, edición, conversión e 
     ).toBe(true);
     await page.screenshot({ path: "artifacts/e3-3/vehiculos-list-1440.png", fullPage: true });
     const primary = page.getByRole("button", { name: "Nuevo vehículo" });
-    await expect(primary).toHaveCSS("color", "rgb(36, 50, 14)");
-    await expect(primary).toHaveCSS("background-color", "rgb(141, 187, 46)");
+    await expect(primary).toHaveCSS("color", "rgb(20, 20, 20)");
+    await expect(primary).toHaveCSS("background-color", "rgb(228, 87, 46)");
 
     await page.getByRole("link", { name: "Coche principal", exact: true }).first().click();
     await expect(

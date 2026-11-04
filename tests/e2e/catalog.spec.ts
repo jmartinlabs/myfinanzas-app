@@ -57,8 +57,8 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(skip).toHaveCSS("opacity", "0");
   await page.getByRole("heading", { name: "Saldos", exact: true }).focus();
   const primary = page.getByRole("button", { name: "Nuevo Saldo" });
-  await expect(primary).toHaveCSS("color", "rgb(36, 50, 14)");
-  await expect(primary).toHaveCSS("background-color", "rgb(141, 187, 46)");
+  await expect(primary).toHaveCSS("color", "rgb(20, 20, 20)");
+  await expect(primary).toHaveCSS("background-color", "rgb(228, 87, 46)");
   await shot("list-desktop");
   await page.setViewportSize({ width: 390, height: 844 });
   await page.emulateMedia({ colorScheme: "dark" });
@@ -66,7 +66,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
     await page.evaluate(
       () => getComputedStyle(document.documentElement).colorScheme,
     ),
-  ).toBe("light");
+  ).toBe("dark");
   await expect(page.locator(".desktop-list")).toBeHidden();
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
   await page.getByRole("button", { name: "Abrir menú" }).click();
@@ -114,7 +114,7 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   await expect(liquidity).toHaveAttribute("aria-checked", "true");
   await expect(liquidity).toBeFocused();
   await expect(liquidity).toHaveCSS("outline-style", "solid");
-  await expect(liquidity).toHaveCSS("background-color", "rgb(141, 187, 46)");
+  await expect(liquidity).toHaveCSS("background-color", "rgb(87, 178, 186)");
   await page.getByRole("button", { name: "Crear Saldo", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Reserva ficticia E1.1", exact: true }),

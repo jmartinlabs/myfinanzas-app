@@ -309,7 +309,7 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     await expect(page.locator(".position-panel")).toContainText("150,00 €");
     await expect(page.locator(".position-placeholder.calculated")).toHaveCSS(
       "color",
-      "rgb(43, 43, 43)",
+      "rgb(247, 245, 241)",
     );
     await shot("position-mobile");
     const gasto = await create(
