@@ -29,6 +29,7 @@ const PORTS = {
   incoherente: 3038,
   "sin-ciclo": 3039,
   nav: 3040,
+  "backup-sin-referencia": 3041,
 } as const;
 
 const ARTIFACTS = "artifacts/e4-9";
@@ -66,7 +67,12 @@ async function startServer(
       },
       { timeout: 20000 },
     )
-    .toBe(200);
+    .toBe(200)
+    .catch((error) => {
+      // No dejar un proceso huérfano si el arranque o el health fallan.
+      child.kill();
+      throw error;
+    });
   return { child, port, dir: dirFor(scenario) };
 }
 
@@ -166,6 +172,9 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     await expect(page.getByText("Verificable", { exact: true })).toBeVisible();
     await expect(page.getByText("Acreditado", { exact: true }).first()).toBeVisible();
     await expect(
+      page.getByText("Referencia documental", { exact: true }),
+    ).toBeVisible();
+    await expect(
       page.getByRole("button", { name: "Confirmar cierre", exact: true }),
     ).toBeEnabled();
 
@@ -210,6 +219,17 @@ test("E4.9 UI: 401, preflight listo, cierre v1, foto inmutable y 390/1440 con tr
     ).toBeVisible();
     await expect(
       photoRegion.getByText(/Registro inmutable\. Fingerprint propio/),
+    ).toBeVisible();
+    await expect(
+      photoRegion.getByText("Sin hechos", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      photoRegion.getByText("SinPlan", { exact: true }),
+    ).toBeVisible();
+    await expect(photoRegion.getByText(/0 movimiento\(s\)/)).toBeVisible();
+    await expect(photoRegion.getByText(/0 línea\(s\)/)).toBeVisible();
+    await expect(
+      photoRegion.getByText("1.000,00 €", { exact: true }).first(),
     ).toBeVisible();
     await expect(page.getByText("Ciclo ya cerrado", { exact: true })).toBeVisible();
     await expect(
@@ -362,6 +382,9 @@ test("E4.9 UI: conflicto 409 por revisión obsoleta y recuperación", async ({
     await login(page, dir);
     await page.getByLabel("Ciclo").selectOption("1");
     await page.getByLabel("Motivo del cierre").fill("Conflicto ficticio E2E");
+    const attemptKey = page.getByTestId("cierre-attempt-key");
+    await expect(attemptKey).toHaveText(/^[0-9a-f-]{36}$/);
+    const keyBefore = await attemptKey.innerText();
 
     let stale = true;
     await page.route("**/api/cierres/1/cerrar", async (route) => {
@@ -394,6 +417,8 @@ test("E4.9 UI: conflicto 409 por revisión obsoleta y recuperación", async ({
     await page
       .getByRole("button", { name: "Actualizar revisión y reintentar" })
       .click();
+    // La recarga del preflight termina cuando la clave de intento cambia.
+    await expect(attemptKey).not.toHaveText(keyBefore);
     await expect(
       page.getByRole("button", { name: "Confirmar cierre", exact: true }),
     ).toBeEnabled();
@@ -453,6 +478,50 @@ test("E4.9 UI: preflight bloqueado por E3.5 y backup, sin foto parcial", async (
     await expectNoOverflow(page);
     await page.screenshot({
       path: `${ARTIFACTS}/bloqueado-390.png`,
+      fullPage: true,
+    });
+    expect(errors).toEqual([]);
+  } finally {
+    child.kill();
+  }
+});
+
+test("E4.9 UI: DT6 sin referencia no se marca Acreditado y bloquea", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  const errors = pageErrors(page);
+  const { child, port, dir } = await startServer(request, "backup-sin-referencia");
+  try {
+    await routeApi(page, port);
+    await login(page, dir);
+    await page.getByLabel("Ciclo").selectOption("1");
+    await expect(
+      page.getByText("BACKUP_NO_VERIFICABLE", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("No acreditado", { exact: true }).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Acreditado", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByText(/Falta la referencia de manifiesto\/checksum\/clave/).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Confirmar cierre", exact: true }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("region", { name: "Fotografía de cierre" }),
+    ).toHaveCount(0);
+    expect(
+      (await page.request.get(`http://127.0.0.1:${port}/api/cierres/1/foto`))
+        .status(),
+    ).toBe(404);
+
+    await page.screenshot({
+      path: `${ARTIFACTS}/backup-sin-referencia-1440.png`,
       fullPage: true,
     });
     expect(errors).toEqual([]);

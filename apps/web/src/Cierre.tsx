@@ -187,6 +187,14 @@ const TOTAL_LABELS: Record<string, string> = {
   amortizaciones: "Amortizaciones",
   devoluciones: "Devoluciones",
   neto: "Neto ingreso − gasto",
+  movimientos: "Movimientos",
+  efectivo: "Efectivo a Fin",
+  posiciones: "Posiciones a Fin",
+  plan: "Plan",
+  e35: "E3.5 / FIN_NETA",
+  deuda: "Deuda E1.6",
+  valoracion: "Valoración / patrimonio",
+  anticipos: "Anticipos",
 };
 const NO_DISPONIBLE_LABELS: Record<string, string> = {
   valoracion: "Valoración / patrimonio (E4.3)",
@@ -200,11 +208,21 @@ const date = (value: string | null | undefined) =>
 const utc = (value: string) => new Date(value).toISOString().replace("T", " ").slice(0, 16) + " UTC";
 const amount = (value: string | null | undefined) =>
   value === null || value === undefined ? "No disponible" : eur(value);
+const backupAcreditado = (backup: {
+  verificado: boolean;
+  restauracionProbada: boolean;
+  referencia: string | null;
+}) =>
+  backup.verificado &&
+  backup.restauracionProbada &&
+  Boolean(backup.referencia);
+const issueMessage = (issues: Issue[], code: string) =>
+  issues.find((issue) => issue.code === code)?.message;
 
 function tone(estado: string) {
   const value = estado.toLowerCase();
   if (
-    /bloque|no verificable|incoheren|conflicto|no disponible|sin siguiente|no acreditad|ausente|no legible/.test(
+    /bloque|no verificable|plannoverificable|plan no verificable|incoheren|conflicto|no disponible|sin siguiente|no acreditad|ausente|no legible/.test(
       value,
     )
   )
@@ -232,7 +250,7 @@ function IssueList({ items, kind }: { items: Issue[]; kind: "bloqueo" | "aviso" 
       <h2>{kind === "bloqueo" ? "Bloqueos que impiden cerrar" : "Avisos"}</h2>
       <ul>
         {items.map((item) => (
-          <li key={item.code}>
+          <li key={item.code + ":" + item.message}>
             <strong>{item.code}</strong> — {item.message}
           </li>
         ))}
@@ -382,7 +400,6 @@ export function Cierre({ go }: { go: (path: string) => void }) {
       .then((result) => {
         if (current !== request.current || selectedRef.current !== selected) return;
         setPreflight(result);
-        setMotivo("");
         setAttemptKey(crypto.randomUUID());
         attempt.current = null;
         setError("");
@@ -512,7 +529,8 @@ export function Cierre({ go }: { go: (path: string) => void }) {
   const conflict =
     errorCode === "REVISION_CONFLICT" ||
     errorCode === "IMPACT_CHANGED" ||
-    errorCode === "ALREADY_CLOSED";
+    errorCode === "ALREADY_CLOSED" ||
+    errorCode === "IDEMPOTENCY_CONFLICT";
   const versionCount = preflight?.cierre.version ?? 1;
   const estadoDisplay = closed ? "Cerrado" : preflight?.estado;
 
@@ -673,10 +691,11 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                   <tr>
                     <td data-label="Gate">E4.8 precierre</td>
                     <td data-label="Estado">
-                      <Badge estado="Integrado" />
+                      <Badge estado="Referencia documental" />
                     </td>
                     <td data-label="Detalle">
-                      Solo lectura; no cierra ni crea fotos.
+                      Referencia documental: el preflight E4.8 está integrado y
+                      es de solo lectura; no autoriza ni cierra.
                     </td>
                   </tr>
                   <tr>
@@ -702,16 +721,21 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                     <td data-label="Estado">
                       <Badge
                         estado={
-                          preflight.backup.verificado &&
-                          preflight.backup.restauracionProbada
+                          backupAcreditado(preflight.backup)
                             ? "Acreditado"
                             : "No acreditado"
                         }
                       />
                     </td>
                     <td data-label="Detalle">
-                      {preflight.backup.motivo ??
-                        "Evidencia de manifiesto, checksum, clave y restauración."}
+                      {backupAcreditado(preflight.backup)
+                        ? "Evidencia de manifiesto, checksum, clave y restauración."
+                        : issueMessage(
+                            preflight.bloqueos,
+                            "BACKUP_NO_VERIFICABLE",
+                          ) ??
+                          preflight.backup.motivo ??
+                          "Falta evidencia DT6/T-BKP: manifiesto, checksum, clave o restauración."}
                       {preflight.backup.referencia
                         ? ` Referencia: ${preflight.backup.referencia}.`
                         : ""}
@@ -723,9 +747,12 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                       <Badge estado={preflight.plan.estado} />
                     </td>
                     <td data-label="Detalle">
-                      {preflight.plan.estado === "SinPlan"
-                        ? "SinPlan es válido; no se inventan líneas."
-                        : `${preflight.plan.lineas} línea(s) capturadas.`}
+                      {preflight.plan.estado === "PlanNoVerificable"
+                        ? issueMessage(preflight.bloqueos, "PLAN_NO_VERIFICABLE") ??
+                          "El plan no es verificable; no se captura ni se inventan líneas."
+                        : preflight.plan.estado === "SinPlan"
+                          ? "SinPlan es válido; no se inventan líneas."
+                          : `${preflight.plan.lineas} línea(s) capturadas.`}
                       {preflight.plan.sinPlanificar
                         ? " Existen hechos reales sin línea de plan."
                         : ""}
@@ -862,13 +889,21 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                   <>
                     <div className="cierre-readonly">
                       <span>Fingerprint que se enviará</span>
-                      <code className="cierre-fingerprint" title={preflight.fingerprint}>
+                      <code
+                        className="cierre-fingerprint"
+                        title={preflight.fingerprint}
+                        data-testid="cierre-form-fingerprint"
+                      >
                         {preflight.fingerprint}
                       </code>
                     </div>
                     <div className="cierre-readonly">
                       <span>Clave de intento (idempotencia)</span>
-                      <code className="cierre-fingerprint" title={attemptKey}>
+                      <code
+                        className="cierre-fingerprint"
+                        title={attemptKey}
+                        data-testid="cierre-attempt-key"
+                      >
                         {attemptKey}
                       </code>
                     </div>
@@ -1016,14 +1051,20 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                       <dd>
                         <Badge
                           estado={
-                            photo.foto.backup.verificado &&
-                            photo.foto.backup.restauracionProbada
+                            backupAcreditado(photo.foto.backup)
                               ? "Acreditado"
                               : "No acreditado"
                           }
                         />
                       </dd>
-                      <small>{photo.foto.backup.motivo}</small>
+                      <small>
+                        {backupAcreditado(photo.foto.backup)
+                          ? photo.foto.backup.motivo
+                          : !photo.foto.backup.referencia
+                            ? "Falta la referencia de manifiesto/checksum/clave de la evidencia DT6/T-BKP."
+                            : photo.foto.backup.motivo ??
+                              "Backup no acreditado: falta la restauración probada."}
+                      </small>
                     </div>
                   </dl>
 

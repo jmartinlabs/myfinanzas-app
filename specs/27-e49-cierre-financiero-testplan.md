@@ -30,7 +30,7 @@ de Revisión Comida con guarda T2 y la comparación de los seis totales de hecho
 > sin excepción por «sin impacto». La propuesta por impacto queda pendiente de enmienda
 > formal y no se usa como criterio de PASS.
 
-Base: `main` `f077b7e`, esquema 18.
+Base: `3cce51e` (rama `feat/e49-cierre`, `main` `58346e1` ya integrado), esquema v25.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -50,10 +50,10 @@ Base: `main` `f077b7e`, esquema 18.
 | AC-14 | Consultar la foto tras T2/T3 | Foto inmutable; vistas vivas separadas | Bun Test + Playwright | Documental; API/UI futura | Foto y vista viva | **PASS parcial (fixtures API + UI/E2E)** — `e49-guards.test.ts` compara la foto tras T2/T3; `cierre.spec.ts` renombra una Partida por T3 tras cerrar y `GET /foto` permanece idéntica. Sin cierre real. | 2026-11-04 |
 | AC-15 | Consumidor Anticipos sin proveedor real | AC36 sigue PARCIAL; no completo con ficticio | Bun Test de contrato AC36 | Documental; API futura | Estado AC36 y proveedor | UNRUN — diseño | — |
 | AC-16 | Operación E4.1 anterior al ciclo y posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo | Bun Test de corte E4.1 | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
-| AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: preflight `SinPlan` válido, sin bloqueo, y la foto v1 registra `SinPlan` sin líneas. | 2026-11-04 |
+| AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: preflight `SinPlan` válido, sin bloqueo, y la UI de la foto v1 muestra `SinPlan` y 0 líneas; no se inspecciona el JSON interno de la foto. | 2026-11-04 |
 | AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto | Bun Test | Documental; API futura | DTO de bloqueo | UNRUN — diseño (el bloqueo existe en la API; no hay E2E de UI en DEV-07) | — |
 | AC-20 | Cerrar con cierres posteriores, coherentes o con diferencia no explicable | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación al mismo corte incluyendo operaciones posteriores legítimas; compara efectivo, posiciones y los totales de hechos (ingresos, gastos, transferencias, amortizaciones, devoluciones y neto); un cierre sin foto es impacto no verificable; sin diferencia no explicable no altera posteriores; una diferencia no explicable o una foto sin totales legibles bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR` | Bun Test + UI | Documental; API/UI futura | Auditoría, foto posterior y bloqueo | **PASS parcial (fixtures API + UI/E2E)** — `e49-guards.test.ts`/`e49-api.test.ts` comparan los seis totales y bloquean fotos ilegibles; `cierre.spec.ts` cubre aviso `CIERRE_FUERA_DE_ORDEN` + 422 `MOTIVO_REQUERIDO` + cierre con motivo, y `INCOHERENCIA_CON_CIERRE_POSTERIOR` sin foto. Sin cierre real. | 2026-11-04 |
-| AC-21 | Cerrar ciclo sin hechos | Solo con ausencia acreditada de operaciones imputables en todas las fuentes; foto con `Sin hechos`; S0 (incluido 0) y posiciones heredadas se capturan; ausencia de Compras nuevas no es `Sin hechos` | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: `Sin hechos` acreditado cierra y lo registra; una fuente ilegible muestra «Con hechos» + `FUENTE_NO_LEGIBLE` y bloquea. El borde de Compras nuevas sigue en fixtures API. | 2026-11-04 |
+| AC-21 | Cerrar ciclo sin hechos | Solo con ausencia acreditada de operaciones imputables en todas las fuentes; foto con `Sin hechos`; S0 (incluido 0) y posiciones heredadas se capturan; ausencia de Compras nuevas no es `Sin hechos` | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: `Sin hechos` acreditado cierra; la UI de la foto muestra `Sin hechos`, 0 movimientos y el S0 congelado; no se inspecciona el JSON interno. Una fuente ilegible muestra «Con hechos» + `FUENTE_NO_LEGIBLE` y bloquea. El borde de Compras nuevas sigue en fixtures API. | 2026-11-04 |
 
 ## DEV-06 matrix T1/T2/T3
 
@@ -109,10 +109,11 @@ la UI/E2E con fixtures, **no** un cierre real ni el cierre de DT6.
 | Caso/AC | Precondición | Resultado observado | Prueba |
 | --- | --- | --- | --- |
 | Sesión 401 | Sin sesión | `GET /preflight` y `GET /foto` devuelven 401; tras MFA se conserva `/cierre` | `tests/e2e/cierre.spec.ts` |
-| Preflight listo (AC-01/AC-17 parcial) | Ciclo con siguiente Inicio, S0, `SinPlan` y evidencia inyectada | Estado `Listo`, ventana 01/01→31/01/2026, S0, fingerprint de 64 hex, `SinPlan` válido y `Sin hechos` acreditado; el cierre crea v1 con app/esquema y sin ciclo siguiente | Igual |
+| Preflight listo (AC-01/AC-17 parcial) | Ciclo con siguiente Inicio, S0, `SinPlan` y evidencia inyectada | Estado `Listo`, ventana 01/01→31/01/2026, S0, fingerprint de 64 hex, `SinPlan` válido y `Sin hechos` acreditado; el cierre crea v1 con app/esquema y sin ciclo siguiente; la UI de la foto muestra `SinPlan`, `Sin hechos`, 0 movimientos y 0 líneas | Igual |
 | Foto inmutable (AC-14 parcial) | Cierre v1 y renombrado T3 de Partida no usada | `GET /foto` idéntica antes/después del renombrado; la UI no recalcula ni edita | Igual |
 | Replay idempotente (AC-10 parcial) | El servidor procesa el cierre y la UI recibe un 500 ficticio; se reintenta con la misma clave | Aviso «Reintento idempotente», misma foto v1, `estado.version = 1` | Igual |
-| Conflicto 409 (AC-11 parcial) | Fingerprint obsoleto entre preflight y confirmación | 409 `REVISION_CONFLICT`, sin foto; tras actualizar la revisión se conserva el motivo y el cierre v1 se completa | Igual |
+| Conflicto 409 (AC-11 parcial) | Fingerprint obsoleto entre preflight y confirmación | 409 `REVISION_CONFLICT`, sin foto; tras actualizar la revisión se conserva el motivo (comprobado tras cambiar la clave de intento) y el cierre v1 se completa | Igual |
+| DT6 sin referencia | Backup verificado y restauración probada, pero sin referencia de manifiesto/checksum/clave | El gate exige referencia: badge «No acreditado», mensaje `BACKUP_NO_VERIFICABLE` real, cierre deshabilitado y sin foto | Igual |
 | Bloqueo E3.5 + backup (AC-08/AC-09 parcial) | Evidencia E3.5 no verificable y backup no acreditado | Códigos `E35_NO_VERIFICABLE` y `BACKUP_NO_VERIFICABLE`, botón deshabilitado, sin foto (404), sin cierre parcial | Igual |
 | Ventana no finita (AC-02 parcial) | Un solo ciclo, sin siguiente Inicio | `SIN_SIGUIENTE_INICIO`, Fin no derivable, cierre deshabilitado | Igual |
 | `Sin hechos` no acreditado (AC-21 parcial) | Fuente auxiliar ilegible en el fixture | `FUENTE_NO_LEGIBLE`, estado «Con hechos» (no se declara `Sin hechos`), cierre deshabilitado | Igual |
@@ -124,8 +125,9 @@ la UI/E2E con fixtures, **no** un cierre real ni el cierre de DT6.
 Comandos y resultado DEV-07 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
 - `bun run typecheck` — OK.
-- `bun run build` — OK (46 módulos; aviso de chunk >500 kB, no error).
-- `bunx playwright test tests/e2e/cierre.spec.ts` — **10/10 PASS**.
+- `bun run build` — OK (48 módulos; aviso de chunk >500 kB, no error).
+- `bunx playwright test tests/e2e/cierre.spec.ts` — **11/11 PASS** (incluye R1 de motivo
+  conservado y R3 sin referencia de backup).
 - `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` — **7/7 PASS**.
 - `bunx playwright test tests/e2e/precierre.spec.ts` — **1 FAIL preexistente** en HEAD
   `3cce51e`, reproducido con `git stash -u`: el fixture E4.8 devuelve `Bloqueado`
@@ -134,8 +136,16 @@ Comandos y resultado DEV-07 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
 Capturas: `artifacts/e4-9/preflight-{light-s,dark-s,hybrid-s}-{1440,390}.png`,
 `foto-{light-s,dark-s,hybrid-s}-{1440,390}.png`, `bloqueado-390.png`,
-`sin-siguiente-1440.png`, `fuera-de-orden-1440.png`, `incoherencia-1440.png`,
+`backup-sin-referencia-1440.png`, `sin-siguiente-1440.png`,
+`fuera-de-orden-1440.png`, `incoherencia-1440.png`,
 `conflicto-409-1440.png`, `replay-error-1440.png`, `sin-ciclos-1440.png`.
+
+Evidencia R2 (2026-11-04, macOS 15.5 arm64): Bun 1.4.3, Playwright 1.64.1,
+Chromium 156.0.8078.4. `bunx playwright test tests/e2e/cierre.spec.ts` — 11 PASS,
+0 FAIL. Log completo en `artifacts/e4-9/dev-07-e2e.log` (ignorado por Git). La CI
+`critical` **no ejecuta E2E**: `scripts/verify` excluye el check `e2e` en ese perfil y
+`.github/workflows/validate.yml` solo instala Chromium para `full`; la validación E2E
+es local/host, no evidencia de CI `critical`.
 
 Huecos DEV-07: no se acredita DT6/T-BKP ni cierre real; E3.5 es inyectada; solo existe
 v1 porque el re-cierre E4.10 queda fuera, así que el selector de versión (>1) no se
@@ -196,13 +206,15 @@ AC-20 se acredita como coherencia de fixtures, no como cierre real.
 ## Browser verification
 
 Ejecutado el 2026-11-04 por DEV-07 sobre `feat/e49-cierre`: `tests/e2e/cierre.spec.ts`
-(10/10) recorre 1440×1000 y 390×844 con `light-s`, `dark-s` y `hybrid-s`, comprueba
+(11/11) recorre 1440×1000 y 390×844 con `light-s`, `dark-s` y `hybrid-s`, comprueba
 `scrollWidth <= innerWidth`, foco visible en la fotografía y capturas en
-`artifacts/e4-9/`. El servidor de test es aislado y la evidencia E3.5/DT6 está
-inyectada: las capturas no acreditan un cierre real ni la restauración T-BKP. La
-regresión `inicio.spec.ts`/`theme.spec.ts` pasa 7/7. `precierre.spec.ts` mantiene un
-fallo preexistente ajeno a este bloque (fixture `Bloqueado` frente a `Listo con
-avisos`).
+`artifacts/e4-9/`. Entorno: macOS 15.5 arm64, Bun 1.4.3, Playwright 1.64.1 y Chromium
+156.0.8078.4. El servidor de test es aislado y la evidencia E3.5/DT6 está inyectada:
+las capturas no acreditan un cierre real ni la restauración T-BKP. La regresión
+`inicio.spec.ts`/`theme.spec.ts` pasa 7/7. `precierre.spec.ts` mantiene un fallo
+preexistente ajeno a este bloque (fixture `Bloqueado` frente a `Listo con avisos`; no
+se corrige aquí). La CI `critical` no ejecuta E2E (perfil sin check `e2e` y sin
+instalación de Chromium).
 
 ## Limitations and next action
 

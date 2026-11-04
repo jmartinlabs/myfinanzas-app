@@ -122,6 +122,19 @@ switch (scenario) {
       },
     };
     break;
+  case "backup-sin-referencia":
+    cycles(2);
+    options = {
+      appVersion: "0.0.0-e2e",
+      backup: {
+        verificado: true,
+        restauracionProbada: true,
+        referencia: null,
+        motivo: null,
+      },
+      e35: verifiedEvidence.e35,
+    };
+    break;
   case "fuente":
     cycles(2);
     // Simulate an applicable auxiliary source that cannot be read: the
