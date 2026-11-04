@@ -1908,6 +1908,17 @@ test("E4.9 QA M4: el alta de Revisión Comida en ventana cerrada exige huella de
     { "idempotency-key": randomUUID() },
   );
   expect(created.status).toBe(201);
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(created.data.operacion.id) as { posterior: string };
+  expect(JSON.parse(audit.posterior)).toMatchObject({
+    impacto: {
+      fingerprint: preview.data.fingerprint,
+      cierres: [{ ciclo: "1", version: 1 }],
+    },
+  });
   expect(
     f.db
       .query(

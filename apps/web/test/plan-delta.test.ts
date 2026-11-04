@@ -1,5 +1,5 @@
 import { test, expect } from "bun:test";
-import { planDeltaEntries } from "./plan-delta";
+import { planDeltaEntries } from "../src/plan-delta";
 
 test("planDeltaEntries ignora el certificado de impacto y conserva los deltas de campo", () => {
   const raw = JSON.stringify({

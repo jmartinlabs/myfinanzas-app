@@ -10,8 +10,11 @@ texto aprobado de SPEC27: 409 `HISTORY_LOCKED` por fecha en ventana cerrada
 (AC-03/AC-04) y bloqueo de hechos anteriores cuando pueden alterar lo capturado o el
 impacto no es verificable. AC-03/AC-04/AC-05/AC-06/AC-14 y la ampliación AC-20 tienen
 prueba de fixtures en `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no cierre
-real). El resto de AC sigue UNRUN. Este bloque se verificó localmente; no se ejecutó un
-workflow de CI. No hay migración nueva ni datos reales. Aprobado con SPEC27 el
+real). El resto de AC sigue UNRUN. La CI de `d4e6d25` falló porque
+`apps/web/src/plan-delta.test.ts` usaba `bun:test` en una ruta prohibida por
+`scripts/check-project`; el test se movió a `apps/web/test/plan-delta.test.ts` y la
+corrección queda pendiente de una nueva ejecución de CI. No hay migración nueva ni
+datos reales. Aprobado con SPEC27 el
 2026-10-28; DT3/DT4 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06
 (2026-11-04) cerró M1–M5 y L5, y L1 por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
 cierres en `audit.campos.impacto`; Revisión Comida los guarda en
@@ -99,7 +102,7 @@ Ejecutado el 2026-11-04 sobre el bloque DEV-06 (worktree `dev-e49`, rama `feat/e
 
 - `bun run typecheck` — OK.
 - `bun test apps/api/src/e49-guards.test.ts` — 31/31 PASS (incluye 21 pruebas DEV-06/QA).
-- `bun test apps/web/src/plan-delta.test.ts` — 2/2 PASS (R1: filtra `impacto` y tolera JSON inválido).
+- `bun test apps/web/test/plan-delta.test.ts` — 2/2 PASS (R1: filtra `impacto` y tolera JSON inválido).
 - `bun run build` — OK (46 módulos; aviso de tamaño de chunk, no error).
 - `bun test apps/api/src/e49-api.test.ts apps/api/src/e49-migration.test.ts apps/api/src/e49-schema-contract.test.ts` — 58 PASS, 3 SKIP, 0 FAIL.
 - `bun test apps/api/src/referencias.test.ts apps/api/src/deudas.test.ts apps/api/src/presupuestos.test.ts apps/api/src/planes-ciclo.test.ts apps/api/src/revision-comida.test.ts apps/api/src/clasificacion.test.ts apps/api/src/instrumentos.test.ts apps/api/src/saldos.test.ts apps/api/src/movimientos.test.ts apps/api/src/compras.test.ts apps/api/src/ventas.test.ts apps/api/src/ciclos.test.ts` — 134 PASS, 9 FAIL de entorno macOS (`Ancestro no confiable` en backup/restore/migración y estado privado), ninguno de los módulos tocados.
@@ -113,8 +116,8 @@ divergentes y hecho no capturado en la ventana posterior. T2 Referencias/Deudas 
 `/impacto` + huella de consumidores + motivo + auditoría, con 409
 `IMPACTO_NO_VERIFICABLE`/`IMPACT_CHANGED`; las pruebas mueven consumidores reales,
 rechazan huellas obsoletas y bloquean si no se pueden leer. T3 mantiene listas blancas
-por entidad; Clasificación cablea `closedFieldDecision` y el endpoint de Subcategoría se
-prueba discriminando `nombre` informativo frente a `padre` económico. Presupuestos exige
+por entidad; Clasificación cablea `closedFieldDecision` y el endpoint de Subcategoría
+cubre la regresión/contrato de `nombre` informativo frente a `padre` económico. Presupuestos exige
 confirmación de impacto tras cierre; plan vivo bloquea si la foto no acredita el plan;
 Revisión Comida permite campos informativos (T3) y exige impacto/fingerprint/motivo/
 auditoría en cambios y altas dentro de ventana cerrada, con preview y escritura usando el
@@ -126,8 +129,9 @@ pruebas.
 
 R1 (UI plan vivo): `PlanesCiclo.tsx` consume `delta` mediante `planDeltaEntries`, que
 filtra solo entradas con `anterior`/`posterior` y descarta el certificado `impacto` y
-cualquier clave extra. La comprobación está en `apps/web/src/plan-delta.test.ts` y el
-build de producción se ejecutó sin error; no se declara E2E/UI de cierre.
+cualquier clave extra. La comprobación está en `apps/web/test/plan-delta.test.ts` y el
+build de producción se ejecutó sin error; no se declara E2E/UI de cierre. La ubicación
+del test se corrigió tras el fallo de CI de `d4e6d25`.
 
 
 ## Functional verification
