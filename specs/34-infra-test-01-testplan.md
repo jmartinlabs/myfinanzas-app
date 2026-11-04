@@ -6,8 +6,8 @@ Status: **UNRUN — documento de planificación.** No se ha ejecutado ninguna co
 esta entrega. Este test plan no autoriza DEV, auditoría del VPS, DNS, Caddy, despliegue,
 datos reales ni merge.
 Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04).
-Contrato de alojamiento: [vps-infra PR #7](https://github.com/jmartinlabs/vps-infra/pull/7),
-borrador, HEAD `a99ac33d8ad1a8a5d944f6130e458a2857c5461c`.
+Contrato de alojamiento: **pendiente de un nuevo entregable de `vps-infra`**. El PR #7 de
+vps-infra está CLOSED, sin merge y con rama eliminada; solo es antecedente histórico.
 Documentos de referencia: [RUNBOOK](../infra/RUNBOOK.md),
 [preparación de despliegue](../infra/README.md),
 [seguridad](guidelines/security.md), [calidad](guidelines/quality.md).

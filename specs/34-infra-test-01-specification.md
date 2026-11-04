@@ -5,7 +5,7 @@ DNS, Caddy, despliegue, datos reales, migraciones operativas ni merge.
 Approval source/date: PENDING.
 Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04), sin cambios de
 aplicación en esta rama.
-Documentos relacionados: [contrato de alojamiento TEST de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7),
+Documentos relacionados: [antecedente histórico cancelado de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) (CLOSED, no mergeado),
 [runbook de operación](../infra/RUNBOOK.md), [preparación de despliegue](../infra/README.md),
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
@@ -29,7 +29,7 @@ Esta especificación:
 - define **el contrato de MyFinanzas** (imagen, runtime, estado, autenticación, copias y
   mecanismo de datos ficticios) y la **interfaz** que `vps-infra` consume;
 - **no** repite la arquitectura interna del host, que pertenece a
-  [vps-infra PR #7](https://github.com/jmartinlabs/vps-infra/pull/7);
+  el nuevo entregable host de `vps-infra`; el PR #7 está cerrado y solo es antecedente;
 - **no** implementa nada: ni herramienta de seed, ni imagen TEST, ni cambios en el release;
 - **no** toca `vps-infra`, el VPS, DNS, Caddy, UFW ni ningún servicio remoto.
 
@@ -67,12 +67,12 @@ ninguna prueba de aplicación ni de infraestructura para esta spec.
 | `production-init`, `setup`, `backup-cli` como CLIs deliberadas | `production-init.ts`, `setup.ts`, `backup-cli.ts` | TEST los invoca como tareas efímeras, nunca como arranque normal. |
 | `release.py` construye imagen + frontend con manifiesto y `--expected-commit` | `infra/release.py` | El candidato se verifica; no se usa etiqueta móvil. |
 | `runtime.py:render` fija `18081` y `APP_ORIGIN=https://myfinanzas.pp.ua` | `infra/runtime.py` | **No** se usa sin cambios para TEST; ver D6. |
-| `vps-infra` PR #7 abierto, borrador, HEAD `a99ac33d8ad1a8a5d944f6130e458a2857c5461c` | API de GitHub | Su spec de alojamiento existe, pero su estado de partida está desactualizado (§11). |
+| `vps-infra` PR #7 **CLOSED** el 2026-11-04, sin merge y con rama eliminada | API de GitHub | Solo antecedente histórico; la parte host requiere un nuevo entregable (§11). |
 
-`[CONFIRMADO]` La spec de `vps-infra` usa como fuente `origin/main` `0b8aade` y propone
+`[CONFIRMADO]` El antecedente cerrado usaba `origin/main` `0b8aade` y proponía
 `D6: estado productivo limpio; datos ficticios manuales`. Esa formulación **no** cumple el
-requisito de reproducibilidad de esta entrega y se registra como solicitud de cambio en
-§11, sin editar el repositorio ajeno.
+requisito de reproducibilidad de esta entrega; se recoge en §11 para el nuevo entregable host,
+sin editar el repositorio ajeno.
 
 `[CONFIRMADO]` El runbook de MyFinanzas mantiene el despliegue como **NOT deployable** y
 exige el [gate Rootless](../infra/RUNBOOK.md#gate-obligatorio-de-rootless-previo-al-despliegue)
@@ -102,7 +102,7 @@ en la base declarada. TEST añade restricciones, no relaja ninguna existente.
 | Proceso | Bun 1.4.3, `apps/api/src/main.ts` | `Containerfile`, `main.ts` |
 | Puerto interno | `3001` | `main.ts` |
 | Bind interno | `API_BIND_HOST=0.0.0.0` solo dentro del namespace | `server-config.ts` |
-| Publicación host | `127.0.0.1:18082:3001` | Contrato de packet y §5; propuesta de vps-infra D3 |
+| Publicación host | `127.0.0.1:18082:3001` | Propuesta del packet y §5; pendiente de la nueva spec host |
 | UID/GID interno | `10001:10001` con `keep-id:uid=10001,gid=10001` | `Containerfile`, `runtime.py`, RUNBOOK |
 | Rootfs | solo lectura, `TMPDIR=/tmp/private`, tmpfs 64 MiB noexec | `Containerfile`, RUNBOOK |
 | Límites | 1 GiB RAM, 1 CPU, 128 pids | RUNBOOK, plantilla Quadlet |
@@ -327,9 +327,9 @@ para saltarse servicios.
 
 ## 5. Contrato de despliegue con vps-infra (solo interfaz)
 
-`[CONFIRMADO]` La arquitectura del host, el usuario, las rutas, Caddy, DNS, UFW y el
-aprovisionamiento pertenecen a
-[vps-infra PR #7](https://github.com/jmartinlabs/vps-infra/pull/7). Esta sección solo fija
+`[CONFIRMADO]` La arquitectura del host, el usuario, las rutas, Caddy, DNS, UFW y el aprovisionamiento
+pertenecen a `vps-infra`, que debe producir un **nuevo entregable host**. El PR #7 está
+cerrado y solo se conserva como antecedente. Esta sección solo fija
 la **interfaz** que MyFinanzas consume y entrega; no duplica detalles internos ni afirma
 que existan en el VPS.
 
@@ -337,7 +337,7 @@ que existan en el VPS.
 | --- | --- | --- |
 | `public_origin` | `https://test.myfinanzas.pp.ua` | Contrato del packet |
 | `public_host` | `test.myfinanzas.pp.ua` | Contrato del packet |
-| `caddy_upstream` | `127.0.0.1:18082` | Contrato del packet; D3 de vps-infra |
+| `caddy_upstream` | `127.0.0.1:18082` | Propuesta del packet; pendiente de la nueva spec host |
 | `api_container_port` | `3001` | `main.ts` |
 | `api_bind_host` | `0.0.0.0` solo dentro del namespace | `server-config.ts` |
 | `static_root` | `frontend/` del paquete verificado | `release.py` |
@@ -355,8 +355,9 @@ que existan en el VPS.
 | `rollback` | Solo al par exacto con prueba; si no, bloqueo y preservación | RUNBOOK, `compatibility.py` |
 
 `[CONFIRMADO]` `infra/runtime.py:render` **no** es reutilizable tal cual para TEST: fija
-`18081` y `APP_ORIGIN=https://myfinanzas.pp.ua`. La unidad TEST debe ser la de vps-infra
-(§6.3 de su spec) o generarse con una CLI parametrizada que aún no existe. D6 lo decide.
+`18081` y `APP_ORIGIN=https://myfinanzas.pp.ua`. La unidad TEST debe definirla el nuevo
+entregable host de `vps-infra` (la §6.3 del antecedente cerrado es solo referencia) o una CLI
+parametrizada que aún no existe. D6 lo decide.
 
 Obligaciones de MyFinanzas en la interfaz:
 
@@ -478,7 +479,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D3 | Orden seed/alta: seed antes de `setup` vs después | Antes del alta, para exigir ausencia de propietario | `[PENDIENTE]` |
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[PENDIENTE]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[PENDIENTE]` |
-| D6 | Unidad TEST: unidad de vps-infra vs parametrizar `runtime.py:render` | Unidad de vps-infra mientras `render` siga fijando PROD/18081 | `[PENDIENTE]` |
+| D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[PENDIENTE]` |
 
 ## 10. Fuera de alcance
 
@@ -493,35 +494,32 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 - Monitorización residente nueva, scheduler, retención 7/4/3 o SLA/RPO/RTO de producción.
 - Certificación de seguridad, WCAG, carga o alta disponibilidad.
 
-## 11. Cambios solicitados a vps-infra (PR #7)
+## 11. Coordinación con vps-infra y nuevo entregable host
 
-`[PROPUESTA]` Solicitudes para que el propietario de
-[vps-infra PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) actualice su
-especificación. **Este repositorio no edita, comitea ni publica en `vps-infra`.**
+`[CONFIRMADO]` `vps-infra` PR #7 está **CLOSED** desde el 2026-11-04T18:20Z, sin merge y con
+la rama remota eliminada. Se conserva únicamente como **antecedente histórico cancelado**; no
+es contrato vigente, dependencia activa ni aprobación.
 
-1. **D6 — datos ficticios.** Sustituir «datos ficticios manuales» por el mecanismo
-   reproducible de §4: artefacto test-only, dataset `FT-1`, marcador TEST, manifiesto y
-   checksums, guardas, reset archivado y verificación posterior. Enlazar esta spec.
-2. **Estado de partida.** Actualizar la fuente de `0b8aade` a `main`
-   `b713b089e11d6035af547c1665c47fbc10b4c0a7` o al candidato de despliegue aprobado, y
-   registrar que E4.9/v25 **no** están mergeados y el esquema vigente es 24.
-3. **Secuencia.** Insertar `seed init → seed apply → seed verify` entre
-   `production-init` (§7.5) y el alta del propietario (§7.6); el alta ocurre después del
-   seed y sobre datos ya verificados.
-4. **Rutas y estado.** Añadir `<data-root>/test-instance.json` y
-   `<data-root>/reset/state-<UTC>` al inventario de §5.1, con modo `0600`/`0700`, y reflejar
-   su impacto en el presupuesto de disco.
-5. **Artefacto de release.** Reconocer un segundo ID inmutable de seed en el manifiesto,
-   cargarlo solo para tareas efímeras y prohibir su uso en la unidad permanente.
-6. **AC-24.** Reforzar la comprobación de «solo datos ficticios» con `seed verify` y
-   checksums, no solo inspección visual de la UI.
-7. **Nuevos AC.** Añadir criterios para guardas del seed, determinismo, idempotencia y
-   reset sin tocar PROD; mapearlos a `INFRA-TEST-01-AC04…AC09`.
-8. **`render-unit`.** Mantener la nota de §6.3: la CLI de la app no se usa para TEST
-   mientras fije `18081` y `APP_ORIGIN` de PROD; D6 decide si se parametriza después.
-9. **Test plan.** Su nota de que el test plan se crea «al iniciar la implementación» puede
-   conservarse; este repositorio mantiene su propio test plan documental, que no autoriza
-   ejecución.
+`[PROPUESTA]` La parte host de TEST requiere un **nuevo entregable de `vps-infra`** con su
+propio ciclo SPEC → revisión → aprobación → operaciones. El usuario debe autorizarlo; este
+repositorio **no abre** esa tarea ni PR por inferencia. El nuevo entregable debe recoger:
+
+1. **D6 — datos ficticios reproducibles.** Artefacto test-only, dataset `FT-1`, marcador
+   TEST, manifiesto/checksums, guardas, reset archivado y verificación; enlazar esta spec.
+2. **Estado de partida.** Base `main` `b713b08` o candidato aprobado; E4.9/v25 **no**
+   mergeados y esquema vigente 24.
+3. **Secuencia.** `production-init → seed init/apply/verify → setup`.
+4. **Rutas y estado.** `<data-root>/test-instance.json` y
+   `<data-root>/reset/state-<UTC>` con `0600`/`0700` y su efecto en disco.
+5. **Artefacto de release.** Segundo ID inmutable de seed, solo tareas efímeras y prohibido
+   en la unidad permanente.
+6. **AC de datos ficticios.** `seed verify` y checksums, no solo inspección visual.
+7. **AC nuevos.** Guardas, determinismo, idempotencia y reset sin tocar PROD, mapeados a
+   `INFRA-TEST-01-AC04…AC09`.
+8. **`render-unit`.** No usar la CLI de la app para TEST mientras fije `18081` y el origen de
+   PROD; D6 decide si se parametriza en un trabajo posterior.
+9. **Test plan host.** El suyo propio, con autorizaciones por fase; no sustituye este test
+   plan documental.
 
 ## 12. Trazabilidad y límites de las afirmaciones
 
@@ -532,5 +530,5 @@ especificación. **Este repositorio no edita, comitea ni publica en `vps-infra`.
 - `[PENDIENTE]` D1–D6, la aprobación de la spec y todas las autorizaciones de fase.
 - Ningún PASS se hereda de otras entregas. `UNRUN` no es PASS ni FAIL.
 - Las rutas de host citadas (`/srv/myfinanzas-test`, `/var/www/myfinanzas-test`) son
-  propuestas de vps-infra, no directorios verificados.
+  propuestas heredadas del antecedente cerrado; no son directorios verificados ni un contrato vigente.
 - La aprobación de esta spec no autoriza DEV, VPS, DNS, Caddy, deploy, datos reales ni merge.
