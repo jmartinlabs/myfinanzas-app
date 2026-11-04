@@ -1,0 +1,480 @@
+# 29 — E4.11 Fotografías de ciclo/trimestre/año consultables: Specification
+
+Status: **DRAFT — no aprobada; no autoriza DEV ni merge.**
+Approval source/date: **PENDING** — no existe aprobación funcional ni revisión de Álex
+registrada para E4.11.
+Base: rama `docs/next-packages`, base `eefc20d` (2026-11-04). Ningún AC está ejecutado y
+este documento no declara PASS.
+Contexto y fuentes: [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md),
+[roadmap E4.11](roadmap.md#e411--fotografías-de-ciclotrimestreaño-consultables),
+[SPEC27/E4.9](27-e49-cierre-financiero-specification.md),
+[testplan E4.9](27-e49-cierre-financiero-testplan.md),
+[SPEC20/E4.5](20-historico-precontrol-specification.md),
+[SPEC24/E4.6](24-e46-resumen-inicio-specification.md),
+[brief E4.9](investigations/e49-decision-brief-2026-11-04.md),
+[análisis E4.10](investigations/e410-reapertura-analysis-2026-11-04.md),
+[convención de identificadores](methodology/identifier-convention.md).
+
+El número `29` es soporte documental propuesto en el
+[índice](methodology/identifier-index.md); la identidad de la entrega es **E4.11 · SPEC**.
+
+**Leyenda:** `[CONFIRMADO]` = regla de un documento aprobado o decisión ya registrada;
+`[PROPUESTA]` = detalle candidato de esta SPEC; `[PENDIENTE]` = decisión o evidencia que
+aún no existe. Aprobar esta SPEC, cuando ocurra, no autorizará DEV ni merge.
+
+---
+
+## 1. Capacidad
+
+E4.11 permite consultar evidencia financiera **persistida** por ciclo y por periodo
+(trimestre/año), con su versión, corte y origen identificables, distinguiéndola de forma
+contractual y visible de un cálculo vivo y de un archivo precontrol.
+
+Incluye, como candidato `[PROPUESTA]`:
+
+- consulta de fotos de cierre por ciclo y versión, con sus metadatos inmutables;
+- consulta de trimestre/año **según la política que se apruebe en M1–M3** (agregado
+  persistido o vista determinista), sin recálculo desde motores vivos;
+- etiquetado de origen (`Foto` / `CalculoVivo` / `Archivo`), versión y cobertura por cifra;
+- estados de cobertura y de composición; ausencia nunca convertida en `0`;
+- selección explícita de versión y comparación v1/v2 sin alterar ninguna;
+- navegación de una cifra de periodo a las fotos de ciclo que la componen;
+- continuidad entre ejercicios: lo consultado de 2026 sigue consultable cuando exista 2027;
+- consulta de solo lectura, salvo el agregado persistido si se aprueba M2-A.
+
+No incluye: crear cierres o fotos de ciclo (E4.9/E4.10), reabrir o rectificar (E4.10/DT9),
+recalcular retroactivamente, convertir el archivo E4.5 en foto, definir métricas o
+comparaciones anuales (E4.7) ni aprobar UI/wireframes (DT8).
+
+---
+
+## 2. Distinción estricta: foto persistida, cálculo vivo y archivo precontrol
+
+`[CONFIRMADO]` E4.11 no puede tratar como equivalentes tres cosas que el sistema ya
+separa. La tabla fija qué puede mostrar cada una y qué no puede hacer nunca; condensa la
+tabla del [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md#1-distinción-estricta-foto-persistida-cálculo-vivo-y-archivo-precontrol).
+
+| Dimensión | **Foto persistida** (E4.9/E4.10) | **Cálculo vivo** (E4.6/E2.6) | **Archivo precontrol** (E4.5) |
+| --- | --- | --- | --- |
+| Naturaleza | Evidencia financiera capturada e inmutable en un cierre. | Composición de solo lectura de motores vigentes. | Registro histórico de solo lectura con procedencia, mapping y cobertura. |
+| Autoridad | E4.9/E4.10 (SPEC27; v2 en E4.10). | E4.6 consume E2.6, E2.4, E1.1, E4.2/E4.3/E4.4 y E3.6; no crea economía nueva. | E4.5; no es segundo ledger, plan ni foto. |
+| Cuándo existe | Al cerrar o re-cerrar un ciclo, en transacción única. | En cada consulta; no se persiste como foto. | Con archivo/mapping/corte verificados; se consulta por ejercicio y corte. |
+| Referencia temporal | Ventana congelada `[inicio, fin]`; `fin` acreditado por el siguiente Inicio. | Contexto vivo del ciclo/posición actual. | Ejercicio natural y `corteConsulta` inclusivo; cada fuente conserva su corte. |
+| Mutabilidad | Inmutable; v1/v2; no se actualiza ni se borra; retención permanente. | Cambia con motores y con T2/T3; no es histórico. | Inmutable por versión de registro; solo la vigente suma; no hay DELETE. |
+| Qué puede mostrar | Hechos, totales, plan final/`SinPlan`, clasificación/referencias, inversión a `Fin`, auxiliares, cobertura, backup y no disponibles, con versión de app/esquema y fingerprint. | Liquidez, ciclo, saldos/bolsas, ahorro, inversión, deuda y pendientes **actuales**, con motor y cobertura. | Archivo por Partida, cobertura, detalle precontrol/control, mapping, procedencia y estados. |
+| Qué **nunca** | No se recalcula desde el estado vivo; no presenta `0` por ausencia; no declara completo un total parcial; no captura E3.5 si no es verificable; no sustituye un plan inexistente. | No es evidencia histórica; no se etiqueta como foto; no congela cifras; no afirma «lo que valía al cierre». | No es foto ni se transforma en una; no crea Movimientos, planes, aperturas ni cierres; no inventa `0`; `tipoRegistro=Archivo`. |
+| Versión/corte | Versión de foto y fingerprint; corte = `Fin` congelado. | Sin versión histórica; revisión técnica del estado vivo. | `versionMapping`, `versionFuente`, `corteArchivo`, intervalos y cobertura por fuente. |
+| Papel en E4.11 | Fuente principal de la consulta histórica por ciclo y versión. | Solo contraste etiquetado («actual» vs «foto»); nunca como histórico. | Fuente separada para precontrol; **no** compone la foto de cierre ni un total de foto. |
+
+### 2.1 Consecuencias confirmadas
+
+- `[CONFIRMADO]` La foto de cierre «no se recalcula desde el estado vivo» (SPEC27,
+  «Data model and contracts» y AC-14); E4.11-AC1 del roadmap exige mostrar «valores
+  persistidos de la foto, no recálculo retroactivo».
+- `[CONFIRMADO]` E4.6 no lee estado de cierre, precierre ni foto; no crea snapshots y se
+  limita a motores vivos (SPEC24, «Fronteras con E4.7 y E4.9»). Un valor de E4.6 nunca es
+  una foto.
+- `[CONFIRMADO]` E4.5 declara que el archivo «no es un segundo ledger, no es una
+  fotografía de cierre y no es un plan» (SPEC20, «Functionality»); E4.5-AC-01 (C/E4.11)
+  exige que la UI/API distinga `Archivo`, `Detalle` y `Foto`, y que la foto no se
+  recalcule desde archivo.
+- `[PENDIENTE]` La **naturaleza del agregado de trimestre/año** no está definida: no se
+  sabe si será una nueva foto persistida, una vista determinista sobre fotos de ciclo o
+  ambas (M2). Hasta decidirlo, este documento lo llama **«agregado de periodo»** y no
+  «foto» sin calificar.
+
+---
+
+## 3. Fuentes y dependencias
+
+`[CONFIRMADO]` Las dependencias se leen en el estado real, no en el estado deseado:
+
+| Fuente/dependencia | Estado verificado | Qué aporta | Límite para E4.11 |
+| --- | --- | --- | --- |
+| **E4.5 — archivo precontrol** | SPEC20 aprobada; DEV no autorizado; DT7 sigue siendo gate. | Registros, mapping, cobertura, corte y procedencia; consulta por ejercicio. | No crea fotos, cierres, planes ni hechos; no se transforma en foto. Su inclusión en E4.11 es M6. |
+| **E4.9 — cierre y primera foto** | SPEC27 aprobada; PR **#200 OPEN/draft** según la investigación de alcance (2026-11-04), no mergeado; sin QA final registrada. | Foto v1 inmutable: versión, ventana, S0, plan, hechos, inversión, auxiliares, cobertura y backup. | No hay v2 ni reapertura; rutas, auditoría y forma de foto no son contrato estable hasta merge/QA `[PENDIENTE]`. |
+| **E4.10 — reapertura/re-cierre** | Roadmap/AC definidos; SPEC28 asignada y **no iniciada**. | v2 y versión vigente tras una rectificación ordinaria. | No implementado; política de versiones/estado `[PENDIENTE]` (D5 del análisis E4.10). |
+| **DT4 — contenido, metadatos, versiones, retención** | `[CONFIRMADO]` Resuelta el 2026-10-28 en SPEC27. | Contrato de foto, v1/v2, metadatos inmutables, retención permanente y regla «trimestre/año usan la versión vigente al generar el agregado, registran cuál usaron y queda congelado». | No fija la **composición** exacta del periodo, el estado «reabierto sin v2», ni si «congelado» implica un artefacto persistido: M1–M3. |
+| **Versiones y cortes** | `[CONFIRMADO]` v1/v2 por ciclo; corte = `Fin` congelado; versiones anteriores consultables. | Identidad y trazabilidad por ciclo y versión. | No hay regla de qué versión de cada ciclo compone un trimestre/año `[PENDIENTE]`. |
+| **Periodos trimestre/año** | `[PENDIENTE]` E4.11 debe definirlos (M3). | Agrupación por calendario o por ciclo, con corte y versión. | No se prorratea, divide ni inventa un ciclo que cruce el límite sin decisión. |
+| **E2.6/E4.6 — cálculo vivo** | SPEC24 aprobada según índice e investigación; PR **#201 OPEN/draft**; E2.6 integrado. El tablero conserva una fila desactualizada (`SPEC24 no iniciada`); contradicción documental `[PENDIENTE]`. | Valores actuales para contraste etiquetado. | No es fuente de valores persistidos ni de historia. |
+| **DT9 — rectificación de ciclos antiguos** | `[PENDIENTE]` No habilitar hasta otra SPEC aprobada. | Efecto sobre agregados y cierres posteriores. | E4.11 no implementa ni decide la excepción (M6). |
+| **DT6/T-BKP** | `[PENDIENTE]` Sin destino externo ni restauración real. | Cierre real y evidencia de backup. | Fixtures no acreditan DT6; la consulta de fixtures sí puede prepararse. |
+| **Esquema** | `[PENDIENTE]` No asumir `v25`/`v26`. | — | E4.11 es de solo lectura salvo que M2-A cree un artefacto persistido; entonces necesitará versión de esquema propia y aprobación. |
+
+### 3.1 Contenido de la foto (DT4 resuelta en SPEC27)
+
+`[CONFIRMADO]` El contrato incluye identidad (ciclo, versión de foto, fecha UTC, actor,
+motivo, fingerprint, versión de aplicación y de esquema), ventana, hechos, plan,
+clasificación/referencias, inversión E4.1, auxiliares, cobertura, backup y no disponibles
+(SPEC27, «Photo contract»). `[PENDIENTE]` La inclusión del efecto/identidad de Ventas E4.2
+en el bloque de inversión y la exclusión motivada de conciliaciones E4.4 son propuestas del
+brief E4.9, no contrato aprobado. E4.11 **lee lo que la foto realmente capture** y declara
+`No disponible`/motivo cuando falte; no lo reconstruye.
+
+---
+
+## 4. Principios
+
+`[CONFIRMADO]` cuando derivan de SPEC27/SPEC20/roadmap; `[PROPUESTA]` cuando son
+invariantes candidatos de E4.11.
+
+1. **Solo lectura.** E4.11 no crea, rectifica ni borra cierres, fotos, hechos, planes ni
+   archivo. Única excepción posible: persistir un agregado de periodo si se aprueba M2-A,
+   con ruta, clave e identidad propias. `[PROPUESTA]`
+2. **Inmutabilidad.** La foto E4.9/E4.10 no se actualiza ni se borra; el agregado
+   congelado, si existe, tampoco. `[CONFIRMADO]` para fotos; `[PROPUESTA]` para agregados.
+3. **Sin recálculo retroactivo.** Ninguna cifra histórica se obtiene de motores vivos,
+   del precierre ni del archivo. `[CONFIRMADO]` (roadmap E4.11-AC1; SPEC27 AC-14).
+4. **Origen, versión y corte identificables.** Cada cifra declara `origen`, versión de
+   foto, fingerprint, corte y, si procede, regla de composición. `[PROPUESTA]`.
+5. **Ausencia ≠ 0.** Un bloque o ciclo sin evidencia se declara `No disponible` o
+   `Parcial` con motivo; nunca `0` por omisión. `[CONFIRMADO]` (SPEC27; SPEC20).
+6. **Composición explícita.** Ninguna consulta de periodo elige versión, ciclo o corte en
+   silencio: si aplica un valor por defecto, la respuesta lo declara. `[PROPUESTA]`.
+7. **Separación de tipos.** `Foto`, `CalculoVivo` y `Archivo` no se suman en un mismo
+   total sin etiqueta; el archivo nunca compone un total de foto. `[CONFIRMADO]` por
+   E4.5-AC-01 y roadmap E4.11-AC3.
+8. **Retención permanente y continuidad.** No se podan fotos ni versiones; un ejercicio
+   anterior sigue consultable sin reetiquetarse. `[CONFIRMADO]` (DT4; roadmap).
+9. **Trazabilidad descendente.** Toda cifra de periodo puede navegar a las fotos de ciclo
+   que la componen y a los ciclos excluidos con su motivo. `[PROPUESTA]`.
+10. **DT9 fuera.** No existe ruta para rectificar ciclos antiguos ni para «corregir» una
+    foto histórica. `[CONFIRMADO]` (roadmap; DT9).
+
+---
+
+## 5. Decisiones materiales: P1–P8 en seis bloques
+
+`[PENDIENTE]` **Ninguna decisión está tomada.** Las recomendaciones son `[PROPUESTA]`
+técnica/funcional y no congelan la política; la SPEC permanece **parametrizada** hasta la
+aprobación del usuario. Se agrupan en seis bloques porque P1/P4/P5 no admiten respuestas
+independientes sin producir combinaciones incoherentes.
+
+| Bloque | Decisiones heredadas | Tema |
+| --- | --- | --- |
+| M1 | P1, P4, P5 | Versión por ciclo, ciclo reabierto sin v2 y mezcla de versiones |
+| M2 | P2 | Agregado persistido, vista determinista o híbrido |
+| M3 | P3 | Periodo, frontera y continuidad entre ejercicios |
+| M4 | P6 | Retención de fotos y de agregados |
+| M5 | P7 | Consulta y selección explícita de versión |
+| M6 | P8 | DT9 y límites del archivo E4.5 |
+
+### M1 — Qué versión de cada ciclo compone un periodo (P1, P4, P5)
+
+| Sub | Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- | --- |
+| **P1** versión que compone | A) última versión cerrada de cada ciclo en el instante de generar; B) versión explícita elegida por el usuario; C) todas las versiones visibles y el agregado declara la usada; D) solo ciclos con v1 y bloquear si hay reapertura. | A es simple pero cambia si hay re-cierre; B es auditable pero más compleja; C conserva historia; D evita mezclas pero bloquea informes. | C como mínimo obligatorio (declarar por ciclo) con B disponible para fijar una versión concreta. No se recomienda D. |
+| **P4** reabierto sin v2 | A) excluir y marcar «pendiente de re-cierre»; B) usar la última versión cerrada (v1) y marcarla; C) bloquear la generación del agregado. | A/B conservan informes pero pueden quedar obsoletos; C es más estricto y puede bloquear. | A, coordinado con D5 de E4.10; nunca presentar v1 como vigente sin marca. |
+| **P5** mezcla de versiones | A) prohibir un agregado con versiones distintas; B) permitir y registrar la versión de cada ciclo; C) un agregado por combinación. | A simplifica pero puede impedir periodos reales; B es transparente; C explota combinatoriamente. | B, siempre con composición registrada; A solo si el usuario prefiere bloquear periodos mixtos. |
+
+`[CONFIRMADO]` DT4 exige registrar la versión usada y que el agregado quede congelado; por
+tanto **declarar la composición no es opcional** sea cual sea la opción elegida.
+`[PENDIENTE]` Si un ciclo cruza el límite del periodo: M3.
+
+### M2 — Agregado persistido, vista determinista o híbrido (P2)
+
+| Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- |
+| A) Nueva foto de trimestre/año con versión, fingerprint y referencias a las fotos de ciclo. | Permite responder «qué mostraba el trimestre entonces»; exige almacén, migración y decisión de esquema. | Válida solo si el usuario confirma que «queda congelado» (DT4) exige un artefacto persistido. |
+| B) Vista calculada al consultar desde fotos inmutables, con regla y composición registradas en la respuesta. | No añade almacén ni migración; «congelado» significa determinista sobre fotos inmutables, no recalcular motores. | Alternativa mínima; no fija política por sí sola. |
+| C) Híbrido: vista por defecto y congelación explícita. | Dos caminos y dos verdades potenciales; más superficie de error. | Solo si A y B no bastan tras la decisión del usuario. |
+
+`[PENDIENTE]` **Ambigüedad material:** DT4 dice que el agregado «queda congelado» y
+«registra la versión usada», pero no aclara si eso implica una fila persistida (A) o una
+consulta determinista con la regla registrada (B). No se resuelve por inferencia. Si se
+aprueba A, su contenido nunca se recalcula y su retención es M4; si se aprueba B, la
+consulta debe ser reproducible con las mismas fotos y la misma regla declarada.
+
+### M3 — Periodo, frontera y continuidad entre ejercicios (P3)
+
+| Aspecto | Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- | --- |
+| Periodo | A) trimestre/año natural por calendario; B) periodos de ciclo financiero; C) ambos etiquetados; D) solo ciclo y año natural, sin trimestre hasta definirlo. | A encaja con «trimestre/año»; B respeta ciclos que cruzan diciembre; C duplica; D reduce alcance. | A, con el periodo declarado en la respuesta; C solo si el usuario necesita ambos. |
+| Ciclo que cruza el límite | A) incluir por `Fin`; B) incluir por solapamiento; C) solo si está contenido; D) prorratear. | A/B pueden contar el ciclo en un solo periodo o en dos; C excluye ciclos reales; D inventa una división sin base. | A, sin prorrateo, declarando la ventana completa del ciclo y su cobertura en el periodo donde cae su `Fin`. |
+| Ciclo sin cierre | A) excluir con motivo/cobertura; B) bloquear el agregado. | A conserva informes con cobertura parcial; B impide consultar el periodo. | A, con estado `Parcial` y motivo por ciclo. |
+| Continuidad | A) inmutabilidad y consulta permanente; B) vista de transición explícita; C) reetiquetar o recalcular el ejercicio anterior. | A/B conservan evidencia; C contradice DT4 y E4.11-AC2. | A + B (vista de transición), sin reetiquetar ni borrar. |
+
+`[CONFIRMADO]` La continuidad no autoriza a mezclar ejercicios en un mismo total sin
+declararlo; un ejercicio anterior no se reetiqueta ni se borra (DT4; roadmap E4.11-AC2).
+
+### M4 — Retención (P6)
+
+| Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- |
+| A) Permanente para fotos **y** agregados. | Coherente con DT4 y con la evidencia histórica; exige coordinar el crecimiento con DT6/T-BKP. | A. |
+| B) Permanente para fotos; agregados regenerables. | Solo es viable si M2-B: un agregado determinista no es un artefacto que se puede «perder». | B únicamente si M2-B. |
+| C) Poda de agregados antiguos. | Contradice la retención permanente y la continuidad entre ejercicios. | No recomendada. |
+
+`[CONFIRMADO]` La retención permanente de **fotos y versiones** ya está fijada por DT4; P6
+solo abre el alcance del agregado.
+
+### M5 — Consulta y selección explícita de versión (P7)
+
+| Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- |
+| A) Por ciclo/versión. | Simple y trazable; no responde trimestre/año. | Primera capacidad. |
+| B) Por trimestre/año. | Responde el caso de uso principal; necesita M1–M3. | Segunda capacidad, tras A. |
+| C) Por corte. | Útil para auditar «qué había a Fin»; puede confundirse con el corte vivo. | Como filtro/orden, no como sustituto de versión. |
+| D) Combinación con selector de versión y origen. | Máxima trazabilidad; más UI y más estados. | D, por fases: A → B, con selector explícito y origen visible. |
+
+`[PROPUESTA]` Si existe un valor por defecto (p. ej. última versión), la respuesta incluye
+`seleccionAplicada` y la UI lo muestra; nunca se cambia de versión sin que el usuario lo
+vea. Consultar una versión anterior no altera la vigente.
+
+### M6 — DT9 y límites del archivo E4.5 (P8)
+
+| Sub | Opciones | Impacto | Recomendación `[PROPUESTA]` |
+| --- | --- | --- | --- |
+| **P8** DT9 | A) no habilitar; B) habilitar solo con SPEC propia aprobada. | A mantiene P5 y la inmutabilidad; B exige definir efecto en agregados y cierres posteriores. | A. E4.11 no implementa la excepción. |
+| Archivo E4.5 | A) excluirlo de E4.11; B) vista separada de solo lectura con su propia cobertura, sin componer totales de foto; C) combinarlo con fotos en un total. | A reduce alcance; B aporta contexto precontrol sin contaminar la foto; C contradice E4.5-AC-01 y E4.11-AC3. | B solo si E4.5 tiene DEV/DT7 y su frontera de consulta; si no, A en el primer incremento. C queda prohibida. |
+
+---
+
+## 6. Contrato conceptual de consulta
+
+`[PROPUESTA]` Contrato de solo lectura, parametrizado por M1–M6. Las rutas son
+ilustrativas y **no canónicas**: dependen del merge/QA de E4.9 y de la decisión M5.
+
+### 6.1 Entidades
+
+| Entidad | Contenido mínimo | Procedencia |
+| --- | --- | --- |
+| **FotoCiclo** | Identidad (ciclo, versión, UTC, actor, motivo, fingerprint, versión app/esquema), ventana, bloques de la foto, cobertura y no disponibles. | E4.9/E4.10, leída sin transformar. |
+| **AgregadoPeriodo** | Periodo, regla de composición, `seleccionAplicada`, fotos de ciclo componentes (ciclo, versión, fingerprint, inclusión/motivo), cobertura y valores. | M2: persistido o determinista. |
+| **CalculoVivo** | Valores actuales, `revision`, motor(es) y cobertura; marcado explícitamente como no histórico. | E4.6/E2.6. |
+| **Archivo** | `tipoRegistro=Archivo`, ejercicio, `corteConsulta`, cobertura, procedencia y mapping. | E4.5, solo si M6-B. |
+
+### 6.2 DTO mínimo del agregado
+
+```json
+{
+  "origen": "Foto",
+  "tipo": "Trimestre",
+  "periodo": { "ejercicio": 2026, "trimestre": 4, "inicio": "2026-10-01", "fin": "2026-12-31" },
+  "seleccionAplicada": { "regla": "M1-aprobada", "porDefecto": true },
+  "identidad": {
+    "versionAgregado": "A1",
+    "fechaUtc": "2026-11-04T10:00:00Z",
+    "fingerprint": "…",
+    "versionApp": "…",
+    "versionEsquema": "N"
+  },
+  "composicion": [
+    { "ciclo": "C-2026-10", "versionFoto": 1, "fingerprint": "…", "estado": "Incluido" },
+    { "ciclo": "C-2026-11", "versionFoto": 2, "fingerprint": "…", "estado": "Incluido" },
+    { "ciclo": "C-2026-12", "estado": "ExcluidoSinCierre", "motivo": "SIN_CIERRE" }
+  ],
+  "cobertura": { "estado": "Parcial", "motivos": ["CICLO_SIN_CIERRE"], "bloques": [] },
+  "valores": { "…": "…" },
+  "noDisponible": []
+}
+```
+
+`[PROPUESTA]` Reglas del DTO: `origen` es obligatorio y nunca ambiguo; `composicion`
+enumera **todos** los ciclos del periodo, incluidos los excluidos; `versionEsquema` es
+ilustrativo y no fija una versión concreta de esquema; los importes sin evidencia son
+`null`, no `0`.
+
+### 6.3 Consultas conceptuales
+
+| Operación ilustrativa | Devuelve | Nota |
+| --- | --- | --- |
+| `GET /api/fotos/ciclos/:ciclo?version=N` | Foto de ciclo o `SinFoto` con motivo. | Versión ausente → 404 con motivo; nunca cae a otra versión en silencio. |
+| `GET /api/fotos/ciclos/:ciclo/versiones` | Índice de versiones consultables. | Alimenta el selector M5. |
+| `GET /api/fotos/periodos?tipo=Trimestre&ejercicio=YYYY&trimestre=Qn` | Agregado de periodo con composición y cobertura. | Depende de M1–M3. |
+| `GET /api/fotos/periodos/:id` | Agregado persistido por identidad. | Solo si M2-A. |
+| `GET /api/fotos/contraste?ciclo=…` | Bloque `CalculoVivo` etiquetado para comparar. | Opcional; nunca sustituye a la foto. |
+| `GET /api/historico/...` | Archivo E4.5. | Ruta propiedad de E4.5, no de E4.11. |
+| `POST/PATCH/DELETE /api/fotos/*` | 405/422. | Salvo creación del agregado si M2-A. |
+
+---
+
+## 7. Estados de cobertura y composición
+
+| Estado | Significado | Regla |
+| --- | --- | --- |
+| `Completo` | Todos los bloques/ciclos exigidos tienen evidencia y no hay huecos. | Único estado que permite certificar un total del periodo. |
+| `Parcial` | Falta al menos un bloque o ciclo, o hay un hueco declarado. | Se muestran los componentes y el motivo; el total es `null` o «parcial», nunca certificado. |
+| `NoDisponible` | No hay evidencia consultable para el periodo/ciclo. | Motivo obligatorio; nunca `0`. |
+| `SinFoto` | El ciclo existe pero no tiene cierre/foto. | No se crea una foto vacía. |
+| `PendienteReCierre` | El ciclo está reabierto sin v2 (si M1-P4-A). | Se declara; v1 no se presenta como vigente sin marca. |
+| `ExcluidoSinCierre` | Ciclo del periodo sin cierre. | Aparece en `composicion` con motivo. |
+| `FueraDePeriodo` | Ciclo que cruza el límite y no se incluye según M3. | Se muestra como contexto, no suma. |
+
+`[CONFIRMADO]` El archivo E4.5 conserva **su propia** terminología
+(`Completa`/`Parcial`/`NoAcreditada`/`NoDisponible`/`Solapada`); E4.11 no la redefine ni
+la traduce a estados de foto. `[PROPUESTA]` Los estados anteriores son los de foto y
+agregado.
+
+---
+
+## 8. Fronteras
+
+| Entrega | Frontera |
+| --- | --- |
+| **E4.5** | Fuente separada. E4.11 puede mostrarla (M6-B) pero no la convierte en foto, no la suma a un total de foto y no hereda su cobertura. Su consulta sigue siendo de E4.5. |
+| **E4.6** | Solo contraste etiquetado `CalculoVivo`; nunca histórico. E4.6 no lee fotos y E4.11 no usa motores vivos para cifras históricas. |
+| **E4.7** | E4.11 aporta la evidencia y su consulta; E4.7 decide métricas, márgenes y comparación anual. E4.11 no define márgenes ni sustituye el flujo anual. |
+| **E4.9/E4.10** | E4.11 no crea, reabre ni rectifica; lee fotos y versiones. La creación de v2 y el estado reabierto son de E4.10. |
+| **DT9** | Fuera: no hay ruta de rectificación de ciclos antiguos ni de «foto corregida». |
+
+---
+
+## 9. Pantallas e interfaces
+
+`[PROPUESTA]` UI provisional, no aprobada (DT8). Contenido mínimo:
+
+- selector de periodo (ciclo / trimestre / año) y de versión;
+- badge de origen por cifra (`Foto`, `Actual`, `Archivo`) y de versión/corte;
+- panel de cobertura y composición con ciclos incluidos/excluidos y motivo;
+- navegación de la cifra de periodo a las fotos de ciclo;
+- comparación v1/v2 sin edición;
+- estados vacío/carga/error/bloqueo y sesión expirada.
+
+`[PROPUESTA]` La UI no muestra `0` por ausencia ni declara «completo» un total parcial; si
+hay valores vivos y foto, ambos se muestran separados y rotulados, nunca fusionados.
+
+---
+
+## 10. Vacío, carga y error
+
+| Estado | Comportamiento `[PROPUESTA]` |
+| --- | --- |
+| Vacío (periodo sin fotos) | «Sin fotos para este periodo» con motivo; no `0` ni foto vacía. |
+| Ciclo sin cierre | `SinFoto` con motivo y enlace a E4.8/E4.9 si aplica; no se crea cierre. |
+| Periodo parcial | Componentes y huecos visibles; total «parcial»/`null`; no se certifica. |
+| Cargando | Conserva periodo, filtros y versión; no muestra totales provisionales. |
+| Error de red | Reintento; conserva selección; no demo ni datos inventados. |
+| 401/403 | Sesión/MFA/CSRF; no filtra importes ni SQL. |
+| Versión inexistente | 404 con motivo; no cae a la última en silencio. |
+| Periodo futuro/inválido | 422 con campo y foco; no `0` ni cobertura ficticia. |
+| Error técnico | Mensaje genérico con `requestId`; sin payload financiero en logs. |
+
+---
+
+## 11. API behavior and external dependencies
+
+`[PROPUESTA]` Solo lectura; reutiliza autenticación MFA, Origin/CSRF, límite JSON,
+errores `Problem`, snapshot transaccional y `no-store`. Sin servicios externos.
+
+- Consultas de foto y periodo devuelven un único snapshot coherente; no mezclan dos
+  lecturas.
+- `origen`, `versionFoto`/`versionAgregado`, `fingerprint`, corte y cobertura son
+  obligatorios en la respuesta.
+- Ninguna ruta de escritura de fotos, cierres o ciclos. Si M2-A, la creación del agregado
+  tiene ruta, clave de idempotencia y auditoría propias, y no modifica fotos de ciclo.
+- Los errores no revelan importes ni estructura interna más allá del motivo funcional.
+
+---
+
+## 12. Validación y casos límite
+
+- Ciclo con foto v1 y T2/T3 posteriores: la foto no cambia; la vista viva sí. `[CONFIRMADO]`
+- v1 y v2 coexistentes: ambas consultables; v1 no se actualiza. `[CONFIRMADO]`
+  (cuando E4.10 exista).
+- Re-cierre tras un agregado: el agregado anterior no se recalcula (M2). `[PENDIENTE]`
+  política exacta.
+- Ciclo reabierto sin v2: según M1-P4; prohibido presentarlo como cerrado sin marca.
+- Ciclo que cruza límite de trimestre/año: según M3; prohibido prorratear sin decisión.
+- Ciclo sin cierre dentro del periodo: excluido con motivo y cobertura `Parcial`.
+- Periodo con un solo ciclo: sigue siendo agregado válido; no se presenta como foto de
+  ciclo.
+- Foto con bloques `No disponible` (E4.3/E4.2/E4.4): se muestran con motivo; no se
+  completan desde motores vivos.
+- E3.5 no verificable: no existe foto (cierre bloqueado); E4.11 no la inventa.
+- Cierre fuera de orden (AC-20 de SPEC27): la foto existe con su ventana; el agregado la
+  incluye según su `Fin` y declara la composición, sin reordenar historia.
+- Renombrado de Partida/Instrumento (T3): la foto conserva ID y versión del nombre.
+- Ejercicio futuro o sin fotos: `NoDisponible`/422 según el caso; nunca `0`.
+- Consulta concurrente durante un re-cierre: snapshot coherente; no se sirve una foto a
+  medias.
+
+---
+
+## 13. Exclusiones
+
+- `[CONFIRMADO]` No crea cierres ni fotos de ciclo (E4.9/E4.10).
+- `[CONFIRMADO]` No reabre ni rectifica ciclos (E4.10/DT9).
+- `[CONFIRMADO]` No recalcula retroactivamente ni presenta el cálculo vivo como histórico
+  (roadmap E4.11-AC1; SPEC27 AC-14).
+- `[CONFIRMADO]` No transforma el archivo E4.5 en fotos, planes ni hechos (roadmap
+  E4.11-AC3; SPEC20).
+- `[CONFIRMADO]` No decide en silencio qué versión de ciclo forma un trimestre/año
+  (roadmap, «Fuera» de E4.11).
+- `[CONFIRMADO]` No habilita DT9.
+- `[PROPUESTA]` No define márgenes, patrimonio, valoración ni comparación anual (E4.7).
+- `[PROPUESTA]` No poda ni borra fotos, versiones ni agregados.
+- `[PROPUESTA]` No aprueba wireframes/UI definitiva (DT8) ni autoriza DEV.
+- `[PROPUESTA]` No usa datos reales ni cierre real sin DT6/T-BKP.
+
+---
+
+## 14. Acceptance checks candidatos
+
+`[PENDIENTE]` Ninguno aprobado ni ejecutado. Los resultados marcados «según política» se
+completan con la decisión M correspondiente; el AC no cambia, cambia su parámetro.
+
+| ID | Acción / precondiciones | Resultado esperado |
+| --- | --- | --- |
+| E4.11-AC01 | Ciclo cerrado con foto v1; aplicar cambios T2/T3 después; consultar foto y cálculo vivo. (M5) | La foto devuelve exactamente los valores persistidos al cierre; la vista viva devuelve otros valores, etiquetada `CalculoVivo` con motor y revisión; ninguna cifra de la foto proviene del motor vivo. |
+| E4.11-AC02 | Consultar metadatos de una foto de ciclo antes y después de T2/T3. | Ciclo, versión, UTC, actor, motivo, fingerprint, versión de app/esquema y ventana `[inicio, fin]` visibles e idénticos; no se recalculan. |
+| E4.11-AC03 | Con v1 y v2 disponibles (cuando E4.10 exista), seleccionar v1 explícitamente. | Devuelve v1 con `seleccionAplicada`; v2 sigue consultable; no se devuelve otra versión ni se modifica ninguna. Sin E4.10, v1 es la única y la respuesta lo declara. |
+| E4.11-AC04 | Consultar un trimestre/año con varios ciclos cerrados. (M1–M3) | Cada cifra agregada referencia las fotos de ciclo que la componen (ciclo, versión, fingerprint) y la regla de composición; ninguna cifra se obtiene de motores vivos. |
+| E4.11-AC05 | Periodo con ciclos de versiones distintas y/o un ciclo reabierto. (M1) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; no hay composición silenciosa; si la política prohíbe la mezcla, se bloquea con motivo. |
+| E4.11-AC06 | Ciclo reabierto sin v2 (cuando E4.10 exista). (M1/P4) | Se aplica la política aprobada: excluido y marcado `PendienteReCierre`, o última versión cerrada marcada; v1 nunca se presenta como vigente sin marca; no se crea foto. |
+| E4.11-AC07 | Generar/consultar un agregado y después re-cerrar un ciclo creando v2. (M1–M2) | El agregado anterior devuelve los mismos valores y versiones; no se recalcula; un agregado nuevo declara las versiones nuevas. |
+| E4.11-AC08 | Navegar desde una cifra de periodo a sus ciclos componentes. (M5) | Cada ciclo incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente, fuera de periodo). |
+| E4.11-AC09 | Periodo con cobertura incompleta: ciclo sin cierre, hueco o fuente `No disponible`. | Estado `Parcial`/`NoDisponible` con motivo por bloque; ningún total parcial se declara completo ni se sustituye por `0`. |
+| E4.11-AC10 | Ejercicio con solo archivo E4.5 y sin fotos. (M6) | La UI/API muestra `Archivo` (`tipoRegistro=Archivo`), no `Foto`; no se crea foto, cierre ni plan; el archivo no compone un total de foto. |
+| E4.11-AC11 | Crear el ejercicio siguiente y volver a consultar el anterior. (M3) | Fotos y periodos del ejercicio anterior siguen consultables con valores, versiones y cortes; no se reetiquetan, recalculan ni borran; la transición no mezcla ejercicios sin declararlo. |
+| E4.11-AC12 | Intentar `POST`/`PATCH`/`DELETE` sobre fotos o periodos. | 405/422; no se crea, rectifica ni borra foto. Excepción única: creación del agregado si M2-A, con su ruta y clave. |
+| E4.11-AC13 | Intentar rectificar un ciclo antiguo o consultar una «foto corregida» por DT9. (M6/P8) | No existe ruta; se rechaza con motivo; E4.11 no habilita DT9. |
+| E4.11-AC14 | Consultar un periodo futuro y un ciclo sin cierre. | Periodo futuro: 422 con campo/motivo. Ciclo sin cierre: `SinFoto` con motivo. Ninguno devuelve `0` ni una foto vacía. |
+| E4.11-AC15 | Consultar una foto cuyo bloque E4.3/E4.2/E4.4 consta `No disponible`. | El bloque se muestra `No disponible` con motivo; no se completa desde el motor vivo ni se declara completo el total. |
+
+---
+
+## 15. Trazabilidad
+
+| Fuente | Regla | AC candidatos |
+| --- | --- | --- |
+| Roadmap E4.11-AC1 | Valores persistidos, no recálculo retroactivo. | AC01, AC04, AC07 |
+| Roadmap E4.11-AC2 | Versiones/cortes/origen identificables e inmutables. | AC02, AC03, AC05, AC11 |
+| Roadmap E4.11-AC3 | El archivo no se transforma en fotos o planes inexistentes. | AC10, AC12 |
+| SPEC27 / DT4 | Foto inmutable, v1/v2, retención, metadatos, «versión vigente al generar». | AC02, AC03, AC06, AC07 |
+| SPEC20 / E4.5 | `Archivo` ≠ `Foto`; no se recalcula desde archivo. | AC10, AC15 |
+| SPEC24 / E4.6 | Cálculo vivo no histórico. | AC01, AC15 |
+| DT9 | Sin rectificación de ciclos antiguos. | AC13 |
+| Decisiones M1–M6 | Composición, agregado, periodo, retención, consulta y archivo. | AC04–AC09, AC11 |
+
+---
+
+## 16. Gates de entrada (antes de aprobar o desarrollar)
+
+- `[PENDIENTE]` **E4.9 mergeado y con QA independiente**: contrato de foto y rutas
+  canónicas estabilizados. Hoy PR #200 está OPEN/draft.
+- `[PENDIENTE]` **E4.10** con SPEC aprobada y política de versiones/estado fijada, o
+  decisión explícita de limitar E4.11 a ciclos con v1 y excluir reaperturas.
+- `[PENDIENTE]` **Decisiones M1–M6** del usuario (P1–P8). Sin ellas no se puede cerrar el
+  contrato de consulta ni los AC parametrizados.
+- `[PENDIENTE]` **M6**: si se muestra el archivo E4.5, su DEV/DT7 y su frontera de consulta.
+- `[PENDIENTE]` **DT6/T-BKP** para cierre real; fixtures para desarrollo y pruebas.
+- `[CONFIRMADO]` DT4 no se reabre; se aplica.
+- `[CONFIRMADO]` Aprobar SPEC29 no autoriza DEV; el DEV es un gate separado.
+
+---
+
+## 17. Riesgos
+
+| Riesgo | Mitigación candidata |
+| --- | --- |
+| Recalcular retroactivamente | Consultar solo valores persistidos; etiquetar `Actual` vs `Foto`; probar con fuentes vivas cambiadas tras el cierre. |
+| Archivo convertido en foto | Tipos separados y sin ruta de escritura; probar que el archivo no crea cierres/planes. |
+| Agregados que mezclan versiones sin declararlo | Registrar composición por ciclo/versión/fingerprint; prohibir la mezcla silenciosa. |
+| Estado reabierto sin v2 | Regla M1-P4 explícita y coordinada con E4.10 D5. |
+| Periodo que cruza frontera | M3; no prorratear; declarar cobertura y corte; probar 2026→2027. |
+| Cobertura parcial presentada como completa | Estados y motivos por bloque; `No disponible` ≠ `0`; no certificar parciales. |
+| Pérdida de trazabilidad de versión | Exigir versión, corte, fingerprint y referencia a la foto de ciclo; selector visible. |
+| Confusión con E4.7 | Frontera documental: E4.11 aporta evidencia; E4.7 decide métricas y comparación. |
+| DT9 por la puerta trasera | Solo lectura; DT9 en SPEC aparte y aprobación explícita. |
