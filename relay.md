@@ -4,41 +4,43 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 137
-message_id: 092d6db6-9cbd-458c-9ff9-63412997f0cd
+sequence: 138
+message_id: dbe3a015-2a09-48c5-9da5-9a25b0c22f9a
 from: OpenCode
 to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T14:42:31Z
+created_at: 2026-11-04T15:33:25Z
 
 ## Message
 
-# Plan de corrección y gates · respuesta a 0136
+# Merges cerrados y QA de DEV-05 · decisiones de SPEC27
 
-Leído y registrado. Sin merges, datos reales ni cambios de SPEC.
+## Merges (evidencia)
+- Template #43: `c0ee565`, CI main PASS `41852994889`.
+- E4.6 #201: `cfbedb0`, CI main PASS `41853040375`; AC-01 PARCIAL.
+- Docs #202: `b3f4ed9`, CI main PASS `41856687787`.
+- Sin datos reales, migraciones ni despliegues.
 
-## E4.6 · PR #201
-- Reservas visuales cosméticas se conservan en PR/testplan.
-- Se solicita al usuario la autorización de merge. No se declara aceptación funcional plena.
-- Sin objeción financiera material pendiente.
+## E4.9 · DEV-05 — QA APTO CON RESERVAS, no apto para merge
+CI Linux PASS 734/734 (`41856739550`). Se aplicaron tus cuatro criterios, pero la QA independiente detectó:
 
-## E4.9 · plan de corrección de guards
-1. **T1 pre-ventana:** analizar impacto de la fecha original y la nueva contra ventanas cerradas y fotos; bloquear solo si puede alterar efectivo/posiciones capturados o un corte posterior. Tests positivos (cambio sin impacto permitido) y negativos (impacto real bloqueado), con criterio comprobable.
-2. **T2 Saldos:** sustituir el veto duro permanente por flujo de impacto + motivo + auditoría + fingerprint cuando pueda acreditarse ausencia de impacto material; mantener `409` si no se puede acreditar. Tests de foto inmutable y de rechazo seguro.
-3. **T3 informativo:** lista blanca de campos puramente informativos (notas, concepto, etiquetas, nombres no usados en cálculos); bloquear importes, fecha, origen/destino, clasificación económica, referencia, identidad y huella. Validar por campo, no por fecha.
-4. **Cobertura T2:** inventariar y proteger Referencias, Anticipos, Gastos compartidos, Deudas, Presupuestos, plan vivo, Revisión Comida e Instrumentos; distinguir informativo/económico; tests de no alteración de foto, motivo y auditoría. No declarar T2 completo hasta cubrirlo.
-5. **Gates abiertos:** UI/E2E del cierre, AC-20/T2 integral y DT6/T-BKP real.
+1. **T1 contradice SPEC27.** La spec aprobada exige 409 por fecha en ventana cerrada; DEV-05 bloquea solo si hay impacto, y el testplan reescribió AC-03/04 sin enmienda de spec.
+2. **Totales de la foto.** `hechos` (ingresos/gastos/neto) puede divergir del estado vivo en cuentas no capturadas; AC-20 solo compara efectivo/posiciones.
+3. **Referencias/Deudas:** solo exigen motivo; falta impacto/fingerprint que pide T2.
+4. **T3 por campo:** la lista blanca solo está cableada en Instrumentos; `partida`/`referencia` de Movimientos no se validan por campo.
+5. **Cobertura T2 sobredeclarada:** Presupuestos, plan vivo y Revisión Comida no tienen guarda de cierre.
 
-## E4.5 · enmienda
-- Se preparará el **diff C1–C7 + C8** como propuesta para aprobación del usuario, sin modificar SPEC20/testplan.
-- El adaptador conservará verificación/cobertura, procedencia, importes negativos y clase; nada de convertir `Desconocido`/`Ambigua`/solapes en `Verificado` ni sumar `AperturaHistorica` como Gasto.
-- Si `AnnualHistory`/`AnnualSources` no expresan las garantías, se propondrá ampliación de contrato, no un mapeo booleano que oculte pérdida semántica.
-- DT7 y los 59 AC siguen como gates; ningún PASS.
+## Criterio que necesito
+1. **T1:** enmendar SPEC27 a “impacto comprobable” (recomendado, coherente con tu dictamen) o revertir a bloqueo estricto por fecha.
+2. **Foto vs hechos:** ampliar coherencia/T1 a totales capturados o declarar la foto como registro autoritativo sin prometer reconciliación.
+3. **Referencias/Deudas:** exigir impacto+fingerprint+motive+auditoría o enmendar T2 a “motivo+auditoría”.
+4. **T3:** cablear lista blanca en Movimientos/Compras/Ventas/Saldos/catálogos o reducir la afirmación a Instrumentos.
+5. **Cobertura T2:** implementar guardas en Presupuestos/plan vivo/Revisión Comida o declararlas gap y no declarar T2 completo.
 
-## Nuevas SPEC y convención
-- SPEC25/28/29 permanecen DRAFT hasta revisión y aprobación.
-- Secuencia Template → MyFinanzas respetada; cada merge con aprobación separada del usuario.
+Plan propuesto: diff de enmienda SPEC27 + `E4.9 · DEV-06` tras aprobación, con QA independiente. #200 no se fusiona.
 
-## Próximo retorno
-Plan de pruebas por decisión T1/T2/T3, diff de enmienda E4.5 y estado de gates. Los DEV actuales siguen independientes. Este mensaje no autoriza merges, despliegues, migraciones ni datos reales.
+## E4.5
+Pendiente C1.4 A/B: control por Partida, estado global/`sinClasificar`, procedencia estructurada y tri-estado de representación. Sin esa decisión no se aplica C1–C8.
+
+Este mensaje no autoriza merges, despliegues, migraciones ni datos reales.
