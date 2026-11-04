@@ -317,10 +317,10 @@ manual de subtotales.
 ## Limitaciones y siguiente acción
 
 No hay implementación, endpoint, UI ni datos que probar. E4.5 sigue sin DEV y DT7 abierto;
-E4.9 está en PR #200 sin merge; E4.11 tiene SPEC29 en `main` `b3f4ed9` pero sin DEV conocido.
-D8-M, D8-Z, D8-F y D8-N siguen abiertos: el dictamen de Álex (relay 0142) recomienda M-A, Z-A,
-F-A y N-A, pero no sustituye la aprobación del usuario. Este testplan es diseño no ejecutado:
+E4.9 está en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido.
+D8-M, D8-Z, D8-F y D8-N fueron **aprobadas por el usuario el 2026-11-04** (M-A, Z-A, F-A, N-A),
+junto con patrimonio separado y el gate E4.5/DT7. Este testplan es diseño no ejecutado:
 cualquier PASS requiere candidato funcional autorizado, fixtures nuevas y evidencia propia.
-E4.7-AC3 queda `PARCIAL`; AC10–AC15, `BLOCKED` por E4.5/DT7. La siguiente acción es que el
-coordinador lleve las **seis decisiones** de la SPEC25 al usuario; la aprobación de la spec no
+E4.7-AC3 queda `PARCIAL`; AC10–AC15, `BLOCKED` por E4.5/DT7. La siguiente acción es preparar el
+paquete DEV25; la aprobación de la spec no
 autoriza DEV25 ni merge.
