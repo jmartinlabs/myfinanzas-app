@@ -1,6 +1,6 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `dd56553`; esquema **v24 integrado** con DEV E4.3-A+B+C+QA; v25 no reservada.
+Base de referencia: `main` `5c4297a`; esquema **v24 integrado** con DEV E4.3-A+B+C+QA; v25 no reservada.
 No se reserva v25 sin decisión.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
@@ -22,6 +22,9 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 | DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | — |
 | QA final E4.3 | **MERGED** `dd56553` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; 409 seguro; post-merge `41796526278` | Aceptación funcional final de Álex |
 | E4.4/E3.6 evidencia | **MERGED** #190/#191 | Progress 17, evidencia 21 y R17/R18 clasificadas | — |
+| KI-409-01 (bug menor) | **PR #194 draft** `1b0ab52` | 409 mantiene bloqueo tras editar; E2E regresión | Autorización de merge |
+| E4.9 brief de decisiones | **Preparado** | `e49-decision-brief-2026-11-04.md`; 5 decisiones bloqueantes agrupadas | Decisión del usuario/Álex |
+| E4.6 readiness | **Preparado** | `24-e46-consumer-readiness.md`; F-01/F-02 pendientes | Corregir spec/fixture antes de DEV24 |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
@@ -47,7 +50,7 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 ### P1 — Preparación sin DEV nuevo
 
-5. **E4.9:** paquete actualizado a 2026-11-04; resolver D4, T1 Ventas, versionado v25, versión de app, UI, AC-20, DT4 y MFA.
+5. **E4.9:** brief 2026-11-04 con recomendación para D4, T1 Ventas, v25, AC-20, DT4, UI, versión de app y MFA; bloque de 5 decisiones pendiente.
 6. **E4.6:** contrato de consumidores/fixtures cuando E4.3 esté avanzado; no duplicar motores.
 7. **E4.7:** frontera/DT8; no abrir SPEC25 hasta decisiones.
 8. **E4.5/DT7:** checklist de mapping/cortes/2026 y QA documental, solo si se prioriza.
