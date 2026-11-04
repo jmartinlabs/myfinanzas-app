@@ -11,7 +11,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.5 | approved | not-ready (DT7) | AC-48…59 **NO APTO** | not-ready | pending | Enmienda C1–C7 + reauditoría |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | drafting (SPEC25) | not-ready | planned | not-ready | pending | Decisiones D8-M/Z/F/N |
-| E4.9 | approved | implementing (#200: DEV-04 guards `6af6911`; DEV-05 correcciones en curso) | guards APTO CON RESERVAS; conjunto pendiente | not-ready | pending | DEV-05 + UI/E2E + DT6 |
+| E4.9 | approved | implementing (#200: DEV-04 guards; DEV-05/DEV-06 correcciones) | DEV-05 APTO CON RESERVAS; conjunto pendiente | not-ready | pending | DEV-06 + UI/E2E + DT6 |
 | E4.10 | drafting (SPEC28) | not-ready | planned | not-ready | pending | Decisiones D1–D9 + E4.9 estable |
 | E4.11 | drafting (SPEC29) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
 | E4.12 | not-ready (requisitos) | not-ready | planned | not-ready | pending | DT6/DT7 y specs previas |
@@ -63,8 +63,8 @@ Base `main` `17d86c3`; **v24 integrada** con DEV E4.3 A+B+C+QA; **v25 autorizada
 - **DEV24/E4.6 autorizado:** F-01/F-02 corregidas y validadas. Bloques A+B (composición/API)
   en ejecución; C/UI después. Sin esquema ni migración.
 - **KI-409-01:** corregido y MERGED `17d86c3` (#194).
-- **Temas visuales:** propuesta y prueba `light-s`/`dark-s`/`hybrid-s` pendiente de autorización
-  de Fase 1; sin cambios en la app.
+- **Temas visuales:** Fase 1 **MERGED `0b8aade`** (#198): `light-s`/`dark-s`/`hybrid-s`, selector,
+  persistencia y tokens semánticos. Fase 2 (evolución visual) en análisis; **sin DEV**.
 - **Flake SQLite B3:** investigado sin reproducción macOS; pendiente ejecución diagnóstica Linux.
 - **En preparación:** frontera E4.7 y checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
