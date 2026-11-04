@@ -10,7 +10,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
 | E4.5 | approved | not-ready (DT7; C1–C8) | AC-48…59 **NO APTO** | not-ready | pending | Aprobar C1–C8 y reauditar AC-48…59 |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | approved (merged `948ade8`) | candidate `05aee71` (#210) | APTO CON RESERVAS | not-ready | pending | CI 670/670; cerrar reservas documentales y autorizar merge |
+| E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | candidate `85b4102` (#200: A+B+guards+DEV-06/07) | APTO CON RESERVAS | not-ready | pending | CI 756/756; DT6 real y cierre real pendientes |
 | E4.10 | draft (SPEC28 en `main`) | not-ready | planned | not-ready | pending | Decisiones D1–D9 |
 | E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
