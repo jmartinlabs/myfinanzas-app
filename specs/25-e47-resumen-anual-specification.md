@@ -76,7 +76,7 @@ consulta, no porque exista una cifra anual certificada.
 - Ingresos históricos: E4.5 solo cubre Gastos (Q2=A); E4.7 no los reconstruye.
 - Patrimonio global, patrimonio neto o suma de valoración + deuda + flujo.
 - Fórmulas nuevas de «margen medio», «margen real puntual» o cualquier ratio anual.
-- Exportación CSV/PDF o informe oficial en el primer DEV mientras D8-F no lo autorice.
+- Exportación CSV/PDF o informe oficial en el primer DEV: F-A no la incluye; requiere decisión posterior.
 
 ## Frontera y autoridad
 
@@ -303,8 +303,7 @@ recombina archivo y detalle; no deduce cobertura por su cuenta.
 
 ### Patrimonio (solo si entra)
 
-`[PENDIENTE]` El alcance del patrimonio no está aprobado. `[DICTAMEN ÁLEX — recomendación, no
-aprobación]` Se recomienda **incluir contexto separado** de valoración/resultados E4.3 y deuda
+`[APROBADA 2026-11-04]` Se incluye **contexto separado** de valoración/resultados E4.3 y deuda
 E4.4 **solo al mismo corte verificable**, cada uno con su estado y cobertura. E4.7 no calcula
 patrimonio neto, no suma valoración + deuda + flujo y no oculta la indisponibilidad. Si no hay
 un corte comparable, el bloque se marca `No disponible`; no se fabrica la cifra. Si el usuario
@@ -325,8 +324,8 @@ etiqueta, su cobertura y su `estado`. No los suma entre Ciclos, no los promedia 
 convierte en un margen anual. `margenes.publicados` y las métricas de margen del carril
 realidad son la misma respuesta de E2.6; no se calculan dos veces.
 
-`[PENDIENTE]` «Margen medio» y «margen real puntual» no tienen fórmula aprobada. E4.7 los
-publica como `No disponible` con motivo «Definición pendiente DT8» y no los calcula. Si el
+`[APROBADA M-A 2026-11-04]` «Margen medio» y «margen real puntual» no tienen fórmula aprobada.
+E4.7 los publica como `No disponible` con motivo «Definición pendiente DT8» y no los calcula. Si el
 usuario quiere una fórmula, debe nacer en el motor propietario (E2.6/E3.6), no en E4.7.
 
 ## Contrato de lectura (DTO conceptual)
@@ -607,14 +606,15 @@ type ResumenAnual = {
 
 ## Márgenes y DT8 agrupado
 
-DT8 no es una única decisión. Para E4.7 se agrupa en cuatro bloques. Ninguna opción de esta
-sección está aprobada: Álex ya emitió su dictamen funcional (relay 0142) y la aprobación
-corresponde al usuario.
+DT8 no es una única decisión. Para E4.7 se agrupa en cuatro bloques. Las opciones M-A, Z-A,
+F-A y N-A fueron aprobadas por el usuario el 2026-11-04; el dictamen de Álex (relay 0142) fue
+favorable y las precisiones están incorporadas.
 
 ### D8-M — Márgenes medio, estructural, real puntual y plan
 
-`[PENDIENTE]` Faltan fórmula, denominador y agregación anual de «margen medio» y «margen real
-puntual». `margenEstructural` y `margen frente a nómina real` ya existen, pero son del plan.
+`[APROBADA M-A 2026-11-04]` No se define fórmula, denominador ni agregación anual de «margen
+medio» y «margen real puntual»; quedan `No disponible`. `margenEstructural` y `margen frente a
+nómina real` ya existen, pero son del plan.
 
 `[DICTAMEN ÁLEX — recomendación, no aprobación]` M-A es recomendable para el primer alcance:
 consumir **únicamente** `margenEstructural` y `margen frente a nómina real` existentes en E2.6,
@@ -630,8 +630,7 @@ cumplimiento parcial y dependencia explícita de una definición futura.
 | **M-B** | Definir una agregación anual de márgenes existentes (suma, media o margen de agregados) solo con Ciclos completos | Requiere decisión financiera y una regla de cobertura; no se implementa en E4.7 sin aprobación |
 | **M-C** | Definir «margen medio» y «margen real puntual» en E2.6/E3.6, con numerador, denominador y tratamiento de Bonus/extraordinaria/Recuperado/meses parciales | Requiere spec/motor propietario; E4.7 solo consumiría el resultado |
 
-**Recomendación** `[PROPUESTA — avalada funcionalmente por Álex; pendiente de aprobación del
-usuario]`: **M-A**. Publicar `margenEstructural` y `margen frente a nómina real` con su
+**Aprobada** `[2026-11-04]`: **M-A**. Publicar `margenEstructural` y `margen frente a nómina real` con su
 cobertura y etiqueta `plan`; mostrar `margen medio` y `margen real puntual` como `No disponible
 — definición pendiente DT8`; no sumar, promediar ni anualizar márgenes. E4.7-AC3 se registra
 como **PARCIAL**, nunca PASS. Si se aprueba M-C, la fórmula debe nacer en el motor propietario,
@@ -644,7 +643,7 @@ infinito; coste parcial o incompleto → `No disponible`; no se divide un subtot
 (`SPEC24:150-163`, AC-16). Un `0` anual sigue siendo una decisión explícita, no una ausencia
 (`SPEC10`).
 
-`[DICTAMEN ÁLEX — recomendación, no aprobación]` **Z-A**: no crear cocientes anuales. Si se
+`[APROBADA Z-A 2026-11-04]` No crear cocientes anuales. Si se
 solicita `mesesCubiertos` con coste esencial verificado `0`, el resultado es `No disponible`
 (no `0`, no infinito). Los dos decimales de meses son **solo presentación**: nunca se redondea
 el valor del origen. Una magnitud que el alcance no publica se declara `No aplica` con motivo,
@@ -656,17 +655,16 @@ no `0`.
 | **Z-B** | Definir un ratio anual nuevo (por ejemplo, cobertura en meses del año) | Requiere fórmula, denominador y tratamiento de meses parciales; no se implementa sin decisión |
 | **Z-C** | No mostrar ningún contexto de coste esencial en E4.7 | Evita el problema, pero pierde trazabilidad con R6; no recomendado |
 
-**Recomendación** `[PROPUESTA — avalada funcionalmente por Álex; pendiente de aprobación del
-usuario]`: **Z-A**. Sin cocientes anuales nuevos; coste `0` verificado → `mesesCubiertos` `No
+**Aprobada** `[2026-11-04]`: **Z-A**. Sin cocientes anuales nuevos; coste `0` verificado → `mesesCubiertos` `No
 disponible`; formato de meses a 2 decimales solo como presentación, sin alterar ni redondear el
 valor de origen. Si E4.7 no publica un cociente, se declara `No aplica` con motivo, no `0`.
 
 ### D8-F — Formato, filtros y salida
 
-`[PENDIENTE]` Faltan columnas exactas, orden, exportación y salida (pantalla, PDF u otra). La
+`[APROBADA F-A 2026-11-04]` No hay CSV/PDF en el primer DEV; faltan columnas exactas, orden y salida posterior. La
 identidad visual y los tokens existentes no se reabren.
 
-`[DICTAMEN ÁLEX — recomendación, no aprobación]` **F-A** es recomendable, con una precisión:
+`[APROBADA F-A 2026-11-04]` Con una precisión:
 F-A **sí incluye filtros funcionales**, no es una pantalla sin filtros. Filtros principales:
 ejercicio y cobertura. Filtros secundarios: Ciclo y Partida. Si F-B conserva esos mismos
 filtros, su diferencia real respecto de F-A es añadir **exportación CSV con contrato definido**;
@@ -679,18 +677,17 @@ lectura: 1440 tabla compacta y 390 tarjetas; la QA visual/responsive es un gate 
 | **F-B** | F-A + exportación CSV con contrato definido (mismos filtros) | Requiere definir columnas, orden, importes y cobertura exportada; más superficie de prueba |
 | **F-C** | F-B + PDF o informe imprimible oficial | Requiere decisión de formato, firma/versión y posiblemente otra spec; no recomendado para el primer DEV |
 
-**Recomendación** `[PROPUESTA — avalada funcionalmente por Álex; pendiente de aprobación del
-usuario]`: **F-A** para el primer DEV; filtros principales ejercicio/cobertura y secundarios
+**Aprobada** `[2026-11-04]`: **F-A** para el primer DEV; filtros principales ejercicio/cobertura y secundarios
 Ciclo/Partida; columnas por carril, estado y fuente visibles; sin exportación ni PDF hasta una
 decisión posterior. La revisión visual 1440/390 sigue siendo un gate separado.
 
 ### D8-N — Datos no aplicables
 
-`[PENDIENTE]` Hay magnitudes que no existen por diseño (por ejemplo, total anual de flujo,
+`[APROBADA N-A 2026-11-04]` Hay magnitudes que no existen por diseño (por ejemplo, total anual de flujo,
 total de efectivo del bróker o patrimonio neto global) y otras que existen pero no están
 disponibles (por ejemplo, ingresos históricos o archivo sin DT7). No deben confundirse.
 
-`[DICTAMEN ÁLEX — recomendación, no aprobación]` **N-A**: `No aplica` cuando la magnitud **no
+`[APROBADA N-A 2026-11-04]` `No aplica` cuando la magnitud **no
 existe en el alcance o en el diseño**; `No disponible` cuando **existe pero falta fuente o
 verificación**. Ambos con motivo visible, sin `0` ficticio ni celda vacía, y distinguibles sin
 depender solo del color.
@@ -887,7 +884,7 @@ corchetes son etiquetas, no cifras.
 - Ingresos históricos reconstruidos; archivo distinto de E4.5.
 - Patrimonio global o patrimonio neto; suma de valoración, deuda y flujo.
 - Fórmulas nuevas de «margen medio»/«margen real puntual»; cualquier ratio anual no aprobado.
-- Exportación CSV/PDF o informe oficial en el primer DEV mientras D8-F no lo autorice.
+- Exportación CSV/PDF o informe oficial en el primer DEV: F-A no la incluye; requiere decisión posterior.
 - Aprobar DT8, aprobar esta spec o autorizar DEV25, merge, datos reales o migración.
 
 ## Acceptance checks
@@ -956,39 +953,19 @@ se declara PASS.
 | E4.11 | SPEC29 en `main` `b3f4ed9`; sin DEV conocido | No hay foto anual; no se simula |
 | E2.6 | Contrato real 2026-11-04 en `b3f4ed9` | `valor:null` + `subtotal` + `Parcial`; E4.7 no fabrica totales |
 
-## Seis decisiones para aprobación del usuario
+## Seis decisiones aprobadas
 
-`[CONFIRMADO]` Las seis decisiones fueron aprobadas por el usuario el 2026-11-04. El
-dictamen funcional de Álex (relay 0142) **recomienda** las opciones indicadas, pero no sustituye
-la aprobación del usuario ni autoriza DEV25, merge, datos reales ni migración. Aprobar esta spec
-tampoco autoriza DEV25: el desarrollo requiere una autorización separada.
+`[CONFIRMADO]` Aprobadas por el usuario el 2026-11-04. No autorizan DEV25, merge, datos reales
+ni migración; la aprobación de SPEC25 no inicia desarrollo.
 
-1. **D8-M — márgenes.** ¿Se aprueba **M-A**: publicar únicamente `margenEstructural` y `margen
-   frente a nómina real` de E2.6, por Ciclo, con estado/cobertura y etiqueta inequívoca de
-   **márgenes del plan** (no ahorro ejecutado), dejando `margen medio` y `margen real puntual`
-   como `No disponible` por DT8, sin agregación anual? Con M-A, **E4.7-AC3 queda PARCIAL** y
-   depende de una definición futura; no puede PASS completo. Alternativas: M-B (agregación
-   anual) o M-C (definir los márgenes en E2.6/E3.6).
-2. **D8-Z — coste esencial 0 y cocientes.** ¿Se aprueba **Z-A**: sin cocientes anuales nuevos;
-   coste esencial verificado `0` → `mesesCubiertos` `No disponible` (no `0`, no infinito); dos
-   decimales solo presentación, sin redondear el origen; magnitud no publicada por el alcance →
-   `No aplica` con motivo? Alternativa: Z-B (ratio anual nuevo) o Z-C (no mostrar contexto).
-3. **D8-F — formato, filtros y salida.** ¿Se aprueba **F-A** para el primer DEV: pantalla de
-   solo lectura con filtros funcionales principales de ejercicio y cobertura, y secundarios de
-   Ciclo y Partida; sin CSV ni PDF; 1440 tabla compacta y 390 tarjetas; QA visual/responsive
-   como gate separado? F-B añade CSV con contrato; F-C añade PDF/informe.
-4. **D8-N — datos no aplicables.** ¿Se aprueba **N-A**: `No aplica` cuando la magnitud no existe
-   en el alcance/diseño y `No disponible` cuando existe pero falta fuente o verificación, ambos
-   con motivo visible, nunca `0` ni celda vacía y sin depender solo del color? Alternativa:
-   N-B (omitir la fila).
-5. **Patrimonio.** ¿Se aprueba incluir **contexto separado** de valoración/resultados E4.3 y
-   deuda E4.4 **solo al mismo corte verificable**, cada uno con estado/cobertura, sin calcular
-   patrimonio neto, sin sumar valoración + deuda + flujo y sin ocultar indisponibilidad? Si no
-   hay corte comparable, el bloque queda `No disponible`, sin cifra fabricada. Alternativa:
-   excluirlo del primer alcance como `No aplica`.
-6. **Gate E4.5/DT7 y primer alcance.** ¿Se acepta un **primer alcance vivo de solo lectura**,
-   desacoplado de la finalización de E4.9? Sin E4.5 desarrollado y sin DT7 aprobado no hay
-   archivo anual verificado ni total anual: **AC10–AC15 quedan `UNRUN`/`BLOCKED`** según la
-   evidencia y **no se declara E4.7 completa** ni PASS del roadmap. Sin fotos E4.9/E4.11 se
-   mantiene «cálculo vivo, sin foto». La aprobación de esta spec es documental y no autoriza
-   DEV25, merge, datos reales ni migración.
+1. **D8-M — M-A:** solo `margenEstructural` y `margen frente a nómina real`, etiquetados como
+   plan; `margen medio` y `margen real puntual` ND por DT8. **AC3 PARCIAL**.
+2. **D8-Z — Z-A:** sin cocientes anuales; coste 0 → `mesesCubiertos` ND; decimales solo
+   presentación.
+3. **D8-F — F-A:** filtros funcionales ejercicio/cobertura y Ciclo/Partida; sin CSV/PDF en el
+   primer DEV; 1440 tabla y 390 tarjetas.
+4. **D8-N — N-A:** `No aplica` vs `No disponible` con motivo, sin 0 ni celda vacía.
+5. **Patrimonio:** contexto separado E4.3/E4.4 al mismo corte verificable; sin patrimonio neto
+   ni sumas.
+6. **Gate E4.5/DT7:** primer alcance vivo de solo lectura; AC10–AC15 `UNRUN/BLOCKED`; no se
+   declara E4.7 completa.
