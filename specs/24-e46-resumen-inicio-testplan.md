@@ -51,8 +51,7 @@ filas `BLOCKED` dependen de E4.3 o del consumo E3.6; la falta de configuración 
 
 ## Fixture integrada E4.6 — diseñada, no ejecutada
 
-Todos los datos son ficticios. El ciclo `C007` cubre `2026-06-20`–`2026-07-19`, con
-`mesFinanciado 2026-06` y corte efectivo `2026-07-19`.
+Todos los datos son ficticios. El ciclo `C007` inicia `2026-06-20`, está abierto y su corte efectivo es `2026-07-19`; `mesFinanciado` se deriva del inicio y es **`2026-07`**. No se fuerza el motor para obtener `2026-06`. Validación técnica 2026-11-04: `fundedMonth` y compra S003→S007 ejecutables con los contratos vigentes; la suite E4.6 sigue UNRUN sin DEV24.
 
 ### Saldos
 
@@ -62,6 +61,7 @@ Todos los datos son ficticios. El ciclo `C007` cubre `2026-06-20`–`2026-07-19`
 | `S002` | Efectivo / Movimientos | Activa | Sí | Ahorro | No | `800.00` |
 | `S003` | Efectivo / Inversiones | Activa | Sí | Inversión | No | `1456.40` (efectivo) |
 | `S004` | Efectivo / Inversiones | Activa | No | Inversión | No | `500.00` (efectivo) |
+| `S007` | Inversión / Inversiones | Activa | No | Inversión | No | posiciones `I1001`/`I1002` |
 | `S005` | Efectivo / Movimientos | Activa | Sin informar | — | Sí | `250.00` |
 | `S006` | Efectivo / Movimientos | Inactiva | Sí | — | No | `999.00` |
 | `S000` | técnico | — | — | — | — | excluido del inicio |
@@ -70,8 +70,8 @@ Todos los datos son ficticios. El ciclo `C007` cubre `2026-06-20`–`2026-07-19`
 
 | Instrumento | Saldo inversión | Cantidad | Tipo valoración | Valor EUR | Resultado |
 | --- | --- | --- | --- | --- | --- |
-| `I1001` Fondo índice demo | `S004` | `7.5` | Automática | `877.50` | `258.50` |
-| `I1002` Acción demo | `S004` | `2` | Manual | `320.00` | `No disponible` |
+| `I1001` Fondo índice demo | `S007` | `7.5` | Automática | `877.50` | `258.50` |
+| `I1002` Acción demo | `S007` | `2` | Manual | `320.00` | `No disponible` |
 
 Agregado E4.3 esperado: valoración **Completa** `1197.50`; resultado **Parcial 1/2** y
 `resultadoEur: null` por la valoración manual.
@@ -104,7 +104,7 @@ Total no hipotecario esperado: `valor: null`, `subtotal: 1020.00`, cobertura `2/
 | Margen frente a nómina real | `100.00` | Plan, no ahorro |
 
 Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahorro sobre
-`S002`, `PRE003` Inversión sobre `S004`. Plan del ciclo `C007` con 4 líneas completas.
+`S002`, `PRE003` Inversión sobre `S007`. Plan del ciclo `C007` con 4 líneas completas.
 
 ### Coste esencial
 
@@ -121,7 +121,7 @@ Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahor
 | `V-LIQ-COMPLETA` | `S005.Liquidez = No` (o se excluye del universo activo) | Liquidez completa 3/3 `3456.40`; `mesesCubiertos = 345640/150000 = 2.304266…`, visible sin `mesesObjetivo` |
 | `V-LIQ-PARCIAL` | Fixture base con `S005.Liquidez` sin informar | `mesesCubiertos` `No disponible` por liquidez parcial |
 | `V-LIQ-CERO` | Todos los Saldos activos con `Liquidez = No`; sin posición elegible | Liquidez `Cero verificado`; `mesesCubiertos` `0,00`, no ND |
-| `V-EJERCICIO` | Ciclo `C008`: inicio `2026-12-20`, fin/corte `2027-01-19`, `mesFinanciado 2026-12`; planes 2026 y 2027 con esenciales distintos | `annualEquivalent` de 2026; no 2027, reloj, corte ni año del ingreso |
+| `V-EJERCICIO` | Ciclo `C008`: inicio `2026-11-20`, abierto, corte `2027-01-19`, `mesFinanciado 2026-12` derivado; planes 2026 y 2027 con esenciales distintos | `annualEquivalent` de 2026; no 2027, reloj, corte ni año del ingreso |
 
 ### Configuración R6 (proveedor de prueba)
 
@@ -145,7 +145,7 @@ es `No disponible`; `mesesCubiertos` se publica si liquidez y coste son completo
 | Meses cubiertos — liquidez completa | `3456.40 / 1500.00` (`V-LIQ-COMPLETA`) | `345640/150000 = 2.304266…`; se muestra `2,30` (formato propuesto DT8) aunque `mesesObjetivo` sea `null`; `minimoObjetivo` ND |
 | Meses cubiertos — liquidez cero | `0 / 1500.00` (`V-LIQ-CERO`) | `0,00` con `Cero verificado`; no ND |
 | Coste 0 | `0` verificado | meses cubiertos `No disponible`, no 0/infinito |
-| Ejercicio esencial | `C008` con `mesFinanciado 2026-12` y corte `2027-01-19` | `annualEquivalent` de 2026; 2027 no se usa |
+| Ejercicio esencial | `C008` con inicio `2026-11-20`, `mesFinanciado 2026-12` y corte `2027-01-19` | `annualEquivalent` de 2026; 2027 no se usa |
 | Agregado inversión | `877.50 + 320.00` | `1197.50`, cobertura completa |
 | Efectivo bróker | `S003 1456.40` y `S004 500.00` | dos registros, sin total |
 | Deuda no hipotecaria | `720.00 + 300.00` | subtotal `1020.00`; total `null` por `D005` |

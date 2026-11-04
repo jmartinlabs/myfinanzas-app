@@ -104,7 +104,7 @@ PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se 
 | AC-25 | Cobertura E4.3 `Parcial n/m`; `capital.calculable` de E4.4 | E4.3 TP-10; deuda «desglose inválido» | Alinear etiquetas (`Verificada`/`Completa`) al DTO de E4.6 | Mapa de contrato, sin motor nuevo |
 | AC-26 | Shell, tokens y Playwright MFA existentes | Specs e2e de valoración, pendientes y deudas | No existe pantalla `/inicio`; faltan capturas y teclado | Q1=A; revisión visual conserva gate |
 | AC-27 | `no-store` global y sesión MFA en rutas financieras | F9, `pendientes-api` (401/403/404) y E4.3 AC-12 | La ruta nueva no existe; al crearse debe heredar guard y cabeceras | T-SEG |
-| AC-28 | `annualEquivalent(2026)` y Q4=A | `annualYear` y pruebas de plan anual (no la selección Q4) | **Fixture inviable con el contrato vigente** (F-01) | Q4=A aprobada; premisa de fixture por resolver |
+| AC-28 | `annualEquivalent(2026)` y Q4=A | `annualYear` y pruebas de plan anual (no la selección Q4) | Fixture corregida (F-01); validar C008 ejecutable | Q4=A aprobada; sin decisión pendiente |
 | AC-29 | `Cero verificado` de E2.6 con coste > 0 | F8 (universo vacío conocido = cero) | Composición `0/1500 = 0,00` | Q11 |
 
 ### 2.1 Recuento de huecos (sin declarar PASS)
@@ -129,7 +129,7 @@ PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se 
 | H-05 | `/api/deudas` no admite `corte` y pagina de 100 en 100; el corte vive en la ficha | Un total Q7 construido desde la primera página sería falso; hay que recorrer todas las deudas activas o usar el motor | `listDeudasCompletas` en [deuda-completa.ts](../apps/api/src/deuda-completa.ts) |
 | H-06 | `/api/saldos` pagina de 100 en 100 | Contradice «no truncar listas que afectan a un total»; el consumidor debe recorrer páginas o usar `getSaldo` por ID | `readSaldos` en [saldos.ts](../apps/api/src/saldos.ts) |
 | H-07 | No hay `/inicio` ni entrada de navegación; `/` va a `/saldos` | AC-09 y AC-26 no ejecutables | [main.tsx](../apps/web/src/main.tsx) |
-| H-08 | La fixture integrada del testplan no es construible tal como está escrita | Bloquea AC-02/18/24/25/28 y la comparación al céntimo | F-01 y F-02 |
+| H-08 | La fixture integrada del testplan no era construible tal como estaba escrita | Corregida documentalmente; pendiente validación ejecutable | F-01/F-02 resueltas |
 | H-09 | `e43Corte` exige una fecha civil; no tiene modo «actual» | Si `corte` es `null`, la sección de inversión debe quedar `No disponible`; no se sustituye por la fecha de consulta | `e43Corte`/`civil` |
 | H-10 | El efectivo puede leerse por `cashAt` o por `e43Corte.efectivo` | Dos lecturas separadas pueden fechar distinto; dentro de una sección debe usarse una sola ruta y el mismo corte | `cashDto`, `e43Corte` |
 | H-11 | `Saldos.objetivo` no es el `mesesObjetivo` de R6 | Reutilizarlo inventaría un objetivo no aprobado | SPEC24 §Objetivo R6; `saldos.ts` |
@@ -141,7 +141,7 @@ PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se 
 
 | Artefacto | Sin DEV24 | Gate |
 | --- | --- | --- |
-| Corrección de la fixture integrada (F-01/F-02) | Sí, documental, una vez decidida la semántica | Documento propietario de SPEC24; este informe no la decide |
+| Corrección de la fixture integrada (F-01/F-02) | Sí, aplicada en SPEC24/testplan el 2026-11-04 | Revisar C007/C008/S007 y validar antes de DEV24 |
 | Tabla de mapeo motor→DTO (H-02 a H-06) | Sí, documental | Ninguno; no crea contrato ejecutable |
 | Oráculo independiente y cifras prohibidas | Sí; el testplan ya lo contiene; se puede completar sin ejecutar | Ninguno |
 | Diseño de casos de contrato (nombres, precondiciones, asserts) | Sí, como diseño | La autoría de test es código |
@@ -157,28 +157,21 @@ PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se 
 
 ### 3.2 Bloqueos y preguntas que deben resolverse antes de DEV24
 
-**F-01 — `mesFinanciado` de la fixture no es producible con el contrato vigente.**
+**F-01 — `mesFinanciado` de la fixture no era producible con el contrato vigente (RESUELTA documentalmente el 2026-11-04).**
 [SPEC03](03-ciclos-financiados-specification.md) define «Mes financiado = primer día del mes
 siguiente al Inicio» y `createCycle` lo deriva con `fundedMonth`; `deriveCycles` devuelve el
 valor almacenado. Por tanto:
 
-- C007 del testplan (`inicio 2026-06-20`, `mesFinanciado 2026-06`) no es producible por
-  `createCycle`: el valor derivado es `2026-07-01`. No altera el año del coste esencial
-  (2026), pero la etiqueta del fixture es incorrecta.
-- C008 de `V-EJERCICIO` (`inicio 2026-12-20`, `mesFinanciado 2026-12`, corte
-  `2027-01-19`) tampoco: el valor derivado es `2027-01-01`, y con ello Q4=A seleccionaría
-  el plan de **2027**, no el de 2026. El escenario de AC-28 («corte en el ejercicio
-  siguiente, plan del ejercicio de `mesFinanciado`») puede construirse con otras fechas,
-  pero no se inventa aquí: requiere corrección en el documento propietario o decisión
-  funcional explícita.
-- Además, el DTO de ejemplo usa `YYYY-MM` y el motor `YYYY-MM-01`; es un mapeo de formato.
+- **Corrección aplicada:** C007 se declara abierto con inicio `2026-06-20`, corte
+  `2026-07-19` y `mesFinanciado 2026-07` (derivado); C008 de `V-EJERCICIO` usa inicio
+  `2026-11-20`, abierto, `mesFinanciado 2026-12` y corte `2027-01-19`. No se cambia el motor.
+- **Validación técnica 2026-11-04:** script efímero confirmó `fundedMonth(2026-06-20)=2026-07-01`, `fundedMonth(2026-11-20)=2026-12-01`, creación de ambos ciclos y posición de `S007` con compra a `S003`; no se ejecutaron suites completas.
+- El DTO de ejemplo usa `YYYY-MM` y el motor `YYYY-MM-01`; es un mapeo de formato.
 
-**F-02 — El Saldo `S004` tiene dos papeles incompatibles.** El testplan define S004 como
-`Efectivo/Inversiones` (500 de efectivo) y, a la vez, como «Saldo inversión» de `I1001` e
-`I1002`. `createPurchase` exige que el Saldo de inversión sea `Inversión/Inversiones` y
-distinto del de efectivo; `cashDto` exige `Efectivo/Inversiones`. Un único Saldo no puede
-ser ambos. La fixture necesita dos Saldos (efectivo y cartera) o una reasignación explícita;
-la elección afecta a AC-18, AC-19, AC-24 y AC-25.
+**F-02 — El Saldo `S004` tenía dos papeles incompatibles (RESUELTA documentalmente el 2026-11-04).**
+Se añade `S007` como `Inversión/Inversiones` para `I1001`/`I1002`; `S004` permanece
+`Efectivo/Inversiones` con 500,00 € y `PRE003` pasa a `S007`. No se cambian tipos ni se
+fuerza el motor. **Validación 2026-11-04:** compra sobre `S007` con efectivo `S003` y posición resultante correcta en script efímero; queda validar la fixture integrada completa antes de DEV24.
 
 **F-03 — DT8.** Formato de meses (2 decimales propuesto) y ruta `/inicio` con posible
 redirección desde `/` siguen pendientes; no cambian valores, pero condicionan AC-13 y AC-09.
@@ -191,8 +184,8 @@ ni caché; es diseño técnico, no decisión funcional.
 inyección de prueba, no una tabla ni un valor por defecto. Sin él, solo `minimoObjetivo` es
 `No disponible`.
 
-Ninguna de estas preguntas reabre Q1–Q12. F-01 y F-02 son defectos de fixture/semántica que
-deben resolverse antes de que un DEV24 pueda ejecutar AC-28, AC-18 y AC-25 con honestidad.
+Ninguna de estas preguntas reabre Q1–Q12. F-01 y F-02 quedan resueltas documentalmente; falta
+validar la fixture ejecutable completa antes de solicitar DEV24. F-03 a F-05 siguen abiertas.
 
 ## 4. Riesgos de duplicar motores o inventar agregados
 
@@ -232,8 +225,7 @@ validaciones de estructura.
 
 ## 6. Próxima acción mínima
 
-**No iniciar DEV24.** La acción mínima e independiente es que el coordinador solicite la
-resolución de **F-01 y F-02** en el documento propietario de E4.6 (fixture y semántica de
-`mesFinanciado`/Saldo de inversión) y, solo después, emita un paquete DEV24 con ownership
-explícito de endpoint, UI, fixture y pruebas. Mientras eso no ocurra, este documento es la
-base de readiness; no modifica estados del tablero ni del testplan.
+**No iniciar DEV24.** La acción mínima e independiente es validar la fixture ya corregida
+(F-01/F-02) en el documento propietario de E4.6 y, solo después, emitir un paquete DEV24 con
+ownership explícito de endpoint, UI, fixture y pruebas. Mientras eso no ocurra, este documento
+es la base de readiness; no modifica estados del tablero ni del testplan.
