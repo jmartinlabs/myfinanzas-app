@@ -9,9 +9,9 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
 | E4.5 | approved | not-ready (DT7) | AC-48…59 **NO APTO** | not-ready | pending | Enmienda C1–C7 + reauditoría |
-| E4.6 | approved | verified candidate `1a94412` (#201); visual final pendiente | APTO CON RESERVAS (AC-01 PARCIAL) | PR-open, no aprobado | pending | Revisión visual final + merge del usuario |
+| E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | drafting (SPEC25) | not-ready | planned | not-ready | pending | Decisiones D8-M/Z/F/N |
-| E4.9 | approved | implementing (#200: A+B+guards; UI/E2E pendiente) | guards APTO CON RESERVAS; conjunto pendiente | not-ready | pending | Decisiones T1/T2/T3 + DT6 |
+| E4.9 | approved | implementing (#200: DEV-04 guards `6af6911`; DEV-05 correcciones en curso) | guards APTO CON RESERVAS; conjunto pendiente | not-ready | pending | DEV-05 + UI/E2E + DT6 |
 | E4.10 | drafting (SPEC28) | not-ready | planned | not-ready | pending | Decisiones D1–D9 + E4.9 estable |
 | E4.11 | drafting (SPEC29) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
 | E4.12 | not-ready (requisitos) | not-ready | planned | not-ready | pending | DT6/DT7 y specs previas |

@@ -3,8 +3,9 @@
 Status: **APROBADA documentalmente por el usuario el 2026-11-03.** Q1–Q12 ratificadas en
 opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetivo/umbrales) y
 **Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente).
-**DEV24 autorizado el 2026-11-04.** La rama `feat/e46-inicio` contiene la composición de solo
-lectura `GET /api/resumen-inicio` y la UI `/inicio`. Estado real: AC con evidencia local en el
+**DEV24 MERGED `cfbedb0` el 2026-11-04.** Integra la composición de solo lectura
+`GET /api/resumen-inicio` y la UI `/inicio`; AC-01 permanece PARCIAL y las reservas visuales
+no bloqueantes quedan registradas en el PR/testplan. Estado real: AC con evidencia local en el
 [testplan](24-e46-resumen-inicio-testplan.md); AC-20, AC-21 y AC-27 están en PASS local
 (AC-27 con UI/reauth y 401/500 server-side), y AC-01 queda **PARCIAL** solo por la cobertura
 estructurada por ítem que E1.1/E4.4 no publican. Sin merge ni `--full`; la revisión visual de

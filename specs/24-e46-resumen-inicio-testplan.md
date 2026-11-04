@@ -1,8 +1,8 @@
 # 24 — E4.6 Resumen de inicio completo: Test plan
 
 Status: **APROBADA documentalmente por el usuario el 2026-11-03 — DISEÑO DE PRUEBAS.**
-Actualización 2026-11-04: la rama `feat/e46-inicio` contiene la composición de solo lectura
-(A+B, `GET /api/resumen-inicio`) y la UI `/inicio` (bloque C). La matriz deja en **PASS local**
+Actualización 2026-11-04: `feat/e46-inicio` quedó integrada en `cfbedb0` con la composición de
+solo lectura (A+B, `GET /api/resumen-inicio`) y la UI `/inicio` (bloque C). La matriz deja en **PASS local**
 los AC con prueba concreta, incluidos AC-20, AC-21 y AC-27 (401 real por logout, 500 genérico
 del handler con fallo interno real y UI de 500/401 interceptados con reautenticación TOTP
 real). **AC-01 queda PARCIAL** solo por la cobertura por ítem de

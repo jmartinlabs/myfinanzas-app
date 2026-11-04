@@ -1,7 +1,7 @@
 # Convención de identificadores — MyFinanzas
 
 **Estado:** aprobada por el usuario el 2026-11-04; integración pendiente de merge.
-Adopta la norma general de Agentic Template (`specs/methodology/identifiers.md`) y **no
+Adopta la norma general de Agentic Template ([identifiers.md](https://github.com/jmartinlabs/agent-project-template/blob/c0ee565/specs/methodology/identifiers.md)) y **no
 renombra** archivos, carpetas, ramas, PR, commits, enlaces ni identificadores históricos.
 
 ## 1. Identificador canónico
