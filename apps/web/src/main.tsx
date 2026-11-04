@@ -121,11 +121,12 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
+          const current = location.pathname + location.search;
           go(
-            path.startsWith("/flujo-mensual") ||
-              path.startsWith("/pendientes") ||
-              path.startsWith("/inversiones")
-              ? path
+            current.startsWith("/flujo-mensual") ||
+              current.startsWith("/pendientes") ||
+              current.startsWith("/inversiones")
+              ? current
               : "/saldos",
           );
         }}

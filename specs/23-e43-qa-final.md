@@ -1,7 +1,7 @@
 # 23 — E4.3 QA final (A+B+C)
 
 Status: **QA VISUAL Y FUNCIONAL COMPLETADA — APTO CON RESERVAS MENORES.** Candidato de esta
-rama sobre `main` `7306494`; sin merge. Los estados de AC reflejan la evidencia ejecutada; la aceptación visual final corresponde al usuario y la revisión funcional final a Álex.
+rama sobre `main` `9b76569`; sin merge. Los estados de AC reflejan la evidencia ejecutada; la aceptación visual final corresponde al usuario y la revisión funcional final a Álex.
 
 ## 1. Alcance y evidencia
 
@@ -89,7 +89,18 @@ Resultado: **15 PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN, 0 BLOCKED**. Los
 - El detalle no muestra los hechos de Compra/Venta; se consultan en la ficha del Instrumento.
 - No se ha ejecutado el perfil `full` con datos reales ni migración operativa.
 
-## 6. Recomendación
+## 6. QA independiente incremental
+
+- **2026-11-04:** revisión independiente del diff de QA final: **APTO CON RESERVAS**, sin
+  defecto bloqueante.
+- Detectó P2: al cambiar el corte, `main.tsx` podía reautenticar con el `path` de estado
+  anterior y perder la fecha consultada. Corregido en esta rama usando
+  `location.pathname + location.search`; el E2E cambia a 2026-03-31 antes de la caducidad y
+  comprueba el retorno a ese corte (4 filas, Parcial 1/4).
+- La copia de O3 se aparta ligeramente del wireframe aprobado; queda como reserva visual
+  menor sujeta a la aceptación final.
+
+## 7. Recomendación
 
 Publicar esta rama y su PR, ejecutar CI y QA independiente final, y presentar a Álex la
 revisión funcional con las capturas anteriores. El merge funcional queda pendiente de

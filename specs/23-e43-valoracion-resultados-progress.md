@@ -2,7 +2,8 @@
 
 Status: **E4.3 A+B+C integrado en `main`; QA final completada en PR #189 (candidato
 `85f5b9a`, CI 644/644 y Playwright 1/1). QA-A/B/C APTO CON RESERVAS; reservas menores
-documentadas. Sin merge de QA final y sin PASS de AC/TP.**
+documentadas. Sin merge de QA final; 15 AC PASS de cobertura y 2 PARCIAL, con aceptación
+funcional y merge pendientes.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),

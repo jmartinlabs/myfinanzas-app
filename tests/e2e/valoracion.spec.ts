@@ -746,13 +746,14 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       fullPage: true,
     });
 
-    // R5 · sesión expirada: se conserva el corte y el contexto de /inversiones.
+    // R5 · sesión expirada: se conserva el corte consultado y el contexto de /inversiones.
     await page.setViewportSize({ width: 1440, height: 1000 });
     await page.goto(`${LIST}?fecha=2026-06-30`);
     await expect(
       page.getByRole("heading", { name: "Valoración y resultados" }),
     ).toBeVisible();
     await expect(page.getByLabel(/Fecha de corte/)).toHaveValue("2026-06-30");
+    await page.getByLabel(/Fecha de corte/).fill("2026-03-31");
     await page.route(
       "**/api/e43/corte?*",
       (route) =>
@@ -785,8 +786,12 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(
       page.getByRole("heading", { name: "Valoración y resultados" }),
     ).toBeVisible();
-    await expect(page.getByLabel(/Fecha de corte/)).toHaveValue("2026-06-30");
-    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(5);
+    await expect(page.getByLabel(/Fecha de corte/)).toHaveValue("2026-03-31");
+    await expect(page).toHaveURL(/fecha=2026-03-31/);
+    await expect(page.locator(".valoracion-table tbody tr")).toHaveCount(4);
+    await expect(page.getByLabel("Agregado a corte")).toContainText(
+      "Parcial 1/4",
+    );
     await expect(page.getByText(/La sesión ha caducado/)).toHaveCount(0);
 
     expect(errors).toEqual([]);
