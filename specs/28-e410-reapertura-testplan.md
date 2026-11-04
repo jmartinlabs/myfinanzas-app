@@ -1,0 +1,221 @@
+# 28 — E4.10 Reabrir el último cierre y volver a cerrar: Test plan
+
+**DRAFT — no aprobada; no autoriza DEV ni merge.**
+Status: **DRAFT documental — diseño de pruebas; NO EJECUTADO. Todos los AC están
+`UNRUN`. Ningún AC está en PASS.** No existe implementación de E4.10, endpoint, DDL,
+migración, UI ni candidato funcional. No se usan datos reales.
+Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
+Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
+Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
+Base: rama `docs/next-packages`, commit `eefc20d`. E4.9 se lee en el PR **#200**
+(`feat/e49-cierre`, head `2fe5d01`), **OPEN y en draft**, sin QA final ni merge; sus AC
+siguen **UNRUN**. DT6/T-BKP sigue abierto.
+
+**Leyenda de estado:** `UNRUN` = diseñado, no ejecutado. `UNRUN — condicionado Dn` = no
+puede ejecutarse con resultado estable hasta que se apruebe esa decisión. `BLOCKED` = falta
+una dependencia externa. No se usa `PASS` en este documento.
+
+---
+
+## 1. Estrategia
+
+- **Unidad/API:** Bun Test sobre las operaciones conceptuales de E4.10 y las guardas de
+  E4.9, con SQLite de fixture y snapshots antes/después.
+- **Persistencia:** comprobar filas, versiones, triggers de inmutabilidad, secuencia
+  `MAX(version)+1`, auditoría append-only y ausencia de estados parciales.
+- **Contrato:** DTO de estado/versión/foto; errores motivados; idempotencia y concurrencia.
+- **Seguridad:** sesión MFA completa, Origin/CSRF, límites de JSON, ausencia de rutas
+  `PATCH`/`DELETE`, rechazo de payloads manipulados.
+- **UI:** Playwright cuando exista una UI autorizada; aquí solo se diseña el caso, no se
+  ejecuta. No hay capturas 390/1440.
+- **Datos:** fixtures sintéticos exclusivamente. Un fixture de backup **no** acredita DT6.
+- **Verificación final:** cuando exista código de E4.10, el paquete DEV usará
+  `python3 scripts/verify` o `python3 scripts/verify --full` según el perfil autorizado.
+  Este documento no ejecuta nada.
+
+Las rutas y nombres de códigos son `[PENDIENTE · provisional E4.9]`. Los casos se escriben
+contra las operaciones conceptuales (`reabrirUltimoCierre`, `reCerrarCiclo`,
+`estadoDeCierre`, `versionesDeCierre`, `fotoDeCierre`, `cancelarReapertura`) y se adaptarán
+a la superficie canónica después del QA/merge de E4.9, sin cambiar la semántica.
+
+---
+
+## 2. Escenarios núcleo
+
+### F1 — v1 → reapertura → corrección → v2
+
+1. Ciclo último con cierre v1 y foto completa; fixture con hechos, plan y auxiliares.
+2. Reabrir con motivo, actor, UTC y versión esperada.
+3. Verificar `Reabierto(v1)`, evento de auditoría y foto v1 sin cambios.
+4. Aplicar una corrección T2 (y T1 si D2-B) con su impacto/auditoría.
+5. Re-cerrar con motivo (si D3-B), versión esperada y preflight.
+6. Verificar v2 con el contrato completo, vínculo v1→v2, `Cerrado(v2)` y v1 intacta.
+
+**Cubre:** AC02, AC06, AC08, AC10, AC18, AC20.
+
+### F2 — v1 intacta
+
+1. Capturar snapshot de `cierres`, `fotos_cierre`, auditoría y `schema_version` antes de
+   reabrir.
+2. Reabrir, corregir y re-cerrar.
+3. Comparar la fila y la foto v1 byte a byte (o por columnas relevantes) con el snapshot.
+4. Intentar `UPDATE`/`DELETE` directo sobre v1 y su foto; la base debe rechazarlo.
+
+**Cubre:** AC07, AC10, AC14.
+
+### F3 — Cierre posterior existente
+
+1. Ciclo A cerrado (v1) y ciclo B posterior cerrado.
+2. Intentar reabrir A por la vía ordinaria.
+3. Verificar rechazo motivado, sin evento de reapertura, sin cambio de estado y sin tocar B.
+4. Repetir con un cierre posterior creado entre la reapertura y el re-cierre de A (carrera).
+
+**Cubre:** AC01, AC16.
+
+### F4 — Intento de salto por API
+
+1. `reCerrarCiclo` sin reapertura previa.
+2. Reabrir un ciclo no último o una versión histórica (v1 cuando existe v2).
+3. `PATCH`/`DELETE` de cierre, foto o versión.
+4. Reabrir/re-cerrar omitiendo versión esperada o con versión obsoleta.
+5. Verificar rechazo en todas, sin escritura ni evento parcial.
+
+**Cubre:** AC04, AC12, AC14.
+
+### F5 — Fallo atómico
+
+1. Inducir fallo en la transacción de reapertura (auditoría/estado).
+2. Inducir fallo en la transacción de re-cierre (foto/auditoría/intento) después de las
+   comprobaciones.
+3. Verificar rollback total: sin evento/foto huérfanos, sin v2, estado consistente, v1
+   consultable y reintento posible.
+
+**Cubre:** AC05, AC13.
+
+### F6 — Idempotencia y concurrencia
+
+1. Repetir reapertura con la misma clave y payload; repetir re-cierre con la misma clave y
+   payload.
+2. Repetir con la misma clave y payload distinto.
+3. Dos reaperturas concurrentes; dos re-cierres concurrentes; versión esperada obsoleta.
+4. Verificar una sola versión/ventana, respuestas estables y conflictos motivados.
+
+**Cubre:** AC11, AC12.
+
+---
+
+## 3. Matriz de aceptación
+
+| AC | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado |
+| --- | --- | --- | --- | --- | --- | --- |
+| E4.10-AC01 | Cierre con otro ciclo posterior cerrado; reabrir | Rechazo motivado; sin evento ni cambio; cierre posterior intacto | Bun Test + SQL snapshot | API futura | DTO de error y snapshot | UNRUN |
+| E4.10-AC02 | v1 → reabrir → corregir → re-cerrar | v1 intacta; v2 con fecha/motivo/actor/fingerprint/app/esquema y vínculo | Bun Test + snapshot | API futura | v1, v2 y auditoría | UNRUN |
+| E4.10-AC03 | Dependencias posteriores presentes; reabrir/re-cerrar | Revalidación de solo lectura; S0/plan ajenos sin cambios; evidencia | Bun Test de revalidación | API futura | DTO y snapshot | UNRUN |
+| E4.10-AC04 | Reabrir no último o versión histórica | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado | Bun Test de elegibilidad | API futura | Error y snapshot | UNRUN |
+| E4.10-AC05 | Fallo inducido en transacción de reapertura | Rollback total; sigue `Cerrado(vN)`; sin auditoría huérfana | Bun Test de fallo inducido | API futura | Snapshot sin cambios | UNRUN |
+| E4.10-AC06 | Reabrir con motivo/actor/UTC | `Reabierto(vN)`; metadatos persistidos; sin foto nueva | Bun Test + SQL | API futura | Evento y estado | UNRUN |
+| E4.10-AC07 | Consultar/modificar v1 durante reapertura | v1 y foto intactas; consulta persistida; `PATCH`/`DELETE` rechazados | Bun Test + SQL triggers | API futura | Foto y triggers | UNRUN |
+| E4.10-AC08 | Corrección T2 en ventana | Impacto/motivo/auditoría; v1 intacta; vista viva actualizada/marcada | Bun Test + UI futura | API/UI futura | Auditoría y foto | UNRUN |
+| E4.10-AC09 | Escritura T1 dentro/fuera de ventana | D2-A: `HISTORY_LOCKED`; D2-B: solo ventana/ciclo, auditada; S0/ventana/Fin bloqueados | Bun Test de guarda | API futura | Respuesta y snapshot | UNRUN — condicionado D2 |
+| E4.10-AC10 | Re-cerrar tras corregir | Una versión `N+1` con foto completa; v1 y anteriores intactas | Bun Test + SQL snapshot | API futura | v1, v2 y secuencia | UNRUN |
+| E4.10-AC11 | Reintento idéntico y payload distinto | Mismo resultado/versión; conflicto de idempotencia; sin duplicados | Bun Test de idempotencia | API futura | Respuestas y versiones | UNRUN |
+| E4.10-AC12 | Reaperturas/re-cierres concurrentes; versión obsoleta | Solo una gana; la otra conflicto; sin dos ventanas/versiones | Bun Test de concurrencia | API futura | Dos respuestas y snapshot | UNRUN |
+| E4.10-AC13 | Fallo inducido en transacción de re-cierre | Rollback; sin v2/foto parcial; sigue `Reabierto(vN)`; v1 consultable | Bun Test de fallo inducido | API futura | Snapshot y estado | UNRUN |
+| E4.10-AC14 | Saltos por API: re-cerrar sin reabrir, escribir v1, versión histórica, omitir versión | Rechazo motivado en todas; sin escritura | Bun Test de rutas/guardas | API futura | Errores y snapshot | UNRUN |
+| E4.10-AC15 | Re-cierre sin preflight/backup/restauración DT6 o sin E3.5 verificable | Bloqueo antes de escribir; sin v2; fixture marcado sintético | Bun Test de preflight | API futura | DTO de bloqueo | UNRUN |
+| E4.10-AC16 | Cierre posterior creado entre reapertura y re-cierre | Re-cierre detenido; sin v2 silenciosa; posterior intacto; ventana resuelta según D8 | Bun Test de carrera | API futura | Error, auditoría y snapshot | UNRUN |
+| E4.10-AC17 | Dependencia posterior contradictoria | Bloqueo o aviso según D4; valores comparados auditados; sin cambios automáticos | Bun Test de revalidación | API futura | Auditoría y snapshot | UNRUN — condicionado D4 |
+| E4.10-AC18 | Recorrer cadena v1 → reapertura → correcciones → v2 | Auditoría completa, append-only, sin huecos ni huérfanos | Bun Test + SQL | API futura | Eventos ordenados | UNRUN |
+| E4.10-AC19 | Plan `SinPlan`/capturado y auxiliares disponibles/no | v2 captura estado vigente sin inventar; ausente → `No disponible`; v1 intacta | Bun Test + UI futura | API/UI futura | Foto v2 y auditoría | UNRUN — condicionado D6 |
+| E4.10-AC20 | Consultar v1/v2 con y sin versión explícita | Valores persistidos, versión seleccionada, última cerrada y estado; sin recálculo | Bun Test de contrato | API futura | DTO y foto | UNRUN |
+| E4.10-AC21 | Cancelar reapertura, si D8-B | `Cerrado(vN)` sin v2; evento auditado; v1 intacta; T1 re-bloqueado | Bun Test + SQL | API futura | Estado y auditoría | UNRUN — condicionado D8 |
+| E4.10-AC22 | Ciclo antiguo o restore como reapertura | Rechazo; sin ruta alternativa; motivo auditado | Bun Test de límites | API futura | Error y auditoría | UNRUN |
+
+---
+
+## 4. Regresión E4.9 y E4.8
+
+Estos casos no son AC de E4.10, pero deben seguir verdes antes de declarar cualquier PASS
+de E4.10:
+
+| Caso | Regla que no puede romperse | Estado |
+| --- | --- | --- |
+| R-E49-01 | T1 en ventana cerrada sigue devolviendo `HISTORY_LOCKED` fuera de la ventana de E4.10. | UNRUN |
+| R-E49-02 | T2 en ciclo cerrado sigue exigiendo impacto/motivo/auditoría y no altera la foto. | UNRUN |
+| R-E49-03 | Cierre ordinario duplicado sigue bloqueado; E4.10 es la única vía de reapertura. | UNRUN |
+| R-E49-04 | Reintento de cierre idéntico y conflicto de payload distinto se mantienen. | UNRUN |
+| R-E49-05 | Cambio concurrente entre preview y confirmación sigue dando conflicto sin foto parcial. | UNRUN |
+| R-E49-06 | Rollback de cierre sigue siendo total; no hay cierre/foto huérfanos. | UNRUN |
+| R-E49-07 | Foto v1 no se recalcula al consultar tras T2/T3. | UNRUN |
+| R-E49-08 | Cierre fuera de orden con diferencia no explicable sigue bloqueando por `INCOHERENCIA_CON_CIERRE_POSTERIOR`. | UNRUN |
+| R-E48-01 | Precierre sigue siendo solo lectura y no crea cierre, foto, reapertura ni versión. | UNRUN |
+| R-SEC-01 | Rutas financieras siguen exigiendo sesión MFA completa, Origin/CSRF y límites; sin roles nuevos por defecto (D3). | UNRUN |
+
+---
+
+## 5. Verificación funcional
+
+`UNRUN`. No existe candidato funcional de E4.10, ni operación de reapertura, ni camino de
+re-cierre en E4.9, ni foto v2. El PR #200 de E4.9 sigue OPEN/draft y sus AC UNRUN. No se
+declara verificación funcional por diseño documental.
+
+---
+
+## 6. Verificación de navegador
+
+`UNRUN`. No hay UI de E4.10 ni wireframes aprobados. Cuando exista UI autorizada, se
+verificarán al menos: elegibilidad del último cierre, confirmación con motivo, estado
+reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesión expirada, en
+390 y 1440. No se declaran capturas ni PASS.
+
+---
+
+## 7. Dependencias y limitaciones
+
+- `[PENDIENTE]` **E4.9 mergeado y con QA independiente.** Sin eso, las rutas, la forma de
+  reapertura, la foto, la auditoría y la política de versiones son
+  `[PENDIENTE · provisional E4.9]`; los casos se adaptan, no se congelan.
+- `[PENDIENTE]` **E4.9 no tiene camino de re-cierre.** `confirmCierre` bloquea el segundo
+  cierre con `ALREADY_CLOSED`; el caso F1 no puede ejecutarse hasta que exista la operación
+  acordada (E4.9 o E4.10).
+- `[PENDIENTE D1]` Reserva de «último», repetibilidad tras v2 y posible v3. Sin decisión no
+  hay AC para esos casos; no se declaran excluidos.
+- `[PENDIENTE D2]` AC09 y F1 (parte T1) no tienen resultado estable hasta decidir el
+  alcance T1.
+- `[PENDIENTE D3]` Un motivo o dos; longitud y presencia en foto/auditoría.
+- `[PENDIENTE D4]` AC17 no puede declarar bloqueo o aviso hasta aprobar la matriz y el
+  nivel de bloqueo.
+- `[PENDIENTE D5]` Versión vigente sin v2 y agregados E4.11. AC20 se limita a consulta de
+  versiones; no decide la composición de periodos.
+- `[PENDIENTE D6]` AC19 no fija si el plan es rectificable ni si v2 exige comparación.
+- `[PENDIENTE D7]` AC11/AC12 describen el comportamiento observable; los nombres de códigos
+  y el espacio de idempotencia son provisionales.
+- `[PENDIENTE D8]` AC21 (cancelación) y la resolución de una ventana bloqueada por un
+  cierre posterior no tienen resultado estable.
+- `[CONFIRMADO]` **DT9 fuera.** AC22 solo verifica el rechazo; no diseña la rectificación
+  de ciclos antiguos.
+- `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
+  marcarse `PASS (fixtures)` solo si se autoriza; el cierre real sigue `BLOQUEADO (real)`.
+- `[PENDIENTE]` **Versión de esquema.** No se asume la versión de E4.9 ni se reserva una
+  nueva aquí; la migración se decide en el paquete DEV.
+- `[PENDIENTE]` **Caso «re-cierre sin cambios»** y **«reabrir tras v2»**: no hay AC hasta
+  decisión; no se ejecutan ni se declaran PASS.
+- `[CONFIRMADO]` **Sin datos reales, sin despliegue, sin merge.** Aprobar este testplan no
+  autoriza DEV; ejecutar pruebas exige autorización separada.
+
+---
+
+## 8. Criterios de salida
+
+Para declarar un AC `PASS` harán falta, como mínimo:
+
+1. E4.9 mergeado y con QA independiente, o una decisión explícita que permita probar E4.10
+   contra un contrato congelado.
+2. La decisión material correspondiente resuelta (D2/D4/D6/D8) cuando el AC esté
+   condicionado.
+3. Evidencia real del comando ejecutado, no una descripción.
+4. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
+   versión nueva.
+5. Revisión independiente de QA; este documento no se autoaprueba.
+
+**Estado global:** `UNRUN` — diseño documental. Ningún AC en PASS.
