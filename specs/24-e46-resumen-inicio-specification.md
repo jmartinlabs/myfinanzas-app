@@ -221,9 +221,9 @@ independientes y un mismo Saldo puede pertenecer a varias.
     "ciclo": {
       "id": "C007",
       "inicio": "2026-06-20",
-      "fin": "2026-07-19",
-      "mesFinanciado": "2026-06",
-      "estadoTemporal": "Con fin temporal",
+      "fin": null,
+      "mesFinanciado": "2026-07",
+      "estadoTemporal": "Abierto",
       "corte": "2026-07-19",
       "estadoCorte": "disponible"
     },
@@ -403,7 +403,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │ INICIO · Resumen financiero                                                                  │
-│ Ciclo financiado C007 · 20/06/2026–19/07/2026 · Corte 19/07/2026 · Referencia 19/07 (disponible) │
+│ Ciclo financiado C007 · inicio 20/06/2026 · corte 19/07/2026 · Referencia 19/07 (disponible)   │
 │ Solo lectura · [Cómo se calcula y qué falta]                                                 │
 ├───────────────────────────────────────────────┬──────────────────────────────────────────────┤
 │ LIQUIDEZ                            POSICIÓN  │ OBJETIVO R6                         OBJETIVO │
