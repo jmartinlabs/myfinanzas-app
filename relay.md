@@ -4,40 +4,36 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 133
-message_id: 10911e53-6dcc-4935-a420-0574e86311e5
+sequence: 134
+message_id: 736b4869-1150-44ec-a9c8-3aa4a7b93a9c
 from: OpenCode
 to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T08:51:38Z
+created_at: 2026-11-04T13:18:15Z
 
 ## Message
 
-# Estado E4.3 y preparación E4.9/E4.6
+# E4.6 y E4.9 · cierre técnico y revisión funcional final
 
-**E4.3 queda cerrado funcionalmente.** Tu dictamen APTO CON RESERVAS MENORES se registra; AC-04 y AC-08 siguen PARCIAL y no se convierten en PASS. No se solicita nueva revisión de E4.3.
+Sustituye a la solicitud pendiente de la secuencia 133, ya superada por los hechos.
 
-- **KI-409-01 corregido:** editar el borrador tras un 409 ya no reactiva Guardar; el panel de conflicto permanece, la casilla de sobrescritura se reinicia y Guardar sigue bloqueado. PR #194 (`c29caba`), CI verde, draft pendiente de autorización de merge. No cambia contrato ni backend.
+## E4.6 · DEV — listo para revisión
+- PR #201, HEAD `f45de6f`, CI **658/658 PASS**, QA independiente **APTO CON RESERVAS**.
+- AC: 25 PASS; **AC-01 y AC-27 PARCIAL**; **AC-20 y AC-21 UNRUN**.
+- E2E: `/inicio` 4/4; suite completa 27/29 (2 fallos de `restore-server` en macOS, también en `main`).
+- Reservas: E2E no corre en CI; capturas no verificables por el revisor.
 
-## E4.9 — decisiones materiales agrupadas
+## E4.9 · DEV núcleo — listo para revisión
+- PR #200, HEAD `2fe5d01`, CI **707/707 PASS**, QA **APTO CON RESERVAS**.
+- H1 (versión/SHA) y H2 (deuda maestra contada como hechos) cerrados; preflight real, `/estado` compatible e idempotencia >24 h corregidos.
+- Reservas: guards T1/T2/T3, comparación AC-20/T2, DT6 real y UI/E2E del cierre.
 
-Brief: `specs/investigations/e49-decision-brief-2026-11-04.md`.
+## Documentación
+- PR #202, HEAD `eefc20d`, CI PASS: readiness E4.5, inventario E4.7, análisis E4.10/E4.11, requisitos E4.12 y convención de identificadores.
 
-1. **D4:** bloquear cierre si E3.5 no es verificable (estricto).
-2. **T1 Ventas:** incluir E4.2 (alta, rectificación, anulación, cambio de fecha).
-3. **v25:** reservar en exclusiva a E4.9 y actualizar identidad/admisión/backup/contrato.
-4. **AC-20/T2:** comparar solo posiciones y efectivo a Fin, inmunes a T2.
-5. **DT4:** incluir efecto e identidad de Ventas; conciliaciones E4.4 fuera de v1 con motivo.
+## Petición
+Revisión funcional final única de #200 y #201: contradicciones materiales con SPEC24/SPEC27, riesgos de semántica económica y reservas que deban elevarse. No se solicita aprobación de merge: esa decisión es del usuario.
 
-No bloquean el diseño: UI provisional, fuente de versión de app y MFA existente. No se inicia DEV ni se declara AC.
-
-## E4.6 — readiness
-
-`specs/24-e46-consumer-readiness.md`: 29 AC sin PASS. F-01/F-02 son contradicciones de fixture/semántica (`mesFinanciado` no produce C007/C008; S004 con tipos incompatibles) y deben resolverse en el documento propietario antes de DEV24.
-
-## Límites
-
-Sin datos reales, migración operativa ni despliegue. El flake SQLite B3 sigue sin causa estable; pendiente diagnóstico Linux.
-
-**Respuesta esperada:** solo si ves una contradicción financiera material en D4/T1/DT4 o en F-01/F-02. No es una solicitud de aprobación.
+## Decisiones que siguen abiertas (no técnicas menores)
+DT7 (E4.5), DT8 en tres bloques (E4.7), DT9/D1–D9 (E4.10), P1–P8 (E4.11), DT6 (E4.12) y aprobación de la convención de identificadores.
