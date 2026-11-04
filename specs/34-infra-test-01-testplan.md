@@ -2,10 +2,11 @@
 
 Specification: [34 — entorno TEST reproducible con datos ficticios](34-infra-test-01-specification.md)
 
-Status: **UNRUN — documento de planificación.** No se ha ejecutado ninguna comprobación de
-esta entrega. Este test plan no autoriza DEV, auditoría del VPS, DNS, Caddy, despliegue,
+Status: **APPROVED — plan aprobado por el usuario el 2026-11-04; ejecución UNRUN.** No se ha
+ejecutado ninguna comprobación de esta entrega. Este test plan no autoriza DEV, auditoría del VPS, DNS, Caddy, despliegue,
 datos reales ni merge.
 Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04).
+Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»).
 Contrato de alojamiento: **pendiente de un nuevo entregable de `vps-infra`**. El PR #7 de
 vps-infra está CLOSED, sin merge y con rama eliminada; solo es antecedente histórico.
 Documentos de referencia: [RUNBOOK](../infra/RUNBOOK.md),
@@ -67,7 +68,7 @@ habilita las siguientes.
 
 | Fase | Objetivo | Precondición | Evidencia de salida | Estado |
 | --- | --- | --- | --- | --- |
-| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | UNRUN |
+| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | **PASS** (2026-11-04) |
 | 1 | Auditoría de solo lectura | Autorización de acceso de lectura | Inventario redactado del host, Caddy, DNS, Podman, puertos y disco | UNRUN |
 | 2 | Aprovisionar host | Auditoría completada | Usuario, rutas, `linger`, UFW y versiones registradas | UNRUN |
 | 3 | Release y seed | SHA congelado; gate Rootless | Manifiestos, IDs inmutables, verificación y artefacto test-only | UNRUN |

@@ -1,8 +1,9 @@
 # 34 — INFRA-TEST-01: entorno TEST reproducible con datos ficticios — Specification
 
-Status: **DRAFT — [PROPUESTA] documental, no aprobada.** No autoriza DEV, acceso al VPS,
-DNS, Caddy, despliegue, datos reales, migraciones operativas ni merge.
-Approval source/date: PENDING.
+Status: **APPROVED — SPEC y test plan aprobados por el usuario el 2026-11-04; D1–D6 aprobadas.**
+No autoriza DEV, acceso al VPS, DNS, Caddy, despliegue, datos reales, migraciones operativas
+ni merge.
+Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»).
 Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04), sin cambios de
 aplicación en esta rama.
 Documentos relacionados: [antecedente histórico cancelado de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) (CLOSED, no mergeado),
@@ -423,7 +424,7 @@ la anterior. El detalle operativo, la evidencia y el owner están en el
 
 | Fase | Contenido | Autorización |
 | --- | --- | --- |
-| 0 | Aprobación de esta spec y del test plan | Usuario |
+| 0 | Aprobación de esta spec y del test plan | **Aprobada 2026-11-04** |
 | 1 | Auditoría de solo lectura del host, Caddy, DNS, Podman, puertos y disco | Usuario |
 | 2 | Aprovisionamiento de usuario/rutas/`linger`/UFW | Usuario |
 | 3 | Construir y verificar release + seed; gate Rootless sobre el SHA | Usuario / CI |
@@ -474,12 +475,12 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 
 | ID | Decisión | Recomendación | Estado |
 | --- | --- | --- | --- |
-| D1 | Entrega del seed: imagen test-only vs herramienta en host con Bun fijado | Imagen test-only desde el mismo commit | `[PENDIENTE]` |
-| D2 | Identificación de TEST: solo `APP_ORIGIN`/env vs marcador + origen + manifiesto | Marcador `test-instance.json` + origen exacto | `[PENDIENTE]` |
-| D3 | Orden seed/alta: seed antes de `setup` vs después | Antes del alta, para exigir ausencia de propietario | `[PENDIENTE]` |
-| D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[PENDIENTE]` |
-| D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[PENDIENTE]` |
-| D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[PENDIENTE]` |
+| D1 | Entrega del seed: imagen test-only vs herramienta en host con Bun fijado | Imagen test-only desde el mismo commit | `[APROBADA 2026-11-04]` |
+| D2 | Identificación de TEST: solo `APP_ORIGIN`/env vs marcador + origen + manifiesto | Marcador `test-instance.json` + origen exacto | `[APROBADA 2026-11-04]` |
+| D3 | Orden seed/alta: seed antes de `setup` vs después | Antes del alta, para exigir ausencia de propietario | `[APROBADA 2026-11-04]` |
+| D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
+| D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
+| D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
 
 ## 10. Fuera de alcance
 
