@@ -28,25 +28,27 @@ solas:
 
 ## Cola operativa — 2026-11-03
 
-Base `main` `5c4297a`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada.
+Base `main` `17d86c3`; **v24 integrada** con DEV E4.3 A+B+C+QA; **v25 autorizada para E4.9**.
 
 - **A+B+C integrados:** DEV43-A (v24/C24/backup) y DEV43-B (read model/API) MERGED `3b9be46`;
   DEV43-C (UI/E2E) MERGED `8552d4a` (squash de #187). CI de PR 644/644 y post-merge
   `41730772524` verde. QA-A/QA-B/QA-C APTO CON RESERVAS.
 - **QA final E4.3:** MERGED `dd56553` (squash de #189); CI post-merge `41796526278` verde.
   15 AC PASS de cobertura, 2 PARCIAL, reservas menores; 409 con descarte seguro o
-  sobrescritura explícita. Aceptación funcional final de Álex pendiente; sin PASS de
+  sobrescritura explícita. Álex cerró la revisión con APTO y reservas menores; sin PASS de
   aceptación.
 - **Evidencia E4.4/E3.6:** post-merge registrada (#190); R17/R18 clasificadas como deuda de
   trazabilidad documental (#191).
-- **En paralelo:** flake SQLite B3 investigado sin reproducción macOS; pendiente una
-  ejecución diagnóstica Linux. **E4.9:** paquete A/B/C preparado en
-  `e49-execution-package-2026-11-04.md`; 5 decisiones materiales agrupadas, sin DEV.
-  **E4.6:** F-01/F-02 corregidas en spec/testplan (C007 `2026-07`, C008 inicio `2026-11-20`,
-  `S007` para posiciones) y validadas técnicamente; DEV24 no autorizado. **KI-409-01**
-  corregido en PR #194, pendiente de autorización de merge.
-- **Preparable sin DEV:** consumidores/fixtures E4.6 (readiness y F-01/F-02); frontera E4.7;
-  checklist DT7/E4.5 solo si se pide.
+- **DEV E4.9 autorizado:** v25 exclusiva, D4 estricto, Ventas E4.2 en T1, AC-20/T2 y DT4
+  según brief. Bloque A (v25/C25/migración/backup) en ejecución; B/C después. Sin merge ni
+  datos reales.
+- **DEV24/E4.6 autorizado:** F-01/F-02 corregidas y validadas. Bloques A+B (composición/API)
+  en ejecución; C/UI después. Sin esquema ni migración.
+- **KI-409-01:** corregido y MERGED `17d86c3` (#194).
+- **Temas visuales:** propuesta y prueba `light-s`/`dark-s`/`hybrid-s` pendiente de autorización
+  de Fase 1; sin cambios en la app.
+- **Flake SQLite B3:** investigado sin reproducción macOS; pendiente ejecución diagnóstica Linux.
+- **En preparación:** frontera E4.7 y checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
 - **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
 

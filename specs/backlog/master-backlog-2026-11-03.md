@@ -1,6 +1,6 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `5c4297a`; esquema **v24 integrado** con DEV E4.3-A+B+C+QA; v25 no reservada.
+Base de referencia: `main` `17d86c3`; esquema **v24 integrado**; **v25 autorizada para E4.9**.
 No se reserva v25 sin decisión.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
@@ -22,10 +22,10 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 | DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | — |
 | QA final E4.3 | **MERGED** `dd56553` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; 409 seguro; post-merge `41796526278` | Aceptación funcional final de Álex |
 | E4.4/E3.6 evidencia | **MERGED** #190/#191 | Progress 17, evidencia 21 y R17/R18 clasificadas | — |
-| KI-409-01 (bug menor) | **PR #194 draft** `1b0ab52` | 409 mantiene bloqueo tras editar; E2E regresión | Autorización de merge |
+| KI-409-01 (bug menor) | **MERGED** `17d86c3` | 409 mantiene bloqueo tras editar; E2E regresión | — |
 | E4.9 brief de decisiones | **Preparado** | `e49-decision-brief-2026-11-04.md`; 5 decisiones bloqueantes agrupadas | Decisión del usuario |
-| E4.9 paquete A/B/C | **Preparado** | `e49-execution-package-2026-11-04.md`; dependencias, AC y pruebas | Autorización de DEV |
-| E4.6 readiness | **Corregido** | F-01/F-02 resueltas en spec/testplan; validación técnica PASS | Autorización de DEV24 |
+| DEV E4.9-A (v25/C25/migración/backup) | **En ejecución** | Worktree `dev-e49`, rama `feat/e49-cierre` | B/C tras A |
+| DEV24/E4.6 A+B (composición/API) | **En ejecución** | Worktree `dev-e46`, rama `feat/e46-inicio` | C/UI tras A+B |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
@@ -51,7 +51,7 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 ### P1 — Preparación sin DEV nuevo
 
-5. **E4.9:** brief 2026-11-04 con recomendación para D4, T1 Ventas, v25, AC-20, DT4, UI, versión de app y MFA; bloque de 5 decisiones pendiente.
+5. **E4.9:** DEV autorizado; A (v25) en ejecución. B/C conservan las decisiones aprobadas y el brief 2026-11-04.
 6. **E4.6:** contrato de consumidores/fixtures cuando E4.3 esté avanzado; no duplicar motores.
 7. **E4.7:** frontera/DT8; no abrir SPEC25 hasta decisiones.
 8. **E4.5/DT7:** checklist de mapping/cortes/2026 y QA documental, solo si se prioriza.
