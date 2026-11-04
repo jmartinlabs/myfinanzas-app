@@ -1,19 +1,20 @@
 # 24 — E4.6 Resumen de inicio: Readiness de consumidores
 
-Status: **DOCUMENTO DE PREPARACIÓN — no es especificación, no aprueba y no autoriza DEV24.**
-Cero AC en PASS o FAIL: los 29 AC siguen **UNRUN** según el
-[testplan](24-e46-resumen-inicio-testplan.md). Este documento no implementa endpoint, UI,
-SQLite, DDL, migración ni fixture ejecutable; no modifica el tablero, el backlog, la
-[SPEC23/E4.3](23-e43-valoracion-resultados-specification.md) ni código.
-Base contrastada: `main` `5c4297a` (2026-11-04), esquema SQLite **v24**. Rama
-`docs/e46-readiness`; solo se escribe este archivo.
+Status: **DOCUMENTO DE PREPARACIÓN HISTÓRICO — no es especificación.** Actualización
+2026-11-04: **DEV24 fue autorizado e implementado** en la rama `feat/e46-inicio` (composición
+`GET /api/resumen-inicio` y UI `/inicio`). El estado vigente de los AC es el
+[testplan](24-e46-resumen-inicio-testplan.md), no esta matriz: la mayoría tienen evidencia
+local PASS, AC-01 es PARCIAL por huecos de fuente/cobertura, AC-27 es PARCIAL (sesión
+expirada/500 sin prueba) y AC-20/AC-21 siguen UNRUN. Este documento no implementa código ni
+sustituye la revisión de QA; se conserva como análisis de readiness previo.
+Base histórica contrastada: `main` `5c4297a` (2026-11-04), esquema SQLite **v24**.
 Specification: [24-e46-resumen-inicio-specification.md](24-e46-resumen-inicio-specification.md).
 Brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md).
 
-**Qué sí acredita este documento:** qué contratos de origen existen hoy en `main`, qué
-pruebas pueden reutilizarse como regresión u oráculo, qué falta para consumir y qué no puede
-prepararse sin autorización. **Qué no acredita:** corrección funcional, PASS de ningún AC,
-cobertura de QA ni autorización de desarrollo.
+**Qué sí acredita este documento:** qué contratos de origen existían en `main`, qué pruebas
+podían reutilizarse como regresión u oráculo y qué faltaba antes del DEV. **Qué no acredita:**
+corrección funcional, PASS de ningún AC ni cobertura de QA; para eso rige el testplan y la
+revisión independiente.
 
 ## 1. Estado de partida y dependencias
 
@@ -39,7 +40,7 @@ de otra entrega).
 | E4.4 Deuda completa | `listDeudasCompletas`, `getDeudaCompleta`, `GET /api/deudas`, `GET /api/deudas/{id}?corte=`; `tipoDeuda`, `capital.calculable`, `capital.deudaViva` | DISPONIBLE | [deuda-completa.ts](../apps/api/src/deuda-completa.ts) | Deuda viva por deuda; listado sin `corte` y paginado (ver H-05) |
 | E3.6 Pendientes | `listPendientes`, `getPendiente`, `GET /api/pendientes`, `GET /api/pendientes/:tipo/:id`; `filas`, `conteos`, `fuenteFallos`, `soloLectura` | PARCIAL — integrado en `a26fffb`; la forma de lista difiere del DTO propuesto | [pendientes.ts](../apps/api/src/pendientes.ts), [pendientes-api.test.ts](../apps/api/src/pendientes-api.test.ts) | Lista y conteos por estado; sin total monetario (ver H-04) |
 | E4.8 Precierre | `getPrecierre`, `getPrecierreEstado`, `GET /api/cierres/precierre/:id` | DISPONIBLE (`e608bbb`) | [precierre.ts](../apps/api/src/precierre.ts), [26-e48-precierre-specification.md](26-e48-precierre-specification.md) | FUERA de E4.6: no se lee ni se usa como fuente ni como foto |
-| E4.9 Cierre y foto | Spec aprobada; DEV no autorizado | FUERA | [27-e49-cierre-financiero-specification.md](27-e49-cierre-financiero-specification.md) | E4.6 no anticipa cierre, foto ni ventana |
+| E4.9 Cierre y foto | Spec aprobada; DEV en curso (#200; guards DEV-04, correcciones DEV-05) | FUERA | [27-e49-cierre-financiero-specification.md](27-e49-cierre-financiero-specification.md) | E4.6 no anticipa cierre, foto ni ventana |
 | E4.7 Resumen anual | Futuro | FUERA | [roadmap](roadmap.md) | E4.6 no compara ejercicios ni agrega por año |
 | Configuración R6 (meses objetivo y umbrales) | Sin almacén ni proveedor en v24; Q3-B=A | AUSENTE por diseño | SPEC24 §Objetivo R6 | Solo `minimoObjetivo` queda `No disponible`; `mesesCubiertos` no depende de ella |
 | DT8 (formato, UX y métricas no cerradas) | Abierta | AUSENTE | [roadmap](roadmap.md) (DT8), SPEC24 §Objetivo R6 | Formato de meses y ruta `/inicio` conservan gate |
@@ -49,12 +50,15 @@ de otra entrega).
 - **Contratos de motor:** los ocho ámbitos que E4.6 compone (contexto, flujo, plan anual,
   Saldos, inversiones, valoración, deuda y pendientes) están en `main`. La dependencia
   histórica «E4.3 no tiene DEV» de la spec y del testplan **ya no describe** `5c4297a`.
-- **Consumidor E4.6:** `AUSENTE`. No existe `GET /api/resumen-inicio`, módulo de composición,
-  pantalla `/inicio`, entrada de navegación, fixture integrada ni `resumen-inicio.test.ts`.
-- **Autorización:** DEV24 no está autorizado. La aprobación documental de Q1–Q12 no habilita
-  código, DDL ni migración.
-- **Consecuencia:** la entrega es preparable documentalmente, pero ningún AC puede pasar a
-  PASS por este trabajo. Los estados del testplan no cambian.
+- **Consumidor E4.6 (estado histórico):** `AUSENTE` en `5c4297a`. Actualmente **presente** en
+  `feat/e46-inicio`: `GET /api/resumen-inicio`, composición, pantalla `/inicio`, entrada de
+  navegación, fixture E2E aislada y `resumen-inicio.test.ts`.
+- **Autorización:** DEV24 fue autorizado el 2026-11-04. Sigue sin autorizar merge ni
+  despliegue sin aprobación explícita; no hay DDL ni migración de E4.6.
+- **Consecuencia vigente:** los AC con prueba concreta están en PASS local según el testplan;
+  AC-01 es PARCIAL por huecos de fuente/cobertura en el DTO y AC-27 es PARCIAL porque sesión
+  expirada y error 500 no tienen prueba directa. No se declara completa la entrega sin
+  `--full`, QA independiente y merge aprobado.
 
 ### 1.4 Afirmaciones desactualizadas que no se corrigen aquí
 
@@ -70,10 +74,11 @@ sus documentos propietarios, no a este.
 
 ## 2. Matriz de los 29 AC
 
-**Lectura de la matriz.** «Fuente/contrato» indica qué motor ya existe; «prueba
-reutilizable» indica una prueba existente que sirve como regresión u oráculo, **no** como
-evidencia de E4.6; «hueco» es lo que falta para poder ejecutar el AC. Ninguna fila declara
-PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se citan.
+**Lectura de la matriz (histórica).** «Fuente/contrato» indica qué motor ya existía; «prueba
+reutilizable» indica una prueba existente que servía como regresión u oráculo, **no** como
+evidencia de E4.6; «hueco» era lo que faltaba antes del DEV. Esta matriz se escribió antes de
+la autorización del 2026-11-04: **el estado vigente de los AC es el testplan**, no estas filas.
+Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se citan.
 
 | AC | Fuente / contrato disponible | Prueba reutilizable | Hueco de consumidor / fixture | Decisión funcional |
 | --- | --- | --- | --- | --- |
@@ -139,23 +144,30 @@ PASS ni FAIL. Las decisiones Q1–Q12 están aprobadas y no se reabren; solo se 
 
 ### 3.1 Artefactos y gate
 
-| Artefacto | Sin DEV24 | Gate |
-| --- | --- | --- |
-| Corrección de la fixture integrada (F-01/F-02) | Sí, aplicada en SPEC24/testplan el 2026-11-04 | Revisar C007/C008/S007 y validar antes de DEV24 |
-| Tabla de mapeo motor→DTO (H-02 a H-06) | Sí, documental | Ninguno; no crea contrato ejecutable |
-| Oráculo independiente y cifras prohibidas | Sí; el testplan ya lo contiene; se puede completar sin ejecutar | Ninguno |
-| Diseño de casos de contrato (nombres, precondiciones, asserts) | Sí, como diseño | La autoría de test es código |
-| Plan de reutilización de regresión y Playwright | Sí, documental | Ninguno |
-| Checklist de accesibilidad y capturas | Sí, documental | Capturas requieren UI |
-| Registro de riesgos y decisiones abiertas | Sí, este documento | Ninguno |
-| `GET /api/resumen-inicio`, composición y DTO | No | Autorización expresa DEV24 |
-| Pantalla `/inicio`, navegación, componentes y estilos | No | DEV24 + revisión visual |
-| Seed de fixture y specs Playwright | No | DEV24 |
-| Doble de contrato para `mesesObjetivo` | No | DEV24; solo prueba, nunca almacén (Q3-B=A) |
-| Cualquier cambio en motores E2.4/E2.6/E3.6/E4.2/E4.3/E4.4 | **No autorizado por E4.6** | Si falta contrato, tarea separada del motor propietario |
-| Tabla, DDL o migración | **Nunca en E4.6** | P-10; requeriría decisión y spec propias |
+Actualización 2026-11-04: los artefactos marcados como dependientes de DEV24 se implementaron
+en `feat/e46-inicio`. La columna «Sin DEV24» se conserva como estado histórico.
 
-### 3.2 Bloqueos y preguntas que deben resolverse antes de DEV24
+| Artefacto | Sin DEV24 (histórico) | Estado 2026-11-04 |
+| --- | --- | --- |
+| Corrección de la fixture integrada (F-01/F-02) | Sí, aplicada en SPEC24/testplan el 2026-11-04 | Validada por la fixture E2E (`inicio-server.ts`) |
+| Tabla de mapeo motor→DTO (H-02 a H-06) | Sí, documental | Consumida por `resumen-inicio.ts` |
+| Oráculo independiente y cifras prohibidas | Sí; el testplan lo contiene | Ejecutado por `resumen-inicio.test.ts` |
+| Diseño de casos de contrato (nombres, precondiciones, asserts) | Sí, como diseño | Implementado en `resumen-inicio.test.ts` |
+| Plan de reutilización de regresión y Playwright | Sí, documental | Implementado en `tests/e2e/inicio.spec.ts` |
+| Checklist de accesibilidad y capturas | Sí, documental | Capturas `artifacts/e4-6/`; contraste y foco comprobados |
+| Registro de riesgos y decisiones abiertas | Sí, este documento | Histórico; ver testplan |
+| `GET /api/resumen-inicio`, composición y DTO | No | Implementado; AC-01 PARCIAL por huecos de fuente/cobertura |
+| Pantalla `/inicio`, navegación, componentes y estilos | No | Implementada en `feat/e46-inicio` |
+| Seed de fixture y specs Playwright | No | `apps/api/test-support/inicio-server.ts` + `tests/e2e/inicio.spec.ts` |
+| Doble de contrato para `mesesObjetivo` | No | Implementado y probado en AC-12/13 |
+| Cualquier cambio en motores E2.4/E2.6/E3.6/E4.2/E4.3/E4.4 | **No autorizado por E4.6** | Sin cambios de motores; solo se mapean motivos ya publicados |
+| Tabla, DDL o migración | **Nunca en E4.6** | No se creó ninguna |
+
+### 3.2 Bloqueos y preguntas que debían resolverse antes de DEV24 (histórico)
+
+Los bloqueos de autorización y fixture quedaron resueltos el 2026-11-04; las decisiones
+funcionales abiertas (Q1–Q12) no se reabren. Lo que sigue pendiente es la revisión QA, el
+`--full` y el merge.
 
 **F-01 — `mesFinanciado` de la fixture no era producible con el contrato vigente (RESUELTA documentalmente el 2026-11-04).**
 [SPEC03](03-ciclos-financiados-specification.md) define «Mes financiado = primer día del mes
@@ -225,7 +237,8 @@ validaciones de estructura.
 
 ## 6. Próxima acción mínima
 
-**No iniciar DEV24.** La acción mínima e independiente es validar la fixture ya corregida
-(F-01/F-02) en el documento propietario de E4.6 y, solo después, emitir un paquete DEV24 con
-ownership explícito de endpoint, UI, fixture y pruebas. Mientras eso no ocurra, este documento
-es la base de readiness; no modifica estados del tablero ni del testplan.
+**DEV24 ya está implementado en `feat/e46-inicio`; no se reinicia.** La acción siguiente es la
+revisión independiente de QA y la ejecución canónica `python3 scripts/verify --full` sobre el
+SHA candidato. Después, el merge requiere aprobación explícita e identificable. AC-01 se
+mantiene PARCIAL por huecos de fuente/cobertura en el DTO y AC-20/AC-21 siguen UNRUN; no se
+declara completa la entrega hasta cerrarlos o bloquearlos con causa verificable.

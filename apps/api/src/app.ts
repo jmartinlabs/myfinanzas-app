@@ -226,6 +226,7 @@ import {
   type TipoItem,
 } from "./pendientes";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
+import { resumenInicio } from "./resumen-inicio";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -237,6 +238,11 @@ export type AppOptions = {
   origin?: string;
   now?: () => number;
   impactGuard?: ImpactGuard;
+  /**
+   * Doble de contrato de prueba para R6. No es un almacén ni un valor por
+   * defecto: sin él, `minimoObjetivo` queda `No disponible`.
+   */
+  resumenInicio?: { mesesObjetivo?: number | null };
 };
 export async function jsonBody(req: Request): Promise<Record<string, unknown>> {
   if (
@@ -336,6 +342,25 @@ export function createApp(db: Database, options: AppOptions) {
         auth.logout(req);
         headers.append("set-cookie", auth.cookie(auth.cookieName, "", 0));
         return reply({ ok: true });
+      }
+      // E4.6 — composición de solo lectura: un único GET, sin escrituras.
+      if (path === "/api/resumen-inicio") {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El resumen de inicio es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            resumenInicio(db, now(), {
+              annualProvider: options.annualProvider,
+              mesesObjetivo: options.resumenInicio?.mesesObjetivo,
+            }),
+          )(),
+        );
       }
       if (path === "/api/saldos" && req.method === "GET")
         return reply(listSaldos(db, new URL(req.url).searchParams));
