@@ -140,7 +140,8 @@ type ClassificationSnapshot = {
 type PhotoPayload = {
   ventana: {
     inicio: string;
-    fin: string;
+    /** `null` when no next Inicio exists; Fin is never invented. */
+    fin: string | null;
     saldoInicial: string | null;
     estadoTemporal: string;
   };
@@ -193,6 +194,26 @@ type PhotoPayload = {
   noDisponible: Record<string, { estado: string; motivo: string }>;
 };
 
+type ComparedPosition = {
+  instrumento: string;
+  saldoInversion: string;
+  cantidad: string;
+};
+
+/**
+ * Values actually compared by the AC-20 coherence check. They are stored in
+ * `cierre_audit.posterior`, not only the closure identity, so the audit keeps
+ * the evidence behind the result. Per-account comparison remains a C/guard
+ * open point; this keeps the aggregate cash/positions pair.
+ */
+type ComparedValues = {
+  efectivo: { almacenado: string | null; vivo: string | null };
+  posiciones: {
+    almacenado: ComparedPosition[] | null;
+    vivo: ComparedPosition[];
+  };
+};
+
 type Capture = {
   ciclo: ReturnType<typeof getCycle>["ciclo"];
   ventana: PhotoPayload["ventana"];
@@ -212,6 +233,7 @@ type Capture = {
       fin: string;
       coherente: boolean;
       motivos: string[];
+      comparado: ComparedValues;
     }[];
     contradicciones: string[];
   };
@@ -227,6 +249,8 @@ type Capture = {
 
 const hex64 = /^[a-f0-9]{64}$/;
 const keyPattern = /^[a-zA-Z0-9-]{16,100}$/;
+/** SQLite/JSON safe-integer ceiling used by the C25 `cierres` DIGIT check. */
+const SAFE_INTEGER = 9007199254740991n;
 
 function sum(values: bigint[]) {
   return values.reduce((a, b) => a + b, 0n);
@@ -615,7 +639,7 @@ function auxiliarySnapshot(
     db,
     "SELECT id,nombre,estado,revision,CAST(apertura AS TEXT) apertura FROM deudas ORDER BY id",
   );
-  const sources = [anticipos, compartidos, nomina, revisionComida];
+  const sources = [anticipos, compartidos, nomina, revisionComida, deuda];
   const errors = sources
     .map((source) => source.error)
     .filter((value): value is string => value !== null);
@@ -632,6 +656,7 @@ function auxiliarySnapshot(
       hechos: revisionComida.rows.length,
       acreditado: !revisionComida.error,
     },
+    { fuente: "Deuda", hechos: deuda.rows.length, acreditado: !deuda.error },
   ];
   return {
     ok: errors.length === 0,
@@ -679,18 +704,68 @@ function classificationSnapshot(db: Database): ClassificationSnapshot {
 function compareStoredSnapshot(
   stored: unknown,
   live: InvestmentSnapshot,
-): string[] {
+): { problems: string[]; comparado: ComparedValues } {
+  const livePositions: ComparedPosition[] = live.posiciones.map((row) => ({
+    instrumento: row.instrumento,
+    saldoInversion: row.saldoInversion,
+    cantidad: row.cantidad,
+  }));
+  const invalid = (
+    problems: string[],
+    almacenado: Partial<ComparedValues> = {},
+  ): { problems: string[]; comparado: ComparedValues } => ({
+    problems,
+    comparado: {
+      efectivo: almacenado.efectivo ?? {
+        almacenado: null,
+        vivo: live.efectivo,
+      },
+      posiciones: almacenado.posiciones ?? {
+        almacenado: null,
+        vivo: livePositions,
+      },
+    },
+  });
   if (!stored || typeof stored !== "object" || Array.isArray(stored))
-    return ["La foto posterior no contiene una instantánea de inversión."];
+    return invalid(["La foto posterior no contiene una instantánea de inversión."]);
   const value = stored as {
     efectivo?: unknown;
     cuentas?: unknown;
     posiciones?: unknown;
   };
   if (!Array.isArray(value.cuentas) || !Array.isArray(value.posiciones))
-    return [
+    return invalid([
       "La foto posterior no contiene desglose de efectivo y posiciones comparable.",
-    ];
+    ]);
+  const storedPositions: ComparedPosition[] = value.posiciones
+    .filter(
+      (
+        row,
+      ): row is {
+        instrumento: string;
+        saldoInversion: string;
+        cantidad: string;
+      } =>
+        !!row &&
+        typeof row === "object" &&
+        typeof (row as { instrumento?: unknown }).instrumento === "string" &&
+        typeof (row as { saldoInversion?: unknown }).saldoInversion ===
+          "string" &&
+        typeof (row as { cantidad?: unknown }).cantidad === "string",
+    )
+    .map((row) => ({
+      instrumento: row.instrumento,
+      saldoInversion: row.saldoInversion,
+      cantidad: row.cantidad,
+    }));
+  const comparado: ComparedValues = {
+    efectivo: {
+      almacenado:
+        typeof value.efectivo === "string" ? value.efectivo : null,
+      vivo: live.efectivo,
+    },
+    posiciones: { almacenado: storedPositions, vivo: livePositions },
+  };
   const problems: string[] = [];
   if (typeof value.efectivo === "string" && value.efectivo !== live.efectivo)
     problems.push(
@@ -715,37 +790,16 @@ function compareStoredSnapshot(
     [...storedCash].some((entry) => !liveCash.has(entry))
   )
     problems.push("El desglose de efectivo a Fin ha cambiado.");
-  const positionKey = (row: {
-    instrumento: string;
-    saldoInversion: string;
-    cantidad: string;
-  }) => `${row.instrumento}|${row.saldoInversion}|${row.cantidad}`;
-  const storedPositions = new Set(
-    value.posiciones
-      .filter(
-        (
-          row,
-        ): row is {
-          instrumento: string;
-          saldoInversion: string;
-          cantidad: string;
-        } =>
-          !!row &&
-          typeof row === "object" &&
-          typeof (row as { instrumento?: unknown }).instrumento === "string" &&
-          typeof (row as { saldoInversion?: unknown }).saldoInversion ===
-            "string" &&
-          typeof (row as { cantidad?: unknown }).cantidad === "string",
-      )
-      .map(positionKey),
-  );
-  const livePositions = new Set(live.posiciones.map(positionKey));
+  const positionKey = (row: ComparedPosition) =>
+    `${row.instrumento}|${row.saldoInversion}|${row.cantidad}`;
+  const storedPositionKeys = new Set(storedPositions.map(positionKey));
+  const livePositionKeys = new Set(livePositions.map(positionKey));
   if (
-    storedPositions.size !== livePositions.size ||
-    [...storedPositions].some((entry) => !livePositions.has(entry))
+    storedPositionKeys.size !== livePositionKeys.size ||
+    [...storedPositionKeys].some((entry) => !livePositionKeys.has(entry))
   )
     problems.push("Las posiciones a Fin han cambiado.");
-  return problems;
+  return { problems, comparado };
 }
 
 function coherence(
@@ -767,11 +821,19 @@ function coherence(
   }[];
   const cierres = rows.map((row) => {
     let motivos: string[] = [];
+    let comparado: ComparedValues = {
+      efectivo: { almacenado: null, vivo: null },
+      posiciones: { almacenado: null, vivo: [] },
+    };
     try {
       const live = investmentSnapshot(db, row.fin);
-      motivos = live.ok
+      const compared = live.ok
         ? compareStoredSnapshot(JSON.parse(row.inversion), live)
+        : compareStoredSnapshot({}, live);
+      motivos = live.ok
+        ? compared.problems
         : [live.motivo ?? "No se pudo recalcular la foto posterior."];
+      comparado = compared.comparado;
     } catch {
       motivos = ["No se pudo leer la foto posterior."];
     }
@@ -781,6 +843,7 @@ function coherence(
       fin: row.fin,
       coherente: motivos.length === 0,
       motivos,
+      comparado,
     };
   });
   const contradicciones = cierres
@@ -805,6 +868,19 @@ function capture(
   const fin = ciclo.fin;
   const s0 = ciclo.saldoInicialComida;
   const s0Cents = s0 === null || s0 === undefined ? null : money(s0);
+  if (
+    s0Cents !== null &&
+    (s0Cents < -SAFE_INTEGER || s0Cents > SAFE_INTEGER)
+  )
+    throw new Problem(
+      422,
+      "S0_FUERA_DE_RANGO",
+      "El Saldo inicial manual supera el rango exacto admitido; corrige el ciclo antes de cerrar.",
+      {
+        saldoInicialComida:
+          "Máximo ±90071992547409.91 EUR en céntimos exactos.",
+      },
+    );
   if (!fin)
     blockers.push({
       code: "SIN_SIGUIENTE_INICIO",
@@ -951,9 +1027,14 @@ function capture(
         : e35?.motivo ?? "E3.5/FIN_NETA no verificable.",
     },
     deuda: {
-      estado: "Parcial",
-      motivo:
-        "Deuda E1.6 capturada; conciliaciones E4.4 fuera de v1 con motivo (DT4).",
+      estado: auxiliary.fuentes.find((source) => source.fuente === "Deuda")
+        ?.acreditado
+        ? "Parcial"
+        : "No disponible",
+      motivo: auxiliary.fuentes.find((source) => source.fuente === "Deuda")
+        ?.acreditado
+        ? "Deuda E1.6 capturada; conciliaciones E4.4 fuera de v1 con motivo (DT4)."
+        : "No se pudo leer Deuda E1.6; la cobertura al corte no está acreditada.",
     },
     valoracion: {
       estado: "No disponible",
@@ -986,7 +1067,7 @@ function capture(
   const payload: PhotoPayload = {
     ventana: {
       inicio: ciclo.inicio,
-      fin: fin ?? ciclo.inicio,
+      fin,
       saldoInicial: s0 ?? null,
       estadoTemporal: fin ? "Cerrado" : ciclo.estadoTemporal,
     },
@@ -1052,7 +1133,7 @@ function capture(
     coherencia,
     estadoCierre,
     payload,
-    fingerprint: fingerprint(payload),
+    fingerprint: fingerprint({ payload, coherencia }),
     appVersion: resolveAppVersion(options.appVersion),
     schemaVersion: schemaVersion(db),
     actor: options.actor ?? actorDefault,
@@ -1252,7 +1333,9 @@ export function confirmCierre(
 
   return db
     .transaction(() => {
-      db.run("DELETE FROM cierre_attempts WHERE expires<?", [now]);
+      // Keep this key's attempt even after its expiry: a replay of the same
+      // key/payload must return the same photo instead of ALREADY_CLOSED.
+      // Only unrelated expired attempts are pruned.
       const retry = db
         .query("SELECT hash,response FROM cierre_attempts WHERE key=?")
         .get(key) as { hash: string; response: string } | null;
@@ -1263,8 +1346,16 @@ export function confirmCierre(
             "IDEMPOTENCY_CONFLICT",
             "El intento ya tiene otros datos.",
           );
+        db.run("UPDATE cierre_attempts SET expires=? WHERE key=?", [
+          now + 86400000,
+          key,
+        ]);
         return { ...JSON.parse(retry.response), replayed: true };
       }
+      db.run("DELETE FROM cierre_attempts WHERE expires<? AND key<>?", [
+        now,
+        key,
+      ]);
       const data = capture(db, cicloId, options, now);
       if (data.estadoCierre.estado === "Cerrado")
         throw new Problem(
@@ -1272,13 +1363,9 @@ export function confirmCierre(
           "ALREADY_CLOSED",
           "El ciclo ya está cerrado; solo E4.10 puede habilitar un re-cierre.",
         );
-      if (data.coherencia.requerida && motivo === null)
-        throw new Problem(
-          422,
-          "MOTIVO_REQUERIDO",
-          "Un cierre fuera de orden exige motivo para auditoría.",
-          { motivo: "Indica el motivo del cierre fuera de orden." },
-        );
+      // Fingerprint includes the computed coherence list, so a later closure
+      // created between preview and confirm is a revision conflict even when
+      // its new out-of-order warning would also demand a motive.
       if (body.fingerprint !== data.fingerprint)
         throw new Problem(
           409,
@@ -1286,6 +1373,13 @@ export function confirmCierre(
           "La vista previa ha cambiado; revisa el preflight antes de cerrar.",
           {},
           { fingerprint: data.fingerprint, bloqueos: data.blockers },
+        );
+      if (data.coherencia.requerida && motivo === null)
+        throw new Problem(
+          422,
+          "MOTIVO_REQUERIDO",
+          "Un cierre fuera de orden exige motivo para auditoría.",
+          { motivo: "Indica el motivo del cierre fuera de orden." },
         );
       if (data.blockers.length) {
         const first = data.blockers[0];
@@ -1295,6 +1389,13 @@ export function confirmCierre(
       }
       const tiempo = new Date(now).toISOString();
       const payload = data.payload;
+      const fin = data.ventana.fin;
+      if (fin === null)
+        throw new Problem(
+          409,
+          "SIN_SIGUIENTE_INICIO",
+          "No existe siguiente Inicio; no se deriva Fin ni se permite cerrar.",
+        );
       db.run(
         `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,
           creado_utc,motivo,fingerprint,estado)
@@ -1302,7 +1403,7 @@ export function confirmCierre(
         [
           cicloId,
           data.ventana.inicio,
-          data.ventana.fin,
+          fin,
           money(payload.ventana.saldoInicial)!,
           actor,
           tiempo,
@@ -1325,7 +1426,7 @@ export function confirmCierre(
           data.appVersion,
           data.schemaVersion,
           data.ventana.inicio,
-          data.ventana.fin,
+          fin,
           money(payload.ventana.saldoInicial)!,
           "Cerrado",
           payload.hechos.estado,
@@ -1356,6 +1457,9 @@ export function confirmCierre(
               ciclo: entry.ciclo,
               version: entry.version,
               fin: entry.fin,
+              resultado: entry.coherente ? "Coherente" : "Incoherente",
+              motivos: entry.motivos,
+              comparado: entry.comparado,
             })),
           }),
           motivo,

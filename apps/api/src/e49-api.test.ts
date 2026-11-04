@@ -14,6 +14,7 @@ import {
   type CierreOptions,
 } from "./e49";
 import { updateSaldo, getSaldo } from "./saldos";
+import { BUILD_VERSION, resolveAppVersion } from "./app-version";
 
 process.env.NODE_ENV = "test";
 
@@ -146,6 +147,28 @@ function planNoVerificable(db: Database) {
   );
 }
 
+function verifiableRegimen(db: Database, ciclo = "1", saldo = "S001") {
+  const t = "2026-01-01T00:00:00.000Z";
+  db.run(
+    `INSERT INTO regimen_comida(saldo,ciclo_corte,apertura,evidencia,cobertura,
+       estado,revision,creado,actualizado)
+     VALUES(?,?,?,'Extracto ficticio E4.9','Verificable','Activo',1,?,?)`,
+    [saldo, ciclo, 10000, t, t],
+  );
+}
+
+function januaryMovement(db: Database, id = "8001") {
+  db.run(
+    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
+       partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
+       capital,intereses)
+     VALUES(?,'2026-01-15','Ingreso',1234,'S000','S001','Nómina',
+       NULL,NULL,'Hecho ficticio E4.9','',0,1,'2026-01-15T00:00:00.000Z',
+       '2026-01-15T00:00:00.000Z',NULL,NULL)`,
+    [id],
+  );
+}
+
 function performanceOperation(
   db: Database,
   instrumento: string,
@@ -242,6 +265,7 @@ test("E4.9 B: preflight blocks without next Inicio, D4/E3.5 and backup", async (
   expect(pre.status).toBe(200);
   expect(pre.data.e49Bloqueado).toBe(true);
   expect(pre.data.estado).toBe("Bloqueado");
+  expect(pre.data.ventana.fin).toBeNull();
   const codes = pre.data.bloqueos.map((b: { code: string }) => b.code);
   expect(codes).toContain("SIN_SIGUIENTE_INICIO");
   expect(codes).toContain("E35_NO_VERIFICABLE");
@@ -282,11 +306,15 @@ test("E4.9 B: SinPlan closes v1 with app/schema metadata and no live writes", as
   );
   expect(result.data.foto.cobertura.totales.anticipos.estado).toBe("Parcial");
 
-  const state = await f.request("/api/cierres/1/cierre");
+  const state = await f.request("/api/cierres/1/estado");
   expect(state.status).toBe(200);
   expect(state.data.estado).toBe("Cerrado");
   expect(state.data.version).toBe(1);
   expect(state.data.fotoVersion).toBe(1);
+  expect(state.data.precierre.ciclo).toBe("1");
+  const alias = await f.request("/api/cierres/1/cierre");
+  expect(alias.data.estado).toBe("Cerrado");
+  expect(alias.data.version).toBe(1);
 
   const after = {
     movimientos: f.db.query("SELECT COUNT(*) n FROM movimientos").get(),
@@ -343,6 +371,19 @@ test("E4.9 B: idempotent replay, payload conflict and stale preview", async () =
   expect(replay.status).toBe(201);
   expect(replay.data.foto).toEqual(first.data.foto);
   expect(replay.data.replayed).toBe(true);
+
+  // A same key/payload replay after the 24 h window must keep returning the
+  // same photo, not ALREADY_CLOSED.
+  f.db.run("UPDATE cierre_attempts SET expires=? WHERE key=?", [now - 1, key]);
+  const afterExpiry = await f.request("/api/cierres/1/cerrar", "POST", body, {
+    "idempotency-key": key,
+  });
+  expect(afterExpiry.status).toBe(201);
+  expect(afterExpiry.data.replayed).toBe(true);
+  expect(afterExpiry.data.foto).toEqual(first.data.foto);
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get(),
+  ).toEqual({ n: 1 });
 
   const changed = await f.request(
     "/api/cierres/1/cerrar",
@@ -464,6 +505,34 @@ test("E4.9 B: out-of-order closure requires motive, audits and preserves later p
   expect(audit).toEqual({
     accion: "cierre_fuera_de_orden",
     motivo: "Cierre tardío ficticio",
+  });
+  const posteriorRow = f.db
+    .query(
+      "SELECT posterior FROM cierre_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
+    )
+    .get() as { posterior: string };
+  const posterior = JSON.parse(posteriorRow.posterior) as {
+    coherence: {
+      ciclo: string;
+      version: number;
+      resultado: string;
+      comparado: {
+        efectivo: { almacenado: string | null; vivo: string | null };
+        posiciones: {
+          almacenado: { instrumento: string; cantidad: string }[] | null;
+          vivo: { instrumento: string; cantidad: string }[];
+        };
+      };
+    }[];
+  };
+  expect(posterior.coherence[0]).toMatchObject({
+    ciclo: "2",
+    version: 1,
+    resultado: "Coherente",
+    comparado: {
+      efectivo: { almacenado: "0.00", vivo: "0.00" },
+      posiciones: { almacenado: [], vivo: [] },
+    },
   });
   const laterNow = f.db
     .query(
@@ -609,4 +678,219 @@ test("E4.9 B: provider exposes the same closure state used by preflight", () => 
   expect(estado.cierre?.fingerprint).toBe(pre.fingerprint);
   const photo = getFotoCierre(db, "1");
   expect(photo.foto.fingerprint).toBe(pre.fingerprint);
+});
+
+test("E4.9 B: AC-20 a later closure created between preview and confirm is REVISION_CONFLICT", async () => {
+  const f = fixture();
+  await f.enroll();
+  const later = await f.close("2");
+  expect(later.result.status).toBe(201);
+
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(pre.data.coherencia.requerida).toBe(true);
+
+  // A new later cycle makes cycle 3 closable; closing it after the preview
+  // adds a second coherence entry and must invalidate the preview fingerprint.
+  f.db.run(
+    "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('4','2026-04-01',10000,'2026-01-01T00:00:00.000Z')",
+  );
+  const laterStill = await f.close("3");
+  expect(laterStill.result.status).toBe(201);
+
+  const stale = await f.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: pre.data.fingerprint },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(stale.status).toBe(409);
+  expect(stale.data.code).toBe("REVISION_CONFLICT");
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
+  ).toEqual({ n: 0 });
+  expect(
+    f.db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
+  ).toEqual({ n: 0 });
+});
+
+test("E4.9 B: default E3.5 provider unblocks a verifiable cycle", async () => {
+  const f = fixture(validOptions({ e35: undefined }));
+  verifiableRegimen(f.db);
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(pre.data.e35.verificable).toBe(true);
+  expect(
+    pre.data.bloqueos.map((b: { code: string }) => b.code),
+  ).not.toContain("E35_NO_VERIFICABLE");
+  expect(pre.data.e49Bloqueado).toBe(false);
+});
+
+test("E4.9 B: hechos con movimientos captures Con hechos", async () => {
+  const f = fixture();
+  januaryMovement(f.db);
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.data.hechos.estado).toBe("Con hechos");
+  expect(pre.data.hechos.fuentes[0]).toMatchObject({
+    fuente: "Movimientos",
+    hechos: 1,
+    acreditado: true,
+  });
+  const { result } = await f.close("1");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.hechos.estado).toBe("Con hechos");
+  expect(result.data.foto.hechos.totales.ingresos).toBe("12.34");
+});
+
+test("E4.9 B: S0 cero is a fact and closes with saldoInicial 0.00", async () => {
+  const f = fixture();
+  f.db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES
+       ('4','2026-04-01',0,'2026-01-01T00:00:00.000Z'),
+       ('5','2026-05-01',10000,'2026-01-01T00:00:00.000Z')`,
+  );
+  await f.enroll();
+  const { result } = await f.close("4");
+  expect(result.status).toBe(201);
+  expect(result.data.foto.ventana.saldoInicial).toBe("0.00");
+  expect(result.data.foto.hechos.estado).toBe("Sin hechos");
+});
+
+test("E4.9 B: verified backup without restore proof blocks before writing", async () => {
+  const f = fixture(
+    validOptions({
+      backup: {
+        verificado: true,
+        restauracionProbada: false,
+        referencia: "manifiesto-sin-restauracion",
+      },
+    }),
+  );
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(
+    pre.data.bloqueos.map((b: { code: string }) => b.code),
+  ).toContain("BACKUP_NO_VERIFICABLE");
+  const close = await f.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: pre.data.fingerprint },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(close.status).toBe(409);
+  expect(close.data.code).toBe("BACKUP_NO_VERIFICABLE");
+  expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+});
+
+test("E4.9 B: E4.1 unavailable blocks with E4_1_NO_DISPONIBLE", async () => {
+  const f = fixture();
+  f.db.run(
+    "UPDATE saldos SET tipo='Exterior', control='Exterior' WHERE control='Inversiones'",
+  );
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(
+    pre.data.bloqueos.map((b: { code: string }) => b.code),
+  ).toContain("E4_1_NO_DISPONIBLE");
+  expect(pre.data.inversion.efectivo).toBeNull();
+});
+
+test("E4.9 B: an absent Deuda table makes auxiliary fail and blocks FUENTE_NO_LEGIBLE", async () => {
+  const f = fixture();
+  f.db.run("ALTER TABLE deudas RENAME TO deudas_off");
+  await f.enroll();
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(
+    pre.data.bloqueos.map((b: { code: string }) => b.code),
+  ).toContain("FUENTE_NO_LEGIBLE");
+  expect(pre.data.cobertura.totales.deuda.estado).toBe("No disponible");
+  expect(pre.data.hechos.fuentes).toContainEqual({
+    fuente: "Deuda",
+    hechos: 0,
+    acreditado: false,
+  });
+  const close = await f.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: pre.data.fingerprint },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(close.status).toBe(409);
+  expect(
+    close.data.bloqueos.map((b: { code: string }) => b.code),
+  ).toContain("FUENTE_NO_LEGIBLE");
+  expect(f.db.query("SELECT COUNT(*) n FROM fotos_cierre").get()).toEqual({
+    n: 0,
+  });
+});
+
+test("E4.9 B: documented precierre endpoint never reports Listo con avisos while blocked", async () => {
+  const f = fixture();
+  await f.enroll();
+  const pre = await f.request("/api/cierres/precierre/1");
+  expect(pre.status).toBe(200);
+  expect(pre.headers.get("cache-control")).toBe("no-store");
+  expect(pre.data.ciclo.id).toBe("1");
+  expect(pre.data.e4_9Bloqueado).toBe(true);
+  expect(pre.data.estado).toBe("Bloqueado");
+  expect(
+    pre.data.estado === "Listo con avisos" && pre.data.e4_9Bloqueado,
+  ).toBe(false);
+  expect(
+    pre.data.fuentes.map((source: { key: string }) => source.key),
+  ).toEqual(expect.arrayContaining(["e35", "e42", "e44", "e36"]));
+});
+
+test("E4.9 B: S0 above the exact safe-integer range returns a motivated 422", async () => {
+  const f = fixture();
+  f.db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES
+       ('4','2026-04-01',9007199254740992,'2026-01-01T00:00:00.000Z'),
+       ('5','2026-05-01',10000,'2026-01-01T00:00:00.000Z')`,
+  );
+  await f.enroll();
+  const pre = await f.request("/api/cierres/4/preflight");
+  expect(pre.status).toBe(422);
+  expect(pre.data.code).toBe("S0_FUERA_DE_RANGO");
+  expect(pre.data.fields.saldoInicialComida).toContain("90071992547409.91");
+  expect(f.db.query("SELECT COUNT(*) n FROM cierres").get()).toEqual({ n: 0 });
+});
+
+test("E4.9 B: app version is reproducible from package/env with documented fallback", () => {
+  const previous = {
+    APP_VERSION: process.env.APP_VERSION,
+    APP_SHA: process.env.APP_SHA,
+    GIT_SHA: process.env.GIT_SHA,
+    GITHUB_SHA: process.env.GITHUB_SHA,
+    COMMIT_SHA: process.env.COMMIT_SHA,
+    SOURCE_SHA: process.env.SOURCE_SHA,
+  };
+  try {
+    delete process.env.APP_VERSION;
+    delete process.env.GIT_SHA;
+    delete process.env.GITHUB_SHA;
+    delete process.env.COMMIT_SHA;
+    delete process.env.SOURCE_SHA;
+    process.env.APP_SHA = "ABCDEF1234567890";
+    expect(resolveAppVersion("1.2.3-fixture")).toBe(
+      "1.2.3-fixture+abcdef1234567890",
+    );
+    delete process.env.APP_SHA;
+    expect(resolveAppVersion("1.2.3-fixture")).toBe("1.2.3-fixture");
+    process.env.APP_VERSION = "9.9.9-env";
+    expect(resolveAppVersion()).toBe("9.9.9-env");
+    delete process.env.APP_VERSION;
+    expect(resolveAppVersion()).not.toBe("");
+    expect(BUILD_VERSION).toMatch(/^\d+\.\d+\.\d+/);
+  } finally {
+    for (const [name, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[name];
+      else process.env[name] = value;
+    }
+  }
 });

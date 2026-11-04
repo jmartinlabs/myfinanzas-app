@@ -58,14 +58,43 @@ function close(db: Database) {
   db.close();
 }
 
+function verifiableRegimen(db: Database, ciclo = "1", saldo = "S001") {
+  db.run(
+    `INSERT INTO regimen_comida(saldo,ciclo_corte,apertura,evidencia,cobertura,
+       estado,revision,creado,actualizado)
+     VALUES(?,?,10000,'Extracto ficticio E3.5','Verificable','Activo',1,'f','f')`,
+    [saldo, ciclo],
+  );
+}
+
+function classifyFood(db: Database, movimiento = "101") {
+  db.run(
+    `INSERT INTO movimiento_revision_comida(movimiento,etiqueta,
+       evidencia_bancaria,evidencia_comercial,estado_revision,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,'Comida','Extracto ficticio E3.5','Ticket ficticio E3.5',
+       'Revisada',1,1,'f','f')`,
+    [movimiento],
+  );
+}
+
 test("AC-01: ventana finita, S0 visible y sin escritura", () => {
   const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.ciclo).toMatchObject({ inicio: "2026-01-01", fin: "2026-01-31" });
     expect(result.ciclo.saldoInicialComida).toBe("1000.00");
     expect(["Listo", "Listo con avisos"]).toContain(result.estado);
     expect(result.bloqueos).toEqual([]);
+    expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe(
+      "Verificado",
+    );
+    expect(result.fuentes.find((f) => f.key === "e44")?.estado).toBe(
+      "Integrado",
+    );
+    expect(result.fuentes.find((f) => f.key === "e36")).toBeDefined();
     expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({ n: 1 });
   } finally {
     close(db);
@@ -381,13 +410,17 @@ test("AC-06: sin compras nuevas pero con posición previa no es vacío", () => {
 
 test("AC-07: fuentes no disponibles son aviso, no cero ni bloqueo", () => {
   const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
-    for (const key of ["e43", "e44"]) {
+    for (const key of ["e43"]) {
       const source = result.fuentes.find((f) => f.key === key)!;
       expect(source.estado).toBe("No disponible");
       expect(source.cobertura).toBe("No disponible");
     }
+    expect(result.fuentes.find((f) => f.key === "e44")?.estado).toBe("Integrado");
+    expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe("Verificado");
     expect(result.fuentes.find((f) => f.key === "e42")?.estado).toBe("Integrado");
     const auxiliary = result.fuentes.find((f) => f.key === "anticipos")!;
     expect(auxiliary.estado).toBe("Parcial");
@@ -510,6 +543,8 @@ test("AC-11: cambio de importe del plan cambia la huella", () => {
 
 test("AC-12: SinPlan es válido y no bloquea", () => {
   const db = fixture();
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.plan.estado).toBe("SinPlan");

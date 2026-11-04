@@ -9,6 +9,9 @@ import {
 } from "./investment-engine";
 import { decimal } from "./saldos";
 import { fingerprint, financeRevision, ledgerRows, type LedgerRow } from "./movement-ledger";
+import { e35Metrics } from "./e35";
+import { listDeudasCompletas } from "./deuda-completa";
+import { conciliacionCiclo } from "./conciliacion-ciclos";
 
 export type PrecierreEstado =
   | "Listo"
@@ -340,6 +343,109 @@ function investmentSource(
     };
   }
 }
+function e35Source(
+  db: Database,
+  id: string,
+  now: number,
+): { source: PrecierreSource; verificable: boolean } {
+  try {
+    const metrics = e35Metrics(db, id, now);
+    const verificable = metrics.proveedor.bloqueo.verificable;
+    return {
+      verificable,
+      source: {
+        key: "e35",
+        label: "E3.5 Comida / FIN_NETA",
+        cobertura: metrics.proveedor.cobertura,
+        estado: verificable ? "Verificado" : "No disponible",
+        motivo: verificable
+          ? "E3.5/FIN_NETA verificable; E4.9 consume y captura sus resultados."
+          : metrics.proveedor.bloqueo.motivo ??
+            metrics.proveedor.motivo ??
+            "E3.5/FIN_NETA no verificable; E4.9 queda bloqueado.",
+        enlace: "/comida",
+        aplicable: true,
+      },
+    };
+  } catch (error) {
+    return {
+      verificable: false,
+      source: {
+        key: "e35",
+        label: "E3.5 Comida / FIN_NETA",
+        cobertura: "Error de lectura",
+        estado: "Error",
+        motivo:
+          error instanceof Error
+            ? error.message
+            : "E3.5/FIN_NETA no verificable; E4.9 queda bloqueado.",
+        enlace: "/comida",
+        aplicable: true,
+      },
+    };
+  }
+}
+
+function deudaSource(db: Database): PrecierreSource {
+  try {
+    const deudas = listDeudasCompletas(db);
+    return {
+      key: "e44",
+      label: "E4.4 Deuda completa",
+      cobertura: `${deudas.total} deudas`,
+      estado: "Integrado",
+      motivo:
+        "Deuda E1.6 con ficha y conciliaciones E4.4 legibles; cobertura histórica al corte no acreditada.",
+      enlace: "/deudas",
+      aplicable: false,
+    };
+  } catch {
+    return {
+      key: "e44",
+      label: "E4.4 Deuda completa",
+      cobertura: "Error de lectura",
+      estado: "Error",
+      motivo: "No se pudo leer E4.4 Deuda completa.",
+      enlace: "/deudas",
+      aplicable: false,
+    };
+  }
+}
+
+function e36Source(
+  db: Database,
+  id: string,
+  now: number,
+): PrecierreSource {
+  try {
+    const conciliacion = conciliacionCiclo(db, id, now);
+    const verificada = conciliacion.cobertura === "Verificada";
+    return {
+      key: "e36",
+      label: "E3.6 Pendientes / conciliación",
+      cobertura: conciliacion.cobertura,
+      estado: verificada ? "Verificado" : "Parcial",
+      motivo: verificada
+        ? conciliacion.motivo ?? "Conciliación E3.6 verificada; solo lectura."
+        : conciliacion.motivo ??
+          conciliacion.motivoBanco ??
+          "Conciliación E3.6 no verificable al corte.",
+      enlace: "/pendientes",
+      aplicable: false,
+    };
+  } catch {
+    return {
+      key: "e36",
+      label: "E3.6 Pendientes / conciliación",
+      cobertura: "Error de lectura",
+      estado: "Error",
+      motivo: "No se pudo leer E3.6 Pendientes / conciliación.",
+      enlace: "/pendientes",
+      aplicable: false,
+    };
+  }
+}
+
 export function getPrecierre(
   db: Database,
   id: string,
@@ -416,6 +522,12 @@ export function getPrecierre(
       code: "INVERSION_ERROR",
       message: investment.source.motivo,
     });
+  const e35 = e35Source(db, id, now);
+  if (!e35.verificable)
+    bloqueos.push({
+      code: "E35_NO_VERIFICABLE",
+      message: e35.source.motivo,
+    });
   const fuentes: PrecierreSource[] = [
     movements,
     plan.source,
@@ -470,24 +582,26 @@ export function getPrecierre(
     },
     investment.source,
     unavailable("e43", "E4.3 valoración / patrimonio", "Motor E4.3 no implementado."),
-    unavailable(
-      "e35",
-      "E3.5 Comida / FIN_NETA",
-      "Motor E3.5/FIN_NETA no integrado; P7 parcial. E4.9 queda bloqueado.",
-    ),
+    e35.source,
     {
       key: "e42",
       label: "E4.2 Ventas",
-      cobertura: "Operaciones de inversión",
-      estado: "Integrado",
+      cobertura:
+        investment.efectivo === null
+          ? "No disponible"
+          : "Operaciones de inversión",
+      estado:
+        investment.source.estado === "Error" ? "Error" : "Integrado",
       motivo:
-        "Compra/Venta restan/suman en efectivo y posición; UI/E2E pendientes.",
+        investment.source.estado === "Error"
+          ? investment.source.motivo
+          : "Compra/Venta restan/suman en efectivo y posición; motor E4.2 integrado.",
       enlace: "/inversiones",
       aplicable: true,
     },
-    unavailable("e44", "E4.4 Deuda completa", "Documental sin código."),
+    deudaSource(db),
     unavailable("e45", "E4.5 Histórico / precontrol", "Documental sin código."),
-    unavailable("e36", "E3.6 Pendientes / conciliación", "Documental sin código."),
+    e36Source(db, id, now),
   ];
   const corePartial =
     movements.estado === "Error" ||
@@ -522,10 +636,13 @@ export function getPrecierre(
     },
     estado,
     cobertura:
-      optionalUnavailable || auxiliaryPartial ? "Parcial" : "Completa",
-    e4_9Bloqueado:
       bloqueos.length > 0 ||
-      fuentes.find((s) => s.key === "e35")?.estado === "No disponible",
+      corePartial ||
+      optionalUnavailable ||
+      auxiliaryPartial
+        ? "Parcial"
+        : "Completa",
+    e4_9Bloqueado: bloqueos.length > 0,
     bloqueos,
     avisos,
     fuentes,

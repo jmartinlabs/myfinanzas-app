@@ -128,7 +128,9 @@ Contratos conceptuales, sin implementación:
 - `GET /api/cierres/precierre/:ciclo` — E4.8, solo lectura.
 - `POST /api/cierres/:ciclo/cerrar` — cierre con clave de intento, revisión/hash y
   motivo; respuesta con foto/estado.
-- `GET /api/cierres/:ciclo/estado` — estado y versión.
+- `GET /api/cierres/:ciclo/estado` — estado y versión del cierre E4.9; los campos
+  del precierre E4.8 se conservan bajo la clave `precierre`. `GET .../cierre` queda
+  como alias del mismo estado de cierre.
 - `GET /api/cierres/:ciclo/foto` — foto vigente.
 - Reintento idéntico devuelve la misma foto; payload distinto → 409
   `IDEMPOTENCY_CONFLICT`; cambio concurrente → 409 `IMPACT_CHANGED`/`REVISION_CONFLICT`.

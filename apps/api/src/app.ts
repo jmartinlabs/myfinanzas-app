@@ -804,9 +804,17 @@ export function createApp(db: Database, options: AppOptions) {
           );
         }
         return reply(
-          db.transaction(() =>
-            getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
-          )(),
+          db.transaction(() => ({
+            ...getCierreEstado(db, cierreEstado[1]),
+            // SPEC27 `/estado` is the E4.9 closure state. The E4.8 precierre
+            // fields stay available under `precierre` for compatibility.
+            precierre: getPrecierreEstado(
+              db,
+              cierreEstado[1],
+              now(),
+              options.precierre,
+            ),
+          }))(),
         );
       }
       const cierrePreflight = path.match(
