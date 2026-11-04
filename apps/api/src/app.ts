@@ -209,6 +209,13 @@ import {
   type PrecierreOptions,
 } from "./precierre";
 import {
+  confirmCierre,
+  getCierreEstado,
+  getFotoCierre,
+  previewCierre,
+  type CierreOptions,
+} from "./e49";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -220,6 +227,7 @@ export type AppOptions = {
   classificationGuard?: ClassificationGuard;
   movementGuard?: MovementProtection;
   precierre?: PrecierreOptions;
+  cierre?: CierreOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -800,6 +808,86 @@ export function createApp(db: Database, options: AppOptions) {
             getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
           )(),
         );
+      }
+      const cierrePreflight = path.match(
+        /^\/api\/cierres\/(\d+)\/preflight$/,
+      );
+      if (cierrePreflight) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El preflight de cierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            previewCierre(db, cierrePreflight[1], options.cierre, now()),
+          )(),
+        );
+      }
+      const cierreFoto = path.match(/^\/api\/cierres\/(\d+)\/foto$/);
+      if (cierreFoto) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La foto de cierre es de solo lectura.",
+          );
+        }
+        const rawVersion = new URL(req.url).searchParams.get("version");
+        let version: number | undefined;
+        if (rawVersion !== null) {
+          version = Number(rawVersion);
+          if (
+            !Number.isSafeInteger(version) ||
+            version < 1 ||
+            rawVersion !== String(version)
+          )
+            throw new Problem(422, "VALIDATION", "Versión de foto inválida.", {
+              version: "Indica una versión positiva.",
+            });
+        }
+        return reply(
+          db.transaction(() => getFotoCierre(db, cierreFoto[1], version))(),
+        );
+      }
+      const cierreState = path.match(/^\/api\/cierres\/(\d+)\/cierre$/);
+      if (cierreState) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El estado de cierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() => getCierreEstado(db, cierreState[1]))(),
+        );
+      }
+      const cierreConfirm = path.match(/^\/api\/cierres\/(\d+)\/cerrar$/);
+      if (cierreConfirm) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El cierre se confirma con POST.",
+          );
+        }
+        const result = confirmCierre(
+          db,
+          cierreConfirm[1],
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          options.cierre,
+          now(),
+        );
+        headers.set("location", `/api/cierres/${cierreConfirm[1]}/foto`);
+        return reply(result, 201);
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());
