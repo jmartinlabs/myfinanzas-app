@@ -9,7 +9,6 @@ import {
   esDeudaNoHipotecariaActiva,
   listarDeudasCompletas,
 } from "./deuda-no-hipotecaria";
-import { decimal } from "./saldos";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 

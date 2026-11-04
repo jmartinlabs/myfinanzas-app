@@ -3,8 +3,8 @@
 Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04.**
 Diseño de pruebas con **ejecución local DEV25 el 2026-11-04** (ver §Ejecución local DEV25).
 E4.7-AC3 sigue en cumplimiento parcial; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 y AC25
-siguen UNRUN. Existe un candidato local en la rama `feat/e47-resumen-anual`; la publicación
-y el merge requieren autorización separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
+siguen UNRUN. Existe un candidato publicado en PR #210 (rama `feat/e47-resumen-anual`); el
+merge requiere autorización separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
 autoriza datos reales, migración, snapshots ni merge.
 
 Specification: [25-e47-resumen-anual-specification.md](25-e47-resumen-anual-specification.md)
@@ -28,10 +28,10 @@ documentos ya aprobados; no se introducen datos personales ni cifras de negocio 
 
 **Leyenda de estado:** `UNRUN` = diseñado y no ejecutado; `BLOCKED` = no ejecutable por una
 dependencia externa; `PARCIAL` = cumplimiento parcial documental/contractual, **no PASS**;
-`PASS (local)` = ejecutado en el candidato local con comando, entorno, commits y evidencia
-propios, sin CI Linux ni QA independiente; `PASS`/`FAIL` completos exigen además el gate
-canónico y la revisión independiente. Resultado local: AC01, AC04–AC09, AC16, AC17, AC22,
-AC24, AC26 y AC27 en `PASS (local)`; AC02, AC03, AC18, AC20, AC21 y AC23 en `PARCIAL`;
+`PASS (local)` = ejecutado en el candidato de PR #210 con comando, entorno, commits y
+evidencia propios, sin CI Linux ni QA independiente; `PASS`/`FAIL` completos exigen además el gate
+canónico y la revisión independiente. Resultado local: AC01, AC04–AC09, AC16, AC17, AC24,
+AC26 y AC27 en `PASS (local)`; AC02, AC03, AC18, AC20, AC21, AC22 y AC23 en `PARCIAL`;
 AC10–AC15 en `BLOCKED` por E4.5/DT7; AC19 y AC25 en `UNRUN`. Las dependencias se indican en
 la columna de gate, sin convertir la falta de dependencia en un PASS.
 
@@ -85,7 +85,7 @@ El dictamen de Álex recomienda, **sin sustituir la aprobación del usuario**:
 
 ## Ejecución local DEV25 (2026-11-04)
 
-**Candidato local:** rama `feat/e47-resumen-anual`, base `main` `90cd5dc`; commits DEV-01
+**Candidato:** rama `feat/e47-resumen-anual`, publicada en PR #210, base `main` `90cd5dc`; commits DEV-01
 `293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f`, QA `60f18f8` y corrección final QA (este
 commit). Commit local, sin datos reales y sin migración. La publicación y el merge requieren
 autorización separada.
@@ -108,10 +108,16 @@ No sustituye la CI Linux ni la revisión independiente de QA.
 candidato y entorno con el comando indicado; no es PASS de CI Linux ni de QA independiente.
 AC07, AC08 y AC09 se verificaron en el DTO/API; las capturas E2E cubren la composición de 2026.
 `PARCIAL` y `BLOCKED` conservan su causa. AC02, AC18, AC20, AC21 y AC23 quedan `PARCIAL` por
-los límites de evidencia indicados; AC22 solo acredita una **comprobación parcial de contraste**,
-no una auditoría WCAG. `UNRUN` indica que no se ejecutó: AC19 porque E4.7 no publica el cociente
+los límites de evidencia indicados; AC22 queda `PARCIAL` porque solo acredita una
+**comprobación parcial de contraste**, no una auditoría WCAG. `UNRUN` indica que no se ejecutó: AC19 porque E4.7 no publica el cociente
 de meses y AC25 porque no se probó concurrencia real entre revisiones. **No se declara E4.7
 completa, PASS del roadmap ni merge.**
+
+**Semántica de `cobertura=Completa` con `sinLinea`.** El filtro se aplica a la cobertura de
+cada Partida publicada por E2.4. Una Partida con ejecución verificada y corte 31/12 puede
+aparecer como `Completa` aunque no tenga línea de presupuesto (`sinLinea`); en ese caso
+`CarrilPlan.estado` y la cobertura del carril son `Parcial`, porque el plan no cubre todas las
+Partidas. No se oculta la Partida ni se inventa un presupuesto.
 
 **Evidencia sintética.** La fixture `apps/api/test-support/resumen-anual-fixture.ts` usa solo IDs
 e importes ficticios ya documentados (C007/C008, F-ARCHIVO y F-MARGEN no se conectan porque E4.5
@@ -128,7 +134,7 @@ Commit local de corrección sobre `60f18f8`. No se modifica E4.9.
 | B2 — Patrimonio/deuda | La deuda se lee con `getDeudaCompleta` en el mismo corte y solo se aplica el filtro Q7 de presentación (no hipotecaria activa). Se expone `corte` en valoración y deuda | `resumen-anual.test.ts` «B2: deuda E4.4 al corte y solo no hipotecaria activa»; UI «Corte aplicado» |
 | M1 — Cobertura del plan | La cobertura de cada Partida deriva de E2.4 (`Completa` solo si el corte es 31/12); el filtro y el estado del carril dejan de ser degenerados | `resumen-anual.test.ts` «AC04/07/19/23» con `annualProvider` completo |
 | M2 — Revisión | La huella incluye patrimonio, valoración y deuda al corte | `resumen-anual.test.ts` «M2: la revisión cambia al cambiar la deuda del patrimonio» |
-| M3 — Matriz | AC02, AC18, AC20, AC21 y AC23 rebajados a `PARCIAL`; AC22 declara contraste parcial, no WCAG | Esta matriz |
+| M3 — Matriz | AC02, AC18, AC20, AC21, AC22 y AC23 rebajados a `PARCIAL`; AC22 declara contraste parcial, no WCAG | Esta matriz |
 | L1 — Estados y márgenes | `No aplica` con motivo en Diferencia; margen con `corte` real (no `null` fabricado); estados de corte humanizados; `margenes.estado` coherente (ND si ningún margen publica valor) | UI `ResumenAnual.tsx`; `resumen-anual.test.ts` |
 | L2 — Contraste | Se declara comprobación parcial; no se afirma auditoría WCAG completa | Este testplan |
 | N1 — Reloj E2E / deuda | El servidor E2E fija `now` al 2027-02-01; MFA y datos usan el mismo instante. E2E assertea deuda `1.020,00` y cobertura `Parcial`; si la lectura falla no se muestra «Corte aplicado» | `tests/e2e/resumen-anual.spec.ts`; `artifacts/e4-7/` |
@@ -251,11 +257,12 @@ la URL no contiene importes. La QA visual/responsive es un gate separado.
 
 ## Matriz de aceptación
 
-**Resultado local DEV25.** AC01, AC04–AC09, AC16, AC17, AC22, AC24, AC26 y AC27 quedan
-`PASS (local)` con la evidencia de §Ejecución local DEV25. AC02, AC03, AC18, AC20, AC21 y AC23
+**Resultado local DEV25.** AC01, AC04–AC09, AC16, AC17, AC24, AC26 y AC27 quedan
+`PASS (local)` con la evidencia de §Ejecución local DEV25. AC02, AC03, AC18, AC20, AC21, AC22 y AC23
 quedan `PARCIAL`: AC02 no declara IDs/contexto de cada cifra en la tabla de 1440; AC18 no
 ejecuta el valor numérico de F-MARGEN; AC20 cubre el bloque incluido y el corte, pero no la
-variante sin patrimonio; AC21 activa un drill-down, no todos los enlaces; AC23 cubre vacío,
+variante sin patrimonio; AC21 activa un drill-down, no todos los enlaces; AC22 solo acredita
+comprobación parcial de contraste, no auditoría WCAG; AC23 cubre vacío,
 500, 401 y reintento, pero no la degradación de un solo carril. AC10–AC15 quedan `BLOCKED` por
 E4.5/DT7. AC19 y AC25 quedan `UNRUN`: no se publica el cociente de meses y no se probó la
 concurrencia real entre revisiones. La columna «Gate» indica la dependencia que impide
@@ -284,7 +291,7 @@ ejecutarlos; no es un resultado.
 | E4.7-AC19 | Límite / coste 0 | `F-COSTE-CERO` y cociente no definido; si E4.7 muestra el contexto de coste esencial | `mesesCubiertos` `No disponible`; no se divide por cero; sin ratio anual nuevo; dos decimales solo presentación, sin redondear el origen; si no aplica, `No aplica` con motivo | API + revisión de DTO | D8-Z | DTO | UNRUN |
 | E4.7-AC20 | Límite / patrimonio | `F-PATRIMONIO` con y sin inclusión de patrimonio; variante sin corte comparable | Si entra: E4.3 y E4.4 al mismo corte verificable, separados y cada uno con estado/cobertura; sin patrimonio neto ni suma valoración + deuda + flujo. Si no hay corte comparable: ambos `No disponible`, sin cifra fabricada. Si no entra: bloque ausente o `No aplica` con motivo | API + Playwright | E4.3/E4.4; decisión de alcance | DTO y captura | PARCIAL |
 | E4.7-AC21 | Positivo / enlaces | Activar cada enlace de la vista y volver | Ruta/ID correctos; se conserva el ejercicio y los filtros; la URL no contiene importes ni datos personales | Playwright | DEV25 | Capturas, URLs y foco | PARCIAL |
-| E4.7-AC22 | Positivo / UX | `F-FILTROS`: 1440×1000 y 390×844; filtros principales ejercicio/cobertura y secundarios Ciclo/Partida; teclado, foco y comprobación parcial de contraste | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; sin tema/tokens nuevos; sin CSV/PDF en el primer DEV | Playwright + capturas | D8-F; DEV25 | `artifacts/e4-7/*.png`; capturas y estados de filtros; contraste parcial, no auditoría WCAG | PASS (local) |
+| E4.7-AC22 | Positivo / UX | `F-FILTROS`: 1440×1000 y 390×844; filtros principales ejercicio/cobertura y secundarios Ciclo/Partida; teclado, foco y comprobación parcial de contraste | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; sin tema/tokens nuevos; sin CSV/PDF en el primer DEV | Playwright + capturas | D8-F; DEV25 | `artifacts/e4-7/*.png`; capturas y estados de filtros; contraste parcial, no auditoría WCAG | PARCIAL |
 | E4.7-AC23 | Negativo / estados | Forzar vacío, carga, parcial, ND, error de una fuente y reintento | Estados diferenciados; solo el carril afectado degrada; no `0`; el reintento conserva la selección | Playwright con intercepción de red | DEV25 | Capturas y DTO | PARCIAL |
 | E4.7-AC24 | Negativo / seguridad | Acceso anónimo, sesión expirada, error 500 e intento de escritura | 401/reautenticación sin datos; errores genéricos sin SQL ni importes; `no-store`; no hay métodos de escritura | API + HTTP | DEV25 | Respuestas y cabeceras | PASS (local) |
 | E4.7-AC25 | Límite / concurrencia | Cambiar una fuente entre carga y reintento; dos consultas concurrentes | No se mezclan revisiones; la respuesta antigua se descarta; la selección se conserva | API + Playwright | DEV25 | Respuestas y capturas | UNRUN |
@@ -385,13 +392,14 @@ manual de subtotales.
 
 ## Limitaciones y siguiente acción
 
-Existe un candidato local corregido de DEV25 (rama `feat/e47-resumen-anual`, commits
+Existe un candidato corregido de DEV25 publicado en PR #210 (rama `feat/e47-resumen-anual`, commits
 DEV-01/DEV-02/DEV-03 más las correcciones QA) con 8 pruebas API de E4.7, 4 E2E y 7 regresiones de
-inicio/temas en PASS local. El commit local no se ha publicado ni mergeado. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
+inicio/temas en PASS local. El candidato está publicado en PR #210; sin merge. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
 en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido. Las seis decisiones
 D8-M/Z/F/N, patrimonio y gate E4.5/DT7 están aprobadas por el usuario el 2026-11-04; D8-M
 mantiene E4.7-AC3 en `PARCIAL`. AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 y AC25 siguen
-`UNRUN`; AC02, AC18, AC20, AC21 y AC23 quedan `PARCIAL` por los límites de evidencia descritos.
+`UNRUN`; AC02, AC18, AC20, AC21, AC22 y AC23 quedan `PARCIAL` por los límites de evidencia
+descritos.
 La siguiente acción es la revisión independiente de QA y, solo después, la autorización
 separada de publicación y merge. Ningún AC bloqueado se declara PASS ni se presenta E4.7 como
 completa.
