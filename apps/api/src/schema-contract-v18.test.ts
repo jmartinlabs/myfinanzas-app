@@ -18,7 +18,7 @@ import { openDatabaseV17 } from "../test-support/database-v17";
 
 const contract18 = "C18-INVERSION-306BBC5";
 const contract19 = "C19-COMIDA-UNICO-01";
-const contract24 = "C24-E43-VALORACION";
+const contract25 = "C25-E49-CIERRE-FINANCIERO";
 const contract21 = "C21-VENTAS-E42";
 
 function files(dir: string) {
@@ -50,34 +50,34 @@ function rejectWithoutChange(
   }
 }
 
-test("C18/C21: fresh and v16/v17 upgrades produce the frozen v23 manifest", () => {
+test("C18/C21: fresh and v16/v17 upgrades produce the frozen v25 manifest", () => {
   process.env.NODE_ENV = "test";
   const dir = mkdtempSync(join(tmpdir(), "mf-c18-manifest-"));
   try {
     const fresh = new Database(join(dir, "fresh.sqlite"));
     prepareSchema(fresh, { origin: "demo", key_hash: null });
     const expected = manifest(fresh);
-    expect(verifyContract(fresh, 24)).toBe(contract24);
+    expect(verifyContract(fresh, 25)).toBe(contract25);
     fresh.close();
 
     const v17path = join(dir, "v17.sqlite");
     openDatabaseV17(v17path).close();
     const v17 = openDatabase(v17path);
     expect(v17.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 24,
+      version: 25,
     });
     expect(manifest(v17)).toEqual(expected);
-    expect(verifyContract(v17, 24)).toBe(contract24);
+    expect(verifyContract(v17, 25)).toBe(contract25);
     v17.close();
 
     const v16path = join(dir, "v16.sqlite");
     openDatabaseV16(v16path).close();
     const v16 = openDatabase(v16path);
     expect(v16.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 24,
+      version: 25,
     });
     expect(manifest(v16)).toEqual(expected);
-    expect(verifyContract(v16, 24)).toBe(contract24);
+    expect(verifyContract(v16, 25)).toBe(contract25);
     v16.close();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -138,7 +138,7 @@ for (const journal of ["DELETE", "WAL"] as const) {
       seed.close();
       chmodSync(valid, 0o600);
       const db = openDatabase(valid);
-      expect(verifyContract(db, 24)).toBe(contract24);
+      expect(verifyContract(db, 25)).toBe(contract25);
       db.close();
 
       const extra = join(dir, "extra.sqlite");
