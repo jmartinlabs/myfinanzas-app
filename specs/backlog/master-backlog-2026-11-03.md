@@ -1,6 +1,6 @@
 # Master backlog — MyFinanzas (2026-11-03)
 
-Base de referencia: `main` `3b9be46`; esquema **v24 integrado** con DEV E4.3-A+B; v25 no reservada.
+Base de referencia: `main` `9b76569`; esquema **v24 integrado** con DEV E4.3-A+B+C; v25 no reservada.
 No se reserva v25 sin decisión.
 Este documento es un índice de trabajo, no una aprobación. Los AC solo pasan a PASS con
 evidencia ejecutada; una spec aprobada no autoriza DEV.
@@ -19,7 +19,9 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 | --- | --- | --- | --- |
 | DEV E4.3-A (v24, migración, C24, backup) | **MERGED** `3b9be46` | 644/644 en PR `7de64c1`; post-merge `41722741566` fast PASS; QA-A APTO CON RESERVAS | — |
 | DEV E4.3-B (read model/API) | **MERGED** `3b9be46` | `e43-api` 14/14; QA-B APTO CON RESERVAS | — |
-| DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | Aceptación visual y reservas |
+| DEV E4.3-C (UI/E2E) | **MERGED** `8552d4a` | Playwright 1/1 + regresión Inversiones; CI PR `41728978112` 644/644; QA-C APTO CON RESERVAS | — |
+| QA final E4.3 | **PR #189 draft** `66d58d3` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; reservas menores | Revisión Álex y aprobación de merge |
+| E4.4/E3.6 evidencia | **MERGED** #190/#191 | Progress 17, evidencia 21 y R17/R18 clasificadas | — |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
@@ -38,14 +40,14 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 
 ### P0 — Ahora
 
-1. **DEV E4.3 A→B→C:** esquema v24, read model/API, UI/E2E, QA final. Prioridad absoluta.
-2. **Evidencia post-merge E4.4/E3.6:** crear `17-progress` y actualizar `21-progress`/testplan sin declarar PASS; alinear cabeceras.
-3. **#181:** verificar CI, corregir body (incluye gobernanza) y merge documental.
-4. **Estabilizar CI:** investigar flake `sqlite-opening.test.ts:288` (`SQLITE_IOERR_SHORT_READ`) sin ocultarlo.
+1. **DEV E4.3:** A+B+C integrados; QA final en PR #189 pendiente de revisión funcional de Álex y aprobación de merge.
+2. **Evidencia post-merge E4.4/E3.6:** completada (#190/#191), sin PASS indebido.
+3. **#181:** MERGED `7bfb5a2`; verificado.
+4. **Estabilizar CI:** flake `sqlite-opening.test.ts:288` en investigación; no enmascarar.
 
 ### P1 — Preparación sin DEV nuevo
 
-5. **E4.9:** paquete de decisión ya integrado (`06eeb0f`); resolver D4, T1 Ventas, versionado v24/v25, versión de app, UI, AC-20, DT4 y MFA.
+5. **E4.9:** paquete actualizado a 2026-11-04; resolver D4, T1 Ventas, versionado v25, versión de app, UI, AC-20, DT4 y MFA.
 6. **E4.6:** contrato de consumidores/fixtures cuando E4.3 esté avanzado; no duplicar motores.
 7. **E4.7:** frontera/DT8; no abrir SPEC25 hasta decisiones.
 8. **E4.5/DT7:** checklist de mapping/cortes/2026 y QA documental, solo si se prioriza.
