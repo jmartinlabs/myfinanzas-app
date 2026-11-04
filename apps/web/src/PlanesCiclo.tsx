@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
+import { planDeltaEntries } from "./plan-delta";
 import { Alert, PageHead } from "./ui";
 type Budget = { id: string; nombre: string; fuente: string; estado: string };
 type Line = {
@@ -741,12 +742,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
                   {a.motivo ?? "Captura inicial"}
                 </p>
                 <dl>
-                  {Object.entries(
-                    JSON.parse(a.delta) as Record<
-                      string,
-                      { anterior: string | null; posterior: string | null }
-                    >,
-                  ).map(([field, delta]) => (
+                  {planDeltaEntries(a.delta).map(([field, delta]) => (
                     <div key={field}>
                       <dt>{labels[field as keyof typeof labels]}</dt>
                       <dd>

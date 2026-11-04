@@ -10,10 +10,10 @@ texto aprobado de SPEC27: 409 `HISTORY_LOCKED` por fecha en ventana cerrada
 (AC-03/AC-04) y bloqueo de hechos anteriores cuando pueden alterar lo capturado o el
 impacto no es verificable. AC-03/AC-04/AC-05/AC-06/AC-14 y la ampliación AC-20 tienen
 prueba de fixtures en `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no cierre
-real). El resto de AC sigue UNRUN. No se ejecutó CI para este bloque; no hay migración
-nueva ni datos reales. Aprobado con SPEC27 el 2026-10-28; DT3/DT4 resueltas el
-2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06 (2026-11-04) cerró M1–M5 y L5, y L1
-por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
+real). El resto de AC sigue UNRUN. Este bloque se verificó localmente; no se ejecutó un
+workflow de CI. No hay migración nueva ni datos reales. Aprobado con SPEC27 el
+2026-10-28; DT3/DT4 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06
+(2026-11-04) cerró M1–M5 y L5, y L1 por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
 cierres en `audit.campos.impacto`; Revisión Comida los guarda en
 `revision_comida_audit.posterior.impacto`; plan vivo los guarda en
 `cycle_plan_audit.delta.impacto`. También quedan cubiertos el fingerprint único de
@@ -98,10 +98,12 @@ sin guarda de cierre ni se inventan columnas nuevas.
 Ejecutado el 2026-11-04 sobre el bloque DEV-06 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
 - `bun run typecheck` — OK.
-- `bun test apps/api/src/e49-guards.test.ts` — 27/27 PASS (incluye 17 pruebas DEV-06/QA).
+- `bun test apps/api/src/e49-guards.test.ts` — 31/31 PASS (incluye 21 pruebas DEV-06/QA).
+- `bun test apps/web/src/plan-delta.test.ts` — 2/2 PASS (R1: filtra `impacto` y tolera JSON inválido).
+- `bun run build` — OK (46 módulos; aviso de tamaño de chunk, no error).
 - `bun test apps/api/src/e49-api.test.ts apps/api/src/e49-migration.test.ts apps/api/src/e49-schema-contract.test.ts` — 58 PASS, 3 SKIP, 0 FAIL.
 - `bun test apps/api/src/referencias.test.ts apps/api/src/deudas.test.ts apps/api/src/presupuestos.test.ts apps/api/src/planes-ciclo.test.ts apps/api/src/revision-comida.test.ts apps/api/src/clasificacion.test.ts apps/api/src/instrumentos.test.ts apps/api/src/saldos.test.ts apps/api/src/movimientos.test.ts apps/api/src/compras.test.ts apps/api/src/ventas.test.ts apps/api/src/ciclos.test.ts` — 134 PASS, 9 FAIL de entorno macOS (`Ancestro no confiable` en backup/restore/migración y estado privado), ninguno de los módulos tocados.
-- `bun test apps/api` — 670 PASS, 8 SKIP, 56 FAIL, todos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
+- `bun test apps/api` — 674 PASS, 8 SKIP, 56 FAIL, todos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
 
 Cobertura de guards DEV-06: AC-20 compara `hechos.totales` (ingresos, gastos,
 transferencias, amortizaciones, devoluciones y neto) al corte congelado de cada foto
@@ -112,14 +114,20 @@ divergentes y hecho no capturado en la ventana posterior. T2 Referencias/Deudas 
 `IMPACTO_NO_VERIFICABLE`/`IMPACT_CHANGED`; las pruebas mueven consumidores reales,
 rechazan huellas obsoletas y bloquean si no se pueden leer. T3 mantiene listas blancas
 por entidad; Clasificación cablea `closedFieldDecision` y el endpoint de Subcategoría se
-prueba explícitamente. Presupuestos exige confirmación de impacto tras cierre; plan vivo
-bloquea si la foto no acredita el plan; Revisión Comida permite campos informativos (T3)
-y exige impacto/fingerprint/motivo/auditoría en cambios y altas dentro de ventana
-cerrada, con preview y escritura usando el mismo fingerprint y pruebas de Detalle y
+prueba discriminando `nombre` informativo frente a `padre` económico. Presupuestos exige
+confirmación de impacto tras cierre; plan vivo bloquea si la foto no acredita el plan;
+Revisión Comida permite campos informativos (T3) y exige impacto/fingerprint/motivo/
+auditoría en cambios y altas dentro de ventana cerrada, con preview y escritura usando el
+mismo fingerprint y pruebas de Detalle, anulación, vínculo, alta y rectificación de
 Reposición. L1 queda trazable por entidad: Referencias, Deudas y Presupuestos en
 `audit.campos.impacto`; Revisión Comida en `revision_comida_audit.posterior.impacto`;
 plan vivo en `cycle_plan_audit.delta.impacto`. La foto se mantiene idéntica en todas las
 pruebas.
+
+R1 (UI plan vivo): `PlanesCiclo.tsx` consume `delta` mediante `planDeltaEntries`, que
+filtra solo entradas con `anterior`/`posterior` y descarta el certificado `impacto` y
+cualquier clave extra. La comprobación está en `apps/web/src/plan-delta.test.ts` y el
+build de producción se ejecutó sin error; no se declara E2E/UI de cierre.
 
 
 ## Functional verification

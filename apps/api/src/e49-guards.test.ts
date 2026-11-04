@@ -2172,3 +2172,193 @@ test("E4.9 QA fail-closed: consumidores no legibles bloquean sin escribir", asyn
     f.db.query("SELECT estado FROM referencias WHERE id=?").get(referenceId),
   ).toEqual({ estado: "Activa" });
 });
+
+test("E4.9 QA L1: anulación de Revisión Comida persiste huella y cierres", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const created = await f.request(
+    "/api/revision-comida",
+    "POST",
+    {
+      fecha: "2026-01-10",
+      concepto: "Comida a anular",
+      importe: "10.00",
+      direccion: "Salida",
+      esDevolucion: false,
+      clasificacion: "Comida",
+      evidenciaBancaria: null,
+      cuentaOrigen: null,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  const id = created.data.operacion.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const preview = await f.request(
+    `/api/revision-comida/${id}/impacto`,
+    "POST",
+    { revision: 1 },
+  );
+  expect(preview.status).toBe(200);
+  const without = await f.request(
+    `/api/revision-comida/${id}/anular`,
+    "POST",
+    { revision: 1, motivo: "Anulación" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(without.status).toBe(409);
+  expect(without.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+  const written = await f.request(
+    `/api/revision-comida/${id}/anular`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Anulación revisada",
+      fingerprint: preview.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(written.status).toBe(200);
+  expect(written.data.operacion.estadoRegistro).toBe("Anulado");
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(id) as { posterior: string };
+  expect(JSON.parse(audit.posterior).impacto).toMatchObject({
+    fingerprint: preview.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
+});
+
+test("E4.9 QA L1: vínculo de Revisión Comida persiste huella y cierres", async () => {
+  const f = fixture({ facts: false, classification: true });
+  await f.enroll();
+  seedMovement(f.db, {
+    id: "8401",
+    fecha: "2026-01-14",
+    importe: 500,
+    tipo: "Gasto",
+    destino: "S000",
+    partida: "PAR900",
+  });
+  const created = await f.request(
+    "/api/revision-comida",
+    "POST",
+    {
+      fecha: "2026-01-14",
+      concepto: "Comida a vincular",
+      importe: "5.00",
+      direccion: "Salida",
+      esDevolucion: false,
+      clasificacion: "Comida",
+      evidenciaBancaria: null,
+      cuentaOrigen: null,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  const id = created.data.operacion.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const body = {
+    revision: 1,
+    movimiento: "8401",
+    tipoVinculo: "Individual",
+    evidenciaVinculo: "Evidencia QA de vínculo",
+  };
+  const preview = await f.request(
+    `/api/revision-comida/${id}/impacto`,
+    "POST",
+    body,
+  );
+  expect(preview.status).toBe(200);
+  const written = await f.request(
+    `/api/revision-comida/${id}/vinculo`,
+    "POST",
+    {
+      ...body,
+      motivo: "Vínculo revisado",
+      fingerprint: preview.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(written.status).toBe(200);
+  expect(written.data.operacion.estadoVinculo).toBe("Verificado");
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(id) as { posterior: string };
+  expect(JSON.parse(audit.posterior).impacto).toMatchObject({
+    fingerprint: preview.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
+});
+
+test("E4.9 QA L1: alta de Reposición en ventana cerrada exige huella y la audita", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  const body = {
+    fecha: "2026-01-13",
+    concepto: "Reposición alta QA",
+    importe: "30.00",
+    direccion: "Entrada",
+    esDevolucion: false,
+    evidenciaBancaria: "Extracto QA alta reposición",
+    cuentaOrigen: null,
+  };
+  const preview = await f.request(
+    "/api/revision-comida/reposiciones/impacto",
+    "POST",
+    body,
+  );
+  expect(preview.status).toBe(200);
+  const created = await f.request(
+    "/api/revision-comida/reposiciones",
+    "POST",
+    {
+      ...body,
+      motivo: "Alta de reposición revisada",
+      fingerprint: preview.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(created.status).toBe(201);
+  expect(created.data.operacion.tipo).toBe("Reposicion");
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(created.data.operacion.id) as { posterior: string };
+  expect(JSON.parse(audit.posterior).impacto).toMatchObject({
+    fingerprint: preview.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
+});
+
+test("E4.9 QA T3 Subcategoría discrimina nombre informativo de padre económico", async () => {
+  const f = fixture({ facts: true, classification: true });
+  await f.enroll();
+  f.db.run(
+    `INSERT INTO categorias(id,nombre,grupo,anual,mensual,referencia,estado,
+       revision,creado,actualizado)
+     VALUES('CAT901','Categoría alternativa','Gasto','Gasto','Gasto',0,'Activa',1,?,?)`,
+    [stamp, stamp],
+  );
+  expect((await f.close("1")).result.status).toBe(201);
+  expect(
+    closedFieldDecision(f.db, "subcategoria", ["nombre"]),
+  ).toMatchObject({ informative: ["nombre"], economic: [] });
+  expect(
+    closedFieldDecision(f.db, "subcategoria", ["padre"]),
+  ).toMatchObject({ informative: [], economic: ["padre"] });
+
+  const preview = await f.request(
+    "/api/clasificacion/subcategorias/SUB900/impacto",
+    "POST",
+    { revision: 1, nombre: "Subcategoría informativa", padre: "CAT901" },
+  );
+  expect(preview.status).toBe(200);
+  expect(preview.data.changed).toContain("nombre");
+  expect(preview.data.changed).toContain("padre");
+  expect(preview.data.economic).toEqual(["padre"]);
+});
