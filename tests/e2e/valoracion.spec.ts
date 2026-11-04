@@ -649,6 +649,21 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
     await expect(
       page.getByRole("button", { name: "Guardar corrección" }),
     ).toBeDisabled();
+    await overwrite.check();
+    await expect(
+      page.getByRole("button", { name: /Usar mi borrador sobre la revisión/ }),
+    ).toBeEnabled();
+    await page.getByLabel(/Precio unitario/).fill("126.000000");
+    await expect(overwrite).not.toBeChecked();
+    await expect(
+      page.getByRole("button", { name: /Usar mi borrador sobre la revisión/ }),
+    ).toBeDisabled();
+    await expect(
+      page.getByText(/Cambios concurrentes en la revisión 2/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Guardar corrección" }),
+    ).toBeDisabled();
     await page
       .getByRole("button", {
         name: "Descartar mi borrador y cargar la revisión vigente",

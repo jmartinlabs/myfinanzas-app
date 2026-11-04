@@ -1551,9 +1551,11 @@ function ValuationForm({
       live = false;
     };
   }, [saldoId, instrumentoId, fecha]);
+  useEffect(() => {
+    if (conflict) setOverwrite(false);
+  }, [conflict, fecha, tipo, valorEur, precio, divisa, cambio, procedencia, motivo]);
   function changed() {
     setError("");
-    setStale(false);
     setErrors({});
     attempt.current = crypto.randomUUID();
   }
@@ -1716,10 +1718,10 @@ function ValuationForm({
             : "La app calcula con precisión exacta; solo el importe final se redondea a céntimos."
         }
       />
-      {error && (
+      {(error || (stale && rectifying && conflict)) && (
         <div ref={alert} tabIndex={-1} className="focus-alert">
           <Alert>
-            {error}
+            {error && <>{error}</>}
             {stale && rectifying && conflict && (
               <div className="valoracion-conflict">
                 <p>
@@ -1738,6 +1740,10 @@ function ValuationForm({
                 ) : (
                   <p>La revisión avanzó sin diferencias de contenido.</p>
                 )}
+                <p className="help">
+                  Diferencias detectadas al recibir el 409; editar el borrador no
+                  autoriza la sobrescritura.
+                </p>
                 <p>
                   <button
                     className="secondary"
