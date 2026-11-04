@@ -215,6 +215,7 @@ import {
 } from "./pendientes";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
+import { resumenAnual } from "./resumen-anual";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
@@ -346,6 +347,27 @@ export function createApp(db: Database, options: AppOptions) {
               annualProvider: options.annualProvider,
               mesesObjetivo: options.resumenInicio?.mesesObjetivo,
             }),
+          )(),
+        );
+      }
+      // E4.7 — composición anual de solo lectura: un único GET, sin escrituras.
+      if (path === "/api/resumen-anual") {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El resumen anual es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            resumenAnual(
+              db,
+              new URL(req.url).searchParams,
+              now(),
+              { annualProvider: options.annualProvider },
+            ),
           )(),
         );
       }

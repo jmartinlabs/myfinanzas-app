@@ -1,9 +1,11 @@
 # 25 — E4.7 Resumen anual y flujo completo trazable: Test plan
 
 Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04.**
-Diseño de pruebas, **NO EJECUTADO**. Ningún AC está en PASS; E4.7-AC3 queda en cumplimiento
-parcial. No existe candidato funcional de E4.7, endpoint, UI, DDL ni migración. **DEV25 no
-autorizado.** Este documento no autoriza datos reales, migración, snapshots ni merge.
+Diseño de pruebas con **ejecución local DEV25 el 2026-11-04** (ver §Ejecución local DEV25).
+E4.7-AC3 sigue en cumplimiento parcial; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 sigue
+UNRUN y AC25 queda verificado en local. Existe un candidato publicado en PR #210 (rama `feat/e47-resumen-anual`); el
+merge requiere autorización separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
+autoriza datos reales, migración, snapshots ni merge.
 
 Specification: [25-e47-resumen-anual-specification.md](25-e47-resumen-anual-specification.md)
 Dictamen funcional de Álex: relay 0142 (2026-11-04), favorable a M-A / Z-A / F-A / N-A;
@@ -26,10 +28,12 @@ documentos ya aprobados; no se introducen datos personales ni cifras de negocio 
 
 **Leyenda de estado:** `UNRUN` = diseñado y no ejecutado; `BLOCKED` = no ejecutable por una
 dependencia externa; `PARCIAL` = cumplimiento parcial documental/contractual, **no PASS**;
-`PASS`/`FAIL` solo pueden registrarse con candidato autorizado, comando, entorno, SHA y
-evidencia. En este documento **ningún AC está en PASS**: E4.7-AC3 queda `PARCIAL`; AC10–AC15
-quedan `BLOCKED` (sin E4.5/DT7 y sin candidato DEV25); el resto `UNRUN`. Las dependencias se
-indican en la columna de gate, sin convertir la falta de dependencia en un PASS.
+`PASS (local)` = ejecutado en el candidato de PR #210 con comando, entorno, commits y
+evidencia propios, sin CI Linux ni QA independiente; `PASS`/`FAIL` completos exigen además el gate
+canónico y la revisión independiente. Resultado local: AC01, AC04–AC09, AC16, AC17, AC24,
+AC26 y AC27 en `PASS (local)`; AC02, AC03, AC18, AC20, AC21, AC22 y AC23 en `PARCIAL`;
+AC10–AC15 en `BLOCKED` por E4.5/DT7; AC19 en `UNRUN`; AC25 en `PASS (local)`. Las dependencias se indican en
+la columna de gate, sin convertir la falta de dependencia en un PASS.
 
 ## Estrategia
 
@@ -78,6 +82,84 @@ El dictamen de Álex recomienda, **sin sustituir la aprobación del usuario**:
 | Linux CI | Ubuntu 24.04, Bun/age/Chromium preparados; full del SHA candidato | Gate final del DEV |
 | Fixtures | Bases ficticias, MFA real local, sin datos personales | Nunca Excel, DB real, claves o VPS |
 | Documental actual | `python3 scripts/validate-template`, `check-project`, `test-validator`, `git diff --check` | Solo estructura; no valida E4.7 |
+
+## Ejecución local DEV25 (2026-11-04)
+
+**Candidato:** rama `feat/e47-resumen-anual`, publicada en PR #210, base `main` `90cd5dc`; commits DEV-01
+`293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f`, QA `60f18f8` y corrección final QA (este
+commit). Commit local, sin datos reales y sin migración. La publicación y el merge requieren
+autorización separada.
+
+**Entorno:** macOS local; Bun 1.4.3; TypeScript 7.0.2; Chromium/Playwright 1.64.1; 2026-11-04.
+No sustituye la CI Linux ni la revisión independiente de QA.
+
+| Comprobación | Comando real | Resultado |
+| --- | --- | --- |
+| Tipos | `bun run typecheck` | PASS (exit 0) |
+| Build cliente | `bun run build` | PASS (exit 0); aviso de chunk >500 kB ya existente |
+| API E4.7 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 48 pass / 0 fail (8 de E4.7 y 40 de los motores) |
+| API E4.6 | `NODE_ENV=test bun test apps/api/src/resumen-inicio.test.ts` | 18 pass / 0 fail |
+| API E4.7 + E4.6 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 66 pass / 0 fail |
+| E2E E4.7 | `bunx playwright test tests/e2e/resumen-anual.spec.ts` | 5 pass / 0 fail |
+| Regresión inicio/temas | `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` | 7 pass / 0 fail |
+| Capturas | `artifacts/e4-7/*.png` | 7 capturas: tres temas a 1440/390 y el estado vacío |
+
+**Lectura de la matriz.** `PASS (local)` significa que la comprobación se ejecutó en este
+candidato y entorno con el comando indicado; no es PASS de CI Linux ni de QA independiente.
+AC07, AC08 y AC09 se verificaron en el DTO/API; las capturas E2E cubren la composición de 2026.
+`PARCIAL` y `BLOCKED` conservan su causa. AC02, AC18, AC20, AC21 y AC23 quedan `PARCIAL` por
+los límites de evidencia indicados; AC22 queda `PARCIAL` porque solo acredita una
+**comprobación parcial de contraste**, no una auditoría WCAG. `UNRUN` indica que no se ejecutó: AC19 porque E4.7 no publica el cociente
+de meses. AC25 se verificó con dos consultas retenidas en la misma pestaña; **no es concurrencia
+multi-cliente**. **No se declara E4.7
+completa, PASS del roadmap ni merge.**
+
+**Semántica de `cobertura=Completa` con `sinLinea`.** El filtro se aplica a la cobertura de
+cada Partida publicada por E2.4. Una Partida con ejecución verificada y corte 31/12 puede
+aparecer como `Completa` aunque no tenga línea de presupuesto (`sinLinea`); en ese caso
+`CarrilPlan.estado` y la cobertura del carril son `Parcial`, porque el plan no cubre todas las
+Partidas. No se oculta la Partida ni se inventa un presupuesto.
+
+**Evidencia sintética.** La fixture `apps/api/test-support/resumen-anual-fixture.ts` usa solo IDs
+e importes ficticios ya documentados (C007/C008, F-ARCHIVO y F-MARGEN no se conectan porque E4.5
+no existe). No se usan Excel, bases reales, credenciales ni datos personales. Las capturas se
+guardan en `artifacts/e4-7/`, ignorado por Git.
+
+## Corrección QA (2026-11-04)
+
+Commit local de corrección sobre `60f18f8`. No se modifica E4.9.
+
+| Hallazgo | Corrección aplicada | Evidencia |
+| --- | --- | --- |
+| B1 — Ciclo abierto eterno | `tocaEjercicio` acota el Ciclo por `fin ?? corte ?? inicio`; un ejercicio posterior al corte vivo no hereda Ciclos ni patrimonio | `resumen-anual.test.ts` «B1: un Ciclo abierto no se atribuye a años futuros» (2030) |
+| B2 — Patrimonio/deuda | La deuda se lee con `getDeudaCompleta` en el mismo corte y solo se aplica el filtro Q7 de presentación (no hipotecaria activa). Se expone `corte` en valoración y deuda | `resumen-anual.test.ts` «B2: deuda E4.4 al corte y solo no hipotecaria activa»; UI «Corte aplicado» |
+| M1 — Cobertura del plan | La cobertura de cada Partida deriva de E2.4 (`Completa` solo si el corte es 31/12); el filtro y el estado del carril dejan de ser degenerados | `resumen-anual.test.ts` «AC04/07/19/23» con `annualProvider` completo |
+| M2 — Revisión | La huella incluye patrimonio, valoración y deuda al corte | `resumen-anual.test.ts` «M2: la revisión cambia al cambiar la deuda del patrimonio» |
+| M3 — Matriz | AC02, AC18, AC20, AC21, AC22 y AC23 rebajados a `PARCIAL`; AC22 declara contraste parcial, no WCAG | Esta matriz |
+| L1 — Estados y márgenes | `No aplica` con motivo en Diferencia; margen con `corte` real (no `null` fabricado); estados de corte humanizados; `margenes.estado` coherente (ND si ningún margen publica valor) | UI `ResumenAnual.tsx`; `resumen-anual.test.ts` |
+| L2 — Contraste | Se declara comprobación parcial; no se afirma auditoría WCAG completa | Este testplan |
+| N1 — Reloj E2E / deuda | El servidor E2E fija `now` al 2027-02-01; MFA y datos usan el mismo instante. E2E assertea deuda `1.020,00` y cobertura `Parcial`; si la lectura falla no se muestra «Corte aplicado» | `tests/e2e/resumen-anual.spec.ts`; `artifacts/e4-7/` |
+| N2 — Motor de deuda | `fuente.motor` de deuda es `E4.4 getDeudaCompleta` | `resumen-anual.test.ts`; E2E |
+| N3 — Plan con `sinLinea` | `CarrilPlan.estado` es `Parcial` si alguna Partida no tiene presupuesto, aunque su ejecución sea completa | `resumen-anual.test.ts` «AC04/07/19/23» |
+| N4 — Agregación Q7 | Extraído `deuda-no-hipotecaria.ts` (listado paginado, predicado Q7 y agregación), usado por E4.6 y E4.7 sin cambiar el resultado de E4.6 | `resumen-inicio.test.ts` 18 pass; `resumen-anual.test.ts` |
+
+**Comandos de la corrección:** `bun run typecheck` PASS; `bun run build` PASS (aviso de chunk
+preexistente); `bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts`
+26 pass / 0 fail; `bun test` E4.7 + motores 48 pass / 0 fail; E2E E4.7 5 pass / 0 fail;
+regresión inicio/temas 7 pass / 0 fail. Capturas regeneradas en `artifacts/e4-7/`.
+
+**Integración con E4.9.** `style.css` mantiene el bloque `.e47-` separado y documenta el
+conflicto previsible con `.cierre-*`; no se modifica ningún archivo de E4.9.
+
+## QA independiente (2026-11-04)
+
+Dictamen **APTO CON RESERVAS** sobre `05aee71`/`25c2cd5`. No sustituye la aprobación de merge,
+que es separada. Reservas registradas: AC02 (IDs/contexto por cifra no visibles en la tabla de
+1440), AC18 (F-MARGEN numérico no ejecutado), AC20 (falta la variante sin patrimonio), AC21 (no
+se activaron todos los enlaces), AC22 (contraste parcial, no auditoría WCAG) y AC23 (no se probó
+la degradación de un único carril). AC25 se cierra en esta entrega con la prueba E2E de descarte
+de respuesta antigua; AC19 sigue `UNRUN` porque E4.7 no publica el cociente de meses. No se
+declara E4.7 completa, PASS del roadmap ni merge.
 
 ## Fixtures diseñadas
 
@@ -186,41 +268,46 @@ la URL no contiene importes. La QA visual/responsive es un gate separado.
 
 ## Matriz de aceptación
 
-**Ningún AC está en PASS.** E4.7-AC3 queda `PARCIAL` (cumplimiento documental/contractual:
-los dos márgenes existentes se representan, pero «margen medio» y «margen real puntual» no
-tienen definición DT8). AC10–AC15 quedan `BLOCKED` por E4.5/DT7 y ausencia de candidato DEV25;
-el resto `UNRUN`. La columna «Gate» indica la dependencia que impide ejecutarlos hoy; no es un
-resultado.
+**Resultado local DEV25.** AC01, AC04–AC09, AC16, AC17, AC24, AC25, AC26 y AC27 quedan
+`PASS (local)` con la evidencia de §Ejecución local DEV25. AC02, AC03, AC18, AC20, AC21, AC22 y AC23
+quedan `PARCIAL`: AC02 no declara IDs/contexto de cada cifra en la tabla de 1440; AC18 no
+ejecuta el valor numérico de F-MARGEN; AC20 cubre el bloque incluido y el corte, pero no la
+variante sin patrimonio; AC21 activa un drill-down, no todos los enlaces; AC22 solo acredita
+comprobación parcial de contraste, no auditoría WCAG; AC23 cubre vacío,
+500, 401 y reintento, pero no la degradación de un solo carril. AC10–AC15 quedan `BLOCKED` por
+E4.5/DT7. AC19 queda `UNRUN` porque no se publica el cociente de meses; AC25 queda
+`PASS (local)` con una prueba de descarte de respuesta antigua en la misma pestaña. La columna «Gate» indica la dependencia que impide
+ejecutarlos; no es un resultado.
 
 | AC | Tipo | Precondición y acción | Resultado esperado | Método / comando propuesto | Gate / dependencia | Evidencia esperada | Estado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| E4.7-AC01 | Negativo / contrato | Snapshot de tablas y `schema_version`; GET del resumen; intentar POST/PATCH/DELETE | Sin cambios en hechos, planes, cierres, auditoría, configuración ni `schema_version`; solo GET; no hay ruta de escritura | API + SQLite; `bun test apps/api/src/resumen-anual.test.ts` | DEV25 | Diff de tablas, códigos y `schema_version` | UNRUN |
-| E4.7-AC02 | Positivo / contrato | Abrir cada cifra y su detalle en `F-E26-C007` | Cada cifra declara `fuente.motor`, IDs, contexto, estado y cobertura; la UI no calcula ni rellena | API + Playwright | DEV25 | DTO y captura | UNRUN |
+| E4.7-AC01 | Negativo / contrato | Snapshot de tablas y `schema_version`; GET del resumen; intentar POST/PATCH/DELETE | Sin cambios en hechos, planes, cierres, auditoría, configuración ni `schema_version`; solo GET; no hay ruta de escritura | API + SQLite; `bun test apps/api/src/resumen-anual.test.ts` | DEV25 | Diff de tablas, códigos y `schema_version` | PASS (local) |
+| E4.7-AC02 | Positivo / contrato | Abrir cada cifra y su detalle en `F-E26-C007` | Cada cifra declara `fuente.motor`, IDs, contexto, estado y cobertura; la UI no calcula ni rellena | API + Playwright | DEV25 | DTO y captura | PARCIAL |
 | E4.7-AC03 | Positivo / contrato | Comparar cada bloque incluido con su motor al mismo contexto | Igualdad exacta al céntimo con el propietario de ese bloque; ninguna cifra se reimplementa. **Cumplimiento PARCIAL**: `margen medio` y `margen real puntual` quedan ND por DT8 y no pueden verificar igualdad; AC3 no puede PASS completo | `bun test apps/api/src/resumen-anual.test.ts` + suites de motores | DEV25; E4.5 para archivo; D8-M y definición futura | Cumplimiento parcial documental (dos márgenes + ND DT8); sin PASS | PARCIAL |
-| E4.7-AC04 | Negativo / contrato | Consultar un ejercicio con cobertura parcial (`F-E26-C007`) | El DTO no contiene `totalAnual`; no hay etiqueta «total anual»; todo agregado monetario del propietario lleva `alcance`, `estado`, `subtotalConocido` y `motivo` | API + revisión de DTO/UI | DEV25 | DTO; ausencia de campo y texto | UNRUN |
-| E4.7-AC05 | Límite / contrato | `F-E26-C007` con el contrato real de E2.6 | `ingresos`, `gasto`, `extraordinaria` y `nomina` con `valor:null`, `subtotal` conocido y `Parcial`; `operativo` y `margenReal` `No disponible`; E4.7 no rellena ni anualiza | `bun test apps/api/src/resumen-anual.test.ts` | DEV25 | DTO con estados exactos | UNRUN |
-| E4.7-AC06 | Negativo / límite | Dos Ciclos ficticios del mismo ejercicio, ambos `Parcial` | El carril realidad lista los Ciclos y sus subtotales; no publica total anual ni suma de subtotales como año; `agregadoAnual.estado=No aplica` | API + revisión de DTO | DEV25 | DTO con dos Ciclos y ausencia de total | UNRUN |
-| E4.7-AC07 | Límite | Una fuente devuelve `null` y otra `0.00` verificado (`F-E26-C007` y variante cero) | `null` se muestra `No disponible`; `0,00` se muestra `Cero verificado`; no se sustituyen | API + Playwright | DEV25 | DTO y captura | UNRUN |
-| E4.7-AC08 | Límite / año-Ciclo | `F-C008` con hechos en 2026 y 2027 | Aparece en ambos ejercicios con el mismo `cicloId`, fechas y métricas de Ciclo; sin prorrateo ni copia; el plan usa el año natural | API + Playwright | DEV25 | Dos DTO comparables y capturas | UNRUN |
-| E4.7-AC09 | Límite / año-Ciclo | Gasto `28/12/2026` en Ciclo `20/12–19/01` y aportación `25/01/2027` (escenario SPEC21) | El plan anual usa 2026; el flujo usa el Ciclo; ambos visibles; no se reasigna el hecho | API + Playwright | DEV25 | DTO y captura | UNRUN |
+| E4.7-AC04 | Negativo / contrato | Consultar un ejercicio con cobertura parcial (`F-E26-C007`) | El DTO no contiene `totalAnual`; no hay etiqueta «total anual»; todo agregado monetario del propietario lleva `alcance`, `estado`, `subtotalConocido` y `motivo` | API + revisión de DTO/UI | DEV25 | DTO; ausencia de campo y texto | PASS (local) |
+| E4.7-AC05 | Límite / contrato | `F-E26-C007` con el contrato real de E2.6 | `ingresos`, `gasto`, `extraordinaria` y `nomina` con `valor:null`, `subtotal` conocido y `Parcial`; `operativo` y `margenReal` `No disponible`; E4.7 no rellena ni anualiza | `bun test apps/api/src/resumen-anual.test.ts` | DEV25 | DTO con estados exactos | PASS (local) |
+| E4.7-AC06 | Negativo / límite | Dos Ciclos ficticios del mismo ejercicio, ambos `Parcial` | El carril realidad lista los Ciclos y sus subtotales; no publica total anual ni suma de subtotales como año; `agregadoAnual.estado=No aplica` | API + revisión de DTO | DEV25 | DTO con dos Ciclos y ausencia de total | PASS (local) |
+| E4.7-AC07 | Límite | Una fuente devuelve `null` y otra `0.00` verificado (`F-E26-C007` y variante cero) | `null` se muestra `No disponible`; `0,00` se muestra `Cero verificado`; no se sustituyen | API + Playwright | DEV25 | DTO y captura | PASS (local) |
+| E4.7-AC08 | Límite / año-Ciclo | `F-C008` con hechos en 2026 y 2027 | Aparece en ambos ejercicios con el mismo `cicloId`, fechas y métricas de Ciclo; sin prorrateo ni copia; el plan usa el año natural | API + Playwright | DEV25 | Dos DTO comparables y capturas | PASS (local) |
+| E4.7-AC09 | Límite / año-Ciclo | Gasto `28/12/2026` en Ciclo `20/12–19/01` y aportación `25/01/2027` (escenario SPEC21) | El plan anual usa 2026; el flujo usa el Ciclo; ambos visibles; no se reasigna el hecho | API + Playwright | DEV25 | DTO y captura | PASS (local) |
 | E4.7-AC10 | Límite / archivo | `F-HASTACORTE`: E4.5 devuelve `alcanceTotal=HastaCorte` | La UI dice «hasta corte» y no «anual»; no se publica total anual; el total hasta corte conserva su estado | API + Playwright | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
 | E4.7-AC11 | Negativo / archivo | `F-NOACREDITADA`: E4.5 devuelve `estadoCobertura=NoAcreditada` | No certifica Ejecutado/Diferencia/total; muestra «Universo no acreditado», motivo y subtotal separable si existe; no `0`, no `Parcial` | API + Playwright | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
 | E4.7-AC12 | Positivo / archivo | `F-ARCHIVO-UNICO`: E4.5 combina `1200.00 + 300.00` sin solape | E4.7 muestra `1500.00` de E4.5 una vez; no suma componentes; no duplica amortización | `bun test apps/api/src/resumen-anual.test.ts` | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
 | E4.7-AC13 | Negativo / archivo | `F-ARCHIVO-SOLAPE`: solape no separable | Componentes visibles; total/subtotal `null`; no `1500` ni `1520` como total; `Solapada`/`NoVerificable` y motivo | API + Playwright | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
 | E4.7-AC14 | Negativo / no suma | Archivo anual y flujo del Ciclo en el mismo ejercicio | Se muestran en carriles separados; no se suman; el archivo no entra en el plan mensual ni en el flujo | API + Playwright | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
 | E4.7-AC15 | Negativo / archivo | Consultar ingresos históricos | `No disponible` con motivo; no se reconstruyen desde plan/E2.6/archivo; no `0` | API + revisión de DTO | E4.5 DEV / DT7; DEV25 | Sin evidencia; UNRUN hasta candidato, BLOCKED por E4.5/DT7 | BLOCKED |
-| E4.7-AC16 | Negativo / previsión | `F-PREVISION` con simulación E2.5 y flujo real | La previsión se muestra aparte; no se suma al año ni al Ciclo; no se etiqueta como realidad | API + Playwright | DEV25 | DTO y captura | UNRUN |
-| E4.7-AC17 | Positivo / ajuste | E3.6 publica `G_n`/`S_aj` para un Ciclo (`F-E26-C007`) | Se muestran en bloque propio, con estado y motivo; `S_aj` es `Parcial`; no se suman al bruto E2.6 ni se convierten en margen | `bun test apps/api/src/resumen-anual.test.ts` + `pendientes.test.ts` | DEV25 | DTO con ambos bloques | UNRUN |
-| E4.7-AC18 | Límite / márgenes | `F-MARGEN`: media `1750.00` parcial, Base `1800.00`, nómina `valor:null` | `margenEstructural=−50.00 Parcial`; `margenReal` ND; ambos con etiqueta «márgenes del plan»; `margen medio` y `margen real puntual` ND «DT8»; no hay margen anual ni promedio | API + Playwright | D8-M; E4.7-AC3 es PARCIAL | DTO y captura; sin PASS de AC3 | UNRUN |
+| E4.7-AC16 | Negativo / previsión | `F-PREVISION` con simulación E2.5 y flujo real | La previsión se muestra aparte; no se suma al año ni al Ciclo; no se etiqueta como realidad | API + Playwright | DEV25 | DTO y captura | PASS (local) |
+| E4.7-AC17 | Positivo / ajuste | E3.6 publica `G_n`/`S_aj` para un Ciclo (`F-E26-C007`) | Se muestran en bloque propio, con estado y motivo; `S_aj` es `Parcial`; no se suman al bruto E2.6 ni se convierten en margen | `bun test apps/api/src/resumen-anual.test.ts` + `pendientes.test.ts` | DEV25 | DTO con ambos bloques | PASS (local) |
+| E4.7-AC18 | Límite / márgenes | `F-MARGEN`: media `1750.00` parcial, Base `1800.00`, nómina `valor:null` | `margenEstructural=−50.00 Parcial`; `margenReal` ND; ambos con etiqueta «márgenes del plan»; `margen medio` y `margen real puntual` ND «DT8»; no hay margen anual ni promedio | API + Playwright | D8-M; E4.7-AC3 es PARCIAL | DTO y captura; sin PASS de AC3 | PARCIAL |
 | E4.7-AC19 | Límite / coste 0 | `F-COSTE-CERO` y cociente no definido; si E4.7 muestra el contexto de coste esencial | `mesesCubiertos` `No disponible`; no se divide por cero; sin ratio anual nuevo; dos decimales solo presentación, sin redondear el origen; si no aplica, `No aplica` con motivo | API + revisión de DTO | D8-Z | DTO | UNRUN |
-| E4.7-AC20 | Límite / patrimonio | `F-PATRIMONIO` con y sin inclusión de patrimonio; variante sin corte comparable | Si entra: E4.3 y E4.4 al mismo corte verificable, separados y cada uno con estado/cobertura; sin patrimonio neto ni suma valoración + deuda + flujo. Si no hay corte comparable: ambos `No disponible`, sin cifra fabricada. Si no entra: bloque ausente o `No aplica` con motivo | API + Playwright | E4.3/E4.4; decisión de alcance | DTO y captura | UNRUN |
-| E4.7-AC21 | Positivo / enlaces | Activar cada enlace de la vista y volver | Ruta/ID correctos; se conserva el ejercicio y los filtros; la URL no contiene importes ni datos personales | Playwright | DEV25 | Capturas, URLs y foco | UNRUN |
-| E4.7-AC22 | Positivo / UX | `F-FILTROS`: 1440×1000 y 390×844; filtros principales ejercicio/cobertura y secundarios Ciclo/Partida; teclado, foco y contraste | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; sin tema/tokens nuevos; sin CSV/PDF en el primer DEV | Playwright + capturas | D8-F; DEV25 | `artifacts/e4-7/*.png`; capturas y estados de filtros | UNRUN |
-| E4.7-AC23 | Negativo / estados | Forzar vacío, carga, parcial, ND, error de una fuente y reintento | Estados diferenciados; solo el carril afectado degrada; no `0`; el reintento conserva la selección | Playwright con intercepción de red | DEV25 | Capturas y DTO | UNRUN |
-| E4.7-AC24 | Negativo / seguridad | Acceso anónimo, sesión expirada, error 500 e intento de escritura | 401/reautenticación sin datos; errores genéricos sin SQL ni importes; `no-store`; no hay métodos de escritura | API + HTTP | DEV25 | Respuestas y cabeceras | UNRUN |
-| E4.7-AC25 | Límite / concurrencia | Cambiar una fuente entre carga y reintento; dos consultas concurrentes | No se mezclan revisiones; la respuesta antigua se descarta; la selección se conserva | API + Playwright | DEV25 | Respuestas y capturas | UNRUN |
-| E4.7-AC26 | Negativo / persistencia | Inspeccionar tablas, `schema_version` y artefactos antes/después | Sin tabla, snapshot, caché persistida ni migración; `schema_version` igual; no se persiste el resumen | SQLite + API | DEV25 | Diff de esquema y artefactos | UNRUN |
-| E4.7-AC27 | Límite / cierre | Consultar sin E4.9/E4.11 | Cabecera «cálculo vivo, sin foto»; no hay cierre/foto ni certificación anual; no se simula una foto | API + Playwright | E4.9/E4.11 | DTO y captura | UNRUN |
+| E4.7-AC20 | Límite / patrimonio | `F-PATRIMONIO` con y sin inclusión de patrimonio; variante sin corte comparable | Si entra: E4.3 y E4.4 al mismo corte verificable, separados y cada uno con estado/cobertura; sin patrimonio neto ni suma valoración + deuda + flujo. Si no hay corte comparable: ambos `No disponible`, sin cifra fabricada. Si no entra: bloque ausente o `No aplica` con motivo | API + Playwright | E4.3/E4.4; decisión de alcance | DTO y captura | PARCIAL |
+| E4.7-AC21 | Positivo / enlaces | Activar cada enlace de la vista y volver | Ruta/ID correctos; se conserva el ejercicio y los filtros; la URL no contiene importes ni datos personales | Playwright | DEV25 | Capturas, URLs y foco | PARCIAL |
+| E4.7-AC22 | Positivo / UX | `F-FILTROS`: 1440×1000 y 390×844; filtros principales ejercicio/cobertura y secundarios Ciclo/Partida; teclado, foco y comprobación parcial de contraste | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; sin tema/tokens nuevos; sin CSV/PDF en el primer DEV | Playwright + capturas | D8-F; DEV25 | `artifacts/e4-7/*.png`; capturas y estados de filtros; contraste parcial, no auditoría WCAG | PARCIAL |
+| E4.7-AC23 | Negativo / estados | Forzar vacío, carga, parcial, ND, error de una fuente y reintento | Estados diferenciados; solo el carril afectado degrada; no `0`; el reintento conserva la selección | Playwright con intercepción de red | DEV25 | Capturas y DTO | PARCIAL |
+| E4.7-AC24 | Negativo / seguridad | Acceso anónimo, sesión expirada, error 500 e intento de escritura | 401/reautenticación sin datos; errores genéricos sin SQL ni importes; `no-store`; no hay métodos de escritura | API + HTTP | DEV25 | Respuestas y cabeceras | PASS (local) |
+| E4.7-AC25 | Límite / concurrencia | Dos consultas con ejercicios distintos; la primera se retiene y la segunda completa antes; después se libera la primera | No se mezclan revisiones; la respuesta antigua se descarta; se conserva el ejercicio y la cobertura seleccionados | `tests/e2e/resumen-anual.spec.ts` «AC25: descarta la respuesta antigua de una consulta retenida» | DEV25 | Prueba E2E 5/5; no es concurrencia multi-cliente | PASS (local) |
+| E4.7-AC26 | Negativo / persistencia | Inspeccionar tablas, `schema_version` y artefactos antes/después | Sin tabla, snapshot, caché persistida ni migración; `schema_version` igual; no se persiste el resumen | SQLite + API | DEV25 | Diff de esquema y artefactos | PASS (local) |
+| E4.7-AC27 | Límite / cierre | Consultar sin E4.9/E4.11 | Cabecera «cálculo vivo, sin foto»; no hay cierre/foto ni certificación anual; no se simula una foto | API + Playwright | E4.9/E4.11 | DTO y captura | PASS (local) |
 
 ## Oráculo independiente y no duplicación
 
@@ -310,17 +397,19 @@ manual de subtotales.
 - Sin FAIL abiertos, sin regresiones en E2.4/E2.6/E3.6/E4.5 y sin cambios de datos.
 - `python3.12 scripts/verify --full` del candidato estable en PASS.
 - Capturas 390/1440 inspeccionadas; teclado, foco y estados comprobados.
-- Revisión independiente de QA y aprobación de merge separada.
+- QA independiente emitida (**APTO CON RESERVAS**) y aprobación de merge separada.
 - La entrega no se declara completa si falta E4.5/DT7, si D8-M no está decidido o si E4.9/E4.11
   no existen; en esos casos los AC afectados quedan `UNRUN`/`BLOCKED`/`PARCIAL`, no PASS.
 
 ## Limitaciones y siguiente acción
 
-No hay implementación, endpoint, UI ni datos que probar. E4.5 sigue sin DEV y DT7 abierto;
-E4.9 está en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido.
-D8-M, D8-Z, D8-F y D8-N fueron **aprobadas por el usuario el 2026-11-04** (M-A, Z-A, F-A, N-A),
-junto con patrimonio separado y el gate E4.5/DT7. Este testplan es diseño no ejecutado:
-cualquier PASS requiere candidato funcional autorizado, fixtures nuevas y evidencia propia.
-E4.7-AC3 queda `PARCIAL`; AC10–AC15, `BLOCKED` por E4.5/DT7. La siguiente acción es preparar el
-paquete DEV25; la aprobación de la spec no
-autoriza DEV25 ni merge.
+Existe un candidato corregido de DEV25 publicado en PR #210 (rama `feat/e47-resumen-anual`, commits
+DEV-01/DEV-02/DEV-03 más las correcciones QA) con 8 pruebas API de E4.7, 4 E2E y 7 regresiones de
+inicio/temas en PASS local. El candidato está publicado en PR #210; sin merge. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
+en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido. Las seis decisiones
+D8-M/Z/F/N, patrimonio y gate E4.5/DT7 están aprobadas por el usuario el 2026-11-04; D8-M
+mantiene E4.7-AC3 en `PARCIAL`. AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 sigue
+`UNRUN`; AC25 queda `PASS (local)`; AC02, AC18, AC20, AC21, AC22 y AC23 quedan `PARCIAL` por
+los límites de evidencia descritos. La QA independiente ya emitió **APTO CON RESERVAS** sobre
+`05aee71`/`25c2cd5`; la autorización de merge sigue siendo separada. Ningún AC bloqueado se declara PASS ni se presenta E4.7 como
+completa.
