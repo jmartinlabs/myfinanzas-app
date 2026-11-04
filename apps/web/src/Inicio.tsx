@@ -697,6 +697,18 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         >
           Cómo se calcula y qué falta
         </a>
+        {ciclo && (
+          <a
+            className="secondary inicio-jump"
+            href={`/cierre?ciclo=${ciclo.id}`}
+            onClick={(event) => {
+              event.preventDefault();
+              go(`/cierre?ciclo=${ciclo.id}`);
+            }}
+          >
+            Ver cierre del ciclo
+          </a>
+        )}
       </PageHead>
 
       <section

@@ -10,10 +10,11 @@ texto aprobado de SPEC27: 409 `HISTORY_LOCKED` por fecha en ventana cerrada
 (AC-03/AC-04) y bloqueo de hechos anteriores cuando pueden alterar lo capturado o el
 impacto no es verificable. AC-03/AC-04/AC-05/AC-06/AC-14 y la ampliación AC-20 tienen
 prueba de fixtures en `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no cierre
-real). El resto de AC sigue UNRUN. La CI de `d4e6d25` falló porque
-`apps/web/src/plan-delta.test.ts` usaba `bun:test` en una ruta prohibida por
-`scripts/check-project`; el test se movió a `apps/web/test/plan-delta.test.ts` y la
-corrección queda pendiente de una nueva ejecución de CI. No hay migración nueva ni
+real). El resto de AC sigue UNRUN. **DEV-07 (2026-11-04)** añade la UI `/cierre` y la
+matriz E2E con servidor aislado y evidencia E3.5/DT6 **inyectada por el servidor de
+test**; no hay proveedor real de backup, no se acredita DT6 ni un cierre real y las
+capturas son de fixtures ficticias. La corrección de ubicación del test de plan vivo
+se verificó en CI Linux `41876737538` (PASS, 6m8s) sobre `f5ee167`. No hay migración nueva ni
 datos reales. Aprobado con SPEC27 el
 2026-10-28; DT3/DT4 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06
 (2026-11-04) cerró M1–M5 y L5, y L1 por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
@@ -33,26 +34,26 @@ Base: `main` `f077b7e`, esquema 18.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; metadatos con versión de app y esquema; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | UNRUN — diseño | — |
-| AC-02 | Ciclo sin siguiente Inicio | Bloqueo por `SIN_SIGUIENTE_INICIO`; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | UNRUN — diseño | — |
+| AC-01 | Ciclo con ventana, S0, plan o `SinPlan` y backup; cerrar | Cierre y foto; `Cerrado`; metadatos con versión de app y esquema; sin ciclo siguiente | Bun Test + SQL snapshot | Documental; API futura | Cierre/foto y snapshot | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: cierre v1, foto con app/esquema y sin ciclo siguiente, con evidencia E3.5/backup inyectada; no es cierre real. | 2026-11-04 |
+| AC-02 | Ciclo sin siguiente Inicio | Bloqueo por `SIN_SIGUIENTE_INICIO`; no Fin inventado ni cierre | Bun Test + UI | Documental; API/UI futura | DTO con motivo | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts` muestra el código, Fin «No derivable» y cierre deshabilitado. | 2026-11-04 |
 | AC-03 | Alta/rectificación/anulación de Movimiento con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: altas, rectificaciones (incluida solo concepto/nota), anulaciones y cambios de fecha en enero cerrado devuelven 409 y no escriben; un hecho anterior a la ventana que altera efectivo capturado o cuyo impacto no es verificable también devuelve 409. No cubre UI ni cierre real. | 2026-11-04 |
 | AC-04 | Mover un Movimiento desde/hacia una ventana cerrada | 409; fecha antigua y nueva comprobadas; sin escritura | Bun Test de guarda | Documental; API futura | Respuesta y snapshot | **PASS (fixtures API)** — `e49-guards.test.ts`: rectificaciones desde/hacia enero cerrado y hacia una ventana cerrada desde un hecho abierto devuelven 409 en Movimientos, Compras y Ventas, con fecha antigua y nueva comprobadas y sin escritura. | 2026-11-04 |
 | AC-05 | Reclasificación T2 en ciclo cerrado | Impacto/motivo/auditoría; foto intacta. Saldos: preview/fingerprint/motivo/auditoría para cambios no fotografiados y 409 para los materiales | Bun Test + UI | Documental; API/UI futura | Auditoría y foto | **PASS (fixtures API)** — `e49-guards.test.ts`: clasificación exige `RECTIFICATION_REQUIRED`, la vista previa marca `used` y la rectificación deja auditoría; Saldo no capturado usa `/impacto` + `/rectificar` con motivo; apertura/tipo/control capturados siguen en 409. Presupuestos exige `/impacto` + fingerprint + motivo + auditoría tras cierre; plan vivo exige motivo/fingerprint y bloquea si la foto de plan es ilegible; Revisión Comida exige impacto/fingerprint/motivo en cambios económicos y altas dentro de ventana cerrada, y permite campos informativos (T3) con motivo/auditoría. Foto idéntica. Sin UI. | 2026-11-04 |
 | AC-06 | Renombrar Partida/Instrumento/Referencia/Deuda/Saldo/Presupuesto T3 | Permitido en campos informativos; foto conserva ID + versión; identidad/económico bloqueado por campo o revisado por T2 | Bun Test | Documental; API futura | Foto y nombre vigente | **PASS (fixtures API)** — `e49-guards.test.ts`: renombrar Partida, Instrumento, Referencia, Deuda, Saldo y Presupuesto devuelve 200; cambiar el ISIN del Instrumento tras el cierre devuelve 409 `HISTORY_LOCKED` con `campos`; en Referencia/Deuda/Instrumento el cambio económico sin huella devuelve 409 `IMPACTO_NO_VERIFICABLE` o exige T2. Foto idéntica. | 2026-11-04 |
 | AC-07 | Cerrar con posiciones E4.1 anteriores y sin Compras nuevas | Foto con efectivo/posiciones a Fin, anteriores incluidas y posteriores excluidas; valoración/patrimonio `No disponible` | Bun Test de contrato | Documental; API futura | Foto con cobertura | UNRUN — diseño | — |
-| AC-08 | Cerrar con E3.5/FIN_NETA no disponible | Cierre bloqueado; sin foto; no parcial ni completo | Bun Test + UI | Documental; API/UI futura | DTO de bloqueo | UNRUN — diseño | — |
-| AC-09 | Backup sin evidencia/restauración | Bloqueo antes de escribir | Bun Test de preflight | Documental; API futura | DTO de bloqueo | UNRUN — diseño | — |
-| AC-10 | Reintento idéntico y payload distinto | Misma foto; 409 `IDEMPOTENCY_CONFLICT` | Bun Test de idempotencia | Documental; API futura | Respuestas y foto | UNRUN — diseño | — |
-| AC-11 | Cambio concurrente preview/confirmación | 409 `IMPACT_CHANGED`/`REVISION_CONFLICT` | Bun Test de concurrencia | Documental; API futura | Dos revisiones y 409 | UNRUN — diseño | — |
+| AC-08 | Cerrar con E3.5/FIN_NETA no disponible | Cierre bloqueado; sin foto; no parcial ni completo | Bun Test + UI | Documental; API/UI futura | DTO de bloqueo | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: `E35_NO_VERIFICABLE`, botón deshabilitado y `GET /foto` 404; evidencia inyectada, no cierre real. | 2026-11-04 |
+| AC-09 | Backup sin evidencia/restauración | Bloqueo antes de escribir | Bun Test de preflight | Documental; API futura | DTO de bloqueo | **PASS parcial (fixtures UI/E2E)** — `BACKUP_NO_VERIFICABLE` en la misma pantalla; el proveedor real DT6 sigue abierto. | 2026-11-04 |
+| AC-10 | Reintento idéntico y payload distinto | Misma foto; 409 `IDEMPOTENCY_CONFLICT` | Bun Test de idempotencia | Documental; API futura | Respuestas y foto | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: 500 ficticio tras procesar, reintento con la misma clave devuelve la misma v1. El 409 por payload distinto se cubre en `e49-api.test.ts`; no se fuerza desde la UI. | 2026-11-04 |
+| AC-11 | Cambio concurrente preview/confirmación | 409 `IMPACT_CHANGED`/`REVISION_CONFLICT` | Bun Test de concurrencia | Documental; API futura | Dos revisiones y 409 | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: fingerprint obsoleto → 409 `REVISION_CONFLICT`, sin foto, recuperación con nueva revisión y motivo conservado. | 2026-11-04 |
 | AC-12 | Fallo dentro de transacción | Rollback total; sin cierre/foto | Bun Test de fallo inducido | Documental; API futura | Snapshot sin cambios | UNRUN — diseño | — |
 | AC-13 | Reabrir/cerrar por vía ordinaria | Solo E4.10 reabre el último; cierre ordinario no reabre | Bun Test + UI | Documental; API/UI futura | Respuesta y estado | UNRUN — diseño | — |
-| AC-14 | Consultar la foto tras T2/T3 | Foto inmutable; vistas vivas separadas | Bun Test + Playwright | Documental; API/UI futura | Foto y vista viva | **PASS parcial (fixtures API)** — `e49-guards.test.ts` compara la foto antes/después de reclasificación, renombrados, referencia, deuda, instrumento y revisión de Saldo: idéntica. Playwright/UI UNRUN. | 2026-11-04 |
+| AC-14 | Consultar la foto tras T2/T3 | Foto inmutable; vistas vivas separadas | Bun Test + Playwright | Documental; API/UI futura | Foto y vista viva | **PASS parcial (fixtures API + UI/E2E)** — `e49-guards.test.ts` compara la foto tras T2/T3; `cierre.spec.ts` renombra una Partida por T3 tras cerrar y `GET /foto` permanece idéntica. Sin cierre real. | 2026-11-04 |
 | AC-15 | Consumidor Anticipos sin proveedor real | AC36 sigue PARCIAL; no completo con ficticio | Bun Test de contrato AC36 | Documental; API futura | Estado AC36 y proveedor | UNRUN — diseño | — |
 | AC-16 | Operación E4.1 anterior al ciclo y posterior a Fin | Anterior incluida en posición/efectivo a Fin; posterior excluida; sin doble cómputo | Bun Test de corte E4.1 | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
-| AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | UNRUN — diseño | — |
-| AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto | Bun Test | Documental; API futura | DTO de bloqueo | UNRUN — diseño | — |
-| AC-20 | Cerrar con cierres posteriores, coherentes o con diferencia no explicable | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación al mismo corte incluyendo operaciones posteriores legítimas; compara efectivo, posiciones y los totales de hechos (ingresos, gastos, transferencias, amortizaciones, devoluciones y neto); un cierre sin foto es impacto no verificable; sin diferencia no explicable no altera posteriores; una diferencia no explicable o una foto sin totales legibles bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR` | Bun Test + UI | Documental; API/UI futura | Auditoría, foto posterior y bloqueo | **PASS parcial (fixtures API)** — `e49-guards.test.ts` y `e49-api.test.ts`: cierre posterior coherente con hecho anterior y cuenta no capturada; seis totales capturados comparados; foto sin `hechos.totales`, total divergente, transferencia/amortización/devolución divergente, hecho no capturado en la ventana posterior o cierre sin foto bloquean. Sin UI ni cierre real. | 2026-11-04 |
-| AC-21 | Cerrar ciclo sin hechos | Solo con ausencia acreditada de operaciones imputables en todas las fuentes; foto con `Sin hechos`; S0 (incluido 0) y posiciones heredadas se capturan; ausencia de Compras nuevas no es `Sin hechos` | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | UNRUN — diseño | — |
+| AC-17 | Cerrar con `SinPlan` | Permitido; foto registra `SinPlan`; no líneas inventadas | Bun Test + UI | Documental; API/UI futura | Foto con `SinPlan` | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: preflight `SinPlan` válido, sin bloqueo, y la foto v1 registra `SinPlan` sin líneas. | 2026-11-04 |
+| AC-18 | Cerrar con `PlanNoVerificable` | Bloqueado; sin foto | Bun Test | Documental; API futura | DTO de bloqueo | UNRUN — diseño (el bloqueo existe en la API; no hay E2E de UI en DEV-07) | — |
+| AC-20 | Cerrar con cierres posteriores, coherentes o con diferencia no explicable | Exige `CIERRE_FUERA_DE_ORDEN` con motivo, auditoría y comprobación al mismo corte incluyendo operaciones posteriores legítimas; compara efectivo, posiciones y los totales de hechos (ingresos, gastos, transferencias, amortizaciones, devoluciones y neto); un cierre sin foto es impacto no verificable; sin diferencia no explicable no altera posteriores; una diferencia no explicable o una foto sin totales legibles bloquea por `INCOHERENCIA_CON_CIERRE_POSTERIOR` | Bun Test + UI | Documental; API/UI futura | Auditoría, foto posterior y bloqueo | **PASS parcial (fixtures API + UI/E2E)** — `e49-guards.test.ts`/`e49-api.test.ts` comparan los seis totales y bloquean fotos ilegibles; `cierre.spec.ts` cubre aviso `CIERRE_FUERA_DE_ORDEN` + 422 `MOTIVO_REQUERIDO` + cierre con motivo, y `INCOHERENCIA_CON_CIERRE_POSTERIOR` sin foto. Sin cierre real. | 2026-11-04 |
+| AC-21 | Cerrar ciclo sin hechos | Solo con ausencia acreditada de operaciones imputables en todas las fuentes; foto con `Sin hechos`; S0 (incluido 0) y posiciones heredadas se capturan; ausencia de Compras nuevas no es `Sin hechos` | Bun Test + SQL snapshot | Documental; API futura | Foto y snapshot | **PASS parcial (fixtures UI/E2E)** — `cierre.spec.ts`: `Sin hechos` acreditado cierra y lo registra; una fuente ilegible muestra «Con hechos» + `FUENTE_NO_LEGIBLE` y bloquea. El borde de Compras nuevas sigue en fixtures API. | 2026-11-04 |
 
 ## DEV-06 matrix T1/T2/T3
 
@@ -95,6 +96,53 @@ trazable sin cambiar esquema: Referencias, Deudas y Presupuestos en
 plan vivo en `cycle_plan_audit.delta.impacto`. No se declara L1 cerrado para entidades
 sin guarda de cierre ni se inventan columnas nuevas.
 
+## DEV-07 matrix UI/E2E (2026-11-04)
+
+Alcance: pantalla `/cierre` (entrada desde el shell y desde `/inicio`), preflight,
+confirmación, foto v1, estados de bloqueo y errores. Servidor aislado
+`apps/api/test-support/cierre-server.ts` (`NODE_ENV=test`) con ciclos, saldos y
+Clasificación ficticios. La evidencia de E3.5/FIN_NETA y de backup/restauración se
+**inyecta** mediante `createApp({ cierre })`; no existe proveedor real DT6/T-BKP y no
+se usa producción ni datos reales. Por eso esta matriz acredita el comportamiento de
+la UI/E2E con fixtures, **no** un cierre real ni el cierre de DT6.
+
+| Caso/AC | Precondición | Resultado observado | Prueba |
+| --- | --- | --- | --- |
+| Sesión 401 | Sin sesión | `GET /preflight` y `GET /foto` devuelven 401; tras MFA se conserva `/cierre` | `tests/e2e/cierre.spec.ts` |
+| Preflight listo (AC-01/AC-17 parcial) | Ciclo con siguiente Inicio, S0, `SinPlan` y evidencia inyectada | Estado `Listo`, ventana 01/01→31/01/2026, S0, fingerprint de 64 hex, `SinPlan` válido y `Sin hechos` acreditado; el cierre crea v1 con app/esquema y sin ciclo siguiente | Igual |
+| Foto inmutable (AC-14 parcial) | Cierre v1 y renombrado T3 de Partida no usada | `GET /foto` idéntica antes/después del renombrado; la UI no recalcula ni edita | Igual |
+| Replay idempotente (AC-10 parcial) | El servidor procesa el cierre y la UI recibe un 500 ficticio; se reintenta con la misma clave | Aviso «Reintento idempotente», misma foto v1, `estado.version = 1` | Igual |
+| Conflicto 409 (AC-11 parcial) | Fingerprint obsoleto entre preflight y confirmación | 409 `REVISION_CONFLICT`, sin foto; tras actualizar la revisión se conserva el motivo y el cierre v1 se completa | Igual |
+| Bloqueo E3.5 + backup (AC-08/AC-09 parcial) | Evidencia E3.5 no verificable y backup no acreditado | Códigos `E35_NO_VERIFICABLE` y `BACKUP_NO_VERIFICABLE`, botón deshabilitado, sin foto (404), sin cierre parcial | Igual |
+| Ventana no finita (AC-02 parcial) | Un solo ciclo, sin siguiente Inicio | `SIN_SIGUIENTE_INICIO`, Fin no derivable, cierre deshabilitado | Igual |
+| `Sin hechos` no acreditado (AC-21 parcial) | Fuente auxiliar ilegible en el fixture | `FUENTE_NO_LEGIBLE`, estado «Con hechos» (no se declara `Sin hechos`), cierre deshabilitado | Igual |
+| Cierre fuera de orden (AC-20 parcial) | Cierre posterior ficticio y coherencia verificada | Aviso `CIERRE_FUERA_DE_ORDEN`, motivo obligatorio; sin motivo 422 `MOTIVO_REQUERIDO`; con motivo cierra v1 | Igual |
+| Incoherencia posterior (AC-20 parcial) | Hecho ficticio dentro de la ventana de la foto posterior | `INCOHERENCIA_CON_CIERRE_POSTERIOR`, cierre deshabilitado, sin foto | Igual |
+| Vacío de ciclos | Base sin ciclos | «Sin ciclos para cerrar», sin acción de cierre | Igual |
+| Responsive y temas | 1440×1000 y 390×844; `light-s`, `dark-s`, `hybrid-s` | Sin scroll horizontal; capturas en `artifacts/e4-9/` | Igual |
+
+Comandos y resultado DEV-07 (worktree `dev-e49`, rama `feat/e49-cierre`):
+
+- `bun run typecheck` — OK.
+- `bun run build` — OK (46 módulos; aviso de chunk >500 kB, no error).
+- `bunx playwright test tests/e2e/cierre.spec.ts` — **10/10 PASS**.
+- `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` — **7/7 PASS**.
+- `bunx playwright test tests/e2e/precierre.spec.ts` — **1 FAIL preexistente** en HEAD
+  `3cce51e`, reproducido con `git stash -u`: el fixture E4.8 devuelve `Bloqueado`
+  (E3.5/`e4_9Bloqueado`) donde el test espera `Listo con avisos`. No lo introduce
+  DEV-07 y no se corrige en este bloque.
+
+Capturas: `artifacts/e4-9/preflight-{light-s,dark-s,hybrid-s}-{1440,390}.png`,
+`foto-{light-s,dark-s,hybrid-s}-{1440,390}.png`, `bloqueado-390.png`,
+`sin-siguiente-1440.png`, `fuera-de-orden-1440.png`, `incoherencia-1440.png`,
+`conflicto-409-1440.png`, `replay-error-1440.png`, `sin-ciclos-1440.png`.
+
+Huecos DEV-07: no se acredita DT6/T-BKP ni cierre real; E3.5 es inyectada; solo existe
+v1 porque el re-cierre E4.10 queda fuera, así que el selector de versión (>1) no se
+ejercita; no hay E2E de `PLAN_NO_VERIFICABLE` ni de `S0_FUERA_DE_RANGO` en UI; no se
+prueban 403/404/503 desde la pantalla. El caso «SIN_PLAN» del encargo no es un bloqueo
+según SPEC27: `SinPlan` es válido y se cubre como cierre correcto; el bloqueo de plan
+se corresponde con `PLAN_NO_VERIFICABLE`.
 
 ## Regression checks
 
@@ -141,13 +189,20 @@ seis totales de hechos y a cierres sin foto. Los guards se prueban sobre
 `openDatabase(":memory:")` con cierres creados por la API y opciones E3.5/backup
 ficticias. No se usan datos reales. El cierre real sigue bloqueado por DT6/T-BKP y la
 UI/E2E de cierre no forma parte de este bloque. La matriz DEV-06 no declara completo
-ningún AC que dependa de UI, cierre real o CI Linux. AC-03/AC-04 se acreditan solo como
+ningún AC que dependa de UI, cierre real o evidencia de host. La CI Linux de `f5ee167` está en PASS; AC-03/AC-04 se acreditan solo como
 fixtures de API: no cubren la UI ni el cierre real y no se declaran PASS funcionales.
 AC-20 se acredita como coherencia de fixtures, no como cierre real.
 
 ## Browser verification
 
-UNRUN. Wireframes pendientes; no hay capturas 390/1440 de E4.9.
+Ejecutado el 2026-11-04 por DEV-07 sobre `feat/e49-cierre`: `tests/e2e/cierre.spec.ts`
+(10/10) recorre 1440×1000 y 390×844 con `light-s`, `dark-s` y `hybrid-s`, comprueba
+`scrollWidth <= innerWidth`, foco visible en la fotografía y capturas en
+`artifacts/e4-9/`. El servidor de test es aislado y la evidencia E3.5/DT6 está
+inyectada: las capturas no acreditan un cierre real ni la restauración T-BKP. La
+regresión `inicio.spec.ts`/`theme.spec.ts` pasa 7/7. `precierre.spec.ts` mantiene un
+fallo preexistente ajeno a este bloque (fixture `Bloqueado` frente a `Listo con
+avisos`).
 
 ## Limitations and next action
 
@@ -159,14 +214,16 @@ define por el Fin cronológicamente más reciente sin otro ciclo posterior cerra
 fecha de registro es solo auditoría. E4.10 no se desarrolla. La aprobación de
 spec/wireframes, DT6/T-BKP y cualquier DEV son gates separados; DT3/DT4 ya están
 resueltas. El bloque DEV-06 ejecuta pruebas de fixtures con autorización del
-2026-11-04; el cierre real, la UI/E2E, CI Linux y cualquier merge siguen siendo gates
-separados. Quedan como huecos explícitos: el alta de `revision_comida` fuera de una
+2026-11-04; DEV-07 añade UI/E2E con evidencia inyectada. El cierre real, DT6/T-BKP y
+cualquier merge siguen siendo gates; CI Linux PASS en `f5ee167`.
+Quedan como huecos explícitos: el alta de `revision_comida` fuera de una
 ventana cerrada no exige huella; el cambio de Estado de Presupuestos no se trata como
 fuente/destino; y la propuesta de permitir campos informativos de Movimientos, Compras y
 Ventas dentro de una ventana cerrada requiere una enmienda de SPEC27. La regla T1 por
 fecha sigue siendo la norma aprobada: no se implementa la excepción informativa ni se
 usa como criterio de PASS. La ampliación de AC-20 a los seis `hechos.totales`, el bloqueo
 de cierres sin foto y las guardas T2 de Referencias/Deudas, Presupuestos, plan vivo y
-Revisión Comida son fixtures de API, no cobertura de UI ni de cierre real. L1 se declara
+Revisión Comida son fixtures de API; DEV-07 añade su recorrido UI/E2E con evidencia
+inyectada, no un cierre real. L1 se declara
 solo por entidad y con el mecanismo JSON indicado; no se añaden columnas ni se altera el
 esquema.

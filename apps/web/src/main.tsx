@@ -3,6 +3,7 @@ import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
 import { Pendientes } from "./Pendientes";
 import { Precierre } from "./Precierre";
+import { Cierre } from "./Cierre";
 import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
@@ -137,7 +138,8 @@ function App() {
             current.startsWith("/inicio") ||
               current.startsWith("/flujo-mensual") ||
               current.startsWith("/pendientes") ||
-              current.startsWith("/inversiones")
+              current.startsWith("/inversiones") ||
+              current.startsWith("/cierre")
               ? current
               : "/saldos",
           );
@@ -378,6 +380,20 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/cierre") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/cierre") ? "page" : undefined}
+            href="/cierre"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/cierre");
+            }}
+          >
+            <span aria-hidden="true">▣</span> Cierre{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
               path.startsWith("/movimientos") ? "nav-active" : "nav-link"
             }
             aria-current={path.startsWith("/movimientos") ? "page" : undefined}
@@ -514,6 +530,8 @@ function App() {
             <Comida go={go} />
           ) : path.startsWith("/precierre") ? (
             <Precierre go={go} />
+          ) : path.startsWith("/cierre") ? (
+            <Cierre go={go} />
           ) : path.startsWith("/revision-comida") ? (
             <RevisionComida path={path} go={go} />
           ) : path.startsWith("/flujo-mensual") ? (
