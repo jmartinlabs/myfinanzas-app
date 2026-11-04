@@ -161,6 +161,7 @@ type MargenPublicado = {
   cobertura: Cobertura;
   fuente: Fuente;
   cicloId: string;
+  corte: string | null;
   alcance: "Ciclo";
 };
 
@@ -186,6 +187,7 @@ type Patrimonio = {
     coberturaValoracion: string;
     resultadoEur: string | null;
     coberturaResultado: string;
+    corte: string | null;
     fuente: Fuente;
     enlace: Enlace;
   };
@@ -194,6 +196,7 @@ type Patrimonio = {
     subtotal: string | null;
     estado: EstadoMetrica;
     cobertura: Cobertura;
+    corte: string | null;
     fuente: Fuente;
     enlace: Enlace;
   };
@@ -308,6 +311,12 @@ function contextText(contexto: ContextoMetrica) {
       contexto.corte ? ` · corte ${formatDate(contexto.corte)}` : ""
     }`;
   return `corte ${formatDate(contexto.fecha)}`;
+}
+
+function estadoCorteLabel(estado: "disponible" | "parcial" | "no_disponible") {
+  if (estado === "disponible") return "Disponible";
+  if (estado === "parcial") return "Parcial";
+  return "No disponible";
 }
 
 function Badge({
@@ -511,6 +520,28 @@ function MetricCard({ metrica, go }: { metrica: Metrica; go: (path: string) => v
   );
 }
 
+function margenMetrica(margen: MargenPublicado): Metrica {
+  return {
+    clave: margen.clave,
+    etiqueta: margen.etiqueta,
+    clase: "plan",
+    valor: margen.valor,
+    subtotal: margen.subtotal,
+    estado: margen.estado,
+    unidad: "EUR",
+    motivo: margen.motivo,
+    cobertura: margen.cobertura,
+    fuente: margen.fuente,
+    contexto: {
+      tipo: "ciclo",
+      cicloId: margen.cicloId,
+      corte: margen.corte,
+    },
+    alcance: "Ciclo",
+    enlace: null,
+  };
+}
+
 function MetricTableRow({ metrica }: { metrica: Metrica }) {
   return (
     <tr>
@@ -701,7 +732,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           </div>
           <div>
             <dt>Estado del corte</dt>
-            <dd>{data.contexto.corte.estado}</dd>
+            <dd>{estadoCorteLabel(data.contexto.corte.estado)}</dd>
           </div>
           <div>
             <dt>Cobertura global</dt>
@@ -840,7 +871,14 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         </td>
                         <td>
                           {item.diferencia === null ? (
-                            <span className="e47-nd">No aplica</span>
+                            <span className="e47-amount-wrap">
+                              <span className="e47-nd">No aplica</span>
+                              <small>
+                                {item.presupuesto === null
+                                  ? "Sin presupuesto anual"
+                                  : "Ejecutado no verificable"}
+                              </small>
+                            </span>
                           ) : (
                             <Amount metrica={item.diferencia} />
                           )}
@@ -893,7 +931,14 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         <dt>Diferencia</dt>
                         <dd>
                           {item.diferencia === null ? (
-                            <span className="e47-nd">No aplica</span>
+                            <span className="e47-amount-wrap">
+                              <span className="e47-nd">No aplica</span>
+                              <small>
+                                {item.presupuesto === null
+                                  ? "Sin presupuesto anual"
+                                  : "Ejecutado no verificable"}
+                              </small>
+                            </span>
                           ) : (
                             <Amount metrica={item.diferencia} />
                           )}
@@ -1060,7 +1105,9 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
             motor="E4.5 · histórico de Gastos"
             lane={archivo}
           />
-          <p className="e47-gate">Gate {archivo.gate}</p>
+          <p className="e47-gate">
+            Gate {archivo.gate === "BLOCKED" ? "BLOQUEADO" : archivo.gate}
+          </p>
           <p className="e47-empty">{archivo.motivo}</p>
           <p className="e47-note">
             Sin E4.5/DT7 no hay archivo verificado ni total anual. No se simula
@@ -1114,19 +1161,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <th scope="row">{margen.cicloId}</th>
                   <td>{margen.etiqueta}</td>
                   <td>
-                    <Amount
-                      metrica={{
-                        ...margen,
-                        unidad: "EUR",
-                        contexto: {
-                          tipo: "ciclo",
-                          cicloId: margen.cicloId,
-                          corte: null,
-                        },
-                        enlace: null,
-                        alcance: "Ciclo",
-                      }}
-                    />
+                    <Amount metrica={margenMetrica(margen)} />
                   </td>
                   <td>
                     <EstadoBadge estado={margen.estado} />
@@ -1143,17 +1178,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           {data.margenes.publicados.map((margen) => (
             <MetricCard
               key={`${margen.cicloId}-${margen.clave}`}
-              metrica={{
-                ...margen,
-                unidad: "EUR",
-                contexto: {
-                  tipo: "ciclo",
-                  cicloId: margen.cicloId,
-                  corte: null,
-                },
-                enlace: null,
-                alcance: "Ciclo",
-              }}
+              metrica={margenMetrica(margen)}
               go={go}
             />
           ))}
@@ -1209,6 +1234,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                 </div>
               </dl>
               <p className="e47-ciclo-meta">
+                Corte aplicado: {formatDate(data.patrimonio.valoracion.corte)} ·
                 Cobertura valoración:{" "}
                 {data.patrimonio.valoracion.coberturaValoracion} · resultado:{" "}
                 {data.patrimonio.valoracion.coberturaResultado}
@@ -1240,6 +1266,9 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   </dd>
                 </div>
               </dl>
+              <p className="e47-ciclo-meta">
+                Corte aplicado: {formatDate(data.patrimonio.deuda.corte)}
+              </p>
               <CoverageLine cobertura={data.patrimonio.deuda.cobertura} />
               <FuenteLinea fuente={data.patrimonio.deuda.fuente} />
               <PageLink enlace={data.patrimonio.deuda.enlace} go={go} />

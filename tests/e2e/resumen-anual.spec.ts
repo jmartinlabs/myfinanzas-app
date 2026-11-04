@@ -280,7 +280,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(prevision).toContainText("NO DISPONIBLE");
   await expect(prevision).toContainText("no se suma");
   const archivo = page.locator("section[aria-labelledby='e47-archivo']");
-  await expect(archivo).toContainText("Gate BLOCKED");
+  await expect(archivo).toContainText("Gate BLOQUEADO");
   await expect(archivo).toContainText("E4.5");
   await expect(archivo).toContainText("DT7");
   await expect(archivo).not.toContainText("0,00 €");
@@ -294,6 +294,7 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(patrimonio).toContainText("Deuda E4.4");
   await expect(patrimonio).toContainText("sin patrimonio neto");
   await expect(patrimonio).toContainText("E4.4 listDeudasCompletas");
+  await expect(patrimonio).toContainText("Corte aplicado: 15/01/2027");
 
   // Enlaces sin importes en la URL.
   const hrefs = await page
@@ -390,7 +391,7 @@ test("AC23: sin datos no se convierte en 0,00 ni en filas inventadas", async ({
   ).toContainText("no tiene Ciclos");
   await expect(
     page.locator("section[aria-labelledby='e47-archivo']"),
-  ).toContainText("Gate BLOCKED");
+  ).toContainText("Gate BLOQUEADO");
   await expect(page.locator(".e47-page")).not.toContainText("0,00 €");
 
   await resetScroll(page);

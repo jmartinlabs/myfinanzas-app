@@ -4174,7 +4174,9 @@ textarea {
   margin-top: 2px;
 }
 
-/* E4.7 · Resumen anual. Bloque aditivo con prefijo .e47-; no altera el shell. */
+/* E4.7 · Resumen anual. Bloque aditivo con prefijo .e47-; no altera el shell.
+   E4.9 usa .cierre-*; si ambos aterrizan, mantener los bloques separados y
+   resolver únicamente solapes de layout, sin reutilizar selectores ajenos. */
 .e47-page {
   display: grid;
   gap: 20px;

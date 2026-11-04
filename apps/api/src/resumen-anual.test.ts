@@ -7,6 +7,8 @@ import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { monthlyFlow } from "./flujo-mensual";
 import { getAnnualPlan, previewAnnualPlan, confirmAnnualPlan, type AnnualProvider } from "./plan-anual";
+import { getDeudaCompleta } from "./deuda-completa";
+import { createDebt } from "./deudas";
 import { resumenAnual } from "./resumen-anual";
 import {
   seedResumenAnualFixture,
@@ -258,7 +260,7 @@ test("AC02/03/05/06/17/18: composición exacta contra los motores propietarios",
 
   // Márgenes solo los dos de E2.6, etiqueta de plan y ND de DT8.
   expect(dto.margenes.etiqueta).toBe("Márgenes del plan");
-  expect(dto.margenes.estado).toBe("Parcial");
+  expect(dto.margenes.estado).toBe("No disponible");
   expect(dto.margenes.publicados).toHaveLength(4);
   expect(dto.margenes.publicados.map((m) => m.clave)).toEqual([
     "margenEstructural",
@@ -303,6 +305,9 @@ test("AC02/03/05/06/17/18: composición exacta contra los motores propietarios",
   expect(dto.patrimonio!.deuda.fuente.motor).toBe(
     "E4.4 listDeudasCompletas",
   );
+  expect(dto.patrimonio!.deuda.corte).toBe("2027-01-15");
+  expect(dto.patrimonio!.valoracion.corte).toBe("2027-01-15");
+  expect(dto.patrimonio!.deuda.fuente.ids).toEqual(["D001", "D002", "D005"]);
   expect(dto.patrimonio!.deuda.subtotal).toBe("1020.00");
   expect(dto.patrimonio!.deuda.estado).toBe("Parcial");
 });
@@ -428,6 +433,27 @@ test("AC04/07/19/23: filtros, null ≠ 0 y cero verificado del propietario", () 
   expect(zeroItem.ejecutado.valor).toBe("0.00");
   expect(zeroItem.ejecutado.estado).toBe("Cero verificado");
   expect(zeroItem.ejecutado.subtotal).toBe("0.00");
+  expect(zeroItem.cobertura.estado).toBe("Completa");
+  expect(zero.carriles.plan.estado).toBe("Verificado");
+  expect(zero.carriles.plan.cobertura.estado).toBe("Completa");
+
+  const completa = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026", cobertura: "Completa" }),
+    NOW,
+    { annualProvider: provider },
+  );
+  expect(completa.carriles.plan.items.length).toBeGreaterThan(0);
+  for (const item of completa.carriles.plan.items)
+    expect(item.cobertura.estado).toBe("Completa");
+  const parcialConProveedor = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026", cobertura: "Parcial" }),
+    NOW,
+    { annualProvider: provider },
+  );
+  expect(parcialConProveedor.carriles.plan.items).toEqual([]);
+  expect(parcialConProveedor.carriles.plan.estado).toBe("Sin datos");
 
   const c8 = zero.carriles.realidad.ciclos.find((c) => c.cicloId === "8")!;
   expect(c8.extraordinaria.valor).toBeNull();
@@ -483,4 +509,85 @@ test("AC04/07/19/23: filtros, null ≠ 0 y cero verificado del propietario", () 
       NOW,
     ),
   ).toThrow(/Cobertura inválida/);
+});
+
+test("B1: un Ciclo abierto no se atribuye a años futuros", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2030" }),
+    NOW,
+  );
+  expect(dto.ejercicio.natural).toBe(2030);
+  expect(dto.ejercicio.ciclos).toEqual([]);
+  expect(dto.carriles.realidad.ciclos).toEqual([]);
+  expect(dto.carriles.realidad.estado).toBe("Sin datos");
+  expect(dto.carriles.plan.items).toEqual([]);
+  expect(dto.carriles.plan.estado).toBe("Sin datos");
+  expect(dto.carriles.archivo.gate).toBe("BLOCKED");
+  expect(dto.margenes.publicados).toEqual([]);
+  expect(dto.margenes.estado).toBe("No disponible");
+  // El ejercicio 2030 es posterior al corte vivo 2027-01-15: no hereda
+  // patrimonio de otro año.
+  expect(dto.patrimonio!.corte.fecha).toBeNull();
+  expect(dto.patrimonio!.valoracion.corte).toBeNull();
+  expect(dto.patrimonio!.deuda.corte).toBeNull();
+  expect(dto.patrimonio!.deuda.subtotal).toBeNull();
+});
+
+test("B2: deuda E4.4 al corte y solo no hipotecaria activa", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const dto = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  const corte = dto.patrimonio!.corte.fecha!;
+  expect(corte).toBe("2027-01-15");
+  expect(dto.patrimonio!.deuda.corte).toBe(corte);
+  expect(dto.patrimonio!.valoracion.corte).toBe(corte);
+
+  // D001 tenía 1.000,00 y una cuota con 280,00 de capital el 2026-07-05.
+  expect(
+    getDeudaCompleta(fixture.db, "D001", "2026-06-30", NOW).capitalPendiente,
+  ).toBe("1000.00");
+  expect(
+    getDeudaCompleta(fixture.db, "D001", corte, NOW).capitalPendiente,
+  ).toBe("720.00");
+  expect(dto.patrimonio!.deuda.subtotal).toBe("1020.00");
+  expect(dto.patrimonio!.deuda.total).toBeNull();
+  expect(dto.patrimonio!.deuda.fuente.ids).toEqual(["D001", "D002", "D005"]);
+  expect(dto.patrimonio!.deuda.cobertura).toMatchObject({
+    estado: "Parcial",
+    incluidos: 2,
+    excluidos: 1,
+  });
+  expect(dto.patrimonio!.deuda.cobertura.motivos.join(" ")).toContain("D005");
+});
+
+test("M2: la revisión cambia al cambiar la deuda del patrimonio", () => {
+  const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
+  const before = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  createDebt(
+    fixture.db,
+    {
+      nombre: "Deuda nueva QA E4.7",
+      inicioControl: "2026-01-01",
+      capitalApertura: "100.00",
+      tipoDeuda: "No hipotecaria",
+    },
+    randomUUID(),
+    NOW,
+  );
+  const after = resumenAnual(
+    fixture.db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  expect(after.contexto.revision).not.toBe(before.contexto.revision);
+  expect(after.patrimonio!.deuda.subtotal).toBe("1120.00");
 });

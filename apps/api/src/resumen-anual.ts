@@ -3,7 +3,7 @@ import { cycleContext, cycleMaster, type Cycle } from "./ciclos";
 import { monthlyFlow, type Metric } from "./flujo-mensual";
 import { annualYear, getAnnualPlan, type AnnualProvider } from "./plan-anual";
 import { e43Corte } from "./e43";
-import { listDeudasCompletas } from "./deuda-completa";
+import { getDeudaCompleta, listDeudasCompletas } from "./deuda-completa";
 import { decimal } from "./saldos";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
@@ -179,6 +179,7 @@ export type MargenPublicado = {
   cobertura: Cobertura;
   fuente: Fuente;
   cicloId: string;
+  corte: string | null;
   alcance: "Ciclo";
 };
 
@@ -204,6 +205,7 @@ export type Patrimonio = {
     coberturaValoracion: string;
     resultadoEur: string | null;
     coberturaResultado: string;
+    corte: string | null;
     fuente: Fuente;
     enlace: Enlace;
   };
@@ -212,6 +214,7 @@ export type Patrimonio = {
     subtotal: string | null;
     estado: EstadoMetrica;
     cobertura: Cobertura;
+    corte: string | null;
     fuente: Fuente;
     enlace: Enlace;
   };
@@ -438,7 +441,10 @@ function cicloRef(cycle: Cycle): CicloRef {
 function tocaEjercicio(cycle: Cycle, year: number) {
   const start = `${String(year).padStart(4, "0")}-01-01`;
   const end = `${String(year).padStart(4, "0")}-12-31`;
-  return cycle.inicio <= end && (cycle.fin === null || cycle.fin >= start);
+  // Un Ciclo abierto (fin null) solo llega hasta su corte/referencia. Sin
+  // corte verificable no se extiende a años futuros: solo toca su año civil.
+  const cycleEnd = cycle.fin ?? cycle.corte ?? cycle.inicio;
+  return cycle.inicio <= end && cycleEnd >= start;
 }
 
 function metricFromFlow(
@@ -645,6 +651,22 @@ function coberturaRealidad(ciclos: CicloRealidad[]): Cobertura {
   });
 }
 
+function planItemCoverage(
+  item: {
+    ejecutado: string | null;
+    cobertura: string;
+    corte: string | null;
+  },
+  year: number,
+): EstadoCobertura {
+  if (item.ejecutado === null) return "Parcial";
+  if (item.cobertura === "Verificable al corte")
+    return item.corte === `${String(year).padStart(4, "0")}-12-31`
+      ? "Completa"
+      : "Parcial";
+  return "Parcial";
+}
+
 function planSection(
   db: Database,
   ejercicio: number,
@@ -674,18 +696,26 @@ function planSection(
         const motivoEjecutado = item.motivo
           ? `Ejecutado parcial: ${item.motivo}`
           : "Ejecutado verificado hasta el corte; no es total anual.";
+        const itemCoberturaEstado = planItemCoverage(item, ejercicio);
+        const yearEnd = `${String(ejercicio).padStart(4, "0")}-12-31`;
         const itemCobertura = cobertura({
-          estado: "Parcial",
+          estado: itemCoberturaEstado,
           fuente: MOTOR.plan,
-          detalle: `E2.4: ${item.cobertura}${
-            item.corte ? ` hasta ${item.corte}` : " sin corte verificable"
-          }.`,
+          detalle:
+            itemCoberturaEstado === "Completa"
+              ? `E2.4: Verificable al corte ${item.corte}; año completo.`
+              : `E2.4: ${item.cobertura}${
+                  item.corte ? ` hasta ${item.corte}` : " sin corte verificable"
+                }.`,
           incluidos: item.hechos.length,
-          motivos: item.motivo
-            ? [item.motivo]
-            : [
-                "Cobertura anual no acreditada; el Ejecutado no es total anual.",
-              ],
+          motivos:
+            itemCoberturaEstado === "Completa"
+              ? []
+              : item.motivo
+                ? [item.motivo]
+                : [
+                    "Cobertura anual no acreditada; el Ejecutado no es total anual.",
+                  ],
         });
         const ejecutado: Metrica = {
           clave: "ejecutado",
@@ -711,7 +741,12 @@ function planSection(
             ejercicio,
             corte: item.corte,
           },
-          alcance: item.corte ? "HastaCorte" : "Ejercicio",
+          alcance:
+            item.corte === yearEnd
+              ? "Ejercicio"
+              : item.corte
+                ? "HastaCorte"
+                : "Ejercicio",
           enlace,
         };
         const diferencia =
@@ -766,23 +801,36 @@ function planSection(
         hasta: `${String(ejercicio).padStart(4, "0")}-12-31`,
       },
     };
+    const completa =
+      items.length > 0 &&
+      items.every((item) => item.cobertura.estado === "Completa");
+    const estado: EstadoMetrica =
+      items.length === 0 ? "Sin datos" : completa ? "Verificado" : "Parcial";
     return {
-      estado: items.length === 0 ? "Sin datos" : "Parcial",
+      estado,
       motivo:
         items.length === 0
           ? "Sin líneas de plan ni ejecución para el filtro seleccionado."
-          : "Plan y Ejecutado se leen de E2.4; no se suman Partidas ni se crea un total anual.",
+          : completa
+            ? "Plan y Ejecutado se leen de E2.4 con cobertura completa del año; no se suman Partidas."
+            : "Plan y Ejecutado se leen de E2.4; no se suman Partidas ni se crea un total anual.",
       items,
       cobertura: cobertura({
-        estado: items.length === 0 ? "Sin datos" : "Parcial",
+        estado:
+          items.length === 0 ? "Sin datos" : completa ? "Completa" : "Parcial",
         fuente: MOTOR.plan,
-        detalle:
-          "Cada Partida conserva la cobertura de E2.4; la cobertura anual no está acreditada.",
+        detalle: completa
+          ? "Cada Partida conserva la cobertura completa de E2.4 para el año natural."
+          : "Cada Partida conserva la cobertura de E2.4; la cobertura anual no está acreditada.",
         incluidos: items.length,
         motivos:
           items.length === 0
             ? ["Sin líneas de plan ni ejecución para el filtro."]
-            : ["El Ejecutado se verifica, si procede, solo hasta el corte."],
+            : completa
+              ? []
+              : [
+                  "El Ejecutado se verifica, si procede, solo hasta el corte.",
+                ],
       }),
       fuente,
       enlace,
@@ -859,11 +907,17 @@ function margenesSection(ciclos: CicloRealidad[]): Margenes {
         cobertura: metrica.cobertura,
         fuente: metrica.fuente,
         cicloId: ciclo.cicloId,
+        corte:
+          metrica.contexto.tipo === "ciclo" ? metrica.contexto.corte : null,
         alcance: "Ciclo",
       });
     }
+  const conValor = publicados.some(
+    (margen) => margen.valor !== null || margen.subtotal !== null,
+  );
   return {
-    estado: publicados.length === 0 ? "No disponible" : "Parcial",
+    estado:
+      publicados.length === 0 || !conValor ? "No disponible" : "Parcial",
     etiqueta: "Márgenes del plan",
     publicados,
     noDefinidos: [
@@ -884,14 +938,18 @@ function margenesSection(ciclos: CicloRealidad[]): Margenes {
   };
 }
 
-function allDebts(db: Database) {
+function activeNonHypothecaryDebts(db: Database) {
   const items: ReturnType<typeof listDeudasCompletas>["items"] = [];
   let page = 1;
   let total = 0;
   do {
     const result = listDeudasCompletas(
       db,
-      new URLSearchParams({ estado: "", page: String(page) }),
+      new URLSearchParams({
+        estado: "Activa",
+        tipoDeuda: "No hipotecaria",
+        page: String(page),
+      }),
     );
     items.push(...result.items);
     total = result.total;
@@ -908,7 +966,11 @@ function valoracionEstado(cobertura: string): EstadoMetrica {
   return "No disponible";
 }
 
-function patrimonioSection(db: Database, corte: string | null): Patrimonio {
+function patrimonioSection(
+  db: Database,
+  corte: string | null,
+  now: number,
+): Patrimonio {
   const nota =
     "Bloques separados al mismo corte; sin patrimonio neto, sin suma de valoración + deuda + flujo";
   const valoracionBase: Patrimonio["valoracion"] = {
@@ -917,6 +979,7 @@ function patrimonioSection(db: Database, corte: string | null): Patrimonio {
     coberturaValoracion: "No disponible",
     resultadoEur: null,
     coberturaResultado: "No disponible",
+    corte: null,
     fuente: { motor: MOTOR.valoracion, ids: [], revision: null },
     enlace: { etiqueta: "Ver inversiones", ruta: "/inversiones", ids: [] },
   };
@@ -929,6 +992,7 @@ function patrimonioSection(db: Database, corte: string | null): Patrimonio {
       fuente: MOTOR.deuda,
       detalle: "Sin corte verificable común.",
     }),
+    corte: null,
     fuente: { motor: MOTOR.deuda, ids: [], revision: null },
     enlace: { etiqueta: "Ver deudas", ruta: "/deudas", ids: [] },
   };
@@ -962,6 +1026,7 @@ function patrimonioSection(db: Database, corte: string | null): Patrimonio {
           ? null
           : source.agregado.resultadoEur,
       coberturaResultado: source.agregado.coberturaResultado,
+      corte,
       fuente: {
         motor: MOTOR.valoracion,
         ids: source.posiciones.map((posicion) => posicion.instrumento.id),
@@ -976,40 +1041,44 @@ function patrimonioSection(db: Database, corte: string | null): Patrimonio {
     };
   } catch (error) {
     valoracion.estado = "No disponible";
+    valoracion.corte = corte;
     valoracion.fuente = {
       ...valoracion.fuente,
       motor: `${MOTOR.valoracion}: ${errorMessage(error)}`,
     };
   }
 
-  let deuda = { ...deudaBase };
+  let deuda = { ...deudaBase, corte };
   try {
-    const activas = allDebts(db).filter(
-      (item) => item.estado === "Activa" && item.tipoDeuda === "No hipotecaria",
+    // Q7 de presentación: solo deuda no hipotecaria activa. El capital de cada
+    // ficha se lee de E4.4 en el mismo corte con `getDeudaCompleta`; no se usa
+    // el capital actual del listado ni se reimplementa la regla de E4.6.
+    const fichas = activeNonHypothecaryDebts(db).map((item) =>
+      getDeudaCompleta(db, item.id, corte, now),
     );
-    const calculables = activas.filter((item) => item.capital.calculable);
+    const calculables = fichas.filter((ficha) => ficha.capital.calculable);
     const subtotal =
-      activas.length === 0
+      fichas.length === 0
         ? null
-        : sumCents(calculables.map((item) => item.capitalPendiente));
+        : sumCents(calculables.map((ficha) => ficha.capitalPendiente));
     const completa =
-      activas.length > 0 &&
-      calculables.length === activas.length &&
+      fichas.length > 0 &&
+      calculables.length === fichas.length &&
       subtotal !== null;
     const total = completa ? decimal(subtotal!) : null;
     const estado: EstadoMetrica =
-      activas.length === 0
+      fichas.length === 0
         ? "Sin datos"
         : completa
           ? total === "0.00"
             ? "Cero verificado"
             : "Verificado"
           : "Parcial";
-    const motivos = activas
-      .filter((item) => !item.capital.calculable)
+    const motivos = fichas
+      .filter((ficha) => !ficha.capital.calculable)
       .map(
-        (item) =>
-          `${item.id}: ${item.capital.motivoNoCalculable ?? "capital no calculable"}`,
+        (ficha) =>
+          `${ficha.id}: ${ficha.capital.motivoNoCalculable ?? "capital no calculable"}`,
       );
     deuda = {
       total,
@@ -1018,25 +1087,34 @@ function patrimonioSection(db: Database, corte: string | null): Patrimonio {
       cobertura: cobertura({
         estado: coberturaDe(estado),
         fuente: MOTOR.deuda,
-        detalle:
-          "Solo deuda no hipotecaria activa; capital pendiente es stock, no flujo.",
+        detalle: `E4.4 al corte ${corte}; solo deuda no hipotecaria activa; capital pendiente es stock, no flujo.`,
         incluidos: calculables.length,
-        excluidos: activas.length - calculables.length,
+        excluidos: fichas.length - calculables.length,
         motivos,
       }),
+      corte,
       fuente: {
         motor: MOTOR.deuda,
-        ids: activas.map((item) => item.id),
-        revision: null,
+        ids: fichas.map((ficha) => ficha.id),
+        revision: fingerprint(
+          fichas.map((ficha) => ({
+            id: ficha.id,
+            revision: ficha.revision,
+            corte: ficha.corte,
+            capitalPendiente: ficha.capitalPendiente,
+            calculable: ficha.capital.calculable,
+          })),
+        ),
       },
       enlace: { etiqueta: "Ver deudas", ruta: "/deudas", ids: [] },
     };
   } catch (error) {
     deuda.estado = "No disponible";
+    deuda.corte = corte;
     deuda.cobertura = cobertura({
       estado: "NoDisponible",
       fuente: MOTOR.deuda,
-      detalle: `E4.4 no disponible: ${errorMessage(error)}.`,
+      detalle: `E4.4 no disponible al corte ${corte}: ${errorMessage(error)}.`,
       motivos: [`E4.4 no disponible: ${errorMessage(error)}.`],
     });
   }
@@ -1151,7 +1229,12 @@ export function resumenAnual(
   const archivo = archivoSection();
   const margenes = margenesSection(realidadCiclos);
   const corte = context?.referencia.fecha ?? null;
-  const patrimonio = patrimonioSection(db, corte);
+  // Un ejercicio posterior al corte vivo no hereda patrimonio de otro año.
+  const patrimonioCorte =
+    corte !== null && Number(corte.slice(0, 4)) >= filtros.ejercicio
+      ? corte
+      : null;
+  const patrimonio = patrimonioSection(db, patrimonioCorte, now);
 
   const porCarril = {
     plan: plan.cobertura,
@@ -1199,6 +1282,25 @@ export function resumenAnual(
       cicloId: margen.cicloId,
       valor: margen.valor,
     })),
+    patrimonio === null
+      ? null
+      : {
+          corte: patrimonio.corte,
+          valoracion: {
+            valorEur: patrimonio.valoracion.valorEur,
+            resultadoEur: patrimonio.valoracion.resultadoEur,
+            coberturaValoracion: patrimonio.valoracion.coberturaValoracion,
+            coberturaResultado: patrimonio.valoracion.coberturaResultado,
+            fuenteRevision: patrimonio.valoracion.fuente.revision,
+          },
+          deuda: {
+            total: patrimonio.deuda.total,
+            subtotal: patrimonio.deuda.subtotal,
+            cobertura: patrimonio.deuda.cobertura,
+            corte: patrimonio.deuda.corte,
+            fuenteRevision: patrimonio.deuda.fuente.revision,
+          },
+        },
   ]);
 
   return {
