@@ -1,6 +1,6 @@
 # Índice de identificadores históricos ↔ entrega canónica
 
-**Estado:** aprobado el 2026-11-04; integración pendiente de merge. Solo registro de
+**Estado:** aprobado el 2026-11-04 e **integrado en `main` `b3f4ed9`** (PR #202). Solo registro de
 trazabilidad; no renombra ni reescribe artefactos. Ver [convención](identifier-convention.md).
 
 ## Specs por número
