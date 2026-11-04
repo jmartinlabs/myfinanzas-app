@@ -1,11 +1,11 @@
 # E4.9 — paquete breve para autorización de DEV
 
-**Base:** `main` `dd56553` (2026-11-04). **Documento de decisión; no autoriza DEV, no declara PASS.**
+**Base:** `main` `5c4297a` (2026-11-04). **Documento de decisión; no autoriza DEV, no declara PASS.** Brief actualizado: [e49-decision-brief-2026-11-04](e49-decision-brief-2026-11-04.md).
 Marcas: **CONFIRMADO** (estado verificado), **PROPUESTA** (candidato no aprobado), **PENDIENTE** (requiere decisión).
 
 ## 1. Estado y límites
 
-- **CONFIRMADO:** SPEC27/E4.9 aprobada documentalmente; **sin DEV** y con AC **UNRUN**. E4.8 precierre, E3.5/FIN_NETA, E4.2 Ventas, E4.4 Deuda completa y E3.6 Pendientes están integrados; **E4.3 A+B+C está integrado** (v24 en `main`) y su QA final espera revisión/merge.
+- **CONFIRMADO:** SPEC27/E4.9 aprobada documentalmente; **sin DEV** y con AC **UNRUN**. E4.8 precierre, E3.5/FIN_NETA, E4.2 Ventas, E4.4 Deuda completa y E3.6 Pendientes están integrados; **E4.3 A+B+C+QA está integrado** (v24 y `dd56553` en `main`); la QA final consta APTO CON RESERVAS.
 - **CONFIRMADO:** PR **#178 integrada** (`8b5cf5c`): wireframes 1440/390 de E4.9 disponibles. Es un insumo de diseño, no una autorización de desarrollo ni una aprobación visual independiente.
 - **CONFIRMADO:** esquema **v24 integrado** con E4.3. **v25 preferida para E4.9** (**PENDIENTE** de asignación formal); no se reserva sin decisión.
 - **CONFIRMADO:** **DT6/T-BKP abierto**. Bloquea el cierre real y AC-09 real; no bloquea el DEV con fixtures.

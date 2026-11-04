@@ -28,7 +28,7 @@ solas:
 
 ## Cola operativa — 2026-11-03
 
-Base `main` `dd56553`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada.
+Base `main` `5c4297a`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada.
 
 - **A+B+C integrados:** DEV43-A (v24/C24/backup) y DEV43-B (read model/API) MERGED `3b9be46`;
   DEV43-C (UI/E2E) MERGED `8552d4a` (squash de #187). CI de PR 644/644 y post-merge
@@ -40,8 +40,11 @@ Base `main` `dd56553`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada
 - **Evidencia E4.4/E3.6:** post-merge registrada (#190); R17/R18 clasificadas como deuda de
   trazabilidad documental (#191).
 - **En paralelo:** flake SQLite B3 investigado sin reproducción macOS; pendiente una
-  ejecución diagnóstica Linux; paquete E4.9 actualizado; E4.6/E4.7 preparables sin DEV.
-- **Preparable sin DEV:** consumidores/fixtures E4.6; frontera E4.7; checklist DT7/E4.5 solo si se pide.
+  ejecución diagnóstica Linux. E4.9 dispone de brief de decisiones; E4.6 readiness documental
+  con F-01/F-02 pendientes en su spec. KI-409-01 (bug menor) corregido en PR #194, pendiente
+  de autorización de merge.
+- **Preparable sin DEV:** consumidores/fixtures E4.6 (readiness y F-01/F-02); frontera E4.7;
+  checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
 - **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
 
