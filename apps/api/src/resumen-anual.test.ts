@@ -307,6 +307,26 @@ test("AC02/03/05/06/17/18: composición exacta contra los motores propietarios",
   expect(dto.patrimonio!.deuda.estado).toBe("Parcial");
 });
 
+test("AC20/27: sin corte comparable no se fabrica patrimonio ni foto", () => {
+  const db = openDatabase(":memory:");
+  const dto = resumenAnual(
+    db,
+    new URLSearchParams({ ejercicio: "2026" }),
+    NOW,
+  );
+  expect(dto.contexto.corte.fecha).toBeNull();
+  expect(dto.contexto.calculo).toBe("Vivo");
+  expect(dto.contexto.fotoId).toBeNull();
+  expect(dto.patrimonio).not.toBeNull();
+  expect(dto.patrimonio!.corte.estado).toBe("No disponible");
+  expect(dto.patrimonio!.valoracion.estado).toBe("No disponible");
+  expect(dto.patrimonio!.deuda.estado).toBe("No disponible");
+  expect(dto.patrimonio!.valoracion.valorEur).toBeNull();
+  expect(dto.patrimonio!.deuda.total).toBeNull();
+  expect(dto.patrimonio!.deuda.subtotal).toBeNull();
+  expect(dto.carriles.realidad.estado).toBe("Sin datos");
+});
+
 test("AC08/09: el mismo Ciclo cruza 2026/2027 sin prorrateo ni copia del plan", () => {
   const fixture = seedResumenAnualFixture(openDatabase(":memory:"));
   const dto2026 = resumenAnual(

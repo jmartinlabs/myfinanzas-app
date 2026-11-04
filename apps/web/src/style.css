@@ -4548,6 +4548,12 @@ textarea {
   .e47-context-head,
   .e47-lane-head {
     flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+  }
+  .e47-lane-motivo {
+    flex-basis: auto;
+    width: 100%;
   }
   .e47-lane-status {
     justify-content: flex-start;

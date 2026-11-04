@@ -724,6 +724,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           <label>
             Ejercicio
             <select
+              aria-label="Ejercicio"
               value={filters.ejercicio}
               onChange={(event) => updateFilter("ejercicio", event.target.value)}
             >
@@ -737,6 +738,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           <label>
             Cobertura
             <select
+              aria-label="Cobertura"
               value={filters.cobertura}
               onChange={(event) => updateFilter("cobertura", event.target.value)}
             >
@@ -751,6 +753,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           <label>
             Ciclo
             <select
+              aria-label="Ciclo"
               value={filters.ciclo}
               onChange={(event) => updateFilter("ciclo", event.target.value)}
             >
@@ -766,6 +769,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           <label>
             Partida
             <select
+              aria-label="Partida"
               value={filters.partida}
               onChange={(event) => updateFilter("partida", event.target.value)}
             >
@@ -947,6 +951,11 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                 {ciclo.fin ? formatDate(ciclo.fin) : "abierto"} · corte{" "}
                 {formatDate(ciclo.corte)}
               </h3>
+              <p className="e47-linkrow">
+                <PageLink enlace={ciclo.ingresos.enlace} go={go}>
+                  Ver flujo mensual del ciclo {ciclo.cicloId}
+                </PageLink>
+              </p>
               <p className="e47-ciclo-meta">
                 Ejercicios: {ciclo.ejercicios.join(", ")}. Un Ciclo puede cruzar
                 diciembre/enero; no se prorratea.

@@ -13,8 +13,9 @@ import { seedResumenAnualFixture } from "./resumen-anual-fixture";
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
 const empty = process.env.E47_SCENARIO === "empty";
-const dir = empty ? ".local/e2e-e47-empty" : ".local/e2e-e47";
-const port = empty ? 3019 : 3018;
+const dir =
+  process.env.E47_DIR ?? (empty ? ".local/e2e-e47-empty" : ".local/e2e-e47");
+const port = Number(process.env.E47_PORT ?? (empty ? 3019 : 3018));
 
 rmSync(dir, { recursive: true, force: true });
 mkdirSync(dir, { recursive: true, mode: 0o700 });
