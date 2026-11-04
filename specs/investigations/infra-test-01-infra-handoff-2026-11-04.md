@@ -54,8 +54,11 @@ adopta, reemplaza o cierra. MyFinanzas **no modifica `vps-infra`** a partir de e
 
 1. Release verificada: `image.oci.tar`, `frontend/`, `manifest.json`, `manifest.sha256`.
 2. Artefacto de seed test-only con manifiesto y checksum propios.
-3. Instrucciones mínimas de `production-init`, `seed init/apply/verify`, `setup`, backup y
-   restore, ya documentadas en `infra/RUNBOOK.md`.
+3. `production-init`, `setup`, backup y restore tienen procedimientos documentados en
+   `infra/RUNBOOK.md`. El mecanismo reproducible `FT-1` y sus comandos
+   `seed init/apply/verify` están **definidos en SPEC34 pero todavía no implementados**;
+   sus instrucciones operativas definitivas se incorporarán cuando el mecanismo se
+   desarrolle y valide.
 4. Evidencia del gate Rootless y de compatibilidad sobre el SHA candidato.
 5. Dataset `FT-1` y manifiesto de verificación; sin datos reales.
 
@@ -65,7 +68,10 @@ El host debe responder, con evidencia de solo lectura:
 
 1. Usuario/UID disponibles, `subuid`/`subgid`, `linger`, límites y política de login SSH.
 2. Versiones reales de Debian, Podman, Quadlet/systemd, Caddy y Bun del host.
-3. Puertos `80/443/18082` libres y ausencia de conflictos con otros servicios.
+3. Puertos: verificar qué servicios usan actualmente `80/443` (especialmente Caddy) y
+   confirmar que el subdominio TEST puede incorporarse sin alterar el sitio existente;
+   verificar que `18082` está disponible y puede permanecer exclusivamente en loopback.
+   No modificar reglas ni servicios durante la auditoría.
 4. Estructura real de Caddy: fichero principal, imports, sitio raíz y procedimiento de
    validación/recarga/rollback.
 5. DNS: proveedor, TTL, A/AAAA, proxy/CDN del dominio raíz y cómo añadir `test` sin tocarlo.
@@ -85,7 +91,10 @@ El host debe responder, con evidencia de solo lectura:
 
 ## 7. Dependencias y límites
 
-- E4.9/v25 **no mergeado**: TEST se ancla a esquema 24 y no prueba cierres.
+- E4.9/v25 **no mergeado**: el esquema 24 es la referencia de la base documental actual,
+  no una fijación permanente. Antes del despliegue se fijará el SHA exacto de MyFinanzas y
+  se verificará su esquema real. Cualquier actualización del candidato exige revisar
+  compatibilidad, seed, pruebas y contrato con vps-infra; TEST no prueba cierres.
 - E4.5/DT7 no apta; E4.7/E4.10/E4.11 en DRAFT: fuera del dataset y smoke.
 - DT6/T-BKP, gate Rootless, Caddy/DNS reales y flake B3 siguen abiertos.
 - MyFinanzas **no accede al VPS**, no ejecuta administración, no modifica `vps-infra`, no
