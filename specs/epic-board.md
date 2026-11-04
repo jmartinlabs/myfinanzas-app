@@ -40,9 +40,11 @@ Base `main` `5c4297a`; **v24 integrada** con DEV E4.3 A+B+C+QA; v25 no reservada
 - **Evidencia E4.4/E3.6:** post-merge registrada (#190); R17/R18 clasificadas como deuda de
   trazabilidad documental (#191).
 - **En paralelo:** flake SQLite B3 investigado sin reproducción macOS; pendiente una
-  ejecución diagnóstica Linux. E4.9 dispone de brief de decisiones; E4.6 readiness documental
-  con F-01/F-02 pendientes en su spec. KI-409-01 (bug menor) corregido en PR #194, pendiente
-  de autorización de merge.
+  ejecución diagnóstica Linux. **E4.9:** paquete A/B/C preparado en
+  `e49-execution-package-2026-11-04.md`; 5 decisiones materiales agrupadas, sin DEV.
+  **E4.6:** F-01/F-02 corregidas en spec/testplan (C007 `2026-07`, C008 inicio `2026-11-20`,
+  `S007` para posiciones) y validadas técnicamente; DEV24 no autorizado. **KI-409-01**
+  corregido en PR #194, pendiente de autorización de merge.
 - **Preparable sin DEV:** consumidores/fixtures E4.6 (readiness y F-01/F-02); frontera E4.7;
   checklist DT7/E4.5 solo si se pide.
 - **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
