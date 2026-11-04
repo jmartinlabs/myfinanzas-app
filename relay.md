@@ -4,51 +4,46 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 129
-message_id: 204aa47c-2fbc-4ee2-a9de-918b4a1d9330
+sequence: 130
+message_id: 7c0dd7bc-58d6-435f-a318-2f2938ef2177
 from: OpenCode
 to: Alex
-reply_expected: false
+reply_expected: true
 read_by: none
-created_at: 2026-11-03T19:56:21Z
+created_at: 2026-11-04T06:53:55Z
 
 ## Message
 
-# TABLERO CORTO Y CORRECCIONES (OpenCode → Alex)
+# Revisión funcional final — E4.3 Valoración y resultados
 
-## Correcciones de estado
+**No es una aprobación ni una decisión de merge.** Solicito revisión funcional final de Álex sobre DEV E4.3 (A+B+C), con QA técnica completada y PR pendiente de autorización.
 
-- `main` **`8b5cf5c`**. #177 `bb076f1`, #179 `5dc1dd3`, **#178 MERGED `8b5cf5c`**; CI post-merge de las tres SUCCESS.
-- **DEV E4.3 ya tiene autorización directa del usuario en la sesión**: «Apruebo iniciar DEV E4.3 A/B/C… v24 reservado… fixtures… sin datos reales». No hace falta otra frase.
-- Worktree `dev43-e43`, rama `feat/e43-valoracion`, base `8b5cf5c`. Bloque A (esquema v24, migración, C24, backup) en ejecución. v24 exclusiva de E4.3.
+## Estado
 
-## Tablero
+- A+B integrados en `main` `3b9be46`; C integrado en `8552d4a`; QA final en PR #189, candidato `eda935a` (CI 644/644; Playwright 1/1; typecheck/build PASS).
+- **15 AC con PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN, 0 BLOCKED.** Los PARCIAL son evidencia, no defectos: reapertura explícita (AC-04) y concurrencia real de dos procesos (AC-08).
+- Reservas menores: 403 CSRF/idempotencia solo cubiertos por API; sin efectivo en fixture; formato nativo de fecha; el detalle no muestra Σ Compras/Σ Ventas y enlaza a la ficha del Instrumento.
 
-| Frente | Dueño | Archivos/conflicto | Dependencia | Estado/permiso |
-| --- | --- | --- | --- | --- |
-| DEV E4.3 A/B/C | implementation (A), luego B/C | `e43-schema`, `schema-contract*`, `backup`, luego `e43`/`app`/UI | SPEC23+wireframes integrados; v24 | **En ejecución A**; sin merge |
-| E4.9 pre-DEV | functional read-only | `specs/27-*`, `precierre.ts`, `app.ts`, DT5/DT6 | D4/T1 ventas/v25 | Paquete listo; **sin DEV** |
-| E4.6 consumidores | functional read-only | `specs/24-*`, motores E2.6/E3.6/E4.3/E4.4 | SPEC24 aprobada; no DEV24 | Puede prepararse; **sin DEV24** |
-| E4.7/SPEC25 | functional read-only | inventario 1 página, sin PR | DT8/E4.5/E4.6/E4.3 | Inventario listo; **no abrir spec** |
-| E4.5/DT7 | functional, solo si se pide | checklist mapping/cortes/2026 | DT7 | No iniciado |
-| E4.10–E4.12 | coordinador | solo mapa de dependencias | E4.9 | Sin specs prematuras |
+## Qué revisar
 
-## Paralelismo ya permitido
+1. Semántica de valoración Manual/Automática, cobertura y elegibilidad.
+2. Resultado de posiciones abiertas/cerradas y ausencia de porcentaje.
+3. A-01: valoración que no representa la cantidad al corte (captura `a01-detail-1440.png`).
+4. Efectivo separado y ausencia de totales parciales presentados como completos.
+5. Si apruebas funcionalmente o tienes observaciones concretas.
 
-- E4.3 A y, en paralelo, E4.9/E4.6/E4.7 **solo análisis read-only**.
-- Sin dos escritores en `app.ts`, `style.css`, `main.tsx`, `precierre.ts` ni DDL.
-- Un solo dueño de v24; QA independiente; sin merge funcional.
+## Capturas accesibles (datos ficticios)
 
-## Política que requeriría autorización del usuario
+- Listado 1440: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/w1-list-1440.png
+- Listado 390 parcial: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/w2-list-390.png
+- Detalle: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/w3-detail-1440.png
+- Alta automática: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/w5-alta-1440.png
+- Corrección 409: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/w9-409-1440.png
+- A-01 cantidad modificada: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-captures/a01-detail-1440.png
+- Informe QA: https://github.com/jmartinlabs/myfinanzas-app/blob/eda935a/specs/23-e43-qa-final.md
 
-Texto propuesto, **no concedido**:
+## Límites
 
-> «Autorizo que, dentro de specs ya aprobadas, los trabajos documentales no normativos puedan preparar rama/PR y pasar QA sin pedirme permiso por cada paso. Los cambios normativos, DEV nuevos, merges, datos reales, DDL y despliegue siguen requiriendo aprobación explícita por objeto y SHA.»
+Sin datos reales, migración operativa ni despliegue. La revisión no autoriza merge; el merge funcional requiere aprobación explícita del usuario.
 
-## Necesita autorización directa
-
-DEV E4.9/E4.6/E4.7/E4.5, merges funcionales, DT6 real, datos reales, despliegue. Nada de eso está concedido.
-
-## Próximo entregable
-
-DEV43-A con diff/tests; después B y C. En paralelo, E4.9/E4.6/E4.7 quedan listos para trabajos read-only sin colisión.
+**Respuesta esperada:** APTO funcional u observaciones concretas sobre semántica/UX. No necesito decisiones técnicas.
