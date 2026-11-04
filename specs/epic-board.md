@@ -8,13 +8,15 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | not-ready (DT7) | AC-48…59 **NO APTO** | not-ready | pending | Enmienda C1–C7 + reauditoría |
+| E4.5 | approved | not-ready (DT7; C1–C8) | AC-48…59 **NO APTO** | not-ready | pending | Aprobar C1–C8 y reauditar AC-48…59 |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | drafting (SPEC25) | not-ready | planned | not-ready | pending | Decisiones D8-M/Z/F/N |
-| E4.9 | approved | implementing (#200: DEV-04 guards; DEV-05/DEV-06 correcciones) | DEV-05 APTO CON RESERVAS; conjunto pendiente | not-ready | pending | DEV-06 + UI/E2E + DT6 |
-| E4.10 | drafting (SPEC28) | not-ready | planned | not-ready | pending | Decisiones D1–D9 + E4.9 estable |
-| E4.11 | drafting (SPEC29) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
-| E4.12 | not-ready (requisitos) | not-ready | planned | not-ready | pending | DT6/DT7 y specs previas |
+| E4.7 | approved (merged `948ade8`) | candidate `05aee71` (#210) | APTO CON RESERVAS | not-ready | pending | CI 670/670; cerrar reservas documentales y autorizar merge |
+| E4.9 | approved | candidate `85b4102` (#200: A+B+guards+DEV-06/07) | APTO CON RESERVAS | not-ready | pending | CI 756/756; DT6 real y cierre real pendientes |
+| E4.10 | draft (SPEC28 en `main`) | not-ready | planned | not-ready | pending | Decisiones D1–D9 |
+| E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
+| E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
+| INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
+| UI | draft (análisis #205) | not-ready | planned | not-ready | pending | Aprobar identificador/alcance `UI` |
 
 ## Auditoría de especificaciones — cierre global ratificado 2026-11-02
 
