@@ -303,7 +303,7 @@ test("AC02/03/05/06/17/18: composición exacta contra los motores propietarios",
   expect(dto.patrimonio!.corte.fecha).toBe("2027-01-15");
   expect(dto.patrimonio!.valoracion.fuente.motor).toBe("E4.3 e43Corte");
   expect(dto.patrimonio!.deuda.fuente.motor).toBe(
-    "E4.4 listDeudasCompletas",
+    "E4.4 getDeudaCompleta",
   );
   expect(dto.patrimonio!.deuda.corte).toBe("2027-01-15");
   expect(dto.patrimonio!.valoracion.corte).toBe("2027-01-15");
@@ -434,8 +434,11 @@ test("AC04/07/19/23: filtros, null ≠ 0 y cero verificado del propietario", () 
   expect(zeroItem.ejecutado.estado).toBe("Cero verificado");
   expect(zeroItem.ejecutado.subtotal).toBe("0.00");
   expect(zeroItem.cobertura.estado).toBe("Completa");
-  expect(zero.carriles.plan.estado).toBe("Verificado");
-  expect(zero.carriles.plan.cobertura.estado).toBe("Completa");
+  expect(zero.carriles.plan.estado).toBe("Parcial");
+  expect(zero.carriles.plan.cobertura.estado).toBe("Parcial");
+  expect(zero.carriles.plan.motivo).toContain(
+    "sin presupuesto de plan",
+  );
 
   const completa = resumenAnual(
     fixture.db,

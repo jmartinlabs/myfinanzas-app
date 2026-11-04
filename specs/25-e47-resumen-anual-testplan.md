@@ -3,8 +3,8 @@
 Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04.**
 Diseño de pruebas con **ejecución local DEV25 el 2026-11-04** (ver §Ejecución local DEV25).
 E4.7-AC3 sigue en cumplimiento parcial; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 y AC25
-siguen UNRUN. Existe un candidato local en la rama `feat/e47-resumen-anual`, sin push ni merge;
-no hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
+siguen UNRUN. Existe un candidato local en la rama `feat/e47-resumen-anual`; la publicación
+y el merge requieren autorización separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
 autoriza datos reales, migración, snapshots ni merge.
 
 Specification: [25-e47-resumen-anual-specification.md](25-e47-resumen-anual-specification.md)
@@ -86,9 +86,9 @@ El dictamen de Álex recomienda, **sin sustituir la aprobación del usuario**:
 ## Ejecución local DEV25 (2026-11-04)
 
 **Candidato local:** rama `feat/e47-resumen-anual`, base `main` `90cd5dc`; commits DEV-01
-`293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f` y corrección QA (este commit). Sin push, sin
-merge, sin datos reales y sin migración. La publicación y el merge requieren autorización
-separada.
+`293ef16`, DEV-02 `d0c5401`, DEV-03 `130b27f`, QA `60f18f8` y corrección final QA (este
+commit). Commit local, sin datos reales y sin migración. La publicación y el merge requieren
+autorización separada.
 
 **Entorno:** macOS local; Bun 1.4.3; TypeScript 7.0.2; Chromium/Playwright 1.64.1; 2026-11-04.
 No sustituye la CI Linux ni la revisión independiente de QA.
@@ -98,6 +98,8 @@ No sustituye la CI Linux ni la revisión independiente de QA.
 | Tipos | `bun run typecheck` | PASS (exit 0) |
 | Build cliente | `bun run build` | PASS (exit 0); aviso de chunk >500 kB ya existente |
 | API E4.7 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 48 pass / 0 fail (8 de E4.7 y 40 de los motores) |
+| API E4.6 | `NODE_ENV=test bun test apps/api/src/resumen-inicio.test.ts` | 18 pass / 0 fail |
+| API E4.7 + E4.6 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 66 pass / 0 fail |
 | E2E E4.7 | `bunx playwright test tests/e2e/resumen-anual.spec.ts` | 4 pass / 0 fail |
 | Regresión inicio/temas | `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` | 7 pass / 0 fail |
 | Capturas | `artifacts/e4-7/*.png` | 7 capturas: tres temas a 1440/390 y el estado vacío |
@@ -118,7 +120,7 @@ guardan en `artifacts/e4-7/`, ignorado por Git.
 
 ## Corrección QA (2026-11-04)
 
-Commit local de corrección sobre `130b27f`. Sin push, sin merge y sin cambios en E4.9.
+Commit local de corrección sobre `60f18f8`. No se modifica E4.9.
 
 | Hallazgo | Corrección aplicada | Evidencia |
 | --- | --- | --- |
@@ -129,9 +131,14 @@ Commit local de corrección sobre `130b27f`. Sin push, sin merge y sin cambios e
 | M3 — Matriz | AC02, AC18, AC20, AC21 y AC23 rebajados a `PARCIAL`; AC22 declara contraste parcial, no WCAG | Esta matriz |
 | L1 — Estados y márgenes | `No aplica` con motivo en Diferencia; margen con `corte` real (no `null` fabricado); estados de corte humanizados; `margenes.estado` coherente (ND si ningún margen publica valor) | UI `ResumenAnual.tsx`; `resumen-anual.test.ts` |
 | L2 — Contraste | Se declara comprobación parcial; no se afirma auditoría WCAG completa | Este testplan |
+| N1 — Reloj E2E / deuda | El servidor E2E fija `now` al 2027-02-01; MFA y datos usan el mismo instante. E2E assertea deuda `1.020,00` y cobertura `Parcial`; si la lectura falla no se muestra «Corte aplicado» | `tests/e2e/resumen-anual.spec.ts`; `artifacts/e4-7/` |
+| N2 — Motor de deuda | `fuente.motor` de deuda es `E4.4 getDeudaCompleta` | `resumen-anual.test.ts`; E2E |
+| N3 — Plan con `sinLinea` | `CarrilPlan.estado` es `Parcial` si alguna Partida no tiene presupuesto, aunque su ejecución sea completa | `resumen-anual.test.ts` «AC04/07/19/23» |
+| N4 — Agregación Q7 | Extraído `deuda-no-hipotecaria.ts` (listado paginado, predicado Q7 y agregación), usado por E4.6 y E4.7 sin cambiar el resultado de E4.6 | `resumen-inicio.test.ts` 18 pass; `resumen-anual.test.ts` |
 
 **Comandos de la corrección:** `bun run typecheck` PASS; `bun run build` PASS (aviso de chunk
-preexistente); `bun test` focal + motores 48 pass / 0 fail; E2E E4.7 4 pass / 0 fail;
+preexistente); `bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts`
+26 pass / 0 fail; `bun test` E4.7 + motores 48 pass / 0 fail; E2E E4.7 4 pass / 0 fail;
 regresión inicio/temas 7 pass / 0 fail. Capturas regeneradas en `artifacts/e4-7/`.
 
 **Integración con E4.9.** `style.css` mantiene el bloque `.e47-` separado y documenta el
@@ -379,8 +386,8 @@ manual de subtotales.
 ## Limitaciones y siguiente acción
 
 Existe un candidato local corregido de DEV25 (rama `feat/e47-resumen-anual`, commits
-DEV-01/DEV-02/DEV-03 más la corrección QA) con 8 pruebas API de E4.7, 4 E2E y 7 regresiones de
-inicio/temas en PASS local. No hay push ni merge. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
+DEV-01/DEV-02/DEV-03 más las correcciones QA) con 8 pruebas API de E4.7, 4 E2E y 7 regresiones de
+inicio/temas en PASS local. El commit local no se ha publicado ni mergeado. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
 en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido. Las seis decisiones
 D8-M/Z/F/N, patrimonio y gate E4.5/DT7 están aprobadas por el usuario el 2026-11-04; D8-M
 mantiene E4.7-AC3 en `PARCIAL`. AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 y AC25 siguen

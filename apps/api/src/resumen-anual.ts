@@ -3,7 +3,12 @@ import { cycleContext, cycleMaster, type Cycle } from "./ciclos";
 import { monthlyFlow, type Metric } from "./flujo-mensual";
 import { annualYear, getAnnualPlan, type AnnualProvider } from "./plan-anual";
 import { e43Corte } from "./e43";
-import { getDeudaCompleta, listDeudasCompletas } from "./deuda-completa";
+import { getDeudaCompleta } from "./deuda-completa";
+import {
+  agregarDeudaNoHipotecaria,
+  esDeudaNoHipotecariaActiva,
+  listarDeudasCompletas,
+} from "./deuda-no-hipotecaria";
 import { decimal } from "./saldos";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
@@ -281,7 +286,7 @@ const MOTOR = {
   ajuste: "E3.6 flujoAjustado (E2.6)",
   archivo: "E4.5 histórico/precontrol",
   valoracion: "E4.3 e43Corte",
-  deuda: "E4.4 listDeudasCompletas",
+  deuda: "E4.4 getDeudaCompleta",
 } as const;
 
 const COBERTURAS: EstadoCobertura[] = [
@@ -375,24 +380,6 @@ function ndMetric(args: {
     alcance: args.alcance ?? "No aplica",
     enlace: args.enlace ?? null,
   };
-}
-
-function centsOf(value: string | null): bigint | null {
-  if (value === null) return null;
-  const negative = value.startsWith("-");
-  const [whole, fraction = ""] = value.replace("-", "").split(".");
-  const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
-  return negative ? -cents : cents;
-}
-
-function sumCents(values: (string | null)[]): bigint | null {
-  let total = 0n;
-  for (const value of values) {
-    const cents = centsOf(value);
-    if (cents === null) return null;
-    total += cents;
-  }
-  return total;
 }
 
 function parseFiltros(params: URLSearchParams) {
@@ -801,9 +788,11 @@ function planSection(
         hasta: `${String(ejercicio).padStart(4, "0")}-12-31`,
       },
     };
-    const completa =
+    const sinLinea = items.some((item) => item.presupuesto === null);
+    const coberturasCompletas =
       items.length > 0 &&
       items.every((item) => item.cobertura.estado === "Completa");
+    const completa = coberturasCompletas && !sinLinea;
     const estado: EstadoMetrica =
       items.length === 0 ? "Sin datos" : completa ? "Verificado" : "Parcial";
     return {
@@ -813,7 +802,9 @@ function planSection(
           ? "Sin líneas de plan ni ejecución para el filtro seleccionado."
           : completa
             ? "Plan y Ejecutado se leen de E2.4 con cobertura completa del año; no se suman Partidas."
-            : "Plan y Ejecutado se leen de E2.4; no se suman Partidas ni se crea un total anual.",
+            : sinLinea
+              ? "Plan y Ejecutado se leen de E2.4; hay Partidas con ejecución sin presupuesto de plan."
+              : "Plan y Ejecutado se leen de E2.4; no se suman Partidas ni se crea un total anual.",
       items,
       cobertura: cobertura({
         estado:
@@ -821,7 +812,9 @@ function planSection(
         fuente: MOTOR.plan,
         detalle: completa
           ? "Cada Partida conserva la cobertura completa de E2.4 para el año natural."
-          : "Cada Partida conserva la cobertura de E2.4; la cobertura anual no está acreditada.",
+          : sinLinea
+            ? "Cada Partida conserva la cobertura de E2.4; hay ejecución sin línea de presupuesto."
+            : "Cada Partida conserva la cobertura de E2.4; la cobertura anual no está acreditada.",
         incluidos: items.length,
         motivos:
           items.length === 0
@@ -829,6 +822,11 @@ function planSection(
             : completa
               ? []
               : [
+                  ...(sinLinea
+                    ? [
+                        "Hay Partidas con ejecución sin presupuesto de plan; el carril no es un plan completo.",
+                      ]
+                    : []),
                   "El Ejecutado se verifica, si procede, solo hasta el corte.",
                 ],
       }),
@@ -938,27 +936,6 @@ function margenesSection(ciclos: CicloRealidad[]): Margenes {
   };
 }
 
-function activeNonHypothecaryDebts(db: Database) {
-  const items: ReturnType<typeof listDeudasCompletas>["items"] = [];
-  let page = 1;
-  let total = 0;
-  do {
-    const result = listDeudasCompletas(
-      db,
-      new URLSearchParams({
-        estado: "Activa",
-        tipoDeuda: "No hipotecaria",
-        page: String(page),
-      }),
-    );
-    items.push(...result.items);
-    total = result.total;
-    if (result.items.length === 0) break;
-    page += 1;
-  } while (items.length < total && page <= 100000);
-  return items;
-}
-
 function valoracionEstado(cobertura: string): EstadoMetrica {
   if (/^(Verificada|Completa)$/i.test(cobertura)) return "Verificado";
   if (/^Parcial/i.test(cobertura)) return "Parcial";
@@ -1053,58 +1030,33 @@ function patrimonioSection(
     // Q7 de presentación: solo deuda no hipotecaria activa. El capital de cada
     // ficha se lee de E4.4 en el mismo corte con `getDeudaCompleta`; no se usa
     // el capital actual del listado ni se reimplementa la regla de E4.6.
-    const fichas = activeNonHypothecaryDebts(db).map((item) =>
-      getDeudaCompleta(db, item.id, corte, now),
-    );
-    const calculables = fichas.filter((ficha) => ficha.capital.calculable);
-    const subtotal =
-      fichas.length === 0
-        ? null
-        : sumCents(calculables.map((ficha) => ficha.capitalPendiente));
-    const completa =
-      fichas.length > 0 &&
-      calculables.length === fichas.length &&
-      subtotal !== null;
-    const total = completa ? decimal(subtotal!) : null;
-    const estado: EstadoMetrica =
-      fichas.length === 0
-        ? "Sin datos"
-        : completa
-          ? total === "0.00"
-            ? "Cero verificado"
-            : "Verificado"
-          : "Parcial";
-    const motivos = fichas
-      .filter((ficha) => !ficha.capital.calculable)
-      .map(
-        (ficha) =>
-          `${ficha.id}: ${ficha.capital.motivoNoCalculable ?? "capital no calculable"}`,
-      );
+    const fichas = listarDeudasCompletas(db)
+      .filter(esDeudaNoHipotecariaActiva)
+      .map((item) => getDeudaCompleta(db, item.id, corte, now));
+    const agregado = agregarDeudaNoHipotecaria(fichas);
     deuda = {
-      total,
-      subtotal: subtotal === null ? null : decimal(subtotal),
-      estado,
+      total: agregado.total,
+      subtotal: agregado.subtotal,
+      estado: agregado.estado,
       cobertura: cobertura({
-        estado: coberturaDe(estado),
+        estado: coberturaDe(agregado.estado),
         fuente: MOTOR.deuda,
         detalle: `E4.4 al corte ${corte}; solo deuda no hipotecaria activa; capital pendiente es stock, no flujo.`,
-        incluidos: calculables.length,
-        excluidos: fichas.length - calculables.length,
-        motivos,
+        incluidos: agregado.incluidos,
+        excluidos: agregado.excluidos,
+        motivos: agregado.motivos,
       }),
       corte,
       fuente: {
         motor: MOTOR.deuda,
-        ids: fichas.map((ficha) => ficha.id),
-        revision: fingerprint(
-          fichas.map((ficha) => ({
-            id: ficha.id,
-            revision: ficha.revision,
-            corte: ficha.corte,
-            capitalPendiente: ficha.capitalPendiente,
-            calculable: ficha.capital.calculable,
-          })),
-        ),
+        ids: agregado.ids,
+        revision: fingerprint({
+          corte,
+          ids: agregado.ids,
+          revisiones: agregado.revisiones,
+          total: agregado.total,
+          subtotal: agregado.subtotal,
+        }),
       },
       enlace: { etiqueta: "Ver deudas", ruta: "/deudas", ids: [] },
     };

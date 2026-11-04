@@ -8,6 +8,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { mkdirSync, readFileSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { totp } from "../../apps/api/src/auth";
+import { RESUMEN_ANUAL_NOW } from "../../apps/api/test-support/resumen-anual-clock";
 
 /**
  * E4.7 — UI /resumen-anual con MFA real y un servidor aislado.
@@ -121,7 +122,7 @@ async function login(page: Page, dir: string) {
   const secret = (await page.locator(".secret").textContent())!;
   await page
     .getByLabel("Código de la aplicación autenticadora")
-    .fill(totp(secret).generate());
+    .fill(totp(secret).generate({ timestamp: RESUMEN_ANUAL_NOW }));
   await page
     .getByRole("button", { name: "Verificar código", exact: true })
     .click();
@@ -293,8 +294,11 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
   await expect(patrimonio).toContainText("Valoración E4.3");
   await expect(patrimonio).toContainText("Deuda E4.4");
   await expect(patrimonio).toContainText("sin patrimonio neto");
-  await expect(patrimonio).toContainText("E4.4 listDeudasCompletas");
-  await expect(patrimonio).toContainText("Corte aplicado: 15/01/2027");
+  await expect(patrimonio).toContainText("E4.4 getDeudaCompleta");
+  const deuda = page.getByRole("article", { name: "Deuda E4.4" });
+  await expect(deuda).toContainText("1.020,00 €");
+  await expect(deuda).toContainText("PARCIAL");
+  await expect(deuda).toContainText("Corte aplicado: 15/01/2027");
 
   // Enlaces sin importes en la URL.
   const hrefs = await page
@@ -369,6 +373,45 @@ test("AC02/05/06/18/21/22/27: carriles, estados, enlaces, 1440/390 y tres temas"
     });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
+
+  // N1: si la lectura de deuda falla, no se muestra «Corte aplicado».
+  await page.route("**/api/resumen-anual*", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(BASE_PORT);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    json.patrimonio.deuda = {
+      ...json.patrimonio.deuda,
+      estado: "No disponible",
+      total: null,
+      subtotal: null,
+      corte: null,
+      cobertura: {
+        ...json.patrimonio.deuda.cobertura,
+        estado: "NoDisponible",
+        incluidos: 0,
+        excluidos: 0,
+        motivos: ["E4.4 no disponible: prueba de corte fallido."],
+      },
+      fuente: {
+        ...json.patrimonio.deuda.fuente,
+        motor: "E4.4 getDeudaCompleta",
+        ids: [],
+        revision: null,
+      },
+    };
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  await page.reload();
+  const deudaFallida = page.getByRole("article", { name: "Deuda E4.4" });
+  await expect(deudaFallida).toContainText("NO DISPONIBLE");
+  await expect(deudaFallida).not.toContainText("Corte aplicado");
+  await expect(deudaFallida).not.toContainText("1.020,00 €");
+
   expect(errors).toEqual([]);
 });
 

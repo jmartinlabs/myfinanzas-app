@@ -12,6 +12,7 @@ import {
   getAnnualPlan,
   previewAnnualPlan,
 } from "../src/plan-anual";
+import { RESUMEN_ANUAL_NOW } from "./resumen-anual-clock";
 
 /**
  * Fixture sintética de E4.7. Solo IDs e importes ficticios de SPEC20/24/25.
@@ -22,7 +23,7 @@ import {
  * `8` cruza diciembre/enero (2026-11-20 a 2027-01-15) para comprobar que un
  * Ciclo aparece en dos ejercicios sin prorrateo.
  */
-export const SEED_NOW = Date.parse("2027-02-01T10:00:00Z");
+export const SEED_NOW = RESUMEN_ANUAL_NOW;
 
 function saveMovement(
   db: Database,

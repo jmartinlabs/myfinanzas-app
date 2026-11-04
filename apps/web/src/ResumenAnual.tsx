@@ -1209,7 +1209,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           </header>
           <p className="e47-note">{data.patrimonio.nota}</p>
           <div className="e47-grid-2">
-            <article className="e47-subblock">
+            <article className="e47-subblock" aria-label="Valoración E4.3">
               <h3>Valoración E4.3</h3>
               <dl className="e47-card-facts">
                 <div>
@@ -1233,16 +1233,20 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   </dd>
                 </div>
               </dl>
-              <p className="e47-ciclo-meta">
-                Corte aplicado: {formatDate(data.patrimonio.valoracion.corte)} ·
-                Cobertura valoración:{" "}
-                {data.patrimonio.valoracion.coberturaValoracion} · resultado:{" "}
-                {data.patrimonio.valoracion.coberturaResultado}
-              </p>
+              {data.patrimonio.valoracion.estado !== "No disponible" &&
+                data.patrimonio.valoracion.corte !== null && (
+                  <p className="e47-ciclo-meta">
+                    Corte aplicado:{" "}
+                    {formatDate(data.patrimonio.valoracion.corte)} · Cobertura
+                    valoración:{" "}
+                    {data.patrimonio.valoracion.coberturaValoracion} ·
+                    resultado: {data.patrimonio.valoracion.coberturaResultado}
+                  </p>
+                )}
               <FuenteLinea fuente={data.patrimonio.valoracion.fuente} />
               <PageLink enlace={data.patrimonio.valoracion.enlace} go={go} />
             </article>
-            <article className="e47-subblock">
+            <article className="e47-subblock" aria-label="Deuda E4.4">
               <h3>Deuda E4.4</h3>
               <dl className="e47-card-facts">
                 <div>
@@ -1266,9 +1270,12 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   </dd>
                 </div>
               </dl>
-              <p className="e47-ciclo-meta">
-                Corte aplicado: {formatDate(data.patrimonio.deuda.corte)}
-              </p>
+              {data.patrimonio.deuda.estado !== "No disponible" &&
+                data.patrimonio.deuda.corte !== null && (
+                  <p className="e47-ciclo-meta">
+                    Corte aplicado: {formatDate(data.patrimonio.deuda.corte)}
+                  </p>
+                )}
               <CoverageLine cobertura={data.patrimonio.deuda.cobertura} />
               <FuenteLinea fuente={data.patrimonio.deuda.fuente} />
               <PageLink enlace={data.patrimonio.deuda.enlace} go={go} />

@@ -9,6 +9,7 @@ import { loadKey, provision } from "../src/auth";
 import { openDatabase } from "../src/database";
 import { createApp } from "../src/app";
 import { seedResumenAnualFixture } from "./resumen-anual-fixture";
+import { RESUMEN_ANUAL_NOW } from "./resumen-anual-clock";
 
 if (process.env.NODE_ENV !== "test") throw new Error("Test process only");
 
@@ -22,11 +23,14 @@ mkdirSync(dir, { recursive: true, mode: 0o700 });
 const db = openDatabase(dir + "/demo.sqlite");
 if (!empty) seedResumenAnualFixture(db);
 const key = loadKey(db, dir + "/auth.key");
-// Bootstrap uses the real clock so the real MFA window remains valid.
-writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
+// Fixed clock after the 2027 cut: E4.4 rejects future cuts and MFA must use
+// the same instant as the data.
+writeFileSync(dir + "/bootstrap.txt", provision(db, RESUMEN_ANUAL_NOW), {
+  mode: 0o600,
+});
 BunRuntime.runMain(
   Layer.launch(
-    HttpServer.serve(createApp(db, { key })).pipe(
+    HttpServer.serve(createApp(db, { key, now: () => RESUMEN_ANUAL_NOW })).pipe(
       Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port })),
     ),
   ),
