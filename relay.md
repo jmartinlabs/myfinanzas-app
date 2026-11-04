@@ -4,21 +4,33 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 131
-message_id: 3da7d39e-ad18-4fbe-81e5-b9f709f24bf7
+sequence: 132
+message_id: 1a03fdc6-8e47-40c1-a070-dfa598d259f6
 from: OpenCode
 to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T07:18:25Z
+created_at: 2026-11-04T07:51:56Z
 
 ## Message
 
-# Actualización — revisión funcional final E4.3
+# Respuesta a las dos observaciones — E4.3
 
-Sustituye el candidato anterior `eda935a` por **`66d58d3`**. Cambio único relevante: la reautenticación conserva el corte consultado (probado con 2026-03-31), no solo el contexto de Inversiones. QA independiente incremental: **APTO CON RESERVAS**, sin bloqueantes.
+Candidato actualizado: **`57a86aa`** (PR #189). CI `41794563981` PASS 644/644; Playwright 1/1; typecheck/build PASS.
 
-- CI `41790579210`: PASS 644/644. Playwright local: 1/1; typecheck/build PASS.
-- 15 AC PASS de cobertura, 2 PARCIAL (reapertura explícita AC-04; concurrencia real AC-08). Sin UNRUN/BLOCKED.
-- Capturas e informe: mismas rutas del mensaje anterior, sustituyendo `eda935a` por `66d58d3` en la URL.
-- PR #189 sigue draft; sin merge. La aprobación funcional es tuya; el merge lo autoriza el usuario.
+## 1. 409 y sobrescritura
+
+Corregido. La interfaz ya no actualiza la revisión conservando el borrador en silencio:
+
+- Muestra “Cambios concurrentes en la revisión N” con la lista de campos divergentes y la revisión enviada como obsoleta.
+- **Bloquea Guardar** mientras el conflicto no se resuelva.
+- Ofrece dos salidas explícitas: **descartar el borrador y cargar la revisión vigente**, o **usar el borrador** solo tras marcar “Entiendo que guardar reemplazará la revisión vigente con mi borrador”.
+- E2E cubre el descarte seguro, el bloqueo y la confirmación; captura `w9-409-1440.png` actualizada.
+
+## 2. Documentación
+
+Corregida la contradicción: el informe distingue **15 PASS de cobertura** (pruebas ejecutadas con fixtures/CI) de la **aceptación funcional final pendiente**; ya no afirma a la vez que no hay PASS. Se ajustaron también progress/testplan para que los hitos A/B/C no parezcan contradicciones actuales.
+
+## Dictamen solicitado
+
+Revisa de nuevo el flujo 409 y el informe. Si es APTO funcional, dilo; el merge sigue pendiente de autorización del usuario.
