@@ -331,6 +331,21 @@ Leyenda: **CUBIERTO** = prueba directa y suite ejecutada en CI, sin PASS del AC;
 - **R14:** la extensión `Ingreso/Transferencia/Amortizacion` de `ContextoHecho` se conserva
   declarada desde `c206d3d`; este cambio solo añadió elegibilidad.
 
+### 12.4 Revisión focalizada R17/R18 — 2026-11-04
+
+- **Hecho:** #180 declaró «R17/R18 (residuos menores de elegibilidad)», pero ninguna de las
+  dos etiquetas tiene definición, escenario ni prueba asociada en el repositorio; solo se
+  citan en este progress y en el testplan 21.
+- **Comprobación:** la elegibilidad de Compartidos/Anticipos está cubierta por
+  `pendientes.test.ts` R13 (relacionado posterior y ciclo elegible) y R4 (contextos), y por
+  la cobertura por métrica de AC-21. No se reprodujo un defecto financiero ni una pérdida de
+  elegibilidad.
+- **Clasificación:** **deuda de trazabilidad documental, no defecto de código**. No procede
+  corrección funcional ni de esquema; procede sustituir las etiquetas por los casos concretos
+  o retirarlas en la próxima revisión de E3.6. No se declara PASS de R17/R18.
+- **Límite:** la revisión es documental y de código; no se ejecutó una suite nueva de
+  concurrencia ni se cambió el comportamiento.
+
 ## 13. Próxima acción segura
 
 1. Actualizar el [testplan 21](21-pendientes-conciliacion-testplan.md) con esta evidencia,
