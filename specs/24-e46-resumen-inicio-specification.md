@@ -213,13 +213,22 @@ independientes y un mismo Saldo puede pertenecer a varias.
 
 `GET /api/resumen-inicio` devuelve un objeto con `contexto`, `secciones` y
 `pendientesDelModelo`. Los importes son cadenas decimales exactas en EUR; `null` es
-`No disponible`. Ejemplo ficticio (coherente con el oráculo del testplan):
+`No disponible`.
+
+**Contrato real de E2.6 (verificado 2026-11-04).** Los IDs de ciclo del DTO son los del
+motor (`7`, `8`); `C007`/`C008` son nombres de escenario. Cuando la cobertura bancaria del
+intervalo no está acreditada, cada magnitud de ciclo conserva `valor: null`, publica el
+`subtotal` registrado y queda `Parcial`; `operativo` y `margenReal` quedan `No disponible`
+porque no existen los tres componentes completos. Un subtotal parcial nunca se convierte en
+total ni se usa para fabricar un margen.
+
+Ejemplo ficticio (coherente con el oráculo del testplan):
 
 ```json
 {
   "contexto": {
     "ciclo": {
-      "id": "C007",
+      "id": "7",
       "inicio": "2026-06-20",
       "fin": null,
       "mesFinanciado": "2026-07",
@@ -301,11 +310,11 @@ independientes y un mismo Saldo puede pertenecer a varias.
       "zona": "Informativa"
     },
     "ciclo": {
-      "ingresos": { "clave": "ingresos", "etiqueta": "Ingresos", "clase": "real", "valor": "2250.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "gasto": { "clave": "gasto", "etiqueta": "Gasto bruto", "clase": "real", "valor": "1800.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "extraordinaria": { "clave": "extraordinaria", "etiqueta": "Amortización extraordinaria", "clase": "real", "valor": "100.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "operativo": { "clave": "operativo", "etiqueta": "Saldo operativo bruto observado", "clase": "real", "valor": "350.00", "subtotal": null, "estado": "Parcial", "unidad": "EUR", "motivo": "Definición parcial: no es ahorro real ni variación patrimonial", "cobertura": { "estado": "Parcial", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "margenReal": { "clave": "margenReal", "etiqueta": "Margen frente a nómina real", "clase": "plan", "valor": "100.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "Margen del plan, no ahorro ejecutado", "cobertura": { "estado": "Completa", "incluidos": 4, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } }
+      "ingresos": { "clave": "ingresos", "etiqueta": "Ingresos", "clase": "real", "valor": null, "subtotal": "2250.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Suma de hechos bancarios únicos; sin duplicar asociaciones N:M. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "gasto": { "clave": "gasto", "etiqueta": "Gasto bruto", "clase": "real", "valor": null, "subtotal": "1800.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Todos los Gastos brutos registrados, incluidas cuotas/compartidos/terminal/sin plan. Difiere de H física; sin netos E3. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "extraordinaria": { "clave": "extraordinaria", "etiqueta": "Amortización extraordinaria", "clase": "real", "valor": null, "subtotal": "100.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Amortización de deuda con relación válida. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "operativo": { "clave": "operativo", "etiqueta": "Saldo operativo bruto observado", "clase": "real", "valor": null, "subtotal": null, "estado": "No disponible", "unidad": "EUR", "motivo": "No disponible sin los tres componentes completos. Cuando sea calculable será PARCIAL por definición; no representa ahorro real ni variación patrimonial completa", "cobertura": { "estado": "No disponible", "incluidos": 3, "excluidos": 0, "motivos": ["No disponible sin los tres componentes completos. Cuando sea calculable será PARCIAL por definición; no representa ahorro real ni variación patrimonial completa"] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "margenReal": { "clave": "margenReal", "etiqueta": "Margen frente a nómina real", "clase": "plan", "valor": null, "subtotal": null, "estado": "No disponible", "unidad": "EUR", "motivo": "Margen del PLAN; no ahorro ejecutado ni Bonus/forecast", "cobertura": { "estado": "No disponible", "incluidos": 4, "excluidos": 0, "motivos": ["Margen del PLAN; no ahorro ejecutado ni Bonus/forecast"] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } }
     },
     "saldos": {
       "contexto": { "tipo": "actual" },
@@ -352,7 +361,7 @@ independientes y un mismo Saldo puede pertenecer a varias.
       "items": [
         { "id": "D001", "nombre": "Préstamo demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": "720.00", "calculable": true },
         { "id": "D002", "nombre": "Financiación demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": "300.00", "calculable": true },
-        { "id": "D005", "nombre": "Deuda incompleta demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": null, "calculable": false, "motivo": "Desglose de un movimiento aplicable no verificable" }
+        { "id": "D005", "nombre": "Deuda incompleta demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": null, "calculable": false, "motivo": "Falta el capital de apertura" }
       ],
       "total": {
         "valor": null,
@@ -403,7 +412,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │ INICIO · Resumen financiero                                                                  │
-│ Ciclo financiado C007 · inicio 20/06/2026 · corte 19/07/2026 · Referencia 19/07 (disponible)   │
+│ Ciclo 7 · inicio 20/06/2026 · corte 19/07/2026 · Referencia 19/07 (disponible)                │
 │ Solo lectura · [Cómo se calcula y qué falta]                                                 │
 ├───────────────────────────────────────────────┬──────────────────────────────────────────────┤
 │ LIQUIDEZ                            POSICIÓN  │ OBJETIVO R6                         OBJETIVO │
@@ -413,10 +422,10 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │                                               │ Meses cubiertos: ND · liquidez parcial      │
 │                                               │ Zona informativa · sin transferencia        │
 ├───────────────────────────────────────────────┴──────────────────────────────────────────────┤
-│ CICLO C007 · REAL vs PLAN                                                                    │
-│ Ingresos 2.250,00 € REAL · Gasto bruto 1.800,00 € REAL · Extraordinaria 100,00 € REAL        │
-│ Saldo operativo 350,00 € ! PARCIAL — no es ahorro real ni variación patrimonial              │
-│ Margen frente a nómina 100,00 € PLAN · [Ver flujo mensual]                                   │
+│ CICLO 7 · REAL vs PLAN                                                                       │
+│ Ingresos 2.250,00 € ! PARCIAL · Gasto bruto 1.800,00 € ! PARCIAL · Extraordinaria 100,00 € ! │
+│ Saldo operativo ND — sin los tres componentes completos; no es ahorro real                   │
+│ Margen frente a nómina ND · PLAN · [Ver flujo mensual]                                       │
 ├──────────────────┬──────────────────┬──────────────────┬─────────────────────────────────────┤
 │ SALDOS Y BOLSAS  │ AHORRO           │ INVERSIÓN        │ DEUDA NO HIPOTECARIA                │
 │ 6 Saldos         │ Posición S002    │ Posiciones       │ 2/3 calculables                     │
@@ -425,7 +434,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │ Bolsas 1         │ Variación ND     │ 1.456,40 €       │ Sin informar: aparte                │
 │ [Ver Saldos]     │ [Ver Saldos]     │ [Ver Inversión]  │ [Ver Deudas]                        │
 ├──────────────────┴──────────────────┴──────────────────┴─────────────────────────────────────┤
-│ PENDIENTES (E3.6) — No disponible: consumo E4.6 no implementado. Sin conteo 0. [Ver cobertura] │
+│ PENDIENTES (E3.6) — consumidos de su read model; sin total monetario ni conteo 0.   [Ver]    │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -434,7 +443,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 ```text
 ┌─────────────────────────────┐
 │ INICIO                      │
-│ Ciclo C007                  │
+│ Ciclo 7                     │
 │ 20/06–19/07 · Corte 19/07   │
 │ Solo lectura                │
 ├─────────────────────────────┤
@@ -450,11 +459,11 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │ Motivo: liquidez parcial    │
 │ [Ver coste esencial]        │
 ├─────────────────────────────┤
-│ CICLO C007    REAL / PLAN   │
-│ Ingresos 2.250,00 €  REAL   │
-│ Gasto bruto 1.800,00 € REAL │
-│ Saldo operativo 350,00 €    │
-│ ! PARCIAL                   │
+│ CICLO 7       REAL / PLAN   │
+│ Ingresos 2.250,00 € PARCIAL │
+│ Gasto bruto 1.800,00 PARCIAL│
+│ Saldo operativo ND          │
+│ sin 3 componentes           │
 │ [Ver flujo mensual]         │
 ├─────────────────────────────┤
 │ INVERSIÓN        POSICIÓN   │

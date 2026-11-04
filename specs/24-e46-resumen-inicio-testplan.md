@@ -51,7 +51,7 @@ filas `BLOCKED` dependen de E4.3 o del consumo E3.6; la falta de configuración 
 
 ## Fixture integrada E4.6 — diseñada, no ejecutada
 
-Todos los datos son ficticios. El ciclo `C007` inicia `2026-06-20`, está abierto y su corte efectivo es `2026-07-19`; `mesFinanciado` se deriva del inicio y es **`2026-07`**. No se fuerza el motor para obtener `2026-06`. Validación técnica 2026-11-04: `fundedMonth` y compra S003→S007 ejecutables con los contratos vigentes; la suite E4.6 sigue UNRUN sin DEV24.
+Todos los datos son ficticios. El escenario se denomina `C007`, pero su **ID consumible por E2.6 es `7`** (el motor exige IDs numéricos) y así lo publica el DTO y sus enlaces; igual ocurre con `C008` → `8`. Inicia `2026-06-20`, está abierto y su corte efectivo es `2026-07-19`; `mesFinanciado` se deriva del inicio y es **`2026-07`**. No se fuerza el motor para obtener `2026-06`. Validación técnica 2026-11-04: `fundedMonth` y compra S003→S007 ejecutables con los contratos vigentes; la suite E4.6 sigue UNRUN sin DEV24.
 
 ### Saldos
 
@@ -84,7 +84,7 @@ Agregado E4.3 esperado: valoración **Completa** `1197.50`; resultado **Parcial 
 | `D002` | No hipotecaria | Activa | `300.00` | Calculable |
 | `D003` | Hipotecaria | Activa | `50000.00` | Calculable, fuera del total |
 | `D004` | Sin informar | Activa | `100.00` | Fuera del total |
-| `D005` | No hipotecaria | Activa | `null` | Desglose inválido; no calculable |
+| `D005` | No hipotecaria | Activa | `null` | Falta el capital de apertura; no calculable |
 | `D006` | No hipotecaria | Inactiva | `400.00` | Excluida por estado |
 
 Total no hipotecario esperado: `valor: null`, `subtotal: 1020.00`, cobertura `2/3`.
@@ -99,9 +99,9 @@ Total no hipotecario esperado: `valor: null`, `subtotal: 1020.00`, cobertura `2/
 | Total ingresos | `2250.00` | Oráculo |
 | Gasto bruto | `1800.00` | Incluye cuota `300.00`, compartido bruto `300.00`, Comida auxiliar `50.00` y terminal `100.00` |
 | Amortización extraordinaria | `100.00` | Separada |
-| Saldo operativo bruto | `350.00` | `2250 − 1800 − 100`; siempre PARCIAL |
+| Saldo operativo bruto | `No disponible` | Los tres componentes son subtotales parciales; no se fabrica `350.00` |
 | Del mes del plan | `1900.00` | 4/4 líneas |
-| Margen frente a nómina real | `100.00` | Plan, no ahorro |
+| Margen frente a nómina real | `No disponible` | Nómina publicada como subtotal; no se fabrica `100.00` |
 
 Presupuestos: `PRE001` y `PRE004` sobre `S001` (varios por saldo), `PRE002` Ahorro sobre
 `S002`, `PRE003` Inversión sobre `S007`. Plan del ciclo `C007` con 4 líneas completas.
@@ -145,12 +145,12 @@ es `No disponible`; `mesesCubiertos` se publica si liquidez y coste son completo
 | Meses cubiertos — liquidez completa | `3456.40 / 1500.00` (`V-LIQ-COMPLETA`) | `345640/150000 = 2.304266…`; se muestra `2,30` (formato propuesto DT8) aunque `mesesObjetivo` sea `null`; `minimoObjetivo` ND |
 | Meses cubiertos — liquidez cero | `0 / 1500.00` (`V-LIQ-CERO`) | `0,00` con `Cero verificado`; no ND |
 | Coste 0 | `0` verificado | meses cubiertos `No disponible`, no 0/infinito |
-| Ejercicio esencial | `C008` con inicio `2026-11-20`, `mesFinanciado 2026-12` y corte `2027-01-19` | `annualEquivalent` de 2026; 2027 no se usa |
+| Ejercicio esencial | `C008` (ID `8`) con inicio `2026-11-20`, `mesFinanciado 2026-12` y corte `2027-01-19` | `annualEquivalent` de 2026; 2027 no se usa |
 | Agregado inversión | `877.50 + 320.00` | `1197.50`, cobertura completa |
 | Efectivo bróker | `S003 1456.40` y `S004 500.00` | dos registros, sin total |
 | Deuda no hipotecaria | `720.00 + 300.00` | subtotal `1020.00`; total `null` por `D005` |
-| Ciclo operativo | `2250.00 − 1800.00 − 100.00` | `350.00`, `Parcial` |
-| Margen real | `2000.00 − 1900.00` | `100.00`, clase `plan` |
+| Ciclo operativo | `2250.00 − 1800.00 − 100.00` | `valor: null`, `No disponible`: componentes parciales, sin fabricar `350.00` |
+| Margen real | `2000.00 − 1900.00` | `valor: null`, `No disponible`, clase `plan`: nómina solo subtotal |
 
 Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 
@@ -159,7 +159,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | Inversión + efectivo | `1197.50 + 1456.40 + 500.00 = 3153.90` | El efectivo no es posición |
 | Liquidez + Ahorro + Bolsas | Cualquier suma cruzada (p. ej. `3456.40 + 800.00 + 250.00`) | Vistas solapadas del mismo Saldo |
 | Liquidez − deuda | `3456.40 − 1020.00 = 2436.40` | La deuda es informativa |
-| Gasto − total deudas | `1800.00 − 400.00 = 1400.00` | La cuota ya está en el Gasto; la extraordinaria ya está separada |
+| Gasto − total deudas | `1800.00 − 400.00 = 1400.00`; operativo fabricado `350.00` | La cuota ya está en el Gasto; con componentes parciales no hay operativo |
 | Operativo − pendientes | Cualquier resta de E3.6 | Pendientes no son ajuste del flujo |
 | Gasto + Neto compartido | `1800.00 + 180.00` | Neto sustituye/ajusta, no se suma al bruto |
 
@@ -168,7 +168,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC | Tipo | Precondición y acción | Resultado esperado | Método y comando | Plataforma / owner | Evidencia | Estado |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | AC-01 | Positivo | Abrir inicio con fixture | Toda cifra con `fuente.motor`, IDs y contexto; UI sin cálculos | API + Playwright | Local/CI · impl + QA | DTO y captura | UNRUN |
-| AC-02 | Positivo | Comparar DTO con motores | Igualdad exacta: `3456.40`, `1500.00`, `1197.50`, `1020.00`, `350.00`, `100.00` | `bun test apps/api/resumen-inicio.test.ts` | Local/CI · impl | Tabla de oráculo | UNRUN |
+| AC-02 | Positivo | Comparar DTO con motores | Igualdad exacta por campo, incluidos `null`: liquidez `3456.40`/`Parcial`; ingresos `2250.00`, gasto `1800.00`, extraordinaria `100.00` y nómina `2000.00` como `subtotal` con `valor:null`/`Parcial`; `operativo` y `margenReal` `No disponible`; deuda `1020.00`/`Parcial`; coste `1500.00`; agregado `1197.50` | `bun test apps/api/resumen-inicio.test.ts` | Local/CI · impl | Tabla de oráculo | UNRUN |
 | AC-03 | Negativo | Snapshot de tablas antes/después del GET | Sin cambios; solo GET; 405 en POST/PATCH/DELETE | API + SQLite | Local/CI · QA | Diff de tablas y códigos | UNRUN |
 | AC-04 | Límite | Modificar un Gasto y recargar | Cambia la sección y `revision`; las demás no | API | Local/CI · impl | Respuestas antes/después | UNRUN |
 | AC-05 | Positivo | `S005` sin Liquidez | `Parcial`, 3 incluidos, 1 excluido, subtotal `3456.40` | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
@@ -188,13 +188,13 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-19 | Negativo | Saldo en tres vistas | Aparece en las tres; sin suma combinada | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-20 | Negativo | Cambiar cobertura de Presupuesto | Liquidez/ahorro no cambian; no se resta lo presupuestado | API | Local/CI · impl | Antes/después | UNRUN |
 | AC-21 | Negativo | Añadir deuda | Liquidez, gasto y operativo no cambian | API | Local/CI · impl | Antes/después | UNRUN |
-| AC-22 | Límite | Cuota `300` + extraordinaria `100` | Operativo `350`, no `−50` ni `1400` | API | Local/CI · impl | DTO | UNRUN |
+| AC-22 | Límite | Cuota `300` + extraordinaria `100` | Operativo `No disponible`: no aparece `350`, `−50` ni `1400`; no se resta la cuota ni la extraordinaria de ninguna métrica publicada | API | Local/CI · impl | DTO | UNRUN |
 | AC-23 | Positivo | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | DTO | UNRUN (E3.6 disponible; E4.6 sin DEV) |
 | AC-24 | Positivo | `I1002` manual | Valor `320.00`; resultado/rentabilidad `No disponible` | API + UI | Local/CI · QA | DTO y captura | UNRUN |
 | AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | DTO y captura | UNRUN |
 | AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/*.png` | UNRUN |
 | AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP | Local/CI · QA | Respuestas y cabeceras | UNRUN |
-| AC-28 | Positivo/Límite | `V-EJERCICIO`: `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | DTO y `ejercicioOrigen` | UNRUN |
+| AC-28 | Positivo/Límite | `V-EJERCICIO` (ID `8`): `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | DTO y `ejercicioOrigen` | UNRUN |
 | AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API | Local/CI · impl | DTO | UNRUN |
 
 ### Casos específicos de no duplicación
