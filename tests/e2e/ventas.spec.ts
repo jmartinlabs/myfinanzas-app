@@ -666,8 +666,8 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
       page.getByRole("heading", { name: "Inversiones", exact: true }),
     ).toBeVisible();
     const theme = await light();
-    expect(theme.luminance).toBeGreaterThan(180);
-    expect(theme.scheme).toBe("light");
+    expect(theme.luminance).toBeLessThan(80);
+    expect(theme.scheme).toBe("dark");
     await ventasTab();
     await expect(page.locator(".inversiones-mobile li")).toHaveCount(4);
     await noOverflow();

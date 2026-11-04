@@ -213,6 +213,10 @@ test("E2.5 payroll: real MFA, documents, allocation, forecast and responsive rev
       page.getByRole("heading", { name: "Cobros bancarios y reparto global" }),
     ).toHaveCount(0);
 
+    await page.mouse.move(0, 0);
+    await expect(
+      page.getByRole("button", { name: "Histórico", exact: true }),
+    ).toHaveCSS("background-color", "rgb(228, 87, 46)");
     const ratios = await page
       .locator(".payroll-table th, .payroll-table button, button.primary")
       .evaluateAll((nodes) =>

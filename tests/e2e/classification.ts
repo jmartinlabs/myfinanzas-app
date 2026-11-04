@@ -115,8 +115,8 @@ export async function classificationJourney(page: Page) {
     name: "Nueva Partida",
     exact: true,
   });
-  await expect(primary).toHaveCSS("color", "rgb(36, 50, 14)");
-  await expect(primary).toHaveCSS("background-color", "rgb(141, 187, 46)");
+  await expect(primary).toHaveCSS("color", "rgb(20, 20, 20)");
+  await expect(primary).toHaveCSS("background-color", "rgb(228, 87, 46)");
   await page.getByLabel("Buscar nombre o ID").fill("No coincide");
   await expect(
     page.getByRole("heading", { name: "Sin coincidencias" }),
@@ -138,7 +138,7 @@ export async function classificationJourney(page: Page) {
     await page.evaluate(
       () => getComputedStyle(document.documentElement).colorScheme,
     ),
-  ).toBe("light");
+  ).toBe("dark");
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await page.getByRole("link", { name: "Clasificación", exact: false }).click();
   await expect(
