@@ -296,6 +296,8 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+    await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
@@ -307,6 +309,8 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await select.selectOption(theme);
     await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+    await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-390.png`,
