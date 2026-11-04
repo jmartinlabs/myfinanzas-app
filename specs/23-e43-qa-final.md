@@ -1,7 +1,9 @@
 # 23 — E4.3 QA final (A+B+C)
 
-Status: **QA VISUAL Y FUNCIONAL COMPLETADA — APTO CON RESERVAS MENORES.** Candidato de esta
-rama sobre `main` `9b76569`; sin merge. Los estados de AC reflejan la evidencia ejecutada; la aceptación visual final corresponde al usuario y la revisión funcional final a Álex.
+Status: **QA VISUAL Y FUNCIONAL COMPLETADA — APTO CON RESERVAS MENORES.** Integrada en
+`main` `dd56553` (squash de #189). 15 AC PASS de cobertura, 2 PARCIAL; 409 con sobrescritura
+explícita. La aceptación funcional final sigue pendiente de Álex; no se declara PASS de
+aceptación.
 
 ## 1. Alcance y evidencia
 

@@ -1,6 +1,6 @@
 # E4.9 — paquete breve para autorización de DEV
 
-**Base:** `main` `9b76569` (2026-11-04). **Documento de decisión; no autoriza DEV, no declara PASS.**
+**Base:** `main` `dd56553` (2026-11-04). **Documento de decisión; no autoriza DEV, no declara PASS.**
 Marcas: **CONFIRMADO** (estado verificado), **PROPUESTA** (candidato no aprobado), **PENDIENTE** (requiere decisión).
 
 ## 1. Estado y límites

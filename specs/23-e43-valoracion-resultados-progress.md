@@ -1,9 +1,6 @@
 # 23 — E4.3 Valoración y resultados: Progress
 
-Status: **E4.3 A+B+C integrado en `main`; QA final completada en PR #189 (candidato
-`85f5b9a`, CI 644/644 y Playwright 1/1). QA-A/B/C APTO CON RESERVAS; reservas menores
-documentadas. Sin merge de QA final; 15 AC PASS de cobertura y 2 PARCIAL, con aceptación
-funcional y merge pendientes.**
+Status: **E4.3 A+B+C y QA final integrados en `main` `dd56553` (squash de #184, #187 y #189); CI post-merge `41796526278` verde. 15 AC PASS de cobertura, 2 PARCIAL; 409 con sobrescritura explícita. Aceptación funcional final de Álex pendiente; sin PASS de aceptación.**
 Task ID: `SPEC23-E4.3` — Valoración y resultados de posiciones.
 Fecha: 2026-11-03.
 Fuentes: [specification](23-e43-valoracion-resultados-specification.md),
@@ -95,7 +92,7 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 
 ## QA final — 2026-11-04
 
-- **Candidato:** PR #189, rama `fix/e43-qa-final`, HEAD `85f5b9a`; CI Linux `required`
+- **Candidato:** PR #189, rama `fix/e43-qa-final`, HEAD `57a86aa`; merged `dd56553`; CI Linux `required`
   644/644; `typecheck`, `build`, Playwright Valoración 1/1 y regresión Inversiones 1/1.
 - **Corregido:** R5 (contexto `/inversiones` y corte consultado), O3 (singular/plural),
   recaptura del 390 parcial antes de mutar y **409 sin sobrescritura inadvertida** (diferencias
