@@ -1,3 +1,4 @@
+import { Inicio } from "./Inicio";
 import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
 import { Pendientes } from "./Pendientes";
@@ -133,7 +134,8 @@ function App() {
           setAuth("ready");
           const current = location.pathname + location.search;
           go(
-            current.startsWith("/flujo-mensual") ||
+            current.startsWith("/inicio") ||
+              current.startsWith("/flujo-mensual") ||
               current.startsWith("/pendientes") ||
               current.startsWith("/inversiones")
               ? current
@@ -172,6 +174,18 @@ function App() {
         </button>
         <nav id="main-nav">
           <p className="nav-group">MI ESPACIO</p>
+          <a
+            className={path.startsWith("/inicio") ? "nav-active" : "nav-link"}
+            href="/inicio"
+            aria-current={path.startsWith("/inicio") ? "page" : undefined}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/inicio");
+            }}
+          >
+            <span aria-hidden="true">◉</span> Inicio{" "}
+            <span aria-hidden="true">›</span>
+          </a>
           <a
             href="/anticipos"
             className={
@@ -492,7 +506,9 @@ function App() {
               {notice}
             </p>
           )}
-          {path.startsWith("/dprima") ? (
+          {path.startsWith("/inicio") ? (
+            <Inicio go={go} />
+          ) : path.startsWith("/dprima") ? (
             <Dprima go={go} />
           ) : path.startsWith("/comida") ? (
             <Comida go={go} />

@@ -1,0 +1,810 @@
+import {
+  test,
+  expect,
+  type APIRequestContext,
+  type Locator,
+  type Page,
+} from "@playwright/test";
+import { spawn, type ChildProcess } from "node:child_process";
+import { mkdirSync, readFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { totp } from "../../apps/api/src/auth";
+
+/**
+ * E4.6 — UI /inicio con MFA real y un servidor aislado.
+ *
+ * El servidor de test siembra la fixture ficticia C007 (ID numérico 7) y nunca
+ * toca una base real. El escenario `zero` reutiliza el mismo fixture con
+ * liquidez cero verificada para AC-07/29.
+ */
+
+const BASE_PORT = 3014;
+const ZERO_PORT = 3015;
+const DEGRADED_PORT = 3016;
+const AUTH_PORT = 3017;
+const BASE_DIR = ".local/e2e-inicio";
+const ZERO_DIR = ".local/e2e-inicio-zero";
+const DEGRADED_DIR = ".local/e2e-inicio-degradado";
+const AUTH_DIR = ".local/e2e-inicio-auth";
+let base: ChildProcess | undefined;
+let zero: ChildProcess | undefined;
+let degraded: ChildProcess | undefined;
+let auth: ChildProcess | undefined;
+
+async function waitForApi(request: APIRequestContext, port: number) {
+  await expect
+    .poll(
+      async () => {
+        try {
+          return (await request.get(`http://127.0.0.1:${port}/api/health`))
+            .status();
+        } catch {
+          return 0;
+        }
+      },
+      { timeout: 20000 },
+    )
+    .toBe(200);
+}
+
+test.beforeAll(async ({ request }) => {
+  base = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test" },
+    },
+  );
+  zero = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "zero" },
+    },
+  );
+  degraded = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "degradado" },
+    },
+  );
+  auth = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "auth" },
+    },
+  );
+  await waitForApi(request, BASE_PORT);
+  await waitForApi(request, ZERO_PORT);
+  await waitForApi(request, DEGRADED_PORT);
+  await waitForApi(request, AUTH_PORT);
+});
+
+test.afterAll(() => {
+  base?.kill();
+  zero?.kill();
+  degraded?.kill();
+  auth?.kill();
+});
+
+async function routeApi(page: Page, port: number) {
+  await page.route("**/api/**", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(port);
+    await route.fulfill({ response: await route.fetch({ url: url.toString() }) });
+  });
+}
+
+async function login(page: Page, dir: string) {
+  const password = "Clave ficticia inicio " + randomUUID();
+  await page.goto("/inicio");
+  await page
+    .getByLabel("Token de configuración local")
+    .fill(readFileSync(`${dir}/bootstrap.txt`, "utf8"));
+  await page.getByLabel("Contraseña", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await expect(page.locator(".secret")).toBeVisible();
+  const secret = (await page.locator(".secret").textContent())!;
+  await page
+    .getByLabel("Código de la aplicación autenticadora")
+    .fill(totp(secret).generate());
+  await page
+    .getByRole("button", { name: "Verificar código", exact: true })
+    .click();
+  await page
+    .getByRole("button", { name: "He guardado los códigos · Continuar" })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Inicio", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".inicio-context")).toBeVisible();
+  return { secret, password };
+}
+
+/** Reautentica un usuario ya configurado sin repetir el alta ni los códigos. */
+async function reauthenticate(
+  page: Page,
+  credentials: { secret: string; password: string },
+) {
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill(credentials.password);
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page
+    .getByLabel("Código de la aplicación autenticadora")
+    .fill(totp(credentials.secret).generate({ timestamp: Date.now() + 30000 }));
+  await page
+    .getByRole("button", { name: "Verificar código", exact: true })
+    .click();
+}
+
+async function resetScroll(page: Page) {
+  await page.evaluate(async () => {
+    window.scrollTo(0, 0);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
+  });
+}
+
+async function expectInicio(page: Page) {
+  await expect(
+    page.getByRole("heading", { name: "Inicio", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+}
+
+async function drillDown(page: Page, link: Locator, url: RegExp) {
+  await link.click();
+  await expect(page).toHaveURL(url);
+  expect(page.url()).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
+  await page.goBack();
+  await expectInicio(page);
+}
+
+/** Contraste de texto, motivos y enlaces principales, no solo de los badges. */
+async function expectInicioContrast(page: Page) {
+  // Abre los detalles para que small/meta/summary no queden fuera por offsetParent.
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = true;
+  });
+  const ratios = await page.locator(".inicio-page").evaluate((root) => {
+    const luminance = (rgb: string) => {
+      const values = rgb.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
+      if (!values || values.length !== 3) return 0;
+      const [r, g, b] = values.map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045
+          ? channel / 12.92
+          : Math.pow((channel + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const nodes = Array.from(
+      root.querySelectorAll(
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.inicio-value,.inicio-estado,.inicio-item-meta,.inicio-clase",
+      ),
+    );
+    const result: number[] = [];
+    for (const node of nodes) {
+      const element = node as HTMLElement;
+      const style = getComputedStyle(element);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        !element.offsetParent
+      )
+        continue;
+      const text = (element.textContent ?? "").trim();
+      if (!text) continue;
+      let background = "rgba(0, 0, 0, 0)";
+      let parent: HTMLElement | null = element;
+      while (parent) {
+        const candidate = getComputedStyle(parent).backgroundColor;
+        if (candidate !== "rgba(0, 0, 0, 0)" && candidate !== "transparent") {
+          background = candidate;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      const foreground = luminance(style.color);
+      const behind = luminance(background);
+      if (foreground === 0 || behind === 0) continue;
+      result.push(
+        (Math.max(foreground, behind) + 0.05) /
+          (Math.min(foreground, behind) + 0.05),
+      );
+    }
+    return result;
+  });
+  expect(ratios.length).toBeGreaterThan(0);
+  expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.5);
+}
+
+test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/e4-6", { recursive: true });
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await routeApi(page, BASE_PORT);
+  await login(page, BASE_DIR);
+
+  // Un solo h1 y contexto derivado de la referencia, no del reloj.
+  await expect(page.locator("h1")).toHaveCount(1);
+  const contexto = page.locator(".inicio-context");
+  await expect(contexto).toContainText("Ciclo 7");
+  await expect(contexto).toContainText("20/06/2026");
+  await expect(contexto).toContainText("19/07/2026");
+  await expect(contexto).toContainText("Referencia financiera");
+  await expect(contexto).toContainText("disponible");
+
+  // AC-01/05: la liquidez es Parcial, con subtotal, motivo y 3/4.
+  const liquidezSection = page.locator(
+    "section[aria-labelledby='inicio-liquidez']",
+  );
+  const liquidez = page.getByRole("article", { name: "Liquidez", exact: true });
+  await expect(liquidez).toContainText("Subtotal conocido");
+  await expect(liquidez).toContainText("3.456,40 €");
+  await expect(liquidez).toContainText("PARCIAL");
+  await expect(liquidez).toContainText("3/4");
+  await expect(liquidez).toContainText("S005: Liquidez sin informar");
+  await expect(liquidez).toContainText("E2.6 monthlyFlow");
+  await expect(liquidez).toContainText("S001");
+  await expect(liquidez).toContainText("Contexto: actual");
+  await liquidezSection
+    .getByText("Ver posiciones incluidas y excluidas")
+    .click();
+  await expect(liquidezSection).toContainText("Incluidas (3)");
+  await expect(liquidezSection).toContainText("Excluidas (1)");
+  await expect(liquidezSection).toContainText("Cuenta cotidiana demo");
+
+  // Objetivo R6: coste completo, mínimo ND y meses cubiertos ND por liquidez parcial.
+  const objetivo = page.getByRole("article", { name: "Objetivo R6", exact: true });
+  await expect(objetivo).toContainText("1.500,00 €");
+  await expect(objetivo).toContainText("COMPLETO");
+  await expect(objetivo).toContainText("No configurados");
+  await expect(objetivo).toContainText("NO DISPONIBLE");
+  await expect(objetivo).toContainText(
+    "Liquidez parcial: no se divide el subtotal conocido.",
+  );
+  await expect(objetivo).toContainText("Ejercicio 2026");
+  await expect(objetivo).toContainText("Zona informativa");
+  await expect(objetivo).toContainText("Cobertura Completa");
+  await expect(objetivo).toContainText("0 importes esenciales sin informar");
+  await expect(objetivo).not.toContainText("9.000,00 €");
+
+  // Ciclo: subtotales parciales y operativo/margen No disponible, sin fabricar 350.
+  const ciclo = page.locator("section[aria-labelledby='inicio-ciclo']");
+  const ingresos = ciclo.getByRole("article", { name: "Ingresos", exact: true });
+  await expect(ingresos).toContainText("2.250,00 €");
+  await expect(ingresos).toContainText("Subtotal conocido");
+  await expect(ingresos).toContainText("PARCIAL");
+  const gasto = ciclo.getByRole("article", { name: "Gasto bruto", exact: true });
+  await expect(gasto).toContainText("1.800,00 €");
+  await expect(gasto).toContainText("PARCIAL");
+  const extraordinaria = ciclo.getByRole("article", {
+    name: "Amortización extraordinaria",
+    exact: true,
+  });
+  await expect(extraordinaria).toContainText("100,00 €");
+  await expect(extraordinaria).toContainText("PARCIAL");
+  const operativo = ciclo.getByRole("article", {
+    name: "Saldo operativo bruto observado",
+    exact: true,
+  });
+  await expect(operativo).toContainText("NO DISPONIBLE");
+  await expect(operativo).not.toContainText("350,00 €");
+  const margen = ciclo.getByRole("article", {
+    name: "Margen frente a nómina real",
+    exact: true,
+  });
+  await expect(margen).toContainText("NO DISPONIBLE");
+  await expect(margen).not.toContainText("100,00 €");
+  const nomina = ciclo.getByRole("article", {
+    name: "Nómina cobrada",
+    exact: true,
+  });
+  await expect(nomina).toContainText("2.000,00 €");
+  await expect(nomina).toContainText("Subtotal conocido");
+  await expect(nomina).toContainText("PARCIAL");
+  const base = ciclo.getByRole("article", {
+    name: "Base planificada",
+    exact: true,
+  });
+  await expect(base).toContainText("1.900,00 €");
+  await expect(base).toContainText("Total verificado");
+  await expect(base).toContainText("COMPLETO");
+  const delMes = ciclo.getByRole("article", {
+    name: "Del mes planificado",
+    exact: true,
+  });
+  await expect(delMes).toContainText("1.900,00 €");
+  await expect(delMes).toContainText("Total verificado");
+  await expect(delMes).toContainText("COMPLETO");
+  await expect(page.locator("body")).not.toContainText("350,00 €");
+
+  // B1: ningún motivo se repite como bullet de cobertura en la misma tarjeta.
+  for (const card of await page.locator(".inicio-metric").all()) {
+    const motivo = (
+      await card.locator(".inicio-metric-motivo").first().innerText()
+    ).trim();
+    if (!motivo) continue;
+    for (const bullet of await card
+      .locator(".inicio-metric-coverage li")
+      .allInnerTexts())
+      expect(bullet.trim()).not.toBe(motivo);
+    // Un solo CTA por destino dentro de la misma tarjeta.
+    const cardHrefs = await card
+      .locator("a")
+      .evaluateAll((anchors) =>
+        anchors.map((anchor) => anchor.getAttribute("href") ?? ""),
+      );
+    expect(new Set(cardHrefs).size).toBe(cardHrefs.length);
+  }
+
+  // Taxonomía única: los badges no muestran estados crudos en minúsculas.
+  const badges = page.locator(".inicio-estado");
+  expect(await badges.count()).toBeGreaterThan(0);
+  for (const badge of await badges.all()) {
+    expect([
+      "Verificado",
+      "Cero verificado",
+      "Parcial",
+      "No disponible",
+      "No aplica",
+      "Sin datos",
+    ]).toContain(await badge.getAttribute("data-estado"));
+    const text = (await badge.innerText()).trim();
+    expect(text).not.toBe("No disponible");
+    expect(text).not.toBe("Completa");
+    expect(text).not.toMatch(/^Parcial \d/);
+  }
+
+  // Saldos: conteos y ausencia de total.
+  const saldos = page.locator("section[aria-labelledby='inicio-saldos']");
+  await expect(saldos).toContainText("Sin total de Saldos");
+  await expect(saldos).toContainText("cobertura 6/7");
+  await saldos.getByText("Ver Saldos y su pertenencia").click();
+  await expect(saldos.locator(".inicio-item-list li")).toHaveCount(7);
+  await expect(saldos).toContainText("posición calculado");
+
+  // Ahorro: la posición y las métricas declaran su fuente y cobertura.
+  const ahorro = page.locator("section[aria-labelledby='inicio-ahorro']");
+  await expect(ahorro).toContainText("posición calculado");
+  await expect(ahorro).toContainText("Cobertura:");
+  await expect(ahorro).toContainText("Fuente: Motor no instalado");
+
+  // Inversión: agregado valorado y efectivo separados, sin total combinado.
+  const inversion = page.locator("section[aria-labelledby='inicio-inversion']");
+  await expect(inversion).toContainText("1.197,50 €");
+  await expect(inversion).toContainText("Resultado");
+  await expect(inversion).toContainText("Parcial 1/2");
+  await expect(inversion).toContainText("1.456,40 €");
+  await expect(inversion).toContainText("500,00 €");
+  await expect(inversion).toContainText("Sin total combinado");
+  await expect(inversion).not.toContainText("3.153,90 €");
+  await inversion.getByText("Ver posiciones").click();
+  await expect(inversion).toContainText("cobertura Completa");
+  await expect(inversion).toContainText("Acción demo");
+
+  // Deuda: subtotal parcial 2/3, D005 no calculable y aparte fuera del total.
+  const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
+  const deudaTotal = page.getByRole("article", {
+    name: "Deuda no hipotecaria",
+    exact: true,
+  });
+  await expect(deudaTotal).toContainText("Subtotal conocido");
+  await expect(deudaTotal).toContainText("1.020,00 €");
+  await expect(deudaTotal).toContainText("PARCIAL");
+  await expect(deudaTotal).toContainText("2/3");
+  await expect(deuda).toContainText("D005");
+  await expect(deuda).toContainText("no calculable");
+  await expect(deuda).toContainText("Hipotecaria");
+  await expect(deuda).toContainText("Sin informar");
+  await expect(deuda).not.toContainText("2.436,40 €");
+
+  // AC-01: cada tarjeta declara motor, IDs (cuando existen) y contexto.
+  await expect(objetivo).toContainText("E2.4 annualEquivalent");
+  await expect(saldos).toContainText("E1.1 listSaldos/getSaldo");
+  await expect(inversion).toContainText("E4.3 e43Corte + E4.2 cashAt");
+  await expect(deuda).toContainText("E4.4 listDeudasCompletas/getDeudaCompleta");
+  const sourceLines = page.locator(".inicio-metric .inicio-source");
+  expect(await sourceLines.count()).toBeGreaterThanOrEqual(10);
+  for (const text of await sourceLines.allInnerTexts())
+    expect(text).toContain("Fuente:");
+
+  // Pendientes: sin total monetario.
+  const pendientes = page.locator("section[aria-labelledby='inicio-pendientes']");
+  await expect(pendientes).toContainText("Sin total monetario");
+  await expect(pendientes).toContainText("E3.6 listPendientes");
+
+  // AC-09: enlaces reales y sin importes en la URL.
+  const hrefs = await page
+    .locator(".inicio-page a")
+    .evaluateAll((anchors) => anchors.map((anchor) => anchor.getAttribute("href") ?? ""));
+  expect(hrefs).toContain("/saldos");
+  expect(hrefs).toContain("/flujo-mensual?ciclo=7");
+  expect(hrefs).toContain("/inversiones");
+  expect(hrefs).toContain("/deudas");
+  expect(hrefs).toContain("/deudas/D001");
+  expect(hrefs).toContain("/pendientes");
+  expect(hrefs).toContain("/saldos/S001");
+  expect(hrefs).toContain("/plan-anual");
+  expect(
+    hrefs.filter((href) => href === "/flujo-mensual?ciclo=7"),
+  ).toHaveLength(1);
+  for (const href of hrefs)
+    expect(href).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
+
+  // Activa todos los drill-down y vuelve comprobando el contexto del ciclo.
+  await drillDown(
+    page,
+    liquidezSection.getByRole("link", { name: "Ver Saldos", exact: true }),
+    /\/saldos$/,
+  );
+  await saldos.getByText("Ver Saldos y su pertenencia").click();
+  await drillDown(
+    page,
+    saldos.getByRole("link", { name: /^S001 / }),
+    /\/saldos\/S001$/,
+  );
+  await drillDown(
+    page,
+    ciclo.getByRole("link", { name: "Ver flujo mensual", exact: true }).first(),
+    /\/flujo-mensual\?ciclo=7$/,
+  );
+  await drillDown(
+    page,
+    inversion.getByRole("link", { name: "Ver Inversión", exact: true }),
+    /\/inversiones$/,
+  );
+  await drillDown(
+    page,
+    deuda.getByRole("link", { name: "Ver Deudas", exact: true }),
+    /\/deudas$/,
+  );
+  await drillDown(
+    page,
+    deuda.getByRole("link", { name: /^D001 / }),
+    /\/deudas\/D001$/,
+  );
+  await drillDown(
+    page,
+    pendientes.getByRole("link", { name: "Ver Pendientes", exact: true }),
+    /\/pendientes$/,
+  );
+  await drillDown(
+    page,
+    objetivo.getByRole("link", { name: "Ver coste esencial", exact: true }),
+    /\/plan-anual$/,
+  );
+
+  // AC-26: teclado/foco visible.
+  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
+  await page.keyboard.press("Tab");
+  const outlined = await page.evaluate(() => {
+    const element = document.activeElement as HTMLElement | null;
+    if (!element) return false;
+    const style = getComputedStyle(element);
+    return style.outlineStyle !== "none" && parseFloat(style.outlineWidth) >= 1;
+  });
+  expect(outlined).toBe(true);
+
+  const select = page.getByLabel("Tema visual");
+  const expectNoOverflow = async () =>
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+    await expect(page.locator(".inicio-metric").first()).toBeVisible();
+    await expectNoOverflow();
+    await expectInicioContrast(page);
+    await expectNoOverflow();
+    // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
+    await page.locator(".inicio-page details").evaluateAll((nodes) => {
+      for (const node of nodes) (node as HTMLDetailsElement).open = false;
+    });
+    await resetScroll(page);
+    await page.screenshot({
+      path: `artifacts/e4-6/inicio-${theme}-1440.png`,
+      fullPage: true,
+    });
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+    await expect(page.locator(".inicio-metric").first()).toBeVisible();
+    await expectNoOverflow();
+    await expectInicioContrast(page);
+    await expectNoOverflow();
+    await page.locator(".inicio-page details").evaluateAll((nodes) => {
+      for (const node of nodes) (node as HTMLDetailsElement).open = false;
+    });
+    await resetScroll(page);
+    await page.screenshot({
+      path: `artifacts/e4-6/inicio-${theme}-390.png`,
+      fullPage: true,
+    });
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  expect(errors).toEqual([]);
+});
+
+test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/e4-6", { recursive: true });
+  await routeApi(page, ZERO_PORT);
+  await login(page, ZERO_DIR);
+
+  const liquidez = page.getByRole("article", { name: "Liquidez", exact: true });
+  await expect(liquidez).toContainText("0,00 €");
+  await expect(liquidez).toContainText("Cero verificado");
+  await expect(liquidez).toContainText("CERO VERIFICADO");
+  await expect(liquidez).not.toContainText("Subtotal conocido");
+
+  const objetivo = page.getByRole("article", { name: "Objetivo R6", exact: true });
+  await expect(objetivo).toContainText("0,00 meses");
+  await expect(objetivo).toContainText("CERO VERIFICADO");
+  await expect(objetivo).toContainText("No configurados");
+  await expect(objetivo).toContainText("NO DISPONIBLE");
+
+  const operativo = page
+    .locator("section[aria-labelledby='inicio-ciclo']")
+    .getByRole("article", {
+      name: "Saldo operativo bruto observado",
+      exact: true,
+    });
+  await expect(operativo).toContainText("NO DISPONIBLE");
+  await expect(operativo).not.toContainText("0,00 €");
+
+  const deudaTotal = page.getByRole("article", {
+    name: "Deuda no hipotecaria",
+    exact: true,
+  });
+  await expect(deudaTotal).toContainText("PARCIAL");
+  await expect(deudaTotal).toContainText("1.020,00 €");
+  await expect(deudaTotal).toContainText("Subtotal conocido");
+
+  // Evidencia: tres temas a 1440 y 390, también en el escenario cero.
+  const select = page.getByLabel("Tema visual");
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    for (const [width, height] of [
+      [1440, 1000],
+      [390, 844],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await resetScroll(page);
+      await page.screenshot({
+        path: `artifacts/e4-6/inicio-cero-${theme}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+});
+
+test("M-4: estados degradados no se presentan como vacío real", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/e4-6", { recursive: true });
+  await routeApi(page, DEGRADED_PORT);
+  await page.route("**/api/resumen-inicio", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(DEGRADED_PORT);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    json.secciones.deudaNoHipotecaria.total = {
+      valor: null,
+      subtotal: null,
+      estado: "No disponible",
+      motivo: "E4.4 no disponible: fuente no verificable.",
+      cobertura: {
+        estado: "No disponible",
+        incluidos: 0,
+        excluidos: 0,
+        motivos: ["E4.4 no disponible: fuente no verificable."],
+      },
+      fuente: {
+        motor: "E4.4 listDeudasCompletas/getDeudaCompleta",
+        ids: [],
+        revisiones: [],
+      },
+    };
+    json.secciones.deudaNoHipotecaria.items = [];
+    json.secciones.deudaNoHipotecaria.aparte = {
+      hipotecaria: [],
+      sinInformar: [],
+    };
+    json.secciones.pendientes.fuenteFallos = [
+      {
+        motor: "E4.2 cashAt",
+        id: "S003",
+        motivo: "Efectivo no verificable",
+      },
+    ];
+    json.secciones.pendientes.items = [];
+    json.secciones.pendientes.conteo = null;
+    json.secciones.pendientes.metrica.estado = "Sin datos";
+    const saldo = json.secciones.saldos.items.find(
+      (item: any) => item.id === "S001",
+    );
+    saldo.posicion = null;
+    saldo.motivo = "Control de movimientos no verificado";
+    const ahorro = json.secciones.ahorro.posiciones[0];
+    ahorro.valor = null;
+    ahorro.estado = "No disponible";
+    ahorro.motivo = "Posición de ahorro no verificable por el motor";
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  await login(page, DEGRADED_DIR);
+
+  const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
+  await expect(deuda).toContainText("Bloque no disponible por fallo de fuente");
+  await expect(deuda).toContainText("E4.4 no disponible: fuente no verificable.");
+  await expect(deuda).not.toContainText("Sin deudas no hipotecarias activas");
+
+  const pendientes = page.locator("section[aria-labelledby='inicio-pendientes']");
+  await expect(pendientes).toContainText("PARCIAL · FUENTES CON FALLO");
+  await expect(pendientes).toContainText(
+    "E4.2 cashAt S003: Efectivo no verificable",
+  );
+  await expect(pendientes).not.toContainText("Sin pendientes");
+  await expect(pendientes).not.toContainText("SIN DATOS");
+
+  const saldos = page.locator("section[aria-labelledby='inicio-saldos']");
+  await saldos.getByText("Ver Saldos y su pertenencia").click();
+  await expect(saldos).toContainText(
+    "Motivo: Control de movimientos no verificado",
+  );
+  const ahorro = page.locator("section[aria-labelledby='inicio-ahorro']");
+  await expect(ahorro).toContainText(
+    "Posición de ahorro no verificable por el motor",
+  );
+
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = false;
+  });
+
+  // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
+  const select = page.getByLabel("Tema visual");
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    for (const [width, height] of [
+      [1440, 1000],
+      [390, 844],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await resetScroll(page);
+      await page.screenshot({
+        path: `artifacts/e4-6/inicio-degradado-${theme}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+});
+
+test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de contexto", async ({
+  page,
+}) => {
+  await routeApi(page, AUTH_PORT);
+  const credentials = await login(page, AUTH_DIR);
+  await expectInicio(page);
+
+  // Error 500 del endpoint: estado genérico con reintento, sin cifras ni fuga.
+  await page.route("**/api/resumen-inicio", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      headers: { "cache-control": "no-store" },
+      body: JSON.stringify({
+        code: "INTERNAL",
+        error: "No se pudo completar la operación.",
+      }),
+    }),
+  );
+  await page.reload();
+  const fallo = page
+    .getByRole("alert")
+    .filter({ hasText: "No se pudo completar la operación." });
+  await expect(fallo).toBeVisible();
+  await expect(
+    fallo.getByRole("button", { name: "Reintentar", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("3.456,40 €");
+  await expect(page.locator("body")).not.toContainText("1.197,50 €");
+  await expect(page.locator("body")).not.toContainText("1.020,00 €");
+  await expect(page.locator("body")).not.toContainText("SQLITE");
+  await expect(page.locator("body")).not.toContainText("SELECT");
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  await page.unroute("**/api/resumen-inicio");
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expectInicio(page);
+
+  // Sesión expirada durante /inicio: 401, sin importes y con reautenticación.
+  await page.route("**/api/resumen-inicio", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      headers: { "cache-control": "no-store" },
+      body: JSON.stringify({
+        code: "ACCESS_DENIED",
+        error: "No se pudo verificar el acceso.",
+      }),
+    }),
+  );
+  await page.reload();
+  await expect(page.getByText(/no se muestran importes/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Volver a iniciar sesión" }),
+  ).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("3.456,40 €");
+  await expect(page.locator("body")).not.toContainText("1.020,00 €");
+  // El contexto de cabecera sigue montado; solo desaparecen los datos.
+  await expect(page.locator(".cycle-context")).toContainText(
+    "CICLO FINANCIADO",
+  );
+  await expect(page.locator(".cycle-context")).toContainText("Referencia financiera");
+
+  await page.unroute("**/api/resumen-inicio");
+  await page
+    .getByRole("button", { name: "Volver a iniciar sesión" })
+    .click();
+  await reauthenticate(page, credentials);
+  await expect(page).toHaveURL(/\/inicio$/);
+  await expectInicio(page);
+  await expect(
+    page.getByRole("article", { name: "Liquidez", exact: true }),
+  ).toContainText("3.456,40 €");
+});
+
+test("AC-27: acceso anónimo 401 y respuesta no-store", async ({ request }) => {
+  const anonymous = await request.get(
+    `http://127.0.0.1:${BASE_PORT}/api/resumen-inicio`,
+  );
+  expect(anonymous.status()).toBe(401);
+  expect(anonymous.headers()["cache-control"]).toContain("no-store");
+
+  const post = await request.post(
+    `http://127.0.0.1:${BASE_PORT}/api/resumen-inicio`,
+  );
+  expect(post.status()).toBe(401);
+});

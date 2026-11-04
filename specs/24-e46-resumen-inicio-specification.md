@@ -2,9 +2,13 @@
 
 Status: **APROBADA documentalmente por el usuario el 2026-11-03.** Q1–Q12 ratificadas en
 opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetivo/umbrales) y
-**Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente). DEV24
-**NO autorizado**; ningún AC en PASS. Wireframes 1440/390: contrato documental aprobado; la
-implementación visual no está autorizada.
+**Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente).
+**DEV24 autorizado el 2026-11-04.** La rama `feat/e46-inicio` contiene la composición de solo
+lectura `GET /api/resumen-inicio` y la UI `/inicio`. Estado real: AC con evidencia local en el
+[testplan](24-e46-resumen-inicio-testplan.md); AC-20, AC-21 y AC-27 están en PASS local
+(AC-27 con UI/reauth y 401/500 server-side), y AC-01 queda **PARCIAL** solo por la cobertura
+estructurada por ítem que E1.1/E4.4 no publican. Sin merge ni `--full`; la revisión visual de
+implementación conserva su gate.
 Este documento no implementa código, API, SQLite, DDL ni migraciones.
 Approval source/date: aprobación directa del usuario, 2026-11-03.
 Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md),
@@ -15,7 +19,8 @@ Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resum
 [SPEC17](17-e44-deuda-completa-specification.md), [SPEC27](27-e49-cierre-financiero-specification.md),
 [guías UI](guidelines/ui.md), [arquitectura](guidelines/architecture.md),
 [calidad](guidelines/quality.md) y [seguridad](guidelines/security.md).
-Base de contenido: `main` `024b348` (2026-11-03), esquema SQLite **v23**.
+Base de contenido: `main` `024b348` (2026-11-03); esquema SQLite vigente **v24** (la base
+inicial de E4.6 era v23).
 Rebase mecánico sobre `origin/main` `bb076f1` (incluye `a26fffb`, E3.6/DEV21); no reaudita el
 contenido ni cambia el alcance.
 Test design: [24-e46-resumen-inicio-testplan.md](24-e46-resumen-inicio-testplan.md).
@@ -65,7 +70,7 @@ escrituras de ningún tipo.
 | Pendientes y conciliación | E3.6 | Consume su read model; no crea un motor paralelo |
 | Patrimonio global y comparación anual | E4.7 (futuro) | Fuera de E4.6 |
 | Cierre, foto y reapertura | E4.8–E4.10 | Fuera de E4.6; no lee ni escribe fotos |
-| Configuración de meses objetivo y umbrales | **No existe en v23** | Solo `minimoObjetivo` queda `No disponible` (Q3-B); `mesesCubiertos` no depende de ella |
+| Configuración de meses objetivo y umbrales | **No existe en v24** | Solo `minimoObjetivo` queda `No disponible` (Q3-B); `mesesCubiertos` no depende de ella |
 
 **CONFIRMADO.** E4.6 no reabre E2.6, E3.6, E4.2, E4.3 ni E4.4. No introduce una fórmula
 económica nueva ni una tabla de resultados.
@@ -105,9 +110,9 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 | Liquidez | `monthlyFlow().metrics.liquidez` y `.liquidez` | `valor`, `subtotal`, `estado`, `motivo`, `cobertura`, `incluidos`, `excluidos` | No re-suma Saldos ni reaplica el filtro Liquidez |
 | Ciclo | `monthlyFlow().metrics` | `ingresos`, `gasto`, `extraordinaria`, `operativo` (`observedOperating`), `margenReal`, `nomina`, `base`, `delMes` | No recompone Gasto ni márgenes |
 | Objetivo R6 | `annualEquivalent()` de E2.4 + configuración Q3-B | `estado`, `total {numeradorCentimos, divisor}`, `parcial`, `importesSinInformar` | No divide por 12 ni usa `mesesObjetivo` para `mesesCubiertos` |
-| Saldos/bolsas | `listSaldos` / `getSaldo` | `posicion.importe`, `posicion.motivo`, `liquidez`, `finalidad`, `mostrarComoBolsa`, `estado` | No crea una posición nueva ni suma vistas |
-| Ahorro | `metrics.ahorroCierre`, `variacionAhorro`, `ahorroResidual` de E2.6; Saldos con Finalidad `Ahorro` | Valores y cobertura publicados; lista de posiciones | No inventa «ahorro generado» ni total nuevo |
-| Inversión valorada | Contrato E4.3 `GET /api/e43/corte?fecha=` (conceptual) | `agregado.valorEur`, `coberturaValoracion`, `resultadoEur`, `coberturaResultado`, `posiciones[]` | No valora, no reescala, no calcula resultado |
+| Saldos/bolsas | `listSaldos` / `getSaldo` | `posicion.importe`, `posicion.condicion`, `posicion.motivo`, `liquidez`, `finalidad`, `mostrarComoBolsa`, `estado`, `revision` | No crea una posición nueva ni suma vistas ni inventa cobertura por ítem |
+| Ahorro | `metrics.ahorroCierre`, `variacionAhorro`, `ahorroResidual` de E2.6; Saldos con Finalidad `Ahorro` | Valores, `fuente`, `ids` y `cobertura` publicados; lista de posiciones con condición y revisión | No inventa «ahorro generado» ni total nuevo ni cobertura por ítem |
+| Inversión valorada | Contrato E4.3 `GET /api/e43/corte?fecha=` (conceptual) | `agregado.valorEur`, `coberturaValoracion`, `resultadoEur`, `coberturaResultado`, `posiciones[]` con `valoracion.motivo`, `valoracion.cobertura` y elegibilidad | No valora, no reescala, no calcula resultado |
 | Posiciones sin valorar | `positionsAtDate(db, corte)` de E4.2 | `cantidad`, `compras`, `ventas`, fechas | No crea valor si E4.3 falta |
 | Efectivo del bróker | `cashAt` / `cashDto` / `GET /api/inversiones/efectivo?saldo=` | `disponible` por Saldo `Efectivo`/`Inversiones` | No suma un total de efectivo ni lo mezcla con posiciones |
 | Deuda | `GET /api/deudas` (sin corte) y `GET /api/deudas/{id}?corte=` | `tipoDeuda`, `estado`, `capitalPendiente`, `capital.calculable`, `motivoNoCalculable` | No reconstruye capital ni resta la deuda del gasto |
@@ -116,6 +121,27 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 **CONFIRMADO.** Las rutas y funciones anteriores son las fuentes; E4.6 no mantiene una
 segunda implementación. `monthlyFlow` ya documenta que la cobertura histórica del intervalo
 no está acreditada; E4.6 conserva esa marca.
+
+### Fuente y cobertura por campo (AC-01)
+
+Actualización 2026-11-04. E4.6 solo transporta campos que el motor ya publica. No se inventan
+importes ni recuentos: los textos de `cobertura.motivos` se derivan de contadores publicados
+(`importesSinInformar`, `clasificacionesPendientes`, estado) y no añaden cifras nuevas.
+
+| Campo | Motor / contrato | Disponibilidad real | Decisión E4.6 |
+| --- | --- | --- | --- |
+| `ahorro.ahorroCierre` y `variacionAhorro`: `fuente`, `ids`, `cobertura` | E2.6 `Metric` | Sí: `fuente`, `ids` y `cobertura` (texto) | Se transportan literalmente y se muestran en Ahorro. `cobertura` conserva el texto del motor, no se convierte en un objeto inventado. |
+| `objetivo.costeEsencialMensual.cobertura` | E2.4 `annualEquivalent` | Parcial: `estado`, `importesSinInformar`, `clasificacionesPendientes`, `ejercicioSinPlan` y `fuentes.motivo` | `cobertura.estado` se deriva del estado del equivalente; `cobertura.motivos` es texto derivado de los contadores publicados, no un recuento nuevo. No se inventan `incluidos`/`excluidos` de líneas. |
+| Saldos por ítem | E1.1 `Saldo.posicion` | Parcial: `condicion` y `motivo`; no existe cobertura por Saldo | Se añade `condicion` y se conserva `motivo`; la cobertura y la fuente estructuradas siguen siendo de sección. |
+| Ahorro por ítem | E1.1 a través de E2.6 | Parcial: `condicion`, `motivo` y `revision`; no existe cobertura por ítem | Se añaden `condicion` y `revision`; la fuente/cobertura de la sección cubre la lista. |
+| Deuda aparte por ítem | E4.4 `listDeudasCompletas` | Parcial: `estado`, `tipoDeuda`, `revision`, `capital.calculable` y `motivoNoCalculable`; no existe cobertura por ítem | Se transportan `estado`, `tipoDeuda`, `revision`; `calculable`/`motivo` explican el capital. La cobertura solo existe para el total. |
+| Inversión por posición | E4.3 `positionDto` | Sí: `valoracion.motivo`, `valoracion.cobertura` y `elegibilidadFechaExacta` | Se transportan y se pintan junto a la posición; no se recalcula la valoración ni el resultado. |
+
+**AC-01 conserva PARCIAL** porque E1.1/E4.4 no publican una cobertura estructurada por ítem
+para Saldos, Ahorro y deuda aparte. E4.6 muestra la cobertura de sección y la condición/motivo
+por ítem en su lugar; publicar `incluidos`/`excluidos` por ítem sería inventar un contrato que
+el motor no ofrece. El resto de huecos (fuente/cobertura de ahorro, cobertura del coste y
+motivo de valoración por posición) queda cubierto con campos ya publicados.
 
 ### Contexto y selección
 
@@ -167,7 +193,7 @@ Reglas:
   meses (2 decimales propuesto) queda **PENDIENTE DT8** y no altera el valor.
 
 **PENDIENTE Q3-B.** No existe almacén de `mesesObjetivo` ni de umbrales. El contrato admite una
-configuración inyectada por un proveedor aprobado; en v23 el proveedor no existe y **solo**
+configuración inyectada por un proveedor aprobado; en v24 el proveedor no existe y **solo**
 `minimoObjetivo` figura `No disponible`. E4.6 no crea esa configuración, ni defaults, ni tabla,
 ni motor duplicado.
 
@@ -213,13 +239,22 @@ independientes y un mismo Saldo puede pertenecer a varias.
 
 `GET /api/resumen-inicio` devuelve un objeto con `contexto`, `secciones` y
 `pendientesDelModelo`. Los importes son cadenas decimales exactas en EUR; `null` es
-`No disponible`. Ejemplo ficticio (coherente con el oráculo del testplan):
+`No disponible`.
+
+**Contrato real de E2.6 (verificado 2026-11-04).** Los IDs de ciclo del DTO son los del
+motor (`7`, `8`); `C007`/`C008` son nombres de escenario. Cuando la cobertura bancaria del
+intervalo no está acreditada, cada magnitud de ciclo conserva `valor: null`, publica el
+`subtotal` registrado y queda `Parcial`; `operativo` y `margenReal` quedan `No disponible`
+porque no existen los tres componentes completos. Un subtotal parcial nunca se convierte en
+total ni se usa para fabricar un margen.
+
+Ejemplo ficticio (coherente con el oráculo del testplan):
 
 ```json
 {
   "contexto": {
     "ciclo": {
-      "id": "C007",
+      "id": "7",
       "inicio": "2026-06-20",
       "fin": null,
       "mesFinanciado": "2026-07",
@@ -301,11 +336,11 @@ independientes y un mismo Saldo puede pertenecer a varias.
       "zona": "Informativa"
     },
     "ciclo": {
-      "ingresos": { "clave": "ingresos", "etiqueta": "Ingresos", "clase": "real", "valor": "2250.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "gasto": { "clave": "gasto", "etiqueta": "Gasto bruto", "clase": "real", "valor": "1800.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "extraordinaria": { "clave": "extraordinaria", "etiqueta": "Amortización extraordinaria", "clase": "real", "valor": "100.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "", "cobertura": { "estado": "Completa", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "operativo": { "clave": "operativo", "etiqueta": "Saldo operativo bruto observado", "clase": "real", "valor": "350.00", "subtotal": null, "estado": "Parcial", "unidad": "EUR", "motivo": "Definición parcial: no es ahorro real ni variación patrimonial", "cobertura": { "estado": "Parcial", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } },
-      "margenReal": { "clave": "margenReal", "etiqueta": "Margen frente a nómina real", "clase": "plan", "valor": "100.00", "subtotal": null, "estado": "Verificado", "unidad": "EUR", "motivo": "Margen del plan, no ahorro ejecutado", "cobertura": { "estado": "Completa", "incluidos": 4, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "C007", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=C007", "ids": [] } }
+      "ingresos": { "clave": "ingresos", "etiqueta": "Ingresos", "clase": "real", "valor": null, "subtotal": "2250.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Suma de hechos bancarios únicos; sin duplicar asociaciones N:M. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 3, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "gasto": { "clave": "gasto", "etiqueta": "Gasto bruto", "clase": "real", "valor": null, "subtotal": "1800.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Todos los Gastos brutos registrados, incluidas cuotas/compartidos/terminal/sin plan. Difiere de H física; sin netos E3. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "extraordinaria": { "clave": "extraordinaria", "etiqueta": "Amortización extraordinaria", "clase": "real", "valor": null, "subtotal": "100.00", "estado": "Parcial", "unidad": "EUR", "motivo": "Amortización de deuda con relación válida. Cobertura histórica del intervalo no acreditada; subtotal registrado, sin total completo", "cobertura": { "estado": "Parcial", "incluidos": 1, "excluidos": 0, "motivos": [] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "operativo": { "clave": "operativo", "etiqueta": "Saldo operativo bruto observado", "clase": "real", "valor": null, "subtotal": null, "estado": "No disponible", "unidad": "EUR", "motivo": "No disponible sin los tres componentes completos. Cuando sea calculable será PARCIAL por definición; no representa ahorro real ni variación patrimonial completa", "cobertura": { "estado": "No disponible", "incluidos": 3, "excluidos": 0, "motivos": ["No disponible sin los tres componentes completos. Cuando sea calculable será PARCIAL por definición; no representa ahorro real ni variación patrimonial completa"] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } },
+      "margenReal": { "clave": "margenReal", "etiqueta": "Margen frente a nómina real", "clase": "plan", "valor": null, "subtotal": null, "estado": "No disponible", "unidad": "EUR", "motivo": "Margen del PLAN; no ahorro ejecutado ni Bonus/forecast", "cobertura": { "estado": "No disponible", "incluidos": 4, "excluidos": 0, "motivos": ["Margen del PLAN; no ahorro ejecutado ni Bonus/forecast"] }, "fuente": { "motor": "E2.6 monthlyFlow", "ids": [], "revisiones": [] }, "contexto": { "tipo": "ciclo", "cicloId": "7", "corte": "2026-07-19" }, "enlace": { "ruta": "/flujo-mensual?ciclo=7", "ids": [] } }
     },
     "saldos": {
       "contexto": { "tipo": "actual" },
@@ -352,7 +387,7 @@ independientes y un mismo Saldo puede pertenecer a varias.
       "items": [
         { "id": "D001", "nombre": "Préstamo demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": "720.00", "calculable": true },
         { "id": "D002", "nombre": "Financiación demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": "300.00", "calculable": true },
-        { "id": "D005", "nombre": "Deuda incompleta demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": null, "calculable": false, "motivo": "Desglose de un movimiento aplicable no verificable" }
+        { "id": "D005", "nombre": "Deuda incompleta demo", "tipoDeuda": "No hipotecaria", "estado": "Activa", "capitalPendiente": null, "calculable": false, "motivo": "Falta el capital de apertura" }
       ],
       "total": {
         "valor": null,
@@ -386,12 +421,12 @@ Campos derivados que el cliente **no** puede escribir: todos. El endpoint es sol
 
 | Estado | Condición | Presentación |
 | --- | --- | --- |
-| `Verificado` | Motor, contexto y todas las fuentes de esa métrica acotada disponibles | Importe + fuente + contexto |
-| `Cero verificado` | Universo verificado sin importes distintos de 0, o resultado exactamente 0 | `0,00 €` explícito, no ausencia |
-| `Parcial` | Subtotal comprobable con fuentes o pertenencia incompletas; o métrica parcial por definición | Etiqueta `PARCIAL`, incluidos/excluidos, subtotal y motivo |
-| `No disponible` | Falta motor, dato, contexto o cálculo material | Sin cifra; motivo y fuente; componentes conocidos aparte |
-| `No aplica` | La magnitud no existe por diseño (p. ej. un total de efectivo del bróker) | Texto `No aplica`, nunca `0` |
-| `Sin datos` | Universo verificado y vacío (sin Saldos, sin deudas, sin plan) | Texto explícito; no confundir con `No disponible` |
+| `Verificado` | Motor, contexto y todas las fuentes de esa métrica acotada disponibles | Badge `COMPLETO`, etiqueta `Total verificado`, importe + fuente + contexto |
+| `Cero verificado` | Universo verificado sin importes distintos de 0, o resultado exactamente 0 | Badge `CERO VERIFICADO`, etiqueta `Cero verificado` y `0,00 €` explícito |
+| `Parcial` | Subtotal comprobable con fuentes o pertenencia incompletas; o métrica parcial por definición | Badge `PARCIAL` (con `· HISTÓRICO` o `· COMPONENTES` si el motivo publicado lo distingue), etiqueta `Subtotal conocido`, incluidos/excluidos y motivo |
+| `No disponible` | Falta motor, dato, contexto o cálculo material | Badge `NO DISPONIBLE`, etiqueta `No disponible`, sin cifra; motivo y fuente; componentes conocidos aparte |
+| `No aplica` | La magnitud no existe por diseño (p. ej. un total de efectivo del bróker) | Badge/texto `NO APLICA`, nunca `0` |
+| `Sin datos` | Universo verificado y vacío (sin Saldos, sin deudas, sin plan) | Badge/texto `SIN DATOS`; no confundir con `No disponible` |
 
 ## Screens and interfaces
 
@@ -403,20 +438,20 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 ```text
 ┌──────────────────────────────────────────────────────────────────────────────────────────────┐
 │ INICIO · Resumen financiero                                                                  │
-│ Ciclo financiado C007 · inicio 20/06/2026 · corte 19/07/2026 · Referencia 19/07 (disponible)   │
+│ Ciclo 7 · inicio 20/06/2026 · corte 19/07/2026 · Referencia 19/07 (disponible)                │
 │ Solo lectura · [Cómo se calcula y qué falta]                                                 │
 ├───────────────────────────────────────────────┬──────────────────────────────────────────────┤
 │ LIQUIDEZ                            POSICIÓN  │ OBJETIVO R6                         OBJETIVO │
-│ Subtotal conocido 3.456,40 €        ! PARCIAL │ Coste esencial/mes 1.500,00 €      ✓ Completo│
+│ Subtotal conocido 3.456,40 €        ! PARCIAL │ Coste esencial/mes 1.500,00 €      ✓ COMPLETO│
 │ 3/4 posiciones · 1 sin informar               │ Meses objetivo: No configurados    — ND      │
 │ [Ver posiciones incluidas/excluidas]          │ Mínimo objetivo: No disponible              │
 │                                               │ Meses cubiertos: ND · liquidez parcial      │
 │                                               │ Zona informativa · sin transferencia        │
 ├───────────────────────────────────────────────┴──────────────────────────────────────────────┤
-│ CICLO C007 · REAL vs PLAN                                                                    │
-│ Ingresos 2.250,00 € REAL · Gasto bruto 1.800,00 € REAL · Extraordinaria 100,00 € REAL        │
-│ Saldo operativo 350,00 € ! PARCIAL — no es ahorro real ni variación patrimonial              │
-│ Margen frente a nómina 100,00 € PLAN · [Ver flujo mensual]                                   │
+│ CICLO 7 · REAL vs PLAN                                                                       │
+│ Ingresos 2.250,00 € ! PARCIAL · Gasto bruto 1.800,00 € ! PARCIAL · Extraordinaria 100,00 € ! │
+│ Saldo operativo ND — sin los tres componentes completos; no es ahorro real                   │
+│ Margen frente a nómina ND · PLAN · [Ver flujo mensual]                                       │
 ├──────────────────┬──────────────────┬──────────────────┬─────────────────────────────────────┤
 │ SALDOS Y BOLSAS  │ AHORRO           │ INVERSIÓN        │ DEUDA NO HIPOTECARIA                │
 │ 6 Saldos         │ Posición S002    │ Posiciones       │ 2/3 calculables                     │
@@ -425,7 +460,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │ Bolsas 1         │ Variación ND     │ 1.456,40 €       │ Sin informar: aparte                │
 │ [Ver Saldos]     │ [Ver Saldos]     │ [Ver Inversión]  │ [Ver Deudas]                        │
 ├──────────────────┴──────────────────┴──────────────────┴─────────────────────────────────────┤
-│ PENDIENTES (E3.6) — No disponible: consumo E4.6 no implementado. Sin conteo 0. [Ver cobertura] │
+│ PENDIENTES (E3.6) — consumidos de su read model; sin total monetario ni conteo 0.   [Ver]    │
 └──────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -434,7 +469,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 ```text
 ┌─────────────────────────────┐
 │ INICIO                      │
-│ Ciclo C007                  │
+│ Ciclo 7                     │
 │ 20/06–19/07 · Corte 19/07   │
 │ Solo lectura                │
 ├─────────────────────────────┤
@@ -450,11 +485,11 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │ Motivo: liquidez parcial    │
 │ [Ver coste esencial]        │
 ├─────────────────────────────┤
-│ CICLO C007    REAL / PLAN   │
-│ Ingresos 2.250,00 €  REAL   │
-│ Gasto bruto 1.800,00 € REAL │
-│ Saldo operativo 350,00 €    │
-│ ! PARCIAL                   │
+│ CICLO 7       REAL / PLAN   │
+│ Ingresos 2.250,00 € PARCIAL │
+│ Gasto bruto 1.800,00 PARCIAL│
+│ Saldo operativo ND          │
+│ sin 3 componentes           │
 │ [Ver flujo mensual]         │
 ├─────────────────────────────┤
 │ INVERSIÓN        POSICIÓN   │
@@ -472,8 +507,8 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 2. **Liquidez y objetivo** (primera fila): la lectura principal de R6.
 3. **Ciclo actual** (ancho completo): real vs plan, con la etiqueta `PARCIAL` del saldo
    operativo siempre visible.
-4. **Saldos/bolsas, Ahorro, Inversión, Deuda no hipotecaria** (cuatro bloques en 1440;
-   apilados en 390). Cada bloque declara su contexto y no se suman entre sí.
+4. **Saldos/bolsas, Ahorro, Inversión, Deuda** (cuatro bloques en 1440; apilados en 390).
+   Cada bloque declara su contexto y no se suman entre sí.
 5. **Pendientes** y **cobertura del modelo**: motores ausentes, parcialidad y enlaces.
 
 - Nueva entrada de navegación **Inicio** al principio de «MI ESPACIO»; ruta propuesta
@@ -500,6 +535,30 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 
 El color nunca es el único portador del estado. Los importes se formatean `1.234,56 €` con
 signo `−` para negativos; los meses, con 2 decimales propuestos y marca `meses`.
+
+### Correcciones de revisión visual (2026-11-04)
+
+Estas precisiones no cambian el alcance ni los datos: son reglas de presentación para la UI.
+
+- **Motivo único.** Si un bullet de `cobertura.motivos` coincide con `motivo`, se muestra una
+  sola vez. Se aplica a todas las tarjetas, al coste esencial, a la deuda y a los bloques que
+  repetían el texto a nivel de sección.
+- **Importe y etiqueta.** `Parcial` muestra `Subtotal conocido`; `Verificado` muestra
+  `Total verificado`; `Cero verificado` muestra `Cero verificado`; `No disponible` muestra
+  `No disponible`. La tarjeta de deuda se llama `Deuda no hipotecaria` y no presenta un
+  subtotal como «total»; en liquidez cero, `0,00 €` conserva su etiqueta verificada.
+- **Badges.** Un único componente y estilo para `COMPLETO`, `PARCIAL`, `NO DISPONIBLE`,
+  `CERO VERIFICADO`, `NO APLICA` y `SIN DATOS`. No se usan como badge los textos crudos
+  `No disponible`, `Completa` ni `Parcial n/m`; el detalle `Parcial n/m` queda como texto
+  secundario. La distinción `PARCIAL · HISTÓRICO` / `PARCIAL · COMPONENTES` sale del motivo
+  publicado, sin inventar datos.
+- **CTA único.** Cada tarjeta tiene como máximo un enlace principal al mismo destino. El ciclo
+  conserva un único `Ver flujo mensual` a nivel de sección, no uno por tarjeta.
+- **Rejilla.** El ciclo usa 2 columnas para evitar la celda vacía con 8 métricas. Los títulos
+  no se parten por palabra; los IDs de fuente van en línea propia con `overflow-wrap`.
+- **390.** `AHORRO DE CIERRE` y `VARIACIÓN DE AHORRO` se apilan igual que en 1440. El resumen
+  y los KPI no se rediseñan en esta pasada.
+- **Evidencia.** Capturas de `base`, `cero` y `degradado` en 1440 y 390 para los tres temas.
 
 ### Accesibilidad
 
@@ -628,8 +687,12 @@ roadmap se indica después de la tabla.
 ## Approval and next action
 
 **APROBADA documentalmente por el usuario el 2026-11-03** (Q1–Q12, opción A; Q3-B=A; Q4=A).
-La aprobación no autoriza DEV24, DDL, migración, merge ni despliegue, y **ningún AC está en
-PASS**. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. Para declarar completa la
-entrega siguen aplicando las dependencias del roadmap: E4.3 no tiene DEV; E3.6/DEV21 está
-integrado en `a26fffb`, sin reauditoría de su consumo en esta actualización. El siguiente gate
-es la autorización separada de DEV por el coordinador.
+**DEV24 se autorizó el 2026-11-04** con alcance A+B+C; la aprobación de la spec no autoriza por
+sí sola merge ni despliegue. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. La
+composición y la UI existen en `feat/e46-inicio`. Actualización local 2026-11-04: AC-20 y
+AC-21 tienen prueba directa; AC-27 cubre UI/reauth con 500/401 interceptados y 401/500
+server-side reales; AC-01 sigue PARCIAL solo por la cobertura por ítem que E1.1/E4.4 no
+publican, con justificación por campo en esta spec. Faltan
+el `--full`, la revisión QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21
+sigue en `a26fffb` sin reauditoría de su consumo. El siguiente gate es la revisión
+independiente y el merge aprobado, no otra autorización de DEV.
