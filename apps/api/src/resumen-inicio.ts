@@ -1044,12 +1044,15 @@ function pendientesSection(db: Database, now: number) {
     const motivos = source.fuenteFallos.map(
       (fallo) => `${fallo.motor}${fallo.id ? ` ${fallo.id}` : ""}: ${fallo.motivo}`,
     );
+    // Un fallo de fuente nunca se presenta como universo vacío verificado.
     const estado: EstadoMetrica =
-      source.items.length === 0
-        ? "Sin datos"
-        : source.fuenteFallos.length > 0
-          ? "Parcial"
+      source.fuenteFallos.length > 0
+        ? "Parcial"
+        : source.items.length === 0
+          ? "Sin datos"
           : "No aplica";
+    const motivoBase =
+      "E3.6 publica pendientes por tipo/estado; no existe un total monetario entre tipos.";
     return {
       contexto: context,
       metrica: metric({
@@ -1060,7 +1063,9 @@ function pendientesSection(db: Database, now: number) {
         estado,
         unidad: null,
         motivo:
-          "E3.6 publica pendientes por tipo/estado; no existe un total monetario entre tipos.",
+          source.fuenteFallos.length > 0
+            ? `E3.6 con fuentes parciales: ${motivos.join("; ")}. ${motivoBase}`
+            : motivoBase,
         cobertura: cobertura(
           estado,
           source.items.length,

@@ -175,9 +175,9 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-01 | Positivo | Abrir inicio con fixture | Toda cifra con `fuente.motor`, IDs y contexto; UI sin cálculos | API + Playwright | Local/CI · impl + QA | `tests/e2e/inicio.spec.ts` muestra fuente/cobertura/motivo por tarjeta y en mínimo/meses. Huecos del DTO: posiciones individuales de Saldos/Ahorro, deuda aparte y ahorroCierre/variación sin fuente/cobertura propia; `costeEsencialMensual` sin objeto de cobertura. No se inventan. | PARCIAL (2026-11-04, local) |
 | AC-02 | Positivo | Comparar DTO con motores | Igualdad exacta por campo, incluidos `null`: liquidez `3456.40`/`Parcial`; ingresos `2250.00`, gasto `1800.00`, extraordinaria `100.00` y nómina `2000.00` como `subtotal` con `valor:null`/`Parcial`; base y delMes `1900.00`/`Verificado`/`plan`; `operativo` y `margenReal` `No disponible`; deuda `1020.00`/`Parcial`; coste `1500.00`; agregado `1197.50` | `bun test apps/api/src/resumen-inicio.test.ts` | Local/CI · impl | Tabla de oráculo + asserts de nómina/base/delMes | PASS (2026-11-04, local) |
 | AC-03 | Negativo | Snapshot de tablas antes/después del GET | Sin cambios; solo GET; 405 en POST/PATCH/DELETE | API + SQLite | Local/CI · QA | `resumen-inicio.test.ts`: snapshot antes/después, 405 con `Allow: GET` y sin escrituras en POST/PATCH/DELETE | PASS (2026-11-04, local) |
-| AC-04 | Límite | Modificar un hecho de una fuente y recargar | Cambia la sección y `revision`; las demás no | API | Local/CI · impl | `resumen-inicio.test.ts` (cambio de Saldo y revisión determinista; no se reutiliza evidencia para un Gasto) | PASS (2026-11-04, local) |
+| AC-04 | Límite | Modificar un hecho de una fuente y recargar | Cambia la sección y `revision`; las demás no | API | Local/CI · impl | `resumen-inicio.test.ts`: edita un Gasto real (`1050.00`→`1150.00`), cambia la revisión y Gasto `1800.00`→`1900.00`; ingresos, extraordinaria, inversión, deuda, objetivo y ahorro conservan su cifra/cobertura | PASS (2026-11-04, local) |
 | AC-05 | Positivo | `S005` sin Liquidez | `Parcial`, 3 incluidos, 1 excluido, subtotal `3456.40` | API + UI | Local/CI · impl + QA | `tests/e2e/inicio.spec.ts` (Liquidez `3/4`, `S005: Liquidez sin informar`) | PASS (2026-11-04, local) |
-| AC-06 | Negativo | Motor ausente o error de fuente | `No disponible` con motivo y motor; no 0 | API | Local/CI · impl | `resumen-inicio.test.ts` (fallo de E2.4 degrada su sección y conserva las demás) | PASS (2026-11-04, local) |
+| AC-06 | Negativo | Motor ausente o error de fuente | `No disponible` con motivo y motor; no 0 | API | Local/CI · impl | `resumen-inicio.test.ts` con alcance E2.4: fallo de fuente degrada su sección y conserva las demás. M-4 adicional: E3.6 con `fuenteFallos` y cero filas publica `Parcial`, no `Sin datos`; no se fuerzan E2.6/E4.4/E4.3 | PASS (alcance E2.4, 2026-11-04, local) |
 | AC-07 | Límite | `null` de motor frente a `0.00` | `No disponible` vs `0,00 €`/`Cero verificado` | API + UI | Local/CI · QA | `tests/e2e/inicio.spec.ts` (base y escenario `zero`) + `artifacts/e4-6/inicio-cero-1440.png` | PASS (2026-11-04, local) |
 | AC-08 | Negativo | Cambiar el reloj de consulta | Sin cambio de ciclo, corte ni cifras | API | Local · QA | `resumen-inicio.test.ts` compara `NOW` y `LATER`; solo cambia `consulta` | PASS (2026-11-04, local) |
 | AC-09 | Positivo | Activar cada drill-down y volver | ID correcto, contexto conservado, URL sin importes | Playwright | Local/CI · QA | `tests/e2e/inicio.spec.ts`: Saldos, S001, Flujo, Inversiones, Deudas, D001, Pendientes y Plan anual; vuelta con `Ciclo 7` y sin importes en URL | PASS (2026-11-04, local) |
@@ -232,7 +232,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | `bun test apps/api/ventas.test.ts` / inversiones | E4.2 cantidades y efectivo | Candidato E4.6 | UNRUN |
 | `bun test apps/api/deuda-completa.test.ts` | E4.4 deuda viva y cobertura | Candidato E4.6 | UNRUN |
 | `bun test apps/api/plan-anual.test.ts` | E2.4 equivalente esencial | Candidato E4.6 | UNRUN |
-| `bun test apps/api/src/resumen-inicio.test.ts` | Composición API E4.6 | Candidato | PASS 12/12 (2026-11-04, local) |
+| `bun test apps/api/src/resumen-inicio.test.ts` | Composición API E4.6, AC-04 Gasto y M-4 | Candidato | PASS 14/14 (2026-11-04, local) |
 | `bunx playwright test tests/e2e/inicio.spec.ts` | UI E2E E4.6, drills y M-4 | Candidato | PASS 4/4 (2026-11-04, local) |
 | `bun run typecheck` | Tipos del DTO y UI | Candidato | PASS (2026-11-04, local) |
 | `bun run build` | Cliente | Candidato | PASS (2026-11-04, local) |
@@ -293,7 +293,8 @@ La rama `feat/e46-inicio` implementa la composición API (A+B) y la UI `/inicio`
 Evidencia local de esta actualización (2026-11-04): `bun run typecheck`, `bun run build`,
 `bunx playwright test tests/e2e/inicio.spec.ts` (4/4, incluido el escenario degradado M-4,
 todos los drill-down y contraste de texto/motivos/enlaces) y
-`bun test apps/api/src/resumen-inicio.test.ts` (12/12). La matriz deja en PASS local los AC con
+`bun test apps/api/src/resumen-inicio.test.ts` (14/14, incluido AC-04 con un Gasto y M-4 de
+E3.6 con fuentes fallidas). La matriz deja en PASS local los AC con
 prueba concreta; **AC-01 es PARCIAL** por huecos de fuente/cobertura del DTO y **AC-27 es
 PARCIAL** por sesión expirada/500 sin prueba directa; AC-20/AC-21 siguen UNRUN. No se declara
 PASS de la matriz completa ni se reutiliza esta evidencia para el gate canónico.

@@ -4146,3 +4146,14 @@ textarea {
 .inicio-degradado ul {
   margin-bottom: 0;
 }
+
+/* Las tarjetas de la fila de cuatro son estrechas: el detalle se apila. */
+.inicio-grid-4 .inicio-item-list li {
+  grid-template-columns: minmax(0, 1fr);
+}
+.inicio-grid-4 .inicio-item-value {
+  grid-column: 1;
+  grid-row: auto;
+  text-align: left;
+  margin-top: 2px;
+}

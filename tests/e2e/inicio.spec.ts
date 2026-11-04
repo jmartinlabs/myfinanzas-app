@@ -140,6 +140,10 @@ async function drillDown(page: Page, link: Locator, url: RegExp) {
 
 /** Contraste de texto, motivos y enlaces principales, no solo de los badges. */
 async function expectInicioContrast(page: Page) {
+  // Abre los detalles para que small/meta/summary no queden fuera por offsetParent.
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = true;
+  });
   const ratios = await page.locator(".inicio-page").evaluate((root) => {
     const luminance = (rgb: string) => {
       const values = rgb.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
@@ -154,7 +158,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,.inicio-value,.inicio-estado",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.inicio-value,.inicio-estado,.inicio-item-meta,.inicio-clase",
       ),
     );
     const result: number[] = [];
@@ -424,6 +428,11 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
     await expectInicioContrast(page);
+    await expectNoOverflow();
+    // La captura conserva el estado compacto; el contraste ya midió con details abiertos.
+    await page.locator(".inicio-page details").evaluateAll((nodes) => {
+      for (const node of nodes) (node as HTMLDetailsElement).open = false;
+    });
     await resetScroll(page);
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
@@ -439,6 +448,10 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
     await expectInicioContrast(page);
+    await expectNoOverflow();
+    await page.locator(".inicio-page details").evaluateAll((nodes) => {
+      for (const node of nodes) (node as HTMLDetailsElement).open = false;
+    });
     await resetScroll(page);
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-390.png`,

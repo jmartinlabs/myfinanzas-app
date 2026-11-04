@@ -397,7 +397,7 @@ function baseFixture(at = NOW, options: { annual?: boolean } = {}) {
     importe: "300.00",
     concepto: "Compartido bruto ficticio E4.6",
   });
-  saveMovement(db, {
+  const gastoCorriente = saveMovement(db, {
     tipo: "Gasto",
     fecha: "2026-07-08",
     saldo: "S001",
@@ -579,6 +579,7 @@ function baseFixture(at = NOW, options: { annual?: boolean } = {}) {
     saldos: { s007: s007.id },
     partidas: { pGeneric, pD001, pD004 },
     instruments: { i1, i2 },
+    movements: { gastoCorriente: gastoCorriente.id },
   };
 }
 
@@ -1061,6 +1062,27 @@ test("AC-06: error de una fuente degrada su sección sin tumbar el 200", async (
   }
 });
 
+test("M-4: E3.6 con fuentes fallidas y cero filas publica Parcial, no Sin datos", () => {
+  const db = openDatabase(":memory:");
+  try {
+    // Simula fuentes no legibles sin crear filas de pendientes: no hay ciclos
+    // en esta base y Anticipos/Compartidos dejan de responder.
+    db.run("ALTER TABLE fichas_anticipos RENAME TO fichas_anticipos_off");
+    db.run("ALTER TABLE fichas_compartidos RENAME TO fichas_compartidos_off");
+    const dto = resumenInicio(db, NOW);
+    expect(dto.secciones.pendientes.items).toEqual([]);
+    expect(dto.secciones.pendientes.fuenteFallos.length).toBeGreaterThan(0);
+    expect(dto.secciones.pendientes.metrica.estado).toBe("Parcial");
+    expect(dto.secciones.pendientes.metrica.cobertura.estado).toBe("Parcial");
+    expect(dto.secciones.pendientes.metrica.motivo).toContain(
+      "E3.6 con fuentes parciales",
+    );
+    expect(dto.secciones.pendientes.metrica.motivo).toContain("Anticipos");
+  } finally {
+    db.close();
+  }
+});
+
 test("AC-03/27: GET autenticado, no-store, 401, 405 y 403 sin escrituras", async () => {
   const { db } = baseFixture();
   try {
@@ -1131,6 +1153,86 @@ test("AC-04/11: revisión determinista y pertenencia solo por Liquidez", async (
       finalidad: "Inversión",
       bolsa: true,
     });
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-04: editar un Gasto cambia su sección y revisión sin alterar las independientes", () => {
+  const fixture = baseFixture();
+  const { db } = fixture;
+  try {
+    const before = resumenInicio(db, NOW);
+    const row = db
+      .query("SELECT revision FROM movimientos WHERE id=?")
+      .get(fixture.movements.gastoCorriente) as { revision: number } | null;
+    expect(row).not.toBeNull();
+    const body = {
+      tipo: "Gasto",
+      fecha: "2026-07-08",
+      saldo: "S001",
+      partida: fixture.partidas.pGeneric,
+      importe: "1150.00",
+      concepto: "Gastos corrientes ficticios E4.6",
+      revision: row!.revision,
+      motivo: "Corrección ficticia AC-04",
+    };
+    const preview = previewMovement(
+      db,
+      body,
+      fixture.movements.gastoCorriente,
+      false,
+      NOW,
+    );
+    writeMovement(
+      db,
+      { ...body, fingerprint: preview.fingerprint, aceptarCoincidencia: true },
+      randomUUID(),
+      fixture.movements.gastoCorriente,
+      false,
+      NOW,
+    );
+    const after = resumenInicio(db, NOW);
+    const cifra = (metrica: {
+      valor: string | null;
+      subtotal: string | null;
+      estado: string;
+      motivo: string;
+      cobertura: unknown;
+    }) => ({
+      valor: metrica.valor,
+      subtotal: metrica.subtotal,
+      estado: metrica.estado,
+      motivo: metrica.motivo,
+      cobertura: metrica.cobertura,
+    });
+
+    expect(after.contexto.revision).not.toBe(before.contexto.revision);
+    expect(before.secciones.ciclo.gasto.subtotal).toBe("1800.00");
+    expect(after.secciones.ciclo.gasto.subtotal).toBe("1900.00");
+    // Las secciones que no dependen del Gasto conservan su cifra y cobertura.
+    expect(cifra(after.secciones.ciclo.ingresos)).toEqual(
+      cifra(before.secciones.ciclo.ingresos),
+    );
+    expect(cifra(after.secciones.ciclo.extraordinaria)).toEqual(
+      cifra(before.secciones.ciclo.extraordinaria),
+    );
+    expect(after.secciones.inversion).toEqual(before.secciones.inversion);
+    expect(after.secciones.deudaNoHipotecaria).toEqual(
+      before.secciones.deudaNoHipotecaria,
+    );
+    expect(after.secciones.objetivo.costeEsencialMensual).toMatchObject({
+      valor: before.secciones.objetivo.costeEsencialMensual.valor,
+      estado: before.secciones.objetivo.costeEsencialMensual.estado,
+      estadoEquivalente:
+        before.secciones.objetivo.costeEsencialMensual.estadoEquivalente,
+      ejercicio: before.secciones.objetivo.costeEsencialMensual.ejercicio,
+      ejercicioOrigen:
+        before.secciones.objetivo.costeEsencialMensual.ejercicioOrigen,
+    });
+    expect(after.secciones.ahorro.posiciones).toEqual(
+      before.secciones.ahorro.posiciones,
+    );
   } finally {
     db.close();
   }
