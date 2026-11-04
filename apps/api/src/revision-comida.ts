@@ -408,6 +408,11 @@ function attempt<T>(
     .immediate();
 }
 
+type ImpactAudit = {
+  fingerprint: string;
+  cierres: { ciclo: string; version: number; inicio: string; fin: string }[];
+};
+
 function audit(
   db: Database,
   id: string,
@@ -417,7 +422,18 @@ function audit(
   posterior: unknown,
   motivo: string | null,
   time: string,
+  impacto: ImpactAudit | null = null,
 ) {
+  // The audit table has no impact column and the schema is closed. The
+  // existing `posterior` JSON keeps the reviewed fingerprint and affected
+  // closures without changing the contract or hiding them in the motive.
+  const storedPosterior =
+    impacto &&
+    posterior &&
+    typeof posterior === "object" &&
+    !Array.isArray(posterior)
+      ? { ...(posterior as Record<string, unknown>), impacto }
+      : posterior;
   db.run(
     "INSERT INTO revision_comida_audit(operacion,accion,revision,anterior,posterior,motivo,instante,actor) VALUES(?,?,?,?,?,?,?,'usuario-unico')",
     [
@@ -425,7 +441,7 @@ function audit(
       action,
       revision,
       previous === null ? null : JSON.stringify(previous),
-      JSON.stringify(posterior),
+      JSON.stringify(storedPosterior),
       motivo,
       time,
     ],
@@ -481,6 +497,7 @@ export function createRevisionComida(
     );
     const informative = informativeFields.revisionComida ?? [];
     const windows = closedWindowsForDates(db, [candidate.fecha]);
+    let creationImpact: ImpactAudit | null = null;
     if (windows.length) {
       assertRevisionComidaClosureImpact(
         db,
@@ -533,6 +550,15 @@ export function createRevisionComida(
             })),
           },
         );
+      creationImpact = {
+        fingerprint: body.fingerprint,
+        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+      };
     }
     if (tipo === "Reposicion") {
       const duplicate = rows.find(
@@ -589,7 +615,7 @@ export function createRevisionComida(
       ],
     );
     const after = find(db, id, tipo);
-    audit(db, id, 1, "alta", null, auditValue(after), motivo, time);
+    audit(db, id, 1, "alta", null, auditValue(after), motivo, time, creationImpact);
     return {
       ...getRevisionComida(db, id),
       coincidencias,
@@ -629,14 +655,14 @@ function requireClosureReview(
 ) {
   const nextDate = typeof body.fecha === "string" ? body.fecha : null;
   const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
-  if (!windows.length) return;
+  if (!windows.length) return null;
   const informative = informativeFields.revisionComida ?? [];
   const economic = economicFields.filter(
     (field) => !informative.includes(field),
   );
   // T3: a purely informative change (concepto) keeps working after a close;
   // the caller still requires and audits its motive.
-  if (!economic.length) return;
+  if (!economic.length) return null;
   assertRevisionComidaClosureImpact(
     db,
     [old.fecha, nextDate],
@@ -689,6 +715,15 @@ function requireClosureReview(
         })),
       },
     );
+  return {
+    fingerprint: body.fingerprint,
+    cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+      ciclo,
+      version,
+      inicio,
+      fin,
+    })),
+  };
 }
 
 /** Preview for the T2 Revisión Comida impact certificate. */
@@ -823,7 +858,7 @@ export function rectificarRevisionComida(
     const motivo = motive(body)!,
       candidate = validated(body, old, now, tipo),
       time = new Date(now).toISOString();
-    requireClosureReview(
+    const closureImpact = requireClosureReview(
       db,
       id,
       tipo,
@@ -861,6 +896,7 @@ export function rectificarRevisionComida(
       auditValue(after),
       motivo,
       time,
+      closureImpact,
     );
     return getRevisionComida(db, id);
   });
@@ -892,7 +928,7 @@ export function anularRevisionComida(
     revisionFrom(body, old);
     const motivo = motive(body)!,
       time = new Date(now).toISOString();
-    requireClosureReview(
+    const closureImpact = requireClosureReview(
       db,
       id,
       tipo,
@@ -916,6 +952,7 @@ export function anularRevisionComida(
       auditValue(after),
       motivo,
       time,
+      closureImpact,
     );
     return getRevisionComida(db, id);
   });
@@ -1038,7 +1075,7 @@ export function vincularRevisionComida(
     revisionFrom(body, old);
     const motivo = motive(body)!,
       time = new Date(now).toISOString();
-    requireClosureReview(
+    const closureImpact = requireClosureReview(
       db,
       id,
       tipo,
@@ -1075,6 +1112,7 @@ export function vincularRevisionComida(
         auditValue(after),
         motivo,
         time,
+        closureImpact,
       );
       return getRevisionComida(db, id);
     }
@@ -1118,6 +1156,7 @@ export function vincularRevisionComida(
       auditValue(after),
       motivo,
       time,
+      closureImpact,
     );
     return getRevisionComida(db, id);
   });

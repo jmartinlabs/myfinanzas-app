@@ -12,10 +12,13 @@ impacto no es verificable. AC-03/AC-04/AC-05/AC-06/AC-14 y la ampliación AC-20 
 prueba de fixtures en `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no cierre
 real). El resto de AC sigue UNRUN. No se ejecutó CI para este bloque; no hay migración
 nueva ni datos reales. Aprobado con SPEC27 el 2026-10-28; DT3/DT4 resueltas el
-2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06 (2026-11-04) cerró M1–M5, L1 y L5:
-fingerprint único de Revisión Comida, cierres sin foto bloqueantes, T3 de Clasificación
-cableado, alta de Revisión Comida con guarda T2 y comparación de los seis totales de
-hechos.
+2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06 (2026-11-04) cerró M1–M5 y L5, y L1
+por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
+cierres en `audit.campos.impacto`; Revisión Comida los guarda en
+`revision_comida_audit.posterior.impacto`; plan vivo los guarda en
+`cycle_plan_audit.delta.impacto`. También quedan cubiertos el fingerprint único de
+Revisión Comida, los cierres sin foto bloqueantes, T3 de Clasificación cableado, el alta
+de Revisión Comida con guarda T2 y la comparación de los seis totales de hechos.
 
 > **Nota T1 (2026-11-04).** La lectura por impacto que permitía escrituras sin efecto
 > económico dentro de una ventana cerrada fue una **propuesta** de DEV-05, no una
@@ -66,14 +69,14 @@ recalcula.
 | T1 | Ciclos | — | `Inicio`, `Fin` derivado y S0 de ciclo cerrado: 409 duro | `assertClosedCyclesUnchanged`; test “un ciclo cerrado no cambia Inicio ni S0” |
 | T2 | Saldos (`saldos.ts`) | `nombre` | `tipo`/`control`/`apertura` capturados: 409 duro. Cambio económico con uso histórico no fotografiado: `/impacto` + `/rectificar` con fingerprint, motivo y auditoría | `saldoClosureConflict`, `previewSaldoChange`, `updateSaldo`; test “Saldos: bloquea lo material y revisa…” |
 | T2 | Clasificación (`clasificacion.ts`) | `nombre` y `grupo` (categoría); `nombre` (subcategoría/partida) | Jerarquía/atribución económica: `RECTIFICATION_REQUIRED` y flujo de impacto existente; `closedFieldDecision` cableado por entidad | `closedFieldDecision` + `classificationClosureImpact`; test “reclasificación económica exige revisión…” |
-| T2 | Referencias (`referencias.ts`) | `nombre` | `tipo`, `estado` y ficha de vehículo: `/impacto` con huella de consumidores + motivo + auditoría; sin huella 409 `IMPACTO_NO_VERIFICABLE`; identidad usada sigue protegida | `previewReferenceImpact` + `assertClosedEconomicImpact`; tests “catálogos distinguen…” y “Referencias y Deudas exigen impacto…” |
-| T2 | Deudas (`deudas.ts`) | `nombre` | Resto de atributos: `/impacto` con huella de consumidores + motivo + auditoría; sin huella 409; apertura/Inicio usados siguen bloqueados | `previewDebtImpact` + `assertClosedEconomicImpact`; tests “catálogos distinguen…” y “Referencias y Deudas exigen impacto…” |
+| T2 | Referencias (`referencias.ts`) | `nombre` | `tipo`, `estado` y ficha de vehículo: `/impacto` con huella de consumidores + motivo + auditoría; sin huella 409 `IMPACTO_NO_VERIFICABLE`; identidad usada sigue protegida; auditoría en `audit.campos.impacto` | `previewReferenceImpact` + `assertClosedEconomicImpact`; tests “catálogos distinguen…”, “Referencias y Deudas exigen impacto…” y “consumidores…” |
+| T2 | Deudas (`deudas.ts`) | `nombre` | Resto de atributos: `/impacto` con huella de consumidores + motivo + auditoría; sin huella 409; apertura/Inicio usados siguen bloqueados; auditoría en `audit.campos.impacto` | `previewDebtImpact` + `assertClosedEconomicImpact`; tests “catálogos distinguen…”, “Referencias y Deudas exigen impacto…” y “consumidores…” |
 | T2 | Gastos compartidos (`compartidos.ts`) | `nombre` del participante | Rol/partes: vista de impacto + fingerprint + motivo + auditoría; alta de participante con hechos en ventana cerrada exige motivo | Flujo existente + `closedWindowsForDates`; test “Gastos compartidos: el alta de participante…” |
 | T2 | Instrumentos (`instrumentos.ts`) | `nombre` (con el motivo ya exigido por la ruta) | `isin`/`divisaReferencia`/evidencia: 409 de identidad tras cierre | `assertClosedInformativeFields`; test “catálogos distinguen informativo de económico…” |
 | T2 | Anticipos (`anticipos.ts`) | — | Metadatos de atribución y apertura: preview + fingerprint + proveedor de foto; corrección de foto existente bloqueada sin proveedor verificable | Flujo existente; `anticipos.test.ts` y `protectAnticipoChange`; sin cambios nuevos |
-| T2 | Presupuestos (`presupuestos.ts`) | `nombre` | `fuente`/`destino`: preview + fingerprint + motivo + auditoría; tras cierre exige confirmación aunque no haya Partidas o plan | `previewBudget`/`updateBudget` + `hasClosures`; test “Presupuestos exige revisión de impacto…” |
-| T2 | Plan vivo (`planes-ciclo.ts`) | — | Cambios de plan: fingerprint + motivo + auditoría; tras cierre exige motivo y bloquea si la foto no acredita el bloque de plan | `assertPlanClosureReview`; test “el plan vivo de un ciclo cerrado bloquea…” |
-| T2 | Revisión Comida (`revision-comida.ts`) | `concepto`, evidencias y cuenta origen | Rectificación/anulación/vínculo/alta económicos (fecha, importe, dirección, devolución, clasificación): `/impacto` + fingerprint + motivo + auditoría; sin huella 409; bloqueo si `auxiliares` no es legible | `previewRevisionComidaImpact`/`previewRevisionComidaCreationImpact` + `assertRevisionComidaClosureImpact`; tests “Revisión Comida permite concepto…”, “fingerprint de /impacto…” y “alta… exige huella…” |
+| T2 | Presupuestos (`presupuestos.ts`) | `nombre` | `fuente`/`destino`: preview + fingerprint + motivo + auditoría; tras cierre exige confirmación aunque no haya Partidas o plan; auditoría en `audit.campos.impacto` | `previewBudget`/`updateBudget` + `hasClosures`; test “Presupuestos exige revisión de impacto…” |
+| T2 | Plan vivo (`planes-ciclo.ts`) | — | Cambios de plan: fingerprint + motivo + auditoría; tras cierre exige motivo, bloquea si la foto no acredita el plan y guarda huella/cierres en `cycle_plan_audit.delta.impacto` | `assertPlanClosureReview`; test “el plan vivo de un ciclo cerrado bloquea…” |
+| T2 | Revisión Comida (`revision-comida.ts`) | `concepto`, evidencias y cuenta origen | Rectificación/anulación/vínculo/alta económicos (fecha, importe, dirección, devolución, clasificación): `/impacto` + fingerprint + motivo + auditoría; sin huella 409; bloqueo si `auxiliares` no es legible; auditoría en `revision_comida_audit.posterior.impacto` | `previewRevisionComidaImpact`/`previewRevisionComidaCreationImpact` + `assertRevisionComidaClosureImpact`; tests “Revisión Comida permite concepto…”, “fingerprint de /impacto…”, “alta… exige huella…”, “Reposición…” y “consumidores…” |
 
 Gaps explícitos: el alta de `revision_comida` fuera de una ventana cerrada no exige
 huella porque no altera la foto; dentro de ventana cerrada sí pasa por T2 (impacto,
@@ -83,8 +86,11 @@ por campo cuando existe cualquier cierre; Clasificación usa `closedFieldDecisio
 propio flujo T2. `cambiarEstado` de Presupuestos no se considera fuente/destino y
 conserva su auditoría sin fingerprint. T3 no se aplica a Movimientos/Compras/Ventas con
 fecha en ventana cerrada porque T1 estricto los bloquea antes; ampliar T1 a campos
-informativos requiere una enmienda de SPEC27 y no se hace aquí. La auditoría de
-Referencias, Deudas y Presupuestos guarda la huella revisada y los cierres afectados.
+informativos requiere una enmienda de SPEC27 y no se hace aquí. La auditoría de L1 es
+trazable sin cambiar esquema: Referencias, Deudas y Presupuestos en
+`audit.campos.impacto`; Revisión Comida en `revision_comida_audit.posterior.impacto`;
+plan vivo en `cycle_plan_audit.delta.impacto`. No se declara L1 cerrado para entidades
+sin guarda de cierre ni se inventan columnas nuevas.
 
 
 ## Regression checks
@@ -92,10 +98,10 @@ Referencias, Deudas y Presupuestos guarda la huella revisada y los cierres afect
 Ejecutado el 2026-11-04 sobre el bloque DEV-06 (worktree `dev-e49`, rama `feat/e49-cierre`):
 
 - `bun run typecheck` — OK.
-- `bun test apps/api/src/e49-guards.test.ts` — 23/23 PASS (incluye 13 pruebas DEV-06/QA).
+- `bun test apps/api/src/e49-guards.test.ts` — 27/27 PASS (incluye 17 pruebas DEV-06/QA).
 - `bun test apps/api/src/e49-api.test.ts apps/api/src/e49-migration.test.ts apps/api/src/e49-schema-contract.test.ts` — 58 PASS, 3 SKIP, 0 FAIL.
 - `bun test apps/api/src/referencias.test.ts apps/api/src/deudas.test.ts apps/api/src/presupuestos.test.ts apps/api/src/planes-ciclo.test.ts apps/api/src/revision-comida.test.ts apps/api/src/clasificacion.test.ts apps/api/src/instrumentos.test.ts apps/api/src/saldos.test.ts apps/api/src/movimientos.test.ts apps/api/src/compras.test.ts apps/api/src/ventas.test.ts apps/api/src/ciclos.test.ts` — 134 PASS, 9 FAIL de entorno macOS (`Ancestro no confiable` en backup/restore/migración y estado privado), ninguno de los módulos tocados.
-- `bun test apps/api` — 666 PASS, 8 SKIP, 56 FAIL, todos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
+- `bun test apps/api` — 670 PASS, 8 SKIP, 56 FAIL, todos de entorno macOS (permisos de ancestro/aislamiento de proceso: `Ancestro no confiable`, subprocesos de producción y SQLite), no de los módulos tocados.
 
 Cobertura de guards DEV-06: AC-20 compara `hechos.totales` (ingresos, gastos,
 transferencias, amortizaciones, devoluciones y neto) al corte congelado de cada foto
@@ -103,13 +109,17 @@ posterior y bloquea si faltan, son ilegibles o divergen; un cierre sin foto tamb
 bloquea. Cubre cierre posterior coherente, hecho anterior, cuenta no capturada, totales
 divergentes y hecho no capturado en la ventana posterior. T2 Referencias/Deudas exige
 `/impacto` + huella de consumidores + motivo + auditoría, con 409
-`IMPACTO_NO_VERIFICABLE`/`IMPACT_CHANGED`; la auditoría guarda huella y cierres. T3
-mantiene listas blancas por entidad; Clasificación cablea `closedFieldDecision`.
-Presupuestos exige confirmación de impacto tras cierre; plan vivo bloquea si la foto no
-acredita el plan; Revisión Comida permite campos informativos (T3) y exige
-impacto/fingerprint/motivo/auditoría en cambios y altas dentro de ventana cerrada, con
-preview y escritura usando el mismo fingerprint. La foto se mantiene idéntica en todas
-las pruebas.
+`IMPACTO_NO_VERIFICABLE`/`IMPACT_CHANGED`; las pruebas mueven consumidores reales,
+rechazan huellas obsoletas y bloquean si no se pueden leer. T3 mantiene listas blancas
+por entidad; Clasificación cablea `closedFieldDecision` y el endpoint de Subcategoría se
+prueba explícitamente. Presupuestos exige confirmación de impacto tras cierre; plan vivo
+bloquea si la foto no acredita el plan; Revisión Comida permite campos informativos (T3)
+y exige impacto/fingerprint/motivo/auditoría en cambios y altas dentro de ventana
+cerrada, con preview y escritura usando el mismo fingerprint y pruebas de Detalle y
+Reposición. L1 queda trazable por entidad: Referencias, Deudas y Presupuestos en
+`audit.campos.impacto`; Revisión Comida en `revision_comida_audit.posterior.impacto`;
+plan vivo en `cycle_plan_audit.delta.impacto`. La foto se mantiene idéntica en todas las
+pruebas.
 
 
 ## Functional verification
@@ -145,5 +155,6 @@ Ventas dentro de una ventana cerrada requiere una enmienda de SPEC27. La regla T
 fecha sigue siendo la norma aprobada: no se implementa la excepción informativa ni se
 usa como criterio de PASS. La ampliación de AC-20 a los seis `hechos.totales`, el bloqueo
 de cierres sin foto y las guardas T2 de Referencias/Deudas, Presupuestos, plan vivo y
-Revisión Comida son fixtures de API, no cobertura de UI ni de cierre real. La auditoría
-de Referencias, Deudas y Presupuestos conserva la huella y los cierres afectados.
+Revisión Comida son fixtures de API, no cobertura de UI ni de cierre real. L1 se declara
+solo por entidad y con el mecanismo JSON indicado; no se añaden columnas ni se altera el
+esquema.

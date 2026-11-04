@@ -438,13 +438,27 @@ export function confirmCyclePlan(
           "IMPACT_CHANGED",
           "La revisión ha cambiado; revisa de nuevo.",
         );
-      assertPlanClosureReview(
+      const closureWindows = assertPlanClosureReview(
         db,
         ciclo,
         !p.sinCambios,
         body.motivo,
         "confirmar el plan del ciclo",
       );
+      const closureImpact =
+        closureWindows.length && typeof body.fingerprint === "string"
+          ? {
+              fingerprint: body.fingerprint,
+              cierres: closureWindows.map(
+                ({ ciclo: id, version, inicio, fin }) => ({
+                  ciclo: id,
+                  version,
+                  inicio,
+                  fin,
+                }),
+              ),
+            }
+          : null;
       if (
         p.requiereMotivo &&
         !p.sinCambios &&
@@ -487,7 +501,9 @@ export function confirmCyclePlan(
               revision,
               new Date(now).toISOString(),
               typeof body.motivo === "string" ? body.motivo.trim() : null,
-              JSON.stringify(delta),
+              JSON.stringify(
+                closureImpact ? { ...delta, impacto: closureImpact } : delta,
+              ),
             ],
           );
         }

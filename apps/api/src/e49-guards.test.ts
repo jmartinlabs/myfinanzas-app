@@ -1609,11 +1609,16 @@ test("E4.9 DEV-06 T2: el plan vivo de un ciclo cerrado bloquea si la foto no acr
     motivo: "Plan revisado tras cierre",
   }, { "idempotency-key": randomUUID() });
   expect(reviewed.status).toBe(200);
-  expect(
-    f.db
-      .query("SELECT motivo FROM cycle_plan_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1")
-      .get(),
-  ).toMatchObject({ motivo: "Plan revisado tras cierre" });
+  const planAudit = f.db
+    .query(
+      "SELECT motivo,delta FROM cycle_plan_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
+    )
+    .get() as { motivo: string; delta: string };
+  expect(planAudit).toMatchObject({ motivo: "Plan revisado tras cierre" });
+  expect(JSON.parse(planAudit.delta).impacto).toMatchObject({
+    fingerprint: impact.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
 });
 
 test("E4.9 DEV-06 T2/T3: Revisión Comida permite concepto y exige impacto en cambios económicos", async () => {
@@ -1831,6 +1836,15 @@ test("E4.9 QA M1: el fingerprint de /impacto de Revisión Comida coincide con la
   expect(written.status).toBe(200);
   expect(written.data.operacion.concepto).toBe("Comida corregida");
   expect(written.data.operacion.importe).toBe("12.00");
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(id) as { posterior: string };
+  expect(JSON.parse(audit.posterior).impacto).toMatchObject({
+    fingerprint: preview.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
 });
 
 test("E4.9 QA M2: un cierre posterior sin foto bloquea AC-20", async () => {
@@ -1948,4 +1962,213 @@ test("E4.9 QA M3: Clasificación usa la lista blanca por campo y conserva T2", a
 
   const after = await f.request("/api/cierres/1/foto");
   expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 QA T3: el endpoint de Subcategoría admite renombrado informativo tras cierre", async () => {
+  const f = fixture({ facts: true, classification: true });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const renamed = await f.request(
+    "/api/clasificacion/subcategorias/SUB900",
+    "PATCH",
+    { revision: 1, nombre: "Subcategoría renombrada T3" },
+  );
+  expect(renamed.status).toBe(200);
+  expect(renamed.data.item.nombre).toBe("Subcategoría renombrada T3");
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 QA Reposición: preview y escritura comparten huella y dejan auditoría L1", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const created = await f.request(
+    "/api/revision-comida/reposiciones",
+    "POST",
+    {
+      fecha: "2026-01-12",
+      concepto: "Reposición ficticia",
+      importe: "20.00",
+      direccion: "Entrada",
+      esDevolucion: false,
+      evidenciaBancaria: "Extracto ficticio QA",
+      cuentaOrigen: null,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(created.status).toBe(201);
+  const id = created.data.operacion.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+
+  const preview = await f.request(
+    `/api/revision-comida/reposiciones/${id}/impacto`,
+    "POST",
+    { revision: 1, importe: "25.00" },
+  );
+  expect(preview.status).toBe(200);
+  const without = await f.request(
+    `/api/revision-comida/reposiciones/${id}/rectificar`,
+    "POST",
+    { revision: 1, motivo: "Cambio económico", importe: "25.00" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(without.status).toBe(409);
+  expect(without.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+
+  const written = await f.request(
+    `/api/revision-comida/reposiciones/${id}/rectificar`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Cambio económico revisado",
+      importe: "25.00",
+      fingerprint: preview.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(written.status).toBe(200);
+  expect(written.data.operacion.importe).toBe("25.00");
+  const audit = f.db
+    .query(
+      "SELECT posterior FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+    )
+    .get(id) as { posterior: string };
+  expect(JSON.parse(audit.posterior).impacto).toMatchObject({
+    fingerprint: preview.data.fingerprint,
+    cierres: [{ ciclo: "1", version: 1 }],
+  });
+});
+
+test("E4.9 QA consumidores: Referencias y Deudas cambian la huella y el impacto obsoleto se rechaza", async () => {
+  const f = fixture({ facts: false, classification: true });
+  await f.enroll();
+  const reference = await f.request(
+    "/api/referencias",
+    "POST",
+    { nombre: "Referencia consumidores", tipo: "Viaje" },
+    { "idempotency-key": randomUUID() },
+  );
+  const referenceId = reference.data.item.id as string;
+  const debt = await f.request(
+    "/api/deudas",
+    "POST",
+    {
+      nombre: "Deuda consumidores",
+      inicioControl: "2026-01-01",
+      capitalApertura: "100.00",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  const debtId = debt.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+
+  const referenceBefore = await f.request(
+    `/api/referencias/${referenceId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(referenceBefore.status).toBe(200);
+  seedMovement(f.db, {
+    id: "8301",
+    fecha: "2026-02-10",
+    importe: 500,
+    referencia: referenceId,
+  });
+  const referenceAfter = await f.request(
+    `/api/referencias/${referenceId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(referenceAfter.status).toBe(200);
+  expect(referenceAfter.data.fingerprint).not.toBe(
+    referenceBefore.data.fingerprint,
+  );
+  const staleReference = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Huella obsoleta",
+      fingerprint: referenceBefore.data.fingerprint,
+    },
+  );
+  expect(staleReference.status).toBe(409);
+  expect(staleReference.data.code).toBe("IMPACT_CHANGED");
+  expect(
+    f.db
+      .query("SELECT estado FROM referencias WHERE id=?")
+      .get(referenceId),
+  ).toEqual({ estado: "Activa" });
+
+  f.db.run("UPDATE partidas SET deuda=? WHERE id='PAR900'", [debtId]);
+  const debtBefore = await f.request(
+    `/api/deudas/${debtId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(debtBefore.status).toBe(200);
+  seedMovement(f.db, {
+    id: "8302",
+    fecha: "2026-02-11",
+    importe: 500,
+    tipo: "Gasto",
+    destino: "S000",
+    partida: "PAR900",
+  });
+  const debtAfter = await f.request(
+    `/api/deudas/${debtId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(debtAfter.status).toBe(200);
+  expect(debtAfter.data.fingerprint).not.toBe(debtBefore.data.fingerprint);
+  const staleDebt = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 1,
+    estado: "Inactiva",
+    motivo: "Huella obsoleta",
+    fingerprint: debtBefore.data.fingerprint,
+  });
+  expect(staleDebt.status).toBe(409);
+  expect(staleDebt.data.code).toBe("IMPACT_CHANGED");
+  expect(
+    f.db.query("SELECT estado FROM deudas WHERE id=?").get(debtId),
+  ).toEqual({ estado: "Activa" });
+});
+
+test("E4.9 QA fail-closed: consumidores no legibles bloquean sin escribir", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const reference = await f.request(
+    "/api/referencias",
+    "POST",
+    { nombre: "Referencia no verificable", tipo: "Viaje" },
+    { "idempotency-key": randomUUID() },
+  );
+  const referenceId = reference.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  f.db.run("ALTER TABLE movimientos RENAME TO movimientos_qa_oculta");
+  const preview = await f.request(
+    `/api/referencias/${referenceId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(preview.status).toBe(409);
+  expect(preview.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+  const write = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Intento fail-closed",
+      fingerprint: "a".repeat(64),
+    },
+  );
+  expect(write.status).toBe(409);
+  expect(write.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+  expect(
+    f.db.query("SELECT estado FROM referencias WHERE id=?").get(referenceId),
+  ).toEqual({ estado: "Activa" });
 });
