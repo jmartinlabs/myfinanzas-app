@@ -9,6 +9,7 @@ import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
 import { PlanAnual } from "./PlanAnual";
+import { ResumenAnual } from "./ResumenAnual";
 import { PlanesCiclo } from "./PlanesCiclo";
 import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
@@ -318,6 +319,21 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/resumen-anual") ? "nav-active" : "nav-link"
+            }
+            href="/resumen-anual"
+            aria-current={
+              path.startsWith("/resumen-anual") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/resumen-anual");
+            }}
+          >
+            Resumen anual
+          </a>
+          <a
+            className={
               path.startsWith("/saldos") || path === "/"
                 ? "nav-active"
                 : "nav-link"
@@ -528,6 +544,8 @@ function App() {
             <Nomina />
           ) : path.startsWith("/plan-anual") ? (
             <PlanAnual go={go} />
+          ) : path.startsWith("/resumen-anual") ? (
+            <ResumenAnual go={go} />
           ) : path.startsWith("/planes-ciclo") ? (
             <PlanesCiclo go={go} />
           ) : path.startsWith("/presupuestos") ? (
