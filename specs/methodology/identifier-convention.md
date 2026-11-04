@@ -52,8 +52,38 @@ Forma de uso: `E4.10 · SPEC`, `E4.10 · DEV`, `E4.10 · QA`, `E4.10 · MERGE`.
 
 - Paquete: `E4.10 · SPEC` o `E4.10 · DEV-02 — <nombre>`.
 - Rama: `feat/e46-<tema>` o `docs/<tema>` (histórico).
-- PR: `feat(e4.6): <resultado>` o `docs(e46): <resultado>`.
 - Los commits y PR referencian el identificador y la etapa; no inventan IDs nuevos.
+
+### Títulos de PR
+
+Formato:
+
+```text
+<tipo>(<scope>): <ETAPA>[-<BLOQUE>] — <descripción>
+```
+
+- **`<tipo>`:** `feat`, `fix`, `test`, `docs`, `chore`, `refactor`.
+- **`<scope>`:** ID funcional en minúsculas y sin separadores que rompan el parseo:
+  `E4.10 → e410`, `E4.6 → e46`. Trabajo transversal usa un slug documentado (`theme`, `ci`).
+- **`<ETAPA>`:** `SPEC`, `DEV` o `QA`. `MERGE` es seguimiento y no requiere PR propia.
+- **`<BLOQUE>`:** `DEV-01`, `DEV-02`… si la PR cubre un bloque. Si cubre varios, se usa
+  `DEV` y se listan los bloques en la descripción.
+- Se conserva el número `#NNN` de GitHub; no se renumeran ni se renombran PR históricas.
+- Títulos cortos, descriptivos y compatibles con los validadores existentes.
+
+Ejemplos:
+
+```text
+docs(e410): SPEC — reapertura de cierres
+feat(e410): DEV-01 — modelo de reapertura
+feat(e410): DEV-02 — API y controles
+test(e410): QA — pruebas de reapertura
+fix(e410): DEV-02 — corrección del bloqueo histórico
+feat(theme): DEV-01 — sistema de temas y shell
+```
+
+Las PR abiertas antes de esta convención conservan su título. Las nuevas la aplican desde su
+creación; una PR que abarque varios bloques lo declara en la descripción.
 
 ## 6. Límites
 
