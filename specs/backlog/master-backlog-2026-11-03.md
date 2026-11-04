@@ -23,8 +23,9 @@ evidencia ejecutada; una spec aprobada no autoriza DEV.
 | QA final E4.3 | **MERGED** `dd56553` | CI 644/644; Playwright 1/1; 15 PASS/2 PARCIAL; 409 seguro; post-merge `41796526278` | Aceptación funcional final de Álex |
 | E4.4/E3.6 evidencia | **MERGED** #190/#191 | Progress 17, evidencia 21 y R17/R18 clasificadas | — |
 | KI-409-01 (bug menor) | **PR #194 draft** `1b0ab52` | 409 mantiene bloqueo tras editar; E2E regresión | Autorización de merge |
-| E4.9 brief de decisiones | **Preparado** | `e49-decision-brief-2026-11-04.md`; 5 decisiones bloqueantes agrupadas | Decisión del usuario/Álex |
-| E4.6 readiness | **Preparado** | `24-e46-consumer-readiness.md`; F-01/F-02 pendientes | Corregir spec/fixture antes de DEV24 |
+| E4.9 brief de decisiones | **Preparado** | `e49-decision-brief-2026-11-04.md`; 5 decisiones bloqueantes agrupadas | Decisión del usuario |
+| E4.9 paquete A/B/C | **Preparado** | `e49-execution-package-2026-11-04.md`; dependencias, AC y pruebas | Autorización de DEV |
+| E4.6 readiness | **Corregido** | F-01/F-02 resueltas en spec/testplan; validación técnica PASS | Autorización de DEV24 |
 | #181 cola/tablero + reparto autónomo | MERGED `7bfb5a2` | CI PASS `41710499996` | — |
 | Backlog único | Este documento | — | Mantener por hitos |
 
