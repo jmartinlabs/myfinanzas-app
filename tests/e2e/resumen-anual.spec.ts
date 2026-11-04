@@ -21,14 +21,17 @@ const BASE_PORT = 3018;
 const EMPTY_PORT = 3019;
 const ERROR_PORT = 3020;
 const FILTERS_PORT = 3021;
+const CONCURRENCY_PORT = 3022;
 const BASE_DIR = ".local/e2e-e47";
 const EMPTY_DIR = ".local/e2e-e47-empty";
 const ERROR_DIR = ".local/e2e-e47-error";
 const FILTERS_DIR = ".local/e2e-e47-filters";
+const CONCURRENCY_DIR = ".local/e2e-e47-concurrency";
 let base: ChildProcess | undefined;
 let empty: ChildProcess | undefined;
 let error: ChildProcess | undefined;
 let filters: ChildProcess | undefined;
+let concurrency: ChildProcess | undefined;
 
 async function waitForApi(request: APIRequestContext, port: number) {
   await expect
@@ -89,10 +92,24 @@ test.beforeAll(async ({ request }) => {
       },
     },
   );
+  concurrency = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/resumen-anual-server.ts"],
+    {
+      stdio: "pipe",
+      env: {
+        ...process.env,
+        NODE_ENV: "test",
+        E47_PORT: String(CONCURRENCY_PORT),
+        E47_DIR: CONCURRENCY_DIR,
+      },
+    },
+  );
   await waitForApi(request, BASE_PORT);
   await waitForApi(request, EMPTY_PORT);
   await waitForApi(request, ERROR_PORT);
   await waitForApi(request, FILTERS_PORT);
+  await waitForApi(request, CONCURRENCY_PORT);
 });
 
 test.afterAll(() => {
@@ -100,6 +117,7 @@ test.afterAll(() => {
   empty?.kill();
   error?.kill();
   filters?.kill();
+  concurrency?.kill();
 });
 
 async function routeApi(page: Page, port: number) {
@@ -504,7 +522,7 @@ test("AC23/24: error de fuente y sesión expirada sin cifras ni fugas", async ({
   expect(errors).toEqual([]);
 });
 
-test("AC25: filtros funcionales y conservación al volver de un enlace", async ({
+test("AC21: filtros funcionales y conservación al volver de un enlace", async ({
   page,
 }) => {
   await routeApi(page, FILTERS_PORT);
@@ -559,4 +577,81 @@ test("AC25: filtros funcionales y conservación al volver de un enlace", async (
   await expect(
     page.getByRole("heading", { name: "Resumen anual", exact: true }),
   ).toBeVisible();
+});
+
+test("AC25: descarta la respuesta antigua de una consulta retenida", async ({
+  page,
+}) => {
+  await routeApi(page, CONCURRENCY_PORT);
+  await login(page, CONCURRENCY_DIR);
+  await page.goto("/resumen-anual?ejercicio=2026");
+  await expect(page.locator(".e47-context")).toContainText("2026");
+
+  // Filtro secundario que debe sobrevivir al cambio de ejercicio.
+  const cobertura = page.getByLabel("Cobertura", { exact: true });
+  await cobertura.selectOption("Parcial");
+  await expect(page).toHaveURL(/cobertura=Parcial/);
+
+  let releaseFirst!: () => void;
+  let firstStarted!: () => void;
+  const firstGate = new Promise<void>((resolve) => {
+    releaseFirst = resolve;
+  });
+  const firstStartedPromise = new Promise<void>((resolve) => {
+    firstStarted = resolve;
+  });
+  let firstHeld = false;
+
+  await page.route("**/api/resumen-anual*", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(CONCURRENCY_PORT);
+    if (url.searchParams.get("ejercicio") === "2027") {
+      firstHeld = true;
+      firstStarted();
+      const response = await route.fetch({ url: url.toString() });
+      await firstGate;
+      await route.fulfill({ response });
+      return;
+    }
+    await route.fulfill({
+      response: await route.fetch({ url: url.toString() }),
+    });
+  });
+
+  const ejercicio = page.getByLabel("Ejercicio", { exact: true });
+  await ejercicio.selectOption("2027");
+  await firstStartedPromise;
+  expect(firstHeld).toBe(true);
+  await expect(page).toHaveURL(/ejercicio=2027/);
+
+  // La segunda consulta (2028) termina antes de liberar la primera (2027).
+  await ejercicio.selectOption("2028");
+  await expect(page).toHaveURL(/ejercicio=2028/);
+  await expect(page.getByLabel("Cobertura", { exact: true })).toHaveValue(
+    "Parcial",
+  );
+  await expect(page.locator(".e47-empty-page")).toContainText(
+    "Sin datos para este ejercicio",
+  );
+  await expect(
+    page.locator("section[aria-labelledby='e47-plan']"),
+  ).toContainText("Sin plan ni ejecución");
+  await expect(page.locator(".e47-page")).not.toContainText("Ciclo 8");
+
+  // Liberar la respuesta 2027 no debe sustituir la selección 2028.
+  releaseFirst();
+  await page.waitForTimeout(400);
+  await expect(ejercicio).toHaveValue("2028");
+  await expect(page).toHaveURL(/ejercicio=2028/);
+  await expect(page).toHaveURL(/cobertura=Parcial/);
+  await expect(page.getByLabel("Cobertura", { exact: true })).toHaveValue(
+    "Parcial",
+  );
+  await expect(page.locator(".e47-empty-page")).toContainText(
+    "Sin datos para este ejercicio",
+  );
+  await expect(page.locator(".e47-page")).not.toContainText("Ciclo 8");
+  await expect(
+    page.locator("section[aria-labelledby='e47-plan']"),
+  ).not.toContainText("18.000,00 €");
 });

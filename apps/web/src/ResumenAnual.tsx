@@ -589,6 +589,87 @@ function yearOptions(current: string) {
   return Array.from({ length: 8 }, (_, index) => String(base - 4 + index));
 }
 
+function FilterBar({
+  filters,
+  onChange,
+  ciclos,
+  partidas,
+}: {
+  filters: Filters;
+  onChange: (key: keyof Filters, value: string) => void;
+  ciclos: CicloRef[];
+  partidas: string[];
+}) {
+  return (
+    <div
+      className="e47-filters"
+      role="group"
+      aria-label="Filtros del resumen anual"
+    >
+      <label>
+        Ejercicio
+        <select
+          aria-label="Ejercicio"
+          value={filters.ejercicio}
+          onChange={(event) => onChange("ejercicio", event.target.value)}
+        >
+          {yearOptions(filters.ejercicio).map((year) => (
+            <option key={year} value={year}>
+              {year}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Cobertura
+        <select
+          aria-label="Cobertura"
+          value={filters.cobertura}
+          onChange={(event) => onChange("cobertura", event.target.value)}
+        >
+          <option value="">Todas</option>
+          <option value="Completa">Completa</option>
+          <option value="Parcial">Parcial</option>
+          <option value="NoAcreditada">No acreditada</option>
+          <option value="NoDisponible">No disponible</option>
+          <option value="Solapada">Solapada</option>
+        </select>
+      </label>
+      <label>
+        Ciclo
+        <select
+          aria-label="Ciclo"
+          value={filters.ciclo}
+          onChange={(event) => onChange("ciclo", event.target.value)}
+        >
+          <option value="">Todos</option>
+          {ciclos.map((ciclo) => (
+            <option key={ciclo.cicloId} value={ciclo.cicloId}>
+              {ciclo.cicloId} · {formatDate(ciclo.inicio)}–
+              {ciclo.fin ? formatDate(ciclo.fin) : "abierto"}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Partida
+        <select
+          aria-label="Partida"
+          value={filters.partida}
+          onChange={(event) => onChange("partida", event.target.value)}
+        >
+          <option value="">Todas</option>
+          {partidas.map((partida) => (
+            <option key={partida} value={partida}>
+              {partida}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  );
+}
+
 export function ResumenAnual({ go }: { go: (path: string) => void }) {
   const [filters, setFilters] = useState<Filters>(initialFilters);
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -644,6 +725,21 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
           title="Resumen anual"
           description="Componiendo lo que ya publican los motores propietarios…"
         />
+        <section className="panel e47-context" aria-labelledby="e47-cargando">
+          <div className="e47-context-head">
+            <div>
+              <p className="eyebrow">EJERCICIO NATURAL</p>
+              <h2 id="e47-cargando">{filters.ejercicio}</h2>
+            </div>
+            <p className="e47-live">Cargando… · Solo lectura</p>
+          </div>
+          <FilterBar
+            filters={filters}
+            onChange={updateFilter}
+            ciclos={[]}
+            partidas={filters.partida === "" ? [] : [filters.partida]}
+          />
+        </section>
         <div
           className="e47-skeleton"
           role="status"
@@ -751,68 +847,12 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
             <dd>{data.contexto.revision.slice(0, 16)}…</dd>
           </div>
         </dl>
-        <div className="e47-filters" role="group" aria-label="Filtros del resumen anual">
-          <label>
-            Ejercicio
-            <select
-              aria-label="Ejercicio"
-              value={filters.ejercicio}
-              onChange={(event) => updateFilter("ejercicio", event.target.value)}
-            >
-              {yearOptions(filters.ejercicio).map((year) => (
-                <option key={year} value={year}>
-                  {year}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Cobertura
-            <select
-              aria-label="Cobertura"
-              value={filters.cobertura}
-              onChange={(event) => updateFilter("cobertura", event.target.value)}
-            >
-              <option value="">Todas</option>
-              <option value="Completa">Completa</option>
-              <option value="Parcial">Parcial</option>
-              <option value="NoAcreditada">No acreditada</option>
-              <option value="NoDisponible">No disponible</option>
-              <option value="Solapada">Solapada</option>
-            </select>
-          </label>
-          <label>
-            Ciclo
-            <select
-              aria-label="Ciclo"
-              value={filters.ciclo}
-              onChange={(event) => updateFilter("ciclo", event.target.value)}
-            >
-              <option value="">Todos</option>
-              {data.ejercicio.ciclos.map((ciclo) => (
-                <option key={ciclo.cicloId} value={ciclo.cicloId}>
-                  {ciclo.cicloId} · {formatDate(ciclo.inicio)}–
-                  {ciclo.fin ? formatDate(ciclo.fin) : "abierto"}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Partida
-            <select
-              aria-label="Partida"
-              value={filters.partida}
-              onChange={(event) => updateFilter("partida", event.target.value)}
-            >
-              <option value="">Todas</option>
-              {partidaOptions.map((partida) => (
-                <option key={partida} value={partida}>
-                  {partida}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
+        <FilterBar
+          filters={filters}
+          onChange={updateFilter}
+          ciclos={data.ejercicio.ciclos}
+          partidas={partidaOptions}
+        />
         <p className="e47-context-meta">
           Consulta {data.contexto.consulta} ·{" "}
           {data.contexto.calculo === "Vivo"

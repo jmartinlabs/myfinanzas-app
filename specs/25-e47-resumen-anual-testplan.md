@@ -2,8 +2,8 @@
 
 Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04.**
 Diseño de pruebas con **ejecución local DEV25 el 2026-11-04** (ver §Ejecución local DEV25).
-E4.7-AC3 sigue en cumplimiento parcial; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 y AC25
-siguen UNRUN. Existe un candidato publicado en PR #210 (rama `feat/e47-resumen-anual`); el
+E4.7-AC3 sigue en cumplimiento parcial; AC10–AC15 siguen BLOCKED por E4.5/DT7; AC19 sigue
+UNRUN y AC25 queda verificado en local. Existe un candidato publicado en PR #210 (rama `feat/e47-resumen-anual`); el
 merge requiere autorización separada. No hay tablas, DDL ni migración nuevas. Ningún AC bloqueado se declara PASS. Este documento no
 autoriza datos reales, migración, snapshots ni merge.
 
@@ -32,7 +32,7 @@ dependencia externa; `PARCIAL` = cumplimiento parcial documental/contractual, **
 evidencia propios, sin CI Linux ni QA independiente; `PASS`/`FAIL` completos exigen además el gate
 canónico y la revisión independiente. Resultado local: AC01, AC04–AC09, AC16, AC17, AC24,
 AC26 y AC27 en `PASS (local)`; AC02, AC03, AC18, AC20, AC21, AC22 y AC23 en `PARCIAL`;
-AC10–AC15 en `BLOCKED` por E4.5/DT7; AC19 y AC25 en `UNRUN`. Las dependencias se indican en
+AC10–AC15 en `BLOCKED` por E4.5/DT7; AC19 en `UNRUN`; AC25 en `PASS (local)`. Las dependencias se indican en
 la columna de gate, sin convertir la falta de dependencia en un PASS.
 
 ## Estrategia
@@ -100,7 +100,7 @@ No sustituye la CI Linux ni la revisión independiente de QA.
 | API E4.7 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 48 pass / 0 fail (8 de E4.7 y 40 de los motores) |
 | API E4.6 | `NODE_ENV=test bun test apps/api/src/resumen-inicio.test.ts` | 18 pass / 0 fail |
 | API E4.7 + E4.6 + motores | `NODE_ENV=test bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts apps/api/src/flujo-mensual.test.ts apps/api/src/plan-anual.test.ts apps/api/src/pendientes.test.ts` | 66 pass / 0 fail |
-| E2E E4.7 | `bunx playwright test tests/e2e/resumen-anual.spec.ts` | 4 pass / 0 fail |
+| E2E E4.7 | `bunx playwright test tests/e2e/resumen-anual.spec.ts` | 5 pass / 0 fail |
 | Regresión inicio/temas | `bunx playwright test tests/e2e/inicio.spec.ts tests/e2e/theme.spec.ts` | 7 pass / 0 fail |
 | Capturas | `artifacts/e4-7/*.png` | 7 capturas: tres temas a 1440/390 y el estado vacío |
 
@@ -110,7 +110,8 @@ AC07, AC08 y AC09 se verificaron en el DTO/API; las capturas E2E cubren la compo
 `PARCIAL` y `BLOCKED` conservan su causa. AC02, AC18, AC20, AC21 y AC23 quedan `PARCIAL` por
 los límites de evidencia indicados; AC22 queda `PARCIAL` porque solo acredita una
 **comprobación parcial de contraste**, no una auditoría WCAG. `UNRUN` indica que no se ejecutó: AC19 porque E4.7 no publica el cociente
-de meses y AC25 porque no se probó concurrencia real entre revisiones. **No se declara E4.7
+de meses. AC25 se verificó con dos consultas retenidas en la misma pestaña; **no es concurrencia
+multi-cliente**. **No se declara E4.7
 completa, PASS del roadmap ni merge.**
 
 **Semántica de `cobertura=Completa` con `sinLinea`.** El filtro se aplica a la cobertura de
@@ -144,11 +145,21 @@ Commit local de corrección sobre `60f18f8`. No se modifica E4.9.
 
 **Comandos de la corrección:** `bun run typecheck` PASS; `bun run build` PASS (aviso de chunk
 preexistente); `bun test apps/api/src/resumen-anual.test.ts apps/api/src/resumen-inicio.test.ts`
-26 pass / 0 fail; `bun test` E4.7 + motores 48 pass / 0 fail; E2E E4.7 4 pass / 0 fail;
+26 pass / 0 fail; `bun test` E4.7 + motores 48 pass / 0 fail; E2E E4.7 5 pass / 0 fail;
 regresión inicio/temas 7 pass / 0 fail. Capturas regeneradas en `artifacts/e4-7/`.
 
 **Integración con E4.9.** `style.css` mantiene el bloque `.e47-` separado y documenta el
 conflicto previsible con `.cierre-*`; no se modifica ningún archivo de E4.9.
+
+## QA independiente (2026-11-04)
+
+Dictamen **APTO CON RESERVAS** sobre `05aee71`/`25c2cd5`. No sustituye la aprobación de merge,
+que es separada. Reservas registradas: AC02 (IDs/contexto por cifra no visibles en la tabla de
+1440), AC18 (F-MARGEN numérico no ejecutado), AC20 (falta la variante sin patrimonio), AC21 (no
+se activaron todos los enlaces), AC22 (contraste parcial, no auditoría WCAG) y AC23 (no se probó
+la degradación de un único carril). AC25 se cierra en esta entrega con la prueba E2E de descarte
+de respuesta antigua; AC19 sigue `UNRUN` porque E4.7 no publica el cociente de meses. No se
+declara E4.7 completa, PASS del roadmap ni merge.
 
 ## Fixtures diseñadas
 
@@ -257,15 +268,15 @@ la URL no contiene importes. La QA visual/responsive es un gate separado.
 
 ## Matriz de aceptación
 
-**Resultado local DEV25.** AC01, AC04–AC09, AC16, AC17, AC24, AC26 y AC27 quedan
+**Resultado local DEV25.** AC01, AC04–AC09, AC16, AC17, AC24, AC25, AC26 y AC27 quedan
 `PASS (local)` con la evidencia de §Ejecución local DEV25. AC02, AC03, AC18, AC20, AC21, AC22 y AC23
 quedan `PARCIAL`: AC02 no declara IDs/contexto de cada cifra en la tabla de 1440; AC18 no
 ejecuta el valor numérico de F-MARGEN; AC20 cubre el bloque incluido y el corte, pero no la
 variante sin patrimonio; AC21 activa un drill-down, no todos los enlaces; AC22 solo acredita
 comprobación parcial de contraste, no auditoría WCAG; AC23 cubre vacío,
 500, 401 y reintento, pero no la degradación de un solo carril. AC10–AC15 quedan `BLOCKED` por
-E4.5/DT7. AC19 y AC25 quedan `UNRUN`: no se publica el cociente de meses y no se probó la
-concurrencia real entre revisiones. La columna «Gate» indica la dependencia que impide
+E4.5/DT7. AC19 queda `UNRUN` porque no se publica el cociente de meses; AC25 queda
+`PASS (local)` con una prueba de descarte de respuesta antigua en la misma pestaña. La columna «Gate» indica la dependencia que impide
 ejecutarlos; no es un resultado.
 
 | AC | Tipo | Precondición y acción | Resultado esperado | Método / comando propuesto | Gate / dependencia | Evidencia esperada | Estado |
@@ -294,7 +305,7 @@ ejecutarlos; no es un resultado.
 | E4.7-AC22 | Positivo / UX | `F-FILTROS`: 1440×1000 y 390×844; filtros principales ejercicio/cobertura y secundarios Ciclo/Partida; teclado, foco y comprobación parcial de contraste | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; sin tema/tokens nuevos; sin CSV/PDF en el primer DEV | Playwright + capturas | D8-F; DEV25 | `artifacts/e4-7/*.png`; capturas y estados de filtros; contraste parcial, no auditoría WCAG | PARCIAL |
 | E4.7-AC23 | Negativo / estados | Forzar vacío, carga, parcial, ND, error de una fuente y reintento | Estados diferenciados; solo el carril afectado degrada; no `0`; el reintento conserva la selección | Playwright con intercepción de red | DEV25 | Capturas y DTO | PARCIAL |
 | E4.7-AC24 | Negativo / seguridad | Acceso anónimo, sesión expirada, error 500 e intento de escritura | 401/reautenticación sin datos; errores genéricos sin SQL ni importes; `no-store`; no hay métodos de escritura | API + HTTP | DEV25 | Respuestas y cabeceras | PASS (local) |
-| E4.7-AC25 | Límite / concurrencia | Cambiar una fuente entre carga y reintento; dos consultas concurrentes | No se mezclan revisiones; la respuesta antigua se descarta; la selección se conserva | API + Playwright | DEV25 | Respuestas y capturas | UNRUN |
+| E4.7-AC25 | Límite / concurrencia | Dos consultas con ejercicios distintos; la primera se retiene y la segunda completa antes; después se libera la primera | No se mezclan revisiones; la respuesta antigua se descarta; se conserva el ejercicio y la cobertura seleccionados | `tests/e2e/resumen-anual.spec.ts` «AC25: descarta la respuesta antigua de una consulta retenida» | DEV25 | Prueba E2E 5/5; no es concurrencia multi-cliente | PASS (local) |
 | E4.7-AC26 | Negativo / persistencia | Inspeccionar tablas, `schema_version` y artefactos antes/después | Sin tabla, snapshot, caché persistida ni migración; `schema_version` igual; no se persiste el resumen | SQLite + API | DEV25 | Diff de esquema y artefactos | PASS (local) |
 | E4.7-AC27 | Límite / cierre | Consultar sin E4.9/E4.11 | Cabecera «cálculo vivo, sin foto»; no hay cierre/foto ni certificación anual; no se simula una foto | API + Playwright | E4.9/E4.11 | DTO y captura | PASS (local) |
 
@@ -386,7 +397,7 @@ manual de subtotales.
 - Sin FAIL abiertos, sin regresiones en E2.4/E2.6/E3.6/E4.5 y sin cambios de datos.
 - `python3.12 scripts/verify --full` del candidato estable en PASS.
 - Capturas 390/1440 inspeccionadas; teclado, foco y estados comprobados.
-- Revisión independiente de QA y aprobación de merge separada.
+- QA independiente emitida (**APTO CON RESERVAS**) y aprobación de merge separada.
 - La entrega no se declara completa si falta E4.5/DT7, si D8-M no está decidido o si E4.9/E4.11
   no existen; en esos casos los AC afectados quedan `UNRUN`/`BLOCKED`/`PARCIAL`, no PASS.
 
@@ -397,9 +408,8 @@ DEV-01/DEV-02/DEV-03 más las correcciones QA) con 8 pruebas API de E4.7, 4 E2E 
 inicio/temas en PASS local. El candidato está publicado en PR #210; sin merge. E4.5 sigue sin DEV y DT7 abierto; E4.9 está
 en PR #200 sin merge; E4.11 tiene SPEC29 en `main` pero sin DEV conocido. Las seis decisiones
 D8-M/Z/F/N, patrimonio y gate E4.5/DT7 están aprobadas por el usuario el 2026-11-04; D8-M
-mantiene E4.7-AC3 en `PARCIAL`. AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 y AC25 siguen
-`UNRUN`; AC02, AC18, AC20, AC21, AC22 y AC23 quedan `PARCIAL` por los límites de evidencia
-descritos.
-La siguiente acción es la revisión independiente de QA y, solo después, la autorización
-separada de publicación y merge. Ningún AC bloqueado se declara PASS ni se presenta E4.7 como
+mantiene E4.7-AC3 en `PARCIAL`. AC10–AC15 siguen `BLOCKED` por E4.5/DT7; AC19 sigue
+`UNRUN`; AC25 queda `PASS (local)`; AC02, AC18, AC20, AC21, AC22 y AC23 quedan `PARCIAL` por
+los límites de evidencia descritos. La QA independiente ya emitió **APTO CON RESERVAS** sobre
+`05aee71`/`25c2cd5`; la autorización de merge sigue siendo separada. Ningún AC bloqueado se declara PASS ni se presenta E4.7 como
 completa.
