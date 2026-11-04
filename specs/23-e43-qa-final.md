@@ -84,7 +84,10 @@ Resultado: **15 PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN, 0 BLOCKED**. Los
 
 ## 5. Riesgos residuales
 
-- No hay PASS de AC/TP; la evidencia es de fixtures y CI, no de datos reales.
+- **PASS de cobertura ≠ PASS de aceptación final:** los 15 PASS acreditan pruebas
+  ejecutadas con fixtures/CI; la aceptación funcional final sigue pendiente y no se infiere
+  de ellos.
+- La evidencia es de fixtures y CI, no de datos reales.
 - La ventana de E4.9, la foto y la integración `e43`/`valoracion` siguen fuera de alcance.
 - El detalle no muestra los hechos de Compra/Venta; se consultan en la ficha del Instrumento.
 - No se ha ejecutado el perfil `full` con datos reales ni migración operativa.
@@ -99,6 +102,10 @@ Resultado: **15 PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN, 0 BLOCKED**. Los
   comprueba el retorno a ese corte (4 filas, Parcial 1/4).
 - La copia de O3 se aparta ligeramente del wireframe aprobado; queda como reserva visual
   menor sujeta a la aceptación final.
+- **Conflicto 409:** la interfaz ya no actualiza la revisión en silencio. Muestra las
+  diferencias, bloquea el guardado y exige elegir entre descartar el borrador y recargar la
+  versión vigente o confirmar expresamente la sobrescritura con una casilla. El E2E cubre el
+  descarte seguro, el bloqueo y la confirmación explícita.
 
 ## 7. Recomendación
 

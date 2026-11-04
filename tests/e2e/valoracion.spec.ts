@@ -634,12 +634,33 @@ test("E4.3 valoración: listado/agregado, detalle, alta, rectificación, ficha, 
       path: "artifacts/e4-3/valoracion-409-revision-1440.png",
       fullPage: true,
     });
+    await expect(
+      page.getByText(/Cambios concurrentes en la revisión 2/),
+    ).toBeVisible();
+    await expect(page.getByText(/obsoleta; vigente 2/)).toBeVisible();
+    await expect(page.locator(".valoracion-conflict")).toContainText("Precio");
+    const overwrite = page.getByRole("checkbox", {
+      name: /reemplazará la revisión vigente/,
+    });
+    await expect(overwrite).not.toBeChecked();
+    await expect(
+      page.getByRole("button", { name: /Usar mi borrador sobre la revisión/ }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Guardar corrección" }),
+    ).toBeDisabled();
     await page
       .getByRole("button", {
-        name: "Actualizar revisión conservando el borrador",
+        name: "Descartar mi borrador y cargar la revisión vigente",
       })
       .click();
     await expect(page.locator(".focus-alert")).toHaveCount(0);
+    await expect(page.getByLabel(/Precio unitario/)).toHaveValue("124.00");
+    await expect(page.getByLabel(/Motivo de corrección/)).toHaveValue("");
+    await page.getByLabel(/Precio unitario/).fill("125.000000");
+    await page.getByLabel(/Motivo de corrección/).fill(
+      "Corrección ficticia de precio",
+    );
     await page.getByRole("button", { name: "Guardar corrección" }).click();
     await expect(
       page.getByRole("heading", { name: /Valoración VAL-/ }),

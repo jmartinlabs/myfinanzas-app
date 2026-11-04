@@ -1466,6 +1466,11 @@ function ValuationForm({
     [errors, setErrors] = useState<Record<string, string>>({}),
     [error, setError] = useState(""),
     [stale, setStale] = useState(false),
+    [conflict, setConflict] = useState<{
+      current: ValoracionDto;
+      changes: string[];
+    } | null>(null),
+    [overwrite, setOverwrite] = useState(false),
     [busy, setBusy] = useState(false),
     [retry, setRetry] = useState(0),
     attempt = useRef(crypto.randomUUID()),
@@ -1576,23 +1581,71 @@ function ValuationForm({
     backHref = rectifying && id
       ? fichaHref(id)
       : `${VALORACION_BASE}/${saldo ?? ""}/${instrumento ?? ""}?fecha=${fecha}`;
+  async function loadConflict() {
+    if (!id) return;
+    try {
+      const value = await api<Ficha>(`/e43/valoraciones/${id}`);
+      const current = value.valoracion;
+      const changes: string[] = [];
+      const add = (label: string, currentValue: string | null, draft: string) => {
+        if ((currentValue ?? "") !== (draft ?? "")) changes.push(label);
+      };
+      add("Fecha", current.fecha, fecha);
+      add("Tipo", current.tipo, tipo);
+      add("Procedencia", current.procedencia, procedencia);
+      if (tipo === "Manual") add("Importe EUR", current.valorEur, valorEur);
+      else {
+        add("Precio", current.precio, precio);
+        add("Divisa", current.divisa, divisa);
+        add("Cambio", current.cambio, cambio);
+      }
+      setConflict({ current, changes });
+    } catch (value) {
+      setError((value as Error).message);
+    }
+  }
   function failed(value: unknown) {
     const apiError = value as ApiError;
     setError(apiError.message);
     setErrors(apiError.fields ?? {});
     setStale(apiError.code === "REVISION_CONFLICT");
+    setOverwrite(false);
+    if (apiError.code === "REVISION_CONFLICT" && rectifying)
+      void loadConflict();
     requestAnimationFrame(() => alert.current?.focus());
   }
-  async function refreshRevision() {
-    if (!id) return;
-    try {
-      const value = await api<Ficha>(`/e43/valoraciones/${id}`);
-      setRevision(value.valoracion.revision ?? revision);
-      setStale(false);
-      setError("");
-    } catch (value) {
-      setError((value as Error).message);
-    }
+  function discardAndReload() {
+    if (!conflict) return;
+    const current = conflict.current;
+    setTipo(current.tipo ?? "Manual");
+    setFecha(current.fecha ?? todayIso());
+    setValorEur(current.valorEur ?? "");
+    setPrecio(current.precio ?? "");
+    setDivisa(current.divisa ?? "EUR");
+    setCambio(
+      current.cambio ??
+        (current.divisa === null || current.divisa === "EUR"
+          ? "1.000000"
+          : ""),
+    );
+    setProcedencia(current.procedencia ?? "");
+    setRevision(current.revision ?? revision);
+    setMotivo("");
+    setConflict(null);
+    setStale(false);
+    setOverwrite(false);
+    setError("");
+    setErrors({});
+    attempt.current = crypto.randomUUID();
+  }
+  function useDraftOverwrite() {
+    if (!conflict || !overwrite) return;
+    setRevision(conflict.current.revision ?? revision);
+    setConflict(null);
+    setStale(false);
+    setOverwrite(false);
+    setError("");
+    setErrors({});
   }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
@@ -1667,16 +1720,54 @@ function ValuationForm({
         <div ref={alert} tabIndex={-1} className="focus-alert">
           <Alert>
             {error}
-            {stale && rectifying && (
-              <p>
-                <button
-                  className="secondary"
-                  type="button"
-                  onClick={refreshRevision}
-                >
-                  Actualizar revisión conservando el borrador
-                </button>
-              </p>
+            {stale && rectifying && conflict && (
+              <div className="valoracion-conflict">
+                <p>
+                  <b>
+                    Cambios concurrentes en la revisión{" "}
+                    {conflict.current.revision}.
+                  </b>{" "}
+                  Tu borrador no se ha guardado.
+                </p>
+                {conflict.changes.length ? (
+                  <ul>
+                    {conflict.changes.map((change) => (
+                      <li key={change}>{change}</li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p>La revisión avanzó sin diferencias de contenido.</p>
+                )}
+                <p>
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={discardAndReload}
+                  >
+                    Descartar mi borrador y cargar la revisión vigente
+                  </button>
+                </p>
+                <label className="valoracion-overwrite">
+                  <input
+                    type="checkbox"
+                    checked={overwrite}
+                    onChange={(event) => setOverwrite(event.target.checked)}
+                  />{" "}
+                  Entiendo que guardar reemplazará la revisión vigente con mi
+                  borrador.
+                </label>
+                <p>
+                  <button
+                    className="secondary"
+                    type="button"
+                    disabled={!overwrite}
+                    onClick={useDraftOverwrite}
+                  >
+                    Usar mi borrador sobre la revisión{" "}
+                    {conflict.current.revision}
+                  </button>
+                </p>
+              </div>
             )}
           </Alert>
         </div>
@@ -1915,7 +2006,12 @@ function ValuationForm({
             <div className="form-grid">
               <div className="valoracion-readonly">
                 <span className="help">Revisión vigente enviada</span>
-                <strong>{revision}</strong>
+                <strong>
+                  {revision}
+                  {stale && conflict
+                    ? ` (obsoleta; vigente ${conflict.current.revision})`
+                    : ""}
+                </strong>
                 <small className="help">
                   Una revisión obsoleta produce 409 REVISION_CONFLICT.
                 </small>
@@ -1960,7 +2056,7 @@ function ValuationForm({
           >
             Cancelar
           </button>
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || stale}>
             {busy
               ? "Guardando…"
               : rectifying

@@ -3655,3 +3655,18 @@ textarea {
     margin-top: 4px;
   }
 }
+.valoracion-conflict {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+.valoracion-conflict ul {
+  margin: 0;
+  padding-left: 20px;
+}
+.valoracion-overwrite {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 13px;
+}

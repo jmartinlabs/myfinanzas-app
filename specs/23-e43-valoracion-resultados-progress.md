@@ -71,7 +71,7 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
   devolvía 500 en vez de 422) y R2 (`cantidadBase` declarada en Automática) corregidos en
   `464341b`; R3 reforzado con instantánea de todas las tablas antes/después de las lecturas.
   Quedan como reservas menores AC-07/AC-17 y concurrencia real, y la UI (C).
-- **Límite:** ningún AC/TP funcional se declara PASS todavía; C/UI pendiente.
+- **Límite en el hito B:** no se declaraba ningún AC/TP funcional como PASS; C/UI quedaba pendiente.
 
 ## Checkpoint C — UI/E2E
 
@@ -91,14 +91,15 @@ canónico es CI Linux. No se declara ningún criterio funcional E4.3 como PASS.
 - **Reservas:** cobertura E2E pendiente de cantidad modificada/A-01, Manual 0,00, resultado
   negativo, serie vacía, sin efectivo, 403 CSRF e idempotencia en reintento; la sesión
   expirada global no conserva el corte; aceptación visual final de wireframes pendiente.
-- **Límite:** ningún AC/TP se declara PASS; la aceptación visual corresponde al usuario.
+- **Límite en el hito C:** no se declaraba ningún AC/TP como PASS antes de la QA final; la aceptación visual corresponde al usuario.
 
 ## QA final — 2026-11-04
 
 - **Candidato:** PR #189, rama `fix/e43-qa-final`, HEAD `85f5b9a`; CI Linux `required`
   644/644; `typecheck`, `build`, Playwright Valoración 1/1 y regresión Inversiones 1/1.
-- **Corregido:** R5 (contexto `/inversiones` al reautenticar), O3 (singular/plural) y
-  recaptura del 390 parcial antes de mutar.
+- **Corregido:** R5 (contexto `/inversiones` y corte consultado), O3 (singular/plural),
+  recaptura del 390 parcial antes de mutar y **409 sin sobrescritura inadvertida** (diferencias
+  visibles, guardado bloqueado, descarte seguro o confirmación explícita con casilla).
 - **Evidencia añadida:** A-01 (base 10 → corte 8), Manual 0,00, resultado negativo −120,25 €,
   serie vacía y sesión expirada con retorno al corte.
 - **Clasificación:** 15 AC PASS de cobertura (API+UI), 2 PARCIAL, 0 UNRUN/BLOCKED. Reservas menores: 403

@@ -195,8 +195,9 @@ A no expone endpoints E4.3. Se verificaron esquema v24, migración, contrato C24
 parcial y backup/restore desde fixtures. B implementó `GET`/`POST` E4.3 y su suite
 `e43-api.test.ts` (14 pruebas): corte, detalle, serie, ficha, alta/rectificación, cobertura,
 errores 401/403/404/409/422, límite 2⁵³−1, redondeo, resultado negativo y no escritura de
-`e43`/`valoracion`/foto. La evidencia es de API; QA-B dio APTO CON RESERVAS y la UI (C) sigue
-pendiente, por lo que ningún AC/TP se declara PASS.
+`e43`/`valoracion`/foto. La evidencia es de API; C añadió la UI/E2E y la QA final (PR #189)
+reclasificó 15 AC a PASS de cobertura y 2 PARCIAL, con aceptación funcional pendiente. No se
+confunde el PASS de cobertura con la aceptación final ni con datos reales.
 
 ## Browser verification (web only)
 
@@ -265,6 +266,6 @@ Cualquier dictamen no convertirá un AC en PASS sin evidencia.
 | 2026-11-03 | `c022f88` (C) | QA-C independiente + re-QA | APTO CON RESERVAS | R1/R3 y O1/O2 corregidos; reservas de cobertura y sesión |
 | 2026-11-03 | `8552d4a` (A+B+C) | CI Linux post-merge `41730772524` | PASS (perfil fast) | Integrado en `main`; squash de #187 |
 | 2026-11-04 | `85f5b9a` (QA final) | `bun run typecheck` + `bun run build` | PASS | Cambios R5/O3 y E2E ampliado |
-| 2026-11-04 | `85f5b9a` (QA final) | Playwright Valoración + Inversiones | PASS 1/1 + 1/1 | A-01, Manual 0,00, negativo, serie vacía, sesión expirada y 390 parcial |
+| 2026-11-04 | `85f5b9a` (QA final) | Playwright Valoración + Inversiones | PASS 1/1 + 1/1 | A-01, Manual 0,00, negativo, serie vacía, sesión expirada, 390 parcial y 409 seguro |
 | 2026-11-04 | `85f5b9a` (QA final) | CI Linux `required` `41735151093` | PASS 644/644 | Perfil critical; sin Playwright |
 | 2026-11-04 | `85f5b9a` (QA final) | Informe y capturas | 15 CUBIERTO / 2 PARCIAL / 0 PASS | `23-e43-qa-final.md` y `23-e43-captures/` |
