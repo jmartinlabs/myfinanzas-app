@@ -192,6 +192,36 @@ function saveCyclePlan(
   );
 }
 
+function metricaCifra(metrica: {
+  valor: string | null;
+  subtotal: string | null;
+  estado: string;
+  motivo: string;
+  cobertura: unknown;
+}) {
+  return {
+    valor: metrica.valor,
+    subtotal: metrica.subtotal,
+    estado: metrica.estado,
+    motivo: metrica.motivo,
+    cobertura: metrica.cobertura,
+  };
+}
+
+function ahorroCifra({
+  estado,
+  valor,
+  motivo,
+  cobertura,
+}: {
+  estado: string;
+  valor: string | null;
+  motivo: string;
+  cobertura: string | null;
+}) {
+  return { estado, valor, motivo, cobertura };
+}
+
 function baseFixture(at = NOW, options: { annual?: boolean } = {}) {
   const db = openDatabase(":memory:");
 
@@ -579,6 +609,7 @@ function baseFixture(at = NOW, options: { annual?: boolean } = {}) {
     saldos: { s007: s007.id },
     partidas: { pGeneric, pD001, pD004 },
     instruments: { i1, i2 },
+    budgets: budgets.map((budget) => budget.id),
     movements: { gastoCorriente: gastoCorriente.id },
   };
 }
@@ -650,6 +681,12 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
       ejercicio: 2026,
       ejercicioOrigen: "mesFinanciado",
       estadoEquivalente: "Completo",
+      cobertura: {
+        estado: "Completa",
+        importesSinInformar: 0,
+        clasificacionesPendientes: 0,
+        ejercicioSinPlan: false,
+      },
     });
     expect(dto.secciones.objetivo.mesesObjetivo).toBeNull();
     expect(dto.secciones.objetivo.metrica).toMatchObject({
@@ -719,6 +756,12 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
     });
     const s005 = dto.secciones.saldos.items.find((item) => item.id === "S005");
     expect(s005).toMatchObject({ liquidez: null, bolsa: true });
+    // E1.1 publica la condición de posición; se transporta por ítem.
+    expect(
+      dto.secciones.saldos.items.every(
+        (item) => typeof item.condicion === "string" && item.condicion.length > 0,
+      ),
+    ).toBe(true);
     // El motivo de posición de E1.1 se conserva para no dejar cifras null sin
     // explicación en el consumidor.
     expect(
@@ -733,10 +776,21 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
         nombre: "Ahorro demo",
         valor: "800.00",
         estado: "Verificado",
+        condicion: "calculado",
       }),
     ]);
-    expect(dto.secciones.ahorro.ahorroCierre.estado).toBe("No disponible");
-    expect(dto.secciones.ahorro.variacionAhorro.estado).toBe("No disponible");
+    expect(dto.secciones.ahorro.ahorroCierre).toMatchObject({
+      estado: "No disponible",
+      valor: null,
+      cobertura: expect.any(String),
+      fuente: expect.objectContaining({ motor: expect.any(String) }),
+    });
+    expect(dto.secciones.ahorro.variacionAhorro).toMatchObject({
+      estado: "No disponible",
+      valor: null,
+      cobertura: expect.any(String),
+      fuente: expect.objectContaining({ motor: expect.any(String) }),
+    });
 
     expect(dto.secciones.inversion.agregado).toMatchObject({
       coberturaValoracion: "Completa",
@@ -762,6 +816,9 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
       estado: "Abierta",
       tipoValoracion: "Manual",
       valorEur: "320.00",
+      valoracionEstado: "Disponible",
+      valoracionMotivo: null,
+      valoracionCobertura: "Completa",
       resultadoEur: null,
       resultadoEstado: "No disponible",
     });
@@ -790,10 +847,22 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
       dto.secciones.deudaNoHipotecaria.items.find((item) => item.id === "D005"),
     ).toMatchObject({ capitalPendiente: null, calculable: false });
     expect(dto.secciones.deudaNoHipotecaria.aparte.hipotecaria).toEqual([
-      expect.objectContaining({ id: "D003", capitalPendiente: "50000.00" }),
+      expect.objectContaining({
+        id: "D003",
+        tipoDeuda: "Hipotecaria",
+        estado: "Activa",
+        capitalPendiente: "50000.00",
+        revision: expect.any(Number),
+      }),
     ]);
     expect(dto.secciones.deudaNoHipotecaria.aparte.sinInformar).toEqual([
-      expect.objectContaining({ id: "D004", capitalPendiente: "100.00" }),
+      expect.objectContaining({
+        id: "D004",
+        tipoDeuda: null,
+        estado: "Activa",
+        capitalPendiente: "100.00",
+        revision: expect.any(Number),
+      }),
     ]);
 
     const serialized = JSON.stringify(dto);
@@ -1233,6 +1302,127 @@ test("AC-04: editar un Gasto cambia su sección y revisión sin alterar las inde
     expect(after.secciones.ahorro.posiciones).toEqual(
       before.secciones.ahorro.posiciones,
     );
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-20: una línea de plan no altera liquidez ni ahorro ni resta lo presupuestado", () => {
+  const fixture = baseFixture();
+  const { db } = fixture;
+  try {
+    const before = resumenInicio(db, NOW);
+    // E2.3: se eleva el Del mes de un Presupuesto del plan del ciclo. No se
+    // toca ningún hecho, saldo, deuda ni operación.
+    saveCyclePlan(db, fixture.cycleId, [
+      { presupuesto: fixture.budgets[0], delMes: "2500.00" },
+    ]);
+    const after = resumenInicio(db, NOW);
+
+    // El plan sí cambia: 1.000,00 -> 2.500,00 en una línea (+1.500,00).
+    expect(before.secciones.ciclo.delMes.valor).toBe("1900.00");
+    expect(after.secciones.ciclo.delMes.valor).toBe("3400.00");
+    expect(after.contexto.revision).not.toBe(before.contexto.revision);
+
+    // Liquidez y Ahorro conservan valor, subtotal, estado y cobertura.
+    expect(after.secciones.liquidez.metrica).toEqual(
+      before.secciones.liquidez.metrica,
+    );
+    expect(metricaCifra(after.secciones.liquidez.metrica)).toEqual(
+      metricaCifra(before.secciones.liquidez.metrica),
+    );
+    expect(metricaCifra(after.secciones.liquidez.metrica)).toMatchObject({
+      valor: null,
+      subtotal: "3456.40",
+      estado: "Parcial",
+    });
+    expect(after.secciones.ahorro.posiciones).toEqual(
+      before.secciones.ahorro.posiciones,
+    );
+    const ahorroCifra = ({
+      estado,
+      valor,
+      motivo,
+      cobertura,
+    }: {
+      estado: string;
+      valor: string | null;
+      motivo: string;
+      cobertura: string | null;
+    }) => ({ estado, valor, motivo, cobertura });
+    expect(ahorroCifra(after.secciones.ahorro.ahorroCierre)).toEqual(
+      ahorroCifra(before.secciones.ahorro.ahorroCierre),
+    );
+    expect(ahorroCifra(after.secciones.ahorro.variacionAhorro)).toEqual(
+      ahorroCifra(before.secciones.ahorro.variacionAhorro),
+    );
+
+    // Ninguna métrica de ejecución resta el importe presupuestado.
+    expect(metricaCifra(after.secciones.ciclo.gasto)).toEqual(
+      metricaCifra(before.secciones.ciclo.gasto),
+    );
+    expect(metricaCifra(after.secciones.ciclo.operativo)).toEqual(
+      metricaCifra(before.secciones.ciclo.operativo),
+    );
+    expect(after.secciones.ciclo.gasto.subtotal).toBe("1800.00");
+    expect(after.secciones.ciclo.operativo.estado).toBe("No disponible");
+    expect(JSON.stringify(after.secciones.liquidez)).not.toContain("1956.40");
+  } finally {
+    db.close();
+  }
+});
+
+test("AC-21: añadir deuda solo cambia deudaNoHipotecaria", () => {
+  const fixture = baseFixture();
+  const { db } = fixture;
+  try {
+    const before = resumenInicio(db, NOW);
+    const created = createDebt(
+      db,
+      {
+        nombre: "Deuda nueva ficticia AC-21",
+        inicioControl: "2026-07-01",
+        capitalApertura: "250.00",
+        tipoDeuda: "No hipotecaria",
+      },
+      randomUUID(),
+      NOW,
+    );
+    const after = resumenInicio(db, NOW);
+
+    // Liquidez, Gasto y Operativo conservan valor/subtotal/estado/motivo.
+    expect(metricaCifra(after.secciones.liquidez.metrica)).toEqual(
+      metricaCifra(before.secciones.liquidez.metrica),
+    );
+    expect(metricaCifra(after.secciones.ciclo.gasto)).toEqual(
+      metricaCifra(before.secciones.ciclo.gasto),
+    );
+    expect(metricaCifra(after.secciones.ciclo.operativo)).toEqual(
+      metricaCifra(before.secciones.ciclo.operativo),
+    );
+    expect(after.secciones.ahorro.posiciones).toEqual(
+      before.secciones.ahorro.posiciones,
+    );
+    expect(ahorroCifra(after.secciones.ahorro.ahorroCierre)).toEqual(
+      ahorroCifra(before.secciones.ahorro.ahorroCierre),
+    );
+    expect(ahorroCifra(after.secciones.ahorro.variacionAhorro)).toEqual(
+      ahorroCifra(before.secciones.ahorro.variacionAhorro),
+    );
+
+    // El único bloque que cambia es la deuda no hipotecaria.
+    expect(before.secciones.deudaNoHipotecaria.total.subtotal).toBe("1020.00");
+    expect(after.secciones.deudaNoHipotecaria.total.subtotal).toBe("1270.00");
+    expect(after.secciones.deudaNoHipotecaria.total.estado).toBe("Parcial");
+    expect(after.secciones.deudaNoHipotecaria.items.map((item) => item.id)).toContain(
+      created.id,
+    );
+    expect(
+      after.secciones.deudaNoHipotecaria.items.find(
+        (item) => item.id === created.id,
+      ),
+    ).toMatchObject({ capitalPendiente: "250.00", calculable: true });
+    expect(after.contexto.revision).not.toBe(before.contexto.revision);
   } finally {
     db.close();
   }

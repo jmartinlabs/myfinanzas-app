@@ -261,8 +261,9 @@ function saldoItem(saldo: Saldo) {
     nombre: saldo.nombre,
     estado: saldo.estado,
     posicion: saldo.posicion.importe,
-    // El motivo ya existe en E1.1; se conserva para que una posición null no
-    // quede sin explicación en el consumidor.
+    // E1.1 publica la condición de la posición y su motivo; se conservan para
+    // que una posición null no quede sin explicación en el consumidor.
+    condicion: saldo.posicion.condicion,
     motivo: saldo.posicion.motivo,
     liquidez: saldo.liquidez,
     finalidad: saldo.finalidad,
@@ -523,6 +524,33 @@ function objetivoSection(
   const costeEstado: EstadoMetrica =
     complete ? "Verificado" : "No disponible";
 
+  // Cobertura publicada por E2.4: no se inventan recuentos de líneas. El
+  // estado se deriva del `estado` del equivalente y el resto se transporta.
+  const equivalenteEstado = equivalent?.estado ?? "No disponible";
+  const coberturaCosteEstado: EstadoCobertura =
+    equivalenteEstado === "Completo"
+      ? "Completa"
+      : equivalenteEstado === "Incompleto"
+        ? "Parcial"
+        : equivalenteEstado === "Sin plan anual"
+          ? "Sin datos"
+          : "No disponible";
+  const coberturaCosteMotivos: string[] = [];
+  if (annualError !== null)
+    coberturaCosteMotivos.push(`E2.4 no disponible: ${annualError}`);
+  else if (equivalenteEstado === "Incompleto")
+    coberturaCosteMotivos.push(
+      `${equivalent?.importesSinInformar ?? 0} importes esenciales sin informar; el equivalente mensual no es un total.`,
+    );
+  else if (equivalenteEstado === "Sin plan anual")
+    coberturaCosteMotivos.push(
+      "Sin plan anual para el ejercicio de mesFinanciado.",
+    );
+  if ((equivalent?.clasificacionesPendientes ?? 0) > 0)
+    coberturaCosteMotivos.push(
+      `${equivalent?.clasificacionesPendientes} clasificaciones esenciales pendientes.`,
+    );
+
   const mesesObjetivo =
     options.mesesObjetivo === undefined || options.mesesObjetivo === null
       ? null
@@ -632,6 +660,15 @@ function objetivoSection(
       ejercicioOrigen: "mesFinanciado" as const,
       estadoEquivalente: equivalent?.estado ?? "No disponible",
       motivo: costeMotivo,
+      cobertura: {
+        estado: coberturaCosteEstado,
+        motivos: coberturaCosteMotivos,
+        importesSinInformar: equivalent?.importesSinInformar ?? null,
+        clasificacionesPendientes:
+          equivalent?.clasificacionesPendientes ?? null,
+        ejercicioSinPlan: equivalent?.ejercicioSinPlan ?? null,
+        fuenteMotivo: annualPlan?.fuentes.motivo ?? annualError,
+      },
       racional:
         equivalent?.total != null
           ? equivalent.total
@@ -687,6 +724,7 @@ function ahorroSection(
       nombre: item.nombre,
       valor: item.posicion,
       estado: item.posicion === null ? "No disponible" : "Verificado",
+      condicion: item.condicion,
       revision: item.revision,
       // Motivo real de E1.1 cuando la posición no es verificable. No se
       // fabrica un texto nuevo si el motor no lo publica.
@@ -703,6 +741,14 @@ function ahorroSection(
         metric?.motivo ??
         flowError ??
         "E2.6 no publica esta métrica sin un ciclo actual verificable.",
+      // E2.6 publica fuente, IDs y cobertura como texto; se transportan sin
+      // reinterpretarlos. No existe un objeto de cobertura estructurado.
+      cobertura: metric?.cobertura ?? null,
+      fuente: {
+        motor: metric?.fuente ?? MOTOR.ciclo,
+        ids: metric?.ids ?? [],
+        revisiones: flow ? [`monthlyFlow@${flow.revision}`] : [],
+      },
     };
   };
   return {
@@ -785,6 +831,15 @@ function inversionSection(db: Database, corte: string | null) {
       valorEur: position.valoracion?.valorEur ?? null,
       fechaValoracion: position.valoracion?.fecha ?? null,
       valoracionEstado: position.valoracion?.estado ?? null,
+      // E4.3 publica el motivo de la valoración y su cobertura; E4.6 los
+      // descartaba. Se transportan sin recalcular la valoración.
+      valoracionMotivo:
+        position.valoracion?.estado === "Disponible"
+          ? null
+          : (position.valoracion?.motivo ?? null),
+      valoracionCobertura: position.valoracion?.cobertura ?? null,
+      elegibilidadFechaExacta:
+        position.valoracion?.elegibilidadFechaExacta ?? null,
       resultadoEur:
         position.resultado.estado === "Disponible"
           ? position.resultado.importeEur
@@ -919,8 +974,11 @@ function deudaSection(db: Database) {
         .map((item) => ({
           id: item.id,
           nombre: item.nombre,
+          tipoDeuda: item.tipoDeuda,
+          estado: item.estado,
           capitalPendiente: item.capitalPendiente,
           calculable: item.capital.calculable,
+          revision: item.revision,
           ...(item.capital.calculable
             ? {}
             : { motivo: item.capital.motivoNoCalculable }),
@@ -930,8 +988,11 @@ function deudaSection(db: Database) {
         .map((item) => ({
           id: item.id,
           nombre: item.nombre,
+          tipoDeuda: item.tipoDeuda,
+          estado: item.estado,
           capitalPendiente: item.capitalPendiente,
           calculable: item.capital.calculable,
+          revision: item.revision,
           ...(item.capital.calculable
             ? {}
             : { motivo: item.capital.motivoNoCalculable }),

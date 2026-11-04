@@ -69,6 +69,7 @@ type SaldoItem = {
   nombre: string;
   estado: string;
   posicion: string | null;
+  condicion: string;
   motivo?: string | null;
   liquidez: boolean | null;
   finalidad: string | null;
@@ -85,6 +86,9 @@ type InversionPosicion = {
   valorEur: string | null;
   fechaValoracion: string | null;
   valoracionEstado: string | null;
+  valoracionMotivo: string | null;
+  valoracionCobertura: string | null;
+  elegibilidadFechaExacta: string | null;
   resultadoEur: string | null;
   resultadoEstado: string;
   resultadoMotivo: string | null;
@@ -103,8 +107,11 @@ type DeudaItem = {
 type DeudaAparte = {
   id: string;
   nombre: string;
+  tipoDeuda: string | null;
+  estado: string;
   capitalPendiente: string | null;
   calculable: boolean;
+  revision: number;
   motivo?: string | null;
 };
 
@@ -124,7 +131,16 @@ type AhorroPosicion = {
   nombre: string;
   valor: string | null;
   estado: string;
+  condicion: string;
   motivo?: string | null;
+};
+
+type MetricAhorro = {
+  estado: string;
+  valor: string | null;
+  motivo: string;
+  cobertura: string | null;
+  fuente: Fuente;
 };
 
 type ResumenInicio = {
@@ -167,6 +183,14 @@ type ResumenInicio = {
         ejercicioOrigen: string;
         estadoEquivalente: string;
         motivo: string;
+        cobertura: {
+          estado: string;
+          motivos: string[];
+          importesSinInformar: number | null;
+          clasificacionesPendientes: number | null;
+          ejercicioSinPlan: boolean | null;
+          fuenteMotivo: string | null;
+        };
         fuente: Fuente;
         contexto: Contexto;
       };
@@ -196,9 +220,9 @@ type ResumenInicio = {
     ahorro: {
       contexto: Contexto;
       posiciones: AhorroPosicion[];
-      ahorroCierre: { estado: string; valor: string | null; motivo: string };
-      variacionAhorro: { estado: string; valor: string | null; motivo: string };
-      ahorroResidual: { estado: string; valor: string | null; motivo: string };
+      ahorroCierre: MetricAhorro;
+      variacionAhorro: MetricAhorro;
+      ahorroResidual: MetricAhorro;
       fuente: Fuente;
       enlace: Enlace;
     };
@@ -739,6 +763,31 @@ export function Inicio({ go }: { go: (path: string) => void }) {
             <p className="inicio-metric-motivo">
               {objetivo.costeEsencialMensual.motivo}
             </p>
+            <p className="inicio-metric-meta">
+              Cobertura {objetivo.costeEsencialMensual.cobertura.estado}
+              {objetivo.costeEsencialMensual.cobertura.importesSinInformar !==
+              null
+                ? ` · ${objetivo.costeEsencialMensual.cobertura.importesSinInformar} importes esenciales sin informar`
+                : ""}
+              {objetivo.costeEsencialMensual.cobertura
+                .clasificacionesPendientes !== null
+                ? ` · ${objetivo.costeEsencialMensual.cobertura.clasificacionesPendientes} clasificaciones pendientes`
+                : ""}
+            </p>
+            {objetivo.costeEsencialMensual.cobertura.motivos.length > 0 && (
+              <ul className="inicio-metric-coverage">
+                {objetivo.costeEsencialMensual.cobertura.motivos.map(
+                  (motivo) => (
+                    <li key={motivo}>{motivo}</li>
+                  ),
+                )}
+              </ul>
+            )}
+            {objetivo.costeEsencialMensual.cobertura.fuenteMotivo && (
+              <p className="inicio-metric-motivo">
+                {objetivo.costeEsencialMensual.cobertura.fuenteMotivo}
+              </p>
+            )}
             <dl className="inicio-objetivo-facts">
               <div>
                 <dt>Meses objetivo</dt>
@@ -882,7 +931,8 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                       ? "sin informar"
                       : item.bolsa
                         ? "Sí"
-                        : "No"}
+                        : "No"}{" "}
+                    · posición {item.condicion}
                   </span>
                   {item.posicion === null && item.motivo && (
                     <span className="inicio-item-meta">
@@ -935,7 +985,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                     {item.id} · {item.nombre}
                   </a>
                   <span className="inicio-item-meta">
-                    {item.estado}
+                    {item.estado} · posición {item.condicion}
                     {item.valor === null && item.motivo
                       ? ` · ${item.motivo}`
                       : ""}
@@ -960,6 +1010,14 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {ahorro.ahorroCierre.estado}
                 </span>
                 <small>{ahorro.ahorroCierre.motivo}</small>
+                <small>
+                  Fuente: {ahorro.ahorroCierre.fuente.motor}
+                  {ahorro.ahorroCierre.fuente.ids.length > 0
+                    ? ` · ${ahorro.ahorroCierre.fuente.ids.join(", ")}`
+                    : ""}
+                  {" · "}Cobertura:{" "}
+                  {ahorro.ahorroCierre.cobertura ?? "sin cobertura publicada"}
+                </small>
               </dd>
             </div>
             <div>
@@ -972,6 +1030,15 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {ahorro.variacionAhorro.estado}
                 </span>
                 <small>{ahorro.variacionAhorro.motivo}</small>
+                <small>
+                  Fuente: {ahorro.variacionAhorro.fuente.motor}
+                  {ahorro.variacionAhorro.fuente.ids.length > 0
+                    ? ` · ${ahorro.variacionAhorro.fuente.ids.join(", ")}`
+                    : ""}
+                  {" · "}Cobertura:{" "}
+                  {ahorro.variacionAhorro.cobertura ??
+                    "sin cobertura publicada"}
+                </small>
               </dd>
             </div>
           </dl>
@@ -1055,6 +1122,15 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                     <span className="inicio-item-meta">
                       {item.cantidad} · {item.estado} ·{" "}
                       {item.tipoValoracion}
+                      {item.valoracionCobertura
+                        ? ` · cobertura ${item.valoracionCobertura}`
+                        : ""}
+                      {item.valoracionMotivo
+                        ? ` · ${item.valoracionMotivo}`
+                        : ""}
+                      {item.elegibilidadFechaExacta
+                        ? ` · ${item.elegibilidadFechaExacta}`
+                        : ""}
                       {item.resultadoMotivo
                         ? ` · ${item.resultadoMotivo}`
                         : ""}
@@ -1199,7 +1275,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                         : `${item.id} ${formatDecimal(
                             item.capitalPendiente,
                             "EUR",
-                          )}`,
+                          )} · ${item.estado}`,
                     )
                     .join(" · ")}
                 </p>
@@ -1216,7 +1292,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                         : `${item.id} ${formatDecimal(
                             item.capitalPendiente,
                             "EUR",
-                          )}`,
+                          )} · ${item.estado}`,
                     )
                     .join(" · ")}
                 </p>

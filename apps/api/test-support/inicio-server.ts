@@ -35,12 +35,15 @@ const NOW = Date.parse("2026-11-03T10:00:00Z");
 const scenario = process.env.E46_SCENARIO ?? "base";
 const zero = scenario === "zero";
 const degraded = scenario === "degradado";
-const dir = degraded
-  ? ".local/e2e-inicio-degradado"
-  : zero
-    ? ".local/e2e-inicio-zero"
-    : ".local/e2e-inicio";
-const port = degraded ? 3016 : zero ? 3015 : 3014;
+const auth = scenario === "auth";
+const dir = auth
+  ? ".local/e2e-inicio-auth"
+  : degraded
+    ? ".local/e2e-inicio-degradado"
+    : zero
+      ? ".local/e2e-inicio-zero"
+      : ".local/e2e-inicio";
+const port = auth ? 3017 : degraded ? 3016 : zero ? 3015 : 3014;
 
 function saveMovement(db: Database, body: Record<string, unknown>) {
   const plan = previewMovement(db, body, null, false, NOW);

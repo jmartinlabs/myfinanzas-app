@@ -21,12 +21,15 @@ import { totp } from "../../apps/api/src/auth";
 const BASE_PORT = 3014;
 const ZERO_PORT = 3015;
 const DEGRADED_PORT = 3016;
+const AUTH_PORT = 3017;
 const BASE_DIR = ".local/e2e-inicio";
 const ZERO_DIR = ".local/e2e-inicio-zero";
 const DEGRADED_DIR = ".local/e2e-inicio-degradado";
+const AUTH_DIR = ".local/e2e-inicio-auth";
 let base: ChildProcess | undefined;
 let zero: ChildProcess | undefined;
 let degraded: ChildProcess | undefined;
+let auth: ChildProcess | undefined;
 
 async function waitForApi(request: APIRequestContext, port: number) {
   await expect
@@ -69,15 +72,25 @@ test.beforeAll(async ({ request }) => {
       env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "degradado" },
     },
   );
+  auth = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "auth" },
+    },
+  );
   await waitForApi(request, BASE_PORT);
   await waitForApi(request, ZERO_PORT);
   await waitForApi(request, DEGRADED_PORT);
+  await waitForApi(request, AUTH_PORT);
 });
 
 test.afterAll(() => {
   base?.kill();
   zero?.kill();
   degraded?.kill();
+  auth?.kill();
 });
 
 async function routeApi(page: Page, port: number) {
@@ -89,13 +102,12 @@ async function routeApi(page: Page, port: number) {
 }
 
 async function login(page: Page, dir: string) {
+  const password = "Clave ficticia inicio " + randomUUID();
   await page.goto("/inicio");
   await page
     .getByLabel("Token de configuración local")
     .fill(readFileSync(`${dir}/bootstrap.txt`, "utf8"));
-  await page.getByLabel("Contraseña", { exact: true }).fill(
-    "Clave ficticia inicio " + randomUUID(),
-  );
+  await page.getByLabel("Contraseña", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Continuar", exact: true }).click();
   await expect(page.locator(".secret")).toBeVisible();
   const secret = (await page.locator(".secret").textContent())!;
@@ -112,6 +124,24 @@ async function login(page: Page, dir: string) {
     page.getByRole("heading", { name: "Inicio", exact: true }),
   ).toBeVisible();
   await expect(page.locator(".inicio-context")).toBeVisible();
+  return { secret, password };
+}
+
+/** Reautentica un usuario ya configurado sin repetir el alta ni los códigos. */
+async function reauthenticate(
+  page: Page,
+  credentials: { secret: string; password: string },
+) {
+  await page
+    .getByLabel("Contraseña", { exact: true })
+    .fill(credentials.password);
+  await page.getByRole("button", { name: "Continuar", exact: true }).click();
+  await page
+    .getByLabel("Código de la aplicación autenticadora")
+    .fill(totp(credentials.secret).generate({ timestamp: Date.now() + 30000 }));
+  await page
+    .getByRole("button", { name: "Verificar código", exact: true })
+    .click();
 }
 
 async function resetScroll(page: Page) {
@@ -246,6 +276,8 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   );
   await expect(objetivo).toContainText("Ejercicio 2026");
   await expect(objetivo).toContainText("Zona informativa");
+  await expect(objetivo).toContainText("Cobertura Completa");
+  await expect(objetivo).toContainText("0 importes esenciales sin informar");
   await expect(objetivo).not.toContainText("9.000,00 €");
 
   // Ciclo: subtotales parciales y operativo/margen No disponible, sin fabricar 350.
@@ -302,6 +334,13 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expect(saldos).toContainText("cobertura 6/7");
   await saldos.getByText("Ver Saldos y su pertenencia").click();
   await expect(saldos.locator(".inicio-item-list li")).toHaveCount(7);
+  await expect(saldos).toContainText("posición calculado");
+
+  // Ahorro: la posición y las métricas declaran su fuente y cobertura.
+  const ahorro = page.locator("section[aria-labelledby='inicio-ahorro']");
+  await expect(ahorro).toContainText("posición calculado");
+  await expect(ahorro).toContainText("Cobertura:");
+  await expect(ahorro).toContainText("Fuente: Motor no instalado");
 
   // Inversión: agregado valorado y efectivo separados, sin total combinado.
   const inversion = page.locator("section[aria-labelledby='inicio-inversion']");
@@ -312,6 +351,9 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   await expect(inversion).toContainText("500,00 €");
   await expect(inversion).toContainText("Sin total combinado");
   await expect(inversion).not.toContainText("3.153,90 €");
+  await inversion.getByText("Ver posiciones").click();
+  await expect(inversion).toContainText("cobertura Completa");
+  await expect(inversion).toContainText("Acción demo");
 
   // Deuda: subtotal parcial 2/3, D005 no calculable y aparte fuera del total.
   const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
@@ -590,6 +632,81 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     path: "artifacts/e4-6/inicio-degradado-1440.png",
     fullPage: true,
   });
+});
+
+test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de contexto", async ({
+  page,
+}) => {
+  await routeApi(page, AUTH_PORT);
+  const credentials = await login(page, AUTH_DIR);
+  await expectInicio(page);
+
+  // Error 500 del endpoint: estado genérico con reintento, sin cifras ni fuga.
+  await page.route("**/api/resumen-inicio", (route) =>
+    route.fulfill({
+      status: 500,
+      contentType: "application/json",
+      headers: { "cache-control": "no-store" },
+      body: JSON.stringify({
+        code: "INTERNAL",
+        error: "No se pudo completar la operación.",
+      }),
+    }),
+  );
+  await page.reload();
+  const fallo = page
+    .getByRole("alert")
+    .filter({ hasText: "No se pudo completar la operación." });
+  await expect(fallo).toBeVisible();
+  await expect(
+    fallo.getByRole("button", { name: "Reintentar", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("3.456,40 €");
+  await expect(page.locator("body")).not.toContainText("1.197,50 €");
+  await expect(page.locator("body")).not.toContainText("1.020,00 €");
+  await expect(page.locator("body")).not.toContainText("SQLITE");
+  await expect(page.locator("body")).not.toContainText("SELECT");
+  await expect(page).toHaveURL(/\/inicio$/);
+
+  await page.unroute("**/api/resumen-inicio");
+  await page.getByRole("button", { name: "Reintentar", exact: true }).click();
+  await expectInicio(page);
+
+  // Sesión expirada durante /inicio: 401, sin importes y con reautenticación.
+  await page.route("**/api/resumen-inicio", (route) =>
+    route.fulfill({
+      status: 401,
+      contentType: "application/json",
+      headers: { "cache-control": "no-store" },
+      body: JSON.stringify({
+        code: "ACCESS_DENIED",
+        error: "No se pudo verificar el acceso.",
+      }),
+    }),
+  );
+  await page.reload();
+  await expect(page.getByText(/no se muestran importes/)).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Volver a iniciar sesión" }),
+  ).toBeVisible();
+  await expect(page.locator("body")).not.toContainText("3.456,40 €");
+  await expect(page.locator("body")).not.toContainText("1.020,00 €");
+  // El contexto de cabecera sigue montado; solo desaparecen los datos.
+  await expect(page.locator(".cycle-context")).toContainText(
+    "CICLO FINANCIADO",
+  );
+  await expect(page.locator(".cycle-context")).toContainText("Referencia financiera");
+
+  await page.unroute("**/api/resumen-inicio");
+  await page
+    .getByRole("button", { name: "Volver a iniciar sesión" })
+    .click();
+  await reauthenticate(page, credentials);
+  await expect(page).toHaveURL(/\/inicio$/);
+  await expectInicio(page);
+  await expect(
+    page.getByRole("article", { name: "Liquidez", exact: true }),
+  ).toContainText("3.456,40 €");
 });
 
 test("AC-27: acceso anónimo 401 y respuesta no-store", async ({ request }) => {

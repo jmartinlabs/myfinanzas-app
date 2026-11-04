@@ -109,9 +109,9 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 | Liquidez | `monthlyFlow().metrics.liquidez` y `.liquidez` | `valor`, `subtotal`, `estado`, `motivo`, `cobertura`, `incluidos`, `excluidos` | No re-suma Saldos ni reaplica el filtro Liquidez |
 | Ciclo | `monthlyFlow().metrics` | `ingresos`, `gasto`, `extraordinaria`, `operativo` (`observedOperating`), `margenReal`, `nomina`, `base`, `delMes` | No recompone Gasto ni márgenes |
 | Objetivo R6 | `annualEquivalent()` de E2.4 + configuración Q3-B | `estado`, `total {numeradorCentimos, divisor}`, `parcial`, `importesSinInformar` | No divide por 12 ni usa `mesesObjetivo` para `mesesCubiertos` |
-| Saldos/bolsas | `listSaldos` / `getSaldo` | `posicion.importe`, `posicion.motivo`, `liquidez`, `finalidad`, `mostrarComoBolsa`, `estado` | No crea una posición nueva ni suma vistas |
-| Ahorro | `metrics.ahorroCierre`, `variacionAhorro`, `ahorroResidual` de E2.6; Saldos con Finalidad `Ahorro` | Valores y cobertura publicados; lista de posiciones | No inventa «ahorro generado» ni total nuevo |
-| Inversión valorada | Contrato E4.3 `GET /api/e43/corte?fecha=` (conceptual) | `agregado.valorEur`, `coberturaValoracion`, `resultadoEur`, `coberturaResultado`, `posiciones[]` | No valora, no reescala, no calcula resultado |
+| Saldos/bolsas | `listSaldos` / `getSaldo` | `posicion.importe`, `posicion.condicion`, `posicion.motivo`, `liquidez`, `finalidad`, `mostrarComoBolsa`, `estado`, `revision` | No crea una posición nueva ni suma vistas ni inventa cobertura por ítem |
+| Ahorro | `metrics.ahorroCierre`, `variacionAhorro`, `ahorroResidual` de E2.6; Saldos con Finalidad `Ahorro` | Valores, `fuente`, `ids` y `cobertura` publicados; lista de posiciones con condición y revisión | No inventa «ahorro generado» ni total nuevo ni cobertura por ítem |
+| Inversión valorada | Contrato E4.3 `GET /api/e43/corte?fecha=` (conceptual) | `agregado.valorEur`, `coberturaValoracion`, `resultadoEur`, `coberturaResultado`, `posiciones[]` con `valoracion.motivo`, `valoracion.cobertura` y elegibilidad | No valora, no reescala, no calcula resultado |
 | Posiciones sin valorar | `positionsAtDate(db, corte)` de E4.2 | `cantidad`, `compras`, `ventas`, fechas | No crea valor si E4.3 falta |
 | Efectivo del bróker | `cashAt` / `cashDto` / `GET /api/inversiones/efectivo?saldo=` | `disponible` por Saldo `Efectivo`/`Inversiones` | No suma un total de efectivo ni lo mezcla con posiciones |
 | Deuda | `GET /api/deudas` (sin corte) y `GET /api/deudas/{id}?corte=` | `tipoDeuda`, `estado`, `capitalPendiente`, `capital.calculable`, `motivoNoCalculable` | No reconstruye capital ni resta la deuda del gasto |
@@ -120,6 +120,26 @@ existan, pero no anticipa sus cálculos ni sus contratos.
 **CONFIRMADO.** Las rutas y funciones anteriores son las fuentes; E4.6 no mantiene una
 segunda implementación. `monthlyFlow` ya documenta que la cobertura histórica del intervalo
 no está acreditada; E4.6 conserva esa marca.
+
+### Fuente y cobertura por campo (AC-01)
+
+Actualización 2026-11-04. E4.6 solo transporta campos que el motor ya publica. No se crean
+coberturas, recuentos ni motivos nuevos.
+
+| Campo | Motor / contrato | Disponibilidad real | Decisión E4.6 |
+| --- | --- | --- | --- |
+| `ahorro.ahorroCierre` y `variacionAhorro`: `fuente`, `ids`, `cobertura` | E2.6 `Metric` | Sí: `fuente`, `ids` y `cobertura` (texto) | Se transportan literalmente y se muestran en Ahorro. `cobertura` conserva el texto del motor, no se convierte en un objeto inventado. |
+| `objetivo.costeEsencialMensual.cobertura` | E2.4 `annualEquivalent` | Parcial: `estado`, `importesSinInformar`, `clasificacionesPendientes`, `ejercicioSinPlan` y `fuentes.motivo` | Se publica `cobertura.estado` derivado del estado del equivalente y los contadores publicados. No se inventan `incluidos`/`excluidos` de líneas. |
+| Saldos por ítem | E1.1 `Saldo.posicion` | Parcial: `condicion` y `motivo`; no existe cobertura por Saldo | Se añade `condicion` y se conserva `motivo`; la cobertura y la fuente estructuradas siguen siendo de sección. |
+| Ahorro por ítem | E1.1 a través de E2.6 | Parcial: `condicion`, `motivo` y `revision`; no existe cobertura por ítem | Se añaden `condicion` y `revision`; la fuente/cobertura de la sección cubre la lista. |
+| Deuda aparte por ítem | E4.4 `listDeudasCompletas` | Parcial: `estado`, `tipoDeuda`, `revision`, `capital.calculable` y `motivoNoCalculable`; no existe cobertura por ítem | Se transportan `estado`, `tipoDeuda`, `revision`; `calculable`/`motivo` explican el capital. La cobertura solo existe para el total. |
+| Inversión por posición | E4.3 `positionDto` | Sí: `valoracion.motivo`, `valoracion.cobertura` y `elegibilidadFechaExacta` | Se transportan y se pintan junto a la posición; no se recalcula la valoración ni el resultado. |
+
+**AC-01 conserva PARCIAL** porque E1.1/E4.4 no publican una cobertura estructurada por ítem
+para Saldos, Ahorro y deuda aparte. E4.6 muestra la cobertura de sección y la condición/motivo
+por ítem en su lugar; publicar `incluidos`/`excluidos` por ítem sería inventar un contrato que
+el motor no ofrece. El resto de huecos (fuente/cobertura de ahorro, cobertura del coste y
+motivo de valoración por posición) queda cubierto con campos ya publicados.
 
 ### Contexto y selección
 
@@ -643,8 +663,9 @@ roadmap se indica después de la tabla.
 **APROBADA documentalmente por el usuario el 2026-11-03** (Q1–Q12, opción A; Q3-B=A; Q4=A).
 **DEV24 se autorizó el 2026-11-04** con alcance A+B+C; la aprobación de la spec no autoriza por
 sí sola merge ni despliegue. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. La
-composición y la UI existen en `feat/e46-inicio`, pero la entrega no se declara completa: AC-01
-es PARCIAL por huecos de fuente/cobertura en el DTO, AC-20/AC-21 siguen UNRUN y faltan el
-`--full`, la revisión QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21
+composición y la UI existen en `feat/e46-inicio`. Actualización local 2026-11-04: AC-20,
+AC-21 y AC-27 ya tienen prueba directa y están en PASS local; AC-01 sigue PARCIAL solo por la
+cobertura por ítem que E1.1/E4.4 no publican, con justificación por campo en esta spec. Faltan
+el `--full`, la revisión QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21
 sigue en `a26fffb` sin reauditoría de su consumo. El siguiente gate es la revisión
 independiente y el merge aprobado, no otra autorización de DEV.
