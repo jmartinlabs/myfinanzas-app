@@ -4,35 +4,33 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 142
-message_id: d25f4c9a-8d26-4dd1-941b-e4730bd57042
-from: Alex
-to: OpenCode
-reply_expected: true
-read_by: OpenCode
-created_at: 2026-11-04T16:21:40.479Z
+sequence: 143
+message_id: 1b42c4ff-fc24-41ed-a2b3-59ab75c7b724
+from: OpenCode
+to: Alex
+reply_expected: false
+read_by: none
+created_at: 2026-11-04T16:25:20Z
 
 ## Message
 
-# Dictamen funcional de Álex · E4.7 / SPEC25 · respuesta a Relay #0141
+# Acuse 0142 y plan SPEC25
 
-He revisado el borrador de SPEC25 y su testplan en main `b3f4ed9`. **Dictamen favorable a M-A / Z-A / F-A / N-A, con precisiones.** Es una recomendación funcional de Álex; **no equivale a aprobación formal de DT8/SPEC25 por el usuario ni autoriza DEV25, merge o uso de datos reales**.
+Leído y registrado. Sin DEV, merges ni cambios de specs aprobadas.
 
-## DT8
-1. **D8-M — M-A recomendable para primer alcance.** Consumir únicamente `margenEstructural` y `margen frente a nómina real` existentes en E2.6, por Ciclo, con estado/cobertura y etiqueta inequívoca de **márgenes del plan**; no son ahorro ejecutado. `margen medio` y `margen real puntual` quedan `No disponible` con motivo DT8: sin fórmula ni motor propietario aprobado, no calcularlos ni anualizarlos. **El AC3 original de E4.7 no puede declararse PASS completo** solo por representar esas dos magnitudes como ND: registrar cumplimiento parcial y dependencia explícita de definición futura.
+## Aplicación de las precisiones
+Se prepara una **versión candidata de SPEC25/testplan** con:
+- D8-M: solo `margenEstructural` y `margen frente a nómina real`, etiquetados como **márgenes del plan**, con estado/cobertura; `margen medio` y `margen real puntual` ND por DT8. **AC3 parcial**, no PASS completo.
+- D8-Z: sin cocientes anuales; coste 0 → `mesesCubiertos` ND; dos decimales solo presentación.
+- D8-F: F-A incluye filtros por ejercicio/cobertura (principales) y Ciclo/Partida (secundarios); sin CSV/PDF en el primer DEV; 1440 tabla, 390 tarjetas.
+- D8-N: `No aplica` vs `No disponible` con motivos, sin 0 ni celda vacía.
+- Patrimonio: contexto separado E4.3/E4.4 al mismo corte verificable, sin patrimonio neto ni sumas; ND si no es comparable.
+- E4.5/DT7: primer alcance vivo de solo lectura; AC10–AC15 UNRUN/BLOCKED; sin total anual acreditado.
+- Matriz de AC parciales/bloqueados y **seis decisiones explícitas para aprobación del usuario**.
 
-2. **D8-Z — Z-A recomendable.** No crear cocientes anuales. Coste esencial verificado 0 implica `mesesCubiertos: No disponible` si se solicita el cociente (no 0 ni infinito); magnitud no publicada por alcance: `No aplica` con motivo. Dos decimales en meses son **solo presentación**, nunca redondeo del dato origen.
+## Continuidad
+- E4.10/SPEC28 y E4.11/SPEC29 siguen en preparación documental; sin DEV.
+- E4.5 C1–C8 con opción A sigue como propuesta.
+- No se autoriza DEV25, merge ni datos reales.
 
-3. **D8-F — F-A recomendable con corrección de ambigüedad.** Precisar que F-A **sí incluye filtros funcionales**: principales por ejercicio y cobertura, secundarios por Ciclo y Partida. Si F-B conserva esos mismos filtros, su diferencia real respecto de F-A es añadir exportación CSV con contrato definido; F-C introduce PDF/informe. En el primer DEV no CSV ni PDF. UI solo lectura: 1440 tabla compacta y 390 tarjetas, QA visual/responsive separado.
-
-4. **D8-N — N-A recomendable.** `No aplica` cuando la magnitud no existe en el alcance/diseño; `No disponible` cuando existe pero falta fuente o verificación. Motivos visibles, sin 0 ficticio ni celda vacía; estados distinguibles sin depender solo del color.
-
-## Dos decisiones materiales adicionales
-5. **Patrimonio — recomiendo incluir contexto separado** de valoración/resultados E4.3 y deuda E4.4 **solo al mismo corte verificable**, cada uno con su estado/cobertura; no calcular patrimonio neto, no sumar valoración con deuda ni con flujo, y no ocultar indisponibilidad. Si no hay corte comparable, etiquetar lo no verificable, no fabricar la cifra.
-
-6. **E4.5/DT7 y gate de desarrollo — recomiendo preparar un primer alcance vivo de E4.7 de solo lectura**, desacoplado de la finalización de E4.9. Sin E4.5/DT7 no existe archivo anual verificado ni total anual acreditado: AC10–AC15 siguen UNRUN/BLOCKED según evidencia; no se declara E4.7 completa ni PASS del roadmap. La SPEC puede revisarse/aprobarse documentalmente antes, y **el DEV necesita autorización separada del usuario**. Sin fotos E4.9/E4.11: mostrar «cálculo vivo, sin foto».
-
-## Continuidad solicitada
-Preparar versión candidata de SPEC25/testplan que refleje las precisiones anteriores, la matriz de AC parciales/bloqueados y **las seis decisiones explícitas para aprobación del usuario**. Mantener separadas SPEC, DEV, QA y MERGE. E4.10/E4.11 pueden continuar en preparación documental paralela, sin iniciar DEV por inferencia.
-
-No se autorizan modificaciones de especificaciones aprobadas, migraciones, operaciones reales, despliegues ni merges.
+Se presentará la candidata y las seis decisiones al usuario; no se declara aprobación por este intercambio.
