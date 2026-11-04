@@ -8,6 +8,7 @@ import { openDatabase } from "./database";
 import { createInstrumento } from "./instrumentos";
 import { getSaldo } from "./saldos";
 import type { CierreOptions } from "./e49";
+import { closedFieldDecision } from "./e49-guards";
 
 process.env.NODE_ENV = "test";
 
@@ -86,7 +87,7 @@ function seedMovement(
     id: string;
     fecha: string;
     importe: number;
-    tipo?: "Transferencia" | "Gasto";
+    tipo?: "Transferencia" | "Gasto" | "Ingreso";
     origen?: string;
     destino?: string;
     subtipo?: string | null;
@@ -951,12 +952,29 @@ test("E4.9 T2/T3: catálogos distinguen informativo de económico y exigen motiv
   expect(referenceNoMotive.status).toBe(422);
   expect(referenceNoMotive.data.code).toBe("VALIDATION");
 
+  const referenceNoImpact = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    { revision: 2, motivo: "Baja sin huella de impacto" },
+  );
+  expect(referenceNoImpact.status).toBe(409);
+  expect(referenceNoImpact.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+
+  const referenceReviewedImpact = await f.request(
+    `/api/referencias/${referenceId}/impacto`,
+    "POST",
+    { revision: 2, estado: "Inactiva" },
+  );
+  expect(referenceReviewedImpact.status).toBe(200);
+  expect(referenceReviewedImpact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
   const referenceReviewed = await f.request(
     `/api/referencias/${referenceId}/desactivar`,
     "POST",
     {
       revision: 2,
       motivo: "Baja revisada de catálogo tras el cierre",
+      fingerprint: referenceReviewedImpact.data.fingerprint,
     },
   );
   expect(referenceReviewed.status).toBe(200);
@@ -980,10 +998,27 @@ test("E4.9 T2/T3: catálogos distinguen informativo de económico y exigen motiv
   });
   expect(debtNoMotive.status).toBe(422);
 
+  const debtNoImpact = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 2,
+    estado: "Inactiva",
+    motivo: "Baja sin huella de impacto",
+  });
+  expect(debtNoImpact.status).toBe(409);
+  expect(debtNoImpact.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+
+  const debtReviewedImpact = await f.request(
+    `/api/deudas/${debtId}/impacto`,
+    "POST",
+    { revision: 2, estado: "Inactiva" },
+  );
+  expect(debtReviewedImpact.status).toBe(200);
+  expect(debtReviewedImpact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
   const debtReviewed = await f.request(`/api/deudas/${debtId}`, "PATCH", {
     revision: 2,
     estado: "Inactiva",
     motivo: "Baja revisada de Deuda tras el cierre",
+    fingerprint: debtReviewedImpact.data.fingerprint,
   });
   expect(debtReviewed.status).toBe(200);
   expect(
@@ -1169,4 +1204,564 @@ test("E4.9 AC-20/T2: los guards evitan una falsa incoherencia al cerrar fuera de
   );
   expect(closed.status).toBe(201);
   expect(closed.data.foto.version).toBe(1);
+});
+
+test("E4.9 DEV-06 AC-20: los totales de hechos capturados se comparan al cierre posterior", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  // Hecho anterior a la ventana de la foto posterior y hecho dentro de ella.
+  seedMovement(f.db, {
+    id: "8201",
+    fecha: "2026-01-10",
+    importe: 1000,
+    tipo: "Ingreso",
+    subtipo: "Nómina",
+    origen: "S000",
+    destino: "S001",
+  });
+  seedMovement(f.db, {
+    id: "8202",
+    fecha: "2026-02-10",
+    importe: 500,
+    tipo: "Ingreso",
+    subtipo: "Nómina",
+    origen: "S000",
+    destino: "S001",
+  });
+  expect((await f.close("2")).result.status).toBe(201);
+
+  // Cuenta creada después de la foto: no aparece en el desglose capturado y no
+  // debe producir una falsa contradicción.
+  const account = await f.request(
+    "/api/saldos",
+    "POST",
+    {
+      nombre: "Cuenta posterior no capturada",
+      tipo: "Efectivo",
+      control: "Terminal",
+      estado: "Activa",
+      finalidad: null,
+      fechaApertura: null,
+      saldoApertura: "0.00",
+      objetivo: null,
+      liquidez: false,
+      mostrarComoBolsa: false,
+      permiteSalidaExterior: false,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(account.status).toBe(201);
+
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(pre.data.coherencia.requerida).toBe(true);
+  expect(pre.data.coherencia.contradicciones).toEqual([]);
+  const closed = await f.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    {
+      fingerprint: pre.data.fingerprint,
+      motivo: "Cierre tardío coherente con totales de hechos",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(closed.status).toBe(201);
+
+  const posteriorRow = f.db
+    .query(
+      "SELECT posterior FROM cierre_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
+    )
+    .get() as { posterior: string };
+  const posterior = JSON.parse(posteriorRow.posterior) as {
+    coherence: {
+      ciclo: string;
+      comparado: {
+        hechos: {
+          estado: string;
+          ingresos: { almacenado: string | null; vivo: string | null };
+          gastos: { almacenado: string | null; vivo: string | null };
+          neto: { almacenado: string | null; vivo: string | null };
+        };
+      };
+    }[];
+  };
+  expect(posterior.coherence[0]).toMatchObject({
+    ciclo: "2",
+    comparado: {
+      hechos: {
+        estado: "Comparado",
+        ingresos: { almacenado: "5.00", vivo: "5.00" },
+        gastos: { almacenado: "0.00", vivo: "0.00" },
+        neto: { almacenado: "5.00", vivo: "5.00" },
+      },
+    },
+  });
+});
+
+test("E4.9 DEV-06 AC-20: una foto sin totales de hechos o con totales divergentes bloquea", async () => {
+  const missing = fixture({ facts: false });
+  await missing.enroll();
+  expect((await missing.close("2")).result.status).toBe(201);
+  missing.db.run("DROP TRIGGER foto_cierre_no_update");
+  missing.db.run(
+    `UPDATE fotos_cierre SET hechos='{"estado":"Con hechos","movimientos":[]}' WHERE ciclo='2' AND version=1`,
+  );
+  const missingPre = await missing.request("/api/cierres/1/preflight");
+  expect(missingPre.status).toBe(200);
+  expect(missingPre.data.coherencia.contradicciones.length).toBeGreaterThan(0);
+  expect(
+    missingPre.data.coherencia.contradicciones.join(" "),
+  ).toContain("totales de hechos");
+  const missingClose = await missing.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: missingPre.data.fingerprint, motivo: "Intento con foto incompleta" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(missingClose.status).toBe(409);
+  expect(missingClose.data.code).toBe("INCOHERENCIA_CON_CIERRE_POSTERIOR");
+
+  missing.db.run(
+    "UPDATE fotos_cierre SET hechos='null' WHERE ciclo='2' AND version=1",
+  );
+  const unreadablePre = await missing.request("/api/cierres/1/preflight");
+  expect(unreadablePre.status).toBe(200);
+  expect(
+    unreadablePre.data.coherencia.contradicciones.join(" "),
+  ).toContain("no captura los totales de hechos");
+
+  const divergent = fixture({ facts: false });
+  await divergent.enroll();
+  expect((await divergent.close("2")).result.status).toBe(201);
+  divergent.db.run("DROP TRIGGER foto_cierre_no_update");
+  divergent.db.run(
+    `UPDATE fotos_cierre SET hechos=json_set(hechos,'$.totales.ingresos','999.00') WHERE ciclo='2' AND version=1`,
+  );
+  const divergentPre = await divergent.request("/api/cierres/1/preflight");
+  expect(divergentPre.status).toBe(200);
+  expect(divergentPre.data.coherencia.contradicciones.length).toBeGreaterThan(0);
+  expect(
+    divergentPre.data.coherencia.contradicciones.join(" "),
+  ).toContain("Total de ingresos");
+  const divergentClose = await divergent.request(
+    "/api/cierres/1/cerrar",
+    "POST",
+    { fingerprint: divergentPre.data.fingerprint, motivo: "Intento con total divergente" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(divergentClose.status).toBe(409);
+  expect(divergentClose.data.code).toBe("INCOHERENCIA_CON_CIERRE_POSTERIOR");
+});
+
+test("E4.9 DEV-06 AC-20: un hecho posterior en la ventana de la foto también se detecta", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  expect((await f.close("2")).result.status).toBe(201);
+  // Inserción directa para simular una operación legítima no capturada; la API
+  // T1 la bloquearía por fecha en ventana cerrada.
+  seedMovement(f.db, {
+    id: "8203",
+    fecha: "2026-02-12",
+    importe: 250,
+    tipo: "Ingreso",
+    subtipo: "Nómina",
+    origen: "S000",
+    destino: "S001",
+  });
+  const pre = await f.request("/api/cierres/1/preflight");
+  expect(pre.status).toBe(200);
+  expect(pre.data.coherencia.contradicciones.length).toBeGreaterThan(0);
+  expect(
+    pre.data.coherencia.contradicciones.join(" "),
+  ).toContain("Total de ingresos");
+});
+
+test("E4.9 DEV-06 T2: Referencias y Deudas exigen impacto, huella, motivo y auditoría", async () => {
+  const f = fixture({ facts: true });
+  await f.enroll();
+  const reference = await f.request(
+    "/api/referencias",
+    "POST",
+    { nombre: "Referencia impacto", tipo: "Viaje" },
+    { "idempotency-key": randomUUID() },
+  );
+  const referenceId = reference.data.item.id as string;
+  const debt = await f.request(
+    "/api/deudas",
+    "POST",
+    {
+      nombre: "Deuda impacto",
+      inicioControl: "2026-01-01",
+      capitalApertura: "100.00",
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  const debtId = debt.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const referenceImpact = await f.request(
+    `/api/referencias/${referenceId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(referenceImpact.status).toBe(200);
+  expect(referenceImpact.data.economico).toEqual(["estado"]);
+  expect(referenceImpact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const referenceWrong = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Baja revisada",
+      fingerprint: "b".repeat(64),
+    },
+  );
+  expect(referenceWrong.status).toBe(409);
+  expect(referenceWrong.data.code).toBe("IMPACT_CHANGED");
+
+  const referenceReviewed = await f.request(
+    `/api/referencias/${referenceId}/desactivar`,
+    "POST",
+    {
+      revision: 1,
+      motivo: "Baja revisada con impacto acreditado",
+      fingerprint: referenceImpact.data.fingerprint,
+    },
+  );
+  expect(referenceReviewed.status).toBe(200);
+  expect(
+    f.db
+      .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+      .get(referenceId),
+  ).toMatchObject({ motivo: "Baja revisada con impacto acreditado" });
+
+  const debtImpact = await f.request(
+    `/api/deudas/${debtId}/impacto`,
+    "POST",
+    { revision: 1, estado: "Inactiva" },
+  );
+  expect(debtImpact.status).toBe(200);
+  expect(debtImpact.data.economico).toEqual(["estado"]);
+  const debtReviewed = await f.request(`/api/deudas/${debtId}`, "PATCH", {
+    revision: 1,
+    estado: "Inactiva",
+    motivo: "Baja de Deuda con impacto acreditado",
+    fingerprint: debtImpact.data.fingerprint,
+  });
+  expect(debtReviewed.status).toBe(200);
+  expect(
+    f.db
+      .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+      .get(debtId),
+  ).toMatchObject({ motivo: "Baja de Deuda con impacto acreditado" });
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 DEV-06 T2/T3: Presupuestos exige revisión de impacto tras cierre y permite el nombre", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const budget = await f.request(
+    "/api/presupuestos",
+    "POST",
+    { nombre: "Presupuesto guards", fuente: "No aplica", destino: null },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(budget.status).toBe(201);
+  const budgetId = budget.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const rename = await f.request(`/api/presupuestos/${budgetId}`, "PATCH", {
+    revision: 1,
+    nombre: "Presupuesto renombrado",
+  });
+  expect(rename.status).toBe(200);
+  expect(rename.data.item.revision).toBe(2);
+
+  const changes = {
+    revision: 2,
+    nombre: "Presupuesto renombrado",
+    fuente: "Gasto real",
+    destino: "S001",
+  };
+  const unconfirmed = await f.request(
+    `/api/presupuestos/${budgetId}`,
+    "PATCH",
+    changes,
+  );
+  expect(unconfirmed.status).toBe(409);
+  expect(unconfirmed.data.code).toBe("RECTIFICATION_REQUIRED");
+
+  const impact = await f.request(
+    `/api/presupuestos/${budgetId}/impacto`,
+    "POST",
+    changes,
+  );
+  expect(impact.status).toBe(200);
+  expect(impact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const wrong = await f.request(
+    `/api/presupuestos/${budgetId}/rectificar`,
+    "POST",
+    { cambios: changes, fingerprint: "c".repeat(64), motivo: "Revisión T2" },
+  );
+  expect(wrong.status).toBe(409);
+  expect(wrong.data.code).toBe("IMPACT_CHANGED");
+
+  const reviewed = await f.request(
+    `/api/presupuestos/${budgetId}/rectificar`,
+    "POST",
+    {
+      cambios: changes,
+      fingerprint: impact.data.fingerprint,
+      motivo: "Cambio de fuente revisado",
+    },
+  );
+  expect(reviewed.status).toBe(200);
+  expect(
+    f.db
+      .query("SELECT motivo FROM audit WHERE entidad=? ORDER BY id DESC LIMIT 1")
+      .get(budgetId),
+  ).toMatchObject({ motivo: "Cambio de fuente revisado" });
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 DEV-06 T2: el plan vivo de un ciclo cerrado bloquea si la foto no acredita el impacto", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const budget = await f.request(
+    "/api/presupuestos",
+    "POST",
+    { nombre: "Presupuesto plan guards", fuente: "No aplica", destino: null },
+    { "idempotency-key": randomUUID() },
+  );
+  const budgetId = budget.data.item.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const plan = await f.request("/api/planes-ciclo/1");
+  expect(plan.status).toBe(200);
+  const body = {
+    revision: plan.data.revision as number,
+    contextRevision: plan.data.contextRevision as string,
+    cambios: [
+      {
+        presupuesto: budgetId,
+        base: "10.00",
+        esencial: "5.00",
+        delMes: "2.00",
+      },
+    ],
+  };
+  const impact = await f.request("/api/planes-ciclo/1/impacto", "POST", body);
+  expect(impact.status).toBe(200);
+  expect(impact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  f.db.run("DROP TRIGGER foto_cierre_no_update");
+  const originalPlan = (
+    f.db
+      .query("SELECT plan FROM fotos_cierre WHERE ciclo='1' AND version=1")
+      .get() as { plan: string }
+  ).plan;
+  f.db.run(
+    "UPDATE fotos_cierre SET plan='null' WHERE ciclo='1' AND version=1",
+  );
+  const blocked = await f.request("/api/planes-ciclo/1/confirmar", "POST", {
+    propuesta: body,
+    fingerprint: impact.data.fingerprint,
+    motivo: "Plan revisado tras cierre",
+  }, { "idempotency-key": randomUUID() });
+  expect(blocked.status).toBe(409);
+  expect(blocked.data.code).toBe("HISTORY_LOCKED");
+
+  f.db.run(
+    "UPDATE fotos_cierre SET plan=? WHERE ciclo='1' AND version=1",
+    [originalPlan],
+  );
+  const reviewed = await f.request("/api/planes-ciclo/1/confirmar", "POST", {
+    propuesta: body,
+    fingerprint: impact.data.fingerprint,
+    motivo: "Plan revisado tras cierre",
+  }, { "idempotency-key": randomUUID() });
+  expect(reviewed.status).toBe(200);
+  expect(
+    f.db
+      .query("SELECT motivo FROM cycle_plan_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1")
+      .get(),
+  ).toMatchObject({ motivo: "Plan revisado tras cierre" });
+});
+
+test("E4.9 DEV-06 T2/T3: Revisión Comida permite concepto y exige impacto en cambios económicos", async () => {
+  const f = fixture({ facts: false });
+  await f.enroll();
+  const created = await f.request(
+    "/api/revision-comida",
+    "POST",
+    {
+      fecha: "2026-01-10",
+      concepto: "Comida ficticia",
+      importe: "10.00",
+      direccion: "Salida",
+      esDevolucion: false,
+      clasificacion: "Comida",
+      evidenciaBancaria: null,
+      cuentaOrigen: null,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(created.status).toBe(201);
+  const id = created.data.operacion.id as string;
+  expect((await f.close("1")).result.status).toBe(201);
+  const photo = await f.request("/api/cierres/1/foto");
+
+  const informative = await f.request(
+    `/api/revision-comida/${id}/rectificar`,
+    "POST",
+    { revision: 1, motivo: "Concepto corregido", concepto: "Comida corregida" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(informative.status).toBe(200);
+  expect(informative.data.operacion.concepto).toBe("Comida corregida");
+  expect(
+    f.db
+      .query(
+        "SELECT motivo FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+      )
+      .get(id),
+  ).toMatchObject({ motivo: "Concepto corregido" });
+
+  const impact = await f.request(
+    `/api/revision-comida/${id}/impacto`,
+    "POST",
+    { revision: 2, importe: "12.00" },
+  );
+  expect(impact.status).toBe(200);
+  expect(impact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+
+  const withoutImpact = await f.request(
+    `/api/revision-comida/${id}/rectificar`,
+    "POST",
+    { revision: 2, motivo: "Cambio económico", importe: "12.00" },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(withoutImpact.status).toBe(409);
+  expect(withoutImpact.data.code).toBe("IMPACTO_NO_VERIFICABLE");
+
+  f.db.run("DROP TRIGGER foto_cierre_no_update");
+  const originalAux = (
+    f.db
+      .query("SELECT auxiliares FROM fotos_cierre WHERE ciclo='1' AND version=1")
+      .get() as { auxiliares: string }
+  ).auxiliares;
+  f.db.run(
+    "UPDATE fotos_cierre SET auxiliares='null' WHERE ciclo='1' AND version=1",
+  );
+  const blocked = await f.request(
+    `/api/revision-comida/${id}/rectificar`,
+    "POST",
+    {
+      revision: 2,
+      motivo: "Cambio económico",
+      importe: "12.00",
+      fingerprint: impact.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(blocked.status).toBe(409);
+  expect(blocked.data.code).toBe("HISTORY_LOCKED");
+
+  // Restaura el bloque auxiliar original de la foto y confirma el cambio.
+  f.db.run(
+    "UPDATE fotos_cierre SET auxiliares=? WHERE ciclo='1' AND version=1",
+    [originalAux],
+  );
+  const reviewed = await f.request(
+    `/api/revision-comida/${id}/rectificar`,
+    "POST",
+    {
+      revision: 2,
+      motivo: "Cambio económico revisado",
+      importe: "12.00",
+      fingerprint: impact.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+  expect(reviewed.status).toBe(200);
+  expect(reviewed.data.operacion.importe).toBe("12.00");
+  expect(
+    f.db
+      .query(
+        "SELECT motivo FROM revision_comida_audit WHERE operacion=? ORDER BY id DESC LIMIT 1",
+      )
+      .get(id),
+  ).toMatchObject({ motivo: "Cambio económico revisado" });
+
+  const after = await f.request("/api/cierres/1/foto");
+  expect(after.data).toEqual(photo.data);
+});
+
+test("E4.9 DEV-06 T3: el conflicto T1 estricto se mantiene y las listas blancas son por campo", async () => {
+  const f = fixture({ facts: true });
+  await f.enroll();
+  expect((await f.close("1")).result.status).toBe(201);
+
+  const movement = closedFieldDecision(f.db, "movimiento", ["concepto", "nota"]);
+  expect(movement.economic).toEqual([]);
+  expect(movement.informative).toEqual(["concepto", "nota"]);
+  const movementAmount = closedFieldDecision(f.db, "movimiento", [
+    "importe",
+    "fecha",
+    "origen",
+  ]);
+  expect(movementAmount.economic).toEqual(["importe", "fecha", "origen"]);
+
+  for (const entity of [
+    "saldo",
+    "referencia",
+    "instrumento",
+    "deuda",
+    "presupuesto",
+    "partida",
+    "categoria",
+    "subcategoria",
+  ]) {
+    const decision = closedFieldDecision(f.db, entity, ["nombre"]);
+    expect(decision.informative).toEqual(["nombre"]);
+    expect(decision.economic).toEqual([]);
+  }
+
+  const blockedByField: [string, string][] = [
+    ["compra", "importeEur"],
+    ["venta", "fecha"],
+    ["saldo", "saldoApertura"],
+    ["referencia", "tipo"],
+    ["instrumento", "isin"],
+    ["deuda", "estado"],
+    ["presupuesto", "fuente"],
+    ["partida", "padre"],
+  ];
+  for (const [entity, field] of blockedByField) {
+    const decision = closedFieldDecision(f.db, entity, [field]);
+    expect(decision.economic).toEqual([field]);
+    expect(decision.informative).toEqual([]);
+  }
+
+  // T1 estricto: aunque `nota` sea informativa por campo, la fecha en ventana
+  // cerrada manda y el hecho completo sigue bloqueado (AC-03/AC-04).
+  const noteOnly = await f.request(
+    "/api/movimientos/8001/rectificar",
+    "POST",
+    movementRectification({
+      fecha: "2026-01-15",
+      concepto: "Cambio solo de nota",
+      nota: "Nota permitida por T3 pero bloqueada por T1",
+    }),
+    { "idempotency-key": randomUUID() },
+  );
+  expect(noteOnly.status).toBe(409);
+  expect(noteOnly.data.code).toBe("HISTORY_LOCKED");
 });

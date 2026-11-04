@@ -1,5 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
+import { fingerprint } from "./movement-ledger";
 
 /**
  * E4.9 closure guards shared by the real write paths.
@@ -573,7 +574,15 @@ export const informativeFields: Record<string, readonly string[]> = {
   deuda: ["nombre"],
   presupuesto: ["nombre"],
   participante: ["nombre"],
-  revisionComida: ["concepto"],
+  revisionComida: [
+    "concepto",
+    "evidenciaBancaria",
+    "evidenciaRelacionCompra",
+    "cuentaOrigen",
+  ],
+  categoria: ["nombre"],
+  subcategoria: ["nombre"],
+  partida: ["nombre"],
 };
 
 export type ClosedFieldDecision = {
@@ -667,6 +676,276 @@ export function assertClosedEconomicMotive(
     );
   return decision.windows;
 }
+
+/**
+ * T2 consumer-impact fingerprint. The value is computed over the entity, the
+ * changed economic fields and the consumer rows a photo or a live view could
+ * depend on, so a free-text motive is never enough after a close (DEV-06).
+ */
+export function consumerImpactFingerprint(
+  entity: string,
+  id: string,
+  changed: readonly string[],
+  consumers: unknown,
+): string {
+  return fingerprint([
+    entity,
+    id,
+    [...changed].sort((a, b) => a.localeCompare(b)),
+    consumers,
+  ]);
+}
+
+/**
+ * T2 guarded review for Referencias/Deudas: informative fields keep working
+ * (T3), while an economic field after a close requires the impact fingerprint
+ * built from the affected consumers plus motive and audit. When the impact
+ * cannot be credited the write is blocked instead of weakening the certificate.
+ */
+export function assertClosedEconomicImpact(
+  db: Database,
+  entity: string,
+  changed: readonly string[],
+  motive: unknown,
+  impactFingerprint: unknown,
+  expectedFingerprint: string,
+  action: string,
+): ClosedWindow[] {
+  const decision = closedFieldDecision(db, entity, changed);
+  if (!decision.economic.length) return [];
+  if (
+    typeof motive !== "string" ||
+    !motive.trim() ||
+    motive.length > 2000 ||
+    /[\u0000-\u001f\u007f]/.test(motive)
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      `Indica el motivo de ${action}; el cambio es económico y existe un cierre.`,
+      { motivo: "Motivo obligatorio para el cambio económico." },
+      {
+        cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+        campos: decision.economic,
+      },
+    );
+  if (
+    typeof impactFingerprint !== "string" ||
+    !/^[a-f0-9]{64}$/.test(impactFingerprint)
+  )
+    throw new Problem(
+      409,
+      "IMPACTO_NO_VERIFICABLE",
+      `No se puede ${action}: falta la huella de impacto de los consumidores afectados.`,
+      {
+        fingerprint:
+          "Genera la vista de impacto y envía su huella junto al motivo.",
+      },
+      {
+        cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+        campos: decision.economic,
+      },
+    );
+  if (impactFingerprint !== expectedFingerprint)
+    throw new Problem(
+      409,
+      "IMPACT_CHANGED",
+      `No se puede ${action}: el impacto sobre los consumidores ha cambiado; vuelve a revisarlo.`,
+      { fingerprint: "La huella de impacto no coincide con el estado actual." },
+      {
+        cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+        campos: decision.economic,
+      },
+    );
+  return decision.windows;
+}
+
+/** Closures whose frozen window belongs to the given cycle. */
+export function closedWindowsForCycle(
+  db: Database,
+  ciclo: string,
+): ClosedWindow[] {
+  return closedWindows(db).filter((window) => window.ciclo === ciclo);
+}
+
+/**
+ * Read the plan block of every photo that captured the cycle. A missing or
+ * unreadable plan block cannot prove the impact, so the live plan review is
+ * blocked rather than silently accepted.
+ */
+function assertPlanPhotosVerifiable(db: Database, ciclo: string) {
+  if (!hasTable(db, "fotos_cierre")) return;
+  const rows = db
+    .query(
+      `SELECT f.plan FROM cierres c JOIN fotos_cierre f
+        ON f.ciclo=c.ciclo AND f.version=c.version
+       WHERE c.ciclo=?`,
+    )
+    .all(ciclo) as { plan: string }[];
+  for (const row of rows) {
+    try {
+      const plan = JSON.parse(row.plan) as { estado?: unknown; items?: unknown };
+      if (
+        !plan ||
+        typeof plan !== "object" ||
+        !["SinPlan", "Capturado"].includes(plan.estado as string) ||
+        !Array.isArray(plan.items)
+      )
+        throw new Error("plan no verificable");
+    } catch {
+      throw new Problem(
+        409,
+        "HISTORY_LOCKED",
+        `No se puede cambiar el plan del ciclo ${ciclo}: la foto no permite acreditar el impacto.`,
+        { plan: "Bloque de plan ilegible en la foto de cierre." },
+        {
+          cierres: closedWindowsForCycle(db, ciclo).map(
+            ({ ciclo: id, version, inicio, fin }) => ({
+              ciclo: id,
+              version,
+              inicio,
+              fin,
+            }),
+          ),
+        },
+      );
+    }
+  }
+}
+
+/**
+ * T2 live-plan guard: once a cycle is closed, changing its plan keeps the
+ * frozen photo intact but needs an explicit motive/fingerprint review (already
+ * provided by the plan flow) and a verifiable captured plan block.
+ */
+export function assertPlanClosureReview(
+  db: Database,
+  ciclo: string,
+  hasChanges: boolean,
+  motive: unknown,
+  action: string,
+): ClosedWindow[] {
+  const windows = closedWindowsForCycle(db, ciclo);
+  if (!windows.length) return [];
+  if (!hasChanges) return windows;
+  if (
+    typeof motive !== "string" ||
+    !motive.trim() ||
+    motive.length > 2000 ||
+    /[\u0000-\u001f\u007f]/.test(motive)
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      `Indica el motivo de ${action}; el ciclo está cerrado.`,
+      { motivo: "Motivo obligatorio para cambiar el plan de un ciclo cerrado." },
+      {
+        cierres: windows.map(({ ciclo: id, version, inicio, fin }) => ({
+          ciclo: id,
+          version,
+          inicio,
+          fin,
+        })),
+      },
+    );
+  assertPlanPhotosVerifiable(db, ciclo);
+  return windows;
+}
+
+/**
+ * T2 Revisión Comida guard. Modifying, annulling or linking an auxiliary fact
+ * whose date falls inside a closed window keeps the photo intact but needs a
+ * motive/audit review and a readable `auxiliares` block to credit the impact.
+ * Creation is not guarded here because a new row does not alter a stored photo;
+ * that gap is documented in the DEV-06 matrix.
+ */
+export function assertRevisionComidaClosureImpact(
+  db: Database,
+  dates: readonly (string | null | undefined)[],
+  hasChanges: boolean,
+  motive: unknown,
+  action: string,
+): ClosedWindow[] {
+  const windows = closedWindowsForDates(db, dates);
+  if (!windows.length) return [];
+  if (!hasChanges) return windows;
+  if (
+    typeof motive !== "string" ||
+    !motive.trim() ||
+    motive.length > 2000 ||
+    /[\u0000-\u001f\u007f]/.test(motive)
+  )
+    throw new Problem(
+      422,
+      "VALIDATION",
+      `Indica el motivo de ${action}; la operación pertenece a una ventana cerrada.`,
+      { motivo: "Motivo obligatorio para cambiar Revisión Comida tras un cierre." },
+      {
+        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+      },
+    );
+  if (!hasTable(db, "fotos_cierre")) return windows;
+  for (const window of windows) {
+    const row = db
+      .query(
+        `SELECT f.auxiliares FROM cierres c JOIN fotos_cierre f
+          ON f.ciclo=c.ciclo AND f.version=c.version
+         WHERE c.ciclo=? AND c.version=?`,
+      )
+      .get(window.ciclo, window.version) as { auxiliares: string } | null;
+    try {
+      const aux = JSON.parse(row?.auxiliares ?? "");
+      const e35 =
+        aux && typeof aux === "object"
+          ? (aux as { e35?: unknown }).e35
+          : undefined;
+      if (
+        !e35 ||
+        typeof e35 !== "object" ||
+        typeof (e35 as { verificable?: unknown }).verificable !== "boolean" ||
+        !("huella" in (e35 as object))
+      )
+        throw new Error("auxiliares no verificables");
+    } catch {
+      throw new Problem(
+        409,
+        "HISTORY_LOCKED",
+        `No se puede ${action}: la foto del ciclo ${window.ciclo} no permite acreditar el impacto sobre Revisión Comida.`,
+        { auxiliares: "Bloque auxiliar ilegible en la foto de cierre." },
+        {
+          cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+            ciclo,
+            version,
+            inicio,
+            fin,
+          })),
+        },
+      );
+    }
+  }
+  return windows;
+}
+
 
 /**
  * Creation of a new investment cash account would add a line to the account

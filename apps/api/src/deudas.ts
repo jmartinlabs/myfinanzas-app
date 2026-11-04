@@ -2,7 +2,12 @@ import type { Database } from "bun:sqlite";
 import { Problem, money, decimal } from "./saldos";
 import { civil } from "./ciclos";
 import { fingerprint } from "./movement-ledger";
-import { assertClosedEconomicMotive } from "./e49-guards";
+import {
+  assertClosedEconomicImpact,
+  closedFieldDecision,
+  consumerImpactFingerprint,
+  hasClosures,
+} from "./e49-guards";
 import { getDeudaCompleta } from "./deuda-completa";
 export type Debt = {
   id: string;
@@ -50,6 +55,79 @@ export function getDebt(db: Database, id: string): Debt {
     actualizado: r.actualizado,
   };
 }
+
+const editableDebtFields = [
+  "nombre",
+  "inicioControl",
+  "capitalApertura",
+  "estado",
+  "tipoDeuda",
+  "tin",
+  "tae",
+  "cuotaContractual",
+  "condiciones",
+] as const;
+
+function debtImpactHash(
+  db: Database,
+  id: string,
+  changed: readonly string[],
+  revision: number,
+): string {
+  return consumerImpactFingerprint("deuda", id, changed, [
+    revision,
+    debtUsage(db, id),
+  ]);
+}
+
+/**
+ * T2 Debt impact preview. Economic attributes need the consumer fingerprint,
+ * motive and audit after a closure; informative name-only changes stay T3.
+ */
+export function previewDebtImpact(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  return db.transaction(() => {
+    const old = getDebt(db, id);
+    if (body.revision !== old.revision)
+      throw new Problem(
+        409,
+        "REVISION_CONFLICT",
+        "La Deuda ha cambiado. Revisa su ficha; tu borrador se conserva.",
+      );
+    fields(body, old, conditionRow(db, id));
+    const changed = editableDebtFields.filter((field) => field in body);
+    const decision = closedFieldDecision(db, "deuda", changed);
+    let usos: ReturnType<typeof debtUsage>;
+    try {
+      usos = debtUsage(db, id);
+    } catch {
+      throw new Problem(
+        409,
+        "IMPACTO_NO_VERIFICABLE",
+        "No se pueden leer los consumidores de la Deuda; no se puede acreditar el impacto.",
+      );
+    }
+    return {
+      deuda: id,
+      revision: old.revision,
+      cambios: changed,
+      informativo: decision.informative,
+      economico: decision.economic,
+      usos,
+      cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+      fingerprint: debtImpactHash(db, id, changed, old.revision),
+    };
+  })();
+}
+
 export function listDebts(db: Database, p = new URLSearchParams()) {
   return db.transaction(() => {
     const page = Number(p.get("page") ?? 1),
@@ -186,7 +264,7 @@ function fields(
     "tae",
     "cuotaContractual",
     "condiciones",
-    ...(old ? ["revision", "estado", "motivo"] : []),
+    ...(old ? ["revision", "estado", "motivo", "fingerprint"] : []),
   ];
   for (const k of Object.keys(body))
     if (!allowed.includes(k))
@@ -406,16 +484,28 @@ export function updateDebt(
           "La Deuda ha cambiado. Revisa su ficha; tu borrador se conserva.",
         );
       const v = fields(body, old, conditionRow(db, id));
-      const changed = Object.keys(body).filter(
-        (field) => !["revision", "motivo"].includes(field),
-      );
-      assertClosedEconomicMotive(
-        db,
-        "deuda",
-        changed,
-        v.motivo,
-        "actualizar la Deuda",
-      );
+      const changed = editableDebtFields.filter((field) => field in body);
+      if (hasClosures(db)) {
+        let expected: string;
+        try {
+          expected = debtImpactHash(db, id, changed, old.revision);
+        } catch {
+          throw new Problem(
+            409,
+            "IMPACTO_NO_VERIFICABLE",
+            "No se pueden leer los consumidores de la Deuda; no se puede acreditar el impacto del cambio.",
+          );
+        }
+        assertClosedEconomicImpact(
+          db,
+          "deuda",
+          changed,
+          v.motivo,
+          body.fingerprint,
+          expected,
+          "actualizar la Deuda",
+        );
+      }
       if (
         (v.inicioControl !== old.inicioControl ||
           money(v.capitalApertura) !== money(old.capitalApertura)) &&

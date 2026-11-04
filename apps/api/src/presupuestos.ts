@@ -2,6 +2,7 @@ import { planConfigurationImpact } from "./planes-ciclo";
 import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
+import { hasClosures } from "./e49-guards";
 
 export const budgetSources = [
   "Gasto real",
@@ -310,9 +311,13 @@ export function updateBudget(
     .transaction(() => {
       const p = plan(db, id, body);
       if (p.blocked) throw new Problem(409, "HISTORY_LOCKED", p.coverage);
+      // DEV-06: after a close, an economic change must always carry the
+      // impact fingerprint + motive, even when no Partida or plan line uses it
+      // yet. The photo is immutable, but the live configuration must be
+      // consciously reviewed and audited.
       if (
         p.economic &&
-        (p.partidas.length || p.execution?.ciclos.length) &&
+        (hasClosures(db) || p.partidas.length || p.execution?.ciclos.length) &&
         !confirmation
       )
         throw new Problem(

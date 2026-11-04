@@ -48,6 +48,7 @@ import {
   rectificarRevisionComida,
   anularRevisionComida,
   vincularRevisionComida,
+  previewRevisionComidaImpact,
 } from "./revision-comida";
 import {
   getAnticipo,
@@ -90,6 +91,7 @@ import {
   createDebt,
   updateDebt,
   debtUsage,
+  previewDebtImpact,
 } from "./deudas";
 import {
   getDeudaCompleta,
@@ -106,6 +108,7 @@ import {
   listReferences,
   createReference,
   updateReference,
+  previewReferenceImpact,
 } from "./referencias";
 import {
   getVehicle,
@@ -547,7 +550,7 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(item, 201);
       }
       const reposicion = path.match(
-        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo|impacto))?$/,
       );
       if (reposicion) {
         const [, id, action] = reposicion;
@@ -556,6 +559,10 @@ export function createApp(db: Database, options: AppOptions) {
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";
+          if (action === "impacto")
+            return reply(
+              previewRevisionComidaImpact(db, id, body, "Reposicion"),
+            );
           if (action === "rectificar")
             return reply(
               rectificarRevisionComida(db, id, body, key, now(), "Reposicion"),
@@ -570,7 +577,7 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       const revision = path.match(
-        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo|impacto))?$/,
       );
       if (revision) {
         const [, id, action] = revision;
@@ -579,6 +586,8 @@ export function createApp(db: Database, options: AppOptions) {
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";
+          if (action === "impacto")
+            return reply(previewRevisionComidaImpact(db, id, body, "Detalle"));
           if (action === "rectificar")
             return reply(
               rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
@@ -1076,7 +1085,7 @@ export function createApp(db: Database, options: AppOptions) {
           });
       }
       const debt = path.match(
-        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar|impacto))?$/,
       );
       if (debt) {
         const [, id, action] = debt;
@@ -1102,16 +1111,18 @@ export function createApp(db: Database, options: AppOptions) {
           (action && req.method === "POST")
         ) {
           let body = await jsonBody(req);
+          if (action === "impacto")
+            return reply(previewDebtImpact(db, id, body));
           if (action) {
             if (
               Object.keys(body).some(
-                (k) => !["revision", "motivo"].includes(k),
+                (k) => !["revision", "motivo", "fingerprint"].includes(k),
               )
             )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo revisión y motivo para Estado.",
+                "Solo revisión, motivo y huella para Estado.",
               );
             body = {
               revision: body.revision,
@@ -1119,6 +1130,9 @@ export function createApp(db: Database, options: AppOptions) {
               ...(body.motivo === undefined
                 ? {}
                 : { motivo: body.motivo }),
+              ...(body.fingerprint === undefined
+                ? {}
+                : { fingerprint: body.fingerprint }),
             };
           }
           return reply({ item: updateDebt(db, id, body, now()) });
@@ -1137,7 +1151,7 @@ export function createApp(db: Database, options: AppOptions) {
         return reply({ item }, 201);
       }
       const reference = path.match(
-        /^\/api\/referencias\/(REF\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/referencias\/(REF\d+)(?:\/(desactivar|reactivar|impacto))?$/,
       );
       if (reference) {
         const [, id, action] = reference;
@@ -1178,21 +1192,26 @@ export function createApp(db: Database, options: AppOptions) {
           (action && req.method === "POST")
         ) {
           let body = await jsonBody(req);
+          if (action === "impacto")
+            return reply(previewReferenceImpact(db, id, body));
           if (action) {
             if (
               Object.keys(body).some(
-                (k) => !["revision", "motivo"].includes(k),
+                (k) => !["revision", "motivo", "fingerprint"].includes(k),
               )
             )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo se admite revisión y motivo para Estado.",
+                "Solo se admite revisión, motivo y huella para Estado.",
               );
             body = {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
               ...(body.motivo === undefined ? {} : { motivo: body.motivo }),
+              ...(body.fingerprint === undefined
+                ? {}
+                : { fingerprint: body.fingerprint }),
             };
           } else if ("estado" in body)
             throw new Problem(

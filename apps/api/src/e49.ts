@@ -202,6 +202,21 @@ type ComparedPosition = {
 
 type ComparedCash = { saldo: string; disponible: string };
 
+type ComparedTotal = { almacenado: string | null; vivo: string | null };
+
+/**
+ * Facts totals captured by a photo (`hechos.totales`) compared at its own
+ * frozen window. A photo that cannot prove them is reported as
+ * `noVerificable` and blocks the out-of-order closure instead of silently
+ * accepting a divergence (SPEC27 AC-20, DEV-06).
+ */
+type ComparedFacts = {
+  estado: "Comparado" | "No verificable";
+  ingresos: ComparedTotal;
+  gastos: ComparedTotal;
+  neto: ComparedTotal;
+};
+
 /**
  * Values actually compared by the AC-20 coherence check. They are stored in
  * `cierre_audit.posterior`, not only the closure identity, so the audit keeps
@@ -215,6 +230,7 @@ type ComparedValues = {
     almacenado: ComparedPosition[] | null;
     vivo: ComparedPosition[];
   };
+  hechos: ComparedFacts;
 };
 
 type Capture = {
@@ -559,21 +575,7 @@ function factsSnapshot(
   const rows = all.filter(
     (row) => row.fecha >= inicio && row.fecha <= fin,
   );
-  const active = rows.filter((row) => row.anulado === 0);
-  const byType = (type: LedgerRow["tipo"]) =>
-    sum(
-      active
-        .filter((row) => row.tipo === type)
-        .map((row) => BigInt(row.importe)),
-    );
-  const totales = {
-    ingresos: decimal(byType("Ingreso"))!,
-    gastos: decimal(byType("Gasto"))!,
-    transferencias: decimal(byType("Transferencia"))!,
-    amortizaciones: decimal(byType("Amortización deuda"))!,
-    devoluciones: decimal(byType("Devolución de gasto"))!,
-    neto: decimal(byType("Ingreso") - byType("Gasto"))!,
-  };
+  const totales = factTotals(rows);
   const fuentes = [
     { fuente: "Movimientos", hechos: rows.length, acreditado: true },
     {
@@ -598,6 +600,50 @@ function factsSnapshot(
       ? { motivo: "Una fuente aplicable no se pudo leer; no se acredita ausencia." }
       : {}),
   };
+}
+
+/** Same total formula used by the photo and by the AC-20 coherence check. */
+function factTotals(rows: LedgerRow[]): Record<string, string> {
+  const active = rows.filter((row) => row.anulado === 0);
+  const byType = (type: LedgerRow["tipo"]) =>
+    sum(
+      active
+        .filter((row) => row.tipo === type)
+        .map((row) => BigInt(row.importe)),
+    );
+  return {
+    ingresos: decimal(byType("Ingreso"))!,
+    gastos: decimal(byType("Gasto"))!,
+    transferencias: decimal(byType("Transferencia"))!,
+    amortizaciones: decimal(byType("Amortización deuda"))!,
+    devoluciones: decimal(byType("Devolución de gasto"))!,
+    neto: decimal(byType("Ingreso") - byType("Gasto"))!,
+  };
+}
+
+/**
+ * Live fact totals at a later photo's frozen window. A read failure is
+ * reported as `ok:false` so the coherence check blocks instead of treating an
+ * unreadable source as "no divergence".
+ */
+function liveFactTotals(
+  db: Database,
+  inicio: string,
+  fin: string,
+): { ok: boolean; totales: Record<string, string>; motivo?: string } {
+  try {
+    const rows = ledgerRows(db).filter(
+      (row) => row.fecha >= inicio && row.fecha <= fin,
+    );
+    return { ok: true, totales: factTotals(rows) };
+  } catch {
+    return {
+      ok: false,
+      totales: {},
+      motivo:
+        "No se pudieron recalcular los totales de hechos de la foto posterior.",
+    };
+  }
 }
 
 function auxiliarySnapshot(
@@ -713,7 +759,9 @@ function classificationSnapshot(db: Database): ClassificationSnapshot {
 
 function compareStoredSnapshot(
   stored: unknown,
+  storedHechos: unknown,
   live: InvestmentSnapshot,
+  liveFacts: { ok: boolean; totales: Record<string, string>; motivo?: string },
 ): { problems: string[]; comparado: ComparedValues } {
   const livePositions: ComparedPosition[] = live.posiciones.map((row) => ({
     instrumento: row.instrumento,
@@ -724,6 +772,14 @@ function compareStoredSnapshot(
     saldo: row.saldo,
     disponible: row.disponible,
   }));
+  const emptyFacts = (
+    estado: ComparedFacts["estado"] = "No verificable",
+  ): ComparedFacts => ({
+    estado,
+    ingresos: { almacenado: null, vivo: liveFacts.totales.ingresos ?? null },
+    gastos: { almacenado: null, vivo: liveFacts.totales.gastos ?? null },
+    neto: { almacenado: null, vivo: liveFacts.totales.neto ?? null },
+  });
   const invalid = (
     problems: string[],
     almacenado: Partial<ComparedValues> = {},
@@ -742,6 +798,7 @@ function compareStoredSnapshot(
         almacenado: null,
         vivo: livePositions,
       },
+      hechos: almacenado.hechos ?? emptyFacts(),
     },
   });
   if (!stored || typeof stored !== "object" || Array.isArray(stored))
@@ -785,6 +842,7 @@ function compareStoredSnapshot(
         typeof (row as { disponible?: unknown }).disponible === "string",
     )
     .map((row) => ({ saldo: row.saldo, disponible: row.disponible }));
+  const comparedFacts = compareStoredFacts(storedHechos, liveFacts);
   const comparado: ComparedValues = {
     efectivo: {
       almacenado:
@@ -793,8 +851,9 @@ function compareStoredSnapshot(
     },
     cuentas: { almacenado: storedCashRows, vivo: liveCash },
     posiciones: { almacenado: storedPositions, vivo: livePositions },
+    hechos: comparedFacts.comparado,
   };
-  const problems: string[] = [];
+  const problems: string[] = [...comparedFacts.problems];
   if (typeof value.efectivo === "string" && value.efectivo !== live.efectivo)
     problems.push(
       `Efectivo total almacenado ${value.efectivo} frente a ${live.efectivo ?? "No disponible"}.`,
@@ -824,13 +883,76 @@ function compareStoredSnapshot(
   return { problems, comparado };
 }
 
+const comparedFactKeys = ["ingresos", "gastos", "neto"] as const;
+
+/**
+ * Compares the `hechos.totales` a later photo captured with the same totals
+ * recomputed at its frozen window. Missing or unreadable totals are a blocking
+ * problem: the check never treats "cannot verify" as "coherent" (DEV-06).
+ */
+function compareStoredFacts(
+  storedHechos: unknown,
+  liveFacts: { ok: boolean; totales: Record<string, string>; motivo?: string },
+): { problems: string[]; comparado: ComparedFacts } {
+  const problems: string[] = [];
+  const value =
+    storedHechos && typeof storedHechos === "object" && !Array.isArray(storedHechos)
+      ? (storedHechos as { totales?: unknown })
+      : null;
+  const storedTotals =
+    value && value.totales && typeof value.totales === "object" &&
+    !Array.isArray(value.totales)
+      ? (value.totales as Record<string, unknown>)
+      : null;
+  const comparado: ComparedFacts = {
+    estado: "Comparado",
+    ingresos: { almacenado: null, vivo: liveFacts.totales.ingresos ?? null },
+    gastos: { almacenado: null, vivo: liveFacts.totales.gastos ?? null },
+    neto: { almacenado: null, vivo: liveFacts.totales.neto ?? null },
+  };
+  if (!storedTotals) {
+    problems.push(
+      "La foto posterior no captura los totales de hechos; no se puede verificar su coherencia.",
+    );
+    comparado.estado = "No verificable";
+    return { problems, comparado };
+  }
+  for (const key of comparedFactKeys) {
+    const stored = storedTotals[key];
+    if (typeof stored !== "string") {
+      problems.push(
+        `La foto posterior no captura el total de ${key}; no se puede verificar su coherencia.`,
+      );
+      comparado.estado = "No verificable";
+      continue;
+    }
+    comparado[key] = {
+      almacenado: stored,
+      vivo: liveFacts.totales[key] ?? null,
+    };
+    if (!liveFacts.ok) {
+      problems.push(
+        liveFacts.motivo ??
+          "No se pudieron recalcular los totales de hechos de la foto posterior.",
+      );
+      comparado.estado = "No verificable";
+      continue;
+    }
+    if (stored !== liveFacts.totales[key])
+      problems.push(
+        `Total de ${key} almacenado ${stored} frente a ${liveFacts.totales[key] ?? "No disponible"}.`,
+      );
+  }
+  return { problems, comparado };
+}
+
 function coherence(
   db: Database,
   fin: string,
 ): Capture["coherencia"] {
   const rows = db
     .query(
-      `SELECT c.ciclo,c.version,c.fin,f.inversion
+      `SELECT c.ciclo,c.version,c.inicio,c.fin,f.inversion,f.hechos
        FROM cierres c JOIN fotos_cierre f
          ON f.ciclo=c.ciclo AND f.version=c.version
        WHERE c.fin > ? ORDER BY c.fin,c.ciclo,c.version`,
@@ -838,8 +960,10 @@ function coherence(
     .all(fin) as {
     ciclo: string;
     version: number;
+    inicio: string;
     fin: string;
     inversion: string;
+    hechos: string;
   }[];
   const cierres = rows.map((row) => {
     let motivos: string[] = [];
@@ -847,18 +971,47 @@ function coherence(
       efectivo: { almacenado: null, vivo: null },
       cuentas: { almacenado: null, vivo: [] },
       posiciones: { almacenado: null, vivo: [] },
+      hechos: {
+        estado: "No verificable",
+        ingresos: { almacenado: null, vivo: null },
+        gastos: { almacenado: null, vivo: null },
+        neto: { almacenado: null, vivo: null },
+      },
     };
     try {
       const live = investmentSnapshot(db, row.fin);
-      const compared = live.ok
-        ? compareStoredSnapshot(JSON.parse(row.inversion), live)
-        : compareStoredSnapshot({}, live);
-      motivos = live.ok
-        ? compared.problems
-        : [live.motivo ?? "No se pudo recalcular la foto posterior."];
+      const liveFacts = liveFactTotals(db, row.inicio, row.fin);
+      let storedInversion: unknown = undefined;
+      let storedHechos: unknown = undefined;
+      try {
+        storedInversion = JSON.parse(row.inversion);
+      } catch {
+        motivos.push("No se pudo leer la instantánea de inversión posterior.");
+      }
+      try {
+        storedHechos = JSON.parse(row.hechos);
+      } catch {
+        motivos.push("No se pudo leer la instantánea de hechos posterior.");
+      }
+      const compared = compareStoredSnapshot(
+        storedInversion,
+        storedHechos,
+        live,
+        liveFacts,
+      );
+      if (!live.ok)
+        motivos.push(
+          live.motivo ?? "No se pudo recalcular la foto posterior.",
+        );
+      if (!liveFacts.ok)
+        motivos.push(
+          liveFacts.motivo ??
+            "No se pudieron recalcular los totales de hechos posteriores.",
+        );
+      motivos.push(...compared.problems);
       comparado = compared.comparado;
     } catch {
-      motivos = ["No se pudo leer la foto posterior."];
+      motivos.push("No se pudo leer la foto posterior.");
     }
     return {
       ciclo: row.ciclo,

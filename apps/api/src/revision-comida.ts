@@ -9,6 +9,12 @@ import {
   revisionComidaRows,
   type RevisionComidaRow,
 } from "./revision-comida-ledger";
+import {
+  assertRevisionComidaClosureImpact,
+  closedWindowsForDates,
+  consumerImpactFingerprint,
+  informativeFields,
+} from "./e49-guards";
 
 export const clasificaciones = [
   "Comida",
@@ -532,6 +538,133 @@ export function createRevisionComida(
   });
 }
 
+function revisionImpactFingerprint(
+  id: string,
+  tipo: Tipo,
+  old: RevisionComidaRow,
+  changed: readonly string[],
+) {
+  return consumerImpactFingerprint("revisionComida", id, changed, [
+    tipo,
+    old.revision,
+    old.fecha,
+    old.movimiento ?? null,
+  ]);
+}
+
+/**
+ * T2 Revisión Comida closure review. A row whose old or new date belongs to a
+ * closed window keeps the photo intact, but needs motive + a consumer impact
+ * fingerprint + audit, and a readable auxiliary photo block. If the impact
+ * cannot be credited the change is blocked (DEV-06).
+ */
+function requireClosureReview(
+  db: Database,
+  id: string,
+  tipo: Tipo,
+  old: RevisionComidaRow,
+  body: Record<string, unknown>,
+  changed: readonly string[],
+  action: string,
+  economicFields: readonly string[] = changed,
+) {
+  const nextDate = typeof body.fecha === "string" ? body.fecha : null;
+  const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
+  if (!windows.length) return;
+  const informative = informativeFields.revisionComida ?? [];
+  const economic = economicFields.filter(
+    (field) => !informative.includes(field),
+  );
+  // T3: a purely informative change (concepto) keeps working after a close;
+  // the caller still requires and audits its motive.
+  if (!economic.length) return;
+  assertRevisionComidaClosureImpact(
+    db,
+    [old.fecha, nextDate],
+    true,
+    body.motivo,
+    action,
+  );
+  const fingerprintChanged = changed.filter(
+    (field) => !informative.includes(field),
+  );
+  const expected = revisionImpactFingerprint(
+    id,
+    tipo,
+    old,
+    fingerprintChanged,
+  );
+  if (
+    typeof body.fingerprint !== "string" ||
+    !/^[a-f0-9]{64}$/.test(body.fingerprint)
+  )
+    throw new Problem(
+      409,
+      "IMPACTO_NO_VERIFICABLE",
+      `No se puede ${action}: falta la huella de impacto de la operación.`,
+      {
+        fingerprint:
+          "Genera la vista de impacto de Revisión Comida y envía su huella.",
+      },
+      {
+        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+      },
+    );
+  if (body.fingerprint !== expected)
+    throw new Problem(
+      409,
+      "IMPACT_CHANGED",
+      `No se puede ${action}: el impacto de Revisión Comida ha cambiado; vuelve a revisarlo.`,
+      { fingerprint: "La huella de impacto no coincide con el estado actual." },
+      {
+        cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+          ciclo,
+          version,
+          inicio,
+          fin,
+        })),
+      },
+    );
+}
+
+/** Preview for the T2 Revisión Comida impact certificate. */
+export function previewRevisionComidaImpact(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+  tipo: Tipo = "Detalle",
+) {
+  return db.transaction(() => {
+    const old = find(db, id, tipo);
+    revisionFrom(body, old);
+    const changed = Object.keys(body).filter(
+      (field) =>
+        !["revision", "motivo", "fingerprint", "tipo"].includes(field),
+    );
+    const nextDate = typeof body.fecha === "string" ? body.fecha : null;
+    const windows = closedWindowsForDates(db, [old.fecha, nextDate]);
+    return {
+      operacion: id,
+      revision: old.revision,
+      cambios: changed,
+      cierres: windows.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+      requiereMotivo: windows.length > 0,
+      fingerprint: revisionImpactFingerprint(id, tipo, old, changed),
+    };
+  })();
+}
+
+
 export function rectificarRevisionComida(
   db: Database,
   id: string,
@@ -540,7 +673,7 @@ export function rectificarRevisionComida(
   now = Date.now(),
   tipo: Tipo = "Detalle",
 ) {
-  rejectUnknown(body, [...fieldsFor(tipo), "revision", "motivo"]);
+  rejectUnknown(body, [...fieldsFor(tipo), "revision", "motivo", "fingerprint"]);
   const hash = fingerprint([
     "rectificación",
     tipo,
@@ -559,6 +692,18 @@ export function rectificarRevisionComida(
     const motivo = motive(body)!,
       candidate = validated(body, old, now, tipo),
       time = new Date(now).toISOString();
+    requireClosureReview(
+      db,
+      id,
+      tipo,
+      old,
+      body,
+      Object.keys(body).filter(
+        (field) =>
+          !["revision", "motivo", "fingerprint", "tipo"].includes(field),
+      ),
+      "rectificar la operación de Revisión Comida",
+    );
     db.run(
       `UPDATE revision_comida SET fecha=?,concepto=?,importe=?,direccion=?,es_devolucion=?,clasificacion=?,evidencia_bancaria=?,evidencia_relacion_compra=?,cuenta_origen=?,revision=revision+1,actualizado=? WHERE id=?`,
       [
@@ -598,7 +743,7 @@ export function anularRevisionComida(
   now = Date.now(),
   tipo: Tipo = "Detalle",
 ) {
-  rejectUnknown(body, ["revision", "motivo"]);
+  rejectUnknown(body, ["revision", "motivo", "fingerprint"]);
   const hash = fingerprint([
     "anulación",
     tipo,
@@ -616,6 +761,16 @@ export function anularRevisionComida(
     revisionFrom(body, old);
     const motivo = motive(body)!,
       time = new Date(now).toISOString();
+    requireClosureReview(
+      db,
+      id,
+      tipo,
+      old,
+      body,
+      [],
+      "anular la operación de Revisión Comida",
+      ["estado_registro"],
+    );
     db.run(
       "UPDATE revision_comida SET estado_registro='Anulado',revision=revision+1,actualizado=? WHERE id=?",
       [time, id],
@@ -729,6 +884,7 @@ export function vincularRevisionComida(
   rejectUnknown(body, [
     "revision",
     "motivo",
+    "fingerprint",
     "movimiento",
     "tipoVinculo",
     "evidenciaVinculo",
@@ -751,6 +907,20 @@ export function vincularRevisionComida(
     revisionFrom(body, old);
     const motivo = motive(body)!,
       time = new Date(now).toISOString();
+    requireClosureReview(
+      db,
+      id,
+      tipo,
+      old,
+      body,
+      [
+        "movimiento",
+        "tipoVinculo",
+        "evidenciaVinculo",
+        "desvincular",
+      ].filter((field) => field in body),
+      "cambiar el vínculo de Revisión Comida",
+    );
     const unlink =
       body.desvincular === true ||
       body.movimiento === null ||

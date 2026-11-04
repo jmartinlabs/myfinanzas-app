@@ -9,6 +9,7 @@ import {
 import { Problem, money, decimal } from "./saldos";
 import { spanishToday } from "./movimientos";
 import { eligibleDevolutionCents } from "./comida";
+import { assertPlanClosureReview } from "./e49-guards";
 
 export type PlanBudget = {
   id: string;
@@ -437,6 +438,13 @@ export function confirmCyclePlan(
           "IMPACT_CHANGED",
           "La revisión ha cambiado; revisa de nuevo.",
         );
+      assertPlanClosureReview(
+        db,
+        ciclo,
+        !p.sinCambios,
+        body.motivo,
+        "confirmar el plan del ciclo",
+      );
       if (
         p.requiereMotivo &&
         !p.sinCambios &&
