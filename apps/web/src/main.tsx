@@ -121,7 +121,14 @@ function App() {
         onReady={() => {
           setExpired(false);
           setAuth("ready");
-          go(path.startsWith("/flujo-mensual") || path.startsWith("/pendientes") ? path : "/saldos");
+          const current = location.pathname + location.search;
+          go(
+            current.startsWith("/flujo-mensual") ||
+              current.startsWith("/pendientes") ||
+              current.startsWith("/inversiones")
+              ? current
+              : "/saldos",
+          );
         }}
       />
     );
