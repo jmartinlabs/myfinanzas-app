@@ -2,9 +2,13 @@
 
 Status: **APROBADA documentalmente por el usuario el 2026-11-03.** Q1–Q12 ratificadas en
 opción A, incluida **Q3-B=A** (E4.6 solo lectura, sin almacén de meses objetivo/umbrales) y
-**Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente). DEV24
-**NO autorizado**; ningún AC en PASS. Wireframes 1440/390: contrato documental aprobado; la
-implementación visual no está autorizada.
+**Q4=A** (año de `mesFinanciado`, incluso si el corte cae en el ejercicio siguiente).
+**DEV24 autorizado el 2026-11-04.** La rama `feat/e46-inicio` contiene la composición de solo
+lectura `GET /api/resumen-inicio` y la UI `/inicio`. Estado real: AC con evidencia local en el
+[testplan](24-e46-resumen-inicio-testplan.md); AC-01 queda **PARCIAL** por huecos de
+fuente/cobertura en el DTO, AC-27 es **PARCIAL** por sesión expirada/500 sin prueba y
+AC-20/AC-21 siguen UNRUN. Sin merge ni `--full`; la revisión visual de implementación conserva
+su gate.
 Este documento no implementa código, API, SQLite, DDL ni migraciones.
 Approval source/date: aprobación directa del usuario, 2026-11-03.
 Context and brainstorming: [24-e46-resumen-inicio-brainstorming.md](24-e46-resumen-inicio-brainstorming.md),
@@ -637,8 +641,10 @@ roadmap se indica después de la tabla.
 ## Approval and next action
 
 **APROBADA documentalmente por el usuario el 2026-11-03** (Q1–Q12, opción A; Q3-B=A; Q4=A).
-La aprobación no autoriza DEV24, DDL, migración, merge ni despliegue, y **ningún AC está en
-PASS**. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. Para declarar completa la
-entrega siguen aplicando las dependencias del roadmap: E4.3 no tiene DEV; E3.6/DEV21 está
-integrado en `a26fffb`, sin reauditoría de su consumo en esta actualización. El siguiente gate
-es la autorización separada de DEV por el coordinador.
+**DEV24 se autorizó el 2026-11-04** con alcance A+B+C; la aprobación de la spec no autoriza por
+sí sola merge ni despliegue. Q3-B=A mantiene E4.6 sin almacén de meses objetivo/umbrales. La
+composición y la UI existen en `feat/e46-inicio`, pero la entrega no se declara completa: AC-01
+es PARCIAL por huecos de fuente/cobertura en el DTO, AC-20/AC-21 siguen UNRUN y faltan el
+`--full`, la revisión QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21
+sigue en `a26fffb` sin reauditoría de su consumo. El siguiente gate es la revisión
+independiente y el merge aprobado, no otra autorización de DEV.

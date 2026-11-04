@@ -69,6 +69,7 @@ type SaldoItem = {
   nombre: string;
   estado: string;
   posicion: string | null;
+  motivo?: string | null;
   liquidez: boolean | null;
   finalidad: string | null;
   bolsa: boolean | null;
@@ -104,6 +105,7 @@ type DeudaAparte = {
   nombre: string;
   capitalPendiente: string | null;
   calculable: boolean;
+  motivo?: string | null;
 };
 
 type PendienteItem = {
@@ -746,24 +748,39 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                     : `${objetivo.mesesObjetivo} meses`}
                 </dd>
               </div>
-              <div>
-                <dt>Mínimo objetivo</dt>
-                <dd>
-                  <MetricValue metrica={objetivo.metrica} />{" "}
-                  <EstadoBadge estado={objetivo.metrica.estado} />
-                </dd>
-              </div>
-              <div>
-                <dt>Meses cubiertos</dt>
-                <dd>
-                  <MetricValue metrica={objetivo.mesesCubiertos} />{" "}
-                  <EstadoBadge estado={objetivo.mesesCubiertos.estado} />
-                </dd>
-              </div>
             </dl>
-            <p className="inicio-metric-motivo">
-              {objetivo.mesesCubiertos.motivo}
-            </p>
+            <div className="inicio-submetric">
+              <h4>Mínimo objetivo</h4>
+              <div className="inicio-metric-main">
+                <MetricValue metrica={objetivo.metrica} />
+                <EstadoBadge estado={objetivo.metrica.estado} />
+              </div>
+              <p className="inicio-metric-meta">
+                {coverageText(objetivo.metrica.cobertura)}
+              </p>
+              <p className="inicio-metric-motivo">{objetivo.metrica.motivo}</p>
+              <FuenteLinea
+                fuente={objetivo.metrica.fuente}
+                contexto={objetivo.metrica.contexto}
+              />
+            </div>
+            <div className="inicio-submetric">
+              <h4>Meses cubiertos</h4>
+              <div className="inicio-metric-main">
+                <MetricValue metrica={objetivo.mesesCubiertos} />
+                <EstadoBadge estado={objetivo.mesesCubiertos.estado} />
+              </div>
+              <p className="inicio-metric-meta">
+                {coverageText(objetivo.mesesCubiertos.cobertura)}
+              </p>
+              <p className="inicio-metric-motivo">
+                {objetivo.mesesCubiertos.motivo}
+              </p>
+              <FuenteLinea
+                fuente={objetivo.mesesCubiertos.fuente}
+                contexto={objetivo.mesesCubiertos.contexto}
+              />
+            </div>
             <p className="inicio-zona">
               Zona {objetivo.zona.toLowerCase()} · sin transferencias ni
               reservas automáticas.
@@ -867,6 +884,11 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                         ? "Sí"
                         : "No"}
                   </span>
+                  {item.posicion === null && item.motivo && (
+                    <span className="inicio-item-meta">
+                      Motivo: {item.motivo}
+                    </span>
+                  )}
                   <span className="inicio-item-value">
                     {item.posicion === null
                       ? "ND"
@@ -912,7 +934,12 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   >
                     {item.id} · {item.nombre}
                   </a>
-                  <span className="inicio-item-meta">{item.estado}</span>
+                  <span className="inicio-item-meta">
+                    {item.estado}
+                    {item.valor === null && item.motivo
+                      ? ` · ${item.motivo}`
+                      : ""}
+                  </span>
                   <span className="inicio-item-value">
                     {item.valor === null
                       ? "ND"
@@ -1006,6 +1033,16 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               </div>
             </dl>
           )}
+          <p className="inicio-metric-meta">
+            Cobertura: {coverageText(inversion.cobertura)}
+          </p>
+          {inversion.cobertura.motivos.length > 0 && (
+            <ul className="inicio-metric-coverage">
+              {inversion.cobertura.motivos.map((motivo) => (
+                <li key={motivo}>{motivo}</li>
+              ))}
+            </ul>
+          )}
           {inversion.posiciones.length > 0 && (
             <details className="inicio-detail">
               <summary>Ver posiciones</summary>
@@ -1018,6 +1055,9 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                     <span className="inicio-item-meta">
                       {item.cantidad} · {item.estado} ·{" "}
                       {item.tipoValoracion}
+                      {item.resultadoMotivo
+                        ? ` · ${item.resultadoMotivo}`
+                        : ""}
                     </span>
                     <span className="inicio-item-value">
                       {item.valorEur === null
@@ -1101,10 +1141,22 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               {coverageText(deuda.total.cobertura)} · calculables
             </p>
             <p className="inicio-metric-motivo">{deuda.total.motivo}</p>
+            <FuenteLinea
+              fuente={deuda.total.fuente}
+              contexto={deuda.contexto}
+            />
           </article>
-          {deuda.items.length === 0 ? (
-            <p className="muted">Sin deudas no hipotecarias activas.</p>
-          ) : (
+          {deuda.total.estado === "No disponible" && (
+            <p className="inicio-motivo">
+              Bloque no disponible por fallo de fuente; no se presenta como un
+              vacío real. {deuda.total.motivo}
+            </p>
+          )}
+          {deuda.total.estado !== "No disponible" &&
+            deuda.items.length === 0 && (
+              <p className="muted">Sin deudas no hipotecarias activas.</p>
+            )}
+          {deuda.items.length > 0 && (
             <ul className="inicio-item-list">
               {deuda.items.map((item) => (
                 <li key={item.id}>
@@ -1141,7 +1193,9 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {deuda.aparte.hipotecaria
                     .map((item) =>
                       item.capitalPendiente === null
-                        ? `${item.id} ND`
+                        ? `${item.id} ND${
+                            item.motivo ? ` (${item.motivo})` : ""
+                          }`
                         : `${item.id} ${formatDecimal(
                             item.capitalPendiente,
                             "EUR",
@@ -1156,7 +1210,9 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {deuda.aparte.sinInformar
                     .map((item) =>
                       item.capitalPendiente === null
-                        ? `${item.id} ND`
+                        ? `${item.id} ND${
+                            item.motivo ? ` (${item.motivo})` : ""
+                          }`
                         : `${item.id} ${formatDecimal(
                             item.capitalPendiente,
                             "EUR",
@@ -1167,7 +1223,15 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               )}
             </div>
           )}
-          <FuenteLinea fuente={deuda.fuente} contexto={deuda.contexto} />
+          <p className="inicio-source">
+            Fuente del bloque (incluye deudas fuera del total):{" "}
+            <strong>{deuda.fuente.motor}</strong>
+            {deuda.fuente.ids.length > 0 && (
+              <>
+                {" · "}IDs: <span>{deuda.fuente.ids.join(", ")}</span>
+              </>
+            )}
+          </p>
           <p className="inicio-linkrow">
             <InicioLink enlace={deuda.enlace} go={go}>
               Ver Deudas
@@ -1182,27 +1246,56 @@ export function Inicio({ go }: { go: (path: string) => void }) {
       >
         <div className="inicio-section-head">
           <h2 id="inicio-pendientes">Pendientes</h2>
-          <EstadoBadge estado={pendientes.metrica.estado} />
+          {pendientes.fuenteFallos.length > 0 ? (
+            <span className="inicio-estado inicio-estado-partial">
+              <span aria-hidden="true">!</span> PARCIAL · FUENTES CON FALLO
+            </span>
+          ) : (
+            <EstadoBadge estado={pendientes.metrica.estado} />
+          )}
         </div>
         <p className="inicio-metric-motivo">{pendientes.metrica.motivo}</p>
+        {pendientes.fuenteFallos.length > 0 && (
+          <div className="inicio-degradado" role="status">
+            <strong>Estado degradado:</strong> hay fuentes de E3.6 no
+            verificables; el bloque no se presenta como vacío ni como conteo
+            cero.
+            <ul className="inicio-metric-coverage">
+              {pendientes.fuenteFallos.map((fallo) => (
+                <li key={`${fallo.motor}-${fallo.id ?? ""}-${fallo.motivo}`}>
+                  {fallo.motor}
+                  {fallo.id ? ` ${fallo.id}` : ""}: {fallo.motivo}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
         {pendientes.conteo !== null &&
           Object.keys(pendientes.conteo).length > 0 && (
-            <dl className="inicio-counts">
-              {Object.entries(pendientes.conteo).map(([estado, count]) => (
-                <div key={estado}>
-                  <dt>{estado}</dt>
-                  <dd>{count}</dd>
-                </div>
-              ))}
-            </dl>
+            <>
+              <p className="inicio-metric-meta">
+                {pendientes.fuenteFallos.length > 0
+                  ? "Conteo parcial"
+                  : "Conteo por estado"}
+              </p>
+              <dl className="inicio-counts">
+                {Object.entries(pendientes.conteo).map(([estado, count]) => (
+                  <div key={estado}>
+                    <dt>{estado}</dt>
+                    <dd>{count}</dd>
+                  </div>
+                ))}
+              </dl>
+            </>
           )}
-        {pendientes.items.length === 0 ? (
+        {pendientes.items.length === 0 &&
+        pendientes.fuenteFallos.length === 0 ? (
           <p className="muted">
             {pendientes.metrica.estado === "Sin datos"
               ? "Sin pendientes."
               : "Sin pendientes verificables; no se publica un conteo 0."}
           </p>
-        ) : (
+        ) : pendientes.items.length === 0 ? null : (
           <ul className="inicio-item-list">
             {pendientes.items.slice(0, 12).map((item) => {
               const enlace = item.enlaces[0];

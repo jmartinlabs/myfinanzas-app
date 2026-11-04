@@ -2,6 +2,7 @@ import {
   test,
   expect,
   type APIRequestContext,
+  type Locator,
   type Page,
 } from "@playwright/test";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -19,10 +20,13 @@ import { totp } from "../../apps/api/src/auth";
 
 const BASE_PORT = 3014;
 const ZERO_PORT = 3015;
+const DEGRADED_PORT = 3016;
 const BASE_DIR = ".local/e2e-inicio";
 const ZERO_DIR = ".local/e2e-inicio-zero";
+const DEGRADED_DIR = ".local/e2e-inicio-degradado";
 let base: ChildProcess | undefined;
 let zero: ChildProcess | undefined;
+let degraded: ChildProcess | undefined;
 
 async function waitForApi(request: APIRequestContext, port: number) {
   await expect
@@ -57,13 +61,23 @@ test.beforeAll(async ({ request }) => {
       env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "zero" },
     },
   );
+  degraded = spawn(
+    process.env.BUN_BIN ?? "bun",
+    ["apps/api/test-support/inicio-server.ts"],
+    {
+      stdio: "pipe",
+      env: { ...process.env, NODE_ENV: "test", E46_SCENARIO: "degradado" },
+    },
+  );
   await waitForApi(request, BASE_PORT);
   await waitForApi(request, ZERO_PORT);
+  await waitForApi(request, DEGRADED_PORT);
 });
 
 test.afterAll(() => {
   base?.kill();
   zero?.kill();
+  degraded?.kill();
 });
 
 async function routeApi(page: Page, port: number) {
@@ -100,16 +114,83 @@ async function login(page: Page, dir: string) {
   await expect(page.locator(".inicio-context")).toBeVisible();
 }
 
-function luminance(rgb: string) {
-  const values = rgb.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
-  if (!values || values.length !== 3) return 0;
-  const [r, g, b] = values.map((value) => {
-    const channel = value / 255;
-    return channel <= 0.04045
-      ? channel / 12.92
-      : Math.pow((channel + 0.055) / 1.055, 2.4);
+async function resetScroll(page: Page) {
+  await page.evaluate(async () => {
+    window.scrollTo(0, 0);
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+    );
   });
-  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+}
+
+async function expectInicio(page: Page) {
+  await expect(
+    page.getByRole("heading", { name: "Inicio", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
+}
+
+async function drillDown(page: Page, link: Locator, url: RegExp) {
+  await link.click();
+  await expect(page).toHaveURL(url);
+  expect(page.url()).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
+  await page.goBack();
+  await expectInicio(page);
+}
+
+/** Contraste de texto, motivos y enlaces principales, no solo de los badges. */
+async function expectInicioContrast(page: Page) {
+  const ratios = await page.locator(".inicio-page").evaluate((root) => {
+    const luminance = (rgb: string) => {
+      const values = rgb.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
+      if (!values || values.length !== 3) return 0;
+      const [r, g, b] = values.map((value) => {
+        const channel = value / 255;
+        return channel <= 0.04045
+          ? channel / 12.92
+          : Math.pow((channel + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    };
+    const nodes = Array.from(
+      root.querySelectorAll(
+        "h1,h2,h3,h4,p,dt,dd,li,a,.inicio-value,.inicio-estado",
+      ),
+    );
+    const result: number[] = [];
+    for (const node of nodes) {
+      const element = node as HTMLElement;
+      const style = getComputedStyle(element);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        !element.offsetParent
+      )
+        continue;
+      const text = (element.textContent ?? "").trim();
+      if (!text) continue;
+      let background = "rgba(0, 0, 0, 0)";
+      let parent: HTMLElement | null = element;
+      while (parent) {
+        const candidate = getComputedStyle(parent).backgroundColor;
+        if (candidate !== "rgba(0, 0, 0, 0)" && candidate !== "transparent") {
+          background = candidate;
+          break;
+        }
+        parent = parent.parentElement;
+      }
+      const foreground = luminance(style.color);
+      const behind = luminance(background);
+      if (foreground === 0 || behind === 0) continue;
+      result.push(
+        (Math.max(foreground, behind) + 0.05) /
+          (Math.min(foreground, behind) + 0.05),
+      );
+    }
+    return result;
+  });
+  expect(ratios.length).toBeGreaterThan(0);
+  expect(Math.min(...ratios)).toBeGreaterThanOrEqual(4.5);
 }
 
 test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive", async ({
@@ -196,6 +277,19 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   });
   await expect(nomina).toContainText("2.000,00 €");
   await expect(nomina).toContainText("Subtotal conocido");
+  await expect(nomina).toContainText("PARCIAL");
+  const base = ciclo.getByRole("article", {
+    name: "Base planificada",
+    exact: true,
+  });
+  await expect(base).toContainText("1.900,00 €");
+  await expect(base).toContainText("VERIFICADO");
+  const delMes = ciclo.getByRole("article", {
+    name: "Del mes planificado",
+    exact: true,
+  });
+  await expect(delMes).toContainText("1.900,00 €");
+  await expect(delMes).toContainText("VERIFICADO");
   await expect(page.locator("body")).not.toContainText("350,00 €");
 
   // Saldos: conteos y ausencia de total.
@@ -256,22 +350,52 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   expect(hrefs).toContain("/deudas/D001");
   expect(hrefs).toContain("/pendientes");
   expect(hrefs).toContain("/saldos/S001");
+  expect(hrefs).toContain("/plan-anual");
   for (const href of hrefs)
     expect(href).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
 
-  await ciclo
-    .getByRole("link", { name: "Ver flujo mensual", exact: true })
-    .first()
-    .click();
-  await expect(page).toHaveURL(/\/flujo-mensual\?ciclo=7$/);
-  await page.goBack();
-  await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
-  await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
-
-  await deuda.getByRole("link", { name: "Ver Deudas", exact: true }).click();
-  await expect(page).toHaveURL(/\/deudas$/);
-  await page.goBack();
-  await expect(page.getByRole("heading", { name: "Inicio", exact: true })).toBeVisible();
+  // Activa todos los drill-down y vuelve comprobando el contexto del ciclo.
+  await drillDown(
+    page,
+    liquidezSection.getByRole("link", { name: "Ver Saldos", exact: true }),
+    /\/saldos$/,
+  );
+  await saldos.getByText("Ver Saldos y su pertenencia").click();
+  await drillDown(
+    page,
+    saldos.getByRole("link", { name: /^S001 / }),
+    /\/saldos\/S001$/,
+  );
+  await drillDown(
+    page,
+    ciclo.getByRole("link", { name: "Ver flujo mensual", exact: true }).first(),
+    /\/flujo-mensual\?ciclo=7$/,
+  );
+  await drillDown(
+    page,
+    inversion.getByRole("link", { name: "Ver Inversión", exact: true }),
+    /\/inversiones$/,
+  );
+  await drillDown(
+    page,
+    deuda.getByRole("link", { name: "Ver Deudas", exact: true }),
+    /\/deudas$/,
+  );
+  await drillDown(
+    page,
+    deuda.getByRole("link", { name: /^D001 / }),
+    /\/deudas\/D001$/,
+  );
+  await drillDown(
+    page,
+    pendientes.getByRole("link", { name: "Ver Pendientes", exact: true }),
+    /\/pendientes$/,
+  );
+  await drillDown(
+    page,
+    objetivo.getByRole("link", { name: "Ver coste esencial", exact: true }),
+    /\/plan-anual$/,
+  );
 
   // AC-26: teclado/foco visible.
   await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur());
@@ -299,6 +423,8 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
     await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
+    await expectInicioContrast(page);
+    await resetScroll(page);
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
       fullPage: true,
@@ -312,34 +438,12 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
     await expect(page.locator(".inicio-metric").first()).toBeVisible();
     await expectNoOverflow();
+    await expectInicioContrast(page);
+    await resetScroll(page);
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-390.png`,
       fullPage: true,
     });
-    const contrast = await page.locator(".inicio-estado").evaluateAll((nodes) => {
-      const luminance = (rgb: string) => {
-        const values = rgb.match(/\d+(?:\.\d+)?/g)?.slice(0, 3).map(Number);
-        if (!values || values.length !== 3) return 0;
-        const [r, g, b] = values.map((value) => {
-          const channel = value / 255;
-          return channel <= 0.04045
-            ? channel / 12.92
-            : Math.pow((channel + 0.055) / 1.055, 2.4);
-        });
-        return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-      };
-      return nodes.map((node) => {
-        const element = node as HTMLElement;
-        const style = getComputedStyle(element);
-        const foreground = luminance(style.color);
-        const background = luminance(style.backgroundColor);
-        return (
-          (Math.max(foreground, background) + 0.05) /
-          (Math.min(foreground, background) + 0.05)
-        );
-      });
-    });
-    expect(Math.min(...contrast)).toBeGreaterThanOrEqual(4.5);
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
@@ -379,8 +483,98 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   await expect(deudaTotal).toContainText("PARCIAL");
   await expect(deudaTotal).toContainText("1.020,00 €");
 
+  await resetScroll(page);
   await page.screenshot({
     path: "artifacts/e4-6/inicio-cero-1440.png",
+    fullPage: true,
+  });
+});
+
+test("M-4: estados degradados no se presentan como vacío real", async ({
+  page,
+}) => {
+  mkdirSync("artifacts/e4-6", { recursive: true });
+  await routeApi(page, DEGRADED_PORT);
+  await page.route("**/api/resumen-inicio", async (route) => {
+    const url = new URL(route.request().url());
+    url.port = String(DEGRADED_PORT);
+    const response = await route.fetch({ url: url.toString() });
+    const json: any = await response.json();
+    json.secciones.deudaNoHipotecaria.total = {
+      valor: null,
+      subtotal: null,
+      estado: "No disponible",
+      motivo: "E4.4 no disponible: fuente no verificable.",
+      cobertura: {
+        estado: "No disponible",
+        incluidos: 0,
+        excluidos: 0,
+        motivos: ["E4.4 no disponible: fuente no verificable."],
+      },
+      fuente: {
+        motor: "E4.4 listDeudasCompletas/getDeudaCompleta",
+        ids: [],
+        revisiones: [],
+      },
+    };
+    json.secciones.deudaNoHipotecaria.items = [];
+    json.secciones.deudaNoHipotecaria.aparte = {
+      hipotecaria: [],
+      sinInformar: [],
+    };
+    json.secciones.pendientes.fuenteFallos = [
+      {
+        motor: "E4.2 cashAt",
+        id: "S003",
+        motivo: "Efectivo no verificable",
+      },
+    ];
+    json.secciones.pendientes.items = [];
+    json.secciones.pendientes.conteo = null;
+    json.secciones.pendientes.metrica.estado = "Sin datos";
+    const saldo = json.secciones.saldos.items.find(
+      (item: any) => item.id === "S001",
+    );
+    saldo.posicion = null;
+    saldo.motivo = "Control de movimientos no verificado";
+    const ahorro = json.secciones.ahorro.posiciones[0];
+    ahorro.valor = null;
+    ahorro.estado = "No disponible";
+    ahorro.motivo = "Posición de ahorro no verificable por el motor";
+    await route.fulfill({
+      status: response.status(),
+      headers: response.headers(),
+      json,
+    });
+  });
+  await login(page, DEGRADED_DIR);
+
+  const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
+  await expect(deuda).toContainText("Bloque no disponible por fallo de fuente");
+  await expect(deuda).toContainText("E4.4 no disponible: fuente no verificable.");
+  await expect(deuda).not.toContainText("Sin deudas no hipotecarias activas");
+
+  const pendientes = page.locator("section[aria-labelledby='inicio-pendientes']");
+  await expect(pendientes).toContainText("PARCIAL · FUENTES CON FALLO");
+  await expect(pendientes).toContainText(
+    "E4.2 cashAt S003: Efectivo no verificable",
+  );
+  await expect(pendientes).not.toContainText("Sin pendientes");
+  await expect(pendientes).not.toContainText("SIN DATOS");
+
+  const saldos = page.locator("section[aria-labelledby='inicio-saldos']");
+  await saldos.getByText("Ver Saldos y su pertenencia").click();
+  await expect(saldos).toContainText(
+    "Motivo: Control de movimientos no verificado",
+  );
+  const ahorro = page.locator("section[aria-labelledby='inicio-ahorro']");
+  await expect(ahorro).toContainText(
+    "Posición de ahorro no verificable por el motor",
+  );
+
+  await resetScroll(page);
+  await page.screenshot({
+    path: "artifacts/e4-6/inicio-degradado-1440.png",
     fullPage: true,
   });
 });

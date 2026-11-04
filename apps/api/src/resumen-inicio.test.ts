@@ -718,6 +718,13 @@ test("AC-01/02/05/18/22/24/25: DTO compuesto contra el oráculo del testplan", a
     });
     const s005 = dto.secciones.saldos.items.find((item) => item.id === "S005");
     expect(s005).toMatchObject({ liquidez: null, bolsa: true });
+    // El motivo de posición de E1.1 se conserva para no dejar cifras null sin
+    // explicación en el consumidor.
+    expect(
+      dto.secciones.saldos.items.every(
+        (item) => typeof item.motivo === "string" && item.motivo.length > 0,
+      ),
+    ).toBe(true);
 
     expect(dto.secciones.ahorro.posiciones).toEqual([
       expect.objectContaining({
@@ -839,6 +846,24 @@ test("AC-02: cada cifra del DTO coincide al céntimo con su motor propietario", 
         flow.metrics[clave].estado,
       );
     }
+    // Nómina conserva el subtotal parcial visible; base/delMes son PLAN
+    // verificados y no se confunden con la ejecución real.
+    expect(dto.secciones.ciclo.nomina).toMatchObject({
+      valor: null,
+      subtotal: "2000.00",
+      estado: "Parcial",
+      clase: "real",
+    });
+    expect(dto.secciones.ciclo.base).toMatchObject({
+      valor: "1900.00",
+      estado: "Verificado",
+      clase: "plan",
+    });
+    expect(dto.secciones.ciclo.delMes).toMatchObject({
+      valor: "1900.00",
+      estado: "Verificado",
+      clase: "plan",
+    });
     expect(dto.secciones.objetivo.costeEsencialMensual.estadoEquivalente).toBe(
       annual.esencial.estado,
     );
@@ -1051,10 +1076,12 @@ test("AC-03/27: GET autenticado, no-store, 401, 405 y 403 sin escrituras", async
     expect(ok.headers.get("cache-control")).toBe("no-store");
     expect(snapshot(db)).toEqual(before);
 
-    const post = await h.request("/api/resumen-inicio", "POST", {});
-    expect(post.status).toBe(405);
-    expect(post.headers.get("allow")).toBe("GET");
-    expect(snapshot(db)).toEqual(before);
+    for (const method of ["POST", "PATCH", "DELETE"] as const) {
+      const unsupported = await h.request("/api/resumen-inicio", method, {});
+      expect(unsupported.status).toBe(405);
+      expect(unsupported.headers.get("allow")).toBe("GET");
+      expect(snapshot(db)).toEqual(before);
+    }
 
     const wrongOrigin = await h.request(
       "/api/resumen-inicio",

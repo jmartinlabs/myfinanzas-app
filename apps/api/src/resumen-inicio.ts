@@ -261,6 +261,9 @@ function saldoItem(saldo: Saldo) {
     nombre: saldo.nombre,
     estado: saldo.estado,
     posicion: saldo.posicion.importe,
+    // El motivo ya existe en E1.1; se conserva para que una posición null no
+    // quede sin explicación en el consumidor.
+    motivo: saldo.posicion.motivo,
     liquidez: saldo.liquidez,
     finalidad: saldo.finalidad,
     bolsa: saldo.mostrarComoBolsa,
@@ -685,9 +688,9 @@ function ahorroSection(
       valor: item.posicion,
       estado: item.posicion === null ? "No disponible" : "Verificado",
       revision: item.revision,
-      ...(item.posicion === null
-        ? { motivo: "Posición de ahorro no verificable." }
-        : {}),
+      // Motivo real de E1.1 cuando la posición no es verificable. No se
+      // fabrica un texto nuevo si el motor no lo publica.
+      ...(item.posicion === null ? { motivo: item.motivo } : {}),
     }));
   const estadoMetrica = (metric: Metric | null): EstadoMetrica =>
     (metric?.estado as EstadoMetrica | undefined) ?? "No disponible";
@@ -918,6 +921,9 @@ function deudaSection(db: Database) {
           nombre: item.nombre,
           capitalPendiente: item.capitalPendiente,
           calculable: item.capital.calculable,
+          ...(item.capital.calculable
+            ? {}
+            : { motivo: item.capital.motivoNoCalculable }),
         })),
       sinInformar: activas
         .filter((item) => item.tipoDeuda === null)
@@ -926,6 +932,9 @@ function deudaSection(db: Database) {
           nombre: item.nombre,
           capitalPendiente: item.capitalPendiente,
           calculable: item.capital.calculable,
+          ...(item.capital.calculable
+            ? {}
+            : { motivo: item.capital.motivoNoCalculable }),
         })),
     };
     const totalValor = completa ? decimal(subtotal!) : null;
