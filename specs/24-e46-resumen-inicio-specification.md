@@ -421,12 +421,12 @@ Campos derivados que el cliente **no** puede escribir: todos. El endpoint es sol
 
 | Estado | Condición | Presentación |
 | --- | --- | --- |
-| `Verificado` | Motor, contexto y todas las fuentes de esa métrica acotada disponibles | Importe + fuente + contexto |
-| `Cero verificado` | Universo verificado sin importes distintos de 0, o resultado exactamente 0 | `0,00 €` explícito, no ausencia |
-| `Parcial` | Subtotal comprobable con fuentes o pertenencia incompletas; o métrica parcial por definición | Etiqueta `PARCIAL`, incluidos/excluidos, subtotal y motivo |
-| `No disponible` | Falta motor, dato, contexto o cálculo material | Sin cifra; motivo y fuente; componentes conocidos aparte |
-| `No aplica` | La magnitud no existe por diseño (p. ej. un total de efectivo del bróker) | Texto `No aplica`, nunca `0` |
-| `Sin datos` | Universo verificado y vacío (sin Saldos, sin deudas, sin plan) | Texto explícito; no confundir con `No disponible` |
+| `Verificado` | Motor, contexto y todas las fuentes de esa métrica acotada disponibles | Badge `COMPLETO`, etiqueta `Total verificado`, importe + fuente + contexto |
+| `Cero verificado` | Universo verificado sin importes distintos de 0, o resultado exactamente 0 | Badge `CERO VERIFICADO`, etiqueta `Cero verificado` y `0,00 €` explícito |
+| `Parcial` | Subtotal comprobable con fuentes o pertenencia incompletas; o métrica parcial por definición | Badge `PARCIAL` (con `· HISTÓRICO` o `· COMPONENTES` si el motivo publicado lo distingue), etiqueta `Subtotal conocido`, incluidos/excluidos y motivo |
+| `No disponible` | Falta motor, dato, contexto o cálculo material | Badge `NO DISPONIBLE`, etiqueta `No disponible`, sin cifra; motivo y fuente; componentes conocidos aparte |
+| `No aplica` | La magnitud no existe por diseño (p. ej. un total de efectivo del bróker) | Badge/texto `NO APLICA`, nunca `0` |
+| `Sin datos` | Universo verificado y vacío (sin Saldos, sin deudas, sin plan) | Badge/texto `SIN DATOS`; no confundir con `No disponible` |
 
 ## Screens and interfaces
 
@@ -442,7 +442,7 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 │ Solo lectura · [Cómo se calcula y qué falta]                                                 │
 ├───────────────────────────────────────────────┬──────────────────────────────────────────────┤
 │ LIQUIDEZ                            POSICIÓN  │ OBJETIVO R6                         OBJETIVO │
-│ Subtotal conocido 3.456,40 €        ! PARCIAL │ Coste esencial/mes 1.500,00 €      ✓ Completo│
+│ Subtotal conocido 3.456,40 €        ! PARCIAL │ Coste esencial/mes 1.500,00 €      ✓ COMPLETO│
 │ 3/4 posiciones · 1 sin informar               │ Meses objetivo: No configurados    — ND      │
 │ [Ver posiciones incluidas/excluidas]          │ Mínimo objetivo: No disponible              │
 │                                               │ Meses cubiertos: ND · liquidez parcial      │
@@ -507,8 +507,8 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 2. **Liquidez y objetivo** (primera fila): la lectura principal de R6.
 3. **Ciclo actual** (ancho completo): real vs plan, con la etiqueta `PARCIAL` del saldo
    operativo siempre visible.
-4. **Saldos/bolsas, Ahorro, Inversión, Deuda no hipotecaria** (cuatro bloques en 1440;
-   apilados en 390). Cada bloque declara su contexto y no se suman entre sí.
+4. **Saldos/bolsas, Ahorro, Inversión, Deuda** (cuatro bloques en 1440; apilados en 390).
+   Cada bloque declara su contexto y no se suman entre sí.
 5. **Pendientes** y **cobertura del modelo**: motores ausentes, parcialidad y enlaces.
 
 - Nueva entrada de navegación **Inicio** al principio de «MI ESPACIO»; ruta propuesta
@@ -535,6 +535,30 @@ shell, tipografía, tokens y componentes existentes; no introduce tema, librerí
 
 El color nunca es el único portador del estado. Los importes se formatean `1.234,56 €` con
 signo `−` para negativos; los meses, con 2 decimales propuestos y marca `meses`.
+
+### Correcciones de revisión visual (2026-11-04)
+
+Estas precisiones no cambian el alcance ni los datos: son reglas de presentación para la UI.
+
+- **Motivo único.** Si un bullet de `cobertura.motivos` coincide con `motivo`, se muestra una
+  sola vez. Se aplica a todas las tarjetas, al coste esencial, a la deuda y a los bloques que
+  repetían el texto a nivel de sección.
+- **Importe y etiqueta.** `Parcial` muestra `Subtotal conocido`; `Verificado` muestra
+  `Total verificado`; `Cero verificado` muestra `Cero verificado`; `No disponible` muestra
+  `No disponible`. La tarjeta de deuda se llama `Deuda no hipotecaria` y no presenta un
+  subtotal como «total»; en liquidez cero, `0,00 €` conserva su etiqueta verificada.
+- **Badges.** Un único componente y estilo para `COMPLETO`, `PARCIAL`, `NO DISPONIBLE`,
+  `CERO VERIFICADO`, `NO APLICA` y `SIN DATOS`. No se usan como badge los textos crudos
+  `No disponible`, `Completa` ni `Parcial n/m`; el detalle `Parcial n/m` queda como texto
+  secundario. La distinción `PARCIAL · HISTÓRICO` / `PARCIAL · COMPONENTES` sale del motivo
+  publicado, sin inventar datos.
+- **CTA único.** Cada tarjeta tiene como máximo un enlace principal al mismo destino. El ciclo
+  conserva un único `Ver flujo mensual` a nivel de sección, no uno por tarjeta.
+- **Rejilla.** El ciclo usa 2 columnas para evitar la celda vacía con 8 métricas. Los títulos
+  no se parten por palabra; los IDs de fuente van en línea propia con `overflow-wrap`.
+- **390.** `AHORRO DE CIERRE` y `VARIACIÓN DE AHORRO` se apilan igual que en 1440. El resumen
+  y los KPI no se rediseñan en esta pasada.
+- **Evidencia.** Capturas de `base`, `cero` y `degradado` en 1440 y 390 para los tres temas.
 
 ### Accesibilidad
 

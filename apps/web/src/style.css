@@ -3792,12 +3792,18 @@ textarea {
   font-size: 13px;
   margin: 16px 0 8px;
 }
+.inicio-section > h2,
+.inicio-section h3,
+.inicio-metric-head h3 {
+  overflow-wrap: normal;
+  word-break: normal;
+}
 .inicio-section > h2 + .inicio-metric {
   margin-top: 0;
 }
 .inicio-metric-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 .inicio-metric {
@@ -3918,6 +3924,13 @@ textarea {
 }
 .inicio-source strong {
   color: var(--text);
+}
+.inicio-source > span {
+  display: block;
+}
+.inicio-source-ids {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .inicio-note {
   margin: 12px 0 0;
@@ -4091,6 +4104,9 @@ textarea {
     min-height: 44px;
   }
   .inicio-item-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-nd-list {
     grid-template-columns: minmax(0, 1fr);
   }
   .inicio-item-value {

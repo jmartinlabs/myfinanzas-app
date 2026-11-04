@@ -283,13 +283,53 @@ const ESTADO_META: Record<
   EstadoMetrica,
   { icon: string; label: string; tone: "ok" | "partial" | "nd" }
 > = {
-  Verificado: { icon: "✓", label: "VERIFICADO", tone: "ok" },
+  Verificado: { icon: "✓", label: "COMPLETO", tone: "ok" },
   "Cero verificado": { icon: "✓", label: "CERO VERIFICADO", tone: "ok" },
   Parcial: { icon: "!", label: "PARCIAL", tone: "partial" },
   "No disponible": { icon: "—", label: "NO DISPONIBLE", tone: "nd" },
   "No aplica": { icon: "—", label: "NO APLICA", tone: "nd" },
   "Sin datos": { icon: "○", label: "SIN DATOS", tone: "nd" },
 };
+
+/** Traduce coberturas de motor (E4.3/E2.4) a la taxonomía única de badges. */
+function estadoDesdeCobertura(value: string): EstadoMetrica {
+  if (/^(Completa|Verificada|Completo)$/i.test(value)) return "Verificado";
+  if (/^Parcial/i.test(value)) return "Parcial";
+  if (/^No aplica$/i.test(value)) return "No aplica";
+  if (/^Sin datos$/i.test(value)) return "Sin datos";
+  return "No disponible";
+}
+
+/**
+ * Distingue parcial por cobertura histórica de parcial por componentes, usando
+ * solo el texto publicado por el motor. Si no hay señal, deja `PARCIAL`.
+ */
+function etiquetaParcial(
+  estado: EstadoMetrica,
+  motivo: string,
+  cobertura: Cobertura,
+): string | undefined {
+  if (estado !== "Parcial") return undefined;
+  const texto = `${motivo} ${cobertura.motivos.join(" ")}`.toLowerCase();
+  if (texto.includes("cobertura histórica")) return "PARCIAL · HISTÓRICO";
+  if (/componente|no calculable|sin informar|faltan/.test(texto))
+    return "PARCIAL · COMPONENTES";
+  return undefined;
+}
+
+/** Evita repetir el mismo texto como bullet de cobertura y como motivo. */
+function motivosSinDuplicar(motivos: string[], motivo: string): string[] {
+  const normalizar = (value: string) =>
+    value.trim().replace(/\s+/g, " ").toLocaleLowerCase("es");
+  const motivoNormalizado = normalizar(motivo);
+  const vistos = new Set<string>();
+  return motivos.filter((candidato) => {
+    const texto = normalizar(candidato);
+    if (!texto || texto === motivoNormalizado || vistos.has(texto)) return false;
+    vistos.add(texto);
+    return true;
+  });
+}
 
 const CLASE_META: Record<string, string> = {
   real: "REAL",
@@ -338,56 +378,109 @@ function coverageText(cobertura: Cobertura) {
   return `${cobertura.incluidos}/${total} · incluidos ${cobertura.incluidos} · excluidos ${cobertura.excluidos}`;
 }
 
-/** Traduce el estado textual de cobertura de E4.3 a un tono semántico. */
-function coverageTone(value: string) {
-  if (/^(Completa|Verificada)$/i.test(value)) return "ok";
-  if (/^Parcial/i.test(value)) return "partial";
-  return "nd";
-}
-
-function EstadoBadge({ estado }: { estado: EstadoMetrica }) {
-  const meta = ESTADO_META[estado];
+function Badge({
+  tone,
+  label,
+  icon,
+  estado,
+}: {
+  tone: "ok" | "partial" | "nd";
+  label: string;
+  icon: string;
+  estado: string;
+}) {
   return (
     <span
-      className={`inicio-estado inicio-estado-${meta.tone}`}
+      className={`inicio-estado inicio-estado-${tone}`}
       data-estado={estado}
     >
-      <span aria-hidden="true">{meta.icon}</span> {meta.label}
+      <span aria-hidden="true">{icon}</span> {label}
+    </span>
+  );
+}
+
+function EstadoBadge({
+  estado,
+  label,
+}: {
+  estado: EstadoMetrica;
+  label?: string;
+}) {
+  const meta = ESTADO_META[estado];
+  return (
+    <Badge
+      tone={meta.tone}
+      label={label ?? meta.label}
+      icon={meta.icon}
+      estado={estado}
+    />
+  );
+}
+
+/** Badge único para estados de cobertura publicados como texto por el motor. */
+function CoberturaBadge({ valor }: { valor: string }) {
+  return <EstadoBadge estado={estadoDesdeCobertura(valor)} />;
+}
+
+function AmountValue({
+  valor,
+  subtotal,
+  estado,
+  unidad,
+}: {
+  valor: string | null;
+  subtotal: string | null;
+  estado: EstadoMetrica;
+  unidad: "EUR" | "meses" | null;
+}) {
+  if (estado === "No aplica" || estado === "Sin datos")
+    return (
+      <span className="inicio-value inicio-value-nd">
+        {estado === "No aplica" ? "No aplica" : "Sin datos"}
+      </span>
+    );
+  if (estado === "No disponible")
+    return (
+      <span className="inicio-value-wrap">
+        <small className="inicio-value-note">No disponible</small>
+        <span className="inicio-value inicio-value-nd">ND</span>
+        {subtotal != null && (
+          <small className="inicio-value-note">
+            Subtotal conocido {formatDecimal(subtotal, unidad)}
+          </small>
+        )}
+      </span>
+    );
+  const nota =
+    estado === "Parcial"
+      ? "Subtotal conocido"
+      : estado === "Cero verificado"
+        ? "Cero verificado"
+        : "Total verificado";
+  const mostrado =
+    estado === "Parcial" ? (subtotal ?? valor) : (valor ?? subtotal);
+  return (
+    <span className="inicio-value-wrap">
+      <small className="inicio-value-note">{nota}</small>
+      {mostrado === null ? (
+        <span className="inicio-value inicio-value-nd">ND</span>
+      ) : (
+        <span className="inicio-value">
+          {formatDecimal(mostrado, unidad)}
+        </span>
+      )}
     </span>
   );
 }
 
 function MetricValue({ metrica }: { metrica: Metrica }) {
-  if (metrica.estado === "No disponible") {
-    return (
-      <span className="inicio-value-wrap">
-        <span className="inicio-value inicio-value-nd">ND</span>
-        {metrica.subtotal != null && (
-          <small className="inicio-value-note">
-            Subtotal conocido{" "}
-            {formatDecimal(metrica.subtotal, metrica.unidad)}
-          </small>
-        )}
-      </span>
-    );
-  }
-  if (metrica.estado === "No aplica")
-    return <span className="inicio-value inicio-value-nd">No aplica</span>;
-  if (metrica.estado === "Sin datos")
-    return <span className="inicio-value inicio-value-nd">Sin datos</span>;
-  const shown = metrica.valor ?? metrica.subtotal ?? null;
-  if (shown === null)
-    return <span className="inicio-value inicio-value-nd">ND</span>;
-  const isSubtotal = metrica.valor === null;
   return (
-    <span className="inicio-value-wrap">
-      {isSubtotal && (
-        <small className="inicio-value-note">Subtotal conocido</small>
-      )}
-      <span className="inicio-value">
-        {formatDecimal(shown, metrica.unidad)}
-      </span>
-    </span>
+    <AmountValue
+      valor={metrica.valor}
+      subtotal={metrica.subtotal ?? null}
+      estado={metrica.estado}
+      unidad={metrica.unidad}
+    />
   );
 }
 
@@ -417,19 +510,23 @@ function InicioLink({
 function FuenteLinea({
   fuente,
   contexto,
+  etiqueta = "Fuente",
 }: {
   fuente: Fuente;
   contexto: Contexto;
+  etiqueta?: string;
 }) {
   return (
     <p className="inicio-source">
-      Fuente: <strong>{fuente.motor}</strong>
+      <span>
+        {etiqueta}: <strong>{fuente.motor}</strong>
+      </span>
       {fuente.ids.length > 0 && (
-        <>
-          {" · "}IDs: <span>{fuente.ids.join(", ")}</span>
-        </>
+        <span className="inicio-source-ids">
+          IDs: {fuente.ids.join(", ")}
+        </span>
       )}
-      {" · "}Contexto: {contextText(contexto)}
+      <span>Contexto: {contextText(contexto)}</span>
     </p>
   );
 }
@@ -438,13 +535,24 @@ function MetricCard({
   metrica,
   go,
   enlaceTexto,
+  showLink = true,
   children,
 }: {
   metrica: Metrica;
   go: (path: string) => void;
   enlaceTexto?: string;
+  showLink?: boolean;
   children?: React.ReactNode;
 }) {
+  const motivos = motivosSinDuplicar(
+    metrica.cobertura.motivos,
+    metrica.motivo,
+  );
+  const parcial = etiquetaParcial(
+    metrica.estado,
+    metrica.motivo,
+    metrica.cobertura,
+  );
   return (
     <article
       className="inicio-metric"
@@ -459,12 +567,12 @@ function MetricCard({
       </div>
       <div className="inicio-metric-main">
         <MetricValue metrica={metrica} />
-        <EstadoBadge estado={metrica.estado} />
+        <EstadoBadge estado={metrica.estado} label={parcial} />
       </div>
       <p className="inicio-metric-meta">{coverageText(metrica.cobertura)}</p>
-      {metrica.cobertura.motivos.length > 0 && (
+      {motivos.length > 0 && (
         <ul className="inicio-metric-coverage">
-          {metrica.cobertura.motivos.map((motivo) => (
+          {motivos.map((motivo) => (
             <li key={motivo}>{motivo}</li>
           ))}
         </ul>
@@ -472,7 +580,7 @@ function MetricCard({
       <p className="inicio-metric-motivo">{metrica.motivo}</p>
       <FuenteLinea fuente={metrica.fuente} contexto={metrica.contexto} />
       {children}
-      {metrica.enlace !== null && (
+      {showLink && metrica.enlace !== null && (
         <p className="inicio-linkrow">
           <InicioLink enlace={metrica.enlace} go={go}>
             {enlaceTexto ?? "Ver origen"}
@@ -561,6 +669,14 @@ export function Inicio({ go }: { go: (path: string) => void }) {
   const inversion = secciones.inversion;
   const deuda = secciones.deudaNoHipotecaria;
   const pendientes = secciones.pendientes;
+  const coste = objetivo.costeEsencialMensual;
+  const costeMotivos = motivosSinDuplicar(coste.cobertura.motivos, coste.motivo);
+  const costeEstadoValor: EstadoMetrica =
+    coste.valor !== null
+      ? "Verificado"
+      : coste.subtotal !== null
+        ? "Parcial"
+        : "No disponible";
 
   return (
     <div className="inicio-page">
@@ -723,71 +839,43 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               <span className="inicio-clase">OBJETIVO</span>
             </div>
             <div className="inicio-metric-main">
-              <span className="inicio-value-wrap">
-                <span className="inicio-value">
-                  {objetivo.costeEsencialMensual.valor === null
-                    ? "ND"
-                    : formatDecimal(
-                        objetivo.costeEsencialMensual.valor,
-                        "EUR",
-                      )}
-                </span>
-                {objetivo.costeEsencialMensual.valor === null &&
-                  objetivo.costeEsencialMensual.subtotal !== null && (
-                    <small className="inicio-value-note">
-                      Subtotal conocido{" "}
-                      {formatDecimal(
-                        objetivo.costeEsencialMensual.subtotal,
-                        "EUR",
-                      )}
-                    </small>
-                  )}
-              </span>
-              <span
-                className={`inicio-estado ${
-                  objetivo.costeEsencialMensual.estado === "Verificado"
-                    ? "inicio-estado-ok"
-                    : "inicio-estado-nd"
-                }`}
-              >
-                {objetivo.costeEsencialMensual.estado === "Verificado"
-                  ? "✓ COMPLETO"
-                  : "— NO DISPONIBLE"}
-              </span>
+              <AmountValue
+                valor={coste.valor}
+                subtotal={coste.subtotal}
+                estado={costeEstadoValor}
+                unidad="EUR"
+              />
+              <CoberturaBadge valor={coste.cobertura.estado} />
             </div>
             <p className="inicio-metric-meta">
               Ejercicio {objetivo.costeEsencialMensual.ejercicio ?? "—"} ·
               origen {objetivo.costeEsencialMensual.ejercicioOrigen} ·
               equivalente {objetivo.costeEsencialMensual.estadoEquivalente}
             </p>
-            <p className="inicio-metric-motivo">
-              {objetivo.costeEsencialMensual.motivo}
-            </p>
+            <p className="inicio-metric-motivo">{coste.motivo}</p>
             <p className="inicio-metric-meta">
-              Cobertura {objetivo.costeEsencialMensual.cobertura.estado}
-              {objetivo.costeEsencialMensual.cobertura.importesSinInformar !==
-              null
-                ? ` · ${objetivo.costeEsencialMensual.cobertura.importesSinInformar} importes esenciales sin informar`
+              Cobertura {coste.cobertura.estado}
+              {coste.cobertura.importesSinInformar !== null
+                ? ` · ${coste.cobertura.importesSinInformar} importes esenciales sin informar`
                 : ""}
-              {objetivo.costeEsencialMensual.cobertura
-                .clasificacionesPendientes !== null
-                ? ` · ${objetivo.costeEsencialMensual.cobertura.clasificacionesPendientes} clasificaciones pendientes`
+              {coste.cobertura.clasificacionesPendientes !== null
+                ? ` · ${coste.cobertura.clasificacionesPendientes} clasificaciones pendientes`
                 : ""}
             </p>
-            {objetivo.costeEsencialMensual.cobertura.motivos.length > 0 && (
+            {costeMotivos.length > 0 && (
               <ul className="inicio-metric-coverage">
-                {objetivo.costeEsencialMensual.cobertura.motivos.map(
-                  (motivo) => (
-                    <li key={motivo}>{motivo}</li>
-                  ),
-                )}
+                {costeMotivos.map((motivo) => (
+                  <li key={motivo}>{motivo}</li>
+                ))}
               </ul>
             )}
-            {objetivo.costeEsencialMensual.cobertura.fuenteMotivo && (
-              <p className="inicio-metric-motivo">
-                {objetivo.costeEsencialMensual.cobertura.fuenteMotivo}
-              </p>
-            )}
+            {coste.cobertura.fuenteMotivo &&
+              coste.cobertura.fuenteMotivo !== coste.motivo &&
+              !costeMotivos.includes(coste.cobertura.fuenteMotivo) && (
+                <p className="inicio-metric-motivo">
+                  {coste.cobertura.fuenteMotivo}
+                </p>
+              )}
             <dl className="inicio-objetivo-facts">
               <div>
                 <dt>Meses objetivo</dt>
@@ -851,9 +939,6 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         <h2 id="inicio-ciclo">
           {ciclo ? `Ciclo ${ciclo.id} · REAL vs PLAN` : "Ciclo · REAL vs PLAN"}
         </h2>
-        {cicloSeccion.motivo && (
-          <p className="inicio-motivo">{cicloSeccion.motivo}</p>
-        )}
         <div className="inicio-metric-grid">
           {[
             cicloSeccion.ingresos,
@@ -869,10 +954,17 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               key={metrica.clave}
               metrica={metrica}
               go={go}
-              enlaceTexto="Ver flujo mensual"
+              showLink={false}
             />
           ))}
         </div>
+        {cicloSeccion.ingresos.enlace !== null && (
+          <p className="inicio-linkrow">
+            <InicioLink enlace={cicloSeccion.ingresos.enlace} go={go}>
+              Ver flujo mensual
+            </InicioLink>
+          </p>
+        )}
         <p className="inicio-note">
           El saldo operativo y el margen se publican tal como los entrega E2.6.
           Un subtotal parcial no se convierte en total, no se fabrica un margen
@@ -1006,9 +1098,9 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                 {ahorro.ahorroCierre.valor === null
                   ? "ND"
                   : formatDecimal(ahorro.ahorroCierre.valor, "EUR")}{" "}
-                <span className="inicio-estado inicio-estado-nd">
-                  {ahorro.ahorroCierre.estado}
-                </span>
+                <EstadoBadge
+                  estado={ahorro.ahorroCierre.estado as EstadoMetrica}
+                />
                 <small>{ahorro.ahorroCierre.motivo}</small>
                 <small>
                   Fuente: {ahorro.ahorroCierre.fuente.motor}
@@ -1026,9 +1118,9 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                 {ahorro.variacionAhorro.valor === null
                   ? "ND"
                   : formatDecimal(ahorro.variacionAhorro.valor, "EUR")}{" "}
-                <span className="inicio-estado inicio-estado-nd">
-                  {ahorro.variacionAhorro.estado}
-                </span>
+                <EstadoBadge
+                  estado={ahorro.variacionAhorro.estado as EstadoMetrica}
+                />
                 <small>{ahorro.variacionAhorro.motivo}</small>
                 <small>
                   Fuente: {ahorro.variacionAhorro.fuente.motor}
@@ -1060,12 +1152,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         >
           <h2 id="inicio-inversion">Inversión</h2>
           {inversion.agregado === null ? (
-            <p className="inicio-motivo">
-              Inversión No disponible.
-              {inversion.cobertura.motivos.length > 0
-                ? ` ${inversion.cobertura.motivos.join(" ")}`
-                : ""}
-            </p>
+            <p className="inicio-motivo">Inversión No disponible.</p>
           ) : (
             <dl className="inicio-objetivo-facts">
               <div>
@@ -1074,13 +1161,16 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {inversion.agregado.valorEur === null
                     ? "ND"
                     : formatDecimal(inversion.agregado.valorEur, "EUR")}{" "}
-                  <span
-                    className={`inicio-estado inicio-estado-${coverageTone(
-                      inversion.agregado.coberturaValoracion,
-                    )}`}
-                  >
-                    {inversion.agregado.coberturaValoracion}
-                  </span>
+                  <CoberturaBadge
+                    valor={inversion.agregado.coberturaValoracion}
+                  />
+                  {/^Parcial/i.test(
+                    inversion.agregado.coberturaValoracion,
+                  ) && (
+                    <small className="inicio-value-note">
+                      {inversion.agregado.coberturaValoracion}
+                    </small>
+                  )}
                 </dd>
               </div>
               <div>
@@ -1089,13 +1179,16 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   {inversion.agregado.resultadoEur === null
                     ? "ND"
                     : formatDecimal(inversion.agregado.resultadoEur, "EUR")}{" "}
-                  <span
-                    className={`inicio-estado inicio-estado-${coverageTone(
-                      inversion.agregado.coberturaResultado,
-                    )}`}
-                  >
-                    {inversion.agregado.coberturaResultado}
-                  </span>
+                  <CoberturaBadge
+                    valor={inversion.agregado.coberturaResultado}
+                  />
+                  {/^Parcial/i.test(
+                    inversion.agregado.coberturaResultado,
+                  ) && (
+                    <small className="inicio-value-note">
+                      {inversion.agregado.coberturaResultado}
+                    </small>
+                  )}
                 </dd>
               </div>
             </dl>
@@ -1188,14 +1281,14 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         </section>
 
         <section className="panel inicio-section" aria-labelledby="inicio-deuda">
-          <h2 id="inicio-deuda">Deuda no hipotecaria</h2>
+          <h2 id="inicio-deuda">Deuda</h2>
           <article
             className="inicio-metric inicio-deuda-total"
             data-clase="posicion"
-            aria-label="Total de deuda no hipotecaria"
+            aria-label="Deuda no hipotecaria"
           >
             <div className="inicio-metric-head">
-              <h3>Total no hipotecario</h3>
+              <h3>Deuda no hipotecaria</h3>
               <span className="inicio-clase">POSICIÓN</span>
             </div>
             <div className="inicio-metric-main">
@@ -1203,7 +1296,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                 metrica={{
                   ...deuda.total,
                   clave: "deudaNoHipotecaria",
-                  etiqueta: "Total no hipotecario",
+                  etiqueta: "Deuda no hipotecaria",
                   clase: "posicion",
                   unidad: "EUR",
                   fuente: deuda.total.fuente,
@@ -1211,7 +1304,14 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   enlace: deuda.enlace,
                 }}
               />
-              <EstadoBadge estado={deuda.total.estado} />
+              <EstadoBadge
+                estado={deuda.total.estado}
+                label={etiquetaParcial(
+                  deuda.total.estado,
+                  deuda.total.motivo,
+                  deuda.total.cobertura,
+                )}
+              />
             </div>
             <p className="inicio-metric-meta">
               {coverageText(deuda.total.cobertura)} · calculables
@@ -1225,7 +1325,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
           {deuda.total.estado === "No disponible" && (
             <p className="inicio-motivo">
               Bloque no disponible por fallo de fuente; no se presenta como un
-              vacío real. {deuda.total.motivo}
+              vacío real.
             </p>
           )}
           {deuda.total.estado !== "No disponible" &&
@@ -1299,15 +1399,11 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               )}
             </div>
           )}
-          <p className="inicio-source">
-            Fuente del bloque (incluye deudas fuera del total):{" "}
-            <strong>{deuda.fuente.motor}</strong>
-            {deuda.fuente.ids.length > 0 && (
-              <>
-                {" · "}IDs: <span>{deuda.fuente.ids.join(", ")}</span>
-              </>
-            )}
-          </p>
+          <FuenteLinea
+            fuente={deuda.fuente}
+            contexto={deuda.contexto}
+            etiqueta="Fuente del bloque (incluye deudas fuera del total)"
+          />
           <p className="inicio-linkrow">
             <InicioLink enlace={deuda.enlace} go={go}>
               Ver Deudas
@@ -1323,9 +1419,10 @@ export function Inicio({ go }: { go: (path: string) => void }) {
         <div className="inicio-section-head">
           <h2 id="inicio-pendientes">Pendientes</h2>
           {pendientes.fuenteFallos.length > 0 ? (
-            <span className="inicio-estado inicio-estado-partial">
-              <span aria-hidden="true">!</span> PARCIAL · FUENTES CON FALLO
-            </span>
+            <EstadoBadge
+              estado="Parcial"
+              label="PARCIAL · FUENTES CON FALLO"
+            />
           ) : (
             <EstadoBadge estado={pendientes.metrica.estado} />
           )}

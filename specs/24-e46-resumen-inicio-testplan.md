@@ -181,7 +181,7 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-04 | Límite | Modificar un hecho de una fuente y recargar | Cambia la sección y `revision`; las demás no | API | Local/CI · impl | `resumen-inicio.test.ts`: edita un Gasto real (`1050.00`→`1150.00`), cambia la revisión y Gasto `1800.00`→`1900.00`; ingresos, extraordinaria, inversión, deuda, objetivo y ahorro conservan su cifra/cobertura | PASS (2026-11-04, local) |
 | AC-05 | Positivo | `S005` sin Liquidez | `Parcial`, 3 incluidos, 1 excluido, subtotal `3456.40` | API + UI | Local/CI · impl + QA | `tests/e2e/inicio.spec.ts` (Liquidez `3/4`, `S005: Liquidez sin informar`) | PASS (2026-11-04, local) |
 | AC-06 | Negativo | Motor ausente o error de fuente | `No disponible` con motivo y motor; no 0 | API | Local/CI · impl | `resumen-inicio.test.ts` con alcance E2.4: fallo de fuente degrada su sección y conserva las demás. M-4 adicional: E3.6 con `fuenteFallos` y cero filas publica `Parcial`, no `Sin datos`; no se fuerzan E2.6/E4.4/E4.3 | PASS (alcance E2.4, 2026-11-04, local) |
-| AC-07 | Límite | `null` de motor frente a `0.00` | `No disponible` vs `0,00 €`/`Cero verificado` | API + UI | Local/CI · QA | `tests/e2e/inicio.spec.ts` (base y escenario `zero`) + `artifacts/e4-6/inicio-cero-1440.png` | PASS (2026-11-04, local) |
+| AC-07 | Límite | `null` de motor frente a `0.00` | `No disponible` vs `0,00 €`/`Cero verificado` | API + UI | Local/CI · QA | `tests/e2e/inicio.spec.ts` (base y escenario `zero`) + `artifacts/e4-6/inicio-cero-{light,dark,hybrid}-{1440,390}.png` | PASS (2026-11-04, local) |
 | AC-08 | Negativo | Cambiar el reloj de consulta | Sin cambio de ciclo, corte ni cifras | API | Local · QA | `resumen-inicio.test.ts` compara `NOW` y `LATER`; solo cambia `consulta` | PASS (2026-11-04, local) |
 | AC-09 | Positivo | Activar cada drill-down y volver | ID correcto, contexto conservado, URL sin importes | Playwright | Local/CI · QA | `tests/e2e/inicio.spec.ts`: Saldos, S001, Flujo, Inversiones, Deudas, D001, Pendientes y Plan anual; vuelta con `Ciclo 7` y sin importes en URL | PASS (2026-11-04, local) |
 | AC-10 | Negativo | Buscar total patrimonial o suma cruzada | No existe cifra ni suma cruzada | API + UI | Local/CI · QA | `resumen-inicio.test.ts` (sin `totalSaldos`/total de inversión) + UI sin sumas | PASS (2026-11-04, local) |
@@ -199,8 +199,8 @@ Comprobaciones de **no duplicación** (los valores erróneos no deben aparecer):
 | AC-22 | Límite | Cuota `300` + extraordinaria `100` | Operativo `No disponible`: no aparece `350`, `−50` ni `1400`; no se resta la cuota ni la extraordinaria de ninguna métrica publicada | API + UI | Local/CI · impl | `resumen-inicio.test.ts` + E2E: operativo ND y ausencia de `350,00 €` | PASS (2026-11-04, local) |
 | AC-23 | Positivo | E3.6 con pendientes de varios tipos | Lista por tipo/estado; sin total monetario ni suma al flujo | API + UI | Local/CI · impl + QA | `resumen-inicio.test.ts` (AC-09/10/19/23) + UI sin total monetario | PASS (2026-11-04, local) |
 | AC-24 | Positivo | `I1002` manual | Valor `320.00`; resultado/rentabilidad `No disponible` | API + UI | Local/CI · QA | `resumen-inicio.test.ts` + UI resultado ND | PASS (2026-11-04, local) |
-| AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | `resumen-inicio.test.ts` + UI deuda `2/3` y `1.020,00 €` | PASS (2026-11-04, local) |
-| AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/inicio-{light,dark,hybrid}-{1440,390}.png`; contraste de texto/motivos/enlaces ≥ 4,5 en los tres temas | PASS (2026-11-04, local) |
+| AC-25 | Límite | Agregado parcial y `D005` no calculable | `Parcial n/m` sin total; subtotal `1020.00`; sin 0 sustitutivo | API + UI | Local/CI · impl + QA | `resumen-inicio.test.ts` + UI deuda `2/3`, `Subtotal conocido` y `1.020,00 €` | PASS (2026-11-04, local) |
+| AC-26 | Positivo | 1440×1000 y 390×844, teclado/foco | Sin scroll horizontal; estado icono+texto; foco visible; badges, etiquetas, motivo y CTA unificados | Playwright + capturas | Local/CI · QA | `artifacts/e4-6/inicio-{light,dark,hybrid}-{1440,390}.png`, `inicio-cero-{light,dark,hybrid}-{1440,390}.png` y `inicio-degradado-{light,dark,hybrid}-{1440,390}.png`; E2E comprueba que ningún bullet repite el motivo, que los badges usan la taxonomía única, que no hay dos enlaces al mismo destino dentro de una tarjeta y que `/flujo-mensual?ciclo=7` aparece una sola vez; contraste ≥ 4,5 en los tres temas | PASS (2026-11-04, local) |
 | AC-27 | Negativo | Anónimo, sesión expirada, error 500 | 401/reautenticación; error genérico; `no-store` | API + HTTP + Playwright | Local/CI · QA | `resumen-inicio.test.ts`: anónimo `401`, `405`/`403`, `no-store`, logout real seguido de `401` real, y fallo interno real tras autenticar que ejecuta el `500` genérico del handler (`INTERNAL`, `requestId`, sin SQL ni importes). E2E: 500 y 401 están **interceptados** para probar UI, alerta genérica, reintento, ausencia de cifras/fuga y reautenticación TOTP real volviendo a `/inicio`. No se fuerza un fallo de fuente porque el read model degrada a `200` por diseño. | PASS UI/reauth + server-side 401/500 (2026-11-04, local) |
 | AC-28 | Positivo/Límite | `V-EJERCICIO` (ID `8`): `mesFinanciado 2026-12`, corte `2027-01-19`, planes 2026 y 2027 | `costeEsencialMensual` de 2026; no 2027, reloj, corte ni año del ingreso | API | Local/CI · impl | `resumen-inicio.test.ts` (AC-28) | PASS (2026-11-04, local) |
 | AC-29 | Límite | `V-LIQ-CERO` con coste `1500.00` | `mesesCubiertos` `0,00` con `Cero verificado`; no ND ni 0 implícito | API + UI | Local/CI · impl | `tests/e2e/inicio.spec.ts` escenario `zero` (0,00 € y 0,00 meses) + `bun test apps/api/src/resumen-inicio.test.ts` | PASS (2026-11-04, local) |
@@ -254,7 +254,8 @@ verificación de no escritura compara las tablas y `schema_version` antes/despu�
 ## Browser verification (web)
 
 - Playwright real con MFA; sin bypass.
-- Resoluciones 1440×1000 y 390×844; capturas en `artifacts/e4-6/` (ignoradas por Git).
+- Resoluciones 1440×1000 y 390×844; capturas de `base`, `cero` y `degradado` en ambos
+  tamaños y tres temas en `artifacts/e4-6/` (ignoradas por Git).
 - Recorridos: liquidez/objetivo, ciclo, Saldos, Ahorro, Inversión, Deuda, Pendientes,
   drill-down y vuelta, estados parcial/ND/error, sesión expirada.
 - Teclado: orden de foco, activación de enlaces y `details`; foco visible.
@@ -262,16 +263,33 @@ verificación de no escritura compara las tablas y `schema_version` antes/despu�
   los importes no aparecen en URLs ni en logs de red.
 - Revisión de accesibilidad básica; no se declara auditoría WCAG completa.
 
-## Visual improvements (propuesta para implementación, no aprobada visualmente)
+## Visual review status (2026-11-04)
 
-1. Reducir a dos tarjetas la primera fila (Liquidez/Objetivo) para una lectura inmediata.
-2. Hacer visible el contexto y la cobertura en la cabecera, no en un tooltip.
-3. Etiquetar explícitamente «sin total combinado» en Inversión y Saldos.
-4. Reservar el ámbar solo para `Parcial` y el gris para `No disponible`, con texto.
-5. En 390, mantener el estado pegado al importe y el enlace de origen a ancho completo.
+La revisión visual independiente emitió **NO APTO** por dos bloqueantes y varios menores. Esta
+pasada los corrige sin cambiar datos, motores ni temas:
 
-Las correcciones y recapturas se registrarán tras la revisión visual; esta lista no sustituye
-la aprobación de wireframes.
+- **B1 — motivo duplicado.** El bullet de cobertura se omite cuando coincide con el motivo;
+  también se elimina la repetición a nivel de sección en ciclo, deuda, inversión y coste. El
+  E2E recorre todas las tarjetas y comprueba que ningún bullet coincide con su motivo.
+- **B2 — total vs subtotal.** La tarjeta pasa a `Deuda no hipotecaria` y el importe se etiqueta
+  como `Subtotal conocido`. En liquidez cero, `0,00 €` conserva `Cero verificado`. La regla
+  `Parcial → Subtotal conocido`, `Verificado → Total verificado`,
+  `Cero verificado → Cero verificado` y `No disponible → No disponible` se aplica en
+  `AmountValue`.
+- **Badges.** Un único componente para `COMPLETO`, `PARCIAL`, `NO DISPONIBLE`,
+  `CERO VERIFICADO`, `NO APLICA` y `SIN DATOS`; los textos crudos de cobertura ya no son badge.
+  `Parcial 1/2` queda como detalle y `PARCIAL · HISTÓRICO`/`PARCIAL · COMPONENTES` se deriva del
+  motivo publicado.
+- **CTAs.** Un solo `Ver flujo mensual` a nivel de sección; las tarjetas de ciclo ya no repiten
+  el mismo enlace.
+- **Rejilla.** Ciclo pasa a 2 columnas; los títulos no se parten por palabra y los IDs de fuente
+  van en línea propia con `overflow-wrap`.
+- **390.** `AHORRO DE CIERRE` y `VARIACIÓN DE AHORRO` se apilan; no hay scroll horizontal.
+- **Evidencia.** Capturas `base`, `cero` y `degradado` en 1440/390 y tres temas.
+
+**Reserva visual (no bloqueante):** equilibrar la altura de la primera fila
+Liquidez/Objetivo y un posible rediseño de resumen/KPI. No se cambia la estética global ni el
+sistema de temas.
 
 ## Criterios de salida
 
@@ -299,8 +317,11 @@ real) y `bun test apps/api/src/resumen-inicio.test.ts` (18/18, incluidos AC-04, 
 AC-27 con 401 real por logout y 500 genérico del handler, y M-4 de E3.6 con fuentes fallidas).
 La matriz deja en PASS local los AC con prueba concreta. **AC-01 sigue PARCIAL** solo por la
 cobertura estructurada por ítem de Saldos/Ahorro/deuda aparte, que E1.1/E4.4 no publican; la
-spec justifica campo por campo qué se muestra en su lugar. No se declara PASS de la matriz
-completa ni se reutiliza esta evidencia para el gate canónico.
+spec justifica campo por campo qué se muestra en su lugar. La revisión visual independiente
+(NO APTO) se corrigió en esta pasada: motivo único, etiqueta total/subtotal, taxonomía de
+badges, CTA único, rejilla de ciclo, IDs en línea propia y Ahorro apilado a 390. Queda como
+**reserva visual** equilibrar la altura de la primera fila y un posible rediseño de resumen/KPI.
+No se declara PASS de la matriz completa ni se reutiliza esta evidencia para el gate canónico.
 
 Siguen pendientes: `python3 scripts/verify --full` del SHA candidato, la revisión independiente
 de QA y la aprobación de merge. E4.3 está integrado en `main`; E3.6/DEV21 sigue en `a26fffb`

@@ -319,14 +319,53 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     exact: true,
   });
   await expect(base).toContainText("1.900,00 €");
-  await expect(base).toContainText("VERIFICADO");
+  await expect(base).toContainText("Total verificado");
+  await expect(base).toContainText("COMPLETO");
   const delMes = ciclo.getByRole("article", {
     name: "Del mes planificado",
     exact: true,
   });
   await expect(delMes).toContainText("1.900,00 €");
-  await expect(delMes).toContainText("VERIFICADO");
+  await expect(delMes).toContainText("Total verificado");
+  await expect(delMes).toContainText("COMPLETO");
   await expect(page.locator("body")).not.toContainText("350,00 €");
+
+  // B1: ningún motivo se repite como bullet de cobertura en la misma tarjeta.
+  for (const card of await page.locator(".inicio-metric").all()) {
+    const motivo = (
+      await card.locator(".inicio-metric-motivo").first().innerText()
+    ).trim();
+    if (!motivo) continue;
+    for (const bullet of await card
+      .locator(".inicio-metric-coverage li")
+      .allInnerTexts())
+      expect(bullet.trim()).not.toBe(motivo);
+    // Un solo CTA por destino dentro de la misma tarjeta.
+    const cardHrefs = await card
+      .locator("a")
+      .evaluateAll((anchors) =>
+        anchors.map((anchor) => anchor.getAttribute("href") ?? ""),
+      );
+    expect(new Set(cardHrefs).size).toBe(cardHrefs.length);
+  }
+
+  // Taxonomía única: los badges no muestran estados crudos en minúsculas.
+  const badges = page.locator(".inicio-estado");
+  expect(await badges.count()).toBeGreaterThan(0);
+  for (const badge of await badges.all()) {
+    expect([
+      "Verificado",
+      "Cero verificado",
+      "Parcial",
+      "No disponible",
+      "No aplica",
+      "Sin datos",
+    ]).toContain(await badge.getAttribute("data-estado"));
+    const text = (await badge.innerText()).trim();
+    expect(text).not.toBe("No disponible");
+    expect(text).not.toBe("Completa");
+    expect(text).not.toMatch(/^Parcial \d/);
+  }
 
   // Saldos: conteos y ausencia de total.
   const saldos = page.locator("section[aria-labelledby='inicio-saldos']");
@@ -358,9 +397,10 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   // Deuda: subtotal parcial 2/3, D005 no calculable y aparte fuera del total.
   const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
   const deudaTotal = page.getByRole("article", {
-    name: "Total de deuda no hipotecaria",
+    name: "Deuda no hipotecaria",
     exact: true,
   });
+  await expect(deudaTotal).toContainText("Subtotal conocido");
   await expect(deudaTotal).toContainText("1.020,00 €");
   await expect(deudaTotal).toContainText("PARCIAL");
   await expect(deudaTotal).toContainText("2/3");
@@ -397,6 +437,9 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   expect(hrefs).toContain("/pendientes");
   expect(hrefs).toContain("/saldos/S001");
   expect(hrefs).toContain("/plan-anual");
+  expect(
+    hrefs.filter((href) => href === "/flujo-mensual?ciclo=7"),
+  ).toHaveLength(1);
   for (const href of hrefs)
     expect(href).not.toMatch(/[0-9]{2,}[.,][0-9]{2}|€/);
 
@@ -513,6 +556,7 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
 
   const liquidez = page.getByRole("article", { name: "Liquidez", exact: true });
   await expect(liquidez).toContainText("0,00 €");
+  await expect(liquidez).toContainText("Cero verificado");
   await expect(liquidez).toContainText("CERO VERIFICADO");
   await expect(liquidez).not.toContainText("Subtotal conocido");
 
@@ -532,17 +576,37 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   await expect(operativo).not.toContainText("0,00 €");
 
   const deudaTotal = page.getByRole("article", {
-    name: "Total de deuda no hipotecaria",
+    name: "Deuda no hipotecaria",
     exact: true,
   });
   await expect(deudaTotal).toContainText("PARCIAL");
   await expect(deudaTotal).toContainText("1.020,00 €");
+  await expect(deudaTotal).toContainText("Subtotal conocido");
 
-  await resetScroll(page);
-  await page.screenshot({
-    path: "artifacts/e4-6/inicio-cero-1440.png",
-    fullPage: true,
-  });
+  // Evidencia: tres temas a 1440 y 390, también en el escenario cero.
+  const select = page.getByLabel("Tema visual");
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    for (const [width, height] of [
+      [1440, 1000],
+      [390, 844],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await resetScroll(page);
+      await page.screenshot({
+        path: `artifacts/e4-6/inicio-cero-${theme}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
 });
 
 test("M-4: estados degradados no se presentan como vacío real", async ({
@@ -627,11 +691,34 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     "Posición de ahorro no verificable por el motor",
   );
 
-  await resetScroll(page);
-  await page.screenshot({
-    path: "artifacts/e4-6/inicio-degradado-1440.png",
-    fullPage: true,
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = false;
   });
+
+  // Evidencia: tres temas a 1440 y 390, también en el escenario degradado.
+  const select = page.getByLabel("Tema visual");
+  for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await select.selectOption(theme);
+    await expect(page.locator("html")).toHaveAttribute("data-theme", theme);
+    for (const [width, height] of [
+      [1440, 1000],
+      [390, 844],
+    ] as const) {
+      await page.setViewportSize({ width, height });
+      await expect(
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= window.innerWidth,
+        ),
+      ).toBe(true);
+      await resetScroll(page);
+      await page.screenshot({
+        path: `artifacts/e4-6/inicio-degradado-${theme}-${width}.png`,
+        fullPage: true,
+      });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
 });
 
 test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de contexto", async ({
