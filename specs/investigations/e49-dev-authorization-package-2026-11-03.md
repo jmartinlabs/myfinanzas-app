@@ -1,13 +1,13 @@
 # E4.9 — paquete breve para autorización de DEV
 
-**Base:** `main` `8b5cf5c` (2026-11-03). **Documento de decisión; no autoriza DEV, no declara PASS.**
+**Base:** `main` `9b76569` (2026-11-04). **Documento de decisión; no autoriza DEV, no declara PASS.**
 Marcas: **CONFIRMADO** (estado verificado), **PROPUESTA** (candidato no aprobado), **PENDIENTE** (requiere decisión).
 
 ## 1. Estado y límites
 
-- **CONFIRMADO:** SPEC27/E4.9 aprobada documentalmente; **sin DEV** y con AC **UNRUN**. E4.8 precierre, E3.5/FIN_NETA, E4.2 Ventas, E4.4 Deuda completa y E3.6 Pendientes están integrados; **E4.3 no tiene código**.
+- **CONFIRMADO:** SPEC27/E4.9 aprobada documentalmente; **sin DEV** y con AC **UNRUN**. E4.8 precierre, E3.5/FIN_NETA, E4.2 Ventas, E4.4 Deuda completa y E3.6 Pendientes están integrados; **E4.3 A+B+C está integrado** (v24 en `main`) y su QA final espera revisión/merge.
 - **CONFIRMADO:** PR **#178 integrada** (`8b5cf5c`): wireframes 1440/390 de E4.9 disponibles. Es un insumo de diseño, no una autorización de desarrollo ni una aprobación visual independiente.
-- **CONFIRMADO:** esquema **v23**. **v24 reservada a E4.3**; **v25 preferida para E4.9** (**PENDIENTE** de asignación formal).
+- **CONFIRMADO:** esquema **v24 integrado** con E4.3. **v25 preferida para E4.9** (**PENDIENTE** de asignación formal); no se reserva sin decisión.
 - **CONFIRMADO:** **DT6/T-BKP abierto**. Bloquea el cierre real y AC-09 real; no bloquea el DEV con fixtures.
 - **Límite:** este documento solo fija el paquete de decisión. No implementa, no migra, no ejecuta datos reales, no publica ni fusiona.
 
