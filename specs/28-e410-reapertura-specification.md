@@ -4,12 +4,15 @@
 Status: **DRAFT documental.** Sin aprobación del usuario, sin AC en PASS, sin DEV, sin
 migración, sin datos reales y sin merge. Las decisiones D1–D9 siguen abiertas en el
 [brainstorming](28-e410-reapertura-brainstorming.md); este documento propone un contrato
-candidato y marca lo que no puede fijarse.
+candidato y marca lo que no puede fijarse. Esta revisión solo reconcilia referencias con
+E4.9; no introduce decisiones funcionales.
+
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
-Base: rama `docs/next-packages`, commit `eefc20d`. E4.9 se lee en el PR **#200**
-(`feat/e49-cierre`, head `2fe5d01`), **OPEN y en draft**, sin QA final ni merge; sus AC
-siguen **UNRUN**. DT6/T-BKP sigue abierto. No se asume una versión de esquema nueva: la
-reserva concreta se decide después de E4.9.
+Base de esta revisión: `main` **`3842831`** (2026-11-05). E4.9 está **integrado** en
+`0176ffc` (#200), con QA **APTO CON RESERVAS** y CI post-merge `42000330143`; `a806fd9`
+es E4.5 (#216), no E4.9. Los AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales
+de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto. v25 está ocupada por E4.9:
+E4.10 no reserva versión en esta SPEC.
 
 Context and brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md),
 [análisis E4.10](investigations/e410-reapertura-analysis-2026-11-04.md),
@@ -27,8 +30,7 @@ Context and brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapert
 
 - `[CONFIRMADO]` — regla de un documento aprobado o decisión ya registrada.
 - `[PROPUESTA]` — detalle candidato, no aprobado.
-- `[PENDIENTE]` — decisión o evidencia que aún no existe.
-- `[PENDIENTE · provisional E4.9]` — depende de QA/merge de E4.9; no se congela aquí.
+- `[PENDIENTE]` — decisión o evidencia que aún no existe; E4.9 ya está integrado.
 
 ---
 
@@ -56,22 +58,22 @@ No incluye: DT9, ciclos antiguos, restauración de backup como reapertura, agreg
 trimestrales/anuales E4.11, recálculo retroactivo, valoración/resultado/patrimonio E4.3,
 Ventas E4.2, conciliaciones E4.4, cambios de permisos, despliegue ni datos reales.
 
-`[PENDIENTE · provisional E4.9]` E4.9 solo implementa el camino de v1: `confirmCierre`
-inserta `version=1` y bloquea con `ALREADY_CLOSED`; no existe camino de re-cierre. E4.10
-requiere que el contrato de E4.9 se extienda o que E4.10 aporte la operación de re-cierre;
-el ownership se decide en el paquete DEV, no aquí.
+`[CONFIRMADO]` E4.9 integrado solo implementa el camino de v1: `confirmCierre` inserta
+`version=1` y bloquea con `ALREADY_CLOSED`; no existe camino de re-cierre. `[PENDIENTE]`
+E4.10 requiere que el contrato de E4.9 se extienda o que E4.10 aporte la operación de
+re-cierre; el ownership se decide en el paquete DEV.
 
 ### 1.1 Contratos heredados de E4.9
 
 | Contrato | Estado | Uso en E4.10 |
 | --- | --- | --- |
-| **v1 → v2** | `[CONFIRMADO]` DT4; `[PENDIENTE · provisional E4.9]` camino de re-cierre. | La reapertura no actualiza v1; el re-cierre crea una versión nueva. |
-| **Inmutabilidad** | `[CONFIRMADO]` cierre y foto no se actualizan ni se borran; `[PENDIENTE · provisional E4.9]` triggers y cobertura QA. | v1 y su foto quedan intactas; no hay `PATCH`/`DELETE`. |
-| **Auditoría** | `[CONFIRMADO]` actor/UTC/motivo/fingerprint y append-only; `[PENDIENTE · provisional E4.9]` acciones/campos. | La reapertura exige evento propio y cadena v1→reapertura→v2. |
-| **Fingerprint** | `[CONFIRMADO]` huella propia; `financeRevision` no la sustituye; `[PENDIENTE · provisional E4.9]` composición de v2. | El re-cierre compara preflight y confirmación; no usa la huella técnica como foto. |
+| **v1 → v2** | `[CONFIRMADO]` DT4; `[PENDIENTE]` extensión de re-cierre de E4.10. | La reapertura no actualiza v1; el re-cierre crea una versión nueva. |
+| **Inmutabilidad** | `[CONFIRMADO]` E4.9: cierre y foto no se actualizan ni se borran; triggers y QA APTO CON RESERVAS. | v1 y su foto quedan intactas; no hay `PATCH`/`DELETE`. |
+| **Auditoría** | `[CONFIRMADO]` E4.9: actor/UTC/motivo/fingerprint, append-only y dos acciones; `[PENDIENTE]` extensión de acciones/campos de E4.10. | La reapertura exige evento propio y cadena v1→reapertura→v2. |
+| **Fingerprint** | `[CONFIRMADO]` E4.9: huella propia; `financeRevision` no la sustituye; `[PENDIENTE]` composición de v2. | El re-cierre compara preflight y confirmación; no usa la huella técnica como foto. |
 | **Fuera de orden** | `[CONFIRMADO]` AC-20; motivo y coherencia al mismo corte. | No se reutiliza por analogía: un cierre posterior bloquea la vía ordinaria. |
 | **T1/T2/T3** | `[CONFIRMADO]` T1 bloquea, T2 audita, T3 se permite; `[PENDIENTE D2]` alcance T1 en la ventana. | La ventana declara qué desbloquea; no se presupone T1. |
-| **Endpoints, forma y versiones** | `[PENDIENTE · provisional E4.9]`. | No se fijan rutas, representación de la reapertura ni política definitiva de versiones. |
+| **Endpoints, forma y versiones** | `[CONFIRMADO]` superficie E4.9 (estado, preflight, foto, cierre); `[PENDIENTE]` rutas, representación de reapertura y política de versiones de E4.10. | No se fijan rutas nuevas ni la política definitiva de versiones. |
 
 ---
 
@@ -87,7 +89,7 @@ el ownership se decide en el paquete DEV, no aquí.
 | **Re-cierre** | `[CONFIRMADO]` Nuevo cierre del mismo ciclo que crea una versión de foto posterior sin alterar las anteriores (SPEC27, DT4). |
 | **Versión vigente** | `[PENDIENTE]` Mientras el ciclo está reabierto y sin nueva versión, la candidata es la última versión cerrada; la regla definitiva depende de D5/E4.11. |
 | **Dependencia posterior** | `[PENDIENTE D4]` S0/plan del ciclo siguiente, fotos, auxiliares, agregados E4.11 y precontrol, según la matriz que se apruebe. No se amplía por analogía. |
-| **Estado de cierre derivado** | `[PROPUESTA]` Estado observable `Cerrado(vN)` o `Reabierto(vN)`. Los nombres y la representación persistida son provisionales hasta E4.9. |
+| **Estado de cierre derivado** | `[PROPUESTA]` Estado observable `Cerrado(vN)` o `Reabierto(vN)`. E4.9 integrado solo persiste `Cerrado(v1)`; la representación de E4.10 sigue pendiente. |
 
 ---
 
@@ -158,7 +160,7 @@ Transiciones candidatas:
   ramificaría la historia);
 - si la reapertura consume un número de versión de estado.
 
-`[PENDIENTE · provisional E4.9]` La representación persistida (evento append-only, tabla de
+`[PENDIENTE]` La representación persistida (evento append-only, tabla de
 reaperturas, campo derivado o versión de estado) no se fija. La semántica observable sí:
 existe una ventana, es auditable, v1 no cambia y el re-cierre crea una versión nueva.
 
@@ -168,7 +170,7 @@ existe una ventana, es auditable, v1 no cambia y el re-cierre crea una versión 
 
 `[PROPUESTA]` Salvo las reglas marcadas `[CONFIRMADO]`, el flujo siguiente es candidato.
 La forma de materializar la reapertura no se fija aquí; el flujo describe la semántica
-observable y se adapta a la representación que se apruebe tras E4.9.
+observable y se adapta a la representación que apruebe E4.10; E4.9 ya está integrado.
 
 ### 5.1 Reabrir
 
@@ -237,7 +239,7 @@ re-cierre y D1 debe prever una salida para no bloquear indefinidamente.
 ## 6. Data model and contracts
 
 `[PROPUESTA]` Contratos conceptuales, sin DDL ni migración en este documento. La forma
-exacta depende de E4.9 y de la decisión de esquema del paquete DEV.
+exacta depende de la decisión de esquema de E4.10; E4.9 ya está integrado.
 
 - **Evento de reapertura:** ciclo, versión de origen, actor, UTC, motivo, fingerprint o
   hash de la petición, versión/estado esperado, clave de intento, resultado y correlación.
@@ -254,7 +256,7 @@ exacta depende de E4.9 y de la decisión de esquema del paquete DEV.
 - **Metadatos inmutables:** versión de aplicación y de esquema, además de ciclo, versión de
   foto, fecha UTC, actor, motivo y fingerprint (SPEC27).
 
-`[PENDIENTE · provisional E4.9]` No se fija:
+`[PENDIENTE]` No se fija:
 
 - si la auditoría se extiende en `cierre_audit` o se crea una tabla de eventos; el CHECK
   actual solo admite `cierre` y `cierre_fuera_de_orden` y exige migración;
@@ -268,8 +270,8 @@ exacta depende de E4.9 y de la decisión de esquema del paquete DEV.
 ## 7. API behavior and external dependencies
 
 `[PROPUESTA]` Contrato conceptual. **No se fijan rutas, métodos HTTP ni nombres de códigos
-como contrato estable** mientras E4.9 no esté mergeado y QA no haya fijado su superficie
-(`[PENDIENTE · provisional E4.9]`).
+como contrato estable**. E4.9 ya está integrado; no se fijan rutas ni códigos de E4.10
+hasta que se decidan.
 
 | Operación conceptual | Entrada | Salida | Reglas |
 | --- | --- | --- | --- |
@@ -324,7 +326,7 @@ fixture no acredita DT6.
 
 | Nivel | Mientras `Reabierto` | Auditoría | Límite |
 | --- | --- | --- | --- |
-| **T1** | `[PENDIENTE D2]` Bloqueado con `HISTORY_LOCKED` si D2-A; permitido solo dentro de la ventana y del ciclo si D2-B (incluida Ventas E4.2 si E4.9 confirma su ampliación T1). | Si se permite: impacto, motivo, actor, UTC y revisión por escritura. | Nunca S0, `inicio`/`Fin` ni identidad congelada. No desbloquea otros ciclos. |
+| **T1** | `[PENDIENTE D2]` Bloqueado con `HISTORY_LOCKED` si D2-A; permitido solo dentro de la ventana y del ciclo si D2-B (incluida Ventas E4.2, ya confirmada en T1 de E4.9). | Si se permite: impacto, motivo, actor, UTC y revisión por escritura. | Nunca S0, `inicio`/`Fin` ni identidad congelada. No desbloquea otros ciclos. |
 | **T2** | Permitido con impacto, motivo y auditoría; la foto v1 no se altera. | La ya exigida por la ruta T2, más correlación con la ventana. | No modifica v1; las vistas vivas se actualizan o se marcan. |
 | **T3** | Permitido. | La vigente; si la foto guarda versión del nombre, no se altera. | No se usa para eludir T1/T2. |
 
@@ -365,9 +367,9 @@ orden de E4.9, no a E4.10.
 ## 10. Audit
 
 `[CONFIRMADO]` Actor, UTC, motivo y fingerprint forman parte de la identidad del cierre; la
-auditoría es append-only. `[PENDIENTE · provisional E4.9]` Las acciones, campos y soporte
-concreto de la auditoría de reapertura no se congelan hasta QA/merge. **`[PROPUESTA]`** La
-reapertura debe ser reconstruible sin depender de la foto.
+auditoría es append-only. `[PENDIENTE]` Las acciones, campos y soporte concreto de la
+auditoría de reapertura de E4.10 no se congelan; E4.9 ya está integrado y solo admite dos
+acciones. **`[PROPUESTA]`** La reapertura debe ser reconstruible sin depender de la foto.
 
 `[PROPUESTA]` Cada evento registra, como mínimo:
 
@@ -384,7 +386,7 @@ reapertura debe ser reconstruible sin depender de la foto.
 `[CONFIRMADO]` La cadena `v1 → reapertura → correcciones → v2` debe ser consultable y no
 tener huecos ni eventos huérfanos. Un fallo de auditoría revierte la transacción.
 
-`[PENDIENTE · provisional E4.9]` Se decide en el paquete DEV si se extiende
+`[PENDIENTE]` Se decide en el paquete DEV si se extiende
 `cierre_audit` con nuevas acciones/campos o se crea una tabla de eventos. Cualquier opción
 exige migración y actualizar el contrato de esquema; no se asume que la tabla actual sirva
 tal cual. Los motivos no se publican como secretos ni se usan para almacenar credenciales.
@@ -396,8 +398,8 @@ tal cual. Los motivos no se publican como secretos ni se usan para almacenar cre
 `[CONFIRMADO]` v1 y su foto son inmutables; no se actualizan ni se borran. El re-cierre
 crea v2 sin alterar v1; todas las versiones son consultables; la retención es permanente
 (SPEC27, DT4). La foto no se recalcula desde el estado vivo (AC-14).
-`[PENDIENTE · provisional E4.9]` La política de versiones que dependa del contrato de E4.9
-no se congela; D5 decide la regla funcional de versión vigente y repetibilidad.
+`[PENDIENTE]` La política de versiones no se congela; D5/E4.11 deciden la regla funcional
+de versión vigente y repetibilidad. E4.9 ya está integrado.
 
 Reglas candidatas:
 
@@ -413,7 +415,7 @@ Reglas candidatas:
 6. `[PENDIENTE D5]` Mientras el ciclo está reabierto, la última versión cerrada sigue
    consultable; la regla de «vigente» para agregados y la posibilidad de v3 quedan
    abiertas.
-7. `[PENDIENTE · provisional E4.9]` La inclusión de la identidad de v1 y del motivo de
+7. `[PENDIENTE]` La inclusión de la identidad de v1 y del motivo de
    reapertura en el fingerprint de v2 no se fija; el vínculo no depende solo del hash.
 
 ---
@@ -506,9 +508,9 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
   aprobación explícita.
 - **Restore no es reapertura:** restaurar un backup no reabre un ciclo; rebobina identidad
   y auditoría. DT6 es un gate independiente.
-- **Gates heredados de E4.9:** sin E3.5/FIN_NETA verificable no hay re-cierre ni foto; DT6
-  bloquea el cierre real. E4.3/E4.2/E4.4 no disponibles se capturan como `No disponible`
-  con motivo si el cierre está autorizado; no se declaran capturados.
+- **Gates heredados de E4.9:** E3.5 está integrado pero AC-15 sigue PARCIAL; DT6 bloquea el
+  cierre real. E4.3/E4.2/E4.4 no disponibles se capturan como `No disponible` con motivo si
+  el cierre está autorizado; no se declaran capturados.
 - **No se reabren M1–M6, DT3 ni DT4:** se aplican; esta SPEC no los reinterpreta.
 - **No se corrige automáticamente un cierre posterior** ni se recalcula su S0/plan.
 - **No se recalculan fotos, agregados ni precontrol** desde el estado vivo.
@@ -595,8 +597,8 @@ excluidos por inferencia.
    reintento idéntico seguro y conflicto ante payload/versión distintos?
 
 **No se decide aquí:** DT9, la forma definitiva de reapertura (evento, tabla, estado o
-versión), las rutas canónicas, la tabla de auditoría ni la política de versiones que
-dependa de E4.9. Los detalles marcados `[PENDIENTE]` dentro de estos bloques (v3,
-`SIN_CAMBIOS`, inclusión exacta en el fingerprint) se resuelven con la decisión del bloque
-o en el paquete DEV; no son decisiones adicionales. Aprobar esta SPEC no autoriza DEV ni
-merge.
+versión), las rutas canónicas, la tabla de auditoría ni la política de versiones
+(D5/E4.11). E4.9 ya está integrado. Los detalles marcados `[PENDIENTE]` dentro de estos
+bloques (v3, `SIN_CAMBIOS`, inclusión exacta en el fingerprint) se resuelven con la
+decisión del bloque o en el paquete DEV; no son decisiones adicionales. Aprobar esta SPEC
+no autoriza DEV ni merge.

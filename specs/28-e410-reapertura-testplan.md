@@ -7,9 +7,10 @@ migración, UI ni candidato funcional. No se usan datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
-Base: rama `docs/next-packages`, commit `eefc20d`. E4.9 se lee en el PR **#200**
-(`feat/e49-cierre`, head `2fe5d01`), **OPEN y en draft**, sin QA final ni merge; sus AC
-siguen **UNRUN**. DT6/T-BKP sigue abierto.
+Base de esta revisión: `main` **`3842831`** (2026-11-05). E4.9 está **integrado** en
+`0176ffc` (#200), con QA **APTO CON RESERVAS** y CI post-merge `42000330143`; `a806fd9`
+es E4.5 (#216), no E4.9. Los AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales
+de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto.
 
 **Leyenda de estado:** `UNRUN` = diseñado, no ejecutado. `UNRUN — condicionado Dn` = no
 puede ejecutarse con resultado estable hasta que se apruebe esa decisión. `BLOCKED` = falta
@@ -33,10 +34,11 @@ una dependencia externa. No se usa `PASS` en este documento.
   `python3 scripts/verify` o `python3 scripts/verify --full` según el perfil autorizado.
   Este documento no ejecuta nada.
 
-Las rutas y nombres de códigos son `[PENDIENTE · provisional E4.9]`. Los casos se escriben
-contra las operaciones conceptuales (`reabrirUltimoCierre`, `reCerrarCiclo`,
-`estadoDeCierre`, `versionesDeCierre`, `fotoDeCierre`, `cancelarReapertura`) y se adaptarán
-a la superficie canónica después del QA/merge de E4.9, sin cambiar la semántica.
+Las rutas y nombres de códigos de E4.10 siguen `[PENDIENTE]`; la superficie E4.9 ya está
+integrada. Los casos se escriben contra las operaciones conceptuales
+(`reabrirUltimoCierre`, `reCerrarCiclo`, `estadoDeCierre`, `versionesDeCierre`,
+`fotoDeCierre`, `cancelarReapertura`) y se adaptan a la superficie E4.9 integrada, sin
+cambiar la semántica.
 
 ---
 
@@ -156,8 +158,9 @@ de E4.10:
 ## 5. Verificación funcional
 
 `UNRUN`. No existe candidato funcional de E4.10, ni operación de reapertura, ni camino de
-re-cierre en E4.9, ni foto v2. El PR #200 de E4.9 sigue OPEN/draft y sus AC UNRUN. No se
-declara verificación funcional por diseño documental.
+re-cierre en E4.9, ni foto v2. E4.9 está integrado en `0176ffc`, pero el re-cierre no está
+implementado y sus AC de aceptación siguen pendientes; los PASS de fixtures no son
+aceptación. No se declara verificación funcional por diseño documental.
 
 ---
 
@@ -172,9 +175,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 
 ## 7. Dependencias y limitaciones
 
-- `[PENDIENTE]` **E4.9 mergeado y con QA independiente.** Sin eso, las rutas, la forma de
-  reapertura, la foto, la auditoría y la política de versiones son
-  `[PENDIENTE · provisional E4.9]`; los casos se adaptan, no se congelan.
+- `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS. Las rutas, la
+  forma de reapertura, la foto v2, la auditoría y la política de versiones de E4.10 siguen
+  `[PENDIENTE]`; los casos se adaptan, no se congelan.
 - `[PENDIENTE]` **E4.9 no tiene camino de re-cierre.** `confirmCierre` bloquea el segundo
   cierre con `ALREADY_CLOSED`; el caso F1 no puede ejecutarse hasta que exista la operación
   acordada (E4.9 o E4.10).
