@@ -1096,6 +1096,80 @@ Estos contratos son mínimos y de solo lectura; no implementan E4.7/E4.11/E4.12.
 - No presenta 0 anual por ausencia de histórico ni por un año futuro/corte no
   verificado.
 
+#### Adaptador E4.5 → E2.4
+
+E2.4 consume el histórico mediante el seam interno `AnnualSources`/`AnnualHistory`
+(`apps/api/src/plan-anual.ts`), no mediante un «DTO E2.4». El adaptador proyecta los
+registros y conserva las garantías de E4.5. Una garantía que el tipo no pueda expresar
+no se sustituye por un booleano ni por un string: se declara no representable y exige
+ampliación de contrato antes de consumir AC-58.
+
+La proyección aplica la opción A aprobada: control diferenciado por Partida y fuente
+(`controles[]`), estado global de cobertura/conflictos/`sinClasificar` con propagación a
+la verificabilidad del total, procedencia estructurada `AnnualProvenance` (identidad,
+huella y versiones) y representación en tres estados `Si/No/Desconocido` con evidencias.
+
+| Campo E4.5 | Campo E2.4 | Proyección | Garantía |
+| --- | --- | --- | --- |
+| `idArchivo` | — | Añadir `AnnualHistory.idArchivo`; identidad de deduplicación y trazabilidad. | Ampliar |
+| `fuenteId` | — | Añadir `AnnualHistory.fuenteId`; identificador lógico estable del inventario DT7; una versión nueva conserva el mismo. | Ampliar |
+| `ejercicio` | `ejercicio` | Igual al ejercicio consultado. | Se conserva |
+| `partidaId` | `partida: string` | Solo con `estadoMapeo=Mapeado`; `null` no se convierte en Partida y va a `sinClasificar`. | Ampliar |
+| `intervalo` | `intervalo` | Inclusivo, dentro del ejercicio y del corte; sin recorte ni prorrateo. | Se conserva |
+| `clase` | — | Añadir; solo `GastoHistorico` y `Regularizacion2026` suman; `AperturaHistorica` fuera del total y de la cobertura de Gastos; Deuda no se proyecta. | Ampliar |
+| `saldoId` | — | Solo `AperturaHistorica`; E2.4 no lo usa, no lo escribe y no lo suma. | Se ignora |
+| `importeCentimos` | `importeCentimos` | Entero de céntimos; gasto no negativo; regularización y apertura admiten signo acreditado. | Ampliar |
+| `fecha` | `fecha` | Solo fecha económica acreditada y dentro del intervalo; sin inferencia. | Se conserva |
+| `procedencia` | `procedencia: string` | `AnnualProvenance` con identidad (`documentoHash`), huella (`huellaContenido`), ubicación, `idOrigen?`, `referenciaOrigen`, `versionFuente`, `versionMapping`, `evidenciaFecha` y `jerarquiaOrigen`. | Ampliar |
+| `huellaContenido` | — | Dentro de `AnnualProvenance`; deduplica o detecta conflicto; dos fuentes con mismo intervalo/Partida son `Ambigua`. | Ampliar |
+| `estadoVerificacion` | `verificado: boolean` | Solo `Verificado` suma; `NoVerificado`/`Rechazado` no suman y motivan. | Ampliar |
+| `estadoMapeo` | — | Añadir; solo `Mapeado` suma por Partida; `Pendiente`/`Ambigua` van a `sinClasificar` y dejan el global `NoVerificable`. | Ampliar |
+| `estadoMapeoReferencia` | — | Añadir; solo `Mapeado` certifica desglose; `Pendiente`/`Ambigua` lo dejan `Incompleto`; `NoAplica` exige evidencia de ausencia. | Ampliar |
+| desglose por Referencia | — | Añadir salida derivada `Completo`/`Incompleto`/`NoAplica`; no se persiste ni bloquea el total por Partida sin cambio de atribución. | Ampliar |
+| `representadoEnMovimientos` | `boolean` | Unión `Si/No/Desconocido`; `Si` exige vínculo verificado; sin vínculo se degrada a `Desconocido`; `No` exige `evidenciaRepresentacion`; `Desconocido` no suma ni entra en subtotal sin evidencia de no duplicidad. | Ampliar |
+| `version`/`reemplazaA` | — | Añadir; solo la vigente suma; dos vigentes incompatibles = `NoVerificable`. | Ampliar |
+| `nota` | — | No se usa para clasificar ni para sumar. | Se ignora |
+| control por `(Partida, fuente)` | `control` único | Sustituir por `controles[]` con `fuenteId`, `partida` e intervalo; sin control atribuible, `NoVerificable`; el tramo de otra Partida no acredita cobertura. | Ampliar (A) |
+| `alcanceTotal` | — | Añadir; `Anual` solo con 31/12; `HastaCorte` en otro caso. | Ampliar |
+| `estadoCobertura`/`estadoTotal` | `cobertura: string` | Añadir los estados por Partida y global; `conflictos[]` y `sinClasificar[]` no vacíos dejan el global `NoVerificable`; `NoDisponible` no se propaga. | Ampliar (A) |
+| `subtotalConocido` | `subtotalRegistrado`/`historicoConocido` | Añadir `string o null`; `null` si el solape o duplicado no es separable; nunca `"0.00"` en solape; `null ≠ 0`. | Ampliar |
+| `motivoCodigo` | `motivo` | Añadir código estable; el texto no lo sustituye. | Ampliar |
+| `conflictos[]`/`agregadoNoAtribuible[]`/`sinClasificar` | — | Añadir señales agregadas globales para distinguir total completo, incompleto y no atribuible. | Ampliar (A) |
+| `estadoUniverso`/`fuentesEsperadas[]`/`huecos` | — | Añadir al proveedor; sin universo acreditado no se distingue `NoAcreditada` de `Parcial`. | Ampliar |
+| `fuentes[]` | — | Añadir metadata por fuente (hoja, huella, corte, versión, intervalos, controles por Partida y clase). | Ampliar |
+
+Reglas del adaptador:
+
+1. Solo `Verificado` + `Mapeado` (Partida) + `representado=No` acreditado es candidato a
+   suma. `NoVerificado`, `Rechazado`, `Pendiente`, `Ambigua` y `Excluido` no suman.
+2. `representado=Si` exige vínculo verificado; sin vínculo se trata como `Desconocido` y
+   el total queda `NoVerificable`, nunca se excluye en silencio.
+3. `No` exige `evidenciaRepresentacion` (identidad/origen/huella); la ausencia de
+   coincidencia de importe no acredita `No`.
+4. `Desconocido` no suma ni entra en `subtotalConocido` sin evidencia estructurada de no
+   duplicidad.
+5. Una Referencia pendiente no bloquea el total por Partida si no cambia atribución; si
+   puede cambiarla, el total global y la Partida quedan `NoVerificable`.
+6. Cualquier solape no resuelto deja `NoVerificable`; si la parte solapada no se aísla,
+   `subtotalConocido=null`. No se elige fuente ni se prorratea.
+7. Sin `documentoHash`, `hojaTabla`, `versionFuente` y `versionMapping` no hay total.
+   `idOrigen` es opcional; `referenciaOrigen` se conserva.
+8. `AperturaHistorica` no suma como Gasto, no acredita cobertura y no se escribe en
+   Saldos/Deudas. El proveedor la entrega fuera de `historico[]` (`aperturas[]`); si
+   aparece en `historico[]` con su `clase`, se mueve a `aperturas[]` y no suma; sin
+   `clase`, el total queda `NoVerificable`.
+9. `GastoHistorico` no admite importe negativo; `Regularizacion2026` y apertura admiten
+   signo solo con efecto económico acreditado (Q5=A). No se infiere por nombre ni año.
+10. `controles[]` es la única fuente de control; un tramo de otra Partida o fuente no
+    acredita cobertura.
+11. `sinClasificar[]` no vacío o conflicto no resuelto deja el total global
+    `NoVerificable`; una Partida no afectada conserva su estado.
+12. `alcanceTotal=Anual` solo con corte 31/12; un total con corte abierto es
+    `HastaCorte` y no se anula por no ser anual.
+13. `subtotalConocido` es informativo, nunca total; `"0.00"` solo es válido como cero
+    verificado. `null` no se convierte en `0`, no se compara con `"0.00"` y no se muestra
+    como cero.
+
 ### E4.7 — Resumen Anual y flujo completo trazable
 
 - Consume el combinador E4.5; no reimplementa la suma archivo+detalle ni deduce
@@ -1233,15 +1307,15 @@ D14 → AC-53…58.
 | AC-45 | I | Mover PAR100 de SUB-A a SUB-B sin cambiar ID; consultar archivo e historia | E1.2 aplicado: impacto, motivo, confirmación, revisión/huella y protecciones; `partida.jerarquiaVigente` muestra SUB-B y `procedenciaJerarquia` conserva SUB-A; sin versión de catálogo ni reescritura; sin impacto/motivo/confirmación -> bloqueo/conflicto de revisión (409 como ejemplo) |
 | AC-46 | I | (a) Candidatos PAR100/PAR205/PAR300 sin universo DT7 acreditado; (b) universo acreditado con PAR300 y fuente esperada ausente; (c) universo acreditado, fuentes presentes y sin hechos; (d) una Partida completa y otra sin intervalo | (a) `NoAcreditada`/`NoVerificable`, no `Parcial` ni 0; (b) `Parcial`/`FuenteAusente`; (c) `Completa` y 0 verificado, no hueco; (d) global `Parcial`, no `NoDisponible`; `NoDisponible` solo si ninguna Partida tiene intervalo |
 | AC-47 | I | (a) Filtrar `fuenteId=SRC-1` con PAR205 sin SRC-1; (b) SRC-2 tiene conflicto no resuelto; (c) nueva versión de SRC-1 con mismo `fuenteId` | (a) PAR205 «No cubierta por esta fuente», no 0; (b) conflicto de SRC-2 visible, `total=null`, `estadoTotal=NoVerificable`, `subtotalFuente` decimal/null no certificado; (c) mismo `fuenteId`, sin fuente nueva |
-| AC-48 | I (D4) | Archivo con Partida/importe/intervalo/clase verificados, `representadoEnMovimientos=No`, Referencia pendiente que no cambia atribución, **sin `procedencia.idOrigen`** | Suma al total por Partida; `idArchivo`/huella/procedencia trazable bastan; `referenciaId=null`; `procedencia.referenciaOrigen` visible; `estadoMapeoReferencia=Pendiente`; desglose `Incompleto`; no `sinClasificar`; no `REFxxx` |
+| AC-48 | I (D4) | Archivo con Partida/importe/intervalo/clase verificados, `representado=No` **acreditado** por `evidenciaRepresentacion` (identidad/origen/huella, no ausencia de coincidencia de importe), Referencia pendiente que no cambia atribución, **sin `AnnualProvenance.idOrigen`**, sin conflicto, duplicado no absorbido ni solape no resuelto con `controles[]` de la misma Partida/fuente | Suma al total por Partida y `estadoTotal=Verificado` de la Partida; `idArchivo`/`AnnualProvenance` trazable (identidad + huella + versiones) bastan; `referenciaId=null`; `procedencia.referenciaOrigen` visible; `estadoMapeoReferencia=Pendiente`; desglose `Incompleto`; no `sinClasificar`; no `REFxxx`; `conflictos=[]`, `agregadoNoAtribuible=[]`; si existe solape/duplicado no resuelto, el mismo registro deja `estadoTotal=NoVerificable` y `total=null` aunque la Referencia sea pendiente |
 | AC-49 | I (D4) | Igual que AC-48, pero la Referencia podría cambiar Partida/elegibilidad/identidad/deduplicación | Total global y Partida afectada `NoVerificable`; no candidato, no suma, no exclusión por conveniencia |
-| AC-50 | I (D4) | `representadoEnMovimientos=Si`, `Desconocido` y `No` acreditado | `Si` excluye el archivo y el Movimiento cuenta una vez; `Desconocido` no entra en total; solo `No` suma; `Desconocido` no entra en subtotal sin evidencia de no duplicidad |
-| AC-51 | I (D4) | Completar mapping de Referencia sin cambiar Partida; después cambiarla a otra Partida | Primer caso: total por Partida no cambia, desglose completo; segundo: reclasificación/conflicto, total bloqueado, sin recálculo silencioso |
-| AC-52 | I (D4) | `Regularizacion2026` con Referencia pendiente sin evidencia Q5=A; después con evidencia y Partida/importe acreditados | Sin evidencia: no suma; con evidencia: aplica D4; nunca por nombre/parecido |
-| AC-53 | I (D14) | Partida A `Completa` y Partida B `NoDisponible` | Global `Parcial`; estados por Partida; `NoDisponible` no se propaga; total según cobertura |
+| AC-50 | I (D4) | Tres variantes del mismo registro: (a) `representado=Si` con `vinculo` verificado (Movimiento/registro identificado); (b) `representado=No` con `evidenciaRepresentacion` acreditada por identidad/origen/huella; (c) `representado=Desconocido`, o `Si` sin vínculo verificado | (a) el archivo se excluye y el Movimiento vinculado cuenta una vez, dentro de `detalleControl` o `detallePrecontrolVinculado` según su fecha; (b) el archivo suma una vez; (c) `estadoTotal=NoVerificable`; el archivo no suma y `subtotalConocido=null` sin `evidenciaNoDuplicidad` (no `"0.00"`); con evidencia, el archivo puede entrar en el subtotal etiquetado, nunca en el total; `Si` sin vínculo se normaliza a `Desconocido`, nunca se excluye en silencio |
+| AC-51 | I (D4) | (a) Completar el mapping de Referencia del registro sin cambiar su Partida; (b) después reclasificar el registro a otra Partida con nueva versión de mapping y de archivo | (a) el total y el importe por Partida no cambian; el desglose por Referencia pasa a `Completo`; no se crea versión de archivo; (b) reclasificación/conflicto: el total afectado queda `NoVerificable`, `total=null`, con motivo y auditoría; la clasificación original se conserva en la versión anterior; solo la vigente suma; sin recálculo silencioso |
+| AC-52 | I (D4) | (a) `Regularizacion2026` sin evidencia Q5=A de naturaleza/signo/inclusión, con Referencia pendiente; (b) con evidencia Q5=A y Partida/importe acreditados, pero Referencia pendiente que no cambia atribución; (c) con evidencia Q5=A, Partida/importe/fecha acreditados y Referencia mapeada | (a) queda `Pendiente`/`NoVerificado` y no suma; no se infiere por nombre, hoja, prefijo ni año; (b) aplica D4.1: suma por Partida si está verificado/mapeado, con `representado=No` acreditado y sin conflicto/solape, y el desglose queda `Incompleto`; (c) aplica D4 y suma una vez, sin duplicar archivo/Movimiento; falta de evidencia Q5=A y Referencia pendiente son faltas distintas y no se sustituyen entre sí |
+| AC-53 | I (D14) | Universo acreditado; Partida A con intervalo verificado y un registro elegible; Partida B sin ningún intervalo verificado (`NoDisponible`) | A: `estadoCobertura=Completa`, `estadoTotal=Verificado`, `total` verificado; B: `estadoCobertura=NoDisponible`, `estadoTotal=NoDisponible`, `total=null`; global: `estadoCobertura=Parcial`, `estadoTotal=NoVerificable`, `totales.valor=null`; `NoDisponible` no se propaga al global; no se presenta 0 |
 | AC-54 | I (D14) | Solape no resuelto en una Partida, resto completo | Global `Solapada`; `total=null`; no fuente elegida ni prorrateo |
 | AC-55 | I (D14) | Sin universo acreditado, con importes verificados/no conflictivos/separable y un `Desconocido` sin evidencia de no duplicidad | `NoAcreditada`; `subtotalConocido` solo con importes separables y sin el `Desconocido`; `total=null`; nunca 0 ni total certificado |
-| AC-56 | I (D14) | Cobertura completa a 30/06; después a 31/12; después condición incumplida | A 30/06: `Verificado`, `total` hasta corte, `alcanceTotal=HastaCorte`, no anual; a 31/12: `Anual`; si falla condición: `total=null` |
+| AC-56 | I (D14) | Reloj de prueba fijado en `2027-01-15` (posterior al 31/12/2026). Fixture F3-A: universo DT7 acreditado para PAR100; archivo `01/01–30/06` 900,00 con `controles[]` `{F3, PAR100, 01/01–30/06}`; control `{F3, PAR100, 01/07–31/12}` 300,00; consultas (a) corte 30/06, (b) corte 31/12; (c) variante con control `01/08–31/12` (hueco julio) y corte 31/12 | (a) `estadoCobertura=Completa`, `estadoTotal=Verificado`, `total="900.00"`, `alcanceTotal=HastaCorte`, no anual; (b) `Completa`, `Verificado`, `total="1200.00"`, `alcanceTotal=Anual`; (c) `Parcial`, `estadoTotal=NoVerificable`, `total=null`, `subtotalConocido="1200.00"` solo por componentes separables, nunca 0 ni total anual |
 | AC-57 | I (D4/D14) | Total por Partida verificado con desglose por Referencia `Incompleto` | El total por Partida se certifica; el desglose por Referencia no; no se presenta como completo |
-| AC-58 | C (E2.4) | Histórico con Referencia pendiente y Partida/importe/unicidad acreditados; después ambigüedad de atribución; corte abierto | `Ejecutado` incluye el importe; `Diferencia` calculable; con ambigüedad: `Ejecutado=null`, `Diferencia=null`, motivo; total hasta corte no anual; subtotal etiquetado |
+| AC-58 | C (E2.4) | Sobre `AnnualSources`/`AnnualHistory` reales: (a) registro con `estadoVerificacion=Verificado`, `estadoMapeo=Mapeado`, `estadoMapeoReferencia=Pendiente`, `representado=No` acreditado, `clase=GastoHistorico`, importe/intervalo/`AnnualProvenance` acreditados (identidad + huella + versiones), sin `idOrigen`, control por Partida/fuente en `controles[]` sin solape; (b) misma identidad con ambigüedad de atribución; (c) corte abierto 30/06; (d) `representado=Desconocido` | (a) `ejecutado` incluye el importe; `diferencia` calculable si hay presupuesto; `desgloseReferencia=Incompleto` no impide el total por Partida; `estadoTotal` de la Partida `Verificado` y global `Verificado` si no hay `sinClasificar`/conflicto; (b) `ejecutado=null`, `diferencia=null`, `estadoTotal=NoVerificable`, motivo; (c) `total` hasta corte con `alcanceTotal=HastaCorte`, nunca anual; (d) `estadoTotal=NoVerificable`, `subtotalConocido=null` sin evidencia de no duplicidad; `null` no se muestra como `0`; ningún caso usa `verificado:false` como sustituto de estados |
 | AC-59 | I (D4) | Fuente sin Referencia declarada vs fuente que la declara sin destino; registro con Partida pendiente | `NoAplica` solo con evidencia de ausencia; si declara, `Pendiente/Ambigua`; Partida pendiente visible en `sinClasificar` con importe/motivo y total `NoVerificable` |
