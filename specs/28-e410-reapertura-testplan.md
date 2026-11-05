@@ -1,6 +1,6 @@
 # 28 — E4.10 Reabrir el último cierre y volver a cerrar: Test plan
 
-**DRAFT — no aprobada; no autoriza DEV ni merge.**
+**DRAFT — test plan no aprobado; no autoriza DEV ni merge.**
 Status: **DRAFT documental — diseño de pruebas; NO EJECUTADO. Todos los AC están
 `UNRUN`. Ningún AC está en PASS.** SPEC28 está **ratificada como contrato documental**
 (2026-11-05); este testplan sigue en diseño y su ejecución requiere un DEV autorizado. No

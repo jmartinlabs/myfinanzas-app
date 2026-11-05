@@ -209,6 +209,10 @@ del tablero, y **no se reauditan en esta rama**.
 
 ### 4.1 Estado real por entrega
 
+> **Nota (2026-11-05):** la tabla conserva el estado a `90cd5dc` como base histórica del
+> borrador. Los avances posteriores no se reauditan aquí; en particular, E4.9 quedó
+> integrada y SPEC28 fue ratificada. Las filas E4.10/E4.11 se actualizan al estado vigente.
+
 | Dependencia | Estado declarado a `90cd5dc` | Situación | Qué debe estar cerrado antes del ensayo |
 | --- | --- | --- | --- |
 | **E1.1–E1.6** | Integradas; E1.1 con 6 AC `PARCIAL`; E1.6 con contratos futuros separados | Integrado | Contratos estables de IDs, aperturas, movimientos, referencias y deuda; sin deuda documental que altere identidad |
@@ -223,8 +227,8 @@ del tablero, y **no se reauditan en esta rama**.
 | **E4.7** | SPEC25 candidata integrada (#206); no aprobada; **sin DEV** | **Sin DEV** | Resumen anual y flujo trazable; sin esto no se cierra R3/R6 |
 | **E4.8** | Precierre integrado (#150/#161); sin cierre real | Integrado | Controles de consistencia operativos antes del cierre/foto |
 | **E4.9** | PR **#200 en implementación**, no mergeado; AC `UNRUN` | **En PR** | Cierre manual, foto inmutable y preflight de backup verificables; DT6 bloquea el cierre real |
-| **E4.10** | SPEC28 en borrador (#202); no aprobada; **sin DEV** | **Sin DEV** | Reapertura/re-cierre y versiones v1/v2; sin esto AC07 no puede demostrar versiones de fotos |
-| **E4.11** | SPEC29 en borrador (#202); no aprobada; **sin DEV** | **Sin DEV** | Consulta histórica por corte/versión; sin esto no hay foto trimestral/anual que preservar |
+| **E4.10** | SPEC28 **ratificada documentalmente** (2026-11-05); 24 AC `UNRUN`; **sin DEV** | **Sin DEV** | Reapertura/re-cierre y versiones v1/v2; sin esto AC07 no puede demostrar versiones de fotos |
+| **E4.11** | SPEC29 en borrador; P1-C/P4-A/P5-B aprobadas; **sin DEV** | **Sin DEV** | Consulta histórica por corte/versión; sin esto no hay foto trimestral/anual que preservar |
 | **E4.12** | SPEC30 = este documento | **Borrador** | Aprobación propia y autorización separada del ensayo |
 
 ### 4.2 DT6/T-BKP
@@ -319,6 +323,9 @@ ensayo ni la del merge (approvals).
 
 ## 7. Riesgos y huecos
 
+> **Nota (2026-11-05):** los estados de esta tabla son los del borrador (`90cd5dc`). E4.9 se
+> integró después; SPEC28 está ratificada documentalmente y DEV E4.10 sigue no autorizado.
+
 | Riesgo/hueco | Evidencia actual | Impacto en E4.12 | Responsable / gate |
 | --- | --- | --- | --- |
 | **DT6 abierto** | Sin destino externo; solo restores sintéticos | AC01 no puede acreditar recuperación operativa desde copia externa; P7 bloqueado | Usuario fija destino/custodia; gate DT6 |
@@ -327,11 +334,11 @@ ensayo ni la del merge (approvals).
 | **Flake SQLite B3** | `SQLITE_IOERR_SHORT_READ` intermitente; 0 reproducciones macOS; reproducción Linux `UNRUN` | Riesgo de falso negativo/positivo en la suite y en la confianza del restore; no es corrupción demostrada | Investigación separada; no cerrar por CI verde |
 | **E4.5 sin DEV** | Spec aprobada; 59 AC `UNRUN`; DT7 pendiente | Falta archivo/histórico precontrol y universo DT7 para AC06/AC12 | Autorización DEV E4.5 |
 | **E4.9 en PR** | PR #200 en implementación, no mergeado; AC `UNRUN` | No hay contrato estable de cierre/foto ni preflight que el ensayo pueda preservar | Merge + QA E4.9 |
-| **E4.10 sin DEV** | SPEC28 en borrador | No hay reapertura/re-cierre ni v1/v2 reales que AC07 exija preservar | SPEC28 + DEV |
-| **E4.11 sin DEV** | SPEC29 en borrador | No hay consulta de fotos por corte/versión que AC05/AC07 puedan contrastar | SPEC29 + DEV |
+| **E4.10 sin DEV** | SPEC28 ratificada documentalmente; 24 AC `UNRUN`; DEV no autorizado | No hay reapertura/re-cierre ni v1/v2 reales que AC07 exija preservar | Autorización DEV E4.10 |
+| **E4.11 sin DEV** | SPEC29 en borrador; P1-C/P4-A/P5-B aprobadas; DEV no autorizado | No hay consulta de fotos por corte/versión que AC05/AC07 puedan contrastar | SPEC29 + DEV |
 | **E4.7 sin DEV** | SPEC25 candidata | Escenario R3/R6 y flujo anual incompletos | SPEC25 + DEV |
 | **Oráculo no inspeccionado** | Referencia sanitizada; libro no inspeccionado por agentes; AC-25/P3 abierto | AC12/AC13 no tienen oráculo estable ni equivalencia real de Comida | Usuario/asesor; AUD-06 |
-| **Esquema en deriva** | `main` v24; v25 autorizada para E4.9 | El ensayo debe fijar versión de app/esquema y no mezclar contratos | Coordinador + ejecutor; AC16 |
+| **Esquema en deriva** | `main` v25 integrada con E4.9; E4.10 requiere versión posterior | El ensayo debe fijar versión de app/esquema y no mezclar contratos | Coordinador + ejecutor; AC16 |
 | **Restore sintético tomado como operativo** | Informes v19/v20 declaran sus límites | Falsa sensación de recuperación | Declaración de límites; AC17 |
 | **Temporales/forense** | `backup`/`restore` usan temporales privados; no se promete borrado seguro | La evidencia no puede afirmar ausencia forense de restos | Volumen cifrado en destino |
 | **Expansión a despliegue/P7** | Roadmap «Fuera» | Cambio de alcance no autorizado | §8; autorización separada |

@@ -46,7 +46,7 @@
 | Esquema posterior a v25 | **Pendiente** de asignación | Bloquea DDL y migración; no se asume v26 |
 | DT6/T-BKP | Abierto | Bloquea cierre/re-cierre real; DEV con fixtures no lo acredita |
 | E3.5/FIN_NETA (AC-15 PARCIAL) | Parcial | Sin verificación suficiente no hay re-cierre ni foto |
-| E4.5 precontrol | Integrado; DT7 abierto | Solo lectura; no se transforma en foto ni hecho |
+| E4.5 precontrol | SPEC/documentación integrada; **DEV no autorizado** (59 AC `UNRUN`); DT7 abierto | Solo lectura prevista; no se transforma en foto ni hecho |
 | SPEC29 P2/P3/P6/P7/P8 | Pendientes | No se aprueban ni se infieren en este paquete |
 | Autenticación MFA | Vigente | Las operaciones exigen sesión completa |
 
@@ -59,7 +59,7 @@ con aprobación explícita. Ninguna se presupone.
 
 | ID | Decisión | Opciones / límite | Impacto |
 | --- | --- | --- | --- |
-| DT-A | Persistencia de la reapertura | Tabla de eventos propia, versión de estado o extensión de `cierres`; no se asume que la tabla actual sirva | Esquema, migración, consultas |
+| DT-A | Persistencia de la reapertura | Tabla de eventos append-only o tabla de estado propia; nunca un `UPDATE` de la fila de `cierres` ni materializar el estado reescribiendo el cierre | Esquema, migración, consultas |
 | DT-B | Auditoría | Extender `cierre_audit` (el CHECK actual solo admite `cierre` y `cierre_fuera_de_orden`, exige migración) o crear tabla de eventos | Migración, append-only, AC18 |
 | DT-C | Fingerprint de `v2` | Candidato: huella del payload y coherencia de v2; vínculo y motivo como metadatos separados. No decidido si incluye identidad de v1, motivo o revalidación | Foto, comparación, AC02/AC10 |
 | DT-D | Estado observable | `Cerrado(vN)`/`Reabierto(vN)` derivado o persistido; garantías de una sola ventana | Estado, concurrencia, AC12/AC16 |
