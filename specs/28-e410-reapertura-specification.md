@@ -495,8 +495,10 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
 ## 13. Empty, loading and error states
 
 - **Sin cierre:** no hay reapertura; se explica que el cierre es E4.9.
-- **Reabierto sin correcciones:** la ventana sigue abierta; el re-cierre se rige por la
-  decisión pendiente sobre `SIN_CAMBIOS` (no se inventa aquí).
+- **Reabierto sin correcciones:** la ventana sigue abierta; el re-cierre sin cambios
+  materiales se rechaza con resultado explícito `SIN_CAMBIOS` y no crea foto. Si procede,
+  se usa la cancelación auditada de D8 con ausencia de cambios acreditada. No basta la
+  igualdad de importes o totales.
 - **Carga:** conserva ciclo, versión y filtros; no muestra totales provisionales.
 - **Error:** no hay v2 ni foto parcial; se declara el fallo y se permite reintento
   idempotente. El ciclo permanece `Reabierto(vN)` si falló el re-cierre.
