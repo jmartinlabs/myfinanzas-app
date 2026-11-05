@@ -90,9 +90,13 @@ es implementativa una vez aprobada la anterior. **DT-A, DT-B y DT-D se aprueban 
 | **Tipo** | **Aprobación humana** (modelo de persistencia). |
 
 Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
-(`reapertura`/`cancelacion`), `actor`, `utc`, `motivo`, `fingerprint_peticion`,
-`version_esperada`, `clave_intento`, `correlacion`, `reapertura_origen` (para cancelación) y
-`resultado`. Triggers de no `UPDATE`/`DELETE`.
+(`reapertura`/`cancelacion`), `actor`, `utc`, `motivo` (obligatorio, trim, máximo 1000),
+`fingerprint_peticion`, `version_esperada`, `clave_intento`, `correlacion`,
+`reapertura_origen` (para cancelación) y `resultado`. `cierre_vinculos`: `ciclo`,
+`version_origen`, `version_destino`, `reapertura_id`, `correlacion`, con
+`PRIMARY KEY(ciclo, version_destino)`. Ambas son **append-only**: triggers de no `UPDATE` y
+no `DELETE`, FKs a `cierres`/`reaperturas` y `CHECK` de motivo. La garantía D3 no depende solo
+del código.
 
 ### DT-B · Auditoría
 
@@ -155,9 +159,9 @@ Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
 | | |
 | --- | --- |
 | **Alternativas** | G1: excepción explícita y acotada en los puntos de entrada T1, manteniendo `closedWindows` intacta. G2: guardas paralelas para E4.10. |
-| **Recomendación** | **G1.** No modificar `closedWindows`: alimenta S0/ventana (`assertClosedCyclesUnchanged`), T2/T3, plan y revisión de comida. Añadir una resolución de «ventana activa» que solo consulten las entradas T1: `assertDatesWritable` en su variante T1, `movementClosureImpact` (Movimientos) y `operationClosureImpact` (Compras y Ventas). Excluir únicamente el cierre `vN` del ciclo reabierto; el resto de ciclos y fotos siguen bloqueando. S0, `inicio`, `Fin` y la ventana se validan con sus guardas actuales, sin excepción. Fuera de la ventana se mantiene `HISTORY_LOCKED`; T2/T3 no cambian. |
-| **Justificación** | Una segunda implementación duplicaría la regla T1 y podría divergir. La excepción debe ser mínima, cubrir las tres rutas T1 (Movimientos, Compras y Ventas) y ser fail-closed. Excluir globalmente `closedWindows` desactivaría protecciones ajenas a T1. |
-| **Riesgos** | Una exclusión demasiado amplia abriría ciclos cerrados. Pruebas obligatorias: reabrir A y verificar que B sigue bloqueado; S0/ventana/Fin del ciclo A siguen bloqueados; fechas fuera de ventana; estado cancelado; Compras y Ventas; `vN` histórico no editable. |
+| **Recomendación** | **G1.** No modificar `closedWindows`: alimenta S0/ventana (`assertClosedCyclesUnchanged`), T2/T3, plan y revisión de comida. Añadir una resolución de «ventana activa» que solo consulten las entradas T1: `assertDatesWritable` en su variante T1, `movementClosureImpact` (Movimientos) y `operationClosureImpact` (Compras y Ventas). Excluir **todas las versiones del ciclo con ventana activa** (`v1…vN`), porque `photoSnapshots` lee todas las fotos y una versión anterior del mismo ciclo no debe bloquear sus propias correcciones; el resto de ciclos y fotos siguen bloqueando. S0, `inicio`, `Fin` y la ventana se validan con sus guardas actuales, sin excepción. Fuera de la ventana se mantiene `HISTORY_LOCKED`; T2/T3 no cambian. |
+| **Justificación** | Una segunda implementación duplicaría la regla T1 y podría divergir. La excepción debe ser mínima, cubrir las tres rutas T1 (Movimientos, Compras y Ventas) y ser fail-closed. Excluir globalmente `closedWindows` desactivaría protecciones ajenas a T1; excluir solo `vN` dejaría bloqueado el ciclo tras reabrir v2/v3. |
+| **Riesgos** | Una exclusión demasiado amplia abriría ciclos cerrados. Pruebas obligatorias: reabrir A y verificar que B sigue bloqueado; S0/ventana/Fin del ciclo A siguen bloqueados; fechas fuera de ventana; estado cancelado; Compras y Ventas; **reapertura de v2/v3 con T1 permitido solo en A**; fotos de A consultables e intactas. |
 | **Dependencias** | Bloque A/B/D, SPEC28 §8, guardas E4.9. |
 | **Tipo** | **Implementativo** con matriz de guardas confirmada por QA; D2-B ya está aprobada. |
 
