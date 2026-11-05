@@ -65,7 +65,8 @@ habilitada por esta spec.
 `[CONFIRMADO]` El flujo vigente es `feature/* → main`; no hay rama `test`. La base no tiene
 MyFinanzas desplegada, no hay datos reales y el esquema vigente se declara por SHA, no se
 fija aquí. El [PR #9 de `vps-infra`](https://github.com/jmartinlabs/vps-infra/pull/9) (host
-TEST) sigue abierto y no mergeado; su §11.1 describe el despliegue como manual. Este diseño
+TEST) está MERGED en `901204c`; la spec conserva estado DRAFT/pendiente de aprobación y su
+§11.1 describe el despliegue como manual. Este diseño
 prepara la activación automática cuando se habilite expresamente: sustituirá solo el
 disparador, no los gates del host.
 
@@ -260,7 +261,7 @@ Controles adicionales de implementación `[PROPUESTA]`:
 | Repositorio | Posee | Documentos/artefactos |
 | --- | --- | --- |
 | `myfinanzas-app` | Convención y validación de tags, workflows, verificaciones, release, promoción y aceptación; contrato de esquema del SHA | Esta spec, `infra/release.py`, `infra/RUNBOOK.md`, `validate.yml`, workflows de despliegue y contrato por SHA |
-| `vps-infra` | Recepción y activación seguras, aislamiento TEST/PROD, privilegios, rutas, servicios, copias y recuperación | [Contrato de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18), host TEST PR #9 y `docs/operaciones.md` |
+| `vps-infra` | Recepción y activación seguras, aislamiento TEST/PROD, privilegios, rutas, servicios, copias y recuperación | [Contrato de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18), host TEST (PR #9 MERGED, spec DRAFT) y `docs/operaciones.md` |
 | `agent-project-template` | Patrón reutilizable como opción, sin imponerlo ni alterar la orquestación | [`docs/DEPLOYMENT_TAGS.md`](https://github.com/jmartinlabs/agent-project-template/pull/48) y enlace en su README |
 
 Los cambios de interfaz —campos del contrato, puertos, rutas, nombres de entorno o
