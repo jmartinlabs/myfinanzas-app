@@ -88,7 +88,7 @@ re-cierre; el ownership se decide en el paquete DEV.
 | **Fingerprint** | `[CONFIRMADO]` E4.9: huella propia; `financeRevision` no la sustituye; `[PENDIENTE]` composición de v2. | El re-cierre compara preflight y confirmación; no usa la huella técnica como foto. |
 | **Fuera de orden** | `[CONFIRMADO]` AC-20; motivo y coherencia al mismo corte. | No se reutiliza por analogía: un cierre posterior bloquea la vía ordinaria. |
 | **T1/T2/T3** | `[CONFIRMADO]` T1 bloquea, T2 audita, T3 se permite; `[APROBADO D2-B]` T1 en la ventana para Movimientos, Compras y Ventas; S0/`inicio`/`Fin` protegidos. | La ventana declara qué desbloquea. |
-| **Endpoints, forma y versiones** | `[CONFIRMADO]` superficie E4.9 (estado, preflight, foto, cierre); `[PENDIENTE]` rutas, representación de reapertura y política de versiones de E4.10. | No se fijan rutas nuevas ni la política definitiva de versiones. |
+| **Endpoints, forma y versiones** | `[CONFIRMADO]` superficie E4.9 (estado, preflight, foto, cierre); `[APROBADO D5-A]` política funcional de versión vigente; `[PENDIENTE]` rutas, representación de reapertura y fingerprint de v2. | No se fijan rutas nuevas; la representación y el fingerprint siguen pendientes. |
 
 ---
 
@@ -99,7 +99,7 @@ re-cierre; el ownership se decide en el paquete DEV.
 | **Último cierre** | `[CONFIRMADO]` Ciclo cerrado con el `Fin` cronológicamente más reciente y sin otro ciclo posterior cerrado. La fecha de registro no otorga prioridad. |
 | **Cierre posterior** | `[CONFIRMADO]` Cierre de otro ciclo cuyo `Fin` es posterior al del cierre considerado. Su existencia impide la reapertura ordinaria (E4.10-AC1). |
 | **Reapertura** | `[PROPUESTA]` Transición auditada que habilita una ventana de rectificación sobre el último cierre. No modifica la foto v1 ni crea una foto nueva. |
-| **Ventana de rectificación** | `[PROPUESTA]` Intervalo entre la reapertura y el re-cierre o la cancelación. Su alcance T1/T2/T3 depende de D2. |
+| **Ventana de rectificación** | `[CONFIRMADO]` Intervalo entre la reapertura y el re-cierre o la cancelación. T1 según D2-B; T2/T3 confirmados. |
 | **Rectificación** | `[CONFIRMADO]` Escritura T2/T3 y T1 dentro de la ventana según D2-B, con las guardas y la auditoría vigentes. |
 | **Re-cierre** | `[CONFIRMADO]` Nuevo cierre del mismo ciclo que crea una versión de foto posterior sin alterar las anteriores (SPEC27, DT4). |
 | **Versión vigente** | `[APROBADO D5-A]` Mientras el ciclo está reabierto y sin nueva versión, la última versión cerrada es consultable pero no se presenta como vigente sin advertencia. |
@@ -123,8 +123,9 @@ re-cierre; el ownership se decide en el paquete DEV.
    La reapertura (evento + estado derivado + auditoría) usa el mismo patrón transaccional.
    Un fallo no deja estado parcial, foto a medias ni auditoría huérfana.
 5. **`[CONFIRMADO]` Sin cierre posterior.** Si existe un cierre posterior, la reapertura
-   ordinaria se rechaza con motivo. **`[PROPUESTA]`** Si aparece durante la ventana, el
-   re-cierre se detiene y la ventana se resuelve según D8.
+   ordinaria se rechaza con motivo. **`[APROBADO D1-A/D8]`** Si aparece durante la ventana,
+   el re-cierre se detiene y la ventana se resuelve por D8: con cambios materiales no se
+   cancela; se exige `vN+1` o recuperación auditada aprobada por separado.
 6. **`[CONFIRMADO]` No se modifica automáticamente el S0 ni el plan de otro ciclo.**
    La revalidación es de solo lectura (E4.10-AC3).
 7. **`[CONFIRMADO]` Auditoría append-only.** Toda transición material registra actor, UTC
@@ -163,7 +164,8 @@ Transiciones candidatas:
   con cambios, `vN+1` o recuperación auditada aprobada por separado.
 - `SinCierre → Reabierto` — **prohibida**.
 - `Cerrado(vN) → Cerrado(vN+1)` sin reapertura — **prohibida**.
-- `Reabierto(vN) → Reabierto(vN)` — **prohibida** (una sola ventana por ciclo y vez).
+- `Reabierto(vN) → Reabierto(vN)` — **prohibida** (una sola ventana activa; tras el
+  re-cierre puede abrirse otra secuencial v3+).
 - `Reabierto(vN) → Reabierto(vM)` con M ≠ N — **prohibida**.
 - `Cerrado(vN) → Cerrado(vM)` con M ≤ N — **prohibida**.
 - Borrar o actualizar una versión/foto — **prohibido**.
@@ -567,7 +569,7 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC02 | Cerrar (v1) → reabrir → corregir → re-cerrar. | v1 intacta y consultable; v2 creada con fecha, motivo, actor, fingerprint, versión de app/esquema y vínculo v1→v2. | `[CONFIRMADO]` roadmap AC2 / DT4; `[PROPUESTA]` vínculo |
 | E4.10-AC03 | Reabrir/re-cerrar con dependencias posteriores existentes. | Revalidación de solo lectura; su S0/plan no se modifica automáticamente; evidencia registrada. | `[CONFIRMADO]` roadmap AC3 |
 | E4.10-AC04 | Intentar reabrir un cierre no último o una versión histórica distinta de la última. | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado; sin estado parcial. | `[CONFIRMADO]` P5/DT9; `[APROBADO D1-A]` rechazo de versión histórica |
-| E4.10-AC05 | Fallo inducido dentro de la transacción de reapertura. | Rollback total; el cierre sigue `Cerrado(vN)`; sin evento ni auditoría huérfana. | `[APROBADO D8]` atomicidad |
+| E4.10-AC05 | Fallo inducido dentro de la transacción de reapertura. | Rollback total; el cierre sigue `Cerrado(vN)`; sin evento ni auditoría huérfana. | `[PROPUESTA]` atomicidad de reapertura pendiente |
 | E4.10-AC06 | Reabrir con motivo, actor y UTC; consultar después. | Estado `Reabierto(vN)`; motivo/actor/UTC persistidos; no se crea foto ni versión de foto. | `[PENDIENTE D3]` |
 | E4.10-AC07 | Consultar y intentar modificar v1/foto mientras el ciclo está reabierto. | v1 y foto intactas; consulta devuelve valores persistidos; `PATCH`/`DELETE` rechazados. | `[CONFIRMADO]` inmutabilidad |
 | E4.10-AC08 | Reclasificar un hecho T2 dentro de la ventana. | Impacto, motivo y auditoría; v1 intacta; vista viva actualizada o marcada. | `[CONFIRMADO]` T2 |
@@ -629,7 +631,7 @@ exclusiones por inferencia.
 | D7 | Pendiente | Concurrencia observable. |
 | SPEC29 P2/P3/P6/P7/P8 | Pendientes | No se convierten en decisiones por inferencia. |
 
-**Trazabilidad:** D1 → §4, §5, AC10/AC16; D2 → §8, AC09; D5 → §11, AC20 y SPEC29
+**Trazabilidad:** D1 → §4, §5, AC10/AC16/AC23; D2 → §8, AC09; D5 → §11, AC20 y SPEC29
 P1-C/P4-A/P5-B; D8 → §5.5, AC16/AC21; D9 → AC04/AC22.
 
 **No se decide aquí:** la forma definitiva de reapertura (evento, tabla, estado o versión),
