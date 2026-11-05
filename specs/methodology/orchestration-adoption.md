@@ -458,12 +458,12 @@ template ni crear un segundo scheduler:
 | `.agents/skills/orchestrate/SKILL.md` | Activación en el paso de épicas solapadas |
 | `AGENTS.md` | Una línea de activación en Coordinación |
 | `specs/methodology/myfinanzas-coordination.md` | Precisión del reparto: SPEC/investigación/paquete DEV/diseño QA y siguiente acción, sin segundo scheduler |
-| `specs/methodology/dynamic-agents.md` | En esperas, avanzar trabajo independiente; `pending` solo si no hay trabajo listo |
+| `specs/methodology/dynamic-agents.md` | En esperas, avanzar trabajo independiente que no comprometa una decisión protegida; `pending` solo si no hay trabajo listo |
 | `specs/methodology/acceptance-scenarios.md` | Escenario O13 de look-ahead |
 
 Se preservan las reglas locales: aprobación separada de desarrollo, gates financieros,
 QA independiente, prohibición de auto-merge y autorización de merge. No se añaden
 servicios, dependencias ni evals nuevas; la aplicación, SQL, CI y scripts funcionales no
-cambian. Verificación local: `python3 scripts/check-project` y
-`python3 scripts/check-repository` PASS. El comportamiento real de un cliente no se
+cambian. Verificación local: `python3 scripts/check-project`, `python3 scripts/check-repository` y
+`python3.12 scripts/verify baseline` PASS. El comportamiento real de un cliente no se
 declara medido por este cambio documental.
