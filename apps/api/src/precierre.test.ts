@@ -6,6 +6,7 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { getPrecierre, getPrecierreEstado } from "./precierre";
+import { confirmCierre, previewCierre } from "./e49";
 import { positionsAtDate, quantityText } from "./investment-engine";
 
 process.env.NODE_ENV = "test";
@@ -58,14 +59,44 @@ function close(db: Database) {
   db.close();
 }
 
+function verifiableRegimen(db: Database, ciclo = "1", saldo = "S001") {
+  db.run(
+    `INSERT INTO regimen_comida(saldo,ciclo_corte,apertura,evidencia,cobertura,
+       estado,revision,creado,actualizado)
+     VALUES(?,?,10000,'Extracto ficticio E3.5','Verificable','Activo',1,'f','f')`,
+    [saldo, ciclo],
+  );
+}
+
+function classifyFood(db: Database, movimiento = "101") {
+  db.run(
+    `INSERT INTO movimiento_revision_comida(movimiento,etiqueta,
+       evidencia_bancaria,evidencia_comercial,estado_revision,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,'Comida','Extracto ficticio E3.5','Ticket ficticio E3.5',
+       'Revisada',1,1,'f','f')`,
+    [movimiento],
+  );
+}
+
 test("AC-01: ventana finita, S0 visible y sin escritura", () => {
   const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.ciclo).toMatchObject({ inicio: "2026-01-01", fin: "2026-01-31" });
     expect(result.ciclo.saldoInicialComida).toBe("1000.00");
     expect(["Listo", "Listo con avisos"]).toContain(result.estado);
     expect(result.bloqueos).toEqual([]);
+    expect(result.e4_9Bloqueado).toBe(false);
+    expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe(
+      "Verificado",
+    );
+    expect(result.fuentes.find((f) => f.key === "e44")?.estado).toBe(
+      "Integrado",
+    );
+    expect(result.fuentes.find((f) => f.key === "e36")).toBeDefined();
     expect(db.query("SELECT COUNT(*) n FROM movimientos").get()).toEqual({ n: 1 });
   } finally {
     close(db);
@@ -381,13 +412,17 @@ test("AC-06: sin compras nuevas pero con posición previa no es vacío", () => {
 
 test("AC-07: fuentes no disponibles son aviso, no cero ni bloqueo", () => {
   const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
-    for (const key of ["e43", "e44"]) {
+    for (const key of ["e43"]) {
       const source = result.fuentes.find((f) => f.key === key)!;
       expect(source.estado).toBe("No disponible");
       expect(source.cobertura).toBe("No disponible");
     }
+    expect(result.fuentes.find((f) => f.key === "e44")?.estado).toBe("Integrado");
+    expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe("Verificado");
     expect(result.fuentes.find((f) => f.key === "e42")?.estado).toBe("Integrado");
     const auxiliary = result.fuentes.find((f) => f.key === "anticipos")!;
     expect(auxiliary.estado).toBe("Parcial");
@@ -510,6 +545,8 @@ test("AC-11: cambio de importe del plan cambia la huella", () => {
 
 test("AC-12: SinPlan es válido y no bloquea", () => {
   const db = fixture();
+  verifiableRegimen(db);
+  classifyFood(db);
   try {
     const result = getPrecierre(db, "1", now, { backup });
     expect(result.plan.estado).toBe("SinPlan");
@@ -541,6 +578,11 @@ test("AC-14: E3.5 no disponible deja precierre parcial y E4.9 bloqueado", () => 
     const comida = result.fuentes.find((f) => f.key === "e35")!;
     expect(comida.estado).toBe("No disponible");
     expect(result.cobertura).toBe("Parcial");
+    expect(result.estado).toBe("Listo con avisos");
+    expect(result.bloqueos.map((b) => b.code)).not.toContain(
+      "E35_NO_VERIFICABLE",
+    );
+    expect(result.avisos.map((a) => a.code)).toContain("E35_NO_VERIFICABLE");
     expect(result.e4_9Bloqueado).toBe(true);
   } finally {
     close(db);
@@ -555,6 +597,73 @@ test("AC-15: estado comparte versión y estado con precierre", () => {
     expect(state.revision).toBe(full.revision);
     expect(state.estado).toBe(full.estado);
     expect(state.e4_9Bloqueado).toBe(full.e4_9Bloqueado);
+  } finally {
+    close(db);
+  }
+});
+
+test("B2: error de fuente núcleo marca e4_9Bloqueado aunque el estado sea Parcial", () => {
+  const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
+  try {
+    db.run("ALTER TABLE movimiento_anticipo RENAME TO movimiento_anticipo_off");
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.estado).toBe("Parcial");
+    expect(result.e4_9Bloqueado).toBe(true);
+    expect(
+      result.estado === "Listo con avisos" && result.e4_9Bloqueado,
+    ).toBe(false);
+  } finally {
+    close(db);
+  }
+});
+
+test("AC-16: cierre posterior real detectado desde cierres/fotos sin inyección", () => {
+  const db = fixture({ plan: true });
+  verifiableRegimen(db);
+  classifyFood(db);
+  try {
+    db.run(
+      "INSERT INTO ciclos(id,inicio,saldo_comida,creado) VALUES('3','2026-03-01',300000,'f')",
+    );
+    const options = {
+      appVersion: "0.0.0-precierre-fixture",
+      backup: {
+        verificado: true,
+        restauracionProbada: true,
+        referencia: "backup-ficticio-precierre",
+      },
+      e35: {
+        verificable: true,
+        motivo: null,
+        huella: "b".repeat(64),
+        cobertura: "Verificada",
+        datos: { fixture: "E3.5 precierre" },
+      },
+    };
+    const preview = previewCierre(db, "2", options, now);
+    confirmCierre(
+      db,
+      "2",
+      { fingerprint: preview.fingerprint },
+      randomUUID(),
+      options,
+      now,
+    );
+    const result = getPrecierre(db, "1", now, { backup });
+    expect(result.cierres).toHaveLength(1);
+    expect(result.cierres[0]).toMatchObject({
+      id: "2",
+      fin: "2026-02-28",
+      coherent: true,
+    });
+    expect(result.avisos.map((a) => a.code)).toContain(
+      "CIERRE_FUERA_DE_ORDEN",
+    );
+    expect(result.bloqueos.map((b) => b.code)).not.toContain(
+      "INCOHERENCIA_CON_CIERRE_POSTERIOR",
+    );
   } finally {
     close(db);
   }

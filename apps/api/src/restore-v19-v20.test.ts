@@ -180,7 +180,7 @@ test("RESTORE-19/20: v19 cifrado conserva Comida y migra a v21", () => {
     const migrated = openDatabase(restored.database);
     try {
       expect(migrated.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
       expect(
         migrated.query("SELECT COUNT(*) n FROM movimientos WHERE id IN ('301','302')").get(),

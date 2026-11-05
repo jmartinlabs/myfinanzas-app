@@ -48,6 +48,8 @@ import {
   rectificarRevisionComida,
   anularRevisionComida,
   vincularRevisionComida,
+  previewRevisionComidaImpact,
+  previewRevisionComidaCreationImpact,
 } from "./revision-comida";
 import {
   getAnticipo,
@@ -90,6 +92,7 @@ import {
   createDebt,
   updateDebt,
   debtUsage,
+  previewDebtImpact,
 } from "./deudas";
 import {
   getDeudaCompleta,
@@ -106,6 +109,7 @@ import {
   listReferences,
   createReference,
   updateReference,
+  previewReferenceImpact,
 } from "./referencias";
 import {
   getVehicle,
@@ -177,6 +181,7 @@ import {
   createSaldo,
   getSaldo,
   listSaldos,
+  previewSaldoChange,
   updateSaldo,
   Problem,
   type ImpactGuard,
@@ -209,18 +214,27 @@ import {
   type PrecierreOptions,
 } from "./precierre";
 import {
+  confirmCierre,
+  getCierreEstado,
+  getFotoCierre,
+  previewCierre,
+  type CierreOptions,
+} from "./e49";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
 } from "./pendientes";
 import { conciliacionCiclo } from "./conciliacion-ciclos";
 import { resumenInicio } from "./resumen-inicio";
+import { resumenAnual } from "./resumen-anual";
 
 export type AppOptions = {
   annualProvider?: AnnualProvider;
   classificationGuard?: ClassificationGuard;
   movementGuard?: MovementProtection;
   precierre?: PrecierreOptions;
+  cierre?: CierreOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -346,6 +360,27 @@ export function createApp(db: Database, options: AppOptions) {
               annualProvider: options.annualProvider,
               mesesObjetivo: options.resumenInicio?.mesesObjetivo,
             }),
+          )(),
+        );
+      }
+      // E4.7 — composición anual de solo lectura: un único GET, sin escrituras.
+      if (path === "/api/resumen-anual") {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El resumen anual es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            resumenAnual(
+              db,
+              new URL(req.url).searchParams,
+              now(),
+              { annualProvider: options.annualProvider },
+            ),
           )(),
         );
       }
@@ -524,6 +559,15 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(getComidaMovement(db, comida[1]));
       if (path === "/api/revision-comida/opciones" && req.method === "GET")
         return reply(revisionComidaOptions(db, now()));
+      if (path === "/api/revision-comida/impacto" && req.method === "POST")
+        return reply(
+          previewRevisionComidaCreationImpact(
+            db,
+            await jsonBody(req),
+            "Detalle",
+            now(),
+          ),
+        );
       if (path === "/api/revision-comida" && req.method === "GET")
         return reply(listOperaciones(db, new URL(req.url).searchParams));
       if (path === "/api/revision-comida" && req.method === "POST") {
@@ -546,6 +590,18 @@ export function createApp(db: Database, options: AppOptions) {
       )
         return reply(listReposiciones(db, new URL(req.url).searchParams));
       if (
+        path === "/api/revision-comida/reposiciones/impacto" &&
+        req.method === "POST"
+      )
+        return reply(
+          previewRevisionComidaCreationImpact(
+            db,
+            await jsonBody(req),
+            "Reposicion",
+            now(),
+          ),
+        );
+      if (
         path === "/api/revision-comida/reposiciones" &&
         req.method === "POST"
       ) {
@@ -563,7 +619,7 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(item, 201);
       }
       const reposicion = path.match(
-        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+        /^\/api\/revision-comida\/reposiciones\/(\d+)(?:\/(rectificar|anular|vinculo|impacto))?$/,
       );
       if (reposicion) {
         const [, id, action] = reposicion;
@@ -572,6 +628,10 @@ export function createApp(db: Database, options: AppOptions) {
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";
+          if (action === "impacto")
+            return reply(
+              previewRevisionComidaImpact(db, id, body, "Reposicion"),
+            );
           if (action === "rectificar")
             return reply(
               rectificarRevisionComida(db, id, body, key, now(), "Reposicion"),
@@ -586,7 +646,7 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       const revision = path.match(
-        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo))?$/,
+        /^\/api\/revision-comida\/(\d+)(?:\/(rectificar|anular|vinculo|impacto))?$/,
       );
       if (revision) {
         const [, id, action] = revision;
@@ -595,6 +655,8 @@ export function createApp(db: Database, options: AppOptions) {
         if (action && req.method === "POST") {
           const body = await jsonBody(req),
             key = req.headers.get("idempotency-key") ?? "";
+          if (action === "impacto")
+            return reply(previewRevisionComidaImpact(db, id, body, "Detalle"));
           if (action === "rectificar")
             return reply(
               rectificarRevisionComida(db, id, body, key, now(), "Detalle"),
@@ -821,10 +883,93 @@ export function createApp(db: Database, options: AppOptions) {
           );
         }
         return reply(
+          db.transaction(() => ({
+            // E4.8 shape stays at the top level (SPEC26 AC-15); the E4.9
+            // closure state is additive under `cierre`.
+            ...getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
+            cierre: getCierreEstado(db, cierreEstado[1]),
+          }))(),
+        );
+      }
+      const cierrePreflight = path.match(
+        /^\/api\/cierres\/(\d+)\/preflight$/,
+      );
+      if (cierrePreflight) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El preflight de cierre es de solo lectura.",
+          );
+        }
+        return reply(
           db.transaction(() =>
-            getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
+            previewCierre(db, cierrePreflight[1], options.cierre, now()),
           )(),
         );
+      }
+      const cierreFoto = path.match(/^\/api\/cierres\/(\d+)\/foto$/);
+      if (cierreFoto) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La foto de cierre es de solo lectura.",
+          );
+        }
+        const rawVersion = new URL(req.url).searchParams.get("version");
+        let version: number | undefined;
+        if (rawVersion !== null) {
+          version = Number(rawVersion);
+          if (
+            !Number.isSafeInteger(version) ||
+            version < 1 ||
+            rawVersion !== String(version)
+          )
+            throw new Problem(422, "VALIDATION", "Versión de foto inválida.", {
+              version: "Indica una versión positiva.",
+            });
+        }
+        return reply(
+          db.transaction(() => getFotoCierre(db, cierreFoto[1], version))(),
+        );
+      }
+      const cierreState = path.match(/^\/api\/cierres\/(\d+)\/cierre$/);
+      if (cierreState) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El estado de cierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() => getCierreEstado(db, cierreState[1]))(),
+        );
+      }
+      const cierreConfirm = path.match(/^\/api\/cierres\/(\d+)\/cerrar$/);
+      if (cierreConfirm) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El cierre se confirma con POST.",
+          );
+        }
+        const result = confirmCierre(
+          db,
+          cierreConfirm[1],
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          options.cierre,
+          now(),
+        );
+        headers.set("location", `/api/cierres/${cierreConfirm[1]}/foto`);
+        return reply(result, 201);
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());
@@ -1009,7 +1154,7 @@ export function createApp(db: Database, options: AppOptions) {
           });
       }
       const debt = path.match(
-        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/deudas\/(D\d+)(?:\/(desactivar|reactivar|impacto))?$/,
       );
       if (debt) {
         const [, id, action] = debt;
@@ -1035,16 +1180,18 @@ export function createApp(db: Database, options: AppOptions) {
           (action && req.method === "POST")
         ) {
           let body = await jsonBody(req);
+          if (action === "impacto")
+            return reply(previewDebtImpact(db, id, body));
           if (action) {
             if (
               Object.keys(body).some(
-                (k) => !["revision", "motivo"].includes(k),
+                (k) => !["revision", "motivo", "fingerprint"].includes(k),
               )
             )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo revisión y motivo para Estado.",
+                "Solo revisión, motivo y huella para Estado.",
               );
             body = {
               revision: body.revision,
@@ -1052,6 +1199,9 @@ export function createApp(db: Database, options: AppOptions) {
               ...(body.motivo === undefined
                 ? {}
                 : { motivo: body.motivo }),
+              ...(body.fingerprint === undefined
+                ? {}
+                : { fingerprint: body.fingerprint }),
             };
           }
           return reply({ item: updateDebt(db, id, body, now()) });
@@ -1070,7 +1220,7 @@ export function createApp(db: Database, options: AppOptions) {
         return reply({ item }, 201);
       }
       const reference = path.match(
-        /^\/api\/referencias\/(REF\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/referencias\/(REF\d+)(?:\/(desactivar|reactivar|impacto))?$/,
       );
       if (reference) {
         const [, id, action] = reference;
@@ -1111,16 +1261,26 @@ export function createApp(db: Database, options: AppOptions) {
           (action && req.method === "POST")
         ) {
           let body = await jsonBody(req);
+          if (action === "impacto")
+            return reply(previewReferenceImpact(db, id, body));
           if (action) {
-            if (Object.keys(body).some((k) => k !== "revision"))
+            if (
+              Object.keys(body).some(
+                (k) => !["revision", "motivo", "fingerprint"].includes(k),
+              )
+            )
               throw new Problem(
                 422,
                 "VALIDATION",
-                "Solo se admite revisión para Estado.",
+                "Solo se admite revisión, motivo y huella para Estado.",
               );
             body = {
               revision: body.revision,
               estado: action === "reactivar" ? "Activa" : "Inactiva",
+              ...(body.motivo === undefined ? {} : { motivo: body.motivo }),
+              ...(body.fingerprint === undefined
+                ? {}
+                : { fingerprint: body.fingerprint }),
             };
           } else if ("estado" in body)
             throw new Problem(
@@ -1517,12 +1677,60 @@ export function createApp(db: Database, options: AppOptions) {
         }
       }
       const match = path.match(
-        /^\/api\/saldos\/(S\d+)(?:\/(desactivar|reactivar))?$/,
+        /^\/api\/saldos\/(S\d+)(?:\/(desactivar|reactivar|impacto|rectificar))?$/,
       );
       if (match) {
         const [, id, action] = match;
         if (!action && req.method === "GET")
           return reply({ saldo: getSaldo(db, id) });
+        if (action === "impacto" && req.method === "POST")
+          return reply(
+            previewSaldoChange(
+              db,
+              id,
+              await jsonBody(req),
+              options.impactGuard,
+            ),
+          );
+        if (action === "rectificar" && req.method === "POST") {
+          const body = await jsonBody(req);
+          const cambios = body.cambios;
+          if (
+            !cambios ||
+            typeof cambios !== "object" ||
+            Array.isArray(cambios)
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Envía los cambios del Saldo en cambios.",
+              { cambios: "Objeto de cambios." },
+            );
+          if (
+            Object.keys(body).some(
+              (key) =>
+                !["cambios", "motivo", "fingerprint"].includes(key),
+            )
+          )
+            throw new Problem(
+              422,
+              "VALIDATION",
+              "Campo no editable en la rectificación del Saldo.",
+            );
+          return reply({
+            saldo: updateSaldo(
+              db,
+              id,
+              cambios as Record<string, unknown>,
+              options.impactGuard,
+              now(),
+              {
+                fingerprint: body.fingerprint,
+                motivo: body.motivo,
+              },
+            ),
+          });
+        }
         if (
           (!action && req.method === "PATCH") ||
           (action && req.method === "POST")

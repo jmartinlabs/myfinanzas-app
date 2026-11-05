@@ -3,12 +3,14 @@ import { RevisionComida } from "./RevisionComida";
 import { Comida } from "./Comida";
 import { Pendientes } from "./Pendientes";
 import { Precierre } from "./Precierre";
+import { Cierre } from "./Cierre";
 import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
 import { Anticipos } from "./Anticipos";
 import { Nomina } from "./Nomina";
 import { PlanAnual } from "./PlanAnual";
+import { ResumenAnual } from "./ResumenAnual";
 import { PlanesCiclo } from "./PlanesCiclo";
 import { Presupuestos } from "./Presupuestos";
 import { Deudas } from "./Deudas";
@@ -137,7 +139,8 @@ function App() {
             current.startsWith("/inicio") ||
               current.startsWith("/flujo-mensual") ||
               current.startsWith("/pendientes") ||
-              current.startsWith("/inversiones")
+              current.startsWith("/inversiones") ||
+              current.startsWith("/cierre")
               ? current
               : "/saldos",
           );
@@ -318,6 +321,21 @@ function App() {
           </a>
           <a
             className={
+              path.startsWith("/resumen-anual") ? "nav-active" : "nav-link"
+            }
+            href="/resumen-anual"
+            aria-current={
+              path.startsWith("/resumen-anual") ? "page" : undefined
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              go("/resumen-anual");
+            }}
+          >
+            Resumen anual
+          </a>
+          <a
+            className={
               path.startsWith("/saldos") || path === "/"
                 ? "nav-active"
                 : "nav-link"
@@ -374,6 +392,20 @@ function App() {
             }}
           >
             <span aria-hidden="true">◐</span> Precierre{" "}
+            <span aria-hidden="true">›</span>
+          </a>
+          <a
+            className={
+              path.startsWith("/cierre") ? "nav-active" : "nav-link"
+            }
+            aria-current={path.startsWith("/cierre") ? "page" : undefined}
+            href="/cierre"
+            onClick={(e) => {
+              e.preventDefault();
+              go("/cierre");
+            }}
+          >
+            <span aria-hidden="true">▣</span> Cierre{" "}
             <span aria-hidden="true">›</span>
           </a>
           <a
@@ -514,6 +546,8 @@ function App() {
             <Comida go={go} />
           ) : path.startsWith("/precierre") ? (
             <Precierre go={go} />
+          ) : path.startsWith("/cierre") ? (
+            <Cierre go={go} />
           ) : path.startsWith("/revision-comida") ? (
             <RevisionComida path={path} go={go} />
           ) : path.startsWith("/flujo-mensual") ? (
@@ -528,6 +562,8 @@ function App() {
             <Nomina />
           ) : path.startsWith("/plan-anual") ? (
             <PlanAnual go={go} />
+          ) : path.startsWith("/resumen-anual") ? (
+            <ResumenAnual go={go} />
           ) : path.startsWith("/planes-ciclo") ? (
             <PlanesCiclo go={go} />
           ) : path.startsWith("/presupuestos") ? (

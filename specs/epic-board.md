@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-04
+## Identificadores canónicos y etapas — reconciliado 2026-11-05
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,13 +8,54 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | not-ready (DT7) | AC-48…59 **NO APTO** | not-ready | pending | Enmienda C1–C7 + reauditoría |
+| E4.5 | approved | not-ready (DT7; DEV no autorizado) | APTO (focal; 59 AC UNRUN) | merged `a806fd9` (#216) | pending | C1–C8 y R1–R4 integrados; QA focal APTO; DT7 abierto; DEV E4.5 no autorizado; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
-| E4.7 | drafting (SPEC25) | not-ready | planned | not-ready | pending | Decisiones D8-M/Z/F/N |
-| E4.9 | approved | implementing (#200: DEV-04 guards `6af6911`; DEV-05 correcciones en curso) | guards APTO CON RESERVAS; conjunto pendiente | not-ready | pending | DEV-05 + UI/E2E + DT6 |
-| E4.10 | drafting (SPEC28) | not-ready | planned | not-ready | pending | Decisiones D1–D9 + E4.9 estable |
-| E4.11 | drafting (SPEC29) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
-| E4.12 | not-ready (requisitos) | not-ready | planned | not-ready | pending | DT6/DT7 y specs previas |
+| E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
+| E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
+| E4.10 | draft (SPEC28 en `main`) | not-ready | planned | not-ready | pending | Decisiones D1–D9 |
+| E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | Decisiones P1–P8 + E4.10 |
+| E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
+| INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
+| UI | draft (análisis #205) | not-ready | planned | not-ready | pending | Aprobar identificador/alcance `UI` |
+
+## E4.9 — estado vigente reconciliado (2026-11-05)
+
+Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+presente E4.9 sin DEV autorizado o con el candidato `85b4102`. Las secciones históricas
+conservan su fecha y no deben leerse como estado actual.
+
+- **Autorización:** DEV E4.9 **autorizado el 2026-11-03** (v25 exclusiva, D4 estricto,
+  Ventas E4.2 en T1, AC-20/T2, DT4, fixtures y QA). Sin datos reales.
+- **Candidato integrado:** `f34cbbd` (PR **#200**), fusionado en `main` `0176ffc` el
+  2026-11-05. Integración de `origin/main` con conflicto resuelto en `style.css`
+  conservando los bloques `.cierre-*` y `.e47-*`. Incluye la corrección B-1 de precierre
+  (SPEC26 AC-14) y la reversión de la spec 27 a `origin/main`.
+- **CI:** `41995447858` **PASS** sobre `f34cbbd` (perfil `critical`, 764/764 API; no
+  ejecuta E2E). **CI post-merge:** `42000330143` **PASS** sobre `0176ffc`.
+  **E2E focal local:** 24/24 PASS.
+- **QA:** **APTO CON RESERVAS** (DEV-06/07); B-1 resuelto y verificado. Reservas de
+  cobertura y operativas abiertas; no hay PASS de DT6 ni de cierre real.
+- **Merge:** **completado** (`0176ffc`). La aceptación funcional y los gates de operación
+  real siguen separados; no se autoriza cierre real ni datos reales.
+- **DT6/T-BKP:** abierto. Bloquea **AC-09 y el cierre real**; **no** bloquea el DEV con
+  fixtures.
+- **Main posterior:** `a806fd9` (#216, documentación de E4.5) no modifica el estado de E4.9.
+
+## E4.5 — estado vigente reconciliado (2026-11-05)
+
+Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+presente E4.5 con C3/AC-56 abiertos, con #216 en `5d3ad0b` o con las precisiones sin
+aplicar. Las secciones históricas conservan su fecha y no deben leerse como estado actual.
+
+- **Integración:** PR **#216** fusionada por squash en `main` **`a806fd9`** el 2026-11-05;
+  HEAD validado `9d5ad85`. Incluye la enmienda C1–C8 y las reservas R1–R4 de
+  AC-46/48/49/53/58.
+- **QA:** reauditoría focal independiente **APTO** sobre `54659eb`; evidencia en
+  [e45-qa-ac48-59-2026-11-04](investigations/e45-qa-ac48-59-2026-11-04.md).
+- **CI:** `42014768987` **PASS** sobre `9d5ad85` (perfil `docs`); post-merge
+  `42014853576` **PASS** sobre `a806fd9`.
+- **Límites:** los 59 AC siguen `UNRUN`; no hay PASS funcional. DEV E4.5 **no autorizado**;
+  DT7 abierto; sin datos reales, importación ni despliegue.
 
 ## Auditoría de especificaciones — cierre global ratificado 2026-11-02
 
@@ -40,7 +81,8 @@ solas:
 - **DT2-E4.3:** **aprobada** el 2026-11-03 sobre `24f3efb` (PR #174).
 - **SPEC23/E4.3:** specification, testplan y wireframes **integrados**; **DEV E4.3 A/B/C autorizado** el 2026-11-03 con **v24 reservada**, fixtures y QA; sin merge ni despliegue.
 - **SPEC24/E4.6:** Q1–Q12 ratificadas (A), spec/testplan **MERGED `5dc1dd3`**; **DEV24 no autorizado**.
-- **Wireframes E4.9:** **MERGED `8b5cf5c`**; **DEV E4.9 no autorizado**.
+- **Wireframes E4.9:** **MERGED `8b5cf5c`**. En esa fecha el DEV no estaba autorizado;
+  **se autorizó después el 2026-11-03** (ver cola operativa y estado vigente).
 - **Primera foto E4.9:** E4.3 puede figurar `No disponible`; el resto de gates de cierre sigue
   intacto.
 
@@ -63,11 +105,13 @@ Base `main` `17d86c3`; **v24 integrada** con DEV E4.3 A+B+C+QA; **v25 autorizada
 - **DEV24/E4.6 autorizado:** F-01/F-02 corregidas y validadas. Bloques A+B (composición/API)
   en ejecución; C/UI después. Sin esquema ni migración.
 - **KI-409-01:** corregido y MERGED `17d86c3` (#194).
-- **Temas visuales:** propuesta y prueba `light-s`/`dark-s`/`hybrid-s` pendiente de autorización
-  de Fase 1; sin cambios en la app.
+- **Temas visuales:** Fase 1 **MERGED `0b8aade`** (#198): `light-s`/`dark-s`/`hybrid-s`, selector,
+  persistencia y tokens semánticos. Fase 2 (evolución visual) en análisis; **sin DEV**.
 - **Flake SQLite B3:** investigado sin reproducción macOS; pendiente ejecución diagnóstica Linux.
 - **En preparación:** frontera E4.7 y checklist DT7/E4.5 solo si se pide.
-- **Bloqueado por decisión:** DEV E4.9 (D4/T1/foto/versionado/DT6); DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales.
+- **Bloqueado por decisión (histórico 2026-11-03):** DEV E4.9 (D4/T1/foto/versionado/DT6);
+  DEV24/DEV25/DEV E4.5; E4.10–E4.12; v25; datos reales. **Superado para E4.9:** DEV
+  autorizado y ejecutado; ver estado vigente 2026-11-05.
 - **Merges:** funcionales y documentales requieren aprobación explícita por PR y SHA.
 
 ## Pendientes consolidados post Comida/Partidas — 2026-10-31 (vigente)
@@ -177,8 +221,9 @@ Análisis de adaptación en
   E3.5 con cobertura parcial/ND; no se reabre.
 - **Doble vínculo Anticipo:** coherencia semántica, no igualdad literal; un solo ID
   se cuenta una vez y los conflictos se tratan como parcial/no disponible.
-- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 sigue **sin DEV
-  autorizado**; consumirá el proveedor E3.5 cuando se autorice (D4).
+- Evitar duplicar gastos, devoluciones, financiación o reposiciones. E4.9 **fue
+  autorizado el 2026-11-03 y su DEV está ejecutado** (integrado en `0176ffc`); consumirá el
+  proveedor E3.5 cuando se complete el gate correspondiente (D4). Ver estado vigente.
 
 ### 5. Dependencias de cierre y release
 
@@ -200,6 +245,11 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
 
 #### E4.9 — gates separados
 
+**Estado vigente 2026-11-05:** DEV E4.9 **autorizado** (2026-11-03) y ejecutado;
+integrado `0176ffc` (PR #200) con CI `42000330143` PASS y QA **APTO CON
+RESERVAS**. **Merge completado en `0176ffc` el 2026-11-05.** DT6/T-BKP sigue
+abierto: bloquea AC-09 y el cierre real, no el DEV con fixtures.
+
 E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
 
 | Gate | Estado | Efecto |
@@ -207,7 +257,7 @@ E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
 | E3.5 / FIN_NETA | **MERGED `1560d04`**; DEV18 histórico STOP | Integrado sobre registro único; AC-12/15 PARCIAL; R2/R3 cubiertas por PR #173, pendiente de merge |
 | DT6 / T-BKP | Abierto y aparcado; sin datos físicos | Bloquea **AC-09 y el cierre real**; el DEV con fixtures no queda bloqueado por DT6 (decisión 2026-11-03). Los fixtures v19/v20 no acreditan custodia externa ni simulacro |
 | E4.8 precierre | [PR #150](https://github.com/jmartinlabs/myfinanzas-app/pull/150) **MERGED** en `e608bbb`; CI postmerge PASS; UI provisional; visual aplazada al final | Desarrollo integrado; puerta del flujo E4.9; falta el cierre E4.9 |
-| DEV E4.9 / SPEC27 | No autorizado; AC **UNRUN** | DT6 no bloquea el DEV con fixtures, sí el cierre real. Faltan cierre, foto, impactos, idempotencia, concurrencia, seguridad y pruebas |
+| DEV E4.9 / SPEC27 | **Autorizado 2026-11-03 y ejecutado**; integrado en `0176ffc`; QA APTO CON RESERVAS; B-1 de precierre corregido | DT6 no bloquea el DEV con fixtures, sí el cierre real. Merge de #200 completado; aceptación funcional y operación real siguen pendientes |
 | Entorno real | Gates separados | Datos, release/rootless y ejecución productiva no autorizados |
 
 No bloqueantes por sí solos: E4.1 posiciones a Fin está integrada; E4.3, E4.2 y
@@ -216,9 +266,10 @@ alcance; DT3/DT4 están resueltas y no se reabren. La primera fotografía puede
 registrar E4.3 como `No disponible` (confirmado 2026-11-03), sin inventar
 valoración ni patrimonio.
 
-Orden recomendado, sin iniciar trabajo automáticamente: analizar la adaptación de
-E3.5/FIN_NETA; mantener E4.8 integrado y la visual aplazada; mantener DT6 aparcado;
-abordar DEV E4.9 solo tras aprobar alcance y dependencias.
+Orden recomendado (histórico, previo a la autorización del DEV E4.9): analizar la
+adaptación de E3.5/FIN_NETA; mantener E4.8 integrado y la visual aplazada; mantener DT6
+aparcado. **Estado actual:** DEV E4.9 ejecutado y merge de #200 completado en `0176ffc`;
+la aceptación funcional y el cierre real siguen pendientes, sin nueva autorización de DEV.
 
 ### 6. Mejoras opcionales
 
@@ -383,7 +434,7 @@ Precisiones compatibles, sin reabrir DT3/DT4:
 `codex/docs-dt3-dt4-resolution`, PR #111, SPEC26/SPEC27 y sus testplans. Bloqueos:
 DT6/T-BKP (sin destino externo) y E3.5/FIN_NETA. No se ha ejecutado código ni pruebas.
 
-# Coordinación global — consolidado 2026-10-28 (post PR #107)
+# Coordinación global — consolidado 2026-10-28 (post PR #107) (histórico)
 
 Sustituye como resumen vigente a los apartados inferiores, que se conservan como historia.
 Responsable único del tablero: coordinador global (OpenCode). Entrada en la rama
@@ -785,6 +836,11 @@ no como nuevas ejecuciones de este coordinador. No repetir pruebas por este regi
 
 ## Registro SPEC / entrega / desarrollo
 
+> **Registro histórico.** Las filas de esta tabla conservan el estado de su fecha de
+> registro y no sustituyen al **estado vigente E4.9 reconciliado (2026-11-05)** de la
+> cabecera. Para E4.9, la fila de esta tabla se actualiza solo como índice; la evidencia
+> vigente está en la sección superior.
+
 SPEC21–SPEC30 asignadas expresamente por el usuario en esta coordinación; no son
 expedientes redactados ni autorización de inicio. Se recupera aquí la asignación
 que solo constaba en un resumen local desaparecido. No renumerar las existentes.
@@ -817,7 +873,7 @@ que solo constaba en un resumen local desaparecido. No renumerar las existentes.
 | SPEC24 | E4.6 | Resumen de inicio | Número asignado; no iniciada | No iniciado |
 | SPEC25 | E4.7 | Resumen Anual y flujo completo | Número asignado; no iniciada | No iniciado |
 | SPEC26 | E4.8 | Precierre | Aprobada documentalmente; integrada #150/#161 | DEV26 no autorizado |
-| SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; DEV no autorizado | AC UNRUN; gates E3.5/DT6 |
+| SPEC27 | E4.9 | Cierre y primera fotografía | Aprobada documentalmente; **DEV autorizado 2026-11-03 y ejecutado** | Integrado `0176ffc` (#200); CI PASS; QA APTO CON RESERVAS; aceptación y operación real pendientes; DT6 abierto |
 | SPEC28 | E4.10 | Reapertura y nuevo cierre | Número asignado; no iniciada | No iniciado |
 | SPEC29 | E4.11 | Fotografías consultables | Número asignado; no iniciada | No iniciado |
 | SPEC30 | E4.12 | Recuperación integral | Número asignado; no iniciada | No iniciado |
