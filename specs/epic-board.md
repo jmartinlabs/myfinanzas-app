@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-04
+## Identificadores canónicos y etapas — reconciliado 2026-11-05
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -8,7 +8,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | --- | --- | --- | --- | --- | --- | --- |
 | E4.3 | approved | verified (merged `dd56553`) | passed with reserves (15 PASS / 2 PARCIAL) | merged | favorable con reservas | Cerrado; no reabrir sin defecto material |
 | E4.4 | approved | verified (merged `024b348`) | evidence R17/R18 | merged | no registrada | Deuda de trazabilidad documental |
-| E4.5 | approved | not-ready (C3/AC-56; DT7) | AC-48…59 **NO APTO** | not-ready | pending | C1–C8 ratificado 2026-11-05 y aplicado en #216 `5d3ad0b`; reauditoría **NO APTO** por C3/AC-56; merge #216 pendiente; DT7 abierto; 59 AC UNRUN |
+| E4.5 | approved | not-ready (DT7; DEV no autorizado) | APTO (focal; 59 AC UNRUN) | merged `a806fd9` (#216) | pending | C1–C8 y R1–R4 integrados; QA focal APTO; DT7 abierto; DEV E4.5 no autorizado; 59 AC UNRUN |
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
@@ -39,6 +39,23 @@ conservan su fecha y no deben leerse como estado actual.
   real siguen separados; no se autoriza cierre real ni datos reales.
 - **DT6/T-BKP:** abierto. Bloquea **AC-09 y el cierre real**; **no** bloquea el DEV con
   fixtures.
+- **Main posterior:** `a806fd9` (#216, documentación de E4.5) no modifica el estado de E4.9.
+
+## E4.5 — estado vigente reconciliado (2026-11-05)
+
+Esta sección sustituye como estado vigente cualquier referencia anterior del tablero que
+presente E4.5 con C3/AC-56 abiertos, con #216 en `5d3ad0b` o con las precisiones sin
+aplicar. Las secciones históricas conservan su fecha y no deben leerse como estado actual.
+
+- **Integración:** PR **#216** fusionada por squash en `main` **`a806fd9`** el 2026-11-05;
+  HEAD validado `9d5ad85`. Incluye la enmienda C1–C8 y las reservas R1–R4 de
+  AC-46/48/49/53/58.
+- **QA:** reauditoría focal independiente **APTO** sobre `54659eb`; evidencia en
+  [e45-qa-ac48-59-2026-11-04](investigations/e45-qa-ac48-59-2026-11-04.md).
+- **CI:** `42014768987` **PASS** sobre `9d5ad85` (perfil `docs`); post-merge
+  `42014853576` **PASS** sobre `a806fd9`.
+- **Límites:** los 59 AC siguen `UNRUN`; no hay PASS funcional. DEV E4.5 **no autorizado**;
+  DT7 abierto; sin datos reales, importación ni despliegue.
 
 ## Auditoría de especificaciones — cierre global ratificado 2026-11-02
 
