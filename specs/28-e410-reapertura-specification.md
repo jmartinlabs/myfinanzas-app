@@ -1,10 +1,12 @@
 # 28 — E4.10 Reabrir el último cierre y volver a cerrar: Specification
 
-**DRAFT — decisiones aprobadas; no autoriza DEV ni merge.**
-Status: **DRAFT documental.** Sin AC en PASS, sin DEV, sin migración, sin datos reales y
-sin merge. **D1–D9 y `SIN_CAMBIOS` aprobadas por el usuario el 2026-11-05**; solo las
-decisiones P2/P3/P6/P7/P8 de SPEC29 siguen abiertas. Los AC de E4.10 siguen **UNRUN**; los
-PASS de fixtures/parciales de E4.9 no son PASS de aceptación.
+**APROBADA COMO CONTRATO DOCUMENTAL — 2026-11-05; no autoriza DEV ni merge.**
+Status: **Aprobada documentalmente por el usuario el 2026-11-05** como contrato de E4.10,
+con D1–D9 y `SIN_CAMBIOS`. Sin AC en PASS, sin DEV, sin migración, sin datos reales y sin
+merge. Solo las decisiones P2/P3/P6/P7/P8 de SPEC29 siguen abiertas y no se aprueban por
+inferencia. Los 24 AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales de E4.9 no
+son PASS de aceptación. Las decisiones técnicas de representación, esquema, rutas y
+fingerprint siguen pendientes y se separan en el paquete DEV.
 
 **Registro de decisiones aprobadas (2026-11-05):**
 
@@ -658,6 +660,12 @@ D7 → AC11/AC12; D8 → §5.5, AC16/AC21; D9 → AC04/AC22; SIN_CAMBIOS → AC2
 **No se decide aquí:** la forma definitiva de reapertura (evento, tabla, estado o versión),
 las rutas canónicas, la tabla de auditoría, la inclusión exacta en el fingerprint de v2 y
 las decisiones P2/P3/P6/P7/P8 de SPEC29. Aprobar esta SPEC no autoriza DEV ni merge.
+
+**Ratificación de SPEC28 (2026-11-05).** El usuario ratificó esta SPEC como contrato
+documental de E4.10, con D1–D9 y `SIN_CAMBIOS`, el testplan de 24 AC en `UNRUN` y sin
+autorización de DEV ni merge. La ratificación no habilita datos reales, SQL, migración,
+cierre real ni despliegue, y no resuelve por inferencia las cuestiones técnicas pendientes
+de §6, §7 y §10 ni las decisiones P2/P3/P6/P7/P8 de SPEC29.
 
 ## 19. Decisiones aprobadas D3/D4/D6/D7 y SIN_CAMBIOS
 
