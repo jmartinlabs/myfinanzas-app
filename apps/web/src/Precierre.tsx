@@ -316,6 +316,14 @@ export function Precierre({ go }: { go: (p: string) => void }) {
             <button className="primary" type="button" disabled>
               Cerrar ciclo (E4.9) — no disponible en E4.8
             </button>
+            <button
+              className="secondary"
+              type="button"
+              onClick={() => go("/cierre?ciclo=" + selected)}
+              disabled={!selected}
+            >
+              Abrir cierre E4.9
+            </button>
           </div>
         </>
       )}

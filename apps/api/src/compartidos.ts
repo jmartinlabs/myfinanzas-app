@@ -4,6 +4,7 @@ import { getClassification } from "./clasificacion";
 import { fingerprint, ledgerRows, type LedgerRow } from "./movement-ledger";
 import { getReference } from "./reference-rules";
 import { createReference } from "./referencias";
+import { closedWindowsForDates } from "./e49-guards";
 import {
   aportacionMetadata,
   aportacionesReferencia,
@@ -1594,10 +1595,44 @@ export function createParticipante(
   now = Date.now(),
 ) {
   return attempt(db, "compartido:participante:alta:" + referencia, body, key, now, () => {
-    allowed(body, ["nombre", "rol", "partes"]);
+    allowed(body, ["nombre", "rol", "partes", "motivo"]);
     const nombre = name(body.nombre),
       rol = role(body.rol),
       partes = parts(body.partes);
+    const motive =
+      typeof body.motivo === "string" ? body.motivo.trim() : "";
+    if (
+      body.motivo !== undefined &&
+      (typeof body.motivo !== "string" ||
+        !motive ||
+        motive.length > 2000 ||
+        /[\u0000-\u001f\u007f]/.test(motive))
+    )
+      throw new Problem(422, "VALIDATION", "Indica un motivo válido.", {
+        motivo: "Motivo de hasta 2000 caracteres.",
+      });
+    const usage = db
+      .query("SELECT fecha FROM movimientos WHERE referencia=?")
+      .all(referencia) as { fecha: string }[];
+    const closed = closedWindowsForDates(
+      db,
+      usage.map((row) => row.fecha),
+    );
+    if (closed.length && !motive)
+      throw new Problem(
+        422,
+        "VALIDATION",
+        "El participante afecta a un Gasto compartido con hechos en ventana cerrada; indica el motivo.",
+        { motivo: "Motivo obligatorio para el reparto posterior al cierre." },
+        {
+          cierres: closed.map(({ ciclo, version, inicio, fin }) => ({
+            ciclo,
+            version,
+            inicio,
+            fin,
+          })),
+        },
+      );
     const { row, ref } = ficha(db, referencia);
     if (ref.estado !== "Activa")
       throw new Problem(
@@ -1627,7 +1662,7 @@ export function createParticipante(
       "alta participante",
       null,
       { id, nombre, rol, partes, estado: "Activa", revision: 1 },
-      null,
+      motive || null,
       now,
     );
     void row;

@@ -9,6 +9,7 @@ import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { Schema } from "effect";
 import { Problem, money, decimal } from "./saldos";
+import { assertClosedCyclesUnchanged } from "./e49-guards";
 
 export function civil(value: unknown): string {
   if (
@@ -535,6 +536,7 @@ function operationPlan(
   ].sort((a, b) => a.inicio.localeCompare(b.inicio));
   const before = deriveCycles(beforeRows, reference),
     after = deriveCycles(afterRows, reference);
+  assertClosedCyclesUnchanged(db, before, after);
   const atDate = (all: Cycle[], date: string) =>
     all.find((c) => c.inicio <= date && (c.fin === null || date <= c.fin)) ??
     null;

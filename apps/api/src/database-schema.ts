@@ -16,6 +16,7 @@ import { budgetSchema, assertBudgetContract } from "./budget-schema";
 import { debtSchema } from "./debt-schema";
 import { debtCompletaSchema } from "./debt-completa-schema";
 import { valoracionSchema } from "./e43-schema";
+import { cierreFinancieroSchema } from "./e49-schema";
 import { Database } from "bun:sqlite";
 import { classificationSchema } from "./classification-schema";
 import { cycleSchema } from "./cycle-schema";
@@ -43,7 +44,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, schemaVersion].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, schemaVersion].includes(
         versions[0].version,
       )
     ) {
@@ -99,7 +100,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (versionTable) {
         if (
           versions.length !== 1 ||
-          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, schemaVersion].includes(
+          ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, schemaVersion].includes(
             versions[0].version,
           )
         )
@@ -135,6 +136,7 @@ export function prepareSchema(db: Database, identity: Identity) {
         }
         if (versions[0].version < 23) debtCompletaSchema(db);
         if (versions[0].version < 24) valoracionSchema(db);
+        if (versions[0].version < 25) cierreFinancieroSchema(db);
         return; // Existing data is never re-seeded.
       }
       if (
@@ -257,6 +259,7 @@ export function prepareSchema(db: Database, identity: Identity) {
       if (schemaVersion >= 22) comidaRolV22(db);
       if (schemaVersion >= 23) debtCompletaSchema(db);
       if (schemaVersion >= 24) valoracionSchema(db);
+      if (schemaVersion >= 25) cierreFinancieroSchema(db);
       db.run("UPDATE schema_version SET version=?", [schemaVersion]);
     }).immediate();
   } catch (error) {
