@@ -21,7 +21,7 @@ y las decisiones P2/P3/P6/P7/P8 de SPEC29 siguen abiertas. Los AC de E4.10 sigue
 inferencia.
 
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
-Base de esta revisión: `main` **`3842831`** (2026-11-05). E4.9 está **integrado** en
+Base de esta incorporación: `main` **`436fe3a`** (2026-11-05; revisión anterior `3842831`). E4.9 está **integrado** en
 `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI post-merge `42000330143`; `a806fd9`
 es E4.5 (#216), no E4.9. Los AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales
 de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto. v25 está ocupada por E4.9:
@@ -60,7 +60,7 @@ La capacidad incluye:
 
 1. comprobar que el cierre es el último y que no existe otro ciclo posterior cerrado;
 2. reabrir el cierre con actor, UTC, motivo y auditoría, sin modificar la foto v1;
-3. abrir una ventana de rectificación cuyo alcance T1/T2/T3 se decide en D2;
+3. abrir una ventana de rectificación con T2/T3 y T1 según D2-B aprobada;
 4. revalidar las dependencias posteriores en solo lectura, sin modificar su S0 ni su plan;
 5. re-cerrar el ciclo creando una versión nueva con el contrato completo de foto;
 6. conservar v1 y v2 consultables, con selección explícita de versión;
@@ -100,9 +100,9 @@ re-cierre; el ownership se decide en el paquete DEV.
 | **Cierre posterior** | `[CONFIRMADO]` Cierre de otro ciclo cuyo `Fin` es posterior al del cierre considerado. Su existencia impide la reapertura ordinaria (E4.10-AC1). |
 | **Reapertura** | `[PROPUESTA]` Transición auditada que habilita una ventana de rectificación sobre el último cierre. No modifica la foto v1 ni crea una foto nueva. |
 | **Ventana de rectificación** | `[PROPUESTA]` Intervalo entre la reapertura y el re-cierre o la cancelación. Su alcance T1/T2/T3 depende de D2. |
-| **Rectificación** | `[PROPUESTA]` Escritura T2/T3 —y T1 solo si D2 la habilita— realizada dentro de la ventana, con las guardas y la auditoría vigentes. |
+| **Rectificación** | `[CONFIRMADO]` Escritura T2/T3 y T1 dentro de la ventana según D2-B, con las guardas y la auditoría vigentes. |
 | **Re-cierre** | `[CONFIRMADO]` Nuevo cierre del mismo ciclo que crea una versión de foto posterior sin alterar las anteriores (SPEC27, DT4). |
-| **Versión vigente** | `[PENDIENTE]` Mientras el ciclo está reabierto y sin nueva versión, la candidata es la última versión cerrada; la regla definitiva depende de D5/E4.11. |
+| **Versión vigente** | `[APROBADO D5-A]` Mientras el ciclo está reabierto y sin nueva versión, la última versión cerrada es consultable pero no se presenta como vigente sin advertencia. |
 | **Dependencia posterior** | `[PENDIENTE D4]` S0/plan del ciclo siguiente, fotos, auxiliares, agregados E4.11 y precontrol, según la matriz que se apruebe. No se amplía por analogía. |
 | **Estado de cierre derivado** | `[PROPUESTA]` Estado observable `Cerrado(vN)` o `Reabierto(vN)`. E4.9 integrado solo persiste `Cerrado(v1)`; la representación de E4.10 sigue pendiente. |
 
@@ -425,9 +425,10 @@ tal cual. Los motivos no se publican como secretos ni se usan para almacenar cre
 `[CONFIRMADO]` v1 y su foto son inmutables; no se actualizan ni se borran. El re-cierre
 crea v2 sin alterar v1; todas las versiones son consultables; la retención es permanente
 (SPEC27, DT4). La foto no se recalcula desde el estado vivo (AC-14).
-`[PENDIENTE]` La política de versiones no se congela; D5 decide la regla funcional de
-versión vigente y repetibilidad, coordinada con E4.11 **P1, P4 y P5**. E4.9 ya está
-integrado.
+`[APROBADO D5-A]` La política de versión vigente está decidida: v1 consultable pero no
+vigente sin advertencia; agregados nuevos excluyen y marcan `PendienteReCierre`; ya
+generados congelados; mezcla con composición exacta. Quedan pendientes la representación
+persistida, el fingerprint de v2 y los detalles no decididos de SPEC29 P2/P3/P6/P7/P8.
 
 Reglas candidatas:
 
@@ -517,8 +518,8 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
   se crea v2 con auditoría. No se decide aquí.
 - Reabrir después de v2 (v3) → `[APROBADO D1-A/D5-A]` secuencial sobre la última versión
   cerrada; nunca se ramifica la historia.
-- Reapertura tras cancelación → `[APROBADO D8]` solo sin cambios materiales; con cambios,
-  `vN+1` o recuperación auditada aprobada por separado; nueva ventana auditada.
+- Reapertura tras cancelación → `[PROPUESTA]` consecuencia de D1-A: no hay ventana activa
+  tras cancelar; una nueva reapertura secuencial queda sujeta a D1-A y no se infiere de D8.
 - DT6 sin evidencia o restauración no probada → re-cierre real bloqueado; fixtures se
   marcan sintéticos (AC15).
 - DT9, ciclo antiguo o restore de backup → rechazo; no hay ruta alternativa (AC22).
@@ -565,29 +566,30 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC01 | Reabrir por la vía ordinaria un cierre con otro ciclo posterior cerrado. | Rechazo motivado; sin cambio de estado, sin evento de reapertura y sin tocar el cierre posterior. | `[CONFIRMADO]` roadmap AC1 |
 | E4.10-AC02 | Cerrar (v1) → reabrir → corregir → re-cerrar. | v1 intacta y consultable; v2 creada con fecha, motivo, actor, fingerprint, versión de app/esquema y vínculo v1→v2. | `[CONFIRMADO]` roadmap AC2 / DT4; `[PROPUESTA]` vínculo |
 | E4.10-AC03 | Reabrir/re-cerrar con dependencias posteriores existentes. | Revalidación de solo lectura; su S0/plan no se modifica automáticamente; evidencia registrada. | `[CONFIRMADO]` roadmap AC3 |
-| E4.10-AC04 | Intentar reabrir un cierre no último o una versión histórica distinta de la última. | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado; sin estado parcial. | `[CONFIRMADO]` P5/DT9; `[PROPUESTA]` rechazo de versión histórica |
-| E4.10-AC05 | Fallo inducido dentro de la transacción de reapertura. | Rollback total; el cierre sigue `Cerrado(vN)`; sin evento ni auditoría huérfana. | `[PROPUESTA]` |
-| E4.10-AC06 | Reabrir con motivo, actor y UTC; consultar después. | Estado `Reabierto(vN)`; motivo/actor/UTC persistidos; no se crea foto ni versión de foto. | `[PROPUESTA]` D3/D5 |
+| E4.10-AC04 | Intentar reabrir un cierre no último o una versión histórica distinta de la última. | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado; sin estado parcial. | `[CONFIRMADO]` P5/DT9; `[APROBADO D1-A]` rechazo de versión histórica |
+| E4.10-AC05 | Fallo inducido dentro de la transacción de reapertura. | Rollback total; el cierre sigue `Cerrado(vN)`; sin evento ni auditoría huérfana. | `[APROBADO D8]` atomicidad |
+| E4.10-AC06 | Reabrir con motivo, actor y UTC; consultar después. | Estado `Reabierto(vN)`; motivo/actor/UTC persistidos; no se crea foto ni versión de foto. | `[PENDIENTE D3]` |
 | E4.10-AC07 | Consultar y intentar modificar v1/foto mientras el ciclo está reabierto. | v1 y foto intactas; consulta devuelve valores persistidos; `PATCH`/`DELETE` rechazados. | `[CONFIRMADO]` inmutabilidad |
 | E4.10-AC08 | Reclasificar un hecho T2 dentro de la ventana. | Impacto, motivo y auditoría; v1 intacta; vista viva actualizada o marcada. | `[CONFIRMADO]` T2 |
-| E4.10-AC09 | Escritura T1 dentro/fuera de la ventana, según D2. | Dentro: permitida solo en ventana/ciclo, con impacto/auditoría; S0/ventana/Fin siempre bloqueados. Fuera: `HISTORY_LOCKED`. | `[APROBADO D2-B]` |
+| E4.10-AC09 | Escritura T1 dentro/fuera de la ventana. | Dentro: permitida solo en ventana/ciclo, con impacto/auditoría; S0/`inicio`/`Fin` siempre bloqueados. Fuera: `HISTORY_LOCKED`. | `[APROBADO D2-B]` |
 | E4.10-AC10 | Re-cerrar tras corregir. | Exactamente una versión nueva `N+1` con el contrato completo de foto; `vN` y anteriores intactas; vínculo consultable. | `[CONFIRMADO]` DT4; `[APROBADO D1-A]` secuencial |
 | E4.10-AC11 | Repetir reapertura/re-cierre con la misma clave y payload; luego con payload distinto. | Reintento idéntico devuelve el mismo resultado/versión; payload distinto → conflicto de idempotencia; sin duplicados. | `[CONFIRMADO]` patrón E4.9 |
 | E4.10-AC12 | Dos reaperturas o dos re-cierres concurrentes; versión esperada obsoleta. | Solo una operación gana; la otra recibe conflicto; no se crean dos versiones ni dos ventanas. | `[PROPUESTA]` D7 |
 | E4.10-AC13 | Fallo inducido en la transacción de re-cierre. | Rollback total; sin v2 ni foto parcial; el ciclo sigue `Reabierto(vN)`; v1 consultable; reintento posible. | `[CONFIRMADO]` atomicidad |
 | E4.10-AC14 | Intentar saltarse la restricción por API: re-cerrar sin reabrir, reabrir un no último, escribir v1, reabrir una versión histórica, omitir versión esperada. | Todas las rutas rechazan con motivo; sin cambio de estado ni escritura. | `[PROPUESTA]` |
 | E4.10-AC15 | Re-cerrar sin preflight/backup verificable, sin restauración DT6 o sin E3.5/FIN_NETA verificable. | Bloqueo antes de escribir; sin v2; fixtures marcados sintéticos; cierre real solo con DT6 y E3.5 verificable. | `[CONFIRMADO]` DT6 / E3.5 |
-| E4.10-AC16 | Crear un cierre posterior entre la reapertura y el re-cierre. | El re-cierre se detiene con error motivado; no hay v2 silenciosa; el cierre posterior no se altera; la ventana se resuelve por D8 (con cambios materiales, B/C; A no aplica). | `[APROBADO D1-A/D8]` |
+| E4.10-AC16 | Crear un cierre posterior entre la reapertura y el re-cierre. | El re-cierre se detiene con error motivado; no hay v2 silenciosa; el cierre posterior no se altera. Con cambios materiales no se cancela: se exige re-cierre `vN+1` o recuperación auditada aprobada por separado; mantener reabierto no resuelve. | `[APROBADO D1-A/D8]` |
 | E4.10-AC17 | Dependencia posterior contradictoria en la revalidación. | Bloqueo o aviso según D4; valores comparados auditados; ningún S0/plan ajeno modificado. | `[PENDIENTE D4]` |
 | E4.10-AC18 | Recorrer la cadena v1 → reapertura → correcciones → v2. | Auditoría completa, append-only y consultable; actor/UTC/motivo/versiones/fingerprint; sin huecos ni eventos huérfanos. | `[CONFIRMADO]` auditoría |
 | E4.10-AC19 | Reabrir y re-cerrar con plan `SinPlan`/capturado y auxiliares disponibles o no. | v2 captura el estado vigente sin inventar líneas; fuente ausente → `No disponible` con motivo; v1 intacta. | `[PENDIENTE D6]` |
 | E4.10-AC20 | Consultar `vN` y `vN+1` tras el re-cierre, con y sin versión explícita. | Devuelve valores persistidos, versión seleccionada, última cerrada y estado de reapertura; sin recálculo ni `0` por ausencia. | `[CONFIRMADO]` foto/AC-14; `[APROBADO D5-A]` v1 consultable, no vigente sin advertencia |
 | E4.10-AC21 | Cancelar una reapertura. | Sin cambios materiales: `Cerrado(vN)` sin foto, evento auditado, `vN`/anteriores intactas, T1 re-bloqueado. Con cambios: `vN+1` o recuperación auditada aprobada por separado. | `[APROBADO D8]` |
 | E4.10-AC22 | Intentar reabrir un ciclo antiguo o usar restore de backup como reapertura. | Rechazo; no hay ruta alternativa; motivo auditado; DT9/DT6 no se confunden con E4.10. | `[CONFIRMADO]` P5/DT9/DT6 |
+| E4.10-AC23 | Reabrir tras v2 (v3). | Secuencial sobre la última versión cerrada; no se reabre una versión histórica; una sola ventana activa; v3+ crea foto completa. | `[APROBADO D1-A/D5-A]` |
 
-`[PENDIENTE]` No hay AC para «reabrir tras v2 (v3)» ni para «re-cierre sin cambios» hasta
-que D1/D5 y la política de `SIN_CAMBIOS` se resuelvan. No se declaran como PASS ni como
-excluidos por inferencia.
+`[PENDIENTE]` No hay AC para «re-cierre sin cambios»; queda sujeto a la política de
+`SIN_CAMBIOS`. «Reabrir tras v2» tiene AC23 y sigue `UNRUN`. No se declaran PASS ni
+exclusiones por inferencia.
 
 ---
 

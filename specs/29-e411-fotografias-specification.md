@@ -93,15 +93,15 @@ tabla del [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md#1-
 | Fuente/dependencia | Estado verificado | Qué aporta | Límite para E4.11 |
 | --- | --- | --- | --- |
 | **E4.5 — archivo precontrol** | SPEC20 aprobada; DEV no autorizado; DT7 sigue siendo gate. | Registros, mapping, cobertura, corte y procedencia; consulta por ejercicio. | No crea fotos, cierres, planes ni hechos; no se transforma en foto. Su inclusión en E4.11 es M6. |
-| **E4.9 — cierre y primera foto** | SPEC27 aprobada; PR **#200 OPEN/draft** según la investigación de alcance (2026-11-04), no mergeado; sin QA final registrada. | Foto v1 inmutable: versión, ventana, S0, plan, hechos, inversión, auxiliares, cobertura y backup. | No hay v2 ni reapertura; rutas, auditoría y forma de foto no son contrato estable hasta merge/QA `[PENDIENTE]`. |
-| **E4.10 — reapertura/re-cierre** | Roadmap/AC definidos; SPEC28 asignada y **no iniciada**. | v2 y versión vigente tras una rectificación ordinaria. | No implementado; política de versiones/estado `[PENDIENTE]` (D5 del análisis E4.10). |
-| **DT4 — contenido, metadatos, versiones, retención** | `[CONFIRMADO]` Resuelta el 2026-10-28 en SPEC27. | Contrato de foto, v1/v2, metadatos inmutables, retención permanente y regla «trimestre/año usan la versión vigente al generar el agregado, registran cuál usaron y queda congelado». | No fija la **composición** exacta del periodo, el estado «reabierto sin v2», ni si «congelado» implica un artefacto persistido: M1–M3. |
-| **Versiones y cortes** | `[CONFIRMADO]` v1/v2 por ciclo; corte = `Fin` congelado; versiones anteriores consultables. | Identidad y trazabilidad por ciclo y versión. | No hay regla de qué versión de cada ciclo compone un trimestre/año `[PENDIENTE]`. |
-| **Periodos trimestre/año** | `[PENDIENTE]` E4.11 debe definirlos (M3). | Agrupación por calendario o por ciclo, con corte y versión. | No se prorratea, divide ni inventa un ciclo que cruce el límite sin decisión. |
+| **E4.9 — cierre y primera foto** | SPEC27 aprobada; **integrada** en `0176ffc` con QA APTO CON RESERVAS. | Foto v1 inmutable: versión, ventana, S0, plan, hechos, inversión, auxiliares, cobertura y backup. | No hay v2 ni reapertura; E4.10 las define, no E4.11. |
+| **E4.10 — reapertura/re-cierre** | SPEC28 parcialmente decidida: D1/D2/D5/D8/D9 aprobadas; D3/D4/D6/D7 pendientes; sin DEV. | v2, versión vigente y estado reabierto para E4.11. | La política D5-A está aprobada; quedan representación, auditoría y detalles de implementación. |
+| **DT4 — contenido, metadatos, versiones, retención** | `[CONFIRMADO]` Resuelta el 2026-10-28 en SPEC27. | Contrato de foto, v1/v2, metadatos inmutables, retención permanente y regla «trimestre/año usan la versión vigente al generar el agregado, registran cuál usaron y queda congelado». | No fija la **composición** exacta del periodo; P1-C/P4-A/P5-B aprobadas orientan, P2/P3 siguen pendientes. |
+| **Versiones y cortes** | `[CONFIRMADO]` v1/v2 por ciclo; corte = `Fin` congelado; versiones anteriores consultables. | Identidad y trazabilidad por ciclo y versión. | D5-A/P1-C/P4-A/P5-B aprobadas: composición declarada, ciclo reabierto excluido/marcado y mezcla con registro exacto. |
+| **Periodos trimestre/año** | `[PENDIENTE]` M3 y P2/P3. | Agrupación por calendario o por ciclo, con corte y versión. | No se prorratea, divide ni inventa un ciclo que cruce el límite sin decisión. |
 | **E2.6/E4.6 — cálculo vivo** | SPEC24 aprobada según índice e investigación; PR **#201 OPEN/draft**; E2.6 integrado. El tablero conserva una fila desactualizada (`SPEC24 no iniciada`); contradicción documental `[PENDIENTE]`. | Valores actuales para contraste etiquetado. | No es fuente de valores persistidos ni de historia. |
-| **DT9 — rectificación de ciclos antiguos** | `[PENDIENTE]` No habilitar hasta otra SPEC aprobada. | Efecto sobre agregados y cierres posteriores. | E4.11 no implementa ni decide la excepción (M6). |
+| **DT9 — rectificación de ciclos antiguos** | `[CONFIRMADO]` D9-A aprobada: solo último cierre; DT9 fuera. | Efecto sobre agregados y cierres posteriores. | E4.11 no implementa ni decide la excepción (M6). |
 | **DT6/T-BKP** | `[PENDIENTE]` Sin destino externo ni restauración real. | Cierre real y evidencia de backup. | Fixtures no acreditan DT6; la consulta de fixtures sí puede prepararse. |
-| **Esquema** | `[PENDIENTE]` No asumir `v25`/`v26`. | — | E4.11 es de solo lectura salvo que M2-A cree un artefacto persistido; entonces necesitará versión de esquema propia y aprobación. |
+| **Esquema** | `[CONFIRMADO]` E4.9 ocupa `v25`; no asumir `v26`. | — | E4.11 es de solo lectura salvo que M2-A cree un artefacto persistido; entonces necesitará versión de esquema propia y aprobación. |
 
 ### 3.1 Contenido de la foto (DT4 resuelta en SPEC27)
 
@@ -164,7 +164,7 @@ independientes sin producir combinaciones incoherentes.
 
 | Sub | Opciones | Impacto | Recomendación `[PROPUESTA]` |
 | --- | --- | --- | --- |
-| **P1** versión que compone | A) última versión cerrada de cada ciclo en el instante de generar; B) versión explícita elegida por el usuario; C) todas las versiones visibles y el agregado declara la usada; D) solo ciclos con v1 y bloquear si hay reapertura. | A es simple pero cambia si hay re-cierre; B es auditable pero más compleja; C conserva historia; D evita mezclas pero bloquea informes. | **Aprobado C + B disponible:** composición declarada por ciclo y selección explícita de versión. No se usa D. |
+| **P1** versión que compone | A) última versión cerrada de cada ciclo en el instante de generar; B) versión explícita elegida por el usuario; C) todas las versiones visibles y el agregado declara la usada; D) solo ciclos con v1 y bloquear si hay reapertura. | A es simple pero cambia si hay re-cierre; B es auditable pero más compleja; C conserva historia; D evita mezclas pero bloquea informes. | **Aprobado P1-C:** todas las versiones visibles y composición declarada; la selección explícita forma parte de C. P1-B no se aprueba por separado. No se usa D. |
 | **P4** reabierto sin v2 | A) excluir y marcar «pendiente de re-cierre»; B) usar la última versión cerrada (v1) y marcarla; C) bloquear la generación del agregado. | A/B conservan informes pero pueden quedar obsoletos; C es más estricto y puede bloquear. | **Aprobado A**, coordinado con D5 de E4.10; v1 consultable, no vigente sin advertencia. |
 | **P5** mezcla de versiones | A) prohibir un agregado con versiones distintas; B) permitir y registrar la versión de cada ciclo; C) un agregado por combinación. | A simplifica pero puede impedir periodos reales; B es transparente; C explota combinatoriamente. | **Aprobado B**, siempre con composición exacta registrada; A queda descartada. |
 
@@ -446,8 +446,11 @@ completan con la decisión M correspondiente; el AC no cambia, cambia su paráme
 | SPEC27 / DT4 | Foto inmutable, v1/v2, retención, metadatos, «versión vigente al generar». | AC02, AC03, AC06, AC07 |
 | SPEC20 / E4.5 | `Archivo` ≠ `Foto`; no se recalcula desde archivo. | AC10, AC15 |
 | SPEC24 / E4.6 | Cálculo vivo no histórico. | AC01, AC15 |
-| DT9 | Sin rectificación de ciclos antiguos. | AC13 |
-| Decisiones M1–M6 | Composición, agregado, periodo, retención, consulta y archivo. | AC04–AC09, AC11 |
+| DT9 | Sin rectificación de ciclos antiguos (D9-A). | AC13 |
+| P1-C (2026-11-05) | Composición declarada por ciclo y selección explícita. | AC03, AC04, AC05 |
+| P4-A (2026-11-05) | Ciclo reabierto excluido y marcado `PendienteReCierre`. | AC06, AC07 |
+| P5-B (2026-11-05) | Mezcla de versiones con composición exacta registrada. | AC05 |
+| Decisiones M2–M6 pendientes | P2/P3/P6/P7/P8. | AC04–AC09, AC11 |
 
 ---
 
