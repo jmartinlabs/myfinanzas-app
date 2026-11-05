@@ -126,7 +126,8 @@ re-cierre; el ownership se decide en el paquete DEV.
    ordinaria se rechaza con motivo. **`[APROBADO D1-A/D8]`** Si aparece durante la ventana,
    el re-cierre ordinario se bloquea; el cierre posterior no se altera. Con cambios
    materiales no se cancela: la única salida es recuperación extraordinaria documentada y
-   aprobada por separado. Sin cierre posterior, cambios materiales → `vN+1`.
+   aprobada por separado. Sin cierre posterior, cambios materiales → `vN+1` con foto
+   completa y motivo.
 6. **`[CONFIRMADO]` No se modifica automáticamente el S0 ni el plan de otro ciclo.**
    La revalidación es de solo lectura (E4.10-AC3).
 7. **`[CONFIRMADO]` Auditoría append-only.** Toda transición material registra actor, UTC
@@ -259,9 +260,11 @@ componentes fotografiados. Ante incertidumbre, se bloquea.
   resultado de la comparación; `vN` y anteriores intactas; T1 re-bloqueado.
 - **Con cambios materiales y sin cierre posterior:** no se cancela sin nueva versión; se
   exige re-cierre `vN+1` con foto completa y motivo.
-- **Con cierre posterior:** el re-cierre ordinario `vN+1` queda bloqueado; no se altera el
-  cierre posterior; la única salida es recuperación extraordinaria documentada y aprobada
-  por separado. No se cancela sin evidencia ni se descartan cambios en silencio.
+- **Con cambios materiales y cierre posterior:** el re-cierre ordinario `vN+1` queda
+  bloqueado; no se altera el cierre posterior; la única salida es recuperación
+  extraordinaria documentada y aprobada por separado. Sin cambios materiales se mantiene
+  la cancelación sin foto descrita en el primer supuesto. No se cancela sin evidencia ni se
+  descartan cambios en silencio.
 - **Detección:** comparar contra `vN` (`v1` solo si `N=1`); si no se puede demostrar la
   ausencia de cambios, tratar como material (fail-closed).
 - **Prohibido:** descartar cambios en silencio o presentar `Cerrado(vN)` como si la ventana
@@ -313,7 +316,7 @@ hasta que se decidan.
 | `fotoDeCierre(ciclo, versión?)` | Ciclo, versión opcional | Foto persistida y metadatos | Sin versión: la última cerrada; no la vigente viva. |
 | `reabrirUltimoCierre(ciclo, solicitud)` | Motivo, versión/estado esperado, clave de intento | Estado `Reabierto`, versión de origen, ventana | No crea foto; no modifica v1; atómica. |
 | `reCerrarCiclo(ciclo, solicitud)` | Motivo de re-cierre si D3-B, versión esperada, fingerprint de preflight, clave de intento | Versión nueva, foto, vínculo v1→v2 | Crea una sola versión; fallo → rollback. |
-| `cancelarReapertura(ciclo, solicitud)` | Motivo, versión esperada, clave de intento | Estado `Cerrado(vN)` | D8: sin foto solo sin cambios materiales; con cambios, `vN+1`/recuperación. |
+| `cancelarReapertura(ciclo, solicitud)` | Motivo, versión esperada, clave de intento | Estado `Cerrado(vN)` | D8: sin foto solo sin cambios materiales; con cambios y sin cierre posterior, `vN+1`; con cierre posterior, re-cierre ordinario bloqueado y solo recuperación extraordinaria aprobada por separado. |
 
 Reglas transversales:
 
@@ -365,7 +368,9 @@ fixture no acredita DT6.
 
 `[CONFIRMADO]` Al re-cerrar, la ventana se cierra y T1 vuelve a bloquearse.
 `[APROBADO D8]` La cancelación sin cambios materiales cierra la ventana sin foto; con
-cambios materiales exige `vN+1` o recuperación auditada aprobada por separado.
+cambios materiales y sin cierre posterior exige `vN+1` con foto completa y motivo; con
+cierre posterior, el re-cierre ordinario `vN+1` queda bloqueado, no se altera el cierre
+posterior y solo cabe recuperación extraordinaria documentada y aprobada por separado.
 
 ---
 
@@ -585,7 +590,7 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC13 | Fallo inducido en la transacción de re-cierre. | Rollback total; sin v2 ni foto parcial; el ciclo sigue `Reabierto(vN)`; v1 consultable; reintento posible. | `[CONFIRMADO]` atomicidad |
 | E4.10-AC14 | Intentar saltarse la restricción por API: re-cerrar sin reabrir, reabrir un no último, escribir v1, reabrir una versión histórica, omitir versión esperada. | Todas las rutas rechazan con motivo; sin cambio de estado ni escritura. | `[PROPUESTA]` |
 | E4.10-AC15 | Re-cerrar sin preflight/backup verificable, sin restauración DT6 o sin E3.5/FIN_NETA verificable. | Bloqueo antes de escribir; sin v2; fixtures marcados sintéticos; cierre real solo con DT6 y E3.5 verificable. | `[CONFIRMADO]` DT6 / E3.5 |
-| E4.10-AC16 | Crear un cierre posterior entre la reapertura y el re-cierre. | El re-cierre ordinario se bloquea con error motivado; no hay v2 silenciosa; el cierre posterior no se altera. Con cambios materiales no se cancela: la única salida es recuperación extraordinaria documentada y aprobada por separado. Sin cierre posterior, cambios materiales → `vN+1`. | `[APROBADO D1-A/D8]` |
+| E4.10-AC16 | Crear un cierre posterior entre la reapertura y el re-cierre. | El re-cierre ordinario se bloquea con error motivado; no hay v2 silenciosa; el cierre posterior no se altera. Con cambios materiales no se cancela: la única salida es recuperación extraordinaria documentada y aprobada por separado. Sin cierre posterior, cambios materiales → `vN+1` con foto completa y motivo. | `[APROBADO D1-A/D8]` |
 | E4.10-AC17 | Dependencia posterior contradictoria en la revalidación. | Bloqueo o aviso según D4; valores comparados auditados; ningún S0/plan ajeno modificado. | `[PENDIENTE D4]` |
 | E4.10-AC18 | Recorrer la cadena v1 → reapertura → correcciones → v2. | Auditoría completa, append-only y consultable; actor/UTC/motivo/versiones/fingerprint; sin huecos ni eventos huérfanos. | `[CONFIRMADO]` auditoría |
 | E4.10-AC19 | Reabrir y re-cerrar con plan `SinPlan`/capturado y auxiliares disponibles o no. | v2 captura el estado vigente sin inventar líneas; fuente ausente → `No disponible` con motivo; v1 intacta. | `[PENDIENTE D6]` |

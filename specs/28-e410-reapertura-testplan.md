@@ -220,8 +220,8 @@ Para declarar un AC `PASS` harán falta, como mínimo:
 
 1. E4.9 **integrado en `0176ffc` con QA APTO CON RESERVAS (cumplido)**, o una decisión
    explícita que permita probar E4.10 contra un contrato congelado.
-2. La decisión material correspondiente resuelta (D2/D4/D6/D8) cuando el AC esté
-   condicionado.
+2. La decisión material correspondiente resuelta (D3/D4/D6/D7 según el AC) cuando el AC
+   esté condicionado.
 3. Evidencia real del comando ejecutado, no una descripción.
 4. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
    versión nueva.
