@@ -1,18 +1,44 @@
 # E4.10 — paquete definitivo de autorización DEV (2026-11-05)
 
-> **PROPUESTA — NO AUTORIZADA.** Este paquete fija alcance, decisiones técnicas, secuencia,
-> pruebas y criterios de aceptación para una autorización **separada** de DEV E4.10. **No
-> autoriza desarrollo**, no escribe código ni DDL, no migra datos, no declara ningún AC en
-> PASS y no habilita datos reales, cierre real ni despliegue. La ejecución exige aprobación
-> humana expresa sobre un SHA concreto.
+> **RATIFICADO — 2026-11-05; DEV NO AUTORIZADO.** DT-A…DT-I, la reserva v26 y el testplan
+> fueron ratificados conjuntamente por el usuario el 2026-11-05. Este paquete fija alcance,
+> decisiones, secuencia, pruebas y criterios de aceptación para una autorización **separada**
+> de DEV E4.10. **No autoriza desarrollo**, no escribe código ni DDL, no migra datos, no
+> declara ningún AC en PASS y no habilita datos reales, cierre real ni despliegue. La
+> ejecución exige aprobación humana expresa sobre un SHA concreto.
 
-- **Base original:** `main` **`2cd0951`**; **reverificado en `a8e526b`** (2026-11-05).
+- **Base original:** `main` **`2cd0951`**; **reverificado en `a8e526b`**; **registro de
+  ratificación:** `main` **`06debd0`** (2026-11-05).
 - **SPEC28:** ratificada como contrato documental el 2026-11-05 (D1–D9 y `SIN_CAMBIOS`).
-- **Testplan:** 24 AC (`E4.10-AC01…AC24`), todos **`UNRUN`**.
-- **Esquema vigente:** **v25** (E4.9 integrado en `0176ffc`).
+- **Testplan:** **aprobado y congelado** el 2026-11-05; 24 AC (`E4.10-AC01…AC24`), todos
+  **`UNRUN`**.
+- **Esquema:** **v26 reservada** exclusivamente para E4.10; vigente v25 (E4.9 en `0176ffc`).
 - **Propuesta previa:** [e410-dev-package-proposal-2026-11-05](e410-dev-package-proposal-2026-11-05.md);
   este documento la sustituye como paquete de autorización.
 - **Fuera de alcance:** DT9, recuperación extraordinaria, E4.11, datos reales y cierre real.
+
+---
+
+## 0. Registro de ratificación (2026-11-05)
+
+El usuario ratificó conjuntamente, en los términos de este paquete y del testplan:
+
+| Decisión | Opción ratificada |
+| --- | --- |
+| DT-A | **A2** — `reaperturas` append-only, proyección singleton y vínculos inmutables |
+| DT-B | **B2** — conservar `cierre_audit`; auditoría separada, correlación y trigger de motivo para `version>1` |
+| DT-C | **C2** — fingerprint de contenido, coherencia y origen; actor/motivo como metadatos |
+| DT-D | **D2** — estado derivado, una sola ventana global y concurrencia transaccional |
+| DT-E | **E1** — reutilizar preflight/cierre de E4.9 y añadir rutas de reapertura/cancelación |
+| DT-F | **F1** — reservar **v26**; migración aditiva 25→26 sin alterar datos históricos |
+| DT-G | **G1** — excepción T1 limitada al ciclo reabierto y a Movimientos, Compras y Ventas |
+| DT-H | **H2** — comparación de componentes materiales; revertidos o evidencia insuficiente bloquean la cancelación |
+| DT-I | **I1** — recuperación extraordinaria fuera de E4.10 |
+
+- **v26:** reservada solo para E4.10; la reserva **no autoriza DDL ni migración**.
+- **Testplan:** aprobado y congelado, incluido el criterio E4.5/precontrol §3 y PC-01…PC-06.
+- **Límites:** esta ratificación no autoriza DEV, código, DDL, migración, datos reales,
+  cierre real ni despliegue.
 
 ---
 
@@ -55,8 +81,8 @@ Se conserva íntegramente el alcance de SPEC28; no se amplía ni se reduce por i
 | Contrato más reciente | `apps/api/src/schema-contracts.json:14103` → `C25-E49-CIERRE-FINANCIERO` |
 | Ninguna DDL escribe 26 | Solo tests hacen `UPDATE schema_version SET version=26`; no hay `C26` ni migración 26 |
 
-**Propuesta expresa: reservar `v26` para E4.10**, migración aditiva `25 → 26`. No se crea
-DDL ni migración en este paquete.
+**Reservada `v26` para E4.10 (ratificada el 2026-11-05)**, migración aditiva `25 → 26`. No
+se crea DDL ni migración en este paquete; la reserva no autoriza su ejecución.
 
 ### 2.1 Consumidores identificados (deben actualizarse en el DEV)
 
@@ -78,16 +104,18 @@ DDL ni migración en este paquete.
    `ventas`.
 
 **Riesgo:** una versión no reservada, una lista de backup sin actualizar o un centinela que
-siga apuntando a 26 rompería restore y las pruebas de contrato. **Decisión humana:** confirmar
-la reserva de v26. **Implementación:** actualizar todos los consumidores antes de migrar.
+siga apuntando a 26 rompería restore y las pruebas de contrato. **Reserva ratificada el
+2026-11-05.** **Implementación:** actualizar todos los consumidores antes de migrar.
 
 ---
 
 ## 3. Matriz DT-A…DT-I
 
-Cada decisión indica alternativas, recomendación, riesgos y si requiere aprobación humana o
-es implementativa una vez aprobada la anterior. **DT-A, DT-B y DT-D se aprueban como bloque**
-(modelo de persistencia, auditoría y estado); el orden de implementación es A → B → D.
+Cada decisión fue **ratificada el 2026-11-05**; se documentan alternativas, recomendación,
+riesgos y si requiere aprobación humana o es implementativa. **DT-A, DT-B y DT-D se aprobaron
+como bloque** (modelo de persistencia, auditoría y estado); el orden de implementación es
+A → B → D. Las etiquetas «Aprobación humana» quedaron ratificadas; las «Implementativas» se
+ejecutarán solo en un DEV autorizado.
 
 ### DT-A · Persistencia de la reapertura
 
@@ -208,7 +236,7 @@ del código.
 | Esquema v26 | **Propuesto** | Bloquea DDL hasta aprobación de DT-F |
 | DT6/T-BKP | Abierto | Bloquea cierre/re-cierre **real**; no la aceptación con fixtures |
 | E3.5/FIN_NETA AC-15 | PARCIAL | Sin verificación suficiente no hay re-cierre real ni foto |
-| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio propuesto en el [testplan E4.10](../28-e410-reapertura-testplan.md), §3: ausencia `NoDisponible` con motivo; datos ilegibles o contradicción material bloquean; diferencia no material acreditada → aviso auditado. Pendiente de ratificación |
+| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio del [testplan E4.10](../28-e410-reapertura-testplan.md), §3, ratificado el 2026-11-05: ausencia `NoDisponible` con motivo; datos ilegibles o contradicción material bloquean; diferencia no material acreditada → aviso auditado |
 | SPEC29 P2/P3/P6/P7/P8 | Pendientes | Fuera de E4.10; no se infieren |
 | Sesión MFA | Vigente | Escrituras con sesión completa y CSRF/Origin |
 
@@ -218,7 +246,7 @@ del código.
 
 | # | Incremento | Entregable | Gate de salida |
 | --- | --- | --- | --- |
-| I0 | Decisiones | DT-A…DT-I aprobadas o diferidas explícitamente; **testplan aprobado/congelado** y criterio E4.5 §3 ratificado | Autorización humana del paquete, del testplan y del criterio |
+| I0 | Decisiones | DT-A…DT-I ratificadas; **testplan aprobado/congelado** y criterio E4.5 §3 ratificado | **Cumplido**; solo falta la autorización DEV separada |
 | I1 | Esquema v26 | Migración aditiva, `reaperturas`, `cierre_vinculos`, proyección, triggers, contrato `C26`, backup/restore | Upgrade 25→26 y restore verificados; sin cambios en filas existentes |
 | I2 | Reapertura | Evento, motivo/actor/UTC, versión esperada, una ventana, idempotencia | AC01, AC04–AC07, AC14, AC22 |
 | I3 | Guardas y revalidación | T1/T2/T3 en ventana (Movimientos, Compras y Ventas), impacto, revalidación de solo lectura | AC03, AC08, AC09, AC17 |
@@ -311,15 +339,19 @@ Cualquier cambio de contrato de E4.9 exige justificación y QA específica.
 
 ---
 
-## 9. Autorización futura (no concedida)
+## 9. Solicitud final de autorización DEV (no concedida)
 
-Texto candidato para una autorización separada:
+**SHA de referencia:** el commit de `main` que integre este registro de ratificación
+(`docs/e410-ratification-record`). Se fijará en la autorización; no se usa un SHA anterior.
+
+Texto propuesto para la autorización separada:
 
 > Autorizo el DEV E4.10 sobre el SHA indicado, con el alcance congelado de SPEC28, las
-> decisiones DT-A…DT-I aprobadas en este paquete y la reserva de esquema v26. Autorizo código,
-> DDL y migración **solo en el entorno de desarrollo**, con fixtures sintéticos, sin datos
-> reales, sin cierre real, sin despliegue y sin migración en producción. La aceptación exige
-> los 24 AC en PASS, regresión E4.9, QA independiente y merge separado. DT9, la recuperación
-> extraordinaria y E4.11 quedan fuera.
+> decisiones DT-A…DT-I ratificadas, la reserva de esquema v26 y el testplan aprobado y
+> congelado. Autorizo código, DDL y migración **solo en el entorno de desarrollo**, con
+> fixtures sintéticos, sin datos reales, sin cierre real, sin despliegue y sin migración en
+> producción. La aceptación exige los 24 AC en PASS, la regresión `R-E49`/`R-E48`/`R-SEC`,
+> QA independiente y merge separado. DT9, la recuperación extraordinaria, E4.11, los datos
+> reales y el cierre real quedan fuera; DT6/T-BKP y E3.5 siguen siendo gates independientes.
 
 **No concedida.** Sin esta autorización no se escribe código, DDL, migración ni prueba alguna.
