@@ -3,6 +3,10 @@
 **Status: NOT deployable.** This folder is a design proposal. Templates end in
 `.example` deliberately, to prevent accidental Quadlet activation.
 
+El despliegue mediante tags de GitHub está documentado en
+[DEPLOY-TAGS-01](../specs/35-deploy-tags-01-specification.md): diseño aprobado para
+documentación, **sin tags ni workflows operativos, sin credenciales y sin despliegue**.
+
 ## Confirmed operational environment (2026-10-21)
 
 - Aruba VPS, Debian 13, 2 vCPU, 4 GB RAM, 40 GB disk; admin `mfadmin`.
