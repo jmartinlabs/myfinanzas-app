@@ -126,12 +126,12 @@ cambiar la semántica.
 | E4.10-AC13 | Fallo inducido en transacción de re-cierre | Rollback; sin v2/foto parcial; sigue `Reabierto(vN)`; v1 consultable | Bun Test de fallo inducido | API futura | Snapshot y estado | UNRUN |
 | E4.10-AC14 | Saltos por API: re-cerrar sin reabrir, escribir v1, versión histórica, omitir versión | Rechazo motivado en todas; sin escritura | Bun Test de rutas/guardas | API futura | Errores y snapshot | UNRUN |
 | E4.10-AC15 | Re-cierre sin preflight/backup/restauración DT6 o sin E3.5 verificable | Bloqueo antes de escribir; sin v2; fixture marcado sintético | Bun Test de preflight | API futura | DTO de bloqueo | UNRUN |
-| E4.10-AC16 | Cierre posterior creado entre reapertura y re-cierre | Re-cierre detenido; sin v2 silenciosa; posterior intacto. Con cambios materiales no se cancela: `vN+1` o recuperación auditada aprobada por separado | Bun Test de carrera | API futura | Error, auditoría y snapshot | UNRUN |
+| E4.10-AC16 | Cierre posterior creado entre reapertura y re-cierre | Re-cierre ordinario bloqueado; sin v2 silenciosa; posterior intacto. Con cambios materiales no se cancela: solo recuperación extraordinaria aprobada por separado. Sin cierre posterior, cambios → `vN+1` | Bun Test de carrera | API futura | Error, auditoría y snapshot | UNRUN |
 | E4.10-AC17 | Dependencia posterior contradictoria | Bloqueo o aviso según D4; valores comparados auditados; sin cambios automáticos | Bun Test de revalidación | API futura | Auditoría y snapshot | UNRUN — condicionado D4 |
 | E4.10-AC18 | Recorrer cadena v1 → reapertura → correcciones → v2 | Auditoría completa, append-only, sin huecos ni huérfanos | Bun Test + SQL | API futura | Eventos ordenados | UNRUN |
 | E4.10-AC19 | Plan `SinPlan`/capturado y auxiliares disponibles/no | v2 captura estado vigente sin inventar; ausente → `No disponible`; v1 intacta | Bun Test + UI futura | API/UI futura | Foto v2 y auditoría | UNRUN — condicionado D6 |
 | E4.10-AC20 | Consultar v1/v2 con y sin versión explícita | Valores persistidos, versión seleccionada, última cerrada y estado; sin recálculo | Bun Test de contrato | API futura | DTO y foto | UNRUN |
-| E4.10-AC21 | Cancelar reapertura | Sin cambios materiales: `Cerrado(vN)` sin foto, evento auditado, `vN`/anteriores intactas, T1 re-bloqueado. Con cambios: `vN+1` o recuperación auditada aprobada por separado | Bun Test + SQL | API futura | Estado y auditoría | UNRUN |
+| E4.10-AC21 | Cancelar reapertura | Sin cambios materiales: `Cerrado(vN)` sin foto, evento auditado, `vN`/anteriores intactas, T1 re-bloqueado. Con cambios y sin cierre posterior: `vN+1`. Con cierre posterior: solo recuperación extraordinaria aprobada por separado | Bun Test + SQL | API futura | Estado y auditoría | UNRUN |
 | E4.10-AC22 | Ciclo antiguo o restore como reapertura | Rechazo; sin ruta alternativa; motivo auditado | Bun Test de límites | API futura | Error y auditoría | UNRUN |
 | E4.10-AC23 | Reabrir tras v2 (v3) | Secuencial sobre la última versión cerrada; no versión histórica; una ventana; v3+ con foto completa | Bun Test de secuencia | API futura | Versiones y auditoría | UNRUN |
 
@@ -195,9 +195,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 - `[PENDIENTE D6]` AC19 no fija si el plan es rectificable ni si v2 exige comparación.
 - `[PENDIENTE D7]` AC11/AC12 describen el comportamiento observable; los nombres de códigos
   y el espacio de idempotencia son provisionales.
-- `[APROBADO D8]` AC21 cancelación: sin cambios materiales, sin foto; con cambios, `vN+1` o
-  recuperación auditada. Con cierre posterior, no se cancela: `vN+1` o recuperación
-  auditada aprobada por separado.
+- `[APROBADO D8]` AC21 cancelación: sin cambios materiales, sin foto; con cambios y sin
+  cierre posterior, `vN+1`; con cierre posterior, re-cierre ordinario bloqueado y solo
+  recuperación extraordinaria aprobada por separado.
 - `[CONFIRMADO]` **DT9 fuera.** AC22 solo verifica el rechazo; no diseña la rectificación
   de ciclos antiguos.
 - `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
@@ -207,6 +207,8 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
   DEV con una versión posterior.
 - `[PENDIENTE]` **Caso «re-cierre sin cambios»**: no hay AC hasta decidir `SIN_CAMBIOS`.
   **«Reabrir tras v2»:** AC23 aprobado, `UNRUN`; no se declara PASS.
+- `[PROPUESTA]` **Paquete final D3/D4/D6/D7** en SPEC28 §19; no aprobado. AC11/AC12,
+  AC17 y AC19 siguen condicionados y `UNRUN`.
 - `[CONFIRMADO]` **Sin datos reales, sin despliegue, sin merge.** Aprobar este testplan no
   autoriza DEV; ejecutar pruebas exige autorización separada.
 
