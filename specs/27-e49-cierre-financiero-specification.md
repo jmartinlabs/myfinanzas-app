@@ -28,9 +28,11 @@ patrimonio E4.3, Comida E3.5/FIN_NETA, desarrollar Ventas E4.2 (su protección T
 implementada se refleja en la matriz) ni conciliaciones E4.4.
 
 **Enmienda documental 2026-11-05:** T1 incluye Ventas E4.2 (alta, rectificación,
-anulación, cambio de fecha) con fecha en ventana cerrada, ya implementada y verificada en
-E4.9 (AC-04/testplan). Esta enmienda solo refleja el contrato; no modifica código ni
-autoriza DEV.
+anulación, cambio de fecha) con fecha en ventana cerrada, ya implementada y verificada con
+fixtures de API (test T1 de Ventas, `apps/api/src/e49-guards.test.ts`; AC-04 para cambio de
+fecha); no es PASS funcional ni cierre real. Fuente: autorización del usuario de
+2026-11-03 (Ventas E4.2 en T1) y enmienda documental autorizada el 2026-11-05. Esta
+enmienda solo refleja el contrato; no modifica código ni autoriza DEV.
 
 **Interpretación de «plan final»:** el roadmap E4.9-AC1 se lee como **estado final del
 plan**, que puede ser `SinPlan` o líneas capturadas; no exige que existan líneas.
@@ -177,7 +179,7 @@ Contratos conceptuales, sin implementación:
 | Auxiliares | Anticipos, Compartidos, Nómina, Revisión Comida y Deuda E1.6 si hay hechos |
 | Cobertura | `completo/parcial/no_disponible` por total y motivo |
 | Backup | Evidencia DT6/T-BKP referenciada |
-| No disponible | E4.3, E4.2, E4.4 cuando falten; E3.5 bloquea la foto y no se captura como `No disponible` |
+| No disponible | E4.3, E4.4 y bloques de E4.2 no capturados cuando falten; de E4.2 solo se hereda la guarda T1. E3.5 bloquea la foto y no se captura como `No disponible` |
 
 **Totales parciales:** Gasto/Ingreso completo con Movimientos completo; efectivo/posición
 inversión completo para Compras registradas con cobertura histórica parcial y valoración
@@ -196,7 +198,7 @@ fecha UTC, actor, motivo y fingerprint; no se recalculan al consultar.
 - No `ciclo_id` en Movimientos.
 - No reapertura, fotos trimestrales/anuales ni cierre automático.
 - No se desarrolla E4.10 ni DT9; solo se precisa el significado de «último cierre».
-- No E4.3, E3.5/FIN_NETA, E4.2 ni E4.4.
+- No se desarrolla E4.3, E3.5/FIN_NETA, E4.2 ni E4.4; de E4.2 solo se hereda la guarda T1.
 - No capturar una fuente como runtime si no existe; `No disponible` con motivo.
 - No habilitar cierre parcial anticipado por E3.5/FIN_NETA no disponible; AC-19
   (cierre parcial y re-cierre futuro) queda **descartado**, no aprobado.
