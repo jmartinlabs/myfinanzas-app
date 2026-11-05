@@ -6,7 +6,7 @@
 > PASS y no habilita datos reales, cierre real ni despliegue. La ejecución exige aprobación
 > humana expresa sobre un SHA concreto.
 
-- **Base:** `main` **`2cd0951`** (2026-11-05).
+- **Base original:** `main` **`2cd0951`**; **reverificado en `a8e526b`** (2026-11-05).
 - **SPEC28:** ratificada como contrato documental el 2026-11-05 (D1–D9 y `SIN_CAMBIOS`).
 - **Testplan:** 24 AC (`E4.10-AC01…AC24`), todos **`UNRUN`**.
 - **Esquema vigente:** **v25** (E4.9 integrado en `0176ffc`).
@@ -51,7 +51,7 @@ Se conserva íntegramente el alcance de SPEC28; no se amplía ni se reduce por i
 | --- | --- |
 | Versión vigente | `apps/api/src/database-identity.ts:4` → `schemaVersion = 25` |
 | Última rama de migración | `apps/api/src/database-schema.ts:139` → `if (versions[0].version < 25)`; no existe rama `<26`; el constructor fresco llega a `>=25` en `:262` |
-| Lista admitida en backup | `apps/api/src/backup.ts:54` y `:275` terminan en `25`; tablas por versión desde `:355` |
+| Lista admitida en backup | `apps/api/src/backup.ts:54` y `:275` terminan en `25`; la lista de tablas por versión empieza en `:310` y la entrada v25 está en `:355` |
 | Contrato más reciente | `apps/api/src/schema-contracts.json:14103` → `C25-E49-CIERRE-FINANCIERO` |
 | Ninguna DDL escribe 26 | Solo tests hacen `UPDATE schema_version SET version=26`; no hay `C26` ni migración 26 |
 
@@ -66,7 +66,9 @@ DDL ni migración en este paquete.
 3. **Contratos:** `schema-contracts.json` (nuevo `C26`) y `schema-contract.ts`.
 4. **Centinelas de versión desconocida:** `e49-schema-contract.test.ts:212-217` y `:421-442`;
    `e43-schema-contract.test.ts:189-194` y `:401`. Deben pasar a 27 sin debilitar el rechazo.
-5. **Aserciones de versión vigente 25/C25:** 57 líneas en 29 archivos de test:
+5. **Aserciones de versión vigente 25/C25:** 57 líneas (50 `version: 25` + 7 `toBe(25)`,
+   incluye literales de fixture) en 29 archivos de test; revisar además las referencias
+   `C25`:
    `ciclos`, `comida`, `compartidos`, `compras`, `cycle-operations`, `d5-aportaciones`,
    `d5-backup`, `deudas-v23-migration`, `deudas`, `e35-migration`, `e43-migration`,
    `e43-schema-contract`, `e44-schema-contract`, `e49-api`, `e49-migration`,
@@ -280,7 +282,8 @@ Cualquier cambio de contrato de E4.9 exige justificación y QA específica.
 
 1. **QA independiente** sobre el SHA autorizado, con evidencia por AC y sin auto-QA del
    ejecutor.
-2. **Testplan aprobado/congelado** antes de I2; sus definiciones de AC y resultados esperados
+2. **Testplan aprobado/congelado** antes de I1 y de cualquier incremento DEV; sus
+   definiciones de AC y resultados esperados
    no se reinterpretan durante el DEV. Los 24 AC en PASS o reserva explícita aprobada; ningún
    `UNRUN` al cerrar el DEV.
 3. **Contrato v26 determinista**, upgrade 25→26 y restore verificados; sin cambios en IDs,

@@ -114,8 +114,10 @@ cambiar la semántica.
 ## 3. Revalidación y dependencia E4.5/precontrol
 
 `[PROPUESTA — requiere ratificación]` Criterio operativo para AC03/AC17 mientras E4.5 no
-está implementado. Desarrolla la matriz D4 de SPEC28; **no la amplía, no la reinterpreta y
-no modifica SPEC28**.
+está implementado. **Operacionaliza** la matriz D4 de SPEC28 para los casos que no regula
+—ausencia de fuente y distinción entre contradicción material y aviso acreditado— y hereda
+las precondiciones de AC01/AC04/AC12. **No modifica SPEC28 ni sustituye su contrato.** La
+regla de ausencia de §3.1.2 es un punto expreso de ratificación.
 
 ### 3.1 Regla propuesta
 
@@ -130,8 +132,11 @@ no modifica SPEC28**.
      (`E4_5_NO_DISPONIBLE`, `SIN_DATOS_PRECONTROL` o equivalente), registrado en la
      evidencia. **No se convierte en cero, no se declara verificado y no se usa como prueba
      de nada.** No bloquea por sí mismo, porque no hay contradicción que comparar.
-   - **Con datos ilegibles o contradictorios:** bloqueo `REVALIDACION_BLOQUEANTE`; no se
-     emite v2.
+   - **Con datos ilegibles:** bloqueo `REVALIDACION_BLOQUEANTE`; no se emite v2.
+   - **Con contradicción material:** bloqueo `REVALIDACION_BLOQUEANTE`; no se emite v2.
+   - **Con diferencia no material acreditada:** aviso auditado, sin bloqueo y sin cambios en
+     S0/plan; la acreditación y los valores comparados se registran. No se admite un aviso
+     sin evidencia.
    - **Con datos coherentes:** `Verificado`, solo lectura, con valores comparados; no se
      modifica S0, plan ni precontrol.
 3. **Sin inferencia funcional:** la ausencia de E4.5 no bloquea E4.10 ni autoriza un cierre
@@ -143,11 +148,12 @@ no modifica SPEC28**.
 
 | Caso | Precondición | Resultado esperado | AC |
 | --- | --- | --- | --- |
-| PC-01 | E4.5 no implementado; sin datos de precontrol | `NoDisponible` con motivo; el re-cierre con fixtures continúa; sin `0` y sin declarar «verificado»; evidencia registrada | AC03 |
+| PC-01 | E4.5 no implementado; sin datos de precontrol; resto de dependencias obligatorias presentes | `NoDisponible` con motivo; el re-cierre con fixtures continúa; sin `0` y sin declarar «verificado»; **S0/plan ajenos sin cambios verificados**; evidencia registrada | AC03 |
 | PC-02 | Datos E4.5 presentes y coherentes | `Verificado`; solo lectura; precontrol, S0 y planes ajenos sin cambios | AC03, AC17 |
-| PC-03 | Datos E4.5 presentes y contradictorios | `REVALIDACION_BLOQUEANTE`; sin v2; auditoría de valores comparados | AC17 |
+| PC-03 | Datos E4.5 presentes con contradicción material | `REVALIDACION_BLOQUEANTE`; sin v2; auditoría de valores comparados | AC17 |
 | PC-04 | Datos E4.5 presentes pero ilegibles | Bloqueo; no se asume no bloqueante | AC17 |
 | PC-05 | E4.5 se implementa después y aparecen datos nuevos | La siguiente revalidación los incluye; no se reescribe el pasado ni se marcan como verificados retroactivamente | AC03 |
+| PC-06 | Diferencia no material acreditada como no bloqueante | Aviso auditado, sin bloqueo; S0/plan ajenos sin cambios; acreditación y valores registrados | AC17 |
 
 **Límite:** este criterio no declara que E4.5 esté integrado ni convierte su ausencia en
 resultado financiero. Si el usuario decide que el precontrol es evidencia obligatoria para
@@ -288,7 +294,7 @@ Para declarar un AC `PASS` harán falta, como mínimo:
    explícita que permita probar E4.10 contra un contrato congelado.
 3. Decisiones E4.10 (D1–D9 y `SIN_CAMBIOS`) aprobadas; solo P2/P3/P6/P7/P8 de SPEC29
    siguen pendientes.
-4. Criterio de revalidación §3 ratificado; PC-01…PC-05 ejecutados según corresponda.
+4. Criterio de revalidación §3 ratificado; PC-01…PC-06 ejecutados según corresponda.
 5. Evidencia real del comando ejecutado, no una descripción.
 6. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
    versión nueva.
