@@ -112,6 +112,8 @@ evidencia privada, merge ni despliegue. Los 59 AC de SPEC20 siguen `UNRUN`.
   extracción, intervalo, corte ni reloj (`spec:114-115,149-156`).
 - Aperturas de Saldo aparte; Deuda fuera (`spec:157-167`).
 - Hashes `sha256:ficticio-*` son etiquetas, no huellas reales.
+- Los fixtures 2026 con corte `2026-12-31` usan **reloj de prueba `2027-01-15`**;
+  sin él, la consulta es 422/`NoVerificable` (`spec:357-361`). No se usa el reloj real.
 
 ### 3.2 Identidades ficticias
 
@@ -127,6 +129,19 @@ evidencia privada, merge ni despliegue. Los 59 AC de SPEC20 siguen `UNRUN`.
 | `REF102` | Formación | Referencia | — | Referencia no declarada |
 | `S001` | Saldo ficticio A | Saldo | — | Apertura histórica |
 | `D100` | Deuda ficticia | Deuda | — | Solo contexto E4.4 |
+
+#### Mapping ficticio
+
+| `idMapeo` | Destino | Estado | Evidencia | Vigencia |
+| --- | --- | --- | --- | --- |
+| `MAP-2024-v1` | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2024 | 2024 |
+| `MAP-2025-v1` | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2025 | 2025 |
+| `MAP-2026-v3` | PAR100/PAR205/PAR300/PAR900 | Aprobado | EV-MAP-2026 | 2026 |
+| `MAP-2026-v3` (origen «Viaje») | PAR205/PAR206 | Ambigua | EV-MAP-AMB-01 | 2026 |
+| `MAP-2026-v4` | PAR200 (solo variante F-DT7-19) | Aprobado | EV-MAP-2026-04 | 2026 |
+
+La ambigüedad es por identidad de origen, no por versión global; solo `Aprobado`
+permite sumar (`spec:226-250`).
 
 ### 3.3 Resumen por ejercicio
 
@@ -148,11 +163,11 @@ Agregación D14: `NoAcreditada` → `Solapada` → `Completa` → `NoDisponible`
 | `SRC-2025-GAS-P100` | GastoHistorico | PAR100 | 12 meses de 2025 | 2025-12-31 | NoAplica | v1 | Presente | MAP-2025-v1 |
 | `SRC-2025-GAS-P205` | GastoHistorico | PAR205 | 01/01–30/06; 01/10–31/12 | 2025-12-31 | NoAplica | v1 | Presente | MAP-2025-v1 |
 | `SRC-2025-GAS-P300` | GastoHistorico | PAR300 | — | — | NoAplica | — | Ausente | MAP-2025-v1 |
-| `SRC-2026-GAS-P100` | GastoHistorico | PAR100 | 2026-01-01/2026-08-27 | 2026-08-27 | 2026-08-28/2026-12-31 | v1 (v2) | Presente | MAP-2026-v3 |
+| `SRC-2026-GAS-P100` | GastoHistorico | PAR100 | 2026-01-01/2026-08-27 | 2026-08-27 | 2026-08-28/2026-12-31 | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-GAS-P205` | GastoHistorico | PAR205 | 2026-01-01/2026-06-30 | 2026-06-30 | 2026-08-01/2026-12-31 | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-GAS-P206` | GastoHistorico | PAR206 | 2026-01-01/2026-12-31 | 2026-12-31 | NoAplica | v1 | Presente | MAP-2026-v3 (ambigua) |
 | `SRC-2026-GAS-P300` | GastoHistorico | PAR300 | 2026-01-01/2026-12-31 | 2026-12-31 | NoAplica | v1 | Presente | MAP-2026-v3 |
-| `SRC-2026-REG-P900` | Regularizacion2026 | PAR900 | 2026-06-15/2026-06-15 | 2026-12-31 | NoAplica | v1 | Presente | MAP-2026-v3 |
+| `SRC-2026-REG-P900` | Regularizacion2026 | PAR900 | 2026-06-15/2026-06-15 | 2026-06-15 | NoAplica | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-APERT-S001` | AperturaHistorica | S001 | 2026-01-01/2026-01-01 | 2026-01-01 | NoAplica | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-DEUDA-D100` | DeudaContexto | D100 | 2026-08-28/2026-12-31 | 2026-08-27 | 2026-08-28/2026-12-31 | v1 | Solo contexto | — |
 | `SRC-2027-GAS-P100` | GastoHistorico | PAR100 | — | — | NoAplica | — | Ausente | MAP-2027-v1 |
@@ -194,6 +209,7 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
   "estadoUniverso": "Acreditado",
   "universoPartidas": ["PAR100", "PAR205", "PAR206", "PAR300", "PAR900"],
   "corteConsulta": "2026-12-31",
+  "relojPrueba": "2027-01-15",
   "fuentes": [
     {"fuenteId": "SRC-2026-GAS-P100", "alcance": "PAR100", "versionFuente": "v1",
      "intervalos": [{"inicio": "2026-01-01", "fin": "2026-08-27"}],
@@ -210,7 +226,8 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
     {"fuenteId": "SRC-2026-GAS-P300", "alcance": "PAR300", "estado": "Presente",
      "versionMapping": "MAP-2026-v3"},
     {"fuenteId": "SRC-2026-REG-P900", "alcance": "PAR900", "estado": "Presente",
-     "versionMapping": "MAP-2026-v3"},
+     "intervalos": [{"inicio": "2026-06-15", "fin": "2026-06-15"}],
+     "corteArchivo": "2026-06-15", "versionMapping": "MAP-2026-v3"},
     {"fuenteId": "SRC-2026-APERT-S001", "alcance": "S001", "estado": "Presente",
      "intervalos": [{"inicio": "2026-01-01", "fin": "2026-01-01"}],
      "versionMapping": "MAP-2026-v3"}
@@ -237,7 +254,7 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
        "estadoCobertura": "Completa", "estadoTotal": "Verificado",
        "motivoCodigo": "AusenciaVerificadaSinHechos"},
       {"partida": "PAR900", "archivo": "50.00", "total": null,
-       "estadoCobertura": "Completa", "estadoTotal": "NoVerificable",
+       "estadoCobertura": "Parcial", "estadoTotal": "NoVerificable",
        "motivoCodigo": "RegularizacionPendiente"}
     ],
     "conflictos": [],
@@ -250,19 +267,26 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 }
 ```
 
-## 4. Catálogo de fixtures `F-DT7-01…24`
+El `motivoCodigo` global es la causa principal de cobertura; los motivos por Partida
+(`MappingPendiente`, `RegularizacionPendiente`) se conservan en `items[].motivoCodigo`.
+
+## 4. Catálogo de fixtures `F-DT7-01…25`
 
 > Todos ficticios y no ejecutados. Los resultados son DTO esquemáticos, no PASS.
+> Cada fixture es autocontenido y no se acumula con el inventario ni con otros
+> fixtures; las variantes se indican expresamente.
 
 ### Positivos y base
 
 - **F-DT7-01 · Archivo + detalle contiguos.** Archivo `"1200.00"` 01/01–08/27;
-  detalle `"300.00"` 08/28–12/31; corte 12/31. Esperado: `Completa`/`Verificado`,
-  total `"1500.00"`, componentes `"1200.00"`/`"300.00"`. Prohibido: `"2700.00"`,
-  `"1200.00"`, doble cómputo, `Anual` con corte 08/27.
+  detalle `"300.00"` 08/28–12/31; corte 12/31 con reloj `2027-01-15`. Esperado:
+  `Completa`/`Verificado`, total `"1500.00"`, componentes `"1200.00"`/`"300.00"`.
+  Prohibido: `"2700.00"`, `"1200.00"`, doble cómputo, `Anual` con corte 08/27.
 - **F-DT7-15 · Cero verificado vs ausencia.** Fuente presente 01/01–12/31 sin filas.
-  Esperado: `Completa`/`Verificado`, `"0.00"`, `AusenciaVerificadaSinHechos`. Prohibido:
-  `NoDisponible`, `null`, `"0.00"` sin intervalo verificado.
+  Esperado: `Completa`/`Verificado`, `"0.00"`, `AusenciaVerificadaSinHechos`. Variante:
+  registro explícito `"0.00"` verificado; ambos suman 0, pero solo la ausencia usa
+  `AusenciaVerificadaSinHechos` y el registro cero conserva identidad y estado.
+  Prohibido: `NoDisponible`, `null`, `"0.00"` sin intervalo verificado.
 - **F-DT7-16 · Transición y año vacío.** 2027 sin archivo/control/hechos; Ciclo
   dic/ene. Esperado: 2027 `NoDisponible`/`NoDisponible`, sin plan/Movimiento/foto/
   apertura/cierre; 2026 consultable. Prohibido: arrastre, total plurianual, `"0.00"`.
@@ -292,15 +316,20 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 ### Deduplicación, identidad y versiones
 
 - **F-DT7-04 · Duplicado de identidad y huella.** Dos filas idénticas de `"120.00"`.
-  Esperado: un registro lógico, total `"1200.00"`, 9 filas físicas / 8 lógicas.
-  Prohibido: `"1320.00"`, dos registros, deduplicar por importe.
+  Esperado: un registro lógico; 9 filas físicas / 8 lógicas; suma bruta de archivo
+  `"1200.00"`, archivo elegible `"1140.00"` (excluye el representado de 60), precontrol
+  vinculado `"60.00"` y total combinado de PAR100 `"1500.00"`. Prohibido: `"1320.00"`,
+  dos registros, llamar `"1200.00"` al total certificado, deduplicar por importe.
 - **F-DT7-14 · Versión que reemplaza.** v1 `"1200.00"`; v2 `"1150.00"` con
-  `reemplazaA`; detalle `"300.00"`. Esperado: solo v2, total `"1450.00"`; v1 historia.
-  Prohibido: `"2350.00"`, elegir por fila, borrar v1, reescribir mapping.
+  `reemplazaA`; detalle `"300.00"`; variante sin el precontrol de 60. Esperado: solo v2,
+  total `"1450.00"`; v1 historia. Prohibido: `"2350.00"`, elegir por fila, borrar v1,
+  reescribir mapping.
 - **F-DT7-19 · Renombrado, reclasificación y jerarquía.** Renombrar conserva ID;
-  reclasificar exige versión; cambio de jerarquía conserva `PARxxx`. Esperado:
-  procedencia original y jerarquía vigente separadas; solo vigente suma. Prohibido:
-  ID nuevo por renombrar, sumar original + reclasificación, inventar versión de catálogo.
+  reclasificar exige versión; cambio de jerarquía conserva `PARxxx`. AC-45 exige además
+  impacto, motivo, confirmación, revisión/huella y protecciones E1.2; sin ellos, 409.
+  Esperado: procedencia original y jerarquía vigente separadas; solo vigente suma.
+  Prohibido: ID nuevo por renombrar, sumar original + reclasificación, inventar versión
+  de catálogo, resolver el cambio de jerarquía sin impacto/confirmación.
 
 ### Mapping, procedencia y fecha
 
@@ -353,11 +382,17 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 - **F-DT7-20 · Solo Gastos, corte abierto y futuro.** Ingreso/Transferencia/
   Amortización/Gasto; corte 27/10; corte futuro. Esperado: solo Gasto `"50.00"`;
   `HastaCorte`; futuro 422. Prohibido: `"650.00"`, anual con corte abierto, 0.
-- **F-DT7-24 · Proyección E2.4/E4.7.** Archivo `"900.00"` 01/01–06/30; detalle
-  `"300.00"` 07/01–12/31; reloj 2027-01-15. Esperado: corte 30/06 `"900.00"`
-  `HastaCorte`; corte 31/12 `"1200.00"` `Anual`; julio sin cobertura `NoVerificable`;
+- **F-DT7-24 · Proyección E2.4/E4.7 (AC-56).** Reloj `2027-01-15`. (a) Archivo
+  `"900.00"` 01/01–06/30, corte 30/06: `Completa`/`Verificado`, `"900.00"`, `HastaCorte`.
+  (b) Mismo archivo + detalle `"300.00"` 07/01–12/31, corte 31/12: `Completa`/
+  `Verificado`, `"1200.00"`, `Anual`. (c) Variante con `controlDetalle` desde 08/01 y
+  corte 31/12: julio sin cobertura, `Parcial`/`NoVerificable`, total `null`.
   `annualExecution` por Partida; `diferencia` solo si ejecutado verificable. Prohibido:
-  anual con corte abierto, `"1200.00"` con hueco, prorrateo, `0` por ausencia.
+  anual con corte abierto, `"1200.00"` en (c), prorrateo, `0` por ausencia.
+- **F-DT7-25 · Sin archivo y control desde 01/09 (AC-10).** Sin archivo;
+  `controlDetalle` 01/09–12/31; hueco 01/01–08/31; corte 31/12. Esperado: `Parcial`/
+  `NoVerificable`, total `null`, motivo de cobertura anterior, no `0`. Prohibido:
+  `"0.00"`, cobertura completa, total con hueco.
 
 ## 5. Matriz de trazabilidad
 
@@ -374,7 +409,7 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 | AC-07 | F-DT7-02 | REQ-02 | `Parcial`; hueco; subtotal `"1200.00"` | `UNRUN` |
 | AC-08 | F-DT7-01, 03 | REQ-02 | Corte inclusivo; `HastaCorte`/`Anual` | `UNRUN` |
 | AC-09 | F-DT7-15 | REQ-02 | `Completa`/`Verificado`; `"0.00"` | `UNRUN` |
-| AC-10 | F-DT7-02, 10 | REQ-01/02 | Fuente ausente/hueco; no `0` | `UNRUN` |
+| AC-10 | F-DT7-02, 10, 25 | REQ-01/02 | Fuente ausente/hueco; no `0` | `UNRUN` |
 | AC-11 | F-DT7-15 | REQ-02 | Cero explícito vs ausencia | `UNRUN` |
 | AC-12 | F-DT7-04 | REQ-05 | Un registro lógico; una suma | `UNRUN` |
 | AC-13 | F-DT7-13 | REQ-05 | Dos candidatos; no suma ni elige | `UNRUN` |
@@ -402,8 +437,8 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 | AC-42 | F-DT7-22 | REQ-03 | Fecha solo con evidencia | `UNRUN` |
 | AC-43 | F-DT7-17 | REQ-06 | Deuda no se enlaza ni suma | `UNRUN` |
 | AC-44 | F-DT7-18 | REQ-05 | Detalle no se prioriza sin evidencia | `UNRUN` |
-| AC-45 | F-DT7-19 | REQ-03/04 | Jerarquía vigente/procedencia; 409 | `UNRUN` |
-| AC-46 | F-DT7-10, 11, 23 | REQ-01/02 | `NoAcreditada`, `FuenteAusente`, D14 | `UNRUN` |
+| AC-45 | F-DT7-19 | REQ-03/04 | Jerarquía, impacto/confirmación, 409 | `UNRUN` |
+| AC-46 | F-DT7-10, 11, 15, 23 | REQ-01/02 | `NoAcreditada`, `FuenteAusente`, cero, D14 | `UNRUN` |
 | AC-47 | F-DT7-13 | REQ-02 | `Filtrada`; conflicto visible | `UNRUN` |
 | AC-48 | F-DT7-21 | REQ-03/04 | Referencia pendiente sin cambio; suma | `UNRUN` |
 | AC-49 | F-DT7-21, 12 | REQ-04/05 | Atribución afectada `NoVerificable` | `UNRUN` |
@@ -418,8 +453,11 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 | AC-58 | F-DT7-24 | REQ-10 | `annualExecution`; `items[]`/`totales` | `UNRUN` |
 | AC-59 | F-DT7-05 | REQ-04 | `NoAplica` con evidencia; pendiente visible | `UNRUN` |
 
-Fuera de fixtures DT7: AC-01/23 (E4.11), AC-25/26 (API/seguridad), AC-27/28 (UI),
-AC-29 (E4.7), AC-30 (restore E4.12). Requieren DEV/contratos o ensayo de restauración.
+| AC-29 | F-DT7-24 | REQ-10 | Consumidor E4.7; no recalcula | `UNRUN` |
+| AC-30 | F-DT7-01 + manifiesto | REQ-03/05/06 | Restore preserva IDs/mapping; G-DT6 | `UNRUN` |
+
+Fuera de fixtures DT7: AC-01/23 (E4.11), AC-25/26 (API/seguridad) y AC-27/28 (UI).
+Requieren DEV/contratos o ensayo de interfaz; no se declaran cubiertos.
 
 ## 6. Decisiones materiales pendientes
 
@@ -441,7 +479,7 @@ AC-29 (E4.7), AC-30 (restore E4.12). Requieren DEV/contratos o ensayo de restaur
 | **DT7-M11** | Custodia y acceso a evidencia privada | Local; externa cifrada; híbrida; accesos | Seguridad, auditoría, P6/P7 | Usuario | G-P6/P7 + G-DT7 |
 | **DT7-M12** | Firma de la conciliación independiente | Revisor + usuario; solo usuario; coordinador + usuario | Aceptación, E4.12 | Usuario | G-DT7 + G-DT6 |
 | **DT7-M13** | Autorización P6/P7 para datos reales | No; sí con alcance/fecha; solo muestra; más tarde | Alcance real; no afecta ficción | Usuario | G-P6/P7 |
-| **DT7-M14** | Frontera E2.4: ampliar seam o adaptar E4.5 | Ampliar `AnnualSources`/`AnnualHistory`; adaptar E4.5; nueva interfaz; aplazar AC-58 | Alcance DEV y regresiones E2.4 | Coordinador + usuario | G-E2.4/G-DEV |
+| **DT7-M14** | Frontera E2.4: ampliar seam o adaptar E4.5 | Ampliar `AnnualSources`/`AnnualHistory`; adaptar E4.5; nueva interfaz; aplazar AC-58 | Alcance DEV y regresiones E2.4 | Usuario sobre propuesta del coordinador | G-E2.4/G-DEV |
 | **DT7-M15** | Evidencia de separación/disyunción de agregado | Vínculo de origen; separación aprobada; ambas; ninguna | Desbloquea o no total solo-detalle | Usuario sobre propuesta técnica | G-DT7 |
 | **DT7-M16** | Evidencia de fecha económica | Campo por fuente; evidencia documental; `null` por defecto; otra | Atribución de fecha; no importe | Usuario sobre propuesta técnica | G-DT7 + G-E2.4 |
 
