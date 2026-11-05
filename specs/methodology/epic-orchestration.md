@@ -23,14 +23,31 @@ SHA/PR/check state and retain the historical record as superseded.
 - `QA`: planned → test-design → awaiting-implementation → verifying → passed/failed/blocked. Independent test design and investigation can overlap another feature's spec or dev. Never claim tests passed before execution against the actual candidate.
 - `merge`: proposed PR → ready-for-user-review → user-approved → merged. Branch/PR publication is ordinary inside the authorized scope; never publish outside it. Never auto-merge. PR readiness requires current tests/review evidence; branch merge is a separate approval gate.
 
+
+## Proactive planning (look-ahead)
+
+Keep the next roadmap items and their hard dependencies identified, not only the item in
+progress. While current work advances or waits (DEV, CI, an external return), prepare the next
+independent ready work that commits no protected decision: brainstorming or a specification
+draft, a bounded investigation, a work packet for already approved and authorized DEV, or QA
+test design. Do not wait for an unnecessary instruction.
+
+Preparation never promotes a draft, authorizes DEV, starts QA verification, merges or deploys.
+Replan when a task completes, a result or return arrives, a blocker appears, or an approval or
+dependency changes; consolidate verified results and pending decisions and raise only user or
+advisor decisions that require authorization. Keep the existing board row or current summary
+current with a verifiable next action. Create no second scheduler, queue or status system, and no
+artificial task to keep an agent busy. If no independent work is ready, record the pending
+decision or hard dependency and stop.
+
 ## Scheduler: reconcile at meaningful milestones
 
 1. Start with last trusted checkpoint and verify relevant Git/PR/approval/test deltas; reread full sources only for ambiguity, risk, drift or required financial/security checks.
 2. Identify gates and hard dependencies. Mark blocked only where there is a real dependency; cite the specific prerequisite and owner. Distinguish user decision needed from environment/technical blocker.
-3. Recompute independent **ready** work when a gate or relevant dependency changes: approved AND authorized implementation; candidate verification; independent spec drafting up to approval; bounded investigation with hypothesis/exit condition.
-4. Prefer user priorities and critical-path work, but do not starve next-feature preparation because an unrelated investigation is running. When any work is blocked, promptly pick the next independent ready item.
+3. Recompute independent **ready** work when a gate, relevant dependency or the look-ahead changes: approved AND authorized implementation; candidate verification; independent spec drafting up to approval; bounded investigation with hypothesis/exit condition; QA test design; and work packets for approved, authorized DEV. Do not wait for an explicit instruction to prepare ready work that commits no protected decision.
+4. Prefer user priorities and critical-path work, but do not starve next-feature preparation because an unrelated investigation is running. When any work is blocked **or merely waiting**, advance the next independent ready item instead of idling. If nothing useful is ready, record the pending decision or hard dependency and stop; never create artificial work.
 5. Prefer one complete implementation packet per authorized feature, then independent QA/review. Parallel work requires genuine independence, justified context cost, separate ownership and authorized isolated checkouts for code writers; otherwise serialize.
-6. At major milestones update only changed state and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run.
+6. At major milestones (task completion, result, blocker, candidate, QA, PR) update only changed state and the board's next independent action, and pass concise evidence to the next authorized step within this active execution. Approved spec + explicit MyFinanzas development authorization → dev; verified candidate → required independent QA; QA passed + checks green → publish/update the PR when the scope authorizes it. Do not ask again for unchanged prior permission. A correctable failed check does not end the run. Preparation does not promote a draft or bypass a gate.
 7. End an active run with a concise board summary: completed, underway, waiting on user, blocked, newly ready, and exact next action. State the responsible party, exact human action (or none) and reason for waiting. No claim of background processing between sessions; rescan on next invocation.
 
 Use [dynamic agent management](dynamic-agents.md) with **one executor by default** and independent QA when required. More workers only when parallelism provides real benefit. This is advisory, not a Codex runtime limit; preserve all financial, security and PR merge approval gates.
