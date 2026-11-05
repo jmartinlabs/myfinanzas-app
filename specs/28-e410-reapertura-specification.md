@@ -107,7 +107,7 @@ re-cierre; el ownership se decide en el paquete DEV.
 | **Rectificación** | `[CONFIRMADO]` Escritura T2/T3 y T1 dentro de la ventana según D2-B, con las guardas y la auditoría vigentes. |
 | **Re-cierre** | `[CONFIRMADO]` Nuevo cierre del mismo ciclo que crea una versión de foto posterior sin alterar las anteriores (SPEC27, DT4). |
 | **Versión vigente** | `[APROBADO D5-A]` Mientras el ciclo está reabierto y sin nueva versión, la última versión cerrada es consultable pero no se presenta como vigente sin advertencia. |
-| **Dependencia posterior** | `[PENDIENTE D4]` S0/plan del ciclo siguiente, fotos, auxiliares, agregados E4.11 y precontrol, según la matriz que se apruebe. No se amplía por analogía. |
+| **Dependencia posterior** | `[APROBADO D4]` S0/plan del ciclo siguiente, fotos, auxiliares, agregados E4.11 y precontrol; contradicción material bloquea; aviso solo si se acredita no bloqueante. No se amplía por analogía. |
 | **Estado de cierre derivado** | `[PROPUESTA]` Estado observable `Cerrado(vN)` o `Reabierto(vN)`. E4.9 integrado solo persiste `Cerrado(v1)`; la representación de E4.10 sigue pendiente. |
 
 ---
@@ -137,15 +137,15 @@ re-cierre; el ownership se decide en el paquete DEV.
 7. **`[CONFIRMADO]` Auditoría append-only.** Toda transición material registra actor, UTC
    y motivo; no se actualiza ni se borra. **`[PROPUESTA]`** La cadena registra además
    versión de origen/destino, fingerprint y resultado.
-8. **`[PROPUESTA]` Idempotencia y concurrencia.** Reintento idéntico seguro; payload o
+8. **`[APROBADO D7-A+B+C]` Idempotencia y concurrencia.** Reintento idéntico seguro; payload o
    versión esperada distintos → conflicto; nunca dos versiones por reintento o carrera.
 9. **`[CONFIRMADO]` DT6 es un gate separado.** La reapertura no es una restauración de
    backup; el cierre real —también el re-cierre real— exige evidencia DT6/T-BKP.
 10. **`[CONFIRMADO]` DT9 queda fuera.** E4.10 no habilita ciclos antiguos ni crea una
     excepción por la puerta trasera.
 11. **`[CONFIRMADO]` Seguridad heredada.** Se reutiliza la sesión MFA completa, Origin/CSRF
-    y los límites de la API. **`[PROPUESTA]`** No se introducen roles nuevos y el actor se
-    toma de la sesión, no del cliente; la identidad del actor queda sujeta a D3.
+    y los límites de la API. **`[APROBADO D3-B+C]`** No se introducen roles nuevos y el
+    actor se toma de la sesión, no del cliente.
 12. **`[CONFIRMADO]` Foto no recalculada.** Consultar v1/v2 devuelve valores persistidos,
     no una composición desde el estado vivo (SPEC27 AC-14; E4.11-AC1).
 
@@ -232,7 +232,7 @@ la atomicidad.
 Antes de re-cerrar, E4.10 muestra un preflight de solo lectura:
 
 - estado, versión de origen y fingerprint de la vista previa;
-- diferencias materiales frente a v1 (plan, auxiliares, hechos, clasificación, inversión);
+- diferencias materiales frente a `vN` (plan, auxiliares, hechos, clasificación, inversión);
 - resultado de la revalidación de dependencias posteriores (D4);
 - bloqueos y avisos, sin totales provisionales;
 - evidencia de backup/DT6 disponible.
@@ -244,7 +244,7 @@ parcial (patrón E4.9 AC-11).
 
 1. **Comprobaciones.** La ventana sigue abierta; la versión esperada es la última; no
    apareció un cierre posterior; el preflight y la revalidación están vigentes; el motivo
-   de re-cierre está presente si D3-B.
+   de re-cierre está presente (D3-B+C).
 2. **Transacción.** Crear el cierre de versión `N+1`, la foto completa, la auditoría y el
    intento. La secuencia de versión es `MAX(version)+1`; v1 y las versiones anteriores no
    se tocan.
@@ -319,7 +319,7 @@ hasta que se decidan.
 | `versionesDeCierre(ciclo)` | Ciclo | Lista de versiones con metadatos, última cerrada y estado de reapertura | Todas las versiones existentes consultables; selección explícita. |
 | `fotoDeCierre(ciclo, versión?)` | Ciclo, versión opcional | Foto persistida y metadatos | Sin versión: la última cerrada; no la vigente viva. |
 | `reabrirUltimoCierre(ciclo, solicitud)` | Motivo, versión/estado esperado, clave de intento | Estado `Reabierto`, versión de origen, ventana | No crea foto; no modifica v1; atómica. |
-| `reCerrarCiclo(ciclo, solicitud)` | Motivo de re-cierre si D3-B, versión esperada, fingerprint de preflight, clave de intento | Versión nueva, foto, vínculo v1→v2 | Crea una sola versión; fallo → rollback. |
+| `reCerrarCiclo(ciclo, solicitud)` | Motivo de re-cierre (D3-B+C), versión esperada, fingerprint de preflight, clave de intento | Versión nueva, foto, vínculo v1→v2 | Crea una sola versión; fallo → rollback. |
 | `cancelarReapertura(ciclo, solicitud)` | Motivo, versión esperada, clave de intento | Estado `Cerrado(vN)` | D8: sin foto solo sin cambios materiales; con cambios y sin cierre posterior, `vN+1`; con cierre posterior, re-cierre ordinario bloqueado y solo recuperación extraordinaria aprobada por separado. |
 
 Reglas transversales:
@@ -383,8 +383,8 @@ posterior y solo cabe recuperación extraordinaria documentada y aprobada por se
 `[CONFIRMADO]` E4.10-AC3 exige revalidar dependencias posteriores sin modificar
 automáticamente su saldo inicial. La revalidación es de solo lectura y se registra.
 
-`[PENDIENTE D4]` La matriz exacta no está aprobada. Candidata, sin ampliar AC-20 por
-analogía:
+`[APROBADO D4]` Matriz de revalidación (sin ampliar AC-20 por analogía): contradicción
+material bloquea; aviso solo si se acredita no bloqueante; registrar valores comparados.
 
 - S0 y plan del ciclo siguiente: comprobar que la rectificación no los invalida; no
   recalcularlos ni cambiarlos.
@@ -478,7 +478,7 @@ visual es un gate separado y no se declara PASS.
   permitido y qué sigue bloqueado; acceso a v1.
 - **Rectificación:** las rutas T2/T1 muestran su impacto y auditoría; no se presenta una
   vista viva como si fuera la foto.
-- **Preparación del re-cierre:** resumen de diferencias frente a v1, bloqueos/avisos,
+- **Preparación del re-cierre:** resumen de diferencias frente a `vN`, bloqueos/avisos,
   evidencia de backup y confirmación con motivo/idempotencia.
 - **Resultado:** v2 creada, enlace a v1 y v2, comparación lado a lado, sin totales
   provisionales.
@@ -523,8 +523,8 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
 - Cierre posterior que aparece entre reapertura y re-cierre → re-cierre detenido; la
   ventana se resuelve por D8: re-cierre ordinario bloqueado; recuperación extraordinaria
   aprobada por separado (AC16).
-- Dependencia posterior contradictoria → bloqueo o aviso según D4; sin cambios
-  automáticos de S0/plan (AC17).
+- Dependencia posterior contradictoria → contradicción material bloquea; aviso solo si se
+  acredita no bloqueante; sin cambios automáticos de S0/plan (AC17).
 - `SinPlan` → válido; v2 lo captura; no se inventan líneas. `PlanNoVerificable` → bloqueo
   (AC19).
 - Auxiliar sin hechos o fuente no disponible → `No disponible` con motivo; no se copia v1
@@ -605,9 +605,8 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC23 | Reabrir tras v2 (v3). | Secuencial sobre la última versión cerrada; no se reabre una versión histórica; una sola ventana activa; v3+ crea foto completa. | `[APROBADO D1-A/D5-A]` |
 | E4.10-AC24 | Re-cerrar sin cambios materiales. | Rechazo explícito `SIN_CAMBIOS`; no crea foto; cancelación D8 solo con ausencia acreditada; no basta igualdad de importes/totales; con cambios revertidos o evidencia insuficiente no hay equivalencia ni cancelación automática. | `[APROBADO SIN_CAMBIOS]` |
 
-`[PENDIENTE]` No hay AC para «re-cierre sin cambios»; queda sujeto a la política de
-`SIN_CAMBIOS`. «Reabrir tras v2» tiene AC23 y sigue `UNRUN`. No se declaran PASS ni
-exclusiones por inferencia.
+`[APROBADO SIN_CAMBIOS]` «Re-cierre sin cambios» tiene AC24 y §19; «reabrir tras v2»
+tiene AC23. Ambos siguen `UNRUN`; no se declaran PASS ni exclusiones por inferencia.
 
 ---
 

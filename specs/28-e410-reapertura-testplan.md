@@ -14,8 +14,8 @@ de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto.
 
 **Leyenda de estado:** `UNRUN` = diseñado, no ejecutado. `UNRUN — condicionado Dn` = no
 puede ejecutarse con resultado estable hasta que se apruebe esa decisión. `BLOCKED` = falta
-una dependencia externa. No se usa `PASS` en este documento. **D1, D2, D5, D8 y D9 están
-aprobadas (2026-11-05); D3, D4, D6 y D7 siguen abiertas.**
+una dependencia externa. No se usa `PASS` en este documento. **D1–D9 y `SIN_CAMBIOS`
+están aprobadas (2026-11-05); solo P2/P3/P6/P7/P8 de SPEC29 siguen abiertas.**
 
 ---
 
@@ -51,7 +51,7 @@ cambiar la semántica.
 2. Reabrir con motivo, actor, UTC y versión esperada.
 3. Verificar `Reabierto(v1)`, evento de auditoría y foto v1 sin cambios.
 4. Aplicar una corrección T2 (y T1 si D2-B) con su impacto/auditoría.
-5. Re-cerrar con motivo (si D3-B), versión esperada y preflight.
+5. Re-cerrar con motivo (D3-B+C), versión esperada y preflight.
 6. Verificar v2 con el contrato completo, vínculo v1→v2, `Cerrado(v2)` y v1 intacta.
 
 **Cubre:** AC02, AC06, AC08, AC10, AC18, AC20.
