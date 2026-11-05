@@ -200,6 +200,23 @@ def validate(root):
  }.items():
   for token in tokens:
    if token not in read(name): fail('execution-mode',f'{name}: missing {token}')
+ # Delegation preference, functional DRAFT scope and packet execution mode are canonical.
+ dynamic_policy=read('specs/methodology/dynamic-agents.md')
+ for token in ('## Delegation preference','one executor per task','Never create artificial agents'):
+  if token.lower() not in dynamic_policy.lower(): fail('delegation-preference',f'dynamic policy missing {token}')
+ orchestrator_skill=read('.agents/skills/orchestrate/SKILL.md')
+ for token in ('Prefer a specialist for substantial','one executor per task','never invent agents'):
+  if token.lower() not in orchestrator_skill.lower(): fail('delegation-preference',f'orchestrator missing {token}')
+ if 'one executor per task' not in read('specs/methodology/epic-orchestration.md'): fail('delegation-preference','epic scheduler missing one executor per task')
+ functional_role=read('.agents/roles/functional.md').lower()
+ for token in ('create and append','draft specifications','acceptance criteria'):
+  if token not in functional_role: fail('functional-scope',f'functional role missing {token}')
+ spec_skill=read('.agents/skills/spec/SKILL.md')
+ for token in ('delegate may create and append','A functional delegate may write draft specification sections','Only the user approves'):
+  if token not in spec_skill: fail('functional-scope',f'spec skill missing {token}')
+ work_packet=read('templates/agent-work-packet.md')
+ for token in ('Execution mode','documentary editing within the authorized packet'):
+  if token.lower() not in work_packet.lower(): fail('delegation-preference',f'agent work packet missing {token}')
  return errors
 if __name__=='__main__':
  if len(sys.argv)>2: sys.exit('Usage: validate-template [repository-root]')

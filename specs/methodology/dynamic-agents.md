@@ -15,12 +15,27 @@ The coordinator is the only scheduler and shared board writer. Subagents must no
 ## Dynamic selection algorithm
 
 1. **Inventory** relevant ready work using checkpoint and real code/test/approval state. Do not rebuild the full queue after each event.
-2. **Check necessity**: Default to one executor for an authorized outcome. Delegate complete deliverables, not microsteps; bring in independent QA at the candidate gate.
-3. **Size the pool**: Prefer one executor, scaling only for independent ready tasks that justify context and coordination overhead. Respect actual runtime quotas and isolated ownership. This is not a fixed Codex limit or authorization for new financial scope.
+2. **Delegate when it pays**: Prefer a specialist for substantial, autonomous, bounded work — specification drafting, approved implementation, investigations and QA — when the client supports it. Reserve direct coordinator execution for small corrections, coordination, user decisions and operations where delegation costs more than it saves. Assign a complete deliverable, not microsteps. Bring in independent QA at the candidate gate.
+3. **Size the pool**: Keep **one executor per task**, not one executor per session. Start additional concurrent tasks only when they are independent, ready and worth more than the coordination overhead. Never create agents or work to fill a pool. Respect actual runtime quotas and isolated ownership. This is not a fixed Codex limit or authorization for new financial scope.
 4. **Pick a role dynamically** from reusable profiles or a temporary narrowly bounded specialization. Same profile can be used more than once for independent tasks. For each delegate, issue a [work-packet contract](../../templates/agent-work-packet.md): unique ID, source/approval evidence, objective, file ownership, read/write permissions, isolation, dependencies, deliverable, checks, prohibitions and return schema.
 5. **Start only if supported**: Check actual available subagent tools/capabilities in the active client session before claiming a worker exists. If unavailable, use sequential execution following the same ready queue; never pretend the delegate ran. External chats opened manually are **not** attached workers. They can only contribute via recorded checkpoints/branches/PRs.
 6. **Supervise by milestone and exception**: Inspect actual candidate diff and test evidence at agreed handoffs, not each intermediate message. Prevent duplicate work; parallel code writers need disjoint ownership and safe isolated checkouts, otherwise serialize.
 7. **Close or reassign** when deliverables are complete, blocked, duplicated or no longer useful. A completed agent's task is done; launch a **new bounded work packet** for another need rather than treating a role as a permanent always-on worker. Do not claim terminated sessions kept working or that agent cleanup was executed unless the runtime confirms it.
+
+## Delegation preference
+
+Delegate substantial, autonomous and bounded work whenever the active client supports it and the
+benefit exceeds the coordination cost: specification drafting, approved implementation, bounded
+investigations and QA. Prefer **background** execution when it is verifiably supported and the
+coordinator can advance independent authorized work or does not need the result to continue; use
+**foreground** when the next step depends on the result; reserve **direct** coordinator execution
+for small corrections, coordination, user decisions and operations where delegation does not pay.
+
+Keep **one executor per task**. Several tasks may run concurrently only with real independence,
+disjoint ownership and authorized isolation. Never create artificial agents, duplicate reviewers
+or work merely to fill a pool. MyFinanzas gates do not change: specification and development are
+approved separately, financial decisions remain protected, QA stays independent and merge needs
+explicit, identifiable approval.
 
 ## Execution mode: direct, foreground, background
 
@@ -28,14 +43,16 @@ Choose the mode per task before dispatch, with the lowest cost that still delive
 outcome. Do not create a delegate for a trivial task, and do not defer in background work whose
 result is needed to continue. The mode changes neither the project gates nor the evidence required.
 
-- **Direct (coordinator).** Small corrections, low-cost operations, financial or functional
-  decisions that need immediate interaction with the user, consolidation, supervision and brief
-  verifications.
+- **Direct (coordinator).** Small corrections, low-cost operations, coordination, financial or
+  functional decisions that need immediate user interaction, consolidation, supervision and brief
+  verifications where delegation costs more than it saves.
 - **Foreground subagent.** The coordinator needs the result immediately, the task is short enough
   for reasonable synchronous delegation, or dependencies prevent useful work until it returns.
 - **Background subagent.** Substantial approved specification creation or review, autonomous
   authorized DEV implementation, bounded investigations and audits, independent QA once a
   verifiable candidate exists, and other delimited work that needs no continuous supervision.
+  Prefer this mode when support is verified and the coordinator can advance independent authorized
+  work or does not need the result to continue.
 
 Background requires verified support in the active client (for example a `background` option or an
 equivalent asynchronous task API) and a benefit that justifies its cost. Without that support, use
@@ -49,10 +66,7 @@ independent worktrees and branches; their sessions started 4 ms apart and their 
 model was DeepSeek V4.1 Flash; this record does not re-verify that identity. It proves technical
 viability only: no token saving, quality gain or blanket parallelization is claimed.
 
-Parallelism: keep one executor by default and add delegates only for authorized, independent tasks
-with disjoint ownership and real isolation. No universal agent count applies; respect the verified
-client limit, the quota gate and these local gates (separate specification and development
-approval, financial decisions, independent QA, Agent Relay v1 without protocol changes).
+Parallelism: keep one executor per task; add concurrent tasks only for authorized, independent work with disjoint ownership and real isolation when value exceeds the coordination cost. No universal agent count applies; respect the verified client limit, the quota gate and these local gates (separate specification and development approval, financial decisions, independent QA, Agent Relay v1 without protocol changes).
 
 At the start of each substantial task, state briefly: task and identifier; who executes
 (coordinator or subagent profile); mode (direct, foreground or background); isolation (checkout or
