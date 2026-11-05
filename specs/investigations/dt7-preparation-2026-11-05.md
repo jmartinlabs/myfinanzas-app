@@ -132,13 +132,13 @@ evidencia privada, merge ni despliegue. Los 59 AC de SPEC20 siguen `UNRUN`.
 
 #### Mapping ficticio
 
-| `idMapeo` | Destino | Estado | Evidencia | Vigencia |
-| --- | --- | --- | --- | --- |
-| `MAP-2024-v1` | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2024 | 2024 |
-| `MAP-2025-v1` | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2025 | 2025 |
-| `MAP-2026-v3` | PAR100/PAR205/PAR300/PAR900 | Aprobado | EV-MAP-2026 | 2026 |
-| `MAP-2026-v3` (origen «Viaje») | PAR205/PAR206 | Ambigua | EV-MAP-AMB-01 | 2026 |
-| `MAP-2026-v4` | PAR200 (solo variante F-DT7-19) | Aprobado | EV-MAP-2026-04 | 2026 |
+| `idMapeo` | Identidad de origen | Destino | Estado | Evidencia | Vigencia |
+| --- | --- | --- | --- | --- | --- |
+| `MAP-2024-v1` | `SRC-2024-GAS-GLOBAL` + IDs | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2024 | 2024 |
+| `MAP-2025-v1` | `SRC-2025-GAS-*` + IDs | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2025 | 2025 |
+| `MAP-2026-v3` | `SRC-2026-GAS-*` + IDs | PAR100/PAR205/PAR300/PAR900 | Aprobado | EV-MAP-2026 | 2026 |
+| `MAP-2026-v3` | origen «Viaje» sin ID | PAR205/PAR206 | Ambigua | EV-MAP-AMB-01 | 2026 |
+| `MAP-2026-v4` | registro PAR100 reclasificado | PAR200 (solo variante F-DT7-19) | Aprobado | EV-MAP-2026-04 | 2026 |
 
 La ambigüedad es por identidad de origen, no por versión global; solo `Aprobado`
 permite sumar (`spec:226-250`).
@@ -169,7 +169,7 @@ Agregación D14: `NoAcreditada` → `Solapada` → `Completa` → `NoDisponible`
 | `SRC-2026-GAS-P300` | GastoHistorico | PAR300 | 2026-01-01/2026-12-31 | 2026-12-31 | NoAplica | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-REG-P900` | Regularizacion2026 | PAR900 | 2026-06-15/2026-06-15 | 2026-06-15 | NoAplica | v1 | Presente | MAP-2026-v3 |
 | `SRC-2026-APERT-S001` | AperturaHistorica | S001 | 2026-01-01/2026-01-01 | 2026-01-01 | NoAplica | v1 | Presente | MAP-2026-v3 |
-| `SRC-2026-DEUDA-D100` | DeudaContexto | D100 | 2026-08-28/2026-12-31 | 2026-08-27 | 2026-08-28/2026-12-31 | v1 | Solo contexto | — |
+| `SRC-2026-DEUDA-D100` | DeudaContexto | D100 | 2026-08-28/2026-12-31 | 2026-12-31 | 2026-08-28/2026-12-31 | v1 | Solo contexto | — |
 | `SRC-2027-GAS-P100` | GastoHistorico | PAR100 | — | — | NoAplica | — | Ausente | MAP-2027-v1 |
 | `SRC-2027-GAS-P205` | GastoHistorico | PAR205 | — | — | NoAplica | — | Ausente | MAP-2027-v1 |
 | `SRC-2027-GAS-P300` | GastoHistorico | PAR300 | — | — | NoAplica | — | Ausente | MAP-2027-v1 |
@@ -209,7 +209,7 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
   "estadoUniverso": "Acreditado",
   "universoPartidas": ["PAR100", "PAR205", "PAR206", "PAR300", "PAR900"],
   "corteConsulta": "2026-12-31",
-  "relojPrueba": "2027-01-15",
+  "fixtureReloj": "2027-01-15",
   "fuentes": [
     {"fuenteId": "SRC-2026-GAS-P100", "alcance": "PAR100", "versionFuente": "v1",
      "intervalos": [{"inicio": "2026-01-01", "fin": "2026-08-27"}],
@@ -269,6 +269,8 @@ Detalle de control ficticio: `M-2026-0123` `"100.00"` (2026-09-10), `M-2026-0124
 
 El `motivoCodigo` global es la causa principal de cobertura; los motivos por Partida
 (`MappingPendiente`, `RegularizacionPendiente`) se conservan en `items[].motivoCodigo`.
+`fixtureReloj` es metadato de prueba, no un campo del DTO de la API. `MappingPendiente`
+se usa para mapping no resuelto; `DuplicadoAmbiguo` se reserva a identidad duplicada.
 
 ## 4. Catálogo de fixtures `F-DT7-01…25`
 
@@ -317,9 +319,10 @@ El `motivoCodigo` global es la causa principal de cobertura; los motivos por Par
 
 - **F-DT7-04 · Duplicado de identidad y huella.** Dos filas idénticas de `"120.00"`.
   Esperado: un registro lógico; 9 filas físicas / 8 lógicas; suma bruta de archivo
-  `"1200.00"`, archivo elegible `"1140.00"` (excluye el representado de 60), precontrol
-  vinculado `"60.00"` y total combinado de PAR100 `"1500.00"`. Prohibido: `"1320.00"`,
-  dos registros, llamar `"1200.00"` al total certificado, deduplicar por importe.
+  `"1200.00"`, archivo elegible `"1140.00"` (excluye el representado de 60),
+  `detalleControl` `"300.00"`, precontrol vinculado `"60.00"` y total combinado de
+  PAR100 `"1500.00"` (`1140 + 300 + 60`). Prohibido: `"1320.00"`, dos registros,
+  llamar `"1200.00"` al total certificado, deduplicar por importe.
 - **F-DT7-14 · Versión que reemplaza.** v1 `"1200.00"`; v2 `"1150.00"` con
   `reemplazaA`; detalle `"300.00"`; variante sin el precontrol de 60. Esperado: solo v2,
   total `"1450.00"`; v1 historia. Prohibido: `"2350.00"`, elegir por fila, borrar v1,
@@ -453,8 +456,8 @@ El `motivoCodigo` global es la causa principal de cobertura; los motivos por Par
 | AC-58 | F-DT7-24 | REQ-10 | `annualExecution`; `items[]`/`totales` | `UNRUN` |
 | AC-59 | F-DT7-05 | REQ-04 | `NoAplica` con evidencia; pendiente visible | `UNRUN` |
 
-| AC-29 | F-DT7-24 | REQ-10 | Consumidor E4.7; no recalcula | `UNRUN` |
-| AC-30 | F-DT7-01 + manifiesto | REQ-03/05/06 | Restore preserva IDs/mapping; G-DT6 | `UNRUN` |
+| AC-29 | F-DT7-24 | REQ-10 | Cobertura/corte; resto requiere contrato E4.7 | `UNRUN` |
+| AC-30 | F-DT7-01 + manifiesto | REQ-03/05/06 | Manifiesto: `idArchivo`, `idMapeo`, intervalos, `fuenteId`, regularización; G-DT6 | `UNRUN` |
 
 Fuera de fixtures DT7: AC-01/23 (E4.11), AC-25/26 (API/seguridad) y AC-27/28 (UI).
 Requieren DEV/contratos o ensayo de interfaz; no se declaran cubiertos.
