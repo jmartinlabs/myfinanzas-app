@@ -44,7 +44,7 @@ código, componentes, CSS, temas, API, cálculos financieros ni datos reales. No
 - El selector de tema existente se conserva; no se añade otro selector ni se cambia el
   mecanismo de persistencia.
 - **Prohibido:** modificar paletas, tokens cromáticos, `theme-boot.js`, orden/identidad de los
-  temas o el tema inicial sin una decisión expresa y separada.
+  temas o el tema inicial (`dark-s`), que están cerrados.
 
 ### 2.1 Propuesta de actualización de `guidelines/ui.md`
 
@@ -69,7 +69,7 @@ esta propuesta es una decisión separada.
 | --- | --- | --- | --- |
 | E4.6 / `/inicio` | Integrada `cfbedb0` (#201); SPEC24 aprobada | Estructura, cifras y estados de Inicio | No reordenar secciones ni cambiar cifras/estados |
 | E4.9 / cierre y foto | Integrada `0176ffc` (#200), QA APTO CON RESERVAS | Patrones de operación irreversible y bloqueo | No reabrir rutas, contratos ni estados |
-| E4.10 / reapertura | SPEC28 con D1–D9 y `SIN_CAMBIOS` aprobadas; **sin DEV** | Wireframe conceptual futuro | No anticipar clases, rutas ni implementación |
+| E4.10 / reapertura | SPEC28 **DRAFT**; D1–D9 y `SIN_CAMBIOS` aprobadas 2026-11-05, incorporación en #223 OPEN/draft sin merge; **sin DEV** | Wireframe conceptual futuro | No anticipar clases, rutas ni implementación |
 | E4.11 / fotos periodo | SPEC29 DRAFT | Contexto de consulta | No fijar pantallas antes de su SPEC |
 | Temas #198 | Cerrado | Tokens y selector | No cambiar colores ni temas |
 
@@ -79,14 +79,18 @@ esta propuesta es una decisión separada.
 | --- | --- | --- | --- | --- |
 | **DEV-01 Fundamentos** | Escala tipográfica, espaciado, radios, foco y tamaños mínimos | Tokens no cromáticos; escala en shell y base; consumo real de `--space` | — | 1440/390 × 3 temas sin regresión; texto funcional ≥ 12 px; un radio por familia |
 | **DEV-02 Cifras y estados** | Unificar importe, badge, tarjeta, vacío y esqueleto | `Amount`, `Badge`, `Metric`, `EmptyState`, `Skeleton`; `--negative` aplicado; formateador único | DEV-01 | Badge único; `0,00 €`, `ND`, `No aplica`, `Sin datos` distinguibles; contraste ≥ 4.5 en 3 temas |
-| **DEV-03 Navegación** | Agrupar rutas sin cambiarlas | Datos de navegación en módulo; grupos; activo con barra+peso; título por ruta; menú móvil accesible | DEV-01 | 21 rutas iguales; activo sin color; teclado; sin desbordamiento a 390 |
+| **DEV-03 Navegación** | Agrupar rutas sin cambiarlas | Datos de navegación en módulo; grupos; activo con barra+peso; título por ruta; menú móvil accesible | DEV-01 | Todas las rutas actuales (23) iguales; activo sin color; teclado; sin desbordamiento a 390 |
 | **DEV-04 Tablas y listados** | Una tabla, un comportamiento | Primitiva `Table`; importes a la derecha; cabecera/hover por token; tarjetas móviles | DEV-01, DEV-02 | Misma información tabla/tarjeta; sin scroll horizontal; región desplazable rotulada |
 | **DEV-05 Formularios y fichas** | Formularios y detalle consistentes | `Field`, secciones, ayuda/error, rejilla 2→1; ficha por jerarquía | DEV-01, DEV-02 | Error sin salto; foco al primer error; AA en 3 temas |
 | **DEV-06 Pantallas clave** | Llevar el sistema a Inicio y 4–5 pantallas | Inicio, catálogo, ficha, formulario, operación | DEV-02…05; frontera E4.6/E4.9/E4.10 | Inicio conserva secciones/cifras/estados; una lectura principal; capturas antes/después |
-| **DEV-07 Temas y AA** | Cerrar paridad y evidencia | Matriz 4 pantallas × 3 temas × 2 anchos; contraste automatizado; teclado/zoom/reduced motion; actualizar guía y catálogo | DEV-01…06 | Pares ≥ 4.5/3; cero desbordamiento; evidencia adjunta, no aprobación |
+| **DEV-07 Temas y AA** | Cerrar paridad y evidencia | Matriz 5 pantallas × 3 temas × 2 anchos; contraste automatizado; teclado/zoom/reduced motion; actualizar guía y catálogo | DEV-01…06 | Pares ≥ 4.5/3; cero desbordamiento; evidencia adjunta, no aprobación |
 
 Orden recomendado: `01 → 02 → (03 ∥ 04 ∥ 05) → 06 → 07`. Cada bloque es reversible y ninguno
 cambia API, datos, cálculos ni estados.
+
+**DEV-02 — inventario previo:** antes de unificar el formateador, inventariar `eur()`,
+`formatDecimal` y las cadenas/AC que comparan `-`/`−` o decimales; actualizar tests de forma
+consciente; no cambiar valores, redondeos ni contratos.
 
 ## 5. Pantallas de referencia
 
@@ -99,7 +103,7 @@ cambia API, datos, cálculos ni estados.
 
 ## 6. QA y evidencia
 
-- Matriz **4 pantallas × 3 temas × 2 anchos (390/1440)** con capturas reproducibles.
+- Matriz **5 pantallas × 3 temas × 2 anchos (390/1440)** con capturas reproducibles.
 - Contraste automatizado por tema; foco visible; teclado; zoom 200 %; `prefers-reduced-motion`.
 - Sin scroll horizontal; sin pérdida de cifras/estados; `null ≠ 0` y `ND` visibles.
 - `python3 scripts/verify` (o `--full` según el cambio) y E2E de tema/Inicio; capturas como

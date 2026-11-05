@@ -6,7 +6,8 @@ temas de #198 están cerrados y no se reabren.
 
 **Base:** `main` **`238af31`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
 decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
-(#200) con QA APTO CON RESERVAS; E4.10 con D1–D9 y `SIN_CAMBIOS` aprobadas, sin DEV.
+(#200) con QA APTO CON RESERVAS; E4.10 con SPEC28 **DRAFT**, D1–D9 y `SIN_CAMBIOS`
+aprobadas 2026-11-05 e incorporación en #223 OPEN/draft sin merge; sin DEV.
 
 **Leyenda.** `[CONFIRMADO]` = regla de un documento aprobado, estado verificado en Git o hecho
 medido en el repositorio/artefacto citado. `[PROPUESTA]` = candidato de diseño no aprobado.
@@ -100,7 +101,7 @@ reservados a entregas (`identifier-index.md:39-49`).
 | **Legibilidad financiera** | No hay estilo global de importe: solo Inicio usa 22 px/tabulares; en tablas la posición se pinta a 11 px y el ID a 10 px. Dos formateadores con reglas distintas (`eur()` no rellena decimales y usa `-` ASCII; `formatDecimal` usa `−` y rellena a 2) | `Saldos.tsx:233-242`, `api.ts:89-93`, `Inicio.tsx:343-352` |
 | **Signo y negativos** | `--negative`/`--negative-soft`/`--negative-border` existen y **no se usan en ningún selector**: un importe negativo no se distingue visualmente | `themes.css:47-49`, medición sobre `style.css` |
 | **Estados e indicadores** | El color de éxito es el mismo que el de enlace/acento (`--positive` = `--accent` = `--ok`), así que «completo», un enlace y la navegación activa comparten tono; el estado se apoya en icono+texto, pero no hay un segundo canal (forma o peso). Los conteos de Pendientes se pintan como una fila de encabezados y cifras a 10 px donde un `0` pesa lo mismo que el único valor informativo | `themes.css:39,44,56,109,114,126`, captura `inicio-light-s-1440.png` |
-| **Navegación** | **21 enlaces planos** en un único grupo «MI ESPACIO»; 11 llevan icono y chevron y 10 no; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:175-464`, `style.css:302-333` |
+| **Navegación** | **23 enlaces planos** en un único grupo «MI ESPACIO»; 12 llevan icono y chevron y 11 no; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:175-464`, `style.css:302-333` |
 | **Cabecera** | `Tema`, «Entorno local» y «Cerrar sesión» conviven con el contexto de ciclo; el título del documento sigue siendo **«MyFinanzas · Catálogo de prueba»** | `main.tsx:471-493`, `index.html:6` |
 | **Tema inicial** | `dark-s` está fijado en `index.html`, en `theme-boot.js` y en `themes.ts`; no se consulta `prefers-color-scheme` | `index.html:2`, `theme-boot.js:5-11`, `themes.ts:11` |
 | **Tablas** | Un mapa de columnas fijo (29/13/15/13/30 %) se aplica a todas las tablas y cada página lo sobrescribe; `Precierre` usa `className="table"` y la clase `.table` **no está definida** en la hoja: la tabla solo recibe el `min-width` de su contenedor y se pinta con celdas, cabecera y densidad del navegador | `style.css:489-517`, `style.css:3372-3418`, `style.css:2205-2211`, `Precierre.tsx:237-238` |
@@ -176,18 +177,18 @@ que algún AC compara; hay que inventariarlas antes de `DEV`.
 
 ### 4.3 Navegación y móvil
 
-`[PROPUESTA]` Mantener **las 21 rutas actuales** y agruparlas sin cambiar `href`:
+`[PROPUESTA]` Mantener **las 23 rutas actuales** y agruparlas sin cambiar `href`:
 
 | Grupo | Rutas |
 | --- | --- |
 | Resumen | Inicio |
 | Día a día | Movimientos, Comida, Revisión Comida, D′ · Partidas, Anticipos, Compartidos |
-| Periodos | Ciclos, Plan del ciclo, Precierre, Flujo mensual |
-| Planificación | Presupuestos, Plan anual, Nómina |
+| Periodos | Ciclos, Plan del ciclo, Precierre, Flujo mensual, Cierre |
+| Planificación | Presupuestos, Plan anual, Resumen anual, Nómina |
 | Patrimonio | Saldos, Clasificación, Inversiones, Deudas, Vehículos, Referencias |
 | Control | Pendientes y conciliación |
 
-Cambios de forma, no de ruta: icono en **todos** los elementos (hoy solo en 11 de 21), indicador de
+Cambios de forma, no de ruta: icono en **todos** los elementos (hoy solo en 12 de 23), indicador de
 activo con barra lateral + peso + `aria-current` (no solo color), grupos plegables con estado
 persistido en memoria, cabecera única con contexto de ciclo + preferencias (tema, sesión) en un
 menú, y título de documento actualizado por ruta. En móvil: cabecera compacta con menú modal
@@ -216,15 +217,14 @@ provisional de E4.8; se arregla cuando se decida la UI de E4.9, no antes (ver §
 
 1. Todo componente consume tokens; nunca un color literal ni un `data-theme` en el componente
    (hoy se cumple: 0 hexadecimales en `style.css`).
-2. Los 66 tokens deben estar consumidos o retirados; no se mantienen tokens «por si acaso»
-   (`--chart-*` no tiene ningún consumidor).
-3. Cada estado (`ok`, `parcial`, `nd`, `warning`, `error`, `negativo`) debe verse distinto **en
-   los tres temas**: se separa el verde/teal de éxito del acento de enlace y se usa `--negative`
-   para importes negativos.
-4. Matriz de evidencia obligatoria: 4 pantallas representativas (Inicio, catálogo, ficha,
-   formulario) × 3 temas × {1440, 390} y, además, estados vacío/carga/error/degradado.
-5. `[PENDIENTE]` Decidir el tema inicial: hoy es oscuro por código y por test
-   (`theme.spec.ts:76-78`), no por preferencia del usuario.
+2. Los tokens existentes se consumen; **no se retiran ni añaden tokens ni colores** en esta
+   iniciativa. Los alias históricos se corrigen en `DEV-01` sin cambiar la paleta.
+3. Cada estado (`ok`, `parcial`, `nd`, `warning`, `error`, `negativo`) se distingue con
+   icono + texto + forma usando los tokens actuales; `--negative` puede aplicarse a importes
+   negativos, sin separar ni sustituir colores de la identidad.
+4. Matriz de evidencia obligatoria: 5 pantallas representativas (Inicio, catálogo, ficha,
+   formulario y operación) × 3 temas × {1440, 390} y, además, estados vacío/carga/error/degradado.
+5. `[CONFIRMADO]` El tema inicial sigue siendo `dark-s`; no se reabre en esta iniciativa.
 
 `[PENDIENTE]` El contraste se comprueba hoy por pantalla en algunos E2E
 (`inicio.spec.ts:177-227`, `flujo-mensual.spec.ts:183-221`), no de forma transversal: falta una
@@ -263,7 +263,7 @@ declarada.
 | --- | --- | --- | --- |
 | **Alcance** | Ajustes de contraste, tamaños mínimos, unificación de badges y corrección de la tabla de precierre | Primitivas visuales + shell + tablas/formularios + 4–6 pantallas clave, sin cambiar rutas ni contratos | Reorganización profunda de información: nuevos agrupados, buscador global, posibles rutas nuevas |
 | **Bloques `DEV`** | 2–3 | 7 | 4–5, pero con alcance funcional |
-| **Riesgo** | Bajo, pero deja la deuda estructural: 21 enlaces planos, componentes duplicados, tipografía sin escala | Medio y acotado: toca `style.css`, `main.tsx` y primitivas compartidas; exige coordinación con E4.9 | Alto: puede alterar rutas y el mapa de drill-down aprobado en SPEC24/SPEC27; rompe E2E y reabre UX |
+| **Riesgo** | Bajo, pero deja la deuda estructural: 23 enlaces planos, componentes duplicados, tipografía sin escala | Medio y acotado: toca `style.css`, `main.tsx` y primitivas compartidas; exige coordinación con E4.10/E4.11 | Alto: puede alterar rutas y el mapa de drill-down aprobado en SPEC24/SPEC27; rompe E2E y reabre UX |
 | **Dependencia de E4.9** | Baja | Media: hay que respetar precierre/cierre congelados | Alta |
 | **Veredicto** | Insuficiente como iniciativa | **Recomendada** | Prematura |
 
@@ -282,11 +282,11 @@ descartadas para esta iniciativa; C solo podría reconsiderarse después de B y 
 | --- | --- | --- | --- | --- |
 | **`UI · DEV-01 — Fundamentos visuales`** | Fijar escala tipográfica, espaciado, radios, foco y tamaños mínimos | Tokens no cromáticos en `style.css: :root`; escala aplicada a shell, tipografía base y foco; retirada de `--space` sin uso o su consumo real | Ninguna; va primero | Capturas 1440/390 × 3 temas del shell sin regresión; ningún texto funcional < 12 px; un solo radio por familia de superficie |
 | **`UI · DEV-02 — Cifras, estados e indicadores`** | Unificar importe, badge y tarjeta métrica | `Amount`, `Badge`, `Metric`, `EmptyState`, `Skeleton`; tono de éxito separado del acento; `--negative` aplicado; un formateador | `DEV-01` | Un único estilo de badge; `0,00 €`, `ND`, `No aplica` y `Sin datos` distinguibles por texto+icono; contraste ≥ 4.5 en los tres temas |
-| **`UI · DEV-03 — Navegación y cabecera`** | Ordenar 21 rutas sin cambiarlas | Datos de navegación en módulo propio, grupos, iconos homogéneos, activo con barra+peso, preferencias en menú, título de documento por ruta, menú móvil accesible | `DEV-01`; coordinación con el dueño de `main.tsx` (E4.9) | Las 21 rutas responden igual; activo perceptible sin color; teclado completo; sin desbordamiento a 390 |
+| **`UI · DEV-03 — Navegación y cabecera`** | Ordenar 23 rutas sin cambiarlas | Datos de navegación en módulo propio, grupos, iconos homogéneos, activo con barra+peso, preferencias en menú, título de documento por ruta, menú móvil accesible | `DEV-01`; coordinación con E4.10/E4.11 futuras | Las 23 rutas responden igual; activo perceptible sin color; teclado completo; sin desbordamiento a 390 |
 | **`UI · DEV-04 — Tablas y listados`** | Una tabla, un comportamiento | Primitiva `Table` con roles de columna, importes a la derecha, cabecera y hover por token; conversión a tarjetas; retirada de mapas de columna por página | `DEV-01`, `DEV-02` | Misma información en tabla y tarjeta; listados sin scroll horizontal a 390 y datos anchos con región desplazable rotulada; ningún `className` de tabla sin estilos |
 | **`UI · DEV-05 — Formularios y fichas`** | Formularios y detalle consistentes | `Field`, secciones, ayuda/error, rejilla 2→1, ficha con jerarquía de identificación/configuración/atributos/posición | `DEV-01`, `DEV-02` | Error sin salto de layout; foco al primer error; etiqueta y ayuda legibles; AA en ayuda y error en 3 temas |
 | **`UI · DEV-06 — Pantallas clave`** | Llevar el sistema a Inicio y a 4–5 pantallas de referencia | Inicio, un catálogo, una ficha, un formulario y una pantalla de operación con la nueva jerarquía | `DEV-02`…`DEV-05`; frontera de §7 | Inicio conserva secciones, cifras y estados de SPEC24; una lectura principal por tarjeta; sin duplicar motivo/CTA; capturas antes/después |
-| **`UI · DEV-07 — Temas y verificación AA`** | Cerrar paridad y evidencia | Matriz 4 pantallas × 3 temas × 2 anchos; contraste automatizado por tema; foco/zoom/reduced motion; actualización de `guidelines/ui.md` y catálogo de componentes | `DEV-01`…`DEV-06` | Todos los pares texto/fondo ≥ 4.5 (normal) y ≥ 3 (grande/componente); cero desbordamiento; evidencia adjunta como capturas, no como aprobación |
+| **`UI · DEV-07 — Temas y verificación AA`** | Cerrar paridad y evidencia | Matriz 5 pantallas × 3 temas × 2 anchos; contraste automatizado por tema; foco/zoom/reduced motion; actualización de `guidelines/ui.md` y catálogo de componentes | `DEV-01`…`DEV-06` | Todos los pares texto/fondo ≥ 4.5 (normal) y ≥ 3 (grande/componente); cero desbordamiento; evidencia adjunta como capturas, no como aprobación |
 
 `[PROPUESTA]` Orden: `01 → 02 → (03 ∥ 04 ∥ 05) → 06 → 07`. Cada bloque es reversible por sí
 mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
@@ -300,11 +300,11 @@ mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
 | Superficie | Estado | Qué puede hacer `UI` | Qué no puede hacer |
 | --- | --- | --- | --- |
 | `/inicio` (E4.6, `cfbedb0`) | Integrada; UX y wireframes aprobados en SPEC24; **la revisión visual de implementación conserva su gate** (`spec24:3-12,434-435`) | Jerarquía, densidad, tipografía, agrupación de metadatos, unificar badges y CTA | Cambiar orden de secciones, añadir/quitar cifras, alterar la taxonomía de estados, reescribir la semántica de cobertura |
-| `/precierre` (E4.8) | Integrada; UI provisional y «visual aplazada al final» (`epic-board.md:211`) | Tokens compartidos y pulido que no altere su contrato | Rediseñar la pantalla o su tabla sin autorización de su spec |
+| `/precierre` (E4.8) | Integrada; UI provisional y «visual aplazada al final» (`epic-board.md:259`) | Tokens compartidos y pulido que no altere su contrato | Rediseñar la pantalla o su tabla sin autorización de su spec |
 | Cierre / foto (E4.9) | Integrada en `0176ffc` (#200), QA APTO CON RESERVAS; UI de su SPEC27 | Consumir patrones de operación irreversible, confirmación y bloqueo ya aprobados | Reabrir rutas, contratos o estados de E4.9 |
 | `/deudas`, `/inversiones`, etc. (E1–E4.4) | Integradas, con UX aprobada por su spec | Pulido visual que no altere decisiones | Reabrir reglas o estados |
 | E4.7 | Integrada en `0e89562` (#210) | Pulido visual dentro de su contrato | Recalcular o reordenar cifras |
-| E4.10 | SPEC28 con D1–D9 y `SIN_CAMBIOS` aprobadas; **sin DEV** | Wireframe conceptual de reapertura/cierre, sin clases ni rutas | Anticipar implementación, estados persistidos o pantallas definitivas |
+| E4.10 | SPEC28 **DRAFT**; D1–D9 y `SIN_CAMBIOS` aprobadas 2026-11-05, incorporación en #223 OPEN/draft sin merge; **sin DEV** | Wireframe conceptual de reapertura/cierre, sin clases ni rutas | Anticipar implementación, estados persistidos o pantallas definitivas |
 | E4.11 | SPEC29 DRAFT; sin UI implementada | Nada | Fijar pantallas antes de su SPEC |
 
 ### 7.2 Cómo evitar conflictos
@@ -322,7 +322,7 @@ el punto de colisión principal.
 3. **Tokens cromáticos como gate.** `themes.css` alimenta todas las pantallas y los E2E fijan
    valores RGB concretos (`theme.spec.ts:78-114`): cualquier cambio de paleta es un bloque
    propio, con matriz de evidencia y actualización consciente de tests.
-4. **`main.tsx` con un único dueño por cambio.** `DEV-03` extrae las 21 rutas a un módulo de
+4. **`main.tsx` con un único dueño por cambio.** `DEV-03` extrae las 23 rutas a un módulo de
    datos y deja el JSX estable; E4.9 ya está integrado y cualquier ruta futura de E4.10/E4.11
    exige coordinación previa.
 5. **No crear clases genéricas nuevas.** `.metric` y `.table` ya demuestran el problema:
@@ -367,10 +367,10 @@ modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
 - **Cerrado:** identificador `UI`, alternativa B y los tres temas de #198. No se reabren.
 - **Inicio:** ¿se acepta pulir jerarquía/densidad sin reabrir SPEC24 (mismas secciones, cifras y
   estados)?
-- **Navegación:** ¿se valida agrupar las 21 rutas en seis grupos sin cambiar rutas ni añadir
+- **Navegación:** ¿se valida agrupar las 23 rutas en seis grupos sin cambiar rutas ni añadir
   módulos?
 - **Alcance de la primera pasada:** ¿qué pantallas entran en `DEV-06` además de Inicio?
-- **Evidencia:** ¿se acepta la matriz 4 pantallas × 3 temas × 2 anchos con contraste automatizado
+- **Evidencia:** ¿se acepta la matriz 5 pantallas × 3 temas × 2 anchos con contraste automatizado
   y teclado?
 - **Secuencia:** ¿`DEV-01`/`DEV-02` tras aprobar la SPEC y antes de `DEV-06`?
 - **Guía:** ¿se aprueba la propuesta de actualización de `guidelines/ui.md` incluida en la SPEC?
