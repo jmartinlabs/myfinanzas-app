@@ -22,11 +22,11 @@ datos reales. No fusiona nada.
 
 | Superficie | Estado comprobado |
 | --- | --- |
-| Navegación | **23 enlaces** de navegación en un único grupo «MI ESPACIO» (`main.tsx:178-464`); `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
+| Navegación | **23 enlaces** de navegación en un único grupo «MI ESPACIO» (`main.tsx:179-493`); `/saldos/nuevo` es subvista y `/` es alias de Saldos. No se añaden rutas. |
 | Temas | Tres temas y **66 tokens** semánticos (`themes.css`, 220 líneas); arranque sin parpadeo y selector existente (`themes.ts`, `theme-boot.js`). |
 | Shell | Sidebar 236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px (`style.css`). |
 | Componentes | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` (`ui.tsx`). |
-| CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 tokens consumidos y 0 usos de `var(--space)`. |
+| CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados, 30 de los 66 tokens definidos sin uso y 0 usos de `var(--space)`. |
 | E4.6 | Integrada `cfbedb0` (#201); UX de Inicio aprobada en SPEC24. |
 | E4.9 | Integrada `0176ffc` (#200); QA APTO CON RESERVAS; UI y contratos de cierre existen. |
 | E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |

@@ -81,7 +81,7 @@ reservados a entregas (`identifier-index.md:39-49`).
 
 | Área | Implementado | Evidencia |
 | --- | --- | --- |
-| Temas | Tres temas (`light-s`, `dark-s`, `hybrid-s`), los mismos 66 tokens semánticos en cada bloque; arranque antes de React sin parpadeo; preferencia en `localStorage`; selector en cabecera | `themes.css:11-220`, `theme-boot.js:1-13`, `themes.ts`, `main.tsx:39,54-56,474-487`, `theme.spec.ts:76-148` |
+| Temas | Tres temas (`light-s`, `dark-s`, `hybrid-s`), los mismos 66 tokens semánticos en cada bloque; arranque antes de React sin parpadeo; preferencia en `localStorage`; selector en cabecera | `themes.css:11-220`, `theme-boot.js:1-13`, `themes.ts`, `main.tsx:39,54-56,506-521`, `theme.spec.ts:76-148` |
 | Tokenización del color | `style.css` solo conserva **1 hex de fallback** (`var(--warning, #6b5412)`); el resto de color pasa por `var(--…)`; los componentes no conocen el tema | `style.css:4241`, `themes.css:6-10` |
 | Shell | Sidebar fija de 236 px, cabecera global de 84 px con contexto de ciclo, contenido fluido con `max-width: 1450px`, pie; breakpoints 1050/760 px; menú móvil desplegable | `style.css:260-437,888-917,918-1217`, `main.tsx:147-616` |
 | Componentes compartidos | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` | `ui.tsx:1-110` |
@@ -94,15 +94,15 @@ reservados a entregas (`identifier-index.md:39-49`).
 
 | Dimensión | Qué falta | Evidencia |
 | --- | --- | --- |
-| **Tipografía** | Se declara `Inter` como primera familia pero no se carga ninguna fuente: se usa la del sistema. Escala inexistente: **190** tamaños en píxeles, **79 ≤ 11 px** y **33 ≤ 10 px** (mínimo 7 px) | `style.css:2-9`, medición sobre `style.css` |
+| **Tipografía** | Se declara `Inter` como primera familia pero no se carga ninguna fuente: se usa la del sistema. Escala inexistente: **190** declaraciones en píxeles, **98 ≤ 11 px** y **52 ≤ 10 px** (19 por debajo de 10 px; mínimo 7 px) | `style.css:2-9`, medición sobre `style.css` |
 | **Espaciado y radios** | `--space` está declarado y **no se usa**; **50** radios literales con 10 valores distintos frente a **9** usos de `var(--radius)` | `style.css:11-12`, medición sobre `style.css` |
-| **Tokens** | **30** de los 66 nombres declarados no se consumen en la hoja (incluidos `--chart-*`, `--table-head`, `--negative`, `--strong-*`); los componentes siguen usando alias históricos (`var(--section)`, `var(--white)`, `var(--green)`) | `themes.css:11-220`, medición sobre `style.css` |
+| **Tokens** | **30** de los 66 nombres declarados no se consumen en la hoja (incluidos `--chart-*`, `--negative`, `--strong-*`; `--table-head` sí se usa); los componentes siguen usando alias históricos (`var(--section)`, `var(--white)`, `var(--green)`) | `themes.css:11-220`, medición sobre `style.css` |
 | **Jerarquía** | En cada tarjeta de Inicio compiten título (13 px), nota, cifra (22 px), cobertura, motivo, fuente, IDs y contexto en 6–8 líneas; el estado (`NO DISPONIBLE`) puede quedar por encima de la propia cifra `ND` | captura `inicio-light-s-1440.png`, `Inicio.tsx:556-591` |
 | **Densidad** | Inicio mide 4.475 px de alto a 1440; la fila de cuatro tarjetas deja ~270 px por tarjeta y empuja fuentes/IDs a 10 px con múltiples saltos de línea; queda un hueco vertical grande antes de «Pendientes» por alturas desiguales | captura y medición del PNG; `style.css:3778-3783,3918-3934` |
 | **Legibilidad financiera** | No hay estilo global de importe: solo Inicio usa 22 px/tabulares; en tablas la posición se pinta a 11 px y el ID a 10 px. Dos formateadores con reglas distintas (`eur()` no rellena decimales y usa `-` ASCII; `formatDecimal` usa `−` y rellena a 2) | `Saldos.tsx:233-242`, `api.ts:89-93`, `Inicio.tsx:343-352` |
 | **Signo y negativos** | `--negative`/`--negative-soft`/`--negative-border` existen y **no se usan en ningún selector**: un importe negativo no se distingue visualmente | `themes.css:47-49`, medición sobre `style.css` |
 | **Estados e indicadores** | El color de éxito es el mismo que el de enlace/acento (`--positive` = `--accent` = `--ok`), así que «completo», un enlace y la navegación activa comparten tono; el estado se apoya en icono+texto, pero no hay un segundo canal (forma o peso). Los conteos de Pendientes se pintan como una fila de encabezados y cifras a 10 px donde un `0` pesa lo mismo que el único valor informativo | `themes.css:39,44,56,109,114,126`, captura `inicio-light-s-1440.png` |
-| **Navegación** | **23 enlaces planos** en un único grupo «MI ESPACIO»; iconos y chevrons inconsistentes entre enlaces; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:175-464`, `style.css:302-333` |
+| **Navegación** | **23 enlaces planos** en un único grupo «MI ESPACIO»; iconos y chevrons inconsistentes entre enlaces; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:179-493`, `style.css:302-333` |
 | **Cabecera** | `Tema`, «Entorno local» y «Cerrar sesión» conviven con el contexto de ciclo; el título del documento sigue siendo **«MyFinanzas · Catálogo de prueba»** | `main.tsx:471-493`, `index.html:6` |
 | **Tema inicial** | `dark-s` está fijado en `index.html`, en `theme-boot.js` y en `themes.ts`; no se consulta `prefers-color-scheme` | `index.html:2`, `theme-boot.js:5-11`, `themes.ts:11` |
 | **Tablas** | Un mapa de columnas fijo (29/13/15/13/30 %) se aplica a todas las tablas y cada página lo sobrescribe; `Precierre` usa `className="table"` y la clase `.table` **no está definida** en la hoja: la tabla solo recibe el `min-width` de su contenedor y se pinta con celdas, cabecera y densidad del navegador | `style.css:489-517`, `style.css:3372-3418`, `style.css:2205-2211`, `Precierre.tsx:237-238` |
@@ -217,7 +217,7 @@ provisional de E4.8; se arregla cuando se decida la UI de E4.9, no antes (ver §
 `[PROPUESTA]` Reglas de paridad:
 
 1. Todo componente consume tokens; nunca un color literal ni un `data-theme` en el componente
-   (hoy se cumple: 0 hexadecimales en `style.css`).
+   (hoy se cumple salvo 1 hex de fallback en `style.css:4241`).
 2. Los tokens existentes se consumen; **no se retiran ni añaden tokens ni colores** en esta
    iniciativa. Los alias históricos se corrigen en `DEV-01` sin cambiar la paleta.
 3. Cada estado (`ok`, `parcial`, `nd`, `warning`, `error`, `negativo`) se distingue con
@@ -286,7 +286,7 @@ descartadas para esta iniciativa; C solo podría reconsiderarse después de B y 
 | **`UI · DEV-03 — Navegación y cabecera`** | Ordenar 23 rutas sin cambiarlas | Datos de navegación en módulo propio, grupos, iconos homogéneos, activo con barra+peso, preferencias en menú, título de documento por ruta, menú móvil accesible | `DEV-01`; coordinación con E4.10/E4.11 futuras | Las 23 rutas responden igual; activo perceptible sin color; teclado completo; sin desbordamiento a 390 |
 | **`UI · DEV-04 — Tablas y listados`** | Una tabla, un comportamiento | Primitiva `Table` con roles de columna, importes a la derecha, cabecera y hover por token; conversión a tarjetas; retirada de mapas de columna por página | `DEV-01`, `DEV-02` | Misma información en tabla y tarjeta; listados sin scroll horizontal a 390 y datos anchos con región desplazable rotulada; ningún `className` de tabla sin estilos |
 | **`UI · DEV-05 — Formularios y fichas`** | Formularios y detalle consistentes | `Field`, secciones, ayuda/error, rejilla 2→1, ficha con jerarquía de identificación/configuración/atributos/posición | `DEV-01`, `DEV-02` | Error sin salto de layout; foco al primer error; etiqueta y ayuda legibles; AA en ayuda y error en 3 temas |
-| **`UI · DEV-06 — Pantallas clave`** | Llevar el sistema a Inicio y a 4–5 pantallas de referencia | Inicio, un catálogo, una ficha, un formulario y una pantalla de operación con la nueva jerarquía | `DEV-02`…`DEV-05`; frontera de §7 | Inicio conserva secciones, cifras y estados de SPEC24; una lectura principal por tarjeta; sin duplicar motivo/CTA; capturas antes/después |
+| **`UI · DEV-06 — Pantallas clave`** | Llevar el sistema a Inicio + 4 pantallas de referencia (5 total) | Inicio, un catálogo, una ficha, un formulario y una pantalla de operación con la nueva jerarquía | `DEV-02`…`DEV-05`; frontera de §7 | Inicio conserva secciones, cifras y estados de SPEC24; una lectura principal por tarjeta; sin duplicar motivo/CTA; capturas antes/después |
 | **`UI · DEV-07 — Temas y verificación AA`** | Cerrar paridad y evidencia | Matriz 5 pantallas × 3 temas × 2 anchos; contraste automatizado por tema; foco/zoom/reduced motion; actualización de `guidelines/ui.md` y catálogo de componentes | `DEV-01`…`DEV-06` | Todos los pares texto/fondo ≥ 4.5 (normal) y ≥ 3 (grande/componente); cero desbordamiento; evidencia adjunta como capturas, no como aprobación |
 
 `[PROPUESTA]` Orden: `01 → 02 → (03 ∥ 04 ∥ 05) → 06 → 07`. Cada bloque es reversible por sí
