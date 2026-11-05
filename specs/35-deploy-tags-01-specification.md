@@ -13,10 +13,8 @@ Documentos relacionados: [SPEC34 — entorno TEST](34-infra-test-01-specificatio
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
 [RUNBOOK de release y operación](../infra/RUNBOOK.md),
-[seguridad](guidelines/security.md), [calidad](guidelines/quality.md),
-[tablero de épicas](epic-board.md) y el
-[contrato host de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18)
-de `vps-infra` (documentación en revisión).
+[seguridad](guidelines/security.md), [calidad](guidelines/quality.md) y
+[tablero de épicas](epic-board.md).
 
 Las marcas `[CONFIRMADO]`, `[PROPUESTA]` y `[PENDIENTE]` distinguen hechos comprobados,
 diseño derivado y cuestiones sin decisión. Ninguna marca convierte una propuesta en
@@ -35,8 +33,8 @@ Rootless, esquema, copia y recuperación. Se distinguen dos entornos:
 `[CONFIRMADO]` Esta spec posee la convención de tags, la validación de origen, la
 orquestación de comprobaciones, la construcción o recuperación de la release, la promoción
 TEST→PROD, el smoke de aplicación y la evidencia de aceptación. No posee el contrato del
-host, que pertenece a `vps-infra`, ni el patrón reutilizable, que pertenece a
-`agent-project-template`.
+host, que pertenece a `vps-infra`, ni la documentación de un patrón reutilizable para otros
+repositorios, que es opcional y no forma parte de esta entrega.
 
 `[PENDIENTE]` La aprobación de este diseño no autoriza su implementación. No existe ningún
 tag operativo, workflow de despliegue, credencial, acceso al VPS ni automatización
@@ -59,16 +57,15 @@ habilitada por esta spec.
 | Persistencia SQLite, identidad y copias | [SPEC31](31-sqlite-produccion-specification.md) | Conserva el contrato de estado, copia y restauración; no se duplica |
 | Rootless, imagen, UID y gate previo | [SPEC32](32-ejecucion-rootless-specification.md) y [RUNBOOK](../infra/RUNBOOK.md) | El gate Rootless sigue siendo obligatorio; esta spec lo comprueba, no lo rebaja |
 | Release, manifiesto, parada, rollback y copias | [RUNBOOK](../infra/RUNBOOK.md) | Fuente de la secuencia operativa; esta spec solo añade el disparador y la promoción |
-| Recepción y activación en el host | `vps-infra`, [contrato de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18) | Interfaz de entrada/salida, aislamiento TEST/PROD, permisos y recuperación |
-| Patrón reutilizable | `agent-project-template`, [`docs/DEPLOYMENT_TAGS.md`](https://github.com/jmartinlabs/agent-project-template/pull/48) | Documentación opcional; no impone el patrón ni cambia la orquestación |
+| Recepción y activación en el host | `vps-infra` (contrato que mantenga su agente) | Interfaz de entrada/salida, aislamiento TEST/PROD, permisos y recuperación; esta spec no depende de una PR concreta |
+| Patrón reutilizable (opcional) | Repositorio que decida adoptarlo; no es dependencia de esta entrega | Documentación opcional; no altera la orquestación de MyFinanzas |
 
 `[CONFIRMADO]` El flujo vigente es `feature/* → main`; no hay rama `test`. La base no tiene
 MyFinanzas desplegada, no hay datos reales y el esquema vigente se declara por SHA, no se
-fija aquí. El [PR #9 de `vps-infra`](https://github.com/jmartinlabs/vps-infra/pull/9) (host
-TEST) está MERGED en `901204c`; la spec conserva estado DRAFT/pendiente de aprobación y su
-§11.1 describe el despliegue como manual. Este diseño
-prepara la activación automática cuando se habilite expresamente: sustituirá solo el
-disparador, no los gates del host.
+fija aquí. El contrato del host pertenece a `vps-infra`; esta spec define la interfaz
+esperada y no depende de una PR concreta de ese repositorio. Este diseño prepara la
+activación automática cuando se habilite expresamente: sustituirá solo el disparador, no los
+gates del host.
 
 `[PENDIENTE]` **Dependencia de TEST.** La actualización de
 [SPEC34](34-infra-test-01-specification.md) a v25/C25 está en el
@@ -264,12 +261,12 @@ Controles adicionales de implementación `[PROPUESTA]`:
 | Repositorio | Posee | Documentos/artefactos |
 | --- | --- | --- |
 | `myfinanzas-app` | Convención y validación de tags, workflows, verificaciones, release, promoción y aceptación; contrato de esquema del SHA | Esta spec, `infra/release.py`, `infra/RUNBOOK.md`, `validate.yml`, workflows de despliegue y contrato por SHA |
-| `vps-infra` | Recepción y activación seguras, aislamiento TEST/PROD, privilegios, rutas, servicios, copias y recuperación | [Contrato de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18), host TEST (PR #9 MERGED, spec DRAFT) y `docs/operaciones.md` |
-| `agent-project-template` | Patrón reutilizable como opción, sin imponerlo ni alterar la orquestación | [`docs/DEPLOYMENT_TAGS.md`](https://github.com/jmartinlabs/agent-project-template/pull/48) y enlace en su README |
+| `vps-infra` | Recepción y activación seguras, aislamiento TEST/PROD, privilegios, rutas, servicios, copias y recuperación | Contrato host que mantenga su agente; esta spec no depende de una PR concreta |
 
 Los cambios de interfaz —campos del contrato, puertos, rutas, nombres de entorno o
 credenciales— se revisan conjuntamente y se registran en el documento propietario. Este
-repositorio no duplica el contrato del host; `vps-infra` no duplica la convención de tags.
+repositorio no duplica el contrato del host. La documentación del patrón en otros
+repositorios es opcional y no forma parte de esta entrega.
 
 ## 9. Decisiones pendientes
 
@@ -291,7 +288,7 @@ repositorio no duplica el contrato del host; `vps-infra` no duplica la convenci�
 
 | Fase | Objetivo | Evidencia de salida | Autorización |
 | --- | --- | --- | --- |
-| 0 | Documentar el diseño y revisarlo | Esta spec, el contrato host y el patrón del template; QA y CI documentales | **Actual; sin implementación** |
+| 0 | Documentar el diseño y revisarlo | Esta spec; QA y CI documentales | **Actual; sin implementación** |
 | 1 | Cerrar D1–D11 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
 | 2 | Configurar protección de tags y Environments | Reglas efectivas verificadas; sin tags operativos ni credenciales de despliegue | Separada |
 | 3 | Implementar el workflow en dry-run | Solo `workflow_dispatch`, sin `push` de tags y sin credenciales de VPS; casos negativos y positivos; host intacto | Separada |
@@ -334,7 +331,5 @@ su autorización. Ninguna fase se declara completada por un merge documental.
 - [Preparación de despliegue](../infra/README.md)
 - [Seguridad](guidelines/security.md) y [calidad](guidelines/quality.md)
 - [Tablero de épicas](epic-board.md)
-- [Contrato host de despliegue por tags](https://github.com/jmartinlabs/vps-infra/pull/18)
-  (`vps-infra`, PR de documentación en revisión)
-- Patrón reutilizable de `agent-project-template`
-  ([PR #48](https://github.com/jmartinlabs/agent-project-template/pull/48))
+- El contrato host y la eventual documentación reutilizable pertenecen a sus respectivos
+  repositorios; esta spec no depende de su integración ni de una PR concreta.
