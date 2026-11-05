@@ -6,8 +6,9 @@ o accesos al VPS, cambiar servicios, DNS, Caddy, Podman o firewall, desplegar ni
 Approval source/date: usuario, 2026-11-05 (diseño de despliegue mediante tags; alcance
 limitado a documentación y revisión técnica).
 Base: `main` `70fa7c054e48faf48ae545a13f1d88e06b0c9f25` (2026-11-05). El diseño se
-preparó sobre `baa673e`; `main` incorporó después E4.10 I1 (v26) y este documento no fija
-una versión de esquema, por lo que no depende de esa entrega.
+preparó sobre `baa673e`; `main` incorporó después E4.10 I1 (v26). Este documento no fija una
+versión de esquema ni depende de v26; la habilitación de TEST queda condicionada a la
+reconciliación de esquema/seed de D11.
 Documentos relacionados: [SPEC34 — entorno TEST](34-infra-test-01-specification.md),
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
@@ -63,9 +64,17 @@ habilitada por esta spec.
 
 `[CONFIRMADO]` El flujo vigente es `feature/* → main`; no hay rama `test`. La base no tiene
 MyFinanzas desplegada, no hay datos reales y el esquema vigente se declara por SHA, no se
-fija aquí. El PR #9 de `vps-infra` (host TEST) sigue abierto y no mergeado; su §11.1
-describe el despliegue como manual. Este diseño prepara la activación automática cuando se
-habilite expresamente: sustituirá solo el disparador, no los gates del host.
+fija aquí. El [PR #9 de `vps-infra`](https://github.com/jmartinlabs/vps-infra/pull/9) (host
+TEST) sigue abierto y no mergeado; su §11.1 describe el despliegue como manual. Este diseño
+prepara la activación automática cuando se habilite expresamente: sustituirá solo el
+disparador, no los gates del host.
+
+`[PENDIENTE]` **Dependencia de TEST.** La actualización de
+[SPEC34](34-infra-test-01-specification.md) a v25/C25 está en el
+[PR #229](https://github.com/jmartinlabs/myfinanzas-app/pull/229), abierto; el seed de `FT-1`
+se define para v25 y rechaza v26. El primer tag de TEST no podrá habilitarse hasta
+reconciliar el contrato de esquema/seed con el SHA elegido. Este diseño no fija esa
+reconciliación (D11).
 
 ## 3. Convención de tags
 
@@ -76,15 +85,17 @@ deploy-test-v0.1.0   → entorno TEST
 deploy-prod-v0.1.0   → entorno PROD
 ```
 
-`[PROPUESTA]` La validación implementada aceptará exactamente el formato SemVer estable:
+`[PROPUESTA]` La validación, cuando se implemente, aceptará exactamente el formato SemVer
+estable:
 
 ```text
 ^deploy-(test|prod)-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$
 ```
 
 No se admiten prefijos, sufijos, versiones incompletas, `latest`, metadatos de build ni
-pre-releases sin una decisión separada (D10). El nombre del tag y la versión del manifiesto
-deben coincidir.
+pre-releases sin una decisión separada (D10). El nombre del tag y la versión del contrato de
+despliegue deben coincidir. El manifiesto actual de `release.py` no declara versión de
+aplicación; ese campo se añadirá o se vinculará por tag/SHA en D2/D3.
 
 Reglas:
 
@@ -94,19 +105,20 @@ Reglas:
   rama móvil, un merge ref, un fork o un commit no alcanzable desde el origen autorizado.
 - **Autor.** Solo un publicador autorizado crea tags. La comprobación de permisos se hace en
   el workflow además de la protección de GitHub; ninguna de las dos se presume.
-- **Reintentos.** Un fallo de validación antes de mutar puede reintentarse sobre el mismo
-  tag, SHA y artefacto, aumentando el intento. Un artefacto distinto, un commit distinto o
-  un cambio de gates exige un nuevo tag de versión, normalmente un patch.
-- **Un despliegue exitoso por versión y entorno.** No se vuelve a desplegar la misma versión
-  ya activada; un redespliegue exige decisión y una versión nueva.
+- **Reintentos.** `[PROPUESTA]` Un fallo de validación antes de mutar puede reintentarse
+  sobre el mismo tag, SHA y artefacto, aumentando el intento. Un artefacto distinto, un
+  commit distinto o un cambio de gates exige un nuevo tag de versión, normalmente un patch.
+- **Un despliegue exitoso por versión y entorno.** `[PROPUESTA]` No se vuelve a desplegar la
+  misma versión ya activada; un redespliegue exige decisión y una versión nueva.
 - **Anotación.** `[PROPUESTA]` El tag se crea anotado con un bloque no secreto que incluye
   versión, SHA, digest del manifiesto, contrato de esquema, referencia de QA y, en TEST, el
   manifiesto de seed. La forma exacta se decide en D3; el workflow no debe interpretar texto
   libre sin validación estricta.
 
-La creación del tag no es la autorización de merge ni la aceptación funcional. Es una
-atestación del publicador de que la QA aplicable terminó para ese SHA; el workflow registra
-al actor y la referencia, pero no puede demostrar por sí mismo la calidad de la QA.
+`[PROPUESTA]` La creación del tag no es la autorización de merge ni la aceptación funcional.
+Es una atestación del publicador de que la QA aplicable terminó para ese SHA; el workflow
+registra al actor y la referencia, pero no puede demostrar por sí mismo la calidad de la QA
+(D3).
 
 ## 4. Flujo TEST
 
@@ -128,7 +140,7 @@ al actor y la referencia, pero no puede demostrar por sí mismo la calidad de la
 | QA | Referencia de QA independiente del SHA, revisable y sin secretos | Detener; no convertir un archivo autoemitido en PASS |
 | Rootless | Run `SUCCESS` del gate Rootless sobre el SHA exacto y coincidencia con la release | Detener; lanzar `Rootless infrastructure 32` sobre el SHA y reanudar |
 | Release | Manifiesto verificado con `--expected-commit` y `--expected-manifest-sha256`; ID/digest inmutable; frontend del mismo paquete | Detener; no reconstruir silenciosamente otro artefacto |
-| Esquema y seed | Contrato declarado por el manifiesto compatible con el estado TEST; manifiesto de seed y marcador TEST verificados | Detener antes de abrir la base |
+| Esquema y seed | Contrato declarado por el manifiesto compatible con el estado TEST; manifiesto de seed y marcador TEST verificados (ver D11) | Detener antes de abrir la base |
 | Copia y recuperación | Copia válida y plan de restauración aplicables; sin copia no se activa si existe estado | Detener |
 | Entorno | Interruptor de TEST habilitado, credenciales TEST disponibles, bloqueo exclusivo adquirido | No tocar el VPS |
 
@@ -152,7 +164,8 @@ para corregir una validación.
 - Se registran SHA, digest del manifiesto, ID de imagen, checksum del frontend y contrato de
   esquema. Se selecciona la imagen por ID/digest inmutable, nunca por etiqueta.
 - El paquete es privado y no se publica como artifact de CI sin una decisión que revise la
-  política de SPEC34 (D2). PROD no reconstruye un artefacto distinto del aprobado.
+  política del [RUNBOOK](../infra/RUNBOOK.md) (D2). PROD no reconstruye un artefacto distinto
+  del aprobado.
 
 ### 4.4 Despliegue y smoke
 
@@ -160,7 +173,9 @@ para corregir una validación.
    aunque el tag sea válido.
 2. Adquirir el bloqueo exclusivo del entorno; un segundo despliegue se rechaza.
 3. Entregar al host el contrato de §3 de `vps-infra` (entorno, versión, SHA, digest,
-   manifiesto, seed, esquema, copia, smoke). No se envían secretos al workflow ni a los logs.
+   manifiesto, seed, esquema, copia, smoke). No se incluyen secretos en el contrato, la
+   anotación del tag ni los logs; el workflow obtiene las credenciales del Environment o
+   almacén autorizado solo tras la habilitación o la aprobación correspondiente.
 4. Ejecutar el perfil de smoke acordado: salud, ruta protegida sin sesión, frontend, `seed
    verify` y una lectura/escritura sintética autorizada. La autenticación completa se incluye
    solo si el perfil dispone de un usuario de prueba y un canal seguro para el TOTP; nunca se
@@ -215,13 +230,13 @@ cambian. Ninguna propuesta abierta en otro repositorio se interpreta como adopci
 
 ## 7. Seguridad y controles
 
-| Requisito confirmado | Control de diseño | Evidencia |
+| Requisito aprobado | Control de diseño | Evidencia esperada (UNRUN) |
 | --- | --- | --- |
 | Proteger tags y restringir creación/modificación | Ruleset/tag protection con actores autorizados, sin update/delete; comprobar la regla efectiva y los bypass | Consulta de solo lectura a GitHub y prueba negativa |
 | Verificar SHA, procedencia y artefactos inmutables | Ancestro del origen, manifiesto, checksums e ID/digest; sin etiquetas móviles | Salida de verificación y manifiesto |
 | Impedir despliegues concurrentes | Un lock por entorno y `cancel-in-progress: false`; rechazo del segundo | Run bloqueado y registro |
 | Credenciales separadas y de mínimos privilegios | Principal TEST/PROD distinto, sin root, secreto en el Environment o almacén autorizado, no en Git | Configuración revisada y prueba de alcance |
-| No guardar claves ni secretos en repositorios o artefactos | Revisión de diff, manifiesto y logs; secretos efímeros; sin TOTP ni `age` en la release | Auditoría de contenido y permisos |
+| No guardar claves ni secretos en repositorios o artefactos | Revisión de diff, manifiesto y logs; secretos efímeros; sin identidad privada `age` ni secreto TOTP en la release (el binario `age` verificado sí forma parte de la imagen) | Auditoría de contenido y permisos |
 | No desplegar sin backup y recuperación validados | Precondición bloqueante; copia y restauración ensayadas; PROD con datos reales sujeto a DT6/T-BKP | Copia, restore y plan revisados |
 | No reconstruir en PROD un artefacto distinto | Promoción por SHA y digest; si no coincide, se detiene | Comparación TEST/PROD |
 | Un error de validación detiene sin modificar el VPS | Fase de preflight de solo lectura; fallo cerrado; sin reparación automática | Estado del host antes/después y logs |
@@ -257,7 +272,7 @@ repositorio no duplica el contrato del host; `vps-infra` no duplica la convenci�
 | ID | Decisión | Recomendación | Bloquea |
 | --- | --- | --- | --- |
 | D1 | Mecanismo de protección de tags, actores autorizados, bypass y firma de tags | Ruleset o tag protection verificada; sin bypass ordinario; firma solo si se acuerda su custodia | Fase 2 |
-| D2 | Almacenamiento y transporte privado del paquete de release | Almacén privado direccionado por digest, con manifiesto y retención; revisar la prohibición de artifact de CI de SPEC34 | Fase 1 |
+| D2 | Almacenamiento y transporte privado del paquete de release | Almacén privado direccionado por digest, con manifiesto y retención; revisar la prohibición de artifact de CI del RUNBOOK | Fase 1 |
 | D3 | Formato de la referencia QA y de la anotación del tag | Bloque estructurado y validado; la QA se revisa fuera del workflow y el actor queda registrado | Fase 3 |
 | D4 | Lugar de ejecución y credenciales (runner dedicado, SSH restringido u OIDC) | Mínimos privilegios, sin root, sin comandos arbitrarios; evaluar el modelo de amenaza del host | Fase 2 |
 | D5 | Interruptor de TEST y primera versión | Estado inicial desactivado; habilitar solo con contrato host y copia/restore ensayados | Fase 4 |
@@ -266,13 +281,14 @@ repositorio no duplica el contrato del host; `vps-infra` no duplica la convenci�
 | D8 | Autorización de migración y prueba de backup/restore | Reutilizar `compatibility.py` y el RUNBOOK; una autorización por par de esquema y datos | Fase 5 |
 | D9 | Perfil de smoke y comportamiento ante fallo posterior | Perfil fijo y mínimo; recuperación manual con estado preservado, sin rollback automático | Fases 4–5 |
 | D10 | Pre-releases, metadatos de build y futura rama `test` | Solo SemVer estable ahora; la rama futura cambia únicamente el origen de tags | Futuro |
+| D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` ya está en v26 y el seed documentado es v25 | Fase 1 |
 
 ## 10. Fases propuestas para implementar y habilitar
 
 | Fase | Objetivo | Evidencia de salida | Autorización |
 | --- | --- | --- | --- |
 | 0 | Documentar el diseño y revisarlo | Esta spec, el contrato host y el patrón del template; QA y CI documentales | **Actual; sin implementación** |
-| 1 | Cerrar D1–D10 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
+| 1 | Cerrar D1–D11 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
 | 2 | Configurar protección de tags y Environments | Reglas efectivas verificadas; sin tags operativos ni credenciales de despliegue | Separada |
 | 3 | Implementar el workflow en dry-run | Solo `workflow_dispatch`, sin `push` de tags y sin credenciales de VPS; casos negativos y positivos; host intacto | Separada |
 | 4 | Habilitar TEST | Primer `deploy-test-vX`; smoke, copia/restore y evidencia; PROD intacto | Separada |
