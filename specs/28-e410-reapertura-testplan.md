@@ -1,18 +1,20 @@
 # 28 — E4.10 Reabrir el último cierre y volver a cerrar: Test plan
 
-**DRAFT — test plan no aprobado; no autoriza DEV ni merge.**
-Status: **DRAFT documental — diseño de pruebas; NO EJECUTADO. Todos los AC están
-`UNRUN`. Ningún AC está en PASS.** SPEC28 está **ratificada como contrato documental**
-(2026-11-05); este testplan sigue en diseño y su ejecución requiere un DEV autorizado. No
-existe implementación de E4.10, endpoint, DDL, migración, UI ni candidato funcional. No se
-usan datos reales.
+**PROPUESTO PARA APROBACIÓN Y CONGELACIÓN — 2026-11-05; no aprobado todavía.**
+Status: **Propuesta de test plan; NO EJECUTADO. Los 24 AC están `UNRUN`; ninguno en
+PASS.** SPEC28 está **ratificada como contrato documental** (2026-11-05). Al aprobarse, este
+testplan queda **congelado**: sus definiciones y resultados esperados no se reinterpretan
+durante el DEV y cualquier cambio exige nueva aprobación. No existe implementación de E4.10,
+endpoint, DDL, migración, UI ni candidato funcional. No se usan datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
-Base de esta incorporación: `main` **`436fe3a`** (2026-11-05; revisión anterior `3842831`). E4.9 está **integrado** en
-`0176ffc` (#200), con QA **APTO CON RESERVAS** y CI post-merge `42000330143`; `a806fd9`
-es E4.5 (#216), no E4.9. Los AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales
-de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto.
+Base de esta revisión: `main` **`a8e526b`** (2026-11-05), con SPEC28 ratificada y el paquete
+DEV [e410-dev-authorization-package-2026-11-05](investigations/e410-dev-authorization-package-2026-11-05.md)
+integrado. E4.9 está **integrado** en `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI
+post-merge `42000330143`; `a806fd9` es E4.5 (#216), no E4.9. Los AC de E4.10 siguen
+**UNRUN**; los PASS de fixtures/parciales de E4.9 no son PASS de aceptación. DT6/T-BKP sigue
+abierto.
 
 **Leyenda de estado:** `UNRUN` = diseñado, no ejecutado. `UNRUN — condicionado Dn` = no
 puede ejecutarse con resultado estable hasta que se apruebe esa decisión. `BLOCKED` = falta
@@ -109,7 +111,57 @@ cambiar la semántica.
 
 ---
 
-## 3. Matriz de aceptación
+## 3. Revalidación y dependencia E4.5/precontrol
+
+`[PROPUESTA — requiere ratificación]` Criterio operativo para AC03/AC17 mientras E4.5 no
+está implementado. **Operacionaliza** la matriz D4 de SPEC28 para los casos que no regula
+—ausencia de fuente y distinción entre contradicción material y aviso acreditado— y hereda
+las precondiciones de AC01/AC04/AC12. **No modifica SPEC28 ni sustituye su contrato.** La
+regla de ausencia de §3.1.2 es un punto expreso de ratificación.
+
+### 3.1 Regla propuesta
+
+1. **Obligatorio y bloqueante:** integridad del último cierre y su versión; ausencia de
+   cierre posterior y de otra ventana; coherencia de S0/plan del ciclo siguiente si existe;
+   fotos/versiones posteriores si aparecen por carrera; contradicción material en cualquier
+   fuente disponible. Si una de estas evidencias existe y no puede verificarse, se bloquea.
+2. **Condicional por existencia:** precontrol/histórico E4.5 y agregados E4.11. La
+   comprobación solo aplica si existe una fuente o un conjunto de datos declarado para el
+   ciclo o sus dependencias.
+   - **Sin fuente o sin datos** (E4.5 no implementado): resultado `NoDisponible` con motivo
+     (`E4_5_NO_DISPONIBLE`, `SIN_DATOS_PRECONTROL` o equivalente), registrado en la
+     evidencia. **No se convierte en cero, no se declara verificado y no se usa como prueba
+     de nada.** No bloquea por sí mismo, porque no hay contradicción que comparar.
+   - **Con datos ilegibles:** bloqueo `REVALIDACION_BLOQUEANTE`; no se emite v2.
+   - **Con contradicción material:** bloqueo `REVALIDACION_BLOQUEANTE`; no se emite v2.
+   - **Con diferencia no material acreditada:** aviso auditado, sin bloqueo y sin cambios en
+     S0/plan; la acreditación y los valores comparados se registran. No se admite un aviso
+     sin evidencia.
+   - **Con datos coherentes:** `Verificado`, solo lectura, con valores comparados; no se
+     modifica S0, plan ni precontrol.
+3. **Sin inferencia funcional:** la ausencia de E4.5 no bloquea E4.10 ni autoriza un cierre
+   real. DT6/T-BKP y E3.5 verificable siguen siendo gates independientes del cierre real.
+4. **Registro:** cada resultado (verificado, no disponible o bloqueante) queda en la
+   evidencia de revalidación y en la auditoría; nunca se sustituye por un valor inventado.
+
+### 3.2 Escenarios y resultados esperados
+
+| Caso | Precondición | Resultado esperado | AC |
+| --- | --- | --- | --- |
+| PC-01 | E4.5 no implementado; sin datos de precontrol; resto de dependencias obligatorias presentes | `NoDisponible` con motivo; el re-cierre con fixtures continúa; sin `0` y sin declarar «verificado»; **S0/plan ajenos sin cambios verificados**; evidencia registrada | AC03 |
+| PC-02 | Datos E4.5 presentes y coherentes | `Verificado`; solo lectura; precontrol, S0 y planes ajenos sin cambios | AC03, AC17 |
+| PC-03 | Datos E4.5 presentes con contradicción material | `REVALIDACION_BLOQUEANTE`; sin v2; auditoría de valores comparados | AC17 |
+| PC-04 | Datos E4.5 presentes pero ilegibles | Bloqueo; no se asume no bloqueante | AC17 |
+| PC-05 | E4.5 se implementa después y aparecen datos nuevos | La siguiente revalidación los incluye; no se reescribe el pasado ni se marcan como verificados retroactivamente | AC03 |
+| PC-06 | Diferencia no material acreditada como no bloqueante | Aviso auditado, sin bloqueo; S0/plan ajenos sin cambios; acreditación y valores registrados | AC17 |
+
+**Límite:** este criterio no declara que E4.5 esté integrado ni convierte su ausencia en
+resultado financiero. Si el usuario decide que el precontrol es evidencia obligatoria para
+todo re-cierre, PC-01 pasaría a bloqueo y deberá ratificarse expresamente antes del DEV.
+
+---
+
+## 4. Matriz de aceptación
 
 | AC | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -149,7 +201,7 @@ cambiar la semántica.
 
 ---
 
-## 4. Regresión E4.9 y E4.8
+## 5. Regresión E4.9 y E4.8
 
 Estos casos no son AC de E4.10, pero deben seguir verdes antes de declarar cualquier PASS
 de E4.10:
@@ -169,7 +221,7 @@ de E4.10:
 
 ---
 
-## 5. Verificación funcional
+## 6. Verificación funcional
 
 `UNRUN`. No existe candidato funcional de E4.10, ni operación de reapertura, ni camino de
 re-cierre en E4.9, ni foto v2. E4.9 está integrado en `0176ffc`, pero el re-cierre no está
@@ -178,7 +230,7 @@ aceptación. No se declara verificación funcional por diseño documental.
 
 ---
 
-## 6. Verificación de navegador
+## 7. Verificación de navegador
 
 `UNRUN`. No hay UI de E4.10 ni wireframes aprobados. Cuando exista UI autorizada, se
 verificarán al menos: elegibilidad del último cierre, confirmación con motivo, estado
@@ -187,7 +239,7 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 
 ---
 
-## 7. Dependencias y limitaciones
+## 8. Dependencias y limitaciones
 
 - `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS. Las rutas, la
   forma de reapertura, la foto v2 y la auditoría de E4.10 siguen `[PENDIENTE]`; la política
@@ -216,9 +268,12 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
   de ciclos antiguos.
 - `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
   marcarse `PASS (fixtures)` solo si se autoriza; el cierre real sigue `BLOQUEADO (real)`.
-- `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**; E4.10 no reserva versión en
-  este testplan. `[PENDIENTE]` La versión de la migración de E4.10 se decidirá en su paquete
-  DEV con una versión posterior.
+- `[PROPUESTO]` **E4.5/precontrol no implementado.** Se aplica el criterio de §3: la
+  ausencia se registra como `NoDisponible` con motivo y no bloquea por sí misma; los datos
+  presentes, ilegibles o contradictorios bloquean. Requiere ratificación.
+- `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**. `[PROPUESTO]` E4.10 reserva
+  **v26**, verificada como libre y pendiente de ratificación conjunta; el DEV actualizará
+  contratos, backup/restore, listas de versiones y tests consumidores antes de migrar.
 - `[APROBADO SIN_CAMBIOS]` **Re-cierre sin cambios:** rechazo explícito `SIN_CAMBIOS`,
   sin foto; cancelación D8 si procede y ausencia acreditada; no basta igualdad de importes.
   AC24 `UNRUN`; positivos/negativos en la matriz.
@@ -229,17 +284,20 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 
 ---
 
-## 8. Criterios de salida
+## 9. Criterios de salida
 
 Para declarar un AC `PASS` harán falta, como mínimo:
 
-1. E4.9 **integrado en `0176ffc` con QA APTO CON RESERVAS (cumplido)**, o una decisión
+1. **Testplan aprobado y congelado** antes del DEV; cualquier cambio de definición exige
+   nueva aprobación.
+2. E4.9 **integrado en `0176ffc` con QA APTO CON RESERVAS (cumplido)**, o una decisión
    explícita que permita probar E4.10 contra un contrato congelado.
-2. Decisiones E4.10 (D1–D9 y `SIN_CAMBIOS`) aprobadas; solo P2/P3/P6/P7/P8 de SPEC29
+3. Decisiones E4.10 (D1–D9 y `SIN_CAMBIOS`) aprobadas; solo P2/P3/P6/P7/P8 de SPEC29
    siguen pendientes.
-3. Evidencia real del comando ejecutado, no una descripción.
-4. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
+4. Criterio de revalidación §3 ratificado; PC-01…PC-06 ejecutados según corresponda.
+5. Evidencia real del comando ejecutado, no una descripción.
+6. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
    versión nueva.
-5. Revisión independiente de QA; este documento no se autoaprueba.
+7. Revisión independiente de QA; este documento no se autoaprueba.
 
 **Estado global:** `UNRUN` — diseño documental. Ningún AC en PASS.
