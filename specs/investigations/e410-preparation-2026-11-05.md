@@ -36,7 +36,7 @@ Los AC de E4.10 y los 59 AC de E4.5 siguen `UNRUN`.
 | No se asume versión de esquema nueva; se decide tras E4.9 | v25 está ocupada por E4.9; E4.10 no reserva versión | Declarar «v25 ocupada; E4.10 sin versión en SPEC28» |
 | Endpoints/formas/versiones provisionales de E4.9 | La superficie E4.9 existe y está mergeada; las rutas de E4.10 no están fijadas | Separar superficie E4.9 observada de rutas E4.10 pendientes |
 | T1 incluirá Ventas si E4.9 confirma su ampliación | T1 de E4.9 ya incluye Ventas E4.2 (alta, rectificación, anulación, cambio de fecha) | Contrato heredado confirmado |
-| E4.11/SPEC29 y E4.12/SPEC30 no iniciadas | Existen en `main` como **DRAFT**, sin aprobación ni DEV; decisiones P1–P8/M1–M6 y DT6/DT7 abiertas | Actualizar estados; no usar la cola de decisiones como vigencia |
+| Contexto de tablero: E4.11/SPEC29 y E4.12/SPEC30 no iniciadas | Existen en `main` como **DRAFT**, sin aprobación ni DEV; decisiones P1–P8/M1–M6 y DT6/DT7 abiertas | Actualizar estados; no usar la cola de decisiones como vigencia |
 | Base `docs/next-packages` `eefc20d`; DT6 abierto y E3.5 condiciona | SPEC28 está en `main`; DT6 sigue abierto; E3.5 integrado pero AC-15 PARCIAL | Actualizar base y precisar E3.5 |
 
 **Veredicto:** SPEC28 conserva estructura y semántica, pero su línea base E4.9 y varios
@@ -125,7 +125,7 @@ y congelado) y los contratos E4.9 ya mergeados.
 
 | Dimensión | Regla vigente | Decide E4.11 | Efecto en E4.10 |
 | --- | --- | --- | --- |
-| Versionado por ciclo | v1 inmutable; vN; todas consultables; retención permanente | M5/P7 selección de versión y `seleccionAplicada` | E4.10 crea vN; E4.11 la lee |
+| Versionado por ciclo | v1 inmutable; vN; todas consultables; retención permanente | M5/P7 selección/consulta y `seleccionAplicada`; la política de versiones/estado reabierto es D5/DT4 | E4.10 crea vN; E4.11 la lee |
 | Agregados trimestre/año | DT4: usan la versión vigente al generarse, registran cuál y quedan congelados | M2/P2 naturaleza del agregado | E4.10 no implementa agregados |
 | Mezcla de versiones | DT4 exige registrar la versión usada | M1/P5 prohibir o permitir con registro | Cada ciclo debe tener versión identificable |
 | Ciclo reabierto sin vN | Sin regla aprobada | M1/P4 excluir/marcar/bloquear | D5 ↔ P4 no se pueden separar |
@@ -133,14 +133,15 @@ y congelado) y los contratos E4.9 ya mergeados.
 | Consulta | Sin recálculo; ausencia ≠ 0 | M5/P7 por ciclo/versión/periodo/corte | E4.10 expone v1/vN |
 | Archivo E4.5 | No es foto ni compone totales | M6 excluir o vista separada | E4.10 no usa E4.5 como foto |
 
-**Frontera:** E4.10 aporta vN, estado reabierto y la regla D5; E4.11 decide composición de
-periodos, agregados y consulta. E4.11 sigue DRAFT, sin aprobación ni DEV.
+**Frontera:** E4.10 aporta vN y estado reabierto; D5 se decide conjuntamente con E4.11
+(P4/P5). E4.11 decide composición de periodos, agregados y consulta. E4.11 sigue DRAFT,
+sin aprobación ni DEV.
 
 ## 6. Protecciones e idempotencia
 
 | Nivel | Fuera de la ventana | Dentro de la ventana |
 | --- | --- | --- |
-| T1 | `[CONFIRMADO]` 409 `HISTORY_LOCKED` por fecha; incluye Movimientos, Compras, Ventas, S0, `Inicio`/`Fin` | `[PENDIENTE D2]`: A lo mantiene bloqueado; B permite solo dentro del ciclo y ventana, con auditoría; S0/`inicio`/`Fin` siempre bloqueados |
+| T1 | `[CONFIRMADO]` 409 `HISTORY_LOCKED` por fecha para Movimientos/Compras/Ventas; S0 e `Inicio`/`Fin` por ciclo cerrado | `[PENDIENTE D2]`: A lo mantiene bloqueado; B permite solo dentro del ciclo y ventana, con auditoría; S0/`inicio`/`Fin` siempre bloqueados |
 | T2 | `[CONFIRMADO]` impacto + motivo + auditoría; foto intacta | `[CONFIRMADO]` se permite con las mismas guardas |
 | T3 | `[CONFIRMADO]` permitido; no elude T1/T2 | `[CONFIRMADO]` se permite |
 
@@ -167,14 +168,15 @@ periodos, agregados y consulta. E4.11 sigue DRAFT, sin aprobación ni DEV.
 | --- | --- | --- | --- |
 | E4.9 | v1 mergeado, foto inmutable, auditoría, idempotencia, T1/T2/T3 | Que E4.9 implemente el re-cierre | Ninguno para documentar; re-cierre es extensión |
 | E4.11 | D5 y coherencia P1/P4/P5 | DEV, API, esquema o agregados | **D5 ↔ P4/P5** bloquea aprobar SPEC28/SPEC29 |
-| E4.12 | Nada funcional; solo preservación de versiones/metadatos en restore | Ensayo, matriz, DT6 | Ninguno; E4.12 es downstream |
+| E4.12 | Nada funcional; solo preservación de versiones/metadatos en restore | Ensayo, matriz, DT6 | Ninguno para E4.10; E4.12 es downstream y tiene bloqueos propios: DT6/DT7, E4.5, E4.7, E3.5/E3.6 (AC-15 PARCIAL), AUD-06 y E4.10/E4.11 |
 | E4.5/DT7 | Revalidación de solo lectura del precontrol | DEV E4.5 ni mapping real | Afecta a datos reales; 59 AC UNRUN |
 | DT6/T-BKP | Evidencia para re-cierre real | DEV con fixtures y especificación | Bloquea cierre real, no documentación |
 | Esquema | Versión posterior a v25, decidida en paquete DEV | Asumir v25/v26 en SPEC28 | Bloquea DEV, no SPEC |
 | D1–D9 | Cierre de decisiones materiales | — | Bloquea aprobar SPEC28 |
 
-**Dirección:** E4.10 depende de E4.9 (resuelto), D5/E4.11 y D1–D9; **no** de E4.12. E4.11
-depende de E4.10 para P4/v2. E4.12 depende de E4.10/E4.11 integrados.
+**Dirección:** E4.10 depende de E4.9 integrado en `0176ffc` (aceptación funcional y cierre
+real pendientes), de D5/E4.11 y de D1–D9; **no** de E4.12. E4.11 depende de E4.10 para
+P4/v2. E4.12 depende de E4.10/E4.11 integrados.
 
 ## 8. Próxima fase
 
@@ -182,13 +184,15 @@ depende de E4.10 para P4/v2. E4.12 depende de E4.10/E4.11 integrados.
 
 - Cabecera/base: E4.9 mergeado `0176ffc`, QA APTO CON RESERVAS, CI/E2E; `main` `136713b`;
   aclarar que `a806fd9` es E4.5.
-- Convertir los marcadores `[PENDIENTE · provisional E4.9]` en hechos confirmados y dejar
-  pendiente solo la extensión E4.10.
+- Convertir solo los marcadores que describen la superficie E4.9 ya integrada (v1,
+  triggers, acciones `cierre`/`cierre_fuera_de_orden`, endpoints E4.9); mantener
+  `[PENDIENTE]` los que dependen de D1/D5/D8, de la forma de reapertura y de la versión de
+  esquema.
 - Confirmar que E4.9 no implementa re-cierre, `version=1` y estado persistido `Cerrado`.
 - Añadir T1 Ventas como contrato heredado.
 - Actualizar E4.11/E4.12: DRAFT en `main`, sin aprobación ni DEV.
-- Mantener D1–D9 abiertas y todos los AC E4.10 `UNRUN`; no convertir PASS de fixtures E4.9
-  en PASS de aceptación.
+- Mantener D1–D8 abiertas y D9 pendiente de confirmación explícita; todos los AC E4.10
+  `UNRUN`; no convertir PASS de fixtures E4.9 en PASS de aceptación.
 - Actualizar el testplan: retirar «PR #200 OPEN/draft» y conservar regresiones E4.9.
 
 ### 8.2 Paquetes de decisión
@@ -207,7 +211,8 @@ depende de E4.10 para P4/v2. E4.12 depende de E4.10/E4.11 integrados.
 3. Paquete conjunto E4.10/E4.11 (D5 + P1/P4/P5).
 4. Revisión independiente y aprobación de SPEC28.
 5. Paquete DEV de E4.10: gate separado, no autorizado.
-6. E4.11 avanza tras D5; E4.12 sigue bloqueado por DT6/DT7, E4.5 y E4.10/E4.11.
+6. E4.11 avanza tras D5; E4.12 sigue bloqueado, entre otros, por DT6/DT7, E4.5, E4.7,
+   E3.5/E3.6 (AC-15 PARCIAL), AUD-06 y E4.10/E4.11; el roadmap exige E1–E3 y E4.1–E4.11.
 
 **Siguiente acción única:** abrir `E4.10-DOC-01` con ownership de `specs/28-*` para
 actualizar la vigencia E4.9 y retirar marcadores provisionales obsoletos, manteniendo
