@@ -24,7 +24,13 @@ E4.9 cierra manualmente un ciclo con ventana financiera finita y acreditada. Al 
 5. no crea automáticamente el ciclo siguiente ni cambia su S0.
 
 No incluye reapertura E4.10, fotos trimestrales/anuales E4.11, valoración/resultado/
-patrimonio E4.3, Comida E3.5/FIN_NETA, Ventas E4.2 ni conciliaciones E4.4.
+patrimonio E4.3, Comida E3.5/FIN_NETA, desarrollar Ventas E4.2 (su protección T1 ya
+implementada se refleja en la matriz) ni conciliaciones E4.4.
+
+**Enmienda documental 2026-11-05:** T1 incluye Ventas E4.2 (alta, rectificación,
+anulación, cambio de fecha) con fecha en ventana cerrada, ya implementada y verificada en
+E4.9 (AC-04/testplan). Esta enmienda solo refleja el contrato; no modifica código ni
+autoriza DEV.
 
 **Interpretación de «plan final»:** el roadmap E4.9-AC1 se lee como **estado final del
 plan**, que puede ser `SinPlan` o líneas capturadas; no exige que existan líneas.
@@ -97,7 +103,7 @@ Decisiones del usuario, sin reabrir M1–M6:
 
 | Nivel | Escrituras | Comportamiento |
 | --- | --- | --- |
-| T1 | Movimientos (alta, rectificación, anulación, cambio de fecha), S0, ventana/Fin, Compras/rectificaciones/anulaciones E4.1 con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; no escribe |
+| T1 | Movimientos (alta, rectificación, anulación, cambio de fecha), S0, ventana/Fin, Compras/rectificaciones/anulaciones E4.1 y Ventas/rectificaciones/anulaciones E4.2 (incluido cambio de fecha) con fecha en ventana cerrada | 409 `HISTORY_LOCKED`; no escribe |
 | T2 | Clasificación, Referencias, participantes/reparto, Anticipos, Compartidos, Deuda, Presupuestos, plan vivo, Revisión Comida, Instrumentos y atributos de Saldo que afectan métricas | Impacto + motivo + auditoría; foto intacta; vistas vivas actualizadas o marcadas |
 | T3 | Notas, evidencias, etiquetas y nombres no usados en cálculos | Permitido; si la foto guarda versión del nombre, no la altera |
 
