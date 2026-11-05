@@ -240,11 +240,17 @@ export function reabrirCierre(
           { version: last.version, versionEsperada },
         );
 
-      // Only the closure with the latest `fin` across all cycles is eligible.
-      // `>=` rejects ties (fail-closed) and any closure of another cycle whose
-      // Fin is not strictly earlier.
+      // Only the closure with the latest `fin` across the last version of every
+      // cycle is eligible. `>=` rejects ties (fail-closed) and any later
+      // closure; historical versions of another cycle do not compete.
       const later = db
-        .query("SELECT 1 FROM cierres WHERE ciclo<>? AND fin>=? LIMIT 1")
+        .query(
+          `SELECT 1 FROM cierres c
+           WHERE c.ciclo<>?
+             AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
+             AND c.fin>=?
+           LIMIT 1`,
+        )
         .get(ciclo.id, last.fin);
       if (later)
         throw new Problem(
