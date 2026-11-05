@@ -4,41 +4,23 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 151
-message_id: 8ba32543-9b96-401b-905b-215451f6444b
+sequence: 152
+message_id: f5ac1c7a-691e-407d-9ee3-02197a458f0f
 from: OpenCode
 to: Alex
-reply_expected: true
+reply_expected: false
 read_by: none
-created_at: 2026-11-05T06:36:57Z
+created_at: 2026-11-05T06:37:47Z
 
 ## Message
 
-# Estado nov 2026-11-05 · E4.7 cerrado, E4.9 candidato y cola SPEC
+# Acuse 0150 y actualización de estado
 
-## Integrado
-- **E4.7 DEV25 MERGED `0e89562`** (#210), CI main PASS; tablero actualizado `4717199`. AC3 PARCIAL, AC10–AC15 BLOCKED, AC19 UNRUN.
-- **#209** (limpieza D8/paquete DEV25) y **#211** (cola de decisiones + SPEC30 E4.12) integrados.
-- **#208** (handoff infra) integrado; SPEC34 en main; vps-infra mantiene auditoría/operación. No se modifica vps-infra.
+Leído 0150 (dictamen INFRA-TEST-01). Se registra. Desde entonces, por autorización expresa del usuario:
 
-## E4.9 — candidato, sin merge
-- `85b4102`, CI **756/756**, E2E focal **19/19**, QA **APTO CON RESERVAS**.
-- R1/R3/R4 y B1–B7 cerrados; T1 409 estricto; DEV-06/07 completos.
-- **Gates abiertos:** DT6/T-BKP real, cierre real, selector v>1 y estados no cubiertos. #200 draft.
-- No se solicita merge hasta presentar candidato con gates explícitos y autorización del usuario.
+- **#207 MERGED `58346e1`**: SPEC34/testplan en `main`, aprobados; D1–D6 aprobadas por el usuario.
+- **#208 MERGED `90cd5dc`**: paquete de requisitos para vps-infra.
+- El nuevo entregable host se preparó como **vps-infra PR #9** (draft), pero la coordinación vigente atribuye auditoría/operación a vps-infra; **no se modifica ese repo** y PR #9 queda como input, no como dependencia activa.
+- Los 19 AC siguen `UNRUN`; no se ha accedido al VPS ni modificado DNS/Caddy. Rootless, DT6/T-BKP, restore y límites siguen como gates.
 
-## E4.5 — decisión material pendiente
-- QA AC-48…59 **NO APTO**; C1.4 A aprobada, **C1–C8 siguen propuesta**.
-- Se necesita criterio sobre el texto final C1–C8 (especialmente adaptador E4.5→E2.4 y AC-58) para aplicarlo a SPEC20/testplan y reauditar. DT7 sigue separado.
-
-## E4.10/E4.11/E4.12
-- SPEC28/29 en DRAFT; decisiones D1–D9 y P1–P8 agrupadas en la cola integrada.
-- SPEC30/E4.12 DRAFT integrada; sin ensayo ni DEV.
-- Sin decisiones materiales nuevas; pueden esperar.
-
-## Petición
-1. Criterio funcional sobre el **texto C1–C8** de E4.5 (aplicar y reauditar, o mantener propuesta).
-2. ¿Alguna objeción material para que E4.9 quede como candidato cerrado pendiente solo de DT6/cierre real?
-3. Confirmar que E4.10/E4.11 pueden esperar sin bloquear preparación.
-
-Sin merges funcionales, VPS, datos reales ni despliegues.
+El estado actual (E4.7 mergeado, E4.9 candidato, cola SPEC, E4.5 C1–C8) está en 0151. Sin merges funcionales ni autorizaciones implícitas.
