@@ -1,9 +1,10 @@
 # 29 — E4.11 Fotografías de ciclo/trimestre/año consultables: Specification
 
-Status: **DRAFT — no aprobada; no autoriza DEV ni merge.**
-Approval source/date: **PENDING** — no existe aprobación funcional ni revisión de Álex
+Status: **DRAFT — parcialmente decidida; no aprobada; no autoriza DEV ni merge.**
+Approval source/date: **2026-11-05** — P1-C, P4-A y P5-B aprobadas por el usuario; P2, P3,
+P6, P7 y P8 siguen pendientes. No hay aprobación funcional completa ni revisión de Álex
 registrada para E4.11.
-Base: rama `docs/next-packages`, base `eefc20d` (2026-11-04). Ningún AC está ejecutado y
+Base: `main` `436fe3a` (2026-11-05); E4.9 integrado en `0176ffc`. Ningún AC está ejecutado y
 este documento no declara PASS.
 Contexto y fuentes: [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md),
 [roadmap E4.11](roadmap.md#e411--fotografías-de-ciclotrimestreaño-consultables),
@@ -146,9 +147,8 @@ invariantes candidatos de E4.11.
 
 ## 5. Decisiones materiales: P1–P8 en seis bloques
 
-`[PENDIENTE]` **Ninguna decisión está tomada.** Las recomendaciones son `[PROPUESTA]`
-técnica/funcional y no congelan la política; la SPEC permanece **parametrizada** hasta la
-aprobación del usuario. Se agrupan en seis bloques porque P1/P4/P5 no admiten respuestas
+`[PARCIAL]` **P1-C, P4-A y P5-B están aprobadas (2026-11-05).** P2, P3, P6, P7 y P8
+siguen pendientes; la SPEC permanece parametrizada en esos bloques. Se agrupan en seis bloques porque P1/P4/P5 no admiten respuestas
 independientes sin producir combinaciones incoherentes.
 
 | Bloque | Decisiones heredadas | Tema |
@@ -164,13 +164,14 @@ independientes sin producir combinaciones incoherentes.
 
 | Sub | Opciones | Impacto | Recomendación `[PROPUESTA]` |
 | --- | --- | --- | --- |
-| **P1** versión que compone | A) última versión cerrada de cada ciclo en el instante de generar; B) versión explícita elegida por el usuario; C) todas las versiones visibles y el agregado declara la usada; D) solo ciclos con v1 y bloquear si hay reapertura. | A es simple pero cambia si hay re-cierre; B es auditable pero más compleja; C conserva historia; D evita mezclas pero bloquea informes. | C como mínimo obligatorio (declarar por ciclo) con B disponible para fijar una versión concreta. No se recomienda D. |
-| **P4** reabierto sin v2 | A) excluir y marcar «pendiente de re-cierre»; B) usar la última versión cerrada (v1) y marcarla; C) bloquear la generación del agregado. | A/B conservan informes pero pueden quedar obsoletos; C es más estricto y puede bloquear. | A, coordinado con D5 de E4.10; nunca presentar v1 como vigente sin marca. |
-| **P5** mezcla de versiones | A) prohibir un agregado con versiones distintas; B) permitir y registrar la versión de cada ciclo; C) un agregado por combinación. | A simplifica pero puede impedir periodos reales; B es transparente; C explota combinatoriamente. | B, siempre con composición registrada; A solo si el usuario prefiere bloquear periodos mixtos. |
+| **P1** versión que compone | A) última versión cerrada de cada ciclo en el instante de generar; B) versión explícita elegida por el usuario; C) todas las versiones visibles y el agregado declara la usada; D) solo ciclos con v1 y bloquear si hay reapertura. | A es simple pero cambia si hay re-cierre; B es auditable pero más compleja; C conserva historia; D evita mezclas pero bloquea informes. | **Aprobado C + B disponible:** composición declarada por ciclo y selección explícita de versión. No se usa D. |
+| **P4** reabierto sin v2 | A) excluir y marcar «pendiente de re-cierre»; B) usar la última versión cerrada (v1) y marcarla; C) bloquear la generación del agregado. | A/B conservan informes pero pueden quedar obsoletos; C es más estricto y puede bloquear. | **Aprobado A**, coordinado con D5 de E4.10; v1 consultable, no vigente sin advertencia. |
+| **P5** mezcla de versiones | A) prohibir un agregado con versiones distintas; B) permitir y registrar la versión de cada ciclo; C) un agregado por combinación. | A simplifica pero puede impedir periodos reales; B es transparente; C explota combinatoriamente. | **Aprobado B**, siempre con composición exacta registrada; A queda descartada. |
 
 `[CONFIRMADO]` DT4 exige registrar la versión usada y que el agregado quede congelado; por
 tanto **declarar la composición no es opcional** sea cual sea la opción elegida.
-`[PENDIENTE]` Si un ciclo cruza el límite del periodo: M3.
+`[APROBADO 2026-11-05]` P1-C, P4-A y P5-B. `[PENDIENTE]` Si un ciclo cruza el límite del
+periodo: M3.
 
 ### M2 — Agregado persistido, vista determinista o híbrido (P2)
 
@@ -298,7 +299,7 @@ ilustrativo y no fija una versión concreta de esquema; los importes sin evidenc
 | `Parcial` | Falta al menos un bloque o ciclo, o hay un hueco declarado. | Se muestran los componentes y el motivo; el total es `null` o «parcial», nunca certificado. |
 | `NoDisponible` | No hay evidencia consultable para el periodo/ciclo. | Motivo obligatorio; nunca `0`. |
 | `SinFoto` | El ciclo existe pero no tiene cierre/foto. | No se crea una foto vacía. |
-| `PendienteReCierre` | El ciclo está reabierto sin v2 (si M1-P4-A). | Se declara; v1 no se presenta como vigente sin marca. |
+| `PendienteReCierre` | El ciclo está reabierto sin v2 (P4-A aprobada). | Se declara; v1 no se presenta como vigente sin marca. |
 | `ExcluidoSinCierre` | Ciclo del periodo sin cierre. | Aparece en `composicion` con motivo. |
 | `FueraDePeriodo` | Ciclo que cruza el límite y no se incluye según M3. | Se muestra como contexto, no suma. |
 
@@ -422,7 +423,7 @@ completan con la decisión M correspondiente; el AC no cambia, cambia su paráme
 | E4.11-AC03 | Con v1 y v2 disponibles (cuando E4.10 exista), seleccionar v1 explícitamente. | Devuelve v1 con `seleccionAplicada`; v2 sigue consultable; no se devuelve otra versión ni se modifica ninguna. Sin E4.10, v1 es la única y la respuesta lo declara. |
 | E4.11-AC04 | Consultar un trimestre/año con varios ciclos cerrados. (M1–M3) | Cada cifra agregada referencia las fotos de ciclo que la componen (ciclo, versión, fingerprint) y la regla de composición; ninguna cifra se obtiene de motores vivos. |
 | E4.11-AC05 | Periodo con ciclos de versiones distintas y/o un ciclo reabierto. (M1) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; no hay composición silenciosa; si la política prohíbe la mezcla, se bloquea con motivo. |
-| E4.11-AC06 | Ciclo reabierto sin v2 (cuando E4.10 exista). (M1/P4) | Se aplica la política aprobada: excluido y marcado `PendienteReCierre`, o última versión cerrada marcada; v1 nunca se presenta como vigente sin marca; no se crea foto. |
+| E4.11-AC06 | Ciclo reabierto sin v2 (cuando E4.10 exista). (M1/P4) | P4-A aprobada: excluido y marcado `PendienteReCierre`; v1 consultable pero no vigente sin advertencia; no se crea foto. |
 | E4.11-AC07 | Generar/consultar un agregado y después re-cerrar un ciclo creando v2. (M1–M2) | El agregado anterior devuelve los mismos valores y versiones; no se recalcula; un agregado nuevo declara las versiones nuevas. |
 | E4.11-AC08 | Navegar desde una cifra de periodo a sus ciclos componentes. (M5) | Cada ciclo incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente, fuera de periodo). |
 | E4.11-AC09 | Periodo con cobertura incompleta: ciclo sin cierre, hueco o fuente `No disponible`. | Estado `Parcial`/`NoDisponible` con motivo por bloque; ningún total parcial se declara completo ni se sustituye por `0`. |
@@ -452,13 +453,12 @@ completan con la decisión M correspondiente; el AC no cambia, cambia su paráme
 
 ## 16. Gates de entrada (antes de aprobar o desarrollar)
 
-- `[PENDIENTE]` **E4.9 mergeado y con QA independiente**: contrato de foto y rutas
-  canónicas estabilizados. Hoy PR #200 está OPEN/draft.
-- `[PENDIENTE]` **E4.10** con SPEC aprobada y política de versiones/estado fijada, o
-  decisión explícita de limitar E4.11 a ciclos con v1 y excluir reaperturas.
-- `[PENDIENTE]` **Decisiones M1–M6** del usuario (P1–P8). Sin ellas no se puede cerrar el
-  contrato de consulta ni los AC parametrizados.
-- `[PENDIENTE]` **M6**: si se muestra el archivo E4.5, su DEV/DT7 y su frontera de consulta.
+- `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS; contrato de foto
+  y superficie E4.9 estabilizados.
+- `[CONFIRMADO]` **E4.10:** D1/D2/D5/D8/D9 aprobadas; P1-C/P4-A/P5-B aprobadas. P2/P3/P6/
+  P7/P8 y D3/D4/D6/D7 siguen pendientes.
+- `[PENDIENTE]` **Decisiones M2–M6** (P2/P3/P6/P7/P8) y la frontera de consulta/archivo
+  E4.5.
 - `[PENDIENTE]` **DT6/T-BKP** para cierre real; fixtures para desarrollo y pruebas.
 - `[CONFIRMADO]` DT4 no se reabre; se aplica.
 - `[CONFIRMADO]` Aprobar SPEC29 no autoriza DEV; el DEV es un gate separado.
