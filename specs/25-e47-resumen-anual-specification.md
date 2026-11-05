@@ -1,11 +1,13 @@
 # 25 — E4.7 Resumen anual y flujo completo trazable: Specification
 
-Status: **DRAFT — no aprobada; no autoriza DEV, datos reales, migración ni merge.**
-No hay aprobación del usuario, de Álex ni del coordinador. Ningún AC está en PASS. Este
-documento no implementa código, API, SQLite, DDL, migración, snapshots ni tablas nuevas.
+Status: **APPROVED — SPEC25 y test plan aprobados por el usuario el 2026-11-04; D8-M/Z/F/N
+y las seis decisiones aprobadas.** No autoriza DEV25, merges, datos reales ni migración.
+Ningún AC está en PASS; E4.7-AC3 queda en cumplimiento parcial. Este documento no implementa
+código, API, SQLite, DDL, migración, snapshots ni tablas nuevas.
 
-Approval source/date: **ninguna**. El paquete `E4.7 · SPEC` solo autoriza redactar esta
-especificación y su testplan.
+Approval source/date: usuario, 2026-11-04 («Apruebo 206»). El dictamen funcional de Álex
+(relay 0142) fue favorable a M-A / Z-A / F-A / N-A con precisiones; la aprobación formal es
+del usuario. La aprobación de SPEC no autoriza DEV25 ni merge.
 Context and sources:
 [inventario anual E4.7 2026-11-03/2026-11-04](investigations/e47-annual-inventory-2026-11-03.md),
 [roadmap E4.7](roadmap.md),
@@ -16,17 +18,20 @@ Context and sources:
 [SPEC24/E4.6](24-e46-resumen-inicio-specification.md),
 [SPEC27/E4.9](27-e49-cierre-financiero-specification.md),
 [SPEC20/E4.5](20-historico-precontrol-specification.md),
+[dictamen funcional de Álex, relay 0142](https://github.com/jmartinlabs/myfinanzas-app/commit/6af0df5),
 [arquitectura](guidelines/architecture.md), [UI](guidelines/ui.md),
 [calidad](guidelines/quality.md) y [seguridad](guidelines/security.md).
-Base de contenido: `main` `0b8aade` (2026-11-04), esquema SQLite vigente en esa base.
-Rama documental: `docs/next-packages`, base `eefc20d`; esta spec no reaudita el contenido de
-esa rama, no reabre ninguna spec aprobada y no cambia el alcance de ninguna entrega.
+Base de contenido: `main` `b3f4ed9` (2026-11-04), esquema SQLite vigente en esa base.
+Rama documental: `docs/e47-candidate`, base `main` `b3f4ed9`; esta spec no reaudita el
+contenido de otras ramas, no reabre ninguna spec aprobada y no cambia el alcance de ninguna
+entrega.
 Test design: [25-e47-resumen-anual-testplan.md](25-e47-resumen-anual-testplan.md).
 
 **Leyenda.** `[CONFIRMADO]` = regla ya aprobada o hecho verificado en el código/documento
 citado. `[PROPUESTA]` = criterio técnico candidato de esta spec, no aprobado. `[PENDIENTE]` =
-decisión del usuario, de Álex o dependencia externa. La recomendación de DT8 es una
-`[PROPUESTA]` y **no** una decisión.
+decisión del usuario, de Álex o dependencia externa. `[DICTAMEN ÁLEX — recomendación, no
+aprobación]` = opinión funcional registrada en el relay 0142; no es aprobación de DT8 ni de la
+spec. La recomendación de DT8 es una `[PROPUESTA]` y **no** una decisión.
 
 ## Functionality
 
@@ -53,8 +58,9 @@ consulta, no porque exista una cifra anual certificada.
 
 - Selección de ejercicio natural y declaración del corte, la referencia y la cobertura.
 - Carriles separados de plan, previsión, realidad y archivo.
-- Lectura de `margenEstructural` y `margen frente a nómina real` de E2.6, con etiqueta de
-  plan y cobertura; los márgenes sin definición aprobada se publican `No disponible`.
+- Lectura de `margenEstructural` y `margen frente a nómina real` de E2.6, por Ciclo, con
+  etiqueta inequívoca de **márgenes del plan** y cobertura; no son ahorro ejecutado. Los
+  márgenes sin definición aprobada se publican `No disponible`.
 - Lectura del ajuste `G_n`/`S_aj` de E3.6 en su propio bloque, sin fusionarlo con E2.6.
 - Enlaces de trazabilidad a cada motor/ficha por ID, sin importes en la URL.
 - Estado explícito «cálculo vivo, sin foto» mientras no exista E4.9/E4.11 consumible.
@@ -68,9 +74,9 @@ consulta, no porque exista una cifra anual certificada.
 - Comparación interanual (año contra año), variaciones interanuales o series históricas no
   publicadas.
 - Ingresos históricos: E4.5 solo cubre Gastos (Q2=A); E4.7 no los reconstruye.
-- Patrimonio global, patrimonio neto o suma de valoración y deuda.
+- Patrimonio global, patrimonio neto o suma de valoración + deuda + flujo.
 - Fórmulas nuevas de «margen medio», «margen real puntual» o cualquier ratio anual.
-- Exportación, PDF o informe oficial mientras D8-F no lo autorice.
+- Exportación CSV/PDF o informe oficial en el primer DEV: F-A no la incluye; requiere decisión posterior.
 
 ## Frontera y autoridad
 
@@ -148,12 +154,22 @@ plan, no el del flujo.
 consulta anual no crea una foto. Si en el futuro existe una foto, E4.7 no la mezcla con la
 lectura viva ni recalcula sus valores.
 
+### Primer alcance vivo y gate E4.5/DT7
+
+`[DICTAMEN ÁLEX — recomendación, no aprobación]` El primer alcance de E4.7 es una vista viva de
+solo lectura, **desacoplada de la finalización de E4.9**. Sin E4.5 desarrollado y sin DT7
+aprobado no existe archivo anual verificado ni total anual acreditado: los checks AC10–AC15
+quedan `UNRUN`/`BLOCKED` según la evidencia disponible y **no se declara E4.7 completa ni PASS
+del roadmap**. La spec puede revisarse o aprobarse documentalmente antes; el DEV25 necesita
+autorización separada del usuario. Sin fotos E4.9/E4.11, la cabecera mantiene «cálculo vivo,
+sin foto».
+
 ## Contrato real de E2.6 (decisión de 2026-11-04)
 
 `[CONFIRMADO]` El motor E2.6 no publica `valor` cuando la cobertura histórica del intervalo
 no está acreditada. Publica el importe registrado como `subtotal` y marca la métrica
 `Parcial`. La decisión está registrada en el PR #201 y el comportamiento ya existe en
-`main` `0b8aade`. Fuente: inventario E4.7, A.2; `apps/api/src/flujo-mensual.ts`.
+`main` `b3f4ed9`. Fuente: inventario E4.7, A.2; `apps/api/src/flujo-mensual.ts`.
 
 | Métrica E2.6 | DTO real | Estado | Lectura correcta |
 | --- | --- | --- | --- |
@@ -174,8 +190,8 @@ no está acreditada. Publica el importe registrado como `subtotal` y marca la m�
    sería un **subtotal de subtotales** con la peor cobertura; se publicaría como
    `subtotalConocido` + estado + motivo, nunca como «total anual».
 3. `[CONFIRMADO]` `operativo` y `margenReal` no se pueden anualizar mientras sean
-   `No disponible`; se muestran como ND con motivo o se omiten. No se rellenan con una cifra
-   distinta ni con la aritmética de los subtotales.
+   `No disponible`; se muestran como ND con motivo y nunca se rellenan con una cifra distinta
+   ni con la aritmética de los subtotales.
 4. `[CONFIRMADO]` `margenEstructural` sigue siendo un margen del plan; no autoriza un
    «margen medio anual» ni un «margen real puntual».
 5. `[CONFIRMADO]` El DTO anual no debe tener un campo `totalAnual` incondicional. Todo
@@ -185,11 +201,10 @@ no está acreditada. Publica el importe registrado como `subtotal` y marca la m�
 7. `[CONFIRMADO]` Los ingresos históricos siguen `No disponible` (E4.5 Q2=A); no se
    reconstruyen desde el plan ni desde E2.6.
 
-> **Nota de deriva documental.** En `main` `0b8aade`, los ejemplos DTO de `spec24:304-308`
-> aún muestran `valor` numérico para métricas E2.6 y cifra en `operativo`/`margenReal`. El PR
-> #201 declara esos ejemplos alineados; hasta el merge no deben usarse como contrato. La
-> fuente vigente es el código de E2.6 y la decisión de 2026-11-04. Esta spec no corrige
-> SPEC24; solo evita citarla como contrato de E2.6.
+> **Nota de deriva documental resuelta.** En `main` `b3f4ed9`, tras el merge del PR #201, los
+> ejemplos DTO de SPEC24 ya muestran `valor:null`, `subtotal` y `Parcial` para las métricas
+> E2.6. La fuente vigente sigue siendo el código de E2.6 y la decisión de 2026-11-04; esta spec
+> no reabre SPEC24.
 
 ## Matriz fuente/magnitud/propietario
 
@@ -288,11 +303,12 @@ recombina archivo y detalle; no deduce cobertura por su cuenta.
 
 ### Patrimonio (solo si entra)
 
-`[PENDIENTE]` El alcance del patrimonio no está aprobado. Si entra, E4.7 muestra E4.3
-(valoración/resultado) y E4.4 (deuda viva) **al mismo corte**, en bloques separados y con su
-cobertura. No calcula patrimonio global, no suma valoración y deuda, no presenta un
-`patrimonioNeto` y no lo añade al flujo anual. Si no entra, el bloque se omite o se declara
-`No aplica` con motivo; no se publica una cifra global.
+`[APROBADA 2026-11-04]` Se incluye **contexto separado** de valoración/resultados E4.3 y deuda
+E4.4 **solo al mismo corte verificable**, cada uno con su estado y cobertura. E4.7 no calcula
+patrimonio neto, no suma valoración + deuda + flujo y no oculta la indisponibilidad. Si no hay
+un corte comparable, el bloque se marca `No disponible`; no se fabrica la cifra. Si el usuario
+decide excluirlo, el bloque se omite o se declara `No aplica` con motivo; nunca se publica una
+cifra global.
 
 ### Márgenes
 
@@ -308,8 +324,8 @@ etiqueta, su cobertura y su `estado`. No los suma entre Ciclos, no los promedia 
 convierte en un margen anual. `margenes.publicados` y las métricas de margen del carril
 realidad son la misma respuesta de E2.6; no se calculan dos veces.
 
-`[PENDIENTE]` «Margen medio» y «margen real puntual» no tienen fórmula aprobada. E4.7 los
-publica como `No disponible` con motivo «Definición pendiente DT8» y no los calcula. Si el
+`[APROBADA M-A 2026-11-04]` «Margen medio» y «margen real puntual» no tienen fórmula aprobada.
+E4.7 los publica como `No disponible` con motivo «Definición pendiente DT8» y no los calcula. Si el
 usuario quiere una fórmula, debe nacer en el motor propietario (E2.6/E3.6), no en E4.7.
 
 ## Contrato de lectura (DTO conceptual)
@@ -484,21 +500,27 @@ type MargenPublicado = {
 
 type Margenes = {
   estado: "Pendiente DT8" | "Parcial" | "No disponible";
-  publicados: MargenPublicado[];
+  etiqueta: "Márgenes del plan";   // no son ahorro ejecutado
+  publicados: MargenPublicado[];   // solo margenEstructural y margen frente a nómina real, por Ciclo
   noDefinidos: {
     clave: "margenMedio" | "margenRealPuntual";
     etiqueta: string;
     estado: "No disponible";
     motivo: "Definición pendiente DT8";
   }[];
-  nota: string;
+  nota: "Sin agregación anual ni margen medio; AC3 parcial";
 };
 
 type Patrimonio = {
   incluido: true;
-  corte: string;
+  corte: {
+    fecha: string | null;              // mismo corte para E4.3 y E4.4
+    estado: EstadoMetrica;             // No disponible si no hay corte comparable
+    motivo: string;
+  };
   valoracion: {
     valorEur: string | null;
+    estado: EstadoMetrica;
     coberturaValoracion: string;
     resultadoEur: string | null;
     coberturaResultado: string;
@@ -513,7 +535,7 @@ type Patrimonio = {
     fuente: Fuente;
     enlace: Enlace;
   } | null;                     // E4.4, solo contexto
-  nota: "Bloques separados; sin patrimonio neto ni suma al flujo";
+  nota: "Bloques separados al mismo corte; sin patrimonio neto, sin suma de valoración + deuda + flujo";
 };
 
 type ResumenAnual = {
@@ -572,28 +594,47 @@ type ResumenAnual = {
 - `[PROPUESTA]` `fuente.ids` identifica los hechos/registros; `revision` es la huella de la
   lectura cuando el motor la publica. No se inventa una revisión.
 - `[PROPUESTA]` Los enlaces solo contienen IDs, rutas y filtros; nunca importes.
+- `[PROPUESTA]` `No aplica` significa que la magnitud no existe en el alcance/diseño;
+  `No disponible` significa que existe pero falta fuente o verificación. Ambos llevan motivo
+  visible; ninguno se sustituye por `0`, celda vacía o solo color.
+- `[PROPUESTA]` El bloque patrimonio solo existe con un corte común verificable para E4.3 y
+  E4.4; cada bloque conserva su estado/cobertura. Si no hay corte comparable, ambos quedan
+  `No disponible` con motivo; no se calcula patrimonio neto ni se suma valoración + deuda +
+  flujo.
+- `[PROPUESTA]` Los dos decimales de presentación (importes y meses) no redondean el valor de
+  origen; el DTO conserva el decimal exacto del motor.
 
 ## Márgenes y DT8 agrupado
 
-DT8 no es una única decisión. Para E4.7 se agrupa en cuatro bloques. Ninguna opción de esta
-sección está aprobada; la recomendación es una propuesta para que Álex y el usuario decidan.
+DT8 no es una única decisión. Para E4.7 se agrupa en cuatro bloques. Las opciones M-A, Z-A,
+F-A y N-A fueron aprobadas por el usuario el 2026-11-04; el dictamen de Álex (relay 0142) fue
+favorable y las precisiones están incorporadas.
 
 ### D8-M — Márgenes medio, estructural, real puntual y plan
 
-`[PENDIENTE]` Faltan fórmula, denominador y agregación anual de «margen medio» y «margen real
-puntual». `margenEstructural` y `margen frente a nómina real` ya existen, pero son del plan.
+`[APROBADA M-A 2026-11-04]` No se define fórmula, denominador ni agregación anual de «margen
+medio» y «margen real puntual»; quedan `No disponible`. `margenEstructural` y `margen frente a
+nómina real` ya existen, pero son del plan.
+
+`[DICTAMEN ÁLEX — recomendación, no aprobación]` M-A es recomendable para el primer alcance:
+consumir **únicamente** `margenEstructural` y `margen frente a nómina real` existentes en E2.6,
+por Ciclo, con estado/cobertura y etiqueta inequívoca de **márgenes del plan**; no son ahorro
+ejecutado. `margen medio` y `margen real puntual` quedan `No disponible` con motivo DT8: sin
+fórmula ni motor propietario aprobado, no se calculan ni se anualizan. **E4.7-AC3 no puede
+declararse PASS completo** solo por representar esas dos magnitudes como ND: se registra
+cumplimiento parcial y dependencia explícita de una definición futura.
 
 | Opción | Contenido | Efecto en E4.7 |
 | --- | --- | --- |
-| **M-A** | Publicar solo los dos márgenes existentes de E2.6, por Ciclo, con etiqueta de plan y cobertura; `margenMedio` y `margenRealPuntual` como `No disponible — DT8`; sin agregación anual | Mínimo riesgo; no requiere fórmula nueva; E4.7-AC3 queda parcial hasta que se acepte que los no definidos sean ND |
+| **M-A** | Publicar solo los dos márgenes existentes de E2.6, por Ciclo, con etiqueta de plan y cobertura; `margenMedio` y `margenRealPuntual` como `No disponible — DT8`; sin agregación anual | Mínimo riesgo; no requiere fórmula nueva; E4.7-AC3 queda **PARCIAL** hasta que se acepte que los no definidos sean ND y exista definición futura |
 | **M-B** | Definir una agregación anual de márgenes existentes (suma, media o margen de agregados) solo con Ciclos completos | Requiere decisión financiera y una regla de cobertura; no se implementa en E4.7 sin aprobación |
 | **M-C** | Definir «margen medio» y «margen real puntual» en E2.6/E3.6, con numerador, denominador y tratamiento de Bonus/extraordinaria/Recuperado/meses parciales | Requiere spec/motor propietario; E4.7 solo consumiría el resultado |
 
-**Recomendación propuesta** `[PROPUESTA — pendiente de validación de Álex y del usuario]`:
-**M-A**. Publicar `margenEstructural` y `margen frente a nómina real` con su cobertura y
-etiqueta `plan`; mostrar `margen medio` y `margen real puntual` como `No disponible —
-definición pendiente DT8`; no sumar, promediar ni anualizar márgenes. Si se aprueba M-C, la
-fórmula debe nacer en el motor propietario, no en E4.7.
+**Aprobada** `[2026-11-04]`: **M-A**. Publicar `margenEstructural` y `margen frente a nómina real` con su
+cobertura y etiqueta `plan`; mostrar `margen medio` y `margen real puntual` como `No disponible
+— definición pendiente DT8`; no sumar, promediar ni anualizar márgenes. E4.7-AC3 se registra
+como **PARCIAL**, nunca PASS. Si se aprueba M-C, la fórmula debe nacer en el motor propietario,
+no en E4.7.
 
 ### D8-Z — Coste esencial nulo y cocientes
 
@@ -602,47 +643,64 @@ infinito; coste parcial o incompleto → `No disponible`; no se divide un subtot
 (`SPEC24:150-163`, AC-16). Un `0` anual sigue siendo una decisión explícita, no una ausencia
 (`SPEC10`).
 
+`[APROBADA Z-A 2026-11-04]` No crear cocientes anuales. Si se
+solicita `mesesCubiertos` con coste esencial verificado `0`, el resultado es `No disponible`
+(no `0`, no infinito). Los dos decimales de meses son **solo presentación**: nunca se redondea
+el valor del origen. Una magnitud que el alcance no publica se declara `No aplica` con motivo,
+no `0`.
+
 | Opción | Contenido | Efecto en E4.7 |
 | --- | --- | --- |
-| **Z-A** | No introducir cocientes anuales nuevos; conservar la regla confirmada de coste 0; formato de meses a 2 decimales como propuesta | No hay división nueva; E4.7 muestra el contexto de E2.4/E4.6 con su fuente |
+| **Z-A** | No introducir cocientes anuales nuevos; conservar la regla confirmada de coste 0; formato de meses a 2 decimales como presentación, sin redondear el origen | No hay división nueva; E4.7 muestra el contexto de E2.4/E4.6 con su fuente |
 | **Z-B** | Definir un ratio anual nuevo (por ejemplo, cobertura en meses del año) | Requiere fórmula, denominador y tratamiento de meses parciales; no se implementa sin decisión |
 | **Z-C** | No mostrar ningún contexto de coste esencial en E4.7 | Evita el problema, pero pierde trazabilidad con R6; no recomendado |
 
-**Recomendación propuesta** `[PROPUESTA — pendiente de validación de Álex y del usuario]`:
-**Z-A**. Sin cocientes anuales nuevos; coste `0` verificado → `mesesCubiertos` `No
-disponible`; formato de meses a 2 decimales solo como presentación, sin alterar el valor. Si
-E4.7 no publica un cociente, se declara `No aplica`, no `0`.
+**Aprobada** `[2026-11-04]`: **Z-A**. Sin cocientes anuales nuevos; coste `0` verificado → `mesesCubiertos` `No
+disponible`; formato de meses a 2 decimales solo como presentación, sin alterar ni redondear el
+valor de origen. Si E4.7 no publica un cociente, se declara `No aplica` con motivo, no `0`.
 
 ### D8-F — Formato, filtros y salida
 
-`[PENDIENTE]` Faltan filtros, columnas exactas, orden, exportación y salida (pantalla, PDF u
-otra). La identidad visual y los tokens existentes no se reabren.
+`[APROBADA F-A 2026-11-04]` No hay CSV/PDF en el primer DEV; faltan columnas exactas, orden y salida posterior. La
+identidad visual y los tokens existentes no se reabren.
+
+`[APROBADA F-A 2026-11-04]` Con una precisión:
+F-A **sí incluye filtros funcionales**, no es una pantalla sin filtros. Filtros principales:
+ejercicio y cobertura. Filtros secundarios: Ciclo y Partida. Si F-B conserva esos mismos
+filtros, su diferencia real respecto de F-A es añadir **exportación CSV con contrato definido**;
+F-C introduce además **PDF/informe**. En el primer DEV no hay CSV ni PDF. La UI es de solo
+lectura: 1440 tabla compacta y 390 tarjetas; la QA visual/responsive es un gate separado.
 
 | Opción | Contenido | Efecto en E4.7 |
 | --- | --- | --- |
-| **F-A** | Pantalla de solo lectura; filtro principal por ejercicio y cobertura; Ciclo/Partida como filtros secundarios; sin exportación ni PDF en el primer DEV; 1440 tabla compacta y 390 tarjetas | Menor alcance; reutiliza shell/tokens; revisión visual posterior |
-| **F-B** | F-A + filtros por Ciclo/Partida + exportación CSV | Requiere definir columnas, orden, importes y cobertura exportada; más superficie de prueba |
-| **F-C** | F-A/B + PDF o informe imprimible oficial | Requiere decisión de formato, firma/versión y posiblemente otra spec; no recomendado para el primer DEV |
+| **F-A** | Pantalla de solo lectura con filtros funcionales: principales ejercicio y cobertura; secundarios Ciclo y Partida; sin exportación ni PDF en el primer DEV; 1440 tabla compacta y 390 tarjetas | Menor alcance; reutiliza shell/tokens; revisión visual posterior |
+| **F-B** | F-A + exportación CSV con contrato definido (mismos filtros) | Requiere definir columnas, orden, importes y cobertura exportada; más superficie de prueba |
+| **F-C** | F-B + PDF o informe imprimible oficial | Requiere decisión de formato, firma/versión y posiblemente otra spec; no recomendado para el primer DEV |
 
-**Recomendación propuesta** `[PROPUESTA — pendiente de validación de Álex y del usuario]`:
-**F-A** para el primer DEV; columnas por carril, estado y fuente visibles; sin exportación ni
-PDF hasta una decisión posterior. La revisión visual 1440/390 sigue siendo un gate separado.
+**Aprobada** `[2026-11-04]`: **F-A** para el primer DEV; filtros principales ejercicio/cobertura y secundarios
+Ciclo/Partida; columnas por carril, estado y fuente visibles; sin exportación ni PDF hasta una
+decisión posterior. La revisión visual 1440/390 sigue siendo un gate separado.
 
 ### D8-N — Datos no aplicables
 
-`[PENDIENTE]` Hay magnitudes que no existen por diseño (por ejemplo, total anual de flujo,
+`[APROBADA N-A 2026-11-04]` Hay magnitudes que no existen por diseño (por ejemplo, total anual de flujo,
 total de efectivo del bróker o patrimonio neto global) y otras que existen pero no están
 disponibles (por ejemplo, ingresos históricos o archivo sin DT7). No deben confundirse.
+
+`[APROBADA N-A 2026-11-04]` `No aplica` cuando la magnitud **no
+existe en el alcance o en el diseño**; `No disponible` cuando **existe pero falta fuente o
+verificación**. Ambos con motivo visible, sin `0` ficticio ni celda vacía, y distinguibles sin
+depender solo del color.
 
 | Opción | Contenido | Efecto en E4.7 |
 | --- | --- | --- |
 | **N-A** | Estado explícito `No aplica` con motivo por magnitud; `No disponible` para fuente ausente; nunca `0` ni celda vacía | Lectura sin ambigüedad; requiere copy y pruebas de estados |
 | **N-B** | Omitir la fila cuando no aplica | Menos ruido, pero puede parecer que el dato no existe o que se ha perdido |
 
-**Recomendación propuesta** `[PROPUESTA — pendiente de validación de Álex y del usuario]`:
-**N-A**. `No aplica` para lo que no existe por diseño y `No disponible` para lo que existe
-pero no se puede acreditar; ambos con motivo visible. Ningún estado se representa solo con
-color.
+**Recomendación** `[PROPUESTA — avalada funcionalmente por Álex; pendiente de aprobación del
+usuario]`: **N-A**. `No aplica` para lo que no existe por diseño y `No disponible` para lo que
+existe pero no se puede acreditar; ambos con motivo visible. Ningún estado se representa solo
+con color.
 
 ## Cobertura histórica y archivo E4.5
 
@@ -768,8 +826,9 @@ corchetes son etiquetas, no cifras.
   icono **y** texto, nunca solo con color.
 - El motivo y la fuente se ven sin depender de tooltip; el detalle se abre con enlaces por ID.
 - La cabecera declara ejercicio, corte, cobertura y «cálculo vivo, sin foto».
+- Los filtros principales son ejercicio y cobertura; los secundarios, Ciclo y Partida. La
+  selección se conserva al volver de un enlace y nunca se pone un importe en la URL.
 - No se muestra un «total anual» ni una cifra grande que sugiera un cierre.
-- Los filtros conservan la selección al volver de un enlace; no ponen importes en la URL.
 - Los importes se formatean en `es-ES` con dos decimales visuales, sin redondear el valor
   almacenado; la UI no calcula.
 
@@ -781,7 +840,8 @@ corchetes son etiquetas, no cifras.
 | Sin datos | Ejercicio sin plan, sin Ciclos, sin archivo y sin hechos | «Sin datos para este ejercicio»; no `0`, no filas inventadas |
 | Vacío verificado | Cobertura completa y sin hechos elegibles | `0,00` con `Cero verificado`; no `Sin datos` |
 | Parcial | Una fuente o Parte no verificable | Etiqueta `Parcial`, subtotal conocido, incluidos/excluidos y motivo |
-| No disponible | Motor/dato/contexto ausente | Sin cifra; motivo, fuente y componentes conocidos aparte |
+| No aplica | Magnitud inexistente en el alcance/diseño | Etiqueta `No aplica` con motivo visible; sin `0` ni celda vacía |
+| No disponible | Motor/dato/contexto ausente, o existe pero falta fuente/verificación | Sin cifra; motivo, fuente y componentes conocidos aparte |
 | No acreditada | E4.5 sin universo DT7 | «Universo no acreditado»; subtotal separado si existe; no total |
 | Solapada | E4.5 con solapamiento no separable | Componentes visibles; total/subtotal `null`; motivo; no suma |
 | Error de fuente | Un motor falla o timeout | Solo ese carril `No disponible` con motor y motivo; los demás siguen; reintento |
@@ -799,6 +859,11 @@ corchetes son etiquetas, no cifras.
 - Un `HastaCorte` no se rotula como anual; un `NoAcreditada` no se degrada a `Parcial`.
 - `null` no se convierte en `0`; un `0` verificado se conserva y se distingue de la ausencia.
 - Coste esencial `0` no produce división; `mesesCubiertos` es `No disponible`.
+- Los dos decimales de presentación no redondean el valor de origen.
+- `No aplica` y `No disponible` se distinguen por su motivo; ninguno se representa con `0`,
+  celda vacía o solo color.
+- E4.3 y E4.4 solo se comparan al mismo corte verificable; si no coincide, ambos `No disponible`
+  y no se suman con el flujo.
 - Un margen negativo se conserva con signo; no se trunca ni se convierte en ahorro.
 - Una Partida inactiva conserva su historia; no se borra ni se reasigna.
 - Un renombre de Partida no rompe la línea; se usa el ID y se conserva el nombre de origen
@@ -817,22 +882,24 @@ corchetes son etiquetas, no cifras.
 - Tablas, snapshots, cachés persistidas, fotos o cierres.
 - Cierre/precierre/reapertura E4.8–E4.11; certificación de un ejercicio.
 - Ingresos históricos reconstruidos; archivo distinto de E4.5.
-- Patrimonio global o patrimonio neto; suma de valoración y deuda.
+- Patrimonio global o patrimonio neto; suma de valoración, deuda y flujo.
 - Fórmulas nuevas de «margen medio»/«margen real puntual»; cualquier ratio anual no aprobado.
-- Exportación, PDF o informe oficial mientras D8-F no lo autorice.
-- Aprobar DT8, aprobar esta spec o autorizar DEV25/merge.
+- Exportación CSV/PDF o informe oficial en el primer DEV: F-A no la incluye; requiere decisión posterior.
+- Aprobar DT8, aprobar esta spec o autorizar DEV25, merge, datos reales o migración.
 
 ## Acceptance checks
 
 `[PROPUESTA]` Criterios candidatos, **no aprobados y no ejecutados**. Cada uno es verificable
 con un DTO, una respuesta API o una captura futura; ninguno declara PASS por inspección. La
-matriz de ejecución está en el testplan.
+matriz de ejecución está en el testplan. Estado de partida: **E4.7-AC3 = PARCIAL** (márgenes no
+definidos en DT8); **AC10–AC15 = UNRUN/BLOCKED** por E4.5/DT7; el resto `UNRUN`. Ningún check
+se declara PASS.
 
 | ID | Precondición / acción | Resultado esperado verificable |
 | --- | --- | --- |
 | E4.7-AC01 | Consultar el resumen antes/después y probar POST/PATCH/DELETE | Sin cambios en hechos, planes, cierres, auditoría, configuración ni `schema_version`; solo GET; no existe ruta de escritura |
 | E4.7-AC02 | Abrir cada cifra y su detalle | Cada cifra declara `fuente.motor`, IDs, contexto, estado y cobertura; la UI no calcula ni rellena |
-| E4.7-AC03 | Comparar cada bloque con su motor al mismo contexto | Igualdad exacta al céntimo con el propietario de cada bloque incluido (E2.4/E2.6/E3.6/E4.5/E4.3/E4.4); ninguna cifra se reimplementa |
+| E4.7-AC03 | Comparar cada bloque con su motor al mismo contexto | Igualdad exacta al céntimo con el propietario de cada bloque incluido (E2.4/E2.6/E3.6/E4.5/E4.3/E4.4); ninguna cifra se reimplementa. **Estado PARCIAL**: `margen medio`/`margen real puntual` no tienen definición DT8, por lo que AC3 no puede PASS completo |
 | E4.7-AC04 | Consultar un ejercicio con cobertura parcial | El DTO no contiene `totalAnual`; no hay etiqueta «total anual»; todo agregado monetario del propietario lleva `alcance`, `estado`, `subtotalConocido` y `motivo` |
 | E4.7-AC05 | Fixture C007 con el contrato real de E2.6 | `ingresos`, `gasto`, `extraordinaria` y `nomina` tienen `valor:null`, `subtotal` conocido y `Parcial`; `operativo` y `margenReal` son `No disponible`; E4.7 no rellena ni anualiza |
 | E4.7-AC06 | Dos Ciclos del mismo ejercicio, ambos `Parcial` | El carril realidad lista los Ciclos y sus subtotales; no publica un total anual ni una suma de subtotales como año; `agregadoAnual.estado=No aplica` |
@@ -847,9 +914,9 @@ matriz de ejecución está en el testplan.
 | E4.7-AC15 | Consultar ingresos históricos | `No disponible` con motivo; no se reconstruyen desde plan/E2.6/archivo; no `0` |
 | E4.7-AC16 | Existe una simulación E2.5 y un flujo real | La previsión se muestra aparte; no se suma al año ni al Ciclo; no se etiqueta como realidad |
 | E4.7-AC17 | E3.6 publica `G_n`/`S_aj` para un Ciclo | Se muestran en bloque propio, con estado y motivo; `S_aj` es `Parcial`; no se suman al bruto E2.6 ni se convierten en margen |
-| E4.7-AC18 | E2.6 publica `margenEstructural` y `margenReal` | Se muestran con etiqueta de plan y cobertura; `margenReal` sin `valor` es `No disponible`; `margen medio` y `margen real puntual` son ND «DT8»; no hay margen anual |
-| E4.7-AC19 | Si E4.7 muestra el contexto de coste esencial: coste verificado `0` o cociente no definido | `mesesCubiertos` `No disponible`; no se divide por cero; sin ratio anual nuevo; si no aplica, `No aplica` con motivo |
-| E4.7-AC20 | Alcance con y sin patrimonio | Si entra: E4.3 y E4.4 al mismo corte, separados y con cobertura; sin patrimonio neto ni suma al flujo. Si no: bloque ausente o `No aplica`, sin cifra global |
+| E4.7-AC18 | E2.6 publica `margenEstructural` y `margenReal` | Se muestran por Ciclo con etiqueta inequívoca de **márgenes del plan** (no ahorro ejecutado) y cobertura; `margenReal` sin `valor` es `No disponible`; `margen medio` y `margen real puntual` son ND «DT8»; no hay margen anual ni promedio |
+| E4.7-AC19 | Si E4.7 muestra el contexto de coste esencial: coste verificado `0` o cociente no definido | `mesesCubiertos` `No disponible`; no se divide por cero; sin ratio anual nuevo; los dos decimales no redondean el origen; si el alcance no publica el cociente, `No aplica` con motivo |
+| E4.7-AC20 | Alcance con y sin patrimonio | Si entra: E4.3 y E4.4 **al mismo corte verificable**, separados y cada uno con estado/cobertura; sin patrimonio neto ni suma de valoración + deuda + flujo. Sin corte comparable: `No disponible`, sin cifra fabricada. Si no entra: bloque ausente o `No aplica` con motivo |
 | E4.7-AC21 | Activar cada enlace y volver | Ruta/ID correctos; se conserva el ejercicio y los filtros; la URL no contiene importes ni datos personales |
 | E4.7-AC22 | 1440×1000 y 390×844, teclado y foco | Cuatro carriles legibles, sin scroll horizontal; estado icono+texto; foco visible; contraste; sin tema/tokens nuevos |
 | E4.7-AC23 | Forzar vacío, carga, parcial, ND, error de una fuente y reintento | Estados diferenciados; solo el carril afectado degrada; no `0`; el reintento conserva la selección |
@@ -864,7 +931,7 @@ matriz de ejecución está en el testplan.
 | --- | --- |
 | E4.7-AC1 — integrar histórico válido y Gastos sin duplicar amortizaciones | AC10–AC15, AC27 |
 | E4.7-AC2 — flujo con todas las fuentes temporales y Neto compartido del mismo motor | AC03, AC05, AC16, AC17 |
-| E4.7-AC3 — distinguir margen medio/estructural/real puntual y plan con cobertura visible | AC18, AC19; el PASS completo de AC3 queda **PENDIENTE D8-M** |
+| E4.7-AC3 — distinguir margen medio/estructural/real puntual y plan con cobertura visible | AC18, AC19; **AC3 queda PARCIAL**: con M-A solo se publican los dos márgenes existentes; «medio» y «real puntual» dependen de una definición futura y no pueden PASS completo |
 | Año natural vs Ciclo | AC08, AC09 |
 | Sin total anual / cobertura explícita | AC04–AC07, AC10, AC11, AC13 |
 | Solo lectura, seguridad y UX | AC01, AC02, AC21–AC26 |
@@ -873,37 +940,32 @@ matriz de ejecución está en el testplan.
 
 | Dependencia | Estado 2026-11-04 | Efecto en E4.7 |
 | --- | --- | --- |
-| E4.5 / DT7 | SPEC20 aprobada; **sin DEV**; DT7 abierto | Sin archivo runtime no hay total anual ni AC10–AC15 ejecutables; quedan `UNRUN`/`BLOCKED` |
-| D8-M | `[PENDIENTE]` | Sin decisión, E4.7-AC3 no puede PASS completo; los márgenes no definidos quedan ND |
-| D8-Z | `[PENDIENTE]` | Sin decisión, no se publica ratio anual nuevo; coste 0 sigue la regla confirmada |
-| D8-F | `[PENDIENTE]` | Sin decisión, no hay exportación/PDF y la revisión visual queda abierta |
-| D8-N | `[PENDIENTE]` | Sin decisión, el tratamiento de `No aplica`/`No disponible` no se considera aprobado |
-| E4.3 | Integrado v24; QA 15 PASS / 2 PARCIAL; sin PASS de aceptación | Solo contexto patrimonial si el alcance lo incluye; no calcula patrimonio global |
-| E4.4 | Integrado DEV17 / `024b348` | Solo contexto patrimonial separado; no se resta del flujo |
+| E4.5 / DT7 | SPEC20 aprobada; **sin DEV**; DT7 abierto | Sin archivo anual verificado no hay total anual; AC10–AC15 quedan `UNRUN`/`BLOCKED`. El primer alcance vivo de E4.7 puede prepararse desacoplado de E4.9 |
+| D8-M | `[APROBADA 2026-11-04]`; M-A | E4.7-AC3 queda **PARCIAL**: los dos márgenes ND dependen de una definición futura; no hay PASS completo |
+| D8-Z | `[APROBADA 2026-11-04]`; Z-A | No se publica ratio anual nuevo; coste 0 sigue la regla confirmada; 2 decimales solo presentación |
+| D8-F | `[APROBADA 2026-11-04]`; F-A con filtros funcionales | Sin CSV/PDF en el primer DEV; 1440 tabla y 390 tarjetas; QA visual separada |
+| D8-N | `[APROBADA 2026-11-04]`; N-A | `No aplica` vs `No disponible` con motivo visible; sin 0 ni celda vacía |
+| E4.3 | Integrado v24; QA 15 PASS / 2 PARCIAL; sin PASS de aceptación | Solo contexto patrimonial al mismo corte verificable; no calcula patrimonio global |
+| E4.4 | Integrado DEV17 / `024b348` | Solo contexto patrimonial separado y al mismo corte; no se resta del flujo |
 | E3.6 | MERGED `a26fffb` | Disponible para `G_n`/`S_aj`; no hay total económico |
 | E4.6 | SPEC/testplan aprobados; DEV24 en PR #201 OPEN | No es fuente ni dependencia de contrato; E4.7 consume E2.6/E2.4/E3.6 directamente |
-| E4.9 | DEV en PR #200 OPEN; sin merge; QA con reservas | No hay cierre/foto; E4.7 sigue vivo |
-| E4.11 | Sin SPEC propia ni DEV en `main` `0b8aade` | No hay foto anual; no se simula |
-| E2.6 | Contrato real 2026-11-04 en `0b8aade` | `valor:null` + `subtotal` + `Parcial`; E4.7 no fabrica totales |
+| E4.9 | DEV en PR #200 OPEN; sin merge; QA con reservas | No hay cierre/foto; no bloquea el primer alcance vivo; E4.7 sigue «sin foto» |
+| E4.11 | SPEC29 en `main` `b3f4ed9`; sin DEV conocido | No hay foto anual; no se simula |
+| E2.6 | Contrato real 2026-11-04 en `b3f4ed9` | `valor:null` + `subtotal` + `Parcial`; E4.7 no fabrica totales |
 
-## Decisiones materiales para aprobación
+## Seis decisiones aprobadas
 
-Máximo seis decisiones; ninguna está tomada por esta spec.
+`[CONFIRMADO]` Aprobadas por el usuario el 2026-11-04. No autorizan DEV25, merge, datos reales
+ni migración; la aprobación de SPEC25 no inicia desarrollo.
 
-1. **D8-M — márgenes.** ¿Se aprueba la opción M-A (publicar solo los márgenes existentes de
-   E2.6, por Ciclo, y dejar «medio»/«real puntual» como `No disponible`), o se elige M-B/M-C
-   con fórmula, denominador y agregación anual? Sin esta decisión, E4.7-AC3 no puede PASS
-   completo.
-2. **D8-Z — coste esencial 0 y cocientes.** ¿Se confirma que E4.7 no introduce ratios anuales
-   nuevos, que coste 0 verificado deja `mesesCubiertos` en `No disponible` y que el formato de
-   meses es 2 decimales (propuesta)?
-3. **D8-F — formato y filtros.** ¿Se aprueba F-A (pantalla de solo lectura, filtro principal
-   por ejercicio/cobertura, Ciclo/Partida secundarios, sin exportación ni PDF en el primer
-   DEV), o se elige F-B/F-C?
-4. **D8-N — datos no aplicables.** ¿Se aprueba N-A (`No aplica` explícito con motivo, distinto
-   de `No disponible`, nunca `0` ni celda vacía), o N-B (omitir la fila)?
-5. **Patrimonio.** ¿E4.7 incluye E4.3/E4.4 solo como contexto separado al corte, sin
-   patrimonio neto ni suma al flujo, o los excluye por completo del primer alcance?
-6. **Gate E4.5/DT7 y alcance del DEV.** ¿Se acepta que sin E4.5 DEV/DT7 no habrá total anual,
-   que el archivo y los AC10–AC15 quedarán `UNRUN`, y que esta aprobación es solo documental,
-   sin autorizar DEV25, datos reales, migración ni merge?
+1. **D8-M — M-A:** solo `margenEstructural` y `margen frente a nómina real`, etiquetados como
+   plan; `margen medio` y `margen real puntual` ND por DT8. **AC3 PARCIAL**.
+2. **D8-Z — Z-A:** sin cocientes anuales; coste 0 → `mesesCubiertos` ND; decimales solo
+   presentación.
+3. **D8-F — F-A:** filtros funcionales ejercicio/cobertura y Ciclo/Partida; sin CSV/PDF en el
+   primer DEV; 1440 tabla y 390 tarjetas.
+4. **D8-N — N-A:** `No aplica` vs `No disponible` con motivo, sin 0 ni celda vacía.
+5. **Patrimonio:** contexto separado E4.3/E4.4 al mismo corte verificable; sin patrimonio neto
+   ni sumas.
+6. **Gate E4.5/DT7:** primer alcance vivo de solo lectura; AC10–AC15 `UNRUN/BLOCKED`; no se
+   declara E4.7 completa.

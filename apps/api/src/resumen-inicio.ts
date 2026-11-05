@@ -4,7 +4,11 @@ import { monthlyFlow, type MonthlyFlow, type Metric } from "./flujo-mensual";
 import { getAnnualPlan, type AnnualProvider } from "./plan-anual";
 import { getSaldo, decimal, type Saldo } from "./saldos";
 import { e43Corte } from "./e43";
-import { listDeudasCompletas } from "./deuda-completa";
+import {
+  agregarDeudaNoHipotecaria,
+  esDeudaNoHipotecariaActiva,
+  listarDeudasCompletas,
+} from "./deuda-no-hipotecaria";
 import { listPendientes } from "./pendientes";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
@@ -193,16 +197,6 @@ function centsOf(value: string | null): bigint | null {
   const [whole, fraction = ""] = value.replace("-", "").split(".");
   const cents = BigInt(whole) * 100n + BigInt(fraction.padEnd(2, "0"));
   return negative ? -cents : cents;
-}
-
-function sumCents(values: (string | null)[]): bigint | null {
-  let total = 0n;
-  for (const value of values) {
-    const cents = centsOf(value);
-    if (cents === null) return null;
-    total += cents;
-  }
-  return total;
 }
 
 function gcd(a: bigint, b: bigint): bigint {
@@ -907,55 +901,12 @@ function inversionSection(db: Database, corte: string | null) {
   }
 }
 
-function allDebts(db: Database) {
-  const items: ReturnType<typeof listDeudasCompletas>["items"] = [];
-  let page = 1;
-  let total = 0;
-  do {
-    const result = listDeudasCompletas(
-      db,
-      new URLSearchParams({ estado: "", page: String(page) }),
-    );
-    items.push(...result.items);
-    total = result.total;
-    if (result.items.length === 0) break;
-    page += 1;
-  } while (items.length < total && page <= 100000);
-  return items;
-}
-
 function deudaSection(db: Database) {
   try {
-    const all = allDebts(db);
+    const all = listarDeudasCompletas(db);
     const activas = all.filter((item) => item.estado === "Activa");
-    const noHipotecarias = activas.filter(
-      (item) => item.tipoDeuda === "No hipotecaria",
-    );
-    const calculables = noHipotecarias.filter(
-      (item) => item.capital.calculable,
-    );
-    const subtotal =
-      noHipotecarias.length === 0
-        ? null
-        : sumCents(calculables.map((item) => item.capitalPendiente));
-    const completa =
-      noHipotecarias.length > 0 &&
-      calculables.length === noHipotecarias.length &&
-      subtotal !== null;
-    const totalEstado: EstadoMetrica =
-      noHipotecarias.length === 0
-        ? "Sin datos"
-        : completa
-          ? subtotal === 0n
-            ? "Cero verificado"
-            : "Verificado"
-          : "Parcial";
-    const motivos = noHipotecarias
-      .filter((item) => !item.capital.calculable)
-      .map(
-        (item) =>
-          `${item.id}: ${item.capital.motivoNoCalculable ?? "capital no calculable"}`,
-      );
+    const noHipotecarias = activas.filter(esDeudaNoHipotecariaActiva);
+    const agregado = agregarDeudaNoHipotecaria(noHipotecarias);
     const items = noHipotecarias.map((item) => ({
       id: item.id,
       nombre: item.nombre,
@@ -998,32 +949,29 @@ function deudaSection(db: Database) {
             : { motivo: item.capital.motivoNoCalculable }),
         })),
     };
-    const totalValor = completa ? decimal(subtotal!) : null;
     return {
       contexto: { tipo: "actual" as const },
       items,
       total: {
-        valor: totalValor,
-        subtotal: subtotal === null ? null : decimal(subtotal),
-        estado: totalEstado,
+        valor: agregado.total,
+        subtotal: agregado.subtotal,
+        estado: agregado.estado,
         motivo:
-          totalEstado === "Parcial"
-            ? motivos.join("; ") || "Hay deudas no calculables."
-            : totalEstado === "Sin datos"
+          agregado.estado === "Parcial"
+            ? agregado.motivos.join("; ") || "Hay deudas no calculables."
+            : agregado.estado === "Sin datos"
               ? "Sin deudas no hipotecarias activas."
               : "Total de deuda no hipotecaria calculable.",
         cobertura: cobertura(
-          totalEstado,
-          calculables.length,
-          noHipotecarias.length - calculables.length,
-          motivos,
+          agregado.estado,
+          agregado.incluidos,
+          agregado.excluidos,
+          agregado.motivos,
         ),
         fuente: {
           motor: MOTOR.deuda,
-          ids: noHipotecarias.map((item) => item.id),
-          revisiones: noHipotecarias.map(
-            (item) => `${item.id}@${item.revision}`,
-          ),
+          ids: agregado.ids,
+          revisiones: agregado.revisiones,
         },
       },
       aparte,
@@ -1034,7 +982,7 @@ function deudaSection(db: Database) {
       },
       enlace: {
         ruta: "/deudas",
-        ids: noHipotecarias.map((item) => item.id),
+        ids: agregado.ids,
       },
     };
   } catch (error) {
