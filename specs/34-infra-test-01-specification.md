@@ -218,9 +218,9 @@ herramienta, dataset ni manifiesto ejecutado.
 | Marcador | `<data-root>/test-instance.json` `0600`, escrito por la primera ejecución autorizada: `environment=test`, `public_origin`, `seed_manifest_sha256`, `schema_version` | Guard de entorno y de ruta (§4.4) |
 | Registro privado | Resultado de cada seed/reset/verify en el expediente del operador, sin secretos | Evidencia del test plan |
 
-`[PENDIENTE]` D1 decide entre imagen test-only y herramienta en host. Se recomienda la
-imagen test-only porque hereda el pin de Bun/dependencias, el rootfs endurecido y la
-trazabilidad del manifiesto, y evita depender de un Bun instalado en el VPS.
+`[CONFIRMADO]` D1 está aprobada: imagen test-only, porque hereda el pin de
+Bun/dependencias, el rootfs endurecido y la trazabilidad del manifiesto, y evita depender de
+un Bun instalado en el VPS. La implementación del artefacto sigue pendiente.
 
 ### 4.3 Interfaz CLI propuesta
 
@@ -547,7 +547,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
 | D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
-| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres/fotos vs crear FT-2 | FT-1 v1 sin cierres ni fotografías; tablas C25 vacías; compatibilidad con servicios v25 verificada por AC08/AC09; guardas rechazan esquemas ≠25 sin migrar; FT-2 reservado a una ampliación independiente con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05]` |
+| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres/fotos vs crear FT-2 | FT-1 v1 sin cierres ni fotografías; tablas C25 vacías; compatibilidad con servicios v25 a verificar por AC08/AC09; guardas rechazan esquemas ≠25 sin migrar; FT-2 reservado a una ampliación independiente con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05]` |
 
 ## 10. Fuera de alcance
 
