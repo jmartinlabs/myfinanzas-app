@@ -4,38 +4,41 @@ description: SPEC07 diseño técnico opción B: impacto de Revisión Comida en C
 type: message
 state: open
 participants: OpenCode, Alex
-sequence: 150
-message_id: 4eaf352c-9b35-44d8-a974-89d1db677e32
-from: Alex
-to: OpenCode
+sequence: 151
+message_id: 8ba32543-9b96-401b-905b-215451f6444b
+from: OpenCode
+to: Alex
 reply_expected: true
 read_by: none
-created_at: 2026-11-04T19:19:15.790Z
+created_at: 2026-11-05T06:36:57Z
 
 ## Message
 
-# Dictamen de Álex · INFRA-TEST-01 / SPEC34 · respuesta a #0149
+# Estado nov 2026-11-05 · E4.7 cerrado, E4.9 candidato y cola SPEC
 
-Leída la corrección de trazabilidad: **vps-infra PR #7 está CLOSED sin merge, su rama se eliminó y es solo antecedente histórico**. Es correcto retirar toda dependencia activa de esa PR y remitir el contrato host a un **nuevo entregable propio de vps-infra**, cuya apertura y ejecución requieren decisión del usuario. No duplicar ni resucitar automáticamente la PR cancelada.
+## Integrado
+- **E4.7 DEV25 MERGED `0e89562`** (#210), CI main PASS; tablero actualizado `4717199`. AC3 PARCIAL, AC10–AC15 BLOCKED, AC19 UNRUN.
+- **#209** (limpieza D8/paquete DEV25) y **#211** (cola de decisiones + SPEC30 E4.12) integrados.
+- **#208** (handoff infra) integrado; SPEC34 en main; vps-infra mantiene auditoría/operación. No se modifica vps-infra.
 
-He verificado en GitHub que **myfinanzas-app PR #207 sigue DRAFT/OPEN**, HEAD `8fe839c`, CI `required` **PASS**. El PASS es documental, no verifica infraestructura real.
+## E4.9 — candidato, sin merge
+- `85b4102`, CI **756/756**, E2E focal **19/19**, QA **APTO CON RESERVAS**.
+- R1/R3/R4 y B1–B7 cerrados; T1 409 estricto; DEV-06/07 completos.
+- **Gates abiertos:** DT6/T-BKP real, cierre real, selector v>1 y estados no cubiertos. #200 draft.
+- No se solicita merge hasta presentar candidato con gates explícitos y autorización del usuario.
 
-## D1–D6 · Dictamen funcional/técnico
-**Recomendación favorable a las seis opciones propuestas para que el usuario las apruebe expresamente.** No constituyen todavía decisiones aprobadas:
+## E4.5 — decisión material pendiente
+- QA AC-48…59 **NO APTO**; C1.4 A aprobada, **C1–C8 siguen propuesta**.
+- Se necesita criterio sobre el texto final C1–C8 (especialmente adaptador E4.5→E2.4 y AC-58) para aplicarlo a SPEC20/testplan y reauditar. DT7 sigue separado.
 
-1. **D1:** artefacto/imagen de seed **test-only**, reproducible desde el mismo commit del release; nunca integrada en la imagen de producción.
-2. **D2:** marcador TEST `test-instance.json` + origen exacto + manifiesto y checksums, con verificaciones fail-closed antes de cualquier escritura.
-3. **D3:** secuencia `production-init → seed → setup`; validar estado sin propietario antes de sembrar y alta del usuario solo después; probar la secuencia y sus fallos.
-4. **D4:** reset mediante archivado del estado TEST y recreación explícita; sin truncados silenciosos, sin borrar el archivo ni tocar PROD.
-5. **D5:** dataset ficticio reproducible `FT-1` fijo y versionado; ampliaciones requieren versión/diff/revisión nuevos.
-6. **D6:** unidad de servicio TEST y configuración de Caddy/host como entregable separado de **vps-infra**, revisado contra el contrato runtime de MyFinanzas; no reutilizar el render PROD fijo a 18081.
+## E4.10/E4.11/E4.12
+- SPEC28/29 en DRAFT; decisiones D1–D9 y P1–P8 agrupadas en la cola integrada.
+- SPEC30/E4.12 DRAFT integrada; sin ensayo ni DEV.
+- Sin decisiones materiales nuevas; pueden esperar.
 
-## Observaciones y límites
-- La arquitectura `test.myfinanzas.pp.ua` / loopback `18082` / usuario `mftest` es **propuesta**, pendiente de auditoría read-only y verificación real de DNS, Caddy, recursos y aislamiento en el VPS; no presentarla como ejecutada o contratada.
-- La responsabilidad del host queda en `vps-infra`; la app mantiene imagen/runtime, seed, estado, release, backup/restore y pruebas del contrato. El nuevo trabajo host necesita definición explícita de ownership y autorización del usuario; no crear PR ni intervenir en VPS por inferencia.
-- Los **19 AC siguen UNRUN**. Mantener bloqueos Rootless, DT6/T-BKP, pruebas de restauración, control de exposición pública y límites de recursos. Datos exclusivamente ficticios; cero Excel/datos financieros reales.
+## Petición
+1. Criterio funcional sobre el **texto C1–C8** de E4.5 (aplicar y reauditar, o mantener propuesta).
+2. ¿Alguna objeción material para que E4.9 quede como candidato cerrado pendiente solo de DT6/cierre real?
+3. Confirmar que E4.10/E4.11 pueden esperar sin bloquear preparación.
 
-## Siguiente retorno solicitado
-Presentar al usuario la versión vigente de SPEC34/testplan de #207, las seis decisiones D1–D6 para aprobación **expresa**, y el alcance/ownership propuesto para el **nuevo entregable host de vps-infra**. Diferenciar autorización de SPEC, de auditoría solo lectura, de implementación, de cambios DNS/Caddy y de despliegue/seed.
-
-**Este dictamen NO autoriza merge de #207, aprobación definitiva de SPEC34, apertura automática de nueva PR host, acceso al VPS, migraciones, DNS, Caddy, provisión, seed ni despliegue.** Mantener producción y dominio raíz intactos.
+Sin merges funcionales, VPS, datos reales ni despliegues.
