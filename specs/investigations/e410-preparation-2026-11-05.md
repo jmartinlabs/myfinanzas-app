@@ -75,7 +75,7 @@ esquema de E4.10.
 | Decisión | Estado | Recomendación | Alternativas y riesgos | Decide | Evidencia |
 | --- | --- | --- | --- | --- | --- |
 | **D1** Último cierre y reserva | Definición `[CONFIRMADO]`; reserva/v3 usuario | **A**: el reabierto reserva la posición hasta re-cierre o cancelación; una sola ventana; v3+ solo sobre la última versión y secuencial; **no se generan cierres posteriores incompatibles durante la reserva** | B multiplica ventanas/versiones; C añade bloqueo y trabajo programado | Usuario | P5/DT3; SPEC27; roadmap E4.10 |
-| **D2** Ventana y alcance T1 | Usuario; base T1 `[CONFIRMADO]` | **B acotada**: T1 solo en la ventana del ciclo para Movimientos, Compras y Ventas; nunca S0/`inicio`/`Fin`; auditoría por escritura; re-bloqueo al re-cerrar/cancelar | A deja sin vía la corrección T1; C añade vencimiento automático | Usuario | SPEC27 T1/T2/T3; testplan E4.9 |
+| **D2** Ventana y alcance T1 | Usuario; base T1 `[CONFIRMADO: implementación/testplan E4.9; enmienda SPEC27 pendiente]` | **B acotada**: T1 solo en la ventana del ciclo para Movimientos, Compras y Ventas; nunca S0/`inicio`/`Fin`; auditoría por escritura; re-bloqueo al re-cerrar/cancelar | A deja sin vía la corrección T1; C añade vencimiento automático | Usuario | SPEC27 T1/T2/T3; testplan E4.9 |
 | **D3** Motivo y actor | Usuario; límites/actor `[CONFIRMADO]` | **B+C**: motivo separado al reabrir y al re-cerrar; 1000 caracteres; actor de sesión; sin roles nuevos | A pierde el motivo de la corrección; C no distingue personas | Usuario | SPEC27 auditoría; E4.10-AC2 |
 | **D4-E4.10** Revalidación | No modificar S0 `[CONFIRMADO]`; matriz/nivel usuario; agregados dependen de E4.11 | **A** para cierres posteriores + **B** para dependencias no cerradas: S0/plan siguiente, fotos, auxiliares, agregados E4.11, precontrol; contradicción bloquea; aviso solo si se declara no bloqueante | C puede dejar cadena incoherente | Usuario | E4.10-AC1/AC3; roadmap |
 | **D5** Versión vigente y agregados | Depende de E4.11 + usuario | **A alineada con P4-A**: v1 visible etiquetada; agregados nuevos excluyen el ciclo reabierto y lo marcan `PendienteReCierre`; agregados ya generados congelados sin recálculo | B muestra total que puede no coincidir; C exige nueva versión de agregado | Usuario + E4.11 | DT4; SPEC27; SPEC29 P1/P4/P5 |
@@ -176,7 +176,8 @@ y congelado) y los contratos E4.9 ya mergeados.
 - `[PROPUESTA]` Reapertura atómica: evento, estado y auditoría en una transacción; fallo →
   rollback sin estado parcial.
 - `[PROPUESTA]` Re-cierre atómico: cierre, foto, auditoría e intento en una transacción;
-  fallo → sin vN ni foto parcial; el ciclo sigue `Reabierto(vN)` y v1 consultable.
+  fallo → sin vN ni foto parcial; el ciclo sigue `Reabierto(vN)` y `vN`/anteriores
+  consultables.
 - `[CONFIRMADO]` El patrón de transacción única y rollback es el de E4.9; DT6 sigue siendo
   gate del cierre real, no de la reapertura documental.
 - `[PROPUESTA]` Cancelación: sin cambios materiales, cierre sin foto; con cambios, `vN+1` o
