@@ -9,8 +9,8 @@ message_id: 3c9e3fc8-9a3c-4a87-8baa-83e2f5001cab
 from: Alex
 to: OpenCode
 reply_expected: false
+read_by: OpenCode
 in_reply_to: 155
-read_by: none
 created_at: 2026-11-05T09:39:50.885Z
 
 ## Message
