@@ -136,7 +136,7 @@ evidencia privada, merge ni despliegue. Los 59 AC de SPEC20 siguen `UNRUN`.
 | --- | --- | --- | --- | --- | --- |
 | `MAP-2024-v1` | `SRC-2024-GAS-GLOBAL` + IDs | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2024 | 2024 |
 | `MAP-2025-v1` | `SRC-2025-GAS-*` + IDs | PAR100/PAR205/PAR300 | Aprobado | EV-MAP-2025 | 2025 |
-| `MAP-2026-v3` | `SRC-2026-GAS-*` + IDs | PAR100/PAR205/PAR300/PAR900 | Aprobado | EV-MAP-2026 | 2026 |
+| `MAP-2026-v3` | `SRC-2026-GAS/REG-*` + IDs | PAR100/PAR205/PAR300/PAR900 | Aprobado | EV-MAP-2026 | 2026 |
 | `MAP-2026-v3` | origen «Viaje» sin ID | PAR205/PAR206 | Ambigua | EV-MAP-AMB-01 | 2026 |
 | `MAP-2026-v4` | registro PAR100 reclasificado | PAR200 (solo variante F-DT7-19) | Aprobado | EV-MAP-2026-04 | 2026 |
 
@@ -457,7 +457,7 @@ se usa para mapping no resuelto; `DuplicadoAmbiguo` se reserva a identidad dupli
 | AC-59 | F-DT7-05 | REQ-04 | `NoAplica` con evidencia; pendiente visible | `UNRUN` |
 
 | AC-29 | F-DT7-24 | REQ-10 | Cobertura/corte; resto requiere contrato E4.7 | `UNRUN` |
-| AC-30 | F-DT7-01 + manifiesto | REQ-03/05/06 | Manifiesto: `idArchivo`, `idMapeo`, intervalos, `fuenteId`, regularización; G-DT6 | `UNRUN` |
+| AC-30 | F-DT7-01 + manifiesto | REQ-03/05/06 | Manifiesto: `idArchivo`, `idMapeo`, intervalos, `fuenteId`, regularización, fotos intactas, cobertura recalculada; G-DT6 | `UNRUN` |
 
 Fuera de fixtures DT7: AC-01/23 (E4.11), AC-25/26 (API/seguridad) y AC-27/28 (UI).
 Requieren DEV/contratos o ensayo de interfaz; no se declaran cubiertos.
