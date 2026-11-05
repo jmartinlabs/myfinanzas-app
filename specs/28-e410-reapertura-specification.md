@@ -12,7 +12,8 @@ Base de esta revisión: `main` **`3842831`** (2026-11-05). E4.9 está **integrad
 `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI post-merge `42000330143`; `a806fd9`
 es E4.5 (#216), no E4.9. Los AC de E4.10 siguen **UNRUN**; los PASS de fixtures/parciales
 de E4.9 no son PASS de aceptación. DT6/T-BKP sigue abierto. v25 está ocupada por E4.9:
-E4.10 no reserva versión en esta SPEC.
+E4.10 no reserva versión en esta SPEC. El brainstorming enlazado conserva su fecha
+histórica; ante discrepancia de vigencia, prevalece esta cabecera.
 
 Context and brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md),
 [análisis E4.10](investigations/e410-reapertura-analysis-2026-11-04.md),
@@ -56,7 +57,8 @@ La capacidad incluye:
 
 No incluye: DT9, ciclos antiguos, restauración de backup como reapertura, agregados
 trimestrales/anuales E4.11, recálculo retroactivo, valoración/resultado/patrimonio E4.3,
-Ventas E4.2, conciliaciones E4.4, cambios de permisos, despliegue ni datos reales.
+desarrollar Ventas E4.2 (su guarda T1 ya integrada en E4.9 se hereda, no se amplía),
+conciliaciones E4.4, cambios de permisos, despliegue ni datos reales.
 
 `[CONFIRMADO]` E4.9 integrado solo implementa el camino de v1: `confirmCierre` inserta
 `version=1` y bloquea con `ALREADY_CLOSED`; no existe camino de re-cierre. `[PENDIENTE]`
@@ -368,8 +370,9 @@ orden de E4.9, no a E4.10.
 
 `[CONFIRMADO]` Actor, UTC, motivo y fingerprint forman parte de la identidad del cierre; la
 auditoría es append-only. `[PENDIENTE]` Las acciones, campos y soporte concreto de la
-auditoría de reapertura de E4.10 no se congelan; E4.9 ya está integrado y solo admite dos
-acciones. **`[PROPUESTA]`** La reapertura debe ser reconstruible sin depender de la foto.
+auditoría de reapertura de E4.10 no se congelan; E4.9 ya está integrado y `cierre_audit`
+solo admite `cierre` y `cierre_fuera_de_orden`. **`[PROPUESTA]`** La reapertura debe ser
+reconstruible sin depender de la foto.
 
 `[PROPUESTA]` Cada evento registra, como mínimo:
 
@@ -398,8 +401,8 @@ tal cual. Los motivos no se publican como secretos ni se usan para almacenar cre
 `[CONFIRMADO]` v1 y su foto son inmutables; no se actualizan ni se borran. El re-cierre
 crea v2 sin alterar v1; todas las versiones son consultables; la retención es permanente
 (SPEC27, DT4). La foto no se recalcula desde el estado vivo (AC-14).
-`[PENDIENTE]` La política de versiones no se congela; D5/E4.11 deciden la regla funcional
-de versión vigente y repetibilidad. E4.9 ya está integrado.
+`[PENDIENTE]` La política de versiones no se congela; D5 decide la regla funcional de
+versión vigente y repetibilidad, coordinada con E4.11/P1–P5. E4.9 ya está integrado.
 
 Reglas candidatas:
 
@@ -508,9 +511,10 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
   aprobación explícita.
 - **Restore no es reapertura:** restaurar un backup no reabre un ciclo; rebobina identidad
   y auditoría. DT6 es un gate independiente.
-- **Gates heredados de E4.9:** E3.5 está integrado pero AC-15 sigue PARCIAL; DT6 bloquea el
-  cierre real. E4.3/E4.2/E4.4 no disponibles se capturan como `No disponible` con motivo si
-  el cierre está autorizado; no se declaran capturados.
+- **Gates heredados de E4.9:** E3.5 está integrado, pero **E3.5-AC-15** sigue PARCIAL;
+  **sin E3.5/FIN_NETA verificable no hay re-cierre ni foto**; DT6 bloquea el cierre real.
+  E4.3/E4.2/E4.4 no disponibles se capturan como `No disponible` con motivo si el cierre
+  está autorizado; no se declaran capturados.
 - **No se reabren M1–M6, DT3 ni DT4:** se aplican; esta SPEC no los reinterpreta.
 - **No se corrige automáticamente un cierre posterior** ni se recalcula su S0/plan.
 - **No se recalculan fotos, agregados ni precontrol** desde el estado vivo.

@@ -199,8 +199,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
   de ciclos antiguos.
 - `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
   marcarse `PASS (fixtures)` solo si se autoriza; el cierre real sigue `BLOQUEADO (real)`.
-- `[PENDIENTE]` **Versión de esquema.** No se asume la versión de E4.9 ni se reserva una
-  nueva aquí; la migración se decide en el paquete DEV.
+- `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**; E4.10 no reserva versión en
+  este testplan. Cualquier migración de E4.10 se decidirá en su paquete DEV con una versión
+  posterior.
 - `[PENDIENTE]` **Caso «re-cierre sin cambios»** y **«reabrir tras v2»**: no hay AC hasta
   decisión; no se ejecutan ni se declaran PASS.
 - `[CONFIRMADO]` **Sin datos reales, sin despliegue, sin merge.** Aprobar este testplan no
@@ -212,8 +213,8 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 
 Para declarar un AC `PASS` harán falta, como mínimo:
 
-1. E4.9 mergeado y con QA independiente, o una decisión explícita que permita probar E4.10
-   contra un contrato congelado.
+1. E4.9 **integrado en `0176ffc` con QA APTO CON RESERVAS (cumplido)**, o una decisión
+   explícita que permita probar E4.10 contra un contrato congelado.
 2. La decisión material correspondiente resuelta (D2/D4/D6/D8) cuando el AC esté
    condicionado.
 3. Evidencia real del comando ejecutado, no una descripción.
