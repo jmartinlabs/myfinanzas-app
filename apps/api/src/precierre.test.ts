@@ -89,6 +89,7 @@ test("AC-01: ventana finita, S0 visible y sin escritura", () => {
     expect(result.ciclo.saldoInicialComida).toBe("1000.00");
     expect(["Listo", "Listo con avisos"]).toContain(result.estado);
     expect(result.bloqueos).toEqual([]);
+    expect(result.e4_9Bloqueado).toBe(false);
     expect(result.fuentes.find((f) => f.key === "e35")?.estado).toBe(
       "Verificado",
     );

@@ -158,8 +158,11 @@ v1 porque el re-cierre E4.10 queda fuera, así que el selector de versión (>1) 
 ejercita; no hay E2E de `PLAN_NO_VERIFICABLE` ni de `S0_FUERA_DE_RANGO` en UI; no se
 prueban 403/404/503 desde la pantalla. El caso «SIN_PLAN» del encargo no es un bloqueo
 según SPEC27: `SinPlan` es válido y se cubre como cierre correcto; el bloqueo de plan
-se corresponde con `PLAN_NO_VERIFICABLE`. La corrección de `precierre.spec.ts` es solo
-de prueba y no cambia ningún estado de AC de SPEC27.
+se corresponde con `PLAN_NO_VERIFICABLE`. La corrección de `precierre.spec.ts` acompaña
+la restauración de SPEC26 AC-14 en `precierre.ts`; no cambia ningún AC de SPEC27.
+`S0_FUERA_DE_RANGO` es una validación defensiva de C25 (±2^53−1 céntimos) cubierta por
+Bun Test en `e49-api.test.ts`; no crea un AC ni una regla funcional nueva y su E2E no
+está cubierto.
 
 ## Regression checks
 
