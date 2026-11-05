@@ -97,7 +97,7 @@ function deudaColumns(db: Database) {
   );
 }
 
-test("E4.4 AC-23: v22→v24 is additive, preserves IDs/audit/MFA and exposes the exact C24 contract", () => {
+test("E4.4 AC-23: v22→v25 is additive, preserves IDs/audit/MFA and exposes the exact C25 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v22.sqlite");
@@ -109,13 +109,13 @@ test("E4.4 AC-23: v22→v24 is additive, preserves IDs/audit/MFA and exposes the
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 24)).toBe("C24-E43-VALORACION");
-      expect(manifest(db)).toEqual(contract("C24-E43-VALORACION").objects);
+      expect(verifyContract(db, 25)).toBe("C25-E49-CIERRE-FINANCIERO");
+      expect(manifest(db)).toEqual(contract("C25-E49-CIERRE-FINANCIERO").objects);
       expect(
         db
           .query(
@@ -177,7 +177,7 @@ test("E4.4 AC-23: v22→v24 is additive, preserves IDs/audit/MFA and exposes the
   }
 });
 
-test("E4.4 AC-23: inconsistent foreign keys reject without a partial v24 base and reopen with FK active", () => {
+test("E4.4 AC-23: inconsistent foreign keys reject without a partial v25 base and reopen with FK active", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-fk.sqlite");
@@ -221,7 +221,7 @@ test("E4.4 AC-23: inconsistent foreign keys reject without a partial v24 base an
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -234,7 +234,7 @@ test("E4.4 AC-23: inconsistent foreign keys reject without a partial v24 base an
   }
 });
 
-test("E4.4 AC-23: a failed v24 migration rolls back to an intact v22 base", () => {
+test("E4.4 AC-23: a failed v25 migration rolls back to an intact v22 base", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-rollback.sqlite");
@@ -277,7 +277,7 @@ test("E4.4 AC-23: a failed v24 migration rolls back to an intact v22 base", () =
   }
 });
 
-test("E4.4 AC-23: a failure inside the v24 migration rolls back the added columns", () => {
+test("E4.4 AC-23: a failure inside the v25 migration rolls back the added columns", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-mid-ddl.sqlite");
@@ -350,7 +350,7 @@ test("E4.4 AC-23: unknown versions stay intact and two starts are idempotent", (
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);

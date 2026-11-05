@@ -1967,9 +1967,9 @@ test("E4.2-AC-36/AC-37: esquema v21 con una sola tabla y migración que conserva
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
-      expect(verifyContract(db, 24)).toBe("C24-E43-VALORACION");
+      expect(verifyContract(db, 25)).toBe("C25-E49-CIERRE-FINANCIERO");
       const tables = (
         db
           .query(
@@ -1997,7 +1997,7 @@ test("E4.2-AC-36/AC-37: esquema v21 con una sola tabla y migración que conserva
         importeEur: "110.00",
       });
       expect(sale.venta.id).toBe("5002");
-      expect(verifyContract(db, 24)).toBe("C24-E43-VALORACION");
+      expect(verifyContract(db, 25)).toBe("C25-E49-CIERRE-FINANCIERO");
     } finally {
       db.close();
     }

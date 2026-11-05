@@ -2,6 +2,13 @@ import type { Database } from "bun:sqlite";
 import { Problem } from "./saldos";
 import { fingerprint } from "./movement-ledger";
 import {
+  assertClosedEconomicImpact,
+  closedFieldDecision,
+  consumerImpactFingerprint,
+  hasClosures,
+  type ClosedWindow,
+} from "./e49-guards";
+import {
   getReference,
   operationalReferenceTypes,
   type Reference,
@@ -60,6 +67,76 @@ export function listReferences(db: Database, params = new URLSearchParams()) {
     };
   })();
 }
+const editableReferenceFields = [
+  "nombre",
+  "tipo",
+  "estado",
+  "vehiculo",
+  "fichaRevision",
+] as const;
+
+function referenceImpactHash(
+  db: Database,
+  id: string,
+  changed: readonly string[],
+  revision: number,
+): string {
+  return consumerImpactFingerprint("referencia", id, changed, [
+    revision,
+    referenceUsage(db, id),
+  ]);
+}
+
+/**
+ * T2 Reference impact preview. Returns the consumer rows and the fingerprint
+ * that an economic change must send after a closure (DEV-06). Informative
+ * name-only changes are reported as such and need no impact certificate.
+ */
+export function previewReferenceImpact(
+  db: Database,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  return db.transaction(() => {
+    const old = getReference(db, id);
+    fields(body, false);
+    if (body.revision !== old.revision)
+      throw new Problem(
+        409,
+        "REVISION_CONFLICT",
+        "La Referencia ha cambiado. Actualiza su ficha; tu borrador se conserva.",
+      );
+    const changed = editableReferenceFields.filter((field) => field in body);
+    const decision = closedFieldDecision(db, "referencia", changed);
+    let usos: ReturnType<typeof referenceUsage>;
+    try {
+      usos = referenceUsage(db, id);
+    } catch {
+      throw new Problem(
+        409,
+        "IMPACTO_NO_VERIFICABLE",
+        "No se pueden leer los consumidores de la Referencia; no se puede acreditar el impacto.",
+      );
+    }
+    return {
+      referencia: id,
+      revision: old.revision,
+      cambios: changed,
+      informativo: decision.informative,
+      economico: decision.economic,
+      usos,
+      cierres: decision.windows.map(({ ciclo, version, inicio, fin }) => ({
+        ciclo,
+        version,
+        inicio,
+        fin,
+      })),
+      fingerprint: referenceImpactHash(db, id, changed, old.revision),
+    };
+  })();
+}
+
+
 const confirmationKeys = [
   "confirmarDuplicadoNombre",
   "candidateNameHash",
@@ -75,6 +152,8 @@ function fields(body: Record<string, unknown>, creating: boolean) {
         "tipo",
         "estado",
         "revision",
+        "motivo",
+        "fingerprint",
         "vehiculo",
         "fichaRevision",
         ...confirmationKeys,
@@ -333,6 +412,54 @@ export function updateReference(
           "REVISION_CONFLICT",
           "La Referencia ha cambiado. Actualiza su ficha; tu borrador se conserva.",
         );
+      if (
+        "motivo" in body &&
+        (typeof body.motivo !== "string" ||
+          !body.motivo.trim() ||
+          body.motivo.length > 2000 ||
+          /[\u0000-\u001f\u007f]/.test(body.motivo))
+      )
+        throw new Problem(422, "VALIDATION", "Indica un motivo válido.", {
+          motivo: "Motivo de hasta 2000 caracteres.",
+        });
+      const motive =
+        typeof body.motivo === "string" && body.motivo.trim()
+          ? body.motivo.trim()
+          : null;
+      const changed = editableReferenceFields.filter((field) => field in body);
+      let closureImpact:
+        | {
+            fingerprint: string | null;
+            cierres: ClosedWindow[];
+          }
+        | null = null;
+      if (hasClosures(db)) {
+        let expected: string;
+        try {
+          expected = referenceImpactHash(db, id, changed, old.revision);
+        } catch {
+          throw new Problem(
+            409,
+            "IMPACTO_NO_VERIFICABLE",
+            "No se pueden leer los consumidores de la Referencia; no se puede acreditar el impacto del cambio.",
+          );
+        }
+        const windows = assertClosedEconomicImpact(
+          db,
+          "referencia",
+          changed,
+          motive,
+          body.fingerprint,
+          expected,
+          "actualizar la Referencia",
+        );
+        if (windows.length)
+          closureImpact = {
+            fingerprint:
+              typeof body.fingerprint === "string" ? body.fingerprint : null,
+            cierres: windows,
+          };
+      }
       if ("vehiculo" in body && nextTipo !== "Vehículo")
         throw new Problem(
           422,
@@ -526,12 +653,31 @@ export function updateReference(
         [
           id,
           old.revision + 1,
-          JSON.stringify({ anterior: old, posterior: getReference(db, id) }),
+          JSON.stringify({
+            anterior: old,
+            posterior: getReference(db, id),
+            ...(closureImpact
+              ? {
+                  impacto: {
+                    fingerprint: closureImpact.fingerprint,
+                    cierres: closureImpact.cierres.map(
+                      ({ ciclo, version, inicio, fin }) => ({
+                        ciclo,
+                        version,
+                        inicio,
+                        fin,
+                      }),
+                    ),
+                  },
+                }
+              : {}),
+          }),
           time,
           old.revision,
-          conversion
-            ? "Conversión explícita a Vehículo; identidad preservada"
-            : "Cambios de catálogo; identidad preservada",
+          motive ??
+            (conversion
+              ? "Conversión explícita a Vehículo; identidad preservada"
+              : "Cambios de catálogo; identidad preservada"),
         ],
       );
       if (confirmation && nextVehicle)
