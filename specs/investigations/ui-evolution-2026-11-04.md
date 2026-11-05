@@ -4,7 +4,7 @@
 funcionales ni financieros y no modifica código.** La alternativa **B** está adoptada; los tres
 temas de #198 están cerrados y no se reabren.
 
-**Base:** `main` **`73fedf8`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
+**Base:** `main` **`043869f`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
 decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
 (#200) con QA APTO CON RESERVAS; E4.10 con **SPEC28 ratificada**, **I1 integrado en `70fa7c0`**
 (v26/C26) e **I2 abierto en `5fa0a1e`** (no fusionado, 24 AC `UNRUN`); E4.11 con **SPEC29

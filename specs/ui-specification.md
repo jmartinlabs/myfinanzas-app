@@ -4,7 +4,7 @@
 autoriza `UI · DEV`, no modifica código, componentes, CSS, temas, API, cálculos financieros ni
 datos reales. No fusiona nada.
 
-- **Base:** `main` **`73fedf8`** (2026-11-05; I1 de E4.10 integrado y recarga de agentes #234).
+- **Base:** `main` **`043869f`** (2026-11-05; I1 de E4.10 integrado y recarga de agentes #234).
 - **Análisis:** [ui-evolution-2026-11-04](investigations/ui-evolution-2026-11-04.md);
   **wireframes:** [ui-evolution-wireframes.html](investigations/ui-evolution-wireframes.html).
 - **Identificador:** `UI` (transversal; no crea épica ni altera las 30 entregas).
