@@ -163,8 +163,9 @@ para corregir una validación.
   de construcción controlado.
 - Si ya existe, se recupera y se verifica; no se reconstruye por comodidad ni se acepta un
   paquete sin manifiesto.
-- Se registran SHA, digest del manifiesto, ID de imagen, checksum del frontend y contrato de
-  esquema. Se selecciona la imagen por ID/digest inmutable, nunca por etiqueta.
+- Se registran SHA, digest del manifiesto, ID de imagen, checksum o mapa de checksums del
+  frontend (`frontend_files`) y contrato de esquema. Se selecciona la imagen por ID/digest
+  inmutable, nunca por etiqueta.
 - El paquete es privado y no se publica como artifact de CI sin una decisión que revise la
   política del [RUNBOOK](../infra/RUNBOOK.md) (D2). PROD no reconstruye un artefacto distinto
   del aprobado.
