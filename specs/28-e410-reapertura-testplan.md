@@ -11,9 +11,10 @@ datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
-Base de esta revisión: `main` **`a8e526b`** (2026-11-05), con SPEC28 ratificada y el paquete
+Base del contenido: `main` **`a8e526b`** (2026-11-05), con SPEC28 ratificada y el paquete
 DEV [e410-dev-authorization-package-2026-11-05](investigations/e410-dev-authorization-package-2026-11-05.md)
-integrado. E4.9 está **integrado** en `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI
+integrado; **registro de ratificación:** #231 sobre `main` `06debd0`. E4.9 está **integrado**
+en `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI
 post-merge `42000330143`; `a806fd9` es E4.5 (#216), no E4.9. Los AC de E4.10 siguen
 **UNRUN**; los PASS de fixtures/parciales de E4.9 no son PASS de aceptación. DT6/T-BKP sigue
 abierto.
@@ -245,8 +246,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 ## 8. Dependencias y limitaciones
 
 - `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS. Las rutas, la
-  forma de reapertura, la foto v2 y la auditoría de E4.10 siguen `[PENDIENTE]`; la política
-  de versiones D5-A está aprobada. Los casos se adaptan, no se congelan.
+  forma de reapertura, la foto v2 y la auditoría están **ratificadas** (DT-A/B/C/E); la
+  implementación se adapta a la superficie ratificada sin cambiar la semántica. Las
+  definiciones y resultados esperados están **congelados**. La política D5-A está aprobada.
 - `[PENDIENTE]` **E4.9 no tiene camino de re-cierre.** `confirmCierre` bloquea el segundo
   cierre con `ALREADY_CLOSED`; el caso F1 no puede ejecutarse hasta que exista la operación
   acordada (E4.9 o E4.10).
