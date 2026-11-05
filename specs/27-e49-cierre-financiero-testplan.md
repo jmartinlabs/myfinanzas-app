@@ -82,6 +82,10 @@ recalcula.
 | T2 | Plan vivo (`planes-ciclo.ts`) | — | Cambios de plan: fingerprint + motivo + auditoría; tras cierre exige motivo, bloquea si la foto no acredita el plan y guarda huella/cierres en `cycle_plan_audit.delta.impacto` | `assertPlanClosureReview`; test “el plan vivo de un ciclo cerrado bloquea…” |
 | T2 | Revisión Comida (`revision-comida.ts`) | `concepto`, evidencias y cuenta origen | Rectificación/anulación/vínculo/alta económicos (fecha, importe, dirección, devolución, clasificación): `/impacto` + fingerprint + motivo + auditoría; sin huella 409; bloqueo si `auxiliares` no es legible; auditoría en `revision_comida_audit.posterior.impacto` | `previewRevisionComidaImpact`/`previewRevisionComidaCreationImpact` + `assertRevisionComidaClosureImpact`; tests “Revisión Comida permite concepto…”, “fingerprint de /impacto…”, “alta… exige huella…”, “Reposición…” y “consumidores…” |
 
+**Enmienda 2026-11-05:** la matriz T1 incluye Ventas E4.2 (alta, rectificación,
+anulación y cambio de fecha) y SPEC27 se actualiza para reflejarlo. AC-04 mantiene su PASS
+de fixtures; esta enmienda no cambia código, AC ni autoriza DEV.
+
 Gaps explícitos: el alta de `revision_comida` fuera de una ventana cerrada no exige
 huella porque no altera la foto; dentro de ventana cerrada sí pasa por T2 (impacto,
 huella, motivo y auditoría). La creación de una cuenta no capturada tampoco se bloquea
