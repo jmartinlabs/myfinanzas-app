@@ -1,13 +1,16 @@
 # DT7 — Propuesta de cierre de decisiones (2026-11-05)
 
-**Estado:** `[PROPUESTA REVISADA]` — **NO APROBADA.** Ninguna recomendación de este documento es una
-decisión, un cierre de DT7, un PASS ni una autorización de DEV, datos reales, importación,
-P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
+**Estado:** `[PROPUESTA REVISADA Y PARCIALMENTE RATIFICADA]` — **DT7 NO CERRADO.** Las
+decisiones M3/M6 están aceptadas y M9–M13 ratificadas por el usuario; el resto sigue
+pendiente. Este documento no es un PASS, no cierra DT7 y no autoriza DEV, datos reales,
+importación, P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
 
-**Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta como
-propuesta de decisión M4/M7/M15/M16; confirma las cuatro opciones A ya integradas en
-C1–C8 (M14); propone ratificar M9–M13; mantiene M1/M2/M5/M8 pendientes de evidencia
-privada real.
+**Revisión 2026-11-05:** Álex emite **APTO CON TRES AJUSTES**. El usuario acepta M3/M6,
+ratifica M9–M13, mantiene M4/M7/M15/M16 como propuestas aceptadas, confirma M14 A y deja
+M1/M2/M5/M8 pendientes de evidencia privada real.
+
+**Integración:** PR #218 mergeada en `main` `c4706a6` (2026-11-05); este documento conserva
+el contenido revisado y registra la ratificación posterior.
 
 - **Base:** `main` **`136713b`** (squash de #217; documento DT7 preparatorio integrado).
 - **Entrada:** `specs/investigations/dt7-preparation-2026-11-05.md`, SPEC20/testplan,
@@ -21,8 +24,9 @@ privada real.
 
 ## 0. Reglas de esta propuesta
 
-1. Una recomendación técnica **no** es una decisión aprobada, salvo M14 A, confirmada como
-   contrato y sin implementación autorizada. El resto debe aceptarse, modificarse o
+1. Una recomendación técnica **no** es una decisión aprobada, salvo las que el usuario
+   aceptó o ratificó expresamente: M3/M6 aceptadas, M9–M13 ratificadas y M14 A confirmada
+   como contrato. M14 no autoriza implementación. El resto debe aceptarse, modificarse o
    rechazarse expresamente.
 2. Una decisión que exige evidencia real no se simula con ficción. La ficción sirve para
    el contrato y las pruebas, no para acreditar el universo, las fuentes ni los importes.
@@ -37,26 +41,26 @@ privada real.
 | --- | --- | --- | --- | --- | --- | --- |
 | **M1** | Ejercicios del histórico | **B** evidencia real | Preparar plantilla y criterios; no fijar años | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
 | **M2** | Partidas y fuentes por ejercicio | **B** evidencia real | Preparar formato de inventario; no fijar listas | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
-| **M3** | Identidad de fuentes sin ID | **A** técnica | Identidad estable y conservación ante cambios de fila/coordenada | Usuario sobre recomendación | G-DT7 | `AJUSTADA, PENDIENTE` |
+| **M3** | Identidad de fuentes sin ID | **A** técnica | Identidad estable y conservación ante cambios de fila/coordenada | Usuario sobre recomendación | G-DT7 | `ACEPTADA (2026-11-05)` |
 | **M4** | Evidencia de `NoAplica`/Referencia | **A** técnica (política) | Reutilizar `referenciaOrigen`/`estadoMapeoReferencia`; no asumir | Usuario sobre recomendación | G-DT7 | `ACEPTADA COMO PROPUESTA` |
 | **M5** | Regularización 2026 concreta | **B** evidencia real | Checklist y estados; no aprobar el registro | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
-| **M6** | Checklist de evidencia de regularización | **A** técnica | Separar mapping de Partida y de Referencia; D4 | Usuario sobre recomendación | G-DT7 | `AJUSTADA, PENDIENTE` |
+| **M6** | Checklist de evidencia de regularización | **A** técnica | Separar mapping de Partida y de Referencia; D4 | Usuario sobre recomendación | G-DT7 | `ACEPTADA (2026-11-05)` |
 | **M7** | Evidencia de representación/precontrol | **A** técnica | Vínculo de origen o tupla+huella; nunca importe | Usuario sobre recomendación | G-DT7/G-E2.4 | `ACEPTADA COMO PROPUESTA` |
 | **M8** | Saldos con apertura histórica | **B** evidencia real | Formato y límites; no fijar lista | Usuario con evidencia | G-DT7 | `PENDIENTE DE EVIDENCIA` |
-| **M9** | Aprobador de excepciones financieras | **C** gobernanza | Usuario aprueba; coordinador solo prepara | Usuario | G-DT7 | `PROPUESTA DE RATIFICACIÓN` |
-| **M10** | Conciliación y tolerancia | **C** gobernanza | 100 % y 0 céntimos; sin tolerancia automática | Usuario | G-DT7 | `PROPUESTA DE RATIFICACIÓN` |
-| **M11** | Custodia/acceso a evidencia | **C** seguridad | Custodia privada cifrada y acceso mínimo; sin datos reales ahora | Usuario | G-P6/P7 + G-DT7 | `PROPUESTA DE RATIFICACIÓN` |
-| **M12** | Firma de conciliación independiente | **C** gobernanza | Revisor independiente + aprobación del usuario | Usuario | G-DT7/G-DT6 | `PROPUESTA DE RATIFICACIÓN` |
-| **M13** | Autorización P6/P7 | **C** seguridad | **No autorizada**; se mantiene el gate | Usuario | G-P6/P7 | `PROPUESTA DE RATIFICACIÓN` |
+| **M9** | Aprobador de excepciones financieras | **C** gobernanza | Usuario aprueba; coordinador solo prepara | Usuario | G-DT7 | `RATIFICADA (2026-11-05)` |
+| **M10** | Conciliación y tolerancia | **C** gobernanza | 100 % y 0 céntimos; sin tolerancia automática | Usuario | G-DT7 | `RATIFICADA (2026-11-05)` |
+| **M11** | Custodia/acceso a evidencia | **C** seguridad | Custodia privada cifrada y acceso mínimo; procedimiento pendiente | Usuario | G-P6/P7 + G-DT7 | `RATIFICADA (2026-11-05)` |
+| **M12** | Firma de conciliación independiente | **C** gobernanza | Revisor independiente + aprobación del usuario | Usuario | G-DT7/G-DT6 | `RATIFICADA (2026-11-05)` |
+| **M13** | Autorización P6/P7 | **C** seguridad | **No autorizada**; se mantiene el gate | Usuario | G-P6/P7 | `RATIFICADA (2026-11-05)` |
 | **M14** | Adaptación E2.4 | **A** técnica | Cuatro opciones A confirmadas; implementación futura | Usuario sobre recomendación | G-E2.4/G-DEV | `CONFIRMADO (A); implementación PENDIENTE` |
 | **M15** | Separación/disyunción de agregado | **A** técnica | Vínculo de origen o disyunción aprobada; sin prorrateo | Usuario sobre recomendación | G-DT7 | `ACEPTADA COMO PROPUESTA` |
 | **M16** | Evidencia de fecha económica | **A** técnica | Campo/evidencia por fuente; `null` por defecto | Usuario sobre recomendación | G-DT7/G-E2.4 | `ACEPTADA COMO PROPUESTA` |
 
 ## 2. Recomendaciones técnicas (A)
 
-**Estado tras la revisión:** M4/M7/M15/M16 aceptadas como propuesta de decisión; M3/M6
-ajustadas y pendientes; M14 A confirmada como contrato; M9–M13 propuestas de ratificación;
-M1/M2/M5/M8 pendientes de evidencia real.
+**Estado tras la revisión:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta de
+decisión; M14 A confirmada como contrato; M9–M13 ratificadas; M1/M2/M5/M8 pendientes de
+evidencia real.
 
 ### M3 — Identidad de fuentes sin ID
 
@@ -229,12 +233,12 @@ agregado excede el corte: `AgregadoNoAtribuibleAlCorte`, contexto separado.
 
 ## 3. Decisiones de gobernanza y seguridad (C)
 
-**Propuesta de ratificación del usuario (2026-11-05).** Las cinco propuestas siguientes
-no se consideran ratificadas hasta confirmación expresa; P6/P7 sigue sin autorización.
+**Ratificadas por el usuario (2026-11-05).** P6/P7 sigue sin autorización. M11 mantiene el
+procedimiento concreto pendiente de decisión.
 
 ### M9 — Aprobador de excepciones financieras
 
-**Propuesta de ratificación:** aprobación del usuario para excepciones financieras.
+**Ratificada (2026-11-05):** aprobación del usuario para excepciones financieras.
 
 - El **usuario** aprueba toda excepción con efecto en total, cobertura, mapping,
   clasificación, duplicidad o regularización.
@@ -245,7 +249,7 @@ no se consideran ratificadas hasta confirmación expresa; P6/P7 sigue sin autori
 
 ### M10 — Conciliación y tolerancia
 
-**Propuesta de ratificación:** conciliación del **100 %** con **0 céntimos** de diferencia.
+**Ratificada (2026-11-05):** conciliación del **100 %** con **0 céntimos** de diferencia.
 
 - Conciliación **íntegra**: 100 % de registros/filas elegibles y **0 céntimos** de
   diferencia.
@@ -257,7 +261,8 @@ no se consideran ratificadas hasta confirmación expresa; P6/P7 sigue sin autori
 
 ### M11 — Custodia y acceso
 
-**Propuesta de ratificación:** custodia privada cifrada y acceso mínimo; P6/P7 no autorizado.
+**Ratificada (2026-11-05):** custodia privada cifrada y acceso mínimo; P6/P7 no autorizado.
+Procedimiento concreto pendiente de decisión.
 
 - En esta fase no hay evidencia real ni custodia que activar.
 - Cuando P6/P7 se autorice: custodia privada cifrada, acceso mínimo y auditado, hashes y
@@ -266,7 +271,7 @@ no se consideran ratificadas hasta confirmación expresa; P6/P7 sigue sin autori
 
 ### M12 — Firma de la conciliación independiente
 
-**Propuesta de ratificación:** revisor independiente más aprobación del usuario.
+**Ratificada (2026-11-05):** revisor independiente más aprobación del usuario.
 
 - Firma un revisor independiente (no autor del cálculo, no importador) **y** el usuario.
 - El coordinador prepara evidencia y reproducible; no se auto-firma.
@@ -275,7 +280,7 @@ no se consideran ratificadas hasta confirmación expresa; P6/P7 sigue sin autori
 
 ### M13 — P6/P7
 
-**Propuesta de ratificación:** P6/P7 **sin autorización.** Se mantiene el gate. Esta
+**Ratificada (2026-11-05):** P6/P7 **sin autorización.** Se mantiene el gate. Esta
 propuesta no solicita Excel, datos reales, importación ni acceso a fuentes privadas.
 
 ## 4. Decisiones que requieren evidencia real (B)
@@ -317,43 +322,42 @@ sigue en E4.4.
 ## 5. Matriz de cierre
 
 Estados: `PENDIENTE DE EVIDENCIA` (M1/M2/M5/M8); `ACEPTADA COMO PROPUESTA` (M4/M7/M15/M16,
-sin decisión formal); `AJUSTADA, PENDIENTE` (M3/M6 tras la revisión); `CONFIRMADO (A);
-implementación PENDIENTE` (M14); `PROPUESTA DE RATIFICACIÓN` (M9–M13).
+sin decisión formal); `ACEPTADA (2026-11-05)` (M3/M6); `CONFIRMADO (A); implementación
+PENDIENTE` (M14); `RATIFICADA (2026-11-05)` (M9–M13).
 
 | ID | Grupo | Recomendación / decisión | Evidencia | Estado |
 | --- | --- | --- | --- | --- |
 | M1 | B | Años y primero incluido | Privada por año | `PENDIENTE DE EVIDENCIA` |
 | M2 | B | Partidas/fuentes por año | Privada por fuente | `PENDIENTE DE EVIDENCIA` |
-| M3 | A | Identidad estable; coordenada en cualquier fuente; conservación ante cambios | Fuentes sin ID | `AJUSTADA, PENDIENTE` |
+| M3 | A | Identidad estable; coordenada en cualquier fuente; conservación ante cambios | Fuentes sin ID | `ACEPTADA (2026-11-05)` |
 | M4 | A | `NoAplica` solo con evidencia | Esquema/muestra | `ACEPTADA COMO PROPUESTA` |
 | M5 | B | Aprobar/pendiente/rechazar/dividir registro | Expediente 2026 | `PENDIENTE DE EVIDENCIA` |
-| M6 | A | Mapping de Partida y de Referencia separados; D4 | Spec/Q5=A | `AJUSTADA, PENDIENTE` |
+| M6 | A | Mapping de Partida y de Referencia separados; D4 | Spec/Q5=A | `ACEPTADA (2026-11-05)` |
 | M7 | A | Vínculo de origen o tupla+huella | Movimiento/registro | `ACEPTADA COMO PROPUESTA` |
 | M8 | B | Saldos con apertura o «ninguno» | Lista/evidencia | `PENDIENTE DE EVIDENCIA` |
-| M9 | C | Usuario aprueba excepciones financieras | Expediente | `PROPUESTA DE RATIFICACIÓN` |
-| M10 | C | 100 % y 0 céntimos; sin tolerancia | Recálculo independiente | `PROPUESTA DE RATIFICACIÓN` |
-| M11 | C | Custodia privada cifrada y acceso mínimo; P6/P7 no | Autorización futura | `PROPUESTA DE RATIFICACIÓN` |
-| M12 | C | Revisor independiente + aprobación del usuario | Firma | `PROPUESTA DE RATIFICACIÓN` |
-| M13 | C | P6/P7 no autorizado | — | `PROPUESTA DE RATIFICACIÓN` |
+| M9 | C | Usuario aprueba excepciones financieras | Expediente | `RATIFICADA (2026-11-05)` |
+| M10 | C | 100 % y 0 céntimos; sin tolerancia | Recálculo independiente | `RATIFICADA (2026-11-05)` |
+| M11 | C | Custodia privada cifrada y acceso mínimo; P6/P7 no; procedimiento pendiente | Autorización futura | `RATIFICADA (2026-11-05)` |
+| M12 | C | Revisor independiente + aprobación del usuario | Firma | `RATIFICADA (2026-11-05)` |
+| M13 | C | P6/P7 no autorizado | — | `RATIFICADA (2026-11-05)` |
 | M14 | A | Cuatro opciones A confirmadas; implementación futura | C1–C8/AC-58 | `CONFIRMADO (A); implementación PENDIENTE` |
 | M15 | A | Vínculo o disyunción; sin prorrateo | AC-39/44 | `ACEPTADA COMO PROPUESTA` |
 | M16 | A | Fecha solo con evidencia | AC-42 | `ACEPTADA COMO PROPUESTA` |
 
 ## 6. Secuencia de cierre propuesta
 
-1. **Usuario:** revisa los ajustes M3/M6 y los acepta, modifica o rechaza. M4/M7/M15/M16
-   ya están aceptadas como propuesta de decisión; M14 A está confirmada.
-2. **Usuario:** ratifica o modifica M9–M13; P6/P7 sigue **no**.
-3. **Usuario:** aporta evidencia privada para M1/M2/M5/M8 en el canal que autorice; no se
+1. **Usuario:** M3/M6 aceptadas; M4/M7/M15/M16 aceptadas como propuesta; M14 A confirmada;
+   M9–M13 ratificadas. No hay decisiones nuevas pendientes en estos bloques.
+2. **Usuario:** aporta evidencia privada para M1/M2/M5/M8 en el canal que autorice; no se
    publica en el repositorio.
-4. **Coordinador:** redacta el DT7 definitivo (inventario, mapping por campo, excepciones,
+3. **Coordinador:** redacta el DT7 definitivo (inventario, mapping por campo, excepciones,
    criterios de aceptación) con evidencia sanitizada y decisiones registradas.
-5. **Usuario:** aprueba o rechaza DT7 como gate documental. Aprobar DT7 no autoriza DEV.
-6. **M14:** la implementación técnica del seam es trabajo futuro; no se inicia sin
+4. **Usuario:** aprueba o rechaza DT7 como gate documental. Aprobar DT7 no autoriza DEV.
+5. **M14:** la implementación técnica del seam es trabajo futuro; no se inicia sin
    autorización separada de DEV.
-7. **DEV E4.5:** solo con autorización explícita separada; después fixtures ejecutables,
+6. **DEV E4.5:** solo con autorización explícita separada; después fixtures ejecutables,
    API/UI, QA independiente y PR/merge propios.
-8. **P6/P7 y DT6:** gates separados para datos reales, importación, backup y cierre real.
+7. **P6/P7 y DT6:** gates separados para datos reales, importación, backup y cierre real.
 
 ## 7. Plantilla de decisión
 
@@ -374,9 +378,9 @@ aprobación.
 
 ## 8. Límites
 
-- Este documento **no** cierra DT7 ni ratifica M9–M13. M14 A queda confirmada como
-  contrato, sin implementación; M4/M7/M15/M16 quedan aceptadas como propuesta, no como
-  decisión formal.
+- Este documento **no** cierra DT7. M9–M13 están ratificadas; M3/M6 aceptadas; M14 A
+  confirmada como contrato, sin implementación; M4/M7/M15/M16 aceptadas como propuesta;
+  M1/M2/M5/M8 pendientes de evidencia real.
 - Sin DEV E4.5, datos reales, Excel, importación, P6/P7, SQL, migración, despliegue ni
   merge.
 - Los 59 AC siguen `UNRUN`; no se declara PASS funcional.
