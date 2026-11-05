@@ -12,7 +12,7 @@ process.env.NODE_ENV = "test";
 
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
-const c25 = "C25-E49-CIERRE-FINANCIERO";
+const c26 = "C26-E410-REAPERTURA-V26";
 const root = () => mkdtempSync(join(process.cwd(), ".tmp-e49-"));
 
 /** Genuine v24 contract plus fictional rows covering every preserved area. */
@@ -191,7 +191,7 @@ type Photo = {
 
 const photo = (overrides: Partial<Photo> = {}): Photo => ({
   appVersion: "0.0.0-fixture",
-  schemaVersion: 25,
+  schemaVersion: 26,
   estadoTemporal: "Cerrado",
   estadoHechos: "Sin hechos",
   estadoPlan: "SinPlan",
@@ -258,7 +258,7 @@ function store() {
   return db;
 }
 
-test("E4.9 A: v24→v25 is additive, preserves IDs/audit/MFA and exposes the exact C25 contract", () => {
+test("E4.10 A: v24→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v24.sqlite");
@@ -270,13 +270,13 @@ test("E4.9 A: v24→v25 is additive, preserves IDs/audit/MFA and exposes the exa
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 25,
+        version: 26,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 25)).toBe(c25);
-      expect(manifest(db)).toEqual(contract(c25).objects);
+      expect(verifyContract(db, 26)).toBe(c26);
+      expect(manifest(db)).toEqual(contract(c26).objects);
       expect(counts(db)).toEqual({
         cierres: 0,
         fotos_cierre: 0,
@@ -320,7 +320,7 @@ test("E4.9 A: the v25 DDL is empty after migration (no backfill)", () => {
   }
 });
 
-test("E4.9 A: inconsistent foreign keys reject without a partial v25 base and reopen with FK active", () => {
+test("E4.10 A: inconsistent foreign keys reject without a partial v26 base and reopen with FK active", () => {
   const dir = root();
   try {
     const path = join(dir, "v24-fk.sqlite");
@@ -370,7 +370,7 @@ test("E4.9 A: inconsistent foreign keys reject without a partial v25 base and re
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 25,
+        version: 26,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -458,7 +458,7 @@ test("E4.9 A: a failure inside the v25 DDL rolls back the created tables", () =>
   }
 });
 
-for (const unknown of [26, 999]) {
+for (const unknown of [27, 999]) {
   test(`E4.9 A: unknown schema version ${unknown} stays intact`, () => {
     const dir = root();
     try {
@@ -508,7 +508,7 @@ test("E4.9 A: two starts are idempotent", () => {
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 25,
+        version: 26,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);
@@ -541,7 +541,7 @@ test("E4.9 A: a closure and its photo are stored atomically and match their iden
       ).get(),
     ).toEqual({
       app_version: "0.0.0-fixture",
-      schema_version: 25,
+      schema_version: 26,
       ventana_inicio: "2026-01-01",
       ventana_fin: "2026-01-31",
       estado_hechos: "Sin hechos",
