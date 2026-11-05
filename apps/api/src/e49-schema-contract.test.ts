@@ -28,6 +28,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
 const c25 = "C25-E49-CIERRE-FINANCIERO";
+const c26 = "C26-E410-REAPERTURA-V26";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const root = () => mkdtempSync(join(process.cwd(), ".tmp-e49-contract-"));
 const fingerprint = "a".repeat(64);
@@ -78,7 +79,7 @@ function closureFixture(db: Database) {
         app_version,schema_version,ventana_inicio,ventana_fin,saldo_inicial,
         estado_temporal,estado_hechos,estado_plan,hechos,plan,clasificacion,
         inversion,auxiliares,cobertura,backup,no_disponible)
-       VALUES('1',1,?,'usuario-unico',NULL,?,'0.0.0-fixture',25,
+       VALUES('1',1,?,'usuario-unico',NULL,?,'0.0.0-fixture',26,
         '2026-01-01','2026-01-31',0,'Cerrado','Sin hechos','SinPlan',
         '{"origen":"fixture"}','{"estado":"SinPlan"}','{}','{}','{}','{}',
         '{"verificado":false,"motivo":"fixture"}','{}')`,
@@ -90,7 +91,48 @@ function closureFixture(db: Database) {
       [t],
     );
     db.run("INSERT INTO cierre_attempts VALUES('intento','hash','{}',1)");
-
+    db.run(
+      `INSERT INTO reaperturas(ciclo,version_origen,tipo,actor,creado_utc,motivo,
+        fingerprint_peticion,version_esperada,clave_intento,correlacion,
+        reapertura_origen,resultado)
+       VALUES('1',1,'reapertura','usuario-unico',?,'Motivo ficticio',?,1,
+        'clave-reapertura','corr-reapertura',NULL,'Abierta')`,
+      [t, fingerprint],
+    );
+    db.run(
+      "INSERT INTO reapertura_activa(id,ciclo,reapertura_id) VALUES(1,'1',1)",
+    );
+    db.run(
+      "INSERT INTO reapertura_attempts VALUES('reapertura','intento','hash','{}',1)",
+    );
+    const t2 = "2026-02-01T00:00:00.000Z";
+    db.run(
+      `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,creado_utc,
+        motivo,fingerprint,estado) VALUES('1',2,'2026-01-01','2026-01-31',0,
+        'usuario-unico',?,'Motivo del re-cierre',?,'Cerrado')`,
+      [t2, fingerprint],
+    );
+    db.run(
+      `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,fingerprint,
+        app_version,schema_version,ventana_inicio,ventana_fin,saldo_inicial,
+        estado_temporal,estado_hechos,estado_plan,hechos,plan,clasificacion,
+        inversion,auxiliares,cobertura,backup,no_disponible)
+       VALUES('1',2,?,'usuario-unico','Motivo del re-cierre',?,'0.0.0-fixture',26,
+        '2026-01-01','2026-01-31',0,'Cerrado','Sin hechos','SinPlan',
+        '{"origen":"fixture"}','{"estado":"SinPlan"}','{}','{}','{}','{}',
+        '{"verificado":false,"motivo":"fixture"}','{}')`,
+      [t2, fingerprint],
+    );
+    db.run(
+      `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
+        instante,actor) VALUES('1',2,'cierre',NULL,'{"version":2}',
+        'Motivo del re-cierre',?,'usuario-unico')`,
+      [t2],
+    );
+    db.run(
+      `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,
+        reapertura_id,correlacion) VALUES('1',1,2,1,'corr-reapertura')`,
+    );
   }).immediate();
 }
 
@@ -122,29 +164,29 @@ test("E4.9 A: C14–C24 stay frozen and registered", () => {
   }
 });
 
-test("E4.9 A: a fresh schema matches C25 exactly", () => {
+test("E4.10 A: a fresh schema matches C26 exactly", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 25,
+      version: 26,
     });
-    expect(manifest(db)).toEqual(contract(c25).objects);
-    expect(verifyContract(db, 25)).toBe(c25);
+    expect(manifest(db)).toEqual(contract(c26).objects);
+    expect(verifyContract(db, 26)).toBe(c26);
   } finally {
     db.close();
   }
 });
 
-test("E4.9 A: the v24→v25 upgrade matches C25 exactly", () => {
+test("E4.10 A: the v24→v26 upgrade matches C26 exactly", () => {
   const dir = root();
   try {
     const path = join(dir, "v24.sqlite");
     materializeContract(path, c24);
     const db = openDatabase(path);
     try {
-      expect(manifest(db)).toEqual(contract(c25).objects);
-      expect(verifyContract(db, 25)).toBe(c25);
+      expect(manifest(db)).toEqual(contract(c26).objects);
+      expect(verifyContract(db, 26)).toBe(c26);
     } finally {
       db.close();
     }
@@ -209,17 +251,17 @@ test("E4.9 A: C25 has no ciclo_id and does not touch E4.1/E4.2/E4.3/E4.8", () =>
   }
 });
 
-test("E4.9 A: unknown v26 contract is rejected without writes", () => {
+test("E4.10 A: unknown v27 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
-    expect(verifyContract(db, 26)).toBe(null);
-    db.exec("UPDATE schema_version SET version=26");
+    expect(verifyContract(db, 27)).toBe(null);
+    db.exec("UPDATE schema_version SET version=27");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 26,
+      version: 27,
     });
   } finally {
     db.close();
@@ -245,7 +287,7 @@ test("E4.9 A: a physical v25 variant is rejected by the exact contract", () => {
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.9 A: v25 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts",
+  "E4.10 A: v26 backup/manifest/restore keeps the closure, photo, audit and MFA and clears attempts",
   async () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -278,8 +320,8 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e4.9-v25",
-        schema: 25,
+        app: "e4.10-v26",
+        schema: 26,
         origin: "demo",
       });
 
@@ -287,7 +329,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 25,
+          version: 26,
         });
         expect(
           copy
@@ -299,6 +341,14 @@ test.skipIf(process.platform !== "linux")(
           {
             ciclo: "1",
             version: 1,
+            inicio: "2026-01-01",
+            fin: "2026-01-31",
+            saldo_inicial: 0,
+            estado: "Cerrado",
+          },
+          {
+            ciclo: "1",
+            version: 2,
             inicio: "2026-01-01",
             fin: "2026-01-31",
             saldo_inicial: 0,
@@ -316,7 +366,15 @@ test.skipIf(process.platform !== "linux")(
             ciclo: "1",
             version: 1,
             app_version: "0.0.0-fixture",
-            schema_version: 25,
+            schema_version: 26,
+            estado_hechos: "Sin hechos",
+            estado_plan: "SinPlan",
+          },
+          {
+            ciclo: "1",
+            version: 2,
+            app_version: "0.0.0-fixture",
+            schema_version: 26,
             estado_hechos: "Sin hechos",
             estado_plan: "SinPlan",
           },
@@ -332,7 +390,45 @@ test.skipIf(process.platform !== "linux")(
             accion: "cierre",
             actor: "usuario-unico",
           },
+          {
+            ciclo: "1",
+            version: 2,
+            accion: "cierre",
+            actor: "usuario-unico",
+          },
         ]);
+        expect(
+          copy
+            .query(
+              "SELECT ciclo,version_origen,version_destino,reapertura_id FROM cierre_vinculos",
+            )
+            .all(),
+        ).toEqual([
+          {
+            ciclo: "1",
+            version_origen: 1,
+            version_destino: 2,
+            reapertura_id: 1,
+          },
+        ]);
+        expect(
+          copy
+            .query(
+              "SELECT ciclo,version_origen,tipo,motivo,resultado FROM reaperturas",
+            )
+            .all(),
+        ).toEqual([
+          {
+            ciclo: "1",
+            version_origen: 1,
+            tipo: "reapertura",
+            motivo: "Motivo ficticio",
+            resultado: "Abierta",
+          },
+        ]);
+        expect(
+          copy.query("SELECT id,ciclo,reapertura_id FROM reapertura_activa").get(),
+        ).toEqual({ id: 1, ciclo: "1", reapertura_id: 1 });
         for (const table of [
           "sessions",
           "challenges",
@@ -341,6 +437,7 @@ test.skipIf(process.platform !== "linux")(
           "auth_limits",
           "idempotency",
           "cierre_attempts",
+          "reapertura_attempts",
         ])
           expect(copy.query(`SELECT COUNT(*) n FROM ${table}`).get()).toEqual({
             n: 0,
@@ -418,7 +515,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.9 A: restoring a v26 package fails without a destination",
+  "E4.10 A: restoring a v27 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -439,7 +536,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 26;
+      altered.manifest.schema = 27;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(
