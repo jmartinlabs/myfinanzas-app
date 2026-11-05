@@ -45,30 +45,39 @@ Se conserva íntegramente el alcance de SPEC28; no se amplía ni se reduce por i
 
 ## 2. Versión de esquema: verificación y propuesta
 
-**Verificado en `main` `2cd0951`:**
+**Reverificado en `main` `a8e526b` (2026-11-05):**
 
 | Comprobación | Evidencia |
 | --- | --- |
 | Versión vigente | `apps/api/src/database-identity.ts:4` → `schemaVersion = 25` |
-| Última rama de migración | `apps/api/src/database-schema.ts:139` → `if (versions[0].version < 25) cierreFinancieroSchema(db)`; no existe rama `<26` |
-| Lista admitida en backup | `apps/api/src/backup.ts:54` y `:275` terminan en `25` |
+| Última rama de migración | `apps/api/src/database-schema.ts:139` → `if (versions[0].version < 25)`; no existe rama `<26`; el constructor fresco llega a `>=25` en `:262` |
+| Lista admitida en backup | `apps/api/src/backup.ts:54` y `:275` terminan en `25`; tablas por versión desde `:355` |
 | Contrato más reciente | `apps/api/src/schema-contracts.json:14103` → `C25-E49-CIERRE-FINANCIERO` |
-| Ninguna DDL escribe 26 | `grep` sin resultados de `SET version=26` |
-| 26 solo como centinela de «desconocido» | `e49-schema-contract.test.ts:212-217`, `e43-schema-contract.test.ts:189-194` |
+| Ninguna DDL escribe 26 | Solo tests hacen `UPDATE schema_version SET version=26`; no hay `C26` ni migración 26 |
 
-**Propuesta expresa: reservar `v26` para E4.10**, migración aditiva `25 → 26`.
+**Propuesta expresa: reservar `v26` para E4.10**, migración aditiva `25 → 26`. No se crea
+DDL ni migración en este paquete.
 
-Actualizaciones obligatorias al introducir v26:
+### 2.1 Consumidores identificados (deben actualizarse en el DEV)
 
-- `database-identity.schemaVersion`, rama `<26` en `database-schema` y contrato `C26`.
-- Listas de versiones admitidas y condiciones de restauración/limpieza de `backup.ts`
-  (`:54`, `:275`), y el manifiesto que enumera tablas por versión.
-- Tests que hoy usan 26 como versión desconocida: deben pasar a un centinela superior (p. ej.
-  27) sin debilitar la comprobación de rechazo.
-- `schema-contracts.json`, pruebas de contrato y restauración v26.
+1. **Identidad y migración:** `database-identity.ts:4`; ramas `database-schema.ts:139` y `:262`.
+2. **Backup/restore:** listas de versiones `backup.ts:54` y `:275`; tablas del manifiesto
+   desde `:355` (nuevas tablas de E4.10).
+3. **Contratos:** `schema-contracts.json` (nuevo `C26`) y `schema-contract.ts`.
+4. **Centinelas de versión desconocida:** `e49-schema-contract.test.ts:212-217` y `:421-442`;
+   `e43-schema-contract.test.ts:189-194` y `:401`. Deben pasar a 27 sin debilitar el rechazo.
+5. **Aserciones de versión vigente 25/C25:** 57 líneas en 29 archivos de test:
+   `ciclos`, `comida`, `compartidos`, `compras`, `cycle-operations`, `d5-aportaciones`,
+   `d5-backup`, `deudas-v23-migration`, `deudas`, `e35-migration`, `e43-migration`,
+   `e43-schema-contract`, `e44-schema-contract`, `e49-api`, `e49-migration`,
+   `e49-schema-contract`, `movimientos`, `nomina`, `plan-anual`, `planes-ciclo`,
+   `production`, `restore-v19-v20`, `revision-comida-backup`, `revision-comida`,
+   `schema-contract-v18`, `sqlite-identity-concurrency`, `vehiculos-backup`, `vehiculos` y
+   `ventas`.
 
-**Riesgo:** una versión no reservada o un centinela sin actualizar rompería backup/restore y
-las pruebas de contrato. **Decisión humana:** confirmar la reserva de v26.
+**Riesgo:** una versión no reservada, una lista de backup sin actualizar o un centinela que
+siga apuntando a 26 rompería restore y las pruebas de contrato. **Decisión humana:** confirmar
+la reserva de v26. **Implementación:** actualizar todos los consumidores antes de migrar.
 
 ---
 
@@ -197,7 +206,7 @@ del código.
 | Esquema v26 | **Propuesto** | Bloquea DDL hasta aprobación de DT-F |
 | DT6/T-BKP | Abierto | Bloquea cierre/re-cierre **real**; no la aceptación con fixtures |
 | E3.5/FIN_NETA AC-15 | PARCIAL | Sin verificación suficiente no hay re-cierre real ni foto |
-| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | **Decisión abierta:** si no está implementado, el paquete no asume que su ausencia bloquee o se registre `No disponible`; requiere criterio humano |
+| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio propuesto en [testplan §3](28-e410-reapertura-testplan.md#3-revalidación-y-dependencia-e45precontrol): ausencia `NoDisponible` con motivo; datos ilegibles o contradictorios bloquean. Pendiente de ratificación |
 | SPEC29 P2/P3/P6/P7/P8 | Pendientes | Fuera de E4.10; no se infieren |
 | Sesión MFA | Vigente | Escrituras con sesión completa y CSRF/Origin |
 
@@ -207,7 +216,7 @@ del código.
 
 | # | Incremento | Entregable | Gate de salida |
 | --- | --- | --- | --- |
-| I0 | Decisiones | DT-A…DT-I aprobadas o diferidas explícitamente; **testplan aprobado/congelado** | Autorización humana del paquete y del testplan |
+| I0 | Decisiones | DT-A…DT-I aprobadas o diferidas explícitamente; **testplan aprobado/congelado** y criterio E4.5 §3 ratificado | Autorización humana del paquete, del testplan y del criterio |
 | I1 | Esquema v26 | Migración aditiva, `reaperturas`, `cierre_vinculos`, proyección, triggers, contrato `C26`, backup/restore | Upgrade 25→26 y restore verificados; sin cambios en filas existentes |
 | I2 | Reapertura | Evento, motivo/actor/UTC, versión esperada, una ventana, idempotencia | AC01, AC04–AC07, AC14, AC22 |
 | I3 | Guardas y revalidación | T1/T2/T3 en ventana (Movimientos, Compras y Ventas), impacto, revalidación de solo lectura | AC03, AC08, AC09, AC17 |
