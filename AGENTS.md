@@ -37,6 +37,9 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
   el merge exige aprobación explícita e identificable y nunca se auto-fusiona.
 - Quick reversible: plan de una línea; un ejecutor por defecto, hitos y QA independiente.
   Aprobar una spec no autoriza desarrollo.
+- Un ejecutor por tarea: delegar el trabajo autónomo sustancial, preferir segundo plano cuando
+  permita avanzar trabajo independiente autorizado y conservar la QA independiente; no crear
+  agentes artificiales.
 - [$handoff](.agents/skills/handoff/SKILL.md) consolida y para; continúa el alcance autorizado
   hasta completarlo o hasta un bloqueo real. Al parar, indica responsable, acción humana y
   estado según [comunicación](specs/methodology/coordinator-communication.md#7-closing-a-turn-or-stopping).

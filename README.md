@@ -256,9 +256,10 @@ con imagen de ensayo se conserva como histórica. Ver [runbook](infra/RUNBOOK.md
 
 ## Coordinación — adaptación selectiva v2.14.0
 La aplicación no se reinicializa. [$orchestrate](.agents/skills/orchestrate/SKILL.md)
-ruta trabajo autorizado hacia las Skills existentes, dimensiona subagentes nativos
-según tareas independientes y mantiene [el tablero](specs/epic-board.md). No es un
-servicio residente ni un framework propio. Sin herramientas de delegación usa la
+ruta trabajo autorizado hacia las Skills existentes, prefiere especialistas para el trabajo
+autónomo sustancial, usa segundo plano cuando permite avanzar trabajo independiente autorizado
+y mantiene [el tablero](specs/epic-board.md). No es un servicio residente ni un framework
+propio; un ejecutor por tarea y sin agentes artificiales. Sin herramientas de delegación usa la
 misma cola secuencialmente. [Reglas locales](specs/methodology/myfinanzas-coordination.md),
 [guía visual](docs/GUIA_VISUAL_ORQUESTACION.md) y
 [fuente/pruebas de adopción](specs/methodology/orchestration-adoption.md).
