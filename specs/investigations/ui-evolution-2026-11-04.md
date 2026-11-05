@@ -178,7 +178,7 @@ que algún AC compara; hay que inventariarlas antes de `DEV`.
 
 ### 4.3 Navegación y móvil
 
-`[PROPUESTA]` Mantener **las 23 rutas actuales** y agruparlas sin cambiar `href`:
+`[PROPUESTA]` Mantener **los 23 enlaces de navegación actuales** y agruparlos sin cambiar `href`:
 
 | Grupo | Rutas |
 | --- | --- |
@@ -283,7 +283,7 @@ descartadas para esta iniciativa; C solo podría reconsiderarse después de B y 
 | --- | --- | --- | --- | --- |
 | **`UI · DEV-01 — Fundamentos visuales`** | Fijar escala tipográfica, espaciado, radios, foco y tamaños mínimos | Tokens no cromáticos en `style.css: :root`; escala aplicada a shell, tipografía base y foco; retirada de `--space` sin uso o su consumo real | Ninguna; va primero | Capturas 1440/390 × 3 temas del shell sin regresión; ningún texto funcional < 12 px; un solo radio por familia de superficie |
 | **`UI · DEV-02 — Cifras, estados e indicadores`** | Unificar importe, badge y tarjeta métrica | `Amount`, `Badge`, `Metric`, `EmptyState`, `Skeleton`; tono de éxito separado del acento; `--negative` aplicado; un formateador | `DEV-01` | Un único estilo de badge; `0,00 €`, `ND`, `No aplica` y `Sin datos` distinguibles por texto+icono; contraste ≥ 4.5 en los tres temas |
-| **`UI · DEV-03 — Navegación y cabecera`** | Ordenar 23 rutas sin cambiarlas | Datos de navegación en módulo propio, grupos, iconos homogéneos, activo con barra+peso, preferencias en menú, título de documento por ruta, menú móvil accesible | `DEV-01`; coordinación con E4.10/E4.11 futuras | Las 23 rutas responden igual; activo perceptible sin color; teclado completo; sin desbordamiento a 390 |
+| **`UI · DEV-03 — Navegación y cabecera`** | Ordenar 23 enlaces sin cambiarlos | Datos de navegación en módulo propio, grupos, iconos homogéneos, activo con barra+peso, preferencias en menú, título de documento por ruta, menú móvil accesible | `DEV-01`; coordinación con E4.10/E4.11 futuras | Los 23 enlaces responden igual; activo perceptible sin color; teclado completo; sin desbordamiento a 390 |
 | **`UI · DEV-04 — Tablas y listados`** | Una tabla, un comportamiento | Primitiva `Table` con roles de columna, importes a la derecha, cabecera y hover por token; conversión a tarjetas; retirada de mapas de columna por página | `DEV-01`, `DEV-02` | Misma información en tabla y tarjeta; listados sin scroll horizontal a 390 y datos anchos con región desplazable rotulada; ningún `className` de tabla sin estilos |
 | **`UI · DEV-05 — Formularios y fichas`** | Formularios y detalle consistentes | `Field`, secciones, ayuda/error, rejilla 2→1, ficha con jerarquía de identificación/configuración/atributos/posición | `DEV-01`, `DEV-02` | Error sin salto de layout; foco al primer error; etiqueta y ayuda legibles; AA en ayuda y error en 3 temas |
 | **`UI · DEV-06 — Pantallas clave`** | Llevar el sistema a Inicio + 4 pantallas de referencia (5 total) | Inicio, un catálogo, una ficha, un formulario y una pantalla de operación con la nueva jerarquía | `DEV-02`…`DEV-05`; frontera de §7 | Inicio conserva secciones, cifras y estados de SPEC24; una lectura principal por tarjeta; sin duplicar motivo/CTA; capturas antes/después |
@@ -323,7 +323,7 @@ el punto de colisión principal.
 3. **Tokens cromáticos como gate.** `themes.css` alimenta todas las pantallas y los E2E fijan
    valores RGB concretos (`theme.spec.ts:78-114`): cualquier cambio de paleta es un bloque
    propio, con matriz de evidencia y actualización consciente de tests.
-4. **`main.tsx` con un único dueño por cambio.** `DEV-03` extrae las 23 rutas a un módulo de
+4. **`main.tsx` con un único dueño por cambio.** `DEV-03` extrae los 23 enlaces a un módulo de
    datos y deja el JSX estable; E4.9 ya está integrado y cualquier ruta futura de E4.10/E4.11
    exige coordinación previa.
 5. **No crear clases genéricas nuevas.** `.metric` y `.table` ya demuestran el problema:
