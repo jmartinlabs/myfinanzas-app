@@ -23,7 +23,8 @@ Se conserva íntegramente el alcance de SPEC28; no se amplía ni se reduce por i
 ### Incluido
 
 - Reapertura del último cierre con motivo, actor, UTC, versión/estado esperado, idempotencia
-  y una sola ventana activa (D1-A, D3-B+C, D7).
+  y una sola ventana activa (D1-A, D3-B+C, D7); `v3+` solo secuencial sobre la última
+  versión cerrada.
 - Correcciones T1/T2/T3 dentro de la ventana y del ciclo, con impacto y auditoría (D2-B).
 - Revalidación de solo lectura de S0, planes, fotos, auxiliares, agregados y precontrol (D4).
 - Re-cierre con foto completa `vN+1`, comparación con `vN` y vínculo consultable (D1-A, D6).
@@ -60,7 +61,8 @@ Se conserva íntegramente el alcance de SPEC28; no se amplía ni se reduce por i
 Actualizaciones obligatorias al introducir v26:
 
 - `database-identity.schemaVersion`, rama `<26` en `database-schema` y contrato `C26`.
-- Listas admitidas de `backup.ts` y tabla de objetos del manifiesto (`schema >= 26`).
+- Listas de versiones admitidas y condiciones de restauración/limpieza de `backup.ts`
+  (`:54`, `:275`), y el manifiesto que enumera tablas por versión.
 - Tests que hoy usan 26 como versión desconocida: deben pasar a un centinela superior (p. ej.
   27) sin debilitar la comprobación de rechazo.
 - `schema-contracts.json`, pruebas de contrato y restauración v26.
@@ -73,7 +75,8 @@ las pruebas de contrato. **Decisión humana:** confirmar la reserva de v26.
 ## 3. Matriz DT-A…DT-I
 
 Cada decisión indica alternativas, recomendación, riesgos y si requiere aprobación humana o
-es implementativa una vez aprobada la anterior.
+es implementativa una vez aprobada la anterior. **DT-A, DT-B y DT-D se aprueban como bloque**
+(modelo de persistencia, auditoría y estado); el orden de implementación es A → B → D.
 
 ### DT-A · Persistencia de la reapertura
 
@@ -83,7 +86,7 @@ es implementativa una vez aprobada la anterior.
 | **Recomendación** | **A2.** Los eventos son la fuente de verdad inmutable; la proyección singleton solo serializa una única ventana global y se reconstruye desde eventos. |
 | **Justificación** | `cierres` y `fotos_cierre` son inmutables y tienen triggers; A1 está prohibida por SPEC28 §4/§6. A3 mezcla auditoría con estado mutable. A2 no reescribe E4.9 y hace explícita la regla «una sola reapertura activa» de D1-A. |
 | **Riesgos** | Evento y proyección deben escribirse en la misma transacción; si divergen, hay que detectarlo al arrancar y reconstruir. Un fallo entre ambos no debe dejar la ventana abierta sin evento. |
-| **Dependencias** | DT-B (auditoría), DT-D (estado), DT-F (v26). |
+| **Dependencias** | Bloque A/B/D (aprobación conjunta), DT-F (v26). |
 | **Tipo** | **Aprobación humana** (modelo de persistencia). |
 
 Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
@@ -95,11 +98,11 @@ Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
 
 | | |
 | --- | --- |
-| **Alternativas** | B1: reconstruir `cierre_audit` para ampliar el `CHECK` de acciones. B2: nueva tabla append-only `reaperturas` como registro de reapertura/cancelación, dejando `cierre_audit` intacta. B3: doble escritura en ambas. |
-| **Recomendación** | **B2.** `cierre_audit` conserva cierres; `reaperturas` registra reapertura/cancelación; el re-cierre usa `cierre_audit` con `accion='cierre'`. Una vista de historial une ambas fuentes por ciclo/versión. |
-| **Justificación** | Reconstruir una tabla de auditoría financiera (12 pasos en SQLite) añade riesgo sin beneficio funcional. La doble escritura puede divergir. B2 mantiene inmutables las filas existentes y no cambia IDs. |
-| **Riesgos** | Cadena repartida en dos tablas; exige correlación explícita y una consulta única. Un re-cierre sin evento de reapertura previo debe rechazarse. |
-| **Dependencias** | DT-A, DT-D, AC18. |
+| **Alternativas** | B1: reconstruir `cierre_audit` para ampliar el `CHECK` de acciones. B2: nueva tabla append-only `reaperturas` como registro de reapertura/cancelación, dejando `cierre_audit` intacta, y nueva `cierre_vinculos` para el vínculo `vN → vN+1`. B3: doble escritura en ambas. |
+| **Recomendación** | **B2.** `cierre_audit` conserva los cierres; `reaperturas` registra reapertura/cancelación; `cierre_vinculos` registra origen, destino, reapertura y correlación. El re-cierre sigue usando `cierre_audit` con `accion='cierre'`, pero un **trigger nuevo** exige `motivo` cuando `version>1` (sin reconstruir la tabla). |
+| **Justificación** | Reconstruir una tabla de auditoría financiera (12 pasos en SQLite) añade riesgo sin beneficio funcional. La doble escritura puede divergir. B2 mantiene inmutables las filas existentes, no cambia IDs y garantiza el motivo D3 del re-cierre incluso si el código lo omite. |
+| **Riesgos** | Cadena repartida en tres tablas; exige correlación explícita y una vista única. Un re-cierre sin evento de reapertura ni vínculo previo debe rechazarse. El trigger debe probarse sobre v1 (sin motivo) y v2+ (con motivo). |
+| **Dependencias** | Bloque A/B/D, DT-F, AC18. |
 | **Tipo** | **Aprobación humana** (estrategia de auditoría). |
 
 ### DT-C · Fingerprint de `v2`
@@ -121,7 +124,7 @@ Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
 | **Recomendación** | **D2.** Estado derivado; la proyección `reapertura_activa(id=1)` garantiza una sola ventana global y se reconstruye desde eventos. |
 | **Justificación** | Evita mutar el cierre y mantiene la historia completa. La unicidad global se impone con la fila singleton dentro de la transacción; una ventana por ciclo no bastaría para D1-A. |
 | **Riesgos** | Lecturas inconsistentes si la proyección se consulta fuera de transacción; concurrencia entre reapertura, cancelación y re-cierre. Pruebas de dos operaciones simultáneas y de versión obsoleta. |
-| **Dependencias** | DT-A, DT-B. |
+| **Dependencias** | Bloque A/B/D. |
 | **Tipo** | **Implementativo** una vez aprobados A y B; el contrato del estado se valida con AC06/AC12/AC16. |
 
 ### DT-E · Superficie API
@@ -151,23 +154,23 @@ Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
 
 | | |
 | --- | --- |
-| **Alternativas** | G1: extender las guardas de E4.9 con una excepción limitada a la ventana activa del ciclo reabierto. G2: guardas paralelas para E4.10. |
-| **Recomendación** | **G1.** `closedWindows` excluye solo el ciclo con reapertura activa; `movementClosureImpact` omite únicamente las fotos de ese ciclo; S0, `inicio`, `Fin` y cualquier otro ciclo siguen bloqueados; fuera de la ventana se mantiene `HISTORY_LOCKED`. T2/T3 no cambian. |
-| **Justificación** | Una segunda implementación duplicaría la regla T1 y podría divergir. La excepción debe ser mínima y fail-closed. |
-| **Riesgos** | Una exclusión demasiado amplia abriría ciclos cerrados. Pruebas obligatorias: reabrir A y verificar que B sigue bloqueado; intentar S0/ventana/Fin; fechas fuera de ventana; estado cancelado. |
-| **Dependencias** | DT-A/D, SPEC28 §8, E4.9 guards. |
+| **Alternativas** | G1: excepción explícita y acotada en los puntos de entrada T1, manteniendo `closedWindows` intacta. G2: guardas paralelas para E4.10. |
+| **Recomendación** | **G1.** No modificar `closedWindows`: alimenta S0/ventana (`assertClosedCyclesUnchanged`), T2/T3, plan y revisión de comida. Añadir una resolución de «ventana activa» que solo consulten las entradas T1: `assertDatesWritable` en su variante T1, `movementClosureImpact` (Movimientos) y `operationClosureImpact` (Compras y Ventas). Excluir únicamente el cierre `vN` del ciclo reabierto; el resto de ciclos y fotos siguen bloqueando. S0, `inicio`, `Fin` y la ventana se validan con sus guardas actuales, sin excepción. Fuera de la ventana se mantiene `HISTORY_LOCKED`; T2/T3 no cambian. |
+| **Justificación** | Una segunda implementación duplicaría la regla T1 y podría divergir. La excepción debe ser mínima, cubrir las tres rutas T1 (Movimientos, Compras y Ventas) y ser fail-closed. Excluir globalmente `closedWindows` desactivaría protecciones ajenas a T1. |
+| **Riesgos** | Una exclusión demasiado amplia abriría ciclos cerrados. Pruebas obligatorias: reabrir A y verificar que B sigue bloqueado; S0/ventana/Fin del ciclo A siguen bloqueados; fechas fuera de ventana; estado cancelado; Compras y Ventas; `vN` histórico no editable. |
+| **Dependencias** | Bloque A/B/D, SPEC28 §8, guardas E4.9. |
 | **Tipo** | **Implementativo** con matriz de guardas confirmada por QA; D2-B ya está aprobada. |
 
 ### DT-H · Detección de cambios materiales (D8)
 
 | | |
 | --- | --- |
-| **Alternativas** | H1: comparar solo importes/totales (rechazada por SPEC28). H2: comparar todos los bloques capturados y tratar la incertidumbre como cambio material. |
-| **Recomendación** | **H2.** Cancelar sin foto solo si no hubo escrituras desde la reapertura y `vN` sigue siendo equivalente en hechos, relaciones, clasificación, plan y componentes. Cualquier escritura, bloque ausente o evidencia insuficiente impide la cancelación y obliga a `vN+1` o a la vía extraordinaria. |
-| **Justificación** | SPEC28 rechaza la igualdad de importes como prueba. La comparación por bloques de la foto es la única evidencia disponible y es reproducible. |
-| **Riesgos** | Un falso «sin cambios» perdería correcciones; un falso «cambios» solo fuerza una foto nueva (coste aceptable). Ante duda, bloquear. |
-| **Dependencias** | D6/D8, payload de foto, AC21/AC24. |
-| **Tipo** | **Aprobación humana** del conjunto de comparación; implementación reproducible con pruebas. |
+| **Alternativas** | H1: comparar solo importes/totales (rechazada por SPEC28). H2: comparar un conjunto material explícito y tratar la incertidumbre como cambio material, sin exigir «ninguna escritura». |
+| **Recomendación** | **H2.** Conjunto material: hechos, relaciones y atribución, clasificación/referencias, plan (`SinPlan`/`Capturado`), componentes económicos (efectivo, posiciones, inversión y auxiliares usados) y S0/ventana. Excluir metadatos volátiles (`app_version`, `schema_version`, timestamps, referencia de backup, correlación). Una escritura T3 no material (nombres, notas, evidencias, etiquetas no usadas en cálculos) **no impide** la cancelación. Cualquier cambio material, incluido uno revertido, o evidencia insuficiente, impide la cancelación automática y obliga a `vN+1` o a la vía extraordinaria. |
+| **Justificación** | SPEC28 rechaza la igualdad de importes como prueba y exige acreditar ausencia de cambios materiales, no ausencia de escrituras. T3 es una escritura permitida que no altera magnitudes. Los cambios revertidos no se asumen equivalentes por su historial. Los metadatos volátiles cambiarían con la propia migración a v26 y producirían falsos negativos. |
+| **Riesgos** | Un falso «sin cambios» perdería correcciones; un falso «cambios» solo fuerza una foto nueva (coste aceptable). La detección depende de que toda escritura T1/T2 quede auditada; si el historial no es completo, bloquear. |
+| **Dependencias** | D6/D8, payload de foto, auditoría de escrituras, AC21/AC24. |
+| **Tipo** | **Aprobación humana** del conjunto material; implementación reproducible con pruebas. |
 
 ### DT-I · Recuperación extraordinaria
 
@@ -200,10 +203,10 @@ Campos mínimos de `reaperturas`: `id`, `ciclo`, `version_origen`, `tipo`
 
 | # | Incremento | Entregable | Gate de salida |
 | --- | --- | --- | --- |
-| I0 | Decisiones | DT-A…DT-I aprobadas o diferidas explícitamente | Autorización humana del paquete |
-| I1 | Esquema v26 | Migración aditiva, `reaperturas`, proyección, triggers, contrato `C26`, backup/restore | Upgrade 25→26 y restore verificados; sin cambios en filas existentes |
+| I0 | Decisiones | DT-A…DT-I aprobadas o diferidas explícitamente; **testplan aprobado/congelado** | Autorización humana del paquete y del testplan |
+| I1 | Esquema v26 | Migración aditiva, `reaperturas`, `cierre_vinculos`, proyección, triggers, contrato `C26`, backup/restore | Upgrade 25→26 y restore verificados; sin cambios en filas existentes |
 | I2 | Reapertura | Evento, motivo/actor/UTC, versión esperada, una ventana, idempotencia | AC01, AC04–AC07, AC14, AC22 |
-| I3 | Guardas y revalidación | T1/T2/T3 en ventana, impacto, revalidación de solo lectura | AC08, AC09, AC17 |
+| I3 | Guardas y revalidación | T1/T2/T3 en ventana (Movimientos, Compras y Ventas), impacto, revalidación de solo lectura | AC03, AC08, AC09, AC17 |
 | I4 | Re-cierre | Foto completa `vN+1`, fingerprint C2, vínculo, preflight/DT6, `SIN_CAMBIOS` | AC02, AC10, AC13, AC15, AC19, AC20, AC23, AC24 |
 | I5 | Cancelación | D8 sin foto solo sin cambios acreditados; con cambios `vN+1`; con cierre posterior, bloqueo | AC16, AC21 |
 | I6 | Idempotencia y concurrencia | Claves separadas, conflicto de payload, carreras y versión obsoleta | AC11, AC12, AC18 |
@@ -243,8 +246,20 @@ Cada incremento se publica con su propio commit/PR y no se fusiona sin autorizac
 | AC23 | I4 | Secuencia | v3+ secuencial; una ventana |
 | AC24 | I4 | Bun Test + SQL | `SIN_CAMBIOS`; sin foto; sin cancelación automática |
 
-**Regresión E4.9:** cierre, foto v1, T1/T2/T3, idempotencia, preflight, backup y triggers deben
-seguir en PASS. Cualquier cambio de contrato de E4.9 exige justificación y QA específica.
+**Regresión obligatoria (antes de cualquier PASS de E4.10):**
+
+- `R-E49-01` T1 fuera de la ventana E4.10 sigue `HISTORY_LOCKED`.
+- `R-E49-02` T2 en ciclo cerrado mantiene impacto/motivo/auditoría y no altera la foto.
+- `R-E49-03` cierre ordinario duplicado sigue bloqueado; E4.10 es la única vía de reapertura.
+- `R-E49-04` reintento idéntico y conflicto de payload se mantienen.
+- `R-E49-05` cambio concurrente entre preview y confirmación da conflicto sin foto parcial.
+- `R-E49-06` rollback de cierre total; sin cierre ni foto huérfanos.
+- `R-E49-07` foto v1 no se recalcula al consultar tras T2/T3.
+- `R-E49-08` cierre fuera de orden sigue bloqueando por `INCOHERENCIA_CON_CIERRE_POSTERIOR`.
+- `R-E48-01` precierre sigue en solo lectura; no crea cierre, foto, reapertura ni versión.
+- `R-SEC-01` rutas financieras con sesión MFA, Origin/CSRF y límites; sin roles nuevos.
+
+Cualquier cambio de contrato de E4.9 exige justificación y QA específica.
 
 ---
 
@@ -252,10 +267,13 @@ seguir en PASS. Cualquier cambio de contrato de E4.9 exige justificación y QA e
 
 1. **QA independiente** sobre el SHA autorizado, con evidencia por AC y sin auto-QA del
    ejecutor.
-2. **24/24 AC en PASS** o reserva explícita aprobada; ningún `UNRUN` al cerrar el DEV.
+2. **Testplan aprobado/congelado** antes de I2; sus definiciones de AC y resultados esperados
+   no se reinterpretan durante el DEV. Los 24 AC en PASS o reserva explícita aprobada; ningún
+   `UNRUN` al cerrar el DEV.
 3. **Contrato v26 determinista**, upgrade 25→26 y restore verificados; sin cambios en IDs,
    auditoría, MFA ni datos históricos.
-4. **Regresión E4.9** sin fallos; guardas T1/T2/T3 probadas en ambos sentidos.
+4. **Regresión completa** `R-E49-01…R-E49-08`, `R-E48-01` y `R-SEC-01` sin fallos; guardas
+   T1/T2/T3 probadas en ambos sentidos y para las tres rutas T1.
 5. **Seguridad:** sesión MFA, CSRF/Origin, límites de payload, ausencia de rutas de mutación
    de fotos.
 6. **Sin datos reales:** fixtures sintéticos identificados; el cierre real sigue bloqueado
