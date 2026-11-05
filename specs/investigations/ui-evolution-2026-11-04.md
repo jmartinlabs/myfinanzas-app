@@ -4,17 +4,18 @@
 funcionales ni financieros y no modifica código.** La alternativa **B** está adoptada; los tres
 temas de #198 están cerrados y no se reabren.
 
-**Base:** `main` **`238af31`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
+**Base:** `main` **`73fedf8`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
 decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
-(#200) con QA APTO CON RESERVAS; E4.10 con SPEC28 **DRAFT**, D1–D9 y `SIN_CAMBIOS`
-aprobadas 2026-11-05 e incorporación en #223 OPEN/draft sin merge; sin DEV.
+(#200) con QA APTO CON RESERVAS; E4.10 con **SPEC28 ratificada**, **I1 integrado en `70fa7c0`**
+(v26/C26) e **I2 abierto en `5fa0a1e`** (no fusionado, 24 AC `UNRUN`); E4.11 con **SPEC29
+DRAFT**, P1-C/P4-A/P5-B aprobadas y P2/P3/P6/P7/P8 pendientes, sin DEV.
 
 **Leyenda.** `[CONFIRMADO]` = regla de un documento aprobado, estado verificado en Git o hecho
 medido en el repositorio/artefacto citado. `[PROPUESTA]` = candidato de diseño no aprobado.
 `[PENDIENTE]` = decisión o evidencia que todavía no existe.
 
 **Fuentes.** Capturas `artifacts/ui-baseline/inicio-{light,dark,hybrid}-s-1440.png` y variantes
-`cero`/`degradado` (la captura de Inicio mide 1440×4475 px); `apps/web/src/style.css` (4.175
+`cero`/`degradado` (la captura de Inicio mide 1440×4475 px); `apps/web/src/style.css` (4.784
 líneas), `apps/web/public/themes.css`, `apps/web/public/theme-boot.js`, `apps/web/index.html`,
 `apps/web/src/main.tsx`, `Inicio.tsx`, `Saldos.tsx`, `Precierre.tsx`, `ui.tsx`, `api.ts:89-93`;
 `specs/guidelines/ui.md`, [SPEC24](../24-e46-resumen-inicio-specification.md),
@@ -81,7 +82,7 @@ reservados a entregas (`identifier-index.md:39-49`).
 | Área | Implementado | Evidencia |
 | --- | --- | --- |
 | Temas | Tres temas (`light-s`, `dark-s`, `hybrid-s`), los mismos 66 tokens semánticos en cada bloque; arranque antes de React sin parpadeo; preferencia en `localStorage`; selector en cabecera | `themes.css:11-220`, `theme-boot.js:1-13`, `themes.ts`, `main.tsx:39,54-56,474-487`, `theme.spec.ts:76-148` |
-| Tokenización del color | `style.css` **no contiene ningún color hexadecimal**: todo color pasa por `var(--…)`; los componentes no conocen el tema | `style.css` (0 coincidencias `#rrggbb`), `themes.css:6-10` |
+| Tokenización del color | `style.css` solo conserva **1 hex de fallback** (`var(--warning, #6b5412)`); el resto de color pasa por `var(--…)`; los componentes no conocen el tema | `style.css:4241`, `themes.css:6-10` |
 | Shell | Sidebar fija de 236 px, cabecera global de 84 px con contexto de ciclo, contenido fluido con `max-width: 1450px`, pie; breakpoints 1050/760 px; menú móvil desplegable | `style.css:260-437,888-917,918-1217`, `main.tsx:147-616` |
 | Componentes compartidos | `PageHead`, `Tag`, `Alert`, `Switch`, `TableScroll` | `ui.tsx:1-110` |
 | Patrones por pantalla | Tabla de escritorio + tarjetas móviles, filtros, toolbar, paginación, fichas en `detail-grid`, formularios en tres bloques, estados vacío/carga/error | `style.css:438-812`, `Saldos.tsx:86-303` |
@@ -93,15 +94,15 @@ reservados a entregas (`identifier-index.md:39-49`).
 
 | Dimensión | Qué falta | Evidencia |
 | --- | --- | --- |
-| **Tipografía** | Se declara `Inter` como primera familia pero no se carga ninguna fuente: se usa la del sistema. Escala inexistente: 165 tamaños en píxeles, **82 ≤ 11 px** y **41 ≤ 10 px** (mínimo 7 px) | `style.css:2-9`, medición sobre `style.css` |
-| **Espaciado y radios** | `--space` está declarado y **no se usa**; 39 radios literales con 10 valores distintos frente a 8 usos de `var(--radius)` | `style.css:11-12`, medición sobre `style.css` |
-| **Tokens** | 32 de los 66 nombres declarados no se consumen en la hoja (incluidos `--chart-*`, `--table-head`, `--negative`, `--strong-*`); los componentes siguen usando alias históricos (`var(--section)` 8, `var(--white)` 6, `var(--green)` 4) | `themes.css:11-220`, medición sobre `style.css` |
+| **Tipografía** | Se declara `Inter` como primera familia pero no se carga ninguna fuente: se usa la del sistema. Escala inexistente: **190** tamaños en píxeles, **79 ≤ 11 px** y **33 ≤ 10 px** (mínimo 7 px) | `style.css:2-9`, medición sobre `style.css` |
+| **Espaciado y radios** | `--space` está declarado y **no se usa**; **50** radios literales con 10 valores distintos frente a **9** usos de `var(--radius)` | `style.css:11-12`, medición sobre `style.css` |
+| **Tokens** | **30** de los 66 nombres declarados no se consumen en la hoja (incluidos `--chart-*`, `--table-head`, `--negative`, `--strong-*`); los componentes siguen usando alias históricos (`var(--section)`, `var(--white)`, `var(--green)`) | `themes.css:11-220`, medición sobre `style.css` |
 | **Jerarquía** | En cada tarjeta de Inicio compiten título (13 px), nota, cifra (22 px), cobertura, motivo, fuente, IDs y contexto en 6–8 líneas; el estado (`NO DISPONIBLE`) puede quedar por encima de la propia cifra `ND` | captura `inicio-light-s-1440.png`, `Inicio.tsx:556-591` |
 | **Densidad** | Inicio mide 4.475 px de alto a 1440; la fila de cuatro tarjetas deja ~270 px por tarjeta y empuja fuentes/IDs a 10 px con múltiples saltos de línea; queda un hueco vertical grande antes de «Pendientes» por alturas desiguales | captura y medición del PNG; `style.css:3778-3783,3918-3934` |
 | **Legibilidad financiera** | No hay estilo global de importe: solo Inicio usa 22 px/tabulares; en tablas la posición se pinta a 11 px y el ID a 10 px. Dos formateadores con reglas distintas (`eur()` no rellena decimales y usa `-` ASCII; `formatDecimal` usa `−` y rellena a 2) | `Saldos.tsx:233-242`, `api.ts:89-93`, `Inicio.tsx:343-352` |
 | **Signo y negativos** | `--negative`/`--negative-soft`/`--negative-border` existen y **no se usan en ningún selector**: un importe negativo no se distingue visualmente | `themes.css:47-49`, medición sobre `style.css` |
 | **Estados e indicadores** | El color de éxito es el mismo que el de enlace/acento (`--positive` = `--accent` = `--ok`), así que «completo», un enlace y la navegación activa comparten tono; el estado se apoya en icono+texto, pero no hay un segundo canal (forma o peso). Los conteos de Pendientes se pintan como una fila de encabezados y cifras a 10 px donde un `0` pesa lo mismo que el único valor informativo | `themes.css:39,44,56,109,114,126`, captura `inicio-light-s-1440.png` |
-| **Navegación** | **23 enlaces planos** en un único grupo «MI ESPACIO»; 12 llevan icono y chevron y 11 no; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:175-464`, `style.css:302-333` |
+| **Navegación** | **23 enlaces planos** en un único grupo «MI ESPACIO»; iconos y chevrons inconsistentes entre enlaces; sin agrupación por dominio, sin búsqueda ni breadcrumb (solo un `.back` en fichas) | `main.tsx:175-464`, `style.css:302-333` |
 | **Cabecera** | `Tema`, «Entorno local» y «Cerrar sesión» conviven con el contexto de ciclo; el título del documento sigue siendo **«MyFinanzas · Catálogo de prueba»** | `main.tsx:471-493`, `index.html:6` |
 | **Tema inicial** | `dark-s` está fijado en `index.html`, en `theme-boot.js` y en `themes.ts`; no se consulta `prefers-color-scheme` | `index.html:2`, `theme-boot.js:5-11`, `themes.ts:11` |
 | **Tablas** | Un mapa de columnas fijo (29/13/15/13/30 %) se aplica a todas las tablas y cada página lo sobrescribe; `Precierre` usa `className="table"` y la clase `.table` **no está definida** en la hoja: la tabla solo recibe el `min-width` de su contenedor y se pinta con celdas, cabecera y densidad del navegador | `style.css:489-517`, `style.css:3372-3418`, `style.css:2205-2211`, `Precierre.tsx:237-238` |
@@ -304,12 +305,12 @@ mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
 | Cierre / foto (E4.9) | Integrada en `0176ffc` (#200), QA APTO CON RESERVAS; UI de su SPEC27 | Consumir patrones de operación irreversible, confirmación y bloqueo ya aprobados | Reabrir rutas, contratos o estados de E4.9 |
 | `/deudas`, `/inversiones`, etc. (E1–E4.4) | Integradas, con UX aprobada por su spec | Pulido visual que no altere decisiones | Reabrir reglas o estados |
 | E4.7 | Integrada en `0e89562` (#210) | Pulido visual dentro de su contrato | Recalcular o reordenar cifras |
-| E4.10 | SPEC28 **DRAFT**; D1–D9 y `SIN_CAMBIOS` aprobadas 2026-11-05, incorporación en #223 OPEN/draft sin merge; **sin DEV** | Wireframe conceptual de reapertura/cierre, sin clases ni rutas | Anticipar implementación, estados persistidos o pantallas definitivas |
-| E4.11 | SPEC29 DRAFT; sin UI implementada | Nada | Fijar pantallas antes de su SPEC |
+| E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e`, no fusionado; 24 AC `UNRUN` | Patrón visual futuro de reapertura, sin clases ni rutas | Anticipar pantallas, estados persistidos o contratos de E4.10 |
+| E4.11 | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV ni UI | Nada | Fijar pantallas antes de su SPEC |
 
 ### 7.2 Cómo evitar conflictos
 
-`[CONFIRMADO]` `style.css` es un monolito de 4.175 líneas con secciones añadidas por entrega y
+`[CONFIRMADO]` `style.css` es un monolito de 4.784 líneas con secciones añadidas por entrega y
 comentarios de ticket (`/* E3.2 base B — Compartidos */`, `/* E4.6 · Resumen de inicio */`). Es
 el punto de colisión principal.
 
@@ -332,9 +333,10 @@ el punto de colisión principal.
 7. **Verificación.** `python3 scripts/verify` (o `--full`) más los E2E de tema e Inicio; las
    capturas son evidencia, no aprobación. No se debilita ningún check para que pase un rediseño.
 
-`[PROPUESTA]` Secuencia: wireframes y `UI · SPEC` ahora; `DEV-01`/`DEV-02` tras aprobar la SPEC;
-`DEV-06` sobre Inicio requiere coordinación de `style.css`/`main.tsx`. E4.9 está integrado;
-E4.10 no tiene DEV y E4.11 sigue en DRAFT, así que no se anticipan sus pantallas.
+`[PROPUESTA]` Secuencia: `UI · SPEC` ahora; `DEV-01`/`DEV-02` tras aprobarla; `DEV-03 → 04 →
+05` (paralelismo solo con archivos disjuntos); `DEV-06` sobre las cinco pantallas de §5; `DEV-07`
+al final. E4.10 I1 está integrado e I2 sigue en PR, así que no se anticipan sus pantallas; E4.11
+sigue en DRAFT. `style.css` y `main.tsx` quedan bajo un único escritor UI por ventana.
 
 ---
 
@@ -353,9 +355,15 @@ E4.10 no tiene DEV y E4.11 sigue en DRAFT, así que no se anticipan sus pantalla
 
 ## 9. Siguiente paso
 
-`[CONFIRMADO 2026-11-05]` Alternativa B adoptada; `UI · SPEC` preparada en
+`[CONFIRMADO 2026-11-05]` Alternativa B adoptada; `UI · SPEC` actualizada en
 [`specs/ui-specification.md`](../ui-specification.md), con wireframes 1440/390 en los tres temas
 y el plan `UI · DEV-01…07`.
+
+`[PROPUESTA]` **Decisiones para aprobación formal:** cinco pantallas de `DEV-06` (Inicio,
+Movimientos, Saldos ficha, Saldos alta/edición, Cierre); secuencia `03 → 04 → 05` con
+paralelismo solo si hay archivos disjuntos; matriz 30+15 capturas y criterios AA/foco/teclado/
+zoom; actualización documental de `guidelines/ui.md` antes de `DEV-01`; aprobación separada de
+`UI · DEV-01`.
 
 `[PENDIENTE]` **No hay `DEV` hasta autorización.** Este documento no crea rama de código, no
 modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
@@ -367,19 +375,19 @@ modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
 - **Cerrado:** identificador `UI`, alternativa B y los tres temas de #198. No se reabren.
 - **Inicio:** ¿se acepta pulir jerarquía/densidad sin reabrir SPEC24 (mismas secciones, cifras y
   estados)?
-- **Navegación:** ¿se valida agrupar las 23 rutas en seis grupos sin cambiar rutas ni añadir
+- **Navegación:** ¿se valida agrupar los 23 enlaces en grupos sin cambiar rutas ni añadir
   módulos?
-- **Alcance de la primera pasada:** ¿qué pantallas entran en `DEV-06` además de Inicio?
-- **Evidencia:** ¿se acepta la matriz 5 pantallas × 3 temas × 2 anchos con contraste automatizado
-  y teclado?
-- **Secuencia:** ¿`DEV-01`/`DEV-02` tras aprobar la SPEC y antes de `DEV-06`?
-- **Guía:** ¿se aprueba la propuesta de actualización de `guidelines/ui.md` incluida en la SPEC?
+- **Pantallas `DEV-06`:** recomendación de cinco (Inicio, Movimientos, Saldos ficha, Saldos
+  alta/edición, Cierre); alternativa mínima de cuatro sin ficha.
+- **Evidencia:** recomendación 30 capturas base + 15 de estados, AA/foco/teclado/zoom.
+- **Secuencia:** `01 → 02 → 03 → 04 → 05 → 06 → 07`; `03 ∥ 04` solo con archivos disjuntos.
+- **Guía:** actualización quirúrgica de `guidelines/ui.md` antes de `DEV-01`, sin cambiar
+  colores.
 
 ## Decisiones
 
 **Cerradas (2026-11-05):** identificador `UI`; alternativa B; tres temas y paletas de #198;
 selector existente. No se reabren.
 
-**Pendientes:** alcance de pantallas de `DEV-06`; orden/paralelismo de `DEV-03/04/05`; criterio
-de evidencia visual; aprobación de la actualización de `guidelines/ui.md`; autorización de
-`UI · DEV-01`.
+**Pendientes:** aprobación formal de la SPEC; cinco pantallas de `DEV-06`; secuencia/paralelismo;
+matriz de evidencia; actualización de `guidelines/ui.md`; autorización separada de `UI · DEV-01`.
