@@ -72,10 +72,11 @@ disparador, no los gates del host.
 
 `[PENDIENTE]` **Dependencia de TEST.** La actualización de
 [SPEC34](34-infra-test-01-specification.md) a v25/C25 está en el
-[PR #229](https://github.com/jmartinlabs/myfinanzas-app/pull/229), abierto; el seed de `FT-1`
-se define para v25 y rechaza v26. El primer tag de TEST no podrá habilitarse hasta
-reconciliar el contrato de esquema/seed con el SHA elegido. Este diseño no fija esa
-reconciliación (D11).
+[PR #229](https://github.com/jmartinlabs/myfinanzas-app/pull/229), **cerrado sin merge**; esa
+actualización no está integrada. El seed de `FT-1` propuesto se define para v25 y rechaza
+v26, mientras `main` ya está en v26. El primer tag de TEST no podrá habilitarse hasta
+reconciliar el contrato de esquema/seed con el SHA elegido mediante una nueva propuesta o la
+reapertura autorizada del PR. Este diseño no fija esa reconciliación (D11).
 
 ## 3. Convención de tags
 
@@ -94,9 +95,9 @@ estable:
 ```
 
 No se admiten prefijos, sufijos, versiones incompletas, `latest`, metadatos de build ni
-pre-releases sin una decisión separada (D10). El nombre del tag y la versión del contrato de
-despliegue deben coincidir. El manifiesto actual de `release.py` no declara versión de
-aplicación; ese campo se añadirá o se vinculará por tag/SHA en D2/D3.
+pre-releases sin una decisión separada (D10). El nombre del tag y la versión declarada en la
+anotación/contrato de despliegue deben coincidir. El manifiesto actual de `release.py` no
+declara versión de aplicación; la definición exacta de ese campo queda en D3.
 
 Reglas:
 
@@ -174,7 +175,8 @@ para corregir una validación.
    aunque el tag sea válido.
 2. Adquirir el bloqueo exclusivo del entorno; un segundo despliegue se rechaza.
 3. Entregar al host el contrato de §3 de `vps-infra` (entorno, versión, SHA, digest,
-   manifiesto, seed, esquema, copia, smoke). No se incluyen secretos en el contrato, la
+   manifiesto, seed, esquema, copia, smoke y, en PROD, la referencia de aprobación del
+   Environment). No se incluyen secretos en el contrato, la
    anotación del tag ni los logs; el workflow obtiene las credenciales del Environment o
    almacén autorizado solo tras la habilitación o la aprobación correspondiente.
 4. Ejecutar el perfil de smoke acordado: salud, ruta protegida sin sesión, frontend, `seed
@@ -282,7 +284,7 @@ repositorio no duplica el contrato del host; `vps-infra` no duplica la convenci�
 | D8 | Autorización de migración y prueba de backup/restore | Reutilizar `compatibility.py` y el RUNBOOK; una autorización por par de esquema y datos | Fase 5 |
 | D9 | Perfil de smoke y comportamiento ante fallo posterior | Perfil fijo y mínimo; recuperación manual con estado preservado, sin rollback automático | Fases 4–5 |
 | D10 | Pre-releases, metadatos de build y futura rama `test` | Solo SemVer estable ahora; la rama futura cambia únicamente el origen de tags | Futuro |
-| D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` ya está en v26 y el seed documentado es v25 | Fase 1 |
+| D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` está en v26, el seed propuesto es v25 y el PR #229 se cerró sin merge: nueva propuesta o reapertura autorizada | Fase 1 |
 
 ## 10. Fases propuestas para implementar y habilitar
 
