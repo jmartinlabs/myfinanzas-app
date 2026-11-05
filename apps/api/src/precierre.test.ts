@@ -577,6 +577,11 @@ test("AC-14: E3.5 no disponible deja precierre parcial y E4.9 bloqueado", () => 
     const comida = result.fuentes.find((f) => f.key === "e35")!;
     expect(comida.estado).toBe("No disponible");
     expect(result.cobertura).toBe("Parcial");
+    expect(result.estado).toBe("Listo con avisos");
+    expect(result.bloqueos.map((b) => b.code)).not.toContain(
+      "E35_NO_VERIFICABLE",
+    );
+    expect(result.avisos.map((a) => a.code)).toContain("E35_NO_VERIFICABLE");
     expect(result.e4_9Bloqueado).toBe(true);
   } finally {
     close(db);

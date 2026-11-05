@@ -1,9 +1,7 @@
 # 27 — E4.9 Cierre financiero y primera fotografía: Specification
 
 Status: **APPROVED — SPEC27/E4.9 aprobada documentalmente el 2026-10-28.** Los AC
-siguen UNRUN; no autoriza cierre real ni despliegue. Implementación actual: **A**
-(esquema v25/C25) y **B núcleo** (preflight, cierre transaccional, foto y API), sin
-guards T1/T2/T3, UI/E2E C ni proveedor real DT6.
+siguen UNRUN; no autoriza DEV, cierre real ni despliegue.
 Approval source/date: **aprobación funcional del usuario el 2026-10-28**, condicionada a
 las correcciones documentales de `SinPlan` y bloqueo E4.9 por E3.5, ya aplicadas; CI
 `40668646943` SUCCESS. Decisiones M1–M6 confirmadas. **DT3 y DT4 resueltas el
@@ -37,8 +35,7 @@ inventa. Mientras no exista, el cierre E4.9 queda bloqueado.
 
 ## Data model and contracts
 
-La implementación A añade el esquema v25 y el contrato C25; este documento conserva
-el contrato funcional. Contratos:
+No hay DDL ni migración en este borrador. Contratos conceptuales:
 
 - **Cierre:** ciclo, versión, ventana congelada, S0 congelado, actor, UTC, motivo,
   fingerprint, estado y referencia a la foto.
@@ -126,17 +123,12 @@ La UI no presenta `0` por ausencia ni declara completo un total parcial.
 
 ## API behavior and external dependencies
 
-Contratos implementados en E4.9 A/B (UI/E2E C pendiente):
+Contratos conceptuales, sin implementación:
 
-- `GET /api/cierres/precierre/:ciclo` — E4.8, solo lectura; detecta cierres
-  posteriores reales desde `cierres`/`fotos_cierre`.
-- `GET /api/cierres/:ciclo/preflight` — preflight E4.9 canónico: devuelve el
-  `fingerprint` que debe enviarse al cierre, bloqueos/avisos y la foto prevista.
+- `GET /api/cierres/precierre/:ciclo` — E4.8, solo lectura.
 - `POST /api/cierres/:ciclo/cerrar` — cierre con clave de intento, revisión/hash y
   motivo; respuesta con foto/estado.
-- `GET /api/cierres/:ciclo/estado` — conserva el shape E4.8 en el nivel superior y
-  añade el estado de cierre E4.9 bajo `cierre`. `GET .../cierre` es el alias directo
-  al objeto de estado E4.9.
+- `GET /api/cierres/:ciclo/estado` — estado y versión.
 - `GET /api/cierres/:ciclo/foto` — foto vigente.
 - Reintento idéntico devuelve la misma foto; payload distinto → 409
   `IDEMPOTENCY_CONFLICT`; cambio concurrente → 409 `IMPACT_CHANGED`/`REVISION_CONFLICT`.
@@ -145,8 +137,6 @@ Contratos implementados en E4.9 A/B (UI/E2E C pendiente):
 ## Validation and edge cases
 
 - Sin ventana finita o sin S0 → bloqueo; no se cierra.
-- S0 fuera del rango exacto ±2^53−1 en céntimos → `422 S0_FUERA_DE_RANGO`
-  motivado; no se intenta escribir.
 - `SinPlan` → válido; no bloquea; se captura como `SinPlan`. `PlanNoVerificable` → bloqueo.
 - Inconsistencia estructural o fuente núcleo ausente → bloqueo.
 - Backup no verificable o restauración no demostrada → bloqueo.

@@ -365,7 +365,9 @@ function e35Source(
             metrics.proveedor.motivo ??
             "E3.5/FIN_NETA no verificable; E4.9 queda bloqueado.",
         enlace: "/comida",
-        aplicable: true,
+        // SPEC26 AC-14: E3.5 no verificable deja el precierre parcial y bloquea
+        // solo E4.9; no convierte el precierre en `Bloqueado`.
+        aplicable: verificable,
       },
     };
   } catch (error) {
@@ -381,7 +383,7 @@ function e35Source(
             ? error.message
             : "E3.5/FIN_NETA no verificable; E4.9 queda bloqueado.",
         enlace: "/comida",
-        aplicable: true,
+        aplicable: false,
       },
     };
   }
@@ -533,7 +535,7 @@ export function getPrecierre(
     });
   const e35 = e35Source(db, id, now);
   if (!e35.verificable)
-    bloqueos.push({
+    avisos.push({
       code: "E35_NO_VERIFICABLE",
       message: e35.source.motivo,
     });
@@ -651,7 +653,9 @@ export function getPrecierre(
       auxiliaryPartial
         ? "Parcial"
         : "Completa",
-    e4_9Bloqueado: bloqueos.length > 0 || corePartial,
+    // SPEC26 AC-14: E3.5 no verificable bloquea E4.9 aunque el precierre siga
+    // siendo parcial con avisos.
+    e4_9Bloqueado: bloqueos.length > 0 || corePartial || !e35.verificable,
     bloqueos,
     avisos,
     fuentes,

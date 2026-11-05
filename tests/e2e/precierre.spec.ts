@@ -68,7 +68,9 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     ).toBeVisible();
     await expect(page.getByText("Wireframes W1–W6 pendientes de aprobación visual")).toBeVisible();
     await page.getByLabel("Ciclo").selectOption("1");
-    await expect(page.getByText("Bloqueado", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("Listo con avisos", { exact: true }).first(),
+    ).toBeVisible();
     await expect(
       page.getByText("E35_NO_VERIFICABLE", { exact: true }),
     ).toBeVisible();
@@ -93,7 +95,9 @@ test("E4.8 precierre: solo lectura, estados y 1440/390", async ({ page, request 
     await page.setViewportSize({ width: 390, height: 844 });
     await page.reload();
     await page.getByLabel("Ciclo").selectOption("1");
-    await expect(page.getByText("Bloqueado", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText("Listo con avisos", { exact: true }).first(),
+    ).toBeVisible();
     await expect(
       page.getByText("E35_NO_VERIFICABLE", { exact: true }),
     ).toBeVisible();
