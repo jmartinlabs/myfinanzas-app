@@ -116,7 +116,7 @@ cambiar la semántica.
 | E4.10-AC03 | Dependencias posteriores presentes; reabrir/re-cerrar | Revalidación de solo lectura; S0/plan ajenos sin cambios; evidencia | Bun Test de revalidación | API futura | DTO y snapshot | UNRUN |
 | E4.10-AC04 | Reabrir no último o versión histórica | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado | Bun Test de elegibilidad | API futura | Error y snapshot | UNRUN |
 | E4.10-AC05 | Fallo inducido en transacción de reapertura | Rollback total; sigue `Cerrado(vN)`; sin auditoría huérfana | Bun Test de fallo inducido | API futura | Snapshot sin cambios | UNRUN |
-| E4.10-AC06 | Reabrir con motivo/actor/UTC | `Reabierto(vN)`; motivos separados reapertura/re-cierre, actor de sesión, UTC y trazabilidad en auditoría/versión; sin foto nueva | Bun Test + SQL | API futura | Evento y estado | UNRUN |
+| E4.10-AC06 | Reabrir con motivo/actor/UTC | `Reabierto(vN)`; motivos separados reapertura/re-cierre, máximo 1000 caracteres y trim, actor de sesión, UTC y trazabilidad en auditoría/versión; sin foto nueva | Bun Test + SQL | API futura | Evento y estado | UNRUN |
 | E4.10-AC07 | Consultar/modificar v1 durante reapertura | v1 y foto intactas; consulta persistida; `PATCH`/`DELETE` rechazados | Bun Test + SQL triggers | API futura | Foto y triggers | UNRUN |
 | E4.10-AC08 | Corrección T2 en ventana | Impacto/motivo/auditoría; v1 intacta; vista viva actualizada/marcada | Bun Test + UI futura | API/UI futura | Auditoría y foto | UNRUN |
 | E4.10-AC09 | Escritura T1 dentro/fuera de ventana | D2-B aprobada: dentro de ventana/ciclo, auditada; S0/ventana/Fin bloqueados; fuera, `HISTORY_LOCKED` | Bun Test de guarda | API futura | Respuesta y snapshot | UNRUN |

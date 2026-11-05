@@ -495,8 +495,10 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
 ## 13. Empty, loading and error states
 
 - **Sin cierre:** no hay reapertura; se explica que el cierre es E4.9.
-- **Reabierto sin correcciones:** la ventana sigue abierta; el re-cierre se rige por la
-  decisión pendiente sobre `SIN_CAMBIOS` (no se inventa aquí).
+- **Reabierto sin correcciones:** la ventana sigue abierta; el re-cierre sin cambios
+  materiales se rechaza con resultado explícito `SIN_CAMBIOS` y no crea foto. Si procede,
+  se usa la cancelación auditada de D8 con ausencia de cambios acreditada. No basta la
+  igualdad de importes o totales.
 - **Carga:** conserva ciclo, versión y filtros; no muestra totales provisionales.
 - **Error:** no hay v2 ni foto parcial; se declara el fallo y se permite reintento
   idempotente. El ciclo permanece `Reabierto(vN)` si falló el re-cierre.
@@ -585,7 +587,7 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC03 | Reabrir/re-cerrar con dependencias posteriores existentes. | Revalidación de solo lectura; su S0/plan no se modifica automáticamente; evidencia registrada. | `[CONFIRMADO]` roadmap AC3 |
 | E4.10-AC04 | Intentar reabrir un cierre no último o una versión histórica distinta de la última. | Rechazo `NO_ES_ULTIMO_CIERRE`/equivalente; DT9 no habilitado; sin estado parcial. | `[CONFIRMADO]` P5/DT9; `[APROBADO D1-A]` rechazo de versión histórica |
 | E4.10-AC05 | Fallo inducido dentro de la transacción de reapertura. | Rollback total; el cierre sigue `Cerrado(vN)`; sin evento ni auditoría huérfana. | `[PROPUESTA]` atomicidad de reapertura pendiente |
-| E4.10-AC06 | Reabrir con motivo, actor y UTC; consultar después. | Estado `Reabierto(vN)`; motivos separados reapertura/re-cierre, actor de sesión/UTC y trazabilidad en auditoría/versión; no se crea foto. | `[APROBADO D3-B+C]` |
+| E4.10-AC06 | Reabrir con motivo, actor y UTC; consultar después. | Estado `Reabierto(vN)`; motivos separados reapertura/re-cierre, máximo 1000 caracteres y trim, actor de sesión/UTC y trazabilidad en auditoría/versión; no se crea foto. | `[APROBADO D3-B+C]` |
 | E4.10-AC07 | Consultar y intentar modificar v1/foto mientras el ciclo está reabierto. | v1 y foto intactas; consulta devuelve valores persistidos; `PATCH`/`DELETE` rechazados. | `[CONFIRMADO]` inmutabilidad |
 | E4.10-AC08 | Reclasificar un hecho T2 dentro de la ventana. | Impacto, motivo y auditoría; v1 intacta; vista viva actualizada o marcada. | `[CONFIRMADO]` T2 |
 | E4.10-AC09 | Escritura T1 dentro/fuera de la ventana. | Dentro: permitida solo en ventana/ciclo, con impacto/auditoría; S0/`inicio`/`Fin` siempre bloqueados. Fuera: `HISTORY_LOCKED`. | `[APROBADO D2-B]` |
