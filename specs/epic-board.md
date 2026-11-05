@@ -247,7 +247,7 @@ Matriz en la [preparación read-only](investigations/pendientes-readonly-2026-10
 
 **Estado vigente 2026-11-05:** DEV E4.9 **autorizado** (2026-11-03) y ejecutado;
 integrado `0176ffc` (PR #200) con CI `42000330143` PASS y QA **APTO CON
-RESERVAS**. **Merge pendiente de aprobación explícita; no autorizado.** DT6/T-BKP sigue
+RESERVAS**. **Merge completado en `0176ffc` el 2026-11-05.** DT6/T-BKP sigue
 abierto: bloquea AC-09 y el cierre real, no el DEV con fixtures.
 
 E4.9 **no se desbloquea solo con DT6**. Los gates son independientes:
@@ -268,8 +268,8 @@ valoración ni patrimonio.
 
 Orden recomendado (histórico, previo a la autorización del DEV E4.9): analizar la
 adaptación de E3.5/FIN_NETA; mantener E4.8 integrado y la visual aplazada; mantener DT6
-aparcado. **Estado actual:** DEV E4.9 ejecutado; queda la decisión de merge de #200, no
-una nueva autorización de DEV.
+aparcado. **Estado actual:** DEV E4.9 ejecutado y merge de #200 completado en `0176ffc`;
+la aceptación funcional y el cierre real siguen pendientes, sin nueva autorización de DEV.
 
 ### 6. Mejoras opcionales
 
