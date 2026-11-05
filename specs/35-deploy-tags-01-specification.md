@@ -5,7 +5,9 @@ No autoriza crear tags operativos, activar workflows de despliegue, configurar c
 o accesos al VPS, cambiar servicios, DNS, Caddy, Podman o firewall, desplegar ni fusionar.
 Approval source/date: usuario, 2026-11-05 (diseño de despliegue mediante tags; alcance
 limitado a documentación y revisión técnica).
-Base: `main` `baa673e778f8489369824e533c3e0caaabe00c1a` (2026-11-05).
+Base: `main` `70fa7c054e48faf48ae545a13f1d88e06b0c9f25` (2026-11-05). El diseño se
+preparó sobre `baa673e`; `main` incorporó después E4.10 I1 (v26) y este documento no fija
+una versión de esquema, por lo que no depende de esa entrega.
 Documentos relacionados: [SPEC34 — entorno TEST](34-infra-test-01-specification.md),
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
