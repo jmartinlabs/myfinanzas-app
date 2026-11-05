@@ -1,12 +1,12 @@
 # UI — Evolución visual de MyFinanzas: propuesta (2026-11-04)
 
-**Estado:** documento de análisis y diseño. **No autoriza `DEV`, no aprueba una spec nueva y no
-cambia ningún contrato funcional ni financiero.** No modifica código de la app.
+**Estado:** documento de análisis y diseño actualizado. **No autoriza `DEV`, no cambia contratos
+funcionales ni financieros y no modifica código.** La alternativa **B** está adoptada; los tres
+temas de #198 están cerrados y no se reabren.
 
-**Base:** rama `docs/ui-evolution`, creada desde `main` `b3f4ed9`. Estados contrastados con
-[tablero](../epic-board.md): temas Fase 1 integrados en `0b8aade` (#198) y E4.6 integrado en
-`cfbedb0` (#201); E4.9 en curso en #200 (`DEV-04` guards `6af6911`, `DEV-05` en curso; UI sin
-decidir).
+**Base:** `main` **`238af31`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
+decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
+(#200) con QA APTO CON RESERVAS; E4.10 con D1–D9 y `SIN_CAMBIOS` aprobadas, sin DEV.
 
 **Leyenda.** `[CONFIRMADO]` = regla de un documento aprobado, estado verificado en Git o hecho
 medido en el repositorio/artefacto citado. `[PROPUESTA]` = candidato de diseño no aprobado.
@@ -37,9 +37,10 @@ presentación **no puede** ser una entrega `E` ni alterar ese recuento.
 `<scope>` del commit/PR (`theme`, `ci`) — `identifier-convention.md:66-67,82`. Ese es el hueco
 por el que encaja esta iniciativa.
 
-### 1.1 Recomendación
+### 1.1 Decisión
 
-`[PROPUESTA]` **`UI`** como identificador transversal estable, siempre cualificado por etapa:
+`[CONFIRMADO 2026-11-05]` **`UI`** es el identificador transversal adoptado, siempre cualificado
+por etapa:
 
 | Uso | Forma |
 | --- | --- |
@@ -109,7 +110,7 @@ reservados a entregas (`identifier-index.md:39-49`).
 | **Reutilización cruzada** | `Precierre` toma clases de Compartidos (`.shared-metrics`, `.metric`), así que rediseñar Compartidos altera precierre sin tocar su archivo | `Precierre.tsx:176-238`, `style.css:2029-2047` |
 | **Móvil** | El comportamiento está definido por CSS (una columna, menú desplegable, cabecera apilada), pero la carpeta de referencia entregada solo contiene capturas a 1440: **no hay revisión visual móvil en este artefacto** | `artifacts/ui-baseline/*-1440.png`, `style.css:918-1217` |
 | **Consistencia entre temas** | El tema claro usa un tinte de tarjeta «plan» (`#f2f0eb`) casi igual al fondo (`#f7f5f1`): la diferenciación depende del borde discontinuo; no hay matriz de evidencia de estados por tema | `themes.css:84,87,154,157`, captura `inicio-light-s-1440.png` |
-| **Identidad documentada** | `guidelines/ui.md` sigue describiendo la identidad verde `#8DBB2E`, fondo `#EEF7E8` y «tema únicamente claro»; la app usa teal/naranja y tres temas desde #198 | `guidelines/ui.md:9-15,67-68,160-162` |
+| **Identidad documentada** | `guidelines/ui.md` sigue describiendo la identidad verde `#8DBB2E`, fondo `#EEF7E8` y «tema únicamente claro»; la app usa teal/naranja y tres temas desde #198. Propuesta de actualización en [`ui-specification.md`](../ui-specification.md) §2.1, sin cambiar colores | `guidelines/ui.md:9-15,67-68,160-162` |
 
 `[CONFIRMADO]` Ninguna carencia anterior exige recalcular una cifra ni cambiar una regla de
 negocio: todas son de presentación. Varias sí tocan decisiones de UX ya aprobadas (orden de
@@ -266,12 +267,9 @@ declarada.
 | **Dependencia de E4.9** | Baja | Media: hay que respetar precierre/cierre congelados | Alta |
 | **Veredicto** | Insuficiente como iniciativa | **Recomendada** | Prematura |
 
-`[PROPUESTA]` **Recomiendo B.** A no resuelve lo que hace que la interfaz se sienta sin acabar
-(jerarquía, tipografía, navegación, duplicación de componentes) y obligaría a repetir el trabajo.
-C añade valor, pero debe llegar **después** de B y con evidencia de uso: rediseñar la navegación
-antes de tener primitivas y pantallas cuidadas cambia dos variables a la vez y choca con los
-mapas de drill-down ya aprobados. B conserva todas las rutas, todas las cifras y todos los
-estados, y deja C como decisión posterior informada.
+`[CONFIRMADO 2026-11-05]` **Adoptada B** por el usuario: evolución progresiva de componentes y
+pantallas, sin rediseñar la identidad visual ni cambiar rutas, cifras o contratos. A y C quedan
+descartadas para esta iniciativa; C solo podría reconsiderarse después de B y con evidencia.
 
 ---
 
@@ -302,10 +300,12 @@ mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
 | Superficie | Estado | Qué puede hacer `UI` | Qué no puede hacer |
 | --- | --- | --- | --- |
 | `/inicio` (E4.6, `cfbedb0`) | Integrada; UX y wireframes aprobados en SPEC24; **la revisión visual de implementación conserva su gate** (`spec24:3-12,434-435`) | Jerarquía, densidad, tipografía, agrupación de metadatos, unificar badges y CTA | Cambiar orden de secciones, añadir/quitar cifras, alterar la taxonomía de estados, reescribir la semántica de cobertura |
-| `/precierre` (E4.8) | UI provisional, «visual aplazada al final» (`epic-board.md:209`) | Nada más allá de tokens compartidos | Rediseñar la pantalla o su tabla antes de que E4.9 decida su UI |
-| Cierre / foto (E4.9, #200) | `DEV-04` guards integrados en rama; `DEV-05` en curso; **UI pendiente de decisión** (`identifier-index.md:79`, `e49-dev-authorization-package:59`) | Diseñar sin tocar contratos: patrones de operación irreversible, confirmación y estados de bloqueo, solo en wireframe | Implementar, congelar clases o anticipar rutas |
+| `/precierre` (E4.8) | Integrada; UI provisional y «visual aplazada al final» (`epic-board.md:211`) | Tokens compartidos y pulido que no altere su contrato | Rediseñar la pantalla o su tabla sin autorización de su spec |
+| Cierre / foto (E4.9) | Integrada en `0176ffc` (#200), QA APTO CON RESERVAS; UI de su SPEC27 | Consumir patrones de operación irreversible, confirmación y bloqueo ya aprobados | Reabrir rutas, contratos o estados de E4.9 |
 | `/deudas`, `/inversiones`, etc. (E1–E4.4) | Integradas, con UX aprobada por su spec | Pulido visual que no altere decisiones | Reabrir reglas o estados |
-| E4.7 / E4.10 / E4.11 | Specs en redacción, sin UI implementada | Nada: no se anticipa su diseño | Fijar pantallas antes de su SPEC |
+| E4.7 | Integrada en `0e89562` (#210) | Pulido visual dentro de su contrato | Recalcular o reordenar cifras |
+| E4.10 | SPEC28 con D1–D9 y `SIN_CAMBIOS` aprobadas; **sin DEV** | Wireframe conceptual de reapertura/cierre, sin clases ni rutas | Anticipar implementación, estados persistidos o pantallas definitivas |
+| E4.11 | SPEC29 DRAFT; sin UI implementada | Nada | Fijar pantallas antes de su SPEC |
 
 ### 7.2 Cómo evitar conflictos
 
@@ -323,8 +323,8 @@ el punto de colisión principal.
    valores RGB concretos (`theme.spec.ts:78-114`): cualquier cambio de paleta es un bloque
    propio, con matriz de evidencia y actualización consciente de tests.
 4. **`main.tsx` con un único dueño por cambio.** `DEV-03` extrae las 21 rutas a un módulo de
-   datos y deja el JSX estable; E4.9 añadirá rutas en el mismo archivo, así que la secuencia se
-   acuerda antes de empezar.
+   datos y deja el JSX estable; E4.9 ya está integrado y cualquier ruta futura de E4.10/E4.11
+   exige coordinación previa.
 5. **No crear clases genéricas nuevas.** `.metric` y `.table` ya demuestran el problema:
    `Precierre` reutiliza `.metric` de Compartidos y `.table` no existe.
 6. **No tocar `ui.tsx` desde dos bloques.** Las primitivas se amplían en `DEV-02` y `DEV-05`;
@@ -332,10 +332,9 @@ el punto de colisión principal.
 7. **Verificación.** `python3 scripts/verify` (o `--full`) más los E2E de tema e Inicio; las
    capturas son evidencia, no aprobación. No se debilita ningún check para que pase un rediseño.
 
-`[PROPUESTA]` Secuencia recomendada frente a E4.9: diseñar y aprobar wireframes ahora; ejecutar
-`DEV-01`/`DEV-02` cuando E4.9 haya fijado su UI o en una rama declarada apilada; `DEV-06` sobre
-Inicio no requiere esperar a E4.9, pero **sí** coordinación de archivos porque comparte
-`style.css` y `main.tsx`.
+`[PROPUESTA]` Secuencia: wireframes y `UI · SPEC` ahora; `DEV-01`/`DEV-02` tras aprobar la SPEC;
+`DEV-06` sobre Inicio requiere coordinación de `style.css`/`main.tsx`. E4.9 está integrado;
+E4.10 no tiene DEV y E4.11 sigue en DRAFT, así que no se anticipan sus pantallas.
 
 ---
 
@@ -354,15 +353,9 @@ Inicio no requiere esperar a E4.9, pero **sí** coordinación de archivos porque
 
 ## 9. Siguiente paso
 
-`[PROPUESTA]` Revisión de esta propuesta por el usuario y, si se acepta la alternativa B:
-
-1. Redactar `UI · SPEC` con los principios, arquetipos, primitivas y la matriz de evidencia.
-2. Producir **wireframes 1440/390 en los tres temas** para 3–4 pantallas de referencia (Inicio,
-   un catálogo, una ficha y un formulario), siguiendo el formato de
-   `specs/27-e49-cierre-financiero-wireframes.html`.
-3. Contrastar Inicio contra los wireframes aprobados de SPEC24 para fijar el límite exacto del
-   pulido visual.
-4. Escribir el paquete `UI · DEV-01` y esperar autorización explícita.
+`[CONFIRMADO 2026-11-05]` Alternativa B adoptada; `UI · SPEC` preparada en
+[`specs/ui-specification.md`](../ui-specification.md), con wireframes 1440/390 en los tres temas
+y el plan `UI · DEV-01…07`.
 
 `[PENDIENTE]` **No hay `DEV` hasta autorización.** Este documento no crea rama de código, no
 modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
@@ -371,28 +364,22 @@ modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
 
 ## Para revisión
 
-- **Identificador.** ¿Se adopta `UI` (`UI · SPEC`, `UI · DEV-01`) con alternativa de reserva
-  `VISUAL`? ¿Se confirma que no crea épica ni altera las 30 entregas?
-- **Identidad.** `guidelines/ui.md` sigue describiendo verde `#8DBB2E` y «solo tema claro», pero
-  la app usa teal/naranja y tres temas desde #198. ¿Se actualiza la guía o se revisa la paleta?
-- **Inicio.** ¿Se acepta pulir jerarquía/densidad de Inicio sin reabrir SPEC24 (mismas secciones,
-  mismas cifras, mismos estados)?
-- **Navegación.** ¿Se valida agrupar las 21 rutas en seis grupos sin cambiar rutas ni añadir
+- **Cerrado:** identificador `UI`, alternativa B y los tres temas de #198. No se reabren.
+- **Inicio:** ¿se acepta pulir jerarquía/densidad sin reabrir SPEC24 (mismas secciones, cifras y
+  estados)?
+- **Navegación:** ¿se valida agrupar las 21 rutas en seis grupos sin cambiar rutas ni añadir
   módulos?
-- **Alcance de la primera pasada.** ¿Qué pantallas entran en `DEV-06` además de Inicio?
-- **Temas.** ¿Se mantiene el oscuro como tema inicial o se pasa a claro / preferencia del sistema?
-- **Evidencia.** ¿Se acepta como criterio visual la matriz 4 pantallas × 3 temas × 2 anchos con
-  contraste automatizado y teclado?
-- **Secuencia.** ¿`DEV-01`/`DEV-02` antes o después de que E4.9 fije su UI?
+- **Alcance de la primera pasada:** ¿qué pantallas entran en `DEV-06` además de Inicio?
+- **Evidencia:** ¿se acepta la matriz 4 pantallas × 3 temas × 2 anchos con contraste automatizado
+  y teclado?
+- **Secuencia:** ¿`DEV-01`/`DEV-02` tras aprobar la SPEC y antes de `DEV-06`?
+- **Guía:** ¿se aprueba la propuesta de actualización de `guidelines/ui.md` incluida en la SPEC?
 
-## Decisiones materiales (máximo 5)
+## Decisiones
 
-1. **Identificador transversal:** `UI` (recomendado), `UX` o `VISUAL`, y su registro posterior en
-   índice/tablero por el coordinador.
-2. **Identidad vigente:** confirmar la paleta teal/naranja de #198 como identidad actual y
-   actualizar `guidelines/ui.md`, o abrir una revisión de paleta antes de tocar componentes.
-3. **Tema inicial:** mantener `dark-s`, cambiar a `light-s` o seguir `prefers-color-scheme`.
-4. **Alcance y orden de B:** qué pantallas entran en la primera pasada y si Inicio se pule antes,
-   durante o después de la UI de E4.9.
-5. **Criterio de aceptación visual:** matriz de capturas 1440/390 × 3 temas, contraste AA
-   automatizado, teclado y zoom 200 % como puerta de cada bloque.
+**Cerradas (2026-11-05):** identificador `UI`; alternativa B; tres temas y paletas de #198;
+selector existente. No se reabren.
+
+**Pendientes:** alcance de pantallas de `DEV-06`; orden/paralelismo de `DEV-03/04/05`; criterio
+de evidencia visual; aprobación de la actualización de `guidelines/ui.md`; autorización de
+`UI · DEV-01`.
