@@ -32,14 +32,14 @@ P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
 | **M1** | Ejercicios del histórico | **B** evidencia real | Preparar plantilla y criterios; no fijar años | Usuario con evidencia | G-DT7 |
 | **M2** | Partidas y fuentes por ejercicio | **B** evidencia real | Preparar formato de inventario; no fijar listas | Usuario con evidencia | G-DT7 |
 | **M3** | Identidad de fuentes sin ID | **A** técnica | Política híbrida de identidad y coordenada congelada | Usuario sobre recomendación | G-DT7 |
-| **M4** | Evidencia de `NoAplica`/Referencia | **A** política + evidencia por fuente | Campo/evidencia negativa; no asumir | Usuario sobre recomendación | G-DT7 |
+| **M4** | Evidencia de `NoAplica`/Referencia | **A** técnica (política) | Evidencia negativa por fuente; no asumir | Usuario sobre recomendación | G-DT7 |
 | **M5** | Regularización 2026 concreta | **B** evidencia real | Checklist y estados; no aprobar el registro | Usuario con evidencia | G-DT7 |
 | **M6** | Checklist de evidencia de regularización | **A** técnica | Checklist mínimo derivado de la spec | Usuario sobre recomendación | G-DT7 |
 | **M7** | Evidencia de representación/precontrol | **A** técnica | Vínculo de origen o tupla+huella; nunca importe | Usuario sobre recomendación | G-DT7/G-E2.4 |
 | **M8** | Saldos con apertura histórica | **B** evidencia real | Formato y límites; no fijar lista | Usuario con evidencia | G-DT7 |
 | **M9** | Aprobador de excepciones financieras | **C** gobernanza | Usuario aprueba; coordinador solo prepara | Usuario | G-DT7 |
 | **M10** | Conciliación y tolerancia | **C** gobernanza | 100 % y 0 céntimos; sin tolerancia automática | Usuario | G-DT7 |
-| **M11** | Custodia/acceso a evidencia | **C** seguridad | Custodia privada y mínimo privilegio; sin datos reales ahora | Usuario | G-P6/P7 |
+| **M11** | Custodia/acceso a evidencia | **C** seguridad | Custodia privada y mínimo privilegio; sin datos reales ahora | Usuario | G-P6/P7 + G-DT7 |
 | **M12** | Firma de conciliación independiente | **C** gobernanza | Revisor independiente + usuario | Usuario | G-DT7/G-DT6 |
 | **M13** | Autorización P6/P7 | **C** seguridad | **No autorizada**; se mantiene el gate | Usuario | G-P6/P7 |
 | **M14** | Adaptación E2.4 | **A** técnica | Ampliar el seam tipado; sin código ahora | Usuario sobre recomendación | G-E2.4/G-DEV |
@@ -56,9 +56,12 @@ P6/P7, SQL, migración, despliegue o merge. Los 59 AC siguen `UNRUN`.
    nueva conserva el ID y actualiza hash/versión (`SPEC20:282-286`).
 2. Identidad de registro:
    - con ID de origen: `(fuenteId, hojaTabla, idOrigen)`;
-   - sin ID: `(fuenteId, hojaTabla, coordenada congelada + cabecera + huella normalizada)`;
+   - sin ID: `(fuenteId, hojaTabla, fila/columna, huella normalizada)` y, si existe,
+     etiqueta de origen aprobada;
    - el nombre editable y el importe **nunca** son identidad.
-3. Coordenada congelada solo para agregados anuales; el resto exige ID/clave estable.
+3. **Propuesta de M3, no regla aprobada:** usar coordenada congelada solo para agregados
+   anuales y exigir ID/clave estable en el resto. SPEC20 no impone esa restricción; se
+   somete a decisión.
 4. Si dos identidades compiten, `Pendiente`/`Ambigua`; no se suma ni se elige.
 5. La evidencia por fuente (qué columnas, qué ID, qué coordenada) se aporta en M2; la
    política no acredita ninguna fuente real.
@@ -70,15 +73,17 @@ usuario apruebe su identidad.
 
 ### M4 — Evidencia de `NoAplica` y Referencia declarada
 
-**Recomendación:** declarar por fuente, con evidencia negativa.
+**Recomendación:** reutilizar el contrato existente y exigir evidencia negativa.
 
-1. Campo de inventario `declaraReferencia` (`Si`/`No`/`Desconocido`) y evidencia de la
-   fuente (columna, esquema o muestra ficticia).
-2. `NoAplica` solo con evidencia de que la fuente no declara Referencia.
+1. Usar `procedencia.referenciaOrigen` (texto o `null`) y `estadoMapeoReferencia`; no se
+   crea un campo nuevo.
+2. `NoAplica` solo con evidencia de que la fuente no declara Referencia (columna, esquema
+   o muestra).
 3. Si declara y no hay destino, `Pendiente`/`Ambigua`; nunca `NoAplica` por defecto.
-4. La evidencia real por fuente queda en M2; la política no la sustituye.
+4. `referenciaOrigen` se conserva para trazabilidad; no se infiere `REFxxx`.
+5. La evidencia real por fuente queda en M2; la política no la sustituye.
 
-**Reutiliza:** REQ-DT7-04, AC-59.
+**Reutiliza:** REQ-DT7-04, AC-59, `procedencia.referenciaOrigen`.
 **Verificación ficticia:** F-DT7-05.
 **Riesgo residual:** una fuente mal clasificada contaminaría el desglose por Referencia.
 
@@ -102,7 +107,9 @@ usuario apruebe su identidad.
 **Recomendación:** vínculo verificable, nunca importe.
 
 1. `representadoEnMovimientos=Si` exige ID de Movimiento/registro o tupla de origen
-   verificada; el archivo se excluye y el hecho cuenta una vez.
+   verificada; el archivo se excluye y el hecho cuenta una vez. **`Si` sin vínculo
+   verificado se normaliza a `Desconocido`; nunca se excluye en silencio** y el total
+   queda `NoVerificable`.
 2. `No` exige `evidenciaRepresentacion` por identidad/origen/huella; no por ausencia de
    coincidencia de importe.
 3. `Desconocido` no certifica ni contamina el subtotal sin evidencia de no duplicidad.
@@ -116,21 +123,31 @@ correcto, no un defecto a relajar.
 
 ### M14 — Adaptación E2.4
 
-**Recomendación:** ampliar el seam tipado, opción A.
+**Recomendación:** ampliar el seam tipado y decidir por separado las cuatro filas de C1.4.
 
-- Extender `AnnualSources`/`AnnualHistory` para expresar tri-estado
-  (`Si/No/Desconocido`), cobertura (`Completa/Parcial/NoDisponible/Solapada/NoAcreditada`),
-  `controles[]` por Partida/fuente y `AnnualProvenance` (identidad, huella, versiones).
+C1.4 exige decisión A/B en cuatro huecos. El texto C1–C8 integrado declara A, pero M14
+debe confirmar cada fila y no inferir las no registradas:
+
+| Hueco C1.4 | Opción A (texto integrado) | Opción B |
+| --- | --- | --- |
+| Control por Partida/fuente | `controles[]` con `fuenteId`, `partida` e intervalo; `control` obsoleto | Mantener `control` único y limitar el proveedor a un alcance |
+| Estado global y `sinClasificar` | `AnnualSources` expone universo, cobertura global, `sinClasificar[]` y `conflictos[]`; `read()` propaga | Agregado global precalculado por el consumidor |
+| Procedencia estructurada | Objeto `AnnualProvenance` (identidad, huella, versiones, ubicación) | String canónico validado por esquema |
+| Tri-estado de representación | Unión `Si/No/Desconocido` + `vinculo` + evidencias | Dos booleanos que pueden contradecirse |
+
 - Mantener compatibilidad: `historicoDisponible:false` por defecto y ausencia de proveedor
   no rompe E2.4.
 - No usar `verificado:false` como sustituto de estados ni `procedencia:string` como
   sustituto de provenance estructurada.
+- **Al aplicar la ampliación, actualizar `vehiculos.ts` y `plan-anual.test.ts` en el mismo
+  cambio**; `controles[]` sustituye a `control` y no se mantienen dos lecturas de
+  cobertura.
 - El adaptador E4.5→E2.4 se documenta y prueba con fixtures; **no se implementa ni se
   modifica esquema en esta fase**.
 - Alternativas: adaptar E4.5 con campos no representables (descartable), nueva interfaz
   de proveedor (mayor alcance) o aplazar AC-58 (no recomendable).
 
-**Reutiliza:** C1–C8, AC-58, `AnnualSources`/`AnnualHistory`.
+**Reutiliza:** C1–C8, C1.4, AC-58, `AnnualSources`/`AnnualHistory`.
 **Gate:** G-E2.4 + G-DEV; la recomendación no autoriza código.
 
 ### M15 — Separación/disyunción de agregado
@@ -192,7 +209,7 @@ agregado excede el corte: `AgregadoNoAtribuibleAlCorte`, contexto separado.
 - En esta fase no hay evidencia real ni custodia que activar.
 - Cuando P6/P7 se autorice: custodia local privada o cifrada, mínimo privilegio, acceso
   auditado, hashes y agregados sanitizados; nunca el documento real en el repositorio.
-- La custodia no sustituye la autorización P6/P7 ni el gate DT6.
+- La custodia no sustituye la autorización P6/P7, el gate DT6 ni G-DT7.
 
 ### M12 — Firma de la conciliación independiente
 
@@ -231,14 +248,16 @@ esperadas ausentes.
 
 **Evidencia necesaria:** expediente del registro concreto (tipo, ejercicio, intervalo,
 importe/signo, Partida/Referencia, procedencia, mapping, representación, no duplicidad,
-inclusión previa, aprobador). Opciones: aprobar, mantener pendiente o rechazar.
+inclusión previa, aprobador). Opciones: aprobar, mantener pendiente, rechazar o dividir si
+es separable.
 
 **Límite:** Q5=A ya está aprobada; M5 no la reabre, solo acredita el registro.
 
 ### M8 — Saldos con apertura histórica
 
 **Evidencia necesaria:** lista cerrada de `Sxxx` con apertura histórica, importe, fecha,
-procedencia y evidencia. No incluye Deuda (`Dxxx`), que sigue en E4.4.
+procedencia y evidencia, o la opción explícita «ninguno». No incluye Deuda (`Dxxx`), que
+sigue en E4.4.
 
 **Formato de respuesta:** `saldoId`, importe, fecha, evidencia; ausencias explícitas.
 
