@@ -42,7 +42,7 @@ Todos los estados son `UNRUN`.
 
 | ID | Método | Entorno | Evidencia | Owner | Fase | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| `INFRA-TEST-01-AC01` | Revisar `git diff` y clasificación con `python3 scripts/verify`; comprobar que solo se modifican la spec y el test plan | E0 | Salida de clasificación `docs`, lista de archivos del diff, `git diff --check` | myfinanzas-app / QA | 0 | UNRUN |
+| `INFRA-TEST-01-AC01` | Revisar `git diff` y clasificación con `python3 scripts/verify`; comprobar que solo se modifican la spec, el test plan y la fila `INFRA-TEST-01` del tablero | E0 | Salida de clasificación `docs`, lista de archivos del diff, `git diff --check` | myfinanzas-app / QA | 0 | UNRUN |
 | `INFRA-TEST-01-AC02` | Congelar SHA de 40 caracteres de `main`; verificar E4.6/E4.9, esquema 25/C25, ausencia de v26 y E4.5/E4.7/E4.10/E4.11 fuera del dataset | E0 | `git rev-parse`, `git merge-base`, tablero, `database-identity.ts` y contrato C25 | myfinanzas-app / QA | 3 | UNRUN |
 | `INFRA-TEST-01-AC03` | Construir release y artefacto de seed desde el mismo SHA; inspeccionar inventario de la imagen de producción | E1 | Manifiestos con IDs inmutables, checksums y listado de rootfs sin `tools/test-seed` | myfinanzas-app | 3 | UNRUN |
 | `INFRA-TEST-01-AC04` | Ejecutar casos negativos del seed: origen PROD, marcador ausente/ajeno, ruta relativa, symlink, permisos incorrectos, esquema 24/26 (comprobar que 24 sigue en 24), propietario existente, estado no vacío | E1 | Códigos `2`/`3`, mensajes sin secretos, estado intacto tras cada rechazo | myfinanzas-app / QA | 3 | UNRUN |
@@ -198,6 +198,6 @@ No se usa `reset-failed`, `chmod`/`chown`, `:U`, borrado de estado ni reintento 
 - Comprobaciones ejecutadas para esta entrega: **ninguna** más allá de la lectura del
   repositorio y de la consulta de solo lectura a GitHub.
 - AC: **19 / 19 `UNRUN`**.
-- Fases: **0 / 9 autorizadas**; la fase 1 tiene la auditoría parcial de `vps-infra` (2026-11-05).
+- Fases: **fase 0 aprobada; 0 / 9 ejecutadas**; la fase 1 tiene la auditoría parcial de `vps-infra` (2026-11-05).
 - Próxima acción independiente: solicitar autorización para implementar el seed y ejecutar las
   pruebas Rootless; completar la fase 1 (Quadlet/cgroup y backups) antes de la fase 2.

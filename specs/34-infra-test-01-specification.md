@@ -457,7 +457,7 @@ Todos son **documentales** hasta que se ejecuten en la fase indicada del
 
 | ID | Criterio verificable |
 | --- | --- |
-| `INFRA-TEST-01-AC01` | La rama solo modifica esta spec y su test plan; clasifica como `docs`; no toca código, workflow, `infra/`, VPS ni `vps-infra`; no hay merge ni deploy. |
+| `INFRA-TEST-01-AC01` | La rama solo modifica esta spec, su test plan y la fila `INFRA-TEST-01` del tablero; clasifica como `docs`; no toca código, workflow, `infra/`, VPS ni `vps-infra`; no hay merge ni deploy. |
 | `INFRA-TEST-01-AC02` | El candidato es un SHA de 40 caracteres de `main` con E4.6 y E4.9 integrados, esquema 25/C25 y sin v26; E4.5/E4.7/E4.10/E4.11 fuera del dataset. Cualquier cambio de base se registra. |
 | `INFRA-TEST-01-AC03` | Existe un artefacto de seed test-only con manifiesto y checksum propios, construido desde el mismo SHA, declara `schema_version=25`/C25 y `tools/test-seed` **no** aparece en la imagen de producción. |
 | `INFRA-TEST-01-AC04` | El seed rechaza origen distinto de TEST, marcador ausente/ajeno, ruta no canónica, symlink, permisos incorrectos, esquema no admitido, propietario existente y estado no vacío. Un fichero v24 se inspecciona en solo lectura, se rechaza con `2` y **sigue en v24** sin escrituras. |
@@ -517,7 +517,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | Caddy real | 2.11.9 auditado, `hold`; bloque TEST pendiente (según vps-infra PR #9) | Sujeto a backup, `caddy validate` y rollback |
 | DNS | Apex A/TTL 14400 conocido; `test` NXDOMAIN (según vps-infra PR #9) | Sin registro `test` no hay TLS ni entorno operativo |
 | Datos ficticios | Diseño de esta spec | Sin seed reproducible no se activa Caddy |
-| Actualización de SPEC34 | `PROPOSED UPDATE` 2026-11-05 pendiente | Sin aprobación, el contrato v25 no es vigente |
+| Actualización de SPEC34 | **Aprobada 2026-11-05** (`APPROVED UPDATE`) | Contrato v25 vigente; implementación pendiente |
 
 ### 9.2 Riesgos
 
@@ -547,7 +547,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
 | D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
-| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres vs crear FT-2 con cierres/fotos | Mantener FT-1 v1 y tablas v25 vacías; FT-2 solo si se decide cubrir E4.9, con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05]` |
+| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres/fotos vs crear FT-2 | FT-1 v1 sin cierres ni fotografías; tablas C25 vacías; compatibilidad con servicios v25 verificada por AC08/AC09; guardas rechazan esquemas ≠25 sin migrar; FT-2 reservado a una ampliación independiente con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05]` |
 
 ## 10. Fuera de alcance
 
@@ -597,8 +597,8 @@ aprobación → operaciones; este repositorio **no abre** esa tarea por inferenc
   VPS-CADDY-UPGRADE-01).
 - `[PROPUESTA]` El seed, `FT-1`, el marcador, el manifiesto, el reset y el artefacto
   test-only son diseño, no implementación.
-- `[CONFIRMADO]` E4.9/C25 está integrado en `a8e526b`; la actualización de esta spec es
-  `PROPOSED UPDATE` y no sustituye la versión aprobada hasta su aprobación.
+- `[CONFIRMADO]` E4.9/C25 está integrado en `a8e526b`; la actualización de esta spec fue
+  aprobada el 2026-11-05 (`APPROVED UPDATE`).
 - `[CONFIRMADO]` La actualización y D7 fueron aprobadas el 2026-11-05; D1–D6 siguen aprobadas.
 - `[PENDIENTE]` La implementación del seed, la construcción de release, el gate Rootless y
   todas las autorizaciones de fase. La aprobación documental no autoriza nada de eso.
