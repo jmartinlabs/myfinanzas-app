@@ -19,6 +19,7 @@ import { Auth, provision, totp } from "./auth";
 
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
+const c25 = "C25-E49-CIERRE-FINANCIERO";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const root = () => mkdtempSync(join(process.cwd(), ".tmp-e43-contract-"));
 
@@ -102,29 +103,29 @@ test("E4.3 AC-24: C14–C23 stay frozen and registered", () => {
   }
 });
 
-test("E4.3 AC-24: a fresh schema matches C24 exactly", () => {
+test("E4.3 AC-24: a fresh schema matches C25 exactly", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 24,
+      version: 25,
     });
-    expect(manifest(db)).toEqual(contract(c24).objects);
-    expect(verifyContract(db, 24)).toBe(c24);
+    expect(manifest(db)).toEqual(contract(c25).objects);
+    expect(verifyContract(db, 25)).toBe(c25);
   } finally {
     db.close();
   }
 });
 
-test("E4.3 AC-24: the v23→v24 upgrade matches C24 exactly", () => {
+test("E4.3 AC-24: the v23→v25 upgrade matches C25 exactly", () => {
   const dir = root();
   try {
     const path = join(dir, "v23.sqlite");
     materializeContract(path, c23);
     const db = openDatabase(path);
     try {
-      expect(manifest(db)).toEqual(contract(c24).objects);
-      expect(verifyContract(db, 24)).toBe(c24);
+      expect(manifest(db)).toEqual(contract(c25).objects);
+      expect(verifyContract(db, 25)).toBe(c25);
     } finally {
       db.close();
     }
@@ -185,17 +186,17 @@ test("E4.3 AC-24: C24 has no ciclo_id and does not touch E4.1/E4.2/E4.8", () => 
   }
 });
 
-test("E4.3 AC-24: unknown v25 contract is rejected without writes", () => {
+test("E4.3 AC-24: unknown v26 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
-    expect(verifyContract(db, 25)).toBe(null);
-    db.exec("UPDATE schema_version SET version=25");
+    expect(verifyContract(db, 26)).toBe(null);
+    db.exec("UPDATE schema_version SET version=26");
     expect(() => verifyAdmittedContract(db)).toThrow(
       "Esquema no compatible; no se modificará esta base.",
     );
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 25,
+      version: 26,
     });
   } finally {
     db.close();
@@ -254,8 +255,8 @@ test.skipIf(process.platform !== "linux")(
 
       const { bundle } = decryptBundle(identity, source);
       expect(bundle.manifest).toMatchObject({
-        app: "e4.3-v24",
-        schema: 24,
+        app: "e4.9-v25",
+        schema: 25,
         origin: "demo",
       });
 
@@ -263,7 +264,7 @@ test.skipIf(process.platform !== "linux")(
       const copy = openDatabase(restored.database);
       try {
         expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-          version: 24,
+          version: 25,
         });
         expect(
           copy
@@ -300,6 +301,7 @@ test.skipIf(process.platform !== "linux")(
           "auth_limits",
           "idempotency",
           "valoracion_attempts",
+          "cierre_attempts",
         ])
           expect(copy.query(`SELECT COUNT(*) n FROM ${table}`).get()).toEqual({
             n: 0,
@@ -396,7 +398,7 @@ test.skipIf(process.platform !== "linux")(
       mkdirSync(corrupt, { mode: 0o700 });
       const plaintext = join(corrupt, "bundle.tmp");
       const altered = structuredClone(bundle);
-      altered.manifest.schema = 25;
+      altered.manifest.schema = 26;
       writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
       cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
       expect(

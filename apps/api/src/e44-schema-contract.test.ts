@@ -19,7 +19,7 @@ import { Auth, provision, totp } from "./auth";
 
 const t = "2026-01-01T00:00:00.000Z";
 const root = () => mkdtempSync(join(process.cwd(), ".tmp-e44-"));
-const c24 = "C24-E43-VALORACION";
+const c25 = "C25-E49-CIERRE-FINANCIERO";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const c22 = "C22-E35-FIN-NETA";
 
@@ -66,7 +66,7 @@ function v22(path: string) {
   });
 }
 
-test("E4.4 AC-24: C23 stays frozen and the v22→v24 upgrade exposes the exact C24 contract", () => {
+test("E4.4 AC-24: C23 stays frozen and the v22→v25 upgrade exposes the exact C25 contract", () => {
   const c23Contract = contract(c23);
   expect(c23Contract.schemaVersion).toBe(23);
   expect(c23Contract.objects).toHaveLength(270);
@@ -74,14 +74,14 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v24 upgrade exposes the exact C
     "96b2425152883435005095af0f010e8ff488558773cf5b6f4c2d500b77df9026",
   );
   expect(c23Contract.id).toBe("C23-E44-DEUDA-COMPLETA");
-  const c24Contract = contract(c24);
-  expect(c24Contract.schemaVersion).toBe(24);
+  const c25Contract = contract(c25);
+  expect(c25Contract.schemaVersion).toBe(25);
 
   const fresh = new Database(":memory:");
   try {
     prepareSchema(fresh, { origin: "demo", key_hash: null });
-    expect(manifest(fresh)).toEqual(c24Contract.objects);
-    expect(verifyContract(fresh, 24)).toBe(c24);
+    expect(manifest(fresh)).toEqual(c25Contract.objects);
+    expect(verifyContract(fresh, 25)).toBe(c25);
   } finally {
     fresh.close();
   }
@@ -109,10 +109,10 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v24 upgrade exposes the exact C
     const upgraded = openDatabase(upgradedPath);
     try {
       expect(upgraded.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
-      expect(manifest(upgraded)).toEqual(c24Contract.objects);
-      expect(verifyContract(upgraded, 24)).toBe(c24);
+      expect(manifest(upgraded)).toEqual(c25Contract.objects);
+      expect(verifyContract(upgraded, 25)).toBe(c25);
     } finally {
       upgraded.close();
     }
@@ -124,7 +124,7 @@ test("E4.4 AC-24: C23 stays frozen and the v22→v24 upgrade exposes the exact C
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.4 AC-24: v24 backup/manifest/restore keeps new fields, reconciliation and MFA",
+  "E4.4 AC-24: v25 backup/manifest/restore keeps new fields, reconciliation and MFA",
   async () => {
   process.env.NODE_ENV = "test";
   const dir = root();
@@ -175,8 +175,8 @@ test.skipIf(process.platform !== "linux")(
 
     const { bundle } = decryptBundle(identity, source);
     expect(bundle.manifest).toMatchObject({
-      app: "e4.3-v24",
-      schema: 24,
+      app: "e4.9-v25",
+      schema: 25,
       origin: "demo",
     });
 
@@ -184,7 +184,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 24,
+        version: 25,
       });
       expect(
         copy
@@ -231,6 +231,7 @@ test.skipIf(process.platform !== "linux")(
         "debt_attempts",
         "conciliacion_attempts",
         "valoracion_attempts",
+        "cierre_attempts",
       ])
         expect(copy.query(`SELECT COUNT(*) n FROM ${table}`).get()).toEqual({
           n: 0,
@@ -301,7 +302,7 @@ test.skipIf(process.platform !== "linux")(
     mkdirSync(corrupt, { mode: 0o700 });
     const plaintext = join(corrupt, "bundle.tmp");
     const altered = structuredClone(bundle);
-    altered.manifest.schema = 25;
+    altered.manifest.schema = 26;
     writeFileSync(plaintext, JSON.stringify(altered), { mode: 0o600 });
     cpSync(join(source, "access-key.age"), join(corrupt, "access-key.age"));
     expect(

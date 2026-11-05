@@ -40,6 +40,10 @@ import {
   positionCents,
   type LedgerRow,
 } from "./movement-ledger";
+import {
+  assertMovementClosureImpact,
+  type MovementEffectRow,
+} from "./e49-guards";
 import { cashAt, cents as cashDecimal } from "./investment-engine";
 import {
   applyComidaDevolucion,
@@ -652,11 +656,25 @@ function payload(body: Record<string, unknown>) {
   );
 }
 function protect(
+  db: Database,
   guard: MovementProtection | undefined,
   action: string,
   old: LedgerRow | null,
   next: unknown,
 ) {
+  assertMovementClosureImpact(
+    db,
+    old,
+    next && typeof next === "object"
+      ? {
+          ...(next as MovementEffectRow),
+          importe: String(
+            money((next as { importe: string }).importe) ?? 0n,
+          ),
+        }
+      : null,
+    "registrar el Movimiento",
+  );
   const protection = guard?.(action, old, next);
   if (protection?.blocked)
     throw new Problem(
@@ -759,7 +777,7 @@ function plan(
       "El alta no admite revisión o motivo de rectificación.",
     );
   const action = annul ? "anulación" : old ? "rectificación" : "alta";
-  protect(guard, action, old, next);
+  protect(db, guard, action, old, next);
   const all = ledgerRows(db),
     cycles = cycleMaster(db),
     duplicates = next
