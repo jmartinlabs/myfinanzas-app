@@ -34,6 +34,8 @@ export type ReaperturaEstado = {
 
 export type ReaperturaOptions = {
   actor?: string;
+  /** Test-only seam: throws after every row is written, before commit. */
+  hooks?: { beforeCommit?: () => void };
 };
 
 const keyPattern = /^[a-zA-Z0-9-]{16,100}$/;
@@ -88,6 +90,7 @@ function activeWindow(db: Database): ActiveWindow | null {
   if (
     row.id === null ||
     row.tipo !== "reapertura" ||
+    row.resultado !== "Abierta" ||
     row.evento_ciclo !== row.ciclo
   )
     throw new Problem(
@@ -101,6 +104,23 @@ function activeWindow(db: Database): ActiveWindow | null {
       500,
       "ESTADO_INCONSISTENTE",
       "La proyección de reapertura no corresponde a la última versión cerrada.",
+    );
+  const later = db
+    .query(
+      `SELECT 1 FROM cierres c
+       WHERE c.ciclo<>?
+         AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
+         AND c.fin>=?
+       LIMIT 1`,
+    )
+    .get(row.ciclo, last.fin);
+  if (later)
+    throw new Problem(
+      409,
+      "CIERRE_POSTERIOR",
+      "Existe un cierre posterior durante la ventana de reapertura.",
+      {},
+      { ciclo: row.ciclo, fin: last.fin },
     );
   return {
     ciclo: row.ciclo,
@@ -216,6 +236,8 @@ export function reabrirCierre(
           "UPDATE reapertura_attempts SET expires=? WHERE operacion='reapertura' AND key=?",
           [now + 86400000, key],
         );
+        // Replay returns the original result; the live state is always
+        // getReaperturaEstado. I4/I5 must not treat this as the current state.
         return { ...JSON.parse(retry.response), replayed: true };
       }
       db.run(
@@ -314,6 +336,7 @@ export function reabrirCierre(
         "INSERT INTO reapertura_attempts(operacion,key,hash,response,expires) VALUES('reapertura',?,?,?,?)",
         [key, requestHash, JSON.stringify(response), now + 86400000],
       );
+      options.hooks?.beforeCommit?.();
       return response;
     })
     .immediate();

@@ -252,12 +252,83 @@ test("E4.10 I2: una sola ventana activa (YA_REABIERTO)", () => {
     expect(same.code).toBe("YA_REABIERTO");
     expect(same.details.ciclo).toBe("1");
 
-    // Another eligible cycle is still globally blocked by the singleton.
+    // A later closure invalidates the active window (fail-closed).
     seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
     const other = problemOf(() => reabrirCierre(db, "2", validBody, key(), {}, now));
     expect(other.status).toBe(409);
-    expect(other.code).toBe("YA_REABIERTO");
+    expect(other.code).toBe("CIERRE_POSTERIOR");
     expect(other.details.ciclo).toBe("1");
+    expect(problemOf(() => getReaperturaEstado(db, "1")).code).toBe(
+      "CIERRE_POSTERIOR",
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I2: una versión histórica de otro ciclo no bloquea si su última versión es anterior", () => {
+  const db = openDatabase(":memory:");
+  try {
+    seedCycle(db, "1", "2026-01-01");
+    seedCycle(db, "2", "2026-02-01");
+    seedClosure(db, "1", 1, "2026-01-01", "2026-09-30");
+    seedClosure(db, "2", 1, "2026-02-01", "2026-12-31");
+    seedClosure(db, "2", 2, "2026-02-01", "2026-06-30", "Re-cierre");
+    const result = reabrirCierre(db, "1", validBody, key(), {}, now);
+    expect(result.estado).toBe("Reabierto");
+    expect(result.version).toBe(1);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I2: un fallo antes del commit revierte evento, proyección e intento", () => {
+  const db = fixtureDb();
+  try {
+    expect(() =>
+      reabrirCierre(
+        db,
+        "1",
+        validBody,
+        key(),
+        {
+          hooks: {
+            beforeCommit: () => {
+              throw new Error("fallo inducido");
+            },
+          },
+        },
+        now,
+      ),
+    ).toThrow("fallo inducido");
+    expect(db.query("SELECT COUNT(*) n FROM reaperturas").get()).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_attempts").get(),
+    ).toEqual({ n: 0 });
+    expect(getReaperturaEstado(db, "1").estado).toBe("Cerrado");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I2: un resultado corrupto en la proyección es ESTADO_INCONSISTENTE", () => {
+  const db = fixtureDb();
+  try {
+    db.run(
+      `INSERT INTO reaperturas(ciclo,version_origen,tipo,actor,creado_utc,
+        motivo,fingerprint_peticion,version_esperada,clave_intento,correlacion,
+        reapertura_origen,resultado)
+       VALUES('1',1,'reapertura','usuario-unico',?,'Motivo ficticio',?,1,
+        'clave-corrupta','corr',NULL,'Otra')`,
+      [iso, fp],
+    );
+    db.run("INSERT INTO reapertura_activa(id,ciclo,reapertura_id) VALUES(1,'1',1)");
+    expect(problemOf(() => getReaperturaEstado(db, "1")).code).toBe(
+      "ESTADO_INCONSISTENTE",
+    );
   } finally {
     db.close();
   }
