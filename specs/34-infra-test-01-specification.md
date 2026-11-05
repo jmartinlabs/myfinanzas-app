@@ -1,13 +1,17 @@
 # 34 — INFRA-TEST-01: entorno TEST reproducible con datos ficticios — Specification
 
-Status: **APPROVED — SPEC y test plan aprobados por el usuario el 2026-11-04; D1–D6 aprobadas.**
+Status: **PROPOSED UPDATE 2026-11-05 — reconcilia SPEC34 con esquema 25/E4.9; pendiente de
+aprobación.** La versión aprobada el 2026-11-04 sigue vigente hasta que se apruebe este cambio.
 No autoriza DEV, acceso al VPS, DNS, Caddy, despliegue, datos reales, migraciones operativas
 ni merge.
-Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»).
-Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04), sin cambios de
-aplicación en esta rama.
+Approval source/date: original usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»);
+actualización de contrato: PENDING.
+Base: `main` `a8e526b4d8a9115af985c4c05905bca25f76c938` (2026-11-05); E4.9 mergeado
+(`0176ffc`, PR #200); `schemaVersion=25` (`C25-E49-CIERRE-FINANCIERO`).
 Documentos relacionados: [antecedente histórico cancelado de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) (CLOSED, no mergeado),
 [runbook de operación](../infra/RUNBOOK.md), [preparación de despliegue](../infra/README.md),
+[27 — E4.9 cierre financiero](27-e49-cierre-financiero-specification.md),
+[host TEST vps-infra PR #9](https://github.com/jmartinlabs/vps-infra/pull/9),
 [31 — SQLite en producción](31-sqlite-produccion-specification.md),
 [32 — ejecución rootless](32-ejecucion-rootless-specification.md),
 [seguridad](guidelines/security.md), [calidad](guidelines/quality.md) y
@@ -18,12 +22,24 @@ Las marcas `[CONFIRMADO]`, `[PROPUESTA]` y `[PENDIENTE]` distinguen hechos compr
 el repositorio o por consulta de solo lectura, diseño sometido a aprobación y cuestiones
 sin decisión. Ninguna marca convierte una propuesta en autorización.
 
+## 0. Resumen de la actualización (2026-11-05)
+
+- **Base:** `main` `a8e526b`; E4.9 integrado y esquema 25/C25.
+- **Cambio de esquema:** C25 es aditivo (4 tablas y 9 triggers); no modifica tablas previas.
+- **Dataset:** `FT-1 v1` no cambia; sigue sin cierres/fotos y exige las tablas v25 vacías.
+- **Seed:** manifiesto, guardas y verificación se anclan a v25/C25 y a esas cuatro tablas a 0.
+- **Release/Rootless:** release e imagen se reconstruyen desde el SHA con E4.9 y el gate se
+  repite sobre ese SHA.
+- **Fuera de alcance:** implementar el seed, migrar TEST desde 24, desplegar o tocar el VPS.
+- **Decisión nueva:** D7 (mantener FT-1 v1 sin cierres; FT-2 solo si se quiere cubrirlos).
+
 ## 1. Objetivo y alcance
 
 `[CONFIRMADO]` El objetivo es disponer de un entorno **TEST** accesible por
 `https://test.myfinanzas.pp.ua` con **datos exclusivamente ficticios y reproducibles**,
 sin PROD, sin exponer la API ni SQLite a Internet y sin interferir con el sitio
-`myfinanzas.pp.ua` ni con el desarrollo en curso de E4.9/E4.7/E4.10/E4.11.
+`myfinanzas.pp.ua` ni con el desarrollo en curso: E4.9/E4.7 integrados, E4.10 con SPEC28
+ratificada sin DEV y E4.11 en borrador.
 
 Esta especificación:
 
@@ -52,23 +68,25 @@ de solo lectura.
 ## 2. Estado verificado y contrato de partida
 
 `[CONFIRMADO]` Consulta de solo lectura del repositorio local y de la API de GitHub el
-2026-11-04. No se ha accedido al VPS, ni a su DNS, ni a su Caddy. No se ha ejecutado
-ninguna prueba de aplicación ni de infraestructura para esta spec.
+2026-11-05. No se ha accedido al VPS, ni a su DNS, ni a su Caddy para esta spec. No se ha
+ejecutado ninguna prueba de aplicación ni de infraestructura para esta spec.
 
 | Hecho | Evidencia | Consecuencia para TEST |
 | --- | --- | --- |
-| `main` en `b713b089e11d6035af547c1665c47fbc10b4c0a7` | `git rev-parse` local | Base documental; no es por sí sola el candidato de despliegue. |
+| `main` en `a8e526b4d8a9115af985c4c05905bca25f76c938` | `git rev-parse` local | Base documental; no es por sí sola el candidato de despliegue. |
 | E4.6 integrado (`cfbedb0`, PR #201) | [tablero](epic-board.md) | El resumen de inicio existe en `main`. |
-| E4.9 en implementación (PR #200), no mergeado | [tablero](epic-board.md) | v25 **no** está en `main`; TEST no puede depender de cierres ni de v25. |
-| `schemaVersion = 24` | `apps/api/src/database-identity.ts` | El dataset y la verificación se anclan a v24 en esta base. |
-| E4.5 no apta (DT7) y E4.7/E4.10/E4.11 en borrador | [tablero](epic-board.md) | Sin históricos E4.5, resumen anual E4.7, reapertura E4.10 ni fotografías E4.11. |
+| E4.9 integrado (`0176ffc`, PR #200) | [tablero](epic-board.md) | Los cierres existen en la base; TEST puede usar el esquema 25. |
+| `schemaVersion = 25` / contrato `C25-E49-CIERRE-FINANCIERO` | `apps/api/src/database-identity.ts`, `e49-schema-contract.test.ts` | La base y el seed se anclan a v25/C25. |
+| C25 añade 4 tablas (`cierres`, `fotos_cierre`, `cierre_audit`, `cierre_attempts`) y 9 triggers; no modifica tablas previas | `e49-schema-contract.test.ts` («C25 only adds…») | FT-1 puede seguir sin cierres; las tablas nuevas deben quedar vacías y verificarse. |
+| E4.5 QA APTO con DT7 abierto y DEV no autorizado; E4.7 integrado; E4.10 SPEC28 ratificada sin DEV; E4.11 en borrador | [tablero](epic-board.md) | Exclusión del dataset por D5, no por estado de desarrollo. |
 | Runtime descrito en `infra/` | `Containerfile`, `runtime.py`, `release.py`, `RUNBOOK.md`, `migrations/`, `compatibility.py` | Contrato reutilizable, con las salvedades de §3 y §6. |
 | API en `3001`, bind explícito `127.0.0.1`/`0.0.0.0` | `apps/api/src/main.ts`, `server-config.ts` | TEST publica en loopback del host y `0.0.0.0` solo dentro del namespace. |
 | Esquema/estado productivo con pareja DB+clave y permisos estrictos | `private-state.ts`, `production-state.ts`, `database.ts` | Reutilizar tal cual; no crear estado desde el entrypoint. |
 | `production-init`, `setup`, `backup-cli` como CLIs deliberadas | `production-init.ts`, `setup.ts`, `backup-cli.ts` | TEST los invoca como tareas efímeras, nunca como arranque normal. |
 | `release.py` construye imagen + frontend con manifiesto y `--expected-commit` | `infra/release.py` | El candidato se verifica; no se usa etiqueta móvil. |
 | `runtime.py:render` fija `18081` y `APP_ORIGIN=https://myfinanzas.pp.ua` | `infra/runtime.py` | **No** se usa sin cambios para TEST; ver D6. |
-| `vps-infra` PR #7 **CLOSED** el 2026-11-04, sin merge y con rama eliminada | API de GitHub | Solo antecedente histórico; la parte host requiere un nuevo entregable (§11). |
+| `vps-infra` PR #9 con la spec host TEST, actualizada y en revisión | GitHub | Contrato host vigente propuesto; no autoriza despliegue. |
+| `vps-infra` PR #7 **CLOSED** el 2026-11-04, sin merge y con rama eliminada | API de GitHub | Solo antecedente histórico. |
 
 `[CONFIRMADO]` El antecedente cerrado usaba `origin/main` `0b8aade` y proponía
 `D6: estado productivo limpio; datos ficticios manuales`. Esa formulación **no** cumple el
@@ -78,6 +96,11 @@ sin editar el repositorio ajeno.
 `[CONFIRMADO]` El runbook de MyFinanzas mantiene el despliegue como **NOT deployable** y
 exige el [gate Rootless](../infra/RUNBOOK.md#gate-obligatorio-de-rootless-previo-al-despliegue)
 sobre el SHA exacto. Esta spec no rebaja ni sustituye ese gate.
+
+`[CONFIRMADO]` El contrato funcional de E4.9/C25 pertenece a
+[SPEC27](27-e49-cierre-financiero-specification.md); su cabecera conserva una base y un
+esquema históricos y no se edita aquí. La reconciliación de esa cabecera corresponde al flujo
+E4.9.
 
 ## 3. Requisitos de MyFinanzas para TEST
 
@@ -94,7 +117,11 @@ en la base declarada. TEST añade restricciones, no relaja ninguna existente.
   `--expected-manifest-sha256`; un rebuild desde otro SHA invalida la verificación.
 - Backend y frontend viajan como conjunto; no se mezcla `dist` de otra release.
 - `[PROPUESTA]` El paquete TEST añade un artefacto de seed con su propio manifiesto e ID
-  inmutable (§4.2). El manifiesto de la app registra el par app+seed y el SHA del dataset.
+  inmutable (§4.2). El manifiesto de la app registra el par app+seed y el SHA del dataset;
+  `release.py` aún no implementa ese campo y no se convierte en AC implícito.
+- `[CONFIRMADO]` El candidato debe incluir E4.9 y el contrato C25; la release y el seed se
+  reconstruyen desde el SHA exacto y el gate Rootless se ejecuta sobre ese SHA. No se reutiliza
+  una release anterior a E4.9.
 
 ### 3.2 Runtime, red y UID
 
@@ -110,9 +137,10 @@ en la base declarada. TEST añade restricciones, no relaja ninguna existente.
 | Privilegios | `cap-drop=all`, `no-new-privileges`, sin socket Podman, sin `:U` | RUNBOOK |
 | Frontend | estático desde `frontend/` del paquete; Vite `5173` **no** se publica | `vite.config.ts`, README |
 
-`[CONFIRMADO]` El proceso no debe crear, migrar ni sembrar estado al arrancar: si falta la
-pareja DB+clave, la configuración es inválida o el esquema no es compatible, falla y queda
-en `start-limit`.
+`[CONFIRMADO]` La app aplica migraciones versionadas del código al abrir un esquema admitido
+(incluida 24→25); no crea estado si falta la pareja DB+clave, no siembra fixtures y falla en
+`start-limit` si el esquema no es compatible. El **seed** evita ese camino en 24/26 mediante
+inspección de solo lectura antes de abrir la conexión de la app.
 
 ### 3.3 Estado, clave y migraciones
 
@@ -122,6 +150,10 @@ en `start-limit`.
   SQLite (se perderían WAL/SHM y la publicación conjunta).
 - Migraciones solo mediante el código de la imagen y sobre un estado compatible; TEST no
   ejecuta migraciones operativas ni downgrades forzados.
+- `[CONFIRMADO]` `production-init` crea una base v25/C25; el seed exige v25 y rechaza 24 o 26;
+  no migra ni «arregla» el esquema. La comprobación se hace **antes** de abrir la conexión de
+  la app: lectura en solo lectura de `schema_version`/contrato C25 y salida `2` si no coincide;
+  nunca se llama a `openDatabase`/`prepareSchema` sobre una base 24/26.
 - `production-init` se ejecuta como tarea efímera sobre un `state` **inexistente**. Crea
   DB+clave juntas, sin usuario, sin fixtures y con `saldos=1` (S000). No es entrypoint.
 - `setup.ts` se ejecuta como tarea efímera con archivo de entrega nuevo `0600`; el token
@@ -150,6 +182,9 @@ en `start-limit`.
   destino y escala.
 - `[PROPUESTA]` TEST exige copia local y copia externa cifrada antes de habilitar Caddy,
   con al menos la copia actual y la anterior, y un simulacro de restauración registrado.
+- `[CONFIRMADO]` La copia incluye las tablas de cierre/foto de v25; el restore verifica
+  integridad/FK y limpia intentos. La vacuidad de `cierres`, `fotos_cierre` y `cierre_audit`
+  la comprueba `seed verify`/AC09, no el restore por sí solo.
 
 ## 4. Mecanismo reproducible de datos ficticios (núcleo)
 
@@ -180,7 +215,7 @@ herramienta, dataset ni manifiesto ejecutado.
 | Herramienta | `tools/test-seed/` con CLI (`cli.ts`), dataset fijo y cálculo de manifiesto; importa servicios de `apps/api/src` | No referenciada por `apps/api/src/main.ts` ni por `infra/Containerfile` de producción |
 | Artefacto | Imagen test-only desde el **mismo commit** (`Containerfile.seed` o etapa equivalente), base/digest y Bun idénticos | ID inmutable y manifiesto propio; el manifiesto de release registra ambos |
 | Dataset | `FT-1`, versión 1, fichero TypeScript/JSON legible con IDs, fechas e importes fijos | `dataset_sha256` en el manifiesto; revisión de diff |
-| Manifiesto | `seed-manifest.json`: formato, dataset/versión, commit, esquema, origen, lista de IDs, checksums lógicos, `created_at` fuera de la huella | `seed verify` compara manifiesto, marcador y estado |
+| Manifiesto | `seed-manifest.json`: formato, dataset/versión, commit, `schema_version=25`, `schema_contract=C25-E49-CIERRE-FINANCIERO`, origen, lista de IDs, `empty_tables` (cierres/fotos/audit/attempts), checksums lógicos, `created_at` fuera de la huella | `seed verify` compara manifiesto, marcador y estado |
 | Marcador | `<data-root>/test-instance.json` `0600`, escrito por la primera ejecución autorizada: `environment=test`, `public_origin`, `seed_manifest_sha256`, `schema_version` | Guard de entorno y de ruta (§4.4) |
 | Registro privado | Resultado de cada seed/reset/verify en el expediente del operador, sin secretos | Evidencia del test plan |
 
@@ -214,9 +249,9 @@ commit (D1) y con `--network=none`. Antes de tocar datos comprueba, en este orde
 | 1 | Entorno explícito | `NODE_ENV=production` y `APP_ORIGIN=https://test.myfinanzas.pp.ua` exactos; otro origen (incluido `https://myfinanzas.pp.ua`) se rechaza |
 | 2 | Marcador TEST | `test-instance.json` existe, es regular `0600`, su `public_origin` coincide y su `environment` es `test` |
 | 3 | Ruta canónica | `--data-root` y `DATABASE_PATH`/`AUTH_KEY_PATH` coinciden con `<root>` y `<root>/state/...`; sin symlinks, `0700`/`0600`, UID efectivo |
-| 4 | Esquema | `schemaVersion` admitido por la imagen y contrato verificado; no se migra ni se «arregla» |
+| 4 | Esquema | Inspección **en solo lectura** antes de abrir la app: `schemaVersion=25` y contrato `C25-E49-CIERRE-FINANCIERO`; 24/26 se rechazan con `2` sin migrar ni escribir |
 | 5 | Sin propietario | En el primer seed, `owner` vacío; un propietario existente implica entorno reclamado o real → rechazo |
-| 6 | Base vacía | `saldos=1` (solo S000), `movimientos=0`, `audit=0` y sin `seed-manifest.json` previo |
+| 6 | Base vacía | `saldos=1` (solo S000), `movimientos=0`, `audit=0`, `cierres=0`, `fotos_cierre=0`, `cierre_audit=0`, `cierre_attempts=0` y sin `seed-manifest.json` previo |
 | 7 | Sin importación | No acepta ficheros, stdin, `--from`, Excel, SQL externo ni datos de entorno |
 
 `seed init` es la única orden que crea el marcador; el resto exige que ya exista. La
@@ -234,8 +269,8 @@ ciegas y no convertir una base demo o de producción en TEST.
 
 ### 4.5 Dataset `FT-1`
 
-`[PROPUESTA]` Conjunto fijo, pequeño y revisable, limitado a funcionalidades presentes en
-`b713b08`. Los nombres incluyen `TEST`; no se usan nombres, importes, fechas ni
+`[PROPUESTA]` Conjunto fijo, pequeño y revisable, limitado a funcionalidades presentes en la
+base `a8e526b`. Los nombres incluyen `TEST`; no se usan nombres, importes, fechas ni
 identificadores de personas reales.
 
 | Área | Contenido fijo | Motivo |
@@ -257,6 +292,14 @@ consultables E4.11, históricos precontrol E4.5 y resumen anual E4.7. Tampoco se
 módulos futuros. Si un módulo no puede sembrarse con su servicio sin cambios de esquema,
 se omite y se registra la omisión; **no** se crea por SQL crudo ni se declara cubierto.
 
+`[CONFIRMADO]` C25 solo añade objetos de esquema: no altera tablas ni columnas previas. Pero
+E4.9 **sí modificó servicios existentes** (guardas T1/T2/T3 en movimientos, compras, ventas,
+saldos, referencias, deudas, clasificación, compartidos, instrumentos, planes, presupuestos y
+`app.ts`). `FT-1` no crea cierres/fotos, por lo que las guardas deberían ser inertes, pero la
+compatibilidad es `[PROPUESTA]` hasta ejecutar el seed con los servicios v25 y verificar que
+las cuatro tablas quedan vacías (AC08/AC09). Incluir cierres/fotos exigiría `FT-2` y otra
+aprobación; no se hace aquí.
+
 `[PROPUESTA]` D5 fija `FT-1` como dataset único de esta entrega. Ampliarlo exige nueva
 versión del dataset y revisión de manifiesto; no se amplía «al vuelo» en el VPS.
 
@@ -269,8 +312,8 @@ versión del dataset y revisión de manifiesto; no se amplía «al vuelo» en el
   no depender del reloj ni de las guardas de Movimientos.
 - El manifiesto incluye checksums lógicos por tabla sobre columnas seleccionadas, excluyendo
   `audit.instante`, sesiones, desafíos, intentos, idempotencia y marcas de tiempo de fila.
-  **No** se promete igualdad byte a byte del archivo SQLite: WAL, orden físico y auditoría
-  cambian legítimamente.
+  Incluye las tablas v25 como vacías (`empty_tables`) y **no** promete igualdad byte a byte del
+  archivo SQLite: WAL, orden físico y auditoría cambian legítimamente.
 - Un segundo `apply` con el mismo manifiesto y checksums → `0` sin escrituras. Marcador
   ausente con datos → rechazo. Checksums distintos → `drift`, sin reparación automática.
 - `[PROPUESTA]` Atomicidad: si Bun/`bun:sqlite` no demuestra transacciones anidadas seguras
@@ -308,7 +351,7 @@ un `state` archivado. La retirada de `reset/` requiere inventario e autorizació
 | Nivel | Comprobación |
 | --- | --- |
 | Manifiesto | `seed verify --expected-manifest-sha256` → `0`; sin drift |
-| SQL de solo lectura | `PRAGMA integrity_check=ok`, `foreign_key_check` vacío, `schema_version=24`, conteos e IDs del manifiesto |
+| SQL de solo lectura | `PRAGMA integrity_check=ok`, `foreign_key_check` vacío, `schema_version=25`, conteos e IDs del manifiesto; `cierres`, `fotos_cierre`, `cierre_audit` y `cierre_attempts` a 0 |
 | API | Con sesión MFA: `GET /api/saldos`, `/api/movimientos`, `/api/ciclos`, `/api/deudas`, `/api/presupuestos` devuelven los IDs ficticios esperados; sin sesión, `401` |
 | UI | Saldos, Movimientos, Ciclos, Deudas y Presupuesto muestran `FT-1` sin errores ni datos ajenos |
 | Aislamiento | Sin datos reales, sin Excel, sin bases importadas; `owner` solo existe tras `setup` |
@@ -326,11 +369,30 @@ para saltarse servicios.
 - Reutilizar el estado de PROD, copiarlo, montarlo o «limpiarlo» para TEST.
 - Declarar PASS sin manifiesto, checksums y evidencia de ejecución.
 
+### 4.11 Impacto del esquema 25 en TEST
+
+`[CONFIRMADO]` El salto 24→25 es **aditivo a nivel de esquema**: añade las tablas `cierres`,
+`fotos_cierre`, `cierre_audit` y `cierre_attempts`, y 9 triggers; no modifica tablas previas.
+E4.9 también cambió servicios existentes con guardas T1/T2/T3, así que la compatibilidad de
+FT-1 no se deduce solo del esquema. Consecuencias:
+
+- `production-init` crea v25; el seed inspecciona en solo lectura antes de abrir la app y
+  rechaza 24/26 con código `2`, sin migrar. Si se abriera la app sobre 24, la migraría; por eso
+  el seed no usa `openDatabase`/`prepareSchema` en ese caso.
+- `FT-1` no cambia: sigue excluyendo cierres/fotos y no usa SQL crudo para llenarlos.
+- El manifiesto y la verificación incluyen `schema_version=25`, `schema_contract` y las
+  cuatro tablas nuevas vacías.
+- Release e imagen se reconstruyen desde el SHA que incluye E4.9; el gate Rootless se repite
+  sobre ese SHA.
+- No se usa el seed para migrar una base TEST desde 24: se crea nueva con `production-init`.
+  La app sí migraría al abrir 24; el seed lo evita inspeccionando antes.
+
 ## 5. Contrato de despliegue con vps-infra (solo interfaz)
 
-`[CONFIRMADO]` La arquitectura del host, el usuario, las rutas, Caddy, DNS, UFW y el aprovisionamiento
-pertenecen a `vps-infra`, que debe producir un **nuevo entregable host**. El PR #7 está
-cerrado y solo se conserva como antecedente. Esta sección solo fija
+`[CONFIRMADO]` La arquitectura del host, el usuario, las rutas, Caddy, DNS, UFW y el
+aprovisionamiento pertenecen a `vps-infra`. El contrato host propuesto está en
+[vps-infra PR #9](https://github.com/jmartinlabs/vps-infra/pull/9), en revisión; no autoriza
+despliegue. El PR #7 está cerrado y solo se conserva como antecedente. Esta sección solo fija
 la **interfaz** que MyFinanzas consume y entrega; no duplica detalles internos ni afirma
 que existan en el VPS.
 
@@ -338,7 +400,7 @@ que existan en el VPS.
 | --- | --- | --- |
 | `public_origin` | `https://test.myfinanzas.pp.ua` | Contrato del packet |
 | `public_host` | `test.myfinanzas.pp.ua` | Contrato del packet |
-| `caddy_upstream` | `127.0.0.1:18082` | Propuesta del packet; pendiente de la nueva spec host |
+| `caddy_upstream` | `127.0.0.1:18082` | Propuesta del packet y de la spec host (PR #9) |
 | `api_container_port` | `3001` | `main.ts` |
 | `api_bind_host` | `0.0.0.0` solo dentro del namespace | `server-config.ts` |
 | `static_root` | `frontend/` del paquete verificado | `release.py` |
@@ -349,10 +411,10 @@ que existan en el VPS.
 | `state` | `state/database.sqlite` + `state/auth.key` | `private-state.ts` |
 | `env` | `NODE_ENV=production`, `APP_ORIGIN`, `DATABASE_PATH`, `AUTH_KEY_PATH`, `API_BIND_HOST` | `main.ts`, `database.ts` |
 | `image` | `sha256:<ID inmutable del manifiesto>`; `Pull=never` | `release.py` |
-| `seed_image` | ID inmutable propio, solo tareas de seed; nunca en la unidad permanente | §4.2 `[PROPUESTA]` |
+| `seed_image` | ID inmutable propio, solo tareas de seed; nunca en la unidad permanente | §4.2 `[PROPUESTA]`; contrato v25/C25 |
 | `resources` | 1 GiB, 1 CPU, 128 pids, tmpfs 64 MiB | RUNBOOK |
 | `secrets` | Ninguno en Git/PR/logs; `auth.key` solo archivo `0600`; identidad `age` fuera del VPS | RUNBOOK |
-| `backup` | CLI de la misma imagen/UID, `age`, montaje separado; restore a destino nuevo | §3.5 |
+| `backup` | CLI de la misma imagen/UID, `age`, montaje separado; restore a destino nuevo | §3.5; incluye tablas v25 |
 | `rollback` | Solo al par exacto con prueba; si no, bloqueo y preservación | RUNBOOK, `compatibility.py` |
 
 `[CONFIRMADO]` `infra/runtime.py:render` **no** es reutilizable tal cual para TEST: fija
@@ -396,16 +458,16 @@ Todos son **documentales** hasta que se ejecuten en la fase indicada del
 
 | ID | Criterio verificable |
 | --- | --- |
-| `INFRA-TEST-01-AC01` | La rama solo añade esta spec y su test plan; clasifica como `docs`; no toca código, workflow, `infra/`, VPS ni `vps-infra`; no hay merge ni deploy. |
-| `INFRA-TEST-01-AC02` | El candidato es un SHA de 40 caracteres de `main` con E4.6 integrado, esquema 24 y sin v25/E4.9/E4.5/E4.7/E4.10/E4.11; cualquier cambio de base se registra. |
-| `INFRA-TEST-01-AC03` | Existe un artefacto de seed test-only con manifiesto y checksum propios, construido desde el mismo SHA, y `tools/test-seed` **no** aparece en la imagen de producción. |
-| `INFRA-TEST-01-AC04` | El seed rechaza origen distinto de TEST, marcador ausente/ajeno, ruta no canónica, symlink, permisos incorrectos, esquema no admitido, propietario existente y estado no vacío. |
+| `INFRA-TEST-01-AC01` | La rama solo modifica esta spec y su test plan; clasifica como `docs`; no toca código, workflow, `infra/`, VPS ni `vps-infra`; no hay merge ni deploy. |
+| `INFRA-TEST-01-AC02` | El candidato es un SHA de 40 caracteres de `main` con E4.6 y E4.9 integrados, esquema 25/C25 y sin v26; E4.5/E4.7/E4.10/E4.11 fuera del dataset. Cualquier cambio de base se registra. |
+| `INFRA-TEST-01-AC03` | Existe un artefacto de seed test-only con manifiesto y checksum propios, construido desde el mismo SHA, declara `schema_version=25`/C25 y `tools/test-seed` **no** aparece en la imagen de producción. |
+| `INFRA-TEST-01-AC04` | El seed rechaza origen distinto de TEST, marcador ausente/ajeno, ruta no canónica, symlink, permisos incorrectos, esquema no admitido, propietario existente y estado no vacío. Un fichero v24 se inspecciona en solo lectura, se rechaza con `2` y **sigue en v24** sin escrituras. |
 | `INFRA-TEST-01-AC05` | Dos ejecuciones independientes desde estado limpio producen los mismos IDs, fechas, importes y checksums lógicos de `FT-1`. |
 | `INFRA-TEST-01-AC06` | Un segundo `seed apply` con el mismo manifiesto termina en no-op sin escrituras; un estado parcial se rechaza sin reparación automática. |
 | `INFRA-TEST-01-AC07` | `seed reset` archiva solo `<data-root>/state` de TEST, no toca PROD, no borra copias y deja una secuencia reproducible de recreación. |
-| `INFRA-TEST-01-AC08` | `FT-1` solo usa funcionalidades presentes en la base declarada; no hay cierres E4.9, históricos E4.5, resumen anual E4.7, reaperturas E4.10 ni fotografías E4.11. |
-| `INFRA-TEST-01-AC09` | La verificación por manifiesto, SQL de solo lectura, API autenticada y UI coincide con `FT-1`; la creación pasó por servicios, no por SQL crudo. |
-| `INFRA-TEST-01-AC10` | `release.py verify` pasa con commit y manifiesto esperados; imagen y frontend son del mismo SHA; se usa ID inmutable, nunca etiqueta móvil. |
+| `INFRA-TEST-01-AC08` | `FT-1` solo usa funcionalidades presentes en la base declarada; no crea cierres/fotos E4.9, históricos E4.5, resumen anual E4.7, reaperturas E4.10 ni fotografías E4.11; las cuatro tablas v25 quedan vacías. |
+| `INFRA-TEST-01-AC09` | La verificación por manifiesto, SQL de solo lectura (`schema_version=25`, tablas v25 vacías), API autenticada y UI coincide con `FT-1`; la creación pasó por servicios, no por SQL crudo. |
+| `INFRA-TEST-01-AC10` | `release.py verify` pasa con commit y manifiesto esperados; imagen y frontend son del mismo SHA (con E4.9/C25); se usa ID inmutable y el gate Rootless se ejecuta sobre ese SHA. |
 | `INFRA-TEST-01-AC11` | La unidad TEST está `active`, salud 200, ruta protegida 401, UID 10001, bind correcto y límites 1 GiB/1 CPU/128 pids. |
 | `INFRA-TEST-01-AC12` | HTTPS válido, HTTP→HTTPS, cookies `__Host-` Secure/HttpOnly/SameSite=Strict, `Origin` ajeno 403 y cabeceras CSP/noindex/nosniff/HSTS corto. |
 | `INFRA-TEST-01-AC13` | `18082` solo escucha en loopback; `3001`, SQLite y la API no son accesibles desde fuera; Vite no está publicado; UFW no abre puertos nuevos. |
@@ -424,8 +486,8 @@ la anterior. El detalle operativo, la evidencia y el owner están en el
 
 | Fase | Contenido | Autorización |
 | --- | --- | --- |
-| 0 | Aprobación de esta spec y del test plan | **Aprobada 2026-11-04** |
-| 1 | Auditoría de solo lectura del host, Caddy, DNS, Podman, puertos y disco | Usuario |
+| 0 | Aprobación de esta spec y del test plan | Aprobada 2026-11-04; **actualización 2026-11-05 pendiente** |
+| 1 | Auditoría de solo lectura del host, Caddy, DNS, Podman, puertos y disco | Usuario; parcial en vps-infra 2026-11-05 |
 | 2 | Aprovisionamiento de usuario/rutas/`linger`/UFW | Usuario |
 | 3 | Construir y verificar release + seed; gate Rootless sobre el SHA | Usuario / CI |
 | 4 | Inicializar estado, `seed init/apply/verify`, alta del propietario | Usuario |
@@ -446,15 +508,17 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 
 | Dependencia | Estado | Efecto |
 | --- | --- | --- |
-| E4.9 / v25 | En implementación, no mergeada | TEST se ancla a v24; no se despliega v25 ni se prueban cierres |
-| E4.7 / E4.10 / E4.11 | DRAFT | Fuera del dataset y del smoke |
-| E4.5 / DT7 | No apta | Sin históricos ni transición de ejercicio |
+| E4.9 / v25 | **Integrado** (`0176ffc`, PR #200); contrato C25 | TEST se ancla a v25/C25; FT-1 excluye cierres y verifica tablas vacías |
+| E4.7 | Integrado (`0e89562`, #210) | Fuera del dataset por D5; no se prueba en TEST |
+| E4.10 / E4.11 | E4.10 SPEC28 ratificada, DEV no autorizado; E4.11 borrador | Fuera del dataset y del smoke |
+| E4.5 / DT7 | QA APTO; DT7 abierto; DEV no autorizado | Sin históricos ni transición de ejercicio |
 | DT6 / T-BKP | Abierto para cierre real | Afecta a la activación productiva; TEST exige copia externa mínima |
 | Flake SQLite **B3** | Investigado sin reproducción; pendiente Linux | Puede aparecer en el ensayo; no se oculta como PASS |
 | Gate Rootless | Obligatorio por RUNBOOK | Sin SUCCESS sobre el SHA exacto no se despliega |
-| Caddy real | Desconocido hasta auditoría | Sujeto a backup, `caddy validate` y rollback |
-| DNS | Controlado por el usuario | Sin registro `test` no hay TLS ni entorno operativo |
+| Caddy real | 2.11.9 auditado, `hold`; bloque TEST pendiente (según vps-infra PR #9) | Sujeto a backup, `caddy validate` y rollback |
+| DNS | Apex A/TTL 14400 conocido; `test` NXDOMAIN (según vps-infra PR #9) | Sin registro `test` no hay TLS ni entorno operativo |
 | Datos ficticios | Diseño de esta spec | Sin seed reproducible no se activa Caddy |
+| Actualización de SPEC34 | `PROPOSED UPDATE` 2026-11-05 pendiente | Sin aprobación, el contrato v25 no es vigente |
 
 ### 9.2 Riesgos
 
@@ -464,8 +528,11 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | Seed en entorno equivocado | Contaminación o pérdida | Marcador + origen + ruta + propietario + base vacía; fallo cerrado |
 | Reset sobre PROD | Pérdida irreversible | Solo `<data-root>/state`; marcador TEST; archivado, nunca borrado |
 | Deriva entre imagen app y seed | Dataset no reproducible | Mismo SHA, manifiesto conjunto, IDs inmutables |
+| Tablas v25 no vacías por error del seed | FT-1 deja de ser mínimo y reproducible | Guarda 6 y verificación de las cuatro tablas a 0 |
+| Guardas E4.9 en servicios usados por FT-1 | El seed puede fallar o cambiar datos | Ejecutar seed con servicios v25 y AC08/AC09; no asumir que son inertes |
+| Release/Rootless anteriores a E4.9 | Imagen sin C25 | Reconstruir y ejecutar el gate sobre el SHA exacto |
 | Imagen de seed en la unidad permanente | Superficie innecesaria | Unidad solo con la imagen app; verificación de inventario |
-| VPS 2 vCPU/4 GB/40 GB | Disco o contención | Límites 1 GiB/1 CPU/128 pids y presupuesto de vps-infra |
+| VPS 2 vCPU/3,8 GiB/40 GB, 35 GB libres, inodos 3 % (según vps-infra PR #9) | Disco o contención | Límites 1 GiB/1 CPU/128 pids y presupuesto de vps-infra |
 | Login TEST público | Fuerza bruta | MFA, límites de app, `noindex`; allowlist de borde si D5 lo decide |
 | Configuración real de Caddy | Interrupción del sitio raíz | Auditoría, backup, validación y rollback |
 | Copia externa inexistente | Sin recuperación real | Bloqueo de activación hasta destino aprobado |
@@ -481,6 +548,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
 | D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
+| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres vs crear FT-2 con cierres/fotos | Mantener FT-1 v1 y tablas v25 vacías; FT-2 solo si se decide cubrir E4.9, con E3.5/FIN_NETA y DT6/backup resueltos | `[PROPUESTA 2026-11-05]` |
 
 ## 10. Fuera de alcance
 
@@ -497,18 +565,19 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 
 ## 11. Coordinación con vps-infra y nuevo entregable host
 
-`[CONFIRMADO]` `vps-infra` PR #7 está **CLOSED** desde el 2026-11-04T18:20Z, sin merge y con
-la rama remota eliminada. Se conserva únicamente como **antecedente histórico cancelado**; no
-es contrato vigente, dependencia activa ni aprobación.
+`[CONFIRMADO]` La parte host de TEST está en
+[vps-infra PR #9](https://github.com/jmartinlabs/vps-infra/pull/9), actualizada y en revisión;
+no está mergeada ni desplegada. El PR #7 de `vps-infra` está **CLOSED** desde el
+2026-11-04T18:20Z y se conserva solo como antecedente histórico.
 
-`[PROPUESTA]` La parte host de TEST requiere un **nuevo entregable de `vps-infra`** con su
-propio ciclo SPEC → revisión → aprobación → operaciones. El usuario debe autorizarlo; este
-repositorio **no abre** esa tarea ni PR por inferencia. El nuevo entregable debe recoger:
+`[PROPUESTA]` El contrato host de PR #9 mantiene su propio ciclo SPEC → revisión →
+aprobación → operaciones; este repositorio **no abre** esa tarea por inferencia. Debe recoger:
 
-1. **D6 — datos ficticios reproducibles.** Artefacto test-only, dataset `FT-1`, marcador
-   TEST, manifiesto/checksums, guardas, reset archivado y verificación; enlazar esta spec.
-2. **Estado de partida.** Base `main` `b713b08` o candidato aprobado; E4.9/v25 **no**
-   mergeados y esquema vigente 24.
+1. **D6 — datos ficticios reproducibles.** Artefacto test-only, dataset `FT-1` v1, marcador
+   TEST, manifiesto/checksums con `schema_version=25`, guardas, reset archivado y verificación;
+   enlazar esta spec.
+2. **Estado de partida.** Base `main` `a8e526b` o candidato aprobado; E4.9/C25 integrado y
+   esquema vigente 25.
 3. **Secuencia.** `production-init → seed init/apply/verify → setup`.
 4. **Rutas y estado.** `<data-root>/test-instance.json` y
    `<data-root>/reset/state-<UTC>` con `0600`/`0700` y su efecto en disco.
@@ -525,10 +594,14 @@ repositorio **no abre** esa tarea ni PR por inferencia. El nuevo entregable debe
 ## 12. Trazabilidad y límites de las afirmaciones
 
 - `[CONFIRMADO]` Los hechos de §2 proceden del checkout local y de la API de GitHub; no de
-  una inspección del VPS.
+  una inspección del VPS. La auditoría y Caddy se documentan en `vps-infra` (PR #9 y cierre
+  VPS-CADDY-UPGRADE-01).
 - `[PROPUESTA]` El seed, `FT-1`, el marcador, el manifiesto, el reset y el artefacto
   test-only son diseño, no implementación.
-- `[PENDIENTE]` D1–D6, la aprobación de la spec y todas las autorizaciones de fase.
+- `[CONFIRMADO]` E4.9/C25 está integrado en `a8e526b`; la actualización de esta spec es
+  `PROPOSED UPDATE` y no sustituye la versión aprobada hasta su aprobación.
+- `[PENDIENTE]` La aprobación de esta actualización, D7 y todas las autorizaciones de fase.
+  D1–D6 siguen aprobadas.
 - Ningún PASS se hereda de otras entregas. `UNRUN` no es PASS ni FAIL.
 - Las rutas de host citadas (`/srv/myfinanzas-test`, `/var/www/myfinanzas-test`) son
   propuestas heredadas del antecedente cerrado; no son directorios verificados ni un contrato vigente.

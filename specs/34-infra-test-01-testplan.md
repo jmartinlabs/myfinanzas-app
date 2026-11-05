@@ -2,13 +2,14 @@
 
 Specification: [34 — entorno TEST reproducible con datos ficticios](34-infra-test-01-specification.md)
 
-Status: **APPROVED — plan aprobado por el usuario el 2026-11-04; ejecución UNRUN.** No se ha
-ejecutado ninguna comprobación de esta entrega. Este test plan no autoriza DEV, auditoría del VPS, DNS, Caddy, despliegue,
-datos reales ni merge.
-Base: `main` `b713b089e11d6035af547c1665c47fbc10b4c0a7` (2026-11-04).
-Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»).
-Contrato de alojamiento: **pendiente de un nuevo entregable de `vps-infra`**. El PR #7 de
-vps-infra está CLOSED, sin merge y con rama eliminada; solo es antecedente histórico.
+Status: **PROPOSED UPDATE 2026-11-05 — pendiente de aprobación; ejecución UNRUN.** No se ha
+ejecutado ninguna comprobación de esta entrega. Este test plan no autoriza DEV, auditoría del
+VPS, DNS, Caddy, despliegue, datos reales ni merge.
+Base: `main` `a8e526b4d8a9115af985c4c05905bca25f76c938` (2026-11-05), esquema 25/C25.
+Approval source/date: original usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»);
+actualización: PENDING.
+Contrato de alojamiento: [vps-infra PR #9](https://github.com/jmartinlabs/vps-infra/pull/9),
+en revisión. El PR #7 está CLOSED; solo es antecedente histórico.
 Documentos de referencia: [RUNBOOK](../infra/RUNBOOK.md),
 [preparación de despliegue](../infra/README.md),
 [seguridad](guidelines/security.md), [calidad](guidelines/quality.md).
@@ -41,16 +42,16 @@ Todos los estados son `UNRUN`.
 
 | ID | Método | Entorno | Evidencia | Owner | Fase | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
-| `INFRA-TEST-01-AC01` | Revisar `git diff` y clasificación con `python3 scripts/verify`; comprobar que solo se añaden la spec y el test plan | E0 | Salida de clasificación `docs`, lista de archivos del diff, `git diff --check` | myfinanzas-app / QA | 0 | UNRUN |
-| `INFRA-TEST-01-AC02` | Congelar SHA de 40 caracteres de `main`; verificar E4.6, esquema 24 y ausencia de v25/E4.9/E4.5/E4.7/E4.10/E4.11 | E0 | `git rev-parse`, `git merge-base`, lectura del tablero y de `database-identity.ts` | myfinanzas-app / QA | 3 | UNRUN |
+| `INFRA-TEST-01-AC01` | Revisar `git diff` y clasificación con `python3 scripts/verify`; comprobar que solo se modifican la spec y el test plan | E0 | Salida de clasificación `docs`, lista de archivos del diff, `git diff --check` | myfinanzas-app / QA | 0 | UNRUN |
+| `INFRA-TEST-01-AC02` | Congelar SHA de 40 caracteres de `main`; verificar E4.6/E4.9, esquema 25/C25, ausencia de v26 y E4.5/E4.7/E4.10/E4.11 fuera del dataset | E0 | `git rev-parse`, `git merge-base`, tablero, `database-identity.ts` y contrato C25 | myfinanzas-app / QA | 3 | UNRUN |
 | `INFRA-TEST-01-AC03` | Construir release y artefacto de seed desde el mismo SHA; inspeccionar inventario de la imagen de producción | E1 | Manifiestos con IDs inmutables, checksums y listado de rootfs sin `tools/test-seed` | myfinanzas-app | 3 | UNRUN |
-| `INFRA-TEST-01-AC04` | Ejecutar casos negativos del seed: origen PROD, marcador ausente/ajeno, ruta relativa, symlink, permisos incorrectos, esquema distinto, propietario existente, estado no vacío | E1 | Códigos `2`/`3`, mensajes sin secretos, estado intacto tras cada rechazo | myfinanzas-app / QA | 3 | UNRUN |
+| `INFRA-TEST-01-AC04` | Ejecutar casos negativos del seed: origen PROD, marcador ausente/ajeno, ruta relativa, symlink, permisos incorrectos, esquema 24/26 (comprobar que 24 sigue en 24), propietario existente, estado no vacío | E1 | Códigos `2`/`3`, mensajes sin secretos, estado intacto tras cada rechazo | myfinanzas-app / QA | 3 | UNRUN |
 | `INFRA-TEST-01-AC05` | Sembrar dos veces desde estados limpios independientes y comparar manifiestos y checksums lógicos | E1 | Dos `seed-manifest.json` con la misma huella lógica; IDs, fechas e importes idénticos | myfinanzas-app | 4 | UNRUN |
 | `INFRA-TEST-01-AC06` | Repetir `seed apply` sobre el mismo estado y manifiesto; introducir un estado parcial en un entorno de ensayo | E1 | Segundo apply `0` sin escrituras; parcial rechazado sin reparación | myfinanzas-app / QA | 4 | UNRUN |
 | `INFRA-TEST-01-AC07` | Ejecutar `seed reset` con unidad parada; verificar destino archivado y ausencia de cambios fuera de la raíz TEST | E1, E2 | Árbol de rutas antes/después, hash del estado archivado, secuencia de recreación | vps-infra / myfinanzas-app | 8 | UNRUN |
-| `INFRA-TEST-01-AC08` | Revisar el dataset `FT-1` contra las funcionalidades de la base; buscar referencias a E4.5/E4.7/E4.9/E4.10/E4.11 | E0, E1 | Diff revisado del dataset, lista de módulos y omisiones registradas | myfinanzas-app / Álex | 3 | UNRUN |
-| `INFRA-TEST-01-AC09` | `seed verify` + `PRAGMA integrity_check`/`foreign_key_check` + lectura API autenticada + smoke UI de Saldos, Movimientos, Ciclos, Deudas y Presupuesto | E1, E2 | Resultado `0`, consultas de solo lectura, capturas ficticias sin datos sensibles | myfinanzas-app / usuario | 4, 7 | UNRUN |
-| `INFRA-TEST-01-AC10` | `release.py verify` con commit y manifiesto esperados; comprobar par app+frontend y ID inmutable | E1 | Salida de `verify`, manifiesto y `podman image inspect` | myfinanzas-app | 3 | UNRUN |
+| `INFRA-TEST-01-AC08` | Revisar `FT-1` contra la base v25; comprobar que no crea cierres/fotos E4.9 ni E4.5/E4.7/E4.10/E4.11 y que las cuatro tablas v25 quedan vacías | E0, E1 | Diff del dataset, lista de módulos, omisiones y conteos de tablas v25 | myfinanzas-app / Álex | 3 | UNRUN |
+| `INFRA-TEST-01-AC09` | `seed verify` + `PRAGMA integrity_check`/`foreign_key_check` + `schema_version=25` + tablas v25 a 0 + lectura API autenticada + smoke UI | E1, E2 | Resultado `0`, consultas de solo lectura, capturas ficticias sin datos sensibles | myfinanzas-app / usuario | 4, 7 | UNRUN |
+| `INFRA-TEST-01-AC10` | `release.py verify` con commit y manifiesto esperados (E4.9/C25); comprobar par app+frontend, ID inmutable y Rootless sobre el SHA | E1 | Salida de `verify`, manifiesto, `podman image inspect` y gate Rootless | myfinanzas-app | 3 | UNRUN |
 | `INFRA-TEST-01-AC11` | Arrancar la unidad TEST y consultar estado, salud, ruta protegida, UID y límites | E2 | `systemctl --user show`, health 200, 401, `podman inspect` del UID y límites | vps-infra | 5 | UNRUN |
 | `INFRA-TEST-01-AC12` | Acceder por HTTPS; revisar certificado, redirección, cabeceras, cookies y un `Origin` ajeno | E2, E3 | `curl -D-`, `openssl s_client`, captura privada de cookies; sin publicar valores | vps-infra / usuario | 6, 7 | UNRUN |
 | `INFRA-TEST-01-AC13` | Comprobar `ss -ltnp`, UFW, acceso externo a `18082`/`3001`, ausencia de Vite y alcance de SQLite | E2, E3 | Inventario de puertos, reglas UFW, intento externo fallido | vps-infra | 2, 6 | UNRUN |
@@ -68,8 +69,8 @@ habilita las siguientes.
 
 | Fase | Objetivo | Precondición | Evidencia de salida | Estado |
 | --- | --- | --- | --- | --- |
-| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | **PASS** (2026-11-04) |
-| 1 | Auditoría de solo lectura | Autorización de acceso de lectura | Inventario redactado del host, Caddy, DNS, Podman, puertos y disco | UNRUN |
+| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | **UNRUN** (actualización 2026-11-05 pendiente; la versión 2026-11-04 no cubre v25) |
+| 1 | Auditoría de solo lectura | Autorización de acceso de lectura | Inventario redactado del host, Caddy, DNS, Podman, puertos y disco | UNRUN (vps-infra 2026-11-05 parcial; faltan Quadlet/cgroup y backups) |
 | 2 | Aprovisionar host | Auditoría completada | Usuario, rutas, `linger`, UFW y versiones registradas | UNRUN |
 | 3 | Release y seed | SHA congelado; gate Rootless | Manifiestos, IDs inmutables, verificación y artefacto test-only | UNRUN |
 | 4 | Inicializar y sembrar | Rutas y permisos verificados | `production-init`, `seed init/apply/verify` y alta del propietario | UNRUN |
@@ -91,7 +92,7 @@ Todos `UNRUN`; ninguno se convierte en PASS por ausencia de error.
 | Seed con directorio `0755` o archivos `0644` | Rechazo `2`; no se corrige el permiso |
 | Seed con `owner` ya creado | Rechazo `2`; el estado se preserva |
 | Seed sobre base con movimientos ajenos | Rechazo `2`/`3`; sin reparación automática |
-| Seed con esquema distinto de 24 | Rechazo; no se migra ni se fuerza |
+| Seed con esquema distinto de 25 (24 o 26) | Rechazo `2`; el fichero v24 sigue en v24, sin escrituras; no se migra |
 | Seed repetido con el mismo manifiesto | `0` sin escrituras |
 | Reset con la unidad respondiendo en `18082` | Rechazo; no se archiva nada |
 | Reset sin confirmación explícita | Rechazo; no se archiva nada |
@@ -149,7 +150,8 @@ Por cada ejecución se registra, fuera del repositorio y sin secretos:
 - Fecha UTC, fase, operador y autorización aplicable.
 - SHA de la app y del manifiesto; ID de imagen app y seed.
 - Resultado por AC: `PASS` / `FAIL` / `BLOCKED` / `UNRUN`, comando y salida redactada.
-- Para seed: `dataset_sha256`, `seed_manifest_sha256`, checksums lógicos y resultado
+- Para seed: `schema_version=25`, `schema_contract=C25-E49-CIERRE-FINANCIERO`,
+  `dataset_sha256`, `seed_manifest_sha256`, checksums lógicos, `empty_tables` y resultado
   `verify`.
 - Para copias: ruta lógica, checksums origen/destino, resultado de restauración y RTO.
 - Para Caddy/DNS: hash del backup, resultado de `caddy validate`, registros antes/después.
@@ -162,16 +164,17 @@ claves, bases, importes reales, IPs privadas ni logs crudos.
 
 | ID | Bloqueo | Efecto | Desbloqueo |
 | --- | --- | --- | --- |
-| B01 | Spec y test plan sin aprobar | Ninguna fase ejecutable | Aprobación del usuario |
-| B02 | D1–D6 pendientes | Seed y unidad no implementables | Decisión del usuario |
-| B03 | E4.9/v25 no mergeados | No se prueba cierre ni v25 | Base congelada en v24; E4.9 fuera |
+| B01 | Actualización de spec/test plan sin aprobar | El contrato v25 no es vigente | Aprobación del usuario |
+| B02 | D1–D6 aprobadas; implementación del seed/release no autorizada | Fase 3 bloqueada | Autorización de fase 3 |
+| B03 | E4.9/C25 integrado; actualización de SPEC34 pendiente | Seed/AC10 sin contrato v25 aprobado | Aprobar esta actualización |
 | B04 | DT6/T-BKP abierto | Activación productiva limitada | Copia externa mínima y decisión |
 | B05 | Flake SQLite B3 sin reproducción Linux | Riesgo de falso FAIL/PASS | Diagnóstico Linux; no ocultar |
-| B06 | Gate Rootless no ejecutado sobre el SHA | Despliegue bloqueado | Run `SUCCESS` sobre el SHA exacto |
-| B07 | Caddy real desconocido | Riesgo para el sitio raíz | Auditoría y backup |
-| B08 | DNS no creado | Sin TLS ni entorno operativo | Autorización y registro `test` |
+| B06 | Gate Rootless sin evidencia sobre `a8e526b` | Despliegue bloqueado | Run `SUCCESS` sobre el SHA exacto |
+| B07 | Caddy 2.11.9 auditado (vps-infra PR #9); bloque TEST pendiente | Riesgo al editar el Caddyfile | Backup, lectura completa, `caddy validate` y rollback |
+| B08 | Apex DNS conocido; `test` NXDOMAIN (vps-infra PR #9) | Sin TLS ni entorno operativo | Autorización y registro `test` |
 | B09 | Destino externo no aprobado | Activación bloqueada | Decisión del usuario |
-| B10 | Presupuesto de disco no medido | Riesgo de ENOSPC | Medición en fase 1/7 |
+| B10 | 35 GB libres y 3 % de inodos medidos (vps-infra PR #9) | El presupuesto ≤5 GB cabe; revalidar en fase 7 | Medición antes/después |
+| B11 | Release e imagen de seed no construidas | Fases 3–4 bloqueadas | Construir y verificar desde `a8e526b` |
 
 ## 9. Criterios de parada
 
@@ -195,6 +198,6 @@ No se usa `reset-failed`, `chmod`/`chown`, `:U`, borrado de estado ni reintento 
 - Comprobaciones ejecutadas para esta entrega: **ninguna** más allá de la lectura del
   repositorio y de la consulta de solo lectura a GitHub.
 - AC: **19 / 19 `UNRUN`**.
-- Fases: **0 / 9 autorizadas**.
-- Próxima acción independiente: revisión de la spec y decisión sobre D1–D6 antes de
-  solicitar la fase 1 (auditoría de solo lectura).
+- Fases: **0 / 9 autorizadas**; la fase 1 tiene la auditoría parcial de `vps-infra` (2026-11-05).
+- Próxima acción independiente: aprobar esta actualización y D7; completar la fase 1
+  (Quadlet/cgroup y backups) antes de la fase 2.
