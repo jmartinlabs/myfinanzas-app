@@ -51,7 +51,7 @@ function valid(path: string, expected?: number) {
     }[];
     if (
       versions.length !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].includes(
         versions[0].version,
       ) ||
       (expected !== undefined && versions[0].version !== expected)
@@ -163,7 +163,9 @@ export function backup(
                                                       ? "e4.4-v23"
                                                       : sourceVersion === 24
                                                         ? "e4.3-v24"
-                                                        : "e4.9-v25",
+                                                        : sourceVersion === 25
+                                                          ? "e4.9-v25"
+                                                          : "e4.10-v26",
       schema: sourceVersion,
       ...(sourceVersion >= 6 ? { origin: sourceIdentity!.origin } : {}),
       id: randomUUID(),
@@ -272,7 +274,7 @@ export function restore(
     const bytes = Buffer.from(bundle.database, "base64");
     if (
       bundle.manifest?.format !== 1 ||
-      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(
+      ![1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26].includes(
         bundle.manifest.schema,
       ) ||
       hash(bytes) !== bundle.manifest.sha256
@@ -353,6 +355,7 @@ export function restore(
           ...(bundle.manifest.schema >= 23 ? ["conciliacion_attempts"] : []),
           ...(bundle.manifest.schema >= 24 ? ["valoracion_attempts"] : []),
           ...(bundle.manifest.schema >= 25 ? ["cierre_attempts"] : []),
+          ...(bundle.manifest.schema >= 26 ? ["reapertura_attempts"] : []),
         ])
           db.run(`DELETE FROM ${table}`);
       })();

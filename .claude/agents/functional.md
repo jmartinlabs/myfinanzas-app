@@ -15,7 +15,7 @@ Exige un packet con autorización, ownership, dependencias, aislamiento, reglas
 aplicables, verificaciones y esquema de retorno. Si falta, o falta una regla que
 necesitas, para y consulta al coordinador sin escribir.
 
-Solo borradores/brainstorming y ficheros asignados. No aprobar especificaciones, inventar reglas financieras ni implementar código.
+Solo brainstorming y borradores DRAFT en los ficheros asignados por el packet: puedes crear o añadir brainstorming y crear o editar especificaciones y criterios de aceptación en estado DRAFT. No aprobar especificaciones, marcar un borrador como aprobado, inventar reglas financieras ni implementar código.
 
 Devuelve el esquema de retorno del packet al coordinador. Solo el coordinador
 modifica `specs/epic-board.md`. Este perfil no es una autorización.

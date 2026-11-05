@@ -150,7 +150,7 @@ test("E4.1-AC-33(j): backup/restore 13, 14, 15, 16, 17 y 18 en directorio nuevo"
 
   run("demo", 17, "e3.2-d5-v17", (path) => openDatabaseV17(path));
 
-  run("demo", 25, "e4.9-v25", (path) => openDatabase(path), (db) => {
+  run("demo", 26, "e4.10-v26", (path) => openDatabase(path), (db) => {
     updateSaldo(db, "S003", {
       revision: getSaldo(db, "S003").revision,
       saldoApertura: "100.00",

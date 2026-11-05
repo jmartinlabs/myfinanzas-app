@@ -83,7 +83,7 @@ class ValidationTests(unittest.TestCase):
    ('specs/methodology/dynamic-agents.md', 'fresh bounded context by default'),
    ('specs/methodology/dynamic-agents.md', 'not repeated status reminders'),
    ('specs/methodology/dynamic-agents.md', 'QA independently'),
-   ('specs/methodology/dynamic-agents.md', 'No OpenCode adapter is supplied'),
+   ('specs/methodology/dynamic-agents.md', 'Optional OpenCode adapters may be present under'),
    ('specs/methodology/dynamic-agents.md', 'explicit user authorization and supported tools'),
    ('specs/methodology/dynamic-agents.md', 'separate checkouts/worktrees AND non-overlapping ownership'),
    ('specs/methodology/dynamic-agents.md', 'Separate test ports, databases'),
@@ -173,6 +173,43 @@ class ValidationTests(unittest.TestCase):
     try:
      p.write_text(original.replace(token,'REMOVED'))
      self.assertRule('execution-mode')
+    finally:
+     p.write_text(original)
+ def test_delegation_preference(self):
+  cases = (
+   ('specs/methodology/dynamic-agents.md', '## Delegation preference'),
+   ('specs/methodology/dynamic-agents.md', 'one executor per task'),
+   ('specs/methodology/dynamic-agents.md', 'Never create artificial agents'),
+   ('.agents/skills/orchestrate/SKILL.md', 'prefer a specialist for substantial'),
+   ('.agents/skills/orchestrate/SKILL.md', 'one executor per task'),
+   ('.agents/skills/orchestrate/SKILL.md', 'never invent agents'),
+   ('specs/methodology/epic-orchestration.md', 'one executor per task'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('delegation-preference')
+    finally:
+     p.write_text(original)
+ def test_packet_execution_mode(self):
+  self.change('templates/agent-work-packet.md','Execution mode','Mode'); self.assertRule('delegation-preference')
+ def test_functional_role_draft_scope(self):
+  cases = (
+   ('.agents/roles/functional.md', 'DRAFT specifications'),
+   ('.agents/roles/functional.md', 'acceptance criteria'),
+   ('.agents/skills/spec/SKILL.md', 'delegate may create and append'),
+   ('.agents/skills/spec/SKILL.md', 'A functional delegate may write draft specification sections'),
+  )
+  for name,token in cases:
+   with self.subTest(name=name,token=token):
+    p=self.root/name; original=p.read_text()
+    self.assertIn(token,original)
+    try:
+     p.write_text(original.replace(token,'REMOVED'))
+     self.assertRule('functional-scope')
     finally:
      p.write_text(original)
  def test_lifecycle_contract(self):

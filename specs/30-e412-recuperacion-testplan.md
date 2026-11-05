@@ -75,10 +75,11 @@ migración, VPS ni merge.
   ensayo integral. `UNRUN — bloqueado`.
 - **DT7:** mapping y corte sin aprobar. AC12 y AC14 no tienen correspondencia campo→caso.
   `UNRUN — bloqueado`.
-- **E4.9 (PR #200):** en implementación, no mergeado; contrato de foto y preflight no
-  estables. AC05, AC07 y AC13 quedan bloqueados. `UNRUN — bloqueado`.
-- **E4.10/E4.11:** SPEC28/SPEC29 en borrador, sin DEV. No hay v1/v2 reales ni consulta
-  histórica por corte/versión. AC07 y AC13 quedan bloqueados. `UNRUN — bloqueado`.
+- **E4.9:** integrada `0176ffc` (#200); QA APTO CON RESERVAS; cierre real bloqueado por
+  DT6. AC05, AC07 y AC13 siguen condicionados. `UNRUN — bloqueado`.
+- **E4.10/E4.11:** SPEC28 ratificada documentalmente (24 AC `UNRUN`) y SPEC29 en borrador,
+  sin DEV. No hay v1/v2 reales ni consulta histórica por corte/versión. AC07 y AC13 quedan
+  bloqueados. `UNRUN — bloqueado`.
 - **E4.5:** SPEC aprobada, DEV no autorizado, DT7 pendiente y 59 AC `UNRUN`. AC06, AC12 y
   la parte de archivo de AC14 quedan bloqueados. `UNRUN — bloqueado`.
 - **E4.7:** SPEC25 candidata, sin DEV; R3/R6 incompletos. AC13/AC15 no pueden declararse
