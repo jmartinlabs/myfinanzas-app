@@ -13,9 +13,9 @@ prueba de fixtures en `apps/api/src/e49-guards.test.ts` (PASS de fixtures, no ci
 real). El resto de AC sigue UNRUN. **DEV-07 (2026-11-04)** añade la UI `/cierre` y la
 matriz E2E con servidor aislado y evidencia E3.5/DT6 **inyectada por el servidor de
 test**; no hay proveedor real de backup, no se acredita DT6 ni un cierre real y las
-capturas son de fixtures ficticias. La corrección de ubicación del test de plan vivo
-se verificó en CI Linux `41876737538` (PASS, 6m8s) sobre `f5ee167`. No hay migración nueva ni
-datos reales. Aprobado con SPEC27 el
+capturas son de fixtures ficticias. La integración final con `main` se verificó en CI
+Linux `41990567217` (PASS, perfil `critical`, 764/764 API) sobre `356fbe9`. No hay
+migración nueva ni datos reales. Aprobado con SPEC27 el
 2026-10-28; DT3/DT4 resueltas el 2026-10-28 y DT6/T-BKP sigue abierto. QA DEV-06
 (2026-11-04) cerró M1–M5 y L5, y L1 por entidad sin cambiar esquema: Referencias/Deudas/Presupuestos guardan huella y
 cierres en `audit.campos.impacto`; Revisión Comida los guarda en
@@ -30,7 +30,7 @@ de Revisión Comida con guarda T2 y la comparación de los seis totales de hecho
 > sin excepción por «sin impacto». La propuesta por impacto queda pendiente de enmienda
 > formal y no se usa como criterio de PASS.
 
-Base: `3cce51e` (rama `feat/e49-cierre`, `main` `58346e1` ya integrado), esquema v25.
+Base: `356fbe9` (rama `feat/e49-cierre`, `main` `4717199` integrado), esquema v25.
 
 | Acceptance ID | Precondiciones y acción | Resultado esperado | Método/comando propuesto | Plataforma/owner | Evidencia esperada | Estado actual | Candidato/fecha |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -209,7 +209,8 @@ seis totales de hechos y a cierres sin foto. Los guards se prueban sobre
 `openDatabase(":memory:")` con cierres creados por la API y opciones E3.5/backup
 ficticias. No se usan datos reales. El cierre real sigue bloqueado por DT6/T-BKP y la
 UI/E2E de cierre no forma parte de este bloque. La matriz DEV-06 no declara completo
-ningún AC que dependa de UI, cierre real o evidencia de host. La CI Linux de `f5ee167` está en PASS; AC-03/AC-04 se acreditan solo como
+ningún AC que dependa de UI, cierre real o evidencia de host. La CI Linux de `356fbe9`
+está en PASS (`41990567217`); AC-03/AC-04 se acreditan solo como
 fixtures de API: no cubren la UI ni el cierre real y no se declaran PASS funcionales.
 AC-20 se acredita como coherencia de fixtures, no como cierre real.
 
@@ -237,7 +238,7 @@ fecha de registro es solo auditoría. E4.10 no se desarrolla. La aprobación de
 spec/wireframes, DT6/T-BKP y cualquier DEV son gates separados; DT3/DT4 ya están
 resueltas. El bloque DEV-06 ejecuta pruebas de fixtures con autorización del
 2026-11-04; DEV-07 añade UI/E2E con evidencia inyectada. El cierre real, DT6/T-BKP y
-cualquier merge siguen siendo gates; CI Linux PASS en `f5ee167`.
+cualquier merge siguen siendo gates; CI Linux PASS en `356fbe9` (`41990567217`).
 Quedan como huecos explícitos: el alta de `revision_comida` fuera de una
 ventana cerrada no exige huella; el cambio de Estado de Presupuestos no se trata como
 fuente/destino; y la propuesta de permitir campos informativos de Movimientos, Compras y
