@@ -3,10 +3,11 @@
 **APROBADO Y CONGELADO — 2026-11-05.**
 Status: **Test plan aprobado y congelado; NO EJECUTADO. Los 24 AC están `UNRUN`; ninguno en
 PASS.** Ratificado por el usuario el **2026-11-05** junto con DT-A…DT-I y la reserva v26;
-integrado en `main` vía **#230** (`06debd0`). El testplan queda **congelado**: sus
-definiciones y resultados esperados no se reinterpretan durante el DEV y cualquier cambio
-exige nueva autorización. No existe implementación de E4.10, endpoint, DDL, migración, UI ni
-candidato funcional. No se usan datos reales.
+registro de la ratificación en **#231** (rama `docs/e410-ratification-record`, base `main`
+`06debd0`). El testplan queda **congelado**: sus definiciones y resultados esperados no se
+reinterpretan durante el DEV y cualquier cambio exige nueva autorización. No existe
+implementación de E4.10, endpoint, DDL, migración, UI ni candidato funcional. No se usan
+datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
@@ -40,8 +41,9 @@ están aprobadas (2026-11-05); solo P2/P3/P6/P7/P8 de SPEC29 siguen abiertas.**
   `python3 scripts/verify` o `python3 scripts/verify --full` según el perfil autorizado.
   Este documento no ejecuta nada.
 
-Las rutas y nombres de códigos de E4.10 siguen `[PENDIENTE]`; la superficie E4.9 ya está
-integrada. Los casos se escriben contra las operaciones conceptuales
+Las rutas de reapertura y cancelación están ratificadas (DT-E E1); los DTO y nombres exactos
+de códigos se concretan en el DEV autorizado sin cambiar la semántica. La superficie E4.9 ya
+está integrada. Los casos se escriben contra las operaciones conceptuales
 (`reabrirUltimoCierre`, `reCerrarCiclo`, `estadoDeCierre`, `versionesDeCierre`,
 `fotoDeCierre`, `cancelarReapertura`) y se adaptan a la superficie E4.9 integrada, sin
 cambiar la semántica.
@@ -120,7 +122,7 @@ implementado. **Operacionaliza** la matriz D4 de SPEC28 para los casos que no re
 las precondiciones de AC01/AC04/AC12. **No modifica SPEC28 ni sustituye su contrato.** La
 regla de ausencia de §3.1.2 queda ratificada como parte del testplan congelado.
 
-### 3.1 Regla propuesta
+### 3.1 Regla ratificada
 
 1. **Obligatorio y bloqueante:** integridad del último cierre y su versión; ausencia de
    cierre posterior y de otra ventana; coherencia de S0/plan del ciclo siguiente si existe;

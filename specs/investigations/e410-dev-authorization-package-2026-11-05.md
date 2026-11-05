@@ -8,7 +8,7 @@
 > ejecución exige aprobación humana expresa sobre un SHA concreto.
 
 - **Base original:** `main` **`2cd0951`**; **reverificado en `a8e526b`**; **registro de
-  ratificación:** `main` **`06debd0`** (2026-11-05).
+  ratificación:** **#231** (rama `docs/e410-ratification-record`, base `main` `06debd0`).
 - **SPEC28:** ratificada como contrato documental el 2026-11-05 (D1–D9 y `SIN_CAMBIOS`).
 - **Testplan:** **aprobado y congelado** el 2026-11-05; 24 AC (`E4.10-AC01…AC24`), todos
   **`UNRUN`**.
@@ -178,7 +178,7 @@ del código.
 | **Recomendación** | **E1**, coherente con E4.9: `POST /api/cierres/:ciclo/reabrir`, `POST /api/cierres/:ciclo/reapertura/cancelar`, `GET /api/cierres/:ciclo/reapertura`; `/estado` incluye el bloque de reapertura; `/preflight` y `/cerrar` aceptan `versionEsperada`; `/foto?version=N` no cambia. Clave `Idempotency-Key` obligatoria en escrituras. |
 | **Justificación** | Menor superficie nueva, reutiliza preflight, foto y errores motivados; evita duplicar el contrato de cierre. |
 | **Riesgos** | Ambigüedad entre cierre inicial y re-cierre; se resuelve por la ventana activa y `versionEsperada`. Códigos nuevos deben documentarse sin romper E4.9. |
-| **Códigos propuestos** | `NO_ES_ULTIMO_CIERRE`, `YA_REABIERTO`, `NO_REABIERTO`, `VERSION_CONFLICTO`, `IDEMPOTENCY_CONFLICT`, `SIN_CAMBIOS`, `IMPACTO_NO_VERIFICABLE`, `DT6_BLOQUEADO`, `E35_BLOQUEADO`, `DT9_FUERA_DE_ALCANCE`. |
+| **Códigos de la superficie ratificada** (nombre final en el DEV) | `NO_ES_ULTIMO_CIERRE`, `YA_REABIERTO`, `NO_REABIERTO`, `VERSION_CONFLICTO`, `IDEMPOTENCY_CONFLICT`, `SIN_CAMBIOS`, `IMPACTO_NO_VERIFICABLE`, `DT6_BLOQUEADO`, `E35_BLOQUEADO`, `DT9_FUERA_DE_ALCANCE`. |
 | **Dependencias** | DT-A/B/D, contrato E4.9. |
 | **Tipo** | **Aprobación humana** (contrato de API); los DTO exactos son implementativos tras aprobar rutas y códigos. |
 
@@ -233,7 +233,7 @@ del código.
 | Elemento | Estado | Efecto en DEV/aceptación |
 | --- | --- | --- |
 | E4.9 cierre y foto v1 | Integrado `0176ffc`, v25 | Base de foto, auditoría, idempotencia y preflight |
-| Esquema v26 | **Propuesto** | Bloquea DDL hasta aprobación de DT-F |
+| Esquema v26 | **Reservado** (ratificado 2026-11-05) | No autoriza DDL; la migración requiere DEV autorizado |
 | DT6/T-BKP | Abierto | Bloquea cierre/re-cierre **real**; no la aceptación con fixtures |
 | E3.5/FIN_NETA AC-15 | PARCIAL | Sin verificación suficiente no hay re-cierre real ni foto |
 | E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio del [testplan E4.10](../28-e410-reapertura-testplan.md), §3, ratificado el 2026-11-05: ausencia `NoDisponible` con motivo; datos ilegibles o contradicción material bloquean; diferencia no material acreditada → aviso auditado |
