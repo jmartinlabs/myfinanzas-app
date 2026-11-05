@@ -117,7 +117,7 @@ def validate(root):
    'Inherit full history only for a concrete dependency',
    'not repeated status reminders', 'Space CI queries progressively',
    'QA independently', 'Workers in other clients',
-   'start/stop owner', 'No OpenCode adapter is supplied',
+   'start/stop owner', 'Optional OpenCode adapters may be present under',
    'explicit user authorization and supported tools',
    'separate checkouts/worktrees AND non-overlapping ownership',
    'Separate test ports, databases', 'Worker output is evidence, never',

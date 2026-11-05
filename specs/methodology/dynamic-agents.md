@@ -168,8 +168,9 @@ Record client/version, session/worker ID, runtime-controlled versus external sta
 start/stop owner, communication route, instruction entry points and evidence destination
 in the existing packet. Confirm the worker can read applicable canonical rules and return
 packet ID, candidate, checks and blockers. Client adapters expose the same rules without
-duplicating or weakening them. No OpenCode adapter is supplied: verify its instruction
-loading/configuration in the chosen installation. Never assume Claude hooks run elsewhere. Agent Relay v1 is user-triggered transport; it does not launch, poll, control or replace start/stop ownership.
+duplicating or weakening them. Optional OpenCode adapters may be present under
+`.opencode/agents/`; they are client adapters, not new roles or always-running workers, and
+their instruction loading/configuration must be verified in the chosen installation. Never assume Claude hooks run elsewhere. Agent Relay v1 is user-triggered transport; it does not launch, poll, control or replace start/stop ownership.
 
 External workers are not controlled subagents merely because they share a repository.
 Without repository access, the user cannot use Agent Relay v1; the coordinator executes or access is resolved. When available, Agent Relay v1 is the canonical transport and the user owns start/stop.
