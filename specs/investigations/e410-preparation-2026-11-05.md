@@ -4,10 +4,12 @@
 modifica código, esquema ni migración, no abre datos reales ni Excel y no fusiona nada.
 Los AC de E4.10 y los 59 AC de E4.5 siguen `UNRUN`.
 
-- **Base:** `main` **`136713b`** (2026-11-05), con E4.9 integrado en `0176ffc` y E4.5 en
+- **Base:** `main` **`3842831`** (2026-11-05), con E4.9 integrado en `0176ffc` y E4.5 en
   `a806fd9`.
 - **Autorización:** análisis y preparación documental de E4.10 solicitados por el usuario
   el 2026-11-05, en paralelo con DT7/#218.
+- **Revisión 2026-11-05:** D1–D7 y D9 se consideran una base razonable, **no aprobada**;
+  D8 corregida; paquetes D1/D2/D8/D9 y D5/E4.11 preparados para aprobación posterior.
 - **Alcance:** diagnóstico de SPEC28, contratos heredados, D1–D9, reapertura, versionado
   de fotos, protecciones, idempotencia, dependencias E4.11/E4.12 y próximos pasos.
 - **Fuera de alcance:** implementación, SQL, migración, rutas nuevas, datos reales,
@@ -25,6 +27,8 @@ Los AC de E4.10 y los 59 AC de E4.5 siguen `UNRUN`.
 - Worktree independiente: `docs/e410-preparation`, base `136713b`.
 - Sin ediciones concurrentes: el subagente fue read-only; la consolidación la hace el
   coordinador.
+- **Actualización posterior:** #218 mergeado en `c4706a6` y #220 en `3842831`; el contenido
+  D1–D9 se actualiza con la corrección D8 y los paquetes, sin cambiar el diagnóstico.
 
 ## 1. Diagnóstico de vigencia de SPEC28
 
@@ -68,15 +72,58 @@ esquema de E4.10.
 
 | Decisión | Estado | Recomendación | Alternativas y riesgos | Decide | Evidencia |
 | --- | --- | --- | --- | --- | --- |
-| **D1** Último cierre y reserva | Definición `[CONFIRMADO]`; reserva/v3 usuario | **A**: el reabierto reserva la posición hasta re-cierre o cancelación; una sola ventana; v3+ solo sobre la última versión y secuencial | B multiplica ventanas/versiones; C añade bloqueo y trabajo programado | Usuario | P5/DT3; SPEC27; roadmap E4.10 |
+| **D1** Último cierre y reserva | Definición `[CONFIRMADO]`; reserva/v3 usuario | **A**: el reabierto reserva la posición hasta re-cierre o cancelación; una sola ventana; v3+ solo sobre la última versión y secuencial; **no se generan cierres posteriores incompatibles durante la reserva** | B multiplica ventanas/versiones; C añade bloqueo y trabajo programado | Usuario | P5/DT3; SPEC27; roadmap E4.10 |
 | **D2** Ventana y alcance T1 | Usuario; base T1 `[CONFIRMADO]` | **B acotada**: T1 solo en la ventana del ciclo para Movimientos, Compras y Ventas; nunca S0/`inicio`/`Fin`; auditoría por escritura; re-bloqueo al re-cerrar/cancelar | A deja sin vía la corrección T1; C añade vencimiento automático | Usuario | SPEC27 T1/T2/T3; testplan E4.9 |
 | **D3** Motivo y actor | Usuario; límites/actor `[CONFIRMADO]` | **B+C**: motivo separado al reabrir y al re-cerrar; 1000 caracteres; actor de sesión; sin roles nuevos | A pierde el motivo de la corrección; C no distingue personas | Usuario | SPEC27 auditoría; E4.10-AC2 |
 | **D4-E4.10** Revalidación | No modificar S0 `[CONFIRMADO]`; matriz/nivel usuario; agregados dependen de E4.11 | **A** para cierres posteriores + **B** para dependencias no cerradas: S0/plan siguiente, fotos, auxiliares, agregados E4.11, precontrol; contradicción bloquea; aviso solo si se declara no bloqueante | C puede dejar cadena incoherente | Usuario | E4.10-AC1/AC3; roadmap |
 | **D5** Versión vigente y agregados | Depende de E4.11 + usuario | **A alineada con P4-A**: v1 visible etiquetada; agregados nuevos excluyen el ciclo reabierto y lo marcan `PendienteReCierre`; agregados ya generados congelados sin recálculo | B muestra total que puede no coincidir; C exige nueva versión de agregado | Usuario + E4.11 | DT4; SPEC27; SPEC29 P1/P4/P5 |
 | **D6** Plan y auxiliares | Usuario; P1/AC-17 `[CONFIRMADO]` | **A+C**: plan vivo editable; `SinPlan`↔`Capturado` con motivo; v2 repite el contrato completo y guarda comparación con v1; auxiliares desde fuentes vigentes; fuente ausente `No disponible` | B impide rectificar plan; cambios silenciosos sin comparación | Usuario | P1; SPEC27 foto; E4.10-AC19 |
 | **D7** Idempotencia y concurrencia | Patrón `[CONFIRMADO]`; comportamiento observable usuario | **A+B+C**: claves separadas reapertura/re-cierre; versión/estado esperado; transacción inmediata; reintento idéntico seguro; payload distinto/versión obsoleta → conflicto; nunca dos versiones | B solo no resuelve dos pestañas; C solo no cubre reintentos | Usuario | E4.9 AC-10/11; testplan |
-| **D8** Fallo/cancelación/recuperación | Usuario | **A+B**: reapertura y re-cierre atómicos e independientes; fallo del re-cierre deja `Reabierto(vN)` y v1 consultable; cancelación auditada sin foto; **C descartada** | Quedarse reabierto bloquea si D1 no prevé salida; B añade transición | Usuario | SPEC28; análisis E4.10 |
+| **D8** Fallo/cancelación/recuperación | Usuario | **A + B corregida**: reapertura y re-cierre atómicos; cancelación sin foto **solo si no hay cambios materiales**; con cambios, re-cierre vN+1 o recuperación auditada; **C descartada** | Quedarse reabierto bloquea si D1 no prevé salida; B sin condición podría perder cambios | Usuario | SPEC28; análisis E4.10; §3.2 |
 | **D9** Ciclos antiguos/DT9 | `[CONFIRMADO]`; solo confirmar | **A**: E4.10 solo último cierre; DT9 fuera, con SPEC propia | B rompe P5/DT9 y multiplica impacto | Usuario | P5/DT9; roadmap |
+
+### 3.1 D1 — precisión: reserva del último cierre
+
+Mientras `Reabierto(vN)` conserva la posición de último cierre:
+
+- no se puede crear ni cerrar un ciclo posterior incompatible;
+- si aparece un cierre posterior por carrera o cierre tardío, el re-cierre se detiene y la
+  ventana se resuelve según D8, sin tocar el cierre posterior;
+- no se abre una segunda ventana: la reapertura de otro ciclo se rechaza mientras la
+  reserva esté activa;
+- la reserva termina con el re-cierre `vN+1` o con la cancelación/recuperación de D8;
+- la fecha de registro no altera la posición; manda el `Fin` cronológico y la ausencia de
+  otro cierre posterior.
+
+Esta precisión no decide D1; describe el efecto de la opción A recomendada.
+
+### 3.2 D8 — corrección: cancelación y recuperación
+
+**Principio:** no se puede devolver un ciclo a `Cerrado(vN)` sin nueva fotografía si durante
+la ventana se alteraron hechos o valores fotografiados. La cancelación sin versión solo es
+válida cuando no hay cambios materiales.
+
+- **D8-B1 — sin cambios materiales:** `Reabierto(vN) → Cerrado(vN)` mediante evento
+  auditado, sin foto nueva; v1 intacta; T1 se re-bloquea; el motivo de cancelación se
+  conserva.
+- **D8-B2 — con cambios materiales:** no se permite cancelar sin nueva versión. Opciones:
+  - **A (recomendada):** re-cerrar `vN+1` con motivo «cancelación con cambios» y foto
+    completa; el cambio queda preservado y auditado.
+  - **B:** revertir los cambios con auditoría y verificación exacta y, solo entonces,
+    cancelar sin foto. Solo si la reversión es completa, demostrable y no altera v1;
+  - **C:** mantener `Reabierto(vN)` hasta resolver; salida de emergencia, no definitiva.
+- **Detección de cambio material:** comparar el estado actual con v1 (hechos T1/T2, plan,
+  auxiliares, valores fotografiados y fingerprint/preflight). Si no se puede demostrar la
+  ausencia de cambios, se trata como material (fail closed).
+- **Recuperación auditada:** registrar motivo, alcance, comparación, actor/UTC, versión y
+  resultado; no se descartan cambios en silencio ni se presenta `Cerrado(vN)` como si la
+  ventana no hubiera existido.
+- **Fallo del re-cierre:** el ciclo sigue `Reabierto(vN)`, v1 consultable y sin foto
+  parcial; el reintento es posible.
+
+**No decidido:** el texto exacto de la comparación, los campos que cuentan como materiales
+y si B se admite. D8 sigue siendo decisión del usuario.
+
 
 **No reabrir:** P5 (solo último cierre sin posteriores; v1/v2 intactas; fecha/motivo),
 DT4 (v1 inmutable, v2, versiones consultables, retención, agregado con versión registrada
@@ -92,14 +139,15 @@ y congelado) y los contratos E4.9 ya mergeados.
 | `Cerrado(v1)` | Único estado persistido hoy; E4.9 inserta v1 y bloquea el segundo cierre | `[CONFIRMADO]` |
 | `Cerrado(vN)` | Versión nueva tras re-cierre | `[PROPUESTA]`; `MAX+1` existe en trigger, camino no implementado |
 | `Reabierto(vN)` | Ventana de rectificación sobre la última versión cerrada | `[PROPUESTA]`; sin estado/endpoint |
-| Cancelación | Vuelta a `Cerrado(vN)` sin foto | `[PENDIENTE D8-B]` |
+| Cancelación | Vuelta a `Cerrado(vN)` sin foto **solo sin cambios materiales**; con cambios, `vN+1` o recuperación auditada | `[PENDIENTE D8 corregida]` |
 
 ### 4.2 Transiciones
 
 - `Cerrado(vN) → Reabierto(vN)`: `[PROPUESTA]`, auditada, sin foto.
 - `Reabierto(vN) → Cerrado(vN+1)`: `[CONFIRMADO]` en «versión nueva sin alterar v1»;
   `[PROPUESTA]` en operación y secuencia.
-- `Reabierto(vN) → Cerrado(vN)` por cancelación: `[PENDIENTE D8-B]`.
+- `Reabierto(vN) → Cerrado(vN)` por cancelación: `[PENDIENTE D8]` solo sin cambios
+  materiales; con cambios, `vN+1` o recuperación auditada.
 - Prohibidas: `SinCierre → Reabierto`, `Cerrado(vN) → Cerrado(vN+1)` sin reapertura, doble
   reapertura, reapertura de versión histórica, `UPDATE`/`DELETE` de cierre/foto/versión.
 
@@ -120,6 +168,8 @@ y congelado) y los contratos E4.9 ya mergeados.
   fallo → sin vN ni foto parcial; el ciclo sigue `Reabierto(vN)` y v1 consultable.
 - `[CONFIRMADO]` El patrón de transacción única y rollback es el de E4.9; DT6 sigue siendo
   gate del cierre real, no de la reapertura documental.
+- `[PROPUESTA]` Cancelación: sin cambios materiales, cierre sin foto; con cambios, `vN+1` o
+  recuperación auditada (D8 corregida). La detección es fail-closed.
 
 ## 5. Fotografías y E4.11
 
@@ -195,28 +245,49 @@ P4/v2. E4.12 depende de E4.10/E4.11 integrados.
   `UNRUN`; no convertir PASS de fixtures E4.9 en PASS de aceptación.
 - Actualizar el testplan: retirar «PR #200 OPEN/draft» y conservar regresiones E4.9.
 
-### 8.2 Paquetes de decisión
+### 8.2 Paquetes de decisión preparados (no aprobados)
 
-1. **Integridad de la ventana:** D2 + D1 + D8 + confirmación D9.
-2. **Auditoría y concurrencia:** D3 + D7.
-3. **Dependencias:** D4 + D6.
-4. **Fotos y periodos:** D5 + E4.11 P1/P4/P5 (conjunto).
-5. **Límite:** D9 (confirmación; puede ir con el paquete 1).
+**Paquete 1 — D1/D2/D8/D9: integridad de la ventana.**
+
+- **D1:** reserva de último cierre; prohibición de cierres posteriores incompatibles
+  mientras la reserva esté activa; v3+ secuencial sobre la última versión.
+- **D2:** T1 acotada a la ventana para Movimientos, Compras y Ventas; S0/`inicio`/`Fin`
+  siempre bloqueados; auditoría por escritura; re-bloqueo al cerrar/cancelar.
+- **D8 corregida:** cancelación sin foto solo sin cambios materiales; con cambios,
+  `vN+1` con foto o recuperación auditada; detección fail-closed; no se descartan cambios
+  en silencio.
+- **D9:** confirmar E4.10 solo último cierre y DT9 fuera.
+- **Preguntas para aprobar:** ¿se acepta la reserva y la prohibición de cierres posteriores?
+  ¿D2-B acotada? ¿D8-B1/B2 con re-cierre vN+1 como opción A? ¿qué campos cuentan como
+  cambio material? ¿D9-A?
+
+**Paquete 2 — D5/E4.11: versión vigente y agregados.**
+
+- **D5:** v1 visible y etiquetada mientras el ciclo está reabierto; agregados nuevos
+  excluyen el ciclo y lo marcan `PendienteReCierre`; agregados ya generados congelados;
+  v3 solo sobre la última versión.
+- **E4.11 P1/P4/P5:** selección/consulta de versión, tratamiento del ciclo reabierto y
+  composición de periodos; no se decide en E4.10.
+- **Preguntas para aprobar:** ¿se acepta D5-A? ¿se confirma `PendienteReCierre`? ¿P4
+  excluye o solo marca? ¿P5 permite mezclar versiones con registro?
+
+**Base razonable, no aprobada:** D3/D7 (auditoría y concurrencia) y D4/D6 (dependencias)
+siguen como propuestas para paquetes posteriores; no forman parte de estos dos paquetes.
 
 ### 8.3 Secuencia recomendada
 
-1. `E4.10-DOC-01`: actualizar SPEC28 y testplan, solo vigencia E4.9 y marcadores
-   obsoletos; sin tocar D1–D9 ni declarar PASS.
-2. Paquete 1 (D2/D1/D8/D9); después paquete 2 (D3/D7) y paquete 3 (D4/D6).
-3. Paquete conjunto E4.10/E4.11 (D5 + P1/P4/P5).
-4. Revisión independiente y aprobación de SPEC28.
-5. Paquete DEV de E4.10: gate separado, no autorizado.
-6. E4.11 avanza tras D5; E4.12 sigue bloqueado, entre otros, por DT6/DT7, E4.5, E4.7,
-   E3.5/E3.6 (AC-15 PARCIAL), AUD-06 y E4.10/E4.11; el roadmap exige E1–E3 y E4.1–E4.11.
+1. **E4.10-DOC-01:** en curso en PR #221; solo vigencia E4.9 y marcadores obsoletos.
+2. **Paquete 1 (D1/D2/D8/D9):** presentar para aprobación; es el bloque de integridad.
+3. **Paquete 2 (D5 + E4.11 P1/P4/P5):** presentar conjuntamente con E4.11.
+4. **D3/D7 y D4/D6:** base razonable, no aprobada; paquetes posteriores.
+5. **Revisión independiente y aprobación de SPEC28.**
+6. **Paquete DEV de E4.10:** gate separado, no autorizado.
+7. **E4.11** avanza tras D5; **E4.12** sigue bloqueado, entre otros, por DT6/DT7, E4.5,
+   E4.7, E3.5/E3.6 (AC-15 PARCIAL), AUD-06 y E4.10/E4.11; el roadmap exige E1–E3 y
+   E4.1–E4.11.
 
-**Siguiente acción única:** abrir `E4.10-DOC-01` con ownership de `specs/28-*` para
-actualizar la vigencia E4.9 y retirar marcadores provisionales obsoletos, manteniendo
-D1–D9 y los AC E4.10 abiertos/`UNRUN`.
+**Siguiente acción única:** cerrar `E4.10-DOC-01` (#221) y presentar el paquete 1
+(D1/D2/D8/D9) para aprobación; después, el paquete 2 con E4.11.
 
 ## 9. Evidencia y límites
 
