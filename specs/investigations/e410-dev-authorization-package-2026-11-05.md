@@ -206,7 +206,7 @@ del código.
 | Esquema v26 | **Propuesto** | Bloquea DDL hasta aprobación de DT-F |
 | DT6/T-BKP | Abierto | Bloquea cierre/re-cierre **real**; no la aceptación con fixtures |
 | E3.5/FIN_NETA AC-15 | PARCIAL | Sin verificación suficiente no hay re-cierre real ni foto |
-| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio propuesto en el [testplan E4.10](28-e410-reapertura-testplan.md), §3: ausencia `NoDisponible` con motivo; datos ilegibles o contradictorios bloquean. Pendiente de ratificación |
+| E4.5 precontrol | SPEC aprobada; DEV no autorizado; 59 AC `UNRUN` | Criterio propuesto en el [testplan E4.10](../28-e410-reapertura-testplan.md), §3: ausencia `NoDisponible` con motivo; datos ilegibles o contradictorios bloquean. Pendiente de ratificación |
 | SPEC29 P2/P3/P6/P7/P8 | Pendientes | Fuera de E4.10; no se infieren |
 | Sesión MFA | Vigente | Escrituras con sesión completa y CSRF/Origin |
 
