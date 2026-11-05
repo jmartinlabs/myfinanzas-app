@@ -402,7 +402,8 @@ tal cual. Los motivos no se publican como secretos ni se usan para almacenar cre
 crea v2 sin alterar v1; todas las versiones son consultables; la retención es permanente
 (SPEC27, DT4). La foto no se recalcula desde el estado vivo (AC-14).
 `[PENDIENTE]` La política de versiones no se congela; D5 decide la regla funcional de
-versión vigente y repetibilidad, coordinada con E4.11/P1–P5. E4.9 ya está integrado.
+versión vigente y repetibilidad, coordinada con E4.11 **P1, P4 y P5**. E4.9 ya está
+integrado.
 
 Reglas candidatas:
 

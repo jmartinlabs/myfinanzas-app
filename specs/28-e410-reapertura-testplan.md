@@ -200,8 +200,8 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 - `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
   marcarse `PASS (fixtures)` solo si se autoriza; el cierre real sigue `BLOQUEADO (real)`.
 - `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**; E4.10 no reserva versión en
-  este testplan. Cualquier migración de E4.10 se decidirá en su paquete DEV con una versión
-  posterior.
+  este testplan. `[PENDIENTE]` La versión de la migración de E4.10 se decidirá en su paquete
+  DEV con una versión posterior.
 - `[PENDIENTE]` **Caso «re-cierre sin cambios»** y **«reabrir tras v2»**: no hay AC hasta
   decisión; no se ejecutan ni se declaran PASS.
 - `[CONFIRMADO]` **Sin datos reales, sin despliegue, sin merge.** Aprobar este testplan no
