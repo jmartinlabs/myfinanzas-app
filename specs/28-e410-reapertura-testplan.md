@@ -1,9 +1,11 @@
 # 28 — E4.10 Reabrir el último cierre y volver a cerrar: Test plan
 
-**DRAFT — no aprobada; no autoriza DEV ni merge.**
+**DRAFT — test plan no aprobado; no autoriza DEV ni merge.**
 Status: **DRAFT documental — diseño de pruebas; NO EJECUTADO. Todos los AC están
-`UNRUN`. Ningún AC está en PASS.** No existe implementación de E4.10, endpoint, DDL,
-migración, UI ni candidato funcional. No se usan datos reales.
+`UNRUN`. Ningún AC está en PASS.** SPEC28 está **ratificada como contrato documental**
+(2026-11-05); este testplan sigue en diseño y su ejecución requiere un DEV autorizado. No
+existe implementación de E4.10, endpoint, DDL, migración, UI ni candidato funcional. No se
+usan datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
