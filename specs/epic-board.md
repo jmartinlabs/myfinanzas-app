@@ -15,7 +15,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.10 | approved (SPEC28 ratificada 2026-11-05) | not-ready (DEV no autorizado) | planned | not-ready | pending | 24 AC UNRUN; paquete DEV definitivo propuesto, sin autorización |
 | E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | P2/P3/P6/P7/P8 pendientes; E4.10 ratificada; DEV no autorizado |
 | E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
-| INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
+| INFRA-TEST-01 | approved (SPEC34 update v25/C25, PR #229, 2026-11-05) | not-ready (host) | UNRUN | n/a | pending | D7 aprobada; seed/release no autorizados; host vps-infra PR #9 |
 | UI | draft (análisis #205) | not-ready | planned | not-ready | pending | Aprobar identificador/alcance `UI` |
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)

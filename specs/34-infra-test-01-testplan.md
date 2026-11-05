@@ -2,12 +2,12 @@
 
 Specification: [34 — entorno TEST reproducible con datos ficticios](34-infra-test-01-specification.md)
 
-Status: **PROPOSED UPDATE 2026-11-05 — pendiente de aprobación; ejecución UNRUN.** No se ha
-ejecutado ninguna comprobación de esta entrega. Este test plan no autoriza DEV, auditoría del
-VPS, DNS, Caddy, despliegue, datos reales ni merge.
+Status: **APPROVED UPDATE 2026-11-05 — ejecución UNRUN.** No se ha ejecutado ninguna
+comprobación de esta entrega. Este test plan no autoriza DEV, implementación del seed,
+releases, auditoría del VPS, DNS, Caddy, despliegue, datos reales ni merge.
 Base: `main` `a8e526b4d8a9115af985c4c05905bca25f76c938` (2026-11-05), esquema 25/C25.
-Approval source/date: original usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»);
-actualización: PENDING.
+Approval source/date: usuario, 2026-11-05 (actualización schema 25/C25 y D7); aprobación
+original 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»).
 Contrato de alojamiento: [vps-infra PR #9](https://github.com/jmartinlabs/vps-infra/pull/9),
 en revisión. El PR #7 está CLOSED; solo es antecedente histórico.
 Documentos de referencia: [RUNBOOK](../infra/RUNBOOK.md),
@@ -69,7 +69,7 @@ habilita las siguientes.
 
 | Fase | Objetivo | Precondición | Evidencia de salida | Estado |
 | --- | --- | --- | --- | --- |
-| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | **UNRUN** (actualización 2026-11-05 pendiente; la versión 2026-11-04 no cubre v25) |
+| 0 | Aprobar spec y test plan | Documento revisado | Aprobación registrada | **PASS** (2026-11-04; actualización 2026-11-05 aprobada) |
 | 1 | Auditoría de solo lectura | Autorización de acceso de lectura | Inventario redactado del host, Caddy, DNS, Podman, puertos y disco | UNRUN (vps-infra 2026-11-05 parcial; faltan Quadlet/cgroup y backups) |
 | 2 | Aprovisionar host | Auditoría completada | Usuario, rutas, `linger`, UFW y versiones registradas | UNRUN |
 | 3 | Release y seed | SHA congelado; gate Rootless | Manifiestos, IDs inmutables, verificación y artefacto test-only | UNRUN |
@@ -164,9 +164,9 @@ claves, bases, importes reales, IPs privadas ni logs crudos.
 
 | ID | Bloqueo | Efecto | Desbloqueo |
 | --- | --- | --- | --- |
-| B01 | Actualización de spec/test plan sin aprobar | El contrato v25 no es vigente | Aprobación del usuario |
+| B01 | Actualización de spec/test plan | **Resuelta 2026-11-05** | Aprobación registrada |
 | B02 | D1–D6 aprobadas; implementación del seed/release no autorizada | Fase 3 bloqueada | Autorización de fase 3 |
-| B03 | E4.9/C25 integrado; actualización de SPEC34 pendiente | Seed/AC10 sin contrato v25 aprobado | Aprobar esta actualización |
+| B03 | E4.9/C25 integrado; contrato v25 aprobado 2026-11-05 | Seed/AC10 con contrato aprobado; implementación pendiente | Autorización de fase 3 |
 | B04 | DT6/T-BKP abierto | Activación productiva limitada | Copia externa mínima y decisión |
 | B05 | Flake SQLite B3 sin reproducción Linux | Riesgo de falso FAIL/PASS | Diagnóstico Linux; no ocultar |
 | B06 | Gate Rootless sin evidencia sobre `a8e526b` | Despliegue bloqueado | Run `SUCCESS` sobre el SHA exacto |
@@ -199,5 +199,5 @@ No se usa `reset-failed`, `chmod`/`chown`, `:U`, borrado de estado ni reintento 
   repositorio y de la consulta de solo lectura a GitHub.
 - AC: **19 / 19 `UNRUN`**.
 - Fases: **0 / 9 autorizadas**; la fase 1 tiene la auditoría parcial de `vps-infra` (2026-11-05).
-- Próxima acción independiente: aprobar esta actualización y D7; completar la fase 1
-  (Quadlet/cgroup y backups) antes de la fase 2.
+- Próxima acción independiente: solicitar autorización para implementar el seed y ejecutar las
+  pruebas Rootless; completar la fase 1 (Quadlet/cgroup y backups) antes de la fase 2.

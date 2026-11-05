@@ -1,11 +1,10 @@
 # 34 — INFRA-TEST-01: entorno TEST reproducible con datos ficticios — Specification
 
-Status: **PROPOSED UPDATE 2026-11-05 — reconcilia SPEC34 con esquema 25/E4.9; pendiente de
-aprobación.** La versión aprobada el 2026-11-04 sigue vigente hasta que se apruebe este cambio.
-No autoriza DEV, acceso al VPS, DNS, Caddy, despliegue, datos reales, migraciones operativas
-ni merge.
-Approval source/date: original usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»);
-actualización de contrato: PENDING.
+Status: **APPROVED UPDATE 2026-11-05 — esquema 25/C25 y D7 aprobados; D1–D6 siguen vigentes.**
+No autoriza DEV, implementación del seed, construcción de releases, acceso al VPS, DNS, Caddy,
+despliegue, datos reales, migraciones operativas ni merge.
+Approval source/date: usuario, 2026-11-05 («Apruebo la actualización de SPEC34 y su test plan
+para el esquema 25/C25, así como la decisión D7»); aprobación original 2026-11-04.
 Base: `main` `a8e526b4d8a9115af985c4c05905bca25f76c938` (2026-11-05); E4.9 mergeado
 (`0176ffc`, PR #200); `schemaVersion=25` (`C25-E49-CIERRE-FINANCIERO`).
 Documentos relacionados: [antecedente histórico cancelado de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) (CLOSED, no mergeado),
@@ -31,7 +30,7 @@ sin decisión. Ninguna marca convierte una propuesta en autorización.
 - **Release/Rootless:** release e imagen se reconstruyen desde el SHA con E4.9 y el gate se
   repite sobre ese SHA.
 - **Fuera de alcance:** implementar el seed, migrar TEST desde 24, desplegar o tocar el VPS.
-- **Decisión nueva:** D7 (mantener FT-1 v1 sin cierres; FT-2 solo si se quiere cubrirlos).
+- **D7 aprobada:** mantener FT-1 v1 sin cierres; FT-2 solo para una ampliación independiente.
 
 ## 1. Objetivo y alcance
 
@@ -486,7 +485,7 @@ la anterior. El detalle operativo, la evidencia y el owner están en el
 
 | Fase | Contenido | Autorización |
 | --- | --- | --- |
-| 0 | Aprobación de esta spec y del test plan | Aprobada 2026-11-04; **actualización 2026-11-05 pendiente** |
+| 0 | Aprobación de esta spec y del test plan | Aprobada 2026-11-04; **actualización 2026-11-05 aprobada** |
 | 1 | Auditoría de solo lectura del host, Caddy, DNS, Podman, puertos y disco | Usuario; parcial en vps-infra 2026-11-05 |
 | 2 | Aprovisionamiento de usuario/rutas/`linger`/UFW | Usuario |
 | 3 | Construir y verificar release + seed; gate Rootless sobre el SHA | Usuario / CI |
@@ -538,7 +537,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | Copia externa inexistente | Sin recuperación real | Bloqueo de activación hasta destino aprobado |
 | Deriva documental con vps-infra | Unidad incoherente | §11 y revisión campo a campo por release |
 
-### 9.3 Decisiones pendientes
+### 9.3 Decisiones
 
 | ID | Decisión | Recomendación | Estado |
 | --- | --- | --- | --- |
@@ -548,7 +547,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | D4 | Reset: truncado lógico vs archivar `state` y recrear | Archivar y recrear con `production-init` | `[APROBADA 2026-11-04]` |
 | D5 | Alcance del dataset: `FT-1` fijo vs ampliación por módulos | `FT-1` fijo; ampliar exige versión nueva | `[APROBADA 2026-11-04]` |
 | D6 | Unidad TEST: nuevo entregable host de vps-infra vs parametrizar `runtime.py:render` | Nuevo entregable host mientras `render` siga fijando PROD/18081 | `[APROBADA 2026-11-04]` |
-| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres vs crear FT-2 con cierres/fotos | Mantener FT-1 v1 y tablas v25 vacías; FT-2 solo si se decide cubrir E4.9, con E3.5/FIN_NETA y DT6/backup resueltos | `[PROPUESTA 2026-11-05]` |
+| D7 | Cobertura de E4.9 en FT-1: mantener FT-1 v1 sin cierres vs crear FT-2 con cierres/fotos | Mantener FT-1 v1 y tablas v25 vacías; FT-2 solo si se decide cubrir E4.9, con E3.5/FIN_NETA y DT6/backup resueltos | `[APROBADA 2026-11-05]` |
 
 ## 10. Fuera de alcance
 
@@ -600,8 +599,9 @@ aprobación → operaciones; este repositorio **no abre** esa tarea por inferenc
   test-only son diseño, no implementación.
 - `[CONFIRMADO]` E4.9/C25 está integrado en `a8e526b`; la actualización de esta spec es
   `PROPOSED UPDATE` y no sustituye la versión aprobada hasta su aprobación.
-- `[PENDIENTE]` La aprobación de esta actualización, D7 y todas las autorizaciones de fase.
-  D1–D6 siguen aprobadas.
+- `[CONFIRMADO]` La actualización y D7 fueron aprobadas el 2026-11-05; D1–D6 siguen aprobadas.
+- `[PENDIENTE]` La implementación del seed, la construcción de release, el gate Rootless y
+  todas las autorizaciones de fase. La aprobación documental no autoriza nada de eso.
 - Ningún PASS se hereda de otras entregas. `UNRUN` no es PASS ni FAIL.
 - Las rutas de host citadas (`/srv/myfinanzas-test`, `/var/www/myfinanzas-test`) son
   propuestas heredadas del antecedente cerrado; no son directorios verificados ni un contrato vigente.
