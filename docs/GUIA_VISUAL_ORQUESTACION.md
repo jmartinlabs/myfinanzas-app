@@ -1,6 +1,6 @@
 # Guía visual: Orchestrator y agentes dinámicos — v2.3.1
 
-> **Objetivo:** trabajar con un único coordinador de desarrollo, que distribuye tareas independientes según el estado real del proyecto. No significa que un Skill cree agentes automáticamente ni que los agentes sigan activos fuera de una ejecución de Codex.
+> **Objetivo:** trabajar con un único coordinador de desarrollo, que distribuye tareas independientes según el estado real del proyecto. No significa que un Skill cree agentes automáticamente ni que los agentes sigan activos fuera de una ejecución del cliente.
 
 **Adaptación MyFinanzas:** [reglas locales y autorizaciones](../specs/methodology/myfinanzas-coordination.md).
 Los ejemplos de E1.7 del upstream son ilustrativos, no crean una entrega del roadmap
@@ -40,7 +40,7 @@ flowchart TD
     B -->|No| Z["Registrar bloqueo y pedir decisión concreta"]
     B -->|Sí| C{"¿Se pueden ejecutar independientemente?"}
     C -->|No| S["Ejecutar secuencialmente"]
-    C -->|Sí| D{"¿Codex permite subagentes?"}
+    C -->|Sí| D{"¿El cliente permite subagentes?"}
     D -->|No / desconocido| S
     D -->|Sí| E["Estimar beneficio, coste, colisiones y límite real"]
     E --> F["Crear solo tareas delimitadas útiles"]
@@ -49,7 +49,7 @@ flowchart TD
     G --> A
 ```
 
-**Reglas:** Quick suele usar uno; Standard puede usar varios; Full puede coordinar varias líneas. Empezar con **uno a tres**, si hay trabajo útil, es una heurística, **no** un máximo rígido ni un límite técnico universal. Más de tres solo si hay beneficio real, capacidad de ejecución y aislamiento seguro.
+**Reglas:** delegar por defecto el trabajo sustancial y autónomo (specs, dev aprobado, investigaciones y QA) cuando el cliente lo permita; reservar la ejecución directa para correcciones pequeñas, coordinación y decisiones. Preferir segundo plano si está verificado y permite avanzar trabajo independiente autorizado. Un ejecutor por tarea; varias tareas solo con independencia real, ownership disjunto y aislamiento autorizado. No crear agentes artificiales. Uno a tres agentes activos sigue siendo una heurística, no un máximo rígido ni un límite técnico universal. Conserva QA independiente cuando sea exigible.
 
 ## 3. Varias épicas sin bloqueo en serie
 
@@ -182,7 +182,7 @@ La selección respeta la [política canónica de modelos](../specs/methodology/m
 | Merge/Deploy automático | No | Requiere aprobación correspondiente |
 | Sesiones Codex independientes antiguas | No gestionadas directamente | Se migran mediante checkpoint/Git |
 
-La documentación de [OpenAI sobre multiagentes en Agents API](https://developers.openai.com/api/docs/guides/agents-api/multi-agent) describe una plataforma que se **configura por separado**. Que exista no prueba que tu Codex Desktop/Web tenga las mismas herramientas activadas.
+La documentación de [OpenAI sobre multiagentes en Agents API](https://developers.openai.com/api/docs/guides/agents-api/multi-agent) describe una plataforma que se **configura por separado**. Que exista no prueba que tu cliente Codex, Claude Code u OpenCode tenga las mismas herramientas activadas.
 
 ## 10. Preguntas frecuentes
 
