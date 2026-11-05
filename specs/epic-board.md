@@ -16,7 +16,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | P2/P3/P6/P7/P8 pendientes; E4.10 ratificada; DEV no autorizado |
 | E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
 | INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
-| DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | planned | PR-open | pending | Sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
+| DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | passed (docs) | PR-open | pending | QA APTO; CI `required` PASS en PR #233; sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
 | UI | draft (análisis #205) | not-ready | planned | not-ready | pending | Aprobar identificador/alcance `UI` |
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
