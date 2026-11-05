@@ -19,6 +19,7 @@ si solo se ha observado la sesión actual.
 | O10 | Skills heredadas no incluidas en el alcance, CI, aplicación y dependencias | `init-project`, `bootstrap`, `roadmap` y `spec` conservan su contrato; CI, app, tests, SQL y lockfile sin cambios. `dev`, `orchestrate`, `task`, `tweak` y `adopt-project` se actualizan solo por el alcance v2.14 documentado |
 | O11 | Trabajo autorizado de código/documentación con rama y PR | Publicar rama y crear/actualizar PR sin aprobación extra; merge sigue bloqueado hasta aprobación explícita e identificable |
 | O12 | Informe intermedio o check corregible dentro del alcance | Investigar, corregir y repetir el check en el mismo turno; si se detiene, declarar responsable, acción humana exacta y motivo de espera |
+| O13 | DEV/CI en curso y siguiente trabajo independiente disponible | Prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA; actualiza tablero con siguiente acción y no cruza gates, no espera instrucción innecesaria ni crea trabajo artificial |
 
 Las pruebas de Quick/Standard con código, implementación de E1.6 y despliegue NO se
 ensayan en esta adopción. No relajar ningún control para dar por superado un escenario.

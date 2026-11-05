@@ -26,6 +26,7 @@ ni inspeccionada físicamente por los agentes; el Excel es la fuente de verdad h
 - [$orchestrate](.agents/skills/orchestrate/SKILL.md), [reglas locales](specs/methodology/myfinanzas-coordination.md)
   y [aprobaciones](specs/methodology/approvals.md). Reparto: OpenCode orquesta, Álex asesora
   y el usuario aprueba ([detalle](specs/methodology/myfinanzas-coordination.md#reparto-de-responsabilidades--orquestador-asesor-y-usuario)).
+- Mantén identificados los siguientes trabajos del roadmap y sus dependencias; mientras algo avanza o espera, prepara SPEC, investigación, paquete DEV ya autorizado o diseño QA sin cruzar gates. Replanifica ante resultados o bloqueos y deja una siguiente acción verificable; no crees trabajo artificial ni un segundo scheduler.
 - [Agent Relay v1](.agents/skills/relay/SKILL.md) es el transporte canónico de coordinación; se usa solo bajo petición explícita y no crea conversaciones automáticamente.
 - [Flujos](specs/methodology/workflows.md) para clasificar; [agentes](specs/methodology/dynamic-agents.md)
   y [roles](.agents/roles/README.md) al delegar; [comunicación](specs/methodology/coordinator-communication.md)

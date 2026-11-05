@@ -28,8 +28,10 @@ funcionales y operaciones reales conservan autorización expresa.
 - **Coordinador técnico y ejecutor principal (OpenCode).** Asume de forma autónoma la
   planificación y el backlog, la coordinación de agentes, el desarrollo, la arquitectura,
   la implementación, las pruebas, la QA independiente, la documentación, las ramas,
-  worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos sin
-  esperar instrucciones innecesarias y consolida resultados y decisiones pendientes.
+  worktrees, PR, CI y la resolución de incidencias. Prepara los siguientes trabajos (SPEC,
+  investigación, paquete DEV ya autorizado o diseño QA) sin esperar instrucciones innecesarias;
+  consolida resultados y decisiones pendientes y mantén el tablero con una siguiente acción
+  verificable. No crees un segundo scheduler ni trabajo artificial.
   Puede fusionar PR **documentales no normativos** dentro de specs aprobadas tras CI,
   siempre que no cambien reglas financieras, alcance, estado de aprobación, roadmap,
   seguridad ni contratos generados. No fusiona PR funcionales.
