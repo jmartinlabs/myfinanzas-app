@@ -94,7 +94,7 @@ tabla del [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md#1-
 | --- | --- | --- | --- |
 | **E4.5 — archivo precontrol** | SPEC20 aprobada; DEV no autorizado; DT7 sigue siendo gate. | Registros, mapping, cobertura, corte y procedencia; consulta por ejercicio. | No crea fotos, cierres, planes ni hechos; no se transforma en foto. Su inclusión en E4.11 es M6. |
 | **E4.9 — cierre y primera foto** | SPEC27 aprobada; **integrada** en `0176ffc` con QA APTO CON RESERVAS. | Foto v1 inmutable: versión, ventana, S0, plan, hechos, inversión, auxiliares, cobertura y backup. | No hay v2 ni reapertura; E4.10 las define, no E4.11. |
-| **E4.10 — reapertura/re-cierre** | SPEC28 parcialmente decidida: D1/D2/D5/D8/D9 aprobadas; D3/D4/D6/D7 pendientes; sin DEV. | v2, versión vigente y estado reabierto para E4.11. | La política D5-A está aprobada; quedan representación, auditoría y detalles de implementación. |
+| **E4.10 — reapertura/re-cierre** | SPEC28 **DRAFT**; D1–D9 y `SIN_CAMBIOS` aprobadas 2026-11-05; sin DEV. | v2, versión vigente y estado reabierto para E4.11. | La política D5-A está aprobada; quedan representación, auditoría y detalles de implementación. |
 | **DT4 — contenido, metadatos, versiones, retención** | `[CONFIRMADO]` Resuelta el 2026-10-28 en SPEC27. | Contrato de foto, v1/v2, metadatos inmutables, retención permanente y regla «trimestre/año usan la versión vigente al generar el agregado, registran cuál usaron y queda congelado». | No fija la **composición** exacta del periodo; P1-C/P4-A/P5-B aprobadas orientan, P2/P3 siguen pendientes. |
 | **Versiones y cortes** | `[CONFIRMADO]` v1/v2 por ciclo; corte = `Fin` congelado; versiones anteriores consultables. | Identidad y trazabilidad por ciclo y versión. | D5-A/P1-C/P4-A/P5-B aprobadas: composición declarada, ciclo reabierto excluido/marcado y mezcla con registro exacto. |
 | **Periodos trimestre/año** | `[PENDIENTE]` M3 y P2/P3. | Agrupación por calendario o por ciclo, con corte y versión. | No se prorratea, divide ni inventa un ciclo que cruce el límite sin decisión. |
@@ -458,8 +458,8 @@ completan con la decisión M correspondiente; el AC no cambia, cambia su paráme
 
 - `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS; contrato de foto
   y superficie E4.9 estabilizados.
-- `[CONFIRMADO]` **E4.10:** D1/D2/D5/D8/D9 aprobadas; P1-C/P4-A/P5-B aprobadas. P2/P3/P6/
-  P7/P8 y D3/D4/D6/D7 siguen pendientes.
+- `[CONFIRMADO]` **E4.10:** D1–D9 y `SIN_CAMBIOS` aprobadas; P1-C/P4-A/P5-B aprobadas.
+  Solo P2/P3/P6/P7/P8 siguen pendientes.
 - `[PENDIENTE]` **Decisiones M2–M6** (P2/P3/P6/P7/P8) y la frontera de consulta/archivo
   E4.5.
 - `[PENDIENTE]` **DT6/T-BKP** para cierre real; fixtures para desarrollo y pruebas.
