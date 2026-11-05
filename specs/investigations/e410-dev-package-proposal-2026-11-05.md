@@ -5,6 +5,9 @@
 > desarrollo**, no fija DDL ni endpoints definitivos, no declara ningún AC en PASS y no
 > habilita datos reales, SQL, migración, cierre real ni despliegue. La ejecución requiere
 > autorización humana expresa sobre un SHA concreto.
+>
+> **Para la autorización, rige el [paquete definitivo](e410-dev-authorization-package-2026-11-05.md)**;
+> este documento se conserva como análisis de alcance y decisiones.
 
 - **Base:** `main` **`28582f9`** (2026-11-05).
 - **SPEC28:** ratificada como contrato documental el 2026-11-05; D1–D9 y `SIN_CAMBIOS`.
