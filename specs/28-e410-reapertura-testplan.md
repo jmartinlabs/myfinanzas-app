@@ -1,17 +1,20 @@
 # 28 — E4.10 Reabrir el último cierre y volver a cerrar: Test plan
 
-**PROPUESTO PARA APROBACIÓN Y CONGELACIÓN — 2026-11-05; no aprobado todavía.**
-Status: **Propuesta de test plan; NO EJECUTADO. Los 24 AC están `UNRUN`; ninguno en
-PASS.** SPEC28 está **ratificada como contrato documental** (2026-11-05). Al aprobarse, este
-testplan queda **congelado**: sus definiciones y resultados esperados no se reinterpretan
-durante el DEV y cualquier cambio exige nueva aprobación. No existe implementación de E4.10,
-endpoint, DDL, migración, UI ni candidato funcional. No se usan datos reales.
+**APROBADO Y CONGELADO — 2026-11-05.**
+Status: **Test plan aprobado y congelado; NO EJECUTADO. Los 24 AC están `UNRUN`; ninguno en
+PASS.** Ratificado por el usuario el **2026-11-05** junto con DT-A…DT-I y la reserva v26;
+registro de la ratificación en **#231** (rama `docs/e410-ratification-record`, base `main`
+`06debd0`). El testplan queda **congelado**: sus definiciones y resultados esperados no se
+reinterpretan durante el DEV y cualquier cambio exige nueva autorización. No existe
+implementación de E4.10, endpoint, DDL, migración, UI ni candidato funcional. No se usan
+datos reales.
 Task ID: `E4.10 · SPEC` (canonical), soporte documental `SPEC28`.
 Specification: [28-e410-reapertura-specification.md](28-e410-reapertura-specification.md)
 Brainstorming: [28-e410-reapertura-brainstorming.md](28-e410-reapertura-brainstorming.md)
-Base de esta revisión: `main` **`a8e526b`** (2026-11-05), con SPEC28 ratificada y el paquete
+Base del contenido: `main` **`a8e526b`** (2026-11-05), con SPEC28 ratificada y el paquete
 DEV [e410-dev-authorization-package-2026-11-05](investigations/e410-dev-authorization-package-2026-11-05.md)
-integrado. E4.9 está **integrado** en `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI
+integrado; **registro de ratificación:** #231 sobre `main` `06debd0`. E4.9 está **integrado**
+en `0176ffc` (#200), con QA **APTO CON RESERVAS** y CI
 post-merge `42000330143`; `a806fd9` es E4.5 (#216), no E4.9. Los AC de E4.10 siguen
 **UNRUN**; los PASS de fixtures/parciales de E4.9 no son PASS de aceptación. DT6/T-BKP sigue
 abierto.
@@ -39,8 +42,9 @@ están aprobadas (2026-11-05); solo P2/P3/P6/P7/P8 de SPEC29 siguen abiertas.**
   `python3 scripts/verify` o `python3 scripts/verify --full` según el perfil autorizado.
   Este documento no ejecuta nada.
 
-Las rutas y nombres de códigos de E4.10 siguen `[PENDIENTE]`; la superficie E4.9 ya está
-integrada. Los casos se escriben contra las operaciones conceptuales
+Las rutas de reapertura y cancelación están ratificadas (DT-E E1); los DTO y nombres exactos
+de códigos se concretan en el DEV autorizado sin cambiar la semántica. La superficie E4.9 ya
+está integrada. Los casos se escriben contra las operaciones conceptuales
 (`reabrirUltimoCierre`, `reCerrarCiclo`, `estadoDeCierre`, `versionesDeCierre`,
 `fotoDeCierre`, `cancelarReapertura`) y se adaptan a la superficie E4.9 integrada, sin
 cambiar la semántica.
@@ -113,13 +117,13 @@ cambiar la semántica.
 
 ## 3. Revalidación y dependencia E4.5/precontrol
 
-`[PROPUESTA — requiere ratificación]` Criterio operativo para AC03/AC17 mientras E4.5 no
-está implementado. **Operacionaliza** la matriz D4 de SPEC28 para los casos que no regula
+`[APROBADO 2026-11-05]` Criterio operativo para AC03/AC17 mientras E4.5 no está
+implementado. **Operacionaliza** la matriz D4 de SPEC28 para los casos que no regula
 —ausencia de fuente y distinción entre contradicción material y aviso acreditado— y hereda
 las precondiciones de AC01/AC04/AC12. **No modifica SPEC28 ni sustituye su contrato.** La
-regla de ausencia de §3.1.2 es un punto expreso de ratificación.
+regla de ausencia de §3.1.2 queda ratificada como parte del testplan congelado.
 
-### 3.1 Regla propuesta
+### 3.1 Regla ratificada
 
 1. **Obligatorio y bloqueante:** integridad del último cierre y su versión; ausencia de
    cierre posterior y de otra ventana; coherencia de S0/plan del ciclo siguiente si existe;
@@ -242,8 +246,9 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 ## 8. Dependencias y limitaciones
 
 - `[CONFIRMADO]` **E4.9 integrado** en `0176ffc` con QA APTO CON RESERVAS. Las rutas, la
-  forma de reapertura, la foto v2 y la auditoría de E4.10 siguen `[PENDIENTE]`; la política
-  de versiones D5-A está aprobada. Los casos se adaptan, no se congelan.
+  forma de reapertura, la foto v2 y la auditoría están **ratificadas** (DT-A/B/C/E); la
+  implementación se adapta a la superficie ratificada sin cambiar la semántica. Las
+  definiciones y resultados esperados están **congelados**. La política D5-A está aprobada.
 - `[PENDIENTE]` **E4.9 no tiene camino de re-cierre.** `confirmCierre` bloquea el segundo
   cierre con `ALREADY_CLOSED`; el caso F1 no puede ejecutarse hasta que exista la operación
   acordada (E4.9 o E4.10).
@@ -268,12 +273,13 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
   de ciclos antiguos.
 - `[CONFIRMADO]` **DT6/T-BKP abierto.** AC15 puede ejecutarse con fixture sintético y
   marcarse `PASS (fixtures)` solo si se autoriza; el cierre real sigue `BLOQUEADO (real)`.
-- `[PROPUESTO]` **E4.5/precontrol no implementado.** Se aplica el criterio de §3: la
-  ausencia se registra como `NoDisponible` con motivo y no bloquea por sí misma; los datos
-  presentes, ilegibles o contradictorios bloquean. Requiere ratificación.
-- `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**. `[PROPUESTO]` E4.10 reserva
-  **v26**, verificada como libre y pendiente de ratificación conjunta; el DEV actualizará
-  contratos, backup/restore, listas de versiones y tests consumidores antes de migrar.
+- `[APROBADO 2026-11-05]` **E4.5/precontrol no implementado.** Se aplica el criterio de §3:
+  la ausencia se registra como `NoDisponible` con motivo y no bloquea por sí misma; los
+  datos presentes, ilegibles o con contradicción material bloquean; la diferencia no
+  material acreditada genera aviso auditado.
+- `[CONFIRMADO]` **Versión de esquema.** E4.9 ocupa **v25**. `[RESERVADO 2026-11-05]` E4.10
+  reserva **v26**, verificada como libre; el DEV actualizará contratos, backup/restore,
+  listas de versiones y tests consumidores antes de migrar. La reserva no autoriza DDL.
 - `[APROBADO SIN_CAMBIOS]` **Re-cierre sin cambios:** rechazo explícito `SIN_CAMBIOS`,
   sin foto; cancelación D8 si procede y ausencia acreditada; no basta igualdad de importes.
   AC24 `UNRUN`; positivos/negativos en la matriz.
@@ -288,13 +294,14 @@ reabierto, comparación v1/v2, errores de cierre posterior/versión/DT6 y sesió
 
 Para declarar un AC `PASS` harán falta, como mínimo:
 
-1. **Testplan aprobado y congelado** antes del DEV; cualquier cambio de definición exige
-   nueva aprobación.
+1. **Testplan aprobado y congelado (cumplido)**: ratificado el 2026-11-05; cualquier cambio
+   de definición exige nueva aprobación.
 2. E4.9 **integrado en `0176ffc` con QA APTO CON RESERVAS (cumplido)**, o una decisión
    explícita que permita probar E4.10 contra un contrato congelado.
 3. Decisiones E4.10 (D1–D9 y `SIN_CAMBIOS`) aprobadas; solo P2/P3/P6/P7/P8 de SPEC29
    siguen pendientes.
-4. Criterio de revalidación §3 ratificado; PC-01…PC-06 ejecutados según corresponda.
+4. Criterio de revalidación §3 ratificado (cumplido); PC-01…PC-06 ejecutados según
+   corresponda durante el DEV.
 5. Evidencia real del comando ejecutado, no una descripción.
 6. Snapshot antes/después que demuestre v1 intacta, ausencia de estado parcial y una sola
    versión nueva.
