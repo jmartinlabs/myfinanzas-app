@@ -151,9 +151,9 @@ test("E4.10 A: C26 is exact and deterministic", () => {
   expect(c26Contract.id).toBe(c26);
   expect(c26Contract.schemaVersion).toBe(26);
   expect(c26Contract.sourceCommit).toBe("baa673e");
-  expect(c26Contract.objects).toHaveLength(306);
+  expect(c26Contract.objects).toHaveLength(308);
   expect(c26Contract.sha256).toBe(
-    "3cfc338ce061f8b2cd9edb014d96bd007cab5caf67d3c976e035cc67ef88dc18",
+    "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265",
   );
   expect(contracts().at(-1)?.id).toBe(c26);
   expect(contract(c25).sha256).toBe(
@@ -230,7 +230,7 @@ test("E4.10 A: v25→v26 is additive and rewrites no C25 object or row", () => {
       );
       for (const [key, object] of previous)
         expect(current.get(key)).toEqual(object);
-      expect(current.size - previous.size).toBe(9);
+      expect(current.size - previous.size).toBe(11);
     } finally {
       db.close();
     }
@@ -261,6 +261,12 @@ test("E4.10 A: reopening and closure links reject orphan cycles, closures and ev
     reopening(db);
     expect(() =>
       db.run(
+        `INSERT INTO reapertura_activa(id,ciclo,reapertura_id)
+         VALUES(1,'999',1)`,
+      ),
+    ).toThrow();
+    expect(() =>
+      db.run(
         `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,reapertura_id,correlacion)
          VALUES('1',1,9,1,'corr')`,
       ),
@@ -270,6 +276,46 @@ test("E4.10 A: reopening and closure links reject orphan cycles, closures and ev
         `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,reapertura_id,correlacion)
          VALUES('1',9,2,1,'corr')`,
       ),
+    ).toThrow();
+    expect(() =>
+      db.run(
+        `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,reapertura_id,correlacion)
+         VALUES('1',1,3,1,'corr')`,
+      ),
+    ).toThrow();
+    expect(() => reopening(db, { reapertura_origen: 1 })).toThrow();
+    expect(() => reopening(db, { version_esperada: 2 })).toThrow();
+
+    reopening(db, {
+      tipo: "cancelacion",
+      reapertura_origen: 1,
+      clave_intento: "clave-2",
+      resultado: "Cancelada",
+    });
+    expect(() =>
+      db.run(
+        `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,reapertura_id,correlacion)
+         VALUES('1',1,2,2,'corr')`,
+      ),
+    ).toThrow();
+    expect(() =>
+      reopening(db, {
+        tipo: "cancelacion",
+        reapertura_origen: 2,
+        clave_intento: "clave-3",
+        resultado: "Cancelada",
+      }),
+    ).toThrow();
+    closure(db, 2);
+    expect(() =>
+      reopening(db, {
+        tipo: "cancelacion",
+        reapertura_origen: 1,
+        version_origen: 2,
+        version_esperada: 2,
+        clave_intento: "clave-4",
+        resultado: "Cancelada",
+      }),
     ).toThrow();
   } finally {
     db.close();

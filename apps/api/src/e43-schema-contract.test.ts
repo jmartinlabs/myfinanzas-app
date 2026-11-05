@@ -103,7 +103,7 @@ test("E4.3 AC-24: C14–C23 stay frozen and registered", () => {
   }
 });
 
-test("E4.10 AC-24: a fresh schema matches C26 exactly", () => {
+test("E4.3 AC-24: a fresh schema matches C26 exactly", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
@@ -117,7 +117,7 @@ test("E4.10 AC-24: a fresh schema matches C26 exactly", () => {
   }
 });
 
-test("E4.10 AC-24: the v23→v26 upgrade matches C26 exactly", () => {
+test("E4.3 AC-24: the v23→v26 upgrade matches C26 exactly", () => {
   const dir = root();
   try {
     const path = join(dir, "v23.sqlite");
@@ -186,7 +186,7 @@ test("E4.3 AC-24: C24 has no ciclo_id and does not touch E4.1/E4.2/E4.8", () => 
   }
 });
 
-test("E4.10 AC-24: unknown v27 contract is rejected without writes", () => {
+test("E4.3 AC-24: unknown v27 contract is rejected without writes", () => {
   const db = new Database(":memory:");
   try {
     prepareSchema(db, { origin: "demo", key_hash: null });
@@ -222,7 +222,7 @@ test("E4.3 AC-24: a physical v24 variant is rejected by the exact contract", () 
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.10 AC-24: v26 backup/manifest/restore keeps the valuation, audit and MFA and clears attempts",
+  "E4.3 AC-24: v26 backup/manifest/restore keeps the valuation, audit and MFA and clears attempts",
   async () => {
     process.env.NODE_ENV = "test";
     const dir = root();
@@ -378,7 +378,7 @@ test.skipIf(process.platform !== "linux")(
 );
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 AC-24: restoring a v27 package fails without a destination",
+  "E4.3 AC-24: restoring a v27 package fails without a destination",
   () => {
     process.env.NODE_ENV = "test";
     const dir = root();

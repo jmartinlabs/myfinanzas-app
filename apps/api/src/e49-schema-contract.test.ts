@@ -105,6 +105,34 @@ function closureFixture(db: Database) {
     db.run(
       "INSERT INTO reapertura_attempts VALUES('reapertura','intento','hash','{}',1)",
     );
+    const t2 = "2026-02-01T00:00:00.000Z";
+    db.run(
+      `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,creado_utc,
+        motivo,fingerprint,estado) VALUES('1',2,'2026-01-01','2026-01-31',0,
+        'usuario-unico',?,'Motivo del re-cierre',?,'Cerrado')`,
+      [t2, fingerprint],
+    );
+    db.run(
+      `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,fingerprint,
+        app_version,schema_version,ventana_inicio,ventana_fin,saldo_inicial,
+        estado_temporal,estado_hechos,estado_plan,hechos,plan,clasificacion,
+        inversion,auxiliares,cobertura,backup,no_disponible)
+       VALUES('1',2,?,'usuario-unico','Motivo del re-cierre',?,'0.0.0-fixture',26,
+        '2026-01-01','2026-01-31',0,'Cerrado','Sin hechos','SinPlan',
+        '{"origen":"fixture"}','{"estado":"SinPlan"}','{}','{}','{}','{}',
+        '{"verificado":false,"motivo":"fixture"}','{}')`,
+      [t2, fingerprint],
+    );
+    db.run(
+      `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
+        instante,actor) VALUES('1',2,'cierre',NULL,'{"version":2}',
+        'Motivo del re-cierre',?,'usuario-unico')`,
+      [t2],
+    );
+    db.run(
+      `INSERT INTO cierre_vinculos(ciclo,version_origen,version_destino,
+        reapertura_id,correlacion) VALUES('1',1,2,1,'corr-reapertura')`,
+    );
   }).immediate();
 }
 
@@ -318,6 +346,14 @@ test.skipIf(process.platform !== "linux")(
             saldo_inicial: 0,
             estado: "Cerrado",
           },
+          {
+            ciclo: "1",
+            version: 2,
+            inicio: "2026-01-01",
+            fin: "2026-01-31",
+            saldo_inicial: 0,
+            estado: "Cerrado",
+          },
         ]);
         expect(
           copy
@@ -334,6 +370,14 @@ test.skipIf(process.platform !== "linux")(
             estado_hechos: "Sin hechos",
             estado_plan: "SinPlan",
           },
+          {
+            ciclo: "1",
+            version: 2,
+            app_version: "0.0.0-fixture",
+            schema_version: 26,
+            estado_hechos: "Sin hechos",
+            estado_plan: "SinPlan",
+          },
         ]);
         expect(
           copy
@@ -345,6 +389,26 @@ test.skipIf(process.platform !== "linux")(
             version: 1,
             accion: "cierre",
             actor: "usuario-unico",
+          },
+          {
+            ciclo: "1",
+            version: 2,
+            accion: "cierre",
+            actor: "usuario-unico",
+          },
+        ]);
+        expect(
+          copy
+            .query(
+              "SELECT ciclo,version_origen,version_destino,reapertura_id FROM cierre_vinculos",
+            )
+            .all(),
+        ).toEqual([
+          {
+            ciclo: "1",
+            version_origen: 1,
+            version_destino: 2,
+            reapertura_id: 1,
           },
         ]);
         expect(

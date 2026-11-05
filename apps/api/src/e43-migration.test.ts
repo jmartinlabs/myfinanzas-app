@@ -212,7 +212,7 @@ function audit(db: Database, row: Row, action: "alta" | "corrección" = "alta") 
   );
 }
 
-test("E4.10 AC-24: v23→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
+test("E4.3 AC-24: v23→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v23.sqlite");

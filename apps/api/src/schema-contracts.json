@@ -16198,7 +16198,7 @@
         "type": "table",
         "name": "cierre_vinculos",
         "tbl_name": "cierre_vinculos",
-        "sql": "CREATE TABLE cierre_vinculos(\n      ciclo TEXT NOT NULL,\n      version_origen INTEGER NOT NULL CHECK(version_origen>0),\n      version_destino INTEGER NOT NULL CHECK(version_destino>0),\n      reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)\n        ON DELETE RESTRICT,\n      correlacion TEXT,\n      PRIMARY KEY(ciclo,version_destino),\n      FOREIGN KEY(ciclo,version_origen) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT,\n      FOREIGN KEY(ciclo,version_destino) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
+        "sql": "CREATE TABLE cierre_vinculos(\n      ciclo TEXT NOT NULL,\n      version_origen INTEGER NOT NULL CHECK(version_origen>0),\n      version_destino INTEGER NOT NULL CHECK(version_destino=version_origen+1),\n      reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)\n        ON DELETE RESTRICT,\n      correlacion TEXT,\n      PRIMARY KEY(ciclo,version_destino),\n      FOREIGN KEY(ciclo,version_origen) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT,\n      FOREIGN KEY(ciclo,version_destino) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
       },
       {
         "type": "table",
@@ -16624,7 +16624,7 @@
         "type": "table",
         "name": "reapertura_activa",
         "tbl_name": "reapertura_activa",
-        "sql": "CREATE TABLE reapertura_activa(\n      id INTEGER PRIMARY KEY CHECK(id=1),\n      ciclo TEXT NOT NULL,\n      reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)\n        ON DELETE RESTRICT\n    ) STRICT"
+        "sql": "CREATE TABLE reapertura_activa(\n      id INTEGER PRIMARY KEY CHECK(id=1),\n      ciclo TEXT NOT NULL,\n      reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)\n        ON DELETE RESTRICT,\n      FOREIGN KEY(ciclo,reapertura_id) REFERENCES reaperturas(ciclo,id)\n        ON DELETE RESTRICT\n    ) STRICT"
       },
       {
         "type": "table",
@@ -16636,7 +16636,7 @@
         "type": "table",
         "name": "reaperturas",
         "tbl_name": "reaperturas",
-        "sql": "CREATE TABLE reaperturas(\n      id INTEGER PRIMARY KEY,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      version_origen INTEGER NOT NULL CHECK(version_origen>0),\n      tipo TEXT NOT NULL CHECK(tipo IN ('reapertura','cancelacion')),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),\n      creado_utc TEXT NOT NULL CHECK(\n        length(creado_utc)=24\n        AND creado_utc GLOB\n          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'\n      ),\n      motivo TEXT NOT NULL CHECK(\n        length(trim(motivo))>0 AND length(motivo)<=1000\n      ),\n      fingerprint_peticion TEXT NOT NULL CHECK(\n        length(fingerprint_peticion)=64\n        AND fingerprint_peticion NOT GLOB '*[^a-f0-9]*'\n      ),\n      version_esperada INTEGER NOT NULL CHECK(version_esperada>0),\n      clave_intento TEXT,\n      correlacion TEXT,\n      reapertura_origen INTEGER REFERENCES reaperturas(id) ON DELETE RESTRICT,\n      resultado TEXT NOT NULL,\n      CHECK(tipo<>'cancelacion' OR reapertura_origen IS NOT NULL),\n      FOREIGN KEY(ciclo,version_origen) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
+        "sql": "CREATE TABLE reaperturas(\n      id INTEGER PRIMARY KEY,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      version_origen INTEGER NOT NULL CHECK(version_origen>0),\n      tipo TEXT NOT NULL CHECK(tipo IN ('reapertura','cancelacion')),\n      actor TEXT NOT NULL CHECK(length(trim(actor))>0 AND length(actor)<=200),\n      creado_utc TEXT NOT NULL CHECK(\n        length(creado_utc)=24\n        AND creado_utc GLOB\n          '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'\n      ),\n      motivo TEXT NOT NULL CHECK(\n        length(trim(motivo))>0 AND length(motivo)<=1000\n      ),\n      fingerprint_peticion TEXT NOT NULL CHECK(\n        length(fingerprint_peticion)=64\n        AND fingerprint_peticion NOT GLOB '*[^a-f0-9]*'\n      ),\n      version_esperada INTEGER NOT NULL CHECK(version_esperada=version_origen),\n      clave_intento TEXT NOT NULL CHECK(length(trim(clave_intento))>0),\n      correlacion TEXT,\n      reapertura_origen INTEGER REFERENCES reaperturas(id) ON DELETE RESTRICT,\n      resultado TEXT NOT NULL CHECK(length(trim(resultado))>0),\n      CHECK(tipo<>'cancelacion' OR reapertura_origen IS NOT NULL),\n      CHECK(tipo='cancelacion' OR reapertura_origen IS NULL),\n      UNIQUE(ciclo,id),\n      FOREIGN KEY(ciclo,version_origen) REFERENCES cierres(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
       },
       {
         "type": "table",
@@ -16871,6 +16871,12 @@
         "name": "cierre_version_sequence",
         "tbl_name": "cierres",
         "sql": "CREATE TRIGGER cierre_version_sequence\n      BEFORE INSERT ON cierres\n      WHEN NEW.version != (\n        SELECT COALESCE(MAX(version),0)+1 FROM cierres WHERE ciclo=NEW.ciclo\n      )\n      BEGIN SELECT RAISE(ABORT,'closure version must follow the previous one'); END"
+      },
+      {
+        "type": "trigger",
+        "name": "cierre_vinculo_coherente",
+        "tbl_name": "cierre_vinculos",
+        "sql": "CREATE TRIGGER cierre_vinculo_coherente\n      BEFORE INSERT ON cierre_vinculos\n      WHEN NOT EXISTS (\n        SELECT 1 FROM reaperturas r\n        WHERE r.id=NEW.reapertura_id\n          AND r.ciclo=NEW.ciclo\n          AND r.version_origen=NEW.version_origen\n          AND r.tipo='reapertura'\n      )\n      BEGIN SELECT RAISE(ABORT,'closure link must reference its reopening'); END"
       },
       {
         "type": "trigger",
@@ -17546,6 +17552,12 @@
       },
       {
         "type": "trigger",
+        "name": "reapertura_cancelacion_coherente",
+        "tbl_name": "reaperturas",
+        "sql": "CREATE TRIGGER reapertura_cancelacion_coherente\n      BEFORE INSERT ON reaperturas\n      WHEN NEW.tipo='cancelacion'\n        AND NOT EXISTS (\n          SELECT 1 FROM reaperturas r\n          WHERE r.id=NEW.reapertura_origen\n            AND r.ciclo=NEW.ciclo\n            AND r.version_origen=NEW.version_origen\n            AND r.tipo='reapertura'\n        )\n      BEGIN SELECT RAISE(ABORT,'cancellation must reference its reopening'); END"
+      },
+      {
+        "type": "trigger",
         "name": "reapertura_no_delete",
         "tbl_name": "reaperturas",
         "sql": "CREATE TRIGGER reapertura_no_delete\n      BEFORE DELETE ON reaperturas\n      BEGIN SELECT RAISE(ABORT,'no delete'); END"
@@ -17731,6 +17743,6 @@
         "sql": "CREATE TRIGGER valoracion_update_correction\n      BEFORE UPDATE ON valoracion_inversion\n      WHEN NEW.revision!=OLD.revision+1\n        OR NEW.motivo_correccion IS NULL\n        OR length(trim(NEW.motivo_correccion))=0\n      BEGIN SELECT RAISE(ABORT,'correction requires next revision and motive'); END"
       }
     ],
-    "sha256": "3cfc338ce061f8b2cd9edb014d96bd007cab5caf67d3c976e035cc67ef88dc18"
+    "sha256": "65534e0148385e85352962a686188c69c11edd3d34aa72ec101dad81ddaf6265"
   }
 ]

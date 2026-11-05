@@ -66,7 +66,7 @@ function v22(path: string) {
   });
 }
 
-test("E4.10 AC-24: C23 stays frozen and the v22→v26 upgrade exposes the exact C26 contract", () => {
+test("E4.4 AC-24: C23 stays frozen and the v22→v26 upgrade exposes the exact C26 contract", () => {
   const c23Contract = contract(c23);
   expect(c23Contract.schemaVersion).toBe(23);
   expect(c23Contract.objects).toHaveLength(270);
@@ -124,7 +124,7 @@ test("E4.10 AC-24: C23 stays frozen and the v22→v26 upgrade exposes the exact 
 // publishNewDirectory is Linux-specific (libc.so.6/renameat2); the canonical
 // backup gate runs on Linux CI. On macOS this test is reported as skipped.
 test.skipIf(process.platform !== "linux")(
-  "E4.10 AC-24: v26 backup/manifest/restore keeps new fields, reconciliation and MFA",
+  "E4.4 AC-24: v26 backup/manifest/restore keeps new fields, reconciliation and MFA",
   async () => {
   process.env.NODE_ENV = "test";
   const dir = root();

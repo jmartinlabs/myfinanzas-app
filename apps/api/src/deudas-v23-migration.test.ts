@@ -97,7 +97,7 @@ function deudaColumns(db: Database) {
   );
 }
 
-test("E4.10 AC-23: v22→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
+test("E4.4 AC-23: v22→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v22.sqlite");
@@ -177,7 +177,7 @@ test("E4.10 AC-23: v22→v26 is additive, preserves IDs/audit/MFA and exposes th
   }
 });
 
-test("E4.10 AC-23: inconsistent foreign keys reject without a partial v26 base and reopen with FK active", () => {
+test("E4.4 AC-23: inconsistent foreign keys reject without a partial v26 base and reopen with FK active", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-fk.sqlite");
@@ -234,7 +234,7 @@ test("E4.10 AC-23: inconsistent foreign keys reject without a partial v26 base a
   }
 });
 
-test("E4.10 AC-23: a failed v26 migration rolls back to an intact v22 base", () => {
+test("E4.4 AC-23: a failed v26 migration rolls back to an intact v22 base", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-rollback.sqlite");
@@ -277,7 +277,7 @@ test("E4.10 AC-23: a failed v26 migration rolls back to an intact v22 base", () 
   }
 });
 
-test("E4.10 AC-23: a failure inside the v26 migration rolls back the added columns", () => {
+test("E4.4 AC-23: a failure inside the v26 migration rolls back the added columns", () => {
   const dir = root();
   try {
     const path = join(dir, "v22-mid-ddl.sqlite");

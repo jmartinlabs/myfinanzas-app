@@ -53,12 +53,14 @@ export function reaperturaSchemaV26(db: Database) {
         length(fingerprint_peticion)=64
         AND fingerprint_peticion NOT GLOB '*[^a-f0-9]*'
       ),
-      version_esperada INTEGER NOT NULL CHECK(version_esperada>0),
-      clave_intento TEXT,
+      version_esperada INTEGER NOT NULL CHECK(version_esperada=version_origen),
+      clave_intento TEXT NOT NULL CHECK(length(trim(clave_intento))>0),
       correlacion TEXT,
       reapertura_origen INTEGER REFERENCES reaperturas(id) ON DELETE RESTRICT,
-      resultado TEXT NOT NULL,
+      resultado TEXT NOT NULL CHECK(length(trim(resultado))>0),
       CHECK(tipo<>'cancelacion' OR reapertura_origen IS NOT NULL),
+      CHECK(tipo='cancelacion' OR reapertura_origen IS NULL),
+      UNIQUE(ciclo,id),
       FOREIGN KEY(ciclo,version_origen) REFERENCES cierres(ciclo,version)
         ON DELETE RESTRICT
     ) STRICT;
@@ -67,13 +69,15 @@ export function reaperturaSchemaV26(db: Database) {
       id INTEGER PRIMARY KEY CHECK(id=1),
       ciclo TEXT NOT NULL,
       reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)
+        ON DELETE RESTRICT,
+      FOREIGN KEY(ciclo,reapertura_id) REFERENCES reaperturas(ciclo,id)
         ON DELETE RESTRICT
     ) STRICT;
 
     CREATE TABLE cierre_vinculos(
       ciclo TEXT NOT NULL,
       version_origen INTEGER NOT NULL CHECK(version_origen>0),
-      version_destino INTEGER NOT NULL CHECK(version_destino>0),
+      version_destino INTEGER NOT NULL CHECK(version_destino=version_origen+1),
       reapertura_id INTEGER NOT NULL REFERENCES reaperturas(id)
         ON DELETE RESTRICT,
       correlacion TEXT,
@@ -107,6 +111,29 @@ export function reaperturaSchemaV26(db: Database) {
     CREATE TRIGGER cierre_vinculo_no_delete
       BEFORE DELETE ON cierre_vinculos
       BEGIN SELECT RAISE(ABORT,'no delete'); END;
+
+    CREATE TRIGGER reapertura_cancelacion_coherente
+      BEFORE INSERT ON reaperturas
+      WHEN NEW.tipo='cancelacion'
+        AND NOT EXISTS (
+          SELECT 1 FROM reaperturas r
+          WHERE r.id=NEW.reapertura_origen
+            AND r.ciclo=NEW.ciclo
+            AND r.version_origen=NEW.version_origen
+            AND r.tipo='reapertura'
+        )
+      BEGIN SELECT RAISE(ABORT,'cancellation must reference its reopening'); END;
+
+    CREATE TRIGGER cierre_vinculo_coherente
+      BEFORE INSERT ON cierre_vinculos
+      WHEN NOT EXISTS (
+        SELECT 1 FROM reaperturas r
+        WHERE r.id=NEW.reapertura_id
+          AND r.ciclo=NEW.ciclo
+          AND r.version_origen=NEW.version_origen
+          AND r.tipo='reapertura'
+      )
+      BEGIN SELECT RAISE(ABORT,'closure link must reference its reopening'); END;
 
     CREATE TRIGGER cierre_audit_recierre_motivo
       BEFORE INSERT ON cierre_audit
