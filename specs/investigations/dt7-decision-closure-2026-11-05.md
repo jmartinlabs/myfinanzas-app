@@ -121,8 +121,10 @@ evidencia de la regularización sigue siendo obligatoria.
 **Mapping de Partida (`estadoMapeo`):**
 
 - `Mapeado` es obligatorio para sumar.
-- `Pendiente`/`Ambigua`/`Excluido` van a `sinClasificar` y bloquean el total de la
-  Partida y el global; no se sustituyen por una Referencia.
+- `Pendiente`/`Ambigua` van a `sinClasificar` y bloquean el total de la Partida y el
+  global.
+- `Excluido` no suma, se muestra con motivo y **no** se trata como `sinClasificar`.
+- Ninguno se sustituye por una Referencia.
 
 **Mapping de Referencia (`estadoMapeoReferencia`):**
 
@@ -138,6 +140,8 @@ evidencia de la regularización sigue siendo obligatoria.
 
 - Tipo `Regularizacion2026`, ejercicio 2026, intervalo dentro de 2026.
 - Importe y signo explícitos; Partida/Referencia si procede.
+- Mapping aprobado (versión, evidencia y vigencia) y `estadoMapeo=Mapeado`;
+  `estadoMapeoReferencia` según D4.
 - Procedencia (fuente, huella, hoja, fila/columna, versión).
 - `representadoEnMovimientos` y evidencia de no duplicidad.
 - Evidencia de inclusión previa en archivo/Movimiento o de ausencia.
@@ -167,7 +171,8 @@ correcto, no un defecto a relajar.
 
 ### M14 — Adaptación E2.4
 
-**Recomendación:** ampliar el seam tipado y decidir por separado las cuatro filas de C1.4.
+**Recomendación:** ampliar el seam tipado conforme a las cuatro opciones A ya confirmadas
+en C1.4; la implementación técnica queda como trabajo futuro.
 
 **Confirmado por el usuario (2026-11-05):** las cuatro opciones A ya integradas en C1–C8.
 No se reabren ni se infieren opciones B. La implementación técnica es trabajo futuro y no
