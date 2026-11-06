@@ -1,7 +1,8 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { openDatabase } from "./database";
 import { backup, restore } from "./backup";
@@ -86,15 +87,13 @@ function counts(db: Database) {
 }
 
 test.skipIf(process.platform !== "linux")(
-  "E4.10 I8: backup/restore v26 conserva la ventana y no la reabre ni duplica",
+  "E4.10 I8: backup/restore v27 (fixture v26) conserva la ventana y no la reabre ni duplica",
   () => {
   // `publishNewDirectory` usa `renameat2` vía `dlopen("libc.so.6")`, exclusivo
   // de Linux; en macOS la publicación falla con `libc.so.6`. La prueba queda
-  // para CI Linux. El directorio privado se crea dentro del workspace porque
-  // `safeAncestors` también rechaza los ancestros de `/var/folders`.
-  const base = join(process.cwd(), ".local");
-  mkdirSync(base, { recursive: true, mode: 0o700 });
-  const dir = mkdtempSync(join(base, "e410-i8-backup-"));
+  // para CI Linux. `tmpdir()` respeta TMPDIR (`/tmp/private` en la imagen
+  // rootless) y no escribe en el workspace read-only.
+  const dir = mkdtempSync(join(tmpdir(), "e410-i8-backup-"));
   try {
     const path = join(dir, "source.sqlite");
     const db = openDatabase(path);

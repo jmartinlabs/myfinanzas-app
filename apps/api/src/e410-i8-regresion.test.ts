@@ -1,7 +1,8 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
-import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { HttpApp } from "@effect/platform";
 import { createApp } from "./app";
@@ -288,10 +289,9 @@ test("E4.10 I8 AC22: un snapshot restaurado no es una ruta de reapertura", () =>
   // `renameat2` vía `libc.so.6`. `VACUUM INTO` reproduce el snapshot
   // consistente previo a la publicación cifrada; la restauración real con
   // age se cubre en `e410-i8-backup.test.ts` (solo Linux). No se inventa una
-  // ruta de restore en la API.
-  const base = join(process.cwd(), ".local");
-  mkdirSync(base, { recursive: true, mode: 0o700 });
-  const dir = mkdtempSync(join(base, "e410-i8-ac22-"));
+  // ruta de restore en la API. `tmpdir()` respeta TMPDIR y evita escribir
+  // en el workspace read-only (`/suite`) del gate rootless.
+  const dir = mkdtempSync(join(tmpdir(), "e410-i8-ac22-"));
   try {
     const sourcePath = join(dir, "source.sqlite");
     const restoredPath = join(dir, "restored.sqlite");
