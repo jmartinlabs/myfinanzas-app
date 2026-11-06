@@ -6,8 +6,8 @@ import type { Database } from "bun:sqlite";
  * Both the I2 API (`e410.ts`) and the T1 guards (`e49-guards.ts`) must see the
  * same window. This module is the only place that reads the projection and
  * decides whether it is open, inconsistent or invalidated by a later closure.
- * It never throws: callers choose whether to fail closed (guards) or expose a
- * structured blocking result (revalidation).
+ * Missing projection/event and stale-version/later-closure states are returned
+ * as values; unexpected SQLite failures still surface as exceptions.
  */
 
 export type ReopeningEvent = {

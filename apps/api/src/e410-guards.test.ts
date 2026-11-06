@@ -14,6 +14,7 @@ import {
   assertClosedInformativeFields,
   assertDatesWritable,
   assertMovementClosureImpact,
+  assertOperationClosureImpact,
   assertPlanClosureReview,
   closedFieldDecision,
   closedWindows,
@@ -733,6 +734,85 @@ test("E4.10 I3 T1: se excluyen todas las versiones del ciclo reabierto, no las d
     expect(error.code).toBe("HISTORY_LOCKED");
     expect(error.details.cierres).toEqual([
       expect.objectContaining({ ciclo: "1", version: 1 }),
+    ]);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 T1: la exclusión solo cubre fechas dentro de la ventana", () => {
+  const db = openDatabase(":memory:");
+  try {
+    seedCycles(db);
+    seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
+    reabrirCierre(
+      db,
+      "2",
+      { versionEsperada: 1, motivo: "Ventana de febrero" },
+      "reapertura-" + randomUUID(),
+      { actor: "Alex" },
+      now,
+    );
+    const movement = (fecha: string) => ({
+      fecha,
+      importe: "500",
+      origen: "S003",
+      destino: "S001",
+    });
+    const operation = (fecha: string) => ({
+      clase: "Compra",
+      fecha,
+      estado: "Vigente",
+      cantidad: "100",
+      importe: "10000",
+      instrumento: "I1",
+      saldoEfectivo: "S003",
+      saldoInversion: "S004",
+    });
+
+    for (const fecha of ["2026-02-01", "2026-02-28"])
+      expect(() =>
+        assertMovementClosureImpact(
+          db,
+          null,
+          movement(fecha),
+          "registrar el Movimiento",
+        ),
+      ).not.toThrow();
+    expect(() =>
+      assertOperationClosureImpact(
+        db,
+        null,
+        operation("2026-02-01"),
+        "registrar la Compra",
+      ),
+    ).not.toThrow();
+
+    for (const fecha of ["2026-01-31", "2025-12-20"]) {
+      const movementError = problemOf(() =>
+        assertMovementClosureImpact(
+          db,
+          null,
+          movement(fecha),
+          "registrar el Movimiento",
+        ),
+      );
+      expect(movementError.code).toBe("HISTORY_LOCKED");
+      expect(movementError.details.cierres).toEqual([
+        expect.objectContaining({ ciclo: "2" }),
+      ]);
+    }
+    const operationError = problemOf(() =>
+      assertOperationClosureImpact(
+        db,
+        null,
+        operation("2025-12-20"),
+        "registrar la Compra",
+      ),
+    );
+    expect(operationError.code).toBe("HISTORY_LOCKED");
+    expect(operationError.details.cierres).toEqual([
+      expect.objectContaining({ ciclo: "2" }),
     ]);
   } finally {
     db.close();

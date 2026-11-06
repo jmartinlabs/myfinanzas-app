@@ -111,6 +111,22 @@ function text(value: unknown): string | null {
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
+/** Empty objects/arrays cannot accredit a `Verificado` result. */
+function hasComparableData(value: unknown): boolean {
+  if (value === undefined || value === null) return false;
+  if (Array.isArray(value)) return value.length > 0;
+  if (typeof value === "object") return Object.keys(value).length > 0;
+  return true;
+}
+
+/** `Aviso` and `Contradiccion` need at least one observed/expected value. */
+function hasComparedValue(aporte: RevalidacionAporte): boolean {
+  return (
+    (aporte.esperado !== undefined && aporte.esperado !== null) ||
+    (aporte.observado !== undefined && aporte.observado !== null)
+  );
+}
+
 function blocked(
   clave: RevalidacionCheck["clave"],
   motivo: string,
@@ -147,7 +163,7 @@ function externalCheck(
   const aporte = raw as RevalidacionAporte;
   switch (aporte.estado) {
     case "Verificado":
-      if (aporte.datos === undefined || aporte.datos === null)
+      if (!hasComparableData(aporte.datos))
         return blocked(
           clave,
           `La fuente ${clave} se declaró verificada sin datos comparables.`,
@@ -187,6 +203,11 @@ function externalCheck(
           clave,
           `La fuente ${clave} informa contradicción sin motivo.`,
         );
+      if (!hasComparedValue(aporte))
+        return blocked(
+          clave,
+          `La fuente ${clave} informa contradicción sin valores comparados.`,
+        );
       return blocked(clave, motivo, "REVALIDACION_BLOQUEANTE", {
         esperado: aporte.esperado ?? null,
         observado: aporte.observado ?? null,
@@ -199,6 +220,11 @@ function externalCheck(
         return blocked(
           clave,
           `La diferencia de ${clave} no está acreditada como no bloqueante.`,
+        );
+      if (!hasComparedValue(aporte))
+        return blocked(
+          clave,
+          `La diferencia de ${clave} no incluye valores comparados.`,
         );
       return {
         clave,
@@ -410,13 +436,6 @@ function auxiliaryKey(
     case "deuda":
       return field("id");
   }
-}
-
-function auxiliaryKeys(
-  source: (typeof auxiliarySources)[number],
-  rows: Record<string, unknown>[],
-): Set<string> {
-  return new Set(rows.map((row) => auxiliaryKey(source, row)));
 }
 
 function auxiliaryCounts(rows: AuxiliaryRows): Record<string, number> {
@@ -724,9 +743,15 @@ export function getRevalidacion(
     try {
       const stored = photoAuxiliaryRows(db, ciclo.id, last.version);
       const live = auxiliaryRows(db, last.inicio, last.fin);
+      const siguienteCiclo = siguiente
+        ? getCycle(db, siguiente.id).ciclo
+        : null;
+      const siguienteFin = siguienteCiclo
+        ? (siguienteCiclo.fin ?? siguienteCiclo.corte)
+        : null;
       const nextAuxiliary =
-        siguiente && esperadoFin
-          ? auxiliaryRows(db, siguiente.inicio, esperadoFin)
+        siguiente && siguienteFin
+          ? auxiliaryRows(db, siguiente.inicio, siguienteFin)
           : null;
       const comparison = compareAuxiliary(stored, live);
       const dangling = danglingAuxiliaryRows(db, stored);
@@ -738,6 +763,9 @@ export function getRevalidacion(
         cicloReabierto: auxiliaryCounts(live),
         cicloSiguiente: nextAuxiliary
           ? auxiliaryCounts(nextAuxiliary)
+          : null,
+        rangoSiguiente: siguiente
+          ? { inicio: siguiente.inicio, fin: siguienteFin }
           : null,
         faltan: comparison.faltan,
         nuevos: comparison.nuevos,

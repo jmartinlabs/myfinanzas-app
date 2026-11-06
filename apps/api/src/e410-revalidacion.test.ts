@@ -6,7 +6,11 @@ import { createApp } from "./app";
 import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import { reabrirCierre } from "./e410";
-import { getRevalidacion, type RevalidacionOptions } from "./e410-revalidacion";
+import {
+  getRevalidacion,
+  type RevalidacionOptions,
+  type RevalidacionProveedor,
+} from "./e410-revalidacion";
 import { Problem } from "./problem";
 
 process.env.NODE_ENV = "test";
@@ -264,6 +268,30 @@ test("E4.10 I3 revalidación: datos ilegibles bloquean y no se asumen no bloquea
   }
 });
 
+test("E4.10 I3 revalidación: Verificado vacío y avisos sin valores bloquean", () => {
+  const db = fixture();
+  try {
+    const proveedores: RevalidacionProveedor[] = [
+      () => ({ estado: "Verificado", datos: {} }),
+      () => ({ estado: "Verificado", datos: [] }),
+      () => ({ estado: "Contradiccion", motivo: "Contradicción sin valores" }),
+      () => ({
+        estado: "Aviso",
+        motivo: "Diferencia sin valores",
+        acreditacion: "Acreditación ficticia",
+      }),
+    ];
+    for (const precontrol of proveedores) {
+      const result = getRevalidacion(db, "2", { precontrol });
+      const item = check(result, "precontrolE45");
+      expect(item.estado).toBe("Bloqueante");
+      expect(item.motivo).toMatch(/datos comparables|valores comparados/);
+    }
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.10 I3 revalidación: una diferencia no material acreditada es aviso, no bloqueo", () => {
   const db = fixture();
   try {
@@ -338,6 +366,36 @@ test("E4.10 I3 revalidación: una ventana congelada incoherente con el ciclo sig
       comparado: {
         finFoto: "2026-02-20",
         esperadoFin: "2026-02-28",
+      },
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: el ciclo siguiente se contrasta con su fin real", () => {
+  const db = fixture();
+  try {
+    db.run(
+      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
+         partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
+         capital,intereses)
+       VALUES('8100','2026-03-10','Ingreso',1000,'S000','S001','Nómina',
+         NULL,NULL,'Nómina ficticia','',0,1,?,?,NULL,NULL)`,
+      [stamp, stamp],
+    );
+    db.run("INSERT INTO payroll(id,revision,data) VALUES('P1',1,'{}')");
+    db.run(
+      `INSERT INTO payroll_allocations(paga,movimiento,importe,
+         revision_movimiento,evidencia)
+       VALUES('P1','8100','1000',1,'Evidencia ficticia')`,
+    );
+    const result = getRevalidacion(db, "2");
+    expect(check(result, "auxiliares")).toMatchObject({
+      estado: "Verificado",
+      comparado: {
+        rangoSiguiente: { inicio: "2026-03-01", fin: "2026-03-10" },
+        cicloSiguiente: { nomina: 1 },
       },
     });
   } finally {

@@ -1,7 +1,10 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
 import { fingerprint } from "./movement-ledger";
-import { activeReopenedCycle } from "./e410-window";
+import {
+  activeReopenedCycle,
+  readActiveWindow,
+} from "./e410-window";
 
 export { activeReopenedCycle };
 
@@ -88,6 +91,46 @@ export function closedWindows(db: Database): ClosedWindow[] {
 
 export function hasClosures(db: Database) {
   return closedWindows(db).length > 0;
+}
+
+type ReopenedWindow = { ciclo: string; inicio: string; fin: string };
+
+/**
+ * E4.10 DT-G: the active window with its frozen dates. T1 may only ignore the
+ * active cycle's photos when every affected date is inside this range; a fact
+ * before the first cycle must still be checked against the photo.
+ */
+function reopenedWindow(db: Database): ReopenedWindow | null {
+  const reading = readActiveWindow(db);
+  if (reading.estado !== "Abierta") return null;
+  const last = db
+    .query(
+      "SELECT inicio,fin FROM cierres WHERE ciclo=? ORDER BY version DESC LIMIT 1",
+    )
+    .get(reading.ventana.ciclo) as { inicio: string; fin: string } | null;
+  return last ? { ciclo: reading.ventana.ciclo, ...last } : null;
+}
+
+function datesInsideWindow(
+  dates: readonly (string | null | undefined)[],
+  window: ReopenedWindow,
+) {
+  const present = dates.filter(
+    (date): date is string => typeof date === "string" && date.length > 0,
+  );
+  return (
+    present.length > 0 &&
+    present.every((date) => date >= window.inicio && date <= window.fin)
+  );
+}
+
+/** Cycle whose photos may be skipped only for a fully in-window fact. */
+function reopenedCycleForDates(
+  db: Database,
+  dates: readonly (string | null | undefined)[],
+): string | null {
+  const window = reopenedWindow(db);
+  return window && datesInsideWindow(dates, window) ? window.ciclo : null;
 }
 
 /** Closed windows touched by any of the received dates, without duplicates. */
@@ -345,13 +388,13 @@ export function movementClosureImpact(
   after: MovementEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
-  const reopened = activeReopenedCycle(db);
+  const reopened = reopenedCycleForDates(db, [before?.fecha, after?.fecha]);
   const photos = photoSnapshots(db);
   const photographed = new Set<string>();
   for (const photo of photos) {
-    // E4.10 DT-G: every version of the reopened cycle is its own
-    // rectification scope; a v1 photo must not block a correction re-opened
-    // on v2/v3. Other cycles and their photos keep blocking.
+    // E4.10 DT-G: only a fact entirely inside the reopened window may ignore
+    // the reopened cycle's own photos. A date before the window still has to
+    // prove its impact; other cycles and their photos keep blocking.
     if (photo.ciclo === reopened) continue;
     photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
@@ -451,11 +494,12 @@ export function operationClosureImpact(
   after: OperationEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
-  const reopened = activeReopenedCycle(db);
+  const reopened = reopenedCycleForDates(db, [before?.fecha, after?.fecha]);
   const photos = photoSnapshots(db);
   const photographed = new Set<string>();
   for (const photo of photos) {
-    // E4.10 DT-G: same scoped exception as Movimientos, for Compra/Venta.
+    // E4.10 DT-G: same scoped exception as Movimientos, only for an operation
+    // entirely inside the reopened window.
     if (photo.ciclo === reopened) continue;
     photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
