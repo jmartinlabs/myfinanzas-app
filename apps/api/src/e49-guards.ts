@@ -87,6 +87,69 @@ export function hasClosures(db: Database) {
   return closedWindows(db).length > 0;
 }
 
+type ActiveReopeningRow = {
+  ciclo: string;
+  id: number | null;
+  evento_ciclo: string | null;
+  version_origen: number | null;
+  tipo: string | null;
+  resultado: string | null;
+};
+
+/**
+ * E4.10 DT-G — the one cycle with an open rectification window.
+ *
+ * Read-only and fail-closed: a missing projection (older schemas), a
+ * projection without its event, an event that is not an open reopening, a
+ * historical version or a later closure all resolve to `null`. `null` means
+ * "no T1 exception": every guard keeps blocking exactly as in E4.9.
+ *
+ * This deliberately does not modify `closedWindows`: that list still feeds
+ * S0/`inicio`/`Fin`, T2/T3, plan and Revisión Comida. Only the T1 entry points
+ * ask for this exception.
+ */
+export function activeReopenedCycle(db: Database): string | null {
+  if (
+    !hasTable(db, "reapertura_activa") ||
+    !hasTable(db, "reaperturas") ||
+    !hasTable(db, "cierres")
+  )
+    return null;
+  const row = db
+    .query(
+      `SELECT p.ciclo,r.id,r.ciclo AS evento_ciclo,r.version_origen,r.tipo,
+        r.resultado
+       FROM reapertura_activa p
+       LEFT JOIN reaperturas r ON r.id=p.reapertura_id
+       WHERE p.id=1`,
+    )
+    .get() as ActiveReopeningRow | null;
+  if (
+    !row ||
+    row.id === null ||
+    row.evento_ciclo !== row.ciclo ||
+    row.tipo !== "reapertura" ||
+    row.resultado !== "Abierta"
+  )
+    return null;
+  const last = db
+    .query(
+      "SELECT version,fin FROM cierres WHERE ciclo=? ORDER BY version DESC LIMIT 1",
+    )
+    .get(row.ciclo) as { version: number; fin: string } | null;
+  if (!last || last.version !== row.version_origen) return null;
+  const later = db
+    .query(
+      `SELECT 1 FROM cierres c
+       WHERE c.ciclo<>?
+         AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
+         AND c.fin>=?
+       LIMIT 1`,
+    )
+    .get(row.ciclo, last.fin);
+  return later ? null : row.ciclo;
+}
+
 /** Closed windows touched by any of the received dates, without duplicates. */
 export function closedWindowsForDates(
   db: Database,
@@ -108,13 +171,23 @@ export function closedWindowsForDates(
  * both checked. A date inside a closed window is rejected even when the
  * operation would not change a captured number; the approved T1 rule is
  * date-based and has no "no impact" exception.
+ *
+ * E4.10 DT-G T1 variant: when `allowActiveReopenedCycle` is set, only the
+ * cycle with an open rectification window stops blocking. S0, `inicio`, `Fin`
+ * and every other cycle keep using the original guard.
  */
 export function assertDatesWritable(
   db: Database,
   dates: readonly (string | null | undefined)[],
   action: string,
+  options: { allowActiveReopenedCycle?: boolean } = {},
 ) {
-  const hits = closedWindowsForDates(db, dates);
+  const reopened = options.allowActiveReopenedCycle
+    ? activeReopenedCycle(db)
+    : null;
+  const hits = closedWindowsForDates(db, dates).filter(
+    (window) => !reopened || window.ciclo !== reopened,
+  );
   if (!hits.length) return;
   const list = hits
     .map((window) => `${window.ciclo} (v${window.version})`)
@@ -332,9 +405,14 @@ export function movementClosureImpact(
   after: MovementEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
+  const reopened = activeReopenedCycle(db);
   const photos = photoSnapshots(db);
   const photographed = new Set<string>();
   for (const photo of photos) {
+    // E4.10 DT-G: every version of the reopened cycle is its own
+    // rectification scope; a v1 photo must not block a correction re-opened
+    // on v2/v3. Other cycles and their photos keep blocking.
+    if (photo.ciclo === reopened) continue;
     photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
       (before && before.fecha <= photo.fin) ||
@@ -356,6 +434,7 @@ export function movementClosureImpact(
       hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
   }
   for (const window of closedWindows(db)) {
+    if (window.ciclo === reopened) continue;
     if (photographed.has(`${window.ciclo}|${window.version}`)) continue;
     if (
       (before && before.fecha <= window.fin) ||
@@ -373,7 +452,9 @@ export function assertMovementClosureImpact(
   after: MovementEffectRow | null | undefined,
   action: string,
 ) {
-  assertDatesWritable(db, [before?.fecha, after?.fecha], action);
+  assertDatesWritable(db, [before?.fecha, after?.fecha], action, {
+    allowActiveReopenedCycle: true,
+  });
   const windows = movementClosureImpact(db, before, after);
   if (windows.length)
     closureProblem(
@@ -430,9 +511,12 @@ export function operationClosureImpact(
   after: OperationEffectRow | null | undefined,
 ): ClosedWindow[] {
   const hits = new Map<string, ClosedWindow>();
+  const reopened = activeReopenedCycle(db);
   const photos = photoSnapshots(db);
   const photographed = new Set<string>();
   for (const photo of photos) {
+    // E4.10 DT-G: same scoped exception as Movimientos, for Compra/Venta.
+    if (photo.ciclo === reopened) continue;
     photographed.add(`${photo.ciclo}|${photo.version}`);
     const touched =
       (before && before.fecha <= photo.fin) ||
@@ -467,6 +551,7 @@ export function operationClosureImpact(
       hits.set(`${photo.ciclo}|${photo.version}`, windowOf(photo));
   }
   for (const window of closedWindows(db)) {
+    if (window.ciclo === reopened) continue;
     if (photographed.has(`${window.ciclo}|${window.version}`)) continue;
     if (
       (before && before.fecha <= window.fin) ||
@@ -484,7 +569,9 @@ export function assertOperationClosureImpact(
   after: OperationEffectRow | null | undefined,
   action: string,
 ) {
-  assertDatesWritable(db, [before?.fecha, after?.fecha], action);
+  assertDatesWritable(db, [before?.fecha, after?.fecha], action, {
+    allowActiveReopenedCycle: true,
+  });
   const windows = operationClosureImpact(db, before, after);
   if (windows.length)
     closureProblem(
