@@ -32,6 +32,17 @@ export type SeleccionAplicada = {
 type CierreFoto = ReturnType<typeof getFotoCierre>["cierre"];
 type FotoPersistida = ReturnType<typeof getFotoCierre>["foto"];
 
+/**
+ * DTO of one cycle photo. Field precedence is deliberate:
+ * - `estadoFoto` only states availability: `Disponible` when a persisted photo
+ *   exists and `SinFoto` when the cycle has no closure.
+ * - `estado` adds the cycle state: `PendienteReCierre` only for the last photo
+ *   of a reopened cycle without v2; otherwise it repeats `estadoFoto`.
+ * - `motivo` is `SIN_CIERRE` for `SinFoto` and `PENDIENTE_RE_CIERRE` for
+ *   `PendienteReCierre`; it is `null` for a normal available photo.
+ * - `vigente` is true only for the last persisted version of a non-reopened
+ *   cycle; it is false for any previous version or for a reopened cycle.
+ */
 export type FotoCicloDto = {
   origen: "Foto";
   estadoFoto: "Disponible" | "SinFoto";

@@ -297,6 +297,66 @@ test("E4.11 I1: reabierto sin v2 mantiene v1 consultable pero no vigente", () =>
   }).toEqual(beforeE49);
 });
 
+test("E4.11 I1: precedencia explícita de estadoFoto, estado, motivo y vigente", () => {
+  const pick = (data: ReturnType<typeof getFotoCiclo>) => ({
+    estadoFoto: data.estadoFoto,
+    estado: data.estado,
+    motivo: data.motivo,
+    vigente: data.vigente,
+  });
+
+  // Latest closed version vs an explicitly requested previous version.
+  const v1v2 = fixtureDb();
+  seedClosure(v1v2, "1", 1, "2026-01-01", "2026-01-31");
+  seedClosure(v1v2, "1", 2, "2026-01-01", "2026-01-31", "Re-cierre ficticio");
+  expect(pick(getFotoCiclo(v1v2, "1"))).toEqual({
+    estadoFoto: "Disponible",
+    estado: "Disponible",
+    motivo: null,
+    vigente: true,
+  });
+  expect(pick(getFotoCiclo(v1v2, "1", 1))).toEqual({
+    estadoFoto: "Disponible",
+    estado: "Disponible",
+    motivo: null,
+    vigente: false,
+  });
+  expect(pick(getFotoCiclo(v1v2, "1", 2))).toEqual({
+    estadoFoto: "Disponible",
+    estado: "Disponible",
+    motivo: null,
+    vigente: true,
+  });
+
+  // Reopened without v2: availability is unchanged, state/motivo are marked,
+  // and v1 is consultable but no longer current.
+  const reabierto = fixtureDb();
+  seedClosure(reabierto, "1", 1, "2026-01-01", "2026-01-31");
+  reabrirCierre(
+    reabierto,
+    "1",
+    { versionEsperada: 1, motivo: "Reapertura ficticia de precedencia" },
+    "reapertura-" + randomUUID(),
+    { actor: "usuario-unico" },
+    now,
+  );
+  expect(pick(getFotoCiclo(reabierto, "1"))).toEqual({
+    estadoFoto: "Disponible",
+    estado: "PendienteReCierre",
+    motivo: "PENDIENTE_RE_CIERRE",
+    vigente: false,
+  });
+
+  // Cycle with no closure: no empty photo, no zero, explicit motive.
+  const sinCierre = fixtureDb();
+  expect(pick(getFotoCiclo(sinCierre, "2"))).toEqual({
+    estadoFoto: "SinFoto",
+    estado: "SinFoto",
+    motivo: "SIN_CIERRE",
+    vigente: false,
+  });
+});
+
 test("E4.11 I1: SinFoto, ciclo inexistente y versión inexistente", () => {
   const db = fixtureDb();
   seedClosure(db, "1", 1, "2026-01-01", "2026-01-31");
