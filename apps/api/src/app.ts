@@ -235,6 +235,10 @@ import {
   type RecierreOptions,
 } from "./e410-recierre";
 import {
+  cancelarReapertura,
+  type CancelacionOptions,
+} from "./e410-cancelacion";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -252,6 +256,7 @@ export type AppOptions = {
   reapertura?: ReaperturaOptions;
   revalidacion?: RevalidacionOptions;
   recierre?: RecierreOptions;
+  cancelacion?: CancelacionOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -1111,6 +1116,32 @@ export function createApp(db: Database, options: AppOptions) {
             : `/api/cierres/${reCerrarPath[1]}/foto`,
         );
         return reply(result, 201);
+      }
+      const cancelarReaperturaPath = path.match(
+        /^\/api\/cierres\/(\d+)\/(?:reapertura\/cancelar|cancelar)$/,
+      );
+      if (cancelarReaperturaPath) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La cancelación de la reapertura se confirma con POST.",
+          );
+        }
+        const result = cancelarReapertura(
+          db,
+          cancelarReaperturaPath[1],
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          { ...options.cierre, ...options.cancelacion },
+          now(),
+        );
+        headers.set(
+          "location",
+          `/api/cierres/${cancelarReaperturaPath[1]}/reapertura`,
+        );
+        return reply(result, 200);
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());
