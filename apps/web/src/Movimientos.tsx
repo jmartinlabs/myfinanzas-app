@@ -8,7 +8,14 @@ import {
 } from "./movement-draft";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur, type Saldo } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import {
+  Alert,
+  DataList,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import { monthLabel, type Cycle } from "./Ciclos";
 type Related = { id: string; nombre: string; estado?: string };
 type Partida = Related & {
@@ -293,6 +300,79 @@ function MovementList({
       {m.concepto || "Movimiento #" + m.id}
     </Link>
   );
+  const saldoName = (m: Movement) =>
+    m.tipo === "Transferencia"
+      ? m.origen.nombre + " → " + m.destino.nombre
+      : (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
+          ? m.destino
+          : m.origen
+        ).nombre;
+  const columns: TableColumn<Movement>[] = [
+    {
+      id: "fecha",
+      header: "Fecha",
+      cell: (m) => (
+        <>
+          {date(m.fecha)}
+          {m.anulado && <Tag inactive>Anulado</Tag>}
+        </>
+      ),
+    },
+    {
+      id: "tipo",
+      header: "Tipo / Subtipo",
+      label: "Tipo / Subtipo",
+      cell: (m) => (
+        <>
+          {m.tipo}
+          <small className="table-id">{m.subtipo ?? ""}</small>
+        </>
+      ),
+    },
+    {
+      id: "concepto",
+      header: "Concepto",
+      cell: (m) => (
+        <>
+          {cellLink(m)}
+          <small className="table-id">#{m.id}</small>
+        </>
+      ),
+    },
+    {
+      id: "saldo",
+      header: "Saldo",
+      cell: (m) => (
+        <>
+          {saldoName(m)}
+          <small className="table-id">
+            {cycle(m.ciclo)}
+            {m.anulado ? " · No computa" : ""}
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "partida",
+      header: "Partida",
+      cell: (m) => (
+        <>
+          {m.partida?.nombre ?? "No aplica"}
+          {m.referencia && (
+            <small className="table-id">
+              {m.referencia.nombre} · {m.referencia.id}
+            </small>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (m) => <strong>{eur(m.importe)}</strong>,
+    },
+  ];
   return (
     <>
       <PageHead
@@ -465,99 +545,21 @@ function MovementList({
         ) : (
           <>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">
-                  Ingresos, Gastos y Transferencias
-                </caption>
-                <thead>
-                  <tr>
-                    {[
-                      "Fecha",
-                      "Tipo / Subtipo",
-                      "Concepto",
-                      "Saldo",
-                      "Partida",
-                      "Importe",
-                    ].map((h) => (
-                      <th scope="col" key={h}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.movimientos.map((m) => (
-                    <tr key={m.id} className={m.anulado ? "annulled" : ""}>
-                      <td>
-                        {date(m.fecha)}
-                        {m.anulado && <Tag inactive>Anulado</Tag>}
-                      </td>
-                      <td>
-                        {m.tipo}
-                        <small className="table-id">{m.subtipo ?? ""}</small>
-                      </td>
-                      <td>
-                        {cellLink(m)}
-                        <small className="table-id">#{m.id}</small>
-                      </td>
-                      <td>
-                        {m.tipo === "Transferencia"
-                          ? m.origen.nombre + " → " + m.destino.nombre
-                          : (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
-                              ? m.destino
-                              : m.origen)
-                              .nombre}
-                      </td>
-                      <td>
-                        {m.partida?.nombre ?? "No aplica"}
-                        {m.referencia && (
-                          <small className="table-id">
-                            {m.referencia.nombre} · {m.referencia.id}
-                          </small>
-                        )}
-                      </td>
-                      <td className="money">{eur(m.importe)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Ingresos, Gastos y Transferencias"
+                label="Tabla de Movimientos"
+                columns={columns}
+                rows={data.movimientos}
+                rowKey={(m) => m.id}
+                rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
+              />
             </div>
-            <ul className="mobile-list">
-              {data.movimientos.map((m) => (
-                <li key={m.id}>
-                  <div className="card-head">
-                    <span>{date(m.fecha)}</span>
-                    <Tag inactive={m.anulado}>
-                      {m.anulado ? "Anulado · " : ""}
-                      {m.tipo}
-                    </Tag>
-                  </div>
-                  <h2>{cellLink(m)}</h2>
-                  <p>
-                    #{m.id} ·{" "}
-                    {m.tipo === "Transferencia"
-                      ? m.origen.nombre + " → " + m.destino.nombre
-                      : (m.tipo === "Ingreso" || m.tipo === "Devolución de gasto"
-                          ? m.destino
-                          : m.origen
-                        ).nombre}
-                  </p>
-                  <p>{m.subtipo ?? m.partida?.nombre}</p>
-                  {m.referencia && (
-                    <p className="help">
-                      {m.referencia.id} · {m.referencia.nombre}
-                    </p>
-                  )}
-                  <div className="card-position">
-                    <strong>{eur(m.importe)}</strong>
-                    <small>
-                      {cycle(m.ciclo)}
-                      {m.anulado ? " · No computa" : ""}
-                    </small>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.movimientos}
+              rowKey={(m) => m.id}
+              className="mobile-list"
+            />
           </>
         )}
         <div className="list-footer">

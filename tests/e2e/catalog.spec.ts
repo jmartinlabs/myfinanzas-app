@@ -47,6 +47,12 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
   ).toBeVisible();
   await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
   await expect(
+    page.getByRole("region", { name: "Catálogo de Saldos" }),
+  ).toHaveCount(1);
+  await expect(
+    page.getByRole("region", { name: "Tabla de Saldos" }),
+  ).toHaveCount(1);
+  await expect(
     page.locator(".global-header").getByText("Sin ciclos", { exact: true }),
   ).toBeVisible();
   const skip = page.getByRole("link", { name: "Saltar al contenido" });
@@ -68,6 +74,10 @@ test("E1.1 + E1.2 + E1.3: acceso real, catálogos, errores y restauración respo
     ),
   ).toBe("dark");
   await expect(page.locator(".desktop-list")).toBeHidden();
+  await expect(page.locator('[aria-label="Tabla de Saldos"]')).toBeHidden();
+  await expect(
+    page.locator('[role="region"][tabindex="0"]:visible'),
+  ).toHaveCount(0);
   await expect(page.locator(".mobile-list li")).toHaveCount(5);
   await page.getByRole("button", { name: "Abrir menú" }).click();
   await expect(page.getByRole("navigation")).toBeVisible();

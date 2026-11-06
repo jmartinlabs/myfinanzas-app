@@ -151,6 +151,8 @@ export type TableProps<Row> = {
   columns: ReadonlyArray<TableColumn<Row>>;
   rows: ReadonlyArray<Row>;
   rowKey?: (row: Row, index: number) => string | number;
+  /** Clase opcional de la fila (p. ej. `annulled`); no altera celdas. */
+  rowClassName?: (row: Row, index: number) => string | undefined;
   /** Muestra el `caption` a la vista en lugar de ocultarlo. */
   captionVisible?: boolean;
   empty?: ReactNode;
@@ -165,6 +167,7 @@ export function Table<Row>({
   columns,
   rows,
   rowKey,
+  rowClassName,
   captionVisible = false,
   empty = "Sin datos",
   className,
@@ -202,7 +205,10 @@ export function Table<Row>({
               </tr>
             ) : (
               rows.map((row, index) => (
-                <tr key={rowKey ? rowKey(row, index) : index}>
+                <tr
+                  key={rowKey ? rowKey(row, index) : index}
+                  className={rowClassName?.(row, index)}
+                >
                   {columns.map((column) => (
                     <td
                       key={column.id}
@@ -252,6 +258,7 @@ export function DataList<Row>({
   return (
     <ul
       className={`ui-data-list${className ? ` ${className}` : ""}`}
+      role="list"
       aria-label={label}
     >
       {rows.length === 0 ? (

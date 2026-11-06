@@ -410,8 +410,20 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
     expect((await get("/movimientos")).total).toBe(5);
     await navigate("/movimientos");
     await expect(page.locator(".desktop-list tbody tr")).toHaveCount(5);
+    await expect(
+      page.getByRole("region", { name: "Registro de Movimientos" }),
+    ).toHaveCount(1);
+    await expect(
+      page.getByRole("region", { name: "Tabla de Movimientos" }),
+    ).toHaveCount(1);
     await shot("list-desktop");
     await page.setViewportSize({ width: 390, height: 844 });
+    await expect(
+      page.locator('[aria-label="Tabla de Movimientos"]'),
+    ).toBeHidden();
+    await expect(
+      page.locator('[role="region"][tabindex="0"]:visible'),
+    ).toHaveCount(0);
     await shot("list-mobile");
     await page.getByText("Más filtros", { exact: true }).focus();
     await page.keyboard.press("Enter");
