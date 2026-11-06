@@ -1165,7 +1165,18 @@ export function createApp(db: Database, options: AppOptions) {
             "El contraste vivo es de solo lectura.",
           );
         }
-        const ciclo = new URL(req.url).searchParams.get("ciclo");
+        const params = new URL(req.url).searchParams;
+        if (params.has("tipoRegistro"))
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "El contraste vivo no mezcla fuentes: no admite tipoRegistro.",
+            {
+              tipoRegistro:
+                "Parámetro no admitido; el contraste es solo E2.6 y no lee el archivo E4.5.",
+            },
+          );
+        const ciclo = params.get("ciclo");
         if (ciclo === null || !/^\d+$/.test(ciclo))
           throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {
             ciclo: "Indica un ciclo válido.",

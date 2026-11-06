@@ -21,17 +21,61 @@ const origin = "http://127.0.0.1:5173";
 const password = "Solo pruebas E4.11 I4 " + randomUUID();
 const fp = "a".repeat(64);
 
-const fotoNoDisponible = [
-  {
-    bloque: "E4.3 · Nómina",
-    estado: "No disponible",
-    motivo: "Sentinel persistido que el motor vivo no debe leer",
-  },
-];
+// Fixture mínimo de E4.9: se rellenan con formas contractuales solo los
+// bloques que consume este incremento. No reproduce el payload completo.
+const noDisponibleMotivo =
+  "Sentinel persistido que el motor vivo no debe leer";
+const fotoNoDisponible = {
+  nomina: { estado: "No disponible", motivo: noDisponibleMotivo },
+};
 const fotoCobertura = {
   estado: "Parcial",
-  motivos: ["E4.3_NO_DISPONIBLE"],
-  total: null,
+  totales: {
+    nomina: { estado: "No disponible", motivo: noDisponibleMotivo },
+    plan: { estado: "Completo", motivo: "Fixture mínimo" },
+  },
+};
+const fotoHechos = {
+  estado: "Sin hechos",
+  movimientos: [],
+  fuentes: [],
+  totales: {},
+};
+const fotoPlan = {
+  estado: "Capturado",
+  items: [],
+  revision: 1,
+  contextRevision: "fixture-minimo",
+  sinPlanificar: false,
+};
+const fotoClasificacion = {
+  categorias: [],
+  subcategorias: [],
+  partidas: [],
+  referencias: [],
+};
+const fotoInversion = {
+  efectivo: null,
+  cuentas: [],
+  posiciones: [],
+  operaciones: [],
+  instrumentos: [],
+  valoracion: "No disponible",
+  motivoValoracion: "Fixture mínimo E4.11 I4",
+};
+const fotoAuxiliares = {
+  anticipos: [],
+  compartidos: [],
+  nomina: [],
+  revisionComida: [],
+  deuda: [],
+  e35: { verificable: false, huella: null, datos: null },
+};
+const fotoBackup = {
+  verificado: false,
+  restauracionProbada: false,
+  referencia: null,
+  motivo: "Fixture mínimo E4.11 I4",
 };
 
 function liveDb() {
@@ -54,15 +98,24 @@ function seedClosure(
       `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,
         creado_utc,motivo,fingerprint,estado)
        VALUES(?,?,?,?,?, 'usuario-unico',?,?,?,'Cerrado')`,
-      [ciclo, version, inicio, fin, saldoInicial, creado, "Cierre ficticio E4.11 I4", fp],
+      [
+        ciclo,
+        version,
+        inicio,
+        fin,
+        saldoInicial,
+        creado,
+        "Cierre ficticio E4.11 I4",
+        fp,
+      ],
     );
     db.run(
       `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,
         fingerprint,app_version,schema_version,ventana_inicio,ventana_fin,
         saldo_inicial,estado_temporal,estado_hechos,estado_plan,hechos,plan,
         clasificacion,inversion,auxiliares,cobertura,backup,no_disponible)
-       VALUES(?,?,?,'usuario-unico',?,?,'0.0.0-fixture',27,?,?,?,'Cerrado',
-        'Con hechos','Capturado',?,?,?,?,?,?,?,?)`,
+       VALUES(?,?,?,'usuario-unico',?,?,'0.0.0-fixture',26,?,?,?,'Cerrado',
+        'Sin hechos','Capturado',?,?,?,?,?,?,?,?)`,
       [
         ciclo,
         version,
@@ -72,13 +125,13 @@ function seedClosure(
         inicio,
         fin,
         saldoInicial,
-        JSON.stringify({ foto: "v1", origen: "persistido" }),
-        JSON.stringify({ foto: "v1" }),
-        JSON.stringify({ foto: "v1" }),
-        JSON.stringify({ foto: "v1" }),
-        JSON.stringify({ foto: "v1" }),
+        JSON.stringify(fotoHechos),
+        JSON.stringify(fotoPlan),
+        JSON.stringify(fotoClasificacion),
+        JSON.stringify(fotoInversion),
+        JSON.stringify(fotoAuxiliares),
         JSON.stringify(fotoCobertura),
-        JSON.stringify({ foto: "v1" }),
+        JSON.stringify(fotoBackup),
         JSON.stringify(fotoNoDisponible),
       ],
     );
@@ -95,12 +148,10 @@ function snapshotAll(db: Database) {
     db
       .query("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
       .all() as { name: string }[]
-  ).map(({ name }) => [
-    name,
-    db.query(`SELECT * FROM "${name}"`).all(),
-  ]);
+  ).map(({ name }) => [name, db.query(`SELECT * FROM "${name}"`).all()]);
 }
 
+// Product/E4.11 tables only. Auth updates `sessions.seen` on every request.
 function snapshotE411(db: Database) {
   return {
     ciclos: db.query("SELECT * FROM ciclos ORDER BY id").all(),
@@ -184,91 +235,99 @@ function fixture() {
   return { db, request, enroll };
 }
 
-function t2t3Changes(db: Database) {
-  // T2: a new live fact inside the cycle window. T3: a renamed Partida.
-  db.run(
-    `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
-       partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
-       capital,intereses)
-     VALUES('9411','2026-07-10','Ingreso',123400,'S000','S001','Nómina',
-       NULL,NULL,'Hecho T2 ficticio E4.11 I4','',0,1,
-       '2026-07-10T00:00:00.000Z','2026-07-10T00:00:00.000Z',NULL,NULL)`,
+test("E4.11 I4: T2 real por API (plan vivo) deja la foto intacta y cambia solo el vivo", async () => {
+  const f = fixture();
+  seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
+  await f.enroll();
+
+  const fotoAntes = getFotoCiclo(f.db, "1");
+  const vivoAntes = getContraste(f.db, "1", now);
+  expect(vivoAntes.metricas.base.valor).toBe("1600.00");
+
+  const current = await f.request("/api/planes-ciclo/1");
+  expect(current.status).toBe(200);
+  const propuesta = {
+    revision: current.data.revision,
+    contextRevision: current.data.contextRevision,
+    cambios: [{ presupuesto: "PRE001", base: "1500.00" }],
+  };
+  const preview = await f.request(
+    "/api/planes-ciclo/1/impacto",
+    "POST",
+    propuesta,
   );
-  db.run(
-    "UPDATE partidas SET nombre='Partida renombrada E4.11 I4' WHERE id='PAR001'",
-  );
-}
+  expect(preview.status).toBe(200);
+  expect(preview.data.requiereMotivo).toBe(true);
+  expect(preview.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
 
-test("E4.11 I4: T2/T3 dejan la foto intacta y cambian solo el cálculo vivo etiquetado", () => {
-  const db = liveDb();
-  seedClosure(db, "1", 1, "2026-06-20", "2026-07-19", 0);
-
-  const fotoAntes = getFotoCiclo(db, "1");
-  const vivoAntes = getContraste(db, "1", now);
-
-  expect(vivoAntes).toMatchObject({
-    origen: "CalculoVivo",
-    motor: MOTOR_CONTRASTE,
-    etiqueta: ETIQUETA_CONTRASTE,
-    ciclo: "1",
-    corte: "2026-07-19",
-    noEsHistorico: true,
-    noSustituyeFoto: true,
-    soloLectura: true,
-  });
-  expect(vivoAntes.revision).toMatch(/^[a-f0-9]{64}$/);
-  expect(vivoAntes.cobertura).toMatchObject({
-    estado: "Parcial",
-    verificada: false,
-    total: null,
-    certificada: false,
-    coberturaBancaria: {
-      verificada: false,
+  const confirmed = await f.request(
+    "/api/planes-ciclo/1/confirmar",
+    "POST",
+    {
+      propuesta,
+      fingerprint: preview.data.fingerprint,
+      motivo: "T2 ficticio de plan vivo E4.11 I4",
     },
-  });
-  expect(vivoAntes.metricas.nomina).toMatchObject({
-    valor: null,
-    subtotal: "2000.00",
-    estado: "Parcial",
-    origen: "CalculoVivo",
-    noEsHistorico: true,
-  });
-  expect(vivoAntes.metricas.nomina.fuente).toContain("Movimientos");
-  expect(vivoAntes.metricas.nomina.motivo).toContain("no acreditada");
-  expect("foto" in vivoAntes).toBe(false);
-  expect("valores" in vivoAntes).toBe(false);
-  expect("totalPeriodo" in vivoAntes).toBe(false);
-  expect(vivoAntes.noDisponible).toContainEqual({
-    clave: "ahorroCierre",
-    fuente: expect.any(String),
-    motivo: expect.stringContaining("Sin proveedor"),
-  });
+    { "idempotency-key": "e411-i4-t2-" + randomUUID() },
+  );
+  expect(confirmed.status).toBe(200);
 
-  t2t3Changes(db);
-
-  const fotoDespues = getFotoCiclo(db, "1");
+  const fotoDespues = getFotoCiclo(f.db, "1");
   expect(fotoDespues).toEqual(fotoAntes);
   expect(fotoDespues.foto?.noDisponible).toEqual(fotoNoDisponible);
-  expect(fotoDespues.foto?.hechos).toEqual({
-    foto: "v1",
-    origen: "persistido",
-  });
+  expect(fotoDespues.foto?.cobertura).toEqual(fotoCobertura);
 
-  const vivoDespues = getContraste(db, "1", now);
+  const vivoDespues = getContraste(f.db, "1", now);
   expect(vivoDespues.revision).not.toBe(vivoAntes.revision);
-  expect(vivoDespues.metricas.nomina.subtotal).toBe("3234.00");
-  expect(vivoDespues.metricas.nomina.ids).toContain("9411");
-  expect(vivoDespues.metricas.nomina).toMatchObject({
-    estado: "Parcial",
+  expect(vivoDespues.metricas.base).toMatchObject({
+    valor: "1500.00",
+    estado: "Verificado",
     origen: "CalculoVivo",
     noEsHistorico: true,
   });
   expect(vivoDespues.origen).toBe("CalculoVivo");
   expect(vivoDespues.noEsHistorico).toBe(true);
-  expect(JSON.stringify(fotoDespues)).not.toContain("3234.00");
-  expect(JSON.stringify(vivoDespues)).not.toContain(
-    "Sentinel persistido que el motor vivo no debe leer",
+  expect(JSON.stringify(fotoDespues)).not.toContain("1500.00");
+  expect(JSON.stringify(vivoDespues)).not.toContain(noDisponibleMotivo);
+});
+
+test("E4.11 I4: T3 real por API (renombrado) deja la foto y los valores vivos intactos", async () => {
+  const f = fixture();
+  seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
+  await f.enroll();
+
+  const fotoAntes = getFotoCiclo(f.db, "1");
+  const vivoAntes = getContraste(f.db, "1", now);
+
+  const currentPartida = await f.request(
+    "/api/clasificacion/partidas/PAR001",
   );
+  expect(currentPartida.status).toBe(200);
+  const renamed = await f.request(
+    "/api/clasificacion/partidas/PAR001",
+    "PATCH",
+    {
+      nombre: "Partida renombrada E4.11 I4",
+      revision: currentPartida.data.item.revision,
+    },
+  );
+  expect(renamed.status).toBe(200);
+  expect(renamed.data.item).toMatchObject({
+    id: "PAR001",
+    nombre: "Partida renombrada E4.11 I4",
+  });
+
+  expect(getFotoCiclo(f.db, "1")).toEqual(fotoAntes);
+  const vivoDespues = getContraste(f.db, "1", now);
+  expect(vivoDespues.metricas.base.valor).toBe(vivoAntes.metricas.base.valor);
+  expect(vivoDespues.metricas.nomina.subtotal).toBe(
+    vivoAntes.metricas.nomina.subtotal,
+  );
+  expect(vivoDespues.metricas.gasto.subtotal).toBe(
+    vivoAntes.metricas.gasto.subtotal,
+  );
+  expect(vivoDespues.origen).toBe("CalculoVivo");
+  expect(vivoDespues.noEsHistorico).toBe(true);
 });
 
 test("E4.11 I4: cobertura y No disponible con motivo; lectura sin escrituras", () => {
@@ -321,7 +380,7 @@ test("E4.11 I4: cobertura y No disponible con motivo; lectura sin escrituras", (
   expect(snapshotAll(db)).toEqual(before);
 });
 
-test("E4.11 I4: ruta GET, 405, matriz negativa y snapshot sin altas", async () => {
+test("E4.11 I4: ruta GET, 405, matriz negativa y snapshot de producto sin altas", async () => {
   const f = fixture();
   seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
 
@@ -356,13 +415,16 @@ test("E4.11 I4: ruta GET, 405, matriz negativa y snapshot sin altas", async () =
   expect(JSON.stringify(ok.data)).not.toContain("tipoRegistro");
   expect(JSON.stringify(ok.data)).not.toContain("Archivo");
 
-  // P8b-A: the contrast route cannot be turned into an archive source.
-  const archivoParam = await f.request(
-    "/api/fotos/contraste?ciclo=1&tipoRegistro=Archivo",
-  );
-  expect(archivoParam.status).toBe(200);
-  expect(archivoParam.data.origen).toBe("CalculoVivo");
-  expect(archivoParam.data).not.toHaveProperty("tipoRegistro");
+  // P8b-A: cualquier selector de otra fuente se rechaza; no se mezcla E4.5.
+  for (const query of ["Archivo", "", "Foto"]) {
+    const wrongSource = await f.request(
+      `/api/fotos/contraste?ciclo=1&tipoRegistro=${query}`,
+    );
+    expect(wrongSource.status).toBe(422);
+    expect(wrongSource.data.code).toBe("VALIDATION");
+    expect(wrongSource.data.fields.tipoRegistro).toContain("no admitido");
+    expect(wrongSource.data).not.toHaveProperty("origen");
+  }
 
   const missing = await f.request("/api/fotos/contraste");
   expect(missing.status).toBe(422);
@@ -397,6 +459,7 @@ test("E4.11 I4: ruta GET, 405, matriz negativa y snapshot sin altas", async () =
     expect(absent.status).toBe(404);
   }
 
+  // The snapshot excludes `sessions.seen`, updated by authenticated requests.
   expect(snapshotE411(f.db)).toEqual(before);
   expect(f.db.query("SELECT COUNT(*) AS n FROM fotos_cierre").get()).toEqual({
     n: 1,
