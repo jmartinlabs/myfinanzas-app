@@ -18,9 +18,14 @@ import { Referencias } from "./Referencias";
 import { Vehiculos } from "./Vehiculos";
 import { Inversiones } from "./Inversiones";
 import { Movimientos } from "./Movimientos";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { api, type Saldo } from "./api";
+import {
+  isNavigationActive,
+  navigationGroups,
+  navigationTitle,
+} from "./navigation";
 import { AuthScreen } from "./AuthScreen";
 import { SaldoForm } from "./SaldoForm";
 import { SaldoDetail, SaldoList } from "./Saldos";
@@ -46,6 +51,8 @@ function App() {
     [revision, setRevision] = useState(0),
     [notice, setNotice] = useState(""),
     [expired, setExpired] = useState(false);
+  const menuToggleRef = useRef<HTMLButtonElement>(null);
+  const mainNavRef = useRef<HTMLElement>(null);
   const check = () => {
     setAuth("loading");
     api("/auth/session")
@@ -56,6 +63,9 @@ function App() {
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+  useEffect(() => {
+    document.title = `${navigationTitle(path)} · MyFinanzas`;
+  }, [path]);
   useEffect(() => {
     const expired = () => setExpired(true);
     addEventListener("session-expired", expired);
@@ -70,6 +80,25 @@ function App() {
     addEventListener("popstate", pop);
     return () => removeEventListener("popstate", pop);
   }, []);
+  useEffect(() => {
+    if (!menu) return;
+    const firstLink =
+      mainNavRef.current?.querySelector<HTMLAnchorElement>("a");
+    if (!firstLink) return;
+    const frame = requestAnimationFrame(() => firstLink.focus());
+    return () => cancelAnimationFrame(frame);
+  }, [menu]);
+  useEffect(() => {
+    if (!menu) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      setMenu(false);
+      menuToggleRef.current?.focus();
+    };
+    addEventListener("keydown", close);
+    return () => removeEventListener("keydown", close);
+  }, [menu]);
   function go(p: string) {
     setNotice("");
     history.pushState(null, "", p);
@@ -168,328 +197,45 @@ function App() {
           <small>CONTROL FINANCIERO PERSONAL</small>
         </a>
         <button
+          ref={menuToggleRef}
+          type="button"
           className="menu-toggle"
           aria-expanded={menu}
           aria-controls="main-nav"
           onClick={() => setMenu((m) => !m)}
         >
-          {menu ? "Cerrar menú" : "Abrir menú"} ☰
+          {menu ? "Cerrar menú" : "Abrir menú"}{" "}
+          <span aria-hidden="true">☰</span>
         </button>
-        <nav id="main-nav">
-          <p className="nav-group">MI ESPACIO</p>
-          <a
-            className={path.startsWith("/inicio") ? "nav-active" : "nav-link"}
-            href="/inicio"
-            aria-current={path.startsWith("/inicio") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/inicio");
-            }}
-          >
-            <span aria-hidden="true">◉</span> Inicio{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            href="/anticipos"
-            className={
-              path.startsWith("/anticipos") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/anticipos") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/anticipos");
-            }}
-          >
-            Anticipos
-          </a>
-          <a
-            className={
-              path.startsWith("/compartidos") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/compartidos") ? "page" : undefined}
-            href="/compartidos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/compartidos");
-            }}
-          >
-            Compartidos
-          </a>
-          <a
-            className={
-              path.startsWith("/flujo-mensual") ? "nav-active" : "nav-link"
-            }
-            href="/flujo-mensual"
-            aria-current={
-              path.startsWith("/flujo-mensual") ? "page" : undefined
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              go("/flujo-mensual");
-            }}
-          >
-            Flujo mensual
-          </a>
-          <a
-            className={
-              path.startsWith("/pendientes") ? "nav-active" : "nav-link"
-            }
-            href="/pendientes"
-            aria-current={
-              path.startsWith("/pendientes") ? "page" : undefined
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              go("/pendientes");
-            }}
-          >
-            Pendientes y conciliación
-          </a>
-          <a
-            className={path.startsWith("/dprima") ? "nav-active" : "nav-link"}
-            href="/dprima"
-            aria-current={path.startsWith("/dprima") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/dprima");
-            }}
-          >
-            D′ · Partidas
-          </a>
-          <a
-            className={path.startsWith("/comida") ? "nav-active" : "nav-link"}
-            href="/comida"
-            aria-current={path.startsWith("/comida") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/comida");
-            }}
-          >
-            Comida · hechos
-          </a>
-          <a
-            className={
-              path.startsWith("/revision-comida") ? "nav-active" : "nav-link"
-            }
-            href="/revision-comida"
-            aria-current={
-              path.startsWith("/revision-comida") ? "page" : undefined
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              go("/revision-comida");
-            }}
-          >
-            Revisión Comida
-          </a>
-          <a
-            className={
-              path.startsWith("/planes-ciclo") ? "nav-active" : "nav-link"
-            }
-            href="/planes-ciclo"
-            aria-current={path.startsWith("/planes-ciclo") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/planes-ciclo");
-            }}
-          >
-            Plan del ciclo
-          </a>
-          <a
-            className={path.startsWith("/nomina") ? "nav-active" : "nav-link"}
-            href="/nomina"
-            aria-current={path.startsWith("/nomina") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/nomina");
-            }}
-          >
-            Nómina
-          </a>
-          <a
-            className={
-              path.startsWith("/plan-anual") ? "nav-active" : "nav-link"
-            }
-            href="/plan-anual"
-            aria-current={path.startsWith("/plan-anual") ? "page" : undefined}
-            onClick={(e) => {
-              e.preventDefault();
-              go("/plan-anual");
-            }}
-          >
-            Plan anual
-          </a>
-          <a
-            className={
-              path.startsWith("/resumen-anual") ? "nav-active" : "nav-link"
-            }
-            href="/resumen-anual"
-            aria-current={
-              path.startsWith("/resumen-anual") ? "page" : undefined
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              go("/resumen-anual");
-            }}
-          >
-            Resumen anual
-          </a>
-          <a
-            className={
-              path.startsWith("/saldos") || path === "/"
-                ? "nav-active"
-                : "nav-link"
-            }
-            aria-current={
-              path.startsWith("/saldos") || path === "/" ? "page" : undefined
-            }
-            href="/saldos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/saldos");
-            }}
-          >
-            <span aria-hidden="true">▤</span> Saldos{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/clasificacion") ? "nav-active" : "nav-link"
-            }
-            aria-current={
-              path.startsWith("/clasificacion") ? "page" : undefined
-            }
-            href="/clasificacion/partidas"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/clasificacion/partidas");
-            }}
-          >
-            <span aria-hidden="true">≡</span> Clasificación{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={path.startsWith("/ciclos") ? "nav-active" : "nav-link"}
-            aria-current={path.startsWith("/ciclos") ? "page" : undefined}
-            href="/ciclos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/ciclos");
-            }}
-          >
-            <span aria-hidden="true">▦</span> Ciclos{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/precierre") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/precierre") ? "page" : undefined}
-            href="/precierre"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/precierre");
-            }}
-          >
-            <span aria-hidden="true">◐</span> Precierre{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/cierre") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/cierre") ? "page" : undefined}
-            href="/cierre"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/cierre");
-            }}
-          >
-            <span aria-hidden="true">▣</span> Cierre{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/movimientos") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/movimientos") ? "page" : undefined}
-            href="/movimientos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/movimientos");
-            }}
-          >
-            <span aria-hidden="true">↔</span> Movimientos{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/vehiculos") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/vehiculos") ? "page" : undefined}
-            href="/vehiculos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/vehiculos");
-            }}
-          >
-            <span aria-hidden="true">⌑</span> Vehículos{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/inversiones") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/inversiones") ? "page" : undefined}
-            href="/inversiones"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/inversiones");
-            }}
-          >
-            <span aria-hidden="true">↗</span> Inversiones{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/referencias") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/referencias") ? "page" : undefined}
-            href="/referencias"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/referencias");
-            }}
-          >
-            <span aria-hidden="true">⌑</span> Referencias{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={path.startsWith("/deudas") ? "nav-active" : "nav-link"}
-            aria-current={path.startsWith("/deudas") ? "page" : undefined}
-            href="/deudas"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/deudas");
-            }}
-          >
-            <span aria-hidden="true">◷</span> Deudas{" "}
-            <span aria-hidden="true">›</span>
-          </a>
-          <a
-            className={
-              path.startsWith("/presupuestos") ? "nav-active" : "nav-link"
-            }
-            aria-current={path.startsWith("/presupuestos") ? "page" : undefined}
-            href="/presupuestos"
-            onClick={(e) => {
-              e.preventDefault();
-              go("/presupuestos");
-            }}
-          >
-            <span aria-hidden="true">▤</span> Presupuestos{" "}
-            <span aria-hidden="true">›</span>
-          </a>
+        <nav id="main-nav" aria-label="Secciones" ref={mainNavRef}>
+          {navigationGroups.map((group) => (
+            <div className="nav-section" key={group.id}>
+              <p className="nav-group">{group.label}</p>
+              {group.items.map((item) => {
+                const active = isNavigationActive(item, path);
+                return (
+                  <a
+                    key={item.href}
+                    className={active ? "nav-active" : "nav-link"}
+                    href={item.href}
+                    aria-current={active ? "page" : undefined}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      go(item.href);
+                    }}
+                  >
+                    <span className="nav-icon" aria-hidden="true">
+                      {item.icon}
+                    </span>
+                    <span className="nav-label">{item.label}</span>
+                    <span className="nav-chevron" aria-hidden="true">
+                      ›
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          ))}
           <div className="nav-future">
             Las siguientes entregas ampliarán tu espacio financiero.
           </div>

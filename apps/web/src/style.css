@@ -4999,3 +4999,64 @@ textarea {
     font-size: 20px;
   }
 }
+
+/* UI · DEV-03 — navegación
+ * La configuración (grupos, orden, etiquetas e iconos) vive en navigation.ts.
+ * Aquí solo se presenta: el activo añade barra y peso además del fondo y
+ * `aria-current`; no se introducen colores ni tokens nuevos.
+ */
+.nav-section {
+  display: block;
+}
+.nav-group {
+  text-transform: uppercase;
+}
+.nav-link,
+.nav-active {
+  position: relative;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.nav-link {
+  font-weight: 600;
+}
+.nav-active {
+  margin-top: 6px;
+  font-weight: 750;
+}
+.nav-active::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 4px;
+  height: 22px;
+  border-radius: var(--radius-pill);
+  background: var(--sidebar-active-text);
+  transform: translateY(-50%);
+}
+.nav-icon {
+  flex: none;
+  width: 22px;
+  font-size: 17px;
+  text-align: center;
+}
+.nav-active span.nav-icon {
+  margin-right: 0;
+  font-size: 17px;
+}
+.nav-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nav-chevron {
+  flex: none;
+  margin-left: auto;
+  font-size: 16px;
+  opacity: 0.55;
+}
+.nav-active .nav-chevron {
+  opacity: 0.9;
+}
