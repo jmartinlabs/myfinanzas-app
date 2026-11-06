@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { createHash } from "node:crypto";
 import { getFotoCierre } from "./e49";
+import { readActiveWindow, type ActiveWindowReading } from "./e410-window";
 import { resolveAppVersion } from "./app-version";
 import { Problem } from "./problem";
 
@@ -46,6 +47,10 @@ export type EstadoComponentePeriodo =
   | "Incluido"
   | "ExcluidoSinCierre"
   | "PendienteReCierre";
+export type EstadoReaperturaComponente =
+  | "Abierta"
+  | "CierrePosterior"
+  | "Inconsistente";
 export type EstadoCoberturaPeriodo = "Parcial" | "NoDisponible";
 
 export type Ventana = { inicio: string; fin: string | null };
@@ -57,6 +62,14 @@ export type ComponentePeriodoDto = {
   versionFoto: number | null;
   fingerprint: string | null;
   estado: EstadoComponentePeriodo;
+  /**
+   * Real reopening state when it prevents inclusion. `null` for a normal
+   * closed cycle or an `ExcluidoSinCierre` component. v27 only admits three
+   * component states, so `CierrePosterior`/`Inconsistente` use
+   * `PendienteReCierre` as the persisted state and this field plus `motivo`
+   * declare the precise cause.
+   */
+  estadoReapertura: EstadoReaperturaComponente | null;
   motivo: string | null;
 };
 
@@ -75,6 +88,7 @@ export type SeleccionAplicadaDto = {
     porDefecto: boolean;
     mesFinanciado: string;
     ventana: Ventana;
+    estadoReapertura: EstadoReaperturaComponente | null;
   }[];
 };
 
@@ -384,10 +398,77 @@ function ultimaVersion(db: Database, ciclo: string) {
   return row?.version ?? null;
 }
 
-function reabierto(db: Database, ciclo: string) {
-  return Boolean(
-    db.query("SELECT 1 FROM reapertura_activa WHERE ciclo=?").get(ciclo),
+type AnomaliaReapertura = {
+  estado: "CierrePosterior" | "Inconsistente";
+  motivo: string;
+};
+
+/**
+ * R5 — real reopening states from the canonical non-throwing reader.
+ * Mapping (no new financial rule):
+ *  - `Abierta` (the cycle owns the open window) → `PendienteReCierre`/P4-A;
+ *  - `CierrePosterior` (a later closure invalidates the window) → exclude the
+ *    reopened cycle with `estadoReapertura:"CierrePosterior"` and
+ *    `motivo:"CIERRE_POSTERIOR"`;
+ *  - `Inconsistente` (projection/event mismatch) → exclude every implicated
+ *    cycle with `estadoReapertura:"Inconsistente"` and
+ *    `motivo:"ESTADO_INCONSISTENTE"`.
+ * v27 only admits `Incluido`/`ExcluidoSinCierre`/`PendienteReCierre` as the
+ * persisted component state, so both anomalies are persisted as
+ * `PendienteReCierre`; the precise state travels in `seleccionAplicada` and
+ * the response. A cycle in `Inconsistente` is never included silently.
+ */
+function anomaliaReapertura(
+  ciclo: string,
+  reading: ActiveWindowReading,
+): AnomaliaReapertura | null {
+  if (reading.estado === "CierrePosterior" && reading.ciclo === ciclo)
+    return { estado: "CierrePosterior", motivo: "CIERRE_POSTERIOR" };
+  if (reading.estado === "Inconsistente") {
+    const implicado =
+      reading.ciclo === ciclo || reading.evento?.ciclo === ciclo;
+    if (implicado)
+      return { estado: "Inconsistente", motivo: "ESTADO_INCONSISTENTE" };
+  }
+  return null;
+}
+
+function ventanaAbierta(ciclo: string, reading: ActiveWindowReading) {
+  return reading.estado === "Abierta" && reading.ventana.ciclo === ciclo;
+}
+
+function inconsistenciaCierre(
+  ciclo: string,
+  versionCierre: number,
+  versionFoto: number | null,
+) {
+  return new Problem(
+    500,
+    "ESTADO_INCONSISTENTE",
+    "El último cierre no tiene la foto correspondiente.",
+    {},
+    { ciclo, versionCierre, versionFoto },
   );
+}
+
+/**
+ * R4 — fail closed when `MAX(cierres.version)` has no matching photo.
+ * `getFotoCierre` without a version joins `fotos_cierre`, so a missing latest
+ * photo would silently return the previous version. We compare the closure
+ * maximum with the returned photo instead of accepting that fallback.
+ */
+function fotoUltimaConsistente(db: Database, ciclo: string, ultima: number) {
+  let foto: ReturnType<typeof getFotoCierre>["foto"];
+  try {
+    foto = getFotoCierre(db, ciclo).foto;
+  } catch (error) {
+    if (error instanceof Problem && error.status === 404)
+      throw inconsistenciaCierre(ciclo, ultima, null);
+    throw error;
+  }
+  if (foto.version !== ultima)
+    throw inconsistenciaCierre(ciclo, ultima, foto.version);
+  return foto;
 }
 
 function coberturaFoto(photo: { cobertura: unknown }) {
@@ -467,6 +548,7 @@ type Compuesto = {
     versionFoto: number | null;
     fingerprint: string | null;
     estado: EstadoComponentePeriodo;
+    estadoReapertura: EstadoReaperturaComponente | null;
     motivo: string | null;
     mesFinanciado: string;
     ventana: Ventana;
@@ -509,13 +591,63 @@ function componer(
   const seleccion: Record<string, number | null> = {};
   const motivos = new Set<string>();
   let incluidos = 0;
+  const reading = readActiveWindow(db);
+
+  function excluirReapertura(
+    ciclo: CicloRow,
+    estadoReapertura: EstadoReaperturaComponente,
+    motivo: string,
+    porDefecto: boolean,
+  ) {
+    seleccion[ciclo.id] = null;
+    motivos.add(motivo);
+    componentes.push({
+      ciclo: ciclo.id,
+      versionFoto: null,
+      fingerprint: null,
+      estado: "PendienteReCierre",
+      estadoReapertura,
+      motivo,
+      mesFinanciado: ciclo.mes_financiado,
+      ventana: ventanaEstructural(db, ciclo),
+      porDefecto,
+    });
+    bloques.push({
+      ciclo: ciclo.id,
+      versionFoto: null,
+      estado:
+        estadoReapertura === "Abierta"
+          ? "PendienteReCierre"
+          : estadoReapertura,
+      motivos: [motivo],
+    });
+  }
 
   for (const ciclo of ciclos) {
     const pedida = solicitada.get(ciclo.id);
     const ultima = ultimaVersion(db, ciclo.id);
-    const estaReabierto = reabierto(db, ciclo.id);
+    const anomalia = anomaliaReapertura(ciclo.id, reading);
+    const abierta = ventanaAbierta(ciclo.id, reading);
 
     if (ultima === null) {
+      // A requested version can never exist without closure: canonical 404,
+      // never a silent fallback to the default or to another cycle.
+      if (pedida !== undefined) getFotoCierre(db, ciclo.id, pedida);
+      if (anomalia || abierta) {
+        // A projection can point at a cycle with no closure. Exclude it with
+        // the real anomaly instead of mislabelling it as a plain missing closure.
+        const estadoReapertura: EstadoReaperturaComponente = abierta
+          ? "Abierta"
+          : anomalia!.estado;
+        const motivo = abierta ? "PENDIENTE_RE_CIERRE" : anomalia!.motivo;
+        excluirReapertura(
+          ciclo,
+          estadoReapertura,
+          motivo,
+          pedida === undefined,
+        );
+        continue;
+      }
       const motivo = "SIN_CIERRE";
       seleccion[ciclo.id] = null;
       motivos.add("CICLO_SIN_CIERRE");
@@ -524,15 +656,12 @@ function componer(
         versionFoto: null,
         fingerprint: null,
         estado: "ExcluidoSinCierre",
+        estadoReapertura: null,
         motivo,
         mesFinanciado: ciclo.mes_financiado,
         ventana: ventanaEstructural(db, ciclo),
         porDefecto: pedida === undefined,
       });
-      if (pedida !== undefined)
-        // A requested version can never exist without closure: canonical 404,
-        // never a silent fallback to the default or to another cycle.
-        getFotoCierre(db, ciclo.id, pedida);
       bloques.push({
         ciclo: ciclo.id,
         versionFoto: null,
@@ -542,34 +671,30 @@ function componer(
       continue;
     }
 
-    // An explicitly requested version must exist even when the cycle is
-    // reopened (404 otherwise). It is never silently replaced.
-    if (pedida !== undefined) getFotoCierre(db, ciclo.id, pedida);
+    // R4: the latest closure must have its matching photo before any version
+    // of this cycle can be composed. Never accept getFotoCierre's fallback.
+    const fotoUltima = fotoUltimaConsistente(db, ciclo.id, ultima);
+    let fotoSeleccionada = fotoUltima;
+    if (pedida !== undefined && pedida !== fotoUltima.version)
+      // An explicit older version must exist; a missing one is a canonical
+      // 404 and is never replaced by the latest photo.
+      fotoSeleccionada = getFotoCierre(db, ciclo.id, pedida).foto;
 
-    if (estaReabierto) {
-      const motivo = "PENDIENTE_RE_CIERRE";
-      seleccion[ciclo.id] = null;
-      motivos.add("PENDIENTE_RE_CIERRE");
-      componentes.push({
-        ciclo: ciclo.id,
-        versionFoto: null,
-        fingerprint: null,
-        estado: "PendienteReCierre",
+    if (anomalia || abierta) {
+      const estadoReapertura: EstadoReaperturaComponente = abierta
+        ? "Abierta"
+        : anomalia!.estado;
+      const motivo = abierta ? "PENDIENTE_RE_CIERRE" : anomalia!.motivo;
+      excluirReapertura(
+        ciclo,
+        estadoReapertura,
         motivo,
-        mesFinanciado: ciclo.mes_financiado,
-        ventana: ventanaEstructural(db, ciclo),
-        porDefecto: pedida === undefined,
-      });
-      bloques.push({
-        ciclo: ciclo.id,
-        versionFoto: null,
-        estado: "PendienteReCierre",
-        motivos: [motivo],
-      });
+        pedida === undefined,
+      );
       continue;
     }
 
-    const { foto } = getFotoCierre(db, ciclo.id, pedida);
+    const foto = fotoSeleccionada;
     const version = foto.version;
     seleccion[ciclo.id] = version;
     incluidos += 1;
@@ -578,6 +703,7 @@ function componer(
       versionFoto: version,
       fingerprint: foto.fingerprint,
       estado: "Incluido",
+      estadoReapertura: null,
       motivo: null,
       mesFinanciado: ciclo.mes_financiado,
       ventana: { inicio: foto.ventana.inicio, fin: foto.ventana.fin },
@@ -635,6 +761,7 @@ function componer(
       porDefecto: componente.porDefecto,
       mesFinanciado: componente.mesFinanciado,
       ventana: componente.ventana,
+      estadoReapertura: componente.estadoReapertura,
     })),
   };
 
@@ -913,6 +1040,7 @@ function filaADto(
         versionFoto: componente.version_foto,
         fingerprint: componente.fingerprint_foto,
         estado: componente.estado,
+        estadoReapertura: extra?.estadoReapertura ?? null,
         motivo: componente.motivo,
       },
     ];
