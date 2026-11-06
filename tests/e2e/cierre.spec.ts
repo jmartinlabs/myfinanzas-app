@@ -30,6 +30,9 @@ const PORTS = {
   "sin-ciclo": 3039,
   nav: 3040,
   "backup-sin-referencia": 3041,
+  "e410-reabierto": 3042,
+  "e410-no-ultimo": 3043,
+  "e410-sin-cambios": 3044,
 } as const;
 
 const ARTIFACTS = "artifacts/e4-9";
@@ -51,6 +54,8 @@ async function startServer(
         NODE_ENV: "test",
         E49_SCENARIO: scenario,
         E49_PORT: String(port),
+        E410_ORIGIN:
+          process.env.E410_ORIGIN ?? "http://127.0.0.1:5173",
       },
     },
   );
@@ -728,6 +733,313 @@ test("E4.9 navegación: shell y /inicio enlazan al cierre sin romper rutas", asy
     await expect(
       page.getByRole("heading", { name: "Cierre financiero", exact: true }),
     ).toBeVisible();
+  } finally {
+    child.kill();
+  }
+});
+
+/**
+ * E4.10 I7 — UI de reapertura, rectificación y re-cierre.
+ *
+ * Fixtures sintéticas: un ciclo con v1 cerrada y ventana abierta, y un cierre
+ * no último para comprobar que la acción no se ofrece. No se usan datos reales
+ * ni se acredita DT6: la evidencia de backup es inyectada por el servidor de
+ * test y sigue sin autorizar un cierre real.
+ */
+const ARTIFACTS_E410 = "artifacts/e4-10";
+
+test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(180000);
+  mkdirSync(ARTIFACTS_E410, { recursive: true });
+  const errors = pageErrors(page);
+  const { child, port, dir } = await startServer(request, "e410-reabierto");
+  try {
+    await routeApi(page, port);
+    await login(page, dir);
+    await page.getByLabel("Ciclo").selectOption("1");
+
+    // Elegibilidad: el último cierre ofrece reabrir y explica qué no cambia.
+    await expect(
+      page.getByText(
+        /v1 es la última versión cerrada y no existe un cierre posterior/,
+      ),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Reabrir el último cierre", exact: true }),
+    ).toBeVisible();
+    await page
+      .getByRole("button", { name: "Reabrir el último cierre", exact: true })
+      .click();
+    await expect(
+      page.getByRole("heading", { name: "Confirmar reapertura de v1", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/v1 y su foto quedan\s+intactas/),
+    ).toBeVisible();
+    await expect(page.getByText(/S0,\s+inicio,\s+Fin/)).toBeVisible();
+    await expect(page.getByTestId("e410-reopen-key")).toHaveText(
+      /^[0-9a-f-]{36}$/,
+    );
+
+    await page
+      .getByLabel("Motivo de la reapertura", { exact: false })
+      .fill("Reapertura ficticia E4.10");
+    await page
+      .getByRole("button", { name: "Confirmar reapertura", exact: true })
+      .click();
+
+    // Estado reabierto y advertencia de foto no vigente.
+    await expect(
+      page.getByRole("heading", { name: "Ciclo reabierto", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Reabierto · v1", { exact: true }).first()).toBeVisible();
+    const statusPanel = page.locator('[aria-label="Estado del cierre"]');
+    await expect(statusPanel.getByText("Reabierto · v1", { exact: true })).toBeVisible();
+    await expect(statusPanel.getByText("Cerrado", { exact: true })).toHaveCount(0);
+    await expect(
+      statusPanel.getByText(/Ciclo reabierto: ventana de rectificación activa/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Ventana de rectificación abierta sobre v1/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/La fotografía v1 no es la vista viva/),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Reabierto · foto v1 no vigente", { exact: true }),
+    ).toBeVisible();
+    // Preparación del re-cierre: diferencias, revalidación y backup visibles.
+    await expect(
+      page.getByRole("heading", { name: "Preparación del re-cierre", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("ConCambios", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/El bloque material hechos difiere/)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Revalidación de dependencias posteriores", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("Acreditado", { exact: true }).first()).toBeVisible();
+    // La cancelación sin foto no se ofrece cuando hay cambios materiales.
+    await expect(
+      page.getByText(/La comparación actual es/),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/No se\s+ofrece la cancelación sin foto/),
+    ).toBeVisible();
+
+    await expect(page.getByTestId("e410-recierre-key")).toHaveText(
+      /^[0-9a-f-]{36}$/,
+    );
+    await page
+      .getByLabel("Motivo del re-cierre", { exact: false })
+      .fill("Hecho rectificado en la ventana");
+    await page
+      .getByRole("button", { name: "Confirmar re-cierre v2", exact: true })
+      .click();
+
+    // Resultado: v2 creada, v1 conservada y comparación lado a lado.
+    await expect(
+      page.getByRole("heading", { name: "Fotografía v2 creada", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/v1 se conserva intacta y consultable/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "v1 (persistida)", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("columnheader", { name: "v2 (persistida)", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Gasto ficticio de rectificación E4.10", { exact: false }),
+    ).not.toBeVisible();
+    await expect(
+      page.getByText(/Con hechos · 1 movimiento/).first(),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Consultar v1", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Consultar v2", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByText(/Valores persistidos de cada fotografía/),
+    ).toBeVisible();
+
+    const state = await page.request.get(
+      `http://127.0.0.1:${port}/api/cierres/1/estado`,
+    );
+    expect(state.status()).toBe(200);
+    const body = await state.json();
+    expect(body.cierre.version).toBe(2);
+    expect(body.reapertura.estado).toBe("Cerrado");
+    expect(body.reapertura.version).toBe(2);
+    expect(body.reapertura.elegibilidad.puedeReabrir).toBe(true);
+    expect(
+      (await page.request.get(`http://127.0.0.1:${port}/api/cierres/1/foto?version=1`))
+        .status(),
+    ).toBe(200);
+    expect(
+      (await page.request.get(`http://127.0.0.1:${port}/api/cierres/1/foto?version=2`))
+        .status(),
+    ).toBe(200);
+
+    // Evidencia visual 1440/390 en los tres temas vigentes.
+    const theme = page.getByLabel("Tema visual");
+    for (const id of ["light-s", "dark-s", "hybrid-s"] as const) {
+      await page.setViewportSize({ width: 1440, height: 1000 });
+      await theme.selectOption(id);
+      await expect(page.locator("html")).toHaveAttribute("data-theme", id);
+      await expectNoOverflow(page);
+      await page.screenshot({
+        path: `${ARTIFACTS_E410}/resultado-${id}-1440.png`,
+        fullPage: true,
+      });
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expectNoOverflow(page);
+      await page.screenshot({
+        path: `${ARTIFACTS_E410}/resultado-${id}-390.png`,
+        fullPage: true,
+      });
+    }
+    expect(errors).toEqual([]);
+  } finally {
+    child.kill();
+  }
+});
+
+test("E4.10 UI: un cierre no último no ofrece reabrir y muestra el motivo", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  mkdirSync(ARTIFACTS_E410, { recursive: true });
+  const errors = pageErrors(page);
+  const { child, port, dir } = await startServer(request, "e410-no-ultimo");
+  try {
+    await routeApi(page, port);
+    await login(page, dir);
+    await page.getByLabel("Ciclo").selectOption("1");
+
+    await expect(
+      page.getByRole("button", { name: "Reabrir el último cierre", exact: true }),
+    ).toHaveCount(0);
+    await expect(page.getByText(/No reabrible\./)).toBeVisible();
+    await expect(
+      page.getByText(/existe un cierre posterior del ciclo 2/),
+    ).toBeVisible();
+    await expect(page.getByText(/Cierre posterior: ciclo 2 · v1/)).toBeVisible();
+
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/no-ultimo-1440.png`,
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectNoOverflow(page);
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/no-ultimo-390.png`,
+      fullPage: true,
+    });
+
+    // El ciclo 2 sí es último y ofrece la acción.
+    await page.getByLabel("Ciclo").selectOption("2");
+    await expect(
+      page.getByRole("button", { name: "Reabrir el último cierre", exact: true }),
+    ).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    child.kill();
+  }
+});
+
+test("E4.10 UI: SIN_CAMBIOS no crea foto y permite cancelar la reapertura (D8)", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  mkdirSync(ARTIFACTS_E410, { recursive: true });
+  const errors = pageErrors(page);
+  const { child, port, dir } = await startServer(request, "e410-sin-cambios");
+  try {
+    await routeApi(page, port);
+    await login(page, dir);
+    await page.getByLabel("Ciclo").selectOption("1");
+
+    await page
+      .getByRole("button", { name: "Reabrir el último cierre", exact: true })
+      .click();
+    await page
+      .getByLabel("Motivo de la reapertura", { exact: false })
+      .fill("Reapertura sin cambios ficticia E4.10");
+    await page
+      .getByRole("button", { name: "Confirmar reapertura", exact: true })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "Ciclo reabierto", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("SinCambios", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText(/SIN_CAMBIOS: no se crea una foto nueva/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Confirmar re-cierre v2/ }),
+    ).toHaveCount(0);
+
+    const cancelButton = page.getByRole("button", {
+      name: "Cancelar reapertura sin foto",
+      exact: true,
+    });
+    await expect(cancelButton).toBeEnabled();
+    await cancelButton.click();
+    await page
+      .getByLabel("Motivo de la cancelación", { exact: false })
+      .fill("No hubo cambios materiales");
+    await expect(page.getByTestId("e410-cancel-key")).toHaveText(
+      /^[0-9a-f-]{36}$/,
+    );
+    await page
+      .getByRole("button", { name: "Confirmar cancelación sin foto", exact: true })
+      .click();
+
+    await expect(
+      page.getByText(/Cancelación registrada: el ciclo vuelve a Cerrado\(v1\) sin foto nueva/),
+    ).toBeVisible();
+
+    const state = await page.request.get(
+      `http://127.0.0.1:${port}/api/cierres/1/estado`,
+    );
+    expect(state.status()).toBe(200);
+    const body = await state.json();
+    expect(body.cierre.version).toBe(1);
+    expect(body.reapertura.estado).toBe("Cerrado");
+    expect(body.reapertura.version).toBe(1);
+    expect(body.reapertura.reapertura).toBeNull();
+    expect(
+      (await page.request.get(`http://127.0.0.1:${port}/api/cierres/1/foto?version=1`))
+        .status(),
+    ).toBe(200);
+    expect(
+      (
+        await page.request.get(
+          `http://127.0.0.1:${port}/api/cierres/1/foto?version=2`,
+        )
+      ).status(),
+    ).toBe(404);
+
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-1440.png`,
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectNoOverflow(page);
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-390.png`,
+      fullPage: true,
+    });
+    expect(errors).toEqual([]);
   } finally {
     child.kill();
   }

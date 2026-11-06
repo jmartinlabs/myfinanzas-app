@@ -180,6 +180,109 @@ type Foto = {
   replayed?: boolean;
 };
 
+type ReaperturaEvento = {
+  id: number;
+  versionOrigen: number;
+  actor: string;
+  creadoUtc: string;
+  motivo: string;
+  correlacion: string | null;
+  fingerprint: string;
+};
+type ReaperturaEstado = {
+  ciclo: string;
+  estado: "SinCierre" | "Cerrado" | "Reabierto";
+  version: number | null;
+  reapertura: ReaperturaEvento | null;
+  elegibilidad?: {
+    puedeReabrir: boolean;
+    motivo: string | null;
+    cierrePosterior: { ciclo: string; version: number; fin: string } | null;
+  };
+};
+type EstadoCierre = {
+  cierre: CierreSnapshot;
+  reapertura: ReaperturaEstado;
+};
+type RevalidacionCheck = {
+  clave: string;
+  estado: "Verificado" | "NoDisponible" | "Aviso" | "Bloqueante";
+  codigo: string | null;
+  motivo: string | null;
+  comparado: unknown;
+};
+type Revalidacion = {
+  ciclo: string;
+  estado: string;
+  bloquea: boolean;
+  version: number | null;
+  reapertura: { id: number; versionOrigen: number } | null;
+  comprobaciones: RevalidacionCheck[];
+  bloqueos: string[];
+  avisos: string[];
+  fingerprint: string;
+};
+type Repreflight = Omit<Preflight, "estado"> & {
+  estado: Preflight["estado"] | "Sin cambios";
+  origen: {
+    ciclo: string;
+    versionOrigen: number;
+    reaperturaId: number;
+    correlacion: string | null;
+  };
+  revalidacion: Revalidacion;
+  comparacion: {
+    estado: "SinCambios" | "ConCambios" | "NoVerificable";
+    bloques: string[];
+    motivos: string[];
+  };
+  sinCambios: boolean;
+};
+type RecierreResultado = Foto & {
+  estado: "Cerrado";
+  recierre: {
+    ciclo: string;
+    versionOrigen: number;
+    versionDestino: number;
+    reaperturaId: number;
+    correlacion: string;
+    fingerprint: string;
+  };
+  vinculo: {
+    ciclo: string;
+    versionOrigen: number;
+    versionDestino: number;
+    reaperturaId: number;
+    correlacion: string;
+  };
+  comparacion: Repreflight["comparacion"];
+  revalidacion: {
+    estado: string;
+    fingerprint: string;
+    bloqueos: string[];
+    avisos: string[];
+  };
+  replayed?: boolean;
+};
+
+const MATERIAL_LABELS: Record<string, string> = {
+  ventana: "Ventana y S0 congelados",
+  hechos: "Hechos y relaciones",
+  plan: "Plan del ciclo",
+  clasificacion: "Clasificación y referencias",
+  inversion: "Inversión a Fin",
+  auxiliares: "Auxiliares usados",
+};
+const REVALIDACION_LABELS: Record<string, string> = {
+  version: "Última versión cerrada",
+  cierrePosterior: "Cierres posteriores",
+  fotosPosteriores: "Versiones posteriores",
+  s0PlanSiguiente: "S0 y plan del ciclo siguiente",
+  auxiliares: "Auxiliares",
+  agregadosE411: "Agregados E4.11",
+  precontrolE45: "Precontrol E4.5",
+};
+
 const TOTAL_LABELS: Record<string, string> = {
   ingresos: "Ingresos",
   gastos: "Gastos",
@@ -227,7 +330,7 @@ function tone(estado: string) {
     )
   )
     return "danger";
-  if (/parcial|aviso|sin planificar|fuera de orden|pendiente/.test(value))
+  if (/parcial|aviso|sin planificar|fuera de orden|pendiente|reabiert/.test(value))
     return "warn";
   if (/sin hechos|sinplan|vacío|vacio/.test(value)) return "empty";
   if (/listo|completo|capturado|verificad|cerrad|coherente|válido|valido/.test(value))
@@ -239,15 +342,26 @@ function Badge({ estado }: { estado: string }) {
   return <span className={`cierre-badge tone-${tone(estado)}`}>{estado}</span>;
 }
 
-function IssueList({ items, kind }: { items: Issue[]; kind: "bloqueo" | "aviso" }) {
+function IssueList({
+  items,
+  kind,
+  title,
+}: {
+  items: Issue[];
+  kind: "bloqueo" | "aviso";
+  title?: string;
+}) {
   if (!items.length) return null;
+  const heading =
+    title ??
+    (kind === "bloqueo" ? "Bloqueos que impiden cerrar" : "Avisos");
   return (
     <div
       className={"cierre-issues " + kind}
       role={kind === "bloqueo" ? "alert" : "status"}
-      aria-label={kind === "bloqueo" ? "Bloqueos que impiden cerrar" : "Avisos del cierre"}
+      aria-label={heading}
     >
-      <h2>{kind === "bloqueo" ? "Bloqueos que impiden cerrar" : "Avisos"}</h2>
+      <h2>{heading}</h2>
       <ul>
         {items.map((item) => (
           <li key={item.code + ":" + item.message}>
@@ -319,6 +433,352 @@ function CoverageTable({ cobertura }: { cobertura: Cobertura }) {
   );
 }
 
+type ActionKind = "reabrir" | "recerrar" | "cancelar";
+type ActionFailure = {
+  kind: ActionKind;
+  message: string;
+  code: string;
+  hint: string;
+};
+
+const ACTION_HINTS: Record<string, string> = {
+  NO_ES_ULTIMO_CIERRE:
+    "Solo el cierre con el Fin más reciente es reabrible. Actualiza la revisión: el cierre posterior no se modifica.",
+  CIERRE_POSTERIOR:
+    "Apareció un cierre posterior durante la ventana. No se altera y el re-cierre ordinario queda bloqueado; la recuperación extraordinaria requiere aprobación separada.",
+  VERSION_CONFLICTO:
+    "La versión esperada ya no es la última. Actualiza el estado y revisa de nuevo antes de escribir.",
+  YA_REABIERTO:
+    "Ya existe una ventana de rectificación activa. No se abre una segunda.",
+  NO_REABIERTO:
+    "El ciclo ya no tiene una reapertura activa. Actualiza el estado: pudo re-cerrarse o cancelarse.",
+  IDEMPOTENCY_CONFLICT:
+    "La clave de intento se usó antes con otros datos. Actualiza la revisión para generar una clave nueva; no se duplica ninguna ventana ni foto.",
+  REVISION_CONFLICT:
+    "La vista previa cambió entre la lectura y la confirmación. No se emite foto parcial: actualiza y repite el preflight.",
+  SIN_CAMBIOS:
+    "No hay cambios materiales acreditados. No se crea una foto nueva; usa la cancelación D8 solo si la ausencia de cambios está acreditada.",
+  BACKUP_NO_VERIFICABLE:
+    "Falta evidencia DT6/T-BKP (manifiesto, checksum, clave o restauración probada). No se escribe ninguna foto.",
+  E35_NO_VERIFICABLE:
+    "E3.5/FIN_NETA no es verificable. Sin ese gate no hay re-cierre ni foto.",
+  REVALIDACION_BLOQUEANTE:
+    "Una dependencia posterior contradice la rectificación. Se bloquea sin modificar S0 ni planes ajenos.",
+  IMPACTO_NO_VERIFICABLE:
+    "No se puede acreditar la comparación material con vN. Se bloquea en lugar de asumir equivalencia.",
+  VENTANA_INCONSISTENTE:
+    "La ventana o el S0 congelados cambiaron durante la reapertura. No se reescribe vN; actualiza y revisa.",
+  VENTANA_RECTIFICACION_CERRADA:
+    "La escritura queda fuera de la ventana de rectificación. Actualiza el estado.",
+  SESION_EXPIRADA:
+    "La sesión ha caducado. Conserva el motivo escrito, vuelve a identificarte y repite la operación.",
+};
+
+function actionFailure(error: unknown, kind: ActionKind): ActionFailure {
+  const failure = error as ApiError;
+  if (failure instanceof ApiError && failure.status === 401)
+    return {
+      kind,
+      message:
+        "La sesión ha caducado. El motivo escrito se conserva en esta pantalla.",
+      code: "SESION_EXPIRADA",
+      hint: ACTION_HINTS.SESION_EXPIRADA,
+    };
+  const code = failure instanceof ApiError ? failure.code : "";
+  return {
+    kind,
+    message: failure?.message || "No se pudo completar la operación.",
+    code,
+    hint:
+      ACTION_HINTS[code] ??
+      "No se ha escrito ningún estado parcial. Revisa el motivo y vuelve a intentarlo.",
+  };
+}
+
+function ActionError({
+  failure,
+  onRefresh,
+}: {
+  failure: ActionFailure;
+  onRefresh: () => void;
+}) {
+  return (
+    <div className="e410-action-error" role="alert">
+      <p>
+        <strong>{failure.message}</strong>
+      </p>
+      <p>{failure.hint}</p>
+      {failure.code && <p className="muted">Código: {failure.code}</p>}
+      <button className="secondary" type="button" onClick={onRefresh}>
+        Actualizar estado y reintentar
+      </button>
+    </div>
+  );
+}
+
+function RevalidacionTable({ revalidacion }: { revalidacion: Revalidacion }) {
+  const compared = (value: unknown) => {
+    if (value === null || value === undefined) return "Sin valores comparados.";
+    try {
+      return JSON.stringify(value, null, 2);
+    } catch {
+      return "Valores no representables.";
+    }
+  };
+  return (
+    <TableScroll label="Revalidación de dependencias posteriores">
+      <div className="shared-table-scroll">
+        <table className="table e410-table">
+          <thead>
+            <tr>
+              <th>Dependencia</th>
+              <th>Resultado</th>
+              <th>Motivo y valores comparados</th>
+            </tr>
+          </thead>
+          <tbody>
+            {revalidacion.comprobaciones.map((check) => (
+              <tr key={check.clave}>
+                <td data-label="Dependencia">
+                  {REVALIDACION_LABELS[check.clave] ?? check.clave}
+                </td>
+                <td data-label="Resultado">
+                  <Badge estado={check.estado} />
+                </td>
+                <td data-label="Motivo y valores comparados">
+                  {check.motivo ?? "Sin incidencias."}
+                  {check.comparado !== null && check.comparado !== undefined && (
+                    <details className="e410-compared">
+                      <summary>Valores comparados (solo lectura)</summary>
+                      <pre>{compared(check.comparado)}</pre>
+                    </details>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </TableScroll>
+  );
+}
+
+function MaterialComparisonView({
+  comparacion,
+}: {
+  comparacion: Repreflight["comparacion"];
+}) {
+  return (
+    <div
+      className={
+        "e410-diff " +
+        (comparacion.estado === "SinCambios"
+          ? "ok"
+          : comparacion.estado === "ConCambios"
+            ? "warn"
+            : "danger")
+      }
+      role="status"
+    >
+      <h3>Diferencias materiales frente a vN</h3>
+      <p>
+        Comparación de solo lectura sobre ventana/S0, hechos, plan, clasificación,
+        inversión y auxiliares. No se recalculan totales ni se usa la vista viva
+        como foto.
+      </p>
+      <p>
+        Resultado: <Badge estado={comparacion.estado} />
+      </p>
+      {comparacion.bloques.length > 0 && (
+        <ul>
+          {comparacion.bloques.map((block) => (
+            <li key={block}>{MATERIAL_LABELS[block] ?? block}</li>
+          ))}
+        </ul>
+      )}
+      {comparacion.motivos.length > 0 && (
+        <ul>
+          {comparacion.motivos.map((reason) => (
+            <li key={reason}>{reason}</li>
+          ))}
+        </ul>
+      )}
+      {comparacion.estado === "SinCambios" && (
+        <p className="e410-strong">
+          SIN_CAMBIOS: no se crea una foto nueva. No basta la igualdad de importes;
+          aquí la ausencia se acredita por bloques materiales y auditoría.
+        </p>
+      )}
+      {comparacion.estado === "NoVerificable" && (
+        <p className="e410-strong">
+          No se puede acreditar la comparación: el re-cierre queda bloqueado y no
+          se asume equivalencia.
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Una lista ausente o ilegible no es una lista vacía: devuelve `null` para que
+ * la UI muestre «No disponible» y nunca convierta la ausencia en `0`.
+ */
+function countList(value: unknown): number | null {
+  return Array.isArray(value) ? value.length : null;
+}
+
+function countText(value: unknown) {
+  const count = countList(value);
+  return count === null ? "No disponible" : String(count);
+}
+
+function countPhrase(
+  value: unknown,
+  singular: string,
+  plural: string,
+) {
+  const count = countList(value);
+  return count === null
+    ? "No disponible"
+    : `${count} ${count === 1 ? singular : plural}`;
+}
+
+function auxiliarySummary(auxiliares: Record<string, unknown>) {
+  const entries = Object.entries(auxiliares).filter(([, value]) =>
+    Array.isArray(value),
+  );
+  return entries.length
+    ? entries.map(([key, value]) => `${key} ${countText(value)}`).join(" · ")
+    : "Sin auxiliares capturados";
+}
+
+function PhotoComparison({
+  before,
+  after,
+  comparacion,
+  correlacion,
+  onVersion,
+}: {
+  before: Foto;
+  after: Foto;
+  comparacion: Repreflight["comparacion"];
+  correlacion?: string;
+  onVersion?: (version: number) => void;
+}) {
+  const rows = [
+    {
+      key: "ventana",
+      label: MATERIAL_LABELS.ventana,
+      before: `${date(before.foto.ventana.inicio)} → ${date(before.foto.ventana.fin)} · S0 ${amount(before.foto.ventana.saldoInicial)}`,
+      after: `${date(after.foto.ventana.inicio)} → ${date(after.foto.ventana.fin)} · S0 ${amount(after.foto.ventana.saldoInicial)}`,
+    },
+    {
+      key: "hechos",
+      label: MATERIAL_LABELS.hechos,
+      before: `${before.foto.hechos.estado} · ${countPhrase(before.foto.hechos.movimientos, "movimiento", "movimientos")}`,
+      after: `${after.foto.hechos.estado} · ${countPhrase(after.foto.hechos.movimientos, "movimiento", "movimientos")}`,
+    },
+    {
+      key: "plan",
+      label: MATERIAL_LABELS.plan,
+      before: `${before.foto.plan.estado} · ${countPhrase(before.foto.plan.items, "línea", "líneas")}`,
+      after: `${after.foto.plan.estado} · ${countPhrase(after.foto.plan.items, "línea", "líneas")}`,
+    },
+    {
+      key: "clasificacion",
+      label: MATERIAL_LABELS.clasificacion,
+      before: `Categorías ${countText(before.foto.clasificacion.categorias)} · subcategorías ${countText(before.foto.clasificacion.subcategorias)} · partidas ${countText(before.foto.clasificacion.partidas)} · referencias ${countText(before.foto.clasificacion.referencias)}`,
+      after: `Categorías ${countText(after.foto.clasificacion.categorias)} · subcategorías ${countText(after.foto.clasificacion.subcategorias)} · partidas ${countText(after.foto.clasificacion.partidas)} · referencias ${countText(after.foto.clasificacion.referencias)}`,
+    },
+    {
+      key: "inversion",
+      label: MATERIAL_LABELS.inversion,
+      before: `Efectivo ${amount(before.foto.inversion.efectivo)} · ${countPhrase(before.foto.inversion.posiciones, "posición", "posiciones")} · ${countPhrase(before.foto.inversion.instrumentos, "instrumento", "instrumentos")}`,
+      after: `Efectivo ${amount(after.foto.inversion.efectivo)} · ${countPhrase(after.foto.inversion.posiciones, "posición", "posiciones")} · ${countPhrase(after.foto.inversion.instrumentos, "instrumento", "instrumentos")}`,
+    },
+    {
+      key: "auxiliares",
+      label: MATERIAL_LABELS.auxiliares,
+      before: auxiliarySummary(before.foto.auxiliares),
+      after: auxiliarySummary(after.foto.auxiliares),
+    },
+  ];
+  return (
+    <section className="panel e410-result" aria-label="Resultado del re-cierre">
+      <div className="e410-head">
+        <div>
+          <p className="eyebrow">E4.10 · RE-CIERRE</p>
+          <h2>Fotografía v{after.foto.version} creada</h2>
+        </div>
+        <Badge estado={`Cerrado · v${after.foto.version}`} />
+      </div>
+      <p>
+        v{before.foto.version} se conserva intacta y consultable. La comparación es
+        un artefacto de auditoría/UI: no es una foto parcial ni una mezcla de
+        versiones.
+      </p>
+      <p className="muted">
+        Vínculo v{before.foto.version} → v{after.foto.version}
+        {correlacion ? (
+          <>
+            {" "}· correlación <code>{correlacion}</code>
+          </>
+        ) : null}{" "}
+        · fingerprints persistidos.
+      </p>
+      <TableScroll label="Comparación lado a lado de versiones de la fotografía">
+        <div className="shared-table-scroll">
+          <table className="table e410-table">
+            <thead>
+              <tr>
+                <th>Bloque</th>
+                <th>v{before.foto.version} (persistida)</th>
+                <th>v{after.foto.version} (persistida)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row) => (
+                <tr
+                  key={row.key}
+                  className={
+                    comparacion.bloques.includes(row.key) ? "e410-changed" : ""
+                  }
+                >
+                  <td data-label="Bloque">{row.label}</td>
+                  <td data-label={`v${before.foto.version}`}>{row.before}</td>
+                  <td data-label={`v${after.foto.version}`}>{row.after}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </TableScroll>
+      <p className="muted">
+        Valores persistidos de cada fotografía; no se recalculan ni se suman
+        totales provisionales.
+      </p>
+      {onVersion && (
+        <div className="actions">
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => onVersion(before.foto.version)}
+          >
+            Consultar v{before.foto.version}
+          </button>
+          <button
+            className="secondary"
+            type="button"
+            onClick={() => onVersion(after.foto.version)}
+          >
+            Consultar v{after.foto.version}
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function Cierre({ go }: { go: (path: string) => void }) {
   const [cycles, setCycles] = useState<{ id: string; inicio: string }[]>([]);
   const [selected, setSelected] = useState("");
@@ -342,6 +802,29 @@ export function Cierre({ go }: { go: (path: string) => void }) {
   const [errorSource, setErrorSource] = useState<"load" | "confirm">("load");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [notice, setNotice] = useState("");
+  // E4.10 I7 — reapertura, rectificación y re-cierre.
+  const [estadoCierre, setEstadoCierre] = useState<EstadoCierre | null>(null);
+  const [repreflight, setRepreflight] = useState<Repreflight | null>(null);
+  const [repreflightLoading, setRepreflightLoading] = useState(false);
+  const [repreflightError, setRepreflightError] = useState("");
+  const [repreflightReload, setRepreflightReload] = useState(0);
+  const [reopenOpen, setReopenOpen] = useState(false);
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [motivoReapertura, setMotivoReapertura] = useState("");
+  const [motivoRecierre, setMotivoRecierre] = useState("");
+  const [motivoCancelacion, setMotivoCancelacion] = useState("");
+  const [reopenKey, setReopenKey] = useState("");
+  const [recierreKey, setRecierreKey] = useState("");
+  const [cancelKey, setCancelKey] = useState("");
+  const reopenAttempt = useRef<{ key: string; signature: string } | null>(null);
+  const recierreAttempt = useRef<{ key: string; signature: string } | null>(null);
+  const cancelAttempt = useRef<{ key: string; signature: string } | null>(null);
+  const [actionBusy, setActionBusy] = useState<ActionKind | "">("");
+  const [actionError, setActionError] = useState<ActionFailure | null>(null);
+  const [recierreResult, setRecierreResult] = useState<RecierreResultado | null>(
+    null,
+  );
+  const [previousPhoto, setPreviousPhoto] = useState<Foto | null>(null);
   const request = useRef(0);
   const selectedRef = useRef(selected);
   selectedRef.current = selected;
@@ -388,6 +871,8 @@ export function Cierre({ go }: { go: (path: string) => void }) {
   useEffect(() => {
     if (!selected) {
       setPreflight(null);
+      setEstadoCierre(null);
+      setRepreflight(null);
       setLoading(false);
       return;
     }
@@ -396,12 +881,25 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     setError("");
     setErrorCode("");
     setFields({});
-    api<Preflight>("/cierres/" + selected + "/preflight")
-      .then((result) => {
+    setActionError(null);
+    Promise.all([
+      api<Preflight>("/cierres/" + selected + "/preflight"),
+      api<EstadoCierre>("/cierres/" + selected + "/estado"),
+    ])
+      .then(([result, state]) => {
         if (current !== request.current || selectedRef.current !== selected) return;
         setPreflight(result);
+        setEstadoCierre(state);
         setAttemptKey(crypto.randomUUID());
         attempt.current = null;
+        setReopenKey(crypto.randomUUID());
+        reopenAttempt.current = null;
+        setRecierreKey(crypto.randomUUID());
+        recierreAttempt.current = null;
+        setCancelKey(crypto.randomUUID());
+        cancelAttempt.current = null;
+        setReopenOpen(false);
+        setCancelOpen(false);
         setError("");
         setErrorCode("");
         setPhotoVersion(result.cierre.fotoVersion ?? result.cierre.version);
@@ -409,6 +907,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
       .catch((e) => {
         if (current !== request.current || selectedRef.current !== selected) return;
         setPreflight(null);
+        setEstadoCierre(null);
         setError((e as Error).message);
         setErrorSource("load");
         setErrorCode(e instanceof ApiError ? e.code : "");
@@ -459,6 +958,66 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     if (photo) photoHeading.current?.focus();
   }, [photo]);
 
+  useEffect(() => {
+    if (
+      !selected ||
+      estadoCierre?.reapertura.estado !== "Reabierto"
+    ) {
+      setRepreflight(null);
+      setRepreflightError("");
+      setRepreflightLoading(false);
+      return;
+    }
+    let live = true;
+    setRepreflightLoading(true);
+    setRepreflightError("");
+    api<Repreflight>("/cierres/" + selected + "/repreflight")
+      .then((result) => {
+        if (live) setRepreflight(result);
+      })
+      .catch((e) => {
+        if (!live) return;
+        setRepreflight(null);
+        setRepreflightError((e as Error).message);
+      })
+      .finally(() => {
+        if (live) setRepreflightLoading(false);
+      });
+    return () => {
+      live = false;
+    };
+  }, [
+    selected,
+    estadoCierre?.reapertura.estado,
+    estadoCierre?.reapertura.version,
+    repreflightReload,
+  ]);
+
+  useEffect(() => {
+    if (!selected || !recierreResult) {
+      setPreviousPhoto(null);
+      return;
+    }
+    const version =
+      recierreResult.vinculo?.versionOrigen ??
+      recierreResult.recierre?.versionOrigen;
+    if (!version || version === recierreResult.foto.version) {
+      setPreviousPhoto(null);
+      return;
+    }
+    let live = true;
+    api<Foto>("/cierres/" + selected + "/foto?version=" + version)
+      .then((result) => {
+        if (live) setPreviousPhoto(result);
+      })
+      .catch(() => {
+        if (live) setPreviousPhoto(null);
+      });
+    return () => {
+      live = false;
+    };
+  }, [selected, recierreResult]);
+
   function selectCycle(id: string) {
     setSelected(id);
     history.replaceState(null, "", "/cierre?ciclo=" + id);
@@ -466,6 +1025,16 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     setPhoto(null);
     setPhotoVersion(null);
     setNotice("");
+    setEstadoCierre(null);
+    setRepreflight(null);
+    setActionError(null);
+    setRecierreResult(null);
+    setPreviousPhoto(null);
+    setReopenOpen(false);
+    setCancelOpen(false);
+    setMotivoReapertura("");
+    setMotivoRecierre("");
+    setMotivoCancelacion("");
   }
 
   function retry() {
@@ -475,6 +1044,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
   function refreshReview() {
     setNotice("");
     setReload((value) => value + 1);
+    setRepreflightReload((value) => value + 1);
   }
 
   async function confirm() {
@@ -521,6 +1091,204 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     }
   }
 
+  function nextKey(
+    ref: { current: { key: string; signature: string } | null },
+    signature: string,
+    fallbackKey = "",
+  ) {
+    if (ref.current?.signature === signature && ref.current.key)
+      return ref.current.key;
+    if (!ref.current && fallbackKey) {
+      ref.current = { key: fallbackKey, signature };
+      return fallbackKey;
+    }
+    const key = crypto.randomUUID();
+    ref.current = { key, signature };
+    return key;
+  }
+
+  function rotateKey(
+    ref: { current: { key: string; signature: string } | null },
+    setKey: (key: string) => void,
+    signature: string,
+  ) {
+    const key = crypto.randomUUID();
+    ref.current = { key, signature };
+    setKey(key);
+  }
+
+  function refreshActions() {
+    setActionError(null);
+    setRepreflightError("");
+    setReload((value) => value + 1);
+    setRepreflightReload((value) => value + 1);
+  }
+
+  function openReopen() {
+    setActionError(null);
+    setReopenOpen(true);
+    const version = estadoCierre?.reapertura.version ?? "";
+    const key = crypto.randomUUID();
+    reopenAttempt.current = { key, signature: version + "|" + motivoReapertura.trim() };
+    setReopenKey(key);
+  }
+
+  async function confirmReopen() {
+    if (!estadoCierre || actionBusy) return;
+    const version = estadoCierre.reapertura.version;
+    const trimmed = motivoReapertura.trim();
+    if (version === null) {
+      setActionError({
+        kind: "reabrir",
+        message: "No hay una versión cerrada que reabrir.",
+        code: "SIN_CIERRE",
+        hint: ACTION_HINTS.NO_ES_ULTIMO_CIERRE,
+      });
+      return;
+    }
+    if (!trimmed) {
+      setActionError({
+        kind: "reabrir",
+        message: "Indica el motivo de la reapertura.",
+        code: "MOTIVO_REQUERIDO",
+        hint: "El motivo es obligatorio y se conserva con actor y UTC en la auditoría.",
+      });
+      return;
+    }
+    const key = nextKey(reopenAttempt, version + "|" + trimmed);
+    setReopenKey(key);
+    setActionBusy("reabrir");
+    setActionError(null);
+    try {
+      const result = await api<{
+        ciclo: string;
+        estado: "Reabierto";
+        version: number;
+        reapertura: ReaperturaEvento;
+        replayed: boolean;
+      }>("/cierres/" + selected + "/reabrir", "POST", {
+        versionEsperada: version,
+        motivo: trimmed,
+      }, { "idempotency-key": key });
+      setNotice(
+        result.replayed
+          ? "Reintento idempotente: se conserva la misma ventana de reapertura."
+          : `Reapertura registrada sobre v${version}. v${version} sigue intacta; no se ha creado una foto nueva.`,
+      );
+      setReopenOpen(false);
+      setMotivoReapertura("");
+      setPhotoVersion(version);
+      setReload((value) => value + 1);
+    } catch (e) {
+      setActionError(actionFailure(e, "reabrir"));
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  async function confirmRecierre() {
+    if (!estadoCierre || !repreflight || actionBusy) return;
+    const version =
+      estadoCierre.reapertura.version ?? repreflight.origen.versionOrigen;
+    const trimmed = motivoRecierre.trim();
+    if (!trimmed) {
+      setActionError({
+        kind: "recerrar",
+        message: "Indica el motivo del re-cierre.",
+        code: "MOTIVO_REQUERIDO",
+        hint: "El motivo de re-cierre («qué se rectificó») es obligatorio y queda en la auditoría y la foto.",
+      });
+      return;
+    }
+    const key = nextKey(
+      recierreAttempt,
+      `${version}|${repreflight.fingerprint}|${trimmed}`,
+      recierreKey,
+    );
+    setRecierreKey(key);
+    setActionBusy("recerrar");
+    setActionError(null);
+    try {
+      const result = await api<RecierreResultado>(
+        "/cierres/" + selected + "/recerrar",
+        "POST",
+        {
+          versionEsperada: version,
+          motivo: trimmed,
+          fingerprint: repreflight.fingerprint,
+        },
+        { "idempotency-key": key },
+      );
+      setRecierreResult(result);
+      setPhoto(result);
+      setPhotoVersion(result.foto.version);
+      setNotice(
+        result.replayed
+          ? "Reintento idempotente: se conserva la misma fotografía del re-cierre."
+          : `Re-cierre registrado: v${result.foto.version} creada; v${result.vinculo.versionOrigen} intacta.`,
+      );
+      setMotivoRecierre("");
+      setReload((value) => value + 1);
+    } catch (e) {
+      setActionError(actionFailure(e, "recerrar"));
+    } finally {
+      setActionBusy("");
+    }
+  }
+
+  async function confirmCancel() {
+    if (!estadoCierre || actionBusy) return;
+    const version = estadoCierre.reapertura.version;
+    const trimmed = motivoCancelacion.trim();
+    if (version === null) {
+      setActionError({
+        kind: "cancelar",
+        message: "No hay una ventana de reapertura que cancelar.",
+        code: "NO_REABIERTO",
+        hint: ACTION_HINTS.NO_REABIERTO,
+      });
+      return;
+    }
+    if (!trimmed) {
+      setActionError({
+        kind: "cancelar",
+        message: "Indica el motivo de la cancelación.",
+        code: "MOTIVO_REQUERIDO",
+        hint: "La cancelación D8 exige motivo y solo se admite sin cambios materiales acreditados.",
+      });
+      return;
+    }
+    const key = nextKey(cancelAttempt, version + "|" + trimmed);
+    setCancelKey(key);
+    setActionBusy("cancelar");
+    setActionError(null);
+    try {
+      const result = await api<{
+        ciclo: string;
+        estado: "Cerrado";
+        version: number;
+        replayed: boolean;
+      }>("/cierres/" + selected + "/cancelar", "POST", {
+        versionEsperada: version,
+        motivo: trimmed,
+      }, { "idempotency-key": key });
+      setNotice(
+        result.replayed
+          ? "Reintento idempotente: la cancelación ya estaba registrada."
+          : `Cancelación registrada: el ciclo vuelve a Cerrado(v${version}) sin foto nueva.`,
+      );
+      setCancelOpen(false);
+      setMotivoCancelacion("");
+      setRecierreResult(null);
+      setPhotoVersion(version);
+      setReload((value) => value + 1);
+    } catch (e) {
+      setActionError(actionFailure(e, "cancelar"));
+    } finally {
+      setActionBusy("");
+    }
+  }
+
   const blocked = Boolean(
     preflight && (preflight.e49Bloqueado || preflight.bloqueos.length),
   );
@@ -531,15 +1299,46 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     errorCode === "IMPACT_CHANGED" ||
     errorCode === "ALREADY_CLOSED" ||
     errorCode === "IDEMPOTENCY_CONFLICT";
-  const versionCount = preflight?.cierre.version ?? 1;
-  const estadoDisplay = closed ? "Cerrado" : preflight?.estado;
+  const versionCount = Math.max(
+    preflight?.cierre.version ?? 1,
+    estadoCierre?.cierre.version ?? 1,
+    estadoCierre?.reapertura.version ?? 1,
+    recierreResult?.foto.version ?? 1,
+  );
+
+  const reapertura = estadoCierre?.reapertura ?? null;
+  const reopened = reapertura?.estado === "Reabierto";
+  const sinCierre = reapertura?.estado === "SinCierre";
+  const originVersion = reapertura?.version ?? preflight?.cierre.version ?? null;
+  const nextVersion = originVersion === null ? null : originVersion + 1;
+  // La cabecera deriva de reapertura.estado: la fila de cierre sigue existiendo
+  // mientras la ventana está abierta, pero presentarla como «Cerrado» contradice
+  // al panel de reapertura.
+  const estadoDisplay = reopened
+    ? `Reabierto · v${originVersion ?? "?"}`
+    : reapertura?.estado === "Cerrado" || closed
+      ? "Cerrado"
+      : preflight?.estado;
+  const elegibilidad = reapertura?.elegibilidad ?? null;
+  const puedeReabrir =
+    reapertura?.estado === "Cerrado" && elegibilidad?.puedeReabrir === true;
+  const repreflightBlocked = Boolean(
+    repreflight &&
+      (repreflight.e49Bloqueado ||
+        repreflight.bloqueos.length > 0 ||
+        repreflight.estado === "Bloqueado"),
+  );
+  const repreflightSinCambios = Boolean(
+    repreflight &&
+      (repreflight.sinCambios || repreflight.comparacion.estado === "SinCambios"),
+  );
 
   return (
     <section className="cierre-page">
       <PageHead
-        eyebrow="E4.9 · Cierre y fotografía"
+        eyebrow="E4.9 · E4.10 · Cierre, reapertura y re-cierre"
         title="Cierre financiero"
-        description="Cierre manual del ciclo y fotografía inmutable. No crea el ciclo siguiente, no cambia su S0 y no recalcula la foto."
+        description="Cierre manual y fotografía inmutable; reapertura ordinaria del último cierre, rectificación y re-cierre vN+1. No crea el ciclo siguiente, no cambia su S0 y no recalcula la foto."
       >
         <button className="secondary" type="button" onClick={refreshReview}>
           Actualizar revisión
@@ -625,9 +1424,13 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                   <Badge estado={estadoDisplay ?? "Sin estado"} />
                 </dd>
                 <small>
-                  {closed
-                    ? "Ciclo cerrado: solo E4.10 podría habilitar un re-cierre."
-                    : "El cierre no crea el ciclo siguiente ni cambia su S0."}
+                  {reopened
+                    ? "Ciclo reabierto: ventana de rectificación activa; v" +
+                      (originVersion ?? "?") +
+                      " es consultable, no vigente sin advertencia."
+                    : closed
+                      ? "Ciclo cerrado: solo E4.10 podría habilitar un re-cierre."
+                      : "El cierre no crea el ciclo siguiente ni cambia su S0."}
                 </small>
               </div>
               <div className="metric">
@@ -638,9 +1441,15 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                     : "v" + preflight.cierre.version}
                 </dd>
                 <small>
-                  {closed
-                    ? "Fotografía v" + preflight.cierre.fotoVersion + " consultable."
-                    : "La primera fotografía será v1."}
+                  {reopened
+                    ? "Fotografía v" +
+                      preflight.cierre.fotoVersion +
+                      " conservada y consultable; no es la vista viva."
+                    : closed
+                      ? "Fotografía v" +
+                        preflight.cierre.fotoVersion +
+                        " consultable."
+                      : "La primera fotografía será v1."}
                 </small>
               </div>
               <div className="metric">
@@ -812,13 +1621,616 @@ export function Cierre({ go }: { go: (path: string) => void }) {
           </div>
 
           {closed ? (
-            <div className="panel cierre-closed-note" aria-label="Cierre existente">
-              <h2>Ciclo ya cerrado</h2>
-              <p>
-                El cierre ordinario no reabre ni crea una segunda fotografía. Solo
-                E4.10 puede habilitar un re-cierre y queda fuera de E4.9.
+            <section
+              className="panel e410-panel"
+              aria-label="Reapertura y re-cierre del último cierre"
+            >
+              <div className="e410-head">
+                <div>
+                  <p className="eyebrow">E4.10 · REAPERTURA Y RE-CIERRE</p>
+                  <h2>
+                    {reopened
+                      ? "Ciclo reabierto"
+                      : sinCierre
+                        ? "Sin cierre que reabrir"
+                        : "Último cierre y reapertura"}
+                  </h2>
+                </div>
+                <Badge
+                  estado={
+                    reopened
+                      ? `Reabierto · v${originVersion ?? "?"}`
+                      : `Cerrado · última v${originVersion ?? "?"}`
+                  }
+                />
+              </div>
+
+              <p className="muted">
+                {reopened ? (
+                  <>
+                    <strong>Ciclo reabierto</strong>. La ventana de rectificación
+                    está activa; v{originVersion ?? "?"} sigue consultable, pero
+                    no es la versión vigente sin advertencia.
+                  </>
+                ) : (
+                  <>
+                    <strong>Ciclo ya cerrado</strong>. El cierre ordinario no
+                    reabre ni crea una segunda fotografía; solo E4.10 habilita la
+                    vía ordinaria de reapertura y re-cierre.
+                  </>
+                )}
               </p>
-            </div>
+
+              {actionError && (
+                <ActionError failure={actionError} onRefresh={refreshActions} />
+              )}
+
+              {!reopened && !sinCierre && (
+                <>
+                  <p>
+                    Solo el cierre con el <strong>Fin cronológicamente más
+                    reciente</strong> y sin otro ciclo posterior cerrado es
+                    reabrible. DT9 —ciclos antiguos— queda fuera de E4.10.
+                  </p>
+                  {puedeReabrir ? (
+                    <>
+                      <div className="e410-note ok" role="note">
+                        <strong>Último cierre.</strong> v{originVersion} es la
+                        última versión cerrada y no existe un cierre posterior.
+                        La reapertura no crea ni modifica ninguna foto.
+                      </div>
+                      {!reopenOpen ? (
+                        <div className="actions">
+                          <button
+                            className="primary"
+                            type="button"
+                            onClick={openReopen}
+                          >
+                            Reabrir el último cierre
+                          </button>
+                        </div>
+                      ) : (
+                        <div
+                          className="e410-form"
+                          aria-label="Confirmar reapertura"
+                        >
+                          <h3>Confirmar reapertura de v{originVersion}</h3>
+                          <p>
+                            Se abrirá una ventana de rectificación auditada con
+                            actor de sesión y UTC. El motivo de reapertura
+                            («por qué») es independiente del motivo del re-cierre.
+                          </p>
+                          <div className="e410-note warn" role="note">
+                            <strong>Qué cambia y qué no.</strong>
+                            <ul>
+                              <li>
+                                v{originVersion} y su foto quedan{" "}
+                                <strong>intactas</strong>; no se crea una foto
+                                nueva ni se reescribe la existente.
+                              </li>
+                              <li>
+                                Se habilita T1 en Movimientos, Compras y Ventas
+                                dentro de la ventana y del ciclo, con impacto y
+                                auditoría por escritura; T2/T3 conservan sus
+                                guardas.
+                              </li>
+                              <li>
+                                S0, <code>inicio</code>, <code>Fin</code>, otros
+                                ciclos y el cierre posterior siguen bloqueados.
+                              </li>
+                              <li>
+                                El re-cierre crea una versión nueva v
+                                {nextVersion ?? "?"} con el contrato
+                                completo de foto y revalida DT6/E3.5.
+                              </li>
+                            </ul>
+                          </div>
+                          <div className="e410-readonly">
+                            <span>Clave de intento (idempotencia)</span>
+                            <code data-testid="e410-reopen-key">
+                              {reopenKey || "Se generará al confirmar"}
+                            </code>
+                          </div>
+                          <label htmlFor="e410-motivo-reapertura">
+                            Motivo de la reapertura{" "}
+                            <span className="e410-required">obligatorio</span>
+                          </label>
+                          <textarea
+                            id="e410-motivo-reapertura"
+                            rows={3}
+                            maxLength={1000}
+                            value={motivoReapertura}
+                            onChange={(event) => {
+                              const value = event.target.value;
+                              setMotivoReapertura(value);
+                              rotateKey(
+                                reopenAttempt,
+                                setReopenKey,
+                                `${originVersion}|${value.trim()}`,
+                              );
+                            }}
+                            placeholder="Por qué se reabre el último cierre"
+                          />
+                          <p className="muted">
+                            Máximo 1000 caracteres; se guarda con trim, actor y
+                            UTC en la auditoría. No sustituye al fingerprint.
+                          </p>
+                          <div className="actions">
+                            <button
+                              className="secondary"
+                              type="button"
+                              onClick={() => setReopenOpen(false)}
+                            >
+                              Cancelar
+                            </button>
+                            <button
+                              className="primary"
+                              type="button"
+                              onClick={confirmReopen}
+                              disabled={actionBusy === "reabrir"}
+                            >
+                              {actionBusy === "reabrir"
+                                ? "Reabriendo…"
+                                : "Confirmar reapertura"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="e410-note warn" role="note">
+                      <strong>No reabrible.</strong>{" "}
+                      {elegibilidad?.motivo ??
+                        "No se pudo verificar la elegibilidad con el contrato de lectura. Actualiza la revisión antes de intentar reabrir."}
+                      {elegibilidad?.cierrePosterior && (
+                        <p>
+                          Cierre posterior: ciclo{" "}
+                          {elegibilidad.cierrePosterior.ciclo} · v
+                          {elegibilidad.cierrePosterior.version} · Fin{" "}
+                          {date(elegibilidad.cierrePosterior.fin)}. No se
+                          modifica ni se reabre por esta vía.
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {sinCierre && (
+                <div className="e410-note warn" role="note">
+                  <strong>Sin cierre financiero.</strong> La reapertura exige un
+                  cierre previo; el primer cierre corresponde a E4.9 y esta
+                  pantalla no lo inventa.
+                </div>
+              )}
+
+              {reopened && reapertura && (
+                <>
+                  <div className="e410-band" role="status">
+                    <strong>
+                      Ventana de rectificación abierta sobre v{originVersion}
+                    </strong>
+                    <p>
+                      Una sola ventana activa. v{originVersion} es consultable,
+                      pero <strong>no es la versión vigente sin advertencia</strong>.
+                      No se presenta la vista viva como si fuera la foto.
+                    </p>
+                  </div>
+
+                  <dl className="shared-metrics cierre-metrics">
+                    <div className="metric">
+                      <dt>Estado de cierre</dt>
+                      <dd>
+                        <Badge estado={`Reabierto · v${originVersion}`} />
+                      </dd>
+                      <small>Reserva del último cierre; DT9 no habilitado.</small>
+                    </div>
+                    <div className="metric">
+                      <dt>Versión de origen</dt>
+                      <dd>v{originVersion}</dd>
+                      <small>No se crea versión de foto al reabrir.</small>
+                    </div>
+                    <div className="metric">
+                      <dt>Ventana</dt>
+                      <dd>
+                        {date(preflight.ventana.inicio)} →{" "}
+                        {date(preflight.ventana.fin)}
+                      </dd>
+                      <small>S0, inicio y Fin congelados; no se recalculan.</small>
+                    </div>
+                    <div className="metric">
+                      <dt>Reapertura</dt>
+                      <dd>
+                        {reapertura.reapertura
+                          ? utc(reapertura.reapertura.creadoUtc)
+                          : "No disponible"}
+                      </dd>
+                      <small>
+                        Actor {reapertura.reapertura?.actor ?? "No disponible"}.
+                      </small>
+                    </div>
+                    <div className="metric">
+                      <dt>Motivo de reapertura</dt>
+                      <dd>{reapertura.reapertura?.motivo ?? "Sin motivo"}</dd>
+                      <small>
+                        Separado del motivo de re-cierre; máximo 1000 caracteres.
+                      </small>
+                    </div>
+                    <div className="metric">
+                      <dt>Fingerprint de la petición</dt>
+                      <dd>
+                        <code
+                          className="cierre-fingerprint"
+                          title={reapertura.reapertura?.fingerprint}
+                        >
+                          {reapertura.reapertura?.fingerprint ?? "No disponible"}
+                        </code>
+                      </dd>
+                      <small>
+                        Correlación{" "}
+                        {reapertura.reapertura?.correlacion ?? "No disponible"}.
+                      </small>
+                    </div>
+                  </dl>
+
+                  <div className="e410-grid-2">
+                    <div>
+                      <h3>Permitido dentro de la ventana</h3>
+                      <ul className="e410-list">
+                        <li>
+                          T1 en Movimientos, Compras y Ventas dentro del ciclo y
+                          de la ventana, con impacto y auditoría por escritura.
+                        </li>
+                        <li>
+                          T2 con impacto/motivo/auditoría; la foto v
+                          {originVersion} no se altera.
+                        </li>
+                        <li>T3 según su guarda vigente.</li>
+                      </ul>
+                      <p className="muted">
+                        Cada corrección conserva su propia auditoría. Esta vista
+                        muestra el impacto acumulado y la revalidación, no
+                        sustituye la auditoría de la ruta T1/T2.
+                      </p>
+                    </div>
+                    <div>
+                      <h3>Sigue bloqueado</h3>
+                      <ul className="e410-list">
+                        <li>
+                          S0, <code>inicio</code> y <code>Fin</code>: identidad
+                          congelada.
+                        </li>
+                        <li>
+                          Otros ciclos, su S0 y su plan; no se recalculan ni se
+                          «cuadran» automáticamente.
+                        </li>
+                        <li>
+                          Editar o borrar v{originVersion}, su foto o una versión:
+                          inmutable.
+                        </li>
+                        <li>
+                          Abrir una segunda ventana o saltarse el re-cierre.
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="e410-note warn" role="note">
+                    <strong>La fotografía v{originVersion} no es la vista viva.</strong>{" "}
+                    Los cambios de la rectificación se leen en sus pantallas y en
+                    la preparación del re-cierre. La foto persistida no se
+                    recalcula ni se mezcla con el estado vivo.
+                  </div>
+
+                  <div className="actions">
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={() => {
+                        if (originVersion !== null) setPhotoVersion(originVersion);
+                      }}
+                      disabled={originVersion === null}
+                    >
+                      Consultar v{originVersion ?? "?"}
+                    </button>
+                    {originVersion !== null && originVersion > 1 && (
+                      <button
+                        className="secondary"
+                        type="button"
+                        onClick={() => setPhotoVersion(1)}
+                      >
+                        Consultar v1
+                      </button>
+                    )}
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={() => go("/movimientos")}
+                    >
+                      Ir a Movimientos
+                    </button>
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={() => go("/inversiones")}
+                    >
+                      Ir a Compras/Ventas
+                    </button>
+                  </div>
+
+                  <div className="e410-preparation">
+                    <div className="e410-head">
+                      <h3>Preparación del re-cierre</h3>
+                      {repreflight && (
+                        <Badge estado={repreflight.estado} />
+                      )}
+                    </div>
+                    {repreflightLoading && (
+                      <p role="status">Cargando vista previa del re-cierre…</p>
+                    )}
+                    {repreflightError && (
+                      <Alert
+                        retry={() =>
+                          setRepreflightReload((value) => value + 1)
+                        }
+                      >
+                        {repreflightError}
+                      </Alert>
+                    )}
+                    {repreflight && (
+                      <>
+                        <p className="muted">
+                          Preflight de solo lectura. Vínculo con v
+                          {repreflight.origen.versionOrigen} · fingerprint{" "}
+                          <code
+                            className="cierre-fingerprint"
+                            title={repreflight.fingerprint}
+                          >
+                            {repreflight.fingerprint}
+                          </code>{" "}
+                          · App {repreflight.appVersion} · esquema{" "}
+                          {repreflight.schemaVersion}.
+                        </p>
+                        <MaterialComparisonView
+                          comparacion={repreflight.comparacion}
+                        />
+                        <h3>Revalidación de dependencias posteriores</h3>
+                        <p className="muted">
+                          Revalidación de solo lectura: no modifica el S0 ni el
+                          plan de otro ciclo. Una contradicción material bloquea;
+                          un aviso solo se muestra si queda acreditado como no
+                          bloqueante.
+                        </p>
+                        <RevalidacionTable
+                          revalidacion={repreflight.revalidacion}
+                        />
+                        <IssueList
+                          items={repreflight.bloqueos}
+                          kind="bloqueo"
+                          title="Bloqueos del re-cierre"
+                        />
+                        <IssueList
+                          items={repreflight.avisos}
+                          kind="aviso"
+                          title="Avisos del re-cierre"
+                        />
+                        <div className="e410-grid-2">
+                          <div>
+                            <h3>Evidencia de backup DT6/T-BKP</h3>
+                            <p>
+                              <Badge
+                                estado={
+                                  backupAcreditado(repreflight.backup)
+                                    ? "Acreditado"
+                                    : "No acreditado"
+                                }
+                              />
+                            </p>
+                            <p>
+                              {backupAcreditado(repreflight.backup)
+                                ? "Manifiesto, checksum, clave y restauración probada."
+                                : repreflight.backup.motivo ??
+                                  "Falta evidencia DT6/T-BKP para el cierre real."}
+                            </p>
+                            <p className="muted">
+                              Referencia:{" "}
+                              {repreflight.backup.referencia ?? "No disponible"}
+                            </p>
+                          </div>
+                          <div>
+                            <h3>Plan y cobertura</h3>
+                            <p>
+                              Plan: <Badge estado={repreflight.plan.estado} /> ·{" "}
+                              {repreflight.plan.lineas} línea(s). Cobertura:{" "}
+                              {repreflight.cobertura.estado}.
+                            </p>
+                            <p className="muted">
+                              Un plan <code>SinPlan</code> es válido y se captura
+                              como tal; no se inventan líneas. Un auxiliar ausente
+                              se declara «No disponible» con motivo.
+                            </p>
+                          </div>
+                        </div>
+
+                        {repreflightBlocked ? (
+                          <div className="e410-note danger" role="alert">
+                            <strong>Re-cierre bloqueado.</strong> No se ofrece
+                            «re-cerrar igualmente» ni una foto parcial. Corrige la
+                            causa o actualiza la revisión; el ciclo permanece
+                            Reabierto(v{originVersion}).
+                          </div>
+                        ) : repreflightSinCambios ? (
+                          <div className="e410-note warn" role="note">
+                            <strong>SIN_CAMBIOS.</strong> No se crea una foto
+                            nueva. Si la ausencia de cambios materiales está
+                            acreditada, usa la cancelación D8; no basta la
+                            igualdad de importes o totales.
+                          </div>
+                        ) : (
+                          <div
+                            className="e410-form"
+                            aria-label="Confirmar re-cierre"
+                          >
+                            <h3>
+                              Confirmar re-cierre v{nextVersion ?? "?"}
+                            </h3>
+                            <p>
+                              Se escribirán el cierre v
+                              {nextVersion ?? "?"}, la foto completa, el
+                              vínculo v{originVersion} → v
+                              {nextVersion ?? "?"}, la auditoría y el
+                              intento en una transacción única. Un fallo deja
+                              rollback total y el ciclo sigue Reabierto(v
+                              {originVersion}).
+                            </p>
+                            <div className="e410-readonly">
+                              <span>Fingerprint del preflight</span>
+                              <code
+                                className="cierre-fingerprint"
+                                title={repreflight.fingerprint}
+                              >
+                                {repreflight.fingerprint}
+                              </code>
+                            </div>
+                            <div className="e410-readonly">
+                              <span>Clave de intento (idempotencia)</span>
+                              <code data-testid="e410-recierre-key">
+                                {recierreKey || "Se generará al confirmar"}
+                              </code>
+                            </div>
+                            <label htmlFor="e410-motivo-recierre">
+                              Motivo del re-cierre{" "}
+                              <span className="e410-required">obligatorio</span>
+                            </label>
+                            <textarea
+                              id="e410-motivo-recierre"
+                              rows={3}
+                              maxLength={1000}
+                              value={motivoRecierre}
+                              onChange={(event) => {
+                                const value = event.target.value;
+                                setMotivoRecierre(value);
+                                rotateKey(
+                                  recierreAttempt,
+                                  setRecierreKey,
+                                  `${originVersion}|${repreflight.fingerprint}|${value.trim()}`,
+                                );
+                              }}
+                              placeholder="Qué se rectificó y por qué"
+                            />
+                            <p className="muted">
+                              Motivo separado del de reapertura; máximo 1000
+                              caracteres. El fingerprint de la vista previa debe
+                              seguir vigente.
+                            </p>
+                            <div className="actions">
+                              <button
+                                className="primary"
+                                type="button"
+                                onClick={confirmRecierre}
+                                disabled={actionBusy === "recerrar"}
+                              >
+                                {actionBusy === "recerrar"
+                                  ? "Re-cerrando…"
+                                  : `Confirmar re-cierre v${nextVersion ?? "?"}`}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div className="e410-cancel">
+                    <h3>Cancelar la reapertura (D8)</h3>
+                    <p>
+                      Solo se admite sin cambios materiales acreditados desde la
+                      reapertura. No basta la igualdad de importes: se comparan
+                      hechos, relaciones, clasificación, plan y componentes. Ante
+                      incertidumbre se bloquea.
+                    </p>
+                    {repreflight &&
+                    repreflight.comparacion.estado !== "SinCambios" ? (
+                      <p className="muted">
+                        La comparación actual es{" "}
+                        <Badge estado={repreflight.comparacion.estado} />. No se
+                        ofrece la cancelación sin foto: usa el re-cierre v
+                        {nextVersion ?? "?"} si hay cambios materiales.
+                      </p>
+                    ) : !cancelOpen ? (
+                      <div className="actions">
+                        <button
+                          className="secondary"
+                          type="button"
+                          onClick={() => {
+                            setActionError(null);
+                            setCancelOpen(true);
+                            const key = crypto.randomUUID();
+                            cancelAttempt.current = {
+                              key,
+                              signature:
+                                originVersion + "|" + motivoCancelacion.trim(),
+                            };
+                            setCancelKey(key);
+                          }}
+                          disabled={!repreflight}
+                        >
+                          Cancelar reapertura sin foto
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="e410-form" aria-label="Cancelar reapertura">
+                        <div className="e410-readonly">
+                          <span>Clave de intento (idempotencia)</span>
+                          <code data-testid="e410-cancel-key">
+                            {cancelKey || "Se generará al confirmar"}
+                          </code>
+                        </div>
+                        <label htmlFor="e410-motivo-cancelacion">
+                          Motivo de la cancelación{" "}
+                          <span className="e410-required">obligatorio</span>
+                        </label>
+                        <textarea
+                          id="e410-motivo-cancelacion"
+                          rows={3}
+                          maxLength={1000}
+                          value={motivoCancelacion}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setMotivoCancelacion(value);
+                            rotateKey(
+                              cancelAttempt,
+                              setCancelKey,
+                              `${originVersion}|${value.trim()}`,
+                            );
+                          }}
+                          placeholder="Por qué no hay cambios materiales"
+                        />
+                        <div className="actions">
+                          <button
+                            className="secondary"
+                            type="button"
+                            onClick={() => setCancelOpen(false)}
+                          >
+                            Volver
+                          </button>
+                          <button
+                            className="primary"
+                            type="button"
+                            onClick={confirmCancel}
+                            disabled={actionBusy === "cancelar"}
+                          >
+                            {actionBusy === "cancelar"
+                              ? "Cancelando…"
+                              : "Confirmar cancelación sin foto"}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </section>
           ) : (
             <>
               <IssueList items={preflight.bloqueos} kind="bloqueo" />
@@ -981,8 +2393,25 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                         Fotografía v{photo.foto.version}
                       </h2>
                     </div>
-                    <Badge estado={"Cerrado · v" + photo.foto.version} />
+                    <Badge
+                      estado={
+                        reopened
+                          ? "Reabierto · foto v" +
+                            photo.foto.version +
+                            " no vigente"
+                          : "Cerrado · v" + photo.foto.version
+                      }
+                    />
                   </div>
+                  {reopened && (
+                    <div className="e410-note warn" role="note">
+                      <strong>Foto consultable, no vigente sin advertencia.</strong>{" "}
+                      El ciclo está reabierto sobre v{photo.foto.version}. Esta
+                      fotografía conserva los valores persistidos del último
+                      cierre; no incluye las correcciones de la ventana y no se
+                      presenta como vista viva.
+                    </div>
+                  )}
                   <div className="cierre-immutable" role="note">
                     <strong>Registro inmutable.</strong> Fingerprint propio{" "}
                     <code className="cierre-fingerprint" title={photo.foto.fingerprint}>
@@ -994,7 +2423,7 @@ export function Cierre({ go }: { go: (path: string) => void }) {
 
                   {versionCount > 1 && (
                     <label htmlFor="cierre-version">
-                      Versión de la fotografía
+                      Versión de la fotografía (persistida)
                       <select
                         id="cierre-version"
                         value={photo.foto.version}
@@ -1018,6 +2447,8 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                       <dt>Identidad</dt>
                       <dd>Ciclo {photo.foto.ciclo} · v{photo.foto.version}</dd>
                       <small>
+                        Seleccionada v{photo.foto.version} · última cerrada v
+                        {preflight.cierre.version ?? photo.foto.version} ·{" "}
                         {utc(photo.foto.creadoUtc)} · actor {photo.foto.actor}
                       </small>
                     </div>
@@ -1166,6 +2597,63 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                 !photoLoading && (
                   <p className="muted">La fotografía no se pudo cargar.</p>
                 )
+              )}
+            </>
+          )}
+
+          {recierreResult && (
+            <>
+              {previousPhoto ? (
+                <PhotoComparison
+                  before={previousPhoto}
+                  after={recierreResult}
+                  comparacion={recierreResult.comparacion}
+                  correlacion={recierreResult.vinculo.correlacion}
+                  onVersion={setPhotoVersion}
+                />
+              ) : (
+                <section
+                  className="panel e410-result"
+                  aria-label="Resultado del re-cierre"
+                >
+                  <div className="e410-head">
+                    <div>
+                      <p className="eyebrow">E4.10 · RE-CIERRE</p>
+                      <h2>
+                        Fotografía v{recierreResult.foto.version} creada
+                      </h2>
+                    </div>
+                    <Badge
+                      estado={`Cerrado · v${recierreResult.foto.version}`}
+                    />
+                  </div>
+                  <p>
+                    v{recierreResult.vinculo.versionOrigen} se conserva intacta.
+                    No se pudo cargar la fotografía anterior para la comparación
+                    lado a lado; no se sustituye por una vista viva ni por totales
+                    provisionales.
+                  </p>
+                  <div className="actions">
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={() =>
+                        setPhotoVersion(recierreResult.vinculo.versionOrigen)
+                      }
+                    >
+                      Consultar v{recierreResult.vinculo.versionOrigen}
+                    </button>
+                    <button
+                      className="secondary"
+                      type="button"
+                      onClick={() =>
+                        setPhotoVersion(recierreResult.foto.version)
+                      }
+                    >
+                      Consultar v{recierreResult.foto.version}
+                    </button>
+                  </div>
+                </section>
               )}
             </>
           )}

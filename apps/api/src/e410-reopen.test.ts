@@ -748,11 +748,14 @@ test("E4.10 I2 API: exige sesión, MFA, CSRF/Origin e idempotencia", async () =>
     expect(estado.data).toHaveProperty("bloqueos");
     expect(estado.data.cierre.estado).toBe("Cerrado");
     expect(estado.data.cierre.version).toBe(1);
-    expect(estado.data.reapertura).toEqual({
+    expect(estado.data.reapertura).toMatchObject({
       ciclo: "1",
       estado: "Reabierto",
       version: 1,
       reapertura: opened.data.reapertura,
+    });
+    expect(estado.data.reapertura.elegibilidad).toMatchObject({
+      puedeReabrir: false,
     });
 
     const getOnPost = await f.request("/api/cierres/1/reabrir");
