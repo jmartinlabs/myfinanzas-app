@@ -12,12 +12,12 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
-| E4.10 | approved (SPEC28 ratificada 2026-11-05) | in progress (I1–I5 merged; I6 #246 ready) | in progress (I6 APTO) | not-ready | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`; 24 AC UNRUN; I6 solo pruebas, CI PASS; merge de #246 pendiente de autorización |
-| E4.11 | approved (SPEC29 merged `6fe91d7`, 2026-11-06) | not-ready (paquete #245) | APTO CON RESERVAS (documental) | not-ready | pending | P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D, P8a-A, P8b-A; 15 AC UNRUN; paquete DEV en #245; DEV no autorizado |
+| E4.10 | approved (SPEC28 ratificada 2026-11-05) | in progress (I1–I6 merged; I7 en curso) | in progress (I6 APTO) | merged I6 `eca4e23` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI en curso; 24 AC UNRUN |
+| E4.11 | approved (SPEC29 merged `6fe91d7`, 2026-11-06) | in progress (DEV autorizado; I1 en curso) | APTO CON RESERVAS (documental) | not-ready | pending | P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D, P8a-A, P8b-A; 15 AC UNRUN; paquete #245; I1 lectura en curso; sin migración real |
 | E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
 | INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
 | DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | passed (docs) | PR-open | pending | QA APTO; CI `required` PASS en PR #233; sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
-| UI | draft (análisis #205; SPEC sin ratificar) | DEV-01/02/03 merged (`464c506`, `025adf8`, `d7eaffb`) | APTO CON RESERVAS (DEV-03) | merged DEV-03 | pending | 23 enlaces y 4 grupos; activo no cromático; móvil/teclado; 3 temas y 390/1440; paquete DEV-04 en #245; DEV-04 no iniciado |
+| UI | draft (análisis #205; SPEC sin ratificar) | DEV-01/02/03 merged; DEV-04 autorizado (I1 en curso) | APTO CON RESERVAS (DEV-03) | merged DEV-03 | pending | DEV-03 `d7eaffb`: 23 enlaces, 4 grupos, activo no cromático, móvil/teclado, 3 temas; DEV-04 paquete #245, I1 primitivas en curso |
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 
