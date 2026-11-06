@@ -2656,10 +2656,13 @@ textarea {
 .debt-list .table-id {
   margin-top: 6px;
 }
-.debt-list .debt-open,
-.debt-cards .debt-open {
+.debt-list .debt-open {
   min-height: 0;
   padding: 2px 0;
+  font-size: var(--text-xs);
+}
+.debt-cards .debt-open {
+  min-height: var(--touch-min);
   font-size: var(--text-xs);
 }
 .e44-varias {

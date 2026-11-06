@@ -309,6 +309,18 @@ test("DataList usa cardCell solo en la tarjeta y conserva la tabla", () => {
   expect(cards).toContain("Tarjeta Cuenta principal");
 });
 
+test("La acción Ver ficha mantiene 44 px en la tarjeta de Deudas", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  expect(css).toMatch(/\.debt-list \.debt-open \{[^}]*min-height: 0;/);
+  const cardRule =
+    css.match(/\.debt-cards \.debt-open \{([^}]*)\}/)?.[1] ?? "";
+  expect(cardRule).toContain("min-height: var(--touch-min)");
+  expect(cardRule).not.toContain("padding: 2px 0");
+});
+
 test("TableScroll conserva el contrato de región enfocable", () => {
   const html = renderToStaticMarkup(
     <TableScroll label="Detalle">
