@@ -5269,5 +5269,106 @@ textarea {
   .e410-diff,
   .e410-action-error {
     padding: 10px 12px;
+
+/* UI · DEV-04 — tablas y listados
+ * Contrato compartido de `Table`/`DataList` sobre `TableScroll`: cabecera y
+ * hover por token, importes alineados y tarjetas con las mismas columnas.
+ * Sección aditiva: solo consume tokens existentes, sin colores literales,
+ * sin reordenar reglas previas y sin tocar paletas ni temas.
+ */
+.ui-table-wrap {
+  width: 100%;
+  min-width: 0;
+}
+.ui-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+.ui-table-caption {
+  margin: 0 0 var(--space-2);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  text-align: left;
+}
+.ui-table th {
+  background: var(--table-head);
+  padding: var(--space-3);
+  border-bottom: 1px solid var(--border);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 700;
+  vertical-align: bottom;
+}
+.ui-table td {
+  padding: var(--space-3);
+  border-top: 1px solid var(--surface-2);
+  font-size: var(--text-sm);
+  vertical-align: middle;
+  overflow-wrap: anywhere;
+}
+.ui-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.ui-table-amount {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ui-table-empty {
+  color: var(--muted);
+  text-align: center;
+}
+.ui-data-list {
+  display: none;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ui-data-list-item {
+  min-width: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+.ui-data-list-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-top: 1px solid var(--surface-2);
+}
+.ui-data-list-field:first-child {
+  border-top: 0;
+}
+.ui-data-list-label {
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.ui-data-list-value {
+  min-width: 0;
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+.ui-data-list-field[data-kind="amount"] .ui-data-list-value {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ui-data-list-field[data-kind="status"] .ui-data-list-value {
+  justify-self: end;
+}
+.ui-data-list-field[data-kind="actions"] {
+  grid-template-columns: minmax(0, 1fr);
+}
+.ui-data-list-empty {
+  color: var(--muted);
+  list-style: none;
+}
+@media (max-width: 760px) {
+  .ui-data-list {
+    display: grid;
   }
 }
