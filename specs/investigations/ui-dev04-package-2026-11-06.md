@@ -1,8 +1,8 @@
 # UI · DEV-04 — Tablas y listados: paquete de propuesta
 
-**Estado:** `[PROPUESTA]` — para autorización. **No implementa código, no inicia `DEV-04` y no
-declara PASS.** Base verificada: `d7eaffb` (`main` con `UI · DEV-01`, `DEV-02` y `DEV-03`
-integrados). Fecha: 2026-11-06.
+**Estado:** **DEV-04 AUTORIZADO el 2026-11-06**; I1 en ejecución. No declara PASS.
+Base verificada: `eca4e23` (`main` con `UI · DEV-01`, `DEV-02` y `DEV-03` integrados, más
+E4.10 I1–I6 y el manifiesto 25→26). Fecha: 2026-11-06.
 
 - **Spec propietaria:** [ui-specification.md](../ui-specification.md), bloque `DEV-04` (§4) y
   criterios transversales (§1, §6).
