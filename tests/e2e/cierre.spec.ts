@@ -982,7 +982,7 @@ test("E4.10 UI: SIN_CAMBIOS no crea foto y permite cancelar la reapertura (D8)",
     ).toBeVisible();
     await expect(page.getByText("SinCambios", { exact: true }).first()).toBeVisible();
     await expect(
-      page.getByText(/SIN_CAMBIOS\. No se crea una foto nueva/),
+      page.getByText(/SIN_CAMBIOS: no se crea una foto nueva/),
     ).toBeVisible();
     await expect(
       page.getByRole("button", { name: /Confirmar re-cierre v2/ }),
