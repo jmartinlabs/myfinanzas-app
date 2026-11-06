@@ -1,0 +1,2605 @@
+<!doctype html>
+<html lang="es" data-theme="light-s">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f7f5f1">
+<title>UI · SPEC — evolución visual (aprobada) · MyFinanzas</title>
+<style>
+/* ============================================================
+   Tokens semánticos vigentes · copia literal de
+   apps/web/public/themes.css (base main 043869f).
+   Temas Dark/Light/Hybrid cerrados (#198): esta SPEC no redefine colores.
+   Los componentes de esta SPEC solo consumen estas variables.
+   ============================================================ */
+html { background: var(--bg); color: var(--text); }
+:root,
+:root[data-theme="dark-s"] {
+  color-scheme: dark;
+  --bg: #141414;
+  --surface: #202020;
+  --surface-2: #262626;
+  --surface-3: #1a1a1a;
+  --sidebar: #101010;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #b9b2a7;
+  --sidebar-border: #2e2e2e;
+  --sidebar-hover: #262626;
+  --sidebar-active-bg: #1e6f7a;
+  --sidebar-active-text: #f7f5f1;
+  --sidebar-focus: #57b2ba;
+  --brand-accent: #57b2ba;
+  --text: #f7f5f1;
+  --muted: #b9b2a7;
+  --border: #3a3a3a;
+  --control-border: #6f6f6f;
+  --action: #e4572e;
+  --on-action: #141414;
+  --action-hover: #f06a45;
+  --on-action-hover: #141414;
+  --action-active: #c94520;
+  --on-action-active: #ffffff;
+  --action-soft: #3a241d;
+  --action-soft-border: #6a3a2a;
+  --accent: #57b2ba;
+  --on-accent: #141414;
+  --accent-soft: #243436;
+  --accent-border: #3e6468;
+  --focus: #57b2ba;
+  --positive: #57b2ba;
+  --positive-soft: #1e3234;
+  --positive-border: #3e6468;
+  --negative: #ff8a7a;
+  --negative-soft: #3a2220;
+  --negative-border: #6e3a32;
+  --warning: #f2c14e;
+  --warning-soft: #3a2f18;
+  --warning-border: #6e5a2e;
+  --error: #ff7b72;
+  --error-soft: #3a2020;
+  --error-border: #6e3535;
+  --ok: #57b2ba;
+  --row-hover: #262626;
+  --selected: #243436;
+  --disabled-bg: #262626;
+  --disabled-text: #6f6f6f;
+  --shadow-1: rgb(0 0 0 / 0.35);
+  --shadow-2: rgb(0 0 0 / 0.45);
+  --strong-surface: #101010;
+  --on-strong: #f7f5f1;
+  --muted-on-strong: #b9b2a7;
+  --strong-border: #2e2e2e;
+  --chart-1: #57b2ba;
+  --chart-2: #b9b2a7;
+  --chart-3: #6f6f6f;
+  --chart-4: #f7f5f1;
+  --chart-strong: #f7f5f1;
+  --chart-accent: #e4572e;
+  --header-bg: #202020;
+  --footer-bg: #141414;
+  --input-bg: #202020;
+  --table-head: #262626;
+  --chip-bg: #202020;
+  --chip-border: #3a3a3a;
+  --chip-text: #f7f5f1;
+}
+:root[data-theme="light-s"] {
+  color-scheme: light;
+  --bg: #f7f5f1;
+  --surface: #ffffff;
+  --surface-2: #ece9e2;
+  --surface-3: #f2f0eb;
+  --sidebar: #ece9e2;
+  --sidebar-text: #1f1f1f;
+  --sidebar-muted: #5f5b55;
+  --sidebar-border: #d8d2c7;
+  --sidebar-hover: #e3ded5;
+  --sidebar-active-bg: #dceae7;
+  --sidebar-active-text: #1f1f1f;
+  --sidebar-focus: #1e6f7a;
+  --brand-accent: #1e6f7a;
+  --text: #1f1f1f;
+  --muted: #5f5b55;
+  --border: #d8d2c7;
+  --control-border: #8c857a;
+  --action: #e4572e;
+  --on-action: #141414;
+  --action-hover: #f06a45;
+  --on-action-hover: #141414;
+  --action-active: #c94520;
+  --on-action-active: #ffffff;
+  --action-soft: #fbece6;
+  --action-soft-border: #f3c6b8;
+  --accent: #1e6f7a;
+  --on-accent: #ffffff;
+  --accent-soft: #dceae7;
+  --accent-border: #b7d4d1;
+  --focus: #1e6f7a;
+  --positive: #1e6f7a;
+  --positive-soft: #e6f1f1;
+  --positive-border: #b7d4d1;
+  --negative: #a33a2a;
+  --negative-soft: #f9e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff4d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+  --ok: #1e6f7a;
+  --row-hover: #ece9e2;
+  --selected: #dceae7;
+  --disabled-bg: #ece9e2;
+  --disabled-text: #8c857a;
+  --shadow-1: rgb(31 31 31 / 0.08);
+  --shadow-2: rgb(31 31 31 / 0.06);
+  --strong-surface: #1f1f1f;
+  --on-strong: #f7f5f1;
+  --muted-on-strong: #b9b2a7;
+  --strong-border: #1f1f1f;
+  --chart-1: #1e6f7a;
+  --chart-2: #b9b2a7;
+  --chart-3: #8c857a;
+  --chart-4: #1f1f1f;
+  --chart-strong: #1f1f1f;
+  --chart-accent: #e4572e;
+  --header-bg: #ffffff;
+  --footer-bg: #f7f5f1;
+  --input-bg: #ffffff;
+  --table-head: #ece9e2;
+  --chip-bg: #ffffff;
+  --chip-border: #d8d2c7;
+  --chip-text: #1f1f1f;
+}
+:root[data-theme="hybrid-s"] {
+  color-scheme: light;
+  --bg: #f7f5f1;
+  --surface: #fffcf7;
+  --surface-2: #ece9e2;
+  --surface-3: #f2f0eb;
+  --sidebar: #1f1f1f;
+  --sidebar-text: #f7f5f1;
+  --sidebar-muted: #b9b2a7;
+  --sidebar-border: rgb(247 245 241 / 0.14);
+  --sidebar-hover: #2a2a2a;
+  --sidebar-active-bg: #1e6f7a;
+  --sidebar-active-text: #f7f5f1;
+  --sidebar-focus: #57b2ba;
+  --brand-accent: #e4572e;
+  --text: #1f1f1f;
+  --muted: #5f5b55;
+  --border: rgb(31 31 31 / 0.16);
+  --control-border: #8c857a;
+  --action: #e4572e;
+  --on-action: #141414;
+  --action-hover: #f06a45;
+  --on-action-hover: #141414;
+  --action-active: #c94520;
+  --on-action-active: #ffffff;
+  --action-soft: #fbece6;
+  --action-soft-border: #f3c6b8;
+  --accent: #1e6f7a;
+  --on-accent: #ffffff;
+  --accent-soft: #dceae7;
+  --accent-border: #b7d4d1;
+  --focus: #1e6f7a;
+  --positive: #1e6f7a;
+  --positive-soft: #e6f1f1;
+  --positive-border: #b7d4d1;
+  --negative: #a33a2a;
+  --negative-soft: #f9e9e6;
+  --negative-border: #e3b7ae;
+  --warning: #8a5a00;
+  --warning-soft: #fff4d6;
+  --warning-border: #e8c97a;
+  --error: #9b2c2c;
+  --error-soft: #fbeaea;
+  --error-border: #e3b5b5;
+  --ok: #1e6f7a;
+  --row-hover: #ece9e2;
+  --selected: #dceae7;
+  --disabled-bg: #ece9e2;
+  --disabled-text: #8c857a;
+  --shadow-1: rgb(31 31 31 / 0.08);
+  --shadow-2: rgb(31 31 31 / 0.06);
+  --strong-surface: #1f1f1f;
+  --on-strong: #f7f5f1;
+  --muted-on-strong: #b9b2a7;
+  --strong-border: #1f1f1f;
+  --chart-1: #1e6f7a;
+  --chart-2: #b9b2a7;
+  --chart-3: #8c857a;
+  --chart-4: #1f1f1f;
+  --chart-strong: #f7f5f1;
+  --chart-accent: #e4572e;
+  --header-bg: #fffcf7;
+  --footer-bg: #f7f5f1;
+  --input-bg: #fffcf7;
+  --table-head: #ece9e2;
+  --chip-bg: #fffcf7;
+  --chip-border: #d8d2c7;
+  --chip-text: #1f1f1f;
+}
+
+/* ============================================================
+   Documento
+   ============================================================ */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+::selection { background: var(--accent-soft); color: var(--text); }
+a { color: var(--accent); text-underline-offset: 3px; }
+h1, h2, h3, h4, p { margin-top: 0; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+svg { display: block; }
+.icon { width: 18px; height: 18px; flex: none; }
+:where(button, a, input, select, summary):focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+.skip {
+  position: absolute; left: 12px; top: -60px; z-index: 100;
+  background: var(--strong-surface); color: var(--on-strong);
+  padding: 10px 14px; border-radius: 8px; font-weight: 700; text-decoration: none;
+}
+.skip:focus { top: 12px; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+.muted { color: var(--muted); }
+.eyebrow {
+  font-size: 10px; line-height: 1.4; font-weight: 760;
+  letter-spacing: .14em; text-transform: uppercase;
+  color: var(--accent); margin: 0 0 8px;
+}
+
+/* Barra de documento + selector de tema */
+.doc-top {
+  position: sticky; top: 0; z-index: 60;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--bg) 90%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+.doc-top-in {
+  max-width: 1520px; margin: 0 auto;
+  padding: 10px clamp(14px, 2.4vw, 32px);
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 14px; flex-wrap: wrap;
+}
+.doc-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.logo {
+  position: relative; width: 28px; height: 28px; flex: none;
+  display: grid; place-items: center;
+  border-radius: 8px; background: var(--strong-surface); color: var(--on-strong);
+  font-size: 13px; font-weight: 800; letter-spacing: -.04em;
+}
+.logo::after {
+  content: ""; position: absolute; right: -3px; bottom: -3px;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--chart-accent); border: 2px solid var(--bg);
+}
+.doc-brand-copy { min-width: 0; }
+.doc-brand-copy strong { display: block; font-size: 12px; line-height: 1.25; letter-spacing: -.01em; }
+.doc-brand-copy small { display: block; font-size: 9px; color: var(--muted); letter-spacing: .09em; text-transform: uppercase; margin-top: 1px; }
+.theme-switch { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; }
+.theme-switch .lbl {
+  font-size: 9px; font-weight: 750; letter-spacing: .13em;
+  text-transform: uppercase; color: var(--muted);
+}
+.seg {
+  display: flex; gap: 2px; padding: 3px;
+  background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px;
+}
+.seg button {
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 28px; padding: 4px 10px;
+  border: 1px solid transparent; border-radius: 999px;
+  background: transparent; color: var(--muted);
+  font-size: 10.5px; font-weight: 650; line-height: 1;
+}
+.seg button[aria-pressed="true"] {
+  background: var(--surface); color: var(--text);
+  border-color: var(--border);
+  box-shadow: 0 1px 2px var(--shadow-1);
+}
+.seg .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.sw-light { background: #f7f5f1; border: 1px solid #8c857a; }
+.sw-dark { background: #202020; border: 1px solid #6f6f6f; }
+.sw-hybrid { background: linear-gradient(90deg, #1f1f1f 50%, #fffcf7 50%); border: 1px solid #8c857a; }
+.theme-live { font-size: 9.5px; color: var(--muted); min-width: 52px; }
+
+.doc { max-width: 1520px; margin: 0 auto; padding: 0 clamp(14px, 2.4vw, 32px) 56px; }
+
+/* Portada */
+.cover {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .72fr);
+  gap: clamp(26px, 4vw, 56px);
+  padding: clamp(34px, 5vw, 66px) 0 clamp(26px, 3vw, 40px);
+  border-bottom: 1px solid var(--border);
+}
+.cover-main { min-width: 0; }
+.doc-title {
+  font-size: clamp(31px, 4.4vw, 54px);
+  line-height: 1.02; letter-spacing: -.045em; font-weight: 760;
+  margin: 0 0 18px; text-wrap: balance; max-width: 18ch;
+}
+.doc-sub {
+  font-size: clamp(13px, 1.4vw, 15.5px); line-height: 1.6;
+  color: var(--muted); max-width: 60ch; margin: 0 0 22px;
+}
+.warn {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 13px 15px; margin: 0 0 20px;
+  border: 1px solid var(--warning-border); border-radius: 10px;
+  background: var(--warning-soft); color: var(--warning);
+  font-size: 12.5px; line-height: 1.5;
+}
+.warn strong { display: block; font-size: 13px; font-weight: 820; letter-spacing: .01em; }
+.warn .icon { width: 19px; height: 19px; margin-top: 1px; }
+.fact-strip { display: flex; flex-wrap: wrap; gap: 7px; }
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 9px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--muted); font-size: 10px; font-weight: 650; letter-spacing: .01em;
+}
+.pill.accent { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+.pill.action { border-color: var(--action-soft-border); background: var(--action-soft); color: var(--action); }
+.cover-side { min-width: 0; }
+.meta-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; padding: 17px 18px;
+  box-shadow: 0 1px 2px var(--shadow-2);
+}
+.meta-card h2 { font-size: 11px; letter-spacing: .11em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.meta-card dl { margin: 0; display: grid; gap: 9px; }
+.meta-card dl > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.meta-card dt { font-size: 8.5px; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.meta-card dd { margin: 0; font-size: 11px; font-weight: 600; line-height: 1.45; overflow-wrap: anywhere; }
+.meta-card dd code { font-size: 10px; color: var(--accent); }
+
+.legend {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 7px;
+  padding: 14px 0 0; border-top: 1px solid var(--border);
+}
+.legend .cap { font-size: 9px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+.legend-sep { width: 1px; height: 18px; background: var(--border); margin: 0 3px; }
+.read-note { margin: 12px 0 0; font-size: 10.5px; line-height: 1.55; color: var(--muted); max-width: 72ch; }
+.read-note b { color: var(--text); font-weight: 700; }
+
+.index { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 18px; }
+.index a {
+  display: flex; gap: 12px; align-items: flex-start;
+  padding: 12px 13px; border: 1px solid var(--border); border-radius: 11px;
+  background: var(--surface); color: var(--text); text-decoration: none;
+  transition: border-color .15s ease, background .15s ease, transform .15s ease;
+}
+.index a:hover { border-color: var(--accent-border); background: var(--surface-3); transform: translateY(-1px); }
+.index .n { font-size: 9px; font-weight: 800; color: var(--accent); padding-top: 2px; letter-spacing: .06em; }
+.index strong { display: block; font-size: 11.5px; line-height: 1.3; }
+.index small { display: block; font-size: 9.5px; color: var(--muted); line-height: 1.45; margin-top: 3px; }
+
+/* Capítulos */
+.chapter { padding-top: clamp(34px, 4.2vw, 58px); scroll-margin-top: 86px; }
+.chapter-head {
+  display: grid; grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 16px; align-items: start; margin-bottom: 16px;
+}
+.chapter-num {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: grid; place-items: center;
+  border: 1px solid var(--accent-border); background: var(--accent-soft);
+  color: var(--accent); font-size: 11px; font-weight: 820;
+}
+.chapter h2 {
+  font-size: clamp(20px, 2.3vw, 29px); line-height: 1.15;
+  letter-spacing: -.025em; font-weight: 730; margin: 0 0 6px;
+}
+.chapter-lead { color: var(--muted); font-size: 12.5px; line-height: 1.6; max-width: 82ch; margin: 0; }
+.chapter-tags { display: flex; flex-wrap: wrap; gap: 5px; justify-content: flex-end; max-width: 300px; }
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 8px; border-radius: 999px;
+  border: 1px solid var(--border); background: var(--surface);
+  color: var(--muted); font-size: 8.5px; font-weight: 750;
+  letter-spacing: .075em; text-transform: uppercase; white-space: nowrap;
+}
+.tag.accent { border-color: var(--accent-border); background: var(--accent-soft); color: var(--accent); }
+
+/* Marco de pantalla */
+.viewport {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+  box-shadow: 0 2px 4px var(--shadow-2), 0 36px 80px -46px var(--shadow-1);
+  overflow: hidden;
+}
+.frame-bar {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 9px 14px; background: var(--surface-2); border-bottom: 1px solid var(--border);
+  font-size: 8.5px; font-weight: 750; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); flex-wrap: wrap;
+}
+.frame-bar .fb-left, .frame-bar .fb-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.frame-bar .dot3 { display: flex; gap: 4px; margin-right: 3px; }
+.frame-bar .dot3 i { width: 6px; height: 6px; border-radius: 50%; background: var(--border); display: block; }
+.frame-bar .live { color: var(--accent); }
+
+/* Notas de diseño */
+.notes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 14px; }
+.note-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  padding: 11px 13px; border-left: 3px solid var(--accent);
+}
+.note-card h4 {
+  margin: 0 0 4px; font-size: 8.5px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--accent);
+  display: flex; align-items: center; gap: 6px;
+}
+.note-card p { margin: 0; font-size: 10.5px; line-height: 1.55; color: var(--muted); }
+.note-card strong { color: var(--text); font-weight: 680; }
+.marker {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 22px; height: 16px; padding: 0 5px;
+  border: 1px dashed var(--accent-border); border-radius: 4px;
+  background: var(--accent-soft); color: var(--accent);
+  font-size: 8px; font-weight: 820; letter-spacing: .04em; line-height: 1;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   Wireframe · estados y piezas compartidas
+   ============================================================ */
+.st {
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 6px; border-radius: 999px; border: 1px solid transparent;
+  font-size: 9.5px; line-height: 1.5; font-weight: 820; letter-spacing: .055em;
+  white-space: nowrap; text-transform: uppercase;
+}
+.st .ic { width: 9px; height: 9px; }
+.st-ok { background: var(--positive-soft); border-color: var(--positive-border); color: var(--positive); }
+.st-partial { background: var(--warning-soft); border-color: var(--warning-border); color: var(--warning); }
+.st-nd { background: var(--surface-2); border-color: var(--border); color: var(--muted); border-style: dashed; }
+.st-zero { background: transparent; border-color: var(--accent-border); color: var(--accent); }
+.st-zero .zi {
+  width: 9px; height: 9px; border: 1px solid currentColor; border-radius: 50%;
+  display: inline-grid; place-items: center; font-size: 6px; font-weight: 800; line-height: 1;
+}
+.st-neutral { background: var(--surface-2); border-color: var(--border); color: var(--muted); }
+.st-state { background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent); }
+
+.w-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 36px; padding: 6px 11px; border-radius: 8px;
+  border: 1px solid transparent; font-size: 12px; font-weight: 700;
+  line-height: 1.2; white-space: nowrap;
+}
+.w-btn .icon { width: 14px; height: 14px; }
+.w-btn-primary { background: var(--action); border-color: var(--action); color: var(--on-action); }
+.w-btn-primary:hover { background: var(--action-hover); border-color: var(--action-hover); color: var(--on-action-hover); }
+.w-btn-secondary { background: var(--surface); border-color: var(--control-border); color: var(--text); }
+.w-btn-secondary:hover { background: var(--surface-3); }
+.w-btn-ghost { background: transparent; border-color: transparent; color: var(--muted); }
+.w-btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+.w-iconbtn {
+  width: 30px; height: 30px; display: inline-grid; place-items: center;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); color: var(--muted);
+}
+.w-iconbtn:hover { background: var(--surface-2); color: var(--text); }
+
+/* ============================================================
+   Wireframe · shell de escritorio
+   ============================================================ */
+.app {
+  display: grid; grid-template-columns: 236px minmax(0, 1fr);
+  background: var(--bg); color: var(--text);
+  font-size: 13px; line-height: 1.45;
+  min-height: 840px;
+}
+.w-sidebar {
+  background: var(--sidebar); color: var(--sidebar-text);
+  border-right: 1px solid var(--sidebar-border);
+  padding: 24px 16px 16px;
+  display: flex; flex-direction: column; min-width: 0;
+}
+.w-brand { display: block; padding: 0 6px; text-decoration: none; color: var(--sidebar-text); }
+.w-brand .bn { display: block; font-size: 23px; line-height: 1; font-weight: 780; letter-spacing: -.055em; }
+.w-brand .bn span { color: var(--brand-accent); }
+.w-brand small {
+  display: block; margin-top: 7px; font-size: 8px; font-weight: 700;
+  letter-spacing: .15em; text-transform: uppercase; color: var(--sidebar-muted);
+}
+.w-cycle-tile {
+  margin-top: 20px; padding: 9px 10px; border-radius: 9px;
+  border: 1px solid var(--sidebar-border);
+  background: color-mix(in srgb, var(--sidebar-text) 6%, transparent);
+}
+.w-cycle-tile .k {
+  display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  font-size: 8px; font-weight: 750; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--sidebar-muted);
+}
+.w-cycle-tile strong { display: block; margin-top: 4px; font-size: 12px; letter-spacing: -.01em; }
+.w-cycle-tile small { display: block; margin-top: 2px; font-size: 9px; color: var(--sidebar-muted); }
+.w-nav-group {
+  margin: 24px 10px 7px; font-size: 8.5px; font-weight: 800;
+  letter-spacing: .14em; text-transform: uppercase; color: var(--sidebar-muted);
+}
+.w-nav { display: flex; flex-direction: column; gap: 2px; }
+.w-nav a {
+  display: flex; align-items: center; gap: 9px;
+  min-height: 34px; padding: 7px 10px; border-radius: 8px;
+  color: color-mix(in srgb, var(--sidebar-text) 82%, transparent);
+  text-decoration: none; font-size: 12.5px; font-weight: 570; line-height: 1.25;
+}
+.w-nav a .icon { width: 16px; height: 16px; color: var(--sidebar-muted); }
+.w-nav a .count {
+  margin-left: auto; min-width: 18px; padding: 1px 5px; border-radius: 999px;
+  background: color-mix(in srgb, var(--sidebar-text) 11%, transparent);
+  color: var(--sidebar-text); font-size: 8px; font-weight: 750; text-align: center;
+}
+.w-nav a:hover { background: var(--sidebar-hover); }
+.w-nav a.active {
+  background: var(--sidebar-active-bg); color: var(--sidebar-active-text);
+  font-weight: 720; box-shadow: inset 3px 0 0 var(--sidebar-focus);
+}
+.w-nav a.active .icon { color: currentColor; }
+.w-nav a.active .count { background: color-mix(in srgb, var(--sidebar-active-text) 18%, transparent); }
+.w-side-bottom {
+  margin-top: auto; padding: 14px 6px 0; border-top: 1px solid var(--sidebar-border);
+  display: flex; flex-direction: column; gap: 9px; font-size: 9.5px; color: var(--sidebar-muted);
+}
+.w-local { display: flex; align-items: center; gap: 6px; }
+.w-local .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--sidebar-focus); }
+.w-user { display: flex; align-items: center; gap: 8px; }
+.w-user .av {
+  width: 25px; height: 25px; border-radius: 8px; display: grid; place-items: center;
+  background: var(--sidebar-active-bg); color: var(--sidebar-active-text);
+  font-size: 9px; font-weight: 800;
+}
+.w-user b { display: block; font-size: 10px; color: var(--sidebar-text); font-weight: 650; }
+.w-user small { display: block; font-size: 9px; }
+
+.w-main { min-width: 0; display: flex; flex-direction: column; }
+.w-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  min-height: 66px; padding: 12px 26px;
+  background: var(--header-bg); border-bottom: 1px solid var(--border);
+}
+.w-breadcrumb {
+  font-size: 8.5px; font-weight: 750; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+}
+.w-cycleline { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; font-size: 11.5px; font-weight: 650; }
+.w-cycleline .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex: none; }
+.w-cycleline .sep { color: var(--border); }
+.w-cycleline .muted { font-weight: 500; font-size: 9.5px; }
+.w-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.w-timestamp {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 9.5px; font-weight: 620; color: var(--muted); white-space: nowrap;
+}
+.w-avatar {
+  width: 29px; height: 29px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--strong-surface); color: var(--on-strong);
+  font-size: 9px; font-weight: 800; letter-spacing: .02em;
+}
+.w-bell { position: relative; }
+.w-bell::after {
+  content: ""; position: absolute; right: 7px; top: 6px;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--chart-accent); border: 1px solid var(--surface);
+}
+
+.w-content {
+  padding: 22px 26px 26px; display: flex; flex-direction: column; gap: 12px;
+  width: 100%; max-width: 1260px;
+}
+.w-pagehead { display: flex; align-items: flex-start; justify-content: space-between; gap: 18px; margin-bottom: 2px; }
+.w-pagehead h1 { font-size: 28px; line-height: 1.1; letter-spacing: -.035em; font-weight: 760; margin: 0 0 4px; }
+.w-lead { font-size: 12px; line-height: 1.5; color: var(--muted); margin: 0; max-width: 74ch; }
+.w-pagehead .actions { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; flex: none; }
+
+.w-context {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  overflow: hidden;
+}
+.w-fact { padding: 9px 13px; border-left: 1px solid var(--border); min-width: 0; }
+.w-fact:first-child { border-left: 0; }
+.w-fact .k {
+  display: block; font-size: 9px; font-weight: 780; letter-spacing: .09em;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 2px;
+}
+.w-fact .v { display: block; font-size: 12px; font-weight: 650; overflow-wrap: anywhere; }
+.w-fact .v small { font-size: 9px; font-weight: 500; color: var(--muted); }
+
+.w-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 13px;
+  padding: 15px 16px; min-width: 0;
+  box-shadow: 0 1px 1px var(--shadow-2);
+}
+.w-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+.w-card-head h3 { font-size: 13px; line-height: 1.3; font-weight: 700; margin: 0; letter-spacing: -.005em; }
+.w-card-head .sub { display: block; font-size: 10px; color: var(--muted); font-weight: 500; margin-top: 2px; }
+.w-card-head .left { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.w-label {
+  font-size: 8.5px; font-weight: 800; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin: 0 0 5px;
+}
+.w-grid-hero { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 1fr); gap: 10px; }
+.w-hero-amount {
+  display: flex; align-items: baseline; gap: 5px; margin: 0 0 4px;
+  font-size: 40px; line-height: 1.05; font-weight: 760; letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums;
+}
+.w-hero-amount .cur { font-size: 21px; font-weight: 620; color: var(--muted); letter-spacing: 0; }
+.w-meta { display: flex; flex-wrap: wrap; gap: 3px 10px; font-size: 10.5px; color: var(--muted); line-height: 1.5; }
+.w-meta b { color: var(--text); font-weight: 650; }
+.w-bar { display: flex; gap: 2px; height: 7px; border-radius: 999px; overflow: hidden; margin: 13px 0 7px; background: var(--surface-2); }
+.w-bar i { display: block; height: 100%; }
+.w-bar .s1 { background: var(--chart-1); }
+.w-bar .s2 { background: var(--chart-2); }
+.w-bar .s3 { background: var(--chart-3); }
+.w-legend { display: flex; flex-wrap: wrap; gap: 4px 11px; }
+.w-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 9.5px; color: var(--muted); }
+.w-legend i { width: 6px; height: 6px; border-radius: 2px; display: block; }
+
+.w-amount-md { font-size: 24px; line-height: 1.1; font-weight: 740; letter-spacing: -.035em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.w-amount-md .cur { font-size: 16px; color: var(--muted); font-weight: 600; }
+.w-amount-nd { color: var(--muted); font-size: 21px; letter-spacing: -.01em; }
+.w-subtotal {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 8px;
+  margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border);
+}
+.w-subtotal .k { font-size: 8.5px; font-weight: 780; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.w-subtotal .v { font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.w-progress { height: 6px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); overflow: hidden; margin: 7px 0 4px; }
+.w-progress span { display: block; height: 100%; width: 69%; background: var(--accent); }
+.w-mini-foot { display: flex; justify-content: space-between; gap: 8px; font-size: 9.5px; color: var(--muted); }
+
+.w-section-card { padding-bottom: 13px; }
+.w-section-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 9px; }
+.w-section-head h3 { font-size: 12.5px; font-weight: 720; margin: 0; }
+.w-section-head p { font-size: 10.5px; color: var(--muted); margin: 2px 0 0; }
+.w-seg-inline { display: flex; gap: 2px; padding: 2px; background: var(--surface-2); border-radius: 7px; }
+.w-seg-inline span { padding: 3px 7px; border-radius: 5px; font-size: 9.5px; font-weight: 700; color: var(--muted); }
+.w-seg-inline .on { background: var(--surface); color: var(--text); box-shadow: 0 1px 1px var(--shadow-1); }
+.w-kpis { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.w-kpi {
+  background: var(--surface-3); border: 1px solid var(--border); border-radius: 9px;
+  padding: 9px 10px; min-width: 0;
+}
+.w-kpi.is-nd { border-style: dashed; background: transparent; }
+.w-kpi-top { display: flex; align-items: center; justify-content: space-between; gap: 5px; margin-bottom: 3px; }
+.w-kpi-top .k { font-size: 9.5px; font-weight: 760; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); }
+.w-kpi-val { font-size: 22px; line-height: 1.2; font-weight: 740; letter-spacing: -.03em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.w-kpi-val .cur { font-size: 16px; color: var(--muted); font-weight: 600; }
+.w-kpi-val.nd { color: var(--muted); font-size: 16px; letter-spacing: .02em; }
+.w-kpi-foot { margin-top: 4px; font-size: 10px; color: var(--muted); line-height: 1.4; }
+.w-kpi-foot .pos { color: var(--positive); font-weight: 700; }
+.w-kpi-foot .neg { color: var(--negative); font-weight: 700; }
+
+.w-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.w-grid-4 .w-card { display: flex; flex-direction: column; }
+.w-card-link {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin-top: auto; padding-top: 8px; border-top: 1px dotted var(--border);
+  color: var(--accent); font-size: 10px; font-weight: 700;
+}
+.w-card-link span { font-size: 12px; }
+.w-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 6px 0; border-top: 1px dotted var(--border); font-size: 11px; line-height: 1.4;
+}
+.w-row:first-of-type { border-top: 0; padding-top: 1px; }
+.w-row .name { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.w-row .val { font-weight: 680; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.w-row .val.nd { color: var(--muted); font-weight: 550; }
+.w-card .w-meta-line { margin-top: 7px; padding-top: 6px; border-top: 1px dotted var(--border); font-size: 9.5px; color: var(--muted); line-height: 1.45; }
+
+.w-pending { padding: 0; overflow: hidden; }
+.w-pending .w-card-head { padding: 13px 16px 10px; margin: 0; border-bottom: 1px solid var(--border); }
+.w-pending-row {
+  display: grid; grid-template-columns: 26px minmax(0, 1fr) auto auto; gap: 9px;
+  align-items: center; padding: 9px 16px; border-top: 1px solid var(--border);
+}
+.w-pending-row:first-of-type { border-top: 0; }
+.w-pending-row .pi {
+  width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--muted);
+}
+.w-pending-row .pi .icon { width: 13px; height: 13px; }
+.w-pending-row .t { display: block; font-size: 12px; font-weight: 650; line-height: 1.35; }
+.w-pending-row .m { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; }
+.w-pending-row .chev { color: var(--muted); font-size: 13px; }
+.w-pending-row:hover { background: var(--row-hover); }
+
+.w-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 26px; border-top: 1px solid var(--border);
+  background: var(--footer-bg); color: var(--muted); font-size: 9px;
+  margin-top: auto; flex-wrap: wrap;
+}
+
+/* ============================================================
+   Wireframe · móvil 390
+   ============================================================ */
+.mobile-layout { display: grid; grid-template-columns: 390px minmax(0, 1fr); gap: 22px; align-items: start; }
+.phone {
+  width: 390px; max-width: 100%; margin: 0 auto;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 30px;
+  overflow: hidden; box-shadow: 0 2px 4px var(--shadow-2), 0 30px 70px -44px var(--shadow-1);
+}
+.m-status {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 9px 18px 5px; font-size: 9px; font-weight: 700; color: var(--muted);
+  background: var(--bg);
+}
+.m-status .sig { display: flex; gap: 4px; align-items: center; font-size: 8px; letter-spacing: .04em; }
+.m-top {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 4px 14px 11px; background: var(--bg);
+}
+.m-brand .bn { font-size: 21px; line-height: 1; font-weight: 780; letter-spacing: -.055em; }
+.m-brand .bn span { color: var(--brand-accent); }
+.m-brand small {
+  display: block; margin-top: 4px; font-size: 8px; font-weight: 720;
+  letter-spacing: .11em; text-transform: uppercase; color: var(--muted);
+}
+.m-top-actions { display: flex; gap: 5px; }
+.m-top .w-iconbtn { width: 32px; height: 32px; }
+.m-body { padding: 0 12px 14px; display: flex; flex-direction: column; gap: 9px; }
+.m-greet h3 { font-size: 21px; line-height: 1.1; letter-spacing: -.035em; font-weight: 760; margin: 0 0 2px; }
+.m-greet .m-sub { margin: 0; font-size: 10.5px; color: var(--muted); }
+.m-hero {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  padding: 13px; box-shadow: 0 1px 1px var(--shadow-2);
+}
+.m-hero .m-topline { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+.m-hero .w-label { margin: 0; }
+.m-amount {
+  display: flex; align-items: baseline; gap: 3px;
+  font-size: 30px; line-height: 1.08; font-weight: 760; letter-spacing: -.045em;
+  font-variant-numeric: tabular-nums; margin: 0 0 3px;
+}
+.m-amount .cur { font-size: 16px; font-weight: 600; color: var(--muted); }
+.m-bar { display: flex; gap: 2px; height: 6px; border-radius: 999px; overflow: hidden; margin: 10px 0 6px; background: var(--surface-2); }
+.m-bar i { display: block; height: 100%; }
+.m-bar .s1 { background: var(--chart-1); }
+.m-bar .s2 { background: var(--chart-2); }
+.m-bar .s3 { background: var(--chart-3); }
+.m-legend { display: flex; flex-wrap: wrap; gap: 3px 8px; font-size: 9px; color: var(--muted); }
+.m-legend span { display: inline-flex; align-items: center; gap: 4px; }
+.m-legend i { width: 5px; height: 5px; border-radius: 1px; }
+
+.m-kpis { display: flex; flex-direction: column; gap: 6px; }
+.m-kpi {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 8px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  padding: 9px 11px;
+}
+.m-kpi .k { font-size: 10px; font-weight: 760; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); align-self: center; }
+.m-kpi .v { grid-row: span 2; font-size: 16px; font-weight: 740; letter-spacing: -.025em; font-variant-numeric: tabular-nums; text-align: right; align-self: center; white-space: nowrap; }
+.m-kpi .v.nd { color: var(--muted); font-size: 12px; }
+.m-kpi .f { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; font-size: 10.5px; color: var(--muted); }
+
+.m-card { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 12px; }
+.m-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 7px; }
+.m-card-head h4 { margin: 0; font-size: 12px; font-weight: 700; line-height: 1.3; }
+.m-card-head .sub { font-size: 10px; color: var(--muted); margin-top: 1px; }
+.m-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-top: 1px dotted var(--border); font-size: 12px; }
+.m-row:first-of-type { border-top: 0; }
+.m-row .name { color: var(--muted); min-width: 0; }
+.m-row .val { font-weight: 680; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.m-nav {
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 1px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+}
+.m-nav a {
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 5px 2px; border-radius: 8px; text-decoration: none;
+  color: var(--muted); font-size: 8.5px; font-weight: 650; line-height: 1;
+}
+.m-nav a .icon { width: 17px; height: 17px; }
+.m-nav a.on { color: var(--accent); background: var(--accent-soft); }
+.m-notes { display: grid; grid-template-columns: 1fr 1fr; align-content: start; gap: 9px; min-width: 0; }
+.m-notes .note-card { border-left-color: var(--chart-accent); }
+.m-notes .note-card h4 { color: var(--accent); }
+
+/* ============================================================
+   Wireframe · listado / tabla
+   ============================================================ */
+.w-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 9px; }
+.w-tabs { display: flex; gap: 3px; padding: 3px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 9px; }
+.w-tabs span { display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 6px; font-size: 10px; font-weight: 680; color: var(--muted); white-space: nowrap; }
+.w-tabs .on { background: var(--surface); color: var(--text); box-shadow: 0 1px 1px var(--shadow-1); }
+.w-tabs b { font-size: 8.5px; color: var(--muted); font-weight: 700; }
+.w-filters {
+  display: grid; grid-template-columns: minmax(170px, 1.4fr) repeat(4, minmax(0, 1fr)) auto;
+  gap: 7px; align-items: end;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 11px;
+  padding: 9px 10px;
+}
+.w-filter { min-width: 0; }
+.w-filter > label { display: block; font-size: 9px; font-weight: 780; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin: 0 0 3px; }
+.w-control { position: relative; display: flex; align-items: center; min-width: 0; }
+.w-control > .icon { position: absolute; left: 8px; width: 12px; height: 12px; color: var(--muted); pointer-events: none; }
+.w-input {
+  width: 100%; min-width: 0; height: 32px; padding: 5px 9px;
+  border: 1px solid var(--control-border); border-radius: 7px;
+  background: var(--input-bg); color: var(--text); font-size: 12px;
+}
+.w-input::placeholder { color: var(--muted); }
+.w-control .w-input { padding-left: 26px; }
+.w-select { appearance: none; padding-right: 24px; }
+.w-control .chev { position: absolute; right: 8px; font-size: 9px; color: var(--muted); pointer-events: none; }
+.w-filter .w-btn { height: 32px; min-height: 32px; }
+.w-applied { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; margin: 7px 0 9px; }
+.w-applied .apl {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 7px; border-radius: 999px; border: 1px solid var(--accent-border);
+  background: var(--accent-soft); color: var(--accent); font-size: 9.5px; font-weight: 650;
+}
+.w-applied .apl button { border: 0; background: transparent; color: inherit; font-size: 10px; line-height: 1; padding: 0; }
+.w-applied .all { font-size: 9.5px; color: var(--muted); margin-left: 2px; }
+.w-clear { border: 0; background: transparent; color: var(--accent); font-size: 10px; font-weight: 650; text-decoration: underline; text-underline-offset: 2px; padding: 2px; }
+
+.w-table-wrap { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: var(--surface); }
+.w-table { width: 100%; border-collapse: collapse; font-size: 12px; line-height: 1.35; }
+.w-table th {
+  height: 30px; padding: 0 9px; text-align: left;
+  background: var(--table-head); color: var(--muted);
+  font-size: 9px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  white-space: nowrap; border-bottom: 1px solid var(--border);
+}
+.w-table td { height: 44px; padding: 6px 9px; border-top: 1px solid var(--border); vertical-align: middle; }
+.w-table tbody tr:first-child td { border-top: 0; }
+.w-table tbody tr:hover { background: var(--row-hover); }
+.w-table tbody tr.is-selected { background: var(--selected); box-shadow: inset 3px 0 0 var(--accent); }
+.w-table .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 680; white-space: nowrap; }
+.w-table th.num { text-align: right; }
+.w-table .id { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 10.5px; font-weight: 650; letter-spacing: .01em; color: var(--accent); white-space: nowrap; }
+.w-table .nm { font-weight: 650; color: var(--text); }
+.w-table .sub { display: block; font-size: 9.5px; color: var(--muted); font-weight: 500; margin-top: 1px; }
+.w-table .act { width: 30px; text-align: right; }
+.w-table .act button {
+  border: 0; background: transparent; color: var(--muted);
+  width: 24px; height: 24px; border-radius: 6px; display: inline-grid; place-items: center;
+}
+.w-table .act button:hover { background: var(--surface-2); color: var(--text); }
+.w-table-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 9px 11px; border-top: 1px solid var(--border);
+  background: var(--surface-3); flex-wrap: wrap;
+}
+.w-table-foot .count { font-size: 10px; color: var(--muted); }
+.w-table-foot .count b { color: var(--text); font-weight: 700; }
+.w-subtotal-block { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+.w-subtotal-block .k { font-size: 8.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.w-subtotal-block .v { font-size: 14px; font-weight: 740; font-variant-numeric: tabular-nums; letter-spacing: -.015em; }
+.w-subtotal-block .hint { font-size: 9px; color: var(--muted); }
+.w-pagination { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 9px; flex-wrap: wrap; }
+.w-pagination .pg { font-size: 10px; color: var(--muted); }
+.w-pagination .pgbtns { display: flex; gap: 4px; }
+.w-pagination .pgbtns button {
+  min-height: 26px; min-width: 26px; padding: 3px 7px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--muted); font-size: 10px;
+}
+.w-pagination .pgbtns .on { background: var(--strong-surface); color: var(--on-strong); border-color: var(--strong-border); }
+
+.state-demos { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.state-demo {
+  border: 1px solid var(--border); border-radius: 11px; background: var(--surface);
+  padding: 15px; display: flex; flex-direction: column; gap: 7px; min-height: 150px;
+}
+.state-demo.empty { border-style: dashed; }
+.state-demo.error { border-color: var(--error-border); background: var(--error-soft); }
+.state-demo .sd-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.state-demo .sd-top .cap { font-size: 7.5px; font-weight: 800; letter-spacing: .09em; text-transform: uppercase; color: var(--muted); }
+.state-demo.error .sd-top .cap { color: var(--error); }
+.state-demo .sd-icon {
+  width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+  background: var(--surface-2); color: var(--muted);
+}
+.state-demo.error .sd-icon { background: var(--surface); color: var(--error); }
+.state-demo h4 { margin: 0; font-size: 11.5px; font-weight: 720; }
+.state-demo.error h4 { color: var(--error); }
+.state-demo p { margin: 0; font-size: 10.5px; line-height: 1.5; color: var(--muted); }
+.state-demo.error p { color: var(--error); }
+.state-demo .sd-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
+.state-demo .code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px; color: var(--muted); background: var(--surface-2);
+  border-radius: 5px; padding: 2px 5px; align-self: flex-start;
+}
+.state-demo.error .code { background: var(--surface); color: var(--error); }
+
+/* ============================================================
+   Wireframe · formulario
+   ============================================================ */
+.w-back {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 8.5px; font-weight: 650; color: var(--accent);
+  text-decoration: none; margin-bottom: 6px;
+}
+.w-form-layout { display: grid; grid-template-columns: minmax(0, 1fr) 286px; gap: 11px; align-items: start; }
+.w-form-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.w-panel {
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 14px 16px; min-width: 0;
+}
+.w-sec-head { display: flex; align-items: flex-start; gap: 9px; margin-bottom: 11px; }
+.w-num {
+  width: 23px; height: 23px; flex: none; display: grid; place-items: center;
+  border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2);
+  color: var(--muted); font-size: 7.5px; font-weight: 820;
+}
+.w-sec-head h2 { margin: 0; font-size: 12px; font-weight: 730; line-height: 1.35; }
+.w-sec-head p { margin: 1px 0 0; font-size: 10.5px; color: var(--muted); line-height: 1.45; }
+.w-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.w-form-grid .span-2 { grid-column: 1 / -1; }
+.w-field { min-width: 0; }
+.w-field > label {
+  display: flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; color: var(--text); margin-bottom: 3px;
+}
+.w-field > label .req { color: var(--error); font-weight: 800; }
+.w-field > label .opt { color: var(--muted); font-weight: 500; }
+.w-field .w-input { height: 36px; font-size: 12.5px; }
+.w-field .w-input:focus { border-color: var(--focus); }
+.w-field .help { display: flex; align-items: flex-start; gap: 4px; margin: 5px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--muted); }
+.w-field .help .icon { width: 10px; height: 10px; margin-top: 1px; flex: none; }
+.w-field .err { display: flex; align-items: flex-start; gap: 4px; margin: 5px 0 0; font-size: 10.5px; line-height: 1.45; color: var(--error); font-weight: 650; }
+.w-field .err .icon { width: 10px; height: 10px; margin-top: 1px; flex: none; }
+.w-field.is-invalid .w-input { border-color: var(--error); }
+.w-field.is-invalid .w-input:focus { outline-color: var(--focus); }
+.w-field.is-focus .w-input {
+  outline: 3px solid var(--focus); outline-offset: 2px; border-color: var(--focus);
+}
+.w-form-help { margin: 9px 0 0; padding-top: 8px; border-top: 1px dotted var(--border); font-size: 10.5px; color: var(--muted); line-height: 1.5; }
+.w-form-help b { color: var(--text); font-weight: 650; }
+.w-alert {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 11px; border-radius: 9px;
+  border: 1px solid var(--error-border); background: var(--error-soft); color: var(--error);
+  font-size: 10.5px; line-height: 1.5; margin-bottom: 9px;
+}
+.w-alert .icon { width: 14px; height: 14px; margin-top: 1px; flex: none; }
+.w-alert b { font-weight: 800; }
+.w-alert a { color: var(--error); font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.w-switches { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 9px; overflow: hidden; margin-top: 10px; }
+.w-switch {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 8px 10px; border-top: 1px solid var(--border); background: var(--surface);
+}
+.w-switch:first-child { border-top: 0; }
+.w-switch .txt { min-width: 0; }
+.w-switch .txt b { display: block; font-size: 11.5px; font-weight: 650; }
+.w-switch .txt small { display: block; font-size: 10px; color: var(--muted); margin-top: 1px; line-height: 1.45; }
+.w-switch .ctl { display: flex; align-items: center; gap: 6px; flex: none; }
+.w-toggle {
+  width: 34px; height: 19px; border-radius: 999px; position: relative;
+  border: 1px solid var(--control-border); background: var(--surface-2);
+}
+.w-toggle::after {
+  content: ""; position: absolute; top: 2px; left: 2px;
+  width: 13px; height: 13px; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--control-border);
+}
+.w-toggle.on { background: var(--accent); border-color: var(--accent); }
+.w-toggle.on::after { left: auto; right: 2px; background: var(--on-accent); border-color: transparent; }
+.w-toggle.absent { border-style: dashed; background: transparent; }
+.w-toggle.absent::after { background: var(--muted); border-color: transparent; opacity: .65; }
+.w-switch .stateword { font-size: 10px; font-weight: 750; color: var(--text); min-width: 18px; text-align: right; }
+.w-switch .stateword.off { color: var(--muted); }
+.w-absent-note { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; justify-content: flex-end; }
+
+.w-aside { display: flex; flex-direction: column; gap: 9px; min-width: 0; }
+.w-aside-card { background: var(--surface); border: 1px solid var(--border); border-radius: 11px; padding: 12px 13px; }
+.w-aside-card h3 { margin: 0 0 8px; font-size: 11px; font-weight: 750; }
+.w-summary { display: grid; gap: 6px; margin: 0; }
+.w-summary div { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.w-summary dt { font-size: 9px; font-weight: 750; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.w-summary dd { margin: 0; font-size: 10.5px; font-weight: 650; text-align: right; overflow-wrap: anywhere; }
+.w-aside-card ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.w-aside-card li { display: flex; gap: 6px; font-size: 10px; line-height: 1.55; color: var(--muted); }
+.w-aside-card li .icon { width: 10px; height: 10px; margin-top: 1px; color: var(--accent); flex: none; }
+.w-aside-card li b { color: var(--text); font-weight: 650; }
+.w-immutable {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 4px 7px; border-radius: 6px;
+  border: 1px solid var(--accent-border); background: var(--accent-soft); color: var(--accent);
+  font-size: 9.5px; font-weight: 700;
+}
+.w-immutable .icon { width: 11px; height: 11px; }
+.w-form-footer {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px; margin-top: 2px;
+  border: 1px solid var(--border); border-radius: 11px; background: var(--surface);
+  box-shadow: 0 -8px 22px -18px var(--shadow-1); flex-wrap: wrap;
+}
+.w-status { display: flex; align-items: center; gap: 6px; font-size: 10.5px; color: var(--muted); }
+.w-status .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--warning); }
+.w-form-footer .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ============================================================
+   Sistema visual / accesibilidad
+   ============================================================ */
+.system-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: start; }
+.doc-card { background: var(--surface); border: 1px solid var(--border); border-radius: 13px; padding: 16px 17px; min-width: 0; }
+.doc-card h3 { font-size: 11.5px; font-weight: 730; margin: 0 0 3px; }
+.doc-card .cap { font-size: 9px; color: var(--muted); margin: 0 0 12px; line-height: 1.5; }
+.doc-table-wrap { overflow-x: auto; }
+.doc-table { width: 100%; border-collapse: collapse; font-size: 10px; line-height: 1.45; }
+.doc-table th {
+  text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border);
+  color: var(--muted); font-size: 7.5px; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; white-space: nowrap;
+}
+.doc-table td { padding: 7px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.doc-table tr:last-child td { border-bottom: 0; }
+.doc-table td:first-child { font-weight: 650; white-space: nowrap; }
+.doc-table .sw { display: inline-block; width: 10px; height: 10px; border-radius: 3px; border: 1px solid var(--border); margin-right: 5px; vertical-align: -1px; }
+.doc-table code { font-size: 8.5px; color: var(--accent); overflow-wrap: anywhere; }
+.doc-table .ratio { font-variant-numeric: tabular-nums; font-weight: 700; white-space: nowrap; }
+.doc-table .ok { color: var(--positive); }
+
+.scale-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+.scale-list li { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 8px; align-items: baseline; padding-bottom: 7px; border-bottom: 1px dotted var(--border); }
+.scale-list li:last-child { border-bottom: 0; padding-bottom: 0; }
+.scale-list .size { font-size: 8px; font-weight: 750; letter-spacing: .05em; color: var(--muted); text-transform: uppercase; }
+.scale-list .use { font-size: 9px; line-height: 1.5; color: var(--muted); }
+.scale-list .use b { color: var(--text); font-weight: 650; }
+.theme-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.theme-card { border: 1px solid var(--border); border-radius: 11px; padding: 12px; background: var(--surface); min-width: 0; }
+.theme-card h3 { margin: 0 0 2px; font-size: 10px; }
+.theme-card p { margin: 0 0 8px; font-size: 8.5px; color: var(--muted); line-height: 1.5; }
+.theme-card .swatches { display: flex; gap: 4px; flex-wrap: wrap; }
+.theme-card .swatches span { width: 26px; height: 18px; border-radius: 4px; border: 1px solid var(--border); }
+.theme-card .hex { margin-top: 6px; font-size: 7px; color: var(--muted); line-height: 1.6; }
+.theme-card .hex code { color: var(--text); font-size: 7px; }
+
+.focus-demo { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 13px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.focus-demo .fd-label { font-size: 8.5px; font-weight: 780; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.focus-demo .focus-sample { outline: 3px solid var(--focus); outline-offset: 3px; }
+.focus-demo .fd-note { font-size: 8.5px; color: var(--muted); }
+.principles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: 12px; }
+.principle { border: 1px solid var(--border); border-radius: 11px; padding: 12px 13px; background: var(--surface-3); }
+.principle h4 { margin: 0 0 3px; font-size: 9.5px; font-weight: 750; }
+.principle p { margin: 0; font-size: 9px; line-height: 1.55; color: var(--muted); }
+
+.closing {
+  margin-top: clamp(36px, 4vw, 58px); padding: clamp(22px, 3vw, 34px);
+  border: 1px solid var(--strong-border); border-radius: 16px;
+  background: var(--strong-surface); color: var(--on-strong);
+}
+.closing .eyebrow { color: var(--on-strong); }
+.closing .eyebrow::before {
+  content: ""; display: inline-block; width: 18px; height: 2px;
+  background: var(--chart-accent); margin-right: 8px; vertical-align: middle;
+}
+.closing h2 { font-size: clamp(20px, 2.4vw, 28px); letter-spacing: -.025em; margin: 0 0 8px; color: var(--on-strong); }
+.closing p { color: var(--muted-on-strong); font-size: 11.5px; line-height: 1.65; max-width: 80ch; margin: 0 0 10px; }
+.closing p:last-child { margin-bottom: 0; }
+.closing strong { color: var(--on-strong); }
+.doc-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--border);
+  color: var(--muted); font-size: 9px; flex-wrap: wrap;
+}
+
+/* ============================================================
+   Adaptación del documento y de los wireframes
+   ============================================================ */
+@media (max-width: 1180px) {
+  .app { grid-template-columns: 200px minmax(0, 1fr); }
+  .w-sidebar { padding-inline: 12px; }
+  .w-nav a { padding-inline: 9px; }
+  .w-content { padding-inline: 22px; }
+  .w-grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .w-pagehead .w-lead { max-width: 56ch; }
+  .w-filters { grid-template-columns: minmax(150px, 1.2fr) repeat(2, minmax(0, 1fr)); }
+  .w-filters .w-filter:nth-child(4), .w-filters .w-filter:nth-child(5) { grid-row: 2; }
+  .w-filters > .w-btn { grid-row: 2; justify-self: start; }
+  .w-form-layout { grid-template-columns: minmax(0, 1fr) 250px; }
+}
+@media (max-width: 980px) {
+  .cover { grid-template-columns: 1fr; }
+  .cover-side { max-width: 520px; }
+  .index { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app { grid-template-columns: 66px minmax(0, 1fr); }
+  .w-sidebar { padding: 18px 8px 12px; align-items: center; }
+  .w-brand { padding: 0; text-align: center; }
+  .w-brand .bn { font-size: 17px; letter-spacing: -.06em; }
+  .w-brand .bn span { color: var(--sidebar-text); }
+  .w-brand small, .w-cycle-tile, .w-nav-group, .w-nav a .label, .w-nav a .count, .w-side-bottom { display: none; }
+  .w-nav { margin-top: 22px; width: 100%; align-items: center; }
+  .w-nav a { justify-content: center; width: 40px; height: 40px; padding: 0; }
+  .w-nav a .icon { width: 18px; height: 18px; }
+  .w-nav a.active { box-shadow: inset 0 0 0 1px var(--sidebar-focus); }
+  .w-header { padding-inline: 18px; }
+  .w-content { padding: 18px; }
+  .w-grid-hero { grid-template-columns: 1fr; }
+  .w-kpis { grid-template-columns: 1fr 1fr; }
+  .w-form-layout { grid-template-columns: 1fr; }
+  .w-aside { display: grid; grid-template-columns: 1fr 1fr; }
+  .w-filters { grid-template-columns: 1fr 1fr; }
+  .w-filters .w-filter:nth-child(n) { grid-row: auto; }
+  .w-filters > .w-btn { grid-row: auto; }
+  .state-demos { grid-template-columns: 1fr; }
+  .mobile-layout { grid-template-columns: 390px minmax(0, 1fr); }
+  .m-notes { grid-template-columns: 1fr; }
+  .notes { grid-template-columns: 1fr 1fr; }
+  .principles { grid-template-columns: 1fr; }
+  .system-grid { grid-template-columns: 1fr; align-items: stretch; }
+}
+@media (max-width: 760px) {
+  .doc { padding-inline: 12px; }
+  .doc-top-in { padding-inline: 12px; }
+  .theme-live { display: none; }
+  .doc-title { max-width: none; }
+  .meta-card dl > div { grid-template-columns: 76px minmax(0, 1fr); }
+  .index { grid-template-columns: 1fr; }
+  .chapter-head { grid-template-columns: 42px minmax(0, 1fr); gap: 11px; }
+  .chapter-tags { grid-column: 2; justify-content: flex-start; max-width: none; }
+  .chapter { scroll-margin-top: 16px; }
+  .notes { grid-template-columns: 1fr; }
+  .frame-bar { font-size: 7.5px; padding-inline: 11px; }
+  .w-sidebar { display: none; }
+  .app { display: block; min-height: 0; }
+  .doc-top { position: static; }
+  .w-header { min-height: 58px; padding: 10px 14px; gap: 8px; }
+  .w-timestamp, .w-head-actions .w-btn-ghost { display: none; }
+  .w-head-actions { flex-wrap: nowrap; }
+  .w-cycleline .sep { display: none; }
+  .w-cycleline .muted { flex-basis: 100%; }
+  .w-content { padding: 16px 14px 20px; gap: 9px; }
+  .w-pagehead { flex-direction: column; gap: 9px; }
+  .w-pagehead h1 { font-size: 24px; }
+  .w-pagehead .actions { width: 100%; }
+  .w-pagehead .actions .w-btn { flex: 1; }
+  .w-context { grid-template-columns: 1fr 1fr; }
+  .w-fact { border-left: 0; border-top: 1px solid var(--border); padding: 8px 10px; }
+  .w-fact:nth-child(-n+2) { border-top: 0; }
+  .w-fact:nth-child(even) { border-left: 1px solid var(--border); }
+  .w-hero-amount { font-size: 31px; }
+  .w-kpis { grid-template-columns: 1fr; }
+  .w-grid-4 { grid-template-columns: 1fr; }
+  .w-grid-hero { gap: 8px; }
+  .w-pending-row { grid-template-columns: 24px minmax(0, 1fr) auto; }
+  .w-pending-row .chev { display: none; }
+  .w-pending-row .st { justify-self: end; }
+  .w-foot { padding-inline: 14px; }
+  .w-toolbar { align-items: stretch; flex-direction: column; }
+  .w-filters { grid-template-columns: 1fr; }
+  .w-table-wrap { border: 0; background: transparent; overflow: visible; }
+  .w-table, .w-table tbody, .w-table thead { display: block; width: 100%; }
+  .w-table colgroup, .w-table thead { display: none; }
+  .w-table tbody { display: grid; gap: 7px; }
+  .w-table tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto;
+    column-gap: 10px; width: 100%;
+    border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface); padding: 10px 11px;
+  }
+  .w-table tbody tr.is-selected { box-shadow: inset 3px 0 0 var(--accent); }
+  .w-table td {
+    height: auto; min-height: 0; padding: 3px 0; border: 0; width: 100%;
+    grid-column: 1 / -1;
+    display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+    font-size: 11.5px;
+  }
+  .w-table td::before {
+    content: attr(data-label); flex: none;
+    font-size: 8.5px; font-weight: 750; letter-spacing: .07em; text-transform: uppercase;
+    color: var(--muted);
+  }
+  .w-table td.c-name {
+    grid-column: 1; grid-row: 1; display: block;
+    font-size: 12.5px; margin-bottom: 2px;
+  }
+  .w-table td.c-name::before { display: none; }
+  .w-table td.c-name .sub { font-size: 9.5px; }
+  .w-table td.c-id {
+    grid-column: 2; grid-row: 1; display: flex; justify-content: flex-end;
+    align-self: start; padding-top: 1px;
+  }
+  .w-table td.c-id::before { display: none; }
+  .w-table td.num { text-align: right; }
+  .w-table td.c-actions { display: none; }
+  .w-table .id { font-size: 9.5px; }
+  .w-table-foot { border: 1px solid var(--border); border-radius: 10px; margin-top: 7px; }
+  .w-pagination { align-items: flex-start; }
+  .state-demos { grid-template-columns: 1fr; }
+  .w-form-grid { grid-template-columns: 1fr; }
+  .w-switch.is-absent { flex-wrap: wrap; align-items: flex-start; gap: 7px; }
+  .w-switch.is-absent .txt { flex: 1 1 100%; }
+  .w-switch.is-absent .ctl { width: 100%; justify-content: flex-end; margin-top: 1px; }
+  .w-switch.is-absent .ctl .w-btn { min-height: 28px; font-size: 10px; }
+  .w-aside { grid-template-columns: 1fr; }
+  .w-form-footer { align-items: stretch; flex-direction: column; }
+  .w-form-footer .actions { justify-content: flex-end; }
+  .w-form-footer .actions .w-btn-primary { flex: 1; }
+  .mobile-layout { grid-template-columns: 1fr; }
+  .phone { width: 100%; max-width: 390px; border-radius: 24px; }
+  .m-notes { display: grid; grid-template-columns: 1fr; }
+  .theme-cards { grid-template-columns: 1fr; }
+  .system-grid { grid-template-columns: 1fr; }
+  .doc-table { font-size: 9px; }
+  .doc-table th, .doc-table td { padding: 5px 6px; }
+  .closing { padding: 20px 17px; }
+}
+@media (max-width: 380px) {
+  .m-body { padding-inline: 9px; }
+  .m-amount { font-size: 27px; }
+  .m-kpi .v { font-size: 13.5px; }
+  .m-nav a { font-size: 6.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; scroll-behavior: auto !important; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#contenido">Saltar al contenido</a>
+
+<!-- Sprite de iconos · sin recursos externos -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 10.5 12 3.5l8.5 7"/><path d="M5.5 9.5v10h13v-10"/><path d="M9.5 19.5v-6h5v6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7"/></symbol>
+    <symbol id="i-check-sq" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="m8 12 2.8 2.8L16.5 9"/></symbol>
+    <symbol id="i-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7.5A2.5 2.5 0 0 1 6.5 5H18v3"/><rect x="4" y="8" width="16" height="11" rx="2.5"/><path d="M16 13.5h2"/></symbol>
+    <symbol id="i-trend" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17.5 9 12l3.5 3.5L20 8"/><path d="M15 8h5v5"/></symbol>
+    <symbol id="i-card" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2.5"/><path d="M3.5 10h17"/><path d="M7 14.5h4"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5.5" width="16" height="15" rx="2.5"/><path d="M8 3.5v4M16 3.5v4M4 10h16"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13"/><path d="m14 5 3 3-3 3"/><path d="M20 16H7"/><path d="m10 13-3 3 3 3"/></symbol>
+    <symbol id="i-layers" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 8.5 4.5L12 12.5 3.5 8Z"/><path d="m4 12.5 8 4.2 8-4.2"/><path d="m4 16.5 8 4.2 8-4.2"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 9.5a5.5 5.5 0 0 1 11 0c0 6 2 7 2 7H4.5s2-1 2-7"/><path d="M10 20a2.2 2.2 0 0 0 4 0"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+    <symbol id="i-user" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20a6.5 6.5 0 0 1 13 0"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6"/><path d="m15.5 15.5 4 4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m14 7 5 5-5 5"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m10 17-5-5 5-5"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5 21 20H3Z"/><path d="M12 9v5"/><path d="M12 17.2h.01"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 7.8h.01"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10" width="14" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 6.4"/><path d="M20 4.5V11h-6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v10"/><path d="m8 10 4 4 4-4"/><path d="M5 19h14"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16l-6 7v6l-4-2v-4Z"/></symbol>
+    <symbol id="i-half" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="7"/><path d="M12 5a7 7 0 0 1 0 14Z" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-dash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M6 12h12"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 12h.01M12 12h.01M18 12h.01"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.2l3.2 1.9"/></symbol>
+  </defs>
+</svg>
+
+<header class="doc-top">
+  <div class="doc-top-in">
+    <div class="doc-brand">
+      <span class="logo" aria-hidden="true">M</span>
+      <span class="doc-brand-copy">
+        <strong>MyFinanzas · SPEC de diseño</strong>
+        <small>Documento de trabajo · no implementado</small>
+      </span>
+    </div>
+    <div class="theme-switch" role="group" aria-label="Tema de la propuesta">
+      <span class="lbl">Tema</span>
+      <div class="seg">
+        <button type="button" data-set-theme="light-s" aria-pressed="true"><i class="dot sw-light" aria-hidden="true"></i>Claro</button>
+        <button type="button" data-set-theme="dark-s" aria-pressed="false"><i class="dot sw-dark" aria-hidden="true"></i>Oscuro</button>
+        <button type="button" data-set-theme="hybrid-s" aria-pressed="false"><i class="dot sw-hybrid" aria-hidden="true"></i>Híbrido</button>
+      </div>
+      <span class="theme-live" data-theme-live>light-s</span>
+    </div>
+  </div>
+</header>
+
+<main class="doc" id="contenido">
+
+  <!-- PORTADA -->
+  <section class="cover" aria-labelledby="doc-title">
+    <div class="cover-main">
+      <p class="eyebrow">Investigación de diseño · 05 / 11 / 2026 · Rama docs/ui-evolution</p>
+      <h1 class="doc-title" id="doc-title">UI · SPEC — evolución visual (aprobada)</h1>
+      <p class="doc-sub">
+        Wireframes estáticos para revisar una evolución visual de MyFinanzas: misma identidad,
+        misma semántica y más claridad en la jerarquía de cifras, los estados de cobertura y la
+        densidad de las pantallas. Todo el contenido es ficticio y solo consume los tokens
+        semánticos vigentes.
+      </p>
+      <div class="warn" role="note">
+        <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+        <div>
+          <strong>No implementado; no autoriza por sí solo DEV</strong>
+          Esta SPEC no modifica la aplicación, no crea componentes de producción ni valida reglas
+          financieras. Es una propuesta visual para revisión humana.
+        </div>
+      </div>
+      <div class="fact-strip" aria-label="Alcance de la propuesta">
+        <span class="pill accent">3 arquetipos + estados</span>
+        <span class="pill">1440 / 390</span>
+        <span class="pill">3 temas</span>
+        <span class="pill">HTML autocontenido</span>
+        <span class="pill">Datos ficticios</span>
+      </div>
+
+      <div class="legend" aria-label="Lenguaje de estados y cifras">
+        <span class="cap">Estados</span>
+        <span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span>
+        <span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+        <span class="st st-nd"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span>
+        <span class="st st-zero"><span class="zi" aria-hidden="true">0</span>CERO</span>
+        <span class="legend-sep" aria-hidden="true"></span>
+        <span class="cap">Cifras</span>
+        <span class="pill">TOTAL verificado</span>
+        <span class="pill">SUBTOTAL con alcance</span>
+        <span class="pill">Foco 3 px</span>
+      </div>
+      <p class="read-note">Las marcas <b>D1</b>, <b>M3</b>, <b>L2</b> o <b>F4</b>, entre otras, remiten a las notas de diseño bajo cada pantalla. El selector superior alterna los tres temas; el contenido es el mismo.</p>
+    </div>
+
+    <aside class="cover-side">
+      <div class="meta-card">
+        <h2>Ficha del documento</h2>
+        <dl>
+          <div><dt>Rama</dt><dd class="mono">docs/ui-evolution</dd></div>
+          <div><dt>Base</dt><dd class="mono">043869f</dd></div>
+          <div><dt>Tokens</dt><dd><code>apps/web/public/themes.css</code></dd></div>
+          <div><dt>Temas</dt><dd>light-s · dark-s · hybrid-s</dd></div>
+          <div><dt>Datos</dt><dd>Ficticios, sin información real</dd></div>
+          <div><dt>Estado</dt><dd>SPEC aprobada · wireframes de referencia · no implementada</dd></div>
+          <div><dt>Autorización</dt><dd>SPEC aprobada 2026-11-06; DEV-01 autorizado por separado; DEV-02…07 no</dd></div>
+        </dl>
+      </div>
+    </aside>
+  </section>
+
+  <nav class="index" aria-label="Índice de pantallas">
+    <a href="#desktop"><span class="n">01</span><span><strong>Inicio · escritorio</strong><small>1440 · jerarquía, estados y notas</small></span></a>
+    <a href="#movil"><span class="n">02</span><span><strong>Inicio · móvil</strong><small>390 · una columna, sin scroll horizontal</small></span></a>
+    <a href="#listado"><span class="n">03</span><span><strong>Saldos · listado</strong><small>tabla densa, filtros, vacío y error</small></span></a>
+    <a href="#formulario"><span class="n">04</span><span><strong>Saldo · edición</strong><small>validación, ayudas y acciones</small></span></a>
+    <a href="#sistema"><span class="n">05</span><span><strong>Sistema visual</strong><small>tokens, tipos, temas y contraste</small></span></a>
+    <a href="#limites"><span class="n">06</span><span><strong>Límites</strong><small>qué decide y qué no decide esta SPEC</small></span></a>
+  </nav>
+
+  <!-- 01 · ESCRITORIO -->
+  <section class="chapter" id="desktop" aria-labelledby="desktop-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">01</span>
+      <div>
+        <p class="eyebrow">Pantalla principal · escritorio</p>
+        <h2 id="desktop-title">Inicio: de “lista de bloques” a una lectura financiera guiada</h2>
+        <p class="chapter-lead">
+          La propuesta conserva todos los motores y contextos, pero ordena la lectura en cuatro
+          alturas: contexto → liquidez y objetivo → ciclo → cartera y pendientes. La cifra
+          principal no compite con metadatos; cada total declara su estado y su alcance.
+        </p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag accent">1440 px</span>
+        <span class="tag">sidebar 236</span>
+        <span class="tag">3 temas</span>
+        <span class="tag">datos ficticios</span>
+      </div>
+    </div>
+
+    <div class="viewport" aria-label="Wireframe de Inicio en escritorio a 1440 píxeles">
+      <div class="frame-bar">
+        <span class="fb-left"><span class="dot3" aria-hidden="true"><i></i><i></i><i></i></span>Escritorio · 1440 × 1000</span>
+        <span class="fb-right"><span class="live">●</span> Tema activo · <span data-theme-live>light-s</span> · datos ficticios</span>
+      </div>
+
+      <div class="app">
+        <aside class="w-sidebar" aria-label="Navegación principal de la muestra">
+          <a class="w-brand" href="#desktop">
+            <span class="bn">My<span>Finanzas</span></span>
+            <small>Control financiero local</small>
+          </a>
+          <div class="w-cycle-tile">
+            <span class="k">Ciclo financiado <span style="display:inline-flex;align-items:center;gap:4px">abierto <span class="marker" title="Nota D1">D1</span></span></span>
+            <strong>C-2026-11</strong>
+            <small>01 nov → 30 nov · corte 04/11</small>
+          </div>
+
+          <p class="w-nav-group">Mi espacio</p>
+          <nav class="w-nav" aria-label="Mi espacio">
+            <a class="active" href="#desktop" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span class="label">Inicio</span><span class="count">3</span></a>
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-check-sq"/></svg><span class="label" title="Pendientes y conciliación">Pendientes</span><span class="count">3</span></a>
+          </nav>
+
+          <p class="w-nav-group">Patrimonio</p>
+          <nav class="w-nav" aria-label="Patrimonio">
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg><span class="label">Saldos</span><span class="count">9</span></a>
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg><span class="label">Inversiones</span></a>
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg><span class="label">Deudas</span></a>
+          </nav>
+
+          <p class="w-nav-group">Operación</p>
+          <nav class="w-nav" aria-label="Operación">
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span class="label">Ciclos</span></a>
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg><span class="label">Movimientos</span></a>
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span class="label">Presupuestos</span></a>
+          </nav>
+
+          <div class="w-side-bottom">
+            <span class="w-local"><span class="dot" aria-hidden="true"></span>Local · datos ficticios</span>
+            <span class="w-user"><span class="av" aria-hidden="true">JM</span><span><b>Espacio privado</b><small>Solo lectura</small></span></span>
+          </div>
+        </aside>
+
+        <div class="w-main">
+          <header class="w-header">
+            <div>
+              <p class="w-breadcrumb">Panorama / Inicio</p>
+              <div class="w-cycleline">
+                <span class="dot" aria-hidden="true"></span>
+                Ciclo <strong>C-2026-11</strong>
+                <span class="sep" aria-hidden="true">·</span>
+                <span class="muted">01–30 nov · corte 04/11</span>
+              </div>
+            </div>
+            <div class="w-head-actions">
+              <span class="w-timestamp"><svg class="icon" style="width:11px;height:11px" aria-hidden="true"><use href="#i-clock"/></svg>Actualizado 08:42</span>
+              <button class="w-btn w-btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span>Cómo se calcula</span></button>
+              <button class="w-iconbtn w-bell" type="button" aria-label="Avisos"><svg class="icon" style="width:15px;height:15px" aria-hidden="true"><use href="#i-bell"/></svg></button>
+              <span class="w-avatar" aria-hidden="true">JM</span>
+            </div>
+          </header>
+
+          <div class="w-content">
+            <div class="w-pagehead">
+              <div>
+                <p class="eyebrow" style="margin-bottom:4px">Resumen financiero · solo lectura</p>
+                <h1>Inicio <span class="marker" title="Nota D7">D7</span></h1>
+                <p class="w-lead">Cada cifra conserva su motor, su contexto y su cobertura. Ningún total cruza fuentes.</p>
+              </div>
+              <div class="actions">
+                <button class="w-btn w-btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg>Ver cobertura</button>
+                <button class="w-btn w-btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Registrar movimiento</button>
+              </div>
+            </div>
+
+            <!-- Contexto -->
+            <section class="w-context" aria-label="Contexto del ciclo y la referencia">
+              <div class="w-fact">
+                <span class="k">Ciclo</span>
+                <span class="v">C-2026-11 <small>· abierto</small></span>
+              </div>
+              <div class="w-fact">
+                <span class="k">Corte</span>
+                <span class="v">04/11/2026</span>
+              </div>
+              <div class="w-fact">
+                <span class="k">Referencia</span>
+                <span class="v">03/11/2026 <small>· vigente</small></span>
+              </div>
+              <div class="w-fact">
+                <span class="k">Cobertura global</span>
+                <span class="v" style="display:flex;gap:5px;align-items:center"><span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></span>
+              </div>
+              <div class="w-fact">
+                <span class="k">Consulta <span class="marker" title="Nota D2">D2</span></span>
+                <span class="v mono" style="font-size:9px">q_8f2c · rev 4</span>
+              </div>
+            </section>
+
+            <!-- Liquidez + objetivo -->
+            <div class="w-grid-hero">
+              <section class="w-card" aria-labelledby="w-liq">
+                <div class="w-card-head">
+                  <div class="left">
+                    <div>
+                      <p class="w-label">Total verificado</p>
+                      <h3 id="w-liq" style="font-size:11.5px">Liquidez disponible</h3>
+                    </div>
+                    <span class="marker" title="Nota D3">D3</span>
+                  </div>
+                  <span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span>
+                </div>
+                <div class="w-hero-amount"><span>12.480,55</span><span class="cur">€</span></div>
+                <p class="w-meta"><b>6 posiciones</b> incluidas · 0 excluidas · última lectura 03/11 18:20</p>
+                <div class="w-bar" role="img" aria-label="Composición de liquidez: 62% cuentas, 18% efectivo, 20% bolsas">
+                  <i class="s1" style="flex:62"></i><i class="s2" style="flex:18"></i><i class="s3" style="flex:20"></i>
+                </div>
+                <div class="w-legend">
+                  <span><i style="background:var(--chart-1)"></i>Cuentas 62%</span>
+                  <span><i style="background:var(--chart-2)"></i>Efectivo 18%</span>
+                  <span><i style="background:var(--chart-3)"></i>Bolsas 20%</span>
+                  <span class="muted" style="margin-left:auto">Sin sumar deuda</span>
+                </div>
+                <div class="w-meta" style="margin-top:10px">
+                  <span>Mayor posición <b>S001 · 4.820,15 €</b></span>
+                  <span>Menor <b>S009 · 350,00 €</b></span>
+                </div>
+              </section>
+
+              <section class="w-card" aria-labelledby="w-obj">
+                <div class="w-card-head">
+                  <div class="left">
+                    <div>
+                      <p class="w-label">Subtotal objetivo</p>
+                      <h3 id="w-obj" style="font-size:11.5px">Coste esencial mensual</h3>
+                    </div>
+                    <span class="marker" title="Nota D4">D4</span>
+                  </div>
+                  <span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+                </div>
+                <div class="w-amount-md">1.840,00 <span class="cur">€ / mes</span></div>
+                <p class="w-meta" style="margin-top:3px">2 importes esenciales sin informar. El subtotal no se eleva a total.</p>
+                <div class="w-progress" role="img" aria-label="Cobertura del objetivo mínimo: 69 por ciento"><span></span></div>
+                <div class="w-mini-foot"><span>11.040,00 € cubiertos</span><span>69,0% de 16.000,00 €</span></div>
+                <div class="w-subtotal">
+                  <span class="k">Mínimo objetivo · 6 meses</span>
+                  <span class="v">16.000,00 €</span>
+                </div>
+                <p class="w-meta" style="margin-top:6px">Sin transferencias ni reservas automáticas.</p>
+              </section>
+            </div>
+
+            <!-- Ciclo -->
+            <section class="w-card w-section-card" aria-labelledby="w-ciclo">
+              <div class="w-section-head">
+                <div>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <h3 id="w-ciclo">Ciclo C-2026-11 · real vs plan</h3>
+                    <span class="marker" title="Nota D5">D5</span>
+                  </div>
+                  <p>Lectura del ciclo actual; las cifras parciales no fabrican margen.</p>
+                </div>
+                <div class="w-seg-inline" aria-label="Vista del ciclo"><span class="on">Real</span><span>Plan</span></div>
+              </div>
+              <div class="w-kpis">
+                <div class="w-kpi">
+                  <div class="w-kpi-top"><span class="k">Ingresos</span><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></div>
+                  <div class="w-kpi-val">3.150,00 <span class="cur">€</span></div>
+                  <div class="w-kpi-foot">Plan 3.080,00 € · <span class="pos">+2,3%</span></div>
+                </div>
+                <div class="w-kpi">
+                  <div class="w-kpi-top"><span class="k">Gasto</span><span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></div>
+                  <div class="w-kpi-val">1.248,30 <span class="cur">€</span></div>
+                  <div class="w-kpi-foot">Plan 1.360,00 € · 2 partidas sin clasificar</div>
+                </div>
+                <div class="w-kpi is-nd">
+                  <div class="w-kpi-top"><span class="k">Margen real</span><span class="st st-nd"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span></div>
+                  <div class="w-kpi-val nd">No disponible</div>
+                  <div class="w-kpi-foot">Depende de un gasto parcial; no se estima.</div>
+                </div>
+                <div class="w-kpi">
+                  <div class="w-kpi-top"><span class="k">Del mes</span><span class="st st-zero"><span class="zi" aria-hidden="true">0</span>CERO</span></div>
+                  <div class="w-kpi-val">0,00 <span class="cur">€</span></div>
+                  <div class="w-kpi-foot">Cero verificado · sin movimientos imputados</div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Cartera -->
+            <div class="w-grid-4">
+              <section class="w-card" aria-labelledby="w-saldos">
+                <div class="w-card-head">
+                  <div class="left"><h3 id="w-saldos">Saldos y bolsas</h3><span class="marker" title="Nota D6">D6</span></div>
+                  <span class="st st-ok" style="font-size:7px">COMPLETO</span>
+                </div>
+                <div class="w-row"><span class="name">Liquidez</span><span class="val">4</span></div>
+                <div class="w-row"><span class="name">Ahorro</span><span class="val">3</span></div>
+                <div class="w-row"><span class="name">Bolsas</span><span class="val">1</span></div>
+                <div class="w-row"><span class="name">Sin informar</span><span class="val">0</span></div>
+                <div class="w-row"><span class="name">Cobertura</span><span class="val">100%</span></div>
+                <p class="w-meta-line">9 saldos · sin total entre vistas.</p>
+                <span class="w-card-link">Ver Saldos <span aria-hidden="true">→</span></span>
+              </section>
+
+              <section class="w-card" aria-labelledby="w-ahorro">
+                <div class="w-card-head">
+                  <div class="left"><h3 id="w-ahorro">Ahorro</h3></div>
+                  <span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+                </div>
+                <div class="w-amount-md" style="color:var(--muted)">12.400,00 <span class="cur">€</span></div>
+                <p class="w-meta" style="margin-top:2px">Subtotal de posiciones informadas</p>
+                <div class="w-row"><span class="name">Posiciones</span><span class="val">3 · 1 parcial</span></div>
+                <div class="w-row"><span class="name">Ahorro de cierre</span><span class="val nd">ND</span></div>
+                <div class="w-row"><span class="name">Variación</span><span class="val nd">ND</span></div>
+                <p class="w-meta-line">Motor no publicado. 1 posición parcial.</p>
+                <span class="w-card-link">Ver posiciones <span aria-hidden="true">→</span></span>
+              </section>
+
+              <section class="w-card" aria-labelledby="w-inv">
+                <div class="w-card-head">
+                  <div class="left"><h3 id="w-inv">Inversión</h3></div>
+                  <span class="st st-ok">COMPLETO</span>
+                </div>
+                <div class="w-amount-md">8.640,00 <span class="cur">€</span></div>
+                <p class="w-meta" style="margin-top:2px">4 posiciones valoradas</p>
+                <div class="w-row"><span class="name">Posiciones</span><span class="val">4</span></div>
+                <div class="w-row"><span class="name">Resultado</span><span class="val">0,00 € <span class="st st-zero" style="font-size:9px"><span class="zi">0</span>CERO</span></span></div>
+                <div class="w-row"><span class="name">Sin valorar</span><span class="val">0</span></div>
+                <p class="w-meta-line">Cero verificado, no ausencia.</p>
+                <span class="w-card-link">Ver inversiones <span aria-hidden="true">→</span></span>
+              </section>
+
+              <section class="w-card" aria-labelledby="w-deuda">
+                <div class="w-card-head">
+                  <div class="left"><h3 id="w-deuda">Deuda</h3></div>
+                  <span class="st st-partial">PARCIAL</span>
+                </div>
+                <div class="w-amount-md">14.260,00 <span class="cur">€</span></div>
+                <p class="w-meta" style="margin-top:2px">Capital pendiente · 3 deudas</p>
+                <div class="w-row"><span class="name">Hipotecaria · aparte</span><span class="val">96.400,00 €</span></div>
+                <div class="w-row"><span class="name">Sin informar</span><span class="val nd">1</span></div>
+                <p class="w-meta-line">La hipotecaria se muestra aparte; no se suma.</p>
+                <span class="w-card-link">Ver deudas <span aria-hidden="true">→</span></span>
+              </section>
+            </div>
+
+            <!-- Pendientes -->
+            <section class="w-card w-pending" aria-labelledby="w-pend">
+              <div class="w-card-head">
+                <div>
+                  <h3 id="w-pend">Pendientes de revisión <span class="tag accent" style="font-size:9px;padding:2px 5px">3 abiertos</span></h3>
+                  <span class="sub">Lo que impide cerrar una cifra o un ciclo, en una sola lista.</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:5px">
+                  <span class="st st-zero" style="font-size:9px"><span class="zi">0</span>CERO</span>
+                  <button class="w-btn w-btn-ghost" type="button">Revisar todo <svg class="icon" aria-hidden="true"><use href="#i-arrow-right"/></svg></button>
+                </div>
+              </div>
+              <div class="w-pending-row">
+                <span class="pi"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg></span>
+                <span><span class="t">S004 · Confirmar saldo de apertura</span><span class="m">Saldos · revisión 4 · 03/11</span></span>
+                <span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+                <span class="chev" aria-hidden="true">›</span>
+              </div>
+              <div class="w-pending-row">
+                <span class="pi"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg></span>
+                <span><span class="t">M-0415 · Falta referencia</span><span class="m">Movimientos · 02/11 · Seguro hogar</span></span>
+                <span class="st st-nd"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span>
+                <span class="chev" aria-hidden="true">›</span>
+              </div>
+              <div class="w-pending-row">
+                <span class="pi"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg></span>
+                <span><span class="t">C-2026-11 · 2 movimientos sin conciliar</span><span class="m">Ciclo · corte 04/11 · ventana abierta</span></span>
+                <span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+                <span class="chev" aria-hidden="true">›</span>
+              </div>
+            </section>
+          </div>
+
+          <footer class="w-foot">
+            <span>MyFinanzas · local · sin envío de datos · v0.11</span>
+            <span>Datos ficticios · propuesta visual · no implementado</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes" aria-label="Notas de diseño del escritorio">
+      <article class="note-card"><h4><span class="marker">D1</span>Shell y navegación</h4><p><strong>Sidebar 236 px con grupos y ciclo visible.</strong> Se mantiene el ancho y la densidad actuales; el ciclo deja de ser un dato suelto y se convierte en el ancla espacial de toda la sesión.</p></article>
+      <article class="note-card"><h4><span class="marker">D2</span>Contexto</h4><p><strong>Una franja, cinco hechos.</strong> Ciclo, corte, referencia y cobertura quedan separados de las cifras. «Solo lectura» es un estado, no un adorno; ningún dato ausente se inventa.</p></article>
+      <article class="note-card"><h4><span class="marker">D3</span>Liquidez</h4><p><strong>Una cifra protagonista.</strong> 38 px tabulares y estado al mismo nivel. La barra de composición explica el total sin añadir un gráfico costoso; el alcance («6 posiciones») va debajo.</p></article>
+      <article class="note-card"><h4><span class="marker">D4</span>Objetivo</h4><p><strong>Subtotal explícito.</strong> La etiqueta «SUBTOTAL OBJETIVO» y el borde discontinuo impiden leerlo como total cerrado. El porcentaje y los meses cubiertos comparten una sola línea base.</p></article>
+      <article class="note-card"><h4><span class="marker">D5</span>Ciclo</h4><p><strong>Cuatro cifras, una jerarquía.</strong> Importe → estado → plan. El margen ND no se rellena con una estimación: se muestra como ausencia con su motivo, y CERO conserva su propia marca.</p></article>
+      <article class="note-card"><h4><span class="marker">D6</span>Cartera y pendientes</h4><p><strong>Mismo lenguaje en cuatro dominios.</strong> Ahorro, inversión y deuda comparten cabecera y estados; la deuda hipotecaria se aparta visualmente y los pendientes se convierten en una lista accionable.</p></article>
+      <article class="note-card"><h4><span class="marker">D7</span>Tipografía y color</h4><p><strong>Densidad sin ruido.</strong> Micro-etiquetas de 7,5–9 px, cifras tabulares y contraste AA. El coral se reserva para la acción principal; el teal comunica verificación, nunca decoración.</p></article>
+      <article class="note-card"><h4><span class="marker">D8</span>Foco</h4><p><strong>Foco de 3 px con offset 3.</strong> Visible sobre superficie, sidebar oscura y fondos cálidos. Se conserva en los tres temas y no depende solo del color del estado.</p></article>
+    </div>
+  </section>
+
+  <!-- 02 · MÓVIL -->
+  <section class="chapter" id="movil" aria-labelledby="movil-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">02</span>
+      <div>
+        <p class="eyebrow">Pantalla principal · móvil</p>
+        <h2 id="movil-title">La misma lectura, en una columna y a una mano</h2>
+        <p class="chapter-lead">
+          No es el escritorio comprimido: desaparece la sidebar, el ciclo vive en la cabecera y
+          cada KPI es una fila con la cifra a la derecha. Todo el contenido mide 390 px y no
+          requiere desplazamiento horizontal.
+        </p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag accent">390 px</span>
+        <span class="tag">1 columna</span>
+        <span class="tag">sin scroll-x</span>
+      </div>
+    </div>
+
+    <div class="mobile-layout">
+      <div class="phone" aria-label="Wireframe de Inicio en móvil a 390 píxeles">
+        <div class="m-status"><span>9:41</span><span class="sig">▮▮▮ ◔ ▰</span></div>
+        <div class="m-top">
+          <div class="m-brand">
+            <span class="bn">My<span>Finanzas</span></span>
+            <small>C-2026-11 · abierto</small>
+          </div>
+          <div class="m-top-actions">
+            <button class="w-iconbtn" type="button" aria-label="Avisos"><svg class="icon" style="width:15px;height:15px" aria-hidden="true"><use href="#i-bell"/></svg></button>
+            <button class="w-iconbtn" type="button" aria-label="Abrir menú"><svg class="icon" style="width:16px;height:16px" aria-hidden="true"><use href="#i-menu"/></svg></button>
+          </div>
+        </div>
+
+        <div class="m-body">
+          <div class="m-greet">
+            <p class="eyebrow" style="margin-bottom:2px">Panorama · solo lectura</p>
+            <h3>Inicio</h3>
+            <p class="m-sub">Referencia 03/11/2026 · corte 04/11</p>
+          </div>
+
+          <section class="m-hero" aria-label="Liquidez disponible">
+            <div class="m-topline">
+              <p class="w-label">Total verificado</p>
+              <span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span>
+            </div>
+            <div class="m-amount">12.480,55 <span class="cur">€</span></div>
+            <p class="m-sub" style="margin:0;font-size:9.5px;color:var(--muted)">Liquidez · 6 posiciones · 0 excluidas</p>
+            <div class="m-bar" role="img" aria-label="Composición: 62% cuentas, 18% efectivo, 20% bolsas">
+              <i class="s1" style="flex:62"></i><i class="s2" style="flex:18"></i><i class="s3" style="flex:20"></i>
+            </div>
+            <div class="m-legend"><span><i style="background:var(--chart-1)"></i>Cuentas 62%</span><span><i style="background:var(--chart-2)"></i>Efectivo 18%</span><span><i style="background:var(--chart-3)"></i>Bolsas 20%</span></div>
+          </section>
+
+          <div class="m-kpis" aria-label="Indicadores del ciclo">
+            <div class="m-kpi">
+              <span class="k">Ingresos</span><span class="v">3.150,00 €</span>
+              <span class="f"><span class="st st-ok" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span>Plan 3.080,00 €</span>
+            </div>
+            <div class="m-kpi">
+              <span class="k">Gasto</span><span class="v">1.248,30 €</span>
+              <span class="f"><span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>2 partidas pendientes</span>
+            </div>
+            <div class="m-kpi">
+              <span class="k">Margen real</span><span class="v nd">No disponible</span>
+              <span class="f"><span class="st st-nd" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span>Depende del gasto</span>
+            </div>
+            <div class="m-kpi">
+              <span class="k">Del mes</span><span class="v">0,00 €</span>
+              <span class="f"><span class="st st-zero" style="font-size:9px"><span class="zi">0</span>CERO</span>Cero verificado</span>
+            </div>
+          </div>
+
+          <section class="m-card" aria-label="Objetivo R6">
+            <div class="m-card-head">
+              <div><h4>Objetivo R6</h4><span class="sub">Coste esencial · subtotal</span></div>
+              <span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span>
+            </div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+              <span style="font-size:20px;font-weight:740;letter-spacing:-.035em;font-variant-numeric:tabular-nums">1.840,00 <span style="font-size:10px;color:var(--muted);font-weight:600">€/mes</span></span>
+              <span style="font-size:9.5px;color:var(--muted)">69,0%</span>
+            </div>
+            <div class="m-bar" style="margin:7px 0 5px"><i class="s1" style="width:69%"></i></div>
+            <div style="display:flex;justify-content:space-between;gap:8px;font-size:9px;color:var(--muted)"><span>11.040,00 € cubiertos</span><span>mín. 16.000,00 €</span></div>
+            <p style="margin:7px 0 0;font-size:9px;color:var(--muted);line-height:1.45">2 importes sin informar · el subtotal no se convierte en total.</p>
+          </section>
+
+          <section class="m-card" aria-label="Cartera">
+            <div class="m-card-head">
+              <div><h4>Cartera</h4><span class="sub">Saldos, ahorro, inversión y deuda</span></div>
+              <span class="marker" title="Nota M3">M3</span>
+            </div>
+            <div class="m-row"><span class="name">Saldos · 9 piezas</span><span class="val">4 liq. · 3 ahorro</span></div>
+            <div class="m-row"><span class="name">Ahorro · posiciones</span><span class="val">12.400,00 € <span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></span></div>
+            <div class="m-row"><span class="name">Inversión valorada</span><span class="val">8.640,00 € <span class="st st-ok" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></span></div>
+            <div class="m-row"><span class="name">Deuda pendiente</span><span class="val">14.260,00 € <span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></span></div>
+          </section>
+
+          <section class="m-card" aria-label="Pendientes">
+            <div class="m-card-head">
+              <div><h4>Pendientes</h4><span class="sub">3 abiertos · 0 críticos</span></div>
+              <span class="st st-zero" style="font-size:9px"><span class="zi">0</span>CERO</span>
+            </div>
+            <div class="m-row"><span class="name" style="color:var(--text);font-weight:650">S004 · Confirmar apertura</span><span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></div>
+            <div class="m-row"><span class="name" style="color:var(--text);font-weight:650">M-0415 · Falta referencia</span><span class="st st-nd" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span></div>
+            <div class="m-row"><span class="name" style="color:var(--text);font-weight:650">Ciclo · 2 sin conciliar</span><span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></div>
+          </section>
+        </div>
+
+        <nav class="m-nav" aria-label="Navegación móvil de la muestra">
+          <a class="on" href="#movil"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg>Inicio</a>
+          <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg>Saldos</a>
+          <a href="#movil"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg>Movs.</a>
+          <a href="#movil"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>Ciclos</a>
+          <a href="#movil"><svg class="icon" aria-hidden="true"><use href="#i-menu"/></svg>Más</a>
+        </nav>
+      </div>
+
+      <div class="m-notes" aria-label="Notas de diseño del móvil">
+        <article class="note-card"><h4><span class="marker">M1</span>Cabecera compacta</h4><p><strong>Marca + ciclo + dos acciones.</strong> La navegación no se convierte en una sidebar estrecha; el menú completo queda en una acción explícita y la barra inferior cubre los cinco destinos frecuentes.</p></article>
+        <article class="note-card"><h4><span class="marker">M2</span>KPIs en columna</h4><p><strong>Etiqueta a la izquierda, cifra a la derecha.</strong> Los cuatro indicadores son filas de una columna, no una rejilla 2×2. El pulgar alcanza el contenido y no se fuerza una tabla en 390 px.</p></article>
+        <article class="note-card"><h4><span class="marker">M3</span>Tarjetas apiladas</h4><p><strong>Se conserva el estado y el alcance.</strong> Cada tarjeta mantiene total/subtotal y su chip; lo secundario se resume y se puede ampliar. Nada depende solo del color.</p></article>
+        <article class="note-card"><h4><span class="marker">M4</span>Límites de 390</h4><p><strong>Sin scroll horizontal.</strong> Contenedores con <code>min-width:0</code>, texto que rompe y objetivos táctiles de 40–44 px. La barra inferior respeta el área segura del sistema.</p></article>
+        <article class="note-card"><h4><span class="marker">M5</span>Jerarquía</h4><p><strong>Liquidez primero, luego el ciclo.</strong> La portada móvil no muestra todos los módulos: muestra la cifra que orienta y deja la exploración a la navegación. La densidad se gana con ritmo, no con más bloques.</p></article>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · LISTADO -->
+  <section class="chapter" id="listado" aria-labelledby="listado-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">03</span>
+      <div>
+        <p class="eyebrow">Listado y tabla · escritorio</p>
+        <h2 id="listado-title">Saldos: filtros legibles, tabla densa y estados honestos</h2>
+        <p class="chapter-lead">
+          La tabla gana precisión sin perder densidad: identificadores monoespaciados, importes
+          tabulares y estados textuales. El pie declara un subtotal con alcance y recuerda que
+          una posición ND impide emitir un total.
+        </p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag accent">1440 px</span>
+        <span class="tag">tabla + vacío + error</span>
+        <span class="tag">filtros persistentes</span>
+      </div>
+    </div>
+
+    <div class="viewport" aria-label="Wireframe del listado de Saldos">
+      <div class="frame-bar">
+        <span class="fb-left"><span class="dot3" aria-hidden="true"><i></i><i></i><i></i></span>Escritorio · 1440 × 1000 · Saldos</span>
+        <span class="fb-right"><span class="live">●</span> Tema activo · <span data-theme-live>light-s</span> · datos ficticios</span>
+      </div>
+
+      <div class="app">
+        <aside class="w-sidebar" aria-label="Navegación principal de la muestra">
+          <a class="w-brand" href="#listado"><span class="bn">My<span>Finanzas</span></span><small>Control financiero local</small></a>
+          <div class="w-cycle-tile">
+            <span class="k">Ciclo financiado <span>abierto</span></span>
+            <strong>C-2026-11</strong>
+            <small>01 nov → 30 nov · corte 04/11</small>
+          </div>
+          <p class="w-nav-group">Mi espacio</p>
+          <nav class="w-nav" aria-label="Mi espacio">
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span class="label">Inicio</span><span class="count">3</span></a>
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-check-sq"/></svg><span class="label" title="Pendientes y conciliación">Pendientes</span><span class="count">3</span></a>
+          </nav>
+          <p class="w-nav-group">Patrimonio</p>
+          <nav class="w-nav" aria-label="Patrimonio">
+            <a class="active" href="#listado" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg><span class="label">Saldos</span><span class="count">9</span></a>
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg><span class="label">Inversiones</span></a>
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg><span class="label">Deudas</span></a>
+          </nav>
+          <p class="w-nav-group">Operación</p>
+          <nav class="w-nav" aria-label="Operación">
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span class="label">Ciclos</span></a>
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg><span class="label">Movimientos</span></a>
+            <a href="#listado"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span class="label">Presupuestos</span></a>
+          </nav>
+          <div class="w-side-bottom">
+            <span class="w-local"><span class="dot" aria-hidden="true"></span>Local · datos ficticios</span>
+            <span class="w-user"><span class="av" aria-hidden="true">JM</span><span><b>Espacio privado</b><small>Solo lectura</small></span></span>
+          </div>
+        </aside>
+
+        <div class="w-main">
+          <header class="w-header">
+            <div>
+              <p class="w-breadcrumb">Patrimonio / Saldos</p>
+              <div class="w-cycleline"><span class="dot" aria-hidden="true"></span>Ciclo <strong>C-2026-11</strong><span class="sep" aria-hidden="true">·</span><span class="muted">9 activos · 2 inactivos</span></div>
+            </div>
+            <div class="w-head-actions">
+              <span class="w-timestamp"><svg class="icon" style="width:11px;height:11px" aria-hidden="true"><use href="#i-clock"/></svg>Consulta 08:42</span>
+              <button class="w-btn w-btn-ghost" type="button"><svg class="icon" aria-hidden="true"><use href="#i-download"/></svg><span>Exportar</span></button>
+              <span class="w-avatar" aria-hidden="true">JM</span>
+            </div>
+          </header>
+
+          <div class="w-content">
+            <div class="w-pagehead">
+              <div>
+                <p class="eyebrow" style="margin-bottom:4px">Patrimonio · configuración</p>
+                <h1>Saldos</h1>
+                <p class="w-lead">Posiciones activas por defecto. Los inactivos se consultan sin mezclarse con la vista operativa.</p>
+              </div>
+              <div class="actions">
+                <button class="w-btn w-btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg>Vista</button>
+                <button class="w-btn w-btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>Nuevo Saldo</button>
+              </div>
+            </div>
+
+            <div class="w-toolbar">
+              <div class="w-tabs" role="tablist" aria-label="Estado de los saldos">
+                <span class="on" role="tab" aria-selected="true">Activos <b>9</b></span>
+                <span role="tab" aria-selected="false">Inactivos <b>2</b></span>
+                <span role="tab" aria-selected="false">Todos <b>11</b></span>
+              </div>
+              <span class="muted" style="font-size:8px">Última sincronización local · 08:42:10</span>
+            </div>
+
+            <section class="w-filters" aria-label="Filtros del listado">
+              <div class="w-filter">
+                <label for="wf-q">Buscar</label>
+                <div class="w-control">
+                  <svg class="icon" aria-hidden="true"><use href="#i-search"/></svg>
+                  <input class="w-input" id="wf-q" placeholder="ID, nombre o finalidad" value="">
+                </div>
+              </div>
+              <div class="w-filter">
+                <label for="wf-tipo">Tipo</label>
+                <div class="w-control">
+                  <select class="w-input w-select" id="wf-tipo"><option>Todos</option><option>Banco</option><option>Efectivo</option><option>Ahorro</option><option>Inversión</option></select>
+                  <span class="chev" aria-hidden="true">⌄</span>
+                </div>
+              </div>
+              <div class="w-filter">
+                <label for="wf-control">Control</label>
+                <div class="w-control">
+                  <select class="w-input w-select" id="wf-control"><option>Todos</option><option>Movimientos</option><option>Valoración</option><option>Terminal</option></select>
+                  <span class="chev" aria-hidden="true">⌄</span>
+                </div>
+              </div>
+              <div class="w-filter">
+                <label for="wf-fin">Finalidad</label>
+                <div class="w-control">
+                  <select class="w-input w-select" id="wf-fin"><option>Todas</option><option>Ahorro</option><option>Gastos planificados</option><option>Inversión</option></select>
+                  <span class="chev" aria-hidden="true">⌄</span>
+                </div>
+              </div>
+              <div class="w-filter">
+                <label for="wf-liq">Liquidez</label>
+                <div class="w-control">
+                  <select class="w-input w-select" id="wf-liq"><option>Todas</option><option>Sí</option><option>No</option><option>Sin informar</option></select>
+                  <span class="chev" aria-hidden="true">⌄</span>
+                </div>
+              </div>
+              <button class="w-btn w-btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-filter"/></svg>Aplicar</button>
+            </section>
+
+            <div class="w-applied" aria-label="Filtros aplicados">
+              <span class="apl">Ciclo C-2026-11 <button type="button" aria-label="Quitar filtro de ciclo">×</button></span>
+              <span class="all">1 filtro aplicado</span>
+              <button class="w-clear" type="button" style="margin-left:auto">Limpiar filtros</button>
+            </div>
+
+            <div class="w-table-wrap">
+              <table class="w-table">
+                <colgroup>
+                  <col style="width:62px"><col><col style="width:124px"><col style="width:114px"><col style="width:70px"><col style="width:92px"><col style="width:104px"><col style="width:30px">
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th scope="col">ID</th>
+                    <th scope="col">Nombre</th>
+                    <th scope="col">Tipo · control</th>
+                    <th scope="col">Finalidad</th>
+                    <th scope="col">Liquidez</th>
+                    <th scope="col" class="num">Posición</th>
+                    <th scope="col">Estado</th>
+                    <th scope="col" aria-label="Acciones"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr class="is-selected">
+                    <td class="c-id" data-label="ID"><span class="id">S001</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Cuenta diaria</span><span class="sub">Actualizado 03/11 · movimientos</span></td>
+                    <td data-label="Tipo · control">Banco<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Gastos planificados</td>
+                    <td data-label="Liquidez">Sí</td>
+                    <td class="num" data-label="Posición">4.820,15 €</td>
+                    <td data-label="Estado"><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S001"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S002</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Tarjeta gastos</span><span class="sub">Actualizado 03/11 · movimientos</span></td>
+                    <td data-label="Tipo · control">Tarjeta<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Gastos planificados</td>
+                    <td data-label="Liquidez">Sí</td>
+                    <td class="num" data-label="Posición">312,40 €</td>
+                    <td data-label="Estado"><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S002"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S003</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Colchón</span><span class="sub">Actualizado 01/11 · movimientos</span></td>
+                    <td data-label="Tipo · control">Ahorro<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Ahorro</td>
+                    <td data-label="Liquidez">No</td>
+                    <td class="num" data-label="Posición">8.200,00 €</td>
+                    <td data-label="Estado"><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S003"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S004</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Cuenta remunerada</span><span class="sub">Revisión 4 · pendiente de apertura</span></td>
+                    <td data-label="Tipo · control">Banco<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Ahorro</td>
+                    <td data-label="Liquidez">No</td>
+                    <td class="num" data-label="Posición">4.200,00 €</td>
+                    <td data-label="Estado"><span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S004"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S005</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Cartera indexada</span><span class="sub">Sin valoración informada</span></td>
+                    <td data-label="Tipo · control">Inversión<span class="sub">Valoración</span></td>
+                    <td data-label="Finalidad">Inversión</td>
+                    <td data-label="Liquidez">No</td>
+                    <td class="num" data-label="Posición"><span class="st st-nd" title="No disponible">ND</span></td>
+                    <td data-label="Estado"><span class="st st-nd"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S005"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S006</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Fondo emergencia</span><span class="sub">Cero explícito · sin movimientos</span></td>
+                    <td data-label="Tipo · control">Ahorro<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Ahorro</td>
+                    <td data-label="Liquidez">No</td>
+                    <td class="num" data-label="Posición">0,00 €</td>
+                    <td data-label="Estado"><span class="st st-zero"><span class="zi" aria-hidden="true">0</span>CERO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S006"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S007</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Efectivo casa</span><span class="sub">Actualizado 02/11 · terminal</span></td>
+                    <td data-label="Tipo · control">Efectivo<span class="sub">Terminal</span></td>
+                    <td data-label="Finalidad">—</td>
+                    <td data-label="Liquidez">Sí</td>
+                    <td class="num" data-label="Posición">640,00 €</td>
+                    <td data-label="Estado"><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S007"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S008</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Cuenta antigua</span><span class="sub">Control no demostrado</span></td>
+                    <td data-label="Tipo · control">Banco<span class="sub">No controlado</span></td>
+                    <td data-label="Finalidad">—</td>
+                    <td data-label="Liquidez">No</td>
+                    <td class="num" data-label="Posición">120,45 €</td>
+                    <td data-label="Estado"><span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S008"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                  <tr>
+                    <td class="c-id" data-label="ID"><span class="id">S009</span></td>
+                    <td class="c-name" data-label="Nombre"><span class="nm">Bolsa viaje</span><span class="sub">Se muestra como bolsa</span></td>
+                    <td data-label="Tipo · control">Efectivo<span class="sub">Movimientos</span></td>
+                    <td data-label="Finalidad">Gastos planificados</td>
+                    <td data-label="Liquidez">Sí</td>
+                    <td class="num" data-label="Posición">350,00 €</td>
+                    <td data-label="Estado"><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td>
+                    <td class="act c-actions"><button type="button" aria-label="Acciones de S009"><svg class="icon" style="width:13px;height:13px" aria-hidden="true"><use href="#i-more"/></svg></button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <div class="w-table-foot">
+                <span class="count"><b>9 saldos</b> · 7 con importe · 1 ND · 1 cero verificado · 2 inactivos ocultos</span>
+                <div class="w-subtotal-block">
+                  <span class="k">Subtotal · no es total</span>
+                  <span class="v">18.643,00 €</span>
+                  <span class="hint">ND excluido del subtotal</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="w-pagination">
+              <span class="pg">Mostrando 1–9 de 12 · orden: ID ascendente</span>
+              <div class="pgbtns"><button type="button" aria-label="Anterior">‹</button><button class="on" type="button" aria-current="page">1</button><button type="button">2</button><button type="button" aria-label="Siguiente">›</button></div>
+            </div>
+
+            <div class="state-demos" aria-label="Estados alternativos de la vista">
+              <section class="state-demo empty" aria-label="Estado vacío por filtros">
+                <div class="sd-top"><span class="cap">Estado · vacío</span><span class="st st-neutral">0 resultados</span></div>
+                <span class="sd-icon"><svg class="icon" aria-hidden="true"><use href="#i-search"/></svg></span>
+                <h4>Sin resultados para estos filtros</h4>
+                <p>No hay saldos que coincidan con «Ciclo C-2026-11» y la búsqueda actual. Quita un filtro o busca por ID.</p>
+                <div class="sd-actions">
+                  <button class="w-btn w-btn-secondary" type="button">Limpiar filtros</button>
+                  <button class="w-btn w-btn-ghost" type="button">Ver todos los saldos</button>
+                </div>
+              </section>
+              <section class="state-demo error" aria-label="Estado de error de carga">
+                <div class="sd-top"><span class="cap">Estado · error</span><span class="st st-neutral">HTTP 503</span></div>
+                <span class="sd-icon"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg></span>
+                <h4>No se pudieron cargar los saldos</h4>
+                <p>La consulta falló. Los filtros se conservan y no se muestra un vacío falso: reintenta o revisa el detalle técnico.</p>
+                <div class="sd-actions">
+                  <button class="w-btn w-btn-primary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Reintentar</button>
+                  <button class="w-btn w-btn-secondary" type="button">Copiar detalle</button>
+                </div>
+                <span class="code">q_8f2c · revisión 4</span>
+              </section>
+            </div>
+          </div>
+
+          <footer class="w-foot">
+            <span>MyFinanzas · local · sin envío de datos · v0.11</span>
+            <span>Datos ficticios · propuesta visual · no implementado</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes" aria-label="Notas de diseño del listado">
+      <article class="note-card"><h4><span class="marker">L1</span>Filtros</h4><p><strong>Una barra, campos etiquetados y filtros aplicados visibles.</strong> El usuario sabe qué está filtrando sin abrir un panel. «Limpiar» está siempre a la vista y no oculta el estado actual.</p></article>
+      <article class="note-card"><h4><span class="marker">L2</span>Tabla densa</h4><p><strong>38 px de fila y cifras tabulares.</strong> El ID va en mono y el estado en texto con icono, no solo color. La cabecera se mantiene legible a 1440 sin convertir la tabla en una ficha.</p></article>
+      <article class="note-card"><h4><span class="marker">L3</span>Fila seleccionada</h4><p><strong>Selección con barra teal y fondo suave.</strong> La fila activa no compite con los chips de estado; el hover y el foco son independientes y visibles con teclado.</p></article>
+      <article class="note-card"><h4><span class="marker">L4</span>Subtotal</h4><p><strong>El pie declara alcance y exclusiones.</strong> «Subtotal · no es total» y «ND excluido» evitan que una cifra parcial se lea como cierre. El recuento de filas acompaña siempre al importe.</p></article>
+      <article class="note-card"><h4><span class="marker">L5</span>Vacío</h4><p><strong>Vacío por filtros, no por ausencia de datos.</strong> El texto nombra los filtros activos y ofrece una salida. No se reutiliza el mismo mensaje para «no hay saldos» y «no hay coincidencias».</p></article>
+      <article class="note-card"><h4><span class="marker">L6</span>Error</h4><p><strong>El error no se disfraza de vacío.</strong> Conserva filtros, ofrece reintento y deja un identificador de consulta. El fondo de error y el icono refuerzan el mensaje sin depender del rojo.</p></article>
+    </div>
+  </section>
+
+  <!-- 04 · FORMULARIO -->
+  <section class="chapter" id="formulario" aria-labelledby="form-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">04</span>
+      <div>
+        <p class="eyebrow">Alta y edición · formulario</p>
+        <h2 id="form-title">Editar Saldo: tres bloques, errores asociados y ayudas que no compiten</h2>
+        <p class="chapter-lead">
+          El formulario conserva la estructura de identificación, configuración económica y
+          atributos de control. La propuesta mejora la lectura del error, separa ayuda de
+          validación y hace visible el estado de guardado sin añadir acciones nuevas.
+        </p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag accent">1440 px</span>
+        <span class="tag">validación inline</span>
+        <span class="tag">foco visible</span>
+        <span class="tag">Sí / No / sin informar</span>
+      </div>
+    </div>
+
+    <div class="viewport" aria-label="Wireframe del formulario de edición de un Saldo">
+      <div class="frame-bar">
+        <span class="fb-left"><span class="dot3" aria-hidden="true"><i></i><i></i><i></i></span>Escritorio · 1440 × 1000 · Editar Saldo</span>
+        <span class="fb-right"><span class="live">●</span> Tema activo · <span data-theme-live>light-s</span> · datos ficticios</span>
+      </div>
+
+      <div class="app">
+        <aside class="w-sidebar" aria-label="Navegación principal de la muestra">
+          <a class="w-brand" href="#formulario"><span class="bn">My<span>Finanzas</span></span><small>Control financiero local</small></a>
+          <div class="w-cycle-tile">
+            <span class="k">Ciclo financiado <span>abierto</span></span>
+            <strong>C-2026-11</strong>
+            <small>01 nov → 30 nov · corte 04/11</small>
+          </div>
+          <p class="w-nav-group">Mi espacio</p>
+          <nav class="w-nav" aria-label="Mi espacio">
+            <a href="#desktop"><svg class="icon" aria-hidden="true"><use href="#i-home"/></svg><span class="label">Inicio</span><span class="count">3</span></a>
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-check-sq"/></svg><span class="label" title="Pendientes y conciliación">Pendientes</span><span class="count">3</span></a>
+          </nav>
+          <p class="w-nav-group">Patrimonio</p>
+          <nav class="w-nav" aria-label="Patrimonio">
+            <a class="active" href="#formulario" aria-current="page"><svg class="icon" aria-hidden="true"><use href="#i-wallet"/></svg><span class="label">Saldos</span><span class="count">9</span></a>
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-trend"/></svg><span class="label">Inversiones</span></a>
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-card"/></svg><span class="label">Deudas</span></a>
+          </nav>
+          <p class="w-nav-group">Operación</p>
+          <nav class="w-nav" aria-label="Operación">
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg><span class="label">Ciclos</span></a>
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg><span class="label">Movimientos</span></a>
+            <a href="#formulario"><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span class="label">Presupuestos</span></a>
+          </nav>
+          <div class="w-side-bottom">
+            <span class="w-local"><span class="dot" aria-hidden="true"></span>Local · datos ficticios</span>
+            <span class="w-user"><span class="av" aria-hidden="true">JM</span><span><b>Espacio privado</b><small>Solo lectura</small></span></span>
+          </div>
+        </aside>
+
+        <div class="w-main">
+          <header class="w-header">
+            <div>
+              <p class="w-breadcrumb">Patrimonio / Saldos / S004</p>
+              <div class="w-cycleline"><span class="dot" aria-hidden="true"></span>Edición <strong>S004</strong><span class="sep" aria-hidden="true">·</span><span class="muted">revisión 4 · activa</span></div>
+            </div>
+            <div class="w-head-actions">
+              <span class="w-timestamp"><svg class="icon" style="width:11px;height:11px" aria-hidden="true"><use href="#i-clock"/></svg>Borrador local</span>
+              <span class="w-avatar" aria-hidden="true">JM</span>
+            </div>
+          </header>
+
+          <div class="w-content">
+            <a class="w-back" href="#listado"><svg class="icon" style="width:12px;height:12px" aria-hidden="true"><use href="#i-arrow-left"/></svg>Volver a Saldos</a>
+
+            <div class="w-pagehead">
+              <div>
+                <p class="eyebrow" style="margin-bottom:4px">Saldos · configuración</p>
+                <h1>Editar Saldo</h1>
+                <p class="w-lead">Define identidad y atributos. Los importes no se recalculan en esta pantalla.</p>
+              </div>
+              <div class="actions">
+                <span class="w-immutable"><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg>S004 · ID inmutable</span>
+                <span class="tag accent" style="background:var(--accent-soft)">Activa</span>
+              </div>
+            </div>
+
+            <div class="w-alert" role="alert" tabindex="-1">
+              <svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>
+              <div><b>Revisa 1 campo antes de guardar.</b> El borrador se conserva. <a href="#wf-saldo">Ir a Saldo apertura</a></div>
+            </div>
+
+            <div class="w-form-layout">
+              <div class="w-form-main">
+                <section class="w-panel" aria-labelledby="f-id">
+                  <div class="w-sec-head">
+                    <span class="w-num" aria-hidden="true">01</span>
+                    <div><h2 id="f-id">Identificación</h2><p>Un nombre reconocible y un tipo estable.</p></div>
+                  </div>
+                  <div class="w-form-grid">
+                    <div class="w-field">
+                      <label for="wf-nombre">Nombre <span class="req" aria-hidden="true">*</span></label>
+                      <input class="w-input" id="wf-nombre" value="Cuenta remunerada" autocomplete="off">
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>Visible en listados y posiciones.</p>
+                    </div>
+                    <div class="w-field">
+                      <label for="wf-f-tipo">Tipo <span class="req" aria-hidden="true">*</span></label>
+                      <div class="w-control">
+                        <select class="w-input w-select" id="wf-f-tipo"><option>Banco</option><option>Efectivo</option><option>Tarjeta</option><option>Ahorro</option><option>Inversión</option></select>
+                        <span class="chev" aria-hidden="true">⌄</span>
+                      </div>
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>El control disponible depende del tipo.</p>
+                    </div>
+                  </div>
+                  <p class="w-form-help"><b>Identificador S004.</b> Permanece estable al editar, desactivar o reactivar. No se reutiliza.</p>
+                </section>
+
+                <section class="w-panel" aria-labelledby="f-eco">
+                  <div class="w-sec-head">
+                    <span class="w-num" aria-hidden="true">02</span>
+                    <div><h2 id="f-eco">Configuración económica</h2><p>La apertura es una posición inicial, no un movimiento.</p></div>
+                  </div>
+                  <div class="w-form-grid">
+                    <div class="w-field">
+                      <label for="wf-f-control">Control <span class="req" aria-hidden="true">*</span></label>
+                      <div class="w-control">
+                        <select class="w-input w-select" id="wf-f-control"><option>Movimientos</option><option>Valoración</option><option>Terminal</option></select>
+                        <span class="chev" aria-hidden="true">⌄</span>
+                      </div>
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>Solo combinaciones contrastadas. Manual no disponible.</p>
+                    </div>
+                    <div class="w-field">
+                      <label for="wf-fecha">Fecha apertura <span class="opt">· opcional</span></label>
+                      <input class="w-input" id="wf-fecha" value="12/01/2025" inputmode="numeric">
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-calendar"/></svg>dd/mm/aaaa · fecha civil del inicio del control.</p>
+                    </div>
+                    <div class="w-field is-invalid is-focus" id="wf-saldo-apertura">
+                      <label for="wf-saldo">Saldo apertura (€) <span class="opt">· opcional</span></label>
+                      <input class="w-input" id="wf-saldo" value="12.400,555" inputmode="decimal" aria-invalid="true" aria-describedby="wf-saldo-help wf-saldo-err">
+                      <p class="err" id="wf-saldo-err"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg>Usa como máximo dos decimales; el valor no se ha modificado.</p>
+                      <p class="help" id="wf-saldo-help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>Admite negativos y cero explícito. Vacío no significa cero.</p>
+                    </div>
+                    <div class="w-field">
+                      <label for="wf-objetivo">Objetivo (€) <span class="opt">· opcional</span></label>
+                      <input class="w-input" id="wf-objetivo" value="6.000,00" inputmode="decimal">
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>Sin objetivo no significa objetivo cero.</p>
+                    </div>
+                  </div>
+                  <p class="w-form-help"><b>Foco visible:</b> el campo con error conserva el valor y el anillo de foco de 3 px. El borde rojo no sustituye al mensaje.</p>
+                </section>
+
+                <section class="w-panel" aria-labelledby="f-atributos">
+                  <div class="w-sec-head">
+                    <span class="w-num" aria-hidden="true">03</span>
+                    <div><h2 id="f-atributos">Atributos de control</h2><p>Independientes entre sí, del tipo y del control.</p></div>
+                  </div>
+                  <div class="w-form-grid">
+                    <div class="w-field span-2">
+                      <label for="wf-f-fin">Finalidad <span class="opt">· opcional</span></label>
+                      <div class="w-control">
+                        <select class="w-input w-select" id="wf-f-fin"><option>Ahorro</option><option>Gastos planificados</option><option>Inversión</option><option>Sin informar</option></select>
+                        <span class="chev" aria-hidden="true">⌄</span>
+                      </div>
+                      <p class="help"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>No se deduce del tipo ni de los switches.</p>
+                    </div>
+                  </div>
+                  <div class="w-switches">
+                    <div class="w-switch">
+                      <div class="txt"><b>Liquidez</b><small>Se incluye en la vista de liquidez disponible.</small></div>
+                      <div class="ctl"><span class="toggle w-toggle" role="img" aria-label="Desactivado"></span><span class="stateword off">No</span></div>
+                    </div>
+                    <div class="w-switch">
+                      <div class="txt"><b>Mostrar como bolsa</b><small>La posición se agrupa como bolsa, no como cuenta.</small></div>
+                      <div class="ctl"><span class="toggle w-toggle on" role="img" aria-label="Activado"></span><span class="stateword">Sí</span></div>
+                    </div>
+                    <div class="w-switch is-absent">
+                      <div class="txt"><b>Permite salida a Exterior</b><small>Histórico sin informar; no equivale a No.</small></div>
+                      <div class="ctl">
+                        <span class="w-absent-note"><span class="st st-nd" title="Sin informar">SIN INFORMAR</span><span class="toggle w-toggle absent" role="img" aria-label="Valor ausente"></span></span>
+                        <button class="w-btn w-btn-ghost" type="button" style="min-height:24px;padding:2px 4px;font-size:8.5px">Informar</button>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="w-form-help">Guardar un cambio no modifica los otros dos indicadores. La ausencia se conserva hasta que se informe un valor.</p>
+                </section>
+              </div>
+
+              <aside class="w-aside" aria-label="Resumen y ayuda del formulario">
+                <div class="w-aside-card">
+                  <h3>Resumen</h3>
+                  <dl class="w-summary">
+                    <div><dt>ID</dt><dd class="mono">S004</dd></div>
+                    <div><dt>Estado</dt><dd><span class="st st-state" style="font-size:9px">ACTIVA</span></dd></div>
+                    <div><dt>Revisión</dt><dd>4 · 02/11/2026</dd></div>
+                    <div><dt>Posición</dt><dd>4.200,00 €</dd></div>
+                    <div><dt>Cobertura</dt><dd><span class="st st-partial" style="font-size:9px"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></dd></div>
+                  </dl>
+                </div>
+                <div class="w-aside-card">
+                  <h3>Ayuda contextual</h3>
+                  <ul>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span><b>Opcional no es cero.</b> Un campo vacío se muestra «Sin informar»; el cero se guarda de forma explícita.</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-lock"/></svg><span><b>El ID no se edita.</b> Identifica la posición en cualquier histórico.</span></li>
+                    <li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span><b>Un cambio, una revisión.</b> El resumen muestra la revisión sobre la que estás editando.</span></li>
+                  </ul>
+                </div>
+                <div class="w-aside-card" style="background:var(--surface-3)">
+                  <h3>Nota de alcance</h3>
+                  <p style="margin:0;font-size:9.5px;line-height:1.55;color:var(--muted)">Este formulario es una muestra visual. No valida reglas financieras ni sustituye la especificación funcional de Saldos.</p>
+                </div>
+              </aside>
+            </div>
+
+            <div class="w-form-footer">
+              <span class="w-status"><span class="dot" aria-hidden="true"></span>Cambios sin guardar · borrador local</span>
+              <div class="actions">
+                <button class="w-btn w-btn-secondary" type="button">Cancelar</button>
+                <button class="w-btn w-btn-primary" type="button">Guardar cambios</button>
+              </div>
+            </div>
+          </div>
+
+          <footer class="w-foot">
+            <span>MyFinanzas · local · sin envío de datos · v0.11</span>
+            <span>Datos ficticios · propuesta visual · no implementado</span>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <div class="notes" aria-label="Notas de diseño del formulario">
+      <article class="note-card"><h4><span class="marker">F1</span>Bloques</h4><p><strong>Tres secciones numeradas.</strong> La numeración crea un recorrido estable y permite enlazar un error a su bloque. En escritorio, la ayuda vive al lado; en móvil, debajo del campo.</p></article>
+      <article class="note-card"><h4><span class="marker">F2</span>Validación</h4><p><strong>Resumen arriba, error junto al campo.</strong> El foco va al aviso y el enlace lleva al campo exacto. El valor inválido no se borra: se conserva para corregirlo.</p></article>
+      <article class="note-card"><h4><span class="marker">F3</span>Ayuda vs error</h4><p><strong>Dos tonos y dos iconos.</strong> La ayuda es neutra y el error es rojo con icono; comparten tamaño para no bailar, pero nunca se confunden. El cero explícito se explica junto al campo.</p></article>
+      <article class="note-card"><h4><span class="marker">F4</span>Switches</h4><p><strong>Sí, No y ausencia son tres lecturas distintas.</strong> La ausencia no se dibuja como un tercer estado del switch: se muestra «SIN INFORMAR» y una acción explícita para informar el valor.</p></article>
+      <article class="note-card"><h4><span class="marker">F5</span>Acciones</h4><p><strong>Una sola acción principal.</strong> «Guardar cambios» en coral; «Cancelar» en secundario. El estado «Cambios sin guardar» queda junto a las acciones, no escondido en el pie del documento.</p></article>
+      <article class="note-card"><h4><span class="marker">F6</span>Foco</h4><p><strong>Anillo teal de 3 px con offset 2–3 px.</strong> Se ve sobre campo blanco, tarjeta cálida y sidebar oscura. Los controles miden 34 px de alto y crecen a 40 px en móvil para el pulgar.</p></article>
+    </div>
+  </section>
+
+  <!-- 05 · SISTEMA -->
+  <section class="chapter" id="sistema" aria-labelledby="sistema-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">05</span>
+      <div>
+        <p class="eyebrow">Sistema visual · referencia</p>
+        <h2 id="sistema-title">Decisiones transversales: tipos, estados, temas y contraste</h2>
+        <p class="chapter-lead">
+          La propuesta no introduce tokens nuevos ni una biblioteca externa. Reutiliza la paleta
+          semántica, la tipografía de sistema y los radios actuales; cambia la composición, la
+          escala tipográfica y el uso deliberado del color.
+        </p>
+      </div>
+      <div class="chapter-tags">
+        <span class="tag accent">tokens existentes</span>
+        <span class="tag">sin dependencias</span>
+        <span class="tag">AA comprobado</span>
+      </div>
+    </div>
+
+    <div class="system-grid">
+      <div class="doc-card">
+        <h3>Roles semánticos usados</h3>
+        <p class="cap">Ningún componente conoce el tema: todos consumen estas variables.</p>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th>Rol</th><th>Token</th><th>Uso en la propuesta</th></tr></thead>
+            <tbody>
+              <tr><td><span class="sw" style="background:var(--bg)"></span>Fondo</td><td><code>--bg</code></td><td>Lienzo y área de trabajo.</td></tr>
+              <tr><td><span class="sw" style="background:var(--surface)"></span>Superficie</td><td><code>--surface</code></td><td>Tarjetas, cabecera y filas.</td></tr>
+              <tr><td><span class="sw" style="background:var(--surface-2)"></span>Superficie 2</td><td><code>--surface-2</code></td><td>Rieles, segmentados y cabecera de tabla.</td></tr>
+              <tr><td><span class="sw" style="background:var(--sidebar)"></span>Sidebar</td><td><code>--sidebar</code></td><td>Navegación; oscura en hybrid-s.</td></tr>
+              <tr><td><span class="sw" style="background:var(--text)"></span>Texto</td><td><code>--text</code></td><td>Cifras y títulos.</td></tr>
+              <tr><td><span class="sw" style="background:var(--muted)"></span>Auxiliar</td><td><code>--muted</code></td><td>Metadatos, ayudas y etiquetas.</td></tr>
+              <tr><td><span class="sw" style="background:var(--accent)"></span>Acento</td><td><code>--accent</code></td><td>Verificación, enlaces y foco.</td></tr>
+              <tr><td><span class="sw" style="background:var(--action)"></span>Acción</td><td><code>--action</code></td><td>Única acción principal por vista.</td></tr>
+              <tr><td><span class="sw" style="background:var(--positive)"></span>Positivo</td><td><code>--positive</code></td><td>Estado COMPLETO y cero verificado.</td></tr>
+              <tr><td><span class="sw" style="background:var(--warning)"></span>Aviso</td><td><code>--warning</code></td><td>Estado PARCIAL y pendientes.</td></tr>
+              <tr><td><span class="sw" style="background:var(--error)"></span>Error</td><td><code>--error</code></td><td>Error de validación y de carga.</td></tr>
+              <tr><td><span class="sw" style="background:var(--focus)"></span>Foco</td><td><code>--focus</code></td><td>Anillo de 3 px en todos los temas.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="doc-card">
+        <h3>Escala y densidad</h3>
+        <p class="cap">La jerarquía se construye con tamaño, peso y espacio; no con más colores.</p>
+        <ul class="scale-list">
+          <li><span class="size">40 / 760</span><span class="use"><b>Cifra protagonista</b> · liquidez y totales verificados. <code>tabular-nums</code>.</span></li>
+          <li><span class="size">28 / 760</span><span class="use"><b>Título de pantalla</b> · una sola lectura por vista.</span></li>
+          <li><span class="size">13 / 700</span><span class="use"><b>Título de bloque</b> · tarjetas y secciones.</span></li>
+          <li><span class="size">12 / 500</span><span class="use"><b>Cuerpo, tablas y campos</b> · lectura densa sin bajar de 12 px.</span></li>
+          <li><span class="size">9–10 / 780</span><span class="use"><b>Micro-etiqueta</b> · versalitas con tracking; nombran, no sustituyen al dato.</span></li>
+        </ul>
+        <div class="principles" style="grid-template-columns:1fr 1fr">
+          <div class="principle"><h4>Radios</h4><p>14–16 px en tarjetas, 8–9 px en controles, 999 px en estados. Se conserva la familia actual.</p></div>
+          <div class="principle"><h4>Densidad</h4><p>Filas de 44 px, campos de 36 px, separación base de 8 px. En móvil, objetivos de 40–44 px.</p></div>
+          <div class="principle" style="grid-column:1/-1"><h4>Texto mínimo</h4><p>El cuerpo de tablas, ayudas y campos parte de 12 px; las cifras destacadas suben de escala. Las micro-etiquetas de 9–10 px solo nombran.</p></div>
+        </div>
+        <div class="focus-demo">
+          <span class="fd-label">Foco visible <span class="marker" title="Nota D8">D8</span></span>
+          <button class="w-btn w-btn-secondary focus-sample" type="button">Campo enfocado</button>
+          <span class="fd-note">3 px · offset 3 · mismo token en los tres temas</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="system-grid" style="margin-top:12px">
+      <div class="doc-card">
+        <h3>Lenguaje de estados</h3>
+        <p class="cap">Siempre icono + palabra. El color acompaña, no decide.</p>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th>Estado</th><th>Señal visual</th><th>Lectura</th></tr></thead>
+            <tbody>
+              <tr><td><span class="st st-ok"><svg class="ic" aria-hidden="true"><use href="#i-check"/></svg>COMPLETO</span></td><td>Teal suave + check</td><td>La cifra tiene cobertura suficiente y no hay partidas pendientes.</td></tr>
+              <tr><td><span class="st st-partial"><svg class="ic" aria-hidden="true"><use href="#i-half"/></svg>PARCIAL</span></td><td>Ámbar suave + medio círculo</td><td>Hay una cifra publicada, pero falta cobertura; se muestra su alcance y motivo.</td></tr>
+              <tr><td><span class="st st-nd"><svg class="ic" aria-hidden="true"><use href="#i-dash"/></svg>ND</span></td><td>Neutro discontinuo + raya</td><td>No disponible. No se dibuja como 0 ni se completa con una estimación.</td></tr>
+              <tr><td><span class="st st-zero"><span class="zi" aria-hidden="true">0</span>CERO</span></td><td>Contorno teal + cero</td><td>Cero verificado. Se distingue de la ausencia y del vacío del filtro.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="principles" style="grid-template-columns:1fr 1fr">
+          <div class="principle"><h4>Total</h4><p>Solo cuando la cobertura lo permite. Etiqueta «TOTAL» y cifra grande; nunca convive con ND.</p></div>
+          <div class="principle"><h4>Subtotal</h4><p>Etiqueta, alcance y exclusión explícitos. Borde discontinuo y texto «no es total».</p></div>
+          <div class="principle" style="grid-column:1/-1"><h4>El color no es el mensaje</h4><p>Icono + palabra en todos los chips; el estado se conserva en alto contraste y se anuncia a lectores de pantalla.</p></div>
+        </div>
+      </div>
+
+      <div class="doc-card">
+        <h3>Contraste medido</h3>
+        <p class="cap">Pares de texto reales de la paleta, calculados con WCAG 2.1. No es una auditoría WCAG completa.</p>
+        <div class="doc-table-wrap">
+          <table class="doc-table">
+            <thead><tr><th>Par</th><th>Tema</th><th>Ratio</th></tr></thead>
+            <tbody>
+              <tr><td>Texto / superficie</td><td>light-s</td><td class="ratio ok">16,48:1</td></tr>
+              <tr><td>Auxiliar / fondo</td><td>light-s</td><td class="ratio ok">6,19:1</td></tr>
+              <tr><td>Acento / accent-soft</td><td>light-s</td><td class="ratio ok">4,70:1</td></tr>
+              <tr><td>Aviso / warning-soft</td><td>light-s</td><td class="ratio ok">5,41:1</td></tr>
+              <tr><td>Texto / superficie</td><td>dark-s</td><td class="ratio ok">14,96:1</td></tr>
+              <tr><td>Auxiliar / superficie</td><td>dark-s</td><td class="ratio ok">7,75:1</td></tr>
+              <tr><td>Acento / accent-soft</td><td>dark-s</td><td class="ratio ok">5,24:1</td></tr>
+              <tr><td>Acción / texto oscuro</td><td>light + hybrid</td><td class="ratio ok">5,00:1</td></tr>
+              <tr><td>Sidebar / texto</td><td>hybrid-s</td><td class="ratio ok">15,14:1</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p style="margin:9px 0 0;font-size:9.5px;color:var(--muted);line-height:1.5">Todos los pares de texto normal superan 4,5:1. Los bordes de control usan <code>--control-border</code>; el foco usa <code>--focus</code> con 3 px.</p>
+      </div>
+    </div>
+
+    <div class="doc-card" style="margin-top:12px">
+      <h3>Los tres temas</h3>
+      <p class="cap">El mismo componente, tres climas. hybrid-s concentra la identidad en la sidebar oscura y mantiene el contenido cálido.</p>
+      <div class="theme-cards">
+        <div class="theme-card">
+          <h3>light-s</h3>
+          <p>Base cálida, superficies blancas, sidebar clara. Lectura diurna y máxima luminosidad.</p>
+          <div class="swatches"><span style="background:#f7f5f1" title="bg"></span><span style="background:#ffffff" title="surface"></span><span style="background:#ece9e2" title="sidebar"></span><span style="background:#1e6f7a" title="accent"></span><span style="background:#e4572e" title="action"></span></div>
+          <div class="hex"><code>#f7f5f1</code> · <code>#fff</code> · <code>#ece9e2</code> · <code>#1e6f7a</code></div>
+        </div>
+        <div class="theme-card">
+          <h3>dark-s</h3>
+          <p>Fondo profundo y superficies escalonadas. El teal aclara para mantener contraste; el coral no cambia.</p>
+          <div class="swatches"><span style="background:#141414" title="bg"></span><span style="background:#202020" title="surface"></span><span style="background:#101010" title="sidebar"></span><span style="background:#57b2ba" title="accent"></span><span style="background:#e4572e" title="action"></span></div>
+          <div class="hex"><code>#141414</code> · <code>#202020</code> · <code>#101010</code> · <code>#57b2ba</code></div>
+        </div>
+        <div class="theme-card">
+          <h3>hybrid-s</h3>
+          <p>Sidebar casi negra y contenido marfil. La marca coral aparece en la navegación; el resto conserva la calidez.</p>
+          <div class="swatches"><span style="background:#f7f5f1" title="bg"></span><span style="background:#fffcf7" title="surface"></span><span style="background:#1f1f1f" title="sidebar"></span><span style="background:#1e6f7a" title="accent"></span><span style="background:#e4572e" title="action"></span></div>
+          <div class="hex"><code>#f7f5f1</code> · <code>#fffcf7</code> · <code>#1f1f1f</code> · <code>#1e6f7a</code></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="principles">
+      <div class="principle"><h4>Jerarquía antes que decoración</h4><p>Una cifra protagonista por zona. El color se reserva para estado y acción; no se usa para llenar superficies.</p></div>
+      <div class="principle"><h4>Densidad con aire</h4><p>Más información por pantalla, pero con líneas base consistentes, micro-etiquetas y separadores solo donde ayudan.</p></div>
+      <div class="principle"><h4>La ausencia tiene forma</h4><p>ND, vacío, cero y error son cuatro experiencias distintas. Ninguna se resuelve con un guion genérico.</p></div>
+    </div>
+  </section>
+
+  <!-- 06 · LÍMITES -->
+  <section class="chapter" id="limites" aria-labelledby="limites-title">
+    <div class="chapter-head">
+      <span class="chapter-num" aria-hidden="true">06</span>
+      <div>
+        <p class="eyebrow">Alcance y siguiente paso</p>
+        <h2 id="limites-title">Lo que esta SPEC decide y lo que deja fuera</h2>
+        <p class="chapter-lead">
+          Es una propuesta de dirección visual, no una especificación funcional ni una
+          autorización de implementación.
+        </p>
+      </div>
+      <div class="chapter-tags"><span class="tag">sin DEV</span><span class="tag">sin datos reales</span></div>
+    </div>
+
+    <div class="system-grid">
+      <div class="doc-card">
+        <h3>Sí representa</h3>
+        <ul class="scale-list">
+          <li><span class="size">01</span><span class="use"><b>Composición</b> de Inicio en escritorio y móvil, listado de Saldos y edición de un Saldo.</span></li>
+          <li><span class="size">02</span><span class="use"><b>Lenguaje visual</b> de estados COMPLETO / PARCIAL / ND / CERO y de total frente a subtotal.</span></li>
+          <li><span class="size">03</span><span class="use"><b>Comportamiento responsive</b> a 390 px, una columna y sin scroll horizontal de página.</span></li>
+          <li><span class="size">04</span><span class="use"><b>Uso de los tres temas</b> con los tokens vigentes, incluido hybrid-s.</span></li>
+          <li><span class="size">05</span><span class="use"><b>Foco visible</b> y pares de contraste medidos para texto normal.</span></li>
+        </ul>
+      </div>
+      <div class="doc-card">
+        <h3>No representa</h3>
+        <ul class="scale-list">
+          <li><span class="size">01</span><span class="use"><b>Lógica financiera</b> ni reglas de cálculo, cobertura o cierre.</span></li>
+          <li><span class="size">02</span><span class="use"><b>Datos reales</b>: todas las cifras, IDs y fechas son ficticios.</span></li>
+          <li><span class="size">03</span><span class="use"><b>Tokens nuevos</b>: no se propone cambiar la paleta ni añadir un cuarto tema.</span></li>
+          <li><span class="size">04</span><span class="use"><b>Componentes de producción</b> ni cambios en la app, el CSS o la API.</span></li>
+          <li><span class="size">05</span><span class="use"><b>Auditoría WCAG completa</b> ni prueba con lector de pantalla.</span></li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="read-note">
+      <b>Cobertura de DEV-06:</b> estos wireframes cubren Inicio (escritorio/móvil), listado de
+      Saldos y edición de Saldo. La recomendación de cinco pantallas añade Movimientos y Cierre;
+      se diseñarán en DEV-06 con la misma matriz y sin anticipar E4.10/E4.11.
+    </p>
+
+    <div class="closing">
+      <p class="eyebrow">Siguiente paso</p>
+      <h2>SPEC aprobada; DEV-01 autorizado por separado.</h2>
+      <p>
+        La dirección visual queda aprobada. `DEV-01` está autorizado; `DEV-02…07` y sus merges
+        requieren autorización separada. Esta referencia no implementa ni declara PASS visual.
+      </p>
+      <p>
+        <strong>No implementado; no autoriza DEV.</strong> Cualquier avance requiere una decisión
+        explícita, una especificación funcional aplicable y su propio alcance autorizado. Los
+        wireframes no sustituyen pruebas de accesibilidad, capturas reales ni validación de
+        reglas financieras.
+      </p>
+    </div>
+  </section>
+
+  <footer class="doc-foot">
+    <span>MyFinanzas · SPEC de diseño · 05/11/2026 · rama docs/ui-evolution · base 043869f</span>
+    <span>Tema activo: <span data-theme-live>light-s</span> · HTML autocontenido · datos ficticios</span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var buttons = Array.prototype.slice.call(document.querySelectorAll("[data-set-theme]"));
+  var labels = Array.prototype.slice.call(document.querySelectorAll("[data-theme-live]"));
+  var colors = { "light-s": "#f7f5f1", "dark-s": "#141414", "hybrid-s": "#f7f5f1" };
+  function apply(theme) {
+    root.setAttribute("data-theme", theme);
+    buttons.forEach(function (button) {
+      var on = button.getAttribute("data-set-theme") === theme;
+      button.setAttribute("aria-pressed", String(on));
+    });
+    labels.forEach(function (label) { label.textContent = theme; });
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute("content", colors[theme] || "#f7f5f1");
+  }
+  buttons.forEach(function (button) {
+    button.addEventListener("click", function () {
+      apply(button.getAttribute("data-set-theme"));
+    });
+  });
+  apply("light-s");
+})();
+</script>
+</body>
+</html>
