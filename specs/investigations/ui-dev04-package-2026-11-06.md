@@ -10,7 +10,8 @@ E4.10 I1–I6 y el manifiesto 25→26). Fecha: 2026-11-06.
   §4.2/§4.4/§7 y [wireframes](ui-evolution-wireframes.html) capítulo «Saldos · listado»
   (notas L1–L6).
 - **Guías:** [ui.md](../guidelines/ui.md) y [quality.md](../guidelines/quality.md).
-- **Gate:** aprobar este paquete **no** autoriza el desarrollo ni el merge; cada incremento
+- **Gate:** DEV-04 está autorizado desde el 2026-11-06; el merge de cada incremento sigue
+  siendo un gate separado. Cada incremento
   requiere autorización y QA independiente.
 
 ---
