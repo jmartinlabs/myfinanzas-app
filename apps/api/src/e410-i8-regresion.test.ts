@@ -1,6 +1,8 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { HttpApp } from "@effect/platform";
 import { createApp } from "./app";
 import { provision, totp } from "./auth";
@@ -25,7 +27,9 @@ import { Problem } from "./problem";
  *  - R-SEC-01: límites de JSON, content-type y sesión expirada en las rutas
  *    de E4.10, sin escrituras parciales;
  *  - AC20: `/foto` con y sin versión y `/estado` devuelven lo persistido tras
- *    v2, sin recalcular desde la vista viva.
+ *    v2, sin recalcular desde la vista viva;
+ *  - AC22: ciclo antiguo y snapshot restaurado se rechazan con código/motivo,
+ *    sin evento, ventana, foto ni mutación persistida.
  *
  * No declara aceptación: los 24 AC de E4.10 siguen `UNRUN` hasta la QA
  * independiente. Los fixtures son sintéticos y no acreditan DT6 ni E3.5.
@@ -243,6 +247,98 @@ test("E4.10 I8 AC14: omitir la versión esperada se rechaza sin escribir", () =>
     expect(snapshotAll(db)).toEqual(afterOpen);
   } finally {
     db.close();
+  }
+});
+
+test("E4.10 I8 AC22: un ciclo antiguo no se reabre y no muta nada", () => {
+  const db = openDatabase(":memory:");
+  try {
+    seedCycle(db, "1", "2026-01-01");
+    seedCycle(db, "2", "2026-02-01");
+    seedCycle(db, "3", "2026-03-01");
+    seedClosure(db, "1", 1, "2026-01-01", "2026-01-31");
+    seedClosure(db, "3", 1, "2026-03-01", "2026-03-31");
+    const before = snapshotAll(db);
+
+    const error = problemOf(() =>
+      reabrirCierre(
+        db,
+        "1",
+        { versionEsperada: 1, motivo: "Intento sobre un ciclo antiguo" },
+        "reapertura-" + randomUUID(),
+        {},
+        now,
+      ),
+    );
+    expect(error.status).toBe(409);
+    expect(error.code).toBe("NO_ES_ULTIMO_CIERRE");
+    expect(error.message).toContain("cierre posterior");
+
+    // AC22: rechazo verificable sin evento, ventana, foto ni mutación.
+    expect(snapshotAll(db)).toEqual(before);
+    expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    expect(getReaperturaEstado(db, "1").estado).toBe("Cerrado");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I8 AC22: un snapshot restaurado no es una ruta de reapertura", () => {
+  // En macOS no se puede ejecutar `restore` real: `publishNewDirectory` usa
+  // `renameat2` vía `libc.so.6`. `VACUUM INTO` reproduce el snapshot
+  // consistente previo a la publicación cifrada; la restauración real con
+  // age se cubre en `e410-i8-backup.test.ts` (solo Linux). No se inventa una
+  // ruta de restore en la API.
+  const base = join(process.cwd(), ".local");
+  mkdirSync(base, { recursive: true, mode: 0o700 });
+  const dir = mkdtempSync(join(base, "e410-i8-ac22-"));
+  try {
+    const sourcePath = join(dir, "source.sqlite");
+    const restoredPath = join(dir, "restored.sqlite");
+    const source = openDatabase(sourcePath);
+    try {
+      seedCycle(source, "1", "2026-01-01");
+      seedCycle(source, "2", "2026-02-01");
+      seedCycle(source, "3", "2026-03-01");
+      seedClosure(source, "1", 1, "2026-01-01", "2026-01-31");
+      seedClosure(source, "3", 1, "2026-03-01", "2026-03-31");
+      source.run("VACUUM INTO ?", [restoredPath]);
+    } finally {
+      source.close();
+    }
+
+    const restored = openDatabase(restoredPath);
+    try {
+      const before = snapshotAll(restored);
+      expect(before.cierres).toHaveLength(2);
+      expect(before.fotos).toHaveLength(2);
+      expect(before.reaperturas).toHaveLength(0);
+      expect(before.activa).toHaveLength(0);
+      expect(restored.query("PRAGMA foreign_key_check").all()).toEqual([]);
+
+      const error = problemOf(() =>
+        reabrirCierre(
+          restored,
+          "1",
+          { versionEsperada: 1, motivo: "Restore no es reapertura" },
+          "reapertura-" + randomUUID(),
+          {},
+          now,
+        ),
+      );
+      expect(error.status).toBe(409);
+      expect(error.code).toBe("NO_ES_ULTIMO_CIERRE");
+      expect(error.message).toContain("cierre posterior");
+
+      // El snapshot restaurado no gana evento, ventana, foto ni fila alguna.
+      expect(snapshotAll(restored)).toEqual(before);
+      expect(restored.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(getReaperturaEstado(restored, "1").estado).toBe("Cerrado");
+    } finally {
+      restored.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 

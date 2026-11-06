@@ -190,9 +190,12 @@ todo re-cierre, PC-01 pasaría a bloqueo y deberá ratificarse expresamente ante
 | E4.10-AC19 | Plan `SinPlan`/capturado y auxiliares disponibles/no | Plan vivo rectificable; `SinPlan`↔`Capturado` con motivo/auditoría; foto completa y comparación con `vN`; auxiliares de fuentes vigentes; ausente → `No disponible` (D6-A+C) | Bun Test + UI futura | API/UI futura | Foto vN+1 y auditoría | UNRUN |
 | E4.10-AC20 | Consultar v1/v2 con y sin versión explícita | Valores persistidos, versión seleccionada, última cerrada y estado; sin recálculo | Bun Test de contrato | API futura | DTO y foto | UNRUN |
 | E4.10-AC21 | Cancelar reapertura | Sin cambios materiales: `Cerrado(vN)` sin foto, evento auditado, `vN`/anteriores intactas, T1 re-bloqueado. Con cambios y sin cierre posterior: `vN+1`. Con cierre posterior: solo recuperación extraordinaria aprobada por separado | Bun Test + SQL | API futura | Estado y auditoría | UNRUN |
-| E4.10-AC22 | Ciclo antiguo o restore como reapertura | Rechazo; sin ruta alternativa; motivo auditado | Bun Test de límites | API futura | Error y auditoría | UNRUN |
+| E4.10-AC22 | Ciclo antiguo o restore como reapertura | Rechazo con código/motivo; sin evento, ventana, foto ni mutación; snapshot sin cambios | Bun Test de límites | API futura | Error motivado y snapshot | UNRUN |
 | E4.10-AC23 | Reabrir tras v2 (v3) | Secuencial sobre la última versión cerrada; no versión histórica; una ventana; v3+ con foto completa | Bun Test de secuencia | API futura | Versiones y auditoría | UNRUN |
 | E4.10-AC24 | Re-cerrar sin cambios materiales | Rechazo explícito `SIN_CAMBIOS`; no crea foto; cancelación D8 solo con ausencia acreditada; no basta igualdad de importes/totales; cambios revertidos o evidencia insuficiente → sin equivalencia ni cancelación automática | Bun Test + SQL | API futura | Error `SIN_CAMBIOS`, estado y auditoría | UNRUN |
+
+**Enmienda AC22 (aprobada 2026-11-06):** el rechazo se acredita con código y motivo
+verificables y snapshot sin cambios; no exige auditoría persistida. AC22 sigue `UNRUN`.
 
 **Casos `SIN_CAMBIOS` (positivo/negativo):**
 
