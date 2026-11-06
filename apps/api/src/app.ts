@@ -230,6 +230,11 @@ import {
   type RevalidacionOptions,
 } from "./e410-revalidacion";
 import {
+  previewRecierre,
+  reCerrarCiclo,
+  type RecierreOptions,
+} from "./e410-recierre";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -246,6 +251,7 @@ export type AppOptions = {
   cierre?: CierreOptions;
   reapertura?: ReaperturaOptions;
   revalidacion?: RevalidacionOptions;
+  recierre?: RecierreOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -1042,6 +1048,67 @@ export function createApp(db: Database, options: AppOptions) {
         headers.set(
           "location",
           `/api/cierres/${reabrirCierrePath[1]}/reapertura`,
+        );
+        return reply(result, 201);
+      }
+      const repreview = path.match(
+        /^\/api\/cierres\/(\d+)\/repreflight$/,
+      );
+      if (repreview) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La vista previa del re-cierre es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            previewRecierre(
+              db,
+              repreview[1],
+              {
+                ...options.cierre,
+                ...options.revalidacion,
+                ...options.recierre,
+              },
+              now(),
+            ),
+          )(),
+        );
+      }
+      const reCerrarPath = path.match(
+        /^\/api\/cierres\/(\d+)\/recerrar$/,
+      );
+      if (reCerrarPath) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El re-cierre se confirma con POST.",
+          );
+        }
+        const result = reCerrarCiclo(
+          db,
+          reCerrarPath[1],
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          {
+            ...options.cierre,
+            ...options.revalidacion,
+            ...options.recierre,
+          },
+          now(),
+        );
+        const version = (result as { foto?: { version?: number } }).foto
+          ?.version;
+        headers.set(
+          "location",
+          version
+            ? `/api/cierres/${reCerrarPath[1]}/foto?version=${version}`
+            : `/api/cierres/${reCerrarPath[1]}/foto`,
         );
         return reply(result, 201);
       }
