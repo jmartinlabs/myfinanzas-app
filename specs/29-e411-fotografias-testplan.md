@@ -18,12 +18,12 @@ aprobadas; no se reinterpreta en la ejecución.
 | E4.11-AC02 | Consultar metadatos de la foto antes y después de T2/T3. | Ciclo, versión, UTC, actor, motivo, fingerprint, versión de app/esquema y ventana `[inicio, fin]` visibles e idénticos; sin recálculo. | Bun Test de contrato de metadatos | Documental; API futura | DTO de identidad y comparación byte a byte | UNRUN — diseño | — |
 | E4.11-AC03 | Fixture con v1 y v2 (cuando E4.10 exista); seleccionar v1 explícitamente y luego v2. | Cada consulta devuelve exactamente la versión solicitada con `seleccionAplicada`; la otra sigue consultable e intacta. Sin E4.10: v1 es la única y la respuesta lo declara. | Bun Test de selección de versión + Playwright del selector | Documental; API/UI futura | Dos DTO y captura 390/1440 del selector | UNRUN — diseño | — |
 | E4.11-AC04 | Consultar un trimestre y un año con varios ciclos cerrados. | Cada cifra agregada referencia las fotos de ciclo que la componen (ciclo, versión, fingerprint) y la regla de composición; ninguna cifra proviene de motores vivos. | Bun Test de composición + snapshot | Documental; API futura | DTO de composición y traza a fotos | UNRUN — diseño | — |
-| E4.11-AC05 | Periodo con ciclos en versiones distintas y/o un ciclo reabierto. (P1-C/P4-A/P5-B) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; la mezcla se permite con composición exacta; el reabierto se excluye/marca; no hay composición silenciosa. | Bun Test de política parametrizada (casos A/B/C de M1) | Documental; API futura | DTO con `composicion[]` completa y motivo de bloqueo | UNRUN — diseño | — |
-| E4.11-AC06 | Ciclo reabierto sin v2 (cuando E4.10 exista). (M1/P4) | Según política: excluido y marcado `PendienteReCierre`, o última versión cerrada marcada; v1 nunca se presenta como vigente sin marca; no se crea foto. | Bun Test + Playwright del estado y del badge | Documental; API/UI futura | DTO de estado, badge y ausencia de foto nueva | UNRUN — diseño | — |
-| E4.11-AC07 | Generar/consultar un agregado de trimestre/año y después re-cerrar un ciclo creando v2; volver a consultar el agregado anterior y generar uno nuevo. (P2-A/P6-A) | El agregado anterior devuelve los mismos valores y versiones; no se recalcula. El nuevo declara las versiones nuevas. | Bun Test de congelación/determinismo + snapshot | Documental; API futura | Dos DTO de agregado y snapshot sin cambios en el primero | UNRUN — diseño | — |
+| E4.11-AC05 | Periodo con ciclos en versiones distintas y/o un ciclo reabierto. (P1-C/P4-A/P5-B) | La respuesta declara por ciclo versión usada, inclusión/exclusión y motivo; la mezcla se permite con composición exacta; el reabierto se excluye/marca; no hay composición silenciosa. | Bun Test de composición P1-C/P4-A/P5-B | Documental; API futura | DTO con `composicion[]` completa y motivo | UNRUN — diseño | — |
+| E4.11-AC06 | Ciclo reabierto sin v2 (E4.10 I2 integrado). (P1-C/P4-A) | Excluido y marcado `PendienteReCierre`; v1 consultable pero no vigente sin advertencia; no se crea foto. | Bun Test + Playwright del estado y del badge | Documental; API/UI futura | DTO de estado, badge y ausencia de foto nueva | UNRUN — diseño | — |
+| E4.11-AC07 | Generar/consultar un agregado de trimestre/año y después re-cerrar un ciclo creando v2; volver a consultar el agregado anterior y generar uno nuevo. (P2-A/P6-A) | El agregado persistido anterior devuelve los mismos valores y versiones; no se recalcula. El nuevo declara las versiones nuevas. | Bun Test de agregado persistido P2-A + snapshot | Documental; API futura | Dos DTO de agregado y snapshot sin cambios en el primero | UNRUN — diseño | — |
 | E4.11-AC08 | Desde una cifra de periodo, navegar a los ciclos componentes (incluidos y excluidos). | Cada incluido devuelve su foto y cobertura; cada excluido figura con motivo (sin cierre, pendiente, fuera de periodo). | Bun Test de drill-down + Playwright | Documental; API/UI futura | DTO por ciclo y capturas 390/1440 | UNRUN — diseño | — |
 | E4.11-AC09 | Periodo con un ciclo sin cierre, un hueco o una fuente `No disponible`. | `Parcial`/`NoDisponible` con motivo por bloque; ningún total parcial se declara completo ni se sustituye por `0`. | Bun Test de estados de cobertura + Playwright | Documental; API/UI futura | DTO de cobertura y captura del total «parcial» | UNRUN — diseño | — |
-| E4.11-AC10 | Ejercicio con solo archivo E4.5 y sin fotos. (P8b-A) | El primer desarrollo **excluye** el archivo E4.5: no hay ruta ni `tipoRegistro=Archivo`; no se crea foto, cierre ni plan. Consulta separada diferida. | Bun Test de contrato E4.5/E4.11 + snapshot | Documental; API/UI futura | DTO con `tipoRegistro`, snapshot sin altas | UNRUN — diseño | — |
+| E4.11-AC10 | Ejercicio con solo archivo E4.5 y sin fotos. (P8b-A) | El primer desarrollo excluye el archivo E4.5: no hay ruta ni `tipoRegistro=Archivo`; no se crea foto, cierre ni plan. Consulta separada diferida. | Bun Test negativo de ausencia de ruta + snapshot | Documental; API futura | Sin ruta/tipoRegistro; snapshot sin altas | UNRUN — diseño | — |
 | E4.11-AC11 | Consultar fotos y periodos de 2026; crear el ejercicio 2027 y volver a consultar 2026. (M3) | Valores, versiones y cortes de 2026 se conservan; no se reetiquetan, recalculan ni borran; la transición no mezcla ejercicios sin declararlo. | Bun Test de continuidad + snapshot antes/después | Documental; API/UI futura | DTO 2026 pre/post y snapshot | UNRUN — diseño | — |
 | E4.11-AC12 | `POST`/`PATCH`/`DELETE` sobre fotos o periodos. | 405/422; no se crea, rectifica ni borra foto. Excepción única: creación del agregado P2-A, con ruta y clave propias. | Bun Test de rutas y verbos | Documental; API futura | Respuestas y snapshot sin cambios | UNRUN — diseño | — |
 | E4.11-AC13 | Intentar rectificar un ciclo antiguo o consultar una «foto corregida» por DT9. (M6/P8) | No existe ruta; rechazo con motivo; E4.11 no habilita DT9. | Bun Test negativo + revisión de rutas | Documental; API futura | 404/405 con motivo y ausencia de endpoint | UNRUN — diseño | — |
@@ -36,16 +36,16 @@ aprobadas; no se reinterpreta en la ejecución.
 | --- | --- | --- |
 | Valores actuales ≠ foto | E4.11-AC01, E4.11-AC02 | La foto no se mueve al cambiar T2/T3; lo vivo se etiqueta y se separa. |
 | Selección explícita de versión anterior | E4.11-AC03, E4.11-AC08 | v1 y v2 consultables e intactas; el selector no cambia de versión en silencio. |
-| Trimestre/año tras re-cierre | E4.11-AC05, E4.11-AC06, E4.11-AC07 | La composición se declara; el agregado anterior queda congelado/determinista y no se recalcula. |
+| Trimestre/año tras re-cierre | E4.11-AC05, E4.11-AC06, E4.11-AC07 | La composición se declara; el agregado persistido anterior no se recalcula. |
 | Continuidad entre ejercicios | E4.11-AC11 | 2026 sigue consultable en 2027, sin reetiquetar ni borrar. |
 
 ## Decisiones aprobadas aplicables
 
 | Decisión | Filas afectadas | Regla aprobada |
 | --- | --- | --- |
-| M1 (P1-C/P4-A/P5-B) | AC05, AC06, AC07 | Composición declarada, reabierto marcado, mezcla registrada. |
+| M1 (P1-C/P4-A/P5-B) | AC03, AC04, AC05, AC06, AC07 | Composición declarada, reabierto marcado, mezcla registrada. |
 | M2 (P2-A) | AC04, AC07, AC12 | Agregado persistido, versionado e inmutable. |
-| M3 (P3-B) | AC04, AC11 | Periodos por ciclos financiados, mes financiado, sin prorrateo. |
+| M3 (P3-B) | AC04, AC05, AC11 | Periodos por ciclos financiados, mes financiado, sin prorrateo. |
 | M4 (P6-A) | AC07, AC11 | Retención permanente de fotos y agregados. |
 | M5 (P7-D) | AC01, AC03, AC08 | Consulta combinada ciclo/trimestre/año con selector explícito. |
 | M6 (P8a-A/P8b-A) | AC10, AC13 | DT9 fuera; archivo E4.5 excluido del primer desarrollo. |
@@ -83,8 +83,8 @@ composición, drill-down y estados vacío/carga/error, sin `0` por ausencia.
 ## Datos y fixtures
 
 `[PROPUESTA]` Solo datos ficticios y deterministas: ciclos cerrados con foto v1, un ciclo
-reabierto sin v2, un re-cierre con v2, un periodo mixto, un ciclo sin cierre y un ejercicio
-con archivo E4.5. Prohibido usar datos reales, bases privadas, credenciales o secretos.
+reabierto sin v2, un re-cierre con v2, un periodo mixto y un ciclo sin cierre. El archivo E4.5
+queda fuera del primer desarrollo (P8b-A). Prohibido usar datos reales, bases privadas, credenciales o secretos.
 Los fixtures no acreditan DT6 ni DT7.
 
 ## Limitations and next action
