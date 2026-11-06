@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import { SaleList, SaleForm, SaleDetail, AnnulSale } from "./Ventas";
 import { Valoracion } from "./Valoracion";
 
@@ -373,6 +373,85 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
       live = false;
     };
   }, [search, estado, page, retry]);
+  const columns: TableColumn<Instrumento>[] = [
+    { id: "id", header: "ID", cell: (instrumento) => instrumento.id },
+    {
+      id: "nombre",
+      header: "Nombre",
+      cell: (instrumento) => (
+        <a
+          href={`${BASE}/instrumentos/${instrumento.id}`}
+          onClick={(event) => {
+            event.preventDefault();
+            go(`${BASE}/instrumentos/${instrumento.id}`);
+          }}
+        >
+          {instrumento.nombre}
+        </a>
+      ),
+      cardCell: (instrumento) => (
+        <a
+          href={`${BASE}/instrumentos/${instrumento.id}`}
+          onClick={(event) => {
+            event.preventDefault();
+            go(`${BASE}/instrumentos/${instrumento.id}`);
+          }}
+        >
+          {instrumento.id} · {instrumento.nombre}
+        </a>
+      ),
+    },
+    {
+      id: "isin",
+      header: "ISIN",
+      cell: (instrumento) => instrumento.isin ?? "—",
+    },
+    {
+      id: "divisa",
+      header: "Divisa ref.",
+      label: "Divisa de referencia",
+      cell: (instrumento) => instrumento.divisaReferencia ?? "—",
+    },
+    {
+      id: "posiciones",
+      header: "Posiciones (cantidad)",
+      label: "Posiciones",
+      cell: (instrumento) =>
+        instrumento.posiciones?.length
+          ? instrumento.posiciones.map((position) => (
+              <div key={position.saldoInversion.id}>
+                {position.saldoInversion.id} {position.saldoInversion.nombre} ·{" "}
+                {num(position.cantidad)} · {position.compras} compra(s)
+              </div>
+            ))
+          : "Sin posiciones",
+    },
+    {
+      id: "compras",
+      header: "Compras",
+      cell: (instrumento) => instrumento.comprasVigentes ?? 0,
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (instrumento) => (
+        <Tag inactive={instrumento.estado === "Inactiva"}>
+          {instrumento.estado}
+        </Tag>
+      ),
+      cardCell: (instrumento) => (
+        <>
+          <Tag inactive={instrumento.estado === "Inactiva"}>
+            {instrumento.estado}
+          </Tag>
+          <small className="help">
+            Valoración: No disponible hasta E4.3
+          </small>
+        </>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -430,95 +509,32 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
         ) : (
           <>
             <div className="desktop-list inversiones-desktop">
-              <table className="inversiones-table">
-                <caption className="sr-only">Instrumentos registrados</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">ID</th>
-                    <th scope="col">Nombre</th>
-                    <th scope="col">ISIN</th>
-                    <th scope="col">Divisa ref.</th>
-                    <th scope="col">Posiciones (cantidad)</th>
-                    <th scope="col">Compras</th>
-                    <th scope="col">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.instrumentos.map((instrumento) => (
-                    <tr key={instrumento.id}>
-                      <td>{instrumento.id}</td>
-                      <td>
-                        <a
-                          href={`${BASE}/instrumentos/${instrumento.id}`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            go(`${BASE}/instrumentos/${instrumento.id}`);
-                          }}
-                        >
-                          {instrumento.nombre}
-                        </a>
-                      </td>
-                      <td>{instrumento.isin ?? "—"}</td>
-                      <td>{instrumento.divisaReferencia ?? "—"}</td>
-                      <td>
-                        {instrumento.posiciones?.length
-                          ? instrumento.posiciones.map((position) => (
-                              <div key={position.saldoInversion.id}>
-                                {position.saldoInversion.id}{" "}
-                                {position.saldoInversion.nombre} ·{" "}
-                                {num(position.cantidad)}
-                              </div>
-                            ))
-                          : "Sin posiciones"}
-                      </td>
-                      <td>{instrumento.comprasVigentes ?? 0}</td>
-                      <td>
-                        <Tag inactive={instrumento.estado === "Inactiva"}>
-                          {instrumento.estado}
-                        </Tag>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Instrumentos registrados"
+                label="Tabla de instrumentos registrados"
+                columns={columns}
+                rows={data.instrumentos}
+                rowKey={(instrumento) => instrumento.id}
+                rowClassName={(instrumento) =>
+                  instrumento.estado === "Inactiva"
+                    ? "ui-row-inactive"
+                    : undefined
+                }
+                tableClassName="inversiones-table"
+              />
             </div>
-            <ul className="mobile-list inversiones-mobile" aria-label="Instrumentos registrados móvil">
-              {data.instrumentos.map((instrumento) => (
-                <li key={instrumento.id}>
-                  <div className="card-head">
-                    <strong>
-                      <a
-                        href={`${BASE}/instrumentos/${instrumento.id}`}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          go(`${BASE}/instrumentos/${instrumento.id}`);
-                        }}
-                      >
-                        {instrumento.id} · {instrumento.nombre}
-                      </a>
-                    </strong>
-                    <Tag inactive={instrumento.estado === "Inactiva"}>
-                      {instrumento.estado}
-                    </Tag>
-                  </div>
-                  <p>
-                    {instrumento.isin ? `ISIN ${instrumento.isin}` : "Sin ISIN"} ·{" "}
-                    {instrumento.divisaReferencia ?? "Sin divisa ref."}
-                  </p>
-                  {instrumento.posiciones?.length ? (
-                    instrumento.posiciones.map((position) => (
-                      <p key={position.saldoInversion.id}>
-                        {position.saldoInversion.id} {position.saldoInversion.nombre} ·{" "}
-                        {num(position.cantidad)} · {position.compras} compra(s)
-                      </p>
-                    ))
-                  ) : (
-                    <p>Sin posiciones</p>
-                  )}
-                  <p className="help">Valoración: No disponible hasta E4.3</p>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.instrumentos}
+              rowKey={(instrumento) => instrumento.id}
+              rowClassName={(instrumento) =>
+                instrumento.estado === "Inactiva"
+                  ? "ui-row-inactive"
+                  : undefined
+              }
+              label="Instrumentos registrados móvil"
+              className="mobile-list inversiones-mobile"
+            />
             <p className="help">{data.cobertura}</p>
             <div className="list-footer">
               <span>{data.total} Instrumento(s) · página {page}</span>
@@ -595,6 +611,103 @@ function InstrumentDetail({
   if (error && !data) return <Alert retry={() => setRetry((v) => v + 1)}>{error}</Alert>;
   if (!data) return <p role="status">Cargando ficha…</p>;
   const instrumento = data.instrumento as Instrumento;
+  const positionColumns: TableColumn<Position>[] = [
+    {
+      id: "saldo",
+      header: "Saldo",
+      cell: (position) =>
+        `${position.saldoInversion.id} · ${position.saldoInversion.nombre}`,
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad",
+      kind: "amount",
+      cell: (position) => num(position.cantidad),
+    },
+    {
+      id: "compras",
+      header: "Compras",
+      cell: (position) => position.compras,
+    },
+    {
+      id: "ventas",
+      header: "Ventas",
+      cell: (position) => position.ventas,
+    },
+    {
+      id: "ultimaCompra",
+      header: "Última compra",
+      cell: (position) => date(position.ultimaCompra),
+    },
+    {
+      id: "ultimaVenta",
+      header: "Última venta",
+      cell: (position) => date(position.ultimaVenta),
+    },
+    {
+      id: "ultimaOperacion",
+      header: "Última operación",
+      cell: (position) => date(position.ultimaOperacion),
+    },
+  ];
+  const compraColumns: TableColumn<Compra>[] = [
+    { id: "fecha", header: "Fecha", cell: (compra) => date(compra.fecha) },
+    {
+      id: "efectivo",
+      header: "Efectivo",
+      cell: (compra) => compra.saldoEfectivo?.id,
+    },
+    {
+      id: "inversion",
+      header: "Inversión",
+      cell: (compra) => compra.saldoInversion?.id,
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad",
+      kind: "amount",
+      cell: (compra) => num(compra.cantidad),
+    },
+    {
+      id: "precio",
+      header: "Precio",
+      kind: "amount",
+      cell: (compra) => num(compra.precio),
+    },
+    { id: "divisa", header: "Divisa", cell: (compra) => compra.divisa },
+    {
+      id: "cambio",
+      header: "Cambio",
+      kind: "amount",
+      cell: (compra) => num(compra.cambio),
+    },
+    {
+      id: "eur",
+      header: "EUR cargado",
+      kind: "amount",
+      cell: (compra) => eur(compra.importeEur),
+    },
+    {
+      id: "comision",
+      header: "Comisión",
+      kind: "amount",
+      cell: (compra) =>
+        compra.comisionEur ? eur(compra.comisionEur) : "0,00 €",
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (compra) => (
+        <Tag inactive={compra.estado === "Anulada"}>{compra.estado}</Tag>
+      ),
+    },
+  ];
+  const ventaColumns: TableColumn<Compra>[] = compraColumns.map((column) =>
+    column.id === "eur"
+      ? { ...column, header: "EUR cobrado", label: "EUR cobrado" }
+      : column,
+  );
   return (
     <>
       <a
@@ -668,57 +781,24 @@ function InstrumentDetail({
           </p>
         ) : (
           <div className="desktop-list inversiones-desktop">
-            <table className="inversiones-table">
-              <caption className="sr-only">Posiciones por Saldo</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Saldo</th>
-                  <th scope="col">Cantidad</th>
-                  <th scope="col">Compras</th>
-                  <th scope="col">Ventas</th>
-                  <th scope="col">Última compra</th>
-                  <th scope="col">Última venta</th>
-                  <th scope="col">Última operación</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.posiciones.map((position: Position) => (
-                  <tr key={position.saldoInversion.id}>
-                    <td>
-                      {position.saldoInversion.id} · {position.saldoInversion.nombre}
-                    </td>
-                    <td>{num(position.cantidad)}</td>
-                    <td>{position.compras}</td>
-                    <td>{position.ventas}</td>
-                    <td>{date(position.ultimaCompra)}</td>
-                    <td>{date(position.ultimaVenta)}</td>
-                    <td>{date(position.ultimaOperacion)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Posiciones por Saldo"
+              label="Tabla de posiciones por Saldo"
+              columns={positionColumns}
+              rows={data.posiciones}
+              rowKey={(position) => position.saldoInversion.id}
+              tableClassName="inversiones-table"
+            />
           </div>
         )}
         {data.posiciones.length > 0 && (
-          <ul
+          <DataList
+            columns={positionColumns}
+            rows={data.posiciones}
+            rowKey={(position) => position.saldoInversion.id}
+            label="Posiciones por Saldo móvil"
             className="mobile-list inversiones-mobile"
-            aria-label="Posiciones por Saldo móvil"
-          >
-            {data.posiciones.map((position: Position) => (
-              <li key={position.saldoInversion.id}>
-                <div className="card-head">
-                  <strong>
-                    {position.saldoInversion.id} · {position.saldoInversion.nombre}
-                  </strong>
-                  <span>{num(position.cantidad)}</span>
-                </div>
-                <p>
-                  {position.compras} compra(s) · {position.ventas} venta(s) ·
-                  última operación {date(position.ultimaOperacion)}
-                </p>
-              </li>
-            ))}
-          </ul>
+          />
         )}
         <p className="help">
           Valoración y resultado: {data.valoracion.estado} ·{" "}
@@ -753,66 +833,30 @@ function InstrumentDetail({
           <p>Sin compras registradas.</p>
         ) : (
           <div className="desktop-list inversiones-desktop">
-            <table className="inversiones-table">
-              <caption className="sr-only">Compras del Instrumento</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Fecha</th>
-                  <th scope="col">Efectivo</th>
-                  <th scope="col">Inversión</th>
-                  <th scope="col">Cantidad</th>
-                  <th scope="col">Precio</th>
-                  <th scope="col">Divisa</th>
-                  <th scope="col">Cambio</th>
-                  <th scope="col">EUR cargado</th>
-                  <th scope="col">Comisión</th>
-                  <th scope="col">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.compras.map((compra: Compra) => (
-                  <tr key={compra.id}>
-                    <td>{date(compra.fecha)}</td>
-                    <td>{compra.saldoEfectivo?.id}</td>
-                    <td>{compra.saldoInversion?.id}</td>
-                    <td>{num(compra.cantidad)}</td>
-                    <td>{num(compra.precio)}</td>
-                    <td>{compra.divisa}</td>
-                    <td>{num(compra.cambio)}</td>
-                    <td>{eur(compra.importeEur)}</td>
-                    <td>{compra.comisionEur ? eur(compra.comisionEur) : "0,00 €"}</td>
-                    <td>{compra.estado}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Compras del Instrumento"
+              label="Tabla de compras del Instrumento"
+              columns={compraColumns}
+              rows={data.compras}
+              rowKey={(compra) => compra.id}
+              rowClassName={(compra) =>
+                compra.estado === "Anulada" ? "annulled" : undefined
+              }
+              tableClassName="inversiones-table"
+            />
           </div>
         )}
         {data.compras.length > 0 && (
-          <ul
+          <DataList
+            columns={compraColumns}
+            rows={data.compras}
+            rowKey={(compra) => compra.id}
+            rowClassName={(compra) =>
+              compra.estado === "Anulada" ? "annulled" : undefined
+            }
+            label="Compras del Instrumento móvil"
             className="mobile-list inversiones-mobile"
-            aria-label="Compras del Instrumento móvil"
-          >
-            {data.compras.map((compra: Compra) => (
-              <li key={compra.id}>
-                <div className="card-head">
-                  <strong>{date(compra.fecha)}</strong>
-                  <Tag inactive={compra.estado === "Anulada"}>
-                    {compra.estado}
-                  </Tag>
-                </div>
-                <p>
-                  {compra.saldoEfectivo?.id} → {compra.saldoInversion?.id} ·{" "}
-                  {num(compra.cantidad)} × {num(compra.precio)} {compra.divisa}
-                  {compra.cambio ? ` · ${num(compra.cambio)}` : ""}
-                </p>
-                <p>
-                  EUR cargado {eur(compra.importeEur)} · comisión{" "}
-                  {compra.comisionEur ? eur(compra.comisionEur) : "0,00 €"}
-                </p>
-              </li>
-            ))}
-          </ul>
+          />
         )}
       </section>
       <section className="panel" aria-labelledby="ventas-instrumento-title">
@@ -832,64 +876,28 @@ function InstrumentDetail({
         ) : (
           <>
             <div className="desktop-list inversiones-desktop">
-              <table className="inversiones-table">
-                <caption className="sr-only">Ventas del Instrumento</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Efectivo</th>
-                    <th scope="col">Inversión</th>
-                    <th scope="col">Cantidad</th>
-                    <th scope="col">Precio</th>
-                    <th scope="col">Divisa</th>
-                    <th scope="col">Cambio</th>
-                    <th scope="col">EUR cobrado</th>
-                    <th scope="col">Comisión</th>
-                    <th scope="col">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.ventas.map((venta: Compra) => (
-                    <tr key={venta.id}>
-                      <td>{date(venta.fecha)}</td>
-                      <td>{venta.saldoEfectivo?.id}</td>
-                      <td>{venta.saldoInversion?.id}</td>
-                      <td>{num(venta.cantidad)}</td>
-                      <td>{num(venta.precio)}</td>
-                      <td>{venta.divisa}</td>
-                      <td>{num(venta.cambio)}</td>
-                      <td>{eur(venta.importeEur)}</td>
-                      <td>{venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}</td>
-                      <td>{venta.estado}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Ventas del Instrumento"
+                label="Tabla de ventas del Instrumento"
+                columns={ventaColumns}
+                rows={data.ventas}
+                rowKey={(venta) => venta.id}
+                rowClassName={(venta) =>
+                  venta.estado === "Anulada" ? "annulled" : undefined
+                }
+                tableClassName="inversiones-table"
+              />
             </div>
-            <ul
+            <DataList
+              columns={ventaColumns}
+              rows={data.ventas}
+              rowKey={(venta) => venta.id}
+              rowClassName={(venta) =>
+                venta.estado === "Anulada" ? "annulled" : undefined
+              }
+              label="Ventas del Instrumento móvil"
               className="mobile-list inversiones-mobile"
-              aria-label="Ventas del Instrumento móvil"
-            >
-              {data.ventas.map((venta: Compra) => (
-                <li key={venta.id}>
-                  <div className="card-head">
-                    <strong>{date(venta.fecha)}</strong>
-                    <Tag inactive={venta.estado === "Anulada"}>
-                      {venta.estado}
-                    </Tag>
-                  </div>
-                  <p>
-                    {venta.saldoEfectivo?.id} → {venta.saldoInversion?.id} ·{" "}
-                    {num(venta.cantidad)} × {num(venta.precio)} {venta.divisa}
-                    {venta.cambio ? ` · ${num(venta.cambio)}` : ""}
-                  </p>
-                  <p>
-                    EUR cobrado {eur(venta.importeEur)} · comisión{" "}
-                    {venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            />
           </>
         )}
         <p className="help">
@@ -1144,6 +1152,97 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
     };
   }, [filters, page, retry]);
   useEffect(() => setPage(1), [filters]);
+  const columns: TableColumn<Compra>[] = [
+    { id: "fecha", header: "Fecha", cell: (compra) => date(compra.fecha) },
+    {
+      id: "instrumento",
+      header: "Instrumento",
+      cell: (compra) => `${compra.instrumento?.id} · ${compra.instrumento?.nombre}`,
+    },
+    {
+      id: "efectivo",
+      header: "Efvo.",
+      label: "Efectivo",
+      cell: (compra) => compra.saldoEfectivo?.id,
+    },
+    {
+      id: "inversion",
+      header: "Inv.",
+      label: "Inversión",
+      cell: (compra) => compra.saldoInversion?.id,
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad",
+      kind: "amount",
+      cell: (compra) => num(compra.cantidad),
+    },
+    {
+      id: "precio",
+      header: "Precio",
+      kind: "amount",
+      cell: (compra) => num(compra.precio),
+    },
+    { id: "divisa", header: "Divisa", cell: (compra) => compra.divisa },
+    {
+      id: "cambio",
+      header: "Cambio",
+      kind: "amount",
+      cell: (compra) => num(compra.cambio),
+    },
+    {
+      id: "eur",
+      header: "EUR cargado",
+      kind: "amount",
+      cell: (compra) => eur(compra.importeEur),
+    },
+    {
+      id: "comision",
+      header: "Comisión",
+      kind: "amount",
+      cell: (compra) =>
+        compra.comisionEur ? eur(compra.comisionEur) : "0,00 €",
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (compra) => (
+        <Tag inactive={compra.estado === "Anulada"}>{compra.estado}</Tag>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (compra) => (
+        <>
+          <button
+            className="text-button"
+            onClick={() => go(`${BASE}/compras/${compra.id}`)}
+          >
+            Ver
+          </button>
+          {compra.estado === "Vigente" && (
+            <>
+              <button
+                className="text-button"
+                onClick={() => go(`${BASE}/compras/${compra.id}/rectificar`)}
+              >
+                Rectificar
+              </button>
+              <button
+                className="text-button"
+                onClick={() => go(`${BASE}/compras/${compra.id}/anular`)}
+              >
+                Anular
+              </button>
+            </>
+          )}
+        </>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -1245,118 +1344,28 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
               {data.resumen.anuladas} anulada(s). {data.cobertura}
             </p>
             <div className="desktop-list inversiones-desktop">
-              <table className="inversiones-table">
-                <caption className="sr-only">Compras registradas</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Instrumento</th>
-                    <th scope="col">Efvo.</th>
-                    <th scope="col">Inv.</th>
-                    <th scope="col">Cantidad</th>
-                    <th scope="col">Precio</th>
-                    <th scope="col">Divisa</th>
-                    <th scope="col">Cambio</th>
-                    <th scope="col">EUR cargado</th>
-                    <th scope="col">Comisión</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.compras.map((compra) => (
-                    <tr key={compra.id}>
-                      <td>{date(compra.fecha)}</td>
-                      <td>
-                        {compra.instrumento?.id} · {compra.instrumento?.nombre}
-                      </td>
-                      <td>{compra.saldoEfectivo?.id}</td>
-                      <td>{compra.saldoInversion?.id}</td>
-                      <td>{num(compra.cantidad)}</td>
-                      <td>{num(compra.precio)}</td>
-                      <td>{compra.divisa}</td>
-                      <td>{num(compra.cambio)}</td>
-                      <td>{eur(compra.importeEur)}</td>
-                      <td>{compra.comisionEur ? eur(compra.comisionEur) : "0,00 €"}</td>
-                      <td>
-                        <Tag inactive={compra.estado === "Anulada"}>{compra.estado}</Tag>
-                      </td>
-                      <td className="inversiones-actions">
-                        <button
-                          className="text-button"
-                          onClick={() => go(`${BASE}/compras/${compra.id}`)}
-                        >
-                          Ver
-                        </button>
-                        {compra.estado === "Vigente" && (
-                          <>
-                            <button
-                              className="text-button"
-                              onClick={() =>
-                                go(`${BASE}/compras/${compra.id}/rectificar`)
-                              }
-                            >
-                              Rectificar
-                            </button>
-                            <button
-                              className="text-button"
-                              onClick={() => go(`${BASE}/compras/${compra.id}/anular`)}
-                            >
-                              Anular
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Compras registradas"
+                label="Tabla de compras registradas"
+                columns={columns}
+                rows={data.compras}
+                rowKey={(compra) => compra.id}
+                rowClassName={(compra) =>
+                  compra.estado === "Anulada" ? "annulled" : undefined
+                }
+                tableClassName="inversiones-table"
+              />
             </div>
-            <ul className="mobile-list inversiones-mobile" aria-label="Compras registradas móvil">
-              {data.compras.map((compra) => (
-                <li key={compra.id}>
-                  <div className="card-head">
-                    <strong>
-                      {date(compra.fecha)} · {compra.instrumento?.id}
-                    </strong>
-                    <Tag inactive={compra.estado === "Anulada"}>{compra.estado}</Tag>
-                  </div>
-                  <p>
-                    {compra.saldoEfectivo?.id} → {compra.saldoInversion?.id} ·{" "}
-                    {num(compra.cantidad)} × {num(compra.precio)} {compra.divisa}
-                    {compra.cambio ? ` · ${num(compra.cambio)}` : ""}
-                  </p>
-                  <p>
-                    EUR cargado {eur(compra.importeEur)} · comisión{" "}
-                    {compra.comisionEur ? eur(compra.comisionEur) : "0,00 €"}
-                  </p>
-                  <div className="actions">
-                    <button
-                      className="text-button"
-                      onClick={() => go(`${BASE}/compras/${compra.id}`)}
-                    >
-                      Ver
-                    </button>
-                    {compra.estado === "Vigente" && (
-                      <>
-                        <button
-                          className="text-button"
-                          onClick={() => go(`${BASE}/compras/${compra.id}/rectificar`)}
-                        >
-                          Rectificar
-                        </button>
-                        <button
-                          className="text-button"
-                          onClick={() => go(`${BASE}/compras/${compra.id}/anular`)}
-                        >
-                          Anular
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.compras}
+              rowKey={(compra) => compra.id}
+              rowClassName={(compra) =>
+                compra.estado === "Anulada" ? "annulled" : undefined
+              }
+              label="Compras registradas móvil"
+              className="mobile-list inversiones-mobile"
+            />
             <div className="list-footer">
               <span>{data.total} Compra(s) · página {page}</span>
               <div className="actions">

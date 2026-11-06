@@ -216,6 +216,20 @@ test("Table alinea importes en th y td según el rol de la columna", () => {
   expect(html).toContain("1.234,50 €");
 });
 
+test("Table conserva una clase de tabla por página sin alterar el contrato", () => {
+  const html = renderToStaticMarkup(
+    <Table
+      caption="Listado de saldos"
+      label="Tabla de saldos"
+      columns={saldoColumns}
+      rows={saldoRows}
+      tableClassName="inversiones-table"
+    />,
+  );
+  expect(html).toContain('class="ui-table inversiones-table"');
+  expect(html).toContain('role="region"');
+});
+
 test("Table aplica rowClassName a la fila y conserva el resto de celdas", () => {
   const html = renderToStaticMarkup(
     <Table
@@ -253,6 +267,58 @@ test("DataList reproduce etiquetas, valores y acciones de las mismas columnas", 
   expect(html).toContain('href="/saldos/s1"');
   expect(html).toContain('data-kind="amount"');
   expect(html).not.toContain('data-label="Interno"');
+});
+
+test("DataList aplica rowClassName a la tarjeta sin alterar sus datos", () => {
+  const html = renderToStaticMarkup(
+    <DataList
+      columns={saldoColumns}
+      rows={saldoRows}
+      label="Saldos en móvil"
+      rowClassName={(row) => (row.id === "s1" ? "annulled" : undefined)}
+    />,
+  );
+  expect(html).toContain('class="ui-data-list-item annulled"');
+  expect(html).toContain("Cuenta principal");
+  expect(html).toContain("1.234,50 €");
+  expect(html).toContain("VERIFICADO");
+});
+
+test("DataList usa cardCell solo en la tarjeta y conserva la tabla", () => {
+  const columns: TableColumn<SaldoRow>[] = [
+    {
+      id: "nombre",
+      header: "Nombre",
+      cell: (row) => row.nombre,
+      cardCell: (row) => `Tarjeta ${row.nombre}`,
+    },
+  ];
+  const table = renderToStaticMarkup(
+    <Table
+      caption="Saldos"
+      label="Tabla de saldos"
+      columns={columns}
+      rows={saldoRows}
+    />,
+  );
+  const cards = renderToStaticMarkup(
+    <DataList columns={columns} rows={saldoRows} label="Saldos móvil" />,
+  );
+  expect(table).toContain('<td data-kind="text">Cuenta principal</td>');
+  expect(table).not.toContain("Tarjeta Cuenta principal");
+  expect(cards).toContain("Tarjeta Cuenta principal");
+});
+
+test("La acción Ver ficha mantiene 44 px en la tarjeta de Deudas", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  expect(css).toMatch(/\.debt-list \.debt-open \{[^}]*min-height: 0;/);
+  const cardRule =
+    css.match(/\.debt-cards \.debt-open \{([^}]*)\}/)?.[1] ?? "";
+  expect(cardRule).toContain("min-height: var(--touch-min)");
+  expect(cardRule).not.toContain("padding: 2px 0");
 });
 
 test("TableScroll conserva el contrato de región enfocable", () => {

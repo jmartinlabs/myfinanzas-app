@@ -131,6 +131,12 @@ export type TableColumn<Row> = {
   width?: string;
   card?: "hidden";
   cell: (row: Row, index: number) => ReactNode;
+  /**
+   * Render alternativo solo para la tarjeta móvil. Permite conservar el texto
+   * o los enlaces propios de la tarjeta sin duplicar falsos positivos de texto
+   * exacto con la tabla. Por defecto se usa `cell`.
+   */
+  cardCell?: (row: Row, index: number) => ReactNode;
 };
 
 function tableColumnLabel<Row>(column: TableColumn<Row>): string {
@@ -158,6 +164,8 @@ export type TableProps<Row> = {
   empty?: ReactNode;
   /** Clases del contenedor interno; conserva hooks como `desktop-list`. */
   className?: string;
+  /** Clases del `<table>`; conserva hooks por página como `inversiones-table`. */
+  tableClassName?: string;
 };
 
 /** Tabla de escritorio con cabecera, importes alineados y scroll rotulado. */
@@ -171,11 +179,14 @@ export function Table<Row>({
   captionVisible = false,
   empty = "Sin datos",
   className,
+  tableClassName,
 }: TableProps<Row>) {
   return (
     <TableScroll label={label}>
       <div className={`ui-table-wrap${className ? ` ${className}` : ""}`}>
-        <table className="ui-table">
+        <table
+          className={`ui-table${tableClassName ? ` ${tableClassName}` : ""}`}
+        >
           <caption
             className={`ui-table-caption${captionVisible ? "" : " sr-only"}`}
           >
@@ -232,6 +243,8 @@ export type DataListProps<Row> = {
   columns: ReadonlyArray<TableColumn<Row>>;
   rows: ReadonlyArray<Row>;
   rowKey?: (row: Row, index: number) => string | number;
+  /** Clase opcional de la tarjeta (p. ej. `annulled`); no altera celdas. */
+  rowClassName?: (row: Row, index: number) => string | undefined;
   /** Nombre accesible opcional de la lista de tarjetas. */
   label?: string;
   empty?: ReactNode;
@@ -249,6 +262,7 @@ export function DataList<Row>({
   columns,
   rows,
   rowKey,
+  rowClassName,
   label,
   empty = "Sin datos",
   className,
@@ -264,29 +278,32 @@ export function DataList<Row>({
       {rows.length === 0 ? (
         <li className="ui-data-list-empty">{empty}</li>
       ) : (
-        rows.map((row, index) => (
-          <li
-            key={rowKey ? rowKey(row, index) : index}
-            className="ui-data-list-item"
-          >
-            {cardColumns.map((column) => {
-              const fieldLabel = tableColumnLabel(column);
-              return (
-                <div
-                  key={column.id}
-                  className="ui-data-list-field"
-                  data-kind={column.kind ?? "text"}
-                  data-label={fieldLabel}
-                >
-                  <span className="ui-data-list-label">{fieldLabel}</span>
-                  <div className="ui-data-list-value">
-                    {column.cell(row, index)}
+        rows.map((row, index) => {
+          const rowClass = rowClassName?.(row, index);
+          return (
+            <li
+              key={rowKey ? rowKey(row, index) : index}
+              className={`ui-data-list-item${rowClass ? ` ${rowClass}` : ""}`}
+            >
+              {cardColumns.map((column) => {
+                const fieldLabel = tableColumnLabel(column);
+                return (
+                  <div
+                    key={column.id}
+                    className="ui-data-list-field"
+                    data-kind={column.kind ?? "text"}
+                    data-label={fieldLabel}
+                  >
+                    <span className="ui-data-list-label">{fieldLabel}</span>
+                    <div className="ui-data-list-value">
+                      {(column.cardCell ?? column.cell)(row, index)}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </li>
-        ))
+                );
+              })}
+            </li>
+          );
+        })
       )}
     </ul>
   );
