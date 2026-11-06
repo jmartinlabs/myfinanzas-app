@@ -16,7 +16,8 @@ test("formatAmount usa guion ASCII y no cambia el valor de los negativos", () =>
 test("formatAmount respeta meses y conteos sin añadir €", () => {
   expect(formatAmount("12.00", "meses")).toBe("12,00 meses");
   expect(formatAmount("5", "conteo")).toBe("5,00");
-  expect(formatAmount("12.345", "EUR")).toBe("12,34 €");
+  expect(formatAmount("12.345", "EUR")).toBe("12,345 €");
+  expect(formatAmount("1.2", "EUR")).toBe("1,20 €");
 });
 
 test("eur y formatDecimal son wrappers del formateador canónico", () => {

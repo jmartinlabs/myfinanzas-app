@@ -21,7 +21,7 @@ export function formatAmount(
   const raw = negative ? value.slice(1) : value;
   const [whole, fraction = ""] = raw.split(".");
   const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  const decimals = fraction.padEnd(2, "0").slice(0, 2);
+  const decimals = fraction.length > 2 ? fraction : fraction.padEnd(2, "0");
   const text = `${grouped},${decimals}`;
   const signed = negative ? `-${text}` : text;
   if (unit === "EUR") return `${signed} €`;
