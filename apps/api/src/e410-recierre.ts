@@ -859,24 +859,55 @@ function sourceAuditChanges(
     label: string;
   }[] = [];
 
-  // Investment operations are material T1/T2 writes: any audited revision after
-  // the reopening keeps the conservative I4 behaviour.
+  // Investment operations: only their T3 fields (`concepto`/`nota`) are
+  // informative. Price, quantity, commission, dates, amounts and relations stay
+  // material even when audited after the reopening.
+  let operationRows: {
+    operacion: string;
+    clase: string;
+    revision: number;
+    anterior: string | null;
+    posterior: string;
+  }[];
   try {
-    if (
-      db
-        .query(
-          `SELECT a.operacion FROM operacion_inversion_audit a
-           JOIN operaciones_inversion o ON o.id=a.operacion
-           WHERE o.fecha <= ? AND a.instante > ? LIMIT 1`,
-        )
-        .get(fin, reopeningUtc)
-    )
-      found.push({ bloque: "inversion", label: "operaciones de inversión" });
+    operationRows = db
+      .query(
+        `SELECT a.operacion,a.revision,a.anterior,a.posterior,o.clase
+         FROM operacion_inversion_audit a
+         JOIN operaciones_inversion o ON o.id=a.operacion
+         WHERE o.fecha <= ? AND a.instante > ?`,
+      )
+      .all(fin, reopeningUtc) as typeof operationRows;
   } catch {
     return noVerificable(
       "inversion",
       "No se pudo leer la auditoría de operaciones de inversión; no se acredita la ausencia de cambios.",
     );
+  }
+  for (const row of operationRows) {
+    let before: unknown = null,
+      after: unknown;
+    try {
+      before = row.anterior === null ? null : JSON.parse(row.anterior);
+      after = JSON.parse(row.posterior);
+    } catch {
+      return noVerificable(
+        "inversion",
+        `La auditoría de la operación ${row.operacion} v${row.revision} no es legible; no se acredita la ausencia de cambios.`,
+      );
+    }
+    const change = auditPayloadChange(
+      before,
+      after,
+      row.clase === "Venta" ? "venta" : "compra",
+      `operación ${row.operacion} v${row.revision}`,
+      "inversion",
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "inversion", label: "operaciones de inversión" });
+      break;
+    }
   }
 
   let instrumentRows: {
@@ -1217,12 +1248,10 @@ function sourceAuditChanges(
 
 /**
  * Direct revision bumps that have no audit row are still not equivalent to no
- * write. Investment operations keep the vN-time baseline. For catalogs with T3
- * informative fields (instruments, classification, references, revisión de
- * comida and deuda), an audited T3 edit accounts for its revision; this check
- * only catches a revision bump with no audit row at all. Material audit rows
- * are classified by `sourceAuditChanges`, so a reverted material write still
- * fails closed.
+ * write. Any audited revision — T3 or material — accounts for the bump:
+ * `sourceAuditChanges` decides whether that audit payload is material, so a T3
+ * edit counts as baseline and a reverted material write still fails closed.
+ * Only a revision bump with no audit row at all is flagged here.
  */
 function revisionBumpChanges(
   db: Database,
@@ -1234,8 +1263,8 @@ function revisionBumpChanges(
   const fin = capture.payload.ventana.fin;
   if (!fin) return null;
   const cierre = db
-    .query("SELECT creado_utc FROM cierres WHERE ciclo=? AND version=?")
-    .get(ciclo, versionOrigen) as { creado_utc: string } | null;
+    .query("SELECT 1 AS ok FROM cierres WHERE ciclo=? AND version=?")
+    .get(ciclo, versionOrigen) as { ok: number } | null;
   if (!cierre)
     return {
       estado: "NoVerificable",
@@ -1253,12 +1282,14 @@ function revisionBumpChanges(
     {
       bloque: "inversion",
       label: "operaciones de inversión",
+      // T3 concept/note audits count as the baseline; a material audit is
+      // classified by `sourceAuditChanges`. Only an unaccounted bump fails.
       sql: `SELECT o.id,o.revision,
         (SELECT MAX(a.revision) FROM operacion_inversion_audit a
-          WHERE a.operacion=o.id AND a.instante<=?) baseline
+          WHERE a.operacion=o.id) baseline
        FROM operaciones_inversion o
        WHERE o.fecha <= ?`,
-      params: [cierre.creado_utc, fin],
+      params: [fin],
     },
     {
       bloque: "inversion",

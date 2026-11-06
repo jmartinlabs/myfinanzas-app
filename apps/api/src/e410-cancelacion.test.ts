@@ -240,6 +240,87 @@ function insertInstrumentoAudit(
   );
 }
 
+function seedOperation(
+  db: Database,
+  input: {
+    id: string;
+    clase: "Compra" | "Venta";
+    fecha?: string;
+    cantidad?: number;
+    importe?: number;
+    precio?: number;
+    comision?: number;
+    concepto?: string;
+    nota?: string | null;
+  },
+) {
+  db.run(
+    `INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,
+       saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,
+       importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado)
+     VALUES(?,?,?,'I9001','S003','S004',?,?,'EUR',NULL,?,?,?,?,'Vigente',1,?,?)`,
+    [
+      input.id,
+      input.clase,
+      input.fecha ?? "2026-01-10",
+      input.cantidad ?? 100_000_000,
+      input.precio ?? 100_000_000,
+      input.importe ?? 10000,
+      input.comision ?? 0,
+      input.concepto ?? "Operación I5",
+      input.nota ?? null,
+      stamp,
+      stamp,
+    ],
+  );
+}
+
+function operationAuditValue(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "9001",
+    clase: "Compra",
+    fecha: "2026-01-10",
+    instrumento: "I9001",
+    saldoEfectivo: "S003",
+    saldoInversion: "S004",
+    cantidad: "1",
+    precio: "1",
+    divisa: "EUR",
+    cambio: null,
+    importeEur: "100.00",
+    comisionEur: "0.00",
+    concepto: "Operación I5",
+    nota: null,
+    estado: "Vigente",
+    revision: 1,
+    ...overrides,
+  };
+}
+
+function insertOperationAudit(
+  db: Database,
+  input: {
+    operacion: string;
+    revision: number;
+    instante: string;
+    anterior: Record<string, unknown>;
+    posterior: Record<string, unknown>;
+  },
+) {
+  db.run(
+    `INSERT INTO operacion_inversion_audit(operacion,revision,accion,motivo,
+       instante,actor,anterior,posterior)
+     VALUES(?,?,'rectificación',NULL,?,'usuario-unico',?,?)`,
+    [
+      input.operacion,
+      input.revision,
+      input.instante,
+      JSON.stringify(input.anterior),
+      JSON.stringify(input.posterior),
+    ],
+  );
+}
+
 function debtAuditValue(overrides: Record<string, unknown> = {}) {
   return {
     id: "D0401",
@@ -1140,6 +1221,331 @@ test("E4.10 I5 R3: los cambios materiales T1/T2 siguen bloqueando", () => {
       });
       expect(counts(db)).toEqual(before);
       expect(getReaperturaEstado(db, "1").estado).toBe("Reabierto");
+    } finally {
+      db.close();
+    }
+  }
+});
+
+test("E4.10 I5 R3: concepto y nota T3 de Compra/Venta no impiden cancelar", () => {
+  const db = fixture();
+  try {
+    seedInstrumento(db);
+    seedOperation(db, {
+      id: "9001",
+      clase: "Compra",
+      fecha: "2026-01-10",
+      concepto: "Compra enero",
+      nota: "nota compra",
+    });
+    seedOperation(db, {
+      id: "9002",
+      clase: "Venta",
+      fecha: "2026-01-20",
+      concepto: "Venta enero",
+      nota: "nota venta",
+    });
+    closeV1(db);
+    reopen(db);
+    const instante = new Date(now + 2_000).toISOString();
+
+    db.run(
+      "UPDATE operaciones_inversion SET concepto='Compra rectificada',nota='nota nueva',revision=2,actualizado=? WHERE id='9001'",
+      [instante],
+    );
+    insertOperationAudit(db, {
+      operacion: "9001",
+      revision: 2,
+      instante,
+      anterior: operationAuditValue({
+        id: "9001",
+        clase: "Compra",
+        revision: 1,
+        concepto: "Compra enero",
+        nota: "nota compra",
+      }),
+      posterior: operationAuditValue({
+        id: "9001",
+        clase: "Compra",
+        revision: 2,
+        concepto: "Compra rectificada",
+        nota: "nota nueva",
+      }),
+    });
+    db.run(
+      "UPDATE operaciones_inversion SET concepto='Venta rectificada',nota='nota nueva venta',revision=2,actualizado=? WHERE id='9002'",
+      [instante],
+    );
+    insertOperationAudit(db, {
+      operacion: "9002",
+      revision: 2,
+      instante,
+      anterior: operationAuditValue({
+        id: "9002",
+        clase: "Venta",
+        fecha: "2026-01-20",
+        revision: 1,
+        concepto: "Venta enero",
+        nota: "nota venta",
+      }),
+      posterior: operationAuditValue({
+        id: "9002",
+        clase: "Venta",
+        fecha: "2026-01-20",
+        revision: 2,
+        concepto: "Venta rectificada",
+        nota: "nota nueva venta",
+      }),
+    });
+
+    const result = cancel(db, {
+      versionEsperada: 1,
+      motivo: "Solo concepto/nota T3",
+    });
+
+    expect(result.comparacion.estado).toBe("SinCambios");
+    expect(getReaperturaEstado(db, "1")).toMatchObject({
+      estado: "Cerrado",
+      version: 1,
+    });
+    expect(cancellationEvents(db)).toHaveLength(1);
+    expect(
+      db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
+    ).toEqual({ n: 1 });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R3: precio, cantidad, comisión o fecha de Compra/Venta siguen bloqueando", () => {
+  const scenarios: {
+    clase: "Compra" | "Venta";
+    nombre: string;
+    change: (
+      db: Database,
+      instante: string,
+      clase: "Compra" | "Venta",
+    ) => void;
+  }[] = [
+    {
+      clase: "Compra",
+      nombre: "precio",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET precio_divisa=120000000,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({ clase, revision: 1 }),
+          posterior: operationAuditValue({
+            clase,
+            revision: 2,
+            precio: "1.2",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Compra",
+      nombre: "cantidad",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET cantidad=200000000,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({ clase, revision: 1 }),
+          posterior: operationAuditValue({
+            clase,
+            revision: 2,
+            cantidad: "2",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Compra",
+      nombre: "comisión",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET comision_eur=500,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({ clase, revision: 1 }),
+          posterior: operationAuditValue({
+            clase,
+            revision: 2,
+            comisionEur: "5.00",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Compra",
+      nombre: "fecha",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET fecha='2026-01-20',revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({ clase, revision: 1 }),
+          posterior: operationAuditValue({
+            clase,
+            revision: 2,
+            fecha: "2026-01-20",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Venta",
+      nombre: "precio",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET precio_divisa=120000000,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 1,
+          }),
+          posterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 2,
+            precio: "1.2",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Venta",
+      nombre: "cantidad",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET cantidad=200000000,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 1,
+          }),
+          posterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 2,
+            cantidad: "2",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Venta",
+      nombre: "comisión",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET comision_eur=500,revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 1,
+          }),
+          posterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 2,
+            comisionEur: "5.00",
+          }),
+        });
+      },
+    },
+    {
+      clase: "Venta",
+      nombre: "fecha",
+      change: (db, instante, clase) => {
+        db.run(
+          "UPDATE operaciones_inversion SET fecha='2026-01-05',revision=2,actualizado=? WHERE id='9001'",
+          [instante],
+        );
+        insertOperationAudit(db, {
+          operacion: "9001",
+          revision: 2,
+          instante,
+          anterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-20",
+            revision: 1,
+          }),
+          posterior: operationAuditValue({
+            clase,
+            fecha: "2026-01-05",
+            revision: 2,
+          }),
+        });
+      },
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const db = fixture();
+    try {
+      seedInstrumento(db);
+      seedOperation(db, {
+        id: "9001",
+        clase: scenario.clase,
+        fecha: scenario.clase === "Venta" ? "2026-01-20" : "2026-01-10",
+      });
+      closeV1(db);
+      reopen(db);
+      const instante = new Date(now + 2_000).toISOString();
+      scenario.change(db, instante, scenario.clase);
+      const before = counts(db);
+
+      const rejected = problemOf(() =>
+        cancel(db, {
+          versionEsperada: 1,
+          motivo: `Intento material ${scenario.clase}: ${scenario.nombre}`,
+        }),
+      );
+
+      expect(rejected.status).toBe(409);
+      expect(rejected.code).toBe("CAMBIOS_MATERIALES");
+      expect(rejected.details.comparacion).toMatchObject({
+        estado: "ConCambios",
+      });
+      expect(counts(db)).toEqual(before);
+      expect(getReaperturaEstado(db, "1").estado).toBe("Reabierto");
+      expect(cancellationEvents(db)).toEqual([]);
     } finally {
       db.close();
     }
