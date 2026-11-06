@@ -66,6 +66,14 @@ function store() {
   return db;
 }
 
+function cycle(db: Database, id: string, inicio: string) {
+  db.run(
+    `INSERT INTO ciclos(id,inicio,saldo_comida,creado,revision,actualizado)
+     VALUES(?,?,0,?,1,?)`,
+    [id, inicio, t, t],
+  );
+}
+
 function closure(db: Database, version = 1, fingerprint = fp) {
   const creado = `2026-0${version}-01T00:00:00.000Z`;
   db.transaction(() => {
@@ -204,10 +212,10 @@ test("E4.11 I2: C27 is exact and deterministic", () => {
   const c27Contract = contract(c27);
   expect(c27Contract.id).toBe(c27);
   expect(c27Contract.schemaVersion).toBe(27);
-  expect(c27Contract.sourceCommit).toBe("e3a9684");
+  expect(c27Contract.sourceCommit).toBe("b02f546");
   expect(c27Contract.objects).toHaveLength(320);
   expect(c27Contract.sha256).toBe(
-    "439062fd2d32dc062ca790300ef0bd06fad292af3cf6cd242ce1c49910d7ee0b",
+    "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23",
   );
   expect(contracts().at(-1)?.id).toBe(c27);
   expect(contract(c26).sha256).toBe(
@@ -298,6 +306,9 @@ test("E4.11 I2: v26→v27 is additive and preserves rows, IDs, audit, attempts a
         version: 27,
       });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+      expect(db.query("PRAGMA recursive_triggers").get()).toEqual({
+        recursive_triggers: 1,
+      });
       expect({
         ciclos: db.query("SELECT * FROM ciclos ORDER BY id").all(),
         cierres: db.query("SELECT * FROM cierres ORDER BY ciclo,version").all(),
@@ -396,7 +407,11 @@ test("E4.11 I2: period photos and components are immutable", () => {
   try {
     closure(db);
     const id = period(db);
+    const second = period(db, { version: "A2" });
     component(db, { periodo_id: id });
+    expect(db.query("PRAGMA recursive_triggers").get()).toEqual({
+      recursive_triggers: 1,
+    });
     expect(() => db.run("UPDATE fotos_periodo SET actor='otro'")).toThrow(
       "immutable period photo",
     );
@@ -407,6 +422,18 @@ test("E4.11 I2: period photos and components are immutable", () => {
     expect(() => db.run("DELETE FROM foto_periodo_componentes")).toThrow(
       "no delete",
     );
+    expect(() =>
+      db.run(
+        "INSERT OR REPLACE INTO fotos_periodo SELECT * FROM fotos_periodo WHERE id=?",
+        [second],
+      ),
+    ).toThrow("no delete");
+    expect(() =>
+      db.run(
+        "INSERT OR REPLACE INTO foto_periodo_componentes SELECT * FROM foto_periodo_componentes WHERE periodo_id=? AND ciclo='1'",
+        [id],
+      ),
+    ).toThrow("no delete");
   } finally {
     db.close();
   }
@@ -518,6 +545,10 @@ test("E4.11 I2: included components must match their closure photo and fingerpri
   const db = store();
   try {
     closure(db);
+    cycle(db, "2", "2026-02-01");
+    cycle(db, "3", "2026-03-01");
+    cycle(db, "4", "2026-04-01");
+    cycle(db, "5", "2026-05-01");
     const id = period(db);
     expect(() => component(db, { periodo_id: id })).not.toThrow();
     expect(() => component(db, { periodo_id: id, ciclo: "2" })).toThrow();
@@ -546,6 +577,14 @@ test("E4.11 I2: included components must match their closure photo and fingerpri
         [id],
       ),
     ).not.toThrow();
+    expect(() =>
+      db.run(
+        `INSERT INTO foto_periodo_componentes(periodo_id,ciclo,version_foto,
+          fingerprint_foto,estado,motivo) VALUES(?, '999', NULL, NULL,
+          'ExcluidoSinCierre', 'ciclo inexistente')`,
+        [id],
+      ),
+    ).toThrow();
     expect(() =>
       db.run(
         `INSERT INTO foto_periodo_componentes(periodo_id,ciclo,version_foto,

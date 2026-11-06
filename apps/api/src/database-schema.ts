@@ -77,7 +77,7 @@ export function prepareSchema(db: Database, identity: Identity) {
     );
   }
   db.exec(
-    "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;",
+    "PRAGMA foreign_keys=ON; PRAGMA busy_timeout=3000; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA recursive_triggers=ON;",
   );
   const rebuild = upgradeFrom !== null && upgradeFrom < 22;
   if (rebuild) db.exec("PRAGMA foreign_keys=OFF");

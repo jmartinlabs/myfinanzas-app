@@ -15,10 +15,15 @@ import type { Database } from "bun:sqlite";
  * contract. Composition, routes, DTOs and UI belong to later E4.11 increments
  * and are not implemented here.
  *
+ * C27's `sourceCommit` is `b02f546` (the `main` base where the E4.11 DEV
+ * package was merged), not the implementation commit of this increment.
+ *
  * Immutability (P2-A/P6-A): a period photo and its components are never
- * updated or deleted. A new aggregate creates the next version (`A1 → A2`)
- * only after the previous one exists. The partial unique indexes keep one
- * version per natural period without relying on `NULL` semantics:
+ * updated or deleted. The opening connection enables `recursive_triggers=ON`
+ * so an `INSERT OR REPLACE` cannot bypass the no-delete triggers. A new
+ * aggregate creates the next version (`A1 → A2`) only after the previous one
+ * exists. The partial unique indexes keep one version per natural period
+ * without relying on `NULL` semantics:
  *  - `(tipo, ejercicio, trimestre, version)` for `Trimestre`;
  *  - `(tipo, ejercicio, version)` for `Anio`.
  *
@@ -108,7 +113,7 @@ export function fotosPeriodoSchemaV27(db: Database) {
     CREATE TABLE foto_periodo_componentes(
       periodo_id INTEGER NOT NULL
         REFERENCES fotos_periodo(id) ON DELETE RESTRICT,
-      ciclo TEXT NOT NULL,
+      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,
       version_foto INTEGER CHECK(version_foto IS NULL OR version_foto>0),
       fingerprint_foto TEXT CHECK(
         fingerprint_foto IS NULL OR (

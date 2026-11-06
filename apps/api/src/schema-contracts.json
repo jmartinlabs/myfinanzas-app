@@ -17747,7 +17747,7 @@
   },
   {
     "id": "C27-E411-FOTOS-PERIODO",
-    "sourceCommit": "e3a9684",
+    "sourceCommit": "b02f546",
     "schemaVersion": 27,
     "objects": [
       {
@@ -18324,7 +18324,7 @@
         "type": "table",
         "name": "foto_periodo_componentes",
         "tbl_name": "foto_periodo_componentes",
-        "sql": "CREATE TABLE foto_periodo_componentes(\n      periodo_id INTEGER NOT NULL\n        REFERENCES fotos_periodo(id) ON DELETE RESTRICT,\n      ciclo TEXT NOT NULL,\n      version_foto INTEGER CHECK(version_foto IS NULL OR version_foto>0),\n      fingerprint_foto TEXT CHECK(\n        fingerprint_foto IS NULL OR (\n          length(fingerprint_foto)=64\n          AND fingerprint_foto NOT GLOB '*[^a-f0-9]*'\n        )\n      ),\n      estado TEXT NOT NULL CHECK(\n        estado IN ('Incluido','ExcluidoSinCierre','PendienteReCierre')\n      ),\n      motivo TEXT CHECK(\n        motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=1000)\n      ),\n      PRIMARY KEY(periodo_id,ciclo),\n      CHECK(\n        (\n          estado='Incluido'\n          AND version_foto IS NOT NULL\n          AND fingerprint_foto IS NOT NULL\n        )\n        OR (\n          estado IN ('ExcluidoSinCierre','PendienteReCierre')\n          AND version_foto IS NULL\n          AND fingerprint_foto IS NULL\n        )\n      ),\n      FOREIGN KEY(ciclo,version_foto) REFERENCES fotos_cierre(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
+        "sql": "CREATE TABLE foto_periodo_componentes(\n      periodo_id INTEGER NOT NULL\n        REFERENCES fotos_periodo(id) ON DELETE RESTRICT,\n      ciclo TEXT NOT NULL REFERENCES ciclos(id) ON DELETE RESTRICT,\n      version_foto INTEGER CHECK(version_foto IS NULL OR version_foto>0),\n      fingerprint_foto TEXT CHECK(\n        fingerprint_foto IS NULL OR (\n          length(fingerprint_foto)=64\n          AND fingerprint_foto NOT GLOB '*[^a-f0-9]*'\n        )\n      ),\n      estado TEXT NOT NULL CHECK(\n        estado IN ('Incluido','ExcluidoSinCierre','PendienteReCierre')\n      ),\n      motivo TEXT CHECK(\n        motivo IS NULL OR (length(trim(motivo))>0 AND length(motivo)<=1000)\n      ),\n      PRIMARY KEY(periodo_id,ciclo),\n      CHECK(\n        (\n          estado='Incluido'\n          AND version_foto IS NOT NULL\n          AND fingerprint_foto IS NOT NULL\n        )\n        OR (\n          estado IN ('ExcluidoSinCierre','PendienteReCierre')\n          AND version_foto IS NULL\n          AND fingerprint_foto IS NULL\n        )\n      ),\n      FOREIGN KEY(ciclo,version_foto) REFERENCES fotos_cierre(ciclo,version)\n        ON DELETE RESTRICT\n    ) STRICT"
       },
       {
         "type": "table",
@@ -19671,6 +19671,6 @@
         "sql": "CREATE TRIGGER valoracion_update_correction\n      BEFORE UPDATE ON valoracion_inversion\n      WHEN NEW.revision!=OLD.revision+1\n        OR NEW.motivo_correccion IS NULL\n        OR length(trim(NEW.motivo_correccion))=0\n      BEGIN SELECT RAISE(ABORT,'correction requires next revision and motive'); END"
       }
     ],
-    "sha256": "439062fd2d32dc062ca790300ef0bd06fad292af3cf6cd242ce1c49910d7ee0b"
+    "sha256": "ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23"
   }
 ]
