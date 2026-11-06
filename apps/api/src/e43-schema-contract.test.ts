@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { randomBytes, randomUUID } from "node:crypto";
 import { prepareSchema } from "./database-schema";
 import { openDatabase } from "./database";
@@ -21,7 +22,7 @@ const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
 const c26 = "C26-E410-REAPERTURA-V26";
 const c23 = "C23-E44-DEUDA-COMPLETA";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e43-contract-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e43-contract-"));
 
 function ageKeys(dir: string) {
   const identity = join(dir, "identity.txt");

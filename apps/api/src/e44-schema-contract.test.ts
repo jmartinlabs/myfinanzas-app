@@ -9,6 +9,7 @@ import {
   writeFileSync,
 } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { randomBytes, randomUUID } from "node:crypto";
 import { prepareSchema } from "./database-schema";
 import { openDatabase } from "./database";
@@ -18,7 +19,7 @@ import { backup, restore } from "./backup";
 import { Auth, provision, totp } from "./auth";
 
 const t = "2026-01-01T00:00:00.000Z";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e44-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 const c26 = "C26-E410-REAPERTURA-V26";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const c22 = "C22-E35-FIN-NETA";

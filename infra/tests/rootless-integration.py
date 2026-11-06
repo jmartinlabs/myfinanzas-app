@@ -3,6 +3,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import shutil
 import socket
 import stat
@@ -13,6 +14,10 @@ import time
 import urllib.error
 import urllib.request
 import uuid
+
+# The reviewed migration dispatched through PREVIOUS_REF is 25 -> 26. Update
+# this guard together with the next authorized migration manifest.
+PREVIOUS_REF_SCHEMA = 25
 
 
 class ProbeError(Exception):
@@ -69,6 +74,40 @@ def e14_diagnostics(stderr):
         result.append({'operation': operation, 'exit': value.get('exit') if type(value.get('exit')) is int else None,
                        'errors': errors})
     return result
+
+
+def resolve_previous_ref(source):
+    """Select the previous release without weakening the ordinary merge-base path.
+
+    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 25 -> 26
+    migration against an ancestor commit while origin/main already carries v26.
+    An explicit value must resolve to an ancestor whose source declares schema 25.
+    """
+    override = os.environ.get('PREVIOUS_REF', '').strip()
+    if not override:
+        return subprocess.check_output(
+            ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
+            text=True).strip()
+    if not re.fullmatch(r'[0-9a-f]{7,40}', override):
+        raise ProbeError('previous_ref must be an unambiguous lowercase commit SHA')
+    resolved = subprocess.run(
+        ['git', '-C', str(source), 'rev-parse', '--verify', override + '^{commit}'],
+        capture_output=True, text=True)
+    commit = resolved.stdout.strip()
+    if resolved.returncode or not re.fullmatch(r'[0-9a-f]{40}', commit):
+        raise ProbeError('previous_ref must resolve to one commit')
+    ancestor = subprocess.run(
+        ['git', '-C', str(source), 'merge-base', '--is-ancestor', commit, 'HEAD'])
+    if ancestor.returncode:
+        raise ProbeError('previous_ref must be an ancestor of the checked out commit')
+    from release import contracts_for
+    previous_schema = contracts_for(commit).get('schema')
+    current_schema = contracts_for('HEAD').get('schema')
+    if previous_schema != PREVIOUS_REF_SCHEMA:
+        raise ProbeError('previous_ref schema must be ' + str(PREVIOUS_REF_SCHEMA))
+    if not isinstance(current_schema, int) or current_schema <= previous_schema:
+        raise ProbeError('previous_ref schema must precede the checked out schema')
+    return commit
 
 
 def health(expected=True):
@@ -473,9 +512,8 @@ def main():
             raise ProbeError('final image API regression failed; private output not published')
         evidence['final-image-api-tests-passed'] = int(counts[1])
         stage = 'previous-private-release-build'
-        previous_ref = subprocess.check_output(
-            ['git', '-C', str(source), 'merge-base', 'HEAD', 'origin/main'],
-            text=True).strip()
+        previous_ref = resolve_previous_ref(source)
+        evidence['previous-ref-selection'] = 'explicit' if os.environ.get('PREVIOUS_REF', '').strip() else 'merge-base'
         previous = build(root / 'previous', ref=previous_ref)
         same_contracts = previous['inputs']['contracts'] == manifest['inputs']['contracts']
         authorization = None
