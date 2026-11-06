@@ -2,10 +2,11 @@
 
 Specification: [29-e411-fotografias-specification.md](29-e411-fotografias-specification.md)
 
-Status: **DRAFT — decisiones funcionales aprobadas; pendiente aprobación formal; no autoriza DEV ni merge. Todos los AC `UNRUN`.**
+Status: **APROBADO — 2026-11-06.** Aprobación formal del usuario; merge documental #242 `6fe91d7`.
+Todos los AC siguen `UNRUN`; no declara aceptación ni PASS. DEV autorizado por separado el 2026-11-06.
 No hay implementación, endpoints, migración, CI ni datos reales. Las decisiones M1–M6 están
 aprobadas: P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D y P8a-A/P8b-A (2026-11-06).
-Base: `main` `756e1e9` (2026-11-06); E4.9 `0176ffc`; E4.10 I1–I5 integrados.
+Base: `main` `eca4e23` (2026-11-06); E4.9 `0176ffc`; E4.10 I1–I6 integrados.
 
 Este testplan no declara PASS. La política de composición queda fijada por las decisiones
 aprobadas; no se reinterpreta en la ejecución.

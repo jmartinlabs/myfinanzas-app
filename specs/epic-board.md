@@ -1,4 +1,4 @@
-## Identificadores canónicos y etapas — reconciliado 2026-11-05
+## Identificadores canónicos y etapas — reconciliado 2026-11-06
 
 Convención: [identifier-convention](methodology/identifier-convention.md); equivalencias:
 [identifier-index](methodology/identifier-index.md). Estados independientes; la aceptación
@@ -12,12 +12,23 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
 | E4.6 | approved | verified (merged `cfbedb0`, #201) | passed with reserves (AC-01 PARCIAL) | merged | favorable con reservas | CI main `41853040375` PASS; reservas visuales registradas |
 | E4.7 | approved (merged `948ade8`) | verified (merged `0e89562`, #210) | APTO CON RESERVAS | merged | pending | CI main `41922922793` PASS; AC3 PARCIAL, AC10–15 BLOCKED, AC19 UNRUN |
 | E4.9 | approved | verified (merged `0176ffc`, #200) | APTO CON RESERVAS | merged | pending | CI main `42000330143` PASS; E2E focal 24/24 local; B-1 de precierre corregido; DT6 real y cierre real pendientes |
-| E4.10 | approved (SPEC28 ratificada 2026-11-05) | in progress (I1 merged `70fa7c0`; I2 #235) | planned | not-ready | pending | DT-A…DT-I, v26 y testplan ratificados; 24 AC UNRUN; I1 implementado, aceptación no declarada |
-| E4.11 | draft (SPEC29 en `main`) | not-ready | planned | not-ready | pending | P2/P3/P6/P7/P8 pendientes; E4.10 ratificada; DEV no autorizado |
+| E4.10 | approved (SPEC28 ratificada 2026-11-05) | in progress (I1–I6 merged; I7 en curso) | I6 APTO (reauditoría final) | merged I6 `eca4e23` | pending | I1 `70fa7c0`, I2 `c708513`, I3 `a5bef85`, I4 `e55d6df`, I5 `756e1e9`, I6 `eca4e23`; I7 UI en curso; 24 AC UNRUN |
+| E4.11 | approved (SPEC29 merged `6fe91d7`, 2026-11-06) | in progress (DEV autorizado; I1 implementado, PR pendiente) | APTO CON RESERVAS (SPEC29 #242) | not-ready | pending | P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D, P8a-A, P8b-A; 15 AC UNRUN; paquete #245; I1 lectura en curso; sin migración real |
 | E4.12 | draft (SPEC30 en `main`) | not-ready | planned | not-ready | pending | Decisiones DT6/DT7 y specs previas |
 | INFRA-TEST-01 | approved (SPEC34 merged `58346e1`) | not-ready (host) | UNRUN | n/a | pending | Handoff #208; auditoría/operación de vps-infra |
 | DEPLOY-TAGS-01 | design approved for documentation (SPEC35, PR #233, 2026-11-05) | not-ready | passed (docs) | PR-open | pending | QA APTO; CI `required` PASS en PR #233; sin tags, workflows, credenciales ni despliegue; D1–D11 y fases 1–6 sin autorizar |
-| UI | draft (análisis #205) | not-ready | planned | not-ready | pending | Aprobar identificador/alcance `UI` |
+| UI | draft (análisis #205; SPEC sin ratificar) | DEV-01/02/03 merged; DEV-04 autorizado (I1 implementado, PR pendiente) | APTO CON RESERVAS (DEV-03) | merged DEV-03 | pending | DEV-03 `d7eaffb`: 23 enlaces, 4 grupos, activo no cromático, móvil/teclado, 3 temas; DEV-04 paquete #245, I1 primitivas en curso |
+
+## Infraestructura rootless 25→26 — estado vigente (2026-11-06)
+
+- **#244** `a3c2b21` **MERGED**: `/suite` read-only corregido con `tmpdir()` en 7 tests; input
+  `workflow_dispatch.previous_ref` con validación de ancestro y esquema. CI `required` y
+  `Rootless capability gate` PASS.
+- **#240** `a127af1` **MERGED**: manifiesto `25-to-26` con `downgrade=restore-only`.
+- **Evidencia:** dispatch run `42231332044` sobre `1aa9f60`, `previous_ref=baa673e`,
+  `previous-ref-selection=explicit`, `final-image-api-tests-passed=886`, backup/restore
+  cifrados, rechazo de downgrade in-place y rollback `restore-only`.
+- **Límite:** validación sintética; sin migraciones operativas, datos reales, VPS ni despliegue.
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 

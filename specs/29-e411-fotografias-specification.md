@@ -1,10 +1,10 @@
 # 29 — E4.11 Fotografías de ciclo/trimestre/año consultables: Specification
 
-Status: **DRAFT — decisiones funcionales aprobadas; pendiente aprobación formal; no autoriza DEV ni merge.**
-Approval source/date: **2026-11-06** — P2-A, P3-B, P6-A, P7-D, P8a-A y P8b-A aprobadas por el
-usuario; se mantienen P1-C, P4-A y P5-B. No hay aprobación formal completa ni revisión de
-Álex registrada para E4.11.
-Base: `main` `756e1e9` (2026-11-06); E4.9 `0176ffc`, E4.10 I1–I5 integrados.
+Status: **APROBADA — 2026-11-06.** Aprobación formal del usuario; merge documental #242 `6fe91d7`.
+No declara aceptación ni PASS; el DEV se autorizó por separado el 2026-11-06.
+Approval source/date: **2026-11-06** — P1-C, P4-A, P5-B, P2-A, P3-B, P6-A, P7-D, P8a-A y P8b-A.
+Revisión de Álex no registrada.
+Base: `main` `eca4e23` (2026-11-06); E4.9 `0176ffc`, E4.10 I1–I6 integrados.
 Ningún AC está ejecutado y este documento no declara PASS.
 Contexto y fuentes: [alcance E4.11](investigations/e411-fotografias-scope-2026-11-04.md),
 [roadmap E4.11](roadmap.md#e411--fotografías-de-ciclotrimestreaño-consultables),
