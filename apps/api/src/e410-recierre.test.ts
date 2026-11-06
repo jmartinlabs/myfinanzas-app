@@ -565,7 +565,7 @@ test("E4.10 I4: v1 → reapertura → corrección → v2 con foto completa, vín
     });
     expect(result.foto.version).toBe(2);
     expect(result.foto.appVersion).toBe("0.0.0-fixture-i4");
-    expect(result.foto.schemaVersion).toBe(26);
+    expect(result.foto.schemaVersion).toBe(27);
     expect(result.foto.ventana).toMatchObject({
       inicio: "2026-01-01",
       fin: "2026-01-31",
@@ -1699,7 +1699,7 @@ test("E4.10 I4 API: repreview/re-cerrar, 401/403/405, 201 y /cerrar intacto", as
       "/api/cierres/1/foto?version=2",
     );
     expect(result.data.foto.version).toBe(2);
-    expect(result.data.foto.schemaVersion).toBe(26);
+    expect(result.data.foto.schemaVersion).toBe(27);
     expect((await f.request("/api/cierres/1/reapertura")).data.estado).toBe(
       "Cerrado",
     );
