@@ -14,7 +14,8 @@ import {
   type RevalidacionOptions,
   type RevalidacionResult,
 } from "./e410-revalidacion";
-import { readActiveWindow, type ReopeningEvent } from "./e410-window";
+import { informativeFields } from "./e49-guards";
+import { readActiveWindow, type CierrePosterior, type ReopeningEvent } from "./e410-window";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 import { decimal } from "./saldos";
@@ -105,15 +106,18 @@ function lastClosure(db: Database, ciclo: string): CierreRow | null {
 }
 
 /**
- * Resolves the single active window for this cycle. The I2 reader already
- * distinguishes a later closure and an inconsistent projection; a stale
- * origin version is reported as a version conflict, not as corruption.
+ * Resolves the single active window for this cycle without throwing just
+ * because a later closure exists. The I2 reader already distinguishes a later
+ * closure and an inconsistent projection; a stale origin version is reported
+ * as a version conflict, not as corruption. Callers that cannot tolerate a
+ * later closure keep using `requireWindow`.
  */
-export function requireWindow(
+export function resolveWindow(
   db: Database,
   ciclo: string,
   action = "re-cerrar",
-): ReopeningEvent {
+  allowLaterClosure = false,
+): { evento: ReopeningEvent; cierrePosterior: CierrePosterior | null } {
   const reading = readActiveWindow(db);
   if (reading.estado === "SinVentana")
     throw new Problem(
@@ -139,17 +143,23 @@ export function requireWindow(
       {},
       { ciclo, ventana: windowCiclo },
     );
-  if (reading.estado === "CierrePosterior")
-    throw new Problem(
-      409,
-      "CIERRE_POSTERIOR",
-      "Existe un cierre posterior durante la ventana; no se altera.",
-      {},
-      {
-        cierrePosterior: reading.cierrePosterior,
-        finVentana: reading.finVentana,
-      },
-    );
+  if (reading.estado === "CierrePosterior") {
+    if (!allowLaterClosure)
+      throw new Problem(
+        409,
+        "CIERRE_POSTERIOR",
+        "Existe un cierre posterior durante la ventana; no se altera.",
+        {},
+        {
+          cierrePosterior: reading.cierrePosterior,
+          finVentana: reading.finVentana,
+        },
+      );
+    return {
+      evento: reading.ventana,
+      cierrePosterior: reading.cierrePosterior,
+    };
+  }
   if (reading.estado === "Inconsistente") {
     const versionOrigen = reading.comparado.versionOrigen;
     const ultimaVersion = reading.comparado.ultimaVersion;
@@ -167,7 +177,15 @@ export function requireWindow(
       );
     throw new Problem(500, "ESTADO_INCONSISTENTE", reading.motivo, {}, reading.comparado);
   }
-  return reading.ventana;
+  return { evento: reading.ventana, cierrePosterior: null };
+}
+
+export function requireWindow(
+  db: Database,
+  ciclo: string,
+  action = "re-cerrar",
+): ReopeningEvent {
+  return resolveWindow(db, ciclo, action).evento;
 }
 
 function revalidationBlockers(revalidacion: RevalidacionResult): CierreIssue[] {
@@ -320,15 +338,14 @@ function materialPlan(value: unknown) {
 }
 
 function materialClasificacion(value: unknown) {
+  // `revision` and the informative names/group are T3 and may change without
+  // altering the economic classification. Identity, hierarchy and reference
+  // type remain material. T3-only audits are filtered in `sourceAuditChanges`.
   return {
-    categorias: projectedRows(value, "categorias", ["id", "revision"]),
-    subcategorias: projectedRows(value, "subcategorias", [
-      "id",
-      "padre",
-      "revision",
-    ]),
-    partidas: projectedRows(value, "partidas", ["id", "padre", "revision"]),
-    referencias: projectedRows(value, "referencias", ["id", "tipo", "revision"]),
+    categorias: projectedRows(value, "categorias", ["id"]),
+    subcategorias: projectedRows(value, "subcategorias", ["id", "padre"]),
+    partidas: projectedRows(value, "partidas", ["id", "padre"]),
+    referencias: projectedRows(value, "referencias", ["id", "tipo"]),
   };
 }
 
@@ -354,7 +371,7 @@ function materialInversion(value: unknown) {
       "comisionEur",
       "estado",
     ]),
-    instrumentos: projectedRows(value, "instrumentos", ["id", "revision"]),
+    instrumentos: projectedRows(value, "instrumentos", ["id"]),
   };
 }
 
@@ -388,7 +405,7 @@ function materialAuxiliares(value: unknown) {
       "importe",
       "fecha",
     ]),
-    deuda: projectedRows(value, "deuda", ["id", "estado", "apertura", "revision"]),
+    deuda: projectedRows(value, "deuda", ["id", "estado", "apertura"]),
     e35: e35
       ? { verificable: e35.verificable ?? null, huella: e35.huella ?? null }
       : null,
@@ -627,6 +644,106 @@ function auditMovementRefs(value: unknown): string[] {
   return [...refs];
 }
 
+const auditVolatileFields = new Set([
+  "revision",
+  "revision_previa",
+  "creado",
+  "actualizado",
+  "instante",
+  "motivo",
+  "fingerprint",
+  "impacto",
+]);
+
+/**
+ * T3 fields for audit payloads. The catalog entities reuse the canonical
+ * `informativeFields` whitelist. `movimiento_revision_comida` has its own
+ * metadata payload: evidence is informative; `etiqueta`/`estadoRevision`
+ * remain material because they drive the food classification calculations.
+ */
+const auditInformativeFields: Record<string, readonly string[]> = {
+  ...informativeFields,
+  movimientoRevisionComida: ["evidenciaBancaria", "evidenciaComercial"],
+};
+
+function noVerificable(bloque: string, motivo: string): MaterialComparison {
+  return { estado: "NoVerificable", bloques: [bloque], motivos: [motivo] };
+}
+
+/**
+ * Compares an audit's previous/next payload against the T3 informative fields
+ * of its entity. Only changes outside that whitelist (and outside volatile
+ * metadata) are material. A null previous payload is an alta: a new entity is
+ * material even when its eventual name is informative.
+ */
+function auditPayloadChange(
+  before: unknown,
+  after: unknown,
+  entity: string,
+  label: string,
+  bloque: "inversion" | "auxiliares" | "clasificacion",
+): MaterialComparison | null {
+  if (before === null || before === undefined)
+    return {
+      estado: "ConCambios",
+      bloques: [bloque],
+      motivos: [`La auditoría registra un alta posterior a la reapertura en ${label}.`],
+    };
+  const left = asRecord(before),
+    right = asRecord(after);
+  if (!left || !right)
+    return noVerificable(
+      bloque,
+      `La auditoría de ${label} no tiene un payload legible; no se acredita la ausencia de cambios.`,
+    );
+  const ignored = new Set([
+    ...(auditInformativeFields[entity] ?? []),
+    ...auditVolatileFields,
+  ]);
+  const project = (record: Record<string, unknown>) =>
+    Object.fromEntries(
+      Object.entries(record).filter(([key]) => !ignored.has(key)),
+    );
+  if (canonical(project(left)) === canonical(project(right))) return null;
+  return {
+    estado: "ConCambios",
+    bloques: [bloque],
+    motivos: [
+      `La auditoría registra un cambio material posterior a la reapertura en ${label}.`,
+    ],
+  };
+}
+
+/** Classification audits store the list of changed field names in `campos`. */
+function classificationAuditChange(
+  raw: string,
+  label: string,
+): MaterialComparison | null {
+  let changed: unknown;
+  try {
+    changed = JSON.parse(raw);
+  } catch {
+    return noVerificable(
+      "clasificacion",
+      `La auditoría de ${label} no es legible; no se acredita la ausencia de cambios.`,
+    );
+  }
+  if (!Array.isArray(changed) || changed.some((field) => typeof field !== "string"))
+    return noVerificable(
+      "clasificacion",
+      `La auditoría de ${label} no contiene una lista de campos legible; no se acredita la ausencia de cambios.`,
+    );
+  const ignored = new Set(["nombre", "grupo", "revision"]);
+  if ((changed as string[]).every((field) => ignored.has(field))) return null;
+  return {
+    estado: "ConCambios",
+    bloques: ["clasificacion"],
+    motivos: [
+      `La auditoría registra un cambio material posterior a la reapertura en ${label}.`,
+    ],
+  };
+}
+
 function sourceAuditChanges(
   db: Database,
   inicio: string,
@@ -737,58 +854,238 @@ function sourceAuditChanges(
     };
   }
 
-  const checks: {
-    bloque: "inversion" | "auxiliares";
+  const found: {
+    bloque: "inversion" | "auxiliares" | "clasificacion";
     label: string;
-    sql: string;
-    params: (string | number)[];
-  }[] = [
-    {
-      bloque: "inversion",
-      label: "operaciones de inversión",
-      sql: `SELECT a.operacion FROM operacion_inversion_audit a
-            JOIN operaciones_inversion o ON o.id=a.operacion
-            WHERE o.fecha <= ? AND a.instante > ? LIMIT 1`,
-      params: [fin, reopeningUtc],
-    },
-    {
-      bloque: "inversion",
-      label: "instrumentos",
-      sql: `SELECT a.instrumento FROM instrumento_audit a
-            WHERE a.instante > ? LIMIT 1`,
-      params: [reopeningUtc],
-    },
-    {
-      bloque: "auxiliares",
-      label: "revisión de comida",
-      sql: `SELECT a.id FROM movimiento_revision_comida_audit a
-            JOIN movimiento_revision_comida c ON c.movimiento=a.movimiento
-            JOIN movimientos m ON m.id=c.movimiento
-            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
-      params: [inicio, fin, reopeningUtc],
-    },
-    {
-      bloque: "auxiliares",
-      label: "deuda",
-      sql: `SELECT a.id FROM audit a
-            JOIN deudas d ON d.id=a.entidad
-            WHERE a.instante > ? LIMIT 1`,
-      params: [reopeningUtc],
-    },
-  ];
-  const found: { bloque: "inversion" | "auxiliares"; label: string }[] = [];
-  for (const check of checks) {
+  }[] = [];
+
+  // Investment operations are material T1/T2 writes: any audited revision after
+  // the reopening keeps the conservative I4 behaviour.
+  try {
+    if (
+      db
+        .query(
+          `SELECT a.operacion FROM operacion_inversion_audit a
+           JOIN operaciones_inversion o ON o.id=a.operacion
+           WHERE o.fecha <= ? AND a.instante > ? LIMIT 1`,
+        )
+        .get(fin, reopeningUtc)
+    )
+      found.push({ bloque: "inversion", label: "operaciones de inversión" });
+  } catch {
+    return noVerificable(
+      "inversion",
+      "No se pudo leer la auditoría de operaciones de inversión; no se acredita la ausencia de cambios.",
+    );
+  }
+
+  let instrumentRows: {
+    instrumento: string;
+    revision: number;
+    anterior: string | null;
+    posterior: string;
+  }[];
+  try {
+    instrumentRows = db
+      .query(
+        `SELECT instrumento,revision,anterior,posterior
+         FROM instrumento_audit WHERE instante > ?`,
+      )
+      .all(reopeningUtc) as typeof instrumentRows;
+  } catch {
+    return noVerificable(
+      "inversion",
+      "No se pudo leer la auditoría de instrumentos; no se acredita la ausencia de cambios.",
+    );
+  }
+  for (const row of instrumentRows) {
+    let before: unknown = null,
+      after: unknown;
     try {
-      if (db.query(check.sql).get(...check.params))
-        found.push({ bloque: check.bloque, label: check.label });
+      before = row.anterior === null ? null : JSON.parse(row.anterior);
+      after = JSON.parse(row.posterior);
     } catch {
-      return {
-        estado: "NoVerificable",
-        bloques: [check.bloque],
-        motivos: [
-          `No se pudo leer la auditoría de ${check.label}; no se acredita la ausencia de cambios.`,
-        ],
-      };
+      return noVerificable(
+        "inversion",
+        `La auditoría del instrumento ${row.instrumento} v${row.revision} no es legible; no se acredita la ausencia de cambios.`,
+      );
+    }
+    const change = auditPayloadChange(
+      before,
+      after,
+      "instrumento",
+      `instrumento ${row.instrumento} v${row.revision}`,
+      "inversion",
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "inversion", label: "instrumentos" });
+      break;
+    }
+  }
+
+  let foodRows: {
+    movimiento: string;
+    revision: number;
+    anterior: string | null;
+    posterior: string;
+  }[];
+  try {
+    foodRows = db
+      .query(
+        `SELECT a.movimiento,a.revision,a.anterior,a.posterior
+         FROM movimiento_revision_comida_audit a
+         JOIN movimiento_revision_comida c ON c.movimiento=a.movimiento
+         JOIN movimientos m ON m.id=c.movimiento
+         WHERE m.fecha BETWEEN ? AND ? AND a.instante > ?`,
+      )
+      .all(inicio, fin, reopeningUtc) as typeof foodRows;
+  } catch {
+    return noVerificable(
+      "auxiliares",
+      "No se pudo leer la auditoría de revisión de comida; no se acredita la ausencia de cambios.",
+    );
+  }
+  for (const row of foodRows) {
+    let before: unknown = null,
+      after: unknown;
+    try {
+      before = row.anterior === null ? null : JSON.parse(row.anterior);
+      after = JSON.parse(row.posterior);
+    } catch {
+      return noVerificable(
+        "auxiliares",
+        `La auditoría de revisión de comida ${row.movimiento} v${row.revision} no es legible; no se acredita la ausencia de cambios.`,
+      );
+    }
+    const change = auditPayloadChange(
+      before,
+      after,
+      "movimientoRevisionComida",
+      `revisión de comida ${row.movimiento} v${row.revision}`,
+      "auxiliares",
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "auxiliares", label: "revisión de comida" });
+      break;
+    }
+  }
+
+  let debtRows: { entidad: string; campos: string }[];
+  try {
+    debtRows = db
+      .query(
+        `SELECT a.entidad,a.campos FROM audit a
+         JOIN deudas d ON d.id=a.entidad
+         WHERE a.instante > ?`,
+      )
+      .all(reopeningUtc) as typeof debtRows;
+  } catch {
+    return noVerificable(
+      "auxiliares",
+      "No se pudo leer la auditoría de deuda; no se acredita la ausencia de cambios.",
+    );
+  }
+  for (const row of debtRows) {
+    let wrapper: Record<string, unknown> | null;
+    try {
+      wrapper = asRecord(JSON.parse(row.campos));
+    } catch {
+      wrapper = null;
+    }
+    if (!wrapper)
+      return noVerificable(
+        "auxiliares",
+        `La auditoría de deuda ${row.entidad} no es legible; no se acredita la ausencia de cambios.`,
+      );
+    const change = auditPayloadChange(
+      wrapper.anterior,
+      wrapper.posterior,
+      "deuda",
+      `deuda ${row.entidad}`,
+      "auxiliares",
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "auxiliares", label: "deuda" });
+      break;
+    }
+  }
+
+  // Classification catalogs write the changed field names as a JSON array.
+  // Names/group are T3; hierarchy, state, economic attributes and reference
+  // type remain material.
+  let classificationRows: { entidad: string; campos: string }[];
+  try {
+    classificationRows = db
+      .query(
+        `SELECT a.entidad,a.campos FROM audit a
+         WHERE a.instante > ?
+           AND json_type(a.campos)='array'
+           AND (
+             EXISTS(SELECT 1 FROM categorias c WHERE c.id=a.entidad)
+             OR EXISTS(SELECT 1 FROM subcategorias s WHERE s.id=a.entidad)
+             OR EXISTS(SELECT 1 FROM partidas p WHERE p.id=a.entidad)
+           )`,
+      )
+      .all(reopeningUtc) as typeof classificationRows;
+  } catch {
+    return noVerificable(
+      "clasificacion",
+      "No se pudo leer la auditoría de clasificación; no se acredita la ausencia de cambios.",
+    );
+  }
+  for (const row of classificationRows) {
+    const change = classificationAuditChange(
+      row.campos,
+      `clasificación ${row.entidad}`,
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "clasificacion", label: "clasificación" });
+      break;
+    }
+  }
+
+  let referenceRows: { entidad: string; campos: string }[];
+  try {
+    referenceRows = db
+      .query(
+        `SELECT a.entidad,a.campos FROM audit a
+         JOIN referencias r ON r.id=a.entidad
+         WHERE a.instante > ? AND a.accion IN ('alta','edición')`,
+      )
+      .all(reopeningUtc) as typeof referenceRows;
+  } catch {
+    return noVerificable(
+      "clasificacion",
+      "No se pudo leer la auditoría de referencias; no se acredita la ausencia de cambios.",
+    );
+  }
+  for (const row of referenceRows) {
+    let wrapper: Record<string, unknown> | null;
+    try {
+      wrapper = asRecord(JSON.parse(row.campos));
+    } catch {
+      wrapper = null;
+    }
+    if (!wrapper)
+      return noVerificable(
+        "clasificacion",
+        `La auditoría de la referencia ${row.entidad} no es legible; no se acredita la ausencia de cambios.`,
+      );
+    const change = auditPayloadChange(
+      wrapper.anterior,
+      wrapper.posterior,
+      "referencia",
+      `referencia ${row.entidad}`,
+      "clasificacion",
+    );
+    if (change?.estado === "NoVerificable") return change;
+    if (change?.estado === "ConCambios") {
+      found.push({ bloque: "clasificacion", label: "referencias" });
+      break;
     }
   }
 
@@ -920,11 +1217,12 @@ function sourceAuditChanges(
 
 /**
  * Direct revision bumps that have no audit row are still not equivalent to no
- * write. The current revision is compared with the revision that was current
- * when `vN` was closed for sources that expose an audited revision
- * (investment operations, instruments, revisión de comida and deuda). A later
- * revision (even if reverted) fails closed. `baseline ?? 1` keeps manual
- * fixtures without audit usable while detecting any real increment.
+ * write. Investment operations keep the vN-time baseline. For catalogs with T3
+ * informative fields (instruments, classification, references, revisión de
+ * comida and deuda), an audited T3 edit accounts for its revision; this check
+ * only catches a revision bump with no audit row at all. Material audit rows
+ * are classified by `sourceAuditChanges`, so a reverted material write still
+ * fails closed.
  */
 function revisionBumpChanges(
   db: Database,
@@ -947,7 +1245,7 @@ function revisionBumpChanges(
       ],
     };
   const checks: {
-    bloque: "inversion" | "auxiliares";
+    bloque: "inversion" | "auxiliares" | "clasificacion";
     label: string;
     sql: string;
     params: (string | number)[];
@@ -965,34 +1263,74 @@ function revisionBumpChanges(
     {
       bloque: "inversion",
       label: "instrumentos",
+      // Any audited revision (including T3) accounts for the bump. Material
+      // audit payloads are classified by `sourceAuditChanges`; this check only
+      // catches a direct revision bump with no audit row at all.
       sql: `SELECT i.id,i.revision,
         (SELECT MAX(a.revision) FROM instrumento_audit a
-          WHERE a.instrumento=i.id AND a.instante<=?) baseline
+          WHERE a.instrumento=i.id) baseline
        FROM instrumentos i`,
-      params: [cierre.creado_utc],
+      params: [],
     },
     {
       bloque: "auxiliares",
       label: "revisión de comida",
       sql: `SELECT c.movimiento id,c.revision,
         (SELECT MAX(a.revision) FROM movimiento_revision_comida_audit a
-          WHERE a.movimiento=c.movimiento AND a.instante<=?) baseline
+          WHERE a.movimiento=c.movimiento) baseline
        FROM movimiento_revision_comida c
        JOIN movimientos m ON m.id=c.movimiento
        WHERE m.fecha BETWEEN ? AND ?`,
-      params: [cierre.creado_utc, inicio, fin],
+      params: [inicio, fin],
     },
     {
       bloque: "auxiliares",
       label: "deuda",
       sql: `SELECT d.id,d.revision,
         (SELECT MAX(a.revision) FROM audit a
-          WHERE a.entidad=d.id AND a.instante<=?) baseline
+          WHERE a.entidad=d.id) baseline
        FROM deudas d`,
-      params: [cierre.creado_utc],
+      params: [],
+    },
+    {
+      bloque: "clasificacion",
+      label: "categorías",
+      sql: `SELECT c.id,c.revision,
+        (SELECT MAX(a.revision) FROM audit a WHERE a.entidad=c.id) baseline
+       FROM categorias c`,
+      params: [],
+    },
+    {
+      bloque: "clasificacion",
+      label: "subcategorías",
+      sql: `SELECT s.id,s.revision,
+        (SELECT MAX(a.revision) FROM audit a WHERE a.entidad=s.id) baseline
+       FROM subcategorias s`,
+      params: [],
+    },
+    {
+      bloque: "clasificacion",
+      label: "partidas",
+      sql: `SELECT p.id,p.revision,
+        (SELECT MAX(a.revision) FROM audit a WHERE a.entidad=p.id) baseline
+       FROM partidas p`,
+      params: [],
+    },
+    {
+      bloque: "clasificacion",
+      label: "referencias",
+      sql: `SELECT r.id,r.revision,
+        (SELECT MAX(a.revision) FROM audit a WHERE a.entidad=r.id) baseline
+       FROM referencias r`,
+      params: [],
     },
   ];
-  const changed: { bloque: "inversion" | "auxiliares"; label: string; id: string; revision: number }[] = [];
+  const changed: {
+    bloque: "inversion" | "auxiliares" | "clasificacion";
+    label: string;
+    id: string;
+    revision: number;
+  }[] = [];
   for (const check of checks) {
     try {
       const rows = db.query(check.sql).all(...check.params) as {

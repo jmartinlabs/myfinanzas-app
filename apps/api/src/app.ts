@@ -1118,7 +1118,7 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(result, 201);
       }
       const cancelarReaperturaPath = path.match(
-        /^\/api\/cierres\/(\d+)\/cancelar$/,
+        /^\/api\/cierres\/(\d+)\/(?:reapertura\/cancelar|cancelar)$/,
       );
       if (cancelarReaperturaPath) {
         if (req.method !== "POST") {

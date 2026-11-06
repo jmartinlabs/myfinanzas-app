@@ -78,14 +78,19 @@ function closeV1(db: Database, options = validOptions()) {
   );
 }
 
-function reopen(db: Database, version = 1, motivo = "Motivo de reapertura") {
+function reopen(
+  db: Database,
+  version = 1,
+  motivo = "Motivo de reapertura",
+  at = now + 1_000,
+) {
   return reabrirCierre(
     db,
     "1",
     { versionEsperada: version, motivo },
     "reapertura-" + randomUUID(),
     { actor: "Alex" },
-    now + 1_000,
+    at,
   );
 }
 
@@ -188,6 +193,228 @@ function insertMovementAudit(
       input.instante,
       JSON.stringify(input.anterior),
       JSON.stringify(input.posterior),
+    ],
+  );
+}
+
+function instrumentAuditValue(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "I9001",
+    nombre: "Instrumento I5",
+    isin: null,
+    isinEvidencia: null,
+    divisaReferencia: null,
+    estado: "Activa",
+    revision: 1,
+    ...overrides,
+  };
+}
+
+function seedInstrumento(db: Database, id = "I9001") {
+  db.run(
+    `INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en)
+     VALUES(?,?,'Activa',1,?,?)`,
+    [id, "Instrumento I5", stamp, stamp],
+  );
+}
+
+function insertInstrumentoAudit(
+  db: Database,
+  input: {
+    revision: number;
+    instante: string;
+    anterior: Record<string, unknown>;
+    posterior: Record<string, unknown>;
+  },
+) {
+  db.run(
+    `INSERT INTO instrumento_audit(instrumento,revision,accion,motivo,instante,
+       actor,anterior,posterior)
+     VALUES('I9001',?,'edición',NULL,?,'usuario-unico',?,?)`,
+    [
+      input.revision,
+      input.instante,
+      JSON.stringify(input.anterior),
+      JSON.stringify(input.posterior),
+    ],
+  );
+}
+
+function debtAuditValue(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "D0401",
+    nombre: "Deuda I5",
+    inicio: "2025-01-01",
+    capitalApertura: "10000.00",
+    estado: "Activa",
+    tipoDeuda: null,
+    tin: null,
+    tae: null,
+    cuotaContractual: null,
+    condiciones: null,
+    revision: 1,
+    ...overrides,
+  };
+}
+
+function seedDeuda(db: Database, id = "D0401") {
+  db.run(
+    `INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado)
+     VALUES(?,'Deuda I5','2025-01-01',10000,'Activa',1,?,?)`,
+    [id, stamp, stamp],
+  );
+}
+
+function insertDebtAudit(
+  db: Database,
+  input: {
+    revision: number;
+    instante: string;
+    anterior: Record<string, unknown>;
+    posterior: Record<string, unknown>;
+  },
+) {
+  db.run(
+    `INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,
+       actor,motivo)
+     VALUES('D0401','edición',?,?,?,?,'usuario-unico',NULL)`,
+    [
+      input.revision,
+      JSON.stringify({ anterior: input.anterior, posterior: input.posterior }),
+      input.instante,
+      input.revision - 1,
+    ],
+  );
+}
+
+function seedClassification(db: Database) {
+  db.run(
+    `INSERT INTO categorias(id,nombre,grupo,anual,mensual,referencia,estado,
+       revision,creado,actualizado)
+     VALUES('CAT9001','Categoría I5','Gasto','Gasto','Gasto',0,'Activa',1,?,?)`,
+    [stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO subcategorias(id,nombre,padre,estado,revision,creado,actualizado)
+     VALUES('SUB9001','Subcategoría I5','CAT9001','Activa',1,?,?)`,
+    [stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO partidas(id,nombre,padre,estado,revision,creado,actualizado)
+     VALUES('PAR9001','Partida I5','SUB9001','Activa',1,?,?)`,
+    [stamp, stamp],
+  );
+}
+
+function insertClassificationAudit(
+  db: Database,
+  input: {
+    entidad: string;
+    revision: number;
+    instante: string;
+    campos: string[];
+  },
+) {
+  db.run(
+    `INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,
+       actor,motivo)
+     VALUES(?,'edición',?,?,?,?,'usuario-unico','Fixture T3 I5')`,
+    [
+      input.entidad,
+      input.revision,
+      JSON.stringify(input.campos),
+      input.instante,
+      input.revision - 1,
+    ],
+  );
+}
+
+function seedRevisionComida(db: Database, movimiento = "8408") {
+  db.run(
+    `INSERT INTO movimiento_revision_comida(movimiento,etiqueta,
+       evidencia_bancaria,evidencia_comercial,estado_revision,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,'Comida','Evidencia I5','Evidencia comercial I5','Revisada',1,1,?,?)`,
+    [movimiento, stamp, stamp],
+  );
+}
+
+function foodMetadataValue(overrides: Record<string, unknown> = {}) {
+  return {
+    movimiento: "8408",
+    etiqueta: "Comida",
+    evidenciaBancaria: "Evidencia I5",
+    evidenciaComercial: "Evidencia comercial I5",
+    estadoRevision: "Revisada",
+    revisionMovimiento: 1,
+    revision: 1,
+    creado: stamp,
+    actualizado: stamp,
+    ...overrides,
+  };
+}
+
+function insertFoodAudit(
+  db: Database,
+  input: {
+    revision: number;
+    instante: string;
+    anterior: Record<string, unknown>;
+    posterior: Record<string, unknown>;
+  },
+) {
+  db.run(
+    `INSERT INTO movimiento_revision_comida_audit(movimiento,accion,revision,
+       anterior,posterior,motivo,instante,actor)
+     VALUES('8408','rectificación',?,?,?,NULL,?,'usuario-unico')`,
+    [
+      input.revision,
+      JSON.stringify(input.anterior),
+      JSON.stringify(input.posterior),
+      input.instante,
+    ],
+  );
+}
+
+function seedReference(db: Database, id = "REF9001") {
+  db.run(
+    `INSERT INTO referencias(id,nombre,tipo,estado,revision,creado,actualizado)
+     VALUES(?,'Referencia I5','Viaje','Activa',1,?,?)`,
+    [id, stamp, stamp],
+  );
+}
+
+function referenceAuditValue(overrides: Record<string, unknown> = {}) {
+  return {
+    id: "REF9001",
+    nombre: "Referencia I5",
+    tipo: "Viaje",
+    estado: "Activa",
+    revision: 1,
+    creado: stamp,
+    actualizado: stamp,
+    ...overrides,
+  };
+}
+
+function insertReferenceAudit(
+  db: Database,
+  input: {
+    revision: number;
+    instante: string;
+    anterior: Record<string, unknown>;
+    posterior: Record<string, unknown>;
+  },
+) {
+  db.run(
+    `INSERT INTO audit(entidad,accion,revision,campos,instante,revision_previa,
+       actor,motivo)
+     VALUES('REF9001','edición',?,?,?,?,'usuario-unico',NULL)`,
+    [
+      input.revision,
+      JSON.stringify({ anterior: input.anterior, posterior: input.posterior }),
+      input.instante,
+      input.revision - 1,
     ],
   );
 }
@@ -503,12 +730,72 @@ test("E4.10 I5: evidencia insuficiente bloquea sin escribir", () => {
   }
 });
 
-test("E4.10 I5: un cierre posterior bloquea la cancelación sin alterarlo", () => {
+test("E4.10 I5 R1: cierre posterior + SinCambios permite cancelar sin foto y no lo altera", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    const opened = reopen(db);
+    seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
+    const later = db
+      .query("SELECT * FROM cierres WHERE ciclo='2' AND version=1")
+      .get();
+    const before = v1Snapshot(db);
+    const beforeCounts = counts(db);
+
+    const result = cancel(db, {
+      versionEsperada: 1,
+      motivo: "Sin cambios pese al cierre posterior",
+    });
+
+    expect(result).toMatchObject({
+      ciclo: "1",
+      estado: "Cerrado",
+      version: 1,
+      replayed: false,
+      comparacion: { estado: "SinCambios" },
+      cierrePosterior: { ciclo: "2", version: 1 },
+    });
+    expect(result.cancelacion).toMatchObject({
+      reaperturaOrigen: opened.reapertura.id,
+      versionOrigen: 1,
+      motivo: "Sin cambios pese al cierre posterior",
+    });
+    expect(v1Snapshot(db)).toEqual(before);
+    expect(
+      db.query("SELECT * FROM cierres WHERE ciclo='2' AND version=1").get(),
+    ).toEqual(later as never);
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 0 });
+    expect(cancellationEvents(db)).toEqual([
+      expect.objectContaining({
+        ciclo: "1",
+        version_origen: 1,
+        reapertura_origen: opened.reapertura.id,
+        resultado: "Cancelada (SinCambios)",
+      }),
+    ]);
+    expect(counts(db)).toEqual({
+      ...beforeCounts,
+      activa: { n: 0 },
+      eventos: { n: 2 },
+      cancelaciones: { n: 1 },
+      intentos: { n: 1 },
+    });
+    expect(getReaperturaEstado(db, "1").estado).toBe("Cerrado");
+    expect(activeReopenedCycle(db)).toBeNull();
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R1: cierre posterior + cambios materiales bloquea con recuperación extraordinaria", () => {
   const db = fixture();
   try {
     closeV1(db);
     reopen(db);
     seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
+    seedMovement(db, { id: "8412", importe: 42 });
     const later = db
       .query("SELECT * FROM cierres WHERE ciclo='2' AND version=1")
       .get();
@@ -523,14 +810,42 @@ test("E4.10 I5: un cierre posterior bloquea la cancelación sin alterarlo", () =
     expect(rejected.message).toContain("recuperación extraordinaria");
     expect(rejected.details).toMatchObject({
       siguientePaso: "recuperacion_extraordinaria",
+      comparacion: { estado: "ConCambios" },
+      cierrePosterior: { ciclo: "2", version: 1 },
     });
     expect(counts(db)).toEqual(before);
     expect(
       db.query("SELECT * FROM cierres WHERE ciclo='2' AND version=1").get(),
     ).toEqual(later as never);
-    const blockedState = problemOf(() => getReaperturaEstado(db, "1"));
-    expect(blockedState.status).toBe(409);
-    expect(blockedState.code).toBe("CIERRE_POSTERIOR");
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 1 });
+    expect(cancellationEvents(db)).toEqual([]);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R1: cierre posterior + evidencia insuficiente bloquea con recuperación extraordinaria", () => {
+  const db = fixture();
+  try {
+    seedBrokenClosure(db);
+    reopen(db);
+    seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
+    const before = counts(db);
+
+    const rejected = problemOf(() =>
+      cancel(db, { versionEsperada: 1, motivo: "Intento sin evidencia" }),
+    );
+
+    expect(rejected.status).toBe(409);
+    expect(rejected.code).toBe("CIERRE_POSTERIOR");
+    expect(rejected.details).toMatchObject({
+      siguientePaso: "recuperacion_extraordinaria",
+      comparacion: { estado: "NoVerificable" },
+      cierrePosterior: { ciclo: "2", version: 1 },
+    });
+    expect(counts(db)).toEqual(before);
     expect(
       db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
     ).toEqual({ n: 1 });
@@ -575,6 +890,363 @@ test("E4.10 I5: una escritura T3 no material no impide la cancelación", () => {
     expect(
       db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
     ).toEqual({ n: 1 });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R3: renombrados T3 de instrumento, clasificación, deuda y referencia no impiden cancelar", () => {
+  const db = fixture();
+  try {
+    seedInstrumento(db);
+    seedClassification(db);
+    seedDeuda(db);
+    seedReference(db);
+    closeV1(db);
+    reopen(db);
+    const first = new Date(now + 2_000).toISOString();
+
+    db.run(
+      "UPDATE instrumentos SET nombre='Instrumento renombrado',revision=2,actualizado_en=? WHERE id='I9001'",
+      [first],
+    );
+    insertInstrumentoAudit(db, {
+      revision: 2,
+      instante: first,
+      anterior: instrumentAuditValue({ revision: 1 }),
+      posterior: instrumentAuditValue({
+        revision: 2,
+        nombre: "Instrumento renombrado",
+      }),
+    });
+    db.run(
+      "UPDATE categorias SET nombre='Categoría renombrada',grupo='Ocio',revision=2,actualizado=? WHERE id='CAT9001'",
+      [first],
+    );
+    insertClassificationAudit(db, {
+      entidad: "CAT9001",
+      revision: 2,
+      instante: first,
+      campos: ["nombre", "grupo"],
+    });
+    db.run(
+      "UPDATE deudas SET nombre='Deuda renombrada',revision=2,actualizado=? WHERE id='D0401'",
+      [first],
+    );
+    insertDebtAudit(db, {
+      revision: 2,
+      instante: first,
+      anterior: debtAuditValue({ revision: 1 }),
+      posterior: debtAuditValue({
+        revision: 2,
+        nombre: "Deuda renombrada",
+      }),
+    });
+    db.run(
+      "UPDATE referencias SET nombre='Referencia renombrada',revision=2,actualizado=? WHERE id='REF9001'",
+      [first],
+    );
+    insertReferenceAudit(db, {
+      revision: 2,
+      instante: first,
+      anterior: referenceAuditValue({ revision: 1 }),
+      posterior: referenceAuditValue({
+        revision: 2,
+        nombre: "Referencia renombrada",
+      }),
+    });
+
+    const result = cancel(db, {
+      versionEsperada: 1,
+      motivo: "Solo renombrados T3",
+    });
+
+    expect(result.comparacion.estado).toBe("SinCambios");
+    expect(getReaperturaEstado(db, "1")).toMatchObject({
+      estado: "Cerrado",
+      version: 1,
+    });
+    expect(cancellationEvents(db)).toHaveLength(1);
+    expect(
+      db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
+    ).toEqual({ n: 1 });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R3: una evidencia de revisión comida es T3 y no impide cancelar", () => {
+  const db = fixture();
+  try {
+    seedMovement(db, {
+      id: "8408",
+      tipo: "Devolución de gasto",
+      importe: 55,
+    });
+    seedRevisionComida(db);
+    closeV1(db);
+    reopen(db);
+    const instante = new Date(now + 2_000).toISOString();
+    db.run(
+      "UPDATE movimiento_revision_comida SET evidencia_bancaria='Nueva evidencia',evidencia_comercial='Nueva comercial',revision=2,actualizado=? WHERE movimiento='8408'",
+      [instante],
+    );
+    insertFoodAudit(db, {
+      revision: 2,
+      instante,
+      anterior: foodMetadataValue({ revision: 1 }),
+      posterior: foodMetadataValue({
+        revision: 2,
+        evidenciaBancaria: "Nueva evidencia",
+        evidenciaComercial: "Nueva comercial",
+      }),
+    });
+
+    const result = cancel(db, {
+      versionEsperada: 1,
+      motivo: "Solo cambió la evidencia",
+    });
+
+    expect(result.comparacion.estado).toBe("SinCambios");
+    expect(getReaperturaEstado(db, "1")).toMatchObject({
+      estado: "Cerrado",
+      version: 1,
+    });
+    expect(cancellationEvents(db)).toHaveLength(1);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R3: los cambios materiales T1/T2 siguen bloqueando", () => {
+  const scenarios: {
+    nombre: string;
+    seed: (db: Database) => void;
+    change: (db: Database, instante: string) => void;
+  }[] = [
+    {
+      nombre: "instrumento",
+      seed: (db) => seedInstrumento(db),
+      change: (db, instante) => {
+        db.run(
+          "UPDATE instrumentos SET divisa_referencia='USD',revision=2,actualizado_en=? WHERE id='I9001'",
+          [instante],
+        );
+        insertInstrumentoAudit(db, {
+          revision: 2,
+          instante,
+          anterior: instrumentAuditValue({ revision: 1 }),
+          posterior: instrumentAuditValue({
+            revision: 2,
+            divisaReferencia: "USD",
+          }),
+        });
+      },
+    },
+    {
+      nombre: "categoría",
+      seed: (db) => seedClassification(db),
+      change: (db, instante) => {
+        db.run(
+          "UPDATE categorias SET estado='Inactiva',revision=2,actualizado=? WHERE id='CAT9001'",
+          [instante],
+        );
+        insertClassificationAudit(db, {
+          entidad: "CAT9001",
+          revision: 2,
+          instante,
+          campos: ["estado"],
+        });
+      },
+    },
+    {
+      nombre: "deuda",
+      seed: (db) => seedDeuda(db),
+      change: (db, instante) => {
+        db.run(
+          "UPDATE deudas SET tin=2500000,revision=2,actualizado=? WHERE id='D0401'",
+          [instante],
+        );
+        insertDebtAudit(db, {
+          revision: 2,
+          instante,
+          anterior: debtAuditValue({ revision: 1 }),
+          posterior: debtAuditValue({ revision: 2, tin: "2500000" }),
+        });
+      },
+    },
+    {
+      nombre: "referencia",
+      seed: (db) => seedReference(db),
+      change: (db, instante) => {
+        db.run(
+          "UPDATE referencias SET tipo='Evento',revision=2,actualizado=? WHERE id='REF9001'",
+          [instante],
+        );
+        insertReferenceAudit(db, {
+          revision: 2,
+          instante,
+          anterior: referenceAuditValue({ revision: 1 }),
+          posterior: referenceAuditValue({ revision: 2, tipo: "Evento" }),
+        });
+      },
+    },
+    {
+      nombre: "revisión comida",
+      seed: (db) => {
+        seedMovement(db, {
+          id: "8408",
+          tipo: "Devolución de gasto",
+          importe: 55,
+        });
+        seedRevisionComida(db);
+      },
+      change: (db, instante) => {
+        db.run(
+          "UPDATE movimiento_revision_comida SET etiqueta='Ocio',revision=2,actualizado=? WHERE movimiento='8408'",
+          [instante],
+        );
+        insertFoodAudit(db, {
+          revision: 2,
+          instante,
+          anterior: foodMetadataValue({ revision: 1 }),
+          posterior: foodMetadataValue({ revision: 2, etiqueta: "Ocio" }),
+        });
+      },
+    },
+  ];
+
+  for (const scenario of scenarios) {
+    const db = fixture();
+    try {
+      scenario.seed(db);
+      closeV1(db);
+      reopen(db);
+      const instante = new Date(now + 2_000).toISOString();
+      scenario.change(db, instante);
+      const before = counts(db);
+
+      const rejected = problemOf(() =>
+        cancel(db, {
+          versionEsperada: 1,
+          motivo: `Intento material: ${scenario.nombre}`,
+        }),
+      );
+
+      expect(rejected.status).toBe(409);
+      expect(rejected.code).toBe("CAMBIOS_MATERIALES");
+      expect(rejected.details.comparacion).toMatchObject({
+        estado: "ConCambios",
+      });
+      expect(counts(db)).toEqual(before);
+      expect(getReaperturaEstado(db, "1").estado).toBe("Reabierto");
+    } finally {
+      db.close();
+    }
+  }
+});
+
+test("E4.10 I5 R5: un fallo antes del commit revierte evento, intento y proyección", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    const opened = reopen(db);
+    const before = counts(db);
+    const beforeV1 = v1Snapshot(db);
+
+    expect(() =>
+      cancel(
+        db,
+        { versionEsperada: 1, motivo: "Fallo inducido" },
+        "cancelacion-" + randomUUID(),
+        {
+          ...validOptions(),
+          hooks: {
+            beforeCommit: () => {
+              throw new Error("fallo inducido I5");
+            },
+          },
+        },
+      ),
+    ).toThrow("fallo inducido I5");
+
+    expect(counts(db)).toEqual(before);
+    expect(v1Snapshot(db)).toEqual(beforeV1);
+    expect(getReaperturaEstado(db, "1")).toMatchObject({
+      estado: "Reabierto",
+      version: 1,
+    });
+    expect(activeReopenedCycle(db)).toBe("1");
+    expect(
+      db
+        .query(
+          "SELECT COUNT(*) n FROM reapertura_activa WHERE reapertura_id=?",
+        )
+        .get(opened.reapertura.id),
+    ).toEqual({ n: 1 });
+    expect(cancellationEvents(db)).toEqual([]);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I5 R5: cancelar una reapertura de v2 deja v1 y v2 intactas", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    reopen(db);
+    seedMovement(db, { id: "8430", importe: 30 });
+    const pre = previewRecierre(db, "1", validOptions(), cancelNow);
+    const reclosed = reCerrarCiclo(
+      db,
+      "1",
+      {
+        versionEsperada: 1,
+        motivo: "Motivo de re-cierre v2",
+        fingerprint: pre.fingerprint,
+      },
+      "recierre-" + randomUUID(),
+      validOptions(),
+      cancelNow,
+    );
+    expect(reclosed.foto.version).toBe(2);
+    reopen(db, 2, "Segunda reapertura", cancelNow + 1_000);
+    const v1 = v1Snapshot(db);
+
+    const result = cancel(
+      db,
+      { versionEsperada: 2, motivo: "Sin cambios en v2" },
+      "cancelacion-" + randomUUID(),
+      validOptions(),
+      cancelNow + 2_000,
+    );
+
+    expect(result).toMatchObject({
+      estado: "Cerrado",
+      version: 2,
+      comparacion: { estado: "SinCambios" },
+    });
+    expect(result.cancelacion.versionOrigen).toBe(2);
+    expect(v1Snapshot(db)).toEqual(v1);
+    expect(
+      db.query(
+        "SELECT COUNT(*) n FROM cierres WHERE ciclo='1' AND version=2",
+      ).get(),
+    ).toEqual({ n: 1 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query(
+        "SELECT COUNT(*) n FROM reaperturas WHERE tipo='cancelacion' AND version_origen=2",
+      ).get(),
+    ).toEqual({ n: 1 });
+    const blocked = problemOf(() =>
+      assertDatesWritable(db, ["2026-01-15"], "registrar el Movimiento", {
+        allowActiveReopenedCycle: true,
+      }),
+    );
+    expect(blocked.code).toBe("HISTORY_LOCKED");
   } finally {
     db.close();
   }
@@ -801,12 +1473,12 @@ test("E4.10 I5: dos procesos con la misma clave hacen replay de una cancelación
   }
 });
 
-test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", async () => {
+test("E4.10 I5 API: cancelar, ruta canónica, 401/403/405, idempotencia y /cerrar intacto", async () => {
   const f = await apiFixture();
   try {
     expect(
       (
-        await f.request("/api/cierres/1/cancelar", "POST", {
+        await f.request("/api/cierres/1/reapertura/cancelar", "POST", {
           versionEsperada: 1,
           motivo: "Sin sesión",
         })
@@ -823,7 +1495,7 @@ test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", asyn
     expect(abrir.status).toBe(201);
 
     const noCsrf = await f.request(
-      "/api/cierres/1/cancelar",
+      "/api/cierres/1/reapertura/cancelar",
       "POST",
       { versionEsperada: 1, motivo: "Sin CSRF" },
       { "x-csrf-token": "" },
@@ -831,23 +1503,27 @@ test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", asyn
     expect(noCsrf.status).toBe(403);
     expect(noCsrf.data.code).toBe("CSRF");
 
-    const wrongMethod = await f.request("/api/cierres/1/cancelar");
+    const wrongMethod = await f.request("/api/cierres/1/reapertura/cancelar");
     expect(wrongMethod.status).toBe(405);
     expect(wrongMethod.headers.get("allow")).toBe("POST");
+    const aliasWrongMethod = await f.request("/api/cierres/1/cancelar");
+    expect(aliasWrongMethod.status).toBe(405);
+    expect(aliasWrongMethod.headers.get("allow")).toBe("POST");
 
     const missingKey = await f.request(
-      "/api/cierres/1/cancelar",
+      "/api/cierres/1/reapertura/cancelar",
       "POST",
       { versionEsperada: 1, motivo: "Motivo de cancelación API" },
     );
     expect(missingKey.status).toBe(422);
     expect(missingKey.data.code).toBe("IDEMPOTENCY_REQUIRED");
 
+    const key = "cancelacion-" + randomUUID();
     const result = await f.request(
-      "/api/cierres/1/cancelar",
+      "/api/cierres/1/reapertura/cancelar",
       "POST",
       { versionEsperada: 1, motivo: "Motivo de cancelación API" },
-      { "idempotency-key": randomUUID() },
+      { "idempotency-key": key },
     );
     expect(result.status).toBe(200);
     expect(result.headers.get("location")).toBe(
@@ -860,6 +1536,17 @@ test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", asyn
     });
     expect(result.data.cancelacion.id).toBeGreaterThan(0);
 
+    // The ratified route and the legacy alias share the same idempotency key.
+    const aliasReplay = await f.request(
+      "/api/cierres/1/cancelar",
+      "POST",
+      { versionEsperada: 1, motivo: "Motivo de cancelación API" },
+      { "idempotency-key": key },
+    );
+    expect(aliasReplay.status).toBe(200);
+    expect(aliasReplay.data.replayed).toBe(true);
+    expect(aliasReplay.data.cancelacion.id).toBe(result.data.cancelacion.id);
+
     expect((await f.request("/api/cierres/1/reapertura")).data.estado).toBe(
       "Cerrado",
     );
@@ -869,6 +1556,25 @@ test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", asyn
     expect(
       f.db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
     ).toEqual({ n: 1 });
+
+    // T1 is re-blocked through the real movement route, not only the guard.
+    const movement = await f.request(
+      "/api/movimientos",
+      "POST",
+      movementBody(),
+      { "idempotency-key": randomUUID() },
+    );
+    expect(movement.status).toBe(409);
+    expect(movement.data.code).toBe("HISTORY_LOCKED");
+
+    const noWindow = await f.request(
+      "/api/cierres/1/reapertura/cancelar",
+      "POST",
+      { versionEsperada: 1, motivo: "Sin ventana" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(noWindow.status).toBe(409);
+    expect(noWindow.data.code).toBe("NO_REABIERTO");
 
     const ordinary = await f.request(
       "/api/cierres/1/cerrar",
@@ -882,6 +1588,62 @@ test("E4.10 I5 API: cancelar, 401/403/405, idempotencia y /cerrar intacto", asyn
     f.db.close();
   }
 });
+
+test("E4.10 I5 API: cambio material responde 409 CAMBIOS_MATERIALES", async () => {
+  const f = await apiFixture();
+  try {
+    await f.enroll();
+    expect((await f.close("1")).result.status).toBe(201);
+    expect(
+      (
+        await f.request(
+          "/api/cierres/1/reabrir",
+          "POST",
+          { versionEsperada: 1, motivo: "Motivo de reapertura API" },
+          { "idempotency-key": randomUUID() },
+        )
+      ).status,
+    ).toBe(201);
+    seedMovement(f.db, { id: "8440", importe: 40 });
+
+    const rejected = await f.request(
+      "/api/cierres/1/reapertura/cancelar",
+      "POST",
+      { versionEsperada: 1, motivo: "Intento con cambio material" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(rejected.status).toBe(409);
+    expect(rejected.data.code).toBe("CAMBIOS_MATERIALES");
+    expect(rejected.data.comparacion.estado).toBe("ConCambios");
+    expect(
+      f.db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 1 });
+    expect(
+      f.db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE ciclo='1'").get(),
+    ).toEqual({ n: 1 });
+  } finally {
+    f.db.close();
+  }
+});
+
+function movementBody(over: Record<string, unknown> = {}) {
+  return {
+    fecha: "2026-01-15",
+    tipo: "Transferencia",
+    importe: "5.00",
+    origen: "S003",
+    destino: "S001",
+    subtipo: null,
+    partida: null,
+    referencia: null,
+    concepto: "Movimiento API I5",
+    nota: null,
+    capital: null,
+    intereses: null,
+    ...over,
+  };
+}
+
 
 async function apiFixture() {
   const db = openDatabase(":memory:");

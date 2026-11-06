@@ -2,8 +2,7 @@ import type { Database } from "bun:sqlite";
 import { randomUUID } from "node:crypto";
 import { getCycle } from "./ciclos";
 import { actorDefault, captureCierre, type CierreOptions } from "./e49";
-import { compareMaterial, requireWindow } from "./e410-recierre";
-import type { ReopeningEvent } from "./e410-window";
+import { compareMaterial, resolveWindow } from "./e410-recierre";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 
@@ -23,9 +22,12 @@ import { Problem } from "./problem";
  * `reapertura_activa` projection re-blocks T1; the guards read that projection,
  * so no second copy of the rule is introduced here.
  *
- * A later closure is not this cycle's window: `requireWindow` (shared with I4)
- * rejects it with `CIERRE_POSTERIOR` and no row is written. Extraordinary
- * recovery is explicitly outside this scope.
+ * A later closure is not a reason to skip the material comparison: `resolveWindow`
+ * exposes the window without throwing, and D8 keeps the no-photo cancellation
+ * available when `vN` is unchanged even if a posterior closure exists. With
+ * changes or insufficient evidence the cancellation is blocked with
+ * `CIERRE_POSTERIOR`/extraordinary recovery and no closure is altered.
+ * Extraordinary recovery itself is explicitly outside this scope.
  */
 
 export type CancelacionOptions = CierreOptions;
@@ -110,20 +112,12 @@ export function cancelarReapertura(
       );
 
       const { ciclo } = getCycle(db, cicloId);
-      let evento: ReopeningEvent;
-      try {
-        evento = requireWindow(db, ciclo.id, "cancelar");
-      } catch (error) {
-        if (error instanceof Problem && error.code === "CIERRE_POSTERIOR")
-          throw new Problem(
-            409,
-            "CIERRE_POSTERIOR",
-            "Existe un cierre posterior durante la ventana; no se cancela ni se re-cierra. La única salida es recuperación extraordinaria documentada y aprobada por separado.",
-            {},
-            { ...error.details, siguientePaso: "recuperacion_extraordinaria" },
-          );
-        throw error;
-      }
+      const { evento, cierrePosterior } = resolveWindow(
+        db,
+        ciclo.id,
+        "cancelar",
+        true,
+      );
       if (evento.versionOrigen !== versionEsperada)
         throw new Problem(
           409,
@@ -136,6 +130,9 @@ export function cancelarReapertura(
       // Reuse I4's conservative material comparison over DT-H. `creadoUtc` is
       // the reopening instant, so audited material writes that were later
       // reverted still force the vN+1 path instead of an automatic cancellation.
+      // A later closure no longer short-circuits this comparison: D8 allows a
+      // no-change cancellation without photo even when a posterior closure
+      // exists, as long as no closure is altered.
       const capture = captureCierre(db, ciclo.id, options, now);
       if (capture.estadoCierre.estado !== "Cerrado")
         throw new Problem(
@@ -150,19 +147,31 @@ export function cancelarReapertura(
         capture,
         evento.creadoUtc,
       );
-      if (comparacion.estado === "NoVerificable")
-        throw new Problem(
-          409,
-          "IMPACTO_NO_VERIFICABLE",
-          "No se acredita la ausencia de cambios materiales; no se cancela sin foto. Usa el re-cierre vN+1.",
-          {},
-          {
-            comparacion,
-            siguientePaso: "recierre",
-            versionSiguiente: versionEsperada + 1,
-          },
-        );
-      if (comparacion.estado === "ConCambios")
+      if (comparacion.estado !== "SinCambios") {
+        if (cierrePosterior)
+          throw new Problem(
+            409,
+            "CIERRE_POSTERIOR",
+            "Existe un cierre posterior y cambios o evidencia insuficiente; no se cancela ni se re-cierra. La única salida es recuperación extraordinaria documentada y aprobada por separado.",
+            {},
+            {
+              comparacion,
+              cierrePosterior,
+              siguientePaso: "recuperacion_extraordinaria",
+            },
+          );
+        if (comparacion.estado === "NoVerificable")
+          throw new Problem(
+            409,
+            "IMPACTO_NO_VERIFICABLE",
+            "No se acredita la ausencia de cambios materiales; no se cancela sin foto. Usa el re-cierre vN+1.",
+            {},
+            {
+              comparacion,
+              siguientePaso: "recierre",
+              versionSiguiente: versionEsperada + 1,
+            },
+          );
         throw new Problem(
           409,
           "CAMBIOS_MATERIALES",
@@ -174,6 +183,7 @@ export function cancelarReapertura(
             versionSiguiente: versionEsperada + 1,
           },
         );
+      }
 
       const creadoUtc = new Date(now).toISOString(),
         correlacion = evento.correlacion ?? randomUUID();
@@ -222,6 +232,7 @@ export function cancelarReapertura(
           fingerprint: requestHash,
         },
         comparacion,
+        cierrePosterior: cierrePosterior ?? null,
         replayed: false,
       };
       db.run(
