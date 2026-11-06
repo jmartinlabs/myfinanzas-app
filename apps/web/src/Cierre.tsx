@@ -619,8 +619,28 @@ function MaterialComparisonView({
   );
 }
 
-function countList(value: unknown) {
-  return Array.isArray(value) ? value.length : 0;
+/**
+ * Una lista ausente o ilegible no es una lista vacía: devuelve `null` para que
+ * la UI muestre «No disponible» y nunca convierta la ausencia en `0`.
+ */
+function countList(value: unknown): number | null {
+  return Array.isArray(value) ? value.length : null;
+}
+
+function countText(value: unknown) {
+  const count = countList(value);
+  return count === null ? "No disponible" : String(count);
+}
+
+function countPhrase(
+  value: unknown,
+  singular: string,
+  plural: string,
+) {
+  const count = countList(value);
+  return count === null
+    ? "No disponible"
+    : `${count} ${count === 1 ? singular : plural}`;
 }
 
 function auxiliarySummary(auxiliares: Record<string, unknown>) {
@@ -628,7 +648,7 @@ function auxiliarySummary(auxiliares: Record<string, unknown>) {
     Array.isArray(value),
   );
   return entries.length
-    ? entries.map(([key, value]) => `${key} ${countList(value)}`).join(" · ")
+    ? entries.map(([key, value]) => `${key} ${countText(value)}`).join(" · ")
     : "Sin auxiliares capturados";
 }
 
@@ -655,26 +675,26 @@ function PhotoComparison({
     {
       key: "hechos",
       label: MATERIAL_LABELS.hechos,
-      before: `${before.foto.hechos.estado} · ${countList(before.foto.hechos.movimientos)} movimiento(s)`,
-      after: `${after.foto.hechos.estado} · ${countList(after.foto.hechos.movimientos)} movimiento(s)`,
+      before: `${before.foto.hechos.estado} · ${countPhrase(before.foto.hechos.movimientos, "movimiento", "movimientos")}`,
+      after: `${after.foto.hechos.estado} · ${countPhrase(after.foto.hechos.movimientos, "movimiento", "movimientos")}`,
     },
     {
       key: "plan",
       label: MATERIAL_LABELS.plan,
-      before: `${before.foto.plan.estado} · ${countList(before.foto.plan.items)} línea(s)`,
-      after: `${after.foto.plan.estado} · ${countList(after.foto.plan.items)} línea(s)`,
+      before: `${before.foto.plan.estado} · ${countPhrase(before.foto.plan.items, "línea", "líneas")}`,
+      after: `${after.foto.plan.estado} · ${countPhrase(after.foto.plan.items, "línea", "líneas")}`,
     },
     {
       key: "clasificacion",
       label: MATERIAL_LABELS.clasificacion,
-      before: `Categorías ${countList(before.foto.clasificacion.categorias)} · subcategorías ${countList(before.foto.clasificacion.subcategorias)} · partidas ${countList(before.foto.clasificacion.partidas)} · referencias ${countList(before.foto.clasificacion.referencias)}`,
-      after: `Categorías ${countList(after.foto.clasificacion.categorias)} · subcategorías ${countList(after.foto.clasificacion.subcategorias)} · partidas ${countList(after.foto.clasificacion.partidas)} · referencias ${countList(after.foto.clasificacion.referencias)}`,
+      before: `Categorías ${countText(before.foto.clasificacion.categorias)} · subcategorías ${countText(before.foto.clasificacion.subcategorias)} · partidas ${countText(before.foto.clasificacion.partidas)} · referencias ${countText(before.foto.clasificacion.referencias)}`,
+      after: `Categorías ${countText(after.foto.clasificacion.categorias)} · subcategorías ${countText(after.foto.clasificacion.subcategorias)} · partidas ${countText(after.foto.clasificacion.partidas)} · referencias ${countText(after.foto.clasificacion.referencias)}`,
     },
     {
       key: "inversion",
       label: MATERIAL_LABELS.inversion,
-      before: `Efectivo ${amount(before.foto.inversion.efectivo)} · ${countList(before.foto.inversion.posiciones)} posición(es) · ${countList(before.foto.inversion.instrumentos)} instrumento(s)`,
-      after: `Efectivo ${amount(after.foto.inversion.efectivo)} · ${countList(after.foto.inversion.posiciones)} posición(es) · ${countList(after.foto.inversion.instrumentos)} instrumento(s)`,
+      before: `Efectivo ${amount(before.foto.inversion.efectivo)} · ${countPhrase(before.foto.inversion.posiciones, "posición", "posiciones")} · ${countPhrase(before.foto.inversion.instrumentos, "instrumento", "instrumentos")}`,
+      after: `Efectivo ${amount(after.foto.inversion.efectivo)} · ${countPhrase(after.foto.inversion.posiciones, "posición", "posiciones")} · ${countPhrase(after.foto.inversion.instrumentos, "instrumento", "instrumentos")}`,
     },
     {
       key: "auxiliares",
@@ -1285,13 +1305,20 @@ export function Cierre({ go }: { go: (path: string) => void }) {
     estadoCierre?.reapertura.version ?? 1,
     recierreResult?.foto.version ?? 1,
   );
-  const estadoDisplay = closed ? "Cerrado" : preflight?.estado;
 
   const reapertura = estadoCierre?.reapertura ?? null;
   const reopened = reapertura?.estado === "Reabierto";
   const sinCierre = reapertura?.estado === "SinCierre";
   const originVersion = reapertura?.version ?? preflight?.cierre.version ?? null;
   const nextVersion = originVersion === null ? null : originVersion + 1;
+  // La cabecera deriva de reapertura.estado: la fila de cierre sigue existiendo
+  // mientras la ventana está abierta, pero presentarla como «Cerrado» contradice
+  // al panel de reapertura.
+  const estadoDisplay = reopened
+    ? `Reabierto · v${originVersion ?? "?"}`
+    : reapertura?.estado === "Cerrado" || closed
+      ? "Cerrado"
+      : preflight?.estado;
   const elegibilidad = reapertura?.elegibilidad ?? null;
   const puedeReabrir =
     reapertura?.estado === "Cerrado" && elegibilidad?.puedeReabrir === true;
@@ -1397,9 +1424,13 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                   <Badge estado={estadoDisplay ?? "Sin estado"} />
                 </dd>
                 <small>
-                  {closed
-                    ? "Ciclo cerrado: solo E4.10 podría habilitar un re-cierre."
-                    : "El cierre no crea el ciclo siguiente ni cambia su S0."}
+                  {reopened
+                    ? "Ciclo reabierto: ventana de rectificación activa; v" +
+                      (originVersion ?? "?") +
+                      " es consultable, no vigente sin advertencia."
+                    : closed
+                      ? "Ciclo cerrado: solo E4.10 podría habilitar un re-cierre."
+                      : "El cierre no crea el ciclo siguiente ni cambia su S0."}
                 </small>
               </div>
               <div className="metric">
@@ -1410,9 +1441,15 @@ export function Cierre({ go }: { go: (path: string) => void }) {
                     : "v" + preflight.cierre.version}
                 </dd>
                 <small>
-                  {closed
-                    ? "Fotografía v" + preflight.cierre.fotoVersion + " consultable."
-                    : "La primera fotografía será v1."}
+                  {reopened
+                    ? "Fotografía v" +
+                      preflight.cierre.fotoVersion +
+                      " conservada y consultable; no es la vista viva."
+                    : closed
+                      ? "Fotografía v" +
+                        preflight.cierre.fotoVersion +
+                        " consultable."
+                      : "La primera fotografía será v1."}
                 </small>
               </div>
               <div className="metric">
@@ -1609,9 +1646,19 @@ export function Cierre({ go }: { go: (path: string) => void }) {
               </div>
 
               <p className="muted">
-                <strong>Ciclo ya cerrado</strong>. El cierre ordinario no reabre
-                ni crea una segunda fotografía; solo E4.10 habilita la vía
-                ordinaria de reapertura y re-cierre.
+                {reopened ? (
+                  <>
+                    <strong>Ciclo reabierto</strong>. La ventana de rectificación
+                    está activa; v{originVersion ?? "?"} sigue consultable, pero
+                    no es la versión vigente sin advertencia.
+                  </>
+                ) : (
+                  <>
+                    <strong>Ciclo ya cerrado</strong>. El cierre ordinario no
+                    reabre ni crea una segunda fotografía; solo E4.10 habilita la
+                    vía ordinaria de reapertura y re-cierre.
+                  </>
+                )}
               </p>
 
               {actionError && (

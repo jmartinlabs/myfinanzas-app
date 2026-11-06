@@ -171,6 +171,12 @@ switch (scenario) {
         NULL,'Gasto ficticio de rectificación E4.10','',0,1,'f','f',NULL,NULL)`,
     );
     break;
+  case "e410-sin-cambios":
+    // Closed v1 without material changes: reopening must lead to SIN_CAMBIOS
+    // and the D8 cancellation path, never to a new photo.
+    cycles(2);
+    closeCycle("1");
+    break;
   case "e410-no-ultimo":
     // Cycle 1 is closed but cycle 2 has a later Fin: the UI must not offer
     // reopening and must show the reason.

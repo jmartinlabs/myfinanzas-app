@@ -32,6 +32,7 @@ const PORTS = {
   "backup-sin-referencia": 3041,
   "e410-reabierto": 3042,
   "e410-no-ultimo": 3043,
+  "e410-sin-cambios": 3044,
 } as const;
 
 const ARTIFACTS = "artifacts/e4-9";
@@ -795,6 +796,12 @@ test("E4.10 UI: reabrir v1, ver el impacto y re-cerrar v2 con comparación", asy
       page.getByRole("heading", { name: "Ciclo reabierto", exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Reabierto · v1", { exact: true }).first()).toBeVisible();
+    const statusPanel = page.locator('[aria-label="Estado del cierre"]');
+    await expect(statusPanel.getByText("Reabierto · v1", { exact: true })).toBeVisible();
+    await expect(statusPanel.getByText("Cerrado", { exact: true })).toHaveCount(0);
+    await expect(
+      statusPanel.getByText(/Ciclo reabierto: ventana de rectificación activa/),
+    ).toBeVisible();
     await expect(
       page.getByText(/Ventana de rectificación abierta sobre v1/),
     ).toBeVisible();
@@ -941,6 +948,97 @@ test("E4.10 UI: un cierre no último no ofrece reabrir y muestra el motivo", asy
     await expect(
       page.getByRole("button", { name: "Reabrir el último cierre", exact: true }),
     ).toBeVisible();
+    expect(errors).toEqual([]);
+  } finally {
+    child.kill();
+  }
+});
+
+test("E4.10 UI: SIN_CAMBIOS no crea foto y permite cancelar la reapertura (D8)", async ({
+  page,
+  request,
+}) => {
+  test.setTimeout(120000);
+  mkdirSync(ARTIFACTS_E410, { recursive: true });
+  const errors = pageErrors(page);
+  const { child, port, dir } = await startServer(request, "e410-sin-cambios");
+  try {
+    await routeApi(page, port);
+    await login(page, dir);
+    await page.getByLabel("Ciclo").selectOption("1");
+
+    await page
+      .getByRole("button", { name: "Reabrir el último cierre", exact: true })
+      .click();
+    await page
+      .getByLabel("Motivo de la reapertura", { exact: false })
+      .fill("Reapertura sin cambios ficticia E4.10");
+    await page
+      .getByRole("button", { name: "Confirmar reapertura", exact: true })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "Ciclo reabierto", exact: true }),
+    ).toBeVisible();
+    await expect(page.getByText("SinCambios", { exact: true }).first()).toBeVisible();
+    await expect(
+      page.getByText(/SIN_CAMBIOS\. No se crea una foto nueva/),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: /Confirmar re-cierre v2/ }),
+    ).toHaveCount(0);
+
+    const cancelButton = page.getByRole("button", {
+      name: "Cancelar reapertura sin foto",
+      exact: true,
+    });
+    await expect(cancelButton).toBeEnabled();
+    await cancelButton.click();
+    await page
+      .getByLabel("Motivo de la cancelación", { exact: false })
+      .fill("No hubo cambios materiales");
+    await expect(page.getByTestId("e410-cancel-key")).toHaveText(
+      /^[0-9a-f-]{36}$/,
+    );
+    await page
+      .getByRole("button", { name: "Confirmar cancelación sin foto", exact: true })
+      .click();
+
+    await expect(
+      page.getByText(/Cancelación registrada: el ciclo vuelve a Cerrado\(v1\) sin foto nueva/),
+    ).toBeVisible();
+
+    const state = await page.request.get(
+      `http://127.0.0.1:${port}/api/cierres/1/estado`,
+    );
+    expect(state.status()).toBe(200);
+    const body = await state.json();
+    expect(body.cierre.version).toBe(1);
+    expect(body.reapertura.estado).toBe("Cerrado");
+    expect(body.reapertura.version).toBe(1);
+    expect(body.reapertura.reapertura).toBeNull();
+    expect(
+      (await page.request.get(`http://127.0.0.1:${port}/api/cierres/1/foto?version=1`))
+        .status(),
+    ).toBe(200);
+    expect(
+      (
+        await page.request.get(
+          `http://127.0.0.1:${port}/api/cierres/1/foto?version=2`,
+        )
+      ).status(),
+    ).toBe(404);
+
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-1440.png`,
+      fullPage: true,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await expectNoOverflow(page);
+    await page.screenshot({
+      path: `${ARTIFACTS_E410}/cancelacion-sin-cambios-390.png`,
+      fullPage: true,
+    });
     expect(errors).toEqual([]);
   } finally {
     child.kill();
