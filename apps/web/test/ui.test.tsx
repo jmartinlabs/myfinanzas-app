@@ -216,6 +216,21 @@ test("Table alinea importes en th y td según el rol de la columna", () => {
   expect(html).toContain("1.234,50 €");
 });
 
+test("Table aplica rowClassName a la fila y conserva el resto de celdas", () => {
+  const html = renderToStaticMarkup(
+    <Table
+      caption="Listado de movimientos"
+      label="Tabla de movimientos"
+      columns={saldoColumns}
+      rows={saldoRows}
+      rowClassName={(row) => (row.id === "s1" ? "annulled" : undefined)}
+    />,
+  );
+  expect(html).toContain('<tr class="annulled">');
+  expect(html).toContain("Cuenta principal");
+  expect(html).toContain("1.234,50 €");
+});
+
 test("DataList reproduce etiquetas, valores y acciones de las mismas columnas", () => {
   const html = renderToStaticMarkup(
     <DataList

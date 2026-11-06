@@ -345,7 +345,10 @@ function MovementList({
       cell: (m) => (
         <>
           {saldoName(m)}
-          <small className="table-id">{cycle(m.ciclo)}</small>
+          <small className="table-id">
+            {cycle(m.ciclo)}
+            {m.anulado ? " · No computa" : ""}
+          </small>
         </>
       ),
     },
@@ -367,7 +370,7 @@ function MovementList({
       id: "importe",
       header: "Importe",
       kind: "amount",
-      cell: (m) => eur(m.importe),
+      cell: (m) => <strong>{eur(m.importe)}</strong>,
     },
   ];
   return (
@@ -548,6 +551,7 @@ function MovementList({
                 columns={columns}
                 rows={data.movimientos}
                 rowKey={(m) => m.id}
+                rowClassName={(m) => (m.anulado ? "annulled" : undefined)}
               />
             </div>
             <DataList
