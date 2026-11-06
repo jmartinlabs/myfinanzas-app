@@ -29,7 +29,7 @@ funcional no se deduce de DEV ni QA. La narrativa inferior se conserva como hist
   `previous-ref-selection=explicit`, `final-image-api-tests-passed=886`, backup/restore
   cifrados, rechazo de downgrade in-place y rollback `restore-only`.
 - **Límite:** validación sintética; sin migraciones operativas, datos reales, VPS ni despliegue.
-- **26→27:** gate sintético PASS en run `42296499658` (pendiente de confirmar en #255); manifiesto `26-to-27` con `previous_ref=b02f546` y 931 tests.
+- **26→27:** gate sintético PASS en run `42299285733` (#255) con `previous_ref=b02f546`, **940 tests**, backup/restore cifrado, downgrade in-place rechazado y rollback `restore-only`.
 
 ## E4.9 — estado vigente reconciliado (2026-11-05)
 
