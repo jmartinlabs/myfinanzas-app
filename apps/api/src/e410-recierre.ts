@@ -109,13 +109,17 @@ function lastClosure(db: Database, ciclo: string): CierreRow | null {
  * distinguishes a later closure and an inconsistent projection; a stale
  * origin version is reported as a version conflict, not as corruption.
  */
-function requireWindow(db: Database, ciclo: string): ReopeningEvent {
+export function requireWindow(
+  db: Database,
+  ciclo: string,
+  action = "re-cerrar",
+): ReopeningEvent {
   const reading = readActiveWindow(db);
   if (reading.estado === "SinVentana")
     throw new Problem(
       409,
       "NO_REABIERTO",
-      "El ciclo no tiene una reapertura activa que re-cerrar.",
+      `El ciclo no tiene una reapertura activa que ${action}.`,
       {},
       { ciclo },
     );
