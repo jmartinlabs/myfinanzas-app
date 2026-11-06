@@ -20,8 +20,11 @@ materializa solo fuentes permitidas desde Git, no el directorio de trabajo.
 Bun 1.4.3/Debian se fija por digest; bun.lock congela dependencias y se deshabilitan
 scripts de instalación. age 1.3.2 linux/amd64 tiene checksum fijado. El manifiesto
 registra fuente, receta, lock, base, plataforma, OS, versiones, imagen, digest OCI,
-checksums de frontend y dos builds sin caché. El payload normalizado excluye tiempos
-y archivos host generados por Podman; diferencias inexplicadas bloquean aceptación.
+checksums de frontend y dos builds sin caché. `Containerfile` y `healthcheck.mjs` se
+materializan y hashean desde el commit seleccionado; `builder_source` identifica el
+HEAD del checkout constructor solo como metadato, nunca como fuente de release. El
+payload normalizado excluye tiempos y archivos host generados por Podman; diferencias
+inexplicadas bloquean aceptación.
 No equivale a prometer archivo OCI idéntico byte a byte ni disponibilidad perpetua
 de descargas. No ampliar arquitectura sin nueva validación.
 

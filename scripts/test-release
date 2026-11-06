@@ -1,0 +1,197 @@
+#!/usr/bin/env python3
+"""Reproducibility regressions for the private release recipe (no Podman)."""
+import io
+import json
+from pathlib import Path
+import subprocess
+import sys
+import tarfile
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / 'infra'))
+import release  # noqa: E402
+
+
+OLD_CONTAINERFILE = b'FROM scratch\n# selected release\n'
+OLD_HEALTHCHECK = b'console.log("selected release");\n'
+NEW_CONTAINERFILE = b'FROM oven/bun:1.4.3-debian\n# builder HEAD\n'
+NEW_HEALTHCHECK = b'console.log("builder HEAD");\n'
+
+
+class ReleaseContextTests(unittest.TestCase):
+    def setUp(self):
+        temp = tempfile.TemporaryDirectory()
+        self.addCleanup(temp.cleanup)
+        self.home = Path(temp.name).resolve()
+        self.root = self.home / 'repo'
+        self.root.mkdir()
+        self.git('init', '-q', '--initial-branch=main')
+        self.git('config', 'user.name', 'Fixture')
+        self.git('config', 'user.email', 'fixture@example.invalid')
+        self.git('config', 'commit.gpgsign', 'false')
+        self.write_tree(OLD_CONTAINERFILE, OLD_HEALTHCHECK)
+        self.a = self.commit('selected release')
+        self.write('infra/Containerfile', NEW_CONTAINERFILE)
+        self.write('infra/healthcheck.mjs', NEW_HEALTHCHECK)
+        self.b = self.commit('builder HEAD')
+        self.age = self.age_archive()
+        self.original_source = release.SOURCE
+        release.SOURCE = self.root
+        self.addCleanup(self.restore_source)
+
+    def restore_source(self):
+        release.SOURCE = self.original_source
+
+    def git(self, *args):
+        return subprocess.check_output(['git', '-C', str(self.root), *args],
+                                       stderr=subprocess.PIPE).decode().strip()
+
+    def write(self, name, data):
+        path = self.root / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(data if isinstance(data, bytes) else data.encode())
+
+    def write_tree(self, containerfile, healthcheck):
+        self.write('package.json', '{}\n')
+        self.write('bun.lock', 'fixture lock\n')
+        self.write('tsconfig.json', '{}\n')
+        self.write('apps/api/package.json', '{"private": true}\n')
+        self.write('apps/web/package.json', '{"private": true}\n')
+        self.write('apps/web/index.html', '<div></div>\n')
+        self.write('apps/web/vite.config.ts', 'export default {};\n')
+        self.write('apps/api/src/database-identity.ts',
+                   'export const schemaVersion = 18;\n')
+        self.write('apps/api/src/backup.ts',
+                   'export const contract = "e4.1-v18";\n')
+        self.write('apps/api/src/contracts.json', '{}\n')
+        self.write('apps/web/src/main.ts', 'export const amount = 1;\n')
+        self.write('infra/Containerfile', containerfile)
+        self.write('infra/healthcheck.mjs', healthcheck)
+
+    def commit(self, message):
+        subprocess.check_call(['git', '-C', str(self.root), 'add', '--all'])
+        subprocess.check_call(['git', '-C', str(self.root), 'commit', '-qm', message])
+        return self.git('rev-parse', 'HEAD')
+
+    def age_archive(self):
+        buffer = io.BytesIO()
+        with tarfile.open(fileobj=buffer, mode='w:gz') as archive:
+            for name in ('age', 'age-keygen'):
+                data = b'#!/bin/sh\nexit 0\n'
+                entry = tarfile.TarInfo('age/' + name)
+                entry.size = len(data)
+                entry.mode = 0o755
+                archive.addfile(entry, io.BytesIO(data))
+        return buffer.getvalue()
+
+    def synthetic_release(self, source, recipe_sha, healthcheck_sha):
+        directory = self.home / ('release-' + release.sha(
+            (source + recipe_sha + healthcheck_sha).encode())[:16])
+        directory.mkdir()
+        (directory / 'frontend').mkdir()
+        archive = directory / 'image.oci.tar'
+        with tarfile.open(archive, 'w'):
+            pass
+        manifest = {
+            'inputs': {
+                'source': source,
+                'contracts': release.contracts_for(source),
+                'recipe_sha256': recipe_sha,
+                'healthcheck_sha256': healthcheck_sha,
+            },
+            'oci_archive_sha256': release.sha(archive.read_bytes()),
+            'frontend_files': {},
+        }
+        path = directory / 'manifest.json'
+        path.write_text(json.dumps(manifest, sort_keys=True))
+        return directory, release.sha(path.read_bytes())
+
+    def test_context_uses_selected_commit_not_builder_head(self):
+        target = self.home / 'context-a'
+        target.mkdir()
+        inputs = release.context(self.a, target, self.age)
+        release.check_context(target, inputs)
+        self.assertEqual(inputs['source'], self.a)
+        self.assertEqual(inputs['builder_source'], self.b)
+        self.assertEqual((target / 'Containerfile').read_bytes(), OLD_CONTAINERFILE)
+        self.assertEqual((target / 'healthcheck.mjs').read_bytes(), OLD_HEALTHCHECK)
+        self.assertEqual(inputs['recipe_sha256'],
+                         release.sha((target / 'Containerfile').read_bytes()))
+        self.assertEqual(inputs['healthcheck_sha256'],
+                         release.sha((target / 'healthcheck.mjs').read_bytes()))
+        # N1: pre-fix context materialized and hashed builder HEAD (commit B).
+        # These assertions turn red if that fallback returns.
+        self.assertNotEqual(inputs['recipe_sha256'], release.sha(NEW_CONTAINERFILE))
+        self.assertNotEqual(inputs['healthcheck_sha256'], release.sha(NEW_HEALTHCHECK))
+        self.assertNotEqual(inputs['recipe_sha256'],
+                            release.sha(release.source_bytes('HEAD', 'infra/Containerfile')))
+
+    def test_verify_rejects_builder_head_recipe_hash(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(NEW_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest)
+        self.assertIn('infra/Containerfile', str(caught.exception))
+        self.assertIn(self.a, str(caught.exception))
+
+    def test_verify_rejects_builder_head_healthcheck_hash(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(NEW_HEALTHCHECK))
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, self.a, digest)
+        self.assertIn('infra/healthcheck.mjs', str(caught.exception))
+        self.assertIn(self.a, str(caught.exception))
+
+    def test_verify_accepts_selected_commit_recipe_hashes(self):
+        directory, digest = self.synthetic_release(
+            self.a, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        manifest = release.verify(directory, self.a, digest)
+        self.assertEqual(manifest['inputs']['source'], self.a)
+
+    def missing_release_file(self, path, branch):
+        self.git('switch', '-q', '-c', branch, self.a)
+        (self.root / path).unlink()
+        commit = self.commit('missing ' + path)
+        target = self.home / ('context-' + branch)
+        target.mkdir()
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.context(commit, target, self.age)
+        message = str(caught.exception)
+        self.assertIn(path, message)
+        self.assertIn(commit, message)
+        self.assertEqual(list(target.iterdir()), [])
+        directory, digest = self.synthetic_release(
+            commit, release.sha(OLD_CONTAINERFILE), release.sha(OLD_HEALTHCHECK))
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.verify(directory, commit, digest)
+        message = str(caught.exception)
+        self.assertIn(path, message)
+        self.assertIn(commit, message)
+        return commit
+
+    def test_missing_containerfile_fails_closed_without_artifact(self):
+        self.missing_release_file('infra/Containerfile', 'without-containerfile')
+
+    def test_missing_healthcheck_fails_closed_without_artifact(self):
+        self.missing_release_file('infra/healthcheck.mjs', 'without-healthcheck')
+
+    def test_source_bytes_names_absent_path_and_commit(self):
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.source_bytes(self.a, 'infra/missing.txt')
+        message = str(caught.exception)
+        self.assertIn('infra/missing.txt', message)
+        self.assertIn(self.a, message)
+
+    def test_dirty_builder_is_still_rejected(self):
+        output = self.home / 'dirty-release'
+        (self.root / 'dirty.txt').write_text('uncommitted\n')
+        with self.assertRaises(release.ReleaseError) as caught:
+            release.build(output)
+        self.assertIn('clean checkout required', str(caught.exception))
+        self.assertFalse(output.exists())
+
+
+if __name__ == '__main__':
+    unittest.main(verbosity=2)

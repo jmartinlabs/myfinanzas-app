@@ -36,7 +36,16 @@ def run(args, timeout=600):
 
 
 def source_bytes(commit, path):
-    return run(['git', '-C', str(SOURCE), 'show', commit + ':' + path])
+    """Read a path from exactly the selected commit; never fall back to HEAD."""
+    value = subprocess.run(['git', '-C', str(SOURCE), 'show', commit + ':' + path],
+                           capture_output=True, timeout=600)
+    if value.returncode:
+        available = subprocess.run(['git', '-C', str(SOURCE), 'rev-parse', '--verify',
+                                    commit + '^{commit}'], capture_output=True, timeout=600)
+        if available.returncode:
+            raise ReleaseError(f'commit {commit} is not available')
+        raise ReleaseError(f'source file {path} is absent from commit {commit}')
+    return value.stdout
 
 
 def contracts_for(commit):
@@ -59,6 +68,11 @@ def files(commit, prefix):
 
 
 def context(commit, target, age_bytes):
+    # Recipe and healthcheck must come from the selected commit. Read them
+    # before writing anything so an absent file fails closed without artifacts.
+    containerfile = source_bytes(commit, 'infra/Containerfile')
+    healthcheck = source_bytes(commit, 'infra/healthcheck.mjs')
+    contracts = contracts_for(commit)
     paths = ['package.json', 'bun.lock', 'tsconfig.json', 'apps/api/package.json', 'apps/web/package.json',
              'apps/web/index.html', 'apps/web/vite.config.ts']
     # Runtime JSON manifests (for example the admitted schema contract) are
@@ -83,15 +97,16 @@ def context(commit, target, age_bytes):
             path = target / 'tools' / name
             path.write_bytes(archive.extractfile(entry).read())
             path.chmod(0o755)
+    (target / 'Containerfile').write_bytes(containerfile)
+    (target / 'healthcheck.mjs').write_bytes(healthcheck)
     inputs = {'source': commit, 'base': BASE, 'platform': 'linux/amd64', 'bun': '1.4.3',
-              'age': '1.3.2', 'age_archive_sha256': AGE_SHA, 'contracts': contracts_for(commit),
+              'age': '1.3.2', 'age_archive_sha256': AGE_SHA, 'contracts': contracts,
               'source_files': source_hashes, 'lock_sha256': source_hashes['bun.lock'],
-              'recipe_sha256': sha(source_bytes('HEAD', 'infra/Containerfile')),
+              'recipe_sha256': sha((target / 'Containerfile').read_bytes()),
+              'healthcheck_sha256': sha((target / 'healthcheck.mjs').read_bytes()),
+              # Builder metadata only: the checkout that produced this manifest.
+              # It is not a release source and never supplies the recipe above.
               'builder_source': run(['git', '-C', str(SOURCE), 'rev-parse', 'HEAD']).decode().strip()}
-    (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
-    (target / 'Containerfile').write_bytes(source_bytes('HEAD', 'infra/Containerfile'))
-    (target / 'healthcheck.mjs').write_bytes(source_bytes('HEAD', 'infra/healthcheck.mjs'))
-    inputs['healthcheck_sha256'] = sha((target / 'healthcheck.mjs').read_bytes())
     (target / 'release-inputs.json').write_text(json.dumps(inputs, sort_keys=True))
     return inputs
 
@@ -177,6 +192,12 @@ def verify(directory, expected_commit, expected_manifest):
     manifest = json.loads(manifest_path.read_text())
     if manifest['inputs']['source'] != expected_commit or manifest['inputs']['contracts'] != contracts_for(expected_commit):
         raise ReleaseError('source/contract mismatch')
+    # Recompute both recipe hashes from the expected commit; a manifest that
+    # carries builder-HEAD hashes for an older source must not be accepted.
+    for path, key in (('infra/Containerfile', 'recipe_sha256'),
+                      ('infra/healthcheck.mjs', 'healthcheck_sha256')):
+        if manifest['inputs'].get(key) != sha(source_bytes(expected_commit, path)):
+            raise ReleaseError(f'{key} mismatch for {path} at expected commit {expected_commit}')
     archive = directory / 'image.oci.tar'
     if archive.is_symlink() or sha(archive.read_bytes()) != manifest['oci_archive_sha256']:
         raise ReleaseError('OCI integrity mismatch')
