@@ -8,7 +8,7 @@ están cerrados y no se reabren.
 **Base:** `main` **`043869f`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
 decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
 (#200) con QA APTO CON RESERVAS; E4.10 con **SPEC28 ratificada**, **I1 integrado en `70fa7c0`**
-(v26/C26) e **I2 abierto en `5fa0a1e`** (no fusionado, 24 AC `UNRUN`); E4.11 con **SPEC29
+(v26/C26) e **I2 abierto en `6ec63f1`** (no fusionado, 24 AC `UNRUN`); E4.11 con **SPEC29
 DRAFT**, P1-C/P4-A/P5-B aprobadas y P2/P3/P6/P7/P8 pendientes, sin DEV.
 
 **Leyenda.** `[CONFIRMADO]` = regla de un documento aprobado, estado verificado en Git o hecho
@@ -113,7 +113,7 @@ reservados a entregas (`identifier-index.md:39-49`).
 | **Reutilización cruzada** | `Precierre` toma clases de Compartidos (`.shared-metrics`, `.metric`), así que rediseñar Compartidos altera precierre sin tocar su archivo | `Precierre.tsx:176-238`, `style.css:2029-2047` |
 | **Móvil** | El comportamiento está definido por CSS (una columna, menú desplegable, cabecera apilada), pero la carpeta de referencia entregada solo contiene capturas a 1440: **no hay revisión visual móvil en este artefacto** | `artifacts/ui-baseline/*-1440.png`, `style.css:918-1217` |
 | **Consistencia entre temas** | El tema claro usa un tinte de tarjeta «plan» (`#f2f0eb`) casi igual al fondo (`#f7f5f1`): la diferenciación depende del borde discontinuo; no hay matriz de evidencia de estados por tema | `themes.css:84,87,154,157`, captura `inicio-light-s-1440.png` |
-| **Identidad documentada** | `guidelines/ui.md` sigue describiendo la identidad verde `#8DBB2E`, fondo `#EEF7E8` y «tema únicamente claro»; la app usa teal/naranja y tres temas desde #198. Propuesta de actualización en [`ui-specification.md`](../ui-specification.md) §2.1, sin cambiar colores | `guidelines/ui.md:9-15,67-68,160-162` |
+| **Identidad documentada** | `guidelines/ui.md` fue actualizada el 2026-11-06: contrato vigente de tres temas, tokens, selector, tipografía y accesibilidad; la identidad verde `#8DBB2E`/`#EEF7E8` se conserva como referencia histórica. Sin cambios de colores | `guidelines/ui.md:3-46` |
 
 `[CONFIRMADO]` Ninguna carencia anterior exige recalcular una cifra ni cambiar una regla de
 negocio: todas son de presentación. Varias sí tocan decisiones de UX ya aprobadas (orden de
@@ -306,7 +306,7 @@ mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
 | Cierre / foto (E4.9) | Integrada en `0176ffc` (#200), QA APTO CON RESERVAS; UI de su SPEC27 | Consumir patrones de operación irreversible, confirmación y bloqueo ya aprobados | Reabrir rutas, contratos o estados de E4.9 |
 | `/deudas`, `/inversiones`, etc. (E1–E4.4) | Integradas, con UX aprobada por su spec | Pulido visual que no altere decisiones | Reabrir reglas o estados |
 | E4.7 | Integrada en `0e89562` (#210) | Pulido visual dentro de su contrato | Recalcular o reordenar cifras |
-| E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e`, no fusionado; 24 AC `UNRUN` | Patrón visual futuro de reapertura, sin clases ni rutas | Anticipar pantallas, estados persistidos o contratos de E4.10 |
+| E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1`, no fusionado; 24 AC `UNRUN` | Patrón visual futuro de reapertura, sin clases ni rutas | Anticipar pantallas, estados persistidos o contratos de E4.10 |
 | E4.11 | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV ni UI | Nada | Fijar pantallas antes de su SPEC |
 
 ### 7.2 Cómo evitar conflictos
@@ -390,5 +390,6 @@ modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
 **Cerradas (2026-11-05):** identificador `UI`; alternativa B; tres temas y paletas de #198;
 selector existente. No se reabren.
 
-**Pendientes:** aprobación formal de la SPEC; cinco pantallas de `DEV-06`; secuencia/paralelismo;
-matriz de evidencia; actualización de `guidelines/ui.md`; autorización separada de `UI · DEV-01`.
+**Aprobadas (2026-11-06):** UI · SPEC; cinco pantallas de `DEV-06`; secuencia/paralelismo;
+matriz de evidencia; actualización de `guidelines/ui.md`. **Autorizado por separado:** `UI · DEV-01`.
+`DEV-02…07` y sus merges no están autorizados.

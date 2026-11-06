@@ -29,7 +29,7 @@ código, componentes, CSS, temas, API, cálculos financieros ni datos reales.
 | CSS | `style.css`: **4.784 líneas**, 1 hex de fallback (`var(--warning, #6b5412)`), 41 nombres `var(--…)` usados (incluye alias locales); de los 66 tokens definidos, 30 sin uso; 0 usos de `var(--space)`. |
 | E4.6 | Integrada `cfbedb0` (#201); UX de Inicio aprobada en SPEC24. |
 | E4.9 | Integrada `0176ffc` (#200); QA APTO CON RESERVAS; UI y contratos de cierre existen. |
-| E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |
+| E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |
 | E4.11 | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV ni UI. |
 | `guidelines/ui.md` | Actualizada el 2026-11-06 con el contrato vigente de tres temas, tokens, selector, tipografía, shell y accesibilidad; historial y paleta histórica preservados. |
 
@@ -88,7 +88,7 @@ No cambia CSS, componentes, paletas, tokens, selector ni comportamiento.
 | --- | --- | --- | --- |
 | E4.6 / `/inicio` | Integrada `cfbedb0` (#201); SPEC24 aprobada | Estructura, cifras y estados de Inicio | No reordenar secciones ni cambiar cifras/estados |
 | E4.9 / cierre y foto | Integrada `0176ffc` (#200), QA APTO CON RESERVAS | Patrones de operación irreversible y bloqueo | No reabrir rutas, contratos ni estados |
-| E4.10 / reapertura | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e`, no fusionado; 24 AC `UNRUN` | Patrón futuro de reapertura/reapertura cancelada | No anticipar pantallas, clases ni rutas de E4.10 hasta su UI |
+| E4.10 / reapertura | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `6ec63f1`, no fusionado; 24 AC `UNRUN` | Patrón futuro de reapertura/reapertura cancelada | No anticipar pantallas, clases ni rutas de E4.10 hasta su UI |
 | E4.11 / fotos periodo | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV | Contexto de consulta | No fijar pantallas antes de su SPEC |
 | Temas #198 | Cerrado `0b8aade` | Tokens y selector | No cambiar colores ni temas |
 
