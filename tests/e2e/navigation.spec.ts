@@ -12,7 +12,7 @@ import { totp } from "../../apps/api/src/auth";
  * que el menú móvil funciona con teclado. El servidor es aislado y ficticio.
  */
 
-const API_PORT = 3018;
+const API_PORT = 3023;
 const DIR = ".local/e2e-navigation";
 let child: ReturnType<typeof spawn> | undefined;
 
@@ -130,6 +130,24 @@ test("UI · DEV-03: 23 enlaces, grupos, activo, títulos y menú móvil accesibl
   expect([...hrefs].sort()).toEqual([...EXPECTED_HREFS].sort());
   expect(hrefs).not.toContain("/");
   expect(hrefs).not.toContain("/saldos/nuevo");
+
+  const expectedGroups = [
+    ["Mi espacio", ["/inicio", "/flujo-mensual", "/pendientes", "/anticipos", "/compartidos"]],
+    ["Patrimonio", ["/saldos", "/clasificacion/partidas", "/inversiones", "/deudas", "/vehiculos", "/referencias"]],
+    ["Operación", ["/movimientos", "/ciclos", "/precierre", "/cierre"]],
+    ["Planificación", ["/dprima", "/comida", "/revision-comida", "/planes-ciclo", "/nomina", "/plan-anual", "/resumen-anual", "/presupuestos"]],
+  ];
+  const sections = nav.locator(".nav-section");
+  expect(await sections.count()).toBe(expectedGroups.length);
+  for (const [index, [label, expected]] of expectedGroups.entries()) {
+    const section = sections.nth(index);
+    await expect(section.locator(".nav-group")).toHaveText(label);
+    expect(
+      await section.locator("a").evaluateAll((links) =>
+        links.map((link) => link.getAttribute("href")),
+      ),
+    ).toEqual(expected);
+  }
 
   // Cuatro grupos de dominio con etiquetas estables.
   for (const group of ["Mi espacio", "Patrimonio", "Operación", "Planificación"])

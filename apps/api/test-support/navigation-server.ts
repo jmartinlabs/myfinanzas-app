@@ -19,7 +19,7 @@ writeFileSync(dir + "/bootstrap.txt", provision(db), { mode: 0o600 });
 BunRuntime.runMain(
   Layer.launch(
     HttpServer.serve(createApp(db, { key, origin: process.env.E2E_APP_ORIGIN ?? "http://127.0.0.1:5173" })).pipe(
-      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3018 })),
+      Layer.provide(BunHttpServer.layer({ hostname: "127.0.0.1", port: 3023 })),
     ),
   ),
 );
