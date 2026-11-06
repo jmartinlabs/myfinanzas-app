@@ -5,7 +5,7 @@ Specification: [29-e411-fotografias-specification.md](29-e411-fotografias-specif
 Status: **DRAFT — decisiones funcionales aprobadas; pendiente aprobación formal; no autoriza DEV ni merge. Todos los AC `UNRUN`.**
 No hay implementación, endpoints, migración, CI ni datos reales. Las decisiones M1–M6 están
 aprobadas: P1-C/P4-A/P5-B, P2-A, P3-B, P6-A, P7-D y P8a-A/P8b-A (2026-11-06).
-Base: `main` `025adf8` (2026-11-06); E4.9 `0176ffc`; E4.10 I1–I4 integrados e I5 en PR.
+Base: `main` `756e1e9` (2026-11-06); E4.9 `0176ffc`; E4.10 I1–I5 integrados.
 
 Este testplan no declara PASS. La política de composición queda fijada por las decisiones
 aprobadas; no se reinterpreta en la ejecución.
@@ -91,5 +91,5 @@ Los fixtures no acreditan DT6 ni DT7.
 
 - Ningún AC ejecutado; las decisiones funcionales están aprobadas y el diseño queda fijado.
 - La política de agregación y la versión canónica están fijadas por M1–M6 aprobadas.
-- E4.9/E4.10 I1–I4 están integrados; I5 sigue en PR. Los fixtures de v1/v2 pueden construirse.
+- E4.9/E4.10 I1–I5 están integrados; los fixtures de v1/v2 pueden construirse.
 - Próxima acción independiente: aprobación formal de SPEC29 y testplan; después, autorización DEV separada.
