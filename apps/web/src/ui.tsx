@@ -110,6 +110,181 @@ export function TableScroll({
   );
 }
 
+/** Rol de presentación de una columna compartida por tabla y tarjetas. */
+export type TableColumnKind = "text" | "amount" | "status" | "actions";
+
+/**
+ * Definición única de una columna.
+ *
+ * `Table` la usa para la cabecera y la celda de escritorio; `DataList` usa la
+ * misma definición para la etiqueta y el valor de cada tarjeta móvil, de modo
+ * que la paridad no depende de mantener dos JSX a mano. `card: "hidden"` solo
+ * omite la columna de las tarjetas: nunca elimina información de la tabla.
+ */
+export type TableColumn<Row> = {
+  id: string;
+  header: ReactNode;
+  /** Etiqueta de la tarjeta móvil; si falta se usa `header` o `id`. */
+  label?: string;
+  kind?: TableColumnKind;
+  /** Ancho opcional de la columna (se aplica a su `th`). */
+  width?: string;
+  card?: "hidden";
+  cell: (row: Row, index: number) => ReactNode;
+};
+
+function tableColumnLabel<Row>(column: TableColumn<Row>): string {
+  if (column.label) return column.label;
+  if (typeof column.header === "string") return column.header;
+  return column.id;
+}
+
+function cellClass(kind: TableColumnKind | undefined): string | undefined {
+  return kind === "amount" ? "ui-table-amount" : undefined;
+}
+
+export type TableProps<Row> = {
+  /** Texto accesible de la tabla; por defecto se oculta visualmente. */
+  caption: ReactNode;
+  /** Nombre de la región desplazable de `TableScroll`. */
+  label: string;
+  columns: ReadonlyArray<TableColumn<Row>>;
+  rows: ReadonlyArray<Row>;
+  rowKey?: (row: Row, index: number) => string | number;
+  /** Muestra el `caption` a la vista en lugar de ocultarlo. */
+  captionVisible?: boolean;
+  empty?: ReactNode;
+  /** Clases del contenedor interno; conserva hooks como `desktop-list`. */
+  className?: string;
+};
+
+/** Tabla de escritorio con cabecera, importes alineados y scroll rotulado. */
+export function Table<Row>({
+  caption,
+  label,
+  columns,
+  rows,
+  rowKey,
+  captionVisible = false,
+  empty = "Sin datos",
+  className,
+}: TableProps<Row>) {
+  return (
+    <TableScroll label={label}>
+      <div className={`ui-table-wrap${className ? ` ${className}` : ""}`}>
+        <table className="ui-table">
+          <caption
+            className={`ui-table-caption${captionVisible ? "" : " sr-only"}`}
+          >
+            {caption}
+          </caption>
+          <thead>
+            <tr>
+              {columns.map((column) => (
+                <th
+                  key={column.id}
+                  scope="col"
+                  className={cellClass(column.kind)}
+                  data-kind={column.kind ?? "text"}
+                  style={column.width ? { width: column.width } : undefined}
+                >
+                  {column.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td className="ui-table-empty" colSpan={columns.length}>
+                  {empty}
+                </td>
+              </tr>
+            ) : (
+              rows.map((row, index) => (
+                <tr key={rowKey ? rowKey(row, index) : index}>
+                  {columns.map((column) => (
+                    <td
+                      key={column.id}
+                      className={cellClass(column.kind)}
+                      data-kind={column.kind ?? "text"}
+                    >
+                      {column.cell(row, index)}
+                    </td>
+                  ))}
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </TableScroll>
+  );
+}
+
+export type DataListProps<Row> = {
+  columns: ReadonlyArray<TableColumn<Row>>;
+  rows: ReadonlyArray<Row>;
+  rowKey?: (row: Row, index: number) => string | number;
+  /** Nombre accesible opcional de la lista de tarjetas. */
+  label?: string;
+  empty?: ReactNode;
+  /** Clases de la lista; conserva hooks como `mobile-list`. */
+  className?: string;
+};
+
+/**
+ * Tarjetas móviles generadas desde las mismas columnas que `Table`.
+ *
+ * Cada campo expone `data-label` y su etiqueta visible. Las columnas
+ * `card: "hidden"` no se muestran aquí, pero sí permanecen en la tabla.
+ */
+export function DataList<Row>({
+  columns,
+  rows,
+  rowKey,
+  label,
+  empty = "Sin datos",
+  className,
+}: DataListProps<Row>) {
+  const cardColumns = columns.filter((column) => column.card !== "hidden");
+
+  return (
+    <ul
+      className={`ui-data-list${className ? ` ${className}` : ""}`}
+      aria-label={label}
+    >
+      {rows.length === 0 ? (
+        <li className="ui-data-list-empty">{empty}</li>
+      ) : (
+        rows.map((row, index) => (
+          <li
+            key={rowKey ? rowKey(row, index) : index}
+            className="ui-data-list-item"
+          >
+            {cardColumns.map((column) => {
+              const fieldLabel = tableColumnLabel(column);
+              return (
+                <div
+                  key={column.id}
+                  className="ui-data-list-field"
+                  data-kind={column.kind ?? "text"}
+                  data-label={fieldLabel}
+                >
+                  <span className="ui-data-list-label">{fieldLabel}</span>
+                  <div className="ui-data-list-value">
+                    {column.cell(row, index)}
+                  </div>
+                </div>
+              );
+            })}
+          </li>
+        ))
+      )}
+    </ul>
+  );
+}
+
 export type AmountState =
   | "Verificado"
   | "Cero verificado"
