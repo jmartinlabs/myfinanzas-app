@@ -32,6 +32,14 @@ import { decimal } from "./saldos";
  * then removes the singleton `reapertura_activa` row. Any failure rolls the
  * whole transaction back and leaves the cycle `Reabierto(vN)`.
  *
+ * Known limits documented by QA:
+ * - F2: the material comparison is intentionally conservative. Audited changes
+ *   on material sources force `vN+1` even when the final state is equal; false
+ *   positives are accepted because they only cost a new photo, never data.
+ * - F3: concurrency tests use two real processes but no deterministic barrier;
+ *   they prove SQLite IMMEDIATE serialisation and one-winner/one-replay, not a
+ *   forced interleaving at a precise instruction.
+ *
  * Fingerprint C2 (DT-C): content + coherence + origin `{ciclo, versionOrigen}`
  * plus the I3 revalidation fingerprint. Motive and actor are immutable
  * metadata/audit, not part of the fingerprint. The revalidation evidence is
@@ -561,11 +569,67 @@ function movementAuditChanges(
  * covers investment operations/instruments and the auxiliary sources captured
  * by the photo (anticipos, compartidos, revisión de comida, nómina and deuda).
  */
+function refsFromRows(value: unknown, field: string): string[] {
+  const rows = asArray(value);
+  if (!rows) return [];
+  const refs = new Set<string>();
+  for (const row of rows) {
+    const record = asRecord(row);
+    if (record && typeof record[field] === "string")
+      refs.add(record[field] as string);
+  }
+  return [...refs];
+}
+
+function auditPagaRefs(paga: string | null, delta: unknown): string[] {
+  const refs = new Set<string>();
+  if (paga) refs.add(paga);
+  const visit = (input: unknown, depth: number) => {
+    if (depth > 3) return;
+    if (Array.isArray(input)) {
+      for (const item of input) visit(item, depth + 1);
+      return;
+    }
+    const record = asRecord(input);
+    if (!record) return;
+    if (typeof record.paga === "string") refs.add(record.paga);
+    // `guardar`/`resolver` audit rows identify the pay in delta.campos[].id.
+    if (Array.isArray(record.campos))
+      for (const entry of record.campos) {
+        const item = asRecord(entry);
+        if (item && typeof item.id === "string") refs.add(item.id);
+      }
+    for (const value of Object.values(record)) visit(value, depth + 1);
+  };
+  visit(delta, 0);
+  return [...refs];
+}
+
+/** Collects `movimiento` ids from direct or nested audit payloads. */
+function auditMovementRefs(value: unknown): string[] {
+  const refs = new Set<string>();
+  const visit = (input: unknown, depth: number) => {
+    if (depth > 4) return;
+    if (Array.isArray(input)) {
+      for (const item of input) visit(item, depth + 1);
+      return;
+    }
+    const record = asRecord(input);
+    if (!record) return;
+    if (typeof record.movimiento === "string") refs.add(record.movimiento);
+    for (const value of Object.values(record)) visit(value, depth + 1);
+  };
+  visit(value, 0);
+  return [...refs];
+}
+
 function sourceAuditChanges(
   db: Database,
   inicio: string,
   fin: string,
   reopeningUtc: string,
+  versionOrigen: number,
+  capture: CaptureCierre,
 ): MaterialComparison | null {
   const cycleMovements = new Set<string>();
   try {
@@ -582,6 +646,93 @@ function sourceAuditChanges(
       ],
     };
   }
+
+  // Material entities captured by vN and by the live capture. These references
+  // survive deletion of the current attribution row and let audit rows without
+  // a `movimiento` payload link back to the cycle (F1 compartidos/anticipos).
+  let storedAux: Record<string, unknown> = {};
+  try {
+    const row = db
+      .query(
+        "SELECT auxiliares FROM fotos_cierre WHERE ciclo=? AND version=?",
+      )
+      .get(capture.ciclo.id, versionOrigen) as { auxiliares: string } | null;
+    if (!row) throw new Error("missing");
+    const parsed = JSON.parse(row.auxiliares);
+    storedAux = asRecord(parsed) ?? {};
+    if (!asRecord(parsed)) throw new Error("not object");
+  } catch {
+    return {
+      estado: "NoVerificable",
+      bloques: ["auxiliares"],
+      motivos: [
+        `No se pudo leer la foto v${versionOrigen}; no se acredita la ausencia de cambios.`,
+      ],
+    };
+  }
+  const liveAux = asRecord(capture.payload.auxiliares) ?? {};
+  const attributionRefs = new Map<"anticipos" | "compartidos", Set<string>>([
+    [
+      "anticipos",
+      new Set([
+        ...refsFromRows(storedAux.anticipos, "referencia"),
+        ...refsFromRows(liveAux.anticipos, "referencia"),
+      ]),
+    ],
+    [
+      "compartidos",
+      new Set([
+        ...refsFromRows(storedAux.compartidos, "referencia"),
+        ...refsFromRows(liveAux.compartidos, "referencia"),
+      ]),
+    ],
+  ]);
+  const cyclePagas = new Set([
+    ...refsFromRows(storedAux.nomina, "paga"),
+    ...refsFromRows(liveAux.nomina, "paga"),
+  ]);
+  try {
+    const rows = db
+      .query(
+        `SELECT DISTINCT p.paga FROM payroll_allocations p
+         JOIN movimientos m ON m.id=p.movimiento
+         WHERE m.fecha BETWEEN ? AND ?`,
+      )
+      .all(inicio, fin) as { paga: string }[];
+    for (const row of rows) cyclePagas.add(row.paga);
+  } catch {
+    return {
+      estado: "NoVerificable",
+      bloques: ["auxiliares"],
+      motivos: [
+        "No se pudieron leer las asignaciones de nómina; no se acredita la ausencia de cambios.",
+      ],
+    };
+  }
+  try {
+    const rows = db
+      .query(
+        `SELECT DISTINCT m.referencia,r.tipo FROM movimientos m
+         JOIN referencias r ON r.id=m.referencia
+         WHERE m.fecha BETWEEN ? AND ? AND m.referencia IS NOT NULL`,
+      )
+      .all(inicio, fin) as { referencia: string; tipo: string }[];
+    for (const row of rows) {
+      if (row.tipo === "Anticipo")
+        attributionRefs.get("anticipos")!.add(row.referencia);
+      if (row.tipo === "Gasto compartido")
+        attributionRefs.get("compartidos")!.add(row.referencia);
+    }
+  } catch {
+    return {
+      estado: "NoVerificable",
+      bloques: ["auxiliares"],
+      motivos: [
+        "No se pudieron leer las referencias de los movimientos; no se acredita la ausencia de cambios.",
+      ],
+    };
+  }
+
   const checks: {
     bloque: "inversion" | "auxiliares";
     label: string;
@@ -638,24 +789,25 @@ function sourceAuditChanges(
   }
 
   // Attribution audits can outlive the current `movimiento_anticipo` /
-  // `movimiento_compartido` row: removing the attribution deletes the row, so
-  // the audit must be linked by its own anterior/posterior content instead of
-  // a current FK. This is the F1 failure: retirar atribución -> revertir.
+  // `movimiento_compartido` row. Link by payload movement when present, and by
+  // reference against the material entities captured by vN/live capture when
+  // the payload has no movement (F1).
   const attributionChecks = [
     {
-      label: "anticipos",
-      sql: `SELECT id,anterior,posterior FROM anticipo_audit
+      key: "anticipos" as const,
+      sql: `SELECT id,referencia,anterior,posterior FROM anticipo_audit
             WHERE instante > ?`,
     },
     {
-      label: "compartidos",
-      sql: `SELECT id,anterior,posterior FROM compartido_audit
+      key: "compartidos" as const,
+      sql: `SELECT id,referencia,anterior,posterior FROM compartido_audit
             WHERE instante > ?`,
     },
-  ] as const;
+  ];
   for (const check of attributionChecks) {
     let rows: {
       id: number;
+      referencia: string;
       anterior: string | null;
       posterior: string;
     }[];
@@ -666,12 +818,17 @@ function sourceAuditChanges(
         estado: "NoVerificable",
         bloques: ["auxiliares"],
         motivos: [
-          `No se pudo leer la auditoría de ${check.label}; no se acredita la ausencia de cambios.`,
+          `No se pudo leer la auditoría de ${check.key}; no se acredita la ausencia de cambios.`,
         ],
       };
     }
+    const refs = attributionRefs.get(check.key)!;
     let changed = false;
     for (const row of rows) {
+      if (refs.has(row.referencia)) {
+        changed = true;
+        break;
+      }
       for (const raw of [row.anterior, row.posterior]) {
         if (raw === null) continue;
         let parsed: unknown;
@@ -682,7 +839,7 @@ function sourceAuditChanges(
             estado: "NoVerificable",
             bloques: ["auxiliares"],
             motivos: [
-              `La auditoría de ${check.label} no es legible; no se acredita la ausencia de cambios.`,
+              `La auditoría de ${check.key} no es legible; no se acredita la ausencia de cambios.`,
             ],
           };
         }
@@ -693,12 +850,13 @@ function sourceAuditChanges(
       }
       if (changed) break;
     }
-    if (changed) found.push({ bloque: "auxiliares", label: check.label });
+    if (changed) found.push({ bloque: "auxiliares", label: check.key });
   }
 
-  // `repartir` writes payroll_audit with paga=NULL; the allocation delta is
-  // the only link to the cycle movement. A repartir/revertir therefore must be
-  // detected from delta.asignaciones, not from payroll_audit.paga.
+  // Every payroll audit action after the reopening is inspected, not only
+  // `repartir`: `guardar`/`resolver` identify the pay in `paga`/delta.campos,
+  // and allocation deltas identify the cycle movement. A pay that is used by a
+  // cycle allocation is material to the photo even when no allocation changed.
   let payrollRows: { id: number; paga: string | null; delta: string }[];
   try {
     payrollRows = db
@@ -727,20 +885,17 @@ function sourceAuditChanges(
         ],
       };
     }
-    const record = asRecord(delta);
-    if (record?.accion !== "repartir") continue;
-    if (!Array.isArray(record.asignaciones))
+    if (!asRecord(delta))
       return {
         estado: "NoVerificable",
         bloques: ["auxiliares"],
         motivos: [
-          "La auditoría de reparto de nómina no contiene asignaciones legibles.",
+          "La auditoría de nómina no contiene un delta legible.",
         ],
       };
     if (
-      auditMovementRefs(record.asignaciones).some((id) =>
-        cycleMovements.has(id),
-      )
+      auditMovementRefs(delta).some((id) => cycleMovements.has(id)) ||
+      auditPagaRefs(row.paga, delta).some((id) => cyclePagas.has(id))
     ) {
       payrollChanged = true;
       break;
@@ -757,25 +912,6 @@ function sourceAuditChanges(
         `La auditoría registra una revisión posterior a la reapertura en ${entry.label}.`,
     ),
   };
-}
-
-/** Collects `movimiento` ids from direct or nested audit payloads. */
-function auditMovementRefs(value: unknown): string[] {
-  const refs = new Set<string>();
-  const visit = (input: unknown, depth: number) => {
-    if (depth > 3) return;
-    if (Array.isArray(input)) {
-      for (const item of input) visit(item, depth + 1);
-      return;
-    }
-    const record = asRecord(input);
-    if (!record) return;
-    if (typeof record.movimiento === "string") refs.add(record.movimiento);
-    for (const key of ["antes", "despues"] as const)
-      if (key in record) visit(record[key], depth + 1);
-  };
-  visit(value, 0);
-  return [...refs];
 }
 
 /**
@@ -949,6 +1085,8 @@ export function compareMaterial(
               capture.payload.ventana.inicio,
               capture.payload.ventana.fin,
               reopeningUtc,
+              versionOrigen,
+              capture,
             )
           : null,
         revisionBumpChanges(db, ciclo, versionOrigen, capture),

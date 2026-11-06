@@ -355,27 +355,32 @@ function payrollChange(
   );
 }
 
+function payrollPaga(overrides: Record<string, unknown> = {}) {
+  return {
+    mes: "2026-01",
+    tipo: "Ordinaria",
+    guardia: "No",
+    devengo: "1500",
+    base: "1500",
+    irpf: "10",
+    variable: "0",
+    historico: "1500",
+    documentado: null,
+    evidencia: "fixture-nomina-i4",
+    evidenciaDocumentado: "",
+    verificado: true,
+    documentadoVerificado: false,
+    nota: "Ficticio I4",
+    ...overrides,
+  };
+}
+
 function seedPayroll(db: Database) {
   const created = payrollChange(
     db,
     {
       accion: "guardar",
-      paga: {
-        mes: "2026-01",
-        tipo: "Ordinaria",
-        guardia: "No",
-        devengo: "1500",
-        base: "1500",
-        irpf: "10",
-        variable: "0",
-        historico: "1500",
-        documentado: null,
-        evidencia: "fixture-nomina-i4",
-        evidenciaDocumentado: "",
-        verificado: true,
-        documentadoVerificado: false,
-        nota: "Ficticio I4",
-      },
+      paga: payrollPaga(),
     },
     now,
   );
@@ -408,6 +413,37 @@ function seedAnticipoAttribution(
   };
   storeAnticipo(db, input.movimiento, attribution, now);
   return attribution;
+}
+
+function seedCompartidoReference(db: Database, referencia: string) {
+  db.run(
+    `INSERT INTO referencias(id,nombre,tipo,estado,revision,creado,actualizado)
+     VALUES(?, 'Compartido sintético I4', 'Gasto compartido', 'Activa', 1, ?, ?)`,
+    [referencia, stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO fichas_compartidos(referencia,revision,creado,actualizado)
+     VALUES(?,1,?,?)`,
+    [referencia, stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO participantes_compartido(id,referencia,nombre,rol,partes,
+       estado,revision,creado,actualizado)
+     VALUES('CP9001',?,'Tercero I4','Tercero',50,'Activa',1,?,?)`,
+    [referencia, stamp, stamp],
+  );
+}
+
+function seedCompartidoAttribution(
+  db: Database,
+  input: { movimiento: string; referencia: string },
+) {
+  db.run(
+    `INSERT INTO movimiento_compartido(movimiento,referencia,participante,
+       evidencia,procedencia,revision_movimiento,revision,creado,actualizado)
+     VALUES(?,?,'CP9001','fixture compartido I4','Registro del titular',1,1,?,?)`,
+    [input.movimiento, input.referencia, stamp, stamp],
+  );
 }
 
 function seedClosure(
@@ -1235,6 +1271,98 @@ test("E4.10 I4: retirar y reponer una atribución de anticipo no es SIN_CAMBIOS"
     expect(pre.comparacion.estado).toBe("ConCambios");
     expect(pre.comparacion.bloques).toContain("auxiliares");
     expect(pre.comparacion.motivos.join(" ")).toContain("anticipos");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: una acción de nómina no-repartir sobre un movimiento del ciclo no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    const paga = seedPayroll(db);
+    seedMovement(db, {
+      id: "8602",
+      tipo: "Ingreso",
+      subtipo: "Nómina",
+      importe: 150000,
+    });
+    payrollChange(
+      db,
+      {
+        accion: "repartir",
+        movimiento: "8602",
+        asignaciones: [
+          { paga: paga.id, importe: "1000", evidencia: "reparto I4" },
+        ],
+      },
+      now,
+    );
+    closeV1(db);
+    reopen(db);
+    payrollChange(
+      db,
+      {
+        accion: "guardar",
+        id: paga.id,
+        paga: payrollPaga({ nota: "nota cambiada I4" }),
+      },
+      now + 2_000,
+    );
+    const audit = db
+      .query(
+        "SELECT paga,delta FROM payroll_audit WHERE instante>? ORDER BY id DESC LIMIT 1",
+      )
+      .get(new Date(now + 1_000).toISOString()) as {
+      paga: string | null;
+      delta: string;
+    };
+    expect(audit.paga).toBe(paga.id);
+    expect(JSON.parse(audit.delta).accion).toBe("guardar");
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    expect(pre.comparacion.motivos.join(" ")).toContain("nómina");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: auditoría de compartido sin movimiento en payload no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    const referencia = "REF9002";
+    seedCompartidoReference(db, referencia);
+    seedMovement(db, {
+      id: "8701",
+      tipo: "Transferencia",
+      importe: 500,
+      referencia,
+    });
+    seedCompartidoAttribution(db, {
+      movimiento: "8701",
+      referencia,
+    });
+    closeV1(db);
+    reopen(db);
+    db.run(
+      `INSERT INTO compartido_audit(referencia,accion,anterior,posterior,
+         motivo,instante,actor)
+       VALUES(?,'edición',?,?,NULL,?,'usuario-unico')`,
+      [
+        referencia,
+        JSON.stringify({ nota: "a" }),
+        JSON.stringify({ nota: "b" }),
+        new Date(now + 2_000).toISOString(),
+      ],
+    );
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    expect(pre.comparacion.motivos.join(" ")).toContain("compartidos");
     const result = reclose(db, pre);
     expect(result.foto.version).toBe(2);
   } finally {
