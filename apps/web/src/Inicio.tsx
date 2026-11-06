@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { api, ApiError } from "./api";
-import { Alert, PageHead } from "./ui";
+import { formatDecimal } from "./format";
+import { Alert, Amount, Badge, Metric, PageHead, Skeleton } from "./ui";
 
 /**
  * E4.6 — Resumen de inicio.
@@ -339,18 +340,7 @@ const CLASE_META: Record<string, string> = {
   informativo: "INFORMATIVO",
 };
 
-/** Formatea una cadena decimal exacta sin convertirla a número. */
-function formatDecimal(value: string, unidad: "EUR" | "meses" | null) {
-  const negative = value.startsWith("-");
-  const raw = negative ? value.slice(1) : value;
-  const [whole, fraction = ""] = raw.split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  const decimals = fraction.padEnd(2, "0").slice(0, 2);
-  const text = `${grouped},${decimals}`;
-  const signed = negative ? `−${text}` : text;
-  return unidad === "meses" ? `${signed} meses` : `${signed} €`;
-}
-
+/** Formatea una fecha ISO como dd/mm/aaaa. */
 function formatDate(value: string | null) {
   if (value === null) return "No disponible";
   const [year, month, day] = value.split("-");
@@ -378,27 +368,6 @@ function coverageText(cobertura: Cobertura) {
   return `${cobertura.incluidos}/${total} · incluidos ${cobertura.incluidos} · excluidos ${cobertura.excluidos}`;
 }
 
-function Badge({
-  tone,
-  label,
-  icon,
-  estado,
-}: {
-  tone: "ok" | "partial" | "nd";
-  label: string;
-  icon: string;
-  estado: string;
-}) {
-  return (
-    <span
-      className={`inicio-estado inicio-estado-${tone}`}
-      data-estado={estado}
-    >
-      <span aria-hidden="true">{icon}</span> {label}
-    </span>
-  );
-}
-
 function EstadoBadge({
   estado,
   label,
@@ -413,6 +382,7 @@ function EstadoBadge({
       label={label ?? meta.label}
       icon={meta.icon}
       estado={estado}
+      kind="estado"
     />
   );
 }
@@ -420,68 +390,6 @@ function EstadoBadge({
 /** Badge único para estados de cobertura publicados como texto por el motor. */
 function CoberturaBadge({ valor }: { valor: string }) {
   return <EstadoBadge estado={estadoDesdeCobertura(valor)} />;
-}
-
-function AmountValue({
-  valor,
-  subtotal,
-  estado,
-  unidad,
-}: {
-  valor: string | null;
-  subtotal: string | null;
-  estado: EstadoMetrica;
-  unidad: "EUR" | "meses" | null;
-}) {
-  if (estado === "No aplica" || estado === "Sin datos")
-    return (
-      <span className="inicio-value inicio-value-nd">
-        {estado === "No aplica" ? "No aplica" : "Sin datos"}
-      </span>
-    );
-  if (estado === "No disponible")
-    return (
-      <span className="inicio-value-wrap">
-        <small className="inicio-value-note">No disponible</small>
-        <span className="inicio-value inicio-value-nd">ND</span>
-        {subtotal != null && (
-          <small className="inicio-value-note">
-            Subtotal conocido {formatDecimal(subtotal, unidad)}
-          </small>
-        )}
-      </span>
-    );
-  const nota =
-    estado === "Parcial"
-      ? "Subtotal conocido"
-      : estado === "Cero verificado"
-        ? "Cero verificado"
-        : "Total verificado";
-  const mostrado =
-    estado === "Parcial" ? (subtotal ?? valor) : (valor ?? subtotal);
-  return (
-    <span className="inicio-value-wrap">
-      <small className="inicio-value-note">{nota}</small>
-      {mostrado === null ? (
-        <span className="inicio-value inicio-value-nd">ND</span>
-      ) : (
-        <span className="inicio-value">
-          {formatDecimal(mostrado, unidad)}
-        </span>
-      )}
-    </span>
-  );
-}
-
-function MetricValue({ metrica }: { metrica: Metrica }) {
-  return (
-    <AmountValue
-      valor={metrica.valor}
-      subtotal={metrica.subtotal ?? null}
-      estado={metrica.estado}
-      unidad={metrica.unidad}
-    />
-  );
 }
 
 function InicioLink({
@@ -554,21 +462,22 @@ function MetricCard({
     metrica.cobertura,
   );
   return (
-    <article
+    <Metric
+      title={metrica.etiqueta}
+      clase={CLASE_META[metrica.clase] ?? metrica.clase}
+      dataClase={metrica.clase}
+      ariaLabel={metrica.etiqueta}
       className="inicio-metric"
-      data-clase={metrica.clase}
-      aria-label={metrica.etiqueta}
+      amount={
+        <Amount
+          value={metrica.valor}
+          subtotal={metrica.subtotal ?? null}
+          state={metrica.estado}
+          unit={metrica.unidad}
+        />
+      }
+      badge={<EstadoBadge estado={metrica.estado} label={parcial} />}
     >
-      <div className="inicio-metric-head">
-        <h3>{metrica.etiqueta}</h3>
-        <span className="inicio-clase">
-          {CLASE_META[metrica.clase] ?? metrica.clase}
-        </span>
-      </div>
-      <div className="inicio-metric-main">
-        <MetricValue metrica={metrica} />
-        <EstadoBadge estado={metrica.estado} label={parcial} />
-      </div>
       <p className="inicio-metric-meta">{coverageText(metrica.cobertura)}</p>
       {motivos.length > 0 && (
         <ul className="inicio-metric-coverage">
@@ -587,7 +496,7 @@ function MetricCard({
           </InicioLink>
         </p>
       )}
-    </article>
+    </Metric>
   );
 }
 
@@ -625,16 +534,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
           title="Inicio"
           description="Componiendo cifras publicadas por sus motores…"
         />
-        <div
-          className="inicio-skeleton"
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <span className="inicio-skeleton-line" />
-          <span className="inicio-skeleton-line" />
-          <span className="inicio-skeleton-line short" />
-        </div>
+        <Skeleton label="Cargando el resumen de inicio" />
       </div>
     );
 
@@ -841,24 +741,22 @@ export function Inicio({ go }: { go: (path: string) => void }) {
 
         <section className="panel inicio-section" aria-labelledby="inicio-objetivo">
           <h2 id="inicio-objetivo">Objetivo R6</h2>
-          <article
+          <Metric
+            title="Coste esencial mensual"
+            clase="OBJETIVO"
+            dataClase="objetivo"
+            ariaLabel="Objetivo R6"
             className="inicio-metric inicio-objetivo"
-            data-clase="objetivo"
-            aria-label="Objetivo R6"
-          >
-            <div className="inicio-metric-head">
-              <h3>Coste esencial mensual</h3>
-              <span className="inicio-clase">OBJETIVO</span>
-            </div>
-            <div className="inicio-metric-main">
-              <AmountValue
-                valor={coste.valor}
+            amount={
+              <Amount
+                value={coste.valor}
                 subtotal={coste.subtotal}
-                estado={costeEstadoValor}
-                unidad="EUR"
+                state={costeEstadoValor}
+                unit="EUR"
               />
-              <CoberturaBadge valor={coste.cobertura.estado} />
-            </div>
+            }
+            badge={<CoberturaBadge valor={coste.cobertura.estado} />}
+          >
             <p className="inicio-metric-meta">
               Ejercicio {objetivo.costeEsencialMensual.ejercicio ?? "—"} ·
               origen {objetivo.costeEsencialMensual.ejercicioOrigen} ·
@@ -901,7 +799,12 @@ export function Inicio({ go }: { go: (path: string) => void }) {
             <div className="inicio-submetric">
               <h4>Mínimo objetivo</h4>
               <div className="inicio-metric-main">
-                <MetricValue metrica={objetivo.metrica} />
+                <Amount
+                  value={objetivo.metrica.valor}
+                  subtotal={objetivo.metrica.subtotal ?? null}
+                  state={objetivo.metrica.estado}
+                  unit={objetivo.metrica.unidad}
+                />
                 <EstadoBadge estado={objetivo.metrica.estado} />
               </div>
               <p className="inicio-metric-meta">
@@ -916,7 +819,12 @@ export function Inicio({ go }: { go: (path: string) => void }) {
             <div className="inicio-submetric">
               <h4>Meses cubiertos</h4>
               <div className="inicio-metric-main">
-                <MetricValue metrica={objetivo.mesesCubiertos} />
+                <Amount
+                  value={objetivo.mesesCubiertos.valor}
+                  subtotal={objetivo.mesesCubiertos.subtotal ?? null}
+                  state={objetivo.mesesCubiertos.estado}
+                  unit={objetivo.mesesCubiertos.unidad}
+                />
                 <EstadoBadge estado={objetivo.mesesCubiertos.estado} />
               </div>
               <p className="inicio-metric-meta">
@@ -943,7 +851,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                 Ver coste esencial
               </InicioLink>
             </p>
-          </article>
+          </Metric>
         </section>
       </div>
 
@@ -1294,28 +1202,21 @@ export function Inicio({ go }: { go: (path: string) => void }) {
 
         <section className="panel inicio-section" aria-labelledby="inicio-deuda">
           <h2 id="inicio-deuda">Deuda</h2>
-          <article
+          <Metric
+            title="Deuda no hipotecaria"
+            clase="POSICIÓN"
+            dataClase="posicion"
+            ariaLabel="Deuda no hipotecaria"
             className="inicio-metric inicio-deuda-total"
-            data-clase="posicion"
-            aria-label="Deuda no hipotecaria"
-          >
-            <div className="inicio-metric-head">
-              <h3>Deuda no hipotecaria</h3>
-              <span className="inicio-clase">POSICIÓN</span>
-            </div>
-            <div className="inicio-metric-main">
-              <MetricValue
-                metrica={{
-                  ...deuda.total,
-                  clave: "deudaNoHipotecaria",
-                  etiqueta: "Deuda no hipotecaria",
-                  clase: "posicion",
-                  unidad: "EUR",
-                  fuente: deuda.total.fuente,
-                  contexto: deuda.contexto,
-                  enlace: deuda.enlace,
-                }}
+            amount={
+              <Amount
+                value={deuda.total.valor}
+                subtotal={deuda.total.subtotal}
+                state={deuda.total.estado}
+                unit="EUR"
               />
+            }
+            badge={
               <EstadoBadge
                 estado={deuda.total.estado}
                 label={etiquetaParcial(
@@ -1324,7 +1225,8 @@ export function Inicio({ go }: { go: (path: string) => void }) {
                   deuda.total.cobertura,
                 )}
               />
-            </div>
+            }
+          >
             <p className="inicio-metric-meta">
               {coverageText(deuda.total.cobertura)} · calculables
             </p>
@@ -1333,7 +1235,7 @@ export function Inicio({ go }: { go: (path: string) => void }) {
               fuente={deuda.total.fuente}
               contexto={deuda.contexto}
             />
-          </article>
+          </Metric>
           {deuda.total.estado === "No disponible" && (
             <p className="inicio-motivo">
               Bloque no disponible por fallo de fuente; no se presenta como un
