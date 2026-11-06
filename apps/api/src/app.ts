@@ -221,6 +221,11 @@ import {
   type CierreOptions,
 } from "./e49";
 import {
+  getReaperturaEstado,
+  reabrirCierre,
+  type ReaperturaOptions,
+} from "./e410";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -235,6 +240,7 @@ export type AppOptions = {
   movementGuard?: MovementProtection;
   precierre?: PrecierreOptions;
   cierre?: CierreOptions;
+  reapertura?: ReaperturaOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -885,9 +891,10 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(
           db.transaction(() => ({
             // E4.8 shape stays at the top level (SPEC26 AC-15); the E4.9
-            // closure state is additive under `cierre`.
+            // closure state and the E4.10 reopening state are additive.
             ...getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
             cierre: getCierreEstado(db, cierreEstado[1]),
+            reapertura: getReaperturaEstado(db, cierreEstado[1]),
           }))(),
         );
       }
@@ -969,6 +976,50 @@ export function createApp(db: Database, options: AppOptions) {
           now(),
         );
         headers.set("location", `/api/cierres/${cierreConfirm[1]}/foto`);
+        return reply(result, 201);
+      }
+      const reaperturaEstado = path.match(
+        /^\/api\/cierres\/(\d+)\/reapertura$/,
+      );
+      if (reaperturaEstado) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El estado de reapertura es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getReaperturaEstado(db, reaperturaEstado[1]),
+          )(),
+        );
+      }
+      const reabrirCierrePath = path.match(
+        /^\/api\/cierres\/(\d+)\/reabrir$/,
+      );
+      if (reabrirCierrePath) {
+        if (req.method !== "POST") {
+          headers.set("allow", "POST");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La reapertura se confirma con POST.",
+          );
+        }
+        const result = reabrirCierre(
+          db,
+          reabrirCierrePath[1],
+          await jsonBody(req),
+          req.headers.get("idempotency-key") ?? "",
+          options.reapertura,
+          now(),
+        );
+        headers.set(
+          "location",
+          `/api/cierres/${reabrirCierrePath[1]}/reapertura`,
+        );
         return reply(result, 201);
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
