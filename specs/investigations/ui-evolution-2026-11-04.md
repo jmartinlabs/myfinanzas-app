@@ -290,8 +290,10 @@ descartadas para esta iniciativa; C solo podría reconsiderarse después de B y 
 | **`UI · DEV-06 — Pantallas clave`** | Llevar el sistema a Inicio + 4 pantallas de referencia (5 total) | Inicio, un catálogo, una ficha, un formulario y una pantalla de operación con la nueva jerarquía | `DEV-02`…`DEV-05`; frontera de §7 | Inicio conserva secciones, cifras y estados de SPEC24; una lectura principal por tarjeta; sin duplicar motivo/CTA; capturas antes/después |
 | **`UI · DEV-07 — Temas y verificación AA`** | Cerrar paridad y evidencia | Matriz 5 pantallas × 3 temas × 2 anchos; contraste automatizado por tema; foco/zoom/reduced motion; actualización de `guidelines/ui.md` y catálogo de componentes | `DEV-01`…`DEV-06` | Todos los pares texto/fondo ≥ 4.5 (normal) y ≥ 3 (grande/componente); cero desbordamiento; evidencia adjunta como capturas, no como aprobación |
 
-`[PROPUESTA]` Orden: `01 → 02 → (03 ∥ 04 ∥ 05) → 06 → 07`. Cada bloque es reversible por sí
-mismo y ninguno incluye cambios de API, datos, cálculos ni estados.
+`[APROBADO 2026-11-06]` Orden: `01 → 02 → 03 → 04 → 05 → 06 → 07`. `03 ∥ 04` solo si un
+único propietario escribe todo `style.css`; en el estado actual comparten archivo, por lo que la
+secuencia segura es secuencial. Cada bloque es reversible por sí mismo y ninguno incluye cambios
+de API, datos, cálculos ni estados.
 
 ---
 
@@ -360,30 +362,28 @@ sigue en DRAFT. `style.css` y `main.tsx` quedan bajo un único escritor UI por v
 [`specs/ui-specification.md`](../ui-specification.md), con wireframes 1440/390 en los tres temas
 y el plan `UI · DEV-01…07`.
 
-`[PROPUESTA]` **Decisiones para aprobación formal:** cinco pantallas de `DEV-06` (Inicio,
+`[APROBADO 2026-11-06]` **Decisiones ratificadas:** cinco pantallas de `DEV-06` (Inicio,
 Movimientos, Saldos ficha, Saldos alta/edición, Cierre); secuencia `03 → 04 → 05` con
-paralelismo solo si hay archivos disjuntos; matriz 30+15 capturas y criterios AA/foco/teclado/
-zoom; actualización documental de `guidelines/ui.md` antes de `DEV-01`; aprobación separada de
-`UI · DEV-01`.
+paralelismo solo si un único propietario escribe `style.css`; matriz 30+15 capturas y criterios
+AA/foco/teclado/zoom; actualización de `guidelines/ui.md`; `UI · DEV-01` autorizado por separado.
 
-`[PENDIENTE]` **No hay `DEV` hasta autorización.** Este documento no crea rama de código, no
-modifica `style.css`, `themes.css` ni `main.tsx`, y no toca el tablero.
+`[CONFIRMADO]` **DEV-01 autorizado; DEV-02…07 no.** Este documento no modifica `style.css`,
+`themes.css` ni `main.tsx`; el trabajo de DEV-01 vive en su rama.
 
 ---
 
-## Para revisión
+## Registro de decisiones
 
 - **Cerrado:** identificador `UI`, alternativa B y los tres temas de #198. No se reabren.
 - **Inicio:** ¿se acepta pulir jerarquía/densidad sin reabrir SPEC24 (mismas secciones, cifras y
   estados)?
 - **Navegación:** ¿se valida agrupar los 23 enlaces en grupos sin cambiar rutas ni añadir
   módulos?
-- **Pantallas `DEV-06`:** recomendación de cinco (Inicio, Movimientos, Saldos ficha, Saldos
+- **Pantallas `DEV-06`:** aprobadas cinco (Inicio, Movimientos, Saldos ficha, Saldos
   alta/edición, Cierre); alternativa mínima de cuatro sin ficha.
-- **Evidencia:** recomendación 30 capturas base + 15 de estados, AA/foco/teclado/zoom.
-- **Secuencia:** `01 → 02 → 03 → 04 → 05 → 06 → 07`; `03 ∥ 04` solo con archivos disjuntos.
-- **Guía:** actualización quirúrgica de `guidelines/ui.md` antes de `DEV-01`, sin cambiar
-  colores.
+- **Evidencia:** aprobada 30 capturas base + 15 de estados, AA/foco/teclado/zoom.
+- **Secuencia:** `01 → 02 → 03 → 04 → 05 → 06 → 07`; `03 ∥ 04` solo con un único propietario de `style.css`.
+- **Guía:** actualización aplicada de `guidelines/ui.md`, sin cambiar colores.
 
 ## Decisiones
 

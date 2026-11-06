@@ -1,8 +1,9 @@
 # UI — Evolución visual de MyFinanzas: Specification (UI · SPEC)
 
 **Estado:** `[APROBADA]` — **ratificada formalmente por el usuario el 2026-11-06.** Autoriza
-`UI · SPEC` y `UI · DEV-01` por separado; **no** autoriza `DEV-02…07` ni ningún merge. No cambia
-código, componentes, CSS, temas, API, cálculos financieros ni datos reales.
+`UI · SPEC`, el merge condicionado de #205 y `UI · DEV-01` por separado; **no** autoriza
+`DEV-02…07` ni otros merges. No cambia código, componentes, CSS, temas, API, cálculos
+financieros ni datos reales.
 
 - **Base:** `main` **`043869f`** (2026-11-05; I1 de E4.10 integrado y recarga de agentes #234).
 - **Análisis:** [ui-evolution-2026-11-04](investigations/ui-evolution-2026-11-04.md);
@@ -106,9 +107,9 @@ No cambia CSS, componentes, paletas, tokens, selector ni comportamiento.
 
 **Orden recomendado:** `01 → 02 → 03 → 04 → 05 → 06 → 07`.
 
-- **03 ∥ 04** solo es seguro después de 02 si hay **dos ejecutores con archivos disjuntos**:
-  03 posee `main.tsx` y la sección de navegación de `style.css`; 04 posee `ui.tsx` (`Table`) y
-  la sección de tablas. `style.css` no puede tener dos escritores.
+- **03 ∥ 04** solo si un único propietario escribe **todo** `style.css` (o el CSS de tablas se
+  separa en un archivo propio) y el otro ejecutor se limita a `main.tsx`/`ui.tsx`. En el estado
+  actual ambos comparten `style.css`, por lo que el orden seguro es `03 → 04`.
 - **05 va después de 04**: comparte `ui.tsx` (`Field`) y las tarjetas móviles de tabla; 04 y 05
   no se paralelizan.
 - **06** espera a 02–05 y a la decisión de pantallas; **07** cierra la matriz completa.
@@ -168,8 +169,9 @@ ratificación de `UI · SPEC`; se conserva la recomendación como registro.
 1. **[APROBADO] Pantallas de `DEV-06`:** cinco pantallas (Inicio, Movimientos, Saldos ficha,
    Saldos alta/edición, Cierre). Alternativa mínima: cuatro sin ficha. Sin E4.10/E4.11.
 2. **[APROBADO] Orden/paralelismo:** `03 → 04 → 05`; `03 ∥ 04` solo con ownership disjunto
-   (`main.tsx`+nav CSS vs `ui.tsx`+tabla CSS). `05` después de `04`; `06` después de `05`;
-   `07` al final. Sin separación de archivos, secuencial.
+   (un único propietario de `style.css`; el otro limitado a `main.tsx`/`ui.tsx`). En el estado
+   actual comparten `style.css`, así que el orden seguro es secuencial. `05` después de `04`;
+   `06` después de `05`; `07` al final.
 3. **[APROBADO] Matriz de evidencia:** 30 capturas base (5×3×2) + 15 de estados críticos; AA,
    foco, teclado, zoom, reduced motion, 390 sin overflow, texto ≥ 12 px y `null ≠ 0`; 12
    capturas antes/después por bloque; QA independiente. §6 fija el detalle.
@@ -184,7 +186,7 @@ selector y alternativa B.
 
 ### 8.1 Aprobación formal (2026-11-06)
 
-El usuario aprobó `UI · SPEC` conforme a la PR #205 (`baf9370`) y ratificó:
+El usuario aprobó `UI · SPEC` conforme a la PR #205 y su HEAD final, y ratificó:
 
 > Alternativa B, tres temas cerrados, cinco pantallas de `DEV-06`, secuencia `01 → 02 → 03 → 04
 > → 05 → 06 → 07` con `03 ∥ 04` solo con ownership disjunto, matriz de 30+15 capturas y

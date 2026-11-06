@@ -25,9 +25,11 @@ historia de E1.1–E1.5 y no reabren decisiones.
 
 ### Accesibilidad
 
-- Suelo **AA**: texto normal ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas; foco visible;
-  objetivos ≥ 44 px; zoom 200 %; `prefers-reduced-motion`; sin scroll horizontal de página a
-  390 px. El estado no depende solo del color.
+- **Objetivo de los bloques UI** (no una declaración de cumplimiento actual): texto normal
+  ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas; foco visible; objetivos ≥ 44 px; zoom
+  200 %; `prefers-reduced-motion`; sin scroll horizontal de página a 390 px. El CSS actual aún
+  contiene controles y textos por debajo de esos umbrales; se corrigen en `DEV-01`, `DEV-04` y
+  `DEV-05`.
 - La excepción de contraste de #7 se conserva como registro histórico; los temas actuales deben
   cumplir AA con sus propios tokens.
 
