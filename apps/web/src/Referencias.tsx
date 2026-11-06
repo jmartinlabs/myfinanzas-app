@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import { referenceReturn } from "./movement-draft";
 import { VehicleForm } from "./Vehiculos";
 export type Reference = {
@@ -78,6 +78,33 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
       {r.nombre}
     </a>
   );
+  const columns: TableColumn<Reference>[] = [
+    {
+      id: "nombre",
+      header: "Nombre / ID",
+      cell: (reference) => (
+        <>
+          {link(reference)}
+          <small className="table-id">{reference.id}</small>
+        </>
+      ),
+    },
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (reference) => reference.tipo,
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (reference) => (
+        <Tag inactive={reference.estado === "Inactiva"}>
+          {reference.estado}
+        </Tag>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -160,43 +187,31 @@ function ReferenceList({ go }: { go: (p: string) => void }) {
           <>
             <p role="status">{data.total} referencias</p>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">Referencias</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Nombre / ID</th>
-                    <th scope="col">Tipo</th>
-                    <th scope="col">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        {link(r)}
-                        <small className="table-id">{r.id}</small>
-                      </td>
-                      <td>{r.tipo}</td>
-                      <td>
-                        <Tag inactive={r.estado === "Inactiva"}>{r.estado}</Tag>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Referencias"
+                label="Tabla de Referencias"
+                columns={columns}
+                rows={data.items}
+                rowKey={(reference) => reference.id}
+                rowClassName={(reference) =>
+                  reference.estado === "Inactiva"
+                    ? "ui-row-inactive"
+                    : undefined
+                }
+              />
             </div>
-            <ul className="mobile-list">
-              {data.items.map((r) => (
-                <li key={r.id}>
-                  <div className="card-head">
-                    <span>{r.tipo}</span>
-                    <Tag inactive={r.estado === "Inactiva"}>{r.estado}</Tag>
-                  </div>
-                  <h2>{link(r)}</h2>
-                  <p>{r.id}</p>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.items}
+              rowKey={(reference) => reference.id}
+              rowClassName={(reference) =>
+                reference.estado === "Inactiva"
+                  ? "ui-row-inactive"
+                  : undefined
+              }
+              label="Referencias móvil"
+              className="mobile-list"
+            />
           </>
         )}
         <div className="list-footer">

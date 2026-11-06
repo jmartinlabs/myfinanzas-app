@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { planDeltaEntries } from "./plan-delta";
-import { Alert, PageHead } from "./ui";
+import { Alert, DataList, PageHead, Table, type TableColumn } from "./ui";
 type Budget = { id: string; nombre: string; fuente: string; estado: string };
 type Line = {
   presupuesto: string;
@@ -228,6 +228,102 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
       if (selectedRef.current === cycle) setError((e as Error).message);
     }
   }
+  const columns: TableColumn<Item>[] = [
+    {
+      id: "presupuesto",
+      header: "Presupuesto / Fuente",
+      cell: (item) => (
+        <>
+          <a
+            href={"/presupuestos/" + item.presupuesto.id}
+            onClick={(e) => {
+              e.preventDefault();
+              go("/presupuestos/" + item.presupuesto.id);
+            }}
+          >
+            {item.presupuesto.nombre}
+          </a>
+          <p>
+            {item.presupuesto.id} · {item.presupuesto.fuente}
+            {item.presupuesto.estado === "Inactivo" && " · Inactivo"}
+          </p>
+          <p>
+            {item.motivo ??
+              (item.sinPlanificar
+                ? "Sin planificar · Sin línea del plan"
+                : item.linea?.delMes === null
+                  ? "Sin importe del mes · Línea existente"
+                  : "")}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: "base",
+      header: "Base",
+      kind: "amount",
+      cell: (item) => amount(item.linea?.base ?? null),
+    },
+    {
+      id: "esencial",
+      header: "Esencial",
+      kind: "amount",
+      cell: (item) => amount(item.linea?.esencial ?? null),
+    },
+    {
+      id: "delMes",
+      header: "Del mes",
+      kind: "amount",
+      cell: (item) => amount(item.linea?.delMes ?? null),
+    },
+    {
+      id: "aTransferir",
+      header: "A transferir",
+      kind: "amount",
+      cell: (item) => amount(item.aTransferir),
+    },
+    {
+      id: "ejecutado",
+      header: "Ejecutado",
+      kind: "amount",
+      cell: (item) => amount(item.ejecutado),
+    },
+    {
+      id: "pendiente",
+      header: "Pendiente / Estado",
+      kind: "amount",
+      cell: (item) => (
+        <>
+          {amount(item.pendiente)}
+          <p>{item.estado ?? "—"}</p>
+        </>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (item) => (
+        <div className="actions">
+          <button
+            className="secondary"
+            onClick={() => showDetail(item.presupuesto.id)}
+          >
+            Ver ejecución de {item.presupuesto.nombre}
+          </button>
+          {item.linea && (
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => begin(item.presupuesto.id)}
+            >
+              Editar {item.presupuesto.nombre}
+            </button>
+          )}
+        </div>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -341,156 +437,23 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
             </div>
           )}
           <div className="desktop-list plan-table">
-            <table>
-              <thead>
-                <tr>
-                  <th>Presupuesto / Fuente</th>
-                  <th>Base</th>
-                  <th>Esencial</th>
-                  <th>Del mes</th>
-                  <th>A transferir</th>
-                  <th>Ejecutado</th>
-                  <th>Pendiente / Estado</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {plan.items
-                  .filter((i) => i.linea || i.sinPlanificar)
-                  .map((i) => (
-                    <tr key={i.presupuesto.id} className="plan-row">
-                      <td>
-                        <a
-                          href={"/presupuestos/" + i.presupuesto.id}
-                          onClick={(e) => {
-                            e.preventDefault();
-                            go("/presupuestos/" + i.presupuesto.id);
-                          }}
-                        >
-                          {i.presupuesto.nombre}
-                        </a>
-                        <p>
-                          {i.presupuesto.id} · {i.presupuesto.fuente}
-                          {i.presupuesto.estado === "Inactivo" && " · Inactivo"}
-                        </p>
-                        <p>
-                          {i.motivo ??
-                            (i.sinPlanificar
-                              ? "Sin planificar · Sin línea del plan"
-                              : i.linea?.delMes === null
-                                ? "Sin importe del mes · Línea existente"
-                                : "")}
-                        </p>
-                      </td>
-                      <td>{amount(i.linea?.base ?? null)}</td>
-                      <td>{amount(i.linea?.esencial ?? null)}</td>
-                      <td>{amount(i.linea?.delMes ?? null)}</td>
-                      <td>{amount(i.aTransferir)}</td>
-                      <td>{amount(i.ejecutado)}</td>
-                      <td>
-                        {amount(i.pendiente)}
-                        <p>{i.estado ?? "—"}</p>
-                      </td>
-                      <td>
-                        <div className="actions">
-                          <button
-                            className="secondary"
-                            onClick={() => showDetail(i.presupuesto.id)}
-                          >
-                            Ver ejecución de {i.presupuesto.nombre}
-                          </button>
-                          {i.linea && (
-                            <button
-                              className="secondary"
-                              disabled={busy}
-                              onClick={() => begin(i.presupuesto.id)}
-                            >
-                              Editar {i.presupuesto.nombre}
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Plan del ciclo por Presupuesto"
+              label="Tabla de Plan del ciclo"
+              columns={columns}
+              rows={plan.items.filter((i) => i.linea || i.sinPlanificar)}
+              rowKey={(item) => item.presupuesto.id}
+              rowClassName={() => "plan-row"}
+            />
           </div>
-          <div className="plan-grid mobile-list">
-            {plan.items
-              .filter((i) => i.linea || i.sinPlanificar)
-              .map((i) => (
-                <article key={i.presupuesto.id} className="panel plan-card">
-                  <h2>
-                    <a
-                      href={"/presupuestos/" + i.presupuesto.id}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        go("/presupuestos/" + i.presupuesto.id);
-                      }}
-                    >
-                      {i.presupuesto.nombre}
-                    </a>
-                  </h2>
-                  <p>
-                    {i.presupuesto.id} · {i.presupuesto.fuente}{" "}
-                    {i.presupuesto.estado === "Inactivo" && (
-                      <strong> · Inactivo</strong>
-                    )}
-                  </p>
-                  <dl className="plan-values">
-                    {Object.entries(labels).map(([f, label]) => (
-                      <div key={f}>
-                        <dt>{label}</dt>
-                        <dd>
-                          {amount(i.linea?.[f as keyof typeof labels] ?? null)}
-                        </dd>
-                      </div>
-                    ))}
-                    <div>
-                      <dt>A transferir</dt>
-                      <dd>{amount(i.aTransferir)}</dd>
-                    </div>
-                    <div>
-                      <dt>Ejecutado</dt>
-                      <dd>{amount(i.ejecutado)}</dd>
-                    </div>
-                    <div>
-                      <dt>Pendiente</dt>
-                      <dd>{amount(i.pendiente)}</dd>
-                    </div>
-                    <div>
-                      <dt>Estado</dt>
-                      <dd>{i.estado ?? "—"}</dd>
-                    </div>
-                  </dl>
-                  <p>
-                    {i.motivo ??
-                      (i.sinPlanificar
-                        ? "Sin planificar · Sin línea del plan"
-                        : i.linea?.delMes === null
-                          ? "Sin importe del mes · Línea existente"
-                          : "")}
-                  </p>
-                  <div className="actions">
-                    <button
-                      className="secondary"
-                      onClick={() => showDetail(i.presupuesto.id)}
-                    >
-                      Ver ejecución de {i.presupuesto.nombre}
-                    </button>
-                    {i.linea && (
-                      <button
-                        className="secondary"
-                        disabled={busy}
-                        onClick={() => begin(i.presupuesto.id)}
-                      >
-                        Editar {i.presupuesto.nombre}
-                      </button>
-                    )}
-                  </div>
-                </article>
-              ))}
-          </div>
+          <DataList
+            columns={columns}
+            rows={plan.items.filter((i) => i.linea || i.sinPlanificar)}
+            rowKey={(item) => item.presupuesto.id}
+            rowClassName={() => "plan-card"}
+            label="Plan del ciclo móvil"
+            className="mobile-list plan-grid"
+          />
           {plan.items.filter(
             (i) => !i.linea && i.motivo && i.presupuesto.estado === "Activo",
           ).length > 0 && (

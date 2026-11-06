@@ -2,7 +2,7 @@ import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { monthLabel } from "./Ciclos";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 
 type Kind = "categorias" | "subcategorias" | "partidas";
 type Item = {
@@ -240,6 +240,31 @@ function ClassificationList({
   const filterSub = subs.filter(
     (s) => !category || s.categoria?.id === category,
   );
+  const columns: TableColumn<Item>[] = [
+    {
+      id: "nombre",
+      header: "Nombre",
+      cell: (item) => (
+        <Link go={go} to={endpoint(kind, item.id)}>
+          {item.nombre}
+        </Link>
+      ),
+    },
+    {
+      id: "relacion",
+      header: kind === "categorias" ? "Grupo" : "Jerarquía",
+      cell: (item) =>
+        kind === "categorias" ? (item.grupo ?? "Sin informar") : chain(item),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (item) => (
+        <Tag inactive={item.estado === "Inactiva"}>{item.estado}</Tag>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -374,57 +399,27 @@ function ClassificationList({
         ) : (
           <>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">{plural[kind]}</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Nombre</th>
-                    <th scope="col">
-                      {kind === "categorias" ? "Grupo" : "Jerarquía"}
-                    </th>
-                    <th scope="col">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.map((r) => (
-                    <tr key={r.id}>
-                      <td>
-                        <Link go={go} to={endpoint(kind, r.id)}>
-                          {r.nombre}
-                        </Link>
-                      </td>
-                      <td>
-                        {kind === "categorias"
-                          ? (r.grupo ?? "Sin informar")
-                          : chain(r)}
-                      </td>
-                      <td>
-                        <Tag inactive={r.estado === "Inactiva"}>{r.estado}</Tag>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption={plural[kind]}
+                label={`Tabla de ${plural[kind]}`}
+                columns={columns}
+                rows={rows}
+                rowKey={(item) => item.id}
+                rowClassName={(item) =>
+                  item.estado === "Inactiva" ? "ui-row-inactive" : undefined
+                }
+              />
             </div>
-            <ul className="mobile-list">
-              {rows.map((r) => (
-                <li key={r.id}>
-                  <div className="card-head">
-                    <h2>
-                      <Link go={go} to={endpoint(kind, r.id)}>
-                        {r.nombre}
-                      </Link>
-                    </h2>
-                    <Tag inactive={r.estado === "Inactiva"}>{r.estado}</Tag>
-                  </div>
-                  <p>
-                    {kind === "categorias"
-                      ? (r.grupo ?? "Sin grupo")
-                      : chain(r)}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={rows}
+              rowKey={(item) => item.id}
+              rowClassName={(item) =>
+                item.estado === "Inactiva" ? "ui-row-inactive" : undefined
+              }
+              label={`${plural[kind]} móvil`}
+              className="mobile-list"
+            />
           </>
         )}
         <div className="list-footer">

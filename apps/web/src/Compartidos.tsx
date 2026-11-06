@@ -1,6 +1,13 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { api, ApiError, eur, type SharedCase, type SharedMetric } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import {
+  api,
+  ApiError,
+  eur,
+  type SharedCase,
+  type SharedMetric,
+  type SharedParticipant,
+} from "./api";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 const base = "/compartidos";
 const date = (value: string | null) =>
   value ? value.split("-").reverse().join("/") : "No disponible";
@@ -103,6 +110,57 @@ function SharedList({ go }: { go: (p: string) => void }) {
       live = false;
     };
   }, [retry]);
+  const columns: TableColumn<SharedCase>[] = [
+    {
+      id: "referencia",
+      header: "Referencia",
+      cell: (shared) => (
+        <Link to={base + "/" + shared.referencia.id} go={go}>
+          {shared.referencia.id}
+        </Link>
+      ),
+    },
+    {
+      id: "caso",
+      header: "Caso",
+      cell: (shared) => shared.referencia.nombre,
+      cardCell: (shared) => (
+        <Link to={base + "/" + shared.referencia.id} go={go}>
+          {shared.referencia.nombre}
+        </Link>
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (shared) => (
+        <Tag>
+          <span className={stateClass(shared.resumen.estado)}>
+            {shared.resumen.estado}
+          </span>
+        </Tag>
+      ),
+    },
+    {
+      id: "bruto",
+      header: "Bruto",
+      kind: "amount",
+      cell: (shared) => amount(shared.resumen.bruto),
+    },
+    {
+      id: "costePropio",
+      header: "Coste propio",
+      kind: "amount",
+      cell: (shared) => amount(shared.resumen.costePropio),
+    },
+    {
+      id: "participantes",
+      header: "Participantes",
+      kind: "amount",
+      cell: (shared) => shared.participantes.length,
+    },
+  ];
   return (
     <>
       <PageHead
@@ -132,72 +190,21 @@ function SharedList({ go }: { go: (p: string) => void }) {
       ) : (
         <>
           <div className="desktop-list shared-list">
-            <table>
-              <thead>
-                <tr>
-                  <th>Referencia</th>
-                  <th>Caso</th>
-                  <th>Estado</th>
-                  <th>Bruto</th>
-                  <th>Coste propio</th>
-                  <th>Participantes</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((c) => (
-                  <tr key={c.referencia.id}>
-                    <td>
-                      <Link to={base + "/" + c.referencia.id} go={go}>
-                        {c.referencia.id}
-                      </Link>
-                    </td>
-                    <td>{c.referencia.nombre}</td>
-                    <td>
-                      <Tag>
-                        <span className={stateClass(c.resumen.estado)}>
-                          {c.resumen.estado}
-                        </span>
-                      </Tag>
-                    </td>
-                    <td>{amount(c.resumen.bruto)}</td>
-                    <td>{amount(c.resumen.costePropio)}</td>
-                    <td>{c.participantes.length}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Gastos compartidos"
+              label="Tabla de Gastos compartidos"
+              columns={columns}
+              rows={data.items}
+              rowKey={(shared) => shared.referencia.id}
+            />
           </div>
-          <div className="shared-cards">
-            {data.items.map((c) => (
-              <article className="panel" key={c.referencia.id}>
-                <p className="eyebrow">{c.referencia.id}</p>
-                <h2>
-                  <Link to={base + "/" + c.referencia.id} go={go}>
-                    {c.referencia.nombre}
-                  </Link>
-                </h2>
-                <p>
-                  <span className={stateClass(c.resumen.estado)}>
-                    {c.resumen.estado}
-                  </span>
-                </p>
-                <dl className="detail-grid">
-                  <div>
-                    <dt>Bruto</dt>
-                    <dd>{amount(c.resumen.bruto)}</dd>
-                  </div>
-                  <div>
-                    <dt>Coste propio</dt>
-                    <dd>{amount(c.resumen.costePropio)}</dd>
-                  </div>
-                  <div>
-                    <dt>Participantes</dt>
-                    <dd>{c.participantes.length}</dd>
-                  </div>
-                </dl>
-              </article>
-            ))}
-          </div>
+          <DataList
+            columns={columns}
+            rows={data.items}
+            rowKey={(shared) => shared.referencia.id}
+            label="Gastos compartidos móvil"
+            className="mobile-list shared-cards"
+          />
         </>
       )}
       <section className="panel shared-scope-note">
@@ -334,6 +341,110 @@ function SharedDetail({ id, go }: { id: string; go: (p: string) => void }) {
   const c = data,
     active = c.participantes.filter((p) => p.estado === "Activa"),
     selectedParticipant = c.participantes.find((p) => p.id === selected);
+  const participantColumns: TableColumn<SharedParticipant>[] = [
+    {
+      id: "nombre",
+      header: "Nombre · rol · partes",
+      label: "Nombre, rol y partes",
+      cell: (participant) => (
+        <>
+          <strong>{participant.nombre}</strong>
+          {participant.estado === "Baja" && <Tag inactive>Baja</Tag>}
+          <small className="muted">
+            {participant.rol} · {participant.partes}{" "}
+            {participant.partes === 1 ? "parte" : "partes"}
+          </small>
+        </>
+      ),
+      cardCell: (participant) => (
+        <>
+          <strong>
+            {participant.nombre} · {participant.rol}
+          </strong>
+          {participant.estado === "Baja" && <Tag inactive>Baja</Tag>}
+          <small className="muted">
+            {participant.partes}{" "}
+            {participant.partes === 1 ? "parte" : "partes"}
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "asignado",
+      header: "Asignado",
+      kind: "amount",
+      cell: (participant) => amount(participant.asignado),
+    },
+    {
+      id: "aportado",
+      header: "Aportado",
+      kind: "amount",
+      cell: (participant) => amount(participant.aportado),
+    },
+    {
+      id: "pendiente",
+      header: "Pendiente",
+      kind: "amount",
+      cell: (participant) => amount(participant.pendiente),
+    },
+    {
+      id: "exceso",
+      header: "Exceso",
+      kind: "amount",
+      cell: (participant) => amount(participant.exceso),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (participant) =>
+        participant.estado === "Activa" ? (
+          <>
+            <button
+              className="text-button"
+              onClick={() => {
+                setSelected(participant.id);
+                setMode("edit");
+              }}
+            >
+              Editar
+            </button>{" "}
+            <button
+              className="text-button"
+              onClick={() => {
+                setSelected(participant.id);
+                setMode("baja");
+              }}
+            >
+              Baja
+            </button>
+          </>
+        ) : null,
+      cardCell: (participant) =>
+        participant.estado === "Activa" ? (
+          <>
+            <button
+              className="secondary"
+              onClick={() => {
+                setSelected(participant.id);
+                setMode("edit");
+              }}
+            >
+              Editar reparto
+            </button>
+            <button
+              className="secondary"
+              onClick={() => {
+                setSelected(participant.id);
+                setMode("baja");
+              }}
+            >
+              Dar de baja
+            </button>
+          </>
+        ) : null,
+    },
+  ];
   return (
     <>
       <PageHead
@@ -486,111 +597,27 @@ function SharedDetail({ id, go }: { id: string; go: (p: string) => void }) {
             </button>
           </div>
           <div className="desktop-list shared-participants">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nombre · rol · partes</th>
-                  <th>Asignado</th>
-                  <th>Aportado</th>
-                  <th>Pendiente</th>
-                  <th>Exceso</th>
-                  <th>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {c.participantes.map((p) => (
-                  <tr key={p.id} className={p.estado === "Baja" ? "muted" : ""}>
-                    <td>
-                      <strong>{p.nombre}</strong>
-                      {p.estado === "Baja" && <Tag inactive>Baja</Tag>}
-                      <small className="muted">
-                        {p.rol} · {p.partes} {p.partes === 1 ? "parte" : "partes"}
-                      </small>
-                    </td>
-                    <td>{amount(p.asignado)}</td>
-                    <td>{amount(p.aportado)}</td>
-                    <td>{amount(p.pendiente)}</td>
-                    <td>{amount(p.exceso)}</td>
-                    <td>
-                      {p.estado === "Activa" && (
-                        <>
-                          <button
-                            className="text-button"
-                            onClick={() => {
-                              setSelected(p.id);
-                              setMode("edit");
-                            }}
-                          >
-                            Editar
-                          </button>{" "}
-                          <button
-                            className="text-button"
-                            onClick={() => {
-                              setSelected(p.id);
-                              setMode("baja");
-                            }}
-                          >
-                            Baja
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption={`Participantes de ${id}`}
+              label="Tabla de Participantes"
+              columns={participantColumns}
+              rows={c.participantes}
+              rowKey={(participant) => participant.id}
+              rowClassName={(participant) =>
+                participant.estado === "Baja" ? "muted" : undefined
+              }
+            />
           </div>
-          <div className="shared-cards">
-            {c.participantes.map((p) => (
-              <article className="panel shared-participant" key={p.id}>
-                <h3>
-                  {p.nombre} · {p.rol}
-                  {p.estado === "Baja" && <Tag inactive>Baja</Tag>}
-                </h3>
-                <p>Partes: {p.partes}</p>
-                <dl className="detail-grid">
-                  <div>
-                    <dt>Asignado</dt>
-                    <dd>{amount(p.asignado)}</dd>
-                  </div>
-                  <div>
-                    <dt>Aportado</dt>
-                    <dd>{amount(p.aportado)}</dd>
-                  </div>
-                  <div>
-                    <dt>Pendiente</dt>
-                    <dd>{amount(p.pendiente)}</dd>
-                  </div>
-                  <div>
-                    <dt>Exceso</dt>
-                    <dd>{amount(p.exceso)}</dd>
-                  </div>
-                </dl>
-                {p.estado === "Activa" && (
-                  <div className="form-actions">
-                    <button
-                      className="secondary"
-                      onClick={() => {
-                        setSelected(p.id);
-                        setMode("edit");
-                      }}
-                    >
-                      Editar reparto
-                    </button>
-                    <button
-                      className="secondary"
-                      onClick={() => {
-                        setSelected(p.id);
-                        setMode("baja");
-                      }}
-                    >
-                      Dar de baja
-                    </button>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
+          <DataList
+            columns={participantColumns}
+            rows={c.participantes}
+            rowKey={(participant) => participant.id}
+            rowClassName={(participant) =>
+              participant.estado === "Baja" ? "muted" : undefined
+            }
+            label="Participantes móvil"
+            className="mobile-list shared-cards"
+          />
           {mode === "add" && (
             <ParticipantForm
               key="add"

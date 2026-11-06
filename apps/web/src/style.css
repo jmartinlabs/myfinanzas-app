@@ -1322,8 +1322,7 @@ textarea {
 .change-summary dd > span {
   display: block;
 }
-.classification-list td a,
-.classification-list .mobile-list h2 a {
+.classification-list td a {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
@@ -1357,9 +1356,6 @@ textarea {
 @media (max-width: 760px) {
   .cycles-list .filters {
     grid-template-columns: 1fr;
-  }
-  .cycles-list .card-head {
-    flex-wrap: wrap;
   }
 }
 
@@ -1568,26 +1564,10 @@ textarea {
 .plan-card {
   min-width: 0;
 }
-.plan-values {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 1rem;
-}
-.plan-values dd {
-  margin: 0;
-  overflow-wrap: anywhere;
-  font-weight: 600;
-}
-.plan-values dt {
-  color: var(--muted, var(--muted));
-}
 .plan-grid a {
   overflow-wrap: anywhere;
 }
 @media (max-width: 760px) {
-  .plan-values {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
   .plan-controls > * {
     width: 100%;
   }
@@ -2157,10 +2137,7 @@ textarea {
 .shared-cards {
   display: none;
   gap: 12px;
-  grid-template-columns: 1fr;
-}
-.shared-participant h3 {
-  overflow-wrap: anywhere;
+  grid-template-columns: minmax(0, 1fr);
 }
 .shared-form {
   margin-top: 16px;
@@ -3096,21 +3073,6 @@ textarea {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
-.pendientes-cards .pendiente-facts {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 8px 12px;
-  margin: 0 0 10px;
-}
-.pendientes-cards .pendiente-facts dt {
-  font-size: 10px;
-  color: var(--muted);
-}
-.pendientes-cards .pendiente-facts dd {
-  margin: 0;
-  font-weight: 650;
-  overflow-wrap: anywhere;
-}
 .pendientes-cards .pendiente-alerts ul {
   font-size: 11px;
 }
@@ -3135,9 +3097,6 @@ textarea {
   .pendientes-filters .search,
   .pendientes-search-action {
     grid-column: 1 / -1;
-  }
-  .pendientes-cards .card-head {
-    flex-wrap: wrap;
   }
   .pendiente-detail-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -3422,6 +3381,10 @@ textarea {
   text-align: left;
   vertical-align: top;
   overflow-wrap: anywhere;
+}
+.valoracion-table th.ui-table-amount,
+.valoracion-table td.ui-table-amount {
+  text-align: right;
 }
 .valoracion-table th {
   background: var(--section);
@@ -5258,6 +5221,8 @@ textarea {
   .e410-diff,
   .e410-action-error {
     padding: 10px 12px;
+  }
+}
 
 /* UI · DEV-04 — tablas y listados
  * Contrato compartido de `Table`/`DataList` sobre `TableScroll`: cabecera y
@@ -5322,6 +5287,7 @@ textarea {
 }
 .ui-data-list {
   display: none;
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-2);
   margin: 0;
   padding: 0;
@@ -5358,6 +5324,10 @@ textarea {
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
 }
+.ui-data-list-value strong {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
 .ui-data-list-value .help {
   display: block;
   margin-top: var(--space-1);
@@ -5375,6 +5345,17 @@ textarea {
 .ui-data-list-empty {
   color: var(--muted);
   list-style: none;
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  .anticipo-table table {
+    min-width: 900px;
+  }
+  .debt-list {
+    min-width: 900px;
+  }
+  .vehicle-table table {
+    min-width: 1100px;
+  }
 }
 @media (max-width: 760px) {
   .ui-data-list {

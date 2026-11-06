@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import { hasNextComidaPage } from "./cycle-pagination";
 export type Cycle = {
   id: string;
@@ -180,6 +180,30 @@ function CycleList({ go }: { go: (p: string) => void }) {
       {monthLabel(cycle.mesFinanciado)}
     </a>
   );
+  const columns: TableColumn<Cycle>[] = [
+    {
+      id: "mes",
+      header: "Mes financiado",
+      cell: (cycle) => link(cycle),
+    },
+    {
+      id: "inicio",
+      header: "Inicio ciclo",
+      cell: (cycle) => dateLabel(cycle.inicio),
+    },
+    {
+      id: "fin",
+      header: "Fin ciclo",
+      cell: (cycle) =>
+        cycle.fin ? dateLabel(cycle.fin) : "Sin siguiente Inicio",
+    },
+    {
+      id: "estado",
+      header: "Estado temporal",
+      kind: "status",
+      cell: (cycle) => <Tag>{cycle.estadoTemporal}</Tag>,
+    },
+  ];
   return (
     <>
       <PageHead
@@ -269,46 +293,21 @@ function CycleList({ go }: { go: (p: string) => void }) {
         ) : (
           <>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">Ciclos financiados</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Mes financiado</th>
-                    <th scope="col">Inicio ciclo</th>
-                    <th scope="col">Fin ciclo</th>
-                    <th scope="col">Estado temporal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data?.ciclos.map((c) => (
-                    <tr key={c.id}>
-                      <td>{link(c)}</td>
-                      <td>{dateLabel(c.inicio)}</td>
-                      <td>
-                        {c.fin ? dateLabel(c.fin) : "Sin siguiente Inicio"}
-                      </td>
-                      <td>
-                        <Tag>{c.estadoTemporal}</Tag>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Ciclos financiados"
+                label="Tabla de Ciclos financiados"
+                columns={columns}
+                rows={data?.ciclos ?? []}
+                rowKey={(cycle) => cycle.id}
+              />
             </div>
-            <ul className="mobile-list">
-              {data?.ciclos.map((c) => (
-                <li key={c.id}>
-                  <div className="card-head">
-                    <h2>{link(c)}</h2>
-                    <Tag>{c.estadoTemporal}</Tag>
-                  </div>
-                  <p>Inicio: {dateLabel(c.inicio)}</p>
-                  <p>
-                    Fin: {c.fin ? dateLabel(c.fin) : "Sin siguiente Inicio"}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data?.ciclos ?? []}
+              rowKey={(cycle) => cycle.id}
+              label="Ciclos financiados móvil"
+              className="mobile-list"
+            />
           </>
         )}
         <div className="list-footer">
