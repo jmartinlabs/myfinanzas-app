@@ -1099,6 +1099,7 @@ test("E4.10 I6 AC18: cadena v1 → reapertura → corrección T1/T2 real → v2 
       origen: "S003",
       destino: "S001",
       nota: "corregido",
+      actualizado: new Date(correctionNow).toISOString(),
     });
     const genericAudit = db
       .query(
