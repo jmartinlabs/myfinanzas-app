@@ -3382,6 +3382,10 @@ textarea {
   vertical-align: top;
   overflow-wrap: anywhere;
 }
+.valoracion-table th.ui-table-amount,
+.valoracion-table td.ui-table-amount {
+  text-align: right;
+}
 .valoracion-table th {
   background: var(--section);
   color: var(--text);
@@ -5341,6 +5345,17 @@ textarea {
 .ui-data-list-empty {
   color: var(--muted);
   list-style: none;
+}
+@media (min-width: 761px) and (max-width: 1050px) {
+  .anticipo-table table {
+    min-width: 900px;
+  }
+  .debt-list {
+    min-width: 900px;
+  }
+  .vehicle-table table {
+    min-width: 1100px;
+  }
 }
 @media (max-width: 760px) {
   .ui-data-list {
