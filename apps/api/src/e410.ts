@@ -36,6 +36,17 @@ export type ReaperturaEstado = {
   reapertura: ReaperturaEvento | null;
 };
 
+/**
+ * Read-only eligibility for the reopening action. It mirrors the same guards
+ * `reabrirCierre` applies before writing (last closure, no later closure, one
+ * active window) so the UI never offers an action the API would reject.
+ */
+export type ReaperturaElegibilidad = {
+  puedeReabrir: boolean;
+  motivo: string | null;
+  cierrePosterior: { ciclo: string; version: number; fin: string } | null;
+};
+
 export type ReaperturaOptions = {
   actor?: string;
   /** Test-only seam: throws after every row is written, before commit. */
@@ -45,6 +56,7 @@ export type ReaperturaOptions = {
 const keyPattern = /^[a-zA-Z0-9-]{16,100}$/;
 
 type CierreRow = { ciclo: string; version: number; fin: string };
+type LaterClosure = { ciclo: string; version: number; fin: string };
 
 function lastCierre(db: Database, cicloId: string): CierreRow | null {
   return (
@@ -53,6 +65,28 @@ function lastCierre(db: Database, cicloId: string): CierreRow | null {
         "SELECT ciclo,version,fin FROM cierres WHERE ciclo=? ORDER BY version DESC LIMIT 1",
       )
       .get(cicloId) as CierreRow | null) ?? null
+  );
+}
+
+/**
+ * Shared eligibility rule for reading and writing: only the latest version of
+ * every other cycle competes, and `fin >=` fails closed on ties.
+ */
+function laterClosure(
+  db: Database,
+  cicloId: string,
+  fin: string,
+): LaterClosure | null {
+  return (
+    (db
+      .query(
+        `SELECT c.ciclo,c.version,c.fin FROM cierres c
+         WHERE c.ciclo<>?
+           AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
+           AND c.fin>=?
+         ORDER BY c.fin,c.ciclo LIMIT 1`,
+      )
+      .get(cicloId, fin) as LaterClosure | null) ?? null
   );
 }
 
@@ -123,6 +157,64 @@ export function getReaperturaEstado(
     version: last.version,
     reapertura: null,
   };
+}
+
+/**
+ * The UI needs to know whether the visible closure is the last one before
+ * offering `Reabrir`. The rule is exactly the write guard: latest version of
+ * this cycle, no closure of another cycle with `fin >=` it, and no open window.
+ * It is intentionally derived/read-only and never writes.
+ */
+export function getReaperturaElegibilidad(
+  db: Database,
+  cicloId: string,
+): ReaperturaElegibilidad {
+  const { ciclo } = getCycle(db, cicloId);
+  const last = lastCierre(db, ciclo.id);
+  if (!last)
+    return {
+      puedeReabrir: false,
+      motivo:
+        "El ciclo no tiene un cierre financiero; primero debe cerrarse (E4.9).",
+      cierrePosterior: null,
+    };
+
+  const later = laterClosure(db, ciclo.id, last.fin);
+  if (later)
+    return {
+      puedeReabrir: false,
+      motivo: `Solo puede reabrirse el último cierre: existe un cierre posterior del ciclo ${later.ciclo} (v${later.version}, Fin ${later.fin}).`,
+      cierrePosterior: later,
+    };
+
+  // Read-only and non-throwing: `/estado` must keep returning the derived
+  // state even when the projection is inconsistent; eligibility simply closes.
+  const reading = readActiveWindow(db);
+  if (reading.estado === "Abierta")
+    return {
+      puedeReabrir: false,
+      motivo:
+        reading.ventana.ciclo === ciclo.id
+          ? `Ya existe una reapertura activa sobre la versión ${last.version}.`
+          : `Ya existe una reapertura activa en el ciclo ${reading.ventana.ciclo}; solo puede haber una ventana.`,
+      cierrePosterior: null,
+    };
+  if (reading.estado === "CierrePosterior")
+    return {
+      puedeReabrir: false,
+      motivo:
+        "Existe un cierre posterior durante la ventana; no se ofrece una nueva reapertura.",
+      cierrePosterior: reading.cierrePosterior,
+    };
+  if (reading.estado === "Inconsistente")
+    return {
+      puedeReabrir: false,
+      motivo:
+        "La proyección de reapertura es inconsistente; no se ofrece reabrir hasta revisarla.",
+      cierrePosterior: null,
+    };
+
+  return { puedeReabrir: true, motivo: null, cierrePosterior: null };
 }
 
 function isPositiveInteger(value: unknown): value is number {
@@ -224,15 +316,7 @@ export function reabrirCierre(
       // Only the closure with the latest `fin` across the last version of every
       // cycle is eligible. `>=` rejects ties (fail-closed) and any later
       // closure; historical versions of another cycle do not compete.
-      const later = db
-        .query(
-          `SELECT 1 FROM cierres c
-           WHERE c.ciclo<>?
-             AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
-             AND c.fin>=?
-           LIMIT 1`,
-        )
-        .get(ciclo.id, last.fin);
+      const later = laterClosure(db, ciclo.id, last.fin);
       if (later)
         throw new Problem(
           409,

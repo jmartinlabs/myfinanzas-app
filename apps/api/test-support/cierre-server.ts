@@ -158,6 +158,26 @@ switch (scenario) {
         NULL,NULL,'Contradicción ficticia E4.9','',0,1,'f','f',NULL,NULL)`,
     );
     break;
+  case "e410-reabierto":
+    // Synthetic E4.10 state: v1 closed and one material fact added inside the
+    // frozen window. The UI reopens and re-closes it, creating v2.
+    cycles(2);
+    closeCycle("1");
+    db.run(
+      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
+        partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
+        capital,intereses)
+       VALUES('101','2026-01-10','Gasto',1000,'S001','S000',NULL,'PAR001',
+        NULL,'Gasto ficticio de rectificación E4.10','',0,1,'f','f',NULL,NULL)`,
+    );
+    break;
+  case "e410-no-ultimo":
+    // Cycle 1 is closed but cycle 2 has a later Fin: the UI must not offer
+    // reopening and must show the reason.
+    cycles(3);
+    closeCycle("1");
+    closeCycle("2");
+    break;
   case "listo":
   case "replay":
   case "conflicto":
@@ -172,6 +192,24 @@ switch (scenario) {
           NULL,'Gasto ficticio de navegación','',0,1,'f','f',NULL,NULL)`,
       );
     break;
+}
+
+function closeCycle(ciclo: string) {
+  const pre = previewCierre(db, ciclo, options, NOW);
+  if (pre.bloqueos.length)
+    throw Error(
+      `fixture: no se pudo cerrar el ciclo ${ciclo}: ${pre.bloqueos
+        .map((item) => item.code)
+        .join(",")}`,
+    );
+  confirmCierre(
+    db,
+    ciclo,
+    { fingerprint: pre.fingerprint, motivo: "Cierre previo ficticio E4.10" },
+    randomUUID(),
+    options,
+    NOW,
+  );
 }
 
 function closeLater(ciclo: string) {
@@ -198,6 +236,7 @@ BunRuntime.runMain(
     HttpServer.serve(
       createApp(db, {
         key,
+        origin: process.env.E410_ORIGIN,
         cierre: options,
       }),
     ).pipe(

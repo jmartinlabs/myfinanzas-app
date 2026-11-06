@@ -221,6 +221,7 @@ import {
   type CierreOptions,
 } from "./e49";
 import {
+  getReaperturaElegibilidad,
   getReaperturaEstado,
   reabrirCierre,
   type ReaperturaOptions,
@@ -911,7 +912,10 @@ export function createApp(db: Database, options: AppOptions) {
             // closure state and the E4.10 reopening state are additive.
             ...getPrecierreEstado(db, cierreEstado[1], now(), options.precierre),
             cierre: getCierreEstado(db, cierreEstado[1]),
-            reapertura: getReaperturaEstado(db, cierreEstado[1]),
+            reapertura: {
+              ...getReaperturaEstado(db, cierreEstado[1]),
+              elegibilidad: getReaperturaElegibilidad(db, cierreEstado[1]),
+            },
           }))(),
         );
       }

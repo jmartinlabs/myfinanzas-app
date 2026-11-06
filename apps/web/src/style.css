@@ -5060,3 +5060,214 @@ textarea {
 .nav-active .nav-chevron {
   opacity: 0.9;
 }
+
+/* E4.10 I7 — contrato y UI de reapertura/re-cierre.
+ * Bloque aditivo con prefijo .e410-; no altera el shell ni los selectores de
+ * E4.9/E4.11. Consume tokens de tema existentes; no añade colores.
+ */
+.e410-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.e410-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+.e410-head h2,
+.e410-head h3 {
+  margin: 0;
+}
+.e410-note {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+.e410-note.ok {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+.e410-note.warn {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+.e410-note.danger {
+  border-left-color: var(--error);
+  background: var(--error-soft);
+}
+.e410-note p {
+  margin: 8px 0 0;
+}
+.e410-note ul,
+.e410-list {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.e410-note li + li,
+.e410-list li + li {
+  margin-top: 6px;
+}
+.e410-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  min-width: 0;
+}
+.e410-form h3 {
+  margin: 0;
+}
+.e410-form label {
+  margin-top: var(--space-1);
+}
+.e410-form textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+}
+.e410-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--section);
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.e410-required {
+  color: var(--error);
+  font-weight: 700;
+}
+.e410-action-error {
+  padding: 12px 14px;
+  border: 1px solid var(--error-border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--error-soft);
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.e410-action-error p {
+  margin: 0 0 6px;
+}
+.e410-band {
+  padding: 12px 14px;
+  border: 1px solid var(--warning-border);
+  border-left: 4px solid var(--warning);
+  border-radius: var(--radius-sm);
+  background: var(--warning-soft);
+  overflow-wrap: anywhere;
+}
+.e410-band p {
+  margin: 6px 0 0;
+}
+.e410-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+  min-width: 0;
+}
+.e410-table td,
+.e410-table th {
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+.e410-compared {
+  margin-top: 6px;
+}
+.e410-compared summary {
+  cursor: pointer;
+  color: var(--accent);
+}
+.e410-compared pre {
+  max-height: 220px;
+  overflow: auto;
+  margin: 6px 0 0;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.e410-diff {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-left-width: 4px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  overflow-wrap: anywhere;
+}
+.e410-diff.ok {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+.e410-diff.warn {
+  border-left-color: var(--warning);
+  background: var(--warning-soft);
+}
+.e410-diff.danger {
+  border-left-color: var(--error);
+  background: var(--error-soft);
+}
+.e410-diff h3 {
+  margin: 0 0 6px;
+}
+.e410-diff ul {
+  margin: 6px 0;
+  padding-left: 20px;
+}
+.e410-strong {
+  font-weight: 700;
+}
+.e410-preparation,
+.e410-cancel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  min-width: 0;
+}
+.e410-result {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.e410-changed td {
+  background: var(--warning-soft);
+}
+.e410-result .cierre-fingerprint,
+.e410-panel .cierre-fingerprint {
+  max-width: 100%;
+}
+@media (max-width: 1050px) {
+  .e410-grid-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .e410-head {
+    align-items: flex-start;
+  }
+  .e410-form,
+  .e410-note,
+  .e410-diff,
+  .e410-action-error {
+    padding: 10px 12px;
+  }
+}
