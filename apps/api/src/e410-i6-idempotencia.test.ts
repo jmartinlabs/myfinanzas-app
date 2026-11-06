@@ -1,9 +1,12 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
-import { randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { HttpApp } from "@effect/platform";
+import { createApp } from "./app";
+import { provision, totp } from "./auth";
 import { openDatabase } from "./database";
 import {
   confirmCierre,
@@ -30,6 +33,11 @@ import { Problem } from "./problem";
  *  - the full v1 → reopening → correction → v2 chain is ordered, append-only
  *    and free of gaps or orphans.
  *
+ * F2 from QA #246: the concurrency cases spawn two real OS processes and prove
+ * SQLite's IMMEDIATE serialisation, one winner and stable replay. They do not
+ * force a deterministic instruction interleaving and deliberately add no
+ * production test seam/barrier for it.
+ *
  * It does not declare acceptance: AC11/AC12/AC18 remain fixtures-level
  * evidence until independent QA reviews them.
  */
@@ -37,8 +45,12 @@ import { Problem } from "./problem";
 process.env.NODE_ENV = "test";
 
 const now = Date.parse("2026-04-10T12:00:00Z");
+const reopenNow = now + 1_000;
+const correctionNow = now + 2_000;
 const recloseNow = now + 60_000;
 const stamp = "2026-01-01T00:00:00.000Z";
+const origin = "http://127.0.0.1:5173";
+const password = "Solo pruebas E4.10 I6 " + randomUUID();
 
 function seedCycles(db: Database) {
   for (const [id, inicio] of [
@@ -97,7 +109,7 @@ function reopen(
   version = 1,
   motivo = "Motivo de reapertura I6",
   key = "reapertura-" + randomUUID(),
-  at = now + 1_000,
+  at = reopenNow,
 ) {
   return reabrirCierre(
     db,
@@ -194,53 +206,6 @@ function seedMovement(
   );
 }
 
-function movementAuditValue(overrides: Record<string, unknown> = {}) {
-  return {
-    id: "8601",
-    fecha: "2026-01-15",
-    tipo: "Transferencia",
-    capital: null,
-    intereses: null,
-    referencia: null,
-    importe: "55",
-    origen: "S000",
-    destino: "S001",
-    subtipo: null,
-    partida: null,
-    concepto: "Hecho sintético I6",
-    nota: "original",
-    anulado: 0,
-    revision: 1,
-    creado: stamp,
-    actualizado: stamp,
-    ...overrides,
-  };
-}
-
-function insertMovementAudit(
-  db: Database,
-  input: {
-    id: string;
-    revision: number;
-    instante: string;
-    anterior: Record<string, unknown>;
-    posterior: Record<string, unknown>;
-  },
-) {
-  db.run(
-    `INSERT INTO movement_audit(id,revision,accion,motivo,instante,actor,
-       anterior,posterior)
-     VALUES(?,?,'rectificación',NULL,?,'usuario-unico',?,?)`,
-    [
-      input.id,
-      input.revision,
-      input.instante,
-      JSON.stringify(input.anterior),
-      JSON.stringify(input.posterior),
-    ],
-  );
-}
-
 function counts(db: Database) {
   return {
     cierres: db.query("SELECT COUNT(*) n FROM cierres").get(),
@@ -250,6 +215,69 @@ function counts(db: Database) {
     reaperturas: db.query("SELECT COUNT(*) n FROM reaperturas").get(),
     activa: db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
   };
+}
+
+/**
+ * Real HTTP surface for the T1/T2 correction used by AC18. The app runs with
+ * the correction instant so the production route writes its own actor/UTC/
+ * revision/audit row, not a test insert.
+ */
+function correctionApi(db: Database) {
+  const handler = HttpApp.toWebHandler(
+    createApp(db, {
+      key: randomBytes(32),
+      now: () => correctionNow,
+      cierre: validOptions(),
+      reapertura: { actor: "Alex" },
+    }),
+  );
+  let cookie = "",
+    csrf = "";
+  async function request(
+    path: string,
+    method = "GET",
+    body?: unknown,
+    headers: Record<string, string> = {},
+  ) {
+    const response = await handler(
+      new Request(origin + path, {
+        method,
+        headers: {
+          origin,
+          "content-type": "application/json",
+          cookie,
+          "x-csrf-token": csrf,
+          ...headers,
+        },
+        body: body === undefined ? undefined : JSON.stringify(body),
+      }),
+    );
+    for (const set of response.headers.getSetCookie()) {
+      const pair = set.split(";")[0],
+        name = pair.split("=")[0];
+      cookie = cookie
+        .split("; ")
+        .filter((part) => part && !part.startsWith(name + "="))
+        .concat(pair)
+        .join("; ");
+    }
+    const data = await response.json();
+    if (data.csrf) csrf = data.csrf;
+    return { status: response.status, data, headers: response.headers };
+  }
+  async function enroll() {
+    const bootstrap = provision(db, correctionNow);
+    const started = await request("/api/auth/enroll", "POST", {
+      token: bootstrap,
+      password,
+    });
+    expect(started.status).toBe(200);
+    const verified = await request("/api/auth/mfa", "POST", {
+      code: totp(started.data.secret).generate({ timestamp: correctionNow }),
+    });
+    expect(verified.status).toBe(200);
+  }
+  return { request, enroll };
 }
 
 test("E4.10 I6 AC11: la clave se separa por operación y queda atada a ciclo y payload", () => {
@@ -526,7 +554,7 @@ function runConcurrentReopen(input: {
 }) {
   const database = resolve("apps/api/src/database.ts"),
     reopening = resolve("apps/api/src/e410.ts");
-  const script = `import{openDatabase}from${JSON.stringify(database)};import{reabrirCierre}from${JSON.stringify(reopening)};const db=openDatabase(process.argv[1]);try{const r=reabrirCierre(db,'1',JSON.parse(process.argv[2]),process.argv[3],{actor:'Alex'},${now + 1_000});process.stdout.write(JSON.stringify({ok:true,id:r.reapertura.id,replayed:r.replayed}));}catch(e){process.stdout.write(JSON.stringify({ok:false,code:e?.code??String(e)}));}finally{db.close();}`;
+  const script = `import{openDatabase}from${JSON.stringify(database)};import{reabrirCierre}from${JSON.stringify(reopening)};const db=openDatabase(process.argv[1]);try{const r=reabrirCierre(db,'1',JSON.parse(process.argv[2]),process.argv[3],{actor:'Alex'},${reopenNow});process.stdout.write(JSON.stringify({ok:true,id:r.reapertura.id,replayed:r.replayed}));}catch(e){process.stdout.write(JSON.stringify({ok:false,code:e?.code??String(e)}));}finally{db.close();}`;
   return Bun.spawn(
     [process.execPath, "-e", script, input.path, JSON.stringify(input.body), input.key],
     { env: { ...process.env, NODE_ENV: "test" }, stdout: "pipe", stderr: "pipe" },
@@ -562,7 +590,7 @@ function runConcurrentCancel(input: {
 }) {
   const database = resolve("apps/api/src/database.ts"),
     cancelacion = resolve("apps/api/src/e410-cancelacion.ts");
-  const script = `import{openDatabase}from${JSON.stringify(database)};import{cancelarReapertura}from${JSON.stringify(cancelacion)};const db=openDatabase(process.argv[1]);try{const r=cancelarReapertura(db,'1',JSON.parse(process.argv[2]),process.argv[3],JSON.parse(process.argv[4]),${now + 2_000});process.stdout.write(JSON.stringify({ok:true,id:r.cancelacion.id,replayed:r.replayed}));}catch(e){process.stdout.write(JSON.stringify({ok:false,code:e?.code??String(e)}));}finally{db.close();}`;
+  const script = `import{openDatabase}from${JSON.stringify(database)};import{cancelarReapertura}from${JSON.stringify(cancelacion)};const db=openDatabase(process.argv[1]);try{const r=cancelarReapertura(db,'1',JSON.parse(process.argv[2]),process.argv[3],JSON.parse(process.argv[4]),${correctionNow});process.stdout.write(JSON.stringify({ok:true,id:r.cancelacion.id,replayed:r.replayed}));}catch(e){process.stdout.write(JSON.stringify({ok:false,code:e?.code??String(e)}));}finally{db.close();}`;
   return Bun.spawn(
     [
       process.execPath,
@@ -830,11 +858,17 @@ test("E4.10 I6 AC12: la misma clave con payload distinto en cancelaciones concur
   }
 });
 
-test("E4.10 I6 AC18: cadena v1 → reapertura → corrección → v2 append-only, ordenada y sin huérfanos", () => {
+test("E4.10 I6 AC18: cadena v1 → reapertura → corrección T1/T2 real → v2 append-only, ordenada y sin huérfanos", async () => {
   const db = fixture();
   try {
-    seedMovement(db, { id: "8601", importe: 55, nota: "original" });
-    closeV1(db);
+    seedMovement(db, {
+      id: "8601",
+      importe: 5500,
+      origen: "S003",
+      destino: "S001",
+      nota: "original",
+    });
+    const v1 = closeV1(db);
     const v1Row = db
       .query("SELECT * FROM cierres WHERE ciclo='1' AND version=1")
       .get();
@@ -845,27 +879,72 @@ test("E4.10 I6 AC18: cadena v1 → reapertura → corrección → v2 append-only
       .query("SELECT * FROM cierre_audit WHERE ciclo='1' AND version=1")
       .get();
 
-    const reopened = reopen(db, 1, "Motivo de reapertura I6");
-    const correctionInstant = new Date(now + 2_000).toISOString();
-    db.run(
-      "UPDATE movimientos SET origen='S002',revision=2,actualizado=? WHERE id='8601'",
-      [correctionInstant],
+    const reopenKey = "i6-chain-reopen-" + randomUUID();
+    const reopened = reopen(db, 1, "Motivo de reapertura I6", reopenKey);
+
+    // The correction goes through the real T1/T2 surface (Movimientos), with
+    // the same session/MFA/CSRF/Origin and idempotency-key used by its own
+    // E4.9/E4.10 suites. It is not a direct SQL update plus manual audit.
+    const api = correctionApi(db);
+    await api.enroll();
+    const correctionBody = {
+      fecha: "2026-01-20",
+      tipo: "Transferencia",
+      importe: "66.00",
+      origen: "S003",
+      destino: "S001",
+      subtipo: null,
+      partida: null,
+      referencia: null,
+      concepto: "Hecho sintético I6",
+      nota: "corregido",
+      capital: null,
+      intereses: null,
+      revision: 1,
+      motivo: "Corrección T1/T2 dentro de la ventana",
+    };
+    const impact = await api.request(
+      "/api/movimientos/8601/impacto",
+      "POST",
+      correctionBody,
     );
-    insertMovementAudit(db, {
-      id: "8601",
-      revision: 2,
-      instante: correctionInstant,
-      anterior: movementAuditValue({ id: "8601", revision: 1 }),
-      posterior: movementAuditValue({
-        id: "8601",
-        revision: 2,
-        origen: "S002",
-      }),
-    });
+    expect(impact.status).toBe(200);
+    expect(impact.data.fingerprint).toMatch(/^[a-f0-9]{64}$/);
+    const correction = await api.request(
+      "/api/movimientos/8601/rectificar",
+      "POST",
+      {
+        ...correctionBody,
+        contextRevision: impact.data.contextRevision,
+        fingerprint: impact.data.fingerprint,
+      },
+      { "idempotency-key": "i6-correccion-" + randomUUID() },
+    );
+    expect(correction.status).toBe(200);
+    expect(correction.data.movimiento.revision).toBe(2);
+    expect(correction.data.movimiento.importe).toBe("66.00");
+    expect(correction.data.auditoria).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          revision: 2,
+          accion: "rectificación",
+          motivo: "Corrección T1/T2 dentro de la ventana",
+          instante: new Date(correctionNow).toISOString(),
+          actor: "usuario-unico",
+          anterior: expect.objectContaining({
+            revision: 1,
+            importe: "55.00",
+          }),
+        }),
+      ]),
+    );
+
     const pre = preview(db);
+    expect(pre.fingerprint).toMatch(/^[a-f0-9]{64}$/);
     expect(pre.comparacion.estado).toBe("ConCambios");
     const closed = reclose(db, pre, validOptions({ actor: "Alex" }));
     expect(closed.foto.version).toBe(2);
+    expect(closed.recierre.fingerprint).toBe(pre.fingerprint);
 
     // Closure versions are contiguous: there is no v1.5, skipped or duplicated.
     const closures = db
@@ -900,6 +979,14 @@ test("E4.10 I6 AC18: cadena v1 → reapertura → corrección → v2 append-only
       instante: new Date(recloseNow).toISOString(),
     });
 
+    // F3: the v2 audit's `anterior` is parsed and asserted, not only selected.
+    expect(JSON.parse(String(audits[1].anterior))).toEqual({
+      ciclo: "1",
+      version: 1,
+      fingerprint: v1.cierre.fingerprint,
+      fotoVersion: 1,
+    });
+
     // The reopening event is the single origin of the chain.
     const events = db
       .query(
@@ -922,6 +1009,14 @@ test("E4.10 I6 AC18: cadena v1 → reapertura → corrección → v2 append-only
     });
     expect(event.id).toBe(reopened.reapertura.id);
     expect(event.correlacion).toBe(reopened.reapertura.correlacion);
+
+    // F3: the event's request fingerprint, UTC and idempotency key are asserted.
+    expect(event.fingerprint_peticion).toBe(
+      reopened.reapertura.fingerprint,
+    );
+    expect(String(event.fingerprint_peticion)).toMatch(/^[a-f0-9]{64}$/);
+    expect(event.creado_utc).toBe(new Date(reopenNow).toISOString());
+    expect(event.clave_intento).toBe(reopenKey);
 
     // The link closes the reopening and points v1 → v2 with the same correlation.
     const links = db
@@ -955,14 +1050,87 @@ test("E4.10 I6 AC18: cadena v1 → reapertura → corrección → v2 append-only
     expect(posterior.revalidacion).toBeDefined();
     expect(posterior.revalidacion.estado).toBeTruthy();
 
-    // The T1/T2 correction sits between the reopening and the re-closure.
+    // F1: the production movement route wrote the audit row. Actor, motive,
+    // UTC, revision and `anterior` are asserted, and the impact fingerprint is
+    // the one echoed by the confirmation.
     const corrections = db
       .query(
-        "SELECT revision,instante FROM movement_audit WHERE id='8601' ORDER BY revision",
+        `SELECT id,revision,accion,motivo,instante,actor,anterior,posterior
+         FROM movement_audit WHERE id='8601' ORDER BY revision`,
       )
-      .all() as { revision: number; instante: string }[];
-    expect(corrections.map((row) => row.revision)).toEqual([2]);
-    expect(corrections[0].instante).toBe(correctionInstant);
+      .all() as Array<{
+      id: string;
+      revision: number;
+      accion: string;
+      motivo: string | null;
+      instante: string;
+      actor: string;
+      anterior: string | null;
+      posterior: string;
+    }>;
+    expect(corrections).toHaveLength(1);
+    const correctionAudit = corrections[0];
+    expect(correctionAudit).toMatchObject({
+      id: "8601",
+      revision: 2,
+      accion: "rectificación",
+      motivo: "Corrección T1/T2 dentro de la ventana",
+      instante: new Date(correctionNow).toISOString(),
+      actor: "usuario-unico",
+    });
+    const beforeCorrection = JSON.parse(String(correctionAudit.anterior));
+    expect(beforeCorrection).toMatchObject({
+      id: "8601",
+      revision: 1,
+      fecha: "2026-01-15",
+      tipo: "Transferencia",
+      importe: "55.00",
+      origen: "S003",
+      destino: "S001",
+      nota: "original",
+    });
+    const afterCorrection = JSON.parse(String(correctionAudit.posterior));
+    expect(afterCorrection).toMatchObject({
+      id: "8601",
+      revision: 2,
+      fecha: "2026-01-20",
+      tipo: "Transferencia",
+      importe: "66.00",
+      origen: "S003",
+      destino: "S001",
+      nota: "corregido",
+    });
+    const genericAudit = db
+      .query(
+        `SELECT entidad,accion,revision,campos,instante,revision_previa,
+           actor,motivo FROM audit WHERE entidad='movimiento:8601'
+         ORDER BY id DESC LIMIT 1`,
+      )
+      .get() as {
+      entidad: string;
+      accion: string;
+      revision: number;
+      campos: string;
+      instante: string;
+      revision_previa: number;
+      actor: string;
+      motivo: string | null;
+    };
+    expect(genericAudit).toMatchObject({
+      entidad: "movimiento:8601",
+      accion: "rectificación",
+      revision: 2,
+      revision_previa: 1,
+      instante: new Date(correctionNow).toISOString(),
+      actor: "usuario-unico",
+      motivo: "Corrección T1/T2 dentro de la ventana",
+    });
+    expect(JSON.parse(genericAudit.campos)).toEqual(
+      expect.arrayContaining(["fecha", "importe"]),
+    );
+
+    // The T1/T2 correction sits between the reopening and the re-closure.
+    const correctionInstant = new Date(correctionNow).toISOString();
     expect(correctionInstant >= String(event.creado_utc)).toBe(true);
     expect(correctionInstant <= audits[1].instante).toBe(true);
 
