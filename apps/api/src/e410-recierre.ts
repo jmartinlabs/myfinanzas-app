@@ -32,10 +32,10 @@ import { decimal } from "./saldos";
  * then removes the singleton `reapertura_activa` row. Any failure rolls the
  * whole transaction back and leaves the cycle `Reabierto(vN)`.
  *
- * Fingerprint C2 (DT-C): content + coherence + origin `{ciclo, versionOrigen}`.
- * Motive and actor are immutable metadata/audit, not part of the fingerprint.
- * The I3 revalidation evidence is persisted in the audit and the response; it
- * is not a substitute for the photo's own coherence block.
+ * Fingerprint C2 (DT-C): content + coherence + origin `{ciclo, versionOrigen}`
+ * plus the I3 revalidation fingerprint. Motive and actor are immutable
+ * metadata/audit, not part of the fingerprint. The revalidation evidence is
+ * also persisted in the audit and the response.
  */
 
 export type RecierreOptions = CierreOptions & RevalidacionOptions;
@@ -111,6 +111,22 @@ function requireWindow(db: Database, ciclo: string): ReopeningEvent {
       {},
       { ciclo },
     );
+  // Ownership first: a window/conflict of another cycle is not this cycle's
+  // conflict. H5: never leak CIERRE_POSTERIOR or a 500 from a different cycle.
+  const windowCiclo =
+    reading.estado === "Abierta"
+      ? reading.ventana.ciclo
+      : reading.estado === "CierrePosterior" || reading.estado === "Inconsistente"
+        ? reading.ciclo
+        : null;
+  if (windowCiclo !== null && windowCiclo !== ciclo)
+    throw new Problem(
+      409,
+      "NO_REABIERTO",
+      "La reapertura activa pertenece a otro ciclo.",
+      {},
+      { ciclo, ventana: windowCiclo },
+    );
   if (reading.estado === "CierrePosterior")
     throw new Problem(
       409,
@@ -139,14 +155,6 @@ function requireWindow(db: Database, ciclo: string): ReopeningEvent {
       );
     throw new Problem(500, "ESTADO_INCONSISTENTE", reading.motivo, {}, reading.comparado);
   }
-  if (reading.ventana.ciclo !== ciclo)
-    throw new Problem(
-      409,
-      "NO_REABIERTO",
-      "La reapertura activa pertenece a otro ciclo.",
-      {},
-      { ciclo, ventana: reading.ventana.ciclo },
-    );
   return reading.ventana;
 }
 
@@ -193,15 +201,21 @@ function captureForRecierre(
   };
 }
 
-/** C2 fingerprint: same content and coherence as E4.9 plus its origin. */
+/**
+ * C2 fingerprint: E4.9 content + coherence, the origin `{ciclo, versionOrigen}`
+ * and the I3 revalidation fingerprint. A change in any of them between preview
+ * and confirmation is a revision conflict, not a silent re-closure.
+ */
 export function fingerprintRecierre(
   capture: Pick<CaptureCierre, "payload" | "coherencia">,
   origen: { ciclo: string; versionOrigen: number },
+  revalidacionFingerprint: string,
 ) {
   return fingerprint({
     payload: capture.payload,
     coherencia: capture.coherencia,
     origen,
+    revalidacion: { fingerprint: revalidacionFingerprint },
   });
 }
 
@@ -541,6 +555,222 @@ function movementAuditChanges(
 }
 
 /**
+ * Audits of material sources outside Movimientos. Any audited revision after
+ * the reopening is not accredited by the live photo alone and fails closed:
+ * a rectification that was later reverted still leaves its audit trail. This
+ * covers investment operations/instruments and the auxiliary sources captured
+ * by the photo (anticipos, compartidos, revisión de comida, nómina and deuda).
+ */
+function sourceAuditChanges(
+  db: Database,
+  inicio: string,
+  fin: string,
+  reopeningUtc: string,
+): MaterialComparison | null {
+  const checks: {
+    bloque: "inversion" | "auxiliares";
+    label: string;
+    sql: string;
+    params: (string | number)[];
+  }[] = [
+    {
+      bloque: "inversion",
+      label: "operaciones de inversión",
+      sql: `SELECT a.operacion FROM operacion_inversion_audit a
+            JOIN operaciones_inversion o ON o.id=a.operacion
+            WHERE o.fecha <= ? AND a.instante > ? LIMIT 1`,
+      params: [fin, reopeningUtc],
+    },
+    {
+      bloque: "inversion",
+      label: "instrumentos",
+      sql: `SELECT a.instrumento FROM instrumento_audit a
+            WHERE a.instante > ? LIMIT 1`,
+      params: [reopeningUtc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "anticipos",
+      sql: `SELECT a.id FROM anticipo_audit a
+            JOIN movimiento_anticipo ma ON ma.referencia=a.referencia
+            JOIN movimientos m ON m.id=ma.movimiento
+            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
+      params: [inicio, fin, reopeningUtc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "compartidos",
+      sql: `SELECT a.id FROM compartido_audit a
+            JOIN movimiento_compartido mc ON mc.referencia=a.referencia
+            JOIN movimientos m ON m.id=mc.movimiento
+            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
+      params: [inicio, fin, reopeningUtc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "revisión de comida",
+      sql: `SELECT a.id FROM movimiento_revision_comida_audit a
+            JOIN movimiento_revision_comida c ON c.movimiento=a.movimiento
+            JOIN movimientos m ON m.id=c.movimiento
+            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
+      params: [inicio, fin, reopeningUtc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "nómina",
+      sql: `SELECT a.id FROM payroll_audit a
+            JOIN payroll_allocations p ON p.paga=a.paga
+            JOIN movimientos m ON m.id=p.movimiento
+            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
+      params: [inicio, fin, reopeningUtc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "deuda",
+      sql: `SELECT a.id FROM audit a
+            JOIN deudas d ON d.id=a.entidad
+            WHERE a.instante > ? LIMIT 1`,
+      params: [reopeningUtc],
+    },
+  ];
+  const found: { bloque: "inversion" | "auxiliares"; label: string }[] = [];
+  for (const check of checks) {
+    try {
+      if (db.query(check.sql).get(...check.params))
+        found.push({ bloque: check.bloque, label: check.label });
+    } catch {
+      return {
+        estado: "NoVerificable",
+        bloques: [check.bloque],
+        motivos: [
+          `No se pudo leer la auditoría de ${check.label}; no se acredita la ausencia de cambios.`,
+        ],
+      };
+    }
+  }
+  if (!found.length) return null;
+  return {
+    estado: "ConCambios",
+    bloques: [...new Set(found.map((entry) => entry.bloque))],
+    motivos: found.map(
+      (entry) =>
+        `La auditoría registra una revisión posterior a la reapertura en ${entry.label}.`,
+    ),
+  };
+}
+
+/**
+ * Direct revision bumps that have no audit row are still not equivalent to no
+ * write. The current revision is compared with the revision that was current
+ * when `vN` was closed for sources that expose an audited revision
+ * (investment operations, instruments, revisión de comida and deuda). A later
+ * revision (even if reverted) fails closed. `baseline ?? 1` keeps manual
+ * fixtures without audit usable while detecting any real increment.
+ */
+function revisionBumpChanges(
+  db: Database,
+  ciclo: string,
+  versionOrigen: number,
+  capture: CaptureCierre,
+): MaterialComparison | null {
+  const inicio = capture.payload.ventana.inicio;
+  const fin = capture.payload.ventana.fin;
+  if (!fin) return null;
+  const cierre = db
+    .query("SELECT creado_utc FROM cierres WHERE ciclo=? AND version=?")
+    .get(ciclo, versionOrigen) as { creado_utc: string } | null;
+  if (!cierre)
+    return {
+      estado: "NoVerificable",
+      bloques: [],
+      motivos: [
+        `No existe el cierre v${versionOrigen}; no se acredita la ausencia de cambios.`,
+      ],
+    };
+  const checks: {
+    bloque: "inversion" | "auxiliares";
+    label: string;
+    sql: string;
+    params: (string | number)[];
+  }[] = [
+    {
+      bloque: "inversion",
+      label: "operaciones de inversión",
+      sql: `SELECT o.id,o.revision,
+        (SELECT MAX(a.revision) FROM operacion_inversion_audit a
+          WHERE a.operacion=o.id AND a.instante<=?) baseline
+       FROM operaciones_inversion o
+       WHERE o.fecha <= ?`,
+      params: [cierre.creado_utc, fin],
+    },
+    {
+      bloque: "inversion",
+      label: "instrumentos",
+      sql: `SELECT i.id,i.revision,
+        (SELECT MAX(a.revision) FROM instrumento_audit a
+          WHERE a.instrumento=i.id AND a.instante<=?) baseline
+       FROM instrumentos i`,
+      params: [cierre.creado_utc],
+    },
+    {
+      bloque: "auxiliares",
+      label: "revisión de comida",
+      sql: `SELECT c.movimiento id,c.revision,
+        (SELECT MAX(a.revision) FROM movimiento_revision_comida_audit a
+          WHERE a.movimiento=c.movimiento AND a.instante<=?) baseline
+       FROM movimiento_revision_comida c
+       JOIN movimientos m ON m.id=c.movimiento
+       WHERE m.fecha BETWEEN ? AND ?`,
+      params: [cierre.creado_utc, inicio, fin],
+    },
+    {
+      bloque: "auxiliares",
+      label: "deuda",
+      sql: `SELECT d.id,d.revision,
+        (SELECT MAX(a.revision) FROM audit a
+          WHERE a.entidad=d.id AND a.instante<=?) baseline
+       FROM deudas d`,
+      params: [cierre.creado_utc],
+    },
+  ];
+  const changed: { bloque: "inversion" | "auxiliares"; label: string; id: string; revision: number }[] = [];
+  for (const check of checks) {
+    try {
+      const rows = db.query(check.sql).all(...check.params) as {
+        id: string;
+        revision: number;
+        baseline: number | null;
+      }[];
+      for (const row of rows)
+        if (row.revision > (row.baseline ?? 1))
+          changed.push({
+            bloque: check.bloque,
+            label: check.label,
+            id: row.id,
+            revision: row.revision,
+          });
+    } catch {
+      return {
+        estado: "NoVerificable",
+        bloques: [check.bloque],
+        motivos: [
+          `No se pudo leer la revisión de ${check.label}; no se acredita la ausencia de cambios.`,
+        ],
+      };
+    }
+  }
+  if (!changed.length) return null;
+  return {
+    estado: "ConCambios",
+    bloques: [...new Set(changed.map((entry) => entry.bloque))],
+    motivos: changed.map(
+      (entry) =>
+        `La revisión ${entry.revision} de ${entry.label} (${entry.id}) es posterior al cierre v${versionOrigen}.`,
+    ),
+  };
+}
+
+/**
  * Compares the live capture against the stored `vN` photo over the material
  * set approved in DT-H: frozen window/S0, facts and relations, plan, economic
  * classification/references, investment components and used auxiliaries.
@@ -586,19 +816,34 @@ export function compareMaterial(
   const bloques = materialBlocks.filter(
     (block) => canonical(stored[block]) !== canonical(live[block]),
   );
-  const audited =
-    reopeningUtc && capture.payload.ventana.fin
-      ? movementAuditChanges(
+  const audits = reopeningUtc
+    ? [
+        movementAuditChanges(
           db,
           capture.payload.ventana.inicio,
-          capture.payload.ventana.fin,
+          capture.payload.ventana.fin ?? "",
           reopeningUtc,
-        )
-      : null;
-  if (audited?.estado === "NoVerificable") return audited;
+        ),
+        capture.payload.ventana.fin
+          ? sourceAuditChanges(
+              db,
+              capture.payload.ventana.inicio,
+              capture.payload.ventana.fin,
+              reopeningUtc,
+            )
+          : null,
+        revisionBumpChanges(db, ciclo, versionOrigen, capture),
+      ].filter((entry): entry is MaterialComparison => entry !== null)
+    : [];
+  const unreadable = audits.find((entry) => entry.estado === "NoVerificable");
+  if (unreadable) return unreadable;
   const allBlocks = new Set<string>(bloques);
-  if (audited?.estado === "ConCambios")
-    for (const block of audited.bloques) allBlocks.add(block);
+  const auditedMotivos: string[] = [];
+  for (const audit of audits)
+    if (audit.estado === "ConCambios") {
+      for (const block of audit.bloques) allBlocks.add(block);
+      auditedMotivos.push(...audit.motivos);
+    }
   return allBlocks.size
     ? {
         estado: "ConCambios",
@@ -608,7 +853,7 @@ export function compareMaterial(
             (block) =>
               `El bloque material ${block} difiere de la foto v${versionOrigen}.`,
           ),
-          ...(audited?.motivos ?? []),
+          ...auditedMotivos,
         ],
       }
     : { estado: "SinCambios", bloques: [], motivos: [] };
@@ -657,17 +902,24 @@ export function previewRecierre(
     revalidationBlockers(revalidacion),
     comparisonBlockers,
   );
-  const fingerprintValue = fingerprintRecierre(data, {
-    ciclo: ciclo.id,
-    versionOrigen: evento.versionOrigen,
-  });
+  const fingerprintValue = fingerprintRecierre(
+    data,
+    {
+      ciclo: ciclo.id,
+      versionOrigen: evento.versionOrigen,
+    },
+    revalidacion.fingerprint,
+  );
+  const estado = allBlockers.length
+    ? "Bloqueado"
+    : comparacion.estado === "SinCambios"
+      ? "Sin cambios"
+      : data.warnings.length || revalidationWarnings.length
+        ? "Listo con avisos"
+        : "Listo";
   return {
     ciclo: ciclo.id,
-    estado: allBlockers.length
-      ? "Bloqueado"
-      : data.warnings.length
-        ? "Listo con avisos"
-        : "Listo",
+    estado,
     e49Bloqueado: allBlockers.length > 0,
     ventana: data.ventana,
     siguienteInicio: data.siguienteInicio,
@@ -859,10 +1111,14 @@ export function reCerrarCiclo(
           { revalidacion },
         );
       }
-      const expectedFingerprint = fingerprintRecierre(data, {
-        ciclo: ciclo.id,
-        versionOrigen: versionEsperada,
-      });
+      const expectedFingerprint = fingerprintRecierre(
+        data,
+        {
+          ciclo: ciclo.id,
+          versionOrigen: versionEsperada,
+        },
+        revalidacion.fingerprint,
+      );
       if (previewFingerprint !== expectedFingerprint)
         throw new Problem(
           409,

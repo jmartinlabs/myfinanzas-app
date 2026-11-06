@@ -1,6 +1,9 @@
 import { test, expect } from "bun:test";
 import type { Database } from "bun:sqlite";
 import { randomBytes, randomUUID } from "node:crypto";
+import { mkdtempSync, rmSync } from "node:fs";
+import { join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { HttpApp } from "@effect/platform";
 import { createApp } from "./app";
 import { provision, totp } from "./auth";
@@ -132,7 +135,7 @@ function seedMovement(
   input: {
     id: string;
     fecha?: string;
-    tipo?: "Transferencia" | "Gasto" | "Ingreso";
+    tipo?: "Transferencia" | "Gasto" | "Ingreso" | "Devolución de gasto";
     importe?: number;
     origen?: string;
     destino?: string;
@@ -201,6 +204,125 @@ function insertMovementAudit(
       JSON.stringify(input.posterior),
     ],
   );
+}
+
+function seedInstrumento(db: Database, id = "I9001") {
+  db.run(
+    `INSERT INTO instrumentos(id,nombre,estado,revision,creado_en,actualizado_en)
+     VALUES(?,?,'Activa',1,?,?)`,
+    [id, "Instrumento sintético I4", stamp, stamp],
+  );
+}
+
+function seedOperation(
+  db: Database,
+  input: {
+    id: string;
+    clase: "Compra" | "Venta";
+    fecha: string;
+    cantidad: number;
+    importe: number;
+  },
+) {
+  db.run(
+    `INSERT INTO operaciones_inversion(id,clase,fecha,instrumento,
+       saldo_efectivo,saldo_inversion,cantidad,precio_divisa,divisa,cambio,
+       importe_eur,comision_eur,concepto,nota,estado,revision,creado,actualizado)
+     VALUES(?,?,?,'I9001','S003','S004',?,10000000,'EUR',NULL,?,0,
+       'Fixture I4',NULL,'Vigente',1,?,?)`,
+    [
+      input.id,
+      input.clase,
+      input.fecha,
+      input.cantidad,
+      input.importe,
+      stamp,
+      stamp,
+    ],
+  );
+}
+
+function insertOperationAudit(
+  db: Database,
+  input: { id: string; revision: number; instante: string },
+) {
+  db.run(
+    `INSERT INTO operacion_inversion_audit(operacion,revision,accion,motivo,
+       instante,actor,anterior,posterior)
+     VALUES(?,?,'rectificación',NULL,?,'usuario-unico',?,?)`,
+    [
+      input.id,
+      input.revision,
+      input.instante,
+      JSON.stringify({ cantidad: 1 }),
+      JSON.stringify({ cantidad: 2 }),
+    ],
+  );
+}
+
+function seedRevisionComida(db: Database, movimiento = "8408") {
+  db.run(
+    `INSERT INTO movimiento_revision_comida(movimiento,etiqueta,
+       evidencia_bancaria,evidencia_comercial,estado_revision,
+       revision_movimiento,revision,creado,actualizado)
+     VALUES(?,'Comida',NULL,NULL,'Revisada',1,1,?,?)`,
+    [movimiento, stamp, stamp],
+  );
+}
+
+function insertRevisionComidaAudit(
+  db: Database,
+  input: { revision: number; instante: string; etiqueta: string },
+) {
+  db.run(
+    `INSERT INTO movimiento_revision_comida_audit(movimiento,accion,revision,
+       anterior,posterior,motivo,instante,actor)
+     VALUES('8408','rectificación',?,?,?,NULL,?,'usuario-unico')`,
+    [
+      input.revision,
+      JSON.stringify({ etiqueta: "Comida" }),
+      JSON.stringify({ etiqueta: input.etiqueta }),
+      input.instante,
+    ],
+  );
+}
+
+function seedBrokenClosure(
+  db: Database,
+  ciclo = "1",
+  version = 1,
+  inicio = "2026-01-01",
+  fin = "2026-01-31",
+) {
+  const creado = "2026-01-01T00:00:00.000Z";
+  const fingerprintValue = "b".repeat(64);
+  db.transaction(() => {
+    db.run(
+      `INSERT INTO cierres(ciclo,version,inicio,fin,saldo_inicial,actor,
+        creado_utc,motivo,fingerprint,estado)
+       VALUES(?,?,?,?,10000,'usuario-unico',?,NULL,?,'Cerrado')`,
+      [ciclo, version, inicio, fin, creado, fingerprintValue],
+    );
+    db.run(
+      `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,
+        fingerprint,app_version,schema_version,ventana_inicio,ventana_fin,
+        saldo_inicial,estado_temporal,estado_hechos,estado_plan,hechos,plan,
+        clasificacion,inversion,auxiliares,cobertura,backup,no_disponible)
+       VALUES(?,?,?,'usuario-unico',NULL,?,'0.0.0-fixture',26,?,?,10000,
+        'Cerrado','Sin hechos','SinPlan','null',
+        '{"estado":"SinPlan","items":[],"revision":null,"sinPlanificar":false}',
+        '{"categorias":[],"subcategorias":[],"partidas":[],"referencias":[]}',
+        '{"efectivo":null,"cuentas":[],"posiciones":[],"operaciones":[],"instrumentos":[]}',
+        '{"anticipos":[],"compartidos":[],"nomina":[],"revisionComida":[],"deuda":[],"e35":{"verificable":true,"huella":null}}',
+        '{}','{}','{}')`,
+      [ciclo, version, creado, fingerprintValue, inicio, fin],
+    );
+    db.run(
+      `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
+        instante,actor) VALUES(?,?,'cierre',NULL,'{}',NULL,?,'usuario-unico')`,
+      [ciclo, version, creado],
+    );
+  })();
 }
 
 function seedDeuda(db: Database, id = "D0401") {  db.run(
@@ -284,6 +406,7 @@ test("E4.10 I4: SIN_CAMBIOS no crea foto y no toca la ventana", () => {
     expect(pre.fingerprint).toMatch(/^[a-f0-9]{64}$/);
     expect(pre.comparacion.estado).toBe("SinCambios");
     expect(pre.sinCambios).toBe(true);
+    expect(pre.estado).toBe("Sin cambios");
     expect(pre.bloqueos).toEqual([]);
 
     const conflict = problemOf(() => reclose(db, pre));
@@ -398,24 +521,31 @@ test("E4.10 I4: v1 → reapertura → corrección → v2 con foto completa, vín
   }
 });
 
-test("E4.10 I4: fingerprint C2 ata contenido, coherencia y origen", () => {
+test("E4.10 I4: fingerprint C2 ata contenido, coherencia, origen y revalidación", () => {
   type FingerprintCapture = Parameters<typeof fingerprintRecierre>[0];
   const base = {
     payload: { hechos: { totales: { neto: "1.00" } } },
     coherencia: {},
   } as unknown as FingerprintCapture;
-  const v1 = fingerprintRecierre(base, { ciclo: "1", versionOrigen: 1 });
-  const v2 = fingerprintRecierre(base, { ciclo: "1", versionOrigen: 2 });
+  const v1 = fingerprintRecierre(base, { ciclo: "1", versionOrigen: 1 }, "rev-a");
+  const v2 = fingerprintRecierre(base, { ciclo: "1", versionOrigen: 2 }, "rev-a");
   const other = fingerprintRecierre(
     {
       ...base,
       payload: { hechos: { totales: { neto: "2.00" } } },
     } as unknown as FingerprintCapture,
     { ciclo: "1", versionOrigen: 1 },
+    "rev-a",
+  );
+  const revalidated = fingerprintRecierre(
+    base,
+    { ciclo: "1", versionOrigen: 1 },
+    "rev-b",
   );
   expect(v1).toMatch(/^[a-f0-9]{64}$/);
   expect(v1).not.toBe(v2);
   expect(v1).not.toBe(other);
+  expect(v1).not.toBe(revalidated);
 });
 
 test("E4.10 I4: re-cerrar sin ventana, versión obsoleta y payload inválido no escriben", () => {
@@ -760,6 +890,12 @@ test("E4.10 I4: un cierre posterior durante la ventana bloquea sin tocar el post
       .query("SELECT * FROM cierres WHERE ciclo='2' AND version=1")
       .get();
     const before = counts(db);
+    // H5: a conflict/window from cycle 1 must not leak when asking cycle 2.
+    const otherCycle = problemOf(() =>
+      previewRecierre(db, "2", validOptions(), recloseNow),
+    );
+    expect(otherCycle.status).toBe(409);
+    expect(otherCycle.code).toBe("NO_REABIERTO");
     const blocked = problemOf(() => preview(db));
     expect(blocked.status).toBe(409);
     expect(blocked.code).toBe("CIERRE_POSTERIOR");
@@ -794,6 +930,404 @@ test("E4.10 I4: dos re-cierres con claves distintas, solo uno gana", () => {
     ).toEqual({ n: 2 });
   } finally {
     db.close();
+  }
+});
+
+test("E4.10 I4: una revisión de inversión rectificada y revertida no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    seedInstrumento(db);
+    seedOperation(db, {
+      id: "9001",
+      clase: "Compra",
+      fecha: "2026-01-10",
+      cantidad: 100_000_000,
+      importe: 10000,
+    });
+    seedOperation(db, {
+      id: "9002",
+      clase: "Venta",
+      fecha: "2026-01-20",
+      cantidad: 40_000_000,
+      importe: 4800,
+    });
+    closeV1(db);
+    reopen(db);
+    const first = new Date(now + 2_000).toISOString();
+    const second = new Date(now + 3_000).toISOString();
+    // Compra: quantity 100 -> 120 -> 100; Venta: importe 4800 -> 5000 -> 4800.
+    db.run(
+      "UPDATE operaciones_inversion SET cantidad=120000000,revision=2,actualizado=? WHERE id='9001'",
+      [first],
+    );
+    insertOperationAudit(db, { id: "9001", revision: 2, instante: first });
+    db.run(
+      "UPDATE operaciones_inversion SET cantidad=100000000,revision=3,actualizado=? WHERE id='9001'",
+      [second],
+    );
+    insertOperationAudit(db, { id: "9001", revision: 3, instante: second });
+    db.run(
+      "UPDATE operaciones_inversion SET importe_eur=5000,revision=2,actualizado=? WHERE id='9002'",
+      [first],
+    );
+    insertOperationAudit(db, { id: "9002", revision: 2, instante: first });
+    db.run(
+      "UPDATE operaciones_inversion SET importe_eur=4800,revision=3,actualizado=? WHERE id='9002'",
+      [second],
+    );
+    insertOperationAudit(db, { id: "9002", revision: 3, instante: second });
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("inversion");
+    expect(pre.comparacion.motivos.join(" ")).toContain("inversión");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+    expect(
+      result.foto.inversion.operaciones.map(
+        (operation: { id: string; cantidad: string }) => ({
+          id: operation.id,
+          cantidad: operation.cantidad,
+        }),
+      ),
+    ).toEqual(
+      expect.arrayContaining([
+        { id: "9001", cantidad: "1" },
+        { id: "9002", cantidad: "0.4" },
+      ]),
+    );
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: una revisión de inversión no acreditada falla cerrado", () => {
+  const db = fixture();
+  try {
+    seedInstrumento(db);
+    seedOperation(db, {
+      id: "9003",
+      clase: "Compra",
+      fecha: "2026-01-10",
+      cantidad: 10,
+      importe: 1000,
+    });
+    closeV1(db);
+    reopen(db);
+    db.run(
+      "UPDATE operaciones_inversion SET cantidad=11,revision=2,actualizado=? WHERE id='9003'",
+      [new Date(now + 2_000).toISOString()],
+    );
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("inversion");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: un auxiliar rectificado y revertido no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    seedMovement(db, {
+      id: "8408",
+      tipo: "Devolución de gasto",
+      importe: 55,
+    });
+    seedRevisionComida(db);
+    closeV1(db);
+    reopen(db);
+    const first = new Date(now + 2_000).toISOString();
+    const second = new Date(now + 3_000).toISOString();
+    db.run(
+      "UPDATE movimiento_revision_comida SET etiqueta='Ocio',revision=2,actualizado=? WHERE movimiento='8408'",
+      [first],
+    );
+    insertRevisionComidaAudit(db, {
+      revision: 2,
+      instante: first,
+      etiqueta: "Ocio",
+    });
+    db.run(
+      "UPDATE movimiento_revision_comida SET etiqueta='Comida',revision=3,actualizado=? WHERE movimiento='8408'",
+      [second],
+    );
+    insertRevisionComidaAudit(db, {
+      revision: 3,
+      instante: second,
+      etiqueta: "Comida",
+    });
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    expect(pre.comparacion.motivos.join(" ")).toContain("revisión de comida");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: avisos de revalidación y Sin cambios se reflejan en estado", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    reopen(db);
+    expect(preview(db).estado).toBe("Sin cambios");
+    seedMovement(db, {
+      id: "8412",
+      tipo: "Devolución de gasto",
+      importe: 12,
+    });
+    seedRevisionComida(db, "8412");
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.revalidacion.avisos).toContain("auxiliares");
+    expect(pre.avisos.map((issue) => issue.code)).toContain(
+      "AUXILIARES_RECTIFICADOS",
+    );
+    expect(pre.estado).toBe("Listo con avisos");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: IMPACTO_NO_VERIFICABLE bloquea sin crear v2", () => {
+  const db = fixture();
+  try {
+    seedBrokenClosure(db);
+    reopen(db);
+    const before = counts(db);
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("NoVerificable");
+    expect(pre.e49Bloqueado).toBe(true);
+    expect(pre.bloqueos.map((issue) => issue.code)).toContain(
+      "IMPACTO_NO_VERIFICABLE",
+    );
+    const blocked = problemOf(() =>
+      reCerrarCiclo(
+        db,
+        "1",
+        {
+          versionEsperada: 1,
+          motivo: "Motivo de re-cierre",
+          fingerprint: pre.fingerprint,
+        },
+        "recierre-" + randomUUID(),
+        validOptions(),
+        recloseNow,
+      ),
+    );
+    expect(blocked.status).toBe(409);
+    expect(blocked.code).toBe("IMPACTO_NO_VERIFICABLE");
+    expect(counts(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: REVISION_CONFLICT si el estado cambia entre preview y confirmación", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    reopen(db);
+    seedMovement(db, { id: "8413", importe: 13 });
+    const pre = preview(db);
+    seedMovement(db, { id: "8414", importe: 14 });
+    const conflict = problemOf(() =>
+      reCerrarCiclo(
+        db,
+        "1",
+        {
+          versionEsperada: 1,
+          motivo: "Motivo de re-cierre",
+          fingerprint: pre.fingerprint,
+        },
+        "recierre-" + randomUUID(),
+        validOptions(),
+        recloseNow,
+      ),
+    );
+    expect(conflict.status).toBe(409);
+    expect(conflict.code).toBe("REVISION_CONFLICT");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: REVISION_CONFLICT si cambia la revalidación I3 entre preview y confirmación", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    reopen(db);
+    seedMovement(db, { id: "8415", importe: 15 });
+    let precontrol = { valor: "a" };
+    const options = {
+      ...validOptions(),
+      precontrol: () => ({
+        estado: "Verificado" as const,
+        datos: { precontrol },
+      }),
+    };
+    const pre = preview(db, options);
+    expect(pre.revalidacion.comprobaciones).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ clave: "precontrolE45", estado: "Verificado" }),
+      ]),
+    );
+    precontrol = { valor: "b" };
+    const conflict = problemOf(() =>
+      reCerrarCiclo(
+        db,
+        "1",
+        {
+          versionEsperada: 1,
+          motivo: "Motivo de re-cierre",
+          fingerprint: pre.fingerprint,
+        },
+        "recierre-" + randomUUID(),
+        options,
+        recloseNow,
+      ),
+    );
+    expect(conflict.status).toBe(409);
+    expect(conflict.code).toBe("REVISION_CONFLICT");
+  } finally {
+    db.close();
+  }
+});
+
+function concurrentFile() {
+  const dir = mkdtempSync(join(tmpdir(), "e410-i4-concurrent-"));
+  const path = join(dir, "concurrent.sqlite");
+  const db = openDatabase(path);
+  seedCycles(db);
+  closeV1(db);
+  reopen(db);
+  seedMovement(db, { id: "8420", importe: 20 });
+  const pre = preview(db);
+  db.close();
+  return { dir, path, pre };
+}
+
+function runConcurrentReclose(input: {
+  path: string;
+  body: Record<string, unknown>;
+  key: string;
+  options: CierreOptions;
+}) {
+  const database = resolve("apps/api/src/database.ts"),
+    recierre = resolve("apps/api/src/e410-recierre.ts");
+  const script = `import{openDatabase}from${JSON.stringify(database)};import{reCerrarCiclo}from${JSON.stringify(recierre)};const db=openDatabase(process.argv[1]);try{const r=reCerrarCiclo(db,'1',JSON.parse(process.argv[2]),process.argv[3],JSON.parse(process.argv[4]),Number(process.argv[5]));process.stdout.write(JSON.stringify({ok:true,version:r.foto.version,replayed:r.replayed}));}catch(e){process.stdout.write(JSON.stringify({ok:false,code:e?.code??String(e)}));}finally{db.close();}`;
+  return Bun.spawn(
+    [
+      process.execPath,
+      "-e",
+      script,
+      input.path,
+      JSON.stringify(input.body),
+      input.key,
+      JSON.stringify(input.options),
+      String(recloseNow),
+    ],
+    { env: { ...process.env, NODE_ENV: "test" }, stdout: "pipe", stderr: "pipe" },
+  );
+}
+
+test("E4.10 I4: dos procesos con claves distintas crean una sola versión", async () => {
+  const { dir, path, pre } = concurrentFile();
+  try {
+    const body = {
+      versionEsperada: 1,
+      motivo: "Motivo de re-cierre concurrente",
+      fingerprint: pre.fingerprint,
+    };
+    const children = ["a", "b"].map((suffix) =>
+      runConcurrentReclose({
+        path,
+        body,
+        key: `recierre-${suffix}-` + randomUUID(),
+        options: validOptions(),
+      }),
+    );
+    const results = await Promise.all(
+      children.map(async (child) => {
+        expect(await child.exited).toBe(0);
+        expect(await new Response(child.stderr).text()).toBe("");
+        return JSON.parse(await new Response(child.stdout).text()) as {
+          ok: boolean;
+          code?: string;
+          version?: number;
+        };
+      }),
+    );
+    expect(results.filter((r) => r.ok)).toHaveLength(1);
+    expect(results.filter((r) => !r.ok).map((r) => r.code)).toEqual([
+      "NO_REABIERTO",
+    ]);
+    const db = openDatabase(path);
+    try {
+      expect(
+        db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
+      ).toEqual({ n: 2 });
+      expect(
+        db.query("SELECT COUNT(*) n FROM cierre_vinculos").get(),
+      ).toEqual({ n: 1 });
+      expect(
+        db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+      ).toEqual({ n: 0 });
+      expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test("E4.10 I4: dos procesos con la misma clave hacen replay de una sola versión", async () => {
+  const { dir, path, pre } = concurrentFile();
+  try {
+    const body = {
+      versionEsperada: 1,
+      motivo: "Motivo de re-cierre idempotente",
+      fingerprint: pre.fingerprint,
+    };
+    const key = "recierre-same-" + randomUUID();
+    const children = [0, 1].map(() =>
+      runConcurrentReclose({ path, body, key, options: validOptions() }),
+    );
+    const results = await Promise.all(
+      children.map(async (child) => {
+        expect(await child.exited).toBe(0);
+        expect(await new Response(child.stderr).text()).toBe("");
+        return JSON.parse(await new Response(child.stdout).text()) as {
+          ok: boolean;
+          code?: string;
+          version?: number;
+          replayed?: boolean;
+        };
+      }),
+    );
+    expect(results.every((r) => r.ok)).toBe(true);
+    expect(results.map((r) => r.version)).toEqual([2, 2]);
+    expect(results.filter((r) => r.replayed)).toHaveLength(1);
+    const db = openDatabase(path);
+    try {
+      expect(
+        db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
+      ).toEqual({ n: 2 });
+      expect(
+        db.query(
+          "SELECT COUNT(*) n FROM reapertura_attempts WHERE operacion='recierre'",
+        ).get(),
+      ).toEqual({ n: 1 });
+    } finally {
+      db.close();
+    }
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
   }
 });
 
