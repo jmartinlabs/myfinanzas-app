@@ -543,7 +543,8 @@ cero. La consulta de v1/v2 es explícita y etiquetada.
   tras cancelar; una nueva reapertura secuencial queda sujeta a D1-A y no se infiere de D8.
 - DT6 sin evidencia o restauración no probada → re-cierre real bloqueado; fixtures se
   marcan sintéticos (AC15).
-- DT9, ciclo antiguo o restore de backup → rechazo; no hay ruta alternativa (AC22).
+- DT9, ciclo antiguo o restore de backup → rechazo expreso con código y motivo
+  verificables y sin mutación persistida; no hay ruta alternativa (AC22).
 - Cambio de versión de esquema/aplicación entre vista previa y confirmación → conflicto;
   no se emite v2 (patrón E4.9).
 - Permisos: sin rol nuevo por defecto (D3); una sesión sin MFA completa no reabre ni
@@ -605,7 +606,7 @@ aprobarse hasta resolver la decisión indicada.
 | E4.10-AC19 | Reabrir y re-cerrar con plan `SinPlan`/capturado y auxiliares disponibles o no. | Plan vivo rectificable; `SinPlan`↔`Capturado` con motivo/auditoría; foto completa y comparación con `vN`; auxiliares de fuentes vigentes; ausente → `No disponible` con motivo; sin copiar valores antiguos. | `[APROBADO D6-A+C]` |
 | E4.10-AC20 | Consultar `vN` y `vN+1` tras el re-cierre, con y sin versión explícita. | Devuelve valores persistidos, versión seleccionada, última cerrada y estado de reapertura; sin recálculo ni `0` por ausencia. | `[CONFIRMADO]` foto/AC-14; `[APROBADO D5-A]` v1 consultable, no vigente sin advertencia |
 | E4.10-AC21 | Cancelar una reapertura. | Sin cambios materiales: `Cerrado(vN)` sin foto, evento auditado, `vN`/anteriores intactas, T1 re-bloqueado. Con cambios y sin cierre posterior: `vN+1`. Con cierre posterior: re-cierre ordinario bloqueado; solo recuperación extraordinaria aprobada por separado. | `[APROBADO D8]` |
-| E4.10-AC22 | Intentar reabrir un ciclo antiguo o usar restore de backup como reapertura. | Rechazo; no hay ruta alternativa; motivo auditado; DT9/DT6 no se confunden con E4.10. | `[CONFIRMADO]` P5/DT9/DT6 |
+| E4.10-AC22 | Intentar reabrir un ciclo antiguo o usar restore de backup como reapertura. | Código y motivo verificables; sin evento, ventana, foto ni mutación persistida; snapshot sin cambios; no hay ruta alternativa; DT9/DT6 no se confunden con E4.10. | `[CONFIRMADO]` P5/DT9/DT6 |
 | E4.10-AC23 | Reabrir tras v2 (v3). | Secuencial sobre la última versión cerrada; no se reabre una versión histórica; una sola ventana activa; v3+ crea foto completa. | `[APROBADO D1-A/D5-A]` |
 | E4.10-AC24 | Re-cerrar sin cambios materiales. | Rechazo explícito `SIN_CAMBIOS`; no crea foto; cancelación D8 solo con ausencia acreditada; no basta igualdad de importes/totales; con cambios revertidos o evidencia insuficiente no hay equivalencia ni cancelación automática. | `[APROBADO SIN_CAMBIOS]` |
 
