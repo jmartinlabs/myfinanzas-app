@@ -1384,6 +1384,22 @@ function capture(
   };
 }
 
+/**
+ * Additive E4.10 seam: the same capture used by preflight/confirm, exposed so
+ * the re-closure can reuse the full photo contract without duplicating any
+ * E4.9 rule. It reads only; `confirmCierre` and its contracts are unchanged.
+ */
+export type CaptureCierre = Capture;
+
+export function captureCierre(
+  db: Database,
+  cicloId: string,
+  options: CierreOptions = {},
+  now = Date.now(),
+): CaptureCierre {
+  return capture(db, cicloId, options, now);
+}
+
 export function previewCierre(
   db: Database,
   cicloId: string,
