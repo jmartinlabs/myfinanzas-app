@@ -16,6 +16,8 @@ import {
   type CierreOptions,
 } from "./e49";
 import { getReaperturaEstado, reabrirCierre } from "./e410";
+import { confirmPayroll, getPayroll } from "./nomina";
+import { storeAnticipo } from "./anticipos";
 import {
   compareMaterial,
   fingerprintRecierre,
@@ -140,13 +142,15 @@ function seedMovement(
     origen?: string;
     destino?: string;
     nota?: string;
+    subtipo?: string | null;
+    referencia?: string | null;
   },
 ) {
   db.run(
     `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
        partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
        capital,intereses)
-     VALUES(?,?,?,?,?,?,NULL,NULL,NULL,?,?,0,1,?,?,NULL,NULL)`,
+     VALUES(?,?,?,?,?,?,?,NULL,?,?,?,0,1,?,?,NULL,NULL)`,
     [
       input.id,
       input.fecha ?? "2026-01-15",
@@ -154,6 +158,8 @@ function seedMovement(
       input.importe ?? 500,
       input.origen ?? "S000",
       input.destino ?? "S001",
+      input.subtipo ?? null,
+      input.referencia ?? null,
       "Hecho sintético I4",
       input.nota ?? "",
       stamp,
@@ -293,8 +299,7 @@ function seedBrokenClosure(
   version = 1,
   inicio = "2026-01-01",
   fin = "2026-01-31",
-) {
-  const creado = "2026-01-01T00:00:00.000Z";
+) {  const creado = "2026-01-01T00:00:00.000Z";
   const fingerprintValue = "b".repeat(64);
   db.transaction(() => {
     db.run(
@@ -325,11 +330,84 @@ function seedBrokenClosure(
   })();
 }
 
-function seedDeuda(db: Database, id = "D0401") {  db.run(
+function seedDeuda(db: Database, id = "D0401") {
+  db.run(
     `INSERT INTO deudas(id,nombre,inicio,apertura,estado,revision,creado,actualizado)
      VALUES(?,'Deuda sintética I4','2025-01-01',10000,'Activa',1,?,?)`,
     [id, stamp, stamp],
   );
+}
+
+function payrollChange(
+  db: Database,
+  body: Record<string, unknown>,
+  at: number,
+) {
+  return confirmPayroll(
+    db,
+    {
+      ...body,
+      contexto: getPayroll(db).contexto,
+      motivo: "Fixture nómina I4",
+    },
+    "nomina-" + randomUUID(),
+    at,
+  );
+}
+
+function seedPayroll(db: Database) {
+  const created = payrollChange(
+    db,
+    {
+      accion: "guardar",
+      paga: {
+        mes: "2026-01",
+        tipo: "Ordinaria",
+        guardia: "No",
+        devengo: "1500",
+        base: "1500",
+        irpf: "10",
+        variable: "0",
+        historico: "1500",
+        documentado: null,
+        evidencia: "fixture-nomina-i4",
+        evidenciaDocumentado: "",
+        verificado: true,
+        documentadoVerificado: false,
+        nota: "Ficticio I4",
+      },
+    },
+    now,
+  );
+  return created.pagas[0] as { id: string };
+}
+
+function seedAnticipoReference(db: Database, referencia: string) {
+  db.run(
+    `INSERT INTO referencias(id,nombre,tipo,estado,revision,creado,actualizado)
+     VALUES(?, 'Anticipo sintético I4', 'Anticipo', 'Activa', 1, ?, ?)`,
+    [referencia, stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO fichas_anticipos(referencia,creado,actualizado)
+     VALUES(?,?,?)`,
+    [referencia, stamp, stamp],
+  );
+}
+
+function seedAnticipoAttribution(
+  db: Database,
+  input: { movimiento: string; referencia: string },
+) {
+  const attribution = {
+    rol: "Adelanto" as const,
+    origen: "S001",
+    destino: "S002",
+    evidencia: "fixture-anticipo-i4",
+    procedencia: "Registro del titular",
+  };
+  storeAnticipo(db, input.movimiento, attribution, now);
+  return attribution;
 }
 
 function seedClosure(
@@ -1062,6 +1140,101 @@ test("E4.10 I4: un auxiliar rectificado y revertido no es SIN_CAMBIOS", () => {
     expect(pre.comparacion.estado).toBe("ConCambios");
     expect(pre.comparacion.bloques).toContain("auxiliares");
     expect(pre.comparacion.motivos.join(" ")).toContain("revisión de comida");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: un reparto de nómina revertido no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    const paga = seedPayroll(db);
+    seedMovement(db, {
+      id: "8601",
+      tipo: "Ingreso",
+      subtipo: "Nómina",
+      importe: 150000,
+    });
+    closeV1(db);
+    reopen(db);
+    payrollChange(
+      db,
+      {
+        accion: "repartir",
+        movimiento: "8601",
+        asignaciones: [
+          { paga: paga.id, importe: "1000", evidencia: "reparto I4" },
+        ],
+      },
+      now + 2_000,
+    );
+    payrollChange(
+      db,
+      { accion: "repartir", movimiento: "8601", asignaciones: [] },
+      now + 3_000,
+    );
+    const audits = db
+      .query(
+        "SELECT paga,delta FROM payroll_audit WHERE instante>? ORDER BY id",
+      )
+      .all(new Date(now + 1_000).toISOString()) as {
+      paga: string | null;
+      delta: string;
+    }[];
+    expect(audits).toHaveLength(2);
+    expect(audits.map((row) => row.paga)).toEqual([null, null]);
+    expect(
+      db.query("SELECT COUNT(*) n FROM payroll_allocations").get(),
+    ).toEqual({ n: 0 });
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    expect(pre.comparacion.motivos.join(" ")).toContain("nómina");
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I4: retirar y reponer una atribución de anticipo no es SIN_CAMBIOS", () => {
+  const db = fixture();
+  try {
+    const referencia = "REF9001";
+    seedAnticipoReference(db, referencia);
+    seedMovement(db, {
+      id: "8501",
+      tipo: "Transferencia",
+      importe: 500,
+      origen: "S001",
+      destino: "S002",
+      referencia,
+    });
+    const attribution = seedAnticipoAttribution(db, {
+      movimiento: "8501",
+      referencia,
+    });
+    closeV1(db);
+    reopen(db);
+    storeAnticipo(db, "8501", null, now + 2_000);
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimiento_anticipo").get(),
+    ).toEqual({ n: 0 });
+    storeAnticipo(db, "8501", attribution, now + 3_000);
+    expect(
+      db.query("SELECT COUNT(*) n FROM movimiento_anticipo").get(),
+    ).toEqual({ n: 1 });
+    expect(
+      db
+        .query("SELECT COUNT(*) n FROM anticipo_audit WHERE instante>?")
+        .get(new Date(now + 1_000).toISOString()),
+    ).toEqual({ n: 2 });
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    expect(pre.comparacion.motivos.join(" ")).toContain("anticipos");
     const result = reclose(db, pre);
     expect(result.foto.version).toBe(2);
   } finally {

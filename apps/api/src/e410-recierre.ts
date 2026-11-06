@@ -567,6 +567,21 @@ function sourceAuditChanges(
   fin: string,
   reopeningUtc: string,
 ): MaterialComparison | null {
+  const cycleMovements = new Set<string>();
+  try {
+    const rows = db
+      .query("SELECT id FROM movimientos WHERE fecha BETWEEN ? AND ?")
+      .all(inicio, fin) as { id: string }[];
+    for (const row of rows) cycleMovements.add(row.id);
+  } catch {
+    return {
+      estado: "NoVerificable",
+      bloques: ["auxiliares"],
+      motivos: [
+        "No se pudieron leer los movimientos del ciclo; no se acredita la ausencia de cambios.",
+      ],
+    };
+  }
   const checks: {
     bloque: "inversion" | "auxiliares";
     label: string;
@@ -590,37 +605,10 @@ function sourceAuditChanges(
     },
     {
       bloque: "auxiliares",
-      label: "anticipos",
-      sql: `SELECT a.id FROM anticipo_audit a
-            JOIN movimiento_anticipo ma ON ma.referencia=a.referencia
-            JOIN movimientos m ON m.id=ma.movimiento
-            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
-      params: [inicio, fin, reopeningUtc],
-    },
-    {
-      bloque: "auxiliares",
-      label: "compartidos",
-      sql: `SELECT a.id FROM compartido_audit a
-            JOIN movimiento_compartido mc ON mc.referencia=a.referencia
-            JOIN movimientos m ON m.id=mc.movimiento
-            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
-      params: [inicio, fin, reopeningUtc],
-    },
-    {
-      bloque: "auxiliares",
       label: "revisión de comida",
       sql: `SELECT a.id FROM movimiento_revision_comida_audit a
             JOIN movimiento_revision_comida c ON c.movimiento=a.movimiento
             JOIN movimientos m ON m.id=c.movimiento
-            WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
-      params: [inicio, fin, reopeningUtc],
-    },
-    {
-      bloque: "auxiliares",
-      label: "nómina",
-      sql: `SELECT a.id FROM payroll_audit a
-            JOIN payroll_allocations p ON p.paga=a.paga
-            JOIN movimientos m ON m.id=p.movimiento
             WHERE m.fecha BETWEEN ? AND ? AND a.instante > ? LIMIT 1`,
       params: [inicio, fin, reopeningUtc],
     },
@@ -648,6 +636,118 @@ function sourceAuditChanges(
       };
     }
   }
+
+  // Attribution audits can outlive the current `movimiento_anticipo` /
+  // `movimiento_compartido` row: removing the attribution deletes the row, so
+  // the audit must be linked by its own anterior/posterior content instead of
+  // a current FK. This is the F1 failure: retirar atribución -> revertir.
+  const attributionChecks = [
+    {
+      label: "anticipos",
+      sql: `SELECT id,anterior,posterior FROM anticipo_audit
+            WHERE instante > ?`,
+    },
+    {
+      label: "compartidos",
+      sql: `SELECT id,anterior,posterior FROM compartido_audit
+            WHERE instante > ?`,
+    },
+  ] as const;
+  for (const check of attributionChecks) {
+    let rows: {
+      id: number;
+      anterior: string | null;
+      posterior: string;
+    }[];
+    try {
+      rows = db.query(check.sql).all(reopeningUtc) as typeof rows;
+    } catch {
+      return {
+        estado: "NoVerificable",
+        bloques: ["auxiliares"],
+        motivos: [
+          `No se pudo leer la auditoría de ${check.label}; no se acredita la ausencia de cambios.`,
+        ],
+      };
+    }
+    let changed = false;
+    for (const row of rows) {
+      for (const raw of [row.anterior, row.posterior]) {
+        if (raw === null) continue;
+        let parsed: unknown;
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          return {
+            estado: "NoVerificable",
+            bloques: ["auxiliares"],
+            motivos: [
+              `La auditoría de ${check.label} no es legible; no se acredita la ausencia de cambios.`,
+            ],
+          };
+        }
+        if (auditMovementRefs(parsed).some((id) => cycleMovements.has(id))) {
+          changed = true;
+          break;
+        }
+      }
+      if (changed) break;
+    }
+    if (changed) found.push({ bloque: "auxiliares", label: check.label });
+  }
+
+  // `repartir` writes payroll_audit with paga=NULL; the allocation delta is
+  // the only link to the cycle movement. A repartir/revertir therefore must be
+  // detected from delta.asignaciones, not from payroll_audit.paga.
+  let payrollRows: { id: number; paga: string | null; delta: string }[];
+  try {
+    payrollRows = db
+      .query("SELECT id,paga,delta FROM payroll_audit WHERE instante > ?")
+      .all(reopeningUtc) as typeof payrollRows;
+  } catch {
+    return {
+      estado: "NoVerificable",
+      bloques: ["auxiliares"],
+      motivos: [
+        "No se pudo leer la auditoría de nómina; no se acredita la ausencia de cambios.",
+      ],
+    };
+  }
+  let payrollChanged = false;
+  for (const row of payrollRows) {
+    let delta: unknown;
+    try {
+      delta = JSON.parse(row.delta);
+    } catch {
+      return {
+        estado: "NoVerificable",
+        bloques: ["auxiliares"],
+        motivos: [
+          "La auditoría de nómina no es legible; no se acredita la ausencia de cambios.",
+        ],
+      };
+    }
+    const record = asRecord(delta);
+    if (record?.accion !== "repartir") continue;
+    if (!Array.isArray(record.asignaciones))
+      return {
+        estado: "NoVerificable",
+        bloques: ["auxiliares"],
+        motivos: [
+          "La auditoría de reparto de nómina no contiene asignaciones legibles.",
+        ],
+      };
+    if (
+      auditMovementRefs(record.asignaciones).some((id) =>
+        cycleMovements.has(id),
+      )
+    ) {
+      payrollChanged = true;
+      break;
+    }
+  }
+  if (payrollChanged) found.push({ bloque: "auxiliares", label: "nómina" });
+
   if (!found.length) return null;
   return {
     estado: "ConCambios",
@@ -657,6 +757,25 @@ function sourceAuditChanges(
         `La auditoría registra una revisión posterior a la reapertura en ${entry.label}.`,
     ),
   };
+}
+
+/** Collects `movimiento` ids from direct or nested audit payloads. */
+function auditMovementRefs(value: unknown): string[] {
+  const refs = new Set<string>();
+  const visit = (input: unknown, depth: number) => {
+    if (depth > 3) return;
+    if (Array.isArray(input)) {
+      for (const item of input) visit(item, depth + 1);
+      return;
+    }
+    const record = asRecord(input);
+    if (!record) return;
+    if (typeof record.movimiento === "string") refs.add(record.movimiento);
+    for (const key of ["antes", "despues"] as const)
+      if (key in record) visit(record[key], depth + 1);
+  };
+  visit(value, 0);
+  return [...refs];
 }
 
 /**
