@@ -241,6 +241,11 @@ import {
 } from "./e410-cancelacion";
 import { getFotoCiclo, getVersionesFotoCiclo } from "./e411";
 import {
+  crearFotoPeriodo,
+  getFotoPeriodo,
+  getFotoPeriodoPorId,
+} from "./e411-periodo";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -1147,6 +1152,52 @@ export function createApp(db: Database, options: AppOptions) {
           `/api/cierres/${cancelarReaperturaPath[1]}/reapertura`,
         );
         return reply(result, 200);
+      }
+      // E4.11 I3 — agregado persistido de trimestre/año. La única escritura
+      // de E4.11 vive aquí; las lecturas no recalculan desde motores vivos.
+      if (path === "/api/fotos/periodos") {
+        if (req.method === "POST") {
+          const result = crearFotoPeriodo(
+            db,
+            await jsonBody(req),
+            req.headers.get("idempotency-key") ?? "",
+            {
+              actor: options.cierre?.actor,
+              appVersion: options.cierre?.appVersion,
+            },
+            now(),
+          );
+          headers.set("location", `/api/fotos/periodos/${result.id}`);
+          return reply(result, 201);
+        }
+        if (req.method === "GET")
+          return reply(
+            db.transaction(() =>
+              getFotoPeriodo(db, new URL(req.url).searchParams, now()),
+            )(),
+          );
+        headers.set("allow", "GET, POST");
+        throw new Problem(
+          405,
+          "METHOD_NOT_ALLOWED",
+          "El agregado de periodo se crea con POST y se consulta con GET.",
+        );
+      }
+      const fotoPeriodo = path.match(/^\/api\/fotos\/periodos\/(\d+)$/);
+      if (fotoPeriodo) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El agregado de periodo es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getFotoPeriodoPorId(db, Number(fotoPeriodo[1])),
+          )(),
+        );
       }
       // E4.11 I1 — consulta de solo lectura de fotos de ciclo y versiones.
       const fotoVersiones = path.match(
