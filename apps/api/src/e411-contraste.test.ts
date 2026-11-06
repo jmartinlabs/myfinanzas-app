@@ -241,6 +241,7 @@ test("E4.11 I4: T2 real por API (plan vivo) deja la foto intacta y cambia solo e
   const f = fixture();
   seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
   await f.enroll();
+  const beforeE411 = snapshotE411(f.db);
 
   const fotoAntes = getFotoCiclo(f.db, "1");
   const vivoAntes = getContraste(f.db, "1", now);
@@ -291,12 +292,14 @@ test("E4.11 I4: T2 real por API (plan vivo) deja la foto intacta y cambia solo e
   expect(vivoDespues.noEsHistorico).toBe(true);
   expect(JSON.stringify(fotoDespues)).not.toContain("1500.00");
   expect(JSON.stringify(vivoDespues)).not.toContain(noDisponibleMotivo);
+  expect(snapshotE411(f.db)).toEqual(beforeE411);
 });
 
 test("E4.11 I4: T3 real por API (renombrado) deja la foto y los valores vivos intactos", async () => {
   const f = fixture();
   seedClosure(f.db, "1", 1, "2026-06-20", "2026-07-19", 0);
   await f.enroll();
+  const beforeE411 = snapshotE411(f.db);
 
   const fotoAntes = getFotoCiclo(f.db, "1");
   const vivoAntes = getContraste(f.db, "1", now);
@@ -330,6 +333,7 @@ test("E4.11 I4: T3 real por API (renombrado) deja la foto y los valores vivos in
   );
   expect(vivoDespues.origen).toBe("CalculoVivo");
   expect(vivoDespues.noEsHistorico).toBe(true);
+  expect(snapshotE411(f.db)).toEqual(beforeE411);
 });
 
 test("E4.11 I4: cobertura y No disponible con motivo; lectura sin escrituras", () => {
