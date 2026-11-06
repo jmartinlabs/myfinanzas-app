@@ -240,6 +240,7 @@ import {
   type CancelacionOptions,
 } from "./e410-cancelacion";
 import { getFotoCiclo, getVersionesFotoCiclo } from "./e411";
+import { getContraste } from "./e411-contraste";
 import {
   crearFotoPeriodo,
   getFotoPeriodo,
@@ -1152,6 +1153,37 @@ export function createApp(db: Database, options: AppOptions) {
           `/api/cierres/${cancelarReaperturaPath[1]}/reapertura`,
         );
         return reply(result, 200);
+      }
+      // E4.11 I4 — contraste vivo de solo lectura. Etiquetado `CalculoVivo`,
+      // separado de toda foto y sin escribir ni completar bloques No disponible.
+      if (path === "/api/fotos/contraste") {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El contraste vivo es de solo lectura.",
+          );
+        }
+        const params = new URL(req.url).searchParams;
+        if (params.has("tipoRegistro"))
+          throw new Problem(
+            422,
+            "VALIDATION",
+            "El contraste vivo no mezcla fuentes: no admite tipoRegistro.",
+            {
+              tipoRegistro:
+                "Parámetro no admitido; el contraste es solo E2.6 y no lee el archivo E4.5.",
+            },
+          );
+        const ciclo = params.get("ciclo");
+        if (ciclo === null || !/^\d+$/.test(ciclo))
+          throw new Problem(422, "VALIDATION", "ID Ciclo inválido.", {
+            ciclo: "Indica un ciclo válido.",
+          });
+        return reply(
+          db.transaction(() => getContraste(db, ciclo, now()))(),
+        );
       }
       // E4.11 I3 — agregado persistido de trimestre/año. La única escritura
       // de E4.11 vive aquí; las lecturas no recalculan desde motores vivos.
