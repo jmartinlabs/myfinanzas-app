@@ -1,6 +1,9 @@
 import type { Database } from "bun:sqlite";
 import { Problem } from "./problem";
 import { fingerprint } from "./movement-ledger";
+import { activeReopenedCycle } from "./e410-window";
+
+export { activeReopenedCycle };
 
 /**
  * E4.9 closure guards shared by the real write paths.
@@ -85,69 +88,6 @@ export function closedWindows(db: Database): ClosedWindow[] {
 
 export function hasClosures(db: Database) {
   return closedWindows(db).length > 0;
-}
-
-type ActiveReopeningRow = {
-  ciclo: string;
-  id: number | null;
-  evento_ciclo: string | null;
-  version_origen: number | null;
-  tipo: string | null;
-  resultado: string | null;
-};
-
-/**
- * E4.10 DT-G — the one cycle with an open rectification window.
- *
- * Read-only and fail-closed: a missing projection (older schemas), a
- * projection without its event, an event that is not an open reopening, a
- * historical version or a later closure all resolve to `null`. `null` means
- * "no T1 exception": every guard keeps blocking exactly as in E4.9.
- *
- * This deliberately does not modify `closedWindows`: that list still feeds
- * S0/`inicio`/`Fin`, T2/T3, plan and Revisión Comida. Only the T1 entry points
- * ask for this exception.
- */
-export function activeReopenedCycle(db: Database): string | null {
-  if (
-    !hasTable(db, "reapertura_activa") ||
-    !hasTable(db, "reaperturas") ||
-    !hasTable(db, "cierres")
-  )
-    return null;
-  const row = db
-    .query(
-      `SELECT p.ciclo,r.id,r.ciclo AS evento_ciclo,r.version_origen,r.tipo,
-        r.resultado
-       FROM reapertura_activa p
-       LEFT JOIN reaperturas r ON r.id=p.reapertura_id
-       WHERE p.id=1`,
-    )
-    .get() as ActiveReopeningRow | null;
-  if (
-    !row ||
-    row.id === null ||
-    row.evento_ciclo !== row.ciclo ||
-    row.tipo !== "reapertura" ||
-    row.resultado !== "Abierta"
-  )
-    return null;
-  const last = db
-    .query(
-      "SELECT version,fin FROM cierres WHERE ciclo=? ORDER BY version DESC LIMIT 1",
-    )
-    .get(row.ciclo) as { version: number; fin: string } | null;
-  if (!last || last.version !== row.version_origen) return null;
-  const later = db
-    .query(
-      `SELECT 1 FROM cierres c
-       WHERE c.ciclo<>?
-         AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
-         AND c.fin>=?
-       LIMIT 1`,
-    )
-    .get(row.ciclo, last.fin);
-  return later ? null : row.ciclo;
 }
 
 /** Closed windows touched by any of the received dates, without duplicates. */

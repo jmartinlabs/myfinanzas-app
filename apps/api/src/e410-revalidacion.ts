@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { dayBefore, getCycle } from "./ciclos";
-import { getReaperturaEstado } from "./e410";
+import { readActiveWindow, type ReopeningEvent } from "./e410-window";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
 import { decimal } from "./saldos";
@@ -53,8 +53,8 @@ export type RevalidacionBody = {
   ciclo: string;
   estado: RevalidacionEstado;
   bloquea: boolean;
-  version: number;
-  reapertura: { id: number; versionOrigen: number };
+  version: number | null;
+  reapertura: { id: number; versionOrigen: number } | null;
   comprobaciones: RevalidacionCheck[];
   bloqueos: string[];
   avisos: string[];
@@ -147,12 +147,17 @@ function externalCheck(
   const aporte = raw as RevalidacionAporte;
   switch (aporte.estado) {
     case "Verificado":
+      if (aporte.datos === undefined || aporte.datos === null)
+        return blocked(
+          clave,
+          `La fuente ${clave} se declaró verificada sin datos comparables.`,
+        );
       return {
         clave,
         estado: "Verificado",
         codigo: null,
         motivo: null,
-        comparado: aporte.datos ?? null,
+        comparado: aporte.datos,
       };
     case "NoDisponible": {
       const motivo = text(aporte.motivo);
@@ -231,9 +236,29 @@ function nextCycle(db: Database, ciclo: string) {
   );
 }
 
-function nextPlan(db: Database, ciclo: string) {
-  if (!hasTable(db, "cycle_plans") || !hasTable(db, "cycle_plan_lines"))
-    return { error: "El plan del ciclo siguiente no es legible." } as const;
+type PlanReading =
+  | {
+      estado: "SinPlan" | "Capturado" | "PlanNoVerificable";
+      revision: number | null;
+      auditRevision: number | null;
+      lineas: number;
+      motivo: string | null;
+    }
+  | { error: string };
+
+/**
+ * Mirrors `planSnapshot` in `e49.ts`: a plan is only verifiable when its
+ * current revision matches the latest `cycle_plan_audit` revision. A missing
+ * plan with no lines is a valid `SinPlan`; unreadable or mismatched plan data
+ * blocks instead of being reported as verified.
+ */
+function nextPlan(db: Database, ciclo: string): PlanReading {
+  if (
+    !hasTable(db, "cycle_plans") ||
+    !hasTable(db, "cycle_plan_lines") ||
+    !hasTable(db, "cycle_plan_audit")
+  )
+    return { error: "El plan del ciclo siguiente no es legible." };
   try {
     const header = db
       .query("SELECT revision FROM cycle_plans WHERE ciclo=?")
@@ -241,30 +266,56 @@ function nextPlan(db: Database, ciclo: string) {
     const lines = db
       .query("SELECT COUNT(*) n FROM cycle_plan_lines WHERE ciclo=?")
       .get(ciclo) as { n: number };
-    if (!header) {
-      if (lines.n > 0)
-        return {
-          error: "Hay líneas de plan sin cabecera para el ciclo siguiente.",
-        } as const;
-      return { estado: "SinPlan", revision: null, lineas: 0 } as const;
-    }
-    if (!Number.isSafeInteger(header.revision) || header.revision < 1)
-      return { error: "La revisión del plan siguiente es ilegible." } as const;
+    const audit = db
+      .query("SELECT MAX(revision) m FROM cycle_plan_audit WHERE ciclo=?")
+      .get(ciclo) as { m: number | null } | null;
+    if (!header && lines.n > 0)
+      return {
+        error: "Hay líneas de plan sin cabecera para el ciclo siguiente.",
+      };
+    if (header && (!Number.isSafeInteger(header.revision) || header.revision < 1))
+      return { error: "La revisión del plan siguiente es ilegible." };
+    const mismatch =
+      !!header &&
+      audit?.m !== null &&
+      audit?.m !== undefined &&
+      audit.m !== header.revision;
+    const sinPlan = lines.n === 0;
     return {
-      estado: "Capturado",
-      revision: header.revision,
+      estado: sinPlan ? "SinPlan" : mismatch ? "PlanNoVerificable" : "Capturado",
+      revision: header?.revision ?? null,
+      auditRevision: audit?.m ?? null,
       lineas: lines.n,
-    } as const;
+      motivo: mismatch
+        ? "La revisión del plan no coincide con su auditoría; no es verificable."
+        : null,
+    };
   } catch {
-    return { error: "No se pudo leer el plan del ciclo siguiente." } as const;
+    return { error: "No se pudo leer el plan del ciclo siguiente." };
   }
 }
 
-function auxiliaryCounts(
+type AuxiliaryRows = {
+  anticipos: Record<string, unknown>[];
+  compartidos: Record<string, unknown>[];
+  nomina: Record<string, unknown>[];
+  revisionComida: Record<string, unknown>[];
+  deuda: Record<string, unknown>[];
+};
+
+const auxiliarySources = [
+  "anticipos",
+  "compartidos",
+  "nomina",
+  "revisionComida",
+  "deuda",
+] as const;
+
+function auxiliaryRows(
   db: Database,
   inicio: string,
   fin: string,
-): Record<string, number> {
+): AuxiliaryRows {
   const required = [
     "movimiento_anticipo",
     "movimiento_compartido",
@@ -276,44 +327,156 @@ function auxiliaryCounts(
     if (!hasTable(db, table))
       throw new Error(`Falta la tabla auxiliar ${table}.`);
   return {
-    anticipos: (
-      db
-        .query(
-          `SELECT COUNT(*) n FROM movimiento_anticipo a
-           JOIN movimientos m ON m.id=a.movimiento
-           WHERE m.fecha BETWEEN ? AND ?`,
-        )
-        .get(inicio, fin) as { n: number }
-    ).n,
-    compartidos: (
-      db
-        .query(
-          `SELECT COUNT(*) n FROM movimiento_compartido c
-           JOIN movimientos m ON m.id=c.movimiento
-           WHERE m.fecha BETWEEN ? AND ?`,
-        )
-        .get(inicio, fin) as { n: number }
-    ).n,
-    nomina: (
-      db
-        .query(
-          `SELECT COUNT(*) n FROM payroll_allocations p
-           JOIN movimientos m ON m.id=p.movimiento
-           WHERE m.fecha BETWEEN ? AND ?`,
-        )
-        .get(inicio, fin) as { n: number }
-    ).n,
-    revisionComida: (
-      db
-        .query(
-          `SELECT COUNT(*) n FROM movimiento_revision_comida c
-           JOIN movimientos m ON m.id=c.movimiento
-           WHERE m.fecha BETWEEN ? AND ?`,
-        )
-        .get(inicio, fin) as { n: number }
-    ).n,
-    deuda: (db.query("SELECT COUNT(*) n FROM deudas").get() as { n: number }).n,
+    anticipos: db
+      .query(
+        `SELECT a.movimiento,a.referencia,a.rol,CAST(m.importe AS TEXT) importe,m.fecha
+         FROM movimiento_anticipo a JOIN movimientos m ON m.id=a.movimiento
+         WHERE m.fecha BETWEEN ? AND ? ORDER BY a.movimiento`,
+      )
+      .all(inicio, fin) as Record<string, unknown>[],
+    compartidos: db
+      .query(
+        `SELECT c.movimiento,c.referencia,c.participante,CAST(m.importe AS TEXT) importe,m.fecha
+         FROM movimiento_compartido c JOIN movimientos m ON m.id=c.movimiento
+         WHERE m.fecha BETWEEN ? AND ? ORDER BY c.movimiento`,
+      )
+      .all(inicio, fin) as Record<string, unknown>[],
+    nomina: db
+      .query(
+        `SELECT p.paga,p.movimiento,CAST(p.importe AS TEXT) importe,m.fecha
+         FROM payroll_allocations p JOIN movimientos m ON m.id=p.movimiento
+         WHERE m.fecha BETWEEN ? AND ? ORDER BY p.movimiento`,
+      )
+      .all(inicio, fin) as Record<string, unknown>[],
+    revisionComida: db
+      .query(
+        `SELECT c.movimiento,c.etiqueta,c.estado_revision estadoRevision,
+           CAST(m.importe AS TEXT) importe,m.fecha
+         FROM movimiento_revision_comida c JOIN movimientos m ON m.id=c.movimiento
+         WHERE m.fecha BETWEEN ? AND ? ORDER BY c.movimiento`,
+      )
+      .all(inicio, fin) as Record<string, unknown>[],
+    deuda: db
+      .query(
+        "SELECT id,nombre,estado,revision,CAST(apertura AS TEXT) apertura FROM deudas ORDER BY id",
+      )
+      .all() as Record<string, unknown>[],
   };
+}
+
+function photoAuxiliaryRows(
+  db: Database,
+  ciclo: string,
+  version: number,
+): AuxiliaryRows {
+  const row = db
+    .query(
+      "SELECT auxiliares FROM fotos_cierre WHERE ciclo=? AND version=?",
+    )
+    .get(ciclo, version) as { auxiliares: string } | null;
+  if (!row) throw new Error("La foto no contiene bloque de auxiliares.");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(row.auxiliares);
+  } catch {
+    throw new Error("El bloque de auxiliares de la foto no es legible.");
+  }
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    throw new Error("El bloque de auxiliares de la foto no es legible.");
+  const value = parsed as Record<string, unknown>;
+  const result = {} as AuxiliaryRows;
+  for (const source of auxiliarySources) {
+    if (!Array.isArray(value[source]))
+      throw new Error(`El auxiliar ${source} de la foto no es legible.`);
+    result[source] = value[source] as Record<string, unknown>[];
+  }
+  return result;
+}
+
+function auxiliaryKey(
+  source: (typeof auxiliarySources)[number],
+  row: Record<string, unknown>,
+): string {
+  const field = (name: string) => String(row[name] ?? "");
+  switch (source) {
+    case "anticipos":
+      return `${field("movimiento")}|${field("referencia")}|${field("rol")}`;
+    case "compartidos":
+      return `${field("movimiento")}|${field("referencia")}|${field("participante")}`;
+    case "nomina":
+      return `${field("paga")}|${field("movimiento")}`;
+    case "revisionComida":
+      return `${field("movimiento")}|${field("etiqueta")}`;
+    case "deuda":
+      return field("id");
+  }
+}
+
+function auxiliaryKeys(
+  source: (typeof auxiliarySources)[number],
+  rows: Record<string, unknown>[],
+): Set<string> {
+  return new Set(rows.map((row) => auxiliaryKey(source, row)));
+}
+
+function auxiliaryCounts(rows: AuxiliaryRows): Record<string, number> {
+  return Object.fromEntries(
+    auxiliarySources.map((source) => [source, rows[source].length]),
+  );
+}
+
+function canonical(value: Record<string, unknown>): string {
+  return JSON.stringify(
+    Object.fromEntries(
+      Object.entries(value).sort(([a], [b]) => a.localeCompare(b)),
+    ),
+  );
+}
+
+function compareAuxiliary(stored: AuxiliaryRows, live: AuxiliaryRows) {
+  const faltan: string[] = [],
+    nuevos: string[] = [],
+    cambiados: string[] = [];
+  for (const source of auxiliarySources) {
+    const storedRows = new Map(
+      stored[source].map((row) => [auxiliaryKey(source, row), row]),
+    );
+    const liveRows = new Map(
+      live[source].map((row) => [auxiliaryKey(source, row), row]),
+    );
+    for (const [key, row] of storedRows) {
+      const current = liveRows.get(key);
+      if (!current) faltan.push(`${source}:${key}`);
+      else if (canonical(row) !== canonical(current))
+        cambiados.push(`${source}:${key}`);
+    }
+    for (const key of liveRows.keys())
+      if (!storedRows.has(key)) nuevos.push(`${source}:${key}`);
+  }
+  return { faltan, nuevos, cambiados };
+}
+
+/**
+ * A stored auxiliary row whose movement no longer exists is a real
+ * contradiction: the photo captured a reference that the live database cannot
+ * explain. A row merely unlinked inside the window is a T2 rectification and
+ * is reported as a warning, not a blocker.
+ */
+function danglingAuxiliaryRows(
+  db: Database,
+  stored: AuxiliaryRows,
+): string[] {
+  const dangling: string[] = [];
+  for (const source of ["anticipos", "compartidos", "nomina", "revisionComida"] as const)
+    for (const row of stored[source]) {
+      const movimiento = row.movimiento;
+      if (
+        typeof movimiento === "string" &&
+        !db.query("SELECT 1 FROM movimientos WHERE id=?").get(movimiento)
+      )
+        dangling.push(`${source}:${auxiliaryKey(source, row)}`);
+    }
+  return dangling;
 }
 
 /**
@@ -326,109 +489,171 @@ export function getRevalidacion(
   options: RevalidacionOptions = {},
 ): RevalidacionResult {
   const { ciclo } = getCycle(db, cicloId);
-  const state = getReaperturaEstado(db, ciclo.id);
-  if (state.estado !== "Reabierto" || !state.reapertura)
-    throw new Problem(
+  const reading = readActiveWindow(db);
+  const noActive = () =>
+    new Problem(
       409,
       "NO_REBIERTO",
       "El ciclo no tiene una reapertura activa que revalidar.",
       {},
-      { ciclo: ciclo.id, estado: state.estado },
+      { ciclo: ciclo.id },
     );
-  const last = lastClosure(db, ciclo.id);
-  if (!last)
-    throw new Problem(
-      409,
-      "SIN_CIERRE",
-      "El ciclo no tiene un cierre que revalidar.",
-    );
+  if (reading.estado === "SinVentana") throw noActive();
+  if (
+    (reading.estado === "Abierta" &&
+      reading.ventana.ciclo !== ciclo.id) ||
+    ((reading.estado === "CierrePosterior" ||
+      reading.estado === "Inconsistente") &&
+      reading.ciclo !== ciclo.id)
+  )
+    throw noActive();
 
+  const last = lastClosure(db, ciclo.id);
+  const event: ReopeningEvent | null =
+    reading.estado === "Abierta" || reading.estado === "CierrePosterior"
+      ? reading.ventana
+      : reading.estado === "Inconsistente"
+        ? reading.evento
+        : null;
+  const versionOrigen = event?.versionOrigen ?? null;
   const comprobaciones: RevalidacionCheck[] = [];
 
-  comprobaciones.push(
-    state.reapertura.versionOrigen === last.version
-      ? {
-          clave: "version",
-          estado: "Verificado",
-          codigo: null,
-          motivo: null,
-          comparado: {
-            versionOrigen: state.reapertura.versionOrigen,
-            ultimaVersion: last.version,
-          },
-        }
-      : blocked(
-          "version",
-          "La ventana no corresponde a la última versión cerrada.",
-          "ESTADO_INCONSISTENTE",
-          {
-            versionOrigen: state.reapertura.versionOrigen,
-            ultimaVersion: last.version,
-          },
-        ),
-  );
+  if (!last)
+    comprobaciones.push(
+      blocked(
+        "version",
+        "No existe un cierre que revalidar.",
+        "SIN_CIERRE",
+        { versionOrigen, ultimaVersion: null },
+      ),
+    );
+  else if (reading.estado !== "Inconsistente" && versionOrigen === last.version)
+    comprobaciones.push({
+      clave: "version",
+      estado: "Verificado",
+      codigo: null,
+      motivo: null,
+      comparado: { versionOrigen, ultimaVersion: last.version },
+    });
+  else
+    comprobaciones.push(
+      blocked(
+        "version",
+        reading.estado === "Inconsistente"
+          ? reading.motivo
+          : "La ventana no corresponde a la última versión cerrada.",
+        "ESTADO_INCONSISTENTE",
+        { versionOrigen, ultimaVersion: last.version },
+      ),
+    );
 
-  const laterClosure = db
-    .query(
-      `SELECT c.ciclo,c.version,c.fin FROM cierres c
-       WHERE c.ciclo<>?
-         AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
-         AND c.fin>=?
-       ORDER BY c.fin,c.ciclo LIMIT 1`,
-    )
-    .get(ciclo.id, last.fin) as {
-    ciclo: string;
-    version: number;
-    fin: string;
-  } | null;
-  comprobaciones.push(
-    laterClosure
-      ? blocked(
-          "cierrePosterior",
-          "Existe un cierre posterior durante la ventana; no se altera.",
-          "CIERRE_POSTERIOR",
-          laterClosure,
-        )
-      : {
-          clave: "cierrePosterior",
-          estado: "Verificado",
-          codigo: null,
-          motivo: null,
-          comparado: { cierrePosterior: null },
+  if (!last)
+    comprobaciones.push({
+      clave: "cierrePosterior",
+      estado: "NoDisponible",
+      codigo: "SIN_CIERRE",
+      motivo: "No hay cierre con el que comparar un cierre posterior.",
+      comparado: null,
+    });
+  else if (reading.estado === "CierrePosterior")
+    comprobaciones.push(
+      blocked(
+        "cierrePosterior",
+        "Existe un cierre posterior durante la ventana; no se altera.",
+        "CIERRE_POSTERIOR",
+        {
+          cierrePosterior: reading.cierrePosterior,
+          finVentana: last.fin,
         },
-  );
+      ),
+    );
+  else {
+    const laterClosure = db
+      .query(
+        `SELECT c.ciclo,c.version,c.fin FROM cierres c
+         WHERE c.ciclo<>?
+           AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
+           AND c.fin>=?
+         ORDER BY c.fin,c.ciclo LIMIT 1`,
+      )
+      .get(ciclo.id, last.fin) as {
+      ciclo: string;
+      version: number;
+      fin: string;
+    } | null;
+    comprobaciones.push(
+      laterClosure
+        ? blocked(
+            "cierrePosterior",
+            "Existe un cierre posterior durante la ventana; no se altera.",
+            "CIERRE_POSTERIOR",
+            laterClosure,
+          )
+        : {
+            clave: "cierrePosterior",
+            estado: "Verificado",
+            codigo: null,
+            motivo: null,
+            comparado: { cierrePosterior: null },
+          },
+    );
+  }
 
-  const laterVersion = db
-    .query(
-      "SELECT version,creado_utc FROM cierres WHERE ciclo=? AND version>? ORDER BY version LIMIT 1",
-    )
-    .get(ciclo.id, last.version) as {
-    version: number;
-    creado_utc: string;
-  } | null;
-  comprobaciones.push(
-    laterVersion
-      ? blocked(
-          "fotosPosteriores",
-          "Apareció una versión posterior del mismo ciclo durante la ventana.",
-          "VERSION_POSTERIOR",
-          laterVersion,
-        )
-      : {
-          clave: "fotosPosteriores",
-          estado: "Verificado",
-          codigo: null,
-          motivo: null,
-          comparado: { ultimaVersion: last.version },
-        },
-  );
+  if (!last)
+    comprobaciones.push({
+      clave: "fotosPosteriores",
+      estado: "NoDisponible",
+      codigo: "SIN_CIERRE",
+      motivo: "No hay foto de cierre que comparar.",
+      comparado: null,
+    });
+  else if (versionOrigen !== null && versionOrigen < last.version)
+    comprobaciones.push(
+      blocked(
+        "fotosPosteriores",
+        "Apareció una versión posterior del mismo ciclo durante la ventana.",
+        "VERSION_POSTERIOR",
+        { versionOrigen, ultimaVersion: last.version },
+      ),
+    );
+  else {
+    const laterVersion = db
+      .query(
+        "SELECT version,creado_utc FROM cierres WHERE ciclo=? AND version>? ORDER BY version LIMIT 1",
+      )
+      .get(ciclo.id, last.version) as {
+      version: number;
+      creado_utc: string;
+    } | null;
+    comprobaciones.push(
+      laterVersion
+        ? blocked(
+            "fotosPosteriores",
+            "Apareció una versión posterior del mismo ciclo durante la ventana.",
+            "VERSION_POSTERIOR",
+            laterVersion,
+          )
+        : {
+            clave: "fotosPosteriores",
+            estado: "Verificado",
+            codigo: null,
+            motivo: null,
+            comparado: { ultimaVersion: last.version },
+          },
+    );
+  }
 
-  const siguiente = nextCycle(db, ciclo.inicio);
+  const siguiente = last ? nextCycle(db, ciclo.inicio) : null;
   const esperadoFin = siguiente ? dayBefore(siguiente.inicio) : null;
-  // D4 forbids recalculating an alien S0/plan. The material check is that the
-  // frozen window still matches the next cycle start; the S0 and plan values
-  // are only read and recorded, never rewritten or derived again.
-  if (!siguiente)
+  if (!last)
+    comprobaciones.push({
+      clave: "s0PlanSiguiente",
+      estado: "NoDisponible",
+      codigo: "SIN_CIERRE",
+      motivo: "No hay ventana cerrada desde la que revalidar el ciclo siguiente.",
+      comparado: null,
+    });
+  else if (!siguiente)
     comprobaciones.push({
       clave: "s0PlanSiguiente",
       estado: "NoDisponible",
@@ -462,8 +687,18 @@ export function getRevalidacion(
       comprobaciones.push(
         blocked(
           "s0PlanSiguiente",
-          plan.error ?? "El plan del ciclo siguiente no es legible.",
+          plan.error,
           "PLAN_ILEGIBLE",
+          comparado,
+        ),
+      );
+    else if (plan.estado === "PlanNoVerificable")
+      comprobaciones.push(
+        blocked(
+          "s0PlanSiguiente",
+          plan.motivo ??
+            "La revisión del plan no coincide con su auditoría; no es verificable.",
+          "PLAN_NO_VERIFICABLE",
           comparado,
         ),
       );
@@ -477,27 +712,84 @@ export function getRevalidacion(
       });
   }
 
-  try {
+  if (!last)
     comprobaciones.push({
       clave: "auxiliares",
-      estado: "Verificado",
-      codigo: null,
-      motivo: null,
-      comparado: {
-        cicloReabierto: auxiliaryCounts(db, last.inicio, last.fin),
-        cicloSiguiente: siguiente
-          ? auxiliaryCounts(db, siguiente.inicio, dayBefore(siguiente.inicio))
-          : null,
-      },
+      estado: "NoDisponible",
+      codigo: "SIN_CIERRE",
+      motivo: "No hay foto de cierre con la que contrastar auxiliares.",
+      comparado: null,
     });
-  } catch {
-    comprobaciones.push(
-      blocked(
-        "auxiliares",
-        "Una fuente auxiliar no se pudo leer; no se acredita su ausencia de impacto.",
-      ),
-    );
-  }
+  else
+    try {
+      const stored = photoAuxiliaryRows(db, ciclo.id, last.version);
+      const live = auxiliaryRows(db, last.inicio, last.fin);
+      const nextAuxiliary =
+        siguiente && esperadoFin
+          ? auxiliaryRows(db, siguiente.inicio, esperadoFin)
+          : null;
+      const comparison = compareAuxiliary(stored, live);
+      const dangling = danglingAuxiliaryRows(db, stored);
+      const comparado = {
+        foto: {
+          version: last.version,
+          ...auxiliaryCounts(stored),
+        },
+        cicloReabierto: auxiliaryCounts(live),
+        cicloSiguiente: nextAuxiliary
+          ? auxiliaryCounts(nextAuxiliary)
+          : null,
+        faltan: comparison.faltan,
+        nuevos: comparison.nuevos,
+        cambiados: comparison.cambiados,
+        dangling,
+      };
+      if (dangling.length)
+        comprobaciones.push(
+          blocked(
+            "auxiliares",
+            "Auxiliares capturados por la foto apuntan a movimientos inexistentes; no se acredita su ausencia de impacto.",
+            "AUXILIARES_INCOHERENTES",
+            comparado,
+          ),
+        );
+      else if (
+        comparison.faltan.length ||
+        comparison.nuevos.length ||
+        comparison.cambiados.length
+      )
+        // New, changed or unlinked auxiliary rows inside the reopened window
+        // are the authorized rectification itself, not an external
+        // contradiction. They still must not be reported as `Verificado`:
+        // the difference is recorded as a warning for the re-closure audit.
+        comprobaciones.push({
+          clave: "auxiliares",
+          estado: "Aviso",
+          codigo: "AUXILIARES_RECTIFICADOS",
+          motivo:
+            "Los auxiliares vivos difieren de la foto dentro de la ventana de rectificación.",
+          comparado: {
+            ...comparado,
+            acreditacion:
+              "Diferencia dentro de la ventana de rectificación; se registra para el re-cierre.",
+          },
+        });
+      else
+        comprobaciones.push({
+          clave: "auxiliares",
+          estado: "Verificado",
+          codigo: null,
+          motivo: null,
+          comparado,
+        });
+    } catch {
+      comprobaciones.push(
+        blocked(
+          "auxiliares",
+          "Una fuente auxiliar o el bloque de la foto no se pudo leer; no se acredita su ausencia de impacto.",
+        ),
+      );
+    }
 
   comprobaciones.push(
     externalCheck("agregadosE411", options.agregados, {
@@ -531,11 +823,14 @@ export function getRevalidacion(
     ciclo: ciclo.id,
     estado,
     bloquea: bloqueos.length > 0,
-    version: last.version,
-    reapertura: {
-      id: state.reapertura.id,
-      versionOrigen: state.reapertura.versionOrigen,
-    },
+    version: last?.version ?? null,
+    reapertura:
+      reading.estado === "Abierta" || reading.estado === "CierrePosterior"
+        ? {
+            id: reading.ventana.id,
+            versionOrigen: reading.ventana.versionOrigen,
+          }
+        : null,
     comprobaciones,
     bloqueos,
     avisos,

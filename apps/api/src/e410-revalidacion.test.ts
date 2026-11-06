@@ -36,6 +36,7 @@ function seedClosure(
   version: number,
   inicio: string,
   fin: string,
+  auxiliares = '{"anticipos":[],"compartidos":[],"nomina":[],"revisionComida":[],"deuda":[]}',
 ) {
   const creado = `2026-0${Math.min(version, 9)}-01T00:00:00.000Z`;
   const fp = "a".repeat(64);
@@ -52,8 +53,8 @@ function seedClosure(
         saldo_inicial,estado_temporal,estado_hechos,estado_plan,hechos,plan,
         clasificacion,inversion,auxiliares,cobertura,backup,no_disponible)
        VALUES(?,?,?,'usuario-unico',?,?,'0.0.0-fixture',26,?,?,10000,'Cerrado',
-        'Sin hechos','SinPlan','{}','{}','{}','{}','{}','{}','{}','{}')`,
-      [ciclo, version, creado, version === 1 ? null : "Re-cierre", fp, inicio, fin],
+        'Sin hechos','SinPlan','{}','{}','{}','{}',?,'{}','{}','{}')`,
+      [ciclo, version, creado, version === 1 ? null : "Re-cierre", fp, inicio, fin, auxiliares],
     );
     db.run(
       `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
@@ -63,11 +64,43 @@ function seedClosure(
   })();
 }
 
-function fixture() {
+function seedPlan(
+  db: Database,
+  ciclo: string,
+  revision: number,
+  auditRevision?: number,
+) {
+  db.run(
+    `INSERT OR IGNORE INTO presupuestos(id,nombre,fuente,destino,estado,
+       revision,creado,actualizado)
+     VALUES('PRE0001','Presupuesto ficticio','No aplica',NULL,'Activo',1,?,?)`,
+    [stamp, stamp],
+  );
+  db.run(
+    `INSERT INTO cycle_plans(ciclo,revision) VALUES(?,?)
+     ON CONFLICT(ciclo) DO UPDATE SET revision=excluded.revision`,
+    [ciclo, revision],
+  );
+  db.run(
+    `INSERT INTO cycle_plan_lines(ciclo,presupuesto,base,esencial,del_mes)
+     VALUES(?,'PRE0001',100,NULL,NULL)
+     ON CONFLICT(ciclo,presupuesto) DO UPDATE SET base=excluded.base`,
+    [ciclo],
+  );
+  if (auditRevision !== undefined)
+    db.run(
+      `INSERT INTO cycle_plan_audit(ciclo,presupuesto,revision,actor,instante,
+         motivo,delta)
+       VALUES(?,'PRE0001',?,'usuario-unico',?,NULL,'{}')`,
+      [ciclo, auditRevision, stamp],
+    );
+}
+
+function fixture(auxiliares?: string) {
   const db = openDatabase(":memory:");
   seedCycles(db);
   seedClosure(db, "1", 1, "2026-01-01", "2026-01-31");
-  seedClosure(db, "2", 1, "2026-02-01", "2026-02-28");
+  seedClosure(db, "2", 1, "2026-02-01", "2026-02-28", auxiliares);
   reabrirCierre(
     db,
     "2",
@@ -84,6 +117,8 @@ function snapshot(db: Database) {
     ciclos: db.query("SELECT * FROM ciclos ORDER BY id").all(),
     planes: db.query("SELECT * FROM cycle_plans ORDER BY ciclo").all(),
     lineas: db.query("SELECT * FROM cycle_plan_lines ORDER BY ciclo").all(),
+    planAudit: db.query("SELECT * FROM cycle_plan_audit ORDER BY id").all(),
+    presupuestos: db.query("SELECT * FROM presupuestos ORDER BY id").all(),
     fotos: db.query("SELECT * FROM fotos_cierre ORDER BY ciclo,version").all(),
     reaperturas: db.query("SELECT * FROM reaperturas ORDER BY id").all(),
     activa: db.query("SELECT * FROM reapertura_activa").all(),
@@ -109,7 +144,7 @@ function check(result: ReturnType<typeof getRevalidacion>, clave: string) {
 test("E4.10 I3 revalidación: sin E4.5 ni agregados no bloquea y no declara verificado", () => {
   const db = fixture();
   try {
-    db.run("INSERT INTO cycle_plans(ciclo,revision) VALUES('3',1)");
+    seedPlan(db, "3", 1);
     const before = snapshot(db);
     const result = getRevalidacion(db, "2");
     expect(snapshot(db)).toEqual(before);
@@ -136,7 +171,7 @@ test("E4.10 I3 revalidación: sin E4.5 ni agregados no bloquea y no declara veri
       estado: "Verificado",
       comparado: {
         siguiente: { id: "3", inicio: "2026-03-01" },
-        plan: { estado: "Capturado", revision: 1, lineas: 0 },
+        plan: { estado: "Capturado", revision: 1, lineas: 1 },
       },
     });
     expect(check(result, "auxiliares").estado).toBe("Verificado");
@@ -217,6 +252,7 @@ test("E4.10 I3 revalidación: datos ilegibles bloquean y no se asumen no bloquea
       () => ({ estado: "Ilegible", motivo: "JSON corrupto" }) as const,
       () => ({ estado: "NoDisponible" }) as never,
       () => ({ estado: "Aviso", motivo: "Diferencia", acreditacion: "" }) as const,
+      () => ({ estado: "Verificado" }) as const,
     ]) {
       const result = getRevalidacion(db, "2", { precontrol: proveedor });
       expect(result.estado).toBe("Bloqueante");
@@ -309,6 +345,201 @@ test("E4.10 I3 revalidación: una ventana congelada incoherente con el ciclo sig
   }
 });
 
+test("E4.10 I3 revalidación: un cierre posterior devuelve Bloqueante sin lanzar", () => {
+  const db = fixture();
+  try {
+    seedClosure(db, "3", 1, "2026-03-01", "2026-03-31");
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "cierrePosterior")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "CIERRE_POSTERIOR",
+      comparado: {
+        cierrePosterior: {
+          ciclo: "3",
+          version: 1,
+          fin: "2026-03-31",
+        },
+        finVentana: "2026-02-28",
+      },
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: una versión posterior del mismo ciclo devuelve Bloqueante", () => {
+  const db = fixture();
+  try {
+    seedClosure(db, "2", 2, "2026-02-01", "2026-02-28");
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "version")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "ESTADO_INCONSISTENTE",
+      comparado: { versionOrigen: 1, ultimaVersion: 2 },
+    });
+    expect(check(result, "fotosPosteriores")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "VERSION_POSTERIOR",
+      comparado: { versionOrigen: 1, ultimaVersion: 2 },
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: una proyección inconsistente devuelve Bloqueante sin lanzar", () => {
+  const db = fixture();
+  try {
+    const reopeningId = (
+      db.query("SELECT reapertura_id id FROM reapertura_activa").get() as {
+        id: number;
+      }
+    ).id;
+    db.run(
+      `INSERT INTO reaperturas(ciclo,version_origen,tipo,actor,creado_utc,
+        motivo,fingerprint_peticion,version_esperada,clave_intento,correlacion,
+        reapertura_origen,resultado)
+       VALUES('2',1,'cancelacion','usuario-unico',?,'Cancelación ficticia',?,
+        1,'clave-cancelacion','corr',?,'Cancelada')`,
+      [stamp, "b".repeat(64), reopeningId],
+    );
+    const cancelId = (
+      db.query("SELECT id FROM reaperturas WHERE tipo='cancelacion'").get() as {
+        id: number;
+      }
+    ).id;
+    db.run("UPDATE reapertura_activa SET reapertura_id=? WHERE id=1", [cancelId]);
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(result.reapertura).toBeNull();
+    expect(check(result, "version")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "ESTADO_INCONSISTENTE",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: un plan con revisión incoherente bloquea", () => {
+  const db = fixture();
+  try {
+    seedPlan(db, "3", 1, 2);
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "s0PlanSiguiente")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "PLAN_NO_VERIFICABLE",
+      comparado: {
+        plan: {
+          estado: "PlanNoVerificable",
+          revision: 1,
+          auditRevision: 2,
+          lineas: 1,
+        },
+      },
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: auxiliares de la foto ausentes bloquean", () => {
+  const db = fixture("{}");
+  try {
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "auxiliares")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "REVALIDACION_BLOQUEANTE",
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: un auxiliar capturado que ya no existe bloquea", () => {
+  const aux = JSON.stringify({
+    anticipos: [
+      {
+        movimiento: "9999",
+        referencia: "A1",
+        rol: "Titular",
+        importe: "100",
+        fecha: "2026-02-10",
+      },
+    ],
+    compartidos: [],
+    nomina: [],
+    revisionComida: [],
+    deuda: [],
+  });
+  const db = fixture(aux);
+  try {
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "auxiliares")).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "AUXILIARES_INCOHERENTES",
+    });
+    expect(check(result, "auxiliares").comparado).toMatchObject({
+      faltan: ["anticipos:9999|A1|Titular"],
+    });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 revalidación: un auxiliar desvinculado dentro de la ventana es aviso", () => {
+  const aux = JSON.stringify({
+    anticipos: [
+      {
+        movimiento: "8002",
+        referencia: "A1",
+        rol: "Titular",
+        importe: "500",
+        fecha: "2026-02-05",
+      },
+    ],
+    compartidos: [],
+    nomina: [],
+    revisionComida: [],
+    deuda: [],
+  });
+  const db = fixture(aux);
+  try {
+    db.run(
+      `INSERT INTO movimientos(id,fecha,tipo,importe,origen,destino,subtipo,
+         partida,referencia,concepto,nota,anulado,revision,creado,actualizado,
+         capital,intereses)
+       VALUES('8002','2026-02-05','Transferencia',500,'S001','S002',NULL,
+         NULL,NULL,'Movimiento ficticio auxiliar','',0,1,?,?,NULL,NULL)`,
+      [stamp, stamp],
+    );
+    const result = getRevalidacion(db, "2");
+    expect(result.bloquea).toBe(false);
+    expect(result.avisos).toContain("auxiliares");
+    expect(check(result, "auxiliares")).toMatchObject({
+      estado: "Aviso",
+      codigo: "AUXILIARES_RECTIFICADOS",
+      comparado: {
+        faltan: ["anticipos:8002|A1|Titular"],
+        dangling: [],
+      },
+    });
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.10 I3 revalidación: exige una reapertura activa", () => {
   const db = openDatabase(":memory:");
   try {
@@ -322,8 +553,7 @@ test("E4.10 I3 revalidación: exige una reapertura activa", () => {
   }
 });
 
-test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", async () => {
-  const db = fixture();
+function apiHarness(db: Database) {
   const key = randomBytes(32);
   const handler = HttpApp.toWebHandler(
     createApp(db, { key, now: () => now }),
@@ -362,8 +592,7 @@ test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", a
     if (data.csrf) csrf = data.csrf;
     return { status: response.status, data, headers: response.headers };
   }
-  try {
-    expect((await request("/api/cierres/2/revalidacion")).status).toBe(401);
+  async function enroll() {
     const bootstrap = provision(db, now);
     const started = await request("/api/auth/enroll", "POST", {
       token: bootstrap,
@@ -374,6 +603,16 @@ test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", a
       code: totp(started.data.secret).generate({ timestamp: now }),
     });
     expect(verified.status).toBe(200);
+  }
+  return { request, enroll };
+}
+
+test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", async () => {
+  const db = fixture();
+  const { request, enroll } = apiHarness(db);
+  try {
+    expect((await request("/api/cierres/2/revalidacion")).status).toBe(401);
+    await enroll();
 
     const before = snapshot(db);
     const state = await request("/api/cierres/2/revalidacion");
@@ -391,6 +630,35 @@ test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", a
     const post = await request("/api/cierres/2/revalidacion", "POST", {});
     expect(post.status).toBe(405);
     expect(post.headers.get("allow")).toBe("GET");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 I3 API: cierre y versión posteriores devuelven 200 Bloqueante", async () => {
+  const db = fixture();
+  const { request, enroll } = apiHarness(db);
+  try {
+    await enroll();
+
+    seedClosure(db, "3", 1, "2026-03-01", "2026-03-31");
+    const laterClosure = await request("/api/cierres/2/revalidacion");
+    expect(laterClosure.status).toBe(200);
+    expect(laterClosure.data).toMatchObject({
+      estado: "Bloqueante",
+      bloquea: true,
+      bloqueos: expect.arrayContaining(["cierrePosterior"]),
+    });
+
+    seedClosure(db, "2", 2, "2026-02-01", "2026-02-28");
+    const laterVersion = await request("/api/cierres/2/revalidacion");
+    expect(laterVersion.status).toBe(200);
+    expect(laterVersion.data).toMatchObject({
+      estado: "Bloqueante",
+      bloquea: true,
+      bloqueos: expect.arrayContaining(["version", "fotosPosteriores"]),
+      version: 2,
+    });
   } finally {
     db.close();
   }

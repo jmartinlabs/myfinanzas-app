@@ -287,6 +287,40 @@ function movementBody(over: Record<string, unknown> = {}) {
   };
 }
 
+function purchaseRectification(over: Record<string, unknown> = {}) {
+  return {
+    revision: 1,
+    motivo: "Rectificación ficticia",
+    fecha: "2026-02-10",
+    cantidad: "1",
+    precio: "100.00",
+    divisa: "EUR",
+    cambio: null,
+    importeEur: "100.00",
+    comisionEur: "0.00",
+    concepto: "Compra febrero",
+    nota: null,
+    ...over,
+  };
+}
+
+function saleRectification(over: Record<string, unknown> = {}) {
+  return {
+    revision: 1,
+    motivo: "Rectificación ficticia",
+    fecha: "2026-02-15",
+    cantidad: "1",
+    precio: "100.00",
+    divisa: "EUR",
+    cambio: null,
+    importeEur: "100.00",
+    comisionEur: "0.00",
+    concepto: "Venta febrero",
+    nota: null,
+    ...over,
+  };
+}
+
 async function createMovement(
   f: ReturnType<typeof fixture>,
   body: Record<string, unknown>,
@@ -295,6 +329,48 @@ async function createMovement(
   expect(impact.status).toBe(200);
   return f.request(
     "/api/movimientos",
+    "POST",
+    {
+      ...body,
+      contextRevision: impact.data.contextRevision,
+      fingerprint: impact.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+}
+
+async function rectifyMovement(
+  f: ReturnType<typeof fixture>,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const impact = await f.request(`/api/movimientos/${id}/impacto`, "POST", body);
+  expect(impact.status).toBe(200);
+  return f.request(
+    `/api/movimientos/${id}/rectificar`,
+    "POST",
+    {
+      ...body,
+      contextRevision: impact.data.contextRevision,
+      fingerprint: impact.data.fingerprint,
+    },
+    { "idempotency-key": randomUUID() },
+  );
+}
+
+async function annulMovement(
+  f: ReturnType<typeof fixture>,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const impact = await f.request(
+    `/api/movimientos/${id}/impacto-anulacion`,
+    "POST",
+    body,
+  );
+  expect(impact.status).toBe(200);
+  return f.request(
+    `/api/movimientos/${id}/anular`,
     "POST",
     {
       ...body,
@@ -394,6 +470,91 @@ test("E4.10 I3 T1: Movimientos, Compras y Ventas se permiten en el ciclo reabier
   }
 });
 
+test("E4.10 I3 T1: rectificación y anulación se permiten en el ciclo reabierto", async () => {
+  const f = fixture();
+  try {
+    seedOperation(f.db, {
+      id: "7003",
+      clase: "Compra",
+      fecha: "2026-02-10",
+      instrumento: f.instrumento,
+      cantidad: "1",
+      importe: 10000,
+      concepto: "Compra febrero",
+    });
+    seedOperation(f.db, {
+      id: "7004",
+      clase: "Venta",
+      fecha: "2026-02-15",
+      instrumento: f.instrumento,
+      cantidad: "1",
+      importe: 10000,
+      concepto: "Venta febrero",
+    });
+    seedMovement(f.db, {
+      id: "8003",
+      fecha: "2026-02-20",
+      importe: 500,
+    });
+    await f.enroll();
+    expect((await f.close("1")).result.status).toBe(201);
+    expect((await f.close("2")).result.status).toBe(201);
+    await reopenLast(f, "2");
+
+    const movementRectified = await rectifyMovement(f, "8003", {
+      ...movementBody({ fecha: "2026-02-20", importe: "6.00" }),
+      revision: 1,
+      motivo: "Rectificación dentro de la ventana",
+    });
+    expect(movementRectified.status).toBe(200);
+    const movementAnnulled = await annulMovement(f, "8003", {
+      revision: 2,
+      motivo: "Anulación dentro de la ventana",
+    });
+    expect(movementAnnulled.status).toBe(200);
+
+    const purchaseRectified = await f.request(
+      "/api/compras/7003/rectificar",
+      "POST",
+      purchaseRectification({
+        fecha: "2026-02-10",
+        cantidad: "1",
+        importeEur: "100.00",
+      }),
+      { "idempotency-key": randomUUID() },
+    );
+    expect(purchaseRectified.status).toBe(200);
+    const purchaseAnnulled = await f.request(
+      "/api/compras/7003/anular",
+      "POST",
+      { revision: 2, motivo: "Anulación dentro de la ventana" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(purchaseAnnulled.status).toBe(200);
+
+    const saleRectified = await f.request(
+      "/api/ventas/7004/rectificar",
+      "POST",
+      saleRectification({
+        fecha: "2026-02-15",
+        cantidad: "1",
+        importeEur: "100.00",
+      }),
+      { "idempotency-key": randomUUID() },
+    );
+    expect(saleRectified.status).toBe(200);
+    const saleAnnulled = await f.request(
+      "/api/ventas/7004/anular",
+      "POST",
+      { revision: 2, motivo: "Anulación dentro de la ventana" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(saleAnnulled.status).toBe(200);
+  } finally {
+    f.db.close();
+  }
+});
+
 test("E4.10 I3 T1: otro ciclo y las fechas fuera de la ventana siguen bloqueados", async () => {
   const f = fixture();
   try {
@@ -433,6 +594,38 @@ test("E4.10 I3 T1: otro ciclo y las fechas fuera de la ventana siguen bloqueados
     expect(sale.status).toBe(409);
     expect(sale.data.code).toBe("HISTORY_LOCKED");
     expect(sale.data.cierres[0].ciclo).toBe("1");
+
+    for (const [path, body] of [
+      [
+        "/api/movimientos/8001/rectificar",
+        {
+          ...movementBody({ fecha: "2026-01-15", importe: "12.34" }),
+          revision: 1,
+          motivo: "Rectificación en otro ciclo",
+        },
+      ],
+      [
+        "/api/movimientos/8001/anular",
+        { revision: 1, motivo: "Anulación en otro ciclo" },
+      ],
+      ["/api/compras/7001/rectificar", purchaseRectification()],
+      [
+        "/api/compras/7001/anular",
+        { revision: 1, motivo: "Anulación en otro ciclo" },
+      ],
+      ["/api/ventas/7002/rectificar", saleRectification()],
+      [
+        "/api/ventas/7002/anular",
+        { revision: 1, motivo: "Anulación en otro ciclo" },
+      ],
+    ] as const) {
+      const rejected = await f.request(path, "POST", body, {
+        "idempotency-key": randomUUID(),
+      });
+      expect(rejected.status).toBe(409);
+      expect(rejected.data.code).toBe("HISTORY_LOCKED");
+      expect(rejected.data.cierres[0].ciclo).toBe("1");
+    }
 
     // Removing the projection (no open window) restores the original lock.
     f.db.run("DELETE FROM reapertura_activa");

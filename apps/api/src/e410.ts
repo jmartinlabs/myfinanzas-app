@@ -4,6 +4,10 @@ import { getCycle } from "./ciclos";
 import { actorDefault } from "./e49";
 import { fingerprint } from "./movement-ledger";
 import { Problem } from "./problem";
+import {
+  readActiveWindow,
+  type ReopeningEvent,
+} from "./e410-window";
 
 /**
  * E4.10 I2 — reopening of the last closure and its derived state.
@@ -52,88 +56,43 @@ function lastCierre(db: Database, cicloId: string): CierreRow | null {
   );
 }
 
-type ActiveRow = {
-  ciclo: string;
-  reapertura_id: number;
-  id: number | null;
-  evento_ciclo: string | null;
-  version_origen: number | null;
-  tipo: string | null;
-  actor: string | null;
-  creado_utc: string | null;
-  motivo: string | null;
-  correlacion: string | null;
-  fingerprint_peticion: string | null;
-  resultado: string | null;
-};
-
 type ActiveWindow = { ciclo: string; reapertura: ReaperturaEvento };
 
+function eventDto(evento: ReopeningEvent): ReaperturaEvento {
+  return {
+    id: evento.id,
+    versionOrigen: evento.versionOrigen,
+    actor: evento.actor,
+    creadoUtc: evento.creadoUtc,
+    motivo: evento.motivo,
+    correlacion: evento.correlacion,
+    fingerprint: evento.fingerprint,
+  };
+}
+
 /**
- * Reads the singleton projection and fails closed if it cannot be explained by
- * a real `reapertura` event of its own cycle and last closure version. A
- * projection pointing at a cancellation, another cycle or a historical
- * version is corruption, not an open window.
+ * Adapts the single non-throwing window reader to the I2 API contract: a
+ * consistent open window is returned, a later closure is a 409 conflict and
+ * any other inconsistency is a 500 corruption. Guards and revalidation use
+ * the shared reader directly instead of this throwing adapter.
  */
 function activeWindow(db: Database): ActiveWindow | null {
-  const row = db
-    .query(
-      `SELECT p.ciclo,p.reapertura_id,r.id,r.ciclo AS evento_ciclo,
-        r.version_origen,r.tipo,r.actor,r.creado_utc,r.motivo,r.correlacion,
-        r.fingerprint_peticion,r.resultado
-       FROM reapertura_activa p
-       LEFT JOIN reaperturas r ON r.id=p.reapertura_id
-       WHERE p.id=1`,
-    )
-    .get() as ActiveRow | null;
-  if (!row) return null;
-  if (
-    row.id === null ||
-    row.tipo !== "reapertura" ||
-    row.resultado !== "Abierta" ||
-    row.evento_ciclo !== row.ciclo
-  )
-    throw new Problem(
-      500,
-      "ESTADO_INCONSISTENTE",
-      "La proyección de reapertura no corresponde a una reapertura válida.",
-    );
-  const last = lastCierre(db, row.ciclo);
-  if (!last || row.version_origen !== last.version)
-    throw new Problem(
-      500,
-      "ESTADO_INCONSISTENTE",
-      "La proyección de reapertura no corresponde a la última versión cerrada.",
-    );
-  const later = db
-    .query(
-      `SELECT 1 FROM cierres c
-       WHERE c.ciclo<>?
-         AND c.version=(SELECT MAX(v.version) FROM cierres v WHERE v.ciclo=c.ciclo)
-         AND c.fin>=?
-       LIMIT 1`,
-    )
-    .get(row.ciclo, last.fin);
-  if (later)
+  const reading = readActiveWindow(db);
+  if (reading.estado === "SinVentana") return null;
+  if (reading.estado === "Abierta")
+    return {
+      ciclo: reading.ventana.ciclo,
+      reapertura: eventDto(reading.ventana),
+    };
+  if (reading.estado === "CierrePosterior")
     throw new Problem(
       409,
       "CIERRE_POSTERIOR",
       "Existe un cierre posterior durante la ventana de reapertura.",
       {},
-      { ciclo: row.ciclo, fin: last.fin },
+      { ciclo: reading.ciclo, fin: reading.finVentana },
     );
-  return {
-    ciclo: row.ciclo,
-    reapertura: {
-      id: row.id,
-      versionOrigen: row.version_origen as number,
-      actor: row.actor as string,
-      creadoUtc: row.creado_utc as string,
-      motivo: row.motivo as string,
-      correlacion: row.correlacion,
-      fingerprint: row.fingerprint_peticion as string,
-    },
-  };
+  throw new Problem(500, "ESTADO_INCONSISTENTE", reading.motivo);
 }
 
 /** Read-only derived closure/reopening state consumed by the API. */
