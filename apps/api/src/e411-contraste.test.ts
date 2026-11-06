@@ -110,6 +110,8 @@ function seedClosure(
       ],
     );
     db.run(
+      // `schema_version` es metadato de la foto: el fixture representa una
+      // captura v26, no la versión con la que se abre la base de pruebas.
       `INSERT INTO fotos_cierre(ciclo,version,creado_utc,actor,motivo,
         fingerprint,app_version,schema_version,ventana_inicio,ventana_fin,
         saldo_inicial,estado_temporal,estado_hechos,estado_plan,hechos,plan,
