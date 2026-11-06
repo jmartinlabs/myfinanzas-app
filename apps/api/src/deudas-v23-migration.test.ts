@@ -2,12 +2,13 @@ import { expect, test } from "bun:test";
 import { Database, type SQLQueryBindings } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { contract, manifest, verifyContract } from "./schema-contract";
 import { materializeContract } from "../test-support/inversiones-schema";
 
 const t = "2026-01-01T00:00:00.000Z";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e44-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e44-"));
 
 /** Genuine v22 contract plus fictional rows covering every preserved area. */
 function v22(path: string, rows = true) {

@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { contract, manifest, verifyContract } from "./schema-contract";
 import { materializeContract } from "../test-support/inversiones-schema";
@@ -10,7 +11,7 @@ import { valoracionSchema } from "./e43-schema";
 const t = "2026-01-01T00:00:00.000Z";
 const c23 = "C23-E44-DEUDA-COMPLETA";
 const c26 = "C26-E410-REAPERTURA-V26";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e43-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e43-"));
 
 /** Genuine v23 contract plus fictional rows covering every preserved area. */
 function v23(path: string, rows = true) {

@@ -15,6 +15,15 @@ on:
       - '!infra/**/*.md'
       - '!infra/**/.*.md'
   workflow_dispatch:
+    inputs:
+      previous_ref:
+        description: >-
+          Lowercase ancestor commit SHA declaring schema 25, used only to
+          exercise the reviewed 25 -> 26 migration gate. Empty keeps the
+          ordinary origin/main merge-base.
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
 concurrency:
@@ -44,6 +53,8 @@ jobs:
           python3 infra/tests/rootless-preflight.py
       - name: Verify real UID volumes published API Quadlet and restart
         shell: bash
+        env:
+          PREVIOUS_REF: ${{ github.event.inputs.previous_ref || '' }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"

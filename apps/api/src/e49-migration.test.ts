@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import { contract, manifest, verifyContract } from "./schema-contract";
@@ -13,7 +14,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c24 = "C24-E43-VALORACION";
 const c26 = "C26-E410-REAPERTURA-V26";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e49-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e49-"));
 
 /** Genuine v24 contract plus fictional rows covering every preserved area. */
 function v24(path: string, rows = true) {

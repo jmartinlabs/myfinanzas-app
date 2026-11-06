@@ -2,6 +2,7 @@ import { expect, test } from "bun:test";
 import { Database } from "bun:sqlite";
 import { mkdtempSync, rmSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { openDatabase } from "./database";
 import { prepareSchema } from "./database-schema";
 import {
@@ -18,7 +19,7 @@ process.env.NODE_ENV = "test";
 const t = "2026-01-01T00:00:00.000Z";
 const c25 = "C25-E49-CIERRE-FINANCIERO";
 const c26 = "C26-E410-REAPERTURA-V26";
-const root = () => mkdtempSync(join(process.cwd(), ".tmp-e410-"));
+const root = () => mkdtempSync(join(tmpdir(), ".tmp-e410-"));
 const fingerprint = "a".repeat(64);
 
 function v25(path: string, rows = true) {
