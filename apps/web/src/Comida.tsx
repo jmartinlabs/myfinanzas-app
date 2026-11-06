@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
-import { Alert, PageHead, TableScroll, Tag } from "./ui";
+import { Alert, PageHead, Table, Tag, type TableColumn } from "./ui";
 
 type Cycle = {
   id: string;
@@ -176,6 +176,87 @@ export function Comida({ go }: { go: (p: string) => void }) {
 
   const cycles = options?.ciclos ?? [];
   const cycle = cycles.find((c) => c.id === cycleId) ?? null;
+  const columns: TableColumn<Item>[] = [
+    {
+      id: "id",
+      header: "ID",
+      cell: (item) => item.id,
+    },
+    {
+      id: "fecha",
+      header: "Fecha",
+      cell: (item) => date(item.fecha),
+    },
+    {
+      id: "operacion",
+      header: "Operación",
+      cell: (item) => (
+        <>
+          {item.concepto || item.tipo}
+          <small className="table-id">
+            {item.tipo}
+            {item.agregadoTerminal ? " · agregado terminal" : ""}
+            {item.anulado ? " · anulado" : ""}
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (item) => (
+        <>
+          {eur(item.importe)} · {item.direccion}
+        </>
+      ),
+    },
+    {
+      id: "partida",
+      header: "Partida",
+      cell: (item) => item.partida ?? "Sin Partida",
+    },
+    {
+      id: "etiqueta",
+      header: "Etiqueta",
+      cell: (item) => (
+        <>
+          {item.etiqueta ?? "Sin clasificar"}
+          <small className="table-id">{item.estadoRevision}</small>
+        </>
+      ),
+    },
+    {
+      id: "devolucion",
+      header: "Devolución",
+      cell: (item) =>
+        item.tipo === "Devolución de gasto"
+          ? item.devolucion
+            ? `${item.devolucion.estado}${item.devolucion.elegibilidad === "Acreditada" ? " · acreditada" : ""}`
+            : "Sin atribución"
+          : "—",
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (item) =>
+        !item.anulado && !item.agregadoTerminal ? (
+          <button
+            type="button"
+            className="secondary"
+            onClick={() => {
+              setSelected(item);
+              setAction(
+                item.tipo === "Devolución de gasto" ? "devolucion" : "metadata",
+              );
+            }}
+          >
+            {item.tipo === "Devolución de gasto" ? "Atribuir" : "Clasificar"}
+          </button>
+        ) : null,
+    },
+  ];
 
   async function call(
     path: string,
@@ -379,74 +460,16 @@ export function Comida({ go }: { go: (p: string) => void }) {
             {list && list.items.length === 0 ? (
               <p>Sin operaciones individuales registradas.</p>
             ) : (
-              <TableScroll label="Tabla de operaciones individuales"><table className="table">
-                <caption className="muted">
-                  {list?.total ?? 0} operaciones individuales
-                </caption>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Fecha</th>
-                    <th>Operación</th>
-                    <th>Importe</th>
-                    <th>Partida</th>
-                    <th>Etiqueta</th>
-                    <th>Devolución</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {(list?.items ?? []).map((i) => (
-                    <tr key={i.id}>
-                      <td>{i.id}</td>
-                      <td>{date(i.fecha)}</td>
-                      <td>
-                        {i.concepto || i.tipo}
-                        <small className="table-id">
-                          {i.tipo}
-                          {i.agregadoTerminal ? " · agregado terminal" : ""}
-                          {i.anulado ? " · anulado" : ""}
-                        </small>
-                      </td>
-                      <td>
-                        {eur(i.importe)} · {i.direccion}
-                      </td>
-                      <td>{i.partida ?? "Sin Partida"}</td>
-                      <td>
-                        {i.etiqueta ?? "Sin clasificar"}
-                        <small className="table-id">{i.estadoRevision}</small>
-                      </td>
-                      <td>
-                        {i.tipo === "Devolución de gasto"
-                          ? i.devolucion
-                            ? `${i.devolucion.estado}${i.devolucion.elegibilidad === "Acreditada" ? " · acreditada" : ""}`
-                            : "Sin atribución"
-                          : "—"}
-                      </td>
-                      <td>
-                        {!i.anulado && !i.agregadoTerminal && (
-                          <button
-                            type="button"
-                            className="secondary"
-                            onClick={() => {
-                              setSelected(i);
-                              setAction(
-                                i.tipo === "Devolución de gasto"
-                                  ? "devolucion"
-                                  : "metadata",
-                              );
-                            }}
-                          >
-                            {i.tipo === "Devolución de gasto"
-                              ? "Atribuir"
-                              : "Clasificar"}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table></TableScroll>
+              <Table
+                caption={`${list?.total ?? 0} operaciones individuales`}
+                label="Tabla de operaciones individuales"
+                columns={columns}
+                rows={list?.items ?? []}
+                rowKey={(item) => item.id}
+                rowClassName={(item) => (item.anulado ? "annulled" : undefined)}
+                captionVisible
+                empty="Sin operaciones individuales registradas."
+              />
             )}
             <div className="actions">
               <button type="button" onClick={() => go("/movimientos/nuevo?tipo=Gasto")}>

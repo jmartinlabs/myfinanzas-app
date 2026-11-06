@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur } from "./api";
-import { Alert, PageHead } from "./ui";
+import { Alert, DataList, PageHead, Table, type TableColumn } from "./ui";
 type Rational = { numeradorCentimos: string; divisor: string };
 type Part = {
   id: string;
@@ -255,6 +255,73 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
       </button>
     </div>
   );
+  const columns: TableColumn<Item>[] = [
+    {
+      id: "partida",
+      header: "Partida",
+      cell: (item) => (
+        <>
+          <strong>
+            {item.partida.id} · {item.partida.nombre}
+          </strong>
+          {item.partida.estado !== "Activa" && <p>Inactiva</p>}
+          <small className="table-id">{item.cobertura}</small>
+        </>
+      ),
+      cardCell: (item) => (
+        <>
+          <strong>
+            {item.partida.id} · {item.partida.nombre}
+          </strong>
+          {item.partida.estado !== "Activa" && <p>Inactiva</p>}
+          <small className="table-id">{item.cobertura}</small>
+          {item.motivo && <p className="help">{item.motivo}</p>}
+        </>
+      ),
+    },
+    {
+      id: "presupuesto",
+      header: "Presupuesto",
+      kind: "amount",
+      cell: (item) =>
+        item.linea?.presupuesto === null
+          ? "Sin informar"
+          : eur(item.linea?.presupuesto ?? null),
+    },
+    {
+      id: "periodo",
+      header: "Periodo previsto",
+      cell: (item) => item.linea?.periodo ?? "—",
+    },
+    {
+      id: "esencial",
+      header: "Esencial",
+      cell: (item) => item.linea?.esencial,
+    },
+    {
+      id: "ejecutado",
+      header: "Ejecutado",
+      kind: "amount",
+      cell: (item) => (item.ejecutado === null ? "—" : eur(item.ejecutado)),
+    },
+    {
+      id: "diferencia",
+      header: "Diferencia",
+      kind: "amount",
+      cell: (item) => (item.diferencia === null ? "—" : eur(item.diferencia)),
+    },
+    {
+      id: "fecha",
+      header: "Fecha ejecutada",
+      cell: (item) => item.fechaEjecutada ?? "—",
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (item) => actions(item),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -413,65 +480,21 @@ export function PlanAnual({ go }: { go: (p: string) => void }) {
           {!!items.length && (
             <>
               <div className="desktop-list annual-table">
-                <table>
-                  <thead>
-                    <tr>
-                      {[
-                        "Partida",
-                        "Presupuesto",
-                        "Periodo previsto",
-                        "Esencial",
-                        "Ejecutado",
-                        "Diferencia",
-                        "Fecha ejecutada",
-                        "Acciones",
-                      ].map((s) => (
-                        <th key={s}>{s}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {items.map((i) => (
-                      <tr key={i.partida.id}>
-                        <td>
-                          <strong>
-                            {i.partida.id} · {i.partida.nombre}
-                          </strong>
-                          {i.partida.estado !== "Activa" && <p>Inactiva</p>}
-                          <small>{i.cobertura}</small>
-                        </td>
-                        <td>
-                          {i.linea?.presupuesto === null
-                            ? "Sin informar"
-                            : eur(i.linea?.presupuesto ?? null)}
-                        </td>
-                        <td>{i.linea?.periodo ?? "—"}</td>
-                        <td>{i.linea?.esencial}</td>
-                        <td>{i.ejecutado === null ? "—" : eur(i.ejecutado)}</td>
-                        <td>
-                          {i.diferencia === null ? "—" : eur(i.diferencia)}
-                        </td>
-                        <td>{i.fechaEjecutada ?? "—"}</td>
-                        <td>{actions(i)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <Table
+                  caption="Plan anual por Partida"
+                  label="Tabla de Plan anual"
+                  columns={columns}
+                  rows={items}
+                  rowKey={(item) => item.partida.id}
+                />
               </div>
-              <div className="mobile-list annual-cards">
-                {items.map((i) => (
-                  <article className="panel" key={i.partida.id}>
-                    <h2>
-                      {i.partida.id} · {i.partida.nombre}
-                    </h2>
-                    {i.partida.estado !== "Activa" && <p>Inactiva</p>}
-                    <p>{i.cobertura}</p>
-                    <dl className="annual-values">{fields(i)}</dl>
-                    {i.motivo && <p className="help">{i.motivo}</p>}
-                    {actions(i)}
-                  </article>
-                ))}
-              </div>
+              <DataList
+                columns={columns}
+                rows={items}
+                rowKey={(item) => item.partida.id}
+                label="Plan anual móvil"
+                className="mobile-list annual-cards"
+              />
             </>
           )}
           {!items.length && !plan.sinPlan && (

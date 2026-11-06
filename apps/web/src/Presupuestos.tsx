@@ -1,7 +1,7 @@
 import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 type Budget = {
   id: string;
   nombre: string;
@@ -114,6 +114,38 @@ function List({ go }: { go: (p: string) => void }) {
     b.saldoDestino
       ? `${b.saldoDestino.id} · ${b.saldoDestino.nombre} · ${b.saldoDestino.estado}`
       : "Sin destino · No aplica";
+  const columns: TableColumn<Budget>[] = [
+    {
+      id: "nombre",
+      header: "Nombre / ID",
+      cell: (budget) => (
+        <>
+          <Link to={base + "/" + budget.id} go={go}>
+            {budget.nombre}
+          </Link>
+          <small className="table-id">{budget.id}</small>
+        </>
+      ),
+    },
+    {
+      id: "fuente",
+      header: "Fuente",
+      cell: (budget) => budget.fuente,
+    },
+    {
+      id: "destino",
+      header: "Saldo destino",
+      cell: (budget) => destination(budget),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (budget) => (
+        <Tag inactive={budget.estado === "Inactivo"}>{budget.estado}</Tag>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -215,52 +247,27 @@ function List({ go }: { go: (p: string) => void }) {
           <>
             <p role="status">{data.total} presupuestos</p>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">Presupuestos</caption>
-                <thead>
-                  <tr>
-                    <th>Nombre / ID</th>
-                    <th>Fuente</th>
-                    <th>Saldo destino</th>
-                    <th>Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((b) => (
-                    <tr key={b.id}>
-                      <td>
-                        <Link to={base + "/" + b.id} go={go}>
-                          {b.nombre}
-                        </Link>
-                        <small className="table-id">{b.id}</small>
-                      </td>
-                      <td>{b.fuente}</td>
-                      <td>{destination(b)}</td>
-                      <td>
-                        <Tag inactive={b.estado === "Inactivo"}>{b.estado}</Tag>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Presupuestos"
+                label="Tabla de Presupuestos"
+                columns={columns}
+                rows={data.items}
+                rowKey={(budget) => budget.id}
+                rowClassName={(budget) =>
+                  budget.estado === "Inactivo" ? "ui-row-inactive" : undefined
+                }
+              />
             </div>
-            <ul className="mobile-list">
-              {data.items.map((b) => (
-                <li key={b.id}>
-                  <div className="card-head">
-                    <span>{b.id}</span>
-                    <Tag inactive={b.estado === "Inactivo"}>{b.estado}</Tag>
-                  </div>
-                  <h2>
-                    <Link to={base + "/" + b.id} go={go}>
-                      {b.nombre}
-                    </Link>
-                  </h2>
-                  <p>Fuente: {b.fuente}</p>
-                  <p>Destino: {destination(b)}</p>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.items}
+              rowKey={(budget) => budget.id}
+              rowClassName={(budget) =>
+                budget.estado === "Inactivo" ? "ui-row-inactive" : undefined
+              }
+              label="Presupuestos móvil"
+              className="mobile-list"
+            />
           </>
         )}
         <div className="list-footer">

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur } from "./api";
-import { Alert, PageHead } from "./ui";
+import { Alert, DataList, PageHead, Table, type TableColumn } from "./ui";
 const madridMonth = () =>
   new Intl.DateTimeFormat("sv-SE", {
     timeZone: "Europe/Madrid",
@@ -141,6 +141,169 @@ export function Nomina() {
   }
   const amount = (v: string | null) =>
     v === null ? "Sin informar" : eur(v.includes(".") ? v : v + ".00");
+  const payrollDetails = (p: any) => (
+    <details>
+      <summary>Originales, fuentes y cobros</summary>
+      <p>
+        Devengo {amount(p.devengo)} · Base IRPF {amount(p.base)} · IRPF{" "}
+        {p.irpf ?? "Sin informar"}% · Variable histórica {amount(p.variable)} ·
+        Guardia {p.guardia ?? "Sin informar"}
+      </p>
+      <p>
+        {p.evidencia} ·{" "}
+        {p.evidenciaDocumentado || "Neto documentado sin informar"} · {p.nota}
+      </p>
+      <p>
+        Neto {amount(p.neto)} · {p.origenNeto ?? "Sin fuente"} ·{" "}
+        {p.derivadosParciales ? "Parcial" : "Completo"}
+      </p>
+      <p>
+        Retención {amount(p.retencion)} · Deducciones {amount(p.deducciones)} ·
+        Estructural {amount(p.estructural)}
+      </p>
+      <p>
+        Primera / última fecha {p.primeraFecha ?? "—"} /{" "}
+        {p.ultimaFecha ?? "—"}
+      </p>
+      {p.asignaciones.map((a: any) => (
+        <p key={a.movimiento}>
+          #{a.movimiento} · {a.fecha} · {amount(a.importe)} · {a.evidencia} ·{" "}
+          {a.valida ? "Verificable" : "Requiere revisión"}
+        </p>
+      ))}
+    </details>
+  );
+  const payrollActions = (p: any) => (
+    <div className="actions">
+      <button className="secondary" onClick={() => edit(p)}>
+        Revisar originales
+      </button>
+      <button className="secondary" onClick={() => edit(p, true)}>
+        Documentar neto
+      </button>
+      {p.discrepancia && (
+        <button
+          className="secondary"
+          onClick={() => {
+            setResolve({
+              id: p.id,
+              fuente: "Documentado",
+              evidencia: "",
+            });
+            setDraft(null);
+          }}
+        >
+          Resolver discrepancia
+        </button>
+      )}
+    </div>
+  );
+  const columns: TableColumn<any>[] = [
+    {
+      id: "paga",
+      header: "Paga / Mes / Tipo",
+      label: "Paga, mes y tipo",
+      cell: (p) => (
+        <>
+          <strong>
+            {p.mes} · {p.tipo}
+          </strong>
+          <br />
+          <span className="payroll-id">{p.id}</span>
+        </>
+      ),
+      cardCell: (p) => (
+        <>
+          <strong>
+            {p.mes} · {p.tipo}
+          </strong>
+          <p className="muted payroll-id">
+            {p.id} · revisión {p.revision}
+          </p>
+        </>
+      ),
+    },
+    {
+      id: "historico",
+      header: "Neto histórico",
+      kind: "amount",
+      cell: (p) => amount(p.historico),
+    },
+    {
+      id: "documentado",
+      header: "Neto documentado",
+      kind: "amount",
+      cell: (p) => amount(p.documentado),
+    },
+    {
+      id: "cobrado",
+      header: "Cobrado asignado",
+      kind: "amount",
+      cell: (p) => (
+        <>
+          {amount(p.cobrado)}
+          <br />
+          {p.numeroIngresos} ingresos
+        </>
+      ),
+    },
+    {
+      id: "conciliacion",
+      header: "Conciliación",
+      cell: (p) => (
+        <>
+          {p.motivo}
+          <br />
+          Diferencia {amount(p.diferencia)}
+          <br />
+          Fecha completa{" "}
+          <span className="payroll-date">
+            {p.fechaCompleta ?? "No acreditada"}
+          </span>
+          {payrollDetails(p)}
+        </>
+      ),
+      cardCell: (p) => (
+        <>
+          <p>
+            {p.numeroIngresos === 0 ? "Sin cobros asociados. " : ""}
+            {p.motivo}
+          </p>
+          <dl>
+            <dt>Diferencia</dt>
+            <dd>
+              {p.diferencia === null ? "No disponible" : amount(p.diferencia)}
+            </dd>
+            <dt>Primera / última fecha bancaria</dt>
+            <dd>
+              {p.primeraFecha ?? "—"} / {p.ultimaFecha ?? "—"}
+            </dd>
+            <dt>Fecha de cobro completo</dt>
+            <dd>
+              <span className="payroll-date">
+                {p.fechaCompleta ?? "No acreditada"}
+              </span>
+            </dd>
+          </dl>
+          <p>
+            Evidencia salarial: {p.evidencia} ·{" "}
+            {p.verificado ? "Verificada" : "Pendiente de verificar"}
+          </p>
+          {payrollDetails(p)}
+        </>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (p) => payrollActions(p),
+    },
+  ];
+  const pagas = (data?.pagas ?? []).filter(
+    (p: any) =>
+      (!mes || p.mes === mes) && (tipo === "Todas" || p.tipo === tipo),
+  );
   return (
     <>
       <PageHead
@@ -221,246 +384,25 @@ export function Nomina() {
                 </p>
               )}
               <div className="payroll-table table-wrap">
-                <table>
-                  <caption>
-                    Pagas documentadas · importes independientes
-                  </caption>
-                  <thead>
-                    <tr>
-                      {[
-                        "Paga / Mes / Tipo",
-                        "Neto histórico",
-                        "Neto documentado",
-                        "Cobrado asignado",
-                        "Conciliación",
-                        "Acciones",
-                      ].map((t) => (
-                        <th key={t}>{t}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.pagas
-                      .filter(
-                        (p: any) =>
-                          (!mes || p.mes === mes) &&
-                          (tipo === "Todas" || p.tipo === tipo),
-                      )
-                      .map((p: any) => (
-                        <tr key={p.id}>
-                          <td>
-                            <strong>
-                              {p.mes} · {p.tipo}
-                            </strong>
-                            <br />
-                            <span className="payroll-id">{p.id}</span>
-                          </td>
-                          <td>{amount(p.historico)}</td>
-                          <td>{amount(p.documentado)}</td>
-                          <td>
-                            {amount(p.cobrado)}
-                            <br />
-                            {p.numeroIngresos} ingresos
-                          </td>
-                          <td>
-                            {p.motivo}
-                            <br />
-                            Diferencia {amount(p.diferencia)}
-                            <br />
-                            Fecha completa{" "}
-                            <span className="payroll-date">
-                              {p.fechaCompleta ?? "No acreditada"}
-                            </span>
-                          </td>
-                          <td>
-                            <button
-                              className="secondary"
-                              onClick={() => edit(p)}
-                            >
-                              Revisar originales
-                            </button>
-                            <button
-                              className="secondary"
-                              onClick={() => edit(p, true)}
-                            >
-                              Documentar neto
-                            </button>
-                            {p.discrepancia && (
-                              <button
-                                className="secondary"
-                                onClick={() => {
-                                  setResolve({
-                                    id: p.id,
-                                    fuente: "Documentado",
-                                    evidencia: "",
-                                  });
-                                  setDraft(null);
-                                }}
-                              >
-                                Resolver discrepancia
-                              </button>
-                            )}
-                            <details>
-                              <summary>Originales, fuentes y cobros</summary>
-                              <p>
-                                Devengo {amount(p.devengo)} · Base IRPF{" "}
-                                {amount(p.base)} · IRPF{" "}
-                                {p.irpf ?? "Sin informar"}% · Variable histórica{" "}
-                                {amount(p.variable)} · Guardia{" "}
-                                {p.guardia ?? "Sin informar"}
-                              </p>
-                              <p>
-                                {p.evidencia} ·{" "}
-                                {p.evidenciaDocumentado ||
-                                  "Neto documentado sin informar"}{" "}
-                                · {p.nota}
-                              </p>
-                              <p>
-                                Neto {amount(p.neto)} ·{" "}
-                                {p.origenNeto ?? "Sin fuente"} ·{" "}
-                                {p.derivadosParciales ? "Parcial" : "Completo"}
-                              </p>
-                              <p>
-                                Retención {amount(p.retencion)} · Deducciones{" "}
-                                {amount(p.deducciones)} · Estructural{" "}
-                                {amount(p.estructural)}
-                              </p>
-                              <p>
-                                Primera / última fecha {p.primeraFecha ?? "—"} /{" "}
-                                {p.ultimaFecha ?? "—"}
-                              </p>
-                              {p.asignaciones.map((a: any) => (
-                                <p key={a.movimiento}>
-                                  #{a.movimiento} · {a.fecha} ·{" "}
-                                  {amount(a.importe)} · {a.evidencia} ·{" "}
-                                  {a.valida
-                                    ? "Verificable"
-                                    : "Requiere revisión"}
-                                </p>
-                              ))}
-                            </details>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                <Table
+                  caption="Pagas documentadas · importes independientes"
+                  label="Tabla de Pagas documentadas"
+                  columns={columns}
+                  rows={pagas}
+                  rowKey={(p) => p.id}
+                  captionVisible
+                  empty=""
+                />
               </div>
-              <div className="payroll-cards">
-                {data.pagas
-                  .filter(
-                    (p: any) =>
-                      (!mes || p.mes === mes) &&
-                      (tipo === "Todas" || p.tipo === tipo),
-                  )
-                  .map((p: any) => (
-                    <article className="panel payroll-card" key={p.id}>
-                      <h2>
-                        {p.mes} · {p.tipo}
-                      </h2>
-                      <p className="muted payroll-id">
-                        {p.id} · revisión {p.revision}
-                      </p>
-                      <dl>
-                        <dt>Neto histórico</dt>
-                        <dd>{amount(p.historico)}</dd>
-                        <dt>Neto documentado</dt>
-                        <dd>{amount(p.documentado)}</dd>
-                        <dt>Cobrado asignado</dt>
-                        <dd>
-                          {amount(p.cobrado)} · {p.numeroIngresos} ingresos
-                        </dd>
-                        <dt>Diferencia</dt>
-                        <dd>
-                          {p.diferencia === null
-                            ? "No disponible"
-                            : amount(p.diferencia)}
-                        </dd>
-                        <dt>Primera / última fecha bancaria</dt>
-                        <dd>
-                          {p.primeraFecha ?? "—"} / {p.ultimaFecha ?? "—"}
-                        </dd>
-                        <dt>Fecha de cobro completo</dt>
-                        <dd>
-                          <span className="payroll-date">
-                            {p.fechaCompleta ?? "No acreditada"}
-                          </span>
-                        </dd>
-                      </dl>
-                      <p>
-                        {p.numeroIngresos === 0 ? "Sin cobros asociados. " : ""}
-                        {p.motivo}
-                      </p>
-                      <details>
-                        <summary>Originales, procedencia y derivados</summary>
-                        <p>
-                          Devengo {amount(p.devengo)} · Base IRPF{" "}
-                          {amount(p.base)} · IRPF {p.irpf ?? "Sin informar"}% ·
-                          Variable histórica {amount(p.variable)} · Nota:{" "}
-                          {p.nota || "Sin informar"}
-                        </p>
-                        <p>
-                          Evidencia salarial: {p.evidencia} ·{" "}
-                          {p.verificado
-                            ? "Verificada"
-                            : "Pendiente de verificar"}
-                        </p>
-                        <p>
-                          Evidencia de Neto documentado:{" "}
-                          {p.evidenciaDocumentado || "Sin informar"}
-                        </p>
-                        <p>
-                          Guardia: {p.guardia ?? "Sin informar"} · Neto:{" "}
-                          {amount(p.neto)} · Origen{" "}
-                          {p.origenNeto ?? "Sin fuente"}
-                        </p>
-                        <p>
-                          Retención: {amount(p.retencion)} · Deducciones no
-                          IRPF: {amount(p.deducciones)} · Neto estructural:{" "}
-                          {amount(p.estructural)}
-                        </p>
-                        <p>
-                          {p.derivadosParciales
-                            ? "Derivados parciales; no son referencia fiscal definitiva"
-                            : "Contexto de Neto completo"}
-                        </p>
-                        {p.asignaciones.map((a: any) => (
-                          <p key={a.movimiento}>
-                            Movimiento #{a.movimiento}: {amount(a.importe)} ·{" "}
-                            {a.fecha} ·{" "}
-                            {a.valida ? "Verificable" : "Requiere revisión"} ·{" "}
-                            {a.evidencia}
-                          </p>
-                        ))}
-                      </details>
-                      <div className="actions">
-                        <button className="secondary" onClick={() => edit(p)}>
-                          Revisar originales
-                        </button>
-                        <button
-                          className="secondary"
-                          onClick={() => edit(p, true)}
-                        >
-                          Documentar neto
-                        </button>
-                        {p.discrepancia && (
-                          <button
-                            className="secondary"
-                            onClick={() => {
-                              setResolve({
-                                id: p.id,
-                                fuente: "Documentado",
-                                evidencia: "",
-                              });
-                              setDraft(null);
-                            }}
-                          >
-                            Resolver discrepancia
-                          </button>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-              </div>
+              <DataList
+                columns={columns}
+                rows={pagas}
+                rowKey={(p) => p.id}
+                rowClassName={() => "payroll-card"}
+                label="Pagas documentadas móvil"
+                className="mobile-list payroll-cards"
+                empty=""
+              />
               {draft && (
                 <section className="panel">
                   <h2>

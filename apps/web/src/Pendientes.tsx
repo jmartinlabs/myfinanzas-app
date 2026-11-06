@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, TableScroll, Tag } from "./ui";
+import {
+  Alert,
+  DataList,
+  PageHead,
+  Table,
+  TableScroll,
+  Tag,
+  type TableColumn,
+} from "./ui";
 
 /**
  * E3.6 — Pendientes y conciliación.
@@ -492,6 +500,124 @@ export function Pendientes({
   const detailHref = (fila: TransversalItem) =>
     `/pendientes/${encodeURIComponent(fila.tipo)}/${encodeURIComponent(fila.fuente.id)}` +
     queryDesde(filtros);
+  const columns: TableColumn<TransversalItem>[] = [
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (fila) => (
+        <>
+          <strong>{TIPO_LABEL[fila.tipo] ?? fila.tipo}</strong>
+          <span className="table-id">{fila.fuente.motor}</span>
+        </>
+      ),
+    },
+    {
+      id: "caso",
+      header: "Caso / fuente",
+      label: "Caso y fuente",
+      cell: (fila) => (
+        <>
+          <a
+            href={detailHref(fila)}
+            onClick={(event) => {
+              event.preventDefault();
+              go(detailHref(fila));
+            }}
+          >
+            {nombreFila(fila)}
+          </a>
+          <span className="table-id">{fila.fuente.id}</span>
+        </>
+      ),
+    },
+    {
+      id: "ciclo",
+      header: "Ciclo",
+      cell: (fila) => cicloTexto(fila.ciclo),
+    },
+    {
+      id: "ejercicio",
+      header: "Ejercicio",
+      cell: (fila) => fila.ejercicio ?? "—",
+    },
+    {
+      id: "magnitud",
+      header: "Magnitud",
+      cell: (fila) => fila.magnitud,
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (fila) => importeTexto(fila.importe, fila.estado),
+    },
+    {
+      id: "estado",
+      header: "Estado · cobertura",
+      label: "Estado y cobertura",
+      kind: "status",
+      cell: (fila) => (
+        <>
+          <Tag
+            inactive={
+              fila.estado === "No disponible" || fila.estado === "Resuelto"
+            }
+          >
+            {fila.estado}
+          </Tag>
+          <span className="table-id">
+            Cobertura: {fila.cobertura}
+            {fila.severidad ? ` · ${fila.severidad}` : ""}
+          </span>
+        </>
+      ),
+      cardCell: (fila) => (
+        <>
+          <Tag
+            inactive={
+              fila.estado === "No disponible" || fila.estado === "Resuelto"
+            }
+          >
+            {fila.estado}
+          </Tag>
+          <p>{fila.cobertura}</p>
+          {fila.severidad && <p className="help">{fila.severidad}</p>}
+        </>
+      ),
+    },
+    {
+      id: "motivo",
+      header: "Motivo y alertas",
+      cell: (fila) => <MotivoCelda fila={fila} />,
+    },
+    {
+      id: "acciones",
+      header: <span className="sr-only">Acciones</span>,
+      kind: "actions",
+      cell: (fila) => (
+        <a
+          href={detailHref(fila)}
+          onClick={(event) => {
+            event.preventDefault();
+            go(detailHref(fila));
+          }}
+        >
+          Abrir
+        </a>
+      ),
+      cardCell: (fila) => (
+        <a
+          href={detailHref(fila)}
+          onClick={(event) => {
+            event.preventDefault();
+            go(detailHref(fila));
+          }}
+        >
+          Abrir detalle
+        </a>
+      ),
+    },
+  ];
 
   if (detailMatch) {
     const tipo = detailTipo ?? detailMatch[1],
@@ -1109,147 +1235,22 @@ export function Pendientes({
         {!loading && !error && data && data.filas.length > 0 && (
           <>
             <div className="desktop-list">
-              <TableScroll label="Pendientes y conciliación">
-                <table className="pendientes-table">
-                  <caption className="sr-only">
-                    Pendientes y conciliación por caso y tipo
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Tipo</th>
-                      <th scope="col">Caso / fuente</th>
-                      <th scope="col">Ciclo</th>
-                      <th scope="col">Ejercicio</th>
-                      <th scope="col">Magnitud</th>
-                      <th scope="col">Importe</th>
-                      <th scope="col">Estado · cobertura</th>
-                      <th scope="col">Motivo y alertas</th>
-                      <th scope="col">
-                        <span className="sr-only">Acciones</span>
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.filas.map((fila) => (
-                      <tr key={fila.claveEfimera}>
-                        <td>
-                          <strong>{TIPO_LABEL[fila.tipo] ?? fila.tipo}</strong>
-                          <span className="table-id">{fila.fuente.motor}</span>
-                        </td>
-                        <td>
-                          <a
-                            href={detailHref(fila)}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              go(detailHref(fila));
-                            }}
-                          >
-                            {nombreFila(fila)}
-                          </a>
-                          <span className="table-id">{fila.fuente.id}</span>
-                        </td>
-                        <td>{cicloTexto(fila.ciclo)}</td>
-                        <td>{fila.ejercicio ?? "—"}</td>
-                        <td>{fila.magnitud}</td>
-                        <td className="money">
-                          {importeTexto(fila.importe, fila.estado)}
-                        </td>
-                        <td>
-                          <Tag
-                            inactive={
-                              fila.estado === "No disponible" ||
-                              fila.estado === "Resuelto"
-                            }
-                          >
-                            {fila.estado}
-                          </Tag>
-                          <span className="table-id">
-                            Cobertura: {fila.cobertura}
-                            {fila.severidad ? ` · ${fila.severidad}` : ""}
-                          </span>
-                        </td>
-                        <td>
-                          <MotivoCelda fila={fila} />
-                        </td>
-                        <td className="pendiente-action">
-                          <a
-                            href={detailHref(fila)}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              go(detailHref(fila));
-                            }}
-                          >
-                            Abrir
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </TableScroll>
+              <Table
+                caption="Pendientes y conciliación por caso y tipo"
+                label="Tabla de Pendientes y conciliación"
+                columns={columns}
+                rows={data.filas}
+                rowKey={(fila) => fila.claveEfimera}
+                tableClassName="pendientes-table"
+              />
             </div>
-            <ul className="mobile-list pendientes-cards">
-              {data.filas.map((fila) => (
-                <li key={fila.claveEfimera}>
-                  <div className="card-head">
-                    <h2>
-                      <a
-                        href={detailHref(fila)}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          go(detailHref(fila));
-                        }}
-                      >
-                        {nombreFila(fila)}
-                      </a>
-                    </h2>
-                    <Tag
-                      inactive={
-                        fila.estado === "No disponible" ||
-                        fila.estado === "Resuelto"
-                      }
-                    >
-                      {fila.estado}
-                    </Tag>
-                  </div>
-                  <p className="id-label">
-                    {TIPO_LABEL[fila.tipo] ?? fila.tipo} · {fila.fuente.id} ·{" "}
-                    {fila.fuente.motor}
-                  </p>
-                  <dl className="pendiente-facts">
-                    <div>
-                      <dt>{fila.magnitud}</dt>
-                      <dd>{importeTexto(fila.importe, fila.estado)}</dd>
-                    </div>
-                    <div>
-                      <dt>Ciclo</dt>
-                      <dd>{cicloTexto(fila.ciclo)}</dd>
-                    </div>
-                    <div>
-                      <dt>Ejercicio</dt>
-                      <dd>{fila.ejercicio ?? "—"}</dd>
-                    </div>
-                    <div>
-                      <dt>Cobertura</dt>
-                      <dd>{fila.cobertura}</dd>
-                    </div>
-                  </dl>
-                  {fila.motivo && !fila.alertas.length && (
-                    <p className="pendiente-motive">{fila.motivo}</p>
-                  )}
-                  <Alertas fila={fila} />
-                  <a
-                    href={detailHref(fila)}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      go(detailHref(fila));
-                    }}
-                  >
-                    Abrir detalle
-                  </a>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.filas}
+              rowKey={(fila) => fila.claveEfimera}
+              label="Pendientes y conciliación móvil"
+              className="mobile-list pendientes-cards"
+            />
           </>
         )}
 

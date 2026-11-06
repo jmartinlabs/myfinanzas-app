@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 
 type Clasificacion =
   | "Comida"
@@ -408,83 +408,106 @@ function OperationTable({
   const rows = "operaciones" in data ? data.operaciones : data.reposiciones;
   const hrefFor = (o: Operacion) =>
     (o.tipo === "Reposicion" ? reposBase : base) + "/" + o.id;
+  const columns: TableColumn<Operacion>[] = [
+    {
+      id: "id",
+      header: "ID",
+      cell: (operation) => `#${operation.id}`,
+      cardCell: (operation) => (
+        <Tag inactive={operation.estadoRegistro === "Anulado"}>
+          #{operation.id} ·{" "}
+          {operation.tipo === "Reposicion" ? "Reposición" : "Detalle"}
+        </Tag>
+      ),
+    },
+    {
+      id: "fecha",
+      header: "Fecha op.",
+      cell: (operation) => date(operation.fecha),
+    },
+    {
+      id: "concepto",
+      header: "Operación",
+      cell: (operation) => (
+        <>
+          <button
+            className="text-button"
+            onClick={() => go(hrefFor(operation))}
+          >
+            {operation.concepto}
+          </button>
+          <small className="table-id">
+            <TagFor o={operation} />
+          </small>
+        </>
+      ),
+      cardCell: (operation) => (
+        <>
+          <button
+            className="text-button"
+            onClick={() => go(hrefFor(operation))}
+          >
+            {operation.concepto}
+          </button>
+          <small className="table-id">
+            <TagFor o={operation} />
+          </small>
+          <p className="help">
+            Evidencia bancaria:{" "}
+            {operation.evidenciaBancaria ? "sí" : "Sin evidencia"}
+          </p>
+          <RowActions o={operation} go={go} />
+        </>
+      ),
+    },
+    {
+      id: "importe",
+      header: "Importe/dirección",
+      label: "Importe y dirección",
+      kind: "amount",
+      cell: (operation) => `${eur(operation.importe)} · ${operation.direccion}`,
+    },
+    {
+      id: "clasificacion",
+      header: "Clasificación",
+      cell: (operation) => classification(operation),
+    },
+    {
+      id: "vinculo",
+      header: "Vínculo",
+      cell: (operation) => linkLabel(operation),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (operation) => stateLabel(operation),
+    },
+  ];
   return (
     <>
       <div className="desktop-list">
-        <table>
-          <caption className="sr-only">Operaciones de Revisión Comida</caption>
-          <thead>
-            <tr>
-              {[
-                "ID",
-                "Fecha op.",
-                "Operación",
-                "Importe/dirección",
-                "Clasificación",
-                "Vínculo",
-                "Estado",
-              ].map((h) => (
-                <th scope="col" key={h}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((o) => (
-              <tr key={o.id} className={o.estadoRegistro === "Anulado" ? "annulled" : ""}>
-                <td>#{o.id}</td>
-                <td>{date(o.fecha)}</td>
-                <td>
-                  <button className="text-button" onClick={() => go(hrefFor(o))}>
-                    {o.concepto}
-                  </button>
-                  <small className="table-id">
-                    <TagFor o={o} />
-                  </small>
-                </td>
-                <td className="money">
-                  {eur(o.importe)} · {o.direccion}
-                </td>
-                <td>{classification(o)}</td>
-                <td>{linkLabel(o)}</td>
-                <td>{stateLabel(o)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <Table
+          caption="Operaciones de Revisión Comida"
+          label="Tabla de operaciones de Revisión Comida"
+          columns={columns}
+          rows={rows}
+          rowKey={(operation) => operation.id}
+          rowClassName={(operation) =>
+            operation.estadoRegistro === "Anulado" ? "annulled" : undefined
+          }
+        />
       </div>
-      <ul className="mobile-list">
-        {rows.map((o) => (
-          <li key={o.id}>
-            <div className="card-head">
-              <span>{date(o.fecha)}</span>
-              <Tag inactive={o.estadoRegistro === "Anulado"}>
-                #{o.id} · {o.tipo === "Reposicion" ? "Reposición" : "Detalle"}
-              </Tag>
-            </div>
-            <h2>
-              <button className="text-button" onClick={() => go(hrefFor(o))}>
-                {o.concepto}
-              </button>
-            </h2>
-            <p>
-              {eur(o.importe)} · {o.direccion} · {classification(o)}
-            </p>
-            <p>
-              Evidencia bancaria: {o.evidenciaBancaria ? "sí" : "Sin evidencia"}
-            </p>
-            <p>Vínculo: {linkLabel(o)}</p>
-            <p className="help">
-              <TagFor o={o} />
-            </p>
-            <div className="card-position">
-              <small>{stateLabel(o)}</small>
-            </div>
-            <RowActions o={o} go={go} />
-          </li>
-        ))}
-      </ul>
+      <DataList
+        columns={columns}
+        rows={rows}
+        rowKey={(operation) => operation.id}
+        rowClassName={(operation) =>
+          operation.estadoRegistro === "Anulado" ? "annulled" : undefined
+        }
+        label="Operaciones de Revisión Comida móvil"
+        className="mobile-list"
+      />
     </>
   );
 }
@@ -707,6 +730,69 @@ function ReposList({ go }: { go: (p: string) => void }) {
     setFilters((f) => ({ ...f, [k]: v }));
     setPage(1);
   };
+  const columns: TableColumn<Operacion>[] = [
+    {
+      id: "id",
+      header: "ID",
+      cell: (operation) => `#${operation.id}`,
+      cardCell: (operation) => (
+        <Tag inactive={operation.estadoRegistro === "Anulado"}>
+          #{operation.id} · Reposición
+        </Tag>
+      ),
+    },
+    {
+      id: "fecha",
+      header: "Fecha",
+      cell: (operation) => date(operation.fecha),
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (operation) => eur(operation.importe),
+    },
+    {
+      id: "evidencia",
+      header: "Evidencia bancaria",
+      cell: (operation) => operation.evidenciaBancaria ?? "Sin evidencia",
+    },
+    {
+      id: "trazabilidad",
+      header: "Trazabilidad",
+      cell: (operation) => (
+        <>
+          {operation.estadoTrazabilidad}
+          <small className="table-id">C-02 (futuro E3.5)</small>
+        </>
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado/Rev",
+      label: "Estado y revisión",
+      kind: "status",
+      cell: (operation) =>
+        `${stateLabel(operation)} · Rev. ${operation.revision}`,
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (operation) => (
+        <>
+          <RowActions o={operation} go={go} />
+          <button
+            className="text-button"
+            disabled
+            title="E3.5 no instalado: no se simula la asignación"
+          >
+            Asignar (E3.5)
+          </button>
+        </>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -754,84 +840,27 @@ function ReposList({ go }: { go: (p: string) => void }) {
         ) : (
           <>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">Reposiciones registradas</caption>
-                <thead>
-                  <tr>
-                    {[
-                      "ID",
-                      "Fecha",
-                      "Importe",
-                      "Evidencia bancaria",
-                      "Trazabilidad",
-                      "Estado/Rev",
-                      "Acciones",
-                    ].map((h) => (
-                      <th scope="col" key={h}>
-                        {h}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.reposiciones.map((r) => (
-                    <tr key={r.id} className={r.estadoRegistro === "Anulado" ? "annulled" : ""}>
-                      <td>#{r.id}</td>
-                      <td>{date(r.fecha)}</td>
-                      <td className="money">{eur(r.importe)}</td>
-                      <td>{r.evidenciaBancaria ?? "Sin evidencia"}</td>
-                      <td>
-                        {r.estadoTrazabilidad}
-                        <small className="table-id">C-02 (futuro E3.5)</small>
-                      </td>
-                      <td>
-                        {stateLabel(r)} · Rev. {r.revision}
-                      </td>
-                      <td>
-                        <RowActions o={r} go={go} />
-                        <button
-                          className="text-button"
-                          disabled
-                          title="E3.5 no instalado: no se simula la asignación"
-                        >
-                          Asignar (E3.5)
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Reposiciones registradas"
+                label="Tabla de Reposiciones registradas"
+                columns={columns}
+                rows={data.reposiciones}
+                rowKey={(operation) => operation.id}
+                rowClassName={(operation) =>
+                  operation.estadoRegistro === "Anulado" ? "annulled" : undefined
+                }
+              />
             </div>
-            <ul className="mobile-list">
-              {data.reposiciones.map((r) => (
-                <li key={r.id}>
-                  <div className="card-head">
-                    <span>{date(r.fecha)}</span>
-                    <Tag inactive={r.estadoRegistro === "Anulado"}>
-                      #{r.id} · Reposición
-                    </Tag>
-                  </div>
-                  <p className="card-position">
-                    <strong>{eur(r.importe)}</strong>
-                  </p>
-                  <p>Evidencia bancaria: {r.evidenciaBancaria ?? "Sin evidencia"}</p>
-                  <p>
-                    Trazabilidad: {r.estadoTrazabilidad} · C-02 (futuro E3.5)
-                  </p>
-                  <p>
-                    Estado: {stateLabel(r)} · Rev. {r.revision}
-                  </p>
-                  <RowActions o={r} go={go} />
-                  <button
-                    className="text-button"
-                    disabled
-                    title="E3.5 no instalado: no se simula la asignación"
-                  >
-                    Asignar (E3.5)
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.reposiciones}
+              rowKey={(operation) => operation.id}
+              rowClassName={(operation) =>
+                operation.estadoRegistro === "Anulado" ? "annulled" : undefined
+              }
+              label="Reposiciones registradas móvil"
+              className="mobile-list"
+            />
           </>
         )}
       </section>
