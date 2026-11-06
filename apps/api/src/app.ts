@@ -226,6 +226,10 @@ import {
   type ReaperturaOptions,
 } from "./e410";
 import {
+  getRevalidacion,
+  type RevalidacionOptions,
+} from "./e410-revalidacion";
+import {
   listPendientes,
   getPendiente,
   type TipoItem,
@@ -241,6 +245,7 @@ export type AppOptions = {
   precierre?: PrecierreOptions;
   cierre?: CierreOptions;
   reapertura?: ReaperturaOptions;
+  revalidacion?: RevalidacionOptions;
   key: Buffer;
   origin?: string;
   now?: () => number;
@@ -993,6 +998,24 @@ export function createApp(db: Database, options: AppOptions) {
         return reply(
           db.transaction(() =>
             getReaperturaEstado(db, reaperturaEstado[1]),
+          )(),
+        );
+      }
+      const revalidacion = path.match(
+        /^\/api\/cierres\/(\d+)\/revalidacion$/,
+      );
+      if (revalidacion) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La revalidación de dependencias es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getRevalidacion(db, revalidacion[1], options.revalidacion),
           )(),
         );
       }
