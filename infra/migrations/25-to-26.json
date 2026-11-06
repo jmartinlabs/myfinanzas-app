@@ -1,0 +1,13 @@
+{
+  "from_schema": 25,
+  "to_schema": 26,
+  "authorized_by": "usuario",
+  "authorized_at": "2026-11-06",
+  "authorization": "Aprobado registrar el manifiesto 25→26 para validación sintética; no autoriza migraciones con datos reales, despliegues, downgrade in-place ni el merge de esta PR.",
+  "downgrade": "restore-only",
+  "from_data": "e4.9-v25",
+  "to_data": "e4.10-v26",
+  "authentication": "argon2id-aesgcm-totp-session-v1",
+  "from_authentication": "argon2id-aesgcm-totp-session-v1",
+  "to_authentication": "argon2id-aesgcm-totp-session-v1"
+}
