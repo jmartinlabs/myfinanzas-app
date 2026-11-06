@@ -364,7 +364,7 @@ test("03 AC20/21: actualización E1.2 genuina, acceso previo intacto y backups v
         db.query("SELECT * FROM counters WHERE name=?").get(old.name),
       ).toEqual(old);
     expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-      version: 26,
+      version: 27,
     });
     expect(db.query("SELECT * FROM ciclos").all()).toEqual([]);
     expect({

@@ -73,7 +73,7 @@ test("I3/migración v21→v22: preserva roles y auditoría, FK íntegras y admit
     v21(path);
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 26 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 27 });
       expect(db.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion").get()).toEqual({ n: 1 });
       expect(
         db.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion_audit").get(),
@@ -168,7 +168,7 @@ test("R2/I3/migración v21→v22: FK inconsistente no deja base parcial y mantie
 
     const db = openDatabase(path);
     try {
-      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 26 });
+      expect(db.query("SELECT version FROM schema_version").get()).toEqual({ version: 27 });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("SELECT COUNT(*) n FROM movimiento_rol_financiacion").get()).toEqual({ n: 2 });

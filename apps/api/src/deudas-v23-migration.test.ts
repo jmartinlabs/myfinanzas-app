@@ -98,7 +98,7 @@ function deudaColumns(db: Database) {
   );
 }
 
-test("E4.4 AC-23: v22→v26 is additive, preserves IDs/audit/MFA and exposes the exact C26 contract", () => {
+test("E4.4 AC-23: v22→v27 is additive, preserves IDs/audit/MFA and exposes the exact C27 contract", () => {
   const dir = root();
   try {
     const path = join(dir, "v22.sqlite");
@@ -110,13 +110,13 @@ test("E4.4 AC-23: v22→v26 is additive, preserves IDs/audit/MFA and exposes the
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 26,
+        version: 27,
       });
       expect(snapshot(db)).toEqual(before);
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
-      expect(verifyContract(db, 26)).toBe("C26-E410-REAPERTURA-V26");
-      expect(manifest(db)).toEqual(contract("C26-E410-REAPERTURA-V26").objects);
+      expect(verifyContract(db, 27)).toBe("C27-E411-FOTOS-PERIODO");
+      expect(manifest(db)).toEqual(contract("C27-E411-FOTOS-PERIODO").objects);
       expect(
         db
           .query(
@@ -222,7 +222,7 @@ test("E4.4 AC-23: inconsistent foreign keys reject without a partial v26 base an
     const db = openDatabase(path);
     try {
       expect(db.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 26,
+        version: 27,
       });
       expect(db.query("PRAGMA foreign_keys").get()).toEqual({ foreign_keys: 1 });
       expect(db.query("PRAGMA foreign_key_check").all()).toEqual([]);
@@ -351,7 +351,7 @@ test("E4.4 AC-23: unknown versions stay intact and two starts are idempotent", (
     const second = openDatabase(path);
     try {
       expect(second.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 26,
+        version: 27,
       });
       expect(manifest(second)).toEqual(firstManifest);
       expect(snapshot(second)).toEqual(firstData);
