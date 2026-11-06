@@ -1,5 +1,46 @@
 # Ui guidelines
 
+## Contrato visual vigente — 2026-11-06
+
+Esta sección sustituye como **estado vigente** cualquier referencia posterior a «tema claro
+exclusivamente» o a la paleta verde histórica. Las secciones siguientes se conservan como
+historia de E1.1–E1.5 y no reabren decisiones.
+
+### Temas y tokens
+
+- Temas **Dark (`dark-s`), Light (`light-s`) y Hybrid (`hybrid-s`)**, implementados en `0b8aade`
+  (#198). Paletas, tokens y selector están **cerrados**; no se añaden colores ni un cuarto tema.
+- Tokens semánticos en `apps/web/public/themes.css`; los componentes consumen `var(--…)` y no
+  conocen el tema. `style.css` conserva un único hex de fallback
+  (`var(--warning, #6b5412)`); el resto es tokenizado.
+- Selector existente (`themes.ts`/`main.tsx`), preferencia persistida y tema inicial `dark-s`;
+  no se cambia el mecanismo ni el orden de los temas.
+
+### Tipografía, shell y espaciado
+
+- Tipografía de sistema; `Inter` está declarada pero no se carga. La escala tipográfica, el
+  espaciado y los radios se fijan en `UI · DEV-01`; objetivo: texto funcional ≥ 12 px y un
+  consumo real de `--space`/`--radius`.
+- Shell: sidebar 236 px, contenido `max-width: 1450px`, breakpoints 1050/760 px y móvil 16 px.
+
+### Accesibilidad
+
+- Suelo **AA**: texto normal ≥ 4.5:1 y grande/componentes ≥ 3:1 en los tres temas; foco visible;
+  objetivos ≥ 44 px; zoom 200 %; `prefers-reduced-motion`; sin scroll horizontal de página a
+  390 px. El estado no depende solo del color.
+- La excepción de contraste de #7 se conserva como registro histórico; los temas actuales deben
+  cumplir AA con sus propios tokens.
+
+### Formularios y estados
+
+- Se conservan las reglas vigentes de formularios, foco, errores, borrador, IDs inmutables y
+  distinción entre ausencia, cero, `ND`, `No aplica` y `Sin datos`. No se convierten ausencias en
+  cero ni se inventan importes.
+
+**Historial:** las secciones siguientes documentan decisiones e implementaciones E1.1–E1.5. Sus
+menciones a «tema claro exclusivamente», a la paleta verde `#8DBB2E`/`#EEF7E8` y a capturas de
+esa fase son referencia histórica, no el contrato vigente.
+
 ## Implementación E1.1 — STEP 7
 Diseño aprobado en STEP 5, ahora implementado bajo autorización expresa de $dev 01.
 Shell con menú lateral escritorio y menú móvil, header Ciclo financiado: No disponible;
@@ -9,7 +50,7 @@ Identidad original MyFinanzas, CSS propio; componentes PageHead/Tag/Alert/Switch
 Tokens vigentes: principal #8DBB2E, cabeceras #CBEA7B, secciones/switch off #DCECB3,
 fondo #EEF7E8, texto #2B2B2B, blanco; texto auxiliar #536147, foco #335B0D.
 Tipografía de sistema sin descarga; shell desktop 236px/sidebar, contenido fluido,
-breakpoints 1050px/760px; móvil padding 16px. Tema light explícito incluso con sistema dark.
+breakpoints 1050px/760px; móvil padding 16px. En E1.1 se fijó tema light explícito incluso con sistema dark; el contrato vigente son los tres temas.
 Switch binario accesible, knob blanco, texto Sí/No; ausencia histórica se representa
 Sin informar y acción explícita Informar No antes de convertirse en switch, no false implícito.
 Los tres indicadores nuevos comienzan false y en edición conservan valores reales.
@@ -64,7 +105,7 @@ traducción documental de esa descripción, no evidencia de una UI implementada.
 - Tablas compactas en escritorio, tarjetas compactas en móvil. La densidad no debe
   perjudicar legibilidad, foco, etiquetas o áreas de interacción.
 - Componentes visuales reutilizables para entregas posteriores, sin construirlos aquí.
-- Tema únicamente claro en esta fase, fondos blancos y verdes suaves MyFinanzas. Sin
+- [Histórico E1.1] Tema únicamente claro en esta fase, fondos blancos y verdes suaves MyFinanzas. Sin
   selector ni modo oscuro, tampoco activación automática por preferencia del sistema.
 
 | Papel de la paleta existente | Color aprobado como referencia de identidad |
@@ -157,7 +198,7 @@ el valor. Null explícito no es booleano de escritura ordinaria ni activa el def
 omisión. No trasladar ese default a futuras importaciones, históricos o S000. Detalle
 canónico en [especificación](../01-saldos-control-specification.md).
 
-Tema claro exclusivamente: superficies blancas/verdes suaves, sin versión oscura,
+[Histórico E1.1] Tema claro exclusivamente: superficies blancas/verdes suaves, sin versión oscura,
 selector de tema ni tokens oscuros implementados. Futuras pruebas verificarán que una
 preferencia de sistema oscura no active otro tema; no ampliar alcance para implementarlo.
 

@@ -1,8 +1,8 @@
 # UI — Evolución visual de MyFinanzas: Specification (UI · SPEC)
 
-**Estado:** `[PROPUESTA]` documental — **lista para aprobación formal; NO APROBADA.** No
-autoriza `UI · DEV`, no modifica código, componentes, CSS, temas, API, cálculos financieros ni
-datos reales. No fusiona nada.
+**Estado:** `[APROBADA]` — **ratificada formalmente por el usuario el 2026-11-06.** Autoriza
+`UI · SPEC` y `UI · DEV-01` por separado; **no** autoriza `DEV-02…07` ni ningún merge. No cambia
+código, componentes, CSS, temas, API, cálculos financieros ni datos reales.
 
 - **Base:** `main` **`043869f`** (2026-11-05; I1 de E4.10 integrado y recarga de agentes #234).
 - **Análisis:** [ui-evolution-2026-11-04](investigations/ui-evolution-2026-11-04.md);
@@ -31,7 +31,7 @@ datos reales. No fusiona nada.
 | E4.9 | Integrada `0176ffc` (#200); QA APTO CON RESERVAS; UI y contratos de cierre existen. |
 | E4.10 | SPEC28 **ratificada**; **I1 integrado** `70fa7c0` (v26/C26); **I2 abierto** `5fa0a1e` (no fusionado); 24 AC `UNRUN`. Sin UI de reapertura. |
 | E4.11 | SPEC29 **DRAFT**; P1-C/P4-A/P5-B aprobadas; P2/P3/P6/P7/P8 pendientes; sin DEV ni UI. |
-| `guidelines/ui.md` | Describe «tema únicamente claro» y la identidad verde histórica; **no refleja los tres temas**. Propuesta concreta en §2.1; no se modifica en este PR. |
+| `guidelines/ui.md` | Actualizada el 2026-11-06 con el contrato vigente de tres temas, tokens, selector, tipografía, shell y accesibilidad; historial y paleta histórica preservados. |
 
 ## 1. Principios verificables
 
@@ -62,30 +62,25 @@ datos reales. No fusiona nada.
 - **Prohibido:** modificar paletas, tokens cromáticos, `theme-boot.js`, orden/identidad de los
   temas o el tema inicial (`dark-s`), que están cerrados.
 
-### 2.1 Propuesta concreta de actualización de `guidelines/ui.md`
+### 2.1 Actualización aplicada de `guidelines/ui.md` (2026-11-06)
 
-`guidelines/ui.md` conserva la identidad verde y «solo tema claro» de E1.1. **No se modifica en
-este PR.** Se propone una actualización documental quirúrgica, sin tocar colores ni código:
+`guidelines/ui.md` conservaba la identidad verde y «solo tema claro» de E1.1. **Actualizada en
+este PR** con una intervención quirúrgica, sin tocar colores ni código:
 
-1. **Cabecera:** sustituir «Tema únicamente claro» por «Temas vigentes: Dark (`dark-s`), Light
-   (`light-s`) y Hybrid (`hybrid-s`), implementados en #198».
-2. **Nueva sección «Temas y tokens vigentes»:**
-   - tokens semánticos en `apps/web/public/themes.css`; los componentes consumen `var(--…)`;
-   - selector existente y preferencia persistida; tema inicial `dark-s`;
-   - paleta, tokens y selector **cerrados**: no se añaden colores ni un cuarto tema.
+1. **Cabecera:** nueva sección «Contrato visual vigente» con Dark (`dark-s`), Light (`light-s`) y
+   Hybrid (`hybrid-s`), implementados en #198.
+2. **Temas y tokens vigentes:** tokens en `apps/web/public/themes.css`; componentes consumen
+   `var(--…)`; selector existente y preferencia persistida; tema inicial `dark-s`; paleta,
+   tokens y selector **cerrados**.
 3. **Tipografía y shell:** tipografía de sistema (Inter declarada pero no cargada); sidebar
-   236 px; contenido `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px.
-4. **Accesibilidad:** suelo AA (4.5:1 texto normal; 3:1 grande/componentes), foco visible,
-   objetivos ≥ 44 px, zoom 200 %, `prefers-reduced-motion`; conservar la excepción de contraste
-   documentada de #7.
-5. **Sección histórica:** marcar la paleta verde `#8DBB2E`/`#EEF7E8` como referencia histórica
-   de E1.1, no como tokens actuales; **no borrar los colores**.
-6. **Conservar** las reglas de formularios, foco, estados, IDs y ausencias; solo se actualiza lo
-   que contradice los tres temas.
+   236 px; `max-width: 1450px`; breakpoints 1050/760 px; móvil 16 px.
+4. **Accesibilidad:** AA 4.5/3, foco, objetivos ≥ 44 px, zoom 200 %, `prefers-reduced-motion`;
+   la excepción de contraste de #7 se conserva como registro histórico.
+5. **Historial:** las secciones E1.1–E1.5 y la paleta `#8DBB2E`/`#EEF7E8` quedan marcadas como
+   referencia histórica; **no se borran colores**.
+6. **Conservadas** las reglas de formularios, foco, estados, IDs y ausencias.
 
-**Aplicación propuesta:** incluir esta actualización en el mismo paquete de aprobación de
-`UI · SPEC`, como commit documental separado y antes de `UI · DEV-01`. No requiere PR nuevo ni
-cambia CSS, componentes, paletas o selector.
+No cambia CSS, componentes, paletas, tokens, selector ni comportamiento.
 
 ## 3. Dependencias
 
@@ -165,62 +160,58 @@ consciente; no cambiar valores, redondeos ni contratos.
 - **QA independiente** por bloque. Las capturas son evidencia, no aprobación; `DEV-07` no se
   declara cerrado sin la matriz completa y revisión independiente.
 
-## 7. Decisiones pendientes y recomendación
+## 7. Decisiones aprobadas (2026-11-06)
 
-1. **Pantallas de `DEV-06`.** **Recomendación:** las cinco de §5 (Inicio, Movimientos, Saldos
-   ficha, Saldos alta/edición, Cierre). Cubren resumen, catálogo, detalle, formulario y
-   operación irreversible; excluyen E4.10/E4.11. Alternativa mínima: Inicio, Movimientos,
-   Saldos alta/edición y Cierre (4), dejando la ficha para una segunda pasada. No se acepta una
-   pantalla de E4.10/E4.11 sin su UI.
-2. **Orden/paralelismo `DEV-03/04/05`.** **Recomendación:** secuencia `03 → 04 → 05`. Único
-   paralelismo admisible: `03 ∥ 04` tras 02 con ownership disjunto (`main.tsx`+nav CSS vs
-   `ui.tsx`+tabla CSS). `05` después de `04`; `06` después de `05`; `07` al final. Sin
-   separación de archivos, no hay paralelismo.
-3. **Matriz de evidencia y accesibilidad.** **Recomendación:** 30 capturas base (5×3×2) + 15 de
-   estados críticos; criterios AA, foco, teclado, zoom, reduced motion, 390 sin overflow, texto
-   ≥ 12 px y `null ≠ 0`; 12 capturas antes/después por bloque; QA independiente. §6 fija el
-   detalle.
-4. **`guidelines/ui.md`.** **Recomendación:** aplicar la actualización quirúrgica de §2.1 en el
-   mismo paquete de aprobación, como commit documental separado y antes de `DEV-01`; conservar
-   colores, tokens y selector. No requiere PR nuevo ni cambio de código.
-5. **Autorización de `UI · DEV-01`** y de cada bloque posterior: decisión separada. Aprobar esta
-   SPEC no autoriza DEV visual.
+Las cuatro decisiones fueron aprobadas por el usuario el 2026-11-06 en los términos de la
+ratificación de `UI · SPEC`; se conserva la recomendación como registro.
+
+1. **[APROBADO] Pantallas de `DEV-06`:** cinco pantallas (Inicio, Movimientos, Saldos ficha,
+   Saldos alta/edición, Cierre). Alternativa mínima: cuatro sin ficha. Sin E4.10/E4.11.
+2. **[APROBADO] Orden/paralelismo:** `03 → 04 → 05`; `03 ∥ 04` solo con ownership disjunto
+   (`main.tsx`+nav CSS vs `ui.tsx`+tabla CSS). `05` después de `04`; `06` después de `05`;
+   `07` al final. Sin separación de archivos, secuencial.
+3. **[APROBADO] Matriz de evidencia:** 30 capturas base (5×3×2) + 15 de estados críticos; AA,
+   foco, teclado, zoom, reduced motion, 390 sin overflow, texto ≥ 12 px y `null ≠ 0`; 12
+   capturas antes/después por bloque; QA independiente. §6 fija el detalle.
+4. **[APROBADO] `guidelines/ui.md`:** actualización aplicada en este PR, sin cambiar colores,
+   tokens ni selector; §2.1 y el propio archivo recogen el contrato vigente.
+5. **`UI · DEV-01`:** **autorizado por separado**; `DEV-02…07` y sus merges no están autorizados.
 
 **Cerradas y no sujetas a reapertura:** identidad cromática, tres temas, paletas, tokens,
 selector y alternativa B.
 
-## 8. Aprobación propuesta y plan de `UI · DEV-01`
+## 8. Aprobación registrada y plan de `UI · DEV-01`
 
-### 8.1 Texto de aprobación formal propuesto
+### 8.1 Aprobación formal (2026-11-06)
 
-> Apruebo `UI · SPEC` como contrato visual de evolución progresiva (alternativa B), con los tres
-> temas Dark/Light/Hybrid cerrados, sin cambios de paletas, tokens, selector, rutas, permisos,
-> contratos, cifras ni comportamiento financiero. Apruebo las cinco pantallas de referencia de
-> `DEV-06`, la secuencia `DEV-01 → 02 → 03 → 04 → 05 → 06 → 07` con el paralelismo condicionado
-> de §4, la matriz de evidencia de §6 y la actualización documental de `guidelines/ui.md` de
-> §2.1. La aprobación no autoriza `UI · DEV` ni ningún merge; cada bloque requiere autorización
-> separada.
+El usuario aprobó `UI · SPEC` conforme a la PR #205 (`baf9370`) y ratificó:
 
-### 8.2 Plan de inicio de `UI · DEV-01` (no autorizado)
+> Alternativa B, tres temas cerrados, cinco pantallas de `DEV-06`, secuencia `01 → 02 → 03 → 04
+> → 05 → 06 → 07` con `03 ∥ 04` solo con ownership disjunto, matriz de 30+15 capturas y
+> actualización de `guidelines/ui.md`. Sin cambios de paletas, tokens, selector, rutas,
+> permisos, contratos, cifras ni comportamiento financiero.
+
+La aprobación autoriza el merge de #205 tras aplicar `guidelines/ui.md` y, por separado,
+`UI · DEV-01`. **No** autoriza `DEV-02…07` ni sus merges.
+
+### 8.2 Plan de `UI · DEV-01` (autorizado 2026-11-06)
 
 - **Alcance:** escala tipográfica, espaciado, radios, foco y tamaños mínimos; tokens **no
   cromáticos** y consumo real de `--space`/`--radius` en shell y base.
 - **Archivos previstos:** `apps/web/src/style.css` (sección propia al final, sin reordenar),
   `apps/web/src/main.tsx` solo si el shell lo exige, y `apps/web/src/ui.tsx` si se añade una
   primitiva mínima. **No** `themes.css`, `theme-boot.js`, `themes.ts`, rutas, API ni datos.
-- **Coordinación E4.10:** E4.10 I1 está integrado y I2 afecta `apps/api`; `UI · DEV-01` no toca
-  esos archivos. `style.css`/`main.tsx` quedan bajo un único escritor UI; no se solapan con
-  E4.10. Antes de abrir rama, rebase desde `main` y contraste del tablero.
+- **Coordinación E4.10:** I1 está integrado e I2 sigue en PR sobre `apps/api`; `UI · DEV-01` no
+  toca esos archivos. `style.css`/`main.tsx` quedan bajo un único escritor UI.
 - **Pruebas:** `bun run typecheck`, `python3 scripts/verify` (perfil según cambio), E2E
   `theme.spec.ts` e `inicio.spec.ts`; capturas 1440/390 en los tres temas; comprobar que no
   cambian cifras, estados ni contratos.
 - **QA:** independiente, con matriz focal de 2 pantallas × 3 temas × 2 anchos y revisión del
   diff. Sin PASS de aceptación global.
-- **Gate:** autorización expresa de `UI · DEV-01`; merge separado. No se inicia `DEV-01` por
-  aprobar esta SPEC.
+- **Gate:** `UI · DEV-01` autorizado; su merge requiere autorización independiente.
 
 ### 8.3 Integración
 
-Aprobar esta SPEC no fusiona #205 ni autoriza `UI · DEV`. La iniciativa sigue independiente de
-E4.10; los bloques que compartan `style.css`/`main.tsx` se coordinan por archivo y ventana. No se
-recomienda iniciar `DEV-06` antes de `DEV-02` y de fijar las pantallas de referencia.
+El merge de #205 se autoriza tras aplicar `guidelines/ui.md`, con CI PASS y QA APTO. La
+iniciativa sigue independiente de E4.10; los bloques que compartan `style.css`/`main.tsx` se
+coordinan por archivo y ventana. `DEV-06` no empieza antes de `DEV-02` y de fijar las pantallas.

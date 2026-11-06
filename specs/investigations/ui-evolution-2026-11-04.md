@@ -1,8 +1,9 @@
 # UI — Evolución visual de MyFinanzas: propuesta (2026-11-04)
 
-**Estado:** documento de análisis y diseño actualizado. **No autoriza `DEV`, no cambia contratos
-funcionales ni financieros y no modifica código.** La alternativa **B** está adoptada; los tres
-temas de #198 están cerrados y no se reabren.
+**Estado:** documento de análisis y diseño. **UI · SPEC aprobada el 2026-11-06**; este análisis
+conserva el estado de la propuesta. **No autoriza `DEV`, no cambia contratos funcionales ni
+financieros y no modifica código.** La alternativa **B** está adoptada; los tres temas de #198
+están cerrados y no se reabren.
 
 **Base:** `main` **`043869f`** (2026-11-05). Temas Fase 1 integrados en `0b8aade` (#198) y
 decisión cromática cerrada; E4.6 integrado en `cfbedb0` (#201); E4.9 integrado en `0176ffc`
