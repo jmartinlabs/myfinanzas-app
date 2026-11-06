@@ -1,3 +1,5 @@
+import { formatAmount } from "./format";
+
 export type Saldo = {
   id: string;
   nombre: string;
@@ -87,9 +89,7 @@ export const controls: Record<string, string[]> = {
   Inversión: ["Inversiones"],
 };
 export function eur(value: string | null) {
-  if (value === null) return "Sin informar";
-  const [whole, dec] = value.split(".");
-  return `${whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".")},${dec} €`;
+  return value === null ? "Sin informar" : formatAmount(value, "EUR");
 }
 
 // E2.6 wire contract only; the browser never imports server modules.

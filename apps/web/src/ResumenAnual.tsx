@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { api, ApiError } from "./api";
-import { Alert, PageHead } from "./ui";
+import { formatDecimal } from "./format";
+import { Alert, Amount, Badge, EmptyState, Metric, PageHead, Skeleton } from "./ui";
 
 /**
  * E4.7 — Resumen anual.
@@ -281,19 +282,6 @@ const COBERTURA_META: Record<
   Solapada: { icon: "⊘", label: "SOLAPADA", tone: "nd" },
 };
 
-function formatDecimal(value: string, unidad: Metrica["unidad"]) {
-  const negative = value.startsWith("-");
-  const raw = negative ? value.slice(1) : value;
-  const [whole, fraction = ""] = raw.split(".");
-  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-  const decimals = fraction.padEnd(2, "0").slice(0, 2);
-  const text = `${grouped},${decimals}`;
-  const signed = negative ? `−${text}` : text;
-  if (unidad === "EUR") return `${signed} €`;
-  if (unidad === "meses") return `${signed} meses`;
-  return signed;
-}
-
 function formatDate(value: string | null) {
   if (value === null) return "No disponible";
   const [year, month, day] = value.split("-");
@@ -317,30 +305,6 @@ function estadoCorteLabel(estado: "disponible" | "parcial" | "no_disponible") {
   if (estado === "disponible") return "Disponible";
   if (estado === "parcial") return "Parcial";
   return "No disponible";
-}
-
-function Badge({
-  tone,
-  label,
-  icon,
-  estado,
-  kind,
-}: {
-  tone: "ok" | "partial" | "nd";
-  label: string;
-  icon: string;
-  estado: string;
-  kind: "estado" | "cobertura";
-}) {
-  return (
-    <span
-      className={`e47-badge e47-badge-${tone}`}
-      data-estado={estado}
-      data-tipo={kind}
-    >
-      <span aria-hidden="true">{icon}</span> {label}
-    </span>
-  );
 }
 
 function EstadoBadge({ estado }: { estado: EstadoMetrica }) {
@@ -373,42 +337,15 @@ function CoberturaBadge({ valor }: { valor: string }) {
   );
 }
 
-function Amount({ metrica }: { metrica: Metrica }) {
-  if (metrica.estado === "No aplica")
-    return <span className="e47-nd">No aplica</span>;
-  if (metrica.estado === "Sin datos")
-    return <span className="e47-nd">Sin datos</span>;
-  if (metrica.estado === "No disponible")
-    return (
-      <span className="e47-amount-wrap">
-        <small>No disponible</small>
-        <strong className="e47-nd">ND</strong>
-        {metrica.subtotal !== null && (
-          <small>
-            Subtotal conocido {formatDecimal(metrica.subtotal, metrica.unidad)}
-          </small>
-        )}
-      </span>
-    );
-  const mostrado =
-    metrica.estado === "Parcial"
-      ? (metrica.subtotal ?? metrica.valor)
-      : (metrica.valor ?? metrica.subtotal);
-  const nota =
-    metrica.estado === "Parcial"
-      ? "Subtotal conocido"
-      : metrica.estado === "Cero verificado"
-        ? "Cero verificado"
-        : "Total verificado";
+/** Adapta la métrica publicada al `Amount` compartido sin tocar su contrato. */
+function MetricAmount({ metrica }: { metrica: Metrica }) {
   return (
-    <span className="e47-amount-wrap">
-      <small>{nota}</small>
-      {mostrado === null ? (
-        <strong className="e47-nd">ND</strong>
-      ) : (
-        <strong>{formatDecimal(mostrado, metrica.unidad)}</strong>
-      )}
-    </span>
+    <Amount
+      value={metrica.valor}
+      subtotal={metrica.subtotal}
+      state={metrica.estado}
+      unit={metrica.unidad}
+    />
   );
 }
 
@@ -506,17 +443,20 @@ function LaneHead({
 
 function MetricCard({ metrica, go }: { metrica: Metrica; go: (path: string) => void }) {
   return (
-    <article className="e47-card" data-clase={metrica.clase} aria-label={metrica.etiqueta}>
-      <div className="e47-card-head">
-        <h4>{metrica.etiqueta}</h4>
-        <EstadoBadge estado={metrica.estado} />
-      </div>
-      <Amount metrica={metrica} />
+    <Metric
+      title={metrica.etiqueta}
+      titleAs="h4"
+      dataClase={metrica.clase}
+      ariaLabel={metrica.etiqueta}
+      className="e47-card"
+      amount={<MetricAmount metrica={metrica} />}
+      badge={<EstadoBadge estado={metrica.estado} />}
+    >
       <p className="e47-card-motivo">{metrica.motivo}</p>
       <CoverageLine cobertura={metrica.cobertura} />
       <FuenteLinea fuente={metrica.fuente} contexto={metrica.contexto} />
       <PageLink enlace={metrica.enlace} go={go} />
-    </article>
+    </Metric>
   );
 }
 
@@ -547,7 +487,7 @@ function MetricTableRow({ metrica }: { metrica: Metrica }) {
     <tr>
       <th scope="row">{metrica.etiqueta}</th>
       <td>
-        <Amount metrica={metrica} />
+        <MetricAmount metrica={metrica} />
         <small className="e47-table-source">{metrica.fuente.motor}</small>
       </td>
       <td>
@@ -740,16 +680,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
             partidas={filters.partida === "" ? [] : [filters.partida]}
           />
         </section>
-        <div
-          className="e47-skeleton"
-          role="status"
-          aria-live="polite"
-          aria-busy="true"
-        >
-          <span className="e47-skeleton-line" />
-          <span className="e47-skeleton-line" />
-          <span className="e47-skeleton-line short" />
-        </div>
+        <Skeleton label="Cargando el resumen anual" />
       </div>
     );
 
@@ -862,9 +793,10 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
       </section>
 
       {sinDatos && (
-        <p className="e47-empty-page" role="status">
-          Sin datos para este ejercicio. No se muestran ceros inventados.
-        </p>
+        <EmptyState
+          className="e47-empty-page"
+          title="Sin datos para este ejercicio. No se muestran ceros inventados."
+        />
       )}
 
       <div className="e47-grid-2">
@@ -901,7 +833,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         </td>
                         <td>{item.esencial ?? "Sin clasificar"}</td>
                         <td>
-                          <Amount metrica={item.ejecutado} />
+                          <MetricAmount metrica={item.ejecutado} />
                           <small className="e47-table-source">
                             {item.ejecutado.fuente.motor}
                             {item.ejecutado.fuente.ids.length > 0
@@ -911,16 +843,17 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                         </td>
                         <td>
                           {item.diferencia === null ? (
-                            <span className="e47-amount-wrap">
-                              <span className="e47-nd">No aplica</span>
-                              <small>
-                                {item.presupuesto === null
+                            <Amount
+                              value={null}
+                              state="No aplica"
+                              note={
+                                item.presupuesto === null
                                   ? "Sin presupuesto anual"
-                                  : "Ejecutado no verificable"}
-                              </small>
-                            </span>
+                                  : "Ejecutado no verificable"
+                              }
+                            />
                           ) : (
-                            <Amount metrica={item.diferencia} />
+                            <MetricAmount metrica={item.diferencia} />
                           )}
                         </td>
                         <td>
@@ -964,23 +897,24 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <div>
                         <dt>Ejecutado</dt>
                         <dd>
-                          <Amount metrica={item.ejecutado} />
+                          <MetricAmount metrica={item.ejecutado} />
                         </dd>
                       </div>
                       <div>
                         <dt>Diferencia</dt>
                         <dd>
                           {item.diferencia === null ? (
-                            <span className="e47-amount-wrap">
-                              <span className="e47-nd">No aplica</span>
-                              <small>
-                                {item.presupuesto === null
+                            <Amount
+                              value={null}
+                              state="No aplica"
+                              note={
+                                item.presupuesto === null
                                   ? "Sin presupuesto anual"
-                                  : "Ejecutado no verificable"}
-                              </small>
-                            </span>
+                                  : "Ejecutado no verificable"
+                              }
+                            />
                           ) : (
-                            <Amount metrica={item.diferencia} />
+                            <MetricAmount metrica={item.diferencia} />
                           )}
                         </dd>
                       </div>
@@ -1075,7 +1009,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <th scope="row">Ajuste G_n</th>
                       <td>
                         {ciclo.ajusteCompartidos.gNeto === null ? (
-                          <span className="e47-nd">ND</span>
+                          <Amount value={null} state="No disponible" showNote={false} />
                         ) : (
                           formatDecimal(ciclo.ajusteCompartidos.gNeto, "EUR")
                         )}
@@ -1096,7 +1030,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                       <th scope="row">Ajuste S_aj</th>
                       <td>
                         {ciclo.ajusteCompartidos.sAjustado === null ? (
-                          <span className="e47-nd">ND</span>
+                          <Amount value={null} state="No disponible" showNote={false} />
                         ) : (
                           formatDecimal(ciclo.ajusteCompartidos.sAjustado, "EUR")
                         )}
@@ -1201,7 +1135,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <th scope="row">{margen.cicloId}</th>
                   <td>{margen.etiqueta}</td>
                   <td>
-                    <Amount metrica={margenMetrica(margen)} />
+                    <MetricAmount metrica={margenMetrica(margen)} />
                   </td>
                   <td>
                     <EstadoBadge estado={margen.estado} />
@@ -1256,7 +1190,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <dt>Valor</dt>
                   <dd>
                     {data.patrimonio.valoracion.valorEur === null ? (
-                      <span className="e47-nd">ND</span>
+                      <Amount value={null} state="No disponible" showNote={false} />
                     ) : (
                       formatDecimal(data.patrimonio.valoracion.valorEur, "EUR")
                     )}
@@ -1266,7 +1200,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <dt>Resultado</dt>
                   <dd>
                     {data.patrimonio.valoracion.resultadoEur === null ? (
-                      <span className="e47-nd">ND</span>
+                      <Amount value={null} state="No disponible" showNote={false} />
                     ) : (
                       formatDecimal(data.patrimonio.valoracion.resultadoEur, "EUR")
                     )}
@@ -1293,7 +1227,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <dt>Total</dt>
                   <dd>
                     {data.patrimonio.deuda.total === null ? (
-                      <span className="e47-nd">ND</span>
+                      <Amount value={null} state="No disponible" showNote={false} />
                     ) : (
                       formatDecimal(data.patrimonio.deuda.total, "EUR")
                     )}
@@ -1303,7 +1237,7 @@ export function ResumenAnual({ go }: { go: (path: string) => void }) {
                   <dt>Subtotal</dt>
                   <dd>
                     {data.patrimonio.deuda.subtotal === null ? (
-                      <span className="e47-nd">ND</span>
+                      <Amount value={null} state="No disponible" showNote={false} />
                     ) : (
                       formatDecimal(data.patrimonio.deuda.subtotal, "EUR")
                     )}

@@ -188,7 +188,7 @@ async function expectInicioContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.inicio-value,.inicio-estado,.inicio-item-meta,.inicio-clase",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,summary,.ui-amount-value,.ui-amount-state,.ui-amount-note,.ui-badge,.inicio-item-meta,.inicio-clase",
       ),
     );
     const result: number[] = [];
@@ -350,7 +350,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   }
 
   // Taxonomía única: los badges no muestran estados crudos en minúsculas.
-  const badges = page.locator(".inicio-estado");
+  const badges = page.locator(".ui-badge");
   expect(await badges.count()).toBeGreaterThan(0);
   for (const badge of await badges.all()) {
     expect([

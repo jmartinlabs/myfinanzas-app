@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
+import { formatAmount } from "./format";
 import { Alert, PageHead } from "./ui";
 import type {
   MonthlyFlowDTO as MonthlyFlow,
@@ -97,13 +98,7 @@ type MonthlyFlowExt = MonthlyFlow & {
 };
 
 function euro(v: string) {
-  const [whole, cents] = v.split(".");
-  return (
-    whole.replace(/\B(?=(\d{3})+(?!\d))/g, ".").replace("-", "−") +
-    "," +
-    (cents ?? "00") +
-    " €"
-  );
+  return formatAmount(v, "EUR");
 }
 function Indicator({
   name,
@@ -194,7 +189,7 @@ function AjusteCompartidosPanel({
       ? "No disponible"
       : /^-?0(?:\.0+)?$/.test(rAdj)
         ? euro(rAdj.replace(/^-/, ""))
-        : "−" + euro(rAdj.replace(/^-/, ""));
+        : "-" + euro(rAdj.replace(/^-/, ""));
   return (
     <section className="panel flow-adjusted" aria-labelledby="flow-adjusted">
       <h2 id="flow-adjusted">Flujo ajustado por Recuperado (E3.6)</h2>

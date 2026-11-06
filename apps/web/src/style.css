@@ -4822,3 +4822,180 @@ textarea {
   --sidebar-width: 236px;
   --content-max: 1450px;
 }
+
+/* UI · DEV-02 — cifras y estados
+ * Primitivas Amount, Badge, Metric, EmptyState y Skeleton.
+ * Solo consume tokens existentes: no define colores ni tokens nuevos.
+ */
+.ui-amount-wrap {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+.ui-amount-note {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: var(--leading-snug);
+}
+.ui-amount-value {
+  font-size: 13px;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ui-amount-value-nd {
+  color: var(--muted);
+  font-weight: 650;
+}
+.ui-amount-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 650;
+}
+.ui-amount-icon {
+  flex: none;
+}
+.ui-amount-negative {
+  color: var(--negative);
+}
+.inicio-metric .ui-amount-value {
+  font-size: 22px;
+  letter-spacing: -0.3px;
+}
+.inicio-metric .ui-amount-state {
+  font-size: 15px;
+  letter-spacing: 0.4px;
+}
+.e47-card .ui-amount-note,
+.e47-table .ui-amount-note,
+.e47-subblock .ui-amount-note {
+  font-size: 9px;
+}
+.ui-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.5px;
+  line-height: var(--leading-snug);
+  white-space: nowrap;
+  background: var(--bg);
+  color: var(--muted);
+}
+.ui-badge-icon {
+  flex: none;
+}
+.ui-badge-ok {
+  color: var(--positive);
+  background: var(--positive-soft);
+  border-color: var(--positive-border);
+}
+.ui-badge-partial {
+  color: var(--warning);
+  background: var(--warning-soft);
+  border-color: var(--warning-border);
+}
+.ui-badge-nd {
+  color: var(--muted);
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+.ui-badge-info {
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-color: var(--accent-border);
+}
+.ui-metric {
+  min-width: 0;
+}
+.ui-metric-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ui-metric-title {
+  margin: 0;
+  font-size: 13px;
+  line-height: var(--leading-tight);
+  overflow-wrap: normal;
+  word-break: normal;
+}
+.ui-metric-class {
+  font-size: 9px;
+  font-weight: 750;
+  letter-spacing: 1px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.ui-metric-main {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 10px;
+  margin-top: 10px;
+}
+.e47-card .ui-metric-main {
+  margin-top: 0;
+}
+.e47-card .ui-metric-title {
+  font-size: 12px;
+}
+.ui-empty {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  color: var(--text);
+}
+.ui-empty-icon {
+  flex: none;
+  color: var(--muted);
+}
+.ui-empty-content {
+  min-width: 0;
+}
+.ui-empty-title {
+  margin: 0;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.ui-empty-text {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+.ui-skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ui-skeleton-line {
+  display: block;
+  height: 18px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+.ui-skeleton-line.short {
+  width: 55%;
+}
+@media (max-width: 760px) {
+  .inicio-metric .ui-amount-value {
+    font-size: 20px;
+  }
+}

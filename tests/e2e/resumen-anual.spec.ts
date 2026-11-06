@@ -191,7 +191,7 @@ async function expectContrast(page: Page) {
     };
     const nodes = Array.from(
       root.querySelectorAll(
-        "h1,h2,h3,h4,p,dt,dd,li,a,small,th,td,.e47-amount-wrap strong",
+        "h1,h2,h3,h4,p,dt,dd,li,a,small,th,td,.ui-amount-value,.ui-badge",
       ),
     );
     const result: number[] = [];
