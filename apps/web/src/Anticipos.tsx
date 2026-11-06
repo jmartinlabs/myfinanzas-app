@@ -566,6 +566,9 @@ export function Anticipos({
                   columns={columns}
                   rows={data.operaciones}
                   rowKey={(o) => o.id}
+                  rowClassName={(o) =>
+                    o.anulado ? "annulled" : undefined
+                  }
                   label="Operaciones acreditadas móvil"
                   className="mobile-list"
                 />

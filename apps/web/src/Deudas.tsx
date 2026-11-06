@@ -314,6 +314,12 @@ function List({ go }: { go: (p: string) => void }) {
           <small className="table-id">
             <Tag inactive={d.estado === "Inactiva"}>{d.estado}</Tag>
           </small>
+          <button
+            className="text-button debt-open"
+            onClick={() => go(base + "/" + d.id)}
+          >
+            Ver ficha
+          </button>
         </>
       ),
     },
@@ -350,16 +356,6 @@ function List({ go }: { go: (p: string) => void }) {
           {conciliacionLabel(d.conciliacion)}
           {d.varias && <span className="e44-varias"> · Varias</span>}
         </>
-      ),
-    },
-    {
-      id: "acciones",
-      header: "Acciones",
-      kind: "actions",
-      cell: (d) => (
-        <button className="secondary" onClick={() => go(base + "/" + d.id)}>
-          Ver ficha
-        </button>
       ),
     },
   ];
@@ -453,6 +449,9 @@ function List({ go }: { go: (p: string) => void }) {
               columns={columns}
               rows={data.items}
               rowKey={(d) => d.id}
+              rowClassName={(d) =>
+                d.estado === "Inactiva" ? "ui-row-inactive" : undefined
+              }
               label="Deudas móvil"
               className="mobile-list debt-cards"
             />
@@ -1132,6 +1131,9 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
                   columns={historyColumns}
                   rows={d!.historia}
                   rowKey={(h) => h.movimiento}
+                  rowClassName={(h) =>
+                    h.estado === "Anulado" ? "annulled" : undefined
+                  }
                   label="Historia ejecutada móvil"
                   className="e44-history-mobile"
                 />

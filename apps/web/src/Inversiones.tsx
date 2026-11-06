@@ -527,6 +527,11 @@ function InstrumentList({ go }: { go: (path: string) => void }) {
               columns={columns}
               rows={data.instrumentos}
               rowKey={(instrumento) => instrumento.id}
+              rowClassName={(instrumento) =>
+                instrumento.estado === "Inactiva"
+                  ? "ui-row-inactive"
+                  : undefined
+              }
               label="Instrumentos registrados móvil"
               className="mobile-list inversiones-mobile"
             />
@@ -846,6 +851,9 @@ function InstrumentDetail({
             columns={compraColumns}
             rows={data.compras}
             rowKey={(compra) => compra.id}
+            rowClassName={(compra) =>
+              compra.estado === "Anulada" ? "annulled" : undefined
+            }
             label="Compras del Instrumento móvil"
             className="mobile-list inversiones-mobile"
           />
@@ -884,6 +892,9 @@ function InstrumentDetail({
               columns={ventaColumns}
               rows={data.ventas}
               rowKey={(venta) => venta.id}
+              rowClassName={(venta) =>
+                venta.estado === "Anulada" ? "annulled" : undefined
+              }
               label="Ventas del Instrumento móvil"
               className="mobile-list inversiones-mobile"
             />
@@ -1349,6 +1360,9 @@ function PurchaseList({ go }: { go: (path: string) => void }) {
               columns={columns}
               rows={data.compras}
               rowKey={(compra) => compra.id}
+              rowClassName={(compra) =>
+                compra.estado === "Anulada" ? "annulled" : undefined
+              }
               label="Compras registradas móvil"
               className="mobile-list inversiones-mobile"
             />

@@ -269,6 +269,21 @@ test("DataList reproduce etiquetas, valores y acciones de las mismas columnas", 
   expect(html).not.toContain('data-label="Interno"');
 });
 
+test("DataList aplica rowClassName a la tarjeta sin alterar sus datos", () => {
+  const html = renderToStaticMarkup(
+    <DataList
+      columns={saldoColumns}
+      rows={saldoRows}
+      label="Saldos en móvil"
+      rowClassName={(row) => (row.id === "s1" ? "annulled" : undefined)}
+    />,
+  );
+  expect(html).toContain('class="ui-data-list-item annulled"');
+  expect(html).toContain("Cuenta principal");
+  expect(html).toContain("1.234,50 €");
+  expect(html).toContain("VERIFICADO");
+});
+
 test("DataList usa cardCell solo en la tarjeta y conserva la tabla", () => {
   const columns: TableColumn<SaldoRow>[] = [
     {

@@ -243,6 +243,8 @@ export type DataListProps<Row> = {
   columns: ReadonlyArray<TableColumn<Row>>;
   rows: ReadonlyArray<Row>;
   rowKey?: (row: Row, index: number) => string | number;
+  /** Clase opcional de la tarjeta (p. ej. `annulled`); no altera celdas. */
+  rowClassName?: (row: Row, index: number) => string | undefined;
   /** Nombre accesible opcional de la lista de tarjetas. */
   label?: string;
   empty?: ReactNode;
@@ -260,6 +262,7 @@ export function DataList<Row>({
   columns,
   rows,
   rowKey,
+  rowClassName,
   label,
   empty = "Sin datos",
   className,
@@ -275,29 +278,32 @@ export function DataList<Row>({
       {rows.length === 0 ? (
         <li className="ui-data-list-empty">{empty}</li>
       ) : (
-        rows.map((row, index) => (
-          <li
-            key={rowKey ? rowKey(row, index) : index}
-            className="ui-data-list-item"
-          >
-            {cardColumns.map((column) => {
-              const fieldLabel = tableColumnLabel(column);
-              return (
-                <div
-                  key={column.id}
-                  className="ui-data-list-field"
-                  data-kind={column.kind ?? "text"}
-                  data-label={fieldLabel}
-                >
-                  <span className="ui-data-list-label">{fieldLabel}</span>
-                  <div className="ui-data-list-value">
-                    {(column.cardCell ?? column.cell)(row, index)}
+        rows.map((row, index) => {
+          const rowClass = rowClassName?.(row, index);
+          return (
+            <li
+              key={rowKey ? rowKey(row, index) : index}
+              className={`ui-data-list-item${rowClass ? ` ${rowClass}` : ""}`}
+            >
+              {cardColumns.map((column) => {
+                const fieldLabel = tableColumnLabel(column);
+                return (
+                  <div
+                    key={column.id}
+                    className="ui-data-list-field"
+                    data-kind={column.kind ?? "text"}
+                    data-label={fieldLabel}
+                  >
+                    <span className="ui-data-list-label">{fieldLabel}</span>
+                    <div className="ui-data-list-value">
+                      {(column.cardCell ?? column.cell)(row, index)}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </li>
-        ))
+                );
+              })}
+            </li>
+          );
+        })
       )}
     </ul>
   );

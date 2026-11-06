@@ -565,6 +565,11 @@ function CorteList({
                 rowKey={(position) =>
                   position.saldoInversion.id + "-" + position.instrumento.id
                 }
+                rowClassName={(position) =>
+                  position.instrumento.estado === "Inactiva"
+                    ? "ui-row-inactive"
+                    : undefined
+                }
                 label="Posiciones al corte móvil"
                 className="valoracion-cards valoracion-mobile"
               />

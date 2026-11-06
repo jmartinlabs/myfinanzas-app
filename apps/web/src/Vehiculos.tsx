@@ -621,6 +621,11 @@ function VehicleList({ go }: { go: (p: string) => void }) {
             columns={columns}
             rows={data.items}
             rowKey={(v) => v.referencia.id}
+            rowClassName={(v) =>
+              v.referencia.estado === "Inactiva"
+                ? "ui-row-inactive"
+                : undefined
+            }
             label="Vehículos móvil"
             className="mobile-list vehicle-cards"
           />

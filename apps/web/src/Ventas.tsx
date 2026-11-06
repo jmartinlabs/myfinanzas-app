@@ -402,6 +402,9 @@ export function SaleList({ go }: { go: (path: string) => void }) {
               columns={columns}
               rows={data.ventas}
               rowKey={(venta) => venta.id}
+              rowClassName={(venta) =>
+                venta.estado === "Anulada" ? "annulled" : undefined
+              }
               label="Ventas registradas móvil"
               className="mobile-list inversiones-mobile"
             />
