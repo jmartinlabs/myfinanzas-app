@@ -15,9 +15,9 @@ import urllib.error
 import urllib.request
 import uuid
 
-# The reviewed migration dispatched through PREVIOUS_REF is 25 -> 26. Update
+# The reviewed migration dispatched through PREVIOUS_REF is 26 -> 27. Update
 # this guard together with the next authorized migration manifest.
-PREVIOUS_REF_SCHEMA = 25
+PREVIOUS_REF_SCHEMA = 26
 
 
 class ProbeError(Exception):
@@ -79,9 +79,9 @@ def e14_diagnostics(stderr):
 def resolve_previous_ref(source):
     """Select the previous release without weakening the ordinary merge-base path.
 
-    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 25 -> 26
-    migration against an ancestor commit while origin/main already carries v26.
-    An explicit value must resolve to an ancestor whose source declares schema 25.
+    PREVIOUS_REF (workflow_dispatch) exists to exercise the reviewed 26 -> 27
+    migration against an ancestor commit while origin/main already carries v27.
+    An explicit value must resolve to an ancestor whose source declares schema 26.
     """
     override = os.environ.get('PREVIOUS_REF', '').strip()
     if not override:
