@@ -226,6 +226,7 @@ test("DataList reproduce etiquetas, valores y acciones de las mismas columnas", 
     />,
   );
   expect(html).toContain('class="ui-data-list mobile-list"');
+  expect(html).toContain('role="list"');
   expect(html).toContain('aria-label="Saldos en móvil"');
   for (const label of ["Nombre", "Saldo", "Estado", "Acciones"]) {
     expect(html).toContain(`data-label="${label}"`);

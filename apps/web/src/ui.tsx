@@ -252,6 +252,7 @@ export function DataList<Row>({
   return (
     <ul
       className={`ui-data-list${className ? ` ${className}` : ""}`}
+      role="list"
       aria-label={label}
     >
       {rows.length === 0 ? (

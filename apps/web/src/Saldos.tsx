@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, eur, flags, flagLabels, type Saldo } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 export function SaldoList({ go }: { go: (path: string) => void }) {
   const [q, setQ] = useState(""),
     [estado, setEstado] = useState("Activa"),
@@ -64,6 +64,56 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
       </a>
     );
   }
+  const columns: TableColumn<Saldo>[] = [
+    {
+      id: "saldo",
+      header: "Saldo / ID",
+      label: "Saldo / ID",
+      cell: (s) => (
+        <>
+          {link(s)}
+          <small className="table-id">
+            {s.id}
+            {s.id === "S000" ? " · Técnico protegido" : ""}
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (s) => s.tipo,
+    },
+    {
+      id: "control",
+      header: "Control",
+      cell: (s) => s.control,
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (s) => <Tag inactive={s.estado === "Inactiva"}>{s.estado}</Tag>,
+    },
+    {
+      id: "posicion",
+      header: "Posición actual",
+      label: "Posición actual",
+      kind: "amount",
+      cell: (s) => (
+        <>
+          <span className="position-label">
+            {s.posicion.importe !== null
+              ? eur(s.posicion.importe)
+              : s.posicion.condicion === "pendiente_motor"
+                ? "Pendiente de motor"
+                : "No aplicable"}
+          </span>
+          <small className="table-id">{s.posicion.motivo}</small>
+        </>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -202,78 +252,20 @@ export function SaldoList({ go }: { go: (path: string) => void }) {
         ) : (
           <>
             <div className="desktop-list">
-              <table>
-                <caption className="sr-only">
-                  Saldos y configuración de control
-                </caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Saldo / ID</th>
-                    <th scope="col">Tipo</th>
-                    <th scope="col">Control</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Posición actual</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.saldos.map((s) => (
-                    <tr key={s.id}>
-                      <td>
-                        {link(s)}
-                        <small className="table-id">
-                          {s.id}
-                          {s.id === "S000" ? " · Técnico protegido" : ""}
-                        </small>
-                      </td>
-                      <td>{s.tipo}</td>
-                      <td>{s.control}</td>
-                      <td>
-                        <Tag inactive={s.estado === "Inactiva"}>{s.estado}</Tag>
-                      </td>
-                      <td>
-                        <span className="position-label">
-                          {s.posicion.importe !== null
-                            ? eur(s.posicion.importe)
-                            : s.posicion.condicion === "pendiente_motor"
-                              ? "Pendiente de motor"
-                              : "No aplicable"}
-                        </span>
-                        <small className="table-id">{s.posicion.motivo}</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Saldos y configuración de control"
+                label="Tabla de Saldos"
+                columns={columns}
+                rows={data.saldos}
+                rowKey={(s) => s.id}
+              />
             </div>
-            <ul className="mobile-list">
-              {data.saldos.map((s) => (
-                <li key={s.id}>
-                  <div className="card-head">
-                    <span className="id-label">
-                      {s.id}
-                      {s.id === "S000" ? " · Técnico protegido" : ""}
-                    </span>
-                    <Tag inactive={s.estado === "Inactiva"}>{s.estado}</Tag>
-                  </div>
-                  <h2>{link(s)}</h2>
-                  <p>
-                    {s.tipo}
-                    <span className="separator">/</span>
-                    {s.control}
-                  </p>
-                  <div className="card-position">
-                    <span>
-                      {s.posicion.importe !== null
-                        ? eur(s.posicion.importe)
-                        : s.posicion.condicion === "pendiente_motor"
-                          ? "Pendiente de motor"
-                          : "No aplicable"}
-                    </span>
-                    <small>{s.posicion.motivo}</small>
-                  </div>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.saldos}
+              rowKey={(s) => s.id}
+              className="mobile-list"
+            />
             <div className="list-footer">
               <span>Página {data.page} · Hasta 100 por página</span>
               <div className="actions">
