@@ -131,6 +131,12 @@ export type TableColumn<Row> = {
   width?: string;
   card?: "hidden";
   cell: (row: Row, index: number) => ReactNode;
+  /**
+   * Render alternativo solo para la tarjeta móvil. Permite conservar el texto
+   * o los enlaces propios de la tarjeta sin duplicar falsos positivos de texto
+   * exacto con la tabla. Por defecto se usa `cell`.
+   */
+  cardCell?: (row: Row, index: number) => ReactNode;
 };
 
 function tableColumnLabel<Row>(column: TableColumn<Row>): string {
@@ -158,6 +164,8 @@ export type TableProps<Row> = {
   empty?: ReactNode;
   /** Clases del contenedor interno; conserva hooks como `desktop-list`. */
   className?: string;
+  /** Clases del `<table>`; conserva hooks por página como `inversiones-table`. */
+  tableClassName?: string;
 };
 
 /** Tabla de escritorio con cabecera, importes alineados y scroll rotulado. */
@@ -171,11 +179,14 @@ export function Table<Row>({
   captionVisible = false,
   empty = "Sin datos",
   className,
+  tableClassName,
 }: TableProps<Row>) {
   return (
     <TableScroll label={label}>
       <div className={`ui-table-wrap${className ? ` ${className}` : ""}`}>
-        <table className="ui-table">
+        <table
+          className={`ui-table${tableClassName ? ` ${tableClassName}` : ""}`}
+        >
           <caption
             className={`ui-table-caption${captionVisible ? "" : " sr-only"}`}
           >
@@ -280,7 +291,7 @@ export function DataList<Row>({
                 >
                   <span className="ui-data-list-label">{fieldLabel}</span>
                   <div className="ui-data-list-value">
-                    {column.cell(row, index)}
+                    {(column.cardCell ?? column.cell)(row, index)}
                   </div>
                 </div>
               );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 
 type Reference = {
   id: string;
@@ -186,6 +186,41 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
         <p>No disponible. No se declara cero ni total completo.</p>
       </section>
     );
+  const partidaColumns: TableColumn<Row>[] = [
+    {
+      id: "partida",
+      header: "Partida",
+      cell: (row) => `${row.partida.id} · ${row.partida.nombre}`,
+    },
+    {
+      id: "subtotal",
+      header: "Subtotal",
+      kind: "amount",
+      cell: (row) => eur(row.subtotalRegistrado),
+    },
+    {
+      id: "coberturaCorte",
+      header: "Cobertura corte",
+      cell: (row) => row.coberturaAlCorte,
+    },
+    {
+      id: "totalCorte",
+      header: "Total al corte",
+      kind: "amount",
+      cell: (row) => amount(row.totalAlCorte),
+    },
+    {
+      id: "coberturaAnual",
+      header: "Cobertura anual",
+      cell: (row) => row.coberturaAnual,
+    },
+    {
+      id: "totalAnual",
+      header: "Total anual",
+      kind: "amount",
+      cell: (row) => amount(row.totalAnual),
+    },
+  ];
   return (
     <section className="panel annual-coverage" aria-label="Gasto año y cobertura">
       <h2>Gasto año</h2>
@@ -231,33 +266,13 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
       </p>
       {annual.resultadosPorPartida.length > 0 && (
         <div className="vehicle-parts">
-          <table>
-            <caption className="sr-only">Resultados por Partida</caption>
-            <thead>
-              <tr>
-                <th scope="col">Partida</th>
-                <th scope="col">Subtotal</th>
-                <th scope="col">Cobertura corte</th>
-                <th scope="col">Total al corte</th>
-                <th scope="col">Cobertura anual</th>
-                <th scope="col">Total anual</th>
-              </tr>
-            </thead>
-            <tbody>
-              {annual.resultadosPorPartida.map((row) => (
-                <tr key={row.partida.id}>
-                  <td>
-                    {row.partida.id} · {row.partida.nombre}
-                  </td>
-                  <td>{eur(row.subtotalRegistrado)}</td>
-                  <td>{row.coberturaAlCorte}</td>
-                  <td>{amount(row.totalAlCorte)}</td>
-                  <td>{row.coberturaAnual}</td>
-                  <td>{amount(row.totalAnual)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <Table
+            caption="Resultados por Partida"
+            label="Tabla de resultados por Partida"
+            columns={partidaColumns}
+            rows={annual.resultadosPorPartida}
+            rowKey={(row) => row.partida.id}
+          />
         </div>
       )}
       {annual.hechosFueraDeControlCorte.length > 0 && (
@@ -278,6 +293,26 @@ function CoveragePanel({ annual }: { annual: Annual | null }) {
 }
 function AnnualFacts({ annual }: { annual: Annual | null }) {
   if (!annual) return null;
+  const columns: TableColumn<Annual["gastos"][number]>[] = [
+    { id: "fecha", header: "Fecha", cell: (g) => date(g.fecha) },
+    {
+      id: "concepto",
+      header: "Concepto",
+      cell: (g) => g.concepto || "—",
+    },
+    {
+      id: "partida",
+      header: "Partida",
+      cell: (g) =>
+        g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "—",
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (g) => eur(g.importe),
+    },
+  ];
   return (
     <section className="panel" aria-label="Gastos del año">
       <div className="panel-head">
@@ -289,40 +324,21 @@ function AnnualFacts({ annual }: { annual: Annual | null }) {
       ) : (
         <>
           <div className="desktop-list">
-            <table>
-              <caption className="sr-only">Gastos del año</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Fecha</th>
-                  <th scope="col">Concepto</th>
-                  <th scope="col">Partida</th>
-                  <th scope="col">Importe</th>
-                </tr>
-              </thead>
-              <tbody>
-                {annual.gastos.map((g) => (
-                  <tr key={g.id}>
-                    <td>{date(g.fecha)}</td>
-                    <td>{g.concepto || "—"}</td>
-                    <td>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "—"}</td>
-                    <td>{eur(g.importe)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Gastos del año"
+              label="Tabla de gastos del año"
+              columns={columns}
+              rows={annual.gastos}
+              rowKey={(g) => g.id}
+            />
           </div>
-          <ul className="mobile-list vehicle-facts" aria-label="Gastos del año móvil">
-            {annual.gastos.map((g) => (
-              <li key={g.id}>
-                <div className="card-head">
-                  <span>{date(g.fecha)}</span>
-                  <strong>{eur(g.importe)}</strong>
-                </div>
-                <h3>{g.concepto || "Sin concepto"}</h3>
-                <p>{g.partida ? `${g.partida.id} · ${g.partida.nombre}` : "Sin Partida"}</p>
-              </li>
-            ))}
-          </ul>
+          <DataList
+            columns={columns}
+            rows={annual.gastos}
+            rowKey={(g) => g.id}
+            label="Gastos del año móvil"
+            className="mobile-list vehicle-facts"
+          />
         </>
       )}
     </section>
@@ -411,6 +427,125 @@ function VehicleList({ go }: { go: (p: string) => void }) {
       {text}
     </a>
   );
+  const columns: TableColumn<View>[] = [
+    {
+      id: "referencia",
+      header: "Referencia",
+      cell: (v) => (
+        <>
+          {link(v.referencia.id, v.referencia.nombre)}
+          <small className="table-id">{v.referencia.id}</small>
+        </>
+      ),
+    },
+    {
+      id: "matricula",
+      header: "Matrícula",
+      cell: (v) => v.ficha?.matricula ?? "Sin informar",
+    },
+    {
+      id: "itv",
+      header: "Próx. ITV",
+      cell: (v) => date(v.ficha?.proximaITV),
+    },
+    {
+      id: "cita",
+      header: "Cita",
+      cell: (v) => date(v.ficha?.cita),
+    },
+    {
+      id: "subtotal",
+      header: "Subtotal reg.",
+      label: "Subtotal registrado",
+      kind: "amount",
+      cell: (v) => (
+        <>
+          <strong>{amount(v.gastoAnual?.subtotalRegistrado)}</strong>
+          {v.gastoAnual?.ceroVerificado ? " verif." : ""}
+        </>
+      ),
+      cardCell: (v) => (
+        <>
+          <strong>{amount(v.gastoAnual?.subtotalRegistrado)}</strong>
+          {v.gastoAnual?.ceroVerificado ? " verif." : ""}
+          <small className="help">
+            Cero verificado: {v.gastoAnual?.ceroVerificado ? "Sí" : "No"}
+          </small>
+          {v.gastoAnual && v.gastoAnual.hechosFueraConocidos > 0 && (
+            <small className="help">
+              Fuera de control/corte: {v.gastoAnual.hechosFueraConocidos}{" "}
+              Gasto(s) · {eur(v.gastoAnual.importeFueraDeControlCorte)} (no
+              computa)
+            </small>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "coberturaCorte",
+      header: "Cob. corte",
+      label: "Cobertura al corte",
+      cell: (v) => (
+        <CoverageText
+          value={v.gastoAnual?.coberturaAlCorte ?? "No disponible"}
+        />
+      ),
+    },
+    {
+      id: "totalCorte",
+      header: "Total al corte",
+      kind: "amount",
+      cell: (v) => amount(v.gastoAnual?.totalAlCorte),
+    },
+    {
+      id: "coberturaAnual",
+      header: "Cob. anual",
+      label: "Cobertura anual",
+      cell: (v) => (
+        <CoverageText
+          value={v.gastoAnual?.coberturaAnual ?? "No disponible"}
+        />
+      ),
+    },
+    {
+      id: "totalAnual",
+      header: "Total anual",
+      kind: "amount",
+      cell: (v) => amount(v.gastoAnual?.totalAnual),
+    },
+    {
+      id: "integridad",
+      header: "Integridad",
+      cell: (v) =>
+        v.integridad.estado === "OK" ? (
+          <Tag>OK</Tag>
+        ) : (
+          <Tag inactive>{integrityTag(v.integridad.estado)}</Tag>
+        ),
+      cardCell: (v) => (
+        <>
+          {v.integridad.estado === "OK" ? (
+            <Tag>OK</Tag>
+          ) : (
+            <Tag inactive>{integrityTag(v.integridad.estado)}</Tag>
+          )}
+          {v.integridad.estado !== "OK" && (
+            <small className="help">{v.integridad.mensaje}</small>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (v) => (
+        <Tag inactive={v.referencia.estado === "Inactiva"}>
+          {v.referencia.estado}
+        </Tag>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -469,119 +604,26 @@ function VehicleList({ go }: { go: (p: string) => void }) {
         <>
           <p role="status">{data.total} vehículos</p>
           <div className="desktop-list vehicle-table">
-            <table>
-              <caption className="sr-only">Vehículos del ejercicio</caption>
-              <thead>
-                <tr>
-                  <th scope="col">Referencia</th>
-                  <th scope="col">Matrícula</th>
-                  <th scope="col">Próx. ITV</th>
-                  <th scope="col">Cita</th>
-                  <th scope="col">Subtotal reg.</th>
-                  <th scope="col">Cob. corte</th>
-                  <th scope="col">Total al corte</th>
-                  <th scope="col">Cob. anual</th>
-                  <th scope="col">Total anual</th>
-                  <th scope="col">Integridad</th>
-                  <th scope="col">Estado</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.items.map((v) => (
-                  <tr key={v.referencia.id}>
-                    <td>
-                      {link(v.referencia.id, v.referencia.nombre)}
-                      <small className="table-id">{v.referencia.id}</small>
-                    </td>
-                    <td>{v.ficha?.matricula ?? "Sin informar"}</td>
-                    <td>{date(v.ficha?.proximaITV)}</td>
-                    <td>{date(v.ficha?.cita)}</td>
-                    <td>
-                      {amount(v.gastoAnual?.subtotalRegistrado)}
-                      {v.gastoAnual?.ceroVerificado ? " verif." : ""}
-                    </td>
-                    <td>
-                      <CoverageText value={v.gastoAnual?.coberturaAlCorte ?? "No disponible"} />
-                    </td>
-                    <td>{amount(v.gastoAnual?.totalAlCorte)}</td>
-                    <td>
-                      <CoverageText value={v.gastoAnual?.coberturaAnual ?? "No disponible"} />
-                    </td>
-                    <td>{amount(v.gastoAnual?.totalAnual)}</td>
-                    <td>
-                      {v.integridad.estado === "OK" ? (
-                        <Tag>OK</Tag>
-                      ) : (
-                        <Tag inactive>{integrityTag(v.integridad.estado)}</Tag>
-                      )}
-                    </td>
-                    <td>
-                      <Tag inactive={v.referencia.estado === "Inactiva"}>
-                        {v.referencia.estado}
-                      </Tag>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <Table
+              caption="Vehículos del ejercicio"
+              label="Tabla de vehículos"
+              columns={columns}
+              rows={data.items}
+              rowKey={(v) => v.referencia.id}
+              rowClassName={(v) =>
+                v.referencia.estado === "Inactiva"
+                  ? "ui-row-inactive"
+                  : undefined
+              }
+            />
           </div>
-          <ul className="mobile-list vehicle-cards">
-            {data.items.map((v) => (
-              <li key={v.referencia.id} className="panel">
-                <div className="card-head">
-                  <span>{v.referencia.id}</span>
-                  <Tag inactive={v.referencia.estado === "Inactiva"}>
-                    {v.referencia.estado}
-                  </Tag>
-                </div>
-                <h2>{link(v.referencia.id, v.referencia.nombre)}</h2>
-                <p>
-                  {v.ficha?.matricula ?? "Sin matrícula"} · Próx. ITV{" "}
-                  {date(v.ficha?.proximaITV)} · Cita {date(v.ficha?.cita)}
-                </p>
-                <dl className="vehicle-values">
-                  <div>
-                    <dt>Subtotal registrado</dt>
-                    <dd>{amount(v.gastoAnual?.subtotalRegistrado)}</dd>
-                  </div>
-                  <div>
-                    <dt>Cobertura al corte</dt>
-                    <dd>{v.gastoAnual?.coberturaAlCorte ?? "No disponible"}</dd>
-                  </div>
-                  <div>
-                    <dt>Total al corte</dt>
-                    <dd>{amount(v.gastoAnual?.totalAlCorte)}</dd>
-                  </div>
-                  <div>
-                    <dt>Cobertura anual</dt>
-                    <dd>{v.gastoAnual?.coberturaAnual ?? "No disponible"}</dd>
-                  </div>
-                  <div>
-                    <dt>Total anual</dt>
-                    <dd>{amount(v.gastoAnual?.totalAnual)}</dd>
-                  </div>
-                  <div>
-                    <dt>Cero verificado</dt>
-                    <dd>{v.gastoAnual?.ceroVerificado ? "Sí" : "No"}</dd>
-                  </div>
-                  <div>
-                    <dt>Integridad</dt>
-                    <dd>{v.integridad.estado}</dd>
-                  </div>
-                </dl>
-                {v.gastoAnual && v.gastoAnual.hechosFueraConocidos > 0 && (
-                  <p className="help">
-                    Fuera de control/corte: {v.gastoAnual.hechosFueraConocidos}{" "}
-                    Gasto(s) · {eur(v.gastoAnual.importeFueraDeControlCorte)} (no
-                    computa)
-                  </p>
-                )}
-                {v.integridad.estado !== "OK" && (
-                  <p className="help">{v.integridad.mensaje}</p>
-                )}
-              </li>
-            ))}
-          </ul>
+          <DataList
+            columns={columns}
+            rows={data.items}
+            rowKey={(v) => v.referencia.id}
+            label="Vehículos móvil"
+            className="mobile-list vehicle-cards"
+          />
           <div className="list-footer">
             <span>Página {page}</span>
             <div className="actions">

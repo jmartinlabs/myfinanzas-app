@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 
 export const VALORACION_BASE = "/inversiones/valoracion";
 
@@ -375,6 +375,113 @@ function CorteList({
         `${VALORACION_BASE}?fecha=${encodeURIComponent(fecha)}`,
       );
   }
+  const corteHref = (position: Posicion) =>
+    positionHref(position, data?.corte ?? corte);
+  const positionColumns: TableColumn<Posicion>[] = [
+    {
+      id: "posicion",
+      header: "Posición",
+      cell: (position) => (
+        <>
+          <a
+            href={corteHref(position)}
+            onClick={(event) => {
+              event.preventDefault();
+              go(corteHref(position));
+            }}
+          >
+            {position.saldoInversion.id} · {position.instrumento.id}
+          </a>
+          <small className="help">{position.instrumento.nombre}</small>
+          {position.instrumento.estado === "Inactiva" && (
+            <Tag inactive>Inactiva · heredada</Tag>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (position) => <PositionState estado={position.estado} />,
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad",
+      kind: "amount",
+      cell: (position) => numText(position.cantidad),
+    },
+    {
+      id: "valoracion",
+      header: "Valoración",
+      kind: "amount",
+      cell: (position) => (
+        <ValoracionCell valoracion={position.valoracion} />
+      ),
+    },
+    {
+      id: "resultado",
+      header: "Resultado",
+      kind: "amount",
+      cell: (position) => (
+        <ResultadoCell resultado={position.resultado} />
+      ),
+    },
+    {
+      id: "rentabilidad",
+      header: "Rentabilidad",
+      cell: (position) => (
+        <>
+          <State text="No disponible" />
+          <small className="help">{position.rentabilidad.motivo}</small>
+        </>
+      ),
+    },
+    {
+      id: "cobertura",
+      header: "Cobertura / elegibilidad",
+      label: "Cobertura",
+      cell: (position) => (
+        <>
+          <AllowedState valoracion={position.valoracion} />
+          {position.valoracion?.elegibilidadFechaExacta && (
+            <State text={position.valoracion.elegibilidadFechaExacta} />
+          )}
+        </>
+      ),
+    },
+    {
+      id: "accion",
+      header: "Acción",
+      kind: "actions",
+      cell: (position) => (
+        <a
+          className="secondary valoracion-link valoracion-row-link"
+          href={corteHref(position)}
+          aria-label={`Ver detalle de ${position.saldoInversion.id} · ${position.instrumento.id}`}
+          onClick={(event) => {
+            event.preventDefault();
+            go(corteHref(position));
+          }}
+        >
+          Ver
+        </a>
+      ),
+      cardCell: (position) => (
+        <a
+          className="secondary valoracion-link"
+          href={corteHref(position)}
+          aria-label={`Abrir detalle de ${position.saldoInversion.id} · ${position.instrumento.id}`}
+          onClick={(event) => {
+            event.preventDefault();
+            go(corteHref(position));
+          }}
+        >
+          Detalle
+        </a>
+      ),
+    },
+  ];
   return (
     <>
       {tabs}
@@ -440,187 +547,27 @@ function CorteList({
             </div>
           ) : (
             <>
-              <div
-                className="desktop-list valoracion-desktop"
-                role="region"
-                aria-label="Posiciones al corte"
-                tabIndex={0}
-              >
-                <table className="valoracion-table">
-                  <caption className="sr-only">
-                    Posiciones y resultados al corte {dateText(data.corte)}.
-                    Datos ficticios.
-                  </caption>
-                  <thead>
-                    <tr>
-                      <th scope="col">Posición</th>
-                      <th scope="col">Estado</th>
-                      <th scope="col" className="num">Cantidad</th>
-                      <th scope="col">Valoración</th>
-                      <th scope="col" className="num">Resultado</th>
-                      <th scope="col">Rentabilidad</th>
-                      <th scope="col">Cobertura / elegibilidad</th>
-                      <th scope="col">Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.posiciones.map((position) => (
-                      <tr
-                        key={
-                          position.saldoInversion.id +
-                          "-" +
-                          position.instrumento.id
-                        }
-                      >
-                        <td>
-                          <a
-                            href={positionHref(position, data.corte)}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              go(positionHref(position, data.corte));
-                            }}
-                          >
-                            {position.saldoInversion.id} ·{" "}
-                            {position.instrumento.id}
-                          </a>
-                          <small className="help">
-                            {position.instrumento.nombre}
-                          </small>
-                          {position.instrumento.estado === "Inactiva" && (
-                            <>
-                              {" "}
-                              <Tag inactive>Inactiva · heredada</Tag>
-                            </>
-                          )}
-                        </td>
-                        <td>
-                          <PositionState estado={position.estado} />
-                        </td>
-                        <td className="num">{numText(position.cantidad)}</td>
-                        <td>
-                          <ValoracionCell valoracion={position.valoracion} />
-                        </td>
-                        <td>
-                          <ResultadoCell resultado={position.resultado} />
-                        </td>
-                        <td>
-                          <State text="No disponible" />
-                          <small className="help">
-                            {position.rentabilidad.motivo}
-                          </small>
-                        </td>
-                        <td>
-                          <AllowedState valoracion={position.valoracion} />
-                          {position.valoracion?.elegibilidadFechaExacta && (
-                            <State
-                              text={
-                                position.valoracion.elegibilidadFechaExacta
-                              }
-                            />
-                          )}
-                        </td>
-                        <td>
-                          <a
-                            className="secondary valoracion-link valoracion-row-link"
-                            href={positionHref(position, data.corte)}
-                            aria-label={`Ver detalle de ${position.saldoInversion.id} · ${position.instrumento.id}`}
-                            onClick={(event) => {
-                              event.preventDefault();
-                              go(positionHref(position, data.corte));
-                            }}
-                          >
-                            Ver
-                          </a>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="desktop-list valoracion-desktop">
+                <Table
+                  caption={`Posiciones y resultados al corte ${dateText(data.corte)}. Datos ficticios.`}
+                  label="Tabla de posiciones al corte"
+                  columns={positionColumns}
+                  rows={data.posiciones}
+                  rowKey={(position) =>
+                    position.saldoInversion.id + "-" + position.instrumento.id
+                  }
+                  tableClassName="valoracion-table"
+                />
               </div>
-              <ul
+              <DataList
+                columns={positionColumns}
+                rows={data.posiciones}
+                rowKey={(position) =>
+                  position.saldoInversion.id + "-" + position.instrumento.id
+                }
+                label="Posiciones al corte móvil"
                 className="valoracion-cards valoracion-mobile"
-                aria-label="Posiciones al corte móvil"
-              >
-                {data.posiciones.map((position) => (
-                  <li
-                    key={
-                      position.saldoInversion.id +
-                      "-" +
-                      position.instrumento.id
-                    }
-                  >
-                    <div className="valoracion-card-head">
-                      <strong>
-                        <a
-                          href={positionHref(position, data.corte)}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            go(positionHref(position, data.corte));
-                          }}
-                        >
-                          {position.saldoInversion.id} ·{" "}
-                          {position.instrumento.id}
-                        </a>
-                        <small className="help">
-                          {position.instrumento.nombre}
-                        </small>
-                      </strong>
-                      <PositionState estado={position.estado} />
-                    </div>
-                    {position.instrumento.estado === "Inactiva" && (
-                      <p>
-                        <Tag inactive>Inactiva · heredada</Tag>
-                      </p>
-                    )}
-                    <dl className="valoracion-facts">
-                      <dt>Cantidad</dt>
-                      <dd>{numText(position.cantidad)}</dd>
-                      <dt>Valoración</dt>
-                      <dd>
-                        <ValoracionCell valoracion={position.valoracion} />
-                      </dd>
-                      <dt>Resultado</dt>
-                      <dd>
-                        <ResultadoCell resultado={position.resultado} />
-                      </dd>
-                      <dt>Rentabilidad</dt>
-                      <dd>
-                        <State text="No disponible" />{" "}
-                        <small className="help">
-                          {position.rentabilidad.motivo}
-                        </small>
-                      </dd>
-                      <dt>Cobertura</dt>
-                      <dd>
-                        <AllowedState valoracion={position.valoracion} />
-                      </dd>
-                      {position.valoracion?.elegibilidadFechaExacta && (
-                        <>
-                          <dt>Elegibilidad</dt>
-                          <dd>
-                            <State
-                              text={
-                                position.valoracion.elegibilidadFechaExacta
-                              }
-                            />
-                          </dd>
-                        </>
-                      )}
-                    </dl>
-                    <a
-                      className="secondary valoracion-link"
-                      href={positionHref(position, data.corte)}
-                      aria-label={`Abrir detalle de ${position.saldoInversion.id} · ${position.instrumento.id}`}
-                      onClick={(event) => {
-                        event.preventDefault();
-                        go(positionHref(position, data.corte));
-                      }}
-                    >
-                      Detalle
-                    </a>
-                  </li>
-                ))}
-              </ul>
+              />
             </>
           )}
           <CashPanel data={data} />
@@ -1110,6 +1057,74 @@ function Serie({
   corte: string;
   go: (path: string) => void;
 }) {
+  const columns: TableColumn<ValoracionDto>[] = [
+    {
+      id: "fecha",
+      header: "Fecha",
+      cell: (row) => dateText(row.fecha),
+    },
+    {
+      id: "dias",
+      header: "Días",
+      kind: "amount",
+      cell: (row) => (row.fecha ? daysBetween(row.fecha, corte) : "—"),
+    },
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (row) => row.tipo ?? "—",
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad base",
+      kind: "amount",
+      cell: (row) => numText(row.cantidadBase),
+    },
+    {
+      id: "valor",
+      header: "Valor",
+      kind: "amount",
+      cell: (row) =>
+        row.estado === "Disponible" ? eur(row.valorEur) : "No disponible",
+    },
+    {
+      id: "revision",
+      header: "Revisión",
+      cell: (row) => row.revision ?? "—",
+    },
+    {
+      id: "elegibilidad",
+      header: "Elegibilidad",
+      cell: (row) => (
+        <State
+          text={
+            row.fecha === corte
+              ? "Elegible por fecha exacta (E4.9 no evaluado)"
+              : "No elegible por fecha exacta en E4.3"
+          }
+        />
+      ),
+    },
+    {
+      id: "accion",
+      header: "Acción",
+      kind: "actions",
+      cell: (row) =>
+        row.id && (
+          <a
+            className="text-button"
+            href={fichaHref(row.id)}
+            aria-label={`Ver ficha de ${row.id}`}
+            onClick={(event) => {
+              event.preventDefault();
+              go(fichaHref(row.id));
+            }}
+          >
+            Ficha
+          </a>
+        ),
+    },
+  ];
   return (
     <section className="panel" aria-labelledby="serie-title">
       <h2 id="serie-title">Serie histórica</h2>
@@ -1120,120 +1135,23 @@ function Serie({
         </p>
       ) : (
         <>
-          <div
-            className="desktop-list valoracion-desktop"
-            role="region"
-            aria-label="Serie histórica de la tabla"
-            tabIndex={0}
-          >
-            <table className="valoracion-table valoracion-series-table">
-              <caption className="sr-only">
-                Serie ficticia de valoraciones al corte {dateText(corte)}.
-              </caption>
-              <thead>
-                <tr>
-                  <th scope="col">Fecha</th>
-                  <th scope="col" className="num">Días</th>
-                  <th scope="col">Tipo</th>
-                  <th scope="col" className="num">Cantidad base</th>
-                  <th scope="col" className="num">Valor</th>
-                  <th scope="col">Revisión</th>
-                  <th scope="col">Elegibilidad</th>
-                  <th scope="col">Acción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.serie.map((row) => (
-                  <tr key={(row.id ?? "") + "-" + row.revision}>
-                    <td>{dateText(row.fecha)}</td>
-                    <td className="num">
-                      {row.fecha ? daysBetween(row.fecha, corte) : "—"}
-                    </td>
-                    <td>{row.tipo ?? "—"}</td>
-                    <td className="num">{numText(row.cantidadBase)}</td>
-                    <td className="num">
-                      {row.estado === "Disponible"
-                        ? eur(row.valorEur)
-                        : "No disponible"}
-                    </td>
-                    <td>{row.revision ?? "—"}</td>
-                    <td>
-                      <State
-                        text={
-                          row.fecha === corte
-                            ? "Elegible por fecha exacta (E4.9 no evaluado)"
-                            : "No elegible por fecha exacta en E4.3"
-                        }
-                      />
-                    </td>
-                    <td>
-                      {row.id && (
-                        <a
-                          className="text-button"
-                          href={fichaHref(row.id)}
-                          aria-label={`Ver ficha de ${row.id}`}
-                          onClick={(event) => {
-                            event.preventDefault();
-                            go(fichaHref(row.id));
-                          }}
-                        >
-                          Ficha
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="desktop-list valoracion-desktop">
+            <Table
+              caption={`Serie ficticia de valoraciones al corte ${dateText(corte)}.`}
+              label="Tabla de serie histórica"
+              columns={columns}
+              rows={data.serie}
+              rowKey={(row) => (row.id ?? "") + "-" + row.revision}
+              tableClassName="valoracion-table valoracion-series-table"
+            />
           </div>
-          <ul
+          <DataList
+            columns={columns}
+            rows={data.serie}
+            rowKey={(row) => (row.id ?? "") + "-" + row.revision}
+            label="Serie histórica móvil"
             className="valoracion-cards valoracion-mobile"
-            aria-label="Serie histórica móvil"
-          >
-            {data.serie.map((row) => (
-              <li key={(row.id ?? "") + "-" + row.revision}>
-                <div className="valoracion-card-head">
-                  <strong>{dateText(row.fecha)}</strong>
-                  <State
-                    text={
-                      row.fecha === corte
-                        ? "Elegible por fecha exacta (E4.9 no evaluado)"
-                        : "No elegible por fecha exacta en E4.3"
-                    }
-                  />
-                </div>
-                <dl className="valoracion-facts">
-                  <dt>Tipo</dt>
-                  <dd>{row.tipo ?? "—"}</dd>
-                  <dt>Días</dt>
-                  <dd>{row.fecha ? daysBetween(row.fecha, corte) : "—"}</dd>
-                  <dt>Cantidad base</dt>
-                  <dd>{numText(row.cantidadBase)}</dd>
-                  <dt>Valor</dt>
-                  <dd>
-                    {row.estado === "Disponible"
-                      ? eur(row.valorEur)
-                      : "No disponible"}
-                  </dd>
-                  <dt>Revisión</dt>
-                  <dd>{row.revision ?? "—"}</dd>
-                </dl>
-                {row.id && (
-                  <a
-                    className="secondary valoracion-link"
-                    href={fichaHref(row.id)}
-                    aria-label={`Ver ficha de ${row.id}`}
-                    onClick={(event) => {
-                      event.preventDefault();
-                      go(fichaHref(row.id));
-                    }}
-                  >
-                    Ficha
-                  </a>
-                )}
-              </li>
-            ))}
-          </ul>
+          />
         </>
       )}
       <p className="help">

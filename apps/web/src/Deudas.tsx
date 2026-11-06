@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import { referenceReturn } from "./movement-draft";
 
 /*
@@ -299,6 +299,70 @@ function List({ go }: { go: (p: string) => void }) {
       {d.nombre}
     </a>
   );
+  const columns: TableColumn<Debt>[] = [
+    {
+      id: "id",
+      header: "ID",
+      cell: (d) => <span className="debt-id">{d.id}</span>,
+    },
+    {
+      id: "nombre",
+      header: "Nombre",
+      cell: (d) => (
+        <>
+          {link(d)}
+          <small className="table-id">
+            <Tag inactive={d.estado === "Inactiva"}>{d.estado}</Tag>
+          </small>
+        </>
+      ),
+    },
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (d) => tipoDeuda(d.tipoDeuda),
+    },
+    {
+      id: "inicio",
+      header: "Inicio control",
+      cell: (d) => fecha(d.inicioControl),
+    },
+    {
+      id: "apertura",
+      header: "Apertura",
+      kind: "amount",
+      cell: (d) => amount(d.capitalApertura),
+    },
+    {
+      id: "viva",
+      header: "Deuda viva",
+      kind: "amount",
+      cell: (d) =>
+        d.capital.calculable
+          ? amount(d.capital.deudaViva)
+          : "No calculable",
+    },
+    {
+      id: "conciliacion",
+      header: "Conciliación",
+      cell: (d) => (
+        <>
+          {conciliacionLabel(d.conciliacion)}
+          {d.varias && <span className="e44-varias"> · Varias</span>}
+        </>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (d) => (
+        <button className="secondary" onClick={() => go(base + "/" + d.id)}>
+          Ver ficha
+        </button>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -373,81 +437,25 @@ function List({ go }: { go: (p: string) => void }) {
               {data.total} {data.total === 1 ? "deuda" : "deudas"}
             </p>
             <div className="desktop-list">
-              <table className="debt-list">
-                <caption className="sr-only">Deudas</caption>
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Nombre</th>
-                    <th>Tipo</th>
-                    <th>Inicio control</th>
-                    <th>Apertura</th>
-                    <th>Deuda viva</th>
-                    <th>Conciliación</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.items.map((d) => (
-                    <tr key={d.id}>
-                      <td className="debt-id">{d.id}</td>
-                      <td>
-                        {link(d)}
-                        <small className="table-id">
-                          <Tag inactive={d.estado === "Inactiva"}>
-                            {d.estado}
-                          </Tag>
-                        </small>
-                      </td>
-                      <td>{tipoDeuda(d.tipoDeuda)}</td>
-                      <td>{fecha(d.inicioControl)}</td>
-                      <td>{amount(d.capitalApertura)}</td>
-                      <td>
-                        {d.capital.calculable
-                          ? amount(d.capital.deudaViva)
-                          : "No calculable"}
-                      </td>
-                      <td>
-                        {conciliacionLabel(d.conciliacion)}
-                        {d.varias && (
-                          <span className="e44-varias"> · Varias</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Deudas"
+                label="Tabla de Deudas"
+                columns={columns}
+                rows={data.items}
+                rowKey={(d) => d.id}
+                rowClassName={(d) =>
+                  d.estado === "Inactiva" ? "ui-row-inactive" : undefined
+                }
+                tableClassName="debt-list"
+              />
             </div>
-            <ul className="mobile-list debt-cards">
-              {data.items.map((d) => (
-                <li key={d.id}>
-                  <div className="card-head">
-                    <span className="id-label">
-                      {d.id} · {tipoDeuda(d.tipoDeuda)}
-                    </span>
-                    <Tag inactive={d.estado === "Inactiva"}>{d.estado}</Tag>
-                  </div>
-                  <h2>{link(d)}</h2>
-                  <p>Inicio control {fecha(d.inicioControl)}</p>
-                  <p>Apertura {amount(d.capitalApertura)}</p>
-                  <p>
-                    Deuda viva{" "}
-                    {d.capital.calculable
-                      ? amount(d.capital.deudaViva)
-                      : "No calculable"}
-                  </p>
-                  <p>
-                    Conciliación {conciliacionLabel(d.conciliacion)}
-                    {d.varias && <span className="e44-varias"> · Varias</span>}
-                  </p>
-                  <button
-                    className="secondary"
-                    onClick={() => go(base + "/" + d.id)}
-                  >
-                    Ver ficha
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <DataList
+              columns={columns}
+              rows={data.items}
+              rowKey={(d) => d.id}
+              label="Deudas móvil"
+              className="mobile-list debt-cards"
+            />
           </>
         )}
         <div className="list-footer">
@@ -715,6 +723,75 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
       ]
     : [];
   const r5Count = r5Fields.filter(([, value]) => value !== null).length;
+  const historyColumns: TableColumn<HistoriaDeuda>[] = [
+    { id: "fecha", header: "Fecha", cell: (h) => fecha(h.fecha) },
+    {
+      id: "tipo",
+      header: "Tipo",
+      cell: (h) => (
+        <>
+          {h.tipo}
+          {h.estado === "Anulado" && " · Anulado"}
+        </>
+      ),
+      cardCell: (h) => (
+        <>
+          {h.tipo}
+          {h.estado === "Anulado" && (
+            <>
+              {" "}
+              <Tag inactive>Anulado</Tag>
+            </>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "total",
+      header: "Total",
+      kind: "amount",
+      cell: (h) => eur(h.total),
+    },
+    {
+      id: "capital",
+      header: "Capital",
+      kind: "amount",
+      cell: (h) => amount(h.capital, "No verificable"),
+    },
+    {
+      id: "intereses",
+      header: "Intereses",
+      kind: "amount",
+      cell: (h) => amount(h.intereses, "No verificable"),
+    },
+    {
+      id: "banco",
+      header: "Banco",
+      kind: "amount",
+      cell: (h) => eur(h.efectoBanco),
+    },
+    {
+      id: "aplica",
+      header: "Aplica",
+      cell: (h) => (h.aplicaAlCapital ? "Sí" : "No"),
+    },
+    {
+      id: "movimiento",
+      header: "Movimiento",
+      kind: "actions",
+      cell: (h) => (
+        <a
+          href={"/movimientos/" + h.movimiento}
+          onClick={(e) => {
+            e.preventDefault();
+            go("/movimientos/" + h.movimiento);
+          }}
+        >
+          {h.movimiento}
+        </a>
+      ),
+    },
+  ];
 
   return (
     <div className="reference-detail debt-detail">
@@ -1039,97 +1116,25 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
               <p>Sin historia ejecutada registrada.</p>
             ) : (
               <>
-                <div className="e44-history-desktop">
-                  <table>
-                    <caption className="sr-only">
-                      Historia ejecutada de la Deuda
-                    </caption>
-                    <thead>
-                      <tr>
-                        <th>Fecha</th>
-                        <th>Tipo</th>
-                        <th>Total</th>
-                        <th>Capital</th>
-                        <th>Intereses</th>
-                        <th>Banco</th>
-                        <th>Aplica</th>
-                        <th>Movimiento</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {d!.historia.map((h) => (
-                        <tr
-                          key={h.movimiento}
-                          className={h.estado === "Anulado" ? "annulled" : ""}
-                        >
-                          <td>{fecha(h.fecha)}</td>
-                          <td>
-                            {h.tipo}
-                            {h.estado === "Anulado" && " · Anulado"}
-                          </td>
-                          <td>{eur(h.total)}</td>
-                          <td>{amount(h.capital, "No verificable")}</td>
-                          <td>{amount(h.intereses, "No verificable")}</td>
-                          <td>{eur(h.efectoBanco)}</td>
-                          <td>{h.aplicaAlCapital ? "Sí" : "No"}</td>
-                          <td>
-                            <a
-                              href={"/movimientos/" + h.movimiento}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                go("/movimientos/" + h.movimiento);
-                              }}
-                            >
-                              {h.movimiento}
-                            </a>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="desktop-list e44-history-desktop">
+                  <Table
+                    caption="Historia ejecutada de la Deuda"
+                    label="Tabla de historia ejecutada"
+                    columns={historyColumns}
+                    rows={d!.historia}
+                    rowKey={(h) => h.movimiento}
+                    rowClassName={(h) =>
+                      h.estado === "Anulado" ? "annulled" : undefined
+                    }
+                  />
                 </div>
-                <ul className="e44-history-mobile">
-                  {d!.historia.map((h) => (
-                    <li
-                      key={h.movimiento}
-                      className={h.estado === "Anulado" ? "annulled" : ""}
-                    >
-                      <div className="card-head">
-                        <strong>{fecha(h.fecha)}</strong>
-                        <Tag inactive={h.estado === "Anulado"}>
-                          {h.estado}
-                        </Tag>
-                      </div>
-                      <p>
-                        {h.tipo} · total {eur(h.total)}
-                      </p>
-                      <dl className="e44-facts">
-                        <div>
-                          <dt>Capital</dt>
-                          <dd>{amount(h.capital, "No verificable")}</dd>
-                        </div>
-                        <div>
-                          <dt>Intereses</dt>
-                          <dd>{amount(h.intereses, "No verificable")}</dd>
-                        </div>
-                        <div>
-                          <dt>Banco</dt>
-                          <dd>{eur(h.efectoBanco)}</dd>
-                        </div>
-                        <div>
-                          <dt>Aplica</dt>
-                          <dd>{h.aplicaAlCapital ? "Sí" : "No"}</dd>
-                        </div>
-                      </dl>
-                      <button
-                        className="text-button"
-                        onClick={() => go("/movimientos/" + h.movimiento)}
-                      >
-                        Ver Movimiento {h.movimiento}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                <DataList
+                  columns={historyColumns}
+                  rows={d!.historia}
+                  rowKey={(h) => h.movimiento}
+                  label="Historia ejecutada móvil"
+                  className="e44-history-mobile"
+                />
               </>
             )}
             <p className="e44-totals">

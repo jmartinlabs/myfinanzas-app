@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import {
   BASE,
   CashLines,
@@ -154,6 +154,116 @@ export function SaleList({ go }: { go: (path: string) => void }) {
     };
   }, [filters, page, retry]);
   useEffect(() => setPage(1), [filters]);
+  const columns: TableColumn<Compra>[] = [
+    {
+      id: "fecha",
+      header: "Fecha",
+      cell: (venta) => date(venta.fecha),
+      cardCell: (venta) =>
+        `${date(venta.fecha)} · ${refId(venta.instrumento)} · ${refId(
+          venta.saldoInversion,
+        )}`,
+    },
+    {
+      id: "instrumento",
+      header: "Instrumento",
+      cell: (venta) => refLabel(venta.instrumento),
+      cardCell: (venta) => (
+        <>
+          {refLabel(venta.instrumento)}
+          {missingReference(venta) && (
+            <small className="help">
+              Incidencia «Revisar»: falta el Instrumento o un Saldo; no se
+              repara ni computa como posición válida.
+            </small>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "efectivo",
+      header: "Efvo.",
+      label: "Efectivo",
+      cell: (venta) => refId(venta.saldoEfectivo),
+    },
+    {
+      id: "inversion",
+      header: "Inv.",
+      label: "Inversión",
+      cell: (venta) => refId(venta.saldoInversion),
+    },
+    {
+      id: "cantidad",
+      header: "Cantidad",
+      kind: "amount",
+      cell: (venta) => num(venta.cantidad),
+    },
+    {
+      id: "precio",
+      header: "Precio",
+      kind: "amount",
+      cell: (venta) => num(venta.precio),
+    },
+    { id: "divisa", header: "Divisa", cell: (venta) => venta.divisa },
+    {
+      id: "cambio",
+      header: "Cambio",
+      kind: "amount",
+      cell: (venta) => num(venta.cambio),
+    },
+    {
+      id: "eur",
+      header: "EUR cobrado",
+      kind: "amount",
+      cell: (venta) => eur(venta.importeEur),
+    },
+    {
+      id: "comision",
+      header: "Comisión",
+      kind: "amount",
+      cell: (venta) =>
+        venta.comisionEur ? eur(venta.comisionEur) : "0,00 €",
+    },
+    {
+      id: "estado",
+      header: "Estado",
+      kind: "status",
+      cell: (venta) => (
+        <Tag inactive={venta.estado === "Anulada"}>{venta.estado}</Tag>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (venta) => (
+        <>
+          <button
+            className="text-button"
+            onClick={() => go(`${BASE}/ventas/${venta.id}`)}
+          >
+            Ver
+          </button>
+          {venta.estado === "Vigente" && (
+            <>
+              <button
+                className="text-button"
+                onClick={() => go(`${BASE}/ventas/${venta.id}/rectificar`)}
+              >
+                Rectificar
+              </button>
+              <button
+                className="text-button"
+                onClick={() => go(`${BASE}/ventas/${venta.id}/anular`)}
+              >
+                Anular
+              </button>
+            </>
+          )}
+        </>
+      ),
+    },
+  ];
   return (
     <>
       <PageHead
@@ -276,137 +386,25 @@ export function SaleList({ go }: { go: (path: string) => void }) {
               </p>
             )}
             <div className="desktop-list inversiones-desktop">
-              <table className="inversiones-table">
-                <caption className="sr-only">Ventas registradas</caption>
-                <thead>
-                  <tr>
-                    <th scope="col">Fecha</th>
-                    <th scope="col">Instrumento</th>
-                    <th scope="col">Efvo.</th>
-                    <th scope="col">Inv.</th>
-                    <th scope="col">Cantidad</th>
-                    <th scope="col">Precio</th>
-                    <th scope="col">Divisa</th>
-                    <th scope="col">Cambio</th>
-                    <th scope="col">EUR cobrado</th>
-                    <th scope="col">Comisión</th>
-                    <th scope="col">Estado</th>
-                    <th scope="col">Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.ventas.map((venta) => (
-                    <tr key={venta.id}>
-                      <td>{date(venta.fecha)}</td>
-                      <td>{refLabel(venta.instrumento)}</td>
-                      <td>{refId(venta.saldoEfectivo)}</td>
-                      <td>{refId(venta.saldoInversion)}</td>
-                      <td>{num(venta.cantidad)}</td>
-                      <td>{num(venta.precio)}</td>
-                      <td>{venta.divisa}</td>
-                      <td>{num(venta.cambio)}</td>
-                      <td>{eur(venta.importeEur)}</td>
-                      <td>
-                        {venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}
-                      </td>
-                      <td>
-                        <Tag inactive={venta.estado === "Anulada"}>
-                          {venta.estado}
-                        </Tag>
-                      </td>
-                      <td className="inversiones-actions">
-                        <button
-                          className="text-button"
-                          onClick={() => go(`${BASE}/ventas/${venta.id}`)}
-                        >
-                          Ver
-                        </button>
-                        {venta.estado === "Vigente" && (
-                          <>
-                            <button
-                              className="text-button"
-                              onClick={() =>
-                                go(`${BASE}/ventas/${venta.id}/rectificar`)
-                              }
-                            >
-                              Rectificar
-                            </button>
-                            <button
-                              className="text-button"
-                              onClick={() =>
-                                go(`${BASE}/ventas/${venta.id}/anular`)
-                              }
-                            >
-                              Anular
-                            </button>
-                          </>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <Table
+                caption="Ventas registradas"
+                label="Tabla de ventas registradas"
+                columns={columns}
+                rows={data.ventas}
+                rowKey={(venta) => venta.id}
+                rowClassName={(venta) =>
+                  venta.estado === "Anulada" ? "annulled" : undefined
+                }
+                tableClassName="inversiones-table"
+              />
             </div>
-            <ul
+            <DataList
+              columns={columns}
+              rows={data.ventas}
+              rowKey={(venta) => venta.id}
+              label="Ventas registradas móvil"
               className="mobile-list inversiones-mobile"
-              aria-label="Ventas registradas móvil"
-            >
-              {data.ventas.map((venta) => (
-                <li key={venta.id}>
-                  <div className="card-head">
-                    <strong>
-                      {date(venta.fecha)} · {refId(venta.instrumento)} ·{" "}
-                      {refId(venta.saldoInversion)}
-                    </strong>
-                    <Tag inactive={venta.estado === "Anulada"}>
-                      {venta.estado}
-                    </Tag>
-                  </div>
-                  {missingReference(venta) && (
-                    <p className="help">
-                      Incidencia «Revisar»: falta el Instrumento o un Saldo; no
-                      se repara ni computa como posición válida.
-                    </p>
-                  )}
-                  <p>
-                    {num(venta.cantidad)} × {num(venta.precio)} {venta.divisa}
-                    {venta.cambio ? ` · ${num(venta.cambio)}` : ""}
-                  </p>
-                  <p>
-                    EUR cobrado {eur(venta.importeEur)} · comisión{" "}
-                    {venta.comisionEur ? eur(venta.comisionEur) : "0,00 €"}
-                  </p>
-                  <div className="actions">
-                    <button
-                      className="text-button"
-                      onClick={() => go(`${BASE}/ventas/${venta.id}`)}
-                    >
-                      Ver
-                    </button>
-                    {venta.estado === "Vigente" && (
-                      <>
-                        <button
-                          className="text-button"
-                          onClick={() =>
-                            go(`${BASE}/ventas/${venta.id}/rectificar`)
-                          }
-                        >
-                          Rectificar
-                        </button>
-                        <button
-                          className="text-button"
-                          onClick={() =>
-                            go(`${BASE}/ventas/${venta.id}/anular`)
-                          }
-                        >
-                          Anular
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            />
             <div className="list-footer">
               <span>
                 {data.total} Venta(s) · página {page}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur } from "./api";
-import { Alert, PageHead, Tag } from "./ui";
+import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
 import { preserveMovement } from "./movement-draft";
 export type Anticipo = {
   saldos: { id: string; nombre: string }[];
@@ -292,6 +292,98 @@ export function Anticipos({
     const s = data?.saldos.find((s) => s.id === id);
     return s ? s.id + " · " + s.nombre : id;
   };
+  const columns: TableColumn<Anticipo["operaciones"][number]>[] = [
+    {
+      id: "fechaId",
+      header: "Fecha / ID",
+      label: "Fecha e identificador",
+      cell: (o) => (
+        <>
+          {date(o.fecha)}
+          <br />
+          Movimiento {o.id}
+        </>
+      ),
+      cardCell: (o) => (
+        <>
+          {date(o.fecha)} · Movimiento {o.id} · {id}
+        </>
+      ),
+    },
+    {
+      id: "rol",
+      header: "Rol acreditado",
+      cell: (o) => o.atribucion?.rol ?? "No disponible",
+    },
+    {
+      id: "importe",
+      header: "Importe",
+      kind: "amount",
+      cell: (o) => amount(o.importe),
+    },
+    {
+      id: "origenDestino",
+      header: "Origen → Destino",
+      label: "Origen y destino",
+      cell: (o) => (
+        <>
+          {saldoName(o.origen)} → {saldoName(o.destino)}
+        </>
+      ),
+    },
+    {
+      id: "estado",
+      header: "Estado / evidencia",
+      label: "Estado y evidencia",
+      kind: "status",
+      cell: (o) => (
+        <>
+          <Tag>
+            {o.elegible ? "✓" : "⚠"} {o.estado}
+          </Tag>
+          <p>{o.motivo ?? o.atribucion?.evidencia}</p>
+          {o.atribucion && <small>{o.atribucion.procedencia}</small>}
+        </>
+      ),
+      cardCell: (o) => (
+        <>
+          <Tag>
+            {o.elegible ? "✓" : "⚠"} {o.estado}
+          </Tag>
+          {o.motivo && <p>{o.motivo}</p>}
+          {o.atribucion && (
+            <p>
+              Procedencia: {o.atribucion.procedencia} · Evidencia:{" "}
+              {o.atribucion.evidencia}
+            </p>
+          )}
+        </>
+      ),
+    },
+    {
+      id: "acciones",
+      header: "Acciones",
+      kind: "actions",
+      cell: (o) => (
+        <>
+          <button
+            className="secondary"
+            onClick={() => go("/movimientos/" + o.id)}
+          >
+            Ver hecho {o.id}
+          </button>
+          {o.tipo === "Transferencia" && !o.anulado && (
+            <button
+              className="secondary"
+              onClick={() => start("acreditar:" + o.id)}
+            >
+              Acreditar Movimiento {o.id}
+            </button>
+          )}
+        </>
+      ),
+    },
+  ];
   return (
     <div className="anticipo-page">
       <PageHead
@@ -456,101 +548,27 @@ export function Anticipos({
               <h2>Operaciones y acreditación</h2>
               {data.operaciones.length > 0 && (
                 <div className="desktop-list anticipo-table">
-                  <table>
-                    <caption>Hechos y roles por ID · {id}</caption>
-                    <thead>
-                      <tr>
-                        <th>Fecha / ID</th>
-                        <th>Rol acreditado</th>
-                        <th>Importe</th>
-                        <th>Origen → Destino</th>
-                        <th>Estado / evidencia</th>
-                        <th>Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.operaciones.map((o) => (
-                        <tr key={o.id}>
-                          <td>
-                            {date(o.fecha)}
-                            <br />
-                            Movimiento {o.id}
-                          </td>
-                          <td>{o.atribucion?.rol ?? "No disponible"}</td>
-                          <td>{amount(o.importe)}</td>
-                          <td>
-                            {saldoName(o.origen)} → {saldoName(o.destino)}
-                          </td>
-                          <td>
-                            <Tag>
-                              {o.elegible ? "✓" : "⚠"} {o.estado}
-                            </Tag>
-                            <p>{o.motivo ?? o.atribucion?.evidencia}</p>
-                            {o.atribucion && (
-                              <small>{o.atribucion.procedencia}</small>
-                            )}
-                          </td>
-                          <td>
-                            <button
-                              className="secondary"
-                              onClick={() => go("/movimientos/" + o.id)}
-                            >
-                              Ver hecho {o.id}
-                            </button>
-                            {o.tipo === "Transferencia" && !o.anulado && (
-                              <button
-                                className="secondary"
-                                onClick={() => start("acreditar:" + o.id)}
-                              >
-                                Acreditar Movimiento {o.id}
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                  <Table
+                    caption={`Hechos y roles por ID · ${id}`}
+                    label="Tabla de operaciones acreditadas"
+                    columns={columns}
+                    rows={data.operaciones}
+                    rowKey={(o) => o.id}
+                    rowClassName={(o) =>
+                      o.anulado ? "annulled" : undefined
+                    }
+                    captionVisible
+                  />
                 </div>
               )}
               {data.operaciones.length ? (
-                <div className="anticipo-cards">
-                  {data.operaciones.map((o) => (
-                    <article className="anticipo-operation" key={o.id}>
-                      <h3>
-                        Movimiento {o.id} ·{" "}
-                        {o.atribucion?.rol ?? "Rol no acreditado"}
-                      </h3>
-                      <p>
-                        {date(o.fecha)} · {amount(o.importe)} ·{" "}
-                        {saldoName(o.origen)} → {saldoName(o.destino)} · {id}
-                      </p>
-                      <Tag>
-                        {o.elegible ? "✓" : "⚠"} {o.estado}
-                      </Tag>
-                      {o.motivo && <p>{o.motivo}</p>}
-                      {o.atribucion && (
-                        <p>
-                          Procedencia: {o.atribucion.procedencia} · Evidencia:{" "}
-                          {o.atribucion.evidencia}
-                        </p>
-                      )}
-                      <button
-                        className="secondary"
-                        onClick={() => go("/movimientos/" + o.id)}
-                      >
-                        Ver hecho {o.id}
-                      </button>
-                      {o.tipo === "Transferencia" && !o.anulado && (
-                        <button
-                          className="secondary"
-                          onClick={() => start("acreditar:" + o.id)}
-                        >
-                          Acreditar Movimiento {o.id}
-                        </button>
-                      )}
-                    </article>
-                  ))}
-                </div>
+                <DataList
+                  columns={columns}
+                  rows={data.operaciones}
+                  rowKey={(o) => o.id}
+                  label="Operaciones acreditadas móvil"
+                  className="mobile-list"
+                />
               ) : (
                 <p>Sin operaciones registradas.</p>
               )}

@@ -216,6 +216,20 @@ test("Table alinea importes en th y td según el rol de la columna", () => {
   expect(html).toContain("1.234,50 €");
 });
 
+test("Table conserva una clase de tabla por página sin alterar el contrato", () => {
+  const html = renderToStaticMarkup(
+    <Table
+      caption="Listado de saldos"
+      label="Tabla de saldos"
+      columns={saldoColumns}
+      rows={saldoRows}
+      tableClassName="inversiones-table"
+    />,
+  );
+  expect(html).toContain('class="ui-table inversiones-table"');
+  expect(html).toContain('role="region"');
+});
+
 test("Table aplica rowClassName a la fila y conserva el resto de celdas", () => {
   const html = renderToStaticMarkup(
     <Table
@@ -253,6 +267,31 @@ test("DataList reproduce etiquetas, valores y acciones de las mismas columnas", 
   expect(html).toContain('href="/saldos/s1"');
   expect(html).toContain('data-kind="amount"');
   expect(html).not.toContain('data-label="Interno"');
+});
+
+test("DataList usa cardCell solo en la tarjeta y conserva la tabla", () => {
+  const columns: TableColumn<SaldoRow>[] = [
+    {
+      id: "nombre",
+      header: "Nombre",
+      cell: (row) => row.nombre,
+      cardCell: (row) => `Tarjeta ${row.nombre}`,
+    },
+  ];
+  const table = renderToStaticMarkup(
+    <Table
+      caption="Saldos"
+      label="Tabla de saldos"
+      columns={columns}
+      rows={saldoRows}
+    />,
+  );
+  const cards = renderToStaticMarkup(
+    <DataList columns={columns} rows={saldoRows} label="Saldos móvil" />,
+  );
+  expect(table).toContain('<td data-kind="text">Cuenta principal</td>');
+  expect(table).not.toContain("Tarjeta Cuenta principal");
+  expect(cards).toContain("Tarjeta Cuenta principal");
 });
 
 test("TableScroll conserva el contrato de región enfocable", () => {

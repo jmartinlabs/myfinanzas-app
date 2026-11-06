@@ -5310,9 +5310,20 @@ textarea {
 .ui-table tbody tr:hover {
   background: var(--surface-2);
 }
+.ui-table tbody tr.ui-row-inactive {
+  color: var(--muted);
+}
+.ui-table td .help {
+  display: block;
+  margin-top: var(--space-1);
+  white-space: normal;
+}
 .ui-table-amount {
   text-align: right;
   font-variant-numeric: tabular-nums;
+}
+.ui-table td[data-kind="actions"] button + button {
+  margin-left: var(--space-2);
 }
 .ui-table-empty {
   color: var(--muted);
@@ -5334,7 +5345,7 @@ textarea {
 }
 .ui-data-list-field {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr);
   align-items: baseline;
   gap: var(--space-2);
   padding: var(--space-1) 0;
@@ -5352,6 +5363,10 @@ textarea {
   min-width: 0;
   font-size: var(--text-sm);
   overflow-wrap: anywhere;
+}
+.ui-data-list-value .help {
+  display: block;
+  margin-top: var(--space-1);
 }
 .ui-data-list-field[data-kind="amount"] .ui-data-list-value {
   text-align: right;
