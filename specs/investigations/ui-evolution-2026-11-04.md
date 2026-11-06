@@ -278,7 +278,7 @@ descartadas para esta iniciativa; C solo podría reconsiderarse después de B y 
 ## 6. Bloques `DEV` propuestos
 
 `[PROPUESTA]` Numeración local a `UI` (`UI · DEV-01`…); no continúa la secuencia de ningún `E4.x`
-(`identifier-convention.md:36-40`). Ningún bloque está autorizado.
+(`identifier-convention.md:36-40`). `DEV-01` está autorizado; `DEV-02…07` no.
 
 | Bloque | Objetivo | Entregables | Dependencias | Criterio de aceptación visual |
 | --- | --- | --- | --- | --- |
@@ -337,7 +337,7 @@ el punto de colisión principal.
    capturas son evidencia, no aprobación. No se debilita ningún check para que pase un rediseño.
 
 `[PROPUESTA]` Secuencia: `UI · SPEC` ahora; `DEV-01`/`DEV-02` tras aprobarla; `DEV-03 → 04 →
-05` (paralelismo solo con archivos disjuntos); `DEV-06` sobre las cinco pantallas de §5; `DEV-07`
+05` (paralelismo solo con un único propietario de `style.css`); `DEV-06` sobre las cinco pantallas de §5; `DEV-07`
 al final. E4.10 I1 está integrado e I2 sigue en PR, así que no se anticipan sus pantallas; E4.11
 sigue en DRAFT. `style.css` y `main.tsx` quedan bajo un único escritor UI por ventana.
 
