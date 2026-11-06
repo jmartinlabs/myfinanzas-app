@@ -238,6 +238,7 @@ import {
   cancelarReapertura,
   type CancelacionOptions,
 } from "./e410-cancelacion";
+import { getFotoCiclo, getVersionesFotoCiclo } from "./e411";
 import {
   listPendientes,
   getPendiente,
@@ -1142,6 +1143,52 @@ export function createApp(db: Database, options: AppOptions) {
           `/api/cierres/${cancelarReaperturaPath[1]}/reapertura`,
         );
         return reply(result, 200);
+      }
+      // E4.11 I1 — consulta de solo lectura de fotos de ciclo y versiones.
+      const fotoVersiones = path.match(
+        /^\/api\/fotos\/ciclos\/([^/]+)\/versiones$/,
+      );
+      if (fotoVersiones) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "El índice de versiones es de solo lectura.",
+          );
+        }
+        return reply(
+          db.transaction(() =>
+            getVersionesFotoCiclo(db, fotoVersiones[1]),
+          )(),
+        );
+      }
+      const fotoCiclo = path.match(/^\/api\/fotos\/ciclos\/([^/]+)$/);
+      if (fotoCiclo) {
+        if (req.method !== "GET") {
+          headers.set("allow", "GET");
+          throw new Problem(
+            405,
+            "METHOD_NOT_ALLOWED",
+            "La foto de ciclo es de solo lectura.",
+          );
+        }
+        const rawVersion = new URL(req.url).searchParams.get("version");
+        let version: number | undefined;
+        if (rawVersion !== null) {
+          version = Number(rawVersion);
+          if (
+            !Number.isSafeInteger(version) ||
+            version < 1 ||
+            rawVersion !== String(version)
+          )
+            throw new Problem(422, "VALIDATION", "Versión de foto inválida.", {
+              version: "Indica una versión positiva.",
+            });
+        }
+        return reply(
+          db.transaction(() => getFotoCiclo(db, fotoCiclo[1], version))(),
+        );
       }
       if (path === "/api/ciclos/contexto" && req.method === "GET")
         return reply(db.transaction(() => cycleContext(db))());
