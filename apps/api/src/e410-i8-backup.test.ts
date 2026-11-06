@@ -9,7 +9,7 @@ import { getReaperturaEstado, reabrirCierre } from "./e410";
 import { Problem } from "./problem";
 
 /**
- * E4.10 I8 — regresión de backup/restore v26 con una ventana activa.
+ * E4.10 I8 — regresión de backup/restore v27 con una ventana activa.
  *
  * El paquete de copia incluye `reaperturas` y `reapertura_activa`; restaurar
  * no es una ruta de reapertura y no debe duplicar la ventana ni crear una
@@ -142,7 +142,7 @@ test.skipIf(process.platform !== "linux")(
     const copy = openDatabase(restored.database);
     try {
       expect(copy.query("SELECT version FROM schema_version").get()).toEqual({
-        version: 26,
+        version: 27,
       });
       expect(counts(copy)).toEqual({
         cierres: { n: 1 },
