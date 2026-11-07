@@ -31,9 +31,10 @@ SPEC34/seed con el SHA elegido; `main` ya no está en v25/v26 sino en v27.
   por ausencia.
 - No existe `tools/test-seed` ni `FT-1`; los fixtures de `infra/tests` y
   `apps/api/test-support` no son un seed válido porque crean filas con SQL crudo.
-- `FT-1` es viable con cuatro correcciones: quinto Saldo `Efectivo/Inversiones`, ID
-  determinista de nómina, preflight de esquema sin migración y archivado/backup de
-  marcador y manifiesto.
+- `FT-1` es viable con cuatro correcciones y una decisión pendiente: quinto Saldo
+  `Efectivo/Inversiones`, ID determinista de nómina (H2), preflight de esquema sin
+  migración y archivado/backup de marcador/manifiesto; además, H6 debe resolverse
+  (añadir `CAT013`/Partida o retirar `REF001`) antes de afirmar cobertura E1.5/E3.2.
 - `FT-2` se diseña aparte, con 3–5 años y volumen realista, y queda bloqueado por D7 y
   por E3.5/FIN_NETA y DT6/backup. No se implementa en este trabajo.
 
@@ -296,7 +297,10 @@ igualdad byte a byte de SQLite (WAL, orden físico y páginas libres).
 Cobertura **excluida por D5/D7** (no se declara cubierta): E2.1 operaciones de ciclo,
 E2.3/E2.4 según alcance, E3.5/FIN_NETA, E4.2 ventas, E4.3 valoración, E4.5 históricos,
 E4.7 resumen anual, E4.9 cierres, E4.10 reaperturas, E4.11 fotografías, Dprima.
-La referencia obligatoria por categoría no se cubre (H6); la referencia opcional sí.
+La referencia obligatoria por categoría no se cubre. La referencia opcional del
+movimiento 5 también queda **pendiente de H6**: un Gasto con Referencia de Gasto
+compartido exige `CAT013`; hasta decidir H6 (añadir `CAT013`/Partida o retirar
+`REF001`), E1.5/E3.2 no se declaran cubiertos.
 
 ### 2.6 Volumen y tiempos objetivo
 
