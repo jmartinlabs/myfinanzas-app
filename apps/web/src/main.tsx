@@ -4,6 +4,7 @@ import { Comida } from "./Comida";
 import { Pendientes } from "./Pendientes";
 import { Precierre } from "./Precierre";
 import { Cierre } from "./Cierre";
+import { Fotos } from "./Fotos";
 import { Dprima } from "./Dprima";
 import { Compartidos } from "./Compartidos";
 import { FlujoMensual } from "./FlujoMensual";
@@ -169,7 +170,8 @@ function App() {
               current.startsWith("/flujo-mensual") ||
               current.startsWith("/pendientes") ||
               current.startsWith("/inversiones") ||
-              current.startsWith("/cierre")
+              current.startsWith("/cierre") ||
+              current.startsWith("/fotos")
               ? current
               : "/saldos",
           );
@@ -294,6 +296,8 @@ function App() {
             <Precierre go={go} />
           ) : path.startsWith("/cierre") ? (
             <Cierre go={go} />
+          ) : path.startsWith("/fotos") ? (
+            <Fotos path={path} go={go} />
           ) : path.startsWith("/revision-comida") ? (
             <RevisionComida path={path} go={go} />
           ) : path.startsWith("/flujo-mensual") ? (

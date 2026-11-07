@@ -7,9 +7,10 @@ import { totp } from "../../apps/api/src/auth";
 /**
  * UI · DEV-03 — navegación.
  *
- * Comprueba que los 23 enlaces actuales se conservan sin cambiar sus `href`,
- * que los grupos y el activo son perceptibles, que el título sigue a la ruta y
- * que el menú móvil funciona con teclado. El servidor es aislado y ficticio.
+ * Comprueba que los 23 enlaces previos se conservan sin cambiar sus `href`,
+ * que el enlace autorizado `/fotos` se declara una sola vez, que los grupos y
+ * el activo son perceptibles, que el título sigue a la ruta y que el menú móvil
+ * funciona con teclado. El servidor es aislado y ficticio.
  */
 
 const API_PORT = 3023;
@@ -32,6 +33,7 @@ const EXPECTED_HREFS = [
   "/ciclos",
   "/precierre",
   "/cierre",
+  "/fotos",
   "/dprima",
   "/comida",
   "/revision-comida",
@@ -103,7 +105,7 @@ async function login(page: Page) {
   ).toBeVisible();
 }
 
-test("UI · DEV-03: 23 enlaces, grupos, activo, títulos y menú móvil accesible", async ({
+test("UI · DEV-03: 23 enlaces previos + /fotos, grupos, activo, títulos y menú móvil accesible", async ({
   page,
 }) => {
   mkdirSync("artifacts/ui-dev-03", { recursive: true });
@@ -121,12 +123,12 @@ test("UI · DEV-03: 23 enlaces, grupos, activo, títulos y menú móvil accesibl
       ),
     ).toBe(true);
 
-  // Los 23 enlaces se conservan exactamente, sin duplicados ni rutas nuevas.
+  // Los 23 enlaces previos se conservan y /fotos se declara una sola vez.
   const hrefs = await nav
     .locator("a")
     .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
-  expect(hrefs).toHaveLength(23);
-  expect(new Set(hrefs).size).toBe(23);
+  expect(hrefs).toHaveLength(24);
+  expect(new Set(hrefs).size).toBe(24);
   expect([...hrefs].sort()).toEqual([...EXPECTED_HREFS].sort());
   expect(hrefs).not.toContain("/");
   expect(hrefs).not.toContain("/saldos/nuevo");
@@ -134,7 +136,7 @@ test("UI · DEV-03: 23 enlaces, grupos, activo, títulos y menú móvil accesibl
   const expectedGroups = [
     ["Mi espacio", ["/inicio", "/flujo-mensual", "/pendientes", "/anticipos", "/compartidos"]],
     ["Patrimonio", ["/saldos", "/clasificacion/partidas", "/inversiones", "/deudas", "/vehiculos", "/referencias"]],
-    ["Operación", ["/movimientos", "/ciclos", "/precierre", "/cierre"]],
+    ["Operación", ["/movimientos", "/ciclos", "/precierre", "/cierre", "/fotos"]],
     ["Planificación", ["/dprima", "/comida", "/revision-comida", "/planes-ciclo", "/nomina", "/plan-anual", "/resumen-anual", "/presupuestos"]],
   ];
   const sections = nav.locator(".nav-section");

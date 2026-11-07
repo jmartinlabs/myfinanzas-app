@@ -1,10 +1,10 @@
 /**
  * UI · DEV-03 — configuración única de la navegación.
  *
- * Solo describe los enlaces existentes: no añade rutas ni módulos. El orden,
- * las etiquetas, los iconos y los grupos viven aquí; `main.tsx` se limita a
- * representarlos. `/` sigue siendo un alias de Saldos y `/saldos/nuevo` una
- * subvista, por lo que ninguno aparece como enlace propio.
+ * Solo describe los enlaces declarados por la aplicación: no crea rutas por sí
+ * mismo. El orden, las etiquetas, los iconos y los grupos viven aquí; `main.tsx`
+ * se limita a representarlos. `/` sigue siendo un alias de Saldos y
+ * `/saldos/nuevo` una subvista, por lo que ninguno aparece como enlace propio.
  */
 
 export type NavigationItem = {
@@ -63,6 +63,7 @@ export const navigationGroups: readonly NavigationGroup[] = [
       { href: "/ciclos", label: "Ciclos", icon: "▦" },
       { href: "/precierre", label: "Precierre", icon: "◐" },
       { href: "/cierre", label: "Cierre", icon: "▣" },
+      { href: "/fotos", label: "Fotos", icon: "▩" },
     ],
   },
   {
