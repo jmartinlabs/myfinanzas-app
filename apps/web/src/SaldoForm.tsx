@@ -1,6 +1,14 @@
 import { useRef, useState, type FormEvent } from "react";
 import { api, ApiError, controls, flags, flagLabels, type Saldo } from "./api";
-import { Alert, PageHead, Switch, Tag } from "./ui";
+import {
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Switch,
+  Tag,
+} from "./ui";
 
 type Draft = {
   nombre: string;
@@ -13,6 +21,14 @@ type Draft = {
   liquidez: boolean | null;
   mostrarComoBolsa: boolean | null;
   permiteSalidaExterior: boolean | null;
+};
+const controlLabels: Partial<Record<keyof Draft, string>> = {
+  nombre: "Nombre *",
+  tipo: "Tipo *",
+  control: "Control *",
+  fechaApertura: "Fecha apertura · opcional",
+  saldoApertura: "Saldo apertura (€) · opcional",
+  objetivo: "Objetivo (€) · opcional",
 };
 export function SaldoForm({
   saldo,
@@ -40,40 +56,10 @@ export function SaldoForm({
     [error, setError] = useState(""),
     [fields, setFields] = useState<Record<string, string>>({});
   const attempt = useRef({ fingerprint: "", key: "" });
+  const form = useRef<HTMLFormElement>(null);
   function set<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
   }
-  const label = (
-    key: keyof Draft,
-    title: string,
-    element: React.ReactNode,
-    hint?: string,
-  ) => (
-    <label>
-      {title}
-      {element}
-      {hint && <small>{hint}</small>}
-      {fields[key] && (
-        <span className="field-error" id={`${key}-error`}>
-          {fields[key]}
-        </span>
-      )}
-    </label>
-  );
-  const props = (key: keyof Draft) => ({
-    "aria-label": (
-      {
-        nombre: "Nombre *",
-        tipo: "Tipo *",
-        control: "Control *",
-        fechaApertura: "Fecha apertura · opcional",
-        saldoApertura: "Saldo apertura (€) · opcional",
-        objetivo: "Objetivo (€) · opcional",
-      } as Record<string, string>
-    )[key],
-    "aria-invalid": Boolean(fields[key]),
-    "aria-describedby": fields[key] ? `${key}-error` : undefined,
-  });
   async function submit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -109,9 +95,10 @@ export function SaldoForm({
           : err.message,
       );
       setFields(err.fields ?? {});
-      requestAnimationFrame(() =>
-        document.querySelector<HTMLElement>('[role="alert"]')?.focus(),
-      );
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(form.current))
+          form.current?.querySelector<HTMLElement>('[role="alert"]')?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -139,36 +126,34 @@ export function SaldoForm({
           <Tag>Estado inicial: Activa</Tag>
         )}
       </PageHead>
-      <form className="saldo-form" onSubmit={submit} noValidate>
+      <form className="saldo-form" onSubmit={submit} noValidate ref={form}>
         {error && (
           <div role="alert" tabIndex={-1} className="alert">
             <div>{error}</div>
           </div>
         )}
-        <section className="panel">
-          <div className="section-title">
-            <span className="step-number">01</span>
-            <div>
-              <h2>Identificación</h2>
-              <p className="muted">Un nombre reconocible para tu Saldo.</p>
-            </div>
-          </div>
-          <div className="form-grid">
-            {label(
-              "nombre",
-              "Nombre *",
+        <FormSection
+          step="01"
+          title="Identificación"
+          description="Un nombre reconocible para tu Saldo."
+        >
+          <FormGrid>
+            <Field
+              id="nombre"
+              label="Nombre"
+              required
+              error={fields.nombre}
+            >
               <input
-                {...props("nombre")}
+                aria-label={controlLabels.nombre}
                 value={draft.nombre}
                 onChange={(e) => set("nombre", e.target.value)}
                 autoComplete="off"
-              />,
-            )}
-            {label(
-              "tipo",
-              "Tipo *",
+              />
+            </Field>
+            <Field id="tipo" label="Tipo" required error={fields.tipo}>
               <select
-                {...props("tipo")}
+                aria-label={controlLabels.tipo}
                 value={draft.tipo}
                 onChange={(e) => {
                   const tipo = e.target.value;
@@ -184,64 +169,66 @@ export function SaldoForm({
                 {Object.keys(controls).map((t) => (
                   <option key={t}>{t}</option>
                 ))}
-              </select>,
-            )}
-          </div>
+              </select>
+            </Field>
+          </FormGrid>
           <p className="help">
             {saldo
               ? `Identificador ${saldo.id}: permanece estable al editar, desactivar o reactivar.`
               : "El servidor asignará un identificador estable Sxxx. No se puede editar ni reutilizar."}
           </p>
-        </section>
-        <section className="panel">
-          <div className="section-title">
-            <span className="step-number">02</span>
-            <div>
-              <h2>Configuración económica</h2>
-              <p className="muted">
-                La apertura es una posición inicial, no un Movimiento.
-              </p>
-            </div>
-          </div>
-          <div className="form-grid">
-            {label(
-              "control",
-              "Control *",
+        </FormSection>
+        <FormSection
+          step="02"
+          title="Configuración económica"
+          description="La apertura es una posición inicial, no un Movimiento."
+        >
+          <FormGrid>
+            <Field
+              id="control"
+              label="Control"
+              required
+              error={fields.control}
+              help="Solo combinaciones contrastadas. Manual aún no está habilitado."
+            >
               <select
-                {...props("control")}
+                aria-label={controlLabels.control}
                 value={draft.control}
                 onChange={(e) => set("control", e.target.value)}
               >
                 {controls[draft.tipo].map((c) => (
                   <option key={c}>{c}</option>
                 ))}
-              </select>,
-              "Solo combinaciones contrastadas. Manual aún no está habilitado.",
-            )}
-            {label(
-              "fechaApertura",
-              "Fecha apertura · opcional",
+              </select>
+            </Field>
+            <Field
+              id="fechaApertura"
+              label="Fecha apertura · opcional"
+              error={fields.fechaApertura}
+              help="Fecha civil del inicio del control; no filtra el Saldo actual."
+            >
               <input
-                {...props("fechaApertura")}
+                aria-label={controlLabels.fechaApertura}
                 type="date"
                 value={draft.fechaApertura}
                 onChange={(e) => set("fechaApertura", e.target.value)}
-              />,
-              "Fecha civil del inicio del control; no filtra el Saldo actual.",
-            )}
-            {label(
-              "saldoApertura",
-              "Saldo apertura (€) · opcional",
+              />
+            </Field>
+            <Field
+              id="saldoApertura"
+              label="Saldo apertura (€) · opcional"
+              error={fields.saldoApertura}
+              help="Admite negativos y cero explícito. Máximo dos decimales."
+            >
               <input
-                {...props("saldoApertura")}
+                aria-label={controlLabels.saldoApertura}
                 inputMode="decimal"
                 placeholder="Sin informar"
                 value={draft.saldoApertura}
                 onChange={(e) => set("saldoApertura", e.target.value)}
-              />,
-              "Admite negativos y cero explícito. Máximo dos decimales.",
-            )}
-          </div>
+              />
+            </Field>
+          </FormGrid>
           <p className="help">
             {["Terminal", "No controlado"].includes(draft.control)
               ? "Aperturas opcionales, sin función actual demostrada para este control. Se conserva la información."
@@ -249,21 +236,18 @@ export function SaldoForm({
                 ? "La apertura monetaria no tiene función actual demostrada para Inversión/Inversiones. Se conserva sin transformarla."
                 : "El motor de cálculo se incorporará en su entrega. Hasta entonces, la posición no está disponible."}
           </p>
-        </section>
-        <section className="panel">
-          <div className="section-title">
-            <span className="step-number">03</span>
-            <div>
-              <h2>Atributos de control</h2>
-              <p className="muted">
-                Independientes entre sí, del Tipo y del Control.
-              </p>
-            </div>
-          </div>
-          <div className="form-grid">
-            {label(
-              "finalidad",
-              "Finalidad · opcional",
+        </FormSection>
+        <FormSection
+          step="03"
+          title="Atributos de control"
+          description="Independientes entre sí, del Tipo y del Control."
+        >
+          <FormGrid>
+            <Field
+              id="finalidad"
+              label="Finalidad · opcional"
+              error={fields.finalidad}
+            >
               <select
                 value={draft.finalidad}
                 onChange={(e) => set("finalidad", e.target.value)}
@@ -272,21 +256,23 @@ export function SaldoForm({
                 {["Gastos planificados", "Ahorro", "Inversión"].map((f) => (
                   <option key={f}>{f}</option>
                 ))}
-              </select>,
-            )}
-            {label(
-              "objetivo",
-              "Objetivo (€) · opcional",
+              </select>
+            </Field>
+            <Field
+              id="objetivo"
+              label="Objetivo (€) · opcional"
+              error={fields.objetivo}
+              help="Sin objetivo no significa objetivo cero."
+            >
               <input
-                {...props("objetivo")}
+                aria-label={controlLabels.objetivo}
                 inputMode="decimal"
                 placeholder="Sin informar"
                 value={draft.objetivo}
                 onChange={(e) => set("objetivo", e.target.value)}
-              />,
-              "Sin objetivo no significa objetivo cero.",
-            )}
-          </div>
+              />
+            </Field>
+          </FormGrid>
           <div className="switch-group">
             {flags.map((f) => (
               <Switch
@@ -297,7 +283,7 @@ export function SaldoForm({
               />
             ))}
           </div>
-        </section>
+        </FormSection>
         <div className="form-footer">
           <p className="muted">
             {saldo
