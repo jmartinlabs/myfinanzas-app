@@ -52,8 +52,9 @@ DEV-05; se cierra su composición y se demuestra que conservan sus contratos.
   cromáticos y selector quedan cerrados.
 - **Sin tocar `ui.tsx`:** las primitivas se consumen; si falta una, se para y se resuelve en el
   bloque propietario (DEV-05), no aquí. Tampoco se modifica `main.tsx`, `api.ts` ni `format.ts`.
-- **Sin DEV-05 I5:** este paquete no crea, planifica ni define un I5 de DEV-05. Las carencias de
-  formularios/fichas fuera de estas cinco pantallas siguen fuera de alcance.
+- **Sin reabrir DEV-05:** este paquete no crea, planifica ni define trabajo nuevo de DEV-05.
+  Las carencias de formularios/fichas fuera de estas cinco pantallas siguen fuera de alcance y
+  se elevan al coordinador si aparecen.
 - **Sin pantallas fuera de la tabla anterior**, sin datos reales, sin dependencias nuevas, sin
   despliegue y sin declarar cerrado `DEV-06`.
 
@@ -100,7 +101,8 @@ PASS. La regresión E4.10 (reapertura/re-cierre) es obligatoria aunque no se toq
 
 Regla común: **estrictamente secuenciales** porque todos escriben `style.css`; un único escritor
 por PR; se añade una sección comentada al final, sin reordenar ni reescribir reglas previas. No
-se paralizan entre sí ni con DEV-05 I5 o Fotos. Clases nuevas, si hacen falta, con prefijo
+se paralizan entre sí ni con otros escritores activos de `style.css`/`ui.tsx` o Fotos.
+Clases nuevas, si hacen falta, con prefijo
 `ui-dev06-`; nada genérico como `.table` o `.metric`. Cada PR adjunta **antes** (base del PR) y
 **después** (candidato) de sus pantallas; la matriz de después se detalla en cada incremento.
 
@@ -166,7 +168,7 @@ se paralizan entre sí ni con DEV-05 I5 o Fotos. Clases nuevas, si hacen falta, 
   y una acción primaria (confirmar), con bloqueo explícito y foto legible en 390/1440.
 - **Archivos y ownership.** `apps/web/src/Cierre.tsx` solo componentes y bloques E4.9
   (`TotalsTable`, `CoverageTable`, tabla de gates, panel `cierre-form` y `cierre-photo`);
-  `style.css` (bloque I4, clases nuevas `cierre-e49-*` para aislar de E4.10);
+  `style.css` (bloque I4; excepción al prefijo común: clases nuevas `cierre-e49-*` para aislar de E4.10);
   `tests/e2e/cierre.spec.ts`. **No** se toca ningún fragmento `e410-*`.
 - **Cambio permitido.** Migrar solo `TotalsTable` y `CoverageTable` a `Table`/`DataList`, con
   etiquetas de región distintas entre preflight y foto, importes alineados y tarjetas móviles;
@@ -204,7 +206,7 @@ Se comprueba en cada incremento sobre sus pantallas; no es un PASS global ni cie
 | D06-06 | Alta/edición conserva formulario | Tres secciones, obligatorios/opcionales, ayuda/error, foco al primer error, borrador, rejilla 2→1 | Unitarias `saldos-dev05` + E2E |
 | D06-07 | Cierre E4.9 conserva su operación | Preflight, gates, bloqueos, fingerprint, motivo, idempotencia y confirmación; sin «cerrar igualmente» | E2E `cierre.spec.ts` |
 | D06-08 | Cierre: foto y ausencias | Foto inmutable, metadatos, cobertura y `No disponible` con motivo; sin foto parcial; `0` solo si es cero real | E2E foto/conflicto + unitaria |
-| D06-09 | Cierre sin features E4.10/E4.11 | Sin reapertura, re-cierre, fotos consultables, `/fotos` ni agregados; `e410-*` y `Fotos.tsx` sin cambios | Diff + E4.10 E2E de regresión |
+| D06-09 | Cierre sin cambios ni adiciones de E4.10/E4.11 | La UI E4.10 y `/fotos` ya integradas se conservan y solo se ejecutan como regresión; no se añade reapertura, re-cierre, fotos ni agregados; `e410-*` y `Fotos.tsx` sin cambios | Diff + E4.10 E2E de regresión |
 | D06-10 | Sin cambios de contrato | API, DTO, rutas, permisos, cálculos, formatos, estados, filtros y paginación intactos | Diff + suites existentes |
 | D06-11 | Accesibilidad y responsive | AA en 3 temas, foco visible, teclado, objetivos ≥ 44 px, zoom 200 %, `prefers-reduced-motion`, 390 sin overflow | E2E/inspección + capturas |
 | D06-12 | Evidencia y QA | 30 capturas base (5×3×2) + 15 críticas, antes/después, nota de regresiones y QA independiente | Artefactos + registro QA |
@@ -219,7 +221,7 @@ ser el de mayor riesgo (E4.9/E4.10 en el mismo archivo).
 
 **Dependencias:** DEV-01, DEV-02, DEV-03, DEV-04 I1–I4, DEV-05 I1–I4 y las specs E4.6/E4.9 ya
 integradas. No depende de E4.10/E4.11. No se inicia sin autorización expresa de `DEV-06` y sin
-confirmar que no hay otro escritor activo de `style.css`/`ui.tsx` (DEV-05 I5 o Fotos). Si lo hay,
+confirmar que no hay otro escritor activo de `style.css`/`ui.tsx` (Fotos u otro frente). Si lo hay,
 se espera, se rebasa desde `main` y se conserva su trabajo.
 
 **QA independiente por PR.** Cada incremento se revisa contra su diff y su evidencia, no contra
@@ -253,7 +255,7 @@ cambios de esta propuesta son documentales: el PR de este paquete solo ejecuta e
 | Cierre: alterar E4.10 al compartir `Cierre.tsx`, `Badge` o `cierre-metrics` | Alto: reabre E4.10 | Clases `cierre-e49-*`, no tocar `e410-*`; guarda de diff y E4.10 E2E |
 | Migrar tablas E4.9 y perder el scroll/cartas móviles | Medio: desbordamiento o información oculta | `Table`+`DataList`, región rotulada, etiquetas únicas, 390 verificado |
 | Subir texto a 12 px y romper la densidad | Medio: desbordamiento o tarjetas enormes | Medir `scrollWidth`, ajustar solo las cinco pantallas, capturas 390/1440 |
-| Colisión de `style.css` con DEV-05 I5 o Fotos | Medio: conflicto de PR | Un escritor por ventana; sección aditiva; rebase y revisión de archivos |
+| Colisión de `style.css` con otro escritor activo (Fotos u otro frente) | Medio: conflicto de PR | Un escritor por ventana; sección aditiva; rebase y revisión de archivos |
 | Playwright no se ejecuta en CI `critical` | Alto para la evidencia | El perfil `critical` solo cubre tipos/build/API; ejecutar E2E en local y en `full`/CI manual, adjuntar log y capturas, no atribuir a CI crítico |
 | `artifacts/` está ignorado por Git | Medio: evidencia no versionada | Referenciar rutas y adjuntar capturas/logs al PR o al registro QA; no commitear artefactos |
 | E2E largos, puertos y servidores aislados | Medio: flakiness | `workers: 1`, servidores propios, cierre en `finally`, datos ficticios |
@@ -274,7 +276,7 @@ cambios de esta propuesta son documentales: el PR de este paquete solo ejecuta e
 **No entra:** E4.10 y E4.11; reapertura, re-cierre, fotos, `/fotos` y agregados; API, DTO, rutas,
 permisos, cálculos, redondeos, formatos, estados, filtros, paginación y acciones nuevas; temas,
 paletas, tokens cromáticos, `theme-boot.js`, `themes.ts` y selector; `ui.tsx`, `main.tsx`,
-`api.ts`, `format.ts`; datos reales, migraciones, dependencias, despliegue o CI nuevo; DEV-05 I5;
+`api.ts`, `format.ts`; datos reales, migraciones, dependencias, despliegue o CI nuevo; trabajo nuevo de DEV-05;
 pantallas fuera de las cinco aprobadas; declarar PASS, cerrar `DEV-06` o fusionar sin
 autorización.
 
