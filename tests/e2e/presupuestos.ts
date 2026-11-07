@@ -56,6 +56,10 @@ export async function presupuestos(
     .getByRole("button", { name: "Guardar presupuesto", exact: true })
     .click();
   await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("#budget-name-error")).toHaveText(
+    "Indica un nombre válido.",
+  );
+  await expect(page.getByLabel("Nombre *", { exact: true })).toBeFocused();
   await page
     .getByLabel("Nombre *", { exact: true })
     .fill("Presupuesto gasto ficticio");
@@ -180,6 +184,23 @@ export async function presupuestos(
   await shot("impact-mobile");
   await page.setViewportSize({ width: 1440, height: 1000 });
   await shot("impact-desktop");
+  await page.getByLabel("Motivo del cambio", { exact: true }).fill("");
+  await page
+    .getByRole("button", { name: "Confirmar cambio", exact: true })
+    .click();
+  await expect(page.getByRole("alert")).toContainText(
+    "Motivo obligatorio, máximo 2000 caracteres.",
+  );
+  await expect(page.locator(".field-error")).toHaveText(
+    "Indica el motivo del cambio.",
+  );
+  await expect(
+    page.getByLabel("Motivo del cambio", { exact: true }),
+  ).toBeFocused();
+  await page
+    .getByLabel("Motivo del cambio", { exact: true })
+    .fill("Configuración demo sin hechos");
+  await expect(page.locator(".field-error")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Confirmar cambio", exact: true })
     .click();

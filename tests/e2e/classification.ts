@@ -64,6 +64,10 @@ export async function classificationJourney(page: Page) {
     .getByRole("button", { name: "Crear Categoría", exact: true })
     .click();
   await expect(page.locator(".field-error")).toHaveCount(4);
+  await expect(page.locator("#error-nombre")).toHaveText(
+    "Indica un nombre sin caracteres de control.",
+  );
+  await expect(page.getByLabel("Nombre *", { exact: true })).toBeFocused();
   await shot("validation-desktop");
   const first = await createCategory("Vida cotidiana ficticia");
   const second = await createCategory("Destino de corrección ficticio");

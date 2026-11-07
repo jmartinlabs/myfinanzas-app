@@ -52,6 +52,12 @@ export async function transferencias(page: Page) {
     .getByRole("button", { name: "Guardar referencia", exact: true })
     .click();
   await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.locator("#ref-name-error")).toHaveText(
+    "Indica un nombre válido.",
+  );
+  await expect(
+    page.getByLabel("Nombre de Referencia *", { exact: true }),
+  ).toBeFocused();
   await shot("validation-mobile");
   await page
     .getByLabel("Nombre de Referencia *", { exact: true })

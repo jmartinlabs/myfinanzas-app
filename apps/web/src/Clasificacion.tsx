@@ -2,7 +2,18 @@ import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { monthLabel } from "./Ciclos";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 
 type Kind = "categorias" | "subcategorias" | "partidas";
 type Item = {
@@ -510,9 +521,8 @@ function ClassificationDetail({
         </button>
       </PageHead>
       {error && <Alert>{error}</Alert>}
-      <div className="detail-grid">
-        <section className="panel">
-          <h2>Identificación y jerarquía</h2>
+      <FormGrid className="detail-grid classification-detail-grid">
+        <FormSection title="Identificación y jerarquía">
           <dl>
             {field("ID inmutable", item.id)}
             {field("Nombre", item.nombre)}
@@ -539,9 +549,10 @@ function ClassificationDetail({
                 item.integridad ?? "No disponible",
               )}
           </dl>
-        </section>
-        <section className="panel">
-          <h2>{kind === "categorias" ? "Configuración" : "Relaciones"}</h2>
+        </FormSection>
+        <FormSection
+          title={kind === "categorias" ? "Configuración" : "Relaciones"}
+        >
           {kind === "categorias" ? (
             <dl>
               {field("Grupo", item.grupo ?? "Sin informar")}
@@ -586,8 +597,8 @@ function ClassificationDetail({
           <p className="help">
             No se calculan importes ni resultados financieros en este catálogo.
           </p>
-        </section>
-      </div>
+        </FormSection>
+      </FormGrid>
       <section className="panel classification-deps">
         <h2>Dependencias del catálogo</h2>
         {deps.length ? (
@@ -702,7 +713,8 @@ function ClassificationForm({
     [plan, setPlan] = useState<Plan | null>(null),
     [reason, setReason] = useState("");
   const attempt = useRef(crypto.randomUUID()),
-    errorRef = useRef<HTMLDivElement>(null);
+    errorRef = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   const parentKind = kind === "partidas" ? "subcategorias" : "categorias";
   useEffect(() => {
     let live = true;
@@ -792,7 +804,9 @@ function ClassificationForm({
       setError(err.message);
       setFields(err.fields ?? {});
       if (err.status === 409) setPlan(null);
-      requestAnimationFrame(() => errorRef.current?.focus());
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(formRef.current)) errorRef.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -802,16 +816,18 @@ function ClassificationForm({
     label: string,
     choices?: { id: string; nombre: string }[],
   ) {
+    const error = fields[name] ? (
+      <span id={`error-${name}`} className="field-error">
+        {fields[name]}
+      </span>
+    ) : undefined;
     return (
-      <label>
-        {label}
+      <Field id={name} label={label} error={error}>
         {choices ? (
           <select
             aria-label={label}
             value={value[name]}
             onChange={(e) => change(name, e.target.value)}
-            aria-invalid={Boolean(fields[name])}
-            aria-describedby={fields[name] ? `error-${name}` : undefined}
           >
             <option value="">Seleccionar…</option>
             {choices.map((c) => (
@@ -825,8 +841,6 @@ function ClassificationForm({
             aria-label={label}
             value={value[name]}
             onChange={(e) => change(name, e.target.value)}
-            aria-invalid={Boolean(fields[name])}
-            aria-describedby={fields[name] ? `error-${name}` : undefined}
             list={
               name === "grupo" || name === "deuda" || name === "presupuesto"
                 ? "classification-groups"
@@ -834,12 +848,7 @@ function ClassificationForm({
             }
           />
         )}
-        {fields[name] && (
-          <span id={`error-${name}`} className="field-error">
-            {fields[name]}
-          </span>
-        )}
-      </label>
+      </Field>
     );
   }
   const fieldLabels: Record<string, string> = {
@@ -893,29 +902,30 @@ function ClassificationForm({
       )}
       <form
         className="saldo-form"
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
-        <section className="panel">
-          <h2>Identificación</h2>
-          <div className="form-grid">
+        <FormSection title="Identificación">
+          <FormGrid>
             {input("nombre", "Nombre *")}
             {kind === "categorias" && input("grupo", "Grupo (opcional)")}
-          </div>
+          </FormGrid>
           <datalist id="classification-groups">
             {groups.map((g) => (
               <option key={g} value={g} />
             ))}
           </datalist>
-        </section>
-        <section className="panel">
-          <h2>{kind === "categorias" ? "Configuración" : "Jerarquía"}</h2>
+        </FormSection>
+        <FormSection
+          title={kind === "categorias" ? "Configuración" : "Jerarquía"}
+        >
           {loading ? (
             <p role="status">Cargando opciones…</p>
           ) : (
-            <div className="form-grid">
+            <FormGrid>
               {kind === "categorias" ? (
                 <>
                   {input(
@@ -940,7 +950,7 @@ function ClassificationForm({
                   parentChoices,
                 )
               )}
-            </div>
+            </FormGrid>
           )}
           {kind === "categorias" && (
             <p className="help">
@@ -951,8 +961,11 @@ function ClassificationForm({
           )}
           {kind === "partidas" && (
             <>
-              <label>
-                Presupuesto opcional
+              <Field
+                id="presupuesto"
+                label="Presupuesto opcional"
+                className="classification-optional-field"
+              >
                 <select
                   aria-label="Presupuesto opcional"
                   value={value.presupuesto}
@@ -970,14 +983,17 @@ function ClassificationForm({
                       </option>
                     ))}
                 </select>
-              </label>
+              </Field>
               <p className="help">
                 0..1 Presupuesto por Partida. El impacto del vínculo
                 presupuestario se comprueba al cambiarlo; no se recalculan
                 importes aquí. La Deuda es independiente.
               </p>
-              <label>
-                Deuda opcional
+              <Field
+                id="deuda"
+                label="Deuda opcional"
+                className="classification-optional-field"
+              >
                 <select
                   aria-label="Deuda opcional"
                   value={value.deuda}
@@ -994,7 +1010,7 @@ function ClassificationForm({
                       </option>
                     ))}
                 </select>
-              </label>
+              </Field>
               <p className="help">
                 Una Partida puede enlazar una Deuda. El enlace de una Partida
                 utilizada está protegido; crea una nueva para el futuro.
@@ -1002,7 +1018,7 @@ function ClassificationForm({
               </p>
             </>
           )}
-        </section>
+        </FormSection>
         {rectifying && (
           <section className="panel classification-deps">
             <h2>Revisión expresa del cambio</h2>
@@ -1114,24 +1130,24 @@ function ClassificationForm({
                   {plan.coverage} Pendiente no implica ausencia de impacto.
                 </p>
                 <PlanImpact impact={plan.budgetExecution} />
-                <label>
-                  Motivo de rectificación *
+                <Field
+                  id="motivo"
+                  label="Motivo de rectificación *"
+                  error={
+                    fields.motivo ? (
+                      <span id="error-motivo" className="field-error">
+                        {fields.motivo}
+                      </span>
+                    ) : undefined
+                  }
+                >
                   <textarea
                     aria-label="Motivo de rectificación *"
                     value={reason}
                     maxLength={2000}
                     onChange={(e) => setReason(e.target.value)}
-                    aria-invalid={Boolean(fields.motivo)}
-                    aria-describedby={
-                      fields.motivo ? "error-motivo" : undefined
-                    }
                   />
-                  {fields.motivo && (
-                    <span id="error-motivo" className="field-error">
-                      {fields.motivo}
-                    </span>
-                  )}
-                </label>
+                </Field>
                 <button
                   type="button"
                   className="primary"
