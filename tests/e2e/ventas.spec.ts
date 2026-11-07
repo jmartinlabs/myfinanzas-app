@@ -396,7 +396,14 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
         /Disponible 12\.5 · necesario 13 · mínimo -0\.5 · 2026-04-10/,
       ),
     ).toBeVisible();
-    await expect(page.locator(".focus-alert")).toBeFocused();
+    await expect(page.getByLabel(/Cantidad \*/)).toBeFocused();
+    await expect(page.getByLabel(/Cantidad \*/)).toHaveAttribute(
+      "aria-describedby",
+      "cantidad-error",
+    );
+    await expect(page.locator("#cantidad-error")).toHaveText(
+      "Cantidad no disponible a la fecha o en una fecha posterior.",
+    );
     await expect(page.getByLabel(/Cantidad \*/)).toHaveValue("13");
     await expect(page.getByLabel(/Instrumento \*/)).toHaveValue("I1001");
     await expect(page.getByLabel(/Saldo de inversión \*/)).toHaveValue("S004");
@@ -679,6 +686,11 @@ test("E4.2 ventas: listado, alta, impacto, rectificación, anulación, ficha, es
     await expect(page.getByLabel(/Fecha \*/)).toBeVisible();
     await expect(page.getByLabel(/Cantidad \*/)).toBeVisible();
     await expect(page.getByLabel(/Cambio histórico/)).toBeVisible();
+    // La navegación enfoca el h1 en el siguiente frame; espera a que se asiente
+    // antes de comprobar el recorrido por teclado del formulario.
+    await expect(
+      page.getByRole("heading", { name: "Nueva venta", exact: true }),
+    ).toBeFocused();
     await page.getByLabel(/Cantidad \*/).focus();
     await page.keyboard.press("Tab");
     await expect(page.getByLabel(/Precio unitario \*/)).toBeFocused();
