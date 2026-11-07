@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import { SaleList, SaleForm, SaleDetail, AnnulSale } from "./Ventas";
 import { Valoracion } from "./Valoracion";
 
@@ -948,7 +959,15 @@ function InstrumentForm({
     [errors, setErrors] = useState<Record<string, string>>({}),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
-    [loaded, setLoaded] = useState(!id);
+    [loaded, setLoaded] = useState(!id),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   useEffect(() => {
     if (!id) return;
     let live = true;
@@ -1026,72 +1045,75 @@ function InstrumentForm({
         title={id ? "Editar instrumento" : "Nuevo instrumento"}
         description="ISIN solo con evidencia; la validación es sintáctica"
       />
-      {error && <Alert>{error}</Alert>}
-      <form className="saldo-form" onSubmit={submit} noValidate>
-        <section className="panel">
-          <div className="form-grid">
-            <label>
-              Nombre *
+      {error && (
+        <div ref={alertRef} tabIndex={-1} className="focus-alert">
+          <Alert>{error}</Alert>
+        </div>
+      )}
+      <form
+        className="saldo-form"
+        onSubmit={submit}
+        noValidate
+        ref={formRef}
+      >
+        <FormSection title="Identificación">
+          <FormGrid>
+            <Field id="nombre" label="Nombre *" error={errors.nombre}>
               <input
                 value={form.nombre}
                 onChange={(event) => change("nombre", event.target.value)}
-                aria-invalid={Boolean(errors.nombre)}
                 required
               />
-              {errors.nombre && <small className="field-error">{errors.nombre}</small>}
-            </label>
-            <label>
-              ISIN (opcional)
+            </Field>
+            <Field id="isin" label="ISIN (opcional)" error={errors.isin}>
               <input
                 value={form.isin}
                 onChange={(event) => change("isin", event.target.value)}
-                aria-invalid={Boolean(errors.isin)}
                 maxLength={16}
               />
-              {errors.isin && <small className="field-error">{errors.isin}</small>}
-            </label>
-            <label>
-              Evidencia del ISIN
+            </Field>
+            <Field
+              id="isinEvidencia"
+              label="Evidencia del ISIN"
+              error={errors.isinEvidencia}
+            >
               <input
                 value={form.isinEvidencia}
                 onChange={(event) => change("isinEvidencia", event.target.value)}
-                aria-invalid={Boolean(errors.isinEvidencia)}
               />
-              {errors.isinEvidencia && (
-                <small className="field-error">{errors.isinEvidencia}</small>
-              )}
-            </label>
-            <label>
-              Divisa de referencia (opcional)
+            </Field>
+            <Field
+              id="divisaReferencia"
+              label="Divisa de referencia (opcional)"
+              error={errors.divisaReferencia}
+            >
               <input
                 value={form.divisaReferencia}
                 onChange={(event) => change("divisaReferencia", event.target.value)}
-                aria-invalid={Boolean(errors.divisaReferencia)}
                 placeholder="EUR"
                 maxLength={3}
               />
-              {errors.divisaReferencia && (
-                <small className="field-error">{errors.divisaReferencia}</small>
-              )}
-            </label>
+            </Field>
             {id && (
-              <label>
-                Motivo de la edición *
+              <Field
+                id="motivo"
+                label="Motivo de la edición *"
+                className="ui-form-span"
+                error={errors.motivo}
+              >
                 <input
                   value={form.motivo}
                   onChange={(event) => change("motivo", event.target.value)}
-                  aria-invalid={Boolean(errors.motivo)}
                   required
                 />
-                {errors.motivo && <small className="field-error">{errors.motivo}</small>}
-              </label>
+              </Field>
             )}
-          </div>
+          </FormGrid>
           <p className="help">
             Renombrar conserva el ID y las Compras. Un Instrumento inactivo no se
             ofrece para nuevas Compras.
           </p>
-        </section>
+        </FormSection>
         <div className="form-footer">
           <button
             type="button"
@@ -1408,25 +1430,20 @@ function PurchaseFields({
     difference = localDifference(form);
   return (
     <>
-      <section className="panel">
-        <div className="form-grid">
-          <label>
-            Fecha *
+      <FormSection title="Datos de la operación">
+        <FormGrid>
+          <Field id="fecha" label="Fecha *" error={errors.fecha}>
             <input
               type="date"
               value={form.fecha}
               onChange={(event) => change("fecha", event.target.value)}
-              aria-invalid={Boolean(errors.fecha)}
               required
             />
-            {errors.fecha && <small className="field-error">{errors.fecha}</small>}
-          </label>
-          <label>
-            Instrumento *
+          </Field>
+          <Field id="instrumento" label="Instrumento *" error={errors.instrumento}>
             <select
               value={form.instrumento}
               onChange={(event) => change("instrumento", event.target.value)}
-              aria-invalid={Boolean(errors.instrumento)}
               disabled={locked}
               required
             >
@@ -1437,16 +1454,15 @@ function PurchaseFields({
                 </option>
               ))}
             </select>
-            {errors.instrumento && (
-              <small className="field-error">{errors.instrumento}</small>
-            )}
-          </label>
-          <label>
-            Saldo de efectivo *
+          </Field>
+          <Field
+            id="saldoEfectivo"
+            label="Saldo de efectivo *"
+            error={errors.saldoEfectivo}
+          >
             <select
               value={form.saldoEfectivo}
               onChange={(event) => change("saldoEfectivo", event.target.value)}
-              aria-invalid={Boolean(errors.saldoEfectivo)}
               disabled={locked}
               required
             >
@@ -1457,16 +1473,15 @@ function PurchaseFields({
                 </option>
               ))}
             </select>
-            {errors.saldoEfectivo && (
-              <small className="field-error">{errors.saldoEfectivo}</small>
-            )}
-          </label>
-          <label>
-            Saldo de inversión *
+          </Field>
+          <Field
+            id="saldoInversion"
+            label="Saldo de inversión *"
+            error={errors.saldoInversion}
+          >
             <select
               value={form.saldoInversion}
               onChange={(event) => change("saldoInversion", event.target.value)}
-              aria-invalid={Boolean(errors.saldoInversion)}
               disabled={locked}
               required
             >
@@ -1477,38 +1492,31 @@ function PurchaseFields({
                 </option>
               ))}
             </select>
-            {errors.saldoInversion && (
-              <small className="field-error">{errors.saldoInversion}</small>
-            )}
-          </label>
-          <label>
-            Cantidad *
+          </Field>
+        </FormGrid>
+      </FormSection>
+      <FormSection title="Importe y divisa">
+        <FormGrid>
+          <Field id="cantidad" label="Cantidad *" error={errors.cantidad}>
             <input
               value={form.cantidad}
               onChange={(event) => change("cantidad", event.target.value)}
-              aria-invalid={Boolean(errors.cantidad)}
               inputMode="decimal"
               required
             />
-            {errors.cantidad && <small className="field-error">{errors.cantidad}</small>}
-          </label>
-          <label>
-            Precio unitario *
+          </Field>
+          <Field id="precio" label="Precio unitario *" error={errors.precio}>
             <input
               value={form.precio}
               onChange={(event) => change("precio", event.target.value)}
-              aria-invalid={Boolean(errors.precio)}
               inputMode="decimal"
               required
             />
-            {errors.precio && <small className="field-error">{errors.precio}</small>}
-          </label>
-          <label>
-            Divisa *
+          </Field>
+          <Field id="divisa" label="Divisa *" error={errors.divisa}>
             <select
               value={form.divisa}
               onChange={(event) => change("divisa", event.target.value)}
-              aria-invalid={Boolean(errors.divisa)}
               required
             >
               {options?.divisas.map((divisa) => (
@@ -1517,64 +1525,46 @@ function PurchaseFields({
                 </option>
               ))}
             </select>
-            {errors.divisa && <small className="field-error">{errors.divisa}</small>}
-          </label>
-          <label>
-            Cambio histórico {form.divisa === "EUR" ? "(EUR = 1 o vacío)" : "*"}
+          </Field>
+          <Field
+            id="cambio"
+            label={`Cambio histórico ${
+              form.divisa === "EUR" ? "(EUR = 1 o vacío)" : "*"
+            }`}
+            error={errors.cambio}
+          >
             <input
               value={form.cambio}
               onChange={(event) => change("cambio", event.target.value)}
-              aria-invalid={Boolean(errors.cambio)}
               inputMode="decimal"
               disabled={form.divisa === "EUR" && form.cambio === ""}
               required={form.divisa !== "EUR"}
             />
-            {errors.cambio && <small className="field-error">{errors.cambio}</small>}
-          </label>
-          <label>
-            Importe EUR cargado *
+          </Field>
+          <Field
+            id="importeEur"
+            label="Importe EUR cargado *"
+            error={errors.importeEur}
+          >
             <input
               value={form.importeEur}
               onChange={(event) => change("importeEur", event.target.value)}
-              aria-invalid={Boolean(errors.importeEur)}
               inputMode="decimal"
               required
             />
-            {errors.importeEur && (
-              <small className="field-error">{errors.importeEur}</small>
-            )}
-          </label>
-          <label>
-            Comisión EUR (incluida)
+          </Field>
+          <Field
+            id="comisionEur"
+            label="Comisión EUR (incluida)"
+            error={errors.comisionEur}
+          >
             <input
               value={form.comisionEur}
               onChange={(event) => change("comisionEur", event.target.value)}
-              aria-invalid={Boolean(errors.comisionEur)}
               inputMode="decimal"
             />
-            {errors.comisionEur && (
-              <small className="field-error">{errors.comisionEur}</small>
-            )}
-          </label>
-          <label>
-            Concepto
-            <input
-              value={form.concepto}
-              onChange={(event) => change("concepto", event.target.value)}
-              aria-invalid={Boolean(errors.concepto)}
-            />
-            {errors.concepto && <small className="field-error">{errors.concepto}</small>}
-          </label>
-          <label>
-            Nota
-            <textarea
-              value={form.nota}
-              onChange={(event) => change("nota", event.target.value)}
-              aria-invalid={Boolean(errors.nota)}
-            />
-            {errors.nota && <small className="field-error">{errors.nota}</small>}
-          </label>
-        </div>
+          </Field>
+        </FormGrid>
         <p className="help">
           Referencia cantidad×precio×cambio:{" "}
           {referenceValue ? eur(referenceValue) : "No calculable"} · Diferencia:{" "}
@@ -1582,7 +1572,28 @@ function PurchaseFields({
           diferencia son informativas; el efectivo baja exactamente por el importe
           cargado. La comisión incluida no se resta otra vez.
         </p>
-      </section>
+      </FormSection>
+      <FormSection title="Detalle">
+        <FormGrid>
+          <Field id="concepto" label="Concepto" error={errors.concepto}>
+            <input
+              value={form.concepto}
+              onChange={(event) => change("concepto", event.target.value)}
+            />
+          </Field>
+          <Field
+            id="nota"
+            label="Nota"
+            className="ui-form-span"
+            error={errors.nota}
+          >
+            <textarea
+              value={form.nota}
+              onChange={(event) => change("nota", event.target.value)}
+            />
+          </Field>
+        </FormGrid>
+      </FormSection>
     </>
   );
 }
@@ -1633,8 +1644,15 @@ function PurchaseForm({
     [stale, setStale] = useState(false),
     [loaded, setLoaded] = useState(!rectifying),
     attempt = useRef(crypto.randomUUID()),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   const queryInstrument = new URLSearchParams(location.search).get("instrumento");
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+    });
+  }, [error]);
   useEffect(() => {
     api<Options>("/instrumentos/opciones")
       .then((value) => {
@@ -1710,7 +1728,6 @@ function PurchaseForm({
       setError(apiError.message);
       setErrors(apiError.fields ?? {});
       setStale(apiError.code === "REVISION_CONFLICT");
-      requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
     }
@@ -1742,7 +1759,6 @@ function PurchaseForm({
       setError(apiError.message);
       setErrors(apiError.fields ?? {});
       setStale(apiError.code === "REVISION_CONFLICT");
-      requestAnimationFrame(() => alert.current?.focus());
     } finally {
       setBusy(false);
     }
@@ -1787,7 +1803,12 @@ function PurchaseForm({
           crea o reactiva un Saldo en Saldos.
         </Alert>
       )}
-      <form className="saldo-form" onSubmit={review} noValidate>
+      <form
+        className="saldo-form"
+        onSubmit={review}
+        noValidate
+        ref={formRef}
+      >
         <PurchaseFields
           form={form}
           change={change}
@@ -1796,19 +1817,23 @@ function PurchaseForm({
           locked={rectifying}
         />
         {rectifying && (
-          <section className="panel">
-            <label>
-              Motivo *
-              <input
-                value={form.motivo}
-                onChange={(event) => change("motivo", event.target.value)}
-                aria-invalid={Boolean(errors.motivo)}
-                required
-              />
-              {errors.motivo && <small className="field-error">{errors.motivo}</small>}
-            </label>
+          <FormSection title="Motivo de la rectificación">
+            <FormGrid>
+              <Field
+                id="motivo"
+                label="Motivo *"
+                className="ui-form-span"
+                error={errors.motivo}
+              >
+                <input
+                  value={form.motivo}
+                  onChange={(event) => change("motivo", event.target.value)}
+                  required
+                />
+              </Field>
+            </FormGrid>
             <p className="help">Revisión actual {revision} → se guardará {revision + 1}.</p>
-          </section>
+          </FormSection>
         )}
         {impact && <ImpactPanel impact={impact} />}
         <div className="form-footer">
