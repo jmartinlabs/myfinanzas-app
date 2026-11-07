@@ -783,6 +783,12 @@ function CicloPanel({
     null,
   );
   const [comparacionCargando, setComparacionCargando] = useState(false);
+  const comparisonRequest = useRef(0);
+  const comparisonContext = `${ciclo}|${
+    versiones?.map((item) => item.version).join(",") ?? "null"
+  }`;
+  const comparisonContextRef = useRef(comparisonContext);
+  comparisonContextRef.current = comparisonContext;
 
   useEffect(() => {
     let live = true;
@@ -907,9 +913,11 @@ function CicloPanel({
   }, [ciclo, foto?.foto?.version, contrasteReintento]);
 
   useEffect(() => {
+    comparisonRequest.current += 1;
     setComparacion(null);
     setComparacionError(null);
-  }, [ciclo]);
+    setComparacionCargando(false);
+  }, [ciclo, versiones]);
 
   useEffect(() => {
     if (!versiones || versiones.length < 2) {
@@ -942,6 +950,8 @@ function CicloPanel({
       });
       return;
     }
+    const request = ++comparisonRequest.current;
+    const context = comparisonContext;
     setComparacionCargando(true);
     setComparacionError(null);
     setComparacion(null);
@@ -951,16 +961,42 @@ function CicloPanel({
         api<FotoCicloDto>(`${base}?version=${a}`),
         api<FotoCicloDto>(`${base}?version=${b}`),
       ]);
+      if (
+        request !== comparisonRequest.current ||
+        comparisonContextRef.current !== context
+      )
+        return;
       setComparacion({ a: primera, b: segunda });
     } catch (error) {
-      setComparacionError(failureFrom(error));
+      if (
+        request === comparisonRequest.current &&
+        comparisonContextRef.current === context
+      )
+        setComparacionError(failureFrom(error));
     } finally {
-      setComparacionCargando(false);
+      if (
+        request === comparisonRequest.current &&
+        comparisonContextRef.current === context
+      )
+        setComparacionCargando(false);
     }
   }
 
+  function cambiarComparacion(version: "a" | "b", value: string) {
+    comparisonRequest.current += 1;
+    if (version === "a") setCompararA(value);
+    else setCompararB(value);
+    setComparacion(null);
+    setComparacionError(null);
+    setComparacionCargando(false);
+  }
+
+  const versionesListas = versiones !== null;
+  const versionesPendientes = versiones === null && versionesError === null;
   const versionActualValida =
-    !version || versiones?.some((item) => String(item.version) === version);
+    !version ||
+    (versionesListas &&
+      versiones.some((item) => String(item.version) === version));
 
   return (
     <>
@@ -1023,7 +1059,8 @@ function CicloPanel({
               <select
                 id="fotos-version"
                 value={version}
-                disabled={fotoCargando}
+                disabled={fotoCargando || versionesPendientes}
+                aria-busy={versionesPendientes}
                 onChange={(event) => onSelectVersion(event.target.value)}
               >
                 <option value="">Última versión (automática)</option>
@@ -1037,7 +1074,13 @@ function CicloPanel({
                         : " · histórica"}
                   </option>
                 ))}
-                {!versionActualValida && (
+                {!versionesListas && version && versionesPendientes && (
+                  <option value={version}>Cargando v{version}…</option>
+                )}
+                {!versionesListas && version && versionesError && (
+                  <option value={version}>v{version} · índice no disponible</option>
+                )}
+                {versionesListas && version && !versionActualValida && (
                   <option value={version}>v{version} · no encontrada</option>
                 )}
               </select>
@@ -1225,11 +1268,9 @@ function CicloPanel({
                     <select
                       id="fotos-comparar-a"
                       value={compararA}
-                      onChange={(event) => {
-                        setCompararA(event.target.value);
-                        setComparacion(null);
-                        setComparacionError(null);
-                      }}
+                      onChange={(event) =>
+                        cambiarComparacion("a", event.target.value)
+                      }
                     >
                       {[...versiones]
                         .sort((a, b) => a.version - b.version)
@@ -1246,11 +1287,9 @@ function CicloPanel({
                     <select
                       id="fotos-comparar-b"
                       value={compararB}
-                      onChange={(event) => {
-                        setCompararB(event.target.value);
-                        setComparacion(null);
-                        setComparacionError(null);
-                      }}
+                      onChange={(event) =>
+                        cambiarComparacion("b", event.target.value)
+                      }
                     >
                       {[...versiones]
                         .sort((a, b) => a.version - b.version)
@@ -1588,8 +1627,8 @@ function PeriodoPanel({
     versionAgregado: string;
   }) => void;
   onAbrirId: (id: string) => void;
-  onAbrirCiclo: (ciclo: string) => void;
-  hrefCiclo: (ciclo: string) => string;
+  onAbrirCiclo: (ciclo: string, version?: number | null) => void;
+  hrefCiclo: (ciclo: string, version?: number | null) => string;
   hrefPeriodoId: (id: number) => string;
 }) {
   const [borrador, setBorrador] = useState({
@@ -1774,8 +1813,17 @@ function PeriodoPanel({
 
       {error && !cargando && error.status === 404 && (
         <section className="panel" aria-label="Sin fotos para el periodo">
-          <EmptyState title="Sin fotos para este periodo" icon="○">
-            {error.message || "No hay agregados persistidos para este periodo."}{" "}
+          <EmptyState
+            title={
+              periodoId
+                ? "Sin foto para esta identidad"
+                : "Sin fotos para este periodo"
+            }
+            icon="○"
+          >
+            <strong>Motivo:</strong>{" "}
+            {error.message ||
+              "No hay agregados persistidos para este periodo."}{" "}
             No se muestra 0 ni una foto vacía.
           </EmptyState>
           <p className="muted">Código: {error.code || "NOT_FOUND"}</p>
@@ -1816,8 +1864,8 @@ function PeriodoResultado({
   onAbrirId,
 }: {
   data: FotoPeriodoDto;
-  hrefCiclo: (ciclo: string) => string;
-  onAbrirCiclo: (ciclo: string) => void;
+  hrefCiclo: (ciclo: string, version?: number | null) => string;
+  onAbrirCiclo: (ciclo: string, version?: number | null) => void;
   hrefPeriodoId: (id: number) => string;
   onAbrirId: (id: string) => void;
 }) {
@@ -1836,10 +1884,10 @@ function PeriodoResultado({
       header: "Ciclo",
       cell: (item) => (
         <a
-          href={hrefCiclo(item.ciclo)}
+          href={hrefCiclo(item.ciclo, item.versionFoto)}
           onClick={(event) => {
             event.preventDefault();
-            onAbrirCiclo(item.ciclo);
+            onAbrirCiclo(item.ciclo, item.versionFoto);
           }}
         >
           {item.ciclo}
@@ -1902,10 +1950,10 @@ function PeriodoResultado({
       kind: "actions",
       cell: (item) => (
         <a
-          href={hrefCiclo(item.ciclo)}
+          href={hrefCiclo(item.ciclo, item.versionFoto)}
           onClick={(event) => {
             event.preventDefault();
-            onAbrirCiclo(item.ciclo);
+            onAbrirCiclo(item.ciclo, item.versionFoto);
           }}
         >
           {item.estado === "Incluido" ? "Abrir foto" : "Ver ciclo"}
@@ -1920,10 +1968,10 @@ function PeriodoResultado({
       header: "Ciclo",
       cell: (item) => (
         <a
-          href={hrefCiclo(item.ciclo)}
+          href={hrefCiclo(item.ciclo, item.versionFoto)}
           onClick={(event) => {
             event.preventDefault();
-            onAbrirCiclo(item.ciclo);
+            onAbrirCiclo(item.ciclo, item.versionFoto);
           }}
         >
           {item.ciclo}
@@ -1984,10 +2032,10 @@ function PeriodoResultado({
       kind: "actions",
       cell: (item) => (
         <a
-          href={hrefCiclo(item.ciclo)}
+          href={hrefCiclo(item.ciclo, item.versionFoto)}
           onClick={(event) => {
             event.preventDefault();
-            onAbrirCiclo(item.ciclo);
+            onAbrirCiclo(item.ciclo, item.versionFoto);
           }}
         >
           Abrir foto
@@ -2294,18 +2342,24 @@ export function Fotos({
     });
   }
 
-  const hrefCiclo = (ciclo: string) =>
+  const hrefCiclo = (ciclo: string, version?: number | null) =>
     vistaUrl({
       ...vista,
       modo: "ciclo",
       ciclo,
-      version: "",
+      version: version === null || version === undefined ? "" : String(version),
       periodoId: "",
     });
 
-  function abrirCiclo(ciclo: string) {
+  function abrirCiclo(ciclo: string, version?: number | null) {
     actualizar(
-      { modo: "ciclo", ciclo, version: "", periodoId: "" },
+      {
+        modo: "ciclo",
+        ciclo,
+        version:
+          version === null || version === undefined ? "" : String(version),
+        periodoId: "",
+      },
       true,
     );
   }
