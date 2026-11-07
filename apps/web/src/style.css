@@ -5704,3 +5704,16 @@ textarea {
     gap: var(--space-5);
   }
 }
+
+/* UI · DEV-05 I3 — fichas de Movimientos y Ciclos
+ * Ajuste aditivo: las fichas conservan la separación de 18px de `.detail-grid`
+ * al consumir FormSection, sin reordenar reglas previas ni tocar otras pantallas.
+ */
+.movement-detail-grid .ui-form-section-head,
+.cycle-detail-grid .ui-form-section-head {
+  margin-bottom: 18px;
+}
+.movement-detail-grid .panel .ui-form-section-title,
+.cycle-detail-grid .panel .ui-form-section-title {
+  margin-bottom: 0;
+}

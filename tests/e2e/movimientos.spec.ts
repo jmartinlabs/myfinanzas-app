@@ -232,6 +232,10 @@ test("E1.4 + E1.5: registro, cálculo, rectificación, anulación, guardas y res
       .getByRole("button", { name: "Registrar movimiento", exact: true })
       .click();
     await expect(page.getByRole("alert")).toBeVisible();
+    await expect(page.locator("#error-mov-tipo")).toHaveText(
+      "Selecciona un Tipo válido.",
+    );
+    await expect(type).toBeFocused();
     await shot("validation-mobile");
     const fill = async (
       kind: string,

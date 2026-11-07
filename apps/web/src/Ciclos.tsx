@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError, eur } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import { hasNextComidaPage } from "./cycle-pagination";
 export type Cycle = {
   id: string;
@@ -412,9 +423,8 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
         </button>
       </PageHead>
       <ReferenceNote context={contexto} />
-      <div className="detail-grid">
-        <section className="panel">
-          <h2>Apertura del ciclo</h2>
+      <FormGrid className="detail-grid cycle-detail-grid">
+        <FormSection title="Apertura del ciclo">
           <dl>
             {field("Inicio ciclo", dateLabel(c.inicio))}
             {field("Saldo inicial comida", eur(c.saldoInicialComida))}
@@ -424,9 +434,8 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
             Saldo informado manualmente. No es un Movimiento ni una conciliación
             automática.
           </p>
-        </section>
-        <section className="panel">
-          <h2>Periodo derivado</h2>
+        </FormSection>
+        <FormSection title="Periodo derivado">
           <dl>
             {field("Mes financiado", dateLabel(c.mesFinanciado))}
             {field(
@@ -436,8 +445,8 @@ function CycleDetail({ id, go }: { id: string; go: (p: string) => void }) {
             {field("Estado temporal", c.estadoTemporal)}
             {field("Corte de abierto", cut)}
           </dl>
-        </section>
-      </div>
+        </FormSection>
+      </FormGrid>
       <section className="panel classification-deps">
         <h2>Conciliación comida</h2>
         <p>No disponible · conciliación E3.5 pendiente</p>
@@ -480,7 +489,8 @@ function CycleForm({ go }: { go: (p: string) => void }) {
     [busy, setBusy] = useState(false),
     [conflict, setConflict] = useState(false);
   const attempt = useRef(crypto.randomUUID()),
-    alertRef = useRef<HTMLDivElement>(null);
+    alertRef = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   const derived = preview(inicio);
   async function submit() {
     if (!context) return;
@@ -504,7 +514,9 @@ function CycleForm({ go }: { go: (p: string) => void }) {
       setError(err.message);
       setFields(err.fields ?? {});
       setConflict(err.status === 409);
-      requestAnimationFrame(() => alertRef.current?.focus());
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -542,44 +554,51 @@ function CycleForm({ go }: { go: (p: string) => void }) {
       <form
         className="saldo-form"
         noValidate
+        ref={formRef}
         onSubmit={(e) => {
           e.preventDefault();
           submit();
         }}
       >
-        <section className="panel">
-          <h2>Apertura del ciclo</h2>
-          <div className="form-grid">
-            <label>
-              Inicio ciclo *
+        <FormSection title="Apertura del ciclo">
+          <FormGrid>
+            <Field
+              id="inicio"
+              label="Inicio ciclo *"
+              error={
+                fields.inicio ? (
+                  <span id="error-inicio" className="field-error">
+                    {fields.inicio}
+                  </span>
+                ) : undefined
+              }
+            >
               <input
                 type="date"
                 aria-label="Inicio ciclo *"
                 value={inicio}
-                aria-invalid={Boolean(fields.inicio)}
-                aria-describedby={fields.inicio ? "error-inicio" : undefined}
                 onChange={(e) => {
                   setInicio(e.target.value);
                   setFields((previous) => ({ ...previous, inicio: "" }));
                 }}
               />
-              {fields.inicio && (
-                <span id="error-inicio" className="field-error">
-                  {fields.inicio}
-                </span>
-              )}
-            </label>
-            <label>
-              Saldo inicial comida (€) *
+            </Field>
+            <Field
+              id="saldoInicialComida"
+              label="Saldo inicial comida (€) *"
+              error={
+                fields.saldoInicialComida ? (
+                  <span id="error-saldo" className="field-error">
+                    {fields.saldoInicialComida}
+                  </span>
+                ) : undefined
+              }
+            >
               <input
                 type="text"
                 inputMode="decimal"
                 aria-label="Saldo inicial comida (€) *"
                 value={saldo}
-                aria-invalid={Boolean(fields.saldoInicialComida)}
-                aria-describedby={
-                  fields.saldoInicialComida ? "error-saldo" : undefined
-                }
                 onChange={(e) => {
                   setSaldo(e.target.value);
                   setFields((previous) => ({
@@ -588,20 +607,14 @@ function CycleForm({ go }: { go: (p: string) => void }) {
                   }));
                 }}
               />
-              {fields.saldoInicialComida && (
-                <span id="error-saldo" className="field-error">
-                  {fields.saldoInicialComida}
-                </span>
-              )}
-            </label>
-          </div>
+            </Field>
+          </FormGrid>
           <p className="help">
             Introduce el importe expresamente: cero y negativos son válidos. No
             se copia el cierre anterior.
           </p>
-        </section>
-        <section className="panel">
-          <h2>Vista previa del periodo</h2>
+        </FormSection>
+        <FormSection title="Vista previa del periodo">
           {!context ? (
             <p role="status">Cargando contexto…</p>
           ) : (
@@ -645,7 +658,7 @@ function CycleForm({ go }: { go: (p: string) => void }) {
               </p>
             </>
           )}
-        </section>
+        </FormSection>
         <div className="form-footer">
           <p className="muted">
             * Ambos campos son obligatorios. Sin importe ni fecha
@@ -808,7 +821,8 @@ function CycleOperationForm({
   const initialized = useRef(false),
     attempt = useRef(crypto.randomUUID()),
     errorRef = useRef<HTMLDivElement>(null),
-    reviewRef = useRef<HTMLDivElement>(null);
+    reviewRef = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   const endpoint = id ? "/ciclos/" + id + "/rectificar" : "/ciclos/omitido";
   useEffect(() => {
     if (!id) return;
@@ -851,7 +865,9 @@ function CycleOperationForm({
     setError(err.message);
     setFields(err.fields ?? {});
     if (err.status === 409) setImpact(null);
-    requestAnimationFrame(() => errorRef.current?.focus());
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) errorRef.current?.focus();
+    });
   };
   async function review(page = 1, comidaPage = 1) {
     setBusy(true);
@@ -940,57 +956,52 @@ function CycleOperationForm({
         <form
           className="saldo-form"
           noValidate
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             review();
           }}
         >
-          <section className="panel">
-            <h2>Entradas manuales</h2>
-            <div className="form-grid">
-              <label>
-                Inicio ciclo *
+          <FormSection title="Entradas manuales">
+            <FormGrid>
+              <Field
+                id="inicio"
+                label="Inicio ciclo *"
+                error={fields.inicio}
+              >
                 <input
                   type="date"
                   aria-label="Inicio ciclo *"
                   value={inicio}
                   onChange={change(setInicio)}
-                  aria-invalid={Boolean(fields.inicio)}
                 />
-                {fields.inicio && (
-                  <span className="field-error">{fields.inicio}</span>
-                )}
-              </label>
-              <label>
-                Saldo inicial comida (€) *
+              </Field>
+              <Field
+                id="saldoInicialComida"
+                label="Saldo inicial comida (€) *"
+                error={fields.saldoInicialComida}
+              >
                 <input
                   aria-label="Saldo inicial comida (€) *"
                   inputMode="decimal"
                   value={saldo}
                   onChange={change(setSaldo)}
-                  aria-invalid={Boolean(fields.saldoInicialComida)}
                 />
-                {fields.saldoInicialComida && (
-                  <span className="field-error">
-                    {fields.saldoInicialComida}
-                  </span>
-                )}
-              </label>
-            </div>
-            <label>
-              Motivo *
+              </Field>
+            </FormGrid>
+            <Field id="motivo" label="Motivo *">
               <textarea
                 aria-label="Motivo *"
                 value={motivo}
                 onChange={change(setMotivo)}
                 maxLength={1000}
               />
-            </label>
+            </Field>
             <p className="help">
               Importe manual explícito: cero y negativos válidos. No se copia un
               cierre ni se modifica la apertura del siguiente ciclo.
             </p>
-          </section>
+          </FormSection>
           {impact && (
             <section
               className="panel cycle-impact"
