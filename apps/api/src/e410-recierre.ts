@@ -213,10 +213,49 @@ function mergeBlockers(...groups: CierreIssue[][]): CierreIssue[] {
   return merged;
 }
 
+const auxiliaryBlocks = [
+  { fuente: "Anticipos", key: "anticipos", label: "Anticipos" },
+  { fuente: "Compartidos", key: "compartidos", label: "Compartidos" },
+  { fuente: "Nómina", key: "nomina", label: "Nómina" },
+  { fuente: "Revisión Comida", key: "revisionComida", label: "Revisión Comida" },
+  { fuente: "Deuda", key: "deuda", label: "Deuda E1.6" },
+] as const;
+
+/**
+ * AC19/D6-A+C: an auxiliary source without current facts is not a `0`, an
+ * empty success, or a copy of `vN`. The vN+1 photo declares the block as
+ * `No disponible` with an explicit motive, while the empty array stays empty.
+ * An unreadable source is also declared here so the preview shows what could
+ * not be captured; it keeps its fail-closed blocker (testplan §3.1) and no
+ * photo is written.
+ */
+function auxiliaryNoDisponible(
+  capture: CaptureCierre,
+): Record<string, { estado: string; motivo: string }> {
+  const entries: Record<string, { estado: string; motivo: string }> = {};
+  for (const block of auxiliaryBlocks) {
+    const fuente = capture.auxiliary.fuentes.find(
+      (row) => row.fuente === block.fuente,
+    );
+    if (!fuente) continue;
+    const rows = capture.payload.auxiliares[block.key];
+    if (fuente.acreditado && rows.length > 0) continue;
+    entries[`auxiliares.${block.key}`] = {
+      estado: "No disponible",
+      motivo: fuente.acreditado
+        ? `La fuente auxiliar ${block.label} no contiene hechos en la ventana; no se copian valores de la versión anterior ni se sustituye por un cero.`
+        : `La fuente auxiliar ${block.label} no se pudo leer; no se copian valores de la versión anterior ni se sustituye por un cero.`,
+    };
+  }
+  return entries;
+}
+
 /**
  * Capture never mutates E4.9. The cycle is closed by definition, so its
  * `YA_CERRADO` blocker is removed only after a valid active window has been
  * resolved; every other blocker (DT6, E3.5, plan, sources, coherence) remains.
+ * The vN+1 payload is completed with per-block auxiliary `No disponible`
+ * entries from the live capture; nothing is taken from `vN`.
  */
 function captureForRecierre(
   db: Database,
@@ -225,6 +264,17 @@ function captureForRecierre(
   now: number,
 ): { data: CaptureCierre; blockers: CierreIssue[] } {
   const data = captureCierre(db, ciclo, options, now);
+  const noDisponible = auxiliaryNoDisponible(data);
+  if (Object.keys(noDisponible).length) {
+    data.payload = {
+      ...data.payload,
+      noDisponible: { ...data.payload.noDisponible, ...noDisponible },
+    };
+    data.fingerprint = fingerprint({
+      payload: data.payload,
+      coherencia: data.coherencia,
+    });
+  }
   return {
     data,
     blockers: data.blockers.filter((issue) => issue.code !== "YA_CERRADO"),

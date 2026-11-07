@@ -918,6 +918,139 @@ test("E4.10 I4: plan capturado y auxiliares vigentes se fotografían en v2", () 
   }
 });
 
+test("E4.10 AC19: un auxiliar sin hechos se declara No disponible en v2 sin copiar v1", () => {
+  const db = fixture();
+  try {
+    const referencia = "REF9101";
+    seedAnticipoReference(db, referencia);
+    seedMovement(db, {
+      id: "8510",
+      tipo: "Transferencia",
+      importe: 500,
+      origen: "S001",
+      destino: "S002",
+      referencia,
+    });
+    seedAnticipoAttribution(db, { movimiento: "8510", referencia });
+    closeV1(db);
+    const v1 = getFotoCierre(db, "1", 1);
+    expect(v1.foto.auxiliares.anticipos).toHaveLength(1);
+    expect(v1.foto.noDisponible["auxiliares.anticipos"]).toBeUndefined();
+
+    reopen(db);
+    // La fuente sigue siendo legible pero deja de tener la atribución vigente.
+    storeAnticipo(db, "8510", null, now + 2_000);
+
+    const pre = preview(db);
+    expect(pre.comparacion.estado).toBe("ConCambios");
+    expect(pre.comparacion.bloques).toContain("auxiliares");
+    for (const key of [
+      "anticipos",
+      "compartidos",
+      "nomina",
+      "revisionComida",
+      "deuda",
+    ]) {
+      expect(pre.noDisponible[`auxiliares.${key}`]?.estado).toBe(
+        "No disponible",
+      );
+      expect(typeof pre.noDisponible[`auxiliares.${key}`]?.motivo).toBe(
+        "string",
+      );
+    }
+
+    const result = reclose(db, pre);
+    expect(result.foto.version).toBe(2);
+    // El bloque vacío no se rellena con la atribución de v1 ni con un cero.
+    expect(result.foto.auxiliares.anticipos).toEqual([]);
+    expect(result.foto.auxiliares.anticipos).not.toEqual(
+      v1.foto.auxiliares.anticipos,
+    );
+    const storedAux = result.foto.noDisponible["auxiliares.anticipos"];
+    expect(storedAux?.estado).toBe("No disponible");
+    expect(storedAux?.motivo).toContain("Anticipos");
+    expect(JSON.stringify(storedAux)).not.toMatch(/\b0\b/);
+
+    // v1 y su foto no cambian; la auditoría explica la comparación material.
+    expect(getFotoCierre(db, "1", 1)).toEqual(v1);
+    const audit = db
+      .query(
+        "SELECT anterior,posterior FROM cierre_audit WHERE ciclo='1' AND version=2",
+      )
+      .get() as { anterior: string; posterior: string };
+    expect(JSON.parse(audit.anterior)).toMatchObject({
+      version: 1,
+      fotoVersion: 1,
+    });
+    const posterior = JSON.parse(audit.posterior) as {
+      version: number;
+      fotoVersion: number;
+      origen: { versionOrigen: number };
+      comparacion: { estado: string; bloques: string[] };
+    };
+    expect(posterior).toMatchObject({
+      version: 2,
+      fotoVersion: 2,
+      origen: { versionOrigen: 1 },
+      comparacion: { estado: "ConCambios" },
+    });
+    expect(posterior.comparacion.bloques).toContain("auxiliares");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 AC19: una fuente auxiliar ilegible se declara No disponible y bloquea sin v2", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    const v1 = getFotoCierre(db, "1", 1);
+    reopen(db);
+    // La tabla existe, pero la consulta auxiliar ya no puede leerla.
+    db.run(
+      "ALTER TABLE payroll_allocations RENAME COLUMN importe TO importe_off",
+    );
+
+    const pre = preview(db);
+    expect(pre.estado).toBe("Bloqueado");
+    expect(pre.bloqueos.map((issue) => issue.code)).toContain(
+      "FUENTE_NO_LEGIBLE",
+    );
+    expect(pre.noDisponible["auxiliares.nomina"]?.estado).toBe(
+      "No disponible",
+    );
+    expect(pre.noDisponible["auxiliares.nomina"]?.motivo).toContain(
+      "no se pudo leer",
+    );
+
+    const before = db
+      .query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'")
+      .get();
+    const error = problemOf(() => reclose(db, pre));
+    expect(error.status).toBe(409);
+    expect(error.code).toBe("FUENTE_NO_LEGIBLE");
+    // Fail-closed: no foto v2, no mutación de la foto v1 ni del cierre.
+    expect(
+      db.query("SELECT COUNT(*) n FROM cierres WHERE ciclo='1'").get(),
+    ).toEqual(before);
+    expect(
+      db.query("SELECT COUNT(*) n FROM fotos_cierre WHERE version=2").get(),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM cierre_audit WHERE version=2").get(),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM cierre_vinculos").get(),
+    ).toEqual({ n: 0 });
+    expect(
+      db.query("SELECT COUNT(*) n FROM reapertura_activa").get(),
+    ).toEqual({ n: 1 });
+    expect(getFotoCierre(db, "1", 1)).toEqual(v1);
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.10 I4: una escritura revertida no se asume equivalente", () => {
   const db = fixture();
   try {
