@@ -429,6 +429,33 @@ test("Field respeta el id y las descripciones previas del control", () => {
   expect(noError).toContain('aria-invalid="false"');
 });
 
+test("Field asocia aria-describedby al contenedor que contiene el mensaje", () => {
+  const message = "Indica un nombre válido.";
+  const html = renderToStaticMarkup(
+    <>
+      <Field id="shared-name" label="Nombre del caso" error={message}>
+        <input />
+      </Field>
+      <Field
+        id="plan-base"
+        label="Base"
+        error={<span id="plan-error-base">{message}</span>}
+      >
+        <input />
+      </Field>
+    </>,
+  );
+
+  expect(html).toContain('aria-describedby="shared-name-error"');
+  expect(html).toMatch(
+    /<p class="ui-field-error" id="shared-name-error">Indica un nombre válido\.<\/p>/,
+  );
+  expect(html).toContain('aria-describedby="plan-base-error"');
+  expect(html).toMatch(
+    /<p class="ui-field-error" id="plan-base-error"><span id="plan-error-base">Indica un nombre válido\.<\/span><\/p>/,
+  );
+});
+
 test("FormSection y FormGrid componen la sección y la rejilla 2→1", () => {
   const html = renderToStaticMarkup(
     <FormSection
