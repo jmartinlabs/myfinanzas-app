@@ -7,7 +7,18 @@ import {
   type SharedMetric,
   type SharedParticipant,
 } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 const base = "/compartidos";
 const date = (value: string | null) =>
   value ? value.split("-").reverse().join("/") : "No disponible";
@@ -225,7 +236,15 @@ function NewShared({ go }: { go: (p: string) => void }) {
     [error, setError] = useState(""),
     [fields, setFields] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
-    attempt = useRef(crypto.randomUUID());
+    attempt = useRef(crypto.randomUUID()),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
@@ -252,43 +271,54 @@ function NewShared({ go }: { go: (p: string) => void }) {
         title="Nuevo caso compartido"
         description="Se crean juntos la Referencia CAT013 y su ficha 1:1; no se admiten fichas o Referencias huérfanas."
       />
-      <form className="panel form-grid" onSubmit={submit} noValidate>
-        {error && <Alert>{error}</Alert>}
-        <label htmlFor="shared-name">Nombre del caso</label>
-        <input
-          id="shared-name"
-          value={name}
-          maxLength={120}
-          required
-          aria-invalid={!!fields.nombre}
-          aria-describedby={fields.nombre ? "shared-name-error" : undefined}
-          onChange={(e) => {
-            setName(e.target.value);
-            setError("");
-            setFields({});
-          }}
-        />
-        {fields.nombre && (
-          <p className="field-error" id="shared-name-error">
-            {fields.nombre}
-          </p>
+      <form
+        className="shared-form"
+        onSubmit={submit}
+        noValidate
+        ref={formRef}
+      >
+        {error && (
+          <div tabIndex={-1} ref={alertRef}>
+            <Alert>{error}</Alert>
+          </div>
         )}
-        <p className="muted">
-          Ejemplo ficticio: «Piso 2026». El nombre se puede editar después desde
-          Referencias; el Tipo queda protegido al tener ficha.
-        </p>
-        <div className="form-actions">
-          <button
-            type="button"
-            className="secondary"
-            onClick={() => go(base)}
-          >
-            Cancelar
-          </button>
-          <button className="primary" disabled={busy}>
-            {busy ? "Creando…" : "Crear caso"}
-          </button>
-        </div>
+        <FormSection title="Identificación">
+          <FormGrid>
+            <Field
+              id="shared-name"
+              label="Nombre del caso"
+              className="ui-form-span"
+              error={fields.nombre}
+            >
+              <input
+                value={name}
+                maxLength={120}
+                required
+                onChange={(e) => {
+                  setName(e.target.value);
+                  setError("");
+                  setFields({});
+                }}
+              />
+            </Field>
+          </FormGrid>
+          <p className="muted">
+            Ejemplo ficticio: «Piso 2026». El nombre se puede editar después desde
+            Referencias; el Tipo queda protegido al tener ficha.
+          </p>
+          <div className="form-actions">
+            <button
+              type="button"
+              className="secondary"
+              onClick={() => go(base)}
+            >
+              Cancelar
+            </button>
+            <button className="primary" disabled={busy}>
+              {busy ? "Creando…" : "Crear caso"}
+            </button>
+          </div>
+        </FormSection>
       </form>
     </>
   );
@@ -782,11 +812,19 @@ function ParticipantForm({
     } | null>(null),
     [motive, setMotive] = useState(""),
     attempt = useRef(crypto.randomUUID()),
-    focus = useRef<HTMLHeadingElement>(null);
+    focus = useRef<HTMLHeadingElement>(null),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (plan)
       requestAnimationFrame(() => focus.current?.focus());
   }, [plan]);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   const changes = () => {
     const value: Record<string, unknown> = {};
     if (!editing || name !== participant.nombre) value.nombre = name;
@@ -911,7 +949,11 @@ function ParticipantForm({
           </span>
           {" · "}Neto después: {amount(plan.impacto.despues.resumen.neto)}
         </p>
-        {error && <Alert>{error}</Alert>}
+        {error && (
+          <div tabIndex={-1} ref={alertRef}>
+            <Alert>{error}</Alert>
+          </div>
+        )}
         <label htmlFor="shared-motive">Motivo (obligatorio)</label>
         <textarea
           id="shared-motive"
@@ -931,67 +973,81 @@ function ParticipantForm({
       </section>
     );
   return (
-    <form className="panel form-grid shared-form" onSubmit={preview} noValidate>
-      <h2>{editing ? "Editar participante" : "Alta de participante"}</h2>
-      {error && <Alert>{error}</Alert>}
-      <label htmlFor="participant-name">Nombre</label>
-      <input
-        id="participant-name"
-        value={name}
-        maxLength={120}
-        required
-        aria-invalid={!!fields.nombre}
-        onChange={(e) => {
-          setName(e.target.value);
-          setError("");
-        }}
-      />
-      {fields.nombre && <p className="field-error">{fields.nombre}</p>}
-      <label htmlFor="participant-role">Rol</label>
-      <select
-        id="participant-role"
-        value={role}
-        onChange={(e) => {
-          setRole(e.target.value as "Titular" | "Tercero");
-          setError("");
-        }}
+    <form
+      className="shared-form"
+      onSubmit={preview}
+      noValidate
+      ref={formRef}
+    >
+      <FormSection
+        title={editing ? "Editar participante" : "Alta de participante"}
       >
-        <option value="Titular">Titular</option>
-        <option value="Tercero">Tercero</option>
-      </select>
-      {fields.rol && <p className="field-error">{fields.rol}</p>}
-      <label htmlFor="participant-parts">Partes enteras</label>
-      <input
-        id="participant-parts"
-        type="number"
-        min={0}
-        max={1000000}
-        step={1}
-        value={parts}
-        required
-        aria-invalid={!!fields.partes}
-        onChange={(e) => {
-          setParts(e.target.value);
-          setError("");
-        }}
-      />
-      {fields.partes && <p className="field-error">{fields.partes}</p>}
-      <p className="muted">
-        El Titular participa en el reparto pero no tiene aportación exigible.
-        Solo puede existir un Titular activo por caso.
-      </p>
-      <div className="form-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button className="primary" disabled={busy}>
-          {busy
-            ? "Comprobando…"
-            : editing
-              ? "Ver impacto"
-              : "Añadir participante"}
-        </button>
-      </div>
+        {error && (
+          <div tabIndex={-1} ref={alertRef}>
+            <Alert>{error}</Alert>
+          </div>
+        )}
+        <FormGrid>
+          <Field
+            id="participant-name"
+            label="Nombre"
+            className="ui-form-span"
+            error={fields.nombre}
+          >
+            <input
+              value={name}
+              maxLength={120}
+              required
+              onChange={(e) => {
+                setName(e.target.value);
+                setError("");
+              }}
+            />
+          </Field>
+          <Field id="participant-role" label="Rol" error={fields.rol}>
+            <select
+              value={role}
+              onChange={(e) => {
+                setRole(e.target.value as "Titular" | "Tercero");
+                setError("");
+              }}
+            >
+              <option value="Titular">Titular</option>
+              <option value="Tercero">Tercero</option>
+            </select>
+          </Field>
+          <Field id="participant-parts" label="Partes enteras" error={fields.partes}>
+            <input
+              type="number"
+              min={0}
+              max={1000000}
+              step={1}
+              value={parts}
+              required
+              onChange={(e) => {
+                setParts(e.target.value);
+                setError("");
+              }}
+            />
+          </Field>
+        </FormGrid>
+        <p className="muted">
+          El Titular participa en el reparto pero no tiene aportación exigible.
+          Solo puede existir un Titular activo por caso.
+        </p>
+        <div className="form-actions">
+          <button type="button" className="secondary" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button className="primary" disabled={busy}>
+            {busy
+              ? "Comprobando…"
+              : editing
+                ? "Ver impacto"
+                : "Añadir participante"}
+          </button>
+        </div>
+      </FormSection>
     </form>
   );
 }
@@ -1008,12 +1064,22 @@ function BajaForm({
 }) {
   const [motive, setMotive] = useState(""),
     [error, setError] = useState(""),
+    [fields, setFields] = useState<Record<string, string>>({}),
     [busy, setBusy] = useState(false),
-    attempt = useRef(crypto.randomUUID());
+    attempt = useRef(crypto.randomUUID()),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setBusy(true);
     setError("");
+    setFields({});
     try {
       await api(
         base +
@@ -1028,36 +1094,58 @@ function BajaForm({
       );
       onDone();
     } catch (e) {
-      setError((e as Error).message);
+      const apiError = e as ApiError;
+      setError(apiError.message);
+      setFields(apiError.fields ?? {});
       attempt.current = crypto.randomUUID();
     } finally {
       setBusy(false);
     }
   }
   return (
-    <form className="panel form-grid shared-form" onSubmit={submit} noValidate>
-      <h2>Baja lógica de {participant.nombre}</h2>
-      <p className="muted">
-        Se conservan sus partes, revisiones y auditoría. No se borra ningún
-        registro ni se reescriben Movimientos.
-      </p>
-      {error && <Alert>{error}</Alert>}
-      <label htmlFor="shared-baja-motive">Motivo (obligatorio)</label>
-      <textarea
-        id="shared-baja-motive"
-        value={motive}
-        onChange={(e) => setMotive(e.target.value)}
-        rows={3}
-        required
-      />
-      <div className="form-actions">
-        <button type="button" className="secondary" onClick={onCancel}>
-          Cancelar
-        </button>
-        <button className="primary" disabled={busy}>
-          {busy ? "Aplicando…" : "Confirmar baja lógica"}
-        </button>
-      </div>
+    <form
+      className="shared-form"
+      onSubmit={submit}
+      noValidate
+      ref={formRef}
+    >
+      <FormSection title={`Baja lógica de ${participant.nombre}`}>
+        <p className="muted">
+          Se conservan sus partes, revisiones y auditoría. No se borra ningún
+          registro ni se reescriben Movimientos.
+        </p>
+        {error && (
+          <div tabIndex={-1} ref={alertRef}>
+            <Alert>{error}</Alert>
+          </div>
+        )}
+        <FormGrid>
+          <Field
+            id="shared-baja-motive"
+            label="Motivo (obligatorio)"
+            className="ui-form-span"
+            error={fields.motivo}
+          >
+            <textarea
+              value={motive}
+              onChange={(e) => {
+                setMotive(e.target.value);
+                setError("");
+              }}
+              rows={3}
+              required
+            />
+          </Field>
+        </FormGrid>
+        <div className="form-actions">
+          <button type="button" className="secondary" onClick={onCancel}>
+            Cancelar
+          </button>
+          <button className="primary" disabled={busy}>
+            {busy ? "Aplicando…" : "Confirmar baja lógica"}
+          </button>
+        </div>
+      </FormSection>
     </form>
   );
 }
@@ -1186,7 +1274,9 @@ function AportacionForm({
     [success, setSuccess] = useState<string | null>(null),
     [reload, setReload] = useState(0),
     attempt = useRef(crypto.randomUUID()),
-    focus = useRef<HTMLHeadingElement>(null);
+    focus = useRef<HTMLHeadingElement>(null),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -1238,6 +1328,12 @@ function AportacionForm({
   useEffect(() => {
     if (plan) requestAnimationFrame(() => focus.current?.focus());
   }, [plan]);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   const thirds =
     data?.participantes.filter(
       (p) => p.estado === "Activa" && p.rol === "Tercero",
@@ -1395,7 +1491,11 @@ function AportacionForm({
                 existente(s). Confirma solo si es una aportación real distinta.
               </p>
             )}
-            {error && <Alert>{error}</Alert>}
+            {error && (
+              <div tabIndex={-1} ref={alertRef}>
+                <Alert>{error}</Alert>
+              </div>
+            )}
             <div className="form-actions">
               <button className="secondary" onClick={() => setPlan(null)}>
                 Cancelar
@@ -1407,123 +1507,154 @@ function AportacionForm({
           </section>
         </>
       ) : (
-        <form className="panel form-grid shared-form" onSubmit={preview} noValidate>
-          {error && <Alert>{error}</Alert>}
-          <label htmlFor="contribution-case">Caso (bloqueado)</label>
-          <input
-            id="contribution-case"
-            value={`${data.referencia.id} · ${data.referencia.nombre}`}
-            readOnly
-          />
-          <label htmlFor="contribution-participant">Quién paga</label>
-          <select
-            id="contribution-participant"
-            value={participante}
-            autoFocus
-            onChange={(e) => {
-              setParticipante(e.target.value);
-              setError("");
-            }}
-          >
-            {thirds.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre} · Tercero
-              </option>
-            ))}
-          </select>
-          {fields.participante && (
-            <p className="field-error">{fields.participante}</p>
-          )}
-          <label htmlFor="contribution-date">Fecha</label>
-          <input
-            id="contribution-date"
-            type="date"
-            value={fecha}
-            max={options?.hoy}
-            required
-            aria-invalid={!!fields.fecha}
-            onChange={(e) => {
-              setFecha(e.target.value);
-              setError("");
-            }}
-          />
-          {fields.fecha && <p className="field-error">{fields.fecha}</p>}
-          <label htmlFor="contribution-amount">Importe (EUR)</label>
-          <input
-            id="contribution-amount"
-            inputMode="decimal"
-            value={importe}
-            placeholder="0,00"
-            required
-            aria-invalid={!!fields.importe}
-            onChange={(e) => {
-              setImporte(e.target.value);
-              setError("");
-            }}
-          />
-          {fields.importe && <p className="field-error">{fields.importe}</p>}
-          <label htmlFor="contribution-destination">Destino interno</label>
-          <select
-            id="contribution-destination"
-            value={destino}
-            onChange={(e) => {
-              setDestino(e.target.value);
-              setError("");
-            }}
-          >
-            {destinations.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.nombre} · {s.id}
-              </option>
-            ))}
-          </select>
-          {fields.destino && <p className="field-error">{fields.destino}</p>}
-          <label htmlFor="contribution-evidence">Evidencia</label>
-          <textarea
-            id="contribution-evidence"
-            value={evidencia}
-            rows={3}
-            minLength={10}
-            maxLength={500}
-            required
-            aria-invalid={!!fields.evidencia}
-            onChange={(e) => {
-              setEvidencia(e.target.value);
-              setError("");
-            }}
-          />
-          {fields.evidencia && (
-            <p className="field-error">{fields.evidencia}</p>
-          )}
-          <label htmlFor="contribution-provenance">Procedencia</label>
-          <select
-            id="contribution-provenance"
-            value={procedencia}
-            onChange={(e) => {
-              setProcedencia(e.target.value);
-              setError("");
-            }}
-          >
-            <option value="Registro del titular">Registro del titular</option>
-            <option value="Documento bancario">Documento bancario</option>
-          </select>
-          <p className="shared-alert" role="note">
-            Es una Transferencia desde Exterior; no es Ingreso ni Gasto. S000 no
-            computa como saldo interno. El efecto bancario es +importe en el
-            Destino.
-          </p>
-          <div className="form-actions">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => go(base + "/" + id)}
-            >
-              Cancelar
-            </button>
-            <button className="primary" disabled={busy}>
-              {busy ? "Calculando…" : "Ver impacto"}
-            </button>
-          </div>
+        <form
+          className="shared-form"
+          onSubmit={preview}
+          noValidate
+          ref={formRef}
+        >
+          <FormSection title="Datos de la aportación">
+            {error && (
+              <div tabIndex={-1} ref={alertRef}>
+                <Alert>{error}</Alert>
+              </div>
+            )}
+            <FormGrid>
+              <Field
+                id="contribution-case"
+                label="Caso (bloqueado)"
+                className="ui-form-span"
+              >
+                <input
+                  value={`${data.referencia.id} · ${data.referencia.nombre}`}
+                  readOnly
+                />
+              </Field>
+              <Field
+                id="contribution-participant"
+                label="Quién paga"
+                error={fields.participante}
+              >
+                <select
+                  value={participante}
+                  autoFocus
+                  onChange={(e) => {
+                    setParticipante(e.target.value);
+                    setError("");
+                  }}
+                >
+                  {thirds.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre} · Tercero
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                id="contribution-date"
+                label="Fecha"
+                error={fields.fecha}
+              >
+                <input
+                  type="date"
+                  value={fecha}
+                  max={options?.hoy}
+                  required
+                  onChange={(e) => {
+                    setFecha(e.target.value);
+                    setError("");
+                  }}
+                />
+              </Field>
+              <Field
+                id="contribution-amount"
+                label="Importe (EUR)"
+                error={fields.importe}
+              >
+                <input
+                  inputMode="decimal"
+                  value={importe}
+                  placeholder="0,00"
+                  required
+                  onChange={(e) => {
+                    setImporte(e.target.value);
+                    setError("");
+                  }}
+                />
+              </Field>
+              <Field
+                id="contribution-destination"
+                label="Destino interno"
+                error={fields.destino}
+              >
+                <select
+                  value={destino}
+                  onChange={(e) => {
+                    setDestino(e.target.value);
+                    setError("");
+                  }}
+                >
+                  {destinations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} · {s.id}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                id="contribution-evidence"
+                label="Evidencia"
+                className="ui-form-span"
+                error={fields.evidencia}
+              >
+                <textarea
+                  value={evidencia}
+                  rows={3}
+                  minLength={10}
+                  maxLength={500}
+                  required
+                  onChange={(e) => {
+                    setEvidencia(e.target.value);
+                    setError("");
+                  }}
+                />
+              </Field>
+              <Field
+                id="contribution-provenance"
+                label="Procedencia"
+              >
+                <select
+                  value={procedencia}
+                  onChange={(e) => {
+                    setProcedencia(e.target.value);
+                    setError("");
+                  }}
+                >
+                  <option value="Registro del titular">
+                    Registro del titular
+                  </option>
+                  <option value="Documento bancario">Documento bancario</option>
+                </select>
+              </Field>
+            </FormGrid>
+            <p className="shared-alert" role="note">
+              Es una Transferencia desde Exterior; no es Ingreso ni Gasto. S000 no
+              computa como saldo interno. El efecto bancario es +importe en el
+              Destino.
+            </p>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => go(base + "/" + id)}
+              >
+                Cancelar
+              </button>
+              <button className="primary" disabled={busy}>
+                {busy ? "Calculando…" : "Ver impacto"}
+              </button>
+            </div>
+          </FormSection>
         </form>
       )}
     </>
@@ -1549,7 +1680,9 @@ function HistoricalAportaciones({
     [notice, setNotice] = useState(""),
     [reload, setReload] = useState(0),
     attempt = useRef(crypto.randomUUID()),
-    focus = useRef<HTMLHeadingElement>(null);
+    focus = useRef<HTMLHeadingElement>(null),
+    formRef = useRef<HTMLFormElement>(null),
+    alertRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -1579,6 +1712,12 @@ function HistoricalAportaciones({
   useEffect(() => {
     if (plan) requestAnimationFrame(() => focus.current?.focus());
   }, [plan]);
+  useEffect(() => {
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formRef.current)) alertRef.current?.focus();
+    });
+  }, [error]);
   const selected = data?.historicos.find((h) => h.movimiento === movement);
   const thirds =
     data?.participantes.filter(
@@ -1693,89 +1832,114 @@ function HistoricalAportaciones({
           </p>
         </section>
       ) : (
-        <form className="panel form-grid shared-form" onSubmit={preview} noValidate>
-          {error && <Alert>{error}</Alert>}
-          <label htmlFor="historical-movement">Movimiento existente</label>
-          <select
-            id="historical-movement"
-            value={movement}
-            autoFocus
-            onChange={(e) => {
-              setMovement(e.target.value);
-              setPlan(null);
-              setError("");
-            }}
-          >
-            {data.historicos.map((h) => (
-              <option key={h.movimiento} value={h.movimiento}>
-                {h.movimiento} · {date(h.fecha)} · {eur(h.importe)} ·{" "}
-                {h.concepto}
-              </option>
-            ))}
-          </select>
-          <label htmlFor="historical-participant">Quién paga</label>
-          <select
-            id="historical-participant"
-            value={participante}
-            onChange={(e) => {
-              setParticipante(e.target.value);
-              setError("");
-            }}
-          >
-            {thirds.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nombre} · Tercero
-              </option>
-            ))}
-          </select>
-          {fields.participante && (
-            <p className="field-error">{fields.participante}</p>
-          )}
-          <label htmlFor="historical-evidence">Evidencia</label>
-          <textarea
-            id="historical-evidence"
-            value={evidencia}
-            rows={3}
-            minLength={10}
-            maxLength={500}
-            required
-            aria-invalid={!!fields.evidencia}
-            onChange={(e) => {
-              setEvidencia(e.target.value);
-              setError("");
-            }}
-          />
-          {fields.evidencia && <p className="field-error">{fields.evidencia}</p>}
-          <label htmlFor="historical-provenance">Procedencia</label>
-          <select
-            id="historical-provenance"
-            value={procedencia}
-            onChange={(e) => {
-              setProcedencia(e.target.value);
-              setError("");
-            }}
-          >
-            <option value="Documento bancario">Documento bancario</option>
-            <option value="Importación histórica autorizada">
-              Importación histórica autorizada
-            </option>
-          </select>
-          <p className="shared-alert" role="note">
-            Un histórico no se acredita solo con «Registro del titular». Se exige
-            documento bancario o importación autorizada y revisión explícita.
-          </p>
-          <div className="form-actions">
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => go(base + "/" + id)}
-            >
-              Cancelar
-            </button>
-            <button className="primary" disabled={busy}>
-              {busy ? "Calculando…" : "Ver impacto"}
-            </button>
-          </div>
+        <form
+          className="shared-form"
+          onSubmit={preview}
+          noValidate
+          ref={formRef}
+        >
+          <FormSection title="Acreditación histórica">
+            {error && (
+              <div tabIndex={-1} ref={alertRef}>
+                <Alert>{error}</Alert>
+              </div>
+            )}
+            <FormGrid>
+              <Field
+                id="historical-movement"
+                label="Movimiento existente"
+                className="ui-form-span"
+                error={fields.movimiento}
+              >
+                <select
+                  value={movement}
+                  autoFocus
+                  onChange={(e) => {
+                    setMovement(e.target.value);
+                    setPlan(null);
+                    setError("");
+                  }}
+                >
+                  {data.historicos.map((h) => (
+                    <option key={h.movimiento} value={h.movimiento}>
+                      {h.movimiento} · {date(h.fecha)} · {eur(h.importe)} ·{" "}
+                      {h.concepto}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                id="historical-participant"
+                label="Quién paga"
+                error={fields.participante}
+              >
+                <select
+                  value={participante}
+                  onChange={(e) => {
+                    setParticipante(e.target.value);
+                    setError("");
+                  }}
+                >
+                  {thirds.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.nombre} · Tercero
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                id="historical-evidence"
+                label="Evidencia"
+                className="ui-form-span"
+                error={fields.evidencia}
+              >
+                <textarea
+                  value={evidencia}
+                  rows={3}
+                  minLength={10}
+                  maxLength={500}
+                  required
+                  onChange={(e) => {
+                    setEvidencia(e.target.value);
+                    setError("");
+                  }}
+                />
+              </Field>
+              <Field
+                id="historical-provenance"
+                label="Procedencia"
+              >
+                <select
+                  value={procedencia}
+                  onChange={(e) => {
+                    setProcedencia(e.target.value);
+                    setError("");
+                  }}
+                >
+                  <option value="Documento bancario">Documento bancario</option>
+                  <option value="Importación histórica autorizada">
+                    Importación histórica autorizada
+                  </option>
+                </select>
+              </Field>
+            </FormGrid>
+            <p className="shared-alert" role="note">
+              Un histórico no se acredita solo con «Registro del titular». Se exige
+              documento bancario o importación autorizada y revisión explícita.
+            </p>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="secondary"
+                onClick={() => go(base + "/" + id)}
+              >
+                Cancelar
+              </button>
+              <button className="primary" disabled={busy}>
+                {busy ? "Calculando…" : "Ver impacto"}
+              </button>
+            </div>
+          </FormSection>
         </form>
       )}
       {plan && selected && (

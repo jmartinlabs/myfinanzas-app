@@ -33,12 +33,12 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
       (await request.get("http://127.0.0.1:3009/api/compartidos/fichas"))
         .status(),
     ).toBe(401);
+    // Enrutado nativo del navegador: route.fetch resetea la respuesta grande de
+    // /compartidos/fichas contra el servidor Bun de test en Node 26.
     await page.route("**/api/**", async (route) => {
       const url = new URL(route.request().url());
       url.port = "3009";
-      await route.fulfill({
-        response: await route.fetch({ url: url.toString() }),
-      });
+      await route.continue({ url: url.toString() });
     });
     await page.goto("/compartidos");
     await page
@@ -169,6 +169,14 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(
       page.getByText("El participante ha cambiado. Revisa su ficha actual."),
     ).toBeVisible();
+    await expect
+      .poll(() =>
+        page.evaluate(
+          () =>
+            !!document.activeElement?.querySelector('[role="alert"]'),
+        ),
+      )
+      .toBe(true);
     await expect(page.getByLabel("Partes enteras")).toHaveValue("2");
     await page.unroute("**/api/compartidos/fichas/*/participantes/*/impacto");
     await page.getByRole("button", { name: "Ver impacto" }).click();
@@ -200,6 +208,14 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await page.getByLabel("Partes enteras").fill("-1");
     await page.getByRole("button", { name: "Ver impacto" }).click();
     await expect(page.getByText("Partes enteras entre 0 y 1000000.")).toBeVisible();
+    await expect(page.locator("#participant-parts-error")).toHaveText(
+      "Indica un número entero de partes.",
+    );
+    await expect(page.getByLabel("Partes enteras")).toHaveAttribute(
+      "aria-describedby",
+      "participant-parts-error",
+    );
+    await expect(page.getByLabel("Partes enteras")).toBeFocused();
     await expect(page.getByLabel("Partes enteras")).toHaveValue("-1");
     await page.getByRole("button", { name: "Cancelar" }).first().click();
     // 100% Titular closes with Neto = Bruto = Coste propio.
@@ -237,6 +253,17 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await page.goto("/compartidos/REF001");
     const beaAfter = page.getByRole("row", { name: /Bea/ });
     await beaAfter.getByRole("button", { name: "Baja", exact: true }).click();
+    await page
+      .getByRole("button", { name: "Confirmar baja lógica" })
+      .click();
+    await expect(page.locator("#shared-baja-motive-error")).toHaveText(
+      "Motivo obligatorio.",
+    );
+    await expect(page.getByLabel("Motivo (obligatorio)")).toHaveAttribute(
+      "aria-describedby",
+      "shared-baja-motive-error",
+    );
+    await expect(page.getByLabel("Motivo (obligatorio)")).toBeFocused();
     await page.getByLabel("Motivo (obligatorio)").fill("Baja ficticia de QA");
     await page
       .getByRole("button", { name: "Confirmar baja lógica" })
@@ -265,6 +292,22 @@ test("E3.2 real MFA, ficha, participants, impact, D5 actions and statuses 390/14
     await expect(
       page.locator(".shared-cards").getByText(longName, { exact: false }),
     ).toBeVisible();
+    // NewShared: error asociado y foco en el primer campo inválido.
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.goto("/compartidos/nuevo");
+    await page
+      .getByRole("button", { name: "Crear caso", exact: true })
+      .click();
+    await expect(page.locator("#shared-name-error")).toHaveText(
+      "Indica un nombre válido.",
+    );
+    await expect(page.getByLabel("Nombre del caso")).toHaveAttribute(
+      "aria-describedby",
+      "shared-name-error",
+    );
+    await expect(page.getByLabel("Nombre del caso")).toBeFocused();
+    await page.getByRole("button", { name: "Cancelar", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Gastos compartidos" })).toBeVisible();
     expect(errors).toEqual([]);
   } finally {
     child.kill();

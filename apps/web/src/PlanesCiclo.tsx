@@ -1,7 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, eur, ApiError } from "./api";
 import { planDeltaEntries } from "./plan-delta";
-import { Alert, DataList, PageHead, Table, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  type TableColumn,
+} from "./ui";
 type Budget = { id: string; nombre: string; fuente: string; estado: string };
 type Line = {
   presupuesto: string;
@@ -65,6 +75,7 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
     [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const reviewRef = useRef<HTMLElement>(null),
     errorRef = useRef<HTMLDivElement>(null),
+    editorRef = useRef<HTMLDivElement>(null),
     selectedRef = useRef(selected),
     planRequest = useRef(0);
   selectedRef.current = selected;
@@ -105,8 +116,11 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
     if (review) reviewRef.current?.focus();
   }, [review]);
   useEffect(() => {
-    if (error) errorRef.current?.focus();
-  }, [error]);
+    if (!error) return;
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(editorRef.current)) errorRef.current?.focus();
+    });
+  }, [error, fieldErrors]);
   async function load(id = selected) {
     if (!id) return;
     const request = ++planRequest.current;
@@ -472,184 +486,193 @@ export function PlanesCiclo({ go }: { go: (p: string) => void }) {
             </details>
           )}
           {(edit || copy) && (
-            <section className="panel">
-              <h2>{copy ? "Copiar plan" : "Editar línea del plan"}</h2>
-              {copy ? (
-                <>
-                  <label>
-                    Ciclo origen
-                    <select
-                      aria-label="Ciclo origen"
-                      value={source}
-                      onChange={(e) => {
-                        setSource(e.target.value);
-                        setReview(null);
-                      }}
-                    >
-                      <option value="">Seleccionar origen</option>
-                      {cycles
-                        .filter((c) => c.id !== selected)
-                        .map((c) => (
-                          <option key={c.id} value={c.id}>
-                            {c.inicio} · {c.id}
-                          </option>
-                        ))}
-                    </select>
-                  </label>
-                  <fieldset>
-                    <legend>Campos a copiar</legend>
-                    {Object.entries(labels).map(([f, l]) => (
-                      <label key={f}>
-                        <input
-                          type="checkbox"
-                          checked={fields.includes(f)}
+            <div ref={editorRef}>
+              <FormSection
+                title={copy ? "Copiar plan" : "Editar línea del plan"}
+              >
+                {copy ? (
+                  <>
+                    <FormGrid>
+                      <Field
+                        id="plan-source"
+                        label="Ciclo origen"
+                        className="ui-form-span"
+                      >
+                        <select
+                          value={source}
                           onChange={(e) => {
-                            setFields((old) =>
-                              e.target.checked
-                                ? [...old, f]
-                                : old.filter((v) => v !== f),
-                            );
+                            setSource(e.target.value);
                             setReview(null);
                           }}
-                        />
-                        {l}
-                      </label>
-                    ))}
-                  </fieldset>
-                  <p>
-                    Solo campos vacíos; cero se conserva. No se copian derivados
-                    ni se modifica el origen.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p>
-                    Vacío = no informado; 0 = importe decidido. A transferir
-                    coincide con Del mes; no crea Transferencias.
-                  </p>
-                  <div className="form-grid">
-                    {Object.entries(labels).map(([f, l]) => (
-                      <label key={f}>
-                        {l}
-                        <input
-                          aria-label={l}
-                          inputMode="decimal"
-                          value={draft[f as keyof typeof draft]}
-                          aria-invalid={!!fieldErrors[f]}
-                          aria-describedby={
-                            fieldErrors[f] ? "plan-error-" + f : undefined
-                          }
-                          onChange={(e) => {
-                            setDraft((d) => ({ ...d, [f]: e.target.value }));
-                            setReview(null);
-                          }}
-                        />
-                        {fieldErrors[f] && (
-                          <span id={"plan-error-" + f}>{fieldErrors[f]}</span>
-                        )}
-                      </label>
-                    ))}
-                  </div>
-                </>
-              )}
-              <div className="actions">
-                <button className="primary" disabled={busy} onClick={preview}>
-                  Revisar cambios del plan
-                </button>
-                <button className="secondary" disabled={busy} onClick={clear}>
-                  Cancelar edición
-                </button>
-              </div>
-              {review && (
-                <section
-                  ref={reviewRef}
-                  tabIndex={-1}
-                  aria-label="Revisión del plan"
-                >
-                  <h3>Revisión del plan</h3>
-                  {review.sinCambios ? (
-                    <p>Sin cambios</p>
-                  ) : (
-                    review.cambios.map((l: Line) => {
-                      const old = plan.items.find(
-                        (i) => i.presupuesto.id === l.presupuesto,
-                      );
-                      const after = review.despues.find(
-                        (i: Item) => i.presupuesto.id === l.presupuesto,
-                      );
-                      return (
-                        <div key={l.presupuesto} className="panel">
-                          <h4>
-                            {old?.presupuesto.nombre} · {l.presupuesto}
-                          </h4>
-                          {Object.entries(labels).map(([f, label]) => (
-                            <p key={f}>
-                              {label}:{" "}
-                              {amount(
-                                old?.linea?.[f as keyof typeof labels] ?? null,
-                              )}{" "}
-                              →{" "}
-                              {amount(
-                                l[f as keyof typeof labels] === null
-                                  ? null
-                                  : (
-                                      BigInt(l[f as keyof typeof labels]!) /
-                                      100n
-                                    ).toString() +
-                                      "." +
-                                      (
-                                        BigInt(l[f as keyof typeof labels]!) %
-                                        100n
-                                      )
-                                        .toString()
-                                        .padStart(2, "0"),
-                              )}
-                            </p>
-                          ))}
-                          <p>
-                            Pendiente: {amount(old?.pendiente ?? null)} →{" "}
-                            {amount(after.pendiente)}. Estado:{" "}
-                            {old?.estado ?? "—"} → {after.estado ?? "—"}
-                          </p>
-                        </div>
-                      );
-                    })
-                  )}
-                  {review.omisiones.map((o: any, index: number) => (
-                    <p key={index}>
-                      {o.presupuesto} · {labels[o.campo as keyof typeof labels]}
-                      : {o.motivo}
+                        >
+                          <option value="">Seleccionar origen</option>
+                          {cycles
+                            .filter((c) => c.id !== selected)
+                            .map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.inicio} · {c.id}
+                              </option>
+                            ))}
+                        </select>
+                      </Field>
+                    </FormGrid>
+                    <fieldset>
+                      <legend>Campos a copiar</legend>
+                      {Object.entries(labels).map(([f, l]) => (
+                        <label key={f}>
+                          <input
+                            type="checkbox"
+                            checked={fields.includes(f)}
+                            onChange={(e) => {
+                              setFields((old) =>
+                                e.target.checked
+                                  ? [...old, f]
+                                  : old.filter((v) => v !== f),
+                              );
+                              setReview(null);
+                            }}
+                          />
+                          {l}
+                        </label>
+                      ))}
+                    </fieldset>
+                    <p>
+                      Solo campos vacíos; cero se conserva. No se copian derivados
+                      ni se modifica el origen.
                     </p>
-                  ))}
-                  <label>
-                    Motivo{" "}
-                    {review.requiereMotivo ? "(obligatorio)" : "(opcional)"}
-                    <textarea
-                      aria-label="Motivo del cambio de plan"
-                      maxLength={2000}
-                      value={reason}
-                      onChange={(e) => setReason(e.target.value)}
-                    />
-                  </label>
-                  <div className="actions">
-                    <button
-                      className="primary"
-                      disabled={busy}
-                      onClick={confirm}
-                    >
-                      Confirmar cambios del plan
-                    </button>
-                    <button
-                      className="secondary"
-                      disabled={busy}
-                      onClick={() => setReview(null)}
-                    >
-                      Volver al borrador
-                    </button>
-                  </div>
-                </section>
-              )}
-            </section>
+                  </>
+                ) : (
+                  <>
+                    <p>
+                      Vacío = no informado; 0 = importe decidido. A transferir
+                      coincide con Del mes; no crea Transferencias.
+                    </p>
+                    <FormGrid>
+                      {Object.entries(labels).map(([f, l]) => (
+                        <Field
+                          key={f}
+                          id={"plan-" + f}
+                          label={l}
+                          error={
+                            fieldErrors[f] ? (
+                              <span id={"plan-error-" + f}>
+                                {fieldErrors[f]}
+                              </span>
+                            ) : undefined
+                          }
+                        >
+                          <input
+                            inputMode="decimal"
+                            value={draft[f as keyof typeof draft]}
+                            onChange={(e) => {
+                              setDraft((d) => ({ ...d, [f]: e.target.value }));
+                              setReview(null);
+                            }}
+                          />
+                        </Field>
+                      ))}
+                    </FormGrid>
+                  </>
+                )}
+                <div className="actions">
+                  <button className="primary" disabled={busy} onClick={preview}>
+                    Revisar cambios del plan
+                  </button>
+                  <button className="secondary" disabled={busy} onClick={clear}>
+                    Cancelar edición
+                  </button>
+                </div>
+                {review && (
+                  <section
+                    ref={reviewRef}
+                    tabIndex={-1}
+                    aria-label="Revisión del plan"
+                  >
+                    <h3>Revisión del plan</h3>
+                    {review.sinCambios ? (
+                      <p>Sin cambios</p>
+                    ) : (
+                      review.cambios.map((l: Line) => {
+                        const old = plan.items.find(
+                          (i) => i.presupuesto.id === l.presupuesto,
+                        );
+                        const after = review.despues.find(
+                          (i: Item) => i.presupuesto.id === l.presupuesto,
+                        );
+                        return (
+                          <div key={l.presupuesto} className="panel">
+                            <h4>
+                              {old?.presupuesto.nombre} · {l.presupuesto}
+                            </h4>
+                            {Object.entries(labels).map(([f, label]) => (
+                              <p key={f}>
+                                {label}:{" "}
+                                {amount(
+                                  old?.linea?.[f as keyof typeof labels] ?? null,
+                                )}{" "}
+                                →{" "}
+                                {amount(
+                                  l[f as keyof typeof labels] === null
+                                    ? null
+                                    : (
+                                        BigInt(l[f as keyof typeof labels]!) /
+                                        100n
+                                      ).toString() +
+                                        "." +
+                                        (
+                                          BigInt(l[f as keyof typeof labels]!) %
+                                          100n
+                                        )
+                                          .toString()
+                                          .padStart(2, "0"),
+                                )}
+                              </p>
+                            ))}
+                            <p>
+                              Pendiente: {amount(old?.pendiente ?? null)} →{" "}
+                              {amount(after.pendiente)}. Estado:{" "}
+                              {old?.estado ?? "—"} → {after.estado ?? "—"}
+                            </p>
+                          </div>
+                        );
+                      })
+                    )}
+                    {review.omisiones.map((o: any, index: number) => (
+                      <p key={index}>
+                        {o.presupuesto} · {labels[o.campo as keyof typeof labels]}
+                        : {o.motivo}
+                      </p>
+                    ))}
+                    <label>
+                      Motivo{" "}
+                      {review.requiereMotivo ? "(obligatorio)" : "(opcional)"}
+                      <textarea
+                        aria-label="Motivo del cambio de plan"
+                        maxLength={2000}
+                        value={reason}
+                        onChange={(e) => setReason(e.target.value)}
+                      />
+                    </label>
+                    <div className="actions">
+                      <button
+                        className="primary"
+                        disabled={busy}
+                        onClick={confirm}
+                      >
+                        Confirmar cambios del plan
+                      </button>
+                      <button
+                        className="secondary"
+                        disabled={busy}
+                        onClick={() => setReview(null)}
+                      >
+                        Volver al borrador
+                      </button>
+                    </div>
+                  </section>
+                )}
+              </FormSection>
+            </div>
           )}
           {detail && (
             <section className="panel" aria-label="Detalle de ejecución">

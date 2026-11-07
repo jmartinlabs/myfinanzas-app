@@ -140,6 +140,19 @@ export async function cyclePlanJourney(page: Page, budgetId: string) {
     .getByRole("button", { name: "Cerrar detalle", exact: true })
     .click();
   await card.getByRole("button", { name: /Editar/ }).click();
+  await page.getByLabel("Base", { exact: true }).fill("-1");
+  await page
+    .getByRole("button", { name: "Revisar cambios del plan", exact: true })
+    .click();
+  await expect(page.locator("#plan-error-base")).toHaveText(
+    "No se admiten negativos.",
+  );
+  await expect(page.getByLabel("Base", { exact: true })).toHaveAttribute(
+    "aria-describedby",
+    "plan-base-error",
+  );
+  await expect(page.getByLabel("Base", { exact: true })).toBeFocused();
+  await page.getByLabel("Base", { exact: true }).fill("");
   await page.getByLabel("Del mes", { exact: true }).fill("0");
   await page
     .getByRole("button", { name: "Revisar cambios del plan", exact: true })
@@ -272,6 +285,13 @@ export async function cyclePlanJourney(page: Page, budgetId: string) {
     .getByRole("button", { name: "Revisar cambios del plan", exact: true })
     .click();
   await expect(page.getByRole("alert")).toContainText("Contexto modificado");
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () => !!document.activeElement?.querySelector('[role="alert"]'),
+      ),
+    )
+    .toBe(true);
   await expect(page.getByLabel("Base", { exact: true })).toHaveValue("12");
   await page.unroute("**/api/planes-ciclo/*/impacto");
   await page
