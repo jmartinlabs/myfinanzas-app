@@ -123,7 +123,7 @@ Baseline documental obligatoria en CI `docs`: `check-repository`, `check-project
 `validate-template`, `git diff --check` y
 `git show --format= --check --first-parent HEAD`. `fast`, `critical`, `full` y
 `--full` local añaden `test-checks`, `test-validator`, `test-agent-usage`,
-`test-auto-agent-usage`, `test-verification` y `test-evidence`. Para full: `bun install --frozen-lockfile`,
+`test-auto-agent-usage`, `test-verification`, `test-evidence` y `test-release`. Para full: `bun install --frozen-lockfile`,
 `bun run typecheck`, `bun run build`, `bun run test`, `python3 scripts/ci_prepare_linux.py`,
 `node node_modules/@playwright/test/cli.js install chromium` y `bun run test:e2e`;
 gate adicional AC23 conserva su condición actual de rama.
@@ -262,7 +262,7 @@ para SQLite QA local requiere Debian13/glibc equivalente según la política vig
 El baseline documental de CI (`docs`) ejecuta check-repository, check-project,
 validate-template y los controles Git de whitespace. Las regresiones del harness
 (test-checks, test-validator, test-agent-usage, test-auto-agent-usage, test-verification,
-test-evidence) se ejecutan en fast/critical/full y en `--full` local; un diff solo
+test-evidence, test-release) se ejecutan en fast/critical/full y en `--full` local; un diff solo
 documental no las ejecuta. Full añade typecheck, build, test y test:e2e una vez cada uno;
 permanece la excepción histórica AC23 de su rama. Docs omite la aplicación y las
 regresiones del harness, con mensajes explícitos. Cero pruebas, skips inesperados y errores fallan.
