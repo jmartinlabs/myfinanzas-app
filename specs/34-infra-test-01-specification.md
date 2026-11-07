@@ -7,7 +7,7 @@ No autoriza DEV, acceso al VPS, DNS, Caddy, despliegue, datos reales, migracione
 ni merge.
 Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»); D7:
 usuario, 2026-11-05 (decisión registrada en el cierre del PR #229, CLOSED sin merge).
-Base: `origin/test` `c7a480f0f51e055d9420edd8957073493d43cf1c` (2026-11-07), igual que
+Base: `origin/test` `0d25be9a1ae97d1dc7e2d94dcf004641973b4b8c` (2026-11-07), igual que
 `origin/main`; `schemaVersion=27`, contrato `C27-E411-FOTOS-PERIODO`. Esta rama solo
 modifica documentación; no cambia la aplicación.
 Documentos relacionados: [antecedente histórico cancelado de vps-infra, PR #7](https://github.com/jmartinlabs/vps-infra/pull/7) (CLOSED, no mergeado),
@@ -25,7 +25,7 @@ el repositorio o por consulta de solo lectura, diseño sometido a aprobación y 
 sin decisión. Ninguna marca convierte una propuesta en autorización.
 
 `[CONFIRMADO]` Revisión 2026-11-07: la base documental es la rama de integración `test`
-(`c7a480f`), no `main`; `schemaVersion=27` y contrato `C27-E411-FOTOS-PERIODO`.
+(`0d25be9`), no `main`; `schemaVersion=27` y contrato `C27-E411-FOTOS-PERIODO`.
 E4.9, E4.10 y E4.11 están integrados en la base y sus módulos se excluyen de `FT-1` por
 alcance (D5/D7), no por ausencia. El flujo adoptado es `feature/* → test → main`: TEST
 consume un SHA de `origin/test` y PROD futuro solo consume un commit promovido a
@@ -71,7 +71,7 @@ ninguna prueba de aplicación ni de infraestructura para esta spec.
 
 | Hecho | Evidencia | Consecuencia para TEST |
 | --- | --- | --- |
-| `origin/test` y `origin/main` en `c7a480f0f51e055d9420edd8957073493d43cf1c` | `git rev-parse` local y API de GitHub | Base documental; `test` es el origen de TEST y `main` el de PROD. No es por sí sola el candidato de despliegue. |
+| `origin/test` y `origin/main` en `0d25be9a1ae97d1dc7e2d94dcf004641973b4b8c` | `git rev-parse` local y API de GitHub | Base documental; `test` es el origen de TEST y `main` el de PROD. No es por sí sola el candidato de despliegue. |
 | E4.6 integrado (`cfbedb0`, PR #201) | [tablero](epic-board.md) | El resumen de inicio existe en la base. |
 | E4.9 integrado (`0176ffc`, PR #200) | [tablero](epic-board.md) | Los cierres existen en la base; se excluyen de `FT-1` por D7. |
 | E4.10 integrado I1–I8 (`70fa7c0`…`5ea79b9`) | [tablero](epic-board.md) y Git | Reapertura y re-cierre existen; se excluyen de `FT-1` por D5/D7. |
@@ -424,7 +424,7 @@ Todos son **documentales** hasta que se ejecuten en la fase indicada del
 | ID | Criterio verificable |
 | --- | --- |
 | `INFRA-TEST-01-AC01` | La rama solo añade esta spec y su test plan; clasifica como `docs`; no toca código, workflow, `infra/`, VPS ni `vps-infra`; no hay merge ni deploy. |
-| `INFRA-TEST-01-AC02` | El candidato es un SHA de 40 caracteres alcanzable desde `origin/test` (base de referencia `c7a480f`), con E4.6, E4.7 y E4.9–E4.11 integrados y esquema 27/C27; `FT-1` excluye sus módulos por D5/D7. La promoción a `main` es un merge explícito aprobado y no se deduce de este AC; cualquier cambio de base se registra. |
+| `INFRA-TEST-01-AC02` | El candidato es un SHA de 40 caracteres alcanzable desde `origin/test` (base de referencia `0d25be9`), con E4.6, E4.7 y E4.9–E4.11 integrados y esquema 27/C27; `FT-1` excluye sus módulos por D5/D7. La promoción a `main` es un merge explícito aprobado y no se deduce de este AC; cualquier cambio de base se registra. |
 | `INFRA-TEST-01-AC03` | Existe un artefacto de seed test-only con manifiesto y checksum propios, construido desde el mismo SHA, y `tools/test-seed` **no** aparece en la imagen de producción. |
 | `INFRA-TEST-01-AC04` | El seed rechaza origen distinto de TEST, marcador ausente/ajeno, ruta no canónica, symlink, permisos incorrectos, esquema no admitido, propietario existente y estado no vacío. |
 | `INFRA-TEST-01-AC05` | Dos ejecuciones independientes desde estado limpio producen los mismos IDs, fechas, importes y checksums lógicos de `FT-1`. |
@@ -483,7 +483,7 @@ esquema a la fuerza ni se reemplaza el estado activo por una copia.
 | E4.11 / v27 | Integrado I1–I6 (`a658803`…`4da1516`); aceptación pendiente | Fuera de `FT-1` por D5/D7; `FT-2` reservado |
 | E4.7 | Integrado (`0e89562`) | Fuera de `FT-1` por D5 |
 | E4.5 / DT7 | Documentación/QA integradas (`a806fd9`); DEV no autorizado | Sin históricos ni transición de ejercicio |
-| Flujo `feature/* → test → main` | Adoptado; `origin/test` y `origin/main` en `c7a480f`; `test` sin ruleset propio verificado | TEST consume `test`; promoción a `main` explícita y aprobada; verificar protección antes de habilitar tags |
+| Flujo `feature/* → test → main` | Adoptado; `origin/test` y `origin/main` en `0d25be9`; `test` sin ruleset propio verificado | TEST consume `test`; promoción a `main` explícita y aprobada; verificar protección antes de habilitar tags |
 | DT6 / T-BKP | Abierto para cierre real | Afecta a la activación productiva; TEST exige copia externa mínima |
 | Flake SQLite **B3** | Investigado sin reproducción; pendiente Linux | Puede aparecer en el ensayo; no se oculta como PASS |
 | Gate Rootless | Obligatorio por RUNBOOK | Sin SUCCESS sobre el SHA exacto no se despliega |
@@ -546,7 +546,7 @@ repositorio **no abre** esa tarea ni PR por inferencia. El nuevo entregable debe
 
 1. **D6 — datos ficticios reproducibles.** Artefacto test-only, dataset `FT-1`, marcador
    TEST, manifiesto/checksums, guardas, reset archivado y verificación; enlazar esta spec.
-2. **Estado de partida.** Base `origin/test` `c7a480f`; esquema 27/C27; E4.9, E4.10 y
+2. **Estado de partida.** Base `origin/test` `0d25be9`; esquema 27/C27; E4.9, E4.10 y
    E4.11 integrados; `FT-1` excluye sus módulos por D5/D7; el seed no está implementado.
 3. **Secuencia.** `production-init → seed init/apply/verify → setup`.
 4. **Rutas y estado.** `<data-root>/test-instance.json` y

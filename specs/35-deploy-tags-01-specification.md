@@ -2,14 +2,14 @@
 
 Status: **DISEÑO APROBADO PARA DOCUMENTACIÓN 2026-11-05 — IMPLEMENTACIÓN NO AUTORIZADA.**
 Reconciliación documental de origen y SHA (2026-11-07): `test` para TEST, `main` para PROD
-futuro, gate TEST→main y SHA congelado de la base documental `c7a480f` (no candidato de
-despliegue); no cambia las decisiones D1–D11 ni la convención de tags. No autoriza crear
+futuro, gate TEST→main y SHA congelado de la base documental `0d25be9` (no candidato de
+despliegue); no cambia las decisiones D1–D11 ni el formato/inmutabilidad de tags; actualiza el origen de TEST y añade la regla de SHA congelado. No autoriza crear
 tags operativos, activar workflows de despliegue,
 configurar credenciales o accesos al VPS, cambiar servicios, DNS, Caddy, Podman o firewall,
 desplegar ni fusionar.
 Approval source/date: usuario, 2026-11-05 (diseño de despliegue mediante tags; alcance
 limitado a documentación y revisión técnica).
-Base: `origin/test` `c7a480f0f51e055d9420edd8957073493d43cf1c` (2026-11-07), igual que
+Base: `origin/test` `0d25be9a1ae97d1dc7e2d94dcf004641973b4b8c` (2026-11-07), igual que
 `origin/main`; estado verificado `schemaVersion=27`/`C27-E411-FOTOS-PERIODO`. El diseño se
 preparó sobre `baa673e`; desde entonces se integraron E4.10 (v26) y E4.11 (v27). Este
 documento no posee el contrato de esquema ni fija el SHA de despliegue: ambos se declaran
@@ -67,7 +67,7 @@ habilitada por esta spec.
 | Patrón reutilizable (opcional) | Repositorio que decida adoptarlo; no es dependencia de esta entrega | Documentación opcional; no altera la orquestación de MyFinanzas |
 
 `[CONFIRMADO]` El flujo adoptado es `feature/* → test → main`. `origin/test` y
-`origin/main` apuntan a `c7a480f` (2026-11-07); `test` es el origen autorizado de TEST y
+`origin/main` apuntan a `0d25be9` (2026-11-07); `test` es el origen autorizado de TEST y
 `main` el de PROD futuro. La base no tiene MyFinanzas desplegada, no hay datos reales y el
 esquema se declara por SHA. El contrato del host pertenece a `vps-infra`; esta spec define
 la interfaz esperada y no depende de una PR concreta de ese repositorio. Este diseño prepara

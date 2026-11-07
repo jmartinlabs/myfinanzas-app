@@ -6,7 +6,7 @@ Status: **APPROVED — plan aprobado por el usuario el 2026-11-04; D7 aprobada e
 2026-11-05; reconciliación documental a v27/C27 y a `origin/test` (2026-11-07);
 ejecución UNRUN.** No se ha ejecutado ninguna comprobación de esta entrega. Este test
 plan no autoriza DEV, auditoría del VPS, DNS, Caddy, despliegue, datos reales ni merge.
-Base: `origin/test` `c7a480f0f51e055d9420edd8957073493d43cf1c` (2026-11-07), igual que
+Base: `origin/test` `0d25be9a1ae97d1dc7e2d94dcf004641973b4b8c` (2026-11-07), igual que
 `origin/main`; esquema 27/C27 (`C27-E411-FOTOS-PERIODO`), `data_contract=e4.11-v27`.
 Approval source/date: usuario, 2026-11-04 («Apruebo SPEC34/testplan y D1–D6»); D7:
 usuario, 2026-11-05 (registrada en el cierre del PR #229, CLOSED sin merge).
@@ -47,7 +47,7 @@ Todos los estados son `UNRUN`.
 | ID | Método | Entorno | Evidencia | Owner | Fase | Estado |
 | --- | --- | --- | --- | --- | --- | --- |
 | `INFRA-TEST-01-AC01` | Revisar `git diff` y clasificación con `python3 scripts/verify`; comprobar que solo se añaden la spec y el test plan | E0 | Salida de clasificación `docs`, lista de archivos del diff, `git diff --check` | myfinanzas-app / QA | 0 | UNRUN |
-| `INFRA-TEST-01-AC02` | Congelar SHA de 40 caracteres alcanzable desde `origin/test` (referencia `c7a480f`); verificar E4.6/E4.7/E4.9/E4.10/E4.11 integrados, esquema 27/C27 y `data_contract=e4.11-v27`; comprobar que `FT-1` excluye sus módulos por D5/D7 y que la promoción a `main` es un merge explícito | E0 | `git rev-parse`, `git merge-base`, tablero, `database-identity.ts` y `schema-contracts.json` | myfinanzas-app / QA | 3 | UNRUN |
+| `INFRA-TEST-01-AC02` | Congelar SHA de 40 caracteres alcanzable desde `origin/test` (referencia `0d25be9`); verificar E4.6/E4.7/E4.9/E4.10/E4.11 integrados, esquema 27/C27 y `data_contract=e4.11-v27`; comprobar que `FT-1` excluye sus módulos por D5/D7 y que la promoción a `main` es un merge explícito | E0 | `git rev-parse`, `git merge-base`, tablero, `database-identity.ts` y `schema-contracts.json` | myfinanzas-app / QA | 3 | UNRUN |
 | `INFRA-TEST-01-AC03` | Construir release y artefacto de seed desde el mismo SHA; inspeccionar inventario de la imagen de producción | E1 | Manifiestos con IDs inmutables, checksums y listado de rootfs sin `tools/test-seed` | myfinanzas-app | 3 | UNRUN |
 | `INFRA-TEST-01-AC04` | Ejecutar casos negativos del seed: origen PROD, marcador ausente/ajeno, ruta relativa, symlink, permisos incorrectos, esquema distinto de 27 (24/25/26 y desconocido), propietario existente, estado no vacío | E1 | Códigos `2`/`3`, mensajes sin secretos, estado intacto tras cada rechazo | myfinanzas-app / QA | 3 | UNRUN |
 | `INFRA-TEST-01-AC05` | Sembrar dos veces desde estados limpios independientes y comparar manifiestos y checksums lógicos | E1 | Dos `seed-manifest.json` con la misma huella lógica; IDs, fechas e importes idénticos | myfinanzas-app | 4 | UNRUN |
