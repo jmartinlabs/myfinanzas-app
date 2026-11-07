@@ -168,9 +168,10 @@ def ci_profile(root, event_name, event, checkout_ref=None):
     if event_name == 'workflow_dispatch':
         return 'full'
     if event_name == 'push':
-        # No feature push, tag or deleted ref may select the postmerge shortcut.
-        if event.get('ref') != 'refs/heads/main' or not re.fullmatch(r'[0-9a-f]{40}', event.get('after', '')) or event['after'] == '0' * 40:
-            raise ValueError('only main pushes have a fast postmerge gate')
+        # Only the two integration branches have a postmerge gate. Feature/tag
+        # pushes and deleted refs still fail closed instead of borrowing it.
+        if event.get('ref') not in ('refs/heads/main', 'refs/heads/test') or not re.fullmatch(r'[0-9a-f]{40}', event.get('after', '')) or event['after'] == '0' * 40:
+            raise ValueError('only main and test pushes have a fast postmerge gate')
         if git(root, 'rev-parse', 'HEAD').decode().strip() != event['after'] or checkout_ref != event['after']:
             raise ValueError('postmerge snapshot differs from event')
         before = event.get('before')
@@ -184,8 +185,8 @@ def ci_profile(root, event_name, event, checkout_ref=None):
     if event_name != 'pull_request':
         raise ValueError('unsupported CI event')
     pr = event.get('pull_request', {})
-    if pr.get('base', {}).get('ref') != 'main':
-        raise ValueError('only PRs targeting main are supported')
+    if pr.get('base', {}).get('ref') not in ('main', 'test'):
+        raise ValueError('only PRs targeting main or test are supported')
     # Selection compares the complete PR against the exact tested integration base.
     # Unverified data never opts out of independent API/SQLite validation.
     try:
@@ -198,11 +199,12 @@ def ci_profile(root, event_name, event, checkout_ref=None):
             return 'critical'
         tested_base = git(root, 'rev-parse', 'HEAD^1').decode().strip()
         if tested_base != base:
-            # A queued run can fetch a merge ref rebuilt on a newer main, so the
-            # event snapshot may be an older base. Only a base that advanced from
-            # that snapshot is legitimate; a rewritten, divergent or older merge
-            # ref still fails closed. Ancestry does not prove the tested base is
-            # the current main tip: the checked-out SHA remains the tested one.
+            # A queued run can fetch a merge ref rebuilt on a newer integration
+            # base (main or test), so the event snapshot may be an older base.
+            # Only a base that advanced from that snapshot is legitimate; a
+            # rewritten, divergent or older merge ref still fails closed.
+            # Ancestry does not prove the tested base is the current tip: the
+            # checked-out SHA remains the tested one.
             if not is_ancestor(root, base, tested_base):
                 raise ValueError('event base is not an ancestor of the tested integration base')
             base = tested_base

@@ -1,4 +1,4 @@
-"""Choose a stable integration checkout for either surviving push/PR event."""
+"""Freeze the integration checkout for main/test pushes and PR merge refs."""
 import json
 import os
 from pathlib import Path
@@ -23,8 +23,13 @@ def select_ref(event_name, event, repository, list_pulls):
     if not isinstance(repository, str) or not re.fullmatch(r'[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+', repository):
         raise ValueError('invalid repository')
     if event_name == 'pull_request':
-        if not sha(event['pull_request']['head']['sha']):
+        pr = event['pull_request']
+        if not sha(pr['head']['sha']):
             raise ValueError('invalid PR head')
+        # Only the two integration branches may be a PR base; anything else is
+        # rejected before selecting a merge ref.
+        if pr.get('base', {}).get('ref') not in ('main', 'test'):
+            raise ValueError('unsupported PR base')
         return pull_ref(event['number'])
     if event_name == 'workflow_dispatch':
         return None  # Checkout already resolved the requested ref; freeze its SHA next.
@@ -34,7 +39,9 @@ def select_ref(event_name, event, repository, list_pulls):
     default = event['repository']['default_branch']
     if not isinstance(default, str) or not default:
         raise ValueError('missing default branch')
-    if ref == 'refs/heads/' + default or ref.startswith('refs/tags/'):
+    # main and test are integration branches: validate their exact tip rather
+    # than borrowing a pull-request merge ref. Tags keep their pinned commit.
+    if ref in ('refs/heads/' + default, 'refs/heads/test') or ref.startswith('refs/tags/'):
         return event['after']
     if not ref.startswith('refs/heads/') or not ref[len('refs/heads/'):]:
         raise ValueError('invalid branch')

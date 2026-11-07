@@ -3,12 +3,14 @@
   "on": {
     "push": {
       "branches": [
-        "main"
+        "main",
+        "test"
       ]
     },
     "pull_request": {
       "branches": [
-        "main"
+        "main",
+        "test"
       ],
       "types": [
         "opened",
@@ -23,8 +25,8 @@
     "contents": "read"
   },
   "concurrency": {
-    "group": "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
-    "cancel-in-progress": "${{ github.ref != 'refs/heads/main' && github.event_name != 'workflow_dispatch' }}"
+    "group": "${{ github.workflow }}:${{ github.event.pull_request.head.repo.full_name || github.repository }}:${{ github.ref_type == 'tag' && 'tag' || 'branch' }}:${{ github.head_ref || github.event_name == 'push' && github.ref_name == 'test' && 'test push' || github.ref_name }}:${{ github.event_name == 'workflow_dispatch' && github.run_id || 'automatic' }}",
+    "cancel-in-progress": "${{ github.ref != 'refs/heads/main' && github.ref != 'refs/heads/test' && github.event_name != 'workflow_dispatch' }}"
   },
   "jobs": {
     "required": {
