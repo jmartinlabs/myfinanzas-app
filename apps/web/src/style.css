@@ -5577,3 +5577,101 @@ textarea {
     align-items: flex-start;
   }
 }
+
+/* UI · DEV-05 — formularios y fichas
+ * Primitivas Field, FormSection y FormGrid. Sección aditiva: solo consume
+ * tokens existentes; sin colores literales, sin reordenar reglas previas y
+ * sin tocar paletas, temas ni pantallas.
+ */
+.ui-form-section {
+  min-width: 0;
+}
+.ui-form-section-head {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space);
+}
+.ui-form-section-copy {
+  min-width: 0;
+}
+.ui-form-section-title {
+  margin: 0 0 var(--space-1);
+  font-size: var(--text-md);
+  line-height: var(--leading-snug);
+}
+.ui-form-section-description {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  line-height: var(--leading-normal);
+}
+.ui-form-step {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--bg);
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 650;
+}
+.ui-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5) var(--space);
+  min-width: 0;
+}
+.ui-form-grid > .ui-form-span {
+  grid-column: 1 / -1;
+}
+.ui-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  font-size: var(--text-xs);
+  font-weight: 600;
+}
+.ui-field-label {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  color: var(--text);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: var(--leading-snug);
+}
+.ui-field-required {
+  color: var(--error);
+  font-weight: 750;
+}
+.ui-field-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: var(--text-xs);
+  font-weight: 400;
+  line-height: var(--leading-normal);
+}
+.ui-field-error {
+  min-height: 1.5em;
+  margin: 0;
+  color: var(--error);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+}
+.ui-field[data-invalid="true"] :is(input, select, textarea) {
+  border-color: var(--error);
+}
+@media (max-width: 760px) {
+  .ui-form-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+}
