@@ -5,7 +5,7 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { api, ApiError, eur } from "./api";
+import { api } from "./api";
 import {
   Alert,
   Amount,
@@ -15,10 +15,46 @@ import {
   PageHead,
   Skeleton,
   Table,
-  type AmountState,
-  type BadgeTone,
   type TableColumn,
 } from "./ui";
+import {
+  countPhrase,
+  coverageRows,
+  coverageState,
+  noDisponibleRows,
+  periodNoDisponibleRows,
+  property,
+} from "./fotos/data";
+import { failureFrom, failureMessage } from "./fotos/errors";
+import { date, money, utc } from "./fotos/format";
+import { motivoTexto, TOTAL_LABELS } from "./fotos/labels";
+import { amountState, estadoTone } from "./fotos/states";
+import type {
+  BloqueCoberturaDto,
+  CicloResumen,
+  ComponentePeriodoDto,
+  ContrasteDto,
+  ContrasteMetricaDto,
+  CoverageRow,
+  Failure,
+  FailureContext,
+  FotoCicloDto,
+  FotoPeriodoDto,
+  FotoPersistida,
+  Modo,
+  NoDisponibleRow,
+  PaginaCiclos,
+  ValorCicloDto,
+  VersionFotoDto,
+  Vista,
+} from "./fotos/types";
+import {
+  seleccionComparacionVersion,
+  trimestreActual,
+  versionExiste,
+  vistaDesdePath,
+  vistaUrl,
+} from "./fotos/view";
 
 /**
  * E4.11 I5 — consulta provisional de fotografías.
@@ -32,502 +68,6 @@ import {
  * DT8 no está aprobada: esta UI es provisional y no declara aceptación visual.
  */
 
-type Modo = "ciclo" | "Trimestre" | "Anio";
-
-type Vista = {
-  modo: Modo;
-  ciclo: string;
-  version: string;
-  ejercicio: string;
-  trimestre: string;
-  versionAgregado: string;
-  periodoId: string;
-};
-
-type Failure = {
-  status: number;
-  code: string;
-  message: string;
-  fields: Record<string, string>;
-  requestId?: string;
-};
-
-type EstadoFotoCiclo = "Disponible" | "SinFoto" | "PendienteReCierre";
-
-type VersionFotoDto = {
-  version: number;
-  creadoUtc: string;
-  actor: string;
-  motivo: string | null;
-  fingerprint: string;
-  appVersion: string;
-  schemaVersion: number;
-  esUltima: boolean;
-  vigente: boolean;
-  estado: "Disponible" | "PendienteReCierre";
-};
-
-type FotoPersistida = {
-  ciclo: string;
-  version: number;
-  creadoUtc: string;
-  actor: string;
-  motivo: string | null;
-  fingerprint: string;
-  appVersion: string;
-  schemaVersion: number;
-  ventana: {
-    inicio: string;
-    fin: string;
-    saldoInicial: string | null;
-    estadoTemporal: string;
-  };
-  estadoHechos: string;
-  estadoPlan: string;
-  hechos: unknown;
-  plan: unknown;
-  clasificacion: unknown;
-  inversion: unknown;
-  auxiliares: unknown;
-  cobertura: unknown;
-  backup: unknown;
-  noDisponible: unknown;
-};
-
-type FotoCicloDto = {
-  origen: "Foto";
-  estadoFoto: "Disponible" | "SinFoto";
-  estado: EstadoFotoCiclo;
-  motivo: string | null;
-  seleccionAplicada: {
-    version: number | null;
-    porDefecto: boolean;
-    regla: string;
-  };
-  vigente: boolean;
-  reapertura: { estado: string };
-  cierre: {
-    ciclo: string;
-    version: number;
-    inicio: string;
-    fin: string;
-    saldoInicial: string;
-  } | null;
-  foto: FotoPersistida | null;
-};
-
-type ComponentePeriodoDto = {
-  ciclo: string;
-  mesFinanciado: string;
-  ventana: { inicio: string; fin: string | null } | null;
-  versionFoto: number | null;
-  fingerprint: string | null;
-  estado: "Incluido" | "ExcluidoSinCierre" | "PendienteReCierre";
-  estadoReapertura: string | null;
-  motivo: string | null;
-};
-
-type BloqueCoberturaDto = {
-  ciclo: string;
-  versionFoto: number | null;
-  estado: string;
-  motivos: string[];
-};
-
-type CoberturaPeriodoDto = {
-  estado: "Parcial" | "NoDisponible";
-  motivos: string[];
-  totalPeriodo: null;
-  bloques: BloqueCoberturaDto[];
-};
-
-type ValorCicloDto = {
-  ciclo: string;
-  versionFoto: number;
-  fingerprint: string;
-  ventana: {
-    inicio: string;
-    fin: string;
-    saldoInicial: string | null;
-    estadoTemporal: string;
-  };
-  estadoHechos: string;
-  estadoPlan: string;
-  hechos: unknown;
-  plan: unknown;
-  clasificacion: unknown;
-  inversion: unknown;
-  auxiliares: unknown;
-  cobertura: unknown;
-  noDisponible: unknown;
-};
-
-type NoDisponiblePeriodoDto = {
-  ciclo: string;
-  versionFoto: number;
-  bloque: string;
-  estado: string;
-  motivo: string | null;
-};
-
-type FotoPeriodoDto = {
-  origen: "Foto";
-  id: number;
-  tipo: "Trimestre" | "Anio";
-  periodo: {
-    ejercicio: number;
-    trimestre: number | null;
-    inicio: string;
-    fin: string;
-  };
-  seleccionAplicada: {
-    regla: string;
-    reglaPeriodo: string;
-    porDefecto: boolean;
-    solicitada: Record<string, number>;
-    seleccion: Record<string, number | null>;
-    porCiclo: unknown[];
-  };
-  seleccionVersion: {
-    version: string;
-    porDefecto: boolean;
-    regla: string;
-  };
-  identidad: {
-    versionAgregado: string;
-    fechaUtc: string;
-    fingerprint: string;
-    versionApp: string;
-    versionEsquema: number;
-    actor: string;
-    motivo: string | null;
-  };
-  composicion: ComponentePeriodoDto[];
-  cobertura: CoberturaPeriodoDto;
-  valores: {
-    totalPeriodo: null;
-    motivoTotal: string;
-    porCiclo: ValorCicloDto[];
-  };
-  noDisponible: NoDisponiblePeriodoDto[];
-};
-
-type ContrasteMetricaDto = {
-  valor: string | null;
-  subtotal: string | null;
-  estado: string;
-  motivo: string;
-  fuente: string;
-  ids: string[];
-  cobertura: string;
-  origen: "CalculoVivo";
-  noEsHistorico: true;
-};
-
-type ContrasteDto = {
-  origen: "CalculoVivo";
-  motor: string;
-  etiqueta: string;
-  ciclo: string;
-  revision: string;
-  corte: string | null;
-  consulta: string;
-  metricas: Record<string, ContrasteMetricaDto>;
-  cobertura: {
-    estado: string;
-    verificada: boolean;
-    motivo: string;
-    motivos: string[];
-    total: null;
-    certificada: false;
-    coberturaBancaria: { verificada: boolean; motivo: string };
-    bloques: { clave: string; estado: string; motivo: string }[];
-  };
-  noDisponible: { clave: string; fuente: string; motivo: string }[];
-  noEsHistorico: true;
-  noSustituyeFoto: true;
-  soloLectura: true;
-};
-
-type CicloResumen = {
-  id: string;
-  inicio: string;
-  mesFinanciado: string;
-};
-
-type PaginaCiclos = { ciclos: CicloResumen[]; total: number };
-
-type CoverageRow = { bloque: string; estado: string; motivo: string };
-type NoDisponibleRow = {
-  bloque: string;
-  estado: string;
-  motivo: string | null;
-  ciclo?: string;
-  version?: number;
-};
-
-const TOTAL_LABELS: Record<string, string> = {
-  ingresos: "Ingresos",
-  gastos: "Gastos",
-  gasto: "Gasto",
-  nomina: "Nómina",
-  bonus: "Bonus",
-  otros: "Otros ingresos",
-  interesesIngreso: "Intereses (ingreso)",
-  restoOtros: "Resto de otros ingresos",
-  cuotas: "Cuotas de deuda",
-  extraordinaria: "Amortización extraordinaria",
-  deudas: "Deudas",
-  capital: "Capital",
-  interesesDeuda: "Intereses de deuda",
-  transferencias: "Transferencias",
-  amortizaciones: "Amortizaciones",
-  devoluciones: "Devoluciones",
-  neto: "Neto ingreso − gasto",
-  movimientos: "Movimientos",
-  efectivo: "Efectivo a Fin",
-  posiciones: "Posiciones a Fin",
-  plan: "Plan",
-  e35: "E3.5 / FIN_NETA",
-  deuda: "Deuda E1.6",
-  valoracion: "Valoración / patrimonio",
-  anticipos: "Anticipos",
-};
-
-const MOTIVO_LABELS: Record<string, string> = {
-  SIN_CIERRE: "Sin cierre registrado",
-  PENDIENTE_RE_CIERRE: "Ciclo reabierto: pendiente de re-cierre",
-  CICLO_SIN_CIERRE: "Ciclo sin cierre: excluido del agregado",
-  SIN_REGLA_ADITIVA: "Sin regla aditiva aprobada: total no certificado",
-  SIN_EVIDENCIA: "Sin evidencia consultable",
-  CIERRE_POSTERIOR: "Cierre posterior: estado de reapertura inconsistente",
-  ESTADO_INCONSISTENTE: "Estado de reapertura inconsistente",
-};
-
-function trimestreActual() {
-  return String(Math.floor(new Date().getMonth() / 3) + 1);
-}
-
-function vistaDesdePath(path: string): Vista {
-  const query = path.includes("?") ? path.slice(path.indexOf("?") + 1) : "";
-  const params = new URLSearchParams(query);
-  const raw = params.get("modo") ?? params.get("tipo");
-  const modo: Modo =
-    raw === "Trimestre" ? "Trimestre" : raw === "Anio" ? "Anio" : "ciclo";
-  const trimestre = params.get("trimestre") ?? trimestreActual();
-  return {
-    modo,
-    ciclo: params.get("ciclo") ?? "",
-    version: params.get("version") ?? "",
-    ejercicio: params.get("ejercicio") ?? String(new Date().getFullYear()),
-    trimestre: /^[1-4]$/.test(trimestre) ? trimestre : "1",
-    versionAgregado: params.get("versionAgregado") ?? "",
-    periodoId: params.get("id") ?? "",
-  };
-}
-
-function vistaUrl(vista: Vista): string {
-  const params = new URLSearchParams();
-  params.set("modo", vista.modo);
-  if (vista.modo === "ciclo") {
-    if (vista.ciclo) params.set("ciclo", vista.ciclo);
-    if (vista.version) params.set("version", vista.version);
-  } else if (vista.periodoId) {
-    params.set("id", vista.periodoId);
-  } else {
-    params.set("ejercicio", vista.ejercicio);
-    if (vista.modo === "Trimestre") params.set("trimestre", vista.trimestre);
-    if (vista.versionAgregado)
-      params.set("versionAgregado", vista.versionAgregado);
-  }
-  return "/fotos?" + params.toString();
-}
-
-function failureFrom(error: unknown): Failure {
-  if (error instanceof ApiError)
-    return {
-      status: error.status,
-      code: error.code,
-      message: error.message,
-      fields: error.fields ?? {},
-      requestId:
-        typeof error.data?.requestId === "string"
-          ? error.data.requestId
-          : undefined,
-    };
-  return {
-    status: 0,
-    code: "",
-    message:
-      error instanceof Error
-        ? error.message
-        : "No se pudo completar la consulta.",
-    fields: {},
-  };
-}
-
-function failureMessage(failure: Failure, context: "foto" | "periodo" | "contraste" | "comparacion") {
-  if (failure.status === 401)
-    return "La sesión ha caducado. Vuelve a identificarte; no se muestran importes ni fotos parciales.";
-  if (failure.status === 404)
-    return context === "foto"
-      ? "No existe la foto o la versión solicitada. No se ha caído a otra versión en silencio."
-      : "No se encontró el recurso solicitado.";
-  if (failure.status === 422)
-    return failure.message || "Revisa los campos de la consulta.";
-  if (failure.status === 0)
-    return "No se pudo conectar con la API. La selección se conserva; no se inventan datos.";
-  return failure.message || "No se pudo completar la consulta.";
-}
-
-function motivoTexto(value: string | null | undefined) {
-  if (!value) return "Sin motivo declarado";
-  return MOTIVO_LABELS[value] ?? value;
-}
-
-function estadoTone(estado: string): BadgeTone {
-  const value = estado.toLowerCase();
-  if (
-    /nodisponible|no disponible|sinfoto|sin datos|sindatos|no vigente|no certificado/.test(
-      value,
-    )
-  )
-    return "nd";
-  if (/parcial|pendiente|reabierto|excluido|sin regla/.test(value))
-    return "partial";
-  if (/completo|verificad|disponible|vigente|incluido|cerrado/.test(value))
-    return "ok";
-  return "info";
-}
-
-function date(value: string | null | undefined) {
-  if (!value) return "No disponible";
-  return value.split("-").reverse().join("/");
-}
-
-function utc(value: string | null | undefined) {
-  if (!value) return "No disponible";
-  const parsed = new Date(value);
-  return Number.isNaN(parsed.valueOf())
-    ? value
-    : parsed.toISOString().replace("T", " ").slice(0, 16) + " UTC";
-}
-
-function money(value: string | null | undefined) {
-  if (value === null || value === undefined) return "No disponible";
-  if (!/^-?\d+(?:\.\d+)?$/.test(value)) return value;
-  return eur(value);
-}
-
-function property(value: unknown, key: string): unknown {
-  return value && typeof value === "object"
-    ? (value as Record<string, unknown>)[key]
-    : undefined;
-}
-
-function countPhrase(value: unknown, singular: string, plural: string) {
-  if (!Array.isArray(value)) return "No disponible";
-  return `${value.length} ${value.length === 1 ? singular : plural}`;
-}
-
-function coverageState(value: unknown) {
-  if (
-    value &&
-    typeof value === "object" &&
-    typeof (value as { estado?: unknown }).estado === "string"
-  )
-    return (value as { estado: string }).estado;
-  return "No disponible";
-}
-
-function coverageRows(value: unknown): CoverageRow[] {
-  if (!value || typeof value !== "object") return [];
-  const totales = (value as { totales?: unknown }).totales;
-  if (!totales || typeof totales !== "object" || Array.isArray(totales))
-    return [];
-  const rows: CoverageRow[] = [];
-  for (const [bloque, item] of Object.entries(
-    totales as Record<string, unknown>,
-  )) {
-    if (!item || typeof item !== "object") continue;
-    const row = item as { estado?: unknown; motivo?: unknown };
-    rows.push({
-      bloque,
-      estado: typeof row.estado === "string" ? row.estado : "No disponible",
-      motivo: typeof row.motivo === "string" ? row.motivo : "",
-    });
-  }
-  return rows;
-}
-
-function noDisponibleRows(value: unknown): NoDisponibleRow[] {
-  if (Array.isArray(value)) {
-    return value.flatMap((item, index): NoDisponibleRow[] => {
-      if (!item || typeof item !== "object") return [];
-      const row = item as {
-        bloque?: unknown;
-        estado?: unknown;
-        motivo?: unknown;
-      };
-      return [
-        {
-          bloque:
-            typeof row.bloque === "string" ? row.bloque : String(index),
-          estado:
-            typeof row.estado === "string" ? row.estado : "No disponible",
-          motivo: typeof row.motivo === "string" ? row.motivo : null,
-        },
-      ];
-    });
-  }
-  if (!value || typeof value !== "object") return [];
-  const rows: NoDisponibleRow[] = [];
-  for (const [bloque, item] of Object.entries(
-    value as Record<string, unknown>,
-  )) {
-    if (!item || typeof item !== "object") {
-      rows.push({ bloque, estado: "No disponible", motivo: null });
-      continue;
-    }
-    const row = item as { estado?: unknown; motivo?: unknown };
-    rows.push({
-      bloque,
-      estado: typeof row.estado === "string" ? row.estado : "No disponible",
-      motivo: typeof row.motivo === "string" ? row.motivo : null,
-    });
-  }
-  return rows;
-}
-
-function periodNoDisponibleRows(
-  rows: NoDisponiblePeriodoDto[],
-): NoDisponibleRow[] {
-  return rows.map((row) => ({
-    bloque: row.bloque,
-    estado: row.estado,
-    motivo: row.motivo,
-    ciclo: row.ciclo,
-    version: row.versionFoto,
-  }));
-}
-
-function amountState(estado: string): AmountState {
-  if (
-    estado === "Verificado" ||
-    estado === "Cero verificado" ||
-    estado === "Parcial" ||
-    estado === "No disponible" ||
-    estado === "No aplica" ||
-    estado === "Sin datos"
-  )
-    return estado;
-  if (/verificad/i.test(estado)) return "Verificado";
-  if (/parcial/i.test(estado)) return "Parcial";
-  if (/nodisponible|no disponible/i.test(estado)) return "No disponible";
-  if (/no aplica/i.test(estado)) return "No aplica";
-  return "Sin datos";
-}
-
 function ErrorBox({
   failure,
   context,
@@ -536,7 +76,7 @@ function ErrorBox({
   children,
 }: {
   failure: Failure;
-  context: "foto" | "periodo" | "contraste" | "comparacion";
+  context: FailureContext;
   retry?: () => void;
   focus?: boolean;
   children?: ReactNode;
@@ -920,21 +460,11 @@ function CicloPanel({
   }, [ciclo, versiones]);
 
   useEffect(() => {
-    if (!versiones || versiones.length < 2) {
-      setCompararA("");
-      setCompararB("");
-      return;
-    }
-    const ascendente = [...versiones].sort((a, b) => a.version - b.version);
     setCompararA((previous) =>
-      previous && versiones.some((item) => String(item.version) === previous)
-        ? previous
-        : String(ascendente[0].version),
+      seleccionComparacionVersion(versiones, previous, "primera"),
     );
     setCompararB((previous) =>
-      previous && versiones.some((item) => String(item.version) === previous)
-        ? previous
-        : String(ascendente[ascendente.length - 1].version),
+      seleccionComparacionVersion(versiones, previous, "ultima"),
     );
   }, [versiones]);
 
@@ -993,10 +523,7 @@ function CicloPanel({
 
   const versionesListas = versiones !== null;
   const versionesPendientes = versiones === null && versionesError === null;
-  const versionActualValida =
-    !version ||
-    (versionesListas &&
-      versiones.some((item) => String(item.version) === version));
+  const versionActualValida = !version || versionExiste(versiones, version);
 
   return (
     <>
