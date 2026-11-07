@@ -409,6 +409,57 @@ describe("FT-1 minimal v27", () => {
     expect(init(root).code).toBe(0);
   });
 
+  test("post-apply failure writes seed-failure.json and does not declare success", () => {
+    const root = fixtureRoot();
+    expect(init(root).code).toBe(0);
+    // Fuerza un fallo después de aplicar el dataset y publicar el manifiesto:
+    // el temporal del marcador ya existe, así que el reemplazo falla.
+    writeFileSync(join(root, "test-instance.json.tmp"), "ocupado\n", {
+      mode: 0o600,
+    });
+    const result = apply(root);
+    expect(result.code).not.toBe(0);
+    const failure = JSON.parse(
+      readFileSync(join(root, "seed-failure.json"), "utf8"),
+    ) as Record<string, any>;
+    expect(failure.environment).toBe("test");
+    expect(failure.step).toBe("marker");
+    expect(failure.message).not.toContain(root);
+    // El manifiesto se publicó, pero el marcador no apunta al seed: no hay éxito.
+    expect(existsSync(join(root, "seed-manifest.json"))).toBe(true);
+    expect(readMarker(root).seed_manifest_sha256).toBeNull();
+  });
+
+  test("owner preexistente y estado ajeno se rechazan sin reparar", () => {
+    const root = fixtureRoot();
+    expect(init(root).code).toBe(0);
+    const db = openFixtureDb(root);
+    db.run(
+      "INSERT INTO owner(id,password,secret,enabled,last_step) VALUES(1,'hash','sealed',1,0)",
+    );
+    db.close();
+    const result = apply(root);
+    expect(result.code).toBe(2);
+    expect(existsSync(join(root, "seed-manifest.json"))).toBe(false);
+  });
+
+  test("un estado TEST con datos ajenos y sin marcador se rechaza", () => {
+    const root = fixtureRoot();
+    const db = openFixtureDb(root);
+    db.run(
+      "INSERT INTO saldos(id,nombre,tipo,control,estado,revision,creado,actualizado) VALUES('S999','Ajeno','Efectivo','Movimientos','Activa',1,'2025-01-01T00:00:00.000Z','2025-01-01T00:00:00.000Z')",
+    );
+    db.close();
+    const result = command(root, [
+      "init",
+      "--data-root",
+      root,
+      "--seed-commit",
+      COMMIT,
+    ]);
+    expect(result.code).toBe(2);
+  });
+
   test("verify honours --expected-manifest-sha256 and rejects a mismatch", () => {
     const root = fixtureRoot();
     seed(root);

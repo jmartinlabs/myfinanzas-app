@@ -43,15 +43,10 @@ function projection(table: string, all: Column[]) {
   if (table === "movement_audit")
     return ["id", "revision", "accion", "motivo", "actor"];
   if (table === "audit")
-    return [
-      "entidad",
-      "accion",
-      "revision",
-      "campos",
-      "revision_previa",
-      "actor",
-      "motivo",
-    ];
+    // `campos` incluye payloads con marcas de tiempo internas; la huella
+    // lógica cubre identidad/acción/revisión/actor/motivo y el payload se
+    // verifica por el manifiesto del dataset, no por checksum libre de tiempo.
+    return ["entidad", "accion", "revision", "revision_previa", "actor", "motivo"];
   if (table === "database_origin")
     return all
       .map((column) => column.name)

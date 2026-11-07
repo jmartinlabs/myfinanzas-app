@@ -41,6 +41,7 @@ export type SeedManifest = {
     schema_contract_sha256: string;
     data_contract: string;
     bun: string;
+    seed_image: string | null;
   };
   environment: {
     name: "test";
@@ -59,6 +60,15 @@ export type SeedManifest = {
   };
   created_at: string;
 };
+
+export function assertSeedRuntime() {
+  if (Bun.version !== SEED_BUN)
+    throw new SeedError(
+      2,
+      `Bun ${Bun.version} distinto del contrato ${SEED_BUN}.`,
+      "environment",
+    );
+}
 
 export function staticManifest(commit: string): Omit<
   SeedManifest,
@@ -80,6 +90,8 @@ export function staticManifest(commit: string): Omit<
       schema_contract_sha256: SEED_SCHEMA_CONTRACT_SHA256,
       data_contract: SEED_DATA_CONTRACT,
       bun: SEED_BUN,
+      // I2 (release pareado) fija aquí el ID inmutable de la imagen seed.
+      seed_image: null,
     },
     environment: {
       name: "test",

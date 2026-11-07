@@ -5,6 +5,7 @@ import {
   APPLY_PRAGMAS,
 } from "./constants";
 import { loadSeedConfig, assertEnvironment } from "./config";
+import { assertSeedRuntime } from "./manifest";
 import {
   optionalPrivateJson,
   replacePrivateFile,
@@ -219,6 +220,7 @@ function assertNoManifest(root: string) {
 
 export function initSeed(parsed: ParsedArguments): SeedResult {
   assertEnvironment();
+  assertSeedRuntime();
   const { root, config } = loadSeedConfig(parsed.dataRoot);
   assertNoFailure(root);
   const commit = parsed.seedCommit!;
@@ -327,6 +329,7 @@ function applyState(db: Database, root: string, commit: string): ApplyState {
 
 export function applySeed(parsed: ParsedArguments): SeedResult {
   assertEnvironment();
+  assertSeedRuntime();
   const { root, config } = loadSeedConfig(parsed.dataRoot);
   const commit = parsed.seedCommit!;
   const readDb = readConnection(config).db;
@@ -374,28 +377,39 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
         failure.step,
       );
     }
-    const manifest = effectiveManifest(db, commit);
-    assertExpectedDatasetState(db, "apply");
-    assertIntegrity(db);
-    const text = JSON.stringify(manifest, null, 2) + "\n";
+    let manifest: ReturnType<typeof effectiveManifest>;
+    let manifestSha256: string;
     try {
-      writeNewPrivateFile(manifestPath(root), text);
-    } catch (error) {
+      manifest = effectiveManifest(db, commit);
+      assertExpectedDatasetState(db, "apply");
+      assertIntegrity(db);
+      const text = JSON.stringify(manifest, null, 2) + "\n";
       try {
-        writeFailure(root, config, "manifest", error);
-      } catch {}
-      throw error;
-    }
-    const manifestSha256 = sha256Hex(text);
-    try {
-      replacePrivateFile(
-        markerPath(root),
-        markerJson({ ...state.marker, seed_manifest_sha256: manifestSha256 }),
-      );
-    } catch (error) {
+        writeNewPrivateFile(manifestPath(root), text);
+      } catch (error) {
+        try {
+          writeFailure(root, config, "manifest", error);
+        } catch {}
+        throw error;
+      }
+      manifestSha256 = sha256Hex(text);
       try {
-        writeFailure(root, config, "marker", error);
-      } catch {}
+        replacePrivateFile(
+          markerPath(root),
+          markerJson({ ...state.marker, seed_manifest_sha256: manifestSha256 }),
+        );
+      } catch (error) {
+        try {
+          writeFailure(root, config, "marker", error);
+        } catch {}
+        throw error;
+      }
+    } catch (error) {
+      if (!(error instanceof SeedError)) {
+        try {
+          writeFailure(root, config, "post-apply", error);
+        } catch {}
+      }
       throw error;
     }
     try {
@@ -415,6 +429,7 @@ export function applySeed(parsed: ParsedArguments): SeedResult {
 
 export function verifySeed(parsed: ParsedArguments): SeedResult {
   assertEnvironment();
+  assertSeedRuntime();
   const { root, config } = loadSeedConfig(parsed.dataRoot);
   const { db } = readConnection(config);
   try {
@@ -465,6 +480,7 @@ export function verifySeed(parsed: ParsedArguments): SeedResult {
 export function statusSeed(parsed: ParsedArguments): SeedResult {
   try {
     assertEnvironment();
+  assertSeedRuntime();
     const { root, config } = loadSeedConfig(parsed.dataRoot);
     let files: ReturnType<typeof readState>;
     try {
