@@ -483,6 +483,46 @@ test("focusFirstInvalidField enfoca el primer control inválido", () => {
   expect(focusFirstInvalidField(empty)).toBeNull();
 });
 
+test("La etiqueta de Field resetea la columna del label global", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  const globalLabel = css.match(/^label \{([\s\S]*?)\}/m)?.[1] ?? "";
+  expect(globalLabel).toContain("flex-direction: column");
+
+  const start = css.indexOf("/* UI · DEV-05 — formularios y fichas");
+  expect(start).toBeGreaterThan(-1);
+  const fieldLabel =
+    css.slice(start).match(/\.ui-field-label \{([\s\S]*?)\}/)?.[1] ?? "";
+  expect(fieldLabel).toContain("flex-direction: row");
+});
+
+test("Field conserva un error largo completo y lo deja envolver", () => {
+  const message =
+    "No se pudo guardar el cierre: revisa el motivo y vuelve a intentarlo; el borrador se conserva y puedes comparar la ficha actual antes de continuar.";
+  expect(message.length).toBeGreaterThan(120);
+
+  const html = renderToStaticMarkup(
+    <Field id="cierre-motivo" label="Motivo del cierre" error={message}>
+      <textarea />
+    </Field>,
+  );
+  expect(html).toContain(message);
+  expect(html).toContain('id="cierre-motivo-error"');
+  expect(html).toContain('aria-describedby="cierre-motivo-error"');
+
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  const errorBlock =
+    css.match(/\.ui-field-error \{([\s\S]*?)\}/)?.[1] ?? "";
+  expect(errorBlock).toContain("overflow-wrap: anywhere");
+  expect(errorBlock).toContain("min-height: 1.5em");
+  expect(errorBlock).not.toMatch(/(?:^|;)\s*height:/);
+});
+
 test("ui.tsx conserva las exportaciones existentes y añade las de DEV-05", () => {
   const exported: Record<string, unknown> = ui;
   for (const name of [
@@ -525,6 +565,9 @@ test("El CSS de DEV-05 define Field, secciones y rejilla 2→1 con tokens", () =
   );
   expect(section).toMatch(
     /\.ui-field \{[^}]*display: flex;[^}]*flex-direction: column;/,
+  );
+  expect(section).toMatch(
+    /\.ui-field-label \{[^}]*display: flex;[^}]*flex-direction: row;/,
   );
   expect(section).toMatch(/\.ui-field-error \{[^}]*min-height:/);
   expect(section).toContain("var(--error)");

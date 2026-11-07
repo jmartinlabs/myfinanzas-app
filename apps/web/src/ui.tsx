@@ -589,6 +589,17 @@ export type FieldProps = {
  * El error se mantiene en el flujo con un hueco reservado para no desplazar
  * la rejilla al aparecer. El control debe reenviar estas props al elemento
  * nativo si no es un `input`, `select` o `textarea`.
+ *
+ * Límites de asociación (F3):
+ * - El hijo debe ser un único control etiquetable nativo o un componente que
+ *   reenvíe estas props al control real. `role="switch"` sobre un `button` o
+ *   un `fieldset`/`legend` necesitan su propio nombre accesible y grupo;
+ *   `Field` no sustituye esa semántica ni debe inyectarles `required`.
+ * - `children` debe ser un solo elemento. Un `Fragment` o varios controles no
+ *   se clonan y `Field` lanza un error.
+ * - Los ids deben ser únicos en la página. Un `id` explícito duplicado, o un
+ *   id de control repetido, duplica `for`/`aria-describedby`; el consumidor
+ *   es responsable de mantenerlos únicos.
  */
 export function Field({
   label,
