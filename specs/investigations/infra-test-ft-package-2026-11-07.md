@@ -2,7 +2,7 @@
 
 **Estado:** `[PROPUESTA]` de análisis. No implementa seed, no modifica SPEC34, no
 autoriza DEV, imagen, VPS, DNS, Caddy, backups, despliegue ni merge. **Base verificada:**
-`main` `557cedb272f67901e9e7cf79e98772b591fd70de` (2026-11-07), rama
+`main` `c7a480f0f51e055d9420edd8957073493d43cf1c` (2026-11-07), rama
 `docs/infra-test-ft-package`. **Documento:** solo añade este informe; no toca código,
 `apps/`, `infra/`, schema, manifiestos ni specs aprobadas. No se ejecutó ninguna
 prueba de aplicación ni de infraestructura; la verificación es lectura de repositorio.
@@ -43,14 +43,14 @@ SPEC34/seed con el SHA elegido; `main` ya no está en v25/v26 sino en v27.
 
 ### 1.1 Diferencia de contrato
 
-| Elemento | SPEC34 (base `b713b08`) | `main` `557cedb` | Cambio propuesto, **no aplicado** |
+| Elemento | SPEC34 (base `b713b08`) | `main` `c7a480f` | Cambio propuesto, **no aplicado** |
 | --- | --- | --- | --- |
 | Esquema | `schemaVersion = 24` | `schemaVersion = 27` | Reanclar SPEC34, testplan y manifiesto de seed a **27**. |
 | Contrato | No fija contrato explícito; presupone v24 | `C27-E411-FOTOS-PERIODO`, 320 objetos, `sha256 = ecc4306bfaa6e27cf41ed15d30f612684051ef53bdf557eb8535187bf1a57e23` | Declarar en el manifiesto `schema=27`, `contract=C27…` y su checksum. |
 | Contrato de backup | v24 | `e4.11-v27` (derivado por `release.py` de `backup.ts`) | Declarar `data_contract=e4.11-v27` en el manifiesto de seed y en la evidencia. |
 | E4.9 | «no mergeado»; TEST anclado a v24 | Integrado (`0176ffc`, v25/C25) | Corregir la tabla de estado y la razón de exclusión. |
 | E4.10 | «en borrador» | Integrado (v26/C26) | Igual: excluido por D5/D7, no por ausencia. |
-| E4.11 | «en borrador» | I1–I3 integrados; v27/C27; I4–I6 pendientes | Igual: excluido de `FT-1`; reservado a `FT-2`. |
+| E4.11 | «en borrador» | I1–I6 integrados; v27/C27 | Excluido de `FT-1` por D5/D7, no por ausencia. |
 | E4.5/E4.7 | «fuera» | Estado distinto según tablero; no se reabre | Mantener fuera de `FT-1`; documentar la razón vigente. |
 | Seed | Diseño `tools/test-seed/` | **No existe** ninguna herramienta ni dataset `FT-1` | Mantener el diseño y crear la herramienta en un incremento autorizado. |
 | Fixtures existentes | No las menciona | `infra/tests/release-fixture.mjs` usa `INSERT` crudos y cubre el contrato de release; `apps/api/test-support` son fixtures de tests | **No reutilizar** como seed de `FT-1`; no cumplen «solo servicios» ni determinismo de IDs. |
@@ -78,11 +78,11 @@ SPEC34/seed con el SHA elegido; `main` ya no está en v25/v26 sino en v27.
 | # | Hallazgo | Evidencia | Propuesta (sin aplicar) |
 | --- | --- | --- | --- |
 | H1 | `FT-1` dice «4 altas» de Saldos, pero una Compra exige un Saldo `Efectivo/Inversiones` y otro `Inversión/Inversiones`. Con solo 4 altas no se puede registrar la compra por servicios. | `compras.ts:validReferences` exige `tipo=Efectivo, control=Inversiones` y `tipo=Inversión, control=Inversiones`. | Enmienda de `FT-1 v1`: añadir `S002 Efectivo/Inversiones` (5 altas). Alternativa: omitir la compra y declarar E4.1 no cubierto; no recomendada. |
-| H2 | `confirmPayroll` genera `id = "PAGA-" + randomUUID()`, por lo que dos ejecuciones limpias no producen los mismos IDs. | `nomina.ts:parsePay`. | Cambio mínimo aprobado: permitir un `id` determinista solo en la creación usada por el seed (p. ej. `PAY001`), conservando el UUID por defecto en la API. Si no se aprueba, `FT-1` debe omitir la nómina y rebajar AC05. |
+| H2 | `confirmPayroll` genera `id = "PAGA-" + randomUUID()`, por lo que dos ejecuciones limpias no producen los mismos IDs. | `nomina.ts:parsePay`. | **Propuesta pendiente de aprobación:** permitir un `id` determinista solo en la creación usada por el seed (p. ej. `PAY001`), conservando el UUID por defecto en la API. Si no se aprueba, `FT-1` omite la nómina y rebaja AC05. |
 | H3 | `openDatabase` en producción ejecuta `prepareSchema`, que puede migrar cualquier versión admitida anterior a 27. El seed no debe migrar ni «arreglar». | `database.ts`, `database-schema.ts`. | Preflight de solo lectura (`schema_version=27` + `verifyContract`) **antes** de abrir la conexión de escritura; usar `openProductionConnection` y aplicar PRAGMA de conexión (FK, busy_timeout, WAL, synchronous) sin migrar. |
 | H4 | `seed reset` archiva `<data-root>/state`, pero no dice qué pasa con `test-instance.json` y `seed-manifest.json`; quedan apuntando a un estado archivado. | SPEC34 §4.8. | Archivar también marcador y manifiesto en `reset/state-<UTC>/` y dejar la raíz sin marcador; la recreación exige nueva `seed init`. |
 | H5 | `backup-cli restore` restaura DB+clave, pero no marcador/manifiesto; `seed verify` sobre el destino restaurado no puede comparar el manifiesto. | `backup.ts`, `backup-cli.ts`. | Incluir una copia cifrada del manifiesto/marcador en el paquete de backup o permitir `seed verify --manifest <ruta>` con el manifiesto de evidencia. Decidir en el incremento de backup/seed. |
-| H6 | `referenceMapping` exige IDs `CAT009`/`CAT013` para Referencia obligatoria; `FT-1` solo crea 2 categorías (`CAT001`, `CAT002`). | `reference-rules.ts`. | Mantener la referencia **opcional** en el Gasto compartido de `FT-1`; no crear 13 categorías ni cambiar el mapping. Declarar cobertura parcial de «Referencia obligatoria». |
+| H6 | `validateSharedReferenceOperation` exige `CAT013` para un Gasto con Referencia de Gasto compartido; `FT-1` solo crea `CAT001`/`CAT002`. | `reference-rules.ts`, `movimientos.ts`. | **Decisión pendiente:** añadir `CAT013` y una Partida para el Gasto compartido, o eliminar `REF001` del movimiento 5 y declarar cobertura parcial. No se resuelve por inferencia. |
 | H7 | El manifiesto de release no registra el seed; el manifiesto de seed no existe. | `infra/release.py`. | Artefacto/manifiesto de seed separado y bloque de pareja en la release; no tocar el manifiesto de producción hasta el incremento autorizado. |
 | H8 | `infra/tests/release-fixture.mjs` y `release-contract.mjs` usan SQL crudo y `installFixture`; no son un seed válido. | `infra/tests/*`. | No reutilizarlos para `FT-1`; conservarlos como aceptación de release. El seed solo usará servicios. |
 | H9 | El handoff de vps-infra cita v24 y E4.9 no mergeado. | `infra-test-01-infra-handoff-2026-11-04.md`. | Actualización documental posterior; el host ya declara `schema=27` y contrato pendiente en su SPEC02. |
