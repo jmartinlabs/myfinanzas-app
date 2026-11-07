@@ -1,4 +1,10 @@
-import type { ReactNode } from "react";
+import {
+  cloneElement,
+  isValidElement,
+  useId,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { formatAmount, type AmountUnit } from "./format";
 export function Alert({
   children,
@@ -545,6 +551,194 @@ export function Skeleton({
           }`}
         />
       ))}
+    </div>
+  );
+}
+
+/** Props que `Field` inyecta en el control nativo. */
+type FieldControlProps = {
+  id?: string;
+  required?: boolean;
+  "aria-invalid"?: boolean | "true" | "false";
+  "aria-describedby"?: string;
+  [key: string]: unknown;
+};
+
+export type FieldProps = {
+  /** Etiqueta visible; su `for` apunta siempre al control. */
+  label: ReactNode;
+  /** Control único: input, select, textarea o componente que reenvíe props. */
+  children: ReactElement;
+  /** Id estable. Si falta se usa el del control o uno generado por React. */
+  id?: string;
+  /** Ayuda persistente, asociada mediante `aria-describedby`. */
+  help?: ReactNode;
+  /** Error de validación; activa `aria-invalid` y lo describe. */
+  error?: ReactNode;
+  /** Marca el campo como obligatorio y lo añade al control. */
+  required?: boolean;
+  /** Clase adicional del contenedor; admite `ui-form-span` en `FormGrid`. */
+  className?: string;
+};
+
+/**
+ * Campo de formulario único.
+ *
+ * Inyecta en el control `id`, `required`, `aria-invalid` y
+ * `aria-describedby`; conserva las descripciones que ya tuviera el control.
+ * El error se mantiene en el flujo con un hueco reservado para no desplazar
+ * la rejilla al aparecer. El control debe reenviar estas props al elemento
+ * nativo si no es un `input`, `select` o `textarea`.
+ *
+ * Límites de asociación (F3):
+ * - El hijo debe ser un único control etiquetable nativo o un componente que
+ *   reenvíe estas props al control real. `role="switch"` sobre un `button` o
+ *   un `fieldset`/`legend` necesitan su propio nombre accesible y grupo;
+ *   `Field` no sustituye esa semántica ni debe inyectarles `required`.
+ * - `children` debe ser un solo elemento. Un `Fragment` o varios controles no
+ *   se clonan y `Field` lanza un error.
+ * - Los ids deben ser únicos en la página. Un `id` explícito duplicado, o un
+ *   id de control repetido, duplica `for`/`aria-describedby`; el consumidor
+ *   es responsable de mantenerlos únicos.
+ */
+export function Field({
+  label,
+  children,
+  id,
+  help,
+  error,
+  required = false,
+  className,
+}: FieldProps) {
+  const generatedId = useId();
+  if (!isValidElement(children)) {
+    throw new Error("Field requiere un único control válido como children");
+  }
+  const child = children as ReactElement<FieldControlProps>;
+  const childId =
+    typeof child.props.id === "string" ? child.props.id : undefined;
+  const controlId = id || childId || `ui-field-${generatedId}`;
+  const helpId = help ? `${controlId}-help` : undefined;
+  const errorId = `${controlId}-error`;
+  const hasError =
+    error !== undefined &&
+    error !== null &&
+    error !== false &&
+    error !== "";
+  const describedBy = Array.from(
+    new Set(
+      [
+        child.props["aria-describedby"],
+        helpId,
+        hasError ? errorId : undefined,
+      ].filter((value): value is string => Boolean(value)),
+    ),
+  ).join(" ");
+  const control = cloneElement(child, {
+    id: controlId,
+    required: required || child.props.required || undefined,
+    "aria-invalid": hasError,
+    "aria-describedby": describedBy || undefined,
+  });
+
+  return (
+    <div
+      className={`ui-field${className ? ` ${className}` : ""}`}
+      data-invalid={hasError ? "true" : undefined}
+    >
+      <label className="ui-field-label" htmlFor={controlId}>
+        {label}
+        {required && (
+          <span className="ui-field-required" aria-hidden="true">
+            *
+          </span>
+        )}
+      </label>
+      {control}
+      {help && (
+        <p className="ui-field-help" id={helpId}>
+          {help}
+        </p>
+      )}
+      <p className="ui-field-error" id={errorId}>
+        {hasError ? error : null}
+      </p>
+    </div>
+  );
+}
+
+/** Enfoca el primer control inválido de un formulario ya marcado por `Field`. */
+export function focusFirstInvalidField(
+  container: ParentNode | null = typeof document === "undefined"
+    ? null
+    : document,
+): HTMLElement | null {
+  const control = container?.querySelector<HTMLElement>(
+    '[aria-invalid="true"]:not([disabled])',
+  );
+  control?.focus();
+  return control ?? null;
+}
+
+export type FormSectionProps = {
+  title: ReactNode;
+  description?: ReactNode;
+  /** Número o texto corto que precede al título (p. ej. `01`). */
+  step?: ReactNode;
+  children?: ReactNode;
+  className?: string;
+  /** Id estable de la sección; el título recibe `${id}-title`. */
+  id?: string;
+};
+
+/** Sección de formulario con la superficie de panel y cabecera propia. */
+export function FormSection({
+  title,
+  description,
+  step,
+  children,
+  className,
+  id,
+}: FormSectionProps) {
+  const generatedId = useId();
+  const headingId = `${id ?? `ui-form-section-${generatedId}`}-title`;
+  return (
+    <section
+      className={`panel ui-form-section${className ? ` ${className}` : ""}`}
+      id={id}
+      aria-labelledby={headingId}
+    >
+      <div className="ui-form-section-head">
+        {step != null && (
+          <span className="ui-form-step" aria-hidden="true">
+            {step}
+          </span>
+        )}
+        <div className="ui-form-section-copy">
+          <h2 className="ui-form-section-title" id={headingId}>
+            {title}
+          </h2>
+          {description && (
+            <p className="ui-form-section-description">{description}</p>
+          )}
+        </div>
+      </div>
+      {children}
+    </section>
+  );
+}
+
+/** Rejilla de campos de dos columnas que pasa a una a 760 px. */
+export function FormGrid({
+  children,
+  className,
+}: {
+  children?: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={`ui-form-grid${className ? ` ${className}` : ""}`}>
+      {children}
     </div>
   );
 }

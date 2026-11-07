@@ -6,12 +6,17 @@ import {
   Badge,
   DataList,
   EmptyState,
+  Field,
+  FormGrid,
+  FormSection,
   Metric,
   Skeleton,
   Table,
   TableScroll,
+  focusFirstInvalidField,
   type TableColumn,
 } from "../src/ui";
+import * as ui from "../src/ui";
 
 type SaldoRow = {
   id: string;
@@ -349,5 +354,223 @@ test("El CSS de Table/DataList consume tokens y alinea los importes", () => {
   expect(section).toMatch(
     /\.ui-table-amount \{[^}]*text-align: right;[^}]*font-variant-numeric: tabular-nums;/,
   );
+  expect(section).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
+});
+
+test("Field asocia label, ayuda y error con ids únicos", () => {
+  const html = renderToStaticMarkup(
+    <>
+      <Field
+        label="Nombre"
+        help="Nombre reconocible"
+        error="Obligatorio"
+        required
+      >
+        <input aria-label="Nombre" />
+      </Field>
+      <Field label="Finalidad">
+        <select aria-label="Finalidad">
+          <option>Sin informar</option>
+        </select>
+      </Field>
+    </>,
+  );
+
+  const inputId = html.match(/<input[^>]*\sid="([^"]+)"/)?.[1];
+  const selectId = html.match(/<select[^>]*\sid="([^"]+)"/)?.[1];
+  expect(inputId).toBeTruthy();
+  expect(selectId).toBeTruthy();
+  expect(inputId).not.toBe(selectId);
+
+  expect(html).toMatch(
+    new RegExp(`<label class="ui-field-label" for="${inputId}">`),
+  );
+  expect(html).toContain(`id="${inputId}-help"`);
+  expect(html).toContain(`id="${inputId}-error"`);
+  expect(html).toContain(
+    `aria-describedby="${inputId}-help ${inputId}-error"`,
+  );
+  expect(html).toContain('aria-invalid="true"');
+  expect(html).toMatch(/<input[^>]*required=""/);
+  expect(html).toContain("Nombre reconocible");
+  expect(html).toContain("Obligatorio");
+
+  expect(html).toMatch(
+    new RegExp(`<label class="ui-field-label" for="${selectId}">`),
+  );
+  const selectTag = html.match(/<select[^>]*>/)?.[0] ?? "";
+  expect(selectTag).toContain('aria-invalid="false"');
+  expect(selectTag).not.toContain("aria-describedby");
+});
+
+test("Field respeta el id y las descripciones previas del control", () => {
+  const html = renderToStaticMarkup(
+    <Field
+      id="fecha-apertura"
+      label="Fecha apertura"
+      help="dd/mm/aaaa"
+      error="Fecha inválida"
+    >
+      <input id="ignorado" aria-describedby="contexto" />
+    </Field>,
+  );
+  expect(html).toContain('id="fecha-apertura"');
+  expect(html).not.toContain('id="ignorado"');
+  expect(html).toContain(
+    'aria-describedby="contexto fecha-apertura-help fecha-apertura-error"',
+  );
+
+  const noError = renderToStaticMarkup(
+    <Field id="objetivo" label="Objetivo" help="Opcional">
+      <input />
+    </Field>,
+  );
+  expect(noError).toContain('aria-describedby="objetivo-help"');
+  expect(noError).toContain('aria-invalid="false"');
+});
+
+test("FormSection y FormGrid componen la sección y la rejilla 2→1", () => {
+  const html = renderToStaticMarkup(
+    <FormSection
+      step="01"
+      title="Identificación"
+      description="Un nombre reconocible"
+    >
+      <FormGrid>
+        <Field label="Nombre" required>
+          <input />
+        </Field>
+        <Field label="Tipo" className="ui-form-span">
+          <select>
+            <option>Efectivo</option>
+          </select>
+        </Field>
+      </FormGrid>
+    </FormSection>,
+  );
+
+  expect(html).toContain('class="panel ui-form-section"');
+  const labelledBy = html.match(/aria-labelledby="([^"]+)"/)?.[1];
+  expect(labelledBy).toBeTruthy();
+  expect(html).toContain(
+    `<h2 class="ui-form-section-title" id="${labelledBy}">Identificación</h2>`,
+  );
+  expect(html).toContain('class="ui-form-step"');
+  expect(html).toContain(">01</span>");
+  expect(html).toContain("Un nombre reconocible");
+  expect(html).toContain('class="ui-form-grid"');
+  expect(html).toContain("ui-field ui-form-span");
+});
+
+test("focusFirstInvalidField enfoca el primer control inválido", () => {
+  let focused = 0;
+  const target = {
+    focus: () => {
+      focused += 1;
+    },
+  } as unknown as HTMLElement;
+  const container = {
+    querySelector: (selector: string) =>
+      selector.includes('[aria-invalid="true"]') ? target : null,
+  } as unknown as ParentNode;
+
+  expect(focusFirstInvalidField(container)).toBe(target);
+  expect(focused).toBe(1);
+
+  const empty = {
+    querySelector: () => null,
+  } as unknown as ParentNode;
+  expect(focusFirstInvalidField(empty)).toBeNull();
+});
+
+test("La etiqueta de Field resetea la columna del label global", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  const globalLabel = css.match(/^label \{([\s\S]*?)\}/m)?.[1] ?? "";
+  expect(globalLabel).toContain("flex-direction: column");
+
+  const start = css.indexOf("/* UI · DEV-05 — formularios y fichas");
+  expect(start).toBeGreaterThan(-1);
+  const fieldLabel =
+    css.slice(start).match(/\.ui-field-label \{([\s\S]*?)\}/)?.[1] ?? "";
+  expect(fieldLabel).toContain("flex-direction: row");
+});
+
+test("Field conserva un error largo completo y lo deja envolver", () => {
+  const message =
+    "No se pudo guardar el cierre: revisa el motivo y vuelve a intentarlo; el borrador se conserva y puedes comparar la ficha actual antes de continuar.";
+  expect(message.length).toBeGreaterThan(120);
+
+  const html = renderToStaticMarkup(
+    <Field id="cierre-motivo" label="Motivo del cierre" error={message}>
+      <textarea />
+    </Field>,
+  );
+  expect(html).toContain(message);
+  expect(html).toContain('id="cierre-motivo-error"');
+  expect(html).toContain('aria-describedby="cierre-motivo-error"');
+
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  const errorBlock =
+    css.match(/\.ui-field-error \{([\s\S]*?)\}/)?.[1] ?? "";
+  expect(errorBlock).toContain("overflow-wrap: anywhere");
+  expect(errorBlock).toContain("min-height: 1.5em");
+  expect(errorBlock).not.toMatch(/(?:^|;)\s*height:/);
+});
+
+test("ui.tsx conserva las exportaciones existentes y añade las de DEV-05", () => {
+  const exported: Record<string, unknown> = ui;
+  for (const name of [
+    "Alert",
+    "Switch",
+    "PageHead",
+    "Tag",
+    "TableScroll",
+    "Table",
+    "DataList",
+    "Amount",
+    "Badge",
+    "Metric",
+    "EmptyState",
+    "Skeleton",
+    "Field",
+    "focusFirstInvalidField",
+    "FormSection",
+    "FormGrid",
+  ]) {
+    expect(typeof exported[name]).toBe("function");
+  }
+});
+
+test("El CSS de DEV-05 define Field, secciones y rejilla 2→1 con tokens", () => {
+  const css = readFileSync(
+    new URL("../src/style.css", import.meta.url),
+    "utf8",
+  );
+  const start = css.indexOf("/* UI · DEV-05 — formularios y fichas");
+  expect(start).toBeGreaterThan(-1);
+  const next = css.indexOf("\n/*", start + 1);
+  const section = css.slice(start, next === -1 ? undefined : next);
+
+  expect(section).toMatch(
+    /\.ui-form-grid \{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+  );
+  expect(section).toMatch(
+    /@media \(max-width: 760px\) \{[\s\S]*?\.ui-form-grid \{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  );
+  expect(section).toMatch(
+    /\.ui-field \{[^}]*display: flex;[^}]*flex-direction: column;/,
+  );
+  expect(section).toMatch(
+    /\.ui-field-label \{[^}]*display: flex;[^}]*flex-direction: row;/,
+  );
+  expect(section).toMatch(/\.ui-field-error \{[^}]*min-height:/);
+  expect(section).toContain("var(--error)");
+  expect(section).toContain("var(--muted)");
   expect(section).not.toMatch(/#[0-9a-f]{3,8}\b|rgba?\(/i);
 });
