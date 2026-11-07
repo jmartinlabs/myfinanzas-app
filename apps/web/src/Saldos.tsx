@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { api, eur, flags, flagLabels, type Saldo } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 export function SaldoList({ go }: { go: (path: string) => void }) {
   const [q, setQ] = useState(""),
     [estado, setEstado] = useState("Activa"),
@@ -363,18 +372,16 @@ export function SaldoDetail({
         </div>
       )}
       {error && <Alert>{error}</Alert>}
-      <div className="detail-grid">
-        <section className="panel">
-          <h2>Identificación</h2>
+      <FormGrid className="detail-grid saldo-detail-grid">
+        <FormSection title="Identificación">
           <dl>
             {row("Identificador", <code>{s.id}</code>)}
             {row("Nombre", s.nombre)}
             {row("Tipo", s.tipo)}
             {row("Estado", s.estado)}
           </dl>
-        </section>
-        <section className="panel">
-          <h2>Configuración financiera</h2>
+        </FormSection>
+        <FormSection title="Configuración financiera">
           <dl>
             {row("Control", s.control)}
             {row(
@@ -391,9 +398,8 @@ export function SaldoDetail({
           <p className="help">
             La apertura no es un Movimiento. Su fecha no filtra el Saldo actual.
           </p>
-        </section>
-        <section className="panel">
-          <h2>Atributos de control</h2>
+        </FormSection>
+        <FormSection title="Atributos de control">
           <dl>
             {row("Finalidad", s.finalidad ?? "Sin informar")}
             {row("Objetivo (€)", eur(s.objetivo))}
@@ -404,7 +410,7 @@ export function SaldoDetail({
               </div>
             ))}
           </dl>
-        </section>
+        </FormSection>
         <section className="panel position-panel">
           <p className="eyebrow">POSICIÓN ACTUAL</p>
           <h2>
@@ -431,7 +437,7 @@ export function SaldoDetail({
                 : "Este control no presenta un saldo actual convencional."}
           </p>
         </section>
-      </div>
+      </FormGrid>
       {s.id !== "S000" && (
         <section className="panel lifecycle">
           <div>
