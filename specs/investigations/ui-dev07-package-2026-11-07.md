@@ -1,7 +1,7 @@
 # UI · DEV-07 — Temas y AA: paquete de especificación e inventario
 
 **Estado:** propuesta documental **pendiente de autorización**; no implementa código, no añade
-pruebas, no declara PASS y no autoriza merge. **Base verificada:** `origin/main` **`557cedb`**
+pruebas, no declara PASS y no autoriza merge. **Base verificada:** `origin/main` **`c7a480f`**
 (2026-11-07). **Fecha:** 2026-11-07.
 
 - **Spec propietaria:** [ui-specification.md](../ui-specification.md), §4 (`DEV-07`), §5 y §6.
@@ -16,7 +16,7 @@ pruebas, no declara PASS y no autoriza merge. **Base verificada:** `origin/main`
   código, rama de implementación, test, captura ni cambio de tablero.
 
 > **Nota operativa:** en este checkout el ref local `main` está desfasado (`025adf8`); la base
-> real es `origin/main` `557cedb`. Toda comparación debe usar el SHA, no el nombre `main`.
+> real es `origin/main` `c7a480f`. Toda comparación debe usar el SHA, no el nombre `main`.
 
 ---
 
@@ -24,9 +24,9 @@ pruebas, no declara PASS y no autoriza merge. **Base verificada:** `origin/main`
 
 ### 1.1 Superficie y componentes
 
-| Elemento | Estado comprobado en `557cedb` |
+| Elemento | Estado comprobado en `c7a480f` |
 | --- | --- |
-| Navegación | **23 enlaces** en 4 grupos (`navigation.ts`); `/saldos/nuevo` y `/` no son enlaces |
+| Navegación | **24 enlaces** en 4 grupos (`navigation.ts`): 23 previos + `/fotos`; `/saldos/nuevo` y `/` no son enlaces |
 | Temas | **3** (`light-s`, `dark-s`, `hybrid-s`) × **66 tokens** semánticos en `themes.css` |
 | Selector y arranque | `themes.ts`/`main.tsx`; preferencia `mf-theme`; inicial `dark-s`; `theme-boot.js` sin parpadeo |
 | Primitivas UI | **16 exportaciones** en `ui.tsx` (15 componentes y el helper `focusFirstInvalidField`): `Alert`, `Switch`, `PageHead`, `Tag`, `TableScroll`, `Table`, `DataList`, `Amount`, `Badge`, `Metric`, `EmptyState`, `Skeleton`, `Field`, `FormSection`, `FormGrid` |
@@ -62,7 +62,7 @@ ficha ni formulario; la de Cierre no cubre los tres temas ni ambos anchos.
 | Prueba | Cobertura real | Límite |
 | --- | --- | --- |
 | `theme.spec.ts` | 3 temas, persistencia, arranque sin flash, shell y listado de Saldos; 6 capturas | No audita las cinco pantallas ni contraste/teclado/zoom |
-| `navigation.spec.ts` | 23 enlaces, menú móvil, `Escape`, foco en primer enlace, 3 temas × 2 anchos | Solo el shell; no recorre las pantallas |
+| `navigation.spec.ts` | 24 enlaces, menú móvil, `Escape`, foco en primer enlace, 3 temas × 2 anchos | Solo el shell; no recorre las pantallas |
 | `inicio.spec.ts` | 3 temas × 2 anchos; contraste de texto de Inicio; un `Tab`; cero/degradado | Solo Inicio; no componentes, foco ni zoom |
 | `movimientos.spec.ts` | 390/1440, overflow, 2 pulsaciones de teclado | Sin bucle de temas ni contraste |
 | `catalog.spec.ts` | Saldos listado/ficha/formulario, 390/1440, foco y algunos `toHaveCSS` | Sin bucle de temas; el contraste que mide usa la **paleta histórica** (incl. `#8DBB2E`), no los tokens vigentes |
@@ -329,7 +329,7 @@ E2E: no se usa como evidencia de la matriz.
 | Riesgo | Impacto | Mitigación |
 | --- | --- | --- |
 | DEV-06 aún no implementado (solo existe el paquete `de9597e`) | Alto: la composición de las cinco pantallas puede cambiar y invalidar la línea base | DEV-07 no empieza hasta que DEV-06 esté autorizado, implementado y fusionado; se re-inventaría al rebasar |
-| DEV-05 I5b (Inversiones) sin fusionar (`261ae78`) | Medio: rama paralela y `style.css` compartido | No se toca Inversiones; se espera su merge y se rebasa; DEV-07 no depende de su UI |
+| DEV-05 I5b (Inversiones) fusionado (`c7a480f`) | Bajo: `style.css` compartido | Ya integrado; DEV-07 no depende de su UI |
 | Paleta y tokens cerrados | Alto: un par que falle no se corrige cambiando `themes.css` | Corregir el uso del token (p. ej. `--sidebar-focus`), no la paleta; si no hay token válido, se eleva y se detiene |
 | Correcciones globales de primitivas | Alto: afectan a pantallas fuera de la matriz | Sección aditiva, alcance medido, regresión completa y capturas de pantallas no clave |
 | Contraste computado con alfa/gradientes/imágenes | Medio: falsos positivos/negativos | Composición de alfa, lista de excepciones manual y fallo explícito; revisión QA |
@@ -337,7 +337,7 @@ E2E: no se usa como evidencia de la matriz.
 | Fotos/E4.11 y resto de rutas | Medio: regresión por CSS compartido | No se editan; solo regresión; si una corrección global las afecta, se revisa y se declara |
 | Runtime de la matriz (30+15, Cierre grande) | Medio: timeout/flakiness | Repartir por pantalla/servidor, un login por servidor, `workers: 1`, sin retries que oculten fallos |
 | `artifacts/` ignorado | Medio: evidencia no versionada | Adjuntar capturas/logs al PR y al registro QA; manifiesto con SHA y rutas; no commitear artefactos |
-| Ref local `main` desfasado | Bajo/medio: comparación incorrecta | Usar `origin/main`/SHA `557cedb`; no confiar en `main` local |
+| Ref local `main` desfasado | Bajo/medio: comparación incorrecta | Usar `origin/main`/SHA `c7a480f`; no confiar en `main` local |
 | `catalog.spec.ts` mide la paleta histórica | Medio: falsa confianza | I4 añade la comprobación de tokens vigentes; la sustitución consciente se revisa, no se borra sin reemplazo |
 
 ### Deuda residual que DEV-07 no cierra
@@ -375,7 +375,7 @@ E2E: no se usa como evidencia de la matriz.
 - **Secuencia:** I1 → I2 → I3 → I4 → I5, estrictamente secuencial por `style.css` y por la
   dependencia de DEV-06. No hay paralelismo seguro mientras un solo archivo concentre estilos.
 - **Dependencias:** DEV-01…DEV-06 integrados (DEV-06 **no** lo está a fecha de este paquete),
-  DEV-05 I5b fusionado o descartado, y confirmación de que no hay otro escritor de `style.css`.
+  DEV-05 I5b ya fusionado (`c7a480f`), y confirmación de que no hay otro escritor de `style.css`.
 - **QA independiente por incremento:** revisa diff y evidencia, no el resumen del autor;
   comprueba cifras/estados, contratos, capturas, contraste, teclado, zoom y regresiones;
   emite APTO / APTO CON RESERVAS o devuelve.
