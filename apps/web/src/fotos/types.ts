@@ -27,7 +27,7 @@ export type Failure = {
 
 export type FailureContext = "foto" | "periodo" | "contraste" | "comparacion";
 
-export type EstadoFotoCiclo = "Disponible" | "SinFoto" | "PendienteReCierre";
+type EstadoFotoCiclo = "Disponible" | "SinFoto" | "PendienteReCierre";
 
 export type VersionFotoDto = {
   version: number;
@@ -109,7 +109,7 @@ export type BloqueCoberturaDto = {
   motivos: string[];
 };
 
-export type CoberturaPeriodoDto = {
+type CoberturaPeriodoDto = {
   estado: "Parcial" | "NoDisponible";
   motivos: string[];
   totalPeriodo: null;

@@ -12,7 +12,7 @@ import {
   property,
 } from "../data";
 import { date, money, utc } from "../format";
-import { motivoTexto, TOTAL_LABELS } from "../labels";
+import { motivoTexto } from "../labels";
 import { estadoTone } from "../states";
 import type {
   BloqueCoberturaDto,
