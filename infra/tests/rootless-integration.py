@@ -435,7 +435,7 @@ def main():
         stage = 'final-image-api-regressions'
         suite = root / 'suite'
         suite.mkdir(mode=0o700)
-        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src'):
+        for prefix in ('apps/api/src', 'apps/api/test-support', 'apps/web/src', 'tools/test-seed'):
             for relative in run(['git', 'ls-tree', '-r', '--name-only', 'HEAD', '--', prefix]).splitlines():
                 # API tests import shared web modules; runtime JSON manifests
                 # are imported by TS modules and must travel with the suite.
@@ -444,6 +444,11 @@ def main():
                 destination = suite / relative
                 destination.parent.mkdir(parents=True, exist_ok=True)
                 destination.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:' + relative]))
+        # The seed tests read the release recipe as a static guard; copy it
+        # into the read-only suite without adding it to the runtime image.
+        containerfile = suite / 'infra' / 'Containerfile'
+        containerfile.parent.mkdir(parents=True, exist_ok=True)
+        containerfile.write_bytes(subprocess.check_output(['git', 'show', 'HEAD:infra/Containerfile']))
         # #31 adds real fcntl lock-holder fixtures requiring Python, not an app
         # dependency. Copy the runner's interpreter/stdlib/loader into the private
         # read-only test mount; never add Python or broad host mounts to runtime.
