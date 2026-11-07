@@ -33,6 +33,10 @@ export async function cycleJourney(page: Page) {
   await page.getByRole("button", { name: "Crear ciclo", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();
   await expect(start).toHaveAttribute("aria-invalid", "true");
+  await expect(page.locator("#error-inicio")).toHaveText(
+    "Indica una fecha civil válida.",
+  );
+  await expect(start).toBeFocused();
   await page.setViewportSize({ width: 390, height: 844 });
   await shot("validation-mobile");
   await start.focus();

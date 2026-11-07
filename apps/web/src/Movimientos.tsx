@@ -6,11 +6,21 @@ import {
   preserveMovement,
   clearMovementReturn,
 } from "./movement-draft";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from "react";
 import { api, ApiError, eur, type Saldo } from "./api";
 import {
   Alert,
   DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
   PageHead,
   Table,
   Tag,
@@ -668,18 +678,16 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           </p>
         </div>
       )}
-      <div className="detail-grid">
-        <section className="panel">
-          <h2>Hecho registrado</h2>
+      <FormGrid className="detail-grid movement-detail-grid">
+        <FormSection title="Hecho registrado">
           <dl>
             {field("ID estable", m.id)}
             {field("Fecha económica", date(m.fecha))}
             {field("Importe", eur(m.importe))}
             {field("Nota", m.nota || "Sin informar")}
           </dl>
-        </section>
-        <section className="panel">
-          <h2>Relaciones financieras</h2>
+        </FormSection>
+        <FormSection title="Relaciones financieras">
           <dl>
             {field(
               "Origen",
@@ -736,10 +744,9 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
               ),
             )}
           </dl>
-        </section>
-      </div>
-      <section className="panel">
-        <h2>Imputación temporal</h2>
+        </FormSection>
+      </FormGrid>
+      <FormSection title="Imputación temporal">
         <dl>
           {field(
             "Ciclo financiado",
@@ -757,7 +764,7 @@ function MovementDetail({ id, go }: { id: string; go: (p: string) => void }) {
           Fin temporal no equivale a cierre financiero. Los cierres se
           entregarán posteriormente.
         </p>
-      </section>
+      </FormSection>
       <section className="panel">
         <details>
           <summary>Historial de cambios · {data.auditoria.length}</summary>
@@ -990,7 +997,8 @@ function MovementForm({
     [refresh, setRefresh] = useState(0);
   const initialized = useRef(!!returnDraft),
     attempt = useRef(crypto.randomUUID()),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formEl = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (returnDraft) clearMovementReturn();
   }, []);
@@ -1152,7 +1160,9 @@ function MovementForm({
       setConflict(true);
       setPlan(null);
     }
-    requestAnimationFrame(() => alert.current?.focus());
+    requestAnimationFrame(() => {
+      if (!focusFirstInvalidField(formEl.current)) alert.current?.focus();
+    });
   }
   async function confirm(p: Plan) {
     const endpoint = id
@@ -1210,10 +1220,21 @@ function MovementForm({
   const field = (
     key: keyof typeof empty,
     label: string,
-    children?: ReactNode,
+    children?: ReactElement,
   ) => (
-    <label key={key}>
-      {label}
+    <Field
+      key={key}
+      id={key}
+      label={label}
+      className={key === "nota" ? "ui-form-span full-width" : undefined}
+      error={
+        fields[key] ? (
+          <span className="field-error" id={"error-mov-" + key}>
+            {fields[key]}
+          </span>
+        ) : undefined
+      }
+    >
       {children ?? (
         <input
           aria-label={label}
@@ -1221,17 +1242,10 @@ function MovementForm({
           inputMode={key === "importe" ? "decimal" : undefined}
           max={key === "fecha" ? options?.hoy : undefined}
           value={form[key]}
-          aria-invalid={!!fields[key]}
-          aria-describedby={fields[key] ? "error-mov-" + key : undefined}
           onChange={(e) => change(key, e.target.value)}
         />
       )}
-      {fields[key] && (
-        <span id={"error-mov-" + key} className="field-error">
-          {fields[key]}
-        </span>
-      )}
-    </label>
+    </Field>
   );
   const saldos = (options?.saldos ?? []).filter(
     (s) =>
@@ -1319,6 +1333,7 @@ function MovementForm({
         <form
           className="saldo-form"
           noValidate
+          ref={formEl}
           onSubmit={(e) => {
             e.preventDefault();
             submit();
@@ -1326,19 +1341,14 @@ function MovementForm({
         >
           {!annul ? (
             <>
-              <section className="panel">
-                <h2>Hecho ejecutado</h2>
-                <div className="form-grid">
+              <FormSection title="Hecho ejecutado">
+                <FormGrid>
                   {field(
                     "tipo",
                     "Tipo *",
                     <select
                       aria-label="Tipo *"
                       value={form.tipo}
-                      aria-invalid={!!fields.tipo}
-                      aria-describedby={
-                        fields.tipo ? "error-mov-tipo" : undefined
-                      }
                       onChange={(e) => change("tipo", e.target.value)}
                     >
                       <option value="">Selecciona</option>
@@ -1352,26 +1362,26 @@ function MovementForm({
                   {field("fecha", "Fecha económica *")}
                   {field("importe", "Importe (€) *")}
                   {field("concepto", "Concepto")}
-                  <label className="full-width">
-                    Nota
+                  {field(
+                    "nota",
+                    "Nota",
                     <textarea
                       aria-label="Nota"
                       value={form.nota}
                       maxLength={4000}
                       onChange={(e) => change("nota", e.target.value)}
-                    />
-                  </label>
-                </div>
+                    />,
+                  )}
+                </FormGrid>
                 <p className="help">
                   Importe mayor que cero. Fecha máxima:{" "}
                   {options ? date(options.hoy) + " (España)" : "Cargando…"}.
                   Cambiar Tipo elimina campos incompatibles, sin convertir el
                   hecho.
                 </p>
-              </section>
-              <section className="panel">
-                <h2>Relación financiera</h2>
-                <div className="form-grid">
+              </FormSection>
+              <FormSection title="Relación financiera">
+                <FormGrid>
                   {form.tipo === "Transferencia" ? (
                     (["origen", "destino"] as const).map((side) =>
                       field(
@@ -1386,10 +1396,6 @@ function MovementForm({
                               : "Saldo destino *"
                           }
                           value={form[side]}
-                          aria-invalid={!!fields[side]}
-                          aria-describedby={
-                            fields[side] ? "error-mov-" + side : undefined
-                          }
                           onChange={(e) => change(side, e.target.value)}
                         >
                           <option value="">Selecciona un Saldo</option>
@@ -1434,10 +1440,6 @@ function MovementForm({
                               : "Saldo receptor *"
                           }
                           value={form.saldo}
-                          aria-invalid={!!fields.saldo}
-                          aria-describedby={
-                            fields.saldo ? "error-mov-saldo" : undefined
-                          }
                           onChange={(e) => change("saldo", e.target.value)}
                         >
                           <option value="">Selecciona un Saldo</option>
@@ -1460,10 +1462,6 @@ function MovementForm({
                       <select
                         aria-label="Subtipo *"
                         value={form.subtipo}
-                        aria-invalid={!!fields.subtipo}
-                        aria-describedby={
-                          fields.subtipo ? "error-mov-subtipo" : undefined
-                        }
                         onChange={(e) => change("subtipo", e.target.value)}
                       >
                         <option value="">Selecciona</option>
@@ -1489,10 +1487,6 @@ function MovementForm({
                             : "Partida *"
                         }
                         value={form.partida}
-                        aria-invalid={!!fields.partida}
-                        aria-describedby={
-                          fields.partida ? "error-mov-partida" : undefined
-                        }
                         onChange={(e) => change("partida", e.target.value)}
                       >
                         <option value="">Selecciona una Partida</option>
@@ -1504,7 +1498,7 @@ function MovementForm({
                         ))}
                       </select>,
                     )}
-                </div>
+                </FormGrid>
                 <p>
                   {form.tipo === "Ingreso"
                     ? "Origen: Exterior técnico S000"
@@ -1553,10 +1547,6 @@ function MovementForm({
                     }
                     value={form.referencia}
                     disabled={requiredRef}
-                    aria-invalid={!!fields.referencia}
-                    aria-describedby={
-                      fields.referencia ? "error-mov-referencia" : undefined
-                    }
                     onChange={(e) => change("referencia", e.target.value)}
                   >
                     <option value="">Sin referencia</option>
@@ -1594,8 +1584,7 @@ function MovementForm({
                       junto al hecho, sin duplicar el importe.
                     </p>
                     {caseError && <Alert>{caseError}</Alert>}
-                    <label>
-                      Rol Anticipo obligatorio
+                    <Field id="rolAnticipo" label="Rol Anticipo obligatorio">
                       <select
                         aria-label="Rol Anticipo obligatorio"
                         value={form.rolAnticipo}
@@ -1605,7 +1594,7 @@ function MovementForm({
                         <option>Adelanto</option>
                         <option>Devolución</option>
                       </select>
-                    </label>
+                    </Field>
                     {form.rolAnticipo === "Adelanto" ? (
                       <p>
                         Orientación declarada:{" "}
@@ -1614,8 +1603,10 @@ function MovementForm({
                       </p>
                     ) : (
                       form.rolAnticipo === "Devolución" && (
-                        <label>
-                          Par de Adelanto acreditado
+                        <Field
+                          id="parAnticipo"
+                          label="Par de Adelanto acreditado"
+                        >
                           <select
                             aria-label="Par de Adelanto acreditado"
                             value={form.parAnticipo}
@@ -1646,11 +1637,10 @@ function MovementForm({
                               </option>
                             ))}
                           </select>
-                        </label>
+                        </Field>
                       )
                     )}
-                    <label>
-                      Evidencia de atribución
+                    <Field id="evidenciaAnticipo" label="Evidencia de atribución">
                       <input
                         aria-label="Evidencia de atribución"
                         value={form.evidenciaAnticipo}
@@ -1658,9 +1648,11 @@ function MovementForm({
                           change("evidenciaAnticipo", e.target.value)
                         }
                       />
-                    </label>
-                    <label>
-                      Procedencia de atribución
+                    </Field>
+                    <Field
+                      id="procedenciaAnticipo"
+                      label="Procedencia de atribución"
+                    >
                       <input
                         aria-label="Procedencia de atribución"
                         value={form.procedenciaAnticipo}
@@ -1668,7 +1660,7 @@ function MovementForm({
                           change("procedenciaAnticipo", e.target.value)
                         }
                       />
-                    </label>
+                    </Field>
                     {fields.anticipo && <p role="alert">{fields.anticipo}</p>}
                     {form.rolAnticipo === "Devolución" &&
                       !caseData?.pares.some((p) => p.disponible) && (
@@ -1707,7 +1699,7 @@ function MovementForm({
                     </p>
                     {selected?.deuda &&
                       (form.tipo === "Gasto" ? (
-                        <div className="form-grid">
+                        <FormGrid>
                           {(["capital", "intereses"] as const).map((k) =>
                             field(
                               k,
@@ -1722,16 +1714,15 @@ function MovementForm({
                                 }
                                 inputMode="decimal"
                                 value={form[k]}
-                                aria-invalid={!!fields[k]}
                                 onChange={(e) => change(k, e.target.value)}
                               />,
                             ),
                           )}
-                          <p>
+                          <p className="ui-form-span">
                             El capital y los intereses deben sumar el importe
                             exacto. No se completan automáticamente.
                           </p>
-                        </div>
+                        </FormGrid>
                       ) : (
                         <p>
                           Capital = importe {form.importe || "sin informar"} EUR
@@ -1782,9 +1773,8 @@ function MovementForm({
                       </Link>
                     </p>
                   )}
-              </section>
-              <section className="panel">
-                <h2>Contexto derivado</h2>
+              </FormSection>
+              <FormSection title="Contexto derivado">
                 <p>
                   Fecha prevista:{" "}
                   {/^\d{4}-\d{2}-\d{2}$/.test(form.fecha)
@@ -1829,11 +1819,10 @@ function MovementForm({
                     </p>
                   </>
                 )}
-              </section>
+              </FormSection>
             </>
           ) : (
-            <section className="panel">
-              <h2>Hecho que se anulará</h2>
+            <FormSection title="Hecho que se anulará">
               <p>
                 #{old!.id} · {date(old!.fecha)} · {old!.tipo} ·{" "}
                 {eur(old!.importe)}
@@ -1843,17 +1832,25 @@ function MovementForm({
                 Se conservarán el registro, sus relaciones y la auditoría.
                 Dejará de computar económicamente.
               </p>
-            </section>
+            </FormSection>
           )}
           {!!id && (
             <section className="panel">
-              <label>
-                Motivo *
+              <Field
+                id="motivo"
+                label="Motivo *"
+                error={
+                  fields.motivo ? (
+                    <span className="field-error" id="error-mov-motivo">
+                      {fields.motivo}
+                    </span>
+                  ) : undefined
+                }
+              >
                 <textarea
                   aria-label="Motivo *"
                   value={reason}
                   maxLength={2000}
-                  aria-invalid={!!fields.motivo}
                   onChange={(e) => {
                     setReason(e.target.value);
                     setPlan(null);
@@ -1861,8 +1858,7 @@ function MovementForm({
                     attempt.current = crypto.randomUUID();
                   }}
                 />
-              </label>
-              {fields.motivo && <p className="field-error">{fields.motivo}</p>}
+              </Field>
             </section>
           )}
           {plan && (
