@@ -1,0 +1,366 @@
+{
+  "format": 1,
+  "id": "FT-1",
+  "version": 1,
+  "anchor": "2025-12-31T12:00:00.000Z",
+  "environment": {
+    "name": "test",
+    "public_origin": "https://test.myfinanzas.pp.ua"
+  },
+  "saldos": [
+    {
+      "id": "S001",
+      "nombre": "Efectivo TEST",
+      "tipo": "Efectivo",
+      "control": "Movimientos",
+      "saldoApertura": "1000.00",
+      "fechaApertura": "2025-01-01",
+      "permiteSalidaExterior": true
+    },
+    {
+      "id": "S002",
+      "nombre": "Efectivo inversión TEST",
+      "tipo": "Efectivo",
+      "control": "Inversiones",
+      "saldoApertura": "500.00",
+      "fechaApertura": "2025-01-01",
+      "permiteSalidaExterior": true
+    },
+    {
+      "id": "S003",
+      "nombre": "Terminal TEST",
+      "tipo": "Efectivo",
+      "control": "Terminal",
+      "saldoApertura": "100.00",
+      "fechaApertura": "2025-01-01",
+      "permiteSalidaExterior": true
+    },
+    {
+      "id": "S004",
+      "nombre": "No controlado TEST",
+      "tipo": "Efectivo",
+      "control": "No controlado",
+      "saldoApertura": "0.00",
+      "fechaApertura": "2025-01-01",
+      "permiteSalidaExterior": true
+    },
+    {
+      "id": "S005",
+      "nombre": "Cartera TEST",
+      "tipo": "Inversión",
+      "control": "Inversiones",
+      "saldoApertura": "0.00",
+      "fechaApertura": "2025-01-01",
+      "permiteSalidaExterior": false
+    }
+  ],
+  "classifications": {
+    "categorias": [
+      {
+        "id": "CAT001",
+        "nombre": "Ingreso TEST",
+        "grupo": null,
+        "anual": "Ingreso",
+        "mensual": "Ingreso",
+        "referencia": false
+      },
+      {
+        "id": "CAT002",
+        "nombre": "Gasto TEST",
+        "grupo": null,
+        "anual": "Gasto",
+        "mensual": "Gasto",
+        "referencia": false
+      }
+    ],
+    "subcategorias": [
+      {
+        "id": "SUB001",
+        "nombre": "Nómina TEST",
+        "padre": "CAT001"
+      },
+      {
+        "id": "SUB002",
+        "nombre": "Gastos TEST",
+        "padre": "CAT002"
+      },
+      {
+        "id": "SUB003",
+        "nombre": "Deuda TEST",
+        "padre": "CAT002"
+      }
+    ],
+    "partidas": [
+      {
+        "id": "PAR001",
+        "nombre": "Nómina TEST",
+        "padre": "SUB001",
+        "deuda": null,
+        "presupuesto": null
+      },
+      {
+        "id": "PAR002",
+        "nombre": "Gasto general TEST",
+        "padre": "SUB002",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR003",
+        "nombre": "Gasto compartido TEST",
+        "padre": "SUB002",
+        "deuda": null,
+        "presupuesto": "PRE001"
+      },
+      {
+        "id": "PAR004",
+        "nombre": "Amortización deuda TEST",
+        "padre": "SUB003",
+        "deuda": "D001",
+        "presupuesto": null
+      }
+    ]
+  },
+  "presupuesto": {
+    "id": "PRE001",
+    "nombre": "Presupuesto mensual TEST",
+    "fuente": "Gasto real",
+    "destino": "S001"
+  },
+  "deuda": {
+    "id": "D001",
+    "nombre": "Deuda TEST",
+    "inicioControl": "2025-01-01",
+    "capitalApertura": "1200.00",
+    "tipoDeuda": "No hipotecaria",
+    "tin": "5.000000",
+    "tae": "5.116190",
+    "cuotaContractual": "150.00",
+    "condiciones": "Condiciones ficticias TEST"
+  },
+  "ciclo": {
+    "id": "1",
+    "inicio": "2025-01-20",
+    "saldoInicialComida": "300.00"
+  },
+  "referencias": {
+    "anticipo": {
+      "id": "REF001",
+      "nombre": "Anticipo TEST",
+      "apertura": "2025-01-15",
+      "evidencia": "Documento ficticio TEST"
+    },
+    "vehiculo": {
+      "id": "REF002",
+      "nombre": "Vehículo TEST",
+      "tipo": "Vehículo",
+      "vehiculo": {
+        "matricula": "TEST-0001",
+        "proximaITV": "2025-06-30",
+        "cita": null
+      }
+    }
+  },
+  "movimientos": [
+    {
+      "id": "1",
+      "tipo": "Ingreso",
+      "fecha": "2025-01-25",
+      "importe": "2500.00",
+      "saldo": "S001",
+      "subtipo": "Nómina",
+      "concepto": "Ingreso ficticio TEST",
+      "nota": "Datos ficticios TEST"
+    },
+    {
+      "id": "2",
+      "tipo": "Gasto",
+      "fecha": "2025-02-03",
+      "importe": "120.00",
+      "saldo": "S001",
+      "partida": "PAR002",
+      "concepto": "Gasto general ficticio TEST",
+      "nota": "Datos ficticios TEST"
+    },
+    {
+      "id": "3",
+      "tipo": "Transferencia",
+      "fecha": "2025-02-05",
+      "importe": "200.00",
+      "origen": "S001",
+      "destino": "S003",
+      "concepto": "Transferencia ficticia TEST",
+      "nota": "Datos ficticios TEST"
+    },
+    {
+      "id": "4",
+      "tipo": "Amortización deuda",
+      "fecha": "2025-02-10",
+      "importe": "150.00",
+      "saldo": "S001",
+      "partida": "PAR004",
+      "concepto": "Amortización ficticia TEST",
+      "nota": "Datos ficticios TEST"
+    },
+    {
+      "id": "5",
+      "tipo": "Gasto",
+      "fecha": "2025-02-12",
+      "importe": "90.00",
+      "saldo": "S001",
+      "partida": "PAR003",
+      "concepto": "Gasto compartido ficticio TEST",
+      "nota": "Datos ficticios TEST"
+    },
+    {
+      "id": "6",
+      "tipo": "Transferencia",
+      "fecha": "2025-02-20",
+      "importe": "500.00",
+      "origen": "S001",
+      "destino": "S003",
+      "referencia": "REF001",
+      "concepto": "Anticipo ficticio TEST",
+      "nota": "Datos ficticios TEST",
+      "anticipo": {
+        "rol": "Adelanto",
+        "origen": "S001",
+        "destino": "S003",
+        "evidencia": "Evidencia ficticia TEST",
+        "procedencia": "Procedencia ficticia TEST"
+      }
+    }
+  ],
+  "inversion": {
+    "instrumento": {
+      "id": "I1001",
+      "nombre": "Instrumento TEST",
+      "isin": null,
+      "isinEvidencia": null,
+      "divisaReferencia": "EUR"
+    },
+    "compra": {
+      "id": "1",
+      "fecha": "2025-02-25",
+      "instrumento": "I1001",
+      "saldoEfectivo": "S002",
+      "saldoInversion": "S005",
+      "cantidad": "10",
+      "precio": "10.00",
+      "divisa": "EUR",
+      "importeEur": "100.00",
+      "comisionEur": "0.00",
+      "concepto": "Compra ficticia TEST",
+      "nota": "Datos ficticios TEST"
+    }
+  },
+  "expected": {
+    "ids": {
+      "saldos": [
+        "S001",
+        "S002",
+        "S003",
+        "S004",
+        "S005"
+      ],
+      "categorias": [
+        "CAT001",
+        "CAT002"
+      ],
+      "subcategorias": [
+        "SUB001",
+        "SUB002",
+        "SUB003"
+      ],
+      "partidas": [
+        "PAR001",
+        "PAR002",
+        "PAR003",
+        "PAR004"
+      ],
+      "presupuestos": [
+        "PRE001"
+      ],
+      "deudas": [
+        "D001"
+      ],
+      "ciclos": [
+        "1"
+      ],
+      "movimientos": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "referencias": [
+        "REF001",
+        "REF002"
+      ],
+      "fichas_anticipos": [
+        "REF001"
+      ],
+      "fichas_vehiculo": [
+        "REF002"
+      ],
+      "instrumentos": [
+        "I1001"
+      ],
+      "operaciones_inversion": [
+        "1"
+      ],
+      "movimiento_anticipo": [
+        "6"
+      ],
+      "payroll": [],
+      "payroll_allocations": [],
+      "fichas_compartidos": [],
+      "participantes_compartido": [],
+      "movimiento_compartido": []
+    },
+    "entity_counts": {
+      "saldos": 6,
+      "categorias": 2,
+      "subcategorias": 3,
+      "partidas": 4,
+      "presupuestos": 1,
+      "deudas": 1,
+      "ciclos": 1,
+      "movimientos": 6,
+      "referencias": 2,
+      "fichas_anticipos": 1,
+      "fichas_vehiculo": 1,
+      "instrumentos": 1,
+      "operaciones_inversion": 1,
+      "movimiento_anticipo": 1,
+      "payroll": 0,
+      "payroll_allocations": 0,
+      "fichas_compartidos": 0,
+      "participantes_compartido": 0,
+      "movimiento_compartido": 0
+    }
+  },
+  "coverage": {
+    "covered": [
+      "E1.1 Saldos: cinco altas ficticias, incluido Efectivo/Inversiones (H1).",
+      "E1.2 Clasificación: categorías, subcategorías y partidas.",
+      "E1.3 Ciclos: un ciclo abierto sin cierres.",
+      "E1.4 Movimientos: Ingreso, Gasto, Transferencia y Amortización de deuda.",
+      "E1.5 Referencias: Anticipo y Vehículo con ficha 1:1.",
+      "E1.6 Deuda: alta y una amortización.",
+      "E2.2 Presupuesto mensual.",
+      "E3.3 Vehículo con matrícula e ITV ficticias.",
+      "E3.4 Anticipo con transferencia de adelanto atribuida.",
+      "E4.1 Inversión: instrumento y una compra."
+    ],
+    "partial": [
+      "E3.1 Nómina omitida (H2): no se usa un ID aleatorio ni SQL crudo; el Ingreso 1 no tiene nómina asignada.",
+      "E1.5/E3.2 Gasto compartido omitido (H6): no se crea CAT013 ni ficha compartida; el Gasto 5 queda sin Referencia.",
+      "E2.1, E2.3 y E2.4 no cubiertos por esta versión mínima.",
+      "E3.5/FIN_NETA no cubierto por esta versión mínima.",
+      "E4.2, E4.3, E4.5, E4.7, E4.9, E4.10, E4.11 y Dprima quedan excluidos por D5/D7."
+    ]
+  }
+}
