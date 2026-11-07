@@ -5,7 +5,6 @@ import {
   type FormEvent,
   type ReactNode,
 } from "react";
-import { api } from "./api";
 import {
   Alert,
   Amount,
@@ -25,15 +24,21 @@ import {
   periodNoDisponibleRows,
   property,
 } from "./fotos/data";
-import { failureFrom, failureMessage } from "./fotos/errors";
+import { failureMessage } from "./fotos/errors";
 import { date, money, utc } from "./fotos/format";
+import {
+  useCatalogoCiclos,
+  useComparacion,
+  useContraste,
+  useFotoCiclo,
+  usePeriodo,
+  useVersiones,
+} from "./fotos/hooks";
 import { motivoTexto, TOTAL_LABELS } from "./fotos/labels";
 import { amountState, estadoTone } from "./fotos/states";
 import type {
   BloqueCoberturaDto,
-  CicloResumen,
   ComponentePeriodoDto,
-  ContrasteDto,
   ContrasteMetricaDto,
   CoverageRow,
   Failure,
@@ -43,13 +48,11 @@ import type {
   FotoPersistida,
   Modo,
   NoDisponibleRow,
-  PaginaCiclos,
   ValorCicloDto,
   VersionFotoDto,
   Vista,
 } from "./fotos/types";
 import {
-  seleccionComparacionVersion,
   trimestreActual,
   versionExiste,
   vistaDesdePath,
@@ -293,233 +296,40 @@ function CicloPanel({
   onSelectVersion: (version: string) => void;
   go: (path: string) => void;
 }) {
-  const [ciclos, setCiclos] = useState<CicloResumen[] | null>(null);
-  const [catalogoError, setCatalogoError] = useState<Failure | null>(null);
-  const [catalogoCargando, setCatalogoCargando] = useState(true);
-  const [catalogoReintento, setCatalogoReintento] = useState(0);
-
-  const [versiones, setVersiones] = useState<VersionFotoDto[] | null>(null);
-  const [versionesError, setVersionesError] = useState<Failure | null>(null);
-  const [versionesCargando, setVersionesCargando] = useState(false);
-  const [versionesReintento, setVersionesReintento] = useState(0);
-
-  const [foto, setFoto] = useState<FotoCicloDto | null>(null);
-  const [fotoError, setFotoError] = useState<Failure | null>(null);
-  const [fotoCargando, setFotoCargando] = useState(false);
-  const [fotoReintento, setFotoReintento] = useState(0);
-
-  const [contraste, setContraste] = useState<ContrasteDto | null>(null);
-  const [contrasteError, setContrasteError] = useState<Failure | null>(null);
-  const [contrasteCargando, setContrasteCargando] = useState(false);
-  const [contrasteReintento, setContrasteReintento] = useState(0);
-
-  const [compararA, setCompararA] = useState("");
-  const [compararB, setCompararB] = useState("");
-  const [comparacion, setComparacion] = useState<{
-    a: FotoCicloDto;
-    b: FotoCicloDto;
-  } | null>(null);
-  const [comparacionError, setComparacionError] = useState<Failure | null>(
-    null,
-  );
-  const [comparacionCargando, setComparacionCargando] = useState(false);
-  const comparisonRequest = useRef(0);
-  const comparisonContext = `${ciclo}|${
-    versiones?.map((item) => item.version).join(",") ?? "null"
-  }`;
-  const comparisonContextRef = useRef(comparisonContext);
-  comparisonContextRef.current = comparisonContext;
-
-  useEffect(() => {
-    let live = true;
-    setCatalogoCargando(true);
-    setCatalogoError(null);
-    (async () => {
-      try {
-        const todos: CicloResumen[] = [];
-        let page = 1;
-        let total = 0;
-        do {
-          const data = await api<PaginaCiclos>(
-            `/ciclos?estado=&page=${page++}`,
-          );
-          todos.push(...data.ciclos);
-          total = data.total;
-        } while (todos.length < total && page <= 100);
-        if (!live) return;
-        setCiclos(todos);
-      } catch (error) {
-        if (!live) return;
-        setCiclos(null);
-        setCatalogoError(failureFrom(error));
-      } finally {
-        if (live) setCatalogoCargando(false);
-      }
-    })();
-    return () => {
-      live = false;
-    };
-  }, [catalogoReintento]);
-
-  useEffect(() => {
-    if (!ciclo && ciclos && ciclos.length > 0) onSelectCiclo(ciclos[0].id);
-  }, [ciclo, ciclos, onSelectCiclo]);
-
-  useEffect(() => {
-    if (!ciclo) {
-      setVersiones(null);
-      setVersionesError(null);
-      setVersionesCargando(false);
-      return;
-    }
-    let live = true;
-    setVersionesCargando(true);
-    setVersionesError(null);
-    setVersiones(null);
-    setComparacion(null);
-    setComparacionError(null);
-    api<VersionFotoDto[]>(
-      `/fotos/ciclos/${encodeURIComponent(ciclo)}/versiones`,
-    )
-      .then((data) => {
-        if (live) setVersiones(data);
-      })
-      .catch((error) => {
-        if (!live) return;
-        setVersiones(null);
-        setVersionesError(failureFrom(error));
-      })
-      .finally(() => {
-        if (live) setVersionesCargando(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [ciclo, versionesReintento]);
-
-  useEffect(() => {
-    if (!ciclo) {
-      setFoto(null);
-      setFotoError(null);
-      setFotoCargando(false);
-      return;
-    }
-    let live = true;
-    setFotoCargando(true);
-    setFoto(null);
-    setFotoError(null);
-    const query = version ? `?version=${encodeURIComponent(version)}` : "";
-    api<FotoCicloDto>(
-      `/fotos/ciclos/${encodeURIComponent(ciclo)}${query}`,
-    )
-      .then((data) => {
-        if (live) setFoto(data);
-      })
-      .catch((error) => {
-        if (live) setFotoError(failureFrom(error));
-      })
-      .finally(() => {
-        if (live) setFotoCargando(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [ciclo, version, fotoReintento]);
-
-  useEffect(() => {
-    if (!ciclo || !foto?.foto) {
-      setContraste(null);
-      setContrasteError(null);
-      setContrasteCargando(false);
-      return;
-    }
-    let live = true;
-    setContrasteCargando(true);
-    setContrasteError(null);
-    setContraste(null);
-    api<ContrasteDto>(`/fotos/contraste?ciclo=${encodeURIComponent(ciclo)}`)
-      .then((data) => {
-        if (live) setContraste(data);
-      })
-      .catch((error) => {
-        if (live) setContrasteError(failureFrom(error));
-      })
-      .finally(() => {
-        if (live) setContrasteCargando(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [ciclo, foto?.foto?.version, contrasteReintento]);
-
-  useEffect(() => {
-    comparisonRequest.current += 1;
-    setComparacion(null);
-    setComparacionError(null);
-    setComparacionCargando(false);
-  }, [ciclo, versiones]);
-
-  useEffect(() => {
-    setCompararA((previous) =>
-      seleccionComparacionVersion(versiones, previous, "primera"),
-    );
-    setCompararB((previous) =>
-      seleccionComparacionVersion(versiones, previous, "ultima"),
-    );
-  }, [versiones]);
-
-  async function comparar() {
-    const a = Number(compararA);
-    const b = Number(compararB);
-    if (!Number.isInteger(a) || !Number.isInteger(b) || a === b) {
-      setComparacionError({
-        status: 422,
-        code: "VALIDATION",
-        message: "Elige dos versiones distintas para comparar.",
-        fields: { version: "Las dos versiones deben ser distintas." },
-      });
-      return;
-    }
-    const request = ++comparisonRequest.current;
-    const context = comparisonContext;
-    setComparacionCargando(true);
-    setComparacionError(null);
-    setComparacion(null);
-    try {
-      const base = `/fotos/ciclos/${encodeURIComponent(ciclo)}`;
-      const [primera, segunda] = await Promise.all([
-        api<FotoCicloDto>(`${base}?version=${a}`),
-        api<FotoCicloDto>(`${base}?version=${b}`),
-      ]);
-      if (
-        request !== comparisonRequest.current ||
-        comparisonContextRef.current !== context
-      )
-        return;
-      setComparacion({ a: primera, b: segunda });
-    } catch (error) {
-      if (
-        request === comparisonRequest.current &&
-        comparisonContextRef.current === context
-      )
-        setComparacionError(failureFrom(error));
-    } finally {
-      if (
-        request === comparisonRequest.current &&
-        comparisonContextRef.current === context
-      )
-        setComparacionCargando(false);
-    }
-  }
-
-  function cambiarComparacion(version: "a" | "b", value: string) {
-    comparisonRequest.current += 1;
-    if (version === "a") setCompararA(value);
-    else setCompararB(value);
-    setComparacion(null);
-    setComparacionError(null);
-    setComparacionCargando(false);
-  }
+  const comparisonReset = useRef<(() => void) | null>(null);
+  const {
+    ciclos,
+    catalogoError,
+    catalogoCargando,
+    reintentarCatalogo,
+  } = useCatalogoCiclos(ciclo, onSelectCiclo);
+  const {
+    versiones,
+    versionesError,
+    versionesCargando,
+    reintentarVersiones,
+  } = useVersiones(ciclo, comparisonReset);
+  const {
+    foto,
+    fotoError,
+    fotoCargando,
+    reintentarFoto,
+  } = useFotoCiclo(ciclo, version);
+  const {
+    contraste,
+    contrasteError,
+    contrasteCargando,
+    reintentarContraste,
+  } = useContraste(ciclo, foto?.foto?.version);
+  const {
+    compararA,
+    compararB,
+    comparacion,
+    comparacionError,
+    comparacionCargando,
+    comparar,
+    cambiarComparacion,
+  } = useComparacion(ciclo, versiones, comparisonReset);
 
   const versionesListas = versiones !== null;
   const versionesPendientes = versiones === null && versionesError === null;
@@ -531,7 +341,7 @@ function CicloPanel({
         <ErrorBox
           failure={catalogoError}
           context="foto"
-          retry={() => setCatalogoReintento((value) => value + 1)}
+          retry={reintentarCatalogo}
         />
       )}
 
@@ -633,7 +443,7 @@ function CicloPanel({
               <button
                 className="text-button"
                 type="button"
-                onClick={() => setVersionesReintento((value) => value + 1)}
+                onClick={reintentarVersiones}
               >
                 Reintentar índice
               </button>
@@ -650,7 +460,7 @@ function CicloPanel({
         <ErrorBox
           failure={fotoError}
           context="foto"
-          retry={() => setFotoReintento((value) => value + 1)}
+          retry={reintentarFoto}
         >
           {fotoError.status === 404 && version && (
             <button
@@ -889,7 +699,7 @@ function CicloPanel({
               <ErrorBox
                 failure={contrasteError}
                 context="contraste"
-                retry={() => setContrasteReintento((value) => value + 1)}
+                retry={reintentarContraste}
                 focus={false}
               />
             )}
@@ -1164,10 +974,6 @@ function PeriodoPanel({
     versionAgregado,
     periodoId,
   });
-  const [periodo, setPeriodo] = useState<FotoPeriodoDto | null>(null);
-  const [error, setError] = useState<Failure | null>(null);
-  const [cargando, setCargando] = useState(false);
-  const [reintento, setReintento] = useState(0);
   const ejercicioRef = useRef<HTMLInputElement>(null);
   const trimestreRef = useRef<HTMLSelectElement>(null);
   const versionRef = useRef<HTMLInputElement>(null);
@@ -1190,46 +996,14 @@ function PeriodoPanel({
     if (target) requestAnimationFrame(() => target.focus());
   }
 
-  useEffect(() => {
-    let live = true;
-    setCargando(true);
-    setError(null);
-    setPeriodo(null);
-    const url = periodoId
-      ? `/fotos/periodos/${encodeURIComponent(periodoId)}`
-      : (() => {
-          const params = new URLSearchParams({
-            tipo: modo,
-            ejercicio,
-          });
-          if (modo === "Trimestre") params.set("trimestre", trimestre);
-          if (versionAgregado) params.set("version", versionAgregado);
-          return `/fotos/periodos?${params.toString()}`;
-        })();
-    api<FotoPeriodoDto>(url)
-      .then((data) => {
-        if (live) setPeriodo(data);
-      })
-      .catch((failure) => {
-        if (!live) return;
-        const normalized = failureFrom(failure);
-        setError(normalized);
-        if (normalized.status === 422) focusCampo(normalized.fields);
-      })
-      .finally(() => {
-        if (live) setCargando(false);
-      });
-    return () => {
-      live = false;
-    };
-  }, [
+  const { periodo, error, cargando, reintentarPeriodo } = usePeriodo(
     modo,
     periodoId,
     ejercicio,
     trimestre,
     versionAgregado,
-    reintento,
-  ]);
+    focusCampo,
+  );
 
   function consultar(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -1361,11 +1135,7 @@ function PeriodoPanel({
         <ErrorBox
           failure={error}
           context="periodo"
-          retry={
-            error.status === 422
-              ? undefined
-              : () => setReintento((value) => value + 1)
-          }
+          retry={error.status === 422 ? undefined : reintentarPeriodo}
           focus={error.status !== 422}
         />
       )}
