@@ -1,7 +1,18 @@
 import { PlanImpact, type PlanImpactData } from "./PlanImpact";
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 type Budget = {
   id: string;
   nombre: string;
@@ -365,8 +376,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
         </button>
       </PageHead>
       {error && <Alert>{error}</Alert>}
-      <section className="panel">
-        <h2>Configuración</h2>
+      <FormSection title="Configuración" className="budget-detail-section">
         <dl>
           <dt>Fuente</dt>
           <dd>{b.fuente}</dd>
@@ -394,9 +404,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
           Ejecución mensual: pendiente de E2.3. No se calculan importes ni
           estados del plan.
         </p>
-      </section>
-      <section className="panel">
-        <h2>Partidas vinculadas</h2>
+      </FormSection>
+      <FormSection title="Partidas vinculadas" className="budget-detail-section">
         {data.partidas.length ? (
           <ul>
             {data.partidas.map((p) => (
@@ -416,9 +425,8 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
           Hechos relacionados: {data.usos.length}. Consulta Plan del ciclo para
           ver la ejecución R3 y sus condiciones de comparabilidad.
         </p>
-      </section>
-      <section className="panel">
-        <h2>Estado e historia</h2>
+      </FormSection>
+      <FormSection title="Estado e historia" className="budget-detail-section">
         <p>
           Los nombres e IDs se conservan al desactivar. No se desvinculan
           Partidas ni se borran hechos.
@@ -443,7 +451,7 @@ function Detail({ id, go }: { id: string; go: (p: string) => void }) {
             {b.estado === "Activo" ? "Desactivar" : "Reactivar"} presupuesto
           </button>
         )}
-      </section>
+      </FormSection>
     </>
   );
 }
@@ -462,7 +470,8 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     [conflict, setConflict] = useState(false);
   const attempt = useRef(crypto.randomUUID()),
     errorRef = useRef<HTMLDivElement>(null),
-    reviewRef = useRef<HTMLElement>(null);
+    reviewRef = useRef<HTMLElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     let live = true;
     setLoading(true);
@@ -495,7 +504,11 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
     };
   }, [id, retry]);
   useEffect(() => {
-    if (error) errorRef.current?.focus();
+    if (!error) return;
+    requestAnimationFrame(() => {
+      const container = formRef.current ?? reviewRef.current;
+      if (!focusFirstInvalidField(container)) errorRef.current?.focus();
+    });
   }, [error]);
   useEffect(() => {
     if (plan) reviewRef.current?.focus();
@@ -605,77 +618,92 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
         </div>
       )}
       {!plan ? (
-        <form onSubmit={save}>
-          <section className="panel">
-            <h2>Identidad</h2>
+        <form onSubmit={save} ref={formRef}>
+          <FormSection title="Identidad">
             <p>ID: {id ?? "Se asignará al guardar"}</p>
-            <label>
-              Nombre *
-              <input
-                value={value.nombre}
-                onChange={(e) => change("nombre", e.target.value)}
-                aria-invalid={!!fields.nombre}
-                aria-describedby={
-                  fields.nombre ? "budget-name-error" : undefined
+            <FormGrid>
+              <Field
+                id="nombre"
+                label="Nombre *"
+                className="ui-form-span"
+                error={
+                  fields.nombre ? (
+                    <span className="field-error" id="budget-name-error">
+                      {fields.nombre}
+                    </span>
+                  ) : undefined
                 }
-              />
-            </label>
-            {fields.nombre && (
-              <p className="field-error" id="budget-name-error">
-                {fields.nombre}
-              </p>
-            )}
+              >
+                <input
+                  value={value.nombre}
+                  onChange={(e) => change("nombre", e.target.value)}
+                />
+              </Field>
+            </FormGrid>
             <p className="help">
               Único, incluidos inactivos; se conservan tildes y espacios. * y ?
               son literales.
             </p>
-          </section>
-          <section className="panel">
-            <h2>Configuración económica</h2>
-            <label>
-              Fuente ejecutado *
-              <select
-                aria-label="Fuente ejecutado *"
-                value={value.fuente}
-                onChange={(e) => change("fuente", e.target.value)}
-                aria-invalid={!!fields.fuente}
-              >
-                <option value="">Elegir fuente</option>
-                {sources.map((s) => (
-                  <option key={s}>{s}</option>
-                ))}
-              </select>
-            </label>
-            {fields.fuente && <p className="field-error">{fields.fuente}</p>}
-            <label>
-              Saldo destino
-              {value.fuente !== "No aplica" ? " *" : " · debe estar vacío"}
-              <select
-                aria-label={
-                  value.fuente !== "No aplica"
-                    ? "Saldo destino *"
-                    : "Saldo destino · debe estar vacío"
+          </FormSection>
+          <FormSection title="Configuración económica">
+            <FormGrid>
+              <Field
+                id="fuente"
+                label="Fuente ejecutado *"
+                error={
+                  fields.fuente ? (
+                    <span className="field-error">{fields.fuente}</span>
+                  ) : undefined
                 }
-                value={value.destino}
-                disabled={value.fuente === "No aplica"}
-                onChange={(e) => change("destino", e.target.value)}
-                aria-invalid={!!fields.destino}
               >
-                <option value="">Sin destino</option>
-                {destinations.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.id} · {s.nombre} · {s.estado}
-                  </option>
-                ))}
-                {/* Never clear a stale destination silently: show it as invalid. */}
-                {value.destino &&
-                  !destinations.some((s) => s.id === value.destino) && (
-                    <option value={value.destino} disabled>
-                      {value.destino} · no válido para esta fuente
+                <select
+                  aria-label="Fuente ejecutado *"
+                  value={value.fuente}
+                  onChange={(e) => change("fuente", e.target.value)}
+                >
+                  <option value="">Elegir fuente</option>
+                  {sources.map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </Field>
+              <Field
+                id="destino"
+                label={`Saldo destino${
+                  value.fuente !== "No aplica" ? " *" : " · debe estar vacío"
+                }`}
+                error={
+                  fields.destino ? (
+                    <span className="field-error">{fields.destino}</span>
+                  ) : undefined
+                }
+              >
+                <select
+                  aria-label={
+                    value.fuente !== "No aplica"
+                      ? "Saldo destino *"
+                      : "Saldo destino · debe estar vacío"
+                  }
+                  value={value.destino}
+                  disabled={value.fuente === "No aplica"}
+                  onChange={(e) => change("destino", e.target.value)}
+                >
+                  <option value="">Sin destino</option>
+                  {destinations.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.id} · {s.nombre} · {s.estado}
                     </option>
-                  )}
-              </select>
-            </label>
+                  ))}
+                  {/* Never clear a stale destination silently: show it as invalid. */}
+                  {value.destino &&
+                    !destinations.some((s) => s.id === value.destino) && (
+                      <option value={value.destino} disabled>
+                        {value.destino} · no válido para esta fuente
+                      </option>
+                    )}
+                </select>
+              </Field>
+            </FormGrid>
             {value.fuente === "No aplica" && value.destino && (
               <button
                 className="secondary"
@@ -685,15 +713,13 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
                 Vaciar destino expresamente
               </button>
             )}
-            {fields.destino && <p className="field-error">{fields.destino}</p>}
             <p className="help">
               Gasto real y Aportación requieren destino interno. No aplica exige
               vacío; no se limpia silenciosamente. Dos Aportaciones no comparten
               destino.
             </p>
-          </section>
-          <section className="panel">
-            <h2>Estado y cobertura</h2>
+          </FormSection>
+          <FormSection title="Estado y cobertura">
             <p>
               {old?.estado ?? "Activo al crear"}. Planificación, importes y
               ejecución mensual pendientes de E2.3.
@@ -714,7 +740,7 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
                     : "Guardar presupuesto"}
               </button>
             </div>
-          </section>
+          </FormSection>
         </form>
       ) : (
         <section className="panel budget-review" tabIndex={-1} ref={reviewRef}>
@@ -764,13 +790,23 @@ function Form({ id, go }: { id?: string; go: (p: string) => void }) {
               Enumerar hechos no verifica el impacto completo.
             </Alert>
           ) : (
-            <label>
-              Motivo del cambio
+            <Field
+              id="motivo"
+              label="Motivo del cambio"
+              error={
+                fields.motivo ? (
+                  <span className="field-error">{fields.motivo}</span>
+                ) : undefined
+              }
+            >
               <textarea
                 value={reason}
-                onChange={(e) => setReason(e.target.value)}
+                onChange={(e) => {
+                  setReason(e.target.value);
+                  setFields((previous) => ({ ...previous, motivo: "" }));
+                }}
               />
-            </label>
+            </Field>
           )}
           <div className="actions">
             <button className="secondary" onClick={() => setPlan(null)}>

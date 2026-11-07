@@ -5717,3 +5717,25 @@ textarea {
 .cycle-detail-grid .panel .ui-form-section-title {
   margin-bottom: 0;
 }
+
+/* UI · DEV-05 I4 — fichas de Clasificación, Referencias y Presupuestos
+ * Ajuste aditivo: conserva la separación y la jerarquía de las fichas al
+ * consumir FormSection. Solo tokens existentes; sin reordenar reglas previas.
+ */
+.classification-detail-grid .ui-form-section-head {
+  margin-bottom: 18px;
+}
+.classification-detail-grid .panel .ui-form-section-title {
+  margin-bottom: 0;
+}
+.reference-detail .ui-form-section-head,
+.budget-detail-section .ui-form-section-head {
+  margin-bottom: var(--space-3);
+}
+.reference-detail .ui-form-section-title,
+.budget-detail-section .ui-form-section-title {
+  margin-bottom: 0;
+}
+.classification-optional-field {
+  margin-top: var(--space-5);
+}

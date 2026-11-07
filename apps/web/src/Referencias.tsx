@@ -1,6 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { api, ApiError } from "./api";
-import { Alert, DataList, PageHead, Table, Tag, type TableColumn } from "./ui";
+import {
+  Alert,
+  DataList,
+  Field,
+  focusFirstInvalidField,
+  FormGrid,
+  FormSection,
+  PageHead,
+  Table,
+  Tag,
+  type TableColumn,
+} from "./ui";
 import { referenceReturn } from "./movement-draft";
 import { VehicleForm } from "./Vehiculos";
 export type Reference = {
@@ -323,8 +334,7 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               {r!.tipo === "Vehículo" ? "Editar ficha" : "Editar referencia"}
             </button>
           </PageHead>
-          <section className="panel">
-            <h2>Identificación</h2>
+          <FormSection title="Identificación">
             <dl>
               <div>
                 <dt>ID estable</dt>
@@ -344,10 +354,9 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               y Gasto compartido crean su ficha 1:1 en la misma transacción. El
               nombre puede cambiar sin alterar sus enlaces.
             </p>
-          </section>
+          </FormSection>
           {r?.tipo === "Vehículo" && (
-            <section className="panel">
-              <h2>Ficha de Vehículo</h2>
+            <FormSection title="Ficha de Vehículo">
               {data.vehiculo ? (
                 <>
                   <dl>
@@ -377,11 +386,10 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
                   automáticamente.
                 </p>
               )}
-            </section>
+            </FormSection>
           )}
           {r?.tipo !== "Vehículo" && (
-            <section className="panel">
-              <h2>Conversión a Vehículo</h2>
+            <FormSection title="Conversión a Vehículo">
               {data.conversion.disponible ? (
                 <>
                   <p>
@@ -399,26 +407,23 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
               ) : (
                 <p className="help">{data.conversion.motivo}</p>
               )}
-            </section>
+            </FormSection>
           )}
           {r?.tipo === "Anticipo" && (
-            <section className="panel">
-              <h2>Ficha de Anticipo</h2>
+            <FormSection title="Ficha de Anticipo">
               <button onClick={() => go("/anticipos/" + id)}>
                 Consultar ficha de Anticipo
               </button>
-            </section>
+            </FormSection>
           )}
           {r?.tipo === "Gasto compartido" && (
-            <section className="panel">
-              <h2>Ficha compartida</h2>
+            <FormSection title="Ficha compartida">
               <button onClick={() => go("/compartidos/" + id)}>
                 Consultar ficha de Gasto compartido
               </button>
-            </section>
+            </FormSection>
           )}
-          <section className="panel">
-            <h2>Movimientos vinculados</h2>
+          <FormSection title="Movimientos vinculados">
             <p>
               {data.usos.length} hechos, incluidos anulados. No se mezclan
               Transferencias con Gastos en un total económico.
@@ -429,9 +434,8 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
             >
               Consultar movimientos de esta referencia
             </button>
-          </section>
-          <section className="panel">
-            <h2>Disponibilidad</h2>
+          </FormSection>
+          <FormSection title="Disponibilidad">
             <p>
               Desactivar impide nuevas selecciones, conservando todos los
               enlaces históricos.
@@ -466,7 +470,7 @@ function ReferenceDetail({ id, go }: { id: string; go: (p: string) => void }) {
                   : "Reactivar referencia"}
               </button>
             )}
-          </section>
+          </FormSection>
         </>
       )}
     </div>
@@ -488,7 +492,8 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
     [conflict, setConflict] = useState(false);
   const attempt = useRef(crypto.randomUUID()),
     initialized = useRef(false),
-    alert = useRef<HTMLDivElement>(null);
+    alert = useRef<HTMLDivElement>(null),
+    formRef = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (!id) return;
     let live = true;
@@ -540,7 +545,9 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
       setError(err.message);
       setFields(err.fields ?? {});
       setConflict(err.status === 409);
-      requestAnimationFrame(() => alert.current?.focus());
+      requestAnimationFrame(() => {
+        if (!focusFirstInvalidField(formRef.current)) alert.current?.focus();
+      });
     } finally {
       setBusy(false);
     }
@@ -553,8 +560,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
           title={data.item.nombre}
           description="Vehículo · ficha 1:1"
         />
-        <section className="panel">
-          <h2>Edición de vehículo</h2>
+        <FormSection title="Edición de vehículo">
           <p>
             El nombre, la matrícula y las fechas se editan en la ficha, donde
             también se confirman los duplicados por dimensión.
@@ -565,7 +571,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
           >
             Abrir ficha de vehículo
           </button>
-        </section>
+        </FormSection>
       </>
     );
   return (
@@ -610,26 +616,31 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
       ) : (
         <form
           noValidate
+          ref={formRef}
           onSubmit={(e) => {
             e.preventDefault();
             save();
           }}
           className="saldo-form"
         >
-          <section className="panel">
-            <h2>Identificación</h2>
+          <FormSection title="Identificación">
             {id && <p>ID inmutable: {id}</p>}
-            <div className="form-grid">
-              <label>
-                Nombre *
+            <FormGrid>
+              <Field
+                id="nombre"
+                label="Nombre *"
+                error={
+                  fields.nombre ? (
+                    <span className="field-error" id="ref-name-error">
+                      {fields.nombre}
+                    </span>
+                  ) : undefined
+                }
+              >
                 <input
                   aria-label="Nombre de Referencia *"
                   maxLength={120}
                   value={name}
-                  aria-invalid={!!fields.nombre}
-                  aria-describedby={
-                    fields.nombre ? "ref-name-error" : undefined
-                  }
                   onChange={(e) => {
                     setName(e.target.value);
                     setFields((v) => ({ ...v, nombre: "" }));
@@ -637,22 +648,24 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                     attempt.current = crypto.randomUUID();
                   }}
                 />
-                {fields.nombre && (
-                  <span className="field-error" id="ref-name-error">
-                    {fields.nombre}
-                  </span>
-                )}
-              </label>
-              <label>
-                Tipo de Referencia *
+              </Field>
+              <Field
+                id="tipo"
+                label="Tipo de Referencia *"
+                error={
+                  fields.tipo ? (
+                    <span className="field-error" id="ref-type-error">
+                      {fields.tipo}
+                    </span>
+                  ) : undefined
+                }
+              >
                 <select
                   aria-label="Tipo de Referencia *"
                   value={type}
                   disabled={
                     !!data?.usos.length || data?.item.tipo === "Vehículo"
                   }
-                  aria-invalid={!!fields.tipo}
-                  aria-describedby={fields.tipo ? "ref-type-error" : undefined}
                   onChange={(e) => {
                     setType(e.target.value);
                     setFields((v) => ({ ...v, tipo: "" }));
@@ -667,13 +680,8 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
                   <option>Gasto compartido</option>
                   {type === "Vehículo" && <option>Vehículo</option>}
                 </select>
-                {fields.tipo && (
-                  <span className="field-error" id="ref-type-error">
-                    {fields.tipo}
-                  </span>
-                )}
-              </label>
-            </div>
+              </Field>
+            </FormGrid>
             {!!data?.usos.length && (
               <p className="help">
                 Tipo protegido: hay movimientos vinculados, incluidos anulados.
@@ -684,7 +692,7 @@ function ReferenceForm({ id, go }: { id?: string; go: (p: string) => void }) {
               Estado inicial Activa. El alta de Vehículo se realiza desde
               «Nuevo vehículo» para crear la ficha 1:1 en la misma transacción.
             </p>
-          </section>
+          </FormSection>
           <div className="form-footer">
             <span>Sin importes ni cálculos propios</span>
             <div className="actions">
