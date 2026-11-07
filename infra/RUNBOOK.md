@@ -5,9 +5,10 @@ en runner efímero ubuntu-24.04; Debian 13, Caddy y almacenamiento reales requie
 otra fase y autorización. No copiar plantillas al servidor ni cambiar su página.
 
 El disparador de despliegue por tag, la promoción TEST→PROD y su aprobación se definen en
-[DEPLOY-TAGS-01](../specs/35-deploy-tags-01-specification.md). Ese diseño **no está
-habilitado**; este runbook conserva los gates operativos, el orden de parada/copia/rollback
-y las condiciones de Rootless que el workflow deberá respetar.
+[DEPLOY-TAGS-01](../specs/35-deploy-tags-01-specification.md). TEST consume un SHA congelado
+de la rama `test`; PROD futuro, el commit promovido a `main` tras el gate TEST→main. Ese
+diseño **no está habilitado**; este runbook conserva los gates operativos, el orden de
+parada/copia/rollback y las condiciones de Rootless que el workflow deberá respetar.
 
 ## Paquete privado y confianza
 
