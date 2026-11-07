@@ -5677,3 +5677,30 @@ textarea {
     gap: var(--space-4);
   }
 }
+
+/* UI · DEV-05 I2 — ficha y formulario de Saldos
+ * Ajustes aditivos para conservar la jerarquía y el espaciado ya aprobados
+ * al consumir las primitivas de I1. Solo tokens existentes; sin tocar otras
+ * pantallas ni reordenar reglas previas.
+ */
+.saldo-detail-grid .ui-form-section-head {
+  margin-bottom: 18px;
+}
+.saldo-detail-grid .panel .ui-form-section-title {
+  margin-bottom: 0;
+}
+@media (max-width: 760px) {
+  .saldo-form .ui-form-section-head {
+    margin-bottom: var(--space-5);
+  }
+  .saldo-form .ui-form-section-title {
+    font-size: var(--text-base);
+  }
+  .saldo-form .ui-form-step {
+    width: 25px;
+    height: 25px;
+  }
+  .saldo-form .ui-form-grid {
+    gap: var(--space-5);
+  }
+}
