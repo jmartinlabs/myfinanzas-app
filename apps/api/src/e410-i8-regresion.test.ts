@@ -60,6 +60,19 @@ function seedClosure(
   inicio: string,
   fin: string,
   motivo: string | null = null,
+  blocks: Partial<
+    Record<
+      | "hechos"
+      | "plan"
+      | "clasificacion"
+      | "inversion"
+      | "auxiliares"
+      | "cobertura"
+      | "backup"
+      | "no_disponible",
+      string
+    >
+  > = {},
 ) {
   const creado = `2026-0${Math.min(version, 9)}-01T00:00:00.000Z`;
   db.transaction(() => {
@@ -75,8 +88,24 @@ function seedClosure(
         saldo_inicial,estado_temporal,estado_hechos,estado_plan,hechos,plan,
         clasificacion,inversion,auxiliares,cobertura,backup,no_disponible)
        VALUES(?,?,?,'usuario-unico',?,?,'0.0.0-fixture',26,?,?,10000,'Cerrado',
-        'Sin hechos','SinPlan','{}','{}','{}','{}','{}','{}','{}','{}')`,
-      [ciclo, version, creado, motivo, fp, inicio, fin],
+        'Sin hechos','SinPlan',?,?,?,?,?,?,?,?)`,
+      [
+        ciclo,
+        version,
+        creado,
+        motivo,
+        fp,
+        inicio,
+        fin,
+        blocks.hechos ?? "{}",
+        blocks.plan ?? "{}",
+        blocks.clasificacion ?? "{}",
+        blocks.inversion ?? "{}",
+        blocks.auxiliares ?? "{}",
+        blocks.cobertura ?? "{}",
+        blocks.backup ?? "{}",
+        blocks.no_disponible ?? "{}",
+      ],
     );
     db.run(
       `INSERT INTO cierre_audit(ciclo,version,accion,anterior,posterior,motivo,
@@ -480,6 +509,56 @@ test("E4.10 I8 AC07/AC14: PATCH/DELETE no mutan cierre, foto, versión, reapertu
   }
 });
 
+test("E4.10 I8 AC07: v1 y su foto siguen consultables e inmutables con la ventana activa", async () => {
+  const f = apiFixture();
+  try {
+    await f.enroll();
+    const beforeOpen = await f.request("/api/cierres/1/foto?version=1");
+    expect(beforeOpen.status).toBe(200);
+    expect(beforeOpen.data.foto.version).toBe(1);
+
+    const opened = await f.request(
+      "/api/cierres/1/reabrir",
+      "POST",
+      { versionEsperada: 1, motivo: "Motivo de reapertura AC07" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(opened.status).toBe(201);
+    expect(opened.data.estado).toBe("Reabierto");
+
+    const duringWindow = snapshotAll(f.db);
+    const v1DuringWindow = await f.request("/api/cierres/1/foto?version=1");
+    expect(v1DuringWindow.status).toBe(200);
+    expect(v1DuringWindow.data).toEqual(beforeOpen.data);
+    expect(snapshotAll(f.db)).toEqual(duringWindow);
+
+    const routes: [string, string][] = [
+      ["/api/cierres/1/foto", "GET"],
+      ["/api/cierres/1/foto?version=1", "GET"],
+      ["/api/cierres/1/cierre", "GET"],
+      ["/api/cierres/1/estado", "GET"],
+      ["/api/cierres/1/revalidacion", "GET"],
+    ];
+    for (const [path, allow] of routes) {
+      for (const method of ["PATCH", "DELETE"] as const) {
+        const response = await f.request(path, method);
+        expect(response.status).toBe(405);
+        expect(response.headers.get("allow")).toBe(allow);
+        expect(response.data.code).toBe("METHOD_NOT_ALLOWED");
+      }
+    }
+
+    // Ni la consulta ni los intentos de escritura mutan la foto, el cierre,
+    // la ventana ni la auditoría.
+    expect(snapshotAll(f.db)).toEqual(duringWindow);
+    expect((await f.request("/api/cierres/1/reapertura")).data.estado).toBe(
+      "Reabierto",
+    );
+  } finally {
+    f.db.close();
+  }
+});
+
 test("E4.10 I8 R-SEC-01: límites de JSON y content-type en las rutas de E4.10 no escriben", async () => {
   const f = apiFixture();
   try {
@@ -559,6 +638,31 @@ test("E4.10 I8: sesión expirada exige reautenticación y conserva la ventana", 
 
     // Reautenticarse no reabre, no duplica ni reescribe la ventana.
     expect(snapshotAll(f.db)).toEqual(before);
+  } finally {
+    f.db.close();
+  }
+});
+
+test("E4.10 I8 AC20: /foto no rellena un bloque ausente ni lo convierte en cero", async () => {
+  const f = apiFixture();
+  try {
+    await f.enroll();
+    // El bloque persistido no contiene `items`: la API no debe sintetizar
+    // `[]` ni convertir la ausencia en un cero. La foto se inserta completa
+    // antes de consultarla porque v1 es inmutable.
+    seedClosure(f.db, "2", 1, "2026-02-01", "2026-02-28", null, {
+      plan: '{"estado":"Capturado","revision":1,"sinPlanificar":false}',
+    });
+    const response = await f.request("/api/cierres/2/foto?version=1");
+    expect(response.status).toBe(200);
+    expect(response.data.foto.plan).toEqual({
+      estado: "Capturado",
+      revision: 1,
+      sinPlanificar: false,
+    });
+    expect(response.data.foto.plan).not.toHaveProperty("items");
+    expect(response.data.foto.plan.items).toBeUndefined();
+    expect(JSON.stringify(response.data.foto.plan)).not.toContain('"items":[]');
   } finally {
     f.db.close();
   }

@@ -1788,3 +1788,359 @@ async function apiFixture() {
   }
   return { db, key, request, enroll, close };
 }
+
+test("E4.10 AC17: una contradicción material bloquea sin v2 y conserva los valores comparados", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    reopen(db);
+    seedMovement(db, { id: "8416", importe: 16 });
+    const options = {
+      ...validOptions(),
+      precontrol: () => ({
+        estado: "Contradiccion" as const,
+        motivo: "El precontrol contradice el cierre reabierto.",
+        esperado: { neto: "100.00" },
+        observado: { neto: "90.00" },
+      }),
+    };
+    const pre = preview(db, options);
+    expect(pre.revalidacion.estado).toBe("Bloqueante");
+    expect(
+      pre.revalidacion.comprobaciones.find(
+        (check) => check.clave === "precontrolE45",
+      ),
+    ).toMatchObject({
+      estado: "Bloqueante",
+      codigo: "REVALIDACION_BLOQUEANTE",
+      comparado: {
+        esperado: { neto: "100.00" },
+        observado: { neto: "90.00" },
+      },
+    });
+    const before = counts(db);
+    const error = problemOf(() =>
+      reCerrarCiclo(
+        db,
+        "1",
+        {
+          versionEsperada: 1,
+          motivo: "Motivo de re-cierre",
+          fingerprint: pre.fingerprint,
+        },
+        "recierre-" + randomUUID(),
+        options,
+        recloseNow,
+      ),
+    );
+    expect(error.status).toBe(409);
+    expect(error.code).toBe("REVALIDACION_BLOQUEANTE");
+    const reported = error.details.revalidacion as {
+      estado: string;
+      comprobaciones: {
+        clave: string;
+        estado: string;
+        comparado: unknown;
+      }[];
+    };
+    expect(reported.estado).toBe("Bloqueante");
+    expect(
+      reported.comprobaciones.find((check) => check.clave === "precontrolE45"),
+    ).toMatchObject({
+      estado: "Bloqueante",
+      comparado: {
+        esperado: { neto: "100.00" },
+        observado: { neto: "90.00" },
+      },
+    });
+    expect(counts(db)).toEqual(before);
+    expect(
+      db.query("SELECT COUNT(*) n FROM cierre_audit WHERE version=2").get(),
+    ).toEqual({ n: 0 });
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 AC17/AC03: un aviso acreditado se re-cierra y queda auditado con los valores comparados", () => {
+  const db = fixture();
+  try {
+    closeV1(db);
+    const v1 = getFotoCierre(db, "1", 1);
+    reopen(db);
+    seedMovement(db, { id: "8417", importe: 17 });
+    const motivoAviso =
+      "El redondeo de presentación difiere; no afecta a los hechos.";
+    const acreditacion =
+      "Diferencia declarada de presentación; no material.";
+    const options = {
+      ...validOptions(),
+      precontrol: () => ({
+        estado: "Aviso" as const,
+        motivo: motivoAviso,
+        acreditacion,
+        esperado: { neto: "100.00" },
+        observado: { neto: "100.001" },
+      }),
+    };
+    const pre = preview(db, options);
+    expect(pre.revalidacion.estado).toBe("ConAvisos");
+    expect(pre.revalidacion.avisos).toContain("precontrolE45");
+
+    const result = reclose(db, pre, options);
+    expect(result.foto.version).toBe(2);
+    expect(getFotoCierre(db, "1", 1)).toEqual(v1);
+
+    const auditRow = db
+      .query("SELECT posterior FROM cierre_audit WHERE ciclo='1' AND version=2")
+      .get() as { posterior: string };
+    const posterior = JSON.parse(auditRow.posterior) as {
+      revalidacion: {
+        estado: string;
+        fingerprint: string;
+        bloqueos: string[];
+        avisos: string[];
+        comprobaciones: {
+          clave: string;
+          estado: string;
+          codigo: string | null;
+          motivo: string | null;
+          comparado: unknown;
+        }[];
+      };
+    };
+    expect(posterior.revalidacion).toMatchObject({
+      estado: "ConAvisos",
+      fingerprint: pre.revalidacion.fingerprint,
+      bloqueos: [],
+      avisos: expect.arrayContaining(["precontrolE45"]),
+    });
+    const audited = posterior.revalidacion.comprobaciones.find(
+      (check) => check.clave === "precontrolE45",
+    );
+    expect(audited).toEqual({
+      clave: "precontrolE45",
+      estado: "Aviso",
+      codigo: "AVISO_NO_MATERIAL",
+      motivo: motivoAviso,
+      comparado: {
+        esperado: { neto: "100.00" },
+        observado: { neto: "100.001" },
+        acreditacion,
+      },
+    });
+    // La auditoría conserva los valores comparados de todas las
+    // comprobaciones, no solo el estado agregado de la revalidación.
+    for (const check of posterior.revalidacion.comprobaciones)
+      expect(check).toHaveProperty("comparado");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 AC08/AC19 API: rectificación T2 del plan en la ventana, v1 intacta y v2 con vista viva", async () => {
+  const f = await apiFixture();
+  try {
+    await f.enroll();
+    const closed = await f.close("1");
+    expect(closed.result.status).toBe(201);
+    const v1 = await f.request("/api/cierres/1/foto?version=1");
+    expect(v1.status).toBe(200);
+    expect(v1.data.foto.plan.estado).toBe("SinPlan");
+    expect(v1.data.foto.auxiliares.deuda).toEqual([]);
+    expect(v1.data.foto.noDisponible).toMatchObject({
+      deudaCompleta: { estado: "No disponible" },
+      conciliaciones: { estado: "No disponible" },
+    });
+
+    const opened = await f.request(
+      "/api/cierres/1/reabrir",
+      "POST",
+      { versionEsperada: 1, motivo: "Rectificar el plan T2" },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(opened.status).toBe(201);
+
+    // El plan y el auxiliar se crean por sus rutas reales, no con INSERT
+    // directo sobre las tablas del plan ni de la foto.
+    const budget = await f.request(
+      "/api/presupuestos",
+      "POST",
+      {
+        nombre: "Presupuesto plan T2 E4.10",
+        fuente: "Gasto real",
+        destino: "S001",
+      },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(budget.status).toBe(201);
+    const budgetId = budget.data.item.id as string;
+
+    const debt = await f.request(
+      "/api/deudas",
+      "POST",
+      {
+        nombre: "Deuda T2 E4.10",
+        inicioControl: "2026-01-01",
+        capitalApertura: "100.00",
+      },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(debt.status).toBe(201);
+    const debtId = debt.data.item.id as string;
+
+    const beforePlan = await f.request("/api/planes-ciclo/1");
+    expect(beforePlan.status).toBe(200);
+    expect(beforePlan.data.revision).toBe(0);
+    expect(beforePlan.data.sinPlan).toBe(true);
+    const propuesta = {
+      revision: beforePlan.data.revision,
+      contextRevision: beforePlan.data.contextRevision,
+      cambios: [
+        {
+          presupuesto: budgetId,
+          base: "100.00",
+          esencial: "50.00",
+          delMes: null,
+        },
+      ],
+    };
+    const impact = await f.request(
+      "/api/planes-ciclo/1/impacto",
+      "POST",
+      propuesta,
+    );
+    expect(impact.status).toBe(200);
+    expect(impact.data.requiereMotivo).toBe(true);
+    const noMotive = await f.request(
+      "/api/planes-ciclo/1/confirmar",
+      "POST",
+      { propuesta, fingerprint: impact.data.fingerprint },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(noMotive.status).toBe(422);
+    expect(noMotive.data.code).toBe("VALIDATION");
+
+    const motivo = "Rectificación T2 del plan dentro de la ventana E4.10";
+    const confirmed = await f.request(
+      "/api/planes-ciclo/1/confirmar",
+      "POST",
+      { propuesta, fingerprint: impact.data.fingerprint, motivo },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(confirmed.status).toBe(200);
+    expect(confirmed.data.revision).toBe(1);
+
+    const planAudit = f.db
+      .query(
+        "SELECT actor,motivo,revision,delta FROM cycle_plan_audit WHERE ciclo='1' ORDER BY id DESC LIMIT 1",
+      )
+      .get() as {
+      actor: string;
+      motivo: string | null;
+      revision: number;
+      delta: string;
+    };
+    expect(planAudit).toMatchObject({ actor: "usuario-unico", motivo, revision: 1 });
+    expect(JSON.parse(planAudit.delta)).toMatchObject({
+      base: { anterior: null, posterior: "100.00" },
+      esencial: { anterior: null, posterior: "50.00" },
+      impacto: {
+        fingerprint: impact.data.fingerprint,
+        cierres: [
+          {
+            ciclo: "1",
+            version: 1,
+            inicio: "2026-01-01",
+            fin: "2026-01-31",
+          },
+        ],
+      },
+    });
+
+    const live = await f.request("/api/planes-ciclo/1");
+    expect(live.status).toBe(200);
+    expect(live.data.revision).toBe(1);
+    expect(
+      live.data.items.find(
+        (item: { presupuesto: { id: string } }) =>
+          item.presupuesto.id === budgetId,
+      ),
+    ).toMatchObject({ linea: { base: "100.00", esencial: "50.00" } });
+    expect(live.data.auditoria).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ motivo, revision: 1 }),
+      ]),
+    );
+
+    // v1 no se reescribe por la rectificación viva.
+    expect((await f.request("/api/cierres/1/foto?version=1")).data).toEqual(
+      v1.data,
+    );
+
+    const pre = await f.request("/api/cierres/1/repreflight");
+    expect(pre.status).toBe(200);
+    expect(pre.data.plan).toMatchObject({
+      estado: "Capturado",
+      revision: 1,
+      lineas: 1,
+    });
+    expect(pre.data.comparacion.estado).toBe("ConCambios");
+    expect(pre.data.comparacion.bloques).toEqual(
+      expect.arrayContaining(["plan", "auxiliares"]),
+    );
+    expect(pre.data.revalidacion.avisos).toContain("auxiliares");
+    expect(pre.data.avisos.map((issue: { code: string }) => issue.code)).toContain(
+      "AUXILIARES_RECTIFICADOS",
+    );
+
+    const result = await f.request(
+      "/api/cierres/1/recerrar",
+      "POST",
+      {
+        versionEsperada: 1,
+        motivo: "Re-cierre tras rectificar el plan",
+        fingerprint: pre.data.fingerprint,
+      },
+      { "idempotency-key": randomUUID() },
+    );
+    expect(result.status).toBe(201);
+    expect(result.data.foto.version).toBe(2);
+    expect(result.data.foto.plan.estado).toBe("Capturado");
+    expect(result.data.foto.plan.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          presupuesto: budgetId,
+          base: "100.00",
+          esencial: "50.00",
+        }),
+      ]),
+    );
+    // v2 lee el auxiliar vigente; no copia la foto v1 (que no tenía deuda).
+    expect(result.data.foto.auxiliares.deuda).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: debtId, estado: "Activa" }),
+      ]),
+    );
+    expect(result.data.foto.auxiliares.deuda).not.toEqual(
+      v1.data.foto.auxiliares.deuda,
+    );
+    // Los bloques que siguen sin estar disponibles se declaran con motivo,
+    // no como cero ni con un valor heredado de v1.
+    expect(result.data.foto.noDisponible).toMatchObject({
+      deudaCompleta: {
+        estado: "No disponible",
+        motivo: expect.stringContaining("E4.4"),
+      },
+      conciliaciones: {
+        estado: "No disponible",
+        motivo: expect.stringContaining("E4.4"),
+      },
+    });
+    expect((await f.request("/api/cierres/1/foto?version=1")).data).toEqual(
+      v1.data,
+    );
+  } finally {
+    f.db.close();
+  }
+});

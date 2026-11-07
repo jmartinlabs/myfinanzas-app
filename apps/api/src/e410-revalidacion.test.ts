@@ -598,6 +598,32 @@ test("E4.10 I3 revalidación: un auxiliar desvinculado dentro de la ventana es a
   }
 });
 
+test("E4.10 AC19: un bloque auxiliar ausente bloquea y no se rellena desde v1", () => {
+  // La foto v1 no contiene la clave `deuda`: no debe completarse con valores
+  // antiguos ni declararse verificada. El comportamiento actual es fail-closed
+  // (bloqueo), no `NoDisponible` por fuente; se documenta como límite de AC19.
+  const db = fixture(
+    '{"anticipos":[],"compartidos":[],"nomina":[],"revisionComida":[]}',
+  );
+  try {
+    const before = snapshot(db);
+    const result = getRevalidacion(db, "2");
+    expect(result.estado).toBe("Bloqueante");
+    expect(result.bloquea).toBe(true);
+    expect(check(result, "auxiliares")).toEqual({
+      clave: "auxiliares",
+      estado: "Bloqueante",
+      codigo: "REVALIDACION_BLOQUEANTE",
+      motivo:
+        "Una fuente auxiliar o el bloque de la foto no se pudo leer; no se acredita su ausencia de impacto.",
+      comparado: null,
+    });
+    expect(snapshot(db)).toEqual(before);
+  } finally {
+    db.close();
+  }
+});
+
 test("E4.10 I3 revalidación: exige una reapertura activa", () => {
   const db = openDatabase(":memory:");
   try {
@@ -688,6 +714,52 @@ test("E4.10 I3 API: GET /revalidacion es de solo lectura y POST no se admite", a
     const post = await request("/api/cierres/2/revalidacion", "POST", {});
     expect(post.status).toBe(405);
     expect(post.headers.get("allow")).toBe("GET");
+  } finally {
+    db.close();
+  }
+});
+
+test("E4.10 AC03: una revalidación bloqueante queda en el DTO y no persiste eventos", async () => {
+  const db = fixture();
+  const { request, enroll } = apiHarness(db);
+  try {
+    await enroll();
+    seedClosure(db, "2", 2, "2026-02-01", "2026-02-28");
+    const before = snapshot(db);
+
+    const blocked = await request("/api/cierres/2/revalidacion");
+    expect(blocked.status).toBe(200);
+    expect(blocked.data).toMatchObject({
+      estado: "Bloqueante",
+      bloquea: true,
+      version: 2,
+    });
+    expect(
+      blocked.data.comprobaciones.find(
+        (item: { clave: string }) => item.clave === "version",
+      ),
+    ).toMatchObject({
+      estado: "Bloqueante",
+      comparado: { versionOrigen: 1, ultimaVersion: 2 },
+    });
+    expect(
+      blocked.data.comprobaciones.find(
+        (item: { clave: string }) => item.clave === "fotosPosteriores",
+      ),
+    ).toMatchObject({
+      estado: "Bloqueante",
+      comparado: { versionOrigen: 1, ultimaVersion: 2 },
+    });
+
+    // El GET es de solo lectura: no añade eventos, auditoría, ventana ni
+    // intentos. La evidencia de la revalidación bloqueada es el DTO; no se
+    // persiste hasta que un re-cierre válido la incorpore a su auditoría.
+    expect(snapshot(db)).toEqual(before);
+    expect(
+      (snapshot(db).audit as { accion: string }[]).filter(
+        (row) => row.accion === "revalidacion",
+      ),
+    ).toEqual([]);
   } finally {
     db.close();
   }
