@@ -79,7 +79,7 @@ SPEC34/seed con el SHA elegido; `main` ya no está en v25/v26 sino en v27.
 | --- | --- | --- | --- |
 | H1 | `FT-1` dice «4 altas» de Saldos, pero una Compra exige un Saldo `Efectivo/Inversiones` y otro `Inversión/Inversiones`. Con solo 4 altas no se puede registrar la compra por servicios. | `compras.ts:validReferences` exige `tipo=Efectivo, control=Inversiones` y `tipo=Inversión, control=Inversiones`. | Enmienda de `FT-1 v1`: añadir `S002 Efectivo/Inversiones` (5 altas). Alternativa: omitir la compra y declarar E4.1 no cubierto; no recomendada. |
 | H2 | `confirmPayroll` genera `id = "PAGA-" + randomUUID()`, por lo que dos ejecuciones limpias no producen los mismos IDs. | `nomina.ts:parsePay`. | Cambio mínimo aprobado: permitir un `id` determinista solo en la creación usada por el seed (p. ej. `PAY001`), conservando el UUID por defecto en la API. Si no se aprueba, `FT-1` debe omitir la nómina y rebajar AC05. |
-| H3 | `openDatabase` en producción ejecuta `prepareSchema`, que puede migrar 24/25/26→27. El seed no debe migrar ni «arreglar». | `database.ts`, `database-schema.ts`. | Preflight de solo lectura (`schema_version=27` + `verifyContract`) **antes** de abrir la conexión de escritura; usar `openProductionConnection` y aplicar PRAGMA de conexión (FK, busy_timeout, WAL, synchronous) sin migrar. |
+| H3 | `openDatabase` en producción ejecuta `prepareSchema`, que puede migrar cualquier versión admitida anterior a 27. El seed no debe migrar ni «arreglar». | `database.ts`, `database-schema.ts`. | Preflight de solo lectura (`schema_version=27` + `verifyContract`) **antes** de abrir la conexión de escritura; usar `openProductionConnection` y aplicar PRAGMA de conexión (FK, busy_timeout, WAL, synchronous) sin migrar. |
 | H4 | `seed reset` archiva `<data-root>/state`, pero no dice qué pasa con `test-instance.json` y `seed-manifest.json`; quedan apuntando a un estado archivado. | SPEC34 §4.8. | Archivar también marcador y manifiesto en `reset/state-<UTC>/` y dejar la raíz sin marcador; la recreación exige nueva `seed init`. |
 | H5 | `backup-cli restore` restaura DB+clave, pero no marcador/manifiesto; `seed verify` sobre el destino restaurado no puede comparar el manifiesto. | `backup.ts`, `backup-cli.ts`. | Incluir una copia cifrada del manifiesto/marcador en el paquete de backup o permitir `seed verify --manifest <ruta>` con el manifiesto de evidencia. Decidir en el incremento de backup/seed. |
 | H6 | `referenceMapping` exige IDs `CAT009`/`CAT013` para Referencia obligatoria; `FT-1` solo crea 2 categorías (`CAT001`, `CAT002`). | `reference-rules.ts`. | Mantener la referencia **opcional** en el Gasto compartido de `FT-1`; no crear 13 categorías ni cambiar el mapping. Declarar cobertura parcial de «Referencia obligatoria». |
@@ -250,7 +250,8 @@ igualdad byte a byte de SQLite (WAL, orden físico y páginas libres).
    coherente.
 3. `--data-root` absoluto, canónico, sin symlinks; `<root>/state` `0700`; DB/clave
    `0600`; UID efectivo; DB y clave en el mismo directorio.
-4. Esquema **27/C27** verificado en solo lectura; 24/25/26/28/desconocido → `2`, sin migrar.
+4. Esquema **27/C27** verificado en solo lectura; cualquier versión distinta de 27
+   (incluidas 24/25/26/28) → `2`, sin migrar.
 5. `owner` vacío en el primer seed; `movimientos=0`; `audit=0`; `saldos=1` (solo S000);
    cierres/fotos en 0; sin `seed-manifest.json` previo.
 6. No acepta ficheros, stdin, Excel, SQL externo, `--from` ni datos de entorno.
@@ -317,7 +318,7 @@ debe medirse en la fase correspondiente.
 | ID | Criterio verificable | Evidencia | Fase |
 | --- | --- | --- | --- |
 | `FT1-AC01` | Manifiesto y marcador declaran `FT-1 v1`, esquema 27, C27, `e4.11-v27`, commit y checksum del dataset. | `seed-manifest.json`, `test-instance.json`, `seed verify` | 3/4 |
-| `FT1-AC02` | Guardas negativas: origen PROD, marcador ausente/ajeno, ruta relativa/symlink, permisos anchos, owner existente, estado no vacío, esquema 24/25/26/28. | Códigos `2`/`3`, estado intacto | 3/4 |
+| `FT1-AC02` | Guardas negativas: origen PROD, marcador ausente/ajeno, ruta relativa/symlink, permisos anchos, owner existente, estado no vacío, esquema distinto de 27 (24/25/26/28). | Códigos `2`/`3`, estado intacto | 3/4 |
 | `FT1-AC03` | Dos ejecuciones limpias independientes producen los mismos IDs, fechas, importes y checksums lógicos, salvo `key_hash`. | Dos manifiestos comparados | 4 |
 | `FT1-AC04` | Segundo `seed apply` es no-op `0`; un estado parcial se rechaza sin reparación. | Conteos, checksums y ausencia de escrituras | 4 |
 | `FT1-AC05` | `seed reset` archiva solo estado/marcador/manifiesto TEST y deja secuencia de recreación; no toca PROD ni copias. | Árbol antes/después y hashes | 8 |
@@ -327,7 +328,7 @@ debe medirse en la fase correspondiente.
 | `FT1-AC09` | Backup cifrado y restore aislado conservan `FT-1` y permiten `seed verify` con la evidencia del manifiesto (resuelve H5). | Checksums, restore, health/401 | 7/8 |
 | `FT1-AC10` | Volumen y tiempos §2.6 medidos en E1; sin fallos de integridad/FK. | `integrity_check`, tiempos, tamaño | 3/4 |
 | `FT1-AC11` | Sin Excel, bases reales, exportaciones, credenciales, PII ni datos de PROD; solo `FT-1`. | Inventario redactado y revisión | 4/7 |
-| `FT1-AC12` | El seed no migra el esquema: 24/25/26/28 se rechazan antes de abrir escritura; 27 permanece 27. | `schema_version` antes/después | 3/4 |
+| `FT1-AC12` | El seed no migra el esquema: cualquier versión distinta de 27 (24/25/26/28) se rechaza antes de abrir escritura; 27 permanece 27. | `schema_version` antes/después | 3/4 |
 
 Mapeo: `FT1-AC01/02/07/12` → SPEC34 AC02/AC04/AC08; `FT1-AC03/04` → AC05/AC06;
 `FT1-AC05` → AC07; `FT1-AC06` → AC03/AC10; `FT1-AC08` → AC09/AC11;
@@ -457,7 +458,7 @@ paralizan escritores sobre los mismos archivos.
 | Cambio de servicios o IDs | Dos ejecuciones no coinciden | Tests de determinismo; H2 para nómina; revisión de servicios |
 | SQL crudo o bypass de invariantes | Datos incoherentes/auditoría falsa | Prohibición, revisión y test estático; solo lectura en verify |
 | Seed en entorno equivocado | Contaminación o pérdida | Marcador + origen + ruta + owner + base vacía; fallo cerrado |
-| Migración silenciosa | Se siembra un esquema distinto | Preflight de solo lectura; 24/25/26/28 → `2` |
+| Migración silenciosa | Se siembra un esquema distinto | Preflight de solo lectura; cualquier versión ≠27 → `2` |
 | Reset/backup pierden evidencia | Imposible verificar restauración | Archivar marcador/manifiesto; incluirlos en la evidencia de backup |
 | Reset sin preflight de salud | Se archiva una unidad activa | H11: preflight del host con evidencia o red de solo lectura para `reset` |
 | Imagen de seed en producción | Superficie innecesaria | Inventario de rootfs; `Pull=never`; ID inmutable |
