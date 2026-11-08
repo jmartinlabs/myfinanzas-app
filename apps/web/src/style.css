@@ -5739,3 +5739,143 @@ textarea {
 .classification-optional-field {
   margin-top: var(--space-5);
 }
+
+/* UI · DEV-06 I1 — Inicio
+ * Sección aditiva: jerarquía, tipografía, espaciado y rejilla de /inicio.
+ * Conserva cifras, estados, fuentes, secciones, orden y comportamiento; solo
+ * consume tokens no cromáticos y no reescribe reglas previas ni temas.
+ */
+.inicio-page {
+  gap: var(--space-4);
+}
+.inicio-context {
+  gap: var(--space-3);
+}
+.inicio-context-head,
+.inicio-section-head {
+  gap: var(--space-3);
+}
+.inicio-grid-2,
+.inicio-grid-4 {
+  gap: var(--space-4);
+}
+.inicio-metric-grid {
+  gap: var(--space-3);
+}
+.inicio-context-facts,
+.inicio-counts,
+.inicio-objetivo-facts,
+.inicio-nd-list {
+  gap: var(--space-2) var(--space-4);
+}
+.inicio-section > h2 {
+  margin-bottom: var(--space-3);
+}
+.inicio-section h3 {
+  margin: var(--space-4) 0 var(--space-2);
+}
+.inicio-metric {
+  padding: var(--space-3);
+}
+.inicio-metric-head {
+  gap: var(--space-2);
+}
+.inicio-metric-main {
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+.inicio-detail {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-detail-grid {
+  gap: var(--space-3);
+}
+.inicio-submetric {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-note {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+}
+.inicio-linkrow {
+  margin-top: var(--space-3);
+  gap: var(--space-2) var(--space-4);
+}
+.inicio-readonly {
+  padding: var(--space-1) var(--space-2);
+}
+.inicio-ref-coverage {
+  gap: var(--space-1) var(--space-4);
+}
+.inicio-metric-meta,
+.inicio-metric-motivo,
+.inicio-source {
+  margin-top: var(--space-2);
+}
+.inicio-zona {
+  margin-top: var(--space-2);
+}
+.inicio-metric-coverage {
+  margin-top: var(--space-2);
+}
+
+/* Texto funcional a partir de 12 px, incluidos metadatos y estados. */
+.inicio-page .ui-badge,
+.inicio-page .ui-metric-class,
+.inicio-page .inicio-readonly,
+.inicio-page .inicio-clase,
+.inicio-page .inicio-estado,
+.inicio-page .inicio-metric-meta,
+.inicio-page .inicio-metric-motivo,
+.inicio-page .inicio-source,
+.inicio-page .inicio-note,
+.inicio-page .inicio-ref-coverage,
+.inicio-page .inicio-item-meta,
+.inicio-page .inicio-value-note,
+.inicio-page .inicio-metric-coverage,
+.inicio-page .inicio-zona,
+.inicio-page .inicio-context-facts dt,
+.inicio-page .inicio-counts dt,
+.inicio-page .inicio-objetivo-facts dt,
+.inicio-page .inicio-nd-list dt,
+.inicio-page .inicio-detail h4,
+.inicio-page .inicio-submetric h4,
+.inicio-page .ui-amount-note {
+  font-size: var(--text-xs);
+}
+.inicio-page .inicio-item-value {
+  font-size: var(--text-sm);
+}
+
+/* Objetivo R6: el coste esencial manda; las submétricas se subordinan. */
+.inicio-submetric .ui-amount-value {
+  font-size: var(--text-md);
+  letter-spacing: 0;
+}
+.inicio-submetric .ui-amount-state {
+  font-size: var(--text-sm);
+}
+
+/* Rejilla 4/2/1: el salto a dos columnas se adelanta para que las tarjetas
+ * sigan siendo legibles con el texto funcional a 12 px. */
+@media (max-width: 1200px) {
+  .inicio-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 760px) {
+  .inicio-grid-2,
+  .inicio-grid-4,
+  .inicio-metric-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .inicio-page {
+    gap: var(--space-3);
+  }
+  .inicio-context,
+  .inicio-section {
+    padding: var(--space-4);
+  }
+}
