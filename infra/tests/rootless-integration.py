@@ -15,6 +15,10 @@ import urllib.error
 import urllib.request
 import uuid
 
+# Import the release contract error for sanitized diagnostics only.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from release import ReleaseError  # noqa: E402
+
 # The reviewed migration dispatched through PREVIOUS_REF is 26 -> 27. Update
 # this guard together with the next authorized migration manifest.
 PREVIOUS_REF_SCHEMA = 26
@@ -197,6 +201,19 @@ def main():
             raise ProbeError('wrong manifest trust pin was accepted')
         verify(output, manifest['inputs']['source'], digest)
         evidence['frontend-backend-integrity-and-negative'] = True
+        stage = 'synthetic-seed-release-smoke'
+        smoke_evidence = root / 'smoke-evidence.json'
+        smoke = subprocess.run(
+            [sys.executable, str(source / 'infra/smoke.py'),
+             '--release', str(output),
+             '--expected-commit', manifest['inputs']['source'],
+             '--expected-manifest-sha256', digest,
+             '--evidence', str(smoke_evidence)],
+            capture_output=True, text=True, timeout=600)
+        if smoke.returncode or not smoke_evidence.is_file():
+            # Never publish raw output: it may contain synthetic factors.
+            raise ProbeError('synthetic release+seed smoke failed')
+        evidence['synthetic-seed-release-smoke'] = True
         data = root / 'data'
         data.mkdir(mode=0o700)
         env = ['--env=NODE_ENV=production', '--env=APP_ORIGIN=https://myfinanzas.pp.ua',
@@ -521,7 +538,7 @@ def main():
         stage = 'previous-private-release-build'
         previous_ref = resolve_previous_ref(source)
         evidence['previous-ref-selection'] = 'explicit' if os.environ.get('PREVIOUS_REF', '').strip() else 'merge-base'
-        previous = build(root / 'previous', ref=previous_ref)
+        previous = build(root / 'previous', ref=previous_ref, seed=False)
         same_contracts = previous['inputs']['contracts'] == manifest['inputs']['contracts']
         authorization = None
         if not same_contracts:
@@ -660,6 +677,6 @@ if __name__ == '__main__':
         main()
     except Exception as error:
         # Fixed stage and class only: no keys, data, env or command output.
-        detail = str(error) if isinstance(error, ProbeError) else type(error).__name__
+        detail = str(error) if isinstance(error, (ProbeError, ReleaseError)) else type(error).__name__
         print('::error title=Rootless integration failed::stage=' + stage + '; reason=' + detail)
         sys.exit(1)

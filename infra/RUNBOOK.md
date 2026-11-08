@@ -29,15 +29,30 @@ inexplicadas bloquean aceptación.
 No equivale a prometer archivo OCI idéntico byte a byte ni disponibilidad perpetua
 de descargas. No ampliar arquitectura sin nueva validación.
 
-La carpeta contiene `image.oci.tar`, `frontend/`, `manifest.json` y
-`manifest.sha256`; permanece privada y no se publica como artifact de CI.
+La carpeta contiene `image.oci.tar`, `image.seed.oci.tar`, `frontend/`,
+`manifest.json` y `manifest.sha256`; permanece privada y no se publica como artifact
+de CI. `release.py build` construye la app y la imagen seed **test-only** desde el
+mismo commit, base y lock, con dos builds por imagen. El manifiesto registra el bloque
+`seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta, `source`,
+`contracts` y lock); `verify` exige que el par esté presente y emparejado.
 Transportar solo por canal privado autorizado en una fase posterior. Obtener el
 SHA del manifiesto y commit esperado de una fuente revisada independiente:
 `python3 infra/release.py verify /ruta/privada/release --expected-commit COMMIT --expected-manifest-sha256 SHA`.
 Un checksum recibido junto a archivos manipulados no autentica a su autor.
 Verificar antes de `podman load --input /ruta/privada/release/image.oci.tar`;
 seleccionar después el ID inmutable del manifiesto, nunca una etiqueta mutable.
-Conservar backend y frontend como conjunto, también al volver a versión anterior.
+Cargar `image.seed.oci.tar` solo para tareas de seed efímeras y nunca referenciarlo
+en la unidad permanente. Conservar backend, frontend y seed como conjunto, también
+al volver a versión anterior.
+
+El smoke sintético de API/UI se ejecuta en un host rootless autorizado, tras verificar
+el paquete, sobre una raíz de datos temporal nueva:
+`python3 infra/smoke.py --release /ruta/privada/release --expected-commit COMMIT --expected-manifest-sha256 SHA`.
+Hace `production-init → seed init/apply/verify → setup`, arranca la app y comprueba
+salud, 401 anónimo, HTML del frontend verificado y una lectura autenticada con TOTP.
+La app no sirve `/` por sí misma: el smoke comprueba el `frontend/` verificado con un
+servidor estático local, no un endpoint de la API. No sustituye CI, el gate Rootless
+ni la autorización de despliegue.
 
 ## Preflight y almacenamiento
 

@@ -11,7 +11,9 @@ auditoría ni idempotencia con SQL crudo.
 - Contrato de datos declarado: **e4.11-v27**.
 - Dataset: `FT-1`, versión `1`, fichero `dataset/ft1.json`.
 - Comandos: `init`, `apply`, `verify` y `status`.
-- **No** incluye `reset` (H11), imagen test-only, `seed_image`, backup/restore ni smoke E2E.
+- Imagen test-only `infra/Containerfile.seed`, construida por `infra/release.py` desde el
+  mismo commit, base y lock que la app; `source.seed_image` registra su ID inmutable.
+- **No** incluye `reset` (H11) ni backup/restore.
 - Los tests viven en `apps/api/src/test-seed-ft1.test.ts` para que el comando canónico
   `bun test apps/api` los ejecute.
 
@@ -39,17 +41,20 @@ export AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key
 # 1. Validar y escribir test-instance.json (no escribe datos financieros)
 bun tools/test-seed/cli.ts init \
   --data-root /var/lib/myfinanzas \
-  --seed-commit "$SEED_COMMIT"
+  --seed-commit "$SEED_COMMIT" \
+  --seed-image "$SEED_IMAGE"
 
 # 2. Aplicar FT-1 con servicios; publica seed-manifest.json
 bun tools/test-seed/cli.ts apply \
   --data-root /var/lib/myfinanzas \
-  --seed-commit "$SEED_COMMIT"
+  --seed-commit "$SEED_COMMIT" \
+  --seed-image "$SEED_IMAGE"
 
 # 3. Recalcular checksums y comparar marcador/manifiesto/estado
 bun tools/test-seed/cli.ts verify \
   --data-root /var/lib/myfinanzas \
-  --expected-manifest-sha256 "$SEED_MANIFEST_SHA256"
+  --expected-manifest-sha256 "$SEED_MANIFEST_SHA256" \
+  --seed-image "$SEED_IMAGE"
 
 # 4. Informe no secreto (sin rutas completas)
 bun tools/test-seed/cli.ts status --data-root /var/lib/myfinanzas
@@ -57,6 +62,27 @@ bun tools/test-seed/cli.ts status --data-root /var/lib/myfinanzas
 
 `init` y `apply` reciben `--seed-commit` (SHA-40) para la procedencia del manifiesto. No
 aceptan ficheros, stdin, `--from`, Excel, SQL externo ni datos de entorno para el dataset.
+
+En un contexto de release, el operador debe pasar `--seed-image sha256:<64 hex>` con el ID
+inmutable del manifiesto de release. `init` lo guarda en el marcador, `apply` en
+`source.seed_image` y `verify` lo compara; si el manifiesto declara imagen seed, `verify`
+exige el flag y rechaza cualquier ID distinto. Sin release (uso local/unitario) el flag es
+opcional y el manifiesto registra `null`.
+
+Con la imagen test-only, el `ENTRYPOINT` es `bun`, así que los argumentos del CLI se pasan
+como comando del contenedor:
+
+```sh
+podman run --rm --pull=never --http-proxy=false --network=none \
+  --userns=keep-id:uid=10001,gid=10001 --user=10001:10001 \
+  --cap-drop=all --security-opt=no-new-privileges --read-only \
+  --volume=/ruta/privada/data:/var/lib/myfinanzas:rw \
+  --env=NODE_ENV=production --env=APP_ORIGIN=https://test.myfinanzas.pp.ua \
+  --env=DATABASE_PATH=/var/lib/myfinanzas/state/database.sqlite \
+  --env=AUTH_KEY_PATH=/var/lib/myfinanzas/state/auth.key \
+  "$SEED_IMAGE" tools/test-seed/cli.ts verify \
+  --data-root /var/lib/myfinanzas --seed-image "$SEED_IMAGE"
+```
 
 ### Códigos de salida
 
@@ -151,7 +177,8 @@ manifiesto declara `schema=27`, `schema_contract=C27-E411-FOTOS-PERIODO` con su 
 `seed-manifest.json` (0600) contiene:
 
 - dataset, versión, SHA-256 del fichero y hash lógico canónico;
-- commit, esquema, contrato y SHA del contrato, contrato de datos y Bun;
+- commit, esquema, contrato y SHA del contrato, contrato de datos, Bun e ID inmutable
+  `source.seed_image`;
 - entorno TEST con rutas relativas `state/database.sqlite` y `state/auth.key`;
 - IDs congelados, conteos, tablas vacías y checksums lógicos por tabla;
 - reglas de exclusión y `created_at` fijado al ancla del dataset.
@@ -173,16 +200,15 @@ incluido `audit.campos`: los arrays de campos auditados entran completos y los p
 presupuesto/deuda se normalizan eliminando recursivamente `creado`/`actualizado`, para que la
 huella no dependa de marcas de tiempo. Manipular la auditoría cambia la huella y `verify`
 falla con `Drift`. El manifiesto declara además las exclusiones de `audit.id`, `*_audit.id` y
-los payloads `anterior`/`posterior`.
-No se promete igualdad byte a byte de SQLite.
+los payloads `anterior`/`posterior`. La exclusión `*_audit.id` se aplica a las tablas
+`*_audit`; **no** aplica a `movement_audit`, cuyo `id` sí entra en la huella (junto con
+`revision`, `accion`, `motivo` y `actor`). No se promete igualdad byte a byte de SQLite.
 
 ## Qué falta para release
 
-- Incremento I2: imagen test-only desde el mismo commit, ID inmutable y bloque `seed` en el
-  manifiesto de release o `release-pair.json`.
-- `seed_image` y su SHA inmutable en el manifiesto/marcador (hoy no existen).
 - `reset` (H11) y la resolución de H5 (backup/restore de manifiesto/marcador).
-- Smoke API/UI autenticado con MFA, evidencia E1, tiempos/volumen y `integrity_check`.
+- Ejecutar `infra/smoke.py` sobre el par release+seed verificado en un host rootless
+  autorizado; la evidencia local no sustituye CI ni el gate Rootless.
 - Cobertura pendiente: E3.1 (H2), E1.5/E3.2 (H6), E2.1/E2.3/E2.4, E3.5/FIN_NETA y módulos
   excluidos por D5/D7.
 - Autorizaciones G2–G7 y QA independiente. Esta entrega no declara PASS de release.

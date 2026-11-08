@@ -28,6 +28,7 @@ export type TestInstanceMarker = {
   schema_contract: string;
   seed_manifest_sha256: string | null;
   seed_commit: string;
+  seed_image: string | null;
   created_at: string;
 };
 
@@ -46,7 +47,10 @@ export const markerPath = (root: string) => join(root, MARKER_FILE);
 export const manifestPath = (root: string) => join(root, MANIFEST_FILE);
 export const failurePath = (root: string) => join(root, FAILURE_FILE);
 
-export function expectedInitMarker(commit: string): TestInstanceMarker {
+export function expectedInitMarker(
+  commit: string,
+  seedImage: string | null = null,
+): TestInstanceMarker {
   return {
     format: SEED_FORMAT,
     environment: "test",
@@ -57,6 +61,7 @@ export function expectedInitMarker(commit: string): TestInstanceMarker {
     schema_contract: SEED_SCHEMA_CONTRACT,
     seed_manifest_sha256: null,
     seed_commit: commit,
+    seed_image: seedImage,
     created_at: dataset.anchor,
   };
 }
@@ -68,6 +73,7 @@ export function markerJson(marker: TestInstanceMarker) {
 export function validateMarker(
   marker: unknown,
   commit?: string,
+  seedImage?: string | null,
 ): string | null {
   if (!marker || typeof marker !== "object" || Array.isArray(marker))
     return "marcador no es un objeto";
@@ -89,6 +95,14 @@ export function validateMarker(
     return "seed_commit inválido";
   if (commit !== undefined && value.seed_commit !== commit)
     return "seed_commit distinto del solicitado";
+  const actualImage = value.seed_image ?? null;
+  if (
+    actualImage !== null &&
+    (typeof actualImage !== "string" || !/^sha256:[a-f0-9]{64}$/.test(actualImage))
+  )
+    return "seed_image inválido";
+  if (seedImage !== undefined && actualImage !== seedImage)
+    return "seed_image distinto del solicitado";
   if (
     value.seed_manifest_sha256 !== null &&
     (typeof value.seed_manifest_sha256 !== "string" ||
