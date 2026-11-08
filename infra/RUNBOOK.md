@@ -37,11 +37,11 @@ artifact ZIP sin cifrar construido en GitHub Actions (retención 7 días), sin s
 bases de datos ni información financiera; en un repositorio público debe tratarse como
 público. La descarga manual es por HTTPS (`gh run download` o la API de artifacts); SSH
 se usa únicamente para transferir el paquete ya verificado al host privado. Requiere
-gate Rootless previo del mismo SHA y QA independiente. El empaquetado manual
-(`workflow_dispatch` con `package_test_release=true`, `release_sha` SHA40 exacto de
-`test` y `qa_reference` que contenga ese SHA) usa un único build por imagen
-(`--single-build`, `payload_equal: null`), sin atribuirse la reproducibilidad que
-Rootless sigue validando con dos builds limpios. `release.py build` construye la app y
+gate Rootless previo del mismo SHA y QA independiente. El build de un tag
+`deploy-test-vX.Y.Z` usa un único build por imagen (`--single-build`,
+`payload_equal: null`), sin atribuirse la reproducibilidad que Rootless sigue validando
+con dos builds limpios; fuera del despliegue puede repetirse `release.py build` sobre el
+SHA exacto para evidencia. `release.py build` construye la app y
 la imagen seed **test-only** desde el mismo commit, base y lock; el manifiesto registra
 el bloque `seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta,
 `source`, `contracts` y lock), y `verify` exige que el par esté presente y emparejado.
@@ -67,25 +67,26 @@ La app no sirve `/` por sí misma: el smoke comprueba el `frontend/` verificado 
 servidor estático local, no un endpoint de la API. No sustituye CI, el gate Rootless
 ni la autorización de despliegue.
 
-## Despliegue directo TEST
+## Despliegue directo TEST por tag
 
-El workflow Rootless, tras `push` a `test` y con `required`/`qa`/Rootless en `SUCCESS`,
-construye una sola release (`release.py build --single-build`), la verifica y ejecuta el
-smoke. Después envía el bundle (manifiesto, checksums, frontend e imagen) al VPS por SSH
-dentro de un comando forzado; el receptor aplica imagen, unidad y frontend con smoke y
-rollback automático.
+El workflow Rootless se dispara con un tag `deploy-test-vX.Y.Z` creado por un actor
+autorizado. No despliegan los merges a `test`. Tras validar tag, actor, SHA y gates
+(`required`, `qa`, Rootless), construye una sola release, la verifica, ejecuta el smoke y
+envía el bundle al VPS por SSH dentro de un comando forzado; el receptor aplica imagen,
+unidad y frontend con smoke y rollback automático.
 
 Gates:
 
-- `MYFINANZAS_TEST_DEPLOY=true` (variable de repositorio) o `workflow_dispatch` con
-  `deploy_test=true`, `release_sha` y `qa_reference` del SHA exacto;
-- entorno GitHub `test` con revisores requeridos; sin esa protección no se activa la variable;
-- el job comprueba que `origin/test` sigue en el SHA construido.
+- tag anotado e inmutable, formato SemVer, commit igual al SHA y ancestro de `origin/test`;
+- actor en `MYFINANZAS_DEPLOY_ACTORS`, además de la protección de tags de GitHub;
+- `required`, `qa` y Rootless en `SUCCESS` sobre el SHA exacto;
+- interruptor de entorno `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;
+- sin GitHub Environments ni segunda aprobación.
 
-No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en el
-entorno `test` (`TEST_DEPLOY_KEY`, `TEST_DEPLOY_KNOWN_HOSTS`) y el receptor corre como
-`mftest` sin sudo. La primera activación sigue siendo manual; las posteriores no ejecutan
-`seed` ni modifican el estado persistente y solo aplican releases con el mismo contrato.
+No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en los
+secretos `TEST_DEPLOY_KEY`/`TEST_DEPLOY_KNOWN_HOSTS` y el receptor corre como `mftest` sin
+sudo. La primera activación sigue siendo manual; las posteriores no ejecutan `seed` ni
+modifican el estado persistente y solo aplican releases con el mismo contrato.
 
 ## Preflight y almacenamiento
 

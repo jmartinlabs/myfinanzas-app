@@ -3,6 +3,8 @@ on:
   push:
     branches:
       - test
+    tags:
+      - 'deploy-test-v*'
   pull_request:
     branches:
       - main
@@ -30,21 +32,6 @@ on:
         required: false
         default: ''
         type: string
-      release_sha:
-        description: Exact lowercase SHA40 of the test branch
-        required: false
-        default: ''
-        type: string
-      qa_reference:
-        description: Independent QA evidence reference for exact SHA
-        required: false
-        default: ''
-        type: string
-      deploy_test:
-        description: Deploy the verified release to the TEST VPS after review
-        required: false
-        default: false
-        type: boolean
 permissions:
   contents: read
   checks: read
@@ -87,7 +74,7 @@ jobs:
   qa:
     name: qa
     # Automated regression on the exact test SHA, not a substitute for independent PR review.
-    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && github.ref == 'refs/heads/test') || (github.event_name == 'workflow_dispatch' && inputs.deploy_test) }}
+    if: ${{ (github.event_name == 'pull_request' && github.base_ref == 'test') || (github.event_name == 'push' && (github.ref == 'refs/heads/test' || startsWith(github.ref, 'refs/tags/deploy-test-v'))) || github.event_name == 'workflow_dispatch' }}
     needs: capability
     runs-on: ubuntu-24.04
     timeout-minutes: 30
@@ -107,11 +94,10 @@ jobs:
       - run: python3 scripts/verify baseline
 
   deploy:
-    name: Deploy TEST to the VPS
-    if: ${{ (github.event_name == 'push' && github.ref == 'refs/heads/test' && vars.MYFINANZAS_TEST_DEPLOY == 'true') || (github.event_name == 'workflow_dispatch' && inputs.deploy_test) }}
+    name: Deploy TEST from an authorized tag
+    if: ${{ startsWith(github.ref, 'refs/tags/deploy-test-v') && vars.MYFINANZAS_TEST_DEPLOY == 'true' }}
     needs: [capability, qa]
     runs-on: ubuntu-24.04
-    environment: test
     timeout-minutes: 60
     permissions:
       contents: read
@@ -122,25 +108,32 @@ jobs:
           ref: ${{ github.sha }}
           fetch-depth: 0
           persist-credentials: false
-      - name: Verify SHA, CI and QA evidence
+      - name: Validate tag, actor, origin and evidence
         shell: bash
         env:
-          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
-          QA_REFERENCE: ${{ inputs.qa_reference }}
           GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.triggering_actor }}
+          ALLOWED_ACTORS: ${{ vars.MYFINANZAS_DEPLOY_ACTORS }}
         run: |
           set -euo pipefail
-          [[ "$GITHUB_REF" == 'refs/heads/test' ]]
-          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$(git rev-parse HEAD)" == "$RELEASE_SHA" ]]
-          [[ "$(git rev-parse origin/test)" == "$RELEASE_SHA" ]]
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
-            [[ -n "$QA_REFERENCE" ]]
-            [[ "$QA_REFERENCE" == *"$RELEASE_SHA"* ]]
-          fi
-          gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+          [[ "$GITHUB_REF_TYPE" == 'tag' ]]
+          [[ "$GITHUB_REF_NAME" =~ ^deploy-test-v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          [[ "$(git cat-file -t "$GITHUB_REF_NAME")" == 'tag' ]]
+          TAG_SHA="$(git rev-list -n1 "$GITHUB_REF_NAME")"
+          [[ "$TAG_SHA" == "$GITHUB_SHA" ]]
+          git fetch --no-tags origin +refs/heads/test:refs/remotes/origin/test
+          git merge-base --is-ancestor "$TAG_SHA" origin/test
+          [[ -n "$ALLOWED_ACTORS" ]]
+          found=0
+          IFS=',' read -ra actors <<< "$ALLOWED_ACTORS"
+          for allowed in "${actors[@]}"; do
+            allowed="${allowed// /}"
+            [[ -n "$allowed" && "$allowed" == "$ACTOR" ]] && found=1
+          done
+          [[ "$found" == 1 ]]
+          gh api "repos/$GITHUB_REPOSITORY/commits/$TAG_SHA/check-runs?per_page=100" \
             | jq -e '.check_runs | any(.name == "qa" and .conclusion == "success")' >/dev/null
-          gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+          gh api "repos/$GITHUB_REPOSITORY/commits/$TAG_SHA/check-runs?per_page=100" \
             | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")' >/dev/null
       - name: Install rootless builder on disposable runner
         run: |
@@ -149,7 +142,7 @@ jobs:
       - name: Build once, verify and smoke
         shell: bash
         env:
-          RELEASE_SHA: ${{ github.event_name == 'push' && github.sha || inputs.release_sha }}
+          RELEASE_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
@@ -164,7 +157,7 @@ jobs:
           cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/image.oci.tar" "$bundle/"
           cp -a "$dest/frontend/." "$bundle/frontend/"
           (cd "$bundle" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
-          printf 'TEST release SHA: %s\nManifest SHA-256: %s\n' "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
+          printf 'Tag: %s\nRelease SHA: %s\nManifest SHA-256: %s\n' "$GITHUB_REF_NAME" "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
       - name: Deploy over the forced SSH command
         shell: bash
         env:
@@ -172,11 +165,13 @@ jobs:
           TEST_DEPLOY_KNOWN_HOSTS: ${{ secrets.TEST_DEPLOY_KNOWN_HOSTS }}
           TEST_DEPLOY_HOST: ${{ vars.TEST_DEPLOY_HOST }}
           TEST_DEPLOY_USER: ${{ vars.TEST_DEPLOY_USER }}
-          ACTOR: ${{ github.actor }}
+          ACTOR: ${{ github.triggering_actor }}
+          VERSION: ${{ github.ref_name }}
         run: |
           set -euo pipefail
           [[ -n "$TEST_DEPLOY_KEY" && -n "$TEST_DEPLOY_KNOWN_HOSTS" ]]
           [[ -n "$TEST_DEPLOY_HOST" && -n "$TEST_DEPLOY_USER" ]]
+          version="${VERSION#deploy-test-v}"
           install -d -m 700 "$RUNNER_TEMP/ssh"
           printf '%s\n' "$TEST_DEPLOY_KEY" > "$RUNNER_TEMP/ssh/id_ed25519"
           printf '%s\n' "$TEST_DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
@@ -186,7 +181,7 @@ jobs:
             | ssh -i "$RUNNER_TEMP/ssh/id_ed25519" -o IdentitiesOnly=yes \
                 -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
                 -o StrictHostKeyChecking=yes \
-                "$TEST_DEPLOY_USER@$TEST_DEPLOY_HOST" "deploy:$ACTOR"
+                "$TEST_DEPLOY_USER@$TEST_DEPLOY_HOST" "deploy:$ACTOR:$version"
       - name: Remove the deployment key
         if: always()
         run: rm -rf "$RUNNER_TEMP/ssh" "$RUNNER_TEMP/mf-test-deploy"

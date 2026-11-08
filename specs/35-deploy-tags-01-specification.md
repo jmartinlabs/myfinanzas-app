@@ -1,6 +1,11 @@
 # 35 — DEPLOY-TAGS-01: despliegue mediante tags de GitHub — Specification
 
-Status: **DISEÑO APROBADO PARA DOCUMENTACIÓN 2026-11-05 — IMPLEMENTACIÓN NO AUTORIZADA.**
+Status: **DISEÑO ACTUALIZADO 2026-11-08 — IMPLEMENTACIÓN NO AUTORIZADA.**
+Decisión definitiva 2026-11-08: la creación de un tag `deploy-test-v*` o `deploy-prod-v*`
+por un actor autorizado **es la orden de despliegue**. No hay GitHub Environments ni segunda
+aprobación, tampoco en PROD. Los merges a `test` o `main` no despliegan. Se mantienen
+protección e inmutabilidad de tags, restricción de actores, validación estricta de formato,
+origen, commit y SHA, CI/QA/Rootless, compatibilidad de contratos, copias y smoke/rollback.
 Reconciliación documental de origen y SHA (2026-11-07): `test` para TEST, `main` para PROD
 futuro, gate TEST→main y SHA congelado de la base documental `0d25be9` (no candidato de
 despliegue); no cambia las decisiones D1–D11 ni el formato/inmutabilidad de tags; actualiza el origen de TEST y añade la regla de SHA congelado. No autoriza crear
@@ -33,7 +38,8 @@ Rootless, esquema, copia y recuperación. Se distinguen dos entornos:
 
 - `deploy-test-v*` → TEST, automático solo cuando el sistema esté habilitado y hayan pasado
   todos los controles.
-- `deploy-prod-v*` → PROD, detenido hasta la aprobación de un GitHub Environment protegido.
+- `deploy-prod-v*` → PROD, automático solo cuando el sistema esté habilitado y hayan pasado
+  todos los controles; sin aprobación adicional.
 
 `[CONFIRMADO]` Esta spec posee la convención de tags, la validación de origen, la
 orquestación de comprobaciones, la construcción o recuperación de la release, la promoción
@@ -117,8 +123,11 @@ Reglas:
 - **SHA congelado.** El tag fija el SHA completo de 40 caracteres y el digest del manifiesto;
   un rebuild o una promoción debe conservar ambos. Un SHA de `test` no promovido a `main` no
   puede recibir un tag PROD.
-- **Autor.** Solo un publicador autorizado crea tags. La comprobación de permisos se hace en
-  el workflow además de la protección de GitHub; ninguna de las dos se presume.
+- **Autor.** Solo un publicador autorizado crea tags. La protección de GitHub y la allowlist
+  del workflow (`MYFINANZAS_DEPLOY_ACTORS`) se comprueban; ninguna de las dos se presume.
+- **Sin aprobación duplicada.** La creación del tag por un actor autorizado es la
+  autorización operativa. No se usan GitHub Environments ni Required reviewers; el workflow
+  no solicita una segunda aprobación.
 - **Reintentos.** `[PROPUESTA]` Un fallo de validación antes de mutar puede reintentarse
   sobre el mismo tag, SHA y artefacto, aumentando el intento. Un artefacto distinto, un
   commit distinto o un cambio de gates exige un nuevo tag de versión, normalmente un patch.
@@ -189,10 +198,9 @@ para corregir una validación.
    aunque el tag sea válido.
 2. Adquirir el bloqueo exclusivo del entorno; un segundo despliegue se rechaza.
 3. Entregar al host el contrato de §3 de `vps-infra` (entorno, versión, SHA, digest,
-   manifiesto, seed, esquema, copia, smoke y, en PROD, la referencia de aprobación del
-   Environment). No se incluyen secretos en el contrato, la
-   anotación del tag ni los logs; el workflow obtiene las credenciales del Environment o
-   almacén autorizado solo tras la habilitación o la aprobación correspondiente.
+   manifiesto, seed, esquema, copia y smoke). No se incluyen secretos en el contrato, la
+   anotación del tag ni los logs; el workflow libera las credenciales del almacén autorizado
+   solo después de validar tag, actor, origen, SHA y gates.
 4. Ejecutar el perfil de smoke acordado: salud, ruta protegida sin sesión, frontend, `seed
    verify` y una lectura/escritura sintética autorizada. La autenticación completa se incluye
    solo si el perfil dispone de un usuario de prueba y un canal seguro para el TOTP; nunca se
@@ -222,19 +230,33 @@ para corregir una validación.
 4. Preparar y revisar el plan de actualización y recuperación: release, esquema, copia,
    mantenimiento, smoke y vuelta atrás.
 
-### 5.2 Aprobación y ejecución
+### 5.2 Ejecución automática
 
-5. El workflow se detiene en el GitHub Environment `production`.
-6. La aprobación se concede mediante **Required reviewers**. `[PROPUESTA]` El autor del tag
-   no puede ser el único aprobador; se configura separación de funciones cuando GitHub lo
-   permita y se verifica la configuración efectiva.
-7. Solo después de **Approve and deploy** se liberan las credenciales de PROD y se ejecuta
-   la activación.
+5. No hay GitHub Environment ni segundo paso de aprobación. La creación del tag por un actor
+   autorizado, con protección e inmutabilidad verificadas, es la orden de despliegue.
+6. Antes de liberar credenciales de PROD se validan tag, actor, SHA, promoción, artefacto
+   idéntico a TEST, backup/restore y contrato. Cualquier fallo detiene sin mutar.
+7. Las credenciales PROD son distintas de TEST y se leen del almacén autorizado solo en la
+   ejecución validada.
 8. Se verifica el resultado, se ejecuta el smoke de producción y se registran evidencias.
 
-`[CONFIRMADO]` La aprobación de GitHub constituye la autorización operativa de esa ejecución,
-una vez que el procedimiento haya sido implementado, revisado y habilitado expresamente. No
-autoriza merges, desarrollo nuevo, importación de datos reales ni una versión posterior.
+`[CONFIRMADO]` La creación del tag constituye la autorización operativa de esa ejecución,
+una vez que el sistema esté habilitado. No autoriza merges, desarrollo nuevo, importación de
+datos reales ni una versión posterior. El actor queda registrado en el run y en el host.
+
+### 5.3 Rollback y copias (reconciliado con el receptor)
+
+- **TEST.** La release solo cambia imagen y frontend con el mismo contrato; el estado
+  persistente no se toca. El par de rollback es unidad + enlace `current`, y se aplica
+  automáticamente si el smoke falla. Si el smoke del rollback también falla, la unidad se
+  detiene y se preserva todo para revisión.
+- **PROD.** Antes de activar se exige copia cifrada e integridad verificada, y una
+  restauración ensayada según SPEC31. La release app-only se revierte igual que TEST; una
+  migración de esquema o datos no se revierte automáticamente y exige restaurar la copia con
+  autorización separada.
+- El receptor TEST implementado en `vps-infra` materializa el primer caso. El receptor PROD
+  reutiliza la misma verificación y añade el gate de copia/restore antes de mutar.
+
 
 ## 6. Estrategia de ramas
 
@@ -256,7 +278,8 @@ otro artefacto. La convención, la inmutabilidad y los controles de artefacto no
 | Proteger tags y restringir creación/modificación | Ruleset/tag protection con actores autorizados, sin update/delete; comprobar la regla efectiva y los bypass | Consulta de solo lectura a GitHub y prueba negativa |
 | Verificar SHA, procedencia y artefactos inmutables | Ancestro del origen autorizado (`test` o `main`), manifiesto, checksums e ID/digest; sin etiquetas móviles | Salida de verificación y manifiesto |
 | Impedir despliegues concurrentes | Un lock por entorno y `cancel-in-progress: false`; rechazo del segundo | Run bloqueado y registro |
-| Credenciales separadas y de mínimos privilegios | Principal TEST/PROD distinto, sin root, secreto en el Environment o almacén autorizado, no en Git | Configuración revisada y prueba de alcance |
+| Credenciales separadas y de mínimos privilegios | Principal TEST/PROD distinto, sin root, secreto en el almacén autorizado, no en Git | Configuración revisada y prueba de alcance |
+| Sin aprobaciones duplicadas | Tag protegido e inmutable + allowlist de actores + validación estricta; sin GitHub Environments | Reglas efectivas y prueba negativa con actor no autorizado |
 | No guardar claves ni secretos en repositorios o artefactos | Revisión de diff, manifiesto y logs; secretos efímeros; sin identidad privada `age` ni secreto TOTP en la release (el binario `age` verificado sí forma parte de la imagen) | Auditoría de contenido y permisos |
 | No desplegar sin backup y recuperación validados | Precondición bloqueante; copia y restauración ensayadas; PROD con datos reales sujeto a DT6/T-BKP | Copia, restore y plan revisados |
 | No reconstruir en PROD un artefacto distinto | Promoción por SHA y digest; si no coincide, se detiene | Comparación TEST/PROD |
@@ -297,14 +320,16 @@ repositorios es opcional y no forma parte de esta entrega.
 | D3 | Formato de la referencia QA y de la anotación del tag | Bloque estructurado y validado; la QA se revisa fuera del workflow y el actor queda registrado | Fase 3 |
 | D4 | Lugar de ejecución y credenciales (runner dedicado, SSH restringido u OIDC) | Mínimos privilegios, sin root, sin comandos arbitrarios; evaluar el modelo de amenaza del host | Fase 2 |
 | D5 | Interruptor de TEST y primera versión | Estado inicial desactivado; habilitar solo con contrato host y copia/restore ensayados | Fase 4 |
-| D6 | Revisores de PROD y separación de funciones | Required reviewers; autor del tag distinto del aprobador | Fase 5 |
+| D6 | Actores autorizados y separación de funciones | Ruleset de tags con allowlist + comprobación `MYFINANZAS_DEPLOY_ACTORS`; sin Required reviewers ni Environments (decisión 2026-11-08) | Fase 2 |
 | D7 | Identidad de promoción y retención de la evidencia TEST | Mismo SHA y digest; si la evidencia o el artefacto caducan, bloquear hasta nuevo TEST | Fases 4–5 |
 | D8 | Autorización de migración y prueba de backup/restore | Reutilizar `compatibility.py` y el RUNBOOK; una autorización por par de esquema y datos | Fase 5 |
 | D9 | Perfil de smoke y comportamiento ante fallo posterior | Perfil fijo y mínimo; recuperación manual con estado preservado, sin rollback automático | Fases 4–5 |
 | D10 | Pre-releases, metadatos de build y futura rama `test` | Solo SemVer estable ahora; la rama futura cambia únicamente el origen de tags | Futuro |
 | D11 | Reconciliación de SPEC34/seed con el SHA elegido para TEST | No habilitar TEST hasta que el contrato de esquema/seed acepte el SHA y el seed correspondiente; `main` está en v26, el seed propuesto es v25 y el PR #229 se cerró sin merge: nueva propuesta o reapertura autorizada | Fase 1 |
 
-`[CONFIRMADO]` D1–D11 conservan la redacción aprobada el 2026-11-05. D10 se redactó cuando
+`[CONFIRMADO]` D6 se actualiza el 2026-11-08: no hay revisores ni Environments; la
+autorización es el tag creado por un actor permitido. El resto de D1–D11 conserva su
+redacción. D10 se redactó cuando
 `test` era futura; la rama existe y el origen vigente se define en §6, sin cambiar la
 decisión sobre pre-releases y metadatos. La referencia de D11 a v26/v25 y al PR #229 es
 histórica: el estado verificado es v27/C27, SPEC34/testplan reconciliados y seed `FT-1` v27
@@ -316,10 +341,10 @@ no implementado; D11 sigue abierta.
 | --- | --- | --- | --- |
 | 0 | Documentar el diseño y revisarlo | Esta spec; QA y CI documentales | **Actual; sin implementación** |
 | 1 | Cerrar D1–D11 y el contrato entre repositorios | Decisiones registradas y documentos reconciliados; sin cambios operativos | Separada |
-| 2 | Configurar protección de tags y Environments | Reglas efectivas verificadas; sin tags operativos ni credenciales de despliegue | Separada |
+| 2 | Configurar protección de tags y allowlist de actores | Reglas efectivas verificadas; sin Environments; sin tags operativos ni credenciales | Separada |
 | 3 | Implementar el workflow en dry-run | Solo `workflow_dispatch`, sin `push` de tags y sin credenciales de VPS; casos negativos y positivos; host intacto | Separada |
 | 4 | Habilitar TEST | Primer `deploy-test-vX` sobre SHA congelado de `test`; smoke, copia/restore y evidencia; PROD intacto | Separada |
-| 5 | Habilitar PROD | Backup/restore, aceptación, revisores y primer `deploy-prod-vX` sobre el SHA promovido a `main` | Separada |
+| 5 | Habilitar PROD | Backup/restore, aceptación y primer `deploy-prod-vX` sobre el SHA promovido a `main` | Separada |
 | 6 | Verificar protección y promoción `test`→`main` | Reglas efectivas, gate y prueba negativa; sin tags operativos | Separada |
 
 Cada fase conserva sus propios criterios y no se deduce de la anterior. La fase 3 no usa un
@@ -342,7 +367,8 @@ su autorización. Ninguna fase se declara completada por un merge documental.
 
 - Crear tags operativos, moverlos, borrarlos o reutilizarlos.
 - Activar workflows de despliegue o publicar la primera release.
-- Configurar credenciales, accesos al VPS, runners, secretos o GitHub Environments.
+- Configurar credenciales, accesos al VPS, runners o secretos. No se usan GitHub
+  Environments para este flujo.
 - Cambiar servicios, DNS, Caddy, Podman, firewall, usuarios, rutas o copias del VPS.
 - Realizar despliegues, migraciones, restauraciones, rollbacks o merges.
 - Importar datos reales, el Excel o información financiera.
