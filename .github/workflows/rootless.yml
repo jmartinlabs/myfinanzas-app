@@ -27,8 +27,24 @@ on:
         required: false
         default: ''
         type: string
+      package_test_release:
+        description: Package a TEST-only artifact after successful Rootless
+        required: false
+        default: false
+        type: boolean
+      release_sha:
+        description: Exact lowercase SHA40 of the test branch
+        required: false
+        default: ''
+        type: string
+      qa_reference:
+        description: Independent QA evidence reference for exact SHA
+        required: false
+        default: ''
+        type: string
 permissions:
   contents: read
+  checks: read
 concurrency:
   group: rootless-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
@@ -64,3 +80,62 @@ jobs:
           export XDG_RUNTIME_DIR="/run/user/$(id -u)"
           export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           python3 infra/tests/rootless-integration.py
+
+  package:
+    name: Package TEST release (manual only)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.package_test_release }}
+    needs: capability
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      checks: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify test SHA and independent CI and QA evidence
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          QA_REFERENCE: ${{ inputs.qa_reference }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          [[ "$GITHUB_REF" == 'refs/heads/test' ]]
+          [[ "$RELEASE_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse HEAD)" == "$RELEASE_SHA" ]]
+          [[ "$(git rev-parse origin/test)" == "$RELEASE_SHA" ]]
+          [[ -n "$QA_REFERENCE" ]]
+          gh api "repos/$GITHUB_REPOSITORY/commits/$RELEASE_SHA/check-runs?per_page=100" \
+            | jq -e '.check_runs | any(.name == "required" and .conclusion == "success")'
+      - name: Install rootless builder on disposable runner
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman uidmap slirp4netns dbus-user-session
+      - name: Build once each, verify paired release and run synthetic smoke
+        shell: bash
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+        run: |
+          set -euo pipefail
+          export XDG_RUNTIME_DIR="/run/user/$(id -u)"
+          export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          dest="$RUNNER_TEMP/mf-test-release"
+          python3 infra/release.py build --ref "$RELEASE_SHA" --output "$dest" --single-build
+          manifest_sha="$(sha256sum "$dest/manifest.json" | cut -d' ' -f1)"
+          python3 infra/release.py verify "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
+          python3 infra/smoke.py --release "$dest" --expected-commit "$RELEASE_SHA" --expected-manifest-sha256 "$manifest_sha"
+          (cd "$dest" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
+          printf 'TEST release SHA: %s\nManifest SHA-256: %s\n' "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload one unencrypted TEST artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: myfinanzas-test-${{ github.sha }}
+          path: ${{ runner.temp }}/mf-test-release/
+          if-no-files-found: error
+          include-hidden-files: false
+          compression-level: 0
+          retention-days: 7
