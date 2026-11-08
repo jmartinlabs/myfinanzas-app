@@ -160,6 +160,82 @@ async function expectInicio(page: Page) {
   await expect(page.locator(".inicio-context")).toContainText("Ciclo 7");
 }
 
+/** Texto funcional de Inicio que debe leerse a ≥12 px (UI DEV-06 I1). */
+const FUNCTIONAL_TEXT_SELECTOR = [
+  ".inicio-readonly",
+  ".inicio-clase",
+  ".inicio-estado",
+  ".inicio-metric-meta",
+  ".inicio-metric-motivo",
+  ".inicio-source",
+  ".inicio-note",
+  ".inicio-ref-coverage",
+  ".inicio-item-list li",
+  ".inicio-item-meta",
+  ".inicio-item-value",
+  ".inicio-value-note",
+  ".inicio-metric-coverage",
+  ".inicio-zona",
+  ".inicio-context-ref",
+  ".inicio-context-meta",
+  ".inicio-context-facts dt",
+  ".inicio-counts dt",
+  ".inicio-objetivo-facts dt",
+  ".inicio-nd-list dt",
+  ".inicio-detail h4",
+  ".inicio-detail ul",
+  ".inicio-submetric h4",
+  ".inicio-aparte",
+  ".inicio-degradado",
+  ".inicio-coverage-list",
+  ".inicio-motivo",
+  ".ui-metric-class",
+  ".ui-badge",
+  ".ui-amount-note",
+  ".ui-amount-state",
+  "small",
+].join(",");
+
+async function expectInicioFunctionalText(page: Page) {
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = true;
+  });
+  const undersized = await page.locator(".inicio-page").evaluate((root, selector) => {
+    const found: { className: string; text: string; fontSize: number }[] = [];
+    for (const node of Array.from(root.querySelectorAll(selector))) {
+      const element = node as HTMLElement;
+      const style = getComputedStyle(element);
+      if (
+        style.display === "none" ||
+        style.visibility === "hidden" ||
+        !element.offsetParent
+      )
+        continue;
+      if (!(element.textContent ?? "").trim()) continue;
+      const fontSize = Number.parseFloat(style.fontSize);
+      if (fontSize < 12) {
+        found.push({
+          className: element.className,
+          text: (element.textContent ?? "").trim().slice(0, 80),
+          fontSize,
+        });
+      }
+    }
+    return found;
+  }, FUNCTIONAL_TEXT_SELECTOR);
+  expect(undersized).toEqual([]);
+  await page.locator(".inicio-page details").evaluateAll((nodes) => {
+    for (const node of nodes) (node as HTMLDetailsElement).open = false;
+  });
+}
+
+async function gridColumnCount(page: Page, selector: string) {
+  return page.locator(selector).evaluate((element) => {
+    const columns = getComputedStyle(element).gridTemplateColumns;
+    return columns.split(/\s+/).filter(Boolean).length;
+  });
+}
+
 async function drillDown(page: Page, link: Locator, url: RegExp) {
   await link.click();
   await expect(page).toHaveURL(url);
@@ -231,6 +307,7 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await routeApi(page, BASE_PORT);
@@ -505,6 +582,36 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       ),
     ).toBe(true);
 
+  // UI DEV-06 I1: rejilla 4/2/1, texto funcional ≥12 px y coste R6 como
+  // lectura principal por encima de sus submétricas.
+  await expectInicioFunctionalText(page);
+  for (const [width, four, two, metric] of [
+    [1440, 4, 2, 2],
+    [900, 2, 2, 2],
+    [390, 1, 1, 1],
+  ] as const) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await gridColumnCount(page, ".inicio-grid-4")).toBe(four);
+    expect(await gridColumnCount(page, ".inicio-grid-2")).toBe(two);
+    expect(await gridColumnCount(page, ".inicio-metric-grid")).toBe(metric);
+    await expectNoOverflow();
+    await expectInicioFunctionalText(page);
+  }
+  const objetivoSizes = await page.evaluate(() => {
+    const fontSize = (selector: string) => {
+      const node = document.querySelector(selector);
+      return node ? Number.parseFloat(getComputedStyle(node).fontSize) : 0;
+    };
+    return {
+      coste: fontSize(
+        ".inicio-objetivo > .ui-metric-main .ui-amount-value",
+      ),
+      submetrica: fontSize(".inicio-submetric .ui-amount-value"),
+    };
+  });
+  expect(objetivoSizes.coste).toBeGreaterThan(objetivoSizes.submetrica);
+  expect(objetivoSizes.submetrica).toBeGreaterThanOrEqual(12);
+
   await page.setViewportSize({ width: 1440, height: 1000 });
   for (const theme of ["light-s", "dark-s", "hybrid-s"] as const) {
     await select.selectOption(theme);
@@ -521,6 +628,10 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
     await resetScroll(page);
     await page.screenshot({
       path: `artifacts/e4-6/inicio-${theme}-1440.png`,
+      fullPage: true,
+    });
+    await page.screenshot({
+      path: `artifacts/dev-06/inicio-${theme}-1440.png`,
       fullPage: true,
     });
   }
@@ -542,6 +653,10 @@ test("AC-01/05/09/26: composición visible, cobertura, drill-down y responsive",
       path: `artifacts/e4-6/inicio-${theme}-390.png`,
       fullPage: true,
     });
+    await page.screenshot({
+      path: `artifacts/dev-06/inicio-${theme}-390.png`,
+      fullPage: true,
+    });
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
   expect(errors).toEqual([]);
@@ -551,8 +666,10 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, ZERO_PORT);
   await login(page, ZERO_DIR);
+  await expectInicioFunctionalText(page);
 
   const liquidez = page.getByRole("article", { name: "Liquidez", exact: true });
   await expect(liquidez).toContainText("0,00 €");
@@ -599,11 +716,18 @@ test("AC-07/29: cero verificado se muestra 0,00 y null sigue No disponible", asy
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      if (width === 390 && theme === "light-s")
+        await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
         path: `artifacts/e4-6/inicio-cero-${theme}-${width}.png`,
         fullPage: true,
       });
+      if (width === 390)
+        await page.screenshot({
+          path: `artifacts/dev-06/inicio-cero-${theme}-390.png`,
+          fullPage: true,
+        });
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -613,6 +737,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
   page,
 }) => {
   mkdirSync("artifacts/e4-6", { recursive: true });
+  mkdirSync("artifacts/dev-06", { recursive: true });
   await routeApi(page, DEGRADED_PORT);
   await page.route("**/api/resumen-inicio", async (route) => {
     const url = new URL(route.request().url());
@@ -667,6 +792,7 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
     });
   });
   await login(page, DEGRADED_DIR);
+  await expectInicioFunctionalText(page);
 
   const deuda = page.locator("section[aria-labelledby='inicio-deuda']");
   await expect(deuda).toContainText("Bloque no disponible por fallo de fuente");
@@ -711,11 +837,18 @@ test("M-4: estados degradados no se presentan como vacío real", async ({
           () => document.documentElement.scrollWidth <= window.innerWidth,
         ),
       ).toBe(true);
+      if (width === 390 && theme === "light-s")
+        await expectInicioFunctionalText(page);
       await resetScroll(page);
       await page.screenshot({
         path: `artifacts/e4-6/inicio-degradado-${theme}-${width}.png`,
         fullPage: true,
       });
+      if (width === 390)
+        await page.screenshot({
+          path: `artifacts/dev-06/inicio-degradado-${theme}-390.png`,
+          fullPage: true,
+        });
     }
   }
   await page.setViewportSize({ width: 1440, height: 1000 });
@@ -725,6 +858,7 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
   page,
 }) => {
   await routeApi(page, AUTH_PORT);
+  mkdirSync("artifacts/dev-06", { recursive: true });
   const credentials = await login(page, AUTH_DIR);
   await expectInicio(page);
 
@@ -783,6 +917,25 @@ test("AC-27: error 500 y sesión expirada sin datos inventados ni pérdida de co
     "CICLO FINANCIADO",
   );
   await expect(page.locator(".cycle-context")).toContainText("Referencia financiera");
+
+  // El estado 401 conserva el texto funcional legible y no desborda a 390.
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+  const alertFontSize = await page
+    .locator(".alert")
+    .filter({ hasText: "no se muestran importes" })
+    .evaluate((element) => Number.parseFloat(getComputedStyle(element).fontSize));
+  expect(alertFontSize).toBeGreaterThanOrEqual(12);
+  await resetScroll(page);
+  await page.screenshot({
+    path: "artifacts/dev-06/inicio-401-390.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 1440, height: 1000 });
 
   await page.unroute("**/api/resumen-inicio");
   await page
