@@ -74,7 +74,8 @@ El workflow Rootless publica, tras `push` a `test` y con `required`/`qa`/Rootles
 `myfinanzas-test-release`. App y seed usan `sha-<SHA40>`; `myfinanzas-test-release:test` es
 el puntero mutable a la última release verificada.
 
-La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
+El job automático exige un check-run `qa` en `SUCCESS` sobre el SHA exacto; sin ese check no
+publica. La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
 `/frontend/`, y declara labels con SHA, hashes, digests y contratos. El VPS la consulta
 periódicamente, verifica el manifiesto y descarga la app por digest; no recibe credenciales
 SSH desde GitHub. Los paquetes deben ser públicos para lectura anónima; si no lo son, el
