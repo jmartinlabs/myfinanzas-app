@@ -37,11 +37,11 @@ artifact ZIP sin cifrar construido en GitHub Actions (retención 7 días), sin s
 bases de datos ni información financiera; en un repositorio público debe tratarse como
 público. La descarga manual es por HTTPS (`gh run download` o la API de artifacts); SSH
 se usa únicamente para transferir el paquete ya verificado al host privado. Requiere
-gate Rootless previo del mismo SHA y QA independiente. El empaquetado manual
-(`workflow_dispatch` con `package_test_release=true`, `release_sha` SHA40 exacto de
-`test` y `qa_reference` que contenga ese SHA) usa un único build por imagen
-(`--single-build`, `payload_equal: null`), sin atribuirse la reproducibilidad que
-Rootless sigue validando con dos builds limpios. `release.py build` construye la app y
+gate Rootless previo del mismo SHA y QA independiente. El build de un tag
+`deploy-test-vX.Y.Z` usa un único build por imagen (`--single-build`,
+`payload_equal: null`), sin atribuirse la reproducibilidad que Rootless sigue validando
+con dos builds limpios; fuera del despliegue puede repetirse `release.py build` sobre el
+SHA exacto para evidencia. `release.py build` construye la app y
 la imagen seed **test-only** desde el mismo commit, base y lock; el manifiesto registra
 el bloque `seed` (ID inmutable, digest OCI, payload del rootfs, SHA de receta,
 `source`, `contracts` y lock), y `verify` exige que el par esté presente y emparejado.
@@ -67,32 +67,29 @@ La app no sirve `/` por sí misma: el smoke comprueba el `frontend/` verificado 
 servidor estático local, no un endpoint de la API. No sustituye CI, el gate Rootless
 ni la autorización de despliegue.
 
-## Publicación GHCR TEST
+## Despliegue directo TEST por tag
 
-El workflow Rootless publica, tras `push` a `test` y con `required`/`qa`/Rootless en
-`SUCCESS`, tres imágenes públicas en GHCR: `myfinanzas-test-app`, `myfinanzas-test-seed` y
-`myfinanzas-test-release`. App y seed usan `sha-<SHA40>`; `myfinanzas-test-release:test` es
-el puntero mutable a la última release verificada.
+El workflow Rootless se dispara con un tag `deploy-test-vX.Y.Z` creado por un actor
+autorizado. No despliegan los merges a `test`. Tras validar tag, actor, SHA y gates
+(`required`, `qa`, Rootless), construye una sola release, la verifica, ejecuta el smoke y
+envía el bundle al VPS por SSH dentro de un comando forzado; el receptor aplica imagen,
+unidad y frontend con smoke y rollback automático.
 
-El job automático exige `MYFINANZAS_TEST_AUTO_PUBLISH=true`, Rootless y el check
-`required` en `SUCCESS`. El check-run `qa` lo emite un job independiente del empaquetado
-que prueba tipos, compilación, tests web y baseline sobre el SHA exacto tras Rootless;
-no sustituye la revisión QA independiente previa al merge. Como `required` se ejecuta
-en otro workflow, la publicación espera su resultado final con timeout y no acepta
-estados pendientes/fallidos. La variable se activa solo tras la primera activación
-TEST aprobada. `workflow_dispatch` con `package_test_release` conserva solo el ZIP
-manual y su `qa_reference`; **no** publica en GHCR por defecto. Tras la primera
-activación, el operador puede usar el input independiente `publish_test_ghcr=true`
-para crear/verificar los paquetes GHCR del SHA exacto con la misma QA/Rootless/required,
-sin introducir un commit artificial. Ese input es falso por defecto. La imagen de release contiene `/manifest.json`, `/manifest.sha256`, `/SHA256SUMS` y
-`/frontend/`, y declara labels con SHA, hashes, digests y contratos. El VPS la consulta
-periódicamente, verifica el manifiesto y descarga la app por digest; no recibe credenciales
-SSH desde GitHub. Los paquetes deben ser públicos para lectura anónima; si no lo son, el
-pull periódico requiere un token y no cumple el flujo sin credenciales.
+Gates:
 
-La primera activación es manual. Las actualizaciones posteriores no ejecutan `seed` ni
-modifican el estado persistente; solo cambian imagen, unidad y frontend cuando el esquema
-declarado coincide. `seed-manifest.json` se genera en la primera activación.
+- tag anotado e inmutable, formato SemVer, commit igual al SHA y ancestro de `origin/test`;
+- anotación con `sha=<SHA40>` y `qa_reference=<referencia que contiene el SHA>`; es la
+  evidencia de revisión independiente, distinta del check automático `qa`;
+- actor en `MYFINANZAS_DEPLOY_ACTORS`, además del ruleset inmutable de tags;
+- `required`, `qa` y Rootless en `SUCCESS` sobre el SHA exacto;
+- interruptor `MYFINANZAS_TEST_DEPLOY=true`; desactivado, el tag no despliega;
+- Environment `test` solo como frontera de secretos y regla de tags, sin Required reviewers
+  ni segunda aprobación.
+
+No usa GHCR, temporizadores, polling ni credenciales de registro. La clave SSH vive en los
+secretos del Environment `test`, `TEST_DEPLOY_KEY`/`TEST_DEPLOY_KNOWN_HOSTS`, y el receptor
+corre como `mftest` sin sudo. La primera activación sigue siendo manual; las posteriores no ejecutan `seed` ni
+modifican el estado persistente y solo aplican releases con el mismo contrato.
 
 ## Preflight y almacenamiento
 
