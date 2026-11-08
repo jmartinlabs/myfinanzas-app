@@ -98,6 +98,9 @@ jobs:
     if: ${{ startsWith(github.ref, 'refs/tags/deploy-test-v') && vars.MYFINANZAS_TEST_DEPLOY == 'true' }}
     needs: [capability, qa]
     runs-on: ubuntu-24.04
+    concurrency:
+      group: myfinanzas-test-deploy
+      cancel-in-progress: false
     timeout-minutes: 60
     permissions:
       contents: read
@@ -156,6 +159,16 @@ jobs:
           mkdir -p "$bundle/frontend"
           cp "$dest/manifest.json" "$dest/manifest.sha256" "$dest/image.oci.tar" "$bundle/"
           cp -a "$dest/frontend/." "$bundle/frontend/"
+          jq -n \
+            --arg environment test \
+            --arg version "${GITHUB_REF_NAME#deploy-test-v}" \
+            --arg tag "$GITHUB_REF_NAME" \
+            --arg release_sha "$RELEASE_SHA" \
+            --arg manifest_sha256 "$manifest_sha" \
+            --arg qa_reference "https://github.com/$GITHUB_REPOSITORY/commit/$RELEASE_SHA/checks" \
+            --arg workflow_run_id "$GITHUB_RUN_ID" \
+            '{environment:$environment, version:$version, tag:$tag, release_sha:$release_sha, manifest_sha256:$manifest_sha256, qa_reference:$qa_reference, workflow_run_id:$workflow_run_id}' \
+            > "$bundle/deploy.json"
           (cd "$bundle" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 sha256sum > SHA256SUMS)
           printf 'Tag: %s\nRelease SHA: %s\nManifest SHA-256: %s\n' "$GITHUB_REF_NAME" "$RELEASE_SHA" "$manifest_sha" >> "$GITHUB_STEP_SUMMARY"
       - name: Deploy over the forced SSH command
@@ -177,7 +190,7 @@ jobs:
           printf '%s\n' "$TEST_DEPLOY_KNOWN_HOSTS" > "$RUNNER_TEMP/ssh/known_hosts"
           chmod 600 "$RUNNER_TEMP/ssh/id_ed25519" "$RUNNER_TEMP/ssh/known_hosts"
           bundle="$RUNNER_TEMP/mf-test-deploy"
-          tar -C "$bundle" -cf - manifest.json manifest.sha256 SHA256SUMS frontend image.oci.tar \
+          tar -C "$bundle" -cf - manifest.json manifest.sha256 SHA256SUMS deploy.json frontend image.oci.tar \
             | ssh -i "$RUNNER_TEMP/ssh/id_ed25519" -o IdentitiesOnly=yes \
                 -o UserKnownHostsFile="$RUNNER_TEMP/ssh/known_hosts" \
                 -o StrictHostKeyChecking=yes \
