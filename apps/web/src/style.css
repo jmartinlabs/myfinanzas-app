@@ -703,6 +703,7 @@ select[aria-invalid="true"] {
 }
 .switch.on {
   background: var(--positive);
+  color: var(--on-accent);
   justify-content: flex-start;
   padding: 3px 3px 3px 10px;
 }
